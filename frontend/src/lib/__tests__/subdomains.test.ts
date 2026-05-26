@@ -62,7 +62,7 @@ describe('normalizeAppPath', () => {
   });
 
   it('treats null as default', () => {
-    expect(normalizeAppPath(null as unknown as string)).toBe('/');
+    expect(Reflect.apply(normalizeAppPath, undefined, [null])).toBe('/');
   });
 });
 
@@ -521,8 +521,8 @@ describe('isValidCheckoutEntrySegment', () => {
   });
 
   it('rejects null/undefined', () => {
-    expect(isValidCheckoutEntrySegment(null as unknown as string)).toBe(false);
-    expect(isValidCheckoutEntrySegment(undefined as unknown as string)).toBe(false);
+    expect(Reflect.apply(isValidCheckoutEntrySegment, undefined, [null])).toBe(false);
+    expect(Reflect.apply(isValidCheckoutEntrySegment, undefined, [undefined])).toBe(false);
   });
 
   it('trims whitespace before validation', () => {

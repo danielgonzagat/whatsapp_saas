@@ -35,6 +35,67 @@ const KNOWLEDGE_BASE_EMBEDDING_MODEL = 'text-embedding-3-small';
 const KNOWLEDGE_BASE_CHUNK_SIZE = 1000;
 const KNOWLEDGE_BASE_CHUNK_OVERLAP = 200;
 
+export function htmlToText(html: string): string {
+  if (!html) {
+    return '';
+  }
+
+  const blockTags = new Set([
+    'p',
+    'div',
+    'br',
+    'li',
+    'h1',
+    'h2',
+    'h3',
+    'h4',
+    'h5',
+    'h6',
+    'section',
+    'article',
+    'header',
+    'footer',
+  ]);
+  const ignoredStack: string[] = [];
+  const parts: string[] = [];
+
+  const parser = new Parser(
+    {
+      onopentag: (name) => {
+        const lower = name.toLowerCase();
+        if (lower === 'script' || lower === 'style') {
+          ignoredStack.push(lower);
+          return;
+        }
+        if (blockTags.has(lower)) {
+          parts.push(' ');
+        }
+      },
+      ontext: (text) => {
+        if (ignoredStack.length === 0) {
+          parts.push(text);
+        }
+      },
+      onclosetag: (name) => {
+        const lower = name.toLowerCase();
+        if (ignoredStack.length > 0 && ignoredStack[ignoredStack.length - 1] === lower) {
+          ignoredStack.pop();
+          return;
+        }
+        if (blockTags.has(lower)) {
+          parts.push(' ');
+        }
+      },
+    },
+    { decodeEntities: true },
+  );
+
+  parser.write(html);
+  parser.end();
+
+  return parts.join(' ').replace(WHITESPACE_G_RE, ' ').trim();
+}
+
 type KnowledgeBaseWalletUsagePayload = {
   operation: 'kb_ingestion';
   requestId: string;
@@ -454,64 +515,7 @@ export class KnowledgeBaseService {
   }
 
   private htmlToText(html: string): string {
-    if (!html) {
-      return '';
-    }
-
-    const blockTags = new Set([
-      'p',
-      'div',
-      'br',
-      'li',
-      'h1',
-      'h2',
-      'h3',
-      'h4',
-      'h5',
-      'h6',
-      'section',
-      'article',
-      'header',
-      'footer',
-    ]);
-    const ignoredStack: string[] = [];
-    const parts: string[] = [];
-
-    const parser = new Parser(
-      {
-        onopentag: (name) => {
-          const lower = name.toLowerCase();
-          if (lower === 'script' || lower === 'style') {
-            ignoredStack.push(lower);
-            return;
-          }
-          if (blockTags.has(lower)) {
-            parts.push(' ');
-          }
-        },
-        ontext: (text) => {
-          if (ignoredStack.length === 0) {
-            parts.push(text);
-          }
-        },
-        onclosetag: (name) => {
-          const lower = name.toLowerCase();
-          if (ignoredStack.length > 0 && ignoredStack[ignoredStack.length - 1] === lower) {
-            ignoredStack.pop();
-            return;
-          }
-          if (blockTags.has(lower)) {
-            parts.push(' ');
-          }
-        },
-      },
-      { decodeEntities: true },
-    );
-
-    parser.write(html);
-    parser.end();
-
-    return parts.join(' ').replace(WHITESPACE_G_RE, ' ').trim();
+    return htmlToText(html);
   }
 
   /**

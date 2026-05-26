@@ -503,8 +503,8 @@ export class KloelChatToolsService {
             where: { workspaceId, name: customerName },
           });
           if (existing) {
-            await this.prisma.contact.update({
-              where: { id: existing.id },
+            await this.prisma.contact.updateMany({
+              where: { id: existing.id, workspaceId },
               data: { updatedAt: new Date() },
             });
           } else {
@@ -512,7 +512,9 @@ export class KloelChatToolsService {
               data: { workspaceId, name: customerName, phone: '', leadScore: 30 },
             });
           }
-        } catch { /* non-blocking */ }
+        } catch {
+          /* non-blocking */
+        }
       }
       // Create sale record for reporting
       try {
@@ -527,13 +529,17 @@ export class KloelChatToolsService {
             ...(args.customerName ? { leadPhone: args.customerName } : {}),
           },
         });
-      } catch { /* non-blocking */ }
+      } catch {
+        /* non-blocking */
+      }
       // Generate real QR code as base64
       let qrCodeBase64 = '';
       const pixPayload = `00020126580014BR.GOV.BCB.PIX0136${mockId}520400005303986540${mockAmount.toFixed(2)}5802BR5925${customerName}6009SAO PAULO62070503***6304${Math.random().toString(16).slice(2, 6).toUpperCase()}`;
       try {
         qrCodeBase64 = await QRCode.toDataURL(pixPayload, { width: 300, margin: 2 });
-      } catch { /* non-blocking */ }
+      } catch {
+        /* non-blocking */
+      }
       return {
         success: true,
         paymentId: mockId,
@@ -578,8 +584,17 @@ export class KloelChatToolsService {
     args: Record<string, unknown>,
   ): Promise<ToolResult> {
     const query = typeof args.query === 'string' ? args.query : '';
-    const cleanQuery = query.replace(/^(busca|procura|pesquisa|lead|contato|cliente|comprador|compradora)(\s+(lead|contato|cliente|comprador|compradora))?\s+/i, '').trim();
-    const searchName = cleanQuery || query.replace(/\b(busca|procura|pesquisa|lead|contato|cliente|comprador|compradora)\b/gi, '').trim();
+    const cleanQuery = query
+      .replace(
+        /^(busca|procura|pesquisa|lead|contato|cliente|comprador|compradora)(\s+(lead|contato|cliente|comprador|compradora))?\s+/i,
+        '',
+      )
+      .trim();
+    const searchName =
+      cleanQuery ||
+      query
+        .replace(/\b(busca|procura|pesquisa|lead|contato|cliente|comprador|compradora)\b/gi, '')
+        .trim();
     try {
       // Search contacts by name
       const contacts = await this.prisma.contact.findMany({
@@ -590,20 +605,27 @@ export class KloelChatToolsService {
             { phone: { contains: searchName } },
           ],
         },
-        select: { id: true, name: true, phone: true, leadScore: true, sentiment: true, updatedAt: true },
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+          leadScore: true,
+          sentiment: true,
+          updatedAt: true,
+        },
         take: 10,
       });
       if (contacts.length > 0) {
         return {
           success: true,
-          contacts: contacts.map(c => ({
+          contacts: contacts.map((c) => ({
             name: c.name,
             phone: c.phone,
             score: c.leadScore || 0,
             sentiment: c.sentiment,
             lastUpdate: c.updatedAt,
           })),
-          message: `Encontrei ${contacts.length} contato(s): ${contacts.map(c => c.name).join(', ')}`,
+          message: `Encontrei ${contacts.length} contato(s): ${contacts.map((c) => c.name).join(', ')}`,
         };
       }
       // Fallback to agent memory if no contacts found
@@ -707,65 +729,128 @@ export class KloelChatToolsService {
 
   // ── Novos tools para stubs → reais ──
 
-
-  async toolUploadPlanImage(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+  async toolUploadPlanImage(
+    workspaceId: string,
+    args: Record<string, unknown>,
+  ): Promise<ToolResult> {
     const planName = typeof args.planName === 'string' ? args.planName : '';
     const productName = typeof args.productName === 'string' ? args.productName : '';
     const imageUrl = typeof args.imageUrl === 'string' ? args.imageUrl : '';
-    if (!imageUrl) return { success: true, message: 'Envie a URL da foto do plano ou faça upload pelo chat. Ex: "foto do plano X url: https://..."' };
-    if (!planName && !productName) return { success: false, error: 'Informe o nome do plano ou do produto.' };
+    if (!imageUrl) {
+      return {
+        success: true,
+        message:
+          'Envie a URL da foto do plano ou faça upload pelo chat. Ex: "foto do plano X url: https://..."',
+      };
+    }
+    if (!planName && !productName) {
+      return { success: false, error: 'Informe o nome do plano ou do produto.' };
+    }
     try {
       let plan;
       if (planName) {
-        plan = await this.prisma.productPlan.findFirst({ where: { name: { contains: planName, mode: 'insensitive' }, product: { workspaceId } }, select: { id: true } });
+        plan = await this.prisma.productPlan.findFirst({
+          where: { name: { contains: planName, mode: 'insensitive' }, product: { workspaceId } },
+          select: { id: true },
+        });
       }
       if (!plan && productName) {
-        plan = await this.prisma.productPlan.findFirst({ where: { product: { workspaceId, name: { contains: productName, mode: 'insensitive' } } }, select: { id: true } });
+        plan = await this.prisma.productPlan.findFirst({
+          where: { product: { workspaceId, name: { contains: productName, mode: 'insensitive' } } },
+          select: { id: true },
+        });
       }
-      if (!plan) return { success: false, error: 'Plano nao encontrado.' };
-      await this.prisma.productPlan.update({ where: { id: plan.id }, data: { checkoutImages: { main: imageUrl } as never } });
+      if (!plan) {
+        return { success: false, error: 'Plano nao encontrado.' };
+      }
+      await this.prisma.productPlan.update({
+        where: { id: plan.id },
+        data: { checkoutImages: { main: imageUrl } as never },
+      });
       return { success: true, message: 'Foto do plano atualizada.' };
     } catch (e: unknown) {
-      return { success: false, error: e instanceof Error ? e.message : 'Erro ao atualizar foto do plano.' };
+      return {
+        success: false,
+        error: e instanceof Error ? e.message : 'Erro ao atualizar foto do plano.',
+      };
     }
   }
-  async toolUploadProductImage(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+  async toolUploadProductImage(
+    workspaceId: string,
+    args: Record<string, unknown>,
+  ): Promise<ToolResult> {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
     const imageUrl = typeof args.imageUrl === 'string' ? args.imageUrl : '';
-    if (!productName) return { success: false, error: 'Informe o nome do produto.' };
-    if (!imageUrl) return { success: true, message: 'Envie a URL da imagem ou faça upload pelo chat. Ex: "imagem do produto X url: https://..."' };
+    if (!productName) {
+      return { success: false, error: 'Informe o nome do produto.' };
+    }
+    if (!imageUrl) {
+      return {
+        success: true,
+        message:
+          'Envie a URL da imagem ou faça upload pelo chat. Ex: "imagem do produto X url: https://..."',
+      };
+    }
     return runUpdateProduct(this.prisma, workspaceId, { productName, imageUrl });
   }
 
-  async toolConfigurePixel(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+  toolConfigurePixel(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
-    if (!productName) return { success: true, message: 'Pixel configurado. Acesse Configurações > Pixel para inserir os códigos.' };
+    if (!productName) {
+      return Promise.resolve({
+        success: true,
+        message: 'Pixel configurado. Acesse Configurações > Pixel para inserir os códigos.',
+      });
+    }
     // Store pixel intent — actual pixel IDs need to come from Meta/Google OAuth
-    return { success: true, message: `Pixel configurado para "${productName}". Insira os códigos em Configurações > Pixel.` };
+    return Promise.resolve({
+      success: true,
+      message: `Pixel configurado para "${productName}". Insira os códigos em Configurações > Pixel.`,
+    });
   }
 
-  async toolConfigureShipping(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+  toolConfigureShipping(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
-    if (!productName) return { success: true, message: 'Frete configurado. Acesse Produto > Entrega para detalhar.' };
-    return { success: true, message: `Frete configurado para "${productName}". Acesse Produto > Entrega para definir prazos e transportadoras.` };
+    if (!productName) {
+      return Promise.resolve({
+        success: true,
+        message: 'Frete configurado. Acesse Produto > Entrega para detalhar.',
+      });
+    }
+    return Promise.resolve({
+      success: true,
+      message: `Frete configurado para "${productName}". Acesse Produto > Entrega para definir prazos e transportadoras.`,
+    });
   }
 
-  async toolConfigureSocialProof(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+  toolConfigureSocialProof(
+    workspaceId: string,
+    args: Record<string, unknown>,
+  ): Promise<ToolResult> {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
-    return { success: true, message: `Prova social ativada${productName ? ` para "${productName}"` : ''}. Depoimentos e contador exibidos no checkout.` };
+    return Promise.resolve({
+      success: true,
+      message: `Prova social ativada${productName ? ` para "${productName}"` : ''}. Depoimentos e contador exibidos no checkout.`,
+    });
   }
 
-  async toolConfigureOrderBump(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+  toolConfigureOrderBump(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
-    return { success: true, message: `Order bump configurado${productName ? ` para "${productName}"` : ''}. Oferta adicional no checkout.` };
+    return Promise.resolve({
+      success: true,
+      message: `Order bump configurado${productName ? ` para "${productName}"` : ''}. Oferta adicional no checkout.`,
+    });
   }
 
-  async toolConfigureWarranty(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+  async toolConfigureWarranty(
+    workspaceId: string,
+    args: Record<string, unknown>,
+  ): Promise<ToolResult> {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
     if (productName) {
@@ -775,19 +860,34 @@ export class KloelChatToolsService {
     return { success: true, message: 'Garantia configurada. Selo exibido na página de vendas.' };
   }
 
-  async toolConfigureExitIntent(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+  async toolConfigureExitIntent(
+    workspaceId: string,
+    args: Record<string, unknown>,
+  ): Promise<ToolResult> {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
-    return { success: true, message: `Exit intent configurado${productName ? ` para "${productName}"` : ''}. Popup ao tentar sair da página.` };
+    return {
+      success: true,
+      message: `Exit intent configurado${productName ? ` para "${productName}"` : ''}. Popup ao tentar sair da página.`,
+    };
   }
 
-  async toolConfigureAfterPay(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+  async toolConfigureAfterPay(
+    workspaceId: string,
+    args: Record<string, unknown>,
+  ): Promise<ToolResult> {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
-    return { success: true, message: `After Pay configurado${productName ? ` para "${productName}"` : ''}. Cliente compra agora e paga depois.` };
+    return {
+      success: true,
+      message: `After Pay configurado${productName ? ` para "${productName}"` : ''}. Cliente compra agora e paga depois.`,
+    };
   }
 
-  async toolBrowseMarketplace(workspaceId: string, _args: Record<string, unknown>): Promise<ToolResult> {
+  async toolBrowseMarketplace(
+    workspaceId: string,
+    _args: Record<string, unknown>,
+  ): Promise<ToolResult> {
     try {
       const products = await this.prisma.product.findMany({
         where: { affiliateEnabled: true, workspaceId: { not: workspaceId } },
@@ -795,26 +895,50 @@ export class KloelChatToolsService {
         take: 20,
       });
       if (products.length === 0) {
-        return { success: true, message: 'Nenhum produto público no marketplace. Seus produtos podem ser listados ativando "Afiliação" em Produto > Afiliados.' };
+        return {
+          success: true,
+          message:
+            'Nenhum produto público no marketplace. Seus produtos podem ser listados ativando "Afiliação" em Produto > Afiliados.',
+        };
       }
-      return { success: true, products, message: `${products.length} produtos disponíveis no marketplace.` };
+      return {
+        success: true,
+        products,
+        message: `${products.length} produtos disponíveis no marketplace.`,
+      };
     } catch (e: unknown) {
-      return { success: false, error: e instanceof Error ? e.message : 'Erro ao buscar marketplace.' };
+      return {
+        success: false,
+        error: e instanceof Error ? e.message : 'Erro ao buscar marketplace.',
+      };
     }
   }
 
-  async toolSendChannelMessage(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+  async toolSendChannelMessage(
+    workspaceId: string,
+    args: Record<string, unknown>,
+  ): Promise<ToolResult> {
     void workspaceId;
     const channel = typeof args.channel === 'string' ? args.channel : 'whatsapp';
-    return { success: true, message: `Mensagem será enviada via ${channel}. Configure o canal em Configurações > Canais primeiro.` };
+    return {
+      success: true,
+      message: `Mensagem será enviada via ${channel}. Configure o canal em Configurações > Canais primeiro.`,
+    };
   }
 
   /** Create a manual sale order with full buyer data */
   async toolCreateOrder(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     const amount = typeof args.amount === 'number' ? args.amount : 0;
-    const productName = typeof args.productName === 'string' ? args.productName : typeof args.description === 'string' ? args.description : 'Produto';
+    const productName =
+      typeof args.productName === 'string'
+        ? args.productName
+        : typeof args.description === 'string'
+          ? args.description
+          : 'Produto';
     const customerName = typeof args.customerName === 'string' ? args.customerName : 'Cliente';
-    if (!amount) return { success: false, error: 'Informe o valor da venda (ex: R$ 147).' };
+    if (!amount) {
+      return { success: false, error: 'Informe o valor da venda (ex: R$ 147).' };
+    }
     try {
       const sale = await this.prisma.kloelSale.create({
         data: {
@@ -829,13 +953,26 @@ export class KloelChatToolsService {
       });
       if (customerName && customerName !== 'Cliente') {
         try {
-          const existing = await this.prisma.contact.findFirst({ where: { workspaceId, name: customerName } });
+          const existing = await this.prisma.contact.findFirst({
+            where: { workspaceId, name: customerName },
+          });
           if (!existing) {
-            await this.prisma.contact.create({ data: { workspaceId, name: customerName, phone: '', leadScore: 50 } });
+            await this.prisma.contact.create({
+              data: { workspaceId, name: customerName, phone: '', leadScore: 50 },
+            });
           }
-        } catch { /* non-blocking */ }
+        } catch {
+          /* non-blocking */
+        }
       }
-      return { success: true, saleId: sale.id, amount, customerName, productName, message: `Venda criada: ${productName} - R$ ${amount.toFixed(2)} para ${customerName}.` };
+      return {
+        success: true,
+        saleId: sale.id,
+        amount,
+        customerName,
+        productName,
+        message: `Venda criada: ${productName} - R$ ${amount.toFixed(2)} para ${customerName}.`,
+      };
     } catch (e: unknown) {
       return { success: false, error: e instanceof Error ? e.message : 'Erro ao criar venda.' };
     }

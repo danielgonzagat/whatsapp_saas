@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { memoryQueue } from '../queue/queue';
-import { KnowledgeBaseService } from './knowledge-base.service';
-import { htmlToText } from './knowledge-base-url-html';
+import { KnowledgeBaseService, htmlToText } from './knowledge-base.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { VectorService } from './vector.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';

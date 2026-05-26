@@ -226,11 +226,12 @@ export class KloelWalletSalesToolsService {
     }
   }
 
-
   async getNps(workspaceId: string): Promise<WalletSalesToolResult> {
     try {
       const sales = await this.prisma.kloelSale.count({ where: { workspaceId } });
-      const refunded = await this.prisma.kloelSale.count({ where: { workspaceId, status: 'refunded' } });
+      const refunded = await this.prisma.kloelSale.count({
+        where: { workspaceId, status: 'refunded' },
+      });
       return {
         success: true,
         totalSales: sales,
@@ -246,7 +247,9 @@ export class KloelWalletSalesToolsService {
   async getChurn(workspaceId: string): Promise<WalletSalesToolResult> {
     try {
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      const activeSubs = await this.prisma.subscription.count({ where: { workspaceId, status: 'ACTIVE' } });
+      const activeSubs = await this.prisma.subscription.count({
+        where: { workspaceId, status: 'ACTIVE' },
+      });
       const cancelledSubs = await this.prisma.subscription.count({
         where: { workspaceId, status: 'CANCELED', updatedAt: { gte: thirtyDaysAgo } },
       });
@@ -254,28 +257,31 @@ export class KloelWalletSalesToolsService {
         success: true,
         activeSubscriptions: activeSubs,
         cancelledLast30Days: cancelledSubs,
-        churnRate: activeSubs + cancelledSubs > 0 ? ((cancelledSubs / (activeSubs + cancelledSubs)) * 100).toFixed(1) + '%' : '0%',
+        churnRate:
+          activeSubs + cancelledSubs > 0
+            ? ((cancelledSubs / (activeSubs + cancelledSubs)) * 100).toFixed(1) + '%'
+            : '0%',
         message: `Churn: ${activeSubs} ativas, ${cancelledSubs} canceladas nos ultimos 30 dias.`,
       };
     } catch (e: unknown) {
       return { success: false, error: e instanceof Error ? e.message : 'Erro' };
     }
   }
-  async requestWithdrawal(workspaceId: string, _args: UnknownRecord): Promise<WalletSalesToolResult> {
-    void workspaceId; void _args; // will integrate Stripe/payout
-    try {
-      return { success: true, message: 'Saque solicitado com sucesso. O valor será processado em até 2 dias úteis.' };
-   } catch (err: unknown) {
-     return { success: false, error: err instanceof Error ? err.message : 'Erro ao solicitar saque' };
-   }
- }
+  requestWithdrawal(workspaceId: string, _args: UnknownRecord): Promise<WalletSalesToolResult> {
+    void workspaceId;
+    void _args; // will integrate Stripe/payout
+    return Promise.resolve({
+      success: true,
+      message: 'Saque solicitado com sucesso. O valor será processado em até 2 dias úteis.',
+    });
+  }
 
-  async requestAnticipation(workspaceId: string, _args: UnknownRecord): Promise<WalletSalesToolResult> {
-    void workspaceId; void _args;
-    try {
-      return { success: true, message: 'Antecipacao solicitada. Recebiveis antecipados em ate 1 dia util.' };
-    } catch (err: unknown) {
-      return { success: false, error: err instanceof Error ? err.message : 'Erro' };
-    }
+  requestAnticipation(workspaceId: string, _args: UnknownRecord): Promise<WalletSalesToolResult> {
+    void workspaceId;
+    void _args;
+    return Promise.resolve({
+      success: true,
+      message: 'Antecipacao solicitada. Recebiveis antecipados em ate 1 dia util.',
+    });
   }
 }

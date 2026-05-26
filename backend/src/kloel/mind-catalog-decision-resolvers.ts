@@ -174,7 +174,9 @@ export async function resolveMessageFormatDecision(
       predicate: 'P(reply|message_type,hour,channel,concept)',
       context: { channel, concept, message_type: format },
     })),
-    ...(baseline !== undefined ? { baseline: options.includes(baseline) ? baseline : options[0] } : {}),
+    ...(baseline !== undefined
+      ? { baseline: options.includes(baseline) ? baseline : options[0] }
+      : {}),
     outcomeKey: `message_format:${workspaceId}:${Date.now()}`,
   });
 
@@ -203,7 +205,9 @@ export async function resolveObjectionResponseDecision(
     'human_transfer',
   ];
   const context: Record<string, unknown> = { channel, concept, priceBand };
-  if (product) context.product = product;
+  if (product) {
+    context.product = product;
+  }
   const memoryAction = await resolveCaseMemoryAction(cases, {
     workspaceId,
     caseType: 'objection_response',
