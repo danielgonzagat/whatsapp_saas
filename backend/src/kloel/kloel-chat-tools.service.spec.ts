@@ -13,6 +13,11 @@ type ProductRecord = {
   status: string;
 };
 
+type KloelMemoryUpsertInput = {
+  where?: { workspaceId_key?: { workspaceId?: string; key?: string } };
+  create?: { workspaceId?: string };
+};
+
 describe('KloelChatToolsService — produto, autopilot e identidade', () => {
   let service: ChatToolsSetup['service'];
   let prisma: ChatToolsPrismaMock;
@@ -29,17 +34,7 @@ describe('KloelChatToolsService — produto, autopilot e identidade', () => {
   });
 
   describe('toolSaveProduct', () => {
-    it('creates product scoped to workspaceId', async () => {
-      const product: ProductRecord = {
-        id: 'p-1',
-        name: 'Curso',
-        price: 199.9,
-        description: '',
-        active: true,
-        status: 'active',
-      };
-      prisma.product.create.mockResolvedValue(product);
-
+    it('creates product through ProductService scoped to workspaceId', async () => {
       const result = await service.toolSaveProduct(ctx.wsId, {
         name: 'Curso',
         price: 199.9,
@@ -47,11 +42,16 @@ describe('KloelChatToolsService — produto, autopilot e identidade', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(prisma.product.create).toHaveBeenCalledWith(
+      expect(ctx.productService.create).toHaveBeenCalledWith(
+        ctx.wsId,
         expect.objectContaining({
-          data: expect.objectContaining({ workspaceId: ctx.wsId, name: 'Curso', price: 199.9 }),
+          name: 'Curso',
+          price: 199.9,
+          description: 'Curso completo',
         }),
+        { id: 'kloel-chat' },
       );
+      expect(prisma.product.create).not.toHaveBeenCalled();
     });
   });
 
@@ -141,12 +141,11 @@ describe('KloelChatToolsService — produto, autopilot e identidade', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(prisma.kloelMemory.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { workspaceId_key: { workspaceId: ctx.wsId, key: 'brandVoice' } },
-          create: expect.objectContaining({ workspaceId: ctx.wsId }),
-        }),
-      );
+      const [upsertInput] = prisma.kloelMemory.upsert.mock.calls[0] as [KloelMemoryUpsertInput];
+      expect(upsertInput.where).toEqual({
+        workspaceId_key: { workspaceId: ctx.wsId, key: 'brandVoice' },
+      });
+      expect(upsertInput.create?.workspaceId).toBe(ctx.wsId);
     });
   });
 });
