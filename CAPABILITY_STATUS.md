@@ -186,3 +186,11 @@
 | kloel.show_audit_log | Mostrar log de ações | AUSENTE | |
 | kloel.list_gaps | Listar capacidades faltantes | AUSENTE | |
 | kloel.self_diagnose | Auto-diagnóstico | AUSENTE | |
+## Notas de Auditoria
+
+### Gap: Prisma direto (Produtos)
+- `kloel-tool-executor.helpers.ts:toolSaveProduct()` → `prisma.product.create()` direto
+- `ProductController.createProduct()` → `prisma.product.create()` direto  
+- Ambos bypassam domain service, eventos, auditoria, RBAC
+- **TODO**: Criar ProductService, fazer UI e chat usarem o mesmo service
+- Impacto: products.create, products.update, plans.*, checkouts.*, coupons.*
