@@ -20,18 +20,10 @@ import {
   type SubmitOnboardingProfileInput,
 } from './connect.types';
 import { readTrimmedString as trimToUndefined } from '../../common/parse';
+import { digitsOrUndefined as digitsOnly } from '../../common/phone';
 
 type StripeAccountCreateParams = Parameters<StripeClient['accounts']['create']>[0];
 type StripeAccountUpdateParams = Parameters<StripeClient['accounts']['update']>[1];
-
-function digitsOnly(value: unknown): string | undefined {
-  const raw = trimToUndefined(value);
-  if (!raw) {
-    return undefined;
-  }
-  const normalized = raw.replace(/\D/g, '');
-  return normalized || undefined;
-}
 
 function compactObject<T extends Record<string, unknown>>(value: T): T | undefined {
   const entries = Object.entries(value).filter(([, entry]) => entry !== undefined);
