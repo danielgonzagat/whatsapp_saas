@@ -13,7 +13,7 @@ import type { SiteItem } from './SitesViewIcons';
 function OverviewSiteCard({ site, isMobile }: { site: SiteItem; isMobile: boolean }) {
   const status: 'online' | 'offline' | 'warning' | 'building' = site.published ? 'online' : 'building';
   return (
-    <Card style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: 14, cursor: 'pointer' }}>
+    <Card style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: 14 }}>
       <StatusDot status={status} />
       <div style={{ flex: 1 }}>
         <div style={{ fontFamily: "'Sora',sans-serif", fontSize: 14, color: TEXT }}>{site.name || 'Site sem titulo'}</div>

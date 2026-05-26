@@ -476,6 +476,43 @@ export class IntentRouterService {
       }),
     },
 
+
+    // === AI persona ===
+    {
+      regex: /(?:configur[ae]r?|defin[ei]r?|mud[ae]r?)\s+(?:a\s+|o\s+)?(?:persona|personalidade|tom|voz)\s+(?:da|do)\s+ia/i,
+      capabilityId: 'configure_ai_persona',
+      extract: (match) => ({
+        personality: match[0].match(/(?:formal|informal|friendly|professional|funny|amig[aá]vel|profissional|engra[cç]ad[ao])/i)?.[0] || undefined,
+      }),
+    },
+
+    // === WhatsApp ===
+    {
+      regex: /(?:status\s+(?:do\s+)?whatsapp|whatsapp\s+(?:est[aá]\s+)?(?:funcionando|conectado|online))/i,
+      capabilityId: 'get_whatsapp_status',
+      extract: () => ({}),
+    },
+    {
+      regex: /(?:conect[ae]r?|vincular?)\s+(?:o\s+)?whatsapp/i,
+      capabilityId: 'connect_whatsapp',
+      extract: () => ({}),
+    },
+
+    // === Billing ===
+    {
+      regex: /(?:atualiz[ae]r?|mud[ae]r?)\s+(?:meu\s+)?(?:plano|billing|cobran[cç]a)/i,
+      capabilityId: 'update_billing_info',
+      extract: () => ({}),
+    },
+
+    // === Image upload ===
+    {
+      regex: /(?:faz\s+)?(?:upload|envi[ae]r?|sob[ei]r?)\s+(?:da\s+)?(?:foto|imagem)\s+(?:do\s+)?(?:plano|produto)/i,
+      capabilityId: 'upload_product_image',
+      extract: (match) => ({
+        targetType: /plano/i.test(match[0]) ? 'plan' : 'product',
+      }),
+    },
     // === Conectar canal ===
     {
       regex: /conect[ae]r?\s+(?:o\s+|meu\s+)?(whatsapp|instagram|facebook|tiktok|email)/i,

@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CiaAutonomyAdvisorService } from './cia-autonomy-advisor.service';
+import { CiaRuntimeStateService } from './cia-runtime-state.service';
 import { DecisionOutcomeService } from '../kloel/decision-outcome.service';
 type ClosedRow = {
   id: string;
@@ -74,10 +75,14 @@ function buildRows(
 describe('CiaAutonomyAdvisorService', () => {
   let service: CiaAutonomyAdvisorService;
   let decisionOutcome: { findAllClosedSinceForWorkspace: jest.Mock };
+  let runtimeState: { updateWorkspaceAutonomy: jest.Mock };
 
   beforeEach(async () => {
     decisionOutcome = {
       findAllClosedSinceForWorkspace: jest.fn().mockResolvedValue([]),
+    };
+    runtimeState = {
+      updateWorkspaceAutonomy: jest.fn().mockResolvedValue(undefined),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -86,6 +91,10 @@ describe('CiaAutonomyAdvisorService', () => {
         {
           provide: DecisionOutcomeService,
           useValue: decisionOutcome,
+        },
+        {
+          provide: CiaRuntimeStateService,
+          useValue: runtimeState,
         },
       ],
     }).compile();
@@ -208,3 +217,143 @@ describe('CiaAutonomyAdvisorService', () => {
     expect(result.reasoning[0]).toContain('INCREASE');
     expect(result.reasoning[0]).toContain('100.0%');
   });
+
+  describe('analyzeAndApply', () => {
+    const originalEnv = process.env.CIA_AUTONOMY_AUTO_APPLY_ENABLED;
+
+    beforeEach(() => {
+      runtimeState.updateWorkspaceAutonomy.mockClear();
+      delete process.env.CIA_AUTONOMY_AUTO_APPLY_ENABLED;
+      jest.clearAllMocks();
+    });
+
+    afterAll(() => {
+      if (originalEnv === undefined) {
+        delete process.env.CIA_AUTONOMY_AUTO_APPLY_ENABLED;
+      } else {
+        process.env.CIA_AUTONOMY_AUTO_APPLY_ENABLED = originalEnv;
+      }
+    });
+
+    it('flag on + 2 recs → 2 applied', async () => {
+      process.env.CIA_AUTONOMY_AUTO_APPLY_ENABLED = 'true';
+
+      const posRows = buildRows(
+        'followup_timing',
+        50,
+        'payment.succeeded',
+        'inbound.silent_24h',
+        0.9,
+      );
+      const negRows = buildRows(
+        'coupon_offer',
+        50,
+        'payment.succeeded',
+        'inbound.silent_24h',
+        0.1,
+      );
+      decisionOutcome.findAllClosedSinceForWorkspace.mockResolvedValue([
+        ...posRows,
+        ...negRows,
+      ]);
+
+      const result = await service.analyzeAndApply('ws-1');
+
+      expect(result.applied).toBe(2);
+      expect(result.reasoning).toHaveLength(2);
+      expect(runtimeState.updateWorkspaceAutonomy).toHaveBeenCalledTimes(2);
+      expect(runtimeState.updateWorkspaceAutonomy).toHaveBeenCalledWith(
+        'ws-1',
+        expect.objectContaining({ mode: 'LIVE' }),
+      );
+      expect(runtimeState.updateWorkspaceAutonomy).toHaveBeenCalledWith(
+        'ws-1',
+        expect.objectContaining({ mode: 'HUMAN_ONLY' }),
+      );
+    });
+
+    it('flag off → 0 applied, still returns reasoning', async () => {
+      // flag not set (= off)
+      const posRows = buildRows(
+        'followup_timing',
+        50,
+        'payment.succeeded',
+        'inbound.silent_24h',
+        0.9,
+      );
+      decisionOutcome.findAllClosedSinceForWorkspace.mockResolvedValue(posRows);
+
+      const result = await service.analyzeAndApply('ws-1');
+
+      expect(result.applied).toBe(0);
+      expect(result.reasoning).toHaveLength(1);
+      expect(result.reasoning[0]).toContain('INCREASE');
+      expect(runtimeState.updateWorkspaceAutonomy).not.toHaveBeenCalled();
+    });
+
+    it('apply throws → counted as not-applied, others still applied', async () => {
+      process.env.CIA_AUTONOMY_AUTO_APPLY_ENABLED = 'true';
+
+      const posRows = buildRows(
+        'followup_timing',
+        50,
+        'payment.succeeded',
+        'inbound.silent_24h',
+        0.9,
+      );
+      const negRows = buildRows(
+        'coupon_offer',
+        50,
+        'payment.succeeded',
+        'inbound.silent_24h',
+        0.1,
+      );
+      decisionOutcome.findAllClosedSinceForWorkspace.mockResolvedValue([
+        ...posRows,
+        ...negRows,
+      ]);
+
+      // First call (INCREASE) throws, second (DECREASE) succeeds
+      runtimeState.updateWorkspaceAutonomy
+        .mockRejectedValueOnce(new Error('DB down'))
+        .mockResolvedValueOnce(undefined);
+
+      const result = await service.analyzeAndApply('ws-1');
+
+      expect(result.applied).toBe(1);
+      expect(result.reasoning).toHaveLength(2);
+      expect(runtimeState.updateWorkspaceAutonomy).toHaveBeenCalledTimes(2);
+    });
+
+    it('skips NO_CHANGE recommendations', async () => {
+      process.env.CIA_AUTONOMY_AUTO_APPLY_ENABLED = 'true';
+
+      const neutralRows = buildRows(
+        'neutral_type',
+        30,
+        'payment.succeeded',
+        'inbound.silent_24h',
+        0.55,
+      );
+      decisionOutcome.findAllClosedSinceForWorkspace.mockResolvedValue(neutralRows);
+
+      const result = await service.analyzeAndApply('ws-1');
+
+      expect(result.applied).toBe(0);
+      expect(result.reasoning).toHaveLength(1);
+      expect(result.reasoning[0]).toContain('NO_CHANGE');
+      expect(runtimeState.updateWorkspaceAutonomy).not.toHaveBeenCalled();
+    });
+
+    it('returns empty reasoning when no data exists', async () => {
+      process.env.CIA_AUTONOMY_AUTO_APPLY_ENABLED = 'true';
+      decisionOutcome.findAllClosedSinceForWorkspace.mockResolvedValue([]);
+
+      const result = await service.analyzeAndApply('ws-1');
+
+      expect(result.applied).toBe(0);
+      expect(result.reasoning).toEqual([]);
+      expect(runtimeState.updateWorkspaceAutonomy).not.toHaveBeenCalled();
+    });
+  });
+});

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { CiaRuntimeStateService } from './cia-runtime-state.service';
 import { DecisionOutcomeService } from '../kloel/decision-outcome.service';
 // ── Outcome success classification (canonical in MindLiftReportService) ────
 
@@ -46,7 +47,10 @@ const LOOKBACK_DAYS = 14;
  */
 @Injectable()
 export class CiaAutonomyAdvisorService {
-  constructor(private readonly decisionOutcome: DecisionOutcomeService) {}
+  constructor(
+    private readonly decisionOutcome: DecisionOutcomeService,
+    private readonly runtimeState: CiaRuntimeStateService,
+  ) {}
   async analyzeAndAdvise(workspaceId: string): Promise<AutonomyAdvice> {
     const since = new Date(Date.now() - LOOKBACK_DAYS * 86400 * 1000);
     const rows = await this.decisionOutcome.findAllClosedSinceForWorkspace(
@@ -110,5 +114,40 @@ export class CiaAutonomyAdvisorService {
     }
 
     return { adjustments, reasoning };
+  }
+
+  async analyzeAndApply(workspaceId: string): Promise<{ applied: number; reasoning: string[] }> {
+    const advice = await this.analyzeAndAdvise(workspaceId);
+
+    if (process.env.CIA_AUTONOMY_AUTO_APPLY_ENABLED !== 'true') {
+      return { applied: 0, reasoning: advice.reasoning };
+    }
+
+    let applied = 0;
+
+    for (const recommendation of advice.reasoning) {
+      if (
+        !recommendation.startsWith('INCREASE') &&
+        !recommendation.startsWith('DECREASE')
+      ) {
+        continue;
+      }
+
+      const parts = recommendation.split(' ');
+      const decisionType = (parts[1] ?? 'unknown').replace(/:$/, '');
+      const mode = recommendation.startsWith('INCREASE') ? 'LIVE' : 'HUMAN_ONLY';
+
+      try {
+        await this.runtimeState.updateWorkspaceAutonomy(workspaceId, {
+          mode,
+          reason: `cia_advisor_${recommendation.startsWith('INCREASE') ? 'increase' : 'decrease'}_${decisionType}`,
+        });
+        applied++;
+      } catch {
+        // One failure does not block other recommendations
+      }
+    }
+
+    return { applied, reasoning: advice.reasoning };
   }
 }

@@ -43,6 +43,7 @@ export class CiaService {
       mindLift,
       metaConnections,
       integrations,
+      pipelineState,
     ] = await Promise.all([
       this.runtime.getOperationalIntelligence(workspaceId),
       this.getHumanTasks(workspaceId),
@@ -63,6 +64,10 @@ export class CiaService {
       this.prisma.integration.findMany({
         where: { workspaceId, isActive: true },
         select: { type: true },
+      }),
+      this.prisma.pipelineState.findUnique({
+        where: { workspaceId },
+        select: { state: true },
       }),
     ]);
     const recent = this.agentEvents.getRecent(workspaceId).slice(-12);
@@ -135,6 +140,9 @@ export class CiaService {
             pZScore: mindLift.pZScore,
           }
         : null,
+      commercial: {
+        pipelineMode: (pipelineState?.state ?? 'legacy') as 'shadow' | 'active' | 'legacy',
+      },
     };
   }
 
