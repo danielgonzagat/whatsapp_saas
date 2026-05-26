@@ -188,6 +188,7 @@ import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service
 import { ToolPlannerModule } from './toolplanner/toolplanner.module';
 import { CapabilityRegistryV2Module } from './capability-registry-v2/capability-registry-v2.module';
 import { IntentRouterModule } from './intent-router/intent-router.module';
+import { SelfAwarenessModule } from './self-awareness/self-awareness.module';
 
 /** Kloel module. */
 @Module({
@@ -213,6 +214,7 @@ import { IntentRouterModule } from './intent-router/intent-router.module';
     CapabilityRegistryV2Module,
     IntentRouterModule,
     ToolPlannerModule,
+    SelfAwarenessModule,
   ],
   controllers: [
     KloelController,
