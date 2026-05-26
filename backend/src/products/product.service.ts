@@ -99,7 +99,7 @@ export class ProductService {
     await this.eventEmitter.emit('product.created', {
       productId: product.id,
       workspaceId,
-      actorId: actor.id,
+      agentId: actor.id,
       name: product.name,
       price: product.price,
       format: product.format,
@@ -107,7 +107,7 @@ export class ProductService {
 
     await this.audit.log({
       workspaceId,
-      actorId: actor.id,
+      agentId: actor.id,
       action: 'product.create',
       entity: 'Product',
       entityId: product.id,
@@ -149,13 +149,13 @@ export class ProductService {
     await this.eventEmitter.emit('product.updated', {
       productId: product.id,
       workspaceId,
-      actorId: actor.id,
+      agentId: actor.id,
       changes: Object.keys(dto),
     });
 
     await this.audit.log({
       workspaceId,
-      actorId: actor.id,
+      agentId: actor.id,
       action: 'product.update',
       entity: 'Product',
       entityId: product.id,
@@ -225,7 +225,7 @@ export class ProductService {
 
     await this.audit.log({
       workspaceId,
-      actorId: actor.id,
+      agentId: actor.id,
       action: 'product.setImage',
       entity: 'Product',
       entityId: productId,
@@ -251,12 +251,12 @@ export class ProductService {
     await this.eventEmitter.emit('product.published', {
       productId: product.id,
       workspaceId,
-      actorId: actor.id,
+      agentId: actor.id,
     });
 
     await this.audit.log({
       workspaceId,
-      actorId: actor.id,
+      agentId: actor.id,
       action: 'product.publish',
       entity: 'Product',
       entityId: productId,
@@ -282,12 +282,12 @@ export class ProductService {
     await this.eventEmitter.emit(available ? 'product.activated' : 'product.deactivated', {
       productId: product.id,
       workspaceId,
-      actorId: actor.id,
+      agentId: actor.id,
     });
 
     await this.audit.log({
       workspaceId,
-      actorId: actor.id,
+      agentId: actor.id,
       action: available ? 'product.activate' : 'product.deactivate',
       entity: 'Product',
       entityId: productId,
@@ -312,12 +312,12 @@ export class ProductService {
     await this.eventEmitter.emit('product.deleted', {
       productId: product.id,
       workspaceId,
-      actorId: actor.id,
+      agentId: actor.id,
     });
 
     await this.audit.log({
       workspaceId,
-      actorId: actor.id,
+      agentId: actor.id,
       action: 'product.delete',
       entity: 'Product',
       entityId: productId,
