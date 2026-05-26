@@ -4,22 +4,14 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { exec as cpExec } from 'child_process';
 import { promisify } from 'util';
+import { REPO_ROOT, repoPath } from './kloel-code-analysis.service';
 
 const exec = promisify(cpExec);
 
-const REPO_ROOT = path.resolve(process.cwd(), '..');
 const MAX_FILE_BYTES = 100_000;
 const MAX_GREP_RESULTS = 30;
 const GIT_LOG_MAX_COUNT = 20;
 const DIR_MAX_ENTRIES = 50;
-
-function repoPath(input: string): string {
-  const resolved = path.resolve(REPO_ROOT, input);
-  if (!resolved.startsWith(REPO_ROOT + path.sep) && resolved !== REPO_ROOT) {
-    throw new Error(`Path outside repo: ${input}`);
-  }
-  return resolved;
-}
 
 interface ToolResult {
   success: boolean;
