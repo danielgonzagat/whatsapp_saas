@@ -14,6 +14,8 @@ import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { randomUUID, timingSafeEqual } from 'node:crypto';
 import type { Request } from 'express';
 import { Public } from '../auth/public.decorator';
+import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
+import { PrismaService } from '../prisma/prisma.service';
 import { EmailInboundService, type InboundEmail } from '../email/email-inbound.service';
 import { ensureError } from '../inbox/omnichannel.helpers';
 
@@ -127,7 +129,10 @@ function parseForwardedEmailHeaders(req: Request) {
 export class EmailInboundController {
   private readonly logger = new Logger(EmailInboundController.name);
 
-  constructor(@Optional() private readonly emailInbound?: EmailInboundService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly emailInbound?: EmailInboundService,
+  ) {}
 
   @Public()
   @Get()
@@ -161,6 +166,27 @@ export class EmailInboundController {
         reason: 'invalid_secret',
       });
       throw new ForbiddenException('email_inbound_forbidden');
+    }
+
+    // Idempotency: dedup by Message-ID header
+    const rawMessageId = bodyString(req, 'message_id', 'Message-Id');
+    if (rawMessageId) {
+      try {
+        await this.prisma.webhookEvent.create({
+          data: {
+            provider: 'email-inbound',
+            externalId: rawMessageId,
+            eventType: 'email_received',
+            payload: toPrismaJsonValue(body),
+          },
+        });
+      } catch (err: unknown) {
+        if ((err as { code?: string }).code === 'P2002') {
+          this.logger.log(`Duplicate inbound email: ${rawMessageId}`);
+          return { received: true, duplicate: true };
+        }
+        throw err;
+      }
     }
 
     const { from, to, subject, content, messageId, inReplyTo } = parseForwardedEmailHeaders(req);

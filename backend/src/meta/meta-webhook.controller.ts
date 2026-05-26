@@ -1,3 +1,4 @@
+import { InjectRedis } from '@nestjs-modules/ioredis';
 import * as crypto from 'node:crypto';
 import { createHmac } from 'node:crypto';
 import {
@@ -13,6 +14,7 @@ import {
   Req,
   Res,
 } from '@nestjs/common';
+import type { Redis } from 'ioredis';
 import { Response } from 'express';
 import { Public } from '../auth/public.decorator';
 import { safeCompareStrings } from '../common/utils/crypto-compare.util';
@@ -44,7 +46,10 @@ interface MarketingWebhookChange {
 export class MetaWebhookController {
   private readonly logger = new Logger(MetaWebhookController.name);
 
-  constructor(private readonly webhooksService: WebhooksService) {}
+  constructor(
+    private readonly webhooksService: WebhooksService,
+    @InjectRedis() private readonly redis: Redis,
+  ) {}
 
   @Public()
   @Get()
@@ -96,6 +101,22 @@ export class MetaWebhookController {
       if (!safeCompareStrings(signature, expected)) {
         this.logger.warn('Invalid Meta Marketing webhook signature — rejecting');
         throw new ForbiddenException('Invalid Meta webhook signature');
+      }
+    }
+
+    // Redis SET NX per-entry dedup (fast gate before DB round-trip)
+    const entries = body.entry || [];
+    if (entries.length > 0) {
+      let allDupes = true;
+      for (const entry of entries) {
+        const changeField = entry.changes?.[0]?.field || 'unknown';
+        const entryRedisKey = `webhook:meta-marketing:${entry.id}-${entry.time}-${changeField}`;
+        const acquired = await this.redis.set(entryRedisKey, '1', 'EX', 300, 'NX');
+        if (acquired) allDupes = false;
+      }
+      if (allDupes) {
+        this.logger.log('All Meta marketing entries already processed (Redis dedup)');
+        return 'ok';
       }
     }
 
