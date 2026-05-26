@@ -50,7 +50,13 @@ export const CORE_CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     requiresConfirmation: false,
     requiredPermissions: ['audit:read'],
     inputSchema: [
-      { key: 'limit', type: 'number', label: 'Quantidade', required: false, description: 'Número de ações para mostrar' },
+      {
+        key: 'limit',
+        type: 'number',
+        label: 'Quantidade',
+        required: false,
+        description: 'Número de ações para mostrar',
+      },
     ],
     domainService: 'AuditService.recent',
     emits: [],
@@ -78,7 +84,13 @@ export const CORE_CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     requiresConfirmation: false,
     requiredPermissions: [],
     inputSchema: [
-      { key: 'capabilityId', type: 'string', label: 'ID', required: true, prompt: 'Qual capacidade você quer saber mais?' },
+      {
+        key: 'capabilityId',
+        type: 'string',
+        label: 'ID',
+        required: true,
+        prompt: 'Qual capacidade você quer saber mais?',
+      },
     ],
     domainService: 'CapabilityRegistry.describe',
     emits: [],
@@ -94,7 +106,13 @@ export const CORE_CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     requiresConfirmation: false,
     requiredPermissions: [],
     inputSchema: [
-      { key: 'status', type: 'select', label: 'Status', required: false, enum: ['pending', 'paid', 'cancelled'] },
+      {
+        key: 'status',
+        type: 'select',
+        label: 'Status',
+        required: false,
+        enum: ['pending', 'paid', 'cancelled'],
+      },
     ],
     domainService: 'OrderService.list',
     emits: [],
@@ -173,9 +191,7 @@ export const CORE_CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     tier: 0,
     requiresConfirmation: false,
     requiredPermissions: [],
-    inputSchema: [
-      { key: 'productId', type: 'string', label: 'ID do produto', required: true },
-    ],
+    inputSchema: [{ key: 'productId', type: 'string', label: 'ID do produto', required: true }],
     domainService: 'PlanService.listForProduct',
     emits: [],
     surface: ['dashboard-chat'],
@@ -188,9 +204,7 @@ export const CORE_CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     tier: 0,
     requiresConfirmation: false,
     requiredPermissions: [],
-    inputSchema: [
-      { key: 'productId', type: 'string', label: 'ID do produto', required: true },
-    ],
+    inputSchema: [{ key: 'productId', type: 'string', label: 'ID do produto', required: true }],
     domainService: 'ReviewService.listForProduct',
     emits: [],
     surface: ['dashboard-chat'],
@@ -203,9 +217,7 @@ export const CORE_CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     tier: 0,
     requiresConfirmation: false,
     requiredPermissions: [],
-    inputSchema: [
-      { key: 'productId', type: 'string', label: 'ID do produto', required: true },
-    ],
+    inputSchema: [{ key: 'productId', type: 'string', label: 'ID do produto', required: true }],
     domainService: 'ProductUrlService.list',
     emits: [],
     surface: ['dashboard-chat'],
@@ -218,9 +230,7 @@ export const CORE_CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     tier: 0,
     requiresConfirmation: true,
     requiredPermissions: ['product:write'],
-    inputSchema: [
-      { key: 'couponId', type: 'string', label: 'ID do cupom', required: true },
-    ],
+    inputSchema: [{ key: 'couponId', type: 'string', label: 'ID do cupom', required: true }],
     domainService: 'CouponService.delete',
     emits: ['coupon.deleted'],
     surface: ['dashboard-chat'],
@@ -250,7 +260,13 @@ export const CORE_CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     requiresConfirmation: true,
     requiredPermissions: ['account:write'],
     inputSchema: [
-      { key: 'documentType', type: 'select', label: 'Tipo', required: true, enum: ['identity', 'contract', 'cnpj_card'] },
+      {
+        key: 'documentType',
+        type: 'select',
+        label: 'Tipo',
+        required: true,
+        enum: ['identity', 'contract', 'cnpj_card'],
+      },
     ],
     domainService: 'DocumentService.upload',
     emits: ['account.document_uploaded'],
@@ -279,7 +295,13 @@ export const CORE_CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     requiredPermissions: ['product:write'],
     inputSchema: [
       { key: 'productId', type: 'string', label: 'Produto', required: true },
-      { key: 'shippingType', type: 'select', label: 'Tipo', required: false, enum: ['free', 'fixed', 'variable'] },
+      {
+        key: 'shippingType',
+        type: 'select',
+        label: 'Tipo',
+        required: false,
+        enum: ['free', 'fixed', 'variable'],
+      },
     ],
     domainService: 'ShippingService.configure',
     emits: ['product.shipping_updated'],

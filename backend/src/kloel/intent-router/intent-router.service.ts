@@ -24,7 +24,8 @@ export class IntentRouterService {
   }> = [
     // === Self-awareness ===
     {
-      regex: /(?:o que|quais|liste|lista|mostre|que)\s.*(?:consegue|capaci|sabe|pode)\s.*(?:fazer?|operar?)/i,
+      regex:
+        /(?:o que|quais|liste|lista|mostre|que)\s.*(?:consegue|capaci|sabe|pode)\s.*(?:fazer?|operar?)/i,
       capabilityId: 'self.capabilities',
       extract: () => ({}),
     },
@@ -55,7 +56,9 @@ export class IntentRouterService {
       capabilityId: 'products.create',
       extract: (match) => ({
         name: match[0].match(/produto\s+["""']?([^""""'"]+)/i)?.[1] || undefined,
-        price: parseFloat(match[0].match(/r?\$?\s*(\d+(?:[.,]\d+)?)/i)?.[1]?.replace(',', '.') ?? '') || undefined,
+        price:
+          parseFloat(match[0].match(/r?\$?\s*(\d+(?:[.,]\d+)?)/i)?.[1]?.replace(',', '.') ?? '') ||
+          undefined,
       }),
     },
     {
@@ -100,7 +103,8 @@ export class IntentRouterService {
 
     // === Theme toggle ===
     {
-      regex: /(?:tem[ae]\s+(?:clar[oa]?|escur[oa]?)|(?:clar[oa]?|escur[oa]?)\s+tem[ae]|(?:dark|light)\s+mode)/i,
+      regex:
+        /(?:tem[ae]\s+(?:clar[oa]?|escur[oa]?)|(?:clar[oa]?|escur[oa]?)\s+tem[ae]|(?:dark|light)\s+mode)/i,
       capabilityId: 'ui.theme',
       extract: (match) => ({
         theme: /escur[oa]|dark/i.test(match[0]) ? 'dark' : 'light',
@@ -175,12 +179,17 @@ export class IntentRouterService {
 
     // === Document upload ===
     {
-      regex: /(?:envi[ae]r?|upload|anex[ae]r?)\s+(?:meu\s+)?(?:documento|contrato|rg|cpf|cnpj|identidade)/i,
+      regex:
+        /(?:envi[ae]r?|upload|anex[ae]r?)\s+(?:meu\s+)?(?:documento|contrato|rg|cpf|cnpj|identidade)/i,
       capabilityId: 'upload_document',
       extract: (match) => ({
-        documentType: match[0].match(/contrato/i) ? 'contract' :
-                      match[0].match(/(?:rg|identidad)/i) ? 'identity' :
-                      match[0].match(/cnpj/i) ? 'cnpj_card' : 'document',
+        documentType: match[0].match(/contrato/i)
+          ? 'contract'
+          : match[0].match(/(?:rg|identidad)/i)
+            ? 'identity'
+            : match[0].match(/cnpj/i)
+              ? 'cnpj_card'
+              : 'document',
       }),
     },
     {
@@ -227,7 +236,9 @@ export class IntentRouterService {
       regex: /(?:emit[ei]r?\s.*pix|ger[ae]r?\s.*pix|cri[ae]r?\s.*pix)/i,
       capabilityId: 'generate_pix',
       extract: (match) => {
-        const amount = parseFloat(match[0].match(/r?\$?\s*(\d+(?:[.,]\d+)?)/i)?.[1]?.replace(',', '.') ?? '') || undefined;
+        const amount =
+          parseFloat(match[0].match(/r?\$?\s*(\d+(?:[.,]\d+)?)/i)?.[1]?.replace(',', '.') ?? '') ||
+          undefined;
         return { amount: amount || undefined };
       },
     },
@@ -237,7 +248,8 @@ export class IntentRouterService {
       extract: () => ({}),
     },
     {
-      regex: /(?:consult[ae]r?\s.*vend[ae]|status\s.*vend[ae]|buscar?\s.*vend[ae]|mostr[ae]r?\s.*vend[ae])/i,
+      regex:
+        /(?:consult[ae]r?\s.*vend[ae]|status\s.*vend[ae]|buscar?\s.*vend[ae]|mostr[ae]r?\s.*vend[ae])/i,
       capabilityId: 'sales.list',
       extract: () => ({}),
     },
@@ -251,7 +263,8 @@ export class IntentRouterService {
 
     // === Affiliates ===
     {
-      regex: /(?:ativ[ae]r?\s.*afil|desativ[ae]r?\s.*afil|configur[ae]r?\s.*afil|programa\s.*afil)/i,
+      regex:
+        /(?:ativ[ae]r?\s.*afil|desativ[ae]r?\s.*afil|configur[ae]r?\s.*afil|programa\s.*afil)/i,
       capabilityId: 'affiliates.configure',
       extract: () => ({}),
     },
@@ -317,9 +330,7 @@ export class IntentRouterService {
     },
   ];
 
-  constructor(
-    private readonly registry: CapabilityRegistryV2Service,
-  ) {}
+  constructor(private readonly registry: CapabilityRegistryV2Service) {}
 
   /**
    * Classify a user message into an intent.
@@ -346,7 +357,9 @@ export class IntentRouterService {
       const match = normalized.match(pattern.regex);
       if (match) {
         const cap = this.registry.get(pattern.capabilityId);
-        if (!cap) continue;
+        if (!cap) {
+          continue;
+        }
 
         const entities = pattern.extract(match);
         const missingInputs = cap.inputSchema

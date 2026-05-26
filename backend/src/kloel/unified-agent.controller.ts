@@ -28,6 +28,8 @@ export class UnifiedAgentController {
       phone: string;
       message: string;
       context?: Record<string, unknown>;
+      predecidedActions?: Array<{ tool: string; args: Record<string, unknown> }>;
+      allowedTools?: string[];
     },
     @Headers('x-internal-key') internalKey?: string,
   ) {
@@ -42,6 +44,10 @@ export class UnifiedAgentController {
       phone: body.phone,
       message: body.message,
       ...(body.context !== undefined ? { context: body.context } : {}),
+      ...(body.predecidedActions !== undefined
+        ? { predecidedActions: body.predecidedActions }
+        : {}),
+      ...(body.allowedTools !== undefined ? { allowedTools: body.allowedTools } : {}),
     });
 
     return {

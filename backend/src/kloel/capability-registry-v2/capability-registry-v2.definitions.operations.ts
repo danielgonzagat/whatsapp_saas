@@ -62,7 +62,13 @@ export const OPERATIONS_CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     requiresConfirmation: false,
     requiredPermissions: [],
     inputSchema: [
-      { key: 'status', type: 'select', label: 'Status', required: false, enum: ['pending', 'paid', 'cancelled', 'refunded'] },
+      {
+        key: 'status',
+        type: 'select',
+        label: 'Status',
+        required: false,
+        enum: ['pending', 'paid', 'cancelled', 'refunded'],
+      },
       { key: 'limit', type: 'number', label: 'Quantidade', required: false },
     ],
     domainService: 'OrderService.list',
@@ -93,7 +99,13 @@ export const OPERATIONS_CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     requiresConfirmation: true,
     requiredPermissions: ['wallet:write'],
     inputSchema: [
-      { key: 'amount', type: 'number', label: 'Valor (R$)', required: true, prompt: 'Qual valor do saque?' },
+      {
+        key: 'amount',
+        type: 'number',
+        label: 'Valor (R$)',
+        required: true,
+        prompt: 'Qual valor do saque?',
+      },
     ],
     domainService: 'WalletService.requestWithdrawal',
     emits: ['wallet.withdrawal_requested'],
@@ -110,7 +122,13 @@ export const OPERATIONS_CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     requiresConfirmation: false,
     requiredPermissions: [],
     inputSchema: [
-      { key: 'period', type: 'select', label: 'Período', required: false, enum: ['today', 'week', 'month', 'year'] },
+      {
+        key: 'period',
+        type: 'select',
+        label: 'Período',
+        required: false,
+        enum: ['today', 'week', 'month', 'year'],
+      },
     ],
     domainService: 'ReportService.getOperations',
     emits: [],
@@ -125,7 +143,13 @@ export const OPERATIONS_CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     requiresConfirmation: false,
     requiredPermissions: [],
     inputSchema: [
-      { key: 'period', type: 'select', label: 'Período', required: false, enum: ['today', 'week', 'month', 'year'] },
+      {
+        key: 'period',
+        type: 'select',
+        label: 'Período',
+        required: false,
+        enum: ['today', 'week', 'month', 'year'],
+      },
     ],
     domainService: 'ReportService.getAbandonments',
     emits: [],
@@ -178,7 +202,13 @@ export const OPERATIONS_CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     requiredPermissions: ['account:write'],
     inputSchema: [
       { key: 'pixKey', type: 'string', label: 'Chave PIX', required: true },
-      { key: 'pixKeyType', type: 'select', label: 'Tipo', required: true, enum: ['CPF', 'CNPJ', 'email', 'celular', 'aleatória'] },
+      {
+        key: 'pixKeyType',
+        type: 'select',
+        label: 'Tipo',
+        required: true,
+        enum: ['CPF', 'CNPJ', 'email', 'celular', 'aleatória'],
+      },
     ],
     domainService: 'AccountService.setPixKey',
     emits: ['account.pix_updated'],
@@ -193,7 +223,13 @@ export const OPERATIONS_CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     requiresConfirmation: true,
     requiredPermissions: ['account:write'],
     inputSchema: [
-      { key: 'documentType', type: 'select', label: 'Tipo', required: true, enum: ['identity', 'contract', 'cnpj_card'] },
+      {
+        key: 'documentType',
+        type: 'select',
+        label: 'Tipo',
+        required: true,
+        enum: ['identity', 'contract', 'cnpj_card'],
+      },
     ],
     domainService: 'DocumentService.upload',
     emits: ['account.document_uploaded'],
