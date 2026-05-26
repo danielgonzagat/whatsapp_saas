@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { BillingWebhookService } from './billing-webhook.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 const constructEventMock = jest.fn();
 const stripeMock = {
@@ -33,22 +34,10 @@ jest.mock('./billing-webhook.helpers', () => ({
   readInvoiceSubscriptionId: jest.fn().mockReturnValue(null),
 }));
 
-type PrismaMock = {
-  webhookEvent: {
-    findFirst: jest.Mock;
-    create: jest.Mock;
-    update: jest.Mock;
-  };
-  $transaction: jest.Mock;
-  workspace: {
-    findFirst: jest.Mock;
-  };
-};
-
 describe('BillingWebhookService', () => {
   let service: BillingWebhookService;
   let config: { get: jest.Mock };
-  let prisma: PrismaMock;
+  let prisma: ReturnType<typeof createPartialPrismaMock>;
   let financialAlert: { webhookProcessingFailed: jest.Mock };
   let txCreate: jest.Mock;
 
@@ -75,15 +64,15 @@ describe('BillingWebhookService', () => {
       }),
     );
 
-    prisma = {
-      webhookEvent: {
-        findFirst: webhookEventFindFirst,
-        create: txCreate,
-        update: webhookEventUpdate,
-      },
-      $transaction,
-      workspace: { findFirst: jest.fn().mockResolvedValue(null) },
-    };
+    prisma = createPartialPrismaMock({
+      webhookEvent: ['findFirst', 'create', 'update'],
+      workspace: ['findFirst'],
+    });
+    prisma.webhookEvent.findFirst = webhookEventFindFirst;
+    prisma.webhookEvent.create = txCreate;
+    prisma.webhookEvent.update = webhookEventUpdate;
+    prisma.$transaction = $transaction;
+    prisma.workspace.findFirst = jest.fn().mockResolvedValue(null);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -100,15 +89,15 @@ describe('BillingWebhookService', () => {
 
   describe('handleWebhook', () => {
     it('throws when rawBody is missing', async () => {
-      await expect(
-        service.handleWebhook('sig', undefined as Buffer),
-      ).rejects.toThrow('Missing rawBody or signature');
+      await expect(service.handleWebhook('sig', undefined as Buffer)).rejects.toThrow(
+        'Missing rawBody or signature',
+      );
     });
 
     it('throws when signature is missing', async () => {
-      await expect(
-        service.handleWebhook(undefined as string, Buffer.from('{}')),
-      ).rejects.toThrow('Missing rawBody or signature');
+      await expect(service.handleWebhook(undefined as string, Buffer.from('{}'))).rejects.toThrow(
+        'Missing rawBody or signature',
+      );
     });
 
     it('returns stripe_not_configured when StripeRuntime is absent', async () => {

@@ -54,14 +54,11 @@ describe('AdRulesController', () => {
       expect(result).toEqual(mockRules);
     });
 
-    it('returns empty array and alerts when prisma rejects (error path)', async () => {
+    it('propagates error when prisma rejects (no longer masked)', async () => {
       const error = new Error('Table does not exist');
       findMany.mockRejectedValue(error);
 
-      const result = await controller.list(req);
-
-      expect(result).toEqual([]);
-      expect(opsAlert).toHaveBeenCalledWith(error, 'AdRulesController.findMany');
+      await expect(controller.list(req)).rejects.toThrow('Table does not exist');
     });
   });
 

@@ -2,25 +2,16 @@ import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { VideoService } from './video.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 describe('VideoService', () => {
   let service: VideoService;
-  let prisma: {
-    mediaJob: {
-      create: jest.Mock;
-      findUnique: jest.Mock;
-      findMany: jest.Mock;
-    };
-  };
+  let prisma: ReturnType<typeof createPartialPrismaMock>;
 
   beforeEach(async () => {
-    prisma = {
-      mediaJob: {
-        create: jest.fn(),
-        findUnique: jest.fn(),
-        findMany: jest.fn(),
-      },
-    };
+    prisma = createPartialPrismaMock({
+      mediaJob: ['create', 'findUnique', 'findMany'],
+    });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [VideoService, { provide: PrismaService, useValue: prisma }],

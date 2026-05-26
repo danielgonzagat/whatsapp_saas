@@ -4,7 +4,6 @@ import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-
 
 export const U0300__U036F_RE = /[\u0300-\u036f]/g;
 export const A_Z0_9_RE = /[^a-z0-9]+/g;
-export const PATTERN_RE = /^-|-$/g;
 
 export interface CreateMemberAreaDto {
   name: string;

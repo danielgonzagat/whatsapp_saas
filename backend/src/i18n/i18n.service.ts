@@ -3,8 +3,8 @@ import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { NON_DIGIT_RE } from '../common/phone';
 
-const D_RE = /\D/g;
 const TRANSLATION_PROVIDER_CONFIG_REQUIRED = 'OpenAI configuration is required for translation';
 
 function translationConfigError(): Error {
@@ -212,7 +212,7 @@ export class I18nService {
    */
   detectLanguageFromPhone(phone: string): SupportedLanguage {
     // Remove caracteres não numéricos
-    const cleanPhone = phone.replace(D_RE, '');
+    const cleanPhone = phone.replace(NON_DIGIT_RE, '');
 
     // Tenta detectar pelo código do país
     for (const [code, lang] of Object.entries(countryToLanguage)) {

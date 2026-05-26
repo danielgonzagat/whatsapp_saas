@@ -1,5 +1,6 @@
 import type { CapabilityRegistrySnapshot } from '../capability-registry/capability-registry.types';
 import { fail, Gate, GateMode, GateVerdict, pass } from './pulse-gates.types';
+import { isObject } from '../../common/types';
 
 export interface NoOverclaimInput {
   readonly abiPayload: unknown;
@@ -7,10 +8,6 @@ export interface NoOverclaimInput {
 }
 
 const MEASURED_BY = 'no-overclaim.gate' as const;
-
-function isObject(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
-}
 
 function buildRegistryMap(
   snapshot: CapabilityRegistrySnapshot | undefined,
@@ -57,13 +54,9 @@ export function makeNoOverclaimGate(mode: GateMode = 'hard_fail'): Gate<unknown>
       const input = normalizeInput(raw);
       const payload = input.abiPayload;
       if (!isObject(payload)) {
-        return fail(
-          'no-overclaim',
-          mode,
-          MEASURED_BY,
-          'ABI payload is not a plain object',
-          [{ detail: 'payload must be a plain object to check overclaim' }],
-        );
+        return fail('no-overclaim', mode, MEASURED_BY, 'ABI payload is not a plain object', [
+          { detail: 'payload must be a plain object to check overclaim' },
+        ]);
       }
 
       const available = extractAvailable(payload);
@@ -88,7 +81,12 @@ export function makeNoOverclaimGate(mode: GateMode = 'hard_fail'): Gate<unknown>
           }
         }
 
-        if (input.registrySnapshot && typeof id === 'string' && id !== '?' && !registryMap.has(id)) {
+        if (
+          input.registrySnapshot &&
+          typeof id === 'string' &&
+          id !== '?' &&
+          !registryMap.has(id)
+        ) {
           evidence.push({
             path: `$.capabilities.available[${idx}]`,
             detail: `capability "${id}" referenced in ABI but not found in capability-registry`,

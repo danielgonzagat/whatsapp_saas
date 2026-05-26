@@ -8,7 +8,7 @@
  *
  * Stores an immutable ranked list of 5 entry market candidates and
  * declares ONE as the active market. Every declaration (including
- * initialisation) emits a `mercado_entrada.declared` spine event
+ * initialisation) emits a `commerce.onboarding.declared` spine event
  * with full provenance.
  *
  * Types are co-located here as the single source of truth for the
@@ -22,7 +22,14 @@ import type { SpineEmitterService } from '../spine/spine-emitter.service';
 // =========================================================================
 // TYPES
 // =========================================================================
-export type BusinessType = 'infoproduto' | 'servico' | 'consultoria' | 'ecommerce' | 'saas' | 'agencia' | 'educacao';
+export type BusinessType =
+  | 'infoproduto'
+  | 'servico'
+  | 'consultoria'
+  | 'ecommerce'
+  | 'saas'
+  | 'agencia'
+  | 'educacao';
 export const ALL_BUSINESS_TYPES: readonly BusinessType[] = [
   'infoproduto',
   'servico',
@@ -208,16 +215,11 @@ const FIRST_CANDIDATE = ENTRY_MARKET_CANDIDATES[0];
 if (!FIRST_CANDIDATE) {
   throw new Error('Invariant: ENTRY_MARKET_CANDIDATES is non-empty');
 }
-export const ACTIVE_ENTRY_MARKET: EntryMarket =
-  entryMarketFromCandidate(FIRST_CANDIDATE);
-export function findCandidateById(
-  id: string,
-): EntryMarketCandidate | undefined {
+export const ACTIVE_ENTRY_MARKET: EntryMarket = entryMarketFromCandidate(FIRST_CANDIDATE);
+export function findCandidateById(id: string): EntryMarketCandidate | undefined {
   return ENTRY_MARKET_CANDIDATES.find((c) => c.marketId === id);
 }
-export function entryMarketFromCandidate(
-  candidate: EntryMarketCandidate,
-): EntryMarket {
+export function entryMarketFromCandidate(candidate: EntryMarketCandidate): EntryMarket {
   return {
     marketId: candidate.marketId,
     label: candidate.label,
@@ -265,14 +267,14 @@ export class MercadoEntradaDeclaratorService implements OnModuleInit {
     if (this.spine) {
       void this.spine
         .emit({
-          eventName: 'mercado_entrada.declared',
+          eventName: 'commerce.onboarding.declared',
           truthMode: 'observed',
           provenance: PROVENANCE_SYNTHETIC,
           payload: { ...this.activeDeclaration.active },
         })
         .catch((err: unknown) => {
           this.logger.warn(
-            `Failed to emit mercado_entrada.declared on init: ${(err as Error).message}`,
+            `Failed to emit commerce.onboarding.declared on init: ${(err as Error).message}`,
           );
         });
     }
@@ -355,7 +357,7 @@ export class MercadoEntradaDeclaratorService implements OnModuleInit {
     if (this.spine) {
       void this.spine
         .emit({
-          eventName: 'mercado_entrada.declared',
+          eventName: 'commerce.onboarding.declared',
           truthMode: 'observed',
           provenance: PROVENANCE_PRODUCTION,
           payload: {
@@ -372,7 +374,7 @@ export class MercadoEntradaDeclaratorService implements OnModuleInit {
         })
         .catch((err: unknown) => {
           this.logger.warn(
-            `Failed to emit mercado_entrada.declared: ${(err as Error).message}`,
+            `Failed to emit commerce.onboarding.declared: ${(err as Error).message}`,
           );
         });
     }

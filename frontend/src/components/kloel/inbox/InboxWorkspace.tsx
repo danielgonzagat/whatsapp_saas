@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { useSocket } from '@/hooks/useSocket';
-import { type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import {
   INBOX_RESPONSIVE_VARS,
 } from './inbox-workspace-utils';
@@ -20,6 +20,7 @@ import { InboxConversationList } from './parts/InboxConversationList';
 import { InboxConversationHeader } from './parts/InboxConversationHeader';
 import { InboxMessageList } from './parts/InboxMessageList';
 import { InboxMessageInput } from './parts/InboxMessageInput';
+import { SuggestionChips } from './parts/SuggestionChips';
 
 interface InboxWorkspaceProps {
   embedded?: boolean;
@@ -88,6 +89,11 @@ export function InboxWorkspace({
     setMessages,
     refreshConversations,
   });
+
+  const contactIdFromConversation = useMemo(
+    () => selectedConversation?.contact?.id ?? null,
+    [selectedConversation],
+  );
 
   if (!isLoading && !isAuthenticated) {
     return (
@@ -177,6 +183,11 @@ export function InboxWorkspace({
               />
             </div>
 
+            <SuggestionChips
+              workspaceId={workspaceId}
+              contactId={contactIdFromConversation}
+              onSelectSuggestion={setReplyText}
+            />
             <InboxMessageInput
               selectedConversationId={selectedConversationId}
               replyText={replyText}

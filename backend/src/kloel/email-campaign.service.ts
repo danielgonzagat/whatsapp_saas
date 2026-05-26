@@ -15,7 +15,7 @@ import {
   sendViaSmtp,
 } from './email-smtp-delivery';
 
-const NAME_RE = /\{\{name\}\}/g;
+import { NAME_RE } from '../common/regex';
 const EMAIL_RE = /\{\{email\}\}/g;
 
 function readText(value: unknown): string | undefined {

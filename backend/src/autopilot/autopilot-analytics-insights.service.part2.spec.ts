@@ -6,21 +6,13 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { CANONICAL_MODEL_IDS } from '../lib/openai-models';
-
-type FlexMock = jest.Mock & {
-  mockResolvedValue: (v: unknown) => FlexMock;
-  mockResolvedValueOnce: (v: unknown) => FlexMock;
-  mockRejectedValue: (err: unknown) => FlexMock;
-};
-
+import { type FlexMock } from '../../test/helpers/prisma.mock';
 jest.mock('../kloel/openai-wrapper', () => ({
   chatCompletionWithRetry: jest.fn(),
 }));
 
 jest.mock('../lib/openai-models', () => {
-  const actual = jest.requireActual<typeof import('../lib/openai-models')>(
-    '../lib/openai-models',
-  );
+  const actual = jest.requireActual<typeof import('../lib/openai-models')>('../lib/openai-models');
   return {
     ...actual,
     resolveBackendOpenAIModel: jest.fn(() => actual.CANONICAL_MODEL_IDS.openAiTextMock),
@@ -270,3 +262,4 @@ describe('AutopilotAnalyticsInsightsService', () => {
       });
     });
   });
+});

@@ -7,8 +7,8 @@ import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import OpenAI from 'openai';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { WHITESPACE_G_RE } from '../common/regex';
 
-const WHITESPACE_G_RE = /\s+/g;
 const QUOTE_TRIM_RE = /^["'""'']+|["'""'']+$/g;
 const TRAILING_PUNCT_G_RE = /[.!?]+$/g;
 const NEWLINE_RE = /\n/;

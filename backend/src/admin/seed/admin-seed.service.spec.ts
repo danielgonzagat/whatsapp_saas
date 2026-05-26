@@ -11,7 +11,6 @@ jest.mock('../auth/admin-auth.service', () => ({
 }));
 
 import { AdminAuthService } from '../auth/admin-auth.service';
-
 describe('AdminSeedService', () => {
   let service: AdminSeedService;
 

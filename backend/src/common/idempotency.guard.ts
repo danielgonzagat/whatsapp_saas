@@ -14,6 +14,7 @@ import { pollUntil } from './async-sequence';
 import { FeatureFlagService } from './feature-flags/feature-flag.service';
 import { bodyFingerprint, buildCacheKey, buildScopeKey } from './idempotency-fingerprint';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { readStringProperty } from './parse';
 
 /** Idempotency_key. */
 export const IDEMPOTENCY_METADATA = 'idempotency';
@@ -60,14 +61,6 @@ interface IdempotencyResponse {
 
 function isRecord(value: unknown): value is IdempotencyRecord {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function readStringProperty(source: unknown, key: string): string | undefined {
-  if (!isRecord(source)) {
-    return undefined;
-  }
-  const value = source[key];
-  return typeof value === 'string' && value.trim() ? value : undefined;
 }
 
 function readNumberProperty(source: unknown, key: string): number | undefined {

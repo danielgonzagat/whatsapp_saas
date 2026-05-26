@@ -1,4 +1,5 @@
 import { fail, Gate, GateEvidence, GateMode, GateVerdict, pass } from './pulse-gates.types';
+import { isObject } from '../../common/types';
 
 /**
  * UTP-PULSE-001 — `no-roleplay` gate.
@@ -44,7 +45,10 @@ const ROLEPLAY_PATTERNS: ReadonlyArray<{
   { id: 'en-you-are-a', re: /\byou\s+are\s+(an?|the)\s+\w/i },
 
   // ── "seu trabalho é" / "your job is" ────────────────────────────
-  { id: 'pt-seu-trabalho', re: /\bseu\s+(trabalho|emprego|dever|prop[oô]sito)\s+[\u00E9e](?=[\s.,;:!?'"»]|$)/i },
+  {
+    id: 'pt-seu-trabalho',
+    re: /\bseu\s+(trabalho|emprego|dever|prop[oô]sito)\s+[\u00E9e](?=[\s.,;:!?'"»]|$)/i,
+  },
   { id: 'en-your-job', re: /\byour\s+(job|task|duty|purpose|mission|objective)\s+is\b/i },
 
   // ── "sua tarefa é" ──────────────────────────────────────────────
@@ -69,7 +73,10 @@ const ROLEPLAY_PATTERNS: ReadonlyArray<{
   { id: 'en-your-role', re: /\byour\s+role\b/i },
 
   // ── Persona declarations for Kloel itself ───────────────────────
-  { id: 'persona-kloel-e', re: /\bKloel\s+(é|is|age|atua|comporta|deve ser|should be|acts as)(?=[\s.,;:!?'"»]|$)/i },
+  {
+    id: 'persona-kloel-e',
+    re: /\bKloel\s+(é|is|age|atua|comporta|deve ser|should be|acts as)(?=[\s.,;:!?'"»]|$)/i,
+  },
 
   // ── "You are now X" system role injection ───────────────────────
   { id: 'en-you-are-now', re: /\byou are now\s+(an?|the|acting)\b/i },
@@ -84,10 +91,6 @@ const ROLEPLAY_PATTERNS: ReadonlyArray<{
   // ── "you are no longer" role removal ───────────────────────────
   { id: 'en-you-are-no-longer', re: /\byou are no longer\b/i },
 ];
-
-function isObject(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
-}
 
 /**
  * Walk every string leaf in the payload and test against role-play

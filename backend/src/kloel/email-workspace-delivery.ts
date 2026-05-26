@@ -2,24 +2,9 @@ import type { Prisma } from '@prisma/client';
 import { decryptString, isEncrypted } from '../lib/crypto';
 import type { EmailDeliveryOverride } from './email-smtp-delivery';
 
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
-}
+import { asRecord } from '../common/types';
 
-function readString(value: unknown): string | undefined {
-  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
-}
-
-function readNumber(value: unknown): number | undefined {
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  if (typeof value === 'string' && value.trim()) {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : undefined;
-  }
-  return undefined;
-}
+import { readTrimmedString as readString, readNumberLoose as readNumber } from '../common/parse';
 
 function isSupportedEmailProvider(
   value: string | undefined,

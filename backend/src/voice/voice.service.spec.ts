@@ -2,6 +2,7 @@ import { ForbiddenException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { VoiceService } from './voice.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 const voiceMockAdd = jest.fn();
 
@@ -20,28 +21,13 @@ jest.mock('../common/redis/redis.util', () => ({
 
 describe('VoiceService', () => {
   let service: VoiceService;
-  let prisma: {
-    voiceProfile: {
-      create: jest.Mock;
-      findUnique: jest.Mock;
-      findMany: jest.Mock;
-    };
-    voiceJob: {
-      create: jest.Mock;
-    };
-  };
+  let prisma: ReturnType<typeof createPartialPrismaMock>;
 
   beforeEach(async () => {
-    prisma = {
-      voiceProfile: {
-        create: jest.fn(),
-        findUnique: jest.fn(),
-        findMany: jest.fn(),
-      },
-      voiceJob: {
-        create: jest.fn(),
-      },
-    };
+    prisma = createPartialPrismaMock({
+      voiceProfile: ['create', 'findUnique', 'findMany'],
+      voiceJob: ['create'],
+    });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [VoiceService, { provide: PrismaService, useValue: prisma }],

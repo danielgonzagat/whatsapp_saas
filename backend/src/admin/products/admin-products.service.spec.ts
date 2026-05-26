@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AdminAuditService } from '../audit/admin-audit.service';
 import { AdminProductsService } from './admin-products.service';
 import { AdminProductStateAction } from './dto/update-product-state.dto';
+import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
 const mockListAdminProducts = jest.fn<Promise<unknown>, unknown[]>();
 const mockGetAdminProductDetail = jest.fn<Promise<unknown>, unknown[]>();
@@ -20,15 +21,11 @@ describe('AdminProductsService', () => {
   const actorId = 'admin_1';
   const productId = 'prod_1';
 
-  const mockProductFindUnique = jest.fn<Promise<unknown>, unknown[]>();
-  const mockProductUpdateMany = jest.fn<Promise<unknown>, unknown[]>();
-
-  const prismaMock = {
-    product: {
-      findUnique: mockProductFindUnique,
-      updateMany: mockProductUpdateMany,
-    },
-  };
+  const prismaMock = createPartialPrismaMock({
+    product: ['findUnique', 'updateMany'],
+  });
+  const mockProductFindUnique = prismaMock.product.findUnique;
+  const mockProductUpdateMany = prismaMock.product.updateMany;
 
   const mockAudit = {
     append: jest.fn<Promise<void>, unknown[]>(),

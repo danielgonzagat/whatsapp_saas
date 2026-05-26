@@ -1,4 +1,5 @@
 import { fail, Gate, GateEvidence, GateMode, GateVerdict, pass } from './pulse-gates.types';
+import { isObject } from '../../common/types';
 
 export interface SiblingClientDescriptor {
   readonly clientId: string;
@@ -38,10 +39,6 @@ export interface InternalKnowledgeLeakInput {
  * Failure policy (hard_fail): blocks context delivery, forces isolation.
  */
 const MEASURED_BY = 'internal-knowledge-leak-guard.gate' as const;
-
-function isObject(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
-}
 
 function normalizeIdentifier(value: string): string {
   return value.replace(/[\s\-_.()]/g, '').toLowerCase();

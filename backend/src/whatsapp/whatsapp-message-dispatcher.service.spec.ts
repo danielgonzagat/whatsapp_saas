@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { INBOX_SERVICE } from '../inbox/inbox.token';
-import type { IInboxService } from '../inbox/inbox.interface';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WorkspaceService } from '../workspaces/workspace.service';
@@ -11,9 +10,19 @@ import { WhatsappSessionService } from './whatsapp-session.service';
 import { WhatsappMessageDispatcherService } from './whatsapp-message-dispatcher.service';
 
 jest.mock('../queue/queue', () => ({
-  flowQueue: { add: jest.fn().mockResolvedValue(undefined) },
+  flowQueue: {
+    add: jest.fn<(...args: unknown[]) => Promise<unknown>>().mockResolvedValue(undefined),
+  },
   autopilotQueue: { add: jest.fn().mockResolvedValue(undefined) },
 }));
+
+const mockFlowQueueAdd = jest.requireMock<{
+  flowQueue: { add: jest.Mock<(...args: unknown[]) => Promise<unknown>> };
+}>('../queue/queue').flowQueue.add;
+
+function getFlowQueueAddMock(): jest.Mock<(...args: unknown[]) => Promise<unknown>> {
+  return mockFlowQueueAdd;
+}
 
 describe('WhatsappMessageDispatcherService', () => {
   let service: WhatsappMessageDispatcherService;
@@ -110,15 +119,20 @@ describe('WhatsappMessageDispatcherService', () => {
     });
 
     it('queues message when worker is available', async () => {
-      const { flowQueue } = require('../queue/queue');
       const result = await service.sendMessage('ws-1', '5511999991234', 'hello');
-      expect(flowQueue.add).toHaveBeenCalledWith('send-message', expect.objectContaining({ to: '5511999991234', message: 'hello' }));
+      expect(getFlowQueueAddMock()).toHaveBeenCalledWith(
+        'send-message',
+        expect.objectContaining({ to: '5511999991234', message: 'hello' }),
+        expect.anything(),
+      );
       expect(result).toEqual({ ok: true, queued: true, delivery: 'queued' });
     });
 
     it('falls back to direct send when worker is not available', async () => {
       workerRuntime.isAvailable.mockResolvedValue(false);
-      const result = await service.sendMessage('ws-1', '5511999991234', 'hello', { forceDirect: false });
+      const result = await service.sendMessage('ws-1', '5511999991234', 'hello', {
+        forceDirect: false,
+      });
       expect(providerRegistry.sendMessage).toHaveBeenCalled();
       expect(result).toEqual(expect.objectContaining({ ok: true, direct: true, delivery: 'sent' }));
     });
@@ -142,12 +156,15 @@ describe('WhatsappMessageDispatcherService', () => {
 
   describe('sendTemplate', () => {
     it('queues template message successfully', async () => {
-      const { flowQueue } = require('../queue/queue');
       const result = await service.sendTemplate('ws-1', '5511999991234', {
         name: 'hello_world',
         language: 'pt_BR',
       });
-      expect(flowQueue.add).toHaveBeenCalledWith('send-message', expect.objectContaining({ type: 'template' }));
+      expect(getFlowQueueAddMock()).toHaveBeenCalledWith(
+        'send-message',
+        expect.objectContaining({ type: 'template' }),
+        expect.anything(),
+      );
       expect(result).toEqual({ ok: true, queued: true, delivery: 'queued' });
     });
 
@@ -159,14 +176,23 @@ describe('WhatsappMessageDispatcherService', () => {
 
   describe('sendDirectMessage', () => {
     it('returns success when provider sends ok', async () => {
-      const result = await service.sendDirectMessage('ws-1', '5511999991234', 'hello');
-      expect(result).toEqual({ success: true, result: expect.objectContaining({ ok: true }) });
+      await expect(service.sendDirectMessage('ws-1', '5511999991234', 'hello')).resolves.toEqual({
+        success: true,
+        result: {
+          ok: true,
+          direct: true,
+          delivery: 'sent',
+          messageId: 'wa-msg-1',
+        },
+      });
     });
 
     it('returns error when provider fails', async () => {
       providerRegistry.sendMessage.mockResolvedValue({ success: false, error: 'send blocked' });
-      const result = await service.sendDirectMessage('ws-1', '5511999991234', 'hello');
-      expect(result).toEqual({ error: true, message: 'send blocked' });
+      await expect(service.sendDirectMessage('ws-1', '5511999991234', 'hello')).resolves.toEqual({
+        error: true,
+        message: 'send blocked',
+      });
     });
   });
 

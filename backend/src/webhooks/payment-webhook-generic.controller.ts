@@ -19,7 +19,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { WebhooksService } from './webhooks.service';
 import type { PaymentWebhookNotifier } from './payment-webhook-stripe.deps';
 import {
-  D_RE,
   type WebhookRequest,
   type GenericPaymentWebhookBody,
   type ShopifyOrderWebhookBody,
@@ -33,9 +32,7 @@ import {
   ensureIdempotent,
   sendOpsAlert,
 } from './payment-webhook-generic.helpers';
-import {
-  updateSaleAndPaymentHelper,
-} from './payment-webhook-generic.helpers';
+import { updateSaleAndPaymentHelper } from './payment-webhook-generic.helpers';
 import { sendGenericConfirmationViaTransport } from './payment-webhook-generic-confirmation';
 
 /**
@@ -43,6 +40,8 @@ import { sendGenericConfirmationViaTransport } from './payment-webhook-generic-c
  * Stripe webhooks are handled by PaymentWebhookStripeController.
  */
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import { digitsOnly } from '../common/phone';
+
 @Controller('webhook/payment')
 @RouteClass('webhook')
 export class PaymentWebhookGenericController {
@@ -137,7 +136,7 @@ export class PaymentWebhookGenericController {
     }
     await assertWorkspaceExists(this.prisma, workspaceId);
 
-    const normalizedPhone = body.phone ? String(body.phone).replace(D_RE, '') : undefined;
+    const normalizedPhone = body.phone ? digitsOnly(body.phone) : undefined;
     await this.updateSaleAndPayment(body, workspaceId, normalizedPhone);
 
     let contact: Contact | null = null;

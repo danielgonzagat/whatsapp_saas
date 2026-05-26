@@ -5,19 +5,16 @@ import { MoneyMachineService } from './money-machine.service';
 
 describe('MoneyMachineService', () => {
   let service: MoneyMachineService;
-  let prisma: {
-    contact: { count: jest.Mock };
-    flow: { create: jest.Mock };
-    message: { count: jest.Mock };
-  };
+  let prisma: ReturnType<typeof createPartialPrismaMock>;
   let campaigns: { create: jest.Mock };
 
   beforeEach(async () => {
-    prisma = {
-      contact: { count: jest.fn() },
-      flow: { create: jest.fn().mockResolvedValue({ id: 'flow-1' }) },
-      message: { count: jest.fn() },
-    };
+    prisma = createPartialPrismaMock({
+      contact: ['count'],
+      flow: ['create'],
+      message: ['count'],
+    });
+    prisma.flow.create.mockResolvedValue({ id: 'flow-1' });
     campaigns = {
       create: jest.fn().mockResolvedValue({ id: 'campaign-1' }),
     };

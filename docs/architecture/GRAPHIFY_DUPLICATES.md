@@ -4,9 +4,9 @@
 > (`graphify-out/enriched-graph.json`). Catches non-exported duplicates
 > the regex-based scanner in `scan.mjs` misses.
 
-Generated from 92003 nodes / 191074 edges.
+Generated from 63764 nodes / 78170 edges.
 
-Total duplicate-label groups: **847**.
+Total duplicate-label groups: **1028**.
 
 **Status legend:**
 - ✅ `canonicalized` — already consolidated; see DEPRECATION_MAP.md
@@ -21,56 +21,56 @@ Total duplicate-label groups: **847**.
 
 | Symbol | Kind | # files | # contexts | Total callers | Status |
 |---|---|---:|---:|---:|---|
-| `main` | function | 79 | 27 | 0 | ⏳ pending |
-| `REPO_ROOT` | type | 46 | 14 | 0 | ⏳ pending |
-| `clamp` | function | 34 | 21 | 0 | ✅ done |
-| `makeEvent` | function | 30 | 9 | 0 | ⏳ pending |
-| `buildService` | function | 29 | 12 | 0 | ⏳ pending |
-| `UnknownRecord` | type | 28 | 4 | 0 | ⏳ pending |
+| `PATTERN_RE` | type | 50 | 26 | 0 | ⏳ pending |
+| `POST` | type | 48 | 3 | 0 | ⏳ pending |
+| `D_RE` | type | 38 | 17 | 0 | ⏳ pending |
+| `makeEvent` | symbol | 29 | 8 | 0 | ⏳ pending |
+| `dynamic` | symbol | 28 | 3 | 0 | ⏳ pending |
 | `MockPrisma` | type | 27 | 7 | 0 | ⏳ pending |
-| `unique` | function | 27 | 12 | 0 | ⏳ pending |
-| `PrismaMock` | type | 24 | 6 | 0 | ⏳ pending |
-| `FlexMock` | type | 22 | 8 | 0 | ⏳ pending |
-| `readText` | function | 21 | 5 | 0 | ⏳ pending |
-| `isRecord` | function | 20 | 16 | 0 | ⏳ pending |
+| `clamp` | symbol | 27 | 15 | 0 | ✅ done |
+| `unique` | symbol | 27 | 12 | 0 | ⏳ pending |
+| `PrismaMock` | type | 26 | 7 | 0 | ⏳ pending |
+| `EMBER` | type | 24 | 4 | 0 | ⏳ pending |
+| `S_RE` | type | 22 | 13 | 0 | ⏳ pending |
+| `isRecord` | symbol | 21 | 16 | 0 | ⏳ pending |
+| `FlexMock` | type | 20 | 8 | 0 | ⏳ pending |
+| `buildService` | symbol | 20 | 10 | 0 | ⏳ pending |
+| `SORA` | type | 20 | 3 | 0 | ⏳ pending |
 | `Props` | type | 18 | 3 | 0 | ⏳ pending |
-| `readString` | function | 17 | 12 | 0 | ⏳ pending |
-| `baseInput` | function | 17 | 6 | 0 | ⏳ pending |
-| `makeSpine` | function | 17 | 6 | 0 | ⏳ pending |
-| `build` | function | 16 | 11 | 0 | ⏳ pending |
-| `VAULT_ROOT` | type | 15 | 4 | 0 | ⏳ pending |
-| `safeStr` | function | 14 | 4 | 0 | ✅ done |
-| `ROOT` | type | 13 | 11 | 0 | ⏳ pending |
-| `REPO` | type | 13 | 2 | 0 | ⏳ pending |
+| `readString` | symbol | 17 | 12 | 0 | ⏳ pending |
+| `makeSpine` | symbol | 17 | 6 | 0 | ⏳ pending |
+| `baseInput` | symbol | 17 | 6 | 0 | ⏳ pending |
+| `BORDER` | type | 17 | 3 | 0 | ⏳ pending |
+| `providerRegistry` | symbol | 16 | 2 | 0 | ⏳ pending |
+| `inputStyle` | symbol | 16 | 5 | 0 | ⏳ pending |
+| `mockAutopilotAdd` | symbol | 15 | 2 | 0 | ⏳ pending |
+| `whatsappApi` | symbol | 15 | 2 | 0 | ⏳ pending |
+| `TEXT` | type | 14 | 2 | 0 | ⏳ pending |
+| `PROCESSOR_VERSION` | type | 13 | 8 | 0 | ⏳ pending |
+| `SCHEMA_VERSION` | type | 13 | 8 | 0 | ⏳ pending |
+| `PATTERN_RE_2` | type | 13 | 8 | 0 | ⏳ pending |
+| `MONO` | type | 13 | 3 | 0 | ⏳ pending |
+| `asRecord` | symbol | 12 | 10 | 0 | ⏳ pending |
 | `TABS` | type | 12 | 3 | 0 | ⏳ pending |
-| `asRecord` | function | 12 | 10 | 0 | ⏳ pending |
-| `constructor` | function | 12 | 2 | 0 | ⏳ pending |
-| `sha256` | function | 12 | 8 | 0 | ⏳ pending |
-| `fail` | function | 12 | 6 | 0 | ⏳ pending |
-| `input` | function | 11 | 6 | 0 | ⏳ pending |
-| `readRecord` | function | 10 | 7 | 0 | ⏳ pending |
-| `formatCurrency` | function | 10 | 3 | 0 | ✅ done |
-| `StatCard` | function | 10 | 3 | 0 | ⏳ pending |
-| `sleep` | function | 10 | 7 | 0 | ⏳ pending |
-| `buildController` | function | 10 | 10 | 0 | ⏳ pending |
-| `MIRROR_ROOT` | type | 10 | 4 | 0 | ⏳ pending |
-| `parseArgs` | function | 10 | 4 | 0 | ⏳ pending |
-| `asString` | function | 9 | 9 | 0 | ⏳ pending |
-| `canActivate` | function | 9 | 8 | 0 | ⏳ pending |
-| `SOURCE_MIRROR_DIR` | type | 9 | 4 | 0 | ⏳ pending |
-| `normalizePath` | function | 9 | 6 | 0 | ⏳ pending |
-| `errorMessage` | function | 8 | 5 | 0 | ⏳ pending |
-| `ConceptRow` | type | 8 | 2 | 0 | ⏳ pending |
-| `uniqueStrings` | function | 8 | 6 | 0 | ⏳ pending |
-| `isObject` | function | 8 | 2 | 0 | ⏳ pending |
-| `check` | function | 8 | 3 | 0 | ⏳ pending |
-| `formatDate` | function | 7 | 4 | 0 | ⏳ pending |
-| `formatDateTime` | function | 7 | 3 | 0 | ⏳ pending |
-| `formatInteger` | function | 7 | 3 | 0 | ⏳ pending |
-| `ChatMessage` | type | 7 | 2 | 0 | ⏳ pending |
-| `createService` | function | 7 | 3 | 0 | ⏳ pending |
-| `makePrisma` | function | 7 | 5 | 0 | ⏳ pending |
-| `makePrismaStub` | function | 7 | 5 | 0 | ⏳ pending |
+| `FONT_MONO` | type | 12 | 4 | 0 | ⏳ pending |
+| `sora` | symbol | 12 | 5 | 0 | ⏳ pending |
+| `safeStr` | symbol | 11 | 4 | 0 | ✅ done |
+| `WHITESPACE_G_RE` | type | 11 | 6 | 0 | ⏳ pending |
+| `mockPrisma` | symbol | 10 | 3 | 0 | ⏳ pending |
+| `A_Z0_9_RE` | type | 10 | 6 | 0 | ⏳ pending |
+| `U0300__U036F_RE` | type | 10 | 7 | 0 | ⏳ pending |
+| `readRecord` | symbol | 10 | 7 | 0 | ⏳ pending |
+| `StatCard` | type | 10 | 3 | 0 | ⏳ pending |
+| `labelStyle` | symbol | 10 | 4 | 0 | ⏳ pending |
+| `resolveWorkspaceIdMock` | symbol | 9 | 9 | 0 | ⏳ pending |
+| `REDIS_TOKEN` | type | 9 | 6 | 0 | ⏳ pending |
+| `asString` | symbol | 9 | 9 | 0 | ⏳ pending |
+| `sha256` | symbol | 9 | 5 | 0 | ⏳ pending |
+| `PROCESSOR_NAME` | type | 9 | 4 | 0 | ⏳ pending |
+| `formatCurrency` | symbol | 9 | 4 | 0 | ✅ done |
+| `SURFACE` | type | 9 | 2 | 0 | ⏳ pending |
+| `WHITESPACE_RE` | type | 8 | 7 | 0 | ⏳ pending |
+| `NON_DIGIT_RE` | type | 8 | 3 | 0 | ⏳ pending |
 
 ## How to use this register
 

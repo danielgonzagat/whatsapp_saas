@@ -1,6 +1,7 @@
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { buildMarketplaceWhere, enrichAffiliateProducts } from './affiliate-helpers';
 import { AffiliateMarketplaceController } from './affiliate-marketplace.controller';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 jest.mock('./affiliate-helpers', () => ({
   buildMarketplaceWhere: jest.fn(),
@@ -11,18 +12,13 @@ const mockBuildMarketplaceWhere = buildMarketplaceWhere as jest.Mock;
 const mockEnrichAffiliateProducts = enrichAffiliateProducts as jest.Mock;
 
 describe('AffiliateMarketplaceController', () => {
-  const affiliateProductFindMany = jest.fn();
-  const affiliateProductCount = jest.fn();
-  const productFindMany = jest.fn();
-  const prismaMock = {
-    affiliateProduct: {
-      findMany: affiliateProductFindMany,
-      count: affiliateProductCount,
-    },
-    product: {
-      findMany: productFindMany,
-    },
-  };
+  const prismaMock = createPartialPrismaMock({
+    affiliateProduct: ['findMany', 'count'],
+    product: ['findMany'],
+  });
+  const affiliateProductFindMany = prismaMock.affiliateProduct.findMany;
+  const affiliateProductCount = prismaMock.affiliateProduct.count;
+  const productFindMany = prismaMock.product.findMany;
 
   let controller: AffiliateMarketplaceController;
 

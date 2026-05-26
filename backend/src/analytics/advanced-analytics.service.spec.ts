@@ -3,29 +3,29 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AgentPerformanceService } from './agent-performance.service';
 import { QueueStatsService } from './queue-stats.service';
 import { AdvancedAnalyticsService } from './advanced-analytics.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 describe('AdvancedAnalyticsService', () => {
   type WorkspaceQueryCall = [{ where: { workspaceId: string } }];
 
   let service: AdvancedAnalyticsService;
-  let prisma: {
-    kloelSale: { findMany: jest.Mock };
-    conversation: { groupBy: jest.Mock };
-    flowExecution: { groupBy: jest.Mock };
-    contact: { count: jest.Mock };
-    flow: { findMany: jest.Mock };
-  };
+  let prisma: ReturnType<typeof createPartialPrismaMock>;
   let agentPerformance: { getAgentPerformance: jest.Mock };
   let queueStats: { getQueueStats: jest.Mock };
 
   beforeEach(async () => {
-    prisma = {
-      kloelSale: { findMany: jest.fn().mockResolvedValue([]) },
-      conversation: { groupBy: jest.fn().mockResolvedValue([]) },
-      flowExecution: { groupBy: jest.fn().mockResolvedValue([]) },
-      contact: { count: jest.fn().mockResolvedValue(0) },
-      flow: { findMany: jest.fn().mockResolvedValue([]) },
-    };
+    prisma = createPartialPrismaMock({
+      kloelSale: ['findMany'],
+      conversation: ['groupBy'],
+      flowExecution: ['groupBy'],
+      contact: ['count'],
+      flow: ['findMany'],
+    });
+    prisma.kloelSale.findMany.mockResolvedValue([]);
+    prisma.conversation.groupBy.mockResolvedValue([]);
+    prisma.flowExecution.groupBy.mockResolvedValue([]);
+    prisma.contact.count.mockResolvedValue(0);
+    prisma.flow.findMany.mockResolvedValue([]);
     agentPerformance = { getAgentPerformance: jest.fn().mockResolvedValue([]) };
     queueStats = { getQueueStats: jest.fn().mockResolvedValue([]) };
 

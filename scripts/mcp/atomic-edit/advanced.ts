@@ -1,13 +1,6 @@
 /**
- * Symbol-named edits + cross-file semantic rename + preview diff.
- *
- * CodeStruct's `editCode` (insert/replace/removal over named AST entities)
- * dominates EFFICIENCY in their ablation (removing it: +38.7% cost from extra
- * validation cycles). "To Diff or Not to Diff?" (2026) shows block-level
- * rewrites of syntactically coherent units (functions/classes) beat fragile
- * offsets. Kiro's program-analysis argument: semantic rename must come from
- * the language service, not LLM text guessing. This module implements all
- * three, each producing a syntactically validated, all-or-nothing change set.
+ * Symbol-named edits, cross-file semantic rename, and preview diff.
+ * All operators produce syntactically validated, all-or-nothing change sets.
  */
 
 import * as fs from 'node:fs';
@@ -35,13 +28,7 @@ function leadingIndent(text: string, atOffset: number): string {
   return m ? m[0] : '';
 }
 
-/**
- * Shift `code` into the target column by prefixing the container `indent` to
- * every line after the first. The caller's first line lands right after the
- * indentation already present in the original slice; subsequent lines keep
- * their OWN relative indentation (we only add the container prefix). For a
- * top-level symbol (indent === "") the code is returned unchanged.
- */
+/** Shift `code` into the target column while preserving relative indentation. */
 function reindent(code: string, indent: string): string {
   if (indent === '') return code;
   const lines = code.split('\n');
@@ -165,6 +152,21 @@ export async function renameSymbolCrossFile(
     : new Project({ compilerOptions: { allowJs: true, noEmit: true } });
   if (!tsconfig)
     project.addSourceFilesAtPaths(path.join(path.dirname(absFile), '**/*.{ts,tsx,js,jsx}'));
+  // A tsconfig commonly EXCLUDES test files (e.g. "**/*spec.ts"), but a correct
+  // cross-file rename must still reach references that live INSIDE specs — test
+  // object keys ({ method: jest.fn() }), `Pick<Class,'method'>` string-literal
+  // type members, and property access on typed test doubles. Without loading
+  // them the language service silently under-collects, forcing manual fixups.
+  // Explicitly add the test/spec sources (node_modules/dist excluded).
+  {
+    const projRoot = tsconfig ? path.dirname(tsconfig) : path.dirname(absFile);
+    project.addSourceFilesAtPaths([
+      path.join(projRoot, '**/*.spec.{ts,tsx}'),
+      path.join(projRoot, '**/*.test.{ts,tsx}'),
+      `!${path.join(projRoot, '**/node_modules/**')}`,
+      `!${path.join(projRoot, '**/dist/**')}`,
+    ]);
+  }
 
   const sf = project.getSourceFile(absFile) ?? project.addSourceFileAtPath(absFile);
   const original = new Map<string, string>();

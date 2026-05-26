@@ -25,8 +25,7 @@ import { RouteClass } from '../common/throttler/route-class.decorator';
 import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator';
 import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 import { WhatsAppEventEmitterService } from '../kloel/whatsapp-emitter/whatsapp-event-emitter.service';
-
-const D_RE = /\D/g;
+import { NON_DIGIT_RE } from '../common/phone';
 
 /** Internal whats app runtime controller. */
 @Controller('internal/whatsapp-runtime')
@@ -277,7 +276,7 @@ export class InternalWhatsAppRuntimeController {
       return { success: false, reason: 'missing_fields' };
     }
 
-    const normalizedPhone = phone.replace(D_RE, '');
+    const normalizedPhone = phone.replace(NON_DIGIT_RE, '');
 
     try {
       const existing = await this.prisma.contact.findUnique({

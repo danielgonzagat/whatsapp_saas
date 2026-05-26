@@ -1,10 +1,10 @@
-import { NotImplementedException } from '@nestjs/common';
 import {
   GoogleMapsStrategy,
   InstagramStrategy,
   IScraperStrategy,
   LinkedInStrategy,
   ScraperSourceCapability,
+  ScraperResult,
 } from './strategies';
 
 describe('strategies', () => {
@@ -26,8 +26,11 @@ describe('strategies', () => {
       expect(cap.message).toContain('worker');
     });
 
-    it('scrape throws NotImplementedException (real scraper in worker)', () => {
-      expect(() => strategy.scrape('restaurants', {})).toThrow(NotImplementedException);
+    it('scrape returns unavailable result (real scraper in worker)', async () => {
+      const result: ScraperResult = await strategy.scrape('restaurants', {});
+      expect(result.unavailable).toBe(true);
+      expect(result.leads).toEqual([]);
+      expect(result.reason).toBeTruthy();
     });
   });
 
@@ -49,8 +52,11 @@ describe('strategies', () => {
       expect(cap.message).toContain('worker');
     });
 
-    it('scrape throws NotImplementedException (real scraper in worker)', () => {
-      expect(() => strategy.scrape('fitness', {})).toThrow(NotImplementedException);
+    it('scrape returns unavailable result (real scraper in worker)', async () => {
+      const result: ScraperResult = await strategy.scrape('fitness', {});
+      expect(result.unavailable).toBe(true);
+      expect(result.leads).toEqual([]);
+      expect(result.reason).toBeTruthy();
     });
   });
 
@@ -71,8 +77,11 @@ describe('strategies', () => {
       expect(cap.status).toBe('unavailable');
     });
 
-    it('scrape throws NotImplementedException', () => {
-      expect(() => strategy.scrape('engineers', {})).toThrow(NotImplementedException);
+    it('scrape returns unavailable result', async () => {
+      const result: ScraperResult = await strategy.scrape('engineers', {});
+      expect(result.unavailable).toBe(true);
+      expect(result.leads).toEqual([]);
+      expect(result.reason).toBeTruthy();
     });
   });
 

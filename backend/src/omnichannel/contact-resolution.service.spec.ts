@@ -2,10 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { OmnichannelContactResolutionService } from './contact-resolution.service';
 import { ChannelIdentifierService, ResolvedContact } from '../contacts/channel-identifier.service';
 import { NormalizedMessage } from '../inbox/omnichannel.helpers';
-
-type FlexMock<T extends (...args: never[]) => unknown> = jest.Mock<ReturnType<T>, Parameters<T>> & {
-  mockResolvedValue: (v: Awaited<ReturnType<T>>) => FlexMock<T>;
-};
+import { type FlexMock } from '../../test/helpers/prisma.mock';
 
 interface MockChannelIdentifierService {
   resolve: FlexMock<

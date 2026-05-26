@@ -6,6 +6,7 @@ import { AccountAgentService } from '../whatsapp/account-agent.service';
 import { AgentEventsService } from '../whatsapp/agent-events.service';
 import { CiaRuntimeService } from './cia-runtime.service';
 import { MindService } from '../kloel/mind.service';
+import { readNumberForce } from '../common/parse';
 
 type JsonRecord = Record<string, unknown>;
 
@@ -558,15 +559,6 @@ export class CiaService {
   }
 
   private readNumber(value: unknown): number {
-    if (typeof value === 'number' && Number.isFinite(value)) {
-      return value;
-    }
-
-    if (typeof value === 'string') {
-      const parsed = Number(value);
-      return Number.isFinite(parsed) ? parsed : 0;
-    }
-
-    return 0;
+    return readNumberForce(value);
   }
 }

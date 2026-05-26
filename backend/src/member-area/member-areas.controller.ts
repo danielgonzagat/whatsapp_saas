@@ -1,3 +1,4 @@
+import { SLUG_EDGE_HYPHEN_RE } from '../common/regex';
 import {
   BadRequestException,
   Body,
@@ -24,7 +25,6 @@ import { MEMBER_AREA_COLORS } from '../common/kloel-colors';
 import {
   A_Z0_9_RE,
   CreateMemberAreaDto,
-  PATTERN_RE,
   U0300__U036F_RE,
   UpdateMemberAreaDto,
   serializeArea,
@@ -185,7 +185,7 @@ export class MemberAreasController {
         .normalize('NFD')
         .replace(U0300__U036F_RE, '')
         .replace(A_Z0_9_RE, '-')
-        .replace(PATTERN_RE, '')}-${Date.now().toString(36)}`;
+        .replace(SLUG_EDGE_HYPHEN_RE, '')}-${Date.now().toString(36)}`;
     }
 
     try {

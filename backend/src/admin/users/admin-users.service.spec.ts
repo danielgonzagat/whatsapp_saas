@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AdminPermissionsService } from '../permissions/admin-permissions.service';
 import { AdminAuditService } from '../audit/admin-audit.service';
 import { AdminUsersService } from './admin-users.service';
+import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
 jest.mock('../auth/admin-auth.service', () => ({
   AdminAuthService: { hashPassword: jest.fn(() => Promise.resolve('hashed')) },
@@ -33,10 +34,6 @@ describe('AdminUsersService', () => {
     updatedAt: new Date(),
   };
 
-  const mockAdminUserFindUnique = jest.fn<Promise<unknown>, unknown[]>();
-  const mockAdminUserFindMany = jest.fn<Promise<unknown>, unknown[]>();
-  const mockAdminUserCreate = jest.fn<Promise<unknown>, unknown[]>();
-  const mockAdminUserUpdate = jest.fn<Promise<unknown>, unknown[]>();
   const mockAdminPermissionDeleteMany = jest.fn<Promise<unknown>, unknown[]>();
   const mockAdminPermissionCreateMany = jest.fn<Promise<unknown>, unknown[]>();
   const mockAdminSessionUpdateMany = jest.fn<Promise<unknown>, unknown[]>();
@@ -58,15 +55,14 @@ describe('AdminUsersService', () => {
 
   const mockPrismaTransaction = jest.fn<Promise<unknown>, unknown[]>();
 
-  const prismaMock = {
-    adminUser: {
-      findUnique: mockAdminUserFindUnique,
-      findMany: mockAdminUserFindMany,
-      create: mockAdminUserCreate,
-      update: mockAdminUserUpdate,
-    },
-    $transaction: mockPrismaTransaction,
-  };
+  const prismaMock = createPartialPrismaMock({
+    adminUser: ['findUnique', 'findMany', 'create', 'update'],
+  });
+  const mockAdminUserFindUnique = prismaMock.adminUser.findUnique;
+  const mockAdminUserFindMany = prismaMock.adminUser.findMany;
+  const mockAdminUserCreate = prismaMock.adminUser.create;
+  const mockAdminUserUpdate = prismaMock.adminUser.update;
+  prismaMock.$transaction = mockPrismaTransaction;
 
   const mockPermissions = {
     seedDefaults: jest.fn<Promise<void>, unknown[]>(),

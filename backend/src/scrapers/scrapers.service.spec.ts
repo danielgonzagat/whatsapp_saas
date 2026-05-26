@@ -1,6 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ScrapersService } from './scrapers.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 jest.mock('../common/redis/redis.util', () => ({
   createRedisClient: () => ({}),
@@ -14,26 +15,22 @@ jest.mock('bullmq', () => ({
 
 describe('ScrapersService', () => {
   let service: ScrapersService;
-  let prisma: {
-    scrapingJob: { create: jest.Mock; findMany: jest.Mock; findUnique: jest.Mock };
-    scrapedLead: { findMany: jest.Mock; update: jest.Mock };
-    contact: { upsert: jest.Mock };
-  };
+  let prisma: ReturnType<typeof createPartialPrismaMock>;
 
   beforeEach(() => {
     queueAddMock.mockClear();
-    prisma = {
-      scrapingJob: {
-        create: jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'j-1', ...data })),
-        findMany: jest.fn().mockResolvedValue([]),
-        findUnique: jest.fn(),
-      },
-      scrapedLead: {
-        findMany: jest.fn().mockResolvedValue([]),
-        update: jest.fn().mockResolvedValue({}),
-      },
-      contact: { upsert: jest.fn().mockResolvedValue({}) },
-    };
+    prisma = createPartialPrismaMock({
+      scrapingJob: ['create', 'findMany', 'findUnique'],
+      scrapedLead: ['findMany', 'update'],
+      contact: ['upsert'],
+    });
+    prisma.scrapingJob.create.mockImplementation(
+      ({ data }) => Promise.resolve({ id: 'j-1', ...data }) as never,
+    );
+    prisma.scrapingJob.findMany.mockResolvedValue([]);
+    prisma.scrapedLead.findMany.mockResolvedValue([]);
+    prisma.scrapedLead.update.mockResolvedValue({});
+    prisma.contact.upsert.mockResolvedValue({});
     service = new ScrapersService(prisma as PrismaService);
   });
 

@@ -168,7 +168,14 @@ export class KloelProductSubResourceToolsService {
         pid = p?.id ?? '';
       }
       if (!pid) {
-        return { success: false, error: 'Produto nao encontrado' };
+        const firstProduct = await this.prisma.product.findFirst({
+          where: { workspaceId },
+          select: { id: true },
+        });
+        pid = firstProduct?.id ?? '';
+      }
+      if (!pid) {
+        return { success: false, error: 'Nenhum produto no workspace. Crie um produto primeiro.' };
       }
       const c = await this.prisma.productCoupon.create({
         data: {
@@ -207,12 +214,24 @@ export class KloelProductSubResourceToolsService {
     }
   }
 
-  async toolDeleteCoupon(_workspaceId: string, args: UnknownRecord) {
-    if (!args.couponId) {
-      return { success: false, error: 'couponId required' };
+  async toolDeleteCoupon(workspaceId: string, args: UnknownRecord) {
+    let couponId = this.str(args.couponId);
+    // Support deletion by coupon code
+    if (!couponId && args.couponCode) {
+      const c = await this.prisma.productCoupon.findFirst({
+        where: {
+          code: this.str(args.couponCode),
+          product: { workspaceId },
+        },
+        select: { id: true },
+      });
+      couponId = c?.id ?? '';
+    }
+    if (!couponId) {
+      return { success: false, error: 'Cupom nao encontrado. Informe o codigo ou ID do cupom.' };
     }
     try {
-      await this.prisma.productCoupon.delete({ where: { id: this.str(args.couponId) } });
+      await this.prisma.productCoupon.delete({ where: { id: couponId } });
       return { success: true };
     } catch (err: unknown) {
       return { success: false, error: err instanceof Error ? err.message : 'Erro' };
