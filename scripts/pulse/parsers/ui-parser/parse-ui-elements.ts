@@ -10,10 +10,7 @@ import { extractHookDestructures } from '../hook-registry';
 import { walkFiles } from '../utils';
 import { readTextFile } from '../../safe-fs';
 import { getFrontendSourceDirs } from '../../frontend-roots';
-import {
-  deriveUnitValue,
-  deriveZeroValue,
-} from '../../dynamic-reality-kernel/catalog-arithmetic';
+import { deriveUnitValue, deriveZeroValue } from '../../dynamic-reality-kernel/catalog-arithmetic';
 import { discoverSourceExtensionsFromObservedTypescript } from '../../dynamic-reality-kernel/token-evidence';
 import { extractLabel, extractComponent, isTestOrSpecFile } from './text-and-string-utils';
 import { extractJSXHandler, expandInlineHandler, DOM_HANDLER_PROPS } from './handler-utils';
@@ -25,6 +22,54 @@ import {
   resolveToggleHandler,
   buildElement,
 } from './semantic-and-api-utils';
+
+function findJSXOpeningTagStart(lines: string[], idx: number): number {
+  const limit = Math.max(deriveZeroValue(), idx - 12);
+  for (let i = idx; i >= limit; i -= deriveUnitValue()) {
+    const trimmed = lines[i].trimStart();
+    if (trimmed.startsWith('</')) {
+      continue;
+    }
+    if (trimmed.includes('<')) {
+      return i;
+    }
+  }
+  return idx;
+}
+
+function hasJSXTagClose(line: string): boolean {
+  let braceDepth = deriveZeroValue();
+  for (const char of line) {
+    if (char === '{') {
+      braceDepth += deriveUnitValue();
+      continue;
+    }
+    if (char === '}') {
+      braceDepth = Math.max(deriveZeroValue(), braceDepth - deriveUnitValue());
+      continue;
+    }
+    if (char === '>' && braceDepth === deriveZeroValue()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function findJSXOpeningTagEnd(lines: string[], idx: number): number {
+  const limit = Math.min(lines.length - deriveUnitValue(), idx + 12);
+  for (let i = idx; i <= limit; i += deriveUnitValue()) {
+    if (hasJSXTagClose(lines[i])) {
+      return i;
+    }
+  }
+  return idx;
+}
+
+function readJSXOpeningTag(lines: string[], idx: number): string {
+  const start = findJSXOpeningTagStart(lines, idx);
+  const end = findJSXOpeningTagEnd(lines, idx);
+  return lines.slice(start, end + deriveUnitValue()).join(' ');
+}
 
 export function parseUIElements(config: PulseConfig, hookRegistry?: HookRegistry): UIElement[] {
   const elements: UIElement[] = [];
@@ -62,6 +107,7 @@ export function parseUIElements(config: PulseConfig, hookRegistry?: HookRegistry
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
+        const openingTag = readJSXOpeningTag(lines, i);
 
         const onClickHandler = extractJSXHandler(line, 'onClick');
         if (onClickHandler) {
@@ -76,14 +122,14 @@ export function parseUIElements(config: PulseConfig, hookRegistry?: HookRegistry
             apiImportsInFile,
             apiModuleMap,
           });
-          const label = extractLabel(line, lines, i);
+          const label = extractLabel(openingTag, lines, i);
           const component = extractComponent(lines, i);
 
           elements.push(
             buildElement(
               relFile,
               i + deriveUnitValue(),
-              hasButtonSemantics(line) ? 'button' : 'clickable',
+              hasButtonSemantics(openingTag) ? 'button' : 'clickable',
               label,
               handler,
               resolved,
@@ -154,7 +200,7 @@ export function parseUIElements(config: PulseConfig, hookRegistry?: HookRegistry
           );
         }
 
-        if (hasToggleSemantics(line)) {
+        if (hasToggleSemantics(openingTag)) {
           const handlerExpr = resolveToggleHandler(line);
           if (handlerExpr) {
             const handler = expandInlineHandler(handlerExpr.trim(), lines, i);
@@ -174,7 +220,7 @@ export function parseUIElements(config: PulseConfig, hookRegistry?: HookRegistry
                 relFile,
                 i + deriveUnitValue(),
                 'toggle',
-                extractLabel(line, lines, i),
+                extractLabel(openingTag, lines, i),
                 handler,
                 resolved,
                 extractComponent(lines, i),
