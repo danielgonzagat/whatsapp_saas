@@ -89,9 +89,6 @@ export class ConsolidationService {
     events: readonly SpineEventRef[],
     cycleAt: string,
   ): readonly EpisodicProposal[] {
-    if (working.length === 0) {
-      return [];
-    }
     const eventById = new Map(events.map((e) => [e.eventId, e]));
     const out: EpisodicProposal[] = [];
     for (const item of working) {
@@ -127,9 +124,6 @@ export class ConsolidationService {
     episodes: readonly EpisodicProposal[],
     cycleAt: string,
   ): readonly ConsolidatedProposal[] {
-    if (episodes.length < 3) {
-      return [];
-    }
     const byPattern = new Map<string, EpisodicProposal[]>();
     for (const ep of episodes) {
       const pattern = this.extractPattern(ep.summary);
