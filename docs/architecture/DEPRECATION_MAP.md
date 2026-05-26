@@ -68,6 +68,28 @@
 | `formatMoney` in `frontend/components/kloel/marketing/WhatsAppExperience.helpers.ts` + `frontend/components/kloel/settings/crm-settings-section.helpers.ts` + `frontend-admin/app/(admin)/produtos/page.helpers.ts` | (stays local — different fallback semantics: Intl.NumberFormat vs 'R$ 0,00' vs '—') | — | ⏸ kept local |
 | `readText` in `common/utils.ts` + `member-area/member-area.helpers.ts` + `meta/read-model/meta-read-helpers.ts` | (stays local — different return types: string vs string\|undefined; different non-string handling) | — | ⏸ kept local |
 | `clamp` in `kloel/evol/types.ts` (tuple-domain signature `clamp([min,max], value)`) | (stays local — different operator from `common/math.ts::clamp(value, min, max)`) | — | ⏸ kept local |
+| 3 Autopilot leftover types (`MoneyReport`/`QueueStats`/`RevenueEvent`) in `frontend/app/(main)/autopilot/page.ui.tsx` | `frontend/app/(main)/autopilot/page.types.ts` | 2026-05-26 | ✅ migrated (re-export; aligns with the existing 9-Autopilot* pattern) |
+| Orphan duplicate `useCheckoutExperienceHelpers.ts` (no-dot) | `useCheckoutExperience.helpers.ts` (with dot) | 2026-05-26 | ✅ removed (zero importers; 104 lines deleted) |
+| Orphan `cia/page.sections.tsx` (245L) | `cia/components/{CiaHeader,CiaStats,CiaNow,CiaMoneyEvents,CiaInsights}.tsx` | 2026-05-26 | ✅ removed (all 5 exports had standalone twins; zero importers) |
+| `formatCurrency`/`formatPhaseLabel`/`formatTs`/`workItemStateBadgeVariant`/`PATTERN_RE_2` in `cia/page.helpers.ts` | `cia/utils.ts` | 2026-05-26 | ✅ migrated (re-export; utils is canonical with 'use client' + 6 consumers) |
+| `createClientRequestId` in `components/kloel/dashboard/KloelDashboard.helpers.ts` | `components/kloel/chat-container.helpers.ts` | 2026-05-26 | ✅ migrated (re-export from parent-dir canonical) |
+| `AutopilotImpactLike` in `components/kloel/autopilot/AutopilotDecisionLog.tsx` | `components/kloel/autopilot/AutopilotPlanInspector.tsx` | 2026-05-26 | ✅ migrated (re-export; PlanInspector is canonical with 3 sibling importers) |
+| `BrazilianBank` type in `hooks/useBrazilianBanks.ts` | `data/brazilian-banks.ts` | 2026-05-26 | ✅ migrated (re-export; data module is canonical) |
+| `ChannelRealData` in marketing `WhatsAppExperience.{panel-tokens,controller}.ts` | `components/kloel/marketing/MarketingTypes.ts` | 2026-05-26 | ✅ migrated (re-export; MarketingTypes is canonical) |
+| `EmailTemplatePreset` in `hooks/useEmailPresets.ts` | `components/kloel/marketing/MarketingTypes.ts` | 2026-05-26 | ✅ migrated (re-export) |
+| `RTierDelta` + `commercialImpactWeight` + `tierToNumber` in `kloel/evol/evol.types.ts` | `kloel/evol/types.ts` | 2026-05-26 | ✅ migrated (re-export; types.ts has 13+ importers vs 3) |
+| 9 WhatsApp tool `Args` interfaces in `kloel/kloel-whatsapp-tools.helpers.ts` | `kloel/kloel-tool-executor.types.ts` | 2026-05-26 | ✅ migrated (re-export; executor.types is canonical with 7 importers) |
+| `RecommendedChannel` + `withinWindow` + `median` in `kloel/offer/offer.types.ts` | `kloel/insight/insight.types.ts` | 2026-05-26 | ✅ migrated (re-export; insight is canonical, 5 wow/* importers already use it) |
+| `MindPolicyChooser` in `kloel/mind-{commercial,recovery}-decision-resolvers.ts` | `kloel/mind-catalog-decision-resolvers.ts` | 2026-05-26 | ✅ migrated (re-export; catalog is canonical, its spec already imports from it) |
+| `unwrapApiPayload` inline in `components/kloel/products/ProductNerveCenterIATab.hooks.ts` | `components/kloel/products/product-nerve-center.shared.tsx` | 2026-05-26 | ✅ migrated (import; shared canonical with 8 sibling importers) |
+| 3+ `SessionStatus` shapes in `whatsapp/providers/{provider-registry,waha-types,whatsapp-api.provider}.types.ts` | (stays local — divergent state-unions per provider; verified 2026-05-26) | — | ⏸ kept local |
+| `PulseTruthSnapshotService` class in `kloel/{abi,pulse-gates}/pulse-truth-snapshot.service.ts` | (stays local — different snapshot shapes and signal sources; both wired into their own NestJS module) | — | ⏸ kept local |
+| `AttributionGuardResult` + `AttributionViolation` in `kloel/commem/commem.types.ts` + `kloel/wisdom/wisdom-attribution.guard.ts` | (stays local — divergent shapes per domain) | — | ⏸ kept local |
+| `normalizeJsonObjExt` + `resolveTimestampExt` in `whatsapp/whatsapp-{catchup,service}.helpers.ts` | (stays local — divergent JSON-string handling and field fallbacks) | — | ⏸ kept local |
+| `TONE_OPTIONS` in `kloel/mind-decision-baselines.ts` + 2 frontend files | (stays local — completely different shapes: enum array vs labeled-tuple vs i18n-key strings) | — | ⏸ kept local |
+| `pollUntil` in `worker/utils/async-sequence.ts` + `backend/src/common/async-sequence.ts` | (stays local — cross-workspace mirror; differs only in TS assertion noise) | — | ⏸ kept local |
+| Local `isRecord` + `toErrorMessage` in `frontend/lib/kloel-conversations.ts` | (stays local — would create lib→components reverse-dependency) | — | ⏸ kept local |
+| `CheckoutFormDraft` / draft helpers in `frontend/app/(checkout)/hooks/useCheckoutExperienceSocial.draft.ts` | (stays local — bound to `CheckoutExperienceForm` (social-helpers) vs `CheckoutExperienceFormState` (.types); unifying requires unified form type) | — | ⏸ kept local |
 
 **Status legend:**
 - ✅ migrated (re-export): local export is now a re-export from canonical; callers unchanged, structure consolidated
