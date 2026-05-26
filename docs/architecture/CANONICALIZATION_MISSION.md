@@ -26,7 +26,7 @@ that's understandable, navigable, and production-ready.)
 | 4 | [EVENT_TAXONOMY.md](EVENT_TAXONOMY.md) | 498 | `w5-event-taxonomy` (37k events) | ✅ |
 | 5 | [SERVICE_CATALOG.md](SERVICE_CATALOG.md) | 1130 | `w5-service-catalog` (33k events) | ✅ |
 | 6 | [DUPLICATION_REGISTER.md](DUPLICATION_REGISTER.md) | 670 | `w5-duplication-register` (72k events) | ✅ |
-| 7 | [ANTI_REGRESSION_GATES.md](ANTI_REGRESSION_GATES.md) | — | `w6-anti-regression-gates` (in flight) | ⏳ |
+| 7 | [ANTI_REGRESSION_GATES.md](ANTI_REGRESSION_GATES.md) | 420 | `w6-anti-regression-gates` (20k events) | ✅ |
 
 Plus the migration tracker:
 
@@ -43,7 +43,7 @@ Plus the migration tracker:
 | 4 — CANONICAL DEFINITION | Pick canonical name/service/event per group | ✅ VOCABULARY + DOMAINS |
 | 5 — SAFE MIGRATION | Apply small, reversible, tested changes | ✅ 13+ semantic migrations landed (see DEPRECATION_MAP) |
 | 6 — CANONICAL DOCUMENTATION | Create the 7 artifacts | ✅ this index |
-| 7 — ANTI-REGRESSION GATES | Block reintroduction of legacy aliases | ⏳ in flight (w6) |
+| 7 — ANTI-REGRESSION GATES | Block reintroduction of legacy aliases | ✅ ANTI_REGRESSION_GATES.md |
 
 ## PI subagent ledger (this mission)
 
@@ -70,7 +70,7 @@ Plus the migration tracker:
 | w5-event-taxonomy | 5 | EVENT_TAXONOMY.md | 37k | ✅ |
 | w5-service-catalog | 5 | SERVICE_CATALOG.md | 33k | ✅ |
 | w5-duplication-register | 5 | DUPLICATION_REGISTER.md | 72k | ✅ |
-| w6-anti-regression-gates | 6 | ANTI_REGRESSION_GATES.md | — | ⏳ |
+| w6-anti-regression-gates | 6 | ANTI_REGRESSION_GATES.md | 20k | ✅ |
 
 22 PI subagent deliveries; >570k events of investigation; all hardened by
 orchestrator (read full transcript → independent grep verification →
@@ -106,7 +106,24 @@ The mission is considered complete when:
 10. ✅ Documentação suficiente para uma IA futura entender o sistema sem
     depender de memória externa — this index + the 7 artifacts + all
     Wave 1-4 audits in docs/audits/
-11. ⏳ Regras anti-regressão — ANTI_REGRESSION_GATES.md (w6 in flight)
+11. ✅ Regras anti-regressão — ANTI_REGRESSION_GATES.md
 
-The mission is **substantially complete** (10/11 deliverables landed).
-The 11th (anti-regression gates) is in active delivery by w6-anti-regression-gates.
+The mission is **COMPLETE** (11/11 definition-of-done items landed).
+
+## What this means for the next agent (human or AI)
+
+Open the 7 artifacts in this order to fully load the system into your head:
+
+1. CANONICAL_DOMAINS.md — the map of where things live
+2. CANONICAL_VOCABULARY.md — the canonical names + banned aliases
+3. CAPABILITY_MAP.md — what the system actually does
+4. EVENT_TAXONOMY.md — every signal the system emits / consumes
+5. SERVICE_CATALOG.md — every service with its boundary
+6. DUPLICATION_REGISTER.md — what's still semantically duplicated
+7. ANTI_REGRESSION_GATES.md — the gates that keep entropy out
+
+After that, the migration tracker DEPRECATION_MAP.md tells you what
+already shipped and which migrations are still pending (per DUP-id).
+
+All Wave 1–4 raw audits remain under `docs/audits/WAVE*.md` for
+deeper context.
