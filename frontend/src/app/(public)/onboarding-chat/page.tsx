@@ -1,5 +1,6 @@
 'use client';
-import { colors } from '@/lib/design-tokens';
+
+import { colors, typography, motion as dtMotion } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 
@@ -8,15 +9,18 @@ import {
   KloelLoadingState,
   KloelMushroomVisual,
 } from '@/components/kloel/KloelBrand';
+import { ErrorBoundary } from '@/components/kloel/ErrorBoundary';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { tokenStorage } from '@/lib/api';
+import { onboardingApi } from '@/lib/api/onboarding';
 import { apiUrl } from '@/lib/http';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, Bot, CheckCircle2, LogIn, MessageSquare, Send, User } from 'lucide-react';
+import { ArrowRight, Bot, CheckCircle2, MessageSquare, Send, User } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { mutate } from 'swr';
+import { OnboardingChatHero } from './OnboardingChatHero';
 
 interface Message {
   id: string;
@@ -38,6 +42,14 @@ function normalizeOnboardingRole(role: string | null): string | null {
   return Object.prototype.hasOwnProperty.call(ROLE_LABELS, role) ? role : null;
 }
 
+/** SSR-safe UUID generation. */
+function safeRandomUUID(): string {
+  if (typeof window !== 'undefined' && typeof crypto?.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 11)}`;
+}
+
 function OnboardingChatContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -46,7 +58,7 @@ function OnboardingChatContent() {
   const [storedRole, setStoredRole] = useState<string | null>(null);
   const selectedRole = queryRole || storedRole;
 
-  // Usa workspaceId da sessão; sem sessão, força login
+  // Usa workspaceId da sessão
   const [workspaceId, setWorkspaceId] = useState<string | null>(null);
   const startedRef = useRef(false);
   const roleSeededRef = useRef(false);
@@ -61,16 +73,8 @@ function OnboardingChatContent() {
   useEffect(() => {
     if (isAuthenticated && workspace?.id) {
       setWorkspaceId(workspace.id);
-      return;
     }
-
-    if (!isAuthenticated) {
-      const callbackPath = queryRole
-        ? `/onboarding-chat?role=${encodeURIComponent(queryRole)}`
-        : '/onboarding-chat';
-      router.push(`/login?callbackUrl=${encodeURIComponent(callbackPath)}`);
-    }
-  }, [isAuthenticated, queryRole, workspace, router]);
+  }, [isAuthenticated, workspace]);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -87,7 +91,10 @@ function OnboardingChatContent() {
 
   // Scroll para a última mensagem
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const el = messagesEndRef.current;
+    if (el && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages.length]);
 
   // Redirecionar para conexão do WhatsApp ao concluir onboarding
@@ -101,7 +108,7 @@ function OnboardingChatContent() {
     setMessages((prev) => [
       ...prev,
       {
-        id: crypto.randomUUID(),
+        id: safeRandomUUID(),
         role,
         content,
         timestamp: new Date(),
@@ -235,23 +242,17 @@ function OnboardingChatContent() {
         addMessage('assistant', assistantMessage);
       }
 
-      // Verificar se o onboarding foi concluído
-      const statusHeaders: HeadersInit = {};
-      if (accessToken) {
-        statusHeaders.Authorization = `Bearer ${accessToken}`;
-      }
-      const statusRes = await fetch(apiUrl(`/kloel/onboarding/${workspaceId}/status`), {
-        headers: statusHeaders,
-      });
-      const statusData: { messagesCount?: number; completed?: boolean } = await statusRes.json();
-      setStatus(statusData);
-
-      if (statusData.completed) {
-        addMessage(
-          'assistant',
-          'Perfeito. Agora vamos conectar seu WhatsApp — vou abrir o QR Code na próxima tela.',
-        );
-        setCompleted(true);
+      // Verificar se o onboarding foi concluído (via onboardingApi)
+      const statusResult = await onboardingApi.getOnboardingStatus(workspaceId);
+      if (statusResult.data) {
+        setStatus(statusResult.data);
+        if (statusResult.data.completed) {
+          addMessage(
+            'assistant',
+            'Perfeito. Agora vamos conectar seu WhatsApp — vou abrir o QR Code na próxima tela.',
+          );
+          setCompleted(true);
+        }
       }
     } catch (error) {
       console.error('Erro ao enviar mensagem:', error);
@@ -262,7 +263,7 @@ function OnboardingChatContent() {
     inputRef.current?.focus();
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
@@ -270,14 +271,7 @@ function OnboardingChatContent() {
   };
 
   const goToDashboard = () => {
-    if (!workspaceId) {
-      return;
-    }
     router.push('/whatsapp');
-  };
-
-  const goToLogin = () => {
-    router.push('/login');
   };
 
   // Show loading while checking auth status
@@ -285,81 +279,174 @@ function OnboardingChatContent() {
     return <OnboardingLoading />;
   }
 
+  // Unauthenticated landing — render hero instead of redirecting
+  if (!isAuthenticated) {
+    const callbackEncoded = encodeURIComponent(
+      queryRole
+        ? `/onboarding-chat?role=${encodeURIComponent(queryRole)}`
+        : '/onboarding-chat',
+    );
+    return <OnboardingChatHero loginUrl={`/login?callbackUrl=${callbackEncoded}`} />;
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-teal-900 to-gray-900 flex flex-col">
+    <div
+      style={{
+        minHeight: '100vh',
+        background: colors.background.void,
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
       {/* Header */}
-      <header className="p-4 border-b border-white/10">
-        <div className="max-w-4xl mx-auto flex items-center gap-3">
+      <header
+        style={{
+          padding: '16px',
+          borderBottom: `1px solid ${colors.border.void}`,
+        }}
+      >
+        <div
+          style={{
+            maxWidth: '1024px',
+            margin: '0 auto',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+          }}
+        >
           <div>
             <Link href="/" style={{ color: 'inherit', textDecoration: 'none', cursor: 'pointer' }}>
               <KloelBrandLockup markSize={22} fontSize={18} fontWeight={600} />
             </Link>
-            <p className="text-base text-gray-400">{kloelT(`Configuração Inteligente`)}</p>
+            <p
+              style={{
+                fontFamily: typography.fontFamily.sans,
+                fontSize: typography.fontSize.bodySmall[0],
+                color: colors.text.muted,
+                lineHeight: typography.fontSize.bodySmall[1].lineHeight,
+              }}
+            >
+              {kloelT(`Configuração Inteligente`)}
+            </p>
           </div>
-          <div className="ml-auto flex items-center gap-4">
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 16 }}>
             {(status?.messagesCount ?? 0) > 0 && (
-              <div className="flex items-center gap-2 text-base text-gray-400">
-                <MessageSquare className="w-4 h-4" aria-hidden="true" />
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontFamily: typography.fontFamily.sans,
+                  fontSize: typography.fontSize.bodySmall[0],
+                  color: colors.text.muted,
+                }}
+              >
+                <MessageSquare style={{ width: 16, height: 16 }} aria-hidden="true" />
                 {status?.messagesCount} mensagens
               </div>
             )}
-            {!isAuthenticated && (
-              <button
-                type="button"
-                onClick={goToLogin}
-                className="flex items-center gap-2 text-base text-gray-400 hover:text-white transition px-3 py-1.5 rounded-lg border border-white/20 hover:border-white/40"
+            {userName || userEmail ? (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  fontFamily: typography.fontFamily.sans,
+                  fontSize: typography.fontSize.bodySmall[0],
+                  color: colors.ember.primary,
+                }}
               >
-                <LogIn className="w-4 h-4" aria-hidden="true" />
-                <span>{kloelT(`Entrar`)}</span>
-              </button>
-            )}
-            {isAuthenticated && (userName || userEmail) && (
-              <div className="flex items-center gap-2 text-base text-green-400">
-                <CheckCircle2 className="w-4 h-4" aria-hidden="true" />
+                <CheckCircle2 style={{ width: 16, height: 16 }} aria-hidden="true" />
                 <span>{userName || userEmail}</span>
               </div>
-            )}
+            ) : null}
           </div>
         </div>
       </header>
 
       {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto p-4">
-        <div className="max-w-4xl mx-auto space-y-4">
-          <AnimatePresence mode={kloelT(`popLayout`)}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
+        <div style={{ maxWidth: '1024px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <AnimatePresence mode="popLayout">
             {messages.map((message) => (
               <motion.div
                 key={message.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                className={`flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}
+                style={{
+                  display: 'flex',
+                  gap: 12,
+                  flexDirection: message.role === 'user' ? 'row-reverse' : 'row',
+                }}
               >
                 {/* Avatar */}
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                    message.role === 'assistant'
-                      ? 'bg-gradient-to-br from-teal-500 to-emerald-500'
-                      : 'bg-blue-500'
-                  }`}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    background:
+                      message.role === 'assistant'
+                        ? colors.ember.primary
+                        : colors.background.elevated,
+                  }}
                 >
                   {message.role === 'assistant' ? (
-                    <Bot className="w-5 h-5 text-white" aria-hidden="true" />
+                    <Bot
+                      style={{ width: 20, height: 20, color: colors.text.inverted }}
+                      aria-hidden="true"
+                    />
                   ) : (
-                    <User className="w-5 h-5 text-white" aria-hidden="true" />
+                    <User
+                      style={{ width: 20, height: 20, color: colors.text.silver }}
+                      aria-hidden="true"
+                    />
                   )}
                 </div>
 
                 {/* Message Bubble */}
                 <div
-                  className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                    message.role === 'assistant'
-                      ? 'bg-white/10 text-white'
-                      : 'bg-blue-500 text-white'
-                  }`}
+                  style={{
+                    maxWidth: '80%',
+                    borderRadius: 12,
+                    padding: '12px 16px',
+                    background:
+                      message.role === 'assistant'
+                        ? colors.background.surface
+                        : colors.ember.primary,
+                    border:
+                      message.role === 'assistant'
+                        ? `1px solid ${colors.border.space}`
+                        : 'none',
+                  }}
                 >
-                  <p className="whitespace-pre-wrap">{message.content}</p>
-                  <p className="text-base opacity-50 mt-1">
+                  <p
+                    style={{
+                      fontFamily: typography.fontFamily.sans,
+                      fontSize: typography.fontSize.body[0],
+                      color: colors.text.silver,
+                      lineHeight: typography.fontSize.body[1].lineHeight,
+                      whiteSpace: 'pre-wrap',
+                      margin: 0,
+                    }}
+                  >
+                    {message.content}
+                  </p>
+                  <p
+                    style={{
+                      fontFamily: typography.fontFamily.mono,
+                      fontSize: typography.fontSize.caption[0],
+                      opacity: 0.5,
+                      marginTop: 4,
+                      marginBottom: 0,
+                      color: colors.text.silver,
+                    }}
+                  >
                     {message.timestamp.toLocaleTimeString('pt-BR', {
                       hour: '2-digit',
                       minute: '2-digit',
@@ -370,20 +457,43 @@ function OnboardingChatContent() {
             ))}
           </AnimatePresence>
 
-          {/* Loading indicator - Enhanced with different states */}
+          {/* Loading indicator */}
           {loading && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex">
-              <div className="bg-white/10 rounded-2xl px-4 py-4 border border-white/10">
-                <div className="flex items-center gap-3">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex' }}>
+              <div
+                style={{
+                  background: colors.background.surface,
+                  borderRadius: 12,
+                  padding: '16px',
+                  border: `1px solid ${colors.border.space}`,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <KloelMushroomVisual
                     size={28}
                     traceColor={colors.text.silver}
                     animated
                     spores="animated"
                   />
-                  <span className="text-gray-300">{kloelT(`kloel está pensando...`)}</span>
+                  <span
+                    style={{
+                      fontFamily: typography.fontFamily.sans,
+                      fontSize: typography.fontSize.body[0],
+                      color: colors.text.silver,
+                    }}
+                  >
+                    {kloelT(`kloel está pensando...`)}
+                  </span>
                 </div>
-                <p className="text-base text-gray-500 mt-2">
+                <p
+                  style={{
+                    fontFamily: typography.fontFamily.sans,
+                    fontSize: typography.fontSize.bodySmall[0],
+                    color: colors.text.muted,
+                    marginTop: 8,
+                    marginBottom: 0,
+                  }}
+                >
                   {kloelT(`A IA esta configurando sua conta automaticamente`)}
                 </p>
               </div>
@@ -395,13 +505,45 @@ function OnboardingChatContent() {
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-2xl p-6 text-center"
+              style={{
+                background: colors.ember.bg,
+                border: `1px solid ${colors.ember.glow10}`,
+                borderRadius: 12,
+                padding: 24,
+                textAlign: 'center',
+              }}
             >
-              <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto mb-4" aria-hidden="true" />
-              <h2 className="text-xl font-bold text-white mb-2">
+              <CheckCircle2
+                style={{
+                  width: 48,
+                  height: 48,
+                  color: colors.ember.primary,
+                  margin: '0 auto 16px',
+                }}
+                aria-hidden="true"
+              />
+              <h2
+                style={{
+                  fontFamily: typography.fontFamily.sans,
+                  fontSize: typography.fontSize.h3[0],
+                  fontWeight: typography.fontSize.h3[1].fontWeight,
+                  color: colors.text.silver,
+                  marginBottom: 8,
+                  marginTop: 0,
+                }}
+              >
                 {kloelT(`Configuracao Concluida!`)}
               </h2>
-              <p className="text-gray-300 mb-6">
+              <p
+                style={{
+                  fontFamily: typography.fontFamily.sans,
+                  fontSize: typography.fontSize.body[0],
+                  color: colors.text.muted,
+                  lineHeight: typography.fontSize.body[1].lineHeight,
+                  marginBottom: 24,
+                  marginTop: 0,
+                }}
+              >
                 {kloelT(
                   `Sua conta está pronta. Agora você pode conectar seu WhatsApp e começar a vender!`,
                 )}
@@ -409,10 +551,30 @@ function OnboardingChatContent() {
               <button
                 type="button"
                 onClick={goToDashboard}
-                className="bg-gradient-to-r from-teal-500 to-emerald-500 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 mx-auto hover:opacity-90 transition"
+                style={{
+                  fontFamily: typography.fontFamily.sans,
+                  fontSize: typography.fontSize.body[0],
+                  fontWeight: typography.fontWeight.medium,
+                  background: colors.ember.primary,
+                  color: colors.text.silver,
+                  border: 'none',
+                  borderRadius: 12,
+                  padding: '12px 24px',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  transition: `opacity ${dtMotion.duration.fast} ${dtMotion.easing.default}`,
+                }}
+                onMouseEnter={(e) => {
+                  (e.target as HTMLButtonElement).style.opacity = '0.9';
+                }}
+                onMouseLeave={(e) => {
+                  (e.target as HTMLButtonElement).style.opacity = '1';
+                }}
               >
                 {kloelT(`Ir para o Dashboard`)}
-                <ArrowRight className="w-5 h-5" aria-hidden="true" />
+                <ArrowRight style={{ width: 20, height: 20 }} aria-hidden="true" />
               </button>
             </motion.div>
           )}
@@ -423,33 +585,93 @@ function OnboardingChatContent() {
 
       {/* Input Area */}
       {!completed && (
-        <div className="border-t border-white/10 p-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex gap-3">
+        <div
+          style={{
+            borderTop: `1px solid ${colors.border.void}`,
+            padding: '16px',
+          }}
+        >
+          <div style={{ maxWidth: '1024px', margin: '0 auto' }}>
+            <div style={{ display: 'flex', gap: 12 }}>
               <input
                 ref={inputRef}
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyPress={handleKeyPress}
+                onKeyDown={handleKeyDown}
                 placeholder={kloelT(`Digite sua mensagem...`)}
                 disabled={loading}
-                className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-50"
+                style={{
+                  flex: 1,
+                  fontFamily: typography.fontFamily.sans,
+                  fontSize: typography.fontSize.body[0],
+                  background: colors.background.surface,
+                  border: `1px solid ${colors.border.space}`,
+                  borderRadius: 12,
+                  padding: '12px 16px',
+                  color: colors.text.silver,
+                  outline: 'none',
+                  transition: `box-shadow ${dtMotion.duration.fast} ${dtMotion.easing.default}`,
+                  opacity: loading ? 0.5 : 1,
+                }}
+                onFocus={(e) => {
+                  e.target.style.boxShadow = `0 0 0 2px ${colors.ember.primary}`;
+                }}
+                onBlur={(e) => {
+                  e.target.style.boxShadow = 'none';
+                }}
               />
               <button
                 type="button"
                 onClick={sendMessage}
                 disabled={loading || !input.trim()}
-                className="bg-gradient-to-r from-teal-500 to-emerald-500 text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 hover:opacity-90 transition disabled:opacity-50"
+                style={{
+                  fontFamily: typography.fontFamily.sans,
+                  fontSize: typography.fontSize.body[0],
+                  fontWeight: typography.fontWeight.medium,
+                  background: colors.ember.primary,
+                  color: colors.text.silver,
+                  border: 'none',
+                  borderRadius: 12,
+                  padding: '12px 24px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  transition: `opacity ${dtMotion.duration.fast} ${dtMotion.easing.default}`,
+                  opacity: loading || !input.trim() ? 0.5 : 1,
+                }}
+                onMouseEnter={(e) => {
+                  if (!loading && input.trim()) {
+                    (e.target as HTMLButtonElement).style.opacity = '0.9';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  (e.target as HTMLButtonElement).style.opacity = loading || !input.trim() ? '0.5' : '1';
+                }}
               >
                 {loading ? (
-                  <KloelMushroomVisual size={22} title="Enviando" traceColor={colors.text.silver} fit="icon" />
+                  <KloelMushroomVisual
+                    size={22}
+                    title="Enviando"
+                    traceColor={colors.text.silver}
+                    fit="icon"
+                  />
                 ) : (
-                  <Send className="w-5 h-5" aria-hidden="true" />
+                  <Send style={{ width: 20, height: 20 }} aria-hidden="true" />
                 )}
               </button>
             </div>
-            <p className="text-base text-gray-500 mt-2 text-center">
+            <p
+              style={{
+                fontFamily: typography.fontFamily.sans,
+                fontSize: typography.fontSize.bodySmall[0],
+                color: colors.text.muted,
+                marginTop: 8,
+                marginBottom: 0,
+                textAlign: 'center',
+              }}
+            >
               {kloelT(
                 `Converse naturalmente com a Kloel. Ela vai configurar sua conta automaticamente.`,
               )}
@@ -463,7 +685,16 @@ function OnboardingChatContent() {
 
 function OnboardingLoading() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-teal-900 to-gray-900 flex items-center justify-center px-4">
+    <div
+      style={{
+        minHeight: '100vh',
+        background: colors.background.void,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '0 16px',
+      }}
+    >
       <KloelLoadingState
         size={96}
         traceColor={colors.text.silver}
@@ -479,7 +710,9 @@ function OnboardingLoading() {
 export default function ConversationalOnboardingPage() {
   return (
     <Suspense fallback={<OnboardingLoading />}>
-      <OnboardingChatContent />
+      <ErrorBoundary>
+        <OnboardingChatContent />
+      </ErrorBoundary>
     </Suspense>
   );
 }
