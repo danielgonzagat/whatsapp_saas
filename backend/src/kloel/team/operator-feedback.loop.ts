@@ -57,7 +57,7 @@ export function buildFeedbackEntry(input: FeedbackInput): FeedbackEntry {
 export function feedbackToValence(
   entry: FeedbackEntry,
 ): AbiValence {
-  if (entry.accepted) return 'positive';
+  if (entry.accepted) {return 'positive';}
   return 'neutral';
 }
 
@@ -95,7 +95,7 @@ export function feedbackToSpineInput(
 export function computeOperatorAccuracy(
   feedbacks: readonly FeedbackEntry[],
 ): number {
-  if (feedbacks.length === 0) return 0;
+  if (feedbacks.length === 0) {return 0;}
   const accepted = feedbacks.filter((f) => f.accepted).length;
   return Math.round((accepted / feedbacks.length) * 100) / 100;
 }
@@ -138,7 +138,7 @@ export function extractFeedbackFromEvents(
           workspaceId: e.workspaceId ?? '',
           operatorId: e.entityRef!.entityId,
           ...(typeof p['operatorNote'] === 'string'
-            ? { operatorNote: p['operatorNote'] as string }
+            ? { operatorNote: p['operatorNote'] }
             : {}),
         };
       },

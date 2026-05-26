@@ -11,10 +11,10 @@ import { defaultValenceFor, isTerminalEvent, SpineEventRef } from './mind.types'
 @Injectable()
 export class ValenceTaggerService {
   public tag(event: SpineEventRef): SpineEventRef {
-    if (event.valence) return event;
-    if (!isTerminalEvent(event.eventName)) return event;
+    if (event.valence) {return event;}
+    if (!isTerminalEvent(event.eventName)) {return event;}
     const inferred = defaultValenceFor(event.eventName);
-    if (!inferred) return event;
+    if (!inferred) {return event;}
     return { ...event, valence: inferred };
   }
 

@@ -186,7 +186,7 @@ export class MindGuardContextBuilderService {
     baseContext: MindActionContext,
   ): Promise<boolean> {
     const externalPaymentId = this.readString(baseContext.paymentExternalId);
-    if (!externalPaymentId) return false;
+    if (!externalPaymentId) {return false;}
     const sale = await this.prisma.kloelSale.findFirst({
       where: {
         workspaceId,

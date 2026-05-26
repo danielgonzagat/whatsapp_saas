@@ -169,12 +169,12 @@ export class KloelBusinessConfigToolsService {
     }
     // Build fiscal/payment settings from extracted args
     const fiscalFields: Record<string, unknown> = {};
-    if (cnpj) fiscalFields.cnpj = cnpj;
-    if (cpf) fiscalFields.cpf = cpf;
-    if (cep) fiscalFields.cep = cep;
-    if (bankCode) fiscalFields.bankCode = bankCode;
-    if (agency) fiscalFields.agency = agency;
-    if (account) fiscalFields.account = account;
+    if (cnpj) {fiscalFields.cnpj = cnpj;}
+    if (cpf) {fiscalFields.cpf = cpf;}
+    if (cep) {fiscalFields.cep = cep;}
+    if (bankCode) {fiscalFields.bankCode = bankCode;}
+    if (agency) {fiscalFields.agency = agency;}
+    if (account) {fiscalFields.account = account;}
 
     const hasFiscal = Object.keys(fiscalFields).length > 0;
     const hasBiz = !!(description || segment);
@@ -190,7 +190,7 @@ export class KloelBusinessConfigToolsService {
               ...currentSettings,
               ...(description ? { businessDescription: description } : {}),
               ...(segment ? { businessSegment: segment } : {}),
-              ...(hasFiscal ? { fiscal: { ...((currentSettings as Record<string, unknown>)?.fiscal as Record<string, unknown> || {}), ...fiscalFields } } : {}),
+              ...(hasFiscal ? { fiscal: { ...((currentSettings)?.fiscal as Record<string, unknown> || {}), ...fiscalFields } } : {}),
             } as Prisma.InputJsonValue,
             ...(businessName ? { name: businessName } : {}),
           },
@@ -375,15 +375,15 @@ export class KloelBusinessConfigToolsService {
         const ws = await tx.workspace.findUnique({ where: { id: workspaceId } });
         const settings = (ws?.providerSettings as Record<string, unknown>) || {};
         const affiliate = (settings.affiliate as Record<string, unknown>) || {};
-        if (args.participate !== undefined) affiliate.participate = args.participate;
-        if (args.visibleInStore !== undefined) affiliate.visibleInStore = args.visibleInStore;
-        if (args.autoApproval !== undefined) affiliate.autoApproval = args.autoApproval;
-        if (args.accessData !== undefined) affiliate.accessData = args.accessData;
-        if (args.accessAbandonments !== undefined) affiliate.accessAbandonments = args.accessAbandonments;
-        if (args.commissionFirstInstallment !== undefined) affiliate.commissionFirstInstallment = args.commissionFirstInstallment;
-        if (args.attributionModel) affiliate.attributionModel = args.attributionModel;
-        if (args.cookieDays !== undefined) affiliate.cookieDays = args.cookieDays;
-        if (args.commissionPercent !== undefined) affiliate.commissionPercent = args.commissionPercent;
+        if (args.participate !== undefined) {affiliate.participate = args.participate;}
+        if (args.visibleInStore !== undefined) {affiliate.visibleInStore = args.visibleInStore;}
+        if (args.autoApproval !== undefined) {affiliate.autoApproval = args.autoApproval;}
+        if (args.accessData !== undefined) {affiliate.accessData = args.accessData;}
+        if (args.accessAbandonments !== undefined) {affiliate.accessAbandonments = args.accessAbandonments;}
+        if (args.commissionFirstInstallment !== undefined) {affiliate.commissionFirstInstallment = args.commissionFirstInstallment;}
+        if (args.attributionModel) {affiliate.attributionModel = args.attributionModel;}
+        if (args.cookieDays !== undefined) {affiliate.cookieDays = args.cookieDays;}
+        if (args.commissionPercent !== undefined) {affiliate.commissionPercent = args.commissionPercent;}
         await tx.workspace.update({
           where: { id: workspaceId },
           data: { providerSettings: { ...settings, affiliate } as Prisma.InputJsonValue },

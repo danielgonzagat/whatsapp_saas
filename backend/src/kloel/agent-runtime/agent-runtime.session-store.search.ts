@@ -274,10 +274,10 @@ function computeHygieneState(ageMs: number, ttlMs: number): AgentRuntimeHygieneS
     return 'fresh';
   }
   const ratio = ageMs / ttlMs;
-  if (ratio < 0.3) return 'fresh';
-  if (ratio < 0.6) return 'aging';
-  if (ratio < 0.9) return 'stale';
-  if (ratio < 1.0) return 'expired';
+  if (ratio < 0.3) {return 'fresh';}
+  if (ratio < 0.6) {return 'aging';}
+  if (ratio < 0.9) {return 'stale';}
+  if (ratio < 1.0) {return 'expired';}
   return 'retired';
 }
 

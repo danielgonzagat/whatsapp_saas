@@ -66,7 +66,7 @@ describe('SpineEmitterService', () => {
 
   it('recentEvents(limit) returns the tail slice', async () => {
     const svc = build();
-    for (let i = 0; i < 10; i += 1) await svc.emit({ ...baseInput, payload: { i } });
+    for (let i = 0; i < 10; i += 1) {await svc.emit({ ...baseInput, payload: { i } });}
     const last3 = svc.recentEvents(3);
     expect(last3).toHaveLength(3);
     expect(last3[2]?.payload?.['i']).toBe(9);
@@ -131,7 +131,7 @@ describe('SpineEmitterService', () => {
   it('ringSize tracks buffered count', async () => {
     const svc = build({ ringCapacity: 5 });
     expect(svc.ringSize()).toBe(0);
-    for (let i = 0; i < 3; i += 1) await svc.emit(baseInput);
+    for (let i = 0; i < 3; i += 1) {await svc.emit(baseInput);}
     expect(svc.ringSize()).toBe(3);
   });
 

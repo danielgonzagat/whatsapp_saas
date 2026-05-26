@@ -39,10 +39,10 @@ export class AssetRegistry {
 
     for (const event of wsEvents) {
       const signal = this.resolveSignal(event);
-      if (!signal) continue;
+      if (!signal) {continue;}
 
       const asset = this.upsertAsset(wsAssets, input.workspaceId, signal, event.eventId, nowIso);
-      if (asset) added.push(asset);
+      if (asset) {added.push(asset);}
     }
 
     return added;
@@ -50,7 +50,7 @@ export class AssetRegistry {
 
   private resolveSignal(event: EvidenceInput['events'][number]): AssetSignal | undefined {
     const staticSignal = ASSET_EVENT_SIGNALS[event.eventName];
-    if (staticSignal) return staticSignal;
+    if (staticSignal) {return staticSignal;}
 
   if (
     event.eventName === 'cognition.valence_assigned' &&

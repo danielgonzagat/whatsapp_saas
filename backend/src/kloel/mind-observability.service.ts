@@ -74,7 +74,7 @@ export class MindObservabilityService {
       take: 500,
     });
     const counts = new Map<string, number>();
-    for (const row of rows) counts.set(row.concept, (counts.get(row.concept) ?? 0) + 1);
+    for (const row of rows) {counts.set(row.concept, (counts.get(row.concept) ?? 0) + 1);}
     return {
       workspaceId,
       hours,
@@ -239,7 +239,7 @@ export class MindObservabilityService {
 
   async trace(workspaceId: string, policyId: string) {
     const policy = await this.prisma.mindPolicy.findFirst({ where: { id: policyId, workspaceId } });
-    if (!policy) return null;
+    if (!policy) {return null;}
     const [similarCases, graphEdges] = await Promise.all([
       this.prisma.mindCase.findMany({
         where: { workspaceId, subject: policy.subject },
@@ -266,7 +266,7 @@ export class MindObservabilityService {
       this.lift(workspaceId, 14),
       this.concepts(workspaceId, 24),
     ]);
-    if (!question.trim()) return { answer: 'Pergunta vazia.', state, lift, concepts };
+    if (!question.trim()) {return { answer: 'Pergunta vazia.', state, lift, concepts };}
     const briefing = await this.verbalizer.narrate(workspaceId);
     return {
       answer: `${briefing}\n\nPergunta recebida: ${question}. Use os campos JSON anexos para auditar os números.`,

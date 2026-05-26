@@ -104,7 +104,7 @@ export function buildPolicyArtifacts(input: {
 
   input.options.forEach((option, index) => {
     const belief = input.beliefs[index];
-    if (!belief) return;
+    if (!belief) {return;}
     const pessimisticSuccess = Math.max(0, belief.mean);
     const pragmatic =
       pessimisticSuccess * input.utilitySuccess + (1 - pessimisticSuccess) * input.utilityFail;

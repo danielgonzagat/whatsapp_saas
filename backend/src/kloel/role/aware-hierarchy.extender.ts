@@ -142,10 +142,10 @@ export function roleAwareReTier(
 ): readonly (RoleAwareWeights & { readonly adjustedTier: DecisionTier })[] {
   return weights.map((w) => {
     let tier: DecisionTier;
-    if (w.adjustedScore >= 0.75) tier = 'AGORA';
-    else if (w.adjustedScore >= 0.5) tier = 'ESTA_SEMANA';
-    else if (w.adjustedScore >= 0.25) tier = 'PARA_SABER';
-    else tier = 'ARQUIVO';
+    if (w.adjustedScore >= 0.75) {tier = 'AGORA';}
+    else if (w.adjustedScore >= 0.5) {tier = 'ESTA_SEMANA';}
+    else if (w.adjustedScore >= 0.25) {tier = 'PARA_SABER';}
+    else {tier = 'ARQUIVO';}
     return { ...w, adjustedTier: tier };
   });
 }
@@ -157,10 +157,10 @@ export function countTierChanges(
   original: readonly AttentionRanking[],
   reTiered: readonly (RoleAwareWeights & { readonly adjustedTier: DecisionTier })[],
 ): number {
-  if (original.length !== reTiered.length) return 0;
+  if (original.length !== reTiered.length) {return 0;}
   let changes = 0;
   for (let i = 0; i < original.length; i++) {
-    if (original[i]!.tier !== reTiered[i]!.adjustedTier) changes++;
+    if (original[i]!.tier !== reTiered[i]!.adjustedTier) {changes++;}
   }
   return changes;
 }

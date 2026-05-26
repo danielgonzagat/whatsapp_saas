@@ -23,7 +23,7 @@ interface EventIndex {
 function indexEvents(events: readonly SpineEventRef[]): EventIndex {
   const byEntity = new Map<string, SpineEventRef[]>();
   for (const e of events) {
-    if (!e.entityRef) continue;
+    if (!e.entityRef) {continue;}
     const k = `${e.entityRef.entityType}:${e.entityRef.entityId}`;
     const cur = byEntity.get(k) ?? [];
     cur.push(e);
@@ -73,15 +73,15 @@ export const hotLeadWithoutResponseDetector: Detector = {
     const { byEntity } = indexEvents(events);
     for (const [, list] of byEntity) {
       const lastReply = lastEventBefore(list, nowMs + 1, (e) => e.eventName === 'commerce.lead.replied');
-      if (!lastReply) continue;
+      if (!lastReply) {continue;}
       const replyMs = Date.parse(lastReply.occurredAt);
-      if (nowMs - replyMs < HOT_LEAD_REPLY_RESPONSE_BUDGET_MS) continue;
+      if (nowMs - replyMs < HOT_LEAD_REPLY_RESPONSE_BUDGET_MS) {continue;}
       const ourReplyAfter = list.find(
         (e) =>
           e.eventName === 'commerce.whatsapp.message_replied' &&
           Date.parse(e.occurredAt) > replyMs,
       );
-      if (ourReplyAfter) continue;
+      if (ourReplyAfter) {continue;}
       out.push(
         makeTension(
           'commerce.hot_lead_without_response',
@@ -109,9 +109,9 @@ export const abandonedCartDetector: Detector = {
         nowMs + 1,
         (e) => e.eventName === 'commerce.cart.created',
       );
-      if (!lastCart) continue;
+      if (!lastCart) {continue;}
       const cartMs = Date.parse(lastCart.occurredAt);
-      if (nowMs - cartMs < ABANDONED_CART_WINDOW_MS) continue;
+      if (nowMs - cartMs < ABANDONED_CART_WINDOW_MS) {continue;}
       const checkoutOrAbandoned = list.find(
         (e) =>
           (e.eventName === 'commerce.cart.checkout_initiated' ||
@@ -119,7 +119,7 @@ export const abandonedCartDetector: Detector = {
             e.eventName === 'commerce.payment.approved') &&
           Date.parse(e.occurredAt) > cartMs,
       );
-      if (checkoutOrAbandoned) continue;
+      if (checkoutOrAbandoned) {continue;}
       out.push(
         makeTension(
           'commerce.abandoned_cart',
@@ -147,15 +147,15 @@ const clickedWithoutConversionDetector: Detector = {
         nowMs + 1,
         (e) => e.eventName === 'commerce.campaign.clicked',
       );
-      if (!lastClick) continue;
+      if (!lastClick) {continue;}
       const clickMs = Date.parse(lastClick.occurredAt);
-      if (nowMs - clickMs < CHANNEL_CLICK_TO_CONVERSION_BUDGET_MS) continue;
+      if (nowMs - clickMs < CHANNEL_CLICK_TO_CONVERSION_BUDGET_MS) {continue;}
       const conv = list.find(
         (e) =>
           e.eventName === 'commerce.campaign.conversion_associated' &&
           Date.parse(e.occurredAt) > clickMs,
       );
-      if (conv) continue;
+      if (conv) {continue;}
       out.push(
         makeTension(
           'commerce.clicked_without_conversion',
@@ -179,7 +179,7 @@ export const repeatedObjectionDetector: Detector = {
     const out: Tension[] = [];
     for (const [, list] of byEntity) {
       const objections = list.filter((e) => e.eventName === 'commerce.lead.objection_raised');
-      if (objections.length < 2) continue;
+      if (objections.length < 2) {continue;}
       const last = objections[objections.length - 1]!;
       out.push(
         makeTension(
@@ -209,12 +209,12 @@ const dormantCustomerDetector: Detector = {
         (e) =>
           e.eventName === 'commerce.lead.converted' || e.eventName === 'commerce.payment.approved',
       );
-      if (!lastConverted) continue;
+      if (!lastConverted) {continue;}
       const lastTouchMs = Math.max(
         ...list.map((e) => Date.parse(e.occurredAt)).filter(Number.isFinite),
       );
       const dormancyDays = (nowMs - lastTouchMs) / (1000 * 60 * 60 * 24);
-      if (dormancyDays < DORMANT_CUSTOMER_DAYS) continue;
+      if (dormancyDays < DORMANT_CUSTOMER_DAYS) {continue;}
       out.push(
         makeTension(
           'commerce.dormant_customer',
@@ -242,16 +242,16 @@ const checkoutStartedWithoutPaymentDetector: Detector = {
         nowMs + 1,
         (e) => e.eventName === 'commerce.cart.checkout_initiated',
       );
-      if (!lastCheckout) continue;
+      if (!lastCheckout) {continue;}
       const checkoutMs = Date.parse(lastCheckout.occurredAt);
-      if (nowMs - checkoutMs < 60 * 60 * 1000) continue; // wait 1h
+      if (nowMs - checkoutMs < 60 * 60 * 1000) {continue;} // wait 1h
       const pay = list.find(
         (e) =>
           (e.eventName === 'commerce.payment.approved' ||
             e.eventName === 'commerce.payment.declined') &&
           Date.parse(e.occurredAt) > checkoutMs,
       );
-      if (pay) continue;
+      if (pay) {continue;}
       out.push(
         makeTension(
           'commerce.checkout_started_without_payment',
@@ -279,15 +279,15 @@ const leadWithoutFollowupDetector: Detector = {
         nowMs + 1,
         (e) => e.eventName === 'commerce.lead.went_silent',
       );
-      if (!lastSilence) continue;
+      if (!lastSilence) {continue;}
       const silenceMs = Date.parse(lastSilence.occurredAt);
-      if (nowMs - silenceMs < SILENCE_FOLLOWUP_BUDGET_MS) continue;
+      if (nowMs - silenceMs < SILENCE_FOLLOWUP_BUDGET_MS) {continue;}
       const followup = list.find(
         (e) =>
           e.eventName === 'commerce.whatsapp.message_replied' &&
           Date.parse(e.occurredAt) > silenceMs,
       );
-      if (followup) continue;
+      if (followup) {continue;}
       out.push(
         makeTension(
           'commerce.lead_without_followup',
@@ -311,7 +311,7 @@ const performingAffiliateDetector: Detector = {
     const perf = events.filter((e) => e.eventName === 'commerce.affiliate.performance_measured');
     for (const e of perf) {
       const mag = Number((e.payload?.['conversionRate'] ?? 0));
-      if (!Number.isFinite(mag) || mag < 0.1) continue;
+      if (!Number.isFinite(mag) || mag < 0.1) {continue;}
       out.push(
         makeTension(
           'commerce.performing_affiliate',
@@ -359,9 +359,9 @@ const viewedWithoutPurchaseDetector: Detector = {
     const { byEntity } = indexEvents(events);
     for (const [, list] of byEntity) {
       const reads = list.filter((e) => e.eventName === 'commerce.whatsapp.message_read');
-      if (reads.length < 3) continue;
+      if (reads.length < 3) {continue;}
       const purchase = list.find((e) => e.eventName === 'commerce.payment.approved');
-      if (purchase) continue;
+      if (purchase) {continue;}
       const last = reads[reads.length - 1]!;
       out.push(
         makeTension(

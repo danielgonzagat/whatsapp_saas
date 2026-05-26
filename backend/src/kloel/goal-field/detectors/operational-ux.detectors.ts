@@ -42,9 +42,9 @@ const peakLoadDetector: Detector = {
       .map((e) => Date.parse(e.occurredAt))
       .filter(Number.isFinite)
       .sort((a, b) => a - b);
-    if (ids.length < 50) return [];
+    if (ids.length < 50) {return [];}
     const lastMinuteCount = ids.filter((t) => nowMs - t <= 60_000).length;
-    if (lastMinuteCount < 100) return [];
+    if (lastMinuteCount < 100) {return [];}
     return [
       makeT(
         'operational.peak_load',
@@ -72,9 +72,9 @@ export const humanHandoffOverdueDetector: Detector = {
           e.eventName === 'commerce.whatsapp.message_replied' &&
           Date.parse(e.occurredAt) > Date.parse(h.occurredAt),
       );
-      if (followUp) continue;
+      if (followUp) {continue;}
       const ageMin = (nowMs - Date.parse(h.occurredAt)) / 60_000;
-      if (ageMin < 15) continue;
+      if (ageMin < 15) {continue;}
       out.push(
         makeT(
           'operational.human_handoff_overdue',
@@ -99,7 +99,7 @@ const queueBuildupDetector: Detector = {
       .length;
     const outgoing = events.filter((e) => e.eventName === 'commerce.whatsapp.message_replied')
       .length;
-    if (incoming - outgoing < 20) return [];
+    if (incoming - outgoing < 20) {return [];}
     return [
       makeT(
         'operational.queue_buildup',
@@ -131,9 +131,9 @@ export const slowResponseDetector: Detector = {
           e.eventName === 'commerce.whatsapp.message_received' &&
           Date.parse(e.occurredAt) < Date.parse(r.occurredAt),
       );
-      if (!inbound) continue;
+      if (!inbound) {continue;}
       const latencyMs = Date.parse(r.occurredAt) - Date.parse(inbound.occurredAt);
-      if (latencyMs < 2 * 60_000) continue;
+      if (latencyMs < 2 * 60_000) {continue;}
       out.push(
         makeT(
           'ux.slow_response',
@@ -157,22 +157,22 @@ const repetitiveQuestionDetector: Detector = {
     const out: Tension[] = [];
     const byEntity = new Map<string, SpineEventRef[]>();
     for (const e of events) {
-      if (e.eventName !== 'commerce.whatsapp.message_received') continue;
-      if (!e.entityRef) continue;
+      if (e.eventName !== 'commerce.whatsapp.message_received') {continue;}
+      if (!e.entityRef) {continue;}
       const k = `${e.entityRef.entityType}:${e.entityRef.entityId}`;
       const cur = byEntity.get(k) ?? [];
       cur.push(e);
       byEntity.set(k, cur);
     }
     for (const [, list] of byEntity) {
-      if (list.length < 3) continue;
+      if (list.length < 3) {continue;}
       const intents = list
         .map((e) => (e.payload?.['intent'] as string | undefined) ?? '')
         .filter(Boolean);
       const counts = new Map<string, number>();
-      for (const i of intents) counts.set(i, (counts.get(i) ?? 0) + 1);
+      for (const i of intents) {counts.set(i, (counts.get(i) ?? 0) + 1);}
       for (const [intent, c] of counts) {
-        if (c < 3) continue;
+        if (c < 3) {continue;}
         out.push(
           makeT(
             'ux.repetitive_question',
@@ -200,7 +200,7 @@ const frictionAtConversionDetector: Detector = {
         e.eventName === 'commerce.payment.declined' ||
         e.eventName === 'commerce.cart.abandoned',
     );
-    if (declines.length < 3) return out;
+    if (declines.length < 3) {return out;}
     const lastDecline = declines[declines.length - 1];
     out.push(
       makeT(
@@ -223,9 +223,9 @@ const toneMismatchDetector: Detector = {
   detect: (events, nowMs) => {
     const out: Tension[] = [];
     for (const e of events) {
-      if (e.eventName !== 'commerce.lead.objection_raised') continue;
+      if (e.eventName !== 'commerce.lead.objection_raised') {continue;}
       const objKind = (e.payload?.['objectionKind'] as string | undefined) ?? '';
-      if (objKind !== 'tone' && objKind !== 'frustration') continue;
+      if (objKind !== 'tone' && objKind !== 'frustration') {continue;}
       out.push(
         makeT(
           'ux.tone_mismatch',

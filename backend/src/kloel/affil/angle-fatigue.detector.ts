@@ -56,8 +56,8 @@ export class AngleFatigueDetectorService {
   }
 
   private determineRecommendation(fatigueScore: number): 'rotate' | 'rest' | 'still_fresh' {
-    if (fatigueScore >= FATIGUE_HIGH_THRESHOLD) return 'rotate';
-    if (fatigueScore >= FATIGUE_MODERATE_THRESHOLD) return 'rest';
+    if (fatigueScore >= FATIGUE_HIGH_THRESHOLD) {return 'rotate';}
+    if (fatigueScore >= FATIGUE_MODERATE_THRESHOLD) {return 'rest';}
     return 'still_fresh';
   }
 

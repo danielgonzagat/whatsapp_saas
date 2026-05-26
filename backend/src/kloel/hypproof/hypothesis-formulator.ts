@@ -25,7 +25,7 @@ const SIGNAL_PATTERNS: Array<{
       }
       if (signal.eventName === 'commerce.lead.went_silent') {
         const confidence = signal.truthMode === 'observed' ? 0.85 : 0.55;
-        if (confidence < MIN_CONFIDENCE_FOR_HYPOTHESIS) return null;
+        if (confidence < MIN_CONFIDENCE_FOR_HYPOTHESIS) {return null;}
         return makeHypothesis(
           signal,
           'lead_response',
@@ -37,7 +37,7 @@ const SIGNAL_PATTERNS: Array<{
       }
       if (signal.eventName === 'commerce.lead.objection_raised') {
         const confidence = signal.truthMode === 'observed' ? 0.7 : 0.45;
-        if (confidence < MIN_CONFIDENCE_FOR_HYPOTHESIS) return null;
+        if (confidence < MIN_CONFIDENCE_FOR_HYPOTHESIS) {return null;}
         return makeHypothesis(
           signal,
           'lead_response',

@@ -152,7 +152,7 @@ export async function runGetDashboardSummary(
   const amount = typeof args.amount === 'number' ? args.amount : 0;
   const productName = typeof args.productName === 'string' ? args.productName : typeof args.description === 'string' ? args.description : 'Produto';
   const customerName = typeof args.customerName === 'string' ? args.customerName : 'Cliente';
-  if (!amount) return { success: false, error: 'Informe o valor da venda (ex: R$ 147).' };
+  if (!amount) {return { success: false, error: 'Informe o valor da venda (ex: R$ 147).' };}
   try {
     const sale = await prisma.kloelSale.create({
       data: {

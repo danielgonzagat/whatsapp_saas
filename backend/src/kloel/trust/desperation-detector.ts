@@ -60,7 +60,7 @@ export function detectDesperation(
 
   for (const ev of sample) {
     const text = extractMessageText(ev);
-    if (!text) continue;
+    if (!text) {continue;}
 
     const lower = text.toLowerCase();
     for (const kw of DISCOUNT_ESCALATION_KEYWORDS) {
@@ -99,9 +99,9 @@ export function detectDesperation(
 
 function extractMessageText(ev: TrustEvent): string | undefined {
   const p = ev.payload;
-  if (!p) return undefined;
-  if (typeof p['messageBody'] === 'string') return p['messageBody'] as string;
-  if (typeof p['body'] === 'string') return p['body'] as string;
-  if (typeof p['text'] === 'string') return p['text'] as string;
+  if (!p) {return undefined;}
+  if (typeof p['messageBody'] === 'string') {return p['messageBody'];}
+  if (typeof p['body'] === 'string') {return p['body'];}
+  if (typeof p['text'] === 'string') {return p['text'];}
   return undefined;
 }

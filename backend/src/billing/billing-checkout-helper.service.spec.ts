@@ -118,7 +118,7 @@ describe('BillingCheckoutHelperService', () => {
       delete process.env.DLQ_WEBHOOK_URL;
       await service.notifyOps('test', { foo: 'bar' });
       expect(fetchMock).not.toHaveBeenCalled();
-      if (originalWebhook) process.env.OPS_WEBHOOK_URL = originalWebhook;
+      if (originalWebhook) {process.env.OPS_WEBHOOK_URL = originalWebhook;}
     });
   });
 });

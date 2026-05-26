@@ -233,7 +233,7 @@ export class GuestChatService implements OnModuleDestroy {
    */
 
   private resolveDefaultWorkspaceId(): string | undefined {
-    if (process.env.NODE_ENV !== 'production') return 'ws-test-001';
+    if (process.env.NODE_ENV !== 'production') {return 'ws-test-001';}
     return undefined;
   }
 

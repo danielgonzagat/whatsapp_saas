@@ -152,7 +152,7 @@ export function sumAmounts(entries: readonly CashEntry[]): bigint {
 }
 
 export function standardDeviation(values: readonly number[]): number {
-  if (values.length < 2) return 0;
+  if (values.length < 2) {return 0;}
   const mean = values.reduce((a, b) => a + b, 0) / values.length;
   const variance =
     values.reduce((sum, v) => sum + (v - mean) * (v - mean), 0) / (values.length - 1);

@@ -69,7 +69,7 @@ import { CAPABILITY_DEFINITIONS } from '../capability-registry-v2/capability-reg
       'account.update_fiscal': ['meus dados fiscais', 'cnpj'],
     };    for (const [capId, messages] of Object.entries(testMessages)) {
       const cap = registry.get(capId);
-      if (!cap) continue;
+      if (!cap) {continue;}
       // At least one of the test messages should match
       const anyMatch = messages.some((msg) => {
         const r = router.classify(msg, 'dashboard-chat', ['*']);

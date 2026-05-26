@@ -134,19 +134,19 @@ function readRecord(value: unknown): Record<string, unknown> {
 function scoreAction(action: string, context: Record<string, unknown>): number {
   const normalized = action.toLowerCase();
   let score = 0.5;
-  if (normalized.includes('pause') || normalized.includes('stop')) score -= 0.24;
-  if (normalized.includes('no_coupon') || normalized.includes('continue_ai')) score -= 0.08;
-  if (normalized.includes('coupon_5')) score += 0.05;
-  if (normalized.includes('coupon_10')) score += 0.1;
-  if (normalized.includes('coupon_15') || normalized.includes('coupon_20')) score += 0.14;
+  if (normalized.includes('pause') || normalized.includes('stop')) {score -= 0.24;}
+  if (normalized.includes('no_coupon') || normalized.includes('continue_ai')) {score -= 0.08;}
+  if (normalized.includes('coupon_5')) {score += 0.05;}
+  if (normalized.includes('coupon_10')) {score += 0.1;}
+  if (normalized.includes('coupon_15') || normalized.includes('coupon_20')) {score += 0.14;}
   if (normalized.includes('transfer'))
-    score += readNumeric(context.ticket, 0) >= 0.7 ? 0.14 : -0.05;
-  if (normalized.includes('audio')) score += context.channel === 'email' ? -0.12 : 0.08;
-  if (normalized.includes('text')) score += context.channel === 'email' ? 0.06 : 0.01;
-  if (normalized.includes('highest_margin') || normalized.includes('premium')) score += 0.08;
-  if (normalized.includes('entry') || normalized.includes('top_seller')) score += 0.04;
-  if (normalized.includes('tomorrow_9h')) score += 0.03;
-  if (normalized.includes('tonight') || normalized.includes('friday')) score += 0.05;
+    {score += readNumeric(context.ticket, 0) >= 0.7 ? 0.14 : -0.05;}
+  if (normalized.includes('audio')) {score += context.channel === 'email' ? -0.12 : 0.08;}
+  if (normalized.includes('text')) {score += context.channel === 'email' ? 0.06 : 0.01;}
+  if (normalized.includes('highest_margin') || normalized.includes('premium')) {score += 0.08;}
+  if (normalized.includes('entry') || normalized.includes('top_seller')) {score += 0.04;}
+  if (normalized.includes('tomorrow_9h')) {score += 0.03;}
+  if (normalized.includes('tonight') || normalized.includes('friday')) {score += 0.05;}
   return clampNumber(score, 0, 1);
 }
 

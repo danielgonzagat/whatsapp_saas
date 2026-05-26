@@ -58,9 +58,9 @@ function ev(over: Partial<SpineEventRef>): SpineEventRef {
     truthMode: over.truthMode ?? 'observed',
   };
   if ('entityRef' in over && over.entityRef !== undefined)
-    e['entityRef'] = over.entityRef;
-  if (over.valence !== undefined) e['valence'] = over.valence;
-  if (over.payload !== undefined) e['payload'] = over.payload;
+    {e['entityRef'] = over.entityRef;}
+  if (over.valence !== undefined) {e['valence'] = over.valence;}
+  if (over.payload !== undefined) {e['payload'] = over.payload;}
   return e as SpineEventRef;
 }
 

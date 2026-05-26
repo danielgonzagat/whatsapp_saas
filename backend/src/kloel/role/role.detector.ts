@@ -82,7 +82,7 @@ function scoreRole(
   roleEvents: Set<string>,
   totalEvents: number,
 ): number {
-  if (totalEvents === 0) return 0;
+  if (totalEvents === 0) {return 0;}
   let hits = 0;
   for (const name of roleEvents) {
     hits += fp.get(name) ?? 0;
@@ -207,9 +207,9 @@ export function detectRoles(input: RoleDetectorInput): readonly RoleDetection[] 
 export function primaryRoleFromDetections(
   detections: readonly RoleDetection[],
 ): Role | undefined {
-  if (detections.length === 0) return undefined;
+  if (detections.length === 0) {return undefined;}
   // Primary is the highest-confidence detection above 0.3
   const candidates = detections.filter((d) => d.confidence >= 0.3);
-  if (candidates.length === 0) return undefined;
+  if (candidates.length === 0) {return undefined;}
   return candidates[0]!.role;
 }

@@ -111,7 +111,7 @@ export class DailyDashboardService {
     }
     let count = 0;
     for (const key of repliedSet) {
-      if (!repliedAfterSet.has(key)) count += 1;
+      if (!repliedAfterSet.has(key)) {count += 1;}
     }
     return count;
   }
@@ -137,7 +137,7 @@ export class DailyDashboardService {
     }
     let count = 0;
     for (const id of contacted) {
-      if (!replied.has(id)) count += 1;
+      if (!replied.has(id)) {count += 1;}
     }
     return count;
   }
@@ -187,7 +187,7 @@ export class DailyDashboardService {
         const alreadySuggested = actions.some(
           (a) => a.targetType === g.entityRef?.entityType && a.targetId === g.entityRef?.entityId,
         );
-        if (alreadySuggested) continue;
+        if (alreadySuggested) {continue;}
         const kind = detectActionKind(g, events);
         actions.push({
           kind,
@@ -205,8 +205,8 @@ export class DailyDashboardService {
       const alreadySuggested = actions.some(
         (a) => a.targetType === c.targetType && a.targetId === c.targetId,
       );
-      if (isUnqualifiedSilentLead(events, c.targetType, c.targetId)) continue;
-      if (isHealthyPostSaleOnly(events, c.targetType, c.targetId)) continue;
+      if (isUnqualifiedSilentLead(events, c.targetType, c.targetId)) {continue;}
+      if (isHealthyPostSaleOnly(events, c.targetType, c.targetId)) {continue;}
       if (!alreadySuggested && c.weight > 0.4) {
         actions.push({
           kind: 'investigate',

@@ -61,7 +61,7 @@ export class MindSurpriseService {
 
       let surpriseTotal = 0;
       for (const row of rows) {
-        if (!row.id) continue;
+        if (!row.id) {continue;}
         if (row.predicate.startsWith('P(')) {
           const probabilityOfMiss = this.clamp(1 - row.predictedMean, 1e-6, 1);
           const surprise = -Math.log(probabilityOfMiss);

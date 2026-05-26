@@ -254,7 +254,7 @@ describe('SuggestionDeliveryService (UTP-ECOSYS-009)', () => {
       disclosure: 'Kloel has commercial link with the recommended party',
     });
     expect(r.status).toBe('delivered');
-    if (r.status !== 'delivered') return;
+    if (r.status !== 'delivered') {return;}
     expect(r.suggestion.disclosure).toBeTruthy();
   });
 });

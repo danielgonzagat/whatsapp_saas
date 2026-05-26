@@ -60,57 +60,57 @@ function extractToneSignals(events: readonly SpineEventRef[]): ToneSignal[] {
 }
 
 function computeDirectness(signals: readonly ToneSignal[]): number {
-  if (signals.length === 0) return 0.5;
+  if (signals.length === 0) {return 0.5;}
 
   const replySignals = signals.filter((s) => !s.isHandoff && s.messageLength > 0);
-  if (replySignals.length === 0) return 0.5;
+  if (replySignals.length === 0) {return 0.5;}
 
   const avgLength = replySignals.reduce((sum, s) => sum + s.messageLength, 0) / replySignals.length;
-  if (avgLength < 50) return 0.85;
-  if (avgLength < 150) return 0.65;
-  if (avgLength < 300) return 0.45;
+  if (avgLength < 50) {return 0.85;}
+  if (avgLength < 150) {return 0.65;}
+  if (avgLength < 300) {return 0.45;}
   return 0.3;
 }
 
 function computeFormality(signals: readonly ToneSignal[]): number {
-  if (signals.length === 0) return 0.5;
+  if (signals.length === 0) {return 0.5;}
 
   const handoffRate = signals.filter((s) => s.isHandoff).length / signals.length;
-  if (handoffRate > 0.5) return 0.25;
-  if (handoffRate > 0.2) return 0.45;
+  if (handoffRate > 0.5) {return 0.25;}
+  if (handoffRate > 0.2) {return 0.45;}
   return 0.6;
 }
 
 function computeVocabularyComplexity(signals: readonly ToneSignal[]): number {
-  if (signals.length === 0) return 0.5;
+  if (signals.length === 0) {return 0.5;}
 
   const replySignals = signals.filter((s) => !s.isHandoff && s.messageLength > 0);
-  if (replySignals.length === 0) return 0.5;
+  if (replySignals.length === 0) {return 0.5;}
 
   const avgLength = replySignals.reduce((sum, s) => sum + s.messageLength, 0) / replySignals.length;
-  if (avgLength > 200) return 0.75;
-  if (avgLength > 100) return 0.55;
+  if (avgLength > 200) {return 0.75;}
+  if (avgLength > 100) {return 0.55;}
   return 0.4;
 }
 
 function inferPreferredPhrases(signals: readonly ToneSignal[]): readonly string[] {
   const replySignals = signals.filter((s) => !s.isHandoff && s.messageLength > 0);
-  if (replySignals.length >= 10) return ['direct_response', 'structured_format'];
-  if (replySignals.length >= 5) return ['concise_replies'];
+  if (replySignals.length >= 10) {return ['direct_response', 'structured_format'];}
+  if (replySignals.length >= 5) {return ['concise_replies'];}
   return [];
 }
 
 function inferAvoidedPhrases(signals: readonly ToneSignal[]): readonly string[] {
   const handoffRate = signals.filter((s) => s.isHandoff).length / Math.max(1, signals.length);
   const avoided: string[] = [];
-  if (handoffRate > 0.3) avoided.push('excessive_automation');
+  if (handoffRate > 0.3) {avoided.push('excessive_automation');}
   return avoided;
 }
 
 function computeConfidence(signals: readonly ToneSignal[]): number {
-  if (signals.length >= 20) return 0.9;
-  if (signals.length >= 10) return 0.7;
-  if (signals.length >= 5) return 0.5;
+  if (signals.length >= 20) {return 0.9;}
+  if (signals.length >= 10) {return 0.7;}
+  if (signals.length >= 5) {return 0.5;}
   return 0.3;
 }
 
@@ -122,7 +122,7 @@ function computeConfidence(signals: readonly ToneSignal[]): number {
  */
 export function observeTone(input: ObserverInput): ToneObservation[] {
   const signals = extractToneSignals(input.events);
-  if (signals.length < MIN_EVENTS) return [];
+  if (signals.length < MIN_EVENTS) {return [];}
 
   return [
     {

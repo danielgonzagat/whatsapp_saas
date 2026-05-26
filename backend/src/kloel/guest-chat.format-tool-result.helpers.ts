@@ -50,7 +50,7 @@ export function formatToolResult(tool: string, result: unknown): string {
       return typeof r.message === 'string' ? r.message : `Cupom ${typeof (r as any).coupon?.code === 'string' ? (r as any).coupon.code : ''} atualizado.`;
     case 'list_checkouts': {
       const chk = Array.isArray((r as any).checkouts) ? (r as any).checkouts : [];
-      if (chk.length === 0) return 'Nenhum checkout encontrado.';
+      if (chk.length === 0) {return 'Nenhum checkout encontrado.';}
       return `Checkouts: ${chk.map((c: any) => c.name || c.id).join(', ')}`;
     }
     case 'delete_coupon':
@@ -73,7 +73,7 @@ export function formatToolResult(tool: string, result: unknown): string {
       return `URLs: ${urls.map((u) => `${s(u.description)} → ${s(u.url)}`).join(', ')}`;
     case 'get_product_reviews': {
       const revs = Array.isArray(r.reviews) ? (r.reviews as Array<Record<string, unknown>>) : [];
-      if (revs.length === 0) return 'Nenhuma avaliação encontrada.';
+      if (revs.length === 0) {return 'Nenhuma avaliação encontrada.';}
       return `Avaliações (${revs.length}): ${revs.map((rv) => `★${rv.rating || '?'} ${s(rv.comment)}`.substring(0, 60)).join(' | ')}`;
     }
     case 'get_product_ai_config':
@@ -117,7 +117,7 @@ export function formatToolResult(tool: string, result: unknown): string {
     }
     case 'list_refunds': {
       const rfunds = Array.isArray((r as any).orders) ? (r as any).orders : [];
-      if (rfunds.length === 0) return 'Nenhum estorno encontrado.';
+      if (rfunds.length === 0) {return 'Nenhum estorno encontrado.';}
       return `Estornos: ${rfunds.length} pedido(s).`;
     }
     case 'list_orders': {
@@ -158,7 +158,7 @@ export function formatToolResult(tool: string, result: unknown): string {
     }
     case 'list_subscriptions': {
       const subs = Array.isArray(r.subscriptions) ? (r.subscriptions as Array<Record<string, unknown>>) : [];
-      if (subs.length === 0) return 'Nenhuma assinatura ativa.';
+      if (subs.length === 0) {return 'Nenhuma assinatura ativa.';}
       return `Assinaturas: ${subs.map((sub) => `${s(sub.plan)} (${s(sub.status)})`).join(', ')}`;
     }
     case 'request_withdrawal':
@@ -197,7 +197,7 @@ export function formatToolResult(tool: string, result: unknown): string {
     case 'get_affiliate_config': {
       const partners = Array.isArray(r.partners) ? (r.partners as Array<Record<string, unknown>>) : [];
       const active = typeof r.activeCount === 'number' ? r.activeCount : 0;
-      if (partners.length === 0) return 'Nenhum afiliado cadastrado.';
+      if (partners.length === 0) {return 'Nenhum afiliado cadastrado.';}
       return `Afiliados: ${partners.length} total (${active} ativos). ${partners.slice(0, 3).map((p) => `${s(p.partnerName)} (${s(p.commissionRate)}%)`).join(', ')}`;
     }
     case 'git_status': {
@@ -237,10 +237,10 @@ export function formatToolResult(tool: string, result: unknown): string {
       return `Schema: ${tables.length} tabelas.`;
     }
     case 'search_codebase': {
-      const results = Array.isArray(r.results) ? (r.results as any[]) : [];
+      const results = Array.isArray(r.results) ? (r.results) : [];
       const err = typeof r.error === 'string' ? r.error : '';
-      if (err) return `Busca: ${err}`;
-      if (results.length === 0) return `Busca: nenhum resultado encontrado.`;
+      if (err) {return `Busca: ${err}`;}
+      if (results.length === 0) {return `Busca: nenhum resultado encontrado.`;}
       return `Busca: ${results.length} resultados: ${results.slice(0, 5).map((x: any) => `${x.file}:${x.line}`).join(', ')}`;
     }
     case 'run_backend_tests': {
@@ -275,7 +275,7 @@ export function formatToolResult(tool: string, result: unknown): string {
     case 'configure_after_pay':
       return typeof r.message === 'string' ? r.message : 'After Pay configurado.';
     case 'browse_marketplace':
-      if (Array.isArray(r.products)) return `${r.products.length} produtos no marketplace.`;
+      if (Array.isArray(r.products)) {return `${r.products.length} produtos no marketplace.`;}
       return typeof r.message === 'string' ? r.message : 'Marketplace consultado.';
     case 'get_social_channels':
       return typeof r.message === 'string' ? r.message : 'Canais consultados.';
@@ -302,7 +302,7 @@ export function formatToolResult(tool: string, result: unknown): string {
     case 'codegraph_files':
       return typeof r.text === 'string' ? r.text : 'CodeGraph consultado.';
     default:
-      if (typeof r.error === 'string') return `Erro: ${r.error}`;
+      if (typeof r.error === 'string') {return `Erro: ${r.error}`;}
       return typeof r.text === 'string' ? r.text : typeof r.message === 'string' ? r.message : 'Acao concluida.';
   }
 }

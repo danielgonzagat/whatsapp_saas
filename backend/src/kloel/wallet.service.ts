@@ -434,7 +434,7 @@ export class WalletService {
                 netAmount,
                 installments: installments ?? null,
                 anticipationType: 'pending_settlement',
-              } as Prisma.InputJsonValue,
+              },
             },
           });
 

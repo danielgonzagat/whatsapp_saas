@@ -670,7 +670,7 @@ export class IntentRouterService {
       const match = normalized.match(pattern.regex);
       if (match) {
         const cap = this.registry.get(pattern.capabilityId);
-        if (!cap) continue;
+        if (!cap) {continue;}
 
         const entities = pattern.extract(match);
         const missingInputs = cap.inputSchema

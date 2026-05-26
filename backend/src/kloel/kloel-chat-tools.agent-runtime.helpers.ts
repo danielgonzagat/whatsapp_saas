@@ -138,11 +138,11 @@ export async function runUpsertAgentSkill(
   workspaceId: string,
   args: ToolUpsertAgentSkillArgs,
 ): Promise<ToolResult> {
-  if (!agentSkills) return { success: false, error: 'agent_skill_registry_unavailable' };
+  if (!agentSkills) {return { success: false, error: 'agent_skill_registry_unavailable' };}
   const id = safeAgentRuntimeId(args.id, '');
   const title = safeStr(args.title).trim().slice(0, 200);
   const summary = safeStr(args.summary).trim().slice(0, 500);
-  if (!id || !title || !summary) return { success: false, error: 'missing_agent_skill_identity' };
+  if (!id || !title || !summary) {return { success: false, error: 'missing_agent_skill_identity' };}
   const skill: AgentSkillDefinition = {
     id,
     title,
@@ -174,9 +174,9 @@ export async function runRecordAgentSkillOutcome(
   workspaceId: string,
   args: ToolRecordAgentSkillOutcomeArgs,
 ): Promise<ToolResult> {
-  if (!agentSkills) return { success: false, error: 'agent_skill_registry_unavailable' };
+  if (!agentSkills) {return { success: false, error: 'agent_skill_registry_unavailable' };}
   const skillId = safeAgentRuntimeId(args.skillId, '');
-  if (!skillId) return { success: false, error: 'missing_agent_skill_id' };
+  if (!skillId) {return { success: false, error: 'missing_agent_skill_id' };}
   const outcome = agentSkillUsageOutcome(args.outcome);
   const provenance = agentSkillProvenance(args.provenance);
   const lifecycleState = agentSkillLifecycle(args.lifecycleState);
@@ -203,10 +203,10 @@ export async function runRecordAgentDelegation(
   workspaceId: string,
   args: ToolRecordAgentDelegationArgs,
 ): Promise<ToolResult> {
-  if (!agentSessions) return { success: false, error: 'agent_sessions_unavailable' };
+  if (!agentSessions) {return { success: false, error: 'agent_sessions_unavailable' };}
   const task = safeStr(args.task).trim().slice(0, 2000);
   const result = safeStr(args.result).trim().slice(0, 3000);
-  if (!task || !result) return { success: false, error: 'missing_delegation_task_or_result' };
+  if (!task || !result) {return { success: false, error: 'missing_delegation_task_or_result' };}
   const sessionId = safeStr(args.sessionId, 'kloel_delegation').trim().slice(0, 160);
   const childSessionId = safeStr(args.childSessionId).trim().slice(0, 160);
   const metadata =
@@ -236,7 +236,7 @@ export async function runRecordAgentEvidence(
   workspaceId: string,
   args: ToolRecordAgentEvidenceArgs,
 ): Promise<ToolResult> {
-  if (!agentEvidence) return { success: false, error: 'agent_evidence_store_unavailable' };
+  if (!agentEvidence) {return { success: false, error: 'agent_evidence_store_unavailable' };}
   const source = safeStr(args.source).trim().slice(0, 500);
   const content = safeStr(args.content).trim().slice(0, 30_000);
   if (!source || !content) {
@@ -270,9 +270,9 @@ export async function runSearchAgentEvidence(
   workspaceId: string,
   args: ToolSearchAgentEvidenceArgs,
 ): Promise<ToolResult> {
-  if (!agentEvidence) return { success: false, error: 'agent_evidence_store_unavailable' };
+  if (!agentEvidence) {return { success: false, error: 'agent_evidence_store_unavailable' };}
   const query = safeStr(args.query).trim();
-  if (!query) return { success: false, error: 'missing_agent_evidence_query' };
+  if (!query) {return { success: false, error: 'missing_agent_evidence_query' };}
   const evidence = await agentEvidence.query({
     workspaceId,
     keyword: query,
@@ -286,7 +286,7 @@ export async function runListAgentEvidence(
   workspaceId: string,
   args: ToolListAgentEvidenceArgs,
 ): Promise<ToolResult> {
-  if (!agentEvidence) return { success: false, error: 'agent_evidence_store_unavailable' };
+  if (!agentEvidence) {return { success: false, error: 'agent_evidence_store_unavailable' };}
   const evidence = await agentEvidence.list({
     workspaceId,
     ...(args.type ? { type: agentEvidenceType(args.type) } : {}),
@@ -300,7 +300,7 @@ export async function runVerifyAgentEvidence(
   agentEvidence: AgentRuntimeEvidenceStoreService | undefined,
   workspaceId: string,
 ): Promise<ToolResult> {
-  if (!agentEvidence) return { success: false, error: 'agent_evidence_store_unavailable' };
+  if (!agentEvidence) {return { success: false, error: 'agent_evidence_store_unavailable' };}
   const integrityIssues = await agentEvidence.verify(workspaceId);
   const summary = await agentEvidence.summary(workspaceId);
   return {

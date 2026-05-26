@@ -53,9 +53,9 @@ export class StructuredLogger extends Logger {
     b?: string | LogExtra,
   ): { message: string; extra?: LogExtra } {
     if (typeof a === 'string') {
-      if (b === undefined || b === null) return { message: a };
-      if (typeof b === 'string') return { message: a, extra: { context: b } };
-      if (typeof b === 'object') return { message: a, extra: b as LogExtra };
+      if (b === undefined || b === null) {return { message: a };}
+      if (typeof b === 'string') {return { message: a, extra: { context: b } };}
+      if (typeof b === 'object') {return { message: a, extra: b };}
       return { message: a, extra: { raw: String(b) } };
     }
     const message = typeof b === 'string' ? b : '';
@@ -75,9 +75,9 @@ export class StructuredLogger extends Logger {
   info(data: LogExtra, message?: string): void;
   info(message: string, err: unknown): void;
   info(a: string | LogExtra, b?: string | LogExtra | unknown): void {
-    if (this.isTestEnv()) return;
+    if (this.isTestEnv()) {return;}
     const { message, extra } = this.normalize(
-      a as string | LogExtra,
+      a,
       b as string | LogExtra | undefined,
     );
     console.log(this.serialize('info', message, extra));
@@ -93,18 +93,18 @@ export class StructuredLogger extends Logger {
     b?: string | LogExtra | unknown,
     c?: string | LogExtra,
   ): void {
-    if (this.isTestEnv()) return;
+    if (this.isTestEnv()) {return;}
     if (c !== undefined) {
       let extra: LogExtra = {};
-      if (typeof b === 'string') extra = { context: b };
-      else if (b && typeof b === 'object') extra = { ...(b as LogExtra) };
-      if (typeof c === 'string') extra = { ...extra, context: c };
-      else if (c && typeof c === 'object') extra = { ...extra, ...c };
+      if (typeof b === 'string') {extra = { context: b };}
+      else if (b && typeof b === 'object') {extra = { ...(b as LogExtra) };}
+      if (typeof c === 'string') {extra = { ...extra, context: c };}
+      else if (c && typeof c === 'object') {extra = { ...extra, ...c };}
       console.warn(this.serialize('warn', a as string, extra));
       return;
     }
     const { message, extra } = this.normalize(
-      a as string | LogExtra,
+      a,
       b as string | LogExtra | undefined,
     );
     console.warn(this.serialize('warn', message, extra));
@@ -122,7 +122,7 @@ export class StructuredLogger extends Logger {
     b?: string | LogExtra | unknown,
     c?: string | LogExtra,
   ): void {
-    if (this.isTestEnv()) return;
+    if (this.isTestEnv()) {return;}
     let message: string;
     let extra: LogExtra = {};
     if (typeof a === 'string') {
@@ -142,14 +142,14 @@ export class StructuredLogger extends Logger {
     } else if (a && typeof a === 'object' && !(a instanceof Error)) {
       extra = { ...(a as LogExtra) };
       if (c !== undefined) {
-        if (typeof b === 'string') extra.stack = b;
-        else if (b) extra = { ...extra, ...(b as LogExtra) };
-        if (typeof c === 'string') extra.context = c;
+        if (typeof b === 'string') {extra.stack = b;}
+        else if (b) {extra = { ...extra, ...(b as LogExtra) };}
+        if (typeof c === 'string') {extra.context = c;}
         else if (c instanceof Error) {
           extra.error = c.message;
           extra.errorName = c.constructor.name;
         } else if (typeof c === 'object') {
-          extra = { ...extra, ...(c as LogExtra) };
+          extra = { ...extra, ...(c) };
         }
         message = typeof b === 'string' ? b : '';
       } else {

@@ -36,7 +36,7 @@ export class ProtectedFilesFirewallService {
 
   check(filePath: string, agentIdentity: string): ProtectedFilesFirewall | null {
     const violationKind = this.classify(filePath);
-    if (!violationKind) return null;
+    if (!violationKind) {return null;}
 
     this.counter += 1;
 

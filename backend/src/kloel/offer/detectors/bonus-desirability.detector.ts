@@ -20,7 +20,7 @@ const WINDOW_DAYS = 90;
 function extractBonusRef(
   payload: Readonly<Record<string, unknown>> | undefined,
 ): string | undefined {
-  if (!payload) return undefined;
+  if (!payload) {return undefined;}
   const bonus = payload['bonusRef'] ?? payload['couponId'] ?? payload['incentiveRef'];
   return typeof bonus === 'string' ? bonus : undefined;
 }
@@ -43,7 +43,7 @@ export function detectBonusDesirability(
 
   for (const event of filtered) {
     const bonusRef = extractBonusRef(event.payload);
-    if (!bonusRef) continue;
+    if (!bonusRef) {continue;}
     if (event.eventName === 'commerce.payment.approved') {
       bonusApproved.set(bonusRef, (bonusApproved.get(bonusRef) ?? 0) + 1);
     } else if (event.eventName === 'commerce.payment.declined') {
@@ -58,7 +58,7 @@ export function detectBonusDesirability(
     const declined = bonusDeclined.get(bonusRef) ?? 0;
     const total = approved + declined;
 
-    if (total < MIN_BONUS_EVENTS) continue;
+    if (total < MIN_BONUS_EVENTS) {continue;}
 
     const declineRate = declined / total;
     if (declineRate >= DESIRABILITY_THRESHOLD) {

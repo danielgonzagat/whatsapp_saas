@@ -18,9 +18,9 @@ const SCORE_GOOD = 65;
 const SCORE_AVERAGE = 45;
 
 function classify(score: number): Classification {
-  if (score >= SCORE_EXCELLENT) return 'excellent';
-  if (score >= SCORE_GOOD) return 'good';
-  if (score >= SCORE_AVERAGE) return 'average';
+  if (score >= SCORE_EXCELLENT) {return 'excellent';}
+  if (score >= SCORE_GOOD) {return 'good';}
+  if (score >= SCORE_AVERAGE) {return 'average';}
   return 'poor';
 }
 

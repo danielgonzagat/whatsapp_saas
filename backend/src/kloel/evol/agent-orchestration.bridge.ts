@@ -18,9 +18,9 @@ export class AgentOrchestrationBridgeService {
     authorization: HumanAuthorization,
     targetAgent: string,
   ): AgentOrchestrationBridgeType | null {
-    if (authorization.status !== 'approved') return null;
-    if (authorization.authorizedAt === null) return null;
-    if (new Date(authorization.expiresAt).getTime() < Date.now()) return null;
+    if (authorization.status !== 'approved') {return null;}
+    if (authorization.authorizedAt === null) {return null;}
+    if (new Date(authorization.expiresAt).getTime() < Date.now()) {return null;}
 
     this.counter += 1;
     const now = new Date().toISOString();
@@ -45,8 +45,8 @@ export class AgentOrchestrationBridgeService {
 
   complete(bridgeId: string, resultHash: string): AgentOrchestrationBridgeType | null {
     const bridge = this.bridges.get(bridgeId);
-    if (!bridge) return null;
-    if (bridge.status !== 'dispatched') return bridge;
+    if (!bridge) {return null;}
+    if (bridge.status !== 'dispatched') {return bridge;}
 
     const completed: AgentOrchestrationBridgeType = {
       ...bridge,
@@ -61,7 +61,7 @@ export class AgentOrchestrationBridgeService {
 
   fail(bridgeId: string, errorMessage: string): AgentOrchestrationBridgeType | null {
     const bridge = this.bridges.get(bridgeId);
-    if (!bridge) return null;
+    if (!bridge) {return null;}
 
     const failed: AgentOrchestrationBridgeType = {
       ...bridge,

@@ -15,7 +15,7 @@ import {
 import { clamp } from '../../common/math';
 
 function ratioOrZero(numerator: number, denominator: number): number {
-  if (denominator <= 0) return 0;
+  if (denominator <= 0) {return 0;}
   return numerator / denominator;
 }
 
@@ -29,8 +29,8 @@ const DIMENSION_LABELS: Record<string, string> = {
 };
 
 function classify(score: number): RevenueClassification {
-  if (score >= HEALTHY_THRESHOLD) return 'healthy';
-  if (score >= UNHEALTHY_THRESHOLD) return 'borderline';
+  if (score >= HEALTHY_THRESHOLD) {return 'healthy';}
+  if (score >= UNHEALTHY_THRESHOLD) {return 'borderline';}
   return 'unhealthy';
 }
 
@@ -43,7 +43,7 @@ function buildReasoning(
 
   const worst = Object.entries(dimensions).reduce<{ key: string; value: number } | null>(
     (acc, [key, value]) => {
-      if (acc === null || value < acc.value) return { key, value };
+      if (acc === null || value < acc.value) {return { key, value };}
       return acc;
     },
     null,
@@ -51,7 +51,7 @@ function buildReasoning(
 
   const best = Object.entries(dimensions).reduce<{ key: string; value: number } | null>(
     (acc, [key, value]) => {
-      if (acc === null || value > acc.value) return { key, value };
+      if (acc === null || value > acc.value) {return { key, value };}
       return acc;
     },
     null,

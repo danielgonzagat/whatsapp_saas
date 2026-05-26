@@ -32,7 +32,7 @@ describe('MindLiftReportService', () => {
       wonVsBaseline: true,
       createdAt: new Date(),
       ...overrides,
-    }) as ClosedOutcomeRow;
+    });
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

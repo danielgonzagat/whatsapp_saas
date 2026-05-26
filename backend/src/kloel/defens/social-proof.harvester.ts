@@ -29,12 +29,12 @@ export class SocialProofHarvester {
 
     for (const event of wsEvents) {
       const kind = PROOF_SIGNAL_MAP[event.eventName];
-      if (!kind) continue;
+      if (!kind) {continue;}
 
       const proofId = `${input.workspaceId}_${kind}_${event.eventId}`;
 
       const existing = this.store.get(input.workspaceId) ?? [];
-      if (existing.some((p) => p.proofId === proofId)) continue;
+      if (existing.some((p) => p.proofId === proofId)) {continue;}
 
       const credibility = this.computeCredibility(kind, event);
       const visibility = this.computeVisibility(kind);

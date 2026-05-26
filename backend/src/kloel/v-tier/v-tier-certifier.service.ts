@@ -109,7 +109,7 @@ export class VtierCertifierService {
       opts.kloelPromptsHelpersPath ?? join(__dirname, '..', 'kloel.prompts.helpers.ts'),
     ];
     for (const p of searchPaths) {
-      if (existsSync(p)) paths.push(p);
+      if (existsSync(p)) {paths.push(p);}
     }
     if (paths.length === 0) {
       return {

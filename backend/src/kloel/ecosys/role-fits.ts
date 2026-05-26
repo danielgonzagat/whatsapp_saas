@@ -16,11 +16,11 @@ interface FingerprintProfile {
 }
 
 function jaccard(a: readonly string[], b: readonly string[]): number {
-  if (a.length === 0 && b.length === 0) return 0;
+  if (a.length === 0 && b.length === 0) {return 0;}
   const setA = new Set(a);
   const setB = new Set(b);
   let intersection = 0;
-  for (const x of setA) if (setB.has(x)) intersection += 1;
+  for (const x of setA) {if (setB.has(x)) {intersection += 1;}}
   const union = setA.size + setB.size - intersection;
   return union === 0 ? 0 : intersection / union;
 }
@@ -52,11 +52,11 @@ function fitBetween(
   const out: RoleFitMatch[] = [];
   for (const a of profiles) {
     for (const b of profiles) {
-      if (a.workspaceFingerprint === b.workspaceFingerprint) continue;
+      if (a.workspaceFingerprint === b.workspaceFingerprint) {continue;}
       const matchPair = rolePairs.find(([x, y]) => a.role === x && b.role === y);
-      if (!matchPair) continue;
+      if (!matchPair) {continue;}
       const score = jaccard(a.capabilities, b.needs);
-      if (score < threshold) continue;
+      if (score < threshold) {continue;}
       const reason = a.capabilities.filter((c) => b.needs.includes(c));
       out.push(makeFit(prefix, a, b, score, reason));
     }

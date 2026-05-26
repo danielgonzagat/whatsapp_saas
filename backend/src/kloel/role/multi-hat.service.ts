@@ -101,10 +101,10 @@ export class MultiHatService {
    */
   public getActiveRoles(workspaceId: string): readonly Role[] {
     const profile = this.profiles.get(workspaceId);
-    if (!profile) return [];
+    if (!profile) {return [];}
     const roles: Role[] = [];
-    if (profile.primaryRole) roles.push(profile.primaryRole);
-    for (const r of profile.secondaryRoles) roles.push(r);
+    if (profile.primaryRole) {roles.push(profile.primaryRole);}
+    for (const r of profile.secondaryRoles) {roles.push(r);}
     return roles;
   }
 

@@ -30,7 +30,7 @@ describe('MailboxGmailOAuthCallbackController', () => {
         expiresAt: new Date(),
       });
 
-      await controller.handleCallback('auth-code-123', 'signed-state', undefined, res as never);
+      await controller.handleCallback('auth-code-123', 'signed-state', undefined, res);
 
       expect(completeOAuthCallback).toHaveBeenCalledWith('auth-code-123', 'signed-state');
       expect(res.redirect).toHaveBeenCalledWith(
@@ -39,7 +39,7 @@ describe('MailboxGmailOAuthCallbackController', () => {
     });
 
     it('redirects with error reason when OAuth provider returns error query param', async () => {
-      await controller.handleCallback(undefined, undefined, 'access_denied', res as never);
+      await controller.handleCallback(undefined, undefined, 'access_denied', res);
 
       expect(completeOAuthCallback).not.toHaveBeenCalled();
       expect(res.redirect).toHaveBeenCalledWith(
@@ -48,7 +48,7 @@ describe('MailboxGmailOAuthCallbackController', () => {
     });
 
     it('redirects with missing_code_or_state when code or state is absent', async () => {
-      await controller.handleCallback(undefined, 'signed-state', undefined, res as never);
+      await controller.handleCallback(undefined, 'signed-state', undefined, res);
 
       expect(completeOAuthCallback).not.toHaveBeenCalled();
       expect(res.redirect).toHaveBeenCalledWith(
@@ -59,7 +59,7 @@ describe('MailboxGmailOAuthCallbackController', () => {
     it('redirects with oauth_callback_failed when service throws', async () => {
       completeOAuthCallback.mockRejectedValueOnce(new Error('token exchange failed'));
 
-      await controller.handleCallback('auth-code-123', 'signed-state', undefined, res as never);
+      await controller.handleCallback('auth-code-123', 'signed-state', undefined, res);
 
       expect(res.redirect).toHaveBeenCalledWith(
         'http://localhost:3000/marketing/email?email=error&provider=gmail&reason=oauth_callback_failed',
@@ -77,7 +77,7 @@ describe('MailboxGmailOAuthCallbackController', () => {
         expiresAt: new Date(),
       });
 
-      await controller.handleCallback('code-xyz', 'state-abc', undefined, res as never);
+      await controller.handleCallback('code-xyz', 'state-abc', undefined, res);
 
       expect(completeOAuthCallback).toHaveBeenCalledTimes(1);
       expect(completeOAuthCallback).toHaveBeenCalledWith('code-xyz', 'state-abc');

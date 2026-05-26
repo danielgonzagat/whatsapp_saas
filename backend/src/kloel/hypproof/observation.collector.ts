@@ -67,7 +67,7 @@ export class ObservationCollectorService {
 
   totalEvidence(workspaceId: string, experimentId: string): number {
     const obs = this.getByExperiment(workspaceId, experimentId);
-    if (obs.length === 0) return 0;
+    if (obs.length === 0) {return 0;}
     return Math.max(...obs.map((o) => o.evidenceCount));
   }
 

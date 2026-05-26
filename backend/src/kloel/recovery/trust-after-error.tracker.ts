@@ -53,10 +53,10 @@ export class TrustAfterErrorTracker {
 
   public markRecovered(workspaceId: string, errorId: string): boolean {
     const entry = this.history.get(workspaceId);
-    if (!entry) return false;
+    if (!entry) {return false;}
 
     const record = entry.errors.find((e) => e.errorId === errorId);
-    if (!record) return false;
+    if (!record) {return false;}
 
     (record as { recovered: boolean }).recovered = true;
     return true;
@@ -64,7 +64,7 @@ export class TrustAfterErrorTracker {
 
   public nonRepetitionRate(workspaceId: string): number {
     const entry = this.history.get(workspaceId);
-    if (!entry || entry.errors.length === 0) return 1;
+    if (!entry || entry.errors.length === 0) {return 1;}
 
     const uniquePatterns = new Set<string>();
     let total = 0;
@@ -76,13 +76,13 @@ export class TrustAfterErrorTracker {
       );
     }
 
-    if (total === 0) return 1;
+    if (total === 0) {return 1;}
     return 1 - (total - uniquePatterns.size) / total;
   }
 
   public autoDetectionRate(workspaceId: string): number {
     const entry = this.history.get(workspaceId);
-    if (!entry || entry.errors.length === 0) return 1;
+    if (!entry || entry.errors.length === 0) {return 1;}
 
     const autoDetected = entry.errors.filter(
       (e) =>
@@ -129,8 +129,8 @@ export class TrustAfterErrorTracker {
     const r18Score = (autoDetectRate + nonRepeat) / 2;
 
     let trustTrend: TrustAfterErrorSnapshot['trustTrend'] = 'flat';
-    if (r18Score >= 0.8) trustTrend = 'up';
-    else if (r18Score < 0.4) trustTrend = 'down';
+    if (r18Score >= 0.8) {trustTrend = 'up';}
+    else if (r18Score < 0.4) {trustTrend = 'down';}
 
     return {
       workspaceId,

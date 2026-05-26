@@ -21,7 +21,7 @@ const WINDOW_DAYS = 120;
 function extractProductId(
   payload: Readonly<Record<string, unknown>> | undefined,
 ): string {
-  if (!payload) return 'unknown';
+  if (!payload) {return 'unknown';}
   const pid = payload['productId'] ?? payload['productRef'] ?? payload['planId'];
   return typeof pid === 'string' ? pid : 'unknown';
 }
@@ -29,7 +29,7 @@ function extractProductId(
 function extractProductTier(
   payload: Readonly<Record<string, unknown>> | undefined,
 ): string | undefined {
-  if (!payload) return undefined;
+  if (!payload) {return undefined;}
   const tier = payload['productTier'] ?? payload['tier'];
   return typeof tier === 'string' ? tier : undefined;
 }
@@ -55,7 +55,7 @@ export function detectProductVersionFit(
   for (const event of filtered) {
     const pid = extractProductId(event.payload);
     const tier = extractProductTier(event.payload);
-    if (tier) productTiers.set(pid, tier);
+    if (tier) {productTiers.set(pid, tier);}
 
     if (event.eventName === 'commerce.payment.approved') {
       productSales.set(pid, (productSales.get(pid) ?? 0) + 1);
@@ -67,7 +67,7 @@ export function detectProductVersionFit(
   }
 
   for (const [productId, sales] of productSales) {
-    if (sales < MIN_SALES_PER_PRODUCT) continue;
+    if (sales < MIN_SALES_PER_PRODUCT) {continue;}
     const refunds = productRefunds.get(productId) ?? 0;
     const churn = productChurn.get(productId) ?? 0;
     const refundRate = refunds / sales;

@@ -311,11 +311,7 @@ describe('ConversationalOnboardingService', () => {
       });
       prisma.kloelMemory.findMany.mockResolvedValue([{ id: 'm1' }, { id: 'm2' }]);
 
-      const result = (await service.getStatus('ws-1')) as {
-        completed: boolean;
-        messagesCount: number;
-        hasStarted: boolean;
-      };
+      const result = (await service.getStatus('ws-1'));
 
       expect(result.completed).toBe(true);
       expect(result.messagesCount).toBe(2);

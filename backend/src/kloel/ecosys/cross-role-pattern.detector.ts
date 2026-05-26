@@ -18,7 +18,7 @@ const MIN_ROLES_FOR_CROSS = 2;
 @Injectable()
 export class CrossRolePatternDetectorService {
   public detect(signals: readonly WorkspaceRoleSignal[]): readonly CrossRolePattern[] {
-    if (signals.length === 0) return [];
+    if (signals.length === 0) {return [];}
     const tokenIndex = new Map<
       string,
       { roles: Set<Role>; workspaces: Set<string> }
@@ -33,8 +33,8 @@ export class CrossRolePatternDetectorService {
     }
     const out: CrossRolePattern[] = [];
     for (const [token, agg] of tokenIndex) {
-      if (agg.workspaces.size < MIN_WORKSPACES_FOR_PATTERN) continue;
-      if (agg.roles.size < MIN_ROLES_FOR_CROSS) continue;
+      if (agg.workspaces.size < MIN_WORKSPACES_FOR_PATTERN) {continue;}
+      if (agg.roles.size < MIN_ROLES_FOR_CROSS) {continue;}
       const sortedRoles = [...agg.roles].sort();
       const confidence = Math.min(
         1,

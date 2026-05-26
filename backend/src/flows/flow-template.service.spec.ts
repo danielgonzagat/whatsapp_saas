@@ -49,7 +49,7 @@ describe('FlowTemplateService', () => {
       category: 'sales',
       nodes: [],
       edges: [],
-    } as never);
+    });
     expect(prisma.flowTemplate.create).toHaveBeenCalled();
     const callArg = prisma.flowTemplate.create.mock.calls[0][0];
     expect(callArg.data.isPublic).toBe(false);

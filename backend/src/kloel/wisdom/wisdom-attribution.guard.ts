@@ -28,7 +28,7 @@ export interface AttributionViolation {
  */
 function checkDescription(description: string): RegExp | null {
   for (const pattern of PII_KEYWORD_PATTERNS) {
-    if (pattern.test(description)) return pattern;
+    if (pattern.test(description)) {return pattern;}
   }
   return null;
 }

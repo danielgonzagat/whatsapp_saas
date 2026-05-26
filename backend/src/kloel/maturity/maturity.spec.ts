@@ -22,13 +22,13 @@ function ev(over?: Partial<SpineEventRef>): SpineEventRef {
     occurredAt: over?.occurredAt ?? '2026-05-13T20:00:00.000Z',
     truthMode: over?.truthMode ?? 'observed',
   };
-  if (over?.entityRef !== undefined) defaults['entityRef'] = over.entityRef;
-  if (over?.valence !== undefined) defaults['valence'] = over.valence;
-  if (over?.payload !== undefined) defaults['payload'] = over.payload;
-  if (over?.correlationId !== undefined) defaults['correlationId'] = over.correlationId;
-  if (over?.eventId) defaults['eventId'] = over.eventId;
-  if (over?.eventName) defaults['eventName'] = over.eventName;
-  if (over?.occurredAt) defaults['occurredAt'] = over.occurredAt;
+  if (over?.entityRef !== undefined) {defaults['entityRef'] = over.entityRef;}
+  if (over?.valence !== undefined) {defaults['valence'] = over.valence;}
+  if (over?.payload !== undefined) {defaults['payload'] = over.payload;}
+  if (over?.correlationId !== undefined) {defaults['correlationId'] = over.correlationId;}
+  if (over?.eventId) {defaults['eventId'] = over.eventId;}
+  if (over?.eventName) {defaults['eventName'] = over.eventName;}
+  if (over?.occurredAt) {defaults['occurredAt'] = over.occurredAt;}
   return defaults as SpineEventRef;
 }
 

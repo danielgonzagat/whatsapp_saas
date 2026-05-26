@@ -23,15 +23,15 @@ describe('AdminTransactionsController', () => {
 
       const result = await controller.list({
         search: 'joao',
-        status: 'PAID' as never,
-        method: 'PIX' as never,
+        status: 'PAID',
+        method: 'PIX',
         gateway: 'stripe',
         workspaceId: 'ws-1',
         from,
         to,
         skip: 10,
         take: 20,
-      } as never);
+      });
 
       expect(list).toHaveBeenCalledTimes(1);
       expect(list).toHaveBeenCalledWith({
@@ -52,7 +52,7 @@ describe('AdminTransactionsController', () => {
       const error = new Error('query failed');
       list.mockRejectedValue(error);
 
-      await expect(controller.list({} as never)).rejects.toThrow('query failed');
+      await expect(controller.list({})).rejects.toThrow('query failed');
     });
   });
 
@@ -86,7 +86,7 @@ describe('AdminTransactionsController', () => {
       await expect(
         controller.operate(
           'order-1',
-          { action: AdminTransactionAction.CHARGEBACK } as never,
+          { action: AdminTransactionAction.CHARGEBACK },
           admin,
         ),
       ).rejects.toThrow('operation failed');

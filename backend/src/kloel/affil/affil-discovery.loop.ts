@@ -210,7 +210,7 @@ export class AffilDiscoveryLoopService {
         (s) => pattern.signalTypes.includes(s.signalType),
       );
 
-      if (relevantSignals.length === 0) continue;
+      if (relevantSignals.length === 0) {continue;}
 
       if (pattern.condition(relevantSignals, input.context)) {
         const insight = pattern.generateInsight(relevantSignals, input.context);

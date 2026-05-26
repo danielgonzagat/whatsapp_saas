@@ -25,12 +25,12 @@ const DEFAULT_WEIGHT_MARGIN_THRESHOLD = 0.2;
 const DEFAULT_MIN_SAMPLE_SIZE = 3;
 
 function mean(values: number[]): number {
-  if (values.length === 0) return 0;
+  if (values.length === 0) {return 0;}
   return values.reduce((a, b) => a + b, 0) / values.length;
 }
 
 function variance(values: number[], avg: number): number {
-  if (values.length <= 1) return 0;
+  if (values.length <= 1) {return 0;}
   const sumSq = values.reduce((s, v) => s + (v - avg) * (v - avg), 0);
   return sumSq / (values.length - 1);
 }
@@ -136,7 +136,7 @@ export function makePlatformBiasMonitorGate(
             (ext) =>
               Math.abs(ext.qualityScore - intRec.qualityScore) <= 0.05,
           );
-          if (sameQualityExternals.length < minSampleSize) continue;
+          if (sameQualityExternals.length < minSampleSize) {continue;}
 
           const extAvgWeight = mean(
             sameQualityExternals.map((e) => e.weight),

@@ -28,7 +28,7 @@ function computeKnowledgeMaturity(
   events: readonly SpineEventRef[],
   domainCount: number,
 ): number {
-  if (events.length === 0) return 0;
+  if (events.length === 0) {return 0;}
 
   const observedRatio =
     events.filter((e) => e.truthMode === 'observed').length / events.length;

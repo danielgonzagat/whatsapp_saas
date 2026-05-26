@@ -43,7 +43,7 @@ export class MarketEntryDecisionService {
 
     return hypotheses.flatMap((hypothesis) => {
       const experiment = this.designer.design(hypothesis);
-      if (!experiment) return [];
+      if (!experiment) {return [];}
 
       return [
         {

@@ -368,7 +368,7 @@ export class CheckoutService {
   /** Set checkout theme (colors, button text, layout). */
   async setTheme(workspaceId: string, checkoutId: string, theme: SetCheckoutThemeDto) {
     await this.verifyCheckoutOwnership(checkoutId, workspaceId);
-    return this.productService.updateConfig(checkoutId, theme as Prisma.CheckoutConfigUpdateInput);
+    return this.productService.updateConfig(checkoutId, theme);
   }
 
   /** Set checkout coupon configuration. */
@@ -380,7 +380,7 @@ export class CheckoutService {
     await this.verifyCheckoutOwnership(checkoutId, workspaceId);
     return this.productService.updateConfig(
       checkoutId,
-      couponConfig as Prisma.CheckoutConfigUpdateInput,
+      couponConfig,
     );
   }
 
@@ -389,7 +389,7 @@ export class CheckoutService {
     await this.verifyCheckoutOwnership(checkoutId, workspaceId);
     return this.productService.updateConfig(
       checkoutId,
-      timerConfig as Prisma.CheckoutConfigUpdateInput,
+      timerConfig,
     );
   }
 
@@ -402,7 +402,7 @@ export class CheckoutService {
     await this.verifyCheckoutOwnership(checkoutId, workspaceId);
     return this.productService.updateConfig(
       checkoutId,
-      config as Prisma.CheckoutConfigUpdateInput,
+      config,
     );
   }
 

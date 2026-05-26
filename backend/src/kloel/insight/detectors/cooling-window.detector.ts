@@ -43,7 +43,7 @@ export function detectCoolingWindow(input: DetectorInput): DetectorResult {
         const payload = event.payload;
         if (payload) {
           const pid = payload['leadId'] ?? payload['leadRef'];
-          if (typeof pid === 'string') leadId = pid;
+          if (typeof pid === 'string') {leadId = pid;}
         }
       }
       if (leadId) {
@@ -58,7 +58,7 @@ export function detectCoolingWindow(input: DetectorInput): DetectorResult {
     }
   }
 
-  if (conversionDurations.length < MIN_CONVERSIONS) return { insights: [] };
+  if (conversionDurations.length < MIN_CONVERSIONS) {return { insights: [] };}
 
   const med = median(conversionDurations);
 

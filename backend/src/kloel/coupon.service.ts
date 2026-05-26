@@ -25,13 +25,13 @@ export class CouponService {
     const coupon = await this.prisma.productCoupon.findFirst({
       where: { productId, code, active: true, OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }] },
     });
-    if (!coupon) return { success: false, error: 'coupon_invalid_or_expired' };
+    if (!coupon) {return { success: false, error: 'coupon_invalid_or_expired' };}
     return { success: true, coupon: { id: coupon.id, code: coupon.code, discountType: coupon.discountType, discountValue: coupon.discountValue } };
   }
 
   async delete(_workspaceId: string, couponId: string) {
     const coupon = await this.prisma.productCoupon.findFirst({ where: { id: couponId } });
-    if (!coupon) return { success: false, error: 'coupon_not_found' };
+    if (!coupon) {return { success: false, error: 'coupon_not_found' };}
     await this.prisma.productCoupon.delete({ where: { id: couponId } });
     return { success: true, message: `Cupom "${coupon.code}" removido.` };
   }

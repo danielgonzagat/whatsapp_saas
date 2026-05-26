@@ -44,11 +44,11 @@ export class GapDetector {
 
     for (const signal of signals) {
       const profile = DOMAIN_RISK_PROFILES[signal.domain];
-      if (!profile) continue;
+      if (!profile) {continue;}
 
       const confidence = clamp([0, 1], signal.severityScore);
 
-      if (confidence < 0.3) continue;
+      if (confidence < 0.3) {continue;}
 
       const projectedRisk =
         Math.round(profile.baseRiskCents * signal.severityScore * commercialImpactWeight(profile.impact));

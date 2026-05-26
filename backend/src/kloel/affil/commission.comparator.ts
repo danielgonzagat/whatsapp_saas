@@ -60,7 +60,7 @@ export class CommissionComparatorService {
   ): number | null {
     const current = comparison.comparisons.find((c) => c.offerId === currentOfferId);
     const target = comparison.comparisons.find((c) => c.offerId === targetOfferId);
-    if (!current || !target || current.expectedMonthlyEarnings === 0) return null;
+    if (!current || !target || current.expectedMonthlyEarnings === 0) {return null;}
     return Math.round(
       ((target.expectedMonthlyEarnings - current.expectedMonthlyEarnings) / current.expectedMonthlyEarnings) * 1000,
     ) / 1000;

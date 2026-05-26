@@ -15,15 +15,15 @@ const MIN_PRICE_POINTS = 2;
 function extractAmountCents(
   payload: Readonly<Record<string, unknown>> | undefined,
 ): number {
-  if (!payload) return 0;
+  if (!payload) {return 0;}
 
   const amount =
     payload['amountCents'] ??
     payload['amount_cents'] ??
     payload['amount'] ??
     payload['value'];
-  if (typeof amount === 'number') return amount;
-  if (typeof amount === 'string') return parseInt(amount, 10) || 0;
+  if (typeof amount === 'number') {return amount;}
+  if (typeof amount === 'string') {return parseInt(amount, 10) || 0;}
   return 0;
 }
 
@@ -41,12 +41,12 @@ export function detectPricingElasticity(input: DetectorInput): DetectorResult {
       withinWindow(e.occurredAt, nowMs, windowDays),
   );
 
-  if (filtered.length < MIN_TRANSACTIONS) return { insights: [] };
+  if (filtered.length < MIN_TRANSACTIONS) {return { insights: [] };}
 
   const priceVolumes = new Map<number, { approved: number; declined: number }>();
   for (const event of filtered) {
     const amount = extractAmountCents(event.payload);
-    if (amount <= 0) continue;
+    if (amount <= 0) {continue;}
 
     const entry = priceVolumes.get(amount) ?? { approved: 0, declined: 0 };
     if (event.eventName === 'commerce.payment.approved') {
@@ -57,7 +57,7 @@ export function detectPricingElasticity(input: DetectorInput): DetectorResult {
     priceVolumes.set(amount, entry);
   }
 
-  if (priceVolumes.size < MIN_PRICE_POINTS) return { insights: [] };
+  if (priceVolumes.size < MIN_PRICE_POINTS) {return { insights: [] };}
 
   const sorted = Array.from(priceVolumes.entries()).sort((a, b) => a[0] - b[0]);
 
@@ -68,7 +68,7 @@ export function detectPricingElasticity(input: DetectorInput): DetectorResult {
 
   for (const [price, { approved, declined }] of sorted) {
     const total = approved + declined;
-    if (total === 0) continue;
+    if (total === 0) {continue;}
     const rate = approved / total;
     if (rate > maxApprovalRate) {
       maxApprovalRate = rate;

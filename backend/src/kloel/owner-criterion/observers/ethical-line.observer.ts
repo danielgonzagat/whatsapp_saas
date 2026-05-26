@@ -173,7 +173,7 @@ export function observeEthicalLines(input: ObserverInput): EthicalLineObservatio
     ...detectCustomerProtectionBoundaries(input.events),
   ];
 
-  if (signals.length < MIN_EVENTS) return [];
+  if (signals.length < MIN_EVENTS) {return [];}
 
   return groupByBoundaryType(signals, input.workspaceId, input.nowMs);
 }

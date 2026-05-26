@@ -74,7 +74,7 @@ describe('DashboardController', () => {
 
       const req = { user: { id: 'user-2' } };
       const query = { period: '7d', workspaceId: 'ws-query' };
-      const result = await controller.getHome(req as never, query as never);
+      const result = await controller.getHome(req as never, query);
 
       expect(resolveWorkspaceIdMock).toHaveBeenCalledWith(req, 'ws-query');
       expect(getHomeSnapshotMock).toHaveBeenCalledWith('ws-home', {

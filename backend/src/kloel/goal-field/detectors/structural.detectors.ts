@@ -52,7 +52,7 @@ const uiWithoutPersistenceDetector: Detector = {
           e.correlationId === ui.correlationId &&
           (e.eventName.startsWith('commerce.') || e.eventName.startsWith('lineage.')),
       );
-      if (persisted) continue;
+      if (persisted) {continue;}
       out.push(
         structTension(
           'structural.ui_without_persistence',
@@ -89,9 +89,9 @@ const flowWithoutValidationDetector: Detector = {
             e.eventName === 'commerce.payment.declined' ||
             e.eventName === 'commerce.cart.abandoned'),
       );
-      if (closed) continue;
+      if (closed) {continue;}
       const ageMin = (nowMs - Date.parse(fs.occurredAt)) / 60000;
-      if (ageMin < 30) continue;
+      if (ageMin < 30) {continue;}
       out.push(
         structTension(
           'structural.flow_without_validation',
@@ -130,7 +130,7 @@ const actionWithoutAuditDetector: Detector = {
           ((e.payload?.['kind'] as string | undefined) === 'audit_log' ||
             e.eventName.includes('audit')),
       );
-      if (audit) continue;
+      if (audit) {continue;}
       out.push(
         structTension(
           'structural.action_without_audit',
@@ -165,7 +165,7 @@ export const backendWithoutSurfaceDetector: Detector = {
     const out: Tension[] = [];
     for (const surface of knownSurfaces) {
       const hasSurfaceEvent = events.some((e) => e.eventName.startsWith(surface));
-      if (hasSurfaceEvent) continue;
+      if (hasSurfaceEvent) {continue;}
       out.push(
         structTension(
           'structural.backend_without_surface',

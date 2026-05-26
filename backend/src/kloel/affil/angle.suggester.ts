@@ -153,7 +153,7 @@ export class AngleSuggesterService {
     const exact = ANGLE_TEMPLATES.find(
       (t) => t.category === category,
     );
-    if (exact) return exact.templates;
+    if (exact) {return exact.templates;}
 
     for (const template of ANGLE_TEMPLATES) {
       for (const trigger of template.triggers) {

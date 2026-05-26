@@ -166,7 +166,7 @@ function detectForcedEndorsement(
     const lower = text.toLowerCase();
     let hits = 0;
     for (const kw of FORCED_ENDORSEMENT_KEYWORDS) {
-      if (lower.includes(kw)) hits += 1;
+      if (lower.includes(kw)) {hits += 1;}
     }
     if (hits > maxHitsInOne) {
       maxHitsInOne = hits;
@@ -238,10 +238,10 @@ function detectAudienceGaslighting(
 
 function extractMessageText(ev: CreatorEvent): string | undefined {
   const p = ev.payload;
-  if (!p) return undefined;
-  if (typeof p['messageBody'] === 'string') return p['messageBody'] as string;
-  if (typeof p['body'] === 'string') return p['body'] as string;
-  if (typeof p['text'] === 'string') return p['text'] as string;
+  if (!p) {return undefined;}
+  if (typeof p['messageBody'] === 'string') {return p['messageBody'];}
+  if (typeof p['body'] === 'string') {return p['body'];}
+  if (typeof p['text'] === 'string') {return p['text'];}
   return undefined;
 }
 
@@ -263,19 +263,19 @@ export function protectAuthenticity(
   const warningFlags: AuthenticityWarningFlag[] = [];
 
   const overselling = detectOverselling(texts, cfg);
-  if (overselling) warningFlags.push(overselling);
+  if (overselling) {warningFlags.push(overselling);}
 
   const misleading = detectMisleadingClaims(texts, cfg);
-  if (misleading) warningFlags.push(misleading);
+  if (misleading) {warningFlags.push(misleading);}
 
   const forced = detectForcedEndorsement(texts, cfg);
-  if (forced) warningFlags.push(forced);
+  if (forced) {warningFlags.push(forced);}
 
   const misalignment = detectValueMisalignment(texts);
-  if (misalignment) warningFlags.push(misalignment);
+  if (misalignment) {warningFlags.push(misalignment);}
 
   const gaslighting = detectAudienceGaslighting(texts);
-  if (gaslighting) warningFlags.push(gaslighting);
+  if (gaslighting) {warningFlags.push(gaslighting);}
 
   const atRisk = warningFlags.length > 0;
 

@@ -57,10 +57,10 @@ export class TacticalTradeoffAdvisor {
   }
 
   private classify(mix: number): TacticalScore {
-    if (mix >= CLASSIFY_THRESHOLD_STRONG) return 'strongly_tactical';
-    if (mix >= CLASSIFY_THRESHOLD_MOSTLY) return 'mostly_tactical';
-    if (mix >= CLASSIFY_THRESHOLD_BALANCED) return 'balanced';
-    if (mix >= CLASSIFY_THRESHOLD_DEFENSIBLE) return 'mostly_defensible';
+    if (mix >= CLASSIFY_THRESHOLD_STRONG) {return 'strongly_tactical';}
+    if (mix >= CLASSIFY_THRESHOLD_MOSTLY) {return 'mostly_tactical';}
+    if (mix >= CLASSIFY_THRESHOLD_BALANCED) {return 'balanced';}
+    if (mix >= CLASSIFY_THRESHOLD_DEFENSIBLE) {return 'mostly_defensible';}
     return 'strongly_defensible';
   }
 

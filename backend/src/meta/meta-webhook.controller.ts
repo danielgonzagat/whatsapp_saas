@@ -112,7 +112,7 @@ export class MetaWebhookController {
         const changeField = entry.changes?.[0]?.field || 'unknown';
         const entryRedisKey = `webhook:meta-marketing:${entry.id}-${entry.time}-${changeField}`;
         const acquired = await this.redis.set(entryRedisKey, '1', 'EX', 300, 'NX');
-        if (acquired) allDupes = false;
+        if (acquired) {allDupes = false;}
       }
       if (allDupes) {
         this.logger.log('All Meta marketing entries already processed (Redis dedup)');

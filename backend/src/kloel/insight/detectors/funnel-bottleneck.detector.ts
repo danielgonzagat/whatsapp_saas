@@ -55,12 +55,12 @@ export function detectFunnelBottleneck(input: DetectorInput): DetectorResult {
     const prevStage = PROGRESSION_ORDER[i - 1];
     const currStage = PROGRESSION_ORDER[i];
 
-    if (prevStage === undefined || currStage === undefined) continue;
+    if (prevStage === undefined || currStage === undefined) {continue;}
 
     const prevCount = counts.get(prevStage) ?? 0;
     const currCount = counts.get(currStage) ?? 0;
 
-    if (prevCount === 0) continue;
+    if (prevCount === 0) {continue;}
 
     const dropRate = 1 - currCount / prevCount;
 

@@ -145,12 +145,12 @@ export class DefensibilityNarrativeBuilder {
     positioningScore: number,
     audienceScore: number,
   ): string {
-    if (defensibilityScore >= 0.8) return 'Deep Moat — highly defensible with multiple reinforcing assets';
-    if (defensibilityScore >= 0.6) return 'Building Moat — defensible trajectory, continue reinforcing';
-    if (defensibilityScore >= 0.4) return 'Emerging Moat — early defensibility signals present';
+    if (defensibilityScore >= 0.8) {return 'Deep Moat — highly defensible with multiple reinforcing assets';}
+    if (defensibilityScore >= 0.6) {return 'Building Moat — defensible trajectory, continue reinforcing';}
+    if (defensibilityScore >= 0.4) {return 'Emerging Moat — early defensibility signals present';}
 
-    if (positioningScore > 0.3) return 'Positioning Moat forming — invest in uniqueness evidence';
-    if (audienceScore > 0.3) return 'Audience Moat forming — accelerate owned audience migration';
+    if (positioningScore > 0.3) {return 'Positioning Moat forming — invest in uniqueness evidence';}
+    if (audienceScore > 0.3) {return 'Audience Moat forming — accelerate owned audience migration';}
 
     return 'No Moat — tactical operations dominating; redirect to defensible asset building';
   }
@@ -234,8 +234,8 @@ export class DefensibilityNarrativeBuilder {
   }
 
   private classifySwitchingEvidence(score: number, evidenceCount: number): ReplacementPainItem['evidenceLevel'] {
-    if (score >= 0.75 && evidenceCount >= 5) return 'proven';
-    if (score > 0 || evidenceCount > 0) return 'emerging';
+    if (score >= 0.75 && evidenceCount >= 5) {return 'proven';}
+    if (score > 0 || evidenceCount > 0) {return 'emerging';}
     return 'not_yet_proven';
   }
 

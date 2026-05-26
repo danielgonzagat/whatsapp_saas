@@ -60,7 +60,7 @@ export class GoalFieldShadowAccumulatorService {
 
   isPromotionEligible(workspaceId: string, nowMs?: number): boolean {
     const state = this.states.get(workspaceId);
-    if (!state) return false;
+    if (!state) {return false;}
     if (nowMs !== undefined && state.lastCycleAt) {
       const lastMs = Date.parse(state.lastCycleAt);
       if (!isNaN(lastMs) && nowMs - lastMs > DECAY_WINDOW_MS) {
@@ -86,7 +86,7 @@ export class GoalFieldShadowAccumulatorService {
 
   private getOrCreateState(workspaceId: string): WorkspaceShadowState {
     const existing = this.states.get(workspaceId);
-    if (existing) return existing;
+    if (existing) {return existing;}
     return {
       workspaceId,
       consecutiveAccepts: 0,
@@ -102,10 +102,10 @@ export class GoalFieldShadowAccumulatorService {
     nowMs: number,
     now: string,
   ): void {
-    if (!state.lastCycleAt) return;
+    if (!state.lastCycleAt) {return;}
     const lastMs = Date.parse(state.lastCycleAt);
-    if (isNaN(lastMs)) return;
-    if (nowMs - lastMs <= DECAY_WINDOW_MS) return;
+    if (isNaN(lastMs)) {return;}
+    if (nowMs - lastMs <= DECAY_WINDOW_MS) {return;}
     state.consecutiveAccepts = 0;
     state.totalCycles = 0;
     state.totalRejects = 0;
@@ -117,8 +117,8 @@ export class GoalFieldShadowAccumulatorService {
   }
 
   private evaluateEligibility(state: WorkspaceShadowState): boolean {
-    if (state.consecutiveAccepts < PROMOTION_THRESHOLD) return false;
-    if (state.totalRejects >= MAX_REJECTS_CAP) return false;
+    if (state.consecutiveAccepts < PROMOTION_THRESHOLD) {return false;}
+    if (state.totalRejects >= MAX_REJECTS_CAP) {return false;}
     const ratio =
       state.totalCycles > 0 ? state.totalRejects / state.totalCycles : 0;
     return ratio < MAX_REJECT_RATIO;

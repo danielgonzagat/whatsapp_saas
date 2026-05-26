@@ -32,7 +32,7 @@ describe('CiaBootstrapService', () => {
       persistRuntimeSnapshot: jest.fn().mockResolvedValue(undefined),
       updateWorkspaceAutonomy: jest.fn().mockResolvedValue(undefined),
       scheduleContactCatalogRefresh: jest.fn().mockResolvedValue(undefined),
-    } as never;
+    };
     chatFilter = {
       normalizeChats: jest.fn().mockReturnValue([]),
       selectRemotePendingChats: jest.fn().mockReturnValue([]),

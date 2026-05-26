@@ -252,7 +252,7 @@ function InjectOptionalPolicySnapshot(): ParameterDecorator {
     const deps =
       (Reflect.getMetadata('self:paramtypes', target) as unknown[]) ??
       [];
-    if (!Array.isArray(deps)) return;
+    if (!Array.isArray(deps)) {return;}
     for (let i = deps.length; i <= parameterIndex; i++) {
       deps.push(undefined);
     }
@@ -262,7 +262,7 @@ function InjectOptionalPolicySnapshot(): ParameterDecorator {
     const optionalDeps: boolean[] =
       (Reflect.getMetadata('optional:paramtypes', target) as boolean[]) ??
       [];
-    if (!Array.isArray(optionalDeps)) return;
+    if (!Array.isArray(optionalDeps)) {return;}
     for (let i = optionalDeps.length; i <= parameterIndex; i++) {
       optionalDeps.push(false);
     }

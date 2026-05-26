@@ -52,15 +52,15 @@ function collectLeadActivity(
   const leadMap = new Map<string, LeadActivity>();
 
   for (const event of events) {
-    if (event.workspaceId !== workspaceId) continue;
+    if (event.workspaceId !== workspaceId) {continue;}
 
     const leadId = event.entityRef?.entityId;
-    if (!leadId || event.entityRef?.entityType !== 'lead') continue;
+    if (!leadId || event.entityRef?.entityType !== 'lead') {continue;}
 
-    if (!HOT_LEAD_EVENTS.has(event.eventName)) continue;
+    if (!HOT_LEAD_EVENTS.has(event.eventName)) {continue;}
 
     const hours = hoursBetween(event.occurredAt, nowIso);
-    if (hours > windowHours) continue;
+    if (hours > windowHours) {continue;}
 
     const existing = leadMap.get(leadId);
     if (existing !== undefined) {
@@ -93,9 +93,9 @@ function hasOperatorAction(
   nowIso: string,
 ): boolean {
   return events.some((e) => {
-    if (!OPERATOR_ACTION_EVENTS.has(e.eventName)) return false;
-    if (e.entityRef?.entityId !== leadId) return false;
-    if (e.entityRef.entityType !== 'lead') return false;
+    if (!OPERATOR_ACTION_EVENTS.has(e.eventName)) {return false;}
+    if (e.entityRef?.entityId !== leadId) {return false;}
+    if (e.entityRef.entityType !== 'lead') {return false;}
     return hoursBetween(e.occurredAt, nowIso) <= windowHours;
   });
 }
@@ -110,12 +110,12 @@ function findLastTouch(
   let latestMs = 0;
 
   for (const event of events) {
-    if (event.entityRef?.entityId !== leadId) continue;
-    if (event.entityRef.entityType !== 'lead') continue;
-    if (!OPERATOR_ACTION_EVENTS.has(event.eventName)) continue;
+    if (event.entityRef?.entityId !== leadId) {continue;}
+    if (event.entityRef.entityType !== 'lead') {continue;}
+    if (!OPERATOR_ACTION_EVENTS.has(event.eventName)) {continue;}
 
     const ms = parseTimestampMs(event.occurredAt);
-    if (hoursBetween(event.occurredAt, nowIso) > windowHours * 2) continue;
+    if (hoursBetween(event.occurredAt, nowIso) > windowHours * 2) {continue;}
 
     if (ms > latestMs) {
       latestMs = ms;

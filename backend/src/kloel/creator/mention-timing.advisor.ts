@@ -45,7 +45,7 @@ function computeDaysSinceLastMention(
   history: readonly MentionHistoryEntry[],
   now: number,
 ): number {
-  if (history.length === 0) return Infinity;
+  if (history.length === 0) {return Infinity;}
 
   const latest = history.reduce((max, h) => {
     const t = new Date(h.mentionedAt).getTime();
@@ -60,7 +60,7 @@ function computeRecentPromotionCount(
 ): number {
   return recentEvents.filter((e) => {
     const text = extractMessageText(e);
-    if (!text) return false;
+    if (!text) {return false;}
 
     const lower = text.toLowerCase();
     const promoSignals = [
@@ -83,7 +83,7 @@ function computeEngagementSinceLastMention(
   history: readonly MentionHistoryEntry[],
   now: number,
 ): number {
-  if (history.length === 0) return recentEvents.length;
+  if (history.length === 0) {return recentEvents.length;}
 
   const latestMentionAt = history.reduce((max, h) => {
     const t = new Date(h.mentionedAt).getTime();
@@ -99,7 +99,7 @@ function computeEngagementSinceLastMention(
 function computeAudienceReceptivity(
   recentEvents: readonly CreatorEvent[],
 ): number {
-  if (recentEvents.length === 0) return 0.5;
+  if (recentEvents.length === 0) {return 0.5;}
 
   const positiveCount = recentEvents.filter((e) =>
     e.valence === 'positive',
@@ -127,11 +127,11 @@ function determineRecommendation(
   engagementSinceLast: number,
   config: TimingConfig,
 ): MentionTimingRecommendation {
-  if (saturationIndex >= config.saturationPauseThreshold) return 'pause';
-  if (recentPromotions >= config.maxConsecutivePromotions) return 'pause';
-  if (engagementSinceLast < config.minEngagementBeforeMention) return 'wait';
-  if (daysSinceLastMention < config.minDaysBetweenMentions) return 'wait';
-  if (receptivity < 0.3) return 'pause';
+  if (saturationIndex >= config.saturationPauseThreshold) {return 'pause';}
+  if (recentPromotions >= config.maxConsecutivePromotions) {return 'pause';}
+  if (engagementSinceLast < config.minEngagementBeforeMention) {return 'wait';}
+  if (daysSinceLastMention < config.minDaysBetweenMentions) {return 'wait';}
+  if (receptivity < 0.3) {return 'pause';}
 
   if (
     receptivity >= config.receptivityHighThreshold &&
@@ -140,7 +140,7 @@ function determineRecommendation(
     return 'now';
   }
 
-  if (daysSinceLastMention >= config.idealDaysBetweenMentions) return 'now';
+  if (daysSinceLastMention >= config.idealDaysBetweenMentions) {return 'now';}
 
   return 'wait';
 }
@@ -157,11 +157,11 @@ function buildReason(
     case 'now':
       return `optimal timing: ${daysSinceLastMention >= 99 ? 'first mention' : `${daysSinceLastMention.toFixed(1)}d since last mention`}, receptivity ${receptivity.toFixed(2)}`;
     case 'wait':
-      if (daysSinceLastMention >= 99) return 'not enough engagement data yet';
+      if (daysSinceLastMention >= 99) {return 'not enough engagement data yet';}
       return `waiting: ${daysSinceLastMention.toFixed(1)}d since last, receptivity ${receptivity.toFixed(2)}`;
     case 'pause':
-      if (saturationIndex >= 0.6) return `pause: saturation index ${saturationIndex.toFixed(2)} too high`;
-      if (recentPromotions >= 5) return `pause: ${recentPromotions} consecutive promotions`;
+      if (saturationIndex >= 0.6) {return `pause: saturation index ${saturationIndex.toFixed(2)} too high`;}
+      if (recentPromotions >= 5) {return `pause: ${recentPromotions} consecutive promotions`;}
       return `pause: audience receptivity critically low (${receptivity.toFixed(2)})`;
     case 'never':
       return 'not recommended: audience engagement absent';
@@ -214,9 +214,9 @@ export function adviseMentionTiming(
 
 function extractMessageText(ev: CreatorEvent): string | undefined {
   const p = ev.payload;
-  if (!p) return undefined;
-  if (typeof p['messageBody'] === 'string') return p['messageBody'] as string;
-  if (typeof p['body'] === 'string') return p['body'] as string;
-  if (typeof p['text'] === 'string') return p['text'] as string;
+  if (!p) {return undefined;}
+  if (typeof p['messageBody'] === 'string') {return p['messageBody'];}
+  if (typeof p['body'] === 'string') {return p['body'];}
+  if (typeof p['text'] === 'string') {return p['text'];}
   return undefined;
 }

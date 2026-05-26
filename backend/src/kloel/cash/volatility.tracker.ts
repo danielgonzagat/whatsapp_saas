@@ -61,15 +61,15 @@ export class VolatilityTracker {
   }
 
   private normalizedVolatility(netFlows: readonly number[]): number {
-    if (netFlows.length < 2) return 0;
+    if (netFlows.length < 2) {return 0;}
     const stdDev = standardDeviation(netFlows);
     const meanAbs = netFlows.reduce((sum, f) => sum + Math.abs(f), 0) / netFlows.length;
-    if (meanAbs === 0) return 0;
+    if (meanAbs === 0) {return 0;}
     return stdDev / meanAbs;
   }
 
   private detectTrend(netFlows: readonly number[]): VolatilityTracking['trend'] {
-    if (netFlows.length < 4) return 'stable';
+    if (netFlows.length < 4) {return 'stable';}
     const mid = Math.floor(netFlows.length / 2);
     const firstHalf = netFlows.slice(0, mid);
     const secondHalf = netFlows.slice(mid);
@@ -77,14 +77,14 @@ export class VolatilityTracker {
     const firstVol = this.normalizedVolatility(firstHalf);
     const secondVol = this.normalizedVolatility(secondHalf);
 
-    if (secondVol > firstVol * 1.2) return 'increasing';
-    if (secondVol < firstVol * 0.8) return 'decreasing';
+    if (secondVol > firstVol * 1.2) {return 'increasing';}
+    if (secondVol < firstVol * 0.8) {return 'decreasing';}
     return 'stable';
   }
 
   private granularityWindowMs(granularity: 'daily' | 'weekly' | 'monthly'): number {
-    if (granularity === 'daily') return 24 * 60 * 60 * 1000;
-    if (granularity === 'weekly') return 7 * 24 * 60 * 60 * 1000;
+    if (granularity === 'daily') {return 24 * 60 * 60 * 1000;}
+    if (granularity === 'weekly') {return 7 * 24 * 60 * 60 * 1000;}
     return 30 * 24 * 60 * 60 * 1000;
   }
 }

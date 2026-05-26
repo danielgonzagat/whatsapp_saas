@@ -21,7 +21,7 @@ const WINDOW_DAYS = 90;
 function extractObjectionKind(
   payload: Readonly<Record<string, unknown>> | undefined,
 ): string | undefined {
-  if (!payload) return undefined;
+  if (!payload) {return undefined;}
   const kind = payload['kind'] ?? payload['objectionKind'];
   return typeof kind === 'string' ? kind : undefined;
 }
@@ -52,7 +52,7 @@ export function detectPositioningMismatch(
     }
   }
 
-  if (totalObjections < MIN_OBJECTIONS) return { insights: [] };
+  if (totalObjections < MIN_OBJECTIONS) {return { insights: [] };}
 
   const dominantCategory = 'price';
   const dominantCount = objectionKinds.get(dominantCategory) ?? 0;

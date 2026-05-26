@@ -154,7 +154,7 @@ export class MaturityGoalFilterService {
     const kw: string[] = [];
     for (let i = 0; i <= idx; i++) {
       const s = STAGE_ORDERED[i];
-      if (s) kw.push(...STAGE_KEYWORDS[s]);
+      if (s) {kw.push(...STAGE_KEYWORDS[s]);}
     }
     return kw;
   }

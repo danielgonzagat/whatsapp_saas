@@ -28,7 +28,7 @@ function makeSpine(): { spine: SpineEmitterService; emitAll: (events: SpineEvent
       subscribers.push(handler);
       const unsub = () => {
         const idx = subscribers.indexOf(handler);
-        if (idx >= 0) subscribers.splice(idx, 1);
+        if (idx >= 0) {subscribers.splice(idx, 1);}
       };
       return unsub;
     }),

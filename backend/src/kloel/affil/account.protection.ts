@@ -59,9 +59,9 @@ export class AccountProtectionService {
     riskScore: number,
     violations: readonly string[],
   ): 'safe' | 'review' | 'pause' | 'stop' {
-    if (riskScore >= RISK_HIGH_THRESHOLD || violations.length >= 3) return 'stop';
-    if (riskScore >= RISK_MODERATE_THRESHOLD) return 'pause';
-    if (violations.length > 0 || riskScore >= 0.2) return 'review';
+    if (riskScore >= RISK_HIGH_THRESHOLD || violations.length >= 3) {return 'stop';}
+    if (riskScore >= RISK_MODERATE_THRESHOLD) {return 'pause';}
+    if (violations.length > 0 || riskScore >= 0.2) {return 'review';}
     return 'safe';
   }
 

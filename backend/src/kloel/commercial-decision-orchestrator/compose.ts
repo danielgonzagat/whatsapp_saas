@@ -105,7 +105,7 @@ export function buildActions(params: {
   const couponDecision = params.couponDecision;
   const couponPercent =
     couponDecision && 'action' in couponDecision
-      ? discountFn(String((couponDecision as Record<string, unknown>).action))
+      ? discountFn(String((couponDecision).action))
       : undefined;
   if (couponDecision && couponPercent) {
     actions.push({
@@ -138,8 +138,8 @@ export function buildActions(params: {
   }
   if (
     params.humanTransferDecision &&
-    (params.humanTransferDecision as Record<string, unknown>).action !== 'continue_ai' &&
-    (params.humanTransferDecision as Record<string, unknown>).action !== 'pause_wait'
+    (params.humanTransferDecision).action !== 'continue_ai' &&
+    (params.humanTransferDecision).action !== 'pause_wait'
   ) {
     actions.push({
       tool: 'transfer_to_human',

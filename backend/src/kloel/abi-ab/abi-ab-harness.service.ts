@@ -52,16 +52,16 @@ function sum(arr: number[]): number {
   return arr.reduce((a, b) => a + b, 0);
 }
 function avg(arr: number[], fallback: number = 0): number {
-  if (arr.length === 0) return fallback;
+  if (arr.length === 0) {return fallback;}
   return sum(arr) / arr.length;
 }
 function ratio(numerator: number, denominator: number, fallback: number = 0): number {
-  if (denominator === 0) return fallback;
+  if (denominator === 0) {return fallback;}
   return numerator / denominator;
 }
 function clamp01(value: number): number {
-  if (value <= 0) return 0;
-  if (value >= 1) return 1;
+  if (value <= 0) {return 0;}
+  if (value >= 1) {return 1;}
   return value;
 }
 function extractClaimsFromText(text: string): AbClaimEvidence[] {
@@ -87,7 +87,7 @@ function estimateCommercialOutcome(params: {
   const satisfactionKeywords = ['obrigado', 'obrigada', 'excelente', 'satisfeito', 'gostei', 'perfeito', 'resolvido', 'ajudou', 'agradeço', 'valeu'];
   const hasConversion = conversionKeywords.some((kw) => text.includes(kw));
   const hasSatisfaction = satisfactionKeywords.some((kw) => text.includes(kw));
-  if (!hasConversion && !hasSatisfaction) return null;
+  if (!hasConversion && !hasSatisfaction) {return null;}
   return {
     conversionSignal: hasConversion,
     satisfactionSignal: hasSatisfaction ? hasSatisfaction : null,
@@ -141,7 +141,7 @@ export class AbiAbHarnessService {
     let count = 0;
     for (const r of records) {
       for (const c of r.claims) {
-        if (!c.hasProof) count++;
+        if (!c.hasProof) {count++;}
       }
     }
     return count;
@@ -155,7 +155,7 @@ export class AbiAbHarnessService {
   }
   public hallucinationRate(records: AbHarnessRecord[]): number {
     const total = this.totalClaims(records);
-    if (total === 0) return 0;
+    if (total === 0) {return 0;}
     return this.hallucinatedFacts(records) / total;
   }
   public computeRDelta(workspaceId: string): AbRCriterionDelta[] {
@@ -222,9 +222,9 @@ export class AbiAbHarnessService {
     let regressed = 0;
     let unchanged = 0;
     for (const d of deltas) {
-      if (d.direction === 'improved') improved++;
-      else if (d.direction === 'regressed') regressed++;
-      else unchanged++;
+      if (d.direction === 'improved') {improved++;}
+      else if (d.direction === 'regressed') {regressed++;}
+      else {unchanged++;}
     }
     if (regressed > 0) {
       return {
@@ -321,15 +321,15 @@ export class AbiAbHarnessService {
     for (const r of records) {
       latencies.push(r.latencyMs);
       tokens.push(r.tokensUsed);
-      if (r.success) successCount++;
+      if (r.success) {successCount++;}
       for (const c of r.claims) {
         claimTotal++;
-        if (!c.hasProof) claimNoProof++;
+        if (!c.hasProof) {claimNoProof++;}
       }
       if (r.commercialOutcome) {
         outcomeCount++;
-        if (r.commercialOutcome.conversionSignal) conversionCount++;
-        if (r.commercialOutcome.satisfactionSignal === true) satisfactionCount++;
+        if (r.commercialOutcome.conversionSignal) {conversionCount++;}
+        if (r.commercialOutcome.satisfactionSignal === true) {satisfactionCount++;}
       }
     }
     return {
@@ -391,7 +391,7 @@ export class AbiAbHarnessService {
       R38: () => satRate * 0.6 + s * 0.4,
     };
     const fn = byCriterion[criterion];
-    if (!fn) return 0;
+    if (!fn) {return 0;}
     return clamp01(fn());
   }
 }

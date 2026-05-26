@@ -9,7 +9,7 @@ export function extractObjectionPatterns(
   const globalKeywordCounts = new Map<string, number>();
   const workspaceKeywordPresence = new Map<string, Set<string>>();
   for (const s of enriched) {
-    if (s.objectionKeywords.size === 0) continue;
+    if (s.objectionKeywords.size === 0) {continue;}
     const wsKeywords = new Set<string>();
     for (const [kw, count] of s.objectionKeywords) {
       globalKeywordCounts.set(kw, (globalKeywordCounts.get(kw) ?? 0) + count);
@@ -18,7 +18,7 @@ export function extractObjectionPatterns(
     workspaceKeywordPresence.set(s.workspaceId, wsKeywords);
   }
   const activeWorkspaces = new Set(workspaceKeywordPresence.keys());
-  if (activeWorkspaces.size < K_ANONYMITY_THRESHOLD) return [];
+  if (activeWorkspaces.size < K_ANONYMITY_THRESHOLD) {return [];}
   const topKeywords = Array.from(globalKeywordCounts.entries())
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5);
@@ -26,7 +26,7 @@ export function extractObjectionPatterns(
     const wsWithKeyword = [...workspaceKeywordPresence.entries()]
       .filter(([, kws]) => kws.has(kw))
       .map(([id]) => id);
-    if (!passesKAnonymity(guard, wsWithKeyword, makeCandidateId())) continue;
+    if (!passesKAnonymity(guard, wsWithKeyword, makeCandidateId())) {continue;}
     const pct = ((wsWithKeyword.length / activeWorkspaces.size) * 100).toFixed(0);
     const topExample = enriched
       .filter((s) => s.objectionKeywords.has(kw))
@@ -54,7 +54,7 @@ export function extractChannelEfficiencyPatterns(
       s.channelStats.whatsappConversionRate > 0 ||
       s.channelStats.campaignConversionRate > 0,
   );
-  if (withChannelData.length < K_ANONYMITY_THRESHOLD) return [];
+  if (withChannelData.length < K_ANONYMITY_THRESHOLD) {return [];}
   const whatsappWs = withChannelData.filter(
     (s) => s.channelStats.whatsappConversionRate > 0,
   );
@@ -118,13 +118,13 @@ export function extractConversionDecayPatterns(
 ): ExtractedPattern[] {
   const results: ExtractedPattern[] = [];
   const withTransitions = enriched.filter((s) => s.stageTransitions.size >= 2);
-  if (withTransitions.length < K_ANONYMITY_THRESHOLD) return [];
+  if (withTransitions.length < K_ANONYMITY_THRESHOLD) {return [];}
   const perWsStageCounts = new Map<string, Map<string, { entering: number; leaving: number }>>();
   for (const s of withTransitions) {
     const stageStats = new Map<string, { entering: number; leaving: number }>();
     for (const [transition, count] of s.stageTransitions) {
       const [from, to] = transition.split('->');
-      if (!from || !to) continue;
+      if (!from || !to) {continue;}
       const fromStats = stageStats.get(from) ?? { entering: 0, leaving: 0 };
       fromStats.leaving += count;
       stageStats.set(from, fromStats);
@@ -136,16 +136,16 @@ export function extractConversionDecayPatterns(
   }
   for (const [transition, _counts] of [...withTransitions[0]!.stageTransitions.entries()]) {
     const [fromStage, toStage] = transition.split('->');
-    if (!fromStage || !toStage) continue;
+    if (!fromStage || !toStage) {continue;}
     const decayWsIds: string[] = [];
     const dropRatios: number[] = [];
     for (const s of withTransitions) {
       const stats = perWsStageCounts.get(s.workspaceId);
-      if (!stats) continue;
+      if (!stats) {continue;}
       const fromLeaving = stats.get(fromStage)?.leaving ?? 0;
       const toEntering = stats.get(toStage)?.entering ?? 0;
       const toLeaving = stats.get(toStage)?.leaving ?? 0;
-      if (fromLeaving === 0) continue;
+      if (fromLeaving === 0) {continue;}
       const enteringRatio = toEntering / fromLeaving;
       if (enteringRatio < 0.5 && toEntering > 0) {
         decayWsIds.push(s.workspaceId);
@@ -159,8 +159,8 @@ export function extractConversionDecayPatterns(
         }
       }
     }
-    if (decayWsIds.length < K_ANONYMITY_THRESHOLD) continue;
-    if (!passesKAnonymity(guard, decayWsIds, makeCandidateId())) continue;
+    if (decayWsIds.length < K_ANONYMITY_THRESHOLD) {continue;}
+    if (!passesKAnonymity(guard, decayWsIds, makeCandidateId())) {continue;}
     const avgDrop = dropRatios.reduce((a, b) => a + b, 0) / dropRatios.length;
     const dropPct = ((1 - avgDrop) * 100).toFixed(0);
     results.push({
@@ -180,7 +180,7 @@ export function extractEngagementPeakPatterns(
 ): ExtractedPattern[] {
   const results: ExtractedPattern[] = [];
   const active = signals.filter((s) => s.totalEvents >= 50);
-  if (active.length < K_ANONYMITY_THRESHOLD) return [];
+  if (active.length < K_ANONYMITY_THRESHOLD) {return [];}
   const hourPresence = new Map<number, number[]>();
   for (const s of active) {
     for (const h of s.peakHours) {
@@ -191,11 +191,11 @@ export function extractEngagementPeakPatterns(
     }
   }
   for (const [hour, totals] of hourPresence) {
-    if (totals.length < K_ANONYMITY_THRESHOLD) continue;
+    if (totals.length < K_ANONYMITY_THRESHOLD) {continue;}
     const wsIds = active
       .filter((s) => s.peakHours.includes(hour))
       .map((s) => s.workspaceId);
-    if (!passesKAnonymity(guard, wsIds, makeCandidateId())) continue;
+    if (!passesKAnonymity(guard, wsIds, makeCandidateId())) {continue;}
     results.push({
       kind: 'engagement_peak',
       dimension: 'timing',
@@ -215,7 +215,7 @@ export function extractOfferObjectionCorrelationPatterns(
   const withBoth = enriched.filter(
     (s) => s.objectionKeywords.size > 0 && s.uniqueProductIds >= 1,
   );
-  if (withBoth.length < K_ANONYMITY_THRESHOLD) return [];
+  if (withBoth.length < K_ANONYMITY_THRESHOLD) {return [];}
   const topKw = Array.from(
     withBoth
       .flatMap((s) => [...s.objectionKeywords.entries()])
@@ -229,8 +229,8 @@ export function extractOfferObjectionCorrelationPatterns(
     .slice(0, 3);
   for (const [kw] of topKw) {
     const wsWithBoth = withBoth.filter((s) => s.objectionKeywords.has(kw));
-    if (wsWithBoth.length < K_ANONYMITY_THRESHOLD) continue;
-    if (!passesKAnonymity(guard, wsWithBoth.map((s) => s.workspaceId), makeCandidateId())) continue;
+    if (wsWithBoth.length < K_ANONYMITY_THRESHOLD) {continue;}
+    if (!passesKAnonymity(guard, wsWithBoth.map((s) => s.workspaceId), makeCandidateId())) {continue;}
     results.push({
       kind: 'offer_objection_correlation',
       dimension: 'offer',

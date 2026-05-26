@@ -97,7 +97,7 @@ export class MindBanditService {
           score(right.alpha, right.beta, right.pulls, totalPulls) -
           score(left.alpha, left.beta, left.pulls, totalPulls),
       )[0];
-      if (!chosen) return null;
+      if (!chosen) {return null;}
 
       await this.prisma.mindBanditArm.updateMany({
         where: { id: chosen.id, workspaceId, decisionType },

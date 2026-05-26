@@ -14,9 +14,9 @@ type PolicyCountRow = {
 };
 
 function severityLabel(surprise: number): string {
-  if (surprise >= 2.0) return 'critical';
-  if (surprise >= 1.0) return 'high';
-  if (surprise >= 0.5) return 'moderate';
+  if (surprise >= 2.0) {return 'critical';}
+  if (surprise >= 1.0) {return 'high';}
+  if (surprise >= 0.5) {return 'moderate';}
   return 'low';
 }
 

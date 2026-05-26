@@ -98,7 +98,7 @@ export class WhatsAppApiWebhookController {
           provider: 'whatsapp-api',
           externalId,
           eventType: event,
-          payload: JSON.parse(JSON.stringify(body)) as any,
+          payload: JSON.parse(JSON.stringify(body)),
         },
       });
     } catch (err: unknown) {

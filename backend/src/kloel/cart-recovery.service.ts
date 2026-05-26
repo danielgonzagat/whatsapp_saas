@@ -30,11 +30,11 @@ function readCartRecoveryMetadata(value: unknown): CartRecoveryMetadata {
 
 function resolvePriceBand(price: unknown): string {
   const n = typeof price === 'number' ? price : Number(price);
-  if (!Number.isFinite(n) || n <= 0) return 'unknown';
-  if (n <= 50) return 'under_50';
-  if (n <= 100) return 'under_100';
-  if (n <= 300) return 'under_300';
-  if (n <= 500) return 'under_500';
+  if (!Number.isFinite(n) || n <= 0) {return 'unknown';}
+  if (n <= 50) {return 'under_50';}
+  if (n <= 100) {return 'under_100';}
+  if (n <= 300) {return 'under_300';}
+  if (n <= 500) {return 'under_500';}
   return 'over_500';
 }
 

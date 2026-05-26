@@ -58,7 +58,7 @@ export class CapabilityRegistryV2Service {
     caps: CapabilityDefinition[],
     permissions: string[],
   ): CapabilityDefinition[] {
-    if (permissions.includes('*')) return caps;
+    if (permissions.includes('*')) {return caps;}
     return caps.filter(
       (cap) =>
         cap.requiredPermissions.length === 0 ||
@@ -77,7 +77,7 @@ export class CapabilityRegistryV2Service {
   groupedByTier(): Record<number, CapabilityDefinition[]> {
     const groups: Record<number, CapabilityDefinition[]> = {};
     for (const cap of CAPABILITY_DEFINITIONS) {
-      if (!groups[cap.tier]) groups[cap.tier] = [];
+      if (!groups[cap.tier]) {groups[cap.tier] = [];}
       groups[cap.tier].push(cap);
     }
     return groups;
@@ -109,13 +109,13 @@ export class CapabilityRegistryV2Service {
     });
 
     const best = scored.sort((a, b) => b.confidence - a.confidence)[0];
-    if (!best || best.confidence < 0.3) return null;
+    if (!best || best.confidence < 0.3) {return null;}
 
     const entities: Record<string, unknown> = {};
     for (const field of best.capability.inputSchema) {
       if (field.type === 'number') {
         const match = normalized.match(/(?:r?\$\s*)?(\d+(?:[.,]\d+)?)/i);
-        if (match) entities[field.key] = parseFloat(match[1].replace(',', '.'));
+        if (match) {entities[field.key] = parseFloat(match[1].replace(',', '.'));}
       }
     }
 

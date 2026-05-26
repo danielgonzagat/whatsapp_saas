@@ -96,7 +96,7 @@ function isCognitiveCheck(v: unknown): v is TruthModeCognitiveCheck {
 }
 
 function isTruthModeItem(v: unknown): v is TruthModeItem {
-  if (typeof v !== 'object' || v === null) return false;
+  if (typeof v !== 'object' || v === null) {return false;}
   const o = v as Record<string, unknown>;
   return typeof o['truthMode'] === 'string' && typeof o['producedBy'] === 'string';
 }
@@ -241,17 +241,17 @@ export function makeTruthModeHonestyGate(
       if (Array.isArray(input)) {
         for (const element of input) {
           if (isCognitiveCheck(element)) {
-            if (element.items) allOffenses.push(...checkItems(element.items));
-            if (element.abi) allOffenses.push(...checkAbi(element.abi));
-            if (element.entries) allOffenses.push(...checkCognitionEntries(element.entries));
+            if (element.items) {allOffenses.push(...checkItems(element.items));}
+            if (element.abi) {allOffenses.push(...checkAbi(element.abi));}
+            if (element.entries) {allOffenses.push(...checkCognitionEntries(element.entries));}
           } else if (isTruthModeItem(element)) {
             allOffenses.push(...checkItems([element]));
           }
         }
       } else if (isCognitiveCheck(input)) {
-        if (input.items) allOffenses.push(...checkItems(input.items));
-        if (input.abi) allOffenses.push(...checkAbi(input.abi));
-        if (input.entries) allOffenses.push(...checkCognitionEntries(input.entries));
+        if (input.items) {allOffenses.push(...checkItems(input.items));}
+        if (input.abi) {allOffenses.push(...checkAbi(input.abi));}
+        if (input.entries) {allOffenses.push(...checkCognitionEntries(input.entries));}
       } else if (isTruthModeItem(input)) {
         allOffenses.push(...checkItems([input]));
       }

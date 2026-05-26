@@ -20,7 +20,7 @@ const WINDOW_DAYS = 120;
 function extractAmountCents(
   payload: Readonly<Record<string, unknown>> | undefined,
 ): number | undefined {
-  if (!payload) return undefined;
+  if (!payload) {return undefined;}
   const amt = payload['amountCents'] ?? payload['amount'] ?? payload['priceCents'];
   return typeof amt === 'number' ? amt : undefined;
 }
@@ -43,7 +43,7 @@ export function detectPricingPsychologySignal(
 
   for (const event of filtered) {
     const amount = extractAmountCents(event.payload);
-    if (amount === undefined || amount <= 0) continue;
+    if (amount === undefined || amount <= 0) {continue;}
 
     if (event.eventName === 'commerce.payment.approved') {
       pointApprovals.set(amount, (pointApprovals.get(amount) ?? 0) + 1);
@@ -57,7 +57,7 @@ export function detectPricingPsychologySignal(
     ...pointDeclines.keys(),
   ]);
 
-  if (allPoints.size < 2) return { insights: [] };
+  if (allPoints.size < 2) {return { insights: [] };}
 
   const points: Array<{
     priceCents: number;
@@ -71,7 +71,7 @@ export function detectPricingPsychologySignal(
     const approvals = pointApprovals.get(priceCents) ?? 0;
     const declines = pointDeclines.get(priceCents) ?? 0;
     const total = approvals + declines;
-    if (total < MIN_TRANSACTIONS_PER_POINT) continue;
+    if (total < MIN_TRANSACTIONS_PER_POINT) {continue;}
     points.push({
       priceCents,
       approvals,
@@ -81,7 +81,7 @@ export function detectPricingPsychologySignal(
     });
   }
 
-  if (points.length < 2) return { insights: [] };
+  if (points.length < 2) {return { insights: [] };}
 
   points.sort((a, b) => a.priceCents - b.priceCents);
 
@@ -89,7 +89,7 @@ export function detectPricingPsychologySignal(
     const prev = points[i - 1];
     const curr = points[i];
 
-    if (prev === undefined || curr === undefined) continue;
+    if (prev === undefined || curr === undefined) {continue;}
 
     const rateGap = curr.declineRate - prev.declineRate;
     if (rateGap > 0.3) {

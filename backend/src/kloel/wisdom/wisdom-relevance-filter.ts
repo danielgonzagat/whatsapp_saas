@@ -27,7 +27,7 @@ export function relevanceScore(
   let score = 0;
 
   if (target.vertical && taxonomy.verticalHint) {
-    if (target.vertical === taxonomy.verticalHint) score += 0.30;
+    if (target.vertical === taxonomy.verticalHint) {score += 0.30;}
   }
 
   if (target.ticketRange && taxonomy.tickethint) {
@@ -40,11 +40,11 @@ export function relevanceScore(
   }
 
   if (target.maturityStage && taxonomy.stageHint) {
-    if (target.maturityStage === taxonomy.stageHint) score += 0.25;
+    if (target.maturityStage === taxonomy.stageHint) {score += 0.25;}
   }
 
   if (target.activeChannels && taxonomy.channelHint) {
-    if (target.activeChannels.includes(taxonomy.channelHint)) score += 0.20;
+    if (target.activeChannels.includes(taxonomy.channelHint)) {score += 0.20;}
   }
 
   return Math.min(1, score);

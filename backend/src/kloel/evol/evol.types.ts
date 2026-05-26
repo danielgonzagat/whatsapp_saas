@@ -158,10 +158,10 @@ const KNOWN_DOMAINS: ReadonlySet<string> = new Set(Object.keys(DOMAIN_RISK_PROFI
 export function resolveDomain(rawDomain: string): string | null {
   for (const [key, profile] of Object.entries(DOMAIN_RISK_PROFILES)) {
     for (const known of profile.knownDomains) {
-      if (rawDomain === known || rawDomain.startsWith(known + '.')) return key;
+      if (rawDomain === known || rawDomain.startsWith(known + '.')) {return key;}
     }
   }
-  if (KNOWN_DOMAINS.has(rawDomain)) return rawDomain;
+  if (KNOWN_DOMAINS.has(rawDomain)) {return rawDomain;}
   return null;
 }
 

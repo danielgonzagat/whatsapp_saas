@@ -24,8 +24,8 @@ const SPINE_STREAM_MAXLEN = 5000;
 
 function detectEnvironment(): 'dev' | 'staging' | 'prod' {
   const env = (process.env['NODE_ENV'] ?? 'development').toLowerCase();
-  if (env === 'production' || env === 'prod') return 'prod';
-  if (env === 'staging') return 'staging';
+  if (env === 'production' || env === 'prod') {return 'prod';}
+  if (env === 'staging') {return 'staging';}
   return 'dev';
 }
 
@@ -72,7 +72,7 @@ export class SpineEmitterService {
       : this.applyAutoValence(base);
 
     this.ring.push(envelope);
-    if (this.ring.length > this.ringCapacity) this.ring.shift();
+    if (this.ring.length > this.ringCapacity) {this.ring.shift();}
 
     // CIA Gap 5 — persist to Redis Stream (fire-and-forget, failure never throws)
     if (this.redis && envelope.workspaceId) {
@@ -109,7 +109,7 @@ export class SpineEmitterService {
     workspaceId: string,
     since?: string,
   ): Promise<SpineEventEnvelope[]> {
-    if (!this.redis) return [];
+    if (!this.redis) {return [];}
     try {
       const key = `spine:events:${workspaceId}`;
       const start = since ?? '-';
@@ -117,7 +117,7 @@ export class SpineEmitterService {
       return results
         .map(([, fields]) => {
           const eventField = fields[1];
-          if (!eventField) return null;
+          if (!eventField) {return null;}
           try {
             return JSON.parse(eventField) as SpineEventEnvelope;
           } catch {
@@ -138,8 +138,8 @@ export class SpineEmitterService {
 
   public recentEvents(limit?: number): readonly SpineEventEnvelope[] {
     if (typeof limit === 'number') {
-      if (limit <= 0) return [];
-      if (limit < this.ring.length) return this.ring.slice(-limit);
+      if (limit <= 0) {return [];}
+      if (limit < this.ring.length) {return this.ring.slice(-limit);}
     }
     return this.ring.slice();
   }
@@ -171,7 +171,7 @@ export class SpineEmitterService {
     this.subscribers.push(handler);
     return () => {
       const idx = this.subscribers.indexOf(handler);
-      if (idx >= 0) this.subscribers.splice(idx, 1);
+      if (idx >= 0) {this.subscribers.splice(idx, 1);}
     };
   }
 

@@ -34,7 +34,7 @@ export class CaseLibraryBuilder {
 
     for (const event of wsEvents) {
       const outcomeKind = OUTCOME_EVENT_MAP[event.eventName];
-      if (!outcomeKind) continue;
+      if (!outcomeKind) {continue;}
 
       caseIndex++;
       const caseId = `${input.workspaceId}_case_${caseIndex}`;
@@ -139,8 +139,8 @@ export class CaseLibraryBuilder {
     };
 
     let score = kindScore[outcomeKind];
-    if (hasQuantified) score += 0.1;
-    if (proofCount > 0) score += Math.min(0.1, proofCount * 0.02);
+    if (hasQuantified) {score += 0.1;}
+    if (proofCount > 0) {score += Math.min(0.1, proofCount * 0.02);}
 
     return clamp(score, 0, 1);
   }

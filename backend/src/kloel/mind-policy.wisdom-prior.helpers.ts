@@ -109,7 +109,7 @@ function wisdomAlignsWithOption(
   patterns: readonly WisdomPattern[],
   option?: { action: string; predicate?: string; context?: Record<string, unknown> },
 ): boolean {
-  if (!option) return false;
+  if (!option) {return false;}
 
   const searchText = [
     option.predicate ?? '',

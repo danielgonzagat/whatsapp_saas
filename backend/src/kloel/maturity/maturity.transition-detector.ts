@@ -20,7 +20,7 @@ export function detectTransitions(
 ): readonly TransitionRecord[] {
   const transitions: TransitionRecord[] = [];
 
-  if (history.length < 2) return transitions;
+  if (history.length < 2) {return transitions;}
 
   const sorted = [...history].sort(
     (a, b) =>
@@ -39,7 +39,7 @@ export function detectTransitions(
     const prev = sorted[i - 1] as MaturityVerdict;
     const curr = sorted[i] as MaturityVerdict;
 
-    if (prev.stage === curr.stage) continue;
+    if (prev.stage === curr.stage) {continue;}
 
     const prevOrd = stageOrder[prev.stage] ?? 0;
     const currOrd = stageOrder[curr.stage] ?? 0;
@@ -67,7 +67,7 @@ export function detectTransitions(
       );
     }
 
-    if (transitionConfidence < MIN_TRANSITION_CONFIDENCE && isForward) continue;
+    if (transitionConfidence < MIN_TRANSITION_CONFIDENCE && isForward) {continue;}
 
     transitions.push({
       fromStage,

@@ -91,7 +91,7 @@ export class UnsafeOperationBlocker {
 
   private computeSafetyBuffer(position: CashPosition): bigint {
     const min30d = position.minBalance7d;
-    if (min30d > 0n) return BigInt(Number(min30d) * 2);
+    if (min30d > 0n) {return BigInt(Number(min30d) * 2);}
     const buffer = Number(position.currentBalanceCents) * 0.2;
     return BigInt(Math.round(Math.abs(buffer)));
   }

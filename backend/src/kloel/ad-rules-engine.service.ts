@@ -288,7 +288,7 @@ export class AdRulesEngineService {
   }
 
   private async ensureBanditArms(workspaceId: string): Promise<void> {
-    if (!this.bandit) return;
+    if (!this.bandit) {return;}
     try {
       await this.bandit.register({
         workspaceId,

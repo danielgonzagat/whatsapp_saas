@@ -49,7 +49,7 @@ describe('CrmController', () => {
       (resolveWorkspaceId as jest.Mock).mockReturnValue('ws-1');
       listContacts.mockResolvedValue({ data: [], meta: { total: 0, page: 2, limit: 10, pages: 0 } });
 
-      await controller.listContacts(mockReq, mockQuery as never);
+      await controller.listContacts(mockReq, mockQuery);
 
       expect(resolveWorkspaceId).toHaveBeenCalledWith(mockReq, 'ws-1');
       expect(listContacts).toHaveBeenCalledWith('ws-1', {

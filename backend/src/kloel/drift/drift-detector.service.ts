@@ -12,14 +12,14 @@ const ALL_TONES: readonly ToneClass[] = [
 const DIMENSION_COUNT = 6;
 
 function clamp01(v: number): number {
-  if (v < 0) return 0;
-  if (v > 1) return 1;
+  if (v < 0) {return 0;}
+  if (v > 1) {return 1;}
   return v;
 }
 
 function ratioChange(before: number, after: number): number {
-  if (before === 0 && after === 0) return 0;
-  if (before === 0) return 1;
+  if (before === 0 && after === 0) {return 0;}
+  if (before === 0) {return 1;}
   return Math.abs(after - before) / Math.max(before, after);
 }
 
@@ -29,10 +29,10 @@ function jaccardSimilarity(
 ): number {
   const setA = new Set(a);
   const setB = new Set(b);
-  if (setA.size === 0 && setB.size === 0) return 1;
+  if (setA.size === 0 && setB.size === 0) {return 1;}
   let intersection = 0;
   for (const item of setA) {
-    if (setB.has(item)) intersection++;
+    if (setB.has(item)) {intersection++;}
   }
   const union = new Set([...setA, ...setB]).size;
   return union === 0 ? 1 : intersection / union;
@@ -44,7 +44,7 @@ function toneDistributionSimilarity(
 ): number {
   const sumA = ALL_TONES.reduce((s, t) => s + a[t], 0);
   const sumB = ALL_TONES.reduce((s, t) => s + b[t], 0);
-  if (sumA === 0 && sumB === 0) return 1;
+  if (sumA === 0 && sumB === 0) {return 1;}
   let dot = 0;
   let normA = 0;
   let normB = 0;
@@ -55,7 +55,7 @@ function toneDistributionSimilarity(
     normA += va * va;
     normB += vb * vb;
   }
-  if (normA === 0 || normB === 0) return 0;
+  if (normA === 0 || normB === 0) {return 0;}
   return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
@@ -65,10 +65,10 @@ function patternOverlapScore(
 ): number {
   const setA = new Set(a.map((p) => p.pattern));
   const setB = new Set(b.map((p) => p.pattern));
-  if (setA.size === 0 && setB.size === 0) return 1;
+  if (setA.size === 0 && setB.size === 0) {return 1;}
   let intersection = 0;
   for (const p of setA) {
-    if (setB.has(p)) intersection++;
+    if (setB.has(p)) {intersection++;}
   }
   const union = new Set([...setA, ...setB]).size;
   return union === 0 ? 1 : intersection / union;
@@ -150,7 +150,7 @@ function computeDimensions(
 
 function stylesummary(tone: Record<ToneClass, number>): string {
   const total = ALL_TONES.reduce((s, t) => s + tone[t], 0);
-  if (total === 0) return 'vazio';
+  if (total === 0) {return 'vazio';}
   const dominant = ALL_TONES.reduce((best, t) =>
     tone[t] > tone[best] ? t : best,
   );
@@ -224,9 +224,9 @@ function buildNarrative(
 function deltaPct(d: DriftDimension): string {
   const before = Number(d.before);
   const after = Number(d.after);
-  if (Number.isNaN(before) || Number.isNaN(after)) return 'n/a';
-  if (before === 0 && after === 0) return '0%';
-  if (before === 0) return '+∞';
+  if (Number.isNaN(before) || Number.isNaN(after)) {return 'n/a';}
+  if (before === 0 && after === 0) {return '0%';}
+  if (before === 0) {return '+∞';}
   const pct = Math.round(((after - before) / before) * 100);
   return `${pct > 0 ? '+' : ''}${pct}%`;
 }

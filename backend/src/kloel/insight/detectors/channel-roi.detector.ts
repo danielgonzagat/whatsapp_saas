@@ -13,29 +13,29 @@ const MIN_EVENTS = 3;
 const POOR_ROI_THRESHOLD = 0.3;
 
 function extractChannel(payload: Readonly<Record<string, unknown>> | undefined): string {
-  if (!payload) return 'unknown';
+  if (!payload) {return 'unknown';}
   const ch = payload['channel'] ?? payload['source'] ?? payload['medium'];
   return typeof ch === 'string' ? ch : 'unknown';
 }
 
 function extractCostCents(payload: Readonly<Record<string, unknown>> | undefined): number {
-  if (!payload) return 0;
+  if (!payload) {return 0;}
   const cost =
     payload['costCents'] ?? payload['cost_cents'] ?? payload['spendCents'] ?? payload['spend'];
-  if (typeof cost === 'number') return cost;
-  if (typeof cost === 'string') return parseInt(cost, 10) || 0;
+  if (typeof cost === 'number') {return cost;}
+  if (typeof cost === 'string') {return parseInt(cost, 10) || 0;}
   return 0;
 }
 
 function extractRevenueCents(payload: Readonly<Record<string, unknown>> | undefined): number {
-  if (!payload) return 0;
+  if (!payload) {return 0;}
   const rev =
     payload['revenueCents'] ??
     payload['revenue_cents'] ??
     payload['amountCents'] ??
     payload['amount'];
-  if (typeof rev === 'number') return rev;
-  if (typeof rev === 'string') return parseInt(rev, 10) || 0;
+  if (typeof rev === 'number') {return rev;}
+  if (typeof rev === 'string') {return parseInt(rev, 10) || 0;}
   return 0;
 }
 
@@ -53,7 +53,7 @@ export function detectChannelRoi(input: DetectorInput): DetectorResult {
       withinWindow(e.occurredAt, nowMs, windowDays),
   );
 
-  if (campaignEvents.length < MIN_EVENTS) return { insights: [] };
+  if (campaignEvents.length < MIN_EVENTS) {return { insights: [] };}
 
   const channelCosts = new Map<string, number>();
   const channelRevenue = new Map<string, number>();
@@ -71,11 +71,11 @@ export function detectChannelRoi(input: DetectorInput): DetectorResult {
     }
   }
 
-  if (channelCosts.size === 0) return { insights: [] };
+  if (channelCosts.size === 0) {return { insights: [] };}
 
   for (const [channel, cost] of channelCosts) {
     const revenue = channelRevenue.get(channel) ?? 0;
-    if (cost < 100_00) continue;
+    if (cost < 100_00) {continue;}
 
     if (revenue === 0 || revenue / cost < POOR_ROI_THRESHOLD) {
       const roi = revenue > 0 ? (revenue / cost).toFixed(2) : '0.00';

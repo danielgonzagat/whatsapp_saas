@@ -45,7 +45,7 @@ describe('AbiBuilderService — shadow mode composition', () => {
     const { builder } = await build();
     const result = await builder.build(defaultInput('public'));
     expect(result.status).toBe('ok');
-    if (result.status !== 'ok') throw new Error('not ok');
+    if (result.status !== 'ok') {throw new Error('not ok');}
     const { abi } = result;
     expect(abi.abiVersion).toBe(ABI_VERSION);
     expect(abi.lineage.canonicalName).toBe('Kloel');
@@ -61,7 +61,7 @@ describe('AbiBuilderService — shadow mode composition', () => {
   it('emitted ABI passes validateAbiPayload', async () => {
     const { builder } = await build();
     const result = await builder.build(defaultInput('public'));
-    if (result.status !== 'ok') throw new Error('not ok');
+    if (result.status !== 'ok') {throw new Error('not ok');}
     const verdict = validateAbiPayload(result.abi);
     expect(verdict.status).toBe('PASS');
     expect(verdict.issues).toHaveLength(0);
@@ -78,7 +78,7 @@ describe('AbiBuilderService — shadow mode composition', () => {
   it('builds technical ABI with genesisEventId surfaced', async () => {
     const { builder } = await build();
     const result = await builder.build(defaultInput('technical'));
-    if (result.status !== 'ok') throw new Error('not ok');
+    if (result.status !== 'ok') {throw new Error('not ok');}
     expect(result.abi.lineage.genesisEventId).toBe('01JD90000000000000000000GE');
   });
 
@@ -99,14 +99,14 @@ describe('AbiBuilderService — shadow mode composition', () => {
     };
     const result = await builder.build(inp);
     expect(result.status).toBe('ok');
-    if (result.status !== 'ok') throw new Error('not ok');
+    if (result.status !== 'ok') {throw new Error('not ok');}
     expect(result.abi.identityProjection.audience).toBe('origin');
   });
 
   it('declares capabilities with runtimeEvidencePct > 0 (no-overclaim)', async () => {
     const { builder } = await build();
     const result = await builder.build(defaultInput('technical'));
-    if (result.status !== 'ok') throw new Error('not ok');
+    if (result.status !== 'ok') {throw new Error('not ok');}
     for (const cap of result.abi.capabilities.available) {
       expect(cap.runtimeEvidencePct).toBeGreaterThan(0);
     }
@@ -115,7 +115,7 @@ describe('AbiBuilderService — shadow mode composition', () => {
   it('payload contains NO behavioral instruction string anywhere (no-roleplay)', async () => {
     const { builder } = await build();
     const result = await builder.build(defaultInput('public'));
-    if (result.status !== 'ok') throw new Error('not ok');
+    if (result.status !== 'ok') {throw new Error('not ok');}
     const serialized = JSON.stringify(result.abi);
     expect(serialized).not.toMatch(/\bvoc[êe]\s+(é|es)\b/i);
     expect(serialized).not.toMatch(/\byou are\b/i);

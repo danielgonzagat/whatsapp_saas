@@ -20,18 +20,18 @@ interface VerbalizerBlock {
 function contextLabel(context: Record<string, unknown>): string {
   const parts: string[] = [];
   const channel = safeString(context.channel);
-  if (channel) parts.push(`canal ${channel}`);
+  if (channel) {parts.push(`canal ${channel}`);}
   const segment = safeString(context.segment);
-  if (segment) parts.push(`segmento ${segment}`);
+  if (segment) {parts.push(`segmento ${segment}`);}
   const hour = context.hour;
   if (typeof hour === 'number') {
     parts.push(`hora ${hour}h`);
   }
   const planTier = safeString(context.plan_tier);
-  if (planTier) parts.push(`plano ${planTier}`);
+  if (planTier) {parts.push(`plano ${planTier}`);}
   const priceBand = safeString(context.price_band);
-  if (priceBand) parts.push(`faixa ${priceBand}`);
-  if (parts.length === 0) return 'contexto geral';
+  if (priceBand) {parts.push(`faixa ${priceBand}`);}
+  if (parts.length === 0) {return 'contexto geral';}
   return parts.join(', ');
 }
 
@@ -56,9 +56,9 @@ function beliefPhrase(belief: MindBelief, predicateLabel: string): string {
 }
 
 function predicateLabel(predicate: string): string {
-  if (predicate.startsWith('P(reply')) return 'Probabilidade de resposta';
-  if (predicate.startsWith('P(conversion')) return 'Probabilidade de conversão';
-  if (predicate.startsWith('P(churn')) return 'Risco de abandono';
+  if (predicate.startsWith('P(reply')) {return 'Probabilidade de resposta';}
+  if (predicate.startsWith('P(conversion')) {return 'Probabilidade de conversão';}
+  if (predicate.startsWith('P(churn')) {return 'Risco de abandono';}
   return predicate;
 }
 
@@ -125,7 +125,7 @@ function buildRulesBasedNarrative(
 
   for (const block of blocks) {
     const topBeliefs = block.beliefs.slice(0, 3);
-    if (topBeliefs.length === 0) continue;
+    if (topBeliefs.length === 0) {continue;}
 
     lines.push(`— ${block.label}`);
     for (const belief of topBeliefs) {

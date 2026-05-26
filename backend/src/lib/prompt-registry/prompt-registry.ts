@@ -22,7 +22,7 @@ function parseVersion(v: PromptVersion): { major: number; minor: number } {
 function isVersionBump(current: PromptVersion, candidate: PromptVersion): boolean {
   const cur = parseVersion(current);
   const cand = parseVersion(candidate);
-  if (cand.major !== cur.major) return cand.major > cur.major;
+  if (cand.major !== cur.major) {return cand.major > cur.major;}
   return cand.minor > cur.minor;
 }
 

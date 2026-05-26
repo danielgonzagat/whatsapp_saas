@@ -346,7 +346,7 @@ export function suggestNextBestActions(input: SuggestInput): readonly NextBestAc
 
   const sorted = scored.sort((a, b) => {
     const diff = b.confidence - a.confidence;
-    if (Math.abs(diff) > 0.001) return diff > 0 ? 1 : -1;
+    if (Math.abs(diff) > 0.001) {return diff > 0 ? 1 : -1;}
     return a.scoreOrder - b.scoreOrder;
   });
 

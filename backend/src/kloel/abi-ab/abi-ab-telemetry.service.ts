@@ -12,13 +12,13 @@ const DEFAULT_MAX_SUCCESS_RATE_GAP_PCT = 5;
 const DEFAULT_MAX_LATENCY_P95_MULTIPLIER = 2;
 
 function percentile(sorted: number[], pct: number): number {
-  if (sorted.length === 0) return 0;
-  if (pct <= 0) return sorted[0] ?? 0;
-  if (pct >= 1) return sorted[sorted.length - 1] ?? 0;
+  if (sorted.length === 0) {return 0;}
+  if (pct <= 0) {return sorted[0] ?? 0;}
+  if (pct >= 1) {return sorted[sorted.length - 1] ?? 0;}
   const idx = (sorted.length - 1) * pct;
   const lo = Math.floor(idx);
   const hi = Math.ceil(idx);
-  if (lo === hi) return sorted[lo] ?? 0;
+  if (lo === hi) {return sorted[lo] ?? 0;}
   return ((sorted[lo] ?? 0) * (hi - idx)) + ((sorted[hi] ?? 0) * (idx - lo));
 }
 
@@ -44,13 +44,13 @@ export class AbiAbTelemetryService {
     let abiSuccess = 0;
 
     for (const s of this.buffer) {
-      if (s.flowName !== flowName) continue;
+      if (s.flowName !== flowName) {continue;}
       if (s.abiUsed) {
         abiLatencies.push(s.latencyMs);
-        if (s.success) abiSuccess++;
+        if (s.success) {abiSuccess++;}
       } else {
         legacyLatencies.push(s.latencyMs);
-        if (s.success) legacySuccess++;
+        if (s.success) {legacySuccess++;}
       }
     }
 
@@ -86,8 +86,8 @@ export class AbiAbTelemetryService {
     const delta = this.reportDelta(flowName);
 
     const insufficient = [];
-    if (delta.legacy.count < minSamples) insufficient.push('legacy');
-    if (delta.abi.count < minSamples) insufficient.push('abi');
+    if (delta.legacy.count < minSamples) {insufficient.push('legacy');}
+    if (delta.abi.count < minSamples) {insufficient.push('abi');}
 
     if (insufficient.length > 0) {
       return {

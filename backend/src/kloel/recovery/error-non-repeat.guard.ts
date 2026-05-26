@@ -53,14 +53,14 @@ export class ErrorNonRepeatGuard {
   public isBlocked(error: DetectedError): boolean {
     const key = this.fingerprintKey(error);
     const entry = this.ledger.get(key);
-    if (!entry) return false;
+    if (!entry) {return false;}
     return Date.now() < entry.blockedUntil;
   }
 
   public cooldownRemainingMs(error: DetectedError): number {
     const key = this.fingerprintKey(error);
     const entry = this.ledger.get(key);
-    if (!entry) return 0;
+    if (!entry) {return 0;}
     return Math.max(0, entry.blockedUntil - Date.now());
   }
 

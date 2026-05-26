@@ -126,7 +126,7 @@ export class SalesService {
               planId,
               buyerName: buyerData.name,
               buyerEmail: buyerData.email,
-            } as Prisma.InputJsonValue,
+            },
           },
         });
 
@@ -170,7 +170,7 @@ export class SalesService {
               buyerEmail: buyerData.email,
               pixExternalId: pixResult.externalId,
               pixStatus: pixResult.status,
-            } as Prisma.InputJsonValue,
+            },
           },
         });
 

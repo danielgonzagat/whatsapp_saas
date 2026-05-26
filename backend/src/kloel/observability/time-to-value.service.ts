@@ -36,13 +36,13 @@ interface WorkspaceState {
 }
 
 function percentile(sorted: number[], p: number): number {
-  if (sorted.length === 0) return 0;
+  if (sorted.length === 0) {return 0;}
   const idx = Math.ceil(sorted.length * (p / 100)) - 1;
   return sorted[Math.max(0, idx)] ?? 0;
 }
 
 function computeMedian(sorted: number[]): number {
-  if (sorted.length === 0) return 0;
+  if (sorted.length === 0) {return 0;}
   const mid = Math.floor(sorted.length / 2);
   if (sorted.length % 2 === 0) {
     return ((sorted[mid - 1] ?? 0) + (sorted[mid] ?? 0)) / 2;
@@ -104,9 +104,9 @@ export class TimeToValueService {
 
   getTimeToValueMs(workspaceId: string): number | null {
     const state = this.store.get(workspaceId);
-    if (!state) return null;
-    if (state.valueConfirmedAt === null) return null;
-    if (state.leadCreatedAt.getTime() === 0) return null;
+    if (!state) {return null;}
+    if (state.valueConfirmedAt === null) {return null;}
+    if (state.leadCreatedAt.getTime() === 0) {return null;}
     return state.valueConfirmedAt.getTime() - state.leadCreatedAt.getTime();
   }
 

@@ -124,7 +124,7 @@ describe('UTP-ABI-009 — Prompt emptied', () => {
 
     it('returns the same constant on every call (idempotent)', () => {
       const a = service.buildSystemPrompt({}, [], []);
-      const b = service.buildSystemPrompt({ a: 1, b: 2 } as never, [] as never, [] as never);
+      const b = service.buildSystemPrompt({ a: 1, b: 2 }, [] as never, [] as never);
       expect(a).toBe(b);
     });
   });

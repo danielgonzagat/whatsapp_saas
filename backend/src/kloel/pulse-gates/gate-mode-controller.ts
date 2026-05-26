@@ -42,7 +42,7 @@ const VALID_GATE_NAMES = new Set<string>(Object.keys(GATE_DEFAULT_MODE));
 const VALID_MODES = new Set<string>(['log_only', 'hard_fail']);
 
 function parseOverrides(raw: string | undefined): Partial<Record<GateName, GateMode>> {
-  if (!raw) return {};
+  if (!raw) {return {};}
   const out: Partial<Record<GateName, GateMode>> = {};
   const pairs = raw
     .split(',')
@@ -75,7 +75,7 @@ export function resolveGateMode(gate: GateName): GateMode {
 export function effectiveGateModes(): Readonly<Record<GateName, GateMode>> {
   const map: Record<GateName, GateMode> = { ...GATE_DEFAULT_MODE };
   for (const [name, mode] of Object.entries(OVERRIDES)) {
-    if (mode) map[name as GateName] = mode;
+    if (mode) {map[name as GateName] = mode;}
   }
   return Object.freeze(map);
 }

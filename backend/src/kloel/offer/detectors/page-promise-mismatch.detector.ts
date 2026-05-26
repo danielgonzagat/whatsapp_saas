@@ -20,7 +20,7 @@ const WINDOW_DAYS = 120;
 function extractProductId(
   payload: Readonly<Record<string, unknown>> | undefined,
 ): string {
-  if (!payload) return 'unknown';
+  if (!payload) {return 'unknown';}
   const pid = payload['productId'] ?? payload['productRef'] ?? payload['planId'];
   return typeof pid === 'string' ? pid : 'unknown';
 }
@@ -63,7 +63,7 @@ export function detectPagePromiseMismatch(
   }
 
   for (const [productId, sales] of productSales) {
-    if (sales < MIN_TRANSACTIONS) continue;
+    if (sales < MIN_TRANSACTIONS) {continue;}
     const refunds = productRefunds.get(productId) ?? 0;
     const chargebacks = productChargebacks.get(productId) ?? 0;
     const badOutcomes = refunds + chargebacks;

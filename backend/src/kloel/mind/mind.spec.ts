@@ -22,13 +22,13 @@ const baseEvent = (over: Partial<SpineEventRef>): SpineEventRef => {
   };
   // Honor explicit `entityRef: undefined` (test wants no entityRef).
   if ('entityRef' in over) {
-    if (over.entityRef !== undefined) event['entityRef'] = over.entityRef;
+    if (over.entityRef !== undefined) {event['entityRef'] = over.entityRef;}
   } else {
     event['entityRef'] = { entityType: 'lead', entityId: 'lead_1' };
   }
-  if (over.valence !== undefined) event['valence'] = over.valence;
-  if (over.payload !== undefined) event['payload'] = over.payload;
-  if (over.correlationId !== undefined) event['correlationId'] = over.correlationId;
+  if (over.valence !== undefined) {event['valence'] = over.valence;}
+  if (over.payload !== undefined) {event['payload'] = over.payload;}
+  if (over.correlationId !== undefined) {event['correlationId'] = over.correlationId;}
   return event as SpineEventRef;
 };
 

@@ -132,7 +132,7 @@ export class GuestChatController {
     @Body('workspaceId') workspaceId?: string,
   ): Promise<{ url?: string; message: string }> {
     this.assertGuestChatEnabledOrThrow();
-    if (!file) return { message: 'Nenhum arquivo enviado.' };
+    if (!file) {return { message: 'Nenhum arquivo enviado.' };}
     try {
       const result = await this.guestChatService.handleFileUpload(
         file.buffer, file.originalname, file.mimetype,

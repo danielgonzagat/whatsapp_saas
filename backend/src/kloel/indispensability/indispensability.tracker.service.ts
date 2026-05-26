@@ -79,7 +79,7 @@ export class IndispensabilityTrackerService {
     for (let i = 1; i < sorted.length; i++) {
       const prev = sorted[i - 1];
       const curr = sorted[i];
-      if (prev === undefined || curr === undefined) continue;
+      if (prev === undefined || curr === undefined) {continue;}
       const prevEnd = new Date(prev.endedAt).getTime();
       const currStart = new Date(curr.startedAt).getTime();
       gaps.push(Math.max(currStart - prevEnd, 0) / MS_PER_HOUR);
@@ -136,10 +136,10 @@ export class IndispensabilityTrackerService {
     const pauseDetected30d = daysSinceLastActivity >= 30;
 
     let riskLevel: ChurnRiskAssessment['riskLevel'] = 'none';
-    if (daysSinceLastActivity >= 60) riskLevel = 'critical';
-    else if (daysSinceLastActivity >= 30) riskLevel = 'high';
-    else if (daysSinceLastActivity >= 14) riskLevel = 'medium';
-    else if (daysSinceLastActivity >= 7) riskLevel = 'low';
+    if (daysSinceLastActivity >= 60) {riskLevel = 'critical';}
+    else if (daysSinceLastActivity >= 30) {riskLevel = 'high';}
+    else if (daysSinceLastActivity >= 14) {riskLevel = 'medium';}
+    else if (daysSinceLastActivity >= 7) {riskLevel = 'low';}
 
     const metrics = this.computeUsageMetrics(workspaceId, sessions, nowMs);
     const weeklyBeforePause = metrics.weeklyAverage;

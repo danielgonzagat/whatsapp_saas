@@ -115,7 +115,7 @@ export class KloelComposerService {
 
   codeNativeSearchWeb(query: string): WebSearchDigest {
     const normalizedQuery = String(query || '').trim();
-    if (!normalizedQuery) return { answer: '', sources: [], totalTokens: 0 };
+    if (!normalizedQuery) {return { answer: '', sources: [], totalTokens: 0 };}
 
     const terms = normalizedQuery
       .split(/\s+/)
@@ -407,7 +407,7 @@ export class KloelComposerService {
           result = await response.json();
           break;
         } catch (err: unknown) {
-          if (err instanceof InternalServerErrorException) throw err;
+          if (err instanceof InternalServerErrorException) {throw err;}
           lastError = err;
           if (attempt < maxRetries - 1) {
             this.logger.warn(`Anthropic site gen attempt ${attempt + 1}/${maxRetries} network error, retrying...`);

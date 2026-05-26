@@ -27,7 +27,7 @@ function isDecisionEvent(eventName: string): boolean {
 }
 
 function classifyTone(event: SpineEventRef): ToneClass {
-  if (event.valence === 'positive') return 'assertivo';
+  if (event.valence === 'positive') {return 'assertivo';}
   if (event.valence === 'negative') {
     if (
       event.eventName === 'commerce.post_sale.churn_risk_detected' ||
@@ -37,8 +37,8 @@ function classifyTone(event: SpineEventRef): ToneClass {
     }
     return 'urgente';
   }
-  if (event.valence === 'ambiguous') return 'consultivo';
-  if (event.truthMode === 'inferred') return 'analitico';
+  if (event.valence === 'ambiguous') {return 'consultivo';}
+  if (event.truthMode === 'inferred') {return 'analitico';}
   if (
     event.eventName === 'commerce.post_sale.first_value_obtained' ||
     event.eventName === 'commerce.post_sale.satisfaction_signal_observed'
@@ -92,7 +92,7 @@ function computeNarrativeStyleHash(
     const charCode = e.eventName.charCodeAt(0) + (e.valence?.charCodeAt(0) ?? 0);
     seeds.push(charCode);
   }
-  if (seeds.length === 0) return 'empty';
+  if (seeds.length === 0) {return 'empty';}
   let hash = 0x811c9dc5;
   for (const s of seeds) {
     hash ^= s;
@@ -106,7 +106,7 @@ function extractDecisionPatterns(
   events: readonly SpineEventRef[],
 ): readonly DecisionPattern[] {
   const decisionEvents = events.filter((e) => isDecisionEvent(e.eventName));
-  if (decisionEvents.length < 2) return [];
+  if (decisionEvents.length < 2) {return [];}
 
   const patternCounts = new Map<string, number>();
   for (let i = 0; i < decisionEvents.length - 1; i++) {

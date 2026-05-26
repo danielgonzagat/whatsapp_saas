@@ -22,7 +22,7 @@ function jaccard(left: string[], right: string[]): number {
 
 function featureOverlap(left: Record<string, unknown>, right: Record<string, unknown>): number {
   const keys = Object.keys(left).filter((key) => right[key] !== undefined);
-  if (keys.length === 0) return 0;
+  if (keys.length === 0) {return 0;}
   const matches = keys.filter((key) => String(left[key]) === String(right[key])).length;
   return matches / keys.length;
 }

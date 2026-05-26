@@ -26,13 +26,13 @@ function ev(over: Partial<SpineEventRef> = {}): SpineEventRef {
     truthMode: over.truthMode ?? 'observed',
   };
   if ('entityRef' in over) {
-    if (over.entityRef !== undefined) e['entityRef'] = over.entityRef;
+    if (over.entityRef !== undefined) {e['entityRef'] = over.entityRef;}
   } else {
     e['entityRef'] = { entityType: 'lead', entityId: 'lead_owner' };
   }
-  if (over.valence !== undefined) e['valence'] = over.valence;
-  if (over.payload !== undefined) e['payload'] = over.payload;
-  if (over.correlationId !== undefined) e['correlationId'] = over.correlationId;
+  if (over.valence !== undefined) {e['valence'] = over.valence;}
+  if (over.payload !== undefined) {e['payload'] = over.payload;}
+  if (over.correlationId !== undefined) {e['correlationId'] = over.correlationId;}
   return e as SpineEventRef;
 }
 
@@ -280,20 +280,20 @@ describe('OwnerCriterionEvidenceBuilder (UTP-OWNER-CRIT-008)', () => {
 
   it('aggregates confidence across all observation buckets', () => {
     const decisions = [
-      emptyObservation<DecisionObservation>({ confidence: 0.8 } as never),
+      emptyObservation<DecisionObservation>({ confidence: 0.8 }),
     ];
     const corrections = [
-      emptyObservation<CorrectionObservation>({ confidence: 0.6 } as never),
+      emptyObservation<CorrectionObservation>({ confidence: 0.6 }),
     ];
-    const tones = [emptyObservation<ToneObservation>({ confidence: 0.4 } as never)];
+    const tones = [emptyObservation<ToneObservation>({ confidence: 0.4 })];
     const risks = [
-      emptyObservation<RiskToleranceObservation>({ confidence: 0.4 } as never),
+      emptyObservation<RiskToleranceObservation>({ confidence: 0.4 }),
     ];
     const ethicals = [
-      emptyObservation<EthicalLineObservation>({ confidence: 0.6 } as never),
+      emptyObservation<EthicalLineObservation>({ confidence: 0.6 }),
     ];
     const approvals = [
-      emptyObservation<ApprovalThresholdObservation>({ confidence: 1.0 } as never),
+      emptyObservation<ApprovalThresholdObservation>({ confidence: 1.0 }),
     ];
     const bundle = build().build({
       workspaceId: 'wks_owner',
@@ -324,7 +324,7 @@ describe('OwnerCriterionEvidenceBuilder (UTP-OWNER-CRIT-008)', () => {
 
   it('preserves all observation buckets in the bundle', () => {
     const decisions = [
-      emptyObservation<DecisionObservation>({ observationId: 'd1', confidence: 0.9 } as never),
+      emptyObservation<DecisionObservation>({ observationId: 'd1', confidence: 0.9 }),
     ];
     const bundle = build().build({
       workspaceId: 'wks_owner',

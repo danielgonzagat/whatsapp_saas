@@ -35,7 +35,7 @@ export class OwnedAudienceBuilder {
   }
 
   defScore(audiences: readonly OwnedAudience[]): number {
-    if (audiences.length === 0) return 0;
+    if (audiences.length === 0) {return 0;}
 
     let totalOwnershipScore = 0;
     let totalSize = 0;
@@ -47,12 +47,12 @@ export class OwnedAudienceBuilder {
       totalSize += weight;
     }
 
-    if (totalSize === 0) return 0;
+    if (totalSize === 0) {return 0;}
     return clamp(totalOwnershipScore / totalSize, 0, 1);
   }
 
   topChannel(audiences: readonly OwnedAudience[]): OwnedAudience | undefined {
-    if (audiences.length === 0) return undefined;
+    if (audiences.length === 0) {return undefined;}
     return [...audiences].sort((a, b) => {
       const scoreA = a.ownershipLevel * (1 - a.platformRisk) * a.estimatedSize;
       const scoreB = b.ownershipLevel * (1 - b.platformRisk) * b.estimatedSize;

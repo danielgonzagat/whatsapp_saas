@@ -207,10 +207,10 @@ export class ProductService {
         { description: { contains: search, mode: 'insensitive' } },
       ];
     }
-    if (category) where.category = category;
-    if (active !== undefined) where.active = active;
-    if (status) where.status = status;
-    if (format) where.format = format;
+    if (category) {where.category = category;}
+    if (active !== undefined) {where.active = active;}
+    if (status) {where.status = status;}
+    if (format) {where.format = format;}
 
     const [products, count] = await Promise.all([
       this.prisma.product.findMany({

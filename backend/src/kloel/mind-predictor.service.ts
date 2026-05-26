@@ -98,7 +98,7 @@ export class MindPredictorService {
     const out: MindJson = {};
     for (const key of keep) {
       const value = features[key];
-      if (value === null || value === undefined) continue;
+      if (value === null || value === undefined) {continue;}
       out[key] =
         typeof value === 'number'
           ? key === 'hour'
@@ -110,16 +110,16 @@ export class MindPredictorService {
   }
 
   private bucketize(value: number): string {
-    if (value <= 0) return '0';
-    if (value < 10) return 'under_10';
-    if (value < 100) return '10_99';
-    if (value < 500) return '100_499';
-    if (value < 1000) return '500_999';
+    if (value <= 0) {return '0';}
+    if (value < 10) {return 'under_10';}
+    if (value < 100) {return '10_99';}
+    if (value < 500) {return '100_499';}
+    if (value < 1000) {return '500_999';}
     return '1000_plus';
   }
 
   private toStableString(value: unknown): string {
-    if (typeof value === 'string') return value;
+    if (typeof value === 'string') {return value;}
     if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
       return value.toString();
     }

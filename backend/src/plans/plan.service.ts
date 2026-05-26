@@ -60,7 +60,7 @@ export class PlanService {
     const product = await this.prisma.product.findFirst({
       where: { id: dto.productId, workspaceId },
     });
-    if (!product) throw new NotFoundException('Product not found');
+    if (!product) {throw new NotFoundException('Product not found');}
 
     const plan = await this.prisma.productPlan.create({
       data: {
@@ -138,20 +138,20 @@ export class PlanService {
     const existing = await this.prisma.productPlan.findFirst({
       where: { id: planId, product: { workspaceId } },
     });
-    if (!existing) throw new NotFoundException('Plan not found');
+    if (!existing) {throw new NotFoundException('Plan not found');}
 
     const updates: Record<string, unknown> = {};
-    if (dto.name !== undefined) updates.name = dto.name;
-    if (dto.price !== undefined) updates.price = Number(dto.price);
-    if (dto.active !== undefined) updates.active = Boolean(dto.active);
-    if (dto.maxInstallments !== undefined) updates.maxInstallments = Number(dto.maxInstallments);
-    if (dto.itemsPerPlan !== undefined) updates.itemsPerPlan = Number(dto.itemsPerPlan);
-    if (dto.billingType !== undefined) updates.billingType = dto.billingType;
-    if (dto.visibleToAffiliates !== undefined) updates.visibleToAffiliates = Boolean(dto.visibleToAffiliates);
-    if (dto.acceptCoupons !== undefined) updates.acceptCoupons = Boolean(dto.acceptCoupons);
-    if (dto.imageUrl !== undefined) updates.imageUrl = dto.imageUrl;
+    if (dto.name !== undefined) {updates.name = dto.name;}
+    if (dto.price !== undefined) {updates.price = Number(dto.price);}
+    if (dto.active !== undefined) {updates.active = Boolean(dto.active);}
+    if (dto.maxInstallments !== undefined) {updates.maxInstallments = Number(dto.maxInstallments);}
+    if (dto.itemsPerPlan !== undefined) {updates.itemsPerPlan = Number(dto.itemsPerPlan);}
+    if (dto.billingType !== undefined) {updates.billingType = dto.billingType;}
+    if (dto.visibleToAffiliates !== undefined) {updates.visibleToAffiliates = Boolean(dto.visibleToAffiliates);}
+    if (dto.acceptCoupons !== undefined) {updates.acceptCoupons = Boolean(dto.acceptCoupons);}
+    if (dto.imageUrl !== undefined) {updates.imageUrl = dto.imageUrl;}
 
-    if (Object.keys(updates).length === 0) return { success: true, plan: existing, message: 'No changes' };
+    if (Object.keys(updates).length === 0) {return { success: true, plan: existing, message: 'No changes' };}
 
     const plan = await this.prisma.productPlan.update({ where: { id: planId }, data: updates });
 
@@ -195,7 +195,7 @@ export class PlanService {
     const plan = await this.prisma.productPlan.findFirst({
       where: { id: planId, product: { workspaceId } },
     });
-    if (!plan) throw new NotFoundException('Plan not found');
+    if (!plan) {throw new NotFoundException('Plan not found');}
 
     await this.prisma.productPlan.delete({ where: { id: planId } });
 
@@ -224,7 +224,7 @@ export class PlanService {
     const plan = await this.prisma.productPlan.findFirst({
       where: { id: planId, product: { workspaceId } },
     });
-    if (!plan) throw new NotFoundException('Plan not found');
+    if (!plan) {throw new NotFoundException('Plan not found');}
 
     const checkoutImages = (plan.checkoutImages as Record<string, unknown>) || {};
     const updated = await this.prisma.productPlan.update({
@@ -248,7 +248,7 @@ export class PlanService {
     const plan = await this.prisma.productPlan.findFirst({
       where: { id: planId, product: { workspaceId } },
     });
-    if (!plan) throw new NotFoundException('Plan not found');
+    if (!plan) {throw new NotFoundException('Plan not found');}
 
     const updated = await this.prisma.productPlan.update({
       where: { id: planId },
@@ -269,7 +269,7 @@ export class PlanService {
     const plan = await this.prisma.productPlan.findFirst({
       where: { id: planId, product: { workspaceId } },
     });
-    if (!plan) throw new NotFoundException('Plan not found');
+    if (!plan) {throw new NotFoundException('Plan not found');}
 
     const updated = await this.prisma.productPlan.update({
       where: { id: planId },
@@ -290,7 +290,7 @@ export class PlanService {
     const plan = await this.prisma.productPlan.findFirst({
       where: { id: planId, product: { workspaceId } },
     });
-    if (!plan) throw new NotFoundException('Plan not found');
+    if (!plan) {throw new NotFoundException('Plan not found');}
 
     const checkoutImages = (plan.checkoutImages as Record<string, unknown>) || {};
     const updated = await this.prisma.productPlan.update({
@@ -314,10 +314,10 @@ export class PlanService {
     const plan = await this.prisma.productPlan.findFirst({
       where: { id: planId, product: { workspaceId } },
     });
-    if (!plan) throw new NotFoundException('Plan not found');
+    if (!plan) {throw new NotFoundException('Plan not found');}
 
     const updates: Record<string, unknown> = {};
-    if (config.visibleToAffiliates !== undefined) updates.visibleToAffiliates = config.visibleToAffiliates;
+    if (config.visibleToAffiliates !== undefined) {updates.visibleToAffiliates = config.visibleToAffiliates;}
     if (config.customCommission !== undefined) {
       const checkoutImages = (plan.checkoutImages as Record<string, unknown>) || {};
       updates.checkoutImages = { ...checkoutImages, customCommission: config.customCommission };

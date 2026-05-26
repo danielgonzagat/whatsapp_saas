@@ -17,7 +17,7 @@ export class ValenceAggregatorService {
   ): AbiAggregatedMood {
     const cutoff = nowMs - windowHours * 60 * 60 * 1000;
     const inWindow = events.filter((e) => {
-      if (!e.valence) return false;
+      if (!e.valence) {return false;}
       const ts = Date.parse(e.occurredAt);
       return Number.isFinite(ts) && ts >= cutoff;
     });

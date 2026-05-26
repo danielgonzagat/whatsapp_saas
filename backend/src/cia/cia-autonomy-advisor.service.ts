@@ -78,7 +78,7 @@ export class CiaAutonomyAdvisorService {
     const stats: DecisionTypeStats[] = [];
 
     for (const [decisionType, { total, successCount }] of grouped) {
-      if (total < MIN_SAMPLES) continue;
+      if (total < MIN_SAMPLES) {continue;}
 
       const successRate = successCount / total;
       const se = Math.sqrt(

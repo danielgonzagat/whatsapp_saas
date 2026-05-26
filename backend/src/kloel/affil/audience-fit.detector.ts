@@ -54,8 +54,8 @@ export class AudienceFitDetectorService {
   }
 
   getFitLevel(fit: AudienceFit): 'strong' | 'moderate' | 'weak' {
-    if (fit.fitScore >= FIT_THRESHOLD_STRONG) return 'strong';
-    if (fit.fitScore >= FIT_THRESHOLD_MODERATE) return 'moderate';
+    if (fit.fitScore >= FIT_THRESHOLD_STRONG) {return 'strong';}
+    if (fit.fitScore >= FIT_THRESHOLD_MODERATE) {return 'moderate';}
     return 'weak';
   }
 

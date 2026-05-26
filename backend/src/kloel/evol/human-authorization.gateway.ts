@@ -52,8 +52,8 @@ export class HumanAuthorizationGateway {
 
   approve(authId: string, humanPrincipal: string, reason: string): HumanAuthorization | null {
     const auth = this.authorizations.get(authId);
-    if (!auth) return null;
-    if (auth.status !== 'pending') return auth;
+    if (!auth) {return null;}
+    if (auth.status !== 'pending') {return auth;}
     if (this.isExpired(auth)) {
       return { ...auth, status: 'expired' };
     }
@@ -72,8 +72,8 @@ export class HumanAuthorizationGateway {
 
   reject(authId: string, humanPrincipal: string, reason: string): HumanAuthorization | null {
     const auth = this.authorizations.get(authId);
-    if (!auth) return null;
-    if (auth.status === 'approved') return auth;
+    if (!auth) {return null;}
+    if (auth.status === 'approved') {return auth;}
 
     const rejected: HumanAuthorization = {
       ...auth,
@@ -88,8 +88,8 @@ export class HumanAuthorizationGateway {
 
   isAuthorized(authId: string): boolean {
     const auth = this.authorizations.get(authId);
-    if (!auth) return false;
-    if (this.isExpired(auth)) return false;
+    if (!auth) {return false;}
+    if (this.isExpired(auth)) {return false;}
     return auth.status === 'approved' && auth.authorizedAt !== null;
   }
 

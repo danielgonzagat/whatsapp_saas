@@ -140,10 +140,10 @@ export async function resolveDecisions(
       priceBand,
     );
     const discountPct = (() => {
-      if (coupon.action === 'coupon_5') return 5;
-      if (coupon.action === 'coupon_10') return 10;
-      if (coupon.action === 'coupon_15') return 15;
-      if (coupon.action === 'coupon_20') return 20;
+      if (coupon.action === 'coupon_5') {return 5;}
+      if (coupon.action === 'coupon_10') {return 10;}
+      if (coupon.action === 'coupon_15') {return 15;}
+      if (coupon.action === 'coupon_20') {return 20;}
       return 0;
     })();
     decisions.coupon_offer = {
@@ -226,9 +226,9 @@ export async function resolveDecisions(
   const aggressivenessCeiling = String(channelSetup?.config?.aggressiveness || '').toLowerCase();
   const brainAggressiveness = String(aggressivenessRaw.aggressiveness || '').toLowerCase();
   const aggressivenessRank = (label: string): number => {
-    if (label.includes('alta') || label.includes('agress')) return 3;
-    if (label.includes('normal') || label.includes('moder')) return 2;
-    if (label.includes('baixa')) return 1;
+    if (label.includes('alta') || label.includes('agress')) {return 3;}
+    if (label.includes('normal') || label.includes('moder')) {return 2;}
+    if (label.includes('baixa')) {return 1;}
     return 2;
   };
   const effectiveAggressiveness =

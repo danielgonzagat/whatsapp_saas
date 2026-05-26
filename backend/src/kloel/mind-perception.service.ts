@@ -191,9 +191,9 @@ export class MindPerceptionService {
   }
 
   private priceBand(totalInCents: number): string {
-    if (totalInCents < 10_000) return 'under_100';
-    if (totalInCents < 50_000) return '100_499';
-    if (totalInCents < 100_000) return '500_999';
+    if (totalInCents < 10_000) {return 'under_100';}
+    if (totalInCents < 50_000) {return '100_499';}
+    if (totalInCents < 100_000) {return '500_999';}
     return '1000_plus';
   }
 

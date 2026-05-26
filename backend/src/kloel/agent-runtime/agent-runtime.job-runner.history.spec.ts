@@ -115,7 +115,7 @@ describe('AgentRuntimeJobRunnerService', () => {
     );
     const upsertArgs = prisma.kloelMemory.upsert.mock.calls[0][0];
     expect(Array.isArray(upsertArgs.update.value.history)).toBe(true);
-    const upsertCall = (prisma.kloelMemory.upsert as jest.Mock).mock.calls[0][0];
+    const upsertCall = (prisma.kloelMemory.upsert).mock.calls[0][0];
     const history = upsertCall.update.value.history;
     expect(history).toHaveLength(2);
   });
@@ -299,7 +299,7 @@ describe('AgentRuntimeJobRunnerService', () => {
 
     await service.runPendingJobsForWorkspace('ws_1');
 
-    const updateCall = (prisma.mindOutboxEvent.updateMany as jest.Mock).mock.calls[1][0];
+    const updateCall = (prisma.mindOutboxEvent.updateMany).mock.calls[1][0];
     const payload = updateCall.data.payload;
     const nextRetryAt = new Date(payload.nextRetryAt);
 

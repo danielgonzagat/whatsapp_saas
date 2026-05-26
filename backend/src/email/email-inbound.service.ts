@@ -65,7 +65,7 @@ function normalizeAttachments(attachments: InboundEmailAttachment[]): MessageAtt
 function buildEmailContent(email: InboundEmail): string {
   const subjectLine = email.subject ? `Assunto: ${email.subject}` : 'Sem assunto';
   const body = email.bodyText || (email.bodyHtml ? stripHtml(email.bodyHtml) : '');
-  if (!body) return subjectLine;
+  if (!body) {return subjectLine;}
   return `${subjectLine}\n\n${body}`;
 }
 
@@ -84,7 +84,7 @@ function maskEmail(value?: string): string | undefined {
 
 function resolveWorkspaceAlias(to: string): { workspaceId: string; username: string } | null {
   const matched = to.match(/^inbox(?:\+([a-zA-Z0-9_-]+))?@/);
-  if (!matched) return null;
+  if (!matched) {return null;}
   const username = matched[1] || 'default';
   return { workspaceId: username, username };
 }

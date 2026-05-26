@@ -176,7 +176,7 @@ export class BrainEventSpineService {
     let recorded = 0;
     for (const event of events) {
       const id = await this.recordCommercial(event);
-      if (id) recorded += 1;
+      if (id) {recorded += 1;}
     }
     return recorded;
   }
@@ -394,19 +394,19 @@ export class BrainEventSpineService {
   }
 
   private resolveIntent(eventType: BrainEventName): string {
-    if (eventType.startsWith('sale.')) return 'sale_lifecycle';
-    if (eventType.startsWith('checkout.')) return 'checkout_lifecycle';
-    if (eventType.startsWith('message.')) return 'message_lifecycle';
-    if (eventType.startsWith('lead.')) return 'lead_lifecycle';
-    if (eventType.startsWith('campaign.')) return 'campaign_lifecycle';
-    if (eventType.startsWith('product.')) return 'product_lifecycle';
-    if (eventType.startsWith('brain.')) return 'brain_lifecycle';
-    if (eventType.startsWith('mind.')) return 'mind_lifecycle';
-    if (eventType.startsWith('capability.')) return 'capability_lifecycle';
-    if (eventType.startsWith('contact.')) return 'contact_lifecycle';
-    if (eventType.startsWith('channel.')) return 'channel_lifecycle';
-    if (eventType.startsWith('identity.')) return 'identity_lifecycle';
-    if (eventType.startsWith('concept.')) return 'concept_lifecycle';
+    if (eventType.startsWith('sale.')) {return 'sale_lifecycle';}
+    if (eventType.startsWith('checkout.')) {return 'checkout_lifecycle';}
+    if (eventType.startsWith('message.')) {return 'message_lifecycle';}
+    if (eventType.startsWith('lead.')) {return 'lead_lifecycle';}
+    if (eventType.startsWith('campaign.')) {return 'campaign_lifecycle';}
+    if (eventType.startsWith('product.')) {return 'product_lifecycle';}
+    if (eventType.startsWith('brain.')) {return 'brain_lifecycle';}
+    if (eventType.startsWith('mind.')) {return 'mind_lifecycle';}
+    if (eventType.startsWith('capability.')) {return 'capability_lifecycle';}
+    if (eventType.startsWith('contact.')) {return 'contact_lifecycle';}
+    if (eventType.startsWith('channel.')) {return 'channel_lifecycle';}
+    if (eventType.startsWith('identity.')) {return 'identity_lifecycle';}
+    if (eventType.startsWith('concept.')) {return 'concept_lifecycle';}
     return 'commercial_lifecycle';
   }
 

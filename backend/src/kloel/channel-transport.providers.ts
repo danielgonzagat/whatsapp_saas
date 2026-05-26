@@ -231,9 +231,9 @@ function hasEnvSmtpProvider(): boolean {
 }
 
 function hasEmailProvider(): 'resend' | 'sendgrid' | 'smtp' | null {
-  if (hasConfiguredEnv('RESEND_API_KEY')) return 'resend';
-  if (hasConfiguredEnv('SENDGRID_API_KEY')) return 'sendgrid';
-  if (hasEnvSmtpProvider()) return 'smtp';
+  if (hasConfiguredEnv('RESEND_API_KEY')) {return 'resend';}
+  if (hasConfiguredEnv('SENDGRID_API_KEY')) {return 'sendgrid';}
+  if (hasEnvSmtpProvider()) {return 'smtp';}
   return null;
 }
 

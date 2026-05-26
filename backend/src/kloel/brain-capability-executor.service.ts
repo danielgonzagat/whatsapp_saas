@@ -474,7 +474,7 @@ export class BrainCapabilityExecutorService {
   /** Search the codebase (read-only) */
   async searchCode(_workspaceId: string, args?: UnknownRecord): Promise<CapabilityResult> {
     const query = String(args?.query ?? '');
-    if (!query.trim()) return { ok: false, error: 'query_required' };
+    if (!query.trim()) {return { ok: false, error: 'query_required' };}
     const glob = typeof args?.glob === 'string' ? args.glob : undefined;
     const max = typeof args?.max === 'number' ? args.max : undefined;
     const hits = this.codeAccess.search(query, { glob, max });
@@ -484,7 +484,7 @@ export class BrainCapabilityExecutorService {
   /** Read a specific source file */
   async readSourceFile(_workspaceId: string, args?: UnknownRecord): Promise<CapabilityResult> {
     const filePath = String(args?.path ?? '');
-    if (!filePath.trim()) return { ok: false, error: 'path_required' };
+    if (!filePath.trim()) {return { ok: false, error: 'path_required' };}
     const startLine = typeof args?.startLine === 'number' ? args.startLine : undefined;
     const endLine = typeof args?.endLine === 'number' ? args.endLine : undefined;
     const result = this.codeAccess.read(filePath, startLine, endLine);
@@ -510,7 +510,7 @@ export class BrainCapabilityExecutorService {
   /** Run a safe read-only SQL query */
   async runSafeQuery(_workspaceId: string, args?: UnknownRecord): Promise<CapabilityResult> {
     const sql = String(args?.sql ?? '');
-    if (!sql.trim()) return { ok: false, error: 'sql_required' };
+    if (!sql.trim()) {return { ok: false, error: 'sql_required' };}
     return this.safeQuery.query(_workspaceId, sql);
   }
   private async emitCapabilityInvoked(

@@ -101,8 +101,8 @@ export async function resolveProductOfferDecision(
 ): Promise<{ offer: string; confidence: number; fallback: boolean }> {
   const baseline = resolveProductOfferBaseline(segment, concept, priceBand);
   const context: Record<string, unknown> = { segment, concept, priceBand };
-  if (lastPurchase) context.lastPurchase = lastPurchase;
-  if (channelConstraint?.channel) context.channel = channelConstraint.channel;
+  if (lastPurchase) {context.lastPurchase = lastPurchase;}
+  if (channelConstraint?.channel) {context.channel = channelConstraint.channel;}
   // Channel-allowed product IDs feed the policy as structural context so the
   // brain (and any downstream consumer of the decision trace) sees what the
   // operator authorized for this channel. A future mapper layer translates
@@ -150,7 +150,7 @@ export async function resolveBroadcastWindowDecision(
   const baseline = resolveBroadcastWindowBaseline(channel, weekday ?? 'monday', fatigue ?? 0);
   const context = { channel, segment, weekday: weekday ?? 'monday', fatigue: fatigue ?? 0 };
   const actions = ['now', 'tonight_20h', 'tomorrow_9h', 'friday_21h'];
-  if (fatigue !== undefined && fatigue >= 0.8) actions.push('pause');
+  if (fatigue !== undefined && fatigue >= 0.8) {actions.push('pause');}
 
   const result = await policy.choose({
     workspaceId,

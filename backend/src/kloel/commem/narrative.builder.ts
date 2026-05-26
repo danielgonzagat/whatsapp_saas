@@ -25,7 +25,7 @@ function generateNarrativeSummary(events: readonly SpineEventRef[], periodDays: 
 }
 
 function generateFindings(events: readonly SpineEventRef[]): readonly string[] {
-  if (events.length === 0) return ['No events to analyze'];
+  if (events.length === 0) {return ['No events to analyze'];}
 
   const findings: string[] = [];
   const domainCounts: Record<string, number> = {};
@@ -45,9 +45,9 @@ function generateFindings(events: readonly SpineEventRef[]): readonly string[] {
   const inferred = events.filter((e) => e.truthMode === 'inferred').length;
   const projected = events.filter((e) => e.truthMode === 'projected').length;
 
-  if (observed > 0) findings.push(`${observed} observed (real) events — ground truth`);
-  if (inferred > 0) findings.push(`${inferred} inferred events — pattern-based reasoning`);
-  if (projected > 0) findings.push(`${projected} projected events — forward-looking signals`);
+  if (observed > 0) {findings.push(`${observed} observed (real) events — ground truth`);}
+  if (inferred > 0) {findings.push(`${inferred} inferred events — pattern-based reasoning`);}
+  if (projected > 0) {findings.push(`${projected} projected events — forward-looking signals`);}
 
   const negativeEvents = events.filter((e) => e.valence === 'negative');
   if (negativeEvents.length > 0) {

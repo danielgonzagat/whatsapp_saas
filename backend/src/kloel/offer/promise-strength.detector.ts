@@ -64,7 +64,7 @@ function countTokens(label: string, text: string, dict: ReadonlySet<string>): nu
 
 function copyScore(offerCopy: string): number {
   const wordCount = offerCopy.split(/\s+/).filter(Boolean).length;
-  if (wordCount === 0) return 0;
+  if (wordCount === 0) {return 0;}
 
   const power = countTokens('power', offerCopy, POWER_WORDS);
   const specificity = countTokens('specificity', offerCopy, SPECIFICITY_MARKERS);
@@ -84,15 +84,15 @@ function classify(
   sampleSize: number,
 ): PromiseStrength {
   if (sampleSize < MIN_SAMPLE_SIZE) {
-    if (copyScoreValue >= 0.6) return 'moderate';
-    if (copyScoreValue >= 0.3) return 'weak';
+    if (copyScoreValue >= 0.6) {return 'moderate';}
+    if (copyScoreValue >= 0.3) {return 'weak';}
     return 'weak';
   }
 
   const composite = copyScoreValue * 0.4 + (conversionRate / STRONG_CONVERSION_THRESHOLD) * 0.6;
 
-  if (composite >= 0.7) return 'strong';
-  if (composite >= 0.35) return 'moderate';
+  if (composite >= 0.7) {return 'strong';}
+  if (composite >= 0.35) {return 'moderate';}
   return 'weak';
 }
 

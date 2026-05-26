@@ -38,7 +38,7 @@ const productWithoutMarginGuardDetector: Detector = {
     const approvals = events.filter((e) => e.eventName === 'commerce.payment.approved');
     for (const a of approvals) {
       const margin = Number(a.payload?.['marginPct'] ?? Number.NaN);
-      if (Number.isFinite(margin) && margin >= 0) continue;
+      if (Number.isFinite(margin) && margin >= 0) {continue;}
       out.push(
         finTension(
           'financial.product_without_margin_guard',
@@ -68,9 +68,9 @@ const churnRiskWithoutRetentionDetector: Detector = {
             e.eventName === 'commerce.crm.next_step_defined') &&
           Date.parse(e.occurredAt) > Date.parse(c.occurredAt),
       );
-      if (retention) continue;
+      if (retention) {continue;}
       const ageHours = (nowMs - Date.parse(c.occurredAt)) / (60 * 60 * 1000);
-      if (ageHours < 1) continue;
+      if (ageHours < 1) {continue;}
       out.push(
         finTension(
           'financial.churn_risk_without_retention',
@@ -94,7 +94,7 @@ export const discountWithoutJustificationDetector: Detector = {
     const discounts = events.filter((e) => Number(e.payload?.['discountCents'] ?? 0) > 0);
     for (const d of discounts) {
       const reason = d.payload?.['discountReason'];
-      if (typeof reason === 'string' && reason.length > 0) continue;
+      if (typeof reason === 'string' && reason.length > 0) {continue;}
       out.push(
         finTension(
           'financial.discount_without_justification',

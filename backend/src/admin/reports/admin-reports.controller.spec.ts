@@ -86,7 +86,7 @@ describe('AdminReportsController', () => {
 
       await controller.exportCsv(
         { period: AdminHomePeriodDto.TODAY },
-        { ...mockAdmin, id: 'admin-42' } as AuthenticatedAdmin,
+        { ...mockAdmin, id: 'admin-42' },
       );
 
       expect(exportCsvRowsMock).toHaveBeenCalledWith(

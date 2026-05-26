@@ -45,15 +45,15 @@ export class CodeAccessService {
         return current;
       }
       const parent = path.dirname(current);
-      if (parent === current) break;
+      if (parent === current) {break;}
       current = parent;
     }
     return path.resolve(hint);
   }  /** List files in a directory relative to repo root */
   list(dirPath: string): FileEntry[] {
     const target = path.resolve(this.root, dirPath.replace(/^\.?\//, ''));
-    if (!target.startsWith(this.root)) return [];
-    if (!fs.existsSync(target)) return [];
+    if (!target.startsWith(this.root)) {return [];}
+    if (!fs.existsSync(target)) {return [];}
 
     try {
       const entries = fs.readdirSync(target, { withFileTypes: true });
@@ -137,7 +137,7 @@ export class CodeAccessService {
     const hits: CodeHit[] = [];
     const lines = stdout.trim().split('\n');
     for (const line of lines) {
-      if (hits.length >= max) break;
+      if (hits.length >= max) {break;}
       const match = line.match(/^([^:]+):(\d+):(\d+):(.*)$/);
       if (match) {
         const [, file = '', lineStr = '0', colStr = '0', content = ''] = match;

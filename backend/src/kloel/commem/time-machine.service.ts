@@ -46,8 +46,8 @@ export class TimeMachineService {
     const diffs: MemoryDiffEntry[] = [];
 
     const allDimensions = new Set<MemoryDimension>();
-    for (const p of before.projections) allDimensions.add(p.dimension);
-    for (const p of after.projections) allDimensions.add(p.dimension);
+    for (const p of before.projections) {allDimensions.add(p.dimension);}
+    for (const p of after.projections) {allDimensions.add(p.dimension);}
 
     for (const dim of allDimensions) {
       const b = before.projections.find((p) => p.dimension === dim);

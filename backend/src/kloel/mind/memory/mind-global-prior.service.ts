@@ -196,13 +196,13 @@ export class MindGlobalPriorService {
         context: { equals: context as Prisma.InputJsonValue },
       },
     });
-    if (!prior) return null;
+    if (!prior) {return null;}
 
     const { mean, variance } = prior;
-    if (variance <= 0 || mean <= 0 || mean >= 1) return null;
+    if (variance <= 0 || mean <= 0 || mean >= 1) {return null;}
 
     const k = (mean * (1 - mean)) / variance - 1;
-    if (k <= 0) return null;
+    if (k <= 0) {return null;}
 
     return { alpha: mean * k, beta: (1 - mean) * k };
   }

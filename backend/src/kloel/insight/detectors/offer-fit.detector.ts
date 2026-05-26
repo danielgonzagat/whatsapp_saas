@@ -13,7 +13,7 @@ const MIN_INSTANCES = 3;
 const SIGNIFICANT_DROP = 0.3;
 
 function extractProductId(payload: Readonly<Record<string, unknown>> | undefined): string {
-  if (!payload) return 'unknown';
+  if (!payload) {return 'unknown';}
   const pid = payload['productId'] ?? payload['productRef'] ?? payload['planId'];
   return typeof pid === 'string' ? pid : 'unknown';
 }
@@ -48,7 +48,7 @@ export function detectOfferFit(input: DetectorInput): DetectorResult {
     }
   }
 
-  if (approvedProducts.length === 0) return { insights: [] };
+  if (approvedProducts.length === 0) {return { insights: [] };}
 
   const totalApprovals = approvedProducts.length;
   const productCounts = new Map<string, number>();

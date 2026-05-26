@@ -58,7 +58,7 @@ export class EmailDispatchAdapter implements ChannelDispatchPort {
 
     for (const candidate of this.providersInOrder()) {
       const result = await this.tryProvider(candidate.label, candidate.send, input.workspaceId, payload);
-      if (result) return result;
+      if (result) {return result;}
     }
     return {
       success: false,
@@ -109,7 +109,7 @@ export class EmailDispatchAdapter implements ChannelDispatchPort {
     workspaceId: string,
     payload: { toEmail: string; subject?: string; html?: string; proactive?: boolean },
   ): Promise<ChannelSendResult | null> {
-    if (!send) return null;
+    if (!send) {return null;}
     try {
       const raw = (await send(workspaceId, payload)) as MailboxSendResult | null;
       if (!raw) {

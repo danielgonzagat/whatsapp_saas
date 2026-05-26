@@ -48,11 +48,11 @@ function severityFromCount(
   count: number,
 ): 'low' | 'medium' | 'high' {
   if (category === 'handoff') {
-    if (count >= HANDOFF_HIGH_SEVERITY_THRESHOLD) return 'high';
+    if (count >= HANDOFF_HIGH_SEVERITY_THRESHOLD) {return 'high';}
     return count >= 2 ? 'medium' : 'low';
   }
   if (category === 'decline') {
-    if (count >= DECLINE_HIGH_SEVERITY_THRESHOLD) return 'high';
+    if (count >= DECLINE_HIGH_SEVERITY_THRESHOLD) {return 'high';}
     return count >= 2 ? 'medium' : 'low';
   }
   return count >= 4 ? 'high' : count >= 2 ? 'medium' : 'low';
@@ -64,12 +64,12 @@ function detectHandoffs(
   const handoffEvents = input.events.filter(
     (e) => e.eventName === 'commerce.whatsapp.handoff_to_human',
   );
-  if (handoffEvents.length === 0) return [];
+  if (handoffEvents.length === 0) {return [];}
 
   return [
     {
       errorId: `err_${randomUUID()}`,
-      category: 'handoff' as ErrorCategory,
+      category: 'handoff',
       workspaceId: input.workspaceId,
       detectedAt: new Date(input.nowMs).toISOString(),
       evidenceEventIds: handoffEvents.map((e) => e.eventId),
@@ -86,12 +86,12 @@ function detectDeclines(
   const declineEvents = input.events.filter(
     (e) => e.eventName === 'commerce.payment.declined',
   );
-  if (declineEvents.length === 0) return [];
+  if (declineEvents.length === 0) {return [];}
 
   return [
     {
       errorId: `err_${randomUUID()}`,
-      category: 'decline' as ErrorCategory,
+      category: 'decline',
       workspaceId: input.workspaceId,
       detectedAt: new Date(input.nowMs).toISOString(),
       evidenceEventIds: declineEvents.map((e) => e.eventId),
@@ -115,12 +115,12 @@ function detectMisclassifications(
     return typeof causedBy === 'string' && causedBy.length > 0;
   });
 
-  if (corrections.length < MIN_EVENTS) return [];
+  if (corrections.length < MIN_EVENTS) {return [];}
 
   return [
     {
       errorId: `err_${randomUUID()}`,
-      category: 'misclassification' as ErrorCategory,
+      category: 'misclassification',
       workspaceId: input.workspaceId,
       detectedAt: new Date(input.nowMs).toISOString(),
       evidenceEventIds: corrections.map((e) => e.eventId),
@@ -148,12 +148,12 @@ function detectMissedOpportunities(
   );
 
   const total = wentSilentEvents.length + leadLostEvents.length;
-  if (total < MIN_EVENTS) return [];
+  if (total < MIN_EVENTS) {return [];}
 
   return [
     {
       errorId: `err_${randomUUID()}`,
-      category: 'missed_opportunity' as ErrorCategory,
+      category: 'missed_opportunity',
       workspaceId: input.workspaceId,
       detectedAt: new Date(input.nowMs).toISOString(),
       evidenceEventIds: [...wentSilentEvents, ...leadLostEvents].map(

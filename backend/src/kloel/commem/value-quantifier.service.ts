@@ -79,7 +79,7 @@ function computeKnowledgeMultiplier(
   events: readonly SpineEventRef[],
   domainCount: number,
 ): number {
-  if (events.length === 0) return 0;
+  if (events.length === 0) {return 0;}
 
   const observedRatio =
     events.filter((e) => e.truthMode === 'observed').length / events.length;
@@ -95,8 +95,8 @@ function computeKnowledgeMultiplier(
 }
 
 function valenceMultiplier(event: SpineEventRef): number {
-  if (event.valence === 'positive') return VALENCE_POSITIVE_MULTIPLIER;
-  if (event.valence === 'negative') return VALENCE_NEGATIVE_PENALTY;
+  if (event.valence === 'positive') {return VALENCE_POSITIVE_MULTIPLIER;}
+  if (event.valence === 'negative') {return VALENCE_NEGATIVE_PENALTY;}
   return 1.0;
 }
 

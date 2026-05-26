@@ -181,7 +181,7 @@ export class AssetGrowthTrackerService {
 
   listAssets(workspaceId: string): readonly AssetRecord[] {
     const ws = this.assets.get(workspaceId);
-    if (!ws) return [];
+    if (!ws) {return [];}
     return [...ws.values()];
   }
 

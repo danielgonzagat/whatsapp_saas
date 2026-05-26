@@ -57,7 +57,7 @@ export class ToolPlannerService {
 
     for (const field of cap.inputSchema) {
       const value = coerced[field.key];
-      if (value === undefined || value === null) continue;
+      if (value === undefined || value === null) {continue;}
 
       switch (field.type) {
         case 'number': {
@@ -82,7 +82,7 @@ export class ToolPlannerService {
                 opt.toLowerCase().startsWith(normalized) ||
                 opt[0]?.toLowerCase() === normalized[0],
             );
-            if (match) coerced[field.key] = match;
+            if (match) {coerced[field.key] = match;}
           }
           break;
         }

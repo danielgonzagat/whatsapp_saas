@@ -40,12 +40,12 @@ export class ReceivablesProjector {
   }
 
   private weightedConfidence(entries: readonly CashEntry[]): number {
-    if (entries.length === 0) return 1.0;
+    if (entries.length === 0) {return 1.0;}
     const totalAbs = entries.reduce((sum, e) => {
       const abs = e.amountCents < 0n ? -e.amountCents : e.amountCents;
       return sum + abs;
     }, 0n);
-    if (totalAbs === 0n) return 1.0;
+    if (totalAbs === 0n) {return 1.0;}
     const weighted = entries.reduce((sum, e) => {
       const abs = e.amountCents < 0n ? -e.amountCents : e.amountCents;
       return sum + Number(abs) * e.confidence;

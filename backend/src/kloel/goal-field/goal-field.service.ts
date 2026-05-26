@@ -71,7 +71,7 @@ export class GoalFieldService {
     for (const det of this.defaultDetectors) {
       try {
         const detected = det.detect(input.events, nowMs);
-        for (const t of detected) tensions.push(t);
+        for (const t of detected) {tensions.push(t);}
       } catch (err) {
         this.logger.error(
           `detector ${det.name} threw — ${(err as Error).message}`,
@@ -158,7 +158,7 @@ export class GoalFieldService {
   ): readonly GoalCandidate[] {
     const out: GoalCandidate[] = [];
     for (const a of aggregated) {
-      if (a.weightedSeverity < threshold) continue;
+      if (a.weightedSeverity < threshold) {continue;}
       const impact = Math.min(1, a.weightedSeverity);
       const viability = a.dominantDimension === 'cognitive' ? 0.6 : 0.75;
       const risk = a.dominantDimension === 'financial' ? 0.3 : 0.2;
@@ -220,7 +220,7 @@ export class GoalFieldService {
     candidates: readonly GoalCandidate[],
     nowMs: number,
   ): readonly GoalCandidate[] {
-    if (!this.shadowAccumulator) return candidates;
+    if (!this.shadowAccumulator) {return candidates;}
     const promoted: GoalCandidate[] = [];
     const blocked: GoalCandidate[] = [];
     for (const c of candidates) {

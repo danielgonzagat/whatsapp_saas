@@ -40,8 +40,8 @@ export function evaluateTiming(
   let peakWindow = false;
   if (hasTypicalWindow) {
     peakWindow =
-      localHour >= cfg.typicalReplyWindowStart! &&
-      localHour < cfg.typicalReplyWindowEnd!;
+      localHour >= cfg.typicalReplyWindowStart &&
+      localHour < cfg.typicalReplyWindowEnd;
   }
 
   const appropriate = !isQuietHours;

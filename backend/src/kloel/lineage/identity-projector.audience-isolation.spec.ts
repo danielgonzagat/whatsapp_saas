@@ -39,7 +39,7 @@ describe('IdentityProjectorService — audience isolation', () => {
         now: new Date('2026-05-20T20:00:00.000Z'),
       });
       expect(isPublicProjection(p)).toBe(true);
-      if (!isPublicProjection(p)) throw new Error('not public');
+      if (!isPublicProjection(p)) {throw new Error('not public');}
       expect(p.canonicalName).toBe('Kloel');
       expect(p.operationalAge.sinceGenesisDays).toBeGreaterThanOrEqual(7);
       expect(p.operationalAge.sinceFirstWorkspaceDays).toBeGreaterThanOrEqual(7);
@@ -63,7 +63,7 @@ describe('IdentityProjectorService — audience isolation', () => {
         capabilityIds: ['lineage', 'abi-builder'],
       });
       expect(isTechnicalProjection(p)).toBe(true);
-      if (!isTechnicalProjection(p)) throw new Error('not technical');
+      if (!isTechnicalProjection(p)) {throw new Error('not technical');}
       expect(p.genesisEventId).toBe('01JD90000000000000000000GE');
       expect(p.tailSequenceNumber).toBe(1);
       expect(p.tailHash).toMatch(/^[a-f0-9]{64}$/);
@@ -86,7 +86,7 @@ describe('IdentityProjectorService — audience isolation', () => {
       const { projector } = await build();
       const p = await projector.project({ audience: 'origin' });
       expect(isCompromisedProjection(p)).toBe(true);
-      if (!isCompromisedProjection(p)) throw new Error('not compromised');
+      if (!isCompromisedProjection(p)) {throw new Error('not compromised');}
       expect(p.reason).toMatch(/auditable authorization/i);
       // Even on refusal, etymology never leaks.
       const serialized = JSON.stringify(p);
@@ -100,7 +100,7 @@ describe('IdentityProjectorService — audience isolation', () => {
         originAuthorization: { grantedAt: '2026-05-13T22:00:00.000Z', grantedBy: 'steward' },
       });
       expect(isOriginProjection(p)).toBe(true);
-      if (!isOriginProjection(p)) throw new Error('not origin');
+      if (!isOriginProjection(p)) {throw new Error('not origin');}
       expect(p.etymology.greek.word).toBe('kléos');
       expect(p.etymology.hebrew.word).toBe('El');
       expect(p.origin.inception).toBe('2026-05-13');
@@ -126,7 +126,7 @@ describe('IdentityProjectorService — audience isolation', () => {
       });
       const p = await projector.project({ audience: 'internal' });
       expect(isInternalProjection(p)).toBe(true);
-      if (!isInternalProjection(p)) throw new Error('not internal');
+      if (!isInternalProjection(p)) {throw new Error('not internal');}
       expect(p.entryCount).toBe(2);
       expect(p.tailSequenceNumber).toBe(2);
       expect(p.etymology.greek.word).toBe('kléos');
@@ -142,7 +142,7 @@ describe('IdentityProjectorService — audience isolation', () => {
       for (const audience of audiences) {
         const p = await projector.project({ audience });
         expect(isCompromisedProjection(p)).toBe(true);
-        if (!isCompromisedProjection(p)) throw new Error('not compromised');
+        if (!isCompromisedProjection(p)) {throw new Error('not compromised');}
         // Even on compromise, canonicalName is still surfaced.
         expect(p.canonicalName).toBe('Kloel');
         // No origin material leaks in compromised projections.
@@ -156,7 +156,7 @@ describe('IdentityProjectorService — audience isolation', () => {
         audience: 'public',
         now: new Date('2026-05-13T20:30:00.000Z'),
       });
-      if (!isPublicProjection(p)) throw new Error('not public');
+      if (!isPublicProjection(p)) {throw new Error('not public');}
       expect(p.operationalAge.sinceFirstWorkspaceDays).toBe(0);
     });
   });
@@ -179,7 +179,7 @@ describe('IdentityProjectorService — audience isolation', () => {
     it('truthMode is always "observed" when projection succeeds', async () => {
       const { projector } = await build();
       const p = await projector.project({ audience: 'public' });
-      if (!isPublicProjection(p)) throw new Error('not public');
+      if (!isPublicProjection(p)) {throw new Error('not public');}
       expect(p.truthMode).toBe('observed');
     });
   });

@@ -25,13 +25,13 @@ function ev(over: Partial<SpineEventRef>): SpineEventRef {
     truthMode: over.truthMode ?? 'observed',
   };
   if ('entityRef' in over) {
-    if (over.entityRef !== undefined) e['entityRef'] = over.entityRef;
+    if (over.entityRef !== undefined) {e['entityRef'] = over.entityRef;}
   } else {
     e['entityRef'] = { entityType: 'lead', entityId: 'lead_1' };
   }
-  if (over.valence !== undefined) e['valence'] = over.valence;
-  if (over.payload !== undefined) e['payload'] = over.payload;
-  if (over.correlationId !== undefined) e['correlationId'] = over.correlationId;
+  if (over.valence !== undefined) {e['valence'] = over.valence;}
+  if (over.payload !== undefined) {e['payload'] = over.payload;}
+  if (over.correlationId !== undefined) {e['correlationId'] = over.correlationId;}
   return e as SpineEventRef;
 }
 

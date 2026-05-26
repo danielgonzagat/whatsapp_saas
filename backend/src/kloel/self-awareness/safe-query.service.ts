@@ -66,13 +66,13 @@ export class SafeQueryService {
         ),
       ]);
 
-      const rows = result as unknown[];
+      const rows = result;
       if (rows.length > MAX_ROWS) {
         return {
           ok: true,
           rows: rows.slice(0, MAX_ROWS),
           error: `truncated_to_${MAX_ROWS}` as unknown as string,
-        } as any;
+        };
       }
       return { ok: true, rows };
     } catch (err) {
@@ -90,7 +90,7 @@ export class SafeQueryService {
     const matches = upper.matchAll(/(?:FROM|JOIN|INTO|UPDATE)\s+"?(\w+)"?/gi);
     for (const m of matches) {
       const name = m[1];
-      if (name && !names.includes(name)) names.push(name);
+      if (name && !names.includes(name)) {names.push(name);}
     }
     return names;
   }

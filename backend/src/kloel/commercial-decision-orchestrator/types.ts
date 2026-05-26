@@ -39,15 +39,15 @@ export function hasConcept(rows: ConceptRow[], concept: string): boolean {
 
 export function priceBandFor(text: string): string {
   const normalized = text.toLowerCase();
-  if (/\b(1000|mil|premium|alto valor)\b/.test(normalized)) return 'over_500';
-  if (/\b(300|500|caro|pre[cç]o)\b/.test(normalized)) return 'over_300';
+  if (/\b(1000|mil|premium|alto valor)\b/.test(normalized)) {return 'over_500';}
+  if (/\b(300|500|caro|pre[cç]o)\b/.test(normalized)) {return 'over_300';}
   return 'unknown';
 }
 
 export function discountPercentFromCoupon(action?: string): number | undefined {
-  if (action === 'coupon_5') return 5;
-  if (action === 'coupon_10') return 10;
-  if (action === 'coupon_15') return 15;
-  if (action === 'coupon_20') return 20;
+  if (action === 'coupon_5') {return 5;}
+  if (action === 'coupon_10') {return 10;}
+  if (action === 'coupon_15') {return 15;}
+  if (action === 'coupon_20') {return 20;}
   return undefined;
 }

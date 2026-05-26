@@ -31,7 +31,7 @@ export class PositioningUniquenessDetector {
 
     for (const event of wsEvents) {
       const signalKind = POSITIONING_SIGNALS[event.eventName];
-      if (!signalKind) continue;
+      if (!signalKind) {continue;}
 
       const existing = signalMap.get(signalKind) ?? { strength: 0, evidence: [] };
       const increment = this.signalIncrement(event.eventName);
@@ -65,7 +65,7 @@ export class PositioningUniquenessDetector {
   }
 
   overallUniqueness(signals: readonly PositioningUniqueness[]): number {
-    if (signals.length === 0) return 0;
+    if (signals.length === 0) {return 0;}
     const totalStrength = signals.reduce((s, sig) => s + sig.strength * (1 - sig.competitorOverlap), 0);
     return Math.round(clamp(totalStrength / signals.length, 0, 1) * 1000) / 1000;
   }

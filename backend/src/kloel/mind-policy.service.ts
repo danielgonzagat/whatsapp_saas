@@ -432,7 +432,7 @@ export class MindPolicyService {
       await this.prisma.mindPolicy.update({
         where: { id: row.id },
         data: {
-          context: { ...ctx, outcomeConfidence: newConfidence } as Prisma.InputJsonValue,
+          context: { ...ctx, outcomeConfidence: newConfidence },
         },
       });
 

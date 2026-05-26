@@ -155,16 +155,16 @@ function inferThresholdLevel(
   autoRate: number,
   overrideRate: number,
 ): ThresholdLevel {
-  if (autoRate >= 0.8 && overrideRate <= 0.2) return 'low';
-  if (autoRate >= 0.5 && overrideRate <= 0.5) return 'medium';
-  if (autoRate >= 0.2) return 'high';
+  if (autoRate >= 0.8 && overrideRate <= 0.2) {return 'low';}
+  if (autoRate >= 0.5 && overrideRate <= 0.5) {return 'medium';}
+  if (autoRate >= 0.2) {return 'high';}
   return 'manual_only';
 }
 
 function computeConfidence(totalActions: number): number {
-  if (totalActions >= 20) return 0.9;
-  if (totalActions >= 10) return 0.7;
-  if (totalActions >= 5) return 0.5;
+  if (totalActions >= 20) {return 0.9;}
+  if (totalActions >= 10) {return 0.7;}
+  if (totalActions >= 5) {return 0.5;}
   return 0.35;
 }
 

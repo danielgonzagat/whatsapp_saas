@@ -288,7 +288,7 @@ export class SegmentationService {
     return {
       contacts: contacts.map((c) => ({
         id: c.id,
-        phone: c.phone as string,
+        phone: c.phone,
         ...(c.name != null ? { name: c.name } : {}),
       })),
       total: contacts.length,

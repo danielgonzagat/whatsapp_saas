@@ -7,9 +7,9 @@ export class AccountService {
 
   async updatePersonalData(workspaceId: string, data: { name?: string; email?: string; phone?: string }) {
     const updates: Record<string, unknown> = {};
-    if (data.name) updates.name = data.name;
-    if (data.email) updates.email = data.email;
-    if (data.phone) updates.phone = data.phone;
+    if (data.name) {updates.name = data.name;}
+    if (data.email) {updates.email = data.email;}
+    if (data.phone) {updates.phone = data.phone;}
     await this.prisma.workspace.update({ where: { id: workspaceId }, data: updates });
     return { success: true, message: 'Personal data updated' };
   }

@@ -23,7 +23,7 @@ export class RuntimeMetricsService {
   private unsubscribeSpine: (() => void) | null = null;
 
   incrementOperations(delta = 1): void {
-    if (delta <= 0) return;
+    if (delta <= 0) {return;}
     this.operationsTotal += delta;
   }
 

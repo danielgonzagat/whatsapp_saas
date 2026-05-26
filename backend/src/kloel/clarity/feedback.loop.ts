@@ -37,7 +37,7 @@ export function applyFeedback(input: FeedbackInput): FeedbackResult {
         : 0;
 
   const updated = rankings.map((ranking) => {
-    if (ranking.itemId !== feedback.itemId) return ranking;
+    if (ranking.itemId !== feedback.itemId) {return ranking;}
 
     const newScore = clampScore(ranking.score + delta);
     return {

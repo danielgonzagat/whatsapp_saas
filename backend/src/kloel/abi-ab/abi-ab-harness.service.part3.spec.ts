@@ -24,7 +24,7 @@ function makePathRunner(
     success: true,
     latencyMs: 200,
     tokensUsed: 150,
-    responseText: 'Obrigado pelo contato. Conforme sua análise, recomendamos adquirir o plano.' as string,
+    responseText: 'Obrigado pelo contato. Conforme sua análise, recomendamos adquirir o plano.',
     ...overrides,
   });
 }
@@ -34,7 +34,7 @@ function makeSlowPathRunner(): AbPathRunnerFn {
     success: true,
     latencyMs: 800,
     tokensUsed: 300,
-    responseText: 'Resposta lenta.' as string,
+    responseText: 'Resposta lenta.',
   });
 }
 
@@ -43,7 +43,7 @@ function makeHighTokenPathRunner(): AbPathRunnerFn {
     success: true,
     latencyMs: 200,
     tokensUsed: 5000,
-    responseText: 'Resposta verbosa com muitas palavras.' as string,
+    responseText: 'Resposta verbosa com muitas palavras.',
   });
 }
 
@@ -52,7 +52,7 @@ function makeFailingPathRunner(): AbPathRunnerFn {
     success: false,
     latencyMs: 100,
     tokensUsed: 10,
-    responseText: '' as string,
+    responseText: '',
   });
 }
 
@@ -61,7 +61,7 @@ function makeConversionRichRunner(): AbPathRunnerFn {
     success: true,
     latencyMs: 180,
     tokensUsed: 200,
-    responseText: 'Excelente! Aproveite nossa oferta exclusiva. Clique aqui para comprar com desconto. Muito obrigado pela confiança.' as string,
+    responseText: 'Excelente! Aproveite nossa oferta exclusiva. Clique aqui para comprar com desconto. Muito obrigado pela confiança.',
   });
 }
 
@@ -70,7 +70,7 @@ function makeHallucinatedRunner(): AbPathRunnerFn {
     success: true,
     latencyMs: 220,
     tokensUsed: 180,
-    responseText: 'O produto X é o melhor do mercado. A empresa Y recomenda este serviço. A pesquisa Z comprovou eficácia de 99%.' as string,
+    responseText: 'O produto X é o melhor do mercado. A empresa Y recomenda este serviço. A pesquisa Z comprovou eficácia de 99%.',
   });
 }
 
@@ -79,7 +79,7 @@ function makeBalancedRunner(): AbPathRunnerFn {
     success: true,
     latencyMs: 200,
     tokensUsed: 200,
-    responseText: 'Bom dia! Conforme sua solicitação, aqui está o resumo.' as string,
+    responseText: 'Bom dia! Conforme sua solicitação, aqui está o resumo.',
   });
 }
 
@@ -120,20 +120,20 @@ describe('AbiAbHarnessService', () => {
         success: true,
         latencyMs: 100,
         tokensUsed: 100,
-        responseText: 'Excelente! Obrigado! Aproveite a oferta!' as string,
+        responseText: 'Excelente! Obrigado! Aproveite a oferta!',
       });
 
       const badRunner: AbPathRunnerFn = async () => ({
         success: false,
         latencyMs: 500,
         tokensUsed: 300,
-        responseText: '' as string,
+        responseText: '',
       });
 
       let callCount = 0;
       const switchingRunner: AbPathRunnerFn = async (params) => {
         callCount++;
-        if (params.workspaceId === 'ws_good') return goodRunner(params);
+        if (params.workspaceId === 'ws_good') {return goodRunner(params);}
         return badRunner(params);
       };
 
@@ -183,7 +183,7 @@ describe('AbiAbHarnessService', () => {
       let callCount = 0;
       const switchingRunner: AbPathRunnerFn = async (params) => {
         callCount++;
-        if (params.useAbi) return variantRunner(params);
+        if (params.useAbi) {return variantRunner(params);}
         return baselineRunner(params);
       };
 
@@ -206,7 +206,7 @@ describe('AbiAbHarnessService', () => {
       let callCount = 0;
       const switchingRunner: AbPathRunnerFn = async (params) => {
         callCount++;
-        if (params.useAbi) return variantRunner(params);
+        if (params.useAbi) {return variantRunner(params);}
         return baselineRunner(params);
       };
 

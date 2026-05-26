@@ -63,7 +63,7 @@ describe('platform-bias-monitor gate', () => {
     expect(v.evidence!.length).toBeGreaterThanOrEqual(3);
     for (const e of v.evidence!) {
       if (e.detail?.includes('commercial link')) {
-        expect(e.detail!).toMatch(/not disclosed/);
+        expect(e.detail).toMatch(/not disclosed/);
       }
     }
   });

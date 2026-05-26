@@ -63,14 +63,14 @@ describe('CheckoutProductService', () => {
 
   describe('createProduct', () => {
     it('writes with workspaceId and default price=0', async () => {
-      const result = await service.createProduct('ws-1', { name: 'X' } as never);
+      const result = await service.createProduct('ws-1', { name: 'X' });
       expect((result as { workspaceId: string }).workspaceId).toBe('ws-1');
       const data = prisma.product.create.mock.calls[0][0].data;
       expect(data.price).toBe(0);
     });
 
     it('respects explicit price', async () => {
-      await service.createProduct('ws-1', { name: 'X', price: 1234 } as never);
+      await service.createProduct('ws-1', { name: 'X', price: 1234 });
       const data = prisma.product.create.mock.calls[0][0].data;
       expect(data.price).toBe(1234);
     });
@@ -165,7 +165,7 @@ describe('CheckoutProductService', () => {
 
     it('creates plan + checkoutConfig in a transaction', async () => {
       prisma.product.findFirst.mockResolvedValue({ id: 'p-1' });
-      await service.createPlan('p-1', { name: 'P1', priceInCents: 1000 } as never, 'ws-1');
+      await service.createPlan('p-1', { name: 'P1', priceInCents: 1000 }, 'ws-1');
       expect(prisma.checkoutProductPlan.create).toHaveBeenCalled();
       expect(prisma.checkoutConfig.create).toHaveBeenCalled();
     });

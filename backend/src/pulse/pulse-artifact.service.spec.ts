@@ -125,10 +125,10 @@ describe('PulseArtifactService', () => {
       const certData = freshCertificateData();
       (fs.readFileSync as jest.Mock).mockImplementation((p: string) => {
         const sp = String(p);
-        if (sp.includes('PULSE_CLI_DIRECTIVE')) return JSON.stringify(directiveData);
-        if (sp.includes('PULSE_CERTIFICATE')) return JSON.stringify(certData);
+        if (sp.includes('PULSE_CLI_DIRECTIVE')) {return JSON.stringify(directiveData);}
+        if (sp.includes('PULSE_CERTIFICATE')) {return JSON.stringify(certData);}
         if (sp.includes('PULSE_EXECUTION_MATRIX'))
-          return JSON.stringify({ generatedAt: new Date().toISOString() });
+          {return JSON.stringify({ generatedAt: new Date().toISOString() });}
         return '{}';
       });
 
@@ -149,8 +149,8 @@ describe('PulseArtifactService', () => {
     it('returns ready status when all artifacts are fresh', () => {
       (fs.readFileSync as jest.Mock).mockImplementation((p: string) => {
         const sp = String(p);
-        if (sp.includes('PULSE_CLI_DIRECTIVE')) return JSON.stringify(freshDirectiveData());
-        if (sp.includes('PULSE_CERTIFICATE')) return JSON.stringify(freshCertificateData());
+        if (sp.includes('PULSE_CLI_DIRECTIVE')) {return JSON.stringify(freshDirectiveData());}
+        if (sp.includes('PULSE_CERTIFICATE')) {return JSON.stringify(freshCertificateData());}
         return JSON.stringify({ generatedAt: new Date().toISOString() });
       });
       (fs.existsSync as jest.Mock).mockReturnValue(true);

@@ -69,17 +69,17 @@ export function detectAnxietyMode(
     if (triggerCount >= 2) {
       shouldActivate = true;
       if (overloadTriggered)
-        reasons.push(
+        {reasons.push(
           `overload ${trigger.overloadFactor} >= ${ANXIETY_OVERLOAD_FACTOR_THRESHOLD}`,
-        );
+        );}
       if (urgentTriggered)
-        reasons.push(
+        {reasons.push(
           `urgent items ${trigger.urgentItemCount} >= ${ANXIETY_URGENT_COUNT_THRESHOLD}`,
-        );
+        );}
       if (backlogTriggered)
-        reasons.push(
+        {reasons.push(
           `backlog ${trigger.decisionBacklog} >= ${ANXIETY_BACKLOG_THRESHOLD}`,
-        );
+        );}
     }
   }
 

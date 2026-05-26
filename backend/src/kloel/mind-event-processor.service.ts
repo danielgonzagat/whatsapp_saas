@@ -329,20 +329,20 @@ export class MindEventProcessorService {
   }
 
   private classifyToolCategory(toolName: string): string | null {
-    if (toolName.startsWith('create_product') || toolName.startsWith('update_product') || toolName.startsWith('delete_product')) return 'product';
-    if (toolName.startsWith('create_plan') || toolName.startsWith('update_plan') || toolName.startsWith('delete_plan')) return 'plan';
-    if (toolName.startsWith('create_checkout') || toolName.startsWith('update_checkout') || toolName.startsWith('delete_checkout')) return 'checkout';
-    if (toolName.startsWith('create_coupon') || toolName.startsWith('update_coupon') || toolName.startsWith('delete_coupon')) return 'coupon';
-    if (toolName.startsWith('create_payment') || toolName.startsWith('generate_pix') || toolName.startsWith('generate_boleto')) return 'payment';
-    if (toolName.startsWith('create_order') || toolName.startsWith('list_orders')) return 'sale';
-    if (toolName.startsWith('get_wallet') || toolName.startsWith('request_withdrawal') || toolName.startsWith('request_anticipation')) return 'wallet';
-    if (toolName.startsWith('search_agent') || toolName.startsWith('list_leads')) return 'crm';
-    if (toolName.startsWith('git_') || toolName.startsWith('code_') || toolName.startsWith('codegraph_') || toolName.startsWith('search_codebase')) return 'code';
-    if (toolName.startsWith('get_settings') || toolName.startsWith('update_fiscal') || toolName.startsWith('toggle_theme')) return 'config';
-    if (toolName.startsWith('configure_') || toolName.startsWith('update_affiliate') || toolName.startsWith('browse_marketplace')) return 'marketing';
-    if (toolName.startsWith('get_sales') || toolName.startsWith('get_analytics') || toolName.startsWith('get_nps') || toolName.startsWith('get_churn') || toolName.startsWith('get_abandon')) return 'analytics';
-    if (toolName.startsWith('add_url') || toolName.startsWith('update_url') || toolName.startsWith('delete_url') || toolName.startsWith('get_product_urls')) return 'url';
-    if (toolName.startsWith('list_subscriptions') || toolName.startsWith('get_product_reviews')) return 'operations';
+    if (toolName.startsWith('create_product') || toolName.startsWith('update_product') || toolName.startsWith('delete_product')) {return 'product';}
+    if (toolName.startsWith('create_plan') || toolName.startsWith('update_plan') || toolName.startsWith('delete_plan')) {return 'plan';}
+    if (toolName.startsWith('create_checkout') || toolName.startsWith('update_checkout') || toolName.startsWith('delete_checkout')) {return 'checkout';}
+    if (toolName.startsWith('create_coupon') || toolName.startsWith('update_coupon') || toolName.startsWith('delete_coupon')) {return 'coupon';}
+    if (toolName.startsWith('create_payment') || toolName.startsWith('generate_pix') || toolName.startsWith('generate_boleto')) {return 'payment';}
+    if (toolName.startsWith('create_order') || toolName.startsWith('list_orders')) {return 'sale';}
+    if (toolName.startsWith('get_wallet') || toolName.startsWith('request_withdrawal') || toolName.startsWith('request_anticipation')) {return 'wallet';}
+    if (toolName.startsWith('search_agent') || toolName.startsWith('list_leads')) {return 'crm';}
+    if (toolName.startsWith('git_') || toolName.startsWith('code_') || toolName.startsWith('codegraph_') || toolName.startsWith('search_codebase')) {return 'code';}
+    if (toolName.startsWith('get_settings') || toolName.startsWith('update_fiscal') || toolName.startsWith('toggle_theme')) {return 'config';}
+    if (toolName.startsWith('configure_') || toolName.startsWith('update_affiliate') || toolName.startsWith('browse_marketplace')) {return 'marketing';}
+    if (toolName.startsWith('get_sales') || toolName.startsWith('get_analytics') || toolName.startsWith('get_nps') || toolName.startsWith('get_churn') || toolName.startsWith('get_abandon')) {return 'analytics';}
+    if (toolName.startsWith('add_url') || toolName.startsWith('update_url') || toolName.startsWith('delete_url') || toolName.startsWith('get_product_urls')) {return 'url';}
+    if (toolName.startsWith('list_subscriptions') || toolName.startsWith('get_product_reviews')) {return 'operations';}
     return 'generic';
   }
 
@@ -365,8 +365,8 @@ export class MindEventProcessorService {
 }
 
 function outcomeFromPayload(event: MindPerceptEvent): 0 | 1 {
-  if (event.payload.outcome === 0 || event.payload.outcome === false) return 0;
+  if (event.payload.outcome === 0 || event.payload.outcome === false) {return 0;}
   const status = toStableString(event.payload.status).toLowerCase();
-  if (['failed', 'cancelled', 'canceled', 'lost', 'unresolved'].includes(status)) return 0;
+  if (['failed', 'cancelled', 'canceled', 'lost', 'unresolved'].includes(status)) {return 0;}
   return 1;
 }

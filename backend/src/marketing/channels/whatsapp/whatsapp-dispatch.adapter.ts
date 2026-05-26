@@ -48,13 +48,13 @@ export class WhatsAppDispatchAdapter implements ChannelDispatchPort {
 
   private buildOpts(input: WhatsAppSendInput): WhatsappSendOpts | undefined {
     const o: WhatsappSendOpts = {};
-    if (input.mediaUrl !== undefined) o.mediaUrl = input.mediaUrl;
-    if (input.mediaType !== undefined) o.mediaType = input.mediaType;
-    if (input.caption !== undefined) o.caption = input.caption;
-    if (input.quotedMessageId !== undefined) o.quotedMessageId = input.quotedMessageId;
-    if (input.externalId !== undefined) o.externalId = input.externalId;
-    if (input.complianceMode !== undefined) o.complianceMode = input.complianceMode;
-    if (input.forceDirect !== undefined) o.forceDirect = input.forceDirect;
+    if (input.mediaUrl !== undefined) {o.mediaUrl = input.mediaUrl;}
+    if (input.mediaType !== undefined) {o.mediaType = input.mediaType;}
+    if (input.caption !== undefined) {o.caption = input.caption;}
+    if (input.quotedMessageId !== undefined) {o.quotedMessageId = input.quotedMessageId;}
+    if (input.externalId !== undefined) {o.externalId = input.externalId;}
+    if (input.complianceMode !== undefined) {o.complianceMode = input.complianceMode;}
+    if (input.forceDirect !== undefined) {o.forceDirect = input.forceDirect;}
     return Object.keys(o).length > 0 ? o : undefined;
   }
 
@@ -76,8 +76,8 @@ export class WhatsAppDispatchAdapter implements ChannelDispatchPort {
         provider: 'whatsapp',
         error: errMsg,
       };
-      if (typeof obj.blocked === 'boolean') failure.blocked = obj.blocked;
-      if (typeof obj.blockedReason === 'string') failure.blockedReason = obj.blockedReason;
+      if (typeof obj.blocked === 'boolean') {failure.blocked = obj.blocked;}
+      if (typeof obj.blockedReason === 'string') {failure.blockedReason = obj.blockedReason;}
       return failure;
     }
     const messageId =
@@ -95,9 +95,9 @@ export class WhatsAppDispatchAdapter implements ChannelDispatchPort {
       delivery: queued ? 'queued' : 'direct',
       queued,
     };
-    if (messageId) ok.messageId = messageId;
-    if (input.externalId) ok.externalId = input.externalId;
-    else if (messageId) ok.externalId = messageId;
+    if (messageId) {ok.messageId = messageId;}
+    if (input.externalId) {ok.externalId = input.externalId;}
+    else if (messageId) {ok.externalId = messageId;}
     return ok;
   }
 }

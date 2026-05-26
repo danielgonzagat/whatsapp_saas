@@ -24,7 +24,7 @@ export class AbiSnapshotCacheService {
   constructor(@Optional() @InjectRedis() private readonly redis?: Redis) {}
 
   async cacheSnapshot(workspaceId: string, payload: CognitiveStateAbi): Promise<void> {
-    if (!this.redis) return;
+    if (!this.redis) {return;}
     try {
       const key = `${SNAPSHOT_KEY_PREFIX}${workspaceId}`;
       await this.redis.set(key, JSON.stringify(payload), 'EX', SNAPSHOT_TTL_SECONDS);
@@ -36,11 +36,11 @@ export class AbiSnapshotCacheService {
   }
 
   async getCachedSnapshot(workspaceId: string): Promise<CognitiveStateAbi | null> {
-    if (!this.redis) return null;
+    if (!this.redis) {return null;}
     try {
       const key = `${SNAPSHOT_KEY_PREFIX}${workspaceId}`;
       const raw = await this.redis.get(key);
-      if (!raw) return null;
+      if (!raw) {return null;}
       return JSON.parse(raw) as CognitiveStateAbi;
     } catch (err: unknown) {
       this.logger.warn(

@@ -18,9 +18,9 @@ const DIMENSION_WEIGHTS: Readonly<Record<MemoryDimension, number>> = {
 
 function determinDimension(event: SpineEventRef): MemoryDimension {
   const hoursSince = (Date.now() - new Date(event.occurredAt).getTime()) / 3600_000;
-  if (hoursSince < 6) return 'working';
-  if (hoursSince < 72) return 'episodic';
-  if (event.truthMode === 'inferred' || event.truthMode === 'projected') return 'semantic';
+  if (hoursSince < 6) {return 'working';}
+  if (hoursSince < 72) {return 'episodic';}
+  if (event.truthMode === 'inferred' || event.truthMode === 'projected') {return 'semantic';}
   return 'consolidated';
 }
 
@@ -35,7 +35,7 @@ function extractTags(event: SpineEventRef): readonly string[] {
   const parts = event.eventName.split('.');
   for (let i = 0; i < Math.min(3, parts.length); i++) {
     const part = parts[i];
-    if (part !== undefined) tags.push(part);
+    if (part !== undefined) {tags.push(part);}
   }
   if (event.entityRef) {
     tags.push(`entity:${event.entityRef.entityType}`);
@@ -65,9 +65,9 @@ export class MemoryProjector {
 
       for (let i = 0; i < scoped.length; i++) {
         const ev = scoped[i];
-        if (ev === undefined) continue;
+        if (ev === undefined) {continue;}
         const evDim = determinDimension(ev);
-        if (evDim !== dim) continue;
+        if (evDim !== dim) {continue;}
 
         items.push({
           id: `mem_${dim}_${i.toString(36)}_${ev.eventId.slice(-6)}`,
@@ -113,19 +113,19 @@ export class MemoryProjector {
     threshold: number,
   ): readonly MemoryProjection[] {
     return projections.map((p) => {
-      if (p.dimension !== 'episodic') return p;
+      if (p.dimension !== 'episodic') {return p;}
 
       const promotedItems = p.items
         .filter((it) => it.weight >= threshold)
         .map((it, idx) => ({
           ...it,
-          dimension: 'working' as MemoryDimension,
+          dimension: 'working',
           id: `mem_working_promoted_${idx.toString(36)}_${it.sourceEventId.slice(-6)}`,
         }));
 
       return {
         ...p,
-        dimension: 'working' as MemoryDimension,
+        dimension: 'working',
         itemCount: promotedItems.length,
         items: promotedItems,
         summary: `${promotedItems.length} items promoted from episodic to working memory`,

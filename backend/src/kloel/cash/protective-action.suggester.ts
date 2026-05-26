@@ -89,8 +89,8 @@ export class ProtectiveActionSuggester {
   }
 
   private urgencyWeight(urgency: ProtectiveAction['urgency']): number {
-    if (urgency === 'now') return 3;
-    if (urgency === 'soon') return 2;
+    if (urgency === 'now') {return 3;}
+    if (urgency === 'soon') {return 2;}
     return 1;
   }
 }

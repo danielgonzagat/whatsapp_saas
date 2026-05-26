@@ -194,7 +194,7 @@ describe('MediaController', () => {
         send: jest.fn(),
       } as never;
 
-      await controller.getDocumentFile(mockReq, 'doc-1', res as never);
+      await controller.getDocumentFile(mockReq, 'doc-1', res);
 
       expect(resolveWorkspaceIdMock).toHaveBeenCalledWith(mockReq);
       expect(getDocumentFile).toHaveBeenCalledWith('ws-1', 'doc-1');

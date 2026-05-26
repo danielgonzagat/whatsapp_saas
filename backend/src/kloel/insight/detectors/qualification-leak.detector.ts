@@ -45,7 +45,7 @@ export function detectQualificationLeak(input: DetectorInput): DetectorResult {
     }
   }
 
-  if (qualifiedCount < MIN_QUALIFIED) return { insights: [] };
+  if (qualifiedCount < MIN_QUALIFIED) {return { insights: [] };}
 
   const leakRate = lostAfterQualified / qualifiedCount;
 

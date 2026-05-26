@@ -54,7 +54,7 @@ describe('GdprController', () => {
     chatMessage: ['findMany', 'updateMany'],
   });
   (prismaMock as any).$transaction = jest.fn((arg: unknown, _opts?: unknown) => {
-    if (typeof arg === 'function') return (arg as (tx: unknown) => unknown)(prismaMock);
+    if (typeof arg === 'function') {return (arg as (tx: unknown) => unknown)(prismaMock);}
     return Promise.all(arg as Promise<unknown>[]);
   });
 

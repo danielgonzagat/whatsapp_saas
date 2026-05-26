@@ -168,20 +168,20 @@ function hourFromTimestamp(iso: string): number {
 }
 
 function toneFromValenceMix(buckets: readonly ValenceBucket[]): string {
-  if (buckets.length === 0) return 'neutral';
+  if (buckets.length === 0) {return 'neutral';}
 
   const total = buckets.reduce((sum, b) => sum + b.count, 0);
-  if (total === 0) return 'neutral';
+  if (total === 0) {return 'neutral';}
 
   const posBucket = buckets.find((b) => b.valence === 'positive');
   const negBucket = buckets.find((b) => b.valence === 'negative');
   const positive = (posBucket !== undefined ? posBucket.count : 0) / total;
   const negative = (negBucket !== undefined ? negBucket.count : 0) / total;
 
-  if (positive >= 0.6) return 'positive';
-  if (negative >= 0.6) return 'negative';
-  if (positive >= 0.4 && negative < 0.3) return 'mostly-positive';
-  if (negative >= 0.4 && positive < 0.3) return 'mostly-negative';
+  if (positive >= 0.6) {return 'positive';}
+  if (negative >= 0.6) {return 'negative';}
+  if (positive >= 0.4 && negative < 0.3) {return 'mostly-positive';}
+  if (negative >= 0.4 && positive < 0.3) {return 'mostly-negative';}
   return 'balanced';
 }
 
@@ -198,7 +198,7 @@ function extractMessageTokens(events: readonly SpineEventRef[]): TokenBucket[] {
 
   for (const event of events) {
     const payload = event.payload;
-    if (!payload) continue;
+    if (!payload) {continue;}
 
     const content =
       (payload as Record<string, unknown>)['body'] ??
@@ -227,7 +227,7 @@ function extractMessageTokens(events: readonly SpineEventRef[]): TokenBucket[] {
 }
 
 function median(values: number[]): number {
-  if (values.length === 0) return 0;
+  if (values.length === 0) {return 0;}
   const sorted = [...values].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
   if (sorted.length % 2 !== 0) {
@@ -236,7 +236,7 @@ function median(values: number[]): number {
   }
   const left = sorted[mid - 1];
   const right = sorted[mid];
-  if (left === undefined || right === undefined) return 0;
+  if (left === undefined || right === undefined) {return 0;}
   return (left + right) / 2;
 }
 
@@ -409,7 +409,7 @@ function deriveDecisionPatterns(events: readonly SpineEventRef[]): DerivedDecisi
       }
     } else if (event.eventName === 'cognition.valence_assigned') {
       const isOperatorRef = event.entityRef?.entityType === 'operator';
-      if (!isOperatorRef || !event.payload) continue;
+      if (!isOperatorRef || !event.payload) {continue;}
       const p = event.payload as Record<string, unknown>;
       const accepted = p['accepted'];
       const operatorNote = p['operatorNote'];
@@ -457,9 +457,9 @@ export class LocalIdentityService {
     let maxMs = 0;
     for (const e of events) {
       const t = Date.parse(e.occurredAt);
-      if (Number.isFinite(t) && t > maxMs) maxMs = t;
+      if (Number.isFinite(t) && t > maxMs) {maxMs = t;}
     }
-    if (maxMs === 0) return new Date().toISOString();
+    if (maxMs === 0) {return new Date().toISOString();}
     return new Date(maxMs).toISOString();
   }
 
@@ -470,7 +470,7 @@ export class LocalIdentityService {
   ): AbiWorkspaceLocalProfile | undefined {
     const events = allEvents.filter((e) => e.workspaceId === workspaceId);
 
-    if (events.length < VOLUME_THRESHOLD) return undefined;
+    if (events.length < VOLUME_THRESHOLD) {return undefined;}
 
     const operational = deriveOperational(events);
     const language = deriveLanguage(events);

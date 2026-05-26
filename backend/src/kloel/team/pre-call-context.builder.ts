@@ -63,7 +63,7 @@ function filterByLead(
 function normalizeValence(
   raw: SpineEventRef['valence'],
 ): AbiValence | undefined {
-  if (raw === undefined) return undefined;
+  if (raw === undefined) {return undefined;}
   return raw;
 }
 
@@ -171,7 +171,7 @@ function findLastContact(events: readonly SpineEventRef[]): string | undefined {
       e.eventName === 'commerce.whatsapp.message_replied' ||
       e.eventName === 'commerce.lead.contacted',
   );
-  if (contactEvents.length === 0) return undefined;
+  if (contactEvents.length === 0) {return undefined;}
 
   return contactEvents.reduce((latest, e) =>
     parseTimestampMs(e.occurredAt) > parseTimestampMs(latest.occurredAt) ? e : latest,

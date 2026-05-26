@@ -107,10 +107,10 @@ function detectTrustGap(
   const authorityObj = feedback.objectionKinds['authority'] ?? 0;
   const totalObj = trustObj + credibilityObj + authorityObj;
 
-  if (totalObj === 0) return undefined;
+  if (totalObj === 0) {return undefined;}
 
   const totalObjections = Object.values(feedback.objectionKinds).reduce((a, b) => a + b, 0);
-  if (totalObjections === 0) return undefined;
+  if (totalObjections === 0) {return undefined;}
 
   const ratio = totalObj / totalObjections;
   const hasProofSignals = /comprovad|provado|estudo|casos|clientes|depoimento/i.test(promise);
@@ -202,15 +202,15 @@ function detectFeedbackGaps(
 }
 
 function aggregateSeverity(gaps: readonly PositioningGapDetail[]): 'none' | 'minor' | 'moderate' | 'critical' {
-  if (gaps.length === 0) return 'none';
+  if (gaps.length === 0) {return 'none';}
 
   const maxSeverity = Math.max(...gaps.map((g) => g.severity));
   const avgSeverity = gaps.reduce((s, g) => s + g.severity, 0) / gaps.length;
 
   const score = maxSeverity * 0.6 + avgSeverity * 0.4;
 
-  if (score >= CRITICAL_SEVERITY_THRESHOLD) return 'critical';
-  if (score >= MODERATE_SEVERITY_THRESHOLD) return 'moderate';
+  if (score >= CRITICAL_SEVERITY_THRESHOLD) {return 'critical';}
+  if (score >= MODERATE_SEVERITY_THRESHOLD) {return 'moderate';}
   return 'minor';
 }
 

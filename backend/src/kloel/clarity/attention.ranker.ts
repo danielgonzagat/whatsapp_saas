@@ -19,9 +19,9 @@ export interface RankerResult {
 }
 
 function tierFromScore(score: number): DecisionTier {
-  if (score >= 0.75) return 'AGORA';
-  if (score >= 0.5) return 'ESTA_SEMANA';
-  if (score >= 0.25) return 'PARA_SABER';
+  if (score >= 0.75) {return 'AGORA';}
+  if (score >= 0.5) {return 'ESTA_SEMANA';}
+  if (score >= 0.25) {return 'PARA_SABER';}
   return 'ARQUIVO';
 }
 

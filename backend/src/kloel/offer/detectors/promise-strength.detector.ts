@@ -20,7 +20,7 @@ const WINDOW_DAYS = 90;
 function extractCampaignRef(
   payload: Readonly<Record<string, unknown>> | undefined,
 ): string {
-  if (!payload) return 'no_campaign';
+  if (!payload) {return 'no_campaign';}
   const ref = payload['campaignId'] ?? payload['adId'] ?? payload['creativeId'];
   return typeof ref === 'string' ? ref : 'no_campaign';
 }
@@ -52,7 +52,7 @@ export function detectPromiseStrength(
   }
 
   for (const [campaign, leadCount] of campaignLeads) {
-    if (leadCount < MIN_LEADS_PER_CAMPAIGN) continue;
+    if (leadCount < MIN_LEADS_PER_CAMPAIGN) {continue;}
     const cartCount = campaignCarts.get(campaign) ?? 0;
     const conversionRate = cartCount / leadCount;
 

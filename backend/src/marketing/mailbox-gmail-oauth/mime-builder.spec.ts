@@ -3,7 +3,7 @@ import { buildRawMimeMessage, encodeHeader } from './mime-builder';
 describe('mime-builder', () => {
   const config = {
     get: jest.fn((key: string) => {
-      if (key === 'FRONTEND_URL') return 'https://app.kloel.test';
+      if (key === 'FRONTEND_URL') {return 'https://app.kloel.test';}
       return undefined;
     }),
   };

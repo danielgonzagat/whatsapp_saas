@@ -46,7 +46,7 @@ export class BeliefUpdateService {
           subject,
           predicate,
           context,
-          outcome as 0 | 1,
+          outcome,
         );
         this.logger.debug(
           `MindBelief updated for hypothesis ${evaluation.hypothesisId} with outcome=${outcome}`,
@@ -88,8 +88,8 @@ export class BeliefUpdateService {
 }
 
 function estimatePriorMean(verdict: string): number {
-  if (verdict === 'confirmed') return 0.55;
-  if (verdict === 'refuted') return 0.45;
+  if (verdict === 'confirmed') {return 0.55;}
+  if (verdict === 'refuted') {return 0.45;}
   return 0.5;
 }
 

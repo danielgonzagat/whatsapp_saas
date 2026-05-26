@@ -52,7 +52,7 @@ export class WisdomProjectorService {
     patterns: readonly AbiWisdomPattern[],
     maxPatterns: number,
   ): AbiWisdomPattern[] {
-    if (patterns.length <= maxPatterns) return [...patterns];
+    if (patterns.length <= maxPatterns) {return [...patterns];}
     return [...patterns]
       .sort((a, b) => b.confidence - a.confidence)
       .slice(0, maxPatterns);

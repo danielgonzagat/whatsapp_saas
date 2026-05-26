@@ -225,7 +225,7 @@ describe('Runtime Conversation — 12-step tracer proof', () => {
       identity as never,
       setup as never,
       prisma as never,
-      tracer as never,
+      tracer,
     );
   }
 

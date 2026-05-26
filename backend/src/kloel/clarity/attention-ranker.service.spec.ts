@@ -178,7 +178,7 @@ describe('AttentionRankerService (UTP-CLARITY-001)', () => {
       { id: 'a', urgency: 0.9, impact: 0.9, reversibility: 0.1, evidenceLevel: 0.8 },
     ];
     const frozen = Object.freeze([...items]);
-    const result = svc.rank(frozen as readonly AttentionItem[]);
+    const result = svc.rank(frozen);
     expect(result.ranked).toHaveLength(1);
     expect(items[0]!.urgency).toBe(0.9);
   });

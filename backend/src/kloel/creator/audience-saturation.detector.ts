@@ -53,7 +53,7 @@ function countPromotions(events: readonly CreatorEvent[]): number {
   let count = 0;
   for (const ev of events) {
     const text = extractMessageText(ev);
-    if (!text) continue;
+    if (!text) {continue;}
 
     const lower = text.toLowerCase();
     if (PROMOTION_SIGNALS.some((s) => lower.includes(s))) {
@@ -65,9 +65,9 @@ function countPromotions(events: readonly CreatorEvent[]): number {
 
 function countNegativeSignals(events: readonly CreatorEvent[]): number {
   return events.filter((e) => {
-    if (e.eventName === 'commerce.lead.objection_raised') return true;
-    if (e.eventName === 'commerce.lead.went_silent') return true;
-    if (e.valence === 'negative') return true;
+    if (e.eventName === 'commerce.lead.objection_raised') {return true;}
+    if (e.eventName === 'commerce.lead.went_silent') {return true;}
+    if (e.valence === 'negative') {return true;}
     return false;
   }).length;
 }
@@ -75,7 +75,7 @@ function countNegativeSignals(events: readonly CreatorEvent[]): number {
 function computeDisengagementTrend(
   events: readonly CreatorEvent[],
 ): DisengagementTrend {
-  if (events.length < 4) return 'stable';
+  if (events.length < 4) {return 'stable';}
 
   const half = Math.floor(events.length / 2);
   const olderHalf = events.slice(0, half);
@@ -91,17 +91,17 @@ function computeDisengagementTrend(
 
   const difference = newerEngagement - olderEngagement;
 
-  if (difference > 1) return 'rising';
-  if (difference < -1) return 'falling';
+  if (difference > 1) {return 'rising';}
+  if (difference < -1) {return 'falling';}
   return 'stable';
 }
 
 function extractMessageText(ev: CreatorEvent): string | undefined {
   const p = ev.payload;
-  if (!p) return undefined;
-  if (typeof p['messageBody'] === 'string') return p['messageBody'] as string;
-  if (typeof p['body'] === 'string') return p['body'] as string;
-  if (typeof p['text'] === 'string') return p['text'] as string;
+  if (!p) {return undefined;}
+  if (typeof p['messageBody'] === 'string') {return p['messageBody'];}
+  if (typeof p['body'] === 'string') {return p['body'];}
+  if (typeof p['text'] === 'string') {return p['text'];}
   return undefined;
 }
 

@@ -24,7 +24,7 @@ export function attributeHierarchy(decision: HierarchyDecision): HierarchyJustif
     rules.find((r) => r !== null) ?? null;
 
   const formatLevel = (raw: string): HierarchyLevel => {
-    if ((HIERARCHY_LEVELS as readonly string[]).includes(raw)) return raw as HierarchyLevel;
+    if ((HIERARCHY_LEVELS as readonly string[]).includes(raw)) {return raw as HierarchyLevel;}
     return 'conversion';
   };
 
@@ -59,7 +59,7 @@ const HIERARCHY_LEVELS = [
 
 // R1 — human_transfer with trust_objection or fatigue_risk → ux (lead experience)
 function ruleHumanTransferUx(decision: HierarchyDecision): HierarchyJustification | null {
-  if (decision.type !== 'human_transfer') return null;
+  if (decision.type !== 'human_transfer') {return null;}
   const concepts = extractConcepts(decision.context);
   if (concepts.has('trust_objection') || concepts.has('fatigue_risk')) {
     const conceptName = concepts.has('trust_objection') ? 'trust_objection' : 'fatigue_risk';
@@ -74,7 +74,7 @@ function ruleHumanTransferUx(decision: HierarchyDecision): HierarchyJustificatio
 // R2 — apply_discount with discountPercent > channelMaxDiscount → blocked compliance;
 //       if within bounds and product margin still positive → margin
 function ruleDiscountComplianceMargin(decision: HierarchyDecision): HierarchyJustification | null {
-  if (decision.type !== 'coupon_offer' && decision.type !== 'apply_discount') return null;
+  if (decision.type !== 'coupon_offer' && decision.type !== 'apply_discount') {return null;}
   const discountPercent = Number(decision.context.discountPercent ?? 0);
   const channelMaxDiscount = Number(decision.context.channelMaxDiscount ?? 100);
   const marginRemaining = Number(decision.context.marginRemaining ?? decision.context.productMargin ?? -1);
@@ -102,7 +102,7 @@ function ruleDiscountComplianceMargin(decision: HierarchyDecision): HierarchyJus
 
 // R3 — proactive_outbound past daily limit → blocked compliance
 function ruleProactiveOutboundCompliance(decision: HierarchyDecision): HierarchyJustification | null {
-  if (decision.type !== 'proactive_outbound' && decision.type !== 'channel_choice') return null;
+  if (decision.type !== 'proactive_outbound' && decision.type !== 'channel_choice') {return null;}
   const dailySent = Number(decision.context.dailySent ?? 0);
   const dailyLimit = Number(decision.context.dailyLimit ?? -1);
   if (dailyLimit >= 0 && dailySent >= dailyLimit) {
@@ -116,7 +116,7 @@ function ruleProactiveOutboundCompliance(decision: HierarchyDecision): Hierarchy
 
 // R10 — refund_request with legitimate reason → compliance (legitimacy before conversion)
 function ruleRefundLegitimacy(decision: HierarchyDecision): HierarchyJustification | null {
-  if (decision.type !== 'refund_request') return null;
+  if (decision.type !== 'refund_request') {return null;}
   const concepts = extractConcepts(decision.context);
   const legitimateReasons = [
     'defective_product',
@@ -138,7 +138,7 @@ function ruleRefundLegitimacy(decision: HierarchyDecision): HierarchyJustificati
 
 // R11 — churn_signal detected → retention (anti-churn: don't poison with new conversion offers)
 function ruleChurnRetention(decision: HierarchyDecision): HierarchyJustification | null {
-  if (decision.type !== 'churn_signal') return null;
+  if (decision.type !== 'churn_signal') {return null;}
   const churnRisk = Number(decision.context.churnRisk ?? 0);
   const satisfactionScore = Number(decision.context.satisfactionScore ?? 1);
 
@@ -153,7 +153,7 @@ function ruleChurnRetention(decision: HierarchyDecision): HierarchyJustification
 
 // R12 — buyer_remorse detected within 7d of purchase → retention (anti-remorse before conversion)
 function ruleAntiRemorseRetention(decision: HierarchyDecision): HierarchyJustification | null {
-  if (decision.type !== 'buyer_remorse') return null;
+  if (decision.type !== 'buyer_remorse') {return null;}
   const daysSincePurchase = Number(decision.context.daysSincePurchase ?? -1);
   const remorseScore = Number(decision.context.remorseScore ?? -1);
 
@@ -171,7 +171,7 @@ function ruleAntiRemorseRetention(decision: HierarchyDecision): HierarchyJustifi
 
 // R13 — post_sale_offer with low satisfaction/NPS → retention (don't cross-sell unhappy customers)
 function rulePostSaleSatisfactionRetention(decision: HierarchyDecision): HierarchyJustification | null {
-  if (decision.type !== 'post_sale_offer') return null;
+  if (decision.type !== 'post_sale_offer') {return null;}
   const nps = Number(decision.context.nps ?? 10);
   const satisfaction = Number(decision.context.satisfaction ?? 1);
   const concepts = extractConcepts(decision.context);
@@ -187,17 +187,17 @@ function rulePostSaleSatisfactionRetention(decision: HierarchyDecision): Hierarc
 
 // R4 — chosen aggressiveness was upper-bound (within ceiling) → bounded by ux (ceiling = ux-driven cap)
 function ruleAggressivenessCeilingUx(decision: HierarchyDecision): HierarchyJustification | null {
-  if (decision.type !== 'cia_aggressiveness') return null;
+  if (decision.type !== 'cia_aggressiveness') {return null;}
   const ceiling = String(decision.context.aggressivenessCeiling ?? '').toLowerCase();
   const brainAggressiveness = String(decision.context.brainAggressiveness ?? '').toLowerCase();
   const effective = String(decision.chosen).toLowerCase();
 
-  if (!ceiling && !brainAggressiveness) return null;
+  if (!ceiling && !brainAggressiveness) {return null;}
 
   const rank = (label: string): number => {
-    if (label.includes('alta') || label.includes('agress') || label.includes('high')) return 3;
-    if (label.includes('normal') || label.includes('moder') || label.includes('medium')) return 2;
-    if (label.includes('baixa') || label.includes('low')) return 1;
+    if (label.includes('alta') || label.includes('agress') || label.includes('high')) {return 3;}
+    if (label.includes('normal') || label.includes('moder') || label.includes('medium')) {return 2;}
+    if (label.includes('baixa') || label.includes('low')) {return 1;}
     return 2;
   };
 
@@ -216,9 +216,9 @@ function ruleAggressivenessCeilingUx(decision: HierarchyDecision): HierarchyJust
 
 // R5 — audio chosen because arsenal exists AND audioRatio prior says lead prefers audio → ux
 function ruleAudioPreferenceUx(decision: HierarchyDecision): HierarchyJustification | null {
-  if (decision.type !== 'audio_vs_text') return null;
+  if (decision.type !== 'audio_vs_text') {return null;}
   const chosen = String(decision.chosen).toLowerCase();
-  if (chosen !== 'audio') return null;
+  if (chosen !== 'audio') {return null;}
   const audioRatio = Number(decision.context.audioRatio ?? 0);
   const arsenalCount = Number(decision.context.arsenalCount ?? 0);
   const hasAudioPreference = hasConceptInContext(decision.context, 'audio_preference');
@@ -234,7 +234,7 @@ function ruleAudioPreferenceUx(decision: HierarchyDecision): HierarchyJustificat
 
 // R6 — product_offer is highest_margin variant chosen → margin
 function ruleHighestMarginOffer(decision: HierarchyDecision): HierarchyJustification | null {
-  if (decision.type !== 'product_offer') return null;
+  if (decision.type !== 'product_offer') {return null;}
   const chosen = String(decision.chosen).toLowerCase();
   if (chosen === 'highest_margin') {
     return {
@@ -247,9 +247,9 @@ function ruleHighestMarginOffer(decision: HierarchyDecision): HierarchyJustifica
 
 // R7 — 'top_seller' chosen due to high replied_rate prior → conversion
 function ruleTopSellerConversion(decision: HierarchyDecision): HierarchyJustification | null {
-  if (decision.type !== 'product_offer') return null;
+  if (decision.type !== 'product_offer') {return null;}
   const chosen = String(decision.chosen).toLowerCase();
-  if (chosen !== 'top_seller') return null;
+  if (chosen !== 'top_seller') {return null;}
   const repliedRate = Number(decision.context.repliedRate ?? 0);
   if (repliedRate >= 0.4) {
     return {
@@ -264,15 +264,15 @@ function ruleTopSellerConversion(decision: HierarchyDecision): HierarchyJustific
 function ruleAggressivenessEscalationConversion(
   decision: HierarchyDecision,
 ): HierarchyJustification | null {
-  if (decision.type !== 'cia_aggressiveness') return null;
+  if (decision.type !== 'cia_aggressiveness') {return null;}
   const concepts = extractConcepts(decision.context);
-  if (!concepts.has('imminent_purchase') && !concepts.has('hot_lead')) return null;
+  if (!concepts.has('imminent_purchase') && !concepts.has('hot_lead')) {return null;}
 
   const chosen = String(decision.chosen).toLowerCase();
   const rank = (label: string): number => {
-    if (label.includes('alta') || label.includes('agress') || label.includes('high')) return 3;
-    if (label.includes('normal') || label.includes('moder') || label.includes('medium')) return 2;
-    if (label.includes('baixa') || label.includes('low')) return 1;
+    if (label.includes('alta') || label.includes('agress') || label.includes('high')) {return 3;}
+    if (label.includes('normal') || label.includes('moder') || label.includes('medium')) {return 2;}
+    if (label.includes('baixa') || label.includes('low')) {return 1;}
     return 2;
   };
 
@@ -308,7 +308,7 @@ function extractConcepts(context: Record<string, unknown>): Set<string> {
   const conceptsArr = context.concepts;
   if (Array.isArray(conceptsArr)) {
     for (const c of conceptsArr) {
-      if (typeof c === 'string' && c.length > 0) concepts.add(c);
+      if (typeof c === 'string' && c.length > 0) {concepts.add(c);}
     }
   }
   return concepts;

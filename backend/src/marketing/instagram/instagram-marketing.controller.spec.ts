@@ -88,7 +88,7 @@ describe('InstagramMarketingController', () => {
       const mockResult = { insight: { id: 'i-1', impressions: 100 }, metaResponse: {} };
       getInsights.mockResolvedValueOnce(mockResult);
 
-      const result = await controller.getInsights(req, {} as never);
+      const result = await controller.getInsights(req, {});
 
       expect(getInsights).toHaveBeenCalledWith('ws-1', ['impressions', 'reach', 'follower_count'], 'day');
       expect(result).toBe(mockResult);

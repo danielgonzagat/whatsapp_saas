@@ -202,7 +202,7 @@ export const GENESIS_EVENT: GenesisEvent = Object.freeze({
       ? 'prod'
       : process.env['NODE_ENV'] === 'staging'
         ? 'staging'
-        : 'dev') as 'dev' | 'staging' | 'prod',
+        : 'dev'),
   }),
   valence: 'neutral',
   payload: GENESIS_PAYLOAD,
@@ -219,10 +219,10 @@ export function verifyGenesisEvent(candidate: unknown): candidate is GenesisEven
     return false;
   }
   const c = candidate as Partial<GenesisEvent>;
-  if (c.eventId !== GENESIS_EVENT_ID) return false;
-  if (c.eventName !== 'lineage.genesis') return false;
-  if (!c.payload) return false;
-  if (c.payload.canonicalName !== ORGANISM_CANONICAL_NAME) return false;
+  if (c.eventId !== GENESIS_EVENT_ID) {return false;}
+  if (c.eventName !== 'lineage.genesis') {return false;}
+  if (!c.payload) {return false;}
+  if (c.payload.canonicalName !== ORGANISM_CANONICAL_NAME) {return false;}
   const recomputed = computeGenesisHash(c.payload);
   return recomputed === c.hash;
 }

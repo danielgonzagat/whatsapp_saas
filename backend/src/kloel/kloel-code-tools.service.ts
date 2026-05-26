@@ -189,7 +189,7 @@ export class KloelCodeToolsService {
         const fname = path.basename(relPath);
         const { stdout } = await exec(`rg --files '${REPO_ROOT}' 2>/dev/null | grep "/${fname}$" | head -1`, { timeout: 8000, maxBuffer: 1024 * 1024 });
         const found = stdout.trim();
-        if (found) absPath = found;
+        if (found) {absPath = found;}
       }
       const content = await fs.readFile(absPath, 'utf-8');
       const lines = content.split('\n');
@@ -342,7 +342,7 @@ export class KloelCodeToolsService {
 
   async toolCodeGraphCallers(symbol: string): Promise<ToolResult> {
     const s = symbol.replace(/["'`]/g, '').trim();
-    if (!s) return { success: true, text: 'Informe o simbolo para buscar callers.' };
+    if (!s) {return { success: true, text: 'Informe o simbolo para buscar callers.' };}
     // Use query to search for symbol; MCP callers not available via CLI
     const output = await this.runCodeGraph(`query "callers of ${s}"`);
     return { success: true, text: `Callers de "${s}" (via query):\n${output}` };
@@ -350,21 +350,21 @@ export class KloelCodeToolsService {
 
   async toolCodeGraphCallees(symbol: string): Promise<ToolResult> {
     const s = symbol.replace(/["'`]/g, '').trim();
-    if (!s) return { success: true, text: 'Informe o simbolo para buscar callees.' };
+    if (!s) {return { success: true, text: 'Informe o simbolo para buscar callees.' };}
     const output = await this.runCodeGraph(`query "callees of ${s}"`);
     return { success: true, text: `Callees de "${s}" (via query):\n${output}` };
   }
 
   async toolCodeGraphImpact(symbol: string): Promise<ToolResult> {
     const s = symbol.replace(/["'`]/g, '').trim();
-    if (!s) return { success: true, text: 'Informe o simbolo para analisar impacto.' };
+    if (!s) {return { success: true, text: 'Informe o simbolo para analisar impacto.' };}
     const output = await this.runCodeGraph(`query "impact of changing ${s}"`);
     return { success: true, text: `Impacto de "${s}" (via query):\n${output}` };
   }
 
   async toolCodeGraphNode(symbol: string): Promise<ToolResult> {
     const s = symbol.replace(/["'`]/g, '').trim();
-    if (!s) return { success: true, text: 'Informe o simbolo para detalhes.' };
+    if (!s) {return { success: true, text: 'Informe o simbolo para detalhes.' };}
     const output = await this.runCodeGraph(`query "${s}"`);
     return { success: true, text: `Detalhes de "${s}" (via query):\n${output}` };
   }

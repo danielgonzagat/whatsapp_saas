@@ -219,7 +219,7 @@ export async function runDeterministicAction(
 
   // Stage 1: IntentRouter (new CapabilityRegistry-based)
   if (hasIntentRouter) {
-    const classification = intentRouter!.classify(message, 'dashboard-chat', ['*']);
+    const classification = intentRouter.classify(message, 'dashboard-chat', ['*']);
     if (!classification.isChat && classification.classification) {
       const action = {
         tool: classification.classification.capabilityId!,
@@ -233,7 +233,7 @@ export async function runDeterministicAction(
           workspaceId,
           toolName: action.tool,
           args: action.args,
-          result: result as { success: boolean; [key: string]: unknown },
+          result: result,
           channel: 'web',
         }));
         if (spine && result.success) {
@@ -272,7 +272,7 @@ export async function runDeterministicAction(
         workspaceId,
         toolName: legacyAction.tool,
         args: legacyAction.args,
-        result: result as { success: boolean; [key: string]: unknown },
+        result: result,
         channel: 'web',
       }));
       if (spine && result.success) {

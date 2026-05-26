@@ -364,8 +364,8 @@ export class KloelChatToolsService {
     const planName = typeof args.planName === 'string' ? args.planName : '';
     const productName = typeof args.productName === 'string' ? args.productName : '';
     const imageUrl = typeof args.imageUrl === 'string' ? args.imageUrl : '';
-    if (!imageUrl) return { success: true, message: 'Envie a URL da foto do plano ou faça upload pelo chat. Ex: "foto do plano X url: https://..."' };
-    if (!planName && !productName) return { success: false, error: 'Informe o nome do plano ou do produto.' };
+    if (!imageUrl) {return { success: true, message: 'Envie a URL da foto do plano ou faça upload pelo chat. Ex: "foto do plano X url: https://..."' };}
+    if (!planName && !productName) {return { success: false, error: 'Informe o nome do plano ou do produto.' };}
     try {
       let plan;
       if (planName) {
@@ -374,7 +374,7 @@ export class KloelChatToolsService {
       if (!plan && productName) {
         plan = await this.prisma.productPlan.findFirst({ where: { product: { workspaceId, name: { contains: productName, mode: 'insensitive' } } }, select: { id: true } });
       }
-      if (!plan) return { success: false, error: 'Plano nao encontrado.' };
+      if (!plan) {return { success: false, error: 'Plano nao encontrado.' };}
       await this.prisma.productPlan.update({ where: { id: plan.id }, data: { checkoutImages: { main: imageUrl } as never } });
       return { success: true, message: 'Foto do plano atualizada.' };
     } catch (e: unknown) {
@@ -385,15 +385,15 @@ export class KloelChatToolsService {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
     const imageUrl = typeof args.imageUrl === 'string' ? args.imageUrl : '';
-    if (!productName) return { success: false, error: 'Informe o nome do produto.' };
-    if (!imageUrl) return { success: true, message: 'Envie a URL da imagem ou faça upload pelo chat. Ex: "imagem do produto X url: https://..."' };
+    if (!productName) {return { success: false, error: 'Informe o nome do produto.' };}
+    if (!imageUrl) {return { success: true, message: 'Envie a URL da imagem ou faça upload pelo chat. Ex: "imagem do produto X url: https://..."' };}
     return runUpdateProduct(this.prisma, workspaceId, { productName, imageUrl });
   }
 
   async toolConfigurePixel(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
-    if (!productName) return { success: true, message: 'Pixel configurado. Acesse Configurações > Pixel para inserir os códigos.' };
+    if (!productName) {return { success: true, message: 'Pixel configurado. Acesse Configurações > Pixel para inserir os códigos.' };}
     // Store pixel intent — actual pixel IDs need to come from Meta/Google OAuth
     return { success: true, message: `Pixel configurado para "${productName}". Insira os códigos em Configurações > Pixel.` };
   }
@@ -401,7 +401,7 @@ export class KloelChatToolsService {
   async toolConfigureShipping(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
-    if (!productName) return { success: true, message: 'Frete configurado. Acesse Produto > Entrega para detalhar.' };
+    if (!productName) {return { success: true, message: 'Frete configurado. Acesse Produto > Entrega para detalhar.' };}
     return { success: true, message: `Frete configurado para "${productName}". Acesse Produto > Entrega para definir prazos e transportadoras.` };
   }
 

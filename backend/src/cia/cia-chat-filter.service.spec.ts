@@ -53,7 +53,7 @@ describe('CiaChatFilterService', () => {
           lastMessageTimestamp: 0,
           lastMessageRecvTimestamp: 12345,
           lastMessageFromMe: null,
-        } as never),
+        }),
       ).toBe(true);
     });
 
@@ -66,7 +66,7 @@ describe('CiaChatFilterService', () => {
           lastMessageTimestamp: 0,
           lastMessageRecvTimestamp: 12345,
           lastMessageFromMe: false,
-        } as never),
+        }),
       ).toBe(false);
     });
   });
@@ -82,7 +82,7 @@ describe('CiaChatFilterService', () => {
             lastMessageTimestamp: 0,
             lastMessageRecvTimestamp: 0,
             lastMessageFromMe: true,
-          } as never,
+          },
           false,
         ),
       ).toBe(true);
@@ -99,7 +99,7 @@ describe('CiaChatFilterService', () => {
             lastMessageTimestamp: longAgo,
             lastMessageRecvTimestamp: longAgo,
             lastMessageFromMe: false,
-          } as never,
+          },
           true,
         ),
       ).toBe(false);
@@ -116,7 +116,7 @@ describe('CiaChatFilterService', () => {
             lastMessageTimestamp: now,
             lastMessageRecvTimestamp: now,
             lastMessageFromMe: false,
-          } as never,
+          },
           false,
         ),
       ).toBe(true);

@@ -79,7 +79,7 @@ export class InsightDeliveryService {
     const plans = new Map<string, ChannelTiming>();
 
     for (const d of decisions) {
-      if (!d.deliver) continue;
+      if (!d.deliver) {continue;}
       const i = d.insight;
       const channel = i.recommendedChannel;
       const timing = i.recommendedTiming;

@@ -68,13 +68,13 @@ export class NoopKloelLLME2EGuard implements KloelLLME2EGuard {
           finish_reason: null,
         },
       ],
-    } as ChatCompletionChunk;
+    };
     yield {
       id: `chatcmpl-e2e-${now}`,
       object: 'chat.completion.chunk',
       created: now,
       model: 'kloel-e2e',
       choices: [{ index: 0, delta: {}, finish_reason: 'stop' }],
-    } as ChatCompletionChunk;
+    };
   }
 }

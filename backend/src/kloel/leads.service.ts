@@ -44,7 +44,7 @@ const COMMERCIAL_SCORE_SIGNALS: Record<string, number> = {
 function computeCommercialScore(lead: LeadRow): number | null {
   const intent = (lead.lastIntent || 'general').toLowerCase();
   const messages = lead.totalMessages ?? 0;
-  if (messages === 0) return null;
+  if (messages === 0) {return null;}
 
   const intentScore =
     COMMERCIAL_SCORE_SIGNALS[intent] ??

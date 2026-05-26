@@ -42,12 +42,12 @@ export interface DisclosureEngineInput {
 }
 
 function isEmptyDisclosure(disclosure?: string): boolean {
-  if (disclosure === undefined || disclosure === null) return true;
+  if (disclosure === undefined || disclosure === null) {return true;}
   return disclosure.trim().length === 0;
 }
 
 function isShortDisclosure(disclosure?: string): boolean {
-  if (disclosure === undefined || disclosure === null) return false;
+  if (disclosure === undefined || disclosure === null) {return false;}
   return disclosure.trim().length < MIN_DISCLOSURE_LENGTH;
 }
 
@@ -98,12 +98,12 @@ export function makeDisclosureEngineGate(
       if (hasCommercialRelObj && !hasDisclosure) {
         evidence.push({
           path: '$.disclosureStatement',
-          detail: `undisclosed commercial tie: commercialRelationship exists (type="${input.commercialRelationship!.type}") for "${input.recommendedPartyName}" but disclosureStatement is missing`,
+          detail: `undisclosed commercial tie: commercialRelationship exists (type="${input.commercialRelationship.type}") for "${input.recommendedPartyName}" but disclosureStatement is missing`,
         });
       }
 
       // 5. Commercial relationship marked non-public
-      if (hasCommercialRelObj && input.commercialRelationship!.isPublic === false) {
+      if (hasCommercialRelObj && input.commercialRelationship.isPublic === false) {
         evidence.push({
           path: '$.commercialRelationship.isPublic',
           detail: `hidden commercial relationship: commercialRelationship.isPublic is false for "${input.recommendedPartyName}" — relationship must be publicly disclosed per PCI.4 §3.14`,

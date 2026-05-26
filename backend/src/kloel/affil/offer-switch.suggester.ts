@@ -103,8 +103,8 @@ export class OfferSwitchSuggesterService {
     current: OfferPerformance,
     candidate: CandidateOffer,
   ): 'low' | 'medium' | 'high' {
-    if (candidate.refundRate > 0.2 || current.trendDirection === 'up') return 'high';
-    if (candidate.conversionRate < 0.02 || candidate.marketDemand < 0.4) return 'medium';
+    if (candidate.refundRate > 0.2 || current.trendDirection === 'up') {return 'high';}
+    if (candidate.conversionRate < 0.02 || candidate.marketDemand < 0.4) {return 'medium';}
     return 'low';
   }
 

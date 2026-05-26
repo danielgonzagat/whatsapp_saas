@@ -105,23 +105,23 @@ function isSingleSuccess(outcome: OutcomeRow): boolean {
 
 function normalizeFailureReason(reason: string): string {
   const trimmed = reason.trim();
-  if (/^[A-Za-z0-9_.-]{1,80}$/.test(trimmed)) return trimmed;
+  if (/^[A-Za-z0-9_.-]{1,80}$/.test(trimmed)) {return trimmed;}
   return 'unclassified_reason';
 }
 
 function normalizeReportLabel(label: string | null | undefined, fallback: string): string {
-  if (!label) return fallback;
+  if (!label) {return fallback;}
   const trimmed = label.trim();
-  if (/^[A-Za-z0-9_.-]{1,80}$/.test(trimmed)) return trimmed;
+  if (/^[A-Za-z0-9_.-]{1,80}$/.test(trimmed)) {return trimmed;}
   return fallback;
 }
 
 function extractFailureReason(
   outcomeValue: unknown,
 ): { reason: string; outcomeKeysCount: number } | null {
-  if (!outcomeValue || typeof outcomeValue !== 'object' || Array.isArray(outcomeValue)) return null;
+  if (!outcomeValue || typeof outcomeValue !== 'object' || Array.isArray(outcomeValue)) {return null;}
   const ov = outcomeValue as Record<string, unknown>;
-  if (typeof ov.reason !== 'string' || ov.reason.length === 0) return null;
+  if (typeof ov.reason !== 'string' || ov.reason.length === 0) {return null;}
   const keys = ov.outcomeKeys;
   const outcomeKeysCount = Array.isArray(keys) ? keys.length : 0;
   return { reason: normalizeFailureReason(ov.reason), outcomeKeysCount };
@@ -140,7 +140,7 @@ function buildFailureReasonCounts(outcomes: OutcomeRow[]): FailureReasonCount[] 
   >();
   for (const o of outcomes) {
     const extracted = extractFailureReason(o.outcomeValue);
-    if (!extracted) continue;
+    if (!extracted) {continue;}
     const chosenAction = normalizeReportLabel(o.chosenAction, 'unknown_action');
     const baselineAction = normalizeReportLabel(o.baselineAction, 'unknown_baseline');
     const key = JSON.stringify([extracted.reason, chosenAction, baselineAction]);

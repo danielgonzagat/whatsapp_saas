@@ -20,8 +20,8 @@ export class AutomaticRollbackService {
     proposal: ImprovementProposal,
     delta: RTierDelta,
   ): AutomaticRollback | null {
-    if (delta.direction !== 'downgraded') return null;
-    if (!this.isWithinWindow(proposal, MAX_ROLLBACK_WINDOW_MS)) return null;
+    if (delta.direction !== 'downgraded') {return null;}
+    if (!this.isWithinWindow(proposal, MAX_ROLLBACK_WINDOW_MS)) {return null;}
 
     this.counter += 1;
     const now = new Date().toISOString();
@@ -47,8 +47,8 @@ export class AutomaticRollbackService {
     proposal: ImprovementProposal,
     verdict: 'confirmed' | 'refuted' | 'inconclusive',
   ): AutomaticRollback | null {
-    if (verdict !== 'refuted') return null;
-    if (!this.isWithinWindow(proposal, MAX_ROLLBACK_WINDOW_MS)) return null;
+    if (verdict !== 'refuted') {return null;}
+    if (!this.isWithinWindow(proposal, MAX_ROLLBACK_WINDOW_MS)) {return null;}
 
     this.counter += 1;
     const now = new Date().toISOString();
@@ -72,8 +72,8 @@ export class AutomaticRollbackService {
 
   execute(rollbackId: string): AutomaticRollback | null {
     const rb = this.rollbacks.get(rollbackId);
-    if (!rb) return null;
-    if (rb.status !== 'pending') return rb;
+    if (!rb) {return null;}
+    if (rb.status !== 'pending') {return rb;}
 
     const now = Date.now();
     const executed: AutomaticRollback = {
@@ -89,7 +89,7 @@ export class AutomaticRollbackService {
 
   fail(rollbackId: string, error: string): AutomaticRollback | null {
     const rb = this.rollbacks.get(rollbackId);
-    if (!rb) return null;
+    if (!rb) {return null;}
 
     const failed: AutomaticRollback = {
       ...rb,

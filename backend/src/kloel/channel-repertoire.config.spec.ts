@@ -131,7 +131,7 @@ describe('channel-repertoire.config', () => {
 
     it('returns a copy, not a mutable reference', () => {
       const fmts = allowedFormatsFor('whatsapp');
-      fmts.push('html_rich' as never);
+      fmts.push('html_rich');
       expect(allowedFormatsFor('whatsapp')).not.toContain('html_rich');
     });
 

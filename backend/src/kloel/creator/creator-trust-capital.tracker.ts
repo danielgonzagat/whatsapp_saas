@@ -55,7 +55,7 @@ const TRUST_CAPITAL_CEILING = 1.0;
 function computeAudienceTrust(
   trustStates: readonly TrustState[],
 ): number {
-  if (trustStates.length === 0) return 0.6;
+  if (trustStates.length === 0) {return 0.6;}
 
   const avgTrust = trustStates.reduce((sum, ts) => sum + ts.trustScore, 0) / trustStates.length;
   return Math.max(0, Math.min(1, avgTrust));
@@ -64,7 +64,7 @@ function computeAudienceTrust(
 function computeAuthenticityIndex(
   recentEvents: readonly CreatorEvent[],
 ): number {
-  if (recentEvents.length === 0) return 0.7;
+  if (recentEvents.length === 0) {return 0.7;}
 
   const objectionCount = recentEvents.filter(
     (e) => e.eventName === 'commerce.lead.objection_raised',
@@ -81,7 +81,7 @@ function computeAuthenticityIndex(
 function computeConsistencyScore(
   recentEvents: readonly CreatorEvent[],
 ): number {
-  if (recentEvents.length < 3) return 0.5;
+  if (recentEvents.length < 3) {return 0.5;}
 
   const positiveRatio = recentEvents.filter((e) =>
     e.valence === 'positive',
@@ -98,14 +98,14 @@ function computeRecommendationFidelity(
   recentEvents: readonly CreatorEvent[],
 ): number {
   const totalWithPayload = recentEvents.filter((e) => e.payload).length;
-  if (totalWithPayload === 0) return 0.5;
+  if (totalWithPayload === 0) {return 0.5;}
 
   const endorsementKeywords = ['recomendo', 'uso e recomendo', 'parceiro', 'parceria'];
   let roughEndorsements = 0;
 
   for (const ev of recentEvents) {
     const text = extractMessageText(ev);
-    if (!text) continue;
+    if (!text) {continue;}
     const lower = text.toLowerCase();
     if (endorsementKeywords.some((kw) => lower.includes(kw))) {
       roughEndorsements += 1;
@@ -123,12 +123,12 @@ function computeRecoveryCapacity(
     (e) => e.eventName === 'commerce.lead.went_silent',
   ).length;
 
-  if (silenceCount === 0) return 0.8;
+  if (silenceCount === 0) {return 0.8;}
 
   const repliesAfterSilence = recentEvents.filter((e, i) => {
-    if (i === 0) return false;
+    if (i === 0) {return false;}
     const prev = recentEvents[i - 1];
-    if (!prev || !recentEvents[i]) return false;
+    if (!prev || !recentEvents[i]) {return false;}
 
     return (
       prev.eventName === 'commerce.lead.went_silent' &&
@@ -151,7 +151,7 @@ function computeAudienceRetentionRate(
     return now - t <= windowMs;
   });
 
-  if (recentInWindow.length === 0) return 0.5;
+  if (recentInWindow.length === 0) {return 0.5;}
 
   const positiveInteractionCount = recentInWindow.filter((e) => {
     return e.eventName === 'commerce.lead.replied' && e.valence !== 'negative';
@@ -164,9 +164,9 @@ function determineVerdict(
   trustCapital: number,
   config: CreatorTrustConfig,
 ): CreatorTrustVerdict {
-  if (trustCapital >= config.strongCapitalMin) return 'strong';
-  if (trustCapital >= config.stableCapitalMin) return 'stable';
-  if (trustCapital >= config.erodingCapitalMin) return 'eroding';
+  if (trustCapital >= config.strongCapitalMin) {return 'strong';}
+  if (trustCapital >= config.stableCapitalMin) {return 'stable';}
+  if (trustCapital >= config.erodingCapitalMin) {return 'eroding';}
   return 'depleted';
 }
 
@@ -191,10 +191,10 @@ function buildReason(
 
 function extractMessageText(ev: CreatorEvent): string | undefined {
   const p = ev.payload;
-  if (!p) return undefined;
-  if (typeof p['messageBody'] === 'string') return p['messageBody'] as string;
-  if (typeof p['body'] === 'string') return p['body'] as string;
-  if (typeof p['text'] === 'string') return p['text'] as string;
+  if (!p) {return undefined;}
+  if (typeof p['messageBody'] === 'string') {return p['messageBody'];}
+  if (typeof p['body'] === 'string') {return p['body'];}
+  if (typeof p['text'] === 'string') {return p['text'];}
   return undefined;
 }
 

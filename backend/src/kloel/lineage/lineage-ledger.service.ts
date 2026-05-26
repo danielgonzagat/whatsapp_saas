@@ -194,7 +194,7 @@ export class InMemoryLineageLedgerRepository implements LineageLedgerRepository 
   }
 
   public async tail(): Promise<LineageEntry | null> {
-    if (this.entries.length === 0) return null;
+    if (this.entries.length === 0) {return null;}
     const last = this.entries[this.entries.length - 1];
     return last ?? null;
   }

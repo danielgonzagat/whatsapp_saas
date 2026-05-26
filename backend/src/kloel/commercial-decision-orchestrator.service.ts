@@ -206,7 +206,7 @@ export class CommercialDecisionOrchestratorService {
       workspaceId, channel, message: input.message,
       conceptRows, concept,
       formatCandidates: channelSupportsAudio
-        ? (formatCandidates as string[])
+        ? (formatCandidates)
         : (formatCandidates as string[]).filter((f) => f !== 'audio'),
       audioRatio, soldRate, repliedRate, priceBand, channelSetup,
     });

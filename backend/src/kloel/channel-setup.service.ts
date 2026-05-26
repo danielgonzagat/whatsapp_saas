@@ -267,7 +267,7 @@ export class ChannelSetupService {
   }
 
   private async assertProductsBelongToWorkspace(workspaceId: string, productIds: string[]) {
-    if (productIds.length === 0) return;
+    if (productIds.length === 0) {return;}
     const found = await this.prisma.product.count({
       where: { workspaceId, id: { in: productIds } },
     });
