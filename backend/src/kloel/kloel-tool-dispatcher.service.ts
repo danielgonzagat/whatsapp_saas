@@ -48,7 +48,7 @@ export class KloelToolDispatcherService {
     private readonly auditService: AuditService,
     private readonly codeToolsService: KloelCodeToolsService,
     private readonly codeAnalysisService: KloelCodeAnalysisService,
-    private readonly accountService: AccountService,
+    @Optional() private readonly accountService?: AccountService,
     @Optional() private readonly couponService?: CouponService,
     @Optional() private readonly checkoutService?: CheckoutService,
     @Optional() private readonly planService?: PlanService,
@@ -314,6 +314,9 @@ export class KloelToolDispatcherService {
         case 'products.upload_image':
           return this.executeTool(workspaceId, 'upload_product_image', args, userId);
         case 'update_personal_data':
+          if (!this.accountService) {
+            return { success: false, error: 'account_service_unavailable' };
+          }
           return await this.accountService.updatePersonalData(workspaceId, asToolArgs(args) as { name?: string; email?: string; phone?: string });
         case 'account.update_personal':
           return this.executeTool(workspaceId, 'update_personal_data', args, userId);
