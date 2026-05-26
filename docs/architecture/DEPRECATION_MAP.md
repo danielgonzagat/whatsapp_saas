@@ -194,6 +194,44 @@ atomic subagent `w1-dup-hunter-semantic` (DeepSeek V4 Pro) which produced
 | normalizeProviderToken | Replaced w/ safeStr().trim().toLowerCase() | 53b0cec71 |
 | isValidDate | Added to common/parse | f5579e55e |
 
+## Wave 21 (Round 2) — Vocabulary family aliases
+
+| Deprecated locus | Replacement | Migrated since | Status |
+|---|---|---|---|
+| `buyer` in `checkout/mercado-pago-pix.service.ts:12-16` | `Contact` | — | ⏳ planned (vocabulary only) |
+| `Prospect` in `kloel/defens/case-library.builder.ts:11` | `Contact` with status/segment filter | — | ⏳ planned (vocabulary only) |
+| `Client` as CRM entity | _(no domain meaning — only `@prisma/client` imports)_ | — | ⛔ banned (never an entity) |
+| `socialLead` informal in `checkout-public.controller.ts:143` | `CheckoutSocialLead` | — | ⏳ planned (vocabulary only) |
+| `capturedLeadId` field on `CheckoutOrder.metadata` | `CheckoutSocialLead.id` (via `convertedOrderId`) | — | ⏳ planned |
+| `waSession` local var in `kloel/unified-agent-context.service.ts:226` | `channelSession` | — | ⏳ planned |
+| `botSession` (legacy — not in current code) | `ChannelSession` | — | ⛔ banned |
+| `WAHASession` (legacy — not in current code) | `ChannelSession` | — | ⛔ banned |
+| `instance` as session alias in `whatsapp/whatsapp-watchdog.service.ts:284` | `ChannelSession` (process-level is distinct) | — | ⏸ kept local (different meaning) |
+| `MetaConnection` as session synonym | `ChannelSession` (OAuth ≠ session) | — | ⏸ kept local (different entity) |
+| `connectionStatus` string in `whatsapp/provider-settings.types.ts:138` | `ChannelSession.status` | — | ⏳ planned |
+
+## Wave 21 (Round 2) — Event alias deprecations
+
+| Deprecated locus | Replacement | Migrated since | Status |
+|---|---|---|---|
+| `commerce.whatsapp.session_lifecycle` sub-event `qr` | `channel.session.qr_generated` | — | ⏳ planned (Round 3 migration) |
+| `commerce.whatsapp.session_lifecycle` sub-event `connected` | `channel.session.connected` | — | ⏳ planned (Round 3 migration) |
+| `commerce.whatsapp.session_lifecycle` sub-event `disconnected` | `channel.session.disconnected` | — | ⏳ planned (Round 3 migration) |
+| `commerce.whatsapp.session_lifecycle` sub-event `banned` | `channel.session.banned` | — | ⏳ planned (Round 3 migration) |
+| `commerce.whatsapp.handoff_to_human` | `conversation.assigned` | — | ⏳ planned (Round 3 migration) |
+| `commerce.whatsapp.conversation_resumed` | `conversation.resumed` | — | ⏳ planned (Round 3 migration) |
+| `commerce.checkout.created` (role.detector.ts filter) | `commerce.cart.created` | — | ⏳ planned |
+| `commerce.checkout.completed` (role.detector.ts filter) | `commerce.payment.approved` | — | ⏳ planned |
+| `qualifyLead` / `leadQualified` (naming) | `lead.qualified` (Brain) | — | ⏳ planned |
+| `wa_connected` / `qr_authenticated` / `sessionOpen` | `channel.session.connected` | — | ⛔ banned |
+| `wa_disconnected` / `sessionClose` | `channel.session.disconnected` | — | ⛔ banned |
+| `thread_created` / `newConversation` | `conversation.started` | — | ⛔ banned |
+| `commerce.lead.created` (spec fixtures only) | `lead.created` (Brain) | — | ⏳ planned |
+| `commerce.lead.qualified` (spec fixtures only) | `lead.qualified` (Brain) | — | ⏳ planned |
+| `commerce.lead.lost` (spec fixtures only) | `lead.abandoned` (Brain) | — | ⏳ planned |
+| `commerce.lead.contacted` (spec fixtures only) | Remove or wire emitter | — | ⏳ planned |
+| `commerce.lead.replied` (ring buffer tests) | `commerce.whatsapp.message_replied` | — | ⏳ planned |
+
 What remains as future canonicalization work is **semantic** (same-name with
 divergent bodies) requiring per-case judgement (see ⏸ kept-local rows above
 for the catalogue and the table above for the pending migrations).

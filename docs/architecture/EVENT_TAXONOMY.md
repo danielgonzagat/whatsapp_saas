@@ -496,3 +496,171 @@ truth-mode** by `WhatsAppEventEmitterService` (confirmed 2026-05-26).
 - [QUEUES_CATALOG.md](QUEUES_CATALOG.md)
 - [SERVICE_CATALOG.md](SERVICE_CATALOG.md)
 - [CANONICAL_VOCABULARY.md](CANONICAL_VOCABULARY.md)
+
+---
+
+## Round 2 expansion — 2026-05-26
+
+> Authored by `w21-canonical-vocabulary-r2`. This section fills gaps
+> discovered during the Contact/Lead/Customer/Prospect/Client/User family
+> analysis and the ChannelSession/WaSession/Connection session audit.
+
+### Section VII — channel.session.* canonical events
+
+`commerce.whatsapp.session_lifecycle` is the unified Spine event for WhatsApp
+session state changes. It carries `input.event` as a sub-event discriminator.
+This round canonicalizes those sub-events as **standalone canonical names**
+under the `channel.session.*` namespace.
+
+#### Canonical channel.session.* events
+
+| Canonical | Legacy alias | Emitter | Description |
+|---|---|---|---|
+| `channel.session.qr_generated` | `commerce.whatsapp.session_lifecycle` (event=qr) | `whatsapp-session.service.ts:65` | QR code ready for WhatsApp Web scan |
+| `channel.session.connected` | `commerce.whatsapp.session_lifecycle` (event=connected) | `whatsapp-session.service.ts:75`, `internal-whatsapp-runtime.controller.ts:127` | Session authenticated and live |
+| `channel.session.disconnected` | `commerce.whatsapp.session_lifecycle` (event=disconnected) | `whatsapp-session.service.ts:134` | Session torn down (manual or error) |
+| `channel.session.banned` | `commerce.whatsapp.session_lifecycle` (event=banned) | _(inferred from type union)_ | Session terminated by provider policy |
+
+**Migration plan**: `commerce.whatsapp.session_lifecycle` continues to be emitted
+as the legacy envelope. New subscribers SHOULD consume `channel.session.*` events.
+The legacy envelope will be deprecated in Round 3 once all subscribers migrate.
+
+**Legacy aliases mapping**:
+
+| Legacy | Canonical |
+|---|---|
+| `wa_connected` | `channel.session.connected` |
+| `qr_authenticated` | `channel.session.qr_generated` |
+| `sessionOpen` | `channel.session.connected` |
+| `wa_disconnected` | `channel.session.disconnected` |
+| `sessionClose` | `channel.session.disconnected` |
+| `channel.connected` (brain) | `channel.session.connected` (Spine) |
+| `channel.disconnected` (brain) | `channel.session.disconnected` (Spine) |
+| `channel.externally_blocked` (brain) | `channel.session.banned` (Spine) |
+
+---
+
+### Section VIII — conversation.* canonical events
+
+Conversation lifecycle events currently live in `commerce.whatsapp.*` namespace
+but semantically belong to a cross-channel `conversation.*` domain. This round
+canonicalizes the mapping.
+
+#### Canonical conversation.* events
+
+| Canonical | Legacy alias | Emitter | Description |
+|---|---|---|---|
+| `conversation.started` | `commerce.whatsapp.message_received` (first message) | `whatsapp-event-emitter.service.ts` | New conversation initiated |
+| `conversation.assigned` | `commerce.whatsapp.handoff_to_human` | `whatsapp-event-emitter.service.ts` | Conversation assigned to human agent |
+| `conversation.unassigned` | _(not yet emitted)_ | — | Conversation returned to bot/autopilot |
+| `conversation.resumed` | `commerce.whatsapp.conversation_resumed` | `whatsapp-event-emitter.service.ts` | Silent conversation reactivated |
+| `conversation.closed` | _(not yet emitted)_ | — | Conversation resolved/closed |
+
+**Legacy aliases mapping**:
+
+| Legacy | Canonical |
+|---|---|
+| `commerce.whatsapp.handoff_to_human` | `conversation.assigned` |
+| `commerce.whatsapp.conversation_resumed` | `conversation.resumed` |
+| `thread_created` | `conversation.started` |
+| `newConversation` | `conversation.started` |
+| `conversationDirty` | (dropped — not an event) |
+| `thread_touched` | (dropped — not an event) |
+
+---
+
+### Section IX — commerce.checkout.* canonical events
+
+Brain event taxonomy defines `checkout.*` (unprefixed): `checkout.created`,
+`checkout.paid`, `checkout.cancelled`, `checkout.viewed`, `checkout.abandoned`,
+`checkout.generated`. The Spine emits `commerce.cart.*` for cart lifecycle.
+This round clarifies the dual-namespace mapping.
+
+#### Canonical cross-namespace map
+
+| Spine (commerce.cart.*) | Brain (checkout.*) | Description |
+|---|---|---|
+| `commerce.cart.created` | `checkout.created` | Cart/item selection initiated |
+| `commerce.cart.abandoned` | `checkout.abandoned` | Cart abandoned before payment |
+| `commerce.cart.checkout_initiated` | `checkout.generated` | Checkout flow started (form visible) |
+| — | `checkout.viewed` | Checkout page viewed |
+| — | `checkout.paid` | Payment confirmed |
+| — | `checkout.cancelled` | Checkout cancelled |
+| `commerce.checkout.created` | — | Role detector only; use `commerce.cart.created` |
+| `commerce.checkout.completed` | — | Role detector only; use `commerce.payment.approved` |
+
+**Note**: `commerce.checkout.created` and `commerce.checkout.completed` appear only
+in `role.detector.ts` (event name filter set). They are NOT emitted by any production
+service. These are legacy filter names; migrate to `commerce.cart.*` equivalents.
+
+---
+
+### Section X — lead.qualified canonical events
+
+`lead.qualified` is a **Brain event** (unprefixed, emitted via `recordCommercial`).
+It has no direct Spine equivalent. The mapping is:
+
+| System | Event | Source |
+|---|---|---|
+| Brain | `lead.qualified` | `brain-action-event-mapper.ts:11` (`qualify_lead` → `lead.qualified`) |
+| Spine | `commerce.lead.converted` | `checkout-event-emitter.service.ts:307` (post-payment lead conversion) |
+| Spine | `commerce.lead.went_silent` | `whatsapp-event-emitter.service.ts` (`emitLeadWentSilent`) |
+| Spine | `commerce.lead.objection_raised` | `crm-event-emitter.service.ts:124` |
+
+**Key distinction**: `lead.qualified` (Brain) means the AI has evaluated the lead
+and determined it meets qualification criteria. `commerce.lead.converted` (Spine)
+means a purchase has occurred. These are NOT synonyms — qualification precedes
+conversion in the funnel.
+
+**Legacy aliases mapping**:
+
+| Legacy | Canonical |
+|---|---|
+| `qualifyLead` | `lead.qualified` (Brain) |
+| `leadQualified` | `lead.qualified` (Brain) |
+| `commerce.lead.created` (spec fixtures) | Use `lead.created` (Brain) |
+| `commerce.lead.qualified` (spec fixtures) | Use `lead.qualified` (Brain) |
+| `commerce.lead.lost` (spec fixtures) | Use `lead.abandoned` (Brain) |
+| `commerce.lead.contacted` (spec fixtures) | Remove or wire emitter |
+| `commerce.lead.replied` (ring buffer tests) | Use `commerce.whatsapp.message_replied` |
+
+---
+
+### Section XI — cognition.* and commerce.* boundary clarification
+
+Events crossing the cognitive/commercial boundary:
+
+| Canonical | System | Description |
+|---|---|---|
+| `cognition.belief_updated` | Spine | A belief about a lead/customer changed (Hypproof) |
+| `cognition.valence_assigned` | Spine | Operator feedback assigned emotional valence |
+| `mind.decision.created` | Brain | A commercial decision was proposed |
+| `mind.decision.resolved` | Brain | A commercial decision completed |
+| `brain.capability.invoked` | Brain | A tool/capability was executed |
+| `brain.capability.failed` | Brain | A tool/capability execution failed |
+
+**Rule**: Cognitive events (`cognition.*`, `mind.*`, `brain.*`) describe the
+agent's internal reasoning. Commerce events (`commerce.*`) describe business
+outcomes. Never emit a commerce event for cognitive state; never emit a cognitive
+event for a business transaction.
+
+---
+
+### Deprecated-to-canonical event summary (new in Round 2)
+
+| Deprecated | Canonical | Notes |
+|---|---|---|
+| `commerce.whatsapp.session_lifecycle` sub-event `qr` | `channel.session.qr_generated` | New standalone event |
+| `commerce.whatsapp.session_lifecycle` sub-event `connected` | `channel.session.connected` | New standalone event |
+| `commerce.whatsapp.session_lifecycle` sub-event `disconnected` | `channel.session.disconnected` | New standalone event |
+| `commerce.whatsapp.session_lifecycle` sub-event `banned` | `channel.session.banned` | New standalone event |
+| `commerce.whatsapp.handoff_to_human` | `conversation.assigned` | Cross-channel canonical |
+| `commerce.whatsapp.conversation_resumed` | `conversation.resumed` | Cross-channel canonical |
+| `commerce.checkout.created` (role detector) | `commerce.cart.created` | Legacy filter only |
+| `commerce.checkout.completed` (role detector) | `commerce.payment.approved` | Legacy filter only |
+| `qualifyLead` / `leadQualified` | `lead.qualified` (Brain) | Naming convention |
+| `wa_connected` / `qr_authenticated` / `sessionOpen` | `channel.session.connected` | Legacy provider names |
+| `wa_disconnected` / `sessionClose` | `channel.session.disconnected` | Legacy provider names |
+| `thread_created` / `newConversation` | `conversation.started` | Legacy naming |
+| `commerce.lead.created` (spec fixtures) | `lead.created` (Brain) | Spec-only aliases |
+| `commerce.lead.qualified` (spec fixtures) | `lead.qualified` (Brain) | Spec-only aliases |
