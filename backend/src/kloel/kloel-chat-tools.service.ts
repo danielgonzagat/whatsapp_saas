@@ -104,14 +104,23 @@ export class KloelChatToolsService {
     @Optional() private readonly agentEvidence?: AgentRuntimeEvidenceStoreService,
   ) {}
   toolSaveProduct(workspaceId: string, args: ToolSaveProductArgs): Promise<ToolResult> {
-    return this.productService.create(workspaceId, {
-      name: args.name,
-      description: args.description,
-      price: args.price,
-      category: args.category,
-      imageUrl: args.imageUrl,
-      format: args.format,
-    }) as Promise<ToolResult>;
+    const format =
+      args.format === 'PHYSICAL' || args.format === 'DIGITAL' || args.format === 'HYBRID'
+        ? args.format
+        : 'DIGITAL';
+
+    return this.productService.create(
+      workspaceId,
+      {
+        name: args.name,
+        description: args.description,
+        price: args.price,
+        category: args.category,
+        imageUrl: args.imageUrl,
+        format,
+      },
+      { id: 'kloel-chat-tools' },
+    ) as Promise<ToolResult>;
   }
   toolListProducts(workspaceId: string): Promise<ToolResult> {
     return runListProducts(this.prisma, workspaceId);
