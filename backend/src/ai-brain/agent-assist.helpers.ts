@@ -30,6 +30,24 @@ export type AssistantAction =
   | 'suggest_reply'
   | 'summarize_conversation';
 
+/**
+ * Per-operation `max_tokens` cap. Required by WAVE3_LLM_PROMPT_AUDIT critical
+ * gap #6: agent-assist was issuing chat completions with NO `max_tokens` set,
+ * letting the model spend the user's wallet unbounded on a single call.
+ *
+ * The caps are tuned to the operation's natural output size:
+ * - analyze_sentiment: short JSON verdict
+ * - suggest_reply: a single WhatsApp message
+ * - generate_pitch: a short product pitch (max ~4 paragraphs)
+ * - summarize_conversation: a longer recap but still bounded
+ */
+export const AGENT_ASSIST_MAX_TOKENS: Record<AssistantAction, number> = {
+  analyze_sentiment: 256,
+  suggest_reply: 400,
+  generate_pitch: 800,
+  summarize_conversation: 1200,
+};
+
 /** Default user-facing message when the prepaid wallet cannot cover an AI call. */
 export function insufficientWalletMessage(): string {
   return 'Saldo insuficiente na wallet prepaid para usar o assistente de IA. Recarregue via PIX ou aguarde a auto-recarga antes de tentar novamente.';

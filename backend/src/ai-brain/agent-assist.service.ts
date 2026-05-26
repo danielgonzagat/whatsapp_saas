@@ -10,6 +10,7 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletService } from '../wallet/wallet.service';
 import {
+  AGENT_ASSIST_MAX_TOKENS,
   AgentAssistWalletAccessError,
   type AssistantAction,
   buildPitchMessages,
@@ -90,7 +91,11 @@ export class AgentAssistService {
       if (!this.openai) {
         throw new Error('OpenAI client not configured');
       }
-      const completion = await chatCompletionWithRetry(this.openai, { model, messages });
+      const completion = await chatCompletionWithRetry(this.openai, {
+        model,
+        messages,
+        max_tokens: AGENT_ASSIST_MAX_TOKENS[operation],
+      });
       if (estimatedCostCents !== undefined && usageCharged) {
         await settleAiUsageIfNeeded({
           walletService: this.prepaidWalletService,
