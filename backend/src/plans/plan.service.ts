@@ -1,7 +1,8 @@
-import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ForbiddenException, Optional } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { BrainEventSpineService } from '../kloel/brain-event-spine.service';
 
 export interface CreatePlanDto {
   productId: string;
@@ -52,6 +53,7 @@ export class PlanService {
     private readonly prisma: PrismaService,
     private readonly eventEmitter: EventEmitter2,
     private readonly audit: AuditService,
+    @Optional() private readonly brainSpine?: BrainEventSpineService,
   ) {}
 
   async create(workspaceId: string, dto: CreatePlanDto, actor?: { id: string }) {
@@ -73,6 +75,14 @@ export class PlanService {
         imageUrl: dto.imageUrl ?? null,
         active: true,
       },
+    });
+
+    await this.brainSpine?.recordCommercial({
+      workspaceId,
+      subject: `plan:${plan.id}`,
+      eventType: 'plan.created',
+      occurredAt: new Date(),
+      payload: { planId: plan.id, productId: dto.productId, name: plan.name, price: plan.price },
     });
 
     this.eventEmitter.emit('plan.created', {
