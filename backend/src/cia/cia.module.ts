@@ -4,6 +4,7 @@ import { KloelModule } from '../kloel/kloel.module';
 import { MindModule } from '../kloel/mind/mind.module';
 import { SpineModule } from '../kloel/spine/spine.module';
 import { WhatsappModule } from '../whatsapp/whatsapp.module';
+import { CiaAutonomyAdvisorService } from './cia-autonomy-advisor.service';
 import { CiaBacklogRunService } from './cia-backlog-run.service';
 import { CiaBootstrapService } from './cia-bootstrap.service';
 import { CiaChatFilterService } from './cia-chat-filter.service';
@@ -30,6 +31,7 @@ import { CIA_RUNTIME_SERVICE } from './cia-runtime.port';
   controllers: [CiaController],
   providers: [
     CiaService,
+    CiaAutonomyAdvisorService,
     CiaBacklogRunService,
     CiaBootstrapService,
     CiaChatFilterService,
@@ -44,6 +46,7 @@ import { CIA_RUNTIME_SERVICE } from './cia-runtime.port';
   ],
   exports: [
     CiaService,
+    CiaAutonomyAdvisorService,
     CIA_RUNTIME_SERVICE,
     WhatsappCiaRuntimeService,
     CiaRuntimeService,
