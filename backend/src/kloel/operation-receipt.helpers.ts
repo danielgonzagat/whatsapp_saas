@@ -60,20 +60,24 @@ export function buildReceipt(params: {
     : typeof params.result.saleId === 'string' ? params.result.saleId
     : undefined;
 
+  const proof = params.result.success ? `tool_${params.toolName}_executed` : undefined;
+  const warnings = params.result.error ? [String(params.result.error)] : undefined;
+  const nextPossibleActions = suggestNextActions(params.toolName, params.result.success);
+
   return {
     actionId: randomUUID(),
     workspaceId: params.workspaceId,
-    userId: params.userId,
+    ...(params.userId !== undefined && { userId: params.userId }),
     channel: params.channel || 'web',
     entityType: classifyEntityType(params.toolName),
-    entityId,
+    ...(entityId !== undefined && { entityId }),
     actionName: params.toolName,
     input: sanitizeInput(params.args),
     status: params.result.success ? 'success' : 'failed',
-    proof: params.result.success ? `tool_${params.toolName}_executed` : undefined,
+    ...(proof !== undefined && { proof }),
     createdAt: new Date().toISOString(),
-    warnings: params.result.error ? [String(params.result.error)] : undefined,
-    nextPossibleActions: suggestNextActions(params.toolName, params.result.success),
+    ...(warnings !== undefined && { warnings }),
+    ...(nextPossibleActions !== undefined && { nextPossibleActions }),
   };
 }
 

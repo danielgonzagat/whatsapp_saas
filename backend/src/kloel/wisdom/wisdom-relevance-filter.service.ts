@@ -41,14 +41,16 @@ export class WisdomRelevanceFilter {
       return [];
     }
 
+    const activeChannels =
+      decisionContext?.activeChannels ??
+      (decisionContext?.channel ? [decisionContext.channel] : undefined);
+
     const target: TargetWorkspaceContext = {
       workspaceId,
-      vertical: decisionContext?.vertical,
-      ticketRange: decisionContext?.ticketRange,
-      maturityStage: decisionContext?.maturityStage,
-      activeChannels:
-        decisionContext?.activeChannels ??
-        (decisionContext?.channel ? [decisionContext.channel] : undefined),
+      ...(decisionContext?.vertical !== undefined && { vertical: decisionContext.vertical }),
+      ...(decisionContext?.ticketRange !== undefined && { ticketRange: decisionContext.ticketRange }),
+      ...(decisionContext?.maturityStage !== undefined && { maturityStage: decisionContext.maturityStage }),
+      ...(activeChannels !== undefined && { activeChannels }),
     };
 
     const filtered = filterByRelevance(patterns, target, 0.2);

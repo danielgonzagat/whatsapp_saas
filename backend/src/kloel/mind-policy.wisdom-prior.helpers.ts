@@ -46,7 +46,7 @@ export function applyWisdomPriors(input: {
 
   try {
     const relevant = input.wisdomFilter.filter(patterns, input.workspaceId, {
-      channel: input.channel,
+      ...(input.channel !== undefined && { channel: input.channel }),
       decisionType: input.decisionType,
     });
 

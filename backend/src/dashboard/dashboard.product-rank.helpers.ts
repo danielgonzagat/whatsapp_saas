@@ -47,7 +47,7 @@ export function computeProductRanking(orders: ProductRankInput[]): RankedProduct
     if (!stats.has(key)) {
       stats.set(key, {
         id: product.id,
-        name: product.name,
+        name: product.name ?? '',
         status: product.status || (product.active ? 'ACTIVE' : 'DRAFT'),
         category: product.category || null,
         imageUrl: product.imageUrl || null,

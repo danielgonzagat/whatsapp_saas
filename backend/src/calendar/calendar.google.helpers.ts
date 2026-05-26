@@ -211,9 +211,10 @@ export class CalendarGoogleHelper {
         config.credentials?.clientSecret || this.configService.get('GOOGLE_CLIENT_SECRET'),
       );
 
-      const googleCredentials: { refresh_token?: string; access_token?: string } = {
-        refresh_token: config.credentials?.refreshToken,
-      };
+      const googleCredentials: { refresh_token?: string; access_token?: string } = {};
+      if (config.credentials?.refreshToken) {
+        googleCredentials.refresh_token = config.credentials.refreshToken;
+      }
       if (config.credentials?.accessToken) {
         googleCredentials.access_token = config.credentials.accessToken;
       }
