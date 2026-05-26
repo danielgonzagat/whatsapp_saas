@@ -25,18 +25,8 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { validateAbiPayload } from './abi/abi-validator';
 
-export interface FollowupListItem {
-  id: string;
-  key: string;
-  phone?: unknown;
-  contactId?: unknown;
-  message: unknown;
-  scheduledFor?: unknown;
-  delayMinutes?: unknown;
-  status: unknown;
-  createdAt: Date;
-  executedAt?: unknown;
-}
+import type { FollowupListItem } from './kloel.service.lists.helpers';
+export type { FollowupListItem };
 
 /** Handles WhatsApp message processing, lead lifecycle, and follow-ups. */
 @Injectable()

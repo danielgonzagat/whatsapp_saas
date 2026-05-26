@@ -50,18 +50,7 @@ interface ComposerMetadata {
 }
 
 /** Followup list item shape. */
-export interface FollowupListItem {
-  id: string;
-  key: string;
-  phone?: unknown;
-  contactId?: unknown;
-  message: unknown;
-  scheduledFor?: unknown;
-  delayMinutes?: unknown;
-  status: unknown;
-  createdAt: Date;
-  executedAt?: unknown;
-}
+export type { FollowupListItem } from './kloel.service.lists.helpers';
 
 /** Kloel main service — thin orchestrator over focused sub-services. */
 @Injectable()
