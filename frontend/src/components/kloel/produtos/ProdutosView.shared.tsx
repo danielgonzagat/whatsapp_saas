@@ -7,6 +7,7 @@ import { secureRandomFloat } from '@/lib/secure-random';
 import { useEffect, useRef } from 'react';
 import type React from 'react';
 import type { LiveFeedEvent } from './ProdutosView.types';
+import { formatBRL } from '@/lib/common/money';
 
 // ── Fonts ──
 export const SORA = "'Sora',sans-serif";
@@ -53,7 +54,7 @@ export const ANIMATIONS = `
 
 // ── Formatters ──
 export const fmt = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n));
-export const fmtBRL = (n: number) => `R$ ${n.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+export const fmtBRL = formatBRL;
 export const fmtBRLCents = (n: number) => fmtBRL(n / 100);
 export const timeAgo = (value?: string | null) => {
   if (!value) {

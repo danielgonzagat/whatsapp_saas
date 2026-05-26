@@ -1,3 +1,5 @@
+import { formatBRL } from '@/lib/common/money';
+
 /** Crm pipeline shape. */
 export interface CRMPipeline {
   /** _id property. */
@@ -54,6 +56,4 @@ export const SORA = "var(--font-sora), 'Sora', sans-serif";
 export const MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
 /** Fmt brl. */
-export function fmtBRL(v: number) {
-  return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-}
+export const fmtBRL = formatBRL;
