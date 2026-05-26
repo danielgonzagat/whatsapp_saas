@@ -65,6 +65,10 @@ describe('TikTokMarketingService', () => {
       'TIKTOK_STATE_SECRET',
       'FRONTEND_URL',
       'NEXT_PUBLIC_TIKTOK_CLIENT_KEY',
+      'NEXT_PUBLIC_TIKTOK_APP_ID',
+      'TIKTOK_APP_ID',
+      'TIKTOK_APP_SECRET',
+      'TIKTOK_CLIENT_ID',
       'JWT_SECRET',
     ]);
   });
@@ -111,6 +115,30 @@ describe('TikTokMarketingService', () => {
 
       expect(result.clientConfigured).toBe(false);
       expect(result.secretConfigured).toBe(false);
+    });
+
+    it('accepts app id and app secret aliases for production TikTok auth', async () => {
+      deleteEnv([
+        'TIKTOK_CLIENT_KEY',
+        'TIKTOK_CLIENT_SECRET',
+        'TIKTOK_STATE_SECRET',
+        'NEXT_PUBLIC_TIKTOK_CLIENT_KEY',
+      ]);
+      setEnv({
+        TIKTOK_APP_ID: '7632164959169806353',
+        TIKTOK_APP_SECRET: 'test-secret',
+        JWT_SECRET: 'jwt-secret',
+      });
+
+      const result = await service.getStatus('ws-1');
+      const auth = service.generateAuthUrl('ws-1', 'creator');
+      const authUrl = new URL(auth.url);
+
+      expect(result.clientConfigured).toBe(true);
+      expect(result.secretConfigured).toBe(true);
+      expect(authUrl.hostname).toBe('www.tiktok.com');
+      expect(authUrl.searchParams.get('client_key')).toBe('7632164959169806353');
+      expect(auth.redirectUri).toBe('https://app.kloel.test/integrations/tiktok/auth/callback');
     });
   });
 
