@@ -2,9 +2,13 @@ import { findFirstSequential } from '@/lib/async-sequence';
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { getBackendCandidateUrls } from '../../_lib/backend-url';
+import {
+  bearerFromHeaderOrCookie,
+  readCookieValue as readCookieValueShared,
+} from '../../_lib/bearer-from-request';
 
 function readCookieValue(request: NextRequest, name: string) {
-  return request.cookies.get(name)?.value || '';
+  return readCookieValueShared(request, name) || '';
 }
 
 function isAuthRedirectLike(value: string) {
@@ -15,28 +19,6 @@ function isAuthRedirectLike(value: string) {
     normalized.includes('<html') ||
     normalized.includes('<!doctype html')
   );
-}
-
-function firstCookieBearer(request: NextRequest, cookieNames: string[]): string | null {
-  for (const cookieName of cookieNames) {
-    const value = readCookieValue(request, cookieName);
-    if (value) {
-      return `Bearer ${value}`;
-    }
-  }
-  return null;
-}
-
-function bearerFromHeaderOrCookie(
-  request: NextRequest,
-  headerName: string,
-  cookieNames: string[],
-): string | null {
-  const headerValue = request.headers.get(headerName);
-  if (headerValue) {
-    return `Bearer ${headerValue}`;
-  }
-  return firstCookieBearer(request, cookieNames);
 }
 
 const ACCESS_TOKEN_COOKIE_NAMES = ['kloel_access_token', 'kloel_token'];
