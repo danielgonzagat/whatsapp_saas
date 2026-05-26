@@ -100,9 +100,7 @@ export class SpineEmitterService {
       try {
         sub(envelope);
       } catch (subErr) {
-        this.logger.warn(
-          `subscriber threw on ${envelope.eventName}: ${errorMessage(subErr)}`,
-        );
+        this.logger.warn(`subscriber threw on ${envelope.eventName}: ${errorMessage(subErr)}`);
       }
     }
     return envelope;
@@ -112,7 +110,9 @@ export class SpineEmitterService {
     workspaceId: string,
     since?: string,
   ): Promise<SpineEventEnvelope[]> {
-    if (!this.redis) return [];
+    if (!this.redis) {
+      return [];
+    }
 
     const key = `spine:events:${workspaceId}`;
     try {
@@ -121,7 +121,9 @@ export class SpineEmitterService {
         .map(([, fields]) => {
           const eventFieldIndex = fields.indexOf('event');
           const eventPayload = eventFieldIndex >= 0 ? fields[eventFieldIndex + 1] : undefined;
-          if (!eventPayload) return null;
+          if (!eventPayload) {
+            return null;
+          }
           try {
             return JSON.parse(eventPayload) as SpineEventEnvelope;
           } catch (error: unknown) {
@@ -133,7 +135,9 @@ export class SpineEmitterService {
         })
         .filter((event): event is SpineEventEnvelope => event !== null);
     } catch (error: unknown) {
-      this.logger.warn(`replayFromStream failed for workspace ${workspaceId}: ${errorMessage(error)}`);
+      this.logger.warn(
+        `replayFromStream failed for workspace ${workspaceId}: ${errorMessage(error)}`,
+      );
       return [];
     }
   }

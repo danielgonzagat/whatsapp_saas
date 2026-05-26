@@ -163,7 +163,11 @@ describe('SpineEmitterService', () => {
       ]);
       const payload = call[6];
       expect(typeof payload).toBe('string');
-      const parsed = JSON.parse(payload as string) as { eventName: string; workspaceId: string; eventId: string };
+      const parsed = JSON.parse(payload as string) as {
+        eventName: string;
+        workspaceId: string;
+        eventId: string;
+      };
       expect(parsed.eventName).toBe('commerce.lead.replied');
       expect(parsed.workspaceId).toBe('wks_demo');
       expect(parsed.eventId).toMatch(/^evt_/);
