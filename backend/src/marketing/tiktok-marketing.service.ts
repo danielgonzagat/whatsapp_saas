@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { Prisma } from '@prisma/client';
-import { encryptMetaToken } from '../meta/meta-token-crypto';
+import { decryptMetaToken, encryptMetaToken } from '../meta/meta-token-crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { asProviderSettings, type ProviderSettings } from '../whatsapp/provider-settings.types';
 
@@ -21,8 +21,10 @@ interface TikTokProviderSubsettings {
 
 const CREATOR_AUTH_URL = 'https://www.tiktok.com/v2/auth/authorize/';
 const CREATOR_TOKEN_URL = 'https://open.tiktokapis.com/v2/oauth/token/';
+const CREATOR_USER_INFO_URL = 'https://open.tiktokapis.com/v2/user/info/';
 const ADVERTISER_AUTH_URL = 'https://business-api.tiktok.com/portal/auth';
 const ADVERTISER_TOKEN_URL = 'https://business-api.tiktok.com/open_api/v1.3/oauth2/access_token/';
+const BUSINESS_API_BASE_URL = 'https://business-api.tiktok.com/open_api/v1.3';
 const STATE_TTL_MS = 10 * 60 * 1000;
 
 type TikTokKind = 'creator' | 'advertiser';
@@ -73,6 +75,18 @@ function readRequiredEnv(keys: string[], label: string): string {
 function expiresAtFromSeconds(seconds: unknown) {
   const expiresIn = Number(seconds || 0);
   return expiresIn > 0 ? new Date(Date.now() + expiresIn * 1000).toISOString() : null;
+}
+
+function readString(value: unknown): string | null {
+  const result = typeof value === 'string' ? value.trim() : '';
+  return result || null;
+}
+
+function readStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.map((item) => readString(item)).filter((item): item is string => Boolean(item));
 }
 
 function signPayload(payload: SignedStatePayload, secret: string): string {
@@ -273,6 +287,82 @@ export class TikTokMarketingService {
     return { connected: true, status: 'connected', kind, advertiserIds };
   }
 
+  async getCreatorProfile(workspaceId: string) {
+    const settings = await this.readTikTokSettings(workspaceId);
+    const accessToken = this.decryptStoredAccessToken(settings);
+    if (!accessToken) {
+      return { status: 'not_connected', profile: null };
+    }
+
+    const url = new URL(CREATOR_USER_INFO_URL);
+    url.searchParams.set(
+      'fields',
+      [
+        'open_id',
+        'union_id',
+        'avatar_url',
+        'display_name',
+        'username',
+        'follower_count',
+        'following_count',
+        'likes_count',
+        'video_count',
+      ].join(','),
+    );
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      signal: AbortSignal.timeout(30000),
+    });
+    const payload = (await response.json().catch(() => ({}))) as {
+      data?: { user?: Record<string, unknown> };
+      error?: { code?: string; message?: string };
+    };
+    if (!response.ok || payload.error?.code === 'access_token_invalid') {
+      return {
+        status: 'provider_error',
+        httpStatus: response.status,
+        providerMessage: payload.error?.message || payload.error?.code || null,
+        profile: null,
+      };
+    }
+    return { status: 'ok', profile: payload.data?.user || null };
+  }
+
+  async listAdvertiserCampaigns(workspaceId: string, rawAdvertiserId?: string) {
+    const settings = await this.readTikTokSettings(workspaceId);
+    const accessToken = this.decryptStoredAccessToken(settings);
+    if (!accessToken) {
+      return { status: 'not_connected', campaigns: [] };
+    }
+    const advertiserId = this.resolveAdvertiserId(settings, rawAdvertiserId);
+    if (!advertiserId) {
+      return { status: 'missing_advertiser_id', campaigns: [] };
+    }
+
+    const url = new URL(`${BUSINESS_API_BASE_URL}/campaign/get/`);
+    url.searchParams.set('advertiser_id', advertiserId);
+    url.searchParams.set('page', '1');
+    url.searchParams.set('page_size', '50');
+    const response = await fetch(url, {
+      headers: { 'Access-Token': accessToken, 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(30000),
+    });
+    const payload = (await response.json().catch(() => ({}))) as {
+      code?: number;
+      message?: string;
+      data?: { list?: Array<Record<string, unknown>> };
+    };
+    if (!response.ok || (typeof payload.code === 'number' && payload.code !== 0)) {
+      return {
+        status: 'provider_error',
+        httpStatus: response.status,
+        providerMessage: payload.message || null,
+        campaigns: [],
+      };
+    }
+    return { status: 'ok', advertiserId, campaigns: payload.data?.list || [] };
+  }
+
   async disconnect(workspaceId: string) {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
@@ -348,6 +438,28 @@ export class TikTokMarketingService {
     return kind === 'advertiser'
       ? `${frontendUrl}/integrations/tiktok/callback`
       : `${frontendUrl}/integrations/tiktok/auth/callback`;
+  }
+
+  private async readTikTokSettings(workspaceId: string) {
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { providerSettings: true },
+    });
+    const settings = asProviderSettings(workspace?.providerSettings);
+    return (settings.tiktok || {}) as Record<string, unknown>;
+  }
+
+  private decryptStoredAccessToken(settings: Record<string, unknown>) {
+    return decryptMetaToken(readString(settings.accessToken));
+  }
+
+  private resolveAdvertiserId(settings: Record<string, unknown>, rawAdvertiserId?: string) {
+    const explicit = readString(rawAdvertiserId);
+    if (explicit) {
+      return explicit.replace(/\D/g, '');
+    }
+    const advertiserIds = readStringArray(settings.advertiserIds);
+    return advertiserIds[0]?.replace(/\D/g, '') || '';
   }
 
   private async exchangeToken(input: {

@@ -1,6 +1,7 @@
 import { TikTokMarketingService } from './tiktok-marketing.service';
 
 jest.mock('../meta/meta-token-crypto', () => ({
+  decryptMetaToken: jest.fn().mockImplementation((token: string | null) => token),
   encryptMetaToken: jest.fn().mockImplementation((token: string) => `encrypted:${token}`),
 }));
 
@@ -168,6 +169,77 @@ describe('TikTokMarketingService', () => {
       const result = service.generateAuthUrl('ws-1');
 
       expect(result.kind).toBe('creator');
+    });
+  });
+
+  describe('read APIs', () => {
+    it('reads creator profile through the official TikTok user info endpoint', async () => {
+      workspaceFindUnique.mockResolvedValue({
+        providerSettings: { tiktok: { connected: true, accessToken: 'creator-token' } },
+      });
+      fetchSpy.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: { user: { open_id: 'open-1', display_name: 'Kloel' } },
+            error: { code: 'ok', message: '' },
+          }),
+          { status: 200 },
+        ),
+      );
+
+      const result = await service.getCreatorProfile('ws-1');
+
+      expect(result).toEqual({
+        status: 'ok',
+        profile: { open_id: 'open-1', display_name: 'Kloel' },
+      });
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          href: expect.stringContaining('https://open.tiktokapis.com/v2/user/info/'),
+        }),
+        expect.objectContaining({ headers: { Authorization: 'Bearer creator-token' } }),
+      );
+    });
+
+    it('lists advertiser campaigns through TikTok Business API without mutating campaigns', async () => {
+      workspaceFindUnique.mockResolvedValue({
+        providerSettings: {
+          tiktok: {
+            connected: true,
+            accessToken: 'advertiser-token',
+            advertiserIds: ['1234567890'],
+          },
+        },
+      });
+      fetchSpy.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            code: 0,
+            message: 'OK',
+            data: { list: [{ campaign_id: 'cmp-1', campaign_name: 'Oferta' }] },
+          }),
+          { status: 200 },
+        ),
+      );
+
+      const result = await service.listAdvertiserCampaigns('ws-1');
+
+      expect(result).toEqual({
+        status: 'ok',
+        advertiserId: '1234567890',
+        campaigns: [{ campaign_id: 'cmp-1', campaign_name: 'Oferta' }],
+      });
+      expect(fetchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          href: expect.stringContaining(
+            'https://business-api.tiktok.com/open_api/v1.3/campaign/get/',
+          ),
+        }),
+        expect.objectContaining({
+          headers: { 'Access-Token': 'advertiser-token', 'Content-Type': 'application/json' },
+        }),
+      );
+      expect(workspaceUpdate).not.toHaveBeenCalled();
     });
   });
 
