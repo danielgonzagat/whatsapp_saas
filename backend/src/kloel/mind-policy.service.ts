@@ -3,6 +3,9 @@ import { StructuredLogger } from '../logging/structured-logger';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelGlobalPriorService } from './kloel-global-prior.service';
+import { WisdomRelevanceFilter } from './wisdom/wisdom-relevance-filter.service';
+import { WisdomPatternStore } from './wisdom/wisdom-pattern-store.service';
+import type { WisdomPattern } from './wisdom/wisdom.types';
 import { MindBeliefService } from './mind-belief.service';
 import { extractChannel } from './mind-belief-by-channel';
 import type { MindBelief, MindPolicyDecision } from './mind.types';
@@ -25,6 +28,10 @@ import {
 const FALLBACK_MIN_SAMPLES = 30;
 const COLD_START_THRESHOLD = 30;
 
+// WISDOM — CIA Gap 9: cross-workspace pattern prior scaling
+const WISDOM_SCALE_FACTOR = 0.5;
+const WISDOM_PRIOR_TARGET = 1.0;
+
 @Injectable()
 export class MindPolicyService {
   private readonly logger = StructuredLogger.from(MindPolicyService.name);
@@ -33,6 +40,8 @@ export class MindPolicyService {
     private readonly prisma: PrismaService,
     private readonly beliefs: MindBeliefService,
     @Optional() private readonly globalPrior?: KloelGlobalPriorService,
+    @Optional() private readonly wisdomFilter?: WisdomRelevanceFilter,
+    @Optional() private readonly wisdomStore?: WisdomPatternStore,
   ) {
     this.logger.debug?.(`MindPolicyService initialized`);
   }
@@ -87,7 +96,16 @@ export class MindPolicyService {
       workspaceOptedOut,
     });
 
-    const beliefs = mixedBeliefs.map((m) => {
+    // Wisdom prior pass — cross-workspace patterns as Beta priors (CIA Gap 9)
+    const wisdomNudged = this.applyWisdomPriors({
+      mixedBeliefs,
+      channel,
+      decisionType: input.decisionType,
+      inputOptions: input.options,
+      workspaceId: input.workspaceId,
+    });
+
+    const beliefs = wisdomNudged.map((m) => {
       if (m.usedPrior) {
         usedGlobalPrior = true;
         if (m.priorWeight > maxPriorWeight) {
@@ -136,6 +154,10 @@ export class MindPolicyService {
     outcome: number,
     baselineOutcome?: number,
   ): Promise<void> {
+    // Gap 6: collect (channel, decisionType, action) tuples to feed back into
+    // the global prior after the transaction commits.
+    const priorRows: Array<{ channel: string; decisionType: string; action: string }> = [];
+
     await this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw /* raw justified: PostgreSQL advisory lock for outcome resolution */ `
         SELECT pg_advisory_xact_lock(hashtext(${`resolve:${workspaceId}:${outcomeKey}`}))
@@ -181,6 +203,13 @@ export class MindPolicyService {
       }
 
       if (resolvedCount > 0) {
+        for (const row of rows) {
+          const channel = extractChannel(row.context as Record<string, unknown>);
+          if (channel) {
+            priorRows.push({ channel, decisionType: row.decisionType, action: row.chosen });
+          }
+        }
+
         await this.persistResolvedMemories(
           rows.map((r) => ({
             ...r,
@@ -192,6 +221,26 @@ export class MindPolicyService {
         );
       }
     });
+
+    // Gap 6: feed resolved outcomes back into the cross-workspace global prior.
+    if (this.globalPrior && priorRows.length > 0) {
+      const success = outcome >= 0.5;
+      for (const row of priorRows) {
+        try {
+          await this.globalPrior.recordObservation(
+            row.channel,
+            row.decisionType,
+            row.action,
+            success,
+          );
+        } catch (err: unknown) {
+          this.logger.error('Failed to record global prior observation from resolveOutcome', {
+            outcomeKey,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
+    }
   }
 
   async resolveOpenForSubject(input: {
@@ -249,6 +298,32 @@ export class MindPolicyService {
         })),
         input.baselineOutcome,
       );
+    }
+
+    // Gap 6: feed resolved outcomes from this subject back into the
+    // cross-workspace global prior.
+    if (this.globalPrior && rows.length > 0) {
+      const success = input.outcome >= 0.5;
+      for (const row of rows) {
+        const channel = extractChannel(row.context as Record<string, unknown>);
+        if (!channel) {
+          continue;
+        }
+        try {
+          await this.globalPrior.recordObservation(
+            channel,
+            row.decisionType,
+            row.chosen,
+            success,
+          );
+        } catch (err: unknown) {
+          this.logger.error('Failed to record global prior observation from resolveOpenForSubject', {
+            subject: input.subject,
+            decisionType: input.decisionType,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
     }
 
     return rows.length;
@@ -381,6 +456,122 @@ export class MindPolicyService {
         return { belief, mixedMean, usedPrior: true, priorWeight };
       }),
     );
+  }
+
+  /**
+   * Apply wisdom patterns as Beta prior nudges (CIA Gap 9).
+   *
+   * Formula — for each matching wisdom pattern with confidence c:
+   *   wisdomWeight = WISDOM_SCALE_FACTOR × c  (= 0.5 × c)
+   *   For each option whose predicate or context aligns with the pattern's
+   *   signalKind:
+   *     effectiveN  = max(1, belief.samples)
+   *     priorTarget = 1.0  (pattern suggests positive outcome)
+   *     nudgedMean  = (mean × effectiveN + wisdomWeight × priorTarget)
+   *                 / (effectiveN + wisdomWeight)
+   *
+   * The scale factor ensures wisdom never dominates workspace-specific signal.
+   * Wrapped in try/catch — failures log but never block the decision.
+   */
+  private applyWisdomPriors(input: {
+    mixedBeliefs: Array<{ belief: MindBelief; mixedMean: number; usedPrior: boolean; priorWeight: number }>;
+    channel: string | undefined;
+    decisionType: string;
+    inputOptions: Array<{ action: string }>;
+    workspaceId: string;
+  }): Array<{ belief: MindBelief; mixedMean: number; usedPrior: boolean; priorWeight: number; wisdomNudged: boolean }> {
+    const result = input.mixedBeliefs.map((m) => ({ ...m, wisdomNudged: false }));
+
+    if (!this.wisdomFilter || !this.wisdomStore) {
+      return result;
+    }
+
+    const patterns = this.wisdomStore.getPatterns();
+    if (patterns.length === 0) {
+      return result;
+    }
+
+    try {
+      const relevant = this.wisdomFilter.filter(patterns, input.workspaceId, {
+        channel: input.channel,
+        decisionType: input.decisionType,
+      });
+
+      if (relevant.length === 0) {
+        return result;
+      }
+
+      // Aggregate wisdom weight: max confidence among matching patterns, scaled.
+      const maxConfidence = Math.max(...relevant.map((p) => p.confidence));
+      const wisdomWeight = WISDOM_SCALE_FACTOR * maxConfidence;
+      const priorTarget = WISDOM_PRIOR_TARGET;
+
+      for (let i = 0; i < result.length; i++) {
+        const entry = result[i]!;
+        const option = input.inputOptions[i];
+
+        // Determine alignment: does the option's predicate/context keywords
+        // overlap with any matching pattern's signalKind?
+        const aligned = this.wisdomAlignsWithOption(relevant, option);
+        if (!aligned) {
+          continue;
+        }
+
+        const effectiveN = Math.max(1, entry.belief.samples ?? 0);
+        const localMean = entry.mixedMean;
+        entry.mixedMean =
+          (localMean * effectiveN + wisdomWeight * priorTarget) /
+          (effectiveN + wisdomWeight);
+        entry.wisdomNudged = true;
+      }
+
+      this.logger.debug?.({
+        operation: 'mind_policy.wisdom_prior',
+        status: 'ok',
+        workspaceId: input.workspaceId,
+        decisionType: input.decisionType,
+        matchingPatterns: relevant.length,
+        maxConfidence,
+        wisdomWeight,
+        nudgedOptions: result.filter((r) => r.wisdomNudged).length,
+      });
+    } catch (err: unknown) {
+      this.logger.warn?.({
+        operation: 'mind_policy.wisdom_prior',
+        status: 'error',
+        workspaceId: input.workspaceId,
+        decisionType: input.decisionType,
+        error: err instanceof Error ? err.message : 'unknown',
+      });
+    }
+
+    return result;
+  }
+
+  /**
+   * Check whether a wisdom pattern set aligns with a decision option.
+   * Returns true if any pattern's signalKind keyword appears in the
+   * option's predicate or context.
+   */
+  private wisdomAlignsWithOption(
+    patterns: readonly WisdomPattern[],
+    option?: { action: string; predicate?: string; context?: Record<string, unknown> },
+  ): boolean {
+    if (!option) return false;
+
+    const searchText = [
+      option.predicate ?? '',
+      option.action ?? '',
+      ...Object.values(option.context ?? {}).map(String),
+    ]
+      .join(' ')
+      .toLowerCase();
+
+    return patterns.some((p) => {
+      // Extract the core concept from signalKind: e.g., 'reply_rate' → 'reply'
+      const concept = p.signalKind.replace(/_rate|_volume|_efficiency|_distribution|_concentration|_activity$/, '');
+      return concept.length > 0 && searchText.includes(concept);
+    });
   }
 
   private async persist(decision: MindPolicyDecision): Promise<void> {
