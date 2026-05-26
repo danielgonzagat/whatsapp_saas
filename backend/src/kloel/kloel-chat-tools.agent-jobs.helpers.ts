@@ -1,6 +1,7 @@
 import type { AgentRuntimeSchedulerService, AgentRuntimeSessionStore } from './agent-runtime';
 import type { PrismaService } from '../prisma/prisma.service';
 import type { ToolResult } from './kloel-chat-tools.agent-runtime.helpers';
+import { safeStr } from '../common/string';
 
 const NON_SLUG_CHAR_RE = /[^a-z0-9_:-]+/g;
 
@@ -168,12 +169,6 @@ export async function runGetAgentArtifact(
       ? 'Artefato recuperado parcialmente por limite de contexto.'
       : 'Artefato recuperado da memória operacional.',
   };
-}
-
-function safeStr(value: unknown, fallback = ''): string {
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-  return fallback;
 }
 
 function safeAgentRuntimeId(value: unknown, fallback: string): string {

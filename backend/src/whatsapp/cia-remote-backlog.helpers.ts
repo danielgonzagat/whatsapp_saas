@@ -4,11 +4,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WahaChatSummary } from './providers/whatsapp-api.provider';
 import { extractPhoneFromChatId as normalizePhoneFromChatId } from './whatsapp-normalization.util';
+import { safeStr } from '../common/string';
 
 export type BacklogMode = 'reply_all_recent_first' | 'reply_only_new' | 'prioritize_hot';
-
-const safeStr = (v: unknown, fb = ''): string =>
-  typeof v === 'string' ? v : typeof v === 'number' || typeof v === 'boolean' ? String(v) : fb;
 
 export interface RemoteBacklogLoadDeps {
   prisma: PrismaService;

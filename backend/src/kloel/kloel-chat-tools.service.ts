@@ -55,16 +55,8 @@ import {
   runListSubscriptions,
 } from './kloel-chat-tools.product.helpers';
 import { runGetAffiliateConfig, runGetSettings } from './kloel-chat-tools.settings.helpers';
+import { safeStr } from '../common/string';
 const NON_SLUG_CHAR_RE = /[^a-z0-9_:-]+/g;
-function safeStr(value: unknown, fallback = ''): string {
-  if (typeof value === 'string') {
-    return value;
-  }
-  if (typeof value === 'number' || typeof value === 'boolean') {
-    return String(value);
-  }
-  return fallback;
-}
 interface ToolSaveProductArgs {
   name: string;
   price: number;
@@ -76,7 +68,10 @@ interface ToolSaveProductArgs {
   warrantyDays?: number;
   salesPageUrl?: string;
   thankyouUrl?: string;
+  thankyouPixUrl?: string;
+  thankyouBoletoUrl?: string;
   supportEmail?: string;
+  affiliateEnabled?: boolean;
   active?: boolean;
 }
 interface ToolDeleteProductArgs {
@@ -142,6 +137,14 @@ export class KloelChatToolsService {
         format: args.format || 'DIGITAL',
         category: args.category || null,
         imageUrl: args.imageUrl || null,
+        tags: args.tags || [],
+        warrantyDays: args.warrantyDays || null,
+        salesPageUrl: args.salesPageUrl || null,
+        thankyouUrl: args.thankyouUrl || null,
+        thankyouPixUrl: args.thankyouPixUrl || null,
+        thankyouBoletoUrl: args.thankyouBoletoUrl || null,
+        supportEmail: args.supportEmail || null,
+        affiliateEnabled: args.affiliateEnabled ?? false,
         active: true,
       },
     });
@@ -677,7 +680,7 @@ export class KloelChatToolsService {
   toolGetProductUrls(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     return runGetProductUrls(this.prisma, workspaceId, args);
   }
-  toolGetProductReviews(workspaceId: string, args: { productId: string }): Promise<ToolResult> {
+  toolGetProductReviews(workspaceId: string, args: { productId?: string; productName?: string }): Promise<ToolResult> {
     return runGetProductReviews(this.prisma, workspaceId, args);
   }
   toolGetProductAiConfig(workspaceId: string, args: { productId: string }): Promise<ToolResult> {
@@ -709,7 +712,6 @@ export class KloelChatToolsService {
   }
 
   // ── Novos tools para stubs → reais ──
-
 
   async toolUploadPlanImage(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     const planName = typeof args.planName === 'string' ? args.planName : '';

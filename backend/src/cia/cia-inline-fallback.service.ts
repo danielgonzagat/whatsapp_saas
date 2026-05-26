@@ -6,14 +6,12 @@ import { AgentEventsService } from '../whatsapp/agent-events.service';
 import { CiaChatFilterService } from './cia-chat-filter.service';
 import { CiaRuntimeStateService } from './cia-runtime-state.service';
 import { CIA_SHARED_REPLY_LOCK_MS, CiaSendHelpersService } from './cia-send-helpers.service';
+import { safeStr } from '../common/string';
 
 type BacklogMode = 'reply_all_recent_first' | 'reply_only_new' | 'prioritize_hot';
 type InlineFallbackConversation = Record<string, unknown>;
 type InlineFallbackMessage = Record<string, unknown>;
 type InlineFallbackContact = Record<string, unknown>;
-
-const safeStr = (v: unknown, fb = ''): string =>
-  typeof v === 'string' ? v : typeof v === 'number' || typeof v === 'boolean' ? String(v) : fb;
 
 /**
  * Handles inline (in-process) backlog fallback execution when the BullMQ worker
