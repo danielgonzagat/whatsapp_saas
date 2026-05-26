@@ -1,4 +1,3 @@
-import type { MindPolicyChooser } from './mind-policy.service';
 import {
   resolveAdAlertActionBaseline,
   resolveBroadcastWindowBaseline,
@@ -6,19 +5,13 @@ import {
   resolveHumanTransferBaseline,
   resolveProductOfferBaseline,
 } from './mind-decision-baselines';
+import type { MindPolicyChooser, PolicyDecisionResult } from './mind-catalog-decision-resolvers';
+import { decisionConfidence } from './mind-catalog-decision-resolvers';
 
-export type { MindPolicyChooser };
-
-type PolicyDecisionResult = Awaited<ReturnType<MindPolicyChooser['choose']>>;
-
-function decisionConfidence(result: PolicyDecisionResult): number {
-  return (
-    result.decision.candidates.find((candidate) => candidate.action === result.chosen)
-      ?.beliefMean ??
-    result.decision.candidates[0]?.beliefMean ??
-    0
-  );
-}
+// Canonical MindPolicyChooser + PolicyDecisionResult + decisionConfidence live
+// in mind-catalog-decision-resolvers — re-export the type for commercial-side
+// consumers and use the imported impl for decisionConfidence.
+export type { MindPolicyChooser, PolicyDecisionResult };
 
 export async function resolveHumanTransferDecision(
   policy: MindPolicyChooser,
@@ -108,19 +101,18 @@ export async function resolveProductOfferDecision(
 ): Promise<{ offer: string; confidence: number; fallback: boolean }> {
   const baseline = resolveProductOfferBaseline(segment, concept, priceBand);
   const context: Record<string, unknown> = { segment, concept, priceBand };
-  if (lastPurchase) {
-    context.lastPurchase = lastPurchase;
-  }
-  if (channelConstraint?.channel) {
-    context.channel = channelConstraint.channel;
-  }
+  if (lastPurchase) context.lastPurchase = lastPurchase;
+  if (channelConstraint?.channel) context.channel = channelConstraint.channel;
   // Channel-allowed product IDs feed the policy as structural context so the
   // brain (and any downstream consumer of the decision trace) sees what the
   // operator authorized for this channel. A future mapper layer translates
   // the chosen strategy label into one of these IDs; until that layer ships,
   // the strategy label is recorded alongside `allowedProductIds` so no
   // out-of-list product can be selected without leaving an audit trail.
-  if (channelConstraint?.allowedProductIds && channelConstraint.allowedProductIds.length > 0) {
+  if (
+    channelConstraint?.allowedProductIds &&
+    channelConstraint.allowedProductIds.length > 0
+  ) {
     context.allowedProductIds = channelConstraint.allowedProductIds;
   }
 
@@ -158,9 +150,7 @@ export async function resolveBroadcastWindowDecision(
   const baseline = resolveBroadcastWindowBaseline(channel, weekday ?? 'monday', fatigue ?? 0);
   const context = { channel, segment, weekday: weekday ?? 'monday', fatigue: fatigue ?? 0 };
   const actions = ['now', 'tonight_20h', 'tomorrow_9h', 'friday_21h'];
-  if (fatigue !== undefined && fatigue >= 0.8) {
-    actions.push('pause');
-  }
+  if (fatigue !== undefined && fatigue >= 0.8) actions.push('pause');
 
   const result = await policy.choose({
     workspaceId,

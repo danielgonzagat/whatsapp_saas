@@ -1,7 +1,7 @@
-import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
-import type Redis from 'ioredis';
+import { InjectRedis } from '@nestjs-modules/ioredis';
 import { randomUUID } from 'node:crypto';
+import type Redis from 'ioredis';
 import { ValenceTaggerService } from '../mind/valence-tagger.service';
 import type { SpineEventRef } from '../mind/mind.types';
 import type { SpineEventEnvelope, SpineEventInput } from './spine-event.types';
@@ -27,10 +27,6 @@ function detectEnvironment(): 'dev' | 'staging' | 'prod' {
   if (env === 'production' || env === 'prod') return 'prod';
   if (env === 'staging') return 'staging';
   return 'dev';
-}
-
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }
 
 @Injectable()
@@ -78,6 +74,7 @@ export class SpineEmitterService {
     this.ring.push(envelope);
     if (this.ring.length > this.ringCapacity) this.ring.shift();
 
+    // CIA Gap 5 — persist to Redis Stream (fire-and-forget, failure never throws)
     if (this.redis && envelope.workspaceId) {
       void this.redis
         .xadd(
@@ -89,9 +86,9 @@ export class SpineEmitterService {
           'event',
           JSON.stringify(envelope),
         )
-        .catch((error: unknown) => {
+        .catch((err: unknown) => {
           this.logger.warn(
-            `Redis xadd failed for workspace ${envelope.workspaceId}: ${errorMessage(error)}`,
+            `Redis xadd failed for workspace ${envelope.workspaceId}: ${(err as Error).message}`,
           );
         });
     }
@@ -100,7 +97,9 @@ export class SpineEmitterService {
       try {
         sub(envelope);
       } catch (subErr) {
-        this.logger.warn(`subscriber threw on ${envelope.eventName}: ${errorMessage(subErr)}`);
+        this.logger.warn(
+          `subscriber threw on ${envelope.eventName}: ${(subErr as Error).message}`,
+        );
       }
     }
     return envelope;
@@ -110,33 +109,28 @@ export class SpineEmitterService {
     workspaceId: string,
     since?: string,
   ): Promise<SpineEventEnvelope[]> {
-    if (!this.redis) {
-      return [];
-    }
-
-    const key = `spine:events:${workspaceId}`;
+    if (!this.redis) return [];
     try {
-      const results = await this.redis.xrange(key, since ?? '-', '+');
+      const key = `spine:events:${workspaceId}`;
+      const start = since ?? '-';
+      const results = await this.redis.xrange(key, start, '+');
       return results
         .map(([, fields]) => {
-          const eventFieldIndex = fields.indexOf('event');
-          const eventPayload = eventFieldIndex >= 0 ? fields[eventFieldIndex + 1] : undefined;
-          if (!eventPayload) {
-            return null;
-          }
+          const eventField = fields[1];
+          if (!eventField) return null;
           try {
-            return JSON.parse(eventPayload) as SpineEventEnvelope;
-          } catch (error: unknown) {
+            return JSON.parse(eventField) as SpineEventEnvelope;
+          } catch {
             this.logger.warn(
-              `replayFromStream malformed JSON for stream ${key}: ${errorMessage(error)}`,
+              `replayFromStream: malformed JSON for stream ${key}, skipping entry`,
             );
             return null;
           }
         })
-        .filter((event): event is SpineEventEnvelope => event !== null);
-    } catch (error: unknown) {
+        .filter((e): e is SpineEventEnvelope => e !== null);
+    } catch (err: unknown) {
       this.logger.warn(
-        `replayFromStream failed for workspace ${workspaceId}: ${errorMessage(error)}`,
+        `replayFromStream failed for workspace ${workspaceId}: ${(err as Error).message}`,
       );
       return [];
     }

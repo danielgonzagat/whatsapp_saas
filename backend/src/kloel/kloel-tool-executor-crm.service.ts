@@ -14,16 +14,7 @@ import type {
 } from './kloel-tool-executor.types';
 
 import { digitsOnly } from '../common/phone';
-
-function centsFromUnknown(value: unknown): number {
-  if (typeof value === 'bigint') {
-    return Number(value);
-  }
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return Math.trunc(value);
-  }
-  return 0;
-}
+import { centsFromUnknown } from './kloel-chat-tools.service';
 
 /** CRM, campaign, and business-config tool implementations for KloelToolExecutorService. */
 @Injectable()

@@ -47,11 +47,22 @@ export class HiddenDataExtractorService {
       model: resolveBackendOpenAIModel('brain'),
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' },
+      max_tokens: 256,
     });
+
+    const rawContent = completion.choices[0]?.message?.content || '{}';
+    const tokens = completion?.usage?.total_tokens ?? 256;
+    this.logger.log(
+      `hidden-data-extract model=brain baseLen=${text.length} outLen=${rawContent.length} tokens=${tokens}`,
+    );
 
     let result: Record<string, unknown> = {};
     try {
-      result = JSON.parse(completion.choices[0]?.message?.content || '{}');
+      result = JSON.parse(rawContent);
+      const keys = Object.keys(result);
+      if (keys.length === 0) {
+        this.logger.warn('hidden-data-extract empty result');
+      }
     } catch (error: unknown) {
       this.logger.error(
         'Failed to parse OpenAI JSON response',

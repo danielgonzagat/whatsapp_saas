@@ -5,30 +5,26 @@ import { StructuredLogger } from '../logging/structured-logger';
 import { Request, Response } from 'express';
 import type Redis from 'ioredis';
 import OpenAI from 'openai';
-import { findFirstSequential } from '../common/async-sequence';
 import { createTextLlmClient, resolveTextLlmApiKey } from '../lib/llm-provider';
-import { resolveBackendOpenAIModel } from '../lib/openai-models';
-import { chatCompletionWithFallback, chatCompletionWithRetry } from './openai-wrapper';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { BrainEventSpineService } from './brain-event-spine.service';
 import { AbiBuilderService } from './abi/abi-builder.service';
-import { validateAbiPayload } from './abi/abi-validator';
 import { UnifiedAgentService } from './unified-agent.service';
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
-import { buildReceipt, writeOperationReceipt, buildResultMeta } from './operation-receipt.helpers';
-import { detectActionIntent, formatToolResult } from './guest-chat.action-intent.helpers';
-import { GUEST_CONVERSATION_TTL_SECONDS } from './guest-chat.constants';
-interface GuestConversation {
-  messages: { role: 'user' | 'assistant'; content: string }[];
-  createdAt: Date;
-  lastMessageAt: Date;
-}
-
-type GuestChatMessage = {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-};
-
+import { randomIdSegment } from '../common/random-id';
+import { IntentRouterService } from './intent-router/intent-router.service';
+import {
+  GuestConversation,
+  persistConversation,
+  persistConversationMessage,
+  cleanupOldConversations as cleanupOldConversationsFn,
+  getConversationStats,
+} from './guest-chat.conversation.helpers';
+import {
+  buildGuestMessages,
+  generateGuestReply,
+  runDeterministicAction,
+} from './guest-chat.chat.helpers';
 // cache.invalidate — Redis is the primary guest conversation store; local Map is fallback.
 @Injectable()
 export class GuestChatService implements OnModuleDestroy {
@@ -36,10 +32,13 @@ export class GuestChatService implements OnModuleDestroy {
   private readonly openai: OpenAI;
   private readonly unavailableMessage =
     'Eu continuo aqui, mas a camada de IA esta instavel agora. Tenta de novo em alguns segundos que eu retomo de onde paramos.';
+
   // Local fallback when Redis is temporarily unavailable.
   private conversations: Map<string, GuestConversation> = new Map();
+
   // Limpar conversas antigas a cada 1 hora
   private cleanupInterval?: NodeJS.Timeout | undefined;
+
   constructor(
     private readonly configService: ConfigService,
     @Optional() private readonly opsAlert?: OpsAlertService,
@@ -48,9 +47,12 @@ export class GuestChatService implements OnModuleDestroy {
     @Optional() private readonly spine?: BrainEventSpineService,
     @Optional() private readonly unifiedAgent?: UnifiedAgentService,
     @Optional() private readonly toolDispatcher?: KloelToolDispatcherService,
+    @Optional() private readonly intentRouter?: IntentRouterService,
   ) {
     const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+
     const apiKey = this.getOpenAiKey();
+
     if (!isTestEnv) {
       this.logger.log(
         `GuestChatService initialized. API Key present: ${!!apiKey}, length: ${apiKey?.length || 0}`,
@@ -59,13 +61,16 @@ export class GuestChatService implements OnModuleDestroy {
         this.logger.error('Primary LLM API key not found! Check your .env file.');
       }
     }
+
     this.openai = createTextLlmClient(this.configService) ?? new OpenAI({ apiKey: 'missing' });
+
     // Limpar conversas inativas (mais de 24h)
     if (!isTestEnv) {
       this.cleanupInterval = setInterval(() => this.cleanupOldConversations(), 60 * 60 * 1000);
       this.cleanupInterval.unref?.();
     }
   }
+
   /** Handle file upload from chat — store file and link to product */
   async handleFileUpload(
     buffer: Buffer,
@@ -81,25 +86,18 @@ export class GuestChatService implements OnModuleDestroy {
       const uploadDir = path.join(process.cwd(), '..', 'uploads', workspaceId || 'guest');
       await fs.mkdir(uploadDir, { recursive: true });
       const ext = path.extname(originalname) || '.bin';
-      const filename = `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}${ext}`;
+      const filename = `${Date.now().toString(36)}_${randomIdSegment(6)}${ext}`;
       const filepath = path.join(uploadDir, filename);
       await fs.writeFile(filepath, buffer);
       const url = `/uploads/${workspaceId || 'guest'}/${filename}`;
+
       // If productName provided, link image to product
       if (productName && this.toolDispatcher) {
         try {
-          await this.toolDispatcher.executeTool(workspaceId, 'update_product', {
-            productName,
-            imageUrl: url,
-          });
-        } catch {
-          /* non-blocking */
-        }
+          await this.toolDispatcher.executeTool(workspaceId, 'update_product', { productName, imageUrl: url });
+        } catch { /* non-blocking */ }
       }
-      return {
-        url,
-        message: `Arquivo ${originalname} enviado${productName ? ` e vinculado ao produto ${productName}` : ''}.`,
-      };
+      return { url, message: `Arquivo ${originalname} enviado${productName ? ` e vinculado ao produto ${productName}` : ''}.` };
     } catch (e: unknown) {
       return { message: `Erro: ${e instanceof Error ? e.message : 'desconhecido'}` };
     }
@@ -111,149 +109,47 @@ export class GuestChatService implements OnModuleDestroy {
       this.cleanupInterval = undefined;
     }
   }
+
   /** Leitura unificada da chave OpenAI (process.env → ConfigService) */
   private getOpenAiKey(): string | undefined {
     return resolveTextLlmApiKey(this.configService);
   }
+
   private writeStreamChunk(
     res: Response,
     data: { content?: string; chunk?: string; done?: boolean; error?: string },
   ) {
     res.write(`data: ${JSON.stringify(data)}\n\n`);
   }
+
   private async buildGuestMessages(message: string, sessionId: string) {
-    const conversation = await this.getOrCreateConversation(sessionId);
-    conversation.messages.push({ role: 'user', content: message });
-    conversation.lastMessageAt = new Date();
-    await this.persistConversation(sessionId, conversation);
-    const historyMessages = conversation.messages.slice(0, -1).slice(-9);
-    const currentInput = {
-      raw: message,
-      channel: 'web',
-      arrivalTimestamp: new Date().toISOString(),
-    };
-    if (this.abiBuilder) {
-      const abiResult = await this.abiBuilder.build({
-        audience: 'public',
-        currentInput,
-        perceptionSnapshot: {
-          channel: 'web',
-        },
-      });
-      if (abiResult.status !== 'ok') {
-        this.logger.warn(`ABI build failed: ${abiResult.reason}, using structured guest fallback`);
-      } else {
-        const abi = abiResult.abi;
-        const validation = validateAbiPayload(abi);
-        if (validation.status === 'FAIL') {
-          this.logger.warn(
-            `ABI validation failed: ${JSON.stringify(validation.issues)}, using structured guest fallback`,
-          );
-        } else {
-          const contextMessages = [
-            ...historyMessages,
-            {
-              role: 'user' as const,
-              content: JSON.stringify({
-                cognitiveState: abi,
-                currentInput,
-              }),
-            },
-          ];
-          return { conversation, contextMessages };
-        }
-      }
-    }
-
-    const contextMessages = [
-      ...historyMessages,
-      {
-        role: 'user' as const,
-        content: JSON.stringify({
-          cognitiveState: {
-            abiStatus: this.abiBuilder ? 'unavailable_or_invalid' : 'builder_not_injected',
-            audience: 'public',
-            perceptionSnapshot: { channel: 'web' },
-          },
-          currentInput,
-        }),
-      },
-    ];
-
-    return {
-      conversation,
-      contextMessages,
-    };
-  }
-
-  private trackGuestUsage(sessionId: string, tokens: number | undefined, model?: string) {
-    this.logger.debug(
-      `[guest-ai] session=${sessionId} model=${model || 'unknown'} tokens=${tokens ?? 0} tracked as transient guest usage without workspace budget context.`,
+    return buildGuestMessages(
+      message,
+      sessionId,
+      this.abiBuilder,
+      this.redis,
+      this.conversations,
+      this.logger,
     );
   }
 
   private async generateGuestReply(
-    contextMessages: GuestChatMessage[],
+    contextMessages: {
+      role: 'system' | 'user' | 'assistant';
+      content: string;
+    }[],
     sessionId: string,
   ): Promise<string> {
-    const primaryModel = resolveBackendOpenAIModel('writer', this.configService);
-    const fallbackModel = resolveBackendOpenAIModel('writer_fallback', this.configService);
-    const emergencyModels = [
-      resolveBackendOpenAIModel('brain', this.configService),
-      resolveBackendOpenAIModel('brain_fallback', this.configService),
-      resolveBackendOpenAIModel('guest_emergency', this.configService),
-    ].filter(Boolean);
-
-    try {
-      const completion = await chatCompletionWithFallback(
-        this.openai,
-        {
-          model: primaryModel,
-          messages: contextMessages,
-          max_tokens: 500,
-          temperature: 0.7,
-        },
-        fallbackModel,
-      );
-      this.trackGuestUsage(sessionId, completion?.usage?.total_tokens, primaryModel);
-
-      return completion.choices[0]?.message?.content?.trim() || this.unavailableMessage;
-    } catch (error: unknown) {
-      void this.opsAlert?.alertOnCriticalError(error, 'GuestChatService.resolveBackendOpenAIModel');
-      this.logger.warn(
-        `Guest writer fallback failed (${error instanceof Error ? error.message : 'unknown_error'}). Trying emergency model chain.`,
-      );
-    }
-
-    const reply = await findFirstSequential(emergencyModels, async (model) => {
-      try {
-        const completion = await chatCompletionWithRetry(this.openai, {
-          model,
-          messages: contextMessages,
-          max_tokens: 500,
-          temperature: 0.7,
-        });
-        this.trackGuestUsage(sessionId, completion?.usage?.total_tokens, model);
-        return completion.choices[0]?.message?.content?.trim();
-      } catch (error: unknown) {
-        void this.opsAlert?.alertOnCriticalError(
-          error,
-          'GuestChatService.resolveBackendOpenAIModel',
-        );
-        this.logger.warn(
-          `Guest emergency model ${model} failed (${error instanceof Error ? error.message : 'unknown_error'}).`,
-        );
-        return undefined;
-      }
-    });
-
-    if (reply) {
-      return reply;
-    }
-
-    return this.unavailableMessage;
+    return generateGuestReply(
+      contextMessages,
+      sessionId,
+      this.openai,
+      this.configService,
+      this.logger,
+      this.opsAlert,
+      this.unavailableMessage,
+    );
   }
-
   /**
    * 💬 Chat com streaming SSE para visitantes
    */
@@ -332,15 +228,12 @@ export class GuestChatService implements OnModuleDestroy {
       res.end();
     }
   }
-
   /**
    * 🔄 Chat síncrono (sem streaming)
    */
 
   private resolveDefaultWorkspaceId(): string | undefined {
-    if (process.env.NODE_ENV !== 'production') {
-      return 'ws-test-001';
-    }
+    if (process.env.NODE_ENV !== 'production') return 'ws-test-001';
     return undefined;
   }
 
@@ -357,61 +250,21 @@ export class GuestChatService implements OnModuleDestroy {
       }
 
       // DETERMINISTIC ACTION ROUTER — execute tools without LLM decision
-      // Fallback: if no workspaceId, try to detect one from session or use dev default
       const effectiveWsId = workspaceId || this.resolveDefaultWorkspaceId();
       if (effectiveWsId && this.toolDispatcher) {
-        const action = detectActionIntent(message);
-        if (action) {
-          this.logger.log(
-            `Deterministic: tool=${action.tool} ws=${effectiveWsId} session=${sessionId}`,
-          );
-          try {
-            await this.persistConversationMessage(sessionId, 'user', message);
-            const result = await this.toolDispatcher.executeTool(
-              effectiveWsId,
-              action.tool,
-              action.args,
-            );
-            // Write OperationReceipt for audit trail
-            void writeOperationReceipt(
-              buildReceipt({
-                workspaceId: effectiveWsId,
-                toolName: action.tool,
-                args: action.args,
-                result: result,
-                channel: 'web',
-              }),
-            );
-            // Emit spine event for cognitive cycle with result data
-            if (this.spine && result.success) {
-              const resultMeta = buildResultMeta(action.tool, result);
-              void this.spine
-                .record({
-                  workspaceId: effectiveWsId,
-                  action: 'tool_executed' as never,
-                  intent: action.tool,
-                  status: 'executed',
-                  meta: {
-                    args: action.args,
-                    userPreview: message.slice(0, 120),
-                    ...resultMeta,
-                  } as never,
-                })
-                .catch((error: unknown) => {
-                  void this.opsAlert?.alertOnCriticalError(error, 'GuestChatService.spine.record');
-                  this.logger.warn(
-                    `Spine record failed: ${error instanceof Error ? error.message : 'unknown'}`,
-                  );
-                });
-            }
-            const reply = formatToolResult(action.tool, result);
-            await this.persistConversationMessage(sessionId, 'assistant', reply);
-            return reply;
-          } catch (err: unknown) {
-            this.logger.warn(
-              `Deterministic failed: ${err instanceof Error ? err.message : 'unknown'}, falling back to LLM`,
-            );
-          }
+        const actionReply = await runDeterministicAction(
+          message,
+          sessionId,
+          effectiveWsId,
+          this.toolDispatcher,
+          this.intentRouter,
+          this.spine,
+          this.redis,
+          this.conversations,
+          this.logger,
+        );
+        if (actionReply !== null) {
+          return actionReply;
         }
       }
 
@@ -437,7 +290,6 @@ export class GuestChatService implements OnModuleDestroy {
           this.logger.warn(
             `UnifiedAgent failed (${uaError instanceof Error ? uaError.message : 'unknown'}), falling back to guest LLM`,
           );
-          // Fall through to guest LLM path below
         }
       }
 
@@ -465,89 +317,13 @@ export class GuestChatService implements OnModuleDestroy {
       return this.unavailableMessage;
     }
   }
-
-  /**
-   * 📋 Obter ou criar conversa
-   */
-  private getRedisKey(sessionId: string): string {
-    return `kloel:guest-chat:${sessionId}`;
-  }
-
-  private parseConversation(raw: string | null): GuestConversation | null {
-    if (!raw) {
-      return null;
-    }
-    try {
-      const parsed = JSON.parse(raw) as {
-        messages?: GuestConversation['messages'];
-        createdAt?: string;
-        lastMessageAt?: string;
-      };
-      if (!Array.isArray(parsed.messages)) {
-        return null;
-      }
-      return {
-        messages: parsed.messages.filter(
-          (message): message is GuestConversation['messages'][number] =>
-            message.role === 'user' || message.role === 'assistant',
-        ),
-        createdAt: parsed.createdAt ? new Date(parsed.createdAt) : new Date(),
-        lastMessageAt: parsed.lastMessageAt ? new Date(parsed.lastMessageAt) : new Date(),
-      };
-    } catch {
-      return null;
-    }
-  }
-
-  private async getOrCreateConversation(sessionId: string): Promise<GuestConversation> {
-    const cached = this.conversations.get(sessionId);
-    if (cached) {
-      return cached;
-    }
-
-    if (this.redis) {
-      try {
-        const stored = this.parseConversation(await this.redis.get(this.getRedisKey(sessionId)));
-        if (stored) {
-          this.conversations.set(sessionId, stored);
-          return stored;
-        }
-      } catch (error: unknown) {
-        this.logger.warn(
-          `Guest chat Redis read failed (${error instanceof Error ? error.message : 'unknown_error'}). Falling back to local cache.`,
-        );
-      }
-    }
-
-    const created: GuestConversation = {
-      messages: [],
-      createdAt: new Date(),
-      lastMessageAt: new Date(),
-    };
-    this.conversations.set(sessionId, created);
-    return created;
-  }
+  // ── Conversation persistence delegators ──
 
   private async persistConversation(
     sessionId: string,
     conversation: GuestConversation,
   ): Promise<void> {
-    this.conversations.set(sessionId, conversation);
-    if (!this.redis) {
-      return;
-    }
-    try {
-      await this.redis.set(
-        this.getRedisKey(sessionId),
-        JSON.stringify(conversation),
-        'EX',
-        GUEST_CONVERSATION_TTL_SECONDS,
-      );
-    } catch (error: unknown) {
-      this.logger.warn(
-        `Guest chat Redis write failed (${error instanceof Error ? error.message : 'unknown_error'}). Continuing with local cache.`,
-      );
-    }
+    return persistConversation(sessionId, conversation, this.redis, this.conversations, this.logger);
   }
 
   private async persistConversationMessage(
@@ -555,43 +331,20 @@ export class GuestChatService implements OnModuleDestroy {
     role: 'user' | 'assistant',
     content: string,
   ): Promise<void> {
-    const conversation = await this.getOrCreateConversation(sessionId);
-    conversation.messages.push({ role, content });
-    conversation.lastMessageAt = new Date();
-    await this.persistConversation(sessionId, conversation);
+    return persistConversationMessage(sessionId, role, content, this.redis, this.conversations, this.logger);
   }
 
   /**
    * 🧹 Limpar conversas antigas
    */
   private cleanupOldConversations(): void {
-    const maxAge = 24 * 60 * 60 * 1000; // 24 horas
-    const now = Date.now();
-    let cleaned = 0;
-
-    for (const [sessionId, conversation] of this.conversations.entries()) {
-      if (now - conversation.lastMessageAt.getTime() > maxAge) {
-        this.conversations.delete(sessionId);
-        cleaned += 1;
-      }
-    }
-
-    if (cleaned > 0) {
-      this.logger.log(`Cleaned up ${cleaned} old guest conversations`);
-    }
+    cleanupOldConversationsFn(this.conversations, this.logger);
   }
 
   /**
    * 📊 Estatísticas (para debug)
    */
   getStats(): { activeSessions: number; totalMessages: number } {
-    let totalMessages = 0;
-    for (const conversation of this.conversations.values()) {
-      totalMessages += conversation.messages.length;
-    }
-    return {
-      activeSessions: this.conversations.size,
-      totalMessages,
-    };
+    return getConversationStats(this.conversations);
   }
 }

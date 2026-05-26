@@ -4,24 +4,6 @@ import {
   type ExecutionReceipt,
   type CapabilityContext,
 } from '../capability-registry-v2/capability-registry-v2.types';
-
-function formatPlannerValue(value: unknown): string {
-  if (value === null || value === undefined) {
-    return '';
-  }
-  if (typeof value === 'string') {
-    return value;
-  }
-  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
-    return String(value);
-  }
-  try {
-    return JSON.stringify(value) ?? '';
-  } catch {
-    return Object.prototype.toString.call(value);
-  }
-}
-
 /**
  * ToolPlanner — bridges IntentRouter classification with existing tool execution.
  *
@@ -35,7 +17,8 @@ function formatPlannerValue(value: unknown): string {
 @Injectable()
 export class ToolPlannerService {
   private readonly logger = new Logger(ToolPlannerService.name);
-  constructor() {}
+  constructor(
+  ) {}
   /**
    * Validate inputs against a capability's schema.
    * Returns missing required fields.
@@ -74,9 +57,7 @@ export class ToolPlannerService {
 
     for (const field of cap.inputSchema) {
       const value = coerced[field.key];
-      if (value === undefined || value === null) {
-        continue;
-      }
+      if (value === undefined || value === null) continue;
 
       switch (field.type) {
         case 'number': {
@@ -101,9 +82,7 @@ export class ToolPlannerService {
                 opt.toLowerCase().startsWith(normalized) ||
                 opt[0]?.toLowerCase() === normalized[0],
             );
-            if (match) {
-              coerced[field.key] = match;
-            }
+            if (match) coerced[field.key] = match;
           }
           break;
         }
@@ -120,7 +99,7 @@ export class ToolPlannerService {
     for (const field of cap.inputSchema) {
       const value = inputs[field.key];
       if (value !== undefined && value !== null && value !== '') {
-        parts.push(`${field.label}: ${formatPlannerValue(value)}`);
+        parts.push(`${field.label}: ${value}`);
       }
     }
     return `${cap.title}: ${parts.join(', ')}`;
@@ -139,10 +118,9 @@ export class ToolPlannerService {
     const auditLogId = `audit_${ctx.requestId}`;
 
     const evidenceUrl = cap.evidenceUrlBuilder
-      ? cap.evidenceUrlBuilder
-          .replace('${productId}', formatPlannerValue(outputs.productId))
-          .replace('${orderId}', formatPlannerValue(outputs.orderId))
-          .replace('${planId}', formatPlannerValue(outputs.planId))
+      ? cap.evidenceUrlBuilder.replace('${productId}', String(outputs.productId || ''))
+          .replace('${orderId}', String(outputs.orderId || ''))
+          .replace('${planId}', String(outputs.planId || ''))
       : undefined;
 
     return {
@@ -198,25 +176,20 @@ export class ToolPlannerService {
 
     const lines: string[] = [`✅ ${receipt.title} executado com sucesso.`];
 
-    const productId = formatPlannerValue(receipt.outputs.productId);
-    if (productId) {
-      lines.push(`Produto: ${productId}`);
+    if (receipt.outputs.productId) {
+      lines.push(`Produto: ${receipt.outputs.productId}`);
     }
-    const planId = formatPlannerValue(receipt.outputs.planId);
-    if (planId) {
-      lines.push(`Plano: ${planId}`);
+    if (receipt.outputs.planId) {
+      lines.push(`Plano: ${receipt.outputs.planId}`);
     }
-    const orderId = formatPlannerValue(receipt.outputs.orderId);
-    if (orderId) {
-      lines.push(`Venda: ${orderId}`);
+    if (receipt.outputs.orderId) {
+      lines.push(`Venda: ${receipt.outputs.orderId}`);
     }
-    const paymentLink = formatPlannerValue(receipt.outputs.paymentLink);
-    if (paymentLink) {
-      lines.push(`Link: ${paymentLink}`);
+    if (receipt.outputs.paymentLink) {
+      lines.push(`Link: ${receipt.outputs.paymentLink}`);
     }
-    const pixCopyPaste = formatPlannerValue(receipt.outputs.pixCopyPaste);
-    if (pixCopyPaste) {
-      lines.push(`PIX copia e cola: ${pixCopyPaste}`);
+    if (receipt.outputs.pixCopyPaste) {
+      lines.push(`PIX copia e cola: ${receipt.outputs.pixCopyPaste}`);
     }
     if (receipt.evidenceUrl) {
       lines.push(`Ver em: ${receipt.evidenceUrl}`);
@@ -230,11 +203,13 @@ export class ToolPlannerService {
   /**
    * Log an action to the audit system.
    */
-  logAuditEntry(receipt: ExecutionReceipt): void {
+  async logAuditEntry(
+    receipt: ExecutionReceipt,
+  ): Promise<void> {
     this.logger.log(
       `[AUDIT] ${receipt.success ? 'OK' : 'FAIL'} ${receipt.capabilityId} ` +
-        `ws=${receipt.workspaceId} duration=${receipt.durationMs}ms ` +
-        `key=${receipt.idempotencyKey}`,
+      `ws=${receipt.workspaceId} duration=${receipt.durationMs}ms ` +
+      `key=${receipt.idempotencyKey}`,
     );
   }
 }

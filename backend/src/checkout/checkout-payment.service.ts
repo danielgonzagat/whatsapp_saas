@@ -14,65 +14,15 @@ import { PrismaService } from '../prisma/prisma.service';
 
 import { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effects.service';
 import { CheckoutEventEmitterService } from '../kloel/checkout-emitter/checkout-event-emitter.service';
+import { mapStripePaymentStatus, extractPixDisplayData, toJsonValue, type CheckoutPaymentStatus, type PixDisplayData } from './checkout-payment.helpers';
 
 type CheckoutPaymentMethod = 'CREDIT_CARD' | 'PIX' | 'BOLETO';
-type CheckoutPaymentStatus = 'APPROVED' | 'DECLINED' | 'PENDING' | 'PROCESSING' | 'CANCELED';
 type SaleChargeInput = Parameters<StripeChargeService['createSaleCharge']>[0];
 type CardPaymentOptions = Extract<
   NonNullable<NonNullable<SaleChargeInput['paymentMethodOptions']>['card']>,
   object
 >;
 
-type PixDisplayData = {
-  pixQrCode: string | null;
-  pixCopyPaste: string | null;
-  pixExpiresAt: string | null;
-};
-
-function mapStripePaymentStatus(status?: string | null): CheckoutPaymentStatus {
-  switch (String(status || '').toLowerCase()) {
-    case 'succeeded':
-      return 'APPROVED';
-    case 'processing':
-      return 'PROCESSING';
-    case 'canceled':
-      return 'CANCELED';
-    default:
-      return 'PENDING';
-  }
-}
-
-function extractPixDisplayData(paymentIntent: {
-  next_action?: {
-    type?: string | null;
-    pix_display_qr_code?: {
-      data?: string | null;
-      image_url_png?: string | null;
-      expires_at?: number | null;
-    } | null;
-  } | null;
-}): PixDisplayData {
-  const nextAction = paymentIntent.next_action;
-  const pixAction =
-    nextAction?.type === 'pix_display_qr_code' ? nextAction.pix_display_qr_code : null;
-
-  return {
-    pixQrCode: pixAction?.image_url_png || null,
-    pixCopyPaste: pixAction?.data || null,
-    pixExpiresAt:
-      typeof pixAction?.expires_at === 'number'
-        ? new Date(pixAction.expires_at * 1000).toISOString()
-        : null,
-  };
-}
-
-function toJsonValue(value: unknown): Prisma.InputJsonValue {
-  return JSON.parse(
-    JSON.stringify(value, (_key, currentValue) =>
-      typeof currentValue === 'bigint' ? currentValue.toString() : currentValue,
-    ),
-  ) as Prisma.InputJsonValue;
-}
 
 /** Checkout payment service. */
 @Injectable()

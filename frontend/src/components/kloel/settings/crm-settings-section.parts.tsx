@@ -8,7 +8,6 @@ import {
   SettingsCard,
   SettingsHeader,
   SettingsInset,
-  SettingsMetricTile,
   SettingsNotice,
   SettingsStatusPill,
   kloelSettingsClass,
@@ -20,19 +19,7 @@ export const fieldClass =
 export const textareaClass =
   'min-h-[96px] rounded-md border border-[var(--app-border-input)] bg-[var(--app-bg-input)] px-3 py-2 text-sm text-[var(--app-text-primary)] outline-none transition placeholder:text-[var(--app-text-placeholder)] focus:border-[var(--app-border-focus)]';
 
-export function StatCard(props: { title: string; value: string; hint?: string }) {
-  return (
-    <SettingsMetricTile>
-      <p className="text-xs font-medium uppercase tracking-[0.18em] text-[var(--app-text-secondary)]">
-        {props.title}
-      </p>
-      <p className="mt-2 text-2xl font-semibold text-[var(--app-text-primary)]">{props.value}</p>
-      {props.hint ? (
-        <p className="mt-1 text-xs text-[var(--app-text-secondary)]">{props.hint}</p>
-      ) : null}
-    </SettingsMetricTile>
-  );
-}
+export { SettingsStatCard as StatCard } from './SettingsStatCard';
 
 type ContactForm = { name: string; phone: string; email: string; notes: string };
 

@@ -300,6 +300,18 @@ export class BrainRuntimeService {
       case 'inspect_runtime':
         capabilityResult = await this.executor.inspectRuntime(workspaceId);
         break;
+      case 'search_code':
+        capabilityResult = await this.executor.searchCode(workspaceId, context);
+        break;
+      case 'read_source_file':
+        capabilityResult = await this.executor.readSourceFile(workspaceId, context);
+        break;
+      case 'safe_query':
+        capabilityResult = await this.executor.runSafeQuery(workspaceId, context);
+        break;
+      case 'list_capabilities_detail':
+        capabilityResult = await this.executor.listCapabilitiesDetail(workspaceId);
+        break;
       default:
         capabilityResult = { ok: false, error: 'unknown_operator_intent' };
     }

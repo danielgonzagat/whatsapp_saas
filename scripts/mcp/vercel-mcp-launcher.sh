@@ -20,6 +20,6 @@ if [[ -z "${VERCEL_TOKEN:-}" ]]; then
   exit 1
 fi
 
-export VERCEL_API_KEY="${VERCEL_TOKEN}"
-export VERCEL_TOKEN
-exec npx --yes vercel-mcp@latest
+# vercel-mcp expects the API key as a KEY=VALUE argument instead of reading
+# VERCEL_TOKEN directly from the environment.
+exec npx --yes vercel-mcp@latest "VERCEL_API_KEY=${VERCEL_TOKEN}"

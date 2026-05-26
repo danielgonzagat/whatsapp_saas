@@ -2,6 +2,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import type { PrismaService } from '../prisma/prisma.service';
 import type { KloelService } from './kloel.service';
+import { clampLimit } from '../common/pagination-clamp.pipe';
 
 export interface ControllerDeps {
   prisma: PrismaService;
@@ -14,7 +15,7 @@ export async function listThreads(
   options: { limit?: number; cursor?: number; paginated?: boolean } = {},
 ) {
   try {
-    const take = Math.min(50, Math.max(1, options.limit ?? 50));
+    const take = clampLimit(options.limit, { default: 50, max: 50 });
     const skip = Math.max(0, options.cursor ?? 0);
     const threads = await deps.prisma.chatThread.findMany({
       where: { workspaceId, messages: { some: {} } },

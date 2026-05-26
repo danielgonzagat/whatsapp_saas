@@ -3,15 +3,7 @@
 import { useToast } from '@/components/kloel/ToastProvider';
 import { apiFetch } from '@/lib/api';
 import { useState, useEffect, useRef } from 'react';
-
-function unwrapApiPayload<T = unknown>(response: unknown): T {
-  const r = response as { error?: string; data?: unknown } | null | undefined;
-  if (r?.error) {
-    throw new Error(r.error);
-  }
-
-  return (r?.data ?? response) as T;
-}
+import { unwrapApiPayload } from './product-nerve-center.shared';
 
 export interface AiConfigShape {
   customerProfile?: {

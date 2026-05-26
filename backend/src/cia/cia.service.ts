@@ -43,6 +43,7 @@ export class CiaService {
       mindLift,
       metaConnections,
       integrations,
+      pipelineState,
     ] = await Promise.all([
       this.runtime.getOperationalIntelligence(workspaceId),
       this.getHumanTasks(workspaceId),
@@ -63,6 +64,10 @@ export class CiaService {
       this.prisma.integration.findMany({
         where: { workspaceId, isActive: true },
         select: { type: true },
+      }),
+      this.prisma.pipelineState.findUnique({
+        where: { workspaceId },
+        select: { state: true },
       }),
     ]);
     const recent = this.agentEvents.getRecent(workspaceId).slice(-12);
@@ -108,9 +113,9 @@ export class CiaService {
       workspaceName: intelligence.workspaceName,
       state: intelligence.runtime?.state || 'IDLE',
       today: {
-        soldAmount: this.readNumber(businessState.approvedSalesAmount),
-        activeConversations: this.readNumber(businessState.openBacklog),
-        pendingPayments: this.readNumber(businessState.pendingPaymentCount),
+        soldAmount: readNumberForce(businessState.approvedSalesAmount),
+        activeConversations: readNumberForce(businessState.openBacklog),
+        pendingPayments: readNumberForce(businessState.pendingPaymentCount),
       },
       now: latest
         ? {
@@ -143,6 +148,9 @@ export class CiaService {
             pZScore: mindLift.pZScore,
           }
         : null,
+      commercial: {
+        pipelineMode: (pipelineState?.state ?? 'legacy') as 'shadow' | 'active' | 'legacy',
+      },
     };
   }
 
@@ -566,7 +574,4 @@ export class CiaService {
     return typeof value === 'string' ? value : '';
   }
 
-  private readNumber(value: unknown): number {
-    return readNumberForce(value);
-  }
 }

@@ -1,10 +1,11 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy, Logger, Optional } from '@nestjs/common';
 import { Queue, Worker } from 'bullmq';
 import { MindBackgroundProcessor } from './mind-bg.processor';
 import { SpineEmitterService } from '../spine/spine-emitter.service';
 import { resolveRedisUrl } from '../../common/redis/resolve-redis-url';
 import { PrismaService } from '../../prisma/prisma.service';
 import { type SpineEventRef } from './mind.types';
+import { CiaCognitiveHealthService } from '../../cia/cia-cognitive-health.service';
 
 const MIND_BG_QUEUE = 'mind-bg-tick';
 
@@ -24,6 +25,7 @@ export class MindBackgroundScheduler implements OnModuleInit, OnModuleDestroy {
     private readonly processor: MindBackgroundProcessor,
     private readonly spine: SpineEmitterService,
     private readonly prisma: PrismaService,
+    @Optional() private readonly cognitiveHealth?: CiaCognitiveHealthService,
   ) {
     const explicit = process.env['KLOEL_MIND_BG_ENABLED'];
     if (explicit !== undefined) {
@@ -90,7 +92,17 @@ export class MindBackgroundScheduler implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private async executeTick(): Promise<void> {
+  /** Register a workspace for MIND tick scheduling (no-op stub — policy TBD). */
+  public registerWorkspace(_workspaceId: string): void {
+    // No-op: scheduling policy will be wired in a future wave.
+  }
+
+  /** Deregister a workspace from MIND tick scheduling (no-op stub — policy TBD). */
+  public deregisterWorkspace(_workspaceId: string): void {
+    // No-op: scheduling policy will be wired in a future wave.
+  }
+
+  async executeTick(): Promise<void> {
     // Primary: spine ring (in-memory, real-time)
     const spineEvents = this.spine.recentEventsAsRef(500);
     // Fallback: database (persisted, survives restart)
@@ -134,5 +146,16 @@ export class MindBackgroundScheduler implements OnModuleInit, OnModuleDestroy {
       workingMemory: [],
       workspaceId: 'ws-test-001',
     });
+
+    // Wave 15: cognitive health on-tick scan (flag-gated, shipped off by default)
+    if (process.env['CIA_COGNITIVE_HEALTH_TICK_ENABLED'] === 'true') {
+      try {
+        await this.cognitiveHealth?.scanAndEscalate('ws-test-001');
+      } catch (err: unknown) {
+        this.logger.warn(
+          `Cognitive health scan failed for ws-test-001: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    }
   }
 }

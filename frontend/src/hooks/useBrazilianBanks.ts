@@ -3,12 +3,13 @@
 import { swrFetcher } from '@/lib/fetcher';
 import useSWR from 'swr';
 
-export interface BrazilianBank {
-  code: number;
-  name: string;
-  fullName: string;
-  ispb: string;
-}
+import { BRAZILIAN_BANKS as STATIC_BANKS } from '@/data/brazilian-banks';
+import type { BrazilianBank } from '@/data/brazilian-banks';
+
+// BrazilianBank type lives in @/data/brazilian-banks (canonical, where the
+// data is defined). Re-export for the existing consumers that import it
+// from this hook.
+export type { BrazilianBank };
 
 export const POPULAR_BANK_CODES = new Set([
   1, 33, 77, 104, 212, 237, 260, 290, 323, 336, 341, 380, 422, 748, 756,
@@ -18,14 +19,7 @@ export function formatBankCode(code: number): string {
   return String(code).padStart(3, '0');
 }
 
-import { BRAZILIAN_BANKS as STATIC_BANKS } from '@/data/brazilian-banks';
-import type { BrazilianBank as StaticBank } from '@/data/brazilian-banks';
-
-function toBrazilianBank(b: StaticBank): BrazilianBank {
-  return { code: b.code, name: b.name, fullName: b.fullName, ispb: b.ispb };
-}
-
-const FALLBACK_BANKS: BrazilianBank[] = STATIC_BANKS.map(toBrazilianBank);
+const FALLBACK_BANKS: BrazilianBank[] = STATIC_BANKS;
 
 export function useBrazilianBanks() {
   const { data, error, isLoading } = useSWR<BrazilianBank[]>(

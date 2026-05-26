@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { AgentRuntimeJobRunnerService } from './agent-runtime.job-runner';
 
 function makePendingRows(rows: Array<{ id: string; payload: Record<string, unknown> }>) {
@@ -359,6 +360,105 @@ describe('AgentRuntimeJobRunnerService', () => {
           }),
         }),
       }),
+    );
+  });
+
+  it('runAllPendingAgentJobs does not alert on connection timeout (P2024)', async () => {
+    const prisma = {
+      mindOutboxEvent: {
+        findMany: jest.fn().mockRejectedValue(
+          new Prisma.PrismaClientKnownRequestError('timed out', {
+            code: 'P2024',
+            clientVersion: '5.0.0',
+          }),
+        ),
+      },
+    };
+    const opsAlert = { alertOnCriticalError: jest.fn() };
+    const service = new AgentRuntimeJobRunnerService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      opsAlert as never,
+    );
+
+    await service.runAllPendingAgentJobs();
+
+    expect(opsAlert.alertOnCriticalError).not.toHaveBeenCalled();
+  });
+
+  it('runAllPendingAgentJobs does not alert on schema drift (P2021)', async () => {
+    const prisma = {
+      mindOutboxEvent: {
+        findMany: jest.fn().mockRejectedValue(
+          new Prisma.PrismaClientKnownRequestError('table does not exist', {
+            code: 'P2021',
+            clientVersion: '5.0.0',
+          }),
+        ),
+      },
+    };
+    const opsAlert = { alertOnCriticalError: jest.fn() };
+    const service = new AgentRuntimeJobRunnerService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      opsAlert as never,
+    );
+
+    await service.runAllPendingAgentJobs();
+
+    expect(opsAlert.alertOnCriticalError).not.toHaveBeenCalled();
+  });
+
+  it('runAllPendingAgentJobs alerts on unknown Prisma error code', async () => {
+    const prisma = {
+      mindOutboxEvent: {
+        findMany: jest.fn().mockRejectedValue(
+          new Prisma.PrismaClientKnownRequestError('unknown', {
+            code: 'P2999',
+            clientVersion: '5.0.0',
+          }),
+        ),
+      },
+    };
+    const opsAlert = { alertOnCriticalError: jest.fn() };
+    const service = new AgentRuntimeJobRunnerService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      opsAlert as never,
+    );
+
+    await service.runAllPendingAgentJobs();
+
+    expect(opsAlert.alertOnCriticalError).toHaveBeenCalled();
+  });
+
+  it('runAllPendingAgentJobs alerts on non-Prisma errors', async () => {
+    const networkError = new Error('network down');
+    const prisma = {
+      mindOutboxEvent: {
+        findMany: jest.fn().mockRejectedValue(networkError),
+      },
+    };
+    const opsAlert = { alertOnCriticalError: jest.fn() };
+    const service = new AgentRuntimeJobRunnerService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      opsAlert as never,
+    );
+
+    await service.runAllPendingAgentJobs();
+
+    expect(opsAlert.alertOnCriticalError).toHaveBeenCalledWith(
+      networkError,
+      'AgentRuntimeJobRunnerService.runAllPendingAgentJobs',
     );
   });
 });

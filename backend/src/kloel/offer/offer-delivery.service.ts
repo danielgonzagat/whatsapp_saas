@@ -14,6 +14,7 @@ import type {
   RankedOfferInsight,
   RecommendedChannel,
 } from './offer.types';
+import { channelPriority } from '../insight/insight-delivery.service';
 
 const STAGE_CHANNEL_FILTER: Readonly<Record<
   MaturityStage,
@@ -25,21 +26,6 @@ const STAGE_CHANNEL_FILTER: Readonly<Record<
   maturidade: ['dashboard', 'report'],
   otimizacao: ['dashboard', 'report'],
 };
-
-function channelPriority(channel: RecommendedChannel): number {
-  switch (channel) {
-    case 'whatsapp':
-      return 5;
-    case 'email':
-      return 4;
-    case 'dashboard':
-      return 3;
-    case 'report':
-      return 2;
-    case 'silent':
-      return 1;
-  }
-}
 
 @Injectable()
 export class OfferDeliveryService {

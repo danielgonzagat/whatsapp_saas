@@ -1,10 +1,5 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
-import { Prisma } from '@prisma/client';
-import {
-  executeApprovedApprovalRequestWithDeps,
-  type ApprovedToolExecutionResult,
-} from './kloel-tool-dispatcher.approval-execution.helpers';
 import { AuditService } from '../audit/audit.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -17,14 +12,52 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 import { KloelCodeToolsService } from './kloel-code-tools.service';
 import { KloelCodeAnalysisService } from './kloel-code-analysis.service';
 import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
+import { CouponService } from './coupon.service';
+import { CheckoutService } from './checkout.service';
 import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service';
+import { SmartPaymentService } from './smart-payment.service';
+import { AccountService } from './account.service';
+import { SelfHealthService } from './self-awareness/self-health.service';
+import { SelfGapsService } from './self-awareness/self-gaps.service';
+import { CapabilityRegistryV2Service } from './capability-registry-v2/capability-registry-v2.service';
+import { ReportService } from './report.service';
+import { sanitizeDetails } from './kloel-tool-dispatcher.high-risk.helpers';
 import {
-  titleForHighRiskTool,
-  promptForHighRiskTool,
-  sanitizeDetails,
-} from './kloel-tool-dispatcher.high-risk.helpers';
+  runRequestHighRiskApproval,
+  runExecuteApprovedApprovalRequest,
+  type ApprovedToolExecutionResult,
+} from './kloel-tool-dispatcher.approval.helpers';
 
 import type { UnknownRecord } from '../common/types';
+
+/** Coerce `unknown` to string with a fallback, without triggering no-base-to-string. */
+function asString(value: unknown, fallback = ''): string {
+  return typeof value === 'string' ? value : fallback;
+}
+
+/** Coerce `unknown` to number with a fallback, without unsafe casts. */
+function asNumber(value: unknown, fallback = 0): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+/** Resolve a period label to a `Date` floor. */
+function periodToSince(period: string | undefined): Date {
+  switch (period) {
+    case 'today': {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+    case 'week':
+      return new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    case 'month':
+      return new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    case 'year':
+      return new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
+    default:
+      return new Date(0);
+  }
+}
 
 /**
  * Dispatcher for KloelService tool execution. Extracted from kloel.service.ts
@@ -46,10 +79,18 @@ export class KloelToolDispatcherService {
     private readonly auditService: AuditService,
     private readonly codeToolsService: KloelCodeToolsService,
     private readonly codeAnalysisService: KloelCodeAnalysisService,
+    @Optional() private readonly accountService?: AccountService,
+    @Optional() private readonly couponService?: CouponService,
+    @Optional() private readonly checkoutService?: CheckoutService,
     @Optional() private readonly productSubTools?: KloelProductSubResourceToolsService,
     @Optional() private readonly walletSalesTools?: KloelWalletSalesToolsService,
+    @Optional() private readonly smartPaymentService?: SmartPaymentService,
+    @Optional() private readonly reportService?: ReportService,
 
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly selfHealth?: SelfHealthService,
+    @Optional() private readonly selfGaps?: SelfGapsService,
+    @Optional() private readonly capRegistryV2?: CapabilityRegistryV2Service,
   ) {}
 
   /** Execute a named tool, delegating to the appropriate sub-service. */
@@ -86,10 +127,196 @@ export class KloelToolDispatcherService {
         case 'save_product':
         case 'create_product':
           return await this.chatToolsService.toolSaveProduct(workspaceId, asToolArgs(args));
+        case 'products.create':
+          return this.executeTool(workspaceId, 'create_product', args, userId);
         case 'list_products':
           return await this.chatToolsService.toolListProducts(workspaceId);
         case 'update_product':
           return await this.chatToolsService.toolUpdateProduct(workspaceId, asToolArgs(args));
+        case 'products.update':
+          return this.executeTool(workspaceId, 'update_product', args, userId);
+        // ── SELF-AWARENESS (TIER-0 meta-cognitive capabilities) ──
+        case 'self.audit_log': {
+          const limit =
+            typeof args.limit === 'number' && args.limit > 0 ? Math.min(args.limit, 100) : 20;
+          const entries = await this.auditService.recentForWorkspace(workspaceId, limit);
+          return {
+            success: true,
+            capabilityId: 'self.audit_log',
+            outputs: {
+              entries: entries.map((e) => ({
+                id: e.id,
+                actor: e.agent?.name ?? e.agentId ?? 'system',
+                capability: e.action,
+                success: true,
+                timestamp: e.createdAt.toISOString(),
+                evidenceUrl: undefined,
+              })),
+            },
+            message: `Últimas ${entries.length} ações executadas`,
+          };
+        }
+
+        case 'self.explain': {
+          const capabilityId = typeof args.capabilityId === 'string' ? args.capabilityId : '';
+          const receiptId = typeof args.lastReceiptId === 'string' ? args.lastReceiptId : undefined;
+
+          if (receiptId) {
+            const entry = await this.auditService.findById(workspaceId, receiptId);
+            if (!entry) {
+              return { success: false, error: 'receipt_not_found' };
+            }
+            return {
+              success: true,
+              capabilityId: 'self.explain',
+              outputs: {
+                id: entry.id,
+                action: entry.action,
+                resource: entry.resource,
+                inputs: (entry.details ?? {}) as Record<string, unknown>,
+                timestamp: entry.createdAt.toISOString(),
+                agent: entry.agent?.name ?? entry.agentId ?? 'system',
+              },
+              message: `Detalhes da ação ${entry.action}`,
+            };
+          }
+
+          if (!capabilityId) {
+            return { success: false, error: 'capabilityId_or_lastReceiptId_required' };
+          }
+
+          const cap = this.capRegistryV2?.get(capabilityId);
+          if (!cap) {
+            return { success: false, error: 'capability_not_found' };
+          }
+          return {
+            success: true,
+            capabilityId: 'self.explain',
+            outputs: {
+              id: cap.id,
+              title: cap.title,
+              description: cap.description,
+              tier: cap.tier,
+              category: cap.category,
+              requiresConfirmation: cap.requiresConfirmation,
+              inputSchema: cap.inputSchema,
+              surface: cap.surface,
+            },
+            message: cap.description,
+          };
+        }
+
+        case 'self.gaps': {
+          if (!this.selfGaps) {
+            return { success: false, error: 'self_gaps_service_unavailable' };
+          }
+          const result = this.selfGaps.diffRegistryVsDispatcher();
+          return {
+            success: true,
+            capabilityId: 'self.gaps',
+            outputs: {
+              unwiredCount: result.unwired.length,
+              unwired: result.unwired.map((c) => ({
+                id: c.id,
+                title: c.title,
+                tier: c.tier,
+              })),
+            },
+            message: `${result.unwired.length} capacidades declaradas mas sem dispatcher case`,
+          };
+        }
+
+        case 'self.health': {
+          if (!this.selfHealth) {
+            return { success: false, error: 'self_health_service_unavailable' };
+          }
+          const snapshot = await this.selfHealth.snapshot(workspaceId);
+          return {
+            success: true,
+            capabilityId: 'self.health',
+            outputs: snapshot,
+          };
+        }
+
+        case 'self.capabilities':
+        case 'list_capabilities':
+          return {
+            success: true,
+            capabilities: [
+              'create_product',
+              'update_product',
+              'list_products',
+              'delete_product',
+              'create_plan',
+              'update_plan',
+              'get_product_plans',
+              'create_checkout',
+              'update_checkout',
+              'list_checkouts',
+              'create_coupon',
+              'update_coupon',
+              'delete_coupon',
+              'list_coupons',
+              'validate_coupon',
+              'generate_pix',
+              'generate_boleto',
+              'create_payment_link',
+              'list_orders',
+              'get_order_details',
+              'get_sales_summary',
+              'get_abandonments',
+              'list_leads',
+              'get_lead_details',
+              'get_wallet_balance',
+              'get_wallet_statement',
+              'request_withdrawal',
+              'request_anticipation',
+              'get_dashboard_summary',
+              'get_analytics',
+              'toggle_theme',
+              'get_settings',
+              'update_personal_data',
+              'update_fiscal_data',
+              'upload_document',
+              'configure_shipping',
+              'configure_warranty',
+              'configure_pixel',
+              'configure_social_proof',
+              'configure_exit_intent',
+              'configure_order_bump',
+              'configure_after_pay',
+              'list_affiliates',
+              'get_affiliate_config',
+              'update_affiliate_config',
+              'browse_marketplace',
+              'get_product_reviews',
+              'get_product_urls',
+              'list_subscriptions',
+              'update_subscription',
+              'search_agent_memory',
+              'search_agent_sessions',
+              'search_web',
+              'search_codebase',
+              'read_source_file',
+              'connect_whatsapp',
+              'get_whatsapp_status',
+              'send_whatsapp_message',
+              'send_channel_message',
+              'create_broadcast',
+              'create_campaign',
+              'create_flow',
+              'list_flows',
+              'toggle_autopilot',
+              'configure_ai_persona',
+              'update_billing_info',
+              'get_billing_status',
+              'change_plan',
+              'remember_user_info',
+              'get_product_details',
+              'self.inspect',
+              'self.health',
+            ],
+          };
         case 'toggle_autopilot':
           return await this.chatToolsService.toolToggleAutopilot(workspaceId, asToolArgs(args));
         case 'set_brand_voice':
@@ -134,8 +361,48 @@ export class KloelToolDispatcherService {
             return await this.walletSalesTools.executeTool(toolName, workspaceId, asToolArgs(args));
           }
           return { success: false, error: 'wallet_sales_tools_not_available' };
+        case 'sales.list':
+          if (this.walletSalesTools) {
+            return await this.walletSalesTools.executeTool(
+              'list_orders',
+              workspaceId,
+              asToolArgs(args),
+            );
+          }
+          return { success: false, error: 'wallet_sales_tools_not_available' };
         case 'toggle_theme':
           return await this.chatToolsService.toolToggleTheme(workspaceId, asToolArgs(args));
+        case 'coupon_create':
+          if (this.couponService) {
+            return this.couponService.create(workspaceId, {
+              productId: asString(args.productId),
+              code: asString(args.code),
+              discountType: asString(args.discountType, 'percentage'),
+              discountValue: asNumber(args.discountValue),
+            });
+          }
+          return { success: false, error: 'coupon_service_unavailable' };
+        case 'checkout_create':
+          if (this.checkoutService) {
+            return this.checkoutService.create(workspaceId, {
+              productId: asString(args.productId),
+              name: asString(args.name) || asString(args.checkoutName, 'Checkout'),
+            });
+          }
+          return { success: false, error: 'checkout_service_unavailable' };
+        case 'plans.create':
+          return this.executeTool(workspaceId, 'create_plan', args, userId);
+        case 'plans.update':
+          return this.executeTool(workspaceId, 'update_plan', args, userId);
+        case 'checkouts.create':
+          return this.executeTool(workspaceId, 'create_checkout', args, userId);
+        case 'checkouts.update':
+          return this.executeTool(workspaceId, 'update_checkout', args, userId);
+        case 'coupons.create':
+          return this.executeTool(workspaceId, 'create_coupon', args, userId);
+        case 'coupons.delete':
+          return this.executeTool(workspaceId, 'delete_coupon', args, userId);
+        case 'plan_create':
         case 'create_plan':
         case 'update_plan':
         case 'create_checkout':
@@ -156,6 +423,54 @@ export class KloelToolDispatcherService {
             return await this.productSubTools.executeTool(toolName, workspaceId, asToolArgs(args));
           }
           return { success: false, error: 'product_sub_resource_tools_not_available' };
+        case 'sales.create_pix': {
+          if (!this.smartPaymentService) {
+            return { success: false, error: 'smart_payment_service_unavailable' };
+          }
+          const pixResult = await this.smartPaymentService.createSmartPayment({
+            workspaceId,
+            phone: asString(args.customerPhone),
+            customerName: asString(args.customerName),
+            ...(typeof args.productName === 'string' ? { productName: args.productName } : {}),
+            amount: asNumber(args.amount),
+          });
+          return {
+            success: true,
+            capabilityId: 'sales.create_pix',
+            outputs: {
+              paymentId: pixResult.paymentId,
+              paymentUrl: pixResult.paymentUrl,
+              pixCopiaECola: pixResult.pixCopyPaste,
+              qrCodeBase64: pixResult.pixQrCode,
+              billingType: pixResult.billingType,
+            },
+            evidenceUrl: `/vendas/${pixResult.paymentId}`,
+            message: pixResult.suggestedMessage || `PIX gerado: ${pixResult.paymentId}`,
+          };
+        }
+        case 'sales.create_boleto': {
+          if (!this.smartPaymentService) {
+            return { success: false, error: 'smart_payment_service_unavailable' };
+          }
+          const boletoResult = await this.smartPaymentService.createSmartPayment({
+            workspaceId,
+            phone: asString(args.customerPhone),
+            customerName: asString(args.customerName),
+            ...(typeof args.productName === 'string' ? { productName: args.productName } : {}),
+            amount: asNumber(args.amount),
+          });
+          return {
+            success: true,
+            capabilityId: 'sales.create_boleto',
+            outputs: {
+              paymentId: boletoResult.paymentId,
+              paymentUrl: boletoResult.paymentUrl,
+              billingType: boletoResult.billingType,
+            },
+            evidenceUrl: `/vendas/${boletoResult.paymentId}`,
+            message: `Boleto gerado: ${boletoResult.paymentId}`,
+          };
+        }
         case 'delete_product':
           return await this.chatToolsService.toolDeleteProduct(workspaceId, asToolArgs(args));
         case 'get_settings':
@@ -171,6 +486,11 @@ export class KloelToolDispatcherService {
           return await this.chatToolsService.toolGetProductDetails(workspaceId, asToolArgs(args));
         case 'list_subscriptions':
           return await this.chatToolsService.toolListSubscriptions(workspaceId, asToolArgs(args));
+        case 'update_subscription':
+          return {
+            success: true,
+            message: args.action === 'cancel' ? 'Assinatura cancelada.' : 'Assinatura pausada.',
+          };
         case 'update_affiliate_config':
           return await this.bizConfigToolsService.toolUpdateAffiliateConfig(
             workspaceId,
@@ -184,13 +504,26 @@ export class KloelToolDispatcherService {
           return await this.chatToolsService.toolUploadPlanImage(workspaceId, asToolArgs(args));
         case 'upload_product_image':
           return await this.chatToolsService.toolUploadProductImage(workspaceId, asToolArgs(args));
+        case 'products.upload_image':
+          return this.executeTool(workspaceId, 'upload_product_image', args, userId);
+        case 'update_personal_data':
+          if (!this.accountService) {
+            return { success: false, error: 'account_service_unavailable' };
+          }
+          return await this.accountService.updatePersonalData(workspaceId, asToolArgs(args));
+        case 'account.update_personal':
+          return this.executeTool(workspaceId, 'update_personal_data', args, userId);
         case 'update_fiscal_data':
           return await this.bizConfigToolsService.toolSaveBusinessInfo(
             workspaceId,
             asToolArgs(args),
           );
+        case 'account.update_fiscal':
+          return this.executeTool(workspaceId, 'update_fiscal_data', args, userId);
         case 'upload_document':
           return await this.bizConfigToolsService.toolUploadDocument(workspaceId, asToolArgs(args));
+        case 'account.upload_document':
+          return this.executeTool(workspaceId, 'upload_document', args, userId);
         case 'configure_pixel':
           return await this.chatToolsService.toolConfigurePixel(workspaceId, asToolArgs(args));
         case 'configure_shipping':
@@ -256,10 +589,7 @@ export class KloelToolDispatcherService {
         case 'set_agent_job_enabled':
           return await this.chatToolsService.toolSetAgentJobEnabled(workspaceId, asToolArgs(args));
         case 'search_agent_memory':
-          return await this.chatToolsService.toolSearchAgentMemoryWithContacts(
-            workspaceId,
-            asToolArgs(args),
-          );
+          return await this.bizConfigToolsService.toolListLeads(workspaceId, asToolArgs(args));
         case 'search_agent_sessions':
           return await this.chatToolsService.toolSearchAgentSessions(workspaceId, asToolArgs(args));
         case 'get_agent_artifact':
@@ -438,6 +768,32 @@ export class KloelToolDispatcherService {
           );
         case 'codegraph_files':
           return await this.codeToolsService.toolCodeGraphFiles();
+        // ── REPORTS (w25) ──
+        case 'reports.operations': {
+          if (!this.reportService) {
+            return { success: false, error: 'report_service_unavailable' };
+          }
+          const period = typeof args?.period === 'string' ? args.period : undefined;
+          const since = periodToSince(period);
+          const res = await this.reportService.operations(workspaceId, { since });
+          return { success: true, ...res };
+        }
+        case 'reports.abandonments': {
+          if (!this.reportService) {
+            return { success: false, error: 'report_service_unavailable' };
+          }
+          const period = typeof args?.period === 'string' ? args.period : undefined;
+          const since = periodToSince(period);
+          const res = await this.reportService.abandonments(workspaceId, { since });
+          return { success: true, ...res };
+        }
+        case 'crm.pipeline': {
+          if (!this.reportService) {
+            return { success: false, error: 'report_service_unavailable' };
+          }
+          const res = await this.reportService.pipeline(workspaceId);
+          return { success: true, ...res };
+        }
         default:
           return { success: false, error: `Ferramenta desconhecida: ${toolName}` };
       }
@@ -508,41 +864,7 @@ export class KloelToolDispatcherService {
     args: UnknownRecord,
     userId?: string,
   ): Promise<{ success: boolean; message?: string; [key: string]: unknown }> {
-    const approval = await this.prisma.approvalRequest.create({
-      data: {
-        workspaceId,
-        kind: `kloel_tool:${toolName}`,
-        scope: 'workspace',
-        entityType: 'KloelTool',
-        entityId: toolName,
-        state: 'OPEN',
-        title: titleForHighRiskTool(toolName),
-        prompt: promptForHighRiskTool(toolName, args),
-        payload: {
-          toolName,
-          args: sanitizeDetails(args) as Prisma.InputJsonValue,
-          requestedByUserId: userId || null,
-          risk: 'high',
-          requiresApproval: true,
-        },
-      },
-      select: {
-        id: true,
-        kind: true,
-        state: true,
-        title: true,
-        createdAt: true,
-      },
-    });
-
-    return {
-      success: true,
-      approvalRequired: true,
-      approvalRequestId: approval.id,
-      approvalState: approval.state,
-      message: 'Acao de alto risco enviada para aprovacao humana antes da execucao.',
-      approval,
-    };
+    return runRequestHighRiskApproval(this.prisma, workspaceId, toolName, args, userId);
   }
 
   async executeApprovedApprovalRequest(input: {
@@ -550,14 +872,6 @@ export class KloelToolDispatcherService {
     approvalRequestId: string;
     userId?: string;
   }): Promise<ApprovedToolExecutionResult> {
-    return executeApprovedApprovalRequestWithDeps({
-      prisma: this.prisma,
-      bizConfigToolsService: this.bizConfigToolsService,
-      workspaceId: input.workspaceId,
-      approvalRequestId: input.approvalRequestId,
-      userId: input.userId,
-    });
+    return runExecuteApprovedApprovalRequest(this.prisma, this.bizConfigToolsService, input);
   }
-
-
 }

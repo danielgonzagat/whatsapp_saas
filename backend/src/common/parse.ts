@@ -170,3 +170,69 @@ export function readNumberForce(value: unknown): number {
   }
   return 0;
 }
+
+/**
+ * Parse a base-10 integer. Returns `undefined` on non-finite or non-scalar input.
+ */
+export function readInt(value: unknown): number | undefined {
+  if (value === '' || value === null || value === undefined) {
+    return undefined;
+  }
+  // Only accept scalar inputs (number/string) — objects stringify to
+  // '[object Object]' and would produce NaN; reject early.
+  if (typeof value !== 'number' && typeof value !== 'string') {
+    return undefined;
+  }
+  const parsed = Number.parseInt(String(value), 10);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+// ─── readBoolean ────────────────────────────────────────────────────
+
+/**
+ * Parse a boolean from: native boolean, "true"/"false", 0/1, "0"/"1".
+ * Returns `undefined` otherwise.
+ */
+export function readBoolean(value: unknown): boolean | undefined {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (value === 'true' || value === '1' || value === 1) {
+    return true;
+  }
+  if (value === 'false' || value === '0' || value === 0) {
+    return false;
+  }
+  return undefined;
+}
+
+// ─── readDate ───────────────────────────────────────────────────────
+
+/**
+ * Parse a Date from: Date instance, epoch ms, epoch s (auto-detected
+ * via > 1e11 threshold), or ISO string. Returns `undefined` otherwise.
+ */
+export function readDate(value: unknown): Date | undefined {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value;
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const ms = value > 100_000_000_000 ? value : value * 1000;
+    const d = new Date(ms);
+    return Number.isNaN(d.getTime()) ? undefined : d;
+  }
+  if (typeof value === 'string' && value.trim()) {
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? undefined : d;
+  }
+  return undefined;
+}
+
+/**
+ * Type guard for "is this a non-NaN Date instance". Companion to {@link readDate};
+ * use it when you've already received a `Date | null | undefined` and want to
+ * narrow to a concrete `Date` without re-parsing.
+ */
+export function isValidDate(value: Date | null | undefined): value is Date {
+  return value instanceof Date && Number.isFinite(value.getTime());
+}

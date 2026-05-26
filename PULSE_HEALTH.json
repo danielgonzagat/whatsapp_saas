@@ -1,6 +1,6 @@
 {
   "score": 100,
-  "totalNodes": 1821,
+  "totalNodes": 1820,
   "breaks": [
     {
       "type": "graph-route-caller-unobserved",
@@ -11,14 +11,24 @@
       "detail": "Controller: receive",
       "source": "graph:confirmed_static:route_caller_unobserved",
       "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-ui-handler-effect-unobserved",
+      "severity": "medium",
+      "file": "frontend/src/components/kloel/marketing/OfficialMarketingChannelPage/StepArsenal.tsx",
+      "line": 126,
+      "description": "clickable \"(sem texto)\" has dead handler",
+      "detail": "Handler: () => remove(index)",
+      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
+      "surface": "ui-interaction"
     }
   ],
   "stats": {
-    "uiElements": 2022,
-    "uiDeadHandlers": 0,
+    "uiElements": 1959,
+    "uiDeadHandlers": 1,
     "apiCalls": 771,
     "apiNoRoute": 0,
-    "backendRoutes": 877,
+    "backendRoutes": 876,
     "backendEmpty": 0,
     "prismaModels": 173,
     "modelOrphans": 0,
@@ -30,13 +40,13 @@
     },
     "proxyRoutes": 85,
     "proxyNoUpstream": 0,
-    "securityIssues": 1,
+    "securityIssues": 2,
     "dataSafetyIssues": 0,
     "qualityIssues": 0,
     "unavailableChecks": 0,
     "unknownSurfaces": 0
   },
-  "timestamp": "2026-05-26T01:40:57.190Z",
-  "runId": "d05efda1-5fc5-4bf6-b348-a45ab8c6f297",
-  "generatedAt": "2026-05-26T01:42:30.793Z"
+  "timestamp": "2026-05-23T23:42:27.442Z",
+  "runId": "4aaf6fe2-6be8-48ac-a562-7313a117a352",
+  "generatedAt": "2026-05-23T23:43:58.960Z"
 }

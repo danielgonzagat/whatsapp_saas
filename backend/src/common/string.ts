@@ -27,11 +27,13 @@ export function normalizeEmail(email: string): string {
 }
 
 /**
- * Coerce `value` to a string when it is already string/number/boolean,
+ * Coerce `value` to a string when it is already string/number/boolean/bigint,
  * otherwise return `fallback` (default `''`).
  *
  * Use for safely rendering arbitrary user/external data without
- * `null`/`undefined`/`object` surprises.
+ * `null`/`undefined`/`object` surprises. `bigint` support was added so this
+ * helper can also serve the mind-verbalizer surface (which previously had
+ * its own `safeString` variant that only differed by handling bigint).
  */
 export function safeStr(value: unknown, fallback = ''): string {
   if (typeof value === 'string') {
@@ -39,6 +41,9 @@ export function safeStr(value: unknown, fallback = ''): string {
   }
   if (typeof value === 'number' || typeof value === 'boolean') {
     return String(value);
+  }
+  if (typeof value === 'bigint') {
+    return value.toString();
   }
   return fallback;
 }

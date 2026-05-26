@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import type { AbClaimEvidence, AbCommercialOutcome, AbCommercialOutcomeDetectorFn, AbHarnessRecord, AbPathRunnerFn, AbPathRunnerResult, AbPromotionDecision, AbRCriterionDelta, AbRCriterionDescriptor, AbRCriterionName } from './abi-ab.types';
+import { randomIdSegment } from '../../common/random-id';
 export const ABI_PATH_RUNNER = Symbol('ABI_PATH_RUNNER');
 export const ABI_COMMERCIAL_OUTCOME_DETECTOR = Symbol('ABI_COMMERCIAL_OUTCOME_DETECTOR');
 const PROMOTION_MIN_SAMPLES = 100;
@@ -45,7 +46,7 @@ const R_CRITERIA: AbRCriterionDescriptor[] = [
   { name: 'R38', family: 'Incentive', description: 'Incentive integrity' },
 ];
 function generateId(): string {
-  return `rec_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+  return `rec_${Date.now()}_${randomIdSegment(8)}`;
 }
 function sum(arr: number[]): number {
   return arr.reduce((a, b) => a + b, 0);

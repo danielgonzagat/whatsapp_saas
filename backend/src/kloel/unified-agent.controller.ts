@@ -44,9 +44,7 @@ export class UnifiedAgentController {
       phone: body.phone,
       message: body.message,
       ...(body.context !== undefined ? { context: body.context } : {}),
-      ...(body.predecidedActions !== undefined
-        ? { predecidedActions: body.predecidedActions }
-        : {}),
+      ...(body.predecidedActions !== undefined ? { predecidedActions: body.predecidedActions } : {}),
       ...(body.allowedTools !== undefined ? { allowedTools: body.allowedTools } : {}),
     });
 

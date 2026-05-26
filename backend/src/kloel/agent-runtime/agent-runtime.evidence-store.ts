@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { createHash, randomUUID } from 'node:crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { sanitizeAgentRuntimeText, toInputJsonValue } from './agent-runtime.sanitizer';
+import { clampLimit } from '../../common/pagination-clamp.pipe';
 
 export type AgentEvidenceType =
   | 'tool_result'
@@ -141,7 +142,7 @@ export class AgentRuntimeEvidenceStoreService {
         ...(params.type ? { type: this.evidenceType(params.type) } : {}),
       },
       orderBy: { createdAt: 'desc' },
-      take: Math.max(1, Math.min(params.limit ?? 50, 200)),
+      take: clampLimit(params.limit, { default: 50, max: 200 }),
     });
     const actor = params.actor ? params.actor.toLowerCase() : '';
     return rows

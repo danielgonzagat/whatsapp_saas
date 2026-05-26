@@ -3,6 +3,8 @@ import { WisdomPatternExtractorService } from './wisdom-pattern-extractor.servic
 import { WisdomProjectorService } from './wisdom-projector.service';
 import { WisdomOptService } from './wisdom-opt';
 import { WisdomPrivacyGuardService } from './wisdom-privacy-guard.service';
+import { WisdomRelevanceFilter } from './wisdom-relevance-filter.service';
+import { WisdomPatternStore } from './wisdom-pattern-store.service';
 
 /**
  * WisdomModule — Camada VI (UTP-WISDOM-001..008).
@@ -22,12 +24,16 @@ import { WisdomPrivacyGuardService } from './wisdom-privacy-guard.service';
     WisdomProjectorService,
     WisdomOptService,
     WisdomPrivacyGuardService,
+    WisdomRelevanceFilter,
+    WisdomPatternStore,
   ],
   exports: [
     WisdomPatternExtractorService,
     WisdomProjectorService,
     WisdomOptService,
     WisdomPrivacyGuardService,
+    WisdomRelevanceFilter,
+    WisdomPatternStore,
   ],
 })
 export class WisdomModule {}

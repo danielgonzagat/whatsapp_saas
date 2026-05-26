@@ -1,0 +1,25 @@
+{
+  "generatedAt": "2026-05-26T18:04:05.200Z",
+  "workspaces": [
+    {
+      "workspace": "backend",
+      "file": "tools/sarif/backend.sarif",
+      "findings": 8651
+    },
+    {
+      "workspace": "frontend",
+      "file": "tools/sarif/frontend.sarif",
+      "findings": 3
+    },
+    {
+      "workspace": "frontend-admin",
+      "file": "tools/sarif/frontend-admin.sarif",
+      "findings": 16
+    },
+    {
+      "workspace": "worker",
+      "file": "tools/sarif/worker.sarif",
+      "findings": 0
+    }
+  ]
+}

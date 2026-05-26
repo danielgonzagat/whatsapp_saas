@@ -1,0 +1,135 @@
+[
+  {
+    "name": "Error Spike — >100 events/1h",
+    "conditions": [
+      {
+        "id": "sentry.rules.conditions.event_frequency.EventFrequencyCondition",
+        "interval": "1h",
+        "value": 100,
+        "comparisonType": "count"
+      }
+    ],
+    "filters": [
+      {
+        "id": "sentry.rules.filters.level.LevelFilter",
+        "match": "gte",
+        "level": "40"
+      }
+    ],
+    "actionMatch": "all",
+    "filterMatch": "all",
+    "frequency": 30,
+    "environment": "production",
+    "actions": [
+      {
+        "id": "sentry.integrations.slack.notify_action.SlackNotifyServiceAction",
+        "workspace": "{{SLACK_WORKSPACE}}",
+        "channel": "#oncall-kloel"
+      },
+      {
+        "id": "sentry.integrations.pagerduty.notify_action.PagerDutyNotifyServiceAction",
+        "account": "{{PAGERDUTY_ACCOUNT}}",
+        "service": "{{PAGERDUTY_SERVICE}}"
+      }
+    ]
+  },
+  {
+    "name": "Performance Regression — p95 >150% of 24h baseline",
+    "conditions": [
+      {
+        "id": "sentry.rules.conditions.regression_event.RegressionEventCondition"
+      }
+    ],
+    "filters": [
+      {
+        "id": "sentry.rules.filters.tagged_event.TaggedEventFilter",
+        "key": "level",
+        "match": "gte",
+        "value": "40"
+      }
+    ],
+    "actionMatch": "all",
+    "filterMatch": "all",
+    "frequency": 60,
+    "environment": "production",
+    "actions": [
+      {
+        "id": "sentry.integrations.slack.notify_action.SlackNotifyServiceAction",
+        "workspace": "{{SLACK_WORKSPACE}}",
+        "channel": "#perf-watch"
+      }
+    ]
+  },
+  {
+    "name": "Release Crash-Free < 99%",
+    "conditions": [
+      {
+        "id": "sentry.rules.conditions.event_frequency.EventFrequencyPercentCondition",
+        "interval": "1h",
+        "value": 200,
+        "comparisonType": "percent"
+      }
+    ],
+    "filters": [
+      {
+        "id": "sentry.rules.filters.tagged_event.TaggedEventFilter",
+        "key": "release",
+        "match": "is_set"
+      },
+      {
+        "id": "sentry.rules.filters.level.LevelFilter",
+        "match": "gte",
+        "level": "50"
+      }
+    ],
+    "actionMatch": "all",
+    "filterMatch": "all",
+    "frequency": 30,
+    "environment": "production",
+    "actions": [
+      {
+        "id": "sentry.integrations.slack.notify_action.SlackNotifyServiceAction",
+        "workspace": "{{SLACK_WORKSPACE}}",
+        "channel": "#oncall-kloel"
+      },
+      {
+        "id": "sentry.integrations.pagerduty.notify_action.PagerDutyNotifyServiceAction",
+        "account": "{{PAGERDUTY_ACCOUNT}}",
+        "service": "{{PAGERDUTY_SERVICE}}"
+      }
+    ]
+  },
+  {
+    "name": "New Issue Spike — >50 events/1h → page on-call",
+    "conditions": [
+      {
+        "id": "sentry.rules.conditions.first_seen_event.FirstSeenEventCondition"
+      },
+      {
+        "id": "sentry.rules.conditions.event_frequency.EventFrequencyCondition",
+        "interval": "1h",
+        "value": 50,
+        "comparisonType": "count"
+      }
+    ],
+    "filters": [
+      {
+        "id": "sentry.rules.filters.level.LevelFilter",
+        "match": "gte",
+        "level": "40"
+      }
+    ],
+    "actionMatch": "all",
+    "filterMatch": "all",
+    "frequency": 30,
+    "environment": "production",
+    "actions": [
+      {
+        "id": "sentry.integrations.pagerduty.notify_action.PagerDutyNotifyServiceAction",
+        "account": "{{PAGERDUTY_ACCOUNT}}",
+        "service": "{{PAGERDUTY_SERVICE}}"
+      }
+    ]
+  }
+]
+

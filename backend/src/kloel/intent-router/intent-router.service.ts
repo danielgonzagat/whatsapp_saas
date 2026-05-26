@@ -24,8 +24,7 @@ export class IntentRouterService {
   }> = [
     // === Self-awareness ===
     {
-      regex:
-        /(?:o que|quais|liste|lista|mostre|que)\s.*(?:consegue|capaci|sabe|pode)\s.*(?:fazer?|operar?)/i,
+      regex: /(?:o que|quais|liste|lista|mostre|que)\s.*(?:consegue|capaci|sabe|pode)\s.*(?:fazer?|operar?)/i,
       capabilityId: 'self.capabilities',
       extract: () => ({}),
     },
@@ -53,12 +52,10 @@ export class IntentRouterService {
     // === Products ===
     {
       regex: /(?:cri[ae]r?\s.*produt|cadastra\s.*produt|nov[oa]\s.*produt)/i,
-      capabilityId: 'products.create',
+      capabilityId: 'create_product',
       extract: (match) => ({
         name: match[0].match(/produto\s+["""']?([^""""'"]+)/i)?.[1] || undefined,
-        price:
-          parseFloat(match[0].match(/r?\$?\s*(\d+(?:[.,]\d+)?)/i)?.[1]?.replace(',', '.') ?? '') ||
-          undefined,
+        price: parseFloat(match[0].match(/r?\$?\s*(\d+(?:[.,]\d+)?)/i)?.[1]?.replace(',', '.') ?? '') || undefined,
       }),
     },
     {
@@ -103,8 +100,7 @@ export class IntentRouterService {
 
     // === Theme toggle ===
     {
-      regex:
-        /(?:tem[ae]\s+(?:clar[oa]?|escur[oa]?)|(?:clar[oa]?|escur[oa]?)\s+tem[ae]|(?:dark|light)\s+mode)/i,
+      regex: /(?:tem[ae]\s+(?:clar[oa]?|escur[oa]?)|(?:clar[oa]?|escur[oa]?)\s+tem[ae]|(?:dark|light)\s+mode)/i,
       capabilityId: 'ui.theme',
       extract: (match) => ({
         theme: /escur[oa]|dark/i.test(match[0]) ? 'dark' : 'light',
@@ -179,17 +175,12 @@ export class IntentRouterService {
 
     // === Document upload ===
     {
-      regex:
-        /(?:envi[ae]r?|upload|anex[ae]r?)\s+(?:meu\s+)?(?:documento|contrato|rg|cpf|cnpj|identidade)/i,
+      regex: /(?:envi[ae]r?|upload|anex[ae]r?)\s+(?:meu\s+)?(?:documento|contrato|rg|cpf|cnpj|identidade)/i,
       capabilityId: 'upload_document',
       extract: (match) => ({
-        documentType: match[0].match(/contrato/i)
-          ? 'contract'
-          : match[0].match(/(?:rg|identidad)/i)
-            ? 'identity'
-            : match[0].match(/cnpj/i)
-              ? 'cnpj_card'
-              : 'document',
+        documentType: match[0].match(/contrato/i) ? 'contract' :
+                      match[0].match(/(?:rg|identidad)/i) ? 'identity' :
+                      match[0].match(/cnpj/i) ? 'cnpj_card' : 'document',
       }),
     },
     {
@@ -236,9 +227,7 @@ export class IntentRouterService {
       regex: /(?:emit[ei]r?\s.*pix|ger[ae]r?\s.*pix|cri[ae]r?\s.*pix)/i,
       capabilityId: 'generate_pix',
       extract: (match) => {
-        const amount =
-          parseFloat(match[0].match(/r?\$?\s*(\d+(?:[.,]\d+)?)/i)?.[1]?.replace(',', '.') ?? '') ||
-          undefined;
+        const amount = parseFloat(match[0].match(/r?\$?\s*(\d+(?:[.,]\d+)?)/i)?.[1]?.replace(',', '.') ?? '') || undefined;
         return { amount: amount || undefined };
       },
     },
@@ -248,9 +237,77 @@ export class IntentRouterService {
       extract: () => ({}),
     },
     {
-      regex:
-        /(?:consult[ae]r?\s.*vend[ae]|status\s.*vend[ae]|buscar?\s.*vend[ae]|mostr[ae]r?\s.*vend[ae])/i,
+      regex: /(?:consult[ae]r?\s.*vend[ae]|status\s.*vend[ae]|buscar?\s.*vend[ae]|mostr[ae]r?\s.*vend[ae])/i,
       capabilityId: 'sales.list',
+      extract: () => ({}),
+    },
+
+    // === URLs ===
+    {
+      regex: /(?:adicion[ae]r?|cri[ae]r?|nov[ao])\s+(?:o\s+|a\s+)?url/i,
+      capabilityId: 'add_url',
+      extract: (match) => {
+        const urlMatch = match[0].match(/(https?:\/\/[^\s]+)/i);
+        return urlMatch ? { url: urlMatch[1] } : {};
+      },
+    },
+    {
+      regex: /(?:edit[ae]r?|atualiz[ae]r?|mud[ae]r?|alter[ae]r?)\s+(?:o\s+|a\s+)?url/i,
+      capabilityId: 'update_url',
+      extract: () => ({}),
+    },
+    {
+      regex: /(?:apag[ae]r?|delet[ae]r?|remov[ae]r?|exclu[ui]r?)\s+(?:o\s+|a\s+)?url/i,
+      capabilityId: 'delete_url',
+      extract: () => ({}),
+    },
+
+    // === Social proof ===
+    {
+      regex: /(?:social\s+proof|prova\s+social|depoimentos?|ativ[ae]r?\s+(?:prova\s+social|social))/i,
+      capabilityId: 'configure_social_proof',
+      extract: (match) => ({
+        enabled: !/desativ[ae]|remov[ae]/i.test(match[0]),
+      }),
+    },
+
+    // === Pixel ===
+    {
+      regex: /(?:configur[ae]r?|ativ[ae]r?)\s+(?:o\s+)?pixel/i,
+      capabilityId: 'configure_pixel',
+      extract: () => ({}),
+    },
+
+    // === Checkout listing ===
+    {
+      regex: /(?:list[ae]r?|meus?|ver)\s+(?:checkouts?|p[aá]ginas?\s+(?:de\s+)?checkouts?)/i,
+      capabilityId: 'list_checkouts',
+      extract: () => ({}),
+    },
+
+    // === Agent memory/sessions ===
+    {
+      regex: /(?:buscar?|pesquisar?|procur[ae]r?)\s+(?:minhas\s+)?(?:conversas?|mem[oó]rias?|hist[oó]ricos?)/i,
+      capabilityId: 'search_agent_memory',
+      extract: (match) => ({ query: match[0] }),
+    },
+    {
+      regex: /(?:buscar?|pesquisar?)\s+(?:sess[oõ]es?|minhas\s+sess[oõ]es?)/i,
+      capabilityId: 'search_agent_sessions',
+      extract: (match) => ({ query: match[0] }),
+    },
+
+    // === Dashboard ===
+    {
+      regex: /(?:dashboard|painel|resumo\s+(?:do\s+)?dia)/i,
+      capabilityId: 'get_dashboard_summary',
+      extract: () => ({}),
+    },
+
+    // === Checkout listing ===
+    {
+      regex: /(?:list[ae]r?|meus?|ver)\s+(?:checkouts?|p[aá]ginas?\s+(?:de\s+)?checkouts?)/i,
+      capabilityId: 'list_checkouts',
       extract: () => ({}),
     },
 
@@ -263,8 +320,7 @@ export class IntentRouterService {
 
     // === Affiliates ===
     {
-      regex:
-        /(?:ativ[ae]r?\s.*afil|desativ[ae]r?\s.*afil|configur[ae]r?\s.*afil|programa\s.*afil)/i,
+      regex: /(?:ativ[ae]r?\s.*afil|desativ[ae]r?\s.*afil|configur[ae]r?\s.*afil|programa\s.*afil)/i,
       capabilityId: 'affiliates.configure',
       extract: () => ({}),
     },
@@ -300,6 +356,261 @@ export class IntentRouterService {
       extract: () => ({}),
     },
 
+    // === Payment link ===
+    {
+      regex: /(?:cri[ae]r?|ger[ae]r?)\s+(?:link\s+(?:de\s+)?pagamento|payment\s+link)/i,
+      capabilityId: 'create_payment_link',
+      extract: (match) => {
+        const amount = parseFloat(match[0].match(/r?\$?\s*(\d+(?:[.,]\d+)?)/i)?.[1]?.replace(',', '.') ?? '') || undefined;
+        return { amount: amount || undefined };
+      },
+    },
+
+    // === Saque/antecipação ===
+    {
+      regex: /(?:solicit[ae]r?|ped[ei]r?)\s+(?:meu\s+)?saque/i,
+      capabilityId: 'request_withdrawal',
+      extract: (match) => {
+        const amount = parseFloat(match[0].match(/r?\$?\s*(\d+(?:[.,]\d+)?)/i)?.[1]?.replace(',', '.') ?? '') || undefined;
+        return { amount: amount || undefined };
+      },
+    },
+    {
+      regex: /(?:solicit[ae]r?|ped[ei]r?)\s+(?:minha\s+)?antecipa[cç][aã]o/i,
+      capabilityId: 'request_anticipation',
+      extract: () => ({}),
+    },
+
+    // === Subscription ===
+    {
+      regex: /(?:cancel[ae]r?|paus[ae]r?|desativ[ae]r?)\s+(?:minha\s+)?(?:assinatura|subscri)/i,
+      capabilityId: 'update_subscription',
+      extract: (match) => ({
+        action: /cancel|paus/i.test(match[0]) ? 'cancel' : 'pause',
+      }),
+    },
+
+    // === Orders ===
+    {
+      regex: /(?:cri[ae]r?|ger[ae]r?|nov[ao])\s+(?:um[a]?\s+)?(?:pedido|order|venda)/i,
+      capabilityId: 'create_order',
+      extract: (match) => {
+        const amount = parseFloat(match[0].match(/r?\$?\s*(\d+(?:[.,]\d+)?)/i)?.[1]?.replace(',', '.') ?? '') || undefined;
+        return { amount: amount || undefined };
+      },
+    },
+    {
+      regex: /(?:detalhes|info|status)\s+(?:do|da)\s+(?:pedido|venda|order)/i,
+      capabilityId: 'get_order_details',
+      extract: () => ({}),
+    },
+
+    // === WhatsApp ===
+    {
+      regex: /(?:lista[er]?|ver|mostr[ae]r?)\s+(?:minhas\s+)?(?:conversas|chats)\s+(?:do\s+)?whatsapp/i,
+      capabilityId: 'list_whatsapp_chats',
+      extract: () => ({}),
+    },
+    {
+      regex: /(?:lista[er]?|ver|mostr[ae]r?)\s+(?:meus\s+)?(?:contatos)\s+(?:do\s+)?whatsapp/i,
+      capabilityId: 'list_whatsapp_contacts',
+      extract: () => ({}),
+    },
+    {
+      regex: /(?:cri[ae]r?|adicion[ae]r?)\s+(?:nov[oa]?\s+)?(?:contato)\s+(?:no\s+)?whatsapp/i,
+      capabilityId: 'create_whatsapp_contact',
+      extract: () => ({}),
+    },
+
+    // === Profile / Bio ===
+    {
+      regex: /(?:atualiz[ae]r?|mud[ae]r?|alter[ae]r?)\s+(?:meus?\s+)?(?:dados\s+pessoais|perfil|nome\s+completo)/i,
+      capabilityId: 'update_personal_data',
+      extract: () => ({}),
+    },
+    {
+      regex: /(?:cri[ae]r?|cadastr[ae]r?)\s+(?:minha\s+)?(?:chave\s+|)pix/i,
+      capabilityId: 'set_pix_key',
+      extract: () => ({}),
+    },
+
+    // === Refund ===
+    {
+      regex: /(?:estorn[ae]r?|reembols[ae]r?|cancel[ae]r?\s+(?:venda|pedido))/i,
+      capabilityId: 'list_refunds',
+      extract: () => ({}),
+    },
+
+    // === Product AI ===
+    {
+      regex: /(?:config\s+(?:da\s+)?ia|ia\s+do\s+produto|persona\s+do\s+produto)/i,
+      capabilityId: 'get_product_ai_config',
+      extract: () => ({}),
+    },
+    {
+      regex: /(?:mud[ae]r?|atualiz[ae]r?)\s+(?:a\s+)?(?:persona|tom|voz)\s+(?:do|da)\s+(?:produto|marca)/i,
+      capabilityId: 'configure_ai_persona',
+      extract: () => ({}),
+    },
+
+    // === Pesquisa / Search ===
+    {
+      regex: /(?:pesquis[ae]r?|buscar?|procura[er]?)\s+(?:na\s+)?(?:web|internet|google)/i,
+      capabilityId: 'search_web',
+      extract: (match) => ({ query: match[0] }),
+    },
+
+    // === Estornos ===
+    {
+      regex: /(?:estornos?|reembolsos?|chargebacks?)/i,
+      capabilityId: 'list_refunds',
+      extract: () => ({}),
+    },
+
+    // === Broadcast ===
+    {
+      regex: /cri[ae]r?\s+(?:uma\s+)?(?:campanha|broadcast|disparo)/i,
+      capabilityId: 'create_broadcast',
+      extract: () => ({}),
+    },
+
+
+    // === NPS / Churn ===
+    {
+      regex: /nps|net\s+promoter/i,
+      capabilityId: 'get_nps',
+      extract: () => ({}),
+    },
+    {
+      regex: /churn|cancelamento\s+(?:total|geral)/i,
+      capabilityId: 'get_churn',
+      extract: () => ({}),
+    },
+
+    // === Marketplace ===
+    {
+      regex: /(?:marketplace|afiliar\s*(?:-se|se)|produtos\s+p[uú]blicos)/i,
+      capabilityId: 'browse_marketplace',
+      extract: () => ({}),
+    },
+
+    // === Detalhes do produto ===
+    {
+      regex: /(?:detalhes|info|mostr[ae]r?)\s+(?:do|o)\s+produto/i,
+      capabilityId: 'get_product_details',
+      extract: () => ({}),
+    },
+
+    // === Estornos ===
+    {
+      regex: /(?:estornos?|reembolsos?|devolu[cç][aã]o)/i,
+      capabilityId: 'list_refunds',
+      extract: () => ({}),
+    },
+
+    // === After Pay ===
+    {
+      regex: /after\s+pay|pagamento\s+(?:depois|posterior|faturado)/i,
+      capabilityId: 'configure_after_pay',
+      extract: (match) => ({
+        enabled: !/desativ/i.test(match[0]),
+      }),
+    },
+
+    // === Order bump ===
+    {
+      regex: /order\s+bump|upsell|downsell/i,
+      capabilityId: 'configure_order_bump',
+      extract: (match) => ({
+        enabled: !/desativ/i.test(match[0]),
+      }),
+    },
+
+    // === Afiliados config ===
+    {
+      regex: /(?:configura[cç][aã]o\s+(?:de\s+)?afiliad|programa\s+(?:de\s+)?afiliad)/i,
+      capabilityId: 'get_affiliate_config',
+      extract: () => ({}),
+    },
+    {
+      regex: /(?:atualiz[ae]r?|edit[ae]r?|mud[ae]r?)\s+(?:o\s+)?(?:programa\s+(?:de\s+)?)?afiliad/i,
+      capabilityId: 'update_affiliate_config',
+      extract: () => ({}),
+    },
+
+    // === Redes sociais / canais ===
+    {
+      regex: /(?:redes?\s+sociais|canais?\s+(?:sociais|conectados))/i,
+      capabilityId: 'get_social_channels',
+      extract: () => ({}),
+    },
+    // === Autopilot ===
+    {
+      regex: /(?:ativ[ae]r?|desativ[ae]r?)\s+(?:o\s+)?autopilot/i,
+      capabilityId: 'toggle_autopilot',
+      extract: (match) => ({
+        enabled: !/desativ/i.test(match[0]),
+      }),
+    },
+
+
+    // === AI persona ===
+    {
+      regex: /(?:configur[ae]r?|defin[ei]r?|mud[ae]r?)\s+(?:a\s+|o\s+)?(?:persona|personalidade|tom|voz)\s+(?:da|do)\s+ia/i,
+      capabilityId: 'configure_ai_persona',
+      extract: (match) => ({
+        personality: match[0].match(/(?:formal|informal|friendly|professional|funny|amig[aá]vel|profissional|engra[cç]ad[ao])/i)?.[0] || undefined,
+      }),
+    },
+
+    // === WhatsApp ===
+    {
+      regex: /(?:status\s+(?:do\s+)?whatsapp|whatsapp\s+(?:est[aá]\s+)?(?:funcionando|conectado|online))/i,
+      capabilityId: 'get_whatsapp_status',
+      extract: () => ({}),
+    },
+    {
+      regex: /(?:conect[ae]r?|vincular?)\s+(?:o\s+)?whatsapp/i,
+      capabilityId: 'connect_whatsapp',
+      extract: () => ({}),
+    },
+
+    // === Billing ===
+    {
+      regex: /(?:atualiz[ae]r?|mud[ae]r?)\s+(?:meu\s+)?(?:plano|billing|cobran[cç]a)/i,
+      capabilityId: 'update_billing_info',
+      extract: () => ({}),
+    },
+
+    // === Image upload ===
+    {
+      regex: /(?:faz\s+)?(?:upload|envi[ae]r?|sob[ei]r?)\s+(?:da\s+)?(?:foto|imagem)\s+(?:do\s+)?(?:plano|produto)/i,
+      capabilityId: 'upload_product_image',
+      extract: (match) => ({
+        targetType: /plano/i.test(match[0]) ? 'plan' : 'product',
+      }),
+    },
+    // === Conectar canal ===
+    {
+      regex: /conect[ae]r?\s+(?:o\s+|meu\s+)?(whatsapp|instagram|facebook|tiktok|email)/i,
+      capabilityId: 'connect_channel',
+      extract: (match) => ({
+        channel: match[1]?.toLowerCase() || 'whatsapp',
+      }),
+    },
+
+    // === Settings ===
+    {
+      regex: /(?:minhas|meus)\s+(?:configura[cç][oõ]es|settings|conta)/i,
+      capabilityId: 'get_settings',
+      extract: () => ({}),
+    },
+    {
+      regex: /(?:dados\s+banc[aá]rios|conta\s+banc[aá]ria)/i,
+      capabilityId: 'get_settings',
+      extract: () => ({}),
+    },
+
     // === Configuration ===
     {
       regex: /(?:tema\s.*(?:clar[oa]?|escur[oa]?)|(?:clar[oa]?|escur[oa]?)\s.*tema)/i,
@@ -330,7 +641,9 @@ export class IntentRouterService {
     },
   ];
 
-  constructor(private readonly registry: CapabilityRegistryV2Service) {}
+  constructor(
+    private readonly registry: CapabilityRegistryV2Service,
+  ) {}
 
   /**
    * Classify a user message into an intent.
@@ -357,9 +670,7 @@ export class IntentRouterService {
       const match = normalized.match(pattern.regex);
       if (match) {
         const cap = this.registry.get(pattern.capabilityId);
-        if (!cap) {
-          continue;
-        }
+        if (!cap) continue;
 
         const entities = pattern.extract(match);
         const missingInputs = cap.inputSchema

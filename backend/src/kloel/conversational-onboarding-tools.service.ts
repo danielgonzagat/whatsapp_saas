@@ -63,9 +63,6 @@ export class ConversationalOnboardingToolsService {
     return fallback;
   }
 
-  readNumber(value: unknown, fallback = 0): number {
-    return readNumberOr(value, fallback);
-  }
 
   readStringArray(value: unknown): string[] | undefined {
     if (!Array.isArray(value)) {
@@ -259,7 +256,7 @@ export class ConversationalOnboardingToolsService {
 
       case 'add_product': {
         const productName = this.readText(args.name).trim();
-        const price = this.readNumber(args.price);
+        const price = readNumberOr(args.price, 0);
         const description = this.readText(args.description).trim();
         const category = this.readText(args.category).trim() || 'default';
         const productId = `product_${Date.now()}`;

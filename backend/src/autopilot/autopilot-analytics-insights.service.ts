@@ -429,12 +429,21 @@ Answer in Portuguese, short and actionable.`;
       const completion = await chatCompletionWithRetry(client, {
         model: resolveBackendOpenAIModel('writer', this.config),
         messages: [{ role: 'user', content: prompt }],
+        max_tokens: 256,
       });
+      const tokens = completion?.usage?.total_tokens ?? 500;
+      const rawAnswer = completion.choices[0]?.message?.content || '';
+      this.logger.log(
+        `analytics-insights ws=${workspaceId} model=writer baseLen=${prompt.length} outLen=${rawAnswer.length} tokens=${tokens}`,
+      );
       await this.planLimits
-        .trackAiUsage(workspaceId, completion?.usage?.total_tokens ?? 500)
+        .trackAiUsage(workspaceId, tokens)
         .catch(() => {});
 
-      const answer = completion.choices[0]?.message?.content || enrichedSummary;
+      const answer = rawAnswer || enrichedSummary;
+      if (!rawAnswer || rawAnswer.trim().length < 5) {
+        this.logger.warn(`analytics-insights short output ws=${workspaceId} len=${rawAnswer.length}`);
+      }
       await this.prisma.autopilotEvent
         .create({
           data: {

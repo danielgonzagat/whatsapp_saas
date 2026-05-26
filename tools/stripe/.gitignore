@@ -1,0 +1,3 @@
+# Keep plan-map.json committed so CI/seed can consume it.
+# plan-map.json contains Stripe product + price IDs only — no secrets.
+!plan-map.json

@@ -13,6 +13,7 @@ import { KloelCodeToolsService } from './kloel-code-tools.service';
 import { KloelCodeAnalysisService } from './kloel-code-analysis.service';
 
 import { KloelReflexivityService } from './kloel-reflexivity.service';
+import { ReportService } from './report.service';
 import { UnifiedAgentToolExecutorService } from './unified-agent-tool-executor';
 
 import { KloelBusinessConfigToolsService } from './kloel-business-config-tools.service';
@@ -67,11 +68,11 @@ import { MetricsModule } from '../metrics/metrics.module';
 import { PartnershipsModule } from '../partnerships/partnerships.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { PulseArtifactService } from '../pulse/pulse-artifact.service';
-import { WebhooksModule } from '../webhooks/webhooks.module';
 import { WalletModule } from '../wallet/wallet.module';
-import { WhatsappModule } from '../whatsapp/whatsapp.module';
 import { ContactsModule } from '../contacts/contacts.module';
 import { ContactIdentityResolverService } from '../contacts/contact-identity-resolver.service';
+import { WebhooksService } from '../webhooks/webhooks.service';
+import { WebhookDispatcherService } from '../webhooks/webhook-dispatcher.service';
 import { AdRulesEngineService } from './ad-rules-engine.service';
 import { AdRulesController } from './ad-rules.controller';
 import { CanvasController } from './canvas.controller';
@@ -182,14 +183,24 @@ import {
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { LineageModule } from './lineage/lineage.module';
 import { RiskClassModule } from './risk-class/risk-class.module';
+import { InboxModule } from '../inbox/inbox.module';
+import { AccountService } from './account.service';
+import { CheckoutService } from './checkout.service';
+import { CouponService } from './coupon.service';
+import { PlanService } from './plan.service';
 import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
 import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service';
+import { ToolPlannerModule } from './toolplanner/toolplanner.module';
+import { CapabilityRegistryV2Module } from './capability-registry-v2/capability-registry-v2.module';
+import { IntentRouterModule } from './intent-router/intent-router.module';
+import { SelfAwarenessModule } from './self-awareness/self-awareness.module';
+import { ProductsModule } from '../products/products.module';
 
 /** Kloel module. */
 @Module({
   imports: [
     PrismaModule,
-    forwardRef(() => WhatsappModule),
+    forwardRef(() => require('../whatsapp/whatsapp.module').WhatsappModule),
     ScheduleModule.forRoot(),
     KycModule,
     forwardRef(() => CampaignsModule),
@@ -201,11 +212,16 @@ import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service
     MetricsModule,
     KloelAudioModule,
     KloelRulesModule,
+    forwardRef(() => InboxModule),
     ContactsModule,
-    forwardRef(() => WebhooksModule),
     LineageModule,
     DriftModule,
     RiskClassModule,
+    CapabilityRegistryV2Module,
+    IntentRouterModule,
+    ToolPlannerModule,
+    SelfAwarenessModule,
+    ProductsModule,
   ],
   controllers: [
     KloelController,
@@ -256,6 +272,10 @@ import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service
     KloelThreadSummaryService,
     KloelChatToolsService,
     KloelCodeToolsService,
+    AccountService,
+    CheckoutService,
+    CouponService,
+    PlanService,
     KloelProductSubResourceToolsService,
     KloelWalletSalesToolsService,
     KloelBusinessConfigToolsService,
@@ -295,6 +315,7 @@ import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service
     PdfProcessorService,
     WalletService,
     WalletLedgerService,
+    ReportService,
     LLMBudgetService,
     UnifiedAgentService,
     { provide: UNIFIED_AGENT_TOKEN, useExisting: UnifiedAgentService },
@@ -315,6 +336,8 @@ import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service
     AdRulesEngineService,
     EmailCampaignService,
     CartRecoveryService,
+    WebhooksService,
+    WebhookDispatcherService,
     BrainCapabilityRegistryService,
     BrainCapabilityExecutorService,
     BrainAutonomyService,
@@ -402,6 +425,7 @@ import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service
     PdfProcessorService,
     WalletService,
     WalletLedgerService,
+    ReportService,
     LLMBudgetService,
     KloelAudioModule,
     UnifiedAgentService,

@@ -4,17 +4,17 @@ import type { UnknownRecord } from '../../common/types';
  * Categories for capability classification.
  */
 export type CapabilityCategory =
-  | 'SELF_AWARENESS' // Auto-consciência
-  | 'MUTATION_SENSITIVE' // Ações que mexem com dinheiro, documentos, etc.
-  | 'MUTATION_SAFE' // Criação/edição não sensível
-  | 'QUERY' // Consultas read-only
-  | 'COMMUNICATION' // Envio de mensagens
-  | 'CONFIGURATION' // Configurações de conta
-  | 'META'; // Metacapacidades
+  | 'SELF_AWARENESS'      // Auto-consciência
+  | 'MUTATION_SENSITIVE'  // Ações que mexem com dinheiro, documentos, etc.
+  | 'MUTATION_SAFE'       // Criação/edição não sensível
+  | 'QUERY'               // Consultas read-only
+  | 'COMMUNICATION'       // Envio de mensagens
+  | 'CONFIGURATION'       // Configurações de conta
+  | 'META';               // Metacapacidades
 
 /**
  * Maturidade da capacidade.
- *
+ * 
  * 'registry' → apenas registrada
  * 'implementing' → implementação em andamento
  * 'testable' → testável via chat mas ainda não verificada
@@ -22,13 +22,7 @@ export type CapabilityCategory =
  * 'blocked' → bloqueada por dependência externa
  * 'deprecated' → substituída
  */
-export type CapabilityMaturity =
-  | 'registry'
-  | 'implementing'
-  | 'testable'
-  | 'verified'
-  | 'blocked'
-  | 'deprecated';
+export type CapabilityMaturity = 'registry' | 'implementing' | 'testable' | 'verified' | 'blocked' | 'deprecated';
 
 /**
  * Input schema definition for a capability.
@@ -39,8 +33,8 @@ export interface CapabilityInputField {
   label: string;
   required: boolean;
   description?: string;
-  enum?: string[]; // For 'select' type
-  prompt?: string; // Question to ask user when missing
+  enum?: string[];  // For 'select' type
+  prompt?: string;  // Question to ask user when missing
 }
 
 /**
@@ -51,17 +45,17 @@ export interface CapabilityDefinition {
   title: string;
   description: string;
   category: CapabilityCategory;
-  tier: number; // Priority tier 0-15
+  tier: number;  // Priority tier 0-15
   requiresConfirmation: boolean;
   requiredPermissions: string[];
   inputSchema: CapabilityInputField[];
-  domainService: string; // Reference to domain service method
-  emits: string[]; // Domain events emitted
-  evidenceUrlBuilder?: string; // Template for URL
-  surface: string[]; // Where this is available
+  domainService: string;  // Reference to domain service method
+  emits: string[];  // Domain events emitted
+  evidenceUrlBuilder?: string;  // Template for URL
+  surface: string[];  // Where this is available
   maturity?: CapabilityMaturity;
-  dependsOn?: string[]; // Capability IDs this depends on
-  parentCapability?: string; // For sub-capabilities
+  dependsOn?: string[];  // Capability IDs this depends on
+  parentCapability?: string;  // For sub-capabilities
 }
 
 /**

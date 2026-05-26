@@ -225,11 +225,6 @@ describe('ConversationalOnboardingToolsService', () => {
       expect(service.readText('hello')).toBe('hello');
     });
 
-    it('readNumber returns finite numbers or fallback', () => {
-      expect(service.readNumber(42)).toBe(42);
-      expect(service.readNumber(NaN)).toBe(0);
-      expect(service.readNumber('abc')).toBe(0);
-    });
   });
 
   describe('upstream errors', () => {

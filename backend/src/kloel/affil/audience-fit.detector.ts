@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { AudienceFit } from './types';
+import { clamp } from '../../common/math';
 
 interface AudienceFitInput {
   readonly audienceId: string;
@@ -20,10 +21,6 @@ const WEIGHTS = {
 
 const FIT_THRESHOLD_STRONG = 0.7;
 const FIT_THRESHOLD_MODERATE = 0.4;
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
-}
 
 @Injectable()
 export class AudienceFitDetectorService {

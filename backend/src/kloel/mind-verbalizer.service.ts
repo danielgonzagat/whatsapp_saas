@@ -10,18 +10,11 @@ import { MindBeliefService } from './mind-belief.service';
 import { MindPolicyService } from './mind-policy.service';
 import { MIND_DECISION_TYPES } from './mind-decision-catalog';
 import type { MindBelief } from './mind.types';
+import { safeStr as safeString } from '../common/string';
 
 interface VerbalizerBlock {
   beliefs: MindBelief[];
   label: string;
-}
-
-function safeString(value: unknown): string {
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
-    return value.toString();
-  }
-  return '';
 }
 
 function contextLabel(context: Record<string, unknown>): string {
@@ -290,6 +283,11 @@ export class MindVerbalizerService {
     });
 
     const content = result.choices[0]?.message?.content;
-    return typeof content === 'string' ? content : null;
+    const outStr = typeof content === 'string' ? content : null;
+    const outLen = outStr ? outStr.length : 0;
+    this.logger.log(
+      `mind-verbalizer ws=${workspaceId} model=${this.verbalizerModel} baseLen=${prompt.length} outLen=${outLen} tokens=${result.usage?.total_tokens ?? 0}`,
+    );
+    return outStr;
   }
 }

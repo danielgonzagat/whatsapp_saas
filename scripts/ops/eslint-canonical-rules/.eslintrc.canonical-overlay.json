@@ -1,0 +1,12 @@
+{
+  "_comment": "Add this overlay to each workspace's eslint.config.mjs to opt into canonical enforcement.",
+  "_usage": "In eslint.config.mjs, add: ...require('../scripts/ops/eslint-canonical-rules/.eslintrc.canonical-overlay.json')",
+  "plugins": {
+    "canonical": "../scripts/ops/eslint-canonical-rules/index.cjs"
+  },
+  "rules": {
+    "canonical/no-rogue-unknown-record": "error",
+    "canonical/no-rogue-phone-normalizer": "error",
+    "canonical/no-rogue-clamp": "error"
+  }
+}

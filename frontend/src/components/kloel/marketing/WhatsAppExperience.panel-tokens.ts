@@ -34,9 +34,4 @@ export interface EffectiveConnection {
   phoneNumberId: string;
 }
 
-export interface ChannelRealData {
-  messages: number;
-  leads: number;
-  sales: number;
-  status: string;
-}
+export type { ChannelRealData } from './MarketingTypes';

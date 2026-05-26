@@ -11,6 +11,7 @@ import type {
 } from './agent-runtime';
 
 import type { ToolResult } from './kloel-tool-executor.types';
+import { safeStr } from '../common/string';
 export type { ToolResult };
 
 export interface ToolUpsertAgentSkillArgs {
@@ -68,12 +69,6 @@ export interface ToolListAgentEvidenceArgs {
 }
 
 const NON_SLUG_CHAR_RE = /[^a-z0-9_:-]+/g;
-
-function safeStr(value: unknown, fallback = ''): string {
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-  return fallback;
-}
 
 function safeAgentRuntimeId(value: unknown, fallback: string): string {
   return safeStr(value, fallback).trim().toLowerCase().replace(NON_SLUG_CHAR_RE, '_').slice(0, 80);

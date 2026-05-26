@@ -1,15 +1,6 @@
 import { ServiceUnavailableException } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
-
-function readConfiguredValue(config: ConfigService, keys: string[]): string | null {
-  for (const key of keys) {
-    const value = String(config.get<string>(key) || process.env[key] || '').trim();
-    if (value) {
-      return value;
-    }
-  }
-  return null;
-}
+import { readConfiguredValue } from '../mailbox-oauth-callback.helpers';
 
 export function resolveRedirectUri(config: ConfigService): string {
   const explicit = readConfiguredValue(config, ['GOOGLE_MAILBOX_REDIRECT_URI']);

@@ -240,7 +240,7 @@ export class AutopilotCycleService {
       return;
     }
 
-    const analysis = await this.executor.analyzeContext(conv.messages);
+    const analysis = await this.executor.analyzeContext(conv.messages, conv.workspaceId);
     const action = await this.executor.decideAction(analysis, conv, isOptimalTime);
 
     if (action !== 'wait') {

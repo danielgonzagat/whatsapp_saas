@@ -6,25 +6,7 @@ import {
   type IntentClassification,
   type ConfirmationRequest,
   type CapabilityContext,
-} from './capability-registry-v2.types';
-import { CAPABILITY_DEFINITIONS, CAPABILITY_MAP } from './capability-registry-v2.const';
-
-function formatCapabilityValue(value: unknown): string {
-  if (value === null || value === undefined) {
-    return '';
-  }
-  if (typeof value === 'string') {
-    return value;
-  }
-  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
-    return String(value);
-  }
-  try {
-    return JSON.stringify(value) ?? '';
-  } catch {
-    return Object.prototype.toString.call(value);
-  }
-}
+} from './capability-registry-v2.types';import { CAPABILITY_DEFINITIONS, CAPABILITY_MAP } from './capability-registry-v2.const';
 
 /**
  * Capability Registry v2 — Single source of truth for all Kloel capabilities.
@@ -47,9 +29,7 @@ export class CapabilityRegistryV2Service {
     for (const cap of CAPABILITY_DEFINITIONS) {
       this.maturities.set(cap.id, cap.maturity ?? 'registry');
     }
-    this.logger.log(
-      `CapabilityRegistry v2 initialized with ${CAPABILITY_DEFINITIONS.length} capabilities`,
-    );
+    this.logger.log(`CapabilityRegistry v2 initialized with ${CAPABILITY_DEFINITIONS.length} capabilities`);
   }
 
   list(): CapabilityDefinition[] {
@@ -78,9 +58,7 @@ export class CapabilityRegistryV2Service {
     caps: CapabilityDefinition[],
     permissions: string[],
   ): CapabilityDefinition[] {
-    if (permissions.includes('*')) {
-      return caps;
-    }
+    if (permissions.includes('*')) return caps;
     return caps.filter(
       (cap) =>
         cap.requiredPermissions.length === 0 ||
@@ -88,7 +66,10 @@ export class CapabilityRegistryV2Service {
     );
   }
 
-  filterFor(options: { surface: string; permissions: string[] }): CapabilityDefinition[] {
+  filterFor(options: {
+    surface: string;
+    permissions: string[];
+  }): CapabilityDefinition[] {
     const fromSurface = this.filterForSurface(options.surface);
     return this.filterForPermissions(fromSurface, options.permissions);
   }
@@ -96,9 +77,7 @@ export class CapabilityRegistryV2Service {
   groupedByTier(): Record<number, CapabilityDefinition[]> {
     const groups: Record<number, CapabilityDefinition[]> = {};
     for (const cap of CAPABILITY_DEFINITIONS) {
-      if (!groups[cap.tier]) {
-        groups[cap.tier] = [];
-      }
+      if (!groups[cap.tier]) groups[cap.tier] = [];
       groups[cap.tier].push(cap);
     }
     return groups;
@@ -130,17 +109,13 @@ export class CapabilityRegistryV2Service {
     });
 
     const best = scored.sort((a, b) => b.confidence - a.confidence)[0];
-    if (!best || best.confidence < 0.3) {
-      return null;
-    }
+    if (!best || best.confidence < 0.3) return null;
 
     const entities: Record<string, unknown> = {};
     for (const field of best.capability.inputSchema) {
       if (field.type === 'number') {
         const match = normalized.match(/(?:r?\$\s*)?(\d+(?:[.,]\d+)?)/i);
-        if (match) {
-          entities[field.key] = parseFloat(match[1].replace(',', '.'));
-        }
+        if (match) entities[field.key] = parseFloat(match[1].replace(',', '.'));
       }
     }
 
@@ -164,7 +139,7 @@ export class CapabilityRegistryV2Service {
   ): ConfirmationRequest {
     const fields = Object.entries(inputs)
       .filter(([, v]) => v !== undefined && v !== '')
-      .map(([k, v]) => `${k}: ${formatCapabilityValue(v)}`)
+      .map(([k, v]) => `${k}: ${v}`)
       .join(', ');
     return {
       capabilityId: cap.id,

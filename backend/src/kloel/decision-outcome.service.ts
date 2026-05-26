@@ -119,6 +119,13 @@ export class DecisionOutcomeService {
     });
   }
 
+  async findAllClosedSinceForWorkspace(workspaceId: string, since: Date) {
+    return this.prisma.decisionOutcome.findMany({
+      where: { workspaceId, outcomeAt: { not: null, gte: since } },
+      orderBy: { outcomeAt: 'desc' },
+    });
+  }
+
   async recordEvent(input: {
     workspaceId: string;
     eventType: string;

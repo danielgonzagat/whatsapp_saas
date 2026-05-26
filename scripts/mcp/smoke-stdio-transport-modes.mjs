@@ -8,6 +8,11 @@ const SERVERS = [
   ['codebody-navigator', 'scripts/mcp/codebody-navigator-mcp/launcher.sh', 'kloel-codebody-navigator'],
 ];
 
+const LINE_ONLY_SERVERS = [
+  ['cognitive-hub', 'scripts/mcp/cognitive-hub-mcp-launcher.sh', 'kloel-protocol-hub'],
+  ['lsp-mesh', 'scripts/mcp/lsp-mesh-mcp-launcher.sh', 'kloel-lsp-router'],
+];
+
 const INIT = {
   jsonrpc: '2.0',
   id: 1,
@@ -147,18 +152,26 @@ async function requestMixedLineSession(launcher) {
   return response;
 }
 
-async function checkServer([name, launcher, expectedServerName]) {
-  const lineRaw = await requestOnce(launcher, 'line');
-  const line = parseLineResponse(lineRaw);
-  if (line?.result?.serverInfo?.name !== expectedServerName) {
-    throw new Error(`${name} line initialize returned unexpected serverInfo: ${JSON.stringify(line?.result?.serverInfo)}`);
+function assertInitializeResult(name, mode, response, expectedServerName) {
+  if (response?.result?.serverInfo?.name !== expectedServerName) {
+    throw new Error(`${name} ${mode} initialize returned unexpected serverInfo: ${JSON.stringify(response?.result?.serverInfo)}`);
   }
+  if (typeof response?.result?.protocolVersion !== 'string' || response.result.protocolVersion.length === 0) {
+    throw new Error(`${name} ${mode} initialize returned missing protocolVersion: ${JSON.stringify(response?.result)}`);
+  }
+}
+
+async function checkLineServer([name, launcher, expectedServerName]) {
+  const lineRaw = await requestOnce(launcher, 'line');
+  assertInitializeResult(name, 'line', parseLineResponse(lineRaw), expectedServerName);
+}
+
+async function checkServer(server) {
+  const [name, launcher, expectedServerName] = server;
+  await checkLineServer(server);
 
   const frameRaw = await requestOnce(launcher, 'frame');
-  const frame = parseFrameResponse(frameRaw);
-  if (frame?.result?.serverInfo?.name !== expectedServerName) {
-    throw new Error(`${name} frame initialize returned unexpected serverInfo: ${JSON.stringify(frame?.result?.serverInfo)}`);
-  }
+  assertInitializeResult(name, 'frame', parseFrameResponse(frameRaw), expectedServerName);
 
   const mixedRaw = await requestMixedLineSession(launcher);
   const mixed = parseLineResponse(mixedRaw);
@@ -171,6 +184,16 @@ let failed = 0;
 for (const server of SERVERS) {
   try {
     await checkServer(server);
+    console.log(`PASS ${server[0]}`);
+  } catch (error) {
+    failed += 1;
+    console.error(`FAIL ${server[0]}: ${error.message}`);
+  }
+}
+
+for (const server of LINE_ONLY_SERVERS) {
+  try {
+    await checkLineServer(server);
     console.log(`PASS ${server[0]}`);
   } catch (error) {
     failed += 1;

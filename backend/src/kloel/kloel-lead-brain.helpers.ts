@@ -3,11 +3,7 @@ import { safeStr } from '../common/string';
 
 export { NON_DIGIT_RE, safeStr };
 
-export function asUnknownRecord(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
-}
+export { asUnknownRecord } from './kloel-lead-processor-helpers';
 
 export function detectBuyIntent(message: string): 'high' | 'medium' | 'low' | 'objection' {
   const lowerMessage = message.toLowerCase();
@@ -66,7 +62,4 @@ export function detectBuyIntent(message: string): 'high' | 'medium' | 'low' | 'o
   return 'low';
 }
 
-export interface ChatMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-}
+export type { ChatMessage } from './kloel-thinker.types';

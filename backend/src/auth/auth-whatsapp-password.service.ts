@@ -24,15 +24,6 @@ import { digitsOnly } from '../common/phone';
  */
 
 /**
- * Normalize a phone number to digits-only so Redis OTP keys, rate-limit
- * keys, DB lookups and Meta send payloads all converge on the same string
- * regardless of caller formatting (`+55…` vs `55…` vs `(11) 9...`).
- */
-function normalizePhone(phone: string): string {
-  return digitsOnly(phone);
-}
-
-/**
  * Handles WhatsApp OTP send/verify and password-recovery (forgot + reset),
  * extracted from AuthVerificationService for line-count compliance.
  */
@@ -56,7 +47,7 @@ export class AuthWhatsappPasswordService {
 
   /** Send a 6-digit OTP via WhatsApp. */
   async sendWhatsAppCode(phone: string, ip?: string) {
-    const normalizedPhone = normalizePhone(phone);
+    const normalizedPhone = digitsOnly(phone);
     await this.rateLimitService.checkRateLimit(`whatsapp-code:${ip || 'ip-unknown'}`, 3, 60 * 1000);
 
     const code = String(randomInt(100000, 999999));
@@ -139,7 +130,7 @@ export class AuthWhatsappPasswordService {
     disabledAt?: Date | null;
     deletedAt?: Date | null;
   }> {
-    const normalizedPhone = normalizePhone(phone);
+    const normalizedPhone = digitsOnly(phone);
     await this.rateLimitService.checkRateLimit(
       `whatsapp-verify:${ip || 'ip-unknown'}`,
       5,

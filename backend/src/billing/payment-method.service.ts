@@ -68,6 +68,26 @@ export class PaymentMethodService {
           throw new Error(ERROR_BILLING_UNAVAILABLE);
         }
 
+        // Defense-in-depth: validate the Stripe client is fully initialized.
+        // If resolveStripeConstructor returned a callable whose instances
+        // lack .customers (ESM/CJS interop edge case), nullify and degrade.
+        if (!this.stripe.customers) {
+          this.logger.error(
+            'Stripe client loaded but .customers resource is undefined — ' +
+              'ESM/CJS interop failure. Disabling Stripe for this request.',
+          );
+          Sentry.captureMessage('Stripe client missing .customers resource', {
+            level: 'error',
+            tags: { type: 'stripe_interop', operation: 'payment_method' },
+            extra: { workspaceId },
+          });
+          this.stripe = null;
+          if (workspace.stripeCustomerId) {
+            return workspace.stripeCustomerId;
+          }
+          throw new Error(ERROR_BILLING_UNAVAILABLE);
+        }
+
         // If we have a persisted customer id, verify it still exists in Stripe.
         // A deleted (or test-data-wiped) customer surfaces as
         // StripeInvalidRequestError code='resource_missing'.

@@ -3,6 +3,8 @@ import { CiaSendHelpersService } from './cia-send-helpers.service';
 import { AgentEventsService } from '../whatsapp/agent-events.service';
 import { ChannelTransportRegistry } from '../kloel/channel-transport.registry';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { SpineEmitterService } from '../kloel/spine/spine-emitter.service';
+import { MindPolicyService } from '../kloel/mind-policy.service';
 
 const REDIS_TOKEN = 'default_IORedisModuleConnectionToken';
 
@@ -17,6 +19,8 @@ describe('CiaSendHelpersService', () => {
   };
   let agentEvents: { publish: jest.Mock };
   let transports: { send: jest.Mock };
+  let spineEmitter: { emit: jest.Mock };
+  let mindPolicy: { resolveOpenForSubject: jest.Mock };
 
   beforeEach(async () => {
     redis = {
@@ -28,6 +32,8 @@ describe('CiaSendHelpersService', () => {
     };
     agentEvents = { publish: jest.fn().mockResolvedValue(undefined) };
     transports = { send: jest.fn() };
+    spineEmitter = { emit: jest.fn().mockResolvedValue({ eventId: 'evt-test', eventName: '', timestamp: '', occurredAt: '', truthMode: 'observed', provenance: { source: 'production' as const, processor: '', processorVersion: '', schemaVersion: '', environment: 'dev' } }) };
+    mindPolicy = { resolveOpenForSubject: jest.fn().mockResolvedValue(0) };
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CiaSendHelpersService,
@@ -35,6 +41,8 @@ describe('CiaSendHelpersService', () => {
         { provide: AgentEventsService, useValue: agentEvents },
         { provide: ChannelTransportRegistry, useValue: transports },
         { provide: OpsAlertService, useValue: { alertOnCriticalError: jest.fn() } },
+        { provide: SpineEmitterService, useValue: spineEmitter },
+        { provide: MindPolicyService, useValue: mindPolicy },
       ],
     }).compile();
     service = module.get(CiaSendHelpersService);
@@ -178,6 +186,174 @@ describe('CiaSendHelpersService', () => {
       transports.send.mockResolvedValue({ success: false, error: 'down' });
       await service.sendCiaMessageWithDailyLimit('ws-1', '+5511', 'hi', {});
       expect(redis.decr).toHaveBeenCalled();
+    });
+
+    it('emits cognition.cia_backlog_action spine event on successful send', async () => {
+      transports.send.mockResolvedValue({ success: true, messageId: 'msg-2' });
+      await service.sendCiaMessageWithDailyLimit(
+        'ws-1',
+        '+5511',
+        'hi',
+        {},
+        'contact-1',
+        'run-1',
+        'test_action',
+      );
+      expect(spineEmitter.emit).toHaveBeenCalledTimes(1);
+      expect(spineEmitter.emit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventName: 'cognition.cia_backlog_action',
+          workspaceId: 'ws-1',
+          truthMode: 'observed',
+          payload: {
+            contactId: 'contact-1',
+            runId: 'run-1',
+            action: 'test_action',
+            channel: 'whatsapp',
+          },
+        }),
+      );
+    });
+
+    it('does NOT emit spine event when send fails', async () => {
+      transports.send.mockResolvedValue({ success: false, error: 'down' });
+      await service.sendCiaMessageWithDailyLimit(
+        'ws-1',
+        '+5511',
+        'hi',
+        {},
+        'contact-1',
+        'run-1',
+        'test_action',
+      );
+      expect(spineEmitter.emit).not.toHaveBeenCalled();
+    });
+
+    it('does NOT emit spine event when daily limit is reached', async () => {
+      redis.incr.mockResolvedValue(99999);
+      await service.sendCiaMessageWithDailyLimit(
+        'ws-2',
+        '+5522',
+        'hi',
+        {},
+        'contact-2',
+        'run-2',
+        'test_action',
+      );
+      expect(spineEmitter.emit).not.toHaveBeenCalled();
+      expect(transports.send).not.toHaveBeenCalled();
+    });
+
+    it('resolves autopilot_action policy on successful send with contactId', async () => {
+      transports.send.mockResolvedValue({ success: true, messageId: 'msg-4' });
+      mindPolicy.resolveOpenForSubject.mockResolvedValue(1);
+
+      const result = await service.sendCiaMessageWithDailyLimit(
+        'ws-4',
+        '+5544',
+        'hi',
+        {},
+        'contact-4',
+        'run-4',
+        'test_action',
+      );
+
+      expect(result.success).toBe(true);
+      expect(mindPolicy.resolveOpenForSubject).toHaveBeenCalledWith({
+        workspaceId: 'ws-4',
+        subject: 'contact:contact-4',
+        decisionType: 'autopilot_action',
+        outcome: 1,
+      });
+    });
+
+    it('resolves autopilot_action with phone fallback when contactId is null', async () => {
+      transports.send.mockResolvedValue({ success: true, messageId: 'msg-5' });
+      mindPolicy.resolveOpenForSubject.mockResolvedValue(1);
+
+      const result = await service.sendCiaMessageWithDailyLimit(
+        'ws-5',
+        '+5555',
+        'hi',
+        {},
+        null,
+        'run-5',
+        'test_action',
+      );
+
+      expect(result.success).toBe(true);
+      expect(mindPolicy.resolveOpenForSubject).toHaveBeenCalledWith({
+        workspaceId: 'ws-5',
+        subject: '+5555',
+        decisionType: 'autopilot_action',
+        outcome: 1,
+      });
+    });
+
+    it('does NOT resolve when no open policy exists (no-op, no error)', async () => {
+      transports.send.mockResolvedValue({ success: true, messageId: 'msg-6' });
+      mindPolicy.resolveOpenForSubject.mockResolvedValue(0);
+
+      const result = await service.sendCiaMessageWithDailyLimit(
+        'ws-6',
+        '+5566',
+        'hi',
+        {},
+        'contact-6',
+      );
+
+      expect(result.success).toBe(true);
+      expect(mindPolicy.resolveOpenForSubject).toHaveBeenCalledTimes(1);
+    });
+
+    it('does NOT throw when resolve fails, still returns send success', async () => {
+      transports.send.mockResolvedValue({ success: true, messageId: 'msg-7' });
+      mindPolicy.resolveOpenForSubject.mockRejectedValue(new Error('db down'));
+
+      const result = await service.sendCiaMessageWithDailyLimit(
+        'ws-7',
+        '+5577',
+        'hi',
+        {},
+        'contact-7',
+        'run-7',
+        'test_action',
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.messageId).toBe('msg-7');
+      expect(mindPolicy.resolveOpenForSubject).toHaveBeenCalledTimes(1);
+    });
+
+    it('does NOT resolve when send fails', async () => {
+      transports.send.mockResolvedValue({ success: false, error: 'down' });
+
+      await service.sendCiaMessageWithDailyLimit(
+        'ws-8',
+        '+5588',
+        'hi',
+        {},
+        'contact-8',
+      );
+
+      expect(mindPolicy.resolveOpenForSubject).not.toHaveBeenCalled();
+    });
+
+    it('does NOT throw when spine emit fails, still returns success', async () => {
+      transports.send.mockResolvedValue({ success: true, messageId: 'msg-3' });
+      spineEmitter.emit.mockRejectedValue(new Error('spine down'));
+      const result = await service.sendCiaMessageWithDailyLimit(
+        'ws-3',
+        '+5533',
+        'hi',
+        {},
+        'contact-3',
+        'run-3',
+        'test_action',
+      );
+      expect(result.success).toBe(true);
+      expect(result.messageId).toBe('msg-3');
+      expect(spineEmitter.emit).toHaveBeenCalledTimes(1);
     });
   });
 

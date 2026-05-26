@@ -6,12 +6,6 @@ export function formatToolResult(tool: string, result: unknown): string {
   }
   const s = (v: unknown, fb = ''): string =>
     typeof v === 'string' || typeof v === 'number' ? String(v) : fb;
-  const records = (v: unknown): Array<Record<string, unknown>> =>
-    Array.isArray(v)
-      ? v.filter(
-          (item): item is Record<string, unknown> => typeof item === 'object' && item !== null,
-        )
-      : [];
   switch (tool) {
     case 'list_products': {
       const products = Array.isArray(r.products)
@@ -24,10 +18,8 @@ export function formatToolResult(tool: string, result: unknown): string {
     }
     case 'create_product': {
       const p = (r.product as Record<string, unknown> | undefined) ?? {};
-      const format = s(p.format);
-      const category = s(p.category);
-      const fmt = format ? ` (${format})` : '';
-      const cat = category ? ` [${category}]` : '';
+      const fmt = p.format ? ` (${p.format})` : '';
+      const cat = p.category ? ` [${p.category}]` : '';
       return `Produto ${s(p.name)}${cat}${fmt} criado! R$ ${s(p.price)}`;
     }
     case 'update_product': {
@@ -39,9 +31,7 @@ export function formatToolResult(tool: string, result: unknown): string {
     case 'create_plan': {
       const p = (r.plan as Record<string, unknown> | undefined) ?? {};
       const pn = s(p.name);
-      return pn === 'Plano'
-        ? `Plano criado! R$ ${s(p.price)}`
-        : `Plano ${pn} criado! R$ ${s(p.price)}`;
+      return pn === 'Plano' ? `Plano criado! R$ ${s(p.price)}` : `Plano ${pn} criado! R$ ${s(p.price)}`;
     }
     case 'get_product_plans': {
       const plans = Array.isArray(r.plans) ? (r.plans as Array<Record<string, unknown>>) : [];
@@ -56,16 +46,12 @@ export function formatToolResult(tool: string, result: unknown): string {
       const cc = (r.coupon as Record<string, unknown> | undefined) ?? {};
       return `Cupom ${s(cc.code || r.code)} criado!`;
     }
-    case 'update_coupon': {
-      const coupon = (r.coupon as Record<string, unknown> | undefined) ?? {};
-      return typeof r.message === 'string' ? r.message : `Cupom ${s(coupon.code)} atualizado.`;
-    }
+    case 'update_coupon':
+      return typeof r.message === 'string' ? r.message : `Cupom ${typeof (r as any).coupon?.code === 'string' ? (r as any).coupon.code : ''} atualizado.`;
     case 'list_checkouts': {
-      const chk = records(r.checkouts);
-      if (chk.length === 0) {
-        return 'Nenhum checkout encontrado.';
-      }
-      return `Checkouts: ${chk.map((c) => s(c.name || c.id)).join(', ')}`;
+      const chk = Array.isArray((r as any).checkouts) ? (r as any).checkouts : [];
+      if (chk.length === 0) return 'Nenhum checkout encontrado.';
+      return `Checkouts: ${chk.map((c: any) => c.name || c.id).join(', ')}`;
     }
     case 'delete_coupon':
       return 'Cupom removido.';
@@ -76,24 +62,21 @@ export function formatToolResult(tool: string, result: unknown): string {
       }
       return `Cupons: ${coupons.map((c) => `${s(c.code)} (${s(c.discountType)})`).join(', ')}`;
     }
-    case 'get_product_urls': {
-      const urls = Array.isArray(r.customUrls)
-        ? (r.customUrls as Array<Record<string, unknown>>)
-        : Array.isArray(r.urls)
-          ? (r.urls as Array<Record<string, unknown>>)
-          : [];
+    case 'self.capabilities':
+    case 'list_capabilities':
+      return 'Posso ajudar com: criar/editar produtos, planos, checkouts, cupons, PIX, boletos, vendas, CRM, carteira, relatorios, configuracoes e mais. Pergunte!';
+    case 'get_product_urls':
+      const urls = Array.isArray(r.customUrls) ? (r.customUrls as Array<Record<string, unknown>>) : [];
       if (urls.length === 0) {
-        return 'Nenhuma URL cadastrada para este produto.';
+        return `Nenhuma URL cadastrada para este produto.`;
       }
-      return `URLs: ${urls.map((u) => `${s(u.description || u.label || u.url)} -> ${s(u.url)}`).join(', ')}`;
-    }
+      return `URLs: ${urls.map((u) => `${s(u.description)} → ${s(u.url)}`).join(', ')}`;
     case 'get_product_reviews': {
-      const reviews = Array.isArray(r.reviews) ? (r.reviews as Array<Record<string, unknown>>) : [];
-      if (reviews.length === 0) {
-        return 'Nenhuma avaliação encontrada.';
-      }
-      return `Avaliações (${reviews.length}): ${reviews.map((review) => `${s(review.rating, '?')} ${s(review.comment)}`.trim()).join(' | ')}`;
+      const revs = Array.isArray(r.reviews) ? (r.reviews as Array<Record<string, unknown>>) : [];
+      if (revs.length === 0) return 'Nenhuma avaliação encontrada.';
+      return `Avaliações (${revs.length}): ${revs.map((rv) => `★${rv.rating || '?'} ${s(rv.comment)}`.substring(0, 60)).join(' | ')}`;
     }
+    case 'get_product_ai_config':
     case 'create_payment_link': {
       const pix = s(r.pixCopyPaste);
       const qr = s(r.pixQrCode);
@@ -133,10 +116,8 @@ export function formatToolResult(tool: string, result: unknown): string {
       return `Extrato: ${items.length} movimentacoes, total R$ ${total.toFixed(2)}.`;
     }
     case 'list_refunds': {
-      const rfunds = Array.isArray(r.orders) ? (r.orders as Array<Record<string, unknown>>) : [];
-      if (rfunds.length === 0) {
-        return 'Nenhum estorno encontrado.';
-      }
+      const rfunds = Array.isArray((r as any).orders) ? (r as any).orders : [];
+      if (rfunds.length === 0) return 'Nenhum estorno encontrado.';
       return `Estornos: ${rfunds.length} pedido(s).`;
     }
     case 'list_orders': {
@@ -176,16 +157,17 @@ export function formatToolResult(tool: string, result: unknown): string {
       return `Produto ${s(p.name)}: ${s(p.description || p.category)} - R$ ${s(p.price)}. ${plans} planos. Ativo: ${p.active ? 'sim' : 'nao'}. URL: ${s(p.salesPageUrl, 'nao definida')}`;
     }
     case 'list_subscriptions': {
-      const subs = Array.isArray(r.subscriptions)
-        ? (r.subscriptions as Array<Record<string, unknown>>)
-        : [];
-      if (subs.length === 0) {
-        return 'Nenhuma assinatura ativa.';
-      }
+      const subs = Array.isArray(r.subscriptions) ? (r.subscriptions as Array<Record<string, unknown>>) : [];
+      if (subs.length === 0) return 'Nenhuma assinatura ativa.';
       return `Assinaturas: ${subs.map((sub) => `${s(sub.plan)} (${s(sub.status)})`).join(', ')}`;
     }
     case 'request_withdrawal':
       return s(r.message, 'Saque processado.');
+    case 'upload_product_image':
+    case 'upload_document':
+    case 'configure_pixel':
+    case 'configure_shipping':
+      return s(r.message, 'Acao concluida.');
     case 'update_fiscal_data':
       return 'Dados atualizados com sucesso.';
     case 'search_agent_memory': {
@@ -213,17 +195,10 @@ export function formatToolResult(tool: string, result: unknown): string {
       return `Configuracoes de ${name}.`;
     }
     case 'get_affiliate_config': {
-      const partners = Array.isArray(r.partners)
-        ? (r.partners as Array<Record<string, unknown>>)
-        : [];
+      const partners = Array.isArray(r.partners) ? (r.partners as Array<Record<string, unknown>>) : [];
       const active = typeof r.activeCount === 'number' ? r.activeCount : 0;
-      if (partners.length === 0) {
-        return 'Nenhum afiliado cadastrado.';
-      }
-      return `Afiliados: ${partners.length} total (${active} ativos). ${partners
-        .slice(0, 3)
-        .map((p) => `${s(p.partnerName)} (${s(p.commissionRate)}%)`)
-        .join(', ')}`;
+      if (partners.length === 0) return 'Nenhum afiliado cadastrado.';
+      return `Afiliados: ${partners.length} total (${active} ativos). ${partners.slice(0, 3).map((p) => `${s(p.partnerName)} (${s(p.commissionRate)}%)`).join(', ')}`;
     }
     case 'git_status': {
       const count = typeof r.fileCount === 'number' ? r.fileCount : 0;
@@ -262,18 +237,11 @@ export function formatToolResult(tool: string, result: unknown): string {
       return `Schema: ${tables.length} tabelas.`;
     }
     case 'search_codebase': {
-      const results = records(r.results);
+      const results = Array.isArray(r.results) ? (r.results as any[]) : [];
       const err = typeof r.error === 'string' ? r.error : '';
-      if (err) {
-        return `Busca: ${err}`;
-      }
-      if (results.length === 0) {
-        return `Busca: nenhum resultado encontrado.`;
-      }
-      return `Busca: ${results.length} resultados: ${results
-        .slice(0, 5)
-        .map((x) => `${s(x.file)}:${s(x.line)}`)
-        .join(', ')}`;
+      if (err) return `Busca: ${err}`;
+      if (results.length === 0) return `Busca: nenhum resultado encontrado.`;
+      return `Busca: ${results.length} resultados: ${results.slice(0, 5).map((x: any) => `${x.file}:${x.line}`).join(', ')}`;
     }
     case 'run_backend_tests': {
       const passed = typeof r.passed === 'number' ? r.passed : 0;
@@ -281,7 +249,6 @@ export function formatToolResult(tool: string, result: unknown): string {
       return `Testes: ${passed} pass, ${failed} fail.`;
     }
     case 'code_lint':
-      return typeof r.message === 'string' ? r.message : 'Lint executado.';
     // ── NOVAS TOOLS ──
     case 'delete_plan':
       return typeof r.message === 'string' ? r.message : 'Plano removido.';
@@ -308,9 +275,7 @@ export function formatToolResult(tool: string, result: unknown): string {
     case 'configure_after_pay':
       return typeof r.message === 'string' ? r.message : 'After Pay configurado.';
     case 'browse_marketplace':
-      if (Array.isArray(r.products)) {
-        return `${r.products.length} produtos no marketplace.`;
-      }
+      if (Array.isArray(r.products)) return `${r.products.length} produtos no marketplace.`;
       return typeof r.message === 'string' ? r.message : 'Marketplace consultado.';
     case 'get_social_channels':
       return typeof r.message === 'string' ? r.message : 'Canais consultados.';
@@ -337,13 +302,7 @@ export function formatToolResult(tool: string, result: unknown): string {
     case 'codegraph_files':
       return typeof r.text === 'string' ? r.text : 'CodeGraph consultado.';
     default:
-      if (typeof r.error === 'string') {
-        return `Erro: ${r.error}`;
-      }
-      return typeof r.text === 'string'
-        ? r.text
-        : typeof r.message === 'string'
-          ? r.message
-          : 'Acao concluida.';
+      if (typeof r.error === 'string') return `Erro: ${r.error}`;
+      return typeof r.text === 'string' ? r.text : typeof r.message === 'string' ? r.message : 'Acao concluida.';
   }
 }

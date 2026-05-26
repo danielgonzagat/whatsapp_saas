@@ -18,6 +18,7 @@ import {
   CIA_BOOTSTRAP_AUTO_CONTINUE,
   CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT,
 } from '../whatsapp/cia-bootstrap.constants';
+import { MindBackgroundScheduler } from '../kloel/mind/mind-bg.scheduler';
 
 export { CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT };
 
@@ -39,6 +40,7 @@ export class CiaBootstrapService {
     @Inject(forwardRef(() => WhatsAppCatchupService))
     private readonly catchupService: WhatsAppCatchupService,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly mindScheduler?: MindBackgroundScheduler,
   ) {
     this.logger.debug?.(`CiaBootstrapService initialized`);
   }
@@ -344,6 +346,14 @@ export class CiaBootstrapService {
         autoContinueBacklog,
       },
     });
+
+    try {
+      this.mindScheduler?.registerWorkspace(workspaceId);
+    } catch (err: unknown) {
+      this.logger.warn(
+        `MIND tick registration failed for ws ${workspaceId}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
 
     return {
       connected: true,

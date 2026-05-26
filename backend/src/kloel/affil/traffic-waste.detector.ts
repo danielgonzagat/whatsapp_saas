@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import type { TrafficWaste } from './types';
+import { clamp } from '../../common/math';
 
 interface TrafficWasteInput {
   readonly campaignId: string;
@@ -20,10 +21,6 @@ interface SegmentPerformance {
 const WASTE_HIGH_THRESHOLD = 0.6;
 const WASTE_MODERATE_THRESHOLD = 0.3;
 const MIN_SPEND_FOR_SEGMENT = 10;
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
-}
 
 @Injectable()
 export class TrafficWasteDetectorService {

@@ -155,7 +155,11 @@
     "railway:runtime:check": "node scripts/ops/check-railway-runtime.mjs",
     "canonical:scan": "node tools/canonicalize/scan.mjs",
     "canonical:check": "node scripts/ops/check-canonical-duplicates.mjs && node scripts/ops/check-canonical-events.mjs",
-    "canonical:baseline": "node scripts/ops/check-canonical-duplicates.mjs --baseline"
+    "canonical:baseline": "node scripts/ops/check-canonical-duplicates.mjs --baseline",
+    "gate:math-random": "node scripts/ops/canonical/gate-math-random.mjs",
+    "gate:prisma-any": "node scripts/ops/canonical/gate-prisma-any.mjs",
+    "gate:asaas-ban": "node scripts/ops/canonical/gate-asaas-ban.mjs",
+    "gate:all": "node scripts/ops/canonical/run-all-gates.mjs"
   },
   "lint-staged": {
     "*.{json,md,yml,yaml}": [

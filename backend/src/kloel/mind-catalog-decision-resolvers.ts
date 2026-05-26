@@ -12,9 +12,12 @@ import {
 
 export type { MindPolicyChooser };
 
-type PolicyDecisionResult = Awaited<ReturnType<MindPolicyChooser['choose']>>;
+export type PolicyDecisionResult = Awaited<ReturnType<MindPolicyChooser['choose']>>;
 
-function decisionConfidence(result: PolicyDecisionResult): number {
+/** Extracts the beliefMean of the chosen action (or first candidate as fallback)
+ *  for a MindPolicyService.choose() result. Exported so peer mind decision
+ *  resolvers (commercial/recovery) consume the same confidence-extraction logic. */
+export function decisionConfidence(result: PolicyDecisionResult): number {
   return (
     result.decision.candidates.find((candidate) => candidate.action === result.chosen)
       ?.beliefMean ??

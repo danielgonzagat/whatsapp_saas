@@ -57,12 +57,8 @@ export interface WorkspaceSettingsResponse {
   providerSettings?: Record<string, unknown>;
 }
 
-export interface ChannelRealData {
-  messages: number;
-  leads: number;
-  sales: number;
-  status: string;
-}
+import type { ChannelRealData } from './MarketingTypes';
+export type { ChannelRealData };
 
 export interface WhatsAppExperienceControllerProps {
   workspaceId: string;
