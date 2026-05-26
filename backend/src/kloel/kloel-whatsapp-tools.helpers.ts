@@ -1,51 +1,33 @@
 import type { PrismaClient } from '@prisma/client';
 
-import type { ToolResult } from './kloel-tool-executor.types';
+import type {
+  ToolResult,
+  ToolSendWhatsAppMessageArgs,
+  ToolPaginationArgs,
+  ToolCreateWhatsAppContactArgs,
+  ToolGetWhatsAppMessagesArgs,
+  ToolSetWhatsAppPresenceArgs,
+  ToolSyncWhatsAppHistoryArgs,
+  ToolSendAudioArgs,
+  ToolSendDocumentArgs,
+  ToolTranscribeAudioArgs,
+} from './kloel-tool-executor.types';
 import { digitsOnly } from '../common/phone';
 
-export type { ToolResult };
-export interface ToolSendWhatsAppMessageArgs {
-  phone: string;
-  message: string;
-}
-export interface ToolPaginationArgs {
-  limit?: number;
-}
-export interface ToolCreateWhatsAppContactArgs {
-  phone: string;
-  name?: string;
-  email?: string;
-}
-export interface ToolGetWhatsAppMessagesArgs {
-  chatId?: string;
-  phone?: string;
-  limit?: number;
-  offset?: number;
-}
-export interface ToolSetWhatsAppPresenceArgs {
-  chatId?: string;
-  phone?: string;
-  presence?: 'typing' | 'paused' | 'seen';
-}
-export interface ToolSyncWhatsAppHistoryArgs {
-  reason?: string;
-}
-export interface ToolSendAudioArgs {
-  phone: string;
-  text: string;
-  voice?: string;
-}
-export interface ToolSendDocumentArgs {
-  phone: string;
-  documentName?: string;
-  url?: string;
-  caption?: string;
-}
-export interface ToolTranscribeAudioArgs {
-  audioUrl?: string;
-  audioBase64?: string;
-  language?: string;
-}
+// All 10 types live canonically in kloel-tool-executor.types — re-export to
+// keep the existing kloel-whatsapp-tools.service public surface intact.
+export type {
+  ToolResult,
+  ToolSendWhatsAppMessageArgs,
+  ToolPaginationArgs,
+  ToolCreateWhatsAppContactArgs,
+  ToolGetWhatsAppMessagesArgs,
+  ToolSetWhatsAppPresenceArgs,
+  ToolSyncWhatsAppHistoryArgs,
+  ToolSendAudioArgs,
+  ToolSendDocumentArgs,
+  ToolTranscribeAudioArgs,
+};
 
 interface AudioServiceClient {
   textToSpeech(text: string, voice?: string, workspaceId?: string): Promise<Buffer>;
