@@ -2,6 +2,14 @@ import { WorkerLogger } from './logger';
 import { autopilotQueue } from './queue';
 import { getErrorMessage } from './utils/error-message';
 
+export function parseNonNegativeEnvInt(raw: string | undefined, fallback: number): number {
+  if (raw === undefined || raw.trim() === '') {
+    return fallback;
+  }
+  const parsed = Number(raw);
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : fallback;
+}
+
 const QUEUE_THRESHOLD =
   Number.parseInt(process.env.AUTOPILOT_QUEUE_WAITING_THRESHOLD || '200', 10) || 200;
 // Transient failures (a handful of jobs) must NOT spam the warn channel —
@@ -16,6 +24,18 @@ const ALERT_WEBHOOK =
 let lastQueueAlert = 0;
 const QUEUE_ALERT_COOLDOWN_MS = 5 * 60_000;
 const AUTOPILOT_QUEUE_CHECK_INTERVAL_MS = 60_000;
+// Failed-job auto-drain grace window. Jobs that failed more than this many
+// milliseconds ago are reaped on every health tick — they are graveyards
+// from past outages whose retry budget is long exhausted. Recent failures
+// (within the grace window) keep alerting so on-call still sees them.
+const AUTOPILOT_FAILED_DRAIN_GRACE_MS = parseNonNegativeEnvInt(
+  process.env.AUTOPILOT_FAILED_DRAIN_GRACE_MS,
+  60 * 60_000,
+);
+const AUTOPILOT_FAILED_DRAIN_LIMIT = parseNonNegativeEnvInt(
+  process.env.AUTOPILOT_FAILED_DRAIN_LIMIT,
+  1000,
+);
 
 async function sendOpsAlert(
   log: WorkerLogger,
@@ -81,11 +101,44 @@ async function maybeAlertFailedJobs(
   });
 }
 
+/**
+ * Reap failed jobs that have been sitting past {@link AUTOPILOT_FAILED_DRAIN_GRACE_MS}.
+ * Returns the number of jobs removed so the caller can re-read the live counts.
+ */
+async function drainStaleFailedJobs(log: WorkerLogger): Promise<number> {
+  try {
+    const drained = await autopilotQueue.clean(
+      AUTOPILOT_FAILED_DRAIN_GRACE_MS,
+      AUTOPILOT_FAILED_DRAIN_LIMIT,
+      'failed',
+    );
+    if (drained.length > 0) {
+      log.info('autopilot_queue_drained_stale_failed', {
+        drained: drained.length,
+        graceMs: AUTOPILOT_FAILED_DRAIN_GRACE_MS,
+      });
+    }
+    return drained.length;
+  } catch (err: unknown) {
+    log.warn('autopilot_queue_drain_failed', { error: getErrorMessage(err) });
+    return 0;
+  }
+}
+
 export async function checkAutopilotQueueHealth(log: WorkerLogger): Promise<void> {
   try {
-    const counts = await autopilotQueue.getJobCounts();
+    let counts = await autopilotQueue.getJobCounts();
+    let failed = counts.failed || 0;
+    // Reap ancient graveyard before alerting so transient-outage debris does
+    // not keep pinging on-call and tripping the runtime gate forever.
+    if (failed > 0) {
+      const drained = await drainStaleFailedJobs(log);
+      if (drained > 0) {
+        counts = await autopilotQueue.getJobCounts();
+        failed = counts.failed || 0;
+      }
+    }
     const waiting = (counts.waiting || 0) + (counts.delayed || 0);
-    const failed = counts.failed || 0;
     const now = Date.now();
 
     await maybeAlertHighQueue(log, waiting, failed, now);
