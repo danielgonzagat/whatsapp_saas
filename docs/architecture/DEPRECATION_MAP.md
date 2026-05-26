@@ -150,6 +150,10 @@ atomic subagent `w1-dup-hunter-semantic` (DeepSeek V4 Pro) which produced
 | `safeStr` × 8 (cia + whatsapp + 4 kloel + product-context-formatter) | ✅ migrated | → `common/string.ts::safeStr` |
 | `digitsOnly`-local × 2 (kyc + connect.service, undefined-on-empty semantics) | ✅ migrated | → `common/phone.ts::digitsOrUndefined` (alias `digitsOnly`) |
 | `extractErrorMessage` (google-auth variant) | ✅ migrated | → `auth/sanitize-auth-error.helper::sanitizeAuthError` (alias) |
+| `safeString` (mind-verbalizer, bigint variant) | ✅ migrated | → `common/string::safeStr` (extended to accept bigint) |
+| `normalizeProviderToken` (whatsapp/provider-env) | ✅ migrated | → `safeStr(...).trim().toLowerCase()` inline |
+| `isValidDate` (dashboard/home-aggregation) | ✅ migrated | → `common/parse::isValidDate` (new) |
+| 9 `Math.random()` ID generators (abi-ab/goal-field/guest-chat/incent/legit/mercado-entrada/mind-prediction) | ✅ migrated | → `common/random-id::randomIdSegment` (crypto.randomBytes-backed) |
 | `readRecord` / `asRecord` / `asUnknownRecord` × 12 (4 shapes) | ⏳ pending | needs per-shape decision |
 | `isRecord` × 6 (3 shapes) | ⏳ pending | type-of-guard shape divergence |
 | `readText` × 4 (3 shapes) | ⏳ pending | divergent return types |
@@ -185,6 +189,10 @@ atomic subagent `w1-dup-hunter-semantic` (DeepSeek V4 Pro) which produced
 | digitsOrUndefined kyc/connect dups | Added to common/phone, both re-aliased | 1703d9b80 |
 | safeStr × 8 dups | Re-imported from common/string | 71a5f3549 |
 | extractErrorMessage (google-auth) | Aliased to sanitizeAuthError | 611fea372 |
+| 9 Math.random ID generators | Replaced with randomIdSegment (CSPRNG) | edc6269dc |
+| safeString → safeStr (bigint extension) | Extended common/string::safeStr | 56c8052f0 |
+| normalizeProviderToken | Replaced w/ safeStr().trim().toLowerCase() | 53b0cec71 |
+| isValidDate | Added to common/parse | f5579e55e |
 
 What remains as future canonicalization work is **semantic** (same-name with
 divergent bodies) requiring per-case judgement (see ⏸ kept-local rows above
