@@ -89,6 +89,10 @@ export function ChannelOnboarding({ channel, initialStep }: Props) {
       void data.openTikTok('advertiser');
       return;
     }
+    if (channel === 'google-ads') {
+      void data.openGoogleAds();
+      return;
+    }
     if (channel === 'email') {
       void data
         .toggleEmail(true)

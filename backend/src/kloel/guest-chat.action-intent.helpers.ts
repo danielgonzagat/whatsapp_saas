@@ -397,7 +397,9 @@ export function detectActionIntent(
   ) {
     const messageText = rawMsg.match(/(?:mensagem|texto|conte[uú]do)\s*:?\s*(.+)$/i)?.[1]?.trim();
     const campaignName = rawMsg
-      .match(/(?:campanha|broadcast)\s+([A-Za-zÀ-ÿ0-9\s-]{2,50}?)(?:\s+(?:mensagem|texto|conte[uú]do)\b|$)/i)?.[1]
+      .match(
+        /(?:campanha|broadcast)\s+([A-Za-zÀ-ÿ0-9\s-]{2,50}?)(?:\s+(?:mensagem|texto|conte[uú]do)\b|$)/i,
+      )?.[1]
       ?.trim();
     return {
       tool: 'create_broadcast',

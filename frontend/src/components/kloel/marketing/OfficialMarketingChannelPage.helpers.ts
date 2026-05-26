@@ -1,4 +1,4 @@
-export type ChannelKey = 'whatsapp' | 'instagram' | 'facebook' | 'tiktok' | 'email';
+export type ChannelKey = 'whatsapp' | 'instagram' | 'facebook' | 'tiktok' | 'google-ads' | 'email';
 
 export interface ChannelConnectionStatus {
   connected?: boolean;
@@ -14,6 +14,19 @@ export interface ConnectStatus {
 export interface TikTokStatus {
   connected?: boolean;
   status?: string | null;
+  [key: string]: unknown;
+}
+
+export interface GoogleAdsStatus {
+  connected?: boolean;
+  status?: string | null;
+  customerIds?: string[];
+  loginCustomerId?: string | null;
+  expiresAt?: string | null;
+  clientConfigured?: boolean;
+  secretConfigured?: boolean;
+  developerTokenConfigured?: boolean;
+  apiVersion?: string;
   [key: string]: unknown;
 }
 
@@ -44,6 +57,7 @@ const CHANNEL_COLORS: Record<ChannelKey, string> = {
   instagram: 'rgb(225, 48, 108)',
   facebook: 'rgb(24, 119, 242)',
   tiktok: 'rgb(0, 0, 0)',
+  'google-ads': 'rgb(251, 188, 4)',
   email: 'rgb(234, 67, 53)',
 };
 
@@ -52,6 +66,7 @@ const CHANNEL_SUMMARIES: Record<ChannelKey, string> = {
   instagram: 'Conecte seu Instagram para responder DMs e automatizar interações.',
   facebook: 'Integre sua página do Facebook para gerenciar mensagens do Messenger.',
   tiktok: 'Conecte o TikTok for Business para unificar dados de campanha.',
+  'google-ads': 'Conecte Google Ads para ler contas, campanhas e métricas do workspace.',
   email: 'Configure seu email para campanhas automatizadas de marketing.',
 };
 
@@ -60,6 +75,7 @@ const CHANNEL_PROOFS: Record<ChannelKey, string[]> = {
   instagram: ['DMs automatizadas', 'Métricas de engajamento', 'Integração oficial'],
   facebook: ['Chat no Messenger', 'Automação de respostas', 'Integração oficial'],
   tiktok: ['Campanhas integradas', 'Dados unificados', 'Conexão oficial'],
+  'google-ads': ['OAuth oficial', 'Contas acessíveis', 'Campanhas em leitura'],
   email: ['Campanhas automáticas', 'Métricas de abertura', 'Integração SMTP'],
 };
 
@@ -87,6 +103,12 @@ export const CHANNEL_META: Record<ChannelKey, ChannelMeta> = {
     summary: CHANNEL_SUMMARIES.tiktok,
     color: CHANNEL_COLORS.tiktok,
     proof: CHANNEL_PROOFS.tiktok,
+  },
+  'google-ads': {
+    label: 'Google Ads',
+    summary: CHANNEL_SUMMARIES['google-ads'],
+    color: CHANNEL_COLORS['google-ads'],
+    proof: CHANNEL_PROOFS['google-ads'],
   },
   email: {
     label: 'Email',

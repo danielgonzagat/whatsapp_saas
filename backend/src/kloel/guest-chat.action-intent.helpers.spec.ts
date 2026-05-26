@@ -56,10 +56,14 @@ describe('guest chat action intent helpers', () => {
   });
 
   it('updates plan commercial fields and returns the changed payload', async () => {
+    let planUpdateData: Record<string, unknown> | null = null;
     const productPlanFindFirst = jest.fn().mockResolvedValue({ id: 'plan-1' });
-    const productPlanUpdate = jest.fn().mockImplementation(({ data }: { data: Record<string, unknown> }) =>
-      Promise.resolve({ id: 'plan-1', name: 'Mensal', price: 99, ...data }),
-    );
+    const productPlanUpdate = jest
+      .fn()
+      .mockImplementation(({ data }: { data: Record<string, unknown> }) => {
+        planUpdateData = data;
+        return Promise.resolve({ id: 'plan-1', name: 'Mensal', price: 99, ...data });
+      });
     const service = new KloelProductSubResourceToolsService({
       productPlan: { findFirst: productPlanFindFirst, update: productPlanUpdate },
     } as unknown as PrismaService);
@@ -72,7 +76,7 @@ describe('guest chat action intent helpers', () => {
     });
 
     expect(result.success).toBe(true);
-    expect(productPlanUpdate.mock.calls[0]?.[0].data).toEqual({
+    expect(planUpdateData).toEqual({
       name: 'Mensal',
       itemsPerPlan: 3,
       maxInstallments: 12,
@@ -90,10 +94,14 @@ describe('guest chat action intent helpers', () => {
 
   it('creates coupons with chat-derived expiration dates', async () => {
     jest.useFakeTimers().setSystemTime(new Date('2026-05-26T12:00:00.000Z'));
+    let couponCreateData: Record<string, unknown> | null = null;
     const productFindFirst = jest.fn().mockResolvedValue({ id: 'prod-1' });
-    const productCouponCreate = jest.fn().mockImplementation(({ data }: { data: Record<string, unknown> }) =>
-      Promise.resolve({ id: 'coupon-1', code: data.code }),
-    );
+    const productCouponCreate = jest
+      .fn()
+      .mockImplementation(({ data }: { data: Record<string, unknown> }) => {
+        couponCreateData = data;
+        return Promise.resolve({ id: 'coupon-1', code: data.code });
+      });
     const service = new KloelProductSubResourceToolsService({
       product: { findFirst: productFindFirst },
       productCoupon: { create: productCouponCreate },
@@ -108,7 +116,7 @@ describe('guest chat action intent helpers', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(productCouponCreate.mock.calls[0]?.[0].data).toEqual({
+      expect(couponCreateData).toEqual({
         productId: 'prod-1',
         code: 'SAVE10',
         discountType: 'PERCENT',

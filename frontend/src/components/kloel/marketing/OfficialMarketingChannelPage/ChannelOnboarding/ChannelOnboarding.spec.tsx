@@ -50,7 +50,7 @@ describe('palette (spec §11/§12)', () => {
   });
 
   it('every channel has the four textual elements (spec §10)', () => {
-    for (const key of ['whatsapp', 'instagram', 'tiktok', 'facebook', 'email'] as const) {
+    for (const key of ['whatsapp', 'instagram', 'tiktok', 'google-ads', 'facebook', 'email'] as const) {
       const c = CHANNEL_COPY[key];
       expect(c.provider).toBe(c.provider.toUpperCase());
       expect(c.provider.length).toBeGreaterThan(0);

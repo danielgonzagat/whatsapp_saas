@@ -12,7 +12,14 @@ import type { ChannelKey } from '../../OfficialMarketingChannelPage.helpers';
 import type { OnboardingPalette } from './palette';
 import { MONO, PILL_RADIUS } from './palette';
 
-const CHANNELS: ChannelKey[] = ['whatsapp', 'instagram', 'tiktok', 'facebook', 'email'];
+const CHANNELS: ChannelKey[] = [
+  'whatsapp',
+  'instagram',
+  'tiktok',
+  'google-ads',
+  'facebook',
+  'email',
+];
 
 export function PreviewBar({
   active,
