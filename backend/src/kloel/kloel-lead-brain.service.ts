@@ -1,3 +1,11 @@
+/**
+ * @deprecated Use {@link ./mind/coordination/lead-mind-coordinator.service.ts LeadMindCoordinator}.
+ * ADR-0013 Wave M1 alias window (4 weeks).
+ *
+ * @cluster Mind/Coordination
+ * @canonical backend/src/kloel/mind/coordination/lead-mind-coordinator.service.ts
+ * @see docs/adr/0013-kloel-mind-unification.md
+ */
 import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { KloelLead, Prisma } from '@prisma/client';

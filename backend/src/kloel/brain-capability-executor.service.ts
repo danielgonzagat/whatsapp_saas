@@ -1,3 +1,11 @@
+/**
+ * @deprecated Use {@link ./mind/coordination/mind-capability-executor.service.ts MindCapabilityExecutor}.
+ * ADR-0013 Wave M1 alias window (4 weeks).
+ *
+ * @cluster Mind/Coordination
+ * @canonical backend/src/kloel/mind/coordination/mind-capability-executor.service.ts
+ * @see docs/adr/0013-kloel-mind-unification.md
+ */
 import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';

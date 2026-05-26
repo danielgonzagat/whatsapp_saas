@@ -1,3 +1,14 @@
+/**
+ * @deprecated Use {@link ./mind/coordination/mind-event-spine.service.ts MindEventSpine}.
+ * This is the central nervous system that re-emits raw CRUD events as
+ * canonical `mind.*` events. 22 cross-domain callers (products, plans,
+ * admin/pipeline, omnichannel, …) — alias is safe, physical move follows
+ * in a separate PR after the 4-week alias window per ADR-0013 Wave M1.
+ *
+ * @cluster Mind/Coordination
+ * @canonical backend/src/kloel/mind/coordination/mind-event-spine.service.ts
+ * @see docs/adr/0013-kloel-mind-unification.md
+ */
 import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';

@@ -1,3 +1,11 @@
+/**
+ * @deprecated Use {@link ./mind/coordination/mind-runtime.service.ts MindRuntime}.
+ * ADR-0013 Wave M1 alias window (4 weeks).
+ *
+ * @cluster Mind/Coordination
+ * @canonical backend/src/kloel/mind/coordination/mind-runtime.service.ts
+ * @see docs/adr/0013-kloel-mind-unification.md
+ */
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
