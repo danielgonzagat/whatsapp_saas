@@ -16,7 +16,6 @@ import { CaptureSocialLeadDto } from './dto/capture-social-lead.dto';
 import { UpdateSocialLeadDto } from './dto/update-social-lead.dto';
 import { findLatestCandidate as companionFindLatestCandidate } from './checkout-social-lead.candidate';
 import {
-  extractAddressFromEnrichment,
   mergeGooglePeopleProfile,
   mergeLeadAddressSnapshot,
   normalizeEmail,
@@ -24,6 +23,8 @@ import {
   normalizePhone,
   toJsonValue,
 } from './checkout-social-lead.util';
+import { buildLeadPrefill, parseProvider } from './checkout-social-lead.helpers';
+import type { CheckoutSocialLeadPrefill } from './checkout-social-lead.helpers';
 
 type CheckoutPlanContext = {
   id: string;
@@ -41,24 +42,6 @@ type ConversionInput = {
   deviceFingerprint?: string | null;
 };
 
-type CheckoutSocialLeadPrefill = {
-  leadId: string;
-  provider: CaptureSocialLeadDto['provider'];
-  name: string | null;
-  email: string | null;
-  avatarUrl: string | null;
-  deviceFingerprint: string | null;
-  phone: string | null;
-  cpf: string | null;
-  cep: string | null;
-  street: string | null;
-  number: string | null;
-  neighborhood: string | null;
-  city: string | null;
-  state: string | null;
-  complement: string | null;
-};
-
 /** Checkout social lead service. */
 @Injectable()
 export class CheckoutSocialLeadService {
@@ -74,7 +57,7 @@ export class CheckoutSocialLeadService {
   /** Capture lead. */
   async captureLead(dto: CaptureSocialLeadDto) {
     const plan = await this.resolvePlanBySlug(dto.slug);
-    const provider = this.parseProvider(dto.provider);
+    const provider = parseProvider(dto.provider);
 
     const verified = await this.verifySocialProvider(provider, dto);
     const lead = await this.prisma.checkoutSocialLead.create({
@@ -173,25 +156,7 @@ export class CheckoutSocialLeadService {
       return null;
     }
 
-    const address = extractAddressFromEnrichment(lead.enrichmentData);
-
-    return {
-      leadId: lead.id,
-      provider: this.serializeProvider(lead.provider),
-      name: lead.name,
-      email: lead.email,
-      avatarUrl: lead.avatarUrl,
-      deviceFingerprint: lead.deviceFingerprint,
-      phone: lead.phone,
-      cpf: lead.cpf,
-      cep: address.cep,
-      street: address.street,
-      number: address.number,
-      neighborhood: address.neighborhood,
-      city: address.city,
-      state: address.state,
-      complement: address.complement,
-    };
+    return buildLeadPrefill(lead);
   }
 
   /** Hydrate google profile. */
@@ -271,25 +236,7 @@ export class CheckoutSocialLeadService {
       await this.syncLeadContact(updatedLead.result.id);
     }
 
-    const address = extractAddressFromEnrichment(updatedLead.result.enrichmentData);
-
-    return {
-      leadId: updatedLead.result.id,
-      provider: this.serializeProvider(updatedLead.result.provider),
-      name: updatedLead.result.name,
-      email: updatedLead.result.email,
-      avatarUrl: updatedLead.result.avatarUrl,
-      deviceFingerprint: updatedLead.result.deviceFingerprint,
-      phone: updatedLead.result.phone,
-      cpf: updatedLead.result.cpf,
-      cep: address.cep,
-      street: address.street,
-      number: address.number,
-      neighborhood: address.neighborhood,
-      city: address.city,
-      state: address.state,
-      complement: address.complement,
-    };
+    return buildLeadPrefill(updatedLead.result);
   }
 
   /** Update lead. */
@@ -473,25 +420,6 @@ export class CheckoutSocialLeadService {
     };
   }
 
-  private parseProvider(provider: string) {
-    if (provider === 'google') {
-      return CheckoutSocialProvider.GOOGLE;
-    }
-    if (provider === 'facebook') {
-      return CheckoutSocialProvider.FACEBOOK;
-    }
-    return CheckoutSocialProvider.APPLE;
-  }
-
-  private serializeProvider(provider: CheckoutSocialProvider): CaptureSocialLeadDto['provider'] {
-    if (provider === CheckoutSocialProvider.GOOGLE) {
-      return 'google';
-    }
-    if (provider === CheckoutSocialProvider.FACEBOOK) {
-      return 'facebook';
-    }
-    return 'apple';
-  }
 
   private async verifySocialProvider(provider: CheckoutSocialProvider, dto: CaptureSocialLeadDto) {
     if (provider === CheckoutSocialProvider.FACEBOOK) {
