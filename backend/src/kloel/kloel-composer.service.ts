@@ -14,6 +14,7 @@ import { StorageService } from '../common/storage/storage.service';
 import { getTraceHeaders } from '../common/trace-headers';
 import { resolveKloelCapabilityModel } from '../lib/ai-models';
 import { KloelComposerE2EGuard, KLOEL_COMPOSER_E2E_GUARD } from './kloel-composer-e2e-guard';
+import { callOpenAIWithRetry } from './openai-wrapper';
 const MODEL_RE = /model/i;
 const INVALID_RE = /invalid/i;
 
@@ -151,7 +152,9 @@ export class KloelComposerService {
       return this.codeNativeSearchWeb(normalizedQuery);
     }
 
-    const response = await this.openai.responses.create({
+    // Per WAVE3_LLM_PROMPT_AUDIT critical gap #8: wrap in retry helper to
+    // survive transient 429 / 5xx / network blips from the responses API.
+    const response = await callOpenAIWithRetry(() => this.openai.responses.create({
       model: KLOEL_SEARCH_WEB_MODEL,
       input: normalizedQuery,
       tools: [
@@ -167,7 +170,7 @@ export class KloelComposerService {
         },
       ],
       include: ['web_search_call.action.sources'],
-    });
+    }));
 
     const outputText = String(response.output_text || '').trim();
     const rawSources = Array.isArray(response.output)
@@ -283,7 +286,11 @@ export class KloelComposerService {
           n: 1,
         };
         const requestOptions: OpenAI.RequestOptions | undefined = signal ? { signal } : undefined;
-        response = await this.openai.images.generate(imageRequest, requestOptions);
+        // Per WAVE3_LLM_PROMPT_AUDIT critical gap #8: wrap in retry helper
+        // so transient 429/5xx don't fail the user's image-generation request.
+        response = await callOpenAIWithRetry(() =>
+          this.openai.images.generate(imageRequest, requestOptions),
+        );
       } catch (error: unknown) {
         const errorRecord = asUnknownRecord(error);
         const errorMessage = typeof errorRecord?.message === 'string' ? errorRecord.message : '';
