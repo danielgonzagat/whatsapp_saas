@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { formatBrlAmount } from './money-format.util';
 import { WalletLedgerService } from './wallet-ledger.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { getWalletBalance, getWalletTransactionHistory } from './wallet.read.helpers';
 
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 // All dates stored as UTC via Prisma DateTime (toISOString)
@@ -41,13 +42,7 @@ export class WalletService {
    * 💰 Obtém saldo do workspace
    */
   async getBalance(workspaceId: string) {
-    const wallet = await this.getOrCreateWallet(workspaceId);
-    return {
-      available: wallet.availableBalance,
-      pending: wallet.pendingBalance,
-      blocked: wallet.blockedBalance,
-      total: wallet.availableBalance + wallet.pendingBalance + wallet.blockedBalance,
-    };
+    return getWalletBalance(this.prisma, workspaceId);
   }
 
   /**
@@ -368,33 +363,7 @@ export class WalletService {
    * 📊 Histórico de transações
    */
   async getTransactionHistory(workspaceId: string, page = 1, limit = 20, type?: string) {
-    const where: Record<string, unknown> = { wallet: { workspaceId } };
-    if (type) {
-      where.type = type;
-    }
-
-    const [transactions, total] = await Promise.all([
-      this.prisma.kloelWalletTransaction.findMany({
-        where,
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-        select: {
-          id: true,
-          walletId: true,
-          type: true,
-          amount: true,
-          description: true,
-          status: true,
-          reference: true,
-          metadata: true,
-          createdAt: true,
-        },
-      }),
-      this.prisma.kloelWalletTransaction.count({ where }),
-    ]);
-
-    return { transactions, total };
+    return getWalletTransactionHistory(this.prisma, workspaceId, page, limit, type);
   }
 
   /**
@@ -557,16 +526,4 @@ export class WalletService {
     return wallet;
   }
 
-  private async getOrCreateWallet(workspaceId: string) {
-    return this.prisma.kloelWallet.upsert({
-      where: { workspaceId },
-      update: {},
-      create: {
-        workspaceId,
-        availableBalance: 0,
-        pendingBalance: 0,
-        blockedBalance: 0,
-      },
-    });
-  }
 }
