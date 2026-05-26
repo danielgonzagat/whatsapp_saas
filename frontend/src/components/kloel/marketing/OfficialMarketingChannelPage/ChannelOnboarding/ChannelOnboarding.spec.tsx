@@ -105,15 +105,20 @@ describe('atoms', () => {
     );
   });
 
-  it('StepBar lights completed+current traces only', () => {
-    const { container } = render(<StepBar step={2} C={D} />);
-    const traces = Array.from(
-      (container.firstElementChild as HTMLElement).children,
-    ) as HTMLElement[];
+  it('StepBar lights completed+current traces and clickable traces from the palette', () => {
+    const onStepClick = vi.fn();
+    const { container } = render(<StepBar step={2} C={D} onStepClick={onStepClick} />);
+    const buttons = screen.getAllByRole('button');
+    const traces = buttons.map((button) => button.firstElementChild as HTMLElement);
+
     expect(traces).toHaveLength(4);
     expect(traces[0].style.background).toBe(D.ember);
     expect(traces[2].style.background).toBe(D.ember);
     expect(traces[3].style.background).toBe(D.inactiveTrace);
+
+    fireEvent.click(buttons[3]);
+    expect(onStepClick).toHaveBeenCalledWith(3);
+    expect(container.firstElementChild).toBeTruthy();
   });
 });
 
