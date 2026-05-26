@@ -12,6 +12,7 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 import { KloelCodeToolsService } from './kloel-code-tools.service';
 import { KloelCodeAnalysisService } from './kloel-code-analysis.service';
 import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
+import { PlanService } from './plan.service';
 import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service';
 import { sanitizeDetails } from './kloel-tool-dispatcher.high-risk.helpers';
 import {
@@ -43,6 +44,7 @@ export class KloelToolDispatcherService {
     private readonly auditService: AuditService,
     private readonly codeToolsService: KloelCodeToolsService,
     private readonly codeAnalysisService: KloelCodeAnalysisService,
+    @Optional() private readonly planService?: PlanService,
     @Optional() private readonly productSubTools?: KloelProductSubResourceToolsService,
     @Optional() private readonly walletSalesTools?: KloelWalletSalesToolsService,
 
@@ -166,6 +168,14 @@ export class KloelToolDispatcherService {
           return { success: false, error: 'wallet_sales_tools_not_available' };
         case 'toggle_theme':
           return await this.chatToolsService.toolToggleTheme(workspaceId, asToolArgs(args));
+        case 'plan_create':
+          if (this.planService) {
+            return this.planService.create(workspaceId, {
+              productId: String(args.productId || ''),
+              name: String(args.name || args.planName || 'Plano'),
+              price: Number(args.price) || 0,
+            });
+          }
         case 'create_plan':
         case 'update_plan':
         case 'create_checkout':
