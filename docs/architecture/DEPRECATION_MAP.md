@@ -51,6 +51,23 @@
 | `FlexMock` local (6 spec files) | `test/helpers/prisma.mock.ts::FlexMock` | — | ⏳ planned (Wave B.2 in flight) |
 | `makeEvent` Variants A+B (18 spec files) | `test/helpers/spine-event-factory.ts::makeEventFactory{,Ms}` | — | ⏳ planned (Wave B.1 in flight) |
 | `buildService` (8 spec files) | (stays local — domain-specific constructor signatures) | — | ⏸ kept local |
+| `FollowupListItem` in `kloel/{kloel-lead-processor.service,kloel.service}.ts` | `kloel/kloel.service.lists.helpers.ts::FollowupListItem` | 2026-05-26 | ✅ migrated (re-export; `import type + export type` where used locally) |
+| `ChatMessage` in `kloel/{kloel-thread.service,kloel-lead-processor-helpers,kloel-lead-brain.helpers}.ts` | `kloel/kloel-thinker.types.ts::ChatMessage` | 2026-05-26 | ✅ migrated (re-export; 4 byte-identical defs collapsed to 1 canonical) |
+| 9 `Autopilot*` types (`AutopilotStatus`/`Stats`/`Impact`/`Action`/`Insight`/`ConfigData`/`Pipeline`/`SystemHealth`/`SmokeTestResult`) in `frontend/app/(main)/autopilot/page.ui.tsx` | `frontend/app/(main)/autopilot/page.types.ts` | 2026-05-26 | ✅ migrated (re-export; 136 lines removed; verified byte-identical via md5sum) |
+| `lib/api/autopilot.ts` Autopilot* types (Record<string,unknown> stubs) | (stays local — divergent: API-layer placeholder stubs, NOT the real shapes in page.types) | — | ⏸ kept local |
+| `FeedbackInput` in `kloel/{clarity/clarity.types,incent/user-feedback-correction.service,team/team.types}.ts` | (stays local — 3 unrelated domains, same name, different shapes) | — | ⏸ kept local |
+| `SessionStatus` in `whatsapp/providers/{provider-registry.types,waha-types,whatsapp-api.provider.types}.ts` | (stays local — 3 provider variants with different state unions) | — | ⏸ kept local |
+| `ToolResult` in `kloel/{kloel-chat-tools.agent-runtime.helpers,kloel-tool-executor.types,kloel-whatsapp-tools.helpers}.ts` | (stays local — divergent stubs per tool family) | — | ⏸ kept local |
+| `makePrismaStub` in `payments/{fraud,ledger}/.spec-helpers.ts` + `wallet/__test-support__/prepaid-wallet.controller.spec-helpers.ts` | (stays local — stubs for 3 different Prisma models: FraudBlacklist, ConnectAccountBalance, PrepaidWallet) | — | ⏸ kept local |
+| `ClientContextBundle` in `kloel/agency/{agency.types,types}.ts` | (stays local — 2 variants in same dir with different fields) | — | ⏸ kept local |
+| `HandoffPackage` in `kloel/{agency/types,team/team.types}.ts` | (stays local — agency-handoff vs team-handoff have completely different shapes) | — | ⏸ kept local |
+| `ObservabilityModule` in `common/observability/` + `kloel/observability/` | (stays local — 2 distinct NestJS modules with different providers/exports) | — | ⏸ kept local |
+| `PortfolioResult` in `kloel/agency/{agency.types,portfolio-assessment}.ts` | (stays local — references different state types: ConsolidatedPortfolioState vs PortfolioState) | — | ⏸ kept local |
+| `LoginDto` / `RefreshDto` / `ChangePasswordDto` in `auth/dto/` + `admin/auth/dto/` (+ `kyc/dto/` for ChangePasswordDto) | (stays local — admin auth has stricter limits/regex by design; intentional security-tier boundary) | — | ⏸ kept local |
+| `Fmt` in `frontend/app/(main)/analytics/analytics.design-tokens.ts` + `frontend/components/kloel/sites/SitesViewIcons.tsx` | (stays local — different formatting: locale vs K-suffix) | — | ⏸ kept local |
+| `formatMoney` in `frontend/components/kloel/marketing/WhatsAppExperience.helpers.ts` + `frontend/components/kloel/settings/crm-settings-section.helpers.ts` + `frontend-admin/app/(admin)/produtos/page.helpers.ts` | (stays local — different fallback semantics: Intl.NumberFormat vs 'R$ 0,00' vs '—') | — | ⏸ kept local |
+| `readText` in `common/utils.ts` + `member-area/member-area.helpers.ts` + `meta/read-model/meta-read-helpers.ts` | (stays local — different return types: string vs string\|undefined; different non-string handling) | — | ⏸ kept local |
+| `clamp` in `kloel/evol/types.ts` (tuple-domain signature `clamp([min,max], value)`) | (stays local — different operator from `common/math.ts::clamp(value, min, max)`) | — | ⏸ kept local |
 
 **Status legend:**
 - ✅ migrated (re-export): local export is now a re-export from canonical; callers unchanged, structure consolidated
