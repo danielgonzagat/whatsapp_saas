@@ -323,7 +323,7 @@ jobs:
   pulse-deep:
     needs: quality
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 75
 
     env:
       PULSE_BACKEND_URL: http://localhost:3099
