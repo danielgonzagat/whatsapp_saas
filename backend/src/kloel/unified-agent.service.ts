@@ -14,6 +14,7 @@ import { UnifiedAgentResponseService } from './unified-agent-response.service';
 import { UnifiedAgentActionsService } from './unified-agent-actions.service';
 import { AgentRuntimeContextService } from './agent-runtime';
 import { AbiBuilderService } from './abi/abi-builder.service';
+import { AbiSnapshotCacheService } from './abi/abi-snapshot-cache.service';
 import { validateAbiPayload } from './abi/abi-validator';
 export type { ToolArgs, ActionEntry } from './unified-agent.types';
 import type { ToolArgs, ActionEntry, PredecidedAction } from './unified-agent.types';
@@ -86,6 +87,7 @@ export class UnifiedAgentService {
     private readonly actions: UnifiedAgentActionsService,
     @Optional() private readonly agentRuntime?: AgentRuntimeContextService,
     @Optional() private readonly abiBuilder?: AbiBuilderService,
+    @Optional() private readonly abiSnapshotCache?: AbiSnapshotCacheService,
     @Optional() private readonly brainCapability?: BrainCapabilityExecutorService,
     @Optional() private readonly toolExecutor?: UnifiedAgentToolExecutorService,
   ) {
@@ -267,18 +269,39 @@ export class UnifiedAgentService {
 
       if (abiResult.status !== 'ok') {
         this.logger.warn(
-          `ABI build failed: ${abiResult.reason}, using structured unified agent fallback`,
+          `ABI build failed: ${abiResult.reason}, trying cached snapshot`,
         );
+        const cached = await this.abiSnapshotCache?.getCachedSnapshot(workspaceId);
+        if (cached) {
+          this.logger.log(`Using cached ABI snapshot for workspace ${workspaceId}`);
+          cognitiveState = cached as object as Record<string, unknown>;
+        } else {
+          this.logger.warn(
+            `No cached ABI snapshot available for workspace ${workspaceId}, using hardcoded zero-state fallback`,
+          );
+        }
       } else {
         const abi = abiResult.abi;
         const validation = validateAbiPayload(abi);
 
         if (validation.status === 'FAIL') {
           this.logger.warn(
-            `ABI validation failed: ${JSON.stringify(validation.issues)}, using structured unified agent fallback`,
+            `ABI validation failed: ${JSON.stringify(validation.issues)}, trying cached snapshot`,
           );
+          const cached = await this.abiSnapshotCache?.getCachedSnapshot(workspaceId);
+          if (cached) {
+            this.logger.log(
+              `Using cached ABI snapshot for workspace ${workspaceId} (validation failed)`,
+            );
+            cognitiveState = cached as object as Record<string, unknown>;
+          } else {
+            this.logger.warn(
+              `No cached ABI snapshot available for workspace ${workspaceId}, using hardcoded zero-state fallback`,
+            );
+          }
         } else {
           cognitiveState = abi as object as Record<string, unknown>;
+          void this.abiSnapshotCache?.cacheSnapshot(workspaceId, abi);
         }
       }
     }
