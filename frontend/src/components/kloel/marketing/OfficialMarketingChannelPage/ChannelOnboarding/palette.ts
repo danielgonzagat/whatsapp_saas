@@ -38,6 +38,40 @@ export interface OnboardingPalette {
   primaryHover: string;
   /** Flower-of-life base opacity (0.22 dark, 0.45 light). */
   flowerOpacity: number;
+
+  // ─── Glyph contract tokens (spec §6) ────────────────────────────────────
+  /** Flower-of-life stroke color (dark uses dim ≈ very faint; light uses faint ≈ paper-edge). */
+  flowerStroke: string;
+  /** Flower-of-life stroke width (0.5 dark, 0.6 light). */
+  flowerStrokeWidth: number;
+  /** Vitruvian axes stroke when the core is awake (>= step 1). */
+  axesAliveStroke: string;
+  /** Vitruvian axes opacity when alive. */
+  axesAliveOpacity: number;
+  /** Vitruvian axes stroke when idle. */
+  axesIdleStroke: string;
+  /** Vitruvian axes opacity when idle. */
+  axesIdleOpacity: number;
+  /** Outer ring stroke when idle (>= step 3 uses ember). */
+  outerRingIdleStroke: string;
+  /** Outer ring opacity when armed (>= step 3). */
+  outerRingArmedOpacity: number;
+  /** Outer ring opacity when idle. */
+  outerRingIdleOpacity: number;
+  /** Inner-orbit stroke when idle (orbiting >= step 2 uses ember). */
+  innerOrbitIdleStroke: string;
+  /** Inner-orbit opacity when orbiting. */
+  innerOrbitOrbitingOpacity: number;
+  /** Inner-orbit opacity when idle. */
+  innerOrbitIdleOpacity: number;
+  /** Inactive product hex stroke (off-state). */
+  productInactiveStroke: string;
+  /** Idle core stroke (around the dim core, before any step takes it). */
+  coreIdleStroke: string;
+  /** Idle core dot fill — high-contrast ink in light, dim shade in dark. */
+  coreIdleDot: string;
+  /** Trace background for inactive StepBar / Dial segments. */
+  inactiveTrace: string;
 }
 
 // Owner-mandated bespoke screen palette (Marketing spec §11 dark / §12 light).
@@ -74,6 +108,22 @@ const DARK: OnboardingPalette = {
   glassShadow: 'none',
   primaryHover: 'rgb(255, 255, 255)',
   flowerOpacity: 0.22,
+  flowerStroke: 'rgb(74, 74, 80)', // dim
+  flowerStrokeWidth: 0.5,
+  axesAliveStroke: 'rgb(38, 38, 43)', // faint
+  axesAliveOpacity: 0.6,
+  axesIdleStroke: 'rgb(38, 38, 43)', // faint
+  axesIdleOpacity: 0.3,
+  outerRingIdleStroke: 'rgb(38, 38, 43)', // faint
+  outerRingArmedOpacity: 0.6,
+  outerRingIdleOpacity: 0.4,
+  innerOrbitIdleStroke: 'rgb(38, 38, 43)', // faint
+  innerOrbitOrbitingOpacity: 0.5,
+  innerOrbitIdleOpacity: 0.35,
+  productInactiveStroke: 'rgb(38, 38, 43)', // faint
+  coreIdleStroke: 'rgb(74, 74, 80)', // dim
+  coreIdleDot: 'rgb(74, 74, 80)', // dim
+  inactiveTrace: 'rgb(38, 38, 43)', // faint
 };
 
 const LIGHT: OnboardingPalette = {
@@ -99,6 +149,22 @@ const LIGHT: OnboardingPalette = {
   glassShadow: '0 2px 10px rgba(0, 0, 0, 0.04)',
   primaryHover: 'rgb(0, 0, 0)',
   flowerOpacity: 0.45,
+  flowerStroke: 'rgb(216, 213, 206)', // faint
+  flowerStrokeWidth: 0.6,
+  axesAliveStroke: 'rgb(156, 156, 159)', // dim
+  axesAliveOpacity: 0.75,
+  axesIdleStroke: 'rgb(216, 213, 206)', // faint
+  axesIdleOpacity: 0.55,
+  outerRingIdleStroke: 'rgb(201, 198, 189)', // hi
+  outerRingArmedOpacity: 0.7,
+  outerRingIdleOpacity: 0.5,
+  innerOrbitIdleStroke: 'rgb(201, 198, 189)', // hi
+  innerOrbitOrbitingOpacity: 0.6,
+  innerOrbitIdleOpacity: 0.45,
+  productInactiveStroke: 'rgb(201, 198, 189)', // hi
+  coreIdleStroke: 'rgb(107, 107, 112)', // muted
+  coreIdleDot: 'rgb(24, 24, 28)', // silver — high-contrast ink dot in light
+  inactiveTrace: 'rgb(201, 198, 189)', // hi
 };
 
 /**

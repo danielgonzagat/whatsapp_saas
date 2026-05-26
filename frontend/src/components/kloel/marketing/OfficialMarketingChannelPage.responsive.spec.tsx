@@ -63,8 +63,8 @@ describe('Channel onboarding step bar (spec §5)', () => {
     // step 1 → traces 0 and 1 lit (ember), 2 and 3 dormant (hi).
     expect(traces[0].style.background).toBe(C.ember);
     expect(traces[1].style.background).toBe(C.ember);
-    expect(traces[2].style.background).toBe(C.hi);
-    expect(traces[3].style.background).toBe(C.hi);
+    expect(traces[2].style.background).toBe(C.inactiveTrace);
+    expect(traces[3].style.background).toBe(C.inactiveTrace);
   });
 
   it('is viewport independent — identical structure on mobile and desktop', () => {
