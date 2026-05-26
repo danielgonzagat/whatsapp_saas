@@ -1,8 +1,9 @@
-import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ForbiddenException, Optional } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import type { Product, Prisma } from '@prisma/client';
+import { BrainEventSpineService } from '../kloel/brain-event-spine.service';
 
 export interface CreateProductDto {
   name: string;
@@ -73,6 +74,7 @@ export class ProductService {
     private readonly prisma: PrismaService,
     private readonly eventEmitter: EventEmitter2,
     private readonly audit: AuditService,
+    @Optional() private readonly brainSpine?: BrainEventSpineService,
   ) {}
 
   /**
@@ -112,6 +114,20 @@ export class ProductService {
       resource: 'Product',
       resourceId: product.id,
       details: { name: product.name, price: product.price },
+    });
+
+    // Feed the cognitive spine: product creation → belief/prediction cycle
+    await this.brainSpine?.recordCommercial({
+      workspaceId,
+      subject: `product:${product.id}`,
+      eventType: 'product.created',
+      occurredAt: new Date(),
+      payload: {
+        productId: product.id,
+        name: product.name,
+        priceInCents: Math.round(product.price * 100),
+        format: product.format,
+      },
     });
 
     this.logger.log(`Product created: ${product.id} by ${actor.id}`);
