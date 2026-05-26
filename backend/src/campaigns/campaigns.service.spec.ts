@@ -267,7 +267,7 @@ describe('CampaignsService', () => {
       expect(mockQueueAdd).toHaveBeenCalledWith(
         'process-campaign',
         { campaignId: 'camp-1', workspaceId: 'ws-1' },
-        expect.any(Object),
+        { delay: 0, jobId: 'process-campaign:camp-1' },
       );
     });
 

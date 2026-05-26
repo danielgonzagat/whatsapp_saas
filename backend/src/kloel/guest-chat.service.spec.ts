@@ -110,17 +110,25 @@ describe('GuestChatService', () => {
       expect(chatCompletionWithFallbackMock).toHaveBeenCalled();
     });
 
-    it('grounds public guest replies with an anti-invention system prompt', async () => {
+    it('grounds public guest replies with structured cognitive payload only', async () => {
       await service.chatSync('Qual o preço do PDRN?', 'session-grounded');
 
       const completionCalls = chatCompletionWithFallbackMock.mock.calls as Array<
         [unknown, { messages?: Array<{ role?: string; content?: string }> }]
       >;
       const messages = completionCalls[0]?.[1].messages ?? [];
+      const lastUserMessage = messages.filter((item) => item.role === 'user').at(-1);
+      const payload = JSON.parse(lastUserMessage?.content ?? '{}') as Record<string, unknown>;
 
-      expect(messages[0]).toMatchObject({ role: 'system' });
-      expect(messages[0]?.content).toContain('NEVER invent product names');
-      expect(messages[0]?.content).toContain('vou verificar e te respondo');
+      expect(messages).toEqual(
+        expect.not.arrayContaining([expect.objectContaining({ role: 'system' })]),
+      );
+      expect(payload).toEqual(
+        expect.objectContaining({
+          cognitiveState: expect.objectContaining({ audience: 'public' }),
+          currentInput: expect.objectContaining({ raw: 'Qual o preço do PDRN?' }),
+        }),
+      );
     });
 
     it('preserves conversation context across messages', async () => {

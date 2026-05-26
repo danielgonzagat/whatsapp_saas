@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  deleteProductUrlTool,
+  generateBoletoTool,
+} from './kloel-product-sub-resource-tools.url-payment.helpers';
 
 import type { UnknownRecord } from '../common/types';
 
@@ -577,69 +581,9 @@ export class KloelProductSubResourceToolsService {
   }
 
   async toolDeleteUrl(workspaceId: string, args: UnknownRecord) {
-    const label = this.str(args.urlLabel || args.label);
-    const url = this.str(args.url);
-    if (!label && !url) {
-      return { success: false, error: 'Informe a descricao ou URL para remover.' };
-    }
-    try {
-      let target: { id: string } | null = null;
-      if (label) {
-        target = await this.prisma.productUrl.findFirst({
-          where: {
-            description: { contains: label, mode: 'insensitive' },
-            product: { workspaceId },
-          },
-          select: { id: true },
-        });
-      }
-      if (!target && url) {
-        target = await this.prisma.productUrl.findFirst({
-          where: { url: { contains: url }, product: { workspaceId } },
-          select: { id: true },
-        });
-      }
-      if (!target) {
-        return { success: false, error: 'URL nao encontrada.' };
-      }
-      await this.prisma.productUrl.delete({ where: { id: target.id } });
-      return { success: true, message: 'URL removida.' };
-    } catch (e: unknown) {
-      return { success: false, error: e instanceof Error ? e.message : 'Erro ao deletar URL.' };
-    }
+    return deleteProductUrlTool(this.prisma, workspaceId, args);
   }
   async toolGenerateBoleto(workspaceId: string, args: UnknownRecord) {
-    try {
-      const amount = this.num(args.amount);
-      const sale = await this.prisma.kloelSale.create({
-        data: {
-          workspaceId,
-          externalPaymentId: 'bol_' + Date.now(),
-          leadPhone: this.str(args.customerPhone),
-          productName: this.str(args.productName),
-          amount,
-          status: 'pending',
-          paymentMethod: 'BOLETO',
-        },
-      });
-      return {
-        success: true,
-        saleId: sale.id,
-        boletoCode:
-          '34191.79001 01043.510047 91020.150008 9 ' +
-          String(Math.round(amount * 100)).padStart(10, '0'),
-        boletoPdf: null, // PDF generation requires pdfkit library
-        boletoHtml: `<div style="font-family:monospace;padding:20px;border:1px solid #000">
-<h3>BOLETO BANCARIO</h3>
-<p>Valor: R$ ${amount.toFixed(2)}</p>
-<p>Codigo: 34191.79001 01043.510047 91020.150008 9 ${String(Math.round(amount * 100)).padStart(10, '0')}</p>
-<p>Beneficiario: ${this.str(args.customerPhone || args.productName)}</p>
-<p>Vencimento: ${new Date(Date.now() + 3 * 86400000).toLocaleDateString('pt-BR')}</p>
-</div>`,
-        amount,
-      };
-    } catch (err: unknown) {
-      return { success: false, error: err instanceof Error ? err.message : 'Erro' };
-    }
+    return generateBoletoTool(this.prisma, workspaceId, args);
   }
 }

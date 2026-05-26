@@ -1,0 +1,1 @@
+export const GUEST_CONVERSATION_TTL_SECONDS = 24 * 60 * 60;
