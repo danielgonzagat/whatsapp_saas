@@ -1,5 +1,7 @@
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
+import { InjectRedis } from '@nestjs-modules/ioredis';
 import { randomUUID } from 'node:crypto';
+import type Redis from 'ioredis';
 import { ValenceTaggerService } from '../mind/valence-tagger.service';
 import type { SpineEventRef } from '../mind/mind.types';
 import type { SpineEventEnvelope, SpineEventInput } from './spine-event.types';
@@ -18,6 +20,7 @@ import type { SpineEventEnvelope, SpineEventInput } from './spine-event.types';
  */
 
 const DEFAULT_RING_CAPACITY = 5000;
+const SPINE_STREAM_MAXLEN = 5000;
 
 function detectEnvironment(): 'dev' | 'staging' | 'prod' {
   const env = (process.env['NODE_ENV'] ?? 'development').toLowerCase();
@@ -38,6 +41,7 @@ export class SpineEmitterService {
   public constructor(
     @Optional() valenceTagger?: ValenceTaggerService,
     @Optional() @Inject('SPINE_EMITTER_OPTS') opts?: { readonly ringCapacity?: number },
+    @Optional() @InjectRedis() private readonly redis?: Redis,
   ) {
     this.valenceTagger = valenceTagger ?? new ValenceTaggerService();
     this.ringCapacity = Math.max(1, opts?.ringCapacity ?? DEFAULT_RING_CAPACITY);
@@ -70,6 +74,25 @@ export class SpineEmitterService {
     this.ring.push(envelope);
     if (this.ring.length > this.ringCapacity) this.ring.shift();
 
+    // CIA Gap 5 — persist to Redis Stream (fire-and-forget, failure never throws)
+    if (this.redis && envelope.workspaceId) {
+      void this.redis
+        .xadd(
+          `spine:events:${envelope.workspaceId}`,
+          'MAXLEN',
+          '~',
+          SPINE_STREAM_MAXLEN,
+          '*',
+          'event',
+          JSON.stringify(envelope),
+        )
+        .catch((err: unknown) => {
+          this.logger.warn(
+            `Redis xadd failed for workspace ${envelope.workspaceId}: ${(err as Error).message}`,
+          );
+        });
+    }
+
     for (const sub of this.subscribers) {
       try {
         sub(envelope);
@@ -80,6 +103,37 @@ export class SpineEmitterService {
       }
     }
     return envelope;
+  }
+
+  public async replayFromStream(
+    workspaceId: string,
+    since?: string,
+  ): Promise<SpineEventEnvelope[]> {
+    if (!this.redis) return [];
+    try {
+      const key = `spine:events:${workspaceId}`;
+      const start = since ?? '-';
+      const results = await this.redis.xrange(key, start, '+');
+      return results
+        .map(([, fields]) => {
+          const eventField = fields[1];
+          if (!eventField) return null;
+          try {
+            return JSON.parse(eventField) as SpineEventEnvelope;
+          } catch {
+            this.logger.warn(
+              `replayFromStream: malformed JSON for stream ${key}, skipping entry`,
+            );
+            return null;
+          }
+        })
+        .filter((e): e is SpineEventEnvelope => e !== null);
+    } catch (err: unknown) {
+      this.logger.warn(
+        `replayFromStream failed for workspace ${workspaceId}: ${(err as Error).message}`,
+      );
+      return [];
+    }
   }
 
   public recentEvents(limit?: number): readonly SpineEventEnvelope[] {
