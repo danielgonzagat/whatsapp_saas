@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';/**
+import { PrismaService } from '../prisma/prisma.service';
+import { clampLimit } from '../common/pagination-clamp.pipe';
+/**
  * ProductService — Domain service for product operations.
  *
  * This is the shared domain layer that both the UI controllers AND
@@ -92,7 +94,7 @@ export class ProductService {
           : {}),
       },
       orderBy: { createdAt: 'desc' },
-      take: Math.min(opts?.limit ?? 50, 200),
+      take: clampLimit(opts?.limit, { default: 50, max: 200 }),
       select: { id: true, name: true, price: true, active: true, imageUrl: true, format: true, createdAt: true },
     });
     return { success: true, products };
