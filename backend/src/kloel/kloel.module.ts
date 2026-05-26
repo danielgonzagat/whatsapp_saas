@@ -185,6 +185,8 @@ import { RiskClassModule } from './risk-class/risk-class.module';
 import { InboxModule } from '../inbox/inbox.module';
 import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
 import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service';
+import { CapabilityRegistryV2Module } from './capability-registry-v2/capability-registry-v2.module';
+import { IntentRouterModule } from './intent-router/intent-router.module';
 
 /** Kloel module. */
 @Module({
@@ -207,6 +209,8 @@ import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service
     LineageModule,
     DriftModule,
     RiskClassModule,
+    CapabilityRegistryV2Module,
+    IntentRouterModule,
   ],
   controllers: [
     KloelController,
@@ -447,6 +451,7 @@ import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service
     AgentRuntimeSchedulerService,
     AgentRuntimeSessionStore,
     AgentRuntimeSkillRegistry,
+    IntentRouterService,
   ],
 })
 export class KloelModule {}
