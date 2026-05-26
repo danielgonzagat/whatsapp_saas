@@ -1,0 +1,131 @@
+{
+  "roundDir": "/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/round-044",
+  "normal": {
+    "events": {
+      "rows": 160,
+      "turnCompleted": true,
+      "completedCommands": 68,
+      "uniqueCompletedCommands": 54,
+      "failedCommands": [
+        {
+          "command": "/bin/zsh -lc 'test -d backend/node_modules'",
+          "exitCode": 1,
+          "output": ""
+        },
+        {
+          "command": "/bin/zsh -lc 'cd backend && npx jest src/kloel/unified-agent.service.spec.ts --runInBand --silent'",
+          "exitCode": 1,
+          "output": "● Validation Error:\n\n  Module ts-jest in the transform option was not found.\n         <rootDir> is: /private/tmp/kloel-ab044-normal-20260516222901/backend/src\n\n  Configuration Documentation:\n  https://jestjs.io/docs/configuration\n\n"
+        },
+        {
+          "command": "/bin/zsh -lc 'rg -n \"as any|@ts-ignore|@ts-expect-error|@ts-nocheck|eslint-disable|biome-ignore|nosemgrep|codacy:|NOSONAR|noqa\" backend/src/kloel/unified-agent.service.ts backend/src/kloel/unified-agent-message-context.part.ts backend/src/kloel/unified-agent-tool-calls.part.ts backend/src/kloel/unified-agent-tool-router.part.ts'",
+          "exitCode": 1,
+          "output": ""
+        },
+        {
+          "command": "/bin/zsh -lc 'cd backend && npx prettier --check src/kloel/unified-agent.service.ts src/kloel/unified-agent-message-context.part.ts src/kloel/unified-agent-tool-calls.part.ts src/kloel/unified-agent-tool-router.part.ts'",
+          "exitCode": 1,
+          "output": "Checking formatting...\n[warn] src/kloel/unified-agent-message-context.part.ts\n[warn] Code style issues found in the above file. Run Prettier with --write to fix.\n"
+        },
+        {
+          "command": "/bin/zsh -lc 'rg -n \"as any|@ts-ignore|@ts-expect-error|@ts-nocheck|eslint-disable|biome-ignore|nosemgrep|codacy:|NOSONAR|noqa\" backend/src/kloel/unified-agent.service.ts backend/src/kloel/unified-agent-message-context.part.ts backend/src/kloel/unified-agent-tool-calls.part.ts backend/src/kloel/unified-agent-tool-router.part.ts'",
+          "exitCode": 1,
+          "output": ""
+        }
+      ],
+      "completedMcpCalls": 0,
+      "mcpTools": {},
+      "fileChangeItems": 3,
+      "fileChangePaths": [
+        "/private/tmp/kloel-ab044-normal-20260516222901/backend/src/kloel/unified-agent-message-context.part.ts",
+        "/private/tmp/kloel-ab044-normal-20260516222901/backend/src/kloel/unified-agent-tool-calls.part.ts",
+        "/private/tmp/kloel-ab044-normal-20260516222901/backend/src/kloel/unified-agent-tool-router.part.ts",
+        "/private/tmp/kloel-ab044-normal-20260516222901/backend/src/kloel/unified-agent.service.ts",
+        "/private/tmp/kloel-ab044-normal-20260516222901/backend/src/kloel/unified-agent.service.ts",
+        "/private/tmp/kloel-ab044-normal-20260516222901/backend/src/kloel/unified-agent.service.ts"
+      ],
+      "agentMessages": 9,
+      "proofReadCommands": 30,
+      "fullDiffCommands": 0,
+      "backendInstallCommands": 1,
+      "usage": {
+        "input_tokens": 4518651,
+        "cached_input_tokens": 4276736,
+        "output_tokens": 28379,
+        "reasoning_output_tokens": 11190
+      }
+    },
+    "validation": {
+      "jestStatus": 0,
+      "typecheckStatus": 0,
+      "diffCheckStatus": 0,
+      "forbiddenPatternStatus": 1,
+      "serviceLines": 347,
+      "specDiff": [],
+      "protectedDiff": [
+        "AGENTS.md"
+      ],
+      "traceCount": null
+    }
+  },
+  "atomic": {
+    "events": {
+      "rows": 180,
+      "turnCompleted": true,
+      "completedCommands": 55,
+      "uniqueCompletedCommands": 49,
+      "failedCommands": [
+        {
+          "command": "/bin/zsh -lc 'rg -n \"as any|@ts-ignore|@ts-expect-error|@ts-nocheck|eslint-disable|biome-ignore|codacy:ignore|codacy:disable|NOSONAR|noqa\" backend/src/kloel/unified-agent.service.ts backend/src/kloel/unified-agent-core.helpers.ts backend/src/kloel/unified-agent-message-flow.ts backend/src/kloel/unified-agent-tool-router.ts'",
+          "exitCode": 1,
+          "output": ""
+        }
+      ],
+      "completedMcpCalls": 26,
+      "mcpTools": {
+        "code_browse": 1,
+        "code_outline": 2,
+        "code_read_symbol": 5,
+        "atomic_create_file": 4,
+        "atomic_delete_file": 1,
+        "atomic_replace_text": 10,
+        "atomic_edit_symbol": 3
+      },
+      "fileChangeItems": 0,
+      "fileChangePaths": [],
+      "agentMessages": 11,
+      "proofReadCommands": 18,
+      "fullDiffCommands": 0,
+      "backendInstallCommands": 1,
+      "usage": {
+        "input_tokens": 5909657,
+        "cached_input_tokens": 5706112,
+        "output_tokens": 29047,
+        "reasoning_output_tokens": 13485
+      }
+    },
+    "validation": {
+      "jestStatus": 0,
+      "typecheckStatus": 0,
+      "diffCheckStatus": 0,
+      "forbiddenPatternStatus": 1,
+      "serviceLines": 254,
+      "specDiff": [],
+      "protectedDiff": [
+        "AGENTS.md"
+      ],
+      "traceCount": 16
+    }
+  },
+  "scorecard": {
+    "functionalPass": true,
+    "serviceLineWinner": "atomic",
+    "eventRowWinner": "normal",
+    "shellCommandWinner": "atomic",
+    "inputTokenWinner": "normal",
+    "outputTokenWinner": "normal",
+    "reasoningTokenWinner": "normal",
+    "traceWinner": "atomic",
+    "protectedDiffTie": true
+  }
+}

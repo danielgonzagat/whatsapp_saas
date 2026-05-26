@@ -1,0 +1,9 @@
+round=106
+created_at=2026-05-18T02:42:00Z
+complexity_step=round105-repeat-helper-parser-dependency-aware
+normal_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab106-normal-20260517233648
+atomic_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab106-atomic-20260517233648
+normal_branch=ab/round106-normal-20260517233648
+atomic_branch=ab/round106-atomic-20260517233648
+decision=repeat_same_difficulty_not_scale
+atomic_policy_delta=dependency-aware parser helper: extract first, import helper, then replace inline parse callsite

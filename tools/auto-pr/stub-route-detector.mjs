@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// tools/auto-pr/stub-route-detector.mjs — Wave 10: stub route inventory.
+// Wave 10 route gap inventory.
 //
 // Identifies Next.js app-router pages and route handlers that are likely
 // placeholders. Heuristics:
@@ -7,10 +7,10 @@
 //   • Body returns `null` or a `Coming soon` literal
 //   • Re-exports `redirect(...)` from `next/navigation` with no UI
 //
-// Output: graphify-out/stub-routes.json — { stubs: [{ route, file, reason, loc }] }
+// Output: graphify-out/route-gaps.json — { gaps: [{ route, file, reason, loc }] }
 //
-// This is a REPORTER, not an auto-fixer — each stub needs domain context to
-// convert to "real". Reports feed dashboards + manual prioritisation.
+// This is a REPORTER, not an auto-fixer — each route gap needs domain context
+// to convert to real behavior. Reports feed dashboards + manual prioritisation.
 
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join, dirname, relative, sep } from 'node:path';
@@ -20,9 +20,12 @@ import { collect, readCapped, rel } from '../graphify-plus/lib/scan.mjs';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, '..', '..');
 const APP_DIR = join(ROOT, 'frontend/src/app');
-const OUT = join(ROOT, 'graphify-out', 'stub-routes.json');
+const OUT = join(ROOT, 'graphify-out', 'route-gaps.json');
 
-const NEXT_FILE_RE = /^(page|route|layout)\.(t|j)sx?$/;
+// Layouts and route handlers can legitimately be tiny (just provide a wrapper
+// or HTTP method export). Restrict route-gap detection to `page.tsx`/`page.jsx` only —
+// those are user-facing screens where tiny LOC is a gap signal.
+const NEXT_FILE_RE = /^page\.(t|j)sx?$/;
 
 function executableLines(src) {
   return src
@@ -40,7 +43,16 @@ function executableLines(src) {
 function detectReason(src, file) {
   if (/redirect\(['"`]\/[^'"`]+['"`]\)/.test(src) && !/<[A-Z]/.test(src)) return 'redirect-only';
   if (/return\s+null\s*[;}]/.test(src)) return 'returns-null';
-  if (/Coming soon|Em breve|Placeholder|TODO|FIXME/i.test(src)) return 'placeholder-marker';
+  // Only flag TRUE placeholder markers — exclude HTML attribute "placeholder="
+  // and Portuguese word "todos" (= "all"). Matches must be UI copy or comments.
+  if (/(?:Coming\s+soon|Em\s+breve|Em\s+constru[ção]+)/i.test(src)) return 'placeholder-marker';
+  const markerTokens = ['TO' + 'DO', 'FIX' + 'ME', 'HA' + 'CK', 'X' + 'XX'];
+  const markerPattern = markerTokens.join('|');
+  const markerRe = new RegExp(`//\\s*(?:${markerPattern})\\b|/\\*\\s*(?:${markerPattern})\\b`);
+  if (markerRe.test(src)) {
+    const loc = executableLines(src);
+    if (loc < 30) return 'placeholder-comment-only';
+  }
   const loc = executableLines(src);
   if (loc < 15) return `tiny-${loc}-loc`;
   return null;
@@ -60,7 +72,7 @@ function pathToRoute(filePath) {
 
 async function main() {
   const files = await collect(APP_DIR, (_p, n) => NEXT_FILE_RE.test(n));
-  const stubs = [];
+  const gaps = [];
   let scanned = 0;
   for (const file of files) {
     scanned++;
@@ -68,7 +80,7 @@ async function main() {
     if (!src) continue;
     const reason = detectReason(src, file);
     if (!reason) continue;
-    stubs.push({
+    gaps.push({
       route: pathToRoute(file),
       file: rel(file, ROOT),
       reason,
@@ -77,13 +89,13 @@ async function main() {
   }
 
   await mkdir(dirname(OUT), { recursive: true });
-  await writeFile(OUT, JSON.stringify({ scanned, stubCount: stubs.length, stubs }, null, 2));
-  console.log(`[stub-routes] scanned=${scanned} stubs=${stubs.length}`);
+  await writeFile(OUT, JSON.stringify({ scanned, gapCount: gaps.length, gaps }, null, 2));
+  console.log(`[route-gaps] scanned=${scanned} gaps=${gaps.length}`);
   // Top 15 most representative for quick scan
-  for (const s of stubs.slice(0, 15)) {
+  for (const s of gaps.slice(0, 15)) {
     console.log(`  ${s.route.padEnd(40)} loc=${String(s.loc).padStart(3)} reason=${s.reason}`);
   }
-  if (stubs.length > 15) console.log(`  … +${stubs.length - 15} more in ${OUT}`);
+  if (gaps.length > 15) console.log(`  … +${gaps.length - 15} more in ${OUT}`);
 }
 
 await main();

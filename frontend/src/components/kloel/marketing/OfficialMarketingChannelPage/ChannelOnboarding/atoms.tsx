@@ -21,7 +21,6 @@ export function StepBar({ step, C, onStepClick }: StepBarProps) {
           width: 28,
           height: 2,
           display: 'block',
-          background: i <= step ? C.ember : C.hi,
           opacity: i === step ? 1 : i < step ? 0.6 : 1,
           transition: 'all .4s ease',
         };
@@ -73,7 +72,7 @@ export function Chip({
     <span
       style={{
         fontFamily: MONO,
-        fontSize: 11,
+        fontSize: 10.5,
         color: dim ? C.dim : C.muted,
         letterSpacing: 1.8,
         textTransform: 'uppercase',
@@ -141,14 +140,6 @@ export function CTA({
         if (variant !== 'ghost') {
           e.currentTarget.style.background = v.bg;
         }
-      }}
-      onFocus={(e) => {
-        if (!disabled) {
-          e.currentTarget.style.boxShadow = `0 0 0 2px ${C.ember}`;
-        }
-      }}
-      onBlur={(e) => {
-        e.currentTarget.style.boxShadow = 'none';
       }}
     >
       {children}
@@ -242,7 +233,7 @@ export function Dial({
               flex: 1,
               height: 6,
               padding: 0,
-              background: i === value ? C.ember : C.hi,
+              background: i === value ? C.ember : C.inactiveTrace,
               border: 'none',
               borderRadius: PILL_RADIUS,
               cursor: 'pointer',

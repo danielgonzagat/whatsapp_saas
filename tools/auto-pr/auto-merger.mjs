@@ -38,10 +38,18 @@ const PREFIX_FILTER = argv.find((a) => a.startsWith('--prefix='))?.split('=')[1]
 const PREFIXES = PREFIX_FILTER.split(',').filter(Boolean);
 const POLL_MS = Number(argv.find((a) => a.startsWith('--poll-ms='))?.split('=')[1] || 300_000);
 
-const FAIL_OK_NAMES = ['Deploy Staging', 'Deploy Production'];
-// Sub-job names of the CI workflow that are tolerated (broken on main pre-existing).
-const FAIL_OK_SUBJOBS = ['e2e', 'pulse-deep'];
+// STRICT MODE (ratified by Daniel 2026-05-21): merges require ALL gates green
+// AND review APPROVED. Tolerated-failure lists default to empty; --admin is
+// off by default. To opt back into the permissive behavior an explicit flag
+// is required (--tolerate-deploy / --tolerate-ci-subjobs / --admin) AND the
+// invoking session must justify the call. This protects the codebase from
+// shipping anything that didn't pass every guard.
+const TOLERATE_DEPLOY = argv.includes('--tolerate-deploy') || process.env.AUTO_MERGE_TOLERATE_DEPLOY === '1';
+const TOLERATE_CI_SUB = argv.includes('--tolerate-ci-subjobs') || process.env.AUTO_MERGE_TOLERATE_CI_SUB === '1';
+const FAIL_OK_NAMES = TOLERATE_DEPLOY ? ['Deploy Staging', 'Deploy Production'] : [];
+const FAIL_OK_SUBJOBS = TOLERATE_CI_SUB ? ['e2e', 'pulse-deep'] : [];
 const USE_ADMIN = argv.includes('--admin') || process.env.AUTO_MERGE_ADMIN === '1';
+const REQUIRE_APPROVED = !argv.includes('--no-require-approval');
 
 async function listOpenPRs() {
   // statusCheckRollup is unavailable on personal-access-token; fetch checks via REST per PR.
@@ -119,6 +127,7 @@ async function evaluate(pr) {
   const reason = [];
   if (pr.mergeable !== 'MERGEABLE') reason.push(`mergeable=${pr.mergeable}`);
   if (pr.reviewDecision === 'CHANGES_REQUESTED') reason.push(`review=CHANGES_REQUESTED`);
+  if (REQUIRE_APPROVED && pr.reviewDecision !== 'APPROVED') reason.push(`review-not-approved (got: ${pr.reviewDecision || 'NONE'}; required: APPROVED)`);
   if (PR_FILTER && String(pr.number) !== PR_FILTER) reason.push(`filter-mismatch:${pr.number}!=${PR_FILTER}`);
   if (LABEL_FILTER && !(pr.labels || []).some((l) => l.name === LABEL_FILTER)) reason.push(`missing-label:${LABEL_FILTER}`);
   if (PREFIXES.length && !PREFIXES.some((p) => pr.headRefName.startsWith(p))) {

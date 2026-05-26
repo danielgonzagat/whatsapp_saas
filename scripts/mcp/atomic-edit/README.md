@@ -25,7 +25,7 @@ research identifies as defective.
 - `code_read_symbol` — scoped selector → full unit + exact range
 
 **Edit (every mutating op: syntax-regression check → atomic write; `preview:true` = dry-run diff; optional `expectedSha256` = optimistic-concurrency guard):**
-- **`atomic_replace_text`** — verbatim `oldText`→`newText`, builtin-`edit` ergonomics (no coordinates) + full validation. **Prefer over builtin `edit` for any multi-line/block change.**
+- **`atomic_replace_text`** — verbatim `oldText`→`newText`, built-in `edit` ergonomics (no coordinates) + full validation. **Prefer over built-in `edit` for any multi-line/block change.**
 - `atomic_replace_range` / `atomic_insert_at` / `atomic_delete_range`
 - `atomic_apply_edits` — LSP `TextEdit[]`, N sites = one all-or-nothing intention
 - `atomic_replace_literal` — swap a literal selected via the AST, by value

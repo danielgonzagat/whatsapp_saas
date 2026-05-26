@@ -1,0 +1,10 @@
+round=113
+created_utc=2026-05-18T05:24:49Z
+complexity=controlled_scale_four_helper_split
+normal_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab113-normal-20260518052449
+atomic_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab113-atomic-20260518052449
+normal_branch=ab/round113-normal-20260518052449
+atomic_branch=ab/round113-atomic-20260518052449
+base_head=565b0f84d
+task=Split UnifiedAgentService runtime/router/parser/cognitive-state concerns into four helper modules while preserving public API and focused behavior.
+scale_rule=Previous accepted round repeated strong Atomic win at three-helper tier; this round adds one real helper extraction without increasing worker count.

@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CampaignsService } from '../campaigns/campaigns.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { MoneyMachineService } from './money-machine.service';
-import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 describe('MoneyMachineService', () => {
   let service: MoneyMachineService;

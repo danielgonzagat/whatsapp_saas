@@ -1,0 +1,6 @@
+round=096
+normal_worktree=/private/tmp/kloel-ab096-normal-20260517202616
+atomic_worktree=/private/tmp/kloel-ab096-atomic-20260517202616
+task=repeat_round095_router_cluster_optional_deps_normalized
+repeat_reason=round095_both_lanes_rejected_normal_lint_atomic_type_surface
+official_loop=opencode_workers_only

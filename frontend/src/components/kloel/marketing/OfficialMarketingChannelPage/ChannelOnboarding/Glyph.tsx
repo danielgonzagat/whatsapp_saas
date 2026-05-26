@@ -73,8 +73,8 @@ export function Glyph({ step, products = 0, arsenal = 0, C }: GlyphProps) {
         {/* 1 · Flower of Life — sacred base */}
         <g
           opacity={C.flowerOpacity}
-          stroke={C.faint}
-          strokeWidth="0.55"
+          stroke={C.flowerStroke}
+          strokeWidth={C.flowerStrokeWidth}
           fill="none"
         >
           <circle cx="150" cy="150" r="56" />
@@ -93,9 +93,9 @@ export function Glyph({ step, products = 0, arsenal = 0, C }: GlyphProps) {
 
         {/* 2 · Vitruvian axes */}
         <g
-          stroke={alive ? C.dim : C.faint}
+          stroke={alive ? C.axesAliveStroke : C.axesIdleStroke}
           strokeWidth="0.5"
-          opacity={alive ? 0.65 : 0.4}
+          opacity={alive ? C.axesAliveOpacity : C.axesIdleOpacity}
           style={{ transition: 'opacity 1s' }}
         >
           <line x1="150" y1="20" x2="150" y2="280" />
@@ -109,10 +109,10 @@ export function Glyph({ step, products = 0, arsenal = 0, C }: GlyphProps) {
           cy="150"
           r="110"
           fill="none"
-          stroke={armed ? C.ember : C.hi}
+          stroke={armed ? C.ember : C.outerRingIdleStroke}
           strokeWidth="0.75"
           strokeDasharray={armed ? '0' : '2 4'}
-          opacity={armed ? 0.65 : 0.45}
+          opacity={armed ? C.outerRingArmedOpacity : C.outerRingIdleOpacity}
           style={{ transition: 'all 1s ease' }}
         />
 
@@ -122,10 +122,10 @@ export function Glyph({ step, products = 0, arsenal = 0, C }: GlyphProps) {
           cy="150"
           r="56"
           fill="none"
-          stroke={orbiting ? C.ember : C.hi}
+          stroke={orbiting ? C.ember : C.innerOrbitIdleStroke}
           strokeWidth="0.75"
           strokeDasharray={orbiting ? '0' : '2 4'}
-          opacity={orbiting ? 0.55 : 0.4}
+          opacity={orbiting ? C.innerOrbitOrbitingOpacity : C.innerOrbitIdleOpacity}
           style={{ transition: 'all 1s ease' }}
         />
 
@@ -167,7 +167,7 @@ export function Glyph({ step, products = 0, arsenal = 0, C }: GlyphProps) {
               cy={p.y}
               r="4"
               fill={p.on ? C.ember : 'transparent'}
-              stroke={p.on ? C.ember : C.hi}
+              stroke={p.on ? C.ember : C.productInactiveStroke}
               strokeWidth="0.75"
             />
             {p.on ? (
@@ -210,7 +210,7 @@ export function Glyph({ step, products = 0, arsenal = 0, C }: GlyphProps) {
           cy="150"
           r={alive ? 14 : 10}
           fill={alive ? C.ember : 'transparent'}
-          stroke={alive ? 'transparent' : C.dim}
+          stroke={alive ? 'transparent' : C.coreIdleStroke}
           strokeWidth="1"
           style={{
             transition: 'all 1s ease',
@@ -225,7 +225,7 @@ export function Glyph({ step, products = 0, arsenal = 0, C }: GlyphProps) {
           cx="150"
           cy="150"
           r="3"
-          fill={alive ? C.white : C.dim}
+          fill={alive ? C.white : C.coreIdleDot}
           opacity={alive ? 0.95 : 1}
           style={{ transition: 'all 1s ease' }}
         />
