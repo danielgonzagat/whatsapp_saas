@@ -147,14 +147,14 @@ atomic subagent `w1-dup-hunter-semantic` (DeepSeek V4 Pro) which produced
 | `sanitizeAppleError` / `sanitizeErrorMessage` / `sanitizeTikTokError` | ✅ migrated | → `auth/sanitize-auth-error.helper::sanitizeAuthError` |
 | `trimToUndefined` × 2 (kyc + connect.service) | ✅ migrated | → `common/parse::readTrimmedString` (alias) |
 | `sleep` × 3 (idempotency.guard + 2 whatsapp inbound-processor) | ✅ migrated | → `common/async-sequence::sleep` |
-| `safeStr` × 8 | ⏳ pending | → `common/string.ts::safeStr` (canonical already exists) |
+| `safeStr` × 8 (cia + whatsapp + 4 kloel + product-context-formatter) | ✅ migrated | → `common/string.ts::safeStr` |
+| `digitsOnly`-local × 2 (kyc + connect.service, undefined-on-empty semantics) | ✅ migrated | → `common/phone.ts::digitsOrUndefined` (alias `digitsOnly`) |
+| `extractErrorMessage` (google-auth variant) | ✅ migrated | → `auth/sanitize-auth-error.helper::sanitizeAuthError` (alias) |
 | `readRecord` / `asRecord` / `asUnknownRecord` × 12 (4 shapes) | ⏳ pending | needs per-shape decision |
 | `isRecord` × 6 (3 shapes) | ⏳ pending | type-of-guard shape divergence |
 | `readText` × 4 (3 shapes) | ⏳ pending | divergent return types |
-| `digitsOnly` × 2 local | ⏳ pending | `common/phone.ts::digitsOnly` exists |
 | `generateId` × 2 | ⏳ pending | replace with `crypto.randomUUID()` per Wave-2 audit |
 | `removeUndefined` / `compactObject` × 2 | ⏳ pending |  |
-| `extractErrorMessage` × 2 | ⏳ pending |  |
 | 4 NestJS orphan modules (email/post-sale/channel-survival/event-emit-audit-emitter) | ⏸ kept local | not wired into AppModule but might be planned activation; documented in `audits/WAVE2_ORPHAN_EXPORTS.md` |
 
 ## Wave 2 audit outputs (PI subagent delegations)
@@ -168,8 +168,12 @@ atomic subagent `w1-dup-hunter-semantic` (DeepSeek V4 Pro) which produced
 | Math.random hunt | `w2-math-random-hunt` | [`WAVE2_MATH_RANDOM_AUDIT.md`](audits/WAVE2_MATH_RANDOM_AUDIT.md) | 12 prod sites; 2 CRITICAL in WISDOM differential privacy (**FIXED**); 9 predictable ID generators; 1 fake-PIX mock (already NODE_ENV-gated) |
 | File-size audit | `w2-file-size-audit` | [`WAVE2_FILE_SIZE_AUDIT.md`](audits/WAVE2_FILE_SIZE_AUDIT.md) | Only 1 file over 800-LOC cap (kloel-chat-tools.service); 74 files in 500-800 danger zone; top-5 decomposition targets ranked by LOC × 90d-churn |
 | Orphan exports | `w2-orphan-exports` | [`WAVE2_ORPHAN_EXPORTS.md`](audits/WAVE2_ORPHAN_EXPORTS.md) | 37 backend / 18 frontend / 12 worker; 4 unwired NestJS modules; ledger reconciliation types; agency/clarity interface returns |
+| Checkout-to-ledger flow | `w3-checkout-flow` | [`WAVE3_CHECKOUT_FLOW_TRACE.md`](audits/WAVE3_CHECKOUT_FLOW_TRACE.md) | Full happy-path trace from /[slug]/page.tsx → Stripe → LedgerService → fulfillment; per-hop honest-state coverage matrix |
+| LLM prompt hygiene | `w3-llm-prompt-audit` | [`WAVE3_LLM_PROMPT_AUDIT.md`](audits/WAVE3_LLM_PROMPT_AUDIT.md) | 37 prompt sites scored on CLAUDE.md's 10-dim quality contract; avg 4.8/10; **10 CRITICAL gaps** (guest-chat anti-invention, autopilot anti-invention, agent-assist max_tokens, worker AI guardrails) |
+| Dead-handler hunt | `w3-dead-handler-hunt` | [`WAVE3_DEAD_HANDLERS.md`](audits/WAVE3_DEAD_HANDLERS.md) | 600+ buttons scanned; only 3 locations with 10+ dead buttons (Dominios edit/trash, Canvas template tags, Sites overview cards) — all in tier-3 SHELL_ONLY surfaces |
+| Empty-return endpoints | `w3-empty-returns` | [`WAVE3_EMPTY_RETURNS.md`](audits/WAVE3_EMPTY_RETURNS.md) | 550 handlers across 130+ controllers — **ZERO stub endpoints**. CLAUDE.md's anti-pattern is already enforced; every `return []` is an honest empty-state or input-guard |
 
-## Wave 2 actions taken from audits
+## Wave 2/3 actions taken from audits
 
 | Finding | Action | Commit |
 |---|---|---|
@@ -178,6 +182,9 @@ atomic subagent `w1-dup-hunter-semantic` (DeepSeek V4 Pro) which produced
 | sanitize*Error trio | Extracted to auth/sanitize-auth-error.helper | 75c3aa3d7 |
 | trimToUndefined dups | Re-imported from common/parse::readTrimmedString | 591412996 |
 | sleep dups | Re-imported from common/async-sequence | fe6887773 |
+| digitsOrUndefined kyc/connect dups | Added to common/phone, both re-aliased | 1703d9b80 |
+| safeStr × 8 dups | Re-imported from common/string | 71a5f3549 |
+| extractErrorMessage (google-auth) | Aliased to sanitizeAuthError | 611fea372 |
 
 What remains as future canonicalization work is **semantic** (same-name with
 divergent bodies) requiring per-case judgement (see ⏸ kept-local rows above
