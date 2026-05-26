@@ -1,0 +1,4 @@
+round=069
+normal_worktree=/private/tmp/kloel-ab069-normal-20260517113500
+atomic_worktree=/private/tmp/kloel-ab069-atomic-20260517113500
+task=class-private-methods-to-helper extraction actionSucceeded and num

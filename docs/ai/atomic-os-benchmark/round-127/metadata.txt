@@ -1,0 +1,12 @@
+round=127
+created_at_utc=2026-05-18T11:18:56Z
+base_head=565b0f84d
+normal_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab127-normal-20260518081855
+atomic_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab127-atomic-20260518081855
+normal_branch=ab/round127-normal-20260518081855
+atomic_branch=ab/round127-atomic-20260518081855
+complexity=seven-helper-predecided-processing-repeat-after-intermediate-lint-policy-repair
+normal_variant=compact_timeout_aware_factory
+atomic_variant=minimal_compact_preprompt_summary_final_service_residue_gate_intermediate_lint_repaired
+idle_ms=720000
+max_ms=1500000

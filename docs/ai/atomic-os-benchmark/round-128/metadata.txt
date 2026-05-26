@@ -1,0 +1,5 @@
+round=128
+timestamp=20260518114443
+normal_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab128-normal-20260518114443
+atomic_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab128-atomic-20260518114443
+base_commit=565b0f84daa9f20b33a174374191a9f1f519a26e

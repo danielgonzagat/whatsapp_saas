@@ -1,0 +1,6 @@
+round=132
+timestamp=20260518110954
+normal_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab132-normal-20260518110954
+atomic_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab132-atomic-20260518110954
+complexity=seven-helper unified-agent split with topology-aware final validation and current-anchor macro facade compaction
+policy=repeat same tier after Round 131 formal gate mismatch and ATOMIC post-failure native reads; do not scale until ATOMIC zero-loss

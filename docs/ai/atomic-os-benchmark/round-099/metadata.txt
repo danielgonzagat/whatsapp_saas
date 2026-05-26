@@ -1,0 +1,6 @@
+round=099
+normal_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-normal-20260517211534
+atomic_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-atomic-20260517211534
+task=escalate_router_plus_runtime_context_cluster
+repeat_reason=round098_closed_by_repeated_normal_failure_atomic_functional
+official_loop=opencode_workers_only

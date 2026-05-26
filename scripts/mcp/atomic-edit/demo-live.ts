@@ -11,7 +11,8 @@ const repoRoot = path.resolve(__dirname, "..", "..", "..");
 const TARGET = "scripts/mcp/atomic-edit/nav.ts"; // a real, non-protected source file
 
 function show(title: string, res: { content: { text: string }[] }) {
-  process.stdout.write(`\n=== ${title} ===\n${res.content[0].text}\n`);
+  const text = res.content[0]?.text ?? "(no content)";
+  process.stdout.write(`\n=== ${title} ===\n${text}\n`);
 }
 
 (async () => {

@@ -1,0 +1,366 @@
+{
+  "roundDir": "/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/round-099",
+  "normal": {
+    "eventsFile": "opencode-normal-events.jsonl",
+    "events": {
+      "rows": 100,
+      "laneStatus": "max_timeout",
+      "laneExitCode": null,
+      "laneElapsedMs": 900751,
+      "laneTimedOut": true,
+      "laneStartTimestamp": 1779063451202,
+      "firstStepStartTimestamp": 1779063465800,
+      "effectiveStartTimestamp": 1779063451202,
+      "eventFirstActionTimestamp": 1779063476515,
+      "firstActionTimestamp": 1779063476515,
+      "eventFinalTimestamp": 1779064316866,
+      "watchdogFinalTimestamp": 1779064351953,
+      "finalTimestamp": 1779064351953,
+      "preprompt": null,
+      "prepromptActionMs": null,
+      "firstActionMs": 25313,
+      "eventSpanMs": 865664,
+      "totalAgentMs": 900751,
+      "turnCompleted": true,
+      "completedCommands": 7,
+      "uniqueCompletedCommands": 7,
+      "failedCommands": [
+        {
+          "command": "npx eslint src/kloel/unified-agent.service.ts src/kloel/unified-agent-tool-router.helpers.ts --max-warnings 0 2>&1",
+          "exitCode": 1,
+          "output": "\n/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-normal-20260517211534/backend/src/kloel/unified-agent-tool-router.helpers.ts\n  111:29  error  Replace `⏎············`R4·BLOCKED:·create_payment_link·—·${gateDecision.reason}`,⏎··········` with ``R4·BLOCKED:·create_payment_link·—·${gateDecision.reason}``  prettier/prettier\n  127:65  error  Replace `⏎········workspaceId,⏎········phone,⏎········args,"
+        },
+        {
+          "command": "npx eslint src/kloel/unified-agent.service.ts src/kloel/unified-agent-tool-router.helpers.ts --fix 2>&1",
+          "exitCode": 1,
+          "output": "\n/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-normal-20260517211534/backend/src/kloel/unified-agent.service.ts\n  430:11  error  Unsafe assignment of an `any` value  @typescript-eslint/no-unsafe-assignment\n\n✖ 1 problem (1 error, 0 warnings)\n\n"
+        }
+      ],
+      "completedMcpCalls": 0,
+      "mcpTools": {},
+      "allTools": {
+        "read": 12,
+        "bash": 7,
+        "glob": 2,
+        "grep": 7,
+        "todowrite": 3,
+        "write": 1,
+        "edit": 6
+      },
+      "nativeFileToolViolations": [
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-normal-20260517211534/CLAUDE.md\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-normal-20260517211534/backend/src/kloel/unified-agent.service.ts\"}"
+        },
+        {
+          "tool": "glob",
+          "inputPreview": "{\"pattern\":\"backend/src/kloel/**/*.helpers.ts\"}"
+        },
+        {
+          "tool": "glob",
+          "inputPreview": "{\"pattern\":\"backend/src/kloel/unified-agent.service.spec.ts\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-normal-20260517211534/backend/src/kloel/unified-agent.service.spec.ts\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-normal-20260517211534/backend/src/kloel/unified-agent-response.helpers.ts\",\"limit\":50}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-normal-20260517211534/backend/src/kloel/agent-runtime\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-normal-20260517211534/backend/src/kloel/agent-runtime/index.ts\"}"
+        },
+        {
+          "tool": "grep",
+          "inputPreview": "{\"pattern\":\"buildToolEnvelope|buildContext|recordTurnOutcome\",\"include\":\"*.ts\",\"path\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-normal-20260517211534/backend/src/kloel/agent-runtime\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-normal-20260517211534/backend/src/kloel/agent-runtime/agent-runtime.context.ts\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-normal-20260517211534/backend/src/kloel/unified-agent.types.ts\"}"
+        },
+        {
+          "tool": "grep",
+          "inputPreview": "{\"pattern\":\"class StructuredLogger\",\"include\":\"*.ts\",\"path\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-normal-20260517211534/backend/src/logging\"}"
+        },
+        {
+          "tool": "grep",
+          "inputPreview": "{\"pattern\":\"class AuditService\",\"include\":\"*.ts\",\"path\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-normal-20260517211534/backend/src/audit\"}"
+        },
+        {
+          "tool": "grep",
+          "inputPreview": "{\"pattern\":\"class PrismaService\",\"include\":\"*.ts\",\"path\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-normal-20260517211534/backend/src/prisma\"}"
+        },
+        {
+          "tool": "grep",
+          "inputPreview": "{\"include\":\"*.ts\",\"pattern\":\"class RiskGateService\",\"path\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-normal-20260517211534/backend/src/kloel/risk-class\"}"
+        },
+        {
+          "tool": "grep",
+          "inputPreview": "{\"include\":\"*.ts\",\"pattern\":\"class UnifiedAgentActionsService\",\"path\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-normal-20260517211534/backend/src/kloel\"}"
+        },
+        {
+          "tool": "write",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-normal-20260517211534/backend/src/kloel/unified-agent-tool-router.helpers.ts\",\"content\":\"import type { StructuredLogger } from '../logging/structured-logger';\\nimport type { PrismaService } from '../prisma/prisma.service';\\nimport type { AuditService } from '../audit/audit.service';\\nimport type OpenAI from 'openai';\\nimport type { Too"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-normal-20260517211534/backend/src/kloel/unified-agent.service.ts\",\"oldString\":\"import {\\n  buildPredecidedActionDraft,\\n  executePredecidedAgentActions,\\n} from './unified-agent-predecided-actions.part';\",\"newString\":\"import {\\n  buildPredecidedActionDraft,\\n  executePredecidedAgentActions,\\n} from './unified-agent-predecided-actions.p"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-normal-20260517211534/backend/src/kloel/unified-agent.service.ts\",\"oldString\":\"    const agentRuntimeContext = await this.buildAgentRuntimeContext({\\n      workspaceId,\\n      channel: this.ctx.readText(context?.channel, 'whatsapp'),\\n      message,\\n      contactId,\\n      ...(params.allowedTools !== undefined ? { allowedTools: params"
+        },
+        {
+          "tool": "grep",
+          "inputPreview": "{\"include\":\"*.ts\",\"pattern\":\"executePredecidedAgentActions\",\"path\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-normal-20260517211534/backend/src/kloel\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-normal-20260517211534/backend/src/kloel/unified-agent-predecided-actions.part.ts\",\"offset\":75,\"limit\":30}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-normal-20260517211534/backend/src/kloel/unified-agent-predecided-actions.part.ts\",\"offset\":60,\"limit\":20}"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-normal-20260517211534/backend/src/kloel/unified-agent.service.ts\",\"oldString\":\"    if (predecidedActions.length > 0) {\\n      const actionsList = await executePredecidedAgentActions({\\n        ...(params.allowedTools !== undefined ? { allowedTools: params.allowedTools } : {}),\\n        contactId,\\n        ...(context !== undefined ? { "
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-normal-20260517211534/backend/src/kloel/unified-agent.service.ts\",\"oldString\":\"    // 5. Process tool calls\\n    const executeTools = context?.executeTools !== false;\\n    if (executeTools && assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {\\n      await forEachSequential(assistantMessage.tool_calls, async (toolC"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-normal-20260517211534/backend/src/kloel/unified-agent.service.ts\",\"oldString\":\"  /**\\n   * Public API: execute a single named tool directly.\\n   */\\n  async executeTool(\\n    tool: string,\\n    args: ToolArgs,\\n    ctx: { workspaceId: string; contactId?: string; phone?: string },\\n  ): Promise<unknown> {\\n    return this.executeToolAct"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-normal-20260517211534/backend/src/kloel/unified-agent.service.ts\"}"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-normal-20260517211534/backend/src/kloel/unified-agent.service.ts\",\"newString\":\"import {\\n  executeToolAction,\\n  actionSucceeded,\\n  buildAgentRuntimeContext,\\n  recordAgentRuntimeTurn,\\n} from './unified-agent-tool-router.helpers';\",\"oldString\":\"import {\\n  executeToolAction,\\n  num,\\n  buildAgentToolEnvelope,\\n  actionSucceeded,\\n  b"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-normal-20260517211534/backend/src/kloel/unified-agent.service.ts\",\"offset\":425,\"limit\":15}"
+        }
+      ],
+      "nativeShellReadCommands": [],
+      "maskedAtomicFailurePipelineCommands": [],
+      "atomicCallWorktreeEscapes": [],
+      "forbiddenAtomicToolUses": [],
+      "forbiddenAtomicCommands": [],
+      "fileChangeItems": 0,
+      "fileChangePaths": [],
+      "agentMessages": 11,
+      "proofReadCommands": 0,
+      "fullDiffCommands": 0,
+      "backendInstallCommands": 0,
+      "usage": {
+        "input_tokens": 81100,
+        "output_tokens": 11761,
+        "reasoning_output_tokens": 8318
+      }
+    },
+    "validation": {
+      "jestStatus": 0,
+      "typecheckStatus": 2,
+      "typecheckErrorCount": 0,
+      "typecheckKloelErrorCount": 0,
+      "lintStatus": 1,
+      "diffCheckStatus": 0,
+      "traceIsolationStatus": null,
+      "forbiddenPatternStatus": 1,
+      "helperThisStatus": 1,
+      "privateMethodsStatus": 1,
+      "serviceLines": 532,
+      "specDiff": [],
+      "protectedDiff": [],
+      "traceCount": null,
+      "docsTraceCount": null,
+      "touchedKloelFiles": [
+        "backend/src/kloel/unified-agent-tool-router.helpers.ts",
+        "backend/src/kloel/unified-agent.service.ts"
+      ],
+      "touchedKloelFileCount": 2,
+      "fileLineCounts": [
+        {
+          "lines": 532,
+          "path": "backend/src/kloel/unified-agent.service.ts"
+        },
+        {
+          "lines": 264,
+          "path": "backend/src/kloel/unified-agent-tool-router.helpers.ts"
+        }
+      ],
+      "actionHelperLines": null,
+      "runtimeHelperLines": null,
+      "runtimeContextHelperLines": null,
+      "toolRouterHelperLines": 264,
+      "totalKloelLines": 796,
+      "unexpectedPrivateHelperRemovalStatus": null,
+      "scopePreservationPass": null,
+      "untrackedInsertions": 264,
+      "sourceInsertions": 315,
+      "sourceDeletions": 256,
+      "sourceChurn": 571
+    }
+  },
+  "atomic": {
+    "eventsFile": "opencode-atomic-events.jsonl",
+    "events": {
+      "rows": 3,
+      "laneStatus": "completed",
+      "laneExitCode": 0,
+      "laneElapsedMs": 900747,
+      "laneTimedOut": false,
+      "laneStartTimestamp": 1779063451206,
+      "firstStepStartTimestamp": 1779063622773,
+      "effectiveStartTimestamp": 1779063451206,
+      "eventFirstActionTimestamp": null,
+      "firstActionTimestamp": 1779063459243,
+      "eventFinalTimestamp": 1779063640321,
+      "watchdogFinalTimestamp": null,
+      "finalTimestamp": 1779063640321,
+      "preprompt": {
+        "startTimestamp": 1779063459243,
+        "endTimestamp": 1779063612359,
+        "exitCode": 0,
+        "commandText": "cd /Users/danielpenin/kloel-ab-worktrees/kloel-ab099-atomic-20260517211534 && ARGS=$(node - <<'NODE'\nconst targetHeader = `import type OpenAI from 'openai';\nimport type { StructuredLogger } from '../logging/structured-logger';\nimport type { PrismaService } from '../prisma/prisma.service';\nimport type { AuditService } from '../audit/audit.service';\nimport type { UnifiedAgentActionsService } from './unified-agent-actions.service';\nimport type { AgentRuntimeContextService } from './agent-runtime';\nimport type { RiskGateService } from './risk-class/risk-gate.service';\nimport type { ToolArgs } from './unified-agent.types';\n\ntype UnknownRecord = Record<string, unknown>;\n\nexport interface ExecuteToolActionDeps {\n  logger: StructuredLogger;\n  actions: UnifiedAgentActionsService;\n  riskGate?: RiskGateService;\n  prisma: PrismaService;\n  auditService: AuditService;\n  openai: OpenAI | null;\n  primaryBrainModel: string;\n  fallbackBrainModel: string;\n  agentRuntime?: AgentRuntimeContextService;\n}`;\nconst signaturePrefixParam = 'deps: ExecuteToolActionDeps, ';\nconst predecided = '        executeTool: executeToolAction.bind(null, this.toolRouterDeps),';\nconst constructorAssignment = [\n  \"    this.writerModel = resolveBackendOpenAIModel('writer', this.config);\",\n  \"    this.fallbackWriterModel = resolveBackendOpenAIModel('writer_fallback', this.config);\",\n  '',\n  '    this.toolRouterDeps = {',\n  '      logger: this.logger,',\n  '      actions: this.actions,',\n  '      riskGate: this.riskGate,',\n  '      prisma: this.prisma,',\n  '      auditService: this.auditService,',\n  '      openai: this.openai,',\n  '      primaryBrainModel: this.primaryBrainModel,',\n  '      fallbackBrainModel: this.fallbackBrainModel,',\n  '      agentRuntime: this.agentRuntime,',\n  '    };',\n  '  }'\n].join('\\n');\nconsole.log(JSON.stringify({\n  decodeEscapedNewlinesInReplacements: true,\n  sourceFile: 'backend/src/kloel/unified-agent.service.ts',\n  targetFile: 'backend/src/kloel/unified-agent-tool-router.helpers.ts',\n  className: 'UnifiedAgentService',\n  methods: [\n    'num',\n    'actionSucceeded',\n    'buildAgentRuntimeContext',\n    'recordAgentRuntimeTurn',\n    'buildAgentToolEnvelope',\n    'executeToolAction'\n  ],\n  importNames: [\n    'num',\n    'actionSucceeded',\n    'buildAgentRuntimeContext',\n    'recordAgentRuntimeTurn',\n    'buildAgentToolEnvelope',\n    'executeToolAction'\n  ],\n  importModule: './unified-agent-tool-router.helpers',\n  targetHeader,\n  methodAdapters: {\n    executeToolAction: {\n      signaturePrefixParam,\n      bodyReplacements: [\n        { oldText: 'this.buildAgentToolEnvelope({', newText: 'buildAgentToolEnvelope(deps.agentRuntime, {' },\n        { oldText: 'this.num(', newText: 'num(' },\n        { oldText: 'this.logger', newText: 'deps.logger' },\n        { oldText: 'this.riskGate', newText: 'deps.riskGate' },\n        { oldText: 'this.actions', newText: 'deps.actions' },\n        { oldText: 'this.prisma', newText: 'deps.prisma' },\n        { oldText: 'this.auditService', newText: 'deps.auditService' },\n        { oldText: 'this.openai', newText: 'deps.openai' },\n        { oldText: 'this.primaryBrainModel', newText: 'deps.primaryBrainModel' },\n        { oldText: 'this.fallbackBrainModel', newText: 'deps.fallbackBrainModel' }\n      ]\n    },\n    buildAgentToolEnvelope: {\n      signaturePrefixParam: 'agentRuntime: AgentRuntimeContextService | undefined, ',\n      bodyReplacements: [\n        { oldText: 'this.agentRuntime', newText: 'agentRuntime' }\n      ]\n    },\n    buildAgentRuntimeContext: {\n      signaturePrefixParam: 'agentRuntime: AgentRuntimeContextService | undefined, ',\n      bodyReplacements: [\n        { oldText: 'this.agentRuntime', newText: 'agentRuntime' }\n      ]\n    },\n    recordAgentRuntimeTurn: {\n      signaturePrefixParam: 'agentRuntime: AgentRuntimeContextService | undefined, ',\n      bodyReplacements: [\n        { oldText: 'this.agentRuntime', newText: 'agentRuntime' }\n      ]\n    }\n  },\n  callsiteReplacements: [\n    { oldText: '    const agentRuntimeContext = await this.buildAgentRuntimeContext({', newText: '    const agentRuntimeContext = await buildAgentRuntimeContext(this.agentRuntime, {', expectedCount: 1 },\n    { oldText: '      await this.recordAgentRuntimeTurn({', newText: '      await recordAgentRuntimeTurn(this.agentRuntime, {', expectedCount: 1 },\n    { oldText: '    await this.recordAgentRuntimeTurn({', newText: '    await recordAgentRuntimeTurn(this.agentRuntime, {', expectedCount: 1 },\n    { oldText: '        executeTool: this.executeToolAction.bind(this),', newText: predecided, expectedCount: 1 },\n    {\n      oldText: '        const result = await this.executeToolAction(',\n      newText: ['        const result = await executeToolAction(', '          this.toolRouterDeps,'].join('\\n'),\n      expectedCount: 1\n    },\n    {\n      oldText: '    return this.executeToolAction(',\n      newText: ['    return executeToolAction(', '      this.toolRouterDeps,'].join('\\n'),\n      expectedCount: 1\n    },\n    { oldText: 'this.actionSucceeded(', newText: 'actionSucceeded(', expectedCount: 2 }\n  ],\n  postRemovalReplacements: [\n    {\n      oldText: '  private readonly fallbackWriterModel: string;',\n      newText: [\n        '  private readonly fallbackWriterModel: string;',\n        '  private readonly toolRouterDeps: ExecuteToolActionDeps;'\n      ].join('\\n'),\n      expectedCount: 1\n    },\n    {\n      oldText: [\n        \"    this.writerModel = resolveBackendOpenAIModel('writer', this.config);\",\n        \"    this.fallbackWriterModel = resolveBackendOpenAIModel('writer_fallback', this.config);\",\n        '  }'\n      ].join('\\n'),\n      newText: constructorAssignment,\n      expectedCount: 1\n    }\n  ],\n  postLintReplacements: [\n    {\n      oldText: [\n        '        let toolArgs: Record<string, unknown> = {};',\n        '        try {',\n        \"          toolArgs = JSON.parse(toolCall.function.arguments || '{}');\",\n        '        } catch {',\n        '          this.logger.warn(`Failed to parse tool args for ${toolName}`);',\n        '        }'\n      ].join('\\n'),\n      newText: [\n        '        let toolArgs: Record<string, unknown> = {};',\n        '        try {',\n        \"          const parsedToolArgs: unknown = JSON.parse(toolCall.function.arguments || '{}');\",\n        '          toolArgs =',\n        \"            parsedToolArgs && typeof parsedToolArgs === 'object' && !Array.isArray(parsedToolArgs)\",\n        '              ? (parsedToolArgs as Record<string, unknown>)',\n        '              : {};',\n        '        } catch {',\n        '          this.logger.warn(`Failed to parse tool args for ${toolName}`);',\n        '        }'\n      ].join('\\n'),\n      expectedCount: 1\n    }\n  ],\n  formatWithEslint: true,\n  validate: true,\n  includeTypecheck: false,\n  validationProfile: 'kloel-unified-agent-tool-router-plus-runtime-context-no-typecheck',\n  scanFiles: [\n    'backend/src/kloel/unified-agent.service.ts',\n    'backend/src/kloel/unified-agent-tool-router.helpers.ts'\n  ],\n  forbiddenTextChecks: [\n    { file: 'backend/src/kloel/unified-agent-tool-router.helpers.ts', text: 'this.', label: 'router helper no this' },\n    { file: 'backend/src/kloel/unified-agent.service.ts', text: 'toolRouterDeps()', label: 'no deps builder method' },\n    { file: 'backend/src/kloel/unified-agent.service.ts', text: 'private async executeToolAction', label: 'private executeToolAction removed' },\n    { file: 'backend/src/kloel/unified-agent.service.ts', text: 'private num', label: 'private num removed' },\n    { file: 'backend/src/kloel/unified-agent.service.ts', text: 'private buildAgentToolEnvelope', label: 'private buildAgentToolEnvelope removed' },\n    { file: 'backend/src/kloel/unified-agent.service.ts', text: 'private actionSucceeded', label: 'private actionSucceeded removed' },\n    { file: 'backend/src/kloel/unified-agent.service.ts', text: 'private async buildAgentRuntimeContext', label: 'private buildAgentRuntimeContext removed' },\n    { file: 'backend/src/kloel/unified-agent.service.ts', text: 'private async recordAgentRuntimeTurn', label: 'private recordAgentRuntimeTurn removed' }\n  ],\n  requiredTextChecks: [\n    { file: 'backend/src/kloel/unified-agent.service.ts', text: 'private readonly toolRouterDeps: ExecuteToolActionDeps;', label: 'deps property present' },\n    { file: 'backend/src/kloel/unified-agent.service.ts', text: 'async executeTool(', label: 'preserve public executeTool' },\n    { file: 'backend/src/kloel/unified-agent.service.ts', text: 'buildAgentRuntimeContext(this.agentRuntime, {', label: 'runtime context explicit dependency' },\n    { file: 'backend/src/kloel/unified-agent.service.ts', text: 'recordAgentRuntimeTurn(this.agentRuntime, {', label: 'runtime turn explicit dependency' }\n  ],\n  report: 'compact'\n}));\nNODE\n) && ATOMIC_OS_REPO_ROOT=/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-atomic-20260517211534 node /Users/danielpenin/kloel-ab-worktrees/kloel-ab099-atomic-20260517211534/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs extract_class_methods_to_file \"$ARGS\" && ATOMIC_OS_REPO_ROOT=/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-atomic-20260517211534 node /Users/danielpenin/kloel-ab-worktrees/kloel-ab099-atomic-20260517211534/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs atomic_add_import '{\"file\":\"backend/src/kloel/unified-agent.service.ts\",\"module\":\"./unified-agent-tool-router.helpers\",\"name\":\"ExecuteToolActionDeps\",\"typeOnly\":true}' && ATOMIC_OS_REPO_ROOT=/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-atomic-20260517211534 node /Users/danielpenin/kloel-ab-worktrees/kloel-ab099-atomic-20260517211534/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs atomic_remove_import '{\"file\":\"backend/src/kloel/unified-agent.service.ts\",\"module\":\"./unified-agent-tool-router.helpers\",\"name\":\"num\"}' && ATOMIC_OS_REPO_ROOT=/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-atomic-20260517211534 node /Users/danielpenin/kloel-ab-worktrees/kloel-ab099-atomic-20260517211534/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs atomic_remove_import '{\"file\":\"backend/src/kloel/unified-agent.service.ts\",\"module\":\"./unified-agent-tool-router.helpers\",\"name\":\"buildAgentToolEnvelope\"}' && ATOMIC_OS_REPO_ROOT=/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-atomic-20260517211534 node /Users/danielpenin/kloel-ab-worktrees/kloel-ab099-atomic-20260517211534/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs atomic_apply_eslint_dry_run_fixes '{\"cwd\":\"backend\",\"args\":[\"src/kloel/unified-agent.service.ts\",\"src/kloel/unified-agent-tool-router.helpers.ts\",\"--fix-dry-run\",\"--fix-type\",\"layout\",\"--format\",\"json\"],\"allowedPaths\":[\"backend/src/kloel/unified-agent.service.ts\",\"backend/src/kloel/unified-agent-tool-router.helpers.ts\"],\"applyKnownResidueFixes\":false}'\n",
+        "output": "[atomic-edit] ready — repo=/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-atomic-20260517211534 node=v25.9.0 pid=6347\n[atomic-edit] tmpdir=/tmp\n[atomic-edit] created backend/src/kloel/unified-agent-tool-router.helpers.ts (267 lines)\n[atomic-edit] semantic edit {\"action\":\"created-declaration\",\"moduleSpecifier\":\"./unified-agent-tool-router.helpers\",\"name\":\"num\",\"alias\":null,\"typeOnly\":false} in backend/src/kloel/unified-agent.service.ts\n[atomic-edit] semantic edit {\"action\":\"added-specifier\",\"moduleSpecifier\":\"./unified-agent-tool-router.helpers\",\"name\":\"actionSucceeded\",\"alias\":null,\"typeOnly\":false} in backend/src/kloel/unified-agent.service.ts\n[atomic-edit] semantic edit {\"action\":\"added-specifier\",\"moduleSpecifier\":\"./unified-agent-tool-router.helpers\",\"name\":\"buildAgentRuntimeContext\",\"alias\":null,\"typeOnly\":false} in backend/src/kloel/unified-agent.service.ts\n[atomic-edit] semantic edit {\"action\":\"added-specifier\",\"moduleSpecifier\":\"./unified-agent-tool-router.helpers\",\"name\":\"recordAgentRuntimeTurn\",\"alias\":null,\"typeOnly\":false} in backend/src/kloel/unified-agent.service.ts\n[atomic-edit] semantic edit {\"action\":\"added-specifier\",\"moduleSpecifier\":\"./unified-agent-tool-router.helpers\",\"name\":\"buildAgentToolEnvelope\",\"alias\":null,\"typeOnly\":false} in backend/src/kloel/unified-agent.service.ts\n[atomic-edit] semantic edit {\"action\":\"added-specifier\",\"moduleSpecifier\":\"./unified-agent-tool-router.helpers\",\"name\":\"executeToolAction\",\"alias\":null,\"typeOnly\":false} in backend/src/kloel/unified-agent.service.ts\n[atomic-edit] wrote backend/src/kloel/unified-agent.service.ts (+14 bytes net)\n[atomic-edit] wrote backend/src/kloel/unified-agent.service.ts (+14 bytes net)\n[atomic-edit] wrote backend/src/kloel/unified-agent.service.ts (+14 bytes net)\n[atomic-edit] wrote backend/src/kloel/unified-agent.service.ts (+16 bytes net)\n[atomic-edit] wrote backend/src/kloel/unified-agent.service.ts (+26 bytes net)\n[atomic-edit] wrote backend/src/kloel/unified-agent.service.ts (+22 bytes net)\n[atomic-edit] wrote backend/src/kloel/unified-agent.service.ts (+-5 bytes net)\n[atomic-edit] wrote backend/src/kloel/unified-agent.service.ts (+-5 bytes net)\n[atomic-edit] edit_symbol remove UnifiedAgentService.num in backend/src/kloel/unified-agent.service.ts\n[atomic-edit] edit_symbol remove UnifiedAgentService.actionSucceeded in backend/src/kloel/unified-agent.service.ts\n[atomic-edit] edit_symbol remove UnifiedAgentService.buildAgentRuntimeContext in backend/src/kloel/unified-agent.service.ts\n[atomic-edit] edit_symbol remove UnifiedAgentService.recordAgentRuntimeTurn in backend/src/kloel/unified-agent.service.ts\n[atomic-edit] edit_symbol remove UnifiedAgentService.buildAgentToolEnvelope in backend/src/kloel/unified-agent.service.ts\n[atomic-edit] edit_symbol remove UnifiedAgentService.executeToolAction in backend/src/kloel/unified-agent.service.ts\n[atomic-edit] wrote backend/src/kloel/unified-agent.service.ts (+58 bytes net)\n[atomic-edit] wrote backend/src/kloel/unified-agent.service.ts (+355 bytes net)\n[atomic-edit] wrote backend/src/kloel/unified-agent.service.ts (+-2 bytes net)\n[atomic-edit] wrote backend/src/kloel/unified-agent.service.ts (+-1 bytes net)\n[atomic-edit] wrote backend/src/kloel/unified-agent.service.ts (+221 bytes net)\n{\n  \"ok\": true,\n  \"operation\": \"extract_class_methods_to_file\",\n  \"sourceFile\": \"/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-atomic-20260517211534/backend/src/kloel/unified-agent.service.ts\",\n  \"targetFile\": \"/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-atomic-20260517211534/backend/src/kloel/unified-agent-tool-router.helpers.ts\",\n  \"selectors\": [\n    \"UnifiedAgentService.num\",\n    \"UnifiedAgentService.actionSucceeded\",\n    \"UnifiedAgentService.buildAgentRuntimeContext\",\n    \"UnifiedAgentService.recordAgentRuntimeTurn\",\n    \"UnifiedAgentService.buildAgentToolEnvelope\",\n    \"UnifiedAgentService.executeToolAction\"\n  ],\n  \"functionNames\": [\n    \"num\",\n    \"actionSucceeded\",\n    \"buildAgentRuntimeContext\",\n    \"recordAgentRuntimeTurn\",\n    \"buildAgentToolEnvelope\",\n    \"executeToolAction\"\n  ],\n  \"importModule\": \"./unified-agent-tool-router.helpers\",\n  \"validation\": {\n    \"ok\": true,\n    \"profile\": \"kloel-unified-agent-tool-router-plus-runtime-context-no-typecheck\",\n    \"scanFiles\": [\n      \"backend/src/kloel/unified-agent.service.ts\",\n      \"backend/src/kloel/unified-agent-tool-router.helpers.ts\"\n    ],\n    \"steps\": [\n      {\n        \"label\": \"jest unified-agent\",\n        \"ok\": true,\n        \"status\": 0,\n        \"signal\": null,\n        \"durationMs\": 24190,\n        \"stdout\": \"\",\n        \"stderr\": \"PASS src/kloel/unified-agent.service.spec.ts (21.424 s)\\n\\nTest Suites: 1 passed, 1 total\\nTests:       13 passed, 13 total\\nSnapshots:   0 total\\nTime:        21.757 s\"\n      },\n      {\n        \"label\": \"diff check backend/src/kloel\",\n        \"ok\": true,\n        \"status\": 0,\n        \"signal\": null,\n        \"durationMs\": 170,\n        \"stdout\": \"\",\n        \"stderr\": \"\"\n      },\n      {\n        \"label\": \"protected diff empty\",\n        \"ok\": true,\n        \"status\": 0,\n        \"signal\": null,\n        \"durationMs\": 39,\n        \"stdout\": \"\",\n        \"stderr\": \"\"\n      },\n      {\n        \"label\": \"forbidden suppression scan empty\",\n        \"ok\": true,\n        \"status\": 1,\n        \"signal\": null,\n        \"durationMs\": 11,\n        \"stdout\": \"\",\n        \"stderr\": \"\"\n      },\n      {\n        \"label\": \"router helper no this\",\n        \"ok\": true,\n        \"status\": 0,\n        \"signal\": null,\n        \"durationMs\": 0,\n        \"stdout\": \"absent: this.\",\n        \"stderr\": \"\"\n      },\n      {\n        \"label\": \"no deps builder method\",\n        \"ok\": true,\n        \"status\": 0,\n        \"signal\": null,\n        \"durationMs\": 0,\n        \"stdout\": \"absent: toolRouterDeps()\",\n        \"stderr\": \"\"\n      },\n      {\n        \"label\": \"private executeToolAction removed\",\n        \"ok\": true,\n        \"status\": 0,\n        \"signal\": null,\n        \"durationMs\": 0,\n        \"stdout\": \"absent: private async executeToolAction\",\n        \"stderr\": \"\"\n      },\n      {\n        \"label\": \"private num removed\",\n        \"ok\": true,\n        \"status\": 0,\n        \"signal\": null,\n        \"durationMs\": 0,\n        \"stdout\": \"absent: private num\",\n        \"stderr\": \"\"\n      },\n      {\n        \"label\": \"private buildAgentToolEnvelope removed\",\n        \"ok\": true,\n        \"status\": 0,\n        \"signal\": null,\n        \"durationMs\": 0,\n        \"stdout\": \"absent: private buildAgentToolEnvelope\",\n        \"stderr\": \"\"\n      },\n      {\n        \"label\": \"private actionSucceeded removed\",\n        \"ok\": true,\n        \"status\": 0,\n        \"signal\": null,\n        \"durationMs\": 0,\n        \"stdout\": \"absent: private actionSucceeded\",\n        \"stderr\": \"\"\n      },\n      {\n        \"label\": \"private buildAgentRuntimeContext removed\",\n        \"ok\": true,\n        \"status\": 0,\n        \"signal\": null,\n        \"durationMs\": 0,\n        \"stdout\": \"absent: private async buildAgentRuntimeContext\",\n        \"stderr\": \"\"\n      },\n      {\n        \"label\": \"private recordAgentRuntimeTurn removed\",\n        \"ok\": true,\n        \"status\": 0,\n        \"signal\": null,\n        \"durationMs\": 0,\n        \"stdout\": \"absent: private async recordAgentRuntimeTurn\",\n        \"stderr\": \"\"\n      },\n      {\n        \"label\": \"deps property present\",\n        \"ok\": true,\n        \"status\": 0,\n        \"signal\": null,\n        \"durationMs\": 0,\n        \"stdout\": \"present: private readonly toolRouterDeps: ExecuteToolActionDeps;\",\n        \"stderr\": \"\"\n      },\n      {\n        \"label\": \"preserve public executeTool\",\n        \"ok\": true,\n        \"status\": 0,\n        \"signal\": null,\n        \"durationMs\": 0,\n        \"stdout\": \"present: async executeTool(\",\n        \"stderr\": \"\"\n      },\n      {\n        \"label\": \"runtime context explicit dependency\",\n        \"ok\": true,\n        \"status\": 0,\n        \"signal\": null,\n        \"durationMs\": 0,\n        \"stdout\": \"present: buildAgentRuntimeContext(this.agentRuntime, {\",\n        \"stderr\": \"\"\n      },\n      {\n        \"label\": "
+      },
+      "prepromptActionMs": 153116,
+      "firstActionMs": 8037,
+      "eventSpanMs": 189115,
+      "totalAgentMs": 189115,
+      "turnCompleted": true,
+      "completedCommands": 1,
+      "uniqueCompletedCommands": 1,
+      "failedCommands": [],
+      "completedMcpCalls": 0,
+      "mcpTools": {},
+      "allTools": {},
+      "nativeFileToolViolations": [],
+      "nativeShellReadCommands": [],
+      "maskedAtomicFailurePipelineCommands": [],
+      "atomicCallWorktreeEscapes": [],
+      "forbiddenAtomicToolUses": [],
+      "forbiddenAtomicCommands": [
+        "cd /Users/danielpenin/kloel-ab-worktrees/kloel-ab099-atomic-20260517211534 && ARGS=$(node - <<'NODE'\nconst targetHeader = `import type OpenAI from 'openai';\nimport type { StructuredLogger } from '../logging/structured-logger';\nimport type { PrismaService } from '../prisma/prisma.service';\nimport type { AuditService } from '../audit/audit.service';\nimport type { UnifiedAgentActionsService } from './unified-agent-actions.service';\nimport type { AgentRuntimeContextService } from './agent-runtime';\nimport type { RiskGateService } from './risk-class/risk-gate.service';\nimport type { ToolArgs } from './unified-agent.types';\n\ntype UnknownRecord = Record<string, unknown>;\n\nexport interface ExecuteToolActionDeps {\n  logger: StructuredLogger;\n  actions: UnifiedAgentActionsService;\n  riskGate?: RiskGateService;\n  prisma: PrismaService;\n  auditService: AuditService;\n  openai: OpenAI | null;\n  primaryBrainModel: string;\n  fallbackBrainModel: string;\n  agentRuntime?: AgentRuntimeContextService;\n}`;\nconst signaturePrefixParam = 'deps: ExecuteToolActionDeps, ';\nconst predecided = '        executeTool: executeToolAction.bind(null, this.toolRouterDeps),';\nconst constructorAssignment = [\n  \"    this.writerModel = resolveBackendOpenAIModel('writer', this.config);\",\n  \"    this.fallbackWriterModel = resolveBackendOpenAIModel('writer_fallback', this.config);\",\n  '',\n  '    this.toolRouterDeps = {',\n  '      logger: this.logger,',\n  '      actions: this.actions,',\n  '      riskGate: this.riskGate,',\n  '      prisma: this.prisma,',\n  '      auditService: this.auditService,',\n  '      openai: this.openai,',\n  '      primaryBrainModel: this.primaryBrainModel,',\n  '      fallbackBrainModel: this.fallbackBrainModel,',\n  '      agentRuntime: this.agentRuntime,',\n  '    };',\n  '  }'\n].join('\\n');\nconsole.log(JSON.stringify({\n  decodeEscapedNewlinesInReplacements: true,\n  sourceFile: 'backend/src/kloel/unified-agent.service.ts',\n  targetFile: 'backend/src/kloel/unified-agent-tool-router.helpers.ts',\n  className: 'UnifiedAgentService',\n  methods: [\n    'num',\n    'actionSucceeded',\n    'buildAgentRuntimeContext',\n    'recordAgentRuntimeTurn',\n    'buildAgentToolEnvelope',\n    'executeToolAction'\n  ],\n  importNames: [\n    'num',\n    'actionSucceeded',\n    'buildAgentRuntimeContext',\n    'recordAgentRuntimeTurn',\n    'buildAgentToolEnvelope',\n    'executeToolAction'\n  ],\n  importModule: './unified-agent-tool-router.helpers',\n  targetHeader,\n  methodAdapters: {\n    executeToolAction: {\n      signaturePrefixParam,\n      bodyReplacements: [\n        { oldText: 'this.buildAgentToolEnvelope({', newText: 'buildAgentToolEnvelope(deps.agentRuntime, {' },\n        { oldText: 'this.num(', newText: 'num(' },\n        { oldText: 'this.logger', newText: 'deps.logger' },\n        { oldText: 'this.riskGate', newText: 'deps.riskGate' },\n        { oldText: 'this.actions', newText: 'deps.actions' },\n        { oldText: 'this.prisma', newText: 'deps.prisma' },\n        { oldText: 'this.auditService', newText: 'deps.auditService' },\n        { oldText: 'this.openai', newText: 'deps.openai' },\n        { oldText: 'this.primaryBrainModel', newText: 'deps.primaryBrainModel' },\n        { oldText: 'this.fallbackBrainModel', newText: 'deps.fallbackBrainModel' }\n      ]\n    },\n    buildAgentToolEnvelope: {\n      signaturePrefixParam: 'agentRuntime: AgentRuntimeContextService | undefined, ',\n      bodyReplacements: [\n        { oldText: 'this.agentRuntime', newText: 'agentRuntime' }\n      ]\n    },\n    buildAgentRuntimeContext: {\n      signaturePrefixParam: 'agentRuntime: AgentRuntimeContextService | undefined, ',\n      bodyReplacements: [\n        { oldText: 'this.agentRuntime', newText: 'agentRuntime' }\n      ]\n    },\n    recordAgentRuntimeTurn: {\n      signaturePrefixParam: 'agentRuntime: AgentRuntimeContextService | undefined, ',\n      bodyReplacements: [\n        { oldText: 'this.agentRuntime', newText: 'agentRuntime' }\n      ]\n    }\n  },\n  callsiteReplacements: [\n    { oldText: '    const agentRuntimeContext = await this.buildAgentRuntimeContext({', newText: '    const agentRuntimeContext = await buildAgentRuntimeContext(this.agentRuntime, {', expectedCount: 1 },\n    { oldText: '      await this.recordAgentRuntimeTurn({', newText: '      await recordAgentRuntimeTurn(this.agentRuntime, {', expectedCount: 1 },\n    { oldText: '    await this.recordAgentRuntimeTurn({', newText: '    await recordAgentRuntimeTurn(this.agentRuntime, {', expectedCount: 1 },\n    { oldText: '        executeTool: this.executeToolAction.bind(this),', newText: predecided, expectedCount: 1 },\n    {\n      oldText: '        const result = await this.executeToolAction(',\n      newText: ['        const result = await executeToolAction(', '          this.toolRouterDeps,'].join('\\n'),\n      expectedCount: 1\n    },\n    {\n      oldText: '    return this.executeToolAction(',\n      newText: ['    return executeToolAction(', '      this.toolRouterDeps,'].join('\\n'),\n      expectedCount: 1\n    },\n    { oldText: 'this.actionSucceeded(', newText: 'actionSucceeded(', expectedCount: 2 }\n  ],\n  postRemovalReplacements: [\n    {\n      oldText: '  private readonly fallbackWriterModel: string;',\n      newText: [\n        '  private readonly fallbackWriterModel: string;',\n        '  private readonly toolRouterDeps: ExecuteToolActionDeps;'\n      ].join('\\n'),\n      expectedCount: 1\n    },\n    {\n      oldText: [\n        \"    this.writerModel = resolveBackendOpenAIModel('writer', this.config);\",\n        \"    this.fallbackWriterModel = resolveBackendOpenAIModel('writer_fallback', this.config);\",\n        '  }'\n      ].join('\\n'),\n      newText: constructorAssignment,\n      expectedCount: 1\n    }\n  ],\n  postLintReplacements: [\n    {\n      oldText: [\n        '        let toolArgs: Record<string, unknown> = {};',\n        '        try {',\n        \"          toolArgs = JSON.parse(toolCall.function.arguments || '{}');\",\n        '        } catch {',\n        '          this.logger.warn(`Failed to parse tool args for ${toolName}`);',\n        '        }'\n      ].join('\\n'),\n      newText: [\n        '        let toolArgs: Record<string, unknown> = {};',\n        '        try {',\n        \"          const parsedToolArgs: unknown = JSON.parse(toolCall.function.arguments || '{}');\",\n        '          toolArgs =',\n        \"            parsedToolArgs && typeof parsedToolArgs === 'object' && !Array.isArray(parsedToolArgs)\",\n        '              ? (parsedToolArgs as Record<string, unknown>)',\n        '              : {};',\n        '        } catch {',\n        '          this.logger.warn(`Failed to parse tool args for ${toolName}`);',\n        '        }'\n      ].join('\\n'),\n      expectedCount: 1\n    }\n  ],\n  formatWithEslint: true,\n  validate: true,\n  includeTypecheck: false,\n  validationProfile: 'kloel-unified-agent-tool-router-plus-runtime-context-no-typecheck',\n  scanFiles: [\n    'backend/src/kloel/unified-agent.service.ts',\n    'backend/src/kloel/unified-agent-tool-router.helpers.ts'\n  ],\n  forbiddenTextChecks: [\n    { file: 'backend/src/kloel/unified-agent-tool-router.helpers.ts', text: 'this.', label: 'router helper no this' },\n    { file: 'backend/src/kloel/unified-agent.service.ts', text: 'toolRouterDeps()', label: 'no deps builder method' },\n    { file: 'backend/src/kloel/unified-agent.service.ts', text: 'private async executeToolAction', label: 'private executeToolAction removed' },\n    { file: 'backend/src/kloel/unified-agent.service.ts', text: 'private num', label: 'private num removed' },\n    { file: 'backend/src/kloel/unified-agent.service.ts', text: 'private buildAgentToolEnvelope', label: 'private buildAgentToolEnvelope removed' },\n    { file: 'backend/src/kloel/unified-agent.service.ts', text: 'private actionSucceeded', label: 'private actionSucceeded removed' },\n    { file: 'backend/src/kloel/unified-agent.service.ts', text: 'private async buildAgentRuntimeContext', label: 'private buildAgentRuntimeContext removed' },\n    { file: 'backend/src/kloel/unified-agent.service.ts', text: 'private async recordAgentRuntimeTurn', label: 'private recordAgentRuntimeTurn removed' }\n  ],\n  requiredTextChecks: [\n    { file: 'backend/src/kloel/unified-agent.service.ts', text: 'private readonly toolRouterDeps: ExecuteToolActionDeps;', label: 'deps property present' },\n    { file: 'backend/src/kloel/unified-agent.service.ts', text: 'async executeTool(', label: 'preserve public executeTool' },\n    { file: 'backend/src/kloel/unified-agent.service.ts', text: 'buildAgentRuntimeContext(this.agentRuntime, {', label: 'runtime context explicit dependency' },\n    { file: 'backend/src/kloel/unified-agent.service.ts', text: 'recordAgentRuntimeTurn(this.agentRuntime, {', label: 'runtime turn explicit dependency' }\n  ],\n  report: 'compact'\n}));\nNODE\n) && ATOMIC_OS_REPO_ROOT=/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-atomic-20260517211534 node /Users/danielpenin/kloel-ab-worktrees/kloel-ab099-atomic-20260517211534/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs extract_class_methods_to_file \"$ARGS\" && ATOMIC_OS_REPO_ROOT=/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-atomic-20260517211534 node /Users/danielpenin/kloel-ab-worktrees/kloel-ab099-atomic-20260517211534/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs atomic_add_import '{\"file\":\"backend/src/kloel/unified-agent.service.ts\",\"module\":\"./unified-agent-tool-router.helpers\",\"name\":\"ExecuteToolActionDeps\",\"typeOnly\":true}' && ATOMIC_OS_REPO_ROOT=/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-atomic-20260517211534 node /Users/danielpenin/kloel-ab-worktrees/kloel-ab099-atomic-20260517211534/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs atomic_remove_import '{\"file\":\"backend/src/kloel/unified-agent.service.ts\",\"module\":\"./unified-agent-tool-router.helpers\",\"name\":\"num\"}' && ATOMIC_OS_REPO_ROOT=/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-atomic-20260517211534 node /Users/danielpenin/kloel-ab-worktrees/kloel-ab099-atomic-20260517211534/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs atomic_remove_import '{\"file\":\"backend/src/kloel/unified-agent.service.ts\",\"module\":\"./unified-agent-tool-router.helpers\",\"name\":\"buildAgentToolEnvelope\"}' && ATOMIC_OS_REPO_ROOT=/Users/danielpenin/kloel-ab-worktrees/kloel-ab099-atomic-20260517211534 node /Users/danielpenin/kloel-ab-worktrees/kloel-ab099-atomic-20260517211534/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs atomic_apply_eslint_dry_run_fixes '{\"cwd\":\"backend\",\"args\":[\"src/kloel/unified-agent.service.ts\",\"src/kloel/unified-agent-tool-router.helpers.ts\",\"--fix-dry-run\",\"--fix-type\",\"layout\",\"--format\",\"json\"],\"allowedPaths\":[\"backend/src/kloel/unified-agent.service.ts\",\"backend/src/kloel/unified-agent-tool-router.helpers.ts\"],\"applyKnownResidueFixes\":false}'\n"
+      ],
+      "fileChangeItems": 0,
+      "fileChangePaths": [],
+      "agentMessages": 1,
+      "proofReadCommands": 0,
+      "fullDiffCommands": 0,
+      "backendInstallCommands": 0,
+      "usage": {
+        "input_tokens": 62563,
+        "output_tokens": 116,
+        "reasoning_output_tokens": 183
+      }
+    },
+    "validation": {
+      "jestStatus": 0,
+      "typecheckStatus": 2,
+      "typecheckErrorCount": 0,
+      "typecheckKloelErrorCount": 0,
+      "lintStatus": 0,
+      "diffCheckStatus": 0,
+      "traceIsolationStatus": null,
+      "forbiddenPatternStatus": 1,
+      "helperThisStatus": 1,
+      "privateMethodsStatus": 1,
+      "serviceLines": 518,
+      "specDiff": [],
+      "protectedDiff": [],
+      "traceCount": 32,
+      "docsTraceCount": null,
+      "touchedKloelFiles": [
+        "backend/src/kloel/unified-agent-tool-router.helpers.ts",
+        "backend/src/kloel/unified-agent.service.ts"
+      ],
+      "touchedKloelFileCount": 2,
+      "fileLineCounts": [
+        {
+          "lines": 518,
+          "path": "backend/src/kloel/unified-agent.service.ts"
+        },
+        {
+          "lines": 267,
+          "path": "backend/src/kloel/unified-agent-tool-router.helpers.ts"
+        }
+      ],
+      "actionHelperLines": null,
+      "runtimeHelperLines": null,
+      "runtimeContextHelperLines": null,
+      "toolRouterHelperLines": 267,
+      "totalKloelLines": 785,
+      "unexpectedPrivateHelperRemovalStatus": null,
+      "scopePreservationPass": null,
+      "untrackedInsertions": 267,
+      "sourceInsertions": 303,
+      "sourceDeletions": 255,
+      "sourceChurn": 558
+    }
+  },
+  "scorecard": {
+    "functionalPass": false,
+    "taskFunctionalPass": false,
+    "normalTaskFunctionalPass": false,
+    "atomicTaskFunctionalPass": true,
+    "shapeComparisonEligible": false,
+    "globalFunctionalPass": false,
+    "sharedTypecheckNoiseOnly": true,
+    "normalLaneStatus": "max_timeout",
+    "atomicLaneStatus": "completed",
+    "normalLaneCompleted": false,
+    "atomicLaneCompleted": true,
+    "laneCompletionWinner": "atomic",
+    "benchmarkIsolationPass": true,
+    "normalModeClean": true,
+    "normalForbiddenAtomicToolUseCount": 0,
+    "normalForbiddenAtomicCommandCount": 0,
+    "atomicModeClean": true,
+    "atomicNativeFileToolViolationCount": 0,
+    "atomicNativeShellReadCommandCount": 0,
+    "atomicMaskedPipelineCommandCount": 0,
+    "atomicWorktreeEscapeCount": 0,
+    "atomicTraceIsolationPass": true,
+    "serviceLineWinner": "not_applicable",
+    "totalProductLineWinner": "not_applicable",
+    "normalScopePreservationPass": null,
+    "atomicScopePreservationPass": null,
+    "scopePreservationWinner": "tie",
+    "eventRowWinner": "atomic",
+    "firstActionWinner": "atomic",
+    "totalAgentTimeWinner": "atomic",
+    "shellCommandWinner": "atomic",
+    "normalFailedCommandCount": 2,
+    "atomicFailedCommandCount": 0,
+    "failedCommandWinner": "atomic",
+    "inputTokenWinner": "atomic",
+    "outputTokenWinner": "atomic",
+    "reasoningTokenWinner": "atomic",
+    "traceWinner": "atomic",
+    "protectedDiffTie": true,
+    "touchedFileWinner": "not_applicable",
+    "sourceChurnWinner": "not_applicable"
+  }
+}
