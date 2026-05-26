@@ -293,17 +293,15 @@ O estado de rigor maximo do Codacy faz parte da governance.
 <claude-mem-context>
 # Memory Context
 
-# [whatsapp_saas] recent context, 2026-05-26 11:36am GMT-3
+# [whatsapp_saas] recent context, 2026-05-26 4:02pm GMT-3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (20,884t read) | 1,802,332t work | 99% savings
+Stats: 50 obs (20,568t read) | 1,780,420t work | 99% savings
 
 ### May 11, 2026
-
-1349 2:51p 🔴 Visual Baseline Updated — signup-mobile.png Snapshot Regenerated from CI Artifact
 1350 2:57p ⚖️ Kloel CIA v3 Execution Contract — Full Mission Definition Issued
 1351 " 🔵 PR #266 Gap Analysis — Foundation Delivered, Production State Not Reached
 1352 " 🔵 Baseline Lift Bug — outcome and baselineOutcome Always Equal, Lift Always Zero
@@ -346,24 +344,19 @@ Stats: 50 obs (20,884t read) | 1,802,332t work | 99% savings
 1413 " 🔵 Backend Railway Deployment Startup Sequence — Full NestJS Boot Captured
 1414 " 🔵 Working Tree State — Branch chore/purga-total-debt Has ~160 Modified Files Pre-Commit
 1415 3:31p ⚖️ Kloel CIA v3 Execution Contract Re-Issued in New Session — Full Mandate Active
-
 ### May 22, 2026
-
 1416 8:04p 🔵 User Iniciou Auditoria Operacional de MCPs Ativos
 1417 8:05p 🔵 Ecossistema MCP Completo Mapeado via ps aux no whatsapp_saas
 1418 " 🔵 check-test-integrity.mjs: Proteção Avançada de Cobertura de Testes no whatsapp_saas
 1419 " 🔵 GitHub API Inacessível em Sessão de Agente (session_id 4445)
-
 ### May 25, 2026
-
 1420 1:01p 🔴 Codex config.toml: deprecated `codex_hooks` replaced with `hooks`
-
 ### May 26, 2026
-
 1421 8:22a 🔵 PI Subagent System — How to Launch and Monitor
 1422 11:32a ✅ Git Merge Conflict Resolution Across Monorepo
+1423 11:36a 🔵 Stripe App Connector Verified for whatsapp_saas Project
 
-Access 1802k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 1780k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>
 
 ## PULSE Auditor Immutability

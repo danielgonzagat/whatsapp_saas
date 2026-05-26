@@ -77,14 +77,6 @@ export class PlanService {
       },
     });
 
-    await this.brainSpine?.recordCommercial({
-      workspaceId,
-      subject: `plan:${plan.id}`,
-      eventType: 'plan.created',
-      occurredAt: new Date(),
-      payload: { planId: plan.id, productId: dto.productId, name: plan.name, price: plan.price },
-    });
-
     this.eventEmitter.emit('plan.created', {
       planId: plan.id,
       productId: dto.productId,
@@ -104,6 +96,20 @@ export class PlanService {
         metadata: { name: plan.name, price: plan.price },
       });
     }
+
+    // Feed the cognitive spine: plan creation → belief/prediction cycle
+    await this.brainSpine?.recordCommercial({
+      workspaceId,
+      subject: `plan:${plan.id}`,
+      eventType: 'plan.created',
+      occurredAt: new Date(),
+      payload: {
+        planId: plan.id,
+        name: plan.name,
+        priceInCents: plan.price !== null ? Math.round(Number(plan.price) * 100) : null,
+        productId: dto.productId,
+      },
+    });
 
     this.logger.log(`Plan created: ${plan.id} "${plan.name}"`);
     return { success: true, plan };
@@ -166,6 +172,21 @@ export class PlanService {
         metadata: { changes: Object.keys(updates) },
       });
     }
+
+    // Feed the cognitive spine: plan update → belief/prediction cycle
+    await this.brainSpine?.recordCommercial({
+      workspaceId,
+      subject: `plan:${plan.id}`,
+      eventType: 'plan.updated',
+      occurredAt: new Date(),
+      payload: {
+        planId: plan.id,
+        name: plan.name,
+        priceInCents: plan.price !== null ? Math.round(Number(plan.price) * 100) : null,
+        productId: existing.productId,
+        changes: Object.keys(updates),
+      },
+    });
 
     return { success: true, plan };
   }

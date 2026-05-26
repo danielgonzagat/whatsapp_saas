@@ -4,6 +4,7 @@ import { readFileSync } from 'fs';
 import { resolve, dirname, extname } from 'path';
 import { fileURLToPath } from 'url';
 
+const PROTO_VERSION = '2024-11-05';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const MESH_PATH = resolve(__dirname, 'lsp-mesh.json');
@@ -140,7 +141,7 @@ process.stdin.on('end', () => { pool.shutdownAll(); process.exit(0); });
 async function handle(msg) {
   try {
     switch (msg.method) {
-      case 'initialize': return respond(msg.id, { capabilities: { tools:{}, resources:{} }, serverInfo: { name:'kloel-lsp-router', version:'2.0.0' } });
+      case 'initialize': return respond(msg.id, { protocolVersion: PROTO_VERSION, capabilities: { tools:{}, resources:{} }, serverInfo: { name:'kloel-lsp-router', version:'2.0.0' } });
       case 'tools/list': return respond(msg.id, { tools: TOOLS });
       case 'tools/call': return await handleToolCall(msg);
       default: return respond(msg.id, {});
@@ -250,5 +251,5 @@ async function lspHealth(id, args) {
   return respond(id, { content:[{type:'text', text:JSON.stringify(results, null, 2)}] });
 }
 
-function respond(id, result) { process.stdout.write(JSON.stringify({ jsonrpc:'2.0', id, result })+'\n'); }
+function respond(id, result) { if (id === undefined) return; process.stdout.write(JSON.stringify({ jsonrpc:'2.0', id, result })+'\n'); }
 function toUri(fp) { return `file://${resolve(fp)}`; }

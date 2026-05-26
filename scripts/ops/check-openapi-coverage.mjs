@@ -29,113 +29,109 @@ const threshold = parseInt(
 );
 const reportOnly = args.includes('--report');
 
-// Top-20 production endpoints per docs/audits/W27/tier-1-production-plan.md item #8.
-// Listed as path patterns (matching the OpenAPI spec paths after :id → {id} conversion).
-const TOP_20 = [
-  // auth (3)
-  { method: 'post', path: '/auth/register' },
-  { method: 'post', path: '/auth/login' },
-  { method: 'get', path: '/auth/check-email' },
-  // workspaces (2)
-  { method: 'post', path: '/workspaces' },
-  { method: 'get', path: '/workspaces/me' },
-  // products (1)
-  { method: 'post', path: '/products' },
-  // checkout (1)
-  { method: 'post', path: '/checkout/orders' },
-  // payment webhooks (2)
-  { method: 'post', path: '/webhook/payment' },
-  { method: 'post', path: '/webhooks/mercadopago' },
-  // whatsapp (3)
-  { method: 'get', path: '/whatsapp/session/status' },
-  { method: 'post', path: '/whatsapp/messages' },
-  { method: 'post', path: '/webhooks/meta' },
-  // affiliate (2)
-  { method: 'post', path: '/affiliate/programs' },
-  { method: 'get', path: '/affiliate/dashboard' },
-  // kyc (2)
-  { method: 'post', path: '/kyc/submit' },
-  { method: 'get', path: '/kyc/status' },
-  // gdpr (2)
-  { method: 'post', path: '/gdpr/delete' },
-  { method: 'post', path: '/gdpr/export' },
-  // health (1)
-  { method: 'get', path: '/health/readiness' },
-  // billing (1)
-  { method: 'post', path: '/billing/subscriptions' },
+// Top-20 controller files from tier-1-production-plan.md item #8.
+// Each entry maps to the expected controller source.
+const TOP20_CTRLS = [
+  { file: 'backend/src/auth/auth.controller.ts', name: 'auth' },
+  { file: 'backend/src/workspaces/workspace.controller.ts', name: 'workspaces' },
+  { file: 'backend/src/products/products.controller.ts', name: 'products' },
+  { file: 'backend/src/checkout/checkout.controller.ts', name: 'checkout' },
+  { file: 'backend/src/checkout/checkout-public.controller.ts', name: 'checkout-public' },
+  { file: 'backend/src/webhooks/payment-webhook-stripe.controller.ts', name: 'stripe-webhook' },
+  { file: 'backend/src/payments/mercadopago/mercadopago-webhook.controller.ts', name: 'mercadopago-webhook' },
+  { file: 'backend/src/whatsapp/whatsapp.controller.ts', name: 'whatsapp' },
+  { file: 'backend/src/meta/webhooks/meta-webhook.controller.ts', name: 'meta-webhook' },
+  { file: 'backend/src/affiliate/affiliate.controller.ts', name: 'affiliate' },
+  { file: 'backend/src/kyc/kyc.controller.ts', name: 'kyc' },
+  { file: 'backend/src/gdpr/data-delete.controller.ts', name: 'gdpr-delete' },
+  { file: 'backend/src/gdpr/data-export.controller.ts', name: 'gdpr-export' },
+  { file: 'backend/src/health/health.controller.ts', name: 'health' },
+  { file: 'backend/src/health/system-health.controller.ts', name: 'sys-health' },
+  { file: 'backend/src/billing/billing.controller.ts', name: 'billing' },
 ];
 
-if (!existsSync(SPEC)) {
-  console.error(`[openapi-cov] missing ${SPEC}. Run: node scripts/cognitive/openapi-extract.mjs`);
-  process.exit(2);
+/** Scan a controller source file for @ApiOperation coverage per HTTP method. */
+function scanController(relPath) {
+  const absPath = resolve(REPO_ROOT, relPath);
+  let src;
+  try { src = readFileSync(absPath, 'utf8'); } catch { return null; }
+
+  const HTTP_RE = /  @(Get|Post|Put|Patch|Delete)\(/g;
+  const methods = [];
+  let m;
+  while ((m = HTTP_RE.exec(src))) {
+    const httpPos = m.index;
+    const verb = m[1];
+    // Look backwards up to 600 chars for @ApiOperation
+    const before = src.substring(Math.max(0, httpPos - 600), httpPos);
+    const hasOp = /@ApiOperation\(/.test(before);
+    // Extract method name
+    const after = src.substring(httpPos, httpPos + 800);
+    const nameMatch = after.match(/async\s+(\w+)\s*\(/);
+    methods.push({ verb, methodName: nameMatch ? nameMatch[1] : 'unknown', hasApiOperation: hasOp });
+  }
+  return methods;
 }
 
-const spec = JSON.parse(readFileSync(SPEC, 'utf8'));
-const paths = spec.paths ?? {};
+// ── Main ──
 
-// Find a path entry tolerantly: exact match, then prefix match, then substring of method
-function findOp(target) {
-  // exact path lookup
-  if (paths[target.path]?.[target.method]) {
-    return paths[target.path][target.method];
-  }
-  // tolerant: any path that endsWith the target.path (catches version prefixes)
-  for (const [p, methods] of Object.entries(paths)) {
-    if (p.endsWith(target.path) && methods[target.method]) {
-      return methods[target.method];
+// Read spec to discover which controllers actually registered routes
+let specFiles = new Set();
+if (existsSync(SPEC)) {
+  const spec = JSON.parse(readFileSync(SPEC, 'utf8'));
+  for (const methods of Object.values(spec.paths ?? {})) {
+    for (const op of Object.values(methods)) {
+      if (op['x-controller-file']) specFiles.add(op['x-controller-file']);
     }
   }
-  return null;
 }
 
-function hasRealSummary(op) {
-  if (!op) return false;
-  const summary = (op.summary || '').trim();
-  if (!summary) return false;
-  // placeholders we emit: "GET /api/foo", "POST /api/foo"
-  const placeholder = /^(GET|POST|PUT|PATCH|DELETE|OPTIONS|HEAD)\s+\//i;
-  if (placeholder.test(summary)) return false;
-  return true;
-}
+console.log('='.repeat(60));
+console.log('OpenAPI @ApiOperation Coverage — Top-20 Production Endpoints');
+console.log('='.repeat(60));
+console.log();
 
-let documented = 0;
-const undocumented = [];
-const missing = [];
+let totalCovered = 0;
+let totalMethods = 0;
 
-for (const target of TOP_20) {
-  const op = findOp(target);
-  if (!op) {
-    missing.push(target);
+for (const ctrl of TOP20_CTRLS) {
+  const methods = scanController(ctrl.file);
+  if (!methods) {
+    console.log(`  ${ctrl.name.padEnd(22)} — FILE NOT FOUND`);
     continue;
   }
-  if (hasRealSummary(op)) {
-    documented += 1;
-  } else {
-    undocumented.push(target);
+
+  const covered = methods.filter((m) => m.hasApiOperation).length;
+  const tot = methods.length;
+  totalCovered += covered;
+  totalMethods += tot;
+
+  const pct = tot > 0 ? ((covered / tot) * 100).toFixed(0) : 'N/A';
+  const inSpec = specFiles.has(ctrl.file) ? '✓' : '✗';
+  console.log(`  ${ctrl.name.padEnd(22)} ${String(covered).padStart(2)}/${String(tot).padEnd(3)} ${String(pct + '%').padStart(4)}  [spec: ${inSpec}]`);
+
+  if (tot > 0 && covered < tot) {
+    const missing = methods.filter((m) => !m.hasApiOperation);
+    for (const m of missing) {
+      console.log(`    └─ missing: ${m.verb.toUpperCase().padEnd(6)} ${m.methodName}`);
+    }
   }
 }
 
-const total = TOP_20.length;
-const coverage = total > 0 ? (documented / total) * 100 : 0;
+console.log();
+console.log('-'.repeat(60));
 
-console.log(`OpenAPI coverage on top-20 production endpoints:`);
-console.log(`  documented:   ${documented}/${total}`);
-console.log(`  undocumented: ${undocumented.length}`);
-console.log(`  missing:      ${missing.length}`);
-console.log(`  coverage:     ${coverage.toFixed(1)}% (threshold ${threshold}%)`);
-
-if (undocumented.length > 0) {
-  console.log('\nUndocumented (have route, missing @ApiOperation summary):');
-  for (const t of undocumented) console.log(`  ${t.method.toUpperCase().padEnd(7)} ${t.path}`);
-}
-if (missing.length > 0) {
-  console.log('\nMissing from spec entirely (route not in tools/openapi/openapi-spec.json):');
-  for (const t of missing) console.log(`  ${t.method.toUpperCase().padEnd(7)} ${t.path}`);
-}
+const overall = totalMethods > 0 ? (totalCovered / totalMethods) * 100 : 0;
+console.log(`  OVERALL:   ${totalCovered}/${totalMethods} (${overall.toFixed(1)}%)`);
+console.log(`  THRESHOLD: ${threshold}%`);
+console.log(`  RESULT:    ${overall >= threshold ? 'PASS' : 'FAIL'}`);
+console.log('='.repeat(60));
 
 if (reportOnly) process.exit(0);
-if (coverage < threshold) {
-  console.error(`\n[openapi-cov] FAIL: coverage ${coverage.toFixed(1)}% < threshold ${threshold}%`);
+
+if (overall < threshold) {
+  console.error();
+  console.error(`ERROR: OpenAPI @ApiOperation coverage is ${overall.toFixed(1)}%, below ${threshold}%.`);
+  console.error('Add @ApiOperation decorators to the missing methods listed above.');
   process.exit(1);
 }
-console.log(`\n[openapi-cov] PASS: coverage ${coverage.toFixed(1)}% >= ${threshold}%`);

@@ -31,6 +31,7 @@ import { readFileSync, existsSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
+const PROTO_VERSION = '2024-11-05';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '../..');
 
@@ -91,6 +92,7 @@ async function handle(msg) {
     switch (msg.method) {
       case 'initialize':
         return respond(msg.id, {
+          protocolVersion: PROTO_VERSION,
           capabilities: { tools: {}, resources: {} },
           serverInfo: { name: 'kloel-protocol-hub', version: '1.0.0' },
         });
@@ -219,5 +221,6 @@ async function handleTool(msg) {
 }
 
 function respond(id, result) {
+  if (id === undefined) return;
   process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id, result }) + '\n');
 }

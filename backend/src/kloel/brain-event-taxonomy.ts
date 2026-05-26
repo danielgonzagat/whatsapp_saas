@@ -27,6 +27,8 @@ export const BRAIN_EVENT_TAXONOMY = [
   'lead.abandoned',
   'contact.segmented',
   'product.created',
+  'plan.created',
+  'plan.updated',
   'campaign.scheduled',
   'campaign.sent',
   'campaign.clicked',

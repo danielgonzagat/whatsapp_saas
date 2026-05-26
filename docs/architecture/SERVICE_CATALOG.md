@@ -4,7 +4,7 @@
 
 Total services: 580. Sorted by domain.
 
-## kloel (301)
+## kloel (300)
 
 - `AbiAbHarnessService` — `backend/src/kloel/abi-ab/abi-ab-harness.service.ts`
 - `AbiAbTelemetryService` — `backend/src/kloel/abi-ab/abi-ab-telemetry.service.ts`
@@ -222,7 +222,6 @@ Total services: 580. Sorted by domain.
 - `PaymentService` — `backend/src/kloel/payment.service.ts`
 - `PdfProcessorService` — `backend/src/kloel/pdf-processor.service.ts`
 - `PerClientContextBundler` — `backend/src/kloel/agency/per-client-context.bundler.ts`
-- `PlanService` — `backend/src/kloel/plan.service.ts`
 - `PlatformBiasMonitorService` — `backend/src/kloel/incent/platform-bias-monitor.service.ts`
 - `PolicyChangeWatcher` — `backend/src/kloel/channel/policy-change.watcher.ts`
 - `PortfolioStateService` — `backend/src/kloel/agency/portfolio-state.service.ts`
@@ -757,6 +756,10 @@ Total services: 580. Sorted by domain.
 ## public-api (1)
 
 - `ApiKeyGuard` — `backend/src/public-api/api-key.guard.ts`
+
+## sales (1)
+
+- `SalesService` — `backend/src/sales/sales.service.ts`
 
 ## team (1)
 
