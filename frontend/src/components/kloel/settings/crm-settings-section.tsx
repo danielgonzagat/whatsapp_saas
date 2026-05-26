@@ -375,17 +375,20 @@ export function CrmSettingsSection() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
+          uppercase
           title={kloelT(`Contatos`)}
           value={String(contacts.length)}
           hint={kloelT(`Primeira pagina do CRM`)}
         />
-        <StatCard title={kloelT(`Pipelines`)} value={String(pipelines.length)} />
+        <StatCard uppercase title={kloelT(`Pipelines`)} value={String(pipelines.length)} />
         <StatCard
+          uppercase
           title={kloelT(`Deals`)}
           value={String(deals.length)}
           hint={kloelT(`Todos os deals ativos retornados`)}
         />
         <StatCard
+          uppercase
           title={kloelT(`Media segmentada`)}
           value={String(Math.round(segmentStats?.total || 0))}
           hint={kloelT(`Media de contatos por preset`)}
