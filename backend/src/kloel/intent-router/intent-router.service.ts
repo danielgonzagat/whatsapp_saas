@@ -98,6 +98,14 @@ export class IntentRouterService {
       extract: () => ({}),
     },
 
+    // === Theme toggle ===
+    {
+      regex: /(?:tem[ae]\s+(?:clar[oa]?|escur[oa]?)|(?:clar[oa]?|escur[oa]?)\s+tem[ae]|(?:dark|light)\s+mode)/i,
+      capabilityId: 'ui.theme',
+      extract: (match) => ({
+        theme: /escur[oa]|dark/i.test(match[0]) ? 'dark' : 'light',
+      }),
+    },
     // === Coupons ===
     {
       regex: /(?:cri[ae]r?\s.*cupom|cupom\s.*nov[oa]|cadastra\s.*cupom)/i,
