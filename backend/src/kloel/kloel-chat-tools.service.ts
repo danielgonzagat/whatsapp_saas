@@ -1,4 +1,5 @@
 import { Injectable, Optional } from '@nestjs/common';
+import { ProductService } from './product.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SmartPaymentService } from './smart-payment.service';
 import {
@@ -64,7 +65,6 @@ import {
 import {
   type ToolSaveProductArgs,
   type ToolDeleteProductArgs,
-  runSaveProduct,
   runListProducts,
   runDeleteProduct,
 } from './kloel-chat-tools.products.helpers';
@@ -95,6 +95,7 @@ export function centsFromUnknown(value: unknown): number {
 @Injectable()
 export class KloelChatToolsService {
   constructor(
+    private readonly productService: ProductService,
     private readonly prisma: PrismaService,
     private readonly smartPaymentService: SmartPaymentService,
     @Optional() private readonly agentScheduler?: AgentRuntimeSchedulerService,
@@ -103,7 +104,14 @@ export class KloelChatToolsService {
     @Optional() private readonly agentEvidence?: AgentRuntimeEvidenceStoreService,
   ) {}
   toolSaveProduct(workspaceId: string, args: ToolSaveProductArgs): Promise<ToolResult> {
-    return runSaveProduct(this.prisma, workspaceId, args);
+    return this.productService.create(workspaceId, {
+      name: args.name,
+      description: args.description,
+      price: args.price,
+      category: args.category,
+      imageUrl: args.imageUrl,
+      format: args.format,
+    }) as Promise<ToolResult>;
   }
   toolListProducts(workspaceId: string): Promise<ToolResult> {
     return runListProducts(this.prisma, workspaceId);
