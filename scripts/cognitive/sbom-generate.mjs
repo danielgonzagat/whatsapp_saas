@@ -4,7 +4,7 @@
  * Uses @cyclonedx/cyclonedx-npm for each package.
  */
 import { execSync } from 'child_process';
-import { writeFileSync, existsSync, mkdirSync } from 'fs';
+import { writeFileSync, existsSync, mkdirSync, statSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -32,17 +32,24 @@ async function main() {
     }
     try {
       const outPath = resolve(OUT_DIR, `sbom-${ws.name}.json`);
-      execSync(`npx --yes @cyclonedx/cyclonedx-npm --output-file "${outPath}" --spec-version 1.5`, {
-        cwd: ws.path,
-        encoding: 'utf8',
-        timeout: 60000,
-        stdio: 'pipe',
-      });
-      const stats = require('fs').statSync(outPath);
+      // --ignore-npm-errors: cyclonedx-npm bails on transient `npm ls` warnings
+      // (extraneous packages, dedup conflicts) which are common in monorepos.
+      // We still get a valid CycloneDX document for the packages that resolve.
+      execSync(
+        `npx --yes @cyclonedx/cyclonedx-npm --output-file "${outPath}" --spec-version 1.5 --ignore-npm-errors`,
+        {
+          cwd: ws.path,
+          encoding: 'utf8',
+          timeout: 180_000,
+          stdio: 'pipe',
+        },
+      );
+      const stats = statSync(outPath);
       results.push({ workspace: ws.name, file: outPath, size: stats.size });
-      console.log(`✅ ${ws.name}: SBOM generated (${(stats.size/1024).toFixed(1)} KB)`);
+      console.log(`✅ ${ws.name}: SBOM generated (${(stats.size / 1024).toFixed(1)} KB)`);
     } catch (e) {
-      console.log(`⚠️  ${ws.name}: ${e.message?.slice(0, 100)}`);
+      const msg = e?.message ? String(e.message).slice(0, 200) : 'unknown_error';
+      console.log(`⚠️  ${ws.name}: ${msg}`);
     }
   }
 

@@ -1,1 +1,35 @@
-{"generated":"2026-05-26T16:36:39Z","workspaces":[]}
+{
+  "generated": "2026-05-26T18:10:08.713Z",
+  "workspaces": [
+    {
+      "workspace": "root",
+      "file": "/Users/danielpenin/whatsapp_saas/tools/sbom/sbom-root.json",
+      "size": 691560
+    },
+    {
+      "workspace": "backend",
+      "file": "/Users/danielpenin/whatsapp_saas/tools/sbom/sbom-backend.json",
+      "size": 1864503
+    },
+    {
+      "workspace": "frontend",
+      "file": "/Users/danielpenin/whatsapp_saas/tools/sbom/sbom-frontend.json",
+      "size": 1507027
+    },
+    {
+      "workspace": "frontend-admin",
+      "file": "/Users/danielpenin/whatsapp_saas/tools/sbom/sbom-frontend-admin.json",
+      "size": 917859
+    },
+    {
+      "workspace": "worker",
+      "file": "/Users/danielpenin/whatsapp_saas/tools/sbom/sbom-worker.json",
+      "size": 777167
+    },
+    {
+      "workspace": "e2e",
+      "file": "/Users/danielpenin/whatsapp_saas/tools/sbom/sbom-e2e.json",
+      "size": 14345
+    }
+  ]
+}
