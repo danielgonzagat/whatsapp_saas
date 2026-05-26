@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
-import { BrainEventSpineService } from './brain-event-spine.service';
+import { MindEventSpine } from './mind/coordination';
 import { ChannelSetupService } from './channel-setup.service';
 import { MindConceptService } from './mind-concepts.service';
 import { MindService } from './mind.service';
@@ -52,7 +52,7 @@ export class CommercialDecisionOrchestratorService {
   constructor(
     private readonly mind: MindService,
     private readonly concepts: MindConceptService,
-    private readonly events: BrainEventSpineService,
+    private readonly events: MindEventSpine,
     private readonly identity: ContactIdentityResolverService,
     private readonly setup: ChannelSetupService,
     private readonly prisma: PrismaService,

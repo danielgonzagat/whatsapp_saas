@@ -12,7 +12,7 @@ import type { StripePaymentIntent } from '../billing/stripe-types';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { FraudEngine } from '../payments/fraud/fraud.engine';
 import { PrismaService } from '../prisma/prisma.service';
-import { BrainEventSpineService } from './brain-event-spine.service';
+import { MindEventSpine } from './mind/coordination';
 import type { SaleEventPayload } from './brain-event-taxonomy';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
@@ -119,7 +119,7 @@ export class PaymentService {
     private readonly auditService: AuditService,
     private readonly financialAlert: FinancialAlertService,
     private readonly fraudEngine: FraudEngine,
-    @Optional() private readonly events?: BrainEventSpineService,
+    @Optional() private readonly events?: MindEventSpine,
   ) {
     // Verify kloelSale model exists at runtime
     if (typeof this.prisma.kloelSale?.create !== 'function') {

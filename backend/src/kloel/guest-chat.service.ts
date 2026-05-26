@@ -7,7 +7,7 @@ import type Redis from 'ioredis';
 import OpenAI from 'openai';
 import { createTextLlmClient, resolveTextLlmApiKey } from '../lib/llm-provider';
 import { OpsAlertService } from '../observability/ops-alert.service';
-import { BrainEventSpineService } from './brain-event-spine.service';
+import { MindEventSpine } from './mind/coordination';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { UnifiedAgentService } from './unified-agent.service';
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
@@ -44,7 +44,7 @@ export class GuestChatService implements OnModuleDestroy {
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() @InjectRedis() private readonly redis?: Redis,
     @Optional() private readonly abiBuilder?: AbiBuilderService,
-    @Optional() private readonly spine?: BrainEventSpineService,
+    @Optional() private readonly spine?: MindEventSpine,
     @Optional() private readonly unifiedAgent?: UnifiedAgentService,
     @Optional() private readonly toolDispatcher?: KloelToolDispatcherService,
     @Optional() private readonly intentRouter?: IntentRouterService,
