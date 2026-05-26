@@ -244,6 +244,75 @@ export class IntentRouterService {
 
     // === URLs ===
     {
+      regex: /(?:adicion[ae]r?|cri[ae]r?|nov[ao])\s+(?:o\s+|a\s+)?url/i,
+      capabilityId: 'add_url',
+      extract: (match) => {
+        const urlMatch = match[0].match(/(https?:\/\/[^\s]+)/i);
+        return urlMatch ? { url: urlMatch[1] } : {};
+      },
+    },
+    {
+      regex: /(?:edit[ae]r?|atualiz[ae]r?|mud[ae]r?|alter[ae]r?)\s+(?:o\s+|a\s+)?url/i,
+      capabilityId: 'update_url',
+      extract: () => ({}),
+    },
+    {
+      regex: /(?:apag[ae]r?|delet[ae]r?|remov[ae]r?|exclu[ui]r?)\s+(?:o\s+|a\s+)?url/i,
+      capabilityId: 'delete_url',
+      extract: () => ({}),
+    },
+
+    // === Social proof ===
+    {
+      regex: /(?:social\s+proof|prova\s+social|depoimentos?|ativ[ae]r?\s+(?:prova\s+social|social))/i,
+      capabilityId: 'configure_social_proof',
+      extract: (match) => ({
+        enabled: !/desativ[ae]|remov[ae]/i.test(match[0]),
+      }),
+    },
+
+    // === Pixel ===
+    {
+      regex: /(?:configur[ae]r?|ativ[ae]r?)\s+(?:o\s+)?pixel/i,
+      capabilityId: 'configure_pixel',
+      extract: () => ({}),
+    },
+
+    // === Checkout listing ===
+    {
+      regex: /(?:list[ae]r?|meus?|ver)\s+(?:checkouts?|p[aá]ginas?\s+(?:de\s+)?checkouts?)/i,
+      capabilityId: 'list_checkouts',
+      extract: () => ({}),
+    },
+
+    // === Agent memory/sessions ===
+    {
+      regex: /(?:buscar?|pesquisar?|procur[ae]r?)\s+(?:minhas\s+)?(?:conversas?|mem[oó]rias?|hist[oó]ricos?)/i,
+      capabilityId: 'search_agent_memory',
+      extract: (match) => ({ query: match[0] }),
+    },
+    {
+      regex: /(?:buscar?|pesquisar?)\s+(?:sess[oõ]es?|minhas\s+sess[oõ]es?)/i,
+      capabilityId: 'search_agent_sessions',
+      extract: (match) => ({ query: match[0] }),
+    },
+
+    // === Dashboard ===
+    {
+      regex: /(?:dashboard|painel|resumo\s+(?:do\s+)?dia)/i,
+      capabilityId: 'get_dashboard_summary',
+      extract: () => ({}),
+    },
+
+    // === Checkout listing ===
+    {
+      regex: /(?:list[ae]r?|meus?|ver)\s+(?:checkouts?|p[aá]ginas?\s+(?:de\s+)?checkouts?)/i,
+      capabilityId: 'list_checkouts',
+      extract: () => ({}),
+    },
+
+    // === URLs ===
+    {
       regex: /(?:adicion[ae]r?\s.*url|url\s.*nov[oa])/i,
       capabilityId: 'urls.add',
       extract: () => ({}),
