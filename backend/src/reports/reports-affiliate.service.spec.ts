@@ -37,7 +37,7 @@ describe('ReportsAffiliateService', () => {
   describe('getAfiliados', () => {
     it('filters by active status and orders by totalRevenue desc', async () => {
       prisma.affiliatePartner.findMany.mockResolvedValue([{ id: 'p1' }]);
-      const result = await service.getAfiliados('ws-1', {} as ReportFiltersDto);
+      const result = await service.getAfiliados('ws-1', {});
       expect(result).toEqual([{ id: 'p1' }]);
       expect(prisma.affiliatePartner.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -50,14 +50,14 @@ describe('ReportsAffiliateService', () => {
 
     it('returns empty array on query failure (defensive)', async () => {
       prisma.affiliatePartner.findMany.mockRejectedValue(new Error('boom'));
-      await expect(service.getAfiliados('ws-1', {} as ReportFiltersDto)).resolves.toEqual([]);
+      await expect(service.getAfiliados('ws-1', {})).resolves.toEqual([]);
     });
   });
 
   describe('getIndicadores', () => {
     it('selects only commission fields, ordered by totalCommission desc', async () => {
       prisma.affiliatePartner.findMany.mockResolvedValue([{ partnerName: 'a' }]);
-      await service.getIndicadores('ws-1', {} as ReportFiltersDto);
+      await service.getIndicadores('ws-1', {});
       const callArg = prisma.affiliatePartner.findMany.mock.calls[0][0];
       expect(callArg.where).toEqual({ workspaceId: 'ws-1' });
       expect(callArg.orderBy).toEqual({ totalCommission: 'desc' });

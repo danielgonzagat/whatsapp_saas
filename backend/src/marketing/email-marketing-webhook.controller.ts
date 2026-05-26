@@ -8,11 +8,12 @@ import {
   Post,
 } from '@nestjs/common';
 import { Public } from '../auth/public.decorator';
-import { Idempotent } from '../common/idempotency.guard';
+import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { safeCompareStrings } from '../common/utils/crypto-compare.util';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { EmailMarketingService } from './email-marketing.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import { PrismaService } from '../prisma/prisma.service';
 
 type ResendWebhookPayload = {
   type: string;
@@ -58,6 +59,7 @@ export class EmailMarketingWebhookController {
 
   constructor(
     private readonly emailMarketingService: EmailMarketingService,
+    private readonly prisma: PrismaService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
@@ -80,12 +82,11 @@ export class EmailMarketingWebhookController {
 
   @Public()
   @Post('resend')
-  @Idempotent()
   async handleResendWebhook(
     @Body() payload: ResendWebhookPayload,
     @Headers('x-webhook-secret') webhookSecret?: string,
     @Headers('authorization') authorization?: string,
-  ): Promise<{ received: boolean }> {
+  ): Promise<{ received: boolean; duplicate?: true }> {
     this.assertInboundSecret(webhookSecret, authorization);
 
     const eventType = payload?.type;
@@ -104,6 +105,24 @@ export class EmailMarketingWebhookController {
     if (!providerMessageId) {
       this.logger.warn(`Resend webhook "${eventType}" received without email_id`);
       return { received: false };
+    }
+
+    const resendExternalId = `resend:${providerMessageId}:${eventType}`;
+    try {
+      await this.prisma.webhookEvent.create({
+        data: {
+          provider: 'resend',
+          externalId: resendExternalId,
+          eventType,
+          payload: toPrismaJsonValue(payload),
+        },
+      });
+    } catch (err: unknown) {
+      if ((err as { code?: string }).code === 'P2002') {
+        this.logger.log(`Duplicate Resend webhook: ${resendExternalId}`);
+        return { received: true, duplicate: true };
+      }
+      throw err;
     }
 
     try {
@@ -125,12 +144,11 @@ export class EmailMarketingWebhookController {
 
   @Public()
   @Post('sendgrid')
-  @Idempotent()
   async handleSendGridWebhook(
     @Body() payload: SendGridWebhookPayload,
     @Headers('x-webhook-secret') webhookSecret?: string,
     @Headers('authorization') authorization?: string,
-  ): Promise<{ received: boolean }> {
+  ): Promise<{ received: boolean; duplicate?: true }> {
     this.assertInboundSecret(webhookSecret, authorization);
 
     if (!Array.isArray(payload)) {
@@ -151,6 +169,24 @@ export class EmailMarketingWebhookController {
         typeof eventObj.sg_message_id === 'string' ? eventObj.sg_message_id : '';
       if (!providerMessageId) {
         continue;
+      }
+
+      const sgEventId = typeof eventObj.sg_event_id === 'string' ? eventObj.sg_event_id : '';
+      const sgExternalId = sgEventId || `sendgrid:${providerMessageId}:${rawEvent}`;
+      try {
+        await this.prisma.webhookEvent.create({
+          data: {
+            provider: 'sendgrid',
+            externalId: sgExternalId,
+            eventType: rawEvent,
+            payload: toPrismaJsonValue(eventObj),
+          },
+        });
+      } catch (err: unknown) {
+        if ((err as { code?: string }).code === 'P2002') {
+          continue;
+        }
+        throw err;
       }
 
       try {

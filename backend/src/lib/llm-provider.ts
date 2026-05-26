@@ -5,7 +5,10 @@ type ConfigLike = Pick<ConfigService, 'get'> | undefined;
 
 const DEFAULT_DEEPSEEK_BASE_URL = 'https://api.deepseek.com/v1';
 
-function readConfig(key: string, config?: ConfigLike): string | undefined {
+/** Reads a string env/ConfigService value with trim+fallback semantics.
+ *  Exported so peer lib/* helpers (openai-models, ...) share the same
+ *  config-read precedence (ConfigService → process.env → undefined). */
+export function readConfig(key: string, config?: ConfigLike): string | undefined {
   const fromConfig = config?.get<string>(key);
   const value = typeof fromConfig === 'string' && fromConfig.trim() ? fromConfig : process.env[key];
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;

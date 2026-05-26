@@ -21,6 +21,7 @@ export function StepBar({ step, C, onStepClick }: StepBarProps) {
           width: 28,
           height: 2,
           display: 'block',
+          background: i <= step ? C.ember : C.inactiveTrace,
           opacity: i === step ? 1 : i < step ? 0.6 : 1,
           transition: 'all .4s ease',
         };
@@ -218,9 +219,7 @@ export function Dial({
         >
           {label}
         </span>
-        <span style={{ fontFamily: SORA, fontSize: 12.5, color: C.silver }}>
-          {labels[value]}
-        </span>
+        <span style={{ fontFamily: SORA, fontSize: 12.5, color: C.silver }}>{labels[value]}</span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         {labels.map((segLabel, i) => (

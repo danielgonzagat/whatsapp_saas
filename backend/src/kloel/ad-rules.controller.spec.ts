@@ -28,7 +28,7 @@ describe('AdRulesController', () => {
         },
       } as never,
       { log: auditLog } as never,
-      { alertOnCriticalError: opsAlert } as never,
+      { alertOnCriticalError: opsAlert },
     );
   });
 

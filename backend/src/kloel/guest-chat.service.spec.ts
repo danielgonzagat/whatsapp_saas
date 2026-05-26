@@ -56,7 +56,6 @@ describe('GuestChatService', () => {
 
   const unavailableMessage =
     'Eu continuo aqui, mas a camada de IA esta instavel agora. Tenta de novo em alguns segundos que eu retomo de onde paramos.';
-
   async function createService() {
     const { chatCompletionWithFallback, chatCompletionWithRetry } =
       await import('./openai-wrapper');
@@ -109,6 +108,27 @@ describe('GuestChatService', () => {
 
       expect(reply).toBe('Olá! Como posso ajudar?');
       expect(chatCompletionWithFallbackMock).toHaveBeenCalled();
+    });
+
+    it('grounds public guest replies with structured cognitive payload only', async () => {
+      await service.chatSync('Qual o preço do PDRN?', 'session-grounded');
+
+      const completionCalls = chatCompletionWithFallbackMock.mock.calls as Array<
+        [unknown, { messages?: Array<{ role?: string; content?: string }> }]
+      >;
+      const messages = completionCalls[0]?.[1].messages ?? [];
+      const lastUserMessage = messages.filter((item) => item.role === 'user').at(-1);
+      const payload = JSON.parse(lastUserMessage?.content ?? '{}') as Record<string, unknown>;
+
+      expect(messages).toEqual(
+        expect.not.arrayContaining([expect.objectContaining({ role: 'system' })]),
+      );
+      expect(payload).toEqual(
+        expect.objectContaining({
+          cognitiveState: expect.objectContaining({ audience: 'public' }),
+          currentInput: expect.objectContaining({ raw: 'Qual o preço do PDRN?' }),
+        }),
+      );
     });
 
     it('preserves conversation context across messages', async () => {

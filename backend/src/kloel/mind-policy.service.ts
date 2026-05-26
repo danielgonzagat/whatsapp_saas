@@ -3,6 +3,8 @@ import { StructuredLogger } from '../logging/structured-logger';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelGlobalPriorService } from './kloel-global-prior.service';
+import { WisdomRelevanceFilter } from './wisdom/wisdom-relevance-filter.service';
+import { WisdomPatternStore } from './wisdom/wisdom-pattern-store.service';
 import { MindBeliefService } from './mind-belief.service';
 import { extractChannel } from './mind-belief-by-channel';
 import type { MindBelief, MindPolicyDecision } from './mind.types';
@@ -21,6 +23,7 @@ import {
   estimateCounterfactualBaselineOutcome,
   persistResolvedPolicyMemories,
 } from './mind-policy.helpers';
+import { applyWisdomPriors } from './mind-policy.wisdom-prior.helpers';
 
 const FALLBACK_MIN_SAMPLES = 30;
 const COLD_START_THRESHOLD = 30;
@@ -33,6 +36,8 @@ export class MindPolicyService {
     private readonly prisma: PrismaService,
     private readonly beliefs: MindBeliefService,
     @Optional() private readonly globalPrior?: KloelGlobalPriorService,
+    @Optional() private readonly wisdomFilter?: WisdomRelevanceFilter,
+    @Optional() private readonly wisdomStore?: WisdomPatternStore,
   ) {
     this.logger.debug?.(`MindPolicyService initialized`);
   }
@@ -87,7 +92,19 @@ export class MindPolicyService {
       workspaceOptedOut,
     });
 
-    const beliefs = mixedBeliefs.map((m) => {
+    // Wisdom prior pass — cross-workspace patterns as Beta priors (CIA Gap 9)
+    const wisdomNudged = applyWisdomPriors({
+      mixedBeliefs,
+      channel,
+      decisionType: input.decisionType,
+      inputOptions: input.options,
+      workspaceId: input.workspaceId,
+      wisdomFilter: this.wisdomFilter,
+      wisdomStore: this.wisdomStore,
+      logger: this.logger,
+    });
+
+    const beliefs = wisdomNudged.map((m) => {
       if (m.usedPrior) {
         usedGlobalPrior = true;
         if (m.priorWeight > maxPriorWeight) {
@@ -136,6 +153,10 @@ export class MindPolicyService {
     outcome: number,
     baselineOutcome?: number,
   ): Promise<void> {
+    // Gap 6: collect (channel, decisionType, action) tuples to feed back into
+    // the global prior after the transaction commits.
+    const priorRows: Array<{ channel: string; decisionType: string; action: string }> = [];
+
     await this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw /* raw justified: PostgreSQL advisory lock for outcome resolution */ `
         SELECT pg_advisory_xact_lock(hashtext(${`resolve:${workspaceId}:${outcomeKey}`}))
@@ -181,6 +202,13 @@ export class MindPolicyService {
       }
 
       if (resolvedCount > 0) {
+        for (const row of rows) {
+          const channel = extractChannel(row.context as Record<string, unknown>);
+          if (channel) {
+            priorRows.push({ channel, decisionType: row.decisionType, action: row.chosen });
+          }
+        }
+
         await this.persistResolvedMemories(
           rows.map((r) => ({
             ...r,
@@ -192,6 +220,26 @@ export class MindPolicyService {
         );
       }
     });
+
+    // Gap 6: feed resolved outcomes back into the cross-workspace global prior.
+    if (this.globalPrior && priorRows.length > 0) {
+      const success = outcome >= 0.5;
+      for (const row of priorRows) {
+        try {
+          await this.globalPrior.recordObservation(
+            row.channel,
+            row.decisionType,
+            row.action,
+            success,
+          );
+        } catch (err: unknown) {
+          this.logger.error('Failed to record global prior observation from resolveOutcome', {
+            outcomeKey,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
+    }
   }
 
   async resolveOpenForSubject(input: {
@@ -249,6 +297,32 @@ export class MindPolicyService {
         })),
         input.baselineOutcome,
       );
+    }
+
+    // Gap 6: feed resolved outcomes from this subject back into the
+    // cross-workspace global prior.
+    if (this.globalPrior && rows.length > 0) {
+      const success = input.outcome >= 0.5;
+      for (const row of rows) {
+        const channel = extractChannel(row.context as Record<string, unknown>);
+        if (!channel) {
+          continue;
+        }
+        try {
+          await this.globalPrior.recordObservation(
+            channel,
+            row.decisionType,
+            row.chosen,
+            success,
+          );
+        } catch (err: unknown) {
+          this.logger.error('Failed to record global prior observation from resolveOpenForSubject', {
+            subject: input.subject,
+            decisionType: input.decisionType,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
     }
 
     return rows.length;
@@ -310,6 +384,77 @@ export class MindPolicyService {
     }
 
     return rows.length;
+  }
+
+  /**
+   * CIA Gap 4 Phase 2 — delayed message.received outcome resolution.
+   *
+   * When a message.received arrives, check resolved autopilot_action policies
+   * (outcome=1) for the contact. Policies resolved within the window get
+   * context.outcomeConfidence='confirmed'; those outside get 'unanswered'.
+   */
+  async confirmAutopilotOutcome(params: {
+    workspaceId: string;
+    contactId: string;
+    windowMinutes?: number;
+  }): Promise<{ confirmed: number; unanswered: number }> {
+    const windowMinutes = params.windowMinutes ?? 30;
+    const now = new Date();
+    const windowCutoff = new Date(now.getTime() - windowMinutes * 60 * 1000);
+
+    const rows = await this.prisma.mindPolicy.findMany({
+      where: {
+        workspaceId: params.workspaceId,
+        subject: `contact:${params.contactId}`,
+        decisionType: 'autopilot_action',
+        outcome: 1,
+        resolvedAt: { not: null },
+      },
+      select: {
+        id: true,
+        context: true,
+        resolvedAt: true,
+      },
+    });
+
+    let confirmed = 0;
+    let unanswered = 0;
+
+    for (const row of rows) {
+      const ctx = (row.context as Record<string, unknown>) ?? {};
+      if (ctx.outcomeConfidence !== undefined && ctx.outcomeConfidence !== null) {
+        continue;
+      }
+
+      const isWithinWindow = row.resolvedAt != null && row.resolvedAt >= windowCutoff;
+      const newConfidence: string = isWithinWindow ? 'confirmed' : 'unanswered';
+
+      await this.prisma.mindPolicy.update({
+        where: { id: row.id },
+        data: {
+          context: { ...ctx, outcomeConfidence: newConfidence } as Prisma.InputJsonValue,
+        },
+      });
+
+      if (isWithinWindow) {
+        confirmed += 1;
+      } else {
+        unanswered += 1;
+      }
+    }
+
+    if (confirmed > 0 || unanswered > 0) {
+      this.logger.debug?.({
+        operation: 'mind_policy.confirmAutopilotOutcome',
+        workspaceId: params.workspaceId,
+        contactId: params.contactId,
+        windowMinutes,
+        confirmed,
+        unanswered,
+      });
+    }
+
+    return { confirmed, unanswered };
   }
 
   async harness(

@@ -17,7 +17,10 @@ describe('MetaWhatsAppService', () => {
 
   beforeEach(() => {
     delete process.env.META_APP_ID;
+    delete process.env.FACEBOOK_APP_ID;
+    delete process.env.META_CLIENT_ID;
     delete process.env.META_CONFIG_ID;
+    delete process.env.META_EMBEDDED_SIGNUP_CONFIG_ID;
     delete process.env.META_WHATSAPP_CONFIG_ID;
     delete process.env.META_INSTAGRAM_CONFIG_ID;
     delete process.env.META_FACEBOOK_CONFIG_ID;
@@ -54,7 +57,10 @@ describe('MetaWhatsAppService', () => {
 
   afterEach(() => {
     delete process.env.META_APP_ID;
+    delete process.env.FACEBOOK_APP_ID;
+    delete process.env.META_CLIENT_ID;
     delete process.env.META_CONFIG_ID;
+    delete process.env.META_EMBEDDED_SIGNUP_CONFIG_ID;
     delete process.env.META_WHATSAPP_CONFIG_ID;
     delete process.env.META_INSTAGRAM_CONFIG_ID;
     delete process.env.META_FACEBOOK_CONFIG_ID;
@@ -99,6 +105,24 @@ describe('MetaWhatsAppService', () => {
     );
     expect(scopes).not.toContain('instagram_content_publish');
     expect(scopes).not.toContain('catalog_management');
+  });
+
+  it('builds embedded signup URLs from accepted Meta env aliases', () => {
+    process.env.FACEBOOK_APP_ID = 'facebook-app-id';
+    process.env.META_EMBEDDED_SIGNUP_CONFIG_ID = 'embedded-config-id';
+    process.env.BACKEND_PUBLIC_URL = 'https://api.kloel.test/';
+
+    const authUrl = new URL(
+      service.buildEmbeddedSignupUrl('ws-1', {
+        channel: 'whatsapp',
+        returnTo: '/marketing/whatsapp',
+      }),
+    );
+
+    expect(authUrl.hostname).toBe('www.facebook.com');
+    expect(authUrl.searchParams.get('client_id')).toBe('facebook-app-id');
+    expect(authUrl.searchParams.get('config_id')).toBe('embedded-config-id');
+    expect(authUrl.searchParams.get('extras')).toContain('sessionInfoVersion');
   });
 
   it('uses Instagram-specific config and scopes for Instagram OAuth', () => {

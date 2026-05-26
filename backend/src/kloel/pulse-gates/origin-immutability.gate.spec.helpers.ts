@@ -1,4 +1,4 @@
-import { GENESIS_EVENT, GenesisPayload } from '../lineage/genesis-event';
+import { GENESIS_EVENT, type GenesisPayload } from '../lineage/genesis-event';
 import { makeOriginImmutabilityGate } from './origin-immutability.gate';
 import type { LineageGuardService, LineageGuardVerdict } from '../lineage/lineage-guard.service';
 
@@ -8,7 +8,7 @@ import type { LineageGuardService, LineageGuardVerdict } from '../lineage/lineag
  *
  * mockGuard() / gate() fabricate a LineageGuardService verdict and wrap it
  * in a fresh OriginImmutabilityGate instance. cloneGenesisPayload() builds
- * synthetic Genesis payloads for the self-verification branch tests.
+ * synthetic Genesis payloads for self-verification branch tests.
  */
 
 /**

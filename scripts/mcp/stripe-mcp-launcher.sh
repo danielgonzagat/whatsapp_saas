@@ -33,28 +33,30 @@ if [[ -f "${ENV_FILE}" ]]; then
   set +a
 fi
 
+STRIPE_MCP_API_KEY="${STRIPE_RESTRICTED_KEY:-${STRIPE_SECRET_KEY:-}}"
+
 # Trim surrounding whitespace/newlines — copy-paste from dashboards often
 # introduces a stray \n or trailing space which makes the key "look right"
 # but fails auth in confusing ways.
-STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY#"${STRIPE_SECRET_KEY%%[![:space:]]*}"}"
-STRIPE_SECRET_KEY="${STRIPE_SECRET_KEY%"${STRIPE_SECRET_KEY##*[![:space:]]}"}"
+STRIPE_MCP_API_KEY="${STRIPE_MCP_API_KEY#"${STRIPE_MCP_API_KEY%%[![:space:]]*}"}"
+STRIPE_MCP_API_KEY="${STRIPE_MCP_API_KEY%"${STRIPE_MCP_API_KEY##*[![:space:]]}"}"
 
-if [[ -z "${STRIPE_SECRET_KEY:-}" ]]; then
-  echo "[stripe-mcp-launcher] STRIPE_SECRET_KEY is not set." >&2
-  echo "[stripe-mcp-launcher] Expected it in ${ENV_FILE} or the parent shell." >&2
+if [[ -z "${STRIPE_MCP_API_KEY:-}" ]]; then
+  echo "[stripe-mcp-launcher] STRIPE_RESTRICTED_KEY or STRIPE_SECRET_KEY is not set." >&2
+  echo "[stripe-mcp-launcher] Expected one of them in ${ENV_FILE} or the parent shell." >&2
   exit 1
 fi
 
-case "${STRIPE_SECRET_KEY}" in
+case "${STRIPE_MCP_API_KEY}" in
   sk_test_*|rk_test_*)
     ;;
   sk_live_*|rk_live_*)
-    echo "[stripe-mcp-launcher] Refusing to start: STRIPE_SECRET_KEY is a LIVE key." >&2
+    echo "[stripe-mcp-launcher] Refusing to start: configured Stripe MCP key is a LIVE key." >&2
     echo "[stripe-mcp-launcher] This launcher is test-mode only. Use an sk_test_/rk_test_ key." >&2
     exit 2
     ;;
   *)
-    echo "[stripe-mcp-launcher] STRIPE_SECRET_KEY has an unexpected prefix." >&2
+    echo "[stripe-mcp-launcher] Configured Stripe MCP key has an unexpected prefix." >&2
     echo "[stripe-mcp-launcher] Expected sk_test_... or rk_test_..." >&2
     exit 3
     ;;
@@ -94,9 +96,9 @@ fi
 
 if (( ${#STRIPE_MCP_ARGS[@]} > 0 )); then
   exec npx -y "@stripe/mcp@${STRIPE_MCP_VERSION}" \
-    --api-key="${STRIPE_SECRET_KEY}" \
+    --api-key="${STRIPE_MCP_API_KEY}" \
     "${STRIPE_MCP_ARGS[@]}" \
     "$@"
 fi
 
-exec npx -y "@stripe/mcp@${STRIPE_MCP_VERSION}" --api-key="${STRIPE_SECRET_KEY}" "$@"
+exec npx -y "@stripe/mcp@${STRIPE_MCP_VERSION}" --api-key="${STRIPE_MCP_API_KEY}" "$@"

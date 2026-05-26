@@ -14,7 +14,7 @@ import {
   PLAN_AI_LABEL_STYLE,
   PLAN_AI_SELECT_CLASS,
 } from './PlanAIConfig.shared';
-import { Toggle } from './PlanAIConfig.toggle';
+import { Toggle } from '@/components/kloel/primitives/Toggle';
 
 interface UpsellSectionProps {
   uid: string;
@@ -69,6 +69,8 @@ export function UpsellSection({
           checked={upsellEnabled}
           onChange={setUpsellEnabled}
           label={kloelT(`Fazer upsell?`)}
+          accentColor={colors.accent.webb}
+          offTrackColor={colors.background.corona}
         />
         {upsellEnabled && (
           <div
@@ -140,6 +142,8 @@ export function UpsellSection({
           checked={downsellEnabled}
           onChange={setDownsellEnabled}
           label={kloelT(`Fazer downsell?`)}
+          accentColor={colors.accent.webb}
+          offTrackColor={colors.background.corona}
         />
         {downsellEnabled && (
           <div

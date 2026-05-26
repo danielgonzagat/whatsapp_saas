@@ -7,6 +7,7 @@ import { AuditService } from '../audit/audit.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { KloelCodeToolsService } from './kloel-code-tools.service';
 import { KloelCodeAnalysisService } from './kloel-code-analysis.service';
+import { AccountService } from './account.service';
 
 type DispatcherPrismaMock = {
   workspace: { findUnique: jest.Mock };
@@ -30,6 +31,7 @@ type DispatcherChatToolsMock = Pick<
   | 'toolListAgentJobs'
   | 'toolSetAgentJobEnabled'
   | 'toolSearchAgentMemory'
+  | 'toolSearchAgentMemoryWithContacts'
   | 'toolSearchAgentSessions'
   | 'toolGetAgentArtifact'
   | 'toolUpsertAgentSkill'
@@ -41,6 +43,8 @@ type DispatcherChatToolsMock = Pick<
   | 'toolVerifyAgentEvidence'
   | 'toolCreatePaymentLink'
 >;
+
+type DispatcherAccountMock = Pick<AccountService, 'updatePersonalData'>;
 
 type DispatcherBizConfigMock = Pick<
   KloelBusinessConfigToolsService,
@@ -88,7 +92,13 @@ type DispatcherCodeToolsMock = Pick<
   | 'toolBuildStatus'
 >;
 
-type DispatcherAuditMock = Pick<AuditService, 'logWithTx'>;
+type DispatcherAuditMock = Pick<AuditService, 'logWithTx' | 'recentForWorkspace' | 'findById'>;
+
+type DispatcherSelfHealthMock = { snapshot: jest.Mock };
+
+type DispatcherSelfGapsMock = { diffRegistryVsDispatcher: jest.Mock };
+
+type DispatcherCapRegistryV2Mock = { get: jest.Mock };
 
 type DispatcherOpsAlertMock = Pick<OpsAlertService, 'alertOnCriticalError'>;
 
@@ -98,12 +108,16 @@ export type {
   DispatcherPrismaMock,
   DispatcherChatToolsMock,
   DispatcherBizConfigMock,
+  DispatcherAccountMock,
   DispatcherWhatsappMock,
   DispatcherComposerMock,
   DispatcherCodeToolsMock,
   DispatcherAuditMock,
   DispatcherOpsAlertMock,
   DispatcherPlanLimitsMock,
+  DispatcherSelfHealthMock,
+  DispatcherSelfGapsMock,
+  DispatcherCapRegistryV2Mock,
 };
 
 const DEFAULT_WS_ID = 'ws-1';
@@ -158,6 +172,11 @@ export function createChatToolsMock(): DispatcherChatToolsMock {
     toolListAgentJobs: jest.fn().mockResolvedValue({ success: true, jobs: [] }),
     toolSetAgentJobEnabled: jest.fn().mockResolvedValue({ success: true }),
     toolSearchAgentMemory: jest.fn().mockResolvedValue({ success: true, memories: [] }),
+    toolSearchAgentMemoryWithContacts: jest.fn().mockResolvedValue({
+      success: true,
+      memories: [],
+      contacts: [],
+    }),
     toolSearchAgentSessions: jest.fn().mockResolvedValue({ success: true, sessions: [] }),
     toolGetAgentArtifact: jest.fn().mockResolvedValue({ success: true, content: '{}' }),
     toolUpsertAgentSkill: jest.fn().mockResolvedValue({ success: true, skillId: 'skill_1' }),
@@ -214,6 +233,35 @@ export function createComposerMock(): DispatcherComposerMock {
 export function createAuditMock(): DispatcherAuditMock {
   return {
     logWithTx: jest.fn().mockResolvedValue(undefined),
+    recentForWorkspace: jest.fn().mockResolvedValue([]),
+    findById: jest.fn().mockResolvedValue(null),
+  };
+}
+
+export function createSelfHealthMock(): DispatcherSelfHealthMock {
+  return {
+    snapshot: jest.fn().mockResolvedValue({
+      db: 'ok',
+      redis: 'ok',
+      whatsapp: 'unknown',
+      llm: 'unknown',
+      lastChecked: new Date().toISOString(),
+    }),
+  };
+}
+
+export function createSelfGapsMock(): DispatcherSelfGapsMock {
+  return {
+    diffRegistryVsDispatcher: jest.fn().mockResolvedValue({
+      unwired: [],
+      wired: [],
+    }),
+  };
+}
+
+export function createCapRegistryV2Mock(): DispatcherCapRegistryV2Mock {
+  return {
+    get: jest.fn().mockReturnValue(undefined),
   };
 }
 
@@ -251,5 +299,13 @@ export function createCodeAnalysisMock(): DispatcherCodeAnalysisMock {
   return {
     toolCodeLint: jest.fn().mockResolvedValue({ success: true, issues: [] }),
     toolCodeDetectIssues: jest.fn().mockResolvedValue({ success: true, issues: [] }),
+  };
+}
+
+export function createAccountMock(): DispatcherAccountMock {
+  return {
+    updatePersonalData: jest
+      .fn()
+      .mockResolvedValue({ success: true, message: 'Personal data updated' }),
   };
 }

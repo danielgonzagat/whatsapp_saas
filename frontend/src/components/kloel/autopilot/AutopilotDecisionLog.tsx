@@ -26,22 +26,8 @@ export interface AutopilotActionLike {
   reason?: string;
 }
 
-export interface AutopilotImpactLike {
-  workspaceId: string;
-  actionsAnalyzed: number;
-  repliedContacts: number;
-  totalReplies: number;
-  replyRate: number;
-  conversions: number;
-  conversionRate: number;
-  avgReplyMinutes: number | null;
-  samples: Array<{
-    contactId: string;
-    contact: string;
-    replyAt: string;
-    delayMinutes: number;
-  }>;
-}
+import type { AutopilotImpactLike } from './AutopilotPlanInspector';
+export type { AutopilotImpactLike };
 
 function ActionRow({ action }: { action: AutopilotActionLike }) {
   const statusColors: Record<string, string> = {

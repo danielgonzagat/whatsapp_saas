@@ -1,23 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ContactIdentityResolverService } from './contact-identity-resolver.service';
 import { PrismaService } from '../prisma/prisma.service';
-
-type FlexMock<T extends (...args: never[]) => unknown> = jest.Mock<ReturnType<T>, Parameters<T>> & {
-  mockResolvedValue: (v: Awaited<ReturnType<T>>) => FlexMock<T>;
-  mockResolvedValueOnce: (v: Awaited<ReturnType<T>>) => FlexMock<T>;
-  mockRejectedValue: (e: unknown) => FlexMock<T>;
-};
-
-interface MockPrisma {
-  channelIdentifier: {
-    findUnique: FlexMock<(args: unknown) => unknown>;
-    findFirst: FlexMock<(args: unknown) => unknown>;
-    create: FlexMock<(args: unknown) => unknown>;
-  };
-  contact: {
-    create: FlexMock<(args: unknown) => unknown>;
-  };
-}
+import { createPartialPrismaMock, FlexMock } from '../../test/helpers/prisma.mock';
 
 function makeContactStub(overrides: Record<string, unknown> = {}) {
   return {
@@ -45,22 +29,16 @@ function makeIdentifierStub(overrides: Record<string, unknown> = {}) {
 
 describe('ContactIdentityResolverService', () => {
   let service: ContactIdentityResolverService;
-  let mockPrisma: MockPrisma;
+  let prismaMock: ReturnType<typeof createPartialPrismaMock>;
 
   beforeEach(async () => {
-    mockPrisma = {
-      channelIdentifier: {
-        findUnique: jest.fn(),
-        findFirst: jest.fn(),
-        create: jest.fn(),
-      },
-      contact: {
-        create: jest.fn(),
-      },
-    };
+    prismaMock = createPartialPrismaMock({
+      channelIdentifier: ['findUnique', 'findFirst', 'create'],
+      contact: ['create'],
+    });
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [ContactIdentityResolverService, { provide: PrismaService, useValue: mockPrisma }],
+      providers: [ContactIdentityResolverService, { provide: PrismaService, useValue: prismaMock }],
     }).compile();
 
     service = module.get<ContactIdentityResolverService>(ContactIdentityResolverService);
@@ -71,7 +49,7 @@ describe('ContactIdentityResolverService', () => {
       const contactStub = makeContactStub();
       const identifierStub = makeIdentifierStub({ contact: contactStub, verifiedAt: new Date() });
 
-      mockPrisma.channelIdentifier.findUnique.mockResolvedValue(identifierStub);
+      prismaMock.channelIdentifier.findUnique.mockResolvedValue(identifierStub);
 
       const result = await service.resolve({
         workspaceId: 'ws-1',
@@ -86,10 +64,10 @@ describe('ContactIdentityResolverService', () => {
     });
 
     it('creates a new contact when no match exists', async () => {
-      mockPrisma.channelIdentifier.findUnique.mockResolvedValue(null);
-      mockPrisma.channelIdentifier.findFirst.mockResolvedValue(null);
-      mockPrisma.contact.create.mockResolvedValue(makeContactStub());
-      mockPrisma.channelIdentifier.create.mockResolvedValue(
+      prismaMock.channelIdentifier.findUnique.mockResolvedValue(null);
+      prismaMock.channelIdentifier.findFirst.mockResolvedValue(null);
+      prismaMock.contact.create.mockResolvedValue(makeContactStub());
+      prismaMock.channelIdentifier.create.mockResolvedValue(
         makeIdentifierStub({ verifiedAt: new Date() }),
       );
 
@@ -114,12 +92,12 @@ describe('ContactIdentityResolverService', () => {
         verifiedAt: new Date(),
       });
 
-      mockPrisma.channelIdentifier.findUnique.mockResolvedValue(null);
-      mockPrisma.channelIdentifier.findFirst.mockResolvedValue({
+      prismaMock.channelIdentifier.findUnique.mockResolvedValue(null);
+      prismaMock.channelIdentifier.findFirst.mockResolvedValue({
         ...verifiedWaId,
         contact: existingContact,
       });
-      mockPrisma.channelIdentifier.create.mockResolvedValue(
+      prismaMock.channelIdentifier.create.mockResolvedValue(
         makeIdentifierStub({ contactId: 'contact-exist', isPrimary: false }),
       );
 
@@ -145,13 +123,13 @@ describe('ContactIdentityResolverService', () => {
         verifiedAt: new Date(),
       });
 
-      mockPrisma.channelIdentifier.findUnique.mockResolvedValue(null);
-      mockPrisma.channelIdentifier.findFirst.mockResolvedValueOnce(null);
-      mockPrisma.channelIdentifier.findFirst.mockResolvedValueOnce({
+      prismaMock.channelIdentifier.findUnique.mockResolvedValue(null);
+      prismaMock.channelIdentifier.findFirst.mockResolvedValueOnce(null);
+      prismaMock.channelIdentifier.findFirst.mockResolvedValueOnce({
         ...verifiedEmailId,
         contact: existingContact,
       });
-      mockPrisma.channelIdentifier.create.mockResolvedValue(
+      prismaMock.channelIdentifier.create.mockResolvedValue(
         makeIdentifierStub({ contactId: 'contact-eml', isPrimary: false }),
       );
 
@@ -169,10 +147,10 @@ describe('ContactIdentityResolverService', () => {
     });
 
     it('does not cross-channel match when channelIdentifier is not verified', async () => {
-      mockPrisma.channelIdentifier.findUnique.mockResolvedValue(null);
-      mockPrisma.channelIdentifier.findFirst.mockResolvedValue(null);
-      mockPrisma.contact.create.mockResolvedValue(makeContactStub({ id: 'contact-new' }));
-      mockPrisma.channelIdentifier.create.mockResolvedValue(
+      prismaMock.channelIdentifier.findUnique.mockResolvedValue(null);
+      prismaMock.channelIdentifier.findFirst.mockResolvedValue(null);
+      prismaMock.contact.create.mockResolvedValue(makeContactStub({ id: 'contact-new' }));
+      prismaMock.channelIdentifier.create.mockResolvedValue(
         makeIdentifierStub({ id: 'ci-new', contactId: 'contact-new' }),
       );
 
@@ -198,12 +176,12 @@ describe('ContactIdentityResolverService', () => {
         verifiedAt: new Date(),
       });
 
-      mockPrisma.channelIdentifier.findUnique.mockResolvedValue(null);
-      mockPrisma.channelIdentifier.findFirst.mockResolvedValue({
+      prismaMock.channelIdentifier.findUnique.mockResolvedValue(null);
+      prismaMock.channelIdentifier.findFirst.mockResolvedValue({
         ...verifiedIgId,
         contact: existingContact,
       });
-      mockPrisma.channelIdentifier.create.mockResolvedValue(
+      prismaMock.channelIdentifier.create.mockResolvedValue(
         makeIdentifierStub({ contactId: 'contact-ig', isPrimary: false }),
       );
 
@@ -229,12 +207,12 @@ describe('ContactIdentityResolverService', () => {
         verifiedAt: new Date(),
       });
 
-      mockPrisma.channelIdentifier.findUnique.mockResolvedValue(null);
-      mockPrisma.channelIdentifier.findFirst.mockResolvedValue({
+      prismaMock.channelIdentifier.findUnique.mockResolvedValue(null);
+      prismaMock.channelIdentifier.findFirst.mockResolvedValue({
         ...waId,
         contact: waContact,
       });
-      mockPrisma.channelIdentifier.create.mockResolvedValue(
+      prismaMock.channelIdentifier.create.mockResolvedValue(
         makeIdentifierStub({ contactId: 'contact-wa', isPrimary: false }),
       );
 

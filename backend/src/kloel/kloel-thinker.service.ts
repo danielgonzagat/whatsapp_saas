@@ -23,6 +23,7 @@ import { OPERATOR_CAPABILITIES } from './brain-capabilities.const';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { BrainCapabilityExecutorService } from './brain-capability-executor.service';
 import { validateAbiPayload } from './abi/abi-validator';
+import { computeHandoffConfidence, HANDOFF_THRESHOLD } from './handoff-confidence.helper';
 import { ChatCompletionMessageParam } from 'openai/resources/chat';
 import { KloelReplyEngineService, LocalToolExecutor } from './kloel-reply-engine.service';
 import { thinkSyncImpl, regenerateThreadAssistantResponseImpl } from './kloel-thinker.helpers';
@@ -272,6 +273,50 @@ export class KloelThinkerService {
               finalSystemPrompt = `${CANONICAL_FALLBACK_SYSTEM}\nstate_payload=${abiStr}`;
               finalUserMessage = message;
               abiOutcome = `success(abiLen=${abiStr.length})`;
+
+              // Wave 10 Phase 2: handoff-confidence collection (flag-gated,
+              // observe-only). Gate defaults OFF — no escalation, no
+              // blocking, just a structured log for telemetry baselining.
+              if (
+                process.env['HANDOFF_CONFIDENCE_GATE_ENABLED'] === 'true' ||
+                process.env['HANDOFF_CONFIDENCE_GATE_BLOCKING_ENABLED'] === 'true'
+              ) {
+                const snapshot = computeHandoffConfidence(
+                  abiResult.abi.beliefs,
+                  abiResult.abi.pulseTruth,
+                );
+                this.logger.log('Handoff confidence snapshot', {
+                  context: 'kloel.handoff.confidence',
+                  ...snapshot,
+                });
+
+                if (
+                  process.env['HANDOFF_CONFIDENCE_GATE_BLOCKING_ENABLED'] === 'true' &&
+                  snapshot.wouldEscalateAtThreshold04
+                ) {
+                  this.logger.warn('Handoff confidence gate: escalation to human', {
+                    context: 'kloel.handoff.confidence.blocking',
+                    workspaceId,
+                    composite: snapshot.composite,
+                    meanBeliefConfidence: snapshot.meanBeliefConfidence,
+                    capabilityHealth: snapshot.capabilityHealth,
+                    overclaimRisk: snapshot.overclaimRisk,
+                    beliefCount: snapshot.beliefCount,
+                    threshold: HANDOFF_THRESHOLD,
+                  });
+                  safeWrite(
+                    createKloelErrorEvent({
+                      content:
+                        'Estou analisando sua mensagem com mais cuidado. ' +
+                        'Um atendente humano vai revisar e responder em breve.',
+                      error: 'confidence_gate_escalation',
+                      done: true,
+                    }),
+                  );
+                  streamWriter.close();
+                  return;
+                }
+              }
             }
           }
         } catch (error: unknown) {

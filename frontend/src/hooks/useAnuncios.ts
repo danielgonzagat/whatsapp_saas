@@ -1,15 +1,5 @@
 import useSWR from 'swr';
-import useSWRMutation from 'swr/mutation';
-import { swrFetcher, swrMutator } from '@/lib/fetcher';
-
-export interface AnunciosAccount {
-  id: string;
-  platform: string;
-  accountId: string;
-  accountName: string;
-  status: string;
-  connected: boolean;
-}
+import { swrFetcher } from '@/lib/fetcher';
 
 export interface AnunciosCampaign {
   id: string;
@@ -34,10 +24,6 @@ export interface AnunciosPlatformStatus {
   status: string;
   accountId?: string;
   clientConfigured: boolean;
-}
-
-export interface AnunciosConnectUrl {
-  authUrl?: string;
 }
 
 type ApiListEnvelope<T> = T[] | { data?: T[] } | null;
@@ -68,20 +54,6 @@ export function useAnunciosStatus() {
   };
 }
 
-export function useAnunciosAccounts(platform?: string) {
-  const query = platform ? `?platform=${encodeURIComponent(platform)}` : '';
-  const { data, isLoading, error, mutate } = useSWR<ApiListEnvelope<AnunciosAccount>>(
-    `/api/anuncios/accounts${query}`,
-    swrFetcher,
-  );
-  return {
-    accounts: unwrapList(data),
-    isLoading,
-    error,
-    refresh: mutate,
-  };
-}
-
 export function useAnunciosCampaigns(platform?: string) {
   const query = platform ? `?platform=${encodeURIComponent(platform)}` : '';
   const { data, isLoading, error, mutate } = useSWR<ApiListEnvelope<AnunciosCampaign>>(
@@ -98,31 +70,3 @@ export function useAnunciosCampaigns(platform?: string) {
 }
 
 
-export function useAnunciosConnectUrl(platform: string) {
-  const { data, isLoading, error } = useSWR<AnunciosConnectUrl>(
-    `/api/anuncios/connect/${platform}`,
-    swrFetcher,
-    { revalidateOnFocus: false, revalidateOnReconnect: false },
-  );
-  return { connectData: data, isLoading, error };
-}
-
-export function useSyncAnunciosAccounts() {
-  const { trigger, isMutating } = useSWRMutation<
-    { success?: boolean },
-    Error,
-    string,
-    { method?: string }
-  >('/api/anuncios/sync/accounts', swrMutator);
-  return { syncAccounts: () => trigger({ method: 'POST' }), isSyncing: isMutating };
-}
-
-export function useSyncAnunciosCampaigns() {
-  const { trigger, isMutating } = useSWRMutation<
-    { success?: boolean },
-    Error,
-    string,
-    { method?: string }
-  >('/api/anuncios/sync/campaigns', swrMutator);
-  return { syncCampaigns: () => trigger({ method: 'POST' }), isSyncing: isMutating };
-}

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
+import { clampLimit } from '../common/pagination-clamp.pipe';
 
 type LeadRow = {
   id: string;
@@ -92,7 +93,7 @@ export class LeadsService {
     workspaceId: string,
     options?: { status?: string; search?: string; limit?: number },
   ) {
-    const limit = Math.min(Math.max(options?.limit ?? 200, 1), 500);
+    const limit = clampLimit(options?.limit, { default: 200, max: 500 });
 
     const statusFilter = options?.status ? { status: options.status } : {};
     const search = options?.search?.trim();

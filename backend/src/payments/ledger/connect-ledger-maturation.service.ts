@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { StructuredLogger } from '../../logging/structured-logger';
+import { Prisma } from '@prisma/client';
 
 import { forEachSequential } from '../../common/async-sequence';
 import { FinancialAlertService } from '../../common/financial-alert.service';
@@ -62,16 +63,36 @@ export class ConnectLedgerMaturationService {
         await this.ledgerService.moveFromPendingToAvailable(entry.id);
         matured += 1;
       } catch (error: unknown) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError) {
+          if (error.code === 'P2002') {
+            this.logger.info(
+              { entryId: entry.id, code: error.code },
+              `connect_ledger_maturation_already_matured P2002 entry=${entry.id}`,
+            );
+            matured += 1;
+            return;
+          }
+          if (error.code === 'P2025') {
+            this.logger.info(
+              { entryId: entry.id, code: error.code },
+              `connect_ledger_maturation_stale_row P2025 entry=${entry.id}`,
+            );
+            matured += 1;
+            return;
+          }
+        }
         failed += 1;
         const message = error instanceof Error ? error.message : String(error);
+        const code = error instanceof Prisma.PrismaClientKnownRequestError ? error.code : undefined;
         this.logger.error(
-          { entryId: entry.id, operation: 'moveFromPendingToAvailable' },
+          { entryId: entry.id, operation: 'moveFromPendingToAvailable', code },
           `connect_ledger_maturation_failed entry=${entry.id}: ${message}`,
         );
         this.financialAlert.reconciliationAlert('connect ledger maturation failed', {
           details: {
             entryId: entry.id,
             error: message,
+            code,
           },
         });
         await this.prisma.adminAuditLog
@@ -83,6 +104,7 @@ export class ConnectLedgerMaturationService {
               details: {
                 entryId: entry.id,
                 error: message,
+                code,
               },
             },
           })

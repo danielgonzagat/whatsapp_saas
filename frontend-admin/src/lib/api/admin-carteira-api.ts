@@ -99,6 +99,161 @@ export interface ListLedgerQuery {
   take?: number;
 }
 
+export interface ConnectAccountRow {
+  accountBalanceId: string;
+  workspaceId: string;
+  stripeAccountId: string;
+  accountType: string;
+  pendingCents: string;
+  availableCents: string;
+  lifetimeReceivedCents: string;
+  lifetimePaidOutCents: string;
+  lifetimeChargebacksCents: string;
+  onboarding: unknown;
+}
+
+export interface ListConnectAccountsResponse {
+  accounts: ConnectAccountRow[];
+}
+
+export interface ConnectReconcileDrift {
+  accountBalanceId: string;
+  workspaceId: string;
+  stripeAccountId: string;
+  ledgerAvailableCents: string;
+  walletAvailableCents: string;
+  driftInCents: string;
+}
+
+export interface ConnectReconcileReport {
+  scannedAccounts: number;
+  drifts: ConnectReconcileDrift[];
+  scannedAt: string;
+}
+
+export interface PayoutRow {
+  id: string;
+  action: string;
+  createdAt: string;
+  requestId: string | null;
+  payoutId: string | null;
+  status: string | null;
+  amountCents: string | null;
+  currency: string | null;
+  error: string | null;
+  adminUser: unknown;
+}
+
+export interface ListPayoutsResponse {
+  items: PayoutRow[];
+  total: number;
+}
+
+export interface CreatePayoutBody {
+  amountCents: number;
+  requestId?: string;
+  currency?: string;
+}
+
+export interface CreatePayoutResponse {
+  success: boolean;
+  payoutId: string;
+  status: string;
+  amountCents: string;
+  currency: string;
+}
+
+export type ConnectPayoutRequestState = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+
+export interface ConnectPayoutRequestRow {
+  approvalRequestId: string;
+  workspaceId: string;
+  accountBalanceId: string;
+  accountType: string;
+  stripeAccountId: string;
+  amountCents: string;
+  currency: string;
+  requestId: string;
+  state: ConnectPayoutRequestState;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+  respondedAt: string | null;
+  decision: string | null;
+}
+
+export interface ListConnectPayoutRequestsResponse {
+  items: ConnectPayoutRequestRow[];
+  total: number;
+}
+
+export interface ListConnectPayoutRequestsQuery {
+  workspaceId?: string;
+  state?: ConnectPayoutRequestState;
+  skip?: number;
+  take?: number;
+}
+
+export interface ApproveRejectResponse {
+  success: boolean;
+  approvalRequestId: string;
+  state: string;
+  payoutId?: string;
+  status?: string;
+  accountBalanceId?: string;
+  stripeAccountId?: string;
+  amountCents?: string;
+  currency?: string;
+}
+
+export interface FraudBlacklistRow {
+  id: string;
+  type: string;
+  value: string;
+  reason: string;
+  addedBy: string;
+  expiresAt: string | null;
+  createdAt: string;
+}
+
+export interface ListFraudBlacklistResponse {
+  items: FraudBlacklistRow[];
+  total: number;
+}
+
+export interface ListFraudBlacklistQuery {
+  type?: string;
+  value?: string;
+  skip?: number;
+  take?: number;
+}
+
+export interface AddFraudBlacklistBody {
+  type: string;
+  value: string;
+  reason: string;
+  expiresAt?: string;
+}
+
+export interface RemoveFraudBlacklistBody {
+  type: string;
+  value: string;
+}
+
+export interface RemoveFraudBlacklistResponse {
+  removedCount: number;
+}
+
+function qs(params: Record<string, unknown>): string {
+  const search = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== '') {
+      search.set(key, String(value));
+    }
+  }
+  return search.toString();
+}
+
 /** Admin carteira api. */
 export const adminCarteiraApi = {
   balance(currency = 'BRL'): Promise<MarketplaceTreasuryBalance> {
@@ -107,18 +262,99 @@ export const adminCarteiraApi = {
     );
   },
   ledger(query: ListLedgerQuery = {}): Promise<ListLedgerResponse> {
-    const params = new URLSearchParams();
-    for (const [key, value] of Object.entries(query)) {
-      if (value !== undefined && value !== null && value !== '') {
-        params.set(key, String(value));
-      }
-    }
-    const qs = params.toString();
-    return adminFetch<ListLedgerResponse>(qs ? `/carteira/ledger?${qs}` : '/carteira/ledger');
+    const queryString = qs(query as Record<string, unknown>);
+    return adminFetch<ListLedgerResponse>(
+      queryString ? `/carteira/ledger?${queryString}` : '/carteira/ledger',
+    );
   },
   reconcile(currency = 'BRL'): Promise<MarketplaceTreasuryReconcileReport> {
     return adminFetch<MarketplaceTreasuryReconcileReport>(
       `/carteira/reconcile?currency=${encodeURIComponent(currency)}`,
+    );
+  },
+
+  connectAccounts(query?: { workspaceId?: string }): Promise<ListConnectAccountsResponse> {
+    const queryString = qs((query || {}) as Record<string, unknown>);
+    return adminFetch<ListConnectAccountsResponse>(
+      queryString ? `/carteira/connect/accounts?${queryString}` : '/carteira/connect/accounts',
+    );
+  },
+
+  connectReconcile(query?: { workspaceId?: string }): Promise<ConnectReconcileReport> {
+    const queryString = qs((query || {}) as Record<string, unknown>);
+    return adminFetch<ConnectReconcileReport>(
+      queryString
+        ? `/carteira/connect/reconcile?${queryString}`
+        : '/carteira/connect/reconcile',
+    );
+  },
+
+  listPayouts(query?: { skip?: number; take?: number }): Promise<ListPayoutsResponse> {
+    const queryString = qs((query || {}) as Record<string, unknown>);
+    return adminFetch<ListPayoutsResponse>(
+      queryString ? `/carteira/payouts?${queryString}` : '/carteira/payouts',
+    );
+  },
+
+  createPayout(body: CreatePayoutBody): Promise<CreatePayoutResponse> {
+    return adminFetch<CreatePayoutResponse, CreatePayoutBody>('/carteira/payouts', {
+      method: 'POST',
+      body,
+    });
+  },
+
+  listConnectPayoutRequests(
+    query?: ListConnectPayoutRequestsQuery,
+  ): Promise<ListConnectPayoutRequestsResponse> {
+    const queryString = qs((query || {}) as Record<string, unknown>);
+    return adminFetch<ListConnectPayoutRequestsResponse>(
+      queryString
+        ? `/carteira/connect/payout-requests?${queryString}`
+        : '/carteira/connect/payout-requests',
+    );
+  },
+
+  approveConnectPayoutRequest(
+    approvalRequestId: string,
+  ): Promise<ApproveRejectResponse> {
+    return adminFetch<ApproveRejectResponse>(
+      `/carteira/connect/payout-requests/${encodeURIComponent(approvalRequestId)}/approve`,
+      { method: 'POST' },
+    );
+  },
+
+  rejectConnectPayoutRequest(
+    approvalRequestId: string,
+    reason?: string,
+  ): Promise<ApproveRejectResponse> {
+    return adminFetch<ApproveRejectResponse, { reason?: string }>(
+      `/carteira/connect/payout-requests/${encodeURIComponent(approvalRequestId)}/reject`,
+      { method: 'POST', body: reason ? { reason } : {} },
+    );
+  },
+
+  listFraudBlacklist(
+    query?: ListFraudBlacklistQuery,
+  ): Promise<ListFraudBlacklistResponse> {
+    const queryString = qs((query || {}) as Record<string, unknown>);
+    return adminFetch<ListFraudBlacklistResponse>(
+      queryString ? `/carteira/fraud/blacklist?${queryString}` : '/carteira/fraud/blacklist',
+    );
+  },
+
+  addFraudBlacklist(body: AddFraudBlacklistBody): Promise<FraudBlacklistRow> {
+    return adminFetch<FraudBlacklistRow, AddFraudBlacklistBody>('/carteira/fraud/blacklist', {
+      method: 'POST',
+      body,
+    });
+  },
+
+  removeFraudBlacklist(
+    body: RemoveFraudBlacklistBody,
+  ): Promise<RemoveFraudBlacklistResponse> {
+    return adminFetch<RemoveFraudBlacklistResponse, RemoveFraudBlacklistBody>(
+      '/carteira/fraud/blacklist/remove',
+      { method: 'POST', body },
     );
   },
 };

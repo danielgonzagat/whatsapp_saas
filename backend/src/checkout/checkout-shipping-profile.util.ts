@@ -1,12 +1,9 @@
 import { NON_DIGIT_RE } from '../common/phone';
+import { clamp } from '../common/math';
 function toDigits(value: unknown) {
   return (
     typeof value === 'string' ? value : typeof value === 'number' ? String(value) : ''
   ).replace(NON_DIGIT_RE, '');
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(Math.max(value, min), max);
 }
 
 function toSafeMoney(value: unknown) {

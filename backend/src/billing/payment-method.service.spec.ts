@@ -366,5 +366,61 @@ describe('PaymentMethodService (P6-10)', () => {
 
       expect(result).toEqual({ paymentMethods: [] });
     });
+
+    it('returns an empty list when Stripe instance is malformed (missing .customers)', async () => {
+      // Simulate the ESM/CJS interop failure: an object without .customers
+      attachStripe(service, {} as StripeMock);
+
+      const result = await service.listPaymentMethods('ws-1');
+
+      expect(result).toEqual({ paymentMethods: [] });
+    });
+  });
+
+  describe('getOrCreateCustomerId — malformed Stripe instance (Wave 22)', () => {
+    it('returns existing customerId when stripe instance lacks .customers', async () => {
+      const tx = {
+        workspace: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'ws-1',
+            name: 'Workspace 1',
+            stripeCustomerId: 'cus_existing_456',
+          }),
+          update: jest.fn(),
+        },
+      };
+      prisma.$transaction.mockImplementation(async (cb: TransactionCallback) => cb(tx));
+
+      // Simulate malformed instance — object without .customers
+      attachStripe(service, {} as StripeMock);
+
+      const result = await service.getOrCreateCustomerId('ws-1');
+
+      expect(result).toBe('cus_existing_456');
+      // Must NOT attempt to call any stripe method
+      expect(stripe.customers.create).not.toHaveBeenCalled();
+      expect(stripe.customers.retrieve).not.toHaveBeenCalled();
+    });
+
+    it('throws ERROR_BILLING_UNAVAILABLE when stripe is malformed and no customerId exists', async () => {
+      const tx = {
+        workspace: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'ws-1',
+            name: 'Workspace 1',
+            stripeCustomerId: null,
+          }),
+          update: jest.fn(),
+        },
+      };
+      prisma.$transaction.mockImplementation(async (cb: TransactionCallback) => cb(tx));
+
+      // Simulate malformed instance — object without .customers
+      attachStripe(service, {} as StripeMock);
+
+      await expect(service.getOrCreateCustomerId('ws-1')).rejects.toThrow(
+        /Infraestrutura de cobran.a indispon.vel/,
+      );
+    });
   });
 });

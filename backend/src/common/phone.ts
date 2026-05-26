@@ -54,6 +54,30 @@ export function digitsOrNull(value: string | null | undefined): string | null {
 }
 
 /**
+ * Strip every non-digit character. Returns `undefined` if input is non-string
+ * or result is empty.
+ *
+ * Use in KYC / Stripe Connect onboarding where empty phone fields must be
+ * OMITTED from the outgoing API payload (Stripe rejects empty-string fields
+ * with type=phone). Equivalent to `readTrimmedString(value) -> digits || undefined`.
+ *
+ * Two call sites previously had byte-identical local re-implementations:
+ *   - kyc/kyc.helpers.ts::digitsOnly (exported, value: unknown)
+ *   - payments/connect/connect.service.ts::digitsOnly (local)
+ */
+export function digitsOrUndefined(value: unknown): string | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  const normalized = trimmed.replace(NON_DIGIT_RE, '');
+  return normalized || undefined;
+}
+
+/**
  * WhatsApp-specific normalizer: drop `@c.us` / `@s.whatsapp.net` suffix
  * BEFORE stripping non-digits, so a WhatsApp JID like
  * `5511999999999@s.whatsapp.net` becomes `5511999999999`.

@@ -1,13 +1,5 @@
 import nodemailer from 'nodemailer';
-
-type EmailConfig = {
-  host: string;
-  port: number;
-  user?: string | undefined;
-  pass?: string | undefined;
-  from: string;
-  secure: boolean;
-};
+import { resolveEmailConfig } from './email-config.helper';
 
 type WorkspaceLike = {
   id?: string;
@@ -18,25 +10,6 @@ type TemplateComponent = Record<string, unknown>;
 
 function toErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
-}
-
-function resolveEmailConfig(): EmailConfig | null {
-  const host = process.env.MAIL_HOST;
-  const port = Number(process.env.MAIL_PORT || 587);
-  const user = process.env.MAIL_USER;
-  const pass = process.env.MAIL_PASS;
-  const from = process.env.MAIL_FROM || 'autopilot@localhost';
-  if (!host) {
-    return null;
-  }
-  return {
-    host,
-    port,
-    user,
-    pass,
-    from,
-    secure: port === 465,
-  };
 }
 
 /** Email provider. */

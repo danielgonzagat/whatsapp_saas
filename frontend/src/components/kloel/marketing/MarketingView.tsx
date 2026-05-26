@@ -19,7 +19,14 @@ import { useOnboardingPalette } from './OfficialMarketingChannelPage/ChannelOnbo
  * the first pixel of the content area — and renders the PreviewBar floating
  * over it. The onboarding screen lives below.
  */
-const CHANNELS: readonly ChannelKey[] = ['whatsapp', 'instagram', 'tiktok', 'facebook', 'email'];
+const CHANNELS: readonly ChannelKey[] = [
+  'whatsapp',
+  'instagram',
+  'tiktok',
+  'google-ads',
+  'facebook',
+  'email',
+];
 
 function resolveChannel(tab: string): ChannelKey {
   return (CHANNELS as readonly string[]).includes(tab) ? (tab as ChannelKey) : 'whatsapp';

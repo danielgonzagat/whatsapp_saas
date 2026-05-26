@@ -1,4 +1,5 @@
 import { colors } from '@/lib/design-tokens';
+import { formatBRL } from '@/lib/common/money';
 
 export const SORA = "var(--font-sora), 'Sora', sans-serif";
 export const MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";
@@ -34,9 +35,7 @@ export const PAY_METHODS: Record<string, string> = {
   DEBIT: colors.semantic.success,
 };
 
-export function fmtBRL(v: number): string {
-  return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-}
+export const fmtBRL = formatBRL;
 
 export function fmtDate(d: string | Date): string {
   return new Date(d).toLocaleDateString('pt-BR');

@@ -12,7 +12,9 @@ const MEASURED_BY = 'no-overclaim.gate' as const;
 function buildRegistryMap(
   snapshot: CapabilityRegistrySnapshot | undefined,
 ): ReadonlyMap<string, { consecutiveFailures: number }> {
-  if (!snapshot) return new Map();
+  if (!snapshot) {
+    return new Map();
+  }
   const map = new Map<string, { consecutiveFailures: number }>();
   for (const rec of snapshot.records) {
     map.set(rec.id, { consecutiveFailures: rec.consecutiveFailures });
@@ -23,14 +25,22 @@ function buildRegistryMap(
 function extractAvailable(
   payload: unknown,
 ): readonly { idx: number; cap: Record<string, unknown> }[] {
-  if (!isObject(payload)) return [];
+  if (!isObject(payload)) {
+    return [];
+  }
   const caps = payload['capabilities'];
-  if (!isObject(caps)) return [];
+  if (!isObject(caps)) {
+    return [];
+  }
   const available = caps['available'];
-  if (!Array.isArray(available)) return [];
+  if (!Array.isArray(available)) {
+    return [];
+  }
   const out: { idx: number; cap: Record<string, unknown> }[] = [];
   available.forEach((cap, idx) => {
-    if (isObject(cap)) out.push({ idx, cap });
+    if (isObject(cap)) {
+      out.push({ idx, cap });
+    }
   });
   return out;
 }

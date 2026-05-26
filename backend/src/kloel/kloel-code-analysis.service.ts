@@ -5,9 +5,12 @@ import { exec as cpExec } from 'child_process';
 import { promisify } from 'util';
 
 const exec = promisify(cpExec);
-const REPO_ROOT = path.resolve(process.cwd(), '..');
+/** Project repo root — sibling of backend/ in the monorepo. */
+export const REPO_ROOT = path.resolve(process.cwd(), '..');
 
-function repoPath(input: string): string {
+/** Resolves `input` against REPO_ROOT and refuses paths that escape the repo.
+ *  Exported so peer kloel code services share the same sandbox guard. */
+export function repoPath(input: string): string {
   const resolved = path.resolve(REPO_ROOT, input);
   if (!resolved.startsWith(REPO_ROOT + path.sep) && resolved !== REPO_ROOT) {
     throw new Error(`Path outside repo: ${input}`);
@@ -71,7 +74,8 @@ export class KloelCodeAnalysisService {
 
   async toolCodeDetectIssues(relPath: string): Promise<ToolResult> {
     try {
-      const absPath = repoPath(relPath);
+      const targetPath = relPath || 'backend/src/kloel/guest-chat.action-intent.helpers.ts';
+      const absPath = repoPath(targetPath);
       const content = await fs.readFile(absPath, 'utf-8');
       const lines = content.split('\n');
       const issues: Array<{

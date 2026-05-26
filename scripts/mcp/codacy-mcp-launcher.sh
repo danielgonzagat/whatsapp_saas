@@ -28,8 +28,13 @@ if [[ -f "${ENV_FILE}" ]]; then
   set +a
 fi
 
+# Map from .env.pulse.local naming to @codacy/codacy-mcp naming
+if [[ -z "${CODACY_ACCOUNT_TOKEN:-}" ]] && [[ -n "${CODACY_API_TOKEN:-}" ]]; then
+  export CODACY_ACCOUNT_TOKEN="${CODACY_API_TOKEN}"
+fi
+
 if [[ -z "${CODACY_ACCOUNT_TOKEN:-}" ]]; then
-  echo "[codacy-mcp-launcher] CODACY_ACCOUNT_TOKEN is not set." >&2
+  echo "[codacy-mcp-launcher] CODACY_ACCOUNT_TOKEN/CODACY_API_TOKEN is not set." >&2
   echo "[codacy-mcp-launcher] Expected it in ${ENV_FILE} or the parent shell." >&2
   exit 1
 fi

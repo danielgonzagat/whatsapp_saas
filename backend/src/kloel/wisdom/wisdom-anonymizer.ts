@@ -10,14 +10,19 @@
 import type { CandidatePattern, KAnonymityParams, DiffPrivacyParams, WisdomPattern } from './wisdom.types';
 import { DEFAULT_K_ANONYMITY, DEFAULT_DIFF_PRIVACY_EPSILON } from './wisdom.types';
 import type { PatternTaxonomy } from './wisdom.types';
+import { secureUniform } from './wisdom-uniform.helper';
 
 /**
  * Laplacian noise generator for differential privacy.
  * Uses the inverse CDF method for the Laplace(0, b) distribution.
  * `scale` = sensitivity / epsilon.
+ *
+ * Uses secureUniform() (crypto.randomBytes-backed) for the uniform sample —
+ * Math.random() is not cryptographically uniform and would weaken the
+ * ε-differential-privacy bound this pipeline relies on.
  */
 function laplacianNoise(scale: number): number {
-  const u = Math.random() - 0.5;
+  const u = secureUniform() - 0.5;
   return -scale * Math.sign(u) * Math.log(1 - 2 * Math.abs(u));
 }
 

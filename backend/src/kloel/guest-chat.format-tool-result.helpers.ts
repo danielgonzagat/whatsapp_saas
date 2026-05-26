@@ -18,7 +18,9 @@ export function formatToolResult(tool: string, result: unknown): string {
     }
     case 'create_product': {
       const p = (r.product as Record<string, unknown> | undefined) ?? {};
-      return `Produto ${s(p.name)} criado! R$ ${s(p.price)}`;
+      const fmt = p.format ? ` (${p.format})` : '';
+      const cat = p.category ? ` [${p.category}]` : '';
+      return `Produto ${s(p.name)}${cat}${fmt} criado! R$ ${s(p.price)}`;
     }
     case 'update_product': {
       const p = (r.product as Record<string, unknown> | undefined) ?? {};
@@ -28,7 +30,8 @@ export function formatToolResult(tool: string, result: unknown): string {
       return 'Produto removido.';
     case 'create_plan': {
       const p = (r.plan as Record<string, unknown> | undefined) ?? {};
-      return `Plano ${s(p.name)} criado! R$ ${s(p.price)}`;
+      const pn = s(p.name);
+      return pn === 'Plano' ? `Plano criado! R$ ${s(p.price)}` : `Plano ${pn} criado! R$ ${s(p.price)}`;
     }
     case 'get_product_plans': {
       const plans = Array.isArray(r.plans) ? (r.plans as Array<Record<string, unknown>>) : [];
@@ -39,8 +42,19 @@ export function formatToolResult(tool: string, result: unknown): string {
     }
     case 'create_checkout':
       return `Checkout ${s(r.name || r.checkoutName, 'criado')}!`;
-    case 'create_coupon':
-      return `Cupom ${s(r.code)} criado!`;
+    case 'create_coupon': {
+      const cc = (r.coupon as Record<string, unknown> | undefined) ?? {};
+      return `Cupom ${s(cc.code || r.code)} criado!`;
+    }
+    case 'update_coupon':
+      return typeof r.message === 'string' ? r.message : `Cupom ${typeof (r as any).coupon?.code === 'string' ? (r as any).coupon.code : ''} atualizado.`;
+    case 'list_checkouts': {
+      const chk = Array.isArray((r as any).checkouts) ? (r as any).checkouts : [];
+      if (chk.length === 0) return 'Nenhum checkout encontrado.';
+      return `Checkouts: ${chk.map((c: any) => c.name || c.id).join(', ')}`;
+    }
+    case 'delete_coupon':
+      return 'Cupom removido.';
     case 'list_coupons': {
       const coupons = Array.isArray(r.coupons) ? (r.coupons as Array<Record<string, unknown>>) : [];
       if (coupons.length === 0) {
@@ -48,15 +62,27 @@ export function formatToolResult(tool: string, result: unknown): string {
       }
       return `Cupons: ${coupons.map((c) => `${s(c.code)} (${s(c.discountType)})`).join(', ')}`;
     }
-    case 'get_product_urls': {
-      const urls = Array.isArray(r.urls) ? (r.urls as Array<Record<string, unknown>>) : [];
+    case 'self.capabilities':
+    case 'list_capabilities':
+      return 'Posso ajudar com: criar/editar produtos, planos, checkouts, cupons, PIX, boletos, vendas, CRM, carteira, relatorios, configuracoes e mais. Pergunte!';
+    case 'get_product_urls':
+      const urls = Array.isArray(r.customUrls) ? (r.customUrls as Array<Record<string, unknown>>) : [];
       if (urls.length === 0) {
-        return 'Nenhuma URL configurada.';
+        return `Nenhuma URL cadastrada para este produto.`;
       }
-      return `URLs: ${urls.map((u) => `${s(u.label || u.url)}`).join(', ')}`;
+      return `URLs: ${urls.map((u) => `${s(u.description)} → ${s(u.url)}`).join(', ')}`;
+    case 'get_product_reviews': {
+      const revs = Array.isArray(r.reviews) ? (r.reviews as Array<Record<string, unknown>>) : [];
+      if (revs.length === 0) return 'Nenhuma avaliação encontrada.';
+      return `Avaliações (${revs.length}): ${revs.map((rv) => `★${rv.rating || '?'} ${s(rv.comment)}`.substring(0, 60)).join(' | ')}`;
     }
+    case 'get_product_ai_config':
     case 'create_payment_link': {
       const pix = s(r.pixCopyPaste);
+      const qr = s(r.pixQrCode);
+      if (qr) {
+        return `PIX gerado! QR code disponivel (base64). Copia e cola: ${pix}`;
+      }
       if (pix) {
         return `PIX copia e cola: ${pix}`;
       }
@@ -89,6 +115,11 @@ export function formatToolResult(tool: string, result: unknown): string {
       );
       return `Extrato: ${items.length} movimentacoes, total R$ ${total.toFixed(2)}.`;
     }
+    case 'list_refunds': {
+      const rfunds = Array.isArray((r as any).orders) ? (r as any).orders : [];
+      if (rfunds.length === 0) return 'Nenhum estorno encontrado.';
+      return `Estornos: ${rfunds.length} pedido(s).`;
+    }
     case 'list_orders': {
       const orders = Array.isArray(r.orders) ? (r.orders as Array<Record<string, unknown>>) : [];
       if (orders.length === 0) {
@@ -120,9 +151,28 @@ export function formatToolResult(tool: string, result: unknown): string {
       const visits = s(r.visits || r.pageViews, '0');
       return `Metricas: ${visits} visitas.`;
     }
+    case 'get_product_details': {
+      const p = (r.product as Record<string, unknown> | undefined) ?? {};
+      const plans = typeof p.planCount === 'number' ? p.planCount : 0;
+      return `Produto ${s(p.name)}: ${s(p.description || p.category)} - R$ ${s(p.price)}. ${plans} planos. Ativo: ${p.active ? 'sim' : 'nao'}. URL: ${s(p.salesPageUrl, 'nao definida')}`;
+    }
+    case 'list_subscriptions': {
+      const subs = Array.isArray(r.subscriptions) ? (r.subscriptions as Array<Record<string, unknown>>) : [];
+      if (subs.length === 0) return 'Nenhuma assinatura ativa.';
+      return `Assinaturas: ${subs.map((sub) => `${s(sub.plan)} (${s(sub.status)})`).join(', ')}`;
+    }
+    case 'request_withdrawal':
+      return s(r.message, 'Saque processado.');
+    case 'upload_product_image':
+    case 'upload_document':
+    case 'configure_pixel':
+    case 'configure_shipping':
+      return s(r.message, 'Acao concluida.');
+    case 'update_fiscal_data':
+      return 'Dados atualizados com sucesso.';
     case 'search_agent_memory': {
-      const results = Array.isArray(r.results || r.items)
-        ? ((r.results || r.items) as Array<Record<string, unknown>>)
+      const results = Array.isArray(r.results || r.items || r.leads || r.contacts)
+        ? ((r.results || r.items || r.leads || r.contacts) as Array<Record<string, unknown>>)
         : [];
       if (results.length === 0) {
         return 'Nenhuma memoria encontrada.';
@@ -143,6 +193,12 @@ export function formatToolResult(tool: string, result: unknown): string {
     case 'get_settings': {
       const name = s(r.name, 'N/A');
       return `Configuracoes de ${name}.`;
+    }
+    case 'get_affiliate_config': {
+      const partners = Array.isArray(r.partners) ? (r.partners as Array<Record<string, unknown>>) : [];
+      const active = typeof r.activeCount === 'number' ? r.activeCount : 0;
+      if (partners.length === 0) return 'Nenhum afiliado cadastrado.';
+      return `Afiliados: ${partners.length} total (${active} ativos). ${partners.slice(0, 3).map((p) => `${s(p.partnerName)} (${s(p.commissionRate)}%)`).join(', ')}`;
     }
     case 'git_status': {
       const count = typeof r.fileCount === 'number' ? r.fileCount : 0;
@@ -181,8 +237,11 @@ export function formatToolResult(tool: string, result: unknown): string {
       return `Schema: ${tables.length} tabelas.`;
     }
     case 'search_codebase': {
-      const matches = Array.isArray(r.matches) ? (r.matches as string[]) : [];
-      return `Codebase: ${matches.length} matches.`;
+      const results = Array.isArray(r.results) ? (r.results as any[]) : [];
+      const err = typeof r.error === 'string' ? r.error : '';
+      if (err) return `Busca: ${err}`;
+      if (results.length === 0) return `Busca: nenhum resultado encontrado.`;
+      return `Busca: ${results.length} resultados: ${results.slice(0, 5).map((x: any) => `${x.file}:${x.line}`).join(', ')}`;
     }
     case 'run_backend_tests': {
       const passed = typeof r.passed === 'number' ? r.passed : 0;
@@ -190,11 +249,60 @@ export function formatToolResult(tool: string, result: unknown): string {
       return `Testes: ${passed} pass, ${failed} fail.`;
     }
     case 'code_lint':
+    // ── NOVAS TOOLS ──
+    case 'delete_plan':
+      return typeof r.message === 'string' ? r.message : 'Plano removido.';
+    case 'delete_checkout':
+      return typeof r.message === 'string' ? r.message : 'Checkout removido.';
+    case 'add_url':
+      return typeof r.message === 'string' ? r.message : 'URL adicionada.';
+    case 'update_url':
+      return typeof r.message === 'string' ? r.message : 'URL atualizada.';
+    case 'delete_url':
+      return typeof r.message === 'string' ? r.message : 'URL removida.';
+    case 'configure_pixel':
+      return typeof r.message === 'string' ? r.message : 'Pixel configurado.';
+    case 'configure_shipping':
+      return typeof r.message === 'string' ? r.message : 'Frete configurado.';
+    case 'configure_social_proof':
+      return typeof r.message === 'string' ? r.message : 'Prova social configurada.';
+    case 'configure_order_bump':
+      return typeof r.message === 'string' ? r.message : 'Order bump configurado.';
+    case 'configure_warranty':
+      return typeof r.message === 'string' ? r.message : 'Garantia configurada.';
+    case 'configure_exit_intent':
+      return typeof r.message === 'string' ? r.message : 'Exit intent configurado.';
+    case 'configure_after_pay':
+      return typeof r.message === 'string' ? r.message : 'After Pay configurado.';
+    case 'browse_marketplace':
+      if (Array.isArray(r.products)) return `${r.products.length} produtos no marketplace.`;
+      return typeof r.message === 'string' ? r.message : 'Marketplace consultado.';
+    case 'get_social_channels':
+      return typeof r.message === 'string' ? r.message : 'Canais consultados.';
+    case 'connect_channel':
+      return typeof r.message === 'string' ? r.message : 'Canal conectado.';
+    case 'upload_product_image':
+      return typeof r.message === 'string' ? r.message : 'Upload de imagem processado.';
+    case 'upload_document':
+      return typeof r.message === 'string' ? r.message : 'Documento registrado.';
+    case 'request_anticipation':
+      return typeof r.message === 'string' ? r.message : 'Antecipação solicitada.';
     case 'code_detect_issues': {
       const issues = Array.isArray(r.issues) ? (r.issues as string[]) : [];
       return `Issues: ${issues.length} encontrados.`;
     }
+    // ── CODEGRAPH ──
+    case 'codegraph_status':
+    case 'codegraph_search':
+    case 'codegraph_context':
+    case 'codegraph_callers':
+    case 'codegraph_callees':
+    case 'codegraph_impact':
+    case 'codegraph_node':
+    case 'codegraph_files':
+      return typeof r.text === 'string' ? r.text : 'CodeGraph consultado.';
     default:
-      return typeof r.message === 'string' ? r.message : 'Acao concluida.';
+      if (typeof r.error === 'string') return `Erro: ${r.error}`;
+      return typeof r.text === 'string' ? r.text : typeof r.message === 'string' ? r.message : 'Acao concluida.';
   }
 }

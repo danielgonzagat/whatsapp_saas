@@ -22,7 +22,12 @@ import {
   getRequestedScopesForChannel,
   type MetaMarketingChannel,
 } from './oauth/meta-scopes.helpers';
-import { NON_DIGIT_RE } from '../common/phone';
+import {
+  buildTextMessageContent,
+  buildMediaMessageContent,
+  parseMessageIdFromResponse,
+  normalizeWhatsAppPhone,
+} from './meta-whatsapp.message.helpers';
 type ResolvedMetaConnection = {
   workspaceId: string;
   accessToken: string;
@@ -54,6 +59,9 @@ const CHANNEL_META_SCOPES: Record<MetaChannel, string[]> = {
   ],
   facebook: [...COMMON_META_SCOPES, 'pages_messaging'],
 };
+function readFirstEnv(keys: string[]): string {
+  return keys.map((key) => String(process.env[key] || '').trim()).find(Boolean) || '';
+}
 function normalizeMetaChannel(channel?: string | null): MetaChannel {
   const normalized = String(channel || '')
     .trim()
@@ -64,10 +72,8 @@ function normalizeMetaChannel(channel?: string | null): MetaChannel {
   return 'whatsapp';
 }
 function readChannelConfigId(channel: MetaChannel): string {
-  const lookup = (primary: string, legacy: string): string => {
-    const val = process.env[primary] || process.env[legacy] || process.env.META_CONFIG_ID || '';
-    return String(val).trim();
-  };
+  const lookup = (primary: string, legacy: string): string =>
+    readFirstEnv([primary, legacy, 'META_CONFIG_ID', 'META_EMBEDDED_SIGNUP_CONFIG_ID']);
   if (channel === 'whatsapp') {
     const result = lookup('META_WHATSAPP_CONFIG_ID', 'META_CONFIG_ID_WHATSAPP');
     if (!result) {
@@ -82,13 +88,13 @@ function readChannelConfigId(channel: MetaChannel): string {
     }
     return result;
   }
-  const result = String(
-    process.env.META_FACEBOOK_CONFIG_ID ||
-      process.env.META_CONFIG_ID_MESSENGER ||
-      process.env.META_CONFIG_ID_FACEBOOK ||
-      process.env.META_CONFIG_ID ||
-      '',
-  ).trim();
+  const result = readFirstEnv([
+    'META_FACEBOOK_CONFIG_ID',
+    'META_CONFIG_ID_MESSENGER',
+    'META_CONFIG_ID_FACEBOOK',
+    'META_CONFIG_ID',
+    'META_EMBEDDED_SIGNUP_CONFIG_ID',
+  ]);
   if (!result) {
     throw new BadRequestException('meta-config-id-missing-for-channel');
   }
@@ -113,7 +119,7 @@ export class MetaWhatsAppService implements OnModuleInit {
     workspaceId: string,
     options?: { channel?: string | null; returnTo?: string | null },
   ): string {
-    const appId = String(process.env.META_APP_ID || '').trim();
+    const appId = readFirstEnv(['META_APP_ID', 'FACEBOOK_APP_ID', 'META_CLIENT_ID']);
     const channel = normalizeMetaChannel(options?.channel);
     const configId = readChannelConfigId(channel);
     const version = String(process.env.META_GRAPH_API_VERSION || 'v21.0').trim();
@@ -385,10 +391,7 @@ export class MetaWhatsAppService implements OnModuleInit {
       recipient_type: 'individual',
       to: this.normalizePhone(to),
       type: 'text',
-      text: {
-        body: String(message || '').trim() || ' ',
-        preview_url: false,
-      },
+      text: buildTextMessageContent(message),
     };
     if (options?.quotedMessageId) {
       payload.context = {
@@ -406,18 +409,7 @@ export class MetaWhatsAppService implements OnModuleInit {
         error: response.error.message,
       };
     }
-    const msgs = Array.isArray((response as Record<string, unknown>)?.messages)
-      ? ((response as Record<string, unknown>).messages as Array<Record<string, unknown>>)
-      : null;
-    const msgId =
-      (msgs && msgs.length > 0 && msgs[0] && typeof msgs[0].id === 'string' ? msgs[0].id : null) ||
-      (typeof (response as Record<string, unknown>).message_id === 'string'
-        ? (response as Record<string, unknown>).message_id
-        : null) ||
-      (typeof (response as Record<string, unknown>).id === 'string'
-        ? (response as Record<string, unknown>).id
-        : null) ||
-      null;
+    const msgId = parseMessageIdFromResponse(response as Record<string, unknown>);
     return {
       success: true,
       messageId: msgId,
@@ -441,12 +433,7 @@ export class MetaWhatsAppService implements OnModuleInit {
         error: 'meta_connection_required',
       };
     }
-    const mediaPayload: Record<string, unknown> = {
-      link: String(mediaUrl || '').trim(),
-    };
-    if (caption && type !== 'audio') {
-      mediaPayload.caption = caption;
-    }
+    const mediaPayload = buildMediaMessageContent(mediaUrl, type, caption);
     const payload: Record<string, unknown> = {
       messaging_product: 'whatsapp',
       recipient_type: 'individual',
@@ -470,18 +457,7 @@ export class MetaWhatsAppService implements OnModuleInit {
         error: response.error.message,
       };
     }
-    const msgs = Array.isArray((response as Record<string, unknown>)?.messages)
-      ? ((response as Record<string, unknown>).messages as Array<Record<string, unknown>>)
-      : null;
-    const msgId =
-      (msgs && msgs.length > 0 && msgs[0] && typeof msgs[0].id === 'string' ? msgs[0].id : null) ||
-      (typeof (response as Record<string, unknown>).message_id === 'string'
-        ? (response as Record<string, unknown>).message_id
-        : null) ||
-      (typeof (response as Record<string, unknown>).id === 'string'
-        ? (response as Record<string, unknown>).id
-        : null) ||
-      null;
+    const msgId = parseMessageIdFromResponse(response as Record<string, unknown>);
     return {
       success: true,
       messageId: msgId,
@@ -577,6 +553,6 @@ export class MetaWhatsAppService implements OnModuleInit {
     return getRequestedScopesForChannel(channel);
   }
   private normalizePhone(value: string): string {
-    return String(value || '').replace(NON_DIGIT_RE, '');
+    return normalizeWhatsAppPhone(value);
   }
 }

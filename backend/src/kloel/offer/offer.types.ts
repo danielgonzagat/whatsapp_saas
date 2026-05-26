@@ -26,12 +26,10 @@ type OfferInsightKind =
   | 'page_promise_mismatch'
   | 'pricing_psychology';
 
-export type RecommendedChannel =
-  | 'whatsapp'
-  | 'email'
-  | 'dashboard'
-  | 'silent'
-  | 'report';
+// RecommendedChannel is canonical in insight.types — re-export for offer
+// consumers (10+ detectors). Same exact union: whatsapp|email|dashboard|silent|report.
+import type { RecommendedChannel } from '../insight/insight.types';
+export type { RecommendedChannel };
 
 export interface OfferInsight {
   readonly insightId: string;
@@ -70,11 +68,7 @@ export interface DeliveryDecision {
   readonly reason?: string;
 }
 
-export interface ChannelTiming {
-  readonly channel: RecommendedChannel;
-  readonly timing: 'now' | 'weekly' | 'monthly';
-  readonly priority: number;
-}
+export type { ChannelTiming } from '../insight/insight.types';
 
 export const OFFER_EVENT_NAMES: ReadonlySet<string> = new Set([
   'commerce.lead.created',
@@ -105,27 +99,8 @@ export const OFFER_EVENT_NAMES: ReadonlySet<string> = new Set([
   'commerce.post_sale.churn_risk_detected',
 ]);
 
-function timestampMs(iso: string): number {
-  return Date.parse(iso);
-}
-
-export function withinWindow(
-  iso: string,
-  nowMs: number,
-  windowDays: number,
-): boolean {
-  const cutoff = nowMs - windowDays * 24 * 60 * 60 * 1000;
-  const ts = timestampMs(iso);
-  return Number.isFinite(ts) && ts >= cutoff;
-}
-
-export function median(values: number[]): number {
-  if (values.length === 0) return 0;
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  if (sorted.length % 2 !== 0) return sorted[mid] ?? 0;
-  return ((sorted[mid - 1] ?? 0) + (sorted[mid] ?? 0)) / 2;
-}
+// withinWindow + median are canonical in insight.types — re-export.
+export { withinWindow, median } from '../insight/insight.types';
 
 export type PromiseStrength = 'weak' | 'moderate' | 'strong';
 

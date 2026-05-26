@@ -17,6 +17,7 @@ import { QueueHealthService } from '../metrics/queue-health.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { getDlqQueue, queueRegistry } from '../queue/queue';
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import { PaginationLimitPipe } from '../common/pagination-clamp.pipe';
 
 /** Ops controller. */
 @Controller('ops/queues')
@@ -38,10 +39,12 @@ export class OpsController {
 
   /** List dlq. */
   @Get(':name/dlq')
-  async listDlq(@Param('name') name: string, @Query('limit') limit = '20') {
-    const clampedLimit = Math.min(Math.max(Number(limit) || 20, 1), 100);
+  async listDlq(
+    @Param('name') name: string,
+    @Query('limit', new PaginationLimitPipe()) limit: number,
+  ) {
     const dlq = this.getDlq(name);
-    const jobs = await dlq.getJobs(['waiting', 'failed'], 0, clampedLimit - 1);
+    const jobs = await dlq.getJobs(['waiting', 'failed'], 0, limit - 1);
     return jobs.map((job) => ({
       id: job.id,
       name: job.name,
@@ -55,11 +58,13 @@ export class OpsController {
 
   /** Retry dlq. */
   @Post(':name/dlq/retry')
-  async retryDlq(@Param('name') name: string, @Body('limit') limit = 10) {
-    const clampedLimit = Math.min(Math.max(Number(limit) || 10, 1), 100);
+  async retryDlq(
+    @Param('name') name: string,
+    @Body('limit', new PaginationLimitPipe({ default: 10 })) limit: number,
+  ) {
     const main = this.getQueue(name);
     const dlq = this.getDlq(name);
-    const jobs = await dlq.getJobs(['waiting', 'failed'], 0, clampedLimit - 1);
+    const jobs = await dlq.getJobs(['waiting', 'failed'], 0, limit - 1);
 
     let retried = 0;
     await forEachSequential(jobs, async (job) => {
@@ -85,9 +90,8 @@ export class OpsController {
 
   /** List webhook alerts. */
   @Get('alerts/webhooks')
-  async listWebhookAlerts(@Query('limit') limit = '20') {
-    const max = Math.min(Math.max(Number.parseInt(limit, 10) || 20, 1), 100);
-    const rows = await this.redis.lrange('alerts:webhooks', 0, max - 1);
+  async listWebhookAlerts(@Query('limit', new PaginationLimitPipe()) limit: number) {
+    const rows = await this.redis.lrange('alerts:webhooks', 0, limit - 1);
     return rows
       .map((r) => {
         try {

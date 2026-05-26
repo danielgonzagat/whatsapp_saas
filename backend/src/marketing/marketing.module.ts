@@ -25,6 +25,8 @@ import { MetaConnectService } from './marketing-connect/meta-connect.service';
 import { EmailConnectService } from './marketing-connect/email-connect.service';
 import { ChannelSetupService } from './marketing-connect/channel-setup.service';
 import { WhatsAppSummaryService } from './marketing-connect/whatsapp-summary.service';
+import { GoogleAdsMarketingController } from './google-ads-marketing.controller';
+import { GoogleAdsMarketingService } from './google-ads-marketing.service';
 
 /** Marketing module. */
 @Module({
@@ -35,12 +37,14 @@ import { WhatsAppSummaryService } from './marketing-connect/whatsapp-summary.ser
     MailboxGmailOAuthCallbackController,
     MailboxMicrosoftOAuthCallbackController,
     TikTokMarketingController,
+    GoogleAdsMarketingController,
     FacebookMessengerController,
   ],
   providers: [
     TikTokMarketingService,
     TikTokMarketingModeService,
     TikTokAdsService,
+    GoogleAdsMarketingService,
     FacebookMessengerService,
     GmailClientService,
     GmailOAuthHandshakeService,
@@ -59,6 +63,7 @@ import { WhatsAppSummaryService } from './marketing-connect/whatsapp-summary.ser
     TikTokMarketingService,
     TikTokMarketingModeService,
     TikTokAdsService,
+    GoogleAdsMarketingService,
     FacebookMessengerService,
     MailboxGmailOAuthService,
     MailboxMicrosoftOAuthService,

@@ -49,16 +49,9 @@ export interface CapabilityEntry {
   readonly lastVerifiedAt: string;
 }
 
-export interface RTierDelta {
-  readonly workspaceId: string;
-  readonly module: string;
-  readonly previousTier: RTier;
-  readonly currentTier: RTier;
-  readonly metrics: Readonly<Record<string, number>>;
-  readonly changedAt: string;
-  readonly direction: 'upgraded' | 'downgraded' | 'unchanged';
-  readonly reason: string;
-}
+// RTierDelta is the canonical interface in ./types — re-export to keep the
+// 3 evol.types.ts consumers (gap-detector/proposal-builder/spec) working.
+export type { RTierDelta } from './types';
 
 export interface Gap {
   readonly id: string;
@@ -175,26 +168,8 @@ export function resolveDomain(rawDomain: string): string | null {
 import { clamp } from '../../common/math';
 export { clamp };
 
-export function commercialImpactWeight(impact: CommercialImpact): number {
-  const weights: Record<CommercialImpact, number> = {
-    revenue_blocking: 1.0,
-    trust_eroding: 0.9,
-    quality_degrading: 0.7,
-    opportunity_missed: 0.5,
-    neutral: 0.1,
-  };
-  return weights[impact];
-}
-
-export function tierToNumber(tier: RTier): number {
-  const map: Record<RTier, number> = {
-    tier_1_functional: 1,
-    tier_2_partial: 2,
-    tier_3_facade: 3,
-    tier_4_shell: 4,
-  };
-  return map[tier];
-}
+// Canonical impls live in ./types.
+export { commercialImpactWeight, tierToNumber } from './types';
 
 export function isRTier3Or4(tier: RTier): boolean {
   return tier === 'tier_3_facade' || tier === 'tier_4_shell';

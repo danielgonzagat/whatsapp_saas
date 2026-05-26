@@ -232,6 +232,7 @@ export function makeCiaBootstrapMock(
   agentEvents: AgentEventsMock,
   runtimeState: CiaRuntimeStateMock,
   catchupService: CatchupServiceMock,
+  mindScheduler?: { registerWorkspace: jest.Mock; deregisterWorkspace: jest.Mock },
 ): CiaBootstrapMock {
   const chatFilter = new CiaChatFilterService();
   return new CiaBootstrapService(
@@ -241,6 +242,8 @@ export function makeCiaBootstrapMock(
     chatFilter,
     runtimeState,
     catchupService as never,
+    undefined,
+    mindScheduler as never,
   );
 }
 

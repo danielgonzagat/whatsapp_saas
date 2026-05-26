@@ -34,7 +34,9 @@ function isDeterministicPipeline(context?: UnknownRecord): boolean {
 }
 
 function toJsonValue(value: unknown): Prisma.InputJsonValue | null {
-  if (value === null) return null;
+  if (value === null) {
+    return null;
+  }
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
     return value;
   }
@@ -56,18 +58,34 @@ function toJsonValue(value: unknown): Prisma.InputJsonValue | null {
 }
 
 function priceBandFor(price: number): string {
-  if (price >= 1000) return 'over_1000';
-  if (price >= 500) return 'over_500';
-  if (price >= 300) return 'over_300';
-  if (price >= 100) return 'over_100';
+  if (price >= 1000) {
+    return 'over_1000';
+  }
+  if (price >= 500) {
+    return 'over_500';
+  }
+  if (price >= 300) {
+    return 'over_300';
+  }
+  if (price >= 100) {
+    return 'over_100';
+  }
   return 'under_100';
 }
 
 function discountPercentFromMind(action: string | undefined, requestedPercent: number): number {
-  if (action === 'coupon_5') return 5;
-  if (action === 'coupon_10') return 10;
-  if (action === 'coupon_15') return 15;
-  if (action === 'coupon_20') return 20;
+  if (action === 'coupon_5') {
+    return 5;
+  }
+  if (action === 'coupon_10') {
+    return 10;
+  }
+  if (action === 'coupon_15') {
+    return 15;
+  }
+  if (action === 'coupon_20') {
+    return 20;
+  }
   return requestedPercent;
 }
 

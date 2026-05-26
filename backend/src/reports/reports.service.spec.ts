@@ -68,7 +68,7 @@ describe('ReportsService', () => {
   describe('delegations', () => {
     it('getVendas resolves affiliate IDs when affiliateEmail filter is set', async () => {
       affiliateService.resolveAffiliateIds.mockResolvedValue(['p1', 'p2']);
-      await service.getVendas('ws-1', { affiliateEmail: 'aff@x.com' } as ReportFiltersDto);
+      await service.getVendas('ws-1', { affiliateEmail: 'aff@x.com' });
       expect(affiliateService.resolveAffiliateIds).toHaveBeenCalledWith('ws-1', 'aff@x.com');
       expect(ordersService.getVendas).toHaveBeenCalledWith(
         'ws-1',
@@ -78,7 +78,7 @@ describe('ReportsService', () => {
     });
 
     it('getVendas passes undefined affiliateIds when no affiliateEmail filter', async () => {
-      await service.getVendas('ws-1', {} as ReportFiltersDto);
+      await service.getVendas('ws-1', {});
       expect(ordersService.getVendas).toHaveBeenCalledWith('ws-1', {}, undefined);
     });
 
@@ -110,7 +110,7 @@ describe('ReportsService', () => {
   describe('getChurn', () => {
     it('counts subscriptions with status=CANCELLED scoped to workspace', async () => {
       prisma.customerSubscription.count.mockResolvedValue(7);
-      const result = await service.getChurn('ws-1', { perPage: 5, page: 1 } as ReportFiltersDto);
+      const result = await service.getChurn('ws-1', { perPage: 5, page: 1 });
       expect(result.total).toBe(7);
       const countArg = prisma.customerSubscription.count.mock.calls[0][0];
       expect(countArg.where.workspaceId).toBe('ws-1');
@@ -119,21 +119,21 @@ describe('ReportsService', () => {
 
     it('returns empty monthly array when raw query fails', async () => {
       prisma.$queryRaw.mockRejectedValue(new Error('SQL boom'));
-      const result = await service.getChurn('ws-1', {} as ReportFiltersDto);
+      const result = await service.getChurn('ws-1', {});
       expect(result.monthly).toEqual([]);
     });
   });
 
   describe('getAssinaturas', () => {
     it('filters by status when supplied', async () => {
-      await service.getAssinaturas('ws-1', { status: 'ACTIVE' } as ReportFiltersDto);
+      await service.getAssinaturas('ws-1', { status: 'ACTIVE' });
       const findManyArg = prisma.customerSubscription.findMany.mock.calls[0][0];
       expect(findManyArg.where.status).toBe('ACTIVE');
       expect(findManyArg.where.workspaceId).toBe('ws-1');
     });
 
     it('caps perPage at 100', async () => {
-      await service.getAssinaturas('ws-1', { perPage: 999, page: 1 } as ReportFiltersDto);
+      await service.getAssinaturas('ws-1', { perPage: 999, page: 1 });
       const findManyArg = prisma.customerSubscription.findMany.mock.calls[0][0];
       expect(findManyArg.take).toBe(100);
     });
@@ -146,7 +146,7 @@ describe('ReportsService', () => {
           amount: 100,
           platform: 'meta',
           date: 'not-a-date',
-        } as never),
+        }),
       ).rejects.toThrow(BadRequestException);
     });
   });

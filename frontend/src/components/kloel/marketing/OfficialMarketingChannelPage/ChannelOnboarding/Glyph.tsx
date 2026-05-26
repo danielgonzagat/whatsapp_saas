@@ -81,12 +81,7 @@ export function Glyph({ step, products = 0, arsenal = 0, C }: GlyphProps) {
           {Array.from({ length: 6 }, (_, i) => {
             const a = (i / 6) * Math.PI * 2;
             return (
-              <circle
-                key={i}
-                cx={150 + Math.cos(a) * 56}
-                cy={150 + Math.sin(a) * 56}
-                r="56"
-              />
+              <circle key={i} cx={150 + Math.cos(a) * 56} cy={150 + Math.sin(a) * 56} r="56" />
             );
           })}
         </g>
@@ -131,10 +126,7 @@ export function Glyph({ step, products = 0, arsenal = 0, C }: GlyphProps) {
 
         {/* 6 · Arsenal constellation (rendered before products so stars sit behind) */}
         {arsenalSlots.map((s, i) => (
-          <g
-            key={i}
-            style={{ transition: 'opacity .8s ease', opacity: s.on ? 1 : 0 }}
-          >
+          <g key={i} style={{ transition: 'opacity .8s ease', opacity: s.on ? 1 : 0 }}>
             <line
               x1="150"
               y1="150"
@@ -158,10 +150,7 @@ export function Glyph({ step, products = 0, arsenal = 0, C }: GlyphProps) {
 
         {/* 5 · Product hexagon */}
         {productSlots.map((p, i) => (
-          <g
-            key={i}
-            style={{ transition: 'all .6s ease', opacity: p.on ? 1 : 0.15 }}
-          >
+          <g key={i} style={{ transition: 'all .6s ease', opacity: p.on ? 1 : 0.15 }}>
             <circle
               cx={p.x}
               cy={p.y}
@@ -199,12 +188,7 @@ export function Glyph({ step, products = 0, arsenal = 0, C }: GlyphProps) {
         </g>
 
         {/* 7 · Core — the intelligence */}
-        <circle
-          cx="150"
-          cy="150"
-          r="32"
-          fill={alive ? `url(#${glowId})` : 'transparent'}
-        />
+        <circle cx="150" cy="150" r="32" fill={alive ? `url(#${glowId})` : 'transparent'} />
         <circle
           cx="150"
           cy="150"

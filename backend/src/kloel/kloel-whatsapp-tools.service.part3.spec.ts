@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { WHATSAPP_MESSAGING } from '../whatsapp/whatsapp.tokens';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import { AudioService } from './audio.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -9,7 +9,6 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 import { ChannelTransportRegistry } from './channel-transport.registry';
 
 jest.mock('../whatsapp/providers/provider-registry');
-jest.mock('../whatsapp/whatsapp.service');
 jest.mock('./audio.service');
 jest.mock('../billing/plan-limits.service');
 jest.mock('../observability/ops-alert.service');
@@ -126,7 +125,7 @@ describe('KloelWhatsAppToolsService', () => {
         KloelWhatsAppToolsService,
         { provide: PrismaService, useValue: prisma },
         { provide: WhatsAppProviderRegistry, useValue: providerRegistry },
-        { provide: WhatsappService, useValue: whatsappService },
+        { provide: WHATSAPP_MESSAGING, useValue: whatsappService },
         { provide: ChannelTransportRegistry, useValue: transports },
         { provide: AudioService, useValue: audioService },
         { provide: PlanLimitsService, useValue: planLimits },

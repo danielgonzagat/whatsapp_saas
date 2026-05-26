@@ -99,11 +99,20 @@ export class PdfProcessorService {
           { role: 'user', content: prompt },
         ],
         temperature: 0.3,
+        max_tokens: 256,
       });
       const content = response.choices[0]?.message?.content || '{}';
       const cleanJson = content.replace(JSON_CODE_FENCE_RE, '').trim();
+      const tokens = response?.usage?.total_tokens ?? 256;
+      this.logger.log(
+        `pdf-analysis ws=${workspaceId} model=brain baseLen=${prompt.length} outLen=${cleanJson.length} tokens=${tokens}`,
+      );
+      const analysis = JSON.parse(cleanJson) as PdfAnalysis;
+      if (!analysis || Object.keys(analysis).length === 0) {
+        this.logger.warn(`pdf-analysis empty result ws=${workspaceId}`);
+      }
       return {
-        analysis: JSON.parse(cleanJson) as PdfAnalysis,
+        analysis,
         usage: (response.usage ?? null) as PdfProcessorUsage,
       };
     } catch (error: unknown) {

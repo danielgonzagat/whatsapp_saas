@@ -1,4 +1,5 @@
 import { ConfigService } from '@nestjs/config';
+import { readConfig } from './llm-provider';
 
 /** Backend open ai model role type. */
 type BackendOpenAIModelRole =
@@ -64,12 +65,6 @@ const MODEL_ENV_KEYS: Record<BackendOpenAIModelRole, readonly string[]> = {
   audio_understanding: ['OPENAI_AUDIO_UNDERSTANDING_MODEL'],
   audio_understanding_fallback: ['OPENAI_AUDIO_UNDERSTANDING_FALLBACK_MODEL'],
 };
-
-function readConfig(key: string, config?: ConfigLike): string | undefined {
-  const fromConfig = config?.get<string>(key);
-  const value = typeof fromConfig === 'string' && fromConfig.trim() ? fromConfig : process.env[key];
-  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
-}
 
 function firstConfiguredValue(keys: readonly string[], config?: ConfigLike): string | undefined {
   for (const key of keys) {

@@ -4,30 +4,10 @@ import { WalletService } from './wallet.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { WalletLedgerService } from './wallet-ledger.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 type WalletTxClient = ReturnType<typeof buildTxClient>;
 type WalletTxCallback = (tx: WalletTxClient) => Promise<unknown>;
-type WalletPrismaMock = {
-  kloelWallet: {
-    upsert: jest.Mock;
-    findUnique: jest.Mock;
-    create: jest.Mock;
-    update: jest.Mock;
-    updateMany: jest.Mock;
-  };
-  kloelWalletTransaction: {
-    create: jest.Mock;
-    findUnique: jest.Mock;
-    findMany: jest.Mock;
-    count: jest.Mock;
-    update: jest.Mock;
-    updateMany: jest.Mock;
-  };
-  auditLog: {
-    create: jest.Mock;
-  };
-  $transaction: jest.Mock;
-};
 
 /**
  * Build a fake transactional Prisma client. Tests that exercise confirmPayment
@@ -75,7 +55,7 @@ function buildTxClient(overrides: {
 
 describe('WalletService', () => {
   let service: WalletService;
-  let prismaMock: WalletPrismaMock;
+  let prismaMock: ReturnType<typeof createPartialPrismaMock>;
   let walletLedger: { appendWithinTx: jest.Mock };
 
   const mockWallet = {
@@ -88,27 +68,15 @@ describe('WalletService', () => {
   };
 
   beforeEach(async () => {
-    prismaMock = {
-      kloelWallet: {
-        upsert: jest.fn().mockResolvedValue(mockWallet),
-        findUnique: jest.fn().mockResolvedValue(mockWallet),
-        create: jest.fn(),
-        update: jest.fn(),
-        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
-      },
-      kloelWalletTransaction: {
-        create: jest.fn(),
-        findUnique: jest.fn(),
-        findMany: jest.fn(),
-        count: jest.fn(),
-        update: jest.fn(),
-        updateMany: jest.fn(),
-      },
-      auditLog: {
-        create: jest.fn().mockResolvedValue({}),
-      },
-      $transaction: jest.fn(),
-    };
+    prismaMock = createPartialPrismaMock({
+      kloelWallet: ['upsert', 'findUnique', 'create', 'update', 'updateMany'],
+      kloelWalletTransaction: ['create', 'findUnique', 'findMany', 'count', 'update', 'updateMany'],
+      auditLog: ['create'],
+    });
+    prismaMock.kloelWallet.upsert.mockResolvedValue(mockWallet);
+    prismaMock.kloelWallet.findUnique.mockResolvedValue(mockWallet);
+    prismaMock.kloelWallet.updateMany.mockResolvedValue({ count: 1 });
+    prismaMock.auditLog.create.mockResolvedValue({});
 
     walletLedger = { appendWithinTx: jest.fn().mockResolvedValue(undefined) };
 
@@ -283,6 +251,195 @@ describe('WalletService', () => {
       });
 
       await service.processSale('ws-1', 100, 'sale-1', 'Product X');
+
+      expect(walletUpdateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ workspaceId: 'ws-1' }),
+        }),
+      );
+    });
+  });
+
+  describe('requestAnticipation', () => {
+    const mockAnticipationWallet = {
+      id: 'wallet-1',
+      workspaceId: 'ws-1',
+      availableBalance: 1000,
+      pendingBalance: 2000,
+      blockedBalance: 100,
+      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    };
+
+    beforeEach(() => {
+      prismaMock.kloelWallet.findUnique.mockResolvedValue(mockAnticipationWallet);
+      prismaMock.kloelWallet.updateMany.mockResolvedValue({ count: 1 });
+    });
+
+    it('moves amount from pending to available minus fee, creates anticipation record and ledger entries', async () => {
+      const txCreate = jest.fn().mockResolvedValue({ id: 'tx-anticipation-1' });
+      const anticipationCreate = jest.fn().mockResolvedValue({ id: 'ant-1' });
+      prismaMock.$transaction.mockImplementation(async (cb: Function) => {
+        return cb({
+          kloelWallet: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
+          kloelWalletTransaction: { create: txCreate },
+          walletAnticipation: { create: anticipationCreate },
+        });
+      });
+
+      const result = await service.requestAnticipation('ws-1', 1000);
+
+      expect(result.success).toBe(true);
+      expect(result.originalAmount).toBe(1000);
+      expect(result.feePercent).toBe(3.0);
+      expect(result.feeAmount).toBe(30);
+      expect(result.netAmount).toBe(970);
+      expect(result.transactionId).toBe('tx-anticipation-1');
+
+      // Ledger entries: debit pending (full amount), credit available (net).
+      expect(walletLedger.appendWithinTx).toHaveBeenCalledTimes(2);
+      const debitCall = walletLedger.appendWithinTx.mock.calls[0][1];
+      expect(debitCall.direction).toBe('debit');
+      expect(debitCall.bucket).toBe('pending');
+      expect(debitCall.amountInCents).toBe(BigInt(100000));
+      const creditCall = walletLedger.appendWithinTx.mock.calls[1][1];
+      expect(creditCall.direction).toBe('credit');
+      expect(creditCall.bucket).toBe('available');
+      // net = 1000 - 30 = 970 => 97000 cents
+      expect(creditCall.amountInCents).toBe(BigInt(97000));
+
+      // Anticipation record persisted.
+      expect(anticipationCreate).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          workspaceId: 'ws-1',
+          originalAmount: 1000,
+          feePercent: 3.0,
+          feeAmount: 30,
+          netAmount: 970,
+          status: 'COMPLETED',
+          transactionId: 'tx-anticipation-1',
+        }),
+      });
+    });
+
+    it('rejects invalid amount (zero, negative, non-finite)', async () => {
+      await expect(service.requestAnticipation('ws-1', 0)).resolves.toEqual({
+        success: false,
+        message: 'Valor de antecipação inválido.',
+      });
+      await expect(service.requestAnticipation('ws-1', -50)).resolves.toEqual({
+        success: false,
+        message: 'Valor de antecipação inválido.',
+      });
+      await expect(service.requestAnticipation('ws-1', NaN)).resolves.toEqual({
+        success: false,
+        message: 'Valor de antecipação inválido.',
+      });
+    });
+
+    it('rejects when pending balance is insufficient', async () => {
+      prismaMock.kloelWallet.findUnique.mockResolvedValue({
+        ...mockAnticipationWallet,
+        pendingBalance: 100,
+      });
+
+      const result = await service.requestAnticipation('ws-1', 500);
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('Saldo pendente insuficiente');
+    });
+
+    it('dual-writes Float + BigInt cents to wallet (I11)', async () => {
+      const walletUpdateMany = jest.fn().mockResolvedValue({ count: 1 });
+      prismaMock.$transaction.mockImplementation(async (cb: Function) => {
+        return cb({
+          kloelWallet: { updateMany: walletUpdateMany },
+          kloelWalletTransaction: { create: jest.fn().mockResolvedValue({ id: 'tx-1' }) },
+          walletAnticipation: { create: jest.fn().mockResolvedValue({ id: 'ant-1' }) },
+        });
+      });
+
+      await service.requestAnticipation('ws-1', 500);
+
+      // 3% fee on 500 = 15, net = 485
+      expect(walletUpdateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: {
+            pendingBalance: { decrement: 500 },
+            availableBalance: { increment: 485 },
+            pendingBalanceInCents: { decrement: BigInt(50000) },
+            availableBalanceInCents: { increment: BigInt(48500) },
+          },
+        }),
+      );
+    });
+
+    it('uses custom fee percent', async () => {
+      prismaMock.$transaction.mockImplementation(async (cb: Function) => {
+        return cb({
+          kloelWallet: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
+          kloelWalletTransaction: { create: jest.fn().mockResolvedValue({ id: 'tx-1' }) },
+          walletAnticipation: { create: jest.fn().mockResolvedValue({ id: 'ant-1' }) },
+        });
+      });
+
+      const result = await service.requestAnticipation('ws-1', 1000, undefined, 5.0);
+
+      expect(result.feePercent).toBe(5.0);
+      expect(result.feeAmount).toBe(50);
+      expect(result.netAmount).toBe(950);
+    });
+
+    it('accepts installments parameter', async () => {
+      const anticipationCreate = jest.fn().mockResolvedValue({ id: 'ant-1' });
+      prismaMock.$transaction.mockImplementation(async (cb: Function) => {
+        return cb({
+          kloelWallet: { updateMany: jest.fn().mockResolvedValue({ count: 1 }) },
+          kloelWalletTransaction: { create: jest.fn().mockResolvedValue({ id: 'tx-1' }) },
+          walletAnticipation: { create: anticipationCreate },
+        });
+      });
+
+      const result = await service.requestAnticipation('ws-1', 1000, 3);
+
+      expect(result.success).toBe(true);
+      expect(anticipationCreate).toHaveBeenCalledWith({
+        data: expect.objectContaining({ installments: 3 }),
+      });
+    });
+
+    it('throws when wallet is not found', async () => {
+      prismaMock.kloelWallet.findUnique.mockResolvedValue(null);
+
+      await expect(service.requestAnticipation('ws-missing', 500)).rejects.toThrow(
+        'KloelWallet not found',
+      );
+    });
+
+    it('throws ConcurrentWalletUpdateError when optimistic lock fails', async () => {
+      prismaMock.$transaction.mockImplementation(async (cb: Function) => {
+        return cb({
+          kloelWallet: { updateMany: jest.fn().mockResolvedValue({ count: 0 }) },
+          kloelWalletTransaction: { create: jest.fn() },
+          walletAnticipation: { create: jest.fn() },
+        });
+      });
+
+      await expect(service.requestAnticipation('ws-1', 500)).rejects.toThrow(
+        'KloelWallet modified concurrently',
+      );
+    });
+
+    it('cross-tenant isolation: updateMany where scoped to workspaceId', async () => {
+      const walletUpdateMany = jest.fn().mockResolvedValue({ count: 1 });
+      prismaMock.$transaction.mockImplementation(async (cb: Function) => {
+        return cb({
+          kloelWallet: { updateMany: walletUpdateMany },
+          kloelWalletTransaction: { create: jest.fn().mockResolvedValue({ id: 'tx-1' }) },
+          walletAnticipation: { create: jest.fn().mockResolvedValue({ id: 'ant-1' }) },
+        });
+      });
+
+      await service.requestAnticipation('ws-1', 500);
 
       expect(walletUpdateMany).toHaveBeenCalledWith(
         expect.objectContaining({

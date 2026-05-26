@@ -12,12 +12,9 @@ jest.mock('./helpers/plan.helpers', () => ({
 }));
 
 import { ProductCheckoutController } from './product-checkout.controller';
-import {
-  ensureWorkspaceProductAccess,
-  getWorkspaceId,
-  safeStr,
-} from './helpers/common.helpers';
+import { ensureWorkspaceProductAccess, getWorkspaceId, safeStr } from './helpers/common.helpers';
 import { buildCheckoutData, serializeCheckout } from './helpers/plan.helpers';
+import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
 const ensureWorkspaceProductAccessMock = ensureWorkspaceProductAccess as jest.Mock;
 const getWorkspaceIdMock = getWorkspaceId as jest.Mock;
@@ -26,10 +23,7 @@ const buildCheckoutDataMock = buildCheckoutData as jest.Mock;
 const serializeCheckoutMock = serializeCheckout as jest.Mock;
 
 describe('ProductCheckoutController', () => {
-  const findMany = jest.fn();
-  const create = jest.fn();
-  const findFirstRow = jest.fn();
-  const deleteRow = jest.fn();
+  let prismaMock: ReturnType<typeof createPartialPrismaMock>;
 
   const txFindFirst = jest.fn();
   const txUpdate = jest.fn();
@@ -38,21 +32,16 @@ describe('ProductCheckoutController', () => {
     productCheckout: { findFirst: txFindFirst, update: txUpdate },
   };
 
-  const prismaMock = {
-    productCheckout: {
-      findMany,
-      create,
-      findFirst: findFirstRow,
-      delete: deleteRow,
-    },
-    $transaction: jest.fn().mockImplementation((cb: (tx: typeof txClient) => unknown) => cb(txClient)),
-  };
-
   const auditMock = { log: jest.fn() };
 
   let controller: ProductCheckoutController;
 
   beforeEach(() => {
+    prismaMock = createPartialPrismaMock({
+      productCheckout: ['findMany', 'create', 'findFirst', 'delete'],
+    });
+    (prismaMock as any).$transaction = jest.fn().mockImplementation((cb: any) => cb(txClient));
+
     jest.clearAllMocks();
     getWorkspaceIdMock.mockReturnValue('ws-1');
     safeStrMock.mockImplementation((v: unknown, fb = '') => (typeof v === 'string' ? v : fb));
@@ -60,18 +49,25 @@ describe('ProductCheckoutController', () => {
     serializeCheckoutMock.mockImplementation((c: Record<string, unknown>) => c);
 
     ensureWorkspaceProductAccessMock.mockResolvedValue(undefined);
-    create.mockResolvedValue({ id: 'co-1', productId: 'p-1', name: 'Checkout 1' });
-    findMany.mockResolvedValue([{ id: 'co-1', productId: 'p-1', name: 'Checkout 1' }]);
-    findFirstRow.mockResolvedValue({ id: 'co-1', productId: 'p-1', name: 'Checkout 1' });
-    deleteRow.mockResolvedValue({ id: 'co-1' });
+    prismaMock.productCheckout.create.mockResolvedValue({
+      id: 'co-1',
+      productId: 'p-1',
+      name: 'Checkout 1',
+    });
+    prismaMock.productCheckout.findMany.mockResolvedValue([
+      { id: 'co-1', productId: 'p-1', name: 'Checkout 1' },
+    ]);
+    prismaMock.productCheckout.findFirst.mockResolvedValue({
+      id: 'co-1',
+      productId: 'p-1',
+      name: 'Checkout 1',
+    });
+    prismaMock.productCheckout.delete.mockResolvedValue({ id: 'co-1' });
     txFindFirst.mockResolvedValue({ id: 'co-1', productId: 'p-1', name: 'Checkout 1' });
     txUpdate.mockResolvedValue({ id: 'co-1', productId: 'p-1', name: 'Updated' });
     auditMock.log.mockResolvedValue(undefined);
 
-    controller = new ProductCheckoutController(
-      prismaMock as never,
-      auditMock as never,
-    );
+    controller = new ProductCheckoutController(prismaMock as never, auditMock as never);
   });
 
   describe('list', () => {
@@ -80,12 +76,8 @@ describe('ProductCheckoutController', () => {
 
       const result = await controller.list('p-1', req);
 
-      expect(ensureWorkspaceProductAccessMock).toHaveBeenCalledWith(
-        prismaMock,
-        'p-1',
-        'ws-1',
-      );
-      expect(findMany).toHaveBeenCalledWith({
+      expect(ensureWorkspaceProductAccessMock).toHaveBeenCalledWith(prismaMock, 'p-1', 'ws-1');
+      expect(prismaMock.productCheckout.findMany).toHaveBeenCalledWith({
         where: { productId: 'p-1' },
         orderBy: { createdAt: 'desc' },
         take: 100,
@@ -102,14 +94,10 @@ describe('ProductCheckoutController', () => {
 
       const result = await controller.create('p-1', body, req);
 
-      expect(ensureWorkspaceProductAccessMock).toHaveBeenCalledWith(
-        prismaMock,
-        'p-1',
-        'ws-1',
-      );
+      expect(ensureWorkspaceProductAccessMock).toHaveBeenCalledWith(prismaMock, 'p-1', 'ws-1');
       expect(buildCheckoutDataMock).toHaveBeenCalledWith(body);
-      expect(create).toHaveBeenCalledTimes(1);
-      const createCall = create.mock.calls[0][0];
+      expect(prismaMock.productCheckout.create).toHaveBeenCalledTimes(1);
+      const createCall = prismaMock.productCheckout.create.mock.calls[0][0];
       expect(createCall.data.productId).toBe('p-1');
       expect(serializeCheckoutMock).toHaveBeenCalledTimes(1);
       expect(result).toMatchObject({ id: 'co-1' });
@@ -123,19 +111,16 @@ describe('ProductCheckoutController', () => {
 
       const result = await controller.update('p-1', 'co-1', body, req);
 
-      expect(ensureWorkspaceProductAccessMock).toHaveBeenCalledWith(
-        prismaMock,
-        'p-1',
-        'ws-1',
-      );
+      expect(ensureWorkspaceProductAccessMock).toHaveBeenCalledWith(prismaMock, 'p-1', 'ws-1');
       expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);
       expect(txFindFirst).toHaveBeenCalledWith({
         where: { id: 'co-1', productId: 'p-1' },
       });
-      expect(buildCheckoutDataMock).toHaveBeenCalledWith(
-        body,
-        { id: 'co-1', productId: 'p-1', name: 'Checkout 1' },
-      );
+      expect(buildCheckoutDataMock).toHaveBeenCalledWith(body, {
+        id: 'co-1',
+        productId: 'p-1',
+        name: 'Checkout 1',
+      });
       expect(txUpdate).toHaveBeenCalledTimes(1);
       expect(serializeCheckoutMock).toHaveBeenCalledTimes(1);
       expect(result).toMatchObject({ id: 'co-1', name: 'Updated' });
@@ -157,12 +142,8 @@ describe('ProductCheckoutController', () => {
 
       await controller.delete('p-1', 'co-1', req);
 
-      expect(ensureWorkspaceProductAccessMock).toHaveBeenCalledWith(
-        prismaMock,
-        'p-1',
-        'ws-1',
-      );
-      expect(findFirstRow).toHaveBeenCalledWith({
+      expect(ensureWorkspaceProductAccessMock).toHaveBeenCalledWith(prismaMock, 'p-1', 'ws-1');
+      expect(prismaMock.productCheckout.findFirst).toHaveBeenCalledWith({
         where: { id: 'co-1', productId: 'p-1' },
       });
       expect(auditMock.log).toHaveBeenCalledWith({
@@ -172,16 +153,14 @@ describe('ProductCheckoutController', () => {
         resourceId: 'co-1',
         details: { deletedBy: 'user', productId: 'p-1' },
       });
-      expect(deleteRow).toHaveBeenCalledWith({ where: { id: 'co-1' } });
+      expect(prismaMock.productCheckout.delete).toHaveBeenCalledWith({ where: { id: 'co-1' } });
     });
 
     it('propagates NotFoundException when checkout does not exist', async () => {
-      findFirstRow.mockResolvedValue(null);
+      prismaMock.productCheckout.findFirst.mockResolvedValue(null);
       const req = { user: { sub: 'u-1', workspaceId: 'ws-1' }, headers: {} } as never;
 
-      await expect(controller.delete('p-1', 'co-missing', req)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(controller.delete('p-1', 'co-missing', req)).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -192,11 +171,7 @@ describe('ProductCheckoutController', () => {
       await controller.list('p-1', req);
 
       expect(getWorkspaceIdMock).toHaveBeenCalledWith(req);
-      expect(ensureWorkspaceProductAccessMock).toHaveBeenCalledWith(
-        prismaMock,
-        'p-1',
-        'ws-1',
-      );
+      expect(ensureWorkspaceProductAccessMock).toHaveBeenCalledWith(prismaMock, 'p-1', 'ws-1');
     });
   });
 
@@ -207,13 +182,11 @@ describe('ProductCheckoutController', () => {
       );
       const req = { user: { sub: 'u-1', workspaceId: 'ws-1' }, headers: {} } as never;
 
-      await expect(controller.list('p-1', req)).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(controller.list('p-1', req)).rejects.toThrow(NotFoundException);
     });
 
     it('rejects when prisma findMany throws', async () => {
-      findMany.mockRejectedValueOnce(new Error('DB error'));
+      prismaMock.productCheckout.findMany.mockRejectedValueOnce(new Error('DB error'));
       const req = { user: { sub: 'u-1', workspaceId: 'ws-1' }, headers: {} } as never;
 
       await expect(controller.list('p-1', req)).rejects.toThrow('DB error');

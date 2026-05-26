@@ -20,16 +20,7 @@ import { CreateEventDto } from './dto/create-event.dto';
 import { ListEventsQueryDto } from './dto/list-events-query.dto';
 
 import { RouteClass } from '../common/throttler/route-class.decorator';
-function parseDateOrFail(raw: string | undefined, label: string): Date | undefined {
-  if (!raw) {
-    return undefined;
-  }
-  const parsed = new Date(raw);
-  if (isNaN(parsed.getTime())) {
-    throw new BadRequestException(`Invalid ${label}`);
-  }
-  return parsed;
-}
+import { parseDateOrFail } from '../common/parse-date-or-fail.helper';
 
 /** Calendar controller. */
 @ApiTags('Calendar')

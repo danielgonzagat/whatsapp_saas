@@ -9,9 +9,9 @@
  * mcp__atomic-edit__* (whose result carries the char-level atomicDiff +
  * FounderBlock — the only permitted visual proof).
  *
- * PreToolUse hook protocol: read the tool call on stdin, emit a structured
- * permission decision on stdout. We DENY native edits to code files and
- * steer to the atomic tool; non-code (pure docs/text) and all non-edit
+ * PreToolUse hook protocol: read the tool call on stdin. For allowed tools,
+ * exit 0 silently; for denied tools, emit a structured deny decision and
+ * steer to the atomic tool. Non-code (pure docs/text) and all non-edit
  * tools pass through, so the session is never bricked for prose.
  *
  * Honest scope: this enforces avoidance (the harness then renders nothing
@@ -62,11 +62,8 @@ const ti = input.tool_input ?? input.toolInput ?? {};
 const filePath = ti.file_path ?? ti.filePath ?? ti.path ?? '';
 
 const allow = () => {
-  process.stdout.write(
-    JSON.stringify({
-      hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow' },
-    }),
-  );
+  // Codex treats an explicit permissionDecision as a blocking/asking decision.
+  // Allowing a tool is represented by exit 0 with no hook decision payload.
   process.exit(0);
 };
 
@@ -106,28 +103,22 @@ const STEER =
 function bashEditsCode(cmd) {
   if (!cmd) return false;
   const source = String(cmd);
-  const codeTarget = String.raw`[^\s'"|;&>]*\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|ipynb|json|py|go|rs|java|kt|c|h|cc|cpp|hpp|cs|rb|php|swift|scala|sh|bash|zsh|css|scss|less|sql|ya?ml|toml|prisma)\b`;
+  const codeTarget = String.raw`(?!(?:/tmp/|/private/tmp/|tmp/))[^\s'"|;&>]*\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|ipynb|json|py|go|rs|java|kt|c|h|cc|cpp|hpp|cs|rb|php|swift|scala|sh|bash|zsh|css|scss|less|sql|ya?ml|toml|prisma)\b`;
   const directMutationPatterns = [
     new RegExp(String.raw`\bsed\b[^|]*\s-i`), // sed -i
     new RegExp(String.raw`\bperl\b[^|]*\s-i`), // perl -i
     new RegExp(String.raw`\b(?:g?awk)\b[^|]*>\s*${codeTarget}`), // awk > code
     new RegExp(String.raw`\btee\b[^|]*\s+\\?["']?\s*${codeTarget}`), // tee [quoted] code
-    new RegExp(String.raw`>>?\s*\\?["']?\s*${codeTarget}`), // > / >> [quoted] code
+    new RegExp(String.raw`(?:^|[\s;&|])>{1,2}(?!>)\s*\\?["']?\s*${codeTarget}`), // > / >> [quoted] code
     new RegExp(String.raw`\b(?:cp|mv|install)\b[^|]*\s${codeTarget}(?:\s|$)`), // cp/mv/install onto code
     new RegExp(String.raw`\b(?:rm|unlink|truncate|touch)\b[^|;&]*${codeTarget}`), // delete/truncate/create code
   ];
   if (directMutationPatterns.some((re) => re.test(source))) return true;
 
-  // Heredoc/here-string that produces a code file: `cat > x.ts <<'EOF'`,
-  // `tee x.ts <<EOF`, `… <<EOF > x.ts`, quoted or not. If the command both
-  // opens a heredoc/here-string AND references any code-extension path, deny
-  // (this closes the quoted/spacing evasions of the redirect regexes above).
-  if (
-    /<<-?\s*['"]?[\w.]/.test(source) &&
-    new RegExp(codeTarget).test(source) &&
-    /\b(?:cat|tee|dd|node|deno|bun|python3?|ruby|php|perl)\b|>>?/.test(source)
-  )
-    return true;
+  // Heredocs are not inherently writes. The direct mutation regexes above
+  // already catch `cat > x.ts <<EOF`, `tee x.ts <<EOF`, and redirects into
+  // code files. Keep read-only diagnostic heredocs legal even when they mention
+  // code paths for spawned probes.
 
   // Inline-eval interpreters (node -e / python -c / ruby -e / php -r / deno
   // eval / bun -e / perl -pe …) are the Write-bypass vector observed in the

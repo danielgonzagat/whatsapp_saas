@@ -33,11 +33,11 @@ afterEach(() => {
   mockPathname = '/marketing/whatsapp';
 });
 
-describe('MarketingView — five-channel PreviewBar (canonical anexo contract)', () => {
-  it('renders exactly five channel buttons (lowercase tokens, CSS uppercase-transformed)', () => {
+describe('MarketingView — six-channel PreviewBar (canonical anexo contract)', () => {
+  it('renders exactly six channel buttons (lowercase tokens, CSS uppercase-transformed)', () => {
     render(<MarketingView defaultTab="whatsapp" />);
     // The reference JSX uses lowercase tokens with CSS text-transform.
-    for (const k of ['whatsapp', 'instagram', 'tiktok', 'facebook', 'email']) {
+    for (const k of ['whatsapp', 'instagram', 'tiktok', 'google-ads', 'facebook', 'email']) {
       expect(screen.getByText(k)).toBeTruthy();
     }
     // Conversas must not appear (spec §15).

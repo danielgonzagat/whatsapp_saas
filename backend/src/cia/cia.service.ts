@@ -43,6 +43,7 @@ export class CiaService {
       mindLift,
       metaConnections,
       integrations,
+      pipelineState,
     ] = await Promise.all([
       this.runtime.getOperationalIntelligence(workspaceId),
       this.getHumanTasks(workspaceId),
@@ -64,6 +65,10 @@ export class CiaService {
         where: { workspaceId, isActive: true },
         select: { type: true },
       }),
+      this.prisma.pipelineState.findUnique({
+        where: { workspaceId },
+        select: { state: true },
+      }),
     ]);
     const recent = this.agentEvents.getRecent(workspaceId).slice(-12);
     const latest = recent[recent.length - 1] || null;
@@ -72,14 +77,22 @@ export class CiaService {
     const activeChannels = new Set<string>();
     if (metaConnections && metaConnections.length > 0) {
       for (const mc of metaConnections) {
-        if (mc.whatsappPhoneNumberId) activeChannels.add('whatsapp');
-        if (mc.instagramAccountId) activeChannels.add('instagram');
-        if (mc.pageId) activeChannels.add('facebook');
+        if (mc.whatsappPhoneNumberId) {
+          activeChannels.add('whatsapp');
+        }
+        if (mc.instagramAccountId) {
+          activeChannels.add('instagram');
+        }
+        if (mc.pageId) {
+          activeChannels.add('facebook');
+        }
       }
     }
     for (const integration of integrations) {
       const lower = integration.type.toLowerCase();
-      if (lower === 'instagram') activeChannels.add('instagram');
+      if (lower === 'instagram') {
+        activeChannels.add('instagram');
+      }
     }
 
     const channels = [...activeChannels];
@@ -100,9 +113,9 @@ export class CiaService {
       workspaceName: intelligence.workspaceName,
       state: intelligence.runtime?.state || 'IDLE',
       today: {
-        soldAmount: this.readNumber(businessState.approvedSalesAmount),
-        activeConversations: this.readNumber(businessState.openBacklog),
-        pendingPayments: this.readNumber(businessState.pendingPaymentCount),
+        soldAmount: readNumberForce(businessState.approvedSalesAmount),
+        activeConversations: readNumberForce(businessState.openBacklog),
+        pendingPayments: readNumberForce(businessState.pendingPaymentCount),
       },
       now: latest
         ? {
@@ -135,6 +148,9 @@ export class CiaService {
             pZScore: mindLift.pZScore,
           }
         : null,
+      commercial: {
+        pipelineMode: (pipelineState?.state ?? 'legacy') as 'shadow' | 'active' | 'legacy',
+      },
     };
   }
 
@@ -558,7 +574,4 @@ export class CiaService {
     return typeof value === 'string' ? value : '';
   }
 
-  private readNumber(value: unknown): number {
-    return readNumberForce(value);
-  }
 }

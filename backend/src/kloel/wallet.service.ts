@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { formatBrlAmount } from './money-format.util';
 import { WalletLedgerService } from './wallet-ledger.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { getWalletBalance, getWalletTransactionHistory } from './wallet.read.helpers';
 
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 // All dates stored as UTC via Prisma DateTime (toISOString)
@@ -41,13 +42,7 @@ export class WalletService {
    * 💰 Obtém saldo do workspace
    */
   async getBalance(workspaceId: string) {
-    const wallet = await this.getOrCreateWallet(workspaceId);
-    return {
-      available: wallet.availableBalance,
-      pending: wallet.pendingBalance,
-      blocked: wallet.blockedBalance,
-      total: wallet.availableBalance + wallet.pendingBalance + wallet.blockedBalance,
-    };
+    return getWalletBalance(this.prisma, workspaceId);
   }
 
   /**
@@ -365,36 +360,150 @@ export class WalletService {
   }
 
   /**
+   * ⏩ Solicita antecipação de recebíveis.
+   *
+   * Moves the requested amount from `pendingBalance` to `availableBalance`
+   * minus the anticipation fee. The fee is deducted from the merchant's
+   * pending receivables as the cost of early settlement.
+   *
+   * Confirmation is required — the controller creates an `approvalRequest`
+   * with `state: 'OPEN'` before calling this method with an already-approved
+   * request id, matching the withdrawal flow.
+   */
+  async requestAnticipation(
+    workspaceId: string,
+    amount: number,
+    installments?: number,
+    feePercent = 3.0,
+  ) {
+    if (!amount || amount <= 0 || !Number.isFinite(amount)) {
+      return { success: false, message: 'Valor de antecipação inválido.' };
+    }
+
+    const wallet = await this.getWalletOrThrow(workspaceId);
+
+    if (wallet.pendingBalance < amount) {
+      return {
+        success: false,
+        message: `Saldo pendente insuficiente para antecipação. Disponível: ${formatBrlAmount(wallet.pendingBalance)}`,
+      };
+    }
+
+    // Integer-cent arithmetic for I11 dual-write.
+    const amountInCents = Math.round(amount * 100);
+    if (!Number.isSafeInteger(amountInCents) || amountInCents <= 0) {
+      throw new Error(`Invalid anticipation amount: ${amount}`);
+    }
+
+    const feeAmount = Math.round((amount * feePercent) / 100 * 100) / 100;
+    const feeAmountInCents = Math.round((amountInCents * feePercent) / 100);
+    const netAmount = amount - feeAmount;
+    const netAmountInCents = BigInt(amountInCents) - BigInt(feeAmountInCents);
+
+    let transaction: { id: string };
+    try {
+      transaction = await this.prisma.$transaction(
+        async (tx: Prisma.TransactionClient) => {
+          // Move the full amount out of pending, credit net to available.
+          // The fee is effectively retained by Kloel (not credited to available).
+          const moved = await tx.kloelWallet.updateMany({
+            where: { id: wallet.id, workspaceId, updatedAt: wallet.updatedAt },
+            data: {
+              pendingBalance: { decrement: amount },
+              availableBalance: { increment: netAmount },
+              pendingBalanceInCents: { decrement: BigInt(amountInCents) },
+              availableBalanceInCents: { increment: netAmountInCents },
+            },
+          });
+          if (moved.count === 0) {
+            throw new ConcurrentWalletUpdateError();
+          }
+
+          const created = await tx.kloelWalletTransaction.create({
+            data: {
+              walletId: wallet.id,
+              type: 'anticipation',
+              amount: netAmount,
+              amountInCents: netAmountInCents,
+              description: `Antecipação de recebíveis (taxa ${feePercent}%)`,
+              status: 'completed',
+              metadata: {
+                originalAmount: amount,
+                feePercent,
+                feeAmount,
+                netAmount,
+                installments: installments ?? null,
+                anticipationType: 'pending_settlement',
+              } as Prisma.InputJsonValue,
+            },
+          });
+
+          // Persist the anticipation record for reporting.
+          await tx.walletAnticipation.create({
+            data: {
+              workspaceId,
+              originalAmount: amount,
+              feePercent,
+              feeAmount,
+              netAmount,
+              installments: installments ?? null,
+              status: 'COMPLETED',
+              transactionId: created.id,
+            },
+          });
+
+          // I12 — ledger entries: debit pending for the full amount,
+          // credit available for the net (fee is not credited).
+          await this.walletLedger.appendWithinTx(tx, {
+            workspaceId,
+            walletId: wallet.id,
+            transactionId: created.id,
+            direction: 'debit',
+            bucket: 'pending',
+            amountInCents: BigInt(amountInCents),
+            reason: 'withdrawal_debit',
+            metadata: { anticipation: true, feePercent, feeAmountInCents },
+          });
+          await this.walletLedger.appendWithinTx(tx, {
+            workspaceId,
+            walletId: wallet.id,
+            transactionId: created.id,
+            direction: 'credit',
+            bucket: 'available',
+            amountInCents: netAmountInCents,
+            reason: 'confirm_payment_credit',
+            metadata: { anticipation: true },
+          });
+
+          return created;
+        },
+        { isolationLevel: 'ReadCommitted' },
+      );
+    } catch (err: unknown) {
+      void this.opsAlert?.alertOnCriticalError(err, 'WalletService.requestAnticipation');
+      this.financialAlert.withdrawalFailed(
+        err instanceof Error ? err : new Error(String(err)),
+        { workspaceId, amount },
+      );
+      throw err;
+    }
+
+    return {
+      success: true,
+      message: 'Antecipação realizada com sucesso.',
+      transactionId: transaction.id,
+      originalAmount: amount,
+      feePercent,
+      feeAmount,
+      netAmount,
+    };
+  }
+
+  /**
    * 📊 Histórico de transações
    */
   async getTransactionHistory(workspaceId: string, page = 1, limit = 20, type?: string) {
-    const where: Record<string, unknown> = { wallet: { workspaceId } };
-    if (type) {
-      where.type = type;
-    }
-
-    const [transactions, total] = await Promise.all([
-      this.prisma.kloelWalletTransaction.findMany({
-        where,
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: { createdAt: 'desc' },
-        select: {
-          id: true,
-          walletId: true,
-          type: true,
-          amount: true,
-          description: true,
-          status: true,
-          reference: true,
-          metadata: true,
-          createdAt: true,
-        },
-      }),
-      this.prisma.kloelWalletTransaction.count({ where }),
-    ]);
-
-    return { transactions, total };
+    return getWalletTransactionHistory(this.prisma, workspaceId, page, limit, type);
   }
 
   /**
@@ -557,16 +666,4 @@ export class WalletService {
     return wallet;
   }
 
-  private async getOrCreateWallet(workspaceId: string) {
-    return this.prisma.kloelWallet.upsert({
-      where: { workspaceId },
-      update: {},
-      create: {
-        workspaceId,
-        availableBalance: 0,
-        pendingBalance: 0,
-        blockedBalance: 0,
-      },
-    });
-  }
 }

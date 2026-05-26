@@ -1,10 +1,11 @@
-import { Injectable, Logger, NotFoundException, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, OnModuleDestroy, Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AgentEventsService } from '../whatsapp/agent-events.service';
 import { CiaBacklogRunService } from './cia-backlog-run.service';
 import { CiaBootstrapService } from './cia-bootstrap.service';
 import { CiaRuntimeStateService } from './cia-runtime-state.service';
 import { asProviderSettings } from '../whatsapp/provider-settings.types';
+import { MindBackgroundScheduler } from '../kloel/mind/mind-bg.scheduler';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 
 /** Cia runtime service — orchestrates bootstrap, backlog, and live autonomy. */
@@ -24,6 +25,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     private readonly runtimeState: CiaRuntimeStateService,
     private readonly bootstrapService: CiaBootstrapService,
     private readonly backlogRunService: CiaBacklogRunService,
+    @Optional() private readonly mindScheduler?: MindBackgroundScheduler,
   ) {}
 
   /** On module destroy. */
@@ -199,6 +201,14 @@ export class CiaRuntimeService implements OnModuleDestroy {
 
   /** Pause autonomy. */
   async pauseAutonomy(workspaceId: string) {
+    try {
+      this.mindScheduler?.deregisterWorkspace(workspaceId);
+    } catch (err: unknown) {
+      this.logger.warn(
+        `MIND tick deregistration failed for ws ${workspaceId}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { providerSettings: true },

@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { KloelChatToolsService } from './kloel-chat-tools.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { ProductService } from '../products/product.service';
 import { SmartPaymentService } from './smart-payment.service';
 import {
   AgentRuntimeSchedulerService,
@@ -26,9 +27,22 @@ export type ChatToolsPrismaMock = {
   $transaction: jest.Mock;
 };
 
+export type ProductServiceMock = {
+  create: jest.Mock;
+  update: jest.Mock;
+  get: jest.Mock;
+  findById: jest.Mock;
+  list: jest.Mock;
+  delete: jest.Mock;
+  setImage: jest.Mock;
+  publish: jest.Mock;
+  toggleAvailability: jest.Mock;
+};
+
 export type ChatToolsSetup = {
   service: KloelChatToolsService;
   prisma: ChatToolsPrismaMock;
+  productService: ProductServiceMock;
   smartPayment: Pick<SmartPaymentService, 'createSmartPayment'>;
   agentScheduler: {
     upsertJob: jest.Mock;
@@ -131,6 +145,24 @@ export async function setupChatToolsService(): Promise<ChatToolsSetup> {
     }),
   };
 
+  function mockProductServiceFactory() {
+    return {
+      create: jest.fn().mockResolvedValue({
+        success: true,
+        product: { id: 'prod-1', name: 'Test', price: 99, active: true, format: 'DIGITAL' },
+      }),
+      update: jest.fn().mockResolvedValue({ success: true, product: { id: 'prod-1' } }),
+      get: jest.fn().mockResolvedValue({ success: true, product: { id: 'prod-1' } }),
+      findById: jest.fn().mockResolvedValue({ id: 'prod-1' }),
+      list: jest.fn().mockResolvedValue({ success: true, products: [], count: 0 }),
+      delete: jest.fn().mockResolvedValue({ success: true, message: 'Deleted' }),
+      setImage: jest.fn().mockResolvedValue({ success: true }),
+      publish: jest.fn().mockResolvedValue({ success: true }),
+      toggleAvailability: jest.fn().mockResolvedValue({ success: true }),
+    };
+  }
+  const mockProductService = mockProductServiceFactory();
+
   const agentEvidence = {
     add: jest.fn().mockResolvedValue({
       id: 'ev_1',
@@ -152,6 +184,7 @@ export async function setupChatToolsService(): Promise<ChatToolsSetup> {
       { provide: AgentRuntimeSchedulerService, useValue: agentScheduler },
       { provide: AgentRuntimeSessionStore, useValue: agentSessions },
       { provide: AgentRuntimeSkillRegistry, useValue: agentSkills },
+      { provide: ProductService, useValue: mockProductService },
       { provide: AgentRuntimeEvidenceStoreService, useValue: agentEvidence },
     ],
   }).compile();
@@ -161,6 +194,7 @@ export async function setupChatToolsService(): Promise<ChatToolsSetup> {
   return {
     service,
     prisma,
+    productService: mockProductService,
     smartPayment,
     agentScheduler,
     agentSessions,

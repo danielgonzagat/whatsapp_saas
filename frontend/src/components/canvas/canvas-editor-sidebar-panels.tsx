@@ -75,9 +75,9 @@ export function SidebarPanels({
           <p style={panelHeading}>{kloelT(`Modelos`)}</p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
             {TEMPLATE_TAGS.map((tag) => (
-              <button type="button" key={tag} style={pillStyle}>
+              <span key={tag} style={{ ...pillStyle, cursor: 'default' }}>
                 {tag}
-              </button>
+              </span>
             ))}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>

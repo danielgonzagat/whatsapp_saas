@@ -170,20 +170,30 @@ describe('KloelChatToolsService', () => {
   });
 
   describe('toolCreatePaymentLink', () => {
-    it('delegates to SmartPaymentService', async () => {
+    it('delegates to SmartPaymentService in production mode', async () => {
+      const originalNodeEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'production';
       smartPayment.createSmartPayment = jest.fn().mockResolvedValue({
         paymentUrl: 'https://pay.test/checkout',
       });
 
-      const result = await service.toolCreatePaymentLink(wsId, {
-        amount: 99.9,
-        description: 'Produto Teste',
-      });
+      try {
+        const result = await service.toolCreatePaymentLink(wsId, {
+          amount: 99.9,
+          description: 'Produto Teste',
+        });
 
-      expect(result.success).toBe(true);
-      expect(smartPayment.createSmartPayment).toHaveBeenCalledWith(
-        expect.objectContaining({ workspaceId: wsId, amount: 99.9 }),
-      );
+        expect(result.success).toBe(true);
+        expect(smartPayment.createSmartPayment).toHaveBeenCalledWith(
+          expect.objectContaining({ workspaceId: wsId, amount: 99.9 }),
+        );
+      } finally {
+        if (originalNodeEnv === undefined) {
+          delete process.env.NODE_ENV;
+        } else {
+          process.env.NODE_ENV = originalNodeEnv;
+        }
+      }
     });
   });
 

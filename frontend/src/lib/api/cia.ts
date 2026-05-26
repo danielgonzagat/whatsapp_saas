@@ -80,6 +80,10 @@ export interface CiaSurfaceResponse {
   runtime?: Record<string, unknown> | null;
   /** Autonomy property. */
   autonomy?: Record<string, unknown> | null;
+  /** Commercial pipeline mode. */
+  commercial?: {
+    pipelineMode: 'shadow' | 'active' | 'legacy';
+  };
 }
 
 /** Cia cognitive highlight shape. */

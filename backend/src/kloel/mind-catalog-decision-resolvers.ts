@@ -1,5 +1,5 @@
 import { resolveCaseMemoryAction, type CaseMemoryLookup } from './mind-case-memory-decision.helper';
-import type { MindPolicyService } from './mind-policy.service';
+import type { MindPolicyChooser } from './mind-policy.service';
 import {
   TONE_OPTIONS,
   resolveAggressivenessBaseline,
@@ -10,11 +10,14 @@ import {
   resolveToneBaseline,
 } from './mind-decision-baselines';
 
-export type MindPolicyChooser = Pick<MindPolicyService, 'choose'>;
+export type { MindPolicyChooser };
 
-type PolicyDecisionResult = Awaited<ReturnType<MindPolicyChooser['choose']>>;
+export type PolicyDecisionResult = Awaited<ReturnType<MindPolicyChooser['choose']>>;
 
-function decisionConfidence(result: PolicyDecisionResult): number {
+/** Extracts the beliefMean of the chosen action (or first candidate as fallback)
+ *  for a MindPolicyService.choose() result. Exported so peer mind decision
+ *  resolvers (commercial/recovery) consume the same confidence-extraction logic. */
+export function decisionConfidence(result: PolicyDecisionResult): number {
   return (
     result.decision.candidates.find((candidate) => candidate.action === result.chosen)
       ?.beliefMean ??
@@ -174,7 +177,9 @@ export async function resolveMessageFormatDecision(
       predicate: 'P(reply|message_type,hour,channel,concept)',
       context: { channel, concept, message_type: format },
     })),
-    ...(baseline !== undefined ? { baseline: options.includes(baseline) ? baseline : options[0] } : {}),
+    ...(baseline !== undefined
+      ? { baseline: options.includes(baseline) ? baseline : options[0] }
+      : {}),
     outcomeKey: `message_format:${workspaceId}:${Date.now()}`,
   });
 
@@ -203,7 +208,9 @@ export async function resolveObjectionResponseDecision(
     'human_transfer',
   ];
   const context: Record<string, unknown> = { channel, concept, priceBand };
-  if (product) context.product = product;
+  if (product) {
+    context.product = product;
+  }
   const memoryAction = await resolveCaseMemoryAction(cases, {
     workspaceId,
     caseType: 'objection_response',

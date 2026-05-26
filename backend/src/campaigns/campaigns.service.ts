@@ -303,7 +303,7 @@ export class CampaignsService {
         missing.push('email.enabled=true com provider configurado');
       }
       if (!delivery.whatsappReady) {
-        missing.push('whatsappApiSession.status=connected');
+        missing.push('Meta Cloud WhatsApp conectado');
       }
     }
 
@@ -318,10 +318,19 @@ export class CampaignsService {
     emailReady: boolean;
     whatsappReady: boolean;
   }> {
-    const ws = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { providerSettings: true },
-    });
+    const [ws, metaConnection] = await Promise.all([
+      this.prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { providerSettings: true },
+      }),
+      this.prisma.metaConnection.findFirst({
+        where: {
+          workspaceId,
+          channel: 'whatsapp',
+        },
+        select: { whatsappPhoneNumberId: true, status: true, tokenExpiresAt: true },
+      }),
+    ]);
 
     const settings =
       (ws?.providerSettings as {
@@ -333,9 +342,18 @@ export class CampaignsService {
       process.env.RESEND_API_KEY || process.env.SENDGRID_API_KEY || process.env.SMTP_HOST,
     );
     const emailReady = Boolean(settings.email?.enabled && emailProviderReady);
-    const whatsappReady = Boolean(
+    const tokenExpiresAt = metaConnection?.tokenExpiresAt;
+    const tokenExpired = Boolean(tokenExpiresAt && new Date(tokenExpiresAt).getTime() < Date.now());
+    const legacyWhatsAppReady = Boolean(
       this.metaWhatsApp && settings?.whatsappApiSession?.status === 'connected',
     );
+    const officialMetaWhatsAppReady = Boolean(
+      this.metaWhatsApp &&
+      metaConnection?.whatsappPhoneNumberId &&
+      String(metaConnection.status || '').toLowerCase() === 'connected' &&
+      !tokenExpired,
+    );
+    const whatsappReady = legacyWhatsAppReady || officialMetaWhatsAppReady;
 
     return { emailReady, whatsappReady };
   }
@@ -357,7 +375,7 @@ export class CampaignsService {
     await forEachSequential(
       Array.from({ length: Math.max(1, Math.min(variants, 10)) }),
       async (_, i) => {
-        const mutatedMessage = await this.mutateCopy(base.messageTemplate, i);
+        const mutatedMessage = await this.mutateCopy(base.messageTemplate, i, workspaceId, base.id);
         const variant = await this.prisma.campaign.create({
           data: {
             name: `${base.name} - Var ${i + 1}`,
@@ -463,7 +481,12 @@ export class CampaignsService {
   /**
    * Gera mutação simples da copy via OpenAI; fallback embaralha CTA.
    */
-  private async mutateCopy(base: string, idx: number): Promise<string> {
+  private async mutateCopy(
+    base: string,
+    idx: number,
+    workspaceId?: string,
+    campaignId?: string,
+  ): Promise<string> {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey || !base) {
       return `${base || ''} [variante ${idx + 1} com CTA: responda SIM agora]`;
@@ -476,12 +499,32 @@ Reescreva a mensagem abaixo para WhatsApp, mantendo intenção mas testando vari
     } de copy. Seja conciso, amigável e inclua CTA direto.
 Mensagem original: """${base}"""
 Retorne apenas a nova mensagem.`;
-    // tokenBudget: non-workspace context, budget tracked at caller level
+    const model = resolveBackendOpenAIModel('writer');
+    // Per WAVE3_LLM_PROMPT_AUDIT critical gap #7: cap output + log decision.
     const completion = await chatCompletionWithRetry(client, {
-      model: resolveBackendOpenAIModel('writer'),
+      model,
       messages: [{ role: 'user', content: prompt }],
+      max_tokens: 400, // single WhatsApp message variant
     });
-    return completion.choices[0]?.message?.content || base;
+    const variant = completion.choices[0]?.message?.content?.trim() || base;
+    // Output validation: refuse outputs that grew >3x original or come back empty —
+    // model hallucinated a long block instead of a single message.
+    const validated =
+      variant.length > 0 && variant.length <= Math.max(base.length * 3, 280) ? variant : base;
+    // Structured decision log (no PII; just lengths + token usage).
+    this.logger.log('Campaign copy variant generated', {
+      context: 'CampaignsService.mutateCopy',
+      ...(workspaceId ? { workspaceId } : {}),
+      ...(campaignId ? { campaignId } : {}),
+      idx,
+      model,
+      baseLength: base.length,
+      variantLength: variant.length,
+      validatedLength: validated.length,
+      validatedFallback: validated !== variant,
+      tokensTotal: completion?.usage?.total_tokens ?? null,
+    });
+    return validated;
   }
 
   /** Pause. */

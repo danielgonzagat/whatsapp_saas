@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-05-18T17:03:16.667Z",
+  "generatedAt": "2026-05-23T23:43:58.960Z",
   "actorProfiles": [
     "synthetic-customer",
     "synthetic-operator",
@@ -105,5 +105,5 @@
       "passedScenarios": 0
     }
   ],
-  "runId": "b90c8ab9-fdcf-4cf3-b037-ae68d7770f39"
+  "runId": "4aaf6fe2-6be8-48ac-a562-7313a117a352"
 }

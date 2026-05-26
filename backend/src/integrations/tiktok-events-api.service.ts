@@ -1,9 +1,9 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
-import * as crypto from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { decryptTikTokToken } from './tiktok-token-crypto';
 import { tiktokCredentialWhere } from './tiktok-ads.helpers';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { hashPii } from './pii-hash.helper';
 
 interface TikTokUserData {
   email?: string;
@@ -60,17 +60,6 @@ interface TikTokTrackResponse {
   code?: number;
   message?: string;
   request_id?: string;
-}
-
-function hashPii(value: string | undefined | null): string {
-  if (!value) {
-    return '';
-  }
-  const normalized = String(value).trim().toLowerCase();
-  if (!normalized) {
-    return '';
-  }
-  return crypto.createHash('sha256').update(normalized).digest('hex');
 }
 
 function buildUserDataPayload(userData: TikTokUserData): Record<string, string> {

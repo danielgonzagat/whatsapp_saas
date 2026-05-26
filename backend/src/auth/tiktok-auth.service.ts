@@ -65,15 +65,7 @@ type TikTokAccessTokenInput = {
   refreshExpiresInSeconds?: number | null;
 };
 
-function sanitizeTikTokError(error: unknown): string {
-  if (error instanceof Error && error.message.trim()) {
-    return error.message.trim();
-  }
-  if (typeof error === 'string' && error.trim()) {
-    return error.trim();
-  }
-  return 'unknown_error';
-}
+import { sanitizeAuthError as sanitizeTikTokError } from './sanitize-auth-error.helper';
 
 /** Maximum provider ID length before ReDoS-safe truncation. */
 const MAX_PROVIDER_ID_LENGTH = 100;

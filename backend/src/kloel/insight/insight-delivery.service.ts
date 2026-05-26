@@ -26,7 +26,9 @@ const STAGE_CHANNEL_FILTER: Readonly<Record<
   otimizacao: ['dashboard', 'report'],
 };
 
-function channelPriority(channel: RecommendedChannel): number {
+/** Stable delivery-channel priority (whatsapp > email > dashboard > report > silent).
+ *  Exported so peer delivery services (offer/...) consume the same ranking. */
+export function channelPriority(channel: RecommendedChannel): number {
   switch (channel) {
     case 'whatsapp':
       return 5;

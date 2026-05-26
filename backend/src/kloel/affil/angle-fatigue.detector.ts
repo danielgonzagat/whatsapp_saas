@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { AngleFatigue } from './types';
+import { clamp } from '../../common/math';
 
 interface AngleFatigueInput {
   readonly angleId: string;
@@ -15,10 +16,6 @@ const FATIGUE_HIGH_THRESHOLD = 0.7;
 const FATIGUE_MODERATE_THRESHOLD = 0.4;
 const CTR_WEIGHT = 0.6;
 const CONV_WEIGHT = 0.4;
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
-}
 
 @Injectable()
 export class AngleFatigueDetectorService {

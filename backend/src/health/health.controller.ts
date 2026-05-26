@@ -1,4 +1,5 @@
 import { Controller, Get, HttpCode, HttpStatus, Param, Res, UseGuards } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/public.decorator';
@@ -9,6 +10,7 @@ import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator
 import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 
 /** Health controller. */
+@ApiTags('Health')
 @Controller('health')
 @RouteClass('read')
 export class HealthController {
@@ -18,6 +20,8 @@ export class HealthController {
   ) {}
 
   /** Liveness probe — public, always 200 if process is up. */
+  @ApiOperation({ summary: 'Liveness probe — returns 200 if the process is running' })
+  @ApiResponse({ status: 200, description: 'Process is alive' })
   @Public()
   @Get('liveness')
   @HttpCode(HttpStatus.OK)
@@ -30,6 +34,9 @@ export class HealthController {
   }
 
   /** Readiness probe — public, returns 200 if all critical deps reachable. */
+  @ApiOperation({ summary: 'Readiness probe — checks all critical dependencies' })
+  @ApiResponse({ status: 200, description: 'All dependencies are reachable' })
+  @ApiResponse({ status: 503, description: 'One or more dependencies are down' })
   @Public()
   @Get('readiness')
   async readiness(@Res({ passthrough: true }) res: Response) {
@@ -61,6 +68,8 @@ export class HealthController {
   }
 
   /** Deep diagnostic — admin only, includes detailed metrics. */
+  @ApiOperation({ summary: 'Deep diagnostic — admin-only health check with detailed metrics' })
+  @ApiResponse({ status: 200, description: 'Diagnostic results' })
   @InternalEndpoint('health deep diagnostic')
   @Get('deep')
   @UseGuards(JwtAuthGuard)
@@ -69,6 +78,8 @@ export class HealthController {
   }
 
   /** System health — public runtime dependencies and queue state. */
+  @ApiOperation({ summary: 'System health — public runtime dependencies and queue state' })
+  @ApiResponse({ status: 200, description: 'System health status' })
   @Public()
   @Get('system')
   async system() {
@@ -76,6 +87,8 @@ export class HealthController {
   }
 
   /** Get health. */
+  @ApiOperation({ summary: 'Workspace-scoped health check' })
+  @ApiResponse({ status: 200, description: 'Workspace health status' })
   @WebhookEndpoint('External health check endpoint')
   @Get(':workspaceId')
   @UseGuards(JwtAuthGuard)

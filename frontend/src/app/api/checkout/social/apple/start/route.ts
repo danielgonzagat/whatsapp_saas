@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { writeCheckoutAppleState, type CheckoutAppleState } from '../state';
+import { readAppleClientId } from '../../../../_lib/apple-auth';
 
 function normalizeRelativePath(value: string | null): string {
   const raw = String(value || '').trim();
@@ -13,12 +14,6 @@ function appendError(returnTo: string, origin: string, reason: string): URL {
   const destination = new URL(returnTo, origin);
   destination.searchParams.set('apple_social_error', reason);
   return destination;
-}
-
-function readAppleClientId(): string {
-  return (
-    process.env.APPLE_CLIENT_ID?.trim() || process.env.NEXT_PUBLIC_APPLE_CLIENT_ID?.trim() || ''
-  );
 }
 
 /** Start checkout Apple social capture. */

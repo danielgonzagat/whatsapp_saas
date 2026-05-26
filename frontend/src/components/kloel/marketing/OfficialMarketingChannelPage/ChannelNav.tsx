@@ -9,7 +9,7 @@ interface Props {
 export function ChannelNav({ channel }: Props) {
   return (
     <nav style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 28 }}>
-      {(['whatsapp', 'instagram', 'facebook', 'tiktok', 'email'] as ChannelKey[]).map((item) => (
+      {(['whatsapp', 'instagram', 'facebook', 'tiktok', 'google-ads', 'email'] as ChannelKey[]).map((item) => (
         <Link
           key={item}
           href={`/marketing/${item}`}

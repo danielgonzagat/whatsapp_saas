@@ -1,9 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import {
-  Optional,
-  ServiceUnavailableException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Optional, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
@@ -11,6 +7,7 @@ import type { Redis } from 'ioredis';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { assertAgentCanAuthenticate, buildAuthLogMessage } from './auth.helpers';
+import { hashOpaqueToken } from './auth-service.helpers';
 import { DbInitErrorService } from './db-init-error.service';
 import { getJwtExpiresIn } from './jwt-config';
 
@@ -194,6 +191,8 @@ export class AuthTokenService {
 
   /** Validate a refresh token, revoke it, and issue a new pair. */
   async refresh(refreshToken: string) {
+    const tokenHash = hashOpaqueToken(refreshToken);
+
     let stored: Prisma.RefreshTokenGetPayload<{ include: { agent: true } }> | null;
     let revokedFirst = false;
     try {
@@ -232,30 +231,107 @@ export class AuthTokenService {
         { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
       );
     } catch (error: unknown) {
+      this.logger.error(
+        buildAuthLogMessage('refresh_token_db_transaction_failed', {
+          tokenHash,
+          error: error instanceof Error ? error.message : String(error),
+        }),
+      );
       void this.opsAlert?.alertOnCriticalError(error, 'AuthTokenService.refresh');
-      DbInitErrorService.throwFriendlyDbInitError(error);
+      try {
+        DbInitErrorService.throwFriendlyDbInitError(error);
+      } catch (dbError: unknown) {
+        if (dbError instanceof ServiceUnavailableException) {
+          throw dbError;
+        }
+        throw new ServiceUnavailableException(
+          'Serviço indisponível. Erro ao acessar banco de dados.',
+        );
+      }
     }
 
-    if (
-      !stored ||
-      (!revokedFirst && stored.revoked) ||
-      !stored.agent ||
-      stored.expiresAt.getTime() < Date.now()
-    ) {
-      if (stored?.revoked && stored.agent && !revokedFirst) {
-        // Replay attempt of an already-revoked token: defensively revoke any
-        // remaining active tokens for the agent.
-        await this.prisma.refreshToken.updateMany({
-          where: { agentId: stored.agent.id, revoked: false },
-          data: { revoked: true },
-        });
-        this.logger.warn(`Revoked refresh token replay detected for agent ${stored.agent.id}`);
-      }
+    if (!stored) {
+      this.logger.warn(buildAuthLogMessage('refresh_token_not_found', { tokenHash }));
       throw new UnauthorizedException('Refresh token inválido ou expirado');
     }
 
-    assertAgentCanAuthenticate(stored.agent);
-    return this.issueTokens(stored.agent);
+    if (!stored.agent) {
+      this.logger.error(
+        buildAuthLogMessage('refresh_token_agent_missing', {
+          tokenHash,
+          tokenId: stored.id,
+        }),
+      );
+      throw new UnauthorizedException('Refresh token inválido ou expirado');
+    }
+
+    if (!revokedFirst && stored.revoked) {
+      // Token was revoked before or during our transaction (replay or race loss).
+      // Defensively revoke remaining active tokens for the agent.
+      this.prisma.refreshToken
+        .updateMany({
+          where: { agentId: stored.agent.id, revoked: false },
+          data: { revoked: true },
+        })
+        .catch(() => {});
+      this.logger.warn(
+        buildAuthLogMessage('refresh_token_replay_or_race', {
+          tokenHash,
+          agentId: stored.agent.id,
+          workspaceId: stored.agent.workspaceId,
+        }),
+      );
+      throw new UnauthorizedException('Refresh token inválido ou expirado');
+    }
+
+    if (stored.expiresAt.getTime() < Date.now()) {
+      this.logger.warn(
+        buildAuthLogMessage('refresh_token_expired', {
+          tokenHash,
+          agentId: stored.agent.id,
+          workspaceId: stored.agent.workspaceId,
+        }),
+      );
+      throw new UnauthorizedException('Refresh token expirado');
+    }
+
+    try {
+      assertAgentCanAuthenticate(stored.agent);
+    } catch (error) {
+      this.logger.warn(
+        buildAuthLogMessage('refresh_token_agent_invalid', {
+          tokenHash,
+          agentId: stored.agent.id,
+          workspaceId: stored.agent.workspaceId,
+        }),
+      );
+      throw error;
+    }
+
+    try {
+      const result = await this.issueTokens(stored.agent);
+      this.logger.log(
+        buildAuthLogMessage('refresh_token_success', {
+          agentId: stored.agent.id,
+          workspaceId: stored.agent.workspaceId,
+        }),
+      );
+      return result;
+    } catch (error: unknown) {
+      this.logger.error(
+        buildAuthLogMessage('refresh_token_issue_failed', {
+          tokenHash,
+          agentId: stored.agent.id,
+          workspaceId: stored.agent.workspaceId,
+          error: error instanceof Error ? error.message : String(error),
+        }),
+      );
+      void this.opsAlert?.alertOnCriticalError(error, 'AuthTokenService.refresh.issueTokens');
+      if (error instanceof UnauthorizedException || error instanceof ServiceUnavailableException) {
+        throw error;
+      }
+      throw new ServiceUnavailableException('Serviço indisponível. Erro ao emitir novos tokens.');
+    }
   }
 
   /** Blacklist an access token JTI so it cannot be reused before natural expiry. */

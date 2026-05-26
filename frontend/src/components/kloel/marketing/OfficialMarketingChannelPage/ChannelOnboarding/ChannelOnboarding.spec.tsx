@@ -50,7 +50,7 @@ describe('palette (spec §11/§12)', () => {
   });
 
   it('every channel has the four textual elements (spec §10)', () => {
-    for (const key of ['whatsapp', 'instagram', 'tiktok', 'facebook', 'email'] as const) {
+    for (const key of ['whatsapp', 'instagram', 'tiktok', 'google-ads', 'facebook', 'email'] as const) {
       const c = CHANNEL_COPY[key];
       expect(c.provider).toBe(c.provider.toUpperCase());
       expect(c.provider.length).toBeGreaterThan(0);
@@ -163,7 +163,7 @@ describe('step vignettes wired by props', () => {
         onContinue={onContinue}
       />,
     );
-
+    expect(screen.getByText(/R\$\s*197/)).toBeTruthy();
     const save = screen.getByRole('button', { name: /Salvar produtos/ });
     expect(save).toBeDisabled();
     fireEvent.click(screen.getByText('Alpha'));
@@ -199,13 +199,7 @@ describe('step vignettes wired by props', () => {
   it('StepArsenal reports count and forwards picked files', () => {
     const onAddFiles = vi.fn();
     const { container, rerender } = render(
-      <StepArsenal
-        C={D}
-        count={0}
-        onAddFiles={onAddFiles}
-        onBack={vi.fn()}
-        onContinue={vi.fn()}
-      />,
+      <StepArsenal C={D} count={0} onAddFiles={onAddFiles} onBack={vi.fn()} onContinue={vi.fn()} />,
     );
     expect(screen.getByText(/Pular esta camada/)).toBeTruthy();
     const input = container.querySelector('input[type="file"]') as HTMLInputElement;
@@ -213,13 +207,7 @@ describe('step vignettes wired by props', () => {
     fireEvent.change(input, { target: { files: [file] } });
     expect(onAddFiles).toHaveBeenCalled();
     rerender(
-      <StepArsenal
-        C={D}
-        count={2}
-        onAddFiles={onAddFiles}
-        onBack={vi.fn()}
-        onContinue={vi.fn()}
-      />,
+      <StepArsenal C={D} count={2} onAddFiles={onAddFiles} onBack={vi.fn()} onContinue={vi.fn()} />,
     );
     expect(screen.getByText(/2 provas carregadas/)).toBeTruthy();
   });

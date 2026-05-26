@@ -45,8 +45,12 @@ describe('BillingWebhookService', () => {
     constructEventMock.mockReset();
     config = {
       get: jest.fn((key: string) => {
-        if (key === 'STRIPE_SECRET_KEY') return 'sk_test_fake';
-        if (key === 'STRIPE_WEBHOOK_SECRET') return 'whsec_fake';
+        if (key === 'STRIPE_SECRET_KEY') {
+          return 'sk_test_fake';
+        }
+        if (key === 'STRIPE_WEBHOOK_SECRET') {
+          return 'whsec_fake';
+        }
         return undefined;
       }),
     };

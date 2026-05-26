@@ -1,16 +1,10 @@
+import { safeStr } from '../../common/string';
+
 /** Resolved whats app provider type. */
 export type ResolvedWhatsAppProvider = 'meta-cloud' | 'whatsapp-api';
 
 function normalizeProviderToken(value: unknown): string {
-  return (
-    typeof value === 'string'
-      ? value
-      : typeof value === 'number' || typeof value === 'boolean'
-        ? String(value)
-        : ''
-  )
-    .trim()
-    .toLowerCase();
+  return safeStr(value).trim().toLowerCase();
 }
 
 /** Normalize whats app provider. */

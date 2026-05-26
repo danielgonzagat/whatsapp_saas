@@ -73,14 +73,20 @@ export class FlowOptimizerService {
         { role: 'user', content: prompt },
       ],
       response_format: { type: 'json_object' },
+      max_tokens: 256,
     });
 
+    const tokens = completion?.usage?.total_tokens ?? 500;
+    const rawSuggestion = completion.choices[0]?.message?.content || '{}';
+    this.logger.log(
+      `flow-optimizer ws=${workspaceId} model=brain baseLen=${prompt.length} outLen=${rawSuggestion.length} tokens=${tokens}`,
+    );
     await this.planLimits
-      .trackAiUsage(workspaceId, completion?.usage?.total_tokens ?? 500)
+      .trackAiUsage(workspaceId, tokens)
       .catch(() => {});
     let suggestion: Record<string, unknown> = {};
     try {
-      const parsed = JSON.parse(completion.choices[0]?.message?.content || '{}') as unknown;
+      const parsed = JSON.parse(rawSuggestion) as unknown;
       suggestion = isSuggestionRecord(parsed) ? parsed : {};
     } catch {
       /* invalid JSON from model */

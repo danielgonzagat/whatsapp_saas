@@ -1,0 +1,57 @@
+import { safeCompareStrings } from '../utils/crypto-compare.util';
+import { sanitizeWebhookChallenge } from '../utils/webhook-challenge-response.util';
+
+/** Parameters for the Meta webhook handshake verification. */
+export interface MetaHandshakeParams {
+  /** The `hub.mode` query parameter from Meta's GET verification request. */
+  mode: string;
+  /** The `hub.verify_token` query parameter from Meta's GET verification request. */
+  token: string;
+  /** The `hub.challenge` query parameter from Meta's GET verification request. */
+  challenge: string;
+  /** The expected verify token (product-specific, sourced from ENV). */
+  expectedToken: string;
+}
+
+/** Result of Meta webhook handshake verification. */
+export interface MetaHandshakeResult {
+  /** Whether the handshake succeeded (mode === 'subscribe', token matched, challenge valid). */
+  ok: boolean;
+  /** The sanitized challenge string to echo back to Meta (only present when `ok` is true). */
+  challenge?: string;
+}
+
+/**
+ * Verify a Meta webhook subscription handshake (hub.mode / hub.verify_token / hub.challenge).
+ *
+ * Implements the Meta Graph API Webhook handshake spec:
+ * https://developers.facebook.com/docs/graph-api/webhooks/getting-started
+ *
+ * - Uses constant-time string comparison (safeCompareStrings) to prevent timing attacks.
+ * - Sanitizes the challenge value before echoing it back (alphanumeric + `_.-`, 1–200 chars).
+ *
+ * Callers are responsible for:
+ * - Sourcing `expectedToken` from the appropriate ENV variable.
+ * - Choosing their own error-handling strategy (throw vs return response).
+ * - Logging the success/failure event.
+ */
+export function verifyMetaHandshake(params: MetaHandshakeParams): MetaHandshakeResult {
+  if (params.mode !== 'subscribe') {
+    return { ok: false };
+  }
+
+  if (!params.expectedToken) {
+    return { ok: false };
+  }
+
+  if (!safeCompareStrings(params.token, params.expectedToken)) {
+    return { ok: false };
+  }
+
+  const sanitized = sanitizeWebhookChallenge(params.challenge);
+  if (!sanitized) {
+    return { ok: false };
+  }
+
+  return { ok: true, challenge: sanitized };
+}

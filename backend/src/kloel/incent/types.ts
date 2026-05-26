@@ -184,10 +184,11 @@ export interface AttributionEntry {
 }
 
 import { clamp } from '../../common/math';
+import { randomIdSegment } from '../../common/random-id';
 export { clamp };
 export function makeIncidentId(prefix: string, seq: number): string {
   const ts = Date.now().toString(36);
-  const rnd = Math.random().toString(36).slice(2, 6);
+  const rnd = randomIdSegment(4);
   return `${prefix}_${ts}_${seq}_${rnd}`;
 }
 

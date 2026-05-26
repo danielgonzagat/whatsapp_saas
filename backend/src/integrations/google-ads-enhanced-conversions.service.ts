@@ -1,10 +1,10 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
-import * as crypto from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { decryptGoogleAdsToken } from './google-ads-token-crypto';
 import { googleAdsCredentialWhere } from './google-ads.helpers';
 import { getTraceHeaders } from '../common/trace-headers';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { hashPii } from './pii-hash.helper';
 
 interface EnhancedConversionUserData {
   email?: string;
@@ -55,17 +55,6 @@ interface GoogleAdsConversionPayload {
       [key: string]: unknown;
     }>;
   }>;
-}
-
-function hashPii(value: string | undefined | null): string {
-  if (!value) {
-    return '';
-  }
-  const normalized = String(value).trim().toLowerCase();
-  if (!normalized) {
-    return '';
-  }
-  return crypto.createHash('sha256').update(normalized).digest('hex');
 }
 
 @Injectable()

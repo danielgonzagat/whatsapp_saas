@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import type { OfferSwitch } from './types';
+import { clamp } from '../../common/math';
 
 interface OfferSwitchInput {
   readonly workspaceId: string;
@@ -32,10 +33,6 @@ const COMMISSION_WEIGHT = 0.3;
 const TICKET_WEIGHT = 0.15;
 const REFUND_WEIGHT = 0.1;
 const DEMAND_WEIGHT = 0.1;
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
-}
 
 @Injectable()
 export class OfferSwitchSuggesterService {

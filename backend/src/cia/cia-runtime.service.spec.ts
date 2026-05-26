@@ -43,6 +43,7 @@ describe('CiaRuntimeService', () => {
   let runtimeState: CiaRuntimeStateMock;
   let bootstrapService: CiaBootstrapMock;
   let backlogRunService: CiaBacklogRunMock;
+  let mindScheduler: { registerWorkspace: jest.Mock; deregisterWorkspace: jest.Mock };
   let service: CiaRuntimeService;
 
   beforeEach(() => {
@@ -54,6 +55,10 @@ describe('CiaRuntimeService', () => {
     redis = makeRedisMock();
     whatsappService = makeWhatsappServiceMock();
     unifiedAgent = makeUnifiedAgentMock();
+    mindScheduler = {
+      registerWorkspace: jest.fn(),
+      deregisterWorkspace: jest.fn(),
+    };
 
     runtimeState = makeCiaRuntimeStateMock(prisma, agentEvents);
     bootstrapService = makeCiaBootstrapMock(
@@ -62,6 +67,7 @@ describe('CiaRuntimeService', () => {
       agentEvents,
       runtimeState,
       catchupService,
+      mindScheduler,
     );
     backlogRunService = makeCiaBacklogRunMock(
       prisma,
@@ -83,6 +89,7 @@ describe('CiaRuntimeService', () => {
       runtimeState,
       bootstrapService,
       backlogRunService,
+      mindScheduler as never,
     );
   });
 
@@ -501,5 +508,33 @@ describe('CiaRuntimeService', () => {
         workspaceId: 'ws-1',
       }),
     );
+  });
+
+  it('deregisters the workspace from MIND tick scheduling on pauseAutonomy', async () => {
+    prisma.workspace.findUnique.mockResolvedValue({
+      providerSettings: {
+        autopilot: { enabled: true },
+        autonomy: { autoBootstrapOnConnected: true },
+        ciaRuntime: { currentRunId: 'run-99' },
+      },
+    });
+    const updateSpy = jest.spyOn(runtimeState, 'updateWorkspaceAutonomy');
+
+    const result = await service.pauseAutonomy('ws-1');
+
+    expect(mindScheduler.deregisterWorkspace).toHaveBeenCalledWith('ws-1');
+    expect(result).toEqual({ paused: true, state: 'PAUSED' });
+    expect(updateSpy).toHaveBeenCalledWith(
+      'ws-1',
+      expect.objectContaining({ mode: 'OFF', reason: 'manual_pause' }),
+    );
+    expect(agentEvents.publish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'status',
+        phase: 'paused',
+        workspaceId: 'ws-1',
+      }),
+    );
+    updateSpy.mockRestore();
   });
 });

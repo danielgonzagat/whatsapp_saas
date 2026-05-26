@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../../logging/structured-logger';
 import type { ProducerTrustInput, ProducerTrustOutput } from './affil.types';
+import { clamp } from '../../common/math';
 
 const WEIGHTS = {
   paymentReliability: 0.35,
@@ -8,10 +9,6 @@ const WEIGHTS = {
   complianceHistory: 0.25,
   communicationScore: 0.20,
 } as const;
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
-}
 
 @Injectable()
 export class ProducerTrustScorerService {

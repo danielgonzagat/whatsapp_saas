@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "eslint",
+          "informationUri": "https://eslint.org",
+          "rules": [
+            {
+              "id": "react-hooks/exhaustive-deps",
+              "helpUri": "https://eslint.org/docs/rules/react-hooks/exhaustive-deps"
+            }
+          ]
+        }
+      },
+      "invocations": [
+        {
+          "executionSuccessful": true,
+          "workingDirectory": {
+            "uri": "file:///Users/danielpenin/whatsapp_saas/frontend/"
+          }
+        }
+      ],
+      "results": [
+        {
+          "ruleId": "react-hooks/exhaustive-deps",
+          "level": "error",
+          "message": {
+            "text": "React Hook useCallback has a missing dependency: 'setMessages'. Either include it or remove the dependency array."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "frontend/src/components/kloel/dashboard/KloelDashboard.messageHandlers.ts",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 66,
+                  "startColumn": 5,
+                  "endLine": 66,
+                  "endColumn": 24
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "react-hooks/exhaustive-deps",
+          "level": "error",
+          "message": {
+            "text": "React Hook useCallback has a missing dependency: 'setMessages'. Either include it or remove the dependency array."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "frontend/src/components/kloel/dashboard/KloelDashboard.messageHandlers.ts",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 80,
+                  "startColumn": 5,
+                  "endLine": 80,
+                  "endColumn": 7
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "react-hooks/exhaustive-deps",
+          "level": "error",
+          "message": {
+            "text": "React Hook useCallback has missing dependencies: 'setIsThinking', 'setMessages', and 'setStreamingMessageId'. Either include them or remove the dependency array."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "frontend/src/components/kloel/dashboard/KloelDashboard.messageHandlers.ts",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 144,
+                  "startColumn": 5,
+                  "endLine": 144,
+                  "endColumn": 49
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "properties": {
+        "workspace": "frontend",
+        "totalFindings": 3,
+        "totalFiles": 1306
+      }
+    }
+  ]
+}

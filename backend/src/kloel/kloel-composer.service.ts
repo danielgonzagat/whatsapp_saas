@@ -14,6 +14,7 @@ import { StorageService } from '../common/storage/storage.service';
 import { getTraceHeaders } from '../common/trace-headers';
 import { resolveKloelCapabilityModel } from '../lib/ai-models';
 import { KloelComposerE2EGuard, KLOEL_COMPOSER_E2E_GUARD } from './kloel-composer-e2e-guard';
+import { callOpenAIWithRetry } from './openai-wrapper';
 const MODEL_RE = /model/i;
 const INVALID_RE = /invalid/i;
 
@@ -151,7 +152,9 @@ export class KloelComposerService {
       return this.codeNativeSearchWeb(normalizedQuery);
     }
 
-    const response = await this.openai.responses.create({
+    // Per WAVE3_LLM_PROMPT_AUDIT critical gap #8: wrap in retry helper to
+    // survive transient 429 / 5xx / network blips from the responses API.
+    const response = await callOpenAIWithRetry(() => this.openai.responses.create({
       model: KLOEL_SEARCH_WEB_MODEL,
       input: normalizedQuery,
       tools: [
@@ -167,7 +170,7 @@ export class KloelComposerService {
         },
       ],
       include: ['web_search_call.action.sources'],
-    });
+    }));
 
     const outputText = String(response.output_text || '').trim();
     const rawSources = Array.isArray(response.output)
@@ -283,7 +286,11 @@ export class KloelComposerService {
           n: 1,
         };
         const requestOptions: OpenAI.RequestOptions | undefined = signal ? { signal } : undefined;
-        response = await this.openai.images.generate(imageRequest, requestOptions);
+        // Per WAVE3_LLM_PROMPT_AUDIT critical gap #8: wrap in retry helper
+        // so transient 429/5xx don't fail the user's image-generation request.
+        response = await callOpenAIWithRetry(() =>
+          this.openai.images.generate(imageRequest, requestOptions),
+        );
       } catch (error: unknown) {
         const errorRecord = asUnknownRecord(error);
         const errorMessage = typeof errorRecord?.message === 'string' ? errorRecord.message : '';
@@ -349,42 +356,71 @@ export class KloelComposerService {
         await this.planLimits.ensureTokenBudget(workspaceId);
       }
 
-      const timeoutSignal = AbortSignal.timeout(60_000);
-      const requestSignal = composeAbortSignal(signal, timeoutSignal);
-
-      // Not SSRF: hardcoded Anthropic API endpoint
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        signal: requestSignal,
-        headers: {
-          ...getTraceHeaders(),
-          'Content-Type': 'application/json',
-          'x-api-key': process.env.ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: KLOEL_SITE_MODEL,
-          max_tokens: 4096,
-          system: [
-            'Return only valid HTML for a complete landing page.',
-            'The output must be production-grade HTML with inline CSS.',
-            'Keep the design aligned with Kloel: restrained, premium, ember accent, strong whitespace.',
-            composerContext ? `Additional runtime context:\n${composerContext}` : null,
-          ]
-            .filter(Boolean)
-            .join('\n'),
-          messages: [{ role: 'user', content: prompt }],
-        }),
+      // Anthropic site generation with retry (WAVE3_LLM_PROMPT_AUDIT WARNING fix):
+      // direct fetch had zero retry on transient failures.
+      const anthropicBody = JSON.stringify({
+        model: KLOEL_SITE_MODEL,
+        max_tokens: 4096,
+        system: [
+          'Return only valid HTML for a complete landing page.',
+          'The output must be production-grade HTML with inline CSS.',
+          'Keep the design aligned with Kloel: restrained, premium, ember accent, strong whitespace.',
+          composerContext ? `Additional runtime context:\n${composerContext}` : null,
+        ]
+          .filter(Boolean)
+          .join('\n'),
+        messages: [{ role: 'user', content: prompt }],
       });
 
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => '');
-        throw new InternalServerErrorException(
-          `Anthropic API error ${response.status}: ${errorText}`,
-        );
+      const maxRetries = 3;
+      let lastError: unknown;
+      let result: { content?: Array<{ text?: string }>; usage?: { input_tokens?: number; output_tokens?: number } } | undefined;
+
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+          const timeoutSignal = AbortSignal.timeout(60_000);
+          const requestSignal = composeAbortSignal(signal, timeoutSignal);
+          const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            signal: requestSignal,
+            headers: {
+              ...getTraceHeaders(),
+              'Content-Type': 'application/json',
+              'x-api-key': process.env.ANTHROPIC_API_KEY,
+              'anthropic-version': '2023-06-01',
+            },
+            body: anthropicBody,
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text().catch(() => '');
+            const status = response.status;
+            if (status === 429 || status >= 500) {
+              lastError = new Error(`Anthropic ${status}: ${errorText}`);
+              this.logger.warn(`Anthropic site gen attempt ${attempt + 1}/${maxRetries} failed (${status}), retrying...`);
+              await new Promise((r) => setTimeout(r, Math.pow(2, attempt) * 500));
+              continue;
+            }
+            throw new InternalServerErrorException(`Anthropic API error ${status}: ${errorText}`);
+          }
+
+          result = await response.json();
+          break;
+        } catch (err: unknown) {
+          if (err instanceof InternalServerErrorException) throw err;
+          lastError = err;
+          if (attempt < maxRetries - 1) {
+            this.logger.warn(`Anthropic site gen attempt ${attempt + 1}/${maxRetries} network error, retrying...`);
+            await new Promise((r) => setTimeout(r, Math.pow(2, attempt) * 500));
+          }
+        }
       }
 
-      const result = await response.json();
+      if (!result) {
+        throw new InternalServerErrorException(
+          `Anthropic site generation failed after ${maxRetries} attempts: ${lastError instanceof Error ? lastError.message : 'unknown'}`,
+        );
+      }
       const html = String(result?.content?.[0]?.text || '').trim();
       if (!html) {
         throw new InternalServerErrorException(ERR_SITE_EMPTY_HTML);

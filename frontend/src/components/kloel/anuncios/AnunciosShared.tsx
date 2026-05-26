@@ -3,6 +3,7 @@
 import { kloelT } from '@/lib/i18n/t';
 import { colors } from '@/lib/design-tokens';
 import { useRef, useEffect, useState } from 'react';
+import { formatBRL } from '@/lib/common/money';
 
 export const SORA = "'Sora', sans-serif";
 export const MONO = "'JetBrains Mono', monospace";
@@ -97,9 +98,7 @@ export function Fmt(v: number): string {
       : v.toString();
 }
 
-export function FmtMoney(n: number): string {
-  return `R$ ${n.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-}
+export const FmtMoney = formatBRL;
 
 export function roasColor(r: number): string {
   if (r > 4) {return G;}

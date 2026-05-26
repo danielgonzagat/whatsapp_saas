@@ -81,11 +81,7 @@ export const EXPECTED_TOOL_ALPHABET = [
 ];
 
 import { digitsOnly } from '../common/phone';
-
-/** Re-export from canonical `common/phone::digitsOnly` for legacy callers. */
-export function normalizePhone(value: string): string {
-  return digitsOnly(value);
-}
+export { digitsOnly as normalizePhone };
 
 export function normalizeChatId(value: string): string {
   const raw = String(value || '').trim();
@@ -95,11 +91,11 @@ export function normalizeChatId(value: string): string {
   if (raw.includes('@')) {
     return raw;
   }
-  return `${normalizePhone(raw)}@c.us`;
+  return `${digitsOnly(raw)}@c.us`;
 }
 
 export function phoneFromChatId(value: string): string {
-  return normalizePhone(String(value || '').split('@')[0] ?? '');
+  return digitsOnly(String(value || '').split('@')[0] ?? '');
 }
 
 export function asStr(v: unknown, fallback = ''): string {
