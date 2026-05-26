@@ -76,18 +76,9 @@ const COMPATIBLE: Record<ProducedBy, ReadonlySet<TruthModeKey>> = {
   simulation: new Set(['projected']),
 };
 
-const VALID_TRUTH_MODES: ReadonlySet<string> = new Set([
-  'observed',
-  'inferred',
-  'projected',
-]);
+const VALID_TRUTH_MODES: ReadonlySet<string> = new Set(['observed', 'inferred', 'projected']);
 
-const VALID_AUDIENCES: ReadonlySet<string> = new Set([
-  'public',
-  'technical',
-  'origin',
-  'internal',
-]);
+const VALID_AUDIENCES: ReadonlySet<string> = new Set(['public', 'technical', 'origin', 'internal']);
 
 const VALID_VALENCES: ReadonlySet<string> = new Set([
   'positive',
@@ -98,13 +89,9 @@ const VALID_VALENCES: ReadonlySet<string> = new Set([
 
 // ─── type guards ────────────────────────────────────────────────────────
 
-function isCognitiveCheck(
-  v: unknown,
-): v is TruthModeCognitiveCheck {
+function isCognitiveCheck(v: unknown): v is TruthModeCognitiveCheck {
   return (
-    typeof v === 'object' &&
-    v !== null &&
-    (v as Record<string, unknown>)['kind'] === 'cognitive'
+    typeof v === 'object' && v !== null && (v as Record<string, unknown>)['kind'] === 'cognitive'
   );
 }
 
@@ -149,7 +136,8 @@ function checkAbi(abi: TruthModeAbiCheck): Offense[] {
     if (tm === undefined || tm === '') {
       offenses.push({
         path: '$.identityProjection.truthMode',
-        detail: 'identityProjection must declare truthMode — claim without epistemic tag is dishonesty',
+        detail:
+          'identityProjection must declare truthMode — claim without epistemic tag is dishonesty',
       });
     } else if (!VALID_TRUTH_MODES.has(tm)) {
       offenses.push({
@@ -174,13 +162,15 @@ function checkAbi(abi: TruthModeAbiCheck): Offense[] {
     if (abi.lineage.etymology !== undefined) {
       offenses.push({
         path: '$.lineage.etymology',
-        detail: 'etymology must not be present in audience "public" — origin spiritual never contaminates public audience (PCI.5 §4.2, PCI.4 §3.3)',
+        detail:
+          'etymology must not be present in audience "public" — origin spiritual never contaminates public audience (PCI.5 §4.2, PCI.4 §3.3)',
       });
     }
     if (abi.lineage.origin !== undefined) {
       offenses.push({
         path: '$.lineage.origin',
-        detail: 'origin must not be present in audience "public" — origin spiritual never contaminates public audience (PCI.5 §4.2, PCI.4 §3.3)',
+        detail:
+          'origin must not be present in audience "public" — origin spiritual never contaminates public audience (PCI.5 §4.2, PCI.4 §3.3)',
       });
     }
   }
@@ -194,9 +184,7 @@ function checkAbi(abi: TruthModeAbiCheck): Offense[] {
  *   (d) Terminal event without valence
  *   (e) Invalid valence value
  */
-function checkCognitionEntries(
-  entries: readonly TruthModeCognitiveEntry[],
-): Offense[] {
+function checkCognitionEntries(entries: readonly TruthModeCognitiveEntry[]): Offense[] {
   const offenses: Offense[] = [];
 
   // (c) Detect mixed truthMode per cognition key
@@ -228,11 +216,7 @@ function checkCognitionEntries(
         detail: `terminal event "${e.key}" must declare valence (PCI.5 §3.3)`,
       });
     }
-    if (
-      e.valence !== undefined &&
-      e.valence !== '' &&
-      !VALID_VALENCES.has(e.valence)
-    ) {
+    if (e.valence !== undefined && e.valence !== '' && !VALID_VALENCES.has(e.valence)) {
       offenses.push({
         path: e.path ?? `cognition.${e.key}`,
         detail: `invalid valence "${e.valence}" — must be ${[...VALID_VALENCES].join('|')}`,
@@ -275,11 +259,12 @@ export function makeTruthModeHonestyGate(
       if (allOffenses.length === 0) {
         return pass('truth-mode-honesty', mode, MEASURED_BY);
       }
+      const reason = `${allOffenses.length} truthMode dishonesty issue(s): ${allOffenses[0].detail}`;
       return fail(
         'truth-mode-honesty',
         mode,
         MEASURED_BY,
-        `${allOffenses.length} truthMode dishonesty issue(s)`,
+        reason,
         allOffenses.map((o) => ({ path: o.path, detail: o.detail })),
       );
     },

@@ -177,6 +177,7 @@ describe('truth-mode-honesty gate — NEGATIVE (FAIL)', () => {
     };
     const v = gate().check(input);
     expect(v.status).toBe('FAIL');
+    expect(v.reason).toMatch(/mixed truthModes/i);
     expect(v.evidence?.[0]?.detail).toMatch(/mixed truthModes/i);
   });
 
@@ -228,10 +229,7 @@ describe('truth-mode-honesty gate — EDGE', () => {
   });
 
   it('array of items — one FAIL, one PASS, overall FAIL', () => {
-    const v = gate().check([
-      item('observed', 'direct'),
-      item('observed', 'classifier'),
-    ]);
+    const v = gate().check([item('observed', 'direct'), item('observed', 'classifier')]);
     expect(v.status).toBe('FAIL');
     expect(v.reason).toMatch(/1 truthMode dishonesty/);
   });

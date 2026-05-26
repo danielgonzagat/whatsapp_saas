@@ -7,12 +7,10 @@ describe('guest chat action intent helpers', () => {
   it('routes URL deletion with the URL payload preserved', () => {
     const action = detectActionIntent('remove a url https://example.com/oferta no produto Serum?');
 
-    expect(action).toEqual({
-      tool: 'delete_url',
-      args: expect.objectContaining({
-        urlLabel: 'serum',
-        url: 'https://example.com/oferta',
-      }),
+    expect(action?.tool).toBe('delete_url');
+    expect(action?.args).toMatchObject({
+      urlLabel: 'serum',
+      url: 'https://example.com/oferta',
     });
   });
 
@@ -33,6 +31,9 @@ describe('guest chat action intent helpers', () => {
   });
 
   it('resolves reviews by productName with accent-tolerant fallback', async () => {
+    const productReviewFindMany = jest
+      .fn()
+      .mockResolvedValue([{ id: 'rev-1', rating: 5, comment: 'Bom' }]);
     const prisma = {
       product: {
         findFirst: jest
@@ -42,14 +43,14 @@ describe('guest chat action intent helpers', () => {
         findMany: jest.fn().mockResolvedValue([{ id: 'prod-1', name: 'Serum Facial' }]),
       },
       productReview: {
-        findMany: jest.fn().mockResolvedValue([{ id: 'rev-1', rating: 5, comment: 'Bom' }]),
+        findMany: productReviewFindMany,
       },
     } as unknown as PrismaService;
 
     const result = await runGetProductReviews(prisma, 'ws-1', { productName: 'Sérum' });
 
     expect(result.success).toBe(true);
-    expect(prisma.productReview.findMany).toHaveBeenCalledWith(
+    expect(productReviewFindMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { productId: 'prod-1' } }),
     );
   });
