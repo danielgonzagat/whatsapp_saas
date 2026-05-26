@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useState, useSyncExternalStore } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { ChannelKey } from '../../OfficialMarketingChannelPage.helpers';
 import { useOfficialMarketingChannel } from '../use-official-marketing-channel';
 import { useOnboardingPalette } from './use-onboarding-palette';
@@ -28,18 +28,6 @@ interface Props {
   initialStep?: number;
 }
 
-function subscribeInteractiveReady(_onStoreChange: () => void) {
-  return () => undefined;
-}
-
-function readInteractiveReady() {
-  return true;
-}
-
-function readServerInteractiveReady() {
-  return false;
-}
-
 /**
  * The canonical channel onboarding screen (Marketing spec). One component,
  * five channels, four steps + the awakened state. Every datum is real: it
@@ -55,12 +43,6 @@ export function ChannelOnboarding({ channel, initialStep }: Props) {
   // the backend (spec §8). Any real navigation clears it.
   const [restarted, setRestarted] = useState(false);
   const [optimisticStep, setOptimisticStep] = useState<number | null>(null);
-  const interactiveReady = useSyncExternalStore(
-    subscribeInteractiveReady,
-    readInteractiveReady,
-    readServerInteractiveReady,
-  );
-
   const backendStep = data.setup.currentStep;
   const effectiveStep = optimisticStep ?? backendStep;
   const awakened = data.completed && !restarted;
@@ -273,16 +255,7 @@ export function ChannelOnboarding({ channel, initialStep }: Props) {
           }}
         >
           <Chip C={C}>{copy.provider}</Chip>
-          {awakened ? null : (
-            <>
-              <StepBar
-                step={Math.min(glyphStep, 3)}
-                C={C}
-                {...(interactiveReady ? { onStepClick: goToStep } : {})}
-              />
-              <Chip C={C} dim>{`Passo ${Math.min(glyphStep, 3) + 1} de 4`}</Chip>
-            </>
-          )}
+          <StepBar step={Math.min(glyphStep, 3)} C={C} />
         </div>
 
         <Glyph

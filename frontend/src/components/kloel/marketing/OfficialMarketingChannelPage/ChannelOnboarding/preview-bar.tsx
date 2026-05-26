@@ -16,7 +16,6 @@ const CHANNELS: ChannelKey[] = [
   'whatsapp',
   'instagram',
   'tiktok',
-  'google-ads',
   'facebook',
   'email',
 ];

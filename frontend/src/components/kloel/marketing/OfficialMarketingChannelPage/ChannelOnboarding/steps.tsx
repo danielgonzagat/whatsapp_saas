@@ -71,21 +71,6 @@ export function StepProducts({
       sub={`${picked.length} de ${products.length} no catálogo`}
       footer={
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
-          {products.length === 0 ? (
-            <p
-              style={{
-                fontFamily: MONO,
-                fontSize: 11,
-                color: C.muted,
-                letterSpacing: 1.2,
-                textTransform: 'uppercase',
-                textAlign: 'center',
-                margin: '12px 0',
-              }}
-            >
-              Nenhum produto no catálogo ainda
-            </p>
-          ) : null}
           {products.map((p) => {
             const on = picked.includes(p.id);
             return (
@@ -148,7 +133,7 @@ export function StepProducts({
           }
           next={
             <CTA C={C} variant="ember" disabled={picked.length === 0} onClick={onContinue}>
-              Salvar produtos <Arrow />
+              Avançar <Arrow />
             </CTA>
           }
         />

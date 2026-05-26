@@ -164,8 +164,8 @@ describe('step vignettes wired by props', () => {
       />,
     );
     expect(screen.getByText(/R\$\s*197/)).toBeTruthy();
-    const save = screen.getByRole('button', { name: /Salvar produtos/ });
-    expect(save).toBeDisabled();
+    const next = screen.getByRole('button', { name: /Avançar/ });
+    expect(next).toBeDisabled();
     fireEvent.click(screen.getByText('Alpha'));
     expect(onToggle).toHaveBeenCalledWith('p1');
     rerender(
@@ -178,11 +178,11 @@ describe('step vignettes wired by props', () => {
         onContinue={onContinue}
       />,
     );
-    fireEvent.click(screen.getByRole('button', { name: /Salvar produtos/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Avançar/ }));
     expect(onContinue).toHaveBeenCalled();
   });
 
-  it('StepProducts shows honest empty state', () => {
+  it('StepProducts keeps the snippet empty catalog surface minimal', () => {
     render(
       <StepProducts
         C={L}
@@ -193,7 +193,8 @@ describe('step vignettes wired by props', () => {
         onContinue={vi.fn()}
       />,
     );
-    expect(screen.getByText(/Nenhum produto no catálogo ainda/i)).toBeTruthy();
+    expect(screen.queryByText(/Nenhum produto no catálogo ainda/i)).toBeNull();
+    expect(screen.getByText('0 de 0 no catálogo')).toBeTruthy();
   });
 
   it('StepArsenal reports count and forwards picked files', () => {

@@ -108,6 +108,8 @@ describe('ChannelOnboarding container — palette + theme', () => {
     expect(screen.getByText('LOGIN META · OAUTH OFICIAL')).toBeTruthy();
     // Step 0 vignette ships the "Dê um corpo" headline + verb button.
     expect(screen.getByText(/Vincular número/)).toBeTruthy();
+    // The supplied diamond snippet has only provider + four traces above the glyph.
+    expect(screen.queryByText(/Passo \d+ de 4/)).toBeNull();
     // Use the resolved palette to assert the void background is in the tree.
     expect(paletteFor('dark').void).toBe('rgb(10, 10, 12)');
   });
@@ -178,7 +180,7 @@ describe('per-step rendering + handlers', () => {
     expect(screen.getByText(/R\$\s*197/)).toBeTruthy();
     fireEvent.click(screen.getByText('Alpha'));
     expect(data.toggleProduct).toHaveBeenCalledWith('p1');
-    fireEvent.click(screen.getByRole('button', { name: /Salvar produtos/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Avançar/ }));
     const [nextSetup, message] = data.persistSetup.mock.calls[0] || [];
     expect(nextSetup?.currentStep).toBe(2);
     expect(message).toBe('Produtos do canal salvos.');
