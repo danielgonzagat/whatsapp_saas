@@ -35,15 +35,40 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '../..');
 
 // Protocol availability checks
+import { execSync } from 'child_process';
+
 function checkProtocol(name, paths) {
   const exists = paths.some(p => existsSync(resolve(ROOT, p)));
   return { name, available: exists, paths: paths.filter(p => existsSync(resolve(ROOT, p))) };
 }
 
+function checkBinary(name, binary, hint) {
+  try {
+    execSync(`command -v ${binary}`, { stdio: 'pipe' });
+    return { name, available: true, paths: [`${binary} (PATH)`] };
+  } catch {
+    return { name, available: false, paths: [], hint };
+  }
+}
+
+function checkAnyOf(name, checks, hint) {
+  for (const c of checks) {
+    if (c.kind === 'path' && existsSync(resolve(ROOT, c.value))) return { name, available: true, paths: [c.value] };
+    if (c.kind === 'bin') {
+      try { execSync(`command -v ${c.value}`, { stdio: 'pipe' }); return { name, available: true, paths: [`${c.value} (PATH)`] }; } catch { /* try next */ }
+    }
+  }
+  return { name, available: false, paths: [], hint };
+}
+
 const PROTOCOLS = [
   checkProtocol('LSP (Language Server)', ['tools/lsp-mesh/lsp-router.mjs', 'tools/lsp-mesh/lsp-mesh.json']),
-  checkProtocol('DAP (Debug Adapter)', []),  // built into OMP via debug.enabled
-  checkProtocol('CDP (Chrome DevTools)', ['scripts/mcp/chrome-devtools-mcp/launcher.sh']),
+  checkAnyOf('DAP (Debug Adapter)',
+    [{ kind: 'bin', value: 'node-debug-adapter' }, { kind: 'bin', value: 'js-debug' }],
+    'Planned: spawn backend with `node --inspect` and bridge inspector protocol → DAP'),
+  checkAnyOf('CDP (Chrome DevTools)',
+    [{ kind: 'bin', value: 'chrome-devtools-mcp' }, { kind: 'path', value: 'scripts/mcp/chrome-devtools-mcp/launcher.sh' }],
+    'Install via npm i -g chrome-devtools-mcp OR wire in .mcp.json'),
   checkProtocol('OpenAPI', ['tools/openapi/openapi-spec.json']),
   checkProtocol('AsyncAPI', ['tools/asyncapi/asyncapi-spec.json']),
   checkProtocol('SARIF', ['tools/sarif/']),
