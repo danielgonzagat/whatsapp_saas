@@ -1,5 +1,4 @@
 import { Injectable, Optional } from '@nestjs/common';
-import { ProductService } from './product.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { SmartPaymentService } from './smart-payment.service';
 import {
@@ -65,6 +64,7 @@ import {
 import {
   type ToolSaveProductArgs,
   type ToolDeleteProductArgs,
+  runSaveProduct,
   runListProducts,
   runDeleteProduct,
 } from './kloel-chat-tools.products.helpers';
@@ -95,7 +95,6 @@ export function centsFromUnknown(value: unknown): number {
 @Injectable()
 export class KloelChatToolsService {
   constructor(
-    private readonly productService: ProductService,
     private readonly prisma: PrismaService,
     private readonly smartPaymentService: SmartPaymentService,
     @Optional() private readonly agentScheduler?: AgentRuntimeSchedulerService,
@@ -104,14 +103,7 @@ export class KloelChatToolsService {
     @Optional() private readonly agentEvidence?: AgentRuntimeEvidenceStoreService,
   ) {}
   toolSaveProduct(workspaceId: string, args: ToolSaveProductArgs): Promise<ToolResult> {
-    return this.productService.create(workspaceId, {
-      name: args.name,
-      description: args.description,
-      price: args.price,
-      category: args.category,
-      imageUrl: args.imageUrl,
-      format: args.format,
-    }) as Promise<ToolResult>;
+    return runSaveProduct(this.prisma, workspaceId, args);
   }
   toolListProducts(workspaceId: string): Promise<ToolResult> {
     return runListProducts(this.prisma, workspaceId);
@@ -231,8 +223,17 @@ export class KloelChatToolsService {
     args: Record<string, unknown>,
   ): Promise<ToolResult> {
     const query = typeof args.query === 'string' ? args.query : '';
-    const cleanQuery = query.replace(/^(busca|procura|pesquisa|lead|contato|cliente|comprador|compradora)(\s+(lead|contato|cliente|comprador|compradora))?\s+/i, '').trim();
-    const searchName = cleanQuery || query.replace(/\b(busca|procura|pesquisa|lead|contato|cliente|comprador|compradora)\b/gi, '').trim();
+    const cleanQuery = query
+      .replace(
+        /^(busca|procura|pesquisa|lead|contato|cliente|comprador|compradora)(\s+(lead|contato|cliente|comprador|compradora))?\s+/i,
+        '',
+      )
+      .trim();
+    const searchName =
+      cleanQuery ||
+      query
+        .replace(/\b(busca|procura|pesquisa|lead|contato|cliente|comprador|compradora)\b/gi, '')
+        .trim();
     try {
       // Search contacts by name
       const contacts = await this.prisma.contact.findMany({
@@ -243,20 +244,27 @@ export class KloelChatToolsService {
             { phone: { contains: searchName } },
           ],
         },
-        select: { id: true, name: true, phone: true, leadScore: true, sentiment: true, updatedAt: true },
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+          leadScore: true,
+          sentiment: true,
+          updatedAt: true,
+        },
         take: 10,
       });
       if (contacts.length > 0) {
         return {
           success: true,
-          contacts: contacts.map(c => ({
+          contacts: contacts.map((c) => ({
             name: c.name,
             phone: c.phone,
             score: c.leadScore || 0,
             sentiment: c.sentiment,
             lastUpdate: c.updatedAt,
           })),
-          message: `Encontrei ${contacts.length} contato(s): ${contacts.map(c => c.name).join(', ')}`,
+          message: `Encontrei ${contacts.length} contato(s): ${contacts.map((c) => c.name).join(', ')}`,
         };
       }
       // Fallback to agent memory if no contacts found
@@ -327,7 +335,10 @@ export class KloelChatToolsService {
   toolGetProductUrls(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     return runGetProductUrls(this.prisma, workspaceId, args);
   }
-  toolGetProductReviews(workspaceId: string, args: { productId?: string; productName?: string }): Promise<ToolResult> {
+  toolGetProductReviews(
+    workspaceId: string,
+    args: { productId?: string; productName?: string },
+  ): Promise<ToolResult> {
     return runGetProductReviews(this.prisma, workspaceId, args);
   }
   toolGetProductAiConfig(workspaceId: string, args: { productId: string }): Promise<ToolResult> {
@@ -360,64 +371,128 @@ export class KloelChatToolsService {
 
   // ── Novos tools para stubs → reais ──
 
-  async toolUploadPlanImage(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+  async toolUploadPlanImage(
+    workspaceId: string,
+    args: Record<string, unknown>,
+  ): Promise<ToolResult> {
     const planName = typeof args.planName === 'string' ? args.planName : '';
     const productName = typeof args.productName === 'string' ? args.productName : '';
     const imageUrl = typeof args.imageUrl === 'string' ? args.imageUrl : '';
-    if (!imageUrl) return { success: true, message: 'Envie a URL da foto do plano ou faça upload pelo chat. Ex: "foto do plano X url: https://..."' };
-    if (!planName && !productName) return { success: false, error: 'Informe o nome do plano ou do produto.' };
+    if (!imageUrl)
+      return {
+        success: true,
+        message:
+          'Envie a URL da foto do plano ou faça upload pelo chat. Ex: "foto do plano X url: https://..."',
+      };
+    if (!planName && !productName)
+      return { success: false, error: 'Informe o nome do plano ou do produto.' };
     try {
       let plan;
       if (planName) {
-        plan = await this.prisma.productPlan.findFirst({ where: { name: { contains: planName, mode: 'insensitive' }, product: { workspaceId } }, select: { id: true } });
+        plan = await this.prisma.productPlan.findFirst({
+          where: { name: { contains: planName, mode: 'insensitive' }, product: { workspaceId } },
+          select: { id: true },
+        });
       }
       if (!plan && productName) {
-        plan = await this.prisma.productPlan.findFirst({ where: { product: { workspaceId, name: { contains: productName, mode: 'insensitive' } } }, select: { id: true } });
+        plan = await this.prisma.productPlan.findFirst({
+          where: { product: { workspaceId, name: { contains: productName, mode: 'insensitive' } } },
+          select: { id: true },
+        });
       }
       if (!plan) return { success: false, error: 'Plano nao encontrado.' };
-      await this.prisma.productPlan.update({ where: { id: plan.id }, data: { checkoutImages: { main: imageUrl } as never } });
+      await this.prisma.productPlan.update({
+        where: { id: plan.id },
+        data: { checkoutImages: { main: imageUrl } as never },
+      });
       return { success: true, message: 'Foto do plano atualizada.' };
     } catch (e: unknown) {
-      return { success: false, error: e instanceof Error ? e.message : 'Erro ao atualizar foto do plano.' };
+      return {
+        success: false,
+        error: e instanceof Error ? e.message : 'Erro ao atualizar foto do plano.',
+      };
     }
   }
-  async toolUploadProductImage(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+  async toolUploadProductImage(
+    workspaceId: string,
+    args: Record<string, unknown>,
+  ): Promise<ToolResult> {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
     const imageUrl = typeof args.imageUrl === 'string' ? args.imageUrl : '';
     if (!productName) return { success: false, error: 'Informe o nome do produto.' };
-    if (!imageUrl) return { success: true, message: 'Envie a URL da imagem ou faça upload pelo chat. Ex: "imagem do produto X url: https://..."' };
+    if (!imageUrl)
+      return {
+        success: true,
+        message:
+          'Envie a URL da imagem ou faça upload pelo chat. Ex: "imagem do produto X url: https://..."',
+      };
     return runUpdateProduct(this.prisma, workspaceId, { productName, imageUrl });
   }
 
-  async toolConfigurePixel(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+  async toolConfigurePixel(
+    workspaceId: string,
+    args: Record<string, unknown>,
+  ): Promise<ToolResult> {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
-    if (!productName) return { success: true, message: 'Pixel configurado. Acesse Configurações > Pixel para inserir os códigos.' };
+    if (!productName)
+      return {
+        success: true,
+        message: 'Pixel configurado. Acesse Configurações > Pixel para inserir os códigos.',
+      };
     // Store pixel intent — actual pixel IDs need to come from Meta/Google OAuth
-    return { success: true, message: `Pixel configurado para "${productName}". Insira os códigos em Configurações > Pixel.` };
+    return {
+      success: true,
+      message: `Pixel configurado para "${productName}". Insira os códigos em Configurações > Pixel.`,
+    };
   }
 
-  async toolConfigureShipping(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+  async toolConfigureShipping(
+    workspaceId: string,
+    args: Record<string, unknown>,
+  ): Promise<ToolResult> {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
-    if (!productName) return { success: true, message: 'Frete configurado. Acesse Produto > Entrega para detalhar.' };
-    return { success: true, message: `Frete configurado para "${productName}". Acesse Produto > Entrega para definir prazos e transportadoras.` };
+    if (!productName)
+      return {
+        success: true,
+        message: 'Frete configurado. Acesse Produto > Entrega para detalhar.',
+      };
+    return {
+      success: true,
+      message: `Frete configurado para "${productName}". Acesse Produto > Entrega para definir prazos e transportadoras.`,
+    };
   }
 
-  async toolConfigureSocialProof(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+  async toolConfigureSocialProof(
+    workspaceId: string,
+    args: Record<string, unknown>,
+  ): Promise<ToolResult> {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
-    return { success: true, message: `Prova social ativada${productName ? ` para "${productName}"` : ''}. Depoimentos e contador exibidos no checkout.` };
+    return {
+      success: true,
+      message: `Prova social ativada${productName ? ` para "${productName}"` : ''}. Depoimentos e contador exibidos no checkout.`,
+    };
   }
 
-  async toolConfigureOrderBump(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+  async toolConfigureOrderBump(
+    workspaceId: string,
+    args: Record<string, unknown>,
+  ): Promise<ToolResult> {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
-    return { success: true, message: `Order bump configurado${productName ? ` para "${productName}"` : ''}. Oferta adicional no checkout.` };
+    return {
+      success: true,
+      message: `Order bump configurado${productName ? ` para "${productName}"` : ''}. Oferta adicional no checkout.`,
+    };
   }
 
-  async toolConfigureWarranty(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+  async toolConfigureWarranty(
+    workspaceId: string,
+    args: Record<string, unknown>,
+  ): Promise<ToolResult> {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
     if (productName) {
@@ -427,19 +502,34 @@ export class KloelChatToolsService {
     return { success: true, message: 'Garantia configurada. Selo exibido na página de vendas.' };
   }
 
-  async toolConfigureExitIntent(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+  async toolConfigureExitIntent(
+    workspaceId: string,
+    args: Record<string, unknown>,
+  ): Promise<ToolResult> {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
-    return { success: true, message: `Exit intent configurado${productName ? ` para "${productName}"` : ''}. Popup ao tentar sair da página.` };
+    return {
+      success: true,
+      message: `Exit intent configurado${productName ? ` para "${productName}"` : ''}. Popup ao tentar sair da página.`,
+    };
   }
 
-  async toolConfigureAfterPay(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+  async toolConfigureAfterPay(
+    workspaceId: string,
+    args: Record<string, unknown>,
+  ): Promise<ToolResult> {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
-    return { success: true, message: `After Pay configurado${productName ? ` para "${productName}"` : ''}. Cliente compra agora e paga depois.` };
+    return {
+      success: true,
+      message: `After Pay configurado${productName ? ` para "${productName}"` : ''}. Cliente compra agora e paga depois.`,
+    };
   }
 
-  async toolBrowseMarketplace(workspaceId: string, _args: Record<string, unknown>): Promise<ToolResult> {
+  async toolBrowseMarketplace(
+    workspaceId: string,
+    _args: Record<string, unknown>,
+  ): Promise<ToolResult> {
     try {
       const products = await this.prisma.product.findMany({
         where: { affiliateEnabled: true, workspaceId: { not: workspaceId } },
@@ -447,18 +537,35 @@ export class KloelChatToolsService {
         take: 20,
       });
       if (products.length === 0) {
-        return { success: true, message: 'Nenhum produto público no marketplace. Seus produtos podem ser listados ativando "Afiliação" em Produto > Afiliados.' };
+        return {
+          success: true,
+          message:
+            'Nenhum produto público no marketplace. Seus produtos podem ser listados ativando "Afiliação" em Produto > Afiliados.',
+        };
       }
-      return { success: true, products, message: `${products.length} produtos disponíveis no marketplace.` };
+      return {
+        success: true,
+        products,
+        message: `${products.length} produtos disponíveis no marketplace.`,
+      };
     } catch (e: unknown) {
-      return { success: false, error: e instanceof Error ? e.message : 'Erro ao buscar marketplace.' };
+      return {
+        success: false,
+        error: e instanceof Error ? e.message : 'Erro ao buscar marketplace.',
+      };
     }
   }
 
-  async toolSendChannelMessage(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+  async toolSendChannelMessage(
+    workspaceId: string,
+    args: Record<string, unknown>,
+  ): Promise<ToolResult> {
     void workspaceId;
     const channel = typeof args.channel === 'string' ? args.channel : 'whatsapp';
-    return { success: true, message: `Mensagem será enviada via ${channel}. Configure o canal em Configurações > Canais primeiro.` };
+    return {
+      success: true,
+      message: `Mensagem será enviada via ${channel}. Configure o canal em Configurações > Canais primeiro.`,
+    };
   }
 
   /** Create a manual sale order with full buyer data */

@@ -28,6 +28,8 @@ import { applyWisdomPriors } from './mind-policy.wisdom-prior.helpers';
 const FALLBACK_MIN_SAMPLES = 30;
 const COLD_START_THRESHOLD = 30;
 
+export type MindPolicyChooser = Pick<MindPolicyService, 'choose'>;
+
 @Injectable()
 export class MindPolicyService {
   private readonly logger = StructuredLogger.from(MindPolicyService.name);
@@ -309,18 +311,16 @@ export class MindPolicyService {
           continue;
         }
         try {
-          await this.globalPrior.recordObservation(
-            channel,
-            row.decisionType,
-            row.chosen,
-            success,
-          );
+          await this.globalPrior.recordObservation(channel, row.decisionType, row.chosen, success);
         } catch (err: unknown) {
-          this.logger.error('Failed to record global prior observation from resolveOpenForSubject', {
-            subject: input.subject,
-            decisionType: input.decisionType,
-            error: err instanceof Error ? err.message : String(err),
-          });
+          this.logger.error(
+            'Failed to record global prior observation from resolveOpenForSubject',
+            {
+              subject: input.subject,
+              decisionType: input.decisionType,
+              error: err instanceof Error ? err.message : String(err),
+            },
+          );
         }
       }
     }
