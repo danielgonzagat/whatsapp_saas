@@ -146,11 +146,28 @@ export class KloelProductSubResourceToolsService {
       if (args.active !== undefined) {
         data.active = Boolean(args.active);
       }
+      const itemsPerPlan = args.itemsPerPlan ?? args.quantity;
+      if (itemsPerPlan !== undefined) {
+        data.itemsPerPlan = this.num(itemsPerPlan);
+      }
+      if (args.maxInstallments !== undefined) {
+        data.maxInstallments = this.num(args.maxInstallments);
+      }
       const plan = await this.prisma.productPlan.update({
         where: { id: planId },
         data,
       });
-      return { success: true, plan: { id: plan.id, name: plan.name, price: plan.price } };
+      return {
+        success: true,
+        plan: {
+          id: plan.id,
+          name: plan.name,
+          price: plan.price,
+          itemsPerPlan: plan.itemsPerPlan,
+          maxInstallments: plan.maxInstallments,
+          active: plan.active,
+        },
+      };
     } catch (err: unknown) {
       return { success: false, error: err instanceof Error ? err.message : 'Erro' };
     }
@@ -255,6 +272,10 @@ export class KloelProductSubResourceToolsService {
       if (!pid) {
         return { success: false, error: 'Nenhum produto no workspace. Crie um produto primeiro.' };
       }
+      const expiresAt =
+        args.expiresInDays !== undefined
+          ? new Date(Date.now() + this.num(args.expiresInDays) * 86_400_000)
+          : undefined;
       const c = await this.prisma.productCoupon.create({
         data: {
           productId: pid,
@@ -263,6 +284,7 @@ export class KloelProductSubResourceToolsService {
           discountValue: this.num(args.discountValue),
           maxUses: this.num(args.usageLimit) || null,
           active: true,
+          ...(expiresAt ? { expiresAt } : {}),
         },
       });
       return { success: true, coupon: { id: c.id, code: c.code } };

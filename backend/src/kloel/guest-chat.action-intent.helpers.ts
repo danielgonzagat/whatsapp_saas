@@ -14,7 +14,8 @@ import {
 export function detectActionIntent(
   message: string,
 ): { tool: string; args: Record<string, unknown> } | null {
-  const msg = message.toLowerCase().trim();
+  const rawMsg = message.trim();
+  const msg = rawMsg.toLowerCase();
 
   // ── PRODUTOS ──
   if (
@@ -98,7 +99,7 @@ export function detectActionIntent(
   }
 
   if (
-    /(?:lista(?:r|ndo)?|meus|ver|mostra)\s+(?:checkouts?|p[aá]ginas?\s+(?:de\s+)?checkouts?)/.test(
+    /(?:lista(?:r|ndo)?|meus|ver|mostra)\s+(?:os\s+|as\s+|meus\s+|minhas\s+)?(?:checkouts?|p[aá]ginas?\s+(?:de\s+)?checkouts?)/.test(
       msg,
     )
   ) {
@@ -225,7 +226,7 @@ export function detectActionIntent(
 
   // ── EDITAR PLANO / CHECKOUT ──
   if (
-    /(edita(?:r|ndo)?|atualiza(?:r|ndo)?|muda(?:r|ndo)?|altera(?:r|ndo)?)\s+(?:o\s+)?(plano|checkout)/.test(
+    /\b(edita(?:r|ndo)?|atualiza(?:r|ndo)?|muda(?:r|ndo)?|altera(?:r|ndo)?|desativa(?:r|ndo)?|pausa(?:r|ndo)?|desabilita(?:r|ndo)?|ativa(?:r|ndo)?|reativa(?:r|ndo)?|restaura(?:r|ndo)?|habilita(?:r|ndo)?)\s+(?:o\s+|a\s+)?(plano|checkout)/.test(
       msg,
     )
   ) {
@@ -248,7 +249,14 @@ export function detectActionIntent(
 
   // ── GARANTIA / EXIT INTENT / AFTER PAY ──
   if (/garantia|warranty/.test(msg)) {
-    return { tool: 'configure_warranty', args: { productName: extractProductName(msg) } };
+    const warrantyDays = rawMsg.match(/(\d+)\s*dias?/i)?.[1];
+    return {
+      tool: 'configure_warranty',
+      args: {
+        productName: extractProductName(rawMsg),
+        ...(warrantyDays ? { warrantyDays: parseInt(warrantyDays, 10) } : {}),
+      },
+    };
   }
   if (/exit intent|popup.*sa[ií]da/.test(msg)) {
     return { tool: 'configure_exit_intent', args: { productName: extractProductName(msg) } };
@@ -383,9 +391,21 @@ export function detectActionIntent(
 
   // ── E-MAIL / MARKETING ──
   if (
-    /(envia(?:r|ndo)?|manda(?:r|ndo)?|dispara(?:r|ndo)?)\s+(email|campanha|broadcast)/.test(msg)
+    /(cria(?:r|ndo)?|envia(?:r|ndo)?|manda(?:r|ndo)?|dispara(?:r|ndo)?)\s+(email|campanha|broadcast)/.test(
+      msg,
+    )
   ) {
-    return { tool: 'create_broadcast', args: { name: extractProductName(msg) } };
+    const messageText = rawMsg.match(/(?:mensagem|texto|conte[uú]do)\s*:?\s*(.+)$/i)?.[1]?.trim();
+    const campaignName = rawMsg
+      .match(/(?:campanha|broadcast)\s+([A-Za-zÀ-ÿ0-9\s-]{2,50}?)(?:\s+(?:mensagem|texto|conte[uú]do)\b|$)/i)?.[1]
+      ?.trim();
+    return {
+      tool: 'create_broadcast',
+      args: {
+        name: campaignName || extractProductName(rawMsg),
+        ...(messageText ? { message: messageText } : {}),
+      },
+    };
   }
 
   // ── CÓDIGO (Meta 1 — self-code consciousness) ──

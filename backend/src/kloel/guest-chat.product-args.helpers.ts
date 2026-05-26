@@ -173,6 +173,17 @@ export function extractPlanArgs(msg: string): Record<string, unknown> {
   if (instMatch?.[1]) {
     args.maxInstallments = parseInt(instMatch[1], 10);
   }
+  // Active state
+  if (/\b(?:desativa|pausa|desabilita)(?:r|ndo)?\s+(?:o\s+|a\s+)?(?:plano|checkout)\b/i.test(msg)) {
+    args.active = false;
+  }
+  if (
+    /\b(?:ativa|reativa|restaura|habilita)(?:r|ndo)?\s+(?:o\s+|a\s+)?(?:plano|checkout)\b/i.test(
+      msg,
+    )
+  ) {
+    args.active = true;
+  }
   // Shipping
   if (/frete\s+gr[aá]tis/i.test(msg)) {
     args.shippingType = 'FREE';
