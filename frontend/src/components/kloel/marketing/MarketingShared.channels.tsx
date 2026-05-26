@@ -42,9 +42,8 @@ export function isTrustedMetaOauthUrl(value: string): boolean {
   }
 }
 
-export function Fmt(n: number) {
-  return n >= 1000 ? `${(n / 1000).toFixed(1)}K` : n.toString();
-}
+import { fmtCompact } from '@/lib/common/format';
+export const Fmt = fmtCompact;
 
 export const FmtMoney = formatBRL;
 
