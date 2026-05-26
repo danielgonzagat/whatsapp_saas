@@ -20,9 +20,8 @@ export interface ConnectAddressInput {
   cep?: string | null;
 }
 
-export function trimToUndefined(value: unknown): string | undefined {
-  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
-}
+export { readTrimmedString as trimToUndefined } from '../common/parse';
+import { readTrimmedString as trimToUndefined } from '../common/parse';
 
 export function digitsOnly(value: unknown): string | undefined {
   const raw = trimToUndefined(value);

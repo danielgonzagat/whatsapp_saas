@@ -19,13 +19,10 @@ import {
   type OnboardingStatus,
   type SubmitOnboardingProfileInput,
 } from './connect.types';
+import { readTrimmedString as trimToUndefined } from '../../common/parse';
 
 type StripeAccountCreateParams = Parameters<StripeClient['accounts']['create']>[0];
 type StripeAccountUpdateParams = Parameters<StripeClient['accounts']['update']>[1];
-
-function trimToUndefined(value: unknown): string | undefined {
-  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
-}
 
 function digitsOnly(value: unknown): string | undefined {
   const raw = trimToUndefined(value);
