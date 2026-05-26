@@ -121,6 +121,32 @@ export class AuditService {
     }
   }
 
+  /** Return the most recent audit entries for a workspace (flat list). */
+  async recentForWorkspace(workspaceId: string, limit = 20) {
+    return this.prisma.auditLog.findMany({
+      where: { workspaceId },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      include: {
+        agent: {
+          select: { name: true, email: true },
+        },
+      },
+    });
+  }
+
+  /** Get a single audit log entry by id, scoped to workspace. */
+  async findById(workspaceId: string, id: string) {
+    return this.prisma.auditLog.findFirst({
+      where: { id, workspaceId },
+      include: {
+        agent: {
+          select: { name: true, email: true },
+        },
+      },
+    });
+  }
+
   /** Get logs. */
   async getLogs(workspaceId: string, limit = 50, offset = 0) {
     const [data, total] = await Promise.all([

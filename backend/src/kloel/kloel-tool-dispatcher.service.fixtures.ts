@@ -91,7 +91,13 @@ type DispatcherCodeToolsMock = Pick<
   | 'toolBuildStatus'
 >;
 
-type DispatcherAuditMock = Pick<AuditService, 'logWithTx'>;
+type DispatcherAuditMock = Pick<AuditService, 'logWithTx' | 'recentForWorkspace' | 'findById'>;
+
+type DispatcherSelfHealthMock = { snapshot: jest.Mock };
+
+type DispatcherSelfGapsMock = { diffRegistryVsDispatcher: jest.Mock };
+
+type DispatcherCapRegistryV2Mock = { get: jest.Mock };
 
 type DispatcherOpsAlertMock = Pick<OpsAlertService, 'alertOnCriticalError'>;
 
@@ -108,6 +114,9 @@ export type {
   DispatcherAuditMock,
   DispatcherOpsAlertMock,
   DispatcherPlanLimitsMock,
+  DispatcherSelfHealthMock,
+  DispatcherSelfGapsMock,
+  DispatcherCapRegistryV2Mock,
 };
 
 const DEFAULT_WS_ID = 'ws-1';
@@ -218,6 +227,35 @@ export function createComposerMock(): DispatcherComposerMock {
 export function createAuditMock(): DispatcherAuditMock {
   return {
     logWithTx: jest.fn().mockResolvedValue(undefined),
+    recentForWorkspace: jest.fn().mockResolvedValue([]),
+    findById: jest.fn().mockResolvedValue(null),
+  };
+}
+
+export function createSelfHealthMock(): DispatcherSelfHealthMock {
+  return {
+    snapshot: jest.fn().mockResolvedValue({
+      db: 'ok',
+      redis: 'ok',
+      whatsapp: 'unknown',
+      llm: 'unknown',
+      lastChecked: new Date().toISOString(),
+    }),
+  };
+}
+
+export function createSelfGapsMock(): DispatcherSelfGapsMock {
+  return {
+    diffRegistryVsDispatcher: jest.fn().mockResolvedValue({
+      unwired: [],
+      wired: [],
+    }),
+  };
+}
+
+export function createCapRegistryV2Mock(): DispatcherCapRegistryV2Mock {
+  return {
+    get: jest.fn().mockReturnValue(undefined),
   };
 }
 

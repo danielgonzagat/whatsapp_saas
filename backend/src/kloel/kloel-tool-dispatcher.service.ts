@@ -18,6 +18,9 @@ import { PlanService } from './plan.service';
 import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service';
 import { SmartPaymentService } from './smart-payment.service';
 import { AccountService } from './account.service';
+import { SelfHealthService } from './self-awareness/self-health.service';
+import { SelfGapsService } from './self-awareness/self-gaps.service';
+import { CapabilityRegistryV2Service } from './capability-registry-v2/capability-registry-v2.service';
 import { sanitizeDetails } from './kloel-tool-dispatcher.high-risk.helpers';
 import {
   runRequestHighRiskApproval,
@@ -57,6 +60,9 @@ export class KloelToolDispatcherService {
     @Optional() private readonly smartPaymentService?: SmartPaymentService,
 
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly selfHealth?: SelfHealthService,
+    @Optional() private readonly selfGaps?: SelfGapsService,
+    @Optional() private readonly capRegistryV2?: CapabilityRegistryV2Service,
   ) {}
 
   /** Execute a named tool, delegating to the appropriate sub-service. */
@@ -101,6 +107,108 @@ export class KloelToolDispatcherService {
           return await this.chatToolsService.toolUpdateProduct(workspaceId, asToolArgs(args));
         case 'products.update':
           return this.executeTool(workspaceId, 'update_product', args, userId);
+        // ── SELF-AWARENESS (TIER-0 meta-cognitive capabilities) ──
+        case 'self.audit_log': {
+          const limit = typeof args.limit === 'number' && args.limit > 0 ? Math.min(args.limit, 100) : 20;
+          const entries = await this.auditService.recentForWorkspace(workspaceId, limit);
+          return {
+            success: true,
+            capabilityId: 'self.audit_log',
+            outputs: {
+              entries: entries.map((e) => ({
+                id: e.id,
+                actor: e.agent?.name ?? e.agentId ?? 'system',
+                capability: e.action,
+                success: true,
+                timestamp: e.createdAt.toISOString(),
+                evidenceUrl: undefined,
+              })),
+            },
+            message: `Últimas ${entries.length} ações executadas`,
+          };
+        }
+
+        case 'self.explain': {
+          const capabilityId = typeof args.capabilityId === 'string' ? args.capabilityId : '';
+          const receiptId = typeof args.lastReceiptId === 'string' ? args.lastReceiptId : undefined;
+
+          if (receiptId) {
+            const entry = await this.auditService.findById(workspaceId, receiptId);
+            if (!entry) {
+              return { success: false, error: 'receipt_not_found' };
+            }
+            return {
+              success: true,
+              capabilityId: 'self.explain',
+              outputs: {
+                id: entry.id,
+                action: entry.action,
+                resource: entry.resource,
+                inputs: (entry.details ?? {}) as Record<string, unknown>,
+                timestamp: entry.createdAt.toISOString(),
+                agent: entry.agent?.name ?? entry.agentId ?? 'system',
+              },
+              message: `Detalhes da ação ${entry.action}`,
+            };
+          }
+
+          if (!capabilityId) {
+            return { success: false, error: 'capabilityId_or_lastReceiptId_required' };
+          }
+
+          const cap = this.capRegistryV2?.get(capabilityId);
+          if (!cap) {
+            return { success: false, error: 'capability_not_found' };
+          }
+          return {
+            success: true,
+            capabilityId: 'self.explain',
+            outputs: {
+              id: cap.id,
+              title: cap.title,
+              description: cap.description,
+              tier: cap.tier,
+              category: cap.category,
+              requiresConfirmation: cap.requiresConfirmation,
+              inputSchema: cap.inputSchema,
+              surface: cap.surface,
+            },
+            message: cap.description,
+          };
+        }
+
+        case 'self.gaps': {
+          if (!this.selfGaps) {
+            return { success: false, error: 'self_gaps_service_unavailable' };
+          }
+          const result = await this.selfGaps.diffRegistryVsDispatcher();
+          return {
+            success: true,
+            capabilityId: 'self.gaps',
+            outputs: {
+              unwiredCount: result.unwired.length,
+              unwired: result.unwired.map((c) => ({
+                id: c.id,
+                title: c.title,
+                tier: c.tier,
+              })),
+            },
+            message: `${result.unwired.length} capacidades declaradas mas sem dispatcher case`,
+          };
+        }
+
+        case 'self.health': {
+          if (!this.selfHealth) {
+            return { success: false, error: 'self_health_service_unavailable' };
+          }
+          const snapshot = await this.selfHealth.snapshot(workspaceId);
+          return {
+            success: true,
+            capabilityId: 'self.health',
+            outputs: snapshot,
+          };
+        }
+
         case 'self.capabilities':
         case 'list_capabilities':
           return {
