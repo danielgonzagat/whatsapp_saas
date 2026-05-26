@@ -17,6 +17,7 @@ import { Injectable } from '@nestjs/common';
 import type { CandidatePattern, WisdomPattern } from './wisdom.types';
 import { validatePatternAttribution } from './wisdom-attribution.guard';
 import { WisdomOptService } from './wisdom-opt';
+import { secureUniform } from './wisdom-uniform.helper';
 
 export class WisdomPrivacyViolationError extends Error {
   public readonly reason: 'k_anonymity' | 'opt_out' | 'attribution_leak';
@@ -64,7 +65,9 @@ export function diffPrivacyNoise(value: number, epsilon = 1.0): number {
   const effectiveEpsilon = Math.max(0.01, epsilon);
   const scale = 1.0 / effectiveEpsilon;
 
-  const u = Math.random() - 0.5;
+  // crypto.randomBytes-backed uniform [0,1) — see wisdom-uniform.helper.ts
+  // for why Math.random() is unacceptable for differential privacy.
+  const u = secureUniform() - 0.5;
   const noise = -scale * Math.sign(u) * Math.log(1 - 2 * Math.abs(u));
 
   return value + noise;
