@@ -177,7 +177,16 @@ describe('WhatsappMessageDispatcherService', () => {
   describe('sendDirectMessage', () => {
     it('returns success when provider sends ok', async () => {
       const result = await service.sendDirectMessage('ws-1', '5511999991234', 'hello');
-      expect(result).toEqual({ success: true, result: expect.objectContaining({ ok: true }) });
+
+      expect(result).toEqual({
+        success: true,
+        result: {
+          ok: true,
+          direct: true,
+          delivery: 'sent',
+          messageId: 'wa-msg-1',
+        },
+      });
     });
 
     it('returns error when provider fails', async () => {

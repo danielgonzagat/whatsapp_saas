@@ -17,15 +17,12 @@ import { UnifiedAgentService } from './unified-agent.service';
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
 import { buildReceipt, writeOperationReceipt, buildResultMeta } from './operation-receipt.helpers';
 import { detectActionIntent, formatToolResult } from './guest-chat.action-intent.helpers';
-
 interface GuestConversation {
   messages: { role: 'user' | 'assistant'; content: string }[];
   createdAt: Date;
   lastMessageAt: Date;
 }
-
 const GUEST_CONVERSATION_TTL_SECONDS = 24 * 60 * 60;
-
 // cache.invalidate — Redis is the primary guest conversation store; local Map is fallback.
 @Injectable()
 export class GuestChatService implements OnModuleDestroy {
@@ -33,13 +30,10 @@ export class GuestChatService implements OnModuleDestroy {
   private readonly openai: OpenAI;
   private readonly unavailableMessage =
     'Eu continuo aqui, mas a camada de IA esta instavel agora. Tenta de novo em alguns segundos que eu retomo de onde paramos.';
-
   // Local fallback when Redis is temporarily unavailable.
   private conversations: Map<string, GuestConversation> = new Map();
-
   // Limpar conversas antigas a cada 1 hora
   private cleanupInterval?: NodeJS.Timeout | undefined;
-
   constructor(
     private readonly configService: ConfigService,
     @Optional() private readonly opsAlert?: OpsAlertService,
@@ -50,9 +44,7 @@ export class GuestChatService implements OnModuleDestroy {
     @Optional() private readonly toolDispatcher?: KloelToolDispatcherService,
   ) {
     const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
-
     const apiKey = this.getOpenAiKey();
-
     if (!isTestEnv) {
       this.logger.log(
         `GuestChatService initialized. API Key present: ${!!apiKey}, length: ${apiKey?.length || 0}`,
@@ -61,16 +53,13 @@ export class GuestChatService implements OnModuleDestroy {
         this.logger.error('Primary LLM API key not found! Check your .env file.');
       }
     }
-
     this.openai = createTextLlmClient(this.configService) ?? new OpenAI({ apiKey: 'missing' });
-
     // Limpar conversas inativas (mais de 24h)
     if (!isTestEnv) {
       this.cleanupInterval = setInterval(() => this.cleanupOldConversations(), 60 * 60 * 1000);
       this.cleanupInterval.unref?.();
     }
   }
-
   /** Handle file upload from chat — store file and link to product */
   async handleFileUpload(
     buffer: Buffer,
@@ -90,7 +79,6 @@ export class GuestChatService implements OnModuleDestroy {
       const filepath = path.join(uploadDir, filename);
       await fs.writeFile(filepath, buffer);
       const url = `/uploads/${workspaceId || 'guest'}/${filename}`;
-
       // If productName provided, link image to product
       if (productName && this.toolDispatcher) {
         try {
@@ -117,32 +105,27 @@ export class GuestChatService implements OnModuleDestroy {
       this.cleanupInterval = undefined;
     }
   }
-
   /** Leitura unificada da chave OpenAI (process.env → ConfigService) */
   private getOpenAiKey(): string | undefined {
     return resolveTextLlmApiKey(this.configService);
   }
-
   private writeStreamChunk(
     res: Response,
     data: { content?: string; chunk?: string; done?: boolean; error?: string },
   ) {
     res.write(`data: ${JSON.stringify(data)}\n\n`);
   }
-
   private async buildGuestMessages(message: string, sessionId: string) {
     const conversation = await this.getOrCreateConversation(sessionId);
     conversation.messages.push({ role: 'user', content: message });
     conversation.lastMessageAt = new Date();
     await this.persistConversation(sessionId, conversation);
-
     const historyMessages = conversation.messages.slice(0, -1).slice(-9);
     const currentInput = {
       raw: message,
       channel: 'web',
       arrivalTimestamp: new Date().toISOString(),
     };
-
     if (this.abiBuilder) {
       const abiResult = await this.abiBuilder.build({
         audience: 'public',
@@ -151,13 +134,11 @@ export class GuestChatService implements OnModuleDestroy {
           channel: 'web',
         },
       });
-
       if (abiResult.status !== 'ok') {
         this.logger.warn(`ABI build failed: ${abiResult.reason}, using structured guest fallback`);
       } else {
         const abi = abiResult.abi;
         const validation = validateAbiPayload(abi);
-
         if (validation.status === 'FAIL') {
           this.logger.warn(
             `ABI validation failed: ${JSON.stringify(validation.issues)}, using structured guest fallback`,
@@ -173,7 +154,6 @@ export class GuestChatService implements OnModuleDestroy {
               }),
             },
           ];
-
           return { conversation, contextMessages };
         }
       }

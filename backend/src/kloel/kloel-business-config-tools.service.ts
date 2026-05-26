@@ -6,6 +6,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
 import { digitsOnly } from '../common/phone';
+import { runChangePlan, type ToolChangePlanArgs } from './kloel-business-config-plan.helpers';
 
 /** Generic tool result shape. */
 interface ToolResult {
@@ -50,10 +51,6 @@ interface ToolUpdateBillingInfoArgs {
   returnUrl?: string;
 }
 
-interface ToolChangePlanArgs {
-  newPlan: string;
-  immediate?: boolean;
-}
 
 /** Handles CRM, business config, campaign, and billing AI chat tools. */
 @Injectable()
@@ -539,7 +536,7 @@ export class KloelBusinessConfigToolsService {
         },
         message: 'Canais disponíveis. Conecte cada um em Configurações > Canais.',
       };
-    } catch (e: unknown) {
+    } catch (_e: unknown) {
       return {
         success: true,
         message: 'Canais sociais disponíveis: WhatsApp, Instagram, Facebook, TikTok, Email.',
@@ -579,59 +576,6 @@ export class KloelBusinessConfigToolsService {
     }
   }
   async toolChangePlan(workspaceId: string, args: ToolChangePlanArgs): Promise<ToolResult> {
-    const { newPlan, immediate: _immediate = true } = args;
-    if (!newPlan) {
-      return { success: false, error: 'Parâmetro obrigatório: newPlan (starter, pro, enterprise)' };
-    }
-    const validPlans = ['starter', 'pro', 'enterprise', 'free'];
-    if (!validPlans.includes(newPlan.toLowerCase())) {
-      return { success: false, error: `Plano inválido. Opções: ${validPlans.join(', ')}` };
-    }
-    try {
-      const workspace = await this.prisma.workspace.findUnique({
-        where: { id: workspaceId },
-        select: { subscription: { select: { plan: true, stripeId: true } } },
-      });
-      const currentPlan = workspace?.subscription?.plan || 'FREE';
-      const targetPlan = newPlan.toUpperCase();
-      if (workspace?.subscription?.stripeId) {
-        return {
-          success: true,
-          requiresAction: true,
-          currentPlan,
-          targetPlan,
-          message: `Para alterar de ${currentPlan} para ${targetPlan}, acesse /billing e use o portal de pagamento.`,
-        };
-      }
-      if (targetPlan !== 'FREE' && currentPlan === 'FREE') {
-        return {
-          success: true,
-          requiresCheckout: true,
-          targetPlan,
-          message: `Para assinar o plano ${targetPlan}, acesse /pricing e complete o checkout.`,
-        };
-      }
-      await this.prisma.subscription.upsert({
-        where: { workspaceId },
-        update: { plan: targetPlan },
-        create: {
-          workspaceId,
-          plan: targetPlan,
-          status: 'ACTIVE',
-          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        },
-      });
-      return {
-        success: true,
-        previousPlan: currentPlan,
-        newPlan: targetPlan,
-        message: `Plano alterado de ${currentPlan} para ${targetPlan}`,
-      };
-    } catch (error: unknown) {
-      void this.opsAlert?.alertOnCriticalError(error, 'KloelBusinessConfigToolsService.upsert');
-      const msg = error instanceof Error ? error.message : 'unknown error';
-      this.logger.error('Erro ao alterar plano:', error);
-      return { success: false, error: msg };
-    }
+    return runChangePlan(this.prisma, this.opsAlert, this.logger, workspaceId, args);
   }
 }

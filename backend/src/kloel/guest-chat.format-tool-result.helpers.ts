@@ -122,7 +122,7 @@ export function formatToolResult(tool: string, result: unknown): string {
       return `Extrato: ${items.length} movimentacoes, total R$ ${total.toFixed(2)}.`;
     }
     case 'list_refunds': {
-      const rfunds = Array.isArray((r as any).orders) ? (r as any).orders : [];
+      const rfunds = Array.isArray(r.orders) ? (r.orders as Array<Record<string, unknown>>) : [];
       if (rfunds.length === 0) {
         return 'Nenhum estorno encontrado.';
       }

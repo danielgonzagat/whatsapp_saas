@@ -305,7 +305,7 @@ describe('unknown host routing', () => {
     expect(location).toContain('next=');
   });
 
-  it('allows authenticated users on unknown hosts for any path', () => {
+  it('allows authenticated users on unknown hosts for every path', () => {
     const response = middleware(buildRequest('https://example.com/some-path'));
     expectNext(response);
   });

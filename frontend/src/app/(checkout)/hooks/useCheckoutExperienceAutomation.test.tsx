@@ -1,5 +1,8 @@
 import { renderHook, waitFor } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import type { SetStateAction } from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { checkoutPublicApi } from '@/lib/api/checkout-public';
+import type { CheckoutExperienceForm } from './checkout-experience-social-helpers';
 import { useCheckoutExperienceAutomation } from './useCheckoutExperienceAutomation';
 
 vi.mock('@/lib/api/checkout-public', () => ({
@@ -8,84 +11,102 @@ vi.mock('@/lib/api/checkout-public', () => ({
   },
 }));
 
+type HookOptions = Parameters<typeof useCheckoutExperienceAutomation>[0];
+type PayMethod = HookOptions['payMethod'];
+
+const emptyForm: CheckoutExperienceForm = {
+  name: '',
+  email: '',
+  cpf: '',
+  phone: '',
+  cep: '',
+  street: '',
+  number: '',
+  neighborhood: '',
+  complement: '',
+  city: '',
+  state: '',
+  destinatario: '',
+  cardNumber: '',
+  cardExp: '',
+  cardCvv: '',
+  cardName: '',
+  cardCpf: '',
+  installments: '',
+};
+
+function baseOptions(overrides: Partial<HookOptions> = {}): HookOptions {
+  return {
+    payMethod: 'card',
+    setPayMethod: vi.fn(),
+    supportsCard: true,
+    supportsPix: false,
+    supportsBoleto: false,
+    redirectTimer: { current: null },
+    socialIdentity: null,
+    setForm: vi.fn(),
+    couponApplied: false,
+    setCouponApplied: vi.fn(),
+    setDiscount: vi.fn(),
+    qty: 1,
+    slug: 'checkout-demo',
+    shippingMode: 'FREE',
+    variableShippingFloorInCents: 0,
+    cep: '',
+    setDynamicShippingInCents: vi.fn(),
+    couponEnabled: false,
+    couponPopupEnabled: false,
+    couponPopupDelay: 0,
+    popupCouponCode: '',
+    couponPopupHandled: false,
+    setCouponCode: vi.fn(),
+    setShowCouponPopup: vi.fn(),
+    ...overrides,
+  };
+}
+
+function renderAutomation(overrides: Partial<HookOptions> = {}) {
+  return renderHook(() => useCheckoutExperienceAutomation(baseOptions(overrides)));
+}
+
+function readFormUpdate(setForm: ReturnType<typeof vi.fn>) {
+  const update = setForm.mock.calls[0]?.[0] as SetStateAction<CheckoutExperienceForm> | undefined;
+  return typeof update === 'function' ? update(emptyForm) : update;
+}
+
 describe('useCheckoutExperienceAutomation', () => {
-  it('rehydrates phone, cpf, and address fields from the social identity snapshot', async () => {
+  beforeEach(() => {
+    vi.mocked(checkoutPublicApi.calculateShipping).mockReset();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('rehydrates checkout form fields from the social identity snapshot', async () => {
     const setForm = vi.fn();
 
-    renderHook(() =>
-      useCheckoutExperienceAutomation({
-        payMethod: 'card',
-        setPayMethod: vi.fn(),
-        supportsCard: true,
-        supportsPix: true,
-        supportsBoleto: false,
-        redirectTimer: { current: null },
-        socialIdentity: {
-          provider: 'google',
-          name: 'Maria de Almeida Cruz',
-          email: 'maria@gmail.com',
-          phone: '62999990000',
-          cpf: '12345678900',
-          cep: '75690-000',
-          street: 'Rua das Flores',
-          number: '100',
-          neighborhood: 'Centro',
-          city: 'Caldas Novas',
-          state: 'GO',
-          complement: 'Apto 12',
-          deviceFingerprint: 'device-123',
-        },
-        setForm,
-        couponApplied: false,
-        setCouponApplied: vi.fn(),
-        setDiscount: vi.fn(),
-        qty: 1,
-        slug: 'checkout-demo',
-        shippingMode: 'FIXED',
-        variableShippingFloorInCents: 0,
-        cep: '',
-        setDynamicShippingInCents: vi.fn(),
-        couponEnabled: true,
-        couponPopupEnabled: false,
-        couponPopupDelay: 1800,
-        popupCouponCode: '',
-        couponPopupHandled: false,
-        setCouponCode: vi.fn(),
-        setShowCouponPopup: vi.fn(),
-      }),
-    );
-
-    await waitFor(() => {
-      expect(setForm).toHaveBeenCalled();
+    renderAutomation({
+      setForm,
+      socialIdentity: {
+        provider: 'google',
+        name: 'Maria de Almeida Cruz',
+        email: 'maria@gmail.com',
+        phone: '62999990000',
+        cpf: '12345678900',
+        cep: '75690-000',
+        street: 'Rua das Flores',
+        number: '100',
+        neighborhood: 'Centro',
+        city: 'Caldas Novas',
+        state: 'GO',
+        complement: 'Apto 12',
+        deviceFingerprint: 'device-123',
+      },
     });
 
-    const updater = setForm.mock.calls[0]?.[0] as
-      | ((prev: Record<string, string>) => Record<string, string>)
-      | undefined;
-    expect(typeof updater).toBe('function');
-
-    const nextState = updater?.({
-      name: '',
-      email: '',
-      cpf: '',
-      phone: '',
-      cep: '',
-      street: '',
-      number: '',
-      neighborhood: '',
-      complement: '',
-      city: '',
-      state: '',
-      destinatario: '',
-      cardNumber: '',
-      cardExp: '',
-      cardCvv: '',
-      cardName: '',
-      cardCpf: '',
-      installments: '',
-    });
-
-    expect(nextState).toMatchObject({
+    await waitFor(() => expect(setForm).toHaveBeenCalled());
+    expect(readFormUpdate(setForm)).toMatchObject({
       name: 'Maria de Almeida Cruz',
       email: 'maria@gmail.com',
       phone: '62999990000',
@@ -100,650 +121,151 @@ describe('useCheckoutExperienceAutomation', () => {
     });
   });
 
-  /* ─── socialIdentity null: no-ops ────────────────────────────────────── */
-
-  it('does not call setForm when socialIdentity is null', () => {
+  it('leaves the form untouched when the social identity snapshot is absent', () => {
     const setForm = vi.fn();
 
-    renderHook(() =>
-      useCheckoutExperienceAutomation({
-        payMethod: 'card',
-        setPayMethod: vi.fn(),
-        supportsCard: true,
-        supportsPix: true,
-        supportsBoleto: false,
-        redirectTimer: { current: null },
-        socialIdentity: null,
-        setForm,
-        couponApplied: false,
-        setCouponApplied: vi.fn(),
-        setDiscount: vi.fn(),
-        qty: 1,
-        slug: 'checkout-demo',
-        shippingMode: 'FIXED',
-        variableShippingFloorInCents: 0,
-        cep: '',
-        setDynamicShippingInCents: vi.fn(),
-        couponEnabled: false,
-        couponPopupEnabled: false,
-        couponPopupDelay: 0,
-        popupCouponCode: '',
-        couponPopupHandled: false,
-        setCouponCode: vi.fn(),
-        setShowCouponPopup: vi.fn(),
-      }),
-    );
+    renderAutomation({ setForm, socialIdentity: null });
 
     expect(setForm).not.toHaveBeenCalled();
   });
 
-  /* ─── payMethod auto-switch ──────────────────────────────────────────── */
-
-  it('switches to first available method when current method is unsupported', () => {
+  it.each<[
+    string,
+    Pick<HookOptions, 'payMethod' | 'supportsCard' | 'supportsPix' | 'supportsBoleto'>,
+    PayMethod | null,
+  ]>([
+    ['uses the first enabled method when the selected method is blocked', { payMethod: 'boleto', supportsCard: true, supportsPix: true, supportsBoleto: false }, 'card'],
+    ['keeps the selected method when it is enabled', { payMethod: 'pix', supportsCard: true, supportsPix: true, supportsBoleto: false }, null],
+    ['keeps the selected method when no method is enabled', { payMethod: 'card', supportsCard: false, supportsPix: false, supportsBoleto: false }, null],
+  ])('%s', (_label, paymentOptions, expectedMethod) => {
     const setPayMethod = vi.fn();
 
-    renderHook(() =>
-      useCheckoutExperienceAutomation({
-        payMethod: 'boleto',
-        setPayMethod,
-        supportsCard: true,
-        supportsPix: true,
-        supportsBoleto: false,
-        redirectTimer: { current: null },
-        socialIdentity: null,
-        setForm: vi.fn(),
-        couponApplied: false,
-        setCouponApplied: vi.fn(),
-        setDiscount: vi.fn(),
-        qty: 1,
-        slug: '',
-        shippingMode: 'FREE',
-        variableShippingFloorInCents: 0,
-        cep: '',
-        setDynamicShippingInCents: vi.fn(),
-        couponEnabled: false,
-        couponPopupEnabled: false,
-        couponPopupDelay: 0,
-        popupCouponCode: '',
-        couponPopupHandled: false,
-        setCouponCode: vi.fn(),
-        setShowCouponPopup: vi.fn(),
-      }),
-    );
+    renderAutomation({ ...paymentOptions, setPayMethod });
 
-    expect(setPayMethod).toHaveBeenCalledWith('card');
+    if (expectedMethod) {
+      expect(setPayMethod).toHaveBeenCalledWith(expectedMethod);
+    } else {
+      expect(setPayMethod).not.toHaveBeenCalled();
+    }
   });
 
-  it('does not switch when current method is supported', () => {
-    const setPayMethod = vi.fn();
-
-    renderHook(() =>
-      useCheckoutExperienceAutomation({
-        payMethod: 'pix',
-        setPayMethod,
-        supportsCard: true,
-        supportsPix: true,
-        supportsBoleto: false,
-        redirectTimer: { current: null },
-        socialIdentity: null,
-        setForm: vi.fn(),
-        couponApplied: false,
-        setCouponApplied: vi.fn(),
-        setDiscount: vi.fn(),
-        qty: 1,
-        slug: '',
-        shippingMode: 'FREE',
-        variableShippingFloorInCents: 0,
-        cep: '',
-        setDynamicShippingInCents: vi.fn(),
-        couponEnabled: false,
-        couponPopupEnabled: false,
-        couponPopupDelay: 0,
-        popupCouponCode: '',
-        couponPopupHandled: false,
-        setCouponCode: vi.fn(),
-        setShowCouponPopup: vi.fn(),
-      }),
-    );
-
-    expect(setPayMethod).not.toHaveBeenCalled();
-  });
-
-  it('does not switch when no methods available', () => {
-    const setPayMethod = vi.fn();
-
-    renderHook(() =>
-      useCheckoutExperienceAutomation({
-        payMethod: 'card',
-        setPayMethod,
-        supportsCard: false,
-        supportsPix: false,
-        supportsBoleto: false,
-        redirectTimer: { current: null },
-        socialIdentity: null,
-        setForm: vi.fn(),
-        couponApplied: false,
-        setCouponApplied: vi.fn(),
-        setDiscount: vi.fn(),
-        qty: 1,
-        slug: '',
-        shippingMode: 'FREE',
-        variableShippingFloorInCents: 0,
-        cep: '',
-        setDynamicShippingInCents: vi.fn(),
-        couponEnabled: false,
-        couponPopupEnabled: false,
-        couponPopupDelay: 0,
-        popupCouponCode: '',
-        couponPopupHandled: false,
-        setCouponCode: vi.fn(),
-        setShowCouponPopup: vi.fn(),
-      }),
-    );
-
-    expect(setPayMethod).not.toHaveBeenCalled();
-  });
-
-  /* ─── couponApplied reset on qty change ──────────────────────────────── */
-
-  it('resets coupon when couponApplied is true and qty changes', () => {
+  it('resets an applied coupon after quantity changes', () => {
     const setCouponApplied = vi.fn();
     const setDiscount = vi.fn();
 
-    renderHook(() =>
-      useCheckoutExperienceAutomation({
-        payMethod: 'card',
-        setPayMethod: vi.fn(),
-        supportsCard: true,
-        supportsPix: false,
-        supportsBoleto: false,
-        redirectTimer: { current: null },
-        socialIdentity: null,
-        setForm: vi.fn(),
-        couponApplied: true,
-        setCouponApplied,
-        setDiscount,
-        qty: 2,
-        slug: '',
-        shippingMode: 'FREE',
-        variableShippingFloorInCents: 0,
-        cep: '',
-        setDynamicShippingInCents: vi.fn(),
-        couponEnabled: false,
-        couponPopupEnabled: false,
-        couponPopupDelay: 0,
-        popupCouponCode: '',
-        couponPopupHandled: false,
-        setCouponCode: vi.fn(),
-        setShowCouponPopup: vi.fn(),
-      }),
-    );
+    renderAutomation({ couponApplied: true, qty: 2, setCouponApplied, setDiscount });
 
     expect(setCouponApplied).toHaveBeenCalledWith(false);
     expect(setDiscount).toHaveBeenCalledWith(0);
   });
 
-  it('does not reset coupon when couponApplied is false', () => {
+  it('keeps coupon state when no coupon is applied', () => {
     const setCouponApplied = vi.fn();
-    const setDiscount = vi.fn();
 
-    renderHook(() =>
-      useCheckoutExperienceAutomation({
-        payMethod: 'card',
-        setPayMethod: vi.fn(),
-        supportsCard: true,
-        supportsPix: false,
-        supportsBoleto: false,
-        redirectTimer: { current: null },
-        socialIdentity: null,
-        setForm: vi.fn(),
-        couponApplied: false,
-        setCouponApplied,
-        setDiscount,
-        qty: 3,
-        slug: '',
-        shippingMode: 'FREE',
-        variableShippingFloorInCents: 0,
-        cep: '',
-        setDynamicShippingInCents: vi.fn(),
-        couponEnabled: false,
-        couponPopupEnabled: false,
-        couponPopupDelay: 0,
-        popupCouponCode: '',
-        couponPopupHandled: false,
-        setCouponCode: vi.fn(),
-        setShowCouponPopup: vi.fn(),
-      }),
-    );
+    renderAutomation({ couponApplied: false, qty: 3, setCouponApplied });
 
     expect(setCouponApplied).not.toHaveBeenCalled();
   });
 
-  /* ─── shipping: variable mode auto-calculation ───────────────────────── */
-
-  it('computes dynamic shipping when mode is VARIABLE and cep has 8 digits', async () => {
-    const { checkoutPublicApi } = await import('@/lib/api/checkout-public');
-    (checkoutPublicApi.calculateShipping as ReturnType<typeof vi.fn>).mockResolvedValue({
-      data: {
-        options: [{ carrier: 'Correios', price: 2590, days: '5-10' }],
-      },
+  it('computes variable shipping from the public checkout API', async () => {
+    vi.mocked(checkoutPublicApi.calculateShipping).mockResolvedValue({
+      status: 200,
+      data: { options: [{ carrier: 'Correios', price: 2590, days: '5-10' }] },
     });
-
     const setDynamicShippingInCents = vi.fn();
 
-    renderHook(() =>
-      useCheckoutExperienceAutomation({
-        payMethod: 'card',
-        setPayMethod: vi.fn(),
-        supportsCard: true,
-        supportsPix: false,
-        supportsBoleto: false,
-        redirectTimer: { current: null },
-        socialIdentity: null,
-        setForm: vi.fn(),
-        couponApplied: false,
-        setCouponApplied: vi.fn(),
-        setDiscount: vi.fn(),
-        qty: 1,
-        slug: 'checkout-demo',
-        shippingMode: 'VARIABLE',
-        variableShippingFloorInCents: 1500,
-        cep: '75690-000',
-        setDynamicShippingInCents,
-        couponEnabled: false,
-        couponPopupEnabled: false,
-        couponPopupDelay: 0,
-        popupCouponCode: '',
-        couponPopupHandled: false,
-        setCouponCode: vi.fn(),
-        setShowCouponPopup: vi.fn(),
-      }),
-    );
+    renderAutomation({
+      shippingMode: 'VARIABLE',
+      variableShippingFloorInCents: 1500,
+      cep: '75690-000',
+      setDynamicShippingInCents,
+    });
 
-    await waitFor(() => {
-      expect(setDynamicShippingInCents).toHaveBeenCalledWith(2590);
+    await waitFor(() => expect(setDynamicShippingInCents).toHaveBeenCalledWith(2590));
+    expect(checkoutPublicApi.calculateShipping).toHaveBeenCalledWith({
+      slug: 'checkout-demo',
+      cep: '75690000',
     });
   });
 
-  it('sets floor shipping when VARIABLE but cep is too short', () => {
+  it.each([
+    ['short CEP in variable mode', { shippingMode: 'VARIABLE', cep: '75690', variableShippingFloorInCents: 1500 }, undefined],
+    ['non-variable mode', { shippingMode: 'FREE', cep: '75690000', variableShippingFloorInCents: 500 }, null],
+  ])('handles shipping fallback for %s', (_label, shippingOptions, expectedValue) => {
     const setDynamicShippingInCents = vi.fn();
 
-    renderHook(() =>
-      useCheckoutExperienceAutomation({
-        payMethod: 'card',
-        setPayMethod: vi.fn(),
-        supportsCard: true,
-        supportsPix: false,
-        supportsBoleto: false,
-        redirectTimer: { current: null },
-        socialIdentity: null,
-        setForm: vi.fn(),
-        couponApplied: false,
-        setCouponApplied: vi.fn(),
-        setDiscount: vi.fn(),
-        qty: 1,
-        slug: 'checkout-demo',
-        shippingMode: 'VARIABLE',
-        variableShippingFloorInCents: 1500,
-        cep: '75690',
-        setDynamicShippingInCents,
-        couponEnabled: false,
-        couponPopupEnabled: false,
-        couponPopupDelay: 0,
-        popupCouponCode: '',
-        couponPopupHandled: false,
-        setCouponCode: vi.fn(),
-        setShowCouponPopup: vi.fn(),
-      }),
-    );
+    renderAutomation({ ...shippingOptions, setDynamicShippingInCents });
 
-    // When cep is too short (< 8 digits), the effect returns early
-    // without calling setDynamicShippingInCents
-    expect(setDynamicShippingInCents).not.toHaveBeenCalled();
+    if (expectedValue === undefined) {
+      expect(setDynamicShippingInCents).not.toHaveBeenCalled();
+    } else {
+      expect(setDynamicShippingInCents).toHaveBeenCalledWith(expectedValue);
+    }
   });
 
-  it('sets shipping to null for non-VARIABLE mode', () => {
+  it('falls back to the variable shipping floor when the API rejects', async () => {
+    vi.mocked(checkoutPublicApi.calculateShipping).mockRejectedValue(new Error('Network error'));
     const setDynamicShippingInCents = vi.fn();
 
-    renderHook(() =>
-      useCheckoutExperienceAutomation({
-        payMethod: 'card',
-        setPayMethod: vi.fn(),
-        supportsCard: true,
-        supportsPix: false,
-        supportsBoleto: false,
-        redirectTimer: { current: null },
-        socialIdentity: null,
-        setForm: vi.fn(),
-        couponApplied: false,
-        setCouponApplied: vi.fn(),
-        setDiscount: vi.fn(),
-        qty: 1,
-        slug: '',
-        shippingMode: 'FREE',
-        variableShippingFloorInCents: 500,
-        cep: '75690000',
-        setDynamicShippingInCents,
-        couponEnabled: false,
-        couponPopupEnabled: false,
-        couponPopupDelay: 0,
-        popupCouponCode: '',
-        couponPopupHandled: false,
-        setCouponCode: vi.fn(),
-        setShowCouponPopup: vi.fn(),
-      }),
-    );
-
-    expect(setDynamicShippingInCents).toHaveBeenCalledWith(null);
-  });
-
-  it('falls back to floor shipping on API error in VARIABLE mode', async () => {
-    const { checkoutPublicApi } = await import('@/lib/api/checkout-public');
-    (checkoutPublicApi.calculateShipping as ReturnType<typeof vi.fn>).mockRejectedValue(
-      new Error('Network error'),
-    );
-
-    const setDynamicShippingInCents = vi.fn();
-
-    renderHook(() =>
-      useCheckoutExperienceAutomation({
-        payMethod: 'card',
-        setPayMethod: vi.fn(),
-        supportsCard: true,
-        supportsPix: false,
-        supportsBoleto: false,
-        redirectTimer: { current: null },
-        socialIdentity: null,
-        setForm: vi.fn(),
-        couponApplied: false,
-        setCouponApplied: vi.fn(),
-        setDiscount: vi.fn(),
-        qty: 1,
-        slug: 'checkout-demo',
-        shippingMode: 'VARIABLE',
-        variableShippingFloorInCents: 2200,
-        cep: '75690-000',
-        setDynamicShippingInCents,
-        couponEnabled: false,
-        couponPopupEnabled: false,
-        couponPopupDelay: 0,
-        popupCouponCode: '',
-        couponPopupHandled: false,
-        setCouponCode: vi.fn(),
-        setShowCouponPopup: vi.fn(),
-      }),
-    );
-
-    await waitFor(() => {
-      expect(setDynamicShippingInCents).toHaveBeenCalledWith(2200);
+    renderAutomation({
+      shippingMode: 'VARIABLE',
+      variableShippingFloorInCents: 2200,
+      cep: '75690-000',
+      setDynamicShippingInCents,
     });
+
+    await waitFor(() => expect(setDynamicShippingInCents).toHaveBeenCalledWith(2200));
   });
 
-  /* ─── coupon popup ───────────────────────────────────────────────────── */
-
-  it('schedules coupon popup when all conditions are met', async () => {
+  it('opens the coupon popup after the configured delay', () => {
     vi.useFakeTimers();
     const setCouponCode = vi.fn();
     const setShowCouponPopup = vi.fn();
 
-    renderHook(() =>
-      useCheckoutExperienceAutomation({
-        payMethod: 'card',
-        setPayMethod: vi.fn(),
-        supportsCard: true,
-        supportsPix: false,
-        supportsBoleto: false,
-        redirectTimer: { current: null },
-        socialIdentity: null,
-        setForm: vi.fn(),
-        couponApplied: false,
-        setCouponApplied: vi.fn(),
-        setDiscount: vi.fn(),
-        qty: 1,
-        slug: 'checkout-demo',
-        shippingMode: 'FREE',
-        variableShippingFloorInCents: 0,
-        cep: '',
-        setDynamicShippingInCents: vi.fn(),
-        couponEnabled: true,
-        couponPopupEnabled: true,
-        couponPopupDelay: 2000,
-        popupCouponCode: 'WELCOME10',
-        couponPopupHandled: false,
-        setCouponCode,
-        setShowCouponPopup,
-      }),
-    );
+    renderAutomation({
+      couponEnabled: true,
+      couponPopupEnabled: true,
+      couponPopupDelay: 2000,
+      popupCouponCode: 'WELCOME10',
+      setCouponCode,
+      setShowCouponPopup,
+    });
 
     vi.advanceTimersByTime(600);
-
     expect(setCouponCode).not.toHaveBeenCalled();
 
     vi.advanceTimersByTime(1500);
-
     expect(setCouponCode).toHaveBeenCalledWith('WELCOME10');
     expect(setShowCouponPopup).toHaveBeenCalledWith(true);
-
-    vi.useRealTimers();
   });
 
-  it('does not schedule coupon popup when couponPopupEnabled is false', () => {
+  it.each([
+    ['popup disabled', { couponPopupEnabled: false, popupCouponCode: 'WELCOME10' }],
+    ['coupon code missing', { couponPopupEnabled: true, popupCouponCode: '' }],
+    ['popup already handled', { couponPopupEnabled: true, popupCouponCode: 'WELCOME10', couponPopupHandled: true }],
+    ['coupon already applied', { couponPopupEnabled: true, popupCouponCode: 'WELCOME10', couponApplied: true }],
+  ])('does not schedule the coupon popup when %s', (_label, popupOptions) => {
     const setCouponCode = vi.fn();
-    const setShowCouponPopup = vi.fn();
 
-    renderHook(() =>
-      useCheckoutExperienceAutomation({
-        payMethod: 'card',
-        setPayMethod: vi.fn(),
-        supportsCard: true,
-        supportsPix: false,
-        supportsBoleto: false,
-        redirectTimer: { current: null },
-        socialIdentity: null,
-        setForm: vi.fn(),
-        couponApplied: false,
-        setCouponApplied: vi.fn(),
-        setDiscount: vi.fn(),
-        qty: 1,
-        slug: 'checkout-demo',
-        shippingMode: 'FREE',
-        variableShippingFloorInCents: 0,
-        cep: '',
-        setDynamicShippingInCents: vi.fn(),
-        couponEnabled: true,
-        couponPopupEnabled: false,
-        couponPopupDelay: 2000,
-        popupCouponCode: 'WELCOME10',
-        couponPopupHandled: false,
-        setCouponCode,
-        setShowCouponPopup,
-      }),
-    );
+    renderAutomation({ couponEnabled: true, setCouponCode, ...popupOptions });
 
     expect(setCouponCode).not.toHaveBeenCalled();
   });
 
-  it('does not schedule coupon popup when popupCouponCode is empty', () => {
-    const setCouponCode = vi.fn();
-
-    renderHook(() =>
-      useCheckoutExperienceAutomation({
-        payMethod: 'card',
-        setPayMethod: vi.fn(),
-        supportsCard: true,
-        supportsPix: false,
-        supportsBoleto: false,
-        redirectTimer: { current: null },
-        socialIdentity: null,
-        setForm: vi.fn(),
-        couponApplied: false,
-        setCouponApplied: vi.fn(),
-        setDiscount: vi.fn(),
-        qty: 1,
-        slug: 'checkout-demo',
-        shippingMode: 'FREE',
-        variableShippingFloorInCents: 0,
-        cep: '',
-        setDynamicShippingInCents: vi.fn(),
-        couponEnabled: true,
-        couponPopupEnabled: true,
-        couponPopupDelay: 2000,
-        popupCouponCode: '',
-        couponPopupHandled: false,
-        setCouponCode,
-        setShowCouponPopup: vi.fn(),
-      }),
-    );
-
-    expect(setCouponCode).not.toHaveBeenCalled();
-  });
-
-  it('does not schedule coupon popup when already handled', () => {
-    const setCouponCode = vi.fn();
-
-    renderHook(() =>
-      useCheckoutExperienceAutomation({
-        payMethod: 'card',
-        setPayMethod: vi.fn(),
-        supportsCard: true,
-        supportsPix: false,
-        supportsBoleto: false,
-        redirectTimer: { current: null },
-        socialIdentity: null,
-        setForm: vi.fn(),
-        couponApplied: false,
-        setCouponApplied: vi.fn(),
-        setDiscount: vi.fn(),
-        qty: 1,
-        slug: 'checkout-demo',
-        shippingMode: 'FREE',
-        variableShippingFloorInCents: 0,
-        cep: '',
-        setDynamicShippingInCents: vi.fn(),
-        couponEnabled: true,
-        couponPopupEnabled: true,
-        couponPopupDelay: 2000,
-        popupCouponCode: 'WELCOME10',
-        couponPopupHandled: true,
-        setCouponCode,
-        setShowCouponPopup: vi.fn(),
-      }),
-    );
-
-    expect(setCouponCode).not.toHaveBeenCalled();
-  });
-
-  it('does not schedule coupon popup when couponAlreadyApplied', () => {
-    const setCouponCode = vi.fn();
-
-    renderHook(() =>
-      useCheckoutExperienceAutomation({
-        payMethod: 'card',
-        setPayMethod: vi.fn(),
-        supportsCard: true,
-        supportsPix: false,
-        supportsBoleto: false,
-        redirectTimer: { current: null },
-        socialIdentity: null,
-        setForm: vi.fn(),
-        couponApplied: true,
-        setCouponApplied: vi.fn(),
-        setDiscount: vi.fn(),
-        qty: 1,
-        slug: 'checkout-demo',
-        shippingMode: 'FREE',
-        variableShippingFloorInCents: 0,
-        cep: '',
-        setDynamicShippingInCents: vi.fn(),
-        couponEnabled: true,
-        couponPopupEnabled: true,
-        couponPopupDelay: 2000,
-        popupCouponCode: 'WELCOME10',
-        couponPopupHandled: false,
-        setCouponCode,
-        setShowCouponPopup: vi.fn(),
-      }),
-    );
-
-    expect(setCouponCode).not.toHaveBeenCalled();
-  });
-
-  /* ─── redirect timer cleanup ─────────────────────────────────────────── */
-
-  it('clears redirect timer on unmount', () => {
+  it.each([
+    ['clears the timer', window.setTimeout(() => undefined, 10000), true],
+    ['ignores a null timer', null, false],
+  ])('%s during unmount', (_label, timer, shouldClear) => {
     const clearTimeoutSpy = vi.spyOn(window, 'clearTimeout');
-    const timer = window.setTimeout(() => undefined, 10000);
-
-    const { unmount } = renderHook(() =>
-      useCheckoutExperienceAutomation({
-        payMethod: 'card',
-        setPayMethod: vi.fn(),
-        supportsCard: true,
-        supportsPix: false,
-        supportsBoleto: false,
-        redirectTimer: { current: timer },
-        socialIdentity: null,
-        setForm: vi.fn(),
-        couponApplied: false,
-        setCouponApplied: vi.fn(),
-        setDiscount: vi.fn(),
-        qty: 1,
-        slug: '',
-        shippingMode: 'FREE',
-        variableShippingFloorInCents: 0,
-        cep: '',
-        setDynamicShippingInCents: vi.fn(),
-        couponEnabled: false,
-        couponPopupEnabled: false,
-        couponPopupDelay: 0,
-        popupCouponCode: '',
-        couponPopupHandled: false,
-        setCouponCode: vi.fn(),
-        setShowCouponPopup: vi.fn(),
-      }),
-    );
+    const { unmount } = renderAutomation({ redirectTimer: { current: timer } });
 
     unmount();
 
-    expect(clearTimeoutSpy).toHaveBeenCalledWith(timer);
-    clearTimeoutSpy.mockRestore();
-  });
-
-  it('does not clear redirect timer when null', () => {
-    const clearTimeoutSpy = vi.spyOn(window, 'clearTimeout');
-
-    const { unmount } = renderHook(() =>
-      useCheckoutExperienceAutomation({
-        payMethod: 'card',
-        setPayMethod: vi.fn(),
-        supportsCard: true,
-        supportsPix: false,
-        supportsBoleto: false,
-        redirectTimer: { current: null },
-        socialIdentity: null,
-        setForm: vi.fn(),
-        couponApplied: false,
-        setCouponApplied: vi.fn(),
-        setDiscount: vi.fn(),
-        qty: 1,
-        slug: '',
-        shippingMode: 'FREE',
-        variableShippingFloorInCents: 0,
-        cep: '',
-        setDynamicShippingInCents: vi.fn(),
-        couponEnabled: false,
-        couponPopupEnabled: false,
-        couponPopupDelay: 0,
-        popupCouponCode: '',
-        couponPopupHandled: false,
-        setCouponCode: vi.fn(),
-        setShowCouponPopup: vi.fn(),
-      }),
-    );
-
-    unmount();
-
-    expect(clearTimeoutSpy).not.toHaveBeenCalled();
+    if (shouldClear) {
+      expect(clearTimeoutSpy).toHaveBeenCalledWith(timer);
+    } else {
+      expect(clearTimeoutSpy).not.toHaveBeenCalled();
+    }
     clearTimeoutSpy.mockRestore();
   });
 });
