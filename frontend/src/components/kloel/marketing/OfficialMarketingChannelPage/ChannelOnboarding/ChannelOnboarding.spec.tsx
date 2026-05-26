@@ -163,7 +163,7 @@ describe('step vignettes wired by props', () => {
         onContinue={onContinue}
       />,
     );
-    
+
     const save = screen.getByRole('button', { name: /Salvar produtos/ });
     expect(save).toBeDisabled();
     fireEvent.click(screen.getByText('Alpha'));
