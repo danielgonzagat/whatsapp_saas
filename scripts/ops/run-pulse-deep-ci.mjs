@@ -27,7 +27,9 @@ function log(msg) {
 }
 
 function ensureDir(dir) {
-  if (!fs.existsSync(dir)) {fs.mkdirSync(dir, { recursive: true });}
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
 }
 
 function runCmd(cmd, opts = {}) {
@@ -36,13 +38,17 @@ function runCmd(cmd, opts = {}) {
 }
 
 function killChildTree(pid, signal) {
-  if (!pid) {return;}
+  if (!pid) {
+    return;
+  }
   try {
     process.kill(-pid, signal);
   } catch {
     try {
       process.kill(pid, signal);
-    } catch { /* best effort */ }
+    } catch {
+      /* best effort */
+    }
   }
 }
 
@@ -58,8 +64,12 @@ async function waitForBackend(url, maxRetries = 90) {
         log(`Backend is healthy at ${url}`);
         return true;
       }
-    } catch { /* not ready */ }
-    if (i % 5 === 0) {log(`Waiting for backend... (attempt ${i + 1}/${maxRetries})`);}
+    } catch {
+      /* not ready */
+    }
+    if (i % 5 === 0) {
+      log(`Waiting for backend... (attempt ${i + 1}/${maxRetries})`);
+    }
     await sleep(2000);
   }
   return false;
@@ -67,7 +77,9 @@ async function waitForBackend(url, maxRetries = 90) {
 
 function readCertificate(jsonPath) {
   try {
-    if (!fs.existsSync(jsonPath)) {return null;}
+    if (!fs.existsSync(jsonPath)) {
+      return null;
+    }
     const raw = fs.readFileSync(jsonPath, 'utf-8');
     return JSON.parse(raw);
   } catch {
@@ -84,8 +96,11 @@ async function spawnProcess(cmd, argsList, envExtra = {}) {
       env: { ...process.env, ...envExtra },
     });
     proc.on('exit', (code, signal) => {
-      if (signal) {resolve(124);}
-      else {resolve(code ?? 1);}
+      if (signal) {
+        resolve(124);
+      } else {
+        resolve(code ?? 1);
+      }
     });
     proc.on('error', () => resolve(1));
   });
@@ -164,19 +179,18 @@ async function runPulseCycle(cycleIndex) {
     PULSE_DISABLE_LOCAL_ENV: 'false',
     PULSE_BACKEND_URL,
     PULSE_DEEP: '1',
-    NODE_OPTIONS: [process.env.NODE_OPTIONS, '--max-old-space-size=6144']
-      .filter(Boolean)
-      .join(' '),
-    PULSE_EXECUTION_TRACE_PATH: path.join(rootDir, `PULSE_EXECUTION_TRACE_CYCLE_${cycleIndex}.json`),
+    NODE_OPTIONS: [process.env.NODE_OPTIONS, '--max-old-space-size=6144'].filter(Boolean).join(' '),
+    PULSE_EXECUTION_TRACE_PATH: path.join(
+      rootDir,
+      `PULSE_EXECUTION_TRACE_CYCLE_${cycleIndex}.json`,
+    ),
   };
 
-  const exitCode = await spawnProcess(process.execPath, [
-    path.join(rootDir, 'scripts', 'pulse', 'run.js'),
-    '--certify',
-    '--tier',
-    '0',
-    '--deep',
-  ], envExtra);
+  const exitCode = await spawnProcess(
+    process.execPath,
+    [path.join(rootDir, 'scripts', 'pulse', 'run.js'), '--certify', '--tier', '0', '--deep'],
+    envExtra,
+  );
 
   log(`PULSE cycle ${cycleIndex} exited with code ${exitCode}`);
 
@@ -187,7 +201,10 @@ async function runPulseCycle(cycleIndex) {
     fs.copyFileSync(certPath, backupPath);
     const internalPath = path.join(rootDir, '.pulse', 'current', 'PULSE_CERTIFICATE.json');
     if (fs.existsSync(internalPath)) {
-      fs.copyFileSync(internalPath, path.join(rootDir, '.pulse', 'current', `PULSE_CERTIFICATE_CYCLE_${cycleIndex}.json`));
+      fs.copyFileSync(
+        internalPath,
+        path.join(rootDir, '.pulse', 'current', `PULSE_CERTIFICATE_CYCLE_${cycleIndex}.json`),
+      );
     }
     log(`Saved PULSE_CERTIFICATE_CYCLE_${cycleIndex}.json`);
   } else {
@@ -209,10 +226,9 @@ async function main() {
     log('Starting test infrastructure via docker compose...');
     ensureDir(path.join(rootDir, '.pulse', 'current'));
 
-    runCmd(
-      `docker compose -f docker-compose.test.yml -p ${composeProject} up -d postgres redis`,
-      { stdio: 'inherit' },
-    );
+    runCmd(`docker compose -f docker-compose.test.yml -p ${composeProject} up -d postgres redis`, {
+      stdio: 'inherit',
+    });
     composeUp = true;
 
     log('Waiting for Postgres and Redis to be healthy...');
@@ -292,21 +308,27 @@ async function main() {
 
       log('');
       log('=== TRIPLE-CYCLE ASSERTION REPORT ===');
-      log(`runtime_evidence > 0: ${report.assertions.runtime_evidence_gt_zero.passed ? 'PASS' : 'FAIL'}`);
-      log(`target_certified:   ${report.assertions.target_certified.passed ? 'PASS' : 'FAIL'}`);
-      log(`no_regression:       ${report.assertions.no_regression.passed ? 'PASS' : 'FAIL'}`);
-      log(`overall:             ${report.overall}`);
+      log(
+        `runtime_evidence > 0: ${report.assertions.runtime_evidence_gt_zero.passed ? 'PASS' : 'FAIL'}`,
+      );
+      log(
+        `certificate_observed: ${report.assertions.certificate_observed.passed ? 'PASS' : 'FAIL'}`,
+      );
+      log(`no_regression:         ${report.assertions.no_regression.passed ? 'PASS' : 'FAIL'}`);
+      log(`overall:               ${report.overall}`);
       log(`Report written to: ${reportPath}`);
 
       if (!report.assertions.runtime_evidence_gt_zero.passed) {
         log(`  ${report.assertions.runtime_evidence_gt_zero.detail}`);
       }
-      if (!report.assertions.target_certified.passed) {
-        log(`  ${report.assertions.target_certified.detail}`);
+      if (!report.assertions.certificate_observed.passed) {
+        log(`  ${report.assertions.certificate_observed.detail}`);
         for (const [cycle, gates] of Object.entries(
-          report.assertions.target_certified.failing_gates_by_cycle,
+          report.assertions.certificate_observed.failing_gates_by_cycle,
         )) {
-          if (gates.length > 0) {log(`    ${cycle}: ${gates.join(', ')}`);}
+          if (gates.length > 0) {
+            log(`    ${cycle}: ${gates.join(', ')}`);
+          }
         }
       }
       if (!report.assertions.no_regression.passed) {
@@ -315,12 +337,14 @@ async function main() {
 
       if (report.overall === 'FAIL') {
         log('');
-        log('Triple-cycle assertions FAILED. Fix underlying code, not the gate.');
+        log(
+          'Triple-cycle assertions FAILED. Fix runtime evidence, certificate generation, or subgate regression.',
+        );
         process.exit(3);
       }
 
       log('');
-      log('All triple-cycle assertions PASSED. CI green: CERTIFIED.');
+      log('All triple-cycle assertions PASSED. CI green: deep evidence stable.');
       process.exit(0);
     }
 
@@ -336,7 +360,9 @@ async function main() {
           `docker compose -f docker-compose.test.yml -p ${composeProject} down --remove-orphans -t 10`,
           { stdio: 'ignore' },
         );
-      } catch { /* best effort */ }
+      } catch {
+        /* best effort */
+      }
     }
   }
 }
