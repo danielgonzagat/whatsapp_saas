@@ -108,7 +108,10 @@ interface ToolCreateFlowArgs {
 interface ToolDashboardSummaryArgs {
   period?: 'today' | 'week' | 'month';
 }
-function centsFromUnknown(value: unknown): number {
+/** Coerces unknown wallet balance values (bigint | number) into integer cents.
+ *  Returns 0 for non-numeric/missing values. Exported so peer kloel services
+ *  (crm/executor/...) consume the same coercion without local copies. */
+export function centsFromUnknown(value: unknown): number {
   if (typeof value === 'bigint') {
     return Number(value);
   }
