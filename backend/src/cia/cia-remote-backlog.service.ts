@@ -250,6 +250,9 @@ export class CiaRemoteBacklogService {
                 complianceMode: remoteBatch.shouldMirrorReplies ? 'reactive' : 'proactive',
                 forceDirect: true,
               },
+              remoteBatch.contactId,
+              runId,
+              'remote_backlog_inline_fallback',
             );
 
             if (

@@ -310,6 +310,9 @@ export class CiaInlineFallbackService {
                 complianceMode: shouldMirrorReplies ? 'reactive' : 'proactive',
                 forceDirect: true,
               },
+              resultContactId || undefined,
+              runId,
+              'backlog_inline_fallback',
             );
 
             if (

@@ -1,5 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { KloelModule } from '../kloel/kloel.module';
+import { SpineModule } from '../kloel/spine/spine.module';
 import { WhatsappModule } from '../whatsapp/whatsapp.module';
 import { CiaBacklogRunService } from './cia-backlog-run.service';
 import { CiaBootstrapService } from './cia-bootstrap.service';
@@ -16,7 +17,7 @@ import { CIA_RUNTIME_SERVICE } from './cia-runtime.port';
 
 /** Cia module. */
 @Module({
-  imports: [KloelModule, forwardRef(() => WhatsappModule)],
+  imports: [KloelModule, SpineModule, forwardRef(() => WhatsappModule)],
   controllers: [CiaController],
   providers: [
     CiaService,

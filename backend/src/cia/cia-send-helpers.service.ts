@@ -6,6 +6,7 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 import { AgentEventsService } from '../whatsapp/agent-events.service';
 import { NON_DIGIT_RE } from '../common/phone';
 import { WHITESPACE_G_RE } from '../common/regex';
+import { SpineEmitterService } from '../kloel/spine/spine-emitter.service';
 
 const PATTERN_RE = /[?!.;,]+$/g;
 export const WHITESPACE_RE = /\s+/;
@@ -66,6 +67,7 @@ export class CiaSendHelpersService {
     @Inject(forwardRef(() => ChannelTransportRegistry))
     private readonly transports: ChannelTransportRegistry,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly spineEmitter?: SpineEmitterService,
   ) {}
 
   getSharedReplyLockKey(
@@ -120,6 +122,9 @@ export class CiaSendHelpersService {
     phone: string,
     text: string,
     options: SendCiaMessageOptions,
+    contactId?: string | null,
+    runId?: string | null,
+    action?: string | null,
   ): Promise<SendActionResult> {
     const reserved = await this.reserveDailyMessageLimit(workspaceId);
     if (!reserved) {
@@ -146,6 +151,25 @@ export class CiaSendHelpersService {
       });
       if (!sendResult.success) {
         await this.releaseDailyMessageLimit(workspaceId);
+      } else {
+        try {
+          await this.spineEmitter?.emit({
+            eventName: 'cognition.cia_backlog_action',
+            workspaceId,
+            truthMode: 'observed',
+            provenance: {
+              source: 'production',
+              processor: 'cia-send-helpers',
+              processorVersion: '1.0.0',
+              schemaVersion: '1.0.0',
+            },
+            payload: { contactId, runId, action, channel: 'whatsapp' },
+          });
+        } catch (err: unknown) {
+          this.logger.warn(
+            `Spine emit failed for cognition.cia_backlog_action: ${(err as Error)?.message ?? String(err)}`,
+          );
+        }
       }
       const msg = sendResult.error ?? sendResult.blockedReason;
       const msgId = sendResult.messageId;

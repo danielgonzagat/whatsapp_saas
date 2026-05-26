@@ -3,6 +3,7 @@ import { CiaSendHelpersService } from './cia-send-helpers.service';
 import { AgentEventsService } from '../whatsapp/agent-events.service';
 import { ChannelTransportRegistry } from '../kloel/channel-transport.registry';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { SpineEmitterService } from '../kloel/spine/spine-emitter.service';
 
 const REDIS_TOKEN = 'default_IORedisModuleConnectionToken';
 
@@ -17,6 +18,7 @@ describe('CiaSendHelpersService', () => {
   };
   let agentEvents: { publish: jest.Mock };
   let transports: { send: jest.Mock };
+  let spineEmitter: { emit: jest.Mock };
 
   beforeEach(async () => {
     redis = {
@@ -28,6 +30,7 @@ describe('CiaSendHelpersService', () => {
     };
     agentEvents = { publish: jest.fn().mockResolvedValue(undefined) };
     transports = { send: jest.fn() };
+    spineEmitter = { emit: jest.fn().mockResolvedValue({ eventId: 'evt-test', eventName: '', timestamp: '', occurredAt: '', truthMode: 'observed', provenance: { source: 'production' as const, processor: '', processorVersion: '', schemaVersion: '', environment: 'dev' } }) };
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CiaSendHelpersService,
@@ -35,6 +38,7 @@ describe('CiaSendHelpersService', () => {
         { provide: AgentEventsService, useValue: agentEvents },
         { provide: ChannelTransportRegistry, useValue: transports },
         { provide: OpsAlertService, useValue: { alertOnCriticalError: jest.fn() } },
+        { provide: SpineEmitterService, useValue: spineEmitter },
       ],
     }).compile();
     service = module.get(CiaSendHelpersService);
@@ -178,6 +182,79 @@ describe('CiaSendHelpersService', () => {
       transports.send.mockResolvedValue({ success: false, error: 'down' });
       await service.sendCiaMessageWithDailyLimit('ws-1', '+5511', 'hi', {});
       expect(redis.decr).toHaveBeenCalled();
+    });
+
+    it('emits cognition.cia_backlog_action spine event on successful send', async () => {
+      transports.send.mockResolvedValue({ success: true, messageId: 'msg-2' });
+      await service.sendCiaMessageWithDailyLimit(
+        'ws-1',
+        '+5511',
+        'hi',
+        {},
+        'contact-1',
+        'run-1',
+        'test_action',
+      );
+      expect(spineEmitter.emit).toHaveBeenCalledTimes(1);
+      expect(spineEmitter.emit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventName: 'cognition.cia_backlog_action',
+          workspaceId: 'ws-1',
+          truthMode: 'observed',
+          payload: {
+            contactId: 'contact-1',
+            runId: 'run-1',
+            action: 'test_action',
+            channel: 'whatsapp',
+          },
+        }),
+      );
+    });
+
+    it('does NOT emit spine event when send fails', async () => {
+      transports.send.mockResolvedValue({ success: false, error: 'down' });
+      await service.sendCiaMessageWithDailyLimit(
+        'ws-1',
+        '+5511',
+        'hi',
+        {},
+        'contact-1',
+        'run-1',
+        'test_action',
+      );
+      expect(spineEmitter.emit).not.toHaveBeenCalled();
+    });
+
+    it('does NOT emit spine event when daily limit is reached', async () => {
+      redis.incr.mockResolvedValue(99999);
+      await service.sendCiaMessageWithDailyLimit(
+        'ws-2',
+        '+5522',
+        'hi',
+        {},
+        'contact-2',
+        'run-2',
+        'test_action',
+      );
+      expect(spineEmitter.emit).not.toHaveBeenCalled();
+      expect(transports.send).not.toHaveBeenCalled();
+    });
+
+    it('does NOT throw when spine emit fails, still returns success', async () => {
+      transports.send.mockResolvedValue({ success: true, messageId: 'msg-3' });
+      spineEmitter.emit.mockRejectedValue(new Error('spine down'));
+      const result = await service.sendCiaMessageWithDailyLimit(
+        'ws-3',
+        '+5533',
+        'hi',
+        {},
+        'contact-3',
+        'run-3',
+        'test_action',
+      );
+      expect(result.success).toBe(true);
+      expect(result.messageId).toBe('msg-3');
+      expect(spineEmitter.emit).toHaveBeenCalledTimes(1);
     });
   });
 
