@@ -33,7 +33,7 @@ export interface HandoffConfidenceSnapshot {
   wouldEscalateAtThreshold04: boolean;
 }
 
-const HANDOFF_THRESHOLD = 0.4;
+export const HANDOFF_THRESHOLD = 0.4;
 
 export function computeHandoffConfidence(
   beliefs: readonly AbiBelief[] | undefined,
