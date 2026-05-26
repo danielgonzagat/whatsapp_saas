@@ -80,6 +80,7 @@ import { IdempotencyMiddleware } from './common/idempotency/idempotency.middlewa
 import { IdempotencyModule } from './common/idempotency/idempotency.module';
 import { KycModule } from './kyc/kyc.module';
 import { MarketingModule } from './marketing/marketing.module';
+import { MarketingChannelsModule } from './marketing/channels/marketing-channels.module';
 import { MarketplaceModule } from './marketplace/marketplace.module';
 import { MemberAreaModule } from './member-area/member-area.module';
 import { MetaModule } from './meta/meta.module';
@@ -279,6 +280,7 @@ function setRedisClientListenerBudget(client: Redis): void {
     MemberAreaModule, // 🎓 Member Areas (Cursos, Comunidades)
     AffiliateModule, // 🤝 Sistema de Afiliados
     MarketingModule, // 📊 Marketing Command Center
+    MarketingChannelsModule, // OmniCore W1 — 6 ChannelDispatchAdapters under marketing/channels/
     PartnershipsModule, // 🤝 Partnerships (Collaborators, Affiliates, Chat)
     VideoModule, // 🎬 Video generation jobs
     CheckoutModule, // Checkout System (products, plans, orders)
