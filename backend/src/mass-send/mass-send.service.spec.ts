@@ -11,6 +11,10 @@ jest.mock('bullmq', () => ({
   })),
 }));
 
+jest.mock('../common/redis/redis.util', () => ({
+  createRedisClient: jest.fn(() => ({})),
+}));
+
 describe('MassSendService', () => {
   let service: MassSendService;
   let module: TestingModule;
@@ -38,6 +42,12 @@ describe('MassSendService', () => {
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  it('closes the queue when the module shuts down', async () => {
+    await module.close();
+
+    expect(mockQueueClose).toHaveBeenCalledTimes(1);
   });
 
   it('sanitizes numbers and enqueues one dispatch job', async () => {

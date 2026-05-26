@@ -21,7 +21,6 @@ export function StepBar({ step, C, onStepClick }: StepBarProps) {
           width: 28,
           height: 2,
           display: 'block',
-          background: i <= step ? C.ember : C.inactiveTrace,
           opacity: i === step ? 1 : i < step ? 0.6 : 1,
           transition: 'all .4s ease',
         };

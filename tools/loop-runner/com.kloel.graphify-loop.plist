@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  tools/loop-runner/com.kloel.graphify-loop.plist
+  Wave 6: launchd manifest for the L13 loop-runner daemon.
+
+  Install (per-user, recommended):
+    cp tools/loop-runner/com.kloel.graphify-loop.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.kloel.graphify-loop.plist
+
+  Tail logs:
+    tail -f /tmp/kloel-graphify-loop.{out,err}.log
+
+  Stop:
+    launchctl unload ~/Library/LaunchAgents/com.kloel.graphify-loop.plist
+
+  The daemon polls graphify-out/auto-pr-jobs/ every 5 min and processes
+  up to 5 jobs per tick. State persisted in graphify-out/loop-state.json
+  so a relaunch never re-processes a done job.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.kloel.graphify-loop</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/bin/node</string>
+    <string>/Users/danielpenin/whatsapp_saas/tools/loop-runner/runner.mjs</string>
+    <string>--max-prs=5</string>
+    <string>--poll-ms=300000</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/Users/danielpenin/whatsapp_saas</string>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+  </dict>
+
+  <key>StandardOutPath</key>
+  <string>/tmp/kloel-graphify-loop.out.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>/tmp/kloel-graphify-loop.err.log</string>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    <key>AGENT_NAME</key>
+    <string>claude-loop-daemon</string>
+  </dict>
+
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+</dict>
+</plist>
