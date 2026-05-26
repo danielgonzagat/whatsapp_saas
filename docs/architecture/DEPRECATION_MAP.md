@@ -106,6 +106,10 @@
 | `buildDuplicateAwareKey` in 2 settings sections (attendance-rules/company-identity) | NEW `frontend/src/components/kloel/settings/duplicate-aware-key.helper.ts` | 2026-05-26 | ✅ migrated (extracted to shared helper) |
 | `FieldLabel` JSX primitive in `vendas/SmartPayment{Form,Result}.tsx` | NEW `vendas/SmartPaymentFieldLabel.tsx` | 2026-05-26 | ✅ migrated (UI primitive; JSX byte-identical so zero pixel changes) |
 | `ConnectedBadge` JSX primitive in `marketing/{Sms,TikTok}MarketingTab.tsx` | NEW `marketing/MarketingConnectedBadge.tsx` | 2026-05-26 | ✅ migrated (UI primitive; JSX byte-identical so zero pixel changes) |
+| `isAuthRedirectLike` + `resolveWorkspaceHeader` in 2 api proxies | `frontend/src/app/api/_lib/bearer-from-request.ts` (existing) | 2026-05-26 | ✅ migrated (added to existing helper; local `readCookieValue` shim removed in both) |
+| `readAppleClientId` + `parseAppleUser` + `AppleUserPayload` across 4 Apple OAuth routes | NEW `frontend/src/app/api/_lib/apple-auth.ts` | 2026-05-26 | ✅ migrated (regular auth start/callback + social-checkout start/callback share canonical) |
+| `getServerApiBase` in 2 checkout server pages (`/[slug]/page.tsx`, `/r/[code]/page.tsx`) | NEW `frontend/src/app/(checkout)/server-api-base.ts` | 2026-05-26 | ✅ migrated (env-precedence + trailing-slash strip canonical) |
+| backend↔worker cross-workspace mirrors (`async-sequence`, `resolve-redis-url`, `contracts/autopilot-jobs`, `constants/sales-templates`, `conversation-agent-state`) | (stays local — separate workspaces by design; ~80 dup symbols) | — | ⏸ kept local |
 
 **Status legend:**
 - ✅ migrated (re-export): local export is now a re-export from canonical; callers unchanged, structure consolidated
