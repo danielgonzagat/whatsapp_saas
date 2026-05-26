@@ -193,10 +193,9 @@ describe('TikTokMarketingService', () => {
         status: 'ok',
         profile: { open_id: 'open-1', display_name: 'Kloel' },
       });
-      expect(fetchSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          href: expect.stringContaining('https://open.tiktokapis.com/v2/user/info/'),
-        }),
+      const profileFetchCall = fetchSpy.mock.calls[0] as [URL, RequestInit];
+      expect(profileFetchCall[0].href).toContain('https://open.tiktokapis.com/v2/user/info/');
+      expect(profileFetchCall[1]).toEqual(
         expect.objectContaining({ headers: { Authorization: 'Bearer creator-token' } }),
       );
     });
@@ -229,12 +228,11 @@ describe('TikTokMarketingService', () => {
         advertiserId: '1234567890',
         campaigns: [{ campaign_id: 'cmp-1', campaign_name: 'Oferta' }],
       });
-      expect(fetchSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          href: expect.stringContaining(
-            'https://business-api.tiktok.com/open_api/v1.3/campaign/get/',
-          ),
-        }),
+      const campaignFetchCall = fetchSpy.mock.calls[0] as [URL, RequestInit];
+      expect(campaignFetchCall[0].href).toContain(
+        'https://business-api.tiktok.com/open_api/v1.3/campaign/get/',
+      );
+      expect(campaignFetchCall[1]).toEqual(
         expect.objectContaining({
           headers: { 'Access-Token': 'advertiser-token', 'Content-Type': 'application/json' },
         }),
