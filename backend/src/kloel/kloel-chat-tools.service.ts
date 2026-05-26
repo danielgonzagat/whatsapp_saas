@@ -2,6 +2,7 @@ import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { filterLegacyProducts } from '../common/products/legacy-products.util';
+import { randomIdSegment } from '../common/random-id';
 import { PrismaService } from '../prisma/prisma.service';
 import { SmartPaymentService } from './smart-payment.service';
 import {
@@ -379,7 +380,7 @@ export class KloelChatToolsService {
       } catch { /* non-blocking */ }
       // Generate real QR code as base64
       let qrCodeBase64 = '';
-      const pixPayload = `00020126580014BR.GOV.BCB.PIX0136${mockId}520400005303986540${mockAmount.toFixed(2)}5802BR5925${customerName}6009SAO PAULO62070503***6304${Math.random().toString(16).slice(2, 6).toUpperCase()}`;
+      const pixPayload = `00020126580014BR.GOV.BCB.PIX0136${mockId}520400005303986540${mockAmount.toFixed(2)}5802BR5925${customerName}6009SAO PAULO62070503***6304${randomIdSegment(4).toUpperCase()}`;
       try {
         qrCodeBase64 = await QRCode.toDataURL(pixPayload, { width: 300, margin: 2 });
       } catch { /* non-blocking */ }
