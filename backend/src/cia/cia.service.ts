@@ -100,9 +100,9 @@ export class CiaService {
       workspaceName: intelligence.workspaceName,
       state: intelligence.runtime?.state || 'IDLE',
       today: {
-        soldAmount: this.readNumber(businessState.approvedSalesAmount),
-        activeConversations: this.readNumber(businessState.openBacklog),
-        pendingPayments: this.readNumber(businessState.pendingPaymentCount),
+        soldAmount: readNumberForce(businessState.approvedSalesAmount),
+        activeConversations: readNumberForce(businessState.openBacklog),
+        pendingPayments: readNumberForce(businessState.pendingPaymentCount),
       },
       now: latest
         ? {
@@ -558,7 +558,4 @@ export class CiaService {
     return typeof value === 'string' ? value : '';
   }
 
-  private readNumber(value: unknown): number {
-    return readNumberForce(value);
-  }
 }
