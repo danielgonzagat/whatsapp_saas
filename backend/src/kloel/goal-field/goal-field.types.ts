@@ -1,4 +1,5 @@
 import type { SpineEventRef } from '../mind/mind.types';
+import { randomIdSegment } from '../../common/random-id';
 
 /**
  * GOAL family types — implements Camada III (Dynamic Goal Field).
@@ -83,11 +84,11 @@ export const DIMENSION_WEIGHT: Readonly<Record<TensionDimension, number>> = Obje
 });
 
 export function makeTensionId(): string {
-  return `t_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  return `t_${Date.now()}_${randomIdSegment(6)}`;
 }
 
 export function makeGoalId(): string {
-  return `g_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  return `g_${Date.now()}_${randomIdSegment(6)}`;
 }
 
 export function entityKey(t: Tension | AggregatedTension): string {

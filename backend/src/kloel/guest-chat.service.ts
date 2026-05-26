@@ -17,6 +17,7 @@ import { UnifiedAgentService } from './unified-agent.service';
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
 import { buildReceipt, writeOperationReceipt, buildResultMeta } from './operation-receipt.helpers';
 import { detectActionIntent, formatToolResult } from './guest-chat.action-intent.helpers';
+import { randomIdSegment } from '../common/random-id';
 
 interface GuestConversation {
   messages: { role: 'user' | 'assistant'; content: string }[];
@@ -87,7 +88,7 @@ export class GuestChatService implements OnModuleDestroy {
       const uploadDir = path.join(process.cwd(), '..', 'uploads', workspaceId || 'guest');
       await fs.mkdir(uploadDir, { recursive: true });
       const ext = path.extname(originalname) || '.bin';
-      const filename = `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}${ext}`;
+      const filename = `${Date.now().toString(36)}_${randomIdSegment(6)}${ext}`;
       const filepath = path.join(uploadDir, filename);
       await fs.writeFile(filepath, buffer);
       const url = `/uploads/${workspaceId || 'guest'}/${filename}`;

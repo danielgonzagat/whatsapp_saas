@@ -19,6 +19,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import type { Role } from '../role/types';
 import type { MaturityStage } from '../maturity/maturity.types';
 import type { SpineEmitterService } from '../spine/spine-emitter.service';
+import { randomIdSegment } from '../../common/random-id';
 // =========================================================================
 // TYPES
 // =========================================================================
@@ -389,6 +390,6 @@ export class MercadoEntradaDeclaratorService implements OnModuleInit {
   // HELPERS
   // -------------------------------------------------------------------
   private makeEventId(): string {
-    return `me_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+    return `me_${Date.now()}_${randomIdSegment(8)}`;
   }
 }
