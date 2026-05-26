@@ -1,6 +1,7 @@
 import { mutate } from 'swr';
 import { API_BASE } from '../http';
 import { tokenStorage, resolveWorkspaceFromAuthPayload } from './core-tokens';
+import { REFRESH_TOKEN_ERROR_CODES } from './auth-errors';
 
 export { tokenStorage, resolveWorkspaceFromAuthPayload };
 
@@ -192,6 +193,32 @@ const API_ORIGIN = API_URL ? new URL(API_URL).origin : '';
 // Mutex to prevent concurrent refresh attempts (race condition on polling pages)
 let refreshPromise: Promise<boolean> | null = null;
 
+// Cross-tab auth coordination: winning tab announces successful
+// refreshes via BroadcastChannel so losing tabs can re-read cookies.
+const AUTH_CHANNEL =
+  typeof BroadcastChannel !== 'undefined'
+    ? new BroadcastChannel('kloel-auth')
+    : null;
+
+function announceAuthRefresh(): void {
+  if (AUTH_CHANNEL) {
+    try {
+      AUTH_CHANNEL.postMessage({ type: 'tokens-refreshed' });
+    } catch {
+      /* postMessage may throw in sandboxed environments */
+    }
+  }
+}
+
+if (AUTH_CHANNEL) {
+  AUTH_CHANNEL.addEventListener('message', (event: MessageEvent) => {
+    if (event.data?.type === 'tokens-refreshed') {
+      // Proactive reconciliation — snapshot-compare-clear in
+      // doRefreshAccessToken also handles this defensively.
+    }
+  });
+}
+
 async function refreshAccessToken(): Promise<boolean> {
   // If a refresh is already in-flight, wait for its result instead of starting a new one
   if (refreshPromise) {
@@ -220,8 +247,48 @@ async function doRefreshAccessToken(): Promise<boolean> {
     });
 
     if (!res.ok) {
-      tokenStorage.clear();
-      return false;
+      // Snapshot-compare-clear: if another tab won the race and
+      // wrote fresh cookies while we were in-flight, skip the clear.
+      const currentRefresh = tokenStorage.getRefreshToken();
+      if (currentRefresh && currentRefresh !== refreshToken) {
+        return true; // winning tab already persisted new tokens
+      }
+
+      // Parse PI-μ error code for differentiated recovery
+      let errorCode: string | undefined;
+      try {
+        const errorBody = await res.json();
+        errorCode = (errorBody as Record<string, unknown>)?.code as string | undefined;
+      } catch {
+        /* ignore parse errors */
+      }
+
+      switch (errorCode) {
+        case REFRESH_TOKEN_ERROR_CODES.RACE_LOST:
+          // Another process claimed the token first. Re-read from
+          // cookies in case the winner already wrote fresh tokens.
+          if (tokenStorage.getToken()) {
+            return true;
+          }
+          return false;
+
+        case REFRESH_TOKEN_ERROR_CODES.ISSUANCE_FAILED:
+          // Transient server error — caller should retry with backoff.
+          return false;
+
+        case REFRESH_TOKEN_ERROR_CODES.REPLAYED:
+          // Security event — log and clear.
+          console.error('[auth] Security: refresh token replay detected');
+          tokenStorage.clear();
+          return false;
+
+        case REFRESH_TOKEN_ERROR_CODES.UNKNOWN:
+        case REFRESH_TOKEN_ERROR_CODES.AGENT_MISSING:
+        case REFRESH_TOKEN_ERROR_CODES.EXPIRED:
+        default:
+          tokenStorage.clear();
+          return false;
+      }
     }
 
     const data: RefreshTokenResponse = await res.json();
@@ -232,11 +299,20 @@ async function doRefreshAccessToken(): Promise<boolean> {
       if (newRefresh) {
         tokenStorage.setRefreshToken(newRefresh);
       }
+
+      // Announce success to other tabs via BroadcastChannel
+      announceAuthRefresh();
+
       return true;
     }
 
     return false;
   } catch {
+    // Snapshot-compare-clear on network error too
+    const currentRefresh = tokenStorage.getRefreshToken();
+    if (currentRefresh && currentRefresh !== refreshToken) {
+      return true;
+    }
     tokenStorage.clear();
     return false;
   }
@@ -385,6 +461,39 @@ async function retryApiRequestWithRefreshedToken<T>(
   return performApiRequest<T>(url, { ...baseInit, headers });
 }
 
+// Exponential backoff delays for 429 (Too Many Requests) responses.
+const BACKOFF_DELAYS_MS = [500, 1500, 4000];
+
+async function retryAfterBackoff<T>(
+  url: string,
+  baseInit: RequestInit,
+  firstResponse: ApiResponse<T>,
+): Promise<ApiResponse<T>> {
+  let last = firstResponse;
+
+  for (let attempt = 0; attempt < BACKOFF_DELAYS_MS.length; attempt++) {
+    await new Promise((resolve) => setTimeout(resolve, BACKOFF_DELAYS_MS[attempt]));
+
+    // Re-read auth header — another tab may have refreshed tokens
+    const token = tokenStorage.getToken();
+    const headers: Record<string, string> = {
+      ...(baseInit.headers as Record<string, string>),
+    };
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await performApiRequest<T>(url, { ...baseInit, headers });
+
+    if (response.status !== 429) {
+      return response;
+    }
+    last = response;
+  }
+
+  return last;
+}
+
 /** Api fetch. */
 export async function apiFetch<T = unknown>(
   endpoint: string,
@@ -405,7 +514,11 @@ export async function apiFetch<T = unknown>(
   };
 
   try {
-    const response = await performApiRequest<T>(url, baseInit);
+    let response = await performApiRequest<T>(url, baseInit);
+
+    if (response.status === 429) {
+      response = await retryAfterBackoff<T>(url, baseInit, response);
+    }
 
     if (response.status === 401 && tokenStorage.getRefreshToken()) {
       const retryResponse = await retryApiRequestWithRefreshedToken<T>(url, baseInit, headers);
