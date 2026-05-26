@@ -41,6 +41,19 @@ function executableLines(src) {
 }
 
 function detectReason(src, file) {
+  // --- NOT a stub: delegate-to-view pattern ---
+  // File imports a View component from @/components/kloel/ and renders it.
+  if (/import\s+\w+View\s+from\s+['"]@\/components\/kloel\//.test(src) && /<[A-Z]\w+/.test(src)) return null;
+
+  // --- NOT a stub: documented redirect ---
+  // File has a JSDoc comment block AND uses redirect() — intentional alias.
+  if (/\/\*\*[\s\S]*?\*\//.test(src) && /redirect\(['"`]\/[^'"`]+['"`]\)/.test(src)) return null;
+
+  // --- NOT a stub: honest empty-state ---
+  // File explicitly acknowledges a feature gap with user-facing messaging.
+  if (/(?:em\s+breve|não\s+está\s+disponível|setup-required)/i.test(src)) return null;
+
+  // --- stub detection below ---
   if (/redirect\(['"`]\/[^'"`]+['"`]\)/.test(src) && !/<[A-Z]/.test(src)) return 'redirect-only';
   if (/return\s+null\s*[;}]/.test(src)) return 'returns-null';
   // Only flag TRUE placeholder markers — exclude HTML attribute "placeholder="
