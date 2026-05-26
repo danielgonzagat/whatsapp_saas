@@ -473,6 +473,25 @@ export class KloelProductSubResourceToolsService {
         pid = p?.id ?? '';
       }
       if (!pid) {
+        const target = productName
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase();
+        const products = await this.prisma.product.findMany({
+          where: { workspaceId },
+          select: { id: true, name: true },
+          take: 200,
+        });
+        const found = products.find((product) =>
+          product.name
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase()
+            .includes(target),
+        );
+        pid = found?.id ?? '';
+      }
+      if (!pid) {
         return { success: false, error: 'Produto nao encontrado.' };
       }
       await this.prisma.productUrl.create({
@@ -536,19 +555,32 @@ export class KloelProductSubResourceToolsService {
   }
 
   async toolDeleteUrl(workspaceId: string, args: UnknownRecord) {
-    const label = this.str(args.urlLabel);
-    if (!label) {
-      return { success: false, error: 'Informe a descricao ou label da URL para remover.' };
+    const label = this.str(args.urlLabel || args.label);
+    const url = this.str(args.url);
+    if (!label && !url) {
+      return { success: false, error: 'Informe a descricao ou URL para remover.' };
     }
     try {
-      const existing = await this.prisma.productUrl.findFirst({
-        where: { description: { contains: label, mode: 'insensitive' }, product: { workspaceId } },
-        select: { id: true },
-      });
-      if (!existing) {
+      let target: { id: string } | null = null;
+      if (label) {
+        target = await this.prisma.productUrl.findFirst({
+          where: {
+            description: { contains: label, mode: 'insensitive' },
+            product: { workspaceId },
+          },
+          select: { id: true },
+        });
+      }
+      if (!target && url) {
+        target = await this.prisma.productUrl.findFirst({
+          where: { url: { contains: url }, product: { workspaceId } },
+          select: { id: true },
+        });
+      }
+      if (!target) {
         return { success: false, error: 'URL nao encontrada.' };
       }
-      await this.prisma.productUrl.delete({ where: { id: existing.id } });
+      await this.prisma.productUrl.delete({ where: { id: target.id } });
       return { success: true, message: 'URL removida.' };
     } catch (e: unknown) {
       return { success: false, error: e instanceof Error ? e.message : 'Erro ao deletar URL.' };

@@ -77,11 +77,22 @@ export function formatToolResult(tool: string, result: unknown): string {
       return `Cupons: ${coupons.map((c) => `${s(c.code)} (${s(c.discountType)})`).join(', ')}`;
     }
     case 'get_product_urls': {
-      const urls = Array.isArray(r.urls) ? (r.urls as Array<Record<string, unknown>>) : [];
+      const urls = Array.isArray(r.customUrls)
+        ? (r.customUrls as Array<Record<string, unknown>>)
+        : Array.isArray(r.urls)
+          ? (r.urls as Array<Record<string, unknown>>)
+          : [];
       if (urls.length === 0) {
-        return 'Nenhuma URL configurada.';
+        return 'Nenhuma URL cadastrada para este produto.';
       }
-      return `URLs: ${urls.map((u) => `${s(u.label || u.url)}`).join(', ')}`;
+      return `URLs: ${urls.map((u) => `${s(u.description || u.label || u.url)} -> ${s(u.url)}`).join(', ')}`;
+    }
+    case 'get_product_reviews': {
+      const reviews = Array.isArray(r.reviews) ? (r.reviews as Array<Record<string, unknown>>) : [];
+      if (reviews.length === 0) {
+        return 'Nenhuma avaliação encontrada.';
+      }
+      return `Avaliações (${reviews.length}): ${reviews.map((review) => `${s(review.rating, '?')} ${s(review.comment)}`.trim()).join(' | ')}`;
     }
     case 'create_payment_link': {
       const pix = s(r.pixCopyPaste);

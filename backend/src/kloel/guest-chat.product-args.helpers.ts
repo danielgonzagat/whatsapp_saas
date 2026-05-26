@@ -1,7 +1,7 @@
 export function extractProductName(msg: string): string {
-  // Try "para Produto X" pattern (for commands ending with product reference)
-  const prodMatch = msg.match(
-    /para\s+(?:o\s+|a\s+)?(?:produto\s+)?["']?([A-Za-zÀ-ÿ0-9\s.+-]{2,60}?)(?:\s*(?:,|\.|R\$|pre[çc]o|valor|\bcom\b|\bpor\b|\bpara\b|\burl\b|https?|\bcor\b|\bdescri[cç][aã]o\b|\bdescricao\b|$)|$)/i,
+  const cleanMsg = msg.replace(/[?!]+\s*$/, '').trim();
+  const prodMatch = cleanMsg.match(
+    /para\s+(?:o\s+|a\s+)\s*(?:produto|oferta|plano|checkout|item)?\s*["']?([A-Za-zÀ-ÿ0-9\s.+-]{2,60}?)(?:\s*(?:,|\.|R\$|pre[çc]o|valor|\bcom\b|\bpor\b|\bpara\b|\burl\b|https?|\bcor\b|\bdescri[cç][aã]o\b|\bdescricao\b|$)|$)/i,
   );
   if (prodMatch?.[1]) {
     const pn = prodMatch[1].trim();
@@ -9,8 +9,16 @@ export function extractProductName(msg: string): string {
       return pn;
     }
   }
-  // Try "do Produto X" or "da Oferta X" pattern first (for venda/pedido contexts)
-  const doMatch = msg.match(
+  const noMatch = cleanMsg.match(
+    /\bno\s+(?:produto|oferta|plano|checkout|item)?\s*["']?([A-Za-zÀ-ÿ0-9\s.+-]{2,60}?)(?:\s*(?:R\$|pre[çc]o|valor|\bcom\b|\bpor\b|\bpara\b|\bno\b|\bna\b|$)|$)/i,
+  );
+  if (noMatch?.[1]) {
+    const nn = noMatch[1].trim();
+    if (nn.length >= 3) {
+      return nn;
+    }
+  }
+  const doMatch = cleanMsg.match(
     /\b(?:do|da)\s+(?:produto|oferta|plano|checkout|item)?\s*["']?([A-Za-zÀ-ÿ0-9\s.+-]{2,60}?)(?:\s*(?:R\$|pre[çc]o|valor|\bcom\b|\bpor\b|\bpara\b|\bdo\b|\bpara\b|$)|$)/i,
   );
   if (doMatch?.[1]) {
@@ -19,11 +27,10 @@ export function extractProductName(msg: string): string {
       return cleanName;
     }
   }
-  const m = msg.match(
+  const m = cleanMsg.match(
     /(?:produtos?|planos?|ofertas?|checkouts?|cupons?|vendas?|pedidos?|orders?)\s+(?:chamad[oa]|de\s+)?["']?([A-Za-zÀ-ÿ0-9\s.+-]{2,60}?)(?:\s*(?:R\$|pre[çc]o|valor|\bcom\b|\bpor\b|\bpara\b|\bdo\b|\bmudando\b|\bmuda\b|\bdescri[cç][aã]o\b|\btags?\b|\bgarantia\b|\bcategoria\b|\bformato\b|\bcart[aã]o\b|\bpix\b|\bboleto\b|\bcor\b|\bcupom\b|\.\s+[A-ZÀ]|$)|$)/i,
   );
   const name = (m?.[1] || '').trim() || '';
-  // Strip leading prepositions and trailing punctuation
   return name
     .replace(/^(para|do|da|de|no|na|em|o|a)\s+/i, '')
     .replace(/[.,;:!]+$/, '')
@@ -32,8 +39,11 @@ export function extractProductName(msg: string): string {
 
 export function extractProductArgs(msg: string): Record<string, unknown> {
   const args: Record<string, unknown> = {};
-  args.productName = extractProductName(msg);
-  const name = extractProductName(msg);
+  const explicitName = msg.match(
+    /(?:nome(?:\s+do\s+produto)?|name|chama(?:do)?)\s*(?:[eé]|:)\s*["']?([A-Za-zÀ-ÿ0-9\s.+-]{2,60}?)(?:\s*(?:,|\.|R\$|pre[çc]o|categoria|formato|tipo|tags?|garantia|descri[cç]|pagamento|dispon[ií]vel|ativo|$))/i,
+  );
+  const name = explicitName?.[1]?.trim() || extractProductName(msg);
+  args.productName = name;
   if (name) {
     args.name = name;
   }
@@ -65,14 +75,14 @@ export function extractProductArgs(msg: string): Record<string, unknown> {
   }
   // Description
   const descMatch = msg.match(
-    /(?:descri[cç][aã]o|description)\s*:?\s*['"]?([A-Za-zÀ-ÿ0-9\s\-.,!]{5,200}?)(?:\s*(?:,|\.|R\$|pre[çc]o|categoria|formato|tags|garantia|url|$))/i,
+    /(?:descri[cç][aã]o|description)\s*:?\s*['"]?([A-Za-zÀ-ÿ0-9\s\-.,!]{5,200}?)(?:\s*(?:,|\.|R\$|pre[çc]o|email|suporte|categoria|formato|tags?|garantia|url|dispon[ií]vel|ativo|$))/i,
   );
   if (descMatch?.[1]) {
     args.description = descMatch[1].trim();
   }
   // Tags
   const tagsMatch = msg.match(
-    /(?:tags?|palavras?[-\s]?chave)\s*:?\s*([A-Za-zÀ-ÿ0-9\s,]{3,100}?)(?:\s*(?:,|\.|R\$|pre[çc]o|$))/i,
+    /(?:tags?|palavras?[-\s]?chave)\s*:?\s*([A-Za-zÀ-ÿ0-9\s,]{3,150}?)(?:\s*(?:\.\s+[A-ZÀ]|R\$|pre[çc]o|descri[cç][aã]o\b|descricao\b|garantia\b|categoria\b|formato\b|$))/i,
   );
   if (tagsMatch?.[1]) {
     args.tags = tagsMatch[1]
@@ -110,7 +120,7 @@ export function extractProductArgs(msg: string): Record<string, unknown> {
   if (/\b(dispon[ií]vel|ativo|disponivel)\b.*\b(venda|vender)\b/i.test(msg)) {
     args.active = true;
   }
-  if (/\b(indispon[ií]vel|pausar|desativar)\b/i.test(msg)) {
+  if (/\b(indispon[ií]vel|pausar|desativa(?:r)?|desabilita(?:r)?)\b/i.test(msg)) {
     args.active = false;
   }
   return args;
@@ -118,9 +128,9 @@ export function extractProductArgs(msg: string): Record<string, unknown> {
 
 export function extractPlanArgs(msg: string): Record<string, unknown> {
   const args: Record<string, unknown> = {};
-  // Product name: after "para" or "do produto" — more reliable than extractProductName for plan/checkout contexts
+  // Product name: after "para o/a" in plan/checkout contexts.
   const prodMatch = msg.match(
-    /para\s+(?:o\s+|a\s+)?(?:produto\s+)?["']?([A-Za-zÀ-ÿ0-9\s.+-]{2,60}?)(?:\s*(?:,|\.|R\$|pre[çc]o|valor|\bcom\b|\bpor\b|\bpara\b|\burl\b|https?|\bcor\b|\bdescri[cç][aã]o\b|\bdescricao\b|$)|$)/i,
+    /para\s+(?:o\s+|a\s+)\s*(?:produto|oferta|plano|checkout|item)?\s*["']?([A-Za-zÀ-ÿ0-9\s.+-]{2,60}?)(?:\s*(?:,|\.|R\$|pre[çc]o|valor|\bcom\b|\bpor\b|\bpara\b|\burl\b|https?|\bcor\b|\bdescri[cç][aã]o\b|\bdescricao\b|$)|$)/i,
   );
   if (prodMatch?.[1]) {
     args.productName = prodMatch[1].trim();
@@ -132,7 +142,10 @@ export function extractPlanArgs(msg: string): Record<string, unknown> {
     /(?:nome|chamad[oa]|plano|checkout)\s*:?\s*([A-Za-zÀ-ÿ0-9\s-]{2,30}?)(?:\s*(?:,|\.|pre[çc]o|R\$|valor|\bcom\b|\bpor\b|\bpara\b|\bcor\b|$))/i,
   );
   if (nm && nm[1]) {
-    args.planName = nm[1].trim();
+    args.planName = nm[1]
+      .trim()
+      .replace(/^chamad[oa]\s+/i, '')
+      .trim();
   }
   // Fallback: extract name directly after "checkout " or "plano " without colon
   if (!args.planName) {

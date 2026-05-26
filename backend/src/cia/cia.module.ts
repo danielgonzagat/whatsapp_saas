@@ -16,7 +16,7 @@ import { CIA_RUNTIME_SERVICE } from './cia-runtime.port';
 
 /** Cia module. */
 @Module({
-  imports: [KloelModule, forwardRef(() => WhatsappModule)],
+  imports: [forwardRef(() => KloelModule), forwardRef(() => WhatsappModule)],
   controllers: [CiaController],
   providers: [
     CiaService,

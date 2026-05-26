@@ -67,7 +67,9 @@ import { MetricsModule } from '../metrics/metrics.module';
 import { PartnershipsModule } from '../partnerships/partnerships.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { PulseArtifactService } from '../pulse/pulse-artifact.service';
+import { WebhooksModule } from '../webhooks/webhooks.module';
 import { WalletModule } from '../wallet/wallet.module';
+import { WhatsappModule } from '../whatsapp/whatsapp.module';
 import { ContactsModule } from '../contacts/contacts.module';
 import { ContactIdentityResolverService } from '../contacts/contact-identity-resolver.service';
 import { AdRulesEngineService } from './ad-rules-engine.service';
@@ -187,7 +189,7 @@ import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service
 @Module({
   imports: [
     PrismaModule,
-    forwardRef(() => require('../whatsapp/whatsapp.module').WhatsappModule),
+    forwardRef(() => WhatsappModule),
     ScheduleModule.forRoot(),
     KycModule,
     forwardRef(() => CampaignsModule),
@@ -200,7 +202,7 @@ import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service
     KloelAudioModule,
     KloelRulesModule,
     ContactsModule,
-    forwardRef(() => require('../webhooks/webhooks.module').WebhooksModule),
+    forwardRef(() => WebhooksModule),
     LineageModule,
     DriftModule,
     RiskClassModule,

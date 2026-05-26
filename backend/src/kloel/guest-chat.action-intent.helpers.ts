@@ -18,15 +18,19 @@ export function detectActionIntent(
 
   // ── PRODUTOS ──
   if (
-    /cria(r|ndo)?\s+(?:um[a]?\s+)?(produto|oferta|novo)/.test(msg) ||
-    /cadastra(r|ndo)?\s+(?:um[a]?\s+)?produto/.test(msg)
+    /cria(r|ndo)?\s+(?:um[a]?\s+)?(?:o\s+|a\s+)?(produto|oferta|novo)/.test(msg) ||
+    /cadastra(r|ndo)?\s+(?:um[a]?\s+)?(?:o\s+|a\s+)?produto/.test(msg)
   ) {
     return { tool: 'create_product', args: extractProductArgs(msg) };
   }
   if (/lista(r|ndo)? (produtos|meus produtos|ofertas|cat[aá]logo)/.test(msg)) {
     return { tool: 'list_products', args: {} };
   }
-  if (/(?:edita|atualiza|muda|altera)(?:r|ndo)?\s+(?:um[a]?\s+)?(?:o\s+)?produto/.test(msg)) {
+  if (
+    /(?:edita|atualiza|muda|altera|desativa|pausa|desabilita)(?:r|ndo)?\s+(?:um[a]?\s+)?(?:o\s+)?produto/.test(
+      msg,
+    )
+  ) {
     return { tool: 'update_product', args: extractProductArgs(msg) };
   }
   if (/(apaga|deleta|exclui|remove)(?:r|ndo)?\s+(?:um[a]?\s+)?(?:o\s+)?produto/.test(msg)) {
@@ -56,14 +60,19 @@ export function detectActionIntent(
   }
 
   // ── URL CRUD ──
-  if (/(adiciona(?:r|ndo)?|cria(?:r|ndo)?|nova|novo)\s+url/.test(msg)) {
+  if (/(adiciona(?:r|ndo)?|cria(?:r|ndo)?|nova|novo)\s+(?:o\s+|a\s+)?url/.test(msg)) {
     return { tool: 'add_url', args: extractUrlArgs(msg) };
   }
-  if (/(edita(?:r|ndo)?|atualiza(?:r|ndo)?|muda(?:r|ndo)?|altera(?:r|ndo)?)\s+url/.test(msg)) {
+  if (
+    /(edita(?:r|ndo)?|atualiza(?:r|ndo)?|muda(?:r|ndo)?|altera(?:r|ndo)?)\s+(?:o\s+|a\s+)?url/.test(
+      msg,
+    )
+  ) {
     return { tool: 'update_url', args: extractUrlArgs(msg) };
   }
-  if (/(apaga|deleta|exclui|remove)\s+url/.test(msg)) {
-    return { tool: 'delete_url', args: { urlLabel: extractProductName(msg) } };
+  if (/(apaga|deleta|exclui|remove)(?:r|ndo)?\s+(?:o\s+|a\s+)?url/.test(msg)) {
+    const urlArgs = extractUrlArgs(msg);
+    return { tool: 'delete_url', args: { urlLabel: extractProductName(msg), url: urlArgs.url } };
   }
 
   // ── DETALHES DO PRODUTO ──
@@ -72,15 +81,19 @@ export function detectActionIntent(
   }
 
   // ── PLANOS ──
-  if (/cria(r|ndo)?\s+(?:um[a]?\s+)?(plano|parcelamento)/.test(msg)) {
+  if (/cria(r|ndo)?\s+(?:um[a]?\s+)?(?:o\s+|a\s+)?(plano|parcelamento)/.test(msg)) {
     return { tool: 'create_plan', args: extractPlanArgs(msg) };
   }
-  if (/lista(r|ndo)? planos?/.test(msg)) {
+  if (
+    /(?:lista(?:r|ndo)?|mostra(?:r|ndo)?|ve(?:r|ndo)?|quais?\s+(?:s[aã]o\s+)?(?:os?\s+)?|meus?\s+)planos?/i.test(
+      msg,
+    )
+  ) {
     return { tool: 'get_product_plans', args: { productName: extractProductName(msg) } };
   }
 
   // ── CHECKOUTS ──
-  if (/cria(r|ndo)?\s+(?:um[a]?\s+)?checkout/.test(msg)) {
+  if (/cria(r|ndo)?\s+(?:um[a]?\s+)?(?:o\s+|a\s+)?checkout/.test(msg)) {
     return { tool: 'create_checkout', args: extractPlanArgs(msg) };
   }
 
@@ -93,7 +106,7 @@ export function detectActionIntent(
   }
 
   // ── CUPONS ──
-  if (/cria(r|ndo)?\s+(?:um[a]?\s+)?cupom/.test(msg)) {
+  if (/cria(r|ndo)?\s+(?:um[a]?\s+)?(?:o\s+|a\s+)?cupom/.test(msg)) {
     return { tool: 'create_coupon', args: extractCouponArgs(msg) };
   }
   if (/lista(r|ndo)?\s+(?:meus\s+)?cupons?/.test(msg)) {
@@ -116,15 +129,18 @@ export function detectActionIntent(
     return { tool: 'generate_boleto', args: extractPaymentArgs(msg) };
   }
 
-  // ── CARTEIRA ── (saque antes de saldo para evitar match parcial)
+  // ── CARTEIRA ── (saque e antecipacao antes de saldo para evitar match parcial)
   if (/saque|solicitar saque|(?:quero|preciso|gostaria|vou)\s+sacar/.test(msg)) {
     return { tool: 'request_withdrawal', args: {} };
   }
-  if (/(meu )?saldo|carteira/.test(msg)) {
-    return { tool: 'get_wallet_balance', args: {} };
+  if (/antecipa[cç][aã]o|antecipar|adiantar\s+receb[ií]vel/.test(msg)) {
+    return { tool: 'request_anticipation', args: {} };
   }
   if (/extrato|hist[oó]rico.*financeiro/.test(msg)) {
     return { tool: 'get_wallet_statement', args: {} };
+  }
+  if (/(meu )?saldo|carteira/.test(msg)) {
+    return { tool: 'get_wallet_balance', args: {} };
   }
 
   // ── NPS / CHURN (antes de vendas para nao capturar) ──
@@ -136,6 +152,9 @@ export function detectActionIntent(
   }
 
   // ── URLs / PÁGINAS ── (antes de vendas para capturar "pagina de vendas")
+  if (/lista(?:r|ndo)?\s+(?:as\s+|os\s+)?urls?/.test(msg)) {
+    return { tool: 'get_product_urls', args: { productName: extractProductName(msg) } };
+  }
   if (/urls?.*(produto|p[aá]gina)/.test(msg) || /p[aá]gina.*vendas/.test(msg)) {
     return { tool: 'get_product_urls', args: { productName: extractProductName(msg) } };
   }
@@ -150,8 +169,8 @@ export function detectActionIntent(
   if (/(minhas |meus )?vendas|pedidos/.test(msg)) {
     return { tool: 'list_orders', args: {} };
   }
-  if (/abandonos?|abandonou|carrinhos? abandonados?/.test(msg)) {
-    return { tool: 'get_sales_summary', args: {} };
+  if (/(?:carrinhos?\s+)?abandon(?:os?|ados?|ou)/.test(msg)) {
+    return { tool: 'get_abandonments', args: {} };
   }
 
   // ── CRM / LEADS ──
@@ -273,11 +292,6 @@ export function detectActionIntent(
   // ── ESTORNOS ──
   if (/estornos?|reembolsos?|devolu[cç][aã]o|cancelar\s+(venda|pedido)/.test(msg)) {
     return { tool: 'list_refunds', args: {} };
-  }
-
-  // ── ANTECIPAÇÕES ──
-  if (/antecipa[cç][aã]o|adiantar\s+receb/.test(msg)) {
-    return { tool: 'request_anticipation', args: {} };
   }
 
   // ── AVALIAÇÕES ──
