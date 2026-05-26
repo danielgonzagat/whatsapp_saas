@@ -41,6 +41,7 @@ import { MindPredictionService } from './mind-prediction.service';
     ConsolidationService,
     MultiTimescaleCoordinator,
     MindBackgroundProcessor,
+    MindBackgroundScheduler,
   ],
 })
 export class MindModule {}

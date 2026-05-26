@@ -90,6 +90,16 @@ export class MindBackgroundScheduler implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  /** Register a workspace for MIND tick scheduling (no-op stub — policy TBD). */
+  public registerWorkspace(_workspaceId: string): void {
+    // No-op: scheduling policy will be wired in a future wave.
+  }
+
+  /** Deregister a workspace from MIND tick scheduling (no-op stub — policy TBD). */
+  public deregisterWorkspace(_workspaceId: string): void {
+    // No-op: scheduling policy will be wired in a future wave.
+  }
+
   private async executeTick(): Promise<void> {
     // Primary: spine ring (in-memory, real-time)
     const spineEvents = this.spine.recentEventsAsRef(500);

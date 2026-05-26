@@ -19,6 +19,7 @@ describe('CiaBootstrapService', () => {
     scheduleContactCatalogRefresh: jest.Mock;
   };
   let chatFilter: { normalizeChats: jest.Mock; selectRemotePendingChats: jest.Mock };
+  let mindScheduler: { registerWorkspace: jest.Mock; deregisterWorkspace: jest.Mock };
 
   beforeEach(async () => {
     prisma = { conversation: { findMany: jest.fn().mockResolvedValue([]) } };
@@ -35,6 +36,10 @@ describe('CiaBootstrapService', () => {
     chatFilter = {
       normalizeChats: jest.fn().mockReturnValue([]),
       selectRemotePendingChats: jest.fn().mockReturnValue([]),
+    };
+    mindScheduler = {
+      registerWorkspace: jest.fn(),
+      deregisterWorkspace: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -165,6 +170,67 @@ describe('CiaBootstrapService', () => {
       );
       const publishCalls = agentEvents.publish.mock.calls.map((c) => c[0]?.type);
       expect(publishCalls).toContain('thought');
+    });
+
+    it('registers the workspace with MIND tick scheduler after successful bootstrap', async () => {
+      const sched = {
+        registerWorkspace: jest.fn(),
+        deregisterWorkspace: jest.fn(),
+      };
+      // Build a fresh service with the scheduler injected directly
+      const svc = new CiaBootstrapService(
+        prisma as never,
+        providerRegistry as never,
+        agentEvents as never,
+        chatFilter as never,
+        runtimeState as never,
+        { triggerCatchup: jest.fn().mockResolvedValue({ scheduled: true, reason: 'test' }) } as never,
+        undefined,
+        sched as never,
+      );
+
+      providerRegistry.getSessionStatus.mockResolvedValue({
+        connected: true,
+        status: 'WORKING',
+      });
+      providerRegistry.getChats.mockResolvedValue({ chats: [] });
+      const startBacklogRun = jest.fn().mockResolvedValue({});
+      const startPresence = jest.fn().mockResolvedValue(undefined);
+      const stopPresence = jest.fn().mockResolvedValue(undefined);
+
+      await svc.run('ws-test', startBacklogRun, startPresence, stopPresence);
+
+      expect(sched.registerWorkspace).toHaveBeenCalledWith('ws-test');
+    });
+
+    it('does NOT register the workspace when bootstrap fails (not connected)', async () => {
+      const sched = {
+        registerWorkspace: jest.fn(),
+        deregisterWorkspace: jest.fn(),
+      };
+      const svc = new CiaBootstrapService(
+        prisma as never,
+        providerRegistry as never,
+        agentEvents as never,
+        chatFilter as never,
+        runtimeState as never,
+        { triggerCatchup: jest.fn() } as never,
+        undefined,
+        sched as never,
+      );
+
+      providerRegistry.getSessionStatus.mockResolvedValue({
+        connected: false,
+        status: 'STARTING',
+      });
+
+      const startBacklogRun = jest.fn();
+      const startPresence = jest.fn().mockResolvedValue(undefined);
+      const stopPresence = jest.fn().mockResolvedValue(undefined);
+
+      await svc.run('ws-test', startBacklogRun, startPresence, stopPresence);
+
+      expect(sched.registerWorkspace).not.toHaveBeenCalled();
     });
   });
 });
