@@ -89,10 +89,14 @@ export class KloelToolDispatcherService {
         case 'save_product':
         case 'create_product':
           return await this.chatToolsService.toolSaveProduct(workspaceId, asToolArgs(args));
+        case 'products.create':
+          return this.executeTool(workspaceId, 'create_product', args, userId);
         case 'list_products':
           return await this.chatToolsService.toolListProducts(workspaceId);
         case 'update_product':
           return await this.chatToolsService.toolUpdateProduct(workspaceId, asToolArgs(args));
+        case 'products.update':
+          return this.executeTool(workspaceId, 'update_product', args, userId);
         case 'self.capabilities':
         case 'list_capabilities':
           return {
@@ -190,14 +194,19 @@ export class KloelToolDispatcherService {
             });
           }
           return { success: false, error: 'checkout_service_unavailable' };
+        case 'plans.create':
+          return this.executeTool(workspaceId, 'create_plan', args, userId);
+        case 'plans.update':
+          return this.executeTool(workspaceId, 'update_plan', args, userId);
+        case 'checkouts.create':
+          return this.executeTool(workspaceId, 'create_checkout', args, userId);
+        case 'checkouts.update':
+          return this.executeTool(workspaceId, 'update_checkout', args, userId);
+        case 'coupons.create':
+          return this.executeTool(workspaceId, 'create_coupon', args, userId);
+        case 'coupons.delete':
+          return this.executeTool(workspaceId, 'delete_coupon', args, userId);
         case 'plan_create':
-          if (this.planService) {
-            return this.planService.create(workspaceId, {
-              productId: String(args.productId || ''),
-              name: String(args.name || args.planName || 'Plano'),
-              price: Number(args.price) || 0,
-            });
-          }
         case 'create_plan':
         case 'update_plan':
         case 'create_checkout':
@@ -245,6 +254,8 @@ export class KloelToolDispatcherService {
           return await this.chatToolsService.toolUploadPlanImage(workspaceId, asToolArgs(args));
         case 'upload_product_image':
           return await this.chatToolsService.toolUploadProductImage(workspaceId, asToolArgs(args));
+        case 'products.upload_image':
+          return this.executeTool(workspaceId, 'upload_product_image', args, userId);
         case 'update_fiscal_data':
           return await this.bizConfigToolsService.toolSaveBusinessInfo(workspaceId, asToolArgs(args));
         case 'upload_document':
