@@ -105,16 +105,38 @@ export class AgentRuntimeSchedulerService {
   }
 
   async listDueJobs(now = new Date(), limit = 25): Promise<DueAgentJob[]> {
-    const rows = await this.prisma.kloelMemory.findMany({
-      where: { category: 'agent_job', type: 'scheduled' },
-      orderBy: { updatedAt: 'asc' },
-      take: Math.max(1, Math.min(limit, 100)),
-      select: { id: true, workspaceId: true, key: true, value: true },
-    });
+    try {
+      const rows = await this.prisma.kloelMemory.findMany({
+        where: { category: 'agent_job', type: 'scheduled' },
+        orderBy: { updatedAt: 'asc' },
+        take: Math.max(1, Math.min(limit, 100)),
+        select: { id: true, workspaceId: true, key: true, value: true },
+      });
 
-    return rows
-      .map((row) => this.parseDueJob(row, now))
-      .filter((job): job is NonNullable<ReturnType<typeof this.parseDueJob>> => job !== null);
+      return rows
+        .map((row) => this.parseDueJob(row, now))
+        .filter((job): job is NonNullable<ReturnType<typeof this.parseDueJob>> => job !== null);
+    } catch (error: unknown) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (this.isConnectionError(error)) {
+          this.logger.warn(
+            `listDueJobs: transient Prisma error (code=${error.code}), returning empty`,
+          );
+          return [];
+        }
+        if (this.isSchemaDriftError(error)) {
+          this.logger.error(
+            `listDueJobs: schema drift suspected (code=${error.code}), returning empty. Verify migrations are applied.`,
+          );
+          return [];
+        }
+        this.logger.warn(
+          `listDueJobs: unhandled Prisma error (code=${error.code}), returning empty: ${this.messageFor(error)}`,
+        );
+        return [];
+      }
+      throw error;
+    }
   }
 
   async listJobs(workspaceId: string, limit = 50): Promise<
@@ -364,6 +386,19 @@ export class AgentRuntimeSchedulerService {
   private normalizeJobKey(jobId: string): string {
     const sanitized = sanitizeAgentRuntimeText(jobId, 160);
     return sanitized.startsWith('agent_job:') ? sanitized : `agent_job:${sanitized}`;
+  }
+
+  private isConnectionError(error: Prisma.PrismaClientKnownRequestError): boolean {
+    // P1001: cannot reach database
+    // P1002: connection timed out
+    // P2024: timed out fetching a connection from the pool
+    return error.code === 'P1001' || error.code === 'P1002' || error.code === 'P2024';
+  }
+
+  private isSchemaDriftError(error: Prisma.PrismaClientKnownRequestError): boolean {
+    // P2021: table does not exist in the current database
+    // P2022: column does not exist in the current database
+    return error.code === 'P2021' || error.code === 'P2022';
   }
 
   private messageFor(error: unknown): string {

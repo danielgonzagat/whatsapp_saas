@@ -47,6 +47,28 @@ export class AgentRuntimeJobRunnerService {
         await this.runPendingJobsForWorkspace(row.workspaceId, 5);
       }
     } catch (error: unknown) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (this.isConnectionError(error)) {
+          this.logger.warn(
+            `runAllPendingAgentJobs: transient Prisma error (code=${error.code}), will retry next cycle`,
+          );
+          return;
+        }
+        if (this.isSchemaDriftError(error)) {
+          this.logger.error(
+            `runAllPendingAgentJobs: schema drift suspected (code=${error.code}). Verify migrations are applied.`,
+          );
+          return;
+        }
+        this.logger.warn(
+          `runAllPendingAgentJobs: unhandled Prisma error (code=${error.code}): ${this.messageFor(error)}`,
+        );
+        void this.opsAlert?.alertOnCriticalError(
+          error,
+          'AgentRuntimeJobRunnerService.runAllPendingAgentJobs',
+        );
+        return;
+      }
       void this.opsAlert?.alertOnCriticalError(
         error,
         'AgentRuntimeJobRunnerService.runAllPendingAgentJobs',
@@ -374,6 +396,19 @@ export class AgentRuntimeJobRunnerService {
   private computeBackoffMs(attempts: number): number {
     const exponent = Math.max(0, attempts - 1);
     return Math.min(BACKOFF_BASE_MS * Math.pow(2, exponent), MAX_BACKOFF_MS);
+  }
+
+  private isConnectionError(error: Prisma.PrismaClientKnownRequestError): boolean {
+    // P1001: cannot reach database
+    // P1002: connection timed out
+    // P2024: timed out fetching a connection from the pool
+    return error.code === 'P1001' || error.code === 'P1002' || error.code === 'P2024';
+  }
+
+  private isSchemaDriftError(error: Prisma.PrismaClientKnownRequestError): boolean {
+    // P2021: table does not exist in the current database
+    // P2022: column does not exist in the current database
+    return error.code === 'P2021' || error.code === 'P2022';
   }
 
   private messageFor(error: unknown): string {
