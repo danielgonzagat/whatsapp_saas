@@ -11,40 +11,13 @@ export type { AutopilotImpact } from './page.types';
 import type { AutopilotAction } from './page.types';
 export type { AutopilotAction };
 
-export interface MoneyReport {
-  totalRevenue?: number;
-  totalCosts?: number;
-  roi?: number;
-  period?: string;
-  conversions?: number;
-  avgTicket?: number;
-  revenueByDay?: Record<string, number>;
-  [key: string]: unknown;
-}
+export type { MoneyReport } from './page.types';
 
-export interface RevenueEvent {
-  id?: string;
-  type?: string;
-  amount?: number;
-  contactId?: string;
-  contact?: string;
-  phone?: string;
-  reason?: string;
-  createdAt: string;
-  [key: string]: unknown;
-}
+export type { RevenueEvent } from './page.types';
 
 export type { AutopilotInsight } from './page.types';
 
-export interface QueueStats {
-  waiting?: number;
-  active?: number;
-  delayed?: number;
-  completed?: number;
-  failed?: number;
-  paused?: number;
-  [key: string]: unknown;
-}
+export type { QueueStats } from './page.types';
 
 export type { AutopilotConfigData } from './page.types';
 
