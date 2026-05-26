@@ -34,7 +34,11 @@ type WorkspaceChannelState = {
 };
 
 /** P-code → recovery decision mapping for error isolation in the cron loop. */
-type RecoveryDecision = 'SKIP_RECORD_NOT_FOUND' | 'SKIP_DUPLICATE' | 'RETRY_LATER' | 'ALERT_AND_SKIP';
+type RecoveryDecision =
+  | 'SKIP_RECORD_NOT_FOUND'
+  | 'SKIP_DUPLICATE'
+  | 'RETRY_LATER'
+  | 'ALERT_AND_SKIP';
 
 /** Checkout social recovery service with deterministic channel constraints. */
 @Injectable()
@@ -113,7 +117,12 @@ export class CheckoutSocialRecoveryService {
             'CheckoutSocialRecoveryService.recoverAbandonedLeads',
             {
               workspaceId: lead.workspaceId,
-              metadata: { leadId: lead.id, decision, prismaCode: (error instanceof Prisma.PrismaClientKnownRequestError) ? error.code : undefined },
+              metadata: {
+                leadId: lead.id,
+                decision,
+                prismaCode:
+                  error instanceof Prisma.PrismaClientKnownRequestError ? error.code : undefined,
+              },
             },
           );
         }

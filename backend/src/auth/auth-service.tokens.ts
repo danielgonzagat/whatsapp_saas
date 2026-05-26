@@ -1,11 +1,15 @@
 import { Logger } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { ServiceUnavailableException, UnauthorizedException  } from '@nestjs/common';
+import { ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import type { JwtService } from '@nestjs/jwt';
 import type { PrismaService } from '../prisma/prisma.service';
 import { DbInitErrorService } from './db-init-error.service';
 import { getJwtExpiresIn } from './jwt-config';
-import { assertAgentCanAuthenticate, buildAuthLogMessage, hashOpaqueToken } from './auth-service.helpers';
+import {
+  assertAgentCanAuthenticate,
+  buildAuthLogMessage,
+  hashOpaqueToken,
+} from './auth-service.helpers';
 
 interface AgentForTokens {
   id: string;
@@ -314,14 +318,9 @@ export async function refreshToken(
         error: error instanceof Error ? error.message : String(error),
       }),
     );
-    if (
-      error instanceof UnauthorizedException ||
-      error instanceof ServiceUnavailableException
-    ) {
+    if (error instanceof UnauthorizedException || error instanceof ServiceUnavailableException) {
       throw error;
     }
-    throw new ServiceUnavailableException(
-      'Serviço indisponível. Erro ao emitir novos tokens.',
-    );
+    throw new ServiceUnavailableException('Serviço indisponível. Erro ao emitir novos tokens.');
   }
 }

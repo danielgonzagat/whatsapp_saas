@@ -53,7 +53,11 @@ export class DlqController {
     const dlq = this.getDlq(name);
 
     const [jobs, counts] = await Promise.all([
-      dlq.getJobs(['waiting', 'failed', 'delayed', 'active'], clampedOffset, clampedOffset + limit - 1),
+      dlq.getJobs(
+        ['waiting', 'failed', 'delayed', 'active'],
+        clampedOffset,
+        clampedOffset + limit - 1,
+      ),
       dlq.getJobCounts('waiting', 'failed', 'delayed', 'active'),
     ]);
 

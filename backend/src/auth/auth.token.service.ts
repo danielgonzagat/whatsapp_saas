@@ -1,9 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import {
-  Optional,
-  ServiceUnavailableException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Optional, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
@@ -331,15 +327,10 @@ export class AuthTokenService {
         }),
       );
       void this.opsAlert?.alertOnCriticalError(error, 'AuthTokenService.refresh.issueTokens');
-      if (
-        error instanceof UnauthorizedException ||
-        error instanceof ServiceUnavailableException
-      ) {
+      if (error instanceof UnauthorizedException || error instanceof ServiceUnavailableException) {
         throw error;
       }
-      throw new ServiceUnavailableException(
-        'Serviço indisponível. Erro ao emitir novos tokens.',
-      );
+      throw new ServiceUnavailableException('Serviço indisponível. Erro ao emitir novos tokens.');
     }
   }
 

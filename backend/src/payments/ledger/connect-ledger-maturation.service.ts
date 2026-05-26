@@ -83,8 +83,7 @@ export class ConnectLedgerMaturationService {
         }
         failed += 1;
         const message = error instanceof Error ? error.message : String(error);
-        const code =
-          error instanceof Prisma.PrismaClientKnownRequestError ? error.code : undefined;
+        const code = error instanceof Prisma.PrismaClientKnownRequestError ? error.code : undefined;
         this.logger.error(
           { entryId: entry.id, operation: 'moveFromPendingToAvailable', code },
           `connect_ledger_maturation_failed entry=${entry.id}: ${message}`,

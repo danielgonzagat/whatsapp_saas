@@ -25,9 +25,7 @@ export class ChannelDispatchRegistry {
     if (adapters) {
       for (const adapter of adapters) {
         if (this.adapters.has(adapter.channelKind)) {
-          this.logger.warn(
-            `Duplicate adapter for channel ${adapter.channelKind}; overwriting.`,
-          );
+          this.logger.warn(`Duplicate adapter for channel ${adapter.channelKind}; overwriting.`);
         }
         this.adapters.set(adapter.channelKind, adapter);
       }

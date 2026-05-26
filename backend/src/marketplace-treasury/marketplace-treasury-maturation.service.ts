@@ -1,16 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import {
-  MarketplaceTreasuryLedgerKind,
-  MarketplaceTreasuryBucket,
-} from '@prisma/client';
+import { MarketplaceTreasuryLedgerKind, MarketplaceTreasuryBucket } from '@prisma/client';
 import { StructuredLogger } from '../logging/structured-logger';
 
 import { forEachSequential } from '../common/async-sequence';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 
-import { MarketplaceTreasuryService } from './marketplace-treasury.service';/** Marketplace treasury maturation result shape. */
+import { MarketplaceTreasuryService } from './marketplace-treasury.service'; /** Marketplace treasury maturation result shape. */
 export interface MarketplaceTreasuryMaturationResult {
   /** Scanned property. */
   scanned: number;
@@ -20,20 +17,16 @@ export interface MarketplaceTreasuryMaturationResult {
   skipped: number;
   /** Failed property. */
   failed: number;
-}/**
+} /**
  * Extracts a Prisma error code from an unknown error, returning undefined
  * when the error is not a PrismaClientKnownRequestError.
  */
 function prismaErrorCode(error: unknown): string | undefined {
-  if (
-    error !== null &&
-    typeof error === 'object' &&
-    'code' in error
-  ) {
+  if (error !== null && typeof error === 'object' && 'code' in error) {
     return (error as { code: unknown }).code as string | undefined;
   }
   return undefined;
-}/**
+} /**
  * Moves marketplace fee credits from PENDING to AVAILABLE using the same
  * append-only discipline as the rest of the payment kernel.
  *
@@ -48,8 +41,7 @@ function prismaErrorCode(error: unknown): string | undefined {
  */
 @Injectable()
 export class MarketplaceTreasuryMaturationService {
-  private readonly logger =
-    StructuredLogger.from(MarketplaceTreasuryMaturationService.name);
+  private readonly logger = StructuredLogger.from(MarketplaceTreasuryMaturationService.name);
 
   constructor(
     private readonly prisma: PrismaService,
@@ -99,14 +91,13 @@ export class MarketplaceTreasuryMaturationService {
             // ── Idempotency check INSIDE the transaction ──
             // Two concurrent cron jobs will serialize here; the
             // second one will see the marker and skip.
-            const alreadyMatured =
-              await tx.marketplaceTreasuryLedger.findFirst({
-                where: {
-                  kind: MarketplaceTreasuryLedgerKind.ADJUSTMENT_CREDIT,
-                  orderId: `mature:available:${credit.id}`,
-                },
-                select: { id: true },
-              });
+            const alreadyMatured = await tx.marketplaceTreasuryLedger.findFirst({
+              where: {
+                kind: MarketplaceTreasuryLedgerKind.ADJUSTMENT_CREDIT,
+                orderId: `mature:available:${credit.id}`,
+              },
+              select: { id: true },
+            });
             if (alreadyMatured) {
               alreadySkipped = true;
               return;
@@ -176,8 +167,7 @@ export class MarketplaceTreasuryMaturationService {
         // Log and skip — retrying won't help.
         if (code === 'P2025') {
           skipped += 1;
-          const message =
-            error instanceof Error ? error.message : String(error);
+          const message = error instanceof Error ? error.message : String(error);
           this.logger.error(
             {
               entryId: credit.id,
@@ -191,8 +181,7 @@ export class MarketplaceTreasuryMaturationService {
 
         // ── Real failure ──
         failed += 1;
-        const message =
-          error instanceof Error ? error.message : String(error);
+        const message = error instanceof Error ? error.message : String(error);
         this.logger.error(
           {
             entryId: credit.id,
@@ -202,17 +191,14 @@ export class MarketplaceTreasuryMaturationService {
           },
           `marketplace_treasury_maturation failed entry=${credit.id}: ${message}`,
         );
-        this.financialAlert.reconciliationAlert(
-          'marketplace treasury maturation failed',
-          {
-            details: {
-              entryId: credit.id,
-              currency: credit.currency,
-              error: message,
-              errorCode: code,
-            },
+        this.financialAlert.reconciliationAlert('marketplace treasury maturation failed', {
+          details: {
+            entryId: credit.id,
+            currency: credit.currency,
+            error: message,
+            errorCode: code,
           },
-        );
+        });
         await this.prisma.adminAuditLog
           .create({
             data: {

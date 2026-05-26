@@ -39,7 +39,7 @@ export interface AwsErrorInfo {
   httpStatus?: number | undefined;
   /** The original error */
   originalError: unknown;
-}// ---------------------------------------------------------------------------
+} // ---------------------------------------------------------------------------
 // Pattern constants
 // ---------------------------------------------------------------------------
 
@@ -69,12 +69,7 @@ const ACCESS_DENIED_CODES = new Set([
 ]);
 
 /** AWS SDK error codes that map to not-found. */
-const NOT_FOUND_CODES = new Set([
-  'NoSuchBucket',
-  'NoSuchKey',
-  'NotFound',
-  'NoSuchUpload',
-]);
+const NOT_FOUND_CODES = new Set(['NoSuchBucket', 'NoSuchKey', 'NotFound', 'NoSuchUpload']);
 
 /** Network error indicators (connection refused, DNS, etc.). */
 const NETWORK_ERROR_INDICATORS = [
@@ -112,7 +107,7 @@ const CREDENTIALS_ERROR_INDICATORS = [
   /security token included.*invalid/i,
   /no credentials/i,
   /could not load credentials/i,
-];// ---------------------------------------------------------------------------
+]; // ---------------------------------------------------------------------------
 // Extraction helpers
 // ---------------------------------------------------------------------------
 
@@ -153,7 +148,7 @@ function extractHttpStatus(error: unknown): number | undefined {
   if (typeof e.statusCode === 'number') return e.statusCode;
 
   return undefined;
-}// ---------------------------------------------------------------------------
+} // ---------------------------------------------------------------------------
 // Core classifier
 // ---------------------------------------------------------------------------
 
@@ -196,18 +191,14 @@ export function classifyAwsError(error: unknown, context: AwsCallContext): AwsEr
     category = 'NETWORK_ERROR';
   }
   // 7. Check timeout specifically
-  else if (
-    awsCode === 'TimeoutError' ||
-    /timeout/i.test(message) ||
-    /timed? ?out/i.test(message)
-  ) {
+  else if (awsCode === 'TimeoutError' || /timeout/i.test(message) || /timed? ?out/i.test(message)) {
     category = 'TIMEOUT';
   }
 
   logAwsError(category, context, error, awsCode, httpStatus);
 
   return { category, message, awsCode, httpStatus, originalError: error };
-}// ---------------------------------------------------------------------------
+} // ---------------------------------------------------------------------------
 // Logging
 // ---------------------------------------------------------------------------
 
@@ -246,7 +237,7 @@ function logAwsError(
   } else {
     logger.error(`AWS ${category} error: ${message}`, details);
   }
-}// ---------------------------------------------------------------------------
+} // ---------------------------------------------------------------------------
 // Convenience helpers
 // ---------------------------------------------------------------------------
 

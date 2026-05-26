@@ -62,7 +62,13 @@ function resolveStripeConstructor(): typeof import('stripe') {
         return fn as typeof import('stripe');
       }
       failures.push(
-        `${source}: instance missing .customers (keys: ${probe ? Object.keys(probe as object).slice(0, 6).join(',') : 'n/a'})`,
+        `${source}: instance missing .customers (keys: ${
+          probe
+            ? Object.keys(probe as object)
+                .slice(0, 6)
+                .join(',')
+            : 'n/a'
+        })`,
       );
     } catch (err: unknown) {
       failures.push(`${source}: constructor threw — ${String(err)}`);
