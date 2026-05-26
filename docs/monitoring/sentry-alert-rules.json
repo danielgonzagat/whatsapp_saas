@@ -1,5 +1,5 @@
 {
-  "$schema": "https://docs.sentry.io/api/projects/list-a-projects-issue-alert-rules/",
+  "_replaced": true,
   "description": "Sentry issue-alert rules for kloel production. Consumed by scripts/ops/sync-sentry-alerts.mjs which mirrors this file into the Sentry project via the REST API.",
   "rules": [
     {
