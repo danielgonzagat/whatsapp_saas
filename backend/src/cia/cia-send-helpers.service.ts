@@ -7,6 +7,7 @@ import { AgentEventsService } from '../whatsapp/agent-events.service';
 import { NON_DIGIT_RE } from '../common/phone';
 import { WHITESPACE_G_RE } from '../common/regex';
 import { SpineEmitterService } from '../kloel/spine/spine-emitter.service';
+import { MindPolicyService } from '../kloel/mind-policy.service';
 
 const PATTERN_RE = /[?!.;,]+$/g;
 export const WHITESPACE_RE = /\s+/;
@@ -68,6 +69,7 @@ export class CiaSendHelpersService {
     private readonly transports: ChannelTransportRegistry,
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() private readonly spineEmitter?: SpineEmitterService,
+    @Optional() private readonly mindPolicy?: MindPolicyService,
   ) {}
 
   getSharedReplyLockKey(
@@ -168,6 +170,19 @@ export class CiaSendHelpersService {
         } catch (err: unknown) {
           this.logger.warn(
             `Spine emit failed for cognition.cia_backlog_action: ${(err as Error)?.message ?? String(err)}`,
+          );
+        }
+        try {
+          const subject = contactId ? `contact:${contactId}` : phone;
+          await this.mindPolicy?.resolveOpenForSubject({
+            workspaceId,
+            subject,
+            decisionType: 'autopilot_action',
+            outcome: 1,
+          });
+        } catch (err: unknown) {
+          this.logger.warn(
+            `MIND policy resolve failed after CIA send: ${(err as Error)?.message ?? String(err)}`,
           );
         }
       }
