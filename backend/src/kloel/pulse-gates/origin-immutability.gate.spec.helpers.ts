@@ -1,10 +1,4 @@
-import {
-  GENESIS_EVENT,
-  GENESIS_EVENT_ID,
-  computeGenesisHash,
-  GenesisEvent,
-  GenesisPayload,
-} from '../lineage/genesis-event';
+import { GENESIS_EVENT, GenesisPayload } from '../lineage/genesis-event';
 import { makeOriginImmutabilityGate } from './origin-immutability.gate';
 import type { LineageGuardService, LineageGuardVerdict } from '../lineage/lineage-guard.service';
 
@@ -12,10 +6,9 @@ import type { LineageGuardService, LineageGuardVerdict } from '../lineage/lineag
  * Shared helpers for the origin-immutability gate spec — split out so the
  * main spec stays below the architecture-guard line budget.
  *
- * mockGuard() / gate() — fabricate a LineageGuardService verdict and wrap it
- * in a fresh OriginImmutabilityGate instance. cloneGenesisPayload() /
- * tamperedGenesisEvent() build synthetic Genesis payloads for the
- * self-verification branch tests.
+ * mockGuard() / gate() fabricate a LineageGuardService verdict and wrap it
+ * in a fresh OriginImmutabilityGate instance. cloneGenesisPayload() builds
+ * synthetic Genesis payloads for the self-verification branch tests.
  */
 
 /**
@@ -61,31 +54,5 @@ export function cloneGenesisPayload(overrides?: Partial<GenesisPayload>): Genesi
     steward: overrides?.steward ?? { ...orig.steward },
     inviolable: overrides?.inviolable ?? [...orig.inviolable],
     evolvable: overrides?.evolvable ?? [...orig.evolvable],
-  };
-}
-
-/**
- * Builds a tampered GenesisEvent-like object. Useful for testing
- * the self-verification branch of the gate. Note: these tests must
- * create a fresh gate instance because the self-checks read the
- * module-level GENESIS_EVENT directly.
- */
-export function tamperedGenesisEvent(overrides: {
-  payload?: Partial<GenesisPayload>;
-  eventId?: string;
-  hash?: string;
-}): GenesisEvent {
-  const payload = cloneGenesisPayload(overrides.payload);
-  const hash = overrides.hash ?? computeGenesisHash(payload);
-  return {
-    eventId: (overrides.eventId ?? GENESIS_EVENT_ID) as typeof GENESIS_EVENT_ID,
-    eventName: 'lineage.genesis' as const,
-    timestamp: GENESIS_EVENT.timestamp,
-    occurredAt: GENESIS_EVENT.occurredAt,
-    truthMode: 'observed' as const,
-    provenance: { ...GENESIS_EVENT.provenance },
-    valence: 'neutral' as const,
-    payload,
-    hash,
   };
 }
