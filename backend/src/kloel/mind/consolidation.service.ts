@@ -45,6 +45,9 @@ export interface ConsolidationCycle {
   readonly consolidatedProposals: readonly ConsolidatedProposal[];
 }
 
+const NO_EPISODIC_PROPOSALS: readonly EpisodicProposal[] = Object.freeze([]);
+const NO_CONSOLIDATED_PROPOSALS: readonly ConsolidatedProposal[] = Object.freeze([]);
+
 @Injectable()
 export class ConsolidationService {
   private readonly logger = new Logger(ConsolidationService.name);
@@ -89,6 +92,9 @@ export class ConsolidationService {
     events: readonly SpineEventRef[],
     cycleAt: string,
   ): readonly EpisodicProposal[] {
+    if (working.length === 0) {
+      return NO_EPISODIC_PROPOSALS;
+    }
     const eventById = new Map(events.map((e) => [e.eventId, e]));
     const out: EpisodicProposal[] = [];
     for (const item of working) {
@@ -124,6 +130,9 @@ export class ConsolidationService {
     episodes: readonly EpisodicProposal[],
     cycleAt: string,
   ): readonly ConsolidatedProposal[] {
+    if (episodes.length < 3) {
+      return NO_CONSOLIDATED_PROPOSALS;
+    }
     const byPattern = new Map<string, EpisodicProposal[]>();
     for (const ep of episodes) {
       const pattern = this.extractPattern(ep.summary);

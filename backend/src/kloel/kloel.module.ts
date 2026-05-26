@@ -201,7 +201,6 @@ import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service
     MetricsModule,
     KloelAudioModule,
     KloelRulesModule,
-    forwardRef(() => require('../inbox/inbox.module').InboxModule),
     ContactsModule,
     LineageModule,
     DriftModule,
