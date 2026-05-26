@@ -1,7 +1,7 @@
 import { resolveCaseMemoryAction, type CaseMemoryLookup } from './mind-case-memory-decision.helper';
-import type { MindPolicyService } from './mind-policy.service';
+import type { MindPolicyChooser } from './mind-policy.service';
 
-export type MindPolicyChooser = Pick<MindPolicyService, 'choose'>;
+export type { MindPolicyChooser };
 
 export interface MindBanditChooser {
   choose(workspaceId: string, decisionType: string): Promise<{ arm: string } | null>;

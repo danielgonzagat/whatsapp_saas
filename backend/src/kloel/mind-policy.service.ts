@@ -424,3 +424,10 @@ export class MindPolicyService {
     return persistResolvedPolicyMemories(prisma, rows, baselineOutcome);
   }
 }
+
+/**
+ * Canonical `MindPolicyChooser` — the minimal `choose`-only view of {@link MindPolicyService}.
+ * Lives here (next to the service it picks from) so the mind decision-resolvers re-export it
+ * instead of each re-declaring the same `Pick<MindPolicyService, 'choose'>`.
+ */
+export type MindPolicyChooser = Pick<MindPolicyService, 'choose'>;

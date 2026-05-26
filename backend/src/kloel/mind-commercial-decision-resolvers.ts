@@ -1,4 +1,4 @@
-import type { MindPolicyService } from './mind-policy.service';
+import type { MindPolicyChooser } from './mind-policy.service';
 import {
   resolveAdAlertActionBaseline,
   resolveBroadcastWindowBaseline,
@@ -7,7 +7,7 @@ import {
   resolveProductOfferBaseline,
 } from './mind-decision-baselines';
 
-export type MindPolicyChooser = Pick<MindPolicyService, 'choose'>;
+export type { MindPolicyChooser };
 
 type PolicyDecisionResult = Awaited<ReturnType<MindPolicyChooser['choose']>>;
 

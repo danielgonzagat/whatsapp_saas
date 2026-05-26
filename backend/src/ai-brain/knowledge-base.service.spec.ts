@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { memoryQueue } from '../queue/queue';
 import { KnowledgeBaseService } from './knowledge-base.service';
+import { htmlToText } from './knowledge-base-url-html';
 import { PrismaService } from '../prisma/prisma.service';
 import { VectorService } from './vector.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -16,7 +17,6 @@ jest.mock('../queue/queue', () => ({
 
 describe('KnowledgeBaseService', () => {
   let service: KnowledgeBaseService;
-  let htmlToText: (html: string) => string;
   let prisma: {
     knowledgeBase: {
       create: jest.Mock;
@@ -89,7 +89,6 @@ describe('KnowledgeBaseService', () => {
     }).compile();
 
     service = module.get<KnowledgeBaseService>(KnowledgeBaseService);
-    htmlToText = Reflect.get(service, 'htmlToText') as (html: string) => string;
   });
 
   it('should be defined', () => {
@@ -100,7 +99,7 @@ describe('KnowledgeBaseService', () => {
     it('should extract visible text and preserve natural spacing', () => {
       const text =
         '<p>Hello world.</p><div>This is a test.</div><article>Another sentence here.</article>';
-      const plainText = htmlToText.call(service, text);
+      const plainText = htmlToText(text);
 
       expect(plainText).toBe('Hello world. This is a test. Another sentence here.');
     });
@@ -108,7 +107,7 @@ describe('KnowledgeBaseService', () => {
     it('should ignore script/style tags while flattening markup', () => {
       const text =
         '<div>Visible copy</div><script>window.secret = true;</script><style>body{display:none}</style><span>More text</span>';
-      const plainText = htmlToText.call(service, text);
+      const plainText = htmlToText(text);
 
       expect(plainText).toBe('Visible copy More text');
     });
