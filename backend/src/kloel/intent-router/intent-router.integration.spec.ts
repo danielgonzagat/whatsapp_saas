@@ -12,7 +12,7 @@ import { CapabilityRegistryV2Service } from '../capability-registry-v2/capabilit
 }describe('IntentRouter + CapabilityRegistry Integration', () => {
   const { registry, router } = createTestFixture();  it('registers all capabilities on init', () => {
     const caps = registry.list();
-    expect(caps.length).toBeGreaterThanOrEqual(55);
+    expect(caps.length).toBeGreaterThanOrEqual(65);
     
     // Verify key capabilities exist
     const capIds = caps.map((c) => c.id);

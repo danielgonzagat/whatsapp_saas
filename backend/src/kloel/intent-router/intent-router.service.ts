@@ -356,6 +356,77 @@ export class IntentRouterService {
       extract: () => ({}),
     },
 
+    // === Payment link ===
+    {
+      regex: /(?:cri[ae]r?|ger[ae]r?)\s+(?:link\s+(?:de\s+)?pagamento|payment\s+link)/i,
+      capabilityId: 'create_payment_link',
+      extract: (match) => {
+        const amount = parseFloat(match[0].match(/r?\$?\s*(\d+(?:[.,]\d+)?)/i)?.[1]?.replace(',', '.') ?? '') || undefined;
+        return { amount: amount || undefined };
+      },
+    },
+
+    // === Saque/antecipação ===
+    {
+      regex: /(?:solicit[ae]r?|ped[ei]r?)\s+(?:meu\s+)?saque/i,
+      capabilityId: 'request_withdrawal',
+      extract: (match) => {
+        const amount = parseFloat(match[0].match(/r?\$?\s*(\d+(?:[.,]\d+)?)/i)?.[1]?.replace(',', '.') ?? '') || undefined;
+        return { amount: amount || undefined };
+      },
+    },
+    {
+      regex: /(?:solicit[ae]r?|ped[ei]r?)\s+(?:minha\s+)?antecipa[cç][aã]o/i,
+      capabilityId: 'request_anticipation',
+      extract: () => ({}),
+    },
+
+    // === Subscription ===
+    {
+      regex: /(?:cancel[ae]r?|paus[ae]r?|desativ[ae]r?)\s+(?:minha\s+)?(?:assinatura|subscri)/i,
+      capabilityId: 'update_subscription',
+      extract: (match) => ({
+        action: /cancel|paus/i.test(match[0]) ? 'cancel' : 'pause',
+      }),
+    },
+
+    // === Broadcast ===
+    {
+      regex: /cri[ae]r?\s+(?:uma\s+)?(?:campanha|broadcast|disparo)/i,
+      capabilityId: 'create_broadcast',
+      extract: () => ({}),
+    },
+
+    // === Autopilot ===
+    {
+      regex: /(?:ativ[ae]r?|desativ[ae]r?)\s+(?:o\s+)?autopilot/i,
+      capabilityId: 'toggle_autopilot',
+      extract: (match) => ({
+        enabled: !/desativ/i.test(match[0]),
+      }),
+    },
+
+    // === Conectar canal ===
+    {
+      regex: /conect[ae]r?\s+(?:o\s+|meu\s+)?(whatsapp|instagram|facebook|tiktok|email)/i,
+      capabilityId: 'connect_channel',
+      extract: (match) => ({
+        channel: match[1]?.toLowerCase() || 'whatsapp',
+      }),
+    },
+
+    // === Settings ===
+    {
+      regex: /(?:minhas|meus)\s+(?:configura[cç][oõ]es|settings|conta)/i,
+      capabilityId: 'get_settings',
+      extract: () => ({}),
+    },
+    {
+      regex: /(?:dados\s+banc[aá]rios|conta\s+banc[aá]ria)/i,
+      capabilityId: 'get_settings',
+      extract: () => ({}),
+    },
+
     // === Configuration ===
     {
       regex: /(?:tema\s.*(?:clar[oa]?|escur[oa]?)|(?:clar[oa]?|escur[oa]?)\s.*tema)/i,
