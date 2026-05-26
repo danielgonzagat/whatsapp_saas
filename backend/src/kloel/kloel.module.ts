@@ -183,6 +183,7 @@ import { AbiBuilderService } from './abi/abi-builder.service';
 import { LineageModule } from './lineage/lineage.module';
 import { RiskClassModule } from './risk-class/risk-class.module';
 import { InboxModule } from '../inbox/inbox.module';
+import { CouponService } from './coupon.service';
 import { PlanService } from './plan.service';
 import { ProductService } from './product.service';
 import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
@@ -267,6 +268,7 @@ import { SelfAwarenessModule } from './self-awareness/self-awareness.module';
     KloelThreadSummaryService,
     KloelChatToolsService,
     KloelCodeToolsService,
+    CouponService,
     PlanService,
     ProductService,
     KloelProductSubResourceToolsService,
