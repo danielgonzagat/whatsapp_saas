@@ -1,12 +1,19 @@
 import { randomUUID } from 'node:crypto';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutCatalogService } from './checkout-catalog.service';
 import { CheckoutOrderService } from './checkout-order.service';
 import { CheckoutProductService } from './checkout-product.service';
 import { CheckoutPublicPayloadBuilder } from './checkout-public-payload.builder';
+import { CheckoutEventEmitterService } from '../kloel/checkout-emitter/checkout-event-emitter.service';
 import { getCheckoutByCode as companionGetCheckoutByCode } from './checkout-code-lookup.helper';
+import type { CreateCheckoutInput } from './checkout-product.types';
+import type { SetCheckoutThemeDto } from './dto/set-checkout-theme.dto';
+import type { SetCheckoutCouponsDto } from './dto/set-checkout-coupons.dto';
+import type { SetCheckoutTimerDto } from './dto/set-checkout-timer.dto';
+import type { SetCheckoutSocialProofDto } from './dto/set-checkout-social-proof.dto';
 
 export type { CheckoutOrderStatusValue } from './checkout-order-status';
 
@@ -28,6 +35,7 @@ export class CheckoutService {
     private readonly productService: CheckoutProductService,
     private readonly catalogService: CheckoutCatalogService,
     private readonly orderService: CheckoutOrderService,
+    private readonly eventEmitter: CheckoutEventEmitterService,
   ) {
     this.publicPayloadBuilder = new CheckoutPublicPayloadBuilder(prisma);
   }
@@ -289,6 +297,119 @@ export class CheckoutService {
       code,
       context,
     );
+  }
+
+  // ─── PI-008: Checkout page configuration methods ──────────────────────────
+
+  private async verifyCheckoutOwnership(checkoutId: string, workspaceId: string) {
+    const checkout = await this.prisma.checkoutProductPlan.findFirst({
+      where: { id: checkoutId, kind: 'CHECKOUT', product: { workspaceId } },
+      select: { id: true, productId: true },
+    });
+    if (!checkout) {
+      throw new NotFoundException('Checkout nao encontrado');
+    }
+    return checkout;
+  }
+
+  /** Create checkout page — emits checkout.created event. */
+  async create(workspaceId: string, productId: string, dto: CreateCheckoutInput) {
+    const result = await this.productService.createCheckout(productId, dto, workspaceId);
+    if (result?.id) {
+      await this.eventEmitter.checkoutCreated({
+        workspaceId,
+        checkoutId: result.id,
+        productId,
+      });
+    }
+    return result;
+  }
+
+  /** Update checkout page — emits checkout.updated event. */
+  async update(
+    workspaceId: string,
+    checkoutId: string,
+    dto: Prisma.CheckoutProductPlanUpdateInput,
+  ) {
+    await this.verifyCheckoutOwnership(checkoutId, workspaceId);
+    const result = await this.productService.updatePlan(checkoutId, dto);
+    await this.eventEmitter.checkoutUpdated({ workspaceId, checkoutId });
+    return result;
+  }
+
+  /** Find checkouts by product. */
+  async findByProduct(workspaceId: string, productId: string) {
+    const product = await this.prisma.product.findFirst({
+      where: { id: productId, workspaceId },
+      select: { id: true },
+    });
+    if (!product) {
+      throw new NotFoundException('Produto nao encontrado');
+    }
+    return this.prisma.checkoutProductPlan.findMany({
+      where: { productId, kind: 'CHECKOUT' },
+      include: {
+        checkoutConfig: true,
+        checkoutLinks: {
+          include: { plan: { select: { id: true, name: true, priceInCents: true, isActive: true } } },
+          orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /** Link plans to checkout. */
+  async linkPlans(workspaceId: string, checkoutId: string, planIds: string[]) {
+    await this.verifyCheckoutOwnership(checkoutId, workspaceId);
+    return this.productService.syncCheckoutLinks(checkoutId, planIds);
+  }
+
+  /** Set checkout theme (colors, button text, layout). */
+  async setTheme(workspaceId: string, checkoutId: string, theme: SetCheckoutThemeDto) {
+    await this.verifyCheckoutOwnership(checkoutId, workspaceId);
+    return this.productService.updateConfig(checkoutId, theme as Prisma.CheckoutConfigUpdateInput);
+  }
+
+  /** Set checkout coupon configuration. */
+  async setCoupons(
+    workspaceId: string,
+    checkoutId: string,
+    couponConfig: SetCheckoutCouponsDto,
+  ) {
+    await this.verifyCheckoutOwnership(checkoutId, workspaceId);
+    return this.productService.updateConfig(
+      checkoutId,
+      couponConfig as Prisma.CheckoutConfigUpdateInput,
+    );
+  }
+
+  /** Set checkout timer configuration. */
+  async setTimer(workspaceId: string, checkoutId: string, timerConfig: SetCheckoutTimerDto) {
+    await this.verifyCheckoutOwnership(checkoutId, workspaceId);
+    return this.productService.updateConfig(
+      checkoutId,
+      timerConfig as Prisma.CheckoutConfigUpdateInput,
+    );
+  }
+
+  /** Set checkout social proof configuration. */
+  async setSocialProof(
+    workspaceId: string,
+    checkoutId: string,
+    config: SetCheckoutSocialProofDto,
+  ) {
+    await this.verifyCheckoutOwnership(checkoutId, workspaceId);
+    return this.productService.updateConfig(
+      checkoutId,
+      config as Prisma.CheckoutConfigUpdateInput,
+    );
+  }
+
+  /** Set checkout exit intent. */
+  async setExitIntent(workspaceId: string, checkoutId: string, enabled: boolean) {
+    await this.verifyCheckoutOwnership(checkoutId, workspaceId);
+    return this.productService.updateConfig(checkoutId, { enableExitIntent: enabled });
   }
 
   /** Duplicate checkout. */
