@@ -33,6 +33,9 @@ type WorkspaceChannelState = {
   emailActive: boolean;
 };
 
+/** P-code → recovery decision mapping for error isolation in the cron loop. */
+type RecoveryDecision = 'SKIP_RECORD_NOT_FOUND' | 'SKIP_DUPLICATE' | 'RETRY_LATER' | 'ALERT_AND_SKIP';
+
 /** Checkout social recovery service with deterministic channel constraints. */
 @Injectable()
 export class CheckoutSocialRecoveryService {
@@ -83,23 +86,37 @@ export class CheckoutSocialRecoveryService {
     await this.warmChannelStates(workspaceIds);
 
     await forEachSequential(leads, async (lead) => {
-      const age = now - lead.createdAt.getTime();
-      const channels = this.getChannelState(lead.workspaceId);
+      try {
+        const age = now - lead.createdAt.getTime();
+        const channels = this.getChannelState(lead.workspaceId);
 
-      await this.markAbandonedIfEligible(lead, age);
+        await this.markAbandonedIfEligible(lead, age);
 
-      if (this.shouldDispatchWhatsAppRecovery(lead, age, channels)) {
-        await this.dispatchWhatsAppRecovery(lead.id);
-      }
+        if (this.shouldDispatchWhatsAppRecovery(lead, age, channels)) {
+          await this.dispatchWhatsAppRecovery(lead.id);
+        }
 
-      if (this.shouldDispatchEmailRecovery(lead, age, channels)) {
-        await this.dispatchEmailRecovery(
-          lead.id,
-          lead.workspaceId,
-          lead.email,
-          lead.name,
-          lead.checkoutSlug,
-        );
+        if (this.shouldDispatchEmailRecovery(lead, age, channels)) {
+          await this.dispatchEmailRecovery(
+            lead.id,
+            lead.workspaceId,
+            lead.email,
+            lead.name,
+            lead.checkoutSlug,
+          );
+        }
+      } catch (error: unknown) {
+        const decision = this.resolveRecoveryError(error, lead.id, lead.workspaceId);
+        if (decision === 'ALERT_AND_SKIP') {
+          void this.opsAlert?.alertOnCriticalError(
+            error,
+            'CheckoutSocialRecoveryService.recoverAbandonedLeads',
+            {
+              workspaceId: lead.workspaceId,
+              metadata: { leadId: lead.id, decision, prismaCode: (error instanceof Prisma.PrismaClientKnownRequestError) ? error.code : undefined },
+            },
+          );
+        }
       }
     });
   }
@@ -281,12 +298,46 @@ export class CheckoutSocialRecoveryService {
 
     if (!sent) {
       this.logger.warn(`Falha ao enviar recovery email para lead ${leadId}.`);
-      await this.prisma.checkoutSocialLead.update({
-        where: { id: leadId },
-        data: { recoveryEmailSentAt: null },
-        select: { id: true, workspaceId: true },
-      });
+      try {
+        await this.prisma.checkoutSocialLead.update({
+          where: { id: leadId },
+          data: { recoveryEmailSentAt: null },
+          select: { id: true, workspaceId: true },
+        });
+      } catch (error: unknown) {
+        if (!(error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025')) {
+          throw error;
+        }
+        this.logger.warn(`Recovery email rollback skipped: lead ${leadId} not found (P2025)`);
+      }
     }
+  }
+
+  /** Map a Prisma / unknown error to a typed recovery decision and log it. */
+  private resolveRecoveryError(
+    error: unknown,
+    leadId: string,
+    _workspaceId: string,
+  ): RecoveryDecision {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === 'P2025') {
+        this.logger.warn(`Recovery skip: lead ${leadId} not found (P2025) — likely deleted`);
+        return 'SKIP_RECORD_NOT_FOUND';
+      }
+      if (error.code === 'P2002') {
+        this.logger.warn(`Recovery skip: lead ${leadId} duplicate (P2002) — concurrent recovery`);
+        return 'SKIP_DUPLICATE';
+      }
+      if (error.code === 'P2028') {
+        this.logger.warn(`Recovery retry: lead ${leadId} transaction error (P2028)`);
+        return 'RETRY_LATER';
+      }
+    }
+    this.logger.error(
+      `Recovery alert: lead ${leadId} unexpected error`,
+      error instanceof Error ? error.stack : undefined,
+    );
+    return 'ALERT_AND_SKIP';
   }
 
   private renderRecoveryEmail(name: string | null, checkoutSlug: string) {
