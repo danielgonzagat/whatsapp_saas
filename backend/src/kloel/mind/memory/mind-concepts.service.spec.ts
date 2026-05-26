@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaService } from '../prisma/prisma.service';
-import { BrainEventSpineService } from './brain-event-spine.service';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { BrainEventSpineService } from '../../brain-event-spine.service';
 import { MindConceptService } from './mind-concepts.service';
 
 describe('MindConceptService', () => {

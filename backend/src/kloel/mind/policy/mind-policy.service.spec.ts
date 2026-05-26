@@ -1,7 +1,7 @@
 import { MindPolicyService } from './mind-policy.service';
-import { WisdomRelevanceFilter } from './wisdom/wisdom-relevance-filter.service';
-import { WisdomPatternStore } from './wisdom/wisdom-pattern-store.service';
-import type { WisdomPattern } from './wisdom/wisdom.types';
+import { WisdomRelevanceFilter } from '../../wisdom/wisdom-relevance-filter.service';
+import { WisdomPatternStore } from '../../wisdom/wisdom-pattern-store.service';
+import type { WisdomPattern } from '../../wisdom/wisdom.types';
 
 describe('MindPolicyService', () => {
   const buildBeliefs = (beliefs: Array<{ mean: number; variance: number }>) => ({
