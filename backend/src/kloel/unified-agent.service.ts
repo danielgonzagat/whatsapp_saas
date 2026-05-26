@@ -15,7 +15,6 @@ import { UnifiedAgentActionsService } from './unified-agent-actions.service';
 import { AgentRuntimeContextService } from './agent-runtime';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { AbiSnapshotCacheService } from './abi/abi-snapshot-cache.service';
-import { validateAbiPayload } from './abi/abi-validator';
 export type { ToolArgs, ActionEntry } from './unified-agent.types';
 import type { ToolArgs, ActionEntry, PredecidedAction } from './unified-agent.types';
 import {
@@ -24,6 +23,7 @@ import {
 } from './unified-agent-predecided-actions.part';
 import { BrainCapabilityExecutorService } from './brain-capability-executor.service';
 import { UnifiedAgentToolExecutorService } from './unified-agent-tool-executor';
+import { buildAgentCognitiveState } from './unified-agent.cognitive-state.helpers';
 
 import type { UnknownRecord } from '../common/types';
 
@@ -238,73 +238,14 @@ export class UnifiedAgentService {
       channel: this.ctx.readText(context?.channel, 'whatsapp'),
       arrivalTimestamp: new Date().toISOString(),
     };
-    let cognitiveState: Record<string, unknown> = {
-      abiStatus: this.abiBuilder ? 'unavailable_or_invalid' : 'builder_not_injected',
-      audience: 'public',
-      perceptionSnapshot: { channel: currentInput.channel },
-    };
-
-    let cognitiveSubstrate:
-      | Awaited<ReturnType<BrainCapabilityExecutorService['buildCognitiveSubstrate']>>
-      | undefined;
-    if (this.brainCapability) {
-      try {
-        cognitiveSubstrate = await this.brainCapability.buildCognitiveSubstrate(workspaceId);
-      } catch (err: unknown) {
-        this.logger.warn(
-          `Cognitive substrate build failed: ${err instanceof Error ? err.message : String(err)}`,
-        );
-      }
-    }
-
-    if (this.abiBuilder) {
-      const abiResult = await this.abiBuilder.build({
-        audience: 'public',
-        currentInput,
-        perceptionSnapshot: {
-          channel: currentInput.channel,
-        },
-        ...(cognitiveSubstrate ? { cognitiveSubstrate } : {}),
-      });
-
-      if (abiResult.status !== 'ok') {
-        this.logger.warn(
-          `ABI build failed: ${abiResult.reason}, trying cached snapshot`,
-        );
-        const cached = await this.abiSnapshotCache?.getCachedSnapshot(workspaceId);
-        if (cached) {
-          this.logger.log(`Using cached ABI snapshot for workspace ${workspaceId}`);
-          cognitiveState = cached as object as Record<string, unknown>;
-        } else {
-          this.logger.warn(
-            `No cached ABI snapshot available for workspace ${workspaceId}, using hardcoded zero-state fallback`,
-          );
-        }
-      } else {
-        const abi = abiResult.abi;
-        const validation = validateAbiPayload(abi);
-
-        if (validation.status === 'FAIL') {
-          this.logger.warn(
-            `ABI validation failed: ${JSON.stringify(validation.issues)}, trying cached snapshot`,
-          );
-          const cached = await this.abiSnapshotCache?.getCachedSnapshot(workspaceId);
-          if (cached) {
-            this.logger.log(
-              `Using cached ABI snapshot for workspace ${workspaceId} (validation failed)`,
-            );
-            cognitiveState = cached as object as Record<string, unknown>;
-          } else {
-            this.logger.warn(
-              `No cached ABI snapshot available for workspace ${workspaceId}, using hardcoded zero-state fallback`,
-            );
-          }
-        } else {
-          cognitiveState = abi as object as Record<string, unknown>;
-          void this.abiSnapshotCache?.cacheSnapshot(workspaceId, abi);
-        }
-      }
-    }
+    const cognitiveState = await buildAgentCognitiveState({
+      workspaceId,
+      currentInput,
+      abiBuilder: this.abiBuilder,
+      abiSnapshotCache: this.abiSnapshotCache,
+      brainCapability: this.brainCapability,
+      logger: this.logger,
+    });
 
     const messages: ChatCompletionMessageParam[] = [
       {
