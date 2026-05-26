@@ -1,6 +1,23 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
+/**
+ * @deprecated DUPLICATE of {@link ../checkout/checkout.service.ts CheckoutService}.
+ * This standalone variant is unused (0 callers, not registered in any NestJS
+ * module). It returns string-error shapes (`{ success: false, error: '…' }`)
+ * instead of throwing exceptions, and uses `Math.random()` for code generation —
+ * both anti-patterns. The canonical service lives at
+ * `backend/src/checkout/checkout.service.ts` (500 LOC façade with proper
+ * sub-services and event emitter).
+ *
+ * Migration path: this file will be deleted in a follow-up PR once
+ * `scripts/ops/check-canonical-services.mjs --strict` confirms 0 callers
+ * for 7 consecutive days.
+ *
+ * @cluster Checkout
+ * @canonical backend/src/checkout/checkout.service.ts
+ * @see docs/architecture/DEPRECATION_MAP.md#cross-cutting-duplications row 33
+ */
 @Injectable()
 export class CheckoutService {
   private readonly logger = new Logger(CheckoutService.name);

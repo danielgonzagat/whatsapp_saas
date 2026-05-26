@@ -1,3 +1,24 @@
+/**
+ * @deprecated DUPLICATE of {@link ../email/email-inbound.controller.ts EmailInboundController}.
+ *
+ * Status: this file is the **forward-canonical target per ADR-0012**
+ * (OmniCore — email is a channel under marketing/). But today it is NOT
+ * registered in any NestJS module — the wired controller is in
+ * `backend/src/email/email.module.ts`. Until the OmniCore move executes
+ * (Wave W3 of ADR-0012), the **live canonical is `email/`**, not this file.
+ *
+ * Migration path (inverted): in Wave W3 of ADR-0012, the `email/` controller
+ * is MOVED here, NestJS module wiring is transferred to a new
+ * `marketing/email/email.module.ts`, and this @deprecated banner is REMOVED.
+ * Until then, this file remains as a draft of the post-migration shape and
+ * MUST NOT be wired into any module.
+ *
+ * @cluster Marketing/Email
+ * @canonical backend/src/email/email-inbound.controller.ts (today)
+ * @future-canonical THIS file (after ADR-0012 Wave W3)
+ * @see docs/adr/0012-kloel-omnicore-channel-unification.md
+ * @see docs/architecture/DEPRECATION_MAP.md#cross-cutting-duplications row 36
+ */
 import {
   Body,
   Controller,
