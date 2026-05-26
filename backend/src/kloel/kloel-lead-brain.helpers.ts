@@ -66,7 +66,4 @@ export function detectBuyIntent(message: string): 'high' | 'medium' | 'low' | 'o
   return 'low';
 }
 
-export interface ChatMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-}
+export type { ChatMessage } from './kloel-thinker.types';
