@@ -12,6 +12,8 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 import { KloelCodeToolsService } from './kloel-code-tools.service';
 import { KloelCodeAnalysisService } from './kloel-code-analysis.service';
 import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
+import { CouponService } from './coupon.service';
+import { CheckoutService } from './checkout.service';
 import { PlanService } from './plan.service';
 import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service';
 import { sanitizeDetails } from './kloel-tool-dispatcher.high-risk.helpers';
@@ -44,6 +46,8 @@ export class KloelToolDispatcherService {
     private readonly auditService: AuditService,
     private readonly codeToolsService: KloelCodeToolsService,
     private readonly codeAnalysisService: KloelCodeAnalysisService,
+    @Optional() private readonly couponService?: CouponService,
+    @Optional() private readonly checkoutService?: CheckoutService,
     @Optional() private readonly planService?: PlanService,
     @Optional() private readonly productSubTools?: KloelProductSubResourceToolsService,
     @Optional() private readonly walletSalesTools?: KloelWalletSalesToolsService,
@@ -168,6 +172,24 @@ export class KloelToolDispatcherService {
           return { success: false, error: 'wallet_sales_tools_not_available' };
         case 'toggle_theme':
           return await this.chatToolsService.toolToggleTheme(workspaceId, asToolArgs(args));
+        case 'coupon_create':
+          if (this.couponService) {
+            return this.couponService.create(workspaceId, {
+              productId: String(args.productId || ''),
+              code: String(args.code || ''),
+              discountType: String(args.discountType || 'percentage'),
+              discountValue: Number(args.discountValue) || 0,
+            });
+          }
+          return { success: false, error: 'coupon_service_unavailable' };
+        case 'checkout_create':
+          if (this.checkoutService) {
+            return this.checkoutService.create(workspaceId, {
+              productId: String(args.productId || ''),
+              name: String(args.name || args.checkoutName || 'Checkout'),
+            });
+          }
+          return { success: false, error: 'checkout_service_unavailable' };
         case 'plan_create':
           if (this.planService) {
             return this.planService.create(workspaceId, {
