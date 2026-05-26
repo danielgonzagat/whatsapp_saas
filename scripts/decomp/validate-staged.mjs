@@ -13,6 +13,8 @@ const REPO_ROOT = path.resolve(here, '..', '..');
 
 const { evaluateContent, getLockedFiles, isProtectedPath, isSelfImmutable, SOURCE_FILE_RE } =
   await import('./lib/gate-rules.mjs');
+const { loadApprovalEntries, matchesApproval, readJsonFile } =
+  await import('../ops/lib/scan-utils.mjs');
 
 function git(args) {
   try {
@@ -28,49 +30,26 @@ function git(args) {
 
 const stagedRaw = git(['diff', '--cached', '--name-status', '--diff-filter=AM']);
 const lockedFiles = getLockedFiles(REPO_ROOT);
-
-function loadGovernanceApprovals() {
-  const approvalsPath = path.join(REPO_ROOT, 'ops', 'governance-change-approvals.json');
-  if (!existsSync(approvalsPath)) {
-    return [];
-  }
-  try {
-    const parsed = JSON.parse(readFileSync(approvalsPath, 'utf8'));
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function hasActiveGovernanceApproval(relPath, approvals, now = new Date()) {
-  return approvals.some(function (entry) {
-    if (!entry || entry.rule !== 'governanceChange') {
-      return false;
-    }
-    if (entry.expires && new Date(entry.expires) < now) {
-      return false;
-    }
-    if (entry.file === relPath) {
-      return true;
-    }
-    return typeof entry.filePrefix === 'string' && relPath.startsWith(entry.filePrefix);
-  });
-}
-
-const governanceApprovals = loadGovernanceApprovals();
+const protectedManifest = readJsonFile('ops/protected-governance-files.json', null);
+const governanceApprovals =
+  protectedManifest?.approvalFile &&
+  Array.isArray(protectedManifest.protectedExact) &&
+  Array.isArray(protectedManifest.protectedPrefixes)
+    ? loadApprovalEntries(protectedManifest.approvalFile, 'governance-change-approvals')
+    : [];
 
 const violations = [];
 
 for (const line of stagedRaw.split('\n').filter(Boolean)) {
   const [status, relPath] = line.split('\t');
-  if (!relPath) {
-    continue;
-  }
+  if (!relPath) continue;
 
   // Bloqueia commit que toque arquivos protegidos sem aprovacao ativa registrada.
-  if (isProtectedPath(relPath) && !hasActiveGovernanceApproval(relPath, governanceApprovals)) {
+  if (isProtectedPath(relPath) && !hasGovernanceApproval(relPath)) {
     violations.push(
-      '[protected] ' + relPath + ' — arquivo protegido por CLAUDE.md, somente Daniel pode editar.',
+      '[protected] ' +
+        relPath +
+        ' — arquivo protegido por CLAUDE.md, somente Daniel pode editar.',
     );
     continue;
   }
@@ -79,18 +58,14 @@ for (const line of stagedRaw.split('\n').filter(Boolean)) {
   // via direct terminal — the legitimate path for governance evolution.
   // PROTECTED_FILES still blocked (those are Daniel-only by spec).
 
-  if (!SOURCE_FILE_RE.test(relPath)) {
-    continue;
-  }
+  if (!SOURCE_FILE_RE.test(relPath)) continue;
 
   const absPath = path.join(REPO_ROOT, relPath);
-  if (!existsSync(absPath)) {
-    continue;
-  }
+  if (!existsSync(absPath)) continue;
   const content = readFileSync(absPath, 'utf8');
   const isNewFile = status === 'A';
   const fileViolations = evaluateContent({ relPath, content, isNewFile, lockedFiles });
-  for (const v of fileViolations) {violations.push('[' + v.rule + '] ' + v.detail);}
+  for (const v of fileViolations) violations.push('[' + v.rule + '] ' + v.detail);
 }
 
 // Roda também o gate canônico de CI (architecture-guardrails) para garantir
@@ -124,3 +99,7 @@ if (violations.length > 0) {
 }
 
 process.exit(0);
+
+function hasGovernanceApproval(relPath) {
+  return matchesApproval(governanceApprovals, relPath, 'governanceChange');
+}
