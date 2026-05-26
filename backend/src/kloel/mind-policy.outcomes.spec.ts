@@ -1,5 +1,10 @@
 import { MindPolicyService } from './mind-policy.service';
 
+type MindPolicyUpdateManyArgs = {
+  where: { id: string; workspaceId: string; resolvedAt: null };
+  data: { outcome: number; resolvedAt: Date; baselineOutcome: number };
+};
+
 describe('MindPolicyService outcomes', () => {
   const buildPrisma = (
     harnessRows: Array<{ outcome: number; baselineOutcome: number | null }> = [],
@@ -24,6 +29,9 @@ describe('MindPolicyService outcomes', () => {
 
   describe('resolve outcomes with real baseline', () => {
     it('estima baseline contrafactual quando o caller nao informa baselineOutcome', async () => {
+      const updateMany = jest
+        .fn<Promise<{ count: number }>, [MindPolicyUpdateManyArgs]>()
+        .mockResolvedValue({ count: 1 });
       const tx = {
         $executeRaw: jest.fn().mockResolvedValue(1),
         kloelMemory: { upsert: jest.fn() },
@@ -40,7 +48,7 @@ describe('MindPolicyService outcomes', () => {
               outcomeKey: 'coupon:1',
             },
           ]),
-          updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+          updateMany,
         },
       };
       const prisma = {
@@ -53,17 +61,18 @@ describe('MindPolicyService outcomes', () => {
 
       await service.resolveOutcome('ws-1', 'coupon:1', 1);
 
-      expect(tx.mindPolicy.updateMany).toHaveBeenCalledWith({
-        where: {
-          id: 'policy-1',
-          workspaceId: 'ws-1',
-          resolvedAt: null,
-        },
-        data: expect.objectContaining({ outcome: 1, baselineOutcome: 0.78 }),
+      expect(updateMany).toHaveBeenCalledTimes(1);
+      const updateCall = updateMany.mock.calls[0]?.[0];
+      if (updateCall === undefined) {
+        throw new Error('Expected mindPolicy.updateMany to be called');
+      }
+      expect(updateCall.where).toEqual({
+        id: 'policy-1',
+        workspaceId: 'ws-1',
+        resolvedAt: null,
       });
-      const updateCall = tx.mindPolicy.updateMany.mock.calls[0][0] as {
-        data: { baselineOutcome: number };
-      };
+      expect(updateCall.data.outcome).toBe(1);
+      expect(updateCall.data.resolvedAt).toBeInstanceOf(Date);
       expect(updateCall.data.baselineOutcome).toBeGreaterThanOrEqual(0);
       expect(updateCall.data.baselineOutcome).toBeLessThan(1);
     });

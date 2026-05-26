@@ -406,12 +406,10 @@ describe('MindPolicyService', () => {
         { mean: 0.7, variance: 0.1 },
       ]);
 
-      // WisdomFilter that throws on filter() call
-      const brokenFilter: WisdomRelevanceFilter = {
-        filter: () => {
-          throw new Error('wisdom filter crash');
-        },
-      } as unknown as WisdomRelevanceFilter;
+      const brokenFilter = new WisdomRelevanceFilter();
+      jest.spyOn(brokenFilter, 'filter').mockImplementation(() => {
+        throw new Error('wisdom filter crash');
+      });
 
       const wisdomStore = new WisdomPatternStore();
       wisdomStore.setPatterns([makeWisdomPattern()]);
