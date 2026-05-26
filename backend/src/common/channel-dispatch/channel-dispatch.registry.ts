@@ -1,4 +1,4 @@
-import { Injectable, Logger, Optional } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import {
   ChannelKind,
   type ChannelDispatchPort,
@@ -7,13 +7,24 @@ import {
 } from './channel-dispatch.port';
 
 /**
+ * Injection token for the array of `ChannelDispatchPort` adapters. Use this
+ * symbol with a `useFactory` provider so NestJS can inject the discovered
+ * adapter list into `ChannelDispatchRegistry`.
+ *
+ * @cluster Channel/Dispatch
+ */
+export const CHANNEL_DISPATCH_ADAPTERS = 'CHANNEL_DISPATCH_ADAPTERS';
+
+/**
  * ChannelDispatchRegistry resolves the correct ChannelDispatchPort
  * adapter for a given ChannelKind and delegates send().
  *
  * Adapters are registered via NestJS dependency injection — each
  * adapter is a provider that implements ChannelDispatchPort and
- * exposes its `channelKind` discriminant. The registry collects
- * them via multi-provider injection.
+ * exposes its `channelKind` discriminant. The MarketingChannelsModule
+ * collects the 6 adapters (WhatsApp/Instagram/Messenger/Facebook/Email/
+ * InternalPartnership) into the CHANNEL_DISPATCH_ADAPTERS token via a
+ * useFactory provider; that array is then injected here.
  */
 
 @Injectable()
@@ -21,7 +32,11 @@ export class ChannelDispatchRegistry {
   private readonly logger = new Logger(ChannelDispatchRegistry.name);
   private readonly adapters = new Map<ChannelKind, ChannelDispatchPort>();
 
-  constructor(@Optional() adapters?: ChannelDispatchPort[]) {
+  constructor(
+    @Optional()
+    @Inject(CHANNEL_DISPATCH_ADAPTERS)
+    adapters?: ChannelDispatchPort[],
+  ) {
     if (adapters) {
       for (const adapter of adapters) {
         if (this.adapters.has(adapter.channelKind)) {

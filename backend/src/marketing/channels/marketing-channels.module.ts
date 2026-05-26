@@ -16,6 +16,10 @@
  * @see backend/src/common/channel-dispatch/channel-dispatch.registry.ts
  */
 import { forwardRef, Module } from '@nestjs/common';
+import {
+  CHANNEL_DISPATCH_ADAPTERS,
+  ChannelDispatchRegistry,
+} from '../../common/channel-dispatch/channel-dispatch.registry';
 import { MarketingModule } from '../marketing.module';
 import { MetaModule } from '../../meta/meta.module';
 import { PrismaModule } from '../../prisma/prisma.module';
@@ -43,7 +47,29 @@ const ADAPTERS = [
     forwardRef(() => MetaModule),
     forwardRef(() => MarketingModule),
   ],
-  providers: [...ADAPTERS],
-  exports: [...ADAPTERS],
+  providers: [
+    ...ADAPTERS,
+    {
+      provide: CHANNEL_DISPATCH_ADAPTERS,
+      useFactory: (
+        whatsapp: WhatsAppDispatchAdapter,
+        instagram: InstagramDispatchAdapter,
+        messenger: MessengerDispatchAdapter,
+        facebook: FacebookDispatchAdapter,
+        email: EmailDispatchAdapter,
+        partnership: InternalPartnershipDispatchAdapter,
+      ) => [whatsapp, instagram, messenger, facebook, email, partnership],
+      inject: [
+        WhatsAppDispatchAdapter,
+        InstagramDispatchAdapter,
+        MessengerDispatchAdapter,
+        FacebookDispatchAdapter,
+        EmailDispatchAdapter,
+        InternalPartnershipDispatchAdapter,
+      ],
+    },
+    ChannelDispatchRegistry,
+  ],
+  exports: [...ADAPTERS, ChannelDispatchRegistry],
 })
 export class MarketingChannelsModule {}
