@@ -221,12 +221,7 @@ export interface ExpansionFit {
   readonly assessedAt: string;
 }
 
-export interface DetectionInput {
-  readonly events: readonly SpineEventRef[];
-  readonly workspaceId: string;
-  readonly entityRef?: { readonly entityType: string; readonly entityId: string };
-  readonly nowMs?: number;
-}
+export type { DetectionInput } from '../channel/types';
 
 import { clamp, daysSince } from '../../common/math';
 export { clamp, daysSince };
