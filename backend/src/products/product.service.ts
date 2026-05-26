@@ -3,7 +3,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import type { Product, Prisma } from '@prisma/client';
-import { BrainEventSpineService } from '../kloel/brain-event-spine.service';
+import { MindEventSpine } from '../kloel/mind/coordination';
 
 export interface CreateProductDto {
   name: string;
@@ -74,7 +74,7 @@ export class ProductService {
     private readonly prisma: PrismaService,
     private readonly eventEmitter: EventEmitter2,
     private readonly audit: AuditService,
-    @Optional() private readonly brainSpine?: BrainEventSpineService,
+    @Optional() private readonly brainSpine?: MindEventSpine,
   ) {}
 
   /**

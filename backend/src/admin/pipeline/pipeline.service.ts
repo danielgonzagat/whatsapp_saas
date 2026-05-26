@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { BrainEventSpineService } from '../../kloel/brain-event-spine.service';
+import { MindEventSpine } from '../../kloel/mind/coordination';
 
 type PipelineStateValue = 'legacy' | 'shadow' | 'active';
 
@@ -31,7 +31,7 @@ export class PipelineService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly events: BrainEventSpineService,
+    private readonly events: MindEventSpine,
   ) {}
 
   async getState(workspaceId: string): Promise<PipelineStateRow> {

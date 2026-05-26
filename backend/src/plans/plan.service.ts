@@ -2,7 +2,7 @@ import { Injectable, Logger, NotFoundException, ForbiddenException, Optional } f
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
-import { BrainEventSpineService } from '../kloel/brain-event-spine.service';
+import { MindEventSpine } from '../kloel/mind/coordination';
 
 export interface CreatePlanDto {
   productId: string;
@@ -53,7 +53,7 @@ export class PlanService {
     private readonly prisma: PrismaService,
     private readonly eventEmitter: EventEmitter2,
     private readonly audit: AuditService,
-    @Optional() private readonly brainSpine?: BrainEventSpineService,
+    @Optional() private readonly brainSpine?: MindEventSpine,
   ) {}
 
   async create(workspaceId: string, dto: CreatePlanDto, actor?: { id: string }) {

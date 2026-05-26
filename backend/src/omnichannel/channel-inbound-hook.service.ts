@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger, Optional, forwardRef } from '@nestjs/common';
-import { BrainEventSpineService } from '../kloel/brain-event-spine.service';
+import { MindEventSpine } from '../kloel/mind/coordination';
 import { MindEventProcessorService } from '../kloel/mind-event-processor.service';
 import { ensureError, type NormalizedMessage } from '../inbox/omnichannel.helpers';
 import type { MindPerceptEvent } from '../kloel/mind.types';
@@ -29,8 +29,8 @@ export class ChannelInboundHookService {
     @Optional()
     @Inject(forwardRef(() => MindEventProcessorService))
     private readonly mindEvents?: MindEventProcessorService,
-    @Inject(forwardRef(() => BrainEventSpineService))
-    private readonly eventSpine?: BrainEventSpineService,
+    @Inject(forwardRef(() => MindEventSpine))
+    private readonly eventSpine?: MindEventSpine,
   ) {}
 
   async onMessageReceived(
