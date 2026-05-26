@@ -195,8 +195,18 @@ export class KloelLeadProcessorService {
           .catch(() => {});
       }
 
+      const tokens = response?.usage?.total_tokens ?? 500;
+      const rawResponse = response.choices[0]?.message?.content || '';
+      const baseLen = messages.reduce((sum, m) => sum + (m.content?.length ?? 0), 0);
+      this.logger.log(
+        `lead-processor ws=${workspaceId} model=writer baseLen=${baseLen} outLen=${rawResponse.length} tokens=${tokens}`,
+      );
+
       const kloelResponse =
-        response.choices[0]?.message?.content || 'Olá! Como posso ajudá-lo hoje?';
+        rawResponse || 'Olá! Como posso ajudá-lo hoje?';
+      if (!rawResponse || rawResponse.trim().length < 5) {
+        this.logger.warn(`lead-processor short output ws=${workspaceId} len=${rawResponse.length}`);
+      }
       await saveLeadMessage(this.prisma, this.logger, lead.id, 'assistant', kloelResponse);
       await updateLeadFromConversation(this.prisma, this.logger, workspaceId, lead.id, message);
       return kloelResponse;

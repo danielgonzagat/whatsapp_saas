@@ -108,12 +108,18 @@ export class KloelThreadSummaryService {
         },
         resolveBackendOpenAIModel('writer_fallback'),
       );
+      const rawTitle = response.choices[0]?.message?.content || '';
+      const title = this.sanitizeGeneratedThreadTitle(rawTitle);
+      const tokens = response?.usage?.total_tokens ?? 64;
       if (workspaceId) {
         await this.planLimits
-          .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 64)
+          .trackAiUsage(workspaceId, tokens)
           .catch(() => {});
       }
-      return this.sanitizeGeneratedThreadTitle(response.choices[0]?.message?.content);
+      this.logger.log(
+        `thread-title ws=${workspaceId ?? 'anon'} model=writer baseLen=${message.length} outLen=${title.length} tokens=${tokens}`,
+      );
+      return title;
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(
         error,
@@ -219,16 +225,24 @@ export class KloelThreadSummaryService {
             ],
             temperature: 0.2,
             top_p: 0.95,
-            max_tokens: 320,
+            max_tokens: 1200,
           },
           resolveBackendOpenAIModel('writer_fallback'),
         );
         await this.planLimits
           .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 120)
           .catch(() => {});
-        summary =
-          String(response.choices[0]?.message?.content || fallbackSummary).trim() ||
-          fallbackSummary;
+        const rawSummary = String(response.choices[0]?.message?.content || '').trim();
+        const tokens = response?.usage?.total_tokens ?? 120;
+        this.logger.log(
+          `thread-summary ws=${workspaceId} model=writer baseLen=${transcript.length} outLen=${rawSummary.length} tokens=${tokens}`,
+        );
+        if (!rawSummary || rawSummary.length < 10) {
+          this.logger.warn(`thread-summary short output ws=${workspaceId} len=${rawSummary.length}`);
+          summary = fallbackSummary;
+        } else {
+          summary = rawSummary;
+        }
       } catch (error: unknown) {
         void this.opsAlert?.alertOnCriticalError(error, 'KloelThreadSummaryService.trackAiUsage');
         this.logger.warn(`Falha ao atualizar resumo da thread ${threadId}: ${String(error)}`); // Intencional: thread summary update is best-effort.

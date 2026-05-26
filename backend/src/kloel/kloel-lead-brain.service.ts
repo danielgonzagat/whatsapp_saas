@@ -352,12 +352,21 @@ export class KloelLeadBrainService {
       await this.llmBudget
         .recordSpend(workspaceId, response?.usage?.total_tokens ?? 0)
         .catch(() => {});
+      const tokens = response?.usage?.total_tokens ?? 500;
+      const rawResponse = response.choices[0]?.message?.content || '';
+      const baseLen = messages.reduce((sum, m) => sum + (m.content?.length ?? 0), 0);
+      this.logger.log(
+        `lead-brain ws=${workspaceId} model=writer baseLen=${baseLen} outLen=${rawResponse.length} tokens=${tokens}`,
+      );
       await this.planLimits
-        .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)
+        .trackAiUsage(workspaceId, tokens)
         .catch(() => {});
 
       const kloelResponse =
-        response.choices[0]?.message?.content || 'Olá! Como posso ajudá-lo hoje?';
+        rawResponse || 'Olá! Como posso ajudá-lo hoje?';
+      if (!rawResponse || rawResponse.trim().length < 5) {
+        this.logger.warn(`lead-brain short output ws=${workspaceId} len=${rawResponse.length}`);
+      }
       await this.saveLeadMessage(lead.id, workspaceId, 'assistant', kloelResponse);
       await this.updateLeadFromConversation(workspaceId, lead.id, message, kloelResponse);
       return kloelResponse;

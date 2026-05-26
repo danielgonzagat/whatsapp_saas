@@ -283,6 +283,11 @@ export class MindVerbalizerService {
     });
 
     const content = result.choices[0]?.message?.content;
-    return typeof content === 'string' ? content : null;
+    const outStr = typeof content === 'string' ? content : null;
+    const outLen = outStr ? outStr.length : 0;
+    this.logger.log(
+      `mind-verbalizer ws=${workspaceId} model=${this.verbalizerModel} baseLen=${prompt.length} outLen=${outLen} tokens=${result.usage?.total_tokens ?? 0}`,
+    );
+    return outStr;
   }
 }

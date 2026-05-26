@@ -92,9 +92,16 @@ export class UnifiedAgentResponseService {
           .trackAiUsage(workspaceId, writerResponse?.usage?.total_tokens ?? 500)
           .catch(() => {});
       }
+      const rawWriterReply = writerResponse.choices[0]?.message?.content || assistantDraft;
+      const tokens = writerResponse?.usage?.total_tokens ?? 500;
+      const baseLen = customerMessage.length + (assistantDraft?.length ?? 0);
+      const outLen = (writerResponse.choices[0]?.message?.content || '').length;
+      this.logger.log(
+        `writer-reply ws=${workspaceId ?? 'anon'} model=${writerModel} baseLen=${baseLen} outLen=${outLen} tokens=${tokens}`,
+      );
       return this.finalizeReplyStyle(
         customerMessage,
-        writerResponse.choices[0]?.message?.content || assistantDraft,
+        rawWriterReply,
         historyTurns,
       );
     } catch (err: unknown) {
@@ -214,11 +221,16 @@ export class UnifiedAgentResponseService {
           ],
           temperature: 0.4,
           top_p: 0.9,
+          max_tokens: 400,
         },
         fallbackWriterModel,
       );
+      const tokens = response?.usage?.total_tokens ?? 500;
+      this.logger.log(
+        `quoted-reply-plan ws=${params.workspaceId} model=${writerModel} baseLen=${params.draftReply.length} outLen=${String(response.choices?.[0]?.message?.content || '').length} tokens=${tokens}`,
+      );
       await planLimits
-        .trackAiUsage(params.workspaceId, response?.usage?.total_tokens ?? 500)
+        .trackAiUsage(params.workspaceId, tokens)
         .catch(() => {});
 
       const raw = String(response.choices?.[0]?.message?.content || '')
