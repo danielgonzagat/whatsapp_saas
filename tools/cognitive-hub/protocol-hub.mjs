@@ -64,8 +64,8 @@ function checkAnyOf(name, checks, hint) {
 const PROTOCOLS = [
   checkProtocol('LSP (Language Server)', ['tools/lsp-mesh/lsp-router.mjs', 'tools/lsp-mesh/lsp-mesh.json']),
   checkAnyOf('DAP (Debug Adapter)',
-    [{ kind: 'bin', value: 'node-debug-adapter' }, { kind: 'bin', value: 'js-debug' }],
-    'Planned: spawn backend with `node --inspect` and bridge inspector protocol → DAP'),
+    [{ kind: 'path', value: 'tools/dap-bridge/dap-router.mjs' }, { kind: 'path', value: 'scripts/mcp/dap-bridge-mcp-launcher.sh' }],
+    'Install via tools/dap-bridge/dap-router.mjs (v1 launcher + session registry; full inspector WS bridge pending)'),
   checkAnyOf('CDP (Chrome DevTools)',
     [{ kind: 'bin', value: 'chrome-devtools-mcp' }, { kind: 'path', value: 'scripts/mcp/chrome-devtools-mcp/launcher.sh' }],
     'Install via npm i -g chrome-devtools-mcp OR wire in .mcp.json'),
