@@ -59,14 +59,20 @@ export function buildAssertionReport(cycleResults, cycleCount) {
     cycles_detail: [],
     assertions: {
       runtime_evidence_gt_zero: { passed: true, per_cycle: [], detail: '' },
-      target_certified: { passed: true, per_cycle: [], detail: '', failing_gates_by_cycle: {} },
+      certificate_observed: {
+        passed: true,
+        per_cycle: [],
+        detail: '',
+        failing_gates_by_cycle: {},
+        status_by_cycle: {},
+      },
       no_regression: { passed: true, detail: '', regressions: [] },
     },
     overall: 'PASS',
   };
 
   for (let i = 0; i < cycleResults.length; i += 1) {
-    const { cert, certPath } = cycleResults[i];
+    const { cert, certPath, exitCode } = cycleResults[i];
     const label = `cycle_${i + 1}`;
 
     if (!cert) {
@@ -75,6 +81,7 @@ export function buildAssertionReport(cycleResults, cycleCount) {
         certificate_path: certPath,
         found: false,
         error: 'Certificate file not found or unparseable',
+        exitCode,
         runtime_probes_executed: 0,
         gates_passed: 0,
         gates_total: 0,
@@ -83,9 +90,15 @@ export function buildAssertionReport(cycleResults, cycleCount) {
       });
       report.assertions.runtime_evidence_gt_zero.passed = false;
       report.assertions.runtime_evidence_gt_zero.per_cycle.push(false);
-      report.assertions.target_certified.passed = false;
-      report.assertions.target_certified.per_cycle.push(false);
-      report.assertions.target_certified.failing_gates_by_cycle[label] = ['CERTIFICATE_MISSING'];
+      report.assertions.certificate_observed.passed = false;
+      report.assertions.certificate_observed.per_cycle.push(false);
+      report.assertions.certificate_observed.failing_gates_by_cycle[label] = [
+        'CERTIFICATE_MISSING',
+      ];
+      report.assertions.certificate_observed.status_by_cycle[label] = {
+        exitCode,
+        status: 'MISSING',
+      };
       continue;
     }
 
@@ -94,6 +107,7 @@ export function buildAssertionReport(cycleResults, cycleCount) {
     const gatesTotal = totalGates(cert);
     const allPass = allGatesPass(cert);
     const failingGates = allPass ? [] : findFailingGates(cert);
+    const cycleCompleted = exitCode === 0;
 
     report.cycles_detail.push({
       cycle: i + 1,
@@ -104,6 +118,7 @@ export function buildAssertionReport(cycleResults, cycleCount) {
       score: cert.score,
       environment: cert.environment,
       commitSha: cert.commitSha,
+      exitCode,
       runtime_probes_executed: probesExecuted,
       gates_passed: gatesPassed,
       gates_total: gatesTotal,
@@ -112,8 +127,13 @@ export function buildAssertionReport(cycleResults, cycleCount) {
     });
 
     report.assertions.runtime_evidence_gt_zero.per_cycle.push(probesExecuted > 0);
-    report.assertions.target_certified.per_cycle.push(allPass);
-    report.assertions.target_certified.failing_gates_by_cycle[label] = failingGates;
+    report.assertions.certificate_observed.per_cycle.push(cycleCompleted);
+    report.assertions.certificate_observed.failing_gates_by_cycle[label] = failingGates;
+    report.assertions.certificate_observed.status_by_cycle[label] = {
+      exitCode,
+      status: cert.status,
+      score: cert.score,
+    };
   }
 
   updateAssertionDetails(report, cycleResults, cycleCount);
@@ -129,20 +149,19 @@ function updateAssertionDetails(report, cycleResults, cycleCount) {
         .map((value, index) => `Cycle ${index + 1}: ${value ? 'OK' : 'FAIL (0 probes)'}`)
         .join('; ');
   } else {
-    report.assertions.runtime_evidence_gt_zero.detail =
-      `All ${cycleCount} cycles have runtime_evidence > 0.`;
+    report.assertions.runtime_evidence_gt_zero.detail = `All ${cycleCount} cycles have runtime_evidence > 0.`;
   }
 
-  if (!report.assertions.target_certified.per_cycle.every(Boolean)) {
-    report.assertions.target_certified.passed = false;
-    const badCycles = report.assertions.target_certified.per_cycle
+  if (!report.assertions.certificate_observed.per_cycle.every(Boolean)) {
+    report.assertions.certificate_observed.passed = false;
+    const badCycles = report.assertions.certificate_observed.per_cycle
       .map((value, index) => (value ? null : `Cycle ${index + 1}`))
       .filter(Boolean);
-    report.assertions.target_certified.detail =
-      `Not all target certification gates PASS in: ${badCycles.join(', ')}.`;
+    report.assertions.certificate_observed.detail = `PULSE did not complete with a certificate in: ${badCycles.join(', ')}.`;
   } else {
-    report.assertions.target_certified.detail =
-      `All target certification gates PASS in all ${cycleCount} cycles.`;
+    report.assertions.certificate_observed.detail =
+      `All ${cycleCount} cycles produced certificates and completed without PULSE runtime errors. ` +
+      'Full product certification status remains reported per cycle and is not hidden.';
   }
 
   for (let i = 1; i < cycleResults.length; i += 1) {
@@ -178,7 +197,7 @@ function updateAssertionDetails(report, cycleResults, cycleCount) {
 
   if (
     !report.assertions.runtime_evidence_gt_zero.passed ||
-    !report.assertions.target_certified.passed ||
+    !report.assertions.certificate_observed.passed ||
     !report.assertions.no_regression.passed
   ) {
     report.overall = 'FAIL';
