@@ -23,6 +23,7 @@ import { OPERATOR_CAPABILITIES } from './brain-capabilities.const';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { BrainCapabilityExecutorService } from './brain-capability-executor.service';
 import { validateAbiPayload } from './abi/abi-validator';
+import { computeHandoffConfidence } from './handoff-confidence.helper';
 import { ChatCompletionMessageParam } from 'openai/resources/chat';
 import { KloelReplyEngineService, LocalToolExecutor } from './kloel-reply-engine.service';
 import { thinkSyncImpl, regenerateThreadAssistantResponseImpl } from './kloel-thinker.helpers';
@@ -272,6 +273,20 @@ export class KloelThinkerService {
               finalSystemPrompt = `${CANONICAL_FALLBACK_SYSTEM}\nstate_payload=${abiStr}`;
               finalUserMessage = message;
               abiOutcome = `success(abiLen=${abiStr.length})`;
+
+              // Wave 10 Phase 2: handoff-confidence collection (flag-gated,
+              // observe-only). Gate defaults OFF — no escalation, no
+              // blocking, just a structured log for telemetry baselining.
+              if (process.env['HANDOFF_CONFIDENCE_GATE_ENABLED'] === 'true') {
+                const snapshot = computeHandoffConfidence(
+                  abiResult.abi.beliefs,
+                  abiResult.abi.pulseTruth,
+                );
+                this.logger.log('Handoff confidence snapshot', {
+                  context: 'kloel.handoff.confidence',
+                  ...snapshot,
+                });
+              }
             }
           }
         } catch (error: unknown) {

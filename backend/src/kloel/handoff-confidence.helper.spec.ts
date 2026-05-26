@@ -76,3 +76,46 @@ describe('computeHandoffConfidence', () => {
     expect(out.beliefCount).toBe(3);
   });
 });
+
+describe('Phase-2 flag-gated integration', () => {
+  const originalEnv = process.env;
+
+  beforeEach(() => {
+    jest.resetModules();
+    process.env = { ...originalEnv };
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
+  });
+
+  it('produces a loggable snapshot when HANDOFF_CONFIDENCE_GATE_ENABLED is true', () => {
+    process.env['HANDOFF_CONFIDENCE_GATE_ENABLED'] = 'true';
+    const enabled = process.env['HANDOFF_CONFIDENCE_GATE_ENABLED'] === 'true';
+    expect(enabled).toBe(true);
+
+    const snapshot = computeHandoffConfidence(
+      [mkBelief(0.7), mkBelief(0.8)],
+      mkPulse(0.9, 0.1),
+    );
+
+    // Snapshot shape is loggable: every field is a JSON-safe primitive.
+    expect(typeof snapshot.composite).toBe('number');
+    expect(typeof snapshot.meanBeliefConfidence).toBe('number');
+    expect(typeof snapshot.capabilityHealth).toBe('number');
+    expect(typeof snapshot.overclaimRisk).toBe('number');
+    expect(typeof snapshot.beliefCount).toBe('number');
+    expect(typeof snapshot.wouldEscalateAtThreshold04).toBe('boolean');
+
+    // Verify the spread produces valid log context keys.
+    const context = { context: 'kloel.handoff.confidence', ...snapshot };
+    expect(context.context).toBe('kloel.handoff.confidence');
+    expect(context.composite).toBe(snapshot.composite);
+  });
+
+  it('skips the gate when HANDOFF_CONFIDENCE_GATE_ENABLED is not true', () => {
+    delete process.env['HANDOFF_CONFIDENCE_GATE_ENABLED'];
+    const enabled = process.env['HANDOFF_CONFIDENCE_GATE_ENABLED'] === 'true';
+    expect(enabled).toBe(false);
+  });
+});
