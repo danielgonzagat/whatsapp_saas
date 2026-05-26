@@ -110,6 +110,30 @@
 | `readAppleClientId` + `parseAppleUser` + `AppleUserPayload` across 4 Apple OAuth routes | NEW `frontend/src/app/api/_lib/apple-auth.ts` | 2026-05-26 | ✅ migrated (regular auth start/callback + social-checkout start/callback share canonical) |
 | `getServerApiBase` in 2 checkout server pages (`/[slug]/page.tsx`, `/r/[code]/page.tsx`) | NEW `frontend/src/app/(checkout)/server-api-base.ts` | 2026-05-26 | ✅ migrated (env-precedence + trailing-slash strip canonical) |
 | backend↔worker cross-workspace mirrors (`async-sequence`, `resolve-redis-url`, `contracts/autopilot-jobs`, `constants/sales-templates`, `conversation-agent-state`) | (stays local — separate workspaces by design; ~80 dup symbols) | — | ⏸ kept local |
+| `resolveEmailConfig` + `EmailConfig` type in worker `providers/{channel-dispatcher,email-provider}.ts` | NEW `worker/providers/email-config.helper.ts` | 2026-05-26 | ✅ migrated (extracted to shared helper) |
+| `BG_CARD` / `BG_ELEVATED` / `BORDER` theme shortcuts in 3 module-shared.tsx files | (stays local — each is a 1-line `KLOEL_THEME.xxx` shorthand owned by its module; consolidation touches 36+ consumers for 6 lines of dup) | — | ⏸ kept local |
+
+---
+
+## Byte-identical canonicalization sweep — COMPLETE 2026-05-26
+
+After this round, the codebase has **zero remaining intra-workspace byte-identical
+function/type/interface/enum duplicates** across backend/src, frontend/src,
+and worker/. Verified via:
+
+```
+python3 scripts/canon-sweep.py  # checks sym_re + type_re + const_re
+```
+
+The 23 remaining duplicates are all **cross-workspace mirrors** (backend↔worker
+for shared contracts like `contracts/autopilot-jobs`, `resolve-redis-url`,
+`async-sequence`, `sales-templates`, `conversation-agent-state`). These are
+intentional: each workspace is its own Node process with its own dependency
+boundary, and there is no shared package in the monorepo to host them.
+
+What remains as future canonicalization work is **semantic** (same-name with
+divergent bodies) rather than byte-identical, and requires per-case judgement
+(see ⏸ kept-local rows above for the catalogue).
 
 **Status legend:**
 - ✅ migrated (re-export): local export is now a re-export from canonical; callers unchanged, structure consolidated
