@@ -72,11 +72,15 @@ export class SelfHealthService {
         where: { id: workspaceId },
         select: { providerSettings: true },
       });
-      if (!workspace) return 'unknown';
+      if (!workspace) {
+        return 'unknown';
+      }
 
       const settings = (workspace.providerSettings ?? {}) as Record<string, unknown>;
       const wpp = settings.whatsapp as Record<string, unknown> | undefined;
-      if (!wpp) return 'unknown';
+      if (!wpp) {
+        return 'unknown';
+      }
 
       // If the workspace has WhatsApp credentials configured, consider it connected.
       // A full connectivity check would require reaching out to the provider,

@@ -88,7 +88,7 @@ describe('SelfGapsService', () => {
       },
     ]);
 
-    const result = await service.diffRegistryVsDispatcher();
+    const result = service.diffRegistryVsDispatcher();
 
     // 4 registry caps: self.health, self.gaps, create_product, unwired_cap
     // create_product is wired, so 3 unwired
@@ -113,7 +113,7 @@ describe('SelfGapsService', () => {
       },
     ]);
 
-    const result = await service.diffRegistryVsDispatcher();
+    const result = service.diffRegistryVsDispatcher();
 
     // Only create_product from dispatcher counts; self.health from other.service doesn't
     expect(result.wired).toContain('create_product');
@@ -151,7 +151,7 @@ describe('SelfGapsService', () => {
       },
     ]);
 
-    const result = await service.diffRegistryVsDispatcher();
+    const result = service.diffRegistryVsDispatcher();
 
     expect(result.unwired.length).toBe(0);
     expect(result.wired.length).toBe(4);
@@ -159,7 +159,7 @@ describe('SelfGapsService', () => {
   it('survives empty search results', async () => {
     codeAccess.search.mockReturnValue([]);
 
-    const result = await service.diffRegistryVsDispatcher();
+    const result = service.diffRegistryVsDispatcher();
 
     expect(result.unwired.length).toBe(4);
     expect(result.wired.length).toBe(0);

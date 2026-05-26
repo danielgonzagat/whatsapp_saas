@@ -37,23 +37,21 @@ describe('ReportService', () => {
       expect(result.refunds).toBe(0);
       expect(result.abandonments).toBe(0);
 
-      expect(prismaMock.checkoutOrder.count).toHaveBeenCalledWith(
-        expect.objectContaining({ where: expect.objectContaining({ workspaceId: 'ws-1' }) }),
-      );
+      type CountArg = { where: { workspaceId: string } };
+      const callsOrder = prismaMock.checkoutOrder.count.mock.calls as unknown as CountArg[][];
+      expect(callsOrder[0]?.[0]?.where.workspaceId).toBe('ws-1');
       expect(prismaMock.kloelSale.count).toHaveBeenCalledTimes(2);
     });
 
     it('includes workspaceId in every query', async () => {
       await service.operations('ws-2');
 
-      for (const call of prismaMock.checkoutOrder.count.mock.calls) {
-        expect(call[0].where.workspaceId).toBe('ws-2');
-      }
-      for (const call of prismaMock.kloelSale.count.mock.calls) {
-        expect(call[0].where.workspaceId).toBe('ws-2');
-      }
-      for (const call of prismaMock.checkoutSocialLead.count.mock.calls) {
-        expect(call[0].where.workspaceId).toBe('ws-2');
+      type CountArg = { where: { workspaceId: string } };
+      const callsOrder = prismaMock.checkoutOrder.count.mock.calls as unknown as CountArg[][];
+      const callsSale = prismaMock.kloelSale.count.mock.calls as unknown as CountArg[][];
+      const callsLead = prismaMock.checkoutSocialLead.count.mock.calls as unknown as CountArg[][];
+      for (const call of [...callsOrder, ...callsSale, ...callsLead]) {
+        expect(call[0]?.where.workspaceId).toBe('ws-2');
       }
     });
 
@@ -77,14 +75,10 @@ describe('ReportService', () => {
       expect(result.total).toBe(0);
       expect(result.items).toEqual([]);
 
-      expect(prismaMock.checkoutSocialLead.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            workspaceId: 'ws-1',
-            convertedAt: null,
-          }),
-        }),
-      );
+      type FindArg = { where: { workspaceId: string; convertedAt: Date | null } };
+      const findCalls = prismaMock.checkoutSocialLead.findMany.mock.calls as unknown as FindArg[][];
+      expect(findCalls[0]?.[0]?.where.workspaceId).toBe('ws-1');
+      expect(findCalls[0]?.[0]?.where.convertedAt).toBeNull();
     });
 
     it('maps rows to AbandonmentItem shape', async () => {
@@ -103,9 +97,10 @@ describe('ReportService', () => {
       ]);
 
       const result = await service.abandonments('ws-1');
+      const item = result.items[0];
 
       expect(result.total).toBe(1);
-      expect(result.items[0]).toEqual({
+      expect(item).toEqual({
         id: 'csl-1',
         name: 'João',
         email: 'joao@test.com',

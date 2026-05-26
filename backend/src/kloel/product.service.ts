@@ -58,16 +58,34 @@ export class ProductService {
     const existing = await this.prisma.product.findFirst({
       where: { id: productId, workspaceId },
     });
-    if (!existing) return { success: false, error: 'product_not_found' };
+    if (!existing) {
+      return { success: false, error: 'product_not_found' };
+    }
     const updateData: Record<string, unknown> = {};
-    if (data.name !== undefined) updateData.name = String(data.name);
-    if (data.description !== undefined) updateData.description = String(data.description);
-    if (data.price !== undefined) updateData.price = Number(data.price);
-    if (data.active !== undefined) updateData.active = Boolean(data.active);
-    if (data.imageUrl !== undefined) updateData.imageUrl = String(data.imageUrl);
-    if (data.format !== undefined) updateData.format = String(data.format);
-    if (data.category !== undefined) updateData.category = String(data.category);
-    if (data.status !== undefined) updateData.status = String(data.status);
+    if (typeof data.name === 'string') {
+      updateData.name = data.name;
+    }
+    if (typeof data.description === 'string') {
+      updateData.description = data.description;
+    }
+    if (typeof data.price === 'number') {
+      updateData.price = data.price;
+    }
+    if (data.active !== undefined) {
+      updateData.active = Boolean(data.active);
+    }
+    if (typeof data.imageUrl === 'string') {
+      updateData.imageUrl = data.imageUrl;
+    }
+    if (typeof data.format === 'string') {
+      updateData.format = data.format;
+    }
+    if (typeof data.category === 'string') {
+      updateData.category = data.category;
+    }
+    if (typeof data.status === 'string') {
+      updateData.status = data.status;
+    }
 
     const product = await this.prisma.product.update({
       where: { id: productId },
@@ -110,14 +128,18 @@ export class ProductService {
     const product = await this.prisma.product.findFirst({
       where: { id: productId, workspaceId },
     });
-    if (!product) return { success: false, error: 'product_not_found' };
+    if (!product) {
+      return { success: false, error: 'product_not_found' };
+    }
     return { success: true, product };
   }
   async delete(workspaceId: string, productId: string) {
     const product = await this.prisma.product.findFirst({
       where: { id: productId, workspaceId },
     });
-    if (!product) return { success: false, error: 'product_not_found' };
+    if (!product) {
+      return { success: false, error: 'product_not_found' };
+    }
     await this.prisma.product.delete({ where: { id: productId } });
     this.logger.log(`Product deleted: ${productId} "${product.name}"`);
     return { success: true, message: `Produto "${product.name}" removido.` };

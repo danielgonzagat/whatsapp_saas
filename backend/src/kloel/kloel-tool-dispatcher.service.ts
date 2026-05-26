@@ -212,7 +212,7 @@ export class KloelToolDispatcherService {
           if (!this.selfGaps) {
             return { success: false, error: 'self_gaps_service_unavailable' };
           }
-          const result = await this.selfGaps.diffRegistryVsDispatcher();
+          const result = this.selfGaps.diffRegistryVsDispatcher();
           return {
             success: true,
             capabilityId: 'self.gaps',

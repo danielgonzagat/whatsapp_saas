@@ -19,7 +19,7 @@ export class SelfGapsService {
    * Compare CAPABILITY_DEFINITIONS against the dispatcher's switch cases
    * and return the list of capabilities that have no case handler.
    */
-  async diffRegistryVsDispatcher(): Promise<GapResult> {
+  diffRegistryVsDispatcher(): GapResult {
     const hits = this.codeAccess.search("case '", {
       glob: '*.ts',
       max: 300,
