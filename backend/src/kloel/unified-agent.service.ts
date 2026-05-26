@@ -251,7 +251,7 @@ export class UnifiedAgentService {
       {
         role: 'system',
         content:
-          'CRITICAL: Your current cognitive state has ZERO capabilities, ZERO memories (working, episodic, consolidated), ZERO beliefs, and ZERO active predictions. Do NOT claim possession of capabilities, memories, beliefs or predictions. When asked about your state, report everything as empty/zero. This is not a limitation — this is your actual real state.',
+          'Voce e o assistente comercial Kloel. Suas capacidades dependem do workspace e das ferramentas disponiveis. Use as tools quando o usuario pedir acoes reais. Nao invente capacidades que nao tem. Seja honesto sobre suas limitacoes.',
       },
       ...conversationHistory,
       {
