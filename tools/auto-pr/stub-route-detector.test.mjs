@@ -16,7 +16,13 @@ function executableLines(src) {
 }
 
 function detectReason(src) {
-  if (/import\s+\w+View\s+from\s+['"]@\/components\/kloel\//.test(src) && /<[A-Z]\w+/.test(src)) return null;
+  if (
+    /import\s+(?:\{\s*)?[A-Z]\w+/.test(src) &&
+    /from\s+['"]@\/components\//.test(src) &&
+    /<[A-Z]\w+/.test(src)
+  ) {
+    return null;
+  }
   if (/\/\*\*[\s\S]*?\*\//.test(src) && /redirect\(['"`]\/[^'"`]+['"`]\)/.test(src)) return null;
   if (/(?:em\s+breve|não\s+está\s+disponível|setup-required)/i.test(src)) return null;
   if (/redirect\(['"`]\/[^'"`]+['"`]\)/.test(src) && !/<[A-Z]/.test(src)) return 'redirect-only';
@@ -69,6 +75,26 @@ test('A3: AnunciosView delegate', () => {
 });
 test('A4: MarketingView delegate', () => {
   strictEqual(detectReason("import MarketingView from '@/components/kloel/marketing/MarketingView';\n\nexport default function Page() {\n  return <MarketingView defaultTab=\"google-ads\" />;\n}"), null);
+});
+
+console.log('\nPattern A+ — Delegate-to-component (non-View names, expect null):');
+test('A+1: KloelCarteira (no View suffix)', () => {
+  strictEqual(detectReason("import KloelCarteira from '@/components/kloel/carteira/KloelCarteira';\nexport default function Page() {\n  return <KloelCarteira defaultTab=\"saldo\" />;\n}"), null);
+});
+test('A+2: InboxWorkspace', () => {
+  strictEqual(detectReason("import InboxWorkspace from '@/components/kloel/inbox/InboxWorkspace';\nexport default function Page() {\n  return <InboxWorkspace />;\n}"), null);
+});
+test('A+3: CanvasEditor outside kloel/', () => {
+  strictEqual(detectReason("import CanvasEditor from '@/components/canvas/CanvasEditor';\nexport default function Page() {\n  return <CanvasEditor />;\n}"), null);
+});
+test('A+4: ProductNerveCenter with props', () => {
+  strictEqual(detectReason("import ProductNerveCenter from '@/components/kloel/products/ProductNerveCenter';\nexport default function Page() {\n  return <ProductNerveCenter productId=\"x\" />;\n}"), null);
+});
+test('A+5: ParceriasShell (aliased import)', () => {
+  strictEqual(detectReason("import { ParceriasShell } from '@/components/kloel/parcerias/ParceriasView';\nexport default function Page() {\n  return <ParceriasShell />;\n}"), null);
+});
+test('A+6: CookiePolicyPage (public route)', () => {
+  strictEqual(detectReason("import CookiePolicyPage from '@/components/kloel/cookies/CookiePolicyPage';\nexport default function Page() {\n  return <CookiePolicyPage />;\n}"), null);
 });
 
 console.log('\nPattern B — Documented redirect (expect null):');

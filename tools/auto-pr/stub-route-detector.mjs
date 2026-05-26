@@ -41,9 +41,18 @@ function executableLines(src) {
 }
 
 function detectReason(src, file) {
-  // --- NOT a stub: delegate-to-view pattern ---
-  // File imports a View component from @/components/kloel/ and renders it.
-  if (/import\s+\w+View\s+from\s+['"]@\/components\/kloel\//.test(src) && /<[A-Z]\w+/.test(src)) return null;
+  // --- NOT a stub: delegate-to-component pattern ---
+  // File imports a PascalCase component from @/components/(kloel|canvas|...)/
+  // and renders it in JSX. Component name does NOT have to end in "View" —
+  // many shells use names like KloelCarteira, InboxWorkspace, ProductNerveCenter,
+  // CanvasEditor, ParceriasShell, CookiePolicyPage, KloelDashboard.
+  if (
+    /import\s+(?:\{\s*)?[A-Z]\w+/.test(src) &&
+    /from\s+['"]@\/components\//.test(src) &&
+    /<[A-Z]\w+/.test(src)
+  ) {
+    return null;
+  }
 
   // --- NOT a stub: documented redirect ---
   // File has a JSDoc comment block AND uses redirect() — intentional alias.
