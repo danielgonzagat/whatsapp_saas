@@ -179,16 +179,30 @@ export async function runCreateFlow(
   };
 }
 
-export async function runListFlows(prisma: PrismaService, workspaceId: string): Promise<ToolResult> {
+export async function runListFlows(
+  prisma: PrismaService,
+  workspaceId: string,
+): Promise<ToolResult> {
   const flows = await prisma.flow.findMany({
     where: { workspaceId },
-    select: { id: true, name: true, isActive: true, createdAt: true, _count: { select: { executions: true } } },
+    select: {
+      id: true,
+      name: true,
+      isActive: true,
+      createdAt: true,
+      _count: { select: { executions: true } },
+    },
     orderBy: { createdAt: 'desc' },
     take: 10,
   });
   return {
     success: true,
-    flows: flows.map((f) => ({ id: f.id, name: f.name, active: f.isActive, executions: f._count.executions })),
+    flows: flows.map((f) => ({
+      id: f.id,
+      name: f.name,
+      active: f.isActive,
+      executions: f._count.executions,
+    })),
     message: `Você tem ${flows.length} fluxo(s) cadastrado(s).`,
   };
 }
@@ -222,7 +236,11 @@ export async function runGetDashboardSummary(
     }),
     prisma.kloelWallet.findUnique({
       where: { workspaceId },
-      select: { availableBalanceInCents: true, pendingBalanceInCents: true, blockedBalanceInCents: true },
+      select: {
+        availableBalanceInCents: true,
+        pendingBalanceInCents: true,
+        blockedBalanceInCents: true,
+      },
     }),
   ]);
   const revenueInCents = paidOrders._sum.totalInCents || 0;
@@ -272,8 +290,17 @@ export async function runCreatePaymentLink(
     const localPaymentId = `pay_dev_${Date.now().toString(36)}`;
     const customerName = args.customerName || 'Cliente';
     const checksum = randomBytes(2).toString('hex').toUpperCase();
-    if (args.customerName) await upsertDevContact(prisma, workspaceId, customerName);
-    await createDevSale(prisma, workspaceId, localPaymentId, args.description || 'Produto', localAmount, args.customerName);
+    if (args.customerName) {
+      await upsertDevContact(prisma, workspaceId, customerName);
+    }
+    await createDevSale(
+      prisma,
+      workspaceId,
+      localPaymentId,
+      args.description || 'Produto',
+      localAmount,
+      args.customerName,
+    );
     const pixPayload = `00020126580014BR.GOV.BCB.PIX0136${localPaymentId}520400005303986540${localAmount.toFixed(2)}5802BR5925${customerName}6009SAO PAULO62070503***6304${checksum}`;
     let qrCodeBase64 = '';
     try {
@@ -308,9 +335,14 @@ async function upsertDevContact(prisma: PrismaService, workspaceId: string, cust
   try {
     const existing = await prisma.contact.findFirst({ where: { workspaceId, name: customerName } });
     if (existing) {
-      await prisma.contact.updateMany({ where: { id: existing.id, workspaceId }, data: { updatedAt: new Date() } });
+      await prisma.contact.updateMany({
+        where: { id: existing.id, workspaceId },
+        data: { updatedAt: new Date() },
+      });
     } else {
-      await prisma.contact.create({ data: { workspaceId, name: customerName, phone: '', leadScore: 30 } });
+      await prisma.contact.create({
+        data: { workspaceId, name: customerName, phone: '', leadScore: 30 },
+      });
     }
   } catch {
     // Local payment evidence should not fail on optional CRM sync.

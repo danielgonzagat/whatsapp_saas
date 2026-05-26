@@ -70,8 +70,6 @@ import { PulseArtifactService } from '../pulse/pulse-artifact.service';
 import { WalletModule } from '../wallet/wallet.module';
 import { ContactsModule } from '../contacts/contacts.module';
 import { ContactIdentityResolverService } from '../contacts/contact-identity-resolver.service';
-import { WebhooksService } from '../webhooks/webhooks.service';
-import { WebhookDispatcherService } from '../webhooks/webhook-dispatcher.service';
 import { AdRulesEngineService } from './ad-rules-engine.service';
 import { AdRulesController } from './ad-rules.controller';
 import { CanvasController } from './canvas.controller';
@@ -202,6 +200,7 @@ import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service
     KloelAudioModule,
     KloelRulesModule,
     ContactsModule,
+    forwardRef(() => require('../webhooks/webhooks.module').WebhooksModule),
     LineageModule,
     DriftModule,
     RiskClassModule,
@@ -314,8 +313,6 @@ import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service
     AdRulesEngineService,
     EmailCampaignService,
     CartRecoveryService,
-    WebhooksService,
-    WebhookDispatcherService,
     BrainCapabilityRegistryService,
     BrainCapabilityExecutorService,
     BrainAutonomyService,

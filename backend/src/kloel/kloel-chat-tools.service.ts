@@ -162,7 +162,13 @@ export class KloelChatToolsService {
     workspaceId: string,
     args: { amount: number; description: string; customerName?: string },
   ): Promise<ToolResult> {
-    return runCreatePaymentLink(this.prisma, this.smartPaymentService, this.logger, workspaceId, args);
+    return runCreatePaymentLink(
+      this.prisma,
+      this.smartPaymentService,
+      this.logger,
+      workspaceId,
+      args,
+    );
   }
 
   toolCreateAgentJob(workspaceId: string, args: ToolCreateAgentJobArgs): Promise<ToolResult> {
@@ -173,7 +179,10 @@ export class KloelChatToolsService {
     return runListAgentJobs(this.agentScheduler, workspaceId);
   }
 
-  toolSetAgentJobEnabled(workspaceId: string, args: ToolSetAgentJobEnabledArgs): Promise<ToolResult> {
+  toolSetAgentJobEnabled(
+    workspaceId: string,
+    args: ToolSetAgentJobEnabledArgs,
+  ): Promise<ToolResult> {
     return runSetAgentJobEnabled(this.agentScheduler, workspaceId, args);
   }
 
@@ -307,7 +316,10 @@ export class KloelChatToolsService {
     return Promise.resolve(runConfigureShipping(workspaceId, args));
   }
 
-  toolConfigureSocialProof(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+  toolConfigureSocialProof(
+    workspaceId: string,
+    args: Record<string, unknown>,
+  ): Promise<ToolResult> {
     return Promise.resolve(runConfigureSocialProof(workspaceId, args));
   }
 
