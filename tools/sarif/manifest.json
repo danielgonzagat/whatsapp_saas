@@ -1,0 +1,10 @@
+{
+  "generatedAt": "2026-05-26T16:42:34.545Z",
+  "workspaces": [
+    {
+      "workspace": "worker",
+      "file": "tools/sarif/worker.sarif",
+      "findings": 0
+    }
+  ]
+}
