@@ -22,6 +22,7 @@ import {
   detectBuyIntent,
 } from './kloel-lead-brain.helpers';
 import type { ChatMessage } from './kloel-lead-brain.helpers';
+import { AUTOPILOT_ANTI_INVENTION_PROMPT } from './autopilot-system-prompt.helper';
 export { NON_DIGIT_RE, safeStr, asUnknownRecord, detectBuyIntent };
 export type { ChatMessage };
 
@@ -327,6 +328,7 @@ export class KloelLeadBrainService {
       }
 
       const messages: ChatMessage[] = [
+        { role: 'system', content: AUTOPILOT_ANTI_INVENTION_PROMPT },
         ...conversationHistory,
         { role: 'user', content: effectiveUserContent },
       ];
