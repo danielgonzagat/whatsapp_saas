@@ -453,7 +453,6 @@ import { IntentRouterModule } from './intent-router/intent-router.module';
     AgentRuntimeSchedulerService,
     AgentRuntimeSessionStore,
     AgentRuntimeSkillRegistry,
-    IntentRouterService,
   ],
 })
 export class KloelModule {}

@@ -42,6 +42,7 @@ export class IntentRouterService {
       regex: /(?:log|audit[oó]ria|a[cç][oõ]es?\s.*execut|o que vc fez|historico)/i,
       capabilityId: 'self.audit_log',
       extract: () => ({}),
+    },
     {
       regex: /lista(?:r|ndo)?\s+(?:meus\s+)?(?:produtos|ofertas|cat[aá]logo)/i,
       capabilityId: 'list_products',

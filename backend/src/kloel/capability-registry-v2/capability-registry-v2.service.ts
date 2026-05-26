@@ -1,6 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';import {
+import { Injectable, Logger } from '@nestjs/common';
+import {
   type CapabilityDefinition,
-  type CapabilityInputField,
   type CapabilityMaturity,
   type ExecutionReceipt,
   type IntentClassification,

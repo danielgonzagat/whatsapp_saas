@@ -62,13 +62,18 @@ export function formatToolResult(tool: string, result: unknown): string {
       }
       return `Cupons: ${coupons.map((c) => `${s(c.code)} (${s(c.discountType)})`).join(', ')}`;
     }
-    case 'get_product_urls': {
-      const urls = Array.isArray(r.urls) ? (r.urls as Array<Record<string, unknown>>) : [];
+    case 'get_product_urls':
+      const urls = Array.isArray(r.customUrls) ? (r.customUrls as Array<Record<string, unknown>>) : [];
       if (urls.length === 0) {
-        return 'Nenhuma URL configurada.';
+        return `Nenhuma URL cadastrada para este produto.`;
       }
-      return `URLs: ${urls.map((u) => `${s(u.label || u.url)}`).join(', ')}`;
+      return `URLs: ${urls.map((u) => `${s(u.description)} → ${s(u.url)}`).join(', ')}`;
+    case 'get_product_reviews': {
+      const revs = Array.isArray(r.reviews) ? (r.reviews as Array<Record<string, unknown>>) : [];
+      if (revs.length === 0) return 'Nenhuma avaliação encontrada.';
+      return `Avaliações (${revs.length}): ${revs.map((rv) => `★${rv.rating || '?'} ${s(rv.comment)}`.substring(0, 60)).join(' | ')}`;
     }
+    case 'get_product_ai_config':
     case 'create_payment_link': {
       const pix = s(r.pixCopyPaste);
       const qr = s(r.pixQrCode);

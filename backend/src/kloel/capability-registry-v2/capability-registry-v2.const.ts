@@ -6,7 +6,6 @@ import { type CapabilityDefinition } from './capability-registry-v2.types';
  * Every action the Kloel can perform is defined here.
  * This IS the registry. Adding a capability here = it is dispatchable.
  */
-export const CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [];
 export const CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
   // ═══════════ Tier 0 — Auto-consciência ═══════════
   {

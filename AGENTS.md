@@ -293,16 +293,15 @@ O estado de rigor maximo do Codacy faz parte da governance.
 <claude-mem-context>
 # Memory Context
 
-# [whatsapp_saas] recent context, 2026-05-25 12:56pm GMT-3
+# [whatsapp_saas] recent context, 2026-05-26 8:19am GMT-3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (20,353t read) | 1,760,086t work | 99% savings
+Stats: 50 obs (20,432t read) | 1,771,338t work | 99% savings
 
 ### May 11, 2026
-1346 2:49p 🟣 Kloel Backend Successfully Deployed to Railway Production
 1347 2:50p 🔵 Worker Service Health Check Confirmed Healthy — Redis Connected, Autopilot Queue Active
 1348 " 🔴 WhatsAppProviderRegistry Added to WhatsappModule Exports
 1349 2:51p 🔴 Visual Baseline Updated — signup-mobile.png Snapshot Regenerated from CI Artifact
@@ -353,8 +352,10 @@ Stats: 50 obs (20,353t read) | 1,760,086t work | 99% savings
 1417 8:05p 🔵 Ecossistema MCP Completo Mapeado via ps aux no whatsapp_saas
 1418 " 🔵 check-test-integrity.mjs: Proteção Avançada de Cobertura de Testes no whatsapp_saas
 1419 " 🔵 GitHub API Inacessível em Sessão de Agente (session_id 4445)
+### May 25, 2026
+1420 1:01p 🔴 Codex config.toml: deprecated `codex_hooks` replaced with `hooks`
 
-Access 1760k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 1771k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>
 
 ## PULSE Auditor Immutability

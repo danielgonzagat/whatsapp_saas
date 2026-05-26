@@ -4,7 +4,6 @@ import {
   type ExecutionReceipt,
   type CapabilityContext,
 } from '../capability-registry-v2/capability-registry-v2.types';
-import { CapabilityRegistryV2Service } from '../capability-registry-v2/capability-registry-v2.service';
 /**
  * ToolPlanner — bridges IntentRouter classification with existing tool execution.
  *
@@ -19,7 +18,6 @@ import { CapabilityRegistryV2Service } from '../capability-registry-v2/capabilit
 export class ToolPlannerService {
   private readonly logger = new Logger(ToolPlannerService.name);
   constructor(
-    private readonly registry: CapabilityRegistryV2Service,
   ) {}
   /**
    * Validate inputs against a capability's schema.

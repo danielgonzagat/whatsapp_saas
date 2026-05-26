@@ -134,11 +134,20 @@ export class KloelProductSubResourceToolsService {
       if (args.active !== undefined) {
         data.active = Boolean(args.active);
       }
+      if (args.maxInstallments !== undefined) {
+        data.maxInstallments = this.num(args.maxInstallments);
+      }
+      if (args.couponEnabled !== undefined) {
+        data.couponEnabled = Boolean(args.couponEnabled);
+      }
+      if (args.itemsPerPlan !== undefined) {
+        data.itemsPerPlan = this.num(args.itemsPerPlan);
+      }
       const plan = await this.prisma.productPlan.update({
         where: { id: planId },
         data,
       });
-      return { success: true, plan: { id: plan.id, name: plan.name, price: plan.price } };
+      return { success: true, plan: { id: plan.id, name: plan.name, price: plan.price, itemsPerPlan: plan.itemsPerPlan } };
     } catch (err: unknown) {
       return { success: false, error: err instanceof Error ? err.message : 'Erro' };
     }
@@ -247,6 +256,7 @@ export class KloelProductSubResourceToolsService {
           discountType: this.str(args.discountType) === 'FIXED' ? 'FIXED' : 'PERCENT',
           discountValue: this.num(args.discountValue),
           maxUses: this.num(args.usageLimit) || null,
+          expiresAt: args.expiresInDays ? new Date(Date.now() + (this.num(args.expiresInDays) * 86400000)) : null,
           active: true,
         },
       });
@@ -408,6 +418,13 @@ export class KloelProductSubResourceToolsService {
         });
         pid = p?.id ?? '';
       }
+      // Accent fallback
+      if (!pid) {
+        const stripped = productName.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        const all = await this.prisma.product.findMany({ where: { workspaceId }, select: { id: true, name: true }, take: 200 });
+        const found = all.find((prod) => prod.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().includes(stripped.toLowerCase()));
+        pid = found?.id ?? '';
+      }
       if (!pid) return { success: false, error: 'Produto nao encontrado.' };
       await this.prisma.productUrl.create({
         data: {
@@ -454,14 +471,26 @@ export class KloelProductSubResourceToolsService {
 
   async toolDeleteUrl(workspaceId: string, args: UnknownRecord) {
     const label = this.str(args.urlLabel);
-    if (!label) return { success: false, error: 'Informe a descricao ou label da URL para remover.' };
+    const url = this.str(args.url);
+    if (!label && !url) return { success: false, error: 'Informe a descricao ou URL para remover.' };
     try {
-      const existing = await this.prisma.productUrl.findFirst({
-        where: { description: { contains: label, mode: 'insensitive' }, product: { workspaceId } },
-        select: { id: true },
-      });
-      if (!existing) return { success: false, error: 'URL nao encontrada.' };
-      await this.prisma.productUrl.delete({ where: { id: existing.id } });
+      let target = null;
+      // Try by label first
+      if (label) {
+        target = await this.prisma.productUrl.findFirst({
+          where: { description: { contains: label, mode: 'insensitive' }, product: { workspaceId } },
+          select: { id: true, url: true },
+        });
+      }
+      // If not found by label, try by URL
+      if (!target && url) {
+        target = await this.prisma.productUrl.findFirst({
+          where: { url: { contains: url }, product: { workspaceId } },
+          select: { id: true, url: true },
+        });
+      }
+      if (!target) return { success: false, error: 'URL nao encontrada.' };
+      await this.prisma.productUrl.delete({ where: { id: target.id } });
       return { success: true, message: 'URL removida.' };
     } catch (e: unknown) {
       return { success: false, error: e instanceof Error ? e.message : 'Erro ao deletar URL.' };

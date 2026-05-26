@@ -19,7 +19,6 @@ import { KloelThreadService } from './kloel-thread.service';
 import { UnifiedAgentContextDataService } from './unified-agent-context-data.service';
 import { UnifiedAgentService } from './unified-agent.service';
 import type { PredecidedAction } from './unified-agent.types';
-import { IntentRouterService } from './intent-router/intent-router.service';
 
 function latestUserText(messages: BrainDecideDto['messages']): string | undefined {
   if (!messages?.length) {
@@ -72,7 +71,6 @@ export class BrainRuntimeService {
     private readonly threads: KloelThreadService,
     private readonly graph: BrainCommercialGraphService,
     private readonly executor: BrainCapabilityExecutorService,
-    private readonly intentRouter: IntentRouterService,
   ) {
     this.logger.debug?.(`BrainRuntimeService initialized`);
   }

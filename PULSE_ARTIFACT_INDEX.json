@@ -1,27 +1,26 @@
 {
-  "runId": "b90c8ab9-fdcf-4cf3-b037-ae68d7770f39",
-  "generatedAt": "2026-05-18T17:03:16.667Z",
+  "runId": "4aaf6fe2-6be8-48ac-a562-7313a117a352",
+  "generatedAt": "2026-05-23T23:43:58.960Z",
   "authorityMode": "advisory-only",
   "advisoryOnly": true,
   "authorityReasons": [
     "Evidence freshness is not closed.",
-    "Pulse self-trust is still failing.",
     "Runtime pass is not green with live evidence."
   ],
   "pulseMachineReadiness": {
     "status": "NOT_READY",
     "scope": "pulse_machine_not_kloel_product",
-    "canRunBoundedAutonomousCycle": false,
+    "canRunBoundedAutonomousCycle": true,
     "canDeclareKloelProductCertified": false,
     "blockers": [
-      "critical_path_terminal: 4884 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:admin-brain, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-contacts. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
-      "external_reality: 0 missing, 2 stale, and 0 invalid external adapter(s) remain.",
-      "self_trust: PULSE still reconstructs 1 phantom capability(ies) and 0 phantom flow(s); self-trust stays degraded until illusion collapses into real chains."
+      "critical_path_terminal: 5113 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "external_reality: 2 missing, 0 stale, and 0 invalid external adapter(s) remain.",
+      "multi_cycle: multiCycleConvergence: no autonomy iteration history found; production-autonomy verdict requires proven cycles. Cycle proof: 0/3 successful non-regressing real cycle(s)."
     ]
   },
   "cleanupPolicy": "enforced-single-state",
-  "canonicalDir": "/Users/danielpenin/whatsapp_saas/.pulse/current",
-  "tempDir": "/Users/danielpenin/whatsapp_saas/.pulse/tmp",
+  "canonicalDir": "/Users/danielpenin/.config/superpowers/worktrees/whatsapp_saas/pr424-ci-fix/.pulse/current",
+  "tempDir": "/Users/danielpenin/.config/superpowers/worktrees/whatsapp_saas/pr424-ci-fix/.pulse/tmp",
   "officialArtifacts": [
     "PULSE_ADMIN_EVIDENCE.json",
     "PULSE_AGENT_ORCHESTRATION_STATE.json",
@@ -91,7 +90,7 @@
         "mode": "preserved"
       },
       "truthMode": "preserved_evidence",
-      "mirrorToRoot": true
+      "mirrorToRoot": false
     },
     {
       "id": "agent-orchestration-state",
@@ -214,7 +213,7 @@
         "mode": "external_snapshot"
       },
       "truthMode": "external_snapshot",
-      "mirrorToRoot": true
+      "mirrorToRoot": false
     },
     {
       "id": "browser-evidence",
@@ -236,7 +235,7 @@
         "mode": "external_snapshot"
       },
       "truthMode": "external_snapshot",
-      "mirrorToRoot": true
+      "mirrorToRoot": false
     },
     {
       "id": "capability-state",
@@ -256,9 +255,9 @@
         "./signal-mapper"
       ],
       "freshness": {
-        "mode": "external_snapshot"
+        "mode": "run"
       },
-      "truthMode": "external_snapshot",
+      "truthMode": "generated_from_module",
       "mirrorToRoot": true
     },
     {
@@ -349,7 +348,7 @@
         "mode": "run"
       },
       "truthMode": "generated_from_module",
-      "mirrorToRoot": true
+      "mirrorToRoot": false
     },
     {
       "id": "context-broadcast",
@@ -367,7 +366,7 @@
         "mode": "run"
       },
       "truthMode": "generated_from_module",
-      "mirrorToRoot": true
+      "mirrorToRoot": false
     },
     {
       "id": "context-delta",
@@ -385,7 +384,7 @@
         "mode": "run"
       },
       "truthMode": "generated_from_module",
-      "mirrorToRoot": true
+      "mirrorToRoot": false
     },
     {
       "id": "convergence-plan",
@@ -430,7 +429,7 @@
         "mode": "preserved"
       },
       "truthMode": "preserved_evidence",
-      "mirrorToRoot": true
+      "mirrorToRoot": false
     },
     {
       "id": "execution-chains",
@@ -558,7 +557,7 @@
         "mode": "preserved"
       },
       "truthMode": "preserved_evidence",
-      "mirrorToRoot": true
+      "mirrorToRoot": false
     },
     {
       "id": "flow-projection",
@@ -576,9 +575,9 @@
         "./signal-mapper"
       ],
       "freshness": {
-        "mode": "external_snapshot"
+        "mode": "run"
       },
-      "truthMode": "external_snapshot",
+      "truthMode": "generated_from_module",
       "mirrorToRoot": true
     },
     {
@@ -600,7 +599,7 @@
         "mode": "external_snapshot"
       },
       "truthMode": "external_snapshot",
-      "mirrorToRoot": true
+      "mirrorToRoot": false
     },
     {
       "id": "health",
@@ -644,7 +643,7 @@
         "mode": "preserved"
       },
       "truthMode": "preserved_evidence",
-      "mirrorToRoot": true
+      "mirrorToRoot": false
     },
     {
       "id": "machine-readiness",
@@ -706,7 +705,7 @@
         "mode": "preserved"
       },
       "truthMode": "preserved_evidence",
-      "mirrorToRoot": true
+      "mirrorToRoot": false
     },
     {
       "id": "operator-evidence",
@@ -728,7 +727,7 @@
         "mode": "preserved"
       },
       "truthMode": "preserved_evidence",
-      "mirrorToRoot": true
+      "mirrorToRoot": false
     },
     {
       "id": "parity-gaps",
@@ -828,7 +827,7 @@
         "mode": "preserved"
       },
       "truthMode": "preserved_evidence",
-      "mirrorToRoot": true
+      "mirrorToRoot": false
     },
     {
       "id": "report",
@@ -872,7 +871,7 @@
         "mode": "run"
       },
       "truthMode": "generated_from_module",
-      "mirrorToRoot": true
+      "mirrorToRoot": false
     },
     {
       "id": "runtime-evidence",
@@ -922,7 +921,7 @@
         "mode": "preserved"
       },
       "truthMode": "preserved_evidence",
-      "mirrorToRoot": true
+      "mirrorToRoot": false
     },
     {
       "id": "scenario-coverage",
@@ -945,7 +944,7 @@
         "mode": "preserved"
       },
       "truthMode": "preserved_evidence",
-      "mirrorToRoot": true
+      "mirrorToRoot": false
     },
     {
       "id": "scope-state",
@@ -990,7 +989,7 @@
         "mode": "preserved"
       },
       "truthMode": "preserved_evidence",
-      "mirrorToRoot": true
+      "mirrorToRoot": false
     },
     {
       "id": "structural-graph",
@@ -1026,7 +1025,7 @@
         "mode": "run"
       },
       "truthMode": "generated_from_module",
-      "mirrorToRoot": true
+      "mirrorToRoot": false
     },
     {
       "id": "world-state",
@@ -1054,71 +1053,35 @@
     }
   ],
   "compatibilityMirrors": [
-    "PULSE_ADMIN_EVIDENCE.json",
     "PULSE_AGENT_ORCHESTRATION_STATE.json",
     "PULSE_ARTIFACT_INDEX.json",
     "PULSE_AUTONOMY_STATE.json",
-    "PULSE_BEADS_STATE.json",
-    "PULSE_BROWSER_EVIDENCE.json",
     "PULSE_CAPABILITY_STATE.json",
     "PULSE_CERTIFICATE.json",
     "PULSE_CLI_DIRECTIVE.json",
     "PULSE_CODACY_EVIDENCE.json",
-    "PULSE_CODEBASE_TRUTH.json",
-    "PULSE_CONTEXT_BROADCAST.json",
-    "PULSE_CONTEXT_DELTA.json",
     "PULSE_CONVERGENCE_PLAN.json",
-    "PULSE_CUSTOMER_EVIDENCE.json",
     "PULSE_EXECUTION_MATRIX.json",
     "PULSE_EXECUTION_TRACE.json",
     "PULSE_EXTERNAL_SIGNAL_STATE.json",
-    "PULSE_FLOW_EVIDENCE.json",
     "PULSE_FLOW_PROJECTION.json",
-    "PULSE_GITNEXUS_STATE.json",
     "PULSE_HEALTH.json",
-    "PULSE_INVARIANT_EVIDENCE.json",
     "PULSE_MACHINE_READINESS.json",
-    "PULSE_OBSERVABILITY_EVIDENCE.json",
-    "PULSE_OPERATOR_EVIDENCE.json",
     "PULSE_PARITY_GAPS.json",
     "PULSE_PATH_COVERAGE.json",
     "PULSE_PRODUCT_GRAPH.json",
     "PULSE_PRODUCT_VISION.json",
-    "PULSE_RECOVERY_EVIDENCE.json",
     "PULSE_REPORT.md",
-    "PULSE_RESOLVED_MANIFEST.json",
     "PULSE_RUNTIME_EVIDENCE.json",
-    "PULSE_RUNTIME_PROBES.json",
-    "PULSE_SCENARIO_COVERAGE.json",
     "PULSE_SCOPE_STATE.json",
-    "PULSE_SOAK_EVIDENCE.json",
     "PULSE_STRUCTURAL_GRAPH.json",
-    "PULSE_WORKER_LEASES.json",
     "PULSE_WORLD_STATE.json"
   ],
   "removedLegacyPulseArtifacts": [
-    "PULSE_ADMIN_EVIDENCE.json",
-    "PULSE_BROWSER_EVIDENCE.json",
     "PULSE_CERTIFICATE.json",
     "PULSE_CLI_DIRECTIVE.json",
-    "PULSE_CODEBASE_TRUTH.json",
-    "PULSE_CONVERGENCE_PLAN.json",
-    "PULSE_CUSTOMER_EVIDENCE.json",
-    "PULSE_EXECUTION_TRACE.json",
-    "PULSE_FLOW_EVIDENCE.json",
-    "PULSE_FLOW_PROJECTION.json",
     "PULSE_HEALTH.json",
-    "PULSE_INVARIANT_EVIDENCE.json",
-    "PULSE_OBSERVABILITY_EVIDENCE.json",
-    "PULSE_OPERATOR_EVIDENCE.json",
-    "PULSE_RECOVERY_EVIDENCE.json",
     "PULSE_REPORT.md",
-    "PULSE_RESOLVED_MANIFEST.json",
-    "PULSE_RUNTIME_EVIDENCE.json",
-    "PULSE_RUNTIME_PROBES.json",
-    "PULSE_SCENARIO_COVERAGE.json",
-    "PULSE_SCOPE_STATE.json",
-    "PULSE_SOAK_EVIDENCE.json",
     "PULSE_WORLD_STATE.json"
   ],
   "rootStateMode": "local-only"

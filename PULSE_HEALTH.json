@@ -1,202 +1,52 @@
 {
-  "score": 99,
-  "totalNodes": 1837,
+  "score": 100,
+  "totalNodes": 1820,
   "breaks": [
     {
       "type": "graph-route-caller-unobserved",
       "severity": "low",
-      "file": "backend/src/admin/runtime-trace/runtime-trace.controller.ts",
-      "line": 15,
-      "description": "GET /admin/runtime/trace is not called by frontend code",
-      "detail": "Controller: getTrace",
+      "file": "backend/src/payments/mercadopago/mercadopago-webhook.controller.ts",
+      "line": 48,
+      "description": "POST /webhooks/mercadopago is not called by frontend code",
+      "detail": "Controller: receive",
       "source": "graph:confirmed_static:route_caller_unobserved",
       "surface": "route-connectivity"
-    },
-    {
-      "type": "graph-route-caller-unobserved",
-      "severity": "low",
-      "file": "backend/src/audio/audio.controller.ts",
-      "line": 26,
-      "description": "POST /audio/synthesize is not called by frontend code",
-      "detail": "Controller: synthesize",
-      "source": "graph:confirmed_static:route_caller_unobserved",
-      "surface": "route-connectivity"
-    },
-    {
-      "type": "graph-route-caller-unobserved",
-      "severity": "low",
-      "file": "backend/src/copilot/copilot.controller.ts",
-      "line": 36,
-      "description": "POST /copilot/suggest is not called by frontend code",
-      "detail": "Controller: suggest",
-      "source": "graph:confirmed_static:route_caller_unobserved",
-      "surface": "route-connectivity"
-    },
-    {
-      "type": "graph-route-caller-unobserved",
-      "severity": "low",
-      "file": "backend/src/copilot/copilot.controller.ts",
-      "line": 47,
-      "description": "POST /copilot/suggest/multiple is not called by frontend code",
-      "detail": "Controller: suggestMultiple",
-      "source": "graph:confirmed_static:route_caller_unobserved",
-      "surface": "route-connectivity"
-    },
-    {
-      "type": "graph-route-caller-unobserved",
-      "severity": "low",
-      "file": "backend/src/health/health.controller.ts",
-      "line": 45,
-      "description": "GET /health/deep is not called by frontend code",
-      "detail": "Controller: deep",
-      "source": "graph:confirmed_static:route_caller_unobserved",
-      "surface": "route-connectivity"
-    },
-    {
-      "type": "graph-route-caller-unobserved",
-      "severity": "low",
-      "file": "backend/src/meta/meta-auth.controller.ts",
-      "line": 161,
-      "description": "GET /meta/auth/diagnostics is not called by frontend code",
-      "detail": "Controller: getDiagnostics",
-      "source": "graph:confirmed_static:route_caller_unobserved",
-      "surface": "route-connectivity"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 3761,
-      "description": "Model KloelGlobalPrior has no service or controller accessing it",
-      "detail": "Fields: id, channel, decisionType, action, observations...",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
-    },
-    {
-      "type": "graph-state-model-access-unobserved",
-      "severity": "medium",
-      "file": "backend/prisma/schema.prisma",
-      "line": 4571,
-      "description": "Model LineageEntry has no service or controller accessing it",
-      "detail": "Fields: id, ledgerEntryId, sequenceNumber, prevEntryHash, eventId...",
-      "source": "graph:confirmed_static:state_model_access_unobserved",
-      "surface": "state-access"
     },
     {
       "type": "graph-ui-handler-effect-unobserved",
       "severity": "medium",
-      "file": "frontend/src/app/(main)/ferramentas/launchpad/page.tsx",
-      "line": 221,
-      "description": "clickable \"onCreated\" has dead handler",
-      "detail": "Handler: () => mutate()",
-      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
-      "surface": "ui-interaction"
-    },
-    {
-      "type": "graph-ui-handler-effect-unobserved",
-      "severity": "medium",
-      "file": "frontend/src/app/(main)/ferramentas/launchpad/page.tsx",
-      "line": 228,
-      "description": "clickable \"onAdded\" has dead handler",
-      "detail": "Handler: () => mutate()",
-      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
-      "surface": "ui-interaction"
-    },
-    {
-      "type": "graph-ui-handler-effect-unobserved",
-      "severity": "medium",
-      "file": "frontend/src/app/(main)/vendas/gestao-vendas/page.tsx",
-      "line": 282,
+      "file": "frontend/src/components/kloel/marketing/OfficialMarketingChannelPage/StepArsenal.tsx",
+      "line": 126,
       "description": "clickable \"(sem texto)\" has dead handler",
-      "detail": "Handler: () => handleRemoveTag(phone, tag)",
+      "detail": "Handler: () => remove(index)",
       "source": "graph:confirmed_static:ui_handler_effect_unobserved",
       "surface": "ui-interaction"
-    },
-    {
-      "type": "graph-ui-handler-effect-unobserved",
-      "severity": "medium",
-      "file": "frontend/src/components/kloel/dashboard/KloelDashboard.tsx",
-      "line": 539,
-      "description": "clickable \"onTitle\" has dead handler",
-      "detail": "Handler: conversationTitle",
-      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
-      "surface": "ui-interaction"
-    },
-    {
-      "type": "graph-ui-handler-effect-unobserved",
-      "severity": "medium",
-      "file": "frontend/src/components/plans/PlanOrderBumpTab.tsx",
-      "line": 326,
-      "description": "clickable \"(sem texto)\" has dead handler",
-      "detail": "Handler: () => handleDelete(bump.id)",
-      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
-      "surface": "ui-interaction"
-    },
-    {
-      "type": "graph-facade-evidence",
-      "severity": "medium",
-      "file": "backend/src/kloel/agency/portfolio-state.service.ts",
-      "line": 237,
-      "description": "[hardcoded_data] Service method returns empty collection/object without guard evidence",
-      "detail": "Service method returns empty collection/object without guard evidence; predicates=truth_confirmed_static, source_facade_evidence_service_empty_return_static_predicate, detector_service_empty_return_static_predicate, evidence_service_method, evidence_method_returns, evidence_returns_empty, evidence_empty_collection, evidence_collection_object, evidence_object_without, evidence_without_guard, evidence_guard_evidence, evidence_evidence_backend, evidence_backend_service, evidence_service_return, evidence_return_statement, evidence_statement_emits, evidence_emits_outside, evidence_outside_catch, evidence_catch_fallback, evidence_fallback_normalizer, evidence_normalizer_guarded, evidence_guarded_empty, evidence_empty_context, evidence_context_evidence, evidence_evidence_return, evidence_return_truth, evidence_truth_confirmed, evidence_confirmed_static, evidence_static_source, evidence_source_facade, evidence_facade_evidence, evidence_evidence_service, evidence_service_empty, evidence_empty_return, evidence_return_static, evidence_static_predicate, evidence_predicate_detector, evidence_detector_service, evidence_predicate; evidence=cd7f55fce80ff643; predicates=truth_confirmed_static,source_facade_evidence_service_empty_return_static_predicate,detector_service_empty_return_static_predicate,evidence_service_method,evidence_method_returns,evidence_returns_empty,evidence_empty_collection,evidence_collection_object,evidence_object_without,evidence_without_guard,evidence_guard_evidence,evidence_evidence_backend,evidence_backend_service,evidence_service_return,evidence_return_statement,evidence_statement_emits,evidence_emits_outside,evidence_outside_catch,evidence_catch_fallback,evidence_fallback_normalizer,evidence_normalizer_guarded,evidence_guarded_empty,evidence_empty_context,evidence_context_evidence,evidence_evidence_return,evidence_return_truth,evidence_truth_confirmed,evidence_confirmed_static,evidence_static_source,evidence_source_facade,evidence_facade_evidence,evidence_evidence_service,evidence_service_empty,evidence_empty_return,evidence_return_static,evidence_static_predicate,evidence_predicate_detector,evidence_detector_service,evidence_predicate; A backend service return statement emits [] or {} outside catch, fallback, normalizer, or guarded-empty context. Evidence: return [];",
-      "source": "graph:confirmed_static:facade_evidence",
-      "surface": "capability-materialization"
-    },
-    {
-      "type": "graph-route-target-unmatched",
-      "severity": "high",
-      "file": "frontend/src/lib/api/kloel.ts",
-      "line": 88,
-      "description": "POST /kloel/approvals/:approvalRequestId/:decision has no matching backend route",
-      "detail": "Pattern: apiFetch, endpoint: /kloel/approvals/${encodeURIComponent(approvalRequestId)}/${decision}",
-      "source": "graph:confirmed_static:route_target_unmatched",
-      "surface": "api-connectivity"
-    },
-    {
-      "type": "graph-route-target-unmatched",
-      "severity": "high",
-      "file": "scripts/pulse/parsers/hook-registry.ts",
-      "line": 122,
-      "description": "POST /api/v1/resource has no matching backend route",
-      "detail": "Pattern: apiFetch, endpoint: /api/v1/resource",
-      "source": "graph:confirmed_static:route_target_unmatched",
-      "surface": "api-connectivity"
-    },
-    {
-      "type": "graph-route-target-unmatched",
-      "severity": "high",
-      "file": "backend/src/health/system-health-external-probes.ts",
-      "line": 166,
-      "description": "POST /https:/api.anthropic.com/v1/messages has no matching backend route",
-      "detail": "Pattern: apiFetch, endpoint: https://api.anthropic.com/v1/messages",
-      "source": "graph:confirmed_static:route_target_unmatched",
-      "surface": "api-connectivity"
     }
   ],
   "stats": {
-    "uiElements": 2062,
-    "uiDeadHandlers": 5,
-    "apiCalls": 792,
-    "apiNoRoute": 3,
-    "backendRoutes": 872,
-    "backendEmpty": 1,
+    "uiElements": 1959,
+    "uiDeadHandlers": 1,
+    "apiCalls": 771,
+    "apiNoRoute": 0,
+    "backendRoutes": 876,
+    "backendEmpty": 0,
     "prismaModels": 173,
-    "modelOrphans": 2,
-    "facades": 1,
+    "modelOrphans": 0,
+    "facades": 0,
     "facadesBySeverity": {
       "high": 0,
-      "medium": 1,
+      "medium": 0,
       "low": 0
     },
-    "proxyRoutes": 84,
+    "proxyRoutes": 85,
     "proxyNoUpstream": 0,
-    "securityIssues": 11,
-    "dataSafetyIssues": 3,
+    "securityIssues": 2,
+    "dataSafetyIssues": 0,
     "qualityIssues": 0,
     "unavailableChecks": 0,
     "unknownSurfaces": 0
   },
-  "timestamp": "2026-05-18T17:00:25.955Z",
-  "runId": "b90c8ab9-fdcf-4cf3-b037-ae68d7770f39",
-  "generatedAt": "2026-05-18T17:03:16.667Z"
+  "timestamp": "2026-05-23T23:42:27.442Z",
+  "runId": "4aaf6fe2-6be8-48ac-a562-7313a117a352",
+  "generatedAt": "2026-05-23T23:43:58.960Z"
 }

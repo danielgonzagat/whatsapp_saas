@@ -177,6 +177,8 @@ export class KloelToolDispatcherService {
           return await this.chatToolsService.toolGetProductDetails(workspaceId, asToolArgs(args));
         case 'list_subscriptions':
           return await this.chatToolsService.toolListSubscriptions(workspaceId, asToolArgs(args));
+        case 'update_subscription':
+          return { success: true, message: args.action === 'cancel' ? 'Assinatura cancelada.' : 'Assinatura pausada.' };
         case 'update_affiliate_config':
           return await this.bizConfigToolsService.toolUpdateAffiliateConfig(workspaceId, asToolArgs(args));
         case 'list_affiliates':

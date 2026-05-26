@@ -4,14 +4,14 @@ export function detectActionIntent(
   const msg = message.toLowerCase().trim();
 
   // ── PRODUTOS ──
-  if (/cria(r|ndo)?\s+(?:um[a]?\s+)?(produto|oferta|novo)/.test(msg) || /cadastra(r|ndo)?\s+(?:um[a]?\s+)?produto/.test(msg)) {
+  if (/cria(r|ndo)?\s+(?:um[a]?\s+)?(?:o\s+|a\s+)?(produto|oferta|novo)/.test(msg) || /cadastra(r|ndo)?\s+(?:um[a]?\s+)?(?:o\s+|a\s+)?produto/.test(msg)) {
     return { tool: 'create_product', args: extractProductArgs(msg) };
   }
   if (/lista(r|ndo)? (produtos|meus produtos|ofertas|cat[aá]logo)/.test(msg)) {
     return { tool: 'list_products', args: {} };
   }
   if (
-    /(?:edita|atualiza|muda|altera)(?:r|ndo)?\s+(?:um[a]?\s+)?(?:o\s+)?produto/.test(msg)
+    /(?:edita|atualiza|muda|altera|desativa|pausa|desabilita)(?:r|ndo)?\s+(?:um[a]?\s+)?(?:o\s+)?produto/.test(msg)
   ) {
     return { tool: 'update_product', args: extractProductArgs(msg) };
   }
@@ -28,14 +28,15 @@ export function detectActionIntent(
   }
 
   // ── URL CRUD ──
-  if (/(adiciona(?:r|ndo)?|cria(?:r|ndo)?|nova|novo)\s+url/.test(msg)) {
+  if (/(adiciona(?:r|ndo)?|cria(?:r|ndo)?|nova|novo)\s+(?:o\s+|a\s+)?url/.test(msg)) {
     return { tool: 'add_url', args: extractUrlArgs(msg) };
   }
-  if (/(edita(?:r|ndo)?|atualiza(?:r|ndo)?|muda(?:r|ndo)?|altera(?:r|ndo)?)\s+url/.test(msg)) {
+  if (/(edita(?:r|ndo)?|atualiza(?:r|ndo)?|muda(?:r|ndo)?|altera(?:r|ndo)?)\s+(?:o\s+|a\s+)?url/.test(msg)) {
     return { tool: 'update_url', args: extractUrlArgs(msg) };
   }
-  if (/(apaga|deleta|exclui|remove)\s+url/.test(msg)) {
-    return { tool: 'delete_url', args: { urlLabel: extractProductName(msg) } };
+  if (/(apaga|deleta|exclui|remove)(?:r|ndo)?\s+(?:o\s+|a\s+)?url/.test(msg)) {
+    const urlArgs = extractUrlArgs(msg);
+    return { tool: 'delete_url', args: { urlLabel: extractProductName(msg), url: urlArgs.url } };
   }
 
   // ── DETALHES DO PRODUTO ──
@@ -44,55 +45,70 @@ export function detectActionIntent(
   }
 
   // ── PLANOS ──
-  if (/cria(r|ndo)?\s+(?:um[a]?\s+)?(plano|parcelamento)/.test(msg)) {
+  if (/cria(r|ndo)?\s+(?:um[a]?\s+)?(?:o\s+|a\s+)?(plano|parcelamento)/.test(msg)) {
     return { tool: 'create_plan', args: extractPlanArgs(msg) };
   }
-  if (/lista(r|ndo)? planos?/.test(msg)) {
+  if (/(?:lista(?:r|ndo)?|mostra(?:r|ndo)?|ve(?:r|ndo)?|quais?\s+(?:s[aã]o\s+)?(?:os?\s+)?|meus?\s+)planos?/i.test(msg)) {
     return { tool: 'get_product_plans', args: { productName: extractProductName(msg) } };
+  }
+  if (/(?:edita|atualiza|muda|altera|desativa|pausa|desabilita|ativa|restaura|habilita)(?:r|ndo)?\s+(?:o\s+|a\s+)?plano/.test(msg)) {
+    return { tool: 'update_plan', args: extractPlanArgs(msg) };
+  }
+
+  // ── BROADCAST / CAMPANHA ──
+  if (/cria(?:r|ndo)?\s+(?:uma\s+)?(?:campanha|broadcast|disparo)/i.test(msg)) {
+    const campaignName = extractProductName(msg) || 'Campanha';
+    const msgMatch = msg.match(/(?:mensagem|msg|texto)\s*:?\s*['\"]?([A-Za-zÀ-ÿ0-9\s\-.,!?%$@]{5,200}?)(?:\s*(?:,|\.|R\$|$))/i);
+    return { tool: 'create_broadcast', args: { name: campaignName, message: msgMatch?.[1]?.trim() || 'Campanha promocional', productName: campaignName } };
   }
 
   // ── CHECKOUTS ──
-  if (/cria(r|ndo)?\s+(?:um[a]?\s+)?checkout/.test(msg)) {
+  if (/cria(r|ndo)?\s+(?:um[a]?\s+)?(?:o\s+|a\s+)?checkout/.test(msg)) {
     return { tool: 'create_checkout', args: extractPlanArgs(msg) };
   }
-
-  if (/(?:lista(?:r|ndo)?|meus|ver|mostra)\s+(?:checkouts?|p[aá]ginas?\s+(?:de\s+)?checkouts?)/.test(msg)) {
+  if (/(?:vincula|adiciona|linka)(?:r|ndo)?\s+(?:o\s+|a\s+)?plano\s+[A-Za-zÀ-ÿ0-9\s\-.]+\s+(?:no|ao)\s+checkout/i.test(msg)) {
+    return { tool: 'update_checkout', args: extractPlanArgs(msg) };
+  }
+  if (/(?:lista(?:r|ndo)?|meus|ver|mostra)\s+(?:os\s+|as\s+)?(?:checkouts?|p[aá]ginas?\s+(?:de\s+)?checkouts?)/.test(msg)) {
     return { tool: 'list_checkouts', args: {} };
   }
 
   // ── CUPONS ──
-  if (/cria(r|ndo)?\s+(?:um[a]?\s+)?cupom/.test(msg)) {
+  if (/cria(r|ndo)?\s+(?:um[a]?\s+)?(?:o\s+|a\s+)?cupom/.test(msg)) {
     return { tool: 'create_coupon', args: extractCouponArgs(msg) };
   }
   if (/lista(r|ndo)?\s+(?:meus\s+)?cupons?/.test(msg)) {
     return { tool: 'list_coupons', args: {} };
   }
-  if (/(apaga(r|ndo)?|deleta(r|ndo)?|remove(r|ndo)?) cupom/.test(msg)) {
+  if (/(apaga|deleta|exclui|remove)(?:r|ndo)?\s+(?:o\s+|a\s+)?cupom/.test(msg)) {
     return { tool: 'delete_coupon', args: extractCouponArgs(msg) };
   }
 
   // ── CRIAR VENDA / PEDIDO MANUAL ──
-  if (/(cria|gera|nova|novo)(?:r|ndo)?\s+(?:um[a]?\s+)?(venda|pedido|order)/.test(msg)) {
+  if (/(cria|gera|nova|novo)(?:r|ndo)?\s+(?:um[a]?\s+)?(?:o\s+|a\s+)?(venda|pedido|order)/.test(msg)) {
     return { tool: 'create_order', args: extractPaymentArgs(msg) };
   }
 
   // ── PAGAMENTOS ──
-  if (/(gera|emiti)(?:r|ndo)?\s+(?:um[a]?\s+)?(pix|cobran[cç]a|pagamento)/.test(msg)) {
+  if (/(gera|emiti)(?:r|ndo)?\s+(?:um[a]?\s+)?(?:o\s+|a\s+)?(pix|cobran[cç]a|pagamento)/.test(msg)) {
     return { tool: 'create_payment_link', args: extractPaymentArgs(msg) };
   }
-  if (/(gera|emite|emiti)(?:r|ndo)?\s+(?:um[a]?\s+)?boleto/.test(msg)) {
+  if (/(gera|emite|emiti)(?:r|ndo)?\s+(?:um[a]?\s+)?(?:o\s+|a\s+)?boleto/.test(msg)) {
     return { tool: 'generate_boleto', args: extractPaymentArgs(msg) };
   }
 
-  // ── CARTEIRA ── (saque antes de saldo para evitar match parcial)
+  // ── CARTEIRA ── (saque antes de saldo, extrato antes de saldo/carteira)
   if (/saque|solicitar saque|(?:quero|preciso|gostaria|vou)\s+sacar/.test(msg)) {
     return { tool: 'request_withdrawal', args: {} };
   }
-  if (/(meu )?saldo|carteira/.test(msg)) {
-    return { tool: 'get_wallet_balance', args: {} };
+  if (/antecipa|c[aã]o|antecipar|adiantar\s+receb[ií]vel/.test(msg)) {
+    return { tool: 'request_anticipation', args: {} };
   }
   if (/extrato|hist[oó]rico.*financeiro/.test(msg)) {
     return { tool: 'get_wallet_statement', args: {} };
+  }
+  if (/(meu )?saldo|carteira/.test(msg)) {
+    return { tool: 'get_wallet_balance', args: {} };
   }
 
   // ── NPS / CHURN (antes de vendas para nao capturar) ──
@@ -104,6 +120,9 @@ export function detectActionIntent(
   }
 
   // ── URLs / PÁGINAS ── (antes de vendas para capturar "pagina de vendas")
+  if (/lista(?:r|ndo)?\s+(?:as\s+|os\s+)?urls?/.test(msg)) {
+    return { tool: 'get_product_urls', args: { productName: extractProductName(msg) } };
+  }
   if (/urls?.*(produto|p[aá]gina)/.test(msg) || /p[aá]gina.*vendas/.test(msg)) {
     return { tool: 'get_product_urls', args: { productName: extractProductName(msg) } };
   }
@@ -118,8 +137,8 @@ export function detectActionIntent(
   if (/(minhas |meus )?vendas|pedidos/.test(msg)) {
     return { tool: 'list_orders', args: {} };
   }
-  if (/abandonos?|abandonou|carrinhos? abandonados?/.test(msg)) {
-    return { tool: 'get_sales_summary', args: {} };
+  if (/(?:carrinhos?\s+)?abandon(?:os?|ados?|ou)/.test(msg)) {
+    return { tool: 'get_abandonments', args: {} };
   }
 
   // ── CRM / LEADS ──
@@ -149,8 +168,42 @@ export function detectActionIntent(
   }
 
   // ── CONFIGURAÇÕES ──
+  if (/(?:atualiza|edita|altera|muda)(?:r|ndo)?\s+(?:meus\s+)?dados\s+fiscais/.test(msg)) {
+    return { tool: 'update_fiscal_data', args: {} };
+  }
+  if (/(?:atualiza|edita|altera|muda)(?:r|ndo)?\s+(?:meus\s+)?dados\s+banc[aá]rios/.test(msg)) {
+    return { tool: 'get_settings', args: {} };
+  }
+  if (/(meus |minhas )?dados\s+fiscais|fiscal|c(npj|pf)|raz[aã]o\s+social/i.test(msg)) {
+    return { tool: 'get_settings', args: {} };
+  }
+  if (/(meus |minhas )?dados\s+banc[aá]rios|conta\s+banc[aá]ria|banco/i.test(msg)) {
+    return { tool: 'get_settings', args: {} };
+  }
+  if (/documento|upload.*doc|enviar.*doc|enviar.*pdf|fazer.*upload/i.test(msg)) {
+    return { tool: 'upload_document', args: { documentType: msg.match(/rg|cpf|cnpj|contrato|identidade/i)?.[0] || 'document' } };
+  }
   if (/(meus |minhas )?configura[cç][oõ]es/.test(msg)) {
     return { tool: 'get_settings', args: {} };
+  }
+
+  // ── ASSINATURAS / ASSINANTES ──
+  if (/lista(?:r|ndo)?\s+(?:meus\s+)?assinantes/i.test(msg)) {
+    return { tool: 'list_subscriptions', args: {} };
+  }
+  if (/lista(?:r|ndo)?\s+(?:minhas\s+)?assinaturas/i.test(msg)) {
+    return { tool: 'list_subscriptions', args: {} };
+  }
+  if (/(?:cancela|pausa|desativa)(?:r|ndo)?\s+(?:a\s+|o\s+)?(?:assinatura|plano\s+enterprise)/i.test(msg)) {
+    return { tool: 'update_subscription', args: { action: /cancela/i.test(msg) ? 'cancel' : 'pause' } };
+  }
+
+  // ── AFILIADOS: MERCHAN / TERMOS / COPRODUÇÃO ──
+  if (/termos?\s+(?:de\s+)?afiliad/i.test(msg)) {
+    return { tool: 'get_affiliate_config', args: {} };
+  }
+  if (/merchan|co[-]?produ[cç][aã]o|ger[êe]ncia\s+(?:de\s+)?afiliad/i.test(msg)) {
+    return { tool: 'get_affiliate_config', args: {} };
   }
 
   // ── EDITAR CONFIG AFILIADOS ──
@@ -170,7 +223,7 @@ export function detectActionIntent(
   }
 
   // ── CRM / PIPELINE ──
-  if (/pipeline|funil|oportunidades|meu(s)?\s+(pipeline|lead|funil)/.test(msg)) {
+  if (/pipeline|funil|oportunidades|meu(s)?\s+(pipeline|leads?|funil)|lista(?:r|ndo)?\s+(?:meus\s+)?leads?/.test(msg)) {
     return { tool: 'list_leads', args: {} };
   }
   if (/(detalhes|info)\s+(do\s+)?lead/.test(msg)) {
@@ -184,7 +237,9 @@ export function detectActionIntent(
 
   // ── GARANTIA / EXIT INTENT / AFTER PAY ──
   if (/garantia|warranty/.test(msg)) {
-    return { tool: 'configure_warranty', args: { productName: extractProductName(msg) } };
+    const wmatch = msg.match(/(\d+)\s*(?:dias?|days?)/i);
+    const wdays = wmatch ? parseInt(wmatch[1], 10) : undefined;
+    return { tool: 'configure_warranty', args: { productName: extractProductName(msg), warrantyDays: wdays } };
   }
   if (/exit intent|popup.*sa[ií]da/.test(msg)) {
     return { tool: 'configure_exit_intent', args: { productName: extractProductName(msg) } };
@@ -375,11 +430,20 @@ export function detectActionIntent(
 }
 
 export function extractProductName(msg: string): string {
-  // Try "para Produto X" pattern (for commands ending with product reference)
-  const prodMatch = msg.match(/para\s+(?:o\s+|a\s+)?(?:produto\s+)?["']?([A-Za-zÀ-ÿ0-9\s\-\.\+]{2,60}?)(?:\s*(?:,|\.|R\$|pre[çc]o|valor|\bcom\b|\bpor\b|\bpara\b|\burl\b|https?|\bcor\b|\bdescri[cç][aã]o\b|\bdescricao\b|$)|$)/i);
+  // Strip trailing question/exclamation marks that break lazy regex terminators
+  const cleanMsg = msg.replace(/[?!]+\s*$/, '').trim();
+  // Try "para o Produto X" / "para a Oferta X" pattern (requires article to avoid matching "para X" in descriptions)
+  const prodMatch = cleanMsg.match(/para\s+(?:o\s+|a\s+)\s*(?:produto|oferta|plano|checkout|item)?\s*["']?([A-Za-zÀ-ÿ0-9\s\-\.\+]{2,60}?)(?:\s*(?:,|\.|R\$|pre[çc]o|valor|\bcom\b|\bpor\b|\bpara\b|\burl\b|https?|\bcor\b|\bdescri[cç][aã]o\b|\bdescricao\b|$)|$)/i);
   if (prodMatch?.[1]) {
     const pn = prodMatch[1].trim();
-    if (pn.length >= 3) return pn;
+    // Reject non-product matches like "comprador X", "cliente X"
+    if (!/\b(comprador|cliente|lead|usu[aá]rio)\b/i.test(pn) && pn.length >= 3) return pn;
+  }
+  // Try "no Produto X" / "na Oferta X" pattern (for URL/attachment contexts)
+  const noMatch = cleanMsg.match(/\bno\s+(?:produto|oferta|plano|checkout|item)?\s*["']?([A-Za-zÀ-ÿ0-9\s\-\.+]{2,60}?)(?:\s*(?:R\$|pre[çc]o|valor|\bcom\b|\bpor\b|\bpara\b|\bno\b|\bna\b|$)|$)/i);
+  if (noMatch?.[1]) {
+    const nn = noMatch[1].trim();
+    if (nn.length >= 3) return nn;
   }
   // Try "do Produto X" or "da Oferta X" pattern first (for venda/pedido contexts)
   const doMatch = msg.match(/\b(?:do|da)\s+(?:produto|oferta|plano|checkout|item)?\s*["']?([A-Za-zÀ-ÿ0-9\s\-\.\+]{2,60}?)(?:\s*(?:R\$|pre[çc]o|valor|\bcom\b|\bpor\b|\bpara\b|\bdo\b|\bpara\b|$)|$)/i);
@@ -387,8 +451,8 @@ export function extractProductName(msg: string): string {
     const cleanName = doMatch[1].trim();
     if (cleanName.length >= 3) return cleanName;
   }
-  const m = msg.match(
-    /(?:produtos?|planos?|ofertas?|checkouts?|cupons?|vendas?|pedidos?|orders?)\s+(?:chamad[oa]|de\s+)?["']?([A-Za-zÀ-ÿ0-9\s\-\.\+]{2,60}?)(?:\s*(?:R\$|pre[çc]o|valor|\bcom\b|\bpor\b|\bpara\b|\bdo\b|\bmudando\b|\bmuda\b|\bdescri[cç][aã]o\b|\btags?\b|\bgarantia\b|\bcategoria\b|\bformato\b|\bcart[aã]o\b|\bpix\b|\bboleto\b|\bcor\b|\bcupom\b|\.\s+[A-ZÀ]|$)|$)/i,
+  const m = cleanMsg.match(
+    /(?:produtos?|planos?|ofertas?|checkouts?|cupons?|vendas?|pedidos?|orders?)\s+(?:chamad[oa]|de\s+)?["']?([A-Za-zÀ-ÿ0-9\s\-\.\+]{2,60}?)(?:\s*(?:R\$|pre[çc]o|valor|\bcom\b|\bpor\b|\bpara\b|\bdo\b|\bmudando\b|\bmuda\b|\bdescri[cç][aã]o\b|\bdescricao\b|\btags?\b|\bgarantia\b|\bcategoria\b|\bformato\b|\bcart[aã]o\b|\bpix\b|\bboleto\b|\bcor\b|\bcupom\b|\bemail\b|\bsuporte\b|\.\s+[A-ZÀ]|$)|$)/i,
   );
   const name = (m?.[1] || '').trim() || '';
   // Strip leading prepositions and trailing punctuation
@@ -400,10 +464,16 @@ export function extractProductName(msg: string): string {
 
 export function extractProductArgs(msg: string): Record<string, unknown> {
   const args: Record<string, unknown> = {};
-  args.productName = extractProductName(msg);
-  const name = extractProductName(msg);
-  if (name) {
-    args.name = name;
+  // Priority 1: Explicit "nome é X" / "nome: X" / "chamado X" / "nome do produto: X"
+  const nameExplicit = msg.match(/(?:nome(?:\s+do\s+produto)?|name|chama(?:do)?)\s*(?:[eé]|:)\s*["']?([A-Za-zÀ-ÿ0-9\s\-\.+]{2,60}?)(?:\s*(?:,|\.|R\$|pre[çc]o|categoria|formato|tipo|tags?|garantia|descri[cç]|pagamento|disponível|ativo|$))/i);
+  if (nameExplicit?.[1]?.trim() && nameExplicit[1].trim().length >= 3) {
+    args.productName = nameExplicit[1].trim();
+    args.name = nameExplicit[1].trim();
+  } else {
+    // Priority 2: Structural extraction from "produto X" context
+    const name = extractProductName(msg);
+    args.productName = name;
+    if (name) args.name = name;
   }
   // "R$ 147", "R$147", "preco 147", "preço 147", "147 reais", "R$ 147,00"
   const pm =
@@ -424,11 +494,11 @@ export function extractProductArgs(msg: string): Record<string, unknown> {
   // Image URL
   const imgMatch = msg.match(/(?:imagem|foto|image)\s*(?:url|link)?\s*:?\s*(https?:\/\/\S+)/i);
   if (imgMatch?.[1]) args.imageUrl = imgMatch[1];
-  // Description
-  const descMatch = msg.match(/(?:descri[cç][aã]o|description)\s*:?\s*['"]?([A-Za-zÀ-ÿ0-9\s\-.,!]{5,200}?)(?:\s*(?:,|\.|R\$|pre[çc]o|categoria|formato|tags|garantia|url|$))/i);
+  // Description (stop at email/suporte/categoria/formato/tags/garantia/etc)
+  const descMatch = msg.match(/(?:descri[cç][aã]o|description)\s*:?\s*["']?([A-Za-zÀ-ÿ0-9\s\-.,!]{5,200}?)(?:\s*(?:,|\.|R\$|pre[çc]o|email|suporte|categoria|formato|tags?|garantia|url|dispon[ií]vel|ativo|$))/i);
   if (descMatch?.[1]) args.description = descMatch[1].trim();
-  // Tags
-  const tagsMatch = msg.match(/(?:tags?|palavras?[-\s]?chave)\s*:?\s*([A-Za-zÀ-ÿ0-9\s,]{3,100}?)(?:\s*(?:,|\.|R\$|pre[çc]o|$))/i);
+  // Tags (comma-separated values, stop at description/garantia/categoria/formato)
+  const tagsMatch = msg.match(/(?:tags?|palavras?[-\s]?chave)\s*:?\s*([A-Za-zÀ-ÿ0-9\s,]{3,150}?)(?:\s*(?:\.\s+[A-ZÀ]|R\$|pre[çc]o|descri[cç][aã]o\b|descricao\b|garantia\b|categoria\b|formato\b|$))/i);
   if (tagsMatch?.[1]) args.tags = tagsMatch[1].split(',').map((t: string) => t.trim()).filter(Boolean);
   // Warranty days
   const warrantyMatch = msg.match(/(?:garantia|warranty)\s*(?:de\s+)?(\d+)\s*(?:dias?|days?)/i);
@@ -444,25 +514,47 @@ export function extractProductArgs(msg: string): Record<string, unknown> {
   if (emailMatch?.[1]) args.supportEmail = emailMatch[1];
   // Disponivel para venda
   if (/\b(dispon[ií]vel|ativo|disponivel)\b.*\b(venda|vender)\b/i.test(msg)) args.active = true;
-  if (/\b(indispon[ií]vel|pausar|desativar)\b/i.test(msg)) args.active = false;
+  if (/\b(indispon[ií]vel|pausar|desativa(?:r)?|desabilita(?:r)?)\b/i.test(msg)) args.active = false;
+  // Weight and dimensions
+  const weightMatch = msg.match(/(\d+)\s*(?:g|gramas?|kg|quilos?)/i);
+  if (weightMatch?.[1]) {
+    const w = parseInt(weightMatch[1], 10);
+    args.packagingConfig = { weightGrams: /kg|quilos?/i.test(weightMatch[0]) ? w * 1000 : w };
+  }
+  const dimMatch = msg.match(/(\d+)\s*x\s*(\d+)\s*(?:x\s*(\d+))?\s*(?:cm|mm|m)/i);
+  if (dimMatch?.[1]) {
+    const pkg = (args.packagingConfig as Record<string,unknown>) || {};
+    pkg.dimensions = { width: dimMatch[1], height: dimMatch[2], depth: dimMatch[3] || dimMatch[2] };
+    args.packagingConfig = pkg;
+  }
+  // Packaging type
+  if (/(?:embalagem|package)\s*(?:tipo\s*)?:?\s*([A-Za-zÀ-ÿ]{3,20})/i.test(msg)) {
+    const pkg = (args.packagingConfig as Record<string,unknown>) || {};
+    pkg.type = msg.match(/(?:embalagem|package)\s*(?:tipo\s*)?:?\s*([A-Za-zÀ-ÿ]{3,20})/i)?.[1];
+    args.packagingConfig = pkg;
+  }
   return args;
 }
 
 export function extractPlanArgs(msg: string): Record<string, unknown> {
   const args: Record<string, unknown> = {};
-  // Product name: after "para" or "do produto" — more reliable than extractProductName for plan/checkout contexts
-  const prodMatch = msg.match(/para\s+(?:o\s+|a\s+)?(?:produto\s+)?["']?([A-Za-zÀ-ÿ0-9\s\-\.\+]{2,60}?)(?:\s*(?:,|\.|R\$|pre[çc]o|valor|\bcom\b|\bpor\b|\bpara\b|\burl\b|https?|\bcor\b|\bdescri[cç][aã]o\b|\bdescricao\b|$)|$)/i);
+  // Product name: after "para o/a" — requires article (avoids matching "para X" in unrelated text)
+  const prodMatch = msg.match(/para\s+(?:o\s+|a\s+)\s*(?:produto|oferta|plano|checkout|item)?\s*["']?([A-Za-zÀ-ÿ0-9\s\-\.+]{2,60}?)(?:\s*(?:,|\.|R\$|pre[çc]o|valor|\bcom\b|\bpor\b|\bpara\b|\burl\b|https?|\bcor\b|\bdescri[cç][aã]o\b|\bdescricao\b|$)|$)/i);
   if (prodMatch?.[1]) {
-    args.productName = prodMatch[1].trim();
+    const pn = prodMatch[1].trim();
+    if (!/\b(comprador|cliente|lead|usu[aá]rio)\b/i.test(pn)) {
+      args.productName = pn;
+    }
   } else {
     args.productName = extractProductName(msg);
   }
   // Plan/checkout name: after "plano X" or "checkout X" or "Nome: X" or "chamado X"
   const nm = msg.match(
-    /(?:nome|chamad[oa]|plano|checkout)\s*:?\s*([A-Za-zÀ-ÿ0-9\s-]{2,30}?)(?:\s*(?:,|\.|pre[çc]o|R\$|valor|\bcom\b|\bpor\b|\bpara\b|\bcor\b|$))/i,
+    /(?:nome|chamad[oa]|plano|checkout)\s*:?\s*([A-Za-zÀ-ÿ0-9\s-]{2,30}?)(?:\s*(?:,|\.|pre[çc]o|R\$|valor|\bcom\b|\bpor\b|\bpara\b|\bcor\b|\baceita(?:r)?\b|\bquantidade\b|\bqtd\b|$))/i,
   );
   if (nm && nm[1]) {
-    args.planName = nm[1].trim();
+    // Strip leading "chamado/chamada" filler word from plan name
+    args.planName = nm[1].trim().replace(/^chamad[oa]\s+/i, '').trim();
   }
   // Fallback: extract name directly after "checkout " or "plano " without colon
   if (!args.planName) {
@@ -484,6 +576,9 @@ export function extractPlanArgs(msg: string): Record<string, unknown> {
   // Installments
   const instMatch = msg.match(/(\d+)\s*(?:x|vezes|parcelas?)/i);
   if (instMatch?.[1]) args.maxInstallments = parseInt(instMatch[1], 10);
+  // Quantity / items
+  const qtyMatch = msg.match(/quantidade\s+(?:de\s+)?(\d+)/i) || msg.match(/qtd\s+(?:de\s+)?(\d+)/i) || msg.match(/(\d+)\s+(?:itens?|unidades?|qtd)/i);
+  if (qtyMatch?.[1]) args.itemsPerPlan = parseInt(qtyMatch[1], 10);
   // Shipping
   if (/frete\s+gr[aá]tis/i.test(msg)) args.shippingType = 'FREE';
   if (/frete\s+fixo/i.test(msg)) args.shippingType = 'FIXED';
@@ -537,6 +632,9 @@ export function extractPlanArgs(msg: string): Record<string, unknown> {
     else args[colorKey] = colorMatch[1];
   }
   if (customComm?.[1]) args.customCommission = parseInt(customComm[1], 10);
+  // Active/disabled
+  if (/\b(indispon[ií]vel|pausar|desativa(?:r)?|desabilita(?:r)?)\b/i.test(msg)) args.active = false;
+  if (/\b(dispon[ií]vel|ativo|disponivel|ativa(?:r)?|habilita(?:r)?)\b/i.test(msg) && !/\b(indispon[ií]vel|pausar|desativa(?:r)?)\b/i.test(msg)) args.active = true;
   return args;
 }
 
@@ -547,7 +645,7 @@ export function extractPaymentArgs(msg: string): Record<string, unknown> {
     args.productName = name;
     args.description = name; // for smart-payment compatibility
   }
-  const am = msg.match(/R\$\s*(\d+[.,]?\d*)/);
+  const am = msg.match(/R\$\s*(\d+[.,]?\d*)/i);
   if (am && am[1]) {
     const val = parseFloat(am[1].replace(',', '.'));
     args.amount = val;
@@ -559,7 +657,7 @@ export function extractPaymentArgs(msg: string): Record<string, unknown> {
       args.amount = parseFloat(am2[1].replace(',', '.'));
     }
   }
-  const nm = msg.match(/para\s+(?:o\s+|a\s+)?(?:comprador[a]?|client[e]?|lead\s+)?([A-Z][a-zÀ-ÿ]{2,25}(?:\s+[A-Z][a-zÀ-ÿ]{2,25})?)(?:\s+(?:comprar|adquirir|pagar|para)\b|$)/i);
+  const nm = msg.match(/para\s+(?:o\s+|a\s+)?(?:comprador[a]?|client[e]?|lead\s+)?([A-Za-zÀ-ÿ]{2,25}(?:\s+[A-Za-zÀ-ÿ]{2,25})?)(?:\s+(?:comprar|adquirir|pagar|para)\b|$)/i);
   if (nm && nm[1]) {
     args.customerName = nm[1].trim();
   }
