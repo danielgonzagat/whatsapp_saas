@@ -131,6 +131,14 @@ export class MindEventProcessorService {
         ['audio_vs_text', 'message_format', 'tom', 'channel_choice'],
         1,
       );
+
+      // CIA Gap 4 Phase 2 — delayed outcome confidence from message.received
+      const contactId = event.subject.slice('contact:'.length);
+      const confResult = await this.policy.confirmAutopilotOutcome({
+        workspaceId: event.workspaceId,
+        contactId,
+      });
+      result.resolved += confResult.confirmed + confResult.unanswered;
     }
   }
 

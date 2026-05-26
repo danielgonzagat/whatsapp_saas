@@ -387,6 +387,77 @@ export class MindPolicyService {
     return rows.length;
   }
 
+  /**
+   * CIA Gap 4 Phase 2 — delayed message.received outcome resolution.
+   *
+   * When a message.received arrives, check resolved autopilot_action policies
+   * (outcome=1) for the contact. Policies resolved within the window get
+   * context.outcomeConfidence='confirmed'; those outside get 'unanswered'.
+   */
+  async confirmAutopilotOutcome(params: {
+    workspaceId: string;
+    contactId: string;
+    windowMinutes?: number;
+  }): Promise<{ confirmed: number; unanswered: number }> {
+    const windowMinutes = params.windowMinutes ?? 30;
+    const now = new Date();
+    const windowCutoff = new Date(now.getTime() - windowMinutes * 60 * 1000);
+
+    const rows = await this.prisma.mindPolicy.findMany({
+      where: {
+        workspaceId: params.workspaceId,
+        subject: `contact:${params.contactId}`,
+        decisionType: 'autopilot_action',
+        outcome: 1,
+        resolvedAt: { not: null },
+      },
+      select: {
+        id: true,
+        context: true,
+        resolvedAt: true,
+      },
+    });
+
+    let confirmed = 0;
+    let unanswered = 0;
+
+    for (const row of rows) {
+      const ctx = (row.context as Record<string, unknown>) ?? {};
+      if (ctx.outcomeConfidence !== undefined && ctx.outcomeConfidence !== null) {
+        continue;
+      }
+
+      const isWithinWindow = row.resolvedAt != null && row.resolvedAt >= windowCutoff;
+      const newConfidence: string = isWithinWindow ? 'confirmed' : 'unanswered';
+
+      await this.prisma.mindPolicy.update({
+        where: { id: row.id },
+        data: {
+          context: { ...ctx, outcomeConfidence: newConfidence } as Prisma.InputJsonValue,
+        },
+      });
+
+      if (isWithinWindow) {
+        confirmed += 1;
+      } else {
+        unanswered += 1;
+      }
+    }
+
+    if (confirmed > 0 || unanswered > 0) {
+      this.logger.debug?.({
+        operation: 'mind_policy.confirmAutopilotOutcome',
+        workspaceId: params.workspaceId,
+        contactId: params.contactId,
+        windowMinutes,
+        confirmed,
+        unanswered,
+      });
+    }
+
+    return { confirmed, unanswered };
+  }
+
   async harness(
     workspaceId: string,
     decisionType: string,
