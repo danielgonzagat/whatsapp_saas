@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { parseDateOrFail } from '../../common/parse-date-or-fail.helper';
 import {
   AdminAction,
   AdminModule,
@@ -48,17 +49,6 @@ function parseTake(value?: string): number | undefined {
   }
   const parsed = Number(value);
   return Number.isFinite(parsed) ? Math.min(200, Math.max(1, Math.trunc(parsed))) : undefined;
-}
-
-function parseDateOrFail(raw: string | undefined, label: string): Date | undefined {
-  if (!raw) {
-    return undefined;
-  }
-  const parsed = new Date(raw);
-  if (isNaN(parsed.getTime())) {
-    throw new BadRequestException(`Invalid ${label}`);
-  }
-  return parsed;
 }
 
 /**
