@@ -10,6 +10,11 @@ import { Injectable, Logger, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { safeJoin } from '../../common/safe-path';
 import { OpsAlertService } from '../../observability/ops-alert.service';
+import {
+  buildAwsCallContext,
+  classifyAwsError,
+} from './s3-error-classifier';
+import type { AwsCallContext } from './s3-error-classifier';
 
 const TRAILING_SLASHES_RE = /\/+$/;
 
@@ -56,6 +61,7 @@ function isAsyncIterableObject(body: unknown): body is SupportedObjectBody {
 export class StorageDriversService {
   private readonly logger = new Logger(StorageDriversService.name);
   private r2Client: S3Client | null = null;
+  private s3Client: S3Client | null = null;
 
   constructor(
     private config: ConfigService,
@@ -71,6 +77,12 @@ export class StorageDriversService {
   ): Promise<UploadResult> {
     const bucket = this.getConfigString('S3_BUCKET');
     const region = this.getConfigString('S3_REGION') ?? 'us-east-1';
+    const ctx: AwsCallContext = buildAwsCallContext({
+      operation: 'uploadToS3',
+      region,
+      bucket: bucket ?? '',
+      key: relativePath,
+    });
     if (!bucket) {
       this.logger.warn('S3_BUCKET not configured, falling back to local storage');
       if (uploadToLocal) {
@@ -79,7 +91,7 @@ export class StorageDriversService {
       throw new Error('S3_BUCKET not configured and no local fallback provided');
     }
     try {
-      const client = new S3Client({ region });
+      const client = this.getS3Client(region);
       await client.send(
         new PutObjectCommand({
           Bucket: bucket,
@@ -96,9 +108,11 @@ export class StorageDriversService {
       this.logger.debug(`Uploaded to S3: ${relativePath} (${buffer.length} bytes)`);
       return { url, path: relativePath, size: buffer.length };
     } catch (error: unknown) {
-      void this.opsAlert?.alertOnCriticalError(error, 'StorageDriversService.uploadToS3');
-      const errorMsg = describeUnknownError(error);
-      this.logger.error(`S3 upload failed: ${errorMsg}, falling back to local`);
+      const classified = classifyAwsError(error, ctx);
+      void this.opsAlert?.alertOnCriticalError(error, 'StorageDriversService.uploadToS3', {
+        metadata: { category: classified.category, awsCode: classified.awsCode },
+      });
+      this.logger.error(`S3 upload failed: ${classified.message}, falling back to local`);
       if (uploadToLocal) {
         return uploadToLocal(buffer, relativePath);
       }
@@ -161,10 +175,18 @@ export class StorageDriversService {
       return false;
     }
     try {
-      const client = new S3Client({ region: this.getConfigString('S3_REGION') ?? 'us-east-1' });
+      const region = this.getConfigString('S3_REGION') ?? 'us-east-1';
+      const client = this.getS3Client(region);
       await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: relativePath }));
       return true;
-    } catch {
+    } catch (error: unknown) {
+      const region = this.getConfigString('S3_REGION') ?? 'us-east-1';
+      classifyAwsError(error, buildAwsCallContext({
+        operation: 'deleteFromS3',
+        region,
+        bucket: bucket ?? '',
+        key: relativePath,
+      }));
       return false;
     }
   }
@@ -203,7 +225,8 @@ export class StorageDriversService {
       return null;
     }
     try {
-      const client = new S3Client({ region: this.getConfigString('S3_REGION') ?? 'us-east-1' });
+      const region = this.getConfigString('S3_REGION') ?? 'us-east-1';
+      const client = this.getS3Client(region);
       const response = await client.send(
         new GetObjectCommand({ Bucket: bucket, Key: relativePath }),
       );
@@ -212,9 +235,15 @@ export class StorageDriversService {
         mimeType: response.ContentType || getMimeTypeForPath(relativePath),
       };
     } catch (error: unknown) {
+      const region = this.getConfigString('S3_REGION') ?? 'us-east-1';
+      classifyAwsError(error, buildAwsCallContext({
+        operation: 'readFromS3',
+        region,
+        bucket: bucket ?? '',
+        key: relativePath,
+      }));
       void this.opsAlert?.alertOnCriticalError(error, 'StorageDriversService.getMimeTypeForPath');
-      const errorMsg = describeUnknownError(error);
-      this.logger.warn(`S3 remote read failed for "${relativePath}": ${errorMsg}`);
+      this.logger.warn(`S3 remote read failed for "${relativePath}"`);
       return null;
     }
   }
@@ -298,10 +327,18 @@ export class StorageDriversService {
       if (!bucket) {
         return { status: 'DEGRADED', driver: 's3', details: { error: 'S3_BUCKET not configured' } };
       }
-      const client = new S3Client({ region: this.getConfigString('S3_REGION') ?? 'us-east-1' });
+      const region = this.getConfigString('S3_REGION') ?? 'us-east-1';
+      const client = this.getS3Client(region);
       await client.send(new HeadBucketCommand({ Bucket: bucket }));
       return { status: 'UP', driver: 's3', details: { bucket } };
     } catch (error: unknown) {
+      const region = this.getConfigString('S3_REGION') ?? 'us-east-1';
+      const bucket = this.getConfigString('S3_BUCKET') ?? '';
+      classifyAwsError(error, buildAwsCallContext({
+        operation: 'checkS3Health',
+        region,
+        bucket,
+      }));
       void this.opsAlert?.alertOnCriticalError(error, 'StorageDriversService.send');
       const errorMsg = describeUnknownError(error);
       return { status: 'DOWN', driver: 's3', details: { error: errorMsg } };
@@ -333,6 +370,15 @@ export class StorageDriversService {
       return `${cdnBase}/${relativePath}`;
     }
     return '';
+  }
+
+  /** Lazily-initialised S3 client, cached. */
+  getS3Client(region: string): S3Client {
+    if (!this.s3Client) {
+      this.s3Client = new S3Client({ region });
+      this.logger.debug(`S3 client initialised for region=${region}`);
+    }
+    return this.s3Client;
   }
 
   getR2Client(): S3Client | null {

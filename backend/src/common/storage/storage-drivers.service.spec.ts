@@ -11,6 +11,40 @@ jest.mock('@aws-sdk/client-s3', () => ({
   HeadBucketCommand: jest.fn(),
 }));
 
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Build a mock AWS SDK UnknownError matching the real shape from @aws-sdk/core. */
+function makeUnknownError(message?: string) {
+  const err = new Error(
+    message ??
+      'UnknownError: UnknownError from @aws-sdk/core.protocols.ProtocolLib.getErrorSchemaOrThrowBaseException',
+  );
+  err.name = 'UnknownError';
+  (err as Record<string, unknown>).$metadata = { httpStatusCode: 400 };
+  return err;
+}
+
+/** Build a mock AWS AccessDenied error. */
+function makeAccessDeniedError() {
+  const err = new Error('Access Denied');
+  err.name = 'AccessDenied';
+  return err;
+}
+
+function configureBucket(
+  config: { get: jest.Mock },
+  bucket = 'my-bucket',
+  region = 'us-east-1',
+) {
+  config.get.mockImplementation((key: string) => {
+    if (key === 'S3_BUCKET') return bucket;
+    if (key === 'S3_REGION') return region;
+    return undefined;
+  });
+}
+
 describe('StorageDriversService', () => {
   let service: StorageDriversService;
   let config: { get: jest.Mock };
@@ -80,6 +114,41 @@ describe('StorageDriversService', () => {
 
       expect(result).toEqual({ url: '/local/path', path: 'local', size: 10 });
     });
+
+    it('falls back to local on AWS UnknownError (protocol mismatch)', async () => {
+      configureBucket(config);
+      s3SendMock.mockRejectedValueOnce(makeUnknownError());
+
+      const localFallback = jest
+        .fn()
+        .mockResolvedValue({ url: '/local/path', path: 'local', size: 10 });
+
+      const result = await service.uploadToS3(
+        Buffer.from('test'),
+        'dir/file.txt',
+        undefined,
+        localFallback,
+      );
+
+      expect(result).toEqual({ url: '/local/path', path: 'local', size: 10 });
+      expect(localFallback).toHaveBeenCalled();
+    });
+
+    it('caches the S3 client across uploads', async () => {
+      const { S3Client } = jest.requireMock('@aws-sdk/client-s3') as {
+        S3Client: jest.Mock;
+      };
+      S3Client.mockClear();
+      // Force a new service so the internal cache is fresh
+      service = new StorageDriversService(config as ConfigService);
+      configureBucket(config);
+
+      await service.uploadToS3(Buffer.from('test'), 'first.txt');
+      await service.uploadToS3(Buffer.from('test'), 'second.txt');
+
+      // S3Client constructor should be called only once (cached)
+      expect(S3Client).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('deleteFromS3', () => {
@@ -98,15 +167,42 @@ describe('StorageDriversService', () => {
     });
 
     it('deletes from S3 successfully when bucket is configured', async () => {
-      config.get.mockImplementation((key: string) => {
-        if (key === 'S3_BUCKET') return 'my-bucket';
-        if (key === 'S3_REGION') return 'us-east-1';
-        return undefined;
-      });
+      configureBucket(config);
 
       const result = await service.deleteFromS3('dir/file.txt');
       expect(result).toBe(true);
       expect(s3SendMock).toHaveBeenCalled();
+    });
+
+    it('returns false on AWS UnknownError (protocol mismatch)', async () => {
+      configureBucket(config);
+      s3SendMock.mockRejectedValueOnce(makeUnknownError());
+
+      const result = await service.deleteFromS3('dir/file.txt');
+      expect(result).toBe(false);
+    });
+
+    it('returns false on network error', async () => {
+      configureBucket(config);
+      s3SendMock.mockRejectedValueOnce(new Error('ECONNREFUSED'));
+
+      const result = await service.deleteFromS3('dir/file.txt');
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('readFromS3', () => {
+    it('returns null when S3_BUCKET is not configured', async () => {
+      const result = await service.readFromS3('dir/file.txt', () => 'application/octet-stream');
+      expect(result).toBeNull();
+    });
+
+    it('returns null on AWS UnknownError (protocol mismatch)', async () => {
+      configureBucket(config);
+      s3SendMock.mockRejectedValueOnce(makeUnknownError());
+
+      const result = await service.readFromS3('dir/file.txt', () => 'application/octet-stream');
+      expect(result).toBeNull();
     });
   });
 
@@ -129,6 +225,16 @@ describe('StorageDriversService', () => {
 
       const result = await service.checkS3Health();
       expect(result).toMatchObject({ status: 'UP', driver: 's3' });
+    });
+
+    it('returns DOWN on AWS UnknownError with error details', async () => {
+      configureBucket(config);
+      s3SendMock.mockRejectedValueOnce(makeUnknownError());
+
+      const result = await service.checkS3Health();
+      expect(result).toMatchObject({ status: 'DOWN', driver: 's3' });
+      expect(result.details).toBeDefined();
+      expect(result.details!.error).toBeTruthy();
     });
   });
 });
