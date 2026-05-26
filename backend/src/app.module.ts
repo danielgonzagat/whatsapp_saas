@@ -126,6 +126,7 @@ import { DefensModule } from './kloel/defens/defens.module';
 import { EvolModule } from './kloel/evol/evol.module';
 import { PulseGatesModule } from './kloel/pulse-gates/pulse-gates.module';
 import { IncentModule } from './kloel/incent/incent.module';
+import { PlansModule } from './plans/plans.module';
 import { PipelineModule } from './pipeline/pipeline.module';
 import { ProductCategoriesModule } from './product-categories/product-categories.module';
 import { ProductsModule } from './products/products.module';
@@ -334,6 +335,7 @@ function setRedisClientListenerBudget(client: Redis): void {
     TikTokAdsModule, // 🎵 TikTok Ads — OAuth + Events API + sync
     AdminModule, // adm.kloel.com identity, audit, permissions (SP-0..2)
     PaymentsModule, // 💳 Stripe Connect — split, ledger, fraud, charge, webhook (FASES 1-7)
+    PlansModule,
     MarketplaceTreasuryModule, // 💼 Marketplace treasury ledger / reconciliation
     WalletModule, // ⚡ Prepaid wallet for usage-metered services (FASE 4)
     UnsubscribeModule, // ✉️ Token-signed unsubscribe endpoint (LGPD/GDPR)

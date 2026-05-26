@@ -109,9 +109,9 @@ export class ProductService {
       workspaceId,
       agentId: actor.id,
       action: 'product.create',
-      entity: 'Product',
-      entityId: product.id,
-      metadata: { name: product.name, price: product.price },
+      resource: 'Product',
+      resourceId: product.id,
+      details: { name: product.name, price: product.price },
     });
 
     this.logger.log(`Product created: ${product.id} by ${actor.id}`);
@@ -157,9 +157,9 @@ export class ProductService {
       workspaceId,
       agentId: actor.id,
       action: 'product.update',
-      entity: 'Product',
-      entityId: product.id,
-      metadata: { changes: Object.keys(dto) },
+      resource: 'Product',
+      resourceId: product.id,
+      details: { changes: Object.keys(dto) },
     });
 
     return { success: true, product };
@@ -227,9 +227,9 @@ export class ProductService {
       workspaceId,
       agentId: actor.id,
       action: 'product.setImage',
-      entity: 'Product',
-      entityId: productId,
-      metadata: { imageUrl },
+      resource: 'Product',
+      resourceId: productId,
+      details: { imageUrl },
     });
 
     return { success: true, product };
@@ -258,8 +258,8 @@ export class ProductService {
       workspaceId,
       agentId: actor.id,
       action: 'product.publish',
-      entity: 'Product',
-      entityId: productId,
+      resource: 'Product',
+      resourceId: productId,
     });
 
     return { success: true, product };
@@ -289,8 +289,8 @@ export class ProductService {
       workspaceId,
       agentId: actor.id,
       action: available ? 'product.activate' : 'product.deactivate',
-      entity: 'Product',
-      entityId: productId,
+      resource: 'Product',
+      resourceId: productId,
     });
 
     return { success: true, product };
@@ -319,8 +319,8 @@ export class ProductService {
       workspaceId,
       agentId: actor.id,
       action: 'product.delete',
-      entity: 'Product',
-      entityId: productId,
+      resource: 'Product',
+      resourceId: productId,
     });
 
     return { success: true, message: 'Product deleted' };
