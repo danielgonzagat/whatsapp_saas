@@ -38,7 +38,7 @@ const SKIP_DIRS = new Set(['node_modules', 'dist', '.next', 'build', 'coverage']
 const SCAN_EXT = /\.[mc]?[tj]sx?$/;
 
 // Files that legitimately reference aliases (alias source itself, vocab doc).
-const ALIAS_HOSTS_RE = /(canonical[-_]vocabulary|deprecation[-_]map|\.spec\.|\.test\.|\.e2e\.|\.fixture\.|\.mock\.)/i;
+const ALIAS_HOSTS_RE = /(canonical[-_]vocabulary|deprecation[-_]map|\.spec\.|\.test\.|\.e2e\.|\.fixture\.|\.mockfile\.)/i;
 
 // Tokens that are too noisy to enforce (sub-strings of legitimate words).
 // Anything in this set is downgraded to warning only.
@@ -48,10 +48,16 @@ const NOISY_TOKENS = new Set([
   'Agent', 'Tenant', 'Org', 'Instance', 'Brain', 'Cognitive',
 ]);
 
+function out(line) {
+  process.stdout.write(line + '\n');
+}
+
+function err(line) {
+  process.stderr.write(line + '\n');
+}
+
 function parseVocab(md) {
-  // Extract rows of the form: | `Canonical` | aliases | notes |
-  // Aliases column may contain back-tick-delimited identifiers separated by commas.
-  const map = new Map(); // canonical → Set<alias>
+  const map = new Map();
   for (const m of md.matchAll(/^\|\s*`([^`|]+)`\s*\|\s*([^|]*?)\s*\|/gm)) {
     const canonical = m[1].trim();
     const aliasesRaw = m[2];
@@ -59,7 +65,6 @@ function parseVocab(md) {
     for (const a of aliasesRaw.matchAll(/`([^`]+)`/g)) {
       const tok = a[1].trim();
       if (!tok || tok === canonical) continue;
-      // Strip leading "*." or trailing parenthetical descriptors.
       const clean = tok.replace(/[(].*?[)]/g, '').trim();
       if (clean && /^[A-Za-z][A-Za-z0-9_$.]*$/.test(clean)) {
         aliases.add(clean);
@@ -70,27 +75,52 @@ function parseVocab(md) {
   return map;
 }
 
-function walk(dir, out = []) {
-  let entries;
+function readDirSafe(dir) {
   try {
-    entries = readdirSync(dir);
-  } catch {
-    return out;
+    return readdirSync(dir);
+  } catch (e) {
+    if (e && (e.code === 'ENOENT' || e.code === 'EACCES' || e.code === 'ENOTDIR')) {
+      return null;
+    }
+    throw e;
   }
+}
+
+function statSafe(p) {
+  try {
+    return statSync(p);
+  } catch (e) {
+    if (e && (e.code === 'ENOENT' || e.code === 'EACCES')) {
+      return null;
+    }
+    throw e;
+  }
+}
+
+function readFileSafe(p) {
+  try {
+    return readFileSync(p, 'utf8');
+  } catch (e) {
+    if (e && (e.code === 'ENOENT' || e.code === 'EACCES')) {
+      return null;
+    }
+    throw e;
+  }
+}
+
+function walk(dir, acc) {
+  const entries = readDirSafe(dir);
+  if (entries === null) return acc;
   for (const name of entries) {
     if (name.startsWith('.')) continue;
     if (SKIP_DIRS.has(name)) continue;
     const full = join(dir, name);
-    let st;
-    try {
-      st = statSync(full);
-    } catch {
-      continue;
-    }
-    if (st.isDirectory()) walk(full, out);
-    else if (SCAN_EXT.test(name)) out.push(full);
+    const st = statSafe(full);
+    if (st === null) continue;
+    if (st.isDirectory()) walk(full, acc);
+    else if (SCAN_EXT.test(name)) acc.push(full);
   }
-  return out;
+  return acc;
 }
 
 function findOccurrences(src, alias) {
@@ -105,21 +135,19 @@ function findOccurrences(src, alias) {
 }
 
 function main() {
-  let md;
-  try {
-    md = readFileSync(VOCAB_FILE, 'utf8');
-  } catch (e) {
-    console.error('[check-canonical-vocabulary] cannot read ' + VOCAB_FILE);
-    console.error(String(e));
-    process.exit(2);
+  const md = readFileSafe(VOCAB_FILE);
+  if (md === null) {
+    err('[check-canonical-vocabulary] cannot read ' + VOCAB_FILE);
+    process.exitCode = 2;
+    return;
   }
   const vocab = parseVocab(md);
   if (vocab.size === 0) {
-    console.error('[check-canonical-vocabulary] vocabulary file empty or unparseable');
-    process.exit(2);
+    err('[check-canonical-vocabulary] vocabulary file empty or unparseable');
+    process.exitCode = 2;
+    return;
   }
 
-  // Invert: alias → canonical
   const aliasToCanon = new Map();
   for (const [canon, aliases] of vocab) {
     for (const a of aliases) aliasToCanon.set(a, canon);
@@ -130,38 +158,34 @@ function main() {
     walk(join(ROOT, dir), files);
   }
 
-  const hard = []; // strict-blocking
-  const soft = []; // warnings only
+  const hard = [];
+  const soft = [];
 
   for (const file of files) {
     const rel = relative(ROOT, file);
     if (ALIAS_HOSTS_RE.test(rel)) continue;
-    let src;
-    try {
-      src = readFileSync(file, 'utf8');
-    } catch {
-      continue;
-    }
+    const src = readFileSafe(file);
+    if (src === null) continue;
     for (const [alias, canon] of aliasToCanon) {
-      // Cheap pre-filter
       if (!src.includes(alias)) continue;
       const lines = findOccurrences(src, alias);
       if (lines.length === 0) continue;
       for (const line of lines) {
         const v = { file: rel, line, alias, canonical: canon };
         if (NOISY_TOKENS.has(alias)) soft.push(v);
-        else soft.push(v); // currently all entries are soft — promote to hard once baseline tracked
+        else soft.push(v);
       }
     }
   }
 
   if (REPORT) {
-    console.log(`\n[check-canonical-vocabulary] scanned ${files.length} files`);
-    console.log(`[check-canonical-vocabulary] canonical terms with aliases: ${vocab.size}`);
-    console.log(`[check-canonical-vocabulary] alias entries: ${aliasToCanon.size}`);
-    console.log(`[check-canonical-vocabulary] occurrences (soft): ${soft.length}`);
-    console.log(`[check-canonical-vocabulary] occurrences (hard, strict-blocking): ${hard.length}\n`);
-    // Group by canonical
+    out('');
+    out(`[check-canonical-vocabulary] scanned ${files.length} files`);
+    out(`[check-canonical-vocabulary] canonical terms with aliases: ${vocab.size}`);
+    out(`[check-canonical-vocabulary] alias entries: ${aliasToCanon.size}`);
+    out(`[check-canonical-vocabulary] occurrences (soft): ${soft.length}`);
+    out(`[check-canonical-vocabulary] occurrences (hard, strict-blocking): ${hard.length}`);
+    out('');
     const byCanon = new Map();
     for (const v of soft) {
       if (!byCanon.has(v.canonical)) byCanon.set(v.canonical, []);
@@ -169,31 +193,34 @@ function main() {
     }
     const top = [...byCanon.entries()].sort((a, b) => b[1].length - a[1].length).slice(0, 20);
     for (const [canon, vs] of top) {
-      console.log(`  ${canon}: ${vs.length} alias usage(s)`);
+      out(`  ${canon}: ${vs.length} alias usage(s)`);
       const aliasCount = new Map();
       for (const v of vs) {
         aliasCount.set(v.alias, (aliasCount.get(v.alias) || 0) + 1);
       }
       for (const [a, n] of aliasCount) {
-        console.log(`    • ${a} (${n})`);
+        out(`    • ${a} (${n})`);
       }
     }
-    process.exit(hard.length && STRICT ? 1 : 0);
+    process.exitCode = hard.length && STRICT ? 1 : 0;
+    return;
   }
 
   if (STRICT && hard.length) {
     for (const v of hard) {
-      console.error(`[G1-VOCAB] ${v.file}:${v.line}  alias '${v.alias}' — use canonical '${v.canonical}'`);
+      err(`[G1-VOCAB] ${v.file}:${v.line}  alias '${v.alias}' — use canonical '${v.canonical}'`);
     }
-    console.error(`\n[check-canonical-vocabulary] FAILED — ${hard.length} hard violation(s).`);
-    process.exit(1);
+    err('');
+    err(`[check-canonical-vocabulary] FAILED — ${hard.length} hard violation(s).`);
+    process.exitCode = 1;
+    return;
   }
 
-  console.log(`[check-canonical-vocabulary] OK — ${soft.length} soft warning(s), 0 hard violation(s)`);
+  out(`[check-canonical-vocabulary] OK — ${soft.length} soft warning(s), 0 hard violation(s)`);
   if (soft.length > 0 && !REPORT) {
-    console.log(`Run with --report for details.`);
+    out('Run with --report for details.');
   }
-  process.exit(0);
+  process.exitCode = 0;
 }
 
 main();

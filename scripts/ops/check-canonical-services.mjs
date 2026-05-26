@@ -39,40 +39,68 @@ const REPORT = process.argv.includes('--report');
 const SCAN_DIRS = ['backend/src'];
 const SKIP_DIRS = new Set(['node_modules', 'dist', 'build', 'coverage']);
 const SCAN_EXT = /\.[mc]?[tj]sx?$/;
-const SKIP_FILES_RE = /\.(spec|test|e2e|fixture|mock)\.[tj]sx?$/;
+const SKIP_FILES_RE = /\.(spec|test|e2e|fixture|mockfile)\.[tj]sx?$/;
 
-function walk(dir, out = []) {
-  let entries;
+function out(line) {
+  process.stdout.write(line + '\n');
+}
+
+function err(line) {
+  process.stderr.write(line + '\n');
+}
+
+function readDirSafe(dir) {
   try {
-    entries = readdirSync(dir);
-  } catch {
-    return out;
+    return readdirSync(dir);
+  } catch (e) {
+    if (e && (e.code === 'ENOENT' || e.code === 'EACCES' || e.code === 'ENOTDIR')) {
+      return null;
+    }
+    throw e;
   }
+}
+
+function statSafe(p) {
+  try {
+    return statSync(p);
+  } catch (e) {
+    if (e && (e.code === 'ENOENT' || e.code === 'EACCES')) {
+      return null;
+    }
+    throw e;
+  }
+}
+
+function readFileSafe(p) {
+  try {
+    return readFileSync(p, 'utf8');
+  } catch (e) {
+    if (e && (e.code === 'ENOENT' || e.code === 'EACCES')) {
+      return null;
+    }
+    throw e;
+  }
+}
+
+function walk(dir, acc) {
+  const entries = readDirSafe(dir);
+  if (entries === null) return acc;
   for (const name of entries) {
     if (name.startsWith('.')) continue;
     if (SKIP_DIRS.has(name)) continue;
     const full = join(dir, name);
-    let st;
-    try {
-      st = statSync(full);
-    } catch {
-      continue;
-    }
-    if (st.isDirectory()) walk(full, out);
-    else if (SCAN_EXT.test(name) && !SKIP_FILES_RE.test(name)) out.push(full);
+    const st = statSafe(full);
+    if (st === null) continue;
+    if (st.isDirectory()) walk(full, acc);
+    else if (SCAN_EXT.test(name) && !SKIP_FILES_RE.test(name)) acc.push(full);
   }
-  return out;
+  return acc;
 }
 
 function loadCatalogServices() {
-  let raw;
-  try {
-    raw = readFileSync(CATALOG_FILE, 'utf8');
-  } catch {
-    return null;
-  }
-  // Lines like: - `ServiceName` — `path/to/file.ts`
-  const services = new Map(); // ServiceName → [files]
+  const raw = readFileSafe(CATALOG_FILE);
+  if (raw === null) return null;
+  const services = new Map();
   for (const m of raw.matchAll(/^[-*]\s+`([A-Z][A-Za-z0-9_]+)`\s+—\s+`([^`]+)`/gm)) {
     const name = m[1];
     const file = m[2];
@@ -83,13 +111,8 @@ function loadCatalogServices() {
 }
 
 function loadDeprecatedAliases() {
-  let raw;
-  try {
-    raw = readFileSync(DEPRECATION_FILE, 'utf8');
-  } catch {
-    return new Set();
-  }
-  // Any back-ticked identifier in the "Deprecated symbol" column.
+  const raw = readFileSafe(DEPRECATION_FILE);
+  if (raw === null) return new Set();
   const aliases = new Set();
   for (const m of raw.matchAll(/\|\s*\d+\s*\|\s*`([A-Z][A-Za-z0-9_]+)`/g)) {
     aliases.add(m[1]);
@@ -98,12 +121,8 @@ function loadDeprecatedAliases() {
 }
 
 function loadCanonicalDomains() {
-  let raw;
-  try {
-    raw = readFileSync(DOMAINS_FILE, 'utf8');
-  } catch {
-    return null;
-  }
+  const raw = readFileSafe(DOMAINS_FILE);
+  if (raw === null) return null;
   const domains = new Set();
   for (const m of raw.matchAll(/^\|\s*`([a-zA-Z0-9_/.-]+)`/gm)) {
     domains.add(m[1]);
@@ -112,14 +131,12 @@ function loadCanonicalDomains() {
 }
 
 function extractInjectableClasses(src) {
-  // Match: @Injectable() <decorator-line>\n... <maybe more decorators> ... export class Name
   const classes = [];
   const re = /@Injectable\([\s\S]*?\)[\s\S]{0,400}?export\s+(?:abstract\s+)?class\s+([A-Z][A-Za-z0-9_]+)/g;
   let m;
   while ((m = re.exec(src)) !== null) {
     const name = m[1];
     const lineNo = src.slice(0, m.index).split('\n').length;
-    // Look backwards 25 lines for a @cluster tag.
     const lines = src.split('\n');
     const start = Math.max(0, lineNo - 25);
     const window = lines.slice(start, lineNo).join('\n');
@@ -131,9 +148,8 @@ function extractInjectableClasses(src) {
 }
 
 function main() {
-  // catalog is loaded for future cross-check (deduplication vs documented services);
-  // currently the live scan is authoritative — the catalog read is preserved so
-  // that catalog drift can be surfaced once a baseline is captured.
+  // Catalog is loaded for future cross-check (deduplication vs documented
+  // services); the live scan is currently authoritative.
   loadCatalogServices();
   const aliases = loadDeprecatedAliases();
   const domains = loadCanonicalDomains();
@@ -143,16 +159,12 @@ function main() {
     walk(join(ROOT, dir), files);
   }
 
-  const seen = new Map(); // ServiceName → [{file, line, cluster}]
+  const seen = new Map();
   const missingCluster = [];
 
   for (const file of files) {
-    let src;
-    try {
-      src = readFileSync(file, 'utf8');
-    } catch {
-      continue;
-    }
+    const src = readFileSafe(file);
+    if (src === null) continue;
     const rel = relative(ROOT, file);
     const classes = extractInjectableClasses(src);
     for (const c of classes) {
@@ -162,46 +174,51 @@ function main() {
     }
   }
 
-  // Duplicates: same class name in 2+ files, neither aliased.
   const dups = [];
   for (const [name, sites] of seen) {
     if (sites.length <= 1) continue;
-    if (aliases.has(name)) continue; // explicitly tracked in DEPRECATION_MAP
+    if (aliases.has(name)) continue;
     dups.push({ name, sites });
   }
 
   if (REPORT) {
-    console.log(`\n[check-canonical-services] scanned ${files.length} backend files`);
-    console.log(`[check-canonical-services] @Injectable classes detected: ${[...seen.values()].reduce((a, s) => a + s.length, 0)}`);
-    console.log(`[check-canonical-services] unique class names: ${seen.size}`);
-    console.log(`[check-canonical-services] duplicate names (not in DEPRECATION_MAP): ${dups.length}`);
-    console.log(`[check-canonical-services] classes missing @cluster tag: ${missingCluster.length}`);
-    console.log(`[check-canonical-services] canonical domains known: ${domains ? domains.size : 'N/A'}\n`);
+    out('');
+    out(`[check-canonical-services] scanned ${files.length} backend files`);
+    out(`[check-canonical-services] @Injectable classes detected: ${[...seen.values()].reduce((a, s) => a + s.length, 0)}`);
+    out(`[check-canonical-services] unique class names: ${seen.size}`);
+    out(`[check-canonical-services] duplicate names (not in DEPRECATION_MAP): ${dups.length}`);
+    out(`[check-canonical-services] classes missing @cluster tag: ${missingCluster.length}`);
+    out(`[check-canonical-services] canonical domains known: ${domains ? domains.size : 'N/A'}`);
+    out('');
     for (const d of dups.slice(0, 30)) {
-      console.log(`  DUP ${d.name}`);
-      for (const s of d.sites) console.log(`    • ${s.file}:${s.line}`);
+      out(`  DUP ${d.name}`);
+      for (const s of d.sites) out(`    • ${s.file}:${s.line}`);
     }
     if (missingCluster.length > 0) {
-      console.log(`\n  First 15 classes missing @cluster:`);
+      out('');
+      out(`  First 15 classes missing @cluster:`);
       for (const m of missingCluster.slice(0, 15)) {
-        console.log(`    • ${m.file}:${m.line}  ${m.name}`);
+        out(`    • ${m.file}:${m.line}  ${m.name}`);
       }
     }
-    process.exit(dups.length && STRICT ? 1 : 0);
+    process.exitCode = dups.length && STRICT ? 1 : 0;
+    return;
   }
 
   if (STRICT && dups.length) {
     for (const d of dups) {
-      console.error(`[G3-DUP] ${d.name} — duplicated across ${d.sites.length} files (not in DEPRECATION_MAP):`);
-      for (const s of d.sites) console.error(`    • ${s.file}:${s.line}`);
+      err(`[G3-DUP] ${d.name} — duplicated across ${d.sites.length} files (not in DEPRECATION_MAP):`);
+      for (const s of d.sites) err(`    • ${s.file}:${s.line}`);
     }
-    console.error(`\n[check-canonical-services] FAILED — ${dups.length} duplicate(s) without alias.`);
-    console.error(`Either: (a) merge into single canonical, OR (b) add row in DEPRECATION_MAP.md.`);
-    process.exit(1);
+    err('');
+    err(`[check-canonical-services] FAILED — ${dups.length} duplicate(s) without alias.`);
+    err(`Either: (a) merge into single canonical, OR (b) add row in DEPRECATION_MAP.md.`);
+    process.exitCode = 1;
+    return;
   }
 
-  console.log(`[check-canonical-services] OK — ${dups.length} dup(s) (tolerated, not strict), ${missingCluster.length} class(es) without @cluster`);
-  process.exit(0);
+  out(`[check-canonical-services] OK — ${dups.length} dup(s) (tolerated, not strict), ${missingCluster.length} class(es) without @cluster`);
+  process.exitCode = 0;
 }
 
 main();

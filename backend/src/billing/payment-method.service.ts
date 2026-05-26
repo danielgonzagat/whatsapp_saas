@@ -72,8 +72,8 @@ export class PaymentMethodService {
         // The probe in stripe-runtime.ts now enforces .customers.create AND
         // .paymentMethods.list at module load; this branch is the runtime
         // belt for the (rare) shape where the namespace passed probe but a
-        // specific method later became undefined (lazy/mocked clients in
-        // odd test harnesses, partial monkey-patching, etc.).
+        // specific method later became undefined (lazy initialization,
+        // partial monkey-patching, etc.).
         const stripeBroken =
           !this.stripe.customers ||
           typeof this.stripe.customers.create !== 'function' ||
