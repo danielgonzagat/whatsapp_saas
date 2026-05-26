@@ -1,0 +1,75 @@
+{
+  "$schema": "https://docs.sentry.io/api/projects/list-a-projects-issue-alert-rules/",
+  "description": "Sentry issue-alert rules for kloel production. Consumed by scripts/ops/sync-sentry-alerts.mjs which mirrors this file into the Sentry project via the REST API.",
+  "rules": [
+    {
+      "name": "kloel.backend.error_spike (>100 events / 1h)",
+      "conditions": [
+        { "id": "sentry.rules.conditions.event_frequency.EventFrequencyCondition", "value": 100, "interval": "1h" }
+      ],
+      "actionMatch": "all",
+      "filterMatch": "all",
+      "filters": [
+        { "id": "sentry.rules.filters.event_attribute.EventAttributeFilter", "attribute": "environment", "match": "eq", "value": "production" }
+      ],
+      "frequency": 30,
+      "environment": "production",
+      "actions": [
+        { "id": "sentry.integrations.slack.notify_action.SlackNotifyServiceAction", "workspace": "kloel", "channel": "#oncall-kloel", "tags": "level,environment" },
+        { "id": "sentry.integrations.pagerduty.notify_action.PagerDutyNotifyServiceAction", "account": "kloel", "service": "kloel-backend" }
+      ]
+    },
+    {
+      "name": "kloel.backend.new_issue_high_volume (>50 events / 1h)",
+      "conditions": [
+        { "id": "sentry.rules.conditions.first_seen_event.FirstSeenEventCondition" },
+        { "id": "sentry.rules.conditions.event_frequency.EventFrequencyCondition", "value": 50, "interval": "1h" }
+      ],
+      "actionMatch": "all",
+      "filterMatch": "all",
+      "filters": [
+        { "id": "sentry.rules.filters.event_attribute.EventAttributeFilter", "attribute": "environment", "match": "eq", "value": "production" },
+        { "id": "sentry.rules.filters.level.LevelFilter", "level": "40", "match": "gte" }
+      ],
+      "frequency": 5,
+      "environment": "production",
+      "actions": [
+        { "id": "sentry.integrations.slack.notify_action.SlackNotifyServiceAction", "workspace": "kloel", "channel": "#oncall-kloel" },
+        { "id": "sentry.integrations.pagerduty.notify_action.PagerDutyNotifyServiceAction", "account": "kloel", "service": "kloel-backend" }
+      ]
+    },
+    {
+      "name": "kloel.performance.regression_p95_50%",
+      "conditions": [
+        { "id": "sentry.rules.conditions.regression_event.RegressionEventCondition" }
+      ],
+      "actionMatch": "all",
+      "filterMatch": "all",
+      "filters": [
+        { "id": "sentry.rules.filters.event_attribute.EventAttributeFilter", "attribute": "environment", "match": "eq", "value": "production" }
+      ],
+      "frequency": 60,
+      "environment": "production",
+      "actions": [
+        { "id": "sentry.integrations.slack.notify_action.SlackNotifyServiceAction", "workspace": "kloel", "channel": "#perf-watch" }
+      ]
+    },
+    {
+      "name": "kloel.release.crash_free_sessions < 99%",
+      "conditions": [
+        { "id": "sentry.rules.conditions.event_frequency.EventFrequencyPercentCondition", "value": 1.0, "interval": "1h", "comparisonType": "count" }
+      ],
+      "actionMatch": "all",
+      "filterMatch": "all",
+      "filters": [
+        { "id": "sentry.rules.filters.event_attribute.EventAttributeFilter", "attribute": "environment", "match": "eq", "value": "production" },
+        { "id": "sentry.rules.filters.level.LevelFilter", "level": "50", "match": "eq" }
+      ],
+      "frequency": 30,
+      "environment": "production",
+      "actions": [
+        { "id": "sentry.integrations.slack.notify_action.SlackNotifyServiceAction", "workspace": "kloel", "channel": "#oncall-kloel" }
+      ]
+    }
+  ]
+}

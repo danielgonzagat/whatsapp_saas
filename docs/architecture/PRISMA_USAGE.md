@@ -6,83 +6,101 @@ Total models referenced: 170.
 
 | Model | # files | Files (top 3) |
 |---|---:|---|
-| `workspace` | 103 | `backend/src/admin/accounts/admin-accounts.service.ts`<br>`backend/src/admin/accounts/queries/detail-account.query.ts`<br>`backend/src/admin/accounts/queries/list-accounts.query.ts`<br>… +100 |
-| `contact` | 72 | `backend/src/admin/contacts/admin-contact-verify.controller.ts`<br>`backend/src/analytics/advanced-analytics.service.ts`<br>`backend/src/analytics/analytics.service.ts`<br>… +69 |
-| `kloelMemory` | 41 | `backend/src/cia/cia-runtime.service.ts`<br>`backend/src/cia/cia.service.ts`<br>`backend/src/dashboard/dashboard.service.ts`<br>… +38 |
-| `product` | 40 | `backend/src/admin/accounts/queries/detail-account.query.ts`<br>`backend/src/admin/accounts/queries/list-accounts.query.ts`<br>`backend/src/admin/clients/admin-clients.service.ts`<br>… +37 |
-| `checkoutOrder` | 37 | `backend/src/admin/accounts/queries/detail-account.query.ts`<br>`backend/src/admin/accounts/queries/list-accounts.query.ts`<br>`backend/src/admin/clients/admin-clients.service.ts`<br>… +34 |
-| `message` | 33 | `backend/src/analytics/agent-performance.service.ts`<br>`backend/src/analytics/analytics.service.ts`<br>`backend/src/analytics/smart-time/smart-time.service.ts`<br>… +30 |
+| `workspace` | 130 | `backend/src/admin/accounts/admin-accounts.service.ts`<br>`backend/src/admin/accounts/queries/detail-account.query.ts`<br>`backend/src/admin/accounts/queries/list-accounts.query.ts`<br>… +127 |
+| `contact` | 98 | `backend/src/admin/contacts/admin-contact-verify.controller.ts`<br>`backend/src/analytics/advanced-analytics.service.ts`<br>`backend/src/analytics/analytics.service.ts`<br>… +95 |
+| `kloelMemory` | 52 | `backend/src/cia/cia-cognitive-health.service.ts`<br>`backend/src/cia/cia-runtime.service.ts`<br>`backend/src/cia/cia.service.ts`<br>… +49 |
+| `product` | 51 | `backend/src/admin/accounts/queries/detail-account.query.ts`<br>`backend/src/admin/accounts/queries/list-accounts.query.ts`<br>`backend/src/admin/clients/admin-clients.service.ts`<br>… +48 |
+| `message` | 47 | `backend/src/analytics/agent-performance.service.ts`<br>`backend/src/analytics/analytics.service.ts`<br>`backend/src/analytics/smart-time/smart-time.service.ts`<br>… +44 |
+| `checkoutOrder` | 38 | `backend/src/admin/accounts/queries/detail-account.query.ts`<br>`backend/src/admin/accounts/queries/list-accounts.query.ts`<br>`backend/src/admin/clients/admin-clients.service.ts`<br>… +35 |
+| `conversation` | 38 | `backend/src/admin/dashboard/admin-dashboard.service.ts`<br>`backend/src/admin/marketing/admin-marketing.service.ts`<br>`backend/src/admin/notifications/admin-notifications.service.ts`<br>… +35 |
 | `agent` | 31 | `backend/src/admin/accounts/kyc/admin-kyc.service.ts`<br>`backend/src/admin/accounts/queries/kyc-queue.query.ts`<br>`backend/src/admin/compliance/admin-compliance.service.ts`<br>… +28 |
-| `conversation` | 25 | `backend/src/admin/dashboard/admin-dashboard.service.ts`<br>`backend/src/admin/marketing/admin-marketing.service.ts`<br>`backend/src/admin/notifications/admin-notifications.service.ts`<br>… +22 |
-| `autopilotEvent` | 24 | `backend/src/autopilot/autopilot-analytics-insights.service.ts`<br>`backend/src/autopilot/autopilot-analytics-report.service.ts`<br>`backend/src/autopilot/autopilot-analytics.service.ts`<br>… +21 |
-| `flow` | 19 | `backend/src/analytics/advanced-analytics.service.ts`<br>`backend/src/analytics/analytics.service.ts`<br>`backend/src/billing/billing-subscription.service.ts`<br>… +16 |
-| `auditLog` | 18 | `backend/src/audit/audit.service.ts`<br>`backend/src/autopilot/autopilot-cycle-money.service.ts`<br>`backend/src/autopilot/autopilot.service.ts`<br>… +15 |
+| `autopilotEvent` | 27 | `backend/src/autopilot/autopilot-analytics-insights.service.ts`<br>`backend/src/autopilot/autopilot-analytics-report.service.ts`<br>`backend/src/autopilot/autopilot-analytics.service.ts`<br>… +24 |
+| `flow` | 23 | `backend/src/analytics/advanced-analytics.service.ts`<br>`backend/src/analytics/analytics.service.ts`<br>`backend/src/billing/billing-subscription.service.ts`<br>… +20 |
+| `auditLog` | 22 | `backend/src/audit/audit.service.ts`<br>`backend/src/autopilot/autopilot-cycle-money.service.ts`<br>`backend/src/autopilot/autopilot.service.ts`<br>… +19 |
+| `kloelSale` | 19 | `backend/src/admin/transactions/admin-transactions.service.ts`<br>`backend/src/analytics/advanced-analytics.service.ts`<br>`backend/src/analytics/analytics.service.ts`<br>… +16 |
 | `checkoutProductPlan` | 17 | `backend/src/admin/products/queries/detail-product.query.ts`<br>`backend/src/admin/products/queries/list-products.query.ts`<br>`backend/src/affiliate/affiliate.controller.ts`<br>… +14 |
-| `kloelSale` | 17 | `backend/src/admin/transactions/admin-transactions.service.ts`<br>`backend/src/analytics/advanced-analytics.service.ts`<br>`backend/src/analytics/analytics.service.ts`<br>… +14 |
-| `approvalRequest` | 13 | `backend/src/kloel/kloel-tool-dispatcher.service.ts`<br>`backend/src/kloel/kloel.controller.ts`<br>`backend/src/kloel/sales.controller.ts`<br>… +10 |
-| `campaign` | 12 | `backend/src/autopilot/autopilot-analytics-report.service.ts`<br>`backend/src/autopilot/autopilot-cycle-money.service.ts`<br>`backend/src/billing/plan-limits.service.ts`<br>… +9 |
-| `subscription` | 12 | `backend/src/autopilot/autopilot-cycle.service.ts`<br>`backend/src/autopilot/autopilot-ops-conversion.service.ts`<br>`backend/src/autopilot/autopilot-ops.service.ts`<br>… +9 |
+| `subscription` | 16 | `backend/src/autopilot/autopilot-cycle.service.ts`<br>`backend/src/autopilot/autopilot-ops-conversion.service.ts`<br>`backend/src/autopilot/autopilot-ops.service.ts`<br>… +13 |
+| `campaign` | 13 | `backend/src/autopilot/autopilot-analytics-report.service.ts`<br>`backend/src/autopilot/autopilot-cycle-money.service.ts`<br>`backend/src/billing/plan-limits.service.ts`<br>… +10 |
+| `approvalRequest` | 13 | `backend/src/kloel/kloel-tool-dispatcher.approval.helpers.ts`<br>`backend/src/kloel/kloel.controller.ts`<br>`backend/src/kloel/sales.controller.ts`<br>… +10 |
 | `metaConnection` | 12 | `backend/src/cia/cia.service.ts`<br>`backend/src/integrations/ads-sync-persistence.helpers.ts`<br>`backend/src/integrations/meta-conversions-api.service.ts`<br>… +9 |
 | `affiliateLink` | 11 | `backend/src/affiliate/affiliate-helpers.ts`<br>`backend/src/affiliate/affiliate.controller.ts`<br>`backend/src/checkout/checkout-code-lookup.helper.ts`<br>… +8 |
 | `memberArea` | 11 | `backend/src/checkout/checkout-post-payment-effects.service.ts`<br>`backend/src/kloel/payment.service.ts`<br>`backend/src/kloel/product-metrics.helpers.ts`<br>… +8 |
 | `adminAuditLog` | 10 | `backend/src/admin/audit/admin-audit.service.ts`<br>`backend/src/admin/compliance/admin-compliance.service.ts`<br>`backend/src/admin/notifications/admin-notifications.service.ts`<br>… +7 |
 | `connectAccountBalance` | 10 | `backend/src/checkout/checkout-payment.service.ts`<br>`backend/src/kyc/kyc.connect-onboarding.ts`<br>`backend/src/payments/connect/connect-payout-approval.service.ts`<br>… +7 |
+| `checkoutSocialLead` | 9 | `backend/src/admin/marketing/admin-marketing.service.ts`<br>`backend/src/checkout/checkout-social-lead.candidate.ts`<br>`backend/src/checkout/checkout-social-lead.service.ts`<br>… +6 |
 | `checkoutPayment` | 8 | `backend/src/admin/dashboard/queries/transactions.query.ts`<br>`backend/src/checkout/mercado-pago-webhook.controller.ts`<br>`backend/src/dashboard/dashboard.controller.ts`<br>… +5 |
+| `productPlan` | 8 | `backend/src/kloel/kloel-chat-tools.product.helpers.ts`<br>`backend/src/kloel/kloel-chat-tools.service.ts`<br>`backend/src/kloel/kloel-product-sub-resource-tools.service.ts`<br>… +5 |
 | `mailboxConnection` | 8 | `backend/src/marketing/mailbox-gmail-oauth/gmail-client.service.ts`<br>`backend/src/marketing/mailbox-gmail-oauth/oauth-handshake.service.ts`<br>`backend/src/marketing/mailbox-gmail-oauth/send.service.ts`<br>… +5 |
-| `checkoutSocialLead` | 7 | `backend/src/admin/marketing/admin-marketing.service.ts`<br>`backend/src/checkout/checkout-social-lead.candidate.ts`<br>`backend/src/checkout/checkout-social-lead.service.ts`<br>… +4 |
+| `checkoutPlanLink` | 7 | `backend/src/affiliate/affiliate.controller.ts`<br>`backend/src/checkout/checkout-code-lookup.helper.ts`<br>`backend/src/checkout/checkout-plan-link.manager.ts`<br>… +4 |
+| `flowExecution` | 7 | `backend/src/analytics/advanced-analytics.service.ts`<br>`backend/src/analytics/analytics.service.ts`<br>`backend/src/dashboard/dashboard.service.ts`<br>… +4 |
+| `kloelLead` | 7 | `backend/src/analytics/analytics.service.ts`<br>`backend/src/kloel/kloel-lead-brain.service.ts`<br>`backend/src/kloel/kloel-lead-processor-helpers.ts`<br>… +4 |
+| `kloelWallet` | 7 | `backend/src/analytics/analytics.service.ts`<br>`backend/src/dashboard/dashboard.service.ts`<br>`backend/src/kloel/kloel-chat-tools.dashboard-payments.helpers.ts`<br>… +4 |
+| `affiliatePartner` | 7 | `backend/src/auth/auth-partner.service.ts`<br>`backend/src/auth/auth-service.partner-invite.ts`<br>`backend/src/kloel/kloel-chat-tools.settings.helpers.ts`<br>… +4 |
+| `deal` | 7 | `backend/src/autopilot/autopilot-analytics-insights.service.ts`<br>`backend/src/autopilot/autopilot-analytics-report.service.ts`<br>`backend/src/crm/crm.deals.helpers.ts`<br>… +4 |
 | `chatMessage` | 7 | `backend/src/chat/chat.service.ts`<br>`backend/src/gdpr/gdpr-processing.helpers.ts`<br>`backend/src/kloel/kloel-thinker.helpers.ts`<br>… +4 |
 | `chatThread` | 7 | `backend/src/chat/chat.service.ts`<br>`backend/src/kloel/kloel-reply-engine.helpers.ts`<br>`backend/src/kloel/kloel-thinker.helpers.ts`<br>… +4 |
 | `mindPolicy` | 6 | `backend/src/admin/mind/admin-mind.service.ts`<br>`backend/src/kloel/brain-commercial-graph.service.ts`<br>`backend/src/kloel/kloel-reflexivity.service.ts`<br>… +3 |
 | `affiliateProduct` | 6 | `backend/src/affiliate/affiliate-marketplace.controller.ts`<br>`backend/src/affiliate/affiliate.controller.ts`<br>`backend/src/kloel/marketing-skills/marketing-skill.context.ts`<br>… +3 |
-| `checkoutPlanLink` | 6 | `backend/src/affiliate/affiliate.controller.ts`<br>`backend/src/checkout/checkout-code-lookup.helper.ts`<br>`backend/src/checkout/checkout-plan-link.manager.ts`<br>… +3 |
-| `kloelLead` | 6 | `backend/src/analytics/analytics.service.ts`<br>`backend/src/kloel/kloel-lead-brain.service.ts`<br>`backend/src/kloel/kloel-lead-processor-helpers.ts`<br>… +3 |
-| `kloelWallet` | 6 | `backend/src/analytics/analytics.service.ts`<br>`backend/src/dashboard/dashboard.service.ts`<br>`backend/src/kloel/kloel-chat-tools.service.ts`<br>… +3 |
-| `refreshToken` | 6 | `backend/src/auth/auth-service.password-verification.ts`<br>`backend/src/auth/auth-service.tokens.ts`<br>`backend/src/auth/auth-whatsapp-password.service.ts`<br>… +3 |
+| `webhookEvent` | 6 | `backend/src/common/ledger-reconciliation.service.ts`<br>`backend/src/marketing/email-inbound.controller.ts`<br>`backend/src/marketing/email-marketing-webhook.controller.ts`<br>… +3 |
 | `integrationCredential` | 6 | `backend/src/integrations/google-ads-enhanced-conversions.service.ts`<br>`backend/src/integrations/google-ads-oauth.helpers.ts`<br>`backend/src/integrations/google-ads.provider.ts`<br>… +3 |
+| `productCoupon` | 6 | `backend/src/kloel/coupon.service.ts`<br>`backend/src/kloel/kloel-chat-tools.product.helpers.ts`<br>`backend/src/kloel/kloel-product-sub-resource-tools.service.ts`<br>… +3 |
 | `adminSession` | 5 | `backend/src/admin/auth/admin-auth.service.ts`<br>`backend/src/admin/auth/admin-session-factory.ts`<br>`backend/src/admin/auth/guards/admin-auth.guard.ts`<br>… +2 |
 | `affiliateRequest` | 5 | `backend/src/affiliate/affiliate-helpers.ts`<br>`backend/src/affiliate/affiliate.controller.ts`<br>`backend/src/kloel/kloel-workspace-context-data.service.ts`<br>… +2 |
-| `flowExecution` | 5 | `backend/src/analytics/advanced-analytics.service.ts`<br>`backend/src/analytics/analytics.service.ts`<br>`backend/src/dashboard/dashboard.service.ts`<br>… +2 |
 | `socialAccount` | 5 | `backend/src/auth/auth-oauth-resolver.service.ts`<br>`backend/src/auth/auth-oauth.service.ts`<br>`backend/src/auth/auth-service.oauth-complete.ts`<br>… +2 |
-| `affiliatePartner` | 5 | `backend/src/auth/auth-partner.service.ts`<br>`backend/src/auth/auth-service.partner-invite.ts`<br>`backend/src/kloel/kloel-workspace-context-data.service.ts`<br>… +2 |
+| `refreshToken` | 5 | `backend/src/auth/auth-service.password-verification.ts`<br>`backend/src/auth/auth-service.tokens.ts`<br>`backend/src/auth/auth-whatsapp-password.service.ts`<br>… +2 |
 | `memberEnrollment` | 5 | `backend/src/checkout/checkout-post-payment-effects.service.ts`<br>`backend/src/dashboard/dashboard.controller.ts`<br>`backend/src/member-area/member-area-public.controller.ts`<br>… +2 |
-| `productPlan` | 5 | `backend/src/kloel/kloel-chat-tools.product.helpers.ts`<br>`backend/src/kloel/kloel-product-sub-resource-tools.service.ts`<br>`backend/src/kloel/product-sub-resources/product-plan.controller.ts`<br>… +2 |
-| `productCoupon` | 5 | `backend/src/kloel/kloel-chat-tools.product.helpers.ts`<br>`backend/src/kloel/kloel-product-sub-resource-tools.service.ts`<br>`backend/src/kloel/product-coupon-sync.util.ts`<br>… +2 |
+| `channelConfig` | 5 | `backend/src/kloel/channel-setup.service.ts`<br>`backend/src/kloel/channel-transport.providers.ts`<br>`backend/src/kloel/daily-limit.service.ts`<br>… +2 |
+| `decisionOutcome` | 5 | `backend/src/kloel/commercial-decision-orchestrator/gating.ts`<br>`backend/src/kloel/decision-outcome.service.ts`<br>`worker/processors/decision-outcome-resolver.ts`<br>… +2 |
 | `adminUser` | 4 | `backend/src/admin/auth/admin-auth.service.ts`<br>`backend/src/admin/auth/guards/admin-auth.guard.ts`<br>`backend/src/admin/seed/admin-seed.service.ts`<br>… +1 |
 | `webhookSubscription` | 4 | `backend/src/admin/config/admin-config.service.ts`<br>`backend/src/webhooks/webhook-dispatcher.service.ts`<br>`backend/src/webhooks/webhook-settings.controller.ts`<br>… +1 |
+| `pipelineState` | 4 | `backend/src/admin/pipeline/pipeline.service.ts`<br>`backend/src/cia/cia.service.ts`<br>`backend/src/kloel/commercial-decision-orchestrator/gating.ts`<br>… +1 |
 | `productReview` | 4 | `backend/src/affiliate/affiliate-helpers.ts`<br>`backend/src/kloel/kloel-chat-tools.product.helpers.ts`<br>`backend/src/kloel/product-sub-resources/product-review.controller.ts`<br>… +1 |
 | `adAccount` | 4 | `backend/src/anuncios/anuncios.service.ts`<br>`backend/src/integrations/ads-sync-persistence.helpers.ts`<br>`backend/src/integrations/google-ads.provider.ts`<br>… +1 |
-| `deal` | 4 | `backend/src/autopilot/autopilot-analytics-insights.service.ts`<br>`backend/src/autopilot/autopilot-analytics-report.service.ts`<br>`backend/src/crm/crm.service.ts`<br>… +1 |
 | `checkoutCoupon` | 4 | `backend/src/checkout/checkout-catalog.helpers.ts`<br>`backend/src/checkout/checkout-catalog.service.ts`<br>`backend/src/checkout/checkout-order-payment.helpers.ts`<br>… +1 |
 | `integration` | 4 | `backend/src/cia/cia.service.ts`<br>`backend/src/kloel/kloel-workspace-context-data.service.ts`<br>`backend/src/kloel/kloel-workspace-context.helpers.ts`<br>… +1 |
+| `pipeline` | 4 | `backend/src/crm/crm.deals.helpers.ts`<br>`backend/src/pipeline/pipeline.service.ts`<br>`worker/providers/tools-registry.ts`<br>… +1 |
+| `stage` | 4 | `backend/src/crm/crm.deals.helpers.ts`<br>`backend/src/pipeline/pipeline.service.ts`<br>`worker/providers/tools-registry.ts`<br>… +1 |
 | `mindOutboxEvent` | 4 | `backend/src/kloel/agent-runtime/agent-runtime.job-runner.ts`<br>`backend/src/kloel/agent-runtime/agent-runtime.scheduler.ts`<br>`backend/src/kloel/brain-event-spine.service.ts`<br>… +1 |
-| `channelConfig` | 4 | `backend/src/kloel/channel-setup.service.ts`<br>`backend/src/kloel/channel-transport.providers.ts`<br>`backend/src/kloel/daily-limit.service.ts`<br>… +1 |
+| `mindBelief` | 4 | `backend/src/kloel/brain-commercial-graph.service.ts`<br>`backend/src/kloel/mind-belief.service.ts`<br>`backend/src/kloel/mind-event-processor.service.ts`<br>… +1 |
+| `productUrl` | 4 | `backend/src/kloel/kloel-chat-tools.product.helpers.ts`<br>`backend/src/kloel/kloel-product-sub-resource-tools.service.ts`<br>`backend/src/kloel/product-sub-resources/product-url.controller.ts`<br>… +1 |
+| `payment` | 4 | `backend/src/kloel/kloel-workspace-context-data.service.ts`<br>`backend/src/payments/mercadopago/mercadopago-webhook.controller.ts`<br>`backend/src/webhooks/payment-webhook-generic.helpers.ts`<br>… +1 |
+| `mindBanditArm` | 4 | `backend/src/kloel/mind-bandit.service.ts`<br>`backend/src/kloel/mind-global-prior.service.ts`<br>`backend/src/kloel/mind-observability.service.ts`<br>… +1 |
 | `apiKey` | 3 | `backend/src/admin/config/admin-config.service.ts`<br>`backend/src/api-keys/api-keys.service.ts`<br>`backend/src/whatsapp/account-agent.capability-gaps.ts` |
 | `mindPrediction` | 3 | `backend/src/admin/mind/admin-mind.service.ts`<br>`backend/src/kloel/mind-observability.service.ts`<br>`backend/src/kloel/mind-predictor.service.ts` |
-| `pipelineState` | 3 | `backend/src/admin/pipeline/pipeline.service.ts`<br>`backend/src/kloel/commercial-decision-orchestrator/gating.ts`<br>`backend/src/kloel/commercial-decision-orchestrator/telemetry.ts` |
+| `knowledgeSource` | 3 | `backend/src/ai-brain/knowledge-base.service.ts`<br>`worker/processors/memory-processor.ts`<br>`worker/providers/semantic-memory.ts` |
 | `checkoutConfig` | 3 | `backend/src/checkout/checkout-catalog.operations.ts`<br>`backend/src/checkout/checkout-product.service.ts`<br>`backend/src/checkout/checkout.service.ts` |
 | `checkoutPixel` | 3 | `backend/src/checkout/checkout-catalog.operations.ts`<br>`backend/src/checkout/checkout-catalog.service.ts`<br>`backend/src/checkout/checkout.service.ts` |
 | `upsell` | 3 | `backend/src/checkout/checkout-catalog.service.ts`<br>`backend/src/checkout/checkout-order-query.service.ts`<br>`backend/src/checkout/checkout.controller.ts` |
+| `systemInsight` | 3 | `backend/src/cia/cia-runtime.service.ts`<br>`worker/providers/commercial-intelligence.persistence.ts`<br>`worker/test/scan-contact.setup.ts` |
 | `gdprRequest` | 3 | `backend/src/gdpr/gdpr-facebook-callback.service.ts`<br>`backend/src/gdpr/gdpr-processing.helpers.ts`<br>`backend/src/gdpr/gdpr.service.ts` |
-| `mindBelief` | 3 | `backend/src/kloel/brain-commercial-graph.service.ts`<br>`backend/src/kloel/mind-belief.service.ts`<br>`backend/src/kloel/mind-observability.service.ts` |
+| `fiscalData` | 3 | `backend/src/kloel/account.service.ts`<br>`backend/src/kyc/kyc.connect-onboarding.ts`<br>`backend/src/kyc/kyc.service.ts` |
+| `productCheckout` | 3 | `backend/src/kloel/checkout.service.ts`<br>`backend/src/kloel/kloel-product-sub-resource-tools.service.ts`<br>`backend/src/kloel/product-sub-resources/product-checkout.controller.ts` |
+| `decisionOutcomeEvent` | 3 | `backend/src/kloel/decision-outcome.service.ts`<br>`worker/processors/decision-outcome-resolver.ts`<br>`worker/processors/silent-24h-resolver.processor.ts` |
+| `productCommission` | 3 | `backend/src/kloel/kloel-business-config-tools.service.ts`<br>`backend/src/kloel/product-sub-resources/helpers/affiliate.helpers.ts`<br>`backend/src/kloel/product-sub-resources/product-commission.controller.ts` |
+| `kloelGlobalPrior` | 3 | `backend/src/kloel/kloel-global-prior.service.ts`<br>`worker/processors/decision-outcome-resolver.ts`<br>`worker/processors/silent-24h-resolver.processor.ts` |
 | `agentWorkItem` | 3 | `backend/src/kloel/kloel-reflexivity.service.ts`<br>`backend/src/whatsapp/account-agent.work-item-upsert.ts`<br>`backend/src/whatsapp/account-agent.work-items.ts` |
 | `customerSubscription` | 3 | `backend/src/kloel/kloel-workspace-context-data.service.ts`<br>`backend/src/kloel/sales-subscriptions.controller.ts`<br>`backend/src/reports/reports.service.ts` |
 | `physicalOrder` | 3 | `backend/src/kloel/kloel-workspace-context-data.service.ts`<br>`backend/src/kloel/order-alerts.service.ts`<br>`backend/src/kloel/sales-orders.controller.ts` |
-| `payment` | 3 | `backend/src/kloel/kloel-workspace-context-data.service.ts`<br>`backend/src/webhooks/payment-webhook-generic.helpers.ts`<br>`backend/src/webhooks/payment-webhook-stripe.handlers2.helpers.ts` |
 | `kloelSite` | 3 | `backend/src/kloel/marketing-skills/marketing-skill.context.ts`<br>`backend/src/kloel/site-public.controller.ts`<br>`backend/src/kloel/site.controller.ts` |
-| `mindBanditArm` | 3 | `backend/src/kloel/mind-bandit.service.ts`<br>`backend/src/kloel/mind-global-prior.service.ts`<br>`backend/src/kloel/mind-observability.service.ts` |
 | `mindConceptDetection` | 3 | `backend/src/kloel/mind-concepts.service.ts`<br>`backend/src/kloel/mind-observability.service.ts`<br>`backend/src/kloel/mind-report.service.ts` |
 | `mindWorkspaceState` | 3 | `backend/src/kloel/mind-observability.service.ts`<br>`backend/src/kloel/mind-report.service.ts`<br>`backend/src/kloel/mind-workspace-state.service.ts` |
 | `productAIConfig` | 3 | `backend/src/kloel/product-sub-resources/product-ai-config.controller.ts`<br>`backend/src/kloel/unified-agent-actions-billing.helpers.ts`<br>`backend/src/kloel/unified-agent.service.ts` |
 | `bankAccount` | 3 | `backend/src/kloel/wallet.controller.ts`<br>`backend/src/kyc/kyc.connect-onboarding.ts`<br>`backend/src/kyc/kyc.service.ts` |
+| `kloelWalletTransaction` | 3 | `backend/src/kloel/wallet.controller.ts`<br>`backend/src/kloel/wallet.read.helpers.ts`<br>`backend/src/kloel/wallet.service.ts` |
 | `marketplaceTreasuryLedger` | 3 | `backend/src/marketplace-treasury/marketplace-treasury-maturation.service.ts`<br>`backend/src/marketplace-treasury/marketplace-treasury-reconcile.service.ts`<br>`backend/src/marketplace-treasury/marketplace-treasury.service.ts` |
+| `mediaJob` | 3 | `backend/src/media/media.service.ts`<br>`backend/src/video/video.service.ts`<br>`worker/media-processor.ts` |
 | `memberModule` | 3 | `backend/src/member-area/member-area-stats.service.ts`<br>`backend/src/member-area/member-modules.controller.ts`<br>`backend/src/member-area/member-structure.controller.ts` |
 | `memberLesson` | 3 | `backend/src/member-area/member-area-stats.service.ts`<br>`backend/src/member-area/member-enrollments.controller.ts`<br>`backend/src/member-area/member-modules.controller.ts` |
 | `connectLedgerEntry` | 3 | `backend/src/payments/connect/connect.controller.ts`<br>`backend/src/payments/ledger/connect-ledger-maturation.service.ts`<br>`backend/src/payments/ledger/connect-ledger-reconciliation.service.ts` |
+| `voiceProfile` | 3 | `backend/src/voice/voice.service.ts`<br>`worker/processors/autopilot/cycle-audio.ts`<br>`worker/voice-processor.ts` |
+| `voiceJob` | 3 | `backend/src/voice/voice.service.ts`<br>`worker/flow-node-executor.interactions.ts`<br>`worker/voice-processor.ts` |
 | `inputCollectionSession` | 3 | `backend/src/whatsapp/account-agent.input-session.ts`<br>`backend/src/whatsapp/account-agent.service.ts`<br>`backend/src/whatsapp/account-agent.work-items.ts` |
 | `kycDocument` | 2 | `backend/src/admin/accounts/kyc/admin-kyc.service.ts`<br>`backend/src/kyc/kyc.service.ts` |
 | `adminLoginAttempt` | 2 | `backend/src/admin/auth/admin-login-attempts.service.ts`<br>`backend/src/admin/notifications/admin-notifications.service.ts` |
 | `adminChatSession` | 2 | `backend/src/admin/chat/admin-chat-session.service.ts`<br>`backend/src/admin/chat/admin-chat.service.ts` |
 | `decisionShadow` | 2 | `backend/src/admin/pipeline/pipeline.service.ts`<br>`backend/src/kloel/commercial-decision-orchestrator/telemetry.ts` |
+| `knowledgeBase` | 2 | `backend/src/ai-brain/knowledge-base.service.ts`<br>`worker/providers/semantic-memory.ts` |
+| `vector` | 2 | `backend/src/ai-brain/knowledge-base.service.ts`<br>`worker/processors/memory-processor.ts` |
 | `queue` | 2 | `backend/src/analytics/queue-stats.service.ts`<br>`backend/src/inbox/smart-routing.service.ts` |
 | `adCampaign` | 2 | `backend/src/anuncios/anuncios.service.ts`<br>`backend/src/integrations/ads-sync-persistence.helpers.ts` |
 | `magicLinkToken` | 2 | `backend/src/auth/auth-service.magic-link.ts`<br>`backend/src/auth/auth-verification.service.ts` |
@@ -90,10 +108,10 @@ Total models referenced: 170.
 | `invoice` | 2 | `backend/src/autopilot/autopilot-analytics-report.service.ts`<br>`backend/src/kloel/kloel-workspace-context-data.service.ts` |
 | `orderBump` | 2 | `backend/src/checkout/checkout-catalog.service.ts`<br>`backend/src/checkout/checkout.controller.ts` |
 | `marketplaceFee` | 2 | `backend/src/checkout/checkout-order-support.ts`<br>`backend/src/checkout/checkout-product-config.service.ts` |
-| `webhookEvent` | 2 | `backend/src/common/ledger-reconciliation.service.ts`<br>`backend/src/webhooks/webhooks.service.ts` |
+| `autonomyRun` | 2 | `backend/src/cia/cia-runtime-state.service.ts`<br>`worker/providers/agent-events.ts` |
+| `autonomyExecution` | 2 | `backend/src/cia/cia-runtime-state.service.ts`<br>`worker/test/scan-contact.setup.ts` |
 | `channelIdentifier` | 2 | `backend/src/contacts/channel-identifier.service.ts`<br>`backend/src/contacts/contact-identity-resolver.service.ts` |
-| `pipeline` | 2 | `backend/src/crm/crm.service.ts`<br>`backend/src/pipeline/pipeline.service.ts` |
-| `stage` | 2 | `backend/src/crm/crm.service.ts`<br>`backend/src/pipeline/pipeline.service.ts` |
+| `tag` | 2 | `backend/src/crm/crm.service.ts`<br>`worker/providers/crm.ts` |
 | `flowVersion` | 2 | `backend/src/flows/flow-optimizer.service.ts`<br>`backend/src/flows/flows.service.ts` |
 | `flowTemplate` | 2 | `backend/src/flows/flow-template.service.ts`<br>`backend/src/marketplace/marketplace.service.ts` |
 | `followUp` | 2 | `backend/src/followup/followup.service.ts`<br>`backend/src/kloel/unified-agent-actions-crm.service.ts` |
@@ -102,37 +120,26 @@ Total models referenced: 170.
 | `channelSetup` | 2 | `backend/src/kloel/channel-setup.service.ts`<br>`backend/src/marketing/marketing-connect/channel-setup.service.ts` |
 | `kloelMessage` | 2 | `backend/src/kloel/kloel-conversation-store.ts`<br>`backend/src/kloel/kloel.service.ts` |
 | `kloelConversation` | 2 | `backend/src/kloel/kloel-lead-brain.service.ts`<br>`backend/src/kloel/kloel-lead-processor-helpers.ts` |
-| `productCheckout` | 2 | `backend/src/kloel/kloel-product-sub-resource-tools.service.ts`<br>`backend/src/kloel/product-sub-resources/product-checkout.controller.ts` |
 | `mindDailyReport` | 2 | `backend/src/kloel/kloel-reflexivity.service.ts`<br>`backend/src/kloel/mind-report.service.ts` |
 | `externalPaymentLink` | 2 | `backend/src/kloel/kloel-workspace-context-data.service.ts`<br>`backend/src/whatsapp/account-agent.product-materializer.ts` |
 | `persona` | 2 | `backend/src/kloel/kloel-workspace-context.service.ts`<br>`backend/src/kloel/kloel.service.lists.helpers.ts` |
 | `mindCase` | 2 | `backend/src/kloel/mind-case-memory.service.ts`<br>`backend/src/kloel/mind-observability.service.ts` |
 | `mindGuardAudit` | 2 | `backend/src/kloel/mind-guards.service.ts`<br>`backend/src/kloel/mind-observability.service.ts` |
-| `productCommission` | 2 | `backend/src/kloel/product-sub-resources/helpers/affiliate.helpers.ts`<br>`backend/src/kloel/product-sub-resources/product-commission.controller.ts` |
-| `productUrl` | 2 | `backend/src/kloel/product-sub-resources/product-url.controller.ts`<br>`backend/src/kloel/unified-agent-actions-billing.helpers.ts` |
 | `document` | 2 | `backend/src/kloel/unified-agent-actions.service.ts`<br>`backend/src/media/media.service.ts` |
-| `kloelWalletTransaction` | 2 | `backend/src/kloel/wallet.controller.ts`<br>`backend/src/kloel/wallet.service.ts` |
-| `fiscalData` | 2 | `backend/src/kyc/kyc.connect-onboarding.ts`<br>`backend/src/kyc/kyc.service.ts` |
 | `marketplaceTreasury` | 2 | `backend/src/marketplace-treasury/marketplace-treasury-reconcile.service.ts`<br>`backend/src/marketplace-treasury/marketplace-treasury.service.ts` |
-| `mediaJob` | 2 | `backend/src/media/media.service.ts`<br>`backend/src/video/video.service.ts` |
+| `scrapingJob` | 2 | `backend/src/scrapers/scrapers.service.ts`<br>`worker/scraper-processor.ts` |
+| `scrapedLead` | 2 | `backend/src/scrapers/scrapers.service.ts`<br>`worker/scraper-processor.ts` |
 | `prepaidWallet` | 2 | `backend/src/wallet/prepaid-wallet.controller.ts`<br>`backend/src/wallet/wallet.service.ts` |
 | `adminChatMessage` | 1 | `backend/src/admin/chat/admin-chat.service.ts` |
 | `destructiveIntent` | 1 | `backend/src/admin/destructive/destructive-intent.service.ts` |
 | `adminPermission` | 1 | `backend/src/admin/permissions/admin-permissions.service.ts` |
-| `knowledgeBase` | 1 | `backend/src/ai-brain/knowledge-base.service.ts` |
-| `knowledgeSource` | 1 | `backend/src/ai-brain/knowledge-base.service.ts` |
-| `vector` | 1 | `backend/src/ai-brain/knowledge-base.service.ts` |
 | `dailyMessageCounter` | 1 | `backend/src/billing/plan-limits.service.ts` |
 | `upsellOrder` | 1 | `backend/src/checkout/checkout-order-query.service.ts` |
-| `autonomyRun` | 1 | `backend/src/cia/cia-runtime-state.service.ts` |
-| `autonomyExecution` | 1 | `backend/src/cia/cia-runtime-state.service.ts` |
-| `systemInsight` | 1 | `backend/src/cia/cia-runtime.service.ts` |
 | `accountProofSnapshot` | 1 | `backend/src/cia/cia.service.ts` |
 | `conversationProofSnapshot` | 1 | `backend/src/cia/cia.service.ts` |
 | `dataDeletionRequest` | 1 | `backend/src/compliance/compliance.service.ts` |
 | `contactIdentityLink` | 1 | `backend/src/contacts/contact-identity-merge.service.ts` |
 | `cookieConsent` | 1 | `backend/src/cookie-consent/cookie-consent.service.ts` |
-| `tag` | 1 | `backend/src/crm/crm.service.ts` |
 | `contactInsight` | 1 | `backend/src/crm/neuro-crm.service.ts` |
 | `variable` | 1 | `backend/src/flows/flows.service.ts` |
 | `agentQueue` | 1 | `backend/src/inbox/smart-routing.service.ts` |
@@ -143,9 +150,6 @@ Total models referenced: 170.
 | `channelProduct` | 1 | `backend/src/kloel/channel-setup.service.ts` |
 | `channelArsenal` | 1 | `backend/src/kloel/channel-setup.service.ts` |
 | `dailyLimitCounter` | 1 | `backend/src/kloel/daily-limit.service.ts` |
-| `decisionOutcome` | 1 | `backend/src/kloel/decision-outcome.service.ts` |
-| `decisionOutcomeEvent` | 1 | `backend/src/kloel/decision-outcome.service.ts` |
-| `kloelGlobalPrior` | 1 | `backend/src/kloel/kloel-global-prior.service.ts` |
 | `lineageEntry` | 1 | `backend/src/kloel/lineage/lineage-ledger.prisma-repository.ts` |
 | `mindGlobalPrior` | 1 | `backend/src/kloel/mind-global-prior.service.ts` |
 | `orderAlert` | 1 | `backend/src/kloel/order-alerts.service.ts` |
@@ -161,15 +165,11 @@ Total models referenced: 170.
 | `igPost` | 1 | `backend/src/marketing/instagram/instagram-marketing.service.ts` |
 | `igInsight` | 1 | `backend/src/marketing/instagram/instagram-marketing.service.ts` |
 | `deviceToken` | 1 | `backend/src/notifications/notifications.service.ts` |
+| `partnerMessage` | 1 | `backend/src/partnerships/partnerships.chat.helpers.ts` |
 | `collaboratorInvite` | 1 | `backend/src/partnerships/partnerships.service.ts` |
-| `partnerMessage` | 1 | `backend/src/partnerships/partnerships.service.ts` |
 | `fraudBlacklist` | 1 | `backend/src/payments/fraud/fraud.engine.ts` |
 | `adSpend` | 1 | `backend/src/reports/reports.service.ts` |
-| `scrapingJob` | 1 | `backend/src/scrapers/scrapers.service.ts` |
-| `scrapedLead` | 1 | `backend/src/scrapers/scrapers.service.ts` |
 | `invitation` | 1 | `backend/src/team/team.service.ts` |
-| `voiceProfile` | 1 | `backend/src/voice/voice.service.ts` |
-| `voiceJob` | 1 | `backend/src/voice/voice.service.ts` |
 | `prepaidWalletTransaction` | 1 | `backend/src/wallet/prepaid-wallet.controller.ts` |
 | `usagePrice` | 1 | `backend/src/wallet/wallet.service.ts` |
 | `connectMaturationRule` | 1 | `backend/src/webhooks/stripe-webhook-ledger.service.ts` |
