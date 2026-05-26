@@ -10,6 +10,7 @@ describe('MindEventProcessorService', () => {
   };
   const policy = {
     resolveOpenForSubject: jest.fn(),
+    confirmAutopilotOutcome: jest.fn(),
   };
   const cases = {
     recordCase: jest.fn(),
@@ -26,6 +27,7 @@ describe('MindEventProcessorService', () => {
     predictor.predictReply.mockResolvedValue({});
     surprise.resolveBinary.mockResolvedValue(0);
     policy.resolveOpenForSubject.mockResolvedValue(1);
+    policy.confirmAutopilotOutcome.mockResolvedValue({ confirmed: 0, unanswered: 0 });
     cases.recordCase.mockResolvedValue(undefined);
     concepts.detect.mockResolvedValue(undefined);
     service = new MindEventProcessorService(
@@ -190,6 +192,49 @@ describe('MindEventProcessorService', () => {
       subject: 'workspace:ws-1',
       decisionType: 'broadcast_window',
       outcome: 1,
+    });
+  });
+
+  describe('message.received autopilot outcome resolution', () => {
+    it('confirms autopilot actions for inbound messages from the same contact', async () => {
+      await service.process({
+        kind: 'message.received',
+        workspaceId: 'ws-1',
+        subject: 'contact:lead-1',
+        payload: { channel: 'instagram', content: 'quero comprar' },
+        occurredAt: new Date('2026-05-09T12:00:00.000Z'),
+      });
+
+      expect(policy.confirmAutopilotOutcome).toHaveBeenCalledWith({
+        workspaceId: 'ws-1',
+        contactId: 'lead-1',
+      });
+    });
+
+    it('does not confirm autopilot actions for non-contact inbound subjects', async () => {
+      await service.process({
+        kind: 'message.received',
+        workspaceId: 'ws-1',
+        subject: 'workspace:ws-1',
+        payload: { channel: 'whatsapp', content: 'hello' },
+        occurredAt: new Date('2026-05-09T12:00:00.000Z'),
+      });
+
+      expect(policy.confirmAutopilotOutcome).not.toHaveBeenCalled();
+    });
+
+    it('adds confirmed and unanswered autopilot outcomes to resolved count', async () => {
+      policy.confirmAutopilotOutcome.mockResolvedValue({ confirmed: 2, unanswered: 1 });
+
+      const result = await service.process({
+        kind: 'message.received',
+        workspaceId: 'ws-1',
+        subject: 'contact:lead-1',
+        payload: { channel: 'instagram', content: 'ok' },
+        occurredAt: new Date('2026-05-09T12:00:00.000Z'),
+      });
+
+      expect(result.resolved).toBe(8);
     });
   });
 

@@ -312,6 +312,72 @@ export class MindPolicyService {
     return rows.length;
   }
 
+  async confirmAutopilotOutcome(input: {
+    workspaceId: string;
+    contactId: string;
+    windowMinutes?: number;
+  }): Promise<{ confirmed: number; unanswered: number }> {
+    const windowMinutes = input.windowMinutes ?? 30;
+    const windowCutoff = new Date(Date.now() - windowMinutes * 60 * 1000);
+
+    const rows = await this.prisma.mindPolicy.findMany({
+      where: {
+        workspaceId: input.workspaceId,
+        subject: `contact:${input.contactId}`,
+        decisionType: 'autopilot_action',
+        outcome: 1,
+        resolvedAt: { not: null },
+      },
+      select: {
+        id: true,
+        context: true,
+        resolvedAt: true,
+      },
+    });
+
+    let confirmed = 0;
+    let unanswered = 0;
+
+    for (const row of rows) {
+      const context =
+        row.context && typeof row.context === 'object' && !Array.isArray(row.context)
+          ? (row.context as Record<string, unknown>)
+          : {};
+      if (context.outcomeConfidence !== undefined && context.outcomeConfidence !== null) {
+        continue;
+      }
+
+      const isWithinWindow = row.resolvedAt !== null && row.resolvedAt >= windowCutoff;
+      const outcomeConfidence = isWithinWindow ? 'confirmed' : 'unanswered';
+
+      await this.prisma.mindPolicy.update({
+        where: { id: row.id },
+        data: {
+          context: { ...context, outcomeConfidence } as Prisma.InputJsonValue,
+        },
+      });
+
+      if (isWithinWindow) {
+        confirmed += 1;
+      } else {
+        unanswered += 1;
+      }
+    }
+
+    if (confirmed > 0 || unanswered > 0) {
+      this.logger.debug?.({
+        operation: 'mind_policy.confirmAutopilotOutcome',
+        workspaceId: input.workspaceId,
+        contactId: input.contactId,
+        windowMinutes,
+        confirmed,
+        unanswered,
+      });
+    }
+
+    return { confirmed, unanswered };
+  }
+
   async harness(
     workspaceId: string,
     decisionType: string,

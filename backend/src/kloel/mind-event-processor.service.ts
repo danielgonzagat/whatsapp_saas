@@ -131,6 +131,13 @@ export class MindEventProcessorService {
         ['audio_vs_text', 'message_format', 'tom', 'channel_choice'],
         1,
       );
+
+      const contactId = event.subject.slice('contact:'.length);
+      const confirmation = await this.policy.confirmAutopilotOutcome({
+        workspaceId: event.workspaceId,
+        contactId,
+      });
+      result.resolved += confirmation.confirmed + confirmation.unanswered;
     }
   }
 
