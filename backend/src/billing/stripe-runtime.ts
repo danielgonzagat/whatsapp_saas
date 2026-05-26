@@ -44,28 +44,44 @@ function resolveStripeConstructor(): typeof import('stripe') {
   }
 
   // Validate each candidate by instantiating a probe and checking that
-  // the instance has the expected Stripe resource namespaces.
+  // the instance exposes the resource methods the service actually calls
+  // (.customers.create/.retrieve, .paymentMethods.list/.attach/.detach/.retrieve,
+  // .checkout.sessions.create). A shape with .customers as an object but
+  // .customers.create undefined is the exact failure mode that produced
+  // Sentry NODE-S — checking only the namespace let it through.
   const failures: string[] = [];
+  const requiredMethods: Array<[string, string]> = [
+    ['customers', 'create'],
+    ['customers', 'retrieve'],
+    ['paymentMethods', 'list'],
+    ['paymentMethods', 'attach'],
+  ];
   for (const { fn, source } of candidates) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const Ctor = fn as unknown as new (...args: any[]) => unknown;
       const probe: unknown = new Ctor('sk_test_stripe_runtime_probe');
-      // A valid Stripe instance MUST have .customers as a non-null object.
-      if (
-        probe &&
-        typeof probe === 'object' &&
-        'customers' in probe &&
-        typeof (probe as Record<string, unknown>).customers === 'object' &&
-        (probe as Record<string, unknown>).customers !== null
-      ) {
+      if (!probe || typeof probe !== 'object') {
+        failures.push(`${source}: probe is ${typeof probe}`);
+        continue;
+      }
+      const probeObj = probe as Record<string, unknown>;
+      const missing: string[] = [];
+      for (const [namespace, method] of requiredMethods) {
+        const ns = probeObj[namespace];
+        if (!ns || typeof ns !== 'object') {
+          missing.push(`.${namespace} (${typeof ns})`);
+          continue;
+        }
+        const fnRef = (ns as Record<string, unknown>)[method];
+        if (typeof fnRef !== 'function') {
+          missing.push(`.${namespace}.${method} (${typeof fnRef})`);
+        }
+      }
+      if (missing.length === 0) {
         return fn as typeof import('stripe');
       }
-      failures.push(
-        `${source}: instance missing .customers (keys: ${
-          probe && typeof probe === 'object' ? Object.keys(probe).slice(0, 6).join(',') : 'n/a'
-        })`,
-      );
+      failures.push(`${source}: missing ${missing.join(', ')}`);
     } catch (err: unknown) {
       failures.push(`${source}: constructor threw — ${String(err)}`);
     }
