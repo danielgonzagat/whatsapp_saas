@@ -16,6 +16,7 @@ import { CouponService } from './coupon.service';
 import { CheckoutService } from './checkout.service';
 import { PlanService } from './plan.service';
 import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service';
+import { SmartPaymentService } from './smart-payment.service';
 import { sanitizeDetails } from './kloel-tool-dispatcher.high-risk.helpers';
 import {
   runRequestHighRiskApproval,
@@ -51,6 +52,7 @@ export class KloelToolDispatcherService {
     @Optional() private readonly planService?: PlanService,
     @Optional() private readonly productSubTools?: KloelProductSubResourceToolsService,
     @Optional() private readonly walletSalesTools?: KloelWalletSalesToolsService,
+    @Optional() private readonly smartPaymentService?: SmartPaymentService,
 
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
@@ -174,6 +176,11 @@ export class KloelToolDispatcherService {
             return await this.walletSalesTools.executeTool(toolName, workspaceId, asToolArgs(args));
           }
           return { success: false, error: 'wallet_sales_tools_not_available' };
+        case 'sales.list':
+          if (this.walletSalesTools) {
+            return await this.walletSalesTools.executeTool('list_orders', workspaceId, asToolArgs(args));
+          }
+          return { success: false, error: 'wallet_sales_tools_not_available' };
         case 'toggle_theme':
           return await this.chatToolsService.toolToggleTheme(workspaceId, asToolArgs(args));
         case 'coupon_create':
@@ -227,6 +234,54 @@ export class KloelToolDispatcherService {
             return await this.productSubTools.executeTool(toolName, workspaceId, asToolArgs(args));
           }
           return { success: false, error: 'product_sub_resource_tools_not_available' };
+        case 'sales.create_pix': {
+          if (!this.smartPaymentService) {
+            return { success: false, error: 'smart_payment_service_unavailable' };
+          }
+          const pixResult = await this.smartPaymentService.createSmartPayment({
+            workspaceId,
+            phone: String(args.customerPhone || ''),
+            customerName: String(args.customerName || ''),
+            ...(typeof args.productName === 'string' ? { productName: args.productName } : {}),
+            amount: Number(args.amount) || 0,
+          });
+          return {
+            success: true,
+            capabilityId: 'sales.create_pix',
+            outputs: {
+              paymentId: pixResult.paymentId,
+              paymentUrl: pixResult.paymentUrl,
+              pixCopiaECola: pixResult.pixCopyPaste,
+              qrCodeBase64: pixResult.pixQrCode,
+              billingType: pixResult.billingType,
+            },
+            evidenceUrl: `/vendas/${pixResult.paymentId}`,
+            message: pixResult.suggestedMessage || `PIX gerado: ${pixResult.paymentId}`,
+          };
+        }
+        case 'sales.create_boleto': {
+          if (!this.smartPaymentService) {
+            return { success: false, error: 'smart_payment_service_unavailable' };
+          }
+          const boletoResult = await this.smartPaymentService.createSmartPayment({
+            workspaceId,
+            phone: String(args.customerPhone || ''),
+            customerName: String(args.customerName || ''),
+            ...(typeof args.productName === 'string' ? { productName: args.productName } : {}),
+            amount: Number(args.amount) || 0,
+          });
+          return {
+            success: true,
+            capabilityId: 'sales.create_boleto',
+            outputs: {
+              paymentId: boletoResult.paymentId,
+              paymentUrl: boletoResult.paymentUrl,
+              billingType: boletoResult.billingType,
+            },
+            evidenceUrl: `/vendas/${boletoResult.paymentId}`,
+            message: `Boleto gerado: ${boletoResult.paymentId}`,
+          };
+        }
         case 'delete_product':
           return await this.chatToolsService.toolDeleteProduct(workspaceId, asToolArgs(args));
         case 'get_settings':
