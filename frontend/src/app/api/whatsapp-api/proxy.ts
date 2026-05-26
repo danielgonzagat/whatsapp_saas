@@ -3,7 +3,8 @@ import type { NextRequest } from 'next/server';
 import { getBackendCandidateUrls } from '../_lib/backend-url';
 import {
   bearerFromHeaderOrCookie,
-  readCookieValue as readCookieValueShared,
+  isAuthRedirectLike,
+  resolveWorkspaceHeader,
 } from '../_lib/bearer-from-request';
 
 interface ProxyRequestError extends Error {
@@ -16,34 +17,12 @@ function createProxyRequestError(message: string, status = 502): ProxyRequestErr
   return error;
 }
 
-function isAuthRedirectLike(value: string) {
-  const normalized = String(value || '').toLowerCase();
-  return (
-    normalized.includes('auth.kloel.com/login') ||
-    normalized.includes('forceauth=1') ||
-    normalized.includes('<html') ||
-    normalized.includes('<!doctype html')
-  );
-}
-
-function readCookieValue(request: NextRequest, name: string) {
-  return readCookieValueShared(request, name) || '';
-}
-
 const WHATSAPP_ACCESS_COOKIES = ['kloel_access_token', 'kloel_token'];
 
 function resolveAuthorizationHeader(request: NextRequest): string | null {
   return (
     request.headers.get('authorization') ||
     bearerFromHeaderOrCookie(request, 'x-kloel-access-token', WHATSAPP_ACCESS_COOKIES)
-  );
-}
-
-function resolveWorkspaceHeader(request: NextRequest): string {
-  return (
-    request.headers.get('x-workspace-id') ||
-    request.headers.get('x-kloel-workspace-id') ||
-    readCookieValue(request, 'kloel_workspace_id')
   );
 }
 

@@ -47,3 +47,32 @@ export function bearerFromHeaderOrCookie(
   }
   return firstCookieBearer(request, cookieNames);
 }
+
+/**
+ * Detects backend responses that smell like an auth-redirect HTML page rather
+ * than the expected JSON payload. Used by api route proxies to short-circuit
+ * 200-with-html replies that would otherwise look like success.
+ */
+export function isAuthRedirectLike(value: string): boolean {
+  const normalized = String(value || '').toLowerCase();
+  return (
+    normalized.includes('auth.kloel.com/login') ||
+    normalized.includes('forceauth=1') ||
+    normalized.includes('<html') ||
+    normalized.includes('<!doctype html')
+  );
+}
+
+/**
+ * Resolves the active workspace id from request headers (preferred) or the
+ * `kloel_workspace_id` cookie. Returns `''` when none match — callers decide
+ * how to handle the missing-workspace case.
+ */
+export function resolveWorkspaceHeader(request: NextRequest): string {
+  return (
+    request.headers.get('x-workspace-id') ||
+    request.headers.get('x-kloel-workspace-id') ||
+    readCookieValue(request, 'kloel_workspace_id') ||
+    ''
+  );
+}

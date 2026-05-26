@@ -4,22 +4,9 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { getBackendCandidateUrls } from '../../_lib/backend-url';
 import {
   bearerFromHeaderOrCookie,
-  readCookieValue as readCookieValueShared,
+  isAuthRedirectLike,
+  resolveWorkspaceHeader,
 } from '../../_lib/bearer-from-request';
-
-function readCookieValue(request: NextRequest, name: string) {
-  return readCookieValueShared(request, name) || '';
-}
-
-function isAuthRedirectLike(value: string) {
-  const normalized = String(value || '').toLowerCase();
-  return (
-    normalized.includes('auth.kloel.com/login') ||
-    normalized.includes('forceauth=1') ||
-    normalized.includes('<html') ||
-    normalized.includes('<!doctype html')
-  );
-}
 
 const ACCESS_TOKEN_COOKIE_NAMES = ['kloel_access_token', 'kloel_token'];
 
@@ -27,14 +14,6 @@ function resolveAuthorizationHeader(request: NextRequest): string | null {
   return (
     request.headers.get('authorization') ||
     bearerFromHeaderOrCookie(request, 'x-kloel-access-token', ACCESS_TOKEN_COOKIE_NAMES)
-  );
-}
-
-function resolveWorkspaceHeader(request: NextRequest): string {
-  return (
-    request.headers.get('x-workspace-id') ||
-    request.headers.get('x-kloel-workspace-id') ||
-    readCookieValue(request, 'kloel_workspace_id')
   );
 }
 
