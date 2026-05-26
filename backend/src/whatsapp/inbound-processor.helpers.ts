@@ -123,9 +123,7 @@ function normalizeUnknownText(value: unknown): string {
   return '';
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms));
-}
+import { sleep } from '../common/async-sequence';
 
 export async function checkDuplicateExt(
   deps: Pick<ProcessDeps, 'redis' | 'prisma'>,
