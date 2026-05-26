@@ -47,15 +47,7 @@ export interface MicrosoftProfileResponse {
   };
 }
 
-function readConfiguredValue(config: ConfigService, keys: string[]): string | null {
-  for (const key of keys) {
-    const value = String(config.get<string>(key) || process.env[key] || '').trim();
-    if (value) {
-      return value;
-    }
-  }
-  return null;
-}
+import { readConfiguredValue } from './mailbox-oauth-callback.helpers';
 
 import {
   normalizeReturnTo,
