@@ -5,6 +5,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 
 import { ConnectLedgerMaturationService } from './connect-ledger-maturation.service';
 import { LedgerService } from './ledger.service';
+import { Prisma } from '@prisma/client';
 
 async function buildService({
   prisma,
@@ -137,7 +138,7 @@ describe('ConnectLedgerMaturationService.matureDueEntries', () => {
       expect.anything(),
     );
     expect(financialAlert.reconciliationAlert.mock.calls[0]?.[1]).toMatchObject({
-      details: { error: 'raw string failure' },
+      details: { error: 'raw string failure', code: undefined },
     });
   });
 
@@ -196,6 +197,7 @@ describe('ConnectLedgerMaturationService.matureDueEntries', () => {
         details: {
           entryId: 'cle_fail_1',
           error: 'boom',
+          code: undefined,
         },
       },
     );
@@ -207,6 +209,111 @@ describe('ConnectLedgerMaturationService.matureDueEntries', () => {
         details: {
           entryId: 'cle_fail_1',
           error: 'boom',
+          code: undefined,
+        },
+      },
+    });
+  });
+
+  it('treats P2002 (unique violation) from moveFromPendingToAvailable as already matured', async () => {
+    const prisma = {
+      connectLedgerEntry: {
+        findMany: jest.fn().mockResolvedValue([{ id: 'cle_p2002' }]),
+      },
+      adminAuditLog: {
+        create: jest.fn().mockResolvedValue({ id: 'audit_p2002' }),
+      },
+    };
+    const p2002 = new Prisma.PrismaClientKnownRequestError('unique constraint', {
+      code: 'P2002',
+      clientVersion: '5.0.0',
+    });
+    const ledger = {
+      moveFromPendingToAvailable: jest.fn().mockRejectedValue(p2002),
+    };
+    const financialAlert = {
+      reconciliationAlert: jest.fn(),
+    };
+    const service = await buildService({ prisma, ledger, financialAlert });
+
+    const result = await service.matureDueEntries(new Date('2026-06-01T00:00:00Z'));
+
+    expect(result).toEqual({ scanned: 1, matured: 1, failed: 0 });
+    expect(financialAlert.reconciliationAlert).not.toHaveBeenCalled();
+    expect(prisma.adminAuditLog.create).not.toHaveBeenCalled();
+  });
+
+  it('treats P2025 (stale row) from moveFromPendingToAvailable as already matured', async () => {
+    const prisma = {
+      connectLedgerEntry: {
+        findMany: jest.fn().mockResolvedValue([{ id: 'cle_p2025' }]),
+      },
+      adminAuditLog: {
+        create: jest.fn().mockResolvedValue({ id: 'audit_p2025' }),
+      },
+    };
+    const p2025 = new Prisma.PrismaClientKnownRequestError('record not found', {
+      code: 'P2025',
+      clientVersion: '5.0.0',
+    });
+    const ledger = {
+      moveFromPendingToAvailable: jest.fn().mockRejectedValue(p2025),
+    };
+    const financialAlert = {
+      reconciliationAlert: jest.fn(),
+    };
+    const service = await buildService({ prisma, ledger, financialAlert });
+
+    const result = await service.matureDueEntries(new Date('2026-06-01T00:00:00Z'));
+
+    expect(result).toEqual({ scanned: 1, matured: 1, failed: 0 });
+    expect(financialAlert.reconciliationAlert).not.toHaveBeenCalled();
+    expect(prisma.adminAuditLog.create).not.toHaveBeenCalled();
+  });
+
+  it('includes error code in audit log and alert for non-prisma failures', async () => {
+    const prisma = {
+      connectLedgerEntry: {
+        findMany: jest.fn().mockResolvedValue([{ id: 'cle_code' }]),
+      },
+      adminAuditLog: {
+        create: jest.fn().mockResolvedValue({ id: 'audit_code' }),
+      },
+    };
+    const prismaErr = new Prisma.PrismaClientKnownRequestError('timeout', {
+      code: 'P2024',
+      clientVersion: '5.0.0',
+    });
+    const ledger = {
+      moveFromPendingToAvailable: jest.fn().mockRejectedValue(prismaErr),
+    };
+    const financialAlert = {
+      reconciliationAlert: jest.fn(),
+    };
+    const service = await buildService({ prisma, ledger, financialAlert });
+
+    const result = await service.matureDueEntries(new Date('2026-07-01T00:00:00Z'));
+
+    expect(result).toEqual({ scanned: 1, matured: 0, failed: 1 });
+    expect(financialAlert.reconciliationAlert).toHaveBeenCalledWith(
+      'connect ledger maturation failed',
+      {
+        details: {
+          entryId: 'cle_code',
+          error: 'timeout',
+          code: 'P2024',
+        },
+      },
+    );
+    expect(prisma.adminAuditLog.create).toHaveBeenCalledWith({
+      data: {
+        action: 'system.connect.maturation_failed',
+        entityType: 'connect_ledger_entry',
+        entityId: 'cle_code',
+        details: {
+          entryId: 'cle_code',
+          error: 'timeout',
+          code: 'P2024',
         },
       },
     });
