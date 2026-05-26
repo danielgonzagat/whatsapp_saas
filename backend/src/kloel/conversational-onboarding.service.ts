@@ -334,7 +334,18 @@ export class ConversationalOnboardingService {
         error instanceof Error ? error.message : String(error),
         { context: 'ConversationalOnboardingService.chat', workspaceId },
       );
-      throw error;
+      // Per WAVE3_LLM_PROMPT_AUDIT critical gap #9: previously rethrew the
+      // raw error, leaving the onboarding UI with no honest reply. Now we
+      // return a Portuguese-Brazil fallback so the user sees a graceful
+      // 'try again' instead of an unhandled exception. The error is still
+      // logged above for observability.
+      const FALLBACK_REPLY =
+        'Tive uma instabilidade momentânea pra processar agora. Pode repetir a mensagem em alguns segundos? Estou aqui pra continuar o onboarding.';
+      if (res) {
+        this.writeSseResponse(res, FALLBACK_REPLY);
+        return;
+      }
+      return FALLBACK_REPLY;
     }
   }
 
