@@ -107,6 +107,11 @@ export class AutopilotCycleExecutorService {
       model: resolveBackendOpenAIModel('brain', this.config),
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' },
+      max_tokens: 256,
+    });
+    this.logger.log('[Autopilot] analyzeContext completed', {
+      tokens: completion?.usage?.total_tokens,
+      model: resolveBackendOpenAIModel('brain', this.config),
     });
 
     let analysisResult: ConversationAnalysis = {
@@ -447,6 +452,7 @@ ${productContext ? `\nAVAILABLE PRODUCTS (use ONLY these real products in your r
     const completion = await chatCompletionWithRetry(this.openai, {
       model: resolveBackendOpenAIModel('writer', this.config),
       messages: [{ role: 'user', content: prompt }],
+      max_tokens: 800,
     });
     if (conv?.workspaceId) {
       await this.planLimits
@@ -454,6 +460,11 @@ ${productContext ? `\nAVAILABLE PRODUCTS (use ONLY these real products in your r
         .catch(() => {});
     }
 
-    return completion.choices[0]?.message?.content ?? null;
+    const rawContent = completion.choices[0]?.message?.content;
+    if (!rawContent || rawContent.trim().length < 5) {
+      this.logger.warn('[Autopilot] generateResponse produced empty/short output', { type, convId: conv.id, workspaceId: conv.workspaceId });
+      return null;
+    }
+    return rawContent;
   }
 }

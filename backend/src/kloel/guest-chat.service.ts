@@ -251,7 +251,11 @@ export class GuestChatService implements OnModuleDestroy {
       );
       this.trackGuestUsage(sessionId, completion?.usage?.total_tokens, primaryModel);
 
-      return completion.choices[0]?.message?.content?.trim() || this.unavailableMessage;
+      const primaryReply = completion.choices[0]?.message?.content?.trim();
+      if (primaryReply && primaryReply.length >= 2) {
+        return primaryReply;
+      }
+      this.logger.warn('[guest-chat] primary model returned empty/short reply, falling through to emergency chain', { sessionId, model: primaryModel });
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'GuestChatService.resolveBackendOpenAIModel');
       this.logger.warn(
@@ -268,7 +272,12 @@ export class GuestChatService implements OnModuleDestroy {
           temperature: 0.7,
         });
         this.trackGuestUsage(sessionId, completion?.usage?.total_tokens, model);
-        return completion.choices[0]?.message?.content?.trim();
+        const reply = completion.choices[0]?.message?.content?.trim();
+        if (reply && reply.length >= 2) {
+          return reply;
+        }
+        this.logger.warn('[guest-chat] emergency model returned empty/short reply', { sessionId, model });
+        return undefined;
       } catch (error: unknown) {
         void this.opsAlert?.alertOnCriticalError(
           error,

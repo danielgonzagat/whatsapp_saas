@@ -211,7 +211,8 @@ export function buildSentimentMessages(text: string): ChatCompletionMessageParam
   return [
     {
       role: 'system',
-      content: 'Classifique sentimento em positivo, neutro ou negativo.',
+      content:
+        'Classifique APENAS o sentimento do texto como positivo, neutro ou negativo. NÃO analise fatos, preços ou produtos — apenas tom emocional.',
     },
     { role: 'user', content: text || '' },
   ];
@@ -244,7 +245,8 @@ export function buildPitchMessages(base: string): ChatCompletionMessageParam[] {
   return [
     {
       role: 'system',
-      content: 'Crie um pitch curto, persuasivo, português BR, CTA claro.',
+      content:
+        'Crie um pitch curto, persuasivo, português BR, CTA claro. NUNCA invente preços, descontos, garantias ou condições que não estejam no contexto fornecido.',
     },
     { role: 'user', content: base },
   ];

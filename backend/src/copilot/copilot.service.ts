@@ -94,6 +94,7 @@ export class CopilotService {
           },
           { role: 'user', content: prompt },
         ],
+        max_tokens: 400,
       });
       await this.planLimits
         .trackAiUsage(workspaceId, completion?.usage?.total_tokens ?? 500)
@@ -196,6 +197,7 @@ Cada resposta deve ser curta, direta e com CTA claro. Varie o tom: 1) amigável 
           { role: 'user', content: prompt },
         ],
         response_format: { type: 'json_object' },
+        max_tokens: 800,
       });
 
       await this.planLimits
