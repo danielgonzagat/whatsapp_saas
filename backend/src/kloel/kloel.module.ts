@@ -23,7 +23,16 @@ import { KLOEL_COMPOSER_E2E_GUARD, NoopKloelComposerE2EGuard } from './kloel-com
 import { KLOEL_LLM_E2E_GUARD, NoopKloelLLME2EGuard } from './kloel-llm-e2e-guard';
 import { KloelController } from './kloel.controller';
 import { KloelDataController } from './kloel-data.controller';
-import { KloelLeadBrainService } from './kloel-lead-brain.service';
+import {
+  LeadMindCoordinator,
+  MindAutonomyCoordinator,
+  MindCapabilityExecutor,
+  MindCapabilityRegistry,
+  MindCommercialGraph,
+  MindEventSpine,
+  MindRuntime,
+  WhatsAppMindCoordinator,
+} from './mind/coordination';
 import { KloelLeadProcessorService } from './kloel-lead-processor.service';
 import { KloelReplyEngineService } from './kloel-reply-engine.service';
 import { KloelService } from './kloel.service';
@@ -40,7 +49,6 @@ import { OnboardingService } from './onboarding.service';
 import { PaymentController } from './payment.controller';
 import { PaymentService } from './payment.service';
 import { WhatsAppBrainController } from './whatsapp-brain.controller';
-import { WhatsAppBrainService } from './whatsapp-brain.service';
 
 import { LLMBudgetService } from './llm-budget.service';
 import { MemoryManagementService } from './memory-management.service';
@@ -118,14 +126,8 @@ import { UnifiedAgentService } from './unified-agent.service';
 import { UNIFIED_AGENT_TOKEN } from './tokens';
 import { UploadController } from './upload.controller';
 import { WebinarController } from './webinar.controller';
-import { BrainCapabilityRegistryService } from './brain-capability-registry.service';
-import { BrainCapabilityExecutorService } from './brain-capability-executor.service';
-import { BrainAutonomyService } from './brain-autonomy.service';
 import { LacunasController } from './lacunas.controller';
-import { BrainCommercialGraphService } from './brain-commercial-graph.service';
-import { BrainEventSpineService } from './brain-event-spine.service';
 import { BrainRuntimeController } from './brain-runtime.controller';
-import { BrainRuntimeService } from './brain-runtime.service';
 import {
   EmailChannelTransport,
   InstagramChannelTransport,
@@ -286,14 +288,14 @@ import { ProductsModule } from '../products/products.module';
     KloelWhatsAppToolsService,
     UnifiedAgentToolExecutorService,
 
-    KloelLeadBrainService,
+    LeadMindCoordinator,
     KloelToolDispatcherService,
     KloelToolExecutorService,
     KloelComposerService,
     KloelLeadProcessorService,
     KloelWorkspaceContextService,
     GuestChatService,
-    WhatsAppBrainService,
+    WhatsAppMindCoordinator,
     PaymentService,
     OnboardingService,
     ConversationalOnboardingService,
@@ -338,12 +340,12 @@ import { ProductsModule } from '../products/products.module';
     CartRecoveryService,
     WebhooksService,
     WebhookDispatcherService,
-    BrainCapabilityRegistryService,
-    BrainCapabilityExecutorService,
-    BrainAutonomyService,
-    BrainCommercialGraphService,
-    BrainEventSpineService,
-    BrainRuntimeService,
+    MindCapabilityRegistry,
+    MindCapabilityExecutor,
+    MindAutonomyCoordinator,
+    MindCommercialGraph,
+    MindEventSpine,
+    MindRuntime,
     InstagramChannelTransport,
     MessengerChannelTransport,
     TikTokChannelTransport,
@@ -406,14 +408,14 @@ import { ProductsModule } from '../products/products.module';
     KloelChatToolsService,
     KloelBusinessConfigToolsService,
     KloelWhatsAppToolsService,
-    KloelLeadBrainService,
+    LeadMindCoordinator,
     KloelToolDispatcherService,
     KloelToolExecutorService,
     KloelComposerService,
     KloelLeadProcessorService,
     KloelWorkspaceContextService,
     GuestChatService,
-    WhatsAppBrainService,
+    WhatsAppMindCoordinator,
     PaymentService,
 
     OnboardingService,
@@ -441,7 +443,7 @@ import { ProductsModule } from '../products/products.module';
     AdRulesEngineService,
     EmailCampaignService,
     ChannelTransportRegistry,
-    BrainEventSpineService,
+    MindEventSpine,
     CommercialDecisionOrchestratorService,
     RuntimeConversationTracerService,
     MindBeliefService,
