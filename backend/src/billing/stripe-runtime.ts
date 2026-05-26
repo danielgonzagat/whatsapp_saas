@@ -49,8 +49,8 @@ function resolveStripeConstructor(): typeof import('stripe') {
   for (const { fn, source } of candidates) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const Ctor = fn as unknown as new (...args: any[]) => any;
-      const probe = new Ctor('sk_test_stripe_runtime_probe');
+      const Ctor = fn as unknown as new (...args: any[]) => unknown;
+      const probe: unknown = new Ctor('sk_test_stripe_runtime_probe');
       // A valid Stripe instance MUST have .customers as a non-null object.
       if (
         probe &&
@@ -63,11 +63,7 @@ function resolveStripeConstructor(): typeof import('stripe') {
       }
       failures.push(
         `${source}: instance missing .customers (keys: ${
-          probe
-            ? Object.keys(probe as object)
-                .slice(0, 6)
-                .join(',')
-            : 'n/a'
+          probe && typeof probe === 'object' ? Object.keys(probe).slice(0, 6).join(',') : 'n/a'
         })`,
       );
     } catch (err: unknown) {

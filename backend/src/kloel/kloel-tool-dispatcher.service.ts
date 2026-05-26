@@ -31,6 +31,16 @@ import {
 
 import type { UnknownRecord } from '../common/types';
 
+/** Coerce `unknown` to string with a fallback, without triggering no-base-to-string. */
+function asString(value: unknown, fallback = ''): string {
+  return typeof value === 'string' ? value : fallback;
+}
+
+/** Coerce `unknown` to number with a fallback, without unsafe casts. */
+function asNumber(value: unknown, fallback = 0): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
 /** Resolve a period label to a `Date` floor. */
 function periodToSince(period: string | undefined): Date {
   switch (period) {
@@ -367,18 +377,18 @@ export class KloelToolDispatcherService {
         case 'coupon_create':
           if (this.couponService) {
             return this.couponService.create(workspaceId, {
-              productId: String(args.productId || ''),
-              code: String(args.code || ''),
-              discountType: String(args.discountType || 'percentage'),
-              discountValue: Number(args.discountValue) || 0,
+              productId: asString(args.productId),
+              code: asString(args.code),
+              discountType: asString(args.discountType, 'percentage'),
+              discountValue: asNumber(args.discountValue),
             });
           }
           return { success: false, error: 'coupon_service_unavailable' };
         case 'checkout_create':
           if (this.checkoutService) {
             return this.checkoutService.create(workspaceId, {
-              productId: String(args.productId || ''),
-              name: String(args.name || args.checkoutName || 'Checkout'),
+              productId: asString(args.productId),
+              name: asString(args.name) || asString(args.checkoutName, 'Checkout'),
             });
           }
           return { success: false, error: 'checkout_service_unavailable' };
@@ -421,10 +431,10 @@ export class KloelToolDispatcherService {
           }
           const pixResult = await this.smartPaymentService.createSmartPayment({
             workspaceId,
-            phone: String(args.customerPhone || ''),
-            customerName: String(args.customerName || ''),
+            phone: asString(args.customerPhone),
+            customerName: asString(args.customerName),
             ...(typeof args.productName === 'string' ? { productName: args.productName } : {}),
-            amount: Number(args.amount) || 0,
+            amount: asNumber(args.amount),
           });
           return {
             success: true,
@@ -446,10 +456,10 @@ export class KloelToolDispatcherService {
           }
           const boletoResult = await this.smartPaymentService.createSmartPayment({
             workspaceId,
-            phone: String(args.customerPhone || ''),
-            customerName: String(args.customerName || ''),
+            phone: asString(args.customerPhone),
+            customerName: asString(args.customerName),
             ...(typeof args.productName === 'string' ? { productName: args.productName } : {}),
-            amount: Number(args.amount) || 0,
+            amount: asNumber(args.amount),
           });
           return {
             success: true,
@@ -502,10 +512,7 @@ export class KloelToolDispatcherService {
           if (!this.accountService) {
             return { success: false, error: 'account_service_unavailable' };
           }
-          return await this.accountService.updatePersonalData(
-            workspaceId,
-            asToolArgs(args) as { name?: string; email?: string; phone?: string },
-          );
+          return await this.accountService.updatePersonalData(workspaceId, asToolArgs(args));
         case 'account.update_personal':
           return this.executeTool(workspaceId, 'update_personal_data', args, userId);
         case 'update_fiscal_data':
@@ -542,24 +549,27 @@ export class KloelToolDispatcherService {
           return await this.chatToolsService.toolBrowseMarketplace(workspaceId, asToolArgs(args));
         case 'get_nps':
         case 'get_churn':
-          if (this.walletSalesTools)
+          if (this.walletSalesTools) {
             return await this.walletSalesTools.executeTool(toolName, workspaceId, asToolArgs(args));
+          }
           return { success: false, error: 'wallet_sales_tools_not_available' };
         case 'list_refunds':
-          if (this.walletSalesTools)
+          if (this.walletSalesTools) {
             return await this.walletSalesTools.executeTool(
               'list_orders',
               workspaceId,
               asToolArgs({ status: 'refunded' }),
             );
+          }
           return { success: false, error: 'wallet_sales_tools_not_available' };
         case 'request_anticipation':
-          if (this.walletSalesTools)
+          if (this.walletSalesTools) {
             return await this.walletSalesTools.executeTool(
               'request_anticipation',
               workspaceId,
               asToolArgs(args),
             );
+          }
           return { success: false, error: 'wallet_sales_tools_not_available' };
         case 'connect_channel':
           return await this.bizConfigToolsService.toolConnectChannel(workspaceId, asToolArgs(args));
@@ -762,21 +772,27 @@ export class KloelToolDispatcherService {
           return await this.codeToolsService.toolCodeGraphFiles();
         // ── REPORTS (w25) ──
         case 'reports.operations': {
-          if (!this.reportService) return { success: false, error: 'report_service_unavailable' };
+          if (!this.reportService) {
+            return { success: false, error: 'report_service_unavailable' };
+          }
           const period = typeof args?.period === 'string' ? args.period : undefined;
           const since = periodToSince(period);
           const res = await this.reportService.operations(workspaceId, { since });
           return { success: true, ...res };
         }
         case 'reports.abandonments': {
-          if (!this.reportService) return { success: false, error: 'report_service_unavailable' };
+          if (!this.reportService) {
+            return { success: false, error: 'report_service_unavailable' };
+          }
           const period = typeof args?.period === 'string' ? args.period : undefined;
           const since = periodToSince(period);
           const res = await this.reportService.abandonments(workspaceId, { since });
           return { success: true, ...res };
         }
         case 'crm.pipeline': {
-          if (!this.reportService) return { success: false, error: 'report_service_unavailable' };
+          if (!this.reportService) {
+            return { success: false, error: 'report_service_unavailable' };
+          }
           const res = await this.reportService.pipeline(workspaceId);
           return { success: true, ...res };
         }

@@ -48,7 +48,9 @@ const createPrismaMock = () => ({
       providerSettings: {},
     }),
   },
-  $transaction: jest.fn().mockImplementation((fn: Function) => fn({})),
+  $transaction: jest
+    .fn()
+    .mockImplementation(<T>(fn: (tx: Record<string, unknown>) => T): T => fn({})),
 });
 
 const createPlanLimitsMock = () => ({

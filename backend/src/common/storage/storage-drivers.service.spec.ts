@@ -1,4 +1,5 @@
 import { ConfigService } from '@nestjs/config';
+import { S3Client } from '@aws-sdk/client-s3';
 import { StorageDriversService } from './storage-drivers.service';
 
 const s3SendMock = jest.fn().mockResolvedValue(undefined);
@@ -27,7 +28,7 @@ function makeUnknownError(message?: string) {
 }
 
 /** Build a mock AWS AccessDenied error. */
-function makeAccessDeniedError() {
+function _makeAccessDeniedError() {
   const err = new Error('Access Denied');
   err.name = 'AccessDenied';
   return err;
@@ -35,8 +36,12 @@ function makeAccessDeniedError() {
 
 function configureBucket(config: { get: jest.Mock }, bucket = 'my-bucket', region = 'us-east-1') {
   config.get.mockImplementation((key: string) => {
-    if (key === 'S3_BUCKET') return bucket;
-    if (key === 'S3_REGION') return region;
+    if (key === 'S3_BUCKET') {
+      return bucket;
+    }
+    if (key === 'S3_REGION') {
+      return region;
+    }
     return undefined;
   });
 }
@@ -77,8 +82,12 @@ describe('StorageDriversService', () => {
 
     it('uploads to S3 when bucket is configured', async () => {
       config.get.mockImplementation((key: string) => {
-        if (key === 'S3_BUCKET') return 'my-bucket';
-        if (key === 'S3_REGION') return 'us-east-1';
+        if (key === 'S3_BUCKET') {
+          return 'my-bucket';
+        }
+        if (key === 'S3_REGION') {
+          return 'us-east-1';
+        }
         return undefined;
       });
 
@@ -90,7 +99,9 @@ describe('StorageDriversService', () => {
 
     it('falls back to local when S3 upload fails', async () => {
       config.get.mockImplementation((key: string) => {
-        if (key === 'S3_BUCKET') return 'my-bucket';
+        if (key === 'S3_BUCKET') {
+          return 'my-bucket';
+        }
         return undefined;
       });
       s3SendMock.mockRejectedValueOnce(new Error('Network error'));
@@ -129,10 +140,7 @@ describe('StorageDriversService', () => {
     });
 
     it('caches the S3 client across uploads', async () => {
-      const { S3Client } = jest.requireMock('@aws-sdk/client-s3') as {
-        S3Client: jest.Mock;
-      };
-      S3Client.mockClear();
+      (S3Client as unknown as jest.Mock).mockClear();
       // Force a new service so the internal cache is fresh
       service = new StorageDriversService(config as ConfigService);
       configureBucket(config);
@@ -212,7 +220,9 @@ describe('StorageDriversService', () => {
 
     it('returns UP when bucket is accessible', async () => {
       config.get.mockImplementation((key: string) => {
-        if (key === 'S3_BUCKET') return 'my-bucket';
+        if (key === 'S3_BUCKET') {
+          return 'my-bucket';
+        }
         return undefined;
       });
       s3SendMock.mockResolvedValueOnce(undefined);

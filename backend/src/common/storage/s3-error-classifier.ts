@@ -116,25 +116,35 @@ const CREDENTIALS_ERROR_INDICATORS = [
  * AWS SDK v3 errors carry a `name` (or `Code`) property.
  */
 function extractAwsCode(error: unknown): string | undefined {
-  if (!error || typeof error !== 'object') return undefined;
+  if (!error || typeof error !== 'object') {
+    return undefined;
+  }
 
   const e = error as Record<string, unknown>;
 
   // AWS SDK v3 service exceptions have a `name` property
-  if (typeof e.name === 'string' && e.name.trim()) return e.name.trim();
+  if (typeof e.name === 'string' && e.name.trim()) {
+    return e.name.trim();
+  }
 
   // Some errors expose a `Code` field (XML-rest errors)
-  if (typeof e.Code === 'string' && e.Code.trim()) return e.Code.trim();
+  if (typeof e.Code === 'string' && e.Code.trim()) {
+    return e.Code.trim();
+  }
 
   // Generic Node.js errors have a `code`
-  if (typeof e.code === 'string' && e.code.trim()) return e.code.trim();
+  if (typeof e.code === 'string' && e.code.trim()) {
+    return e.code.trim();
+  }
 
   return undefined;
 }
 
 /** Extract HTTP status from the error if available. */
 function extractHttpStatus(error: unknown): number | undefined {
-  if (!error || typeof error !== 'object') return undefined;
+  if (!error || typeof error !== 'object') {
+    return undefined;
+  }
 
   const e = error as Record<string, unknown>;
 
@@ -145,7 +155,9 @@ function extractHttpStatus(error: unknown): number | undefined {
   }
 
   // Generic: statusCode
-  if (typeof e.statusCode === 'number') return e.statusCode;
+  if (typeof e.statusCode === 'number') {
+    return e.statusCode;
+  }
 
   return undefined;
 } // ---------------------------------------------------------------------------
@@ -157,7 +169,8 @@ function extractHttpStatus(error: unknown): number | undefined {
  * This MUST be called inside every catch block around S3Client.send().
  */
 export function classifyAwsError(error: unknown, context: AwsCallContext): AwsErrorInfo {
-  const message = error instanceof Error ? error.message : String(error ?? 'Unknown error');
+  const message =
+    error instanceof Error ? error.message : typeof error === 'string' ? error : 'Unknown error';
   const awsCode = extractAwsCode(error);
   const httpStatus = extractHttpStatus(error);
 
@@ -223,7 +236,8 @@ function logAwsError(
     ...(httpStatus ? { httpStatus } : {}),
   };
 
-  const message = error instanceof Error ? error.message : String(error ?? 'Unknown');
+  const message =
+    error instanceof Error ? error.message : typeof error === 'string' ? error : 'Unknown';
 
   if (category === 'UNKNOWN_PROTOCOL') {
     logger.error(
