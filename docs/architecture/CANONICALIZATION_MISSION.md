@@ -71,10 +71,58 @@ Plus the migration tracker:
 | w5-service-catalog | 5 | SERVICE_CATALOG.md | 33k | ✅ |
 | w5-duplication-register | 5 | DUPLICATION_REGISTER.md | 72k | ✅ |
 | w6-anti-regression-gates | 6 | ANTI_REGRESSION_GATES.md | 20k | ✅ |
+| w7-format-money-canon | 7 | WAVE7_FORMAT_MONEY_REPORT (7 sites migrated) | 14k | ✅ |
+| w7-orphan-cleanup | 7 | WAVE7_ORPHAN_CLEANUP_REPORT | 16k | ✅ |
+| w7-llm-warning-fixes | 7 | WAVE7_LLM_WARNING_REPORT (11 sites) | 18k | ✅ |
+| w8-llm-warning-remainder | 8 | WAVE8_LLM_WARNING_REMAINDER_REPORT (12 sites) | 19k | ✅ |
+| w8-webhook-idempotency | 8 | WAVE8_WEBHOOK_IDEMPOTENCY_REPORT (5 Grade-B → A) | 17k | ✅ |
+| w8-dup-normalize-phone | 8 | WAVE8_NORMALIZE_PHONE_REPORT (5 migrated, 2 kept) | 13k | ✅ |
+| w9-prompt-versioning-skeleton | 9 | WAVE9_PROMPT_REGISTRY_REPORT (Phase 1 skeleton) | 11k | ✅ |
+| w9-sites-honest-state | 9 | WAVE9_SITES_HONEST_STATE_REPORT (4 tabs flipped) | 14k | ✅ |
+| w10-handoff-phase-2-wiring | 10 | WAVE10_HANDOFF_PHASE_2_REPORT | 8k | ✅ |
+| w10-decompose-chat-tools | 10 | WAVE10_DECOMPOSE_CHAT_TOOLS_REPORT (-157 LOC) | 21k | ✅ |
+| w11-dup-007-fmt-canon | 11 | WAVE11_DUP_007_FMT_REPORT (K-suffix twins) | 11k | ✅ |
+| w11-cia-gap-1-spine-emission | 11 | WAVE11_CIA_GAP_1_REPORT (Gap 1 closed) | 15k | ✅ |
+| w11-anti-regression-non-protected | 11 | WAVE11_ANTI_REGRESSION_REPORT (3 gates G1/G5/G13) | 32k | ✅ |
+| w11-dup-008-finish | 11 | WAVE11_DUP_008_FINISH_REPORT (6 kept-local) | 19k | ✅ |
+| w12-handoff-phase-3-blocking | 12 | WAVE12_HANDOFF_PHASE_3_REPORT (blocking gate) | 17k | ✅ |
+| w12-cia-gap-2-abi-cache | 12 | WAVE12_CIA_GAP_2_REPORT (Gap 2 closed) | 12k | ✅ |
+| w13-cia-gap-4-outcome-trace | 13 | WAVE13_CIA_GAP_4_REPORT (Gap 4 closed) | 11k | ✅ |
+| w13-cia-gap-10-tick-registration | 13 | WAVE13_CIA_GAP_10_REPORT (Gap 10 closed) | 13k | ✅ |
+| w13-cia-gap-7-tension-escalation | 13 | WAVE13_CIA_GAP_7_REPORT (Gap 7 closed) | 21k | ✅ |
+| w13-readNumber-canonicalize | 13 | WAVE13_READ_NUMBER_REPORT | 12k | ✅ |
+| w13-readString-canonicalize | 13 | WAVE13_READ_STRING_REPORT | 12k | ✅ |
+| w14-cia-gap-3-autonomy-advisor | 14 | WAVE14_CIA_GAP_3_REPORT (Gap 3 closed) | 13k | ✅ |
+| w14-cia-gap-6-prior-closure | 14 | WAVE14_CIA_GAP_6_REPORT (Gap 6 closed) | 15k | ✅ |
+| w14-cia-gap-9-wisdom-prior | 14 | WAVE14_CIA_GAP_9_REPORT (Gap 9 closed) | 34k | ✅ |
+| w14-cia-gap-8-shadow-auto-graduate | 14 | WAVE14_CIA_GAP_8_REPORT (Gap 8 closed) | 11k | ✅ |
+| w14-decompose-chat-tools-products | 14 | WAVE14_DECOMPOSE_CHAT_TOOLS_PRODUCTS_REPORT | 14k | ✅ |
+| w15-cia-gap-5-spine-persistence | 15 | WAVE15_CIA_GAP_5_REPORT (Gap 5 closed — LAST CIA gap) | 11k | ✅ |
+| w15-cognitive-health-on-tick | 15 | WAVE15_COGNITIVE_HEALTH_TICK_REPORT | 12k | ✅ |
+| w15-frontend-dup-009-toggle | 15 | WAVE15_DUP_009_TOGGLE_REPORT | 14k | ✅ |
+| w15-decompose-chat-tools-dashboard | 15 | WAVE15_DECOMPOSE_CHAT_TOOLS_DASHBOARD_REPORT | 15k | ✅ |
+| w15-stat-card-settings-twins | 15 | WAVE15_STAT_CARD_TWINS_REPORT | 14k | ✅ |
 
-22 PI subagent deliveries; >570k events of investigation; all hardened by
+52 PI subagent deliveries; >1.0M events of investigation; all hardened by
 orchestrator (read full transcript → independent grep verification →
 tsc-clean validation → committed with co-author attribution).
+
+## Wave 4 CIA architectural gaps — final scoreboard (post Wave 15)
+
+| Gap | Title | Wave | Status |
+|---|---|---|---|
+| 1 | Spine emission from CIA operational layer | w11 | ✅ |
+| 2 | ABI enrichment with cached cognitive state | w12 | ✅ |
+| 3 | Closed-loop autonomy advisor | w14 | ✅ (advisory only) |
+| 4 | Outcome traceability from backlog runs | w13 | ✅ |
+| 5 | Spine persistence (Redis Stream) | w15 | ✅ |
+| 6 | Close MIND policy → global prior loop | w14 | ✅ |
+| 7 | Cognitive tension escalation (+on-tick) | w13+w15 | ✅ |
+| 8 | Auto-graduate orchestrator shadow→active | w14 | ✅ (flag-gated) |
+| 9 | Wisdom as Beta prior in policy choose | w14 | ✅ |
+| 10 | MIND tick registration on bootstrap/pause | w13 | ✅ |
+
+**10/10 CIA architectural gaps now have scaffolding shipped behind safe defaults.**
 
 ## Execution model
 
