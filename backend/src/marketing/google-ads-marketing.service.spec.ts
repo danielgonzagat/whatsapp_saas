@@ -16,13 +16,22 @@ describe('GoogleAdsMarketingService', () => {
   const originalEnv = { ...process.env };
 
   function buildService(providerSettings: Record<string, unknown> = {}) {
+    const workspaceFindUnique = jest
+      .fn<Promise<{ providerSettings: Record<string, unknown> }>, []>()
+      .mockResolvedValue({ providerSettings });
+    const workspaceUpdate = jest
+      .fn<Promise<{ id: string }>, [WorkspaceUpdateCall]>()
+      .mockResolvedValue({ id: 'ws-1' });
     const prisma = {
       workspace: {
-        findUnique: jest.fn().mockResolvedValue({ providerSettings }),
-        update: jest.fn().mockResolvedValue({ id: 'ws-1' }),
+        findUnique: workspaceFindUnique,
+        update: workspaceUpdate,
       },
     };
-    return { service: new GoogleAdsMarketingService(prisma as unknown as PrismaService), prisma };
+    return {
+      service: new GoogleAdsMarketingService(prisma as unknown as PrismaService),
+      workspaceUpdate,
+    };
   }
 
   beforeEach(() => {
@@ -54,7 +63,7 @@ describe('GoogleAdsMarketingService', () => {
   });
 
   it('lists accessible customers through the current Google Ads API version', async () => {
-    const { service, prisma } = buildService({
+    const { service, workspaceUpdate } = buildService({
       googleAds: { connected: true, accessToken: 'access-token' },
     });
     const fetchMock = jest
@@ -67,13 +76,15 @@ describe('GoogleAdsMarketingService', () => {
 
     expect(result).toEqual({ status: 'ok', customers: ['1234567890'] });
     const fetchCall = fetchMock.mock.calls[0];
-    expect(fetchCall?.[0]).toBe('https://googleads.googleapis.com/v24/customers:listAccessibleCustomers');
-    const fetchInit = fetchCall?.[1] as RequestInit | undefined;
+    expect(fetchCall?.[0]).toBe(
+      'https://googleads.googleapis.com/v24/customers:listAccessibleCustomers',
+    );
+    const fetchInit = fetchCall?.[1];
     const headers = fetchInit?.headers as Record<string, string> | undefined;
     expect(headers?.Authorization).toBe('Bearer access-token');
     expect(headers?.['developer-token']).toBe('developer-token');
 
-    const updateCall = prisma.workspace.update.mock.calls[0]?.[0] as WorkspaceUpdateCall | undefined;
+    const updateCall = workspaceUpdate.mock.calls[0]?.[0];
     expect(updateCall?.where).toEqual({ id: 'ws-1' });
     expect(updateCall?.data.providerSettings.googleAds?.customerIds).toEqual(['1234567890']);
   });

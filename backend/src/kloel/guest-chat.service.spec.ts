@@ -110,6 +110,19 @@ describe('GuestChatService', () => {
       expect(chatCompletionWithFallbackMock).toHaveBeenCalled();
     });
 
+    it('grounds public guest replies with an anti-invention system prompt', async () => {
+      await service.chatSync('Qual o preço do PDRN?', 'session-grounded');
+
+      const completionCalls = chatCompletionWithFallbackMock.mock.calls as Array<
+        [unknown, { messages?: Array<{ role?: string; content?: string }> }]
+      >;
+      const messages = completionCalls[0]?.[1].messages ?? [];
+
+      expect(messages[0]).toMatchObject({ role: 'system' });
+      expect(messages[0]?.content).toContain('NEVER invent product names');
+      expect(messages[0]?.content).toContain('vou verificar e te respondo');
+    });
+
     it('preserves conversation context across messages', async () => {
       await service.chatSync('Meu nome é João', 'session-2');
 

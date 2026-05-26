@@ -59,9 +59,14 @@ function verifyState(rawState: unknown, secret: string): SignedStatePayload | nu
   }
 
   try {
-    const parsed = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8'));
-    const workspaceId = String(parsed?.workspaceId || '').trim();
-    const ts = Number(parsed?.ts || 0);
+    const parsed: unknown = JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8'));
+    if (typeof parsed !== 'object' || parsed === null) {
+      return null;
+    }
+    const payload = parsed as { workspaceId?: unknown; ts?: unknown };
+    const workspaceId = readString(payload.workspaceId) ?? '';
+    const ts =
+      typeof payload.ts === 'number' || typeof payload.ts === 'string' ? Number(payload.ts) : 0;
     if (!workspaceId || !Number.isFinite(ts) || Date.now() - ts > STATE_TTL_MS) {
       return null;
     }
