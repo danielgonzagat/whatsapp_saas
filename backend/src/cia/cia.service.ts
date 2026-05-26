@@ -1,3 +1,16 @@
+/**
+ * @deprecated Use {@link ../kloel/mind/cia/index.ts MindLearningAdapter} (re-export
+ * of this class with the canonical name). Per ADR-0006, CIA is a **learning
+ * adapter** — it feeds priors/baselines/candidates into the Mind but does not
+ * make commercial decisions. Per ADR-0013 Wave M4, the canonical home is
+ * `backend/src/kloel/mind/cia/`. This file remains as the live @Injectable
+ * implementation during the 4-week alias window.
+ *
+ * @cluster Mind/CIA
+ * @canonical backend/src/kloel/mind/cia/ (MindLearningAdapter)
+ * @see docs/adr/0006-papeis-cognitivos-canonicos.md
+ * @see docs/adr/0013-kloel-mind-unification.md
+ */
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueJobId } from '../queue/job-id.util';
