@@ -104,15 +104,30 @@ export class KloelChatToolsService {
     @Optional() private readonly agentEvidence?: AgentRuntimeEvidenceStoreService,
   ) {}
   toolSaveProduct(workspaceId: string, args: ToolSaveProductArgs): Promise<ToolResult> {
-    return this.productService.create(workspaceId, {
-      name: args.name,
-      price: args.price,
-      ...(args.description !== undefined ? { description: args.description } : {}),
-      ...(args.category !== undefined ? { category: args.category } : {}),
-      ...(args.imageUrl !== undefined ? { imageUrl: args.imageUrl } : {}),
-      ...(args.format !== undefined ? { format: args.format as 'PHYSICAL' | 'DIGITAL' | 'HYBRID' } : {}),
-    }, { id: 'kloel-tool' }) as Promise<ToolResult>;
-  }
+      const actorRef = args as ToolSaveProductArgs & { actorId?: unknown };
+      const actorId =
+        typeof actorRef.actorId === 'string' && actorRef.actorId.trim()
+          ? actorRef.actorId
+          : 'kloel-chat';
+      const rawFormat = typeof args.format === 'string' ? args.format.toUpperCase() : undefined;
+      const format: 'PHYSICAL' | 'DIGITAL' | 'HYBRID' | undefined =
+        rawFormat === 'PHYSICAL' || rawFormat === 'DIGITAL' || rawFormat === 'HYBRID'
+          ? rawFormat
+          : undefined;
+
+      return this.productService.create(
+        workspaceId,
+        {
+          name: args.name,
+          description: args.description,
+          price: args.price,
+          category: args.category,
+          imageUrl: args.imageUrl,
+          format,
+        },
+        { id: actorId },
+      ) as Promise<ToolResult>;
+    }
   toolListProducts(workspaceId: string): Promise<ToolResult> {
     return runListProducts(this.prisma, workspaceId);
   }
@@ -387,7 +402,7 @@ export class KloelChatToolsService {
     const imageUrl = typeof args.imageUrl === 'string' ? args.imageUrl : '';
     if (!productName) {return { success: false, error: 'Informe o nome do produto.' };}
     if (!imageUrl) {return { success: true, message: 'Envie a URL da imagem ou faça upload pelo chat. Ex: "imagem do produto X url: https://..."' };}
-    return runUpdateProduct(this.prisma, workspaceId, { productName, imageUrl });
+    return runUpdateProduct(this.prisma, this.productService, workspaceId, { productName, imageUrl });
   }
 
   async toolConfigurePixel(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
@@ -422,7 +437,7 @@ export class KloelChatToolsService {
     const productName = typeof args.productName === 'string' ? args.productName : '';
     if (productName) {
       const days = typeof args.warrantyDays === 'number' ? args.warrantyDays : 7;
-      return runUpdateProduct(this.prisma, workspaceId, { productName, warrantyDays: days });
+      return runUpdateProduct(this.prisma, this.productService, workspaceId, { productName, warrantyDays: days });
     }
     return { success: true, message: 'Garantia configurada. Selo exibido na página de vendas.' };
   }
