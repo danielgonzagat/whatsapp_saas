@@ -15,12 +15,16 @@
  * @see docs/adr/0012-kloel-omnicore-channel-unification.md
  * @see backend/src/common/channel-dispatch/channel-dispatch.registry.ts
  */
-import { Module } from '@nestjs/common';
-import { InstagramDispatchAdapter } from './instagram/instagram-dispatch.adapter';
-import { MessengerDispatchAdapter } from './messenger/messenger-dispatch.adapter';
-import { FacebookDispatchAdapter } from './facebook/facebook-dispatch.adapter';
+import { forwardRef, Module } from '@nestjs/common';
+import { MarketingModule } from '../marketing.module';
+import { MetaModule } from '../../meta/meta.module';
+import { PrismaModule } from '../../prisma/prisma.module';
+import { WhatsappModule } from '../../whatsapp/whatsapp.module';
 import { EmailDispatchAdapter } from './email/email-dispatch.adapter';
+import { FacebookDispatchAdapter } from './facebook/facebook-dispatch.adapter';
+import { InstagramDispatchAdapter } from './instagram/instagram-dispatch.adapter';
 import { InternalPartnershipDispatchAdapter } from './internal-partnership/internal-partnership-dispatch.adapter';
+import { MessengerDispatchAdapter } from './messenger/messenger-dispatch.adapter';
 import { WhatsAppDispatchAdapter } from './whatsapp/whatsapp-dispatch.adapter';
 
 const ADAPTERS = [
@@ -33,6 +37,12 @@ const ADAPTERS = [
 ];
 
 @Module({
+  imports: [
+    PrismaModule,
+    forwardRef(() => WhatsappModule),
+    forwardRef(() => MetaModule),
+    forwardRef(() => MarketingModule),
+  ],
   providers: [...ADAPTERS],
   exports: [...ADAPTERS],
 })

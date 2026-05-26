@@ -1,3 +1,15 @@
+/**
+ * WhatsAppDispatchAdapter — implements `ChannelDispatchPort` for the
+ * WhatsApp channel. Delegates to `WhatsappService.sendMessage` (the
+ * public facade exported by `WhatsappModule`), which internally routes
+ * to the message dispatcher + provider registry chain.
+ *
+ * ADR-0012 OmniCore Wave W1.
+ *
+ * @cluster Marketing/Channels/WhatsApp
+ * @see backend/src/common/channel-dispatch/channel-dispatch.port.ts
+ * @see docs/adr/0012-kloel-omnicore-channel-unification.md
+ */
 import { Injectable } from '@nestjs/common';
 import {
   ChannelDispatchPort,
@@ -6,42 +18,36 @@ import {
   type ChannelSendResult,
   type WhatsAppSendInput,
 } from '../../../common/channel-dispatch/channel-dispatch.port';
-import { WhatsappMessageDispatcherService } from '../../../whatsapp/whatsapp-message-dispatcher.service';
+import { WhatsappService } from '../../../whatsapp/whatsapp.service';
 
-type DispatcherOpts = NonNullable<
-  Parameters<WhatsappMessageDispatcherService['sendMessage']>[3]
->;
+type WhatsappSendOpts = NonNullable<Parameters<WhatsappService['sendMessage']>[3]>;
 
 @Injectable()
 export class WhatsAppDispatchAdapter implements ChannelDispatchPort {
   readonly channelKind = ChannelKind.WHATSAPP;
 
-  constructor(
-    private readonly dispatcher: WhatsappMessageDispatcherService,
-  ) {}
+  constructor(private readonly whatsapp: WhatsappService) {}
 
   async send(input: ChannelSendInput): Promise<ChannelSendResult> {
     if (input.channelKind !== ChannelKind.WHATSAPP) {
       return { success: false, error: 'wrong channel kind' };
     }
-    // TypeScript narrows to WhatsAppSendInput after the discriminant guard
-    const wi = input;
-    const opts = this.buildOpts(wi);
-    const result = await this.dispatcher.sendMessage(
-      wi.workspaceId,
-      wi.to,
-      wi.message,
+    const opts = this.buildOpts(input);
+    const result = await this.whatsapp.sendMessage(
+      input.workspaceId,
+      input.to,
+      input.message,
       opts,
     );
-    return this.mapResult(result, wi);
+    return this.mapResult(result, input);
   }
 
   isConfigured(): boolean {
-    return true;
+    return Boolean(this.whatsapp);
   }
 
-  private buildOpts(input: WhatsAppSendInput): DispatcherOpts | undefined {
-    const o: DispatcherOpts = {};
+  private buildOpts(input: WhatsAppSendInput): WhatsappSendOpts | undefined {
+    const o: WhatsappSendOpts = {};
     if (input.mediaUrl !== undefined) o.mediaUrl = input.mediaUrl;
     if (input.mediaType !== undefined) o.mediaType = input.mediaType;
     if (input.caption !== undefined) o.caption = input.caption;
@@ -53,25 +59,45 @@ export class WhatsAppDispatchAdapter implements ChannelDispatchPort {
   }
 
   private mapResult(
-    result: Awaited<ReturnType<WhatsappMessageDispatcherService['sendMessage']>>,
+    result: Awaited<ReturnType<WhatsappService['sendMessage']>>,
     input: WhatsAppSendInput,
   ): ChannelSendResult {
-    if ('error' in result && result.error) {
-      if ('message' in result) {
-        return { success: false, error: result.message };
-      }
-      return { success: false, error: result.error };
+    const obj = (result ?? {}) as Record<string, unknown>;
+    const success = obj.success !== false && !obj.error;
+    if (!success) {
+      const errMsg =
+        typeof obj.error === 'string'
+          ? obj.error
+          : typeof obj.message === 'string'
+            ? obj.message
+            : 'whatsapp_send_failed';
+      const failure: ChannelSendResult = {
+        success: false,
+        provider: 'whatsapp',
+        error: errMsg,
+      };
+      if (typeof obj.blocked === 'boolean') failure.blocked = obj.blocked;
+      if (typeof obj.blockedReason === 'string') failure.blockedReason = obj.blockedReason;
+      return failure;
     }
-    return {
+    const messageId =
+      typeof obj.messageId === 'string'
+        ? obj.messageId
+        : typeof obj.externalId === 'string'
+          ? obj.externalId
+          : typeof obj.id === 'string'
+            ? obj.id
+            : undefined;
+    const queued = obj.queued === true;
+    const ok: ChannelSendResult = {
       success: true,
-      messageId:
-        'messageId' in result && result.messageId != null
-          ? String(result.messageId)
-          : undefined,
-      queued: 'queued' in result && result.queued === true,
-      delivery:
-        'delivery' in result && result.delivery === 'queued' ? 'queued' : 'direct',
-      externalId: input.externalId,
+      provider: 'whatsapp',
+      delivery: queued ? 'queued' : 'direct',
+      queued,
     };
+    if (messageId) ok.messageId = messageId;
+    if (input.externalId) ok.externalId = input.externalId;
+    else if (messageId) ok.externalId = messageId;
+    return ok;
   }
 }
