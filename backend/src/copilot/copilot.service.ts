@@ -100,6 +100,17 @@ export class CopilotService {
         .trackAiUsage(workspaceId, completion?.usage?.total_tokens ?? 500)
         .catch(() => {});
       const suggestion = completion.choices[0]?.message?.content || '';
+      const tokens = completion?.usage?.total_tokens ?? 500;
+      this.logger.log(
+        `copilot-suggest ws=${workspaceId} model=writer baseLen=${prompt.length} outLen=${suggestion.length} tokens=${tokens}`,
+      );
+      if (!suggestion || suggestion.trim().length < 2) {
+        this.logger.warn(`copilot-suggest short output ws=${workspaceId} len=${suggestion.length}`);
+        return {
+          suggestion:
+            'Vi sua mensagem! Posso te ajudar a decidir e já te enviar os próximos passos agora.',
+        };
+      }
       return { suggestion };
     } catch (error: unknown) {
       this.logger.warn(
@@ -204,6 +215,10 @@ Cada resposta deve ser curta, direta e com CTA claro. Varie o tom: 1) amigável 
         .trackAiUsage(workspaceId, completion?.usage?.total_tokens ?? 500)
         .catch(() => {});
       const content = completion.choices[0]?.message?.content || '{}';
+      const tokens = completion?.usage?.total_tokens ?? 500;
+      this.logger.log(
+        `copilot-suggest-multiple ws=${workspaceId} model=writer baseLen=${prompt.length} outLen=${content.length} tokens=${tokens}`,
+      );
       const parsed = JSON.parse(content);
 
       // Determinar contexto da conversa

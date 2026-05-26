@@ -82,7 +82,7 @@ export class AutopilotCycleExecutorService {
     return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
   }
 
-  async analyzeContext(messages: AutopilotConversation['messages']): Promise<ConversationAnalysis> {
+  async analyzeContext(messages: AutopilotConversation['messages'], workspaceId?: string): Promise<ConversationAnalysis> {
     if (!this.openai) {
       return { intent: 'unknown', sentiment: 'neutral', buyingSignal: false };
     }
@@ -112,6 +112,7 @@ export class AutopilotCycleExecutorService {
     this.logger.log('[Autopilot] analyzeContext completed', {
       tokens: completion?.usage?.total_tokens,
       model: resolveBackendOpenAIModel('brain', this.config),
+      workspaceId,
     });
 
     let analysisResult: ConversationAnalysis = {
@@ -461,6 +462,7 @@ ${productContext ? `\nAVAILABLE PRODUCTS (use ONLY these real products in your r
     }
 
     const rawContent = completion.choices[0]?.message?.content;
+    this.logger.log(`autopilot-response ws=${conv?.workspaceId} model=writer baseLen=${prompt.length} outLen=${rawContent?.length ?? 0} tokens=${completion?.usage?.total_tokens ?? 500}`);
     if (!rawContent || rawContent.trim().length < 5) {
       this.logger.warn('[Autopilot] generateResponse produced empty/short output', { type, convId: conv.id, workspaceId: conv.workspaceId });
       return null;
