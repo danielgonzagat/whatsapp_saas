@@ -24,7 +24,7 @@ export class IntentRouterService {
   }> = [
     // === Self-awareness ===
     {
-      regex: /(?:o que|quais|liste|mostre|que)\s.*(?:consegue|capaci|sabe|pode)\s.*(?:fazer?|operar?)/i,
+      regex: /(?:o que|quais|liste|lista|mostre|que)\s.*(?:consegue|capaci|sabe|pode)\s.*(?:fazer?|operar?)/i,
       capabilityId: 'self.capabilities',
       extract: () => ({}),
     },
@@ -41,6 +41,10 @@ export class IntentRouterService {
     {
       regex: /(?:log|audit[oó]ria|a[cç][oõ]es?\s.*execut|o que vc fez|historico)/i,
       capabilityId: 'self.audit_log',
+      extract: () => ({}),
+    {
+      regex: /lista(?:r|ndo)?\s+(?:meus\s+)?(?:produtos|ofertas|cat[aá]logo)/i,
+      capabilityId: 'list_products',
       extract: () => ({}),
     },
 
@@ -146,7 +150,7 @@ export class IntentRouterService {
       extract: () => ({}),
     },
     {
-      regex: /(?:saqu[ei]|solicit[ae]r?\s.*saqu|ped[ei]r?\s.*saqu)/i,
+      regex: /(?:saqu[ei]|solicit[ae]r?\s.*saqu|ped[ei]r?\s.*saqu|sac[ae]r?)/i,
       capabilityId: 'wallet.withdraw',
       extract: () => ({}),
     },
