@@ -47,6 +47,5 @@ export interface ClassifyInput {
   readonly nowMs?: number;
 }
 
-export function clampConfidence(value: number): number {
-  return Math.max(0, Math.min(1, value));
-}
+import { clampScore } from '../../common/math';
+export const clampConfidence = clampScore;
