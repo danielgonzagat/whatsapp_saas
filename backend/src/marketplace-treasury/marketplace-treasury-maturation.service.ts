@@ -23,7 +23,7 @@ export interface MarketplaceTreasuryMaturationResult {
  */
 function prismaErrorCode(error: unknown): string | undefined {
   if (error !== null && typeof error === 'object' && 'code' in error) {
-    return (error as { code: unknown }).code as string | undefined;
+    return typeof error.code === 'string' ? error.code : undefined;
   }
   return undefined;
 } /**
