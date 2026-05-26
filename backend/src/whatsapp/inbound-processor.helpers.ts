@@ -10,18 +10,10 @@ import type { ProviderSettings } from './provider-settings.types';
 import { extractFallbackTopic as extractFallbackTopicValue } from './whatsapp-normalization.util';
 
 import { whatsappDigits } from '../common/phone';
-
-/**
- * WhatsApp-specific phone normalizer: strip JID suffixes (`@c.us`,
- * `@s.whatsapp.net`) and non-digits. Thin wrapper around the canonical
- * `common/phone::whatsappDigits`.
- */
-export function normalizePhone(phone: string): string {
-  return whatsappDigits(phone);
-}
+export { whatsappDigits as normalizePhone };
 
 function expandComparablePhoneVariants(phone: string): string[] {
-  const digits = normalizePhone(phone);
+  const digits = whatsappDigits(phone);
   if (!digits) {
     return [];
   }
@@ -169,7 +161,7 @@ export function isWorkspaceSelfInboundExt(
   phone: string,
 ): boolean {
   const sessionMeta = (settings?.whatsappApiSession || {}) as Record<string, unknown>;
-  const selfPhone = normalizePhone(normalizeUnknownText(sessionMeta.phoneNumber));
+  const selfPhone = whatsappDigits(normalizeUnknownText(sessionMeta.phoneNumber));
   const selfIds = Array.isArray(sessionMeta.selfIds)
     ? (sessionMeta.selfIds as unknown[]).map((v: unknown) => normalizeUnknownText(v))
     : [];
@@ -179,7 +171,7 @@ export function isWorkspaceSelfInboundExt(
   return selfIds.some(
     (c) =>
       normalizeUnknownText(c) === normalizeUnknownText(from) ||
-      areEquivalentPhones(normalizePhone(String(c || '')), phone),
+      areEquivalentPhones(whatsappDigits(String(c || '')), phone),
   );
 }
 
