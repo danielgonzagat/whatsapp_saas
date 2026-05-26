@@ -18,24 +18,15 @@ const DIMENSION_WEIGHTS: Readonly<Record<MemoryDimension, number>> = {
 
 function determinDimension(event: SpineEventRef): MemoryDimension {
   const hoursSince = (Date.now() - new Date(event.occurredAt).getTime()) / 3600_000;
-  if (hoursSince < 6) {
-    return 'working';
-  }
-  if (hoursSince < 72) {
-    return 'episodic';
-  }
-  if (event.truthMode === 'inferred' || event.truthMode === 'projected') {
-    return 'semantic';
-  }
+  if (hoursSince < 6) {return 'working';}
+  if (hoursSince < 72) {return 'episodic';}
+  if (event.truthMode === 'inferred' || event.truthMode === 'projected') {return 'semantic';}
   return 'consolidated';
 }
 
 function computeWeight(event: SpineEventRef, dim: MemoryDimension): number {
   const base = DIMENSION_WEIGHTS[dim];
-  const ageFactor = Math.max(
-    0.1,
-    1 - (Date.now() - new Date(event.occurredAt).getTime()) / (30 * 24 * 3600_000),
-  );
+  const ageFactor = Math.max(0.1, 1 - (Date.now() - new Date(event.occurredAt).getTime()) / (30 * 24 * 3600_000));
   return clamp(base * ageFactor, 0.05, 1);
 }
 
@@ -44,9 +35,7 @@ function extractTags(event: SpineEventRef): readonly string[] {
   const parts = event.eventName.split('.');
   for (let i = 0; i < Math.min(3, parts.length); i++) {
     const part = parts[i];
-    if (part !== undefined) {
-      tags.push(part);
-    }
+    if (part !== undefined) {tags.push(part);}
   }
   if (event.entityRef) {
     tags.push(`entity:${event.entityRef.entityType}`);
@@ -76,13 +65,9 @@ export class MemoryProjector {
 
       for (let i = 0; i < scoped.length; i++) {
         const ev = scoped[i];
-        if (ev === undefined) {
-          continue;
-        }
+        if (ev === undefined) {continue;}
         const evDim = determinDimension(ev);
-        if (evDim !== dim) {
-          continue;
-        }
+        if (evDim !== dim) {continue;}
 
         items.push({
           id: `mem_${dim}_${i.toString(36)}_${ev.eventId.slice(-6)}`,
@@ -127,20 +112,16 @@ export class MemoryProjector {
     _workspaceId: string,
     threshold: number,
   ): readonly MemoryProjection[] {
-    return projections.map((p): MemoryProjection => {
-      if (p.dimension !== 'episodic') {
-        return p;
-      }
+    return projections.map((p) => {
+      if (p.dimension !== 'episodic') {return p;}
 
       const promotedItems: ProjectedMemoryItem[] = p.items
         .filter((it) => it.weight >= threshold)
-        .map(
-          (it, idx): ProjectedMemoryItem => ({
-            ...it,
-            dimension: 'working',
-            id: `mem_working_promoted_${idx.toString(36)}_${it.sourceEventId.slice(-6)}`,
-          }),
-        );
+        .map((it, idx) => ({
+          ...it,
+          dimension: 'working' as MemoryDimension,
+          id: `mem_working_promoted_${idx.toString(36)}_${it.sourceEventId.slice(-6)}`,
+        }));
 
       return {
         ...p,

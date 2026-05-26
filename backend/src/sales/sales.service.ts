@@ -1,11 +1,10 @@
 import { Injectable, Logger, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { Prisma } from '@prisma/client';
-
 import { AuditService } from '../audit/audit.service';
 import { SpineEmitterService } from '../kloel/spine/spine-emitter.service';
 import { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
-import { PrismaService } from '../prisma/prisma.service';const PROCESSOR = 'sales-service';
+import { PrismaService } from '../prisma/prisma.service';
+const PROCESSOR = 'sales-service';
 const PROCESSOR_VERSION = '1.0.0';
 const SCHEMA_VERSION = '1.0.0';
 
@@ -150,7 +149,7 @@ export class SalesService {
           amountCents,
           payerEmail: buyerData.email,
           payerName: buyerData.name,
-          payerDocument: payerDocDigits || undefined,
+          ...(payerDocDigits ? { payerDocument: payerDocDigits } : {}),
           description,
           externalReference: sale.id,
           expiresAt,

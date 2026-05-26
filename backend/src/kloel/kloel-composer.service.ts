@@ -147,14 +147,15 @@ export class KloelComposerService {
       return this.e2EGuard.buildSearchResult(normalizedQuery);
     }
 
-    if (!this.openai) {
+    const openai = this.openai;
+    if (!openai) {
       this.logger.warn('searchWeb falling back to code-native — no OpenAI client');
       return this.codeNativeSearchWeb(normalizedQuery);
     }
 
     // Per WAVE3_LLM_PROMPT_AUDIT critical gap #8: wrap in retry helper to
     // survive transient 429 / 5xx / network blips from the responses API.
-    const response = await callOpenAIWithRetry(() => this.openai.responses.create({
+    const response = await callOpenAIWithRetry(() => openai.responses.create({
       model: KLOEL_SEARCH_WEB_MODEL,
       input: normalizedQuery,
       tools: [
@@ -268,7 +269,8 @@ export class KloelComposerService {
       if (this.e2EGuard.isEnabled()) {
         return this.e2EGuard.buildImageResult();
       }
-      if (!this.openai) {
+      const openai = this.openai;
+      if (!openai) {
         throw new Error(ERR_IMAGE_API_KEY_MISSING);
       }
       if (!process.env.OPENAI_API_KEY) {
@@ -289,7 +291,7 @@ export class KloelComposerService {
         // Per WAVE3_LLM_PROMPT_AUDIT critical gap #8: wrap in retry helper
         // so transient 429/5xx don't fail the user's image-generation request.
         response = await callOpenAIWithRetry(() =>
-          this.openai.images.generate(imageRequest, requestOptions),
+          openai.images.generate(imageRequest, requestOptions),
         );
       } catch (error: unknown) {
         const errorRecord = asUnknownRecord(error);

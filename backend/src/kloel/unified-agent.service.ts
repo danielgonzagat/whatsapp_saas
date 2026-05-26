@@ -241,9 +241,9 @@ export class UnifiedAgentService {
     const cognitiveState = await buildAgentCognitiveState({
       workspaceId,
       currentInput,
-      abiBuilder: this.abiBuilder,
-      abiSnapshotCache: this.abiSnapshotCache,
-      brainCapability: this.brainCapability,
+      ...(this.abiBuilder !== undefined ? { abiBuilder: this.abiBuilder } : {}),
+      ...(this.abiSnapshotCache !== undefined ? { abiSnapshotCache: this.abiSnapshotCache } : {}),
+      ...(this.brainCapability !== undefined ? { brainCapability: this.brainCapability } : {}),
       logger: this.logger,
     });
 

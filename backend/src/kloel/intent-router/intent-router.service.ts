@@ -218,7 +218,7 @@ export class IntentRouterService {
       capabilityId: 'configure_warranty',
       extract: (match) => {
         const days = match[0].match(/(\d+)\s*(?:dias?|days?)/i);
-        return days ? { warrantyDays: parseInt(days[1], 10) } : {};
+        return days?.[1] ? { warrantyDays: parseInt(days[1], 10) } : {};
       },
     },
 

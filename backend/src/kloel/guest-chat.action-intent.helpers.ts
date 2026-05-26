@@ -238,7 +238,7 @@ export function detectActionIntent(
   // ── GARANTIA / EXIT INTENT / AFTER PAY ──
   if (/garantia|warranty/.test(msg)) {
     const wmatch = msg.match(/(\d+)\s*(?:dias?|days?)/i);
-    const wdays = wmatch ? parseInt(wmatch[1], 10) : undefined;
+    const wdays = wmatch?.[1] ? parseInt(wmatch[1], 10) : undefined;
     return { tool: 'configure_warranty', args: { productName: extractProductName(msg), warrantyDays: wdays } };
   }
   if (/exit intent|popup.*sa[ií]da/.test(msg)) {
@@ -485,7 +485,7 @@ export function extractProductArgs(msg: string): Record<string, unknown> {
   }
   // Format: físico, digital, híbrido
   if (/\b(f[ií]sico|digital|h[ií]brido)\b/i.test(msg)) {
-    const fmt = msg.match(/\b(f[ií]sico|digital|h[ií]brido)\b/i)?.[1].toLowerCase() || '';
+    const fmt = msg.match(/\b(f[ií]sico|digital|h[ií]brido)\b/i)?.[1]?.toLowerCase() ?? '';
     args.format = fmt === 'físico' || fmt === 'fisico' ? 'PHYSICAL' : fmt === 'digital' ? 'DIGITAL' : 'HYBRID';
   }
   // Category

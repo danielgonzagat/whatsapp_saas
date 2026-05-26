@@ -99,8 +99,8 @@ export class MindPolicyService {
       decisionType: input.decisionType,
       inputOptions: input.options,
       workspaceId: input.workspaceId,
-      wisdomFilter: this.wisdomFilter,
-      wisdomStore: this.wisdomStore,
+      ...(this.wisdomFilter !== undefined ? { wisdomFilter: this.wisdomFilter } : {}),
+      ...(this.wisdomStore !== undefined ? { wisdomStore: this.wisdomStore } : {}),
       logger: this.logger,
     });
 

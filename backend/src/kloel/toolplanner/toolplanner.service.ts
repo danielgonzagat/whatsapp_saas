@@ -132,7 +132,7 @@ export class ToolPlannerService {
       outputs,
       domainEvents: cap.emits,
       auditLogId,
-      evidenceUrl,
+      ...(evidenceUrl !== undefined ? { evidenceUrl } : {}),
       timestamp: new Date().toISOString(),
       durationMs,
       idempotencyKey: ctx.idempotencyKey,

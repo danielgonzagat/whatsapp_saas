@@ -259,7 +259,8 @@ export function makeTruthModeHonestyGate(
       if (allOffenses.length === 0) {
         return pass('truth-mode-honesty', mode, MEASURED_BY);
       }
-      const reason = `${allOffenses.length} truthMode dishonesty issue(s): ${allOffenses[0].detail}`;
+      const first = allOffenses[0]!;
+      const reason = `${allOffenses.length} truthMode dishonesty issue(s): ${first.detail}`;
       return fail(
         'truth-mode-honesty',
         mode,

@@ -2190,9 +2190,11 @@ export const CAPABILITY_MAP = new Map<string, CapabilityDefinition>(
 /** Map capability ID -> tier grouping */
 export const CAPABILITIES_BY_TIER: Record<number, CapabilityDefinition[]> =
   CAPABILITY_DEFINITIONS.reduce<Record<number, CapabilityDefinition[]>>((acc, cap) => {
-    if (!acc[cap.tier]) {
-      acc[cap.tier] = [];
+    const entry = acc[cap.tier];
+    if (entry) {
+      entry.push(cap);
+    } else {
+      acc[cap.tier] = [cap];
     }
-    acc[cap.tier].push(cap);
     return acc;
   }, {});
