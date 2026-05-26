@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaService } from '../prisma/prisma.service';
-import { MindService } from './mind.service';
-import { MindReportService } from './mind-report.service';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { MindService } from '../../mind.service';
+import { MindReportService } from '../observability/mind-report.service';
 import { MindProcessorService } from './mind-processor.service';
 
 type ProcessorFn = () => Promise<unknown>;
@@ -28,7 +28,7 @@ jest.mock('bullmq', () => ({
   ),
 }));
 
-jest.mock('../common/redis/redis.util', () => ({
+jest.mock('../../../common/redis/redis.util', () => ({
   createRedisClient: jest.fn(() => ({})),
   isRedisConfigured: jest.fn(() => true),
 }));
