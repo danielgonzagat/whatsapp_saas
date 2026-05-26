@@ -128,6 +128,7 @@ import { PulseGatesModule } from './kloel/pulse-gates/pulse-gates.module';
 import { IncentModule } from './kloel/incent/incent.module';
 import { PipelineModule } from './pipeline/pipeline.module';
 import { ProductCategoriesModule } from './product-categories/product-categories.module';
+import { ProductsModule } from './products/products.module';
 import { PublicApiModule } from './public-api/public-api.module';
 import { PulseModule } from './pulse/pulse.module';
 import { ReportsModule } from './reports/reports.module';
@@ -279,6 +280,7 @@ function setRedisClientListenerBudget(client: Redis): void {
     PartnershipsModule, // 🤝 Partnerships (Collaborators, Affiliates, Chat)
     VideoModule, // 🎬 Video generation jobs
     CheckoutModule, // Checkout System (products, plans, orders)
+    ProductsModule, // 🏷️ Canonical product domain service
     KycModule, // KYC - Know Your Customer
     ReportsModule, // Reports & Analytics (Vendas, Assinaturas, Churn, etc.)
     MetaModule, // Meta Platform (OAuth, Graph API, Webhooks)

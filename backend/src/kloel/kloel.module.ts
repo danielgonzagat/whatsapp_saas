@@ -188,13 +188,13 @@ import { AccountService } from './account.service';
 import { CheckoutService } from './checkout.service';
 import { CouponService } from './coupon.service';
 import { PlanService } from './plan.service';
-import { ProductService } from './product.service';
 import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
 import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service';
 import { ToolPlannerModule } from './toolplanner/toolplanner.module';
 import { CapabilityRegistryV2Module } from './capability-registry-v2/capability-registry-v2.module';
 import { IntentRouterModule } from './intent-router/intent-router.module';
 import { SelfAwarenessModule } from './self-awareness/self-awareness.module';
+import { ProductsModule } from '../products/products.module';
 
 /** Kloel module. */
 @Module({
@@ -221,6 +221,7 @@ import { SelfAwarenessModule } from './self-awareness/self-awareness.module';
     IntentRouterModule,
     ToolPlannerModule,
     SelfAwarenessModule,
+    ProductsModule,
   ],
   controllers: [
     KloelController,
@@ -275,7 +276,6 @@ import { SelfAwarenessModule } from './self-awareness/self-awareness.module';
     CheckoutService,
     CouponService,
     PlanService,
-    ProductService,
     KloelProductSubResourceToolsService,
     KloelWalletSalesToolsService,
     KloelBusinessConfigToolsService,

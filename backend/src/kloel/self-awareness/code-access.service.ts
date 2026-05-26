@@ -140,12 +140,13 @@ export class CodeAccessService {
       if (hits.length >= max) break;
       const match = line.match(/^([^:]+):(\d+):(\d+):(.*)$/);
       if (match) {
+        const [, file = '', lineStr = '0', colStr = '0', content = ''] = match;
         hits.push({
-          file: match[1].replace(this.root + '/', '').replace(this.root, ''),
-          line: parseInt(match[2], 10),
-          column: parseInt(match[3], 10),
-          content: match[4].trim(),
-          match: match[4].trim(),
+          file: file.replace(this.root + '/', '').replace(this.root, ''),
+          line: parseInt(lineStr, 10),
+          column: parseInt(colStr, 10),
+          content: content.trim(),
+          match: content.trim(),
         });
       }
     }
