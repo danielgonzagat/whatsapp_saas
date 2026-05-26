@@ -21,6 +21,7 @@ import { AccountService } from './account.service';
 import { SelfHealthService } from './self-awareness/self-health.service';
 import { SelfGapsService } from './self-awareness/self-gaps.service';
 import { CapabilityRegistryV2Service } from './capability-registry-v2/capability-registry-v2.service';
+import { ReportService } from './report.service';
 import { sanitizeDetails } from './kloel-tool-dispatcher.high-risk.helpers';
 import {
   runRequestHighRiskApproval,
@@ -30,6 +31,24 @@ import {
 
 import type { UnknownRecord } from '../common/types';
 
+/** Resolve a period label to a `Date` floor. */
+function periodToSince(period: string | undefined): Date {
+  switch (period) {
+    case 'today': {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+    case 'week':
+      return new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    case 'month':
+      return new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    case 'year':
+      return new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
+    default:
+      return new Date(0);
+  }
+}
 
 /**
  * Dispatcher for KloelService tool execution. Extracted from kloel.service.ts
@@ -58,6 +77,7 @@ export class KloelToolDispatcherService {
     @Optional() private readonly productSubTools?: KloelProductSubResourceToolsService,
     @Optional() private readonly walletSalesTools?: KloelWalletSalesToolsService,
     @Optional() private readonly smartPaymentService?: SmartPaymentService,
+    @Optional() private readonly reportService?: ReportService,
 
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() private readonly selfHealth?: SelfHealthService,
@@ -651,6 +671,26 @@ export class KloelToolDispatcherService {
           return await this.codeToolsService.toolCodeGraphNode(typeof args.symbol === 'string' ? args.symbol : '');
         case 'codegraph_files':
           return await this.codeToolsService.toolCodeGraphFiles();
+        // ── REPORTS (w25) ──
+        case 'reports.operations': {
+          if (!this.reportService) return { success: false, error: 'report_service_unavailable' };
+          const period = typeof args?.period === 'string' ? args.period : undefined;
+          const since = periodToSince(period);
+          const res = await this.reportService.operations(workspaceId, { since });
+          return { success: true, ...res };
+        }
+        case 'reports.abandonments': {
+          if (!this.reportService) return { success: false, error: 'report_service_unavailable' };
+          const period = typeof args?.period === 'string' ? args.period : undefined;
+          const since = periodToSince(period);
+          const res = await this.reportService.abandonments(workspaceId, { since });
+          return { success: true, ...res };
+        }
+        case 'crm.pipeline': {
+          if (!this.reportService) return { success: false, error: 'report_service_unavailable' };
+          const res = await this.reportService.pipeline(workspaceId);
+          return { success: true, ...res };
+        }
         default:
           return { success: false, error: `Ferramenta desconhecida: ${toolName}` };
       }

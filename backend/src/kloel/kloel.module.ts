@@ -13,6 +13,7 @@ import { KloelCodeToolsService } from './kloel-code-tools.service';
 import { KloelCodeAnalysisService } from './kloel-code-analysis.service';
 
 import { KloelReflexivityService } from './kloel-reflexivity.service';
+import { ReportService } from './report.service';
 import { UnifiedAgentToolExecutorService } from './unified-agent-tool-executor';
 
 import { KloelBusinessConfigToolsService } from './kloel-business-config-tools.service';
@@ -314,6 +315,7 @@ import { SelfAwarenessModule } from './self-awareness/self-awareness.module';
     PdfProcessorService,
     WalletService,
     WalletLedgerService,
+    ReportService,
     LLMBudgetService,
     UnifiedAgentService,
     { provide: UNIFIED_AGENT_TOKEN, useExisting: UnifiedAgentService },
@@ -423,6 +425,7 @@ import { SelfAwarenessModule } from './self-awareness/self-awareness.module';
     PdfProcessorService,
     WalletService,
     WalletLedgerService,
+    ReportService,
     LLMBudgetService,
     KloelAudioModule,
     UnifiedAgentService,

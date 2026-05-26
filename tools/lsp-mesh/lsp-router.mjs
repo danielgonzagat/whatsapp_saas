@@ -234,14 +234,17 @@ async function lspRename(id, args) {
 }
 
 async function lspHealth(id, args) {
+  // dedup by (language, workspace) — not just language — so all 5 typescript
+  // workspaces (backend/frontend/frontend-admin/worker/e2e) report independently.
   const results = {}, checked = new Set();
   for (const [wn, ws] of Object.entries(mesh.workspaces)) {
     for (const sn of ws.servers) {
       if (args?.language && sn !== args.language) continue;
-      if (checked.has(sn)) continue;
-      checked.add(sn);
-      try { const s = await pool.getOrStart(sn, wn); results[`${sn}@${wn}`] = { status:'running', pid:s.proc.pid }; }
-      catch(e) { results[`${sn}@${wn}`] = { status:'error', message:e.message }; }
+      const key = `${sn}@${wn}`;
+      if (checked.has(key)) continue;
+      checked.add(key);
+      try { const s = await pool.getOrStart(sn, wn); results[key] = { status:'running', pid:s.proc.pid }; }
+      catch(e) { results[key] = { status:'error', message:e.message }; }
     }
   }
   return respond(id, { content:[{type:'text', text:JSON.stringify(results, null, 2)}] });
