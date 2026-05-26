@@ -8,7 +8,7 @@ describe('worker runtime utility guards', () => {
   it('resolves safe path segments and rejects invalid segments', () => {
     expect(safeResolve('tmp', 'worker-cache')).toBe(path.resolve('tmp', 'worker-cache'));
     expect(() => safeResolve('tmp', 'bad\0segment')).toThrow('safeResolve: null byte');
-    expect(() => safeResolve('tmp', 42 as unknown as string)).toThrow(TypeError);
+    expect(() => Reflect.apply(safeResolve, null, ['tmp', 42])).toThrow(TypeError);
   });
 
   it('honors WorkerError retry flags and permanent message patterns', () => {
