@@ -102,6 +102,34 @@ From `SEND_MESSAGE_CANONICAL.md` §5 Risk Register:
 | R6: `BrainCapabilityExecutorService.sendMessageViaChannel` returns `queued:true` only — may not deliver | **Investigate** if brain-sourced messages reach the channel. |
 | R7: No `EmailDispatchAdapter` exists yet | ✅ **Built** in Wave W1 of ADR-0012 at `backend/src/marketing/channels/email/email-dispatch.adapter.ts` — resolves mailbox via @Optional injection of Gmail / Microsoft / IMAP-SMTP, tries in priority order, surfaces first non-not_connected result. |
 
+## Wave M5 physical-move progress (top-level kloel/mind-*.service.ts)
+
+| Batch | Services moved | Sub-areas affected | Status |
+|---|---|---|---|
+| 1 | MindBanditService → policy/, MindBeliefService → inference/, MindGlobalPriorService → memory/ | policy, inference, memory | landed (PI-I) |
+| 2 | MindCaseMemoryService → memory/, MindConceptService → memory/, MindPolicyService → policy/ | policy, memory | landed (PI-J) |
+| 3 | MindPredictorService → inference/, MindSurpriseService → inference/, MindVerbalizerService → synthetic/ | inference, synthetic | landed (PI-K) |
+| 4 | MindLiftReportService → observability/, MindObservabilityService → observability/, MindReportService → observability/ | observability | in flight (PI-L) |
+| 5 | mind-event-processor/mind-processor/mind-replay → runtime/ | runtime | planned |
+| 6 | mind-guards/mind-guard-context-builder/mind-quality → policy/ | policy | planned |
+| 7 | mind-simulator/mind-synthetic-generator/mind-workspace-state → synthetic, memory | synthetic, memory | planned |
+| 8 | mind-perception (held — parallel agent owns) | perception | held |
+
+After Wave M5: top-level `kloel/mind-*.service.ts` files become @deprecated
+re-exports for the 4-week alias window; physical code lives at
+`kloel/mind/<sub-area>/`. Gate G4 (`check-mind-canonical-imports.mjs`)
+will promote to `--strict` after the window closes, blocking pre-push
+on any legacy import.
+
+## Gates that enforce this map
+
+| Gate | Script | What it blocks |
+|---|---|---|
+| G1 (vocabulary) | `scripts/ops/check-canonical-vocabulary.mjs` | Alias-name usage in new code (currently 1416 occurrences, soft mode) |
+| G2 (events) | `scripts/ops/check-canonical-events.mjs` | Non-canonical `.emit('…')` strings outside the EVENT_TAXONOMY allowlist |
+| G3 (services) | `scripts/ops/check-canonical-services.mjs` | Duplicate `@Injectable()` class names not registered in this map |
+| G4 (mind imports) | `scripts/ops/check-mind-canonical-imports.mjs` | Imports pointing at the 15 legacy `brain-*` / `ai-brain/*` / `brain/*` / `cia/*` paths (currently 0; soft mode until 2026-06-23) |
+
 ## How to add an entry
 
 1. Confirm the deprecation is decided in an ADR or in a canonical inventory doc.
