@@ -1,0 +1,6 @@
+round=062
+timestamp=20260517101409
+normal_worktree=/private/tmp/kloel-ab062-normal-20260517101409
+atomic_worktree=/private/tmp/kloel-ab062-atomic-20260517101409
+normal_branch=bench/ab062-normal-20260517101409
+atomic_branch=bench/ab062-atomic-20260517101409

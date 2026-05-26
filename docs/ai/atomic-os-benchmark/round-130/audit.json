@@ -1,0 +1,529 @@
+{
+  "roundDir": "/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/round-130",
+  "normal": {
+    "eventsFile": "opencode-normal-events.jsonl",
+    "events": {
+      "rows": 198,
+      "laneStatus": "completed",
+      "laneExitCode": 0,
+      "laneElapsedMs": 1405290,
+      "laneTimedOut": false,
+      "laneStartTimestamp": 1779109446768,
+      "firstStepStartTimestamp": 1779109457674,
+      "effectiveStartTimestamp": 1779109446768,
+      "eventFirstActionTimestamp": 1779109467161,
+      "firstActionTimestamp": 1779109467161,
+      "eventFinalTimestamp": 1779110850795,
+      "watchdogFinalTimestamp": null,
+      "finalTimestamp": 1779110850795,
+      "preprompt": null,
+      "prepromptActionMs": null,
+      "firstActionMs": 20393,
+      "eventSpanMs": 1404027,
+      "totalAgentMs": 1404027,
+      "turnCompleted": true,
+      "completedCommands": 18,
+      "uniqueCompletedCommands": 16,
+      "failedCommands": [
+        {
+          "command": "cd backend && npx jest src/kloel/unified-agent.service.spec.ts --runInBand --silent 2>&1",
+          "exitCode": 1,
+          "output": "FAIL src/kloel/unified-agent.service.spec.ts (11.289 s)\n  ● UnifiedAgentService › executes predecided actions without delegating tool choice to the LLM\n\n    TypeError: service.processMessage is not a function\n\n      396 |\n      397 |   it('executes predecided actions without delegating tool choice to the LLM', async () => {\n    > 398 |     const result = await service.processMessage({\n          | "
+        },
+        {
+          "command": "cd backend && npx eslint src/kloel/unified-agent.service.ts src/kloel/unified-agent-tool-router.helpers.ts src/kloel/unified-agent-runtime.helpers.ts src/kloel/unified-agent-tool-parser.helpers.ts src/kloel/unified-agent-cognitive-state.helpers.ts src/kloel/unified-agent-incoming-message.helpers.ts src/kloel/unified-agent-tool-call-processing.helpers.ts src/kloel/unified-agent-predecided-processing.helpers.ts --max-warnings 0 2>&1",
+          "exitCode": 1,
+          "output": "\n/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent-incoming-message.helpers.ts\n   14:9   error  Replace `⏎··buildAgentRuntimeContext,⏎··recordAgentRuntimeTurn,⏎` with `·buildAgentRuntimeContext,·recordAgentRuntimeTurn·`  prettier/prettier\n   20:3   error  'executeToolAction' is defined but never used. Allowed unused vars must match /^_/u       "
+        },
+        {
+          "command": "cd backend && npx eslint src/kloel/unified-agent.service.ts src/kloel/unified-agent-tool-router.helpers.ts src/kloel/unified-agent-runtime.helpers.ts src/kloel/unified-agent-tool-parser.helpers.ts src/kloel/unified-agent-cognitive-state.helpers.ts src/kloel/unified-agent-incoming-message.helpers.ts src/kloel/unified-agent-tool-call-processing.helpers.ts src/kloel/unified-agent-predecided-processing.helpers.ts --fix 2>&1",
+          "exitCode": 1,
+          "output": "\n/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent-incoming-message.helpers.ts\n  17:3   error  'executeToolAction' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars\n  23:46  error  'ToolArgs' is defined but never used. Allowed unused vars must match /^_/u           @typescript-eslint/no-unused-va"
+        },
+        {
+          "command": "cd backend && npx eslint src/kloel/unified-agent.service.ts src/kloel/unified-agent-tool-router.helpers.ts src/kloel/unified-agent-runtime.helpers.ts src/kloel/unified-agent-tool-parser.helpers.ts src/kloel/unified-agent-cognitive-state.helpers.ts src/kloel/unified-agent-incoming-message.helpers.ts src/kloel/unified-agent-tool-call-processing.helpers.ts src/kloel/unified-agent-predecided-processing.helpers.ts --max-warnings 0 2>&1 && echo \"---ESLINT PASSED---\" && cd backend && npx jest src/kloel/unified-agent.service.spec.ts --runInBand --silent 2>&1 && echo \"---TESTS PASSED---\"",
+          "exitCode": 1,
+          "output": "---ESLINT PASSED---\nzsh:cd:1: no such file or directory: backend\n"
+        },
+        {
+          "command": "cd backend && npx jest src/kloel/unified-agent.service.spec.ts --runInBand --silent 2>&1 && echo \"===JEST OK===\" && npx eslint src/kloel/unified-agent.service.ts src/kloel/unified-agent-tool-router.helpers.ts src/kloel/unified-agent-runtime.helpers.ts src/kloel/unified-agent-tool-parser.helpers.ts src/kloel/unified-agent-cognitive-state.helpers.ts src/kloel/unified-agent-incoming-message.helpers.ts src/kloel/unified-agent-tool-call-processing.helpers.ts src/kloel/unified-agent-predecided-processing.helpers.ts --max-warnings 0 2>&1 && echo \"===ESLINT OK===\" && tsc -p tsconfig.build.json --noEmit 2>&1 && echo \"===TYPECHECK OK===\" && cd /Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157 && git diff --check -- backend/src/kloel 2>&1 && echo \"===GIT DIFF OK===\"",
+          "exitCode": 127,
+          "output": "PASS src/kloel/unified-agent.service.spec.ts (7.448 s)\n\nTest Suites: 1 passed, 1 total\nTests:       13 passed, 13 total\nSnapshots:   0 total\nTime:        7.621 s, estimated 8 s\n===JEST OK===\n===ESLINT OK===\nzsh:1: command not found: tsc\n"
+        }
+      ],
+      "completedMcpCalls": 0,
+      "mcpTools": {},
+      "allTools": {
+        "read": 22,
+        "bash": 18,
+        "glob": 1,
+        "grep": 4,
+        "todowrite": 6,
+        "write": 9,
+        "edit": 13
+      },
+      "nativeFileToolViolations": [
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/CLAUDE.md\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent.service.ts\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent.service.spec.ts\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent.types.ts\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent-predecided-actions.part.ts\"}"
+        },
+        {
+          "tool": "glob",
+          "inputPreview": "{\"pattern\":\"backend/src/kloel/unified-agent-*.ts\",\"path\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent-actions.service.ts\",\"limit\":50}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/abi/abi-validator.ts\",\"limit\":30}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/agent-runtime/index.ts\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/agent-runtime/agent-runtime.context.ts\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/common/async-sequence.ts\"}"
+        },
+        {
+          "tool": "grep",
+          "inputPreview": "{\"pattern\":\"str\\\\(|public str\",\"include\":\"unified-agent-actions.service.ts\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent-actions.service.ts\",\"offset\":51,\"limit\":70}"
+        },
+        {
+          "tool": "grep",
+          "inputPreview": "{\"pattern\":\"async action|async get|async validate|str\\\\b|num\\\\b\",\"include\":\"unified-agent-actions.service.ts\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/abi/abi-builder.service.ts\",\"limit\":40}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/abi/abi-builder.service.ts\",\"offset\":40}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/abi/abi-schema.ts\",\"limit\":60}"
+        },
+        {
+          "tool": "grep",
+          "inputPreview": "{\"include\":\"abi-schema.ts\",\"pattern\":\"AbiCurrentInput|AbiPerceptionSnapshot\"}"
+        },
+        {
+          "tool": "grep",
+          "inputPreview": "{\"include\":\"unified-agent-actions.service.ts\",\"pattern\":\"^  str =|^  num =|^  async action|^  async get|^  async validate|^  async log\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"offset\":310,\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/abi/abi-schema.ts\",\"limit\":30}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"offset\":75,\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/abi/abi-schema.ts\",\"limit\":15}"
+        },
+        {
+          "tool": "write",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent-tool-parser.helpers.ts\",\"content\":\"type UnknownRecord = Record<string, unknown>;\\n\\nexport function isAllowedTool(toolName: string, allowedTools?: string[]): boolean {\\n  return !allowedTools || allowedTools.includes(toolName);\\n}\\n\\nexport function formatPromptValue(value: unknown)"
+        },
+        {
+          "tool": "write",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent-runtime.helpers.ts\",\"content\":\"import type { AgentRuntimeContextService } from './agent-runtime';\\n\\nexport async function buildAgentRuntimeContext(\\n  agentRuntime: AgentRuntimeContextService | undefined,\\n  params: {\\n    workspaceId: string;\\n    channel: string;\\n    message: st"
+        },
+        {
+          "tool": "write",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent-tool-router.helpers.ts\",\"content\":\"import { StructuredLogger } from '../logging/structured-logger';\\nimport type { AgentRuntimeContextService } from './agent-runtime';\\nimport type { ToolArgs } from './unified-agent.types';\\nimport type { UnifiedAgentActionsService } from './unified"
+        },
+        {
+          "tool": "write",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent-cognitive-state.helpers.ts\",\"content\":\"import { StructuredLogger } from '../logging/structured-logger';\\nimport type { AbiBuilderService } from './abi/abi-builder.service';\\nimport { validateAbiPayload } from './abi/abi-validator';\\n\\ntype UnknownRecord = Record<string, unknown>;\\n\\"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"offset\":298,\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent-actions.service.ts\",\"limit\":20}"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent-tool-router.helpers.ts\",\"oldString\":\"import { StructuredLogger } from '../logging/structured-logger';\\nimport type { AgentRuntimeContextService } from './agent-runtime';\\nimport type { ToolArgs } from './unified-agent.types';\\nimport type { UnifiedAgentActionsService } from './unifi"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent-tool-router.helpers.ts\",\"oldString\":\"export interface ExecuteToolActionDeps {\\n  logger: StructuredLogger;\\n  actions: UnifiedAgentActionsService;\\n  prisma: PrismaService;\\n  auditService: AuditService;\\n  riskGate?: RiskGateService;\\n  agentRuntime?: AgentRuntimeContextService;\\n}"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent-tool-router.helpers.ts\",\"oldString\":\"    case 'create_flow_from_description':\\n      return deps.actions.actionCreateFlowFromDescription(\\n        workspaceId,\\n        args,\\n        deps.openai as never,\\n        deps.primaryBrainModel as string,\\n        deps.fallbackBrainModel a"
+        },
+        {
+          "tool": "write",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent-tool-call-processing.helpers.ts\",\"content\":\"import { StructuredLogger } from '../logging/structured-logger';\\nimport { forEachSequential } from '../common/async-sequence';\\nimport {\\n  isAllowedTool,\\n  parseToolArgs,\\n} from './unified-agent-tool-parser.helpers';\\nimport {\\n  execu"
+        },
+        {
+          "tool": "write",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent-predecided-processing.helpers.ts\",\"content\":\"import type { StructuredLogger } from '../logging/structured-logger';\\nimport {\\n  buildPredecidedActionDraft,\\n  executePredecidedAgentActions,\\n} from './unified-agent-predecided-actions.part';\\nimport {\\n  executeToolAction,\\n  num,\\n "
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent-tool-parser.helpers.ts\",\"oldString\":\"export function parseToolArgs(rawArgs: string | undefined): Record<string, unknown> {\\n  try {\\n    return JSON.parse(rawArgs || '{}');\\n  } catch {\\n    return {};\\n  }\\n}\",\"newString\":\"export function parseToolArgs(\\n  rawArgs: string | undefin"
+        },
+        {
+          "tool": "write",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent-tool-call-processing.helpers.ts\",\"content\":\"import { StructuredLogger } from '../logging/structured-logger';\\nimport { forEachSequential } from '../common/async-sequence';\\nimport {\\n  isAllowedTool,\\n  parseToolArgs,\\n} from './unified-agent-tool-parser.helpers';\\nimport {\\n  execu"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent-predecided-processing.helpers.ts\",\"oldString\":\"import {\\n  executeToolAction,\\n  num,\\n  type ExecuteToolActionDeps,\\n} from './unified-agent-tool-router.helpers';\",\"newString\":\"import {\\n  executeToolAction,\\n  type ExecuteToolActionDeps,\\n} from './unified-agent-tool-router.helper"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent-predecided-processing.helpers.ts\",\"oldString\":\"import type { ActionEntry, PredecidedAction, ToolArgs } from './unified-agent.types';\",\"newString\":\"import type { ActionEntry, PredecidedAction } from './unified-agent.types';\"}"
+        },
+        {
+          "tool": "write",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent-incoming-message.helpers.ts\",\"content\":\"import type OpenAI from 'openai';\\nimport type { ChatCompletionMessageParam } from 'openai/resources/chat';\\nimport { StructuredLogger } from '../logging/structured-logger';\\nimport { PlanLimitsService } from '../billing/plan-limits.service';\\"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent-response.service.ts\",\"limit\":30}"
+        },
+        {
+          "tool": "write",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent.service.ts\",\"content\":\"import { Injectable, Optional } from '@nestjs/common';\\nimport { ConfigService } from '@nestjs/config';\\nimport { StructuredLogger } from '../logging/structured-logger';\\nimport OpenAI from 'openai';\\nimport { PlanLimitsService } from '../billing/plan-limits.s"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent.service.ts\",\"oldString\":\"import type { ToolArgs, ActionEntry, PredecidedAction } from './unified-agent.types';\",\"newString\":\"import type { ToolArgs, ActionEntry } from './unified-agent.types';\"}"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent.service.ts\",\"oldString\":\"  async executeTool(\",\"newString\":\"  async processMessage(\\n    params: {\\n      allowedTools?: string[];\\n      predecidedActions?: PredecidedAction[];\\n      workspaceId: string;\\n      contactId: string;\\n      phone: string;\\n      message: string;\\n    "
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent.service.ts\",\"oldString\":\"import type { ToolArgs, ActionEntry } from './unified-agent.types';\",\"newString\":\"import type { ToolArgs, ActionEntry, PredecidedAction } from './unified-agent.types';\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent-incoming-message.helpers.ts\",\"limit\":30}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent-tool-call-processing.helpers.ts\",\"limit\":10}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent-tool-parser.helpers.ts\",\"offset\":33,\"limit\":10}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent-tool-call-processing.helpers.ts\",\"offset\":44}"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent-incoming-message.helpers.ts\",\"oldString\":\"import {\\n  executeToolAction,\\n  actionSucceeded,\\n  type ExecuteToolActionDeps,\\n} from './unified-agent-tool-router.helpers';\",\"newString\":\"import { actionSucceeded, type ExecuteToolActionDeps } from './unified-agent-tool-router.helpers';"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent-incoming-message.helpers.ts\",\"oldString\":\"import type { ActionEntry, PredecidedAction, ToolArgs } from './unified-agent.types';\",\"newString\":\"import type { ActionEntry, PredecidedAction } from './unified-agent.types';\"}"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent-tool-call-processing.helpers.ts\",\"oldString\":\"import type { ActionEntry, ToolArgs } from './unified-agent.types';\",\"newString\":\"import type { ActionEntry } from './unified-agent.types';\"}"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-normal-20260518100157/backend/src/kloel/unified-agent-tool-parser.helpers.ts\",\"oldString\":\"    return { args: JSON.parse(source) };\",\"newString\":\"    return { args: JSON.parse(source) as Record<string, unknown> };\"}"
+        }
+      ],
+      "nativeShellReadCommands": [],
+      "maskedAtomicFailurePipelineCommands": [],
+      "atomicCallWorktreeEscapes": [],
+      "forbiddenAtomicToolUses": [],
+      "forbiddenAtomicCommands": [],
+      "fileChangeItems": 0,
+      "fileChangePaths": [],
+      "agentMessages": 21,
+      "proofReadCommands": 0,
+      "fullDiffCommands": 0,
+      "backendInstallCommands": 0,
+      "usage": {
+        "input_tokens": 94355,
+        "output_tokens": 20630,
+        "reasoning_output_tokens": 14880
+      }
+    },
+    "validation": {
+      "jestStatus": 0,
+      "typecheckStatus": 0,
+      "typecheckErrorCount": 0,
+      "typecheckKloelErrorCount": 0,
+      "lintStatus": 0,
+      "diffCheckStatus": 0,
+      "traceIsolationStatus": null,
+      "forbiddenPatternStatus": 1,
+      "helperThisStatus": 1,
+      "privateMethodsStatus": null,
+      "serviceLines": 184,
+      "specDiff": [],
+      "protectedDiff": [],
+      "traceCount": null,
+      "docsTraceCount": null,
+      "touchedKloelFiles": [
+        "backend/src/kloel/unified-agent-cognitive-state.helpers.ts",
+        "backend/src/kloel/unified-agent-incoming-message.helpers.ts",
+        "backend/src/kloel/unified-agent-predecided-processing.helpers.ts",
+        "backend/src/kloel/unified-agent-runtime.helpers.ts",
+        "backend/src/kloel/unified-agent-tool-call-processing.helpers.ts",
+        "backend/src/kloel/unified-agent-tool-parser.helpers.ts",
+        "backend/src/kloel/unified-agent-tool-router.helpers.ts",
+        "backend/src/kloel/unified-agent.service.ts"
+      ],
+      "touchedKloelFileCount": 8,
+      "fileLineCounts": [
+        {
+          "lines": 184,
+          "path": "backend/src/kloel/unified-agent.service.ts"
+        },
+        {
+          "lines": 240,
+          "path": "backend/src/kloel/unified-agent-tool-router.helpers.ts"
+        },
+        {
+          "lines": 33,
+          "path": "backend/src/kloel/unified-agent-runtime.helpers.ts"
+        },
+        {
+          "lines": 43,
+          "path": "backend/src/kloel/unified-agent-tool-parser.helpers.ts"
+        },
+        {
+          "lines": 48,
+          "path": "backend/src/kloel/unified-agent-cognitive-state.helpers.ts"
+        },
+        {
+          "lines": 309,
+          "path": "backend/src/kloel/unified-agent-incoming-message.helpers.ts"
+        },
+        {
+          "lines": 85,
+          "path": "backend/src/kloel/unified-agent-tool-call-processing.helpers.ts"
+        },
+        {
+          "lines": 103,
+          "path": "backend/src/kloel/unified-agent-predecided-processing.helpers.ts"
+        }
+      ],
+      "actionHelperLines": null,
+      "runtimeHelperLines": 33,
+      "runtimeContextHelperLines": null,
+      "toolRouterHelperLines": 240,
+      "totalKloelLines": 1045,
+      "unexpectedPrivateHelperRemovalStatus": null,
+      "scopePreservationPass": null,
+      "untrackedInsertions": 861,
+      "sourceInsertions": 921,
+      "sourceDeletions": 613,
+      "sourceChurn": 1534
+    }
+  },
+  "atomic": {
+    "eventsFile": "opencode-atomic-events.jsonl",
+    "events": {
+      "rows": 3,
+      "laneStatus": "completed",
+      "laneExitCode": 0,
+      "laneElapsedMs": 1405288,
+      "laneTimedOut": false,
+      "laneStartTimestamp": 1779109446770,
+      "firstStepStartTimestamp": 1779109691930,
+      "effectiveStartTimestamp": 1779109446770,
+      "eventFirstActionTimestamp": null,
+      "firstActionTimestamp": 1779109451248,
+      "eventFinalTimestamp": 1779109712003,
+      "watchdogFinalTimestamp": null,
+      "finalTimestamp": 1779109712003,
+      "preprompt": {
+        "startTimestamp": 1779109451248,
+        "endTimestamp": 1779109684361,
+        "exitCode": 1,
+        "commandText": "bash \"/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/round-130/atomic-fastpath.sh\"\n",
+        "output": "[atomic-edit] ready — repo=/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-atomic-20260518100157 node=v25.9.0 pid=93560\n[atomic-edit] tmpdir=/tmp\n[atomic-edit] created backend/src/kloel/unified-agent-runtime.helpers.ts (28 lines)\n[atomic-edit] semantic edit {\"action\":\"created-declaration\",\"moduleSpecifier\":\"./unified-agent-runtime.helpers\",\"name\":\"buildAgentRuntimeContext\",\"alias\":null,\"typeOnly\":false} in backend/src/kloel/unified-agent.service.ts\n[atomic-edit] semantic edit {\"action\":\"added-specifier\",\"moduleSpecifier\":\"./unified-agent-runtime.helpers\",\"name\":\"recordAgentRuntimeTurn\",\"alias\":null,\"typeOnly\":false} in backend/src/kloel/unified-agent.service.ts\n[atomic-edit] wrote backend/src/kloel/unified-agent.service.ts (+14 bytes net)\n[atomic-edit] wrote backend/src/kloel/unified-agent.service.ts (+14 bytes net)\n[atomic-edit] wrote backend/src/kloel/unified-agent.service.ts (+14 bytes net)\n[atomic-edit] edit_symbol remove UnifiedAgentService.buildAgentRuntimeContext in backend/src/kloel/unified-agent.service.ts\n[atomic-edit] edit_symbol remove UnifiedAgentService.recordAgentRuntimeTurn in backend/src/kloel/unified-agent.service.ts\n[atomic-edit] wrote backend/src/kloel/unified-agent.service.ts (+-1 bytes net)\n{\n  \"ok\": true,\n  \"operation\": \"extract_class_methods_to_file\",\n  \"sourceFile\": \"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-atomic-20260518100157/backend/src/kloel/unified-agent.service.ts\",\n  \"targetFile\": \"/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-atomic-20260518100157/backend/src/kloel/unified-agent-runtime.helpers.ts\",\n  \"selectors\": [\n    \"UnifiedAgentService.buildAgentRuntimeContext\",\n    \"UnifiedAgentService.recordAgentRuntimeTurn\"\n  ],\n  \"functionNames\": [\n    \"buildAgentRuntimeContext\",\n    \"recordAgentRuntimeTurn\"\n  ],\n  \"importModule\": \"./unified-agent-runtime.helpers\",\n  \"validation\": {\n    \"ok\": true,\n    \"profile\": \"round114-runtime-helper-split-no-typecheck\",\n    \"scanFiles\": [\n      \"backend/src/kloel/unified-agent.service.ts\",\n      \"backend/src/kloel/unified-agent-runtime.helpers.ts\"\n    ],\n    \"steps\": [\n      {\n        \"label\": \"jest unified-agent\",\n        \"ok\": true,\n        \"status\": 0,\n        \"signal\": null,\n        \"durationMs\": 13367,\n        \"stdout\": \"\",\n        \"stderr\": \"PASS src/kloel/unified-agent.service.spec.ts (12.135 s)\\n\\nTest Suites: 1 passed, 1 total\\nTests:       13 passed, 13 total\\nSnapshots:   0 total\\nTime:        12.344 s\"\n      },\n      {\n        \"label\": \"diff check backend/src/kloel\",\n        \"ok\": true,\n        \"status\": 0,\n        \"signal\": null,\n        \"durationMs\": 20,\n        \"stdout\": \"\",\n        \"stderr\": \"\"\n      },\n      {\n        \"label\": \"protected diff empty\",\n        \"ok\": true,\n        \"status\": 0,\n        \"signal\": null,\n        \"durationMs\": 26,\n        \"stdout\": \"\",\n        \"stderr\": \"\"\n      },\n      {\n        \"label\": \"forbidden suppression scan empty\",\n        \"ok\": true,\n        \"status\": 1,\n        \"signal\": null,\n        \"durationMs\": 17,\n        \"stdout\": \"\",\n        \"stderr\": \"\"\n      },\n      {\n        \"label\": \"runtime helper no this\",\n        \"ok\": true,\n        \"status\": 0,\n        \"signal\": null,\n        \"durationMs\": 0,\n        \"stdout\": \"absent: this.\",\n        \"stderr\": \"\"\n      },\n      {\n        \"label\": \"runtime helper no unused ToolArgs import\",\n        \"ok\": true,\n        \"status\": 0,\n        \"signal\": null,\n        \"durationMs\": 0,\n        \"stdout\": \"absent: ToolArgs\",\n        \"stderr\": \"\"\n      },\n      {\n        \"label\": \"private buildAgentRuntimeContext removed\",\n        \"ok\": true,\n        \"status\": 0,\n        \"signal\": null,\n        \"durationMs\": 0,\n        \"stdout\": \"absent: private async buildAgentRuntimeContext\",\n        \"stderr\": \"\"\n      },\n      {\n        \"label\": \"private recordAgentRuntimeTurn removed\",\n        \"ok\": true,\n        \"status\": 0,\n        \"signal\": null,\n        \"durationMs\": 0,\n        \"stdout\": \"absent: private async recordAgentRuntimeTurn\",\n        \"stderr\": \"\"\n      },\n      {\n        \"label\": \"runtime helper exports buildAgentRuntimeContext\",\n        \"ok\": true,\n        \"status\": 0,\n        \"signal\": null,\n        \"durationMs\": 0,\n        \"stdout\": \"present: export async function buildAgentRuntimeContext\",\n        \"stderr\": \"\"\n      },\n      {\n        \"label\": \"runtime helper exports recordAgentRuntimeTurn\",\n        \"ok\": true,\n        \"status\": 0,\n        \"signal\": null,\n        \"durationMs\": 0,\n        \"stdout\": \"present: export async function recordAgentRuntimeTurn\",\n        \"stderr\": \"\"\n      },\n      {\n        \"label\": \"runtime context explicit dependency\",\n        \"ok\": true,\n        \"status\": 0,\n        \"signal\": null,\n        \"durationMs\": 0,\n        \"stdout\": \"present: buildAgentRuntimeContext(this.agentRuntime, {\",\n        \"stderr\": \"\"\n      },\n      {\n        \"label\": \"runtime turn explicit dependency\",\n        \"ok\": true,\n        \"status\": 0,\n        \"signal\": null,\n        \"durationMs\": 0,\n        \"stdout\": \"present: recordAgentRuntimeTurn(this.agentRuntime, {\",\n        \"stderr\": \"\"\n      }\n    ]\n  },\n  \"operationCount\": 16,\n  \"operationSummary\": [\n    {\n      \"tool\": \"code_read_symbol\",\n      \"selector\": \"UnifiedAgentService.buildAgentRuntimeContext\",\n      \"ok\": true\n    },\n    {\n      \"tool\": \"code_read_symbol\",\n      \"selector\": \"UnifiedAgentService.recordAgentRuntimeTurn\",\n      \"ok\": true\n    },\n    {\n      \"tool\": \"atomic_create_file\",\n      \"ok\": true,\n      \"tracePath\": \".atomic/traces/op_1779109453649_5784f077.json\",\n      \"changed\": true\n    },\n    {\n      \"tool\": \"atomic_add_import\",\n      \"importName\": \"buildAgentRuntimeContext\",\n      \"ok\": true,\n      \"tracePath\": \".atomic/traces/op_1779109453905_160c5d52.json\",\n      \"changed\": true\n    },\n    {\n      \"tool\": \"atomic_add_import\",\n      \"importName\": \"recordAgentRuntimeTurn\",\n      \"ok\": true,\n      \"tracePath\": \".atomic/traces/op_1779109454140_b8dc0926.json\",\n      \"changed\": true\n    },\n    {\n      \"tool\": \"atomic_replace_text\",\n      \"ok\": true,\n      \"tracePath\": \".atomic/traces/op_1779109454330_29e14f09.json\",\n      \"changed\": true\n    },\n    {\n      \"tool\": \"atomic_replace_text\",\n      \"ok\": true,\n      \"tracePath\": \".atomic/traces/op_1779109454477_47539b97.json\",\n      \"changed\": true\n    },\n    {\n      \"tool\": \"atomic_replace_text\",\n      \"ok\": true,\n      \"tracePath\": \".atomic/traces/op_1779109454621_00473305.json\",\n      \"changed\": true\n    },\n    {\n      \"tool\": \"atomic_edit_symbol\",\n      \"selector\": \"UnifiedAgentService.buildAgentRuntimeContext\",\n      \"ok\": true,\n      \"tracePath\": \".atomic/traces/op_1779109454931_4d7bdbc6.json\",\n      \"changed\": true\n    },\n    {\n      \"tool\": \"atomic_edit_symbol\",\n      \"selector\": \"UnifiedAgentService.recordAgentRuntimeTurn\",\n      \"ok\": true,\n      \"tracePath\": \".atomic/traces/op_1779109455203_01ec3026.json\",\n      \"changed\": true\n    },\n    {\n      \"tool\": \"atomic_replace_text\",\n      \"ok\": true,\n      \"skipped\": true,\n      \"reason\": \"gap absent\"\n    },\n    {\n      \"tool\": \"atomic_replace_text\",\n      \"ok\": true,\n      \"tracePath\": \".atomic/traces/op_1779109455319_5c1a8f59.json\",\n      \"changed\": true\n    },\n    {\n      \"tool\": \"atomic_replace_text\",\n      \"ok\": true,\n      \"skipped\": true,\n      \"reason\": \"gap absent\"\n    },\n    {\n      \"tool\": \"atomic_replace_text\",\n      \"ok\": true,\n      \"skipped\": true,\n      \"reason\": \"gap absent\"\n    },\n    {\n      \"tool\": \"atomic_replace_text\",\n      \"ok\": true,\n      \"skipped\": true,\n      \"reason\": \"gap absent\"\n    },\n    {\n      \"tool\": \"atomic_apply_eslint_dry_run_fixes\",\n      \"ok\": false,\n      \"changed\": true\n    }\n  ]\n}\n[atomic-edit] ready — repo=/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-atomic-20260518100157 node=v25.9.0 pid=95799\n[atomic-edit] tmpdir=/tmp\n[atomic-edit] created backend/src/kloel/unified-agent-tool-router.helpers.ts (239 lines)\n[atomic-edit] semantic edit {\"action\":\"created-declaration\",\"moduleSpecifier\":\"./unified-agent-tool-router.helpers\",\"name\":\"actionSucceeded\",\"alias\":null,\"typeOnly\":false} in ba"
+      },
+      "prepromptActionMs": 233113,
+      "firstActionMs": 4478,
+      "eventSpanMs": 265233,
+      "totalAgentMs": 265233,
+      "turnCompleted": true,
+      "completedCommands": 1,
+      "uniqueCompletedCommands": 1,
+      "failedCommands": [
+        {
+          "command": "bash \"/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/round-130/atomic-fastpath.sh\"\n",
+          "exitCode": 1,
+          "output": "[atomic-edit] ready — repo=/Users/danielpenin/kloel-ab-worktrees/kloel-ab130-atomic-20260518100157 node=v25.9.0 pid=93560\n[atomic-edit] tmpdir=/tmp\n[atomic-edit] created backend/src/kloel/unified-agent-runtime.helpers.ts (28 lines)\n[atomic-edit] semantic edit {\"action\":\"created-declaration\",\"moduleSpecifier\":\"./unified-agent-runtime.helpers\",\"name\":\"buildAgentRuntimeContext\",\"alias\":null,\"typeOnly"
+        }
+      ],
+      "completedMcpCalls": 0,
+      "mcpTools": {},
+      "allTools": {},
+      "nativeFileToolViolations": [],
+      "nativeShellReadCommands": [],
+      "maskedAtomicFailurePipelineCommands": [],
+      "atomicCallWorktreeEscapes": [],
+      "forbiddenAtomicToolUses": [],
+      "forbiddenAtomicCommands": [],
+      "fileChangeItems": 0,
+      "fileChangePaths": [],
+      "agentMessages": 1,
+      "proofReadCommands": 0,
+      "fullDiffCommands": 0,
+      "backendInstallCommands": 0,
+      "usage": {
+        "input_tokens": 60632,
+        "output_tokens": 216,
+        "reasoning_output_tokens": 246
+      }
+    },
+    "validation": {
+      "jestStatus": 1,
+      "typecheckStatus": 2,
+      "typecheckErrorCount": 3,
+      "typecheckKloelErrorCount": 3,
+      "lintStatus": 1,
+      "diffCheckStatus": 0,
+      "traceIsolationStatus": null,
+      "forbiddenPatternStatus": 1,
+      "helperThisStatus": 1,
+      "privateMethodsStatus": null,
+      "serviceLines": 396,
+      "specDiff": [],
+      "protectedDiff": [],
+      "traceCount": 73,
+      "docsTraceCount": null,
+      "touchedKloelFiles": [
+        "backend/src/kloel/unified-agent-cognitive-state.helpers.ts",
+        "backend/src/kloel/unified-agent-incoming-message.helpers.ts",
+        "backend/src/kloel/unified-agent-predecided-processing.helpers.ts",
+        "backend/src/kloel/unified-agent-runtime.helpers.ts",
+        "backend/src/kloel/unified-agent-tool-call-processing.helpers.ts",
+        "backend/src/kloel/unified-agent-tool-parser.helpers.ts",
+        "backend/src/kloel/unified-agent-tool-router.helpers.ts",
+        "backend/src/kloel/unified-agent.service.ts"
+      ],
+      "touchedKloelFileCount": 8,
+      "fileLineCounts": [
+        {
+          "lines": 396,
+          "path": "backend/src/kloel/unified-agent.service.ts"
+        },
+        {
+          "lines": 235,
+          "path": "backend/src/kloel/unified-agent-tool-router.helpers.ts"
+        },
+        {
+          "lines": 33,
+          "path": "backend/src/kloel/unified-agent-runtime.helpers.ts"
+        },
+        {
+          "lines": 44,
+          "path": "backend/src/kloel/unified-agent-tool-parser.helpers.ts"
+        },
+        {
+          "lines": 53,
+          "path": "backend/src/kloel/unified-agent-cognitive-state.helpers.ts"
+        },
+        {
+          "lines": 53,
+          "path": "backend/src/kloel/unified-agent-incoming-message.helpers.ts"
+        },
+        {
+          "lines": 68,
+          "path": "backend/src/kloel/unified-agent-tool-call-processing.helpers.ts"
+        },
+        {
+          "lines": 86,
+          "path": "backend/src/kloel/unified-agent-predecided-processing.helpers.ts"
+        }
+      ],
+      "actionHelperLines": null,
+      "runtimeHelperLines": 33,
+      "runtimeContextHelperLines": null,
+      "toolRouterHelperLines": 235,
+      "totalKloelLines": 968,
+      "unexpectedPrivateHelperRemovalStatus": null,
+      "scopePreservationPass": null,
+      "untrackedInsertions": 572,
+      "sourceInsertions": 652,
+      "sourceDeletions": 421,
+      "sourceChurn": 1073
+    }
+  },
+  "scorecard": {
+    "functionalPass": false,
+    "taskFunctionalPass": false,
+    "normalTaskFunctionalPass": true,
+    "atomicTaskFunctionalPass": false,
+    "shapeComparisonEligible": false,
+    "globalFunctionalPass": false,
+    "sharedTypecheckNoiseOnly": false,
+    "normalLaneStatus": "completed",
+    "atomicLaneStatus": "completed",
+    "normalLaneCompleted": true,
+    "atomicLaneCompleted": true,
+    "laneCompletionWinner": "tie",
+    "benchmarkIsolationPass": true,
+    "normalModeClean": true,
+    "normalForbiddenAtomicToolUseCount": 0,
+    "normalForbiddenAtomicCommandCount": 0,
+    "atomicModeClean": true,
+    "atomicNativeFileToolViolationCount": 0,
+    "atomicNativeShellReadCommandCount": 0,
+    "atomicMaskedPipelineCommandCount": 0,
+    "atomicWorktreeEscapeCount": 0,
+    "atomicTraceIsolationPass": true,
+    "serviceLineWinner": "not_applicable",
+    "totalProductLineWinner": "not_applicable",
+    "normalScopePreservationPass": null,
+    "atomicScopePreservationPass": null,
+    "scopePreservationWinner": "tie",
+    "eventRowWinner": "atomic",
+    "firstActionWinner": "atomic",
+    "totalAgentTimeWinner": "atomic",
+    "shellCommandWinner": "atomic",
+    "normalFailedCommandCount": 5,
+    "atomicFailedCommandCount": 1,
+    "failedCommandWinner": "atomic",
+    "inputTokenWinner": "atomic",
+    "outputTokenWinner": "atomic",
+    "reasoningTokenWinner": "atomic",
+    "traceWinner": "atomic",
+    "protectedDiffTie": true,
+    "touchedFileWinner": "not_applicable",
+    "sourceChurnWinner": "not_applicable"
+  }
+}

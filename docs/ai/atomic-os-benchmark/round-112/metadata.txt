@@ -1,0 +1,8 @@
+round=112
+created_at=2026-05-18T04:59:50Z
+normal_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab112-normal-20260518045950
+atomic_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab112-atomic-20260518045950
+normal_branch=ab/round112-normal-20260518045950
+atomic_branch=ab/round112-atomic-20260518045950
+task=three_module_unified_agent_router_runtime_parser_split
+decision_basis=round_111_first_win_at_three_module_tier_repeat_before_scale

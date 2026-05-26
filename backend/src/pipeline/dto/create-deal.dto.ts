@@ -1,4 +1,4 @@
-import { IsNumber, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import { IsIn, IsNumber, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 /** Create deal dto. */
 export class CreateDealDto {
   /** Workspace id property. */
@@ -13,4 +13,6 @@ export class CreateDealDto {
   @IsOptional() @IsString() @MaxLength(255) stageId?: string;
   /** Description property. */
   @IsOptional() @IsString() @MaxLength(2000) description?: string;
+  /** Priority property (LOW | MEDIUM | HIGH; defaults to MEDIUM when omitted). */
+  @IsOptional() @IsIn(['LOW', 'MEDIUM', 'HIGH']) priority?: string;
 }

@@ -1,0 +1,11 @@
+round=056
+created_at=2026-05-17T08:41:29-03:00
+complexity=medium-bounded-helper-extraction
+status=planned
+normal_worktree=/private/tmp/kloel-ab056-normal-20260517084129
+atomic_worktree=/private/tmp/kloel-ab056-atomic-20260517084129
+task=repeat round 055 helper extraction after atomic tooling updates
+goal=verify whether Atomic closes failed-command, quote-style and overhead gaps before complexity escalation
+normal_constraint=may use default OpenCode editing path, but must not use atomic-edit tools
+atomic_constraint=must use atomic-edit tools only for file mutations
+acceptance=jest unified-agent.service.spec.ts, backend typecheck, diff check, no protected-file diff, no forbidden suppressions in touched files

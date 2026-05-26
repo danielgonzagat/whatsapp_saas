@@ -1,0 +1,11 @@
+round=116
+created_utc=2026-05-18T06:39:55Z
+complexity=controlled_scale_four_helper_split_shape_budget_repeat
+normal_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab116-normal-20260518063955
+atomic_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab116-atomic-20260518063955
+normal_branch=ab/round116-normal-20260518063955
+atomic_branch=ab/round116-atomic-20260518063955
+base_head=565b0f84d
+task=Repeat four-helper UnifiedAgentService split with Atomic shape budget checks active.
+scale_rule=Repeat same four-helper tier because Round115 Atomic lost total Kloel lines and source churn to Normal; no complexity scale until Atomic removes shape loss.
+round116_watchdog_max_ms=1200000

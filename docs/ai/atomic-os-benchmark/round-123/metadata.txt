@@ -1,0 +1,12 @@
+round=123
+created_at_utc=2026-05-18T09:18:52Z
+base_head=565b0f84d
+normal_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab123-normal-20260518091851
+atomic_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab123-atomic-20260518091851
+normal_branch=ab/round123-normal-20260518091851
+atomic_branch=ab/round123-atomic-20260518091851
+complexity=seven-helper-predecided-processing-scale
+normal_variant=max
+atomic_variant=minimal_compact_preprompt_summary
+idle_ms=600000
+max_ms=1200000

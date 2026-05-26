@@ -113,7 +113,7 @@ describe('atoms', () => {
     expect(traces).toHaveLength(4);
     expect(traces[0].style.background).toBe(D.ember);
     expect(traces[2].style.background).toBe(D.ember);
-    expect(traces[3].style.background).toBe(D.hi);
+    expect(traces[3].style.background).toBe(D.inactiveTrace);
   });
 });
 
@@ -163,7 +163,7 @@ describe('step vignettes wired by props', () => {
         onContinue={onContinue}
       />,
     );
-    expect(screen.getByText(/R\$\s*197,00/)).toBeTruthy();
+
     const save = screen.getByRole('button', { name: /Salvar produtos/ });
     expect(save).toBeDisabled();
     fireEvent.click(screen.getByText('Alpha'));

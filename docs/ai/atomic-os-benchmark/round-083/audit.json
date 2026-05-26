@@ -1,0 +1,407 @@
+{
+  "roundDir": "/Users/danielpenin/whatsapp_saas/docs/ai/atomic-os-benchmark/round-083",
+  "normal": {
+    "eventsFile": "opencode-normal-events.jsonl",
+    "events": {
+      "rows": 188,
+      "laneStartTimestamp": 1779042766519,
+      "firstStepStartTimestamp": 1779042777427,
+      "effectiveStartTimestamp": 1779042766519,
+      "eventFirstActionTimestamp": 1779042788988,
+      "firstActionTimestamp": 1779042788988,
+      "finalTimestamp": 1779043623590,
+      "preprompt": null,
+      "prepromptActionMs": null,
+      "firstActionMs": 22469,
+      "totalAgentMs": 857071,
+      "turnCompleted": true,
+      "completedCommands": 25,
+      "uniqueCompletedCommands": 17,
+      "failedCommands": [
+        {
+          "command": "git diff --check -- backend/src/kloel 2>&1",
+          "exitCode": 2,
+          "output": "backend/src/kloel/unified-agent.service.ts:689: new blank line at EOF.\n"
+        },
+        {
+          "command": "git diff --check -- backend/src/kloel 2>&1",
+          "exitCode": 2,
+          "output": "backend/src/kloel/unified-agent.service.ts:659: new blank line at EOF.\n"
+        },
+        {
+          "command": "npx jest --no-coverage backend/src/kloel/unified-agent.service.spec.ts 2>&1",
+          "exitCode": 1,
+          "output": "FAIL src/kloel/unified-agent.service.spec.ts (11.101 s)\n  UnifiedAgentService\n    ✕ sends structured unified-agent state without a system role (7 ms)\n    ✕ turns inbound WhatsApp intent into an outbound send_message action through the unified CIA loop (2 ms)\n    ✓ send_product_info always sends the generated product answer to WhatsApp (4 ms)\n    ✓ uses the configured brain/writer model split (3 ms"
+        }
+      ],
+      "completedMcpCalls": 0,
+      "mcpTools": {},
+      "allTools": {
+        "read": 19,
+        "glob": 1,
+        "todowrite": 3,
+        "write": 2,
+        "edit": 16,
+        "grep": 5,
+        "bash": 25
+      },
+      "nativeFileToolViolations": [
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent.service.ts\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent.service.spec.ts\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/ops/protected-governance-files.json\"}"
+        },
+        {
+          "tool": "glob",
+          "inputPreview": "{\"pattern\":\"backend/src/kloel/agent-runtime/**/*.ts\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/agent-runtime/agent-runtime.context.ts\",\"limit\":80}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/agent-runtime/index.ts\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/agent-runtime/agent-runtime.context.ts\",\"offset\":80}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/agent-runtime/agent-runtime.types.ts\"}"
+        },
+        {
+          "tool": "write",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent-action.helpers.ts\",\"content\":\"export function actionSucceeded(result: unknown): boolean {\\n  if (!result || typeof result !== 'object' || Array.isArray(result)) {\\n    return false;\\n  }\\n  const record = result as Record<string, unknown>;\\n  return record.success === true || record.ok === true || record.ex"
+        },
+        {
+          "tool": "write",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent-runtime-context.helpers.ts\",\"content\":\"import type { AgentRuntimeContextService } from './agent-runtime';\\n\\nexport async function buildAgentRuntimeContext(\\n  params: {\\n    workspaceId: string;\\n    channel: string;\\n    message: string;\\n    contactId?: string;\\n    allowedTools?: string[];\\n  },\\n  agen"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent.service.ts\",\"oldString\":\"import { RiskGateService } from './risk-class/risk-gate.service';\\nexport type { ToolArgs, ActionEntry } from './unified-agent.types';\",\"newString\":\"import { RiskGateService } from './risk-class/risk-gate.service';\\nimport { actionSucceeded, num } from './unified-agent-action.helper"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent.service.ts\",\"oldString\":\"    const agentRuntimeContext = await this.buildAgentRuntimeContext({\\n      workspaceId,\\n      channel: this.ctx.readText(context?.channel, 'whatsapp'),\\n      message,\\n      contactId,\\n      ...(params.allowedTools !== undefined ? { allowedTools: params.allowedTools } : {}),\\n "
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent.service.ts\",\"oldString\":\"      await this.recordAgentRuntimeTurn({\\n        workspaceId,\\n        channel: this.ctx.readText(context?.channel, 'whatsapp'),\\n        userMessage: message,\\n        ...(draftedReply !== undefined ? { assistantMessage: draftedReply } : {}),\\n        contactId,\\n        intent,\\"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent.service.ts\",\"oldString\":\"    await this.recordAgentRuntimeTurn({\\n      workspaceId,\\n      channel: this.ctx.readText(context?.channel, 'whatsapp'),\\n      userMessage: message,\\n      ...(draftedReply !== undefined ? { assistantMessage: draftedReply } : {}),\\n      contactId,\\n      intent,\\n      confide"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent.service.ts\",\"oldString\":\"    const envelope = this.buildAgentToolEnvelope({\\n      workspaceId,\\n      toolName: tool,\\n    });\",\"newString\":\"    const envelope = buildAgentToolEnvelope({\\n      workspaceId,\\n      toolName: tool,\\n    }, this.agentRuntime);\"}"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent.service.ts\",\"oldString\":\"        const paymentAmount = this.num(args.amount);\",\"newString\":\"        const paymentAmount = num(args.amount);\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent.service.ts\",\"offset\":685}"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent.service.ts\",\"newString\":\"}\\n\",\"oldString\":\"  private actionSucceeded(result: unknown): boolean {\\n    if (!result || typeof result !== 'object' || Array.isArray(result)) {\\n      return false;\\n    }\\n    const record = result as Record<string, unknown>;\\n    return record.success === true || record.ok === "
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent.service.ts\",\"limit\":30}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent.service.ts\",\"offset\":680}"
+        },
+        {
+          "tool": "grep",
+          "inputPreview": "{\"pattern\":\"this\\\\.(actionSucceeded|num|buildAgentRuntimeContext|recordAgentRuntimeTurn|buildAgentToolEnvelope)\",\"path\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel\"}"
+        },
+        {
+          "tool": "grep",
+          "inputPreview": "{\"pattern\":\"\\\\bthis\\\\.\",\"path\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent-action.helpers.ts\"}"
+        },
+        {
+          "tool": "grep",
+          "inputPreview": "{\"pattern\":\"\\\\bthis\\\\.\",\"path\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent-runtime-context.helpers.ts\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent.service.ts\",\"offset\":685}"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent.service.ts\",\"oldString\":\"}\\n\\n\",\"newString\":\"}\\n\"}"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent.service.ts\",\"newString\":\"}\",\"oldString\":\"}\\n\\n\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent.service.ts\",\"offset\":650}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent-action.helpers.ts\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent-runtime-context.helpers.ts\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent.service.ts\",\"offset\":30,\"limit\":40}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent.service.ts\",\"limit\":32}"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent.service.ts\",\"newString\":\"import { RiskGateService } from './risk-class/risk-gate.service';\\nimport { actionSucceeded, num } from './unified-agent-action.helpers';\\nimport { buildAgentRuntimeContext, recordAgentRuntimeTurn, buildAgentToolEnvelope } from './unified-agent-runtime-context.helpers';\\nexport type"
+        },
+        {
+          "tool": "grep",
+          "inputPreview": "{\"pattern\":\"formatPromptValue\",\"path\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent.service.ts\"}"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent.service.ts\",\"newString\":\"    const agentRuntimeContext = await buildAgentRuntimeContext({\\n      workspaceId,\\n      channel: this.ctx.readText(context?.channel, 'whatsapp'),\\n      message,\\n      contactId,\\n      ...(params.allowedTools !== undefined ? { allowedTools: params.allowedTools } : {}),\\n    },"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent.service.ts\",\"newString\":\"      await recordAgentRuntimeTurn({\\n        workspaceId,\\n        channel: this.ctx.readText(context?.channel, 'whatsapp'),\\n        userMessage: message,\\n        ...(draftedReply !== undefined ? { assistantMessage: draftedReply } : {}),\\n        contactId,\\n        intent,\\n    "
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent.service.ts\",\"newString\":\"    await recordAgentRuntimeTurn({\\n      workspaceId,\\n      channel: this.ctx.readText(context?.channel, 'whatsapp'),\\n      userMessage: message,\\n      ...(draftedReply !== undefined ? { assistantMessage: draftedReply } : {}),\\n      contactId,\\n      intent,\\n      confidence,\\"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent.service.ts\",\"newString\":\"    const envelope = buildAgentToolEnvelope({\\n      workspaceId,\\n      toolName: tool,\\n    }, this.agentRuntime);\",\"oldString\":\"    const envelope = this.buildAgentToolEnvelope({\\n      workspaceId,\\n      toolName: tool,\\n    });\"}"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent.service.ts\",\"newString\":\"        const paymentAmount = num(args.amount);\",\"oldString\":\"        const paymentAmount = this.num(args.amount);\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent.service.ts\",\"offset\":685}"
+        },
+        {
+          "tool": "edit",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent.service.ts\",\"newString\":\"}\",\"oldString\":\"  private actionSucceeded(result: unknown): boolean {\\n    if (!result || typeof result !== 'object' || Array.isArray(result)) {\\n      return false;\\n    }\\n    const record = result as Record<string, unknown>;\\n    return record.success === true || record.ok === tr"
+        },
+        {
+          "tool": "grep",
+          "inputPreview": "{\"pattern\":\"formatPromptValue\",\"path\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent.service.ts\"}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent.service.ts\",\"offset\":685}"
+        },
+        {
+          "tool": "read",
+          "inputPreview": "{\"filePath\":\"/private/tmp/kloel-ab083-normal-20260517153044/backend/src/kloel/unified-agent.service.ts\",\"offset\":33,\"limit\":30}"
+        }
+      ],
+      "nativeShellReadCommands": [
+        "tail -c 20 backend/src/kloel/unified-agent.service.ts | xxd | head -10"
+      ],
+      "maskedAtomicFailurePipelineCommands": [],
+      "atomicCallWorktreeEscapes": [],
+      "forbiddenAtomicToolUses": [],
+      "forbiddenAtomicCommands": [],
+      "fileChangeItems": 0,
+      "fileChangePaths": [],
+      "agentMessages": 15,
+      "proofReadCommands": 3,
+      "fullDiffCommands": 1,
+      "backendInstallCommands": 0,
+      "usage": {
+        "input_tokens": 75502,
+        "output_tokens": 11080,
+        "reasoning_output_tokens": 9250
+      }
+    },
+    "validation": {
+      "jestStatus": 0,
+      "typecheckStatus": 2,
+      "typecheckErrorCount": 11,
+      "typecheckKloelErrorCount": 0,
+      "diffCheckStatus": 0,
+      "traceIsolationStatus": null,
+      "forbiddenPatternStatus": 1,
+      "helperThisStatus": 1,
+      "privateMethodsStatus": 1,
+      "serviceLines": 688,
+      "specDiff": [],
+      "protectedDiff": [],
+      "traceCount": 0,
+      "docsTraceCount": null,
+      "touchedKloelFiles": [
+        "backend/src/kloel/unified-agent-action.helpers.ts",
+        "backend/src/kloel/unified-agent-runtime-context.helpers.ts",
+        "backend/src/kloel/unified-agent.service.ts"
+      ],
+      "touchedKloelFileCount": 3,
+      "fileLineCounts": [
+        {
+          "lines": 688,
+          "path": "backend/src/kloel/unified-agent.service.ts"
+        },
+        {
+          "lines": 12,
+          "path": "backend/src/kloel/unified-agent-action.helpers.ts"
+        },
+        {
+          "lines": 49,
+          "path": "backend/src/kloel/unified-agent-runtime-context.helpers.ts"
+        }
+      ],
+      "actionHelperLines": 12,
+      "runtimeHelperLines": null,
+      "runtimeContextHelperLines": 49,
+      "untrackedInsertions": 61,
+      "sourceInsertions": 74,
+      "sourceDeletions": 62,
+      "sourceChurn": 136
+    }
+  },
+  "atomic": {
+    "eventsFile": "opencode-atomic-events.jsonl",
+    "events": {
+      "rows": 3,
+      "laneStartTimestamp": 1779042766521,
+      "firstStepStartTimestamp": 1779042809810,
+      "effectiveStartTimestamp": 1779042766521,
+      "eventFirstActionTimestamp": null,
+      "firstActionTimestamp": 1779042771743,
+      "finalTimestamp": 1779042835259,
+      "preprompt": {
+        "startTimestamp": 1779042771743,
+        "endTimestamp": 1779042800236,
+        "exitCode": 0,
+        "commandText": "cd /private/tmp/kloel-ab083-atomic-20260517153044 && ATOMIC_OS_REPO_ROOT=/private/tmp/kloel-ab083-atomic-20260517153044 node /private/tmp/kloel-ab083-atomic-20260517153044/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs extract_class_methods_to_file '{\"sourceFile\":\"backend/src/kloel/unified-agent.service.ts\",\"targetFile\":\"backend/src/kloel/unified-agent-action.helpers.ts\",\"className\":\"UnifiedAgentService\",\"methods\":[\"actionSucceeded\",\"num\"],\"importNames\":[\"actionSucceeded\",\"num\"],\"importModule\":\"./unified-agent-action.helpers\",\"callsiteReplacements\":[{\"oldText\":\"this.actionSucceeded(\",\"newText\":\"actionSucceeded(\",\"expectedCount\":2},{\"oldText\":\"this.num(\",\"newText\":\"num(\",\"expectedCount\":1}],\"validate\":false,\"report\":\"compact\"}' && cd /private/tmp/kloel-ab083-atomic-20260517153044 && ATOMIC_OS_REPO_ROOT=/private/tmp/kloel-ab083-atomic-20260517153044 node /private/tmp/kloel-ab083-atomic-20260517153044/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs extract_class_methods_to_file '{\"sourceFile\":\"backend/src/kloel/unified-agent.service.ts\",\"targetFile\":\"backend/src/kloel/unified-agent-runtime-context.helpers.ts\",\"className\":\"UnifiedAgentService\",\"methods\":[\"buildAgentRuntimeContext\",\"recordAgentRuntimeTurn\",\"buildAgentToolEnvelope\"],\"importNames\":[\"buildAgentRuntimeContext\",\"recordAgentRuntimeTurn\",\"buildAgentToolEnvelope\"],\"importModule\":\"./unified-agent-runtime-context.helpers\",\"targetHeader\":\"import type { AgentRuntimeContextService } from \\u0027./agent-runtime\\u0027;\",\"methodAdapter\":{\"signaturePrefixParam\":\"agentRuntime: AgentRuntimeContextService | undefined, \",\"bodyReplacements\":[{\"oldText\":\"this.agentRuntime\",\"newText\":\"agentRuntime\"}]},\"callsiteReplacements\":[{\"oldText\":\"this.buildAgentRuntimeContext(\",\"newText\":\"buildAgentRuntimeContext(this.agentRuntime, \",\"expectedCount\":1},{\"oldText\":\"this.recordAgentRuntimeTurn(\",\"newText\":\"recordAgentRuntimeTurn(this.agentRuntime, \",\"expectedCount\":2},{\"oldText\":\"this.buildAgentToolEnvelope(\",\"newText\":\"buildAgentToolEnvelope(this.agentRuntime, \",\"expectedCount\":1}],\"validate\":true,\"includeTypecheck\":false,\"validationProfile\":\"kloel-unified-agent-multi-module-extract-no-typecheck\",\"scanFiles\":[\"backend/src/kloel/unified-agent.service.ts\",\"backend/src/kloel/unified-agent-action.helpers.ts\",\"backend/src/kloel/unified-agent-runtime-context.helpers.ts\"],\"forbiddenTextChecks\":[{\"file\":\"backend/src/kloel/unified-agent-action.helpers.ts\",\"text\":\"this.\",\"label\":\"action helper no this\"},{\"file\":\"backend/src/kloel/unified-agent-runtime-context.helpers.ts\",\"text\":\"this.\",\"label\":\"runtime helper no this\"},{\"file\":\"backend/src/kloel/unified-agent.service.ts\",\"text\":\"private actionSucceeded\",\"label\":\"private actionSucceeded removed\"},{\"file\":\"backend/src/kloel/unified-agent.service.ts\",\"text\":\"private num\",\"label\":\"private num removed\"},{\"file\":\"backend/src/kloel/unified-agent.service.ts\",\"text\":\"private async buildAgentRuntimeContext\",\"label\":\"private build runtime context removed\"},{\"file\":\"backend/src/kloel/unified-agent.service.ts\",\"text\":\"private async recordAgentRuntimeTurn\",\"label\":\"private record runtime turn removed\"},{\"file\":\"backend/src/kloel/unified-agent.service.ts\",\"text\":\"private buildAgentToolEnvelope\",\"label\":\"private build tool envelope removed\"}],\"report\":\"compact\"}'\n",
+        "output": "[atomic-edit] ready — repo=/private/tmp/kloel-ab083-atomic-20260517153044 node=v25.9.0 pid=17236\n[atomic-edit] tmpdir=/tmp\n[atomic-edit] created backend/src/kloel/unified-agent-action.helpers.ts (13 lines)\n[atomic-edit] semantic edit {\"action\":\"created-declaration\",\"moduleSpecifier\":\"./unified-agent-action.helpers\",\"name\":\"actionSucceeded\",\"alias\":null} in backend/src/kloel/unified-agent.service.ts\n[atomic-edit] semantic edit {\"action\":\"added-specifier\",\"moduleSpecifier\":\"./unified-agent-action.helpers\",\"name\":\"num\",\"alias\":null} in backend/src/kloel/unified-agent.service.ts\n[atomic-edit] wrote backend/src/kloel/unified-agent.service.ts (+-5 bytes net)\n[atomic-edit] wrote backend/src/kloel/unified-agent.service.ts (+-5 bytes net)\n[atomic-edit] wrote backend/src/kloel/unified-agent.service.ts (+-5 bytes net)\n[atomic-edit] edit_symbol remove UnifiedAgentService.actionSucceeded in backend/src/kloel/unified-agent.service.ts\n[atomic-edit] edit_symbol remove UnifiedAgentService.num in backend/src/kloel/unified-agent.service.ts\n[atomic-edit] wrote backend/src/kloel/unified-agent.service.ts (+-1 bytes net)\n[atomic-edit] wrote backend/src/kloel/unified-agent.service.ts (+-1 bytes net)\n{\n  \"ok\": true,\n  \"operation\": \"extract_class_methods_to_file\",\n  \"sourceFile\": \"/private/tmp/kloel-ab083-atomic-20260517153044/backend/src/kloel/unified-agent.service.ts\",\n  \"targetFile\": \"/private/tmp/kloel-ab083-atomic-20260517153044/backend/src/kloel/unified-agent-action.helpers.ts\",\n  \"selectors\": [\n    \"UnifiedAgentService.actionSucceeded\",\n    \"UnifiedAgentService.num\"\n  ],\n  \"functionNames\": [\n    \"actionSucceeded\",\n    \"num\"\n  ],\n  \"importModule\": \"./unified-agent-action.helpers\",\n  \"validation\": null,\n  \"operationCount\": 14,\n  \"operationSummary\": [\n    {\n      \"tool\": \"code_read_symbol\",\n      \"selector\": \"UnifiedAgentService.actionSucceeded\",\n      \"ok\": true\n    },\n    {\n      \"tool\": \"code_read_symbol\",\n      \"selector\": \"UnifiedAgentService.num\",\n      \"ok\": true\n    },\n    {\n      \"tool\": \"atomic_create_file\",\n      \"ok\": true,\n      \"tracePath\": \".atomic/traces/op_1779042773946_88d6c5ec.json\",\n      \"changed\": true\n    },\n    {\n      \"tool\": \"atomic_add_import\",\n      \"importName\": \"actionSucceeded\",\n      \"ok\": true,\n      \"tracePath\": \".atomic/traces/op_1779042774173_b158fe90.json\",\n      \"changed\": true\n    },\n    {\n      \"tool\": \"atomic_add_import\",\n      \"importName\": \"num\",\n      \"ok\": true,\n      \"tracePath\": \".atomic/traces/op_1779042774387_72874598.json\",\n      \"changed\": true\n    },\n    {\n      \"tool\": \"atomic_replace_text\",\n      \"ok\": true,\n      \"tracePath\": \".atomic/traces/op_1779042774561_8d7e6dec.json\",\n      \"changed\": true\n    },\n    {\n      \"tool\": \"atomic_replace_text\",\n      \"ok\": true,\n      \"tracePath\": \".atomic/traces/op_1779042774738_e1553f71.json\",\n      \"changed\": true\n    },\n    {\n      \"tool\": \"atomic_replace_text\",\n      \"ok\": true,\n      \"tracePath\": \".atomic/traces/op_1779042774907_f1ccb4bd.json\",\n      \"changed\": true\n    },\n    {\n      \"tool\": \"atomic_edit_symbol\",\n      \"selector\": \"UnifiedAgentService.actionSucceeded\",\n      \"ok\": true,\n      \"tracePath\": \".atomic/traces/op_1779042775277_e11d724b.json\",\n      \"changed\": true\n    },\n    {\n      \"tool\": \"atomic_edit_symbol\",\n      \"selector\": \"UnifiedAgentService.num\",\n      \"ok\": true,\n      \"tracePath\": \".atomic/traces/op_1779042775601_465d6d80.json\",\n      \"changed\": true\n    },\n    {\n      \"tool\": \"atomic_replace_text\",\n      \"ok\": true,\n      \"tracePath\": \".atomic/traces/op_1779042775729_4051c447.json\",\n      \"changed\": true\n    },\n    {\n      \"tool\": \"atomic_replace_text\",\n      \"ok\": true,\n      \"tracePath\": \".atomic/traces/op_1779042775916_117ea57b.json\",\n      \"changed\": true\n    },\n    {\n      \"tool\": \"atomic_replace_text\",\n      \"ok\": true,\n      \"skipped\": true,\n      \"reason\": \"gap absent\"\n    },\n    {\n      \"tool\": \"atomic_replace_text\",\n      \"ok\": true,\n      \"skipped\": true,\n      \"reason\": \"gap absent\"\n    }\n  ]\n}\n[atomic-edit] ready — repo=/private/tmp/kloel-ab083-atomic-20260517153044 node=v25.9.0 pid=17380\n[atomic-edit] tmpdir=/tmp\n[atomic-edit] created backend/src/kloel/unified-agent-runtime-context.helpers.ts (41 lines)\n[atomic-edit] semantic edit {\"action\":\"created-declaration\",\"moduleSpecifier\":\"./unified-agent-runtime-context.helpers\",\"name\":\"buildAgentRuntimeContext\",\"alias\":null} in backend/src/kloel/unified-agent.service.ts\n[atomic-edit] semantic edit {\"action\":\"added-specifier\",\"moduleSpecifier\":\"./unified-agent-runtime-context.helpers\",\"name\":\"recordAgentRuntimeTurn\",\"alias\":null} in backend/src/kloel/unified-agent.service.ts\n[atomic-edit] semantic edit {\"action\":\"added-specifier\",\"moduleSpecifier\":\"./unified-agent-runtime-context.helpers\",\"name\":\"buildAgentToolEnvelope\",\"alias\":null} in backend/src/kloel/unified-agent.service.ts\n[atomic-edit] wrote backend/src/kloel/unified-agent.service.ts (+14 bytes net)\n[atomic-edit] wrote backend/src/kloel/unified-agent.service.ts (+14 bytes net)\n[atomic-edit] wrote backend/src/kloel/unified-agent.service.ts (+14 bytes net)\n[atomic-edit] wrote backend/src/kloel/unified-agent.service.ts (+14 bytes net)\n[atomic-edit] edit_symbol remove UnifiedAgentService.buildAgentRuntimeContext in backend/src/kloel/unified-agent.service.ts\n[atomic-edit] edit_symbol remove UnifiedAgentService.recordAgentRuntimeTurn in backend/src/kloel/unified-agent.service.ts\n[atomic-edit] edit_symbol remove UnifiedAgentService.buildAgentToolEnvelope in backend/src/kloel/unified-agent.service.ts\n[atomic-edit] wrote backend/src/kloel/unified-agent.service.ts (+-1 bytes net)\n{\n  \"ok\": true,\n  \"operation\": \"extract_class_methods_to_file\",\n  \"sourceFile\": \"/private/tmp/kloel-ab083-atomic-20260517153044/backend/src/kloel/unified-agent.service.ts\",\n  \"targetFile\": \"/private/tmp/kloel-ab083-atomic-20260517153044/backend/src/kloel/unified-agent-runtime-context.helpers.ts\",\n  \"selectors\": [\n    \"UnifiedAgentService.buildAgentRuntimeContext\",\n    \"UnifiedAgentService.recordAgentRuntimeTurn\",\n    \"UnifiedAgentService.buildAgentToolEnvelope\"\n  ],\n  \"functionNames\": [\n    \"buildAgentRuntimeContext\",\n    \"recordAgentRuntimeTurn\",\n    \"buildAgentToolEnvelope\"\n  ],\n  \"importModule\": \"./unified-agent-runtime-context.helpers\",\n  \"validation\": {\n    \"ok\": true,\n    \"profile\": \"kloel-unified-agent-multi-module-extract-no-typecheck\",\n    \"scanFiles\": [\n      \"backend/src/kloel/unified-agent.service.ts\",\n      \"backend/src/kloel/unified-agent-action.helpers.ts\",\n      \"backend/src/kloel/unified-agent-runtime-context.helpers.ts\"\n    ],\n    \"steps\": [\n      {\n        \"label\": \"jest unified-agent\",\n        \"ok\": true,\n        \"status\": 0,\n        \"signal\": null,\n        \"durationMs\": 19431,\n        \"stdout\": \"\",\n        \"stderr\": \"PASS src/kloel/unified-agent.service.spec.ts (17.607 s)\\n\\nTest Suites: 1 passed, 1 total\\nTests:       13 passed, 13 total\\nSnapshots:   0 total\\nTime:        17.897 s\"\n      },\n      {\n        \"label\": \"diff check backend/src/kloel\",\n        \"ok\": true,\n        \"status\": 0,\n        \"signal\": null,\n        \"durationMs\": 36,\n        \"stdout\": \"\",\n        \"stderr\": \"\"\n      },\n      {\n        \"label\": \"protected diff empty\",\n        \"ok\": true,\n        \"status\": 0,\n        \"signal\": null,\n        \"durationMs\": 24,\n        \"stdout\": \"\",\n        \"stderr\": \"\"\n      },\n      {\n        \"label\": \"forbidden suppression scan empty\",\n        \"ok\": true,\n        \"status\": 1,\n        \"signal\": null,\n        \"durationMs\": 18,\n        \"stdout\": \"\",\n        \"stderr\": \"\"\n      },\n      {\n        \"label\": \"action helper no this\",\n        \"ok\": true,\n        \"status\": 0,\n        \"signal\": null,\n        \"durationMs\": 0,\n        \"stdout\": \"absent: this.\",\n        \"stderr\": \"\"\n      },\n      {\n        \"label\": \"runtime helper no this\",\n        \"ok\": true,\n        \"status\": 0,\n        \"signal\": null,\n        \"durationMs\": 0,\n        \"stdout\": \"absent: this.\",\n        \"stderr\": \"\"\n      },\n      {\n        \"label\": \"private actionSucceeded removed\",\n        \"ok\": "
+      },
+      "prepromptActionMs": 28493,
+      "firstActionMs": 5222,
+      "totalAgentMs": 68738,
+      "turnCompleted": true,
+      "completedCommands": 1,
+      "uniqueCompletedCommands": 1,
+      "failedCommands": [],
+      "completedMcpCalls": 0,
+      "mcpTools": {},
+      "allTools": {},
+      "nativeFileToolViolations": [],
+      "nativeShellReadCommands": [],
+      "maskedAtomicFailurePipelineCommands": [],
+      "atomicCallWorktreeEscapes": [],
+      "forbiddenAtomicToolUses": [],
+      "forbiddenAtomicCommands": [
+        "cd /private/tmp/kloel-ab083-atomic-20260517153044 && ATOMIC_OS_REPO_ROOT=/private/tmp/kloel-ab083-atomic-20260517153044 node /private/tmp/kloel-ab083-atomic-20260517153044/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs extract_class_methods_to_file '{\"sourceFile\":\"backend/src/kloel/unified-agent.service.ts\",\"targetFile\":\"backend/src/kloel/unified-agent-action.helpers.ts\",\"className\":\"UnifiedAgentService\",\"methods\":[\"actionSucceeded\",\"num\"],\"importNames\":[\"actionSucceeded\",\"num\"],\"importModule\":\"./unified-agent-action.helpers\",\"callsiteReplacements\":[{\"oldText\":\"this.actionSucceeded(\",\"newText\":\"actionSucceeded(\",\"expectedCount\":2},{\"oldText\":\"this.num(\",\"newText\":\"num(\",\"expectedCount\":1}],\"validate\":false,\"report\":\"compact\"}' && cd /private/tmp/kloel-ab083-atomic-20260517153044 && ATOMIC_OS_REPO_ROOT=/private/tmp/kloel-ab083-atomic-20260517153044 node /private/tmp/kloel-ab083-atomic-20260517153044/docs/ai/atomic-os-benchmark/tools/atomic-call.cjs extract_class_methods_to_file '{\"sourceFile\":\"backend/src/kloel/unified-agent.service.ts\",\"targetFile\":\"backend/src/kloel/unified-agent-runtime-context.helpers.ts\",\"className\":\"UnifiedAgentService\",\"methods\":[\"buildAgentRuntimeContext\",\"recordAgentRuntimeTurn\",\"buildAgentToolEnvelope\"],\"importNames\":[\"buildAgentRuntimeContext\",\"recordAgentRuntimeTurn\",\"buildAgentToolEnvelope\"],\"importModule\":\"./unified-agent-runtime-context.helpers\",\"targetHeader\":\"import type { AgentRuntimeContextService } from \\u0027./agent-runtime\\u0027;\",\"methodAdapter\":{\"signaturePrefixParam\":\"agentRuntime: AgentRuntimeContextService | undefined, \",\"bodyReplacements\":[{\"oldText\":\"this.agentRuntime\",\"newText\":\"agentRuntime\"}]},\"callsiteReplacements\":[{\"oldText\":\"this.buildAgentRuntimeContext(\",\"newText\":\"buildAgentRuntimeContext(this.agentRuntime, \",\"expectedCount\":1},{\"oldText\":\"this.recordAgentRuntimeTurn(\",\"newText\":\"recordAgentRuntimeTurn(this.agentRuntime, \",\"expectedCount\":2},{\"oldText\":\"this.buildAgentToolEnvelope(\",\"newText\":\"buildAgentToolEnvelope(this.agentRuntime, \",\"expectedCount\":1}],\"validate\":true,\"includeTypecheck\":false,\"validationProfile\":\"kloel-unified-agent-multi-module-extract-no-typecheck\",\"scanFiles\":[\"backend/src/kloel/unified-agent.service.ts\",\"backend/src/kloel/unified-agent-action.helpers.ts\",\"backend/src/kloel/unified-agent-runtime-context.helpers.ts\"],\"forbiddenTextChecks\":[{\"file\":\"backend/src/kloel/unified-agent-action.helpers.ts\",\"text\":\"this.\",\"label\":\"action helper no this\"},{\"file\":\"backend/src/kloel/unified-agent-runtime-context.helpers.ts\",\"text\":\"this.\",\"label\":\"runtime helper no this\"},{\"file\":\"backend/src/kloel/unified-agent.service.ts\",\"text\":\"private actionSucceeded\",\"label\":\"private actionSucceeded removed\"},{\"file\":\"backend/src/kloel/unified-agent.service.ts\",\"text\":\"private num\",\"label\":\"private num removed\"},{\"file\":\"backend/src/kloel/unified-agent.service.ts\",\"text\":\"private async buildAgentRuntimeContext\",\"label\":\"private build runtime context removed\"},{\"file\":\"backend/src/kloel/unified-agent.service.ts\",\"text\":\"private async recordAgentRuntimeTurn\",\"label\":\"private record runtime turn removed\"},{\"file\":\"backend/src/kloel/unified-agent.service.ts\",\"text\":\"private buildAgentToolEnvelope\",\"label\":\"private build tool envelope removed\"}],\"report\":\"compact\"}'\n"
+      ],
+      "fileChangeItems": 0,
+      "fileChangePaths": [],
+      "agentMessages": 1,
+      "proofReadCommands": 0,
+      "fullDiffCommands": 0,
+      "backendInstallCommands": 0,
+      "usage": {
+        "input_tokens": 54959,
+        "output_tokens": 185,
+        "reasoning_output_tokens": 386
+      }
+    },
+    "validation": {
+      "jestStatus": 0,
+      "typecheckStatus": 2,
+      "typecheckErrorCount": 11,
+      "typecheckKloelErrorCount": 0,
+      "diffCheckStatus": 0,
+      "traceIsolationStatus": null,
+      "forbiddenPatternStatus": 1,
+      "helperThisStatus": 1,
+      "privateMethodsStatus": 1,
+      "serviceLines": 689,
+      "specDiff": [],
+      "protectedDiff": [],
+      "traceCount": 22,
+      "docsTraceCount": null,
+      "touchedKloelFiles": [
+        "backend/src/kloel/unified-agent-action.helpers.ts",
+        "backend/src/kloel/unified-agent-runtime-context.helpers.ts",
+        "backend/src/kloel/unified-agent.service.ts"
+      ],
+      "touchedKloelFileCount": 3,
+      "fileLineCounts": [
+        {
+          "lines": 689,
+          "path": "backend/src/kloel/unified-agent.service.ts"
+        },
+        {
+          "lines": 12,
+          "path": "backend/src/kloel/unified-agent-action.helpers.ts"
+        },
+        {
+          "lines": 40,
+          "path": "backend/src/kloel/unified-agent-runtime-context.helpers.ts"
+        }
+      ],
+      "actionHelperLines": 12,
+      "runtimeHelperLines": null,
+      "runtimeContextHelperLines": 40,
+      "untrackedInsertions": 52,
+      "sourceInsertions": 61,
+      "sourceDeletions": 57,
+      "sourceChurn": 118
+    }
+  },
+  "scorecard": {
+    "functionalPass": true,
+    "taskFunctionalPass": true,
+    "globalFunctionalPass": false,
+    "sharedTypecheckNoiseOnly": true,
+    "benchmarkIsolationPass": true,
+    "normalModeClean": true,
+    "normalForbiddenAtomicToolUseCount": 0,
+    "normalForbiddenAtomicCommandCount": 0,
+    "atomicModeClean": true,
+    "atomicNativeFileToolViolationCount": 0,
+    "atomicNativeShellReadCommandCount": 0,
+    "atomicMaskedPipelineCommandCount": 0,
+    "atomicWorktreeEscapeCount": 0,
+    "atomicTraceIsolationPass": true,
+    "serviceLineWinner": "normal",
+    "eventRowWinner": "atomic",
+    "firstActionWinner": "atomic",
+    "totalAgentTimeWinner": "atomic",
+    "shellCommandWinner": "atomic",
+    "normalFailedCommandCount": 3,
+    "atomicFailedCommandCount": 0,
+    "failedCommandWinner": "atomic",
+    "inputTokenWinner": "atomic",
+    "outputTokenWinner": "atomic",
+    "reasoningTokenWinner": "atomic",
+    "traceWinner": "atomic",
+    "protectedDiffTie": true,
+    "touchedFileWinner": "tie",
+    "sourceChurnWinner": "atomic"
+  }
+}

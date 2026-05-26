@@ -251,7 +251,7 @@ export function posToOffset(text: string, pos: Position): number {
   const lineEnd = text.indexOf('\n', offset);
   const lineLen = (lineEnd === -1 ? text.length : lineEnd) - offset;
   // column may equal lineLen + 1 (one past the last char = end-of-line insert).
-  if (pos.column - 1 > lineLen + 1) {
+  if (pos.column - 1 > lineLen) {
     throw new Error(
       `column ${pos.column} out of range on line ${pos.line} (line has ${lineLen} char(s))`,
     );

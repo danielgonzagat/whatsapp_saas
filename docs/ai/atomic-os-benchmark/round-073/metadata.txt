@@ -1,0 +1,10 @@
+round=073
+stamp=20260517124530
+normal=/private/tmp/kloel-ab073-normal-20260517124530
+atomic=/private/tmp/kloel-ab073-atomic-20260517124530
+task=repeat round 069 class methods actionSucceeded+num extraction after round 072 worktree escape rejection
+mission=expand atomicity to the correct faithful atom, not char-by-char work; normal is measurement baseline, not mission
+normal_isolation=watchdog XDG_CONFIG_HOME plus local opencode/.opencode quarantine; atomic tools forbidden
+dependency_isolation=watchdog links node_modules and backend/node_modules dynamically before launch
+atomic_invariant=atomic-call must be pinned to atomic worktree by cwd or by command cd plus ATOMIC_OS_REPO_ROOT
+atomic_update=worktree escape detection in watchdog and round-audit

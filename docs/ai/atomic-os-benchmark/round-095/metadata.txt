@@ -1,0 +1,7 @@
+round=095
+normal_worktree=/private/tmp/kloel-ab095-normal-20260517195614
+atomic_worktree=/private/tmp/kloel-ab095-atomic-20260517195614
+task=repeat_round094_router_cluster_plus_success_newline_safe_atomic_macro
+repeat_reason=round094_atomic_task_functional_failure_escaped_newline_partial_state
+official_loop=opencode_workers_only
+codex_rounds_after_094=non_governing_auxiliary_artifacts
