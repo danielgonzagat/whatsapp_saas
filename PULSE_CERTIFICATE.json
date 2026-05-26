@@ -1,9 +1,9 @@
 {
   "projectId": "kloel",
   "projectName": "KLOEL",
-  "commitSha": "b7fb3ade9acf2a8b49047fd1c8d361f2ec35791a",
+  "commitSha": "88a5bf24b13d69ee406d3b952a407885ae0323d5",
   "environment": "scan",
-  "timestamp": "2026-05-26T01:17:58.772Z",
+  "timestamp": "2026-05-26T01:41:36.720Z",
   "status": "NOT_CERTIFIED",
   "humanReplacementStatus": "NOT_READY",
   "profile": null,
@@ -33,7 +33,7 @@
     },
     "truthExtractionPass": {
       "status": "pass",
-      "reason": "Structural truth is materially coherent: 47 module(s), 88 flow group(s), and no runtime-critical product capability remains phantom or latent.",
+      "reason": "Structural truth is materially coherent: 47 module(s), 87 flow group(s), and no runtime-critical product capability remains phantom or latent.",
       "evidenceMode": "inferred",
       "confidence": "medium"
     },
@@ -119,7 +119,7 @@
     },
     "evidenceFresh": {
       "status": "fail",
-      "reason": "Codacy snapshot is stale (11018 minute(s) old).",
+      "reason": "Codacy snapshot is stale (11042 minute(s) old).",
       "failureClass": "missing_evidence"
     },
     "pulseSelfTrustPass": {
@@ -130,20 +130,20 @@
     },
     "noOverclaimPass": {
       "status": "fail",
-      "reason": "overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=2173, inferred=0, not_available=0, nonObserved=2173, executableUnproved=2173).",
+      "reason": "overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=2222, inferred=0, not_available=0, nonObserved=2222, executableUnproved=2222).",
       "failureClass": "checker_gap",
       "evidenceMode": "observed",
       "confidence": "high"
     },
     "executionMatrixCompletePass": {
       "status": "pass",
-      "reason": "Execution matrix classified 7366 path(s) with zero unknown and zero non-terminal paths.",
+      "reason": "Execution matrix classified 7413 path(s) with zero unknown and zero non-terminal paths.",
       "evidenceMode": "inferred",
       "confidence": "high"
     },
     "criticalPathObservedPass": {
       "status": "fail",
-      "reason": "5127 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "reason": "5174 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "failureClass": "missing_evidence",
       "affectedCapabilityIds": [
         "capability:abi-ab",
@@ -195,39 +195,39 @@
     "operatorPass: operator synthetic scenarios have no observed (runtime-executed) evidence — 0 scenario(s) passed via structural inference only (truthMode='inferred'). Real HTTP/Playwright/DB execution is required.",
     "adminPass: admin synthetic evidence is missing for: admin-settings-kyc-banking, admin-whatsapp-session-control.",
     "soakPass: soak synthetic evidence is missing for: operator-campaigns-and-flows, operator-autopilot-run, system-payment-reconciliation.",
-    "evidenceFresh: Codacy snapshot is stale (11018 minute(s) old).",
-    "noOverclaimPass: overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=2173, inferred=0, not_available=0, nonObserved=2173, executableUnproved=2173).",
-    "criticalPathObservedPass: 5127 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+    "evidenceFresh: Codacy snapshot is stale (11042 minute(s) old).",
+    "noOverclaimPass: overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=2222, inferred=0, not_available=0, nonObserved=2222, executableUnproved=2222).",
+    "criticalPathObservedPass: 5174 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
     "multiCycleConvergencePass: multiCycleConvergence: no autonomy iteration history found; production-autonomy verdict requires proven cycles."
   ],
   "dynamicBlockingReasons": [
     "Observed Codacy files are missing from repo inventory: backend/src/meta/__parts__/meta-auth-helpers.ts, backend/src/meta/__parts__/meta-oauth-url.helpers.ts, frontend/src/components/kloel/KloelProductSurfacePatches.tsx, scripts/fix_context_strings.py, scripts/fix_opsalert_contexts.py, scripts/instrument-ops-alert-catches.py, scripts/instrument-ops-alert.py, scripts/instrument-ops-v2.py, scripts/instrument-v3.py, scripts/instrument_opsalert.py, scripts/instrument_opsalert_v2.py, scripts/orchestration/__parts__/findings-watch.mjs, worker/__parts__/flow-node-executor.interactions.ts, worker/__parts__/flow-node-executor.ts, worker/__parts__/scheduled-followup-handler.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-build.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-inference.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-load.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-persist.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-record.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-scoring.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-types.ts.",
     "Codacy still reports 2225 HIGH issue(s).",
-    "Codacy snapshot is stale (11018 minute(s) old).",
+    "Codacy snapshot is stale (11042 minute(s) old).",
     "Observed external high-impact signals remain active: 1.",
     "Required external adapters are missing: 2.",
-    "Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=2173, inferred=0, not_available=0, nonObserved=2173, executableUnproved=2173.",
-    "No-hardcoded-reality state still has hardcoded reality authority: 223602 hardcoded reality event(s) across 545 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.."
+    "Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=2222, inferred=0, not_available=0, nonObserved=2222, executableUnproved=2222.",
+    "No-hardcoded-reality state still has hardcoded reality authority: 223644 hardcoded reality event(s) across 545 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.."
   ],
   "noHardcodedRealityState": {
     "artifact": "PULSE_NO_HARDCODED_REALITY",
     "version": 1,
-    "generatedAt": "2026-05-26T01:17:58.772Z",
+    "generatedAt": "2026-05-26T01:41:36.720Z",
     "operationalIdentity": "dynamic_hardcode_evidence_event",
     "scannedFiles": 545,
-    "totalEvents": 223602,
+    "totalEvents": 223644,
     "summary": {
-      "totalFindings": 223602,
+      "totalFindings": 223644,
       "byKind": {
-        "hardcoded_literal_surface_risk": 15629,
-        "hardcoded_const_declaration_risk": 8412,
+        "hardcoded_literal_surface_risk": 15635,
+        "hardcoded_const_declaration_risk": 8418,
         "hardcoded_predeclared_authority_context_risk": 218,
         "hardcoded_regex_surface_risk": 1110,
-        "hardcoded_boolean_surface_risk": 1313,
-        "hardcoded_numeric_surface_risk": 4489,
-        "hardcoded_fixed_literal_decision_risk": 784,
+        "hardcoded_boolean_surface_risk": 1315,
+        "hardcoded_numeric_surface_risk": 4491,
+        "hardcoded_fixed_literal_decision_risk": 786,
         "hardcoded_fixed_boolean_decision_risk": 103,
-        "hardcoded_numeric_decision_literal_risk": 397,
+        "hardcoded_numeric_decision_literal_risk": 399,
         "hardcoded_decision_regex_risk": 20,
         "hardcoded_gate_profile_threshold_risk": 13,
         "hardcoded_identity_limit_risk": 7,
@@ -236,7 +236,7 @@
         "hardcoded_parser_rule_blocker_risk": 5,
         "hardcoded_path_decision_risk": 1,
         "hardcoded_auditor_mutation_risk": 1,
-        "hardcoded_replacement_cheat_risk": 191064
+        "hardcoded_replacement_cheat_risk": 191086
       },
       "topFiles": [
         {
@@ -1536,8 +1536,8 @@
   },
   "selfTrustReport": null,
   "scopeStateSummary": {
-    "totalFiles": 6258,
-    "totalLines": 1271271,
+    "totalFiles": 6259,
+    "totalLines": 1271451,
     "runtimeCriticalFiles": 3964,
     "userFacingFiles": 1444,
     "governedValidationFiles": 0,
@@ -1554,13 +1554,13 @@
       "governance": 120,
       "root-config": 21,
       "artifacts": 3,
-      "misc": 339
+      "misc": 340
     },
     "kindCounts": {
       "source": 3877,
       "spec": 1091,
       "migration": 63,
-      "config": 766,
+      "config": 767,
       "document": 458,
       "artifact": 3
     },
@@ -6686,6 +6686,23 @@
         "highestObservedSeverity": null
       },
       {
+        "path": ".atomic/traces/op_1779759129036_a436a1d9.json",
+        "extension": ".json",
+        "lineCount": 80,
+        "surface": "misc",
+        "kind": "config",
+        "runtimeCritical": false,
+        "userFacing": false,
+        "ownerLane": "platform",
+        "executionMode": "ai_safe",
+        "protectedByGovernance": false,
+        "codacyTracked": true,
+        "moduleCandidate": "atomic",
+        "observedCodacyIssueCount": 0,
+        "highSeverityIssueCount": 0,
+        "highestObservedSeverity": null
+      },
+      {
         "path": ".codex/hooks.json",
         "extension": ".json",
         "lineCount": 66,
@@ -7609,7 +7626,7 @@
     "snapshotAvailable": true,
     "sourcePath": "/Users/danielpenin/.config/superpowers/worktrees/whatsapp_saas/backlog-consolidation-v2/PULSE_CODACY_STATE.json",
     "syncedAt": "2026-05-18T09:39:00.608Z",
-    "ageMinutes": 11018,
+    "ageMinutes": 11042,
     "stale": true,
     "loc": 632153,
     "totalIssues": 12025,
@@ -8799,7 +8816,7 @@
       "impactScore": 0.8,
       "confidence": 0.95,
       "summary": "7 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.",
-      "observedAt": "2026-05-26T01:17:21.454Z",
+      "observedAt": "2026-05-26T01:40:59.696Z",
       "relatedFiles": [
         "backend/prisma/migrations/20251209150035_init_baseline/migration.sql"
       ],
@@ -8841,7 +8858,6 @@
         "media-post-video-create",
         "media-post-voice-generate",
         "media-post-voice-profiles",
-        "meta-post-kloel-think",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
         "parcerias-post-kloel-think-sync",
@@ -8871,7 +8887,7 @@
       "impactScore": 0.55,
       "confidence": 0.95,
       "summary": "17 HIGH Codacy issue(s) remain in scripts/__parts__/obsidian-mirror-daemon-content.mjs.",
-      "observedAt": "2026-05-26T01:17:21.454Z",
+      "observedAt": "2026-05-26T01:40:59.696Z",
       "relatedFiles": [
         "scripts/__parts__/obsidian-mirror-daemon-content.mjs"
       ],
@@ -8944,7 +8960,6 @@
         "media-post-video-create",
         "media-post-voice-generate",
         "media-post-voice-profiles",
-        "meta-post-kloel-think",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
         "parcerias-post-kloel-think-sync",
@@ -8986,7 +9001,7 @@
       "impactScore": 0.55,
       "confidence": 0.95,
       "summary": "5 HIGH Codacy issue(s) remain in scripts/__parts__/obsidian-mirror-daemon-utils.mjs.",
-      "observedAt": "2026-05-26T01:17:21.454Z",
+      "observedAt": "2026-05-26T01:40:59.696Z",
       "relatedFiles": [
         "scripts/__parts__/obsidian-mirror-daemon-utils.mjs"
       ],
@@ -9032,7 +9047,7 @@
       "impactScore": 0.55,
       "confidence": 0.95,
       "summary": "1 HIGH Codacy issue(s) remain in backend/src/meta/__parts__/meta-auth-helpers.ts.",
-      "observedAt": "2026-05-26T01:17:21.454Z",
+      "observedAt": "2026-05-26T01:40:59.696Z",
       "relatedFiles": [
         "backend/src/meta/__parts__/meta-auth-helpers.ts"
       ],
@@ -9294,7 +9309,6 @@
         "media-post-video-create",
         "media-post-voice-generate",
         "media-post-voice-profiles",
-        "meta-post-kloel-think",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
         "parcerias-post-kloel-think-sync",
@@ -9336,7 +9350,7 @@
       "impactScore": 0.55,
       "confidence": 0.95,
       "summary": "1 HIGH Codacy issue(s) remain in backend/src/meta/__parts__/meta-oauth-url.helpers.ts.",
-      "observedAt": "2026-05-26T01:17:21.454Z",
+      "observedAt": "2026-05-26T01:40:59.696Z",
       "relatedFiles": [
         "backend/src/meta/__parts__/meta-oauth-url.helpers.ts"
       ],
@@ -9583,7 +9597,6 @@
         "media-post-video-create",
         "media-post-voice-generate",
         "media-post-voice-profiles",
-        "meta-post-kloel-think",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
         "parcerias-post-kloel-think-sync",
@@ -9625,7 +9638,7 @@
       "impactScore": 0.55,
       "confidence": 0.95,
       "summary": "1 HIGH Codacy issue(s) remain in package.json.",
-      "observedAt": "2026-05-26T01:17:21.454Z",
+      "observedAt": "2026-05-26T01:40:59.696Z",
       "relatedFiles": [
         "package.json"
       ],
@@ -9671,7 +9684,7 @@
       "impactScore": 0.55,
       "confidence": 0.95,
       "summary": "2 HIGH Codacy issue(s) remain in scripts/__parts__/obsidian-mirror-daemon-indexes.mjs.",
-      "observedAt": "2026-05-26T01:17:21.454Z",
+      "observedAt": "2026-05-26T01:40:59.696Z",
       "relatedFiles": [
         "scripts/__parts__/obsidian-mirror-daemon-indexes.mjs"
       ],
@@ -9700,18 +9713,18 @@
     }
   ],
   "structuralGraphSummary": {
-    "totalNodes": 7792,
-    "totalEdges": 16546,
+    "totalNodes": 7853,
+    "totalEdges": 16545,
     "roleCounts": {
-      "interface": 2732,
+      "interface": 2793,
       "orchestration": 3764,
       "persistence": 173,
       "side_effect": 1123,
       "simulation": 0
     },
-    "interfaceChains": 2732,
-    "completeChains": 792,
-    "partialChains": 1940,
+    "interfaceChains": 2789,
+    "completeChains": 791,
+    "partialChains": 1998,
     "simulatedChains": 0
   },
   "capabilityStateSummary": {
@@ -9729,9 +9742,9 @@
     "scenarioCoveredCapabilities": 0
   },
   "flowProjectionSummary": {
-    "totalFlows": 75,
+    "totalFlows": 74,
     "realFlows": 0,
-    "partialFlows": 75,
+    "partialFlows": 74,
     "latentFlows": 0,
     "phantomFlows": 0
   },
@@ -20668,10 +20681,10 @@
     }
   ],
   "productVision": {
-    "generatedAt": "2026-05-26T01:18:48.728Z",
+    "generatedAt": "2026-05-26T01:42:26.128Z",
     "truthMode": "aspirational",
     "evidenceBasis": {
-      "observed": 72,
+      "observed": 71,
       "inferred": 422,
       "projected": 0
     },
@@ -20686,7 +20699,7 @@
       "projectedProductionReadiness": "yellow"
     },
     "currentStateSummary": "The current product-facing system materializes 419 partial capability(ies), 0 latent capability(ies). System-wide phantom capability count is 0.",
-    "projectedProductSummary": "If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 419/419 capability(ies) and 75/75 flow(s) at least partially real, with readiness yellow.",
+    "projectedProductSummary": "If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 419/419 capability(ies) and 74/74 flow(s) at least partially real, with readiness yellow.",
     "inferredProductIdentity": "If the currently connected structures converge, the product resolves toward a unified operational platform centered on Analytics, Autopilot, Billing, Campaigns, Checkout, CIA/Agent, CRM, Dashboard, Followups, Inbox/Chat, Onboarding, Partnerships, Products, Sales/Vendas, Scrapers, Account, Canvas, Carteira, Cookies, Ferramentas, Launch, Media, Parcerias.",
     "distanceSummary": "Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 42 structural parity gap(s), and 2225 HIGH Codacy issue(s).",
     "promiseToProductionDelta": {
@@ -21967,7 +21980,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -23214,7 +23226,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -23657,7 +23668,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -24875,7 +24885,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -26108,7 +26117,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -27330,7 +27338,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -28570,7 +28577,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -29008,7 +29014,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -30329,7 +30334,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -30785,7 +30789,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -31977,7 +31980,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -33177,7 +33179,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -34409,7 +34410,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -35603,7 +35603,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -36990,7 +36989,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -38232,7 +38230,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -39481,7 +39478,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -40712,7 +40708,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -41903,7 +41898,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -43088,7 +43082,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -44374,7 +44367,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -45586,7 +45578,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -46835,7 +46826,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -47389,7 +47379,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -47826,7 +47815,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -48263,7 +48251,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -48701,7 +48688,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -49139,7 +49125,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -49577,7 +49562,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -50016,7 +50000,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -50456,7 +50439,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -50586,7 +50568,7 @@
     }
   },
   "convergencePlan": {
-    "totalUnits": 166,
+    "totalUnits": 167,
     "governedValidationUnits": 0,
     "observationOnlyUnits": 1,
     "topQueue": [
@@ -69055,7 +69037,7 @@
             "customer-onboarding-public-map",
             "operator-canvas-surface-map"
           ],
-          "totalInteractions": 82,
+          "totalInteractions": 86,
           "persistedInteractions": 3
         },
         {
@@ -69288,7 +69270,7 @@
             "customer-product-and-checkout",
             "system-payment-reconciliation"
           ],
-          "totalInteractions": 16,
+          "totalInteractions": 29,
           "persistedInteractions": 0
         },
         {
@@ -70395,7 +70377,7 @@
             "customer-product-and-checkout",
             "system-payment-reconciliation"
           ],
-          "totalInteractions": 45,
+          "totalInteractions": 63,
           "persistedInteractions": 3
         },
         {
@@ -70993,7 +70975,7 @@
       ]
     },
     "worldState": {
-      "generatedAt": "2026-05-26T01:18:01.356Z",
+      "generatedAt": "2026-05-26T01:41:39.330Z",
       "actorProfiles": [
         "synthetic-customer",
         "synthetic-operator",
@@ -71101,9 +71083,9 @@
       ]
     },
     "executionTrace": {
-      "runId": "pulse-1779758231854",
-      "generatedAt": "2026-05-26T01:17:11.855Z",
-      "updatedAt": "2026-05-26T01:17:58.772Z",
+      "runId": "pulse-1779759649816",
+      "generatedAt": "2026-05-26T01:40:49.816Z",
+      "updatedAt": "2026-05-26T01:41:36.719Z",
       "environment": "scan",
       "certificationTarget": {
         "tier": 0,
@@ -71115,7 +71097,7 @@
         {
           "phase": "scan:core-parsers",
           "phaseStatus": "passed",
-          "startedAt": "2026-05-26T01:17:11.856Z",
+          "startedAt": "2026-05-26T01:40:49.818Z",
           "metadata": {
             "apiCalls": 771,
             "backendRoutes": 877,
@@ -71123,82 +71105,82 @@
             "prismaModels": 173,
             "proxyRoutes": 85,
             "serviceTraces": 2802,
-            "uiElements": 1961
+            "uiElements": 2022
           },
-          "finishedAt": "2026-05-26T01:17:18.326Z",
-          "durationMs": 6470
+          "finishedAt": "2026-05-26T01:40:56.574Z",
+          "durationMs": 6756
         },
         {
           "phase": "scan:extended-parser-inventory",
           "phaseStatus": "passed",
-          "startedAt": "2026-05-26T01:17:18.326Z",
+          "startedAt": "2026-05-26T01:40:56.574Z",
           "metadata": {
             "discoveredChecks": 5,
             "loadedChecks": 0,
             "unavailableChecks": 0
           },
-          "finishedAt": "2026-05-26T01:17:18.329Z",
+          "finishedAt": "2026-05-26T01:40:56.577Z",
           "durationMs": 3
         },
         {
           "phase": "scan:extended-parsers",
           "phaseStatus": "passed",
-          "startedAt": "2026-05-26T01:17:18.329Z",
+          "startedAt": "2026-05-26T01:40:56.577Z",
           "metadata": {
             "parserCount": 0,
             "breakCount": 0
           },
-          "finishedAt": "2026-05-26T01:17:18.329Z",
+          "finishedAt": "2026-05-26T01:40:56.577Z",
           "durationMs": 0
         },
         {
           "phase": "scan:manifest",
           "phaseStatus": "passed",
-          "startedAt": "2026-05-26T01:17:18.329Z",
+          "startedAt": "2026-05-26T01:40:56.577Z",
           "metadata": {
             "issues": 0,
             "unknownSurfaces": 0,
             "unsupportedStacks": 0
           },
-          "finishedAt": "2026-05-26T01:17:18.332Z",
-          "durationMs": 3
+          "finishedAt": "2026-05-26T01:40:56.579Z",
+          "durationMs": 2
         },
         {
           "phase": "scan:graph",
           "phaseStatus": "passed",
-          "startedAt": "2026-05-26T01:17:18.332Z",
+          "startedAt": "2026-05-26T01:40:56.579Z",
           "metadata": {
             "score": 100,
             "breakCount": 1
           },
-          "finishedAt": "2026-05-26T01:17:18.942Z",
-          "durationMs": 610
+          "finishedAt": "2026-05-26T01:40:57.190Z",
+          "durationMs": 611
         },
         {
           "phase": "scan:truth",
           "phaseStatus": "passed",
-          "startedAt": "2026-05-26T01:17:18.942Z",
+          "startedAt": "2026-05-26T01:40:57.190Z",
           "metadata": {
             "pages": 131,
             "modules": 47,
-            "flowGroups": 88,
-            "scopeFiles": 6258,
+            "flowGroups": 87,
+            "scopeFiles": 6259,
             "capabilities": 453,
-            "projectedFlows": 75
+            "projectedFlows": 74
           },
-          "finishedAt": "2026-05-26T01:17:53.721Z",
-          "durationMs": 34779
+          "finishedAt": "2026-05-26T01:41:31.805Z",
+          "durationMs": 34615
         },
         {
           "phase": "scan:certification",
           "phaseStatus": "running",
-          "startedAt": "2026-05-26T01:17:53.721Z"
+          "startedAt": "2026-05-26T01:41:31.806Z"
         },
         {
           "phase": "scan:certification:preliminary",
           "phaseStatus": "passed",
-          "startedAt": "2026-05-26T01:17:58.141Z",
-          "finishedAt": "2026-05-26T01:17:58.141Z",
+          "startedAt": "2026-05-26T01:41:36.078Z",
+          "finishedAt": "2026-05-26T01:41:36.078Z",
           "durationMs": 0,
           "metadata": {
             "status": "NOT_CERTIFIED",
@@ -71208,25 +71190,25 @@
         {
           "phase": "scan:certification:execution-matrix",
           "phaseStatus": "passed",
-          "startedAt": "2026-05-26T01:17:58.141Z",
+          "startedAt": "2026-05-26T01:41:36.078Z",
           "metadata": {
-            "totalPaths": 7366,
+            "totalPaths": 7413,
             "unknownPaths": 0
           },
-          "finishedAt": "2026-05-26T01:17:58.491Z",
-          "durationMs": 350
+          "finishedAt": "2026-05-26T01:41:36.423Z",
+          "durationMs": 345
         },
         {
           "phase": "scan:certification:path-coverage",
           "phaseStatus": "passed",
-          "startedAt": "2026-05-26T01:17:58.491Z",
-          "finishedAt": "2026-05-26T01:17:58.771Z",
-          "durationMs": 280
+          "startedAt": "2026-05-26T01:41:36.423Z",
+          "finishedAt": "2026-05-26T01:41:36.719Z",
+          "durationMs": 296
         },
         {
           "phase": "scan:certification:final",
           "phaseStatus": "running",
-          "startedAt": "2026-05-26T01:17:58.772Z"
+          "startedAt": "2026-05-26T01:41:36.719Z"
         }
       ],
       "summary": "Execution in progress: 9 passed, 0 failed, 0 timed out, 2 running.",
@@ -71236,7 +71218,7 @@
       "auditTrail": {
         "algorithm": "sha256",
         "eventCount": 11,
-        "chainHead": "bd6e0169388263aea1ea3a618e8766a78fab004af1fd4c0d757116dbce6de641",
+        "chainHead": "d47274cf84a31307011c97ece2f20f2c14076622dfcacf1ac987a380892111a0",
         "verified": true
       }
     }
@@ -71252,7 +71234,7 @@
           "PULSE_CERTIFICATE.json"
         ],
         "metrics": {
-          "inventoryFiles": 6258,
+          "inventoryFiles": 6259,
           "codacyObservedFiles": 63,
           "codacyObservedFilesCovered": 41,
           "confidence": "low"
@@ -71263,7 +71245,7 @@
       {
         "kind": "truth",
         "executed": true,
-        "summary": "Resolved manifest built from 131 page(s), 47 module(s), 88 flow group(s).",
+        "summary": "Resolved manifest built from 131 page(s), 47 module(s), 87 flow group(s).",
         "artifactPaths": [
           "PULSE_CODEBASE_TRUTH.json",
           "PULSE_RESOLVED_MANIFEST.json",
@@ -71816,7 +71798,7 @@
         ],
         "metrics": {
           "codacySnapshotAvailable": true,
-          "codacyAgeMinutes": 11018,
+          "codacyAgeMinutes": 11042,
           "codacyStale": true,
           "externalStaleAdapters": 0,
           "externalMissingAdapters": 2
@@ -71827,12 +71809,12 @@
       {
         "kind": "artifact",
         "executed": true,
-        "summary": "Execution matrix classified 7366 path(s); unknown=0.",
+        "summary": "Execution matrix classified 7413 path(s); unknown=0.",
         "artifactPaths": [
           "PULSE_EXECUTION_MATRIX.json"
         ],
         "metrics": {
-          "totalPaths": 7366,
+          "totalPaths": 7413,
           "unknownPaths": 0,
           "coveragePercent": 100
         }
@@ -71853,7 +71835,7 @@
           "criticalPathCoverageUnobserved": 0,
           "pathCoveragePercent": 1,
           "observedPass": 0,
-          "observedFail": 40
+          "observedFail": 39
         }
       }
     ],
@@ -71874,18 +71856,18 @@
       {
         "kind": "artifact",
         "executed": true,
-        "summary": "Proof readiness blocks completion: status=executable_unproved, canAdvance=false, planned=2173, inferred=0, not_available=0, nonObserved=2173, executableUnproved=2173.",
+        "summary": "Proof readiness blocks completion: status=executable_unproved, canAdvance=false, planned=2222, inferred=0, not_available=0, nonObserved=2222, executableUnproved=2222.",
         "artifactPaths": [
           ".pulse/current/PULSE_PROOF_READINESS.json"
         ],
         "metrics": {
           "canAdvance": 0,
-          "plannedEvidence": 2173,
-          "plannedOrUnexecutedEvidence": 2173,
+          "plannedEvidence": 2222,
+          "plannedOrUnexecutedEvidence": 2222,
           "inferredEvidence": 0,
           "notAvailableEvidence": 0,
-          "nonObservedEvidence": 2173,
-          "executableUnproved": 2173,
+          "nonObservedEvidence": 2222,
+          "executableUnproved": 2222,
           "observationOnlyRequired": 0,
           "blockedNotExecutable": 0
         }
@@ -71893,12 +71875,12 @@
       {
         "kind": "artifact",
         "executed": true,
-        "summary": "No-hardcoded-reality state blocks completion: 223602 hardcoded reality event(s) across 545 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.",
+        "summary": "No-hardcoded-reality state blocks completion: 223644 hardcoded reality event(s) across 545 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.",
         "artifactPaths": [
           "PULSE_NO_HARDCODED_REALITY.json"
         ],
         "metrics": {
-          "totalEvents": 223602,
+          "totalEvents": 223644,
           "scannedFiles": 545
         }
       }
@@ -71907,7 +71889,7 @@
   "pulseMachineReadiness": {
     "scope": "pulse_machine_not_kloel_product",
     "status": "NOT_READY",
-    "generatedAt": "2026-05-26T01:17:58.772Z",
+    "generatedAt": "2026-05-26T01:41:36.720Z",
     "productCertificationStatus": "NOT_CERTIFIED",
     "productCertificationExcludedFromVerdict": true,
     "canRunBoundedAutonomousCycle": true,
@@ -71920,8 +71902,8 @@
         "evidence": {
           "nextExecutableUnitLimit": 8,
           "boundedExecutableUnits": 8,
-          "totalAutonomousUnits": 119,
-          "totalConvergenceUnits": 166
+          "totalAutonomousUnits": 120,
+          "totalConvergenceUnits": 167
         }
       },
       {
@@ -71936,9 +71918,9 @@
       {
         "id": "execution_matrix",
         "status": "pass",
-        "reason": "Execution matrix classified 7366 path(s) with zero unknown and zero non-terminal paths.",
+        "reason": "Execution matrix classified 7413 path(s) with zero unknown and zero non-terminal paths.",
         "evidence": {
-          "totalPaths": 7366,
+          "totalPaths": 7413,
           "unknownPaths": 0,
           "criticalUnobservedPaths": 0,
           "impreciseBreakpoints": 0,
@@ -71948,12 +71930,12 @@
       {
         "id": "critical_path_terminal",
         "status": "fail",
-        "reason": "5127 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+        "reason": "5174 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
         "evidence": {
           "criticalUnobservedPaths": 0,
           "observedPass": 0,
-          "observedFail": 40,
-          "terminalWithoutObservedEvidence": 5127,
+          "observedFail": 39,
+          "terminalWithoutObservedEvidence": 5174,
           "firstTerminalPathId": "matrix:capability:capability:abi-ab",
           "terminalArtifact": "PULSE_EXECUTION_MATRIX.json",
           "coverageArtifact": "PULSE_PATH_COVERAGE.json",
@@ -71966,7 +71948,7 @@
         "reason": "Every observed failure in the execution matrix has a breakpoint.",
         "evidence": {
           "impreciseBreakpoints": 0,
-          "observedFail": 40
+          "observedFail": 39
         }
       },
       {
@@ -72011,11 +71993,11 @@
       }
     ],
     "blockers": [
-      "critical_path_terminal: 5127 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "critical_path_terminal: 5174 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "external_reality: 2 missing, 0 stale, and 0 invalid external adapter(s) remain.",
       "multi_cycle: multiCycleConvergence: no autonomy iteration history found; production-autonomy verdict requires proven cycles. Cycle proof: 0/3 successful non-regressing real cycle(s)."
     ]
   },
-  "runId": "a4188e62-d73b-4b48-a5a5-7a1bc704bdc0",
-  "generatedAt": "2026-05-26T01:18:53.517Z"
+  "runId": "d05efda1-5fc5-4bf6-b348-a45ab8c6f297",
+  "generatedAt": "2026-05-26T01:42:30.793Z"
 }

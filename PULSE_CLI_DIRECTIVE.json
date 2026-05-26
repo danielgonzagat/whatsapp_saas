@@ -1,11 +1,11 @@
 {
-  "generatedAt": "2026-05-26T01:18:53.517Z",
+  "generatedAt": "2026-05-26T01:42:30.793Z",
   "profile": null,
   "certificationScope": null,
   "pulseMachineReadiness": {
     "scope": "pulse_machine_not_kloel_product",
     "status": "NOT_READY",
-    "generatedAt": "2026-05-26T01:17:58.772Z",
+    "generatedAt": "2026-05-26T01:41:36.720Z",
     "productCertificationStatus": "NOT_CERTIFIED",
     "productCertificationExcludedFromVerdict": true,
     "canRunBoundedAutonomousCycle": false,
@@ -18,8 +18,8 @@
         "evidence": {
           "nextExecutableUnitLimit": 8,
           "boundedExecutableUnits": 8,
-          "totalAutonomousUnits": 119,
-          "totalConvergenceUnits": 166
+          "totalAutonomousUnits": 120,
+          "totalConvergenceUnits": 167
         }
       },
       {
@@ -34,9 +34,9 @@
       {
         "id": "execution_matrix",
         "status": "pass",
-        "reason": "Execution matrix classified 7366 path(s) with zero unknown and zero non-terminal paths.",
+        "reason": "Execution matrix classified 7413 path(s) with zero unknown and zero non-terminal paths.",
         "evidence": {
-          "totalPaths": 7366,
+          "totalPaths": 7413,
           "unknownPaths": 0,
           "criticalUnobservedPaths": 0,
           "impreciseBreakpoints": 0,
@@ -46,12 +46,12 @@
       {
         "id": "critical_path_terminal",
         "status": "fail",
-        "reason": "5127 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+        "reason": "5174 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
         "evidence": {
           "criticalUnobservedPaths": 0,
           "observedPass": 0,
-          "observedFail": 40,
-          "terminalWithoutObservedEvidence": 5127,
+          "observedFail": 39,
+          "terminalWithoutObservedEvidence": 5174,
           "firstTerminalPathId": "matrix:capability:capability:abi-ab",
           "terminalArtifact": "PULSE_EXECUTION_MATRIX.json",
           "coverageArtifact": "PULSE_PATH_COVERAGE.json",
@@ -64,7 +64,7 @@
         "reason": "Every observed failure in the execution matrix has a breakpoint.",
         "evidence": {
           "impreciseBreakpoints": 0,
-          "observedFail": 40
+          "observedFail": 39
         }
       },
       {
@@ -110,7 +110,7 @@
     ],
     "blockers": [
       "artifact_consistency: Cross-artifact consistency has not produced a passing check.",
-      "critical_path_terminal: 5127 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "critical_path_terminal: 5174 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "external_reality: 2 missing, 0 stale, and 0 invalid external adapter(s) remain.",
       "multi_cycle: multiCycleConvergence: no autonomy iteration history found; production-autonomy verdict requires proven cycles. Cycle proof: 0/3 successful non-regressing real cycle(s)."
     ]
@@ -154,17 +154,17 @@
     {
       "gate": "evidenceFresh",
       "status": "fail",
-      "reason": "Codacy snapshot is stale (11018 minute(s) old)."
+      "reason": "Codacy snapshot is stale (11042 minute(s) old)."
     },
     {
       "gate": "noOverclaimPass",
       "status": "fail",
-      "reason": "overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=2173, inferred=0, not_available=0, nonObserved=2173, executableUnproved=2173)."
+      "reason": "overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=2222, inferred=0, not_available=0, nonObserved=2222, executableUnproved=2222)."
     },
     {
       "gate": "criticalPathObservedPass",
       "status": "fail",
-      "reason": "5127 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json."
+      "reason": "5174 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json."
     },
     {
       "gate": "multiCycleConvergencePass",
@@ -307,7 +307,7 @@
       }
     ],
     "evidenceFreshness": {
-      "generatedAt": "2026-05-26T01:18:50.218Z",
+      "generatedAt": "2026-05-26T01:42:27.584Z",
       "ageMinutes": 0,
       "stale": false,
       "source": "path_proof_plan",
@@ -326,7 +326,7 @@
       "canDeclareProductCertified": false,
       "blockers": [
         "artifact_consistency: Cross-artifact consistency has not produced a passing check.",
-        "critical_path_terminal: 5127 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+        "critical_path_terminal: 5174 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
         "external_reality: 2 missing, 0 stale, and 0 invalid external adapter(s) remain.",
         "multi_cycle: multiCycleConvergence: no autonomy iteration history found; production-autonomy verdict requires proven cycles. Cycle proof: 0/3 successful non-regressing real cycle(s)."
       ]
@@ -414,7 +414,7 @@
   "zeroPromptProductionGuidanceVerdict": "NAO",
   "zeroPromptProductionGuidanceReason": "NAO: Authority is not automation-eligible: Evidence freshness is not closed. | Runtime pass is not green with live evidence.. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Autonomous convergence history is not proven: 0/3 successful non-regressing real cycle(s).",
   "productionAutonomyVerdict": "NAO",
-  "productionAutonomyReason": "NAO: Evidence freshness is not closed. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 42 parity gap(s), 2225 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Autonomous convergence history is not proven: 0/3 successful non-regressing real cycle(s). | Observed Codacy files are missing from repo inventory: backend/src/meta/__parts__/meta-auth-helpers.ts, backend/src/meta/__parts__/meta-oauth-url.helpers.ts, frontend/src/components/kloel/KloelProductSurfacePatches.tsx, scripts/fix_context_strings.py, scripts/fix_opsalert_contexts.py, scripts/instrument-ops-alert-catches.py, scripts/instrument-ops-alert.py, scripts/instrument-ops-v2.py, scripts/instrument-v3.py, scripts/instrument_opsalert.py, scripts/instrument_opsalert_v2.py, scripts/orchestration/__parts__/findings-watch.mjs, worker/__parts__/flow-node-executor.interactions.ts, worker/__parts__/flow-node-executor.ts, worker/__parts__/scheduled-followup-handler.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-build.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-inference.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-load.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-persist.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-record.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-scoring.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-types.ts. | Codacy still reports 2225 HIGH issue(s). | Codacy snapshot is stale (11018 minute(s) old). | Observed external high-impact signals remain active: 1. | Required external adapters are missing: 2. | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=2173, inferred=0, not_available=0, nonObserved=2173, executableUnproved=2173. | No-hardcoded-reality state still has hardcoded reality authority: 223602 hardcoded reality event(s) across 545 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=2173, inferred=0, not_available=0, nonObserved=2173, executableUnproved=2173).",
+  "productionAutonomyReason": "NAO: Evidence freshness is not closed. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 42 parity gap(s), 2225 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Autonomous convergence history is not proven: 0/3 successful non-regressing real cycle(s). | Observed Codacy files are missing from repo inventory: backend/src/meta/__parts__/meta-auth-helpers.ts, backend/src/meta/__parts__/meta-oauth-url.helpers.ts, frontend/src/components/kloel/KloelProductSurfacePatches.tsx, scripts/fix_context_strings.py, scripts/fix_opsalert_contexts.py, scripts/instrument-ops-alert-catches.py, scripts/instrument-ops-alert.py, scripts/instrument-ops-v2.py, scripts/instrument-v3.py, scripts/instrument_opsalert.py, scripts/instrument_opsalert_v2.py, scripts/orchestration/__parts__/findings-watch.mjs, worker/__parts__/flow-node-executor.interactions.ts, worker/__parts__/flow-node-executor.ts, worker/__parts__/scheduled-followup-handler.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-build.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-inference.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-load.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-persist.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-record.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-scoring.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-types.ts. | Codacy still reports 2225 HIGH issue(s). | Codacy snapshot is stale (11042 minute(s) old). | Observed external high-impact signals remain active: 1. | Required external adapters are missing: 2. | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=2222, inferred=0, not_available=0, nonObserved=2222, executableUnproved=2222. | No-hardcoded-reality state still has hardcoded reality authority: 223644 hardcoded reality event(s) across 545 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=2222, inferred=0, not_available=0, nonObserved=2222, executableUnproved=2222).",
   "canWorkNow": false,
   "canContinueUntilReady": false,
   "canWorkUntilProductionReady": false,
@@ -426,20 +426,20 @@
     "canWorkNow": true,
     "canContinueUntilReady": false,
     "canDeclareComplete": false,
-    "automationSafeUnits": 119,
+    "automationSafeUnits": 120,
     "blockers": [],
     "warnings": [
       "2 external adapter(s) are missing; production reality is incomplete but local convergence can still proceed.",
-      "NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=2173, inferred=0, not_available=0, nonObserved=2173, executableUnproved=2173)."
+      "NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=2222, inferred=0, not_available=0, nonObserved=2222, executableUnproved=2222)."
     ]
   },
   "autonomyProof": {
-    "generatedAt": "2026-05-26T01:17:58.772Z",
+    "generatedAt": "2026-05-26T01:41:36.720Z",
     "freshSessionQuestion": "If a new AI session runs the full Pulse, will it know the next safe executable step?",
     "freshSessionAnswer": "SIM",
     "productionAutonomyQuestion": "Can Pulse prove unsupervised convergence to fully functional and production-safe completion?",
     "productionAutonomyAnswer": "NAO",
-    "productionAutonomyReason": "NAO: Evidence freshness is not closed. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 42 parity gap(s), 2225 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Autonomous convergence history is not proven: 0/3 successful non-regressing real cycle(s). | Observed Codacy files are missing from repo inventory: backend/src/meta/__parts__/meta-auth-helpers.ts, backend/src/meta/__parts__/meta-oauth-url.helpers.ts, frontend/src/components/kloel/KloelProductSurfacePatches.tsx, scripts/fix_context_strings.py, scripts/fix_opsalert_contexts.py, scripts/instrument-ops-alert-catches.py, scripts/instrument-ops-alert.py, scripts/instrument-ops-v2.py, scripts/instrument-v3.py, scripts/instrument_opsalert.py, scripts/instrument_opsalert_v2.py, scripts/orchestration/__parts__/findings-watch.mjs, worker/__parts__/flow-node-executor.interactions.ts, worker/__parts__/flow-node-executor.ts, worker/__parts__/scheduled-followup-handler.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-build.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-inference.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-load.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-persist.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-record.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-scoring.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-types.ts. | Codacy still reports 2225 HIGH issue(s). | Codacy snapshot is stale (11018 minute(s) old). | Observed external high-impact signals remain active: 1. | Required external adapters are missing: 2. | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=2173, inferred=0, not_available=0, nonObserved=2173, executableUnproved=2173. | No-hardcoded-reality state still has hardcoded reality authority: 223602 hardcoded reality event(s) across 545 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=2173, inferred=0, not_available=0, nonObserved=2173, executableUnproved=2173).",
+    "productionAutonomyReason": "NAO: Evidence freshness is not closed. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 42 parity gap(s), 2225 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Autonomous convergence history is not proven: 0/3 successful non-regressing real cycle(s). | Observed Codacy files are missing from repo inventory: backend/src/meta/__parts__/meta-auth-helpers.ts, backend/src/meta/__parts__/meta-oauth-url.helpers.ts, frontend/src/components/kloel/KloelProductSurfacePatches.tsx, scripts/fix_context_strings.py, scripts/fix_opsalert_contexts.py, scripts/instrument-ops-alert-catches.py, scripts/instrument-ops-alert.py, scripts/instrument-ops-v2.py, scripts/instrument-v3.py, scripts/instrument_opsalert.py, scripts/instrument_opsalert_v2.py, scripts/orchestration/__parts__/findings-watch.mjs, worker/__parts__/flow-node-executor.interactions.ts, worker/__parts__/flow-node-executor.ts, worker/__parts__/scheduled-followup-handler.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-build.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-inference.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-load.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-persist.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-record.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-scoring.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-types.ts. | Codacy still reports 2225 HIGH issue(s). | Codacy snapshot is stale (11042 minute(s) old). | Observed external high-impact signals remain active: 1. | Required external adapters are missing: 2. | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=2222, inferred=0, not_available=0, nonObserved=2222, executableUnproved=2222. | No-hardcoded-reality state still has hardcoded reality authority: 223644 hardcoded reality event(s) across 545 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=2222, inferred=0, not_available=0, nonObserved=2222, executableUnproved=2222).",
     "zeroPromptProductionGuidanceQuestion": "If a fresh AI session runs the full Pulse and is told to work autonomously, can it keep converging safely until production completion without manual intervention?",
     "zeroPromptProductionGuidanceAnswer": "NAO",
     "zeroPromptProductionGuidanceReason": "NAO: Authority is not automation-eligible: Evidence freshness is not closed. | Runtime pass is not green with live evidence.. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Autonomous convergence history is not proven: 0/3 successful non-regressing real cycle(s).",
@@ -535,11 +535,11 @@
       "Autonomous convergence history is not proven: 0/3 successful non-regressing real cycle(s).",
       "Observed Codacy files are missing from repo inventory: backend/src/meta/__parts__/meta-auth-helpers.ts, backend/src/meta/__parts__/meta-oauth-url.helpers.ts, frontend/src/components/kloel/KloelProductSurfacePatches.tsx, scripts/fix_context_strings.py, scripts/fix_opsalert_contexts.py, scripts/instrument-ops-alert-catches.py, scripts/instrument-ops-alert.py, scripts/instrument-ops-v2.py, scripts/instrument-v3.py, scripts/instrument_opsalert.py, scripts/instrument_opsalert_v2.py, scripts/orchestration/__parts__/findings-watch.mjs, worker/__parts__/flow-node-executor.interactions.ts, worker/__parts__/flow-node-executor.ts, worker/__parts__/scheduled-followup-handler.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-build.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-inference.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-load.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-persist.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-record.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-scoring.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-types.ts.",
       "Codacy still reports 2225 HIGH issue(s).",
-      "Codacy snapshot is stale (11018 minute(s) old).",
+      "Codacy snapshot is stale (11042 minute(s) old).",
       "Observed external high-impact signals remain active: 1.",
       "Required external adapters are missing: 2.",
-      "Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=2173, inferred=0, not_available=0, nonObserved=2173, executableUnproved=2173.",
-      "No-hardcoded-reality state still has hardcoded reality authority: 223602 hardcoded reality event(s) across 545 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.."
+      "Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=2222, inferred=0, not_available=0, nonObserved=2222, executableUnproved=2222.",
+      "No-hardcoded-reality state still has hardcoded reality authority: 223644 hardcoded reality event(s) across 545 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.."
     ],
     "cycleProof": {
       "requiredCycles": 3,
@@ -562,7 +562,7 @@
         "proofBasis": "codacy_snapshot",
         "executed": true,
         "signalCount": 7,
-        "reason": "PULSE_CODACY_STATE.json is stale (11018 minute(s) old)."
+        "reason": "PULSE_CODACY_STATE.json is stale (11042 minute(s) old)."
       },
       {
         "source": "github",
@@ -671,12 +671,12 @@
     "proofReadiness": {
       "canAdvance": false,
       "status": "executable_unproved",
-      "plannedEvidence": 2173,
+      "plannedEvidence": 2222,
       "inferredEvidence": 0,
       "notAvailableEvidence": 0,
-      "nonObservedEvidence": 2173,
-      "executableUnproved": 2173,
-      "plannedOrUnexecutedEvidence": 2173,
+      "nonObservedEvidence": 2222,
+      "executableUnproved": 2222,
+      "plannedOrUnexecutedEvidence": 2222,
       "observationOnlyRequired": 0,
       "blockedNotExecutable": 0
     }
@@ -684,18 +684,18 @@
   "proofReadiness": {
     "canAdvance": false,
     "status": "executable_unproved",
-    "plannedEvidence": 2173,
+    "plannedEvidence": 2222,
     "inferredEvidence": 0,
     "notAvailableEvidence": 0,
-    "nonObservedEvidence": 2173,
-    "executableUnproved": 2173,
-    "plannedOrUnexecutedEvidence": 2173,
+    "nonObservedEvidence": 2222,
+    "executableUnproved": 2222,
+    "plannedOrUnexecutedEvidence": 2222,
     "observationOnlyRequired": 0,
     "blockedNotExecutable": 0
   },
   "noHardcodedReality": {
     "summary": {
-      "totalEvents": 223602,
+      "totalEvents": 223644,
       "scannedFiles": 545,
       "topFiles": [
         "scripts/pulse/convergence-plan.ts",
@@ -721,11 +721,11 @@
       }
     },
     "blocksProduction": true,
-    "reason": "223602 hardcoded reality event(s) across 545 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9."
+    "reason": "223644 hardcoded reality event(s) across 545 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9."
   },
   "noOverclaim": {
     "gateStatus": "fail",
-    "gateReason": "overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=2173, inferred=0, not_available=0, nonObserved=2173, executableUnproved=2173).",
+    "gateReason": "overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=2222, inferred=0, not_available=0, nonObserved=2222, executableUnproved=2222).",
     "proofReadinessBlocksProduction": true,
     "proofReadinessReason": "proofReadiness canAdvance=false, status=executable_unproved"
   },
@@ -760,7 +760,7 @@
       "mode": "repo_inventory_with_codacy_spotcheck",
       "confidence": "low",
       "reason": "Observed Codacy files are missing from repo inventory: backend/src/meta/__parts__/meta-auth-helpers.ts, backend/src/meta/__parts__/meta-oauth-url.helpers.ts, frontend/src/components/kloel/KloelProductSurfacePatches.tsx, scripts/fix_context_strings.py, scripts/fix_opsalert_contexts.py, scripts/instrument-ops-alert-catches.py, scripts/instrument-ops-alert.py, scripts/instrument-ops-v2.py, scripts/instrument-v3.py, scripts/instrument_opsalert.py, scripts/instrument_opsalert_v2.py, scripts/orchestration/__parts__/findings-watch.mjs, worker/__parts__/flow-node-executor.interactions.ts, worker/__parts__/flow-node-executor.ts, worker/__parts__/scheduled-followup-handler.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-build.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-inference.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-load.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-persist.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-record.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-scoring.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-types.ts.",
-      "inventoryFiles": 6258,
+      "inventoryFiles": 6259,
       "codacyObservedFiles": 63,
       "codacyObservedFilesCovered": 41,
       "missingCodacyFiles": [
@@ -838,7 +838,7 @@
         "blocking": false,
         "proofBasis": "codacy_snapshot",
         "syncedAt": "2026-05-18T09:39:00.608Z",
-        "freshnessMinutes": 11018
+        "freshnessMinutes": 11042
       },
       {
         "source": "github",
@@ -1077,7 +1077,7 @@
         "impactScore": 0.8,
         "confidence": 0.95,
         "summary": "7 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.",
-        "observedAt": "2026-05-26T01:17:21.454Z",
+        "observedAt": "2026-05-26T01:40:59.696Z",
         "relatedFiles": [
           "backend/prisma/migrations/20251209150035_init_baseline/migration.sql"
         ],
@@ -1119,7 +1119,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -1149,7 +1148,7 @@
         "impactScore": 0.55,
         "confidence": 0.95,
         "summary": "17 HIGH Codacy issue(s) remain in scripts/__parts__/obsidian-mirror-daemon-content.mjs.",
-        "observedAt": "2026-05-26T01:17:21.454Z",
+        "observedAt": "2026-05-26T01:40:59.696Z",
         "relatedFiles": [
           "scripts/__parts__/obsidian-mirror-daemon-content.mjs"
         ],
@@ -1222,7 +1221,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -1264,7 +1262,7 @@
         "impactScore": 0.55,
         "confidence": 0.95,
         "summary": "5 HIGH Codacy issue(s) remain in scripts/__parts__/obsidian-mirror-daemon-utils.mjs.",
-        "observedAt": "2026-05-26T01:17:21.454Z",
+        "observedAt": "2026-05-26T01:40:59.696Z",
         "relatedFiles": [
           "scripts/__parts__/obsidian-mirror-daemon-utils.mjs"
         ],
@@ -1310,7 +1308,7 @@
         "impactScore": 0.55,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/meta/__parts__/meta-auth-helpers.ts.",
-        "observedAt": "2026-05-26T01:17:21.454Z",
+        "observedAt": "2026-05-26T01:40:59.696Z",
         "relatedFiles": [
           "backend/src/meta/__parts__/meta-auth-helpers.ts"
         ],
@@ -1572,7 +1570,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -1614,7 +1611,7 @@
         "impactScore": 0.55,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in backend/src/meta/__parts__/meta-oauth-url.helpers.ts.",
-        "observedAt": "2026-05-26T01:17:21.454Z",
+        "observedAt": "2026-05-26T01:40:59.696Z",
         "relatedFiles": [
           "backend/src/meta/__parts__/meta-oauth-url.helpers.ts"
         ],
@@ -1861,7 +1858,6 @@
           "media-post-video-create",
           "media-post-voice-generate",
           "media-post-voice-profiles",
-          "meta-post-kloel-think",
           "meta-post-meta-auth-disconnect",
           "meta-post-meta-instagram-messages-send",
           "parcerias-post-kloel-think-sync",
@@ -1903,7 +1899,7 @@
         "impactScore": 0.55,
         "confidence": 0.95,
         "summary": "1 HIGH Codacy issue(s) remain in package.json.",
-        "observedAt": "2026-05-26T01:17:21.454Z",
+        "observedAt": "2026-05-26T01:40:59.696Z",
         "relatedFiles": [
           "package.json"
         ],
@@ -1949,7 +1945,7 @@
         "impactScore": 0.55,
         "confidence": 0.95,
         "summary": "2 HIGH Codacy issue(s) remain in scripts/__parts__/obsidian-mirror-daemon-indexes.mjs.",
-        "observedAt": "2026-05-26T01:17:21.454Z",
+        "observedAt": "2026-05-26T01:40:59.696Z",
         "relatedFiles": [
           "scripts/__parts__/obsidian-mirror-daemon-indexes.mjs"
         ],
@@ -3737,30 +3733,30 @@
   },
   "executionMatrix": {
     "summary": {
-      "totalPaths": 7366,
+      "totalPaths": 7413,
       "bySource": {
         "execution_chain": 0,
         "capability": 453,
-        "flow": 75,
-        "structural_node": 1795,
-        "scope_file": 5043
+        "flow": 74,
+        "structural_node": 1844,
+        "scope_file": 5042
       },
       "byStatus": {
         "observed_pass": 0,
-        "observed_fail": 40,
+        "observed_fail": 39,
         "untested": 21,
         "observation_only": 0,
         "unreachable": 0,
-        "inferred_only": 2155,
-        "not_executable": 5150
+        "inferred_only": 2204,
+        "not_executable": 5149
       },
       "observedPass": 0,
-      "observedFail": 40,
+      "observedFail": 39,
       "untested": 21,
       "unreachable": 0,
-      "inferredOnly": 2155,
-      "notExecutable": 5150,
-      "terminalPaths": 7366,
+      "inferredOnly": 2204,
+      "notExecutable": 5149,
+      "terminalPaths": 7413,
       "nonTerminalPaths": 0,
       "unknownPaths": 0,
       "criticalUnobservedPaths": 0,
@@ -7887,7 +7883,6 @@
         "media-post-video-create",
         "media-post-voice-generate",
         "media-post-voice-profiles",
-        "meta-post-kloel-think",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
         "parcerias-post-kloel-think-sync",
@@ -9134,7 +9129,6 @@
         "media-post-video-create",
         "media-post-voice-generate",
         "media-post-voice-profiles",
-        "meta-post-kloel-think",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
         "parcerias-post-kloel-think-sync",
@@ -9577,7 +9571,6 @@
         "media-post-video-create",
         "media-post-voice-generate",
         "media-post-voice-profiles",
-        "meta-post-kloel-think",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
         "parcerias-post-kloel-think-sync",
@@ -10795,7 +10788,6 @@
         "media-post-video-create",
         "media-post-voice-generate",
         "media-post-voice-profiles",
-        "meta-post-kloel-think",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
         "parcerias-post-kloel-think-sync",
@@ -12028,7 +12020,6 @@
         "media-post-video-create",
         "media-post-voice-generate",
         "media-post-voice-profiles",
-        "meta-post-kloel-think",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
         "parcerias-post-kloel-think-sync",
@@ -13250,7 +13241,6 @@
         "media-post-video-create",
         "media-post-voice-generate",
         "media-post-voice-profiles",
-        "meta-post-kloel-think",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
         "parcerias-post-kloel-think-sync",
@@ -14490,7 +14480,6 @@
         "media-post-video-create",
         "media-post-voice-generate",
         "media-post-voice-profiles",
-        "meta-post-kloel-think",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
         "parcerias-post-kloel-think-sync",
@@ -14928,7 +14917,6 @@
         "media-post-video-create",
         "media-post-voice-generate",
         "media-post-voice-profiles",
-        "meta-post-kloel-think",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
         "parcerias-post-kloel-think-sync",
@@ -16249,7 +16237,6 @@
         "media-post-video-create",
         "media-post-voice-generate",
         "media-post-voice-profiles",
-        "meta-post-kloel-think",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
         "parcerias-post-kloel-think-sync",
@@ -16705,7 +16692,6 @@
         "media-post-video-create",
         "media-post-voice-generate",
         "media-post-voice-profiles",
-        "meta-post-kloel-think",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
         "parcerias-post-kloel-think-sync",
@@ -17897,7 +17883,6 @@
         "media-post-video-create",
         "media-post-voice-generate",
         "media-post-voice-profiles",
-        "meta-post-kloel-think",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
         "parcerias-post-kloel-think-sync",
@@ -19097,7 +19082,6 @@
         "media-post-video-create",
         "media-post-voice-generate",
         "media-post-voice-profiles",
-        "meta-post-kloel-think",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
         "parcerias-post-kloel-think-sync",
@@ -20329,7 +20313,6 @@
         "media-post-video-create",
         "media-post-voice-generate",
         "media-post-voice-profiles",
-        "meta-post-kloel-think",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
         "parcerias-post-kloel-think-sync",
@@ -21523,7 +21506,6 @@
         "media-post-video-create",
         "media-post-voice-generate",
         "media-post-voice-profiles",
-        "meta-post-kloel-think",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
         "parcerias-post-kloel-think-sync",
@@ -21976,7 +21958,6 @@
         "media-post-video-create",
         "media-post-voice-generate",
         "media-post-voice-profiles",
-        "meta-post-kloel-think",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
         "parcerias-post-kloel-think-sync",
@@ -22413,7 +22394,6 @@
         "media-post-video-create",
         "media-post-voice-generate",
         "media-post-voice-profiles",
-        "meta-post-kloel-think",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
         "parcerias-post-kloel-think-sync",
@@ -22850,7 +22830,6 @@
         "media-post-video-create",
         "media-post-voice-generate",
         "media-post-voice-profiles",
-        "meta-post-kloel-think",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
         "parcerias-post-kloel-think-sync",
@@ -23288,7 +23267,6 @@
         "media-post-video-create",
         "media-post-voice-generate",
         "media-post-voice-profiles",
-        "meta-post-kloel-think",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
         "parcerias-post-kloel-think-sync",
@@ -23726,7 +23704,6 @@
         "media-post-video-create",
         "media-post-voice-generate",
         "media-post-voice-profiles",
-        "meta-post-kloel-think",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
         "parcerias-post-kloel-think-sync",
@@ -24164,7 +24141,6 @@
         "media-post-video-create",
         "media-post-voice-generate",
         "media-post-voice-profiles",
-        "meta-post-kloel-think",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
         "parcerias-post-kloel-think-sync",
@@ -24603,7 +24579,6 @@
         "media-post-video-create",
         "media-post-voice-generate",
         "media-post-voice-profiles",
-        "meta-post-kloel-think",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
         "parcerias-post-kloel-think-sync",
@@ -25043,7 +25018,6 @@
         "media-post-video-create",
         "media-post-voice-generate",
         "media-post-voice-profiles",
-        "meta-post-kloel-think",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
         "parcerias-post-kloel-think-sync",
@@ -25387,7 +25361,6 @@
         "media-post-video-create",
         "media-post-voice-generate",
         "media-post-voice-profiles",
-        "meta-post-kloel-think",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
         "parcerias-post-kloel-think-sync",
@@ -25463,7 +25436,6 @@
         "media-post-video-create",
         "media-post-voice-generate",
         "media-post-voice-profiles",
-        "meta-post-kloel-think",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
         "parcerias-post-kloel-think-sync",
@@ -25765,7 +25737,6 @@
         "media-post-video-create",
         "media-post-voice-generate",
         "media-post-voice-profiles",
-        "meta-post-kloel-think",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
         "parcerias-post-kloel-think-sync",
@@ -26031,7 +26002,6 @@
         "media-post-video-create",
         "media-post-voice-generate",
         "media-post-voice-profiles",
-        "meta-post-kloel-think",
         "meta-post-meta-auth-disconnect",
         "meta-post-meta-instagram-messages-send",
         "parcerias-post-kloel-think-sync",
@@ -41866,7 +41836,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-core",
       "title": "Close PULSE critical path terminal criterion",
-      "summary": "5127 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "summary": "5174 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "whyNow": "PULSE machine readiness is the active target; do not spend this cycle materializing SaaS product capabilities.",
       "visionDelta": "Moves PULSE closer to zero-prompt technical autonomy by closing machine proof, adapter, or execution-evidence gaps.",
       "targetState": "PULSE machine criterion \"critical_path_terminal\" must pass with canonical evidence.",
@@ -42614,7 +42584,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-proof",
       "title": "Repair PULSE evidence fresh proof",
-      "summary": "Codacy snapshot is stale (11018 minute(s) old).",
+      "summary": "Codacy snapshot is stale (11042 minute(s) old).",
       "whyNow": "PULSE cannot claim zero-prompt production autonomy while this proof gate is failing; improve PULSE proof machinery before editing SaaS product code.",
       "visionDelta": "Moves PULSE from advisory/autonomous execution toward certified technical replacement by converting inferred or missing proof into canonical evidence.",
       "targetState": "Certification gate evidenceFresh must pass or expose a precise non-product proof blocker.",
@@ -42779,7 +42749,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-proof",
       "title": "Repair PULSE no overclaim proof",
-      "summary": "overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=2173, inferred=0, not_available=0, nonObserved=2173, executableUnproved=2173).",
+      "summary": "overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=2222, inferred=0, not_available=0, nonObserved=2222, executableUnproved=2222).",
       "whyNow": "PULSE cannot claim zero-prompt production autonomy while this proof gate is failing; improve PULSE proof machinery before editing SaaS product code.",
       "visionDelta": "Moves PULSE from advisory/autonomous execution toward certified technical replacement by converting inferred or missing proof into canonical evidence.",
       "targetState": "Certification gate noOverclaimPass must pass or expose a precise non-product proof blocker.",
@@ -42845,7 +42815,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-proof",
       "title": "Repair PULSE critical path observed proof",
-      "summary": "5127 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "summary": "5174 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "whyNow": "PULSE cannot claim zero-prompt production autonomy while this proof gate is failing; improve PULSE proof machinery before editing SaaS product code.",
       "visionDelta": "Moves PULSE from advisory/autonomous execution toward certified technical replacement by converting inferred or missing proof into canonical evidence.",
       "targetState": "Certification gate criticalPathObservedPass must pass or expose a precise non-product proof blocker.",
@@ -42995,7 +42965,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-proof",
       "title": "Close PULSE production-autonomy proof debt",
-      "summary": "NAO: Evidence freshness is not closed. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 42 parity gap(s), 2225 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Autonomous convergence history is not proven: 0/3 successful non-regressing real cycle(s). | Observed Codacy files are missing from repo inventory: backend/src/meta/__parts__/meta-auth-helpers.ts, backend/src/meta/__parts__/meta-oauth-url.helpers.ts, frontend/src/components/kloel/KloelProductSurfacePatches.tsx, scripts/fix_context_strings.py, scripts/fix_opsalert_contexts.py, scripts/instrument-ops-alert-catches.py, scripts/instrument-ops-alert.py, scripts/instrument-ops-v2.py, scripts/instrument-v3.py, scripts/instrument_opsalert.py, scripts/instrument_opsalert_v2.py, scripts/orchestration/__parts__/findings-watch.mjs, worker/__parts__/flow-node-executor.interactions.ts, worker/__parts__/flow-node-executor.ts, worker/__parts__/scheduled-followup-handler.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-build.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-inference.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-load.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-persist.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-record.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-scoring.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-types.ts. | Codacy still reports 2225 HIGH issue(s). | Codacy snapshot is stale (11018 minute(s) old). | Observed external high-impact signals remain active: 1. | Required external adapters are missing: 2. | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=2173, inferred=0, not_available=0, nonObserved=2173, executableUnproved=2173. | No-hardcoded-reality state still has hardcoded reality authority: 223602 hardcoded reality event(s) across 545 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=2173, inferred=0, not_available=0, nonObserved=2173, executableUnproved=2173).",
+      "summary": "NAO: Evidence freshness is not closed. | Runtime pass is not green with live evidence. | Authority mode is advisory-only, not certified-autonomous. | Certification status is NOT_CERTIFIED, not CERTIFIED. | 2 missing, 0 stale, and 0 invalid external adapter(s) remain. | 42 parity gap(s), 2225 HIGH Codacy issue(s), 0 phantom capability(ies), and 0 phantom flow(s) remain. | 1 governed validation gap(s) remain observation-only or protected-surface work. | Autonomous convergence history is not proven: 0/3 successful non-regressing real cycle(s). | Observed Codacy files are missing from repo inventory: backend/src/meta/__parts__/meta-auth-helpers.ts, backend/src/meta/__parts__/meta-oauth-url.helpers.ts, frontend/src/components/kloel/KloelProductSurfacePatches.tsx, scripts/fix_context_strings.py, scripts/fix_opsalert_contexts.py, scripts/instrument-ops-alert-catches.py, scripts/instrument-ops-alert.py, scripts/instrument-ops-v2.py, scripts/instrument-v3.py, scripts/instrument_opsalert.py, scripts/instrument_opsalert_v2.py, scripts/orchestration/__parts__/findings-watch.mjs, worker/__parts__/flow-node-executor.interactions.ts, worker/__parts__/flow-node-executor.ts, worker/__parts__/scheduled-followup-handler.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-build.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-inference.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-load.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-persist.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-record.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-scoring.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-types.ts. | Codacy still reports 2225 HIGH issue(s). | Codacy snapshot is stale (11042 minute(s) old). | Observed external high-impact signals remain active: 1. | Required external adapters are missing: 2. | Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=2222, inferred=0, not_available=0, nonObserved=2222, executableUnproved=2222. | No-hardcoded-reality state still has hardcoded reality authority: 223644 hardcoded reality event(s) across 545 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.. | NAO: production proof readiness is not fully observed (proofReadiness status=executable_unproved, canAdvance=false, planned=2222, inferred=0, not_available=0, nonObserved=2222, executableUnproved=2222).",
       "whyNow": "PULSE cannot claim production autonomy while proof blockers remain; repair PULSE proof machinery before editing SaaS product code.",
       "visionDelta": "Moves PULSE from next-step guidance toward certified zero-prompt technical replacement.",
       "targetState": "productionAutonomyVerdict must be SIM or expose only precise machine blockers.",
@@ -43419,7 +43389,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-core",
       "title": "Close PULSE critical path terminal criterion",
-      "summary": "5127 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "summary": "5174 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "whyNow": "PULSE machine readiness is the active target; do not spend this cycle materializing SaaS product capabilities.",
       "visionDelta": "Moves PULSE closer to zero-prompt technical autonomy by closing machine proof, adapter, or execution-evidence gaps.",
       "targetState": "PULSE machine criterion \"critical_path_terminal\" must pass with canonical evidence.",
@@ -44184,7 +44154,7 @@
       "productImpact": "machine",
       "ownerLane": "pulse-core",
       "title": "Close PULSE critical path terminal criterion",
-      "summary": "5127 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "summary": "5174 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit, matrix:capability:capability:admin-auth, matrix:capability:capability:admin-brain. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "whyNow": "PULSE machine readiness is the active target; do not spend this cycle materializing SaaS product capabilities.",
       "visionDelta": "Moves PULSE closer to zero-prompt technical autonomy by closing machine proof, adapter, or execution-evidence gaps.",
       "targetState": "PULSE machine criterion \"critical_path_terminal\" must pass with canonical evidence.",
@@ -44756,9 +44726,9 @@
       "scenarioCoveredCapabilities": 0
     },
     "flows": {
-      "totalFlows": 75,
+      "totalFlows": 74,
       "realFlows": 0,
-      "partialFlows": 75,
+      "partialFlows": 74,
       "latentFlows": 0,
       "phantomFlows": 0
     },
@@ -44778,18 +44748,18 @@
       }
     },
     "structuralGraph": {
-      "totalNodes": 7792,
-      "totalEdges": 16546,
+      "totalNodes": 7853,
+      "totalEdges": 16545,
       "roleCounts": {
-        "interface": 2732,
+        "interface": 2793,
         "orchestration": 3764,
         "persistence": 173,
         "side_effect": 1123,
         "simulation": 0
       },
-      "interfaceChains": 2732,
-      "completeChains": 792,
-      "partialChains": 1940,
+      "interfaceChains": 2789,
+      "completeChains": 791,
+      "partialChains": 1998,
       "simulatedChains": 0
     },
     "codacy": {
@@ -44854,7 +44824,7 @@
       }
     },
     "evidenceBasis": {
-      "observed": 72,
+      "observed": 71,
       "inferred": 422,
       "projected": 0
     }
@@ -44889,7 +44859,7 @@
     "leasesRef": "PULSE_WORKER_LEASES.json",
     "gitnexusRef": "gitnexus:missing",
     "beadsRef": "beads:missing",
-    "contextDigest": "3eaea2f40853c751143e88cee4193a14b982c7cdecd5f494ac469703c2c08be6",
+    "contextDigest": "e08037ecb474271da1f3e1a200020c6ccc6df459e2ed6c0fbc0afde0df7a808d",
     "workerEnvelopeCount": 10,
     "contextBroadcastPass": true,
     "ownershipConflictPass": true,
@@ -44904,11 +44874,11 @@
   "stopCondition": [
     "Observed Codacy files are missing from repo inventory: backend/src/meta/__parts__/meta-auth-helpers.ts, backend/src/meta/__parts__/meta-oauth-url.helpers.ts, frontend/src/components/kloel/KloelProductSurfacePatches.tsx, scripts/fix_context_strings.py, scripts/fix_opsalert_contexts.py, scripts/instrument-ops-alert-catches.py, scripts/instrument-ops-alert.py, scripts/instrument-ops-v2.py, scripts/instrument-v3.py, scripts/instrument_opsalert.py, scripts/instrument_opsalert_v2.py, scripts/orchestration/__parts__/findings-watch.mjs, worker/__parts__/flow-node-executor.interactions.ts, worker/__parts__/flow-node-executor.ts, worker/__parts__/scheduled-followup-handler.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-build.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-inference.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-load.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-persist.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-record.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-scoring.ts, worker/processors/cia/cognitive-state/__parts__/cognitive-state-types.ts.",
     "Codacy still reports 2225 HIGH issue(s).",
-    "Codacy snapshot is stale (11018 minute(s) old).",
+    "Codacy snapshot is stale (11042 minute(s) old).",
     "Observed external high-impact signals remain active: 1.",
     "Required external adapters are missing: 2.",
-    "Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=2173, inferred=0, not_available=0, nonObserved=2173, executableUnproved=2173.",
-    "No-hardcoded-reality state still has hardcoded reality authority: 223602 hardcoded reality event(s) across 545 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.."
+    "Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=2222, inferred=0, not_available=0, nonObserved=2222, executableUnproved=2222.",
+    "No-hardcoded-reality state still has hardcoded reality authority: 223644 hardcoded reality event(s) across 545 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.."
   ],
-  "runId": "a4188e62-d73b-4b48-a5a5-7a1bc704bdc0"
+  "runId": "d05efda1-5fc5-4bf6-b348-a45ab8c6f297"
 }
