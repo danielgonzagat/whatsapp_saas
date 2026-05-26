@@ -2,6 +2,7 @@ import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import type { MindActionContext } from './mind-code-native.types';
 import type { ReplayInput, ReplayCandidate, ReplayScenarioInput } from './mind-replay.service';
+import { clamp } from '../common/math';
 
 export interface SyntheticCandidateRecipe {
   action: string;
@@ -36,10 +37,6 @@ function mulberry32(seed: number): () => number {
 
 function lerp(min: number, max: number, t: number): number {
   return min + t * (max - min);
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
 }
 
 const BUILTIN_RECIPES: Record<string, SyntheticDecisionRecipe> = {

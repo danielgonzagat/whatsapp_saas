@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import type { AngleSuggestion } from './types';
+import { clamp } from '../../common/math';
 
 interface AngleSuggestionInput {
   readonly offerId: string;
@@ -109,10 +110,6 @@ const ANGLE_TEMPLATES: readonly AngleTemplate[] = [
     ],
   },
 ];
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
-}
 
 @Injectable()
 export class AngleSuggesterService {

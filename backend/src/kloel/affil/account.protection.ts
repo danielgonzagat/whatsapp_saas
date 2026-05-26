@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { AccountProtection } from './types';
+import { clamp } from '../../common/math';
 
 interface AccountProtectionInput {
   readonly workspaceId: string;
@@ -15,10 +16,6 @@ const RISK_HIGH_THRESHOLD = 0.7;
 const RISK_MODERATE_THRESHOLD = 0.4;
 const NEW_ACCOUNT_DAYS = 30;
 const HIGH_REJECTION_RATE = 0.3;
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
-}
 
 @Injectable()
 export class AccountProtectionService {

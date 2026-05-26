@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../../logging/structured-logger';
 import type { OfferQualityInput, OfferQualityOutput } from './affil.types';
+import { clamp } from '../../common/math';
 
 type Classification = OfferQualityOutput['classification'];
 
@@ -15,10 +16,6 @@ const WEIGHTS = {
 const SCORE_EXCELLENT = 80;
 const SCORE_GOOD = 65;
 const SCORE_AVERAGE = 45;
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
-}
 
 function classify(score: number): Classification {
   if (score >= SCORE_EXCELLENT) return 'excellent';

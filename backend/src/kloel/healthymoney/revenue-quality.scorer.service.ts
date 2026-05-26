@@ -12,10 +12,7 @@ import {
   SUPPORT_COST_CAP_RATIO,
   LTV_MULTIPLIER_THRESHOLD,
 } from './healthymoney.types';
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
+import { clamp } from '../../common/math';
 
 function ratioOrZero(numerator: number, denominator: number): number {
   if (denominator <= 0) return 0;

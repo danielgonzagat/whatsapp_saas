@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { ScaleVsAbandon } from './types';
+import { clamp } from '../../common/math';
 
 interface ScaleVsAbandonInput {
   readonly campaignId: string;
@@ -18,10 +19,6 @@ const SCALE_ROI_THRESHOLD = 1.5;
 const ABANDON_ROI_THRESHOLD = 0.7;
 const MIN_DAYS_FOR_DECISION = 3;
 const MIN_CONVERSIONS_FOR_SCALE = 5;
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
-}
 
 @Injectable()
 export class ScaleVsAbandonAdvisorService {
