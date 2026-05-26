@@ -1,6 +1,11 @@
 {
   "$schema": "https://raw.githubusercontent.com/modelcontextprotocol/specification/main/schema/2025-03-26/mcp.schema.json",
   "mcpServers": {
+    "lsp-mesh": {
+      "command": "bash",
+      "args": ["scripts/mcp/lsp-mesh-mcp-launcher.sh"],
+      "description": "LSP mesh router — proxies 10 real-LSP ops (lsp_definition / lsp_references / lsp_hover / lsp_symbols / lsp_diagnostics / lsp_completion / lsp_code_actions / lsp_rename / lsp_health / lsp_shutdown) across 14 language servers (typescript/eslint/prisma/tailwindcss/css/html/json/yaml/bash/markdown/toml/sql/dockerfile/compose) in 7 workspaces (root/backend/frontend/frontend-admin/worker/e2e/scripts). Lazy spawn, pooled per (language,workspace), id-keyed request routing, 15s timeout. Closes the LSP gap: gives every agent direct access to definition/references/rename/hover/diagnostics from the source-of-truth language servers."
+    },
     "codacy": {
       "command": "bash",
       "args": ["scripts/mcp/codacy-mcp-launcher.sh"],
