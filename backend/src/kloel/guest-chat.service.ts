@@ -18,6 +18,7 @@ import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
 import { buildReceipt, writeOperationReceipt, buildResultMeta } from './operation-receipt.helpers';
 import { detectActionIntent, formatToolResult } from './guest-chat.action-intent.helpers';
 import { randomIdSegment } from '../common/random-id';
+import { IntentRouterService } from './intent-router/intent-router.service';
 
 interface GuestConversation {
   messages: { role: 'user' | 'assistant'; content: string }[];
@@ -70,6 +71,7 @@ export class GuestChatService implements OnModuleDestroy {
     @Optional() private readonly spine?: BrainEventSpineService,
     @Optional() private readonly unifiedAgent?: UnifiedAgentService,
     @Optional() private readonly toolDispatcher?: KloelToolDispatcherService,
+    @Optional() private readonly intentRouter?: IntentRouterService,
   ) {
     const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 
@@ -401,41 +403,82 @@ export class GuestChatService implements OnModuleDestroy {
       // Fallback: if no workspaceId, try to detect one from session or use dev default
       const effectiveWsId = workspaceId || this.resolveDefaultWorkspaceId();
       if (effectiveWsId && this.toolDispatcher) {
-        const action = detectActionIntent(message);
-        if (action) {
-          this.logger.log(`Deterministic: tool=${action.tool} ws=${effectiveWsId} session=${sessionId}`);
+        const hasIntentRouter = this.intentRouter !== undefined;
+        
+        // Stage 1: IntentRouter (new CapabilityRegistry-based)
+        if (hasIntentRouter) {
+          const classification = this.intentRouter!.classify(message, 'dashboard-chat', ['*']);
+          if (!classification.isChat && classification.classification) {
+            const action = {
+              tool: classification.classification.capabilityId!,
+              args: classification.classification.entities,
+            };
+            this.logger.log(`IntentRouter: tool=${action.tool} ws=${effectiveWsId} session=${sessionId}`);
+            try {
+              await this.persistConversationMessage(sessionId, 'user', message);
+              const result = await this.toolDispatcher.executeTool(effectiveWsId, action.tool, action.args);
+              void writeOperationReceipt(buildReceipt({
+                workspaceId: effectiveWsId,
+                toolName: action.tool,
+                args: action.args,
+                result: result as { success: boolean; [key: string]: unknown },
+                channel: 'web',
+              }));
+              if (this.spine && result.success) {
+                const resultMeta = buildResultMeta(action.tool, result);
+                void this.spine.record({
+                  workspaceId: effectiveWsId,
+                  action: 'tool_executed' as never,
+                  intent: action.tool,
+                  status: 'executed',
+                  meta: { args: action.args, userPreview: message.slice(0, 120), ...resultMeta } as never,
+                }).catch(() => {});
+              }
+              const reply = formatToolResult(action.tool, result);
+              await this.persistConversationMessage(sessionId, 'assistant', reply);
+              return reply;
+            } catch (err: unknown) {
+              this.logger.warn(
+                `IntentRouter execution failed: ${err instanceof Error ? err.message : 'unknown'}, falling back to detectActionIntent`,
+              );
+            }
+          }
+        }
+        
+        // Stage 2: Legacy detectActionIntent (fallback)
+        const legacyAction = detectActionIntent(message);
+        if (legacyAction) {
+          this.logger.log(`Legacy deterministic: tool=${legacyAction.tool} ws=${effectiveWsId} session=${sessionId}`);
           try {
             await this.persistConversationMessage(sessionId, 'user', message);
             const result = await this.toolDispatcher.executeTool(
               effectiveWsId,
-              action.tool,
-              action.args,
+              legacyAction.tool,
+              legacyAction.args,
             );
-            // Write OperationReceipt for audit trail
             void writeOperationReceipt(buildReceipt({
               workspaceId: effectiveWsId,
-              toolName: action.tool,
-              args: action.args,
+              toolName: legacyAction.tool,
+              args: legacyAction.args,
               result: result as { success: boolean; [key: string]: unknown },
               channel: 'web',
             }));
-            // Emit spine event for cognitive cycle with result data
             if (this.spine && result.success) {
-              const resultMeta = buildResultMeta(action.tool, result);
+              const resultMeta = buildResultMeta(legacyAction.tool, result);
               void this.spine.record({
                 workspaceId: effectiveWsId,
                 action: 'tool_executed' as never,
-                intent: action.tool,
+                intent: legacyAction.tool,
                 status: 'executed',
-                meta: { args: action.args, userPreview: message.slice(0, 120), ...resultMeta } as never,
+                meta: { args: legacyAction.args, userPreview: message.slice(0, 120), ...resultMeta } as never,
               }).catch(() => {});
             }
-            const reply = formatToolResult(action.tool, result);
+            const reply = formatToolResult(legacyAction.tool, result);
             await this.persistConversationMessage(sessionId, 'assistant', reply);
             return reply;
           } catch (err: unknown) {
             this.logger.warn(
-              `Deterministic failed: ${err instanceof Error ? err.message : 'unknown'}, falling back to LLM`,
+              `Legacy deterministic failed: ${err instanceof Error ? err.message : 'unknown'}, falling back to LLM`,
             );
           }
         }
