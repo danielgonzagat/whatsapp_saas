@@ -1,0 +1,5 @@
+round=088
+normal_worktree=/private/tmp/kloel-ab088-normal-20260517171947
+atomic_worktree=/private/tmp/kloel-ab088-atomic-20260517171947
+task=extract_execute_tool_router_cluster_executeToolAction_num_buildAgentToolEnvelope
+started_at=2026-05-17T17:19:47-03:00

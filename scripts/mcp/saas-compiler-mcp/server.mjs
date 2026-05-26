@@ -5,7 +5,7 @@
  *   • intent_to_spec(intentPath)        → spec.json only
  *   • spec_to_code(specPath)            → auto-pr job
  *   • verify_in_prod(specPath, hours)   → SHIP_OK / ROLLBACK / INCONCLUSIVE
- *   • crystallize_stub(route|top)       → emits crystallisation auto-pr jobs
+ *   • crystallize_route_gap(route|top)       → emits crystallisation auto-pr jobs
  *   • capture_fingerprint(name, steps)  → records a behavioral fingerprint
  *   • replay_fingerprint(name|all,base) → asserts behavior parity
  *   • twin_up / twin_down / twin_shadow / twin_metrics
@@ -45,9 +45,9 @@ const tools = [
     inputSchema: { type: 'object', properties: { specPath: { type: 'string' }, hours: { type: 'number' } }, required: ['specPath'] },
   },
   {
-    name: 'crystallize_stub',
-    description: 'Convert one or more stub routes into real implementations that delegate to canonical view components in components/kloel/. Emits one auto-PR job per stub.',
-    inputSchema: { type: 'object', properties: { route: { type: 'string', description: 'Specific stub route (e.g. /anuncios). Omit to use top-N.' }, top: { type: 'number', description: 'Number of top-priority stubs (default 5)' } } },
+    name: 'crystallize_route_gap',
+    description: 'Convert one or more route gaps into real implementations that delegate to canonical view components in components/kloel/. Emits one auto-PR job per route.',
+    inputSchema: { type: 'object', properties: { route: { type: 'string', description: 'Specific route gap (e.g. /anuncios). Omit to use top-N.' }, top: { type: 'number', description: 'Number of top-priority route gaps (default 5)' } } },
   },
   {
     name: 'capture_fingerprint',
@@ -75,7 +75,7 @@ async function callTool(name, args = {}) {
     case 'intent_to_spec': return runScript(['node', join(ROOT, 'tools/saas-compiler/intent-to-spec.mjs'), args.intentPath]);
     case 'spec_to_code': return runScript(['node', join(ROOT, 'tools/saas-compiler/spec-to-code.mjs'), args.specPath]);
     case 'verify_in_prod': return runScript(['node', join(ROOT, 'tools/saas-compiler/verify-in-prod.mjs'), args.specPath, ...(args.hours ? [`--hours=${args.hours}`] : [])]);
-    case 'crystallize_stub': {
+    case 'crystallize_route_gap': {
       const flags = args.route ? [`--route=${args.route}`] : [`--top=${args.top ?? 5}`];
       return runScript(['node', join(ROOT, 'tools/crystallization/run.mjs'), ...flags]);
     }
@@ -108,7 +108,6 @@ function runScript(args) {
 
 // ─── JSON-RPC over stdio (LSP framing) ───────────────────────────────────────
 let buf = '';
-let sessionResponseMode = null;
 process.stdin.setEncoding('utf8');
 process.stdin.on('data', (chunk) => {
   buf += chunk;
@@ -119,7 +118,7 @@ process.stdin.on('data', (chunk) => {
       if (newline === -1) break;
       const line = buf.slice(0, newline).trim();
       buf = buf.slice(newline + 1);
-      if (line) void handleLine(line, 'line');
+      if (line) void handleLine(line);
       continue;
     }
     const header = buf.slice(0, headerEnd);
@@ -129,21 +128,19 @@ process.stdin.on('data', (chunk) => {
     if (buf.length < headerEnd + 4 + len) break;
     const body = buf.slice(headerEnd + 4, headerEnd + 4 + len);
     buf = buf.slice(headerEnd + 4 + len);
-    void handleLine(body, 'frame');
+    void handleLine(body);
   }
 });
 
-async function handleLine(line, inputMode = 'frame') {
-  const responseMode = sessionResponseMode || inputMode;
-  sessionResponseMode = responseMode;
+async function handleLine(line) {
   let req;
   try { req = JSON.parse(line); } catch { return; }
   const { id, method, params } = req;
   try {
     const result = await dispatch(method, params || {});
-    if (id !== undefined) send({ jsonrpc: '2.0', id, result }, responseMode);
+    if (id !== undefined) send({ jsonrpc: '2.0', id, result });
   } catch (err) {
-    if (id !== undefined) send({ jsonrpc: '2.0', id, error: { code: -32603, message: err.message } }, responseMode);
+    if (id !== undefined) send({ jsonrpc: '2.0', id, error: { code: -32603, message: err.message } });
   }
 }
 
@@ -162,13 +159,9 @@ async function dispatch(method, params) {
   }
 }
 
-function send(msg, responseMode = 'frame') {
+function send(msg) {
   const json = JSON.stringify(msg);
-  if (responseMode === 'line') {
-    process.stdout.write(`${json}\n`);
-    return;
-  }
-  process.stdout.write(`Content-Length: ${Buffer.byteLength(json, 'utf8')}\r\n\r\n${json}`);
+  process.stdout.write(`Content-Length: ${Buffer.byteLength(json, 'utf8')}\r\n\r\n${json}\n`);
 }
 
 process.on('SIGINT', () => process.exit(0));

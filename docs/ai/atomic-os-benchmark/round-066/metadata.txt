@@ -1,0 +1,8 @@
+round=066
+timestamp=20260517105619
+task=scaled_two_symbol_extraction_repeat_after_const_gap_fix
+normal_worktree=/private/tmp/kloel-ab066-normal-20260517105619
+atomic_worktree=/private/tmp/kloel-ab066-atomic-20260517105619
+normal_branch=bench/ab066-normal-20260517105619
+atomic_branch=bench/ab066-atomic-20260517105619
+objective=repeat round 065 complexity after compacting const gap in extract_symbols_to_file

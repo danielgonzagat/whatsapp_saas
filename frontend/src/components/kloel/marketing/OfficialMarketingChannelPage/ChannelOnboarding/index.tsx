@@ -4,10 +4,24 @@ import { useCallback, useMemo, useState, useSyncExternalStore } from 'react';
 import type { ChannelKey } from '../../OfficialMarketingChannelPage.helpers';
 import { useOfficialMarketingChannel } from '../use-official-marketing-channel';
 import { useOnboardingPalette } from './use-onboarding-palette';
-import { SORA, CHANNEL_COPY, TONE_VALUES, EDGE_VALUES, toneIndex, edgeIndex } from './palette';
+import {
+  SORA,
+  CHANNEL_COPY,
+  TONE_VALUES,
+  EDGE_VALUES,
+  toneIndex,
+  edgeIndex,
+} from './palette';
 import { StepBar, Chip, CTA } from './atoms';
 import { Glyph } from './Glyph';
-import { StepConnect, StepProducts, StepArsenal, StepVoice, Done, type ProductRow } from './steps';
+import {
+  StepConnect,
+  StepProducts,
+  StepArsenal,
+  StepVoice,
+  Done,
+  type ProductRow,
+} from './steps';
 
 interface Props {
   channel: ChannelKey;
@@ -126,7 +140,9 @@ export function ChannelOnboarding({ channel, initialStep }: Props) {
       .then(() => data.handleComplete());
   }, [data]);
 
-  const glyphStep = awakened ? 4 : Math.max(0, Math.min(3, viewStep));
+  const glyphStep = awakened
+    ? 4
+    : Math.max(0, Math.min(3, viewStep));
 
   const vignette = useMemo(() => {
     if (awakened) {
@@ -143,7 +159,13 @@ export function ChannelOnboarding({ channel, initialStep }: Props) {
     }
     if (viewStep <= 0) {
       return (
-        <StepConnect C={C} sub={copy.sub} verb={copy.verb} busy={busy} onConnect={handleConnect} />
+        <StepConnect
+          C={C}
+          sub={copy.sub}
+          verb={copy.verb}
+          busy={busy}
+          onConnect={handleConnect}
+        />
       );
     }
     if (viewStep === 1) {
@@ -157,7 +179,10 @@ export function ChannelOnboarding({ channel, initialStep }: Props) {
           onContinue={() => {
             setRestarted(false);
             setOptimisticStep(2);
-            void data.persistSetup({ ...data.setup, currentStep: 2 }, 'Produtos do canal salvos.');
+            void data.persistSetup(
+              { ...data.setup, currentStep: 2 },
+              'Produtos do canal salvos.',
+            );
           }}
         />
       );
@@ -263,11 +288,7 @@ export function ChannelOnboarding({ channel, initialStep }: Props) {
           arsenal={glyphStep >= 3 ? data.setup.arsenal.length : 0}
         />
 
-        <div
-          className="kloel-vin"
-          key={`${awakened ? 'done' : viewStep}`}
-          style={{ width: '100%' }}
-        >
+        <div className="kloel-vin" key={`${awakened ? 'done' : viewStep}`} style={{ width: '100%' }}>
           {vignette}
         </div>
 

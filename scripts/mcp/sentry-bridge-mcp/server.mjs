@@ -28,7 +28,7 @@ const SERVER_INFO = { name: 'sentry-bridge', version: '0.1.0' };
 
 function send(obj) {
   const body = JSON.stringify(obj);
-  process.stdout.write(body + '\n');
+  process.stdout.write(`Content-Length: ${Buffer.byteLength(body, 'utf8')}\r\n\r\n${body}`);
 }
 function asContent(v) {
   return { content: [{ type: 'text', text: typeof v === 'string' ? v : JSON.stringify(v, null, 2) }] };

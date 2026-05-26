@@ -1,0 +1,12 @@
+round=120
+created_at_utc=2026-05-18T08:00:21Z
+base_head=565b0f84d
+normal_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab120-normal-20260518080021
+atomic_worktree=/Users/danielpenin/kloel-ab-worktrees/kloel-ab120-atomic-20260518080021
+normal_branch=ab/round120-normal-20260518080021
+atomic_branch=ab/round120-atomic-20260518080021
+complexity=five-helper-repeat-compact-incoming-preprompt
+normal_variant=max
+atomic_variant=minimal_compact_preprompt
+idle_ms=600000
+max_ms=1200000

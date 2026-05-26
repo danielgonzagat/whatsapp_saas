@@ -18,6 +18,7 @@ describe('AffiliateMarketplaceController', () => {
   });
   const affiliateProductFindMany = prismaMock.affiliateProduct.findMany;
   const affiliateProductCount = prismaMock.affiliateProduct.count;
+  const productFindMany = prismaMock.product.findMany;
 
   let controller: AffiliateMarketplaceController;
 

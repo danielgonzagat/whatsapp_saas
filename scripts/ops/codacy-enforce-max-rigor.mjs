@@ -40,7 +40,6 @@ const DEPRECATED_DISABLED_TOOLS = Object.freeze([
     replacement: 'ESLint + Biome (both already enabled in .codacy.yml).',
   },
 ]);
-
 const TARGET_REPOSITORY_QUALITY = Object.freeze({
   maxIssuePercentage: 0,
   maxDuplicatedFilesPercentage: 0,
@@ -49,7 +48,6 @@ const TARGET_REPOSITORY_QUALITY = Object.freeze({
   fileDuplicationBlockThreshold: 0,
   fileComplexityValueThreshold: 0,
 });
-
 const TARGET_COMMIT_GATE = Object.freeze({
   issueThreshold: { threshold: 0, minimumSeverity: 'Info' },
   securityIssueThreshold: 0,

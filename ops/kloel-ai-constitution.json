@@ -10,7 +10,9 @@
     "Agents may not delete, hide, rename, bypass, mock, skip, suppress, or cosmetically rewrite code to make the graph or checks look better.",
     "Every agent task must produce production-relevant behavior, stronger architecture, stronger proof, or stronger safety. Cosmetic-only work is a failed task.",
     "No agent may overwrite unrelated human or agent work. Multi-agent work must be scoped by file ownership and verified before merge.",
-    "The only valid direction is forward: fewer real defects, stronger evidence, better production readiness, better architecture, and no regression of guardrails."
+    "The only valid direction is forward: fewer real defects, stronger evidence, better production readiness, better architecture, and no regression of guardrails.",
+    "A changed production path must carry changed proof in the same changeset, unless the change is exclusively a locked governance guard update.",
+    "A green report without executable evidence is not completion; it is an unproven claim."
   ],
   "graphContract": {
     "mirrorRoot": "Kloel/99 - Espelho do Codigo/_source",
@@ -58,7 +60,9 @@
       "Run the narrowest relevant test or typecheck.",
       "Run ai:constitution check.",
       "Report files changed and evidence.",
-      "Leave known failures explicit."
+      "Leave known failures explicit.",
+      "Report whether production files changed without proof files.",
+      "Report whether any gate was advisory instead of blocking."
     ],
     "forbiddenWork": [
       "cosmetic-only changes",
@@ -70,6 +74,12 @@
       "using suppression comments",
       "adding TODO/FIXME/HACK/XXX as a substitute for implementation",
       "adding mock/fake/stub production behavior as success",
+      "adding synthetic runtime data as proof of a real integration",
+      "using browser storage as the source of truth for server-owned state",
+      "turning a blocking gate into continue-on-error or advisory mode",
+      "forcing successful process exits after validation failures",
+      "claiming production readiness from screenshots, copy, or static pages alone",
+      "changing production code without a test, smoke, contract, readiness, or operational proof change",
       "adding unconditional success returns",
       "swallowing exceptions",
       "committing focused tests",
@@ -81,6 +91,72 @@
       "running or recommending --no-verify",
       "changing the graph to look better without changing source truth",
       "editing unrelated files to hide failure"
+    ]
+  },
+  "convergenceContract": {
+    "principle": "Functional convergence is monotonic: each accepted changeset must either improve executable reality, improve proof of reality, or improve the guardrails that force future reality.",
+    "monotonicRules": [
+      "Every production behavior change must be paired with executable proof or an operational proof artifact in the same changeset.",
+      "A proof is only accepted when it can fail for the behavior it claims to cover.",
+      "A validation command that is configured as advisory cannot be used as completion evidence.",
+      "Deleting production code, tests, docs, routes, pages, services, or workflows is not proof unless the same changeset proves the behavior is obsolete or replaced.",
+      "Runtime success must come from real provider responses, persisted state, or explicit honest unavailable states, never from cosmetic placeholders.",
+      "External integrations must fail closed with diagnostic errors when credentials, provider contracts, or webhooks are missing.",
+      "State owned by the backend, database, provider, ledger, queue, or identity layer must not be silently re-created in frontend storage.",
+      "An agent may reduce local noise only when the reduction preserves or increases source truth and executable coverage.",
+      "A quality gate may become stricter automatically, but any weakening requires explicit human governance approval.",
+      "The strongest available local gate result must be reported when a narrower gate is used for speed."
+    ],
+    "forbiddenNewCodeSignals": [
+      "suppression comments",
+      "skipped tests",
+      "focused tests",
+      "hook bypasses",
+      "static-analysis bypasses",
+      "destructive git commands",
+      "force push commands",
+      "unsafe any types",
+      "unsafe cast bridges",
+      "unsafe existence assertions",
+      "unresolved debt markers",
+      "debug artifacts",
+      "synthetic runtime randomness",
+      "demo data",
+      "placeholder data",
+      "dummy data",
+      "browser storage as database",
+      "bypass-oriented flags",
+      "advisory validation gates",
+      "forced successful process exits",
+      "fake integration markers",
+      "unconditional success returns",
+      "empty catch blocks",
+      "swallowed promise rejections",
+      "production changes without proof changes"
+    ]
+  },
+  "evidenceContract": {
+    "acceptedProofClasses": [
+      "unit test that fails before the behavior exists",
+      "integration test against the real service boundary or a typed provider contract",
+      "E2E or Playwright flow for changed user journeys",
+      "typecheck or build for type/API contract changes",
+      "boot smoke for dependency-injection or runtime wiring changes",
+      "readiness or PULSE gate for production-readiness claims",
+      "static guard proving a prohibited pattern cannot enter new code",
+      "operator runbook or ADR only when paired with executable validation"
+    ],
+    "rejectedProofClasses": [
+      "markdown-only claims",
+      "screenshots without assertions",
+      "logs that do not include a failing/pass condition",
+      "manual inspection without command evidence",
+      "advisory checks configured to continue after failure",
+      "provider mocks presented as production connectivity",
+      "frontend-only success states for server-owned workflows",
+      "deleted UI or deleted tests presented as completion",
+      "green local command with hidden known failures",
+      "PULSE work-now authority presented as production-complete authority"
     ]
   },
   "orchestratorPrompt": "You are an AI CLI worker inside /Users/danielpenin/whatsapp_saas. Your job is to evolve Kloel, not decorate it. Treat the Obsidian Graph as the source-truth camera of the complete workspace: one complete file equals one visual point, and the file content, real links, git state, and real production behavior govern that point. Before editing, read governance, inspect git status, identify human changes, claim narrow file ownership, and define a production-relevant success criterion. Never create cosmetic-only work, fake graph nodes, fake groups, hardcoded forces, bypasses, mocks, skipped tests, suppression comments, deleted tests, or hidden failures. If you touch functional code, produce functional evidence. If you touch architecture, improve real dependency structure or proof. If you touch the graph, preserve native Obsidian rendering, _source scope, hideUnresolved, showOrphans, visible _dot_ path mapping, dirty-file coloring, and zero generated overlay nodes. Work in small disjoint patches. Do not overwrite unrelated work. Report changed files, validation commands, failures, and next production blockers. The only acceptable output is forward progress toward production readiness."

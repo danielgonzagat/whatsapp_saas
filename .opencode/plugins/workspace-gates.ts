@@ -55,23 +55,36 @@ function normalizeOpenCodeArgs(args: ToolArgs): ToolArgs {
 
 function runHook(repoRoot: string, scriptRel: string, payload: object): { exit: number; stderr: string } {
   const scriptAbs = path.join(repoRoot, scriptRel);
-  if (!existsSync(scriptAbs)) return { exit: 0, stderr: '' };
+  if (!existsSync(scriptAbs)) {
+    return { exit: 1, stderr: `Missing workspace gate: ${scriptRel}` };
+  }
   const result = spawnSync('node', [scriptAbs], {
     input: JSON.stringify(payload),
     encoding: 'utf8',
     cwd: repoRoot,
   });
-  return { exit: result.status ?? 0, stderr: result.stderr || '' };
+  if (result.error) {
+    return { exit: 1, stderr: result.error.message };
+  }
+  return { exit: result.status ?? 1, stderr: result.stderr || '' };
 }
 
 function runAtomicGate(repoRoot: string, payload: object): { deny: boolean; reason: string } {
   const scriptAbs = path.join(repoRoot, 'scripts/mcp/atomic-edit/atomic-only-hook.mjs');
-  if (!existsSync(scriptAbs)) return { deny: false, reason: '' };
+  if (!existsSync(scriptAbs)) {
+    return { deny: true, reason: 'Missing atomic gate script.' };
+  }
   const result = spawnSync('node', [scriptAbs], {
     input: JSON.stringify(payload),
     encoding: 'utf8',
     cwd: repoRoot,
   });
+  if (result.error || result.status !== 0) {
+    return {
+      deny: true,
+      reason: result.error?.message || result.stderr || 'Atomic gate failed.',
+    };
+  }
   try {
     const out = JSON.parse(result.stdout || '{}');
     const decision = out?.hookSpecificOutput;
@@ -113,6 +126,13 @@ export const WorkspaceGatesPlugin: Plugin = async ({ directory, worktree }) => {
         const result = runHook(repoRoot, 'scripts/decomp/preflight-write-gate.mjs', envelope);
         if (result.exit !== 0) {
           throw new Error(result.stderr.trim() || 'Workspace write gate blocked this tool call.');
+        }
+      }
+
+      if (claudeName === 'apply_patch') {
+        const result = runHook(repoRoot, 'scripts/decomp/adapters/apply-patch-gate.mjs', envelope);
+        if (result.exit !== 0) {
+          throw new Error(result.stderr.trim() || 'Workspace apply_patch gate blocked this tool call.');
         }
       }
 

@@ -6,7 +6,6 @@
 // graphify-out/codegraph-base.json (same shape as the legacy base graph.json
 // from upstream graphify, so the existing merge step in run.mjs Just Works).
 
-import { existsSync } from 'node:fs';
 import { writeFile, mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -25,22 +24,7 @@ const ROOT = join(__dirname, '..', '..', '..');
 const OUT = join(ROOT, 'graphify-out', 'codegraph-base.json');
 
 async function main() {
-  const dbPath = join(ROOT, '.codegraph/codegraph.db');
-  if (!existsSync(dbPath)) {
-    await mkdir(dirname(OUT), { recursive: true });
-    await writeFile(
-      OUT,
-      JSON.stringify({
-        nodes: [],
-        edges: [],
-        stats: { skipped: true, reason: `CodeGraph DB not found at ${dbPath}` },
-      }),
-    );
-    console.log(`[codegraph-export] skipped: CodeGraph DB not found at ${dbPath}`);
-    return;
-  }
-
-  const db = openDB(dbPath);
+  const db = openDB(join(ROOT, '.codegraph/codegraph.db'));
   console.log(`[codegraph-export] DB opened. nodes=${countNodes(db)} edges=${countEdges(db)}`);
 
   const nodes = [];

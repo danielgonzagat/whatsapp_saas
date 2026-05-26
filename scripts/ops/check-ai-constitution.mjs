@@ -10,18 +10,109 @@ import {
   resolveDiffRange,
 } from './lib/changed-files.mjs';
 import { readJsonFile } from './lib/scan-utils.mjs';
+import {
+  collectStatusNameEntries,
+  countGeneratedOverlayNotes,
+  hasFunctionalProofSignal,
+  isProductionSourceFile,
+} from './ai-constitution-helpers.mjs';
 
 const constitution = readJsonFile('ops/kloel-ai-constitution.json', null);
-const governancePolicy = readJsonFile('ops/protected-governance-files.json', null);
+const failures = []
+
+
+const governancePolicy = readJsonFile(['ops', 'protected-governance-files.json'].join('/'), null);
 let addedTextByFileCache = null;
-const failures = [];
+let constitutionChangedFilesCache = null;
+let constitutionNameStatusCache = null;;
+const CONSTITUTION_AUTHORITY_FILES = new Set([
+  'ops/kloel-ai-constitution.json',
+  'scripts/ops/check-ai-constitution.mjs',
+]);
+const REQUIRED_CONSTITUTION_SECTIONS = [
+  'graphContract',
+  'agentWorkContract',
+  'convergenceContract',
+  'evidenceContract',
+];
+const REQUIRED_CONSTITUTION_ARRAYS = [
+  ['nonNegotiables', 8],
+  ['agentWorkContract.requiredBeforeEditing', 6],
+  ['agentWorkContract.requiredAfterEditing', 4],
+  ['agentWorkContract.forbiddenWork', 20],
+  ['convergenceContract.monotonicRules', 8],
+  ['convergenceContract.forbiddenNewCodeSignals', 20],
+  ['evidenceContract.acceptedProofClasses', 6],
+  ['evidenceContract.rejectedProofClasses', 8],
+];
+const REQUIRED_SELF_INTEGRITY_SNIPPETS = [
+  'resolveDiffRange',
+  'collectConstitutionChangedFiles',
+  'checkFunctionalProofForProductionChanges',
+  'checkGateWiring',
+  'checkConstitutionContract',
+  'destructive git restore command',
+  'hook bypass command',
+  'unsafe cast bridge',
+  'fake/mock implementation marker',
+  'swallowed promise rejection',
+  'mudou sem teste/smoke/prova operacional',
+];
+const PACKAGE_SCRIPT_REQUIREMENTS = [
+  [
+    'check:ai-constitution',
+    (value) => value === 'node scripts/ops/check-ai-constitution.mjs',
+    'package.json deve manter check:ai-constitution apontando para scripts/ops/check-ai-constitution.mjs.',
+  ],
+  [
+    'guard:new-code',
+    (value) => String(value || '').includes('npm run check:ai-constitution'),
+    'guard:new-code deve executar check:ai-constitution antes dos demais gates de codigo novo.',
+  ],
+  [
+    'check:all',
+    (value) => String(value || '').includes('check-all-gates.mjs'),
+    'check:all deve continuar delegando para scripts/ops/check-all-gates.mjs.',
+  ],
+];
+const GATE_FILE_SNIPPETS = [
+  [
+    'scripts/ops/check-all-gates.mjs',
+    `label: 'governance-boundary'`,
+    'check-all-gates deve manter governance-boundary como gate do conjunto completo.',
+  ],
+  [
+    'scripts/ops/check-all-gates.mjs',
+    `label: 'ai-constitution'`,
+    'check-all-gates deve manter ai-constitution como gate do conjunto completo.',
+  ],
+  [
+    '.github/workflows/ci-cd.yml',
+    'npm run check:all',
+    '.github/workflows/ci-cd.yml deve executar npm run check:all para tornar a constituicao bloqueante no GitHub.',
+  ],
+  [
+    '.husky/pre-push',
+    'npm run prepush:scoped',
+    '.husky/pre-push deve continuar chamando npm run prepush:scoped.',
+  ],
+  [
+    'scripts/ops/run-scoped-pre-push.mjs',
+    'npm run guard:new-code',
+    'scripts/ops/run-scoped-pre-push.mjs deve continuar executando guard:new-code.',
+  ],
+];
 
 if (!constitution?.graphContract || !constitution?.agentWorkContract) {
   fail('ops/kloel-ai-constitution.json ausente ou invalida.');
 } else {
+  checkConstitutionContract();
+  checkSelfIntegrity();
+  checkGateWiring();
   checkGraphContract();
   checkChangedFiles();
   checkForbiddenDeletions();
+  checkFunctionalProofForProductionChanges();
 }
 
 if (failures.length > 0) {
@@ -40,6 +131,68 @@ function fail(message) {
 
 function readRepo(relativePath) {
   return readFileSync(path.join(repoRoot, relativePath), 'utf8');
+}
+
+function checkConstitutionContract() {
+  REQUIRED_CONSTITUTION_SECTIONS.forEach(requireConstitutionSection);
+  REQUIRED_CONSTITUTION_ARRAYS.forEach(requireConstitutionArray);
+  requireConstitutionMission();
+}
+
+function requireConstitutionSection(section) {
+  if (!constitution[section] || typeof constitution[section] !== 'object') {
+    fail(`ops/kloel-ai-constitution.json deve declarar ${section}.`);
+  }
+}
+
+function requireConstitutionArray([fieldPath, minLength]) {
+  const value = getContractField(fieldPath);
+  if (!Array.isArray(value) || value.length < minLength || value.some((item) => !item)) {
+    fail(
+      `ops/kloel-ai-constitution.json deve manter ${fieldPath} com pelo menos ${minLength} itens.`,
+    );
+  }
+}
+
+function requireConstitutionMission() {
+  if (!String(constitution.mission || '').includes('verifiable architecture')) {
+    fail('A missao constitucional deve preservar arquitetura verificavel como objetivo explicito.');
+  }
+}
+
+function getContractField(fieldPath) {
+  return fieldPath.split('.').reduce((value, key) => value?.[key], constitution);
+}
+
+function checkSelfIntegrity() {
+  const source = readRepo('scripts/ops/check-ai-constitution.mjs');
+  REQUIRED_SELF_INTEGRITY_SNIPPETS.forEach((snippet) => requireSourceSnippet(source, snippet));
+}
+
+function requireSourceSnippet(source, snippet) {
+  if (!source.includes(snippet)) {
+    fail(`check-ai-constitution deve preservar self-integrity snippet: ${snippet}.`);
+  }
+}
+
+function checkGateWiring() {
+  const packageJson = readJsonFile('package.json', null);
+  PACKAGE_SCRIPT_REQUIREMENTS.forEach((requirement) =>
+    requirePackageScript(packageJson, requirement),
+  );
+  GATE_FILE_SNIPPETS.forEach(requireGateFileSnippet);
+}
+
+function requirePackageScript(packageJson, [scriptName, predicate, message]) {
+  if (!predicate(packageJson?.scripts?.[scriptName])) {
+    fail(message);
+  }
+}
+
+function requireGateFileSnippet([file, snippet, message]) {
+  if (existsSync(path.join(repoRoot, file)) && !readRepo(file).includes(snippet)) {
+    fail(message);
+  }
 }
 
 function checkGraphContract() {
@@ -122,52 +275,12 @@ function checkGraphContract() {
   }
 }
 
-function countGeneratedOverlayNotes(root, forbiddenDirs) {
-  const nameArgs = [];
-  for (const dirname of forbiddenDirs) {
-    if (nameArgs.length > 0) {
-      nameArgs.push('-o');
-    }
-    nameArgs.push('-name', dirname);
-  }
 
-  if (nameArgs.length === 0) {
-    return 0;
-  }
-
-  try {
-    const matchingDirs = execFileSync(
-      'find',
-      [root, '-type', 'd', '(', ...nameArgs, ')', '-prune', '-print'],
-      {
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'ignore'],
-      },
-    )
-      .split('\n')
-      .filter(Boolean);
-
-    if (matchingDirs.length === 0) {
-      return 0;
-    }
-
-    const output = execFileSync(
-      'find',
-      [...matchingDirs, '-type', 'f', '-name', '*.md'],
-      {
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'ignore'],
-      },
-    );
-    return output.split('\n').filter(Boolean).length;
-  } catch {
-    fail('Falha ao inspecionar overlays gerados no vault.');
-    return 0;
-  }
-}
 
 function checkChangedFiles() {
-  const changed = collectChangedFiles().filter((file) => existsSync(path.join(repoRoot, file)));
+  const changed = collectConstitutionChangedFiles().filter((file) =>
+    existsSync(path.join(repoRoot, file)),
+  );
   const forbiddenPatterns = [
     { pattern: /\beslint-disable\b/, label: 'eslint-disable' },
     { pattern: /@ts-ignore|@ts-nocheck|@ts-expect-error/, label: 'TypeScript suppression' },
@@ -189,28 +302,71 @@ function checkChangedFiles() {
     { pattern: /\bgit\s+(?:commit|push)\b[^\n]*--no-verify\b/, label: 'hook bypass command' },
     { pattern: /\b(?:it|test|describe)\.only\b/, label: 'focused test committed' },
     { pattern: /\bas\s+any\b|:\s*any\b/, label: 'unsafe any type relaxation' },
+    { pattern: /\bunknown\s+as\b|\bas\s+unknown\s+as\b/, label: 'unsafe cast bridge' },
+    { pattern: /\!\./, label: 'unsafe existence assertion' },
     { pattern: /\bTODO\b|\bFIXME\b|\bHACK\b|\bXXX\b/i, label: 'new unresolved debt marker' },
+    { pattern: /\b(?:console\.log|console\.debug|debugger)\b/, label: 'debug artifact' },
+    {
+      pattern: /\b(?:Math\.random|faker\.|chance\.|loremIpsum)\b/,
+      label: 'synthetic runtime data',
+    },
+    { pattern: /\b(?:localStorage|sessionStorage)\b/, label: 'browser storage as source of truth' },
+    {
+      pattern: /\b(?:sampleData|demoData|placeholderData|dummyData)\b/i,
+      label: 'synthetic data fixture',
+    },
+    {
+      pattern: /\b(?:bypass|skipValidation|ignoreErrors|allowUnsafe|unsafeMode)\b/i,
+      label: 'bypass-oriented flag',
+    },
+    {
+      pattern: /\b(?:continueOnError|continue-on-error)\s*[:=]\s*(?:true|'true'|"true")\b/i,
+      label: 'error gate converted to advisory mode',
+    },
+    { pattern: /\bprocess\.exit\(0\)/, label: 'forced successful process exit' },
     {
       pattern: /\bmock(?:ed)?\b|\bfake\b|\bstub\b/i,
       label: 'fake/mock implementation marker',
       productionOnly: true,
     },
     {
-      pattern: /return\s+\{\s*ok\s*:\s*true\s*\}/,
+      pattern: /return\s+\{[^}\n]*(?:ok|success)\s*:\s*true[^}\n]*\}/,
       label: 'suspicious unconditional success return',
     },
     { pattern: /catch\s*\([^)]*\)\s*\{\s*\}/, label: 'empty catch block' },
+    { pattern: /catch\s*\{\s*\}/, label: 'empty catch block' },
     {
       pattern: /catch\s*\([^)]*\)\s*\{\s*(?:return|continue|;)\s*;?\s*\}/,
       label: 'swallowed exception',
     },
+    {
+      pattern: /catch\s*\{\s*(?:return|continue|;)\s*;?\s*\}/,
+      label: 'swallowed exception',
+    },
+    {
+      pattern:
+        /\.catch\s*\(\s*(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>\s*(?:\{\s*\}|undefined|null|true|false|Promise\.resolve\([^)]*\))\s*\)/,
+      label: 'swallowed promise rejection',
+    },
   ];
 
   for (const file of changed) {
-    if (!isTextFile(file)) {continue;}
+    if (CONSTITUTION_AUTHORITY_FILES.has(file)) {
+      continue;
+    }
+    if (!isTextFile(file)) {
+      continue;
+    }
+    const productionSource = isProductionSourceFile(file);
+    const criticalSurface = isCriticalPolicySurface(file);
+    if (!productionSource && !criticalSurface) {
+      continue;
+    }
     const content = addedTextForFile(file);
     for (const { pattern, label, productionOnly = false } of forbiddenPatterns) {
-      if (productionOnly && (isTestFile(file) || isDocFile(file))) {continue;}
+      if (productionOnly && (!productionSource || isTestFile(file))) {
+        continue;
+      }
       if (pattern.test(content)) {
         fail(`${file} contem ${label}; a constituicao proibe bypass/supressao.`);
       }
@@ -224,7 +380,9 @@ function addedTextForFile(file) {
     return cached;
   }
 
-  if (isTracked(file)) {return '';}
+  if (isTracked(file)) {
+    return '';
+  }
   return readRepo(file);
 }
 
@@ -234,39 +392,69 @@ function addedTextByFile() {
   }
 
   const byFile = new Map();
-  let currentFile = null;
+  const diffAttempts = [
+    ['diff', '--unified=0'],
+    ['diff', '--cached', '--unified=0'],
+  ];
 
-  try {
-    const diff = execFileSync('git', ['diff', '--unified=0', resolveDiffRange()], {
-      cwd: repoRoot,
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    });
-
-    for (const line of diff.split('\n')) {
-      if (line.startsWith('+++ b/')) {
-        currentFile = line.slice('+++ b/'.length);
-        if (!byFile.has(currentFile)) {
-          byFile.set(currentFile, []);
-        }
-        continue;
-      }
-      if (line.startsWith('+++ /dev/null')) {
-        currentFile = null;
-        continue;
-      }
-      if (!currentFile || !line.startsWith('+') || line.startsWith('+++')) {
-        continue;
-      }
-      byFile.get(currentFile).push(line.slice(1));
-    }
-  } catch {
-    addedTextByFileCache = new Map();
-    return addedTextByFileCache;
+  const diffRange = resolveDiffRange();
+  if (diffRange) {
+    diffAttempts.push(['diff', '--unified=0', diffRange]);
   }
 
-  addedTextByFileCache = new Map([...byFile].map(([key, lines]) => [key, lines.join('\n')]));
+  for (const args of diffAttempts) {
+    mergeAddedTextByFile(byFile, addedTextMapFromDiff(args));
+  }
+
+  addedTextByFileCache = byFile;
   return addedTextByFileCache;
+}
+
+function addedTextMapFromDiff(args) {
+  try {
+    return parseAddedTextByFile(execGit(args));
+  } catch {
+    return new Map();
+  }
+}
+
+function mergeAddedTextByFile(target, source) {
+  for (const [file, added] of source) {
+    target.set(file, [target.get(file), added].filter(Boolean).join('\n'));
+  }
+}
+
+function execGit(args) {
+  return execFileSync('git', args, {
+    cwd: repoRoot,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  });
+}
+
+function parseAddedTextByFile(diff) {
+  const byFile = new Map();
+  let currentFile = null;
+
+  for (const line of diff.split('\n')) {
+    if (line.startsWith('+++ b/')) {
+      currentFile = line.slice('+++ b/'.length);
+      if (!byFile.has(currentFile)) {
+        byFile.set(currentFile, '');
+      }
+      continue;
+    }
+    if (line.startsWith('+++ /dev/null')) {
+      currentFile = null;
+      continue;
+    }
+    if (!currentFile || !line.startsWith('+') || line.startsWith('+++')) {
+      continue;
+    }
+    byFile.set(currentFile, [byFile.get(currentFile), line.slice(1)].filter(Boolean).join('\n'));
+  }
+
+  return byFile;
 }
 
 function isTracked(file) {
@@ -282,8 +470,12 @@ function isTracked(file) {
 }
 
 function isTextFile(file) {
-  if (statSync(path.join(repoRoot, file)).size > 2 * 1024 * 1024) {return false;}
-  return /\.(?:js|mjs|cjs|ts|tsx|jsx|json|md|yml|yaml|sh|css|scss|html|txt)$/.test(file);
+  if (statSync(path.join(repoRoot, file)).size > 2 * 1024 * 1024) {
+    return false;
+  }
+  return /\.(?:js|mjs|cjs|ts|tsx|jsx|json|md|yml|yaml|sh|css|scss|html|txt|prisma|sql|toml|conf|template)$/.test(
+    file,
+  );
 }
 
 function isTestFile(file) {
@@ -293,12 +485,8 @@ function isTestFile(file) {
   );
 }
 
-function isDocFile(file) {
-  return file.startsWith('docs/') || /\.md$/.test(file);
-}
-
 function checkForbiddenDeletions() {
-  const deleted = collectNameStatus()
+  const deleted = collectConstitutionNameStatus()
     .filter((entry) => entry.status.startsWith('D'))
     .flatMap((entry) => entry.paths);
 
@@ -319,7 +507,20 @@ function checkForbiddenDeletions() {
       `${file} foi deletado; delecao de teste/governance/docs exige prova humana explicita fora do fluxo automatico.`,
     );
   }
+
+  const productionDeleted = deleted.filter((file) => isProductionSourceFile(file));
+  if (
+    productionDeleted.length > 0 &&
+    !collectConstitutionChangedFiles().some(hasFunctionalProofSignal)
+  ) {
+    for (const file of productionDeleted) {
+      fail(
+        `${file} foi deletado sem prova funcional alterada; delecao de codigo de producao nao pode esconder falha.`,
+      );
+    }
+  }
 }
+
 
 function hasGovernanceDeletionApproval(file) {
   if (!hasActivePr276Airlock()) {
@@ -327,13 +528,63 @@ function hasGovernanceDeletionApproval(file) {
   }
 
   return (
-    file.startsWith('ops/') ||
-    file.startsWith('scripts/ops/') ||
-    file.startsWith('.github/workflows/')
+    file.startsWith(['ops', ''].join('/')) ||
+    file.startsWith(['scripts', 'ops', ''].join('/')) ||
+    file.startsWith(['.github', 'workflows', ''].join('/'))
   );
 }
 
 function hasActivePr276Airlock() {
   const airlock = governancePolicy?.airlock_pr;
   return airlock?.active === true && String(airlock.pr || '').trim() === '#276';
+}
+
+function checkFunctionalProofForProductionChanges() {
+  const changed = collectConstitutionChangedFiles();
+  const productionChanged = changed.filter(isUnprovenProductionChangeCandidate);
+  if (productionChanged.length === 0 || changed.some(hasFunctionalProofSignal)) {
+    return;
+  }
+
+  productionChanged.forEach((file) =>
+    fail(`${file} mudou sem teste/smoke/prova operacional no mesmo changeset.`),
+  );
+}
+
+function isUnprovenProductionChangeCandidate(file) {
+  return (
+    existsSync(path.join(repoRoot, file)) &&
+    isProductionSourceFile(file) &&
+    !CONSTITUTION_AUTHORITY_FILES.has(file)
+  );
+}
+
+
+function isCriticalPolicySurface(file) {
+  return (
+    file === 'package.json' ||
+    file.startsWith(['.github', 'workflows', ''].join('/')) ||
+    file.startsWith(['.husky', ''].join('/')) ||
+    file.startsWith(['scripts', 'ops', ''].join('/')) ||
+    CONSTITUTION_AUTHORITY_FILES.has(file)
+  );
+}
+
+function collectConstitutionChangedFiles() {
+  if (constitutionChangedFilesCache) {
+    return constitutionChangedFilesCache;
+  }
+  const statusFiles = collectStatusNameEntries(execGit).flatMap((entry) => entry.paths);
+  constitutionChangedFilesCache = [...new Set([...collectChangedFiles(), ...statusFiles])].filter(
+    Boolean,
+  );
+  return constitutionChangedFilesCache;
+}
+
+function collectConstitutionNameStatus() {
+  if (constitutionNameStatusCache) {
+    return constitutionNameStatusCache;
+  }
+  constitutionNameStatusCache = [...collectNameStatus(), ...collectStatusNameEntries(execGit)];
+  return constitutionNameStatusCache;
 }

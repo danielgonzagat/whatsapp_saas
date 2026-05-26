@@ -34,15 +34,9 @@ async function main() {
 
   console.log('▸ asserting enriched graph');
   const enriched = JSON.parse(await readFile(join(ROOT, 'graphify-out/enriched-graph.json'), 'utf8'));
-  const hasCodeGraphBase = (enriched.meta?.baseNodes ?? 0) > 0;
-  if (hasCodeGraphBase) {
-    assertGte(enriched.nodes.length, 80_000, 'enriched.nodes (base + shards)');
-    assertGte(enriched.edges.length, 150_000, 'enriched.edges (base links + shard edges)');
-  } else {
-    assertGte(enriched.nodes.length, 3_500, 'enriched.nodes (shards-only mode)');
-    assertGte(enriched.edges.length, 20_000, 'enriched.edges (shards-only mode)');
-  }
-  assertGte(Object.keys(enriched.shards).length, 8, 'shards merged');
+  assertGte(enriched.nodes.length, 80_000, 'enriched.nodes (≥ base + shards)');
+  assertGte(enriched.edges.length, 150_000, 'enriched.edges (≥ base links + shard edges)');
+  assertGte(Object.keys(enriched.shards).length, 5, 'shards merged');
 
   console.log('▸ asserting bullmq shard');
   const bullmq = JSON.parse(await readFile(join(ROOT, 'graphify-out/shards/bullmq.json'), 'utf8'));

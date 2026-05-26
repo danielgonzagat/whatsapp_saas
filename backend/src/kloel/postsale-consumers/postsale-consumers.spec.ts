@@ -316,3 +316,4 @@ describe('POSTSALE-000 — No-Regret Pipeline', () => {
         .filter((event) => event.eventName === 'commerce.post_sale.no_regret_confirmed'),
     ).toHaveLength(0);
   });
+});
