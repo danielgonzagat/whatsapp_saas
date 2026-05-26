@@ -400,7 +400,7 @@ function resolveNestedLocalCall(
   visited = new Set<string>(),
   depth = 0,
 ): { type: UIElement['handlerType']; apiCalls: string[] } | null {
-  const { fileContent: _fileContent, lines, apiModuleMap, apiImportsInFile, hookDestructures, hookRegistry } =
+  const { fileContent, lines, apiModuleMap, apiImportsInFile, hookDestructures, hookRegistry } =
     input;
   if (depth > 4) {
     return null;
@@ -436,6 +436,15 @@ function resolveNestedLocalCall(
         type: HANDLER_TYPE_REAL,
         apiCalls: hookFunctionApiCalls(cnBody, hookDestructures, hookRegistry),
       };
+    }
+    if (hasImperativeUiEffect(cnBody) || hasBrowserFileEffect(cnBody)) {
+      return handlerResolution(HANDLER_TYPE_REAL);
+    }
+    if (hasBrowserNavigationEffect(cnBody)) {
+      return handlerResolution(HANDLER_TYPE_NAVIGATION);
+    }
+    if (callsCallbackProp(cnBody, fileContent) || hasStateUpdaterCall(cnBody)) {
+      return handlerResolution(HANDLER_TYPE_REAL);
     }
 
     const nested = resolveNestedLocalCall(input, cnBody, visited, depth + 1);
