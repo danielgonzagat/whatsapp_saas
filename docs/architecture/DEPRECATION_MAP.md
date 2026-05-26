@@ -90,6 +90,22 @@
 | `pollUntil` in `worker/utils/async-sequence.ts` + `backend/src/common/async-sequence.ts` | (stays local — cross-workspace mirror; differs only in TS assertion noise) | — | ⏸ kept local |
 | Local `isRecord` + `toErrorMessage` in `frontend/lib/kloel-conversations.ts` | (stays local — would create lib→components reverse-dependency) | — | ⏸ kept local |
 | `CheckoutFormDraft` / draft helpers in `frontend/app/(checkout)/hooks/useCheckoutExperienceSocial.draft.ts` | (stays local — bound to `CheckoutExperienceForm` (social-helpers) vs `CheckoutExperienceFormState` (.types); unifying requires unified form type) | — | ⏸ kept local |
+| `centsFromUnknown` in `kloel/kloel-tool-executor-crm.service.ts` | `kloel/kloel-chat-tools.service.ts::centsFromUnknown` | 2026-05-26 | ✅ migrated (exported) |
+| `channelPriority` in `kloel/offer/offer-delivery.service.ts` | `kloel/insight/insight-delivery.service.ts::channelPriority` | 2026-05-26 | ✅ migrated (exported; matches RecommendedChannel canon home) |
+| `REPO_ROOT` + `repoPath` in `kloel/kloel-code-tools.service.ts` | `kloel/kloel-code-analysis.service.ts` | 2026-05-26 | ✅ migrated (exported sandbox guard) |
+| `decisionConfidence` + `PolicyDecisionResult` in `kloel/mind-{commercial,recovery}-decision-resolvers.ts` | `kloel/mind-catalog-decision-resolvers.ts` | 2026-05-26 | ✅ migrated (exported; matches MindPolicyChooser canon home) |
+| `unwrapApiPayload` inline in `components/kloel/products/ProductNerveCenterIATab.hooks.ts` | `components/kloel/products/product-nerve-center.shared.tsx` | 2026-05-26 | ✅ migrated (import; shared canonical with 8 sibling importers) |
+| `hashPii` in 3 ad-platform Conversions API services (google-ads/meta/tiktok) | NEW `backend/src/integrations/pii-hash.helper.ts` | 2026-05-26 | ✅ migrated (extracted to shared helper) |
+| `buildRedirect` + `normalizeFrontendUrl` in 2 mailbox OAuth callback controllers | NEW `backend/src/marketing/mailbox-oauth-callback.helpers.ts` | 2026-05-26 | ✅ migrated (extracted to shared helper) |
+| `handleMissingTokenCryptoKey` in 3 token-crypto files (google-ads/tiktok/mailbox) | NEW `backend/src/integrations/token-crypto-shared.helper.ts` | 2026-05-26 | ✅ migrated (extracted to shared helper) |
+| `parseDateOrFail` in 2 controllers (admin-carteira/calendar) | NEW `backend/src/common/parse-date-or-fail.helper.ts` | 2026-05-26 | ✅ migrated (extracted to shared helper) |
+| `readConfiguredValue` in 2 mailbox OAuth helpers | `backend/src/marketing/mailbox-oauth-callback.helpers.ts` (existing) | 2026-05-26 | ✅ migrated (added to existing shared helper) |
+| `readConfig` in `lib/openai-models.ts` | `lib/llm-provider.ts::readConfig` | 2026-05-26 | ✅ migrated (exported; ai-models.ts kept local — protected file) |
+| `readConfig` in `lib/ai-models.ts` | (stays local — protected file; identical impl, cannot edit) | — | ⏸ kept local |
+| `bearerFromHeaderOrCookie` + `firstCookieBearer` + `readCookieValue` in 2 frontend api proxies | NEW `frontend/src/app/api/_lib/bearer-from-request.ts` | 2026-05-26 | ✅ migrated (extracted to shared lib; local `''` fallback shim preserved) |
+| `buildDuplicateAwareKey` in 2 settings sections (attendance-rules/company-identity) | NEW `frontend/src/components/kloel/settings/duplicate-aware-key.helper.ts` | 2026-05-26 | ✅ migrated (extracted to shared helper) |
+| `FieldLabel` JSX primitive in `vendas/SmartPayment{Form,Result}.tsx` | NEW `vendas/SmartPaymentFieldLabel.tsx` | 2026-05-26 | ✅ migrated (UI primitive; JSX byte-identical so zero pixel changes) |
+| `ConnectedBadge` JSX primitive in `marketing/{Sms,TikTok}MarketingTab.tsx` | NEW `marketing/MarketingConnectedBadge.tsx` | 2026-05-26 | ✅ migrated (UI primitive; JSX byte-identical so zero pixel changes) |
 
 **Status legend:**
 - ✅ migrated (re-export): local export is now a re-export from canonical; callers unchanged, structure consolidated
