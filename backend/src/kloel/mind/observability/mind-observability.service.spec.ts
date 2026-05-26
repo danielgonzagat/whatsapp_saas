@@ -1,10 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaService } from '../prisma/prisma.service';
-import { MindBeliefService } from './mind-belief.service';
-import { MindPolicyService } from './mind-policy.service';
-import { MindVerbalizerService } from './mind-verbalizer.service';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { MindBeliefService } from '../inference/mind-belief.service';
+import { MindPolicyService } from '../policy/mind-policy.service';
+import { MindVerbalizerService } from '../../mind-verbalizer.service';
 import { MindReportService } from './mind-report.service';
-import { MindBanditService } from './mind-bandit.service';
+import { MindBanditService } from '../policy/mind-bandit.service';
 import { MindObservabilityService } from './mind-observability.service';
 
 describe('MindObservabilityService', () => {

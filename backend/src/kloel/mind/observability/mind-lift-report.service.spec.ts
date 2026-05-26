@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MindLiftReportService } from './mind-lift-report.service';
-import { DecisionOutcomeService } from './decision-outcome.service';
+import { DecisionOutcomeService } from '../../decision-outcome.service';
 
 describe('MindLiftReportService', () => {
   let service: MindLiftReportService;
