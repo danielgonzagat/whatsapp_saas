@@ -303,7 +303,7 @@ export class CampaignsService {
         missing.push('email.enabled=true com provider configurado');
       }
       if (!delivery.whatsappReady) {
-        missing.push('whatsappApiSession.status=connected');
+        missing.push('Meta Cloud WhatsApp conectado');
       }
     }
 
@@ -318,10 +318,19 @@ export class CampaignsService {
     emailReady: boolean;
     whatsappReady: boolean;
   }> {
-    const ws = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { providerSettings: true },
-    });
+    const [ws, metaConnection] = await Promise.all([
+      this.prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { providerSettings: true },
+      }),
+      this.prisma.metaConnection.findFirst({
+        where: {
+          workspaceId,
+          channel: 'whatsapp',
+        },
+        select: { whatsappPhoneNumberId: true, status: true, tokenExpiresAt: true },
+      }),
+    ]);
 
     const settings =
       (ws?.providerSettings as {
@@ -333,9 +342,18 @@ export class CampaignsService {
       process.env.RESEND_API_KEY || process.env.SENDGRID_API_KEY || process.env.SMTP_HOST,
     );
     const emailReady = Boolean(settings.email?.enabled && emailProviderReady);
-    const whatsappReady = Boolean(
+    const tokenExpiresAt = metaConnection?.tokenExpiresAt;
+    const tokenExpired = Boolean(tokenExpiresAt && new Date(tokenExpiresAt).getTime() < Date.now());
+    const legacyWhatsAppReady = Boolean(
       this.metaWhatsApp && settings?.whatsappApiSession?.status === 'connected',
     );
+    const officialMetaWhatsAppReady = Boolean(
+      this.metaWhatsApp &&
+      metaConnection?.whatsappPhoneNumberId &&
+      String(metaConnection.status || '').toLowerCase() === 'connected' &&
+      !tokenExpired,
+    );
+    const whatsappReady = legacyWhatsAppReady || officialMetaWhatsAppReady;
 
     return { emailReady, whatsappReady };
   }
