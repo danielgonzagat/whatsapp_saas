@@ -45,7 +45,7 @@ export class WhatsAppApiProvider {
 
   /** Get runtime config diagnostics. */
   getRuntimeConfigDiagnostics(): WahaRuntimeConfigDiagnostics {
-    const secretConfigured = hasEnv('META_APP_SECRET');
+    const secretConfigured = hasAnyEnv(['META_APP_SECRET', 'FACEBOOK_APP_SECRET']);
     const verifyTokenConfigured = hasAnyEnv(['META_VERIFY_TOKEN', 'META_WEBHOOK_VERIFY_TOKEN']);
     return {
       provider: 'meta-cloud',
@@ -55,7 +55,7 @@ export class WhatsAppApiProvider {
       secretConfigured,
       storeEnabled: true,
       storeFullSync: true,
-      appIdConfigured: hasEnv('META_APP_ID'),
+      appIdConfigured: hasAnyEnv(['META_APP_ID', 'FACEBOOK_APP_ID', 'META_CLIENT_ID']),
       appSecretConfigured: secretConfigured,
       accessTokenConfigured: hasEnv('META_ACCESS_TOKEN'),
       phoneNumberIdConfigured: hasEnv('META_PHONE_NUMBER_ID'),
