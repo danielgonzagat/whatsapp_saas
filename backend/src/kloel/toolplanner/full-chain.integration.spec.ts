@@ -142,4 +142,32 @@ import { ToolPlannerService } from '../toolplanner/toolplanner.service';
     expect(verbalized).toContain('prod-abc');
     expect(verbalized).toContain('Duração:');
   });
+
+  it('ToolPlanner verbalizes canonical PIX proof fields', () => {
+    const cap = registry.get('sales.create_pix')!;
+    const ctx = {
+      workspaceId: 'ws-test',
+      actorId: 'user-test',
+      source: 'chat',
+      idempotencyKey: 'key-pix',
+      requestId: 'req-pix',
+    };
+    const receipt = planner.buildReceipt(
+      cap,
+      ctx,
+      { amount: 197 },
+      {
+        orderId: 'order-1',
+        pixCopiaECola: '000201pix',
+        pixQrCode: 'qr-base64',
+      },
+      Date.now() - 100,
+    );
+
+    const verbalized = planner.verbalizeReceipt(receipt);
+
+    expect(verbalized).toContain('Venda: order-1');
+    expect(verbalized).toContain('PIX copia e cola: 000201pix');
+    expect(verbalized).toContain('QR Code PIX: qr-base64');
+  });
 });

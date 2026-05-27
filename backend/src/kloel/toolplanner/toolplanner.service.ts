@@ -196,8 +196,13 @@ export class ToolPlannerService {
     if (receipt.outputs.paymentLink) {
       lines.push(`Link: ${receipt.outputs.paymentLink}`);
     }
-    if (receipt.outputs.pixCopyPaste) {
-      lines.push(`PIX copia e cola: ${receipt.outputs.pixCopyPaste}`);
+    const pixCopyPaste = outputString(receipt.outputs.pixCopiaECola || receipt.outputs.pixCopyPaste);
+    if (pixCopyPaste) {
+      lines.push(`PIX copia e cola: ${pixCopyPaste}`);
+    }
+    const pixQrCode = outputString(receipt.outputs.pixQrCode || receipt.outputs.qrCodeBase64);
+    if (pixQrCode) {
+      lines.push(`QR Code PIX: ${pixQrCode}`);
     }
     if (receipt.evidenceUrl) {
       lines.push(`Ver em: ${receipt.evidenceUrl}`);
