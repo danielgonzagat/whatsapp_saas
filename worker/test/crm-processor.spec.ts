@@ -67,13 +67,11 @@ const mockPrisma = {
 vi.mock('../db', () => ({ prisma: mockPrisma }));
 
 vi.mock('../utils/async-sequence', () => ({
-  forEachSequential: vi.fn(
-    async <T>(items: T[], fn: (item: T) => Promise<void>) => {
-      for (const item of items) {
-        await fn(item);
-      }
-    },
-  ),
+  forEachSequential: vi.fn(async <T>(items: T[], fn: (item: T) => Promise<void>) => {
+    for (const item of items) {
+      await fn(item);
+    }
+  }),
 }));
 
 const mockEngine = {
@@ -104,7 +102,10 @@ let checkIdempotentMock: ReturnType<typeof vi.fn>;
 let startJobMock: ReturnType<typeof vi.fn>;
 let markCompletedMock: ReturnType<typeof vi.fn>;
 let isRetryableErrorMock: ReturnType<typeof vi.fn>;
-let engineMock: { startFlow: ReturnType<typeof vi.fn>; parseFlowDefinition: ReturnType<typeof vi.fn> };
+let engineMock: {
+  startFlow: ReturnType<typeof vi.fn>;
+  parseFlowDefinition: ReturnType<typeof vi.fn>;
+};
 let enrichmentMock: ReturnType<typeof vi.fn>;
 let planLimitsMock: ReturnType<typeof vi.fn>;
 
@@ -126,7 +127,9 @@ beforeAll(async () => {
   engineMock = mockEngine;
 
   const enrichment = await import('../providers/checkout-social-lead-enrichment');
-  enrichmentMock = enrichment.processCheckoutSocialLeadEnrichment as unknown as ReturnType<typeof vi.fn>;
+  enrichmentMock = enrichment.processCheckoutSocialLeadEnrichment as unknown as ReturnType<
+    typeof vi.fn
+  >;
 
   const pl = await import('../providers/plan-limits');
   planLimitsMock = pl.PlanLimitsProvider.checkMessageLimit as unknown as ReturnType<typeof vi.fn>;

@@ -23,7 +23,11 @@ import {
 } from '../providers/prepaid-wallet-settlement';
 import { WorkerError } from '../src/utils/error-handler';
 import { checkIdempotent, endJob, logError, markCompleted, startJob } from '../processor-base';
-import { DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE, splitText } from '../utils/memory-text-splitter';
+import {
+  DEFAULT_CHUNK_OVERLAP,
+  DEFAULT_CHUNK_SIZE,
+  splitText,
+} from '../utils/memory-text-splitter';
 
 const DEFAULT_MAX_CHUNKS = 400;
 const WORKER_CONCURRENCY = 5;

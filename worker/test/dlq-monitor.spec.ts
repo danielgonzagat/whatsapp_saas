@@ -52,7 +52,7 @@ let queueInstances: Array<{
 }> = [];
 
 // Use regular function (not arrow) so `new Queue(...)` works
-const MockQueue = vi.fn(function() {
+const MockQueue = vi.fn(function () {
   const inst = {
     getJobs: vi.fn().mockResolvedValue([]),
     getJobCounts: vi.fn().mockResolvedValue({ waiting: 0, delayed: 0, failed: 0 }),
@@ -81,13 +81,11 @@ vi.mock('../queue', () => ({
 }));
 
 vi.mock('../utils/async-sequence', () => ({
-  forEachSequential: vi.fn(
-    async <T>(items: T[], fn: (item: T) => Promise<void>) => {
-      for (const item of items) {
-        await fn(item);
-      }
-    },
-  ),
+  forEachSequential: vi.fn(async <T>(items: T[], fn: (item: T) => Promise<void>) => {
+    for (const item of items) {
+      await fn(item);
+    }
+  }),
 }));
 
 // ── Test state ─────────────────────────────────────────────────────────
@@ -195,7 +193,7 @@ describe('dlq-monitor', () => {
 
     // Override the getJobs for the first DLQ only
     let callCount = 0;
-    MockQueue.mockImplementation(function() {
+    MockQueue.mockImplementation(function () {
       const inst = {
         getJobs: vi.fn().mockImplementation(() => {
           callCount++;
@@ -224,7 +222,7 @@ describe('dlq-monitor', () => {
       expect(transientJob.remove).toHaveBeenCalled();
     } finally {
       MockQueue.mockReset();
-      MockQueue.mockImplementation(function() {
+      MockQueue.mockImplementation(function () {
         const inst = {
           getJobs: vi.fn().mockResolvedValue([]),
           getJobCounts: vi.fn().mockResolvedValue({ waiting: 0, delayed: 0, failed: 0 }),
@@ -252,7 +250,7 @@ describe('dlq-monitor', () => {
     };
 
     let callCount = 0;
-    MockQueue.mockImplementation(function() {
+    MockQueue.mockImplementation(function () {
       const inst = {
         getJobs: vi.fn().mockImplementation(() => {
           callCount++;
@@ -279,7 +277,7 @@ describe('dlq-monitor', () => {
       expect(transientJob.remove).not.toHaveBeenCalled();
     } finally {
       MockQueue.mockReset();
-      MockQueue.mockImplementation(function() {
+      MockQueue.mockImplementation(function () {
         const inst = {
           getJobs: vi.fn().mockResolvedValue([]),
           getJobCounts: vi.fn().mockResolvedValue({ waiting: 0, delayed: 0, failed: 0 }),

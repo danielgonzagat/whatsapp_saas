@@ -66,13 +66,11 @@ const mockPrisma = {
 vi.mock('../db', () => ({ prisma: mockPrisma }));
 
 vi.mock('../utils/async-sequence', () => ({
-  forEachSequential: vi.fn(
-    async <T>(items: T[], fn: (item: T) => Promise<void>) => {
-      for (const item of items) {
-        await fn(item);
-      }
-    },
-  ),
+  forEachSequential: vi.fn(async <T>(items: T[], fn: (item: T) => Promise<void>) => {
+    for (const item of items) {
+      await fn(item);
+    }
+  }),
 }));
 
 // ── Test state ─────────────────────────────────────────────────────────
