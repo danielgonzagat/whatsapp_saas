@@ -80,6 +80,7 @@ function deriveReceiptOutputs(result: UnknownRecord, inputs: UnknownRecord = {})
   const plan = isRecord(result.plan) ? result.plan : null;
   const checkout = isRecord(result.checkout) ? result.checkout : null;
   const coupon = isRecord(result.coupon) ? result.coupon : null;
+  const campaign = isRecord(result.campaign) ? result.campaign : null;
   const productId = asString(
     result.productId,
     product
@@ -99,6 +100,10 @@ function deriveReceiptOutputs(result: UnknownRecord, inputs: UnknownRecord = {})
     result.couponId,
     coupon ? asString(coupon.id, asString(inputs.couponId)) : asString(inputs.couponId),
   );
+  const campaignId = asString(
+    result.campaignId,
+    campaign ? asString(campaign.id, asString(inputs.campaignId)) : asString(inputs.campaignId),
+  );
 
   return {
     ...result,
@@ -107,6 +112,7 @@ function deriveReceiptOutputs(result: UnknownRecord, inputs: UnknownRecord = {})
     ...(planId ? { planId } : {}),
     ...(checkoutId ? { checkoutId } : {}),
     ...(couponId ? { couponId } : {}),
+    ...(campaignId ? { campaignId } : {}),
   };
 }
 
@@ -989,10 +995,36 @@ export class KloelToolDispatcherService {
           return await this.bizConfigToolsService.toolConnectChannel(workspaceId, asToolArgs(args));
         case 'send_channel_message':
           return await this.chatToolsService.toolSendChannelMessage(workspaceId, asToolArgs(args));
-        case 'create_broadcast':
-          return await this.chatToolsService.toolCreateBroadcast(workspaceId, asToolArgs(args));
-        case 'configure_ai_persona':
-          return await this.chatToolsService.toolConfigureAiPersona(workspaceId, asToolArgs(args));
+        case 'create_broadcast': {
+          const startedAt = Date.now();
+          const result = await this.chatToolsService.toolCreateBroadcast(
+            workspaceId,
+            asToolArgs(args),
+          );
+          return this.withCanonicalReceipt(
+            'create_broadcast',
+            workspaceId,
+            args,
+            result,
+            userId,
+            startedAt,
+          );
+        }
+        case 'configure_ai_persona': {
+          const startedAt = Date.now();
+          const result = await this.chatToolsService.toolConfigureAiPersona(
+            workspaceId,
+            asToolArgs(args),
+          );
+          return this.withCanonicalReceipt(
+            'configure_ai_persona',
+            workspaceId,
+            args,
+            result,
+            userId,
+            startedAt,
+          );
+        }
         case 'update_workspace_settings':
           return await this.bizConfigToolsService.toolSaveBusinessInfo(
             workspaceId,

@@ -1,4 +1,4 @@
-import { AuthenticatedRequest } from '../../common/interfaces';
+import { AuthenticatedRequest } from '../../../../common/interfaces';
 import { WhatsAppApiController } from './whatsapp-api.controller';
 import { WhatsAppCatalogController } from './whatsapp-catalog.controller';
 import { WhatsAppMetaCompatController } from './whatsapp-meta-compat.controller';

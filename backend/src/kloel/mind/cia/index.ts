@@ -37,7 +37,7 @@ export { CiaRuntimeService } from './cia-runtime.service';
 export { CiaSendHelpersService } from './cia-send-helpers.service';
 
 export { CiaController } from './cia.controller';
-export { CiaModule } from '../../../cia/cia.module';
+export { CiaModule } from './cia.module';
 
 // Wave M4 progress — physically moved here (no longer re-exported from legacy):
 export {

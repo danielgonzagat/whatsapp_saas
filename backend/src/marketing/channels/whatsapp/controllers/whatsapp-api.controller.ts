@@ -11,21 +11,21 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Response } from 'express';
-import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
-import { WorkspaceGuard } from '../../common/guards/workspace.guard';
-import { AuthenticatedRequest } from '../../common/interfaces';
-import { WorkspaceService } from '../../workspaces/workspace.service';
-import { AccountAgentService } from '../../marketing/channels/whatsapp/account-agent.service';
-import { AgentEventsService } from '../../marketing/channels/whatsapp/agent-events.service';
-import { CIA_RUNTIME_SERVICE, type CiaRuntimePort } from '../../kloel/mind/cia/cia-runtime.port';
+import { JwtAuthGuard } from '../../../../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../../../../common/guards/workspace.guard';
+import { AuthenticatedRequest } from '../../../../common/interfaces';
+import { WorkspaceService } from '../../../../workspaces/workspace.service';
+import { AccountAgentService } from '../account-agent.service';
+import { AgentEventsService } from '../agent-events.service';
+import { CIA_RUNTIME_SERVICE, type CiaRuntimePort } from '../../../../kloel/mind/cia/cia-runtime.port';
 import { asProviderSettings, type ProviderSessionSnapshot } from '../provider-settings.types';
-import { WhatsAppProviderRegistry } from '../providers/provider-registry';
-import { WhatsAppApiProvider } from '../../marketing/channels/whatsapp/providers/whatsapp-api.provider';
-import { WhatsAppCatchupService } from '../whatsapp-catchup.service';
-import { WhatsAppWatchdogService } from '../../marketing/channels/whatsapp/whatsapp-watchdog.service';
+import { WhatsAppProviderRegistry } from '../../../../whatsapp/providers/provider-registry';
+import { WhatsAppApiProvider } from '../providers/whatsapp-api.provider';
+import { WhatsAppCatchupService } from '../../../../whatsapp/whatsapp-catchup.service';
+import { WhatsAppWatchdogService } from '../whatsapp-watchdog.service';
 import { WhatsappService } from '../whatsapp.service';
-import { InternalEndpoint } from '../../common/decorators/internal-endpoint.decorator';
-import { RouteClass } from '../../common/throttler/route-class.decorator';
+import { InternalEndpoint } from '../../../../common/decorators/internal-endpoint.decorator';
+import { RouteClass } from '../../../../common/throttler/route-class.decorator';
 type BacklogMode = Exclude<Parameters<CiaRuntimePort['startBacklogRun']>[1], undefined>;
 
 /** Whats app api controller. */

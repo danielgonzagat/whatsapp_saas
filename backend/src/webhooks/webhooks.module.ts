@@ -1,5 +1,5 @@
 import { Module, forwardRef } from '@nestjs/common';
-import { CiaModule } from '../cia/cia.module';
+import { CiaModule } from '../kloel/mind/cia/cia.module';
 import { InboxModule } from '../inbox/inbox.module';
 import { PrismaService } from '../prisma/prisma.service';
 import { WorkspaceService } from '../workspaces/workspace.service';

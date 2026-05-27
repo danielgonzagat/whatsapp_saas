@@ -1,10 +1,10 @@
 import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
-import { WorkspaceGuard } from '../../common/guards/workspace.guard';
-import { AuthenticatedRequest } from '../../common/interfaces';
+import { JwtAuthGuard } from '../../../../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../../../../common/guards/workspace.guard';
+import { AuthenticatedRequest } from '../../../../common/interfaces';
 import { WhatsappService } from '../whatsapp.service';
-import { InternalEndpoint } from '../../common/decorators/internal-endpoint.decorator';
-import { RouteClass } from '../../common/throttler/route-class.decorator';
+import { InternalEndpoint } from '../../../../common/decorators/internal-endpoint.decorator';
+import { RouteClass } from '../../../../common/throttler/route-class.decorator';
 
 /** Contacts, chats, catalog, and backlog operational endpoints. */
 @Controller('whatsapp-api')

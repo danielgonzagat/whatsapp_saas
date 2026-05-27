@@ -52,6 +52,8 @@ type DispatcherChatToolsMock = Pick<
   | 'toolConfigureWarranty'
   | 'toolConfigureExitIntent'
   | 'toolConfigureAfterPay'
+  | 'toolCreateBroadcast'
+  | 'toolConfigureAiPersona'
 >;
 
 type DispatcherAccountMock = Pick<AccountService, 'updatePersonalData'>;
@@ -223,6 +225,14 @@ export function createChatToolsMock(): DispatcherChatToolsMock {
     toolConfigureAfterPay: jest
       .fn()
       .mockResolvedValue({ success: false, error: 'checkout_after_pay_service_required' }),
+    toolCreateBroadcast: jest.fn().mockResolvedValue({
+      success: true,
+      campaign: { id: 'campaign-1', name: 'Launch', status: 'DRAFT' },
+    }),
+    toolConfigureAiPersona: jest.fn().mockResolvedValue({
+      success: true,
+      persona: { name: 'Kloel', tone: 'formal', personality: 'professional' },
+    }),
   };
 }
 

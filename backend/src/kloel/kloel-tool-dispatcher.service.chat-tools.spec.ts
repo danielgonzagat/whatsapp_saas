@@ -473,6 +473,79 @@ describe('KloelToolDispatcherService — chat tools routing', () => {
     );
   });
 
+  it('routes create_broadcast to chatToolsService with a material receipt', async () => {
+    jest.mocked(chatToolsService.toolCreateBroadcast).mockResolvedValueOnce({
+      success: true,
+      campaign: { id: 'campaign-1', name: 'PDRN Launch', status: 'DRAFT' },
+      message: 'Broadcast criado.',
+    });
+
+    const result = await service.executeTool(
+      DEFAULT_WS_ID,
+      'create_broadcast',
+      { name: 'PDRN Launch', message: 'Oferta hoje' },
+      'user-42',
+    );
+
+    expect(chatToolsService.toolCreateBroadcast).toHaveBeenCalledWith(DEFAULT_WS_ID, {
+      name: 'PDRN Launch',
+      message: 'Oferta hoje',
+    });
+    expect(result.success).toBe(true);
+    expect(result.capabilityId).toBe('create_broadcast');
+    expect(result.receipt).toEqual(
+      objectContaining({
+        capabilityId: 'create_broadcast',
+        workspaceId: DEFAULT_WS_ID,
+        actorId: 'user-42',
+        inputs: { name: 'PDRN Launch', message: 'Oferta hoje' },
+        outputs: objectContaining({ campaignId: 'campaign-1' }),
+        domainEvents: ['campaign.created'],
+        auditLogId: stringMatching(/^audit_/),
+        idempotencyKey: stringContaining('create_broadcast'),
+        success: true,
+      }),
+    );
+  });
+
+  it('routes configure_ai_persona to chatToolsService with a material receipt', async () => {
+    jest.mocked(chatToolsService.toolConfigureAiPersona).mockResolvedValueOnce({
+      success: true,
+      persona: { name: 'Kloel', tone: 'formal', personality: 'professional' },
+      message: 'Persona atualizada.',
+    });
+
+    const result = await service.executeTool(
+      DEFAULT_WS_ID,
+      'configure_ai_persona',
+      { name: 'Kloel', tone: 'formal', personality: 'professional' },
+      'user-42',
+    );
+
+    expect(chatToolsService.toolConfigureAiPersona).toHaveBeenCalledWith(DEFAULT_WS_ID, {
+      name: 'Kloel',
+      tone: 'formal',
+      personality: 'professional',
+    });
+    expect(result.success).toBe(true);
+    expect(result.capabilityId).toBe('configure_ai_persona');
+    expect(result.receipt).toEqual(
+      objectContaining({
+        capabilityId: 'configure_ai_persona',
+        workspaceId: DEFAULT_WS_ID,
+        actorId: 'user-42',
+        inputs: { name: 'Kloel', tone: 'formal', personality: 'professional' },
+        outputs: objectContaining({
+          persona: objectContaining({ name: 'Kloel', tone: 'formal' }),
+        }),
+        domainEvents: ['ai.persona_updated'],
+        auditLogId: stringMatching(/^audit_/),
+        idempotencyKey: stringContaining('configure_ai_persona'),
+        success: true,
+      }),
+    );
+  });
+
   it('routes configure_warranty to chatToolsService with a material receipt', async () => {
     jest.mocked(chatToolsService.toolConfigureWarranty).mockResolvedValueOnce({
       success: true,

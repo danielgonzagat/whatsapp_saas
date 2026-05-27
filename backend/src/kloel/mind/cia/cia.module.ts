@@ -1,23 +1,23 @@
 import { Module, forwardRef } from '@nestjs/common';
-import { GoalFieldModule } from '../kloel/goal-field/goal-field.module';
-import { KloelModule } from '../kloel/kloel.module';
-import { MindModule } from '../kloel/mind/mind.module';
-import { SpineModule } from '../kloel/spine/spine.module';
-import { WhatsappModule } from '../whatsapp/whatsapp.module';
-import { CiaAutonomyAdvisorService } from '../kloel/mind/cia/cia-autonomy-advisor.service';
-import { CiaBacklogRunService } from '../kloel/mind/cia/cia-backlog-run.service';
-import { CiaBootstrapService } from '../kloel/mind/cia/cia-bootstrap.service';
-import { CiaChatFilterService } from '../kloel/mind/cia/cia-chat-filter.service';
-import { CiaCognitiveHealthService } from '../kloel/mind/cia/cia-cognitive-health.service';
-import { CiaInlineFallbackService } from '../kloel/mind/cia/cia-inline-fallback.service';
-import { CiaRemoteBacklogService } from '../kloel/mind/cia/cia-remote-backlog.service';
-import { CiaRuntimeService } from '../kloel/mind/cia/cia-runtime.service';
-import { CiaRuntimeService as WhatsappCiaRuntimeService } from '../kloel/mind/cia/cia-runtime.abstract';
+import { GoalFieldModule } from '../../goal-field/goal-field.module';
+import { KloelModule } from '../../kloel.module';
+import { MindModule } from '../mind.module';
+import { SpineModule } from '../../spine/spine.module';
+import { WhatsappModule } from '../../../whatsapp/whatsapp.module';
+import { CiaAutonomyAdvisorService } from './cia-autonomy-advisor.service';
+import { CiaBacklogRunService } from './cia-backlog-run.service';
+import { CiaBootstrapService } from './cia-bootstrap.service';
+import { CiaChatFilterService } from './cia-chat-filter.service';
+import { CiaCognitiveHealthService } from './cia-cognitive-health.service';
+import { CiaInlineFallbackService } from './cia-inline-fallback.service';
+import { CiaRemoteBacklogService } from './cia-remote-backlog.service';
+import { CiaRuntimeService } from './cia-runtime.service';
+import { CiaRuntimeService as WhatsappCiaRuntimeService } from './cia-runtime.abstract';
 import { CiaRuntimeStateService } from './cia-runtime-state.service';
-import { CiaSendHelpersService } from '../kloel/mind/cia/cia-send-helpers.service';
-import { CiaController } from '../kloel/mind/cia/cia.controller';
-import { CiaService } from '../kloel/mind/cia/cia.service';
-import { CIA_RUNTIME_SERVICE } from '../kloel/mind/cia/cia-runtime.port';
+import { CiaSendHelpersService } from './cia-send-helpers.service';
+import { CiaController } from './cia.controller';
+import { CiaService } from './cia.service';
+import { CIA_RUNTIME_SERVICE } from './cia-runtime.port';
 
 /** Cia module. */
 @Module({

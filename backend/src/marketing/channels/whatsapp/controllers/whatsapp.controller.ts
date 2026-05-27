@@ -1,12 +1,12 @@
 import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { WorkspaceGuard } from '../common/guards/workspace.guard';
-import { Idempotent } from '../common/idempotency.guard';
-import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
-import { WhatsappService } from './whatsapp.service';
+import { JwtAuthGuard } from '../../../../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../../../../common/guards/workspace.guard';
+import { Idempotent } from '../../../../common/idempotency.guard';
+import type { AuthenticatedRequest } from '../../../../common/interfaces/authenticated-request.interface';
+import { WhatsappService } from '../whatsapp.service';
 
-import { RouteClass } from '../common/throttler/route-class.decorator';
-import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator';
+import { RouteClass } from '../../../../common/throttler/route-class.decorator';
+import { WebhookEndpoint } from '../../../../common/decorators/webhook-endpoint.decorator';
 type LegacySendBody = {
   to: string;
   message: string;

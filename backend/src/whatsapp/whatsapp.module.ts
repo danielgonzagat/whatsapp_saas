@@ -12,11 +12,11 @@ import { WhatsAppEventEmitterModule } from '../kloel/whatsapp-emitter/whatsapp-e
 const { KloelModule } = require('../kloel/kloel.module');
 import { AccountAgentService } from './account-agent.service';
 import { AgentEventsService } from '../marketing/channels/whatsapp/agent-events.service';
-import { WhatsAppApiController } from './controllers/whatsapp-api.controller';
-import { WhatsAppCatalogController } from './controllers/whatsapp-catalog.controller';
-import { WhatsAppMetaCompatController } from './controllers/whatsapp-meta-compat.controller';
+import { WhatsAppApiController } from '../marketing/channels/whatsapp/controllers/whatsapp-api.controller';
+import { WhatsAppCatalogController } from '../marketing/channels/whatsapp/controllers/whatsapp-catalog.controller';
+import { WhatsAppMetaCompatController } from '../marketing/channels/whatsapp/controllers/whatsapp-meta-compat.controller';
 import { InboundProcessorService } from '../marketing/channels/whatsapp/inbound-processor.service';
-import { InternalWhatsAppRuntimeController } from './internal-whatsapp-runtime.controller';
+import { InternalWhatsAppRuntimeController } from '../marketing/channels/whatsapp/controllers/internal-whatsapp-runtime.controller';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WahaProvider } from '../marketing/channels/whatsapp/providers/waha.provider';
 import { WhatsAppApiProvider } from '../marketing/channels/whatsapp/providers/whatsapp-api.provider';
@@ -26,7 +26,7 @@ import { WhatsappCatchupHistoryService } from '../marketing/channels/whatsapp/wh
 import { WhatsAppWatchdogService } from '../marketing/channels/whatsapp/whatsapp-watchdog.service';
 import { WhatsAppWatchdogRecoveryService } from '../marketing/channels/whatsapp/whatsapp-watchdog-recovery.service';
 import { WhatsAppWatchdogSessionService } from '../marketing/channels/whatsapp/whatsapp-watchdog-session.service';
-import { WhatsappController } from './whatsapp.controller';
+import { WhatsappController } from '../marketing/channels/whatsapp/controllers/whatsapp.controller';
 import { WhatsappSendRateGuardService } from '../marketing/channels/whatsapp/whatsapp-send-rate-guard.service';
 import { WhatsappService } from './whatsapp.service';
 import { WhatsappSessionService } from '../marketing/channels/whatsapp/whatsapp-session.service';
@@ -54,7 +54,7 @@ import {
     forwardRef(() => CrmModule),
     PrismaModule,
     forwardRef(() => KloelModule),
-    forwardRef(() => require('../cia/cia.module').CiaModule),
+    forwardRef(() => require('../kloel/mind/cia/cia.module').CiaModule),
     forwardRef(() => OmnichannelModule),
     WhatsAppEventEmitterModule,
   ],

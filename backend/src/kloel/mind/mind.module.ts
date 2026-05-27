@@ -1,5 +1,5 @@
 import { forwardRef, Module } from '@nestjs/common';
-import { CiaModule } from '../../cia/cia.module';
+import { CiaModule } from './cia/cia.module';
 import { SpineModule } from '../spine/spine.module';
 import { AttentionService } from './attention.service';
 import { ConsolidationService } from './consolidation.service';

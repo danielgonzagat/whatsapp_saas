@@ -62,7 +62,7 @@ import { AutopilotModule } from './autopilot/autopilot.module';
 import { CalendarModule } from './calendar/calendar.module';
 import { ChatModule } from './chat/chat.module';
 import { CheckoutModule } from './checkout/checkout.module';
-import { CiaModule } from './cia/cia.module';
+import { CiaModule } from './kloel/mind/cia/cia.module';
 import { PromptSanitizerMiddleware } from './common/middleware/prompt-sanitizer.middleware';
 import { getRedisUrl, isRedisConfigured } from './common/redis/redis.util';
 import { StorageModule } from './common/storage/storage.module';
