@@ -34,17 +34,8 @@ function makeDto(overrides?: Record<string, unknown>): Record<string, unknown> {
   };
 }
 
-type MemberAreaListArgs = {
-  where: {
-    type?: string;
-    active?: boolean;
-    OR?: unknown;
-  };
-};
-
-type MemberAreaWriteArgs = {
-  data: Record<string, unknown>;
-};
+type MemberAreaListArgs = { where: { type?: string; active?: boolean; OR?: unknown } };
+type MemberAreaWriteArgs = { data: Record<string, unknown> };
 
 function firstMockArg<T>(mock: jest.Mock, callIndex = 0): T {
   const call = mock.mock.calls[callIndex] as readonly unknown[] | undefined;

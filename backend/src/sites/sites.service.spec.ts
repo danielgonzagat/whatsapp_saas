@@ -159,7 +159,7 @@ describe('SitesService', () => {
       await service.list(ws, { search: 'hello' });
       expect(prisma.site.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ OR: expect.any(Array) as unknown }) as unknown,
+          where: expect.objectContaining({ OR: expect.arrayContaining([]) as unknown }) as unknown,
         }),
       );
     });

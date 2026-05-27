@@ -9,20 +9,11 @@ import { MindEventSpine } from '../kloel/mind/coordination';
 type ProductCreateArgs = { data: Record<string, unknown> };
 type ProductUpdateArgs = { where: { id: string }; data: Record<string, unknown> };
 
-function objectContaining<T extends object>(sample: T): T {
-  const matcher: unknown = expect.objectContaining(sample);
-  return matcher as T;
-}
+function objectContaining<T extends object>(sample: T): T { return expect.objectContaining(sample) as unknown as T; }
 
-function anyArray(): unknown[] {
-  const matcher: unknown = expect.any(Array);
-  return matcher as unknown[];
-}
+function anyArray(): unknown[] { return expect.arrayContaining([]) as unknown as unknown[]; }
 
-function anyObject(): object {
-  const matcher: unknown = expect.any(Object);
-  return matcher as object;
-}
+function anyObject(): object { return expect.objectContaining({}) as object; }
 
 describe('ProductService', () => {
   let service: ProductService;

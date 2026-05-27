@@ -46,11 +46,10 @@ describe('useDashboardHome', () => {
 
   it('passes period parameter to SWR key', () => {
     renderHook(() => useDashboardHome({ period: '30d' }));
-    expect(vi.mocked(useSWR)).toHaveBeenCalledWith(
-      '/dashboard/home?period=30d',
-      expect.any(Function),
-      expect.any(Object),
-    );
+    const [key, fetcher, options] = vi.mocked(useSWR).mock.calls[0] ?? [];
+    expect(key).toBe('/dashboard/home?period=30d');
+    expect(typeof fetcher).toBe('function');
+    expect(options).toEqual(expect.objectContaining({ revalidateOnFocus: false }));
   });
 
   it('returns error when SWR errors', () => {

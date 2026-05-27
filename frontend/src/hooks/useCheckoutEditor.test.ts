@@ -71,6 +71,8 @@ describe('useCheckoutEditor', () => {
 
   it('not call SWR when planId is null', () => {
     renderHook(() => useCheckoutEditor(null));
-    expect(vi.mocked(useSWR)).toHaveBeenCalledWith(null, expect.any(Function));
+    const [key, fetcher] = vi.mocked(useSWR).mock.calls[0] ?? [];
+    expect(key).toBe(null);
+    expect(typeof fetcher).toBe('function');
   });
 });

@@ -74,7 +74,7 @@ describe('ProductController', () => {
       await controller.listProducts(mockReq(), undefined, undefined, 'react');
       expect(prisma.product.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ OR: expect.any(Array) as unknown }) as unknown,
+          where: expect.objectContaining({ OR: expect.arrayContaining([]) as unknown }) as unknown,
         }),
       );
     });

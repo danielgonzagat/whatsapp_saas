@@ -107,10 +107,12 @@ describe('dlq-monitor', () => {
   });
 
   it('registers SIGTERM and SIGINT handlers', () => {
-    expect(mockProcessOn).toHaveBeenCalledWith('SIGTERM', expect.any(Function));
-    expect(mockProcessOn).toHaveBeenCalledWith('SIGINT', expect.any(Function));
-    expect(signalHandlers.SIGTERM).toBeInstanceOf(Function);
-    expect(signalHandlers.SIGINT).toBeInstanceOf(Function);
+    const sigtermHandler = signalHandlers.SIGTERM;
+    const sigintHandler = signalHandlers.SIGINT;
+    expect(sigtermHandler).toBeInstanceOf(Function);
+    expect(sigintHandler).toBeInstanceOf(Function);
+    expect(mockProcessOn).toHaveBeenCalledWith('SIGTERM', sigtermHandler);
+    expect(mockProcessOn).toHaveBeenCalledWith('SIGINT', sigintHandler);
   });
 
   it('notifies ops webhook when DLQ has backlog', async () => {
