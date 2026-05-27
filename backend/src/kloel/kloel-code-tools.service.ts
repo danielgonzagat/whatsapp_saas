@@ -5,6 +5,7 @@ import * as path from 'path';
 import { exec as cpExec } from 'child_process';
 import { promisify } from 'util';
 import { REPO_ROOT, repoPath } from './kloel-code-analysis.service';
+import { CognitiveBridgeService } from './self-awareness/cognitive-bridge.service';
 
 const exec = promisify(cpExec);
 
@@ -31,6 +32,50 @@ interface JestOutput {
 @Injectable()
 export class KloelCodeToolsService {
   private readonly logger = StructuredLogger.from(KloelCodeToolsService.name);
+
+  constructor(private readonly cognitiveBridge: CognitiveBridgeService) {}
+
+  // ── COGNITIVE BRIDGE (Wave 7 PI-CC) ──
+
+  async toolLspDiagnostics(file: string): Promise<ToolResult> {
+    try {
+      const diagnostics = await this.cognitiveBridge.getLspDiagnostics(file);
+      return { success: true, file, total: diagnostics.length, diagnostics };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return { success: false, error: msg };
+    }
+  }
+
+  async toolOpenApiRoute(pathOrController: string): Promise<ToolResult> {
+    try {
+      const routes = await this.cognitiveBridge.getOpenApiRoute(pathOrController);
+      return { success: true, query: pathOrController, total: routes.length, routes };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return { success: false, error: msg };
+    }
+  }
+
+  async toolAsyncApiEvents(domain: string): Promise<ToolResult> {
+    try {
+      const events = await this.cognitiveBridge.getAsyncApiEvents(domain);
+      return { success: true, domain, total: events.length, events };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return { success: false, error: msg };
+    }
+  }
+
+  async toolStaticAnalysis(file: string): Promise<ToolResult> {
+    try {
+      const issues = await this.cognitiveBridge.getStaticAnalysisIssues(file);
+      return { success: true, file, total: issues.length, issues };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return { success: false, error: msg };
+    }
+  }
 
   async toolReadSourceFile(
     relPath: string,

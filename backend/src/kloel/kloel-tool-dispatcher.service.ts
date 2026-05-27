@@ -174,10 +174,28 @@ export class KloelToolDispatcherService {
         }
         case 'list_products':
           return await this.chatToolsService.toolListProducts(workspaceId);
-        case 'update_product':
-          return await this.chatToolsService.toolUpdateProduct(workspaceId, asToolArgs(args));
-        case 'products.update':
-          return this.executeTool(workspaceId, 'update_product', args, userId);
+        case 'update_product': {
+          const productArgs = userId ? { ...args, actorId: userId } : args;
+          return await this.chatToolsService.toolUpdateProduct(
+            workspaceId,
+            asToolArgs(productArgs),
+          );
+        }
+        case 'products.update': {
+          const startedAt = Date.now();
+          const result = await this.executeTool(workspaceId, 'update_product', args, userId);
+          return this.withCanonicalReceipt(
+            'products.update',
+            workspaceId,
+            args,
+            result,
+            userId,
+            startedAt,
+          );
+        }
+        case 'publish_product':
+        case 'products.review_and_publish':
+          return await this.requestHighRiskApproval(workspaceId, toolName, args, userId);
         // ── SELF-AWARENESS (TIER-0 meta-cognitive capabilities) ──
         case 'self.audit_log': {
           const limit =
@@ -572,10 +590,25 @@ export class KloelToolDispatcherService {
           return await this.chatToolsService.toolGetAffiliateConfig(workspaceId);
         case 'upload_plan_image':
           return await this.chatToolsService.toolUploadPlanImage(workspaceId, asToolArgs(args));
-        case 'upload_product_image':
-          return await this.chatToolsService.toolUploadProductImage(workspaceId, asToolArgs(args));
-        case 'products.upload_image':
-          return this.executeTool(workspaceId, 'upload_product_image', args, userId);
+        case 'upload_product_image': {
+          const productArgs = userId ? { ...args, actorId: userId } : args;
+          return await this.chatToolsService.toolUploadProductImage(
+            workspaceId,
+            asToolArgs(productArgs),
+          );
+        }
+        case 'products.upload_image': {
+          const startedAt = Date.now();
+          const result = await this.executeTool(workspaceId, 'upload_product_image', args, userId);
+          return this.withCanonicalReceipt(
+            'products.upload_image',
+            workspaceId,
+            args,
+            result,
+            userId,
+            startedAt,
+          );
+        }
         case 'update_personal_data':
           if (!this.accountService) {
             return { success: false, error: 'account_service_unavailable' };
@@ -841,6 +874,23 @@ export class KloelToolDispatcherService {
           );
         case 'codegraph_files':
           return await this.codeToolsService.toolCodeGraphFiles();
+        // ── COGNITIVE BRIDGE (Wave 7 PI-CC) ──
+        case 'lsp_diagnostics':
+          return await this.codeToolsService.toolLspDiagnostics(
+            typeof args.file === 'string' ? args.file : '',
+          );
+        case 'openapi_route':
+          return await this.codeToolsService.toolOpenApiRoute(
+            typeof args.query === 'string' ? args.query : '',
+          );
+        case 'asyncapi_events':
+          return await this.codeToolsService.toolAsyncApiEvents(
+            typeof args.domain === 'string' ? args.domain : '',
+          );
+        case 'static_analysis':
+          return await this.codeToolsService.toolStaticAnalysis(
+            typeof args.file === 'string' ? args.file : '',
+          );
         // ── REPORTS (w25) ──
         case 'reports.operations': {
           if (!this.reportService) {
@@ -1009,6 +1059,11 @@ export class KloelToolDispatcherService {
     approvalRequestId: string;
     userId?: string;
   }): Promise<ApprovedToolExecutionResult> {
-    return runExecuteApprovedApprovalRequest(this.prisma, this.bizConfigToolsService, input);
+    return runExecuteApprovedApprovalRequest(
+      this.prisma,
+      this.bizConfigToolsService,
+      this.chatToolsService,
+      input,
+    );
   }
 }
