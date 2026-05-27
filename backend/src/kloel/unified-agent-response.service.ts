@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
-import { extractFallbackTopic as extractFallbackTopicValue } from '../whatsapp/whatsapp-normalization.util';
+import { extractFallbackTopic as extractFallbackTopicValue } from '../marketing/channels/whatsapp/whatsapp-normalization.util';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import type { ActionEntry } from './unified-agent.types';
 import {

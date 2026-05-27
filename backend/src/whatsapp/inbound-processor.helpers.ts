@@ -7,7 +7,7 @@ import type { WhatsappService } from './whatsapp.service';
 import type { OpsAlertService } from '../observability/ops-alert.service';
 import type Redis from 'ioredis';
 import type { ProviderSettings } from './provider-settings.types';
-import { extractFallbackTopic as extractFallbackTopicValue } from './whatsapp-normalization.util';
+import { extractFallbackTopic as extractFallbackTopicValue } from '../marketing/channels/whatsapp/whatsapp-normalization.util';
 
 import { whatsappDigits } from '../common/phone';
 

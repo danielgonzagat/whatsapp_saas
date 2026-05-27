@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
-jest.mock('../whatsapp/whatsapp-normalization.util', () => ({
+jest.mock('../marketing/channels/whatsapp/whatsapp-normalization.util', () => ({
   includesAnyPhrase: jest.fn((text: string, phrases: string[]) => {
     if (!text) {
       return false;
@@ -192,7 +192,7 @@ describe('WhatsAppBrainService', () => {
 
     it('detects purchase intent', async () => {
       prisma.kloelLead.findFirst.mockResolvedValue({ id: 'lead-1' });
-      const { includesAnyPhrase } = require('../whatsapp/whatsapp-normalization.util');
+      const { includesAnyPhrase } = require('../marketing/channels/whatsapp/whatsapp-normalization.util');
 
       const result = await service.handleIncomingMessage({
         from: phone,

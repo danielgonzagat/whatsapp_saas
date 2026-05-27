@@ -5,7 +5,7 @@ import { OpsAlertService } from '../../observability/ops-alert.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { asProviderSettings } from '../provider-settings.types';
 import type { ProviderSessionSnapshot } from '../provider-settings.types';
-import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../whatsapp-normalization.util';
+import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../../marketing/channels/whatsapp/whatsapp-normalization.util';
 import { resolveDefaultWhatsAppProvider } from '../../marketing/channels/whatsapp/providers/provider-env';
 import { WahaProvider } from './waha.provider';
 import { WhatsAppApiProvider } from './whatsapp-api.provider';

@@ -14,7 +14,7 @@ import { autopilotQueue, flowQueue } from '../queue/queue';
 import { WorkspaceService } from '../workspaces/workspace.service';
 import { DecisionOutcomeService } from '../kloel/decision-outcome.service';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
-import { isPlaceholderContactName as isPlaceholderName } from './whatsapp-normalization.util';
+import { isPlaceholderContactName as isPlaceholderName } from '../marketing/channels/whatsapp/whatsapp-normalization.util';
 import { TAG_DEFAULT_COLORS } from '../common/kloel-colors';
 import {
   normalizeJsonObjExt,

@@ -15,7 +15,7 @@ import { WhatsappChatMessagesService } from './whatsapp.service.chats.messages';
 import { CiaRuntimeService } from '../cia/cia-runtime.service';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
-import { isPlaceholderContactName as isPlaceholderName } from './whatsapp-normalization.util';
+import { isPlaceholderContactName as isPlaceholderName } from '../marketing/channels/whatsapp/whatsapp-normalization.util';
 import {
   resolveTimestampExt,
   toIsoTimestamp,
@@ -28,7 +28,7 @@ import {
 } from '../marketing/channels/whatsapp/whatsapp.service.normalizers';
 import * as catalogOps from './whatsapp.service.catalog';
 import type { CatalogDeps } from './whatsapp.service.catalog';
-import type { NormalizedContact, NormalizedChat } from './whatsapp-service.types';
+import type { NormalizedContact, NormalizedChat } from '../marketing/channels/whatsapp/whatsapp-service.types';
 import { WhatsappSessionService } from './whatsapp-session.service';
 import { WhatsappMessageDispatcherService } from './whatsapp-message-dispatcher.service';
 import { WhatsappReconcilerService } from './whatsapp-reconciler.service';

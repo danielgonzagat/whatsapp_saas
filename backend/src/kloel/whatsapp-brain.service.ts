@@ -12,7 +12,7 @@
 import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
-import { includesAnyPhrase, normalizeIntentText } from '../whatsapp/whatsapp-normalization.util';
+import { includesAnyPhrase, normalizeIntentText } from '../marketing/channels/whatsapp/whatsapp-normalization.util';
 import { DecisionOutcomeService } from './decision-outcome.service';
 import { KloelService } from './kloel.service';
 

@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MetaWhatsAppService } from '../../meta/meta-whatsapp.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../whatsapp-normalization.util';
+import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../../marketing/channels/whatsapp/whatsapp-normalization.util';
 import {
   deriveQrCodeMessage,
   deriveSessionStateFromDetails,
