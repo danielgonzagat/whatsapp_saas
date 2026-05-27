@@ -15,6 +15,7 @@ import { useDashboardHome, useDashboardPostPayment } from './useDashboardHome';
 
 describe('useDashboardHome', () => {
   beforeEach(() => {
+    vi.mocked(useSWR).mockClear();
     vi.mocked(useSWR).mockReturnValue({
       data: undefined,
       error: undefined,
