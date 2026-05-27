@@ -28,7 +28,7 @@
 import { Injectable, type OnModuleInit } from '@nestjs/common';
 import { StructuredLogger } from '../../../logging/structured-logger';
 import { PlanLimitsService } from '../../../billing/plan-limits.service';
-import { WhatsappService } from '../../../whatsapp/whatsapp.service';
+import { WhatsappService } from './whatsapp.service';
 
 const PATCH_MARKER = Symbol.for('kloel.whatsapp.sendRateGuard.patched');
 

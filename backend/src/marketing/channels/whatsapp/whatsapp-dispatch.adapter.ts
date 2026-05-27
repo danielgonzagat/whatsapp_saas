@@ -18,7 +18,7 @@ import {
   type ChannelSendResult,
   type WhatsAppSendInput,
 } from '../../../common/channel-dispatch/channel-dispatch.port';
-import { WhatsappService } from '../../../whatsapp/whatsapp.service';
+import { WhatsappService } from './whatsapp.service';
 
 type WhatsappSendOpts = NonNullable<Parameters<WhatsappService['sendMessage']>[3]>;
 

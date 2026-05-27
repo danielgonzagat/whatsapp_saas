@@ -1,37 +1,33 @@
 import { BadRequestException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { StructuredLogger } from '../logging/structured-logger';
-import { OpsAlertService } from '../observability/ops-alert.service';
-import { PrismaService } from '../prisma/prisma.service';
+import { StructuredLogger } from '../../../logging/structured-logger';
+import { OpsAlertService } from '../../../observability/ops-alert.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 import {
   buildConversationOperationalState,
   type ConversationOperationalLike,
   type ConversationOperationalState,
-} from './agent-conversation-state.util';
+} from '../../../whatsapp/agent-conversation-state.util';
 import * as chatHelpers from './whatsapp.service.chats';
 import type { ChatHelperDeps } from './whatsapp.service.chats';
 import { WhatsappChatBacklogService } from './whatsapp.service.chats.backlog';
 import { WhatsappChatMessagesService } from './whatsapp.service.chats.messages';
-import { CiaRuntimeService } from '../cia/cia-runtime.service';
-import { WhatsAppProviderRegistry } from './providers/provider-registry';
-import { WhatsAppCatchupService } from './whatsapp-catchup.service';
-import { isPlaceholderContactName as isPlaceholderName } from '../marketing/channels/whatsapp/whatsapp-normalization.util';
-import {
-  resolveTimestampExt,
-  toIsoTimestamp,
-  normalizeNumber,
-} from '../marketing/channels/whatsapp/whatsapp-service.helpers';
+import { CiaRuntimeService } from '../../../cia/cia-runtime.service';
+import { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
+import { WhatsAppCatchupService } from '../../../whatsapp/whatsapp-catchup.service';
+import { isPlaceholderContactName as isPlaceholderName } from './whatsapp-normalization.util';
+import { resolveTimestampExt, toIsoTimestamp, normalizeNumber } from './whatsapp-service.helpers';
 import {
   normalizeContactsArray,
   normalizeChatsArray,
   normalizeMessagesArray,
-} from '../marketing/channels/whatsapp/whatsapp.service.normalizers';
+} from './whatsapp.service.normalizers';
 import * as catalogOps from './whatsapp.service.catalog';
 import type { CatalogDeps } from './whatsapp.service.catalog';
-import type { NormalizedContact, NormalizedChat } from '../marketing/channels/whatsapp/whatsapp-service.types';
-import { WhatsappSessionService } from '../marketing/channels/whatsapp/whatsapp-session.service';
-import { WhatsappMessageDispatcherService } from '../marketing/channels/whatsapp/whatsapp-message-dispatcher.service';
-import { WhatsappReconcilerService } from '../marketing/channels/whatsapp/whatsapp-reconciler.service';
+import type { NormalizedContact, NormalizedChat } from './whatsapp-service.types';
+import { WhatsappSessionService } from './whatsapp-session.service';
+import { WhatsappMessageDispatcherService } from './whatsapp-message-dispatcher.service';
+import { WhatsappReconcilerService } from './whatsapp-reconciler.service';
 
 type ExternalProviderPayload = Record<string, unknown>;
 

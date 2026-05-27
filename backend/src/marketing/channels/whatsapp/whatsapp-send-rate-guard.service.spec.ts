@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PlanLimitsService } from '../../../billing/plan-limits.service';
-import { WhatsappService } from '../../../whatsapp/whatsapp.service';
+import { WhatsappService } from './whatsapp.service';
 import { WhatsappSendRateGuardService } from './whatsapp-send-rate-guard.service';
 
 jest.mock('../../../queue/queue', () => ({

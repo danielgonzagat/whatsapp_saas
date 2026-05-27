@@ -1,14 +1,14 @@
 import { BadRequestException } from '@nestjs/common';
-import { forEachSequential } from '../common/async-sequence';
-import { buildQueueJobId } from '../queue/job-id.util';
-import { autopilotQueue } from '../queue/queue';
-import { collectCatalogContactEntriesExt } from '../marketing/channels/whatsapp/whatsapp-catalog-contact-collector';
-import { rankByPurchaseProbability } from '../marketing/channels/whatsapp/whatsapp.service.ranking';
-import { readText } from '../common/utils';
-import { normalizeJsonObjExt } from '../marketing/channels/whatsapp/whatsapp-service.helpers';
-import type { PrismaService } from '../prisma/prisma.service';
-import type { WhatsAppCatchupService } from './whatsapp-catchup.service';
-import type { CiaRuntimeService } from '../cia/cia-runtime.service';
+import { forEachSequential } from '../../../common/async-sequence';
+import { buildQueueJobId } from '../../../queue/job-id.util';
+import { autopilotQueue } from '../../../queue/queue';
+import { collectCatalogContactEntriesExt } from './whatsapp-catalog-contact-collector';
+import { rankByPurchaseProbability } from './whatsapp.service.ranking';
+import { readText } from '../../../common/utils';
+import { normalizeJsonObjExt } from './whatsapp-service.helpers';
+import type { PrismaService } from '../../../prisma/prisma.service';
+import type { WhatsAppCatchupService } from '../../../whatsapp/whatsapp-catchup.service';
+import type { CiaRuntimeService } from '../../../cia/cia-runtime.service';
 
 export interface CatalogDeps {
   prisma: PrismaService;

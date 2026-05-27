@@ -1,9 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
-import { SmartPaymentService } from './smart-payment.service';
+import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
 import { KloelToolExecutorBillingService } from './kloel-tool-executor-billing.service';
 import { KloelToolExecutorCrmService } from './kloel-tool-executor-crm.service';
 import { KloelToolExecutorWhatsAppService } from './kloel-tool-executor-whatsapp.service';
@@ -45,11 +45,11 @@ export class KloelToolExecutorService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly smartPaymentService: SmartPaymentService,
     private readonly planLimits: PlanLimitsService,
     private readonly whatsappTools: KloelToolExecutorWhatsAppService,
     private readonly billingTools: KloelToolExecutorBillingService,
     private readonly crmTools: KloelToolExecutorCrmService,
+    @Optional() private readonly toolDispatcher?: KloelToolDispatcherService,
   ) {}
 
   async executeTool(
@@ -104,16 +104,21 @@ export class KloelToolExecutorService {
           return await this.crmTools.toolListLeads(workspaceId, args);
         case 'get_lead_details':
           return await this.crmTools.toolGetLeadDetails(workspaceId, args);
-        case 'create_payment_link': {
-          const paymentResult = await this.smartPaymentService.createSmartPayment({
+        case 'create_payment_link':
+          if (!this.toolDispatcher) {
+            return {
+              success: false,
+              error: 'payment_link_dispatcher_unavailable',
+              message:
+                'create_payment_link exige o dispatcher canonico para gerar receipt e prova.',
+            };
+          }
+          return await this.toolDispatcher.executeTool(
             workspaceId,
-            amount: Number(args.amount) || 0,
-            productName: typeof args.description === 'string' ? args.description : '',
-            customerName: typeof args.customerName === 'string' ? args.customerName : 'Cliente',
-            phone: '',
-          });
-          return { success: true, ...paymentResult };
-        }
+            'create_payment_link',
+            args,
+            userId,
+          );
         case 'connect_whatsapp':
           return await this.whatsappTools.toolConnectWhatsapp(workspaceId);
         case 'get_whatsapp_status':

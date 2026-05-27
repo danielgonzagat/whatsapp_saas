@@ -5,7 +5,7 @@ import {
   buildMockPrisma,
 } from './whatsapp.service.spec.fixtures';
 
-jest.mock('../queue/queue', () => ({
+jest.mock('../../../queue/queue', () => ({
   autopilotQueue: { add: jest.fn() },
   flowQueue: { add: jest.fn() },
 }));
@@ -70,7 +70,7 @@ describe('WhatsappService', () => {
     jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
     jest.setSystemTime(new Date('2026-04-20T00:00:00.000Z'));
 
-    const queueModule = jest.requireMock('../queue/queue');
+    const queueModule = jest.requireMock('../../../queue/queue');
     mockAutopilotAdd = queueModule.autopilotQueue.add;
     mockFlowAdd = queueModule.flowQueue.add;
 

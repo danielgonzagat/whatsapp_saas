@@ -6,6 +6,11 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { KloelToolExecutorBillingService } from './kloel-tool-executor-billing.service';
 import { KloelToolExecutorCrmService } from './kloel-tool-executor-crm.service';
 import { KloelToolExecutorWhatsAppService } from './kloel-tool-executor-whatsapp.service';
+import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
+jest.mock('./kloel-tool-executor-whatsapp.service', () => ({
+  KloelToolExecutorWhatsAppService: class MockKloelToolExecutorWhatsAppService {},
+}));
+
 jest.mock('./kloel-tool-executor.helpers', () => ({
   toolSaveProduct: jest.fn().mockResolvedValue({ success: true, message: 'Produto salvo.' }),
   toolListProducts: jest.fn().mockResolvedValue({ success: true, products: [] }),
@@ -46,6 +51,7 @@ describe('KloelToolExecutorService', () => {
   let whatsappTools: Partial<KloelToolExecutorWhatsAppService>;
   let billingTools: Partial<KloelToolExecutorBillingService>;
   let crmTools: Partial<KloelToolExecutorCrmService>;
+  let dispatcher: { executeTool: jest.Mock };
   const wsId = 'ws-exec-1';
   beforeEach(async () => {
     prisma = {
@@ -104,6 +110,14 @@ describe('KloelToolExecutorService', () => {
       toolListLeads: jest.fn().mockResolvedValue({ success: true, leads: [] }),
       toolGetLeadDetails: jest.fn().mockResolvedValue({ success: true }),
     };
+    dispatcher = {
+      executeTool: jest.fn().mockResolvedValue({
+        success: true,
+        capabilityId: 'create_payment_link',
+        outputs: { paymentId: 'pay-1', paymentUrl: 'https://pay.test' },
+        receipt: { capabilityId: 'create_payment_link', success: true },
+      }),
+    };
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         KloelToolExecutorService,
@@ -113,6 +127,7 @@ describe('KloelToolExecutorService', () => {
         { provide: KloelToolExecutorWhatsAppService, useValue: whatsappTools },
         { provide: KloelToolExecutorBillingService, useValue: billingTools },
         { provide: KloelToolExecutorCrmService, useValue: crmTools },
+        { provide: KloelToolDispatcherService, useValue: dispatcher },
       ],
     }).compile();
     service = module.get<KloelToolExecutorService>(KloelToolExecutorService);
@@ -224,19 +239,29 @@ describe('KloelToolExecutorService', () => {
       await service.executeTool(wsId, 'get_lead_details', { leadId: 'l-1' });
       expect(crmTools.toolGetLeadDetails).toHaveBeenCalledWith(wsId, { leadId: 'l-1' });
     });
-    it('routes create_payment_link to SmartPaymentService', async () => {
-      const result = await service.executeTool(wsId, 'create_payment_link', {
+    it('routes create_payment_link through the canonical dispatcher receipt path', async () => {
+      const args = {
         amount: 99.9,
         description: 'Produto',
-      });
-      expect(result.success).toBe(true);
-      expect(smartPayment.createSmartPayment).toHaveBeenCalledWith({
-        workspaceId: wsId,
-        amount: 99.9,
-        productName: 'Produto',
-        customerName: 'Cliente',
-        phone: '',
-      });
+      };
+
+      const result = await service.executeTool(wsId, 'create_payment_link', args, 'user-42');
+
+      expect(smartPayment.createSmartPayment).not.toHaveBeenCalled();
+      expect(dispatcher.executeTool).toHaveBeenCalledWith(
+        wsId,
+        'create_payment_link',
+        args,
+        'user-42',
+      );
+      expect(result).toEqual(
+        expect.objectContaining({
+          success: true,
+          capabilityId: 'create_payment_link',
+          outputs: expect.objectContaining({ paymentId: 'pay-1', paymentUrl: 'https://pay.test' }),
+          receipt: expect.objectContaining({ capabilityId: 'create_payment_link', success: true }),
+        }),
+      );
     });
     it('routes connect_whatsapp to whatsappTools', async () => {
       await service.executeTool(wsId, 'connect_whatsapp', {});
