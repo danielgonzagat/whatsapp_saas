@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { CiaRuntimeStateService } from '../../../cia/cia-runtime-state.service';
+import { CiaRuntimeStateService } from './cia-runtime-state.service';
 import { DecisionOutcomeService } from '../../decision-outcome.service';
 // ── Outcome success classification (canonical in MindLiftReportService) ────
 

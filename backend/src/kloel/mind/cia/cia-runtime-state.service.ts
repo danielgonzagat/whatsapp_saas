@@ -1,11 +1,11 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
-import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
-import { OpsAlertService } from '../observability/ops-alert.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { buildQueueJobId } from '../queue/job-id.util';
-import { autopilotQueue } from '../queue/queue';
-import { AgentEventsService } from '../whatsapp/agent-events.service';
-import { asProviderSettings } from '../whatsapp/provider-settings.types';
+import { toPrismaJsonValue } from '../../../common/prisma/prisma-json.util';
+import { OpsAlertService } from '../../../observability/ops-alert.service';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { buildQueueJobId } from '../../../queue/job-id.util';
+import { autopilotQueue } from '../../../queue/queue';
+import { AgentEventsService } from '../../../whatsapp/agent-events.service';
+import { asProviderSettings } from '../../../whatsapp/provider-settings.types';
 
 const CIA_CONTACT_CATALOG_LOOKBACK_DAYS = Math.max(
   7,
@@ -20,7 +20,7 @@ const CIA_RUNTIME_STALE_RUN_MS = Math.max(
 
 type WorkspaceAutonomyMode = 'OFF' | 'LIVE' | 'BACKLOG' | 'FULL' | 'HUMAN_ONLY' | 'SUSPENDED';
 
-import { safeStr } from '../common/string';
+import { safeStr } from '../../../common/string';
 
 /**
  * Manages CIA runtime state persistence: workspace autonomy snapshots,
