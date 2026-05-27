@@ -346,12 +346,6 @@ export class MindService {
     variantIds: string[],
     context?: Record<string, unknown>,
   ): Promise<{ variant: string; confidence: number; fallback: boolean }> {
-    return resolveBestVariantDecision(
-      this.policy,
-      workspaceId,
-      flow,
-      variantIds,
-      context,
-    );
+    return resolveBestVariantDecision(this.policy, workspaceId, flow, variantIds, context);
   }
 }

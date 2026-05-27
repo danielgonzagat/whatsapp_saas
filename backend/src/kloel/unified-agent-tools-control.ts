@@ -200,8 +200,7 @@ export const UNIFIED_AGENT_TOOLS_CONTROL: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'list_conversations',
-      description:
-        'Lista as conversas recentes do workspace com contato, ultima mensagem e status',
+      description: 'Lista as conversas recentes do workspace com contato, ultima mensagem e status',
       parameters: {
         type: 'object',
         properties: {

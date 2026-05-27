@@ -11,19 +11,9 @@ export interface OwnerAction {
   readonly externalDependencyDescription: string | null;
 }
 
-type ActionCategory =
-  | 'technical'
-  | 'creative'
-  | 'strategic'
-  | 'operational'
-  | 'commercial';
+type ActionCategory = 'technical' | 'creative' | 'strategic' | 'operational' | 'commercial';
 
-export type FrictionKind =
-  | 'stalled'
-  | 'abandoned'
-  | 'never_started'
-  | 'overwhelmed'
-  | 'blocked';
+export type FrictionKind = 'stalled' | 'abandoned' | 'never_started' | 'overwhelmed' | 'blocked';
 
 export const HOURS_24_MS = 24 * 60 * 60 * 1000;
 

@@ -29,15 +29,17 @@ describe('MetaConnectionStateService', () => {
   });
 
   it('returns instagram as connected when instagram channel row has valid token and account', async () => {
-    findMany.mockResolvedValue([{
-      channel: 'instagram',
-      accessToken: 'valid-token',
-      tokenExpiresAt: futureDate,
-      pageId: null,
-      instagramAccountId: 'ig-1',
-      whatsappPhoneNumberId: null,
-      whatsappBusinessId: null,
-    }]);
+    findMany.mockResolvedValue([
+      {
+        channel: 'instagram',
+        accessToken: 'valid-token',
+        tokenExpiresAt: futureDate,
+        pageId: null,
+        instagramAccountId: 'ig-1',
+        whatsappPhoneNumberId: null,
+        whatsappBusinessId: null,
+      },
+    ]);
 
     const state = await service.forWorkspace('ws-1');
 
@@ -63,15 +65,17 @@ describe('MetaConnectionStateService', () => {
   });
 
   it('returns facebook as connected when facebook channel row has valid token and pageId', async () => {
-    findMany.mockResolvedValue([{
-      channel: 'facebook',
-      accessToken: 'valid-token',
-      tokenExpiresAt: futureDate,
-      pageId: 'page-1',
-      instagramAccountId: null,
-      whatsappPhoneNumberId: null,
-      whatsappBusinessId: null,
-    }]);
+    findMany.mockResolvedValue([
+      {
+        channel: 'facebook',
+        accessToken: 'valid-token',
+        tokenExpiresAt: futureDate,
+        pageId: 'page-1',
+        instagramAccountId: null,
+        whatsappPhoneNumberId: null,
+        whatsappBusinessId: null,
+      },
+    ]);
 
     const state = await service.forWorkspace('ws-1');
 
@@ -91,15 +95,17 @@ describe('MetaConnectionStateService', () => {
   });
 
   it('returns whatsapp as connected when whatsapp channel row has valid token and phoneNumberId', async () => {
-    findMany.mockResolvedValue([{
-      channel: 'whatsapp',
-      accessToken: 'valid-token',
-      tokenExpiresAt: futureDate,
-      pageId: 'page-1',
-      instagramAccountId: null,
-      whatsappPhoneNumberId: 'pn-1',
-      whatsappBusinessId: 'waba-1',
-    }]);
+    findMany.mockResolvedValue([
+      {
+        channel: 'whatsapp',
+        accessToken: 'valid-token',
+        tokenExpiresAt: futureDate,
+        pageId: 'page-1',
+        instagramAccountId: null,
+        whatsappPhoneNumberId: 'pn-1',
+        whatsappBusinessId: 'waba-1',
+      },
+    ]);
 
     const state = await service.forWorkspace('ws-1');
 
@@ -114,15 +120,17 @@ describe('MetaConnectionStateService', () => {
   });
 
   it('returns all disconnected when token is expired', async () => {
-    findMany.mockResolvedValue([{
-      channel: 'whatsapp',
-      accessToken: 'valid-token',
-      tokenExpiresAt: pastDate,
-      pageId: 'page-1',
-      instagramAccountId: 'ig-1',
-      whatsappPhoneNumberId: 'pn-1',
-      whatsappBusinessId: 'waba-1',
-    }]);
+    findMany.mockResolvedValue([
+      {
+        channel: 'whatsapp',
+        accessToken: 'valid-token',
+        tokenExpiresAt: pastDate,
+        pageId: 'page-1',
+        instagramAccountId: 'ig-1',
+        whatsappPhoneNumberId: 'pn-1',
+        whatsappBusinessId: 'waba-1',
+      },
+    ]);
 
     const state = await service.forWorkspace('ws-1');
 
@@ -133,15 +141,17 @@ describe('MetaConnectionStateService', () => {
   });
 
   it('returns channel-specific disconnected when assets are missing', async () => {
-    findMany.mockResolvedValue([{
-      channel: 'whatsapp',
-      accessToken: 'valid-token',
-      tokenExpiresAt: futureDate,
-      pageId: null,
-      instagramAccountId: null,
-      whatsappPhoneNumberId: null,
-      whatsappBusinessId: null,
-    }]);
+    findMany.mockResolvedValue([
+      {
+        channel: 'whatsapp',
+        accessToken: 'valid-token',
+        tokenExpiresAt: futureDate,
+        pageId: null,
+        instagramAccountId: null,
+        whatsappPhoneNumberId: null,
+        whatsappBusinessId: null,
+      },
+    ]);
 
     const state = await service.forWorkspace('ws-1');
 

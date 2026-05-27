@@ -53,15 +53,9 @@ export class CiaAutonomyAdvisorService {
   ) {}
   async analyzeAndAdvise(workspaceId: string): Promise<AutonomyAdvice> {
     const since = new Date(Date.now() - LOOKBACK_DAYS * 86400 * 1000);
-    const rows = await this.decisionOutcome.findAllClosedSinceForWorkspace(
-      workspaceId,
-      since,
-    );
+    const rows = await this.decisionOutcome.findAllClosedSinceForWorkspace(workspaceId, since);
 
-    const grouped = new Map<
-      string,
-      { total: number; successCount: number }
-    >();
+    const grouped = new Map<string, { total: number; successCount: number }>();
 
     for (const row of rows) {
       const entry = grouped.get(row.decisionType) ?? {
@@ -78,12 +72,12 @@ export class CiaAutonomyAdvisorService {
     const stats: DecisionTypeStats[] = [];
 
     for (const [decisionType, { total, successCount }] of grouped) {
-      if (total < MIN_SAMPLES) continue;
+      if (total < MIN_SAMPLES) {
+        continue;
+      }
 
       const successRate = successCount / total;
-      const se = Math.sqrt(
-        (NULL_HYPOTHESIS_P * (1 - NULL_HYPOTHESIS_P)) / total,
-      );
+      const se = Math.sqrt((NULL_HYPOTHESIS_P * (1 - NULL_HYPOTHESIS_P)) / total);
       const z = (successRate - NULL_HYPOTHESIS_P) / se;
 
       stats.push({ decisionType, total, successCount, successRate, z });
@@ -126,10 +120,7 @@ export class CiaAutonomyAdvisorService {
     let applied = 0;
 
     for (const recommendation of advice.reasoning) {
-      if (
-        !recommendation.startsWith('INCREASE') &&
-        !recommendation.startsWith('DECREASE')
-      ) {
+      if (!recommendation.startsWith('INCREASE') && !recommendation.startsWith('DECREASE')) {
         continue;
       }
 

@@ -1,11 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SpineEmitterService } from '../spine/spine-emitter.service';
-import type {
-  BanRisk,
-  BanRiskLevel,
-  ChannelKind,
-  DetectionInput,
-} from './types';
+import type { BanRisk, BanRiskLevel, ChannelKind, DetectionInput } from './types';
 import { clamp, filterByWorkspace } from './types';
 
 const HIGH_COMPLAINT_THRESHOLD = 0.05;
@@ -94,9 +89,10 @@ export class BanRiskDetector {
       riskLevel,
       riskProbability: Math.round(riskProbability * 100) / 100,
       policyViolationCount,
-      complaintRate: channelEvents.length > 0
-        ? Math.round((complaintCount / channelEvents.length) * 1000) / 1000
-        : 0,
+      complaintRate:
+        channelEvents.length > 0
+          ? Math.round((complaintCount / channelEvents.length) * 1000) / 1000
+          : 0,
       unusualActivityDetected,
       contributingFactors,
       assessedAt: new Date(nowMs).toISOString(),
@@ -114,10 +110,7 @@ export class BanRiskDetector {
     return true;
   }
 
-  private detectBurst(
-    events: readonly { occurredAt: string }[],
-    nowMs: number,
-  ): boolean {
+  private detectBurst(events: readonly { occurredAt: string }[], nowMs: number): boolean {
     const oneHourMs = 60 * 60 * 1000;
     const recent = events.filter((e) => {
       const ts = Date.parse(e.occurredAt);

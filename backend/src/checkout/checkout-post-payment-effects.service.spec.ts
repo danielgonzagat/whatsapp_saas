@@ -73,7 +73,8 @@ describe('CheckoutPostPaymentEffectsService', () => {
   beforeEach(() => {
     memberAreaUpdateMock = jest.fn().mockResolvedValue({ count: 1 });
     prisma = {
-      memberArea: { findMany: jest.fn().mockResolvedValue([]), updateMany: memberAreaUpdateMock },erArea: { findMany: jest.fn().mockResolvedValue([]) },
+      memberArea: { findMany: jest.fn().mockResolvedValue([]), updateMany: memberAreaUpdateMock },
+      erArea: { findMany: jest.fn().mockResolvedValue([]) },
       memberEnrollment: {
         findFirst: jest.fn().mockResolvedValue(null),
         create: jest.fn().mockResolvedValue({ id: 'enr_1' }),
@@ -175,9 +176,7 @@ describe('CheckoutPostPaymentEffectsService', () => {
     });
 
     it('does not emit leadConverted when markConvertedFromOrder throws', async () => {
-      checkoutSocialLeadService.markConvertedFromOrder.mockRejectedValue(
-        new Error('DB down'),
-      );
+      checkoutSocialLeadService.markConvertedFromOrder.mockRejectedValue(new Error('DB down'));
       const order = makeOrder();
 
       await service.markLeadConverted(order, 'ws_1');

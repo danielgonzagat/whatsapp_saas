@@ -12,6 +12,8 @@ import { CriarSite } from './CriarSite';
 import { EditarSite } from './EditarSite';
 import { Apps } from './Apps';
 import { Protecao } from './Protecao';
+import { useSites } from '@/hooks/useSites';
+import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 
 export default function SitesView({ defaultTab = 'visao-geral' }: { defaultTab?: string }) {
   const { isMobile } = useResponsiveViewport();
@@ -21,6 +23,8 @@ export default function SitesView({ defaultTab = 'visao-geral' }: { defaultTab?:
   const tab = defaultTab;
 
   const rawMode = searchParams?.get('mode') ?? null;
+  const workspaceId = useWorkspaceId();
+  const { sites, isLoading: sitesLoading, error: sitesError } = useSites(workspaceId);
 
   const switchTab = useCallback((id: string) => {
     const nextRoute = id === 'visao-geral' ? '/sites' : `/sites/${id}`;
@@ -46,7 +50,7 @@ export default function SitesView({ defaultTab = 'visao-geral' }: { defaultTab?:
       </div>
 
       <div style={{ maxWidth: 1240, margin: '0 auto' }}>
-        {tab === 'visao-geral' && <VisaoGeral switchTab={switchTab} />}
+        {tab === 'visao-geral' && <VisaoGeral switchTab={switchTab} sites={sites} loading={sitesLoading} error={sitesError} />}
         {tab === 'dominios' && <Dominios />}
         {tab === 'hospedagem' && <Hospedagem />}
         {tab === 'criar' && (rawMode ? <CriarSite mode={rawMode} /> : <CriarSite />)}

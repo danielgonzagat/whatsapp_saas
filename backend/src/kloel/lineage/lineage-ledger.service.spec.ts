@@ -1,7 +1,4 @@
-import {
-  InMemoryLineageLedgerRepository,
-  LineageLedgerService,
-} from './lineage-ledger.service';
+import { InMemoryLineageLedgerRepository, LineageLedgerService } from './lineage-ledger.service';
 import { GENESIS_EVENT } from './genesis-event';
 import { LineageLedgerError, ZERO_HASH } from './lineage-ledger.types';
 
@@ -116,9 +113,9 @@ describe('LineageLedgerService', () => {
     it('rejects duplicate hash', async () => {
       const { service, repo } = build();
       const g = await service.bootstrapGenesis();
-      await expect(
-        repo.append({ ...g, sequenceNumber: 99 }),
-      ).rejects.toThrow(/LINEAGE_LEDGER_DUPLICATE_HASH/);
+      await expect(repo.append({ ...g, sequenceNumber: 99 })).rejects.toThrow(
+        /LINEAGE_LEDGER_DUPLICATE_HASH/,
+      );
     });
 
     it('rejects duplicate sequenceNumber', async () => {

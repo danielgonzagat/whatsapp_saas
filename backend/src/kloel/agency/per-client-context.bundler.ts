@@ -11,20 +11,13 @@
 
 import { Injectable } from '@nestjs/common';
 import { createHash } from 'node:crypto';
-import type {
-  BundleBuildInput,
-  ClientContextBundle,
-  ContextBundleResult,
-} from './agency.types';
+import type { BundleBuildInput, ClientContextBundle, ContextBundleResult } from './agency.types';
 import { clampScore } from './agency.types';
 
 const ISOLATION_ALGORITHM = 'sha256';
 const ISOLATION_ENCODING = 'hex' as const;
 
-function computeIsolationHash(
-  agencyWorkspaceId: string,
-  clientWorkspaceId: string,
-): string {
+function computeIsolationHash(agencyWorkspaceId: string, clientWorkspaceId: string): string {
   const hash = createHash(ISOLATION_ALGORITHM);
   hash.update(`agency:${agencyWorkspaceId}`);
   hash.update(`client:${clientWorkspaceId}`);
@@ -82,10 +75,7 @@ export class PerClientContextBundler {
     const bundledAt = new Date(nowMs).toISOString();
     const tags = inferTags(input);
 
-    const isolationHash = computeIsolationHash(
-      input.agencyWorkspaceId,
-      input.clientWorkspaceId,
-    );
+    const isolationHash = computeIsolationHash(input.agencyWorkspaceId, input.clientWorkspaceId);
 
     const isolationToken = deriveIsolationToken(
       input.agencyWorkspaceId,
@@ -119,10 +109,7 @@ export class PerClientContextBundler {
     expectedAgencyWorkspaceId: string,
     expectedClientWorkspaceId: string,
   ): boolean {
-    const expectedHash = computeIsolationHash(
-      expectedAgencyWorkspaceId,
-      expectedClientWorkspaceId,
-    );
+    const expectedHash = computeIsolationHash(expectedAgencyWorkspaceId, expectedClientWorkspaceId);
     return bundle.isolationToken !== undefined && expectedHash !== undefined;
   }
 
@@ -140,11 +127,7 @@ export class PerClientContextBundler {
 
     void computeIsolationHash(agencyWorkspaceId, clientWorkspaceId);
     const bundledAt = bundle.bundledAt;
-    const expectedToken = deriveIsolationToken(
-      agencyWorkspaceId,
-      clientWorkspaceId,
-      bundledAt,
-    );
+    const expectedToken = deriveIsolationToken(agencyWorkspaceId, clientWorkspaceId, bundledAt);
 
     return bundle.isolationToken === expectedToken;
   }

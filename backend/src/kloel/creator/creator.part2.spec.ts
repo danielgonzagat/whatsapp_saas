@@ -19,9 +19,7 @@ import type { TrustState } from '../trust/trust.types';
 
 const NOW = Date.parse('2026-05-14T00:00:00.000Z');
 
-function baseCreatorEvent(
-  over: Partial<CreatorEvent> = {},
-): CreatorEvent {
+function baseCreatorEvent(over: Partial<CreatorEvent> = {}): CreatorEvent {
   return {
     eventId: over.eventId ?? `evt_${Math.random().toString(36).slice(2, 8)}`,
     eventName: over.eventName ?? 'commerce.lead.replied',

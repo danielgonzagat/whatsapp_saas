@@ -32,7 +32,22 @@ describe('CiaSendHelpersService', () => {
     };
     agentEvents = { publish: jest.fn().mockResolvedValue(undefined) };
     transports = { send: jest.fn() };
-    spineEmitter = { emit: jest.fn().mockResolvedValue({ eventId: 'evt-test', eventName: '', timestamp: '', occurredAt: '', truthMode: 'observed', provenance: { source: 'production' as const, processor: '', processorVersion: '', schemaVersion: '', environment: 'dev' } }) };
+    spineEmitter = {
+      emit: jest.fn().mockResolvedValue({
+        eventId: 'evt-test',
+        eventName: '',
+        timestamp: '',
+        occurredAt: '',
+        truthMode: 'observed',
+        provenance: {
+          source: 'production' as const,
+          processor: '',
+          processorVersion: '',
+          schemaVersion: '',
+          environment: 'dev',
+        },
+      }),
+    };
     mindPolicy = { resolveOpenForSubject: jest.fn().mockResolvedValue(0) };
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -328,13 +343,7 @@ describe('CiaSendHelpersService', () => {
     it('does NOT resolve when send fails', async () => {
       transports.send.mockResolvedValue({ success: false, error: 'down' });
 
-      await service.sendCiaMessageWithDailyLimit(
-        'ws-8',
-        '+5588',
-        'hi',
-        {},
-        'contact-8',
-      );
+      await service.sendCiaMessageWithDailyLimit('ws-8', '+5588', 'hi', {}, 'contact-8');
 
       expect(mindPolicy.resolveOpenForSubject).not.toHaveBeenCalled();
     });

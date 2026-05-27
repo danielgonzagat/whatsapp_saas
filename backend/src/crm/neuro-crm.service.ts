@@ -184,11 +184,11 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
     this.logger.log(
       `neuro-crm-simulate ws=${input.workspaceId} model=writer baseLen=${prompt.length} outLen=${rawTranscript.length} tokens=${tokens}`,
     );
-    await this.planLimits
-      .trackAiUsage(input.workspaceId, tokens)
-      .catch(() => {});
+    await this.planLimits.trackAiUsage(input.workspaceId, tokens).catch(() => {});
     if (!rawTranscript || rawTranscript.trim().length < 10) {
-      this.logger.warn(`neuro-crm-simulate short output ws=${input.workspaceId} len=${rawTranscript.length}`);
+      this.logger.warn(
+        `neuro-crm-simulate short output ws=${input.workspaceId} len=${rawTranscript.length}`,
+      );
       return { transcript: rawTranscript, degraded: true };
     }
     return { transcript: rawTranscript };
@@ -242,8 +242,7 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
     );
 
     if (result.intent === 'COMPLAINT' || result.sentiment === 'NEGATIVE') {
-      const objectionKind =
-        result.intent === 'COMPLAINT' ? 'complaint' : 'negative_sentiment';
+      const objectionKind = result.intent === 'COMPLAINT' ? 'complaint' : 'negative_sentiment';
       void this.crmEmitter
         ?.emitObjectionRaised(workspaceId, contactId, objectionKind)
         .catch(() => {});

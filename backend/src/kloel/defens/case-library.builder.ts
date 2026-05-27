@@ -34,7 +34,9 @@ export class CaseLibraryBuilder {
 
     for (const event of wsEvents) {
       const outcomeKind = OUTCOME_EVENT_MAP[event.eventName];
-      if (!outcomeKind) continue;
+      if (!outcomeKind) {
+        continue;
+      }
 
       caseIndex++;
       const caseId = `${input.workspaceId}_case_${caseIndex}`;
@@ -81,13 +83,21 @@ export class CaseLibraryBuilder {
     const metrics: CaseMetric[] = [];
 
     if (typeof payload['revenueCents'] === 'number') {
-      metrics.push({ label: 'Revenue', value: `$${(payload['revenueCents'] / 100).toFixed(2)}`, trend: 'up' });
+      metrics.push({
+        label: 'Revenue',
+        value: `$${(payload['revenueCents'] / 100).toFixed(2)}`,
+        trend: 'up',
+      });
     }
     if (typeof payload['audienceSize'] === 'number') {
       metrics.push({ label: 'Audience', value: String(payload['audienceSize']), trend: 'up' });
     }
     if (typeof payload['conversionRate'] === 'number') {
-      metrics.push({ label: 'Conversion', value: `${(payload['conversionRate'] * 100).toFixed(1)}%`, trend: 'up' });
+      metrics.push({
+        label: 'Conversion',
+        value: `${(payload['conversionRate'] * 100).toFixed(1)}%`,
+        trend: 'up',
+      });
     }
     if (typeof payload['timeToClose'] === 'number') {
       metrics.push({ label: 'Time to Close', value: `${payload['timeToClose']}d`, trend: 'down' });
@@ -112,7 +122,10 @@ export class CaseLibraryBuilder {
     return `${prefix[outcomeKind]} — Case #${index}`;
   }
 
-  private buildOutcomeSummary(outcomeKind: CaseOutcomeKind, metrics: readonly CaseMetric[]): string {
+  private buildOutcomeSummary(
+    outcomeKind: CaseOutcomeKind,
+    metrics: readonly CaseMetric[],
+  ): string {
     const metricSummary = metrics.map((m) => `${m.label}: ${m.value}`).join(', ');
     const kindSummary: Readonly<Record<CaseOutcomeKind, string>> = {
       revenue_growth: 'Revenue increase achieved',
@@ -125,7 +138,11 @@ export class CaseLibraryBuilder {
     return `${kindSummary[outcomeKind]} — ${metricSummary}`;
   }
 
-  private computeReusability(outcomeKind: CaseOutcomeKind, metrics: readonly CaseMetric[], proofCount: number): number {
+  private computeReusability(
+    outcomeKind: CaseOutcomeKind,
+    metrics: readonly CaseMetric[],
+    proofCount: number,
+  ): number {
     const metricCount = metrics.length;
     const hasQuantified = metricCount > 1;
 
@@ -139,8 +156,12 @@ export class CaseLibraryBuilder {
     };
 
     let score = kindScore[outcomeKind];
-    if (hasQuantified) score += 0.1;
-    if (proofCount > 0) score += Math.min(0.1, proofCount * 0.02);
+    if (hasQuantified) {
+      score += 0.1;
+    }
+    if (proofCount > 0) {
+      score += Math.min(0.1, proofCount * 0.02);
+    }
 
     return clamp(score, 0, 1);
   }

@@ -1,11 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { LineageGuardService } from '../lineage/lineage-guard.service';
-import {
-  fail,
-  GateMode,
-  GateVerdict,
-  pass,
-} from './pulse-gates.types';
+import { fail, GateMode, GateVerdict, pass } from './pulse-gates.types';
 
 /**
  * UTP-PULSE-002 — `lineage-integrity` gate.
@@ -59,4 +54,3 @@ export function makeLineageIntegrityGate(
 ): LineageIntegrityGate {
   return new LineageIntegrityGate(guard, mode);
 }
-

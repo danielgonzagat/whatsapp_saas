@@ -24,10 +24,7 @@ describe('MindWorkspaceStateService', () => {
       },
     };
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        MindWorkspaceStateService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [MindWorkspaceStateService, { provide: PrismaService, useValue: prisma }],
     }).compile();
     service = module.get(MindWorkspaceStateService);
   });

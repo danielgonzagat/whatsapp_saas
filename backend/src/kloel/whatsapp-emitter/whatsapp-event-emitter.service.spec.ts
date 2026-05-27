@@ -222,7 +222,7 @@ describe('WhatsAppEventEmitterService', () => {
         (emitter as Record<string, unknown>).emitMessageReceived = () => {
           const svc = emitter;
           try {
-            svc['spine'].emit({
+            void svc['spine'].emit({
               eventName: 'commerce.whatsapp.message_received',
               workspaceId: WS,
               entityRef: { entityType: 'contact', entityId: 'c' },
@@ -233,7 +233,7 @@ describe('WhatsAppEventEmitterService', () => {
                 processorVersion: '0.0.0',
                 schemaVersion: '1.0.0',
               },
-              payload: undefined as Record<string, unknown>,
+              payload: undefined,
             });
           } catch {
             // If the spine throws, the emitter's safeEmit should have caught it.

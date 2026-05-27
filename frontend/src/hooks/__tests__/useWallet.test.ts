@@ -1,9 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 
-const mockWorkspaceId = vi.hoisted((): { value: string | undefined } => ({
-  value: 'test-workspace-id',
-}));
+const mockUseWorkspaceId = vi.hoisted(() => vi.fn<() => string | undefined>(() => 'test-workspace-id'));
 
 // Mock SWR before importing hooks
 vi.mock('swr', () => ({
@@ -17,14 +15,14 @@ vi.mock('@/lib/fetcher', () => ({
 
 // Mock useWorkspaceId
 vi.mock('@/hooks/useWorkspaceId', () => ({
-  useWorkspaceId: () => mockWorkspaceId.value,
+  useWorkspaceId: mockUseWorkspaceId,
 }));
 
 import { useWalletBalance, useWalletTransactions, useWalletChart, useWalletMonthly, useWalletWithdrawals, useBankAccounts, useWalletAnticipations } from '../useWallet';
 import useSWR from 'swr';
 
 beforeEach(() => {
-  mockWorkspaceId.value = 'test-workspace-id';
+  mockUseWorkspaceId.mockReturnValue('test-workspace-id');
 });
 
 describe('useWalletBalance', () => {
@@ -214,13 +212,13 @@ describe('useBankAccounts', () => {
   });
 
   it('returns null from addBankAccount when workspaceId is not available', async () => {
-    mockWorkspaceId.value = undefined;
+    mockUseWorkspaceId.mockReturnValue(undefined);
     const { result } = renderHook(() => useBankAccounts());
     await expect(result.current.addBankAccount({})).resolves.toBeNull();
   });
 
   it('does nothing from removeBankAccount when workspaceId is not available', async () => {
-    mockWorkspaceId.value = undefined;
+    mockUseWorkspaceId.mockReturnValue(undefined);
     const { result } = renderHook(() => useBankAccounts());
     await expect(result.current.removeBankAccount('id')).resolves.toBeUndefined();
   });

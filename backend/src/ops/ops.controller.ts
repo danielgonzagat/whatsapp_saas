@@ -17,7 +17,7 @@ import { QueueHealthService } from '../metrics/queue-health.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { getDlqQueue, queueRegistry } from '../queue/queue';
 import { RouteClass } from '../common/throttler/route-class.decorator';
-import { PaginationLimitPipe, clampLimit } from '../common/pagination-clamp.pipe';
+import { clampLimit, PaginationLimitPipe } from '../common/pagination-clamp.pipe';
 
 /** Ops controller. */
 @Controller('ops/queues')
@@ -41,7 +41,7 @@ export class OpsController {
   @Get(':name/dlq')
   async listDlq(
     @Param('name') name: string,
-    @Query('limit', new PaginationLimitPipe()) limit: number | string | undefined,
+    @Query('limit', new PaginationLimitPipe()) limit?: number | string,
   ) {
     const dlq = this.getDlq(name);
     const clampedLimit = clampLimit(limit);

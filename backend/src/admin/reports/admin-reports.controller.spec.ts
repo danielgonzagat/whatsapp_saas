@@ -49,17 +49,15 @@ describe('AdminReportsController', () => {
       const error = new Error('database unavailable');
       overviewMock.mockRejectedValue(error);
 
-      await expect(
-        controller.overview({ period: AdminHomePeriodDto.TODAY }),
-      ).rejects.toThrow('database unavailable');
+      await expect(controller.overview({ period: AdminHomePeriodDto.TODAY })).rejects.toThrow(
+        'database unavailable',
+      );
     });
   });
 
   describe('exportCsv', () => {
     it('calls service with period, adminId, from and to', async () => {
-      const mockRows = [
-        { orderNumber: 'ORD-1', totalBRL: '99.90' },
-      ];
+      const mockRows = [{ orderNumber: 'ORD-1', totalBRL: '99.90' }];
       exportCsvRowsMock.mockResolvedValue(mockRows);
 
       const result = await controller.exportCsv(
@@ -86,7 +84,7 @@ describe('AdminReportsController', () => {
 
       await controller.exportCsv(
         { period: AdminHomePeriodDto.TODAY },
-        { ...mockAdmin, id: 'admin-42' } as AuthenticatedAdmin,
+        { ...mockAdmin, id: 'admin-42' },
       );
 
       expect(exportCsvRowsMock).toHaveBeenCalledWith(
@@ -102,10 +100,7 @@ describe('AdminReportsController', () => {
       exportCsvRowsMock.mockRejectedValue(error);
 
       await expect(
-        controller.exportCsv(
-          { period: AdminHomePeriodDto.D30 },
-          mockAdmin,
-        ),
+        controller.exportCsv({ period: AdminHomePeriodDto.D30 }, mockAdmin),
       ).rejects.toThrow('export failed');
     });
   });

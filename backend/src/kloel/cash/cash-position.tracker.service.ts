@@ -16,11 +16,7 @@ export class CashPositionTrackerService {
     this.events.set(workspaceId, list);
   }
 
-  public getPosition(
-    workspaceId: string,
-    windowDays: number,
-    asOf?: number,
-  ): CashPositionSummary {
+  public getPosition(workspaceId: string, windowDays: number, asOf?: number): CashPositionSummary {
     const now = asOf ?? Date.now();
     const windowStartMs = now - windowDays * 24 * 60 * 60 * 1000;
 
@@ -51,10 +47,7 @@ export class CashPositionTrackerService {
     };
   }
 
-  public computeRunwayDays(
-    workspaceId: string,
-    monthlyBurnCents: bigint,
-  ): RunwayResult {
+  public computeRunwayDays(workspaceId: string, monthlyBurnCents: bigint): RunwayResult {
     const list = this.events.get(workspaceId) ?? [];
     let net = 0n;
 

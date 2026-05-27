@@ -311,11 +311,7 @@ describe('ConversationalOnboardingService', () => {
       });
       prisma.kloelMemory.findMany.mockResolvedValue([{ id: 'm1' }, { id: 'm2' }]);
 
-      const result = (await service.getStatus('ws-1')) as {
-        completed: boolean;
-        messagesCount: number;
-        hasStarted: boolean;
-      };
+      const result = await service.getStatus('ws-1');
 
       expect(result.completed).toBe(true);
       expect(result.messagesCount).toBe(2);
@@ -350,12 +346,13 @@ describe('ConversationalOnboardingService', () => {
   });
 
   describe('upstream errors', () => {
-    it('returns an honest fallback when OpenAI call fails', async () => {
+    it('returns an honest retry message when OpenAI call fails', async () => {
       chatCompletionWithRetryMock.mockRejectedValueOnce(new Error('OpenAI rate limit'));
 
-      await expect(service.chat('ws-1', 'Teste')).resolves.toContain(
-        'Tive uma instabilidade momentânea pra processar agora.',
+      await expect(service.chat('ws-1', 'Teste')).resolves.toBe(
+        'Tive uma instabilidade momentânea pra processar agora. Pode repetir a mensagem em alguns segundos? Estou aqui pra continuar o onboarding.',
       );
+      expect(toolsService.saveOnboardingMessage).not.toHaveBeenCalled();
     });
   });
 });

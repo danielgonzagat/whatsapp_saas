@@ -75,7 +75,8 @@ export function certifyMachineHumanAuditable(): VerificationVerdict {
   return {
     criterionId: 'V12',
     status: 'PASS',
-    evidence: 'architectural property — all cognitive state is machine-readable and human-auditable via event spine + PULSE reports',
+    evidence:
+      'architectural property — all cognitive state is machine-readable and human-auditable via event spine + PULSE reports',
     measuredAt: new Date().toISOString(),
   };
 }
@@ -190,7 +191,11 @@ export async function certifyDissolucaoVerificavel(
   return {
     criterionId: 'V15',
     status: 'FAIL',
-    evidence: `only ${coveredSurfaces.length}/${B17_SURFACE_COUNT} surfaces emit events: ${coveredSurfaces.join(', ')}. Missing: ${Object.keys(surfaceMap).filter((s) => !coveredSurfaces.includes(s)).join(', ')}`,
+    evidence: `only ${coveredSurfaces.length}/${B17_SURFACE_COUNT} surfaces emit events: ${coveredSurfaces.join(', ')}. Missing: ${Object.keys(
+      surfaceMap,
+    )
+      .filter((s) => !coveredSurfaces.includes(s))
+      .join(', ')}`,
     measuredAt: now,
   };
 }
@@ -198,7 +203,8 @@ export function certifyRemocaoDegradaCognicao(): VerificationVerdict {
   return {
     criterionId: 'V16',
     status: 'PASS',
-    evidence: 'architectural property — removal of one cognitive component would degrade organism cognition, not just remove a feature',
+    evidence:
+      'architectural property — removal of one cognitive component would degrade organism cognition, not just remove a feature',
     measuredAt: new Date().toISOString(),
   };
 }

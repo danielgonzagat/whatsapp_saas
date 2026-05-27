@@ -12,10 +12,7 @@ import { clamp, clampScore } from './agency.types';
 const NOW = Date.parse('2026-05-14T12:00:00.000Z');
 const AGENCY = 'agency_001';
 
-function makeData(
-  workspaceId: string,
-  overrides: Partial<ClientData> = {},
-): ClientData {
+function makeData(workspaceId: string, overrides: Partial<ClientData> = {}): ClientData {
   return {
     workspaceId,
     revenueCents: overrides.revenueCents ?? 100_000n,
@@ -99,12 +96,8 @@ describe('AGENCY-010 — PerClientContextBundler', () => {
   });
 
   it('produces consistent isolation hash for same input', () => {
-    const r1 = bundler.buildContext(
-      makeBundleInput('client_same', { nowMs: NOW }),
-    );
-    const r2 = bundler.buildContext(
-      makeBundleInput('client_same', { nowMs: NOW }),
-    );
+    const r1 = bundler.buildContext(makeBundleInput('client_same', { nowMs: NOW }));
+    const r2 = bundler.buildContext(makeBundleInput('client_same', { nowMs: NOW }));
 
     expect(r1.isolationHash).toBe(r2.isolationHash);
     expect(r1.bundle.isolationToken).toBe(r2.bundle.isolationToken);
@@ -127,11 +120,7 @@ describe('AGENCY-010 — PerClientContextBundler', () => {
   it('rejects bundle integrity for wrong agency', () => {
     const { bundle } = bundler.buildContext(makeBundleInput('client_a'));
 
-    const valid = bundler.verifyBundleIntegrity(
-      bundle,
-      'agency_other',
-      'client_a',
-    );
+    const valid = bundler.verifyBundleIntegrity(bundle, 'agency_other', 'client_a');
     expect(valid).toBe(false);
   });
 
@@ -143,11 +132,7 @@ describe('AGENCY-010 — PerClientContextBundler', () => {
       agencyWorkspaceId: 'agency_intruder',
     };
 
-    const valid = bundler.verifyBundleIntegrity(
-      tampered,
-      'agency_intruder',
-      'client_a',
-    );
+    const valid = bundler.verifyBundleIntegrity(tampered, 'agency_intruder', 'client_a');
     expect(valid).toBe(false);
   });
 
@@ -159,11 +144,7 @@ describe('AGENCY-010 — PerClientContextBundler', () => {
       clientWorkspaceId: 'client_intruder',
     };
 
-    const valid = bundler.verifyBundleIntegrity(
-      tampered,
-      AGENCY,
-      'client_intruder',
-    );
+    const valid = bundler.verifyBundleIntegrity(tampered, AGENCY, 'client_intruder');
     expect(valid).toBe(false);
   });
 
@@ -201,16 +182,8 @@ describe('AGENCY-010 — PerClientContextBundler', () => {
     expect(r1.isolationHash).not.toBe(r2.isolationHash);
     expect(r1.bundle.isolationToken).not.toBe(r2.bundle.isolationToken);
 
-    const alphaValidOnAlpha = bundler.verifyBundleIntegrity(
-      r1.bundle,
-      AGENCY,
-      'client_alpha',
-    );
-    const alphaValidOnBeta = bundler.verifyBundleIntegrity(
-      r1.bundle,
-      AGENCY,
-      'client_beta',
-    );
+    const alphaValidOnAlpha = bundler.verifyBundleIntegrity(r1.bundle, AGENCY, 'client_alpha');
+    const alphaValidOnBeta = bundler.verifyBundleIntegrity(r1.bundle, AGENCY, 'client_beta');
 
     expect(alphaValidOnAlpha).toBe(true);
     expect(alphaValidOnBeta).toBe(false);
@@ -219,9 +192,7 @@ describe('AGENCY-010 — PerClientContextBundler', () => {
   it('internal-knowledge-leak-guard: cross-client token collision impossible', () => {
     const ids = Array.from({ length: 20 }, (_, i) => `wks_${String(i + 1).padStart(3, '0')}`);
 
-    const bundles = ids.map((id) =>
-      bundler.buildContext(makeBundleInput(id)).bundle,
-    );
+    const bundles = ids.map((id) => bundler.buildContext(makeBundleInput(id)).bundle);
 
     const tokens = new Set(bundles.map((b) => b.isolationToken));
     expect(tokens.size).toBe(ids.length);
@@ -235,11 +206,7 @@ describe('AGENCY-010 — PerClientContextBundler', () => {
       isolationToken: 'malicious_token_0000',
     };
 
-    const valid = bundler.verifyBundleIntegrity(
-      tampered,
-      AGENCY,
-      'client_original',
-    );
+    const valid = bundler.verifyBundleIntegrity(tampered, AGENCY, 'client_original');
     expect(valid).toBe(false);
   });
 });

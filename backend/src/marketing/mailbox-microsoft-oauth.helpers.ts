@@ -49,10 +49,7 @@ export interface MicrosoftProfileResponse {
 
 import { readConfiguredValue } from './mailbox-oauth-callback.helpers';
 
-import {
-  normalizeReturnTo,
-  expiresAtFromSeconds,
-} from './mailbox-gmail-oauth/oauth-state';
+import { normalizeReturnTo, expiresAtFromSeconds } from './mailbox-gmail-oauth/oauth-state';
 export { normalizeReturnTo, expiresAtFromSeconds };
 
 export function readMicrosoftStateSecret(config: ConfigService): string {

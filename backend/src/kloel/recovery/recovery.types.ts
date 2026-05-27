@@ -78,10 +78,7 @@ export interface RecoveryTactic {
 
 type RecoveryDelegationRiskClass = 'R1' | 'R2' | 'R3' | 'R4';
 
-type RecoveryDelegationMode =
-  | 'allowed_alone'
-  | 'requires_review'
-  | 'human_only';
+type RecoveryDelegationMode = 'allowed_alone' | 'requires_review' | 'human_only';
 
 export interface RecoverySafetyContract {
   readonly riskClass: RecoveryDelegationRiskClass;
@@ -168,7 +165,10 @@ export interface RecoveryProofPackage {
 }
 
 export function hashEventPattern(events: readonly SpineEventRef[]): string {
-  const names = events.map((e) => e.eventName).sort().join('|');
+  const names = events
+    .map((e) => e.eventName)
+    .sort()
+    .join('|');
   let hash = 0;
   for (let i = 0; i < names.length; i++) {
     const ch = names.charCodeAt(i);

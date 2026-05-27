@@ -9,51 +9,13 @@ import { SpineEmitterService } from './spine-emitter.service';
  * those prefixes have been observed in the spine buffer.
  */
 const B17_SURFACE_EVENT_PREFIXES: ReadonlyMap<string, readonly string[]> = new Map([
-  [
-    'checkout_wallet_billing',
-    [
-      'commerce.cart.',
-      'commerce.payment.',
-    ],
-  ],
-  [
-    'crm',
-    [
-      'commerce.crm.',
-      'commerce.lead.objection_raised',
-    ],
-  ],
-  [
-    'whatsapp_inbox',
-    [
-      'commerce.whatsapp.',
-    ],
-  ],
-  [
-    'campaigns_ads',
-    [
-      'commerce.campaign.',
-    ],
-  ],
-  [
-    'member_area_affiliate',
-    [
-      'commerce.member_area.',
-      'commerce.affiliate.',
-    ],
-  ],
-  [
-    'kyc_auth',
-    [
-      'commerce.kyc.',
-    ],
-  ],
-  [
-    'post_sale_ltv',
-    [
-      'commerce.post_sale.',
-    ],
-  ],
+  ['checkout_wallet_billing', ['commerce.cart.', 'commerce.payment.']],
+  ['crm', ['commerce.crm.', 'commerce.lead.objection_raised']],
+  ['whatsapp_inbox', ['commerce.whatsapp.']],
+  ['campaigns_ads', ['commerce.campaign.']],
+  ['member_area_affiliate', ['commerce.member_area.', 'commerce.affiliate.']],
+  ['kyc_auth', ['commerce.kyc.']],
+  ['post_sale_ltv', ['commerce.post_sale.']],
 ]);
 
 /**

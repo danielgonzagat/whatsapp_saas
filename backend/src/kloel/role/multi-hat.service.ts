@@ -35,14 +35,10 @@ export class MultiHatService {
     const nowMs = input.nowMs ?? Date.now();
     const profileUpdatedAt = new Date(nowMs).toISOString();
 
-    const detections = [...input.detections].sort(
-      (a, b) => b.confidence - a.confidence,
-    );
+    const detections = [...input.detections].sort((a, b) => b.confidence - a.confidence);
 
     const primaryRole: Role | undefined =
-      detections.length > 0 && detections[0]!.confidence >= 0.3
-        ? detections[0]!.role
-        : undefined;
+      detections.length > 0 && detections[0]!.confidence >= 0.3 ? detections[0]!.role : undefined;
 
     const secondaryRoles: Role[] = detections
       .slice(primaryRole ? 1 : 0)
@@ -101,10 +97,16 @@ export class MultiHatService {
    */
   public getActiveRoles(workspaceId: string): readonly Role[] {
     const profile = this.profiles.get(workspaceId);
-    if (!profile) return [];
+    if (!profile) {
+      return [];
+    }
     const roles: Role[] = [];
-    if (profile.primaryRole) roles.push(profile.primaryRole);
-    for (const r of profile.secondaryRoles) roles.push(r);
+    if (profile.primaryRole) {
+      roles.push(profile.primaryRole);
+    }
+    for (const r of profile.secondaryRoles) {
+      roles.push(r);
+    }
     return roles;
   }
 

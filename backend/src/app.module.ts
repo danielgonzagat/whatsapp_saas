@@ -80,6 +80,7 @@ import { IdempotencyMiddleware } from './common/idempotency/idempotency.middlewa
 import { IdempotencyModule } from './common/idempotency/idempotency.module';
 import { KycModule } from './kyc/kyc.module';
 import { MarketingModule } from './marketing/marketing.module';
+import { MarketingChannelsModule } from './marketing/channels/marketing-channels.module';
 import { MarketplaceModule } from './marketplace/marketplace.module';
 import { MemberAreaModule } from './member-area/member-area.module';
 import { MetaModule } from './meta/meta.module';
@@ -130,6 +131,7 @@ import { PlansModule } from './plans/plans.module';
 import { PipelineModule } from './pipeline/pipeline.module';
 import { ProductCategoriesModule } from './product-categories/product-categories.module';
 import { ProductsModule } from './products/products.module';
+import { SitesModule } from './sites/sites.module';
 import { PublicApiModule } from './public-api/public-api.module';
 import { PulseModule } from './pulse/pulse.module';
 import { ReportsModule } from './reports/reports.module';
@@ -279,10 +281,12 @@ function setRedisClientListenerBudget(client: Redis): void {
     MemberAreaModule, // 🎓 Member Areas (Cursos, Comunidades)
     AffiliateModule, // 🤝 Sistema de Afiliados
     MarketingModule, // 📊 Marketing Command Center
+    MarketingChannelsModule, // OmniCore W1 — 6 ChannelDispatchAdapters under marketing/channels/
     PartnershipsModule, // 🤝 Partnerships (Collaborators, Affiliates, Chat)
     VideoModule, // 🎬 Video generation jobs
     CheckoutModule, // Checkout System (products, plans, orders)
     ProductsModule, // 🏷️ Canonical product domain service
+    SitesModule, // 🌐 Site builder CRUD
     KycModule, // KYC - Know Your Customer
     ReportsModule, // Reports & Analytics (Vendas, Assinaturas, Churn, etc.)
     SalesModule, // 💰 In-chat sales (PIX, card, boleto)

@@ -319,7 +319,9 @@ try {
   });
 
   if (result.status !== 0) {
-    throw new Error(`structural observed fixture failed\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`);
+    throw new Error(
+      `structural observed fixture failed\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`,
+    );
   }
 
   return JSON.parse(result.stdout) as StructuralObservedFixtureResult;

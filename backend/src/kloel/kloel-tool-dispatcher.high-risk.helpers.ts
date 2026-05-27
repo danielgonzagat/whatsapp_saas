@@ -8,6 +8,9 @@ export function titleForHighRiskTool(toolName: string): string {
   if (toolName === 'change_plan') {
     return 'Aprovar alteracao de plano pela CIA';
   }
+  if (toolName === 'products.review_and_publish' || toolName === 'publish_product') {
+    return 'Aprovar publicacao de produto pela CIA';
+  }
   return `Aprovar acao ${toolName}`;
 }
 
@@ -31,11 +34,25 @@ export function promptForHighRiskTool(toolName: string, args: UnknownRecord): st
             : 'plano solicitado';
     return `A CIA quer alterar o plano do workspace para "${plan}". Revise impacto de cobranca e limites antes de autorizar.`;
   }
+  if (toolName === 'products.review_and_publish' || toolName === 'publish_product') {
+    const product =
+      typeof args.productName === 'string' && args.productName.trim()
+        ? args.productName.trim()
+        : typeof args.productId === 'string' && args.productId.trim()
+          ? args.productId.trim()
+          : 'produto solicitado';
+    return `A CIA quer publicar o produto "${product}". Isso pode liberar venda real, checkout e afiliados; revise antes de autorizar.`;
+  }
   return `A CIA solicitou a acao ${toolName}. Revise o contexto antes de executar.`;
 }
 
 export function isSupportedApprovedHighRiskTool(toolName: string): boolean {
-  return toolName === 'create_campaign' || toolName === 'change_plan';
+  return (
+    toolName === 'create_campaign' ||
+    toolName === 'change_plan' ||
+    toolName === 'products.review_and_publish' ||
+    toolName === 'publish_product'
+  );
 }
 
 /**

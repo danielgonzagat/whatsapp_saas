@@ -11,7 +11,14 @@ import type { SelfGap, ImprovementProposal } from './types';
  */
 
 const PROPOSED_FIXES: Readonly<
-  Record<string, { readonly description: string; readonly targetPattern: readonly string[]; readonly risk: 'safe' | 'normal' | 'high' | 'critical' }>
+  Record<
+    string,
+    {
+      readonly description: string;
+      readonly targetPattern: readonly string[];
+      readonly risk: 'safe' | 'normal' | 'high' | 'critical';
+    }
+  >
 > = {
   payments: {
     description: 'Add idempotency guard to payment webhook handler',

@@ -40,14 +40,9 @@ describe('DashboardController', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     resolveWorkspaceIdMock.mockReturnValue('ws-default');
-    normalizeStorageUrlForRequestMock.mockImplementation(
-      (url: string | null) => url,
-    );
+    normalizeStorageUrlForRequestMock.mockImplementation((url: string | null) => url);
 
-    controller = new DashboardController(
-      dashboardServiceMock as never,
-      {} as never,
-    );
+    controller = new DashboardController(dashboardServiceMock as never, {} as never);
   });
 
   describe('getStats', () => {
@@ -74,7 +69,7 @@ describe('DashboardController', () => {
 
       const req = { user: { id: 'user-2' } };
       const query = { period: '7d', workspaceId: 'ws-query' };
-      const result = await controller.getHome(req as never, query as never);
+      const result = await controller.getHome(req as never, query);
 
       expect(resolveWorkspaceIdMock).toHaveBeenCalledWith(req, 'ws-query');
       expect(getHomeSnapshotMock).toHaveBeenCalledWith('ws-home', {
@@ -89,9 +84,9 @@ describe('DashboardController', () => {
       const error = new Error('Database connection lost');
       getStatsMock.mockRejectedValue(error);
 
-      await expect(
-        controller.getStats({ user: {} } as never, 'ws-err'),
-      ).rejects.toThrow('Database connection lost');
+      await expect(controller.getStats({ user: {} } as never, 'ws-err')).rejects.toThrow(
+        'Database connection lost',
+      );
     });
   });
 

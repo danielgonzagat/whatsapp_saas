@@ -60,10 +60,15 @@ export class NoRegretPipelineService {
 
   public async assess(input: DetectionInput, refundRisk?: number): Promise<NoRegretState> {
     const nowMs = input.nowMs ?? Date.now();
-    const initialEvents = filterByWorkspaceAndEntity(input.events, input.workspaceId, input.entityRef);
+    const initialEvents = filterByWorkspaceAndEntity(
+      input.events,
+      input.workspaceId,
+      input.entityRef,
+    );
     const initialPayment = latestEvent(initialEvents, 'commerce.payment.approved');
     const scopedEntityRef = input.entityRef ?? initialPayment?.entityRef;
-    const scopedInput = scopedEntityRef === undefined ? input : { ...input, entityRef: scopedEntityRef };
+    const scopedInput =
+      scopedEntityRef === undefined ? input : { ...input, entityRef: scopedEntityRef };
     const antiRemorse = this.antiRemorse.assess(scopedInput, refundRisk);
     const activation = this.activation.track(scopedInput);
     const firstValue = await this.firstValue.detect(scopedInput);

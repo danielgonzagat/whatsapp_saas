@@ -103,7 +103,12 @@ describe('GmailOAuthHandshakeService', () => {
       expect(upsertCall.create.lastError).toBeNull();
       expect(upsertCall.create.metadata).toBeDefined();
 
-      const { workspaceId: _wsCreate, provider: _provCreate, email: _emailCreate, ...createConnectionData } = upsertCall.create;
+      const {
+        workspaceId: _wsCreate,
+        provider: _provCreate,
+        email: _emailCreate,
+        ...createConnectionData
+      } = upsertCall.create;
       expect(upsertCall.update).toEqual(createConnectionData);
 
       expect(upsertCall.select).toEqual({
@@ -133,13 +138,13 @@ describe('GmailOAuthHandshakeService', () => {
         access_token: 'access-token-abc',
       });
 
-      await expect(
-        service.persistOAuthResult(parsedState, 'auth-code-123'),
-      ).rejects.toThrow('gmail_refresh_token_not_granted');
+      await expect(service.persistOAuthResult(parsedState, 'auth-code-123')).rejects.toThrow(
+        'gmail_refresh_token_not_granted',
+      );
 
-      await expect(
-        service.persistOAuthResult(parsedState, 'auth-code-123'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.persistOAuthResult(parsedState, 'auth-code-123')).rejects.toThrow(
+        BadRequestException,
+      );
 
       expect(mockMailboxUpsert).not.toHaveBeenCalled();
       expect(mockFetchUserInfo).not.toHaveBeenCalled();
@@ -152,13 +157,13 @@ describe('GmailOAuthHandshakeService', () => {
         verified_email: false,
       });
 
-      await expect(
-        service.persistOAuthResult(parsedState, 'auth-code-123'),
-      ).rejects.toThrow('gmail_email_not_verified');
+      await expect(service.persistOAuthResult(parsedState, 'auth-code-123')).rejects.toThrow(
+        'gmail_email_not_verified',
+      );
 
-      await expect(
-        service.persistOAuthResult(parsedState, 'auth-code-123'),
-      ).rejects.toThrow(BadRequestException);
+      await expect(service.persistOAuthResult(parsedState, 'auth-code-123')).rejects.toThrow(
+        BadRequestException,
+      );
 
       expect(mockMailboxUpsert).not.toHaveBeenCalled();
     });
@@ -184,9 +189,7 @@ describe('GmailOAuthHandshakeService', () => {
       await service.persistOAuthResult(isolatedState, 'auth-code-456');
 
       const whereClause = mockMailboxUpsert.mock.calls[0][0].where;
-      expect(whereClause.workspaceId_provider_email.workspaceId).toBe(
-        'ws-isolated-999',
-      );
+      expect(whereClause.workspaceId_provider_email.workspaceId).toBe('ws-isolated-999');
 
       const createClause = mockMailboxUpsert.mock.calls[0][0].create;
       expect(createClause.workspaceId).toBe('ws-isolated-999');

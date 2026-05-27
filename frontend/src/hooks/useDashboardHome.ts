@@ -37,6 +37,7 @@ export function useDashboardHome(params?: {
   const { data, error, isLoading, mutate } = useSWR<DashboardHomeResponse>(key, swrFetcher, {
     refreshInterval: 60_000,
     keepPreviousData: true,
+    revalidateOnFocus: false,
   });
 
   return {

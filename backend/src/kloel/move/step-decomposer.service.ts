@@ -39,7 +39,10 @@ export class StepDecomposerService {
     };
   }
 
-  private computeEffectiveMinutes(raw: number, complexity: ComplexActionInput['complexity']): number {
+  private computeEffectiveMinutes(
+    raw: number,
+    complexity: ComplexActionInput['complexity'],
+  ): number {
     switch (complexity) {
       case 'simple':
         return raw * 0.5;
@@ -112,7 +115,10 @@ export class StepDecomposerService {
     return steps;
   }
 
-  private pickVerbSequence(prior: ComplexActionInput['priorKnowledgeLevel'], count: number): string[] {
+  private pickVerbSequence(
+    prior: ComplexActionInput['priorKnowledgeLevel'],
+    count: number,
+  ): string[] {
     if (prior === 'full') {
       return ['Execute', 'Verify', 'Document'];
     }
@@ -136,9 +142,7 @@ export class StepDecomposerService {
     const tool0 = availableTools[0] ?? '';
     const tool1 = availableTools[1];
     const tool2 = availableTools[2];
-    const mapped: (ToolAssistMap | null)[] = [
-      { verb: 'draft', assistedTool: tool0 },
-    ];
+    const mapped: (ToolAssistMap | null)[] = [{ verb: 'draft', assistedTool: tool0 }];
 
     if (tool1 !== undefined) {
       mapped.push({ verb: 'generate', assistedTool: tool1 });

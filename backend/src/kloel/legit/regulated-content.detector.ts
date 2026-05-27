@@ -19,7 +19,15 @@ import { REGULATED_CONTENT_DISCLAIMERS, generateId } from './types';
 
 const CATEGORY_KEYWORDS: Readonly<Record<RegulatedCategory, readonly string[]>> = {
   health_claims: ['cura', 'tratamento', 'doenca', 'saude', 'emagrecimento', 'clinico', 'medico'],
-  financial_advice: ['investimento', 'acoes', 'renda fixa', 'day trade', 'forex', 'criptomoeda', 'lucro'],
+  financial_advice: [
+    'investimento',
+    'acoes',
+    'renda fixa',
+    'day trade',
+    'forex',
+    'criptomoeda',
+    'lucro',
+  ],
   legal_advice: ['juridico', 'advogado', 'processo', 'lei', 'direito', 'constituicao'],
   medical_device: ['dispositivo medico', 'aparelho', 'protese', 'implante', 'ortodontico'],
   pharmaceutical: ['medicamento', 'remedio', 'farmaco', 'droga', 'prescricao', 'dose'],
@@ -33,9 +41,7 @@ const CATEGORY_KEYWORDS: Readonly<Record<RegulatedCategory, readonly string[]>> 
   restricted_product: ['produto controlado', 'arma', 'explosivo', 'substancia proibida'],
 };
 
-export function detectRegulatedContent(
-  input: RegulatedContentInput,
-): RegulatedContentResult {
+export function detectRegulatedContent(input: RegulatedContentInput): RegulatedContentResult {
   const nowMs = input.nowMs ?? Date.now();
   const violations: PolicyViolation[] = [];
   const lowerContent = input.content.toLowerCase();

@@ -1,7 +1,4 @@
-import {
-  TimeToValueService,
-  type TimeToValueDistribution,
-} from './time-to-value.service';
+import { TimeToValueService, type TimeToValueDistribution } from './time-to-value.service';
 
 function ms(minutes: number): number {
   return minutes * 60 * 1000;
@@ -91,7 +88,11 @@ describe('TimeToValueService', () => {
 
     it('computes TTV for commerce.post_sale.first_value_obtained', () => {
       service.recordEvent('wks_2', 'commerce.lead.created', lead);
-      service.recordEvent('wks_2', 'commerce.post_sale.first_value_obtained', addMinutes(lead, 120));
+      service.recordEvent(
+        'wks_2',
+        'commerce.post_sale.first_value_obtained',
+        addMinutes(lead, 120),
+      );
       expect(service.getTimeToValueMs('wks_2')).toBe(ms(120));
     });
 
@@ -210,7 +211,11 @@ describe('TimeToValueService', () => {
       service.recordEvent('a', 'commerce.payment.approved', d('2026-05-01T10:30:00Z'));
 
       service.recordEvent('b', 'commerce.lead.created', d('2026-05-10T10:00:00Z'));
-      service.recordEvent('b', 'commerce.post_sale.first_value_obtained', d('2026-05-11T10:00:00Z'));
+      service.recordEvent(
+        'b',
+        'commerce.post_sale.first_value_obtained',
+        d('2026-05-11T10:00:00Z'),
+      );
 
       expect(service.getTimeToValueMs('a')).toBe(ms(30));
       expect(service.getTimeToValueMs('b')).toBe(ms(1440));

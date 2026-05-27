@@ -89,7 +89,11 @@ export class CrmEventEmitterService {
         processorVersion: '1.0.0',
         schemaVersion: '1.0.0',
       },
-      payload: { dealId, ...(value !== undefined ? { value } : {}), ...(contactId ? { contactId } : {}) },
+      payload: {
+        dealId,
+        ...(value !== undefined ? { value } : {}),
+        ...(contactId ? { contactId } : {}),
+      },
     });
   }
 
@@ -110,7 +114,11 @@ export class CrmEventEmitterService {
         processorVersion: '1.0.0',
         schemaVersion: '1.0.0',
       },
-      payload: { dealId, ...(lossReason ? { lossReason } : {}), ...(contactId ? { contactId } : {}) },
+      payload: {
+        dealId,
+        ...(lossReason ? { lossReason } : {}),
+        ...(contactId ? { contactId } : {}),
+      },
     });
   }
 

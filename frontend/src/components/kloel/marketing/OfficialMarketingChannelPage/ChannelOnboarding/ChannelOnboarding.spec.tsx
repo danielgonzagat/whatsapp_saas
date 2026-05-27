@@ -105,15 +105,16 @@ describe('atoms', () => {
     );
   });
 
-  it('StepBar lights completed+current traces only', () => {
+  it('StepBar lights completed+current traces from the palette', () => {
     const { container } = render(<StepBar step={2} C={D} />);
-    const traces = Array.from(
-      (container.firstElementChild as HTMLElement).children,
-    ) as HTMLElement[];
+    const root = container.firstElementChild as HTMLElement;
+    const traces = Array.from(root.children) as HTMLElement[];
+
     expect(traces).toHaveLength(4);
     expect(traces[0].style.background).toBe(D.ember);
     expect(traces[2].style.background).toBe(D.ember);
     expect(traces[3].style.background).toBe(D.inactiveTrace);
+    expect(root).toBeTruthy();
   });
 });
 

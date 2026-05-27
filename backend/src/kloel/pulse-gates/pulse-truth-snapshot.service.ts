@@ -82,9 +82,7 @@ export class PulseTruthSnapshotService {
       certificationVerdict = 'AT_RISK';
     }
 
-    const overclaimRisk = hasHardFailData
-      ? clampScore(hardFailFailed / hardFailTotal)
-      : 1;
+    const overclaimRisk = hasHardFailData ? clampScore(hardFailFailed / hardFailTotal) : 1;
 
     return {
       noOverclaimStatus,

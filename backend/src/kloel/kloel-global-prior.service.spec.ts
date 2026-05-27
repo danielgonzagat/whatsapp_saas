@@ -61,9 +61,18 @@ describe('KloelGlobalPriorService', () => {
 
       expect(upsert).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { channel_decisionType_action: { channel: 'whatsapp', decisionType: 'tom', action: 'DIRECT' } },
+          where: {
+            channel_decisionType_action: {
+              channel: 'whatsapp',
+              decisionType: 'tom',
+              action: 'DIRECT',
+            },
+          },
           create: expect.objectContaining({ observations: 1, successes: 1 }),
-          update: expect.objectContaining({ observations: { increment: 1 }, successes: { increment: 1 } }),
+          update: expect.objectContaining({
+            observations: { increment: 1 },
+            successes: { increment: 1 },
+          }),
         }),
       );
     });
@@ -77,7 +86,13 @@ describe('KloelGlobalPriorService', () => {
 
       expect(upsert).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { channel_decisionType_action: { channel: 'instagram', decisionType: 'audio_vs_text', action: 'text' } },
+          where: {
+            channel_decisionType_action: {
+              channel: 'instagram',
+              decisionType: 'audio_vs_text',
+              action: 'text',
+            },
+          },
           create: expect.objectContaining({ observations: 1, successes: 0 }),
           update: expect.objectContaining({ observations: { increment: 1 } }),
         }),

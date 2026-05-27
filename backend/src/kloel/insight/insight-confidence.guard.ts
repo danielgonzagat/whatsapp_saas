@@ -31,9 +31,6 @@ export function confidenceFloor(
   return { pass: true };
 }
 
-export function filterAboveFloor(
-  insights: readonly Insight[],
-  floor?: number,
-): readonly Insight[] {
+export function filterAboveFloor(insights: readonly Insight[], floor?: number): readonly Insight[] {
   return insights.filter((i) => confidenceFloor(i, floor).pass);
 }

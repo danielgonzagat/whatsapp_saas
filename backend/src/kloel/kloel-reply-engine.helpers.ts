@@ -191,6 +191,7 @@ interface BuildAssistantReplyDeps {
       tool_calls?: OpenAI.Chat.ChatCompletionAssistantMessageParam['tool_calls'];
     };
     toolMessages?: Array<{ role?: 'tool'; tool_call_id: string; name: string; content: string }>;
+    prebuiltCognitiveState?: Record<string, unknown>;
   }) => Promise<ChatCompletionMessageParam[]>;
   buildDynamicRuntimeContext: (params: {
     workspaceId?: string;

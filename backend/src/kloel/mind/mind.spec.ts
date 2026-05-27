@@ -2,13 +2,8 @@ import { ValenceTaggerService } from './valence-tagger.service';
 import { ValenceAggregatorService } from './valence-aggregator.service';
 import { AttentionService } from './attention.service';
 import { HebbianService } from './hebbian.service';
-import {
-  ConsolidationService,
-  WorkingMemoryItem,
-} from './consolidation.service';
-import {
-  MultiTimescaleCoordinator,
-} from './multi-timescale.coordinator';
+import { ConsolidationService, WorkingMemoryItem } from './consolidation.service';
+import { MultiTimescaleCoordinator } from './multi-timescale.coordinator';
 import { MindBackgroundProcessor } from './mind-bg.processor';
 import type { SpineEventRef } from './mind.types';
 
@@ -22,13 +17,21 @@ const baseEvent = (over: Partial<SpineEventRef>): SpineEventRef => {
   };
   // Honor explicit `entityRef: undefined` (test wants no entityRef).
   if ('entityRef' in over) {
-    if (over.entityRef !== undefined) event['entityRef'] = over.entityRef;
+    if (over.entityRef !== undefined) {
+      event['entityRef'] = over.entityRef;
+    }
   } else {
     event['entityRef'] = { entityType: 'lead', entityId: 'lead_1' };
   }
-  if (over.valence !== undefined) event['valence'] = over.valence;
-  if (over.payload !== undefined) event['payload'] = over.payload;
-  if (over.correlationId !== undefined) event['correlationId'] = over.correlationId;
+  if (over.valence !== undefined) {
+    event['valence'] = over.valence;
+  }
+  if (over.payload !== undefined) {
+    event['payload'] = over.payload;
+  }
+  if (over.correlationId !== undefined) {
+    event['correlationId'] = over.correlationId;
+  }
   return event as SpineEventRef;
 };
 
@@ -47,7 +50,9 @@ describe('ValenceTaggerService (UTP-MIND-VALENCE-001)', () => {
   });
 
   it('tags post-sale satisfaction and repurchase terminals with honest defaults', () => {
-    const satisfaction = baseEvent({ eventName: 'commerce.post_sale.satisfaction_signal_observed' });
+    const satisfaction = baseEvent({
+      eventName: 'commerce.post_sale.satisfaction_signal_observed',
+    });
     const repurchase = baseEvent({ eventName: 'commerce.post_sale.repurchase_window_opened' });
     expect(tagger.tag(satisfaction).valence).toBe('neutral');
     expect(tagger.tag(repurchase).valence).toBe('positive');
@@ -221,7 +226,11 @@ describe('ConsolidationService (UTP-MIND-CONS-001/002)', () => {
   function buildEvents(): readonly SpineEventRef[] {
     return [
       baseEvent({ eventId: 'e1', eventName: 'commerce.lead.replied', valence: 'positive' }),
-      baseEvent({ eventId: 'e2', eventName: 'commerce.lead.objection_raised', valence: 'negative' }),
+      baseEvent({
+        eventId: 'e2',
+        eventName: 'commerce.lead.objection_raised',
+        valence: 'negative',
+      }),
     ];
   }
 
@@ -290,12 +299,7 @@ describe('MindBackgroundProcessor (UTP-MIND-BG-001)', () => {
     const aggregator = new ValenceAggregatorService();
     const hebbian = new HebbianService({ windowMs: 60_000 });
     const consolidation = new ConsolidationService();
-    const proc = new MindBackgroundProcessor(
-      coordinator,
-      aggregator,
-      hebbian,
-      consolidation,
-    );
+    const proc = new MindBackgroundProcessor(coordinator, aggregator, hebbian, consolidation);
     const events: SpineEventRef[] = [
       baseEvent({ eventName: 'commerce.lead.replied', occurredAt: '2026-05-13T20:00:00.000Z' }),
       baseEvent({

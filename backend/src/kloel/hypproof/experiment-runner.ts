@@ -8,10 +8,7 @@ export class ExperimentRunnerService {
   private readonly runs = new Map<string, ExperimentRun>();
   private readonly idempotencyKeys = new Set<string>();
 
-  start(
-    experiment: MicroExperiment,
-    authorization: AuthorizationDecision,
-  ): ExperimentRun | null {
+  start(experiment: MicroExperiment, authorization: AuthorizationDecision): ExperimentRun | null {
     if (!authorization.authorized) {
       this.logger.warn(
         `Cannot start experiment ${experiment.id}: not authorized (${authorization.reason})`,
@@ -45,9 +42,7 @@ export class ExperimentRunnerService {
     };
 
     this.runs.set(run.id, run);
-    this.logger.debug(
-      `Experiment run started: ${run.id} for experiment ${experiment.id}`,
-    );
+    this.logger.debug(`Experiment run started: ${run.id} for experiment ${experiment.id}`);
     return run;
   }
 

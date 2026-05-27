@@ -36,40 +36,38 @@ function makeFingerprint(
     eventPatternHash: hashEventPattern(related),
     firstSeenAt: related.length > 0 ? (related[0]?.occurredAt ?? '') : '',
     repeatCount: 1,
-    lastSeenAt:
-      related.length > 0
-        ? (related[related.length - 1]?.occurredAt ?? '')
-        : '',
+    lastSeenAt: related.length > 0 ? (related[related.length - 1]?.occurredAt ?? '') : '',
   };
 }
 
-function severityFromCount(
-  category: ErrorCategory,
-  count: number,
-): 'low' | 'medium' | 'high' {
+function severityFromCount(category: ErrorCategory, count: number): 'low' | 'medium' | 'high' {
   if (category === 'handoff') {
-    if (count >= HANDOFF_HIGH_SEVERITY_THRESHOLD) return 'high';
+    if (count >= HANDOFF_HIGH_SEVERITY_THRESHOLD) {
+      return 'high';
+    }
     return count >= 2 ? 'medium' : 'low';
   }
   if (category === 'decline') {
-    if (count >= DECLINE_HIGH_SEVERITY_THRESHOLD) return 'high';
+    if (count >= DECLINE_HIGH_SEVERITY_THRESHOLD) {
+      return 'high';
+    }
     return count >= 2 ? 'medium' : 'low';
   }
   return count >= 4 ? 'high' : count >= 2 ? 'medium' : 'low';
 }
 
-function detectHandoffs(
-  input: ErrorDetectorInput,
-): DetectedError[] {
+function detectHandoffs(input: ErrorDetectorInput): DetectedError[] {
   const handoffEvents = input.events.filter(
     (e) => e.eventName === 'commerce.whatsapp.handoff_to_human',
   );
-  if (handoffEvents.length === 0) return [];
+  if (handoffEvents.length === 0) {
+    return [];
+  }
 
   return [
     {
       errorId: `err_${randomUUID()}`,
-      category: 'handoff' as ErrorCategory,
+      category: 'handoff',
       workspaceId: input.workspaceId,
       detectedAt: new Date(input.nowMs).toISOString(),
       evidenceEventIds: handoffEvents.map((e) => e.eventId),
@@ -80,18 +78,16 @@ function detectHandoffs(
   ];
 }
 
-function detectDeclines(
-  input: ErrorDetectorInput,
-): DetectedError[] {
-  const declineEvents = input.events.filter(
-    (e) => e.eventName === 'commerce.payment.declined',
-  );
-  if (declineEvents.length === 0) return [];
+function detectDeclines(input: ErrorDetectorInput): DetectedError[] {
+  const declineEvents = input.events.filter((e) => e.eventName === 'commerce.payment.declined');
+  if (declineEvents.length === 0) {
+    return [];
+  }
 
   return [
     {
       errorId: `err_${randomUUID()}`,
-      category: 'decline' as ErrorCategory,
+      category: 'decline',
       workspaceId: input.workspaceId,
       detectedAt: new Date(input.nowMs).toISOString(),
       evidenceEventIds: declineEvents.map((e) => e.eventId),
@@ -102,71 +98,54 @@ function detectDeclines(
   ];
 }
 
-function detectMisclassifications(
-  input: ErrorDetectorInput,
-): DetectedError[] {
-  const qualified = input.events.filter(
-    (e) => e.eventName === 'commerce.lead.objection_raised',
-  );
+function detectMisclassifications(input: ErrorDetectorInput): DetectedError[] {
+  const qualified = input.events.filter((e) => e.eventName === 'commerce.lead.objection_raised');
   const corrections = qualified.filter((e) => {
-    const causedBy = (e.payload as Record<string, unknown> | undefined)?.[
-      'causedByEventId'
-    ];
+    const causedBy = (e.payload as Record<string, unknown> | undefined)?.['causedByEventId'];
     return typeof causedBy === 'string' && causedBy.length > 0;
   });
 
-  if (corrections.length < MIN_EVENTS) return [];
+  if (corrections.length < MIN_EVENTS) {
+    return [];
+  }
 
   return [
     {
       errorId: `err_${randomUUID()}`,
-      category: 'misclassification' as ErrorCategory,
+      category: 'misclassification',
       workspaceId: input.workspaceId,
       detectedAt: new Date(input.nowMs).toISOString(),
       evidenceEventIds: corrections.map((e) => e.eventId),
       description: `${corrections.length} lead misclassification(s) detected — classifier may need tuning`,
       severity: severityFromCount('misclassification', corrections.length),
-      fingerprint: makeFingerprint(
-        'misclassification',
-        input.workspaceId,
-        undefined,
-        corrections,
-      ),
+      fingerprint: makeFingerprint('misclassification', input.workspaceId, undefined, corrections),
     },
   ];
 }
 
-function detectMissedOpportunities(
-  input: ErrorDetectorInput,
-): DetectedError[] {
-  const wentSilentEvents = input.events.filter(
-    (e) => e.eventName === 'commerce.lead.went_silent',
-  );
+function detectMissedOpportunities(input: ErrorDetectorInput): DetectedError[] {
+  const wentSilentEvents = input.events.filter((e) => e.eventName === 'commerce.lead.went_silent');
 
-  const leadLostEvents = input.events.filter(
-    (e) => e.eventName === 'commerce.lead.lost',
-  );
+  const leadLostEvents = input.events.filter((e) => e.eventName === 'commerce.lead.lost');
 
   const total = wentSilentEvents.length + leadLostEvents.length;
-  if (total < MIN_EVENTS) return [];
+  if (total < MIN_EVENTS) {
+    return [];
+  }
 
   return [
     {
       errorId: `err_${randomUUID()}`,
-      category: 'missed_opportunity' as ErrorCategory,
+      category: 'missed_opportunity',
       workspaceId: input.workspaceId,
       detectedAt: new Date(input.nowMs).toISOString(),
-      evidenceEventIds: [...wentSilentEvents, ...leadLostEvents].map(
-        (e) => e.eventId,
-      ),
+      evidenceEventIds: [...wentSilentEvents, ...leadLostEvents].map((e) => e.eventId),
       description: `${total} missed opportunity(s) — ${wentSilentEvents.length} silent, ${leadLostEvents.length} lost leads`,
       severity: severityFromCount('missed_opportunity', total),
-      fingerprint: makeFingerprint(
-        'missed_opportunity',
-        input.workspaceId,
-        undefined,
-        [...wentSilentEvents, ...leadLostEvents],
-      ),
+      fingerprint: makeFingerprint('missed_opportunity', input.workspaceId, undefined, [
+        ...wentSilentEvents,
+        ...leadLostEvents,
+      ]),
     },
   ];
 }

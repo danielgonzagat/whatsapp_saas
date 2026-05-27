@@ -57,7 +57,7 @@ export function extractProductArgs(msg: string): Record<string, unknown> {
   }
   // Format: físico, digital, híbrido
   if (/\b(f[ií]sico|digital|h[ií]brido)\b/i.test(msg)) {
-    const fmt = msg.match(/\b(f[ií]sico|digital|h[ií]brido)\b/i)?.[1].toLowerCase() || '';
+    const fmt = msg.match(/\b(f[ií]sico|digital|h[ií]brido)\b/i)?.[1]?.toLowerCase() ?? '';
     args.format =
       fmt === 'físico' || fmt === 'fisico' ? 'PHYSICAL' : fmt === 'digital' ? 'DIGITAL' : 'HYBRID';
   }

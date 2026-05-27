@@ -26,10 +26,7 @@ describe('AnunciosController', () => {
       getSyncStatus: jest.fn(),
     };
 
-    controller = new AnunciosController(
-      anunciosService as never,
-      adsSyncProcessor as never,
-    );
+    controller = new AnunciosController(anunciosService as never, adsSyncProcessor as never);
   });
 
   describe('GET /anuncios/status', () => {
@@ -144,19 +141,17 @@ describe('AnunciosController', () => {
         new Error('Provider connection refused'),
       );
 
-      await expect(
-        controller.getStatus({ workspaceId: 'ws-1' } as never),
-      ).rejects.toThrow('Provider connection refused');
+      await expect(controller.getStatus({ workspaceId: 'ws-1' } as never)).rejects.toThrow(
+        'Provider connection refused',
+      );
     });
 
     it('propagates service errors from sync endpoints', async () => {
-      anunciosService.syncCampaigns.mockRejectedValue(
-        new Error('Sync rate limited'),
-      );
+      anunciosService.syncCampaigns.mockRejectedValue(new Error('Sync rate limited'));
 
-      await expect(
-        controller.syncCampaigns({ workspaceId: 'ws-1' } as never),
-      ).rejects.toThrow('Sync rate limited');
+      await expect(controller.syncCampaigns({ workspaceId: 'ws-1' } as never)).rejects.toThrow(
+        'Sync rate limited',
+      );
     });
   });
 

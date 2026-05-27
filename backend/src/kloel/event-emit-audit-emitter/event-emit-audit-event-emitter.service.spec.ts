@@ -132,8 +132,7 @@ describe('EventEmitAuditEventEmitterService', () => {
 
     const events = emitter.recentEvents();
     const gateEvents = events.filter(
-      (e) =>
-        e.eventName === 'pulse.gate_passed' || e.eventName === 'pulse.gate_failed',
+      (e) => e.eventName === 'pulse.gate_passed' || e.eventName === 'pulse.gate_failed',
     );
     expect(gateEvents.length).toBeGreaterThanOrEqual(2);
     const eventIds = new Set(gateEvents.map((e) => e.eventId));

@@ -33,9 +33,7 @@ export class CiaCognitiveHealthService {
    * persists each as a kloelMemory alert row.
    */
   async scanAndEscalate(workspaceId: string): Promise<{ escalated: number }> {
-    const events = this.spine
-      .recentEventsAsRef()
-      .filter((e) => e.workspaceId === workspaceId);
+    const events = this.spine.recentEventsAsRef().filter((e) => e.workspaceId === workspaceId);
 
     const result = this.goalField.runCycle({ events });
 

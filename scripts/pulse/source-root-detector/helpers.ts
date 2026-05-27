@@ -1,9 +1,10 @@
 import * as path from 'path';
-import { pathExists, readDir } from '../safe-fs';
+import { pathExists, readDir, readTextFile } from '../safe-fs';
 import { safeJoin } from '../safe-path';
 import {
   SourceRootKind,
   SourceRootLanguage,
+  sourceExtensionsSet,
   ZERO,
   SKIP_DIR_NAMES,
 } from './types';
@@ -122,21 +123,21 @@ export function inferKindFromPackage(
   }
 
   if (
-    deps.has('bullmq') ||
-    deps.has('@nestjs/bull') ||
-    deps.has('@nestjs/bullmq') ||
-    /\b(queue|worker|processor)\b/.test(scripts)
-  ) {
-    return 'worker';
-  }
-
-  if (
     deps.has('@nestjs/core') ||
     deps.has('@nestjs/common') ||
     pathExists(safeJoin(packageDir, 'nest-cli.json')) ||
     /\bnest\b/.test(scripts)
   ) {
     return 'backend';
+  }
+
+  if (
+    deps.has('bullmq') ||
+    deps.has('@nestjs/bull') ||
+    deps.has('@nestjs/bullmq') ||
+    /\b(queue|worker|processor)\b/.test(scripts)
+  ) {
+    return 'worker';
   }
 
   return inferKind(relativeDir, pkg.name ?? null);
@@ -161,10 +162,61 @@ export function inferKindFromFileEvidence(rootDir: string, relativeDir: string):
   const absoluteDir = safeJoin(rootDir, relativeDir);
   if (!pathExists(absoluteDir)) return inferKind(relativeDir, null);
 
-  const fromName = guessKindFromDirName(relativeDir);
-  if (fromName) return fromName;
+  let frontendSignals = ZERO;
+  let backendSignals = ZERO;
+  let workerSignals = ZERO;
 
-  return inferKind(relativeDir, null);
+  for (const entry of walkUnskippedFiles(absoluteDir)) {
+    const normalized = normalizeRelative(entry);
+    const ext = path.extname(normalized);
+    if (!sourceExtensionsSet.has(ext)) continue;
+
+    const absoluteFile = safeJoin(absoluteDir, normalized);
+    let content = '';
+    try {
+      content = readTextFile(absoluteFile, 'utf8');
+    } catch {
+      content = '';
+    }
+
+    if (
+      /from\s+['"](?:next|react|@vitejs\/plugin-react)/.test(content) ||
+      /['"]use client['"]/.test(content) ||
+      /export\s+default\s+function/.test(content) ||
+      /(?:^|\/)(app|pages)\//.test(normalized)
+    ) {
+      frontendSignals++;
+    }
+    if (
+      /from\s+['"]@nestjs\/common['"]/.test(content) ||
+      /@Controller\(/.test(content) ||
+      /@Injectable\(/.test(content) ||
+      /setGlobalPrefix\s*\(/.test(content)
+    ) {
+      backendSignals++;
+    }
+    if (
+      /from\s+['"](?:bullmq|@nestjs\/bullmq|@nestjs\/bull)['"]/.test(content) ||
+      /@Processor\(/.test(content) ||
+      /\bnew\s+Worker\(/.test(content)
+    ) {
+      workerSignals++;
+    }
+  }
+
+  const scores: Array<{ kind: SourceRootKind; score: number }> = [
+    { kind: 'frontend', score: frontendSignals },
+    { kind: 'backend', score: backendSignals },
+    { kind: 'worker', score: workerSignals },
+  ].sort((a, b) => b.score - a.score);
+  const strongestSignal = scores[ZERO];
+
+  if (strongestSignal && strongestSignal.score > ZERO) {
+    return strongestSignal.kind;
+  }
+
+  const fromName = guessKindFromDirName(relativeDir);
+  return fromName ?? inferKind(relativeDir, null);
 }
 
 const DIR_FRAMEWORKS: Record<string, string[]> = {
@@ -173,7 +225,47 @@ const DIR_FRAMEWORKS: Record<string, string[]> = {
   worker: ['bullmq'],
 };
 
-export function inferFrameworksFromFileEvidence(_rootDir: string, relativeDir: string): string[] {
+export function inferFrameworksFromFileEvidence(rootDir: string, relativeDir: string): string[] {
+  const absoluteDir = safeJoin(rootDir, relativeDir);
+  if (!pathExists(absoluteDir)) return [];
+
+  const frameworks: string[] = [];
+  for (const entry of walkUnskippedFiles(absoluteDir)) {
+    const normalized = normalizeRelative(entry);
+    const ext = path.extname(normalized);
+    if (!sourceExtensionsSet.has(ext)) continue;
+
+    let content = '';
+    try {
+      content = readTextFile(safeJoin(absoluteDir, normalized), 'utf8');
+    } catch {
+      content = '';
+    }
+
+    if (/from\s+['"]next(?:\/[^'"]*)?['"]/.test(content) || /(?:^|\/)app\//.test(normalized)) {
+      frameworks.push('nextjs');
+    }
+    if (/from\s+['"]react(?:\/[^'"]*)?['"]/.test(content) || /['"]use client['"]/.test(content)) {
+      frameworks.push('react');
+    }
+    if (
+      /from\s+['"]@nestjs\/common['"]/.test(content) ||
+      /@(?:Controller|Injectable|Module)\(/.test(content)
+    ) {
+      frameworks.push('nestjs');
+    }
+    if (
+      /from\s+['"](?:bullmq|@nestjs\/bullmq|@nestjs\/bull)['"]/.test(content) ||
+      /@Processor\(/.test(content)
+    ) {
+      frameworks.push('bullmq');
+    }
+  }
+
+  if (frameworks.length > ZERO) {
+    return uniqueSorted(frameworks);
+  }
+
   const normalized = normalizeRelative(relativeDir);
   const topLevelSegment = normalized.split('/')[ZERO].toLowerCase();
   return uniqueSorted(DIR_FRAMEWORKS[topLevelSegment] ?? []);

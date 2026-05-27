@@ -111,37 +111,41 @@ export class CheckoutPostPaymentEffectsService {
       return;
     }
     const entityRef = { entityType: 'order' as const, entityId: order.id };
-    void this.spine.emit({
-      eventName: 'commerce.post_sale.delivery_completed',
-      workspaceId: order.workspaceId,
-      entityRef,
-      truthMode: 'observed',
-      provenance: {
-        source: 'production',
-        processor: 'checkout-post-payment-effects',
-        processorVersion: '1.0.0',
-        schemaVersion: '1.0.0',
-      },
-      payload: {
-        deliveryKind: 'purchase_confirmation',
-        channel: 'email',
-      },
-    }).catch(() => undefined);
-    void this.spine.emit({
-      eventName: 'commerce.post_sale.activation_started',
-      workspaceId: order.workspaceId,
-      entityRef,
-      truthMode: 'observed',
-      provenance: {
-        source: 'production',
-        processor: 'checkout-post-payment-effects',
-        processorVersion: '1.0.0',
-        schemaVersion: '1.0.0',
-      },
-      payload: {
-        activationKind: 'post_purchase',
-      },
-    }).catch(() => undefined);
+    void this.spine
+      .emit({
+        eventName: 'commerce.post_sale.delivery_completed',
+        workspaceId: order.workspaceId,
+        entityRef,
+        truthMode: 'observed',
+        provenance: {
+          source: 'production',
+          processor: 'checkout-post-payment-effects',
+          processorVersion: '1.0.0',
+          schemaVersion: '1.0.0',
+        },
+        payload: {
+          deliveryKind: 'purchase_confirmation',
+          channel: 'email',
+        },
+      })
+      .catch(() => undefined);
+    void this.spine
+      .emit({
+        eventName: 'commerce.post_sale.activation_started',
+        workspaceId: order.workspaceId,
+        entityRef,
+        truthMode: 'observed',
+        provenance: {
+          source: 'production',
+          processor: 'checkout-post-payment-effects',
+          processorVersion: '1.0.0',
+          schemaVersion: '1.0.0',
+        },
+        payload: {
+          activationKind: 'post_purchase',
+        },
+      })
+      .catch(() => undefined);
   }
 
   private readOrderMetadata(metadata: Prisma.JsonValue | null | undefined) {

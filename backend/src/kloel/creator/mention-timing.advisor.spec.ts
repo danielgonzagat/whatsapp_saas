@@ -5,7 +5,11 @@
  * based on saturationIndex and receptivityScore.
  */
 
-import { adviseMentionTiming, type MentionHistoryEntry, type TimingConfig } from './mention-timing.advisor';
+import {
+  adviseMentionTiming,
+  type MentionHistoryEntry,
+  type TimingConfig,
+} from './mention-timing.advisor';
 
 import type { CreatorEvent } from './types';
 
@@ -22,10 +26,7 @@ function ev(over: Partial<CreatorEvent> = {}): CreatorEvent {
   };
 }
 
-function hist(
-  daysAgo: number,
-  over: Partial<MentionHistoryEntry> = {},
-): MentionHistoryEntry {
+function hist(daysAgo: number, over: Partial<MentionHistoryEntry> = {}): MentionHistoryEntry {
   return {
     mentionedAt: new Date(NOW - daysAgo * 24 * 60 * 60 * 1000).toISOString(),
     partnerId: over.partnerId ?? 'prt_001',
@@ -153,9 +154,7 @@ describe('MentionTimingAdvisor (UTP-CREATOR-002) — full spec', () => {
 
   // ─── 11: daysSinceLastMention is Infinity when no history ───────────
   it('sets daysSinceLastMention to 999 when no mention history', () => {
-    const events: CreatorEvent[] = Array.from({ length: 5 }, () =>
-      ev({ valence: 'positive' }),
-    );
+    const events: CreatorEvent[] = Array.from({ length: 5 }, () => ev({ valence: 'positive' }));
     const timing = adviseMentionTiming(events, []);
     expect(timing.daysSinceLastMention).toBe(999);
   });

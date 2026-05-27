@@ -1,4 +1,4 @@
-import { Injectable, Optional } from '@nestjs/common';
+import { Inject, Injectable, Optional, forwardRef } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
 import { createTextLlmClient, hasTextLlmApiKey } from '../lib/llm-provider';
@@ -45,6 +45,7 @@ export class KloelReplyEngineService {
     private readonly planLimits: PlanLimitsService,
     private readonly threadService: KloelThreadService,
     private readonly wsContextService: KloelWorkspaceContextService,
+    @Inject(forwardRef(() => UnifiedAgentService))
     private readonly unifiedAgentService: UnifiedAgentService,
     @Optional() private readonly marketingSkillService?: MarketingSkillService,
     @Optional() private readonly mindService?: MindService,
@@ -148,8 +149,14 @@ export class KloelReplyEngineService {
     if (!normalized || /ideias?/.test(normalized)) {
       return false;
     }
-    return (
-      CRIE_CADASTRAR_CADASTRE_RE.test(normalized) && PRODUTO_CAT_A__LOGO_AUT_RE.test(normalized)
+    if (
+      CRIE_CADASTRAR_CADASTRE_RE.test(normalized) &&
+      PRODUTO_CAT_A__LOGO_AUT_RE.test(normalized)
+    ) {
+      return true;
+    }
+    return /\b(liste|listar|mostre|mostrar|busque|buscar|pesquise|pesquisar|procure|procurar|consulte|consultar|verifique|verificar|analise|analisar|resuma|resumo|status|dashboard|produtos?|leads?|contatos?|conversas?|whatsapp|mensagens?|evid[eê]ncias?|mem[oó]ria|sess(ões|oes)|jobs?|billing|cobran[çc]a|faturamento|receita|vendas?|pagamentos?)\b/i.test(
+      normalized,
     );
   }
 
@@ -392,6 +399,7 @@ export class KloelReplyEngineService {
     onTraceEvent?: (event: KloelStreamEvent) => void;
     executeLocalTool?: LocalToolExecutor;
     abiStateJson?: string;
+    prebuiltCognitiveState?: Record<string, unknown>;
   }): Promise<string> {
     if (!this.openai) {
       return this.unavailableMessage;

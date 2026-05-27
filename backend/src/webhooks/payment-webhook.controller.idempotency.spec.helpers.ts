@@ -64,7 +64,13 @@ export function registerWooCommerceIdempotencyTests(): void {
         JSON.parse(rawBody) as never,
       );
 
-      expect(redis.set).toHaveBeenCalledWith('webhook:payment:generic:evt_woo_dupe', '1', 'EX', 86400, 'NX');
+      expect(redis.set).toHaveBeenCalledWith(
+        'webhook:payment:generic:evt_woo_dupe',
+        '1',
+        'EX',
+        86400,
+        'NX',
+      );
       expect(result).toEqual({
         ok: true,
         duplicate: true,
@@ -101,8 +107,17 @@ export function registerWooCommerceIdempotencyTests(): void {
         JSON.parse(rawBody) as never,
       );
 
-      expect(redis.set).toHaveBeenCalledWith('webhook:payment:generic:evt_woo_new', '1', 'EX', 86400, 'NX');
-      expect(prisma.workspace.findUnique).toHaveBeenCalledWith({ where: { id: 'ws-woo' }, select: { id: true } });
+      expect(redis.set).toHaveBeenCalledWith(
+        'webhook:payment:generic:evt_woo_new',
+        '1',
+        'EX',
+        86400,
+        'NX',
+      );
+      expect(prisma.workspace.findUnique).toHaveBeenCalledWith({
+        where: { id: 'ws-woo' },
+        select: { id: true },
+      });
       expect(autopilot.markConversion).toHaveBeenCalledWith(
         expect.objectContaining({ reason: 'woocommerce_paid' }),
       );

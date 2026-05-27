@@ -5,20 +5,14 @@ const readWorkspaceEmailDeliveryMock = jest.fn();
 const isWorkspaceDeliveryReadyMock = jest.fn();
 
 jest.mock('../../kloel/email-workspace-delivery', () => ({
-  readWorkspaceEmailDelivery: (
-    config: unknown,
-  ) => readWorkspaceEmailDeliveryMock(config),
-  isWorkspaceDeliveryReady: (
-    delivery: unknown,
-  ) => isWorkspaceDeliveryReadyMock(delivery),
+  readWorkspaceEmailDelivery: (config: unknown) => readWorkspaceEmailDeliveryMock(config),
+  isWorkspaceDeliveryReady: (delivery: unknown) => isWorkspaceDeliveryReadyMock(delivery),
 }));
 
 const buildUnsubscribeFooterHtmlMock = jest.fn();
 
 jest.mock('../../common/utils/unsubscribe-footer.util', () => ({
-  buildUnsubscribeFooterHtml: (
-    opts: unknown,
-  ) => buildUnsubscribeFooterHtmlMock(opts),
+  buildUnsubscribeFooterHtml: (opts: unknown) => buildUnsubscribeFooterHtmlMock(opts),
   buildListUnsubscribeHeader: jest.fn().mockReturnValue(null),
 }));
 
@@ -166,21 +160,15 @@ describe('EmailConnectService', () => {
 
       channelConfigFindUnique.mockResolvedValue(null);
 
-      await expect(
-        service.sendTest('ws-4', 'user@kloel.com'),
-      ).rejects.toThrow(BadRequestException);
-      await expect(
-        service.sendTest('ws-4', 'user@kloel.com'),
-      ).rejects.toThrow('email_provider_not_configured');
+      await expect(service.sendTest('ws-4', 'user@kloel.com')).rejects.toThrow(BadRequestException);
+      await expect(service.sendTest('ws-4', 'user@kloel.com')).rejects.toThrow(
+        'email_provider_not_configured',
+      );
     });
 
     it('throws BadRequestException when recipient email is empty', async () => {
-      await expect(
-        service.sendTest('ws-4', ''),
-      ).rejects.toThrow(BadRequestException);
-      await expect(
-        service.sendTest('ws-4', ''),
-      ).rejects.toThrow('email_test_recipient_required');
+      await expect(service.sendTest('ws-4', '')).rejects.toThrow(BadRequestException);
+      await expect(service.sendTest('ws-4', '')).rejects.toThrow('email_test_recipient_required');
     });
   });
 

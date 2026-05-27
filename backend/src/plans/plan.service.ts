@@ -1,9 +1,9 @@
 import { Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
-import { BrainEventSpineService } from '../kloel/brain-event-spine.service';
+import { MindEventSpine } from '../kloel/mind/coordination';
 
 export interface CreatePlanDto {
   productId: string;
@@ -46,41 +46,39 @@ export interface AffiliateConfig {
   customCommission?: number;
 }
 
-type MutableJsonObject = Record<string, Prisma.InputJsonValue>;
-
-function planJsonObject(value: unknown): MutableJsonObject {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return {};
+function checkoutImagesObject(value: unknown): Prisma.InputJsonObject {
+  if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+    return value;
   }
-  return { ...(value as MutableJsonObject) };
+
+  return {};
 }
 
-function paymentMethodsToJson(methods: PaymentMethodsConfig): MutableJsonObject {
-  const json: MutableJsonObject = {};
-  if (methods.card !== undefined) {
-    json.card = methods.card;
-  }
-  if (methods.pix !== undefined) {
-    json.pix = methods.pix;
-  }
-  if (methods.boleto !== undefined) {
-    json.boleto = methods.boleto;
-  }
-  return json;
+function checkoutImagesWith(
+  current: unknown,
+  patch: Prisma.InputJsonObject,
+): Prisma.InputJsonObject {
+  return { ...checkoutImagesObject(current), ...patch };
 }
 
-function shippingConfigToJson(config: ShippingConfig): MutableJsonObject {
-  const json: MutableJsonObject = {};
-  if (config.type !== undefined) {
-    json.type = config.type;
-  }
-  if (config.fixedValue !== undefined) {
-    json.fixedValue = config.fixedValue;
-  }
-  if (config.originCep !== undefined) {
-    json.originCep = config.originCep;
-  }
-  return json;
+function paymentMethodsJson(
+  methods: PaymentMethodsConfig,
+): Prisma.InputJsonObject & Record<string, unknown> {
+  return {
+    ...(methods.card !== undefined ? { card: methods.card } : {}),
+    ...(methods.pix !== undefined ? { pix: methods.pix } : {}),
+    ...(methods.boleto !== undefined ? { boleto: methods.boleto } : {}),
+  };
+}
+
+function shippingConfigJson(
+  config: ShippingConfig,
+): Prisma.InputJsonObject & Record<string, unknown> {
+  return {
+    ...(config.type !== undefined ? { type: config.type } : {}),
+    ...(config.fixedValue !== undefined ? { fixedValue: config.fixedValue } : {}),
+    ...(config.originCep !== undefined ? { originCep: config.originCep } : {}),
+  };
 }
 
 @Injectable()
@@ -91,7 +89,7 @@ export class PlanService {
     private readonly prisma: PrismaService,
     private readonly eventEmitter: EventEmitter2,
     private readonly audit: AuditService,
-    @Optional() private readonly brainSpine?: BrainEventSpineService,
+    @Optional() private readonly brainSpine?: MindEventSpine,
   ) {}
 
   async create(workspaceId: string, dto: CreatePlanDto, actor?: { id: string }) {
@@ -100,13 +98,6 @@ export class PlanService {
     });
     if (!product) {
       throw new NotFoundException('Product not found');
-    }
-
-    const checkoutImages: MutableJsonObject = {
-      acceptCoupons: dto.acceptCoupons ?? false,
-    };
-    if (dto.imageUrl !== undefined) {
-      checkoutImages.imageUrl = dto.imageUrl;
     }
 
     const plan = await this.prisma.productPlan.create({
@@ -118,7 +109,10 @@ export class PlanService {
         maxInstallments: dto.maxInstallments ?? 1,
         billingType: dto.billingType ?? 'ONE_TIME',
         visibleToAffiliates: dto.visibleToAffiliates ?? false,
-        checkoutImages,
+        checkoutImages: checkoutImagesWith(null, {
+          acceptCoupons: dto.acceptCoupons ?? false,
+          ...(dto.imageUrl !== undefined ? { imageUrl: dto.imageUrl } : {}),
+        }),
         active: true,
       },
     });
@@ -194,7 +188,12 @@ export class PlanService {
       throw new NotFoundException('Plan not found');
     }
 
-    const updates: Prisma.ProductPlanUpdateInput = {};
+    const updates: Record<string, unknown> = {};
+    const checkoutImageUpdates: Prisma.InputJsonObject = {
+      ...(dto.acceptCoupons !== undefined ? { acceptCoupons: Boolean(dto.acceptCoupons) } : {}),
+      ...(dto.imageUrl !== undefined ? { imageUrl: dto.imageUrl } : {}),
+    };
+
     if (dto.name !== undefined) {
       updates.name = dto.name;
     }
@@ -216,22 +215,15 @@ export class PlanService {
     if (dto.visibleToAffiliates !== undefined) {
       updates.visibleToAffiliates = Boolean(dto.visibleToAffiliates);
     }
-    if (dto.acceptCoupons !== undefined || dto.imageUrl !== undefined) {
-      const checkoutImages = planJsonObject(existing.checkoutImages);
-      if (dto.acceptCoupons !== undefined) {
-        checkoutImages.acceptCoupons = Boolean(dto.acceptCoupons);
-      }
-      if (dto.imageUrl !== undefined) {
-        checkoutImages.imageUrl = dto.imageUrl;
-      }
-      updates.checkoutImages = checkoutImages;
+    if (Object.keys(checkoutImageUpdates).length > 0) {
+      updates.checkoutImages = checkoutImagesWith(existing.checkoutImages, checkoutImageUpdates);
     }
 
     if (Object.keys(updates).length === 0) {
       return {
         success: true,
         plan: existing,
-        message: 'Plan update already matches requested state',
+        message: 'No changes',
       };
     }
 
@@ -323,12 +315,13 @@ export class PlanService {
       throw new NotFoundException('Plan not found');
     }
 
-    const checkoutImages = planJsonObject(plan.checkoutImages);
-    const paymentMethods = paymentMethodsToJson(methods);
+    const paymentMethods = paymentMethodsJson(methods);
     const updated = await this.prisma.productPlan.update({
       where: { id: planId },
       data: {
-        checkoutImages: { ...checkoutImages, paymentMethods },
+        checkoutImages: checkoutImagesWith(plan.checkoutImages, {
+          paymentMethods,
+        }),
       },
     });
 
@@ -339,7 +332,7 @@ export class PlanService {
         action: 'plan.setPaymentMethods',
         resource: 'ProductPlan',
         resourceId: planId,
-        details: { paymentMethods },
+        details: paymentMethods,
       });
     }
     return {
@@ -395,10 +388,11 @@ export class PlanService {
       throw new NotFoundException('Plan not found');
     }
 
-    const checkoutImages = planJsonObject(plan.checkoutImages);
     const updated = await this.prisma.productPlan.update({
       where: { id: planId },
-      data: { checkoutImages: { ...checkoutImages, acceptCoupons } },
+      data: {
+        checkoutImages: checkoutImagesWith(plan.checkoutImages, { acceptCoupons }),
+      },
     });
 
     if (actor) {
@@ -430,12 +424,13 @@ export class PlanService {
       throw new NotFoundException('Plan not found');
     }
 
-    const checkoutImages = planJsonObject(plan.checkoutImages);
-    const shipping = shippingConfigToJson(config);
+    const shipping = shippingConfigJson(config);
     const updated = await this.prisma.productPlan.update({
       where: { id: planId },
       data: {
-        checkoutImages: { ...checkoutImages, shipping },
+        checkoutImages: checkoutImagesWith(plan.checkoutImages, {
+          shipping,
+        }),
       },
     });
 
@@ -446,7 +441,7 @@ export class PlanService {
         action: 'plan.setShipping',
         resource: 'ProductPlan',
         resourceId: planId,
-        details: { shipping },
+        details: shipping,
       });
     }
     return {
@@ -468,13 +463,17 @@ export class PlanService {
       throw new NotFoundException('Plan not found');
     }
 
-    const updates: Prisma.ProductPlanUpdateInput = {};
+    const updates: Record<string, unknown> = {};
+    const details: Record<string, unknown> = {};
     if (config.visibleToAffiliates !== undefined) {
       updates.visibleToAffiliates = config.visibleToAffiliates;
+      details.visibleToAffiliates = config.visibleToAffiliates;
     }
     if (config.customCommission !== undefined) {
-      const checkoutImages = planJsonObject(plan.checkoutImages);
-      updates.checkoutImages = { ...checkoutImages, customCommission: config.customCommission };
+      updates.checkoutImages = checkoutImagesWith(plan.checkoutImages, {
+        customCommission: config.customCommission,
+      });
+      details.customCommission = config.customCommission;
     }
 
     const updated = await this.prisma.productPlan.update({
@@ -489,7 +488,7 @@ export class PlanService {
         action: 'plan.setAffiliateConfig',
         resource: 'ProductPlan',
         resourceId: planId,
-        details: { ...config },
+        details,
       });
     }
     return {

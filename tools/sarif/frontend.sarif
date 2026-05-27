@@ -9,6 +9,14 @@
           "informationUri": "https://eslint.org",
           "rules": [
             {
+              "id": "curly",
+              "helpUri": "https://eslint.org/docs/rules/curly"
+            },
+            {
+              "id": "@next/next/no-html-link-for-pages",
+              "helpUri": "https://eslint.org/docs/rules/@next/next/no-html-link-for-pages"
+            },
+            {
               "id": "react-hooks/exhaustive-deps",
               "helpUri": "https://eslint.org/docs/rules/react-hooks/exhaustive-deps"
             }
@@ -24,6 +32,52 @@
         }
       ],
       "results": [
+        {
+          "ruleId": "curly",
+          "level": "error",
+          "message": {
+            "text": "Expected { after 'if' condition."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "frontend/src/app/(main)/settings/privacy/page.tsx",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 57,
+                  "startColumn": 17,
+                  "endLine": 57,
+                  "endColumn": 24
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "@next/next/no-html-link-for-pages",
+          "level": "error",
+          "message": {
+            "text": "Do not use an `<a>` element to navigate to `/privacy/`. Use `<Link />` from `next/link` instead. See: https://nextjs.org/docs/messages/no-html-link-for-pages"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "frontend/src/app/(main)/settings/privacy/page.tsx",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 98,
+                  "startColumn": 9,
+                  "endLine": 98,
+                  "endColumn": 68
+                }
+              }
+            }
+          ]
+        },
         {
           "ruleId": "react-hooks/exhaustive-deps",
           "level": "error",
@@ -96,8 +150,8 @@
       ],
       "properties": {
         "workspace": "frontend",
-        "totalFindings": 3,
-        "totalFiles": 1306
+        "totalFindings": 5,
+        "totalFiles": 1315
       }
     }
   ]

@@ -3,13 +3,13 @@
   "info": {
     "title": "Kloel Backend API (static AST extraction)",
     "version": "1.0.0",
-    "description": "Auto-extracted from 159 NestJS controllers (663 routes). Static AST scan, no runtime boot required. For full schema introspection (DTO bodies, response shapes, auth, request validation) start backend and re-run in `extract` mode.",
+    "description": "Auto-extracted from 161 NestJS controllers (674 routes). Static AST scan, no runtime boot required. For full schema introspection (DTO bodies, response shapes, auth, request validation) start backend and re-run in `extract` mode.",
     "x-extraction": {
       "generator": "scripts/cognitive/openapi-extract.mjs",
       "mode": "static",
-      "controllers": 159,
-      "routes": 663,
-      "generatedAt": "2026-05-26T16:59:51.474Z"
+      "controllers": 161,
+      "routes": 674,
+      "generatedAt": "2026-05-27T01:42:58.443Z"
     }
   },
   "servers": [
@@ -912,9 +912,9 @@
     "/auth/check-email": {
       "post": {
         "tags": [
-          "auth"
+          "Auth"
         ],
-        "operationId": "auth_checkEmail",
+        "operationId": "Auth_checkEmail",
         "summary": "POST /auth/check-email",
         "parameters": [],
         "responses": {
@@ -927,9 +927,9 @@
       },
       "get": {
         "tags": [
-          "auth"
+          "Auth"
         ],
-        "operationId": "auth_checkEmailQuery",
+        "operationId": "Auth_checkEmailQuery",
         "summary": "GET /auth/check-email",
         "parameters": [],
         "responses": {
@@ -944,9 +944,9 @@
     "/auth/register": {
       "post": {
         "tags": [
-          "auth"
+          "Auth"
         ],
-        "operationId": "auth_register",
+        "operationId": "Auth_register",
         "summary": "POST /auth/register",
         "parameters": [],
         "responses": {
@@ -961,9 +961,9 @@
     "/auth/login": {
       "post": {
         "tags": [
-          "auth"
+          "Auth"
         ],
-        "operationId": "auth_login",
+        "operationId": "Auth_login",
         "summary": "POST /auth/login",
         "parameters": [],
         "responses": {
@@ -978,9 +978,9 @@
     "/auth/refresh": {
       "post": {
         "tags": [
-          "auth"
+          "Auth"
         ],
-        "operationId": "auth_refresh",
+        "operationId": "Auth_refresh",
         "summary": "POST /auth/refresh",
         "parameters": [],
         "responses": {
@@ -995,9 +995,9 @@
     "/auth/oauth": {
       "post": {
         "tags": [
-          "auth"
+          "Auth"
         ],
-        "operationId": "auth_oauthLogin",
+        "operationId": "Auth_oauthLogin",
         "summary": "POST /auth/oauth",
         "parameters": [],
         "responses": {
@@ -1012,9 +1012,9 @@
     "/auth/oauth/google": {
       "post": {
         "tags": [
-          "auth"
+          "Auth"
         ],
-        "operationId": "auth_googleOAuthLogin",
+        "operationId": "Auth_googleOAuthLogin",
         "summary": "POST /auth/oauth/google",
         "parameters": [],
         "responses": {
@@ -1029,9 +1029,9 @@
     "/auth/oauth/facebook": {
       "post": {
         "tags": [
-          "auth"
+          "Auth"
         ],
-        "operationId": "auth_facebookOAuthLogin",
+        "operationId": "Auth_facebookOAuthLogin",
         "summary": "POST /auth/oauth/facebook",
         "parameters": [],
         "responses": {
@@ -1046,9 +1046,9 @@
     "/auth/oauth/apple": {
       "post": {
         "tags": [
-          "auth"
+          "Auth"
         ],
-        "operationId": "auth_appleOAuthLogin",
+        "operationId": "Auth_appleOAuthLogin",
         "summary": "POST /auth/oauth/apple",
         "parameters": [],
         "responses": {
@@ -1063,9 +1063,9 @@
     "/auth/oauth/tiktok": {
       "post": {
         "tags": [
-          "auth"
+          "Auth"
         ],
-        "operationId": "auth_tikTokOAuthLogin",
+        "operationId": "Auth_tikTokOAuthLogin",
         "summary": "POST /auth/oauth/tiktok",
         "parameters": [],
         "responses": {
@@ -1080,9 +1080,9 @@
     "/auth/magic-link/request": {
       "post": {
         "tags": [
-          "auth"
+          "Auth"
         ],
-        "operationId": "auth_requestMagicLink",
+        "operationId": "Auth_requestMagicLink",
         "summary": "POST /auth/magic-link/request",
         "parameters": [],
         "responses": {
@@ -1097,9 +1097,9 @@
     "/auth/magic-link/verify": {
       "post": {
         "tags": [
-          "auth"
+          "Auth"
         ],
-        "operationId": "auth_verifyMagicLink",
+        "operationId": "Auth_verifyMagicLink",
         "summary": "POST /auth/magic-link/verify",
         "parameters": [],
         "responses": {
@@ -1114,9 +1114,9 @@
     "/auth/whatsapp/send-code": {
       "post": {
         "tags": [
-          "auth"
+          "Auth"
         ],
-        "operationId": "auth_sendWhatsAppCode",
+        "operationId": "Auth_sendWhatsAppCode",
         "summary": "POST /auth/whatsapp/send-code",
         "parameters": [],
         "responses": {
@@ -1131,9 +1131,9 @@
     "/auth/whatsapp/verify": {
       "post": {
         "tags": [
-          "auth"
+          "Auth"
         ],
-        "operationId": "auth_verifyWhatsAppCode",
+        "operationId": "Auth_verifyWhatsAppCode",
         "summary": "POST /auth/whatsapp/verify",
         "parameters": [],
         "responses": {
@@ -1148,9 +1148,9 @@
     "/auth/anonymous": {
       "post": {
         "tags": [
-          "auth"
+          "Auth"
         ],
-        "operationId": "auth_createAnonymous",
+        "operationId": "Auth_createAnonymous",
         "summary": "POST /auth/anonymous",
         "parameters": [],
         "responses": {
@@ -1165,9 +1165,9 @@
     "/auth/forgot-password": {
       "post": {
         "tags": [
-          "auth"
+          "Auth"
         ],
-        "operationId": "auth_forgotPassword",
+        "operationId": "Auth_forgotPassword",
         "summary": "POST /auth/forgot-password",
         "parameters": [],
         "responses": {
@@ -1182,9 +1182,9 @@
     "/auth/reset-password": {
       "post": {
         "tags": [
-          "auth"
+          "Auth"
         ],
-        "operationId": "auth_resetPassword",
+        "operationId": "Auth_resetPassword",
         "summary": "POST /auth/reset-password",
         "parameters": [],
         "responses": {
@@ -1199,9 +1199,9 @@
     "/auth/verify-email": {
       "post": {
         "tags": [
-          "auth"
+          "Auth"
         ],
-        "operationId": "auth_verifyEmail",
+        "operationId": "Auth_verifyEmail",
         "summary": "POST /auth/verify-email",
         "parameters": [],
         "responses": {
@@ -1216,9 +1216,9 @@
     "/auth/resend-verification": {
       "post": {
         "tags": [
-          "auth"
+          "Auth"
         ],
-        "operationId": "auth_resendVerificationEmail",
+        "operationId": "Auth_resendVerificationEmail",
         "summary": "POST /auth/resend-verification",
         "parameters": [],
         "responses": {
@@ -1233,9 +1233,9 @@
     "/auth/send-verification": {
       "post": {
         "tags": [
-          "auth"
+          "Auth"
         ],
-        "operationId": "auth_sendVerificationEmail",
+        "operationId": "Auth_sendVerificationEmail",
         "summary": "POST /auth/send-verification",
         "parameters": [],
         "responses": {
@@ -1250,9 +1250,9 @@
     "/auth/logout": {
       "post": {
         "tags": [
-          "auth"
+          "Auth"
         ],
-        "operationId": "auth_logout",
+        "operationId": "Auth_logout",
         "summary": "POST /auth/logout",
         "parameters": [],
         "responses": {
@@ -1267,9 +1267,9 @@
     "/auth/me": {
       "get": {
         "tags": [
-          "auth"
+          "Auth"
         ],
-        "operationId": "auth_getMe",
+        "operationId": "Auth_getMe",
         "summary": "GET /auth/me",
         "parameters": [],
         "responses": {
@@ -1284,9 +1284,9 @@
     "/auth/me/onboarding-complete": {
       "put": {
         "tags": [
-          "auth"
+          "Auth"
         ],
-        "operationId": "auth_completeOnboarding",
+        "operationId": "Auth_completeOnboarding",
         "summary": "PUT /auth/me/onboarding-complete",
         "parameters": [],
         "responses": {
@@ -4544,9 +4544,9 @@
     "/gdpr/delete": {
       "post": {
         "tags": [
-          "gdpr"
+          "GDPR"
         ],
-        "operationId": "gdpr_deleteData",
+        "operationId": "GDPR_deleteData",
         "summary": "POST /gdpr/delete",
         "parameters": [],
         "responses": {
@@ -4561,9 +4561,9 @@
     "/gdpr/export": {
       "post": {
         "tags": [
-          "gdpr"
+          "GDPR"
         ],
-        "operationId": "gdpr_exportData",
+        "operationId": "GDPR_exportData",
         "summary": "POST /gdpr/export",
         "parameters": [],
         "responses": {
@@ -4783,9 +4783,9 @@
     "/health/readiness": {
       "get": {
         "tags": [
-          "health"
+          "Health"
         ],
-        "operationId": "health_readiness",
+        "operationId": "Health_readiness",
         "summary": "GET /health/readiness",
         "parameters": [],
         "responses": {
@@ -4800,9 +4800,9 @@
     "/health/deep": {
       "get": {
         "tags": [
-          "health"
+          "Health"
         ],
-        "operationId": "health_deep",
+        "operationId": "Health_deep",
         "summary": "GET /health/deep",
         "parameters": [],
         "responses": {
@@ -4817,9 +4817,9 @@
     "/health/system": {
       "get": {
         "tags": [
-          "health"
+          "Health"
         ],
-        "operationId": "health_system",
+        "operationId": "Health_system",
         "summary": "GET /health/system",
         "parameters": [],
         "responses": {
@@ -4834,9 +4834,9 @@
     "/health/{workspaceId}": {
       "get": {
         "tags": [
-          "health"
+          "Health"
         ],
-        "operationId": "health_getHealth",
+        "operationId": "Health_getHealth",
         "summary": "GET /health/{workspaceId}",
         "parameters": [
           {
@@ -8468,9 +8468,9 @@
     "/kyc/profile": {
       "get": {
         "tags": [
-          "kyc"
+          "KYC"
         ],
-        "operationId": "kyc_getProfile",
+        "operationId": "KYC_getProfile",
         "summary": "GET /kyc/profile",
         "parameters": [],
         "responses": {
@@ -8483,9 +8483,9 @@
       },
       "put": {
         "tags": [
-          "kyc"
+          "KYC"
         ],
-        "operationId": "kyc_updateProfile",
+        "operationId": "KYC_updateProfile",
         "summary": "PUT /kyc/profile",
         "parameters": [],
         "responses": {
@@ -8500,9 +8500,9 @@
     "/kyc/profile/avatar": {
       "post": {
         "tags": [
-          "kyc"
+          "KYC"
         ],
-        "operationId": "kyc_FileInterceptor",
+        "operationId": "KYC_FileInterceptor",
         "summary": "POST /kyc/profile/avatar",
         "parameters": [],
         "responses": {
@@ -8517,9 +8517,9 @@
     "/kyc/fiscal": {
       "get": {
         "tags": [
-          "kyc"
+          "KYC"
         ],
-        "operationId": "kyc_getFiscal",
+        "operationId": "KYC_getFiscal",
         "summary": "GET /kyc/fiscal",
         "parameters": [],
         "responses": {
@@ -8532,9 +8532,9 @@
       },
       "put": {
         "tags": [
-          "kyc"
+          "KYC"
         ],
-        "operationId": "kyc_updateFiscal",
+        "operationId": "KYC_updateFiscal",
         "summary": "PUT /kyc/fiscal",
         "parameters": [],
         "responses": {
@@ -8549,9 +8549,9 @@
     "/kyc/documents": {
       "get": {
         "tags": [
-          "kyc"
+          "KYC"
         ],
-        "operationId": "kyc_getDocuments",
+        "operationId": "KYC_getDocuments",
         "summary": "GET /kyc/documents",
         "parameters": [],
         "responses": {
@@ -8566,9 +8566,9 @@
     "/kyc/documents/upload": {
       "post": {
         "tags": [
-          "kyc"
+          "KYC"
         ],
-        "operationId": "kyc_FileInterceptor",
+        "operationId": "KYC_FileInterceptor",
         "summary": "POST /kyc/documents/upload",
         "parameters": [],
         "responses": {
@@ -8583,9 +8583,9 @@
     "/kyc/documents/{id}": {
       "delete": {
         "tags": [
-          "kyc"
+          "KYC"
         ],
-        "operationId": "kyc_deleteDocument",
+        "operationId": "KYC_deleteDocument",
         "summary": "DELETE /kyc/documents/{id}",
         "parameters": [
           {
@@ -8609,9 +8609,9 @@
     "/kyc/bank": {
       "get": {
         "tags": [
-          "kyc"
+          "KYC"
         ],
-        "operationId": "kyc_getBankAccount",
+        "operationId": "KYC_getBankAccount",
         "summary": "GET /kyc/bank",
         "parameters": [],
         "responses": {
@@ -8624,9 +8624,9 @@
       },
       "put": {
         "tags": [
-          "kyc"
+          "KYC"
         ],
-        "operationId": "kyc_updateBankAccount",
+        "operationId": "KYC_updateBankAccount",
         "summary": "PUT /kyc/bank",
         "parameters": [],
         "responses": {
@@ -8641,9 +8641,9 @@
     "/kyc/security/change-password": {
       "post": {
         "tags": [
-          "kyc"
+          "KYC"
         ],
-        "operationId": "kyc_changePassword",
+        "operationId": "KYC_changePassword",
         "summary": "POST /kyc/security/change-password",
         "parameters": [],
         "responses": {
@@ -8658,9 +8658,9 @@
     "/kyc/status": {
       "get": {
         "tags": [
-          "kyc"
+          "KYC"
         ],
-        "operationId": "kyc_getStatus",
+        "operationId": "KYC_getStatus",
         "summary": "GET /kyc/status",
         "parameters": [],
         "responses": {
@@ -8675,9 +8675,9 @@
     "/kyc/completion": {
       "get": {
         "tags": [
-          "kyc"
+          "KYC"
         ],
-        "operationId": "kyc_getCompletion",
+        "operationId": "KYC_getCompletion",
         "summary": "GET /kyc/completion",
         "parameters": [],
         "responses": {
@@ -8692,9 +8692,9 @@
     "/kyc/submit": {
       "post": {
         "tags": [
-          "kyc"
+          "KYC"
         ],
-        "operationId": "kyc_submitKyc",
+        "operationId": "KYC_submitKyc",
         "summary": "POST /kyc/submit",
         "parameters": [],
         "responses": {
@@ -8709,9 +8709,9 @@
     "/kyc/auto-check": {
       "post": {
         "tags": [
-          "kyc"
+          "KYC"
         ],
-        "operationId": "kyc_autoCheck",
+        "operationId": "KYC_autoCheck",
         "summary": "POST /kyc/auto-check",
         "parameters": [],
         "responses": {
@@ -8726,9 +8726,9 @@
     "/kyc/{agentId}/approve": {
       "post": {
         "tags": [
-          "kyc"
+          "KYC"
         ],
-        "operationId": "kyc_adminApprove",
+        "operationId": "KYC_adminApprove",
         "summary": "POST /kyc/{agentId}/approve",
         "parameters": [
           {
@@ -8950,6 +8950,91 @@
         },
         "x-controller-file": "backend/src/marketing/facebook-messenger.controller.ts",
         "x-method-name": "getStatus"
+      }
+    },
+    "/marketing/connect/google-ads/status": {
+      "get": {
+        "tags": [
+          "marketing"
+        ],
+        "operationId": "marketing_status",
+        "summary": "GET /marketing/connect/google-ads/status",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "x-controller-file": "backend/src/marketing/google-ads-marketing.controller.ts",
+        "x-method-name": "status"
+      }
+    },
+    "/marketing/connect/google-ads/url": {
+      "get": {
+        "tags": [
+          "marketing"
+        ],
+        "operationId": "marketing_url",
+        "summary": "GET /marketing/connect/google-ads/url",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "x-controller-file": "backend/src/marketing/google-ads-marketing.controller.ts",
+        "x-method-name": "url"
+      }
+    },
+    "/marketing/connect/google-ads/complete": {
+      "post": {
+        "tags": [
+          "marketing"
+        ],
+        "operationId": "marketing_complete",
+        "summary": "POST /marketing/connect/google-ads/complete",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "x-controller-file": "backend/src/marketing/google-ads-marketing.controller.ts",
+        "x-method-name": "complete"
+      }
+    },
+    "/marketing/connect/google-ads/customers": {
+      "get": {
+        "tags": [
+          "marketing"
+        ],
+        "operationId": "marketing_customers",
+        "summary": "GET /marketing/connect/google-ads/customers",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "x-controller-file": "backend/src/marketing/google-ads-marketing.controller.ts",
+        "x-method-name": "customers"
+      }
+    },
+    "/marketing/connect/google-ads/campaigns": {
+      "get": {
+        "tags": [
+          "marketing"
+        ],
+        "operationId": "marketing_campaigns",
+        "summary": "GET /marketing/connect/google-ads/campaigns",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "x-controller-file": "backend/src/marketing/google-ads-marketing.controller.ts",
+        "x-method-name": "campaigns"
       }
     },
     "/marketing/instagram/accounts": {
@@ -9516,6 +9601,40 @@
         },
         "x-controller-file": "backend/src/marketing/tiktok-marketing.controller.ts",
         "x-method-name": "complete"
+      }
+    },
+    "/marketing/connect/tiktok/profile": {
+      "get": {
+        "tags": [
+          "marketing"
+        ],
+        "operationId": "marketing_profile",
+        "summary": "GET /marketing/connect/tiktok/profile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "x-controller-file": "backend/src/marketing/tiktok-marketing.controller.ts",
+        "x-method-name": "profile"
+      }
+    },
+    "/marketing/connect/tiktok/campaigns": {
+      "get": {
+        "tags": [
+          "marketing"
+        ],
+        "operationId": "marketing_campaigns",
+        "summary": "GET /marketing/connect/tiktok/campaigns",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "x-controller-file": "backend/src/marketing/tiktok-marketing.controller.ts",
+        "x-method-name": "campaigns"
       }
     },
     "/marketing/connect/tiktok/disconnect": {
@@ -12075,6 +12194,101 @@
         },
         "x-controller-file": "backend/src/scrapers/scrapers.controller.ts",
         "x-method-name": "importLeads"
+      }
+    },
+    "/sites": {
+      "get": {
+        "tags": [
+          "sites"
+        ],
+        "operationId": "sites_list",
+        "summary": "GET /sites",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "x-controller-file": "backend/src/sites/sites.controller.ts",
+        "x-method-name": "list"
+      }
+    },
+    "/sites/{id}": {
+      "get": {
+        "tags": [
+          "sites"
+        ],
+        "operationId": "sites_findOne",
+        "summary": "GET /sites/{id}",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "x-controller-file": "backend/src/sites/sites.controller.ts",
+        "x-method-name": "findOne"
+      }
+    },
+    "/sites/{id}/domains": {
+      "get": {
+        "tags": [
+          "sites"
+        ],
+        "operationId": "sites_listDomains",
+        "summary": "GET /sites/{id}/domains",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "x-controller-file": "backend/src/sites/sites.controller.ts",
+        "x-method-name": "listDomains"
+      }
+    },
+    "/sites/{id}/apps": {
+      "get": {
+        "tags": [
+          "sites"
+        ],
+        "operationId": "sites_listApps",
+        "summary": "GET /sites/{id}/apps",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "x-controller-file": "backend/src/sites/sites.controller.ts",
+        "x-method-name": "listApps"
       }
     },
     "/tiktok-ads/auth/url": {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/kloel';
 import { gdprApi } from '@/lib/api/privacy';
 import { colors } from '@/lib/design-tokens';
@@ -54,7 +55,9 @@ export default function PrivacySettingsPage() {
   }
 
   async function submit() {
-    if (!state) return;
+    if (!state) {
+      return;
+    }
     const required = REQUIRED_TOKEN[state.action];
     if (confirmInput !== required) {
       setState({ ...state, status: 'error', message: `Digite exatamente ${required} para confirmar.` });
@@ -95,9 +98,9 @@ export default function PrivacySettingsPage() {
       <p style={{ color: colors.text.silver, fontSize: 14, marginBottom: 32 }}>
         Direitos garantidos pela LGPD (Art. 18): acesso, portabilidade e exclusão. As solicitações
         são processadas pela equipe Kloel em até 24 horas. Veja{' '}
-        <a href="/privacy" style={{ color: colors.ember.primary }}>
+        <Link href="/privacy" style={{ color: colors.ember.primary }}>
           Política de Privacidade
-        </a>{' '}
+        </Link>{' '}
         para detalhes legais.
       </p>
 

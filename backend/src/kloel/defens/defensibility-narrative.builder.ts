@@ -29,32 +29,42 @@ const SWITCHING_COST_DIMENSIONS: readonly {
   {
     dimension: 'memory',
     label: 'Conversation memory',
-    reasoning: 'Replacement would lose continuity across objection, silence, recovery, checkout, and post-sale evidence.',
-    nextEvidenceToCapture: 'Capture observed conversions and retained post-sale outcomes tied to the full lead journey.',
+    reasoning:
+      'Replacement would lose continuity across objection, silence, recovery, checkout, and post-sale evidence.',
+    nextEvidenceToCapture:
+      'Capture observed conversions and retained post-sale outcomes tied to the full lead journey.',
   },
   {
     dimension: 'criterion',
     label: 'Owner criterion',
-    reasoning: "Replacement would not inherit the owner's learned rules for risk, tone, discounting, escalation, and refusal.",
-    nextEvidenceToCapture: 'Capture accepted owner corrections and the future behavior change they produced.',
+    reasoning:
+      "Replacement would not inherit the owner's learned rules for risk, tone, discounting, escalation, and refusal.",
+    nextEvidenceToCapture:
+      'Capture accepted owner corrections and the future behavior change they produced.',
   },
   {
     dimension: 'context',
     label: 'Commercial context',
-    reasoning: 'Replacement would restart without the local context behind conversion, objection, silence, recovery, and checkout outcomes.',
-    nextEvidenceToCapture: 'Capture complete insecure-lead journeys from objection through honest recovery and checkout.',
+    reasoning:
+      'Replacement would restart without the local context behind conversion, objection, silence, recovery, and checkout outcomes.',
+    nextEvidenceToCapture:
+      'Capture complete insecure-lead journeys from objection through honest recovery and checkout.',
   },
   {
     dimension: 'judgment',
     label: 'Commercial judgment',
-    reasoning: 'Replacement would reduce the product back toward generic execution instead of stage-aware commercial judgment.',
-    nextEvidenceToCapture: 'Capture decisions where Kloel waited, escalated, refused, or chose the safer next action.',
+    reasoning:
+      'Replacement would reduce the product back toward generic execution instead of stage-aware commercial judgment.',
+    nextEvidenceToCapture:
+      'Capture decisions where Kloel waited, escalated, refused, or chose the safer next action.',
   },
   {
     dimension: 'commercial_capital',
     label: 'Accumulated commercial capital',
-    reasoning: 'Replacement would discard the compound asset created by outcomes, corrections, recovery behavior, and defensible sales memory.',
-    nextEvidenceToCapture: 'Capture repeated conversion outcomes, recovery-after-error scenes, and post-sale retention signals.',
+    reasoning:
+      'Replacement would discard the compound asset created by outcomes, corrections, recovery behavior, and defensible sales memory.',
+    nextEvidenceToCapture:
+      'Capture repeated conversion outcomes, recovery-after-error scenes, and post-sale retention signals.',
   },
 ];
 
@@ -82,21 +92,28 @@ export class DefensibilityNarrativeBuilder {
   ): DefensibilityNarrative {
     const nowIso = new Date(nowMs ?? Date.now()).toISOString();
 
-    const assetScore = assets.length > 0
-      ? assets.reduce((s, a) => s + a.score, 0) / assets.length
-      : 0;
+    const assetScore =
+      assets.length > 0 ? assets.reduce((s, a) => s + a.score, 0) / assets.length : 0;
 
-    const positioningScore = positioning.length > 0
-      ? positioning.reduce((s, p) => s + p.strength * (1 - p.competitorOverlap), 0) / positioning.length
-      : 0;
+    const positioningScore =
+      positioning.length > 0
+        ? positioning.reduce((s, p) => s + p.strength * (1 - p.competitorOverlap), 0) /
+          positioning.length
+        : 0;
 
-    const authorityScore = authorities.length > 0
-      ? authorities.reduce((s, a) => s + (a.consistencyScore + a.reachScore + a.depthScore) / 3, 0) / authorities.length
-      : 0;
+    const authorityScore =
+      authorities.length > 0
+        ? authorities.reduce(
+            (s, a) => s + (a.consistencyScore + a.reachScore + a.depthScore) / 3,
+            0,
+          ) / authorities.length
+        : 0;
 
-    const audienceScore = audiences.length > 0
-      ? audiences.reduce((s, a) => s + a.ownershipLevel * (1 - a.platformRisk), 0) / audiences.length
-      : 0;
+    const audienceScore =
+      audiences.length > 0
+        ? audiences.reduce((s, a) => s + a.ownershipLevel * (1 - a.platformRisk), 0) /
+          audiences.length
+        : 0;
 
     const defensibilityScore = clamp(
       0.3 * assetScore + 0.25 * positioningScore + 0.2 * authorityScore + 0.25 * audienceScore,
@@ -145,12 +162,22 @@ export class DefensibilityNarrativeBuilder {
     positioningScore: number,
     audienceScore: number,
   ): string {
-    if (defensibilityScore >= 0.8) return 'Deep Moat — highly defensible with multiple reinforcing assets';
-    if (defensibilityScore >= 0.6) return 'Building Moat — defensible trajectory, continue reinforcing';
-    if (defensibilityScore >= 0.4) return 'Emerging Moat — early defensibility signals present';
+    if (defensibilityScore >= 0.8) {
+      return 'Deep Moat — highly defensible with multiple reinforcing assets';
+    }
+    if (defensibilityScore >= 0.6) {
+      return 'Building Moat — defensible trajectory, continue reinforcing';
+    }
+    if (defensibilityScore >= 0.4) {
+      return 'Emerging Moat — early defensibility signals present';
+    }
 
-    if (positioningScore > 0.3) return 'Positioning Moat forming — invest in uniqueness evidence';
-    if (audienceScore > 0.3) return 'Audience Moat forming — accelerate owned audience migration';
+    if (positioningScore > 0.3) {
+      return 'Positioning Moat forming — invest in uniqueness evidence';
+    }
+    if (audienceScore > 0.3) {
+      return 'Audience Moat forming — accelerate owned audience migration';
+    }
 
     return 'No Moat — tactical operations dominating; redirect to defensible asset building';
   }
@@ -177,7 +204,8 @@ export class DefensibilityNarrativeBuilder {
     } else if (score < 0.6) {
       narrative += 'Maintain tactical pace but accelerate evidence capture into defensible moats.';
     } else {
-      narrative += 'Defensibility is healthy. Continue harvesting evidence without sacrificing tactical momentum.';
+      narrative +=
+        'Defensibility is healthy. Continue harvesting evidence without sacrificing tactical momentum.';
     }
 
     return narrative;
@@ -215,27 +243,35 @@ export class DefensibilityNarrativeBuilder {
 
     const profile = this.buildSwitchingEvidenceProfile(switchingAssets);
     const replacementPain = this.buildReplacementPainItems(profile);
-    const evidencedDimensions = replacementPain.filter((item) => item.evidenceLevel !== 'not_yet_proven');
+    const evidencedDimensions = replacementPain.filter(
+      (item) => item.evidenceLevel !== 'not_yet_proven',
+    );
     const evidencedLabels = evidencedDimensions.map((item) => item.label).join(', ');
-    const capitalLevel = replacementPain.find(
-      (item) => item.dimension === 'commercial_capital',
-    )?.evidenceLevel ?? 'not_yet_proven';
+    const capitalLevel =
+      replacementPain.find((item) => item.dimension === 'commercial_capital')?.evidenceLevel ??
+      'not_yet_proven';
     const replacementPainNarrative =
       profile.overallLevel === 'proven'
         ? `Replacement pain is explicit: swapping Kloel for generic SaaS, automation, or a new hire would discard ${evidencedLabels}. Commercial capital level: ${capitalLevel}.`
         : `Replacement pain is emerging from ${profile.strongestLabel}: swapping to generic SaaS, automation, or a new hire would risk losing ${evidencedLabels || 'no proven dimension yet'}; ${profile.evidenceCount} evidence trail${profile.evidenceCount === 1 ? '' : 's'} observed, but commercial capital remains ${capitalLevel} until conversion, owner-criterion, and recovery evidence compound.`;
 
     return {
-      switchingCostReasoning:
-        `${profile.overallLevel === 'proven' ? 'Proven' : 'Emerging'} switching-cost evidence from ${profile.strongestLabel}: only evidenced dimensions are treated as replacement pain; missing dimensions remain unclaimed until their proof exists.`,
+      switchingCostReasoning: `${profile.overallLevel === 'proven' ? 'Proven' : 'Emerging'} switching-cost evidence from ${profile.strongestLabel}: only evidenced dimensions are treated as replacement pain; missing dimensions remain unclaimed until their proof exists.`,
       replacementPain,
       replacementPainNarrative,
     };
   }
 
-  private classifySwitchingEvidence(score: number, evidenceCount: number): ReplacementPainItem['evidenceLevel'] {
-    if (score >= 0.75 && evidenceCount >= 5) return 'proven';
-    if (score > 0 || evidenceCount > 0) return 'emerging';
+  private classifySwitchingEvidence(
+    score: number,
+    evidenceCount: number,
+  ): ReplacementPainItem['evidenceLevel'] {
+    if (score >= 0.75 && evidenceCount >= 5) {
+      return 'proven';
+    }
+    if (score > 0 || evidenceCount > 0) {
+      return 'emerging';
+    }
     return 'not_yet_proven';
   }
 
@@ -262,7 +298,9 @@ export class DefensibilityNarrativeBuilder {
     };
   }
 
-  private buildReplacementPainItems(profile: SwitchingEvidenceProfile): readonly ReplacementPainItem[] {
+  private buildReplacementPainItems(
+    profile: SwitchingEvidenceProfile,
+  ): readonly ReplacementPainItem[] {
     return SWITCHING_COST_DIMENSIONS.map((dimension) => ({
       dimension: dimension.dimension,
       label: dimension.label,

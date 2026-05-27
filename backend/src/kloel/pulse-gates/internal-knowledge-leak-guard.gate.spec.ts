@@ -57,20 +57,15 @@ function input(
 
 describe('internal-knowledge-leak-guard gate — POSITIVE (PASS)', () => {
   it('PASS: empty sibling clients array', () => {
-    const v = gate().check(
-      input('client-a', 'ws-1', 'some payload text', []),
-    );
+    const v = gate().check(input('client-a', 'ws-1', 'some payload text', []));
     expect(v.status).toBe('PASS');
   });
 
   it('PASS: completely unrelated context payload (flat string)', () => {
     const v = gate().check(
-      input(
-        'client-a',
-        'ws-1',
-        'This is a generic marketing message about shoes.',
-        [sibling('client-b', 'Acme Corp', ['acme@example.com'])],
-      ),
+      input('client-a', 'ws-1', 'This is a generic marketing message about shoes.', [
+        sibling('client-b', 'Acme Corp', ['acme@example.com']),
+      ]),
     );
     expect(v.status).toBe('PASS');
   });
@@ -82,9 +77,7 @@ describe('internal-knowledge-leak-guard gate — POSITIVE (PASS)', () => {
       tags: ['onboarding', 'trial'],
     };
     const v = gate().check(
-      input('client-a', 'ws-1', payload, [
-        sibling('client-b', 'Acme Corp', ['acme@example.com']),
-      ]),
+      input('client-a', 'ws-1', payload, [sibling('client-b', 'Acme Corp', ['acme@example.com'])]),
     );
     expect(v.status).toBe('PASS');
   });
@@ -105,9 +98,7 @@ describe('internal-knowledge-leak-guard gate — POSITIVE (PASS)', () => {
       notes: null as unknown,
     };
     const v = gate().check(
-      input('client-a', 'ws-1', payload, [
-        sibling('client-b', 'Acme Corp', ['acme@example.com']),
-      ]),
+      input('client-a', 'ws-1', payload, [sibling('client-b', 'Acme Corp', ['acme@example.com'])]),
     );
     expect(v.status).toBe('PASS');
   });
@@ -123,19 +114,13 @@ describe('internal-knowledge-leak-guard gate — POSITIVE (PASS)', () => {
 
   it('PASS: short name word (< 2 chars) is filtered — single-letter name', () => {
     const v = gate().check(
-      input('client-a', 'ws-1', 'The letter A appears here', [
-        sibling('client-b', 'A', []),
-      ]),
+      input('client-a', 'ws-1', 'The letter A appears here', [sibling('client-b', 'A', [])]),
     );
     expect(v.status).toBe('PASS');
   });
 
   it('PASS: name with all words < 2 chars produces non-matching pattern', () => {
-    const v = gate().check(
-      input('client-a', 'ws-1', 'A B C', [
-        sibling('client-b', 'A B', []),
-      ]),
-    );
+    const v = gate().check(input('client-a', 'ws-1', 'A B C', [sibling('client-b', 'A B', [])]));
     expect(v.status).toBe('PASS');
   });
 
@@ -150,9 +135,7 @@ describe('internal-knowledge-leak-guard gate — POSITIVE (PASS)', () => {
 
   it('PASS: empty context payload (empty string)', () => {
     const v = gate().check(
-      input('client-a', 'ws-1', '', [
-        sibling('client-b', 'Acme Corp', ['acme@example.com']),
-      ]),
+      input('client-a', 'ws-1', '', [sibling('client-b', 'Acme Corp', ['acme@example.com'])]),
     );
     expect(v.status).toBe('PASS');
   });
@@ -163,9 +146,7 @@ describe('internal-knowledge-leak-guard gate — POSITIVE (PASS)', () => {
 describe('internal-knowledge-leak-guard gate — NEGATIVE (FAIL)', () => {
   it('FAIL: sibling client name leaked in flat string context', () => {
     const v = gate().check(
-      input('client-a', 'ws-1', 'Acme Corp is our partner', [
-        sibling('client-b', 'Acme Corp', []),
-      ]),
+      input('client-a', 'ws-1', 'Acme Corp is our partner', [sibling('client-b', 'Acme Corp', [])]),
     );
     expect(v.status).toBe('FAIL');
     expect(v.reason).toContain('internal knowledge leak');
@@ -221,9 +202,7 @@ describe('internal-knowledge-leak-guard gate — NEGATIVE (FAIL)', () => {
       details: { vendor: 'Acme Corp', status: 'shipped' },
     };
     const v = gate().check(
-      input('client-a', 'ws-1', payload, [
-        sibling('client-b', 'Acme Corp', []),
-      ]),
+      input('client-a', 'ws-1', payload, [sibling('client-b', 'Acme Corp', [])]),
     );
     expect(v.status).toBe('FAIL');
     expect(v.evidence![0].path).toBe('$.details.vendor');
@@ -234,9 +213,7 @@ describe('internal-knowledge-leak-guard gate — NEGATIVE (FAIL)', () => {
       messages: ['Hello', 'Acme Corp says hi', 'Goodbye'],
     };
     const v = gate().check(
-      input('client-a', 'ws-1', payload, [
-        sibling('client-b', 'Acme Corp', []),
-      ]),
+      input('client-a', 'ws-1', payload, [sibling('client-b', 'Acme Corp', [])]),
     );
     expect(v.status).toBe('FAIL');
     expect(v.evidence![0].path).toBe('$.messages[1]');
@@ -275,9 +252,7 @@ describe('internal-knowledge-leak-guard gate — NEGATIVE (FAIL)', () => {
       ],
     };
     const v = gate().check(
-      input('client-a', 'ws-1', payload, [
-        sibling('client-b', 'Acme Corp', []),
-      ]),
+      input('client-a', 'ws-1', payload, [sibling('client-b', 'Acme Corp', [])]),
     );
     expect(v.status).toBe('FAIL');
     expect(v.evidence![0].path).toBe('$.transactions[0].parties[1].name');

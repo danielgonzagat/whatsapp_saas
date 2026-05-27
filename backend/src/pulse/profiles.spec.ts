@@ -223,7 +223,9 @@ process.stdout.write(
   });
 
   if (result.status !== 0) {
-    throw new Error(`profiles fixture failed\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`);
+    throw new Error(
+      `profiles fixture failed\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`,
+    );
   }
 
   return JSON.parse(result.stdout) as ProfilesFixtureResult;
@@ -244,7 +246,9 @@ describe('getProfileSelection', () => {
     expect(fixture.fullProduct.flowIds).toEqual(['checkout-charge', 'billing-sync']);
     expect(fixture.fullProduct.scenarioIds).toEqual(['customer-checkout', 'system-reconciliation']);
     expect(fixture.fullProduct.runtimeProbeIds).toEqual(['backend-health', 'db-connectivity']);
-    expect(fixture.fullProduct.requestedModes).toEqual(expect.arrayContaining(['customer', 'soak']));
+    expect(fixture.fullProduct.requestedModes).toEqual(
+      expect.arrayContaining(['customer', 'soak']),
+    );
   });
 
   it('derives pulse-core-final as a final PULSE-only scope', () => {

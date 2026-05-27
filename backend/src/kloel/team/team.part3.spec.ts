@@ -32,9 +32,7 @@ import {
 import type { SpineEventRef } from '../mind/mind.types';
 import type { PreCallContext, NextBestAction } from './team.types';
 
-const baseEvent = (
-  over: Partial<SpineEventRef> = {},
-): SpineEventRef => ({
+const baseEvent = (over: Partial<SpineEventRef> = {}): SpineEventRef => ({
   eventId: over.eventId ?? `evt_test_${Math.random().toString(36).slice(2, 8)}`,
   eventName: over.eventName ?? 'commerce.lead.created',
   workspaceId: over.workspaceId ?? 'wks_demo',
@@ -43,9 +41,7 @@ const baseEvent = (
   ...(over.entityRef !== undefined ? { entityRef: over.entityRef } : {}),
   ...(over.valence !== undefined ? { valence: over.valence } : {}),
   ...(over.payload !== undefined ? { payload: over.payload } : {}),
-  ...(over.correlationId !== undefined
-    ? { correlationId: over.correlationId }
-    : {}),
+  ...(over.correlationId !== undefined ? { correlationId: over.correlationId } : {}),
 });
 
 const leadRef = (leadId: string) => ({
@@ -100,15 +96,9 @@ describe('TeamRespectProtocol (UTP-TEAM-006)', () => {
     const msg = buildSuggestionMessage(mockSuggestion);
     expect(msg.delegation).toBeDefined();
     expect(msg.delegation.riskClass).toBe(mockSuggestion.r1Contract.riskClass);
-    expect(msg.delegation.delegationMode).toBe(
-      mockSuggestion.r1Contract.delegationMode,
-    );
-    expect(msg.delegation.safeNextStep).toBe(
-      mockSuggestion.r1Contract.safeNextStep,
-    );
-    expect(msg.delegation.rollback).toEqual(
-      mockSuggestion.r1Contract.rollback,
-    );
+    expect(msg.delegation.delegationMode).toBe(mockSuggestion.r1Contract.delegationMode);
+    expect(msg.delegation.safeNextStep).toBe(mockSuggestion.r1Contract.safeNextStep);
+    expect(msg.delegation.rollback).toEqual(mockSuggestion.r1Contract.rollback);
     expect(msg.delegation.leadOutcomeGuardrail).toEqual(
       mockSuggestion.r1Contract.leadOutcomeGuardrail,
     );
@@ -152,8 +142,7 @@ describe('TeamRespectProtocol (UTP-TEAM-006)', () => {
   });
 
   it('exposes leadOutcomeGuardrail so operators see anti-pressure and silence rules', () => {
-    const guard = buildSuggestionMessage(mockSuggestion).delegation
-      .leadOutcomeGuardrail;
+    const guard = buildSuggestionMessage(mockSuggestion).delegation.leadOutcomeGuardrail;
     expect(guard.antiPressureLanguage).toBe(true);
     expect(guard.respectsSilenceWindow).toBe(true);
     expect(guard.requiresContextQualification).toBe(false);
@@ -188,8 +177,7 @@ describe('TeamRespectProtocol (UTP-TEAM-006)', () => {
     const qualified: SuggestionR1Contract = {
       riskClass: 'R1',
       delegationMode: 'allowed_alone',
-      safeNextStep:
-        'surface an honest re-engagement suggestion for owner review; do not send',
+      safeNextStep: 'surface an honest re-engagement suggestion for owner review; do not send',
       rollback: ['dismiss_suggestion', 'snooze_suggestion'],
       leadOutcomeGuardrail: {
         antiPressureLanguage: true,
@@ -200,8 +188,7 @@ describe('TeamRespectProtocol (UTP-TEAM-006)', () => {
     const unqualified: SuggestionR1Contract = {
       riskClass: 'R1',
       delegationMode: 'allowed_alone',
-      safeNextStep:
-        'review timeline and gather context before every re-engagement suggestion',
+      safeNextStep: 'review timeline and gather context before every re-engagement suggestion',
       rollback: ['dismiss_suggestion', 'snooze_suggestion'],
       leadOutcomeGuardrail: {
         antiPressureLanguage: true,
@@ -221,12 +208,8 @@ describe('TeamRespectProtocol (UTP-TEAM-006)', () => {
 
     expect(msgQ.delegation.safeNextStep).toContain('do not send');
     expect(msgU.delegation.safeNextStep).toContain('review timeline');
-    expect(msgQ.delegation.leadOutcomeGuardrail.requiresContextQualification).toBe(
-      true,
-    );
-    expect(msgU.delegation.leadOutcomeGuardrail.requiresContextQualification).toBe(
-      false,
-    );
+    expect(msgQ.delegation.leadOutcomeGuardrail.requiresContextQualification).toBe(true);
+    expect(msgU.delegation.leadOutcomeGuardrail.requiresContextQualification).toBe(false);
     expect(msgQ.dismissible).toBe(true);
     expect(msgU.dismissible).toBe(true);
   });

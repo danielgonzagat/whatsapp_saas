@@ -95,7 +95,28 @@ export async function deleteApiKey(keyId: string, _token?: string): Promise<void
 }
 
 // Billing & Subscription standalone functions
+//
+// CANONICAL: backend/src/lib/api/billing.ts::billingApi
+//
+// Wave 22 canonicalization: every standalone billing helper below has a
+// canonical equivalent in `billingApi` (object-style API with consistent
+// SWR cache invalidation and tokenStorage-resolved workspaceId).
+//
+// Migration:
+//   import { billingApi } from '@/lib/api'; // not './workspace'
+//   billingApi.createCheckoutSession(plan)  // not createCheckoutSession(ws, plan, email)
+//   billingApi.getSubscription()            // not getSubscriptionStatus()
+//   billingApi.activateTrial()              // not activateTrial() — already wired in billingApi
+//   billingApi.addPaymentMethod(id)         // not attachPaymentMethod(id)
+//   billingApi.getPaymentMethods()          // not listPaymentMethods()
+//   billingApi.setDefaultPaymentMethod(id)  // same name in billingApi
+//   billingApi.removePaymentMethod(id)      // same name in billingApi
+//   billingApi.createSetupIntent(returnUrl?) // already wired in billingApi
+//
+// Leaving the standalone helpers in place (callers exist) — they are marked
+// @deprecated so future consumers migrate to billingApi.
 
+/** @deprecated Use `billingApi.createCheckoutSession()` from `@/lib/api`. */
 export interface CheckoutResponse {
   /** Url property. */
   url: string;

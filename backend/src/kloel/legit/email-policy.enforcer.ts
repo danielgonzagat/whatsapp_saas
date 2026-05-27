@@ -26,7 +26,8 @@ export function enforceEmailPolicy(input: PolicyEnforcementInput): PolicyEnforce
       userId: input.userId,
       policyName: 'can_spam_act',
       severity: 'moderate',
-      description: 'Subject line contains spam trigger words as defined by CAN-SPAM Act guidelines.',
+      description:
+        'Subject line contains spam trigger words as defined by CAN-SPAM Act guidelines.',
       source: 'email-policy.enforcer',
       evidence: [`spam_subject:${subject}`],
       detectedAt: new Date(nowMs).toISOString(),

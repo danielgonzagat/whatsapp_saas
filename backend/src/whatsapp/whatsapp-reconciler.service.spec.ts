@@ -24,7 +24,14 @@ const makeWorkspace = (overrides: Record<string, unknown> = {}) => ({
 
 describe('WhatsappReconcilerService', () => {
   let service: WhatsappReconcilerService;
-  let redis: { get: jest.Mock; set: jest.Mock; setex: jest.Mock; rpush: jest.Mock; expire: jest.Mock; publish: jest.Mock };
+  let redis: {
+    get: jest.Mock;
+    set: jest.Mock;
+    setex: jest.Mock;
+    rpush: jest.Mock;
+    expire: jest.Mock;
+    publish: jest.Mock;
+  };
   let inbox: { saveMessageByPhone: jest.Mock };
   let workspaces: { getWorkspace: jest.Mock };
   let neuroCrm: { analyzeContact: jest.Mock };
@@ -63,9 +70,9 @@ describe('WhatsappReconcilerService', () => {
         findFirst: jest.fn(),
         create: jest.fn(),
       },
-      $transaction: jest.fn().mockImplementation((cb: (tx: unknown) => Promise<unknown>) =>
-        cb(prisma),
-      ),
+      $transaction: jest
+        .fn()
+        .mockImplementation((cb: (tx: unknown) => Promise<unknown>) => cb(prisma)),
     };
     providerRegistry = { upsertContactProfile: jest.fn().mockResolvedValue(true) };
 
@@ -78,7 +85,10 @@ describe('WhatsappReconcilerService', () => {
         { provide: NeuroCrmService, useValue: neuroCrm },
         { provide: PrismaService, useValue: prisma },
         { provide: WhatsAppProviderRegistry, useValue: providerRegistry },
-        { provide: DecisionOutcomeService, useValue: { recordEvent: jest.fn().mockResolvedValue(undefined) } },
+        {
+          provide: DecisionOutcomeService,
+          useValue: { recordEvent: jest.fn().mockResolvedValue(undefined) },
+        },
         { provide: OpsAlertService, useValue: { alertOnCriticalError: jest.fn() } },
       ],
     }).compile();
@@ -115,7 +125,11 @@ describe('WhatsappReconcilerService', () => {
     it('enqueues resume-flow job', async () => {
       const { flowQueue } = require('../queue/queue');
       await service.handleIncoming('ws-1', '5511999991234', 'hello');
-      expect(flowQueue.add).toHaveBeenCalledWith('resume-flow', expectValueOf(Object), expectValueOf(Object));
+      expect(flowQueue.add).toHaveBeenCalledWith(
+        'resume-flow',
+        expectValueOf(Object),
+        expectValueOf(Object),
+      );
     });
 
     it('enqueues autopilot scan-contact when autonomous is enabled', async () => {

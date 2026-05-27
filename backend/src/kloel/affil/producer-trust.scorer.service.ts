@@ -5,9 +5,9 @@ import { clamp } from '../../common/math';
 
 const WEIGHTS = {
   paymentReliability: 0.35,
-  refundResolutionTime: 0.20,
+  refundResolutionTime: 0.2,
   complianceHistory: 0.25,
-  communicationScore: 0.20,
+  communicationScore: 0.2,
 } as const;
 
 @Injectable()
@@ -28,10 +28,7 @@ export class ProducerTrustScorerService {
 
     const trustScore = Math.round(clamp(rawScore, 0, 1) * 100);
 
-    this.logger.debug(
-      `Producer trust scored: ${trustScore}`,
-      { trustScore },
-    );
+    this.logger.debug(`Producer trust scored: ${trustScore}`, { trustScore });
 
     return { trustScore };
   }

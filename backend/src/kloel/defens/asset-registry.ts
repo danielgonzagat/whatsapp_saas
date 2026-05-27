@@ -10,14 +10,36 @@ import { assetStrengthFromScore, filterByWorkspace } from './types';
  * Each asset has a strength score (0-1), kind, and evidence trail.
  */
 
-const ASSET_EVENT_SIGNALS: Readonly<Record<string, { readonly kind: AssetKind; readonly label: string; readonly baseScore: number }>> = {
+const ASSET_EVENT_SIGNALS: Readonly<
+  Record<string, { readonly kind: AssetKind; readonly label: string; readonly baseScore: number }>
+> = {
   'commerce.member_area.enrolled': { kind: 'community', label: 'Member Community', baseScore: 0.1 },
-  'commerce.member_area.progressed': { kind: 'community', label: 'Member Community', baseScore: 0.05 },
-  'commerce.affiliate.performance_measured': { kind: 'process_moat', label: 'Affiliate Network', baseScore: 0.15 },
+  'commerce.member_area.progressed': {
+    kind: 'community',
+    label: 'Member Community',
+    baseScore: 0.05,
+  },
+  'commerce.affiliate.performance_measured': {
+    kind: 'process_moat',
+    label: 'Affiliate Network',
+    baseScore: 0.15,
+  },
   'commerce.crm.deal_won': { kind: 'case_library', label: 'Success Cases', baseScore: 0.1 },
-  'commerce.lead.converted': { kind: 'switching_cost', label: 'Conversion Track Record', baseScore: 0.08 },
-  'commerce.campaign.audience_reached': { kind: 'owned_audience', label: 'Campaign Audience', baseScore: 0.05 },
-  'commerce.error.recovery_proof_packaged': { kind: 'switching_cost', label: 'Recovery Proof Trail', baseScore: 0.12 },
+  'commerce.lead.converted': {
+    kind: 'switching_cost',
+    label: 'Conversion Track Record',
+    baseScore: 0.08,
+  },
+  'commerce.campaign.audience_reached': {
+    kind: 'owned_audience',
+    label: 'Campaign Audience',
+    baseScore: 0.05,
+  },
+  'commerce.error.recovery_proof_packaged': {
+    kind: 'switching_cost',
+    label: 'Recovery Proof Trail',
+    baseScore: 0.12,
+  },
 };
 
 interface AssetSignal {
@@ -39,10 +61,14 @@ export class AssetRegistry {
 
     for (const event of wsEvents) {
       const signal = this.resolveSignal(event);
-      if (!signal) continue;
+      if (!signal) {
+        continue;
+      }
 
       const asset = this.upsertAsset(wsAssets, input.workspaceId, signal, event.eventId, nowIso);
-      if (asset) added.push(asset);
+      if (asset) {
+        added.push(asset);
+      }
     }
 
     return added;
@@ -50,22 +76,22 @@ export class AssetRegistry {
 
   private resolveSignal(event: EvidenceInput['events'][number]): AssetSignal | undefined {
     const staticSignal = ASSET_EVENT_SIGNALS[event.eventName];
-    if (staticSignal) return staticSignal;
+    if (staticSignal) {
+      return staticSignal;
+    }
 
-  if (
-    event.eventName === 'cognition.valence_assigned' &&
-    event.entityRef?.entityType === 'operator'
-  ) {
-    const p = event.payload;
-    const operatorNote = typeof p?.['operatorNote'] === 'string'
-      ? p['operatorNote'].trim()
-      : '';
     if (
-      p &&
-      p['accepted'] === false &&
-      operatorNote.length > 0 &&
-      typeof p['learningFraming'] === 'string' &&
-      p['learningFraming'].includes('not human performance scoring')
+      event.eventName === 'cognition.valence_assigned' &&
+      event.entityRef?.entityType === 'operator'
+    ) {
+      const p = event.payload;
+      const operatorNote = typeof p?.['operatorNote'] === 'string' ? p['operatorNote'].trim() : '';
+      if (
+        p &&
+        p['accepted'] === false &&
+        operatorNote.length > 0 &&
+        typeof p['learningFraming'] === 'string' &&
+        p['learningFraming'].includes('not human performance scoring')
       ) {
         return { kind: 'switching_cost', label: 'Owner Criterion Memory', baseScore: 0.1 };
       }

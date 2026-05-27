@@ -1,9 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type {
-  ChannelKind,
-  DetectionInput,
-  OwnedAudience,
-} from './types';
+import type { ChannelKind, DetectionInput, OwnedAudience } from './types';
 import { filterByWorkspace } from './types';
 
 @Injectable()
