@@ -59,6 +59,16 @@ describe('MarketingView — six-channel PreviewBar (canonical anexo contract)', 
     expect(screen.getByTestId('channel-onboarding-stub').textContent).toContain('channel=email');
   });
 
+  it('centers the floating channel selector inside the app content rail', () => {
+    render(<MarketingView defaultTab="whatsapp" />);
+    const bar = screen.getByText('whatsapp').parentElement;
+    expect(bar).toBeInstanceOf(HTMLElement);
+    expect((bar as HTMLElement).style.left).toBe(
+      'calc(var(--kloel-main-rail-width, 0px) + ((100vw - var(--kloel-main-rail-width, 0px)) / 2))',
+    );
+    expect((bar as HTMLElement).style.transform).toBe('translateX(-50%)');
+  });
+
   it('redirects /marketing/conversas to /inbox and /marketing to /marketing/whatsapp', () => {
     mockPathname = '/marketing/conversas';
     render(<MarketingView defaultTab="whatsapp" />);

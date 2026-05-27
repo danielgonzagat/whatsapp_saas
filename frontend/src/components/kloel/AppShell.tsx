@@ -6,10 +6,19 @@ import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { KLOEL_CHAT_ROUTE } from '@/lib/kloel-dashboard-context';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { type ReactNode, startTransition, useCallback, useEffect, useRef, useState } from 'react';
+import {
+  type CSSProperties,
+  type ReactNode,
+  startTransition,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { CommandPalette } from './CommandPalette';
 import { ErrorBoundary } from './ErrorBoundary';
 import { KloelSidebar } from './sidebar/KloelSidebar';
+import { SIDEBAR_WIDTH_COLLAPSED, SIDEBAR_WIDTH_EXPANDED } from './sidebar/sidebar-config';
 import { useSidebarState } from './sidebar/useSidebarState';
 import {
   VIEW_ROUTES,
@@ -36,6 +45,21 @@ export function AppShell({ children }: AppShellProps) {
   const newChatTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { isDesktop, isMobile } = useResponsiveViewport();
   const mobileHeaderOffset = isMobile ? 68 : 0;
+  const appRailWidth = isDesktop
+    ? sidebarExpanded
+      ? SIDEBAR_WIDTH_EXPANDED
+      : SIDEBAR_WIDTH_COLLAPSED
+    : 0;
+  const shellStyle: CSSProperties & { '--kloel-main-rail-width': string } = {
+    '--kloel-main-rail-width': `${appRailWidth}px`,
+    display: 'flex',
+    minHeight: '100vh',
+    height: '100dvh',
+    background: KLOEL_THEME.bgPrimary,
+    fontFamily: "'Sora', sans-serif",
+    color: KLOEL_THEME.textPrimary,
+    overflow: 'visible',
+  };
 
   useEffect(
     () => () => {
@@ -135,17 +159,7 @@ export function AppShell({ children }: AppShellProps) {
   }, [openPalette]);
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        minHeight: '100vh',
-        height: '100dvh',
-        background: KLOEL_THEME.bgPrimary,
-        fontFamily: "'Sora', sans-serif",
-        color: KLOEL_THEME.textPrimary,
-        overflow: 'visible',
-      }}
-    >
+    <div style={shellStyle}>
       <CommandPalette {...paletteProps} onSelect={executeCommand} mode={paletteMode} />
 
       <div className="hidden lg:block" style={{ display: isDesktop ? 'block' : 'none' }}>
