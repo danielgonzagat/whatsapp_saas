@@ -1,4 +1,4 @@
-import { type ResolvedWhatsAppProvider } from './provider-env';
+import { type ResolvedWhatsAppProvider } from '../../marketing/channels/whatsapp/providers/provider-env';
 
 import type { UnknownRecord } from '../../common/types';
 export type { UnknownRecord };

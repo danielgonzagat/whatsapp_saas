@@ -6,7 +6,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { asProviderSettings } from '../provider-settings.types';
 import type { ProviderSessionSnapshot } from '../provider-settings.types';
 import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../whatsapp-normalization.util';
-import { resolveDefaultWhatsAppProvider } from './provider-env';
+import { resolveDefaultWhatsAppProvider } from '../../marketing/channels/whatsapp/providers/provider-env';
 import { WahaProvider } from './waha.provider';
 import { WhatsAppApiProvider } from './whatsapp-api.provider';
 import type {

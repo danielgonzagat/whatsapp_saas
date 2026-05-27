@@ -7,7 +7,7 @@ import { asProviderSettings } from '../whatsapp/provider-settings.types';
 import {
   normalizeWhatsAppProvider,
   resolveDefaultWhatsAppProvider,
-} from '../whatsapp/providers/provider-env';
+} from '../marketing/channels/whatsapp/providers/provider-env';
 
 type SettingsPatch = Record<string, unknown>;
 type EmailSubSettings = Record<string, unknown> & { enabled?: boolean };
