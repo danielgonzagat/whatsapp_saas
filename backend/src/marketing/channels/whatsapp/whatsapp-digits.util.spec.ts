@@ -2,7 +2,7 @@ import {
   isDigit,
   collapseWhitespace,
   extractAsciiDigits,
-} from '../marketing/channels/whatsapp/whatsapp-digits.util';
+} from './whatsapp-digits.util';
 
 describe('isDigit', () => {
   it('returns true for digit characters 0-9', () => {
