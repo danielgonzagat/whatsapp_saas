@@ -20,14 +20,14 @@ import {
   mapMessageType,
 } from './inbound-processor.helpers';
 import { whatsappDigits as normalizePhone } from '../common/phone';
-import { isPlaceholderContactName as isPlaceholderContactNameValue } from './whatsapp-normalization.util';
+import { isPlaceholderContactName as isPlaceholderContactNameValue } from '../marketing/channels/whatsapp/whatsapp-normalization.util';
 import { WHATSAPP_MESSAGING } from '../marketing/channels/whatsapp/whatsapp.tokens';
 import type { IWhatsappMessaging } from '../marketing/channels/whatsapp/whatsapp.interfaces';
 import { WorkerRuntimeService } from './worker-runtime.service';
 import { asProviderSettings, type ProviderSettings } from './provider-settings.types';
 import type { ContactCustomFields } from '../contacts/contact-custom-fields.types';
 import { executeInlineAutopilot } from './inbound-processor.inline-autopilot';
-import { triggerWhatsappMindPercept } from './inbound-mind-percept';
+import { triggerWhatsappMindPercept } from '../marketing/channels/whatsapp/inbound-mind-percept';
 import { WhatsAppEventEmitterService } from '../kloel/whatsapp-emitter/whatsapp-event-emitter.service';
 
 import {
