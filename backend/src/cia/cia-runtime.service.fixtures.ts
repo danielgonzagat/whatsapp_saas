@@ -1,6 +1,6 @@
 import { CiaRuntimeStateService } from './cia-runtime-state.service';
 import { CiaBootstrapService } from './cia-bootstrap.service';
-import { CiaBacklogRunService } from './cia-backlog-run.service';
+import { CiaBacklogRunService } from '../kloel/mind/cia/cia-backlog-run.service';
 import { CiaChatFilterService } from './cia-chat-filter.service';
 import type {
   PrismaMock,

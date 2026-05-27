@@ -26,7 +26,7 @@ export {
 } from '../../../cia/cia.service';
 
 export { CiaAutonomyAdvisorService } from './cia-autonomy-advisor.service';
-export { CiaBacklogRunService } from '../../../cia/cia-backlog-run.service';
+export { CiaBacklogRunService } from './cia-backlog-run.service';
 export { CiaBootstrapService } from './cia-bootstrap.service';
 export { CiaChatFilterService } from './cia-chat-filter.service';
 export { CiaCognitiveHealthService } from './cia-cognitive-health.service';

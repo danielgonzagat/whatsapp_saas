@@ -1,7 +1,7 @@
 import { CiaBacklogRunService } from './cia-backlog-run.service';
-import { AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB } from '../contracts/autopilot-jobs';
+import { AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB } from '../../../contracts/autopilot-jobs';
 
-jest.mock('../queue/queue', () => ({
+jest.mock('../../../queue/queue', () => ({
   autopilotQueue: { add: jest.fn().mockResolvedValue(undefined) },
 }));
 
@@ -151,7 +151,7 @@ describe('CiaBacklogRunService', () => {
         },
       ]);
 
-      const { autopilotQueue } = await import('../queue/queue');
+      const { autopilotQueue } = await import('../../../queue/queue');
       const result = await service.startBacklogRun('ws-1', 'reply_all_recent_first');
 
       expect(result.queued).toBe(true);
