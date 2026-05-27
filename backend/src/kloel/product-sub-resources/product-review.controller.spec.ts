@@ -1,4 +1,4 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {  NotFoundException } from '@nestjs/common';
 import { ProductReviewController } from './product-review.controller';
 
 describe('ProductReviewController', () => {

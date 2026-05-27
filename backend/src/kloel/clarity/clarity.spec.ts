@@ -3,8 +3,6 @@ import { projectHierarchy } from './hierarchy.projector';
 import { applyNoiseFilter } from './noise.filter';
 import { detectAnxietyMode } from './anxiety-mode.detector';
 import { applyFeedback } from './feedback.loop';
-import { buildShortNarrative } from './short-narrative.builder';
-import { clampScore } from './clarity.types';
 import type {
   RankingInput,
   AttentionRanking,

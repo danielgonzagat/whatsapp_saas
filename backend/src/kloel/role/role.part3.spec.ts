@@ -8,36 +8,25 @@
  * >= 14 tests.
  */
 import type { SpineEventRef } from '../mind/mind.types';
-import type { Role, RoleDetection } from './types';
-import { ALL_ROLES, ROLE_DESCRIPTIONS } from './types';
-import { detectRoles, primaryRoleFromDetections } from './role.detector';
+t { ALL_ROLES, ROLE_DESCRIPTIONS } from './types';
+import { detectRoles } from './role.detector';
 import {
   projectRoleContext,
-  projectSingleDetection,
-  emptyRoleContext,
 } from './role-context.projector';
 import {
-  LeverageMapService,
+  
   getLeversForRole,
-  isLeverInControlRadius,
   getLeverageMap,
 } from './leverage-map.service';
 import {
   getRelevantMetricsForRole,
-  getAllMetrics,
-  getMetricsForRoles,
 } from './role-metric.registry';
 import {
   guardRecommendation,
-  guardRecommendations,
-  countBlocked,
-  allowedOnly,
 } from './recommendation-guard';
 import { MultiHatService } from './multi-hat.service';
 import {
   extendHierarchyWithRole,
-  roleAwareReTier,
-  countTierChanges,
 } from './aware-hierarchy.extender';
 import {
   filterWisdomByRole,

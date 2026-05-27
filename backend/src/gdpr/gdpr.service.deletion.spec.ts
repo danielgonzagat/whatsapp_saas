@@ -1,5 +1,4 @@
-import { BadRequestException, NotFoundException, UnauthorizedException } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
+';
 import { Test, TestingModule } from '@nestjs/testing';
 import { GdprStatus, GdprType } from '@prisma/client';
 import { EmailService } from '../auth/email.service';

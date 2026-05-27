@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { INBOX_SERVICE } from '../inbox/inbox.token';
-import type { IInboxService } from '../inbox/inbox.interface';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WorkspaceService } from '../workspaces/workspace.service';

@@ -16,13 +16,7 @@ import {
 } from './wisdom-taxonomy';
 import { WisdomProjectorService } from './wisdom-projector.service';
 import { relevanceScore, filterByRelevance, filterIrrelevant } from './wisdom-relevance-filter';
-import { WisdomOptService } from './wisdom-opt';
-import {
-  validateAttribution,
-  assertNoAttributionLeak,
-  patternDescriptionIsClean,
-} from './wisdom-attribution.guard';
-import type { SpineEventRef } from '../mind/mind.types';
+d.types';
 import type {
   CandidatePattern,
   WorkspaceEventSet,

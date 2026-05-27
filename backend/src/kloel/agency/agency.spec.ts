@@ -3,20 +3,13 @@ import { bundleClientContext } from './client-context-bundle';
 import { rankPriorities } from './priority.ranker';
 import { trackMargin } from './margin-per-client.tracker';
 import { detectChurnRisk } from './churn-risk-per-client.detector';
-import { balanceLoad } from './team-load-balancer';
-import { guardKnowledgeLeak } from './internal-knowledge-leak.guard';
-import { createHandoff } from './handoff.service';
 import type {
   BundleInput,
   ClientContextBundle,
   ChurnInput,
-  HandoffInput,
-  LeakGuardInput,
-  LoadInput,
   MarginInput,
   PortfolioInput,
   PriorityInput,
-  TeamMemberInput,
 } from './types';
 import { clamp, clampScore, daysSince } from './types';
 

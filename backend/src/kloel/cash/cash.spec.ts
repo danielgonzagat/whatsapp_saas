@@ -3,7 +3,6 @@ import type {
   CashPosition,
   PayablesProjection,
   ReceivablesProjection,
-  RiskDetection,
   RiskInput,
   RunwayCalculation,
   VolatilityTracking,
@@ -14,20 +13,8 @@ import { ReceivablesProjector } from './receivables.projector';
 import { PayablesProjector } from './payables.projector';
 import { RunwayCalculator } from './runway.calculator';
 import { RiskDetector } from './risk.detector';
-import { VolatilityTracker } from './volatility.tracker';
-import { ProtectiveActionSuggester } from './protective-action.suggester';
-import { UnsafeOperationBlocker } from './unsafe-operation.blocker';
 
-import {
-  sumAmounts,
-  standardDeviation,
-  entriesByCategory,
-  entriesForWorkspace,
-  entriesInWindow,
-} from './types';
-
-const NOW = Date.parse('2026-05-14T12:00:00.000Z');
-const WKS = 'wks_cash_test';
+est';
 
 function iso(offsetDays: number): string {
   return new Date(NOW + offsetDays * 24 * 60 * 60 * 1000).toISOString();

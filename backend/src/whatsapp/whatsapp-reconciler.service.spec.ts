@@ -1,8 +1,6 @@
 import { expectValueOf } from '../../test/expect-value-of';
 import { Test, TestingModule } from '@nestjs/testing';
-import Redis from 'ioredis';
 import { INBOX_SERVICE } from '../inbox/inbox.token';
-import type { IInboxService } from '../inbox/inbox.interface';
 import { DecisionOutcomeService } from '../kloel/decision-outcome.service';
 import { NeuroCrmService } from '../crm/neuro-crm.service';
 import { OpsAlertService } from '../observability/ops-alert.service';

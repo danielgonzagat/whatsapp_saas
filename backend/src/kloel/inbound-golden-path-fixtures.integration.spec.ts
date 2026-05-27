@@ -12,7 +12,6 @@ import {
   buildInboundReply,
   buildPipelineActiveState,
   buildChannelConfig,
-  buildDecisionOutcomeKey,
 } from '../../test/fixtures/whatsapp-inbound.fixture';
 const WS = 'ws-golden-path';
 const CHANNEL = 'whatsapp';

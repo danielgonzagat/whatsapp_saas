@@ -1,5 +1,4 @@
 import { CopilotController } from './copilot.controller';
-import { CopilotService } from './copilot.service';
 
 jest.mock('../auth/workspace-access', () => ({
   resolveWorkspaceId: jest.fn(),

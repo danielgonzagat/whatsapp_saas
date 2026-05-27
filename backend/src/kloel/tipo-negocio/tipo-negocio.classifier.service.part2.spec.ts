@@ -1,16 +1,7 @@
 import type { SpineEventRef } from '../mind/mind.types';
 import { TipoNegocioClassifierService } from './tipo-negocio.classifier.service';
 import type { ClassifyInput, ProfileNegocio } from './tipo-negocio.types';
-import {
-  classifyAudiencia,
-  classifyModelo,
-  classifyOferta,
-  classifyTicket,
-  classifyTouch,
-} from './tipo-negocio.classifier.service';
-
-const WKS = 'wks_demo';
-const NOW = Date.parse('2026-05-14T22:00:00.000Z');
+Z');
 const svc = new TipoNegocioClassifierService();
 
 function ev(over?: Partial<SpineEventRef>): SpineEventRef {

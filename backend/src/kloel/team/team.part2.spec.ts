@@ -6,36 +6,10 @@
  * blind-spot, smart handoff, respect protocol, and feedback loop.
  */
 
-import { buildPreCallContext } from './pre-call-context.builder';
-import { suggestNextBestActions } from './next-best-action.suggester';
 import { rescueForgottenFollowups } from './forgotten-followup.rescuer';
 import { illuminateBlindSpots } from './blind-spot-illuminator';
 import { SmartHandoffService } from './smart-handoff.service';
-import {
-  formatSuggestionForDisplay,
-  buildSuggestionMessage,
-  validateSuggestionDismissal,
-  isOperatorOverrideAllowed,
-  buildSuggestionId,
-  TEAM_RESPECT_RULES,
-} from './team-respect.protocol';
-import type { SuggestionR1Contract } from './team.types';
-import {
-  buildFeedbackEntry,
-  feedbackToValence,
-  computeOperatorAccuracy,
-  summarizeOperatorFeedbackForLearning,
-  extractFeedbackFromEvents,
-  feedbackToSpineInput,
-} from './operator-feedback.loop';
-
-import type { SpineEventRef } from '../mind/mind.types';
-import type { PreCallContext, NextBestAction } from './team.types';
-
-const baseEvent = (over: Partial<SpineEventRef> = {}): SpineEventRef => ({
-  eventId: over.eventId ?? `evt_test_${Math.random().toString(36).slice(2, 8)}`,
-  eventName: over.eventName ?? 'commerce.lead.created',
-  workspaceId: over.workspaceId ?? 'wks_demo',
+ over.workspaceId ?? 'wks_demo',
   occurredAt: over.occurredAt ?? new Date().toISOString(),
   truthMode: over.truthMode ?? 'observed',
   ...(over.entityRef !== undefined ? { entityRef: over.entityRef } : {}),

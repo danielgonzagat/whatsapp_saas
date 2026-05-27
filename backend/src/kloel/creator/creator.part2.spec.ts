@@ -7,12 +7,7 @@
  * creator trust capital tracking (extends Camada IX trust).
  */
 
-import { detectAudiencePartnerFit, type PartnerProfile } from './audience-partner-fit.detector';
-import { adviseMentionTiming, type MentionHistoryEntry } from './mention-timing.advisor';
-import { detectAudienceSaturation } from './audience-saturation.detector';
-import { protectAuthenticity } from './authenticity.protector';
-import { trackEngagementVsConversion } from './engagement-vs-conversion.tracker';
-import { CreatorTrustCapitalTrackerService } from './creator-trust-capital.tracker';
+from './creator-trust-capital.tracker';
 
 import type { CreatorEvent } from './types';
 import type { TrustState } from '../trust/trust.types';

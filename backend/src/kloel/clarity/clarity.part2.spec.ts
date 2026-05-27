@@ -1,8 +1,3 @@
-import { rankAttention } from './attention.ranker';
-import { projectHierarchy } from './hierarchy.projector';
-import { applyNoiseFilter } from './noise.filter';
-import { detectAnxietyMode } from './anxiety-mode.detector';
-import { applyFeedback } from './feedback.loop';
 import { buildShortNarrative } from './short-narrative.builder';
 import { clampScore } from './clarity.types';
 import type {
@@ -10,7 +5,6 @@ import type {
   AttentionRanking,
   AnxietyMode,
   ClarityFeedback,
-  AnxietyTrigger,
 } from './clarity.types';
 
 const NOW = Date.parse('2026-05-14T12:00:00.000Z');

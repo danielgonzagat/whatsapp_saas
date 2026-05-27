@@ -1,8 +1,6 @@
 import type { SpineEventRef } from '../mind/mind.types';
 import { TipoNegocioClassifierService } from './tipo-negocio.classifier.service';
-import type { ClassifyInput, ProfileNegocio } from './tipo-negocio.types';
-import {
-  classifyAudiencia,
+ssifyAudiencia,
   classifyModelo,
   classifyOferta,
   classifyTicket,

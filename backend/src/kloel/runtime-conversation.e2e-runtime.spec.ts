@@ -1,11 +1,6 @@
 import { CommercialDecisionOrchestratorService } from './commercial-decision-orchestrator.service';
 import { RuntimeConversationTracerService } from './runtime-conversation-tracer.service';
-import {
-  composeCustomerMessage,
-  assertCustomerSafe,
-} from './commercial-decision-orchestrator.service';
-
-const WS = 'ws-tracer';
+;
 const CHANNEL = 'WHATSAPP';
 const CONTACT_ID = 'contact-trace-1';
 

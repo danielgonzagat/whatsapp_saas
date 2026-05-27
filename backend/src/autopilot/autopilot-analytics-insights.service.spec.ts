@@ -4,8 +4,6 @@ import { ConfigService } from '@nestjs/config';
 import { AutopilotAnalyticsInsightsService } from './autopilot-analytics-insights.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
-import { CANONICAL_MODEL_IDS } from '../lib/openai-models';
 import { type FlexMock } from '../../test/helpers/prisma.mock';
 
 jest.mock('../kloel/openai-wrapper', () => ({

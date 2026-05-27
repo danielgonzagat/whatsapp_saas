@@ -1,8 +1,6 @@
 import type { ConflictDetection } from './types';
 
-import { clamp, biasLevelFromDelta, weightedAverage, makeIncidentId } from './types';
-
-import { RecommendationExplainerService } from './recommendation-explainer.service';
+from './recommendation-explainer.service';
 import type { ExplainInput } from './recommendation-explainer.service';
 
 import { ConflictDetectorService } from './conflict-detector.service';
@@ -11,19 +9,14 @@ import type { ConflictInput } from './conflict-detector.service';
 import { ConflictSilenceEnforcerService } from './conflict-silence-enforcer.service';
 import type { SilenceInput } from './conflict-silence-enforcer.service';
 
-import { PlatformBiasMonitorService } from './platform-bias-monitor.service';
 import type { BiasAuditInput } from './platform-bias-monitor.service';
 
-import { DisclosureEngineService } from './disclosure-engine.service';
 import type { DisclosureInput } from './disclosure-engine.service';
 
-import { ThirdPartyAuditExportService } from './third-party-audit-export.service';
 import type { AuditRecommendationEntry } from './third-party-audit-export.service';
 
-import { UserFeedbackCorrectionService } from './user-feedback-correction.service';
 import type { FeedbackInput } from './user-feedback-correction.service';
 
-import { RecommendationAttributionBuilderService } from './recommendation-attribution-builder.service';
 import type {
   AttributionInput,
   AttributionSourceEntry,

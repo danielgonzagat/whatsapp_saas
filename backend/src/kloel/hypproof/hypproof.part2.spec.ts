@@ -1,16 +1,9 @@
-import { AuthorizationGatewayService } from './authorization.gateway';
 import { BeliefUpdateService } from './belief-update';
 import { DiscoveryNarrativeBuilderService } from './discovery-narrative.builder';
-import { ExperimentRunnerService } from './experiment-runner';
-import { HypothesisFormulatorService } from './hypothesis-formulator';
-import { MarketEntryDecisionService } from './market-entry-decision.service';
-import { MicroExperimentDesignerService } from './micro-experiment.designer';
-import { ObservationCollectorService } from './observation.collector';
 import { ProofEvaluatorService } from './proof-evaluator';
 import type {
   SpineSignal,
   Hypothesis,
-  MicroExperiment,
   Observation,
   ProofEvaluation,
 } from './types';

@@ -1,13 +1,9 @@
-import type { SpineEventRef } from '../mind/mind.types';
 import { ConcentrationDetector } from './concentration.detector';
 import { HealthMonitor } from './health.monitor';
 import { BanRiskDetector } from './ban-risk.detector';
 import { PolicyChangeWatcher } from './policy-change.watcher';
 import { ContingencyPlanBuilder } from './contingency-plan.builder';
-import { OwnedAudiencePusher } from './owned-audience.pusher';
-import { MigrationOrchestrator } from './migration.orchestrator';
 import { DiversificationRecommender } from './diversification.recommender';
-import type { DetectionInput } from './types';
 import { makeEventFactory } from '../../../test/helpers/spine-event-factory';
 import { baseInput } from '../../../test/helpers/detection-input-factory';
 import { makeSpine } from '../../../test/helpers/spine-factory';

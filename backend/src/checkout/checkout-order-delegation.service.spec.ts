@@ -1,4 +1,3 @@
-import { BadRequestException } from '@nestjs/common';
 import { CheckoutOrderService } from './checkout-order.service';
 
 type PrismaMock = {

@@ -1,12 +1,10 @@
 import { PortfolioStateService } from './portfolio-state.service';
-import { PerClientContextBundler } from './per-client-context.bundler';
 import type {
   BundleBuildInput,
   ClientData,
   ConsolidationInput,
   TeamMemberData,
 } from './portfolio-state.service';
-import type { ClientContextBundle } from './agency.types';
 import { clamp, clampScore } from './agency.types';
 
 const NOW = Date.parse('2026-05-14T12:00:00.000Z');

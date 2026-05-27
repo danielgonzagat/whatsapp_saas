@@ -3,7 +3,6 @@ import { PatternDetectorService } from './pattern-detector.service';
 import { rankWOWInsights } from './insight-ranker';
 import { buildEvidence, buildEvidenceBundles } from './evidence-builder';
 import { wowConfidenceFloor, filterAboveWOWFloor } from './confidence-floor';
-import { FirstHourOrchestratorService } from './first-hour.orchestrator.service';
 import type { SpineEventRef } from '../mind/mind.types';
 import type { Insight } from '../insight/insight.types';
 import type { RankedWOWInsight } from './wow.types';

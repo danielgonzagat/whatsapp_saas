@@ -18,7 +18,6 @@
 import { Test } from '@nestjs/testing';
 import {
   WisdomPatternExtractorService,
-  type ExtractedPattern,
 } from './wisdom-pattern-extractor.service';
 import { WisdomPrivacyGuardService } from './wisdom-privacy-guard.service';
 import { WisdomOptService } from './wisdom-opt';

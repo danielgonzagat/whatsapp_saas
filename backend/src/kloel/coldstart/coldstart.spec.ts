@@ -1,5 +1,5 @@
 import type { SpineEventRef } from '../mind/mind.types';
-import type { FirstTruthRoadmap, MicroTest, NoHistoryMode } from './coldstart.types';
+import type {  NoHistoryMode } from './coldstart.types';
 import { detectNoHistoryMode } from './no-history-mode.detector';
 import { buildFirstTruthRoadmap } from './first-truth-roadmap.builder';
 import {
@@ -10,9 +10,6 @@ import {
 } from './hypothesis-template-bank';
 import { generateGuidedQuestion } from './guided-question.generator';
 import { designMicroTest } from './micro-test.designer';
-import { detectFirstTruth } from './first-truth.detector';
-import { trackProgress } from './progress.tracker';
-import { GraduationService } from './graduation.service';
 import { withinWindowDays, countUniqueEntities, isColdstartEvent } from './coldstart.types';
 
 const NOW = Date.parse('2026-05-13T22:00:00.000Z');

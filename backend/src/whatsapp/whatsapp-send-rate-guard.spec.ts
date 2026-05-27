@@ -1,5 +1,4 @@
 import { WhatsappSendRateGuardService } from './whatsapp-send-rate-guard.service';
-import { PlanLimitsService } from '../billing/plan-limits.service';
 import { WhatsappService } from './whatsapp.service';
 
 const PATCH_MARKER = Symbol.for('kloel.whatsapp.sendRateGuard.patched');

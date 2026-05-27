@@ -7,7 +7,6 @@
 
 import {
   CreatorTrustCapitalTrackerService,
-  type CreatorTrustConfig,
 } from './creator-trust-capital.tracker';
 
 import type { CreatorEvent } from './types';

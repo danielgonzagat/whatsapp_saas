@@ -10,20 +10,8 @@ import { detectPricingPsychologySignal } from './detectors/pricing-psychology-si
 
 import { rankOfferInsights } from './offer-insight.ranker';
 import { offerConfidenceFloor, filterOfferAboveFloor } from './offer-confidence.guard';
-import { OfferDeliveryService } from './offer-delivery.service';
 
-import type {
-  AudienceProfile,
-  ConversionFeedback,
-  PromiseStrengthConversionData,
-} from './offer.types';
-
-import { PromiseStrengthDetector } from './promise-strength.detector';
-import { PositioningMismatchDetector } from './positioning-mismatch.detector';
-
-import { median } from './offer.types';
-
-const NOW = Date.parse('2026-05-13T22:00:00.000Z');
+22:00:00.000Z');
 const WKS = 'wks_offer_test';
 
 function ev(over?: Partial<SpineEventRef>): SpineEventRef {

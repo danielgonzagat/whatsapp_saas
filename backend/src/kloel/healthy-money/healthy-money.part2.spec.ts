@@ -1,9 +1,3 @@
-import { scoreRevenueQuality } from './revenue-quality.scorer';
-import { projectMargin } from './margin.projector';
-import { projectRefundRisk } from './refund-risk.projector';
-import { projectSupportCost } from './support-cost.projector';
-import { detectBrandWear } from './brand-wear.detector';
-import { evaluateSaleBlock } from './unhealthy-sale.blocker';
 import { BlockerPolicyService } from './blocker-policy.service';
 import { buildDashboard } from './healthy-vs-unhealthy.dashboard';
 import { tierFromScore, clampScore } from './healthy-money.types';

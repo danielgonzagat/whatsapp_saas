@@ -1,7 +1,6 @@
 import { BehaviorSnapshotService } from './behavior-snapshot.service';
 import { DriftDetectorService } from './drift-detector.service';
 import type { SpineEventRef } from '../mind/mind.types';
-import type { WeeklyBehaviorSnapshot } from './drift.types';
 
 function makeEvent(
   override: Partial<SpineEventRef> & { eventName: string; occurredAt: string },

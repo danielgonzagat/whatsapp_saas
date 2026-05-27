@@ -1,7 +1,6 @@
 import { FrictionDetectorService } from './friction.detector';
 import { StepDecomposerService } from './step-decomposer.service';
-import { HOURS_24_MS } from './move.types';
-import type { OwnerAction, ComplexActionInput } from './move.types';
+import type { OwnerAction } from './move.types';
 
 const now = Date.now();
 

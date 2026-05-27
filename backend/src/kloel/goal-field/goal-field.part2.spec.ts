@@ -1,18 +1,7 @@
-import { GoalFieldService } from './goal-field.service';
 import {
   GoalFieldShadowAccumulatorService,
-  WorkspaceShadowState,
 } from './goal-field.shadow-accumulator.service';
-import {
-  hotLeadWithoutResponseDetector,
-  abandonedCartDetector,
-  repeatedObjectionDetector,
-} from './detectors/commercial.detectors';
-import { runtimeCriticalWithoutObservabilityDetector } from './detectors/cognitive.detectors';
-import { backendWithoutSurfaceDetector } from './detectors/structural.detectors';
-import { discountWithoutJustificationDetector } from './detectors/financial.detectors';
-
-describe('GoalFieldShadowAccumulatorService — reject blocking', () => {
+ocking', () => {
   const T0 = Date.parse('2026-01-01T00:00:00.000Z');
 
   it('single reject resets consecutive streak to 0', () => {

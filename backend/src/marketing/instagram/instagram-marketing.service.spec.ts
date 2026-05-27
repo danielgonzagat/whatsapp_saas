@@ -1,6 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
 import { InstagramMarketingService } from './instagram-marketing.service';
-import * as tokenCrypto from '../../meta/meta-token-crypto';
 
 jest.mock('../../meta/meta-token-crypto', () => ({
   decryptMetaToken: jest.fn((token: string | null | undefined) => token || null),

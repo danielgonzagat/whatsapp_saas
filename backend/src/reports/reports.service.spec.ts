@@ -4,7 +4,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ReportsOrdersService } from './reports-orders.service';
 import { ReportsAffiliateService } from './reports-affiliate.service';
 import { ReportsService } from './reports.service';
-import type { ReportFiltersDto } from './dto/report-filters.dto';
 import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 jest.mock('./reports-orders.service', () => {

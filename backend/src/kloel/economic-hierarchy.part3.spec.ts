@@ -1,7 +1,6 @@
 import {
   attributeHierarchy,
   type HierarchyDecision,
-  type HierarchyLevel,
 } from './economic-hierarchy';
 
 describe('economic-hierarchy', () => {

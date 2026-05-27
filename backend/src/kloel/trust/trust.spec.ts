@@ -12,10 +12,6 @@ import { detectDesperation } from './desperation-detector';
 import { evaluateTiming } from './timing-appropriateness';
 import { evaluateBrandRisk } from './brand-protection.guard';
 import { decideSilence } from './silence-as-action.policy';
-import { shouldHandoff } from './human-handoff.trigger';
-import { proposeRecoveryActions } from './trust-recovery.tactics';
-import { TrustStateTrackerService } from './trust-state-tracker.service';
-import { toTrustEvent } from './trust.types';
 
 import type { TrustEvent } from './trust.types';
 import type { SpineEventRef } from '../mind/mind.types';

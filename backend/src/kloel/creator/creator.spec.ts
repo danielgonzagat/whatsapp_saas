@@ -12,7 +12,6 @@ import { adviseMentionTiming, type MentionHistoryEntry } from './mention-timing.
 import { detectAudienceSaturation } from './audience-saturation.detector';
 import { protectAuthenticity } from './authenticity.protector';
 import { trackEngagementVsConversion } from './engagement-vs-conversion.tracker';
-import { CreatorTrustCapitalTrackerService } from './creator-trust-capital.tracker';
 
 import type { CreatorEvent } from './types';
 import type { TrustState } from '../trust/trust.types';

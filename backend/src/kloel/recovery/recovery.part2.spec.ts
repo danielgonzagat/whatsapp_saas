@@ -1,13 +1,8 @@
 import type { SpineEventRef } from '../mind/mind.types';
-import { detectErrors } from './self-error-detector';
 import { buildAcknowledgment } from './error-acknowledgment.builder';
-import { buildExplanation } from './error-explanation.builder';
-import { ErrorNonRepeatGuard } from './error-non-repeat.guard';
-import { proposeRecoveryTactic } from './error-damage-recovery.tactics';
-import { buildErrorNarrative } from './error-narrative.builder';
 import { TrustAfterErrorTracker } from './trust-after-error.tracker';
 import { buildRecoveryProofPackage } from './recovery-proof-package.builder';
-import type { DetectedError, ErrorDetectorInput, RecoveryTactic } from './recovery.types';
+import type { DetectedError, ErrorDetectorInput } from './recovery.types';
 import type { GuardStatus } from './recovery-proof-package.builder';
 
 const NOW = Date.parse('2026-05-13T22:00:00.000Z');

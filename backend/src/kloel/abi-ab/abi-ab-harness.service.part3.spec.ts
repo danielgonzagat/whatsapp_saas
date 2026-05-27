@@ -11,10 +11,9 @@
 
 import { AbiAbHarnessService } from './abi-ab-harness.service';
 import type {
-  AbHarnessRecord,
+  
   AbPathRunnerFn,
   AbPathRunnerResult,
-  AbRCriterionDelta,
 } from './abi-ab.types';
 
 function makePathRunner(overrides: Partial<AbPathRunnerResult> = {}): AbPathRunnerFn {

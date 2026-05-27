@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { KloelThinkerService } from './kloel-thinker.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
-import { LLMBudgetService, estimateChatCostCents } from './llm-budget.service';
+import { LLMBudgetService } from './llm-budget.service';
 import { Response } from 'express';
 
 jest.mock('./kloel-thread.service', () => ({

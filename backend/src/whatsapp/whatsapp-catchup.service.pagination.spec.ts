@@ -11,9 +11,9 @@ jest.mock('../queue/queue', () => ({
 }));
 
 jest.mock('../marketing/channels/whatsapp/whatsapp-catchup-config', () => {
-  const actual = jest.requireActual<typeof import('../marketing/channels/whatsapp/whatsapp-catchup-config')>(
-    '../marketing/channels/whatsapp/whatsapp-catchup-config',
-  );
+  const actual = jest.requireActual<
+    typeof import('../marketing/channels/whatsapp/whatsapp-catchup-config')
+  >('../marketing/channels/whatsapp/whatsapp-catchup-config');
   return {
     ...actual,
     CATCHUP_MAX_MESSAGES_PER_CHAT: 2,

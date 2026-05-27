@@ -9,27 +9,7 @@
  */
 import type { SpineEventRef } from '../mind/mind.types';
 import type { Role, RoleDetection } from './types';
-import { ALL_ROLES, ROLE_DESCRIPTIONS } from './types';
-import { detectRoles, primaryRoleFromDetections } from './role.detector';
-import {
-  projectRoleContext,
-  projectSingleDetection,
-  emptyRoleContext,
-} from './role-context.projector';
-import {
-  LeverageMapService,
-  getLeversForRole,
-  isLeverInControlRadius,
-  getLeverageMap,
-} from './leverage-map.service';
-import {
-  getRelevantMetricsForRole,
-  getAllMetrics,
-  getMetricsForRoles,
-} from './role-metric.registry';
-import {
-  guardRecommendation,
-  guardRecommendations,
+endations,
   countBlocked,
   allowedOnly,
 } from './recommendation-guard';
@@ -40,12 +20,7 @@ import {
   countTierChanges,
 } from './aware-hierarchy.extender';
 import type { AttentionRanking } from '../clarity/clarity.types';
-import {
-  filterWisdomByRole,
-  filterWisdomByMultiRole,
-  explainRelevance,
-} from './aware-wisdom.extender';
-const NOW = Date.parse('2026-05-14T10:00:00.000Z');
+0Z');
 
 function ev(over: Partial<SpineEventRef>): SpineEventRef {
   const e: Record<string, unknown> = {

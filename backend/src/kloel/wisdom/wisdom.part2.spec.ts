@@ -1,32 +1,7 @@
-import { WisdomPatternExtractorService } from './wisdom-pattern-extractor.service';
-import {
-  applyKAnonymity,
-  applyDiffPrivacyNoise,
-  anonymizePatterns,
-  toWisdomPattern,
-} from './wisdom-anonymizer';
-import { validateByNWorkspaces, classifyByNWorkspaces } from './wisdom-validator';
-import {
-  deriveTaxonomy,
-  taxonomyForSignalKind,
-  ALL_VERTICAL_HINTS,
-  ALL_TICKET_HINTS,
-  ALL_STAGE_HINTS,
-  ALL_CHANNEL_HINTS,
-} from './wisdom-taxonomy';
-import { WisdomProjectorService } from './wisdom-projector.service';
-import { relevanceScore, filterByRelevance, filterIrrelevant } from './wisdom-relevance-filter';
-import { WisdomOptService } from './wisdom-opt';
-import {
-  validateAttribution,
-  assertNoAttributionLeak,
-  patternDescriptionIsClean,
-} from './wisdom-attribution.guard';
-import type { SpineEventRef } from '../mind/mind.types';
+ind.types';
 import type {
-  CandidatePattern,
+  
   WorkspaceEventSet,
-  TargetWorkspaceContext,
   WisdomPattern,
 } from './wisdom.types';
 import { makeEventFactory } from '../../../test/helpers/spine-event-factory';

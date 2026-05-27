@@ -2,16 +2,7 @@ import type { SpineEventRef } from '../mind/mind.types';
 import type { DetectorInput, Insight, RankedInsight } from './insight.types';
 import { median } from './insight.types';
 
-import { detectFunnelBottleneck } from './detectors/funnel-bottleneck.detector';
-import { detectOfferFit } from './detectors/offer-fit.detector';
-import { detectObjectionPattern } from './detectors/objection-pattern.detector';
-import { detectQualificationLeak } from './detectors/qualification-leak.detector';
-import { detectCoolingWindow } from './detectors/cooling-window.detector';
-import { detectPricingElasticity } from './detectors/pricing-elasticity.detector';
-import { detectChannelRoi } from './detectors/channel-roi.detector';
-import { detectProductPositioning } from './detectors/product-positioning.detector';
 
-import { rankInsights } from './insight-ranker';
 import { confidenceFloor, filterAboveFloor } from './insight-confidence.guard';
 import { InsightDeliveryService } from './insight-delivery.service';
 
