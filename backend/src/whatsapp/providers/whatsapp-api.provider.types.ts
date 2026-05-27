@@ -23,7 +23,7 @@ export interface SessionStatus {
 }
 
 /** Qr code response shape. */
-export type { QrCodeResponse } from './waha-types';
+export type { QrCodeResponse } from '../../marketing/channels/whatsapp/providers/waha-types';
 
 /** Waha chat summary shape. */
 export interface WahaChatSummary {

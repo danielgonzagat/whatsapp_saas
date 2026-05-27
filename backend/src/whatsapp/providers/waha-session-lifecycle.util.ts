@@ -7,7 +7,7 @@ import { Logger } from '@nestjs/common';
  * Extracted from WahaSessionProvider to keep that file under 400 lines.
  */
 
-import type { QrCodeResponse, WahaLidMapping, WahaSessionConfigDiagnostics } from './waha-types';
+import type { QrCodeResponse, WahaLidMapping, WahaSessionConfigDiagnostics } from '../../marketing/channels/whatsapp/providers/waha-types';
 import { extractLidMappingsPayload } from './waha-session-config.util';
 import { findFirstSequential } from '../../common/async-sequence';
 

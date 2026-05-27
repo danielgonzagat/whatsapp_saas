@@ -8,7 +8,7 @@ import {
   resolveWahaSessionState,
   type WahaRuntimeConfigDiagnostics,
   type WahaSessionConfigDiagnostics,
-} from './waha-types';
+} from '../../marketing/channels/whatsapp/providers/waha-types';
 import {
   normalizeEventList,
   resolveWebhookDiagnosticsFromConfig,
@@ -371,7 +371,9 @@ export class WahaSessionConfigProvider extends WahaTransport {
 
   // ─── LID mappings payload extractor (used by subclass) ───
 
-  protected extractLidMappingsPayload(payload: unknown): import('./waha-types').WahaLidMapping[] {
+  protected extractLidMappingsPayload(
+    payload: unknown,
+  ): import('../../marketing/channels/whatsapp/providers/waha-types').WahaLidMapping[] {
     return extractLidMappingsPayload(payload);
   }
 }

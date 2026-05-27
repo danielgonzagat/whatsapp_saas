@@ -5,7 +5,7 @@
  * Extracted from WahaSessionConfigProvider to keep that file under 400 lines.
  */
 
-import type { WahaLidMapping } from './waha-types';
+import type { WahaLidMapping } from '../../marketing/channels/whatsapp/providers/waha-types';
 import { isWahaInboundMessageEvent } from './waha-message-event-name';
 
 type WahaLidPayload = {

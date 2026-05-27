@@ -10,7 +10,7 @@ import {
   type QrCodeResponse,
   type WahaLidMapping,
   type WahaSessionOverview,
-} from './waha-types';
+} from '../../marketing/channels/whatsapp/providers/waha-types';
 import { WahaSessionConfigProvider } from './waha-session-config.provider';
 import {
   ensureSessionConfigured,

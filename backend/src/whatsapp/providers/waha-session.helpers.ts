@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 
-import type { WahaSessionOverview } from './waha-types';
-import { resolveWahaSessionState } from './waha-types';
+import type { WahaSessionOverview } from '../../marketing/channels/whatsapp/providers/waha-types';
+import { resolveWahaSessionState } from '../../marketing/channels/whatsapp/providers/waha-types';
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
