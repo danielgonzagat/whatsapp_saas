@@ -203,8 +203,9 @@ export class KloelThinkerService {
 
       let finalSystemPrompt = systemPrompt;
       let finalUserMessage = message;
+      let prebuiltCognitiveState: Record<string, unknown> | undefined;
 
-      const useAbi = process.env['KLOEL_THINKER_USE_ABI'] === 'on';
+      const useAbi = process.env['KLOEL_THINKER_USE_ABI'] !== 'off';
       let abiOutcome = useAbi ? (this.abiBuilder ? 'attempted' : 'no_abiBuilder') : 'flag_off';
       let substrateBuilt = false;
       if (useAbi && this.abiBuilder) {
@@ -257,7 +258,11 @@ export class KloelThinkerService {
               // EXACTLY the user's input (fixes long-message hang).
               const capArrays = (_k: string, v: unknown): unknown =>
                 Array.isArray(v) ? v.slice(0, 8) : v;
-              let abiStr = JSON.stringify(abiResult.abi, capArrays);
+              const boundedAbi = JSON.parse(JSON.stringify(abiResult.abi, capArrays)) as Record<
+                string,
+                unknown
+              >;
+              let abiStr = JSON.stringify(boundedAbi);
               // ROOT-CAUSE FIX (runtime-evidenced via KLOEL_ABI_PATH
               // abiLen=6018): the 6000 hard cap blind-sliced the JSON
               // and decapitated memory/episodicRefs/recentSalientEvents
@@ -270,7 +275,8 @@ export class KloelThinkerService {
               if (abiStr.length > ABI_MAX) {
                 abiStr = `${abiStr.slice(0, ABI_MAX)}…(state_truncated)`;
               }
-              finalSystemPrompt = `${CANONICAL_FALLBACK_SYSTEM}\nstate_payload=${abiStr}`;
+              prebuiltCognitiveState = boundedAbi;
+              finalSystemPrompt = CANONICAL_FALLBACK_SYSTEM;
               finalUserMessage = message;
               abiOutcome = `success(abiLen=${abiStr.length})`;
 
@@ -390,6 +396,7 @@ export class KloelThinkerService {
         marketingPromptAddendum,
         summaryMessage,
         recentMessages: historyState.recentMessages,
+        ...(prebuiltCognitiveState !== undefined ? { prebuiltCognitiveState } : {}),
         userMessage: finalUserMessage,
       });
       const streamWriterResponse = (
@@ -417,6 +424,7 @@ export class KloelThinkerService {
           signal,
           streamWriterResponse,
           branchCtx,
+          prebuiltCognitiveState,
         );
         return;
       }
