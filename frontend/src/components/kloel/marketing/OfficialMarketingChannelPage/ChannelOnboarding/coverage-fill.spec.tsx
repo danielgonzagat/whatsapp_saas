@@ -105,7 +105,7 @@ describe('coverage-fill: Dial selection + small CTA size', () => {
     expect(btn.style.padding).toBe('0px 18px');
   });
 
-  it('Dial pre-selected segment paints ember and other segments paint hi', () => {
+  it('Dial pre-selected segment paints ember and inactive segments use the trace token', () => {
     const onChange = vi.fn();
     render(
       <Dial
@@ -118,8 +118,8 @@ describe('coverage-fill: Dial selection + small CTA size', () => {
     );
     const buttons = screen.getAllByRole('button');
     expect(buttons[0].style.background).toBe(D.ember);
-    expect(buttons[1].style.background).toBe(D.hi);
-    expect(buttons[2].style.background).toBe(D.hi);
+    expect(buttons[1].style.background).toBe(D.inactiveTrace);
+    expect(buttons[2].style.background).toBe(D.inactiveTrace);
 
     fireEvent.click(buttons[1]);
     expect(onChange).toHaveBeenCalledWith(1);
