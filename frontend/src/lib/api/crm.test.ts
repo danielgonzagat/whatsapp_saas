@@ -7,7 +7,10 @@ beforeEach(() => {
     ok: true,
     status: 200,
     json: async () => ({
-      data: { data: [{ id: 'c1', name: 'Alice', phone: '5511999999999' }], meta: { total: 1, page: 1, limit: 20, pages: 1 } },
+      data: {
+        data: [{ id: 'c1', name: 'Alice', phone: '5511999999999' }],
+        meta: { total: 1, page: 1, limit: 20, pages: 1 },
+      },
     }),
   } as Response);
 });
@@ -22,7 +25,11 @@ function lastFetch(): { url: string; method: string; headers: Record<string, str
   const url = input instanceof Request ? input.url : String(input ?? '');
   const method = input instanceof Request ? input.method : 'GET';
   const headers: Record<string, string> = {};
-  if (input instanceof Request) input.headers.forEach((v, k) => { headers[k] = v; });
+  if (input instanceof Request) {
+    input.headers.forEach((v, k) => {
+      headers[k] = v;
+    });
+  }
   return { url, method, headers };
 }
 

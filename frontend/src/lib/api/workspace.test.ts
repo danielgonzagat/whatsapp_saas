@@ -1,12 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { listApiKeys, createApiKey, deleteApiKey, getWorkspace, saveWorkspaceSettings } from './workspace';
+import {
+  listApiKeys,
+  createApiKey,
+  deleteApiKey,
+  getWorkspace,
+  saveWorkspaceSettings,
+} from './workspace';
 
 beforeEach(() => {
   document.cookie = 'kloel_access_token=test-token; path=/';
   vi.spyOn(globalThis, 'fetch').mockResolvedValue({
     ok: true,
     status: 200,
-    json: async () => ({ data: { id: 'k1', name: 'Default', key: 'sk-xxx', createdAt: '2025-01-01' } }),
+    json: async () => ({
+      data: { id: 'k1', name: 'Default', key: 'sk-xxx', createdAt: '2025-01-01' },
+    }),
   } as Response);
 });
 
@@ -20,7 +28,11 @@ function lastFetch(): { url: string; method: string; headers: Record<string, str
   const url = input instanceof Request ? input.url : String(input ?? '');
   const method = input instanceof Request ? input.method : 'GET';
   const headers: Record<string, string> = {};
-  if (input instanceof Request) input.headers.forEach((v, k) => { headers[k] = v; });
+  if (input instanceof Request) {
+    input.headers.forEach((v, k) => {
+      headers[k] = v;
+    });
+  }
   return { url, method, headers };
 }
 
