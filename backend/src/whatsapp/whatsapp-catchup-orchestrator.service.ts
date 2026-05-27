@@ -50,7 +50,7 @@ import {
   getCooldownKey,
   releaseLock,
 } from '../marketing/channels/whatsapp/whatsapp-catchup-lock.helpers';
-import { selectCandidateChats } from './whatsapp-catchup-chat-selector';
+import { selectCandidateChats } from '../marketing/channels/whatsapp/whatsapp-catchup-chat-selector';
 import { loadCatchupMessages } from './whatsapp-catchup-message-loader';
 import {
   getCatchupBlockReason as resolveCatchupBlockReason,
