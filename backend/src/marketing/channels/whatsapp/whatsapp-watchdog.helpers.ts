@@ -1,8 +1,8 @@
 import { Logger } from '@nestjs/common';
 
-import { getTraceHeaders } from '../common/trace-headers';
-import { validateNoInternalAccess } from '../common/utils/url-validator';
-import type { SessionHealth } from '../marketing/channels/whatsapp/whatsapp-watchdog.types';
+import { getTraceHeaders } from '../../../common/trace-headers';
+import { validateNoInternalAccess } from '../../../common/utils/url-validator';
+import type { SessionHealth } from './whatsapp-watchdog.types';
 
 export async function alertOpsHelper(
   logger: Logger,
