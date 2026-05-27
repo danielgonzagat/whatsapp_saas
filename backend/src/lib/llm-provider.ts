@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config';
 
 type ConfigLike = Pick<ConfigService, 'get'> | undefined;
 
+export type TextLlmProvider = 'deepseek' | 'generic' | 'openai';
+
 const DEFAULT_DEEPSEEK_BASE_URL = 'https://api.deepseek.com/v1';
 
 /** Reads a string env/ConfigService value with trim+fallback semantics.
@@ -29,14 +31,52 @@ export function isDeepSeekChatModel(model: unknown): boolean {
   return typeof model === 'string' && model.trim().toLowerCase().startsWith('deepseek-');
 }
 
+/** Provider selected for primary text LLM calls, based on key precedence. */
+export function resolveTextLlmProvider(config?: ConfigLike): TextLlmProvider | null {
+  if (readConfig('DEEPSEEK_API_KEY', config)) {
+    return 'deepseek';
+  }
+  if (readConfig('LLM_API_KEY', config)) {
+    return 'generic';
+  }
+  if (readConfig('OPENAI_API_KEY', config)) {
+    return 'openai';
+  }
+  return null;
+}
+
 /** API key for the primary text LLM provider. */
 export function resolveTextLlmApiKey(config?: ConfigLike): string | undefined {
-  return readFirstConfig(['DEEPSEEK_API_KEY', 'LLM_API_KEY', 'OPENAI_API_KEY'], config);
+  const provider = resolveTextLlmProvider(config);
+  if (provider === 'deepseek') {
+    return readConfig('DEEPSEEK_API_KEY', config);
+  }
+  if (provider === 'generic') {
+    return readConfig('LLM_API_KEY', config);
+  }
+  if (provider === 'openai') {
+    return readConfig('OPENAI_API_KEY', config);
+  }
+  return undefined;
 }
 
 /** Base URL for the primary text LLM provider. */
 function resolveTextLlmBaseUrl(config?: ConfigLike): string | undefined {
-  return readFirstConfig(['DEEPSEEK_BASE_URL', 'LLM_BASE_URL', 'OPENAI_BASE_URL'], config);
+  const provider = resolveTextLlmProvider(config);
+  if (provider === 'deepseek') {
+    return (
+      readFirstConfig(['DEEPSEEK_BASE_URL', 'LLM_BASE_URL'], config) || DEFAULT_DEEPSEEK_BASE_URL
+    );
+  }
+  if (provider === 'generic') {
+    return (
+      readFirstConfig(['LLM_BASE_URL', 'DEEPSEEK_BASE_URL'], config) || DEFAULT_DEEPSEEK_BASE_URL
+    );
+  }
+  if (provider === 'openai') {
+    return readConfig('OPENAI_BASE_URL', config);
+  }
+  return undefined;
 }
 
 /** Whether a primary text LLM key is configured. */
@@ -53,9 +93,10 @@ export function createTextLlmClient(
   if (!apiKey) {
     return null;
   }
+  const baseURL = resolveTextLlmBaseUrl(config);
   return new OpenAI({
     apiKey,
-    baseURL: resolveTextLlmBaseUrl(config) || DEFAULT_DEEPSEEK_BASE_URL,
+    ...(baseURL !== undefined ? { baseURL } : {}),
     timeout: options?.timeout ?? 60_000,
     maxRetries: options?.maxRetries ?? 0,
   });
