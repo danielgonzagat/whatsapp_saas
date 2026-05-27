@@ -10,7 +10,7 @@ import { Queue, Worker } from 'bullmq';
 import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
 import { AuditService } from '../audit/audit.service';
 import { forEachSequential } from '../common/async-sequence';
-import { createRedisClient } from '../common/redis/redis.util';
+import { createBullMqConnectionOptions } from '../common/redis/redis.util';
 import {
   buildListUnsubscribeHeader,
   buildUnsubscribeFooterHtml,
@@ -39,7 +39,7 @@ export class CampaignsService {
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() private readonly metaWhatsApp?: MetaWhatsAppService,
   ) {
-    const connection = createRedisClient();
+    const connection = createBullMqConnectionOptions();
 
     this.campaignQueue = new Queue('campaign-jobs', { connection });
 
@@ -51,7 +51,7 @@ export class CampaignsService {
           await this.processCampaignJob(job);
         }
       },
-      { connection: createRedisClient() },
+      { connection },
     );
 
     this.campaignWorker.on('failed', (job, err) => {

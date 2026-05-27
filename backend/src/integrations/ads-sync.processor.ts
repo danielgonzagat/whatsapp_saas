@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { GoogleAdsProvider } from './google-ads.provider';
 import { MetaMarketingProvider } from './meta-marketing.provider';
 import { googleAdsSyncQueue, metaAdsSyncQueue } from '../queue/queue';
-import { createRedisClient } from '../common/redis/redis.util';
+import { createBullMqConnectionOptions } from '../common/redis/redis.util';
 import {
   persistAdAccounts,
   persistAdCampaigns,
@@ -58,7 +58,7 @@ export class AdsSyncProcessor implements OnModuleDestroy {
   // ── Google Ads Worker ──────────────────────────────────────────────
 
   private startGoogleWorker() {
-    const redisConnection = createRedisClient();
+    const redisConnection = createBullMqConnectionOptions();
 
     this.googleWorker = new Worker(
       'google-ads-sync-jobs',
@@ -119,7 +119,7 @@ export class AdsSyncProcessor implements OnModuleDestroy {
   // ── Meta Ads Worker ─────────────────────────────────────────────────
 
   private startMetaWorker() {
-    const redisConnection = createRedisClient();
+    const redisConnection = createBullMqConnectionOptions();
 
     this.metaWorker = new Worker(
       'ads-sync-meta',
