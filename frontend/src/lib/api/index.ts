@@ -44,42 +44,12 @@ export { type Lead, getLeads } from './leads';
 // WhatsApp connection + messaging
 export {
   getWhatsAppScreencastWsBase,
-  buildWhatsAppScreencastWsUrl,
   getWhatsAppStatus,
   initiateWhatsAppConnection,
   getWhatsAppQR,
+  getWhatsAppQrImageOnly,
   disconnectWhatsApp,
   logoutWhatsApp,
-  getWhatsAppViewer,
-  getWhatsAppScreencastToken,
-  performWhatsAppViewerAction,
-  takeoverWhatsAppViewer,
-  resumeWhatsAppAgent,
-  pauseWhatsAppAgent,
-  reconcileWhatsAppSession,
-  getWhatsAppProofs,
-  runWhatsAppActionTurn,
-  // Session management (advanced)
-  getWhatsAppSessionDiagnostics,
-  forceWhatsAppSessionCheck,
-  forceWhatsAppReconnect,
-  repairWhatsAppSessionConfig,
-  linkWhatsAppSession,
-  recreateWhatsAppSessionIfInvalid,
-  getWhatsAppProviderStatus,
-  checkWhatsAppPhone,
-  // Catalog
-  type WhatsAppCatalogContact,
-  getWhatsAppCatalogContacts,
-  getWhatsAppCatalogRanking,
-  refreshWhatsAppCatalog,
-  scoreWhatsAppCatalog,
-  // WhatsApp messaging
-  type WhatsappTemplate,
-  listWhatsappTemplates,
-  whatsappOptIn,
-  whatsappOptOut,
-  whatsappOptStatus,
 } from './whatsapp';
 
 // Analytics

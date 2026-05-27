@@ -24,35 +24,35 @@ Search method: `grep -rEn "\\b<symbol>\\b" frontend/src --include='*.ts' --inclu
 
 | Symbol | Status |
 |---|---|
-| `connectWhatsapp` | DELETED — misnamed dead code, ADR-authorized removal (CONNECT_CHANNEL_CANONICAL.md Step 2). Barrel export removed. CAPABILITY_MAP.md updated. |
-| `getWhatsAppViewer` | DEAD-but-preserved — returns a static stub; preserve per ADR-0012 ("All other functions stay") until frontend wave begins. |
-| `getWhatsAppScreencastToken` | DEAD-but-preserved — returns static `disabled` stub. |
-| `performWhatsAppViewerAction` | DEAD-but-preserved — static failure stub. |
-| `takeoverWhatsAppViewer` | DEAD-but-preserved — static failure stub. |
-| `resumeWhatsAppAgent` | DEAD-but-preserved — static failure stub. |
-| `pauseWhatsAppAgent` | DEAD-but-preserved — static failure stub. |
-| `reconcileWhatsAppSession` | DEAD-but-preserved — static failure stub. |
-| `getWhatsAppProofs` | DEAD-but-preserved — returns `[]`. |
-| `runWhatsAppActionTurn` | DEAD-but-preserved — static failure stub. |
-| `getWhatsAppSessionDiagnostics` | DEAD-but-preserved — wraps `/whatsapp-api/session/diagnostics`. |
-| `forceWhatsAppSessionCheck` | DEAD-but-preserved — wraps `/whatsapp-api/session/force-check`. |
-| `forceWhatsAppReconnect` | DEAD-but-preserved — wraps `/whatsapp-api/session/force-reconnect`. |
-| `repairWhatsAppSessionConfig` | DEAD-but-preserved — wraps `/whatsapp-api/session/repair-config`. |
-| `linkWhatsAppSession` | DEAD-but-preserved — wraps `/whatsapp-api/session/link`. |
-| `recreateWhatsAppSessionIfInvalid` | DEAD-but-preserved — wraps `/whatsapp-api/session/recreate-if-invalid`. |
-| `getWhatsAppProviderStatus` | DEAD-but-preserved — wraps `/whatsapp-api/provider-status`. |
-| `checkWhatsAppPhone` | DEAD-but-preserved — wraps `/whatsapp-api/check/:phone`. |
-| `getWhatsAppCatalogContacts` | DEAD-but-preserved — wraps `/whatsapp-api/catalog/contacts`. |
-| `getWhatsAppCatalogRanking` | DEAD-but-preserved — wraps `/whatsapp-api/catalog/ranking`. |
-| `refreshWhatsAppCatalog` | DEAD-but-preserved — wraps `/whatsapp-api/catalog/refresh`. |
-| `scoreWhatsAppCatalog` | DEAD-but-preserved — wraps `/whatsapp-api/catalog/score`. |
-| `listWhatsappTemplates` | DEAD-but-preserved — returns `[]`. |
-| `whatsappOptIn` | DEAD-but-preserved — POSTs `/whatsapp/:ws/opt-in/bulk`. |
-| `whatsappOptOut` | DEAD-but-preserved — POSTs `/whatsapp/:ws/opt-out/bulk`. |
-| `whatsappOptStatus` | DEAD-but-preserved — GETs `/whatsapp/:ws/opt-status/:phone`. |
-| `buildWhatsAppScreencastWsUrl` | DEAD-but-preserved — ws URL builder. |
-| `simulateWhatsAppConversation` | DEAD-but-preserved — POSTs `/kloel/whatsapp/simulate/:ws`. |
-| `getWhatsAppBrainStatus` | DEAD-but-preserved — GETs `/kloel/whatsapp/status`. |
+| `connectWhatsapp` | REMOVED — Wave 28B. Misnamed dead code, ADR-authorized removal (CONNECT_CHANNEL_CANONICAL.md Step 2). Barrel export removed. CAPABILITY_MAP.md updated. |
+| `getWhatsAppViewer` | REMOVED — Wave 29B. Zero in-repo consumers re-verified. Stub returning static `NOT_SUPPORTED` snapshot. |
+| `getWhatsAppScreencastToken` | REMOVED — Wave 29B. Zero in-repo consumers re-verified. Stub returning static `disabled` token. |
+| `performWhatsAppViewerAction` | REMOVED — Wave 29B. Zero in-repo consumers re-verified. Static failure stub. |
+| `takeoverWhatsAppViewer` | REMOVED — Wave 29B. Zero in-repo consumers re-verified. Static failure stub. |
+| `resumeWhatsAppAgent` | REMOVED — Wave 29B. Zero in-repo consumers re-verified. Static failure stub. |
+| `pauseWhatsAppAgent` | REMOVED — Wave 29B. Zero in-repo consumers re-verified. Static failure stub. |
+| `reconcileWhatsAppSession` | REMOVED — Wave 29B. Zero in-repo consumers re-verified. Static failure stub. |
+| `getWhatsAppProofs` | REMOVED — Wave 29B. Zero in-repo consumers re-verified. Returned `[]`. (Note: `WhatsAppProofEntry` type still re-exported via core.ts barrel — still consumed by `AgentCursor`.) |
+| `runWhatsAppActionTurn` | REMOVED — Wave 29B. Zero in-repo consumers re-verified. Static failure stub. |
+| `getWhatsAppSessionDiagnostics` | REMOVED — Wave 29B. Zero in-repo consumers re-verified. Wrapped `/whatsapp-api/session/diagnostics`. |
+| `forceWhatsAppSessionCheck` | REMOVED — Wave 29B. Zero in-repo consumers re-verified. Wrapped `/whatsapp-api/session/force-check`. |
+| `forceWhatsAppReconnect` | REMOVED — Wave 29B. Zero in-repo consumers re-verified. Wrapped `/whatsapp-api/session/force-reconnect`. |
+| `repairWhatsAppSessionConfig` | REMOVED — Wave 29B. Zero in-repo consumers re-verified. Wrapped `/whatsapp-api/session/repair-config`. |
+| `linkWhatsAppSession` | REMOVED — Wave 29B. Zero in-repo consumers re-verified. Wrapped `/whatsapp-api/session/link`. |
+| `recreateWhatsAppSessionIfInvalid` | REMOVED — Wave 29B. Zero in-repo consumers re-verified. Wrapped `/whatsapp-api/session/recreate-if-invalid`. |
+| `getWhatsAppProviderStatus` | REMOVED — Wave 29B. Zero in-repo consumers re-verified. Wrapped `/whatsapp-api/provider-status`. |
+| `checkWhatsAppPhone` | REMOVED — Wave 29B. Zero in-repo consumers re-verified. Wrapped `/whatsapp-api/check/:phone`. |
+| `getWhatsAppCatalogContacts` | REMOVED — Wave 29B. Zero in-repo consumers re-verified. Wrapped `/whatsapp-api/catalog/contacts`. |
+| `getWhatsAppCatalogRanking` | REMOVED — Wave 29B. Zero in-repo consumers re-verified. Wrapped `/whatsapp-api/catalog/ranking`. |
+| `refreshWhatsAppCatalog` | REMOVED — Wave 29B. Zero in-repo consumers re-verified. Wrapped `/whatsapp-api/catalog/refresh`. |
+| `scoreWhatsAppCatalog` | REMOVED — Wave 29B. Zero in-repo consumers re-verified. Wrapped `/whatsapp-api/catalog/score`. |
+| `listWhatsappTemplates` | REMOVED — Wave 29B. Zero in-repo consumers re-verified. Returned `[]`. `WhatsappTemplate` interface also removed (zero consumers). |
+| `whatsappOptIn` | REMOVED — Wave 29B. Zero in-repo consumers re-verified. POSTed `/whatsapp/:ws/opt-in/bulk`. |
+| `whatsappOptOut` | REMOVED — Wave 29B. Zero in-repo consumers re-verified. POSTed `/whatsapp/:ws/opt-out/bulk`. |
+| `whatsappOptStatus` | REMOVED — Wave 29B. Zero in-repo consumers re-verified. GETed `/whatsapp/:ws/opt-status/:phone`. |
+| `buildWhatsAppScreencastWsUrl` | REMOVED — Wave 29B. Zero in-repo consumers re-verified. ws URL builder. (`getWhatsAppScreencastWsBase` retained — still in barrel.) |
+| `simulateWhatsAppConversation` | REMOVED — Wave 29B. Zero in-repo consumers re-verified. POSTed `/kloel/whatsapp/simulate/:ws`. |
+| `getWhatsAppBrainStatus` | REMOVED — Wave 29B. Zero in-repo consumers re-verified. GETed `/kloel/whatsapp/status`. |
 
 **`whatsappApi` object method dead-method list** (9 of 19 methods):
 
@@ -107,9 +107,38 @@ These changes are **NOT executed in this audit** — only the single ADR-authori
 - Update `CAPABILITY_MAP.md` to drop the obsolete row (7→6 implementations).
 - Write this audit doc.
 
+## Wave 29B follow-up (2026-05-27)
+
+After Wave 28B landed, all 28 remaining "DEAD-but-preserved" entries were
+re-verified via `grep -rEn '\\b<symbol>\\b' frontend/src frontend-admin/src e2e backend worker --include='*.ts' --include='*.tsx'`
+excluding `lib/api/whatsapp.ts`, `lib/api/whatsapp-helpers.ts`, and the barrel
+`lib/api/index.ts`. All 28 returned ZERO consumers. The original
+"preserve per ADR-0012" hedge was over-cautious — the symbols have no live
+callers anywhere in the repo, including the alternate `whatsapp-api.ts` object
+that exposes the canonical surface used in production.
+
+Wave 29B drops:
+
+- 28 dead exports from `frontend/src/lib/api/whatsapp.ts` (485 → 147 lines).
+- The `WhatsappTemplate` interface (zero consumers).
+- All matching barrel re-exports from `frontend/src/lib/api/index.ts`.
+- Added `getWhatsAppQrImageOnly` to barrel re-exports (alive — used by `WhatsAppExperience.controller.ts`).
+
+Preserved-live exports (used in production):
+
+- `getWhatsAppScreencastWsBase` (kept — barrel-exported, even though direct consumers are zero today; cheap to keep, callable by future screencast integration).
+- `getWhatsAppStatus`, `initiateWhatsAppConnection`, `getWhatsAppQR`, `getWhatsAppQrImageOnly`, `disconnectWhatsApp`, `logoutWhatsApp` — all have multiple live consumers per audit table above.
+
+Type-only re-exports moved/retained:
+
+- `WhatsAppProofEntry` — still consumed by `AgentCursor` components. Re-exported directly from `core.ts` via the barrel (was already so; the `whatsapp.ts` type-re-export was redundant).
+- `WhatsAppConnectionStatus`, `WhatsAppConnectResponse` — re-exported from `whatsapp.ts` (kept).
+- `WhatsAppScreencastTokenResponse` — type still exported from `core.ts` and from the barrel; redundant `whatsapp.ts` re-export removed (no consumers).
+- `WhatsAppCatalogContact` — removed (zero consumers).
+
 ## What is intentionally NOT touched
 
-- `getWhatsAppViewer`, `getWhatsAppScreencastToken`, viewer/takeover/resume/pause/proofs/action-turn stubs — preserved per `CONNECT_CHANNEL_CANONICAL.md` line 159: "All other functions (session management, messaging, catalog, brain) stay."
 - All `whatsapp-api.ts` `whatsappApi.*` methods — preserved as the public API surface.
 - `whatsapp-helpers.ts` — internal utility module, no changes needed.
 - `whatsapp-api.test.ts` — preserves the gate-spec coverage on `whatsappApi.getStatus / disconnect / logout / getContacts` + error handling.
+- The 12 `whatsappApi.*` dead methods listed above — separate cleanup, would alter the object idiom and require a coordinated removal from the barrel `api.whatsapp.*` map.
