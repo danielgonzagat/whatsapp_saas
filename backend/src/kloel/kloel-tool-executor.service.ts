@@ -8,7 +8,6 @@ import { KloelToolExecutorBillingService } from './kloel-tool-executor-billing.s
 import { KloelToolExecutorCrmService } from './kloel-tool-executor-crm.service';
 import { KloelToolExecutorWhatsAppService } from './kloel-tool-executor-whatsapp.service';
 import {
-  toolSaveProduct,
   toolListProducts,
   toolDeleteProduct,
   toolSetBrandVoice,
@@ -65,7 +64,7 @@ export class KloelToolExecutorService {
     try {
       switch (toolName) {
         case 'save_product':
-          return await this.toolSaveProduct(workspaceId, args as ToolSaveProductArgs);
+          return await this.toolSaveProduct(workspaceId, args as ToolSaveProductArgs, userId);
         case 'list_products':
           return await this.toolListProducts(workspaceId);
         case 'delete_product':
@@ -181,8 +180,17 @@ export class KloelToolExecutorService {
   private async toolSaveProduct(
     workspaceId: string,
     args: ToolSaveProductArgs,
+    userId?: string,
   ): Promise<ToolResult> {
-    return toolSaveProduct(this.prisma, workspaceId, args);
+    if (!this.toolDispatcher) {
+      return {
+        success: false,
+        error: 'canonical_dispatcher_required',
+        message: 'save_product exige o dispatcher canonico para gerar receipt e prova.',
+      };
+    }
+
+    return this.toolDispatcher.executeTool(workspaceId, 'products.create', args, userId);
   }
 
   private async toolListProducts(workspaceId: string): Promise<ToolResult> {

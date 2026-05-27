@@ -148,9 +148,21 @@ describe('KloelToolExecutorService', () => {
     jest.clearAllMocks();
   });
   describe('executeTool routing', () => {
-    it('routes save_product to helper', async () => {
-      const result = await service.executeTool(wsId, 'save_product', { name: 'X', price: 10 });
+    it('routes save_product through dispatcher receipt path', async () => {
+      dispatcher.executeTool.mockResolvedValueOnce({
+        success: true,
+        capabilityId: 'products.create',
+        outputs: { productId: 'prod-1' },
+        receipt: { capabilityId: 'products.create', success: true },
+      });
+
+      const args = { name: 'X', price: 10 };
+      const result = await service.executeTool(wsId, 'save_product', args, 'user-42');
+
+      expect(dispatcher.executeTool).toHaveBeenCalledWith(wsId, 'products.create', args, 'user-42');
       expect(result.success).toBe(true);
+      expect(result.capabilityId).toBe('products.create');
+      expect(result.receipt).toEqual(expect.objectContaining({ capabilityId: 'products.create' }));
     });
     it('routes list_products to helper', async () => {
       const result = await service.executeTool(wsId, 'list_products', {});
@@ -266,13 +278,13 @@ describe('KloelToolExecutorService', () => {
         args,
         'user-42',
       );
-      expect(result).toEqual(
-        expect.objectContaining({
-          success: true,
-          capabilityId: 'create_payment_link',
-          outputs: expect.objectContaining({ paymentId: 'pay-1', paymentUrl: 'https://pay.test' }),
-          receipt: expect.objectContaining({ capabilityId: 'create_payment_link', success: true }),
-        }),
+      expect(result.success).toBe(true);
+      expect(result.capabilityId).toBe('create_payment_link');
+      expect(result.outputs).toEqual(
+        expect.objectContaining({ paymentId: 'pay-1', paymentUrl: 'https://pay.test' }),
+      );
+      expect(result.receipt).toEqual(
+        expect.objectContaining({ capabilityId: 'create_payment_link', success: true }),
       );
     });
     it('routes connect_whatsapp to whatsappTools', async () => {
