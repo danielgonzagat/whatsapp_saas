@@ -216,6 +216,27 @@ describe('BrainEventSpineService diagnostics', () => {
       );
     });
 
+    it('maps product publication events to product_lifecycle intent', async () => {
+      const event: ProductEventPayload = {
+        occurredAt: new Date(),
+        workspaceId: 'ws-1',
+        subject: 'product:prod-1',
+        eventType: 'product.published',
+        payload: { productId: 'prod-1', name: 'Curso', priceInCents: 14700 },
+      };
+
+      await service.recordCommercial(event);
+
+      expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            action: 'product.published',
+            intent: 'product_lifecycle',
+          }),
+        }),
+      );
+    });
+
     it('maps concept events to concept_lifecycle intent', async () => {
       const event: ConceptEventPayload = {
         occurredAt: new Date(),

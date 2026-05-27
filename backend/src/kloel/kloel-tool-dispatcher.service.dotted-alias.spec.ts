@@ -44,6 +44,7 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 import { KloelCodeToolsService } from './kloel-code-tools.service';
 import { KloelCodeAnalysisService } from './kloel-code-analysis.service';
 import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
+import { CapabilityRegistryV2Service } from './capability-registry-v2/capability-registry-v2.service';
 import {
   createPrismaMock,
   createPlanLimitsMock,
@@ -111,6 +112,7 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
         { provide: KloelCodeAnalysisService, useValue: codeAnalysisService },
         { provide: OpsAlertService, useValue: opsAlert },
         { provide: KloelProductSubResourceToolsService, useValue: productSubTools },
+        CapabilityRegistryV2Service,
       ],
     }).compile();
 
@@ -123,90 +125,308 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
 
   const args = { name: 'Test', price: 99 };
   describe('products.* aliases', () => {
-    it('products.create forwards to create_product and reaches toolSaveProduct', async () => {
-      const prodResult = await service.executeTool(DEFAULT_WS_ID, 'products.create', args);
-      const directResult = await service.executeTool(DEFAULT_WS_ID, 'create_product', args);
+    it('products.create forwards to create_product and returns a material receipt', async () => {
+      chatToolsService.toolSaveProduct = jest.fn().mockResolvedValue({
+        success: true,
+        product: { id: 'prod-1', name: 'Test' },
+      });
 
-      expect(prodResult).toEqual(directResult);
+      const prodResult = await service.executeTool(
+        DEFAULT_WS_ID,
+        'products.create',
+        args,
+        'user-42',
+      );
+
+      expect(chatToolsService.toolSaveProduct).toHaveBeenCalledWith(DEFAULT_WS_ID, {
+        ...args,
+        actorId: 'user-42',
+      });
+      expect(prodResult).toEqual(
+        expect.objectContaining({
+          success: true,
+          capabilityId: 'products.create',
+          outputs: expect.objectContaining({ productId: 'prod-1' }),
+          receipt: expect.objectContaining({
+            capabilityId: 'products.create',
+            actorId: 'user-42',
+            inputs: args,
+            outputs: expect.objectContaining({ productId: 'prod-1' }),
+            domainEvents: ['product.created'],
+            evidenceUrl: '/produtos/prod-1',
+            success: true,
+          }),
+        }),
+      );
     });
 
-    it('products.update forwards to update_product and reaches toolUpdateProduct', async () => {
-      chatToolsService.toolUpdateProduct = jest
-        .fn()
-        .mockResolvedValue({ success: true, updated: true });
+    it('products.update forwards to update_product and returns a material receipt', async () => {
+      chatToolsService.toolUpdateProduct = jest.fn().mockResolvedValue({
+        success: true,
+        product: { id: 'prod-1', name: 'Test' },
+      });
 
-      const dotted = await service.executeTool(DEFAULT_WS_ID, 'products.update', args);
-      const direct = await service.executeTool(DEFAULT_WS_ID, 'update_product', args);
+      const dotted = await service.executeTool(DEFAULT_WS_ID, 'products.update', args, 'user-42');
 
-      expect(dotted).toEqual(direct);
+      expect(chatToolsService.toolUpdateProduct).toHaveBeenCalledWith(DEFAULT_WS_ID, {
+        ...args,
+        actorId: 'user-42',
+      });
+      expect(dotted).toEqual(
+        expect.objectContaining({
+          success: true,
+          capabilityId: 'products.update',
+          outputs: expect.objectContaining({ productId: 'prod-1' }),
+          receipt: expect.objectContaining({
+            capabilityId: 'products.update',
+            actorId: 'user-42',
+            inputs: args,
+            outputs: expect.objectContaining({ productId: 'prod-1' }),
+            domainEvents: ['product.updated'],
+            evidenceUrl: '/produtos/prod-1',
+            success: true,
+          }),
+        }),
+      );
     });
 
-    it('products.upload_image forwards to upload_product_image', async () => {
+    it('products.upload_image reaches upload_product_image', async () => {
       chatToolsService.toolUploadProductImage = jest
         .fn()
         .mockResolvedValue({ success: true, url: 'https://img.test/x.png' });
 
-      const dotted = await service.executeTool(DEFAULT_WS_ID, 'products.upload_image', args);
-      const direct = await service.executeTool(DEFAULT_WS_ID, 'upload_product_image', args);
+      await service.executeTool(DEFAULT_WS_ID, 'products.upload_image', args);
 
-      expect(dotted).toEqual(direct);
+      expect(chatToolsService.toolUploadProductImage).toHaveBeenCalledWith(DEFAULT_WS_ID, args);
     });
   });
   describe('plans.* aliases', () => {
-    it('plans.create forwards to create_plan', async () => {
-      productSubTools.executeTool.mockResolvedValue({ success: true, plan: { id: 'p1' } });
+    it('plans.create forwards to create_plan and returns a material receipt', async () => {
+      productSubTools.executeTool.mockResolvedValue({
+        success: true,
+        plan: { id: 'plan-1', name: 'Basic' },
+      });
 
-      const dotted = await service.executeTool(DEFAULT_WS_ID, 'plans.create', args);
-      const direct = await service.executeTool(DEFAULT_WS_ID, 'create_plan', args);
+      const dotted = await service.executeTool(
+        DEFAULT_WS_ID,
+        'plans.create',
+        { productId: 'prod-1', name: 'Basic', price: 99 },
+        'user-42',
+      );
 
-      expect(dotted).toEqual(direct);
+      expect(productSubTools.executeTool).toHaveBeenCalledWith('create_plan', DEFAULT_WS_ID, {
+        productId: 'prod-1',
+        name: 'Basic',
+        price: 99,
+      });
+      expect(dotted.success).toBe(true);
+      expect(dotted.capabilityId).toBe('plans.create');
+      expect(dotted.outputs).toEqual(expect.objectContaining({ planId: 'plan-1' }));
+      expect(dotted.receipt).toEqual(
+        expect.objectContaining({
+          capabilityId: 'plans.create',
+          workspaceId: DEFAULT_WS_ID,
+          actorId: 'user-42',
+          inputs: { productId: 'prod-1', name: 'Basic', price: 99 },
+          outputs: expect.objectContaining({ planId: 'plan-1' }),
+          domainEvents: ['plan.created'],
+          auditLogId: expect.stringMatching(/^audit_/),
+          evidenceUrl: '/produtos/prod-1/planos/plan-1',
+          idempotencyKey: expect.stringContaining('plans.create'),
+          success: true,
+        }),
+      );
     });
 
-    it('plans.update forwards to update_plan', async () => {
-      productSubTools.executeTool.mockResolvedValue({ success: true });
+    it('plans.update forwards to update_plan and returns a material receipt', async () => {
+      productSubTools.executeTool.mockResolvedValue({
+        success: true,
+        plan: { id: 'plan-1', name: 'Pro' },
+      });
 
-      const dotted = await service.executeTool(DEFAULT_WS_ID, 'plans.update', args);
-      const direct = await service.executeTool(DEFAULT_WS_ID, 'update_plan', args);
+      const planArgs = { productId: 'prod-1', planId: 'plan-1', name: 'Pro', price: 199 };
+      const dotted = await service.executeTool(DEFAULT_WS_ID, 'plans.update', planArgs, 'user-42');
 
-      expect(dotted).toEqual(direct);
+      expect(productSubTools.executeTool).toHaveBeenCalledWith(
+        'update_plan',
+        DEFAULT_WS_ID,
+        planArgs,
+      );
+      expect(dotted.success).toBe(true);
+      expect(dotted.capabilityId).toBe('plans.update');
+      expect(dotted.outputs).toEqual(expect.objectContaining({ planId: 'plan-1' }));
+      expect(dotted.receipt).toEqual(
+        expect.objectContaining({
+          capabilityId: 'plans.update',
+          workspaceId: DEFAULT_WS_ID,
+          actorId: 'user-42',
+          inputs: planArgs,
+          outputs: expect.objectContaining({ productId: 'prod-1', planId: 'plan-1' }),
+          domainEvents: ['plan.updated'],
+          auditLogId: expect.stringMatching(/^audit_/),
+          evidenceUrl: '/produtos/prod-1/planos/plan-1',
+          idempotencyKey: expect.stringContaining('plans.update'),
+          success: true,
+        }),
+      );
     });
   });
   describe('checkouts.* aliases', () => {
-    it('checkouts.create forwards to create_checkout', async () => {
-      productSubTools.executeTool.mockResolvedValue({ success: true, checkout: { id: 'chk1' } });
+    it('checkouts.create forwards to create_checkout and returns a material receipt', async () => {
+      productSubTools.executeTool.mockResolvedValue({
+        success: true,
+        checkout: { id: 'chk-1', name: 'Checkout Principal' },
+      });
 
-      const dotted = await service.executeTool(DEFAULT_WS_ID, 'checkouts.create', args);
-      const direct = await service.executeTool(DEFAULT_WS_ID, 'create_checkout', args);
+      const dotted = await service.executeTool(
+        DEFAULT_WS_ID,
+        'checkouts.create',
+        { productId: 'prod-1', name: 'Checkout Principal' },
+        'user-42',
+      );
 
-      expect(dotted).toEqual(direct);
+      expect(productSubTools.executeTool).toHaveBeenCalledWith('create_checkout', DEFAULT_WS_ID, {
+        productId: 'prod-1',
+        name: 'Checkout Principal',
+      });
+      expect(dotted.success).toBe(true);
+      expect(dotted.capabilityId).toBe('checkouts.create');
+      expect(dotted.outputs).toEqual(expect.objectContaining({ checkoutId: 'chk-1' }));
+      expect(dotted.receipt).toEqual(
+        expect.objectContaining({
+          capabilityId: 'checkouts.create',
+          workspaceId: DEFAULT_WS_ID,
+          actorId: 'user-42',
+          inputs: { productId: 'prod-1', name: 'Checkout Principal' },
+          outputs: expect.objectContaining({ checkoutId: 'chk-1' }),
+          domainEvents: ['checkout.created'],
+          auditLogId: expect.stringMatching(/^audit_/),
+          evidenceUrl: '/produtos/prod-1/checkouts/chk-1',
+          idempotencyKey: expect.stringContaining('checkouts.create'),
+          success: true,
+        }),
+      );
     });
 
-    it('checkouts.update forwards to update_checkout', async () => {
-      productSubTools.executeTool.mockResolvedValue({ success: true });
+    it('checkouts.update forwards to update_checkout and returns a material receipt', async () => {
+      productSubTools.executeTool.mockResolvedValue({
+        success: true,
+        checkout: { id: 'chk-1', name: 'Checkout Pro' },
+      });
 
-      const dotted = await service.executeTool(DEFAULT_WS_ID, 'checkouts.update', args);
-      const direct = await service.executeTool(DEFAULT_WS_ID, 'update_checkout', args);
+      const checkoutArgs = {
+        productId: 'prod-1',
+        checkoutId: 'chk-1',
+        name: 'Checkout Pro',
+        buttonText: 'Comprar Agora',
+      };
+      const dotted = await service.executeTool(
+        DEFAULT_WS_ID,
+        'checkouts.update',
+        checkoutArgs,
+        'user-42',
+      );
 
-      expect(dotted).toEqual(direct);
+      expect(productSubTools.executeTool).toHaveBeenCalledWith(
+        'update_checkout',
+        DEFAULT_WS_ID,
+        checkoutArgs,
+      );
+      expect(dotted.success).toBe(true);
+      expect(dotted.capabilityId).toBe('checkouts.update');
+      expect(dotted.outputs).toEqual(expect.objectContaining({ checkoutId: 'chk-1' }));
+      expect(dotted.receipt).toEqual(
+        expect.objectContaining({
+          capabilityId: 'checkouts.update',
+          workspaceId: DEFAULT_WS_ID,
+          actorId: 'user-42',
+          inputs: checkoutArgs,
+          outputs: expect.objectContaining({ productId: 'prod-1', checkoutId: 'chk-1' }),
+          domainEvents: ['checkout.updated'],
+          auditLogId: expect.stringMatching(/^audit_/),
+          evidenceUrl: '/produtos/prod-1/checkouts/chk-1',
+          idempotencyKey: expect.stringContaining('checkouts.update'),
+          success: true,
+        }),
+      );
     });
   });
   describe('coupons.* aliases', () => {
-    it('coupons.create forwards to create_coupon', async () => {
-      productSubTools.executeTool.mockResolvedValue({ success: true, coupon: { id: 'c1' } });
+    it('coupons.create forwards to create_coupon and returns a material receipt', async () => {
+      productSubTools.executeTool.mockResolvedValue({
+        success: true,
+        coupon: { id: 'coupon-1', code: 'PDRN10' },
+      });
 
-      const dotted = await service.executeTool(DEFAULT_WS_ID, 'coupons.create', args);
-      const direct = await service.executeTool(DEFAULT_WS_ID, 'create_coupon', args);
+      const dotted = await service.executeTool(
+        DEFAULT_WS_ID,
+        'coupons.create',
+        { productId: 'prod-1', code: 'PDRN10', discountType: 'percentage', discountValue: 10 },
+        'user-42',
+      );
 
-      expect(dotted).toEqual(direct);
+      expect(productSubTools.executeTool).toHaveBeenCalledWith('create_coupon', DEFAULT_WS_ID, {
+        productId: 'prod-1',
+        code: 'PDRN10',
+        discountType: 'percentage',
+        discountValue: 10,
+      });
+      expect(dotted.success).toBe(true);
+      expect(dotted.capabilityId).toBe('coupons.create');
+      expect(dotted.outputs).toEqual(expect.objectContaining({ couponId: 'coupon-1' }));
+      expect(dotted.receipt).toEqual(
+        expect.objectContaining({
+          capabilityId: 'coupons.create',
+          workspaceId: DEFAULT_WS_ID,
+          actorId: 'user-42',
+          inputs: {
+            productId: 'prod-1',
+            code: 'PDRN10',
+            discountType: 'percentage',
+            discountValue: 10,
+          },
+          outputs: expect.objectContaining({ couponId: 'coupon-1' }),
+          domainEvents: ['coupon.created'],
+          auditLogId: expect.stringMatching(/^audit_/),
+          evidenceUrl: '/produtos/prod-1/cupons/coupon-1',
+          idempotencyKey: expect.stringContaining('coupons.create'),
+          success: true,
+        }),
+      );
     });
 
-    it('coupons.delete forwards to delete_coupon', async () => {
-      productSubTools.executeTool.mockResolvedValue({ success: true });
+    it('coupons.delete forwards to delete_coupon and returns a material receipt', async () => {
+      productSubTools.executeTool.mockResolvedValue({ success: true, couponId: 'coupon-1' });
 
-      const dotted = await service.executeTool(DEFAULT_WS_ID, 'coupons.delete', args);
-      const direct = await service.executeTool(DEFAULT_WS_ID, 'delete_coupon', args);
+      const deleteArgs = { couponId: 'coupon-1' };
+      const dotted = await service.executeTool(
+        DEFAULT_WS_ID,
+        'coupons.delete',
+        deleteArgs,
+        'user-42',
+      );
 
-      expect(dotted).toEqual(direct);
+      expect(productSubTools.executeTool).toHaveBeenCalledWith(
+        'delete_coupon',
+        DEFAULT_WS_ID,
+        deleteArgs,
+      );
+      expect(dotted.success).toBe(true);
+      expect(dotted.capabilityId).toBe('coupons.delete');
+      expect(dotted.outputs).toEqual(expect.objectContaining({ couponId: 'coupon-1' }));
+      expect(dotted.receipt).toEqual(
+        expect.objectContaining({
+          capabilityId: 'coupons.delete',
+          workspaceId: DEFAULT_WS_ID,
+          actorId: 'user-42',
+          inputs: deleteArgs,
+          outputs: expect.objectContaining({ couponId: 'coupon-1' }),
+          domainEvents: ['coupon.deleted'],
+          auditLogId: expect.stringMatching(/^audit_/),
+          idempotencyKey: expect.stringContaining('coupons.delete'),
+          success: true,
+        }),
+      );
     });
   });
 });

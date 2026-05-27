@@ -56,8 +56,20 @@ export const CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     requiresConfirmation: false,
     requiredPermissions: [],
     inputSchema: [
-      { key: 'workspace', type: 'string', label: 'Workspace', required: true, description: 'root|backend|frontend|frontend-admin|worker|e2e' },
-      { key: 'pattern', type: 'string', label: 'Filtro', required: false, description: 'Nome do pacote (parcial)' },
+      {
+        key: 'workspace',
+        type: 'string',
+        label: 'Workspace',
+        required: true,
+        description: 'root|backend|frontend|frontend-admin|worker|e2e',
+      },
+      {
+        key: 'pattern',
+        type: 'string',
+        label: 'Filtro',
+        required: false,
+        description: 'Nome do pacote (parcial)',
+      },
     ],
     domainService: 'DepsCoverageService.dependencies',
     emits: [],
@@ -66,14 +78,27 @@ export const CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
   {
     id: 'code_coverage',
     title: 'Cobertura de código',
-    description: 'Retorna cobertura de testes (lines/branches/functions/statements) com linhas não cobertas',
+    description:
+      'Retorna cobertura de testes (lines/branches/functions/statements) com linhas não cobertas',
     category: 'SELF_AWARENESS',
     tier: 0,
     requiresConfirmation: false,
     requiredPermissions: [],
     inputSchema: [
-      { key: 'filePath', type: 'string', label: 'Arquivo', required: false, description: 'Caminho do arquivo para cobertura específica' },
-      { key: 'workspace', type: 'string', label: 'Workspace', required: false, description: 'root|backend|frontend|frontend-admin|worker|e2e' },
+      {
+        key: 'filePath',
+        type: 'string',
+        label: 'Arquivo',
+        required: false,
+        description: 'Caminho do arquivo para cobertura específica',
+      },
+      {
+        key: 'workspace',
+        type: 'string',
+        label: 'Workspace',
+        required: false,
+        description: 'root|backend|frontend|frontend-admin|worker|e2e',
+      },
     ],
     domainService: 'DepsCoverageService.codeCoverage',
     emits: [],
@@ -88,7 +113,13 @@ export const CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     requiresConfirmation: false,
     requiredPermissions: [],
     inputSchema: [
-      { key: 'files', type: 'string', label: 'Arquivos', required: true, description: 'Lista de paths separados por vírgula' },
+      {
+        key: 'files',
+        type: 'string',
+        label: 'Arquivos',
+        required: true,
+        description: 'Lista de paths separados por vírgula',
+      },
     ],
     domainService: 'DepsCoverageService.affectedTests',
     emits: [],
@@ -510,7 +541,7 @@ export const CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     requiredPermissions: ['product:write'],
     inputSchema: [{ key: 'productId', type: 'string', label: 'Produto', required: true }],
     domainService: 'MediaService.attach + ProductService.setImage',
-    emits: ['product.image_updated'],
+    emits: ['product.updated'],
     surface: ['dashboard-chat'],
   },
   {
@@ -1536,7 +1567,7 @@ export const CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
       { key: 'imageFile', type: 'file', label: 'Arquivo de imagem', required: true },
     ],
     domainService: 'MediaService.attach + ProductService.setImage',
-    emits: ['product.image_updated'],
+    emits: ['product.updated'],
     evidenceUrlBuilder: '/produtos/${productId}',
     surface: ['dashboard-chat'],
   },
@@ -1593,6 +1624,7 @@ export const CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     ],
     domainService: 'PlanService.create',
     emits: ['plan.created'],
+    evidenceUrlBuilder: '/produtos/${productId}/planos/${planId}',
     surface: ['dashboard-chat'],
   },
   {
@@ -1610,6 +1642,7 @@ export const CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     ],
     domainService: 'PlanService.update',
     emits: ['plan.updated'],
+    evidenceUrlBuilder: '/produtos/${productId}/planos/${planId}',
     surface: ['dashboard-chat'],
   },
 
@@ -1638,6 +1671,7 @@ export const CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     ],
     domainService: 'CheckoutService.create',
     emits: ['checkout.created'],
+    evidenceUrlBuilder: '/produtos/${productId}/checkouts/${checkoutId}',
     surface: ['dashboard-chat'],
   },
   {
@@ -1655,6 +1689,7 @@ export const CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     ],
     domainService: 'CheckoutService.update',
     emits: ['checkout.updated'],
+    evidenceUrlBuilder: '/produtos/${productId}/checkouts/${checkoutId}',
     surface: ['dashboard-chat'],
   },
 
@@ -1682,6 +1717,7 @@ export const CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     ],
     domainService: 'CouponService.create',
     emits: ['coupon.created'],
+    evidenceUrlBuilder: '/produtos/${productId}/cupons/${couponId}',
     surface: ['dashboard-chat'],
   },
   {

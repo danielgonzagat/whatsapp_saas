@@ -1,5 +1,6 @@
 import type { PrismaService } from '../prisma/prisma.service';
 import type { KloelBusinessConfigToolsService } from './kloel-business-config-tools.service';
+import type { KloelChatToolsService } from './kloel-chat-tools.service';
 import type { UnknownRecord } from '../common/types';
 import type { Prisma } from '@prisma/client';
 
@@ -76,15 +77,23 @@ function readApprovedToolPayload(payload: Prisma.JsonValue): {
 }
 async function runExecuteApprovedHighRiskTool(
   bizConfigToolsService: KloelBusinessConfigToolsService,
+  chatToolsService: KloelChatToolsService,
   workspaceId: string,
   toolName: string,
   args: UnknownRecord,
+  userId?: string,
 ): Promise<unknown> {
   switch (toolName) {
     case 'create_campaign':
       return bizConfigToolsService.toolCreateCampaign(workspaceId, args as never);
     case 'change_plan':
       return bizConfigToolsService.toolChangePlan(workspaceId, args as never);
+    case 'products.review_and_publish':
+    case 'publish_product':
+      return chatToolsService.toolPublishProduct(workspaceId, {
+        ...args,
+        ...(userId ? { actorId: userId } : {}),
+      });
     default:
       throw new Error(`unsupported_approved_tool:${toolName}`);
   }
@@ -92,6 +101,7 @@ async function runExecuteApprovedHighRiskTool(
 export async function runExecuteApprovedApprovalRequest(
   prisma: PrismaService,
   bizConfigToolsService: KloelBusinessConfigToolsService,
+  chatToolsService: KloelChatToolsService,
   input: {
     workspaceId: string;
     approvalRequestId: string;
@@ -137,9 +147,11 @@ export async function runExecuteApprovedApprovalRequest(
   try {
     const result = await runExecuteApprovedHighRiskTool(
       bizConfigToolsService,
+      chatToolsService,
       input.workspaceId,
       payload.toolName,
       payload.args,
+      input.userId,
     );
     await prisma.approvalRequest.updateMany({
       where: { id: approval.id, workspaceId: input.workspaceId, state: 'APPROVED' },

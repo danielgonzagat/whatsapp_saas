@@ -4,6 +4,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { ProductService } from './product.service';
+import { MindEventSpine } from '../kloel/mind/coordination';
 
 describe('ProductService', () => {
   let service: ProductService;
@@ -19,6 +20,7 @@ describe('ProductService', () => {
   };
   let eventEmitter: { emit: jest.Mock };
   let audit: { log: jest.Mock };
+  let brainSpine: { recordCommercial: jest.Mock };
 
   const ws = 'ws-1';
   const actor = { id: 'agent-1', email: 'a@b.com' };
@@ -42,19 +44,32 @@ describe('ProductService', () => {
     prisma = {
       product: {
         create: jest.fn().mockImplementation(({ data }) =>
-          Promise.resolve({ id: 'prod-1', workspaceId: ws, ...data, createdAt: new Date(), updatedAt: new Date() }),
+          Promise.resolve({
+            id: 'prod-1',
+            workspaceId: ws,
+            ...data,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          }),
         ),
         findUnique: jest.fn(),
         findFirst: jest.fn(),
         findMany: jest.fn(),
         count: jest.fn(),
         update: jest.fn().mockImplementation(({ where, data }) =>
-          Promise.resolve({ id: where.id, workspaceId: ws, ...data, createdAt: new Date(), updatedAt: new Date() }),
+          Promise.resolve({
+            id: where.id,
+            workspaceId: ws,
+            ...data,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          }),
         ),
       },
     };
     eventEmitter = { emit: jest.fn() };
     audit = { log: jest.fn() };
+    brainSpine = { recordCommercial: jest.fn().mockResolvedValue('event-1') };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -62,6 +77,7 @@ describe('ProductService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: EventEmitter2, useValue: eventEmitter },
         { provide: AuditService, useValue: audit },
+        { provide: MindEventSpine, useValue: brainSpine },
       ],
     }).compile();
     service = module.get(ProductService);
@@ -75,12 +91,17 @@ describe('ProductService', () => {
       expect(result.product?.name).toBe('Widget');
       expect(result.product?.status).toBe('DRAFT');
       expect(result.product?.active).toBe(false);
-      expect(eventEmitter.emit).toHaveBeenCalledWith('product.created', expect.objectContaining({ productId: 'prod-1' }));
+      expect(eventEmitter.emit).toHaveBeenCalledWith(
+        'product.created',
+        expect.objectContaining({ productId: 'prod-1' }),
+      );
       expect(audit.log).toHaveBeenCalledWith(expect.objectContaining({ action: 'product.create' }));
     });
 
     it('throws ForbiddenException when workspaceId is empty', async () => {
-      await expect(service.create('', { name: 'X', price: 10 }, actor)).rejects.toThrow(ForbiddenException);
+      await expect(service.create('', { name: 'X', price: 10 }, actor)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -92,14 +113,38 @@ describe('ProductService', () => {
       expect(eventEmitter.emit).toHaveBeenCalledWith('product.updated', expect.any(Object));
     });
 
+    it('records product edits in the commercial spine', async () => {
+      prisma.product.findUnique.mockResolvedValue(makeProduct());
+      prisma.product.update.mockResolvedValue(makeProduct({ name: 'Updated' }));
+
+      await service.update(ws, 'prod-1', { name: 'Updated' }, actor);
+
+      expect(brainSpine.recordCommercial).toHaveBeenCalledWith(
+        expect.objectContaining({
+          workspaceId: ws,
+          subject: 'product:prod-1',
+          eventType: 'product.updated',
+          payload: expect.objectContaining({
+            productId: 'prod-1',
+            name: 'Updated',
+            changes: ['name'],
+          }),
+        }),
+      );
+    });
+
     it('throws NotFoundException when product missing', async () => {
       prisma.product.findUnique.mockResolvedValue(null);
-      await expect(service.update(ws, 'prod-missing', { name: 'X' }, actor)).rejects.toThrow(NotFoundException);
+      await expect(service.update(ws, 'prod-missing', { name: 'X' }, actor)).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('throws ForbiddenException for cross-workspace access', async () => {
       prisma.product.findUnique.mockResolvedValue(makeProduct({ workspaceId: 'ws-other' }));
-      await expect(service.update(ws, 'prod-1', { name: 'X' }, actor)).rejects.toThrow(ForbiddenException);
+      await expect(service.update(ws, 'prod-1', { name: 'X' }, actor)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -108,7 +153,9 @@ describe('ProductService', () => {
       prisma.product.findFirst.mockResolvedValue(makeProduct());
       const result = await service.findById(ws, 'prod-1');
       expect(result?.id).toBe('prod-1');
-      expect(prisma.product.findFirst).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'prod-1', workspaceId: ws } }));
+      expect(prisma.product.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: 'prod-1', workspaceId: ws } }),
+      );
     });
 
     it('returns null when not found', async () => {
@@ -133,41 +180,124 @@ describe('ProductService', () => {
       prisma.product.findMany.mockResolvedValue([]);
       prisma.product.count.mockResolvedValue(0);
       await service.list(ws, { search: 'widget' });
-      expect(prisma.product.findMany).toHaveBeenCalledWith(expect.objectContaining({
-        where: expect.objectContaining({ OR: expect.any(Array) }),
-      }));
+      expect(prisma.product.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ OR: expect.any(Array) }),
+        }),
+      );
     });
 
     it('applies category and status filters', async () => {
       prisma.product.findMany.mockResolvedValue([]);
       prisma.product.count.mockResolvedValue(0);
       await service.list(ws, { category: 'cat', status: 'APPROVED', active: true });
-      expect(prisma.product.findMany).toHaveBeenCalledWith(expect.objectContaining({
-        where: expect.objectContaining({ category: 'cat', status: 'APPROVED', active: true }),
-      }));
+      expect(prisma.product.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ category: 'cat', status: 'APPROVED', active: true }),
+        }),
+      );
     });
   });
 
   describe('setImage', () => {
     it('updates imageUrl on the product', async () => {
-      prisma.product.update.mockResolvedValue(makeProduct({ imageUrl: 'https://img.example/pic.png' }));
-      const result = await service.setImage(ws, 'prod-1', 'https://img.example/pic.png', { id: 'agent-1' });
+      prisma.product.findUnique.mockResolvedValue(makeProduct());
+      prisma.product.update.mockResolvedValue(
+        makeProduct({ imageUrl: 'https://img.example/pic.png' }),
+      );
+      const result = await service.setImage(ws, 'prod-1', 'https://img.example/pic.png', {
+        id: 'agent-1',
+      });
       expect(result.success).toBe(true);
-      expect(audit.log).toHaveBeenCalledWith(expect.objectContaining({ action: 'product.setImage' }));
+      expect(eventEmitter.emit).toHaveBeenCalledWith(
+        'product.updated',
+        expect.objectContaining({ productId: 'prod-1', changes: ['imageUrl'] }),
+      );
+      expect(audit.log).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'product.setImage' }),
+      );
+    });
+
+    it('refuses image updates across workspaces', async () => {
+      prisma.product.findUnique.mockResolvedValue(makeProduct({ workspaceId: 'ws-other' }));
+
+      await expect(
+        service.setImage(ws, 'prod-1', 'https://img.example/pic.png', { id: 'agent-1' }),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(prisma.product.update).not.toHaveBeenCalled();
+      expect(brainSpine.recordCommercial).not.toHaveBeenCalled();
+    });
+
+    it('records image updates in the commercial spine', async () => {
+      prisma.product.findUnique.mockResolvedValue(makeProduct());
+      prisma.product.update.mockResolvedValue(
+        makeProduct({ imageUrl: 'https://img.example/pic.png' }),
+      );
+
+      await service.setImage(ws, 'prod-1', 'https://img.example/pic.png', { id: 'agent-1' });
+
+      expect(brainSpine.recordCommercial).toHaveBeenCalledWith(
+        expect.objectContaining({
+          workspaceId: ws,
+          subject: 'product:prod-1',
+          eventType: 'product.updated',
+          payload: expect.objectContaining({
+            productId: 'prod-1',
+            imageUrl: 'https://img.example/pic.png',
+            changes: ['imageUrl'],
+          }),
+        }),
+      );
     });
   });
 
   describe('publish', () => {
     it('sets status to APPROVED and active to true', async () => {
+      prisma.product.findUnique.mockResolvedValue(makeProduct());
       prisma.product.update.mockResolvedValue(makeProduct({ status: 'APPROVED', active: true }));
       const result = await service.publish(ws, 'prod-1', { id: 'agent-1' });
       expect(result.success).toBe(true);
       expect(eventEmitter.emit).toHaveBeenCalledWith('product.published', expect.any(Object));
     });
+
+    it('refuses to publish a product from another workspace', async () => {
+      prisma.product.findUnique.mockResolvedValue(makeProduct({ workspaceId: 'ws-other' }));
+
+      await expect(service.publish(ws, 'prod-1', { id: 'agent-1' })).rejects.toThrow(
+        ForbiddenException,
+      );
+
+      expect(prisma.product.update).not.toHaveBeenCalled();
+      expect(eventEmitter.emit).not.toHaveBeenCalledWith('product.published', expect.any(Object));
+      expect(brainSpine.recordCommercial).not.toHaveBeenCalled();
+    });
+
+    it('records published products in the commercial spine', async () => {
+      prisma.product.findUnique.mockResolvedValue(makeProduct());
+      prisma.product.update.mockResolvedValue(makeProduct({ status: 'APPROVED', active: true }));
+
+      await service.publish(ws, 'prod-1', { id: 'agent-1' });
+
+      expect(brainSpine.recordCommercial).toHaveBeenCalledWith(
+        expect.objectContaining({
+          workspaceId: ws,
+          subject: 'product:prod-1',
+          eventType: 'product.published',
+          payload: expect.objectContaining({
+            productId: 'prod-1',
+            name: 'Test',
+            status: 'APPROVED',
+            active: true,
+          }),
+        }),
+      );
+    });
   });
 
   describe('toggleAvailability', () => {
     it('activates a product', async () => {
+      prisma.product.findUnique.mockResolvedValue(makeProduct());
       prisma.product.update.mockResolvedValue(makeProduct({ active: true }));
       const result = await service.toggleAvailability(ws, 'prod-1', true, { id: 'agent-1' });
       expect(result.success).toBe(true);
@@ -175,19 +305,84 @@ describe('ProductService', () => {
     });
 
     it('deactivates a product', async () => {
+      prisma.product.findUnique.mockResolvedValue(makeProduct());
       prisma.product.update.mockResolvedValue(makeProduct({ active: false }));
       const result = await service.toggleAvailability(ws, 'prod-1', false, { id: 'agent-1' });
       expect(result.success).toBe(true);
       expect(eventEmitter.emit).toHaveBeenCalledWith('product.deactivated', expect.any(Object));
     });
+
+    it('refuses availability changes across workspaces', async () => {
+      prisma.product.findUnique.mockResolvedValue(makeProduct({ workspaceId: 'ws-other' }));
+
+      await expect(
+        service.toggleAvailability(ws, 'prod-1', true, { id: 'agent-1' }),
+      ).rejects.toThrow(ForbiddenException);
+
+      expect(prisma.product.update).not.toHaveBeenCalled();
+      expect(brainSpine.recordCommercial).not.toHaveBeenCalled();
+    });
+
+    it('records availability changes in the commercial spine', async () => {
+      prisma.product.findUnique.mockResolvedValue(makeProduct());
+      prisma.product.update.mockResolvedValue(makeProduct({ active: true }));
+
+      await service.toggleAvailability(ws, 'prod-1', true, { id: 'agent-1' });
+
+      expect(brainSpine.recordCommercial).toHaveBeenCalledWith(
+        expect.objectContaining({
+          workspaceId: ws,
+          subject: 'product:prod-1',
+          eventType: 'product.updated',
+          payload: expect.objectContaining({
+            productId: 'prod-1',
+            active: true,
+            changes: ['active'],
+          }),
+        }),
+      );
+    });
   });
 
   describe('delete', () => {
     it('soft-deletes a product (sets status to DELETED)', async () => {
+      prisma.product.findUnique.mockResolvedValue(makeProduct());
       prisma.product.update.mockResolvedValue(makeProduct({ status: 'DELETED', active: false }));
       const result = await service.delete(ws, 'prod-1', { id: 'agent-1' });
       expect(result.success).toBe(true);
       expect(eventEmitter.emit).toHaveBeenCalledWith('product.deleted', expect.any(Object));
+    });
+
+    it('refuses deletion across workspaces', async () => {
+      prisma.product.findUnique.mockResolvedValue(makeProduct({ workspaceId: 'ws-other' }));
+
+      await expect(service.delete(ws, 'prod-1', { id: 'agent-1' })).rejects.toThrow(
+        ForbiddenException,
+      );
+
+      expect(prisma.product.update).not.toHaveBeenCalled();
+      expect(eventEmitter.emit).not.toHaveBeenCalledWith('product.deleted', expect.any(Object));
+      expect(brainSpine.recordCommercial).not.toHaveBeenCalled();
+    });
+
+    it('records product deletion in the commercial spine', async () => {
+      prisma.product.findUnique.mockResolvedValue(makeProduct());
+      prisma.product.update.mockResolvedValue(makeProduct({ status: 'DELETED', active: false }));
+
+      await service.delete(ws, 'prod-1', { id: 'agent-1' });
+
+      expect(brainSpine.recordCommercial).toHaveBeenCalledWith(
+        expect.objectContaining({
+          workspaceId: ws,
+          subject: 'product:prod-1',
+          eventType: 'product.deleted',
+          payload: expect.objectContaining({
+            productId: 'prod-1',
+            status: 'DELETED',
+            active: false,
+          }),
+        }),
+      );
     });
   });
 });

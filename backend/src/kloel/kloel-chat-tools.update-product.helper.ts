@@ -1,12 +1,15 @@
 import type { PrismaService } from '../prisma/prisma.service';
+import type { ProductService, UpdateProductDto } from '../products/product.service';
 import type { ToolResult } from './kloel-chat-tools.agent-runtime.helpers';
 
 export async function runUpdateProduct(
   prisma: PrismaService,
+  productService: ProductService,
   workspaceId: string,
   args: {
     productId?: string;
     productName?: string;
+    actorId?: unknown;
     name?: string;
     price?: number;
     description?: string;
@@ -37,8 +40,9 @@ export async function runUpdateProduct(
   if (!productId) {
     return { success: false, error: 'productId_required' };
   }
-  const updateData: Record<string, unknown> = {};
-  const { productId: _pid, productName: _pname, ...fields } = args;
+
+  const updateData: UpdateProductDto = {};
+  const { productId: _pid, productName: _pname, actorId: _actorId, ...fields } = args;
   if (fields.name !== undefined) {
     updateData.name = fields.name;
   }
@@ -58,7 +62,10 @@ export async function runUpdateProduct(
     updateData.category = fields.category;
   }
   if (fields.format !== undefined) {
-    updateData.format = fields.format;
+    const format = fields.format.toUpperCase();
+    if (format === 'PHYSICAL' || format === 'DIGITAL' || format === 'HYBRID') {
+      updateData.format = format;
+    }
   }
   if (fields.tags !== undefined) {
     updateData.tags = fields.tags;
@@ -93,18 +100,17 @@ export async function runUpdateProduct(
   if (Object.keys(updateData).length === 0) {
     return { success: false, error: 'no_fields_to_update' };
   }
-  const product = await prisma.product
-    .update({
-      where: { id: productId, workspaceId },
-      data: updateData,
-    })
-    .catch(() => null);
-  if (!product) {
+
+  const actorId =
+    typeof args.actorId === 'string' && args.actorId.trim() ? args.actorId : 'kloel-chat';
+  try {
+    const result = await productService.update(workspaceId, productId, updateData, { id: actorId });
+    return {
+      success: result.success,
+      ...(result.product !== undefined ? { product: result.product } : {}),
+      ...(result.message !== undefined ? { message: result.message } : {}),
+    };
+  } catch {
     return { success: false, error: 'product_not_found' };
   }
-  return {
-    success: true,
-    product: { id: product.id, name: product.name, price: product.price },
-    message: `Produto "${product.name}" atualizado.`,
-  };
 }

@@ -1,8 +1,5 @@
 'use client';
 
-import { swrFetcher } from '@/lib/fetcher';
-import useSWR from 'swr';
-
 export type ChannelKey = 'wa' | 'ig' | 'fb' | 'em' | 'sms' | 'tt';
 
 export interface SalesMessage {
@@ -35,18 +32,5 @@ const FALLBACK_SALES_FLOW: SalesMessage[] = [
 ];
 
 export function useSalesFlow() {
-  const { data, error, isLoading } = useSWR<SalesMessage[]>(
-    '/landing/sales-flow',
-    swrFetcher,
-    {
-      keepPreviousData: true,
-      revalidateOnFocus: false,
-      dedupingInterval: 300000,
-    },
-  );
-
-  const messages = Array.isArray(data) && data.length > 0 ? data : FALLBACK_SALES_FLOW;
-  const apiError = error ? (error as Error).message : null;
-
-  return { messages, isLoading, error: apiError };
+  return { messages: FALLBACK_SALES_FLOW, isLoading: false, error: null };
 }

@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
+import { ProductCouponDomainService } from './product-coupon-domain.service';
 
 describe('KloelProductSubResourceToolsService', () => {
   let service: KloelProductSubResourceToolsService;
@@ -39,6 +40,7 @@ describe('KloelProductSubResourceToolsService', () => {
       create: jest.Mock;
     };
   };
+  let productCouponDomain: { deleteProductCoupon: jest.Mock };
 
   const ws = 'ws-1';
 
@@ -78,11 +80,19 @@ describe('KloelProductSubResourceToolsService', () => {
         create: jest.fn().mockResolvedValue({ id: 'sale-1', amount: 100 }),
       },
     };
+    productCouponDomain = {
+      deleteProductCoupon: jest.fn().mockResolvedValue({
+        id: 'coup-1',
+        productId: 'prod-1',
+        code: 'SAVE10',
+      }),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         KloelProductSubResourceToolsService,
         { provide: PrismaService, useValue: prisma },
+        { provide: ProductCouponDomainService, useValue: productCouponDomain },
       ],
     }).compile();
     service = module.get(KloelProductSubResourceToolsService);
@@ -90,19 +100,30 @@ describe('KloelProductSubResourceToolsService', () => {
 
   describe('executeTool', () => {
     it('dispatches create_plan to toolCreatePlan', async () => {
-      const result = await service.executeTool('create_plan', ws, { productId: 'prod-1', planName: 'Basic', price: 29.9 });
+      const result = await service.executeTool('create_plan', ws, {
+        productId: 'prod-1',
+        planName: 'Basic',
+        price: 29.9,
+      });
       expect(result.success).toBe(true);
       expect(result.plan).toBeDefined();
     });
 
     it('dispatches create_checkout to toolCreateCheckout', async () => {
-      const result = await service.executeTool('create_checkout', ws, { productId: 'prod-1', checkoutName: 'CO1' });
+      const result = await service.executeTool('create_checkout', ws, {
+        productId: 'prod-1',
+        checkoutName: 'CO1',
+      });
       expect(result.success).toBe(true);
       expect(result.checkout).toBeDefined();
     });
 
     it('dispatches create_coupon to toolCreateCoupon', async () => {
-      const result = await service.executeTool('create_coupon', ws, { productId: 'prod-1', code: 'SAVE10', discountValue: 10 });
+      const result = await service.executeTool('create_coupon', ws, {
+        productId: 'prod-1',
+        code: 'SAVE10',
+        discountValue: 10,
+      });
       expect(result.success).toBe(true);
       expect(result.coupon).toBeDefined();
     });
@@ -126,7 +147,11 @@ describe('KloelProductSubResourceToolsService', () => {
     });
 
     it('dispatches update_plan', async () => {
-      const result = await service.executeTool('update_plan', ws, { planId: 'plan-1', planName: 'Updated', price: 49.9 });
+      const result = await service.executeTool('update_plan', ws, {
+        planId: 'plan-1',
+        planName: 'Updated',
+        price: 49.9,
+      });
       expect(result.success).toBe(true);
     });
 
@@ -141,17 +166,28 @@ describe('KloelProductSubResourceToolsService', () => {
     });
 
     it('dispatches update_coupon', async () => {
-      const result = await service.executeTool('update_coupon', ws, { code: 'SAVE10', discountValue: 20 });
+      const result = await service.executeTool('update_coupon', ws, {
+        code: 'SAVE10',
+        discountValue: 20,
+      });
       expect(result.success).toBe(true);
     });
 
     it('dispatches add_url', async () => {
-      const result = await service.executeTool('add_url', ws, { productName: 'Test Product', url: 'https://x.com', label: 'Site' });
+      const result = await service.executeTool('add_url', ws, {
+        productName: 'Test Product',
+        url: 'https://x.com',
+        label: 'Site',
+      });
       expect(result.success).toBe(true);
     });
 
     it('dispatches update_url', async () => {
-      const result = await service.executeTool('update_url', ws, { productName: 'Test Product', label: 'Site', url: 'https://y.com' });
+      const result = await service.executeTool('update_url', ws, {
+        productName: 'Test Product',
+        label: 'Site',
+        url: 'https://y.com',
+      });
       expect(result.success).toBe(true);
     });
 
@@ -161,7 +197,11 @@ describe('KloelProductSubResourceToolsService', () => {
     });
 
     it('dispatches generate_boleto', async () => {
-      const result = await service.executeTool('generate_boleto', ws, { amount: 100, customerPhone: '5511999999999', productName: 'Widget' });
+      const result = await service.executeTool('generate_boleto', ws, {
+        amount: 100,
+        customerPhone: '5511999999999',
+        productName: 'Widget',
+      });
       expect(result.success).toBe(true);
       expect(result.boletoCode).toBeDefined();
     });
@@ -169,14 +209,21 @@ describe('KloelProductSubResourceToolsService', () => {
 
   describe('toolCreatePlan', () => {
     it('creates a plan by productId', async () => {
-      const result = await service.toolCreatePlan(ws, { productId: 'prod-1', planName: 'Pro', price: 99.9 });
+      const result = await service.toolCreatePlan(ws, {
+        productId: 'prod-1',
+        planName: 'Pro',
+        price: 99.9,
+      });
       expect(result.success).toBe(true);
       expect(prisma.productPlan.create).toHaveBeenCalled();
     });
 
     it('returns error when product not found', async () => {
       prisma.product.findFirst.mockResolvedValue(null);
-      const result = await service.toolCreatePlan(ws, { productName: 'Nonexistent', planName: 'Plan' });
+      const result = await service.toolCreatePlan(ws, {
+        productName: 'Nonexistent',
+        planName: 'Plan',
+      });
       expect(result.success).toBe(false);
       expect(result.error).toContain('nao encontrado');
     });
@@ -184,7 +231,11 @@ describe('KloelProductSubResourceToolsService', () => {
 
   describe('toolCreateCoupon', () => {
     it('creates a coupon', async () => {
-      const result = await service.toolCreateCoupon(ws, { productId: 'prod-1', code: 'WELCOME', discountValue: 15 });
+      const result = await service.toolCreateCoupon(ws, {
+        productId: 'prod-1',
+        code: 'WELCOME',
+        discountValue: 15,
+      });
       expect(result.success).toBe(true);
     });
 
@@ -196,15 +247,42 @@ describe('KloelProductSubResourceToolsService', () => {
   });
 
   describe('toolDeleteCoupon', () => {
-    it('deletes by couponId', async () => {
+    it('deletes through the shared product coupon domain service', async () => {
       const result = await service.toolDeleteCoupon(ws, { couponId: 'coup-1' });
-      expect(result.success).toBe(true);
+
+      expect(productCouponDomain.deleteProductCoupon).toHaveBeenCalledWith({
+        workspaceId: ws,
+        couponId: 'coup-1',
+        couponCode: '',
+        deletedBy: 'kloel-chat',
+        notFoundMessage: 'Cupom nao encontrado. Informe o codigo ou ID do cupom.',
+      });
+      expect(result).toEqual({ success: true, couponId: 'coup-1', productId: 'prod-1' });
+      expect(prisma.productCoupon.delete).not.toHaveBeenCalled();
     });
 
-    it('returns error when coupon not found', async () => {
-      prisma.productCoupon.findFirst.mockResolvedValue(null);
+    it('passes coupon code deletion through the same domain service', async () => {
+      await service.toolDeleteCoupon(ws, { couponCode: 'SAVE10' });
+
+      expect(productCouponDomain.deleteProductCoupon).toHaveBeenCalledWith({
+        workspaceId: ws,
+        couponId: '',
+        couponCode: 'SAVE10',
+        deletedBy: 'kloel-chat',
+        notFoundMessage: 'Cupom nao encontrado. Informe o codigo ou ID do cupom.',
+      });
+    });
+
+    it('returns error when the domain service rejects not found', async () => {
+      productCouponDomain.deleteProductCoupon.mockRejectedValue(
+        new Error('Cupom nao encontrado. Informe o codigo ou ID do cupom.'),
+      );
+
       const result = await service.toolDeleteCoupon(ws, { couponCode: 'NONE' });
+
       expect(result.success).toBe(false);
+      expect(result.error).toContain('Cupom nao encontrado');
+      expect(prisma.productCoupon.delete).not.toHaveBeenCalled();
     });
   });
 
@@ -222,7 +300,10 @@ describe('KloelProductSubResourceToolsService', () => {
 
   describe('toolAddUrl', () => {
     it('adds a URL to a product', async () => {
-      const result = await service.toolAddUrl(ws, { productName: 'Test Product', url: 'https://x.com' });
+      const result = await service.toolAddUrl(ws, {
+        productName: 'Test Product',
+        url: 'https://x.com',
+      });
       expect(result.success).toBe(true);
     });
 
@@ -234,7 +315,11 @@ describe('KloelProductSubResourceToolsService', () => {
 
   describe('toolGenerateBoleto', () => {
     it('generates boleto with amount and customer info', async () => {
-      const result = await service.toolGenerateBoleto(ws, { amount: 150, customerPhone: '5511999999999', productName: 'Widget' });
+      const result = await service.toolGenerateBoleto(ws, {
+        amount: 150,
+        customerPhone: '5511999999999',
+        productName: 'Widget',
+      });
       expect(result.success).toBe(true);
       expect(result.saleId).toBeDefined();
       expect(result.boletoHtml).toContain('BOLETO');

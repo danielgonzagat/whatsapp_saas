@@ -53,7 +53,7 @@ export const COMMERCE_CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
       { key: 'imageFile', type: 'file', label: 'Arquivo de imagem', required: true },
     ],
     domainService: 'MediaService.attach + ProductService.setImage',
-    emits: ['product.image_updated'],
+    emits: ['product.updated'],
     evidenceUrlBuilder: '/produtos/${productId}',
     surface: ['dashboard-chat'],
   },
@@ -110,6 +110,7 @@ export const COMMERCE_CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     ],
     domainService: 'PlanService.create',
     emits: ['plan.created'],
+    evidenceUrlBuilder: '/produtos/${productId}/planos/${planId}',
     surface: ['dashboard-chat'],
   },
   {
@@ -127,6 +128,7 @@ export const COMMERCE_CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     ],
     domainService: 'PlanService.update',
     emits: ['plan.updated'],
+    evidenceUrlBuilder: '/produtos/${productId}/planos/${planId}',
     surface: ['dashboard-chat'],
   },
 
@@ -155,6 +157,7 @@ export const COMMERCE_CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     ],
     domainService: 'CheckoutService.create',
     emits: ['checkout.created'],
+    evidenceUrlBuilder: '/produtos/${productId}/checkouts/${checkoutId}',
     surface: ['dashboard-chat'],
   },
   {
@@ -172,6 +175,7 @@ export const COMMERCE_CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     ],
     domainService: 'CheckoutService.update',
     emits: ['checkout.updated'],
+    evidenceUrlBuilder: '/produtos/${productId}/checkouts/${checkoutId}',
     surface: ['dashboard-chat'],
   },
 
@@ -199,6 +203,7 @@ export const COMMERCE_CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     ],
     domainService: 'CouponService.create',
     emits: ['coupon.created'],
+    evidenceUrlBuilder: '/produtos/${productId}/cupons/${couponId}',
     surface: ['dashboard-chat'],
   },
   {

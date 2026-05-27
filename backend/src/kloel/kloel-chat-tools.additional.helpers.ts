@@ -1,4 +1,5 @@
 import type { PrismaService } from '../prisma/prisma.service';
+import type { ProductService } from '../products/product.service';
 import type { ToolResult } from './kloel-chat-tools.agent-runtime.helpers';
 import { runUpdateProduct } from './kloel-chat-tools.update-product.helper';
 import { type AgentRuntimeSessionStore } from './agent-runtime';
@@ -54,6 +55,7 @@ export async function runUploadPlanImage(
 
 export async function runUploadProductImage(
   prisma: PrismaService,
+  productService: ProductService,
   workspaceId: string,
   args: Record<string, unknown>,
 ): Promise<ToolResult> {
@@ -69,7 +71,7 @@ export async function runUploadProductImage(
         'Envie a URL da imagem ou faça upload pelo chat. Ex: "imagem do produto X url: https://..."',
     };
   }
-  return runUpdateProduct(prisma, workspaceId, { productName, imageUrl });
+  return runUpdateProduct(prisma, productService, workspaceId, { productName, imageUrl });
 }
 
 export function runConfigurePixel(workspaceId: string, args: Record<string, unknown>): ToolResult {
@@ -131,13 +133,17 @@ export function runConfigureOrderBump(
 
 export async function runConfigureWarranty(
   prisma: PrismaService,
+  productService: ProductService,
   workspaceId: string,
   args: Record<string, unknown>,
 ): Promise<ToolResult> {
   const productName = typeof args.productName === 'string' ? args.productName : '';
   if (productName) {
     const days = typeof args.warrantyDays === 'number' ? args.warrantyDays : 7;
-    return runUpdateProduct(prisma, workspaceId, { productName, warrantyDays: days });
+    return runUpdateProduct(prisma, productService, workspaceId, {
+      productName,
+      warrantyDays: days,
+    });
   }
   return { success: true, message: 'Garantia configurada. Selo exibido na página de vendas.' };
 }

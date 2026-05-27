@@ -51,24 +51,43 @@ function buildReceiptEvidenceUrl(
   return template
     .replace('${productId}', asString(outputs.productId))
     .replace('${orderId}', asString(outputs.orderId))
-    .replace('${planId}', asString(outputs.planId));
+    .replace('${planId}', asString(outputs.planId))
+    .replace('${checkoutId}', asString(outputs.checkoutId))
+    .replace('${couponId}', asString(outputs.couponId));
 }
 
-function deriveReceiptOutputs(result: UnknownRecord): UnknownRecord {
+function deriveReceiptOutputs(result: UnknownRecord, inputs: UnknownRecord = {}): UnknownRecord {
   const product = isRecord(result.product) ? result.product : null;
   const plan = isRecord(result.plan) ? result.plan : null;
+  const checkout = isRecord(result.checkout) ? result.checkout : null;
+  const coupon = isRecord(result.coupon) ? result.coupon : null;
   const productId = asString(
     result.productId,
-    product ? asString(product.id) : plan ? asString(plan.productId) : '',
+    product
+      ? asString(product.id)
+      : asString(
+          plan?.productId,
+          asString(checkout?.productId, asString(coupon?.productId, asString(inputs.productId))),
+        ),
   );
   const orderId = asString(result.orderId, asString(result.saleId));
-  const planId = asString(result.planId, plan ? asString(plan.id) : '');
+  const planId = asString(result.planId, plan ? asString(plan.id, asString(inputs.planId)) : '');
+  const checkoutId = asString(
+    result.checkoutId,
+    checkout ? asString(checkout.id, asString(inputs.checkoutId)) : '',
+  );
+  const couponId = asString(
+    result.couponId,
+    coupon ? asString(coupon.id, asString(inputs.couponId)) : asString(inputs.couponId),
+  );
 
   return {
     ...result,
     ...(productId ? { productId } : {}),
     ...(orderId ? { orderId } : {}),
     ...(planId ? { planId } : {}),
+    ...(checkoutId ? { checkoutId } : {}),
+    ...(couponId ? { couponId } : {}),
   };
 }
 
@@ -496,16 +515,66 @@ export class KloelToolDispatcherService {
             startedAt,
           );
         }
-        case 'plans.update':
-          return this.executeTool(workspaceId, 'update_plan', args, userId);
-        case 'checkouts.create':
-          return this.executeTool(workspaceId, 'create_checkout', args, userId);
-        case 'checkouts.update':
-          return this.executeTool(workspaceId, 'update_checkout', args, userId);
-        case 'coupons.create':
-          return this.executeTool(workspaceId, 'create_coupon', args, userId);
-        case 'coupons.delete':
-          return this.executeTool(workspaceId, 'delete_coupon', args, userId);
+        case 'plans.update': {
+          const startedAt = Date.now();
+          const result = await this.executeTool(workspaceId, 'update_plan', args, userId);
+          return this.withCanonicalReceipt(
+            'plans.update',
+            workspaceId,
+            args,
+            result,
+            userId,
+            startedAt,
+          );
+        }
+        case 'checkouts.create': {
+          const startedAt = Date.now();
+          const result = await this.executeTool(workspaceId, 'create_checkout', args, userId);
+          return this.withCanonicalReceipt(
+            'checkouts.create',
+            workspaceId,
+            args,
+            result,
+            userId,
+            startedAt,
+          );
+        }
+        case 'checkouts.update': {
+          const startedAt = Date.now();
+          const result = await this.executeTool(workspaceId, 'update_checkout', args, userId);
+          return this.withCanonicalReceipt(
+            'checkouts.update',
+            workspaceId,
+            args,
+            result,
+            userId,
+            startedAt,
+          );
+        }
+        case 'coupons.create': {
+          const startedAt = Date.now();
+          const result = await this.executeTool(workspaceId, 'create_coupon', args, userId);
+          return this.withCanonicalReceipt(
+            'coupons.create',
+            workspaceId,
+            args,
+            result,
+            userId,
+            startedAt,
+          );
+        }
+        case 'coupons.delete': {
+          const startedAt = Date.now();
+          const result = await this.executeTool(workspaceId, 'delete_coupon', args, userId);
+          return this.withCanonicalReceipt(
+            'coupons.delete',
+            workspaceId,
+            args,
+            result,
+            userId,
+            startedAt,
+          );
+        }
         case 'plan_create':
         case 'create_plan':
         case 'update_plan':
@@ -948,7 +1017,10 @@ export class KloelToolDispatcherService {
             return { success: false, error: 'deps_coverage_service_unavailable' };
           }
           const filesRaw = typeof args.files === 'string' ? args.files : '';
-          const files = filesRaw.split(',').map((f) => f.trim()).filter(Boolean);
+          const files = filesRaw
+            .split(',')
+            .map((f) => f.trim())
+            .filter(Boolean);
           if (files.length === 0) {
             return { success: false, error: 'files_required' };
           }
@@ -1011,7 +1083,7 @@ export class KloelToolDispatcherService {
     }
 
     const inputs = sanitizeDetails(args);
-    const outputs = result.success ? deriveReceiptOutputs(result) : {};
+    const outputs = result.success ? deriveReceiptOutputs(result, inputs) : {};
     const actorId = userId ?? 'kloel-chat';
     const idempotencyKey = [
       receiptKeyPart(capabilityId),

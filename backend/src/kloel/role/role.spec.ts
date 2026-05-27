@@ -57,16 +57,19 @@ function ev(over: Partial<SpineEventRef>): SpineEventRef {
     occurredAt: over.occurredAt ?? '2026-05-14T08:00:00.000Z',
     truthMode: over.truthMode ?? 'observed',
   };
-  if ('entityRef' in over && over.entityRef !== undefined)
-    {e['entityRef'] = over.entityRef;}
-  if (over.valence !== undefined) {e['valence'] = over.valence;}
-  if (over.payload !== undefined) {e['payload'] = over.payload;}
+  if ('entityRef' in over && over.entityRef !== undefined) {
+    e['entityRef'] = over.entityRef;
+  }
+  if (over.valence !== undefined) {
+    e['valence'] = over.valence;
+  }
+  if (over.payload !== undefined) {
+    e['payload'] = over.payload;
+  }
   return e as SpineEventRef;
 }
 
-function makeWisdomPattern(
-  over: Partial<WisdomPattern>,
-): WisdomPattern {
+function makeWisdomPattern(over: Partial<WisdomPattern>): WisdomPattern {
   return {
     patternId: over.patternId ?? `wp_${Math.random().toString(36).slice(2, 8)}`,
     description: over.description ?? 'pattern desc',
@@ -83,9 +86,7 @@ function makeWisdomPattern(
   };
 }
 
-function makeRanking(
-  over: Partial<AttentionRanking>,
-): AttentionRanking {
+function makeRanking(over: Partial<AttentionRanking>): AttentionRanking {
   return {
     itemId: over.itemId ?? `it_${Math.random().toString(36).slice(2, 6)}`,
     workspaceId: over.workspaceId ?? 'wks_role_test',
@@ -107,6 +108,7 @@ describe('UTP-ROLE-001 — Role Detector', () => {
     const events = [
       ev({ eventName: 'commerce.product.created' }),
       ev({ eventName: 'commerce.product.updated' }),
+      ev({ eventName: 'commerce.product.published' }),
       ev({ eventName: 'commerce.checkout.created' }),
       ev({ eventName: 'commerce.payment.approved' }),
       ev({ eventName: 'commerce.member_area.enrolled' }),
@@ -121,6 +123,7 @@ describe('UTP-ROLE-001 — Role Detector', () => {
     expect(top.role).toBe('produtor');
     expect(top.confidence).toBeGreaterThan(0.2);
     expect(top.detectedFromSignals).toContain('commerce.product.created');
+    expect(top.detectedFromSignals).toContain('commerce.product.published');
   });
 
   it('detects affiliate role from affiliate-specific events', () => {

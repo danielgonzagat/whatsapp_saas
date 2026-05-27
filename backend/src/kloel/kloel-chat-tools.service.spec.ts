@@ -55,6 +55,140 @@ describe('KloelChatToolsService — produto, autopilot e identidade', () => {
     });
   });
 
+  describe('toolUpdateProduct', () => {
+    it('updates through ProductService instead of writing product fields directly', async () => {
+      ctx.productService.update.mockResolvedValue({
+        success: true,
+        product: { id: 'p-1', name: 'Novo nome', price: 199 },
+      });
+
+      const result = await service.toolUpdateProduct(ctx.wsId, {
+        productId: 'p-1',
+        name: 'Novo nome',
+        actorId: 'user-42',
+      });
+
+      expect(result.success).toBe(true);
+      expect(ctx.productService.update).toHaveBeenCalledWith(
+        ctx.wsId,
+        'p-1',
+        { name: 'Novo nome' },
+        { id: 'user-42' },
+      );
+    });
+  });
+
+  describe('toolUploadProductImage', () => {
+    it('attaches an image by product id through ProductService.setImage with actor context', async () => {
+      ctx.productService.setImage.mockResolvedValue({
+        success: true,
+        product: { id: 'p-1', name: 'PDRN', imageUrl: 'https://img.test/pdrn.png' },
+      });
+
+      const result = await service.toolUploadProductImage(ctx.wsId, {
+        productId: 'p-1',
+        imageUrl: 'https://img.test/pdrn.png',
+        actorId: 'user-42',
+      });
+
+      expect(result.success).toBe(true);
+      expect(ctx.productService.setImage).toHaveBeenCalledWith(
+        ctx.wsId,
+        'p-1',
+        'https://img.test/pdrn.png',
+        { id: 'user-42' },
+      );
+      expect(ctx.productService.update).not.toHaveBeenCalled();
+    });
+
+    it('resolves product name inside the workspace before calling ProductService.setImage', async () => {
+      prisma.product.findFirst.mockResolvedValueOnce({ id: 'p-2' });
+      ctx.productService.setImage.mockResolvedValue({
+        success: true,
+        product: { id: 'p-2', name: 'PDRN', imageUrl: 'https://img.test/pdrn.png' },
+      });
+
+      const result = await service.toolUploadProductImage(ctx.wsId, {
+        productName: 'PDRN',
+        imageUrl: 'https://img.test/pdrn.png',
+        actorId: 'user-42',
+      });
+
+      expect(result.success).toBe(true);
+      expect(prisma.product.findFirst).toHaveBeenCalledWith({
+        where: { workspaceId: ctx.wsId, name: { contains: 'PDRN', mode: 'insensitive' } },
+        select: { id: true },
+      });
+      expect(ctx.productService.setImage).toHaveBeenCalledWith(
+        ctx.wsId,
+        'p-2',
+        'https://img.test/pdrn.png',
+        { id: 'user-42' },
+      );
+      expect(ctx.productService.update).not.toHaveBeenCalled();
+    });
+
+    it('refuses missing image input without updating the product', async () => {
+      const result = await service.toolUploadProductImage(ctx.wsId, {
+        productId: 'p-1',
+        actorId: 'user-42',
+      });
+
+      expect(result).toEqual({
+        success: false,
+        error: 'image_url_required',
+        message: 'Envie a URL da imagem ou faça upload pelo chat.',
+      });
+      expect(ctx.productService.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('toolPublishProduct', () => {
+    it('publishes through ProductService with actor context', async () => {
+      prisma.product.findFirst.mockResolvedValueOnce({ id: 'p-1' });
+      ctx.productService.publish.mockResolvedValue({
+        success: true,
+        product: { id: 'p-1', name: 'PDRN', status: 'APPROVED', active: true },
+      });
+
+      const result = await service.toolPublishProduct(ctx.wsId, {
+        productId: 'p-1',
+        actorId: 'user-42',
+      });
+
+      expect(result.success).toBe(true);
+      expect(prisma.product.findFirst).toHaveBeenCalledWith({
+        where: { id: 'p-1', workspaceId: ctx.wsId },
+        select: { id: true },
+      });
+      expect(ctx.productService.publish).toHaveBeenCalledWith(ctx.wsId, 'p-1', {
+        id: 'user-42',
+      });
+    });
+
+    it('resolves a product name inside the workspace before publishing', async () => {
+      prisma.product.findFirst.mockResolvedValueOnce({ id: 'p-2' });
+      ctx.productService.publish.mockResolvedValue({
+        success: true,
+        product: { id: 'p-2', name: 'PDRN', status: 'APPROVED', active: true },
+      });
+
+      const result = await service.toolPublishProduct(ctx.wsId, {
+        productName: 'PDRN',
+        actorId: 'user-42',
+      });
+
+      expect(result.success).toBe(true);
+      expect(prisma.product.findFirst).toHaveBeenCalledWith({
+        where: { workspaceId: ctx.wsId, name: { contains: 'PDRN', mode: 'insensitive' } },
+        select: { id: true },
+      });
+      expect(ctx.productService.publish).toHaveBeenCalledWith(ctx.wsId, 'p-2', {
+        id: 'user-42',
+      });
+    });
+  });
+
   describe('toolListProducts', () => {
     it('returns message when no products exist', async () => {
       prisma.product.findMany.mockResolvedValue([]);

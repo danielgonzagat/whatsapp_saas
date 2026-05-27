@@ -197,6 +197,7 @@ import { CapabilityRegistryV2Module } from './capability-registry-v2/capability-
 import { IntentRouterModule } from './intent-router/intent-router.module';
 import { SelfAwarenessModule } from './self-awareness/self-awareness.module';
 import { ProductsModule } from '../products/products.module';
+import { ProductCouponDomainService } from './product-coupon-domain.service';
 
 /** Kloel module. */
 @Module({
@@ -277,6 +278,7 @@ import { ProductsModule } from '../products/products.module';
     AccountService,
     CheckoutService,
     CouponService,
+    ProductCouponDomainService,
     PlanService,
     KloelProductSubResourceToolsService,
     KloelWalletSalesToolsService,

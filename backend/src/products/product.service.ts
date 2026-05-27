@@ -1,4 +1,10 @@
-import { Injectable, Logger, NotFoundException, ForbiddenException, Optional } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  ForbiddenException,
+  Optional,
+} from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -178,6 +184,22 @@ export class ProductService {
       details: { changes: Object.keys(dto) },
     });
 
+    await this.brainSpine?.recordCommercial({
+      workspaceId,
+      subject: `product:${product.id}`,
+      eventType: 'product.updated',
+      occurredAt: new Date(),
+      payload: {
+        productId: product.id,
+        name: product.name,
+        priceInCents: Math.round(Number(product.price) * 100),
+        format: product.format,
+        status: product.status,
+        active: product.active,
+        changes: Object.keys(dto),
+      },
+    });
+
     return { success: true, product };
   }
 
@@ -193,10 +215,7 @@ export class ProductService {
   /**
    * List products for a workspace with optional filters.
    */
-  async list(
-    workspaceId: string,
-    filters: ProductListFilters = {},
-  ): Promise<ProductListResult> {
+  async list(workspaceId: string, filters: ProductListFilters = {}): Promise<ProductListResult> {
     const { search, category, active, status, format, page = 1, limit = 20 } = filters;
 
     const where: Prisma.ProductWhereInput = { workspaceId };
@@ -207,10 +226,18 @@ export class ProductService {
         { description: { contains: search, mode: 'insensitive' } },
       ];
     }
-    if (category) {where.category = category;}
-    if (active !== undefined) {where.active = active;}
-    if (status) {where.status = status;}
-    if (format) {where.format = format;}
+    if (category) {
+      where.category = category;
+    }
+    if (active !== undefined) {
+      where.active = active;
+    }
+    if (status) {
+      where.status = status;
+    }
+    if (format) {
+      where.format = format;
+    }
 
     const [products, count] = await Promise.all([
       this.prisma.product.findMany({
@@ -234,9 +261,30 @@ export class ProductService {
     imageUrl: string,
     actor: { id: string },
   ): Promise<ProductResult> {
+    this.assertWorkspace(workspaceId);
+
+    const existing = await this.prisma.product.findUnique({
+      where: { id: productId },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`Product ${productId} not found`);
+    }
+
+    if (existing.workspaceId !== workspaceId) {
+      throw new ForbiddenException('Cross-workspace access denied');
+    }
+
     const product = await this.prisma.product.update({
       where: { id: productId },
       data: { imageUrl },
+    });
+
+    await this.eventEmitter.emit('product.updated', {
+      productId: product.id,
+      workspaceId,
+      agentId: actor.id,
+      changes: ['imageUrl'],
     });
 
     await this.audit.log({
@@ -246,6 +294,23 @@ export class ProductService {
       resource: 'Product',
       resourceId: productId,
       details: { imageUrl },
+    });
+
+    await this.brainSpine?.recordCommercial({
+      workspaceId,
+      subject: `product:${product.id}`,
+      eventType: 'product.updated',
+      occurredAt: new Date(),
+      payload: {
+        productId: product.id,
+        name: product.name,
+        priceInCents: Math.round(Number(product.price) * 100),
+        format: product.format,
+        status: product.status,
+        active: product.active,
+        imageUrl,
+        changes: ['imageUrl'],
+      },
     });
 
     return { success: true, product };
@@ -259,6 +324,20 @@ export class ProductService {
     productId: string,
     actor: { id: string },
   ): Promise<ProductResult> {
+    this.assertWorkspace(workspaceId);
+
+    const existing = await this.prisma.product.findUnique({
+      where: { id: productId },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`Product ${productId} not found`);
+    }
+
+    if (existing.workspaceId !== workspaceId) {
+      throw new ForbiddenException('Cross-workspace access denied');
+    }
+
     const product = await this.prisma.product.update({
       where: { id: productId },
       data: { status: 'APPROVED', active: true },
@@ -278,6 +357,21 @@ export class ProductService {
       resourceId: productId,
     });
 
+    await this.brainSpine?.recordCommercial({
+      workspaceId,
+      subject: `product:${product.id}`,
+      eventType: 'product.published',
+      occurredAt: new Date(),
+      payload: {
+        productId: product.id,
+        name: product.name,
+        priceInCents: Math.round(Number(product.price) * 100),
+        format: product.format,
+        status: product.status,
+        active: product.active,
+      },
+    });
+
     return { success: true, product };
   }
 
@@ -290,6 +384,20 @@ export class ProductService {
     available: boolean,
     actor: { id: string },
   ): Promise<ProductResult> {
+    this.assertWorkspace(workspaceId);
+
+    const existing = await this.prisma.product.findUnique({
+      where: { id: productId },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`Product ${productId} not found`);
+    }
+
+    if (existing.workspaceId !== workspaceId) {
+      throw new ForbiddenException('Cross-workspace access denied');
+    }
+
     const product = await this.prisma.product.update({
       where: { id: productId },
       data: { active: available },
@@ -309,6 +417,22 @@ export class ProductService {
       resourceId: productId,
     });
 
+    await this.brainSpine?.recordCommercial({
+      workspaceId,
+      subject: `product:${product.id}`,
+      eventType: 'product.updated',
+      occurredAt: new Date(),
+      payload: {
+        productId: product.id,
+        name: product.name,
+        priceInCents: Math.round(Number(product.price) * 100),
+        format: product.format,
+        status: product.status,
+        active: product.active,
+        changes: ['active'],
+      },
+    });
+
     return { success: true, product };
   }
 
@@ -320,6 +444,20 @@ export class ProductService {
     productId: string,
     actor: { id: string },
   ): Promise<ProductResult> {
+    this.assertWorkspace(workspaceId);
+
+    const existing = await this.prisma.product.findUnique({
+      where: { id: productId },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`Product ${productId} not found`);
+    }
+
+    if (existing.workspaceId !== workspaceId) {
+      throw new ForbiddenException('Cross-workspace access denied');
+    }
+
     const product = await this.prisma.product.update({
       where: { id: productId },
       data: { status: 'DELETED', active: false },
@@ -337,6 +475,21 @@ export class ProductService {
       action: 'product.delete',
       resource: 'Product',
       resourceId: productId,
+    });
+
+    await this.brainSpine?.recordCommercial({
+      workspaceId,
+      subject: `product:${product.id}`,
+      eventType: 'product.deleted',
+      occurredAt: new Date(),
+      payload: {
+        productId: product.id,
+        name: product.name,
+        priceInCents: Math.round(Number(product.price) * 100),
+        format: product.format,
+        status: product.status,
+        active: product.active,
+      },
     });
 
     return { success: true, message: 'Product deleted' };
