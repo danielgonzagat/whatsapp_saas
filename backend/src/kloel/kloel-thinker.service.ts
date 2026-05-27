@@ -111,11 +111,7 @@ export class KloelThinkerService {
         if (deterministicAction) {
           const callId = `detected_${deterministicAction.tool}`;
           safeWrite(
-            createKloelToolCallEvent(
-              callId,
-              deterministicAction.tool,
-              deterministicAction.args,
-            ),
+            createKloelToolCallEvent(callId, deterministicAction.tool, deterministicAction.args),
           );
           const toolResult = await executeLocalTool(
             workspaceId,

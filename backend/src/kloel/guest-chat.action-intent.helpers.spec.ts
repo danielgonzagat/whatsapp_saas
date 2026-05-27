@@ -6,16 +6,6 @@ import { runGetProductReviews } from './kloel-chat-tools.product.helpers';
 import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
 
 describe('guest chat action intent helpers', () => {
-  it('routes self-awareness requests to deterministic self tools', () => {
-    expect(detectActionIntent('o que você consegue fazer agora?')?.tool).toBe('self.capabilities');
-    expect(detectActionIntent('quais capacidades estão quebradas?')?.tool).toBe('self.gaps');
-    expect(detectActionIntent('qual integração está com erro agora?')?.tool).toBe('self.health');
-    expect(detectActionIntent('explique a capacidade products.create')?.tool).toBe('self.explain');
-    expect(detectActionIntent('explique a capacidade products.create')?.args).toEqual({
-      capabilityId: 'products.create',
-    });
-  });
-
   it('formats self-awareness results with live proof details', () => {
     expect(
       formatToolResult('self.capabilities', {

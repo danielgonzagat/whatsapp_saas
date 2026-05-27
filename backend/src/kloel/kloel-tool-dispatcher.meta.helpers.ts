@@ -78,9 +78,18 @@ function asString(value: unknown, fallback = ''): string {
   return typeof value === 'string' ? value : fallback;
 }
 
-function buildReceiptEvidenceUrl(template: string | undefined, outputs: UnknownRecord): string | undefined {
-  if (!template) return undefined;
-  return template
+const FALLBACK_EVIDENCE_URLS: Record<string, string> = {
+  'plans.create': '/produtos/${productId}/planos/${planId}',
+  'plans.update': '/produtos/${productId}/planos/${planId}',
+  'checkouts.create': '/produtos/${productId}/checkouts/${checkoutId}',
+  'checkouts.update': '/produtos/${productId}/checkouts/${checkoutId}',
+  'coupons.create': '/produtos/${productId}/cupons/${couponId}',
+};
+
+function buildReceiptEvidenceUrl(capabilityId: string, template: string | undefined, outputs: UnknownRecord): string | undefined {
+  const resolvedTemplate = template ?? FALLBACK_EVIDENCE_URLS[capabilityId];
+  if (!resolvedTemplate) return undefined;
+  return resolvedTemplate
     .replace('$' + '{productId}', asString(outputs.productId))
     .replace('$' + '{orderId}', asString(outputs.orderId))
     .replace('$' + '{planId}', asString(outputs.planId))
@@ -114,7 +123,7 @@ export function withCanonicalReceipt(deps: ProductDeps, capabilityId: string, wo
   const idempotencyKey = [receiptKeyPart(capabilityId), receiptKeyPart(workspaceId), receiptKeyPart(actorId), receiptKeyPart(JSON.stringify(inputs))].join(':');
   const requestId = idempotencyKey.slice(0, 120);
   const auditLogId = asString(result.auditLogId, 'audit_' + requestId);
-  const evidenceUrl = result.success ? buildReceiptEvidenceUrl(cap.evidenceUrlBuilder, outputs) : undefined;
+  const evidenceUrl = result.success ? buildReceiptEvidenceUrl(capabilityId, cap.evidenceUrlBuilder, outputs) : undefined;
   const emittedEvents = capabilityId === 'products.upload_image' ? ['product.updated'] : cap.emits;
   const receiptParams: Parameters<CapabilityRegistryV2Service['createReceipt']>[0] = {
     capabilityId: cap.id,
@@ -131,6 +140,26 @@ export function withCanonicalReceipt(deps: ProductDeps, capabilityId: string, wo
   if (typeof result.error === 'string') receiptParams.error = result.error;
   const receipt = deps.capRegistryV2.createReceipt(receiptParams);
   return { ...result, capabilityId: cap.id, outputs, domainEvents: receipt.domainEvents, auditLogId: receipt.auditLogId, evidenceUrl: receipt.evidenceUrl, receipt };
+}
+
+const DOTTED_ALIASES: Record<string, string> = {
+  'plans.create': 'create_plan',
+  'plans.update': 'update_plan',
+  'checkouts.create': 'create_checkout',
+  'checkouts.update': 'update_checkout',
+  'coupons.create': 'create_coupon',
+  'coupons.delete': 'delete_coupon',
+};
+
+export async function handleDottedAliasTool(
+  deps: ProductDeps, workspaceId: string, toolName: string, args: UnknownRecord,
+  userId: string | undefined, executeBase: (baseTool: string) => Promise<ToolResult>,
+): Promise<ToolResult | null> {
+  const baseTool = DOTTED_ALIASES[toolName];
+  if (!baseTool) return null;
+  const startedAt = Date.now();
+  const result = await executeBase(baseTool);
+  return withCanonicalReceipt(deps, toolName, workspaceId, args, result, userId, startedAt);
 }
 
 export async function handleProductTool(deps: ProductDeps, workspaceId: string, toolName: string, args: UnknownRecord, userId?: string): Promise<ToolResult | null> {

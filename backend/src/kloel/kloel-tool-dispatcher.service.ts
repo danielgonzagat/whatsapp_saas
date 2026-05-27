@@ -11,7 +11,7 @@ import {
   handleCodeAndReportTool,
   handleProductTool,
   handleSelfAwarenessTool,
-  withCanonicalReceipt,
+  handleDottedAliasTool,
 } from './kloel-tool-dispatcher.meta.helpers';
 import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
@@ -110,17 +110,7 @@ export class KloelToolDispatcherService {
     }
     this.logger.log(`Executando ferramenta: ${toolName}`);
     try {
-      const productResult = await handleProductTool(
-        {
-          prisma: this.prisma,
-          chatToolsService: this.chatToolsService,
-          capRegistryV2: this.capRegistryV2,
-        },
-        workspaceId,
-        toolName,
-        args,
-        userId,
-      );
+      const productResult = await handleProductTool(receiptDeps, workspaceId, toolName, args, userId);
       if (productResult) return productResult;
 
       const selfAwarenessResult = await handleSelfAwarenessTool(
@@ -147,6 +137,12 @@ export class KloelToolDispatcherService {
         args,
       );
       if (codeOrReportResult) return codeOrReportResult;
+
+      const dottedAliasResult = await handleDottedAliasTool(
+        receiptDeps, workspaceId, toolName, args, userId,
+        (baseTool) => this.executeTool(workspaceId, baseTool, args, userId),
+      );
+      if (dottedAliasResult) return dottedAliasResult;
 
       switch (toolName) {
         case 'toggle_autopilot':
@@ -222,84 +218,6 @@ export class KloelToolDispatcherService {
             });
           }
           return { success: false, error: 'checkout_service_unavailable' };
-        case 'plans.create': {
-          const startedAt = Date.now();
-          const result = await this.executeTool(workspaceId, 'create_plan', args, userId);
-          return withCanonicalReceipt(
-            receiptDeps,
-            'plans.create',
-            workspaceId,
-            args,
-            result,
-            userId,
-            startedAt,
-          );
-        }
-        case 'plans.update': {
-          const startedAt = Date.now();
-          const result = await this.executeTool(workspaceId, 'update_plan', args, userId);
-          return withCanonicalReceipt(
-            receiptDeps,
-            'plans.update',
-            workspaceId,
-            args,
-            result,
-            userId,
-            startedAt,
-          );
-        }
-        case 'checkouts.create': {
-          const startedAt = Date.now();
-          const result = await this.executeTool(workspaceId, 'create_checkout', args, userId);
-          return withCanonicalReceipt(
-            receiptDeps,
-            'checkouts.create',
-            workspaceId,
-            args,
-            result,
-            userId,
-            startedAt,
-          );
-        }
-        case 'checkouts.update': {
-          const startedAt = Date.now();
-          const result = await this.executeTool(workspaceId, 'update_checkout', args, userId);
-          return withCanonicalReceipt(
-            receiptDeps,
-            'checkouts.update',
-            workspaceId,
-            args,
-            result,
-            userId,
-            startedAt,
-          );
-        }
-        case 'coupons.create': {
-          const startedAt = Date.now();
-          const result = await this.executeTool(workspaceId, 'create_coupon', args, userId);
-          return withCanonicalReceipt(
-            receiptDeps,
-            'coupons.create',
-            workspaceId,
-            args,
-            result,
-            userId,
-            startedAt,
-          );
-        }
-        case 'coupons.delete': {
-          const startedAt = Date.now();
-          const result = await this.executeTool(workspaceId, 'delete_coupon', args, userId);
-          return withCanonicalReceipt(
-            receiptDeps,
-            'coupons.delete',
-            workspaceId,
-            args,
-            result,
-            userId,
-            startedAt,
-          );
-        }
         case 'plan_create':
         case 'create_plan':
         case 'update_plan':
