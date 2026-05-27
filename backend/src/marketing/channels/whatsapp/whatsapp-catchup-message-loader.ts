@@ -1,7 +1,7 @@
 import type {
   WahaChatMessage,
   WahaChatSummary,
-} from '../../../whatsapp/providers/whatsapp-api.provider';
+} from './providers/whatsapp-api.provider';
 import type { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
 
 async function canonicalizeMessages(

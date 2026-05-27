@@ -1,6 +1,6 @@
 import { CiaRemoteBacklogService } from '../cia/cia-remote-backlog.service';
 import { CiaChatFilterService } from '../cia/cia-chat-filter.service';
-import type { WahaChatSummary } from './providers/whatsapp-api.provider';
+import type { WahaChatSummary } from '../marketing/channels/whatsapp/providers/whatsapp-api.provider';
 function makeChat(overrides: Partial<WahaChatSummary> = {}): WahaChatSummary {
   return {
     id: '5511999999999@c.us',

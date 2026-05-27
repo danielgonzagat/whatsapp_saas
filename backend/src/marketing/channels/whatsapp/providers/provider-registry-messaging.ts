@@ -11,7 +11,7 @@ import { Logger } from '@nestjs/common';
 
 import { OpsAlertService } from '../../../../observability/ops-alert.service';
 import { WahaProvider } from '../../../../whatsapp/providers/waha.provider';
-import { WhatsAppApiProvider } from '../../../../whatsapp/providers/whatsapp-api.provider';
+import { WhatsAppApiProvider } from './whatsapp-api.provider';
 import { sendMessage as companionSendMessage } from '../../../../whatsapp/providers/provider-send-message.helpers';
 import type {
   UnknownRecord,

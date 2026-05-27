@@ -2,7 +2,7 @@ import { CiaChatFilterService } from '../cia/cia-chat-filter.service';
 import { CiaSendHelpersService } from '../cia/cia-send-helpers.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
-import { WahaChatSummary } from './providers/whatsapp-api.provider';
+import { WahaChatSummary } from '../marketing/channels/whatsapp/providers/whatsapp-api.provider';
 import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../marketing/channels/whatsapp/whatsapp-normalization.util';
 import { safeStr } from '../common/string';
 

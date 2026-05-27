@@ -14,10 +14,10 @@ import type { Prisma } from '@prisma/client';
 import { Public } from '../auth/public.decorator';
 import { safeCompareStrings } from '../common/utils/crypto-compare.util';
 import { PrismaService } from '../prisma/prisma.service';
-import { AgentEventsService } from '../whatsapp/agent-events.service';
+import { AgentEventsService } from '../marketing/channels/whatsapp/agent-events.service';
 import { CIA_RUNTIME_SERVICE, type CiaRuntimePort } from '../kloel/mind/cia/cia-runtime.port';
 import { InboundProcessorService } from '../marketing/channels/whatsapp/inbound-processor.service';
-import { WhatsAppApiProvider } from '../whatsapp/providers/whatsapp-api.provider';
+import { WhatsAppApiProvider } from '../marketing/channels/whatsapp/providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from '../whatsapp/whatsapp-catchup.service';
 
 import { RouteClass } from '../common/throttler/route-class.decorator';

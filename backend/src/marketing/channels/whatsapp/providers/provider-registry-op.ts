@@ -9,7 +9,7 @@
  */
 
 import { WahaProvider } from '../../../../whatsapp/providers/waha.provider';
-import { WhatsAppApiProvider } from '../../../../whatsapp/providers/whatsapp-api.provider';
+import { WhatsAppApiProvider } from './whatsapp-api.provider';
 import type { ProviderSessionSnapshot } from '../../../../whatsapp/provider-settings.types';
 
 export interface OpDeps {

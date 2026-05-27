@@ -7,7 +7,7 @@ import { StorageService } from '../common/storage/storage.service';
 import { QueueHealthService } from '../metrics/queue-health.service';
 import { ObservabilityQueriesService } from '../metrics/observability-queries.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { WhatsAppApiProvider } from '../whatsapp/providers/whatsapp-api.provider';
+import { WhatsAppApiProvider } from '../marketing/channels/whatsapp/providers/whatsapp-api.provider';
 import * as DbProbe from './system-health-db-probe';
 import * as ExternalProbe from './system-health-external-probes';
 import * as InfraChecks from './system-health-infra-checks';

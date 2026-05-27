@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 import { forEachSequential } from '../../../common/async-sequence';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
-import { type WahaChatSummary } from '../../../whatsapp/providers/whatsapp-api.provider';
+import { type WahaChatSummary } from './providers/whatsapp-api.provider';
 import { safeStr } from './whatsapp-catchup-history.shared';
 
 type JsonObj = Record<string, unknown>;

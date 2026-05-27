@@ -10,7 +10,7 @@ import { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-r
 import {
   type WahaChatMessage,
   type WahaChatSummary,
-} from '../../../whatsapp/providers/whatsapp-api.provider';
+} from './providers/whatsapp-api.provider';
 import { type InboundMessage } from './inbound-processor.service';
 import { whatsappDigits } from '../../../common/phone';
 import {

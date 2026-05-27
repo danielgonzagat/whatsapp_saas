@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
-import type { WahaChatSummary } from '../../../whatsapp/providers/whatsapp-api.provider';
+import type { WahaChatSummary } from './providers/whatsapp-api.provider';
 import { INBOX_SERVICE } from '../../../inbox/inbox.token';
 import { OpsAlertService } from '../../../observability/ops-alert.service';
 import { WhatsappCatchupHistoryService } from './whatsapp-catchup-history.service';

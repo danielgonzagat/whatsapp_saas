@@ -10,7 +10,7 @@
  */
 
 import { WahaProvider } from '../../../../whatsapp/providers/waha.provider';
-import { WhatsAppApiProvider } from '../../../../whatsapp/providers/whatsapp-api.provider';
+import { WhatsAppApiProvider } from './whatsapp-api.provider';
 import type { SessionStatus } from '../../../../whatsapp/providers/provider-registry.types';
 
 export interface ContactsDeps {

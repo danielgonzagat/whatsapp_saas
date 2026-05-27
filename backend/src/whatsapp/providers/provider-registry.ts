@@ -8,7 +8,7 @@ import type { ProviderSessionSnapshot } from '../provider-settings.types';
 import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../../marketing/channels/whatsapp/whatsapp-normalization.util';
 import { resolveDefaultWhatsAppProvider } from '../../marketing/channels/whatsapp/providers/provider-env';
 import { WahaProvider } from './waha.provider';
-import { WhatsAppApiProvider } from './whatsapp-api.provider';
+import { WhatsAppApiProvider } from '../../marketing/channels/whatsapp/providers/whatsapp-api.provider';
 import type {
   WhatsAppProviderType,
   SendMessageOptions,
