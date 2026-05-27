@@ -33,7 +33,7 @@ export function detectActionIntent(
     /cria(r|ndo)?\s+(?:um[a]?\s+)?(?:o\s+|a\s+)?(produto|oferta|novo)/.test(msg) ||
     /cadastra(r|ndo)?\s+(?:um[a]?\s+)?(?:o\s+|a\s+)?produto/.test(msg)
   ) {
-    return { tool: 'create_product', args: extractProductArgs(msg) };
+    return { tool: 'products.create', args: extractProductArgs(msg) };
   }
   if (/lista(r|ndo)? (produtos|meus produtos|ofertas|cat[aá]logo)/.test(msg)) {
     return { tool: 'list_products', args: {} };

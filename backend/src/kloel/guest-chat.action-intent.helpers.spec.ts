@@ -50,6 +50,19 @@ describe('guest chat action intent helpers', () => {
     expect(detectActionIntent('quero antecipacao do saldo')?.tool).toBe('request_anticipation');
   });
 
+  it('routes product creation through the canonical products.create capability', () => {
+    const action = detectActionIntent('criar produto nome: Serum Pro, preco R$ 147');
+
+    expect(action?.tool).toBe('products.create');
+    expect(action?.args).toEqual(
+      expect.objectContaining({
+        productName: 'serum pro',
+        name: 'serum pro',
+        price: 147,
+      }),
+    );
+  });
+
   it('extracts product names from no-produto contexts and explicit names', () => {
     expect(extractProductName('listar urls no produto Serum?')).toBe('Serum');
     expect(extractProductArgs('criar produto nome: Serum Pro, preco R$ 147')).toEqual(

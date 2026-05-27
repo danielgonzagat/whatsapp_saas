@@ -16,7 +16,8 @@ export function formatToolResult(tool: string, result: unknown): string {
       }
       return `Produtos: ${products.map((p) => `${s(p.name)} - R$ ${s(p.price)}`).join(', ')}`;
     }
-    case 'create_product': {
+    case 'create_product':
+    case 'products.create': {
       const p = (r.product as Record<string, unknown> | undefined) ?? {};
       const fmt = p.format ? ` (${p.format})` : '';
       const cat = p.category ? ` [${p.category}]` : '';

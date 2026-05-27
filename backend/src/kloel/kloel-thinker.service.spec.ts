@@ -332,6 +332,13 @@ describe('KloelThinkerService', () => {
         executeLocalTool as LocalToolExecutor,
       );
 
+      expect(executeLocalTool).toHaveBeenCalledWith(
+        wsId,
+        'products.create',
+        expect.objectContaining({ name: 'pdrn', price: 197 }),
+        'agent-1',
+      );
+
       const streamWriter = (KloelStreamWriter as unknown as jest.Mock).mock.results.at(-1)
         ?.value as { write: jest.Mock<void, [unknown]> };
       const contentEvents = streamWriter.write.mock.calls
