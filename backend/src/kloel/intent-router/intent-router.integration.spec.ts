@@ -28,6 +28,21 @@ describe('IntentRouter + CapabilityRegistry Integration', () => {
     expect(capIds).toContain('account.update_fiscal');
     expect(capIds).toContain('crm.pipeline');
   });
+
+  it('declares legacy payment aliases as deprecated wrappers over canonical sales capabilities', () => {
+    expect(registry.get('generate_pix')).toMatchObject({
+      maturity: 'deprecated',
+      domainService: 'Alias for sales.create_pix',
+      emits: [],
+      dependsOn: ['sales.create_pix'],
+    });
+    expect(registry.get('generate_boleto')).toMatchObject({
+      maturity: 'deprecated',
+      domainService: 'Alias for sales.create_boleto',
+      emits: [],
+      dependsOn: ['sales.create_boleto'],
+    });
+  });
   it('classifies product creation', () => {
     const result = router.classify('Cria um produto chamado PDRN por R$197', 'dashboard-chat', [
       '*',
