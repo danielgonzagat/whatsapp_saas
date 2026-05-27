@@ -7,7 +7,7 @@ import { WhatsappModule } from '../whatsapp/whatsapp.module';
 import { CiaAutonomyAdvisorService } from '../kloel/mind/cia/cia-autonomy-advisor.service';
 import { CiaBacklogRunService } from './cia-backlog-run.service';
 import { CiaBootstrapService } from './cia-bootstrap.service';
-import { CiaChatFilterService } from './cia-chat-filter.service';
+import { CiaChatFilterService } from '../kloel/mind/cia/cia-chat-filter.service';
 import { CiaCognitiveHealthService } from '../kloel/mind/cia/cia-cognitive-health.service';
 import { CiaInlineFallbackService } from './cia-inline-fallback.service';
 import { CiaRemoteBacklogService } from './cia-remote-backlog.service';
