@@ -153,6 +153,30 @@ export function buildResultMeta(
   result: Record<string, unknown>,
 ): Record<string, unknown> {
   const meta: Record<string, unknown> = {};
+  const outputs =
+    result.outputs && typeof result.outputs === 'object' && !Array.isArray(result.outputs)
+      ? (result.outputs as Record<string, unknown>)
+      : undefined;
+  const paymentSources: Record<string, unknown>[] = outputs ? [result, outputs] : [result];
+  const readPaymentString = (...keys: string[]): string | undefined => {
+    for (const source of paymentSources) {
+      for (const key of keys) {
+        const value = source[key];
+        if (typeof value === 'string' && value.trim()) {
+          return value;
+        }
+      }
+    }
+    return undefined;
+  };
+  const copyPaymentString = (targetKey: string, ...sourceKeys: string[]): string | undefined => {
+    const value = readPaymentString(...sourceKeys);
+    if (value !== undefined) {
+      meta[targetKey] = value;
+    }
+    return value;
+  };
+
   // Products
   if (typeof result.product === 'object' && result.product) {
     const p = result.product as Record<string, unknown>;
@@ -188,17 +212,27 @@ export function buildResultMeta(
     }
   }
   // Payments
-  if (typeof result.paymentId === 'string') {
-    meta.paymentId = result.paymentId;
-  }
-  if (typeof result.pixCopyPaste === 'string') {
+  copyPaymentString('paymentId', 'paymentId');
+  copyPaymentString('saleId', 'saleId');
+  const pixCopyPaste = copyPaymentString('pixCopyPaste', 'pixCopyPaste');
+  const pixCopiaECola = copyPaymentString('pixCopiaECola', 'pixCopiaECola');
+  const pixQrCode = copyPaymentString('pixQrCode', 'pixQrCode');
+  const qrCodeBase64 = copyPaymentString('qrCodeBase64', 'qrCodeBase64');
+  const paymentUrl = copyPaymentString('paymentUrl', 'paymentUrl', 'paymentLink');
+  const paymentLink = copyPaymentString('paymentLink', 'paymentLink');
+  if (pixCopyPaste || pixCopiaECola || pixQrCode || qrCodeBase64 || paymentUrl || paymentLink) {
     meta.hasPix = true;
   }
-  if (typeof result.boletoCode === 'string') {
+  const boletoCode = copyPaymentString('boletoCode', 'boletoCode', 'barcode');
+  const boletoBarcode = copyPaymentString('boletoBarcode', 'boletoBarcode', 'barcode');
+  const boletoPdfUrl = copyPaymentString('boletoPdfUrl', 'boletoPdfUrl', 'pdfUrl');
+  const boletoUrl = copyPaymentString('boletoUrl', 'boletoUrl', 'paymentUrl', 'paymentLink');
+  if (boletoCode || boletoBarcode || boletoPdfUrl || boletoUrl) {
     meta.hasBoleto = true;
   }
-  if (typeof result.customerName === 'string') {
-    meta.customerName = result.customerName;
+  const customerName = copyPaymentString('customerName', 'customerName', 'buyerName');
+  if (customerName !== undefined) {
+    meta.customerName = customerName;
   }
   // Wallet
   if (typeof result.balance === 'object' && result.balance) {
