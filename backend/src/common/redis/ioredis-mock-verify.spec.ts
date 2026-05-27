@@ -12,7 +12,7 @@
  * spec catches it before the affected service tests do.
  */
 
-import { createRedisClient } from './redis.util';
+import { createBullMqConnectionOptions, createRedisClient } from './redis.util';
 
 describe('ioredis-mock verification (PR P2-5)', () => {
   it('returns a non-null client in test mode', () => {
@@ -33,6 +33,17 @@ describe('ioredis-mock verification (PR P2-5)', () => {
         process.env.REDIS_CLIENT_MAX_LISTENERS = previous;
       }
     }
+  });
+
+  it('builds BullMQ connection options without sharing a Redis client', () => {
+    const options = createBullMqConnectionOptions({ enableReadyCheck: false });
+
+    expect(options).toMatchObject({
+      url: 'redis://localhost:6379',
+      maxRetriesPerRequest: null,
+      enableReadyCheck: false,
+    });
+    expect(typeof options.retryStrategy).toBe('function');
   });
 
   it('supports SET key value EX ttl with TTL inspection via TTL command', async () => {
