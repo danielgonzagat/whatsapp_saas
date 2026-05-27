@@ -5,6 +5,7 @@ import { SelfHealthService } from './self-health.service';
 import { SelfGapsService } from './self-gaps.service';
 import { CognitiveBridgeService } from './cognitive-bridge.service';
 import { PulseRuntimeService } from './pulse-runtime.service';
+import { DepsCoverageService } from './deps-coverage.service';
 
 @Module({
   providers: [
@@ -14,6 +15,7 @@ import { PulseRuntimeService } from './pulse-runtime.service';
     SelfGapsService,
     CognitiveBridgeService,
     PulseRuntimeService,
+    DepsCoverageService,
   ],
   exports: [
     CodeAccessService,
@@ -22,6 +24,7 @@ import { PulseRuntimeService } from './pulse-runtime.service';
     SelfGapsService,
     CognitiveBridgeService,
     PulseRuntimeService,
+    DepsCoverageService,
   ],
 })
 export class SelfAwarenessModule {}

@@ -19,6 +19,7 @@ import { SmartPaymentService } from './smart-payment.service';
 import { AccountService } from './account.service';
 import { SelfHealthService } from './self-awareness/self-health.service';
 import { SelfGapsService } from './self-awareness/self-gaps.service';
+import { DepsCoverageService } from './self-awareness/deps-coverage.service';
 import { CapabilityRegistryV2Service } from './capability-registry-v2/capability-registry-v2.service';
 import { ReportService } from './report.service';
 import { isRecord, sanitizeDetails } from './kloel-tool-dispatcher.high-risk.helpers';
@@ -55,9 +56,13 @@ function buildReceiptEvidenceUrl(
 
 function deriveReceiptOutputs(result: UnknownRecord): UnknownRecord {
   const product = isRecord(result.product) ? result.product : null;
-  const productId = asString(result.productId, product ? asString(product.id) : '');
+  const plan = isRecord(result.plan) ? result.plan : null;
+  const productId = asString(
+    result.productId,
+    product ? asString(product.id) : plan ? asString(plan.productId) : '',
+  );
   const orderId = asString(result.orderId, asString(result.saleId));
-  const planId = asString(result.planId);
+  const planId = asString(result.planId, plan ? asString(plan.id) : '');
 
   return {
     ...result,
@@ -121,6 +126,7 @@ export class KloelToolDispatcherService {
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() private readonly selfHealth?: SelfHealthService,
     @Optional() private readonly selfGaps?: SelfGapsService,
+    @Optional() private readonly depsCoverage?: DepsCoverageService,
     @Optional() private readonly capRegistryV2?: CapabilityRegistryV2Service,
   ) {}
 
@@ -478,8 +484,18 @@ export class KloelToolDispatcherService {
             });
           }
           return { success: false, error: 'checkout_service_unavailable' };
-        case 'plans.create':
-          return this.executeTool(workspaceId, 'create_plan', args, userId);
+        case 'plans.create': {
+          const startedAt = Date.now();
+          const result = await this.executeTool(workspaceId, 'create_plan', args, userId);
+          return this.withCanonicalReceipt(
+            'plans.create',
+            workspaceId,
+            args,
+            result,
+            userId,
+            startedAt,
+          );
+        }
         case 'plans.update':
           return this.executeTool(workspaceId, 'update_plan', args, userId);
         case 'checkouts.create':
@@ -903,6 +919,42 @@ export class KloelToolDispatcherService {
           );
         case 'runtime_errors':
           return await this.codeToolsService.toolRuntimeErrors();
+        // ── Deps + Coverage + Affected tests (Wave 7 PI-EE) ──
+        case 'dependencies': {
+          if (!this.depsCoverage) {
+            return { success: false, error: 'deps_coverage_service_unavailable' };
+          }
+          const ws = typeof args.workspace === 'string' ? args.workspace : '';
+          const pattern = typeof args.pattern === 'string' ? args.pattern : undefined;
+          const result = await this.depsCoverage.dependencies(ws, pattern);
+          return {
+            success: result.success,
+            capabilityId: 'dependencies',
+            outputs: result,
+            ...(result.error ? { error: result.error } : {}),
+          };
+        }
+        case 'code_coverage': {
+          if (!this.depsCoverage) {
+            return { success: false, error: 'deps_coverage_service_unavailable' };
+          }
+          const filePath = typeof args.filePath === 'string' ? args.filePath : undefined;
+          const ws = typeof args.workspace === 'string' ? args.workspace : undefined;
+          const result = await this.depsCoverage.codeCoverage(filePath, ws);
+          return { success: true, capabilityId: 'code_coverage', outputs: result };
+        }
+        case 'affected_tests': {
+          if (!this.depsCoverage) {
+            return { success: false, error: 'deps_coverage_service_unavailable' };
+          }
+          const filesRaw = typeof args.files === 'string' ? args.files : '';
+          const files = filesRaw.split(',').map((f) => f.trim()).filter(Boolean);
+          if (files.length === 0) {
+            return { success: false, error: 'files_required' };
+          }
+          const result = await this.depsCoverage.affectedTests(files);
+          return { success: true, capabilityId: 'affected_tests', outputs: result };
+        }
         // ── REPORTS (w25) ──
         case 'reports.operations': {
           if (!this.reportService) {
