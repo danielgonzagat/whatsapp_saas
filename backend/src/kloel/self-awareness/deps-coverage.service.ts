@@ -114,9 +114,9 @@ export class DepsCoverageService {
       const deps: DepResult[] = (sbom.components ?? []).map((c) => ({
         name: c.name,
         version: c.version ?? 'unknown',
-        group: c.group,
-        purl: c.purl,
         type: c.type ?? 'library',
+        ...(c.group !== undefined ? { group: c.group } : {}),
+        ...(c.purl !== undefined ? { purl: c.purl } : {}),
       }));
 
       this.cacheSet(cacheKey, deps);
@@ -198,7 +198,8 @@ export class DepsCoverageService {
           );
           let m: RegExpExecArray | null;
           while ((m = importRe.exec(content)) !== null) {
-            imports.push(m[1] ?? m[2]);
+            const imp = m[1] ?? m[2];
+            if (imp) imports.push(imp);
           }
 
           if (imports.length > 0) {
@@ -302,15 +303,17 @@ export class DepsCoverageService {
           if (uncovered.size > 0) {
             const sorted = Array.from(uncovered).sort((a, b) => a - b);
             const ranges: Array<{ start: number; end: number }> = [];
-            let rangeStart = sorted[0];
-            let rangeEnd = sorted[0];
+            let rangeStart = sorted[0] ?? 0;
+            let rangeEnd = sorted[0] ?? 0;
             for (let i = 1; i < sorted.length; i++) {
-              if (sorted[i] === rangeEnd + 1) {
-                rangeEnd = sorted[i];
+              const curr = sorted[i];
+              if (curr === undefined) continue;
+              if (curr === rangeEnd + 1) {
+                rangeEnd = curr;
               } else {
                 ranges.push({ start: rangeStart, end: rangeEnd });
-                rangeStart = sorted[i];
-                rangeEnd = sorted[i];
+                rangeStart = curr;
+                rangeEnd = curr;
               }
             }
             ranges.push({ start: rangeStart, end: rangeEnd });
@@ -376,7 +379,7 @@ export class DepsCoverageService {
           branches: totalBranches,
           functions: totalFunctions,
           statements: totalStatements,
-          uncoveredLines: uncoveredLines.length > 0 ? uncoveredLines : undefined,
+          ...(uncoveredLines.length > 0 ? { uncoveredLines } : {}),
         };
       } catch {
         continue;
