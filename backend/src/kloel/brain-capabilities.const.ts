@@ -1,7 +1,8 @@
 /**
  * Canonical machine-readable capability registry for the Kloel brain.
- * Single source of truth shared by BrainRuntimeService (intent dispatch)
- * and BrainCapabilityExecutorService (self-introspection capability
+ * Single source of truth shared by MindRuntime (intent dispatch, alias
+ * of legacy BrainRuntimeService — see kloel/mind/coordination) and
+ * BrainCapabilityExecutorService (self-introspection capability
  * registry → ABI `capabilities.available`). Kept in its own module so
  * both can import it without a circular dependency
  * (brain-runtime → executor already exists).
