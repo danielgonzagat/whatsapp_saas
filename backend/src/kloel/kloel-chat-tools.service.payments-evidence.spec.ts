@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { KloelChatToolsService } from './kloel-chat-tools.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { ProductService } from '../products/product.service';
 import { SmartPaymentService } from './smart-payment.service';
 import { ProductService } from '../products/product.service';
 import {
@@ -47,6 +48,7 @@ type ChatToolsPrismaMock = {
 describe('KloelChatToolsService', () => {
   let service: KloelChatToolsService;
   let prisma: ChatToolsPrismaMock;
+  let productService: { create: jest.Mock };
   let smartPayment: Pick<SmartPaymentService, 'createSmartPayment'>;
   let productService: { create: jest.Mock };
   let agentScheduler: {
@@ -153,6 +155,12 @@ describe('KloelChatToolsService', () => {
       list: jest.fn().mockResolvedValue([{ id: 'ev_1' }]),
       verify: jest.fn().mockResolvedValue([]),
       summary: jest.fn().mockResolvedValue({ total: 1, byType: { validation: 1 } }),
+    };
+    productService = {
+      create: jest.fn().mockResolvedValue({
+        success: true,
+        product: { id: 'prod-1', name: 'Test', price: 99, active: true, format: 'DIGITAL' },
+      }),
     };
 
     const module: TestingModule = await Test.createTestingModule({

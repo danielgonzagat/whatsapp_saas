@@ -154,6 +154,8 @@ export class KloelProductSubResourceToolsService {
       }
       if (args.itemsPerPlan !== undefined) {
         data.itemsPerPlan = this.num(args.itemsPerPlan);
+      } else if (args.quantity !== undefined) {
+        data.itemsPerPlan = this.num(args.quantity);
       }
       const plan = await this.prisma.productPlan.update({
         where: { id: planId },
@@ -204,7 +206,7 @@ export class KloelProductSubResourceToolsService {
             linkedPlanNames: (Array.isArray(args.linkedPlanNames)
               ? args.linkedPlanNames
               : []) as Prisma.InputJsonArray,
-          } as Prisma.InputJsonObject,
+          },
         },
       });
       return { success: true, checkout: { id: co.id, name: co.name } };
@@ -325,28 +327,28 @@ export class KloelProductSubResourceToolsService {
     }
   }
 
-    async toolDeleteCoupon(workspaceId: string, args: UnknownRecord) {
-      try {
-        if (!this.productCouponDomain) {
-          return { success: false, error: 'Servico de cupom indisponivel.' };
-        }
-
-        const couponId = this.str(args.couponId);
-        const couponCode = this.str(args.couponCode || args.code);
-
-        const deleted = await this.productCouponDomain.deleteProductCoupon({
-          workspaceId,
-          couponId,
-          couponCode,
-          deletedBy: 'kloel-chat',
-          notFoundMessage: 'Cupom nao encontrado. Informe o codigo ou ID do cupom.',
-        });
-
-        return { success: true, couponId: deleted.id, productId: deleted.productId };
-      } catch (err: unknown) {
-        return { success: false, error: err instanceof Error ? err.message : 'Erro' };
+  async toolDeleteCoupon(workspaceId: string, args: UnknownRecord) {
+    try {
+      if (!this.productCouponDomain) {
+        return { success: false, error: 'Servico de cupom indisponivel.' };
       }
+
+      const couponId = this.str(args.couponId);
+      const couponCode = this.str(args.couponCode || args.code);
+
+      const deleted = await this.productCouponDomain.deleteProductCoupon({
+        workspaceId,
+        couponId,
+        couponCode,
+        deletedBy: 'kloel-chat',
+        notFoundMessage: 'Cupom nao encontrado. Informe o codigo ou ID do cupom.',
+      });
+
+      return { success: true, couponId: deleted.id, productId: deleted.productId };
+    } catch (err: unknown) {
+      return { success: false, error: err instanceof Error ? err.message : 'Erro' };
     }
+  }
 
   async toolUpdateCoupon(workspaceId: string, args: UnknownRecord) {
     const code = this.str(args.code || args.couponCode);
