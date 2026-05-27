@@ -172,7 +172,7 @@ export async function runGetProductReviews(
     where: { id: pid, workspaceId },
     select: { id: true, name: true },
   });
-  if (!product) {
+  if (!product && !args.productName) {
     return { success: false, error: 'product_not_found' };
   }
   const reviews = await prisma.productReview.findMany({
@@ -183,7 +183,7 @@ export async function runGetProductReviews(
   });
   return {
     success: true,
-    product: { id: pid, name: args.productName || pid },
+    product: { id: pid, name: product?.name ?? args.productName ?? pid },
     reviews,
   };
 }

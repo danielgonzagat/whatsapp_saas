@@ -349,7 +349,7 @@ export function detectActionIntent(
     const wdays = wmatch?.[1] ? parseInt(wmatch[1], 10) : undefined;
     return {
       tool: 'configure_warranty',
-      args: { productName: extractProductName(msg), warrantyDays: wdays },
+      args: { productName: extractProductName(message), warrantyDays: wdays },
     };
   }
   if (/exit intent|popup.*sa[ií]da/.test(msg)) {
