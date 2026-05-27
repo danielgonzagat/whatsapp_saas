@@ -226,9 +226,7 @@ describe('platform-bias-monitor gate', () => {
       rec({ recommendationId: 'r5', productSource: 'external', weight: 9, qualityScore: 0.8 }),
       rec({ recommendationId: 'r6', productSource: 'external', weight: 10, qualityScore: 0.8 }),
     ];
-    const v = makePlatformBiasMonitorGate().check(
-      input(recs, { weightMarginThreshold: 0.1 }),
-    );
+    const v = makePlatformBiasMonitorGate().check(input(recs, { weightMarginThreshold: 0.1 }));
     expect(v.status).toBe('FAIL');
     expect(v.evidence![0]!.detail).toMatch(/statistically significant weight bias/);
   });
@@ -242,9 +240,7 @@ describe('platform-bias-monitor gate', () => {
       rec({ recommendationId: 'r5', productSource: 'external', weight: 9, qualityScore: 0.71 }),
       rec({ recommendationId: 'r6', productSource: 'external', weight: 10, qualityScore: 0.69 }),
     ];
-    const v = makePlatformBiasMonitorGate().check(
-      input(recs, { significanceThreshold: 0.001 }),
-    );
+    const v = makePlatformBiasMonitorGate().check(input(recs, { significanceThreshold: 0.001 }));
     expect(v.status).toBe('PASS');
   });
 
@@ -301,9 +297,7 @@ describe('platform-bias-monitor gate', () => {
       rec({ recommendationId: 'r8', productSource: 'external', weight: 1 }),
       rec({ recommendationId: 'r9', productSource: 'external', weight: 1 }),
     ];
-    const v = makePlatformBiasMonitorGate().check(
-      input(recs, { minSampleSize: 5 }),
-    );
+    const v = makePlatformBiasMonitorGate().check(input(recs, { minSampleSize: 5 }));
     expect(v.status).toBe('FAIL');
     expect(v.evidence!.some((e) => e.detail?.includes('systematically boosted'))).toBe(true);
   });

@@ -71,6 +71,22 @@ import type {
   DispatcherCodeAnalysisMock,
 } from './kloel-tool-dispatcher.service.fixtures';
 type ProductSubToolsMock = { executeTool: jest.Mock };
+
+function objectContaining<T extends object>(sample: T): T {
+  const matcher: unknown = expect.objectContaining(sample);
+  return matcher as T;
+}
+
+function stringMatching(pattern: RegExp): string {
+  const matcher: unknown = expect.stringMatching(pattern);
+  return matcher as string;
+}
+
+function stringContaining(sample: string): string {
+  const matcher: unknown = expect.stringContaining(sample);
+  return matcher as string;
+}
+
 describe('KloelToolDispatcherService — dotted aliases', () => {
   let service: KloelToolDispatcherService;
   let prisma: DispatcherPrismaMock;
@@ -143,15 +159,15 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
         actorId: 'user-42',
       });
       expect(prodResult).toEqual(
-        expect.objectContaining({
+        objectContaining({
           success: true,
           capabilityId: 'products.create',
-          outputs: expect.objectContaining({ productId: 'prod-1' }),
-          receipt: expect.objectContaining({
+          outputs: objectContaining({ productId: 'prod-1' }),
+          receipt: objectContaining({
             capabilityId: 'products.create',
             actorId: 'user-42',
             inputs: args,
-            outputs: expect.objectContaining({ productId: 'prod-1' }),
+            outputs: objectContaining({ productId: 'prod-1' }),
             domainEvents: ['product.created'],
             evidenceUrl: '/produtos/prod-1',
             success: true,
@@ -173,15 +189,15 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
         actorId: 'user-42',
       });
       expect(dotted).toEqual(
-        expect.objectContaining({
+        objectContaining({
           success: true,
           capabilityId: 'products.update',
-          outputs: expect.objectContaining({ productId: 'prod-1' }),
-          receipt: expect.objectContaining({
+          outputs: objectContaining({ productId: 'prod-1' }),
+          receipt: objectContaining({
             capabilityId: 'products.update',
             actorId: 'user-42',
             inputs: args,
-            outputs: expect.objectContaining({ productId: 'prod-1' }),
+            outputs: objectContaining({ productId: 'prod-1' }),
             domainEvents: ['product.updated'],
             evidenceUrl: '/produtos/prod-1',
             success: true,
@@ -221,18 +237,18 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
       });
       expect(dotted.success).toBe(true);
       expect(dotted.capabilityId).toBe('plans.create');
-      expect(dotted.outputs).toEqual(expect.objectContaining({ planId: 'plan-1' }));
+      expect(dotted.outputs).toEqual(objectContaining({ planId: 'plan-1' }));
       expect(dotted.receipt).toEqual(
-        expect.objectContaining({
+        objectContaining({
           capabilityId: 'plans.create',
           workspaceId: DEFAULT_WS_ID,
           actorId: 'user-42',
           inputs: { productId: 'prod-1', name: 'Basic', price: 99 },
-          outputs: expect.objectContaining({ planId: 'plan-1' }),
+          outputs: objectContaining({ planId: 'plan-1' }),
           domainEvents: ['plan.created'],
-          auditLogId: expect.stringMatching(/^audit_/),
+          auditLogId: stringMatching(/^audit_/),
           evidenceUrl: '/produtos/prod-1/planos/plan-1',
-          idempotencyKey: expect.stringContaining('plans.create'),
+          idempotencyKey: stringContaining('plans.create'),
           success: true,
         }),
       );
@@ -254,18 +270,18 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
       );
       expect(dotted.success).toBe(true);
       expect(dotted.capabilityId).toBe('plans.update');
-      expect(dotted.outputs).toEqual(expect.objectContaining({ planId: 'plan-1' }));
+      expect(dotted.outputs).toEqual(objectContaining({ planId: 'plan-1' }));
       expect(dotted.receipt).toEqual(
-        expect.objectContaining({
+        objectContaining({
           capabilityId: 'plans.update',
           workspaceId: DEFAULT_WS_ID,
           actorId: 'user-42',
           inputs: planArgs,
-          outputs: expect.objectContaining({ productId: 'prod-1', planId: 'plan-1' }),
+          outputs: objectContaining({ productId: 'prod-1', planId: 'plan-1' }),
           domainEvents: ['plan.updated'],
-          auditLogId: expect.stringMatching(/^audit_/),
+          auditLogId: stringMatching(/^audit_/),
           evidenceUrl: '/produtos/prod-1/planos/plan-1',
-          idempotencyKey: expect.stringContaining('plans.update'),
+          idempotencyKey: stringContaining('plans.update'),
           success: true,
         }),
       );
@@ -291,18 +307,18 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
       });
       expect(dotted.success).toBe(true);
       expect(dotted.capabilityId).toBe('checkouts.create');
-      expect(dotted.outputs).toEqual(expect.objectContaining({ checkoutId: 'chk-1' }));
+      expect(dotted.outputs).toEqual(objectContaining({ checkoutId: 'chk-1' }));
       expect(dotted.receipt).toEqual(
-        expect.objectContaining({
+        objectContaining({
           capabilityId: 'checkouts.create',
           workspaceId: DEFAULT_WS_ID,
           actorId: 'user-42',
           inputs: { productId: 'prod-1', name: 'Checkout Principal' },
-          outputs: expect.objectContaining({ checkoutId: 'chk-1' }),
+          outputs: objectContaining({ checkoutId: 'chk-1' }),
           domainEvents: ['checkout.created'],
-          auditLogId: expect.stringMatching(/^audit_/),
+          auditLogId: stringMatching(/^audit_/),
           evidenceUrl: '/produtos/prod-1/checkouts/chk-1',
-          idempotencyKey: expect.stringContaining('checkouts.create'),
+          idempotencyKey: stringContaining('checkouts.create'),
           success: true,
         }),
       );
@@ -334,18 +350,18 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
       );
       expect(dotted.success).toBe(true);
       expect(dotted.capabilityId).toBe('checkouts.update');
-      expect(dotted.outputs).toEqual(expect.objectContaining({ checkoutId: 'chk-1' }));
+      expect(dotted.outputs).toEqual(objectContaining({ checkoutId: 'chk-1' }));
       expect(dotted.receipt).toEqual(
-        expect.objectContaining({
+        objectContaining({
           capabilityId: 'checkouts.update',
           workspaceId: DEFAULT_WS_ID,
           actorId: 'user-42',
           inputs: checkoutArgs,
-          outputs: expect.objectContaining({ productId: 'prod-1', checkoutId: 'chk-1' }),
+          outputs: objectContaining({ productId: 'prod-1', checkoutId: 'chk-1' }),
           domainEvents: ['checkout.updated'],
-          auditLogId: expect.stringMatching(/^audit_/),
+          auditLogId: stringMatching(/^audit_/),
           evidenceUrl: '/produtos/prod-1/checkouts/chk-1',
-          idempotencyKey: expect.stringContaining('checkouts.update'),
+          idempotencyKey: stringContaining('checkouts.update'),
           success: true,
         }),
       );
@@ -373,9 +389,9 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
       });
       expect(dotted.success).toBe(true);
       expect(dotted.capabilityId).toBe('coupons.create');
-      expect(dotted.outputs).toEqual(expect.objectContaining({ couponId: 'coupon-1' }));
+      expect(dotted.outputs).toEqual(objectContaining({ couponId: 'coupon-1' }));
       expect(dotted.receipt).toEqual(
-        expect.objectContaining({
+        objectContaining({
           capabilityId: 'coupons.create',
           workspaceId: DEFAULT_WS_ID,
           actorId: 'user-42',
@@ -385,11 +401,11 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
             discountType: 'percentage',
             discountValue: 10,
           },
-          outputs: expect.objectContaining({ couponId: 'coupon-1' }),
+          outputs: objectContaining({ couponId: 'coupon-1' }),
           domainEvents: ['coupon.created'],
-          auditLogId: expect.stringMatching(/^audit_/),
+          auditLogId: stringMatching(/^audit_/),
           evidenceUrl: '/produtos/prod-1/cupons/coupon-1',
-          idempotencyKey: expect.stringContaining('coupons.create'),
+          idempotencyKey: stringContaining('coupons.create'),
           success: true,
         }),
       );
@@ -413,17 +429,17 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
       );
       expect(dotted.success).toBe(true);
       expect(dotted.capabilityId).toBe('coupons.delete');
-      expect(dotted.outputs).toEqual(expect.objectContaining({ couponId: 'coupon-1' }));
+      expect(dotted.outputs).toEqual(objectContaining({ couponId: 'coupon-1' }));
       expect(dotted.receipt).toEqual(
-        expect.objectContaining({
+        objectContaining({
           capabilityId: 'coupons.delete',
           workspaceId: DEFAULT_WS_ID,
           actorId: 'user-42',
           inputs: deleteArgs,
-          outputs: expect.objectContaining({ couponId: 'coupon-1' }),
+          outputs: objectContaining({ couponId: 'coupon-1' }),
           domainEvents: ['coupon.deleted'],
-          auditLogId: expect.stringMatching(/^audit_/),
-          idempotencyKey: expect.stringContaining('coupons.delete'),
+          auditLogId: stringMatching(/^audit_/),
+          idempotencyKey: stringContaining('coupons.delete'),
           success: true,
         }),
       );

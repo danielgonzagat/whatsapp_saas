@@ -6,11 +6,7 @@
  * refund reasons, and lead qualification alignment.
  */
 
-import type {
-  OfferDetectorInput,
-  OfferDetectorResult,
-  OfferInsight,
-} from '../offer.types';
+import type { OfferDetectorInput, OfferDetectorResult, OfferInsight } from '../offer.types';
 import { OFFER_EVENT_NAMES, withinWindow } from '../offer.types';
 
 const MIN_OBJECTIONS = 4;
@@ -21,14 +17,14 @@ const WINDOW_DAYS = 90;
 function extractObjectionKind(
   payload: Readonly<Record<string, unknown>> | undefined,
 ): string | undefined {
-  if (!payload) {return undefined;}
+  if (!payload) {
+    return undefined;
+  }
   const kind = payload['kind'] ?? payload['objectionKind'];
   return typeof kind === 'string' ? kind : undefined;
 }
 
-export function detectPositioningMismatch(
-  input: OfferDetectorInput,
-): OfferDetectorResult {
+export function detectPositioningMismatch(input: OfferDetectorInput): OfferDetectorResult {
   const { events, workspaceId, nowMs = Date.now() } = input;
   const insights: OfferInsight[] = [];
 
@@ -52,7 +48,9 @@ export function detectPositioningMismatch(
     }
   }
 
-  if (totalObjections < MIN_OBJECTIONS) {return { insights: [] };}
+  if (totalObjections < MIN_OBJECTIONS) {
+    return { insights: [] };
+  }
 
   const dominantCategory = 'price';
   const dominantCount = objectionKinds.get(dominantCategory) ?? 0;
@@ -82,12 +80,8 @@ export function detectPositioningMismatch(
     }
   }
 
-  const lostCount = filtered.filter(
-    (e) => e.eventName === 'commerce.lead.lost',
-  ).length;
-  const leadCount = filtered.filter(
-    (e) => e.eventName === 'commerce.lead.created',
-  ).length;
+  const lostCount = filtered.filter((e) => e.eventName === 'commerce.lead.lost').length;
+  const leadCount = filtered.filter((e) => e.eventName === 'commerce.lead.created').length;
 
   if (leadCount >= MIN_LEADS && lostCount > 0) {
     const lostRatio = lostCount / leadCount;

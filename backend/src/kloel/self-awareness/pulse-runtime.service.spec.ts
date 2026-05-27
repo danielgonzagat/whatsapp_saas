@@ -1,10 +1,24 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PulseRuntimeService, PulseHealthResult, BehaviorGraphNodeResult, RuntimeErrorsResult } from './pulse-runtime.service';
+import { PulseRuntimeService } from './pulse-runtime.service';
 import * as fs from 'fs/promises';
-import * as path from 'path';
+
+type RuntimeErrorFixture = {
+  culprit: string;
+  symbol: string;
+  count: number;
+  lastSeen: string;
+};
+
+function clearServiceCache(target: object): void {
+  const descriptor = Object.getOwnPropertyDescriptor(target, 'cache');
+  const maybeCache: unknown = descriptor?.value;
+  if (maybeCache instanceof Map) {
+    maybeCache.clear();
+  }
+}
 
 // Mock the real PULSE_HEALTH.json shape
-function makeHealthJson(overrides: Partial<any> = {}) {
+function makeHealthJson(overrides: Record<string, unknown> = {}) {
   return JSON.stringify({
     score: 100,
     totalNodes: 1820,
@@ -36,7 +50,7 @@ function makeHealthJson(overrides: Partial<any> = {}) {
   });
 }
 
-function makeBehaviorGraphJson(overrides: Partial<any> = {}) {
+function makeBehaviorGraphJson(overrides: Record<string, unknown> = {}) {
   return JSON.stringify({
     generatedAt: '2026-05-23T23:42:27.442Z',
     summary: { totalNodes: 100, aiSafeNodes: 80 },
@@ -76,7 +90,7 @@ function makeBehaviorGraphJson(overrides: Partial<any> = {}) {
   });
 }
 
-function makeRuntimeErrorsJson(errors: any[]) {
+function makeRuntimeErrorsJson(errors: RuntimeErrorFixture[]) {
   return JSON.stringify({
     generatedAt: '2026-05-23T23:42:27.442Z',
     errors,
@@ -85,7 +99,6 @@ function makeRuntimeErrorsJson(errors: any[]) {
 
 describe('PulseRuntimeService', () => {
   let service: PulseRuntimeService;
-  const repoRoot = path.resolve(process.cwd(), '..');
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -94,7 +107,7 @@ describe('PulseRuntimeService', () => {
     service = module.get<PulseRuntimeService>(PulseRuntimeService);
 
     // Force fresh cache before each test by resetting internal state
-    (service as any).cache.clear();
+    clearServiceCache(service);
   });
 
   // ── pulse_health ──

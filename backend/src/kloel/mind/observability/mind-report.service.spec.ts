@@ -1,5 +1,9 @@
 import { MindReportService } from './mind-report.service';
 
+type MindDailyReportUpsertArgs = {
+  create: unknown;
+};
+
 function reportHarness() {
   const prisma = {
     mindWorkspaceState: {
@@ -11,7 +15,9 @@ function reportHarness() {
       }),
     },
     mindConceptDetection: { findMany: jest.fn().mockResolvedValue([]) },
-    mindDailyReport: { upsert: jest.fn(async ({ create }) => create) },
+    mindDailyReport: {
+      upsert: jest.fn(async ({ create }: MindDailyReportUpsertArgs) => create),
+    },
   };
   const beliefs = { list: jest.fn().mockResolvedValue([]) };
   const policy = {

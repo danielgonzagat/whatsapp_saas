@@ -6,7 +6,6 @@ jest.mock('./scrapers.service', () => ({
 
 jest.mock('@sentry/node', () => ({}), { virtual: true });
 
-
 describe('ScrapersController', () => {
   const createJob = jest.fn();
   const findAll = jest.fn();

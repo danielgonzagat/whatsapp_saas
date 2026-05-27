@@ -1,7 +1,4 @@
-import {
-  InMemoryLineageLedgerRepository,
-  LineageLedgerService,
-} from './lineage-ledger.service';
+import { InMemoryLineageLedgerRepository, LineageLedgerService } from './lineage-ledger.service';
 import { LineageGuardService } from './lineage-guard.service';
 import { LineageEntry, ZERO_HASH } from './lineage-ledger.types';
 
@@ -66,11 +63,9 @@ describe('LineageGuardService', () => {
   it('detects tampering of payload (canonicalName mutation)', async () => {
     const { service, repo, guard } = build();
     await service.bootstrapGenesis();
-    const all = (await repo.listAll());
+    const all = await repo.listAll();
     // Direct write via private internals — simulating storage tamper.
-    const internalEntries = (
-      repo as { entries: LineageEntry[] }
-    ).entries;
+    const internalEntries = (repo as { entries: LineageEntry[] }).entries;
     const tampered: LineageEntry = {
       ...all[0]!,
       payload: {

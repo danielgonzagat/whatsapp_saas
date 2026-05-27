@@ -525,65 +525,56 @@ export class KloelChatToolsService {
     };
   }
 
-  async toolConfigurePixel(
-    workspaceId: string,
-    args: Record<string, unknown>,
-  ): Promise<ToolResult> {
+  toolConfigurePixel(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
     if (!productName) {
-      return {
+      return Promise.resolve({
         success: true,
         message: 'Pixel configurado. Acesse Configurações > Pixel para inserir os códigos.',
-      };
+      });
     }
     // Store pixel intent — actual pixel IDs need to come from Meta/Google OAuth
-    return {
+    return Promise.resolve({
       success: true,
       message: `Pixel configurado para "${productName}". Insira os códigos em Configurações > Pixel.`,
-    };
+    });
   }
 
-  async toolConfigureShipping(
-    workspaceId: string,
-    args: Record<string, unknown>,
-  ): Promise<ToolResult> {
+  toolConfigureShipping(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
     if (!productName) {
-      return {
+      return Promise.resolve({
         success: true,
         message: 'Frete configurado. Acesse Produto > Entrega para detalhar.',
-      };
+      });
     }
-    return {
+    return Promise.resolve({
       success: true,
       message: `Frete configurado para "${productName}". Acesse Produto > Entrega para definir prazos e transportadoras.`,
-    };
+    });
   }
 
-  async toolConfigureSocialProof(
+  toolConfigureSocialProof(
     workspaceId: string,
     args: Record<string, unknown>,
   ): Promise<ToolResult> {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
-    return {
+    return Promise.resolve({
       success: true,
       message: `Prova social ativada${productName ? ` para "${productName}"` : ''}. Depoimentos e contador exibidos no checkout.`,
-    };
+    });
   }
 
-  async toolConfigureOrderBump(
-    workspaceId: string,
-    args: Record<string, unknown>,
-  ): Promise<ToolResult> {
+  toolConfigureOrderBump(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
-    return {
+    return Promise.resolve({
       success: true,
       message: `Order bump configurado${productName ? ` para "${productName}"` : ''}. Oferta adicional no checkout.`,
-    };
+    });
   }
 
   async toolConfigureWarranty(
@@ -602,28 +593,22 @@ export class KloelChatToolsService {
     return { success: true, message: 'Garantia configurada. Selo exibido na página de vendas.' };
   }
 
-  async toolConfigureExitIntent(
-    workspaceId: string,
-    args: Record<string, unknown>,
-  ): Promise<ToolResult> {
+  toolConfigureExitIntent(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
-    return {
+    return Promise.resolve({
       success: true,
       message: `Exit intent configurado${productName ? ` para "${productName}"` : ''}. Popup ao tentar sair da página.`,
-    };
+    });
   }
 
-  async toolConfigureAfterPay(
-    workspaceId: string,
-    args: Record<string, unknown>,
-  ): Promise<ToolResult> {
+  toolConfigureAfterPay(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
-    return {
+    return Promise.resolve({
       success: true,
       message: `After Pay configurado${productName ? ` para "${productName}"` : ''}. Cliente compra agora e paga depois.`,
-    };
+    });
   }
 
   async toolBrowseMarketplace(
@@ -656,16 +641,13 @@ export class KloelChatToolsService {
     }
   }
 
-  async toolSendChannelMessage(
-    workspaceId: string,
-    args: Record<string, unknown>,
-  ): Promise<ToolResult> {
+  toolSendChannelMessage(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     void workspaceId;
     const channel = typeof args.channel === 'string' ? args.channel : 'whatsapp';
-    return {
+    return Promise.resolve({
       success: true,
       message: `Mensagem será enviada via ${channel}. Configure o canal em Configurações > Canais primeiro.`,
-    };
+    });
   }
 
   /** Create a manual sale order with full buyer data */

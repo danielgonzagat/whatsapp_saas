@@ -395,7 +395,7 @@ export class WalletService {
       throw new Error(`Invalid anticipation amount: ${amount}`);
     }
 
-    const feeAmount = Math.round((amount * feePercent) / 100 * 100) / 100;
+    const feeAmount = Math.round(((amount * feePercent) / 100) * 100) / 100;
     const feeAmountInCents = Math.round((amountInCents * feePercent) / 100);
     const netAmount = amount - feeAmount;
     const netAmountInCents = BigInt(amountInCents) - BigInt(feeAmountInCents);
@@ -481,10 +481,10 @@ export class WalletService {
       );
     } catch (err: unknown) {
       void this.opsAlert?.alertOnCriticalError(err, 'WalletService.requestAnticipation');
-      this.financialAlert.withdrawalFailed(
-        err instanceof Error ? err : new Error(String(err)),
-        { workspaceId, amount },
-      );
+      this.financialAlert.withdrawalFailed(err instanceof Error ? err : new Error(String(err)), {
+        workspaceId,
+        amount,
+      });
       throw err;
     }
 
@@ -665,5 +665,4 @@ export class WalletService {
     }
     return wallet;
   }
-
 }

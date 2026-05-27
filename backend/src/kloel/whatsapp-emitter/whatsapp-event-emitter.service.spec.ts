@@ -222,7 +222,7 @@ describe('WhatsAppEventEmitterService', () => {
         (emitter as Record<string, unknown>).emitMessageReceived = () => {
           const svc = emitter;
           try {
-            svc['spine'].emit({
+            void svc['spine'].emit({
               eventName: 'commerce.whatsapp.message_received',
               workspaceId: WS,
               entityRef: { entityType: 'contact', entityId: 'c' },

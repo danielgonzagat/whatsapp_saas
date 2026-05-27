@@ -249,10 +249,10 @@ export class ChannelPolicyRegistry {
  */
 function InjectOptionalPolicySnapshot(): ParameterDecorator {
   return (target, _propertyKey, parameterIndex) => {
-    const deps =
-      (Reflect.getMetadata('self:paramtypes', target) as unknown[]) ??
-      [];
-    if (!Array.isArray(deps)) {return;}
+    const deps = (Reflect.getMetadata('self:paramtypes', target) as unknown[]) ?? [];
+    if (!Array.isArray(deps)) {
+      return;
+    }
     for (let i = deps.length; i <= parameterIndex; i++) {
       deps.push(undefined);
     }
@@ -260,9 +260,10 @@ function InjectOptionalPolicySnapshot(): ParameterDecorator {
     Reflect.defineMetadata('self:paramtypes', deps, target);
 
     const optionalDeps: boolean[] =
-      (Reflect.getMetadata('optional:paramtypes', target) as boolean[]) ??
-      [];
-    if (!Array.isArray(optionalDeps)) {return;}
+      (Reflect.getMetadata('optional:paramtypes', target) as boolean[]) ?? [];
+    if (!Array.isArray(optionalDeps)) {
+      return;
+    }
     for (let i = optionalDeps.length; i <= parameterIndex; i++) {
       optionalDeps.push(false);
     }

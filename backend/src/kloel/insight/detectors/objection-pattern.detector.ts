@@ -10,10 +10,10 @@ import { withinWindow } from '../insight.types';
 
 const MIN_OBJECTIONS = 3;
 
-function extractObjectionKind(
-  payload: Readonly<Record<string, unknown>> | undefined,
-): string {
-  if (!payload) {return 'unspecified';}
+function extractObjectionKind(payload: Readonly<Record<string, unknown>> | undefined): string {
+  if (!payload) {
+    return 'unspecified';
+  }
   const kind = payload['objectionKind'] ?? payload['kind'];
   return typeof kind === 'string' ? kind : 'unspecified';
 }
@@ -30,7 +30,9 @@ export function detectObjectionPattern(input: DetectorInput): DetectorResult {
       withinWindow(e.occurredAt, nowMs, windowDays),
   );
 
-  if (objectionEvents.length < MIN_OBJECTIONS) {return { insights: [] };}
+  if (objectionEvents.length < MIN_OBJECTIONS) {
+    return { insights: [] };
+  }
 
   const kindCounts = new Map<string, number>();
   for (const event of objectionEvents) {

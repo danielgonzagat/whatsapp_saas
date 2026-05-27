@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import type { AttentionItem, AttentionRankingResult, DecisionTier, RankedItem } from './clarity.types';
+import type {
+  AttentionItem,
+  AttentionRankingResult,
+  DecisionTier,
+  RankedItem,
+} from './clarity.types';
 import { clampScore } from './clarity.types';
 
 const AGORA_THRESHOLD = 0.7;
@@ -15,9 +20,15 @@ function computeScore(item: AttentionItem): number {
 }
 
 function classify(score: number): DecisionTier {
-  if (score >= AGORA_THRESHOLD) {return 'AGORA';}
-  if (score >= ESTA_SEMANA_THRESHOLD) {return 'ESTA_SEMANA';}
-  if (score >= PARA_SABER_THRESHOLD) {return 'PARA_SABER';}
+  if (score >= AGORA_THRESHOLD) {
+    return 'AGORA';
+  }
+  if (score >= ESTA_SEMANA_THRESHOLD) {
+    return 'ESTA_SEMANA';
+  }
+  if (score >= PARA_SABER_THRESHOLD) {
+    return 'PARA_SABER';
+  }
   return 'ARQUIVO';
 }
 
@@ -31,10 +42,10 @@ function dominatedTier(ranked: readonly RankedItem[]): DecisionTier | null {
   for (const item of ranked) {
     counts[item.tier] += 1;
   }
-  const entries = (Object.entries(counts) as [DecisionTier, number][]).filter(
-    ([, c]) => c > 0,
-  );
-  if (entries.length === 0) {return null;}
+  const entries = (Object.entries(counts) as [DecisionTier, number][]).filter(([, c]) => c > 0);
+  if (entries.length === 0) {
+    return null;
+  }
   return entries.reduce((a, b) => (b[1] > a[1] ? b : a))[0];
 }
 
@@ -49,7 +60,9 @@ export class AttentionRankerService {
 
     for (const item of items) {
       const score = computeScore(item);
-      if (score <= SILENCE_THRESHOLD) {continue;}
+      if (score <= SILENCE_THRESHOLD) {
+        continue;
+      }
       scored.push({
         id: item.id,
         score,

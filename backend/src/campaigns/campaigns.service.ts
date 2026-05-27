@@ -41,8 +41,6 @@ export class CampaignsService {
     const connection = createRedisClient();
 
     this.campaignQueue = new Queue('campaign-jobs', { connection });
-
-
   }
 
   /** Create. */

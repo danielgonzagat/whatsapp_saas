@@ -100,9 +100,7 @@ describe('CiaBootstrapService', () => {
           lastMessageAt: new Date(),
           contactId: 'k2',
           contact: { id: 'k2', phone: '+5511', name: 'B' },
-          messages: [
-            { id: 'm1', direction: 'INBOUND', createdAt: new Date(), content: 'hi' },
-          ],
+          messages: [{ id: 'm1', direction: 'INBOUND', createdAt: new Date(), content: 'hi' }],
         },
       ]);
       const result = await service.listPendingConversations('ws-1', 100);
@@ -139,12 +137,7 @@ describe('CiaBootstrapService', () => {
       const startPresence = jest.fn().mockResolvedValue(undefined);
       const stopPresence = jest.fn().mockResolvedValue(undefined);
 
-      const result = await service.run(
-        'ws-1',
-        startBacklogRun,
-        startPresence,
-        stopPresence,
-      );
+      const result = await service.run('ws-1', startBacklogRun, startPresence, stopPresence);
 
       expect(result.connected).toBe(false);
       expect(stopPresence).toHaveBeenCalledWith('ws-1', false);
@@ -184,7 +177,9 @@ describe('CiaBootstrapService', () => {
         agentEvents as never,
         chatFilter as never,
         runtimeState as never,
-        { triggerCatchup: jest.fn().mockResolvedValue({ scheduled: true, reason: 'test' }) } as never,
+        {
+          triggerCatchup: jest.fn().mockResolvedValue({ scheduled: true, reason: 'test' }),
+        } as never,
         undefined,
         sched as never,
       );

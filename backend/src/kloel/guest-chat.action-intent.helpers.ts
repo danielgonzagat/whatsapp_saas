@@ -562,7 +562,7 @@ export function extractProductName(msg: string): string {
   const cleanMsg = msg.replace(/[?!]+\s*$/, '').trim();
   // Try "para o Produto X" / "para a Oferta X" pattern (requires article to avoid matching "para X" in descriptions)
   const prodMatch = cleanMsg.match(
-    /para\s+(?:o\s+|a\s+)\s*(?:produto|oferta|plano|checkout|item)?\s*["']?([A-Za-zÀ-ÿ0-9\s\-\.\+]{2,60}?)(?:\s*(?:,|\.|R\$|pre[çc]o|valor|\bcom\b|\bpor\b|\bpara\b|\burl\b|https?|\bcor\b|\bdescri[cç][aã]o\b|\bdescricao\b|$)|$)/i,
+    /para\s+(?:o\s+|a\s+)\s*(?:produto|oferta|plano|checkout|item)?\s*["']?([A-Za-zÀ-ÿ0-9\s.+-]{2,60}?)(?:\s*(?:,|\.|R\$|pre[çc]o|valor|\bcom\b|\bpor\b|\bpara\b|\burl\b|https?|\bcor\b|\bdescri[cç][aã]o\b|\bdescricao\b|$)|$)/i,
   );
   if (prodMatch?.[1]) {
     const pn = prodMatch[1].trim();
@@ -573,7 +573,7 @@ export function extractProductName(msg: string): string {
   }
   // Try "no Produto X" / "na Oferta X" pattern (for URL/attachment contexts)
   const noMatch = cleanMsg.match(
-    /\bno\s+(?:produto|oferta|plano|checkout|item)?\s*["']?([A-Za-zÀ-ÿ0-9\s\-\.+]{2,60}?)(?:\s*(?:R\$|pre[çc]o|valor|\bcom\b|\bpor\b|\bpara\b|\bno\b|\bna\b|$)|$)/i,
+    /\bno\s+(?:produto|oferta|plano|checkout|item)?\s*["']?([A-Za-zÀ-ÿ0-9\s.+-]{2,60}?)(?:\s*(?:R\$|pre[çc]o|valor|\bcom\b|\bpor\b|\bpara\b|\bno\b|\bna\b|$)|$)/i,
   );
   if (noMatch?.[1]) {
     const nn = noMatch[1].trim();
@@ -583,7 +583,7 @@ export function extractProductName(msg: string): string {
   }
   // Try "do Produto X" or "da Oferta X" pattern first (for venda/pedido contexts)
   const doMatch = msg.match(
-    /\b(?:do|da)\s+(?:produto|oferta|plano|checkout|item)?\s*["']?([A-Za-zÀ-ÿ0-9\s\-\.\+]{2,60}?)(?:\s*(?:R\$|pre[çc]o|valor|\bcom\b|\bpor\b|\bpara\b|\bdo\b|\bpara\b|$)|$)/i,
+    /\b(?:do|da)\s+(?:produto|oferta|plano|checkout|item)?\s*["']?([A-Za-zÀ-ÿ0-9\s.+-]{2,60}?)(?:\s*(?:R\$|pre[çc]o|valor|\bcom\b|\bpor\b|\bpara\b|\bdo\b|\bpara\b|$)|$)/i,
   );
   if (doMatch?.[1]) {
     const cleanName = doMatch[1].trim();
@@ -592,7 +592,7 @@ export function extractProductName(msg: string): string {
     }
   }
   const m = cleanMsg.match(
-    /(?:produtos?|planos?|ofertas?|checkouts?|cupons?|vendas?|pedidos?|orders?)\s+(?:chamad[oa]|de\s+)?["']?([A-Za-zÀ-ÿ0-9\s\-\.\+]{2,60}?)(?:\s*(?:R\$|pre[çc]o|valor|\bcom\b|\bpor\b|\bpara\b|\bdo\b|\bmudando\b|\bmuda\b|\bdescri[cç][aã]o\b|\bdescricao\b|\btags?\b|\bgarantia\b|\bcategoria\b|\bformato\b|\bcart[aã]o\b|\bpix\b|\bboleto\b|\bcor\b|\bcupom\b|\bemail\b|\bsuporte\b|\.\s+[A-ZÀ]|$)|$)/i,
+    /(?:produtos?|planos?|ofertas?|checkouts?|cupons?|vendas?|pedidos?|orders?)\s+(?:chamad[oa]|de\s+)?["']?([A-Za-zÀ-ÿ0-9\s.+-]{2,60}?)(?:\s*(?:R\$|pre[çc]o|valor|\bcom\b|\bpor\b|\bpara\b|\bdo\b|\bmudando\b|\bmuda\b|\bdescri[cç][aã]o\b|\bdescricao\b|\btags?\b|\bgarantia\b|\bcategoria\b|\bformato\b|\bcart[aã]o\b|\bpix\b|\bboleto\b|\bcor\b|\bcupom\b|\bemail\b|\bsuporte\b|\.\s+[A-ZÀ]|$)|$)/i,
   );
   const name = (m?.[1] || '').trim() || '';
   // Strip leading prepositions and trailing punctuation
@@ -606,7 +606,7 @@ export function extractProductArgs(msg: string): Record<string, unknown> {
   const args: Record<string, unknown> = {};
   // Priority 1: Explicit "nome é X" / "nome: X" / "chamado X" / "nome do produto: X"
   const nameExplicit = msg.match(
-    /(?:nome(?:\s+do\s+produto)?|name|chama(?:do)?)\s*(?:[eé]|:)\s*["']?([A-Za-zÀ-ÿ0-9\s\-\.+]{2,60}?)(?:\s*(?:,|\.|R\$|pre[çc]o|categoria|formato|tipo|tags?|garantia|descri[cç]|pagamento|disponível|ativo|$))/i,
+    /(?:nome(?:\s+do\s+produto)?|name|chama(?:do)?)\s*(?:[eé]|:)\s*["']?([A-Za-zÀ-ÿ0-9\s.+-]{2,60}?)(?:\s*(?:,|\.|R\$|pre[çc]o|categoria|formato|tipo|tags?|garantia|descri[cç]|pagamento|disponível|ativo|$))/i,
   );
   if (nameExplicit?.[1]?.trim() && nameExplicit[1].trim().length >= 3) {
     args.productName = nameExplicit[1].trim();
@@ -720,7 +720,7 @@ export function extractPlanArgs(msg: string): Record<string, unknown> {
   const args: Record<string, unknown> = {};
   // Product name: after "para o/a" — requires article (avoids matching "para X" in unrelated text)
   const prodMatch = msg.match(
-    /para\s+(?:o\s+|a\s+)\s*(?:produto|oferta|plano|checkout|item)?\s*["']?([A-Za-zÀ-ÿ0-9\s\-\.+]{2,60}?)(?:\s*(?:,|\.|R\$|pre[çc]o|valor|\bcom\b|\bpor\b|\bpara\b|\burl\b|https?|\bcor\b|\bdescri[cç][aã]o\b|\bdescricao\b|$)|$)/i,
+    /para\s+(?:o\s+|a\s+)\s*(?:produto|oferta|plano|checkout|item)?\s*["']?([A-Za-zÀ-ÿ0-9\s.+-]{2,60}?)(?:\s*(?:,|\.|R\$|pre[çc]o|valor|\bcom\b|\bpor\b|\bpara\b|\burl\b|https?|\bcor\b|\bdescri[cç][aã]o\b|\bdescricao\b|$)|$)/i,
   );
   if (prodMatch?.[1]) {
     const pn = prodMatch[1].trim();
@@ -1037,7 +1037,7 @@ export function extractAffiliateArgs(msg: string): Record<string, unknown> {
     args.commissionPercent = parseInt(pctMatch[1], 10);
   }
   const prodMatch = msg.match(
-    /para\s+(?:o\s+|a\s+)?(?:produto\s+)?["']?([A-Za-zÀ-ÿ0-9\s\-\.\+]{2,60}?)(?:\s*(?:,|\.|R\$|pre[çc]o|valor|\bcom\b|\bpor\b|\bpara\b|\burl\b|https?|\bcor\b|\bdescri[cç][aã]o\b|\bdescricao\b|$)|$)/i,
+    /para\s+(?:o\s+|a\s+)?(?:produto\s+)?["']?([A-Za-zÀ-ÿ0-9\s.+-]{2,60}?)(?:\s*(?:,|\.|R\$|pre[çc]o|valor|\bcom\b|\bpor\b|\bpara\b|\burl\b|https?|\bcor\b|\bdescri[cç][aã]o\b|\bdescricao\b|$)|$)/i,
   );
   if (prodMatch?.[1]) {
     args.productName = prodMatch[1].trim();

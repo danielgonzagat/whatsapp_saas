@@ -1,28 +1,5 @@
 import { MindVerbalizerService } from './mind-verbalizer.service';
 
-function buildBelief(
-  overrides: Partial<{
-    subject: string;
-    predicate: string;
-    context: Record<string, unknown>;
-    mean: number;
-    samples: number;
-  }> = {},
-) {
-  return {
-    id: 'id',
-    workspaceId: 'ws-1',
-    subject: overrides.subject ?? 'contact:1',
-    predicate: overrides.predicate ?? 'P(reply|template,hour,channel)',
-    context: overrides.context ?? { channel: 'whatsapp', hour: 14 },
-    mean: overrides.mean ?? 0.65,
-    variance: 0.01,
-    samples: overrides.samples ?? 42,
-    alpha: 10,
-    beta: 5,
-  };
-}
-
 function harnessZero() {
   return { lift: 0, baselineMean: 0, mindMean: 0, n: 0, pZScore: 0 };
 }

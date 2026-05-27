@@ -22,7 +22,7 @@ describe('MercadoEntradaDeclaratorService', () => {
     }).compile();
 
     service = module.get(MercadoEntradaDeclaratorService);
-    await service.onModuleInit();
+    service.onModuleInit();
   });
 
   it('initialises with the first candidate as active market', () => {
@@ -119,9 +119,10 @@ describe('entryMarketFromCandidate (pure function)', () => {
   it('strips scoring fields from candidate', () => {
     const candidate = ENTRY_MARKET_CANDIDATES[0]!;
     const market = entryMarketFromCandidate(candidate);
+    const marketRecord = market as unknown as Record<string, unknown>;
     expect(market.marketId).toBe(candidate.marketId);
     expect(market.label).toBe(candidate.label);
-    expect((market as any).compositeScore).toBeUndefined();
-    expect((market as any).rank).toBeUndefined();
+    expect(marketRecord.compositeScore).toBeUndefined();
+    expect(marketRecord.rank).toBeUndefined();
   });
 });

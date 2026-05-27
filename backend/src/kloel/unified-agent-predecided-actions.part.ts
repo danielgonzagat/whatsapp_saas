@@ -18,8 +18,12 @@ interface CapabilityBlockResult {
 }
 
 function mapBrainRiskToRiskClass(risk: BrainCapabilityRisk): RiskClassLabel {
-  if (risk === 'critical') {return 'R3';}
-  if (risk === 'high') {return 'R2';}
+  if (risk === 'critical') {
+    return 'R3';
+  }
+  if (risk === 'high') {
+    return 'R2';
+  }
   return 'R1';
 }
 

@@ -9,11 +9,7 @@
  * Output: MentionTiming.
  */
 
-import type {
-  CreatorEvent,
-  MentionTiming,
-  MentionTimingRecommendation,
-} from './types';
+import type { CreatorEvent, MentionTiming, MentionTimingRecommendation } from './types';
 
 export interface MentionHistoryEntry {
   readonly mentionedAt: string;
@@ -41,11 +37,10 @@ const DEFAULT_TIMING_CONFIG: TimingConfig = {
   saturationPauseThreshold: 0.6,
 };
 
-function computeDaysSinceLastMention(
-  history: readonly MentionHistoryEntry[],
-  now: number,
-): number {
-  if (history.length === 0) {return Infinity;}
+function computeDaysSinceLastMention(history: readonly MentionHistoryEntry[], now: number): number {
+  if (history.length === 0) {
+    return Infinity;
+  }
 
   const latest = history.reduce((max, h) => {
     const t = new Date(h.mentionedAt).getTime();
@@ -55,12 +50,12 @@ function computeDaysSinceLastMention(
   return (now - latest) / (1000 * 60 * 60 * 24);
 }
 
-function computeRecentPromotionCount(
-  recentEvents: readonly CreatorEvent[],
-): number {
+function computeRecentPromotionCount(recentEvents: readonly CreatorEvent[]): number {
   return recentEvents.filter((e) => {
     const text = extractMessageText(e);
-    if (!text) {return false;}
+    if (!text) {
+      return false;
+    }
 
     const lower = text.toLowerCase();
     const promoSignals = [
@@ -83,7 +78,9 @@ function computeEngagementSinceLastMention(
   history: readonly MentionHistoryEntry[],
   now: number,
 ): number {
-  if (history.length === 0) {return recentEvents.length;}
+  if (history.length === 0) {
+    return recentEvents.length;
+  }
 
   const latestMentionAt = history.reduce((max, h) => {
     const t = new Date(h.mentionedAt).getTime();
@@ -96,18 +93,14 @@ function computeEngagementSinceLastMention(
   }).length;
 }
 
-function computeAudienceReceptivity(
-  recentEvents: readonly CreatorEvent[],
-): number {
-  if (recentEvents.length === 0) {return 0.5;}
+function computeAudienceReceptivity(recentEvents: readonly CreatorEvent[]): number {
+  if (recentEvents.length === 0) {
+    return 0.5;
+  }
 
-  const positiveCount = recentEvents.filter((e) =>
-    e.valence === 'positive',
-  ).length;
+  const positiveCount = recentEvents.filter((e) => e.valence === 'positive').length;
 
-  const negativeCount = recentEvents.filter((e) =>
-    e.valence === 'negative',
-  ).length;
+  const negativeCount = recentEvents.filter((e) => e.valence === 'negative').length;
 
   const silenceCount = recentEvents.filter(
     (e) => e.eventName === 'commerce.lead.went_silent',
@@ -127,11 +120,21 @@ function determineRecommendation(
   engagementSinceLast: number,
   config: TimingConfig,
 ): MentionTimingRecommendation {
-  if (saturationIndex >= config.saturationPauseThreshold) {return 'pause';}
-  if (recentPromotions >= config.maxConsecutivePromotions) {return 'pause';}
-  if (engagementSinceLast < config.minEngagementBeforeMention) {return 'wait';}
-  if (daysSinceLastMention < config.minDaysBetweenMentions) {return 'wait';}
-  if (receptivity < 0.3) {return 'pause';}
+  if (saturationIndex >= config.saturationPauseThreshold) {
+    return 'pause';
+  }
+  if (recentPromotions >= config.maxConsecutivePromotions) {
+    return 'pause';
+  }
+  if (engagementSinceLast < config.minEngagementBeforeMention) {
+    return 'wait';
+  }
+  if (daysSinceLastMention < config.minDaysBetweenMentions) {
+    return 'wait';
+  }
+  if (receptivity < 0.3) {
+    return 'pause';
+  }
 
   if (
     receptivity >= config.receptivityHighThreshold &&
@@ -140,7 +143,9 @@ function determineRecommendation(
     return 'now';
   }
 
-  if (daysSinceLastMention >= config.idealDaysBetweenMentions) {return 'now';}
+  if (daysSinceLastMention >= config.idealDaysBetweenMentions) {
+    return 'now';
+  }
 
   return 'wait';
 }
@@ -157,11 +162,17 @@ function buildReason(
     case 'now':
       return `optimal timing: ${daysSinceLastMention >= 99 ? 'first mention' : `${daysSinceLastMention.toFixed(1)}d since last mention`}, receptivity ${receptivity.toFixed(2)}`;
     case 'wait':
-      if (daysSinceLastMention >= 99) {return 'not enough engagement data yet';}
+      if (daysSinceLastMention >= 99) {
+        return 'not enough engagement data yet';
+      }
       return `waiting: ${daysSinceLastMention.toFixed(1)}d since last, receptivity ${receptivity.toFixed(2)}`;
     case 'pause':
-      if (saturationIndex >= 0.6) {return `pause: saturation index ${saturationIndex.toFixed(2)} too high`;}
-      if (recentPromotions >= 5) {return `pause: ${recentPromotions} consecutive promotions`;}
+      if (saturationIndex >= 0.6) {
+        return `pause: saturation index ${saturationIndex.toFixed(2)} too high`;
+      }
+      if (recentPromotions >= 5) {
+        return `pause: ${recentPromotions} consecutive promotions`;
+      }
       return `pause: audience receptivity critically low (${receptivity.toFixed(2)})`;
     case 'never':
       return 'not recommended: audience engagement absent';
@@ -183,9 +194,10 @@ export function adviseMentionTiming(
   const recentPromotions = computeRecentPromotionCount(recentEvents);
   const engagementSinceLast = computeEngagementSinceLastMention(recentEvents, mentionHistory, now);
   const receptivity = computeAudienceReceptivity(recentEvents);
-  const saturationIndex = recentEvents.length === 0
-    ? 0
-    : Math.min(1, recentPromotions / Math.max(1, recentEvents.length));
+  const saturationIndex =
+    recentEvents.length === 0
+      ? 0
+      : Math.min(1, recentPromotions / Math.max(1, recentEvents.length));
 
   const recommendation = determineRecommendation(
     daysSinceLastMention,
@@ -207,16 +219,31 @@ export function adviseMentionTiming(
     engagementSinceLastMention: engagementSinceLast,
     audienceReceptivity: parseFloat(receptivity.toFixed(3)),
     recommendation,
-    reason: buildReason(recommendation, daysSinceLastMention, saturationIndex, receptivity, recentPromotions, engagementSinceLast),
+    reason: buildReason(
+      recommendation,
+      daysSinceLastMention,
+      saturationIndex,
+      receptivity,
+      recentPromotions,
+      engagementSinceLast,
+    ),
     generatedAt: new Date(now).toISOString(),
   };
 }
 
 function extractMessageText(ev: CreatorEvent): string | undefined {
   const p = ev.payload;
-  if (!p) {return undefined;}
-  if (typeof p['messageBody'] === 'string') {return p['messageBody'];}
-  if (typeof p['body'] === 'string') {return p['body'];}
-  if (typeof p['text'] === 'string') {return p['text'];}
+  if (!p) {
+    return undefined;
+  }
+  if (typeof p['messageBody'] === 'string') {
+    return p['messageBody'];
+  }
+  if (typeof p['body'] === 'string') {
+    return p['body'];
+  }
+  if (typeof p['text'] === 'string') {
+    return p['text'];
+  }
   return undefined;
 }

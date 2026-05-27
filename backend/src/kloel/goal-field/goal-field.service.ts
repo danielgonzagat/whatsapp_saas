@@ -71,11 +71,11 @@ export class GoalFieldService {
     for (const det of this.defaultDetectors) {
       try {
         const detected = det.detect(input.events, nowMs);
-        for (const t of detected) {tensions.push(t);}
+        for (const t of detected) {
+          tensions.push(t);
+        }
       } catch (err) {
-        this.logger.error(
-          `detector ${det.name} threw — ${(err as Error).message}`,
-        );
+        this.logger.error(`detector ${det.name} threw — ${(err as Error).message}`);
       }
     }
 
@@ -83,8 +83,7 @@ export class GoalFieldService {
     const candidates = this.emerge(aggregated, emergenceThreshold, nowMs);
     const selected = this.select(candidates, promotionTopK);
 
-    const promoted =
-      mode === 'active' ? this.gateByShadowEligibility(selected, nowMs) : [];
+    const promoted = mode === 'active' ? this.gateByShadowEligibility(selected, nowMs) : [];
     if (mode === 'active') {
       for (const g of promoted) {
         this.liveGoals.set(g.goalId, { ...g, lastSeenMs: nowMs });
@@ -158,7 +157,9 @@ export class GoalFieldService {
   ): readonly GoalCandidate[] {
     const out: GoalCandidate[] = [];
     for (const a of aggregated) {
-      if (a.weightedSeverity < threshold) {continue;}
+      if (a.weightedSeverity < threshold) {
+        continue;
+      }
       const impact = Math.min(1, a.weightedSeverity);
       const viability = a.dominantDimension === 'cognitive' ? 0.6 : 0.75;
       const risk = a.dominantDimension === 'financial' ? 0.3 : 0.2;
@@ -185,10 +186,7 @@ export class GoalFieldService {
   /**
    * UTP-GOAL-SELECT-001: rank by score and cap to topK.
    */
-  private select(
-    candidates: readonly GoalCandidate[],
-    topK: number,
-  ): readonly GoalCandidate[] {
+  private select(candidates: readonly GoalCandidate[], topK: number): readonly GoalCandidate[] {
     return [...candidates].sort((a, b) => b.score - a.score).slice(0, topK);
   }
 
@@ -220,14 +218,13 @@ export class GoalFieldService {
     candidates: readonly GoalCandidate[],
     nowMs: number,
   ): readonly GoalCandidate[] {
-    if (!this.shadowAccumulator) {return candidates;}
+    if (!this.shadowAccumulator) {
+      return candidates;
+    }
     const promoted: GoalCandidate[] = [];
     const blocked: GoalCandidate[] = [];
     for (const c of candidates) {
-      if (
-        !c.workspaceId ||
-        this.shadowAccumulator.isPromotionEligible(c.workspaceId, nowMs)
-      ) {
+      if (!c.workspaceId || this.shadowAccumulator.isPromotionEligible(c.workspaceId, nowMs)) {
         promoted.push(c);
       } else {
         blocked.push(c);

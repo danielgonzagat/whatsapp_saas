@@ -13,6 +13,15 @@ const DEFAULT_TICK_ATTEMPTS = 3;
 const MIND_SCHEDULER_QUEUE = 'mind-scheduler';
 const MIND_TICK_QUEUE = 'mind-tick';
 
+type MindTickJobData = { workspaceId?: unknown };
+
+function getMindTickWorkspaceId(data: unknown): string {
+  if (data && typeof data === 'object' && 'workspaceId' in data) {
+    return String((data as MindTickJobData).workspaceId);
+  }
+  return '';
+}
+
 @Injectable()
 export class MindProcessorService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = StructuredLogger.from(MindProcessorService.name);
@@ -100,7 +109,7 @@ export class MindProcessorService implements OnModuleInit, OnModuleDestroy {
     this.tickWorker = new Worker(
       MIND_TICK_QUEUE,
       async (job) => {
-        const workspaceId = String(job.data.workspaceId);
+        const workspaceId = getMindTickWorkspaceId(job.data);
         const tick = await this.mind.tick(workspaceId);
         await this.maybeGenerateDailyReport(workspaceId);
         return tick;
@@ -115,10 +124,12 @@ export class MindProcessorService implements OnModuleInit, OnModuleDestroy {
     this.tickWorker.on('failed', (job, error, prev) => {
       if (prev) {
         this.logger.warn(
-          `MIND tick retry workspace=${job?.data?.workspaceId} attempt=${job?.attemptsMade}: ${error.message}`,
+          `MIND tick retry workspace=${getMindTickWorkspaceId(job?.data)} attempt=${job?.attemptsMade}: ${error.message}`,
         );
       } else {
-        this.logger.error(`MIND tick failed workspace=${job?.data?.workspaceId}: ${error.message}`);
+        this.logger.error(
+          `MIND tick failed workspace=${getMindTickWorkspaceId(job?.data)}: ${error.message}`,
+        );
       }
     });
 

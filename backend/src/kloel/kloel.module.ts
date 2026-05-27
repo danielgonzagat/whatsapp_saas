@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Module, forwardRef, type Provider } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ConversationalOnboardingService } from './conversational-onboarding.service';
 import { ConversationalOnboardingToolsService } from './conversational-onboarding-tools.service';
@@ -398,7 +398,7 @@ import { PlansModule } from '../plans/plans.module';
     AgentRuntimeSchedulerService,
     AgentRuntimeSessionStore,
     AgentRuntimeSkillRegistry,
-  ],
+  ] as Provider[],
   exports: [
     KloelService,
     KloelCodeToolsService,

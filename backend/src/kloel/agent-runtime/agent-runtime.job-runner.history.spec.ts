@@ -1,5 +1,18 @@
 import { AgentRuntimeJobRunnerService } from './agent-runtime.job-runner';
 
+type KloelMemoryUpsertArgs = {
+  update: { value: { history: unknown[] } };
+};
+
+type MindOutboxUpdateManyArgs = {
+  data: { payload: { nextRetryAt: string | number | Date } };
+};
+
+function firstMockArg<T>(mock: jest.Mock, callIndex = 0): T {
+  const call = mock.mock.calls[callIndex] as readonly unknown[] | undefined;
+  return call?.[0] as T;
+}
+
 function makePendingRows(rows: Array<{ id: string; payload: Record<string, unknown> }>) {
   return jest.fn().mockResolvedValue(rows);
 }
@@ -113,11 +126,9 @@ describe('AgentRuntimeJobRunnerService', () => {
         }),
       }),
     );
-    const upsertArgs = prisma.kloelMemory.upsert.mock.calls[0][0];
+    const upsertArgs = firstMockArg<KloelMemoryUpsertArgs>(prisma.kloelMemory.upsert);
     expect(Array.isArray(upsertArgs.update.value.history)).toBe(true);
-    const upsertCall = (prisma.kloelMemory.upsert).mock.calls[0][0];
-    const history = upsertCall.update.value.history;
-    expect(history).toHaveLength(2);
+    expect(upsertArgs.update.value.history).toHaveLength(2);
   });
 
   it('handles failed dead-letter persistence gracefully', async () => {
@@ -299,9 +310,8 @@ describe('AgentRuntimeJobRunnerService', () => {
 
     await service.runPendingJobsForWorkspace('ws_1');
 
-    const updateCall = (prisma.mindOutboxEvent.updateMany).mock.calls[1][0];
-    const payload = updateCall.data.payload;
-    const nextRetryAt = new Date(payload.nextRetryAt);
+    const updateCall = firstMockArg<MindOutboxUpdateManyArgs>(prisma.mindOutboxEvent.updateMany, 1);
+    const nextRetryAt = new Date(updateCall.data.payload.nextRetryAt);
 
     const expectedDelayMs = Math.min(60_000 * Math.pow(2, 1), 30 * 60_000);
     const expectedRetryTime = new Date(fakeNow.getTime() + expectedDelayMs);

@@ -10,6 +10,7 @@ import {
   Post,
 } from '@nestjs/common';
 import type Redis from 'ioredis';
+import type { Prisma } from '@prisma/client';
 import { Public } from '../auth/public.decorator';
 import { safeCompareStrings } from '../common/utils/crypto-compare.util';
 import { PrismaService } from '../prisma/prisma.service';
@@ -20,7 +21,7 @@ import { WhatsAppApiProvider } from '../whatsapp/providers/whatsapp-api.provider
 import { WhatsAppCatchupService } from '../whatsapp/whatsapp-catchup.service';
 
 import { RouteClass } from '../common/throttler/route-class.decorator';
-import { Throttle } from "@nestjs/throttler";
+import { Throttle } from '@nestjs/throttler';
 
 interface WahaWebhookPayload {
   event?: string;
@@ -92,13 +93,15 @@ export class WhatsAppApiWebhookController {
         ? String((body.payload as Record<string, string>).id)
         : '';
     const externalId = wahaMessageId || `${sessionId}:${event}`;
+    const payload = JSON.parse(JSON.stringify(body)) as Prisma.InputJsonValue;
+
     try {
       await this.prisma.webhookEvent.create({
         data: {
           provider: 'whatsapp-api',
           externalId,
           eventType: event,
-          payload: JSON.parse(JSON.stringify(body)),
+          payload,
         },
       });
     } catch (err: unknown) {

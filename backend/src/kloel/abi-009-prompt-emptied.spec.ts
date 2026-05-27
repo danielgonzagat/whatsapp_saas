@@ -64,12 +64,8 @@ describe('UTP-ABI-009 — Prompt emptied', () => {
       expect(CANONICAL_FALLBACK_SYSTEM_PROMPT).not.toMatch(
         /\b(nunca|sempre|verbalize|responda|never|always|you\s+must|você\s+deve|voce\s+deve|seu\s+trabalho)\b/i,
       );
-      expect(CANONICAL_FALLBACK_SYSTEM_PROMPT).toContain(
-        'cognitive_state_boundary=distributed',
-      );
-      expect(CANONICAL_FALLBACK_SYSTEM_PROMPT).toContain(
-        'fact_boundary=state_payload',
-      );
+      expect(CANONICAL_FALLBACK_SYSTEM_PROMPT).toContain('cognitive_state_boundary=distributed');
+      expect(CANONICAL_FALLBACK_SYSTEM_PROMPT).toContain('fact_boundary=state_payload');
     });
 
     it('contains no persona, role, or few-shot prose', () => {
@@ -137,10 +133,7 @@ describe('UTP-ABI-009 — Prompt emptied', () => {
     });
 
     it('has no direct dependency on kloel.prompts or kloel.prompts.helpers', () => {
-      const helperImports = [
-        "from './kloel.prompts'",
-        "from './kloel.prompts.helpers'",
-      ];
+      const helperImports = ["from './kloel.prompts'", "from './kloel.prompts.helpers'"];
       for (const imp of helperImports) {
         expect(raw).not.toContain(imp);
       }

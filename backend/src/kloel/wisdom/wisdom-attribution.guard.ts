@@ -28,7 +28,9 @@ export interface AttributionViolation {
  */
 function checkDescription(description: string): RegExp | null {
   for (const pattern of PII_KEYWORD_PATTERNS) {
-    if (pattern.test(description)) {return pattern;}
+    if (pattern.test(description)) {
+      return pattern;
+    }
   }
   return null;
 }
@@ -38,9 +40,7 @@ function checkDescription(description: string): RegExp | null {
  * Returns an array of violations found in the pattern's description
  * and applicableConditions.
  */
-export function validatePatternAttribution(
-  pattern: WisdomPattern,
-): AttributionViolation[] {
+export function validatePatternAttribution(pattern: WisdomPattern): AttributionViolation[] {
   const violations: AttributionViolation[] = [];
 
   for (const pattern_ of PII_KEYWORD_PATTERNS) {
@@ -76,9 +76,7 @@ export function validatePatternAttribution(
  * Validate all patterns for attribution leaks.
  * Returns a result with ok=false if a violation is found.
  */
-export function validateAttribution(
-  patterns: readonly WisdomPattern[],
-): AttributionGuardResult {
+export function validateAttribution(patterns: readonly WisdomPattern[]): AttributionGuardResult {
   const allViolations: AttributionViolation[] = [];
 
   for (const pattern of patterns) {
@@ -96,12 +94,10 @@ export function validateAttribution(
  * Throws an error with details if a violation is found.
  * Use this at the ABI projection boundary.
  */
-export function assertNoAttributionLeak(
-  patterns: readonly WisdomPattern[],
-): void {
+export function assertNoAttributionLeak(patterns: readonly WisdomPattern[]): void {
   const result = validateAttribution(patterns);
   if (!result.ok) {
-    const ids = [...new Set(result.violations.map(v => v.patternId))].join(', ');
+    const ids = [...new Set(result.violations.map((v) => v.patternId))].join(', ');
     throw new Error(
       `Attribution guard failed: PII leak in patterns [${ids}]. ` +
         `${result.violations.length} violations detected.`,

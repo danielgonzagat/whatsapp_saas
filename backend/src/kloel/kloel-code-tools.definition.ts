@@ -257,7 +257,8 @@ export const KLOEL_CHAT_TOOLS_CODE: ChatCompletionTool[] = [
         properties: {
           symbol: {
             type: 'string',
-            description: 'Nome do símbolo (função, método, classe) ou caminho de arquivo para buscar.',
+            description:
+              'Nome do símbolo (função, método, classe) ou caminho de arquivo para buscar.',
           },
           file: {
             type: 'string',

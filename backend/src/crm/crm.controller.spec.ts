@@ -47,7 +47,10 @@ describe('CrmController', () => {
       const mockReq = { user: { sub: 'user-1', workspaceId: 'ws-1' } } as never;
       const mockQuery = { workspaceId: 'ws-1', page: '2', limit: '10', search: 'bob' };
       (resolveWorkspaceId as jest.Mock).mockReturnValue('ws-1');
-      listContacts.mockResolvedValue({ data: [], meta: { total: 0, page: 2, limit: 10, pages: 0 } });
+      listContacts.mockResolvedValue({
+        data: [],
+        meta: { total: 0, page: 2, limit: 10, pages: 0 },
+      });
 
       await controller.listContacts(mockReq, mockQuery);
 
@@ -81,9 +84,9 @@ describe('CrmController', () => {
       const error = new Error('Contact not found');
       getContact.mockRejectedValue(error);
 
-      await expect(
-        controller.getContact(mockReq, '+5511999999999', 'ws-1'),
-      ).rejects.toThrow('Contact not found');
+      await expect(controller.getContact(mockReq, '+5511999999999', 'ws-1')).rejects.toThrow(
+        'Contact not found',
+      );
     });
   });
 

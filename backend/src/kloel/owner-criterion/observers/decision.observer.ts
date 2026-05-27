@@ -120,19 +120,13 @@ export function observeDecisions(input: ObserverInput): DecisionObservation[] {
   const autonomyGrants = extractAutonomyGrants(input.events);
 
   if (overrides.length >= MIN_EVENTS_FOR_OBSERVATION) {
-    observations.push(
-      buildObservation(input.workspaceId, 'override', overrides, input.nowMs),
-    );
+    observations.push(buildObservation(input.workspaceId, 'override', overrides, input.nowMs));
   }
   if (escalations.length >= MIN_EVENTS_FOR_OBSERVATION) {
-    observations.push(
-      buildObservation(input.workspaceId, 'escalation', escalations, input.nowMs),
-    );
+    observations.push(buildObservation(input.workspaceId, 'escalation', escalations, input.nowMs));
   }
   if (rejections.length >= MIN_EVENTS_FOR_OBSERVATION) {
-    observations.push(
-      buildObservation(input.workspaceId, 'rejection', rejections, input.nowMs),
-    );
+    observations.push(buildObservation(input.workspaceId, 'rejection', rejections, input.nowMs));
   }
   if (autonomyGrants.length >= MIN_EVENTS_FOR_OBSERVATION) {
     observations.push(

@@ -4,6 +4,23 @@ import { KloelRuleEngineService } from '../../rules/kloel-rule-engine.service';
 import { MindGuardsService } from './mind-guards.service';
 import type { MindActionContext } from '../../mind-code-native.types';
 
+type GuardRuleContext = {
+  action: string;
+  channel?: string;
+  contactOptOut?: boolean;
+  templateApproved?: unknown;
+};
+
+function objectContaining<T extends object>(sample: T): T {
+  const matcher: unknown = expect.objectContaining(sample);
+  return matcher as T;
+}
+
+function firstMockArg<T>(mock: jest.Mock, callIndex = 0): T {
+  const call = mock.mock.calls[callIndex] as readonly unknown[] | undefined;
+  return call?.[0] as T;
+}
+
 describe('MindGuardsService', () => {
   let service: MindGuardsService;
   let prisma: { mindGuardAudit: { create: jest.Mock } };
@@ -55,7 +72,7 @@ describe('MindGuardsService', () => {
     engine.evaluate.mockReturnValue({ blocked: false });
     await service.evaluate({ ...baseInput, workspaceId: 'ws-tenant-A' });
     expect(prisma.mindGuardAudit.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
+      data: objectContaining({
         workspaceId: 'ws-tenant-A',
         action: 'send_template',
         decision: 'allow',
@@ -80,7 +97,7 @@ describe('MindGuardsService', () => {
       ...baseInput,
       context: { channel: 'whatsapp', contactOptOut: false },
     });
-    const ctx = engine.evaluate.mock.calls[0][0];
+    const ctx = firstMockArg<GuardRuleContext>(engine.evaluate);
     expect(ctx.action).toBe('send_template');
     expect(ctx.channel).toBe('whatsapp');
     expect(ctx.contactOptOut).toBe(false);

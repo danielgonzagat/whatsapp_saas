@@ -17,9 +17,7 @@ export function detectQualificationLeak(input: DetectorInput): DetectorResult {
   const insights: Insight[] = [];
 
   const filtered = events.filter(
-    (e) =>
-      e.workspaceId === workspaceId &&
-      withinWindow(e.occurredAt, nowMs, windowDays),
+    (e) => e.workspaceId === workspaceId && withinWindow(e.occurredAt, nowMs, windowDays),
   );
 
   let qualifiedCount = 0;
@@ -45,7 +43,9 @@ export function detectQualificationLeak(input: DetectorInput): DetectorResult {
     }
   }
 
-  if (qualifiedCount < MIN_QUALIFIED) {return { insights: [] };}
+  if (qualifiedCount < MIN_QUALIFIED) {
+    return { insights: [] };
+  }
 
   const leakRate = lostAfterQualified / qualifiedCount;
 

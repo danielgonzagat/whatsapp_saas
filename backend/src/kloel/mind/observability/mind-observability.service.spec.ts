@@ -7,6 +7,23 @@ import { MindReportService } from './mind-report.service';
 import { MindBanditService } from '../policy/mind-bandit.service';
 import { MindObservabilityService } from './mind-observability.service';
 
+type WorkspaceWhereArgs = {
+  where: {
+    workspaceId: string;
+    occurredAt?: { gte: Date };
+  };
+};
+
+type SurpriseQueryArgs = WorkspaceWhereArgs & {
+  orderBy: { surprise: string };
+  take: number;
+};
+
+function firstMockArg<T>(mock: jest.Mock, callIndex = 0): T {
+  const call = mock.mock.calls[callIndex] as readonly unknown[] | undefined;
+  return call?.[0] as T;
+}
+
 describe('MindObservabilityService', () => {
   let service: MindObservabilityService;
   let prisma: {
@@ -56,15 +73,19 @@ describe('MindObservabilityService', () => {
         strongest: [{ id: 's1' }],
         uncertain: [{ id: 'u1' }],
       });
-      expect(prisma.mindBelief.findMany.mock.calls[0][0].where.workspaceId).toBe('ws-1');
-      expect(prisma.mindBelief.findMany.mock.calls[1][0].where.workspaceId).toBe('ws-1');
+      expect(firstMockArg<WorkspaceWhereArgs>(prisma.mindBelief.findMany).where.workspaceId).toBe(
+        'ws-1',
+      );
+      expect(
+        firstMockArg<WorkspaceWhereArgs>(prisma.mindBelief.findMany, 1).where.workspaceId,
+      ).toBe('ws-1');
     });
   });
 
   describe('surprise', () => {
     it('returns workspace-scoped resolved predictions sorted by surprise desc', async () => {
       await service.surprise('ws-tenant-A', 10);
-      const arg = prisma.mindPrediction.findMany.mock.calls[0][0];
+      const arg = firstMockArg<SurpriseQueryArgs>(prisma.mindPrediction.findMany);
       expect(arg.where).toEqual({
         workspaceId: 'ws-tenant-A',
         resolvedAt: { not: null },
@@ -76,7 +97,7 @@ describe('MindObservabilityService', () => {
 
     it('defaults take to 50', async () => {
       await service.surprise('ws-1');
-      expect(prisma.mindPrediction.findMany.mock.calls[0][0].take).toBe(50);
+      expect(firstMockArg<SurpriseQueryArgs>(prisma.mindPrediction.findMany).take).toBe(50);
     });
   });
 
@@ -96,7 +117,7 @@ describe('MindObservabilityService', () => {
 
     it('uses gte filter with workspace isolation', async () => {
       await service.concepts('ws-tenant-A', 12);
-      const arg = prisma.mindConceptDetection.findMany.mock.calls[0][0];
+      const arg = firstMockArg<WorkspaceWhereArgs>(prisma.mindConceptDetection.findMany);
       expect(arg.where.workspaceId).toBe('ws-tenant-A');
       expect(arg.where.occurredAt.gte).toBeInstanceOf(Date);
     });
@@ -116,9 +137,15 @@ describe('MindObservabilityService', () => {
 
     it('enforces workspaceId filter on every count', async () => {
       await service.health('ws-tenant-A');
-      expect(prisma.mindOutboxEvent.count.mock.calls[0][0].where.workspaceId).toBe('ws-tenant-A');
-      expect(prisma.mindPrediction.count.mock.calls[0][0].where.workspaceId).toBe('ws-tenant-A');
-      expect(prisma.mindPolicy.count.mock.calls[0][0].where.workspaceId).toBe('ws-tenant-A');
+      expect(firstMockArg<WorkspaceWhereArgs>(prisma.mindOutboxEvent.count).where.workspaceId).toBe(
+        'ws-tenant-A',
+      );
+      expect(firstMockArg<WorkspaceWhereArgs>(prisma.mindPrediction.count).where.workspaceId).toBe(
+        'ws-tenant-A',
+      );
+      expect(firstMockArg<WorkspaceWhereArgs>(prisma.mindPolicy.count).where.workspaceId).toBe(
+        'ws-tenant-A',
+      );
     });
   });
 });

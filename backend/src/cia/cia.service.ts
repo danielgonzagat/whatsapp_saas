@@ -586,5 +586,4 @@ export class CiaService {
   private readText(value: unknown): string {
     return typeof value === 'string' ? value : '';
   }
-
 }

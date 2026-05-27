@@ -35,37 +35,103 @@ export class ProtectiveActionSuggester {
 
   private mapTrigger(trigger: string, workspaceId: string): ProtectiveAction | null {
     if (trigger.startsWith('runway_critical')) {
-      return this.makeAction(workspaceId, 'emergency_fund', 'Emergency fund activation needed — runway is critically low', 'now', 5.0);
+      return this.makeAction(
+        workspaceId,
+        'emergency_fund',
+        'Emergency fund activation needed — runway is critically low',
+        'now',
+        5.0,
+      );
     }
     if (trigger.startsWith('runway_high')) {
-      return this.makeAction(workspaceId, 'reduce_burn', 'Reduce burn rate immediately — runway is below safe threshold', 'now', 4.0);
+      return this.makeAction(
+        workspaceId,
+        'reduce_burn',
+        'Reduce burn rate immediately — runway is below safe threshold',
+        'now',
+        4.0,
+      );
     }
     if (trigger.startsWith('runway_medium')) {
-      return this.makeAction(workspaceId, 'reduce_burn', 'Review and plan burn rate reductions', 'soon', 3.0);
+      return this.makeAction(
+        workspaceId,
+        'reduce_burn',
+        'Review and plan burn rate reductions',
+        'soon',
+        3.0,
+      );
     }
     if (trigger.startsWith('trend_30d_critical') || trigger === 'negative_balance_and_projection') {
-      return this.makeAction(workspaceId, 'freeze_spending', 'Freeze all non-essential spending', 'now', 5.0);
+      return this.makeAction(
+        workspaceId,
+        'freeze_spending',
+        'Freeze all non-essential spending',
+        'now',
+        5.0,
+      );
     }
     if (trigger.startsWith('trend_14d_high')) {
-      return this.makeAction(workspaceId, 'reduce_burn', 'Identify and cut discretionary spending', 'now', 3.5);
+      return this.makeAction(
+        workspaceId,
+        'reduce_burn',
+        'Identify and cut discretionary spending',
+        'now',
+        3.5,
+      );
     }
     if (trigger.startsWith('trend_7d_medium')) {
-      return this.makeAction(workspaceId, 'accelerate_collections', 'Accelerate receivables collection', 'soon', 2.5);
+      return this.makeAction(
+        workspaceId,
+        'accelerate_collections',
+        'Accelerate receivables collection',
+        'soon',
+        2.5,
+      );
     }
     if (trigger.startsWith('margin_of_safety')) {
-      return this.makeAction(workspaceId, 'reduce_burn', 'Build safety margin — reduce monthly commitments', 'soon', 2.0);
+      return this.makeAction(
+        workspaceId,
+        'reduce_burn',
+        'Build safety margin — reduce monthly commitments',
+        'soon',
+        2.0,
+      );
     }
     if (trigger.startsWith('volatility_extreme')) {
-      return this.makeAction(workspaceId, 'freeze_spending', 'Freeze spending until volatility stabilizes', 'now', 3.0);
+      return this.makeAction(
+        workspaceId,
+        'freeze_spending',
+        'Freeze spending until volatility stabilizes',
+        'now',
+        3.0,
+      );
     }
     if (trigger.startsWith('volatility_elevated')) {
-      return this.makeAction(workspaceId, 'reduce_burn', 'Build cash buffer to absorb volatility shocks', 'soon', 2.0);
+      return this.makeAction(
+        workspaceId,
+        'reduce_burn',
+        'Build cash buffer to absorb volatility shocks',
+        'soon',
+        2.0,
+      );
     }
     if (trigger.startsWith('coverage_30d_negative')) {
-      return this.makeAction(workspaceId, 'emergency_fund', 'Coverage gap threatens solvency — activate emergency protocol', 'now', 5.0);
+      return this.makeAction(
+        workspaceId,
+        'emergency_fund',
+        'Coverage gap threatens solvency — activate emergency protocol',
+        'now',
+        5.0,
+      );
     }
     if (trigger.startsWith('no_receivables')) {
-      return this.makeAction(workspaceId, 'accelerate_collections', 'No receivables expected — push for immediate collections', 'now', 3.5);
+      return this.makeAction(
+        workspaceId,
+        'accelerate_collections',
+        'No receivables expected — push for immediate collections',
+        'now',
+        3.5,
+      );
     }
     return null;
   }
@@ -89,8 +155,12 @@ export class ProtectiveActionSuggester {
   }
 
   private urgencyWeight(urgency: ProtectiveAction['urgency']): number {
-    if (urgency === 'now') {return 3;}
-    if (urgency === 'soon') {return 2;}
+    if (urgency === 'now') {
+      return 3;
+    }
+    if (urgency === 'soon') {
+      return 2;
+    }
     return 1;
   }
 }

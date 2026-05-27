@@ -2,6 +2,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { MindCaseMemoryService } from './mind-case-memory.service';
 
+type MindCaseCreateArgs = { data: unknown };
+type MindCaseFindArgs = { where: { workspaceId: string; caseType?: string } };
+
+function firstMockArg<T>(mock: jest.Mock, callIndex = 0): T {
+  const call = mock.mock.calls[callIndex] as readonly unknown[] | undefined;
+  return call?.[0] as T;
+}
+
 describe('MindCaseMemoryService', () => {
   let service: MindCaseMemoryService;
   let prisma: {
@@ -11,15 +19,14 @@ describe('MindCaseMemoryService', () => {
   beforeEach(async () => {
     prisma = {
       mindCase: {
-        create: jest.fn().mockImplementation(({ data }) => Promise.resolve(data)),
+        create: jest
+          .fn()
+          .mockImplementation(({ data }: MindCaseCreateArgs) => Promise.resolve(data)),
         findMany: jest.fn().mockResolvedValue([]),
       },
     };
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        MindCaseMemoryService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [MindCaseMemoryService, { provide: PrismaService, useValue: prisma }],
     }).compile();
     service = module.get(MindCaseMemoryService);
   });
@@ -61,13 +68,13 @@ describe('MindCaseMemoryService', () => {
   describe('similar', () => {
     it('enforces workspace isolation in the Prisma query', async () => {
       await service.similar({ workspaceId: 'ws-tenant-A', text: 'hi' });
-      const arg = prisma.mindCase.findMany.mock.calls[0][0];
+      const arg = firstMockArg<MindCaseFindArgs>(prisma.mindCase.findMany);
       expect(arg.where.workspaceId).toBe('ws-tenant-A');
     });
 
     it('filters by caseType when provided', async () => {
       await service.similar({ workspaceId: 'ws-1', text: 'hi', caseType: 'reply' });
-      const arg = prisma.mindCase.findMany.mock.calls[0][0];
+      const arg = firstMockArg<MindCaseFindArgs>(prisma.mindCase.findMany);
       expect(arg.where.caseType).toBe('reply');
     });
 

@@ -20,14 +20,19 @@ function makeEnvelope(overrides: Partial<SpineEventEnvelope> = {}): SpineEventEn
   };
 }
 
-function makeSpine(): { spine: SpineEmitterService; emitAll: (events: SpineEventEnvelope[]) => void } {
+function makeSpine(): {
+  spine: SpineEmitterService;
+  emitAll: (events: SpineEventEnvelope[]) => void;
+} {
   const subscribers: Array<(e: SpineEventEnvelope) => void> = [];
   const spine = {
     subscribe: jest.fn((handler: (e: SpineEventEnvelope) => void) => {
       subscribers.push(handler);
       const unsub = () => {
         const idx = subscribers.indexOf(handler);
-        if (idx >= 0) {subscribers.splice(idx, 1);}
+        if (idx >= 0) {
+          subscribers.splice(idx, 1);
+        }
       };
       return unsub;
     }),

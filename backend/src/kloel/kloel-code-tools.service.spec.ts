@@ -1,10 +1,21 @@
 import { KloelCodeToolsService } from './kloel-code-tools.service';
 
+type MockFileStat = { isFile: () => boolean; size: number };
+type MockDirent = {
+  name: string;
+  isDirectory: () => boolean;
+  isSymbolicLink: () => boolean;
+};
+type ListSourceDirResult = {
+  success: boolean;
+  entries: Array<{ kind: string }>;
+};
+
 // Mock fs/promises at module level
-const mockReadFile = jest.fn();
-const mockStat = jest.fn();
-const mockReaddir = jest.fn();
-const mockAccess = jest.fn();
+const mockReadFile = jest.fn<Promise<string>, unknown[]>();
+const mockStat = jest.fn<Promise<MockFileStat>, unknown[]>();
+const mockReaddir = jest.fn<Promise<MockDirent[]>, unknown[]>();
+const mockAccess = jest.fn<Promise<void>, unknown[]>();
 
 jest.mock('fs/promises', () => ({
   readFile: (...args: unknown[]) => mockReadFile(...args),
@@ -13,7 +24,7 @@ jest.mock('fs/promises', () => ({
   access: (...args: unknown[]) => mockAccess(...args),
 }));
 
-const mockExec = jest.fn();
+const mockExec = jest.fn<unknown, unknown[]>();
 jest.mock('child_process', () => ({
   exec: (...args: unknown[]) => {
     const cb = args[args.length - 1];
@@ -26,34 +37,46 @@ jest.mock('child_process', () => ({
 
 // promisify mock — exec is promisified at module top-level
 jest.mock('util', () => {
-  const actual = jest.requireActual('util');
+  const actual = jest.requireActual<typeof import('util')>('util');
   return {
     ...actual,
-    promisify: () => jest.fn().mockImplementation((cmd: string, opts?: Record<string, unknown>) => {
-      if (typeof cmd !== 'string') return Promise.reject(new Error('bad cmd'));
-      if (cmd.includes('git log')) {
-        return Promise.resolve({ stdout: 'abc123 feat: test\ndef456 fix: bug', stderr: '' });
-      }
-      if (cmd.includes('git diff')) {
-        return Promise.resolve({ stdout: 'src/file.ts | 10 +++', stderr: '' });
-      }
-      if (cmd.includes('git status')) {
-        return Promise.resolve({ stdout: 'M src/file.ts', stderr: '' });
-      }
-      if (cmd.includes('rg --line-number')) {
-        return Promise.resolve({ stdout: 'src/file.ts:10:match', stderr: '' });
-      }
-      if (cmd.includes('npx jest')) {
-        return Promise.resolve({ stdout: JSON.stringify({ success: true, numTotalTests: 5, numPassedTests: 5, numFailedTests: 0, testResults: [] }), stderr: '' });
-      }
-      if (cmd.includes('npx tsc')) {
+    promisify: () =>
+      jest.fn().mockImplementation((cmd: string, _opts?: Record<string, unknown>) => {
+        if (typeof cmd !== 'string') {
+          return Promise.reject(new Error('bad cmd'));
+        }
+        if (cmd.includes('git log')) {
+          return Promise.resolve({ stdout: 'abc123 feat: test\ndef456 fix: bug', stderr: '' });
+        }
+        if (cmd.includes('git diff')) {
+          return Promise.resolve({ stdout: 'src/file.ts | 10 +++', stderr: '' });
+        }
+        if (cmd.includes('git status')) {
+          return Promise.resolve({ stdout: 'M src/file.ts', stderr: '' });
+        }
+        if (cmd.includes('rg --line-number')) {
+          return Promise.resolve({ stdout: 'src/file.ts:10:match', stderr: '' });
+        }
+        if (cmd.includes('npx jest')) {
+          return Promise.resolve({
+            stdout: JSON.stringify({
+              success: true,
+              numTotalTests: 5,
+              numPassedTests: 5,
+              numFailedTests: 0,
+              testResults: [],
+            }),
+            stderr: '',
+          });
+        }
+        if (cmd.includes('npx tsc')) {
+          return Promise.resolve({ stdout: '', stderr: '' });
+        }
+        if (cmd.includes('codegraph')) {
+          return Promise.resolve({ stdout: 'ok', stderr: '' });
+        }
         return Promise.resolve({ stdout: '', stderr: '' });
-      }
-      if (cmd.includes('codegraph')) {
-        return Promise.resolve({ stdout: 'ok', stderr: '' });
-      }
-      return Promise.resolve({ stdout: '', stderr: '' });
-    }),
+      }),
   };
 });
 
@@ -107,9 +130,9 @@ describe('KloelCodeToolsService', () => {
         { name: 'index.ts', isDirectory: () => false, isSymbolicLink: () => false },
         { name: 'package.json', isDirectory: () => false, isSymbolicLink: () => false },
       ]);
-      const result = await service.toolListSourceDir('src');
+      const result = (await service.toolListSourceDir('src')) as ListSourceDirResult;
       expect(result.success).toBe(true);
-      expect(result.entries[0].kind).toBe('directory');
+      expect(result.entries[0]?.kind).toBe('directory');
     });
 
     it('returns error on failure', async () => {
@@ -168,7 +191,9 @@ describe('KloelCodeToolsService', () => {
   describe('toolCodeOutline', () => {
     it('detects symbols from source code', async () => {
       mockAccess.mockResolvedValue(undefined);
-      mockReadFile.mockResolvedValue('export function foo() {}\nexport class Bar {}\nconst baz = 1;\n');
+      mockReadFile.mockResolvedValue(
+        'export function foo() {}\nexport class Bar {}\nconst baz = 1;\n',
+      );
       const result = await service.toolCodeOutline('src/test.ts');
       expect(result.success).toBe(true);
     });
@@ -184,7 +209,9 @@ describe('KloelCodeToolsService', () => {
 
   describe('toolReadPrismaSchema', () => {
     it('parses Prisma schema models and enums', async () => {
-      mockReadFile.mockResolvedValue('model User {\n  id String\n}\nmodel Product {\n  id String\n}\nenum Role {\n  ADMIN\n}');
+      mockReadFile.mockResolvedValue(
+        'model User {\n  id String\n}\nmodel Product {\n  id String\n}\nenum Role {\n  ADMIN\n}',
+      );
       const result = await service.toolReadPrismaSchema();
       expect(result.success).toBe(true);
       expect(result.modelCount).toBe(2);

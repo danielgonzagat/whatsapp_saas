@@ -39,14 +39,11 @@ import {
   roleAwareReTier,
   countTierChanges,
 } from './aware-hierarchy.extender';
-import type { AttentionRanking } from '../clarity/clarity.types';
 import {
   filterWisdomByRole,
   filterWisdomByMultiRole,
   explainRelevance,
 } from './aware-wisdom.extender';
-import type { WisdomPattern } from '../wisdom/wisdom.types';
-
 const NOW = Date.parse('2026-05-14T10:00:00.000Z');
 
 function ev(over: Partial<SpineEventRef>): SpineEventRef {
@@ -67,37 +64,6 @@ function ev(over: Partial<SpineEventRef>): SpineEventRef {
     e['payload'] = over.payload;
   }
   return e as SpineEventRef;
-}
-
-function makeWisdomPattern(over: Partial<WisdomPattern>): WisdomPattern {
-  return {
-    patternId: over.patternId ?? `wp_${Math.random().toString(36).slice(2, 8)}`,
-    description: over.description ?? 'pattern desc',
-    applicableConditions: over.applicableConditions ?? ['stage:validacao'],
-    evidenceWorkspacesCount: over.evidenceWorkspacesCount ?? 5,
-    confidence: over.confidence ?? 0.8,
-    signalKind: over.signalKind ?? 'conversion_rate',
-    taxonomy: over.taxonomy ?? {
-      verticalHint: undefined,
-      tickethint: undefined,
-      stageHint: 'validacao',
-      channelHint: undefined,
-    },
-  };
-}
-
-function makeRanking(over: Partial<AttentionRanking>): AttentionRanking {
-  return {
-    itemId: over.itemId ?? `it_${Math.random().toString(36).slice(2, 6)}`,
-    workspaceId: over.workspaceId ?? 'wks_role_test',
-    label: over.label ?? 'test item',
-    urgency: over.urgency ?? 0.6,
-    impact: over.impact ?? 0.5,
-    reversibility: over.reversibility ?? 0.4,
-    score: over.score ?? 0.45,
-    tier: over.tier ?? 'ESTA_SEMANA',
-    rankedAt: over.rankedAt ?? '2026-05-14T09:00:00.000Z',
-  };
 }
 
 // ---------------------------------------------------------------------------

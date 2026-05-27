@@ -172,7 +172,9 @@ export function computeSourceConfidence(
   const matchRatio = matched / total;
   const baseConfidence =
     matchRatio >= 1 ? 0.92 : matchRatio >= 0.66 ? 0.78 : matchRatio >= 0.33 ? 0.55 : 0.35;
-  return Math.round((baseConfidence * 0.45 + provenanceWeight * 0.35 + freshnessDecay * 0.2) * 100) / 100;
+  return (
+    Math.round((baseConfidence * 0.45 + provenanceWeight * 0.35 + freshnessDecay * 0.2) * 100) / 100
+  );
 }
 
 export function buildAgentRuntimeSourceStamp(
@@ -209,7 +211,9 @@ export function buildAgentRuntimeTurnContent(turn: AgentRuntimeTurnRecord): stri
     turn.contactId ? `contact=${sanitizeAgentRuntimeText(turn.contactId, 80)}` : '',
     turn.threadId ? `thread=${sanitizeAgentRuntimeText(turn.threadId, 80)}` : '',
     `user: ${sanitizeAgentRuntimeText(turn.userMessage, 2000)}`,
-    turn.assistantMessage ? `assistant: ${sanitizeAgentRuntimeText(turn.assistantMessage, 2000)}` : '',
+    turn.assistantMessage
+      ? `assistant: ${sanitizeAgentRuntimeText(turn.assistantMessage, 2000)}`
+      : '',
   ]
     .filter(Boolean)
     .join('\n');
@@ -233,7 +237,11 @@ function collectMatchPositions(lower: string, queryLower: string, tokens: string
   return positions;
 }
 
-function collectClusteredTokenPositions(lower: string, tokens: string[], positions: number[]): void {
+function collectClusteredTokenPositions(
+  lower: string,
+  tokens: string[],
+  positions: number[],
+): void {
   const termPositions = tokens.map((token) => ({
     token,
     positions: matchPositions(lower, token.toLowerCase()),
@@ -274,10 +282,18 @@ function computeHygieneState(ageMs: number, ttlMs: number): AgentRuntimeHygieneS
     return 'fresh';
   }
   const ratio = ageMs / ttlMs;
-  if (ratio < 0.3) {return 'fresh';}
-  if (ratio < 0.6) {return 'aging';}
-  if (ratio < 0.9) {return 'stale';}
-  if (ratio < 1.0) {return 'expired';}
+  if (ratio < 0.3) {
+    return 'fresh';
+  }
+  if (ratio < 0.6) {
+    return 'aging';
+  }
+  if (ratio < 0.9) {
+    return 'stale';
+  }
+  if (ratio < 1.0) {
+    return 'expired';
+  }
   return 'retired';
 }
 

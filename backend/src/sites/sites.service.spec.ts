@@ -8,6 +8,15 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { SitesService } from './sites.service';
 
+type SiteCreateArgs = {
+  data: Record<string, unknown>;
+};
+
+type SiteUpdateArgs = {
+  where: { id: string };
+  data: Record<string, unknown>;
+};
+
 describe('SitesService', () => {
   let service: SitesService;
   let prisma: {
@@ -56,7 +65,7 @@ describe('SitesService', () => {
         count: jest.fn().mockResolvedValue(0),
         findFirst: jest.fn().mockResolvedValue(null),
         findUnique: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockImplementation(({ data }) =>
+        create: jest.fn().mockImplementation(({ data }: SiteCreateArgs) =>
           Promise.resolve({
             id: 'site-1',
             workspaceId: data.workspaceId ?? ws,
@@ -71,7 +80,7 @@ describe('SitesService', () => {
             publishedAt: null,
           }),
         ),
-        update: jest.fn().mockImplementation(({ where, data }) =>
+        update: jest.fn().mockImplementation(({ where, data }: SiteUpdateArgs) =>
           Promise.resolve({
             id: where.id,
             workspaceId: ws,
@@ -91,24 +100,25 @@ describe('SitesService', () => {
         findMany: jest.fn().mockResolvedValue([]),
         findUnique: jest.fn().mockResolvedValue(null),
         findFirst: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockImplementation(({ data }) =>
-          Promise.resolve({ id: 'dom-1', ...data, createdAt: new Date() }),
-        ),
+        create: jest
+          .fn()
+          .mockImplementation(({ data }) =>
+            Promise.resolve({ id: 'dom-1', ...data, createdAt: new Date() }),
+          ),
         delete: jest.fn().mockResolvedValue(undefined),
       },
       siteAppIntegration: {
         findMany: jest.fn().mockResolvedValue([]),
-        upsert: jest.fn().mockImplementation(({ create, update }) =>
-          Promise.resolve({ id: 'app-1', ...create, ...update, createdAt: new Date() }),
-        ),
+        upsert: jest
+          .fn()
+          .mockImplementation(({ create, update }) =>
+            Promise.resolve({ id: 'app-1', ...create, ...update, createdAt: new Date() }),
+          ),
       },
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        SitesService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [SitesService, { provide: PrismaService, useValue: prisma }],
     }).compile();
     service = module.get(SitesService);
   });
@@ -137,7 +147,7 @@ describe('SitesService', () => {
       await service.list(ws, { status: 'PUBLISHED' });
       expect(prisma.site.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ status: 'PUBLISHED' }),
+          where: expect.objectContaining({ status: 'PUBLISHED' }) as unknown,
         }),
       );
     });
@@ -149,7 +159,7 @@ describe('SitesService', () => {
       await service.list(ws, { search: 'hello' });
       expect(prisma.site.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ OR: expect.any(Array) }),
+          where: expect.objectContaining({ OR: expect.any(Array) as unknown }) as unknown,
         }),
       );
     });
@@ -212,23 +222,19 @@ describe('SitesService', () => {
       });
       expect(prisma.site.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ content: { sections: [] } }),
+          data: expect.objectContaining({ content: { sections: [] } }) as unknown,
         }),
       );
     });
 
     it('throws NotFoundException when site missing', async () => {
       prisma.site.findUnique.mockResolvedValue(null);
-      await expect(service.update(ws, 'missing', { name: 'X' })).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(service.update(ws, 'missing', { name: 'X' })).rejects.toThrow(NotFoundException);
     });
 
     it('throws ForbiddenException for cross-workspace access', async () => {
       prisma.site.findUnique.mockResolvedValue(makeSite({ workspaceId: wsOther }));
-      await expect(service.update(ws, 'site-1', { name: 'X' })).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(service.update(ws, 'site-1', { name: 'X' })).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -291,26 +297,24 @@ describe('SitesService', () => {
     it('throws ConflictException on duplicate hostname', async () => {
       prisma.site.findUnique.mockResolvedValue(makeSite());
       prisma.siteDomain.findUnique.mockResolvedValue({ id: 'dom-existing', hostname: 'dup.com' });
-      await expect(
-        service.addDomain(ws, 'site-1', { hostname: 'dup.com' }),
-      ).rejects.toThrow(ConflictException);
+      await expect(service.addDomain(ws, 'site-1', { hostname: 'dup.com' })).rejects.toThrow(
+        ConflictException,
+      );
     });
 
     it('removes a domain scoped to site', async () => {
       prisma.site.findUnique.mockResolvedValue(makeSite());
       prisma.siteDomain.findFirst.mockResolvedValue({ id: 'dom-1', siteId: 'site-1' });
-      await expect(
-        service.removeDomain(ws, 'site-1', 'dom-1'),
-      ).resolves.toBeUndefined();
+      await expect(service.removeDomain(ws, 'site-1', 'dom-1')).resolves.toBeUndefined();
       expect(prisma.siteDomain.delete).toHaveBeenCalledWith({ where: { id: 'dom-1' } });
     });
 
     it('throws NotFoundException removing domain not on site', async () => {
       prisma.site.findUnique.mockResolvedValue(makeSite());
       prisma.siteDomain.findFirst.mockResolvedValue(null);
-      await expect(
-        service.removeDomain(ws, 'site-1', 'bad-dom'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.removeDomain(ws, 'site-1', 'bad-dom')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

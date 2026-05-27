@@ -5,4 +5,8 @@
  *
  * Import from `./mind/observability/mind-lift-report.service` instead.
  */
-export { MindLiftReportService, type LiftReport, type FailureReasonCount } from './mind/observability/mind-lift-report.service';
+export {
+  MindLiftReportService,
+  type LiftReport,
+  type FailureReasonCount,
+} from './mind/observability/mind-lift-report.service';

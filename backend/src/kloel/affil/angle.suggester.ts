@@ -149,11 +149,13 @@ export class AngleSuggesterService {
     return suggestions;
   }
 
-  private findMatchingTemplates(category: string): readonly Omit<AngleTemplateInstance, 'noveltyScore' | 'predictedPerformance'>[] {
-    const exact = ANGLE_TEMPLATES.find(
-      (t) => t.category === category,
-    );
-    if (exact) {return exact.templates;}
+  private findMatchingTemplates(
+    category: string,
+  ): readonly Omit<AngleTemplateInstance, 'noveltyScore' | 'predictedPerformance'>[] {
+    const exact = ANGLE_TEMPLATES.find((t) => t.category === category);
+    if (exact) {
+      return exact.templates;
+    }
 
     for (const template of ANGLE_TEMPLATES) {
       for (const trigger of template.triggers) {

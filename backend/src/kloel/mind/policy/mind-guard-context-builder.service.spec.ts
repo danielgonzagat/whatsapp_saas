@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { MindGuardContextBuilderService } from './mind-guard-context-builder.service';
-import type { MindActionContext } from '../../mind-code-native.types';
 import type { ChannelSendRequest } from '../../channel-transport.types';
 
 describe('MindGuardContextBuilderService', () => {
@@ -24,10 +23,7 @@ describe('MindGuardContextBuilderService', () => {
       kloelSale: { findFirst: jest.fn().mockResolvedValue(null) },
     };
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        MindGuardContextBuilderService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [MindGuardContextBuilderService, { provide: PrismaService, useValue: prisma }],
     }).compile();
     service = module.get(MindGuardContextBuilderService);
   });

@@ -13,27 +13,24 @@ const DOMAIN_VALUE_WEIGHTS: Readonly<Record<string, number>> = {
   'commerce.campaign': 1.0,
   'commerce.member_area': 1.5,
   'commerce.affiliate': 1.0,
-  'lineage': 2.0,
-  'cognition': 2.5,
-  'goal_field': 1.0,
-  'pulse': 0.5,
-  'legitimacy': 1.5,
-  'incentive': 1.0,
-  'evolution': 2.0,
+  lineage: 2.0,
+  cognition: 2.5,
+  goal_field: 1.0,
+  pulse: 0.5,
+  legitimacy: 1.5,
+  incentive: 1.0,
+  evolution: 2.0,
 };
 
 const BASE_CAPITAL_CENTS_PER_EVENT = 100n;
 
-function computeKnowledgeMaturity(
-  events: readonly SpineEventRef[],
-  domainCount: number,
-): number {
-  if (events.length === 0) {return 0;}
+function computeKnowledgeMaturity(events: readonly SpineEventRef[], domainCount: number): number {
+  if (events.length === 0) {
+    return 0;
+  }
 
-  const observedRatio =
-    events.filter((e) => e.truthMode === 'observed').length / events.length;
-  const inferredRatio =
-    events.filter((e) => e.truthMode === 'inferred').length / events.length;
+  const observedRatio = events.filter((e) => e.truthMode === 'observed').length / events.length;
+  const inferredRatio = events.filter((e) => e.truthMode === 'inferred').length / events.length;
 
   const dimensionBonus = Math.min(1, domainCount / 10);
   return clamp(observedRatio * 0.5 + inferredRatio * 0.3 + dimensionBonus * 0.2, 0, 1);
@@ -41,10 +38,7 @@ function computeKnowledgeMaturity(
 
 @Injectable()
 export class ValueQuantifier {
-  public quantify(
-    events: readonly SpineEventRef[],
-    workspaceId: string,
-  ): ValueQuantification {
+  public quantify(events: readonly SpineEventRef[], workspaceId: string): ValueQuantification {
     const scoped = workspaceFilter(events, workspaceId);
 
     const domains = new Set<string>();
@@ -57,15 +51,12 @@ export class ValueQuantifier {
     }
 
     const commercialDensity =
-      scoped.length > 0
-        ? clamp(weightedSum / (scoped.length * 3.0), 0, 1)
-        : 0;
+      scoped.length > 0 ? clamp(weightedSum / (scoped.length * 3.0), 0, 1) : 0;
 
     const knowledgeMaturity = computeKnowledgeMaturity(scoped, domains.size);
 
     const capitalValue =
-      BASE_CAPITAL_CENTS_PER_EVENT * BigInt(scoped.length) +
-      BigInt(Math.floor(weightedSum * 1000));
+      BASE_CAPITAL_CENTS_PER_EVENT * BigInt(scoped.length) + BigInt(Math.floor(weightedSum * 1000));
 
     return {
       workspaceId,
@@ -78,10 +69,7 @@ export class ValueQuantifier {
     };
   }
 
-  public compare(
-    before: ValueQuantification,
-    after: ValueQuantification,
-  ): QuantificationDelta {
+  public compare(before: ValueQuantification, after: ValueQuantification): QuantificationDelta {
     return {
       workspaceId: before.workspaceId,
       eventCountDelta: after.totalEventCount - before.totalEventCount,
@@ -89,8 +77,7 @@ export class ValueQuantifier {
       commercialDensityDelta:
         Math.round((after.commercialDensity - before.commercialDensity) * 10000) / 10000,
       maturityDelta:
-        Math.round((after.knowledgeMaturityScore - before.knowledgeMaturityScore) * 10000) /
-        10000,
+        Math.round((after.knowledgeMaturityScore - before.knowledgeMaturityScore) * 10000) / 10000,
       capitalDelta: after.estimatedCapitalValue - before.estimatedCapitalValue,
     };
   }

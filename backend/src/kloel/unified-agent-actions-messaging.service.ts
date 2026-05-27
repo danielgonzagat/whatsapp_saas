@@ -16,12 +16,15 @@ import { DailyLimitService } from './daily-limit.service';
 import type { UnknownRecord } from '../common/types';
 
 type GmailMailboxPort = {
-  sendMessageFromMailbox(workspaceId: string, input: {
-    toEmail: string;
-    subject: string;
-    html: string;
-    proactive?: boolean;
-  }): Promise<{ sent: boolean; status?: string; messageId?: string }>;
+  sendMessageFromMailbox(
+    workspaceId: string,
+    input: {
+      toEmail: string;
+      subject: string;
+      html: string;
+      proactive?: boolean;
+    },
+  ): Promise<{ sent: boolean; status?: string; messageId?: string }>;
 };
 
 /**

@@ -276,7 +276,9 @@ export class AgentAssistService {
       handler: (completion) => {
         const raw = completion.choices[0]?.message?.content || '';
         if (raw.trim().length < 10) {
-          this.logger.warn('summarize_conversation produced short/empty output, using fallback', { workspaceId: effectiveWorkspaceId });
+          this.logger.warn('summarize_conversation produced short/empty output, using fallback', {
+            workspaceId: effectiveWorkspaceId,
+          });
           return { summary: history.slice(0, 200) };
         }
         return { summary: raw };
@@ -321,7 +323,10 @@ export class AgentAssistService {
       handler: (completion) => {
         const raw = completion.choices[0]?.message?.content || '';
         if (raw.trim().length < 2) {
-          this.logger.warn('suggest_reply produced short/empty output, falling back to latest message', { workspaceId });
+          this.logger.warn(
+            'suggest_reply produced short/empty output, falling back to latest message',
+            { workspaceId },
+          );
           return { suggestion: latest };
         }
         return { suggestion: raw };
@@ -367,8 +372,12 @@ export class AgentAssistService {
       handler: (completion) => {
         const raw = completion.choices[0]?.message?.content || '';
         if (raw.trim().length < 20) {
-          this.logger.warn('generate_pitch produced short/empty output, using fallback', { workspaceId });
-          return { pitch: `Tenho uma condi\xe7\xe3o especial hoje. Quer aproveitar? (${base.slice(0, 80)})` };
+          this.logger.warn('generate_pitch produced short/empty output, using fallback', {
+            workspaceId,
+          });
+          return {
+            pitch: `Tenho uma condi\xe7\xe3o especial hoje. Quer aproveitar? (${base.slice(0, 80)})`,
+          };
         }
         return { pitch: raw };
       },

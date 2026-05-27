@@ -48,9 +48,7 @@ export class OfferSwitchSuggesterService {
 
     for (const candidate of input.candidateOffers) {
       const candidateScore = this.scoreCandidate(candidate);
-      const improvement = candidateScore > 0
-        ? (candidateScore - currentScore) / candidateScore
-        : 0;
+      const improvement = candidateScore > 0 ? (candidateScore - currentScore) / candidateScore : 0;
 
       if (improvement >= MIN_IMPROVEMENT_RATIO) {
         const riskLevel = this.assessRisk(input.currentOfferPerformance, candidate);
@@ -77,11 +75,10 @@ export class OfferSwitchSuggesterService {
   }
 
   private scoreOffer(perf: OfferPerformance): number {
-    const trendBonus = perf.trendDirection === 'up' ? 0.1 : perf.trendDirection === 'down' ? -0.1 : 0;
+    const trendBonus =
+      perf.trendDirection === 'up' ? 0.1 : perf.trendDirection === 'down' ? -0.1 : 0;
     return clamp(
-      perf.conversionRate * CONVERSION_WEIGHT +
-        (1 - perf.refundRate) * REFUND_WEIGHT +
-        trendBonus,
+      perf.conversionRate * CONVERSION_WEIGHT + (1 - perf.refundRate) * REFUND_WEIGHT + trendBonus,
       0,
       1,
     );
@@ -103,8 +100,12 @@ export class OfferSwitchSuggesterService {
     current: OfferPerformance,
     candidate: CandidateOffer,
   ): 'low' | 'medium' | 'high' {
-    if (candidate.refundRate > 0.2 || current.trendDirection === 'up') {return 'high';}
-    if (candidate.conversionRate < 0.02 || candidate.marketDemand < 0.4) {return 'medium';}
+    if (candidate.refundRate > 0.2 || current.trendDirection === 'up') {
+      return 'high';
+    }
+    if (candidate.conversionRate < 0.02 || candidate.marketDemand < 0.4) {
+      return 'medium';
+    }
     return 'low';
   }
 

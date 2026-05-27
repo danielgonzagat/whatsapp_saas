@@ -126,7 +126,9 @@ describe('CiaChatFilterService', () => {
   describe('estimatePendingMessages', () => {
     it('returns max(1, unreadCount, fromMe=false ? 1 : 0)', () => {
       expect(svc.estimatePendingMessages({ unreadCount: 5 } as never)).toBe(5);
-      expect(svc.estimatePendingMessages({ unreadCount: 0, lastMessageFromMe: false } as never)).toBe(1);
+      expect(
+        svc.estimatePendingMessages({ unreadCount: 0, lastMessageFromMe: false } as never),
+      ).toBe(1);
       expect(svc.estimatePendingMessages({} as never)).toBe(1);
     });
   });

@@ -364,12 +364,9 @@ export class KloelLeadBrainService {
       this.logger.log(
         `lead-brain ws=${workspaceId} model=writer baseLen=${baseLen} outLen=${rawResponse.length} tokens=${tokens}`,
       );
-      await this.planLimits
-        .trackAiUsage(workspaceId, tokens)
-        .catch(() => {});
+      await this.planLimits.trackAiUsage(workspaceId, tokens).catch(() => {});
 
-      const kloelResponse =
-        rawResponse || 'Olá! Como posso ajudá-lo hoje?';
+      const kloelResponse = rawResponse || 'Olá! Como posso ajudá-lo hoje?';
       if (!rawResponse || rawResponse.trim().length < 5) {
         this.logger.warn(`lead-brain short output ws=${workspaceId} len=${rawResponse.length}`);
       }

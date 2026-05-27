@@ -61,7 +61,12 @@ export class ProductCouponDomainService {
     });
 
     const deleted = await this.prisma.productCoupon.delete({ where: { id: coupon.id } });
-    await syncWorkspaceCheckoutCouponForProduct(this.prisma, workspaceId, coupon.productId, deleted.code);
+    await syncWorkspaceCheckoutCouponForProduct(
+      this.prisma,
+      workspaceId,
+      coupon.productId,
+      deleted.code,
+    );
 
     return deleted;
   }

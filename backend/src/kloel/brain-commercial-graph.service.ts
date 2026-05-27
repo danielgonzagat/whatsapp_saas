@@ -357,7 +357,8 @@ export class BrainCommercialGraphService {
     const rankedRecommendations = recommendations
       .sort((left, right) => {
         const leftFix = left.toxicityFlag === 'toxic' || left.toxicityFlag === 'regression' ? 0 : 1;
-        const rightFix = right.toxicityFlag === 'toxic' || right.toxicityFlag === 'regression' ? 0 : 1;
+        const rightFix =
+          right.toxicityFlag === 'toxic' || right.toxicityFlag === 'regression' ? 0 : 1;
         if (leftFix !== rightFix) {
           return leftFix - rightFix;
         }

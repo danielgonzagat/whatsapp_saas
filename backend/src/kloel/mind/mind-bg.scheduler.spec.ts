@@ -2,9 +2,7 @@ import { MindBackgroundScheduler } from './mind-bg.scheduler';
 import { MindBackgroundProcessor } from './mind-bg.processor';
 import { MindPredictionService } from './mind-prediction.service';
 import { SpineEmitterService } from '../spine/spine-emitter.service';
-import {
-  MultiTimescaleCoordinator,
-} from './multi-timescale.coordinator';
+import { MultiTimescaleCoordinator } from './multi-timescale.coordinator';
 import { ValenceAggregatorService } from './valence-aggregator.service';
 import { HebbianService } from './hebbian.service';
 import { ConsolidationService } from './consolidation.service';
@@ -49,8 +47,7 @@ jest.mock('bullmq', () => {
 });
 
 function getMocks() {
-  return (globalThis as Record<string, unknown>)
-    .__mindBgMocks as {
+  return (globalThis as Record<string, unknown>).__mindBgMocks as {
     queue: jest.Mock;
     worker: jest.Mock;
     qAdd: jest.Mock<Promise<void>>;
@@ -69,9 +66,7 @@ function buildScheduler(opts?: {
   const aggregator = new ValenceAggregatorService();
   const hebbian = new HebbianService({ windowMs: 60_000 });
   const consolidation = new ConsolidationService();
-  const prediction = new MindPredictionService(
-    undefined as unknown as never,
-  );
+  const prediction = new MindPredictionService(undefined as unknown as never);
   // Stub runCycle — the test spine returns no events, so the DB fallback
   // would fail without a real Prisma.  The tick path uses `void` so the
   // promise rejection from a naked undefined-prisma would crash the test
@@ -191,9 +186,13 @@ describe('MindBackgroundScheduler (UTP gap B)', () => {
 
     expect(queue).toHaveBeenCalledTimes(2); // main + dlq
     expect(worker).toHaveBeenCalledTimes(1);
-    expect(qAdd).toHaveBeenCalledWith('tick', {}, {
-      repeat: { every: 5_000 },
-    });
+    expect(qAdd).toHaveBeenCalledWith(
+      'tick',
+      {},
+      {
+        repeat: { every: 5_000 },
+      },
+    );
   });
 
   it('skips startup when Redis URL is not resolved', async () => {
@@ -269,9 +268,7 @@ describe('MindBackgroundScheduler (UTP gap B)', () => {
 
     it('continues tick processing when scanAndEscalate throws', async () => {
       process.env[cogHealthKey] = 'true';
-      const scanMock = jest
-        .fn()
-        .mockRejectedValue(new Error('goal-field explosion'));
+      const scanMock = jest.fn().mockRejectedValue(new Error('goal-field explosion'));
       const { scheduler } = buildScheduler({
         cognitiveHealth: { scanAndEscalate: scanMock },
       });

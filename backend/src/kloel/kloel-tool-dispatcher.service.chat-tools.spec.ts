@@ -69,6 +69,21 @@ import type {
   DispatcherAccountMock,
 } from './kloel-tool-dispatcher.service.fixtures';
 
+function objectContaining<T extends object>(sample: T): T {
+  const matcher: unknown = expect.objectContaining(sample);
+  return matcher as T;
+}
+
+function stringMatching(pattern: RegExp): string {
+  const matcher: unknown = expect.stringMatching(pattern);
+  return matcher as string;
+}
+
+function stringContaining(sample: string): string {
+  const matcher: unknown = expect.stringContaining(sample);
+  return matcher as string;
+}
+
 describe('KloelToolDispatcherService — chat tools routing', () => {
   let service: KloelToolDispatcherService;
   let prisma: DispatcherPrismaMock;
@@ -159,18 +174,18 @@ describe('KloelToolDispatcherService — chat tools routing', () => {
 
     expect(result.success).toBe(true);
     expect(result.capabilityId).toBe('products.create');
-    expect(result.outputs).toEqual(expect.objectContaining({ productId: 'prod-123' }));
+    expect(result.outputs).toEqual(objectContaining({ productId: 'prod-123' }));
     expect(result.receipt).toEqual(
-      expect.objectContaining({
+      objectContaining({
         capabilityId: 'products.create',
         workspaceId: DEFAULT_WS_ID,
         actorId: 'user-42',
         inputs: { name: 'PDRN', price: 197 },
-        outputs: expect.objectContaining({ productId: 'prod-123' }),
+        outputs: objectContaining({ productId: 'prod-123' }),
         domainEvents: ['product.created'],
-        auditLogId: expect.stringMatching(/^audit_/),
+        auditLogId: stringMatching(/^audit_/),
         evidenceUrl: '/produtos/prod-123',
-        idempotencyKey: expect.stringContaining('products.create'),
+        idempotencyKey: stringContaining('products.create'),
         success: true,
       }),
     );
@@ -197,16 +212,16 @@ describe('KloelToolDispatcherService — chat tools routing', () => {
     expect(result.success).toBe(true);
     expect(result.capabilityId).toBe('products.update');
     expect(result.receipt).toEqual(
-      expect.objectContaining({
+      objectContaining({
         capabilityId: 'products.update',
         workspaceId: DEFAULT_WS_ID,
         actorId: 'user-42',
         inputs: { productId: 'prod-123', name: 'PDRN Plus' },
-        outputs: expect.objectContaining({ productId: 'prod-123' }),
+        outputs: objectContaining({ productId: 'prod-123' }),
         domainEvents: ['product.updated'],
-        auditLogId: expect.stringMatching(/^audit_/),
+        auditLogId: stringMatching(/^audit_/),
         evidenceUrl: '/produtos/prod-123',
-        idempotencyKey: expect.stringContaining('products.update'),
+        idempotencyKey: stringContaining('products.update'),
         success: true,
       }),
     );
@@ -233,16 +248,16 @@ describe('KloelToolDispatcherService — chat tools routing', () => {
     expect(result.success).toBe(true);
     expect(result.capabilityId).toBe('products.upload_image');
     expect(result.receipt).toEqual(
-      expect.objectContaining({
+      objectContaining({
         capabilityId: 'products.upload_image',
         workspaceId: DEFAULT_WS_ID,
         actorId: 'user-42',
         inputs: { productId: 'prod-123', imageUrl: 'https://img.test/pdrn.png' },
-        outputs: expect.objectContaining({ productId: 'prod-123' }),
+        outputs: objectContaining({ productId: 'prod-123' }),
         domainEvents: ['product.updated'],
-        auditLogId: expect.stringMatching(/^audit_/),
+        auditLogId: stringMatching(/^audit_/),
         evidenceUrl: '/produtos/prod-123',
-        idempotencyKey: expect.stringContaining('products.upload_image'),
+        idempotencyKey: stringContaining('products.upload_image'),
         success: true,
       }),
     );
@@ -267,7 +282,7 @@ describe('KloelToolDispatcherService — chat tools routing', () => {
     expect(result.domainEvents).toEqual([]);
     expect(result.evidenceUrl).toBeUndefined();
     expect(result.receipt).toEqual(
-      expect.objectContaining({
+      objectContaining({
         capabilityId: 'products.upload_image',
         workspaceId: DEFAULT_WS_ID,
         actorId: 'user-42',

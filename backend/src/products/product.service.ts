@@ -280,7 +280,7 @@ export class ProductService {
       data: { imageUrl },
     });
 
-    await this.eventEmitter.emit('product.updated', {
+    this.eventEmitter.emit('product.updated', {
       productId: product.id,
       workspaceId,
       agentId: actor.id,

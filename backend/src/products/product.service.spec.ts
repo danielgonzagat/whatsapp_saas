@@ -6,6 +6,24 @@ import { AuditService } from '../audit/audit.service';
 import { ProductService } from './product.service';
 import { MindEventSpine } from '../kloel/mind/coordination';
 
+type ProductCreateArgs = { data: Record<string, unknown> };
+type ProductUpdateArgs = { where: { id: string }; data: Record<string, unknown> };
+
+function objectContaining<T extends object>(sample: T): T {
+  const matcher: unknown = expect.objectContaining(sample);
+  return matcher as T;
+}
+
+function anyArray(): unknown[] {
+  const matcher: unknown = expect.any(Array);
+  return matcher as unknown[];
+}
+
+function anyObject(): object {
+  const matcher: unknown = expect.any(Object);
+  return matcher as object;
+}
+
 describe('ProductService', () => {
   let service: ProductService;
   let prisma: {
@@ -43,7 +61,7 @@ describe('ProductService', () => {
   beforeEach(async () => {
     prisma = {
       product: {
-        create: jest.fn().mockImplementation(({ data }) =>
+        create: jest.fn().mockImplementation(({ data }: ProductCreateArgs) =>
           Promise.resolve({
             id: 'prod-1',
             workspaceId: ws,
@@ -56,7 +74,7 @@ describe('ProductService', () => {
         findFirst: jest.fn(),
         findMany: jest.fn(),
         count: jest.fn(),
-        update: jest.fn().mockImplementation(({ where, data }) =>
+        update: jest.fn().mockImplementation(({ where, data }: ProductUpdateArgs) =>
           Promise.resolve({
             id: where.id,
             workspaceId: ws,
@@ -93,9 +111,9 @@ describe('ProductService', () => {
       expect(result.product?.active).toBe(false);
       expect(eventEmitter.emit).toHaveBeenCalledWith(
         'product.created',
-        expect.objectContaining({ productId: 'prod-1' }),
+        objectContaining({ productId: 'prod-1' }),
       );
-      expect(audit.log).toHaveBeenCalledWith(expect.objectContaining({ action: 'product.create' }));
+      expect(audit.log).toHaveBeenCalledWith(objectContaining({ action: 'product.create' }));
     });
 
     it('throws ForbiddenException when workspaceId is empty', async () => {
@@ -110,7 +128,7 @@ describe('ProductService', () => {
       prisma.product.findUnique.mockResolvedValue(makeProduct());
       const result = await service.update(ws, 'prod-1', { name: 'Updated' }, actor);
       expect(result.success).toBe(true);
-      expect(eventEmitter.emit).toHaveBeenCalledWith('product.updated', expect.any(Object));
+      expect(eventEmitter.emit).toHaveBeenCalledWith('product.updated', anyObject());
     });
 
     it('records product edits in the commercial spine', async () => {
@@ -120,11 +138,11 @@ describe('ProductService', () => {
       await service.update(ws, 'prod-1', { name: 'Updated' }, actor);
 
       expect(brainSpine.recordCommercial).toHaveBeenCalledWith(
-        expect.objectContaining({
+        objectContaining({
           workspaceId: ws,
           subject: 'product:prod-1',
           eventType: 'product.updated',
-          payload: expect.objectContaining({
+          payload: objectContaining({
             productId: 'prod-1',
             name: 'Updated',
             changes: ['name'],
@@ -154,7 +172,7 @@ describe('ProductService', () => {
       const result = await service.findById(ws, 'prod-1');
       expect(result?.id).toBe('prod-1');
       expect(prisma.product.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id: 'prod-1', workspaceId: ws } }),
+        objectContaining({ where: { id: 'prod-1', workspaceId: ws } }),
       );
     });
 
@@ -181,8 +199,8 @@ describe('ProductService', () => {
       prisma.product.count.mockResolvedValue(0);
       await service.list(ws, { search: 'widget' });
       expect(prisma.product.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ OR: expect.any(Array) }),
+        objectContaining({
+          where: objectContaining({ OR: anyArray() }),
         }),
       );
     });
@@ -192,8 +210,8 @@ describe('ProductService', () => {
       prisma.product.count.mockResolvedValue(0);
       await service.list(ws, { category: 'cat', status: 'APPROVED', active: true });
       expect(prisma.product.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ category: 'cat', status: 'APPROVED', active: true }),
+        objectContaining({
+          where: objectContaining({ category: 'cat', status: 'APPROVED', active: true }),
         }),
       );
     });
@@ -211,11 +229,9 @@ describe('ProductService', () => {
       expect(result.success).toBe(true);
       expect(eventEmitter.emit).toHaveBeenCalledWith(
         'product.updated',
-        expect.objectContaining({ productId: 'prod-1', changes: ['imageUrl'] }),
+        objectContaining({ productId: 'prod-1', changes: ['imageUrl'] }),
       );
-      expect(audit.log).toHaveBeenCalledWith(
-        expect.objectContaining({ action: 'product.setImage' }),
-      );
+      expect(audit.log).toHaveBeenCalledWith(objectContaining({ action: 'product.setImage' }));
     });
 
     it('refuses image updates across workspaces', async () => {
@@ -238,11 +254,11 @@ describe('ProductService', () => {
       await service.setImage(ws, 'prod-1', 'https://img.example/pic.png', { id: 'agent-1' });
 
       expect(brainSpine.recordCommercial).toHaveBeenCalledWith(
-        expect.objectContaining({
+        objectContaining({
           workspaceId: ws,
           subject: 'product:prod-1',
           eventType: 'product.updated',
-          payload: expect.objectContaining({
+          payload: objectContaining({
             productId: 'prod-1',
             imageUrl: 'https://img.example/pic.png',
             changes: ['imageUrl'],
@@ -258,7 +274,7 @@ describe('ProductService', () => {
       prisma.product.update.mockResolvedValue(makeProduct({ status: 'APPROVED', active: true }));
       const result = await service.publish(ws, 'prod-1', { id: 'agent-1' });
       expect(result.success).toBe(true);
-      expect(eventEmitter.emit).toHaveBeenCalledWith('product.published', expect.any(Object));
+      expect(eventEmitter.emit).toHaveBeenCalledWith('product.published', anyObject());
     });
 
     it('refuses to publish a product from another workspace', async () => {
@@ -269,7 +285,7 @@ describe('ProductService', () => {
       );
 
       expect(prisma.product.update).not.toHaveBeenCalled();
-      expect(eventEmitter.emit).not.toHaveBeenCalledWith('product.published', expect.any(Object));
+      expect(eventEmitter.emit).not.toHaveBeenCalledWith('product.published', anyObject());
       expect(brainSpine.recordCommercial).not.toHaveBeenCalled();
     });
 
@@ -280,11 +296,11 @@ describe('ProductService', () => {
       await service.publish(ws, 'prod-1', { id: 'agent-1' });
 
       expect(brainSpine.recordCommercial).toHaveBeenCalledWith(
-        expect.objectContaining({
+        objectContaining({
           workspaceId: ws,
           subject: 'product:prod-1',
           eventType: 'product.published',
-          payload: expect.objectContaining({
+          payload: objectContaining({
             productId: 'prod-1',
             name: 'Test',
             status: 'APPROVED',
@@ -301,7 +317,7 @@ describe('ProductService', () => {
       prisma.product.update.mockResolvedValue(makeProduct({ active: true }));
       const result = await service.toggleAvailability(ws, 'prod-1', true, { id: 'agent-1' });
       expect(result.success).toBe(true);
-      expect(eventEmitter.emit).toHaveBeenCalledWith('product.activated', expect.any(Object));
+      expect(eventEmitter.emit).toHaveBeenCalledWith('product.activated', anyObject());
     });
 
     it('deactivates a product', async () => {
@@ -309,7 +325,7 @@ describe('ProductService', () => {
       prisma.product.update.mockResolvedValue(makeProduct({ active: false }));
       const result = await service.toggleAvailability(ws, 'prod-1', false, { id: 'agent-1' });
       expect(result.success).toBe(true);
-      expect(eventEmitter.emit).toHaveBeenCalledWith('product.deactivated', expect.any(Object));
+      expect(eventEmitter.emit).toHaveBeenCalledWith('product.deactivated', anyObject());
     });
 
     it('refuses availability changes across workspaces', async () => {
@@ -330,11 +346,11 @@ describe('ProductService', () => {
       await service.toggleAvailability(ws, 'prod-1', true, { id: 'agent-1' });
 
       expect(brainSpine.recordCommercial).toHaveBeenCalledWith(
-        expect.objectContaining({
+        objectContaining({
           workspaceId: ws,
           subject: 'product:prod-1',
           eventType: 'product.updated',
-          payload: expect.objectContaining({
+          payload: objectContaining({
             productId: 'prod-1',
             active: true,
             changes: ['active'],
@@ -350,7 +366,7 @@ describe('ProductService', () => {
       prisma.product.update.mockResolvedValue(makeProduct({ status: 'DELETED', active: false }));
       const result = await service.delete(ws, 'prod-1', { id: 'agent-1' });
       expect(result.success).toBe(true);
-      expect(eventEmitter.emit).toHaveBeenCalledWith('product.deleted', expect.any(Object));
+      expect(eventEmitter.emit).toHaveBeenCalledWith('product.deleted', anyObject());
     });
 
     it('refuses deletion across workspaces', async () => {
@@ -361,7 +377,7 @@ describe('ProductService', () => {
       );
 
       expect(prisma.product.update).not.toHaveBeenCalled();
-      expect(eventEmitter.emit).not.toHaveBeenCalledWith('product.deleted', expect.any(Object));
+      expect(eventEmitter.emit).not.toHaveBeenCalledWith('product.deleted', anyObject());
       expect(brainSpine.recordCommercial).not.toHaveBeenCalled();
     });
 
@@ -372,11 +388,11 @@ describe('ProductService', () => {
       await service.delete(ws, 'prod-1', { id: 'agent-1' });
 
       expect(brainSpine.recordCommercial).toHaveBeenCalledWith(
-        expect.objectContaining({
+        objectContaining({
           workspaceId: ws,
           subject: 'product:prod-1',
           eventType: 'product.deleted',
-          payload: expect.objectContaining({
+          payload: objectContaining({
             productId: 'prod-1',
             status: 'DELETED',
             active: false,

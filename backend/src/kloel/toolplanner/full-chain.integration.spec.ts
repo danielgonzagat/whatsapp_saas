@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { IntentRouterService } from '../intent-router/intent-router.service';
 import { CapabilityRegistryV2Service } from '../capability-registry-v2/capability-registry-v2.service';
 import { ToolPlannerService } from '../toolplanner/toolplanner.service';
-import { CAPABILITY_DEFINITIONS } from '../capability-registry-v2/capability-registry-v2.const';
 /**
  * Full-chain integration test: IntentRouter → CapabilityRegistry → ToolPlanner.
  *
@@ -60,7 +59,6 @@ import { CAPABILITY_DEFINITIONS } from '../capability-registry-v2/capability-reg
     expect(result.classification).toBeUndefined();
   });
   it('classifies all capabilities from definitions', () => {
-    const caps = registry.list();
     const testMessages: Record<string, string[]> = {
       'products.create': ['cria um produto', 'criar novo produto agora'],
       'sales.create_pix': ['emite um pix', 'gera um pix de R$100'],

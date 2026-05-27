@@ -57,8 +57,15 @@ export class EmailDispatchAdapter implements ChannelDispatchPort {
     };
 
     for (const candidate of this.providersInOrder()) {
-      const result = await this.tryProvider(candidate.label, candidate.send, input.workspaceId, payload);
-      if (result) {return result;}
+      const result = await this.tryProvider(
+        candidate.label,
+        candidate.send,
+        input.workspaceId,
+        payload,
+      );
+      if (result) {
+        return result;
+      }
     }
     return {
       success: false,
@@ -73,43 +80,43 @@ export class EmailDispatchAdapter implements ChannelDispatchPort {
 
   private providersInOrder(): Array<{
     label: string;
-    send: ((
-      workspaceId: string,
-      payload: { toEmail: string; subject?: string; html?: string; proactive?: boolean },
-    ) => Promise<unknown>) | null;
+    send:
+      | ((
+          workspaceId: string,
+          payload: { toEmail: string; subject?: string; html?: string; proactive?: boolean },
+        ) => Promise<unknown>)
+      | null;
   }> {
     return [
       {
         label: 'gmail',
-        send: this.gmail
-          ? (ws, p) => this.gmail!.sendMessageFromMailbox(ws, p)
-          : null,
+        send: this.gmail ? (ws, p) => this.gmail!.sendMessageFromMailbox(ws, p) : null,
       },
       {
         label: 'microsoft',
-        send: this.microsoft
-          ? (ws, p) => this.microsoft!.sendMessageFromMailbox(ws, p)
-          : null,
+        send: this.microsoft ? (ws, p) => this.microsoft!.sendMessageFromMailbox(ws, p) : null,
       },
       {
         label: 'imap-smtp',
-        send: this.imapSmtp
-          ? (ws, p) => this.imapSmtp!.sendMessageFromMailbox(ws, p)
-          : null,
+        send: this.imapSmtp ? (ws, p) => this.imapSmtp!.sendMessageFromMailbox(ws, p) : null,
       },
     ];
   }
 
   private async tryProvider(
     label: string,
-    send: ((
-      workspaceId: string,
-      payload: { toEmail: string; subject?: string; html?: string; proactive?: boolean },
-    ) => Promise<unknown>) | null,
+    send:
+      | ((
+          workspaceId: string,
+          payload: { toEmail: string; subject?: string; html?: string; proactive?: boolean },
+        ) => Promise<unknown>)
+      | null,
     workspaceId: string,
     payload: { toEmail: string; subject?: string; html?: string; proactive?: boolean },
   ): Promise<ChannelSendResult | null> {
-    if (!send) {return null;}
+    if (!send) {
+      return null;
+    }
     try {
       const raw = (await send(workspaceId, payload)) as MailboxSendResult | null;
       if (!raw) {

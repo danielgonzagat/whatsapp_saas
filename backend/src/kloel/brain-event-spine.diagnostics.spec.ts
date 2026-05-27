@@ -7,6 +7,11 @@ import type {
   ProductEventPayload,
 } from './brain-event-taxonomy';
 
+function objectContaining<T extends object>(sample: T): T {
+  const matcher: unknown = expect.objectContaining(sample);
+  return matcher as T;
+}
+
 describe('BrainEventSpineService diagnostics', () => {
   let prisma: {
     autopilotEvent: { create: jest.Mock };
@@ -208,8 +213,8 @@ describe('BrainEventSpineService diagnostics', () => {
       await service.recordCommercial(event);
 
       expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
+        objectContaining({
+          data: objectContaining({
             intent: 'product_lifecycle',
           }),
         }),
@@ -228,8 +233,8 @@ describe('BrainEventSpineService diagnostics', () => {
       await service.recordCommercial(event);
 
       expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
+        objectContaining({
+          data: objectContaining({
             action: 'product.published',
             intent: 'product_lifecycle',
           }),

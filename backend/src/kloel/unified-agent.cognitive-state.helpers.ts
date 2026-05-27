@@ -75,9 +75,7 @@ export async function buildAgentCognitiveState(
         );
         const cached = await abiSnapshotCache?.getCachedSnapshot(workspaceId);
         if (cached) {
-          logger.log(
-            `Using cached ABI snapshot for workspace ${workspaceId} (validation failed)`,
-          );
+          logger.log(`Using cached ABI snapshot for workspace ${workspaceId} (validation failed)`);
           cognitiveState = cached as object as Record<string, unknown>;
         } else {
           logger.warn(

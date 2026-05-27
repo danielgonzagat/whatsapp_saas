@@ -74,9 +74,7 @@ describe('PulseArtifactService', () => {
       PULSE_ARTIFACT_MAX_AGE_MS: '60000',
     });
 
-    (fs.existsSync as jest.Mock).mockImplementation((p: string) =>
-      String(p).includes('.json'),
-    );
+    (fs.existsSync as jest.Mock).mockImplementation((p: string) => String(p).includes('.json'));
     (fs.readFileSync as jest.Mock).mockReturnValue('{}');
 
     service = new PulseArtifactService(config);
@@ -102,9 +100,7 @@ describe('PulseArtifactService', () => {
 
     it('returns stale freshness when artifact is older than max age', () => {
       const oldDate = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      (fs.readFileSync as jest.Mock).mockReturnValue(
-        JSON.stringify({ generatedAt: oldDate }),
-      );
+      (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify({ generatedAt: oldDate }));
 
       const result = service.readArtifactJson('PULSE_CLI_DIRECTIVE.json');
       expect(result.freshness).toBe('stale');
@@ -125,10 +121,15 @@ describe('PulseArtifactService', () => {
       const certData = freshCertificateData();
       (fs.readFileSync as jest.Mock).mockImplementation((p: string) => {
         const sp = String(p);
-        if (sp.includes('PULSE_CLI_DIRECTIVE')) {return JSON.stringify(directiveData);}
-        if (sp.includes('PULSE_CERTIFICATE')) {return JSON.stringify(certData);}
-        if (sp.includes('PULSE_EXECUTION_MATRIX'))
-          {return JSON.stringify({ generatedAt: new Date().toISOString() });}
+        if (sp.includes('PULSE_CLI_DIRECTIVE')) {
+          return JSON.stringify(directiveData);
+        }
+        if (sp.includes('PULSE_CERTIFICATE')) {
+          return JSON.stringify(certData);
+        }
+        if (sp.includes('PULSE_EXECUTION_MATRIX')) {
+          return JSON.stringify({ generatedAt: new Date().toISOString() });
+        }
         return '{}';
       });
 
@@ -149,8 +150,12 @@ describe('PulseArtifactService', () => {
     it('returns ready status when all artifacts are fresh', () => {
       (fs.readFileSync as jest.Mock).mockImplementation((p: string) => {
         const sp = String(p);
-        if (sp.includes('PULSE_CLI_DIRECTIVE')) {return JSON.stringify(freshDirectiveData());}
-        if (sp.includes('PULSE_CERTIFICATE')) {return JSON.stringify(freshCertificateData());}
+        if (sp.includes('PULSE_CLI_DIRECTIVE')) {
+          return JSON.stringify(freshDirectiveData());
+        }
+        if (sp.includes('PULSE_CERTIFICATE')) {
+          return JSON.stringify(freshCertificateData());
+        }
         return JSON.stringify({ generatedAt: new Date().toISOString() });
       });
       (fs.existsSync as jest.Mock).mockReturnValue(true);

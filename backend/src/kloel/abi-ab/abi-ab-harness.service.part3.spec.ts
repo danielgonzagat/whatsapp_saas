@@ -17,9 +17,7 @@ import type {
   AbRCriterionDelta,
 } from './abi-ab.types';
 
-function makePathRunner(
-  overrides: Partial<AbPathRunnerResult> = {},
-): AbPathRunnerFn {
+function makePathRunner(overrides: Partial<AbPathRunnerResult> = {}): AbPathRunnerFn {
   return async () => ({
     success: true,
     latencyMs: 200,
@@ -61,7 +59,8 @@ function makeConversionRichRunner(): AbPathRunnerFn {
     success: true,
     latencyMs: 180,
     tokensUsed: 200,
-    responseText: 'Excelente! Aproveite nossa oferta exclusiva. Clique aqui para comprar com desconto. Muito obrigado pela confiança.',
+    responseText:
+      'Excelente! Aproveite nossa oferta exclusiva. Clique aqui para comprar com desconto. Muito obrigado pela confiança.',
   });
 }
 
@@ -70,7 +69,8 @@ function makeHallucinatedRunner(): AbPathRunnerFn {
     success: true,
     latencyMs: 220,
     tokensUsed: 180,
-    responseText: 'O produto X é o melhor do mercado. A empresa Y recomenda este serviço. A pesquisa Z comprovou eficácia de 99%.',
+    responseText:
+      'O produto X é o melhor do mercado. A empresa Y recomenda este serviço. A pesquisa Z comprovou eficácia de 99%.',
   });
 }
 
@@ -133,7 +133,9 @@ describe('AbiAbHarnessService', () => {
       let callCount = 0;
       const switchingRunner: AbPathRunnerFn = async (params) => {
         callCount++;
-        if (params.workspaceId === 'ws_good') {return goodRunner(params);}
+        if (params.workspaceId === 'ws_good') {
+          return goodRunner(params);
+        }
         return badRunner(params);
       };
 
@@ -183,7 +185,9 @@ describe('AbiAbHarnessService', () => {
       let callCount = 0;
       const switchingRunner: AbPathRunnerFn = async (params) => {
         callCount++;
-        if (params.useAbi) {return variantRunner(params);}
+        if (params.useAbi) {
+          return variantRunner(params);
+        }
         return baselineRunner(params);
       };
 
@@ -206,7 +210,9 @@ describe('AbiAbHarnessService', () => {
       let callCount = 0;
       const switchingRunner: AbPathRunnerFn = async (params) => {
         callCount++;
-        if (params.useAbi) {return variantRunner(params);}
+        if (params.useAbi) {
+          return variantRunner(params);
+        }
         return baselineRunner(params);
       };
 

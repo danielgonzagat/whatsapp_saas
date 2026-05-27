@@ -29,40 +29,12 @@ const RELEVANT_SIGNAL_KINDS: Readonly<Record<Role, readonly string[]>> = {
     'product_concentration',
     'lead_volume',
   ],
-  afiliado: [
-    'conversion_rate',
-    'campaign_efficiency',
-    'lead_volume',
-  ],
-  agencia: [
-    'refund_rate',
-    'deal_close_rate',
-    'lead_volume',
-    'stage_distribution',
-  ],
-  gestor: [
-    'conversion_rate',
-    'deal_close_rate',
-    'lead_volume',
-    'stage_distribution',
-  ],
-  closer: [
-    'conversion_rate',
-    'reply_rate',
-    'deal_close_rate',
-    'lead_volume',
-  ],
-  creator: [
-    'reply_rate',
-    'campaign_efficiency',
-    'lead_volume',
-    'peak_activity',
-  ],
-  especialista: [
-    'handoff_rate',
-    'stage_distribution',
-    'product_concentration',
-  ],
+  afiliado: ['conversion_rate', 'campaign_efficiency', 'lead_volume'],
+  agencia: ['refund_rate', 'deal_close_rate', 'lead_volume', 'stage_distribution'],
+  gestor: ['conversion_rate', 'deal_close_rate', 'lead_volume', 'stage_distribution'],
+  closer: ['conversion_rate', 'reply_rate', 'deal_close_rate', 'lead_volume'],
+  creator: ['reply_rate', 'campaign_efficiency', 'lead_volume', 'peak_activity'],
+  especialista: ['handoff_rate', 'stage_distribution', 'product_concentration'],
 };
 
 export interface RoleFilteredWisdom {
@@ -83,9 +55,7 @@ export function filterWisdomByRole(input: {
   readonly role: Role;
 }): RoleFilteredWisdom {
   const relevantKinds = RELEVANT_SIGNAL_KINDS[input.role] ?? [];
-  const filtered = input.patterns.filter((p) =>
-    relevantKinds.includes(p.signalKind),
-  );
+  const filtered = input.patterns.filter((p) => relevantKinds.includes(p.signalKind));
 
   return {
     role: input.role,
@@ -114,22 +84,28 @@ export function filterWisdomByMultiRole(input: {
   readonly secondaryRoles: readonly Role[];
 }): MultiRoleFilteredWisdom {
   const allRoles = new Set<Role>();
-  if (input.primaryRole) {allRoles.add(input.primaryRole);}
-  for (const r of input.secondaryRoles) {allRoles.add(r);}
+  if (input.primaryRole) {
+    allRoles.add(input.primaryRole);
+  }
+  for (const r of input.secondaryRoles) {
+    allRoles.add(r);
+  }
 
   const relevantKinds = new Set<string>();
   for (const role of allRoles) {
     const kinds = RELEVANT_SIGNAL_KINDS[role] ?? [];
-    for (const k of kinds) {relevantKinds.add(k);}
+    for (const k of kinds) {
+      relevantKinds.add(k);
+    }
   }
 
-  const filtered = input.patterns.filter((p) =>
-    relevantKinds.has(p.signalKind),
-  );
+  const filtered = input.patterns.filter((p) => relevantKinds.has(p.signalKind));
 
   // Boost confidence for patterns matching primary role
   const boosted = filtered.map((p) => {
-    if (!input.primaryRole) {return p;}
+    if (!input.primaryRole) {
+      return p;
+    }
     const primaryKinds = RELEVANT_SIGNAL_KINDS[input.primaryRole] ?? [];
     if (primaryKinds.includes(p.signalKind)) {
       const boostedConf = Math.min(1, p.confidence * 1.15);

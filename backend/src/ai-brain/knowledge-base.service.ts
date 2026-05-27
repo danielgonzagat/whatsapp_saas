@@ -47,7 +47,6 @@ import { WHITESPACE_G_RE } from '../common/regex';
 
 const KNOWLEDGE_BASE_EMBEDDING_MODEL = 'text-embedding-3-small';
 
-
 export function htmlToText(html: string): string {
   if (!html) {
     return '';
@@ -114,8 +113,6 @@ type KnowledgeBaseWalletUsagePayload = {
   requestId: string;
   billing: SerializedInputTokenBillingDescriptor;
 };
-
-
 
 /** Knowledge-base wallet access error. */
 class KnowledgeBaseWalletAccessError extends Error {

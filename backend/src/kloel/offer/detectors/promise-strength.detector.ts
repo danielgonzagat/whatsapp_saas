@@ -6,28 +6,22 @@
  * different campaigns/creatives to identify weak promise signals.
  */
 
-import type {
-  OfferDetectorInput,
-  OfferDetectorResult,
-  OfferInsight,
-} from '../offer.types';
+import type { OfferDetectorInput, OfferDetectorResult, OfferInsight } from '../offer.types';
 import { OFFER_EVENT_NAMES, withinWindow } from '../offer.types';
 
 const MIN_LEADS_PER_CAMPAIGN = 5;
 const WEAK_PROMISE_THRESHOLD = 0.15;
 const WINDOW_DAYS = 90;
 
-function extractCampaignRef(
-  payload: Readonly<Record<string, unknown>> | undefined,
-): string {
-  if (!payload) {return 'no_campaign';}
+function extractCampaignRef(payload: Readonly<Record<string, unknown>> | undefined): string {
+  if (!payload) {
+    return 'no_campaign';
+  }
   const ref = payload['campaignId'] ?? payload['adId'] ?? payload['creativeId'];
   return typeof ref === 'string' ? ref : 'no_campaign';
 }
 
-export function detectPromiseStrength(
-  input: OfferDetectorInput,
-): OfferDetectorResult {
+export function detectPromiseStrength(input: OfferDetectorInput): OfferDetectorResult {
   const { events, workspaceId, nowMs = Date.now() } = input;
   const insights: OfferInsight[] = [];
 
@@ -52,7 +46,9 @@ export function detectPromiseStrength(
   }
 
   for (const [campaign, leadCount] of campaignLeads) {
-    if (leadCount < MIN_LEADS_PER_CAMPAIGN) {continue;}
+    if (leadCount < MIN_LEADS_PER_CAMPAIGN) {
+      continue;
+    }
     const cartCount = campaignCarts.get(campaign) ?? 0;
     const conversionRate = cartCount / leadCount;
 

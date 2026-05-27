@@ -31,19 +31,22 @@ export class TacticalTradeoffAdvisor {
   ): DefensibleVsTacticalTradeoff {
     const nowIso = new Date(nowMs ?? Date.now()).toISOString();
 
-    const avgAssetScore = assets.length > 0
-      ? assets.reduce((s, a) => s + a.score, 0) / assets.length
-      : 0;
+    const avgAssetScore =
+      assets.length > 0 ? assets.reduce((s, a) => s + a.score, 0) / assets.length : 0;
 
     const defensibleMix = clamp(avgAssetScore, 0, 1);
     const tacticalMix = 1 - defensibleMix;
     const normalizedTactical = clamp(tacticalEventRate, 0, 1);
 
-    const finalMix = (normalizedTactical * 0.6 + tacticalMix * 0.4);
+    const finalMix = normalizedTactical * 0.6 + tacticalMix * 0.4;
 
     const tacticalScore = this.classify(finalMix);
     const atRiskAssets = this.identifyAtRisk(assets);
-    const recommendations = this.generateRecommendations(tacticalScore, atRiskAssets.length, assets.length);
+    const recommendations = this.generateRecommendations(
+      tacticalScore,
+      atRiskAssets.length,
+      assets.length,
+    );
 
     return {
       workspaceId,
@@ -57,17 +60,23 @@ export class TacticalTradeoffAdvisor {
   }
 
   private classify(mix: number): TacticalScore {
-    if (mix >= CLASSIFY_THRESHOLD_STRONG) {return 'strongly_tactical';}
-    if (mix >= CLASSIFY_THRESHOLD_MOSTLY) {return 'mostly_tactical';}
-    if (mix >= CLASSIFY_THRESHOLD_BALANCED) {return 'balanced';}
-    if (mix >= CLASSIFY_THRESHOLD_DEFENSIBLE) {return 'mostly_defensible';}
+    if (mix >= CLASSIFY_THRESHOLD_STRONG) {
+      return 'strongly_tactical';
+    }
+    if (mix >= CLASSIFY_THRESHOLD_MOSTLY) {
+      return 'mostly_tactical';
+    }
+    if (mix >= CLASSIFY_THRESHOLD_BALANCED) {
+      return 'balanced';
+    }
+    if (mix >= CLASSIFY_THRESHOLD_DEFENSIBLE) {
+      return 'mostly_defensible';
+    }
     return 'strongly_defensible';
   }
 
   private identifyAtRisk(assets: readonly DefensibleAsset[]): readonly string[] {
-    return assets
-      .filter((a) => a.strength === 'nascent' && a.score < 0.15)
-      .map((a) => a.assetId);
+    return assets.filter((a) => a.strength === 'nascent' && a.score < 0.15).map((a) => a.assetId);
   }
 
   private generateRecommendations(
@@ -84,11 +93,15 @@ export class TacticalTradeoffAdvisor {
     }
 
     if (atRiskCount > 0) {
-      recs.push(`Protect ${atRiskCount} nascent assets before they degrade — invest in evidence capture`);
+      recs.push(
+        `Protect ${atRiskCount} nascent assets before they degrade — invest in evidence capture`,
+      );
     }
 
     if (totalAssets < 3) {
-      recs.push('Register at least 3 defensible asset types (audience, proof, case library) to diversify moat');
+      recs.push(
+        'Register at least 3 defensible asset types (audience, proof, case library) to diversify moat',
+      );
     }
 
     if (recs.length === 0) {

@@ -4,7 +4,9 @@ import type { WeeklyBehaviorSnapshot } from './drift.types';
 describe('DriftDetectorService', () => {
   const svc = new DriftDetectorService();
 
-  const makeSnapshot = (overrides: Partial<WeeklyBehaviorSnapshot> = {}): WeeklyBehaviorSnapshot => ({
+  const makeSnapshot = (
+    overrides: Partial<WeeklyBehaviorSnapshot> = {},
+  ): WeeklyBehaviorSnapshot => ({
     snapshotId: 'snap-1',
     workspaceId: 'ws-1',
     weekStart: '2026-05-18',
@@ -12,14 +14,25 @@ describe('DriftDetectorService', () => {
     decisionsRanked: ['buy', 'sell'],
     conversionsAttributed: 10,
     narrativeStyleHash: 'abc123',
-    toneClassification: { assertivo: 5, consultivo: 2, empatico: 1, analitico: 1, urgente: 0, neutro: 1 },
+    toneClassification: {
+      assertivo: 5,
+      consultivo: 2,
+      empatico: 1,
+      analitico: 1,
+      urgente: 0,
+      neutro: 1,
+    },
     decisionPatterns: [{ pattern: 'discount' }, { pattern: 'urgency' }],
     ...overrides,
   });
 
   describe('compare', () => {
     it('returns drift result with dimensions', () => {
-      const current = makeSnapshot({ snapshotId: 'snap-2', weekStart: '2026-05-25', messagesSent: 200 });
+      const current = makeSnapshot({
+        snapshotId: 'snap-2',
+        weekStart: '2026-05-25',
+        messagesSent: 200,
+      });
       const previous = makeSnapshot();
       const r = svc.compare(current, previous);
       expect(r.snapshotId).toBe('snap-2');
@@ -57,7 +70,14 @@ describe('DriftDetectorService', () => {
     it('detects tone classification drift', () => {
       const current = makeSnapshot({
         snapshotId: 'snap-2',
-        toneClassification: { assertivo: 1, consultivo: 1, empatico: 5, analitico: 1, urgente: 1, neutro: 1 },
+        toneClassification: {
+          assertivo: 1,
+          consultivo: 1,
+          empatico: 5,
+          analitico: 1,
+          urgente: 1,
+          neutro: 1,
+        },
       });
       const previous = makeSnapshot();
       const r = svc.compare(current, previous);
@@ -94,7 +114,11 @@ describe('DriftDetectorService', () => {
     });
 
     it('handles both zero gracefully', () => {
-      const current = makeSnapshot({ snapshotId: 'snap-2', messagesSent: 0, conversionsAttributed: 0 });
+      const current = makeSnapshot({
+        snapshotId: 'snap-2',
+        messagesSent: 0,
+        conversionsAttributed: 0,
+      });
       const previous = makeSnapshot({ messagesSent: 0, conversionsAttributed: 0 });
       const r = svc.compare(current, previous);
       const msgDim = r.details.find((d) => d.dimension === 'messagesSent');
@@ -105,7 +129,14 @@ describe('DriftDetectorService', () => {
     it('handles empty tone classifications', () => {
       const empty = makeSnapshot({
         snapshotId: 'snap-2',
-        toneClassification: { assertivo: 0, consultivo: 0, empatico: 0, analitico: 0, urgente: 0, neutro: 0 },
+        toneClassification: {
+          assertivo: 0,
+          consultivo: 0,
+          empatico: 0,
+          analitico: 0,
+          urgente: 0,
+          neutro: 0,
+        },
       });
       const r = svc.compare(empty, empty);
       const toneDim = r.details.find((d) => d.dimension === 'toneClassification');

@@ -3,6 +3,20 @@ import { WisdomRelevanceFilter } from '../../wisdom/wisdom-relevance-filter.serv
 import { WisdomPatternStore } from '../../wisdom/wisdom-pattern-store.service';
 import type { WisdomPattern } from '../../wisdom/wisdom.types';
 
+type MindPolicyUpdateManyArgs = {
+  data: { baselineOutcome: number };
+};
+
+function objectContaining<T extends object>(sample: T): T {
+  const matcher: unknown = expect.objectContaining(sample);
+  return matcher as T;
+}
+
+function firstMockArg<T>(mock: jest.Mock, callIndex = 0): T {
+  const call = mock.mock.calls[callIndex] as readonly unknown[] | undefined;
+  return call?.[0] as T;
+}
+
 describe('MindPolicyService', () => {
   const buildBeliefs = (beliefs: Array<{ mean: number; variance: number }>) => ({
     getOrInit: jest
@@ -374,7 +388,11 @@ describe('MindPolicyService', () => {
         context: { channel: 'whatsapp' },
         channel: 'whatsapp',
         options: [
-          { action: 'reply_option', predicate: 'P(reply|template,hour,channel)', context: { template: 'text', hour: 10, channel: 'whatsapp' } },
+          {
+            action: 'reply_option',
+            predicate: 'P(reply|template,hour,channel)',
+            context: { template: 'text', hour: 10, channel: 'whatsapp' },
+          },
           { action: 'buy_option', predicate: 'P(buy|offer)', context: { offer: 'a' } },
         ],
         epsilon: 0.5,
@@ -450,9 +468,7 @@ describe('MindPolicyService', () => {
 
     it('no patterns in store → no shift, policy proceeds normally', async () => {
       const prisma = buildPrisma();
-      const beliefs = buildBeliefs([
-        { mean: 0.5, variance: 0.1 },
-      ]);
+      const beliefs = buildBeliefs([{ mean: 0.5, variance: 0.1 }]);
 
       const wisdomFilter = new WisdomRelevanceFilter();
       const wisdomStore = new WisdomPatternStore();
@@ -471,9 +487,7 @@ describe('MindPolicyService', () => {
         subject: 'contact:w3',
         decisionType: 'followup_timing',
         context: {},
-        options: [
-          { action: 'only_option', predicate: 'P(reply)', context: {} },
-        ],
+        options: [{ action: 'only_option', predicate: 'P(reply)', context: {} }],
         epsilon: 0.5,
         fallbackMinSamples: 999,
       });
@@ -520,11 +534,9 @@ describe('MindPolicyService', () => {
           workspaceId: 'ws-1',
           resolvedAt: null,
         },
-        data: expect.objectContaining({ outcome: 1, baselineOutcome: 0.78 }),
+        data: objectContaining({ outcome: 1, baselineOutcome: 0.78 }),
       });
-      const updateCall = tx.mindPolicy.updateMany.mock.calls[0][0] as {
-        data: { baselineOutcome: number };
-      };
+      const updateCall = firstMockArg<MindPolicyUpdateManyArgs>(tx.mindPolicy.updateMany);
       expect(updateCall.data.baselineOutcome).toBeGreaterThanOrEqual(0);
       expect(updateCall.data.baselineOutcome).toBeLessThan(1);
     });
@@ -543,7 +555,6 @@ describe('MindPolicyService', () => {
       expect(result.baselineMean).toBeCloseTo(0.55);
       expect(result.lift).toBeGreaterThan(0);
     });
-
 
     it('resolveOutcome: records global prior observation when globalPrior is injected', async () => {
       const recordObservation = jest.fn().mockResolvedValue(undefined);
@@ -704,7 +715,12 @@ describe('MindPolicyService', () => {
 
       expect(count).toBe(1);
       expect(recordObservation).toHaveBeenCalledTimes(1);
-      expect(recordObservation).toHaveBeenCalledWith('instagram', 'followup_timing', 'exploit_text_10h', true);
+      expect(recordObservation).toHaveBeenCalledWith(
+        'instagram',
+        'followup_timing',
+        'exploit_text_10h',
+        true,
+      );
     });
 
     it('resolveOpenForSubject: skips prior when channel is absent from context', async () => {

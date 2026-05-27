@@ -16,7 +16,13 @@ jest.mock('./checkout-plan-link.manager', () => ({
 describe('CheckoutProductService', () => {
   let service: CheckoutProductService;
   let prisma: {
-    product: { create: jest.Mock; update: jest.Mock; findMany: jest.Mock; findFirst: jest.Mock; deleteMany: jest.Mock };
+    product: {
+      create: jest.Mock;
+      update: jest.Mock;
+      findMany: jest.Mock;
+      findFirst: jest.Mock;
+      deleteMany: jest.Mock;
+    };
     checkoutProductPlan: { create: jest.Mock; findUnique: jest.Mock };
     checkoutConfig: { create: jest.Mock };
     $transaction: jest.Mock;
@@ -41,9 +47,9 @@ describe('CheckoutProductService', () => {
         findUnique: jest.fn().mockResolvedValue({ id: 'plan-1', checkoutConfig: {} }),
       },
       checkoutConfig: { create: jest.fn().mockResolvedValue({}) },
-      $transaction: jest.fn().mockImplementation(async (cb: (tx: unknown) => Promise<unknown>) =>
-        cb(prisma),
-      ),
+      $transaction: jest
+        .fn()
+        .mockImplementation(async (cb: (tx: unknown) => Promise<unknown>) => cb(prisma)),
     };
     auditService = { log: jest.fn().mockResolvedValue(undefined) };
     productConfigService = {
@@ -92,9 +98,9 @@ describe('CheckoutProductService', () => {
           clientVersion: '5.0.0',
         }),
       );
-      await expect(
-        service.updateProduct('p-missing', 'ws-1', { name: 'x' }),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.updateProduct('p-missing', 'ws-1', { name: 'x' })).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('rethrows non-P2025 errors', async () => {
@@ -120,15 +126,13 @@ describe('CheckoutProductService', () => {
     });
 
     it('returns product with checkoutPlans + checkoutTemplates split by kind', async () => {
-      prisma.product.findFirst
-        .mockResolvedValueOnce({ id: 'p-1' })
-        .mockResolvedValueOnce({
-          id: 'p-1',
-          checkoutPlans: [
-            { id: 'pl-1', kind: 'PLAN' },
-            { id: 'co-1', kind: 'CHECKOUT' },
-          ],
-        });
+      prisma.product.findFirst.mockResolvedValueOnce({ id: 'p-1' }).mockResolvedValueOnce({
+        id: 'p-1',
+        checkoutPlans: [
+          { id: 'pl-1', kind: 'PLAN' },
+          { id: 'co-1', kind: 'CHECKOUT' },
+        ],
+      });
       const result = await service.getProduct('p-1', 'ws-1');
       expect(result.checkoutPlans).toHaveLength(1);
       expect(result.checkoutTemplates).toHaveLength(1);

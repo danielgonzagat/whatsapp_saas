@@ -8,6 +8,10 @@
  * @see docs/adr/0013-kloel-mind-unification.md
  */
 export { MindSpineAudit, type SpineAuditResult } from './mind-spine-audit.service';
-export { MindLiftReportService, type LiftReport, type FailureReasonCount } from './mind-lift-report.service';
+export {
+  MindLiftReportService,
+  type LiftReport,
+  type FailureReasonCount,
+} from './mind-lift-report.service';
 export { MindObservabilityService } from './mind-observability.service';
 export { MindReportService } from './mind-report.service';

@@ -1,4 +1,4 @@
-import { Injectable, Optional  } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import {
   EmailChannelTransport,
@@ -33,7 +33,9 @@ export class ChannelTransportRegistry {
     @Optional() private readonly guardContextBuilder?: MindGuardContextBuilderService,
   ) {
     [instagram, messenger, tiktok, email, whatsapp].forEach((provider) => {
-      if (provider) {this.register(provider);}
+      if (provider) {
+        this.register(provider);
+      }
     });
   }
 

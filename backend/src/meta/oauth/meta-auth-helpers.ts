@@ -33,7 +33,9 @@ export function sanitizeReturnTo(
     // All four original patterns were applied to user-supplied `raw` input.
     raw.slice(0, 4).toLowerCase() !== '/%2f' &&
     raw.slice(0, 4).toLowerCase() !== '/%5c' &&
-    raw.indexOf('\r') === -1 && raw.indexOf('\n') === -1 && raw.indexOf('\t') === -1 &&
+    raw.indexOf('\r') === -1 &&
+    raw.indexOf('\n') === -1 &&
+    raw.indexOf('\t') === -1 &&
     // Scheme-URI guard: replaced /^[a-z][a-z0-9+.-]*:/i with char-level scan
     // (no backtracking). Redundant when startsWith('/') holds, but preserved
     // as defense-in-depth against open-redirect.
@@ -213,14 +215,20 @@ export function buildDiagnosticsPayload(input: {
  * which could backtrack on long crafted inputs.
  */
 function looksLikeUrlScheme(s: string): boolean {
-  if (s.length < 2) return false;
+  if (s.length < 2) {
+    return false;
+  }
   // charAt returns '' for OOB and string (not string|undefined) for in-bounds,
   // satisfying TS strict-null-checks without runtime cost.
   const c0 = s.charAt(0);
-  if (!((c0 >= 'a' && c0 <= 'z') || (c0 >= 'A' && c0 <= 'Z'))) return false;
+  if (!((c0 >= 'a' && c0 <= 'z') || (c0 >= 'A' && c0 <= 'Z'))) {
+    return false;
+  }
   for (let i = 1; i < s.length; i++) {
     const c = s.charAt(i);
-    if (c === ':') return true;
+    if (c === ':') {
+      return true;
+    }
     if (
       !(
         (c >= 'a' && c <= 'z') ||
@@ -230,8 +238,9 @@ function looksLikeUrlScheme(s: string): boolean {
         c === '.' ||
         c === '-'
       )
-    )
+    ) {
       return false;
+    }
   }
   return false;
 }

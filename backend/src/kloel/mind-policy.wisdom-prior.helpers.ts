@@ -21,7 +21,12 @@ const WISDOM_PRIOR_TARGET = 1.0;
  * Wrapped in try/catch — failures log but never block the decision.
  */
 export function applyWisdomPriors(input: {
-  mixedBeliefs: Array<{ belief: MindBelief; mixedMean: number; usedPrior: boolean; priorWeight: number }>;
+  mixedBeliefs: Array<{
+    belief: MindBelief;
+    mixedMean: number;
+    usedPrior: boolean;
+    priorWeight: number;
+  }>;
   channel: string | undefined;
   decisionType: string;
   inputOptions: Array<{ action: string }>;
@@ -29,10 +34,31 @@ export function applyWisdomPriors(input: {
   wisdomFilter?: WisdomRelevanceFilter;
   wisdomStore?: WisdomPatternStore;
   logger?: {
-    debug?: (msg: { operation: string; status: string; workspaceId: string; decisionType: string; matchingPatterns: number; maxConfidence: number; wisdomWeight: number; nudgedOptions: number }) => void;
-    warn?: (msg: { operation: string; status: string; workspaceId: string; decisionType: string; error: string }) => void;
+    debug?: (msg: {
+      operation: string;
+      status: string;
+      workspaceId: string;
+      decisionType: string;
+      matchingPatterns: number;
+      maxConfidence: number;
+      wisdomWeight: number;
+      nudgedOptions: number;
+    }) => void;
+    warn?: (msg: {
+      operation: string;
+      status: string;
+      workspaceId: string;
+      decisionType: string;
+      error: string;
+    }) => void;
   };
-}): Array<{ belief: MindBelief; mixedMean: number; usedPrior: boolean; priorWeight: number; wisdomNudged: boolean }> {
+}): Array<{
+  belief: MindBelief;
+  mixedMean: number;
+  usedPrior: boolean;
+  priorWeight: number;
+  wisdomNudged: boolean;
+}> {
   const result = input.mixedBeliefs.map((m) => ({ ...m, wisdomNudged: false }));
 
   if (!input.wisdomFilter || !input.wisdomStore) {
@@ -73,8 +99,7 @@ export function applyWisdomPriors(input: {
       const effectiveN = Math.max(1, entry.belief.samples ?? 0);
       const localMean = entry.mixedMean;
       entry.mixedMean =
-        (localMean * effectiveN + wisdomWeight * priorTarget) /
-        (effectiveN + wisdomWeight);
+        (localMean * effectiveN + wisdomWeight * priorTarget) / (effectiveN + wisdomWeight);
       entry.wisdomNudged = true;
     }
 
@@ -109,7 +134,9 @@ function wisdomAlignsWithOption(
   patterns: readonly WisdomPattern[],
   option?: { action: string; predicate?: string; context?: Record<string, unknown> },
 ): boolean {
-  if (!option) {return false;}
+  if (!option) {
+    return false;
+  }
 
   const searchText = [
     option.predicate ?? '',
@@ -121,7 +148,10 @@ function wisdomAlignsWithOption(
 
   return patterns.some((p) => {
     // Extract the core concept from signalKind: e.g., 'reply_rate' → 'reply'
-    const concept = p.signalKind.replace(/_rate|_volume|_efficiency|_distribution|_concentration|_activity$/, '');
+    const concept = p.signalKind.replace(
+      /_rate|_volume|_efficiency|_distribution|_concentration|_activity$/,
+      '',
+    );
     return concept.length > 0 && searchText.includes(concept);
   });
 }

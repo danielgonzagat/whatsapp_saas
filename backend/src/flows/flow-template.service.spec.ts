@@ -6,7 +6,14 @@ import { FlowTemplateService } from './flow-template.service';
 jest.mock('./flow-template.recommended', () => ({
   getRecommendedFlowTemplates: () => [
     { name: 'tpl-a', category: 'sales', nodes: [], edges: [], isPublic: true },
-    { name: 'tpl-b', category: 'support', nodes: [], edges: [], description: 'desc', isPublic: false },
+    {
+      name: 'tpl-b',
+      category: 'support',
+      nodes: [],
+      edges: [],
+      description: 'desc',
+      isPublic: false,
+    },
   ],
 }));
 
@@ -31,10 +38,7 @@ describe('FlowTemplateService', () => {
       },
     };
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        FlowTemplateService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [FlowTemplateService, { provide: PrismaService, useValue: prisma }],
     }).compile();
     service = module.get(FlowTemplateService);
   });
@@ -82,9 +86,7 @@ describe('FlowTemplateService', () => {
   });
 
   it('seedRecommended skips existing templates by name', async () => {
-    prisma.flowTemplate.findMany.mockResolvedValue([
-      { name: 'tpl-a', id: 'existing-a' },
-    ]);
+    prisma.flowTemplate.findMany.mockResolvedValue([{ name: 'tpl-a', id: 'existing-a' }]);
     const result = await service.seedRecommended();
     expect(result.seeded).toBe(2);
     expect(prisma.flowTemplate.create).toHaveBeenCalledTimes(1);

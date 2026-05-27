@@ -22,26 +22,70 @@ const MIN_SAMPLE_SIZE = 10;
 const STRONG_CONVERSION_THRESHOLD = 0.12;
 
 const POWER_WORDS = new Set([
-  'garantido', 'comprovado', 'exclusivo', 'limitado', 'resultado',
-  'transformação', 'segredo', 'revelado', 'descoberto', 'científico',
-  'garantia', 'inédito', 'imperdível', 'acelerador', 'definitivo',
-  'step-by-step', 'passo a passo', 'método', 'fórmula', 'sistema',
-  'automático', 'escalável', 'lucrativo', 'multiplicador',
+  'garantido',
+  'comprovado',
+  'exclusivo',
+  'limitado',
+  'resultado',
+  'transformação',
+  'segredo',
+  'revelado',
+  'descoberto',
+  'científico',
+  'garantia',
+  'inédito',
+  'imperdível',
+  'acelerador',
+  'definitivo',
+  'step-by-step',
+  'passo a passo',
+  'método',
+  'fórmula',
+  'sistema',
+  'automático',
+  'escalável',
+  'lucrativo',
+  'multiplicador',
 ]);
 
 const SPECIFICITY_MARKERS = new Set([
-  'dias', 'semanas', 'meses', 'horas', '%', 'por cento',
-  'número', 'valor', 'exato', 'preciso', 'exatamente',
-  'R$', 'US$', '€', 'mil', 'milhão',
+  'dias',
+  'semanas',
+  'meses',
+  'horas',
+  '%',
+  'por cento',
+  'número',
+  'valor',
+  'exato',
+  'preciso',
+  'exatamente',
+  'R$',
+  'US$',
+  '€',
+  'mil',
+  'milhão',
 ]);
 
 const URGENCY_SIGNALS = new Set([
-  'hoje', 'agora', 'última', 'vagas', 'encerra', 'prazo',
-  'restam', 'apenas', 'só', 'única', 'exclusiva',
+  'hoje',
+  'agora',
+  'última',
+  'vagas',
+  'encerra',
+  'prazo',
+  'restam',
+  'apenas',
+  'só',
+  'única',
+  'exclusiva',
 ]);
 
 function normalize(text: string): string {
-  return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
 }
 
 function escapeRegex(s: string): string {
@@ -64,17 +108,19 @@ function countTokens(label: string, text: string, dict: ReadonlySet<string>): nu
 
 function copyScore(offerCopy: string): number {
   const wordCount = offerCopy.split(/\s+/).filter(Boolean).length;
-  if (wordCount === 0) {return 0;}
+  if (wordCount === 0) {
+    return 0;
+  }
 
   const power = countTokens('power', offerCopy, POWER_WORDS);
   const specificity = countTokens('specificity', offerCopy, SPECIFICITY_MARKERS);
   const urgency = countTokens('urgency', offerCopy, URGENCY_SIGNALS);
 
-  const powerDensity = power / Math.max(1, wordCount) * 100;
-  const specDensity = specificity / Math.max(1, wordCount) * 100;
-  const urgencyDensity = urgency / Math.max(1, wordCount) * 100;
+  const powerDensity = (power / Math.max(1, wordCount)) * 100;
+  const specDensity = (specificity / Math.max(1, wordCount)) * 100;
+  const urgencyDensity = (urgency / Math.max(1, wordCount)) * 100;
 
-  const score = powerDensity * 0.35 + specDensity * 0.40 + urgencyDensity * 0.25;
+  const score = powerDensity * 0.35 + specDensity * 0.4 + urgencyDensity * 0.25;
   return Math.min(1.0, score / 5);
 }
 
@@ -84,15 +130,23 @@ function classify(
   sampleSize: number,
 ): PromiseStrength {
   if (sampleSize < MIN_SAMPLE_SIZE) {
-    if (copyScoreValue >= 0.6) {return 'moderate';}
-    if (copyScoreValue >= 0.3) {return 'weak';}
+    if (copyScoreValue >= 0.6) {
+      return 'moderate';
+    }
+    if (copyScoreValue >= 0.3) {
+      return 'weak';
+    }
     return 'weak';
   }
 
   const composite = copyScoreValue * 0.4 + (conversionRate / STRONG_CONVERSION_THRESHOLD) * 0.6;
 
-  if (composite >= 0.7) {return 'strong';}
-  if (composite >= 0.35) {return 'moderate';}
+  if (composite >= 0.7) {
+    return 'strong';
+  }
+  if (composite >= 0.35) {
+    return 'moderate';
+  }
   return 'weak';
 }
 
@@ -110,7 +164,9 @@ function buildEvidence(
   const lines: string[] = [];
 
   if (data.sampleSize < MIN_SAMPLE_SIZE) {
-    lines.push(`low sample size (${data.sampleSize} < ${MIN_SAMPLE_SIZE}) — relying primarily on copy analysis`);
+    lines.push(
+      `low sample size (${data.sampleSize} < ${MIN_SAMPLE_SIZE}) — relying primarily on copy analysis`,
+    );
   }
 
   lines.push(`copy quality score: ${(copyScoreValue * 100).toFixed(1)}%`);

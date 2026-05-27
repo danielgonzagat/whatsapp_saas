@@ -30,18 +30,14 @@ export function evaluateTiming(
 ): TimingResult {
   const cfg: TimingConfig = { ...DEFAULT_TIMING_CONFIG, ...config };
 
-  const isQuietHours =
-    localHour >= cfg.quietStartHour || localHour < cfg.quietEndHour;
+  const isQuietHours = localHour >= cfg.quietStartHour || localHour < cfg.quietEndHour;
 
   const hasTypicalWindow =
-    cfg.typicalReplyWindowStart !== undefined &&
-    cfg.typicalReplyWindowEnd !== undefined;
+    cfg.typicalReplyWindowStart !== undefined && cfg.typicalReplyWindowEnd !== undefined;
 
   let peakWindow = false;
   if (hasTypicalWindow) {
-    peakWindow =
-      localHour >= cfg.typicalReplyWindowStart &&
-      localHour < cfg.typicalReplyWindowEnd;
+    peakWindow = localHour >= cfg.typicalReplyWindowStart && localHour < cfg.typicalReplyWindowEnd;
   }
 
   const appropriate = !isQuietHours;

@@ -68,6 +68,16 @@ import type {
   DispatcherAccountMock,
 } from './kloel-tool-dispatcher.service.fixtures';
 
+function objectContaining<T extends object>(sample: T): T {
+  const matcher: unknown = expect.objectContaining(sample);
+  return matcher as T;
+}
+
+function stringContaining(value: string): string {
+  const matcher: unknown = expect.stringContaining(value);
+  return matcher as string;
+}
+
 describe('KloelToolDispatcherService approval execution', () => {
   let service: KloelToolDispatcherService;
   let prisma: DispatcherPrismaMock;
@@ -213,7 +223,7 @@ describe('KloelToolDispatcherService approval execution', () => {
         entityId: 'products.review_and_publish',
         state: 'OPEN',
         title: 'Aprovar publicacao de produto pela CIA',
-        prompt: expect.stringContaining('prod-123'),
+        prompt: stringContaining('prod-123'),
         payload: {
           toolName: 'products.review_and_publish',
           args: { productId: 'prod-123' },
@@ -303,7 +313,7 @@ describe('KloelToolDispatcherService approval execution', () => {
     });
     expect(prisma.approvalRequest.updateMany).toHaveBeenCalledWith({
       where: { id: 'ap-1', workspaceId: DEFAULT_WS_ID, state: 'APPROVED' },
-      data: expect.objectContaining({ state: 'COMPLETED' }),
+      data: objectContaining({ state: 'COMPLETED' }),
     });
   });
 
@@ -339,7 +349,7 @@ describe('KloelToolDispatcherService approval execution', () => {
     });
     expect(prisma.approvalRequest.updateMany).toHaveBeenCalledWith({
       where: { id: 'ap-1', workspaceId: DEFAULT_WS_ID, state: 'APPROVED' },
-      data: expect.objectContaining({ state: 'COMPLETED' }),
+      data: objectContaining({ state: 'COMPLETED' }),
     });
   });
 

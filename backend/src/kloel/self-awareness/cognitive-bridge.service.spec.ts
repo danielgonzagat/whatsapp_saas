@@ -1,6 +1,21 @@
 import { CognitiveBridgeService } from './cognitive-bridge.service';
 import * as fs from 'fs/promises';
 
+type ReadFilePath = Parameters<typeof fs.readFile>[0];
+
+function readFilePathText(pathLike: ReadFilePath): string {
+  if (typeof pathLike === 'string') {
+    return pathLike;
+  }
+  if (pathLike instanceof URL) {
+    return pathLike.href;
+  }
+  if (Buffer.isBuffer(pathLike)) {
+    return pathLike.toString('utf8');
+  }
+  return '<file-handle>';
+}
+
 describe('CognitiveBridgeService', () => {
   let service: CognitiveBridgeService;
   let readFileSpy: jest.SpyInstance;
@@ -129,17 +144,28 @@ describe('CognitiveBridgeService', () => {
 
   function mockReadFile(pathLike: string): string {
     const p = pathLike.toString();
-    if (p.includes('openapi')) return JSON.stringify(mockOpenApiDoc);
-    if (p.includes('asyncapi')) return JSON.stringify(mockAsyncApiDoc);
-    if (p.includes('manifest')) return JSON.stringify(mockManifest);
-    if (p.includes('backend.sarif')) return JSON.stringify(mockSarifDoc);
-    if (p.includes('frontend.sarif')) return JSON.stringify(mockSarifDocEmpty);
+    if (p.includes('openapi')) {
+      return JSON.stringify(mockOpenApiDoc);
+    }
+    if (p.includes('asyncapi')) {
+      return JSON.stringify(mockAsyncApiDoc);
+    }
+    if (p.includes('manifest')) {
+      return JSON.stringify(mockManifest);
+    }
+    if (p.includes('backend.sarif')) {
+      return JSON.stringify(mockSarifDoc);
+    }
+    if (p.includes('frontend.sarif')) {
+      return JSON.stringify(mockSarifDocEmpty);
+    }
     throw new Error('ENOENT: ' + p);
   }
 
   beforeEach(() => {
-    readFileSpy = jest.spyOn(fs, 'readFile').mockImplementation((pathLike: any) => {
-      const content = mockReadFile(typeof pathLike === 'string' ? pathLike : pathLike.toString());
+    readFileSpy = jest.spyOn(fs, 'readFile').mockImplementation((pathLike: ReadFilePath) => {
+      const pathText = readFilePathText(pathLike);
+      const content = mockReadFile(pathText);
       return Promise.resolve(content);
     });
     service = new CognitiveBridgeService();
@@ -221,8 +247,8 @@ describe('CognitiveBridgeService', () => {
   it('caches OpenAPI reads within TTL', async () => {
     await service.getOpenApiRoute('products');
     await service.getOpenApiRoute('orders');
-    const openApiReads = readFileSpy.mock.calls.filter(
-      (c: string[]) => (c[0] as string).includes('openapi'),
+    const openApiReads = readFileSpy.mock.calls.filter((c: string[]) =>
+      (c[0] as string).includes('openapi'),
     );
     expect(openApiReads.length).toBe(1);
   });

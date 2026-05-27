@@ -2,6 +2,23 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { MindBanditService } from './mind-bandit.service';
 
+type BanditUpsertArgs = {
+  where: { workspaceId_decisionType_arm: { workspaceId: string } };
+  create: { isActive: boolean };
+};
+
+type BanditUpdateArgs = {
+  data: {
+    beta: { increment: number };
+    wins: { increment: number };
+  };
+};
+
+function firstMockArg<T>(mock: jest.Mock, callIndex = 0): T {
+  const call = mock.mock.calls[callIndex] as readonly unknown[] | undefined;
+  return call?.[0] as T;
+}
+
 describe('MindBanditService', () => {
   let service: MindBanditService;
   let prisma: {
@@ -23,10 +40,7 @@ describe('MindBanditService', () => {
       },
     };
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        MindBanditService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [MindBanditService, { provide: PrismaService, useValue: prisma }],
     }).compile();
     service = module.get(MindBanditService);
   });
@@ -39,7 +53,7 @@ describe('MindBanditService', () => {
         arms: ['a', 'b', 'c'],
       });
       expect(prisma.mindBanditArm.upsert).toHaveBeenCalledTimes(3);
-      const firstArg = prisma.mindBanditArm.upsert.mock.calls[0][0];
+      const firstArg = firstMockArg<BanditUpsertArgs>(prisma.mindBanditArm.upsert);
       expect(firstArg.where.workspaceId_decisionType_arm.workspaceId).toBe('ws-1');
       expect(firstArg.create.isActive).toBe(true);
     });
@@ -107,7 +121,7 @@ describe('MindBanditService', () => {
         arm: 'B',
         outcome: 0,
       });
-      const data = prisma.mindBanditArm.update.mock.calls[0][0].data;
+      const data = firstMockArg<BanditUpdateArgs>(prisma.mindBanditArm.update).data;
       expect(data.beta).toEqual({ increment: 1 });
       expect(data.wins).toEqual({ increment: 0 });
     });
