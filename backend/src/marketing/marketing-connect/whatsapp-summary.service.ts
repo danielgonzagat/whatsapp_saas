@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { asProviderSettings } from '../../whatsapp/provider-settings.types';
+import { asProviderSettings } from '../../common/provider-settings.types';
 import {
   normalizeWhatsAppSelectedProducts,
   extractSetupConfigField,

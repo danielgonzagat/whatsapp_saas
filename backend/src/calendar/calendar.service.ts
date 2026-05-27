@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import {
   asProviderSettings,
   type ProviderCalendarSettings,
-} from '../whatsapp/provider-settings.types';
+} from '../common/provider-settings.types';
 import { CalendarGoogleHelper } from './calendar.google.helpers';
 
 interface AppointmentRecord {

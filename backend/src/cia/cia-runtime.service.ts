@@ -4,7 +4,7 @@ import { AgentEventsService } from '../whatsapp/agent-events.service';
 import { CiaBacklogRunService } from './cia-backlog-run.service';
 import { CiaBootstrapService } from './cia-bootstrap.service';
 import { CiaRuntimeStateService } from './cia-runtime-state.service';
-import { asProviderSettings } from '../whatsapp/provider-settings.types';
+import { asProviderSettings } from '../common/provider-settings.types';
 import { MindBackgroundScheduler } from '../kloel/mind/mind-bg.scheduler';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 

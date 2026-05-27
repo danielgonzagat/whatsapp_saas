@@ -5,7 +5,7 @@ jest.mock('../meta/meta-token-crypto', () => ({
   encryptMetaToken: jest.fn().mockImplementation((token: string) => `encrypted:${token}`),
 }));
 
-jest.mock('../whatsapp/provider-settings.types', () => ({
+jest.mock('../common/provider-settings.types', () => ({
   asProviderSettings: jest.fn().mockImplementation((val: unknown) => val ?? {}),
 }));
 

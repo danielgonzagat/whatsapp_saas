@@ -10,7 +10,7 @@
 
 import { WahaProvider } from './waha.provider';
 import { WhatsAppApiProvider } from './whatsapp-api.provider';
-import type { ProviderSessionSnapshot } from '../provider-settings.types';
+import type { ProviderSessionSnapshot } from '../../common/provider-settings.types';
 
 export interface OpDeps {
   isWahaMode: () => boolean;

@@ -15,7 +15,7 @@ import { InboxGateway } from '../inbox/inbox.gateway';
 import { OmnichannelService } from '../inbox/omnichannel.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { asProviderSettings } from '../whatsapp/provider-settings.types';
+import { asProviderSettings } from '../common/provider-settings.types';
 import { flowQueue } from '../queue/queue';
 
 /** Arbitrary JSON payload received on the generic catch-hook endpoint. */

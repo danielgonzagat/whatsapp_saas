@@ -26,7 +26,7 @@ function readSendResult(result: unknown): { error: boolean; message: string | nu
     message: typeof record.message === 'string' ? record.message : null,
   };
 }
-import type { ProviderSettings } from './provider-settings.types';
+import type { ProviderSettings } from '../common/provider-settings.types';
 import {
   buildPendingInboundBatchExt,
   shouldBypassHumanLockExt,

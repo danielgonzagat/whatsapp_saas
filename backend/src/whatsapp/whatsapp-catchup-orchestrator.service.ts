@@ -7,7 +7,7 @@ import { forEachSequential } from '../common/async-sequence';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AgentEventsService } from './agent-events.service';
-import { asProviderSettings, type ProviderSessionSnapshot } from './provider-settings.types';
+import { asProviderSettings, type ProviderSessionSnapshot } from '../common/provider-settings.types';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WorkerRuntimeService } from './worker-runtime.service';
 import {

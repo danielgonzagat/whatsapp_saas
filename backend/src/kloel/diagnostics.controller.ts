@@ -4,7 +4,7 @@ import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ObservabilityQueriesService } from '../metrics/observability-queries.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { asProviderSettings } from '../whatsapp/provider-settings.types';
+import { asProviderSettings } from '../common/provider-settings.types';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 

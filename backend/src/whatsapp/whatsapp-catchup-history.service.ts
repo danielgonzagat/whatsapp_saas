@@ -5,7 +5,7 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 import { INBOX_SERVICE } from '../inbox/inbox.token';
 import type { IInboxService } from '../inbox/inbox.interface';
 import { PrismaService } from '../prisma/prisma.service';
-import { type ProviderSettings } from './provider-settings.types';
+import { type ProviderSettings } from '../common/provider-settings.types';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { type WahaChatMessage, type WahaChatSummary } from './providers/whatsapp-api.provider';
 import { type InboundMessage } from './inbound-processor.service';

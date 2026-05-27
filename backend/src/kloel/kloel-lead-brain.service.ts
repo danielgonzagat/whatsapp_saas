@@ -22,7 +22,7 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { validateAbiPayload } from './abi/abi-validator';
 
-import { asProviderSettings } from '../whatsapp/provider-settings.types';
+import { asProviderSettings } from '../common/provider-settings.types';
 import {
   NON_DIGIT_RE,
   safeStr,

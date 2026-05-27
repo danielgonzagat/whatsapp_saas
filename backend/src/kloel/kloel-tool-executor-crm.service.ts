@@ -3,7 +3,7 @@ import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
-import { asProviderSettings } from '../whatsapp/provider-settings.types';
+import { asProviderSettings } from '../common/provider-settings.types';
 import type {
   ToolResult,
   ToolCreateCampaignArgs,

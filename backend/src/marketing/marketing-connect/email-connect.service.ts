@@ -7,7 +7,7 @@ import {
   readWorkspaceEmailDelivery,
 } from '../../kloel/email-workspace-delivery';
 import { buildUnsubscribeFooterHtml } from '../../common/utils/unsubscribe-footer.util';
-import { asProviderSettings } from '../../whatsapp/provider-settings.types';
+import { asProviderSettings } from '../../common/provider-settings.types';
 import { EMAIL_VALIDATION_HTML_BODY } from '../marketing-connect.helpers';
 import { MailboxGmailOAuthService } from '../mailbox-gmail-oauth.service';
 import { MailboxMicrosoftOAuthService } from '../mailbox-microsoft-oauth.service';

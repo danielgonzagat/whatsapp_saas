@@ -34,7 +34,7 @@ import type {
   ToolChangePlanArgs,
 } from './kloel-tool-executor.types';
 
-import { asProviderSettings } from '../whatsapp/provider-settings.types';
+import { asProviderSettings } from '../common/provider-settings.types';
 
 import type { UnknownRecord } from '../common/types';
 

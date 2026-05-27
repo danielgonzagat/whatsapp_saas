@@ -12,7 +12,7 @@ import { CiaChatFilterService } from './cia-chat-filter.service';
 import { CiaInlineFallbackService } from './cia-inline-fallback.service';
 import { CiaRemoteBacklogService } from './cia-remote-backlog.service';
 import { CiaRuntimeStateService } from './cia-runtime-state.service';
-import { asProviderSettings } from '../whatsapp/provider-settings.types';
+import { asProviderSettings } from '../common/provider-settings.types';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import { WhatsAppCatchupService } from '../whatsapp/whatsapp-catchup.service';
 import { WorkerRuntimeService } from '../whatsapp/worker-runtime.service';

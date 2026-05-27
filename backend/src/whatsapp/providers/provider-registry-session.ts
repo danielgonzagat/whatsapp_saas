@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { asProviderSettings, type ProviderSessionSnapshot } from '../provider-settings.types';
+import { asProviderSettings, type ProviderSessionSnapshot } from '../../common/provider-settings.types';
 import { WahaProvider } from './waha.provider';
 import { WhatsAppApiProvider } from './whatsapp-api.provider';
 import type { WhatsAppProviderType, SessionStatus, UnknownRecord } from './provider-registry.types';

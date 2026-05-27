@@ -1,6 +1,6 @@
 import { OrderStatus } from '@prisma/client';
 import type { PrismaService } from '../../../prisma/prisma.service';
-import { asProviderSettings } from '../../../whatsapp/provider-settings.types';
+import { asProviderSettings } from '../../../common/provider-settings.types';
 
 /** Admin account agent shape. */
 interface AdminAccountAgent {

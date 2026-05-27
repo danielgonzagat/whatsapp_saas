@@ -4,7 +4,7 @@ jest.mock('../meta/meta-token-crypto', () => ({
   decryptMetaToken: jest.fn(),
 }));
 
-jest.mock('../whatsapp/provider-settings.types', () => ({
+jest.mock('../common/provider-settings.types', () => ({
   asProviderSettings: jest.fn(),
 }));
 
@@ -23,7 +23,7 @@ describe('TikTokAdsService', () => {
     decryptMetaToken = cryptoMock.decryptMetaToken;
     decryptMetaToken.mockImplementation((token: unknown) => token);
 
-    const settingsMock = jest.requireMock('../whatsapp/provider-settings.types');
+    const settingsMock = jest.requireMock('../common/provider-settings.types');
     asProviderSettings = settingsMock.asProviderSettings;
     asProviderSettings.mockImplementation((val: unknown) => val ?? {});
 

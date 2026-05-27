@@ -3,7 +3,7 @@ import type { CiaChatFilterService } from '../cia/cia-chat-filter.service';
 import type { CiaRuntimeStateService } from '../cia/cia-runtime-state.service';
 import type { PrismaService } from '../prisma/prisma.service';
 import type { WhatsAppProviderRegistry } from './providers/provider-registry';
-import { asProviderSettings } from './provider-settings.types';
+import { asProviderSettings } from '../common/provider-settings.types';
 import { safeStr } from '../common/string';
 
 export type BacklogMode = 'reply_all_recent_first' | 'reply_only_new' | 'prioritize_hot';

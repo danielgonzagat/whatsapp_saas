@@ -2,7 +2,7 @@ import {
   asProviderSettings,
   type ProviderAutonomySettings,
   type ProviderCiaRuntime,
-} from '../common/provider-settings.types';
+} from './provider-settings.types';
 
 describe('asProviderSettings', () => {
   it('returns object values as-is', () => {

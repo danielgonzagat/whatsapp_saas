@@ -8,7 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueJobId } from '../queue/job-id.util';
 import { autopilotQueue } from '../queue/queue';
 import { AgentEventsService } from './agent-events.service';
-import { asProviderSettings } from './provider-settings.types';
+import { asProviderSettings } from '../common/provider-settings.types';
 import { WorkerRuntimeService } from './worker-runtime.service';
 import { isNowebStoreMisconfiguredExt } from './whatsapp-catchup.helpers';
 import {

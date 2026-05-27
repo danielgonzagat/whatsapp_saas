@@ -20,7 +20,7 @@ import { Public } from '../auth/public.decorator';
 import { getTraceHeaders } from '../common/trace-headers';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
-import { asProviderSettings } from '../whatsapp/provider-settings.types';
+import { asProviderSettings } from '../common/provider-settings.types';
 import { WebhooksService } from './webhooks.service';
 
 /**

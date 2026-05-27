@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { toPrismaJsonValue } from '../../common/prisma/prisma-json.util';
 import { PrismaService } from '../../prisma/prisma.service';
-import { asProviderSettings } from '../../whatsapp/provider-settings.types';
+import { asProviderSettings } from '../../common/provider-settings.types';
 import {
   assertMarketingChannel,
   readMarketingChannelSetup,

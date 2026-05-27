@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
-import { asProviderSettings } from '../whatsapp/provider-settings.types';
+import { asProviderSettings } from '../common/provider-settings.types';
 import type { StripeClient, StripeSubscription } from './stripe-types';
 
 export interface MarkSubscriptionStatusDeps {

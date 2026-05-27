@@ -12,7 +12,7 @@ import {
   normalizeJsonObjExt,
   normalizeNumber,
 } from '../marketing/channels/whatsapp/whatsapp-service.helpers';
-import type { ProviderSettings } from './provider-settings.types';
+import type { ProviderSettings } from '../common/provider-settings.types';
 import { WhatsAppEventEmitterService } from '../kloel/whatsapp-emitter/whatsapp-event-emitter.service';
 
 import { UUID_DASH_RE } from '../common/regex';
