@@ -16,7 +16,7 @@ import { CiaRuntimeService as WhatsappCiaRuntimeService } from '../kloel/mind/ci
 import { CiaRuntimeStateService } from './cia-runtime-state.service';
 import { CiaSendHelpersService } from '../kloel/mind/cia/cia-send-helpers.service';
 import { CiaController } from '../kloel/mind/cia/cia.controller';
-import { CiaService } from './cia.service';
+import { CiaService } from '../kloel/mind/cia/cia.service';
 import { CIA_RUNTIME_SERVICE } from '../kloel/mind/cia/cia-runtime.port';
 
 /** Cia module. */

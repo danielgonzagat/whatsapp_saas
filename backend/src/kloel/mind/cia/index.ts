@@ -23,7 +23,7 @@ export {
   CiaService as MindLearningAdapter,
   /** @deprecated Use {@link MindLearningAdapter} instead. */
   CiaService,
-} from '../../../cia/cia.service';
+} from './cia.service';
 
 export { CiaAutonomyAdvisorService } from './cia-autonomy-advisor.service';
 export { CiaBacklogRunService } from './cia-backlog-run.service';

@@ -1,5 +1,5 @@
-import { expectValueOf } from '../../test/expect-value-of';
-jest.mock('../queue/queue', () => ({
+import { expectValueOf } from '../../../../test/expect-value-of';
+jest.mock('../../../queue/queue', () => ({
   flowQueue: { add: jest.fn() },
 }));
 
