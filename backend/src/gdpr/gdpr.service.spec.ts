@@ -39,6 +39,12 @@ jest.mock('node:os', () => ({
 }));
 
 jest.mock('../common/redis/redis.util', () => ({
+  createBullMqConnectionOptions: jest.fn(() => {
+    const { RedisConfigurationError } = jest.requireActual<
+      typeof import('../common/redis/resolve-redis-url')
+    >('../common/redis/resolve-redis-url');
+    throw new RedisConfigurationError('Redis not available in test');
+  }),
   createRedisClient: jest.fn(() => {
     const { RedisConfigurationError } = jest.requireActual<
       typeof import('../common/redis/resolve-redis-url')

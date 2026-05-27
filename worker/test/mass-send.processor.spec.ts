@@ -63,20 +63,20 @@ let handler: ((job: Record<string, unknown>) => Promise<unknown>) | undefined;
 
 beforeAll(async () => {
   const bullmq = await import('bullmq');
-  WorkerMock = bullmq.Worker as unknown as ReturnType<typeof vi.fn>;
+  WorkerMock = bullmq.Worker as ReturnType<typeof vi.fn>;
 
   const pb = await import('../processor-base');
-  checkIdempotentMock = pb.checkIdempotent as unknown as ReturnType<typeof vi.fn>;
-  startJobMock = pb.startJob as unknown as ReturnType<typeof vi.fn>;
-  endJobMock = pb.endJob as unknown as ReturnType<typeof vi.fn>;
-  logErrorMock = pb.logError as unknown as ReturnType<typeof vi.fn>;
-  markCompletedMock = pb.markCompleted as unknown as ReturnType<typeof vi.fn>;
+  checkIdempotentMock = pb.checkIdempotent as ReturnType<typeof vi.fn>;
+  startJobMock = pb.startJob as ReturnType<typeof vi.fn>;
+  endJobMock = pb.endJob as ReturnType<typeof vi.fn>;
+  logErrorMock = pb.logError as ReturnType<typeof vi.fn>;
+  markCompletedMock = pb.markCompleted as ReturnType<typeof vi.fn>;
 
   const q = await import('../queue');
   addBulkMock = (q.flowQueue as { addBulk: ReturnType<typeof vi.fn> }).addBulk;
 
   const eh = await import('../src/utils/error-handler');
-  isRetryableErrorMock = eh.isRetryableError as unknown as ReturnType<typeof vi.fn>;
+  isRetryableErrorMock = eh.isRetryableError as ReturnType<typeof vi.fn>;
 
   // Import the processor — this triggers Worker constructor with the handler
   const mod = await import('../processors/mass-send-processor');

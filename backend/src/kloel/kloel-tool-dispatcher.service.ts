@@ -7,7 +7,12 @@ import { KloelBusinessConfigToolsService } from './kloel-business-config-tools.s
 import { KloelChatToolsService } from './kloel-chat-tools.service';
 import { KloelComposerService } from './kloel-composer.service';
 import { runToolSearchWeb } from './kloel-tool-dispatcher.search-web.helpers';
-import { handleCodeAndReportTool, handleProductTool, handleSelfAwarenessTool } from './kloel-tool-dispatcher.meta.helpers';
+import {
+  handleCodeAndReportTool,
+  handleProductTool,
+  handleSelfAwarenessTool,
+  withCanonicalReceipt,
+} from './kloel-tool-dispatcher.meta.helpers';
 import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { KloelCodeToolsService } from './kloel-code-tools.service';
@@ -78,6 +83,12 @@ export class KloelToolDispatcherService {
   ): Promise<{ success: boolean; message?: string; error?: string; [key: string]: unknown }> {
     const asToolArgs = <T>(value: UnknownRecord): T => value as T;
 
+    const receiptDeps = {
+      prisma: this.prisma,
+      chatToolsService: this.chatToolsService,
+      capRegistryV2: this.capRegistryV2,
+    };
+
     if (!workspaceId || typeof workspaceId !== 'string' || !workspaceId.trim()) {
       return { success: false, error: 'workspace_id_required' };
     }
@@ -98,36 +109,45 @@ export class KloelToolDispatcherService {
       return { success: false, error: 'billing_suspended' };
     }
     this.logger.log(`Executando ferramenta: ${toolName}`);
-    const productResult = await handleProductTool(
-      { prisma: this.prisma, chatToolsService: this.chatToolsService, capRegistryV2: this.capRegistryV2 },
-      workspaceId,
-      toolName,
-      args,
-      userId,
-    );
-    if (productResult) return productResult;
-
-    const selfAwarenessResult = await handleSelfAwarenessTool(
-      { auditService: this.auditService, selfHealth: this.selfHealth, selfGaps: this.selfGaps, capRegistryV2: this.capRegistryV2 },
-      workspaceId,
-      toolName,
-      args,
-    );
-    if (selfAwarenessResult) return selfAwarenessResult;
-
-    const codeOrReportResult = await handleCodeAndReportTool(
-      {
-        codeToolsService: this.codeToolsService,
-        codeAnalysisService: this.codeAnalysisService,
-        reportService: this.reportService,
-      },
-      workspaceId,
-      toolName,
-      args,
-    );
-    if (codeOrReportResult) return codeOrReportResult;
-
     try {
+      const productResult = await handleProductTool(
+        {
+          prisma: this.prisma,
+          chatToolsService: this.chatToolsService,
+          capRegistryV2: this.capRegistryV2,
+        },
+        workspaceId,
+        toolName,
+        args,
+        userId,
+      );
+      if (productResult) return productResult;
+
+      const selfAwarenessResult = await handleSelfAwarenessTool(
+        {
+          auditService: this.auditService,
+          selfHealth: this.selfHealth,
+          selfGaps: this.selfGaps,
+          capRegistryV2: this.capRegistryV2,
+        },
+        workspaceId,
+        toolName,
+        args,
+      );
+      if (selfAwarenessResult) return selfAwarenessResult;
+
+      const codeOrReportResult = await handleCodeAndReportTool(
+        {
+          codeToolsService: this.codeToolsService,
+          codeAnalysisService: this.codeAnalysisService,
+          reportService: this.reportService,
+        },
+        workspaceId,
+        toolName,
+        args,
+      );
+      if (codeOrReportResult) return codeOrReportResult;
+
       switch (toolName) {
         case 'toggle_autopilot':
           return await this.chatToolsService.toolToggleAutopilot(workspaceId, asToolArgs(args));
@@ -202,18 +222,84 @@ export class KloelToolDispatcherService {
             });
           }
           return { success: false, error: 'checkout_service_unavailable' };
-        case 'plans.create':
-          return this.executeTool(workspaceId, 'create_plan', args, userId);
-        case 'plans.update':
-          return this.executeTool(workspaceId, 'update_plan', args, userId);
-        case 'checkouts.create':
-          return this.executeTool(workspaceId, 'create_checkout', args, userId);
-        case 'checkouts.update':
-          return this.executeTool(workspaceId, 'update_checkout', args, userId);
-        case 'coupons.create':
-          return this.executeTool(workspaceId, 'create_coupon', args, userId);
-        case 'coupons.delete':
-          return this.executeTool(workspaceId, 'delete_coupon', args, userId);
+        case 'plans.create': {
+          const startedAt = Date.now();
+          const result = await this.executeTool(workspaceId, 'create_plan', args, userId);
+          return withCanonicalReceipt(
+            receiptDeps,
+            'plans.create',
+            workspaceId,
+            args,
+            result,
+            userId,
+            startedAt,
+          );
+        }
+        case 'plans.update': {
+          const startedAt = Date.now();
+          const result = await this.executeTool(workspaceId, 'update_plan', args, userId);
+          return withCanonicalReceipt(
+            receiptDeps,
+            'plans.update',
+            workspaceId,
+            args,
+            result,
+            userId,
+            startedAt,
+          );
+        }
+        case 'checkouts.create': {
+          const startedAt = Date.now();
+          const result = await this.executeTool(workspaceId, 'create_checkout', args, userId);
+          return withCanonicalReceipt(
+            receiptDeps,
+            'checkouts.create',
+            workspaceId,
+            args,
+            result,
+            userId,
+            startedAt,
+          );
+        }
+        case 'checkouts.update': {
+          const startedAt = Date.now();
+          const result = await this.executeTool(workspaceId, 'update_checkout', args, userId);
+          return withCanonicalReceipt(
+            receiptDeps,
+            'checkouts.update',
+            workspaceId,
+            args,
+            result,
+            userId,
+            startedAt,
+          );
+        }
+        case 'coupons.create': {
+          const startedAt = Date.now();
+          const result = await this.executeTool(workspaceId, 'create_coupon', args, userId);
+          return withCanonicalReceipt(
+            receiptDeps,
+            'coupons.create',
+            workspaceId,
+            args,
+            result,
+            userId,
+            startedAt,
+          );
+        }
+        case 'coupons.delete': {
+          const startedAt = Date.now();
+          const result = await this.executeTool(workspaceId, 'delete_coupon', args, userId);
+          return withCanonicalReceipt(
+            receiptDeps,
+            'coupons.delete',
+            workspaceId,
+            args,
+            result,
+            userId,
+            startedAt,
+          );
+        }
         case 'plan_create':
         case 'create_plan':
         case 'update_plan':

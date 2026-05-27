@@ -52,7 +52,7 @@ export class IntentRouterService {
     // === Products ===
     {
       regex: /(?:cri[ae]r?\s.*produt|cadastra\s.*produt|nov[oa]\s.*produt)/i,
-      capabilityId: 'create_product',
+      capabilityId: 'products.create',
       extract: (match) => ({
         name: match[0].match(/produto\s+["""']?([^""""'"]+)/i)?.[1] || undefined,
         price: parseFloat(match[0].match(/r?\$?\s*(\d+(?:[.,]\d+)?)/i)?.[1]?.replace(',', '.') ?? '') || undefined,
@@ -225,7 +225,7 @@ export class IntentRouterService {
     // === Sales / PIX / Boleto ===
     {
       regex: /(?:emit[ei]r?\s.*pix|ger[ae]r?\s.*pix|cri[ae]r?\s.*pix)/i,
-      capabilityId: 'generate_pix',
+      capabilityId: 'sales.create_pix',
       extract: (match) => {
         const amount = parseFloat(match[0].match(/r?\$?\s*(\d+(?:[.,]\d+)?)/i)?.[1]?.replace(',', '.') ?? '') || undefined;
         return { amount: amount || undefined };
@@ -233,7 +233,7 @@ export class IntentRouterService {
     },
     {
       regex: /(?:emit[ei]r?\s.*bolet|ger[ae]r?\s.*bolet|cri[ae]r?\s.*bolet)/i,
-      capabilityId: 'generate_boleto',
+      capabilityId: 'sales.create_boleto',
       extract: () => ({}),
     },
     {

@@ -1,5 +1,12 @@
 import { createRequire } from 'node:module';
 
+type StripeConstructor = typeof import('stripe');
+type StripeInteropModule = StripeConstructor | { default?: StripeConstructor; Stripe?: StripeConstructor };
+
+function isStripeConstructorCandidate(value: unknown): value is StripeConstructor {
+  return typeof value === 'function';
+}
+
 const stripeRequire = createRequire(__filename);
 
 // Resolve Stripe constructor robustly across Node ESM/CJS interop modes.
@@ -12,29 +19,23 @@ const stripeRequire = createRequire(__filename);
 // Strategy: enumerate callable candidates from every interop shape;
 // validate each by instantiating with a dummy key and probing .customers.
 // The first candidate that produces a valid instance wins.
-function resolveStripeConstructor(): typeof import('stripe') {
-  const mod = stripeRequire('stripe') as never as
-    | typeof import('stripe')
-    | { default: typeof import('stripe'); Stripe?: typeof import('stripe') };
+function resolveStripeConstructor(): StripeConstructor {
+  const mod = stripeRequire('stripe') as StripeInteropModule;
+  const moduleRecord = mod as { default?: unknown; Stripe?: unknown };
 
   // Gather every plausible constructor candidate across interop shapes.
-  const candidates: Array<{ fn: (...args: unknown[]) => unknown; source: string }> = [];
+  const candidates: Array<{ fn: StripeConstructor; source: string }> = [];
 
-  if (typeof mod === 'function') {
-    candidates.push({ fn: mod as (...args: unknown[]) => unknown, source: 'direct' });
+  if (isStripeConstructorCandidate(mod)) {
+    candidates.push({ fn: mod, source: 'direct' });
   }
-  if (mod && typeof (mod as { default?: unknown }).default === 'function') {
-    candidates.push({
-      fn: (mod as { default: (...args: unknown[]) => unknown }).default,
-      source: 'default',
-    });
+  if (isStripeConstructorCandidate(moduleRecord.default)) {
+    candidates.push({ fn: moduleRecord.default, source: 'default' });
   }
-  if (mod && typeof (mod as { Stripe?: unknown }).Stripe === 'function') {
-    candidates.push({
-      fn: (mod as { Stripe: (...args: unknown[]) => unknown }).Stripe,
-      source: 'Stripe',
-    });
+  if (isStripeConstructorCandidate(moduleRecord.Stripe)) {
+    candidates.push({ fn: moduleRecord.Stripe, source: 'Stripe' });
   }
+
 
   if (candidates.length === 0) {
     throw new Error(
@@ -58,8 +59,7 @@ function resolveStripeConstructor(): typeof import('stripe') {
   ];
   for (const { fn, source } of candidates) {
     try {
-      const Ctor = fn as unknown as new (...args: unknown[]) => unknown;
-      const probe: unknown = new Ctor('sk_test_stripe_runtime_probe');
+      const probe: unknown = new fn('sk_test_stripe_runtime_probe');
       if (!probe || typeof probe !== 'object') {
         failures.push(`${source}: probe is ${typeof probe}`);
         continue;
@@ -78,7 +78,7 @@ function resolveStripeConstructor(): typeof import('stripe') {
         }
       }
       if (missing.length === 0) {
-        return fn as typeof import('stripe');
+        return fn;
       }
       failures.push(`${source}: missing ${missing.join(', ')}`);
     } catch (err: unknown) {

@@ -4,6 +4,11 @@ import { ScrapersService } from './scrapers.service';
 import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 jest.mock('../common/redis/redis.util', () => ({
+  createBullMqConnectionOptions: jest.fn(() => ({
+    url: 'redis://localhost:6379',
+    maxRetriesPerRequest: null,
+    enableReadyCheck: true,
+  })),
   createRedisClient: () => ({}),
   isRedisConfigured: () => true,
 }));

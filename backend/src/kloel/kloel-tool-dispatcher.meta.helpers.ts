@@ -105,7 +105,7 @@ function receiptKeyPart(value: string): string {
   return value.replace(/[^a-zA-Z0-9._-]/g, '_');
 }
 
-function withCanonicalReceipt(deps: ProductDeps, capabilityId: string, workspaceId: string, args: UnknownRecord, result: ToolResult, userId: string | undefined, startedAt: number): ToolResult {
+export function withCanonicalReceipt(deps: ProductDeps, capabilityId: string, workspaceId: string, args: UnknownRecord, result: ToolResult, userId: string | undefined, startedAt: number): ToolResult {
   const cap = deps.capRegistryV2?.get(capabilityId);
   if (!cap || !deps.capRegistryV2) return result;
   const inputs = sanitizeDetails(args);
@@ -253,8 +253,35 @@ export async function handleSelfAwarenessTool(
       return { success: true, capabilityId: 'self.health', outputs: await deps.selfHealth.snapshot(workspaceId) };
     }
     case 'self.capabilities':
-    case 'list_capabilities':
-      return { success: true, capabilities: CAPABILITIES };
+    case 'list_capabilities': {
+      if (!deps.capRegistryV2) {
+        return {
+          success: true,
+          capabilities: CAPABILITIES,
+        };
+      }
+      const capabilities = deps.capRegistryV2.list();
+      const manifest = capabilities.map((cap) => ({
+        id: cap.id,
+        title: cap.title,
+        category: cap.category,
+        tier: cap.tier,
+        requiresConfirmation: cap.requiresConfirmation,
+        requiredPermissions: cap.requiredPermissions,
+        surface: cap.surface,
+        ...(cap.maturity !== undefined ? { maturity: cap.maturity } : {}),
+      }));
+      return {
+        success: true,
+        capabilityId: 'self.capabilities',
+        capabilities: manifest.map((cap) => cap.id),
+        outputs: {
+          total: manifest.length,
+          capabilities: manifest,
+        },
+        message: `${manifest.length} capacidades registradas`,
+      };
+    }
     default:
       return null;
   }

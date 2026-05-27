@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
+import { ProductCouponDomainService } from './product-coupon-domain.service';
 import type { UnknownRecord } from '../common/types';
 
 export interface ProductSubResourceToolResult {
@@ -13,7 +14,10 @@ export interface ProductSubResourceToolResult {
 
 @Injectable()
 export class KloelProductSubResourceToolsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly productCouponDomain?: ProductCouponDomainService,
+  ) {}
 
   async executeTool(
     toolName: string,
@@ -314,24 +318,49 @@ export class KloelProductSubResourceToolsService {
   }
 
   async toolDeleteCoupon(workspaceId: string, args: UnknownRecord) {
-    let couponId = this.str(args.couponId);
-    // Support deletion by coupon code
-    if (!couponId && (args.couponCode || args.code)) {
+    const couponId = this.str(args.couponId);
+    const couponCode = this.str(args.couponCode || args.code);
+    const notFoundMessage = 'Cupom nao encontrado. Informe o codigo ou ID do cupom.';
+
+    if (this.productCouponDomain) {
+      try {
+        const deleted = await this.productCouponDomain.deleteProductCoupon({
+          workspaceId,
+          couponId,
+          couponCode,
+          deletedBy: 'kloel-chat',
+          notFoundMessage,
+        });
+        return {
+          success: true,
+          couponId: deleted.id,
+          productId: deleted.productId,
+        };
+      } catch (err: unknown) {
+        return { success: false, error: err instanceof Error ? err.message : 'Erro' };
+      }
+    }
+
+    let resolvedCouponId = couponId;
+    if (!resolvedCouponId && couponCode) {
       const c = await this.prisma.productCoupon.findFirst({
         where: {
-          code: this.str(args.couponCode || args.code),
+          code: couponCode,
           product: { workspaceId },
         },
         select: { id: true },
       });
-      couponId = c?.id ?? '';
+      resolvedCouponId = c?.id ?? '';
     }
-    if (!couponId) {
-      return { success: false, error: 'Cupom nao encontrado. Informe o codigo ou ID do cupom.' };
+    if (!resolvedCouponId) {
+      return { success: false, error: notFoundMessage };
     }
     try {
-      await this.prisma.productCoupon.delete({ where: { id: couponId } });
-      return { success: true };
+      await this.prisma.productCoupon.delete({ where: { id: resolvedCouponId } });
+      return {
+        success: true,
+        couponId: resolvedCouponId,
+      };
     } catch (err: unknown) {
       return { success: false, error: err instanceof Error ? err.message : 'Erro' };
     }

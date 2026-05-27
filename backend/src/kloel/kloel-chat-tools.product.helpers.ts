@@ -9,34 +9,36 @@ function stripAccents(s: string): string {
 }
 
 /** Resolve productId from productName with accent-tolerant search */
-async function resolveProductId(
+type ProductRef = { id: string; name: string };
+
+async function resolveProductRef(
   prisma: PrismaService,
   workspaceId: string,
   productName?: string,
-): Promise<string> {
+): Promise<ProductRef | null> {
   if (!productName) {
-    return '';
+    return null;
   }
-  // Try exact contains first (handles accents when user types them)
-  let p = await prisma.product.findFirst({
+
+  let product = await prisma.product.findFirst({
     where: { workspaceId, name: { contains: productName, mode: 'insensitive' } },
     select: { id: true, name: true },
   });
-  if (p) {
-    return p.id;
+  if (product) {
+    return product;
   }
-  // Fallback: strip accents and try again (handles "serum"→"sérum")
+
   const stripped = stripAccents(productName);
   if (stripped !== productName) {
-    p = await prisma.product.findFirst({
+    product = await prisma.product.findFirst({
       where: { workspaceId, name: { contains: stripped, mode: 'insensitive' } },
       select: { id: true, name: true },
     });
-    if (p) {
-      return p.id;
+    if (product) {
+      return product;
     }
   }
-  // Last resort: fetch all workspace products and compare accent-stripped names
+
   try {
     const all = await prisma.product.findMany({
       where: { workspaceId },
@@ -44,16 +46,22 @@ async function resolveProductId(
       take: 200,
     });
     const searchStripped = stripAccents(productName).toLowerCase();
-    const found = all.find((prod) =>
-      stripAccents(prod.name).toLowerCase().includes(searchStripped),
+    return (
+      all.find((candidate) =>
+        stripAccents(candidate.name).toLowerCase().includes(searchStripped),
+      ) ?? null
     );
-    if (found) {
-      return found.id;
-    }
   } catch {
-    // gracefully skip
+    return null;
   }
-  return '';
+}
+
+async function resolveProductId(
+  prisma: PrismaService,
+  workspaceId: string,
+  productName?: string,
+): Promise<string> {
+  return (await resolveProductRef(prisma, workspaceId, productName))?.id ?? '';
 }
 
 export async function runGetProductPlans(
@@ -144,7 +152,13 @@ export async function runGetProductReviews(
   workspaceId: string,
   args: { productId?: string; productName?: string },
 ): Promise<ToolResult> {
-  const pid = await resolveProductId(prisma, workspaceId, args.productName || args.productId);
+  const productFromName = args.productName
+    ? await resolveProductRef(prisma, workspaceId, args.productName)
+    : null;
+  const pid =
+    productFromName?.id ??
+    (args.productId ? await resolveProductId(prisma, workspaceId, args.productId) : '');
+
   if (!pid && args.productId) {
     const product = await prisma.product.findFirst({
       where: { id: args.productId, workspaceId },
@@ -165,16 +179,21 @@ export async function runGetProductReviews(
       reviews,
     };
   }
+
   if (!pid) {
     return { success: false, error: 'productId_required' };
   }
-  const product = await prisma.product.findFirst({
-    where: { id: pid, workspaceId },
-    select: { id: true, name: true },
-  });
+
+  const product =
+    productFromName ??
+    (await prisma.product.findFirst({
+      where: { id: pid, workspaceId },
+      select: { id: true, name: true },
+    }));
   if (!product) {
     return { success: false, error: 'product_not_found' };
   }
+
   const reviews = await prisma.productReview.findMany({
     where: { productId: pid },
     select: { id: true, rating: true, comment: true, createdAt: true },
@@ -183,7 +202,7 @@ export async function runGetProductReviews(
   });
   return {
     success: true,
-    product: { id: pid, name: args.productName || pid },
+    product: { id: product.id, name: product.name },
     reviews,
   };
 }

@@ -429,7 +429,7 @@ describe('MindPolicyService', () => {
         filter: () => {
           throw new Error('wisdom filter crash');
         },
-      } as unknown as WisdomRelevanceFilter;
+      } as WisdomRelevanceFilter;
 
       const wisdomStore = new WisdomPatternStore();
       wisdomStore.setPatterns([makeWisdomPattern()]);

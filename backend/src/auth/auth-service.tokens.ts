@@ -341,7 +341,7 @@ export async function refreshToken(
       // Pass tx as PrismaService — TransactionClient exposes the
       // same model delegates (workspace, refreshToken) with
       // identical method signatures.
-      return await issueTokens(tx as unknown as PrismaService, jwt, logger, stored.agent);
+      return await issueTokens(tx as PrismaService, jwt, logger, stored.agent);
     });
 
     logger.log(

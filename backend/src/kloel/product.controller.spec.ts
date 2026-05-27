@@ -37,7 +37,7 @@ describe('ProductController', () => {
     prisma = createPartialPrismaMock({
       product: ['findMany', 'findFirst', 'findFirstOrThrow', 'create', 'updateMany', 'deleteMany'],
     });
-    controller = new ProductController(prisma as unknown as PrismaService, undefined);
+    controller = new ProductController(prisma as PrismaService, undefined);
   });
 
   describe('listProducts', () => {

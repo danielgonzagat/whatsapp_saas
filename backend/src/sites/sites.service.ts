@@ -128,7 +128,7 @@ export class SitesService {
   async update(workspaceId: string, siteId: string, dto: UpdateSiteDto): Promise<Site> {
     this.assertWorkspace(workspaceId);
 
-    const existing = await this.prisma.site.findUnique({ where: { id: siteId } });
+    const existing = await this.prisma.site.findUnique({ where: { id: siteId, workspaceId } });
     if (!existing) {
       throw new NotFoundException(`Site ${siteId} not found`);
     }
@@ -147,14 +147,14 @@ export class SitesService {
       data.seoMeta = dto.seoMeta as Prisma.InputJsonValue;
     }
 
-    return this.prisma.site.update({ where: { id: siteId }, data });
+    return this.prisma.site.update({ where: { id: siteId, workspaceId }, data });
   }
 
   /** Soft-delete: archive the site. */
   async archive(workspaceId: string, siteId: string): Promise<Site> {
     this.assertWorkspace(workspaceId);
 
-    const existing = await this.prisma.site.findUnique({ where: { id: siteId } });
+    const existing = await this.prisma.site.findUnique({ where: { id: siteId, workspaceId } });
     if (!existing) {
       throw new NotFoundException(`Site ${siteId} not found`);
     }
@@ -163,7 +163,7 @@ export class SitesService {
     }
 
     return this.prisma.site.update({
-      where: { id: siteId },
+      where: { id: siteId, workspaceId },
       data: { status: 'ARCHIVED' },
     });
   }
@@ -172,7 +172,7 @@ export class SitesService {
   async publish(workspaceId: string, siteId: string): Promise<Site> {
     this.assertWorkspace(workspaceId);
 
-    const existing = await this.prisma.site.findUnique({ where: { id: siteId } });
+    const existing = await this.prisma.site.findUnique({ where: { id: siteId, workspaceId } });
     if (!existing) {
       throw new NotFoundException(`Site ${siteId} not found`);
     }
@@ -184,7 +184,7 @@ export class SitesService {
     }
 
     return this.prisma.site.update({
-      where: { id: siteId },
+      where: { id: siteId, workspaceId },
       data: { status: 'PUBLISHED', publishedAt: new Date() },
     });
   }
@@ -193,7 +193,7 @@ export class SitesService {
   async unpublish(workspaceId: string, siteId: string): Promise<Site> {
     this.assertWorkspace(workspaceId);
 
-    const existing = await this.prisma.site.findUnique({ where: { id: siteId } });
+    const existing = await this.prisma.site.findUnique({ where: { id: siteId, workspaceId } });
     if (!existing) {
       throw new NotFoundException(`Site ${siteId} not found`);
     }
@@ -205,7 +205,7 @@ export class SitesService {
     }
 
     return this.prisma.site.update({
-      where: { id: siteId },
+      where: { id: siteId, workspaceId },
       data: { status: 'DRAFT', publishedAt: null },
     });
   }
@@ -300,7 +300,7 @@ export class SitesService {
 
   private async ensureOwnership(workspaceId: string, siteId: string): Promise<Site> {
     this.assertWorkspace(workspaceId);
-    const site = await this.prisma.site.findUnique({ where: { id: siteId } });
+    const site = await this.prisma.site.findUnique({ where: { id: siteId, workspaceId } });
     if (!site) {
       throw new NotFoundException(`Site ${siteId} not found`);
     }

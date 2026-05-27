@@ -99,7 +99,7 @@ export async function runCreatePaymentLink(
         });
         if (existing) {
           await prisma.contact.update({
-            where: { id: existing.id },
+            where: { id: existing.id, workspaceId },
             data: { updatedAt: new Date() },
           });
         } else {

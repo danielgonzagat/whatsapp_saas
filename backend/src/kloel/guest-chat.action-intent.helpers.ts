@@ -3,6 +3,21 @@ export function detectActionIntent(
 ): { tool: string; args: Record<string, unknown> } | null {
   const msg = message.toLowerCase().trim();
 
+  // ── SELF-AWARENESS ──
+  if (/(?:o que|quais?)\s+(?:voce|você)\s+(?:consegue|pode)\s+fazer|capacidades?\s+(?:dispon[ií]veis|carregadas|ativas)/.test(msg)) {
+    return { tool: 'self.capabilities', args: {} };
+  }
+  if (/capacidades?.*(?:quebrad|faltando|gap|sem dispatcher)|(?:quebrad|faltando|gap).*(?:capacidades?)/.test(msg)) {
+    return { tool: 'self.gaps', args: {} };
+  }
+  if (/(?:integra[cç][aã]o|servi[cç]o|sistema|sa[uú]de|health).*(?:erro|falha|quebrad|degradad|status)|status.*(?:integra[cç][aã]o|sa[uú]de|health)/.test(msg)) {
+    return { tool: 'self.health', args: {} };
+  }
+  const selfExplainMatch = msg.match(/explique\s+a\s+capacidade\s+([a-z0-9_.:-]+)/i);
+  if (selfExplainMatch?.[1]) {
+    return { tool: 'self.explain', args: { capabilityId: selfExplainMatch[1] } };
+  }
+
   // ── PRODUTOS ──
   if (/cria(r|ndo)?\s+(?:um[a]?\s+)?(?:o\s+|a\s+)?(produto|oferta|novo)/.test(msg) || /cadastra(r|ndo)?\s+(?:um[a]?\s+)?(?:o\s+|a\s+)?produto/.test(msg)) {
     return { tool: 'create_product', args: extractProductArgs(msg) };

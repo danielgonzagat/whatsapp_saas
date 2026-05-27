@@ -152,7 +152,7 @@ export class ProductService {
     this.assertWorkspace(workspaceId);
 
     const existing = await this.prisma.product.findUnique({
-      where: { id: productId },
+      where: { id: productId, workspaceId },
     });
 
     if (!existing) {
@@ -164,7 +164,7 @@ export class ProductService {
     }
 
     const product = await this.prisma.product.update({
-      where: { id: productId },
+      where: { id: productId, workspaceId },
       data: dto,
     });
 
@@ -264,7 +264,7 @@ export class ProductService {
     this.assertWorkspace(workspaceId);
 
     const existing = await this.prisma.product.findUnique({
-      where: { id: productId },
+      where: { id: productId, workspaceId },
     });
 
     if (!existing) {
@@ -276,7 +276,7 @@ export class ProductService {
     }
 
     const product = await this.prisma.product.update({
-      where: { id: productId },
+      where: { id: productId, workspaceId },
       data: { imageUrl },
     });
 
@@ -327,7 +327,7 @@ export class ProductService {
     this.assertWorkspace(workspaceId);
 
     const existing = await this.prisma.product.findUnique({
-      where: { id: productId },
+      where: { id: productId, workspaceId },
     });
 
     if (!existing) {
@@ -339,7 +339,7 @@ export class ProductService {
     }
 
     const product = await this.prisma.product.update({
-      where: { id: productId },
+      where: { id: productId, workspaceId },
       data: { status: 'APPROVED', active: true },
     });
 
@@ -387,7 +387,7 @@ export class ProductService {
     this.assertWorkspace(workspaceId);
 
     const existing = await this.prisma.product.findUnique({
-      where: { id: productId },
+      where: { id: productId, workspaceId },
     });
 
     if (!existing) {
@@ -399,7 +399,7 @@ export class ProductService {
     }
 
     const product = await this.prisma.product.update({
-      where: { id: productId },
+      where: { id: productId, workspaceId },
       data: { active: available },
     });
 
@@ -447,7 +447,7 @@ export class ProductService {
     this.assertWorkspace(workspaceId);
 
     const existing = await this.prisma.product.findUnique({
-      where: { id: productId },
+      where: { id: productId, workspaceId },
     });
 
     if (!existing) {
@@ -459,7 +459,7 @@ export class ProductService {
     }
 
     const product = await this.prisma.product.update({
-      where: { id: productId },
+      where: { id: productId, workspaceId },
       data: { status: 'DELETED', active: false },
     });
 

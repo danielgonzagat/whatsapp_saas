@@ -96,7 +96,7 @@ describe('guest chat action intent helpers', () => {
       });
     const service = new KloelProductSubResourceToolsService({
       productPlan: { findFirst: productPlanFindFirst, update: productPlanUpdate },
-    } as unknown as PrismaService);
+    } as PrismaService);
 
     const result = await service.toolUpdatePlan('ws-1', {
       planName: 'Mensal',
@@ -135,7 +135,7 @@ describe('guest chat action intent helpers', () => {
     const service = new KloelProductSubResourceToolsService({
       product: { findFirst: productFindFirst },
       productCoupon: { create: productCouponCreate },
-    } as unknown as PrismaService);
+    } as PrismaService);
 
     try {
       const result = await service.toolCreateCoupon('ws-1', {
@@ -175,7 +175,7 @@ describe('guest chat action intent helpers', () => {
       productReview: {
         findMany: productReviewFindMany,
       },
-    } as unknown as PrismaService;
+    } as PrismaService;
 
     const result = await runGetProductReviews(prisma, 'ws-1', { productName: 'Sérum' });
 

@@ -10,7 +10,7 @@ const signalHandlers: Record<string, (() => void) | undefined> = {};
 const mockSetInterval = vi.fn((fn: () => void, ms: number) => {
   intervalCallback = fn;
   intervalMs = ms;
-  return { unref: vi.fn() } as unknown as NodeJS.Timeout;
+  return { unref: vi.fn() } as NodeJS.Timeout;
 });
 const mockClearInterval = vi.fn();
 
