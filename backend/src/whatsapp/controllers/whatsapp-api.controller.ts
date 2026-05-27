@@ -22,7 +22,7 @@ import { asProviderSettings, type ProviderSessionSnapshot } from '../provider-se
 import { WhatsAppProviderRegistry } from '../providers/provider-registry';
 import { WhatsAppApiProvider } from '../providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from '../whatsapp-catchup.service';
-import { WhatsAppWatchdogService } from '../whatsapp-watchdog.service';
+import { WhatsAppWatchdogService } from '../../marketing/channels/whatsapp/whatsapp-watchdog.service';
 import { WhatsappService } from '../whatsapp.service';
 import { InternalEndpoint } from '../../common/decorators/internal-endpoint.decorator';
 import { RouteClass } from '../../common/throttler/route-class.decorator';

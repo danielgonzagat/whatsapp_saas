@@ -10,18 +10,18 @@
 import { randomUUID } from 'node:crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Inject, Injectable } from '@nestjs/common';
-import { StructuredLogger } from '../logging/structured-logger';
+import { StructuredLogger } from '../../../logging/structured-logger';
 import type Redis from 'ioredis';
 import * as Sentry from '@sentry/node';
-import { safeCompareStrings } from '../common/utils/crypto-compare.util';
-import { PrismaService } from '../prisma/prisma.service';
-import { CIA_RUNTIME_SERVICE, type CiaRuntimePort } from '../kloel/mind/cia/cia-runtime.port';
-import { WhatsAppProviderRegistry } from './providers/provider-registry';
+import { safeCompareStrings } from '../../../common/utils/crypto-compare.util';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { CIA_RUNTIME_SERVICE, type CiaRuntimePort } from '../../../kloel/mind/cia/cia-runtime.port';
+import { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
 import { asProviderSettings } from './provider-settings.types';
-import { WhatsAppCatchupService } from './whatsapp-catchup.service';
-import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
-import type { SessionHealth } from '../marketing/channels/whatsapp/whatsapp-watchdog.types';
-import { alertOpsHelper } from '../marketing/channels/whatsapp/whatsapp-watchdog.helpers';
+import { WhatsAppCatchupService } from '../../../whatsapp/whatsapp-catchup.service';
+import { toPrismaJsonValue } from '../../../common/prisma/prisma-json.util';
+import type { SessionHealth } from './whatsapp-watchdog.types';
+import { alertOpsHelper } from './whatsapp-watchdog.helpers';
 
 /** Watchdog recovery and reconnect service. */
 @Injectable()

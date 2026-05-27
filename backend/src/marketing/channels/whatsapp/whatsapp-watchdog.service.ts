@@ -12,14 +12,14 @@
 
 import { Injectable, OnModuleDestroy, OnModuleInit, Optional } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { StructuredLogger } from '../logging/structured-logger';
+import { StructuredLogger } from '../../../logging/structured-logger';
 import { Prisma } from '@prisma/client';
-import { forEachSequential } from '../common/async-sequence';
-import { OpsAlertService } from '../observability/ops-alert.service';
-import { PrismaService } from '../prisma/prisma.service';
+import { forEachSequential } from '../../../common/async-sequence';
+import { OpsAlertService } from '../../../observability/ops-alert.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 import { asProviderSettings, type ProviderSettings } from './provider-settings.types';
-import { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
-import { WhatsAppProviderRegistry } from './providers/provider-registry';
+import { WhatsAppApiProvider } from '../../../whatsapp/providers/whatsapp-api.provider';
+import { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
 import { WhatsAppWatchdogRecoveryService } from './whatsapp-watchdog-recovery.service';
 import {
   WhatsAppWatchdogSessionService,

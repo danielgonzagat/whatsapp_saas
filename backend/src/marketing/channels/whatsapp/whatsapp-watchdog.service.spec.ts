@@ -1,4 +1,4 @@
-import { expectValueOf } from '../../test/expect-value-of';
+import { expectValueOf } from '../../../../test/expect-value-of';
 import { WhatsAppWatchdogService } from './whatsapp-watchdog.service';
 import { WhatsAppWatchdogSessionService } from './whatsapp-watchdog-session.service';
 

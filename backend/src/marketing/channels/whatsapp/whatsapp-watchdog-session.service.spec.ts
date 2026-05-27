@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaService } from '../prisma/prisma.service';
-import { WhatsAppProviderRegistry } from './providers/provider-registry';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
 import { WhatsAppWatchdogRecoveryService } from './whatsapp-watchdog-recovery.service';
 import { WhatsAppWatchdogSessionService } from './whatsapp-watchdog-session.service';
 
