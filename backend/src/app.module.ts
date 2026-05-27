@@ -131,6 +131,7 @@ import { PlansModule } from './plans/plans.module';
 import { PipelineModule } from './pipeline/pipeline.module';
 import { ProductCategoriesModule } from './product-categories/product-categories.module';
 import { ProductsModule } from './products/products.module';
+import { SitesModule } from './sites/sites.module';
 import { PublicApiModule } from './public-api/public-api.module';
 import { PulseModule } from './pulse/pulse.module';
 import { ReportsModule } from './reports/reports.module';
@@ -285,6 +286,7 @@ function setRedisClientListenerBudget(client: Redis): void {
     VideoModule, // 🎬 Video generation jobs
     CheckoutModule, // Checkout System (products, plans, orders)
     ProductsModule, // 🏷️ Canonical product domain service
+    SitesModule, // 🌐 Site builder CRUD
     KycModule, // KYC - Know Your Customer
     ReportsModule, // Reports & Analytics (Vendas, Assinaturas, Churn, etc.)
     SalesModule, // 💰 In-chat sales (PIX, card, boleto)
