@@ -44,10 +44,18 @@ function normalizeOnboardingRole(role: string | null): string | null {
 
 /** SSR-safe UUID generation. */
 function safeRandomUUID(): string {
-  if (typeof window !== 'undefined' && typeof crypto?.randomUUID === 'function') {
-    return crypto.randomUUID();
+  const cryptoApi = globalThis.crypto;
+  if (typeof cryptoApi?.randomUUID === 'function') {
+    return cryptoApi.randomUUID();
   }
-  return `_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 11)}`;
+  if (typeof cryptoApi?.getRandomValues === 'function') {
+    const bytes = new Uint8Array(8);
+    cryptoApi.getRandomValues(bytes);
+    return `_${Date.now().toString(36)}_${Array.from(bytes, (byte) =>
+      byte.toString(16).padStart(2, '0'),
+    ).join('')}`;
+  }
+  return `_${Date.now().toString(36)}`;
 }
 
 function OnboardingChatContent() {
