@@ -420,45 +420,6 @@ export async function connectWhatsapp(_workspaceId: string): Promise<unknown> {
   return res.data;
 }
 
-/** Send whatsapp message. */
-export async function sendWhatsappMessage(params: {
-  workspaceId: string;
-  to: string;
-  message: string;
-  mediaUrl?: string;
-  mediaType?: 'image' | 'video' | 'audio' | 'document';
-  caption?: string;
-}): Promise<unknown> {
-  const { workspaceId, ...body } = params;
-  const res = await apiFetch<unknown>(`/whatsapp/${workspaceId}/send`, {
-    method: 'POST',
-    body: body,
-  });
-  if (res.error) {
-    throw new Error('Failed to send WhatsApp message');
-  }
-  return res.data;
-}
-
-/** Send whatsapp template. */
-export async function sendWhatsappTemplate(params: {
-  workspaceId: string;
-  to: string;
-  templateName: string;
-  language: string;
-  components?: Array<Record<string, unknown>>;
-}): Promise<unknown> {
-  const { workspaceId, ...body } = params;
-  const res = await apiFetch<unknown>(`/whatsapp/${workspaceId}/send`, {
-    method: 'POST',
-    body: { ...body, type: 'template' },
-  });
-  if (res.error) {
-    throw new Error('Templates require WhatsApp Business API');
-  }
-  return res.data;
-}
-
 /** List whatsapp templates. */
 export async function listWhatsappTemplates(_workspaceId: string): Promise<WhatsappTemplate[]> {
   return [];

@@ -4,22 +4,23 @@
 
 Each capability lists every implementation found across the codebase. A capability with **>1 implementation** is a candidate for canonicalization (pick one canonical name, deprecate the rest).
 
-## CAPABILITY: `send_message` (9 implementations ⚠️ duplicated)
+## CAPABILITY: `send_message` (7 implementations ⚠️ duplicated)
 
 - `SendMessageDto` (class) — `backend/src/admin/chat/dto/send-message.dto.ts:4`
 - `sendWhatsAppCode` (function) — `backend/src/auth/auth-service.whatsapp.ts:13`
 - `SendWhatsAppCodeDto` (class) — `backend/src/auth/dto/whatsapp-auth.dto.ts:4`
-- `sendMessage` (function) — `backend/src/partnerships/partnerships.chat.helpers.ts:105`
-- `sendMessage` (function) — `backend/src/whatsapp/providers/provider-registry-messaging.ts:28`
+- `sendMessage` (function) — `backend/src/partnerships/partnerships.chat.helpers.ts:98`
+- `sendMessage` (function) — `backend/src/whatsapp/providers/provider-registry-messaging.ts:34`
 - `sendMessage` (function) — `backend/src/whatsapp/providers/provider-send-message.helpers.ts:28`
-- `sendWhatsappMessage` (function) — `frontend/src/lib/api/whatsapp.ts:424`
-- `sendWhatsappTemplate` (function) — `frontend/src/lib/api/whatsapp.ts:444`
 - `sendMessage` (function) — `worker/flow-message-sender.helpers.ts:13`
 
-## CAPABILITY: `normalize_phone` (2 implementations ⚠️ duplicated)
+## CAPABILITY: `normalize_phone` (5 implementations ⚠️ duplicated)
 
-- `normalizeNumber` (function) — `backend/src/whatsapp/whatsapp-service.helpers.ts:4`
+- `normalizePhone` (function) — `backend/src/checkout/checkout-social-lead.util.ts:34`
+- `normalizePhone` (function) — `backend/src/common/phone/phone-normalization.util.ts:150`
+- `normalizeNumber` (function) — `backend/src/marketing/channels/whatsapp/whatsapp-service.helpers.ts:4`
 - `formatPhone` (function) — `frontend/src/app/(main)/followups/followups.helpers.ts:31`
+- `normalizePhone` (function) — `worker/utils/phone-normalization.util.ts:171`
 
 ## CAPABILITY: `resolve_tenant` (6 implementations ⚠️ duplicated)
 
@@ -42,7 +43,7 @@ No implementation detected. May not be a feature of this codebase.
 
 ## CAPABILITY: `recover_cart` (1 implementations)
 
-- `CartRecoveryService` (class) — `backend/src/kloel/cart-recovery.service.ts:93`
+- `CartRecoveryService` (class) — `backend/src/kloel/cart-recovery.service.ts:102`
 
 ## CAPABILITY: `score_intent` (0 implementations ⚪ not implemented)
 
@@ -65,8 +66,8 @@ No implementation detected. May not be a feature of this codebase.
 
 - `MetaConnectService` (class) — `backend/src/marketing/marketing-connect/meta-connect.service.ts:10`
 - `MetaConnectionStateService` (class) — `backend/src/meta/meta-connection-state.service.ts:37`
-- `startSession` (function) — `backend/src/whatsapp/providers/provider-registry-session.ts:113`
-- `WhatsappSessionService` (class) — `backend/src/whatsapp/whatsapp-session.service.ts:19`
+- `startSession` (function) — `backend/src/whatsapp/providers/provider-registry-session.ts:112`
+- `WhatsappSessionService` (class) — `backend/src/whatsapp/whatsapp-session.service.ts:21`
 - `WhatsAppSessionHarness` (function) — `frontend/src/app/e2e/_components/whatsapp-session-harness.tsx:11`
 - `MetaConnectSection` (function) — `frontend/src/components/kloel/conta/ContaMetaConnectSection.tsx:12`
 - `connectWhatsapp` (function) — `frontend/src/lib/api/whatsapp.ts:415`
@@ -81,7 +82,7 @@ No implementation detected. May not be a feature of this codebase.
 - `createCheckoutPixel` (function) — `backend/src/checkout/checkout-catalog.operations.ts:8`
 - `buildCheckoutMarketplacePricing` (function) — `backend/src/checkout/checkout-marketplace-pricing.util.ts:40`
 - `buildCheckoutOrderMetadata` (function) — `backend/src/checkout/checkout-order-metadata.util.ts:48`
-- `CheckoutPaymentService` (class) — `backend/src/checkout/checkout-payment.service.ts:29`
+- `CheckoutPaymentService` (class) — `backend/src/checkout/checkout-payment.service.ts:40`
 - `createCheckout` (function) — `backend/src/checkout/checkout-product.create.ts:13`
 - `buildCheckoutShippingQuote` (function) — `backend/src/checkout/checkout-shipping-profile.util.ts:88`
 - `buildCheckoutData` (function) — `backend/src/kloel/product-sub-resources/helpers/plan.serialize-helpers.ts:4`
@@ -89,7 +90,7 @@ No implementation detected. May not be a feature of this codebase.
 - `buildCheckoutFormDraftKey` (function) — `frontend/src/app/(checkout)/hooks/useCheckoutExperience.utils.ts:37`
 - `buildCheckoutFormDraftKey` (function) — `frontend/src/app/(checkout)/hooks/useCheckoutExperienceSocial.draft.ts:15`
 - `createCheckoutForm` (function) — `frontend/src/components/products/ProductCheckoutsTab.helpers.ts:80`
-- `createCheckoutSession` (function) — `frontend/src/lib/api/workspace.ts:107`
+- `createCheckoutSession` (function) — `frontend/src/lib/api/workspace.ts:128`
 - `buildCheckoutDisplayCode` (function) — `frontend/src/lib/checkout-links.ts:57`
 - `buildCheckoutLinksForPlan` (function) — `frontend/src/lib/checkout-links.ts:136`
 - `buildCheckoutPricing` (function) — `frontend/src/lib/checkout-pricing.ts:2`
@@ -109,7 +110,7 @@ No implementation detected. May not be a feature of this codebase.
 ## CAPABILITY: `fraud_check` (3 implementations ⚠️ duplicated)
 
 - `RiskClassModule` (class) — `backend/src/kloel/risk-class/risk-class.module.ts:17`
-- `RiskClassService` (class) — `backend/src/kloel/risk-class/risk-class.service.ts:16`
+- `RiskClassService` (class) — `backend/src/kloel/risk-class/risk-class.service.ts:31`
 - `FraudEngine` (class) — `backend/src/payments/fraud/fraud.engine.ts:175`
 
 ## CAPABILITY: `kyc_verify` (1 implementations)

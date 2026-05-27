@@ -77,8 +77,6 @@ export {
   // WhatsApp messaging
   type WhatsappTemplate,
   connectWhatsapp,
-  sendWhatsappMessage,
-  sendWhatsappTemplate,
   listWhatsappTemplates,
   whatsappOptIn,
   whatsappOptOut,
