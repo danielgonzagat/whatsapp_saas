@@ -222,24 +222,53 @@ describe('KloelChatToolsService — produto, autopilot e identidade', () => {
   });
 
   describe('toolDeleteProduct', () => {
-    it('soft-deletes product with audit log in transaction', async () => {
-      prisma.product.findFirst.mockResolvedValue({
-        id: 'p-1',
-        name: 'Curso Antigo',
+    it('deletes by id through ProductService without direct product transaction', async () => {
+      ctx.productService.delete.mockResolvedValue({ success: true, message: 'Product deleted' });
+
+      const result = await service.toolDeleteProduct(ctx.wsId, {
+        productId: 'p-1',
+        actorId: 'user-42',
       });
 
-      const result = await service.toolDeleteProduct(ctx.wsId, { productName: 'Curso' });
-
       expect(result.success).toBe(true);
-      expect(prisma.$transaction).toHaveBeenCalled();
+      expect(ctx.productService.delete).toHaveBeenCalledWith(ctx.wsId, 'p-1', {
+        id: 'user-42',
+      });
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(prisma.product.updateMany).not.toHaveBeenCalled();
+      expect(prisma.auditLog.create).not.toHaveBeenCalled();
     });
 
-    it('returns error when product not found', async () => {
+    it('resolves product name read-only before deleting through ProductService', async () => {
+      prisma.product.findFirst.mockResolvedValueOnce({ id: 'p-2' });
+      ctx.productService.delete.mockResolvedValue({ success: true, message: 'Product deleted' });
+
+      const result = await service.toolDeleteProduct(ctx.wsId, {
+        productName: 'Curso',
+        actorId: 'user-42',
+      });
+
+      expect(result.success).toBe(true);
+      expect(prisma.product.findFirst).toHaveBeenCalledWith({
+        where: { workspaceId: ctx.wsId, name: { contains: 'Curso', mode: 'insensitive' } },
+        select: { id: true },
+      });
+      expect(ctx.productService.delete).toHaveBeenCalledWith(ctx.wsId, 'p-2', {
+        id: 'user-42',
+      });
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(prisma.product.updateMany).not.toHaveBeenCalled();
+      expect(prisma.auditLog.create).not.toHaveBeenCalled();
+    });
+
+    it('returns error when product is missing', async () => {
       prisma.product.findFirst.mockResolvedValue(null);
 
-      const result = await service.toolDeleteProduct(ctx.wsId, { productId: 'no-exist' });
+      const result = await service.toolDeleteProduct(ctx.wsId, { productName: 'no-exist' });
 
-      expect(result.success).toBe(false);
+      expect(result).toEqual({ success: false, error: 'Produto não encontrado.' });
+      expect(ctx.productService.delete).not.toHaveBeenCalled();
+      expect(prisma.$transaction).not.toHaveBeenCalled();
     });
   });
 

@@ -66,7 +66,6 @@ import {
   type ToolSaveProductArgs,
   type ToolDeleteProductArgs,
   runListProducts,
-  runDeleteProduct,
 } from './kloel-chat-tools.products.helpers';
 import {
   type ToolDashboardSummaryArgs,
@@ -134,8 +133,43 @@ export class KloelChatToolsService {
   toolListProducts(workspaceId: string): Promise<ToolResult> {
     return runListProducts(this.prisma, workspaceId);
   }
-  toolDeleteProduct(workspaceId: string, args: ToolDeleteProductArgs): Promise<ToolResult> {
-    return runDeleteProduct(this.prisma, workspaceId, args);
+
+  private async resolveProductIdByName(
+    workspaceId: string,
+    args: ToolDeleteProductArgs,
+  ): Promise<string | undefined> {
+    const productName =
+      typeof args.productName === 'string' && args.productName.trim()
+        ? args.productName.trim()
+        : undefined;
+    if (!productName) {
+      return undefined;
+    }
+
+    const product = await this.prisma.product.findFirst({
+      where: { workspaceId, name: { contains: productName, mode: 'insensitive' } },
+      select: { id: true },
+    });
+    return typeof product?.id === 'string' ? product.id : undefined;
+  }
+
+  async toolDeleteProduct(workspaceId: string, args: ToolDeleteProductArgs): Promise<ToolResult> {
+    const actorId =
+      typeof args.actorId === 'string' && args.actorId.trim() ? args.actorId : 'kloel-chat';
+    const directProductId =
+      typeof args.productId === 'string' && args.productId.trim()
+        ? args.productId.trim()
+        : undefined;
+
+    const resolvedProductId =
+      directProductId ?? (await this.resolveProductIdByName(workspaceId, args));
+    if (!resolvedProductId) {
+      return { success: false, error: 'Produto não encontrado.' };
+    }
+
+    return this.productService.delete(workspaceId, resolvedProductId, {
+      id: actorId,
+    }) as Promise<ToolResult>;
   }
   async toolToggleAutopilot(
     workspaceId: string,
