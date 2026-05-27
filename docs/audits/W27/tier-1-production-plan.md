@@ -78,12 +78,12 @@ Reuse templates: `customer-product-and-checkout.spec.ts`, `whatsapp-message-flow
 - DELETE: `backend/src/meta/meta-webhook.controller.ts` + spec
 - EDIT: `backend/src/meta/meta.module.ts` (drop top-level registration)
 
-**MercadoPago dedup:**
+**MercadoPago dedup:** ✅ DONE 2026-05-27 (P0 dup #35).
 
-- KEEP: `backend/src/payments/mercadopago/mercadopago-webhook.controller.ts` (A-grade, matches ADR-0009)
-- DELETE: `backend/src/checkout/mercado-pago-webhook.controller.ts` (B-grade, optional signature)
-- MIGRATE: `mapMercadoPagoStatus` + `TERMINAL_ORDER_STATUSES` into `backend/src/payments/mercadopago/mercadopago-pix-charge.service.ts`
-- EDIT: `backend/src/checkout/checkout.module.ts` (drop controller registration)
+- KEPT: `backend/src/payments/mercadopago/mercadopago-webhook.controller.ts` (A-grade, matches ADR-0009)
+- DELETED: `backend/src/checkout/mercado-pago-webhook.controller.ts` (was dead code — never module-registered, `@deprecated` JSDoc was already in place); its spec file deleted; `checkout/mercado-pago-webhook-signature.util.spec.ts` rewired to assert against the canonical file.
+- NOT NEEDED: `mapMercadoPagoStatus` migration — the canonical `mercadopago-pix-charge.service.ts` already owns PIX status mapping; the checkout duplicate's variant only mapped to the `checkoutPayment` schema, which the canonical doesn't (and shouldn't) touch.
+- NOT NEEDED: `checkout.module.ts` edit — the controller was never registered there.
 
 **Diff size:** Medium. **Type:** PI-doable. **Sequence:** S1, must precede item 1.
 

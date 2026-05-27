@@ -402,9 +402,9 @@ Languages indexed:
 
 Duplications and ambiguities found via grep:
 
-- **MercadoPago receivers ×2** (canonicalization target):
-  - `backend/src/payments/mercadopago/mercadopago-webhook.controller.ts`
-  - `backend/src/checkout/mercado-pago-webhook.controller.ts`
+- **MercadoPago receivers** — consolidated 2026-05-27 (P0 dup #35):
+  - `backend/src/payments/mercadopago/mercadopago-webhook.controller.ts` (canonical, A-grade)
+  - ~~`backend/src/checkout/mercado-pago-webhook.controller.ts`~~ REMOVED — was dead code (never module-registered), `@deprecated` JSDoc had flagged it; spec + checkout migration-guard rewired to canonical
 - **Meta webhook receivers ×2**:
   - `backend/src/meta/webhooks/meta-webhook.controller.ts`
   - `backend/src/meta/meta-webhook.controller.ts`

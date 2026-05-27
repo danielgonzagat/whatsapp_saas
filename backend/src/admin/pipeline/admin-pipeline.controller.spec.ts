@@ -1,17 +1,17 @@
-import { PipelineController } from './pipeline.controller';
+import { AdminPipelineController } from './admin-pipeline.controller';
 
-describe('PipelineController', () => {
+describe('AdminPipelineController', () => {
   const service = {
     getState: jest.fn(),
     setState: jest.fn(),
     getHealth: jest.fn(),
   };
 
-  let controller: PipelineController;
+  let controller: AdminPipelineController;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    controller = new PipelineController(service as never);
+    controller = new AdminPipelineController(service as never);
   });
 
   it('delegates getState to service', async () => {

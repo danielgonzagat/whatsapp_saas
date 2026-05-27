@@ -4,12 +4,12 @@ import { RequireAdminPermission } from '../auth/decorators/admin-permission.deco
 import { AdminAuthGuard } from '../auth/guards/admin-auth.guard';
 import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import { InternalEndpoint } from '../../common/decorators/internal-endpoint.decorator';
-import { PipelineService } from './pipeline.service';
+import { AdminPipelineService } from './admin-pipeline.service';
 
 @Controller('admin/pipeline')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)
-export class PipelineController {
-  constructor(private readonly service: PipelineService) {}
+export class AdminPipelineController {
+  constructor(private readonly service: AdminPipelineService) {}
 
   @InternalEndpoint('admin pipeline state')
   @Get('state')

@@ -1,7 +1,7 @@
-import { PipelineService, type DecisionShadowInput } from './pipeline.service';
+import { AdminPipelineService, type DecisionShadowInput } from './admin-pipeline.service';
 import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
-describe('PipelineService', () => {
+describe('AdminPipelineService', () => {
   const prisma = createPartialPrismaMock({
     pipelineState: ['findUnique', 'create', 'upsert', 'update', 'updateMany'],
     decisionShadow: ['upsert'],
@@ -10,12 +10,12 @@ describe('PipelineService', () => {
     recordCommercial: jest.fn(),
   };
 
-  let service: PipelineService;
+  let service: AdminPipelineService;
 
   beforeEach(() => {
     jest.clearAllMocks();
     events.recordCommercial.mockResolvedValue(undefined);
-    service = new PipelineService(prisma as never, events as never);
+    service = new AdminPipelineService(prisma as never, events as never);
   });
 
   describe('getState', () => {

@@ -26,8 +26,8 @@ export type DecisionShadowInput = {
 const FALLBACK_THRESHOLD = 0.05;
 
 @Injectable()
-export class PipelineService {
-  private readonly logger = new Logger(PipelineService.name);
+export class AdminPipelineService {
+  private readonly logger = new Logger(AdminPipelineService.name);
 
   constructor(
     private readonly prisma: PrismaService,
