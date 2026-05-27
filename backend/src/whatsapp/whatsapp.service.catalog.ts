@@ -3,7 +3,7 @@ import { forEachSequential } from '../common/async-sequence';
 import { buildQueueJobId } from '../queue/job-id.util';
 import { autopilotQueue } from '../queue/queue';
 import { collectCatalogContactEntriesExt } from './whatsapp-catalog-contact-collector';
-import { rankByPurchaseProbability } from './whatsapp.service.ranking';
+import { rankByPurchaseProbability } from '../marketing/channels/whatsapp/whatsapp.service.ranking';
 import { readText } from '../common/utils';
 import { normalizeJsonObjExt } from '../marketing/channels/whatsapp/whatsapp-service.helpers';
 import type { PrismaService } from '../prisma/prisma.service';
