@@ -1,5 +1,5 @@
 import { ConfigService } from '@nestjs/config';
-import { readConfig } from './llm-provider';
+import { readConfig, resolveTextLlmProvider } from './llm-provider';
 
 /** Backend open ai model role type. */
 type BackendOpenAIModelRole =
@@ -40,6 +40,14 @@ export const CANONICAL_MODEL_IDS = {
   anthropicSonnetTest: 'claude-sonnet',
 } as const;
 
+const OPENAI_TEXT_DEFAULT_MODELS: Partial<Record<BackendOpenAIModelRole, string>> = {
+  brain: CANONICAL_MODEL_IDS.openAiTextOmni,
+  writer: CANONICAL_MODEL_IDS.openAiTextOmni,
+  brain_fallback: CANONICAL_MODEL_IDS.openAiTextMini,
+  writer_fallback: CANONICAL_MODEL_IDS.openAiTextMini,
+  guest_emergency: CANONICAL_MODEL_IDS.openAiTextMini,
+};
+
 // Ordered ENV keys per role. First non-empty value wins.
 const MODEL_ENV_KEYS: Record<BackendOpenAIModelRole, readonly string[]> = {
   brain: ['DEEPSEEK_BRAIN_MODEL', 'LLM_BRAIN_MODEL', 'OPENAI_BRAIN_MODEL'],
@@ -76,10 +84,17 @@ function firstConfiguredValue(keys: readonly string[], config?: ConfigLike): str
   return undefined;
 }
 
+function defaultModelForRole(role: BackendOpenAIModelRole, config?: ConfigLike): string {
+  if (resolveTextLlmProvider(config) === 'openai') {
+    return OPENAI_TEXT_DEFAULT_MODELS[role] ?? DEFAULT_MODELS[role];
+  }
+  return DEFAULT_MODELS[role];
+}
+
 /** Resolve backend open ai model. */
 export function resolveBackendOpenAIModel(
   role: BackendOpenAIModelRole,
   config?: ConfigLike,
 ): string {
-  return firstConfiguredValue(MODEL_ENV_KEYS[role], config) || DEFAULT_MODELS[role];
+  return firstConfiguredValue(MODEL_ENV_KEYS[role], config) || defaultModelForRole(role, config);
 }
