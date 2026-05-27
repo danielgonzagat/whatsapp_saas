@@ -1,10 +1,10 @@
-import { PrismaService } from '../prisma/prisma.service';
-import { BrainSpineAuditService, SpineAuditResult } from './brain-spine-audit.service';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { MindSpineAudit, SpineAuditResult } from './mind-spine-audit.service';
 
-describe('BrainSpineAuditService', () => {
+describe('MindSpineAudit', () => {
   function buildAuditService(queryRawMock: jest.Mock) {
     const prisma = { $queryRawUnsafe: queryRawMock } as PrismaService;
-    return new BrainSpineAuditService(prisma);
+    return new MindSpineAudit(prisma);
   }
 
   describe('audit(sinceIso)', () => {

@@ -675,9 +675,9 @@ Total services: 591. Sorted by domain.
 
 - `TranscriptionService` — `backend/src/audio/transcription.service.ts`
 
-## brain (1)
+## brain (1 — deprecated re-export only)
 
-- `BrainSpineAuditService` — `backend/src/brain/brain-spine-audit.service.ts`
+- `BrainSpineAuditService` — `backend/src/brain/brain-spine-audit.service.ts` _(deprecated re-export; canonical: `MindSpineAudit` at `backend/src/kloel/mind/observability/mind-spine-audit.service.ts`, per ADR-0013 Wave M3)_
 
 ## calendar (1)
 

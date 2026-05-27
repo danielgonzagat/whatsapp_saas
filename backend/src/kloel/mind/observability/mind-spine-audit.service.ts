@@ -1,16 +1,20 @@
 /**
- * @deprecated Use {@link ../kloel/mind/observability/mind-spine-audit.service.ts MindSpineAudit}
- * (re-exported from `backend/src/kloel/mind/observability/`). This file remains
- * during the ADR-0013 Wave M3 alias window (4 weeks) and will be removed once
- * `scripts/ops/check-canonical-services.mjs --strict` reports 0 callers of
- * `BrainSpineAuditService`.
+ * MindSpineAudit — canonical cognitive spine audit service.
+ *
+ * Audits the autopilot event spine to detect missing
+ * `brain.capability.invoked` events for executed/failed capabilities.
  *
  * @cluster Mind/Observability
  * @canonical backend/src/kloel/mind/observability/mind-spine-audit.service.ts
- * @see docs/adr/0013-kloel-mind-unification.md
+ * @see docs/adr/0013-kloel-mind-unification.md (Wave M3)
+ *
+ * Legacy alias `BrainSpineAuditService` (re-exported from
+ * `backend/src/brain/brain-spine-audit.service.ts`) is kept during the
+ * 4-week alias window and is also re-exported at the bottom of this
+ * file for callers still typed against the old name.
  */
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 
 interface SpineRow {
   capability: string;
@@ -36,11 +40,11 @@ export interface SpineAuditResult {
 }
 
 @Injectable()
-export class BrainSpineAuditService {
-  private readonly logger = new Logger(BrainSpineAuditService.name);
+export class MindSpineAudit {
+  private readonly logger = new Logger(MindSpineAudit.name);
 
   constructor(private readonly prisma: PrismaService) {
-    this.logger.debug?.(`BrainSpineAuditService initialized`);
+    this.logger.debug?.(`MindSpineAudit initialized`);
   }
 
   async audit(sinceIso: string): Promise<SpineAuditResult> {
@@ -122,3 +126,10 @@ export class BrainSpineAuditService {
     return { capabilities, totalMismatch, windowFrom, windowTo };
   }
 }
+
+/**
+ * @deprecated Use {@link MindSpineAudit}. Kept during the ADR-0013 Wave M3
+ * 4-week alias window for back-compat with callers still typed against the
+ * pre-canonicalization name.
+ */
+export { MindSpineAudit as BrainSpineAuditService };
