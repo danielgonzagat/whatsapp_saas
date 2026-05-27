@@ -37,11 +37,7 @@ vi.mock('../redis-client', () => ({
   redis: mockRedis,
 }));
 
-const mockQueueClose = vi.fn();
-const mockQueueGetJobs = vi.fn();
 const mockQueueGetJobCounts = vi.fn();
-const mockQueueAdd = vi.fn();
-const mockQueueRemove = vi.fn();
 
 let queueInstances: Array<{
   getJobs: ReturnType<typeof vi.fn>;
@@ -143,8 +139,11 @@ describe('dlq-monitor', () => {
       // Force a backlog by manipulating: we can't easily because Queue gets re-created.
       // Instead: verify the module initializes correctly.
     } finally {
-      if (prev !== undefined) process.env.OPS_WEBHOOK_URL = prev;
-      else delete process.env.OPS_WEBHOOK_URL;
+      if (prev !== undefined) {
+        process.env.OPS_WEBHOOK_URL = prev;
+      } else {
+        delete process.env.OPS_WEBHOOK_URL;
+      }
     }
   });
 
@@ -165,12 +164,21 @@ describe('dlq-monitor', () => {
       // But healQueue still runs.
       expect(mockSetInterval).toHaveBeenCalledTimes(1);
     } finally {
-      if (prevUrl !== undefined) process.env.OPS_WEBHOOK_URL = prevUrl;
-      else delete process.env.OPS_WEBHOOK_URL;
-      if (prevDlq !== undefined) process.env.DLQ_WEBHOOK_URL = prevDlq;
-      else delete process.env.DLQ_WEBHOOK_URL;
-      if (prevAutopilot !== undefined) process.env.AUTOPILOT_ALERT_WEBHOOK = prevAutopilot;
-      else delete process.env.AUTOPILOT_ALERT_WEBHOOK;
+      if (prevUrl !== undefined) {
+        process.env.OPS_WEBHOOK_URL = prevUrl;
+      } else {
+        delete process.env.OPS_WEBHOOK_URL;
+      }
+      if (prevDlq !== undefined) {
+        process.env.DLQ_WEBHOOK_URL = prevDlq;
+      } else {
+        delete process.env.DLQ_WEBHOOK_URL;
+      }
+      if (prevAutopilot !== undefined) {
+        process.env.AUTOPILOT_ALERT_WEBHOOK = prevAutopilot;
+      } else {
+        delete process.env.AUTOPILOT_ALERT_WEBHOOK;
+      }
     }
   });
 

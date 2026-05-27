@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
-import { WorkerError } from '../src/utils/error-handler';
 
 // ── Mocks ──────────────────────────────────────────────────────────────
 
@@ -7,11 +6,13 @@ class MockWorkerLogger {
   public info = vi.fn();
   public warn = vi.fn();
   public error = vi.fn();
-  constructor(_context: string) {
-    // no-op
+  constructor(context: string) {
+    void context;
   }
 
-  withContext(_correlationId: string, _workspaceId?: string) {
+  withContext(correlationId: string, workspaceId?: string) {
+    void correlationId;
+    void workspaceId;
     return {
       info: vi.fn(),
       warn: vi.fn(),
@@ -123,7 +124,7 @@ beforeAll(async () => {
   const eh = await import('../src/utils/error-handler');
   isRetryableErrorMock = eh.isRetryableError as unknown as ReturnType<typeof vi.fn>;
 
-  const fg = await import('../flow-engine-global');
+  await import('../flow-engine-global');
   engineMock = mockEngine;
 
   const enrichment = await import('../providers/checkout-social-lead-enrichment');

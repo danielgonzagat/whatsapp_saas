@@ -6,11 +6,13 @@ class MockWorkerLogger {
   public info = vi.fn();
   public warn = vi.fn();
   public error = vi.fn();
-  constructor(_context: string) {
-    // no-op
+  constructor(context: string) {
+    void context;
   }
 
-  withContext(_correlationId: string, _workspaceId?: string) {
+  withContext(correlationId: string, workspaceId?: string) {
+    void correlationId;
+    void workspaceId;
     return {
       info: vi.fn(),
       warn: vi.fn(),
