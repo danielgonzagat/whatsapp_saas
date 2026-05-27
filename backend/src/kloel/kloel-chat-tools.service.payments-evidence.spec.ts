@@ -269,6 +269,22 @@ describe('KloelChatToolsService', () => {
     });
   });
 
+  describe('toolSendChannelMessage', () => {
+    it('does not claim a channel message was sent without a real channel service path', async () => {
+      const result = await service.toolSendChannelMessage(wsId, {
+        channel: 'instagram',
+        message: 'Oi',
+      });
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          success: false,
+          error: 'channel_service_required',
+        }),
+      );
+    });
+  });
+
   describe('tenant isolation', () => {
     it('toolSaveProduct uses correct workspaceId', async () => {
       await service.toolSaveProduct('ws-tenant', { name: 'X', price: 1 });

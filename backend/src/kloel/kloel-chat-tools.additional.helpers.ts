@@ -203,14 +203,14 @@ export async function runBrowseMarketplace(
 }
 
 export function runSendChannelMessage(
-  workspaceId: string,
-  args: Record<string, unknown>,
+  _workspaceId: string,
+  _args: Record<string, unknown>,
 ): ToolResult {
-  void workspaceId;
-  const channel = typeof args.channel === 'string' ? args.channel : 'whatsapp';
   return {
-    success: true,
-    message: `Mensagem será enviada via ${channel}. Configure o canal em Configurações > Canais primeiro.`,
+    success: false,
+    error: 'channel_service_required',
+    message:
+      'send_channel_message must execute through a real channel service before it can report delivery.',
   };
 }
 
