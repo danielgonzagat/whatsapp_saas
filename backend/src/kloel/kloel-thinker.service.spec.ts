@@ -305,6 +305,61 @@ describe('KloelThinkerService', () => {
       );
     });
 
+    it('includes canonical receipt proof in deterministic SSE replies', async () => {
+      const executeLocalTool = jest.fn().mockResolvedValue({
+        success: true,
+        product: { id: 'prod-1', name: 'PDRN', price: 197 },
+        capabilityId: 'products.create',
+        auditLogId: 'audit_prod_1',
+        evidenceUrl: '/produtos/prod-1',
+        domainEvents: ['product.created'],
+        receipt: {
+          capabilityId: 'products.create',
+          auditLogId: 'audit_prod_1',
+          evidenceUrl: '/produtos/prod-1',
+          domainEvents: ['product.created'],
+          idempotencyKey: 'products.create:ws-1:agent-1',
+          success: true,
+        },
+      });
+
+      await service.think(
+        { message: 'criar produto nome: PDRN, preco R$ 197', workspaceId: wsId, userId: 'agent-1' },
+        {} as Response,
+        null,
+        undefined,
+        undefined,
+        executeLocalTool as LocalToolExecutor,
+      );
+
+      const streamWriter = (KloelStreamWriter as unknown as jest.Mock).mock.results.at(-1)
+        ?.value as { write: jest.Mock<void, [unknown]> };
+      const contentEvents = streamWriter.write.mock.calls
+        .map(([event]) => event)
+        .filter(
+          (event): event is { type: 'content'; content: string } =>
+            event !== null &&
+            typeof event === 'object' &&
+            !Array.isArray(event) &&
+            (event as { type?: unknown }).type === 'content',
+        );
+      const content = contentEvents.map((event) => event.content).join('\n');
+
+      expect(content).toContain('Produto PDRN');
+      expect(content).toContain('Prova material:');
+      expect(content).toContain('Evidência: /produtos/prod-1');
+      expect(content).toContain('AuditLog: audit_prod_1');
+      expect(content).toContain('Eventos: product.created');
+      expect(finalizeSuccessfulReply).toHaveBeenCalledWith(
+        expect.stringContaining('Evidência: /produtos/prod-1'),
+        0,
+        expect.objectContaining({
+          workspaceId: wsId,
+          message: 'criar produto nome: PDRN, preco R$ 197',
+        }),
+      );
+    });
+
     it('returns an honest tool failure on SSE without falling through to the LLM', async () => {
       const executeLocalTool = jest
         .fn()

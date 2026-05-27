@@ -28,7 +28,11 @@ import { MindCapabilityExecutor } from './mind/coordination';
 import { validateAbiPayload } from './abi/abi-validator';
 import { computeHandoffConfidence, HANDOFF_THRESHOLD } from './handoff-confidence.helper';
 import { ChatCompletionMessageParam } from 'openai/resources/chat';
-import { detectActionIntent, formatToolResult } from './guest-chat.action-intent.helpers';
+import {
+  appendToolResultProof,
+  detectActionIntent,
+  formatToolResult,
+} from './guest-chat.action-intent.helpers';
 import { KloelReplyEngineService, LocalToolExecutor } from './kloel-reply-engine.service';
 import { thinkSyncImpl, regenerateThreadAssistantResponseImpl } from './kloel-thinker.helpers';
 import {
@@ -216,7 +220,10 @@ export class KloelThinkerService {
             ...(toolError !== undefined ? { error: toolError } : {}),
           }),
         );
-        const reply = formatToolResult(deterministicAction.tool, toolResult);
+        const reply = appendToolResultProof(
+          formatToolResult(deterministicAction.tool, toolResult),
+          toolResult,
+        );
         safeWrite(createKloelContentEvent(reply));
         await finalizeSuccessfulReply(reply, 0, branchCtx);
         return;

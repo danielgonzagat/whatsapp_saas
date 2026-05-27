@@ -365,3 +365,56 @@ export function formatToolResult(tool: string, result: unknown): string {
           : 'Acao concluida.';
   }
 }
+
+function readStringField(...values: unknown[]): string {
+  for (const value of values) {
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+  }
+  return '';
+}
+
+function readRecord(value: unknown): Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+function readStringList(...values: unknown[]): string[] {
+  for (const value of values) {
+    if (Array.isArray(value)) {
+      return value.filter(
+        (item): item is string => typeof item === 'string' && item.trim().length > 0,
+      );
+    }
+  }
+  return [];
+}
+
+export function appendToolResultProof(reply: string, result: unknown): string {
+  const r = readRecord(result);
+  if (r.success === false) {
+    return reply;
+  }
+
+  const receipt = readRecord(r.receipt);
+  const capabilityId = readStringField(r.capabilityId, receipt.capabilityId);
+  const evidenceUrl = readStringField(r.evidenceUrl, receipt.evidenceUrl);
+  const auditLogId = readStringField(r.auditLogId, receipt.auditLogId);
+  const idempotencyKey = readStringField(r.idempotencyKey, receipt.idempotencyKey);
+  const domainEvents = readStringList(r.domainEvents, receipt.domainEvents);
+  const proofLines = [
+    capabilityId ? `Capacidade: ${capabilityId}` : '',
+    evidenceUrl ? `Evidência: ${evidenceUrl}` : '',
+    auditLogId ? `AuditLog: ${auditLogId}` : '',
+    domainEvents.length > 0 ? `Eventos: ${domainEvents.join(', ')}` : '',
+    idempotencyKey ? `Idempotência: ${idempotencyKey}` : '',
+  ].filter((line) => line.length > 0);
+
+  if (proofLines.length === 0) {
+    return reply;
+  }
+
+  return `${reply}\n\nProva material:\n${proofLines.map((line) => `- ${line}`).join('\n')}`;
+}

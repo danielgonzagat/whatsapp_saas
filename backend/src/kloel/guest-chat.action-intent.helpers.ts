@@ -1105,4 +1105,4 @@ export function extractFiscalArgs(msg: string): Record<string, unknown> {
   return args;
 }
 
-export { formatToolResult } from './guest-chat.format-tool-result.helpers';
+export { appendToolResultProof, formatToolResult } from './guest-chat.format-tool-result.helpers';
