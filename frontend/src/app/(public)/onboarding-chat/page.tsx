@@ -282,9 +282,7 @@ function OnboardingChatContent() {
   // Unauthenticated landing — render hero instead of redirecting
   if (!isAuthenticated) {
     const callbackEncoded = encodeURIComponent(
-      queryRole
-        ? `/onboarding-chat?role=${encodeURIComponent(queryRole)}`
-        : '/onboarding-chat',
+      queryRole ? `/onboarding-chat?role=${encodeURIComponent(queryRole)}` : '/onboarding-chat',
     );
     return <OnboardingChatHero loginUrl={`/login?callbackUrl=${callbackEncoded}`} />;
   }
@@ -366,7 +364,15 @@ function OnboardingChatContent() {
 
       {/* Chat Area */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
-        <div style={{ maxWidth: '1024px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div
+          style={{
+            maxWidth: '1024px',
+            margin: '0 auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 16,
+          }}
+        >
           <AnimatePresence mode="popLayout">
             {messages.map((message) => (
               <motion.div
@@ -385,7 +391,7 @@ function OnboardingChatContent() {
                   style={{
                     width: 32,
                     height: 32,
-                    borderRadius: '50%',
+                    borderRadius: 8,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -420,9 +426,7 @@ function OnboardingChatContent() {
                         ? colors.background.surface
                         : colors.ember.primary,
                     border:
-                      message.role === 'assistant'
-                        ? `1px solid ${colors.border.space}`
-                        : 'none',
+                      message.role === 'assistant' ? `1px solid ${colors.border.space}` : 'none',
                   }}
                 >
                   <p
@@ -459,7 +463,11 @@ function OnboardingChatContent() {
 
           {/* Loading indicator */}
           {loading && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ display: 'flex' }}>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              style={{ display: 'flex' }}
+            >
               <div
                 style={{
                   background: colors.background.surface,
@@ -647,7 +655,8 @@ function OnboardingChatContent() {
                   }
                 }}
                 onMouseLeave={(e) => {
-                  (e.target as HTMLButtonElement).style.opacity = loading || !input.trim() ? '0.5' : '1';
+                  (e.target as HTMLButtonElement).style.opacity =
+                    loading || !input.trim() ? '0.5' : '1';
                 }}
               >
                 {loading ? (
