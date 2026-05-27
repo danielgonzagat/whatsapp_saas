@@ -1,17 +1,11 @@
 import type { NormalizedMessage } from '../../inbox/omnichannel.helpers';
-import type {
-  GmailMailboxRecord,
-  GmailMessagePart,
-  GmailMessageResponse,
-} from './types';
+import type { GmailMailboxRecord, GmailMessagePart, GmailMessageResponse } from './types';
 
 export function readHeader(
   headers: Array<{ name?: string; value?: string }>,
   wanted: string,
 ): string {
-  const header = headers.find(
-    (item) => item.name?.toLowerCase() === wanted.toLowerCase(),
-  );
+  const header = headers.find((item) => item.name?.toLowerCase() === wanted.toLowerCase());
   return String(header?.value || '').trim();
 }
 
@@ -89,8 +83,7 @@ export function normalizeGmailMessage(
       subject: subject || null,
     },
   };
-  const fromNameVal =
-    parsedFrom.name || parsedFrom.email || fromRaw || undefined;
+  const fromNameVal = parsedFrom.name || parsedFrom.email || fromRaw || undefined;
   if (fromNameVal) {
     normalized.fromName = fromNameVal;
   }

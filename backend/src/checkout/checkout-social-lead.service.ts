@@ -420,7 +420,6 @@ export class CheckoutSocialLeadService {
     };
   }
 
-
   private async verifySocialProvider(provider: CheckoutSocialProvider, dto: CaptureSocialLeadDto) {
     if (provider === CheckoutSocialProvider.FACEBOOK) {
       return this.facebookAuthService.verifyAccessToken(dto.accessToken || '', dto.userId);

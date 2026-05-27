@@ -173,4 +173,3 @@ export function resolveOAuthRedirect(
 export function resolvePublicBackendBaseUrl(env: NodeJS.ProcessEnv): string {
   return resolveOAuthRedirect(env).baseUrl;
 }
-

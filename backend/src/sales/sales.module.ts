@@ -5,7 +5,7 @@ import { SpineModule } from '../kloel/spine/spine.module';
 import { PaymentsModule } from '../payments/payments.module';
 import { PrismaModule } from '../prisma/prisma.module';
 
-import { SalesService } from './sales.service';/**
+import { SalesService } from './sales.service'; /**
  * Sales module — in-chat sales creation (PIX, card, boleto).
  *
  * Imports:

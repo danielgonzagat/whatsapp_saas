@@ -1,14 +1,6 @@
 import { RouteClass } from '../common/throttler/route-class.decorator';
 import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator';
-import {
-  Body,
-  Controller,
-  Get,
-  Post,
-  Query,
-  Request,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Request, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { TikTokMarketingService } from './tiktok-marketing.service';
@@ -191,11 +183,7 @@ export class MarketingConnectController {
     @Request() req: { user: { workspaceId: string; email?: string } },
     @Body() body: { toEmail?: string } = {},
   ) {
-    return this.emailConnect.sendTest(
-      req.user.workspaceId,
-      req.user.email ?? '',
-      body.toEmail,
-    );
+    return this.emailConnect.sendTest(req.user.workspaceId, req.user.email ?? '', body.toEmail);
   }
 
   @WebhookEndpoint('Email connection status probe')
@@ -213,7 +201,9 @@ export class MarketingConnectController {
   }
 
   @Get('tiktok/mode')
-  async getTikTokMode(@Request() req: { user: { workspaceId: string } }): Promise<TikTokModeResult> {
+  async getTikTokMode(
+    @Request() req: { user: { workspaceId: string } },
+  ): Promise<TikTokModeResult> {
     const status = await this.tiktokMarketing.getStatus(req.user.workspaceId);
     const expired = status.expired === true;
     return this.tiktokMode.resolveMode(req.user.workspaceId, expired);
