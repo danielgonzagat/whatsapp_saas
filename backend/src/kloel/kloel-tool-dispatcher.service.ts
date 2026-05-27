@@ -486,12 +486,25 @@ export class KloelToolDispatcherService {
             asToolArgs(args),
             userId,
           );
-        case 'remember_user_info':
-          return await this.chatToolsService.toolRememberUserInfo(
+        case 'remember_user_info': {
+          const startedAt = Date.now();
+          const result = await this.chatToolsService.toolRememberUserInfo(
             workspaceId,
             asToolArgs(args),
             userId,
           );
+          const resultWithMemory = result.success
+            ? { ...result, key: asString(args.key), value: asString(args.value) }
+            : result;
+          return this.withCanonicalReceipt(
+            'remember_user_info',
+            workspaceId,
+            args,
+            resultWithMemory,
+            userId,
+            startedAt,
+          );
+        }
         case 'search_web':
           return await runToolSearchWeb(this.planLimits, this.composerService, workspaceId, args);
         case 'create_flow': {

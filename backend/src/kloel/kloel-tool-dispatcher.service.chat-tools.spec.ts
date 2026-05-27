@@ -415,6 +415,41 @@ describe('KloelToolDispatcherService — chat tools routing', () => {
     );
   });
 
+  it('routes remember_user_info to chatToolsService with a material receipt', async () => {
+    jest.mocked(chatToolsService.toolRememberUserInfo).mockResolvedValueOnce({
+      success: true,
+      message: 'Memoria "lang" salva.',
+    });
+
+    const result = await service.executeTool(
+      DEFAULT_WS_ID,
+      'remember_user_info',
+      { key: 'lang', value: 'pt' },
+      'user-42',
+    );
+
+    expect(chatToolsService.toolRememberUserInfo).toHaveBeenCalledWith(
+      DEFAULT_WS_ID,
+      { key: 'lang', value: 'pt' },
+      'user-42',
+    );
+    expect(result.success).toBe(true);
+    expect(result.capabilityId).toBe('remember_user_info');
+    expect(result.receipt).toEqual(
+      objectContaining({
+        capabilityId: 'remember_user_info',
+        workspaceId: DEFAULT_WS_ID,
+        actorId: 'user-42',
+        inputs: { key: 'lang', value: 'pt' },
+        outputs: objectContaining({ key: 'lang', value: 'pt' }),
+        domainEvents: ['memory.updated'],
+        auditLogId: stringMatching(/^audit_/),
+        idempotencyKey: stringContaining('remember_user_info'),
+        success: true,
+      }),
+    );
+  });
+
   it('routes get_dashboard_summary to chatToolsService', async () => {
     await service.executeTool(DEFAULT_WS_ID, 'get_dashboard_summary', { period: 'today' });
     expect(chatToolsService.toolGetDashboardSummary).toHaveBeenCalledWith(DEFAULT_WS_ID, {

@@ -222,14 +222,23 @@ describe('KloelToolExecutorService', () => {
       expect(result.capabilityId).toBe('set_brand_voice');
       expect(result.receipt).toEqual(expect.objectContaining({ capabilityId: 'set_brand_voice' }));
     });
-    it('routes remember_user_info to helper', async () => {
-      const result = await service.executeTool(
-        wsId,
-        'remember_user_info',
-        { key: 'lang', value: 'pt' },
-        'u-1',
-      );
+    it('routes remember_user_info through dispatcher receipt path', async () => {
+      dispatcher.executeTool.mockResolvedValueOnce({
+        success: true,
+        capabilityId: 'remember_user_info',
+        outputs: { key: 'lang', value: 'pt' },
+        receipt: { capabilityId: 'remember_user_info', success: true },
+      });
+
+      const args = { key: 'lang', value: 'pt' };
+      const result = await service.executeTool(wsId, 'remember_user_info', args, 'u-1');
+
+      expect(dispatcher.executeTool).toHaveBeenCalledWith(wsId, 'remember_user_info', args, 'u-1');
       expect(result.success).toBe(true);
+      expect(result.capabilityId).toBe('remember_user_info');
+      expect(result.receipt).toEqual(
+        expect.objectContaining({ capabilityId: 'remember_user_info' }),
+      );
     });
     it('routes search_web — missing query', async () => {
       const result = await service.executeTool(wsId, 'search_web', {});
