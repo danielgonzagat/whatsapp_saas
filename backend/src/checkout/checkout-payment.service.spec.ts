@@ -6,6 +6,7 @@ import { FinancialAlertService } from '../common/financial-alert.service';
 import { ConnectService } from '../payments/connect/connect.service';
 import { FraudEngine } from '../payments/fraud/fraud.engine';
 import { StripeChargeService } from '../payments/stripe/stripe-charge.service';
+import { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { CheckoutPaymentService } from './checkout-payment.service';
@@ -25,10 +26,11 @@ import {
 } from './checkout-payment-e2e-guard';
 import { CheckoutEventEmitterService } from '../kloel/checkout-emitter/checkout-event-emitter.service';
 
-describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
+describe('CheckoutPaymentService.processPayment — provider routing', () => {
   let service: CheckoutPaymentService;
   let prisma: CheckoutPaymentPrismaMock;
   let stripeCharge: { createSaleCharge: jest.Mock };
+  let mercadoPagoPix: { create: jest.Mock };
   let connectService: { createCustomAccount: jest.Mock };
   let fraudEngine: { evaluate: jest.Mock };
   let financialAlert: { paymentFailed: jest.Mock };
@@ -68,6 +70,17 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
     stripeCharge = {
       createSaleCharge: jest.fn().mockResolvedValue(makeChargeResult()),
     };
+    mercadoPagoPix = {
+      create: jest.fn().mockResolvedValue({
+        externalId: 'mp_pix_1',
+        status: 'pending',
+        qrCode: '000201mp-pix-copia-e-cola',
+        qrCodeBase64: 'base64-mp-qr',
+        ticketUrl: 'https://www.mercadopago.com.br/payments/mp_pix_1/ticket',
+        expiresAt: new Date('2026-06-01T12:00:00.000Z'),
+        raw: { id: 'mp_pix_1', status: 'pending' },
+      }),
+    };
     connectService = {
       createCustomAccount: jest.fn().mockResolvedValue({
         accountBalanceId: 'cab_seller_created',
@@ -98,6 +111,7 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
         CheckoutPaymentService,
         { provide: PrismaService, useValue: prisma },
         { provide: StripeChargeService, useValue: stripeCharge },
+        { provide: MercadoPagoPixChargeService, useValue: mercadoPagoPix },
         { provide: ConnectService, useValue: connectService },
         { provide: FraudEngine, useValue: fraudEngine },
         { provide: FinancialAlertService, useValue: financialAlert },
@@ -231,27 +245,7 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
     });
   });
 
-  it('creates a PIX payment, persists QR data, and returns the qr payload for the pix page', async () => {
-    stripeCharge.createSaleCharge.mockResolvedValueOnce(
-      makeChargeResult({
-        paymentIntentId: 'pi_pix_1',
-        clientSecret: 'pi_pix_1_secret',
-        stripePaymentIntent: {
-          id: 'pi_pix_1',
-          status: 'requires_action',
-          next_action: {
-            type: 'pix_display_qr_code',
-            pix_display_qr_code: {
-              data: '000201pixcopiaecola',
-              image_url_png: 'data:image/png;base64,qr',
-              hosted_instructions_url: 'https://pay.stripe.com/pix/pi_pix_1',
-              expires_at: 1_800_000_000,
-            },
-          },
-        },
-      }),
-    );
-
+  it('creates a PIX payment through Mercado Pago, persists QR data, and never calls Stripe', async () => {
     const tx: CheckoutPaymentTxClient = {
       checkoutPayment: {
         findFirst: jest.fn().mockResolvedValue(null),
@@ -269,42 +263,46 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
 
     const result = await service.processPayment({
       orderId: 'order-1',
+      idempotencyKey: 'idem-pix-1',
       workspaceId: 'ws-1',
       customerName: 'Cliente Pix',
       customerEmail: 'pix@example.com',
+      customerCPF: '12345678909',
+      customerPhone: '11999999999',
       paymentMethod: 'PIX',
       totalInCents: 10_000,
     });
 
-    expect(stripeCharge.createSaleCharge).toHaveBeenCalledWith(
+    expect(stripeCharge.createSaleCharge).not.toHaveBeenCalled();
+    expect(mercadoPagoPix.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        paymentMethodTypes: ['pix'],
-        confirm: true,
-        paymentMethodData: expect.objectContaining({
-          type: 'pix',
-          billing_details: expect.objectContaining({
-            name: 'Cliente Pix',
-            email: 'pix@example.com',
-          }),
-        }),
+        amountCents: 13_990n,
+        description: 'Produto X',
+        externalReference: 'order-1',
+        idempotencyKey: 'idem-pix-1',
+        notificationUrl: expect.stringContaining('/webhooks/mercadopago'),
+        payerDocument: '12345678909',
+        payerEmail: 'pix@example.com',
+        payerName: 'Cliente Pix',
       }),
     );
     expect(tx.checkoutPayment.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          gateway: 'stripe',
-          externalId: 'pi_pix_1',
-          pixQrCode: 'data:image/png;base64,qr',
-          pixCopyPaste: '000201pixcopiaecola',
+          gateway: 'mercadopago',
+          externalId: 'mp_pix_1',
+          pixQrCode: 'data:image/png;base64,base64-mp-qr',
+          pixCopyPaste: '000201mp-pix-copia-e-cola',
           status: 'PENDING',
         }),
       }),
     );
     expect(result).toMatchObject({
       approved: false,
-      paymentIntentId: 'pi_pix_1',
-      pixQrCode: 'data:image/png;base64,qr',
-      pixCopyPaste: '000201pixcopiaecola',
+      clientSecret: null,
+      paymentIntentId: 'mp_pix_1',
+      pixQrCode: 'data:image/png;base64,base64-mp-qr',
+      pixCopyPaste: '000201mp-pix-copia-e-cola',
       type: 'PIX',
     });
   });
@@ -393,7 +391,7 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
     );
   });
 
-  it('rethrows Stripe errors and notifies FinancialAlertService', async () => {
+  it('rethrows Stripe card errors and notifies FinancialAlertService', async () => {
     const stripeError = new Error('stripe unavailable');
     stripeCharge.createSaleCharge.mockRejectedValueOnce(stripeError);
 
@@ -403,7 +401,7 @@ describe('CheckoutPaymentService.processPayment — Stripe-only', () => {
         workspaceId: 'ws-1',
         customerName: 'Cliente',
         customerEmail: 'cliente@example.com',
-        paymentMethod: 'PIX',
+        paymentMethod: 'CREDIT_CARD',
         totalInCents: 10_000,
       }),
     ).rejects.toThrow('stripe unavailable');

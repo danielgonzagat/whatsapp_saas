@@ -68,7 +68,7 @@ describe('StripeChargeService.createSaleCharge', () => {
       expect.objectContaining({
         amount: 13_990,
         currency: 'brl',
-        payment_method_types: ['card', 'boleto'],
+        payment_method_types: ['card'],
         transfer_group: 'sale:order_123',
         receipt_email: 'buyer@example.com',
         metadata: expect.objectContaining({
@@ -152,7 +152,7 @@ describe('StripeChargeService.createSaleCharge', () => {
     );
   });
 
-  it('uses the caller-provided payment_method_types when supplied', async () => {
+  it('keeps Stripe sale charges card-only when payment_method_types is supplied', async () => {
     const stripe = makeStripeStub();
     stripe.stripe.paymentIntents.create.mockResolvedValue({
       client_secret: undefined,
@@ -160,66 +160,27 @@ describe('StripeChargeService.createSaleCharge', () => {
     });
     const service = await buildService(stripe);
 
-    await service.createSaleCharge(baseInput({ paymentMethodTypes: ['card', 'pix'] }));
+    await service.createSaleCharge(baseInput({ paymentMethodTypes: ['card'] }));
 
     const callArgs = stripe.stripe.paymentIntents.create.mock.calls[FIRST_CALL][FIRST_CALL];
-    expect(callArgs.payment_method_types).toEqual(['card', 'pix']);
+    expect(callArgs.payment_method_types).toEqual(['card']);
   });
 
-  it('forwards confirm + payment_method_data for server-confirmed pix flows', async () => {
+  it('does not expose Pix or boleto as Stripe sale payment methods', async () => {
     const stripe = makeStripeStub();
     stripe.stripe.paymentIntents.create.mockResolvedValue({
-      client_secret: 'pi_pix_confirmed_secret',
-      id: 'pi_pix_confirmed',
-      next_action: {
-        pix_display_qr_code: {
-          data: '000201pix',
-          image_url_png: 'data:image/png;base64,qr',
-        },
-        type: 'pix_display_qr_code',
-      },
-      status: 'requires_action',
+      client_secret: 'pi_card_only_secret',
+      id: 'pi_card_only',
     });
     const service = await buildService(stripe);
 
-    const result = await service.createSaleCharge(
-      baseInput({
-        paymentMethodTypes: ['pix'],
-        confirm: true,
-        paymentMethodData: {
-          type: 'pix',
-          billing_details: {
-            name: 'Cliente Pix',
-            email: 'pix@example.com',
-          },
-        },
-        paymentMethodOptions: {
-          pix: { expires_after_seconds: 1800 },
-        },
-      }),
-    );
+    const result = await service.createSaleCharge(baseInput());
 
-    expect(stripe.stripe.paymentIntents.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        payment_method_types: ['pix'],
-        confirm: true,
-        payment_method_data: expect.objectContaining({
-          type: 'pix',
-          billing_details: expect.objectContaining({
-            name: 'Cliente Pix',
-            email: 'pix@example.com',
-          }),
-        }),
-        payment_method_options: {
-          pix: { expires_after_seconds: 1800 },
-        },
-      }),
-      expect.anything(),
-    );
-    expect(result.stripePaymentIntent).toMatchObject({
-      id: 'pi_pix_confirmed',
-      status: 'requires_action',
-    });
+    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[FIRST_CALL][FIRST_CALL];
+    expect(callArgs.payment_method_types).toEqual(['card']);
+    expect(callArgs.payment_method_types).not.toContain('pix');
+    expect(callArgs.payment_method_types).not.toContain('boleto');
+    expect(result.stripePaymentIntent).toMatchObject({ id: 'pi_card_only' });
   });
 
   it('forwards the idempotency key as a Stripe-level idempotencyKey request option', async () => {
@@ -465,7 +426,6 @@ describe('StripeChargeService.createSaleCharge', () => {
     await service.createSaleCharge(
       baseInput({
         confirm: true,
-        paymentMethodData: { type: 'pix' },
       }),
     );
 

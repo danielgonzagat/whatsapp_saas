@@ -15,6 +15,7 @@ import { FinancialAlertService } from '../common/financial-alert.service';
 import { validateOrderTransition } from '../common/checkout-order-state-machine';
 import { ConnectService } from '../payments/connect/connect.service';
 import { FraudEngine } from '../payments/fraud/fraud.engine';
+import { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
 import { StripeChargeService } from '../payments/stripe/stripe-charge.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -22,7 +23,6 @@ import { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effec
 import { CheckoutEventEmitterService } from '../kloel/checkout-emitter/checkout-event-emitter.service';
 import {
   mapStripePaymentStatus,
-  extractPixDisplayData,
   toJsonValue,
   type CheckoutPaymentStatus,
   type PixDisplayData,
@@ -34,6 +34,53 @@ type CardPaymentOptions = Extract<
   NonNullable<NonNullable<SaleChargeInput['paymentMethodOptions']>['card']>,
   object
 >;
+type MercadoPagoPixCharge = Awaited<ReturnType<MercadoPagoPixChargeService['create']>>;
+
+const MP_WEBHOOK_PATH = '/webhooks/mercadopago';
+const PIX_EXPIRATION_MINUTES = 30;
+
+function resolveBackendOrigin(): string {
+  const raw =
+    process.env.BACKEND_PUBLIC_URL ||
+    process.env.PUBLIC_BACKEND_URL ||
+    process.env.BACKEND_URL ||
+    process.env.API_PUBLIC_URL ||
+    process.env.APP_URL ||
+    'http://localhost:3001';
+  const trimmed = raw.replace(/\/+$/, '');
+  if (!/^https?:\/\//i.test(trimmed)) {
+    return `https://${trimmed}`;
+  }
+  return trimmed;
+}
+
+function mapMercadoPagoPixStatus(status: MercadoPagoPixCharge['status']): CheckoutPaymentStatus {
+  switch (status) {
+    case 'approved':
+      return 'APPROVED';
+    case 'rejected':
+      return 'DECLINED';
+    case 'cancelled':
+    case 'expired':
+    case 'refunded':
+      return 'CANCELED';
+    case 'in_process':
+      return 'PROCESSING';
+    case 'pending':
+    default:
+      return 'PENDING';
+  }
+}
+
+function formatMercadoPagoQrImage(qrCodeBase64: string): string | null {
+  if (!qrCodeBase64) {
+    return null;
+  }
+  if (/^data:image\//i.test(qrCodeBase64)) {
+    return qrCodeBase64;
+  }
+  return `data:image/png;base64,${qrCodeBase64}`;
+}
 
 /** Checkout payment service. */
 @Injectable()
@@ -43,6 +90,7 @@ export class CheckoutPaymentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly stripeCharge: StripeChargeService,
+    private readonly mercadoPagoPix: MercadoPagoPixChargeService,
     private readonly connectService: ConnectService,
     private readonly fraudEngine: FraudEngine,
     private readonly financialAlert: FinancialAlertService,
@@ -113,36 +161,17 @@ export class CheckoutPaymentService {
       forceThreeDS?: boolean;
     },
   ) {
-    const isPix = params.paymentMethod === 'PIX';
-    const paymentMethodData = isPix
-      ? {
-          type: 'pix' as const,
-          billing_details: {
-            name: params.customerName,
-            email: params.customerEmail,
-            ...(params.customerPhone !== undefined ? { phone: params.customerPhone } : {}),
-          },
-        }
-      : undefined;
-
     const threeDsRequest = ['an', 'y'].join('') as NonNullable<
       CardPaymentOptions['request_three_d_secure']
     >;
-    const paymentMethodOptions: SaleChargeInput['paymentMethodOptions'] | undefined = isPix
-      ? {
-          pix: {
-            expires_after_seconds: 30 * 60,
-          },
-        }
-      : opts.forceThreeDS
+    const paymentMethodOptions: SaleChargeInput['paymentMethodOptions'] | undefined =
+      opts.forceThreeDS
         ? {
             card: {
               request_three_d_secure: threeDsRequest,
             },
           }
         : undefined;
-
-    const confirm = isPix ? true : undefined;
 
     const base: Parameters<StripeChargeService['createSaleCharge']>[0] = {
       workspaceId: params.workspaceId,
@@ -154,20 +183,14 @@ export class CheckoutPaymentService {
       currency: opts.currency,
       idempotencyKey: params.idempotencyKey || params.orderId,
       buyerEmail: params.customerEmail,
-      paymentMethodTypes: isPix ? ['pix'] : ['card'],
+      paymentMethodTypes: ['card'],
       metadata: {
         kloel_order_id: params.orderId,
         workspace_id: params.workspaceId,
       },
     };
-    if (paymentMethodData !== undefined) {
-      base.paymentMethodData = paymentMethodData;
-    }
     if (paymentMethodOptions !== undefined) {
       base.paymentMethodOptions = paymentMethodOptions;
-    }
-    if (confirm !== undefined) {
-      base.confirm = confirm;
     }
     return base;
   }
@@ -257,6 +280,89 @@ export class CheckoutPaymentService {
     );
   }
 
+  private async persistMercadoPagoPixPayment(
+    params: {
+      orderId: string;
+      workspaceId: string;
+      paymentMethod: CheckoutPaymentMethod;
+      installments?: number;
+    },
+    charge: MercadoPagoPixCharge,
+    paymentStatus: CheckoutPaymentStatus,
+    pixData: PixDisplayData,
+    amount: number,
+  ) {
+    const approved = paymentStatus === 'APPROVED';
+    return this.prisma.$transaction(
+      async (tx) => {
+        const existingPayment = await tx.checkoutPayment.findFirst({
+          where: { orderId: params.orderId },
+        });
+        if (existingPayment) {
+          if (existingPayment.externalId === charge.externalId) {
+            this.logger.log(
+              `Idempotency: payment already exists for order ${params.orderId} with same Mercado Pago payment ${charge.externalId}`,
+            );
+            return existingPayment;
+          }
+          this.logger.warn(
+            `Idempotency: payment exists for order ${params.orderId} but with different externalId (existing=${existingPayment.externalId}, new=${charge.externalId})`,
+          );
+        }
+
+        const createdPayment = await tx.checkoutPayment.create({
+          data: {
+            orderId: params.orderId,
+            gateway: 'mercadopago',
+            externalId: charge.externalId,
+            pixQrCode: pixData.pixQrCode,
+            pixCopyPaste: pixData.pixCopyPaste,
+            pixExpiresAt: pixData.pixExpiresAt ? new Date(pixData.pixExpiresAt) : null,
+            boletoUrl: null,
+            boletoBarcode: null,
+            boletoExpiresAt: null,
+            cardLast4: null,
+            cardBrand: null,
+            status: paymentStatus,
+            webhookData: toJsonValue({
+              provider: 'mercadopago',
+              paymentMethod: 'pix',
+              payment: charge.raw,
+            }),
+          },
+        });
+
+        if (approved) {
+          await this.transitionOrderToApproved(tx, params.orderId, params.workspaceId, {
+            paymentId: createdPayment.id,
+            provider: 'mercadopago',
+            externalId: charge.externalId,
+          });
+        }
+
+        await this.auditService.logWithTx(tx, {
+          workspaceId: params.workspaceId,
+          action: 'CHECKOUT_PAYMENT_CREATED',
+          resource: 'CheckoutPayment',
+          resourceId: createdPayment.id,
+          details: {
+            method: params.paymentMethod,
+            amount,
+            orderId: params.orderId,
+            gateway: 'mercadopago',
+            externalId: charge.externalId,
+            approved,
+            installments: params.installments,
+            paymentStatus: charge.status,
+          },
+        });
+
+        return createdPayment;
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
+  }
+
   /** Process payment. */
   async processPayment(params: {
     orderId: string;
@@ -274,7 +380,7 @@ export class CheckoutPaymentService {
   }) {
     if (params.paymentMethod === 'BOLETO') {
       throw new BadRequestException(
-        'Boleto ainda não está habilitado no checkout Stripe-only. Use cartão ou Pix.',
+        'Boleto deve ser emitido pelo Mercado Pago, mas a capability de boleto ainda não está conectada ao checkout real.',
       );
     }
 
@@ -345,10 +451,132 @@ export class CheckoutPaymentService {
       throw new BadRequestException('Pagamento retido para revisão manual.');
     }
 
+    const amount = chargedTotalInCents / 100;
+
+    if (params.paymentMethod === 'PIX') {
+      try {
+        Sentry.addBreadcrumb({
+          message: `checkout payment processing via Mercado Pago`,
+          category: 'payment',
+          level: 'info',
+          data: {
+            orderId: params.orderId,
+            workspaceId: params.workspaceId,
+            amount,
+            paymentMethod: params.paymentMethod,
+          },
+        });
+
+        const productName =
+          typeof order.plan?.product?.name === 'string' && order.plan.product.name.trim()
+            ? order.plan.product.name
+            : undefined;
+        const payerDocument = params.customerCPF?.replace(/\D/g, '') || undefined;
+        const expiresAt = new Date(Date.now() + PIX_EXPIRATION_MINUTES * 60_000);
+        const charge = await this.mercadoPagoPix.create({
+          idempotencyKey: params.idempotencyKey || params.orderId,
+          amountCents: BigInt(chargedTotalInCents),
+          payerEmail: params.customerEmail,
+          payerName: params.customerName,
+          ...(payerDocument !== undefined ? { payerDocument } : {}),
+          description: productName || `Pedido ${params.orderId}`,
+          externalReference: params.orderId,
+          expiresAt,
+          notificationUrl: `${resolveBackendOrigin()}${MP_WEBHOOK_PATH}`,
+        });
+        const pixData: PixDisplayData = {
+          pixQrCode: formatMercadoPagoQrImage(charge.qrCodeBase64),
+          pixCopyPaste: charge.qrCode || null,
+          pixExpiresAt: charge.expiresAt.toISOString(),
+        };
+        const paymentStatus = mapMercadoPagoPixStatus(charge.status);
+        const approved = paymentStatus === 'APPROVED';
+        const payment = await this.persistMercadoPagoPixPayment(
+          params,
+          charge,
+          paymentStatus,
+          pixData,
+          amount,
+        );
+
+        void this.eventEmitter?.paymentInitiated({
+          workspaceId: params.workspaceId,
+          orderId: params.orderId,
+          paymentIntentId: charge.externalId,
+          paymentMethod: params.paymentMethod,
+          amountInCents: chargedTotalInCents,
+          correlationId: params.idempotencyKey,
+        });
+
+        if (approved) {
+          void this.eventEmitter?.paymentApproved({
+            workspaceId: params.workspaceId,
+            orderId: params.orderId,
+            paymentIntentId: charge.externalId,
+            amountInCents: chargedTotalInCents,
+            correlationId: params.idempotencyKey,
+          });
+          await this.postPaymentEffects
+            .markLeadConverted(order, params.workspaceId)
+            .catch((error) => {
+              this.logger.warn(
+                `Checkout post-payment lead conversion failed for order ${params.orderId}: ${error instanceof Error ? error.message : String(error)}`,
+              );
+            });
+          await this.postPaymentEffects.sendPurchaseSignals(order, amount).catch((error) => {
+            this.logger.warn(
+              `Checkout post-payment purchase signals failed for order ${params.orderId}: ${error instanceof Error ? error.message : String(error)}`,
+            );
+          });
+        }
+
+        return {
+          payment,
+          type: params.paymentMethod,
+          approved,
+          clientSecret: null,
+          paymentIntentId: charge.externalId,
+          pixQrCode: pixData.pixQrCode,
+          pixCopyPaste: pixData.pixCopyPaste,
+          pixExpiresAt: pixData.pixExpiresAt,
+          boletoUrl: null,
+          boletoBarcode: null,
+          boletoExpiresAt: null,
+        };
+      } catch (error: unknown) {
+        void this.eventEmitter?.paymentDeclined({
+          workspaceId: params.workspaceId,
+          orderId: params.orderId,
+          paymentIntentId: undefined,
+          correlationId: params.idempotencyKey,
+          reason: error instanceof Error ? error.message : String(error),
+        });
+        this.logger.error(
+          `Mercado Pago PIX processing failed for order ${params.orderId}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+        Sentry.captureException(error, {
+          tags: { type: 'financial_alert', operation: 'checkout_mercadopago_pix_payment' },
+          extra: {
+            workspaceId: params.workspaceId,
+            orderId: params.orderId,
+            amount,
+            gateway: 'mercadopago',
+          },
+          level: 'fatal',
+        });
+        this.financialAlert.paymentFailed(error as Error, {
+          workspaceId: params.workspaceId,
+          orderId: params.orderId,
+          amount,
+          gateway: 'mercadopago',
+        });
+        throw error;
+      }
+    }
+
     const forceThreeDS =
       params.paymentMethod === 'CREDIT_CARD' && fraudDecision.action === 'require_3ds';
     const sellerStripeAccountId = await this.ensureSellerStripeAccountId(params.workspaceId);
-    const amount = chargedTotalInCents / 100;
 
     try {
       Sentry.addBreadcrumb({
@@ -376,10 +604,11 @@ export class CheckoutPaymentService {
 
       const paymentStatus = mapStripePaymentStatus(charge.stripePaymentIntent.status);
       const approved = paymentStatus === 'APPROVED';
-      const pixData =
-        params.paymentMethod === 'PIX'
-          ? extractPixDisplayData(charge.stripePaymentIntent)
-          : { pixQrCode: null, pixCopyPaste: null, pixExpiresAt: null };
+      const pixData: PixDisplayData = {
+        pixQrCode: null,
+        pixCopyPaste: null,
+        pixExpiresAt: null,
+      };
 
       const payment = await this.persistPayment(params, charge, paymentStatus, pixData, amount);
 
@@ -515,7 +744,7 @@ export class CheckoutPaymentService {
     workspaceId: string,
     _transitionContext: {
       paymentId: string;
-      provider: 'stripe';
+      provider: 'stripe' | 'mercadopago';
       externalId: string;
     },
   ) {

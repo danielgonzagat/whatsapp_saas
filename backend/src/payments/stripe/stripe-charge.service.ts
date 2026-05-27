@@ -8,6 +8,14 @@ import type { SplitInput } from '../split/split.types';
 
 import type { CreateSaleChargeInput, CreateSaleChargeResult } from './stripe-charge.types';
 
+function resolveStripeCardPaymentMethodTypes(input: CreateSaleChargeInput): Array<'card'> {
+  const requested = input.paymentMethodTypes ?? ['card'];
+  if (requested.length !== 1 || requested[0] !== 'card') {
+    throw new Error('Stripe sale charges support only card. Use Mercado Pago for Pix or boleto.');
+  }
+  return ['card'];
+}
+
 /**
  * Marketplace sale creator.
  *
@@ -46,7 +54,7 @@ export class StripeChargeService {
 
     const split = calculateSplit(splitInput);
     const transferGroup = `sale:${input.idempotencyKey}`;
-    const paymentMethodTypes = input.paymentMethodTypes ?? ['card', 'boleto'];
+    const paymentMethodTypes = resolveStripeCardPaymentMethodTypes(input);
     const amount = Number(input.buyerPaidCents);
     const sellerLine = split.splits.find((line) => line.role === 'seller');
     if (!sellerLine) {
