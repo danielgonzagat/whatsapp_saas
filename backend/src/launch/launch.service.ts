@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { asProviderSettings } from '../whatsapp/provider-settings.types';
+import { asProviderSettings } from '../marketing/channels/whatsapp/provider-settings.types';
 
 const PATTERN_RE = / /g;
 

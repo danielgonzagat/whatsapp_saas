@@ -3,7 +3,7 @@ import { createHmac, timingSafeEqual } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { decryptMetaToken, encryptMetaToken } from '../meta/meta-token-crypto';
 import { PrismaService } from '../prisma/prisma.service';
-import { asProviderSettings, type ProviderSettings } from '../whatsapp/provider-settings.types';
+import { asProviderSettings, type ProviderSettings } from './channels/whatsapp/provider-settings.types';
 
 interface TikTokProviderSubsettings {
   connected?: boolean;

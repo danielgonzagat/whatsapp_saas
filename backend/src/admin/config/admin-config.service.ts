@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { asProviderSettings } from '../../whatsapp/provider-settings.types';
+import { asProviderSettings } from '../../marketing/channels/whatsapp/provider-settings.types';
 import { adminErrors } from '../common/admin-api-errors';
 
 /** Admin config workspace row shape. */

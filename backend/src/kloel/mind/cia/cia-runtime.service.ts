@@ -4,9 +4,9 @@ import { AgentEventsService } from '../../../marketing/channels/whatsapp/agent-e
 import { CiaBacklogRunService } from './cia-backlog-run.service';
 import { CiaBootstrapService } from './cia-bootstrap.service';
 import { CiaRuntimeStateService } from './cia-runtime-state.service';
-import { asProviderSettings } from '../../../whatsapp/provider-settings.types';
+import { asProviderSettings } from '../../../marketing/channels/whatsapp/provider-settings.types';
 import { MindBackgroundScheduler } from '../mind-bg.scheduler';
-import { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
+import { WhatsAppProviderRegistry } from '../../../marketing/channels/whatsapp/providers/provider-registry';
 
 /** Cia runtime service — orchestrates bootstrap, backlog, and live autonomy. */
 @Injectable()

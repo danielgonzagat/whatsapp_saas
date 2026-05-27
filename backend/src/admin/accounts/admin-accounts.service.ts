@@ -15,7 +15,7 @@ import {
 import { listKycQueue, type KycQueueResult } from './queries/kyc-queue.query';
 import { AdminKycService } from './kyc/admin-kyc.service';
 import { adminErrors } from '../common/admin-api-errors';
-import { asProviderSettings } from '../../whatsapp/provider-settings.types';
+import { asProviderSettings } from '../../marketing/channels/whatsapp/provider-settings.types';
 import { AdminAuditService } from '../audit/admin-audit.service';
 import { AdminAccountStateAction } from './dto/update-account-state.dto';
 import { UUID_DASH_RE } from '../../common/regex';

@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UnifiedAgentActionsCrmService } from './unified-agent-actions-crm.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
+import { WhatsAppProviderRegistry } from '../marketing/channels/whatsapp/providers/provider-registry';
 import { OpsAlertService } from '../observability/ops-alert.service';
 jest.mock('../queue/queue', () => ({
   flowQueue: {

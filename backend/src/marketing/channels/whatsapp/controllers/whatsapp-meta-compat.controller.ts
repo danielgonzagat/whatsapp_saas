@@ -3,7 +3,7 @@ import { JwtAuthGuard } from '../../../../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../../../common/guards/workspace.guard';
 import { InternalEndpoint } from '../../../../common/decorators/internal-endpoint.decorator';
 import { AuthenticatedRequest } from '../../../../common/interfaces';
-import { WhatsAppProviderRegistry } from '../../../../whatsapp/providers/provider-registry';
+import { WhatsAppProviderRegistry } from '../providers/provider-registry';
 import { RouteClass } from '../../../../common/throttler/route-class.decorator';
 
 /**

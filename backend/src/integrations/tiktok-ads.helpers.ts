@@ -1,6 +1,6 @@
 import { PrismaService } from '../prisma/prisma.service';
 import { decryptTikTokToken } from './tiktok-token-crypto';
-import { asProviderSettings } from '../whatsapp/provider-settings.types';
+import { asProviderSettings } from '../marketing/channels/whatsapp/provider-settings.types';
 import type {
   AdCampaignSyncResult,
   AdInsightSyncResult,

@@ -3,7 +3,7 @@ import { StructuredLogger } from '../logging/structured-logger';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
+import { WhatsAppProviderRegistry } from '../marketing/channels/whatsapp/providers/provider-registry';
 import { WHATSAPP_MESSAGING } from '../marketing/channels/whatsapp/whatsapp.tokens';
 import { AudioService } from './audio.service';
 import { ChannelTransportRegistry } from './channel-transport.registry';

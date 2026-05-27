@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { TikTokAdsService } from '../marketing/tiktok-ads.service';
 import { encryptTikTokToken, decryptTikTokToken } from './tiktok-token-crypto';
-import { asProviderSettings } from '../whatsapp/provider-settings.types';
+import { asProviderSettings } from '../marketing/channels/whatsapp/provider-settings.types';
 import type {
   AdProvider,
   OAuthConnectResult,

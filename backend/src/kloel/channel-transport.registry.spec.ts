@@ -11,7 +11,7 @@ import type { ChannelName, ChannelSendRequest } from './channel-transport.types'
 import { InstagramService } from '../marketing/channels/instagram/instagram.service';
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import { MessengerService } from '../marketing/channels/messenger/messenger.service';
-import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
+import { WhatsAppProviderRegistry } from '../marketing/channels/whatsapp/providers/provider-registry';
 
 class StubWhatsAppRegistry {
   sendMessage = jest.fn();

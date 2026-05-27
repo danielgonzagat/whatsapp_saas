@@ -3,7 +3,7 @@ import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import { actionImportContacts as actionImportContactsCompanion } from './unified-agent-actions-crm.helpers';
 import { flowQueue } from '../queue/queue';
-import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
+import { WhatsAppProviderRegistry } from '../marketing/channels/whatsapp/providers/provider-registry';
 import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { TAG_DEFAULT_COLORS } from '../common/kloel-colors';

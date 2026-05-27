@@ -3,7 +3,7 @@ import { Workspace } from '@prisma/client';
 import { CacheService } from '../common/cache/cache.service';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
-import { asProviderSettings } from '../whatsapp/provider-settings.types';
+import { asProviderSettings } from '../marketing/channels/whatsapp/provider-settings.types';
 import {
   normalizeWhatsAppProvider,
   resolveDefaultWhatsAppProvider,

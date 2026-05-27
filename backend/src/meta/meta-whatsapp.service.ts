@@ -10,7 +10,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { MetaSdkService } from './meta-sdk.service';
 import { decryptMetaToken } from './meta-token-crypto';
-import { asProviderSettings } from '../whatsapp/provider-settings.types';
+import { asProviderSettings } from '../marketing/channels/whatsapp/provider-settings.types';
 import { readRecord, readStrictText } from './read-model/meta-read-helpers';
 import {
   resolveOAuthRedirect,

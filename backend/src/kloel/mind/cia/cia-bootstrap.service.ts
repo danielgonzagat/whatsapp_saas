@@ -5,9 +5,9 @@ import { CiaChatFilterService } from './cia-chat-filter.service';
 import { CiaRuntimeStateService } from './cia-runtime-state.service';
 import { OpsAlertService } from '../../../observability/ops-alert.service';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
+import { WhatsAppProviderRegistry } from '../../../marketing/channels/whatsapp/providers/provider-registry';
 import { WhatsAppCatchupService } from '../../../marketing/channels/whatsapp/whatsapp-catchup.service';
-import { asProviderSettings } from '../../../whatsapp/provider-settings.types';
+import { asProviderSettings } from '../../../marketing/channels/whatsapp/provider-settings.types';
 
 type BootstrapConversation = Record<string, unknown>;
 type OperationalMetadata = { canTakeMore?: boolean; [key: string]: unknown };

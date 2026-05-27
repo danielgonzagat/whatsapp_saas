@@ -1,6 +1,6 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
-import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
+import { WhatsAppProviderRegistry } from '../marketing/channels/whatsapp/providers/provider-registry';
 import type {
   ChannelCapability,
   ChannelName,

@@ -1,7 +1,7 @@
 import type {
   ProviderSettings,
   ProviderSessionSnapshot,
-} from '../whatsapp/provider-settings.types';
+} from '../marketing/channels/whatsapp/provider-settings.types';
 import type { ResolvedWhatsAppProvider } from '../marketing/channels/whatsapp/providers/provider-env';
 
 /** Normalized connection status type. */
