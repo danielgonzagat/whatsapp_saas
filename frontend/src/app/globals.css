@@ -531,28 +531,28 @@ body {
   color: var(--app-text-primary) !important;
 }
 
-.kloel-app-theme-root .bg-\[\rgb(10, 10, 12)\] {
+.kloel-app-theme-root .bg-\[rgb\(10\,\ 10\,\ 12\)\] {
   background-color: var(--app-bg-primary) !important;
 }
 
-.kloel-app-theme-root .bg-\[\rgb(11, 15, 20)\] {
+.kloel-app-theme-root .bg-\[rgb\(11\,\ 15\,\ 20\)\] {
   background-color: var(--app-bg-card) !important;
 }
 
-.kloel-app-theme-root .bg-\[\rgb(17, 17, 19)\],
-.kloel-app-theme-root .bg-\[\rgb(17, 17, 20)\] {
+.kloel-app-theme-root .bg-\[rgb\(17\,\ 17\,\ 19\)\],
+.kloel-app-theme-root .bg-\[rgb\(17\,\ 17\,\ 20\)\] {
   background-color: var(--app-bg-card) !important;
 }
 
-.kloel-app-theme-root .bg-\[\rgb(25, 25, 28)\],
-.kloel-app-theme-root .bg-\[\rgb(26, 26, 30)\],
-.kloel-app-theme-root .bg-\[\rgb(21, 21, 24)\],
-.kloel-app-theme-root .bg-\[\rgb(14, 14, 16)\] {
+.kloel-app-theme-root .bg-\[rgb\(25\,\ 25\,\ 28\)\],
+.kloel-app-theme-root .bg-\[rgb\(26\,\ 26\,\ 30\)\],
+.kloel-app-theme-root .bg-\[rgb\(21\,\ 21\,\ 24\)\],
+.kloel-app-theme-root .bg-\[rgb\(14\,\ 14\,\ 16\)\] {
   background-color: var(--app-bg-secondary) !important;
 }
 
-.kloel-app-theme-root .bg-\[\rgb(30, 30, 34)\],
-.kloel-app-theme-root .bg-\[\rgb(37, 37, 40)\] {
+.kloel-app-theme-root .bg-\[rgb\(30\,\ 30\,\ 34\)\],
+.kloel-app-theme-root .bg-\[rgb\(37\,\ 37\,\ 40\)\] {
   background-color: var(--app-bg-hover) !important;
 }
 
@@ -573,16 +573,16 @@ body {
   ) !important;
 }
 
-.kloel-app-theme-root .border-\[\rgb(25, 25, 28)\] {
+.kloel-app-theme-root .border-\[rgb\(25\,\ 25\,\ 28\)\] {
   border-color: var(--app-border-subtle) !important;
 }
 
-.kloel-app-theme-root .border-\[\rgb(34, 34, 38)\],
-.kloel-app-theme-root .border-\[\rgb(42, 42, 46)\] {
+.kloel-app-theme-root .border-\[rgb\(34\,\ 34\,\ 38\)\],
+.kloel-app-theme-root .border-\[rgb\(42\,\ 42\,\ 46\)\] {
   border-color: var(--app-border-primary) !important;
 }
 
-.kloel-app-theme-root .border-\[\rgb(58, 58, 62)\] {
+.kloel-app-theme-root .border-\[rgb\(58\,\ 58\,\ 62\)\] {
   border-color: var(--app-border-secondary) !important;
 }
 
@@ -592,73 +592,73 @@ body {
   border-color: color-mix(in srgb, var(--app-border-primary) 90%, transparent) !important;
 }
 
-.kloel-app-theme-root .text-\[\rgb(224, 221, 216)\],
-.kloel-app-theme-root .text-\[\rgb(234, 234, 240)\],
-.kloel-app-theme-root .text-\[\rgb(240, 240, 242)\] {
+.kloel-app-theme-root .text-\[rgb\(224\,\ 221\,\ 216\)\],
+.kloel-app-theme-root .text-\[rgb\(234\,\ 234\,\ 240\)\],
+.kloel-app-theme-root .text-\[rgb\(240\,\ 240\,\ 242\)\] {
   color: var(--app-text-primary) !important;
 }
 
-.kloel-app-theme-root .hover\:text-\[\rgb(224, 221, 216)\]:hover {
+.kloel-app-theme-root .hover\:text-\[rgb\(224\,\ 221\,\ 216\)\]:hover {
   color: var(--app-text-primary) !important;
 }
 
-.kloel-app-theme-root .text-\[\rgb(201, 205, 212)\],
-.kloel-app-theme-root .text-\[\rgb(217, 221, 227)\],
-.kloel-app-theme-root .text-\[\rgb(247, 247, 245)\],
-.kloel-app-theme-root .text-\[\rgb(240, 240, 240)\] {
+.kloel-app-theme-root .text-\[rgb\(201\,\ 205\,\ 212\)\],
+.kloel-app-theme-root .text-\[rgb\(217\,\ 221\,\ 227\)\],
+.kloel-app-theme-root .text-\[rgb\(247\,\ 247\,\ 245\)\],
+.kloel-app-theme-root .text-\[rgb\(240\,\ 240\,\ 240\)\] {
   color: var(--app-text-primary) !important;
 }
 
-.kloel-app-theme-root .text-\[\rgb(110, 110, 115)\],
-.kloel-app-theme-root .text-\[\rgb(107, 107, 112)\] {
+.kloel-app-theme-root .text-\[rgb\(110\,\ 110\,\ 115\)\],
+.kloel-app-theme-root .text-\[rgb\(107\,\ 107\,\ 112\)\] {
   color: var(--app-text-secondary) !important;
 }
 
-.kloel-app-theme-root .text-\[\rgb(141, 150, 162)\] {
+.kloel-app-theme-root .text-\[rgb\(141\,\ 150\,\ 162\)\] {
   color: var(--app-text-secondary) !important;
 }
 
-.kloel-app-theme-root .text-\[\rgb(58, 58, 63)\],
-.kloel-app-theme-root .text-\[\rgb(155, 155, 160)\] {
+.kloel-app-theme-root .text-\[rgb\(58\,\ 58\,\ 63\)\],
+.kloel-app-theme-root .text-\[rgb\(155\,\ 155\,\ 160\)\] {
   color: var(--app-text-tertiary) !important;
 }
 
-.kloel-app-theme-root .hover\:bg-\[\rgb(25, 25, 28)\]:hover,
-.kloel-app-theme-root .hover\:bg-\[\rgb(30, 30, 34)\]:hover,
-.kloel-app-theme-root .hover\:bg-\[\rgb(34, 34, 38)\]:hover,
+.kloel-app-theme-root .hover\:bg-\[rgb\(25\,\ 25\,\ 28\)\]:hover,
+.kloel-app-theme-root .hover\:bg-\[rgb\(30\,\ 30\,\ 34\)\]:hover,
+.kloel-app-theme-root .hover\:bg-\[rgb\(34\,\ 34\,\ 38\)\]:hover,
 .kloel-app-theme-root .hover\:bg-white\/5:hover,
 .kloel-app-theme-root .hover\:bg-white\/\[0\.02\]:hover {
   background-color: var(--app-bg-hover) !important;
 }
 
-.kloel-app-theme-root .placeholder\:text-\[\rgb(58, 58, 63)\]::placeholder {
+.kloel-app-theme-root .placeholder\:text-\[rgb\(58\,\ 58\,\ 63\)\]::placeholder {
   color: var(--app-text-placeholder) !important;
 }
 
-.kloel-app-theme-root .focus\:ring-\[\rgb(232, 93, 48)\] {
+.kloel-app-theme-root .focus\:ring-\[rgb\(232\,\ 93\,\ 48\)\] {
   --tw-ring-color: var(--app-accent) !important;
 }
 
-.kloel-app-theme-root .focus-visible\:ring-\[\rgb(232, 93, 48)\]\/15:focus-visible {
+.kloel-app-theme-root .focus-visible\:ring-\[rgb\(232\,\ 93\,\ 48\)\]\/15:focus-visible {
   --tw-ring-color: color-mix(in srgb, var(--app-accent) 15%, transparent) !important;
 }
 
-:root:not([data-kloel-app-theme='dark']) .kloel-app-theme-root .bg-\[\rgb(224, 221, 216)\] {
+:root:not([data-kloel-app-theme='dark']) .kloel-app-theme-root .bg-\[rgb\(224\,\ 221\,\ 216\)\] {
   background-color: var(--app-accent) !important;
 }
 
-:root:not([data-kloel-app-theme='dark']) .kloel-app-theme-root .hover\:bg-\[\rgb(224, 221, 216)\]:hover {
+:root:not([data-kloel-app-theme='dark']) .kloel-app-theme-root .hover\:bg-\[rgb\(224\,\ 221\,\ 216\)\]:hover {
   background-color: var(--app-accent-hover) !important;
 }
 
-:root:not([data-kloel-app-theme='dark']) .kloel-app-theme-root .bg-\[\rgb(224, 221, 216)\]\/8,
-:root:not([data-kloel-app-theme='dark']) .kloel-app-theme-root .bg-\[\rgb(224, 221, 216)\]\/10,
-:root:not([data-kloel-app-theme='dark']) .kloel-app-theme-root .bg-\[\rgb(224, 221, 216)\]\/15 {
+:root:not([data-kloel-app-theme='dark']) .kloel-app-theme-root .bg-\[rgb\(224\,\ 221\,\ 216\)\]\/8,
+:root:not([data-kloel-app-theme='dark']) .kloel-app-theme-root .bg-\[rgb\(224\,\ 221\,\ 216\)\]\/10,
+:root:not([data-kloel-app-theme='dark']) .kloel-app-theme-root .bg-\[rgb\(224\,\ 221\,\ 216\)\]\/15 {
   background-color: var(--app-accent-light) !important;
 }
 
-:root:not([data-kloel-app-theme='dark']) .kloel-app-theme-root .text-\[\rgb(10, 10, 12)\],
-:root:not([data-kloel-app-theme='dark']) .kloel-app-theme-root .text-\[\rgb(17, 17, 19)\] {
+:root:not([data-kloel-app-theme='dark']) .kloel-app-theme-root .text-\[rgb\(10\,\ 10\,\ 12\)\],
+:root:not([data-kloel-app-theme='dark']) .kloel-app-theme-root .text-\[rgb\(17\,\ 17\,\ 19\)\] {
   color: var(--app-text-on-accent) !important;
 }
 

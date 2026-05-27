@@ -6,6 +6,9 @@ describe('EmailMarketingWebhookController', () => {
   let service: {
     reconcileDeliveryFromWebhook: jest.Mock<Promise<void>, unknown[]>;
   };
+  let prisma: {
+    webhookEvent: { create: jest.Mock<Promise<unknown>, unknown[]> };
+  };
 
   const originalNodeEnv = process.env.NODE_ENV;
 
@@ -15,7 +18,12 @@ describe('EmailMarketingWebhookController', () => {
     service = {
       reconcileDeliveryFromWebhook: jest.fn().mockResolvedValue(undefined),
     };
-    controller = new EmailMarketingWebhookController(service as never);
+    const webhookEventCreate = jest.fn<Promise<unknown>, unknown[]>();
+    webhookEventCreate.mockResolvedValue({ id: 'webhook-event-1' });
+    prisma = {
+      webhookEvent: { create: webhookEventCreate },
+    };
+    controller = new EmailMarketingWebhookController(service as never, prisma as never);
   });
 
   afterEach(() => {

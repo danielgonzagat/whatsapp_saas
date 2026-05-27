@@ -350,10 +350,13 @@ describe('ConversationalOnboardingService', () => {
   });
 
   describe('upstream errors', () => {
-    it('throws when OpenAI call fails', async () => {
+    it('returns an honest retry message when OpenAI call fails', async () => {
       chatCompletionWithRetryMock.mockRejectedValueOnce(new Error('OpenAI rate limit'));
 
-      await expect(service.chat('ws-1', 'Teste')).rejects.toThrow('OpenAI rate limit');
+      await expect(service.chat('ws-1', 'Teste')).resolves.toBe(
+        'Tive uma instabilidade momentânea pra processar agora. Pode repetir a mensagem em alguns segundos? Estou aqui pra continuar o onboarding.',
+      );
+      expect(toolsService.saveOnboardingMessage).not.toHaveBeenCalled();
     });
   });
 });

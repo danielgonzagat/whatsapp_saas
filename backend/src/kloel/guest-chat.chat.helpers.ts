@@ -89,7 +89,6 @@ export async function buildGuestMessages(
         );
       } else {
         const contextMessages = [
-          { role: 'system' as const, content: GUEST_CHAT_SYSTEM_PROMPT },
           ...historyMessages,
           {
             role: 'user' as const,
@@ -106,7 +105,6 @@ export async function buildGuestMessages(
   }
 
   const contextMessages = [
-    { role: 'system' as const, content: GUEST_CHAT_SYSTEM_PROMPT },
     ...historyMessages,
     {
       role: 'user' as const,

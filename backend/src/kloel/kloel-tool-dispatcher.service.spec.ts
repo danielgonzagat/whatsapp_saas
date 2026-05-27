@@ -420,7 +420,7 @@ describe('KloelToolDispatcherService', () => {
 
     describe('self.gaps', () => {
       it('returns unwired capabilities', async () => {
-        selfGapsService.diffRegistryVsDispatcher = jest.fn().mockResolvedValue({
+        selfGapsService.diffRegistryVsDispatcher = jest.fn().mockReturnValue({
           unwired: [{ id: 'test.gap', title: 'Test Gap', tier: 1 }],
           wired: [],
         });
