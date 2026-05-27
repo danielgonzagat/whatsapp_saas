@@ -4,6 +4,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { LLMBudgetService, estimateChatCostCents } from './llm-budget.service';
 import { Response } from 'express';
+import { AbiBuilderService } from './abi/abi-builder.service';
+import { MindCapabilityExecutor } from './mind/coordination';
 
 jest.mock('./kloel-thread.service', () => ({
   KloelThreadService: class MockKloelThreadService {},
@@ -110,6 +112,8 @@ describe('KloelThinkerService', () => {
     | 'contextFormatter'
   >;
   let llmE2EGuard: Pick<KloelLLME2EGuard, 'isEnabled' | 'buildStream'>;
+  let abiBuilder: Pick<AbiBuilderService, 'build'>;
+  let capabilityExecutor: Pick<MindCapabilityExecutor, 'buildCognitiveSubstrate'>;
   const {
     thinkSyncImpl,
     regenerateThreadAssistantResponseImpl,
@@ -201,6 +205,16 @@ describe('KloelThinkerService', () => {
       buildStream: jest.fn(),
     };
 
+    abiBuilder = {
+      build: jest.fn().mockResolvedValue({ status: 'lineage_compromised', reason: 'test' }),
+    };
+    capabilityExecutor = {
+      buildCognitiveSubstrate: jest.fn().mockResolvedValue({
+        workingMemory: ['memória operacional'],
+        beliefs: [{ predicate: 'has_products', confidence: 0.8, n: 3 }],
+      }),
+    };
+
     jest.clearAllMocks();
 
     const module: TestingModule = await Test.createTestingModule({
@@ -214,6 +228,8 @@ describe('KloelThinkerService', () => {
         { provide: KloelComposerService, useValue: composerService },
         { provide: KloelReplyEngineService, useValue: replyEngine },
         { provide: KLOEL_LLM_E2E_GUARD, useValue: llmE2EGuard },
+        { provide: AbiBuilderService, useValue: abiBuilder },
+        { provide: MindCapabilityExecutor, useValue: capabilityExecutor },
       ],
     }).compile();
 
@@ -239,6 +255,88 @@ describe('KloelThinkerService', () => {
           jest.fn() as LocalToolExecutor,
         ),
       ).resolves.toBeUndefined();
+    });
+
+    it('builds conversational ABI by default and sends cognitive state to model messages', async () => {
+      const previousFlag = process.env['KLOEL_THINKER_USE_ABI'];
+      delete process.env['KLOEL_THINKER_USE_ABI'];
+      const cognitiveState = {
+        abiVersion: '1.1.0',
+        lineage: {
+          canonicalName: 'Kloel',
+          genesisEventId: 'genesis-1',
+          lineageStatus: 'intact',
+          operationalAge: { days: 1 },
+          capabilities: ['list_products'],
+        },
+        identityProjection: {
+          audience: 'public',
+          currentMaturity: 'developing',
+          truthMode: 'observed',
+        },
+        perception: { currentSnapshot: { channel: 'web' }, recentSalientEvents: [] },
+        beliefs: [],
+        predictions: { active: [], recentSurprises: [] },
+        attention: { candidates: [] },
+        memory: { workingMemory: [], episodicRefs: [], consolidatedRefs: [] },
+        capabilities: {
+          available: [
+            { capabilityId: 'list_products', maturity: 'developing', runtimeEvidencePct: 1 },
+          ],
+          restricted: [],
+        },
+        valence: {
+          recentTrace: [],
+          aggregatedMood: { positive: 0, negative: 0, neutral: 1, ambiguous: 0, windowHours: 24 },
+        },
+        pulseTruth: {
+          noOverclaimStatus: 'PASS',
+          capabilityHealthScore: 1,
+          gates: [],
+          certificationVerdict: {
+            verdict: 'DEVELOPING',
+            score: 1,
+            measuredAt: '2026-05-27T00:00:00.000Z',
+          },
+          overclaimRisk: 0,
+        },
+        currentInput: {
+          raw: 'Liste meus produtos ativos',
+          channel: 'web',
+          arrivalTimestamp: '2026-05-27T00:00:00.000Z',
+        },
+      };
+      abiBuilder.build = jest.fn().mockResolvedValue({ status: 'ok', abi: cognitiveState });
+
+      try {
+        await service.think(
+          { message: 'Liste meus produtos ativos', workspaceId: wsId },
+          {} as Response,
+          null,
+          undefined,
+          undefined,
+          jest.fn() as LocalToolExecutor,
+        );
+      } finally {
+        if (previousFlag === undefined) {
+          delete process.env['KLOEL_THINKER_USE_ABI'];
+        } else {
+          process.env['KLOEL_THINKER_USE_ABI'] = previousFlag;
+        }
+      }
+
+      expect(capabilityExecutor.buildCognitiveSubstrate).toHaveBeenCalledWith(wsId);
+      const buildMock = abiBuilder.build as jest.MockedFunction<AbiBuilderService['build']>;
+      const [abiBuildParams] = buildMock.mock.calls[0] as [
+        Parameters<AbiBuilderService['build']>[0],
+      ];
+      expect(abiBuildParams.cognitiveSubstrate).toEqual(
+        expect.objectContaining({ workingMemory: ['memória operacional'] }),
+      );
+      expect(abiBuildParams.capabilityIds).toEqual(expect.arrayContaining(['list_products']));
+      expect(replyEngine.buildChatModelMessages).toHaveBeenCalledWith(
+        expect.objectContaining({ prebuiltCognitiveState: cognitiveState }),
+      );
     });
 
     it('does not throw when request is aborted before start', async () => {

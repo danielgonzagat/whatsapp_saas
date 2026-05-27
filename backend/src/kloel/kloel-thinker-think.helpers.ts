@@ -206,6 +206,7 @@ export async function runToolPlanningBranch(
     temp: number,
   ) => Promise<{ fullResponse: string; estimatedTokens: number } | null>,
   ctx: ThinkBranchContext,
+  prebuiltCognitiveState?: Record<string, unknown>,
 ): Promise<void> {
   const { workspaceId, userId, message, safeWrite, replyEngine, planLimits } = ctx;
   if (!workspaceId) {
@@ -262,6 +263,7 @@ export async function runToolPlanningBranch(
         marketingPromptAddendum,
         summaryMessage,
         recentMessages: [],
+        ...(prebuiltCognitiveState !== undefined ? { prebuiltCognitiveState } : {}),
         userMessage: message,
         assistantMessage: assistantMsg,
         toolMessages,

@@ -172,6 +172,16 @@ describe('KloelReplyEngineService', () => {
       expect(service.shouldAttemptToolPlanningPass('Crie um produto novo no catálogo')).toBe(true);
     });
 
+    it('returns true for safe read tool requests that need live workspace context', () => {
+      expect(service.shouldAttemptToolPlanningPass('Liste meus produtos ativos')).toBe(true);
+      expect(service.shouldAttemptToolPlanningPass('Mostre o resumo do dashboard de vendas')).toBe(
+        true,
+      );
+      expect(
+        service.shouldAttemptToolPlanningPass('Busque evidências de validação do agente'),
+      ).toBe(true);
+    });
+
     it('returns false for ideas-only messages', () => {
       expect(service.shouldAttemptToolPlanningPass('Me dê ideias de produtos')).toBe(false);
     });
