@@ -13,7 +13,7 @@ import { buildQueueDedupId, buildQueueJobId } from '../../../queue/job-id.util';
 import { autopilotQueue, flowQueue } from '../../../queue/queue';
 import { WorkspaceService } from '../../../workspaces/workspace.service';
 import { DecisionOutcomeService } from '../../../kloel/decision-outcome.service';
-import { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
+import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { isPlaceholderContactName as isPlaceholderName } from './whatsapp-normalization.util';
 import { TAG_DEFAULT_COLORS } from '../../../common/kloel-colors';
 import {

@@ -117,7 +117,7 @@ export class PlanService {
       },
     });
 
-    this.eventEmitter.emit('plan.created', {
+    this.eventEmitter.emit('mind.plan.observed', {
       planId: plan.id,
       productId: dto.productId,
       workspaceId,
@@ -141,7 +141,7 @@ export class PlanService {
     await this.brainSpine?.recordCommercial({
       workspaceId,
       subject: `plan:${plan.id}`,
-      eventType: 'plan.created',
+      eventType: 'mind.plan.observed',
       occurredAt: new Date(),
       payload: {
         planId: plan.id,

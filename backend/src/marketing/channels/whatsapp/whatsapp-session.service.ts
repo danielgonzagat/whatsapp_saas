@@ -6,7 +6,7 @@ import { forEachSequential } from '../../../common/async-sequence';
 import {
   WhatsAppProviderRegistry,
   type SessionStatus,
-} from '../../../whatsapp/providers/provider-registry';
+} from './providers/provider-registry';
 import {
   WhatsAppApiProvider,
   type WahaRuntimeConfigDiagnostics,

@@ -9,11 +9,17 @@ import { MindEventSpine } from '../kloel/mind/coordination';
 type ProductCreateArgs = { data: Record<string, unknown> };
 type ProductUpdateArgs = { where: { id: string }; data: Record<string, unknown> };
 
-function objectContaining<T extends object>(sample: T): T { return expect.objectContaining(sample) as unknown as T; }
+function objectContaining<T extends object>(sample: T): T {
+  return expect.objectContaining(sample);
+}
 
-function anyArray(): unknown[] { return expect.arrayContaining([]) as unknown as unknown[]; }
+function anyArray(): unknown[] {
+  return expect.arrayContaining([]);
+}
 
-function anyObject(): object { return expect.objectContaining({}) as object; }
+function anyObject(): object {
+  return expect.objectContaining({}) as object;
+}
 
 describe('ProductService', () => {
   let service: ProductService;
@@ -101,7 +107,7 @@ describe('ProductService', () => {
       expect(result.product?.status).toBe('DRAFT');
       expect(result.product?.active).toBe(false);
       expect(eventEmitter.emit).toHaveBeenCalledWith(
-        'product.created',
+        'mind.product.observed',
         objectContaining({ productId: 'prod-1' }),
       );
       expect(audit.log).toHaveBeenCalledWith(objectContaining({ action: 'product.create' }));

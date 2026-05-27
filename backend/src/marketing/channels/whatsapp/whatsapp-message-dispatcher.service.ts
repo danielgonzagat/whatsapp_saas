@@ -10,7 +10,7 @@ import { flowQueue } from '../../../queue/queue';
 import { WorkspaceService } from '../../../workspaces/workspace.service';
 import { INBOX_SERVICE } from '../../../inbox/inbox.token';
 import type { IInboxService } from '../../../inbox/inbox.interface';
-import { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
+import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WorkerRuntimeService } from './worker-runtime.service';
 import { WhatsappSessionService } from './whatsapp-session.service';
 import type { ContactCustomFields } from '../../../contacts/contact-custom-fields.types';

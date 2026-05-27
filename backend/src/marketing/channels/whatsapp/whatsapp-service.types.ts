@@ -6,7 +6,7 @@ import type { IInboxService } from '../../../inbox/inbox.interface';
 import type { OpsAlertService } from '../../../observability/ops-alert.service';
 import type { PrismaService } from '../../../prisma/prisma.service';
 import type { WhatsAppCatchupService } from './whatsapp-catchup.service';
-import type { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
+import type { WhatsAppProviderRegistry } from './providers/provider-registry';
 import type { WorkerRuntimeService } from './worker-runtime.service';
 import type { WorkspaceService } from '../../../workspaces/workspace.service';
 import type { WhatsAppApiProvider } from './providers/whatsapp-api.provider';

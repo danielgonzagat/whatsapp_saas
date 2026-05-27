@@ -12,7 +12,7 @@ import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../../../logging/structured-logger';
 import { Counter, Gauge, register } from 'prom-client';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
+import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { asProviderSettings } from './provider-settings.types';
 import { toPrismaJsonValue } from '../../../common/prisma/prisma-json.util';
 import { WhatsAppWatchdogRecoveryService } from './whatsapp-watchdog-recovery.service';

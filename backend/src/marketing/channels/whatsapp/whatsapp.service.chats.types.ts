@@ -1,6 +1,6 @@
 import type { ConversationOperationalState } from './agent-conversation-state.util';
 import type { PrismaService } from '../../../prisma/prisma.service';
-import type { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
+import type { WhatsAppProviderRegistry } from './providers/provider-registry';
 
 export type ChatNormalized = {
   id: string;

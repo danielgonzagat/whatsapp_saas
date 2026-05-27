@@ -24,7 +24,10 @@ import { isPlaceholderContactName as isPlaceholderContactNameValue } from './wha
 import { WHATSAPP_MESSAGING } from './whatsapp.tokens';
 import type { IWhatsappMessaging } from './whatsapp.interfaces';
 import { WorkerRuntimeService } from './worker-runtime.service';
-import { asProviderSettings, type ProviderSettings } from '../../../whatsapp/provider-settings.types';
+import {
+  asProviderSettings,
+  type ProviderSettings,
+} from './provider-settings.types';
 import type { ContactCustomFields } from '../../../contacts/contact-custom-fields.types';
 import { executeInlineAutopilot } from './inbound-processor.inline-autopilot';
 import { triggerWhatsappMindPercept } from './inbound-mind-percept';

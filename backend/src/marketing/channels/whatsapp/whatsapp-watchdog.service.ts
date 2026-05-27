@@ -19,7 +19,7 @@ import { OpsAlertService } from '../../../observability/ops-alert.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { asProviderSettings, type ProviderSettings } from './provider-settings.types';
 import { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
-import { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
+import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WhatsAppWatchdogRecoveryService } from './whatsapp-watchdog-recovery.service';
 import {
   WhatsAppWatchdogSessionService,

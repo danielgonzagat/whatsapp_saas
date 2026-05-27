@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { OpsAlertService } from '../../../observability/ops-alert.service';
-import { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
+import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
 import { WhatsappSessionService } from './whatsapp-session.service';
 

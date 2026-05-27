@@ -13,7 +13,7 @@ import type { ChatHelperDeps } from './whatsapp.service.chats';
 import { WhatsappChatBacklogService } from './whatsapp.service.chats.backlog';
 import { WhatsappChatMessagesService } from './whatsapp.service.chats.messages';
 import { CiaRuntimeService } from '../../../kloel/mind/cia/cia-runtime.service';
-import { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
+import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import { isPlaceholderContactName as isPlaceholderName } from './whatsapp-normalization.util';
 import { resolveTimestampExt, toIsoTimestamp, normalizeNumber } from './whatsapp-service.helpers';

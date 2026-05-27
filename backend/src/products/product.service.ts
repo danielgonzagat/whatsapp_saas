@@ -85,7 +85,7 @@ export class ProductService {
 
   /**
    * Create a new product under the given workspace.
-   * Emits `product.created` and writes an audit entry.
+   * Emits `mind.product.observed` and writes an audit entry.
    */
   async create(
     workspaceId: string,
@@ -104,7 +104,7 @@ export class ProductService {
       },
     });
 
-    await this.eventEmitter.emit('product.created', {
+    await this.eventEmitter.emit('mind.product.observed', {
       productId: product.id,
       workspaceId,
       agentId: actor.id,
@@ -126,7 +126,7 @@ export class ProductService {
     await this.brainSpine?.recordCommercial({
       workspaceId,
       subject: `product:${product.id}`,
-      eventType: 'product.created',
+      eventType: 'mind.product.observed',
       occurredAt: new Date(),
       payload: {
         productId: product.id,

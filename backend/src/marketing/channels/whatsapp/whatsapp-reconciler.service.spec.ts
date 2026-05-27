@@ -8,7 +8,7 @@ import { NeuroCrmService } from '../../../crm/neuro-crm.service';
 import { OpsAlertService } from '../../../observability/ops-alert.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { WorkspaceService } from '../../../workspaces/workspace.service';
-import { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
+import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WhatsappReconcilerService } from './whatsapp-reconciler.service';
 
 jest.mock('../../../queue/queue', () => ({
