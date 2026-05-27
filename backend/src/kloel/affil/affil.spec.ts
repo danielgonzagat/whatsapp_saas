@@ -115,10 +115,10 @@ describe('OfferQualityScorerService', () => {
   it('classifies at boundary: score 65 is good', () => {
     const result = svc.score({
       commissionPct: 60,
-      conversionRateHistorical: 0.60,
-      supportQuality: 0.60,
+      conversionRateHistorical: 0.6,
+      supportQuality: 0.6,
       refundRate: 0.09,
-      audienceFitScore: 0.60,
+      audienceFitScore: 0.6,
     });
     expect(result.score).toBe(65);
     expect(result.classification).toBe('good');

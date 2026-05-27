@@ -51,7 +51,11 @@ describe('AudienceSaturationDetector (UTP-CREATOR-003) — full spec', () => {
   // ─── 3: saturated from mixed promotion + negative signals + falling ─
   it('flags saturated from promotion ratio, negative signals, and falling trend', () => {
     const events: CreatorEvent[] = [
-      ev({ payload: { messageBody: 'link na bio cupom desconto' }, eventName: 'commerce.lead.replied', valence: 'positive' }),
+      ev({
+        payload: { messageBody: 'link na bio cupom desconto' },
+        eventName: 'commerce.lead.replied',
+        valence: 'positive',
+      }),
       ev({ payload: { messageBody: 'link na bio' } }),
       ev({ payload: { messageBody: 'oferta' } }),
       ev({ eventName: 'commerce.lead.objection_raised' }),
@@ -134,7 +138,10 @@ describe('AudienceSaturationDetector (UTP-CREATOR-003) — full spec', () => {
       ev({ payload: { messageBody: 'conteúdo normal' } }),
       ev({ payload: { messageBody: 'conteúdo normal' } }),
     ];
-    const config: Partial<SaturationConfig> = { promotionRatioThreshold: 0.15, saturationThreshold: 0.4 };
+    const config: Partial<SaturationConfig> = {
+      promotionRatioThreshold: 0.15,
+      saturationThreshold: 0.4,
+    };
     const result = detectAudienceSaturation(events, config);
     expect(result.saturated).toBe(true);
   });

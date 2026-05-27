@@ -25,7 +25,10 @@ type EventEmitterMock = {
 type CheckoutServiceInternals = {
   logger: { log: (message: string) => void };
   publicPayloadBuilder: {
-    build: (p: Record<string, unknown>, opts?: Record<string, unknown>) => Promise<Record<string, unknown>>;
+    build: (
+      p: Record<string, unknown>,
+      opts?: Record<string, unknown>,
+    ) => Promise<Record<string, unknown>>;
   };
 };
 // ─── setup ────────────────────────────────────────────────────────────────
@@ -47,7 +50,9 @@ describe('CheckoutService — PI-008 checkout page configuration', () => {
       updateConfig: jest.fn(),
       syncCheckoutLinks: jest.fn(),
       getPlanLinkManager: jest.fn().mockReturnValue({
-        ensurePlanReferenceCode: jest.fn().mockImplementation(async (p: Record<string, unknown>) => p),
+        ensurePlanReferenceCode: jest
+          .fn()
+          .mockImplementation(async (p: Record<string, unknown>) => p),
       }),
     };
     eventEmitter = {
@@ -55,14 +60,20 @@ describe('CheckoutService — PI-008 checkout page configuration', () => {
       checkoutUpdated: jest.fn().mockResolvedValue(undefined),
     };
     service = new CheckoutService(
-      prisma as never, productSvc as never, {} as never, {} as never, eventEmitter as never,
+      prisma as never,
+      productSvc as never,
+      {} as never,
+      {} as never,
+      eventEmitter as never,
     );
     const internal = service as unknown as CheckoutServiceInternals;
     jest.spyOn(internal.logger, 'log').mockImplementation(() => undefined);
     internal.publicPayloadBuilder.build = jest.fn().mockResolvedValue({ id: 'payload' });
   });
 
-  afterEach(() => { jest.restoreAllMocks(); });
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
   // ─── create ─────────────────────────────────────────────────────────────
 
   describe('create', () => {
@@ -75,7 +86,9 @@ describe('CheckoutService — PI-008 checkout page configuration', () => {
 
       expect(productSvc.createCheckout).toHaveBeenCalledWith('prod_1', dto, 'ws_1');
       expect(eventEmitter.checkoutCreated).toHaveBeenCalledWith({
-        workspaceId: 'ws_1', checkoutId: 'chk_new', productId: 'prod_1',
+        workspaceId: 'ws_1',
+        checkoutId: 'chk_new',
+        productId: 'prod_1',
       });
       expect(result).toEqual(created);
     });
@@ -91,8 +104,15 @@ describe('CheckoutService — PI-008 checkout page configuration', () => {
 
   describe('update', () => {
     it('verifies ownership, updates, and emits checkout.updated', async () => {
-      prisma.checkoutProductPlan.findFirst.mockResolvedValueOnce({ id: 'chk_1', productId: 'prod_1' });
-      productSvc.updatePlan.mockResolvedValue({ id: 'chk_1', name: 'Atualizado', kind: 'CHECKOUT' });
+      prisma.checkoutProductPlan.findFirst.mockResolvedValueOnce({
+        id: 'chk_1',
+        productId: 'prod_1',
+      });
+      productSvc.updatePlan.mockResolvedValue({
+        id: 'chk_1',
+        name: 'Atualizado',
+        kind: 'CHECKOUT',
+      });
 
       const result = await service.update('ws_1', 'chk_1', { name: 'Atualizado' });
 
@@ -101,7 +121,10 @@ describe('CheckoutService — PI-008 checkout page configuration', () => {
         select: { id: true, productId: true },
       });
       expect(productSvc.updatePlan).toHaveBeenCalledWith('chk_1', { name: 'Atualizado' });
-      expect(eventEmitter.checkoutUpdated).toHaveBeenCalledWith({ workspaceId: 'ws_1', checkoutId: 'chk_1' });
+      expect(eventEmitter.checkoutUpdated).toHaveBeenCalledWith({
+        workspaceId: 'ws_1',
+        checkoutId: 'chk_1',
+      });
       expect(result).toEqual(expect.objectContaining({ name: 'Atualizado' }));
     });
 
@@ -116,13 +139,16 @@ describe('CheckoutService — PI-008 checkout page configuration', () => {
   describe('findByProduct', () => {
     it('returns checkouts for product', async () => {
       prisma.product.findFirst.mockResolvedValueOnce({ id: 'prod_1' });
-      const checkouts = [{ id: 'chk_1', name: 'A', kind: 'CHECKOUT', checkoutConfig: null, checkoutLinks: [] }];
+      const checkouts = [
+        { id: 'chk_1', name: 'A', kind: 'CHECKOUT', checkoutConfig: null, checkoutLinks: [] },
+      ];
       prisma.checkoutProductPlan.findMany.mockResolvedValueOnce(checkouts);
 
       const result = await service.findByProduct('ws_1', 'prod_1');
 
       expect(prisma.product.findFirst).toHaveBeenCalledWith({
-        where: { id: 'prod_1', workspaceId: 'ws_1' }, select: { id: true },
+        where: { id: 'prod_1', workspaceId: 'ws_1' },
+        select: { id: true },
       });
       expect(prisma.checkoutProductPlan.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: { productId: 'prod_1', kind: 'CHECKOUT' } }),
@@ -132,14 +158,19 @@ describe('CheckoutService — PI-008 checkout page configuration', () => {
 
     it('throws NotFoundException when product not in workspace', async () => {
       prisma.product.findFirst.mockResolvedValueOnce(null);
-      await expect(service.findByProduct('ws_1', 'prod_missing')).rejects.toThrow(NotFoundException);
+      await expect(service.findByProduct('ws_1', 'prod_missing')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
   // ─── linkPlans ──────────────────────────────────────────────────────────
 
   describe('linkPlans', () => {
     it('verifies ownership and syncs links', async () => {
-      prisma.checkoutProductPlan.findFirst.mockResolvedValueOnce({ id: 'chk_1', productId: 'prod_1' });
+      prisma.checkoutProductPlan.findFirst.mockResolvedValueOnce({
+        id: 'chk_1',
+        productId: 'prod_1',
+      });
       productSvc.syncCheckoutLinks.mockResolvedValue(undefined);
 
       await service.linkPlans('ws_1', 'chk_1', ['plan_1', 'plan_2']);
@@ -153,14 +184,19 @@ describe('CheckoutService — PI-008 checkout page configuration', () => {
 
     it('rejects when checkout not found', async () => {
       prisma.checkoutProductPlan.findFirst.mockResolvedValueOnce(null);
-      await expect(service.linkPlans('ws_1', 'chk_missing', ['plan_1'])).rejects.toThrow(NotFoundException);
+      await expect(service.linkPlans('ws_1', 'chk_missing', ['plan_1'])).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
   // ─── setTheme ───────────────────────────────────────────────────────────
 
   describe('setTheme', () => {
     it('verifies ownership and updates config', async () => {
-      prisma.checkoutProductPlan.findFirst.mockResolvedValueOnce({ id: 'chk_1', productId: 'prod_1' });
+      prisma.checkoutProductPlan.findFirst.mockResolvedValueOnce({
+        id: 'chk_1',
+        productId: 'prod_1',
+      });
       productSvc.updateConfig.mockResolvedValue({ id: 'cfg_1', theme: 'NOIR' });
 
       const result = await service.setTheme('ws_1', 'chk_1', { theme: 'NOIR' });
@@ -172,7 +208,10 @@ describe('CheckoutService — PI-008 checkout page configuration', () => {
 
   describe('setCoupons', () => {
     it('verifies ownership and updates config', async () => {
-      prisma.checkoutProductPlan.findFirst.mockResolvedValueOnce({ id: 'chk_1', productId: 'prod_1' });
+      prisma.checkoutProductPlan.findFirst.mockResolvedValueOnce({
+        id: 'chk_1',
+        productId: 'prod_1',
+      });
       productSvc.updateConfig.mockResolvedValue({ id: 'cfg_1', enableCoupon: false });
 
       const result = await service.setCoupons('ws_1', 'chk_1', { enableCoupon: false });
@@ -184,7 +223,10 @@ describe('CheckoutService — PI-008 checkout page configuration', () => {
 
   describe('setTimer', () => {
     it('verifies ownership and updates config', async () => {
-      prisma.checkoutProductPlan.findFirst.mockResolvedValueOnce({ id: 'chk_1', productId: 'prod_1' });
+      prisma.checkoutProductPlan.findFirst.mockResolvedValueOnce({
+        id: 'chk_1',
+        productId: 'prod_1',
+      });
       productSvc.updateConfig.mockResolvedValue({ id: 'cfg_1', enableTimer: true });
 
       const dto = { enableTimer: true, timerType: 'COUNTDOWN' as const, timerMinutes: 15 };
@@ -197,7 +239,10 @@ describe('CheckoutService — PI-008 checkout page configuration', () => {
 
   describe('setSocialProof', () => {
     it('verifies ownership and updates config', async () => {
-      prisma.checkoutProductPlan.findFirst.mockResolvedValueOnce({ id: 'chk_1', productId: 'prod_1' });
+      prisma.checkoutProductPlan.findFirst.mockResolvedValueOnce({
+        id: 'chk_1',
+        productId: 'prod_1',
+      });
       productSvc.updateConfig.mockResolvedValue({ id: 'cfg_1', socialProofEnabled: true });
 
       const result = await service.setSocialProof('ws_1', 'chk_1', { socialProofEnabled: true });
@@ -209,7 +254,10 @@ describe('CheckoutService — PI-008 checkout page configuration', () => {
 
   describe('setExitIntent', () => {
     it('verifies ownership and updates config with enabled=true', async () => {
-      prisma.checkoutProductPlan.findFirst.mockResolvedValueOnce({ id: 'chk_1', productId: 'prod_1' });
+      prisma.checkoutProductPlan.findFirst.mockResolvedValueOnce({
+        id: 'chk_1',
+        productId: 'prod_1',
+      });
       productSvc.updateConfig.mockResolvedValue({ id: 'cfg_1', enableExitIntent: true });
 
       const result = await service.setExitIntent('ws_1', 'chk_1', true);
@@ -218,7 +266,10 @@ describe('CheckoutService — PI-008 checkout page configuration', () => {
     });
 
     it('updates with enabled=false', async () => {
-      prisma.checkoutProductPlan.findFirst.mockResolvedValueOnce({ id: 'chk_1', productId: 'prod_1' });
+      prisma.checkoutProductPlan.findFirst.mockResolvedValueOnce({
+        id: 'chk_1',
+        productId: 'prod_1',
+      });
       productSvc.updateConfig.mockResolvedValue({ id: 'cfg_1', enableExitIntent: false });
 
       const result = await service.setExitIntent('ws_1', 'chk_1', false);

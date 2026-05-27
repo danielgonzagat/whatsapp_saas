@@ -40,9 +40,7 @@ describe('PipelineController', () => {
         headers: {},
       } as never;
 
-      await expect(controller.getPipeline(req, 'ws-other')).rejects.toThrow(
-        ForbiddenException,
-      );
+      await expect(controller.getPipeline(req, 'ws-other')).rejects.toThrow(ForbiddenException);
       expect(getPipeline).not.toHaveBeenCalled();
     });
   });
@@ -113,18 +111,16 @@ describe('PipelineController', () => {
     });
 
     it('propagates NotFoundException from service', async () => {
-      updateDealStage.mockRejectedValueOnce(
-        new NotFoundException('Deal nao encontrado'),
-      );
+      updateDealStage.mockRejectedValueOnce(new NotFoundException('Deal nao encontrado'));
 
       const req = {
         user: { sub: 'u-1', workspaceId: 'ws-1' },
         headers: {},
       } as never;
 
-      await expect(
-        controller.updateStage(req, 'bad-id', { stageId: 'stage-2' }),
-      ).rejects.toThrow(NotFoundException);
+      await expect(controller.updateStage(req, 'bad-id', { stageId: 'stage-2' })).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

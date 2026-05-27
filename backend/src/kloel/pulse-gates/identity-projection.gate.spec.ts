@@ -43,9 +43,7 @@ function validPayload(overrides?: Record<string, unknown>): Record<string, unkno
     attention: { candidates: [] },
     memory: { workingMemory: [], episodicRefs: [], consolidatedRefs: [] },
     capabilities: {
-      available: [
-        { capabilityId: 'lineage', maturity: 'developing', runtimeEvidencePct: 5 },
-      ],
+      available: [{ capabilityId: 'lineage', maturity: 'developing', runtimeEvidencePct: 5 }],
       restricted: [],
     },
     valence: {
@@ -89,7 +87,11 @@ describe('identity-projection gate — POSITIVE (PASS)', () => {
 
   it('PASS: technical audience with etymology present (allowed)', () => {
     const payload = validPayload({
-      identityProjection: { audience: 'technical', currentMaturity: 'developing', truthMode: 'observed' },
+      identityProjection: {
+        audience: 'technical',
+        currentMaturity: 'developing',
+        truthMode: 'observed',
+      },
       lineage: {
         canonicalName: 'Kloel',
         genesisEventId: 'ev-genesis-001',
@@ -105,7 +107,11 @@ describe('identity-projection gate — POSITIVE (PASS)', () => {
 
   it('PASS: internal audience', () => {
     const payload = validPayload({
-      identityProjection: { audience: 'internal', currentMaturity: 'developing', truthMode: 'observed' },
+      identityProjection: {
+        audience: 'internal',
+        currentMaturity: 'developing',
+        truthMode: 'observed',
+      },
     });
     const v = gate().check(payload);
     expect(v.status).toBe('PASS');
@@ -113,7 +119,11 @@ describe('identity-projection gate — POSITIVE (PASS)', () => {
 
   it('PASS: origin audience with etymology and origin present (allowed)', () => {
     const payload = validPayload({
-      identityProjection: { audience: 'origin', currentMaturity: 'developing', truthMode: 'inferred' },
+      identityProjection: {
+        audience: 'origin',
+        currentMaturity: 'developing',
+        truthMode: 'inferred',
+      },
       lineage: {
         canonicalName: 'Kloel',
         genesisEventId: 'ev-genesis-001',
@@ -130,7 +140,11 @@ describe('identity-projection gate — POSITIVE (PASS)', () => {
 
   it('PASS: consistent truthMode between lineage and identityProjection', () => {
     const payload = validPayload({
-      identityProjection: { audience: 'public', currentMaturity: 'developing', truthMode: 'inferred' },
+      identityProjection: {
+        audience: 'public',
+        currentMaturity: 'developing',
+        truthMode: 'inferred',
+      },
       lineage: {
         canonicalName: 'Kloel',
         genesisEventId: 'ev-genesis-001',
@@ -176,7 +190,11 @@ describe('identity-projection gate — POSITIVE (PASS)', () => {
 
   it('PASS: public audience, lineage lacks etymology/origin keys entirely', () => {
     const payload = validPayload({
-      identityProjection: { audience: 'public', currentMaturity: 'developing', truthMode: 'projected' },
+      identityProjection: {
+        audience: 'public',
+        currentMaturity: 'developing',
+        truthMode: 'projected',
+      },
       lineage: {
         canonicalName: 'Kloel',
         genesisEventId: 'ev-genesis-001',

@@ -9,19 +9,13 @@ describe('ProductCategoriesService', () => {
   beforeEach(async () => {
     prisma = { product: { findMany: jest.fn() } };
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        ProductCategoriesService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [ProductCategoriesService, { provide: PrismaService, useValue: prisma }],
     }).compile();
     service = module.get(ProductCategoriesService);
   });
 
   it('lists distinct categories for the workspace', async () => {
-    prisma.product.findMany.mockResolvedValue([
-      { category: 'books' },
-      { category: 'courses' },
-    ]);
+    prisma.product.findMany.mockResolvedValue([{ category: 'books' }, { category: 'courses' }]);
     const result = await service.listByWorkspace('ws-1');
     expect(result).toEqual([{ category: 'books' }, { category: 'courses' }]);
   });

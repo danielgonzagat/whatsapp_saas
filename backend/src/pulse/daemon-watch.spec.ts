@@ -111,7 +111,9 @@ process.stdout.write(
   });
 
   if (result.status !== 0) {
-    throw new Error(`daemon watch fixture failed\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`);
+    throw new Error(
+      `daemon watch fixture failed\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`,
+    );
   }
 
   return JSON.parse(result.stdout) as WatchClassificationFixtureResult;

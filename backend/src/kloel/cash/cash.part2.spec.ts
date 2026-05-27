@@ -1,4 +1,13 @@
-import type { CashEntry, CashPosition, PayablesProjection, ReceivablesProjection, RiskDetection, RiskInput, RunwayCalculation, VolatilityTracking } from './types';
+import type {
+  CashEntry,
+  CashPosition,
+  PayablesProjection,
+  ReceivablesProjection,
+  RiskDetection,
+  RiskInput,
+  RunwayCalculation,
+  VolatilityTracking,
+} from './types';
 
 import { CashPositionTracker } from './cash-position.tracker';
 import { ReceivablesProjector } from './receivables.projector';
@@ -9,7 +18,13 @@ import { VolatilityTracker } from './volatility.tracker';
 import { ProtectiveActionSuggester } from './protective-action.suggester';
 import { UnsafeOperationBlocker } from './unsafe-operation.blocker';
 
-import { sumAmounts, standardDeviation, entriesByCategory, entriesForWorkspace, entriesInWindow } from './types';
+import {
+  sumAmounts,
+  standardDeviation,
+  entriesByCategory,
+  entriesForWorkspace,
+  entriesInWindow,
+} from './types';
 
 const NOW = Date.parse('2026-05-14T12:00:00.000Z');
 const WKS = 'wks_cash_test';

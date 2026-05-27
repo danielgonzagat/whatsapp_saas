@@ -71,18 +71,16 @@ describe('ChatController', () => {
       const req = {} as AuthenticatedRequest;
       getMessagesMock.mockRejectedValue(new Error('Database offline'));
 
-      await expect(
-        controller.getMessages('conv-1', {}, req),
-      ).rejects.toThrow('Database offline');
+      await expect(controller.getMessages('conv-1', {}, req)).rejects.toThrow('Database offline');
     });
 
     it('propagates errors from chatService.addMessage', async () => {
       const req = { user: { sub: 'user-1' } } as AuthenticatedRequest;
       addMessageMock.mockRejectedValue(new Error('Thread not found'));
 
-      await expect(
-        controller.addMessage('conv-1', { content: 'test' }, req),
-      ).rejects.toThrow('Thread not found');
+      await expect(controller.addMessage('conv-1', { content: 'test' }, req)).rejects.toThrow(
+        'Thread not found',
+      );
     });
   });
 

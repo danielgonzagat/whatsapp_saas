@@ -16,9 +16,7 @@ import type {
 const NOW = Date.parse('2026-05-14T12:00:00.000Z');
 const WKS = 'wks_clarity_test';
 
-function makeItem(
-  over?: Partial<RankingInput>,
-): RankingInput {
+function makeItem(over?: Partial<RankingInput>): RankingInput {
   return {
     itemId: over?.itemId ?? 'it_test',
     workspaceId: over?.workspaceId ?? WKS,
@@ -39,9 +37,7 @@ function makeItemFull(
   return { itemId, workspaceId: WKS, label, urgency, impact, reversibility };
 }
 
-function makeAnxietyMode(
-  over?: Partial<AnxietyMode>,
-): AnxietyMode {
+function makeAnxietyMode(over?: Partial<AnxietyMode>): AnxietyMode {
   return {
     active: over?.active ?? false,
     triggeredAt: over?.triggeredAt ?? null,
@@ -50,9 +46,7 @@ function makeAnxietyMode(
   };
 }
 
-function makeFeedback(
-  over?: Partial<ClarityFeedback>,
-): ClarityFeedback {
+function makeFeedback(over?: Partial<ClarityFeedback>): ClarityFeedback {
   return {
     feedbackId: over?.feedbackId ?? 'fb_test',
     itemId: over?.itemId ?? 'it_test',
@@ -70,8 +64,28 @@ function makeFeedback(
 describe('CLARITY-006 — buildShortNarrative', () => {
   it('builds narrative from top items', () => {
     const rankings: AttentionRanking[] = [
-      { itemId: 'a', workspaceId: WKS, label: 'Priority A', urgency: 1, impact: 1, reversibility: 0, score: 1, tier: 'AGORA', rankedAt: new Date(NOW).toISOString() },
-      { itemId: 'b', workspaceId: WKS, label: 'Priority B', urgency: 0.8, impact: 0.8, reversibility: 0, score: 0.8, tier: 'AGORA', rankedAt: new Date(NOW).toISOString() },
+      {
+        itemId: 'a',
+        workspaceId: WKS,
+        label: 'Priority A',
+        urgency: 1,
+        impact: 1,
+        reversibility: 0,
+        score: 1,
+        tier: 'AGORA',
+        rankedAt: new Date(NOW).toISOString(),
+      },
+      {
+        itemId: 'b',
+        workspaceId: WKS,
+        label: 'Priority B',
+        urgency: 0.8,
+        impact: 0.8,
+        reversibility: 0,
+        score: 0.8,
+        tier: 'AGORA',
+        rankedAt: new Date(NOW).toISOString(),
+      },
     ];
     const mode = makeAnxietyMode();
     const narrative = buildShortNarrative({
@@ -87,7 +101,17 @@ describe('CLARITY-006 — buildShortNarrative', () => {
 
   it('shows anxiety prefix when anxiety mode is active', () => {
     const rankings: AttentionRanking[] = [
-      { itemId: 'x', workspaceId: WKS, label: 'Crisis', urgency: 1, impact: 1, reversibility: 0, score: 1, tier: 'AGORA', rankedAt: new Date(NOW).toISOString() },
+      {
+        itemId: 'x',
+        workspaceId: WKS,
+        label: 'Crisis',
+        urgency: 1,
+        impact: 1,
+        reversibility: 0,
+        score: 1,
+        tier: 'AGORA',
+        rankedAt: new Date(NOW).toISOString(),
+      },
     ];
     const mode = makeAnxietyMode({ active: true });
     const narrative = buildShortNarrative({
@@ -103,8 +127,28 @@ describe('CLARITY-006 — buildShortNarrative', () => {
 
   it('filters non-AGORA items when anxiety is active', () => {
     const rankings: AttentionRanking[] = [
-      { itemId: 'x', workspaceId: WKS, label: 'Urgent', urgency: 1, impact: 1, reversibility: 0, score: 1, tier: 'AGORA', rankedAt: new Date(NOW).toISOString() },
-      { itemId: 'y', workspaceId: WKS, label: 'Later', urgency: 0.2, impact: 0.2, reversibility: 1, score: 0.1, tier: 'ARQUIVO', rankedAt: new Date(NOW).toISOString() },
+      {
+        itemId: 'x',
+        workspaceId: WKS,
+        label: 'Urgent',
+        urgency: 1,
+        impact: 1,
+        reversibility: 0,
+        score: 1,
+        tier: 'AGORA',
+        rankedAt: new Date(NOW).toISOString(),
+      },
+      {
+        itemId: 'y',
+        workspaceId: WKS,
+        label: 'Later',
+        urgency: 0.2,
+        impact: 0.2,
+        reversibility: 1,
+        score: 0.1,
+        tier: 'ARQUIVO',
+        rankedAt: new Date(NOW).toISOString(),
+      },
     ];
     const mode = makeAnxietyMode({ active: true });
     const narrative = buildShortNarrative({
