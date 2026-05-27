@@ -175,3 +175,15 @@ export interface ObservabilityCoverageState {
     severity: 'critical' | 'high' | 'medium';
   }>;
 }
+
+export type ObservabilityLogFieldToken =
+  | 'workspaceId'
+  | 'userId'
+  | 'externalId'
+  | 'operation'
+  | 'status'
+  | 'durationMs'
+  | 'errorCode'
+  | 'requestId'
+  | 'traceId'
+  | 'spanId';

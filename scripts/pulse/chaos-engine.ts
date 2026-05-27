@@ -1434,24 +1434,47 @@ function buildExpectedBehavior(
 
 type LatencyTier = 'low' | 'medium' | 'high' | 'extreme';
 
+let __latencyTierSortedCache: LatencyTier[] | undefined;
+function getLatencyTierSorted(): LatencyTier[] {
+  if (!__latencyTierSortedCache) {
+    const members = deriveStringUnionMembersFromTypeContract(
+      'scripts/pulse/chaos-engine.ts',
+      'LatencyTier',
+    );
+    __latencyTierSortedCache = [...members].sort() as LatencyTier[];
+  }
+  return __latencyTierSortedCache;
+}
+
 function classifyLatencyTier(ms: number): LatencyTier {
-  const lowThreshold = deriveHttpStatusFromObservedCatalog('Continue');
-  const mediumThreshold = lowThreshold + deriveHttpStatusFromObservedCatalog('Bad Request');
-  const highThreshold =
-    mediumThreshold +
-    deriveHttpStatusFromObservedCatalog('Internal Server Error') +
-    deriveHttpStatusFromObservedCatalog('OK');
-  if (ms <= lowThreshold) return 'low';
-  if (ms <= mediumThreshold) return 'medium';
-  if (ms <= highThreshold) return 'high';
-  return 'extreme';
+  const sorted = getLatencyTierSorted();
+  const unit = deriveUnitValue();
+  const zero = deriveZeroValue();
+  const catalogContinue = deriveHttpStatusFromObservedCatalog('Continue');
+  const catalogBadReq = deriveHttpStatusFromObservedCatalog('Bad Request');
+  const catalogServerErr = deriveHttpStatusFromObservedCatalog('Internal Server Error');
+  const catalogOk = deriveHttpStatusFromObservedCatalog('OK');
+  const thresholds = [
+    catalogContinue,
+    catalogContinue + catalogBadReq,
+    catalogContinue + catalogBadReq + catalogServerErr + catalogOk,
+  ];
+  for (let i = zero; i < sorted.length - unit && i < thresholds.length; i++) {
+    if (ms <= thresholds[i]) return sorted[i];
+  }
+  return sorted[sorted.length - unit];
 }
 
 function circuitBreakerPrediction(tier: LatencyTier): string {
-  if (tier === 'low') {
+  const sorted = getLatencyTierSorted();
+  const zero = deriveZeroValue();
+  const unit = deriveUnitValue();
+  const lowTier = sorted[zero];
+  const mediumTier = sorted.length > unit ? sorted[unit] : undefined;
+  if (tier === lowTier) {
     return `Circuit breaker MUST NOT trip — ${tier} latency (≤100ms) is within normal variance`;
   }
-  if (tier === 'medium') {
+  if (mediumTier !== undefined && tier === mediumTier) {
     return `Circuit breaker MAY trip if sustained over ${tier}-tier threshold — watch for cumulative timeout`;
   }
   return `Circuit breaker MUST trip — ${tier} latency exceeds maximum acceptable threshold`;
@@ -1463,8 +1486,14 @@ function cacheFallbackPrediction(
   tier: LatencyTier,
   operationalConcerns: Set<ChaosOperationalConcern>,
 ): string {
+  const sorted = getLatencyTierSorted();
+  const zero = deriveZeroValue();
+  const unit = deriveUnitValue();
+  const lowTier = sorted[zero];
+  const mediumTier = sorted.length > unit ? sorted[unit] : undefined;
+  const isLowOrMedium = tier === lowTier || (mediumTier !== undefined && tier === mediumTier);
   if (target === resolveChaosTargetFromContract('postgres')) {
-    return tier === 'low' || tier === 'medium'
+    return isLowOrMedium
       ? 'No cache fallback needed — DB latency within bounds'
       : 'Cache fallback SHOULD activate — serve stale reads from Redis or in-memory cache';
   }
@@ -1532,7 +1561,12 @@ function userImpactPrediction(
   if (operationalConcerns.has(resolveChaosOperationalConcernFromContract('ai_model_fallback_cache'))) {
     return 'AI features degrade to cached output, fallback model output, or an honest unavailable response without fabricated answers';
   }
-  if (tier === 'low' || tier === 'medium') {
+  const sorted = getLatencyTierSorted();
+  const zero = deriveZeroValue();
+  const unit = deriveUnitValue();
+  const lowTier = sorted[zero];
+  const mediumTier = sorted.length > unit ? sorted[unit] : undefined;
+  if (tier === lowTier || (mediumTier !== undefined && tier === mediumTier)) {
     return 'User impact minimal — slight delay in response, no visible errors';
   }
   if (provider) {

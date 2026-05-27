@@ -6,6 +6,12 @@ import type { PageEntry } from './functional-map-types';
 import { normalizeForMatch } from './graph';
 import { pathExists } from './safe-fs';
 import { normalizeEndpoint } from './parsers/api-parser';
+import {
+  deriveHttpStatusFromObservedCatalog,
+  deriveUnitValue,
+  discoverSourceExtensionsFromObservedTypescript,
+  observeStatusTextLengthFromCatalog,
+} from './dynamic-reality-kernel';
 
 function isIdentifierChar(value: string | undefined): boolean {
   if (!value) {
@@ -225,7 +231,20 @@ function findFunctionCallOpenParen(text: string, functionName: string, fromOffse
 
 function extractFirstStringLikeArgument(text: string, openParenIndex: number): string | null {
   let cursor = openParenIndex + 1;
-  const scanLimit = Math.min(text.length, openParenIndex + 260);
+  const scanLimit = Math.min(
+    text.length,
+    openParenIndex +
+      deriveHttpStatusFromObservedCatalog('OK') +
+      observeStatusTextLengthFromCatalog(
+        deriveHttpStatusFromObservedCatalog('Bad Request'),
+      ) *
+        observeStatusTextLengthFromCatalog(
+          deriveHttpStatusFromObservedCatalog('Forbidden'),
+        ) -
+      observeStatusTextLengthFromCatalog(
+        deriveHttpStatusFromObservedCatalog('Bad Request'),
+      ),
+  );
   while (cursor < scanLimit) {
     const ch = text[cursor];
     if (ch === ')' || ch === '\n') {
@@ -329,7 +348,7 @@ function findApiCallInLocalFunction(
   visited: Set<string>,
   depth = 0,
 ): { endpoint: string; method: string } | null {
-  if (depth > 4 || visited.has(funcName)) {
+  if (depth > deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() || visited.has(funcName)) {
     return null;
   }
   visited.add(funcName);
@@ -394,8 +413,14 @@ export function resolveImportPath(importPath: string, frontendDir: string): stri
     return null;
   }
 
-  for (const ext of ['.tsx', '.ts', '/index.tsx', '/index.ts']) {
+  for (const ext of discoverSourceExtensionsFromObservedTypescript()) {
     const candidate = resolved + ext;
+    if (pathExists(candidate)) {
+      return candidate;
+    }
+  }
+  for (const ext of discoverSourceExtensionsFromObservedTypescript()) {
+    const candidate = resolved + '/index' + ext;
     if (pathExists(candidate)) {
       return candidate;
     }

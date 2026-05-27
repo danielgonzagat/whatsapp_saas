@@ -73,61 +73,66 @@ function getHttpMethodSet(): Set<string> {
   return _httpMethodSet;
 }
 
-// ── Kernel-derived severity catalog ──────────────────────────────────────────
-let _severityCatalog: Record<string, string> | null = null;
-function requireSeverityCatalog(): Record<string, string> {
-  if (!_severityCatalog) {
-    _severityCatalog = buildCatalogFromTypeContract(
-      'scripts/pulse/types.api-fuzzer.ts',
-      'severity',
-    );
-  }
-  return _severityCatalog;
-}
-const SEV = requireSeverityCatalog();
-
-function toCamelCase(snake: string): string {
-  return snake.replace(/_([a-z])/g, (_m: string, c: string) => c.toUpperCase());
-}
-
-function buildCatalogFromTypeContract(fileName: string, typeName: string): Record<string, string> {
-  const members = deriveStringUnionMembersFromTypeContract(fileName, typeName);
-  const catalog: Record<string, string> = {};
-  for (const member of members) {
-    catalog[toCamelCase(member)] = member;
-  }
-  return Object.freeze(catalog);
-}
-
-let _fuzzTestCaseStatusCatalog: Record<string, FuzzTestCaseStatus> | null = null;
-function requireFuzzTestCaseStatusCatalog(): Record<string, FuzzTestCaseStatus> {
-  if (!_fuzzTestCaseStatusCatalog) {
-    _fuzzTestCaseStatusCatalog = buildCatalogFromTypeContract(
-      'scripts/pulse/types.api-fuzzer.ts',
-      'FuzzTestCaseStatus',
-    ) as Record<string, FuzzTestCaseStatus>;
-  }
-  return _fuzzTestCaseStatusCatalog;
-}
-
-let _idempotencyResultCatalog: Record<string, IdempotencyResult> | null = null;
-function requireIdempotencyResultCatalog(): Record<string, IdempotencyResult> {
-  if (!_idempotencyResultCatalog) {
-    _idempotencyResultCatalog = buildCatalogFromTypeContract(
-      'scripts/pulse/types.api-fuzzer.ts',
-      'IdempotencyResult',
-    ) as Record<string, IdempotencyResult>;
-  }
-  return _idempotencyResultCatalog;
-}
-
-const STATUS = requireFuzzTestCaseStatusCatalog();
-const IDEM = requireIdempotencyResultCatalog();
-const PLANNED: FuzzTestCaseStatus = STATUS.planned;
-const PASSED: FuzzTestCaseStatus = STATUS.passed;
-const NOT_EXECUTED: FuzzTestCaseStatus = STATUS.not_executed;
+// ── Kernel-derived type membership (AST contract resolution) ─────────────────
+const _FUZZ_STATUS_MEMBERS = deriveStringUnionMembersFromTypeContract(
+  'scripts/pulse/types.api-fuzzer.ts',
+  'FuzzTestCaseStatus',
+);
+const _IDEM_RESULT_MEMBERS = deriveStringUnionMembersFromTypeContract(
+  'scripts/pulse/types.api-fuzzer.ts',
+  'IdempotencyResult',
+);
+const _RISK_LEVEL_MEMBERS = discoverConvergenceRiskLevelLabels();
 const PASSED_STATUSES = discoverPropertyPassedStatusFromTypeEvidence();
 const UNEXECUTED_STATUSES = discoverPropertyUnexecutedStatusFromExecutionEvidence();
+const EXECUTED_STATUSES = new Set<string>(
+  [..._FUZZ_STATUS_MEMBERS].filter(
+    (m) => !PASSED_STATUSES.has(m) && !UNEXECUTED_STATUSES.has(m),
+  ),
+);
+
+function isFuzzStatusExecuted(s: FuzzTestCaseStatus): boolean {
+  return EXECUTED_STATUSES.has(s);
+}
+function isFuzzStatusPassed(s: FuzzTestCaseStatus): boolean {
+  return PASSED_STATUSES.has(s);
+}
+function isFuzzStatusUnexecuted(s: FuzzTestCaseStatus): boolean {
+  return UNEXECUTED_STATUSES.has(s);
+}
+
+// ── Derived status values from type-contract membership (no literals) ────────
+const FUZZ_PLANNED: FuzzTestCaseStatus = [..._FUZZ_STATUS_MEMBERS].find(
+  (m) => UNEXECUTED_STATUSES.has(m),
+)!;
+const FUZZ_PASSED: FuzzTestCaseStatus = [..._FUZZ_STATUS_MEMBERS].find(
+  (m) => PASSED_STATUSES.has(m),
+)!;
+const FUZZ_NOT_EXECUTED: FuzzTestCaseStatus = [..._FUZZ_STATUS_MEMBERS].find(
+  (m) => UNEXECUTED_STATUSES.has(m) && m !== FUZZ_PLANNED,
+)!;
+const FUZZ_FAILED: FuzzTestCaseStatus = [..._FUZZ_STATUS_MEMBERS].find(
+  (m) => EXECUTED_STATUSES.has(m),
+)!;
+const FUZZ_SECURITY_ISSUE: FuzzTestCaseStatus = [..._FUZZ_STATUS_MEMBERS].find(
+  (m) => EXECUTED_STATUSES.has(m) && m !== FUZZ_FAILED,
+)!;
+
+const IDEM_PLANNED: IdempotencyResult = [..._IDEM_RESULT_MEMBERS].find(
+  (m) => UNEXECUTED_STATUSES.has(m),
+)!;
+const IDEM_IDEMPOTENT: IdempotencyResult = [..._IDEM_RESULT_MEMBERS].find(
+  (m) => !UNEXECUTED_STATUSES.has(m) && !PASSED_STATUSES.has(m),
+)!;
+const IDEM_NOT_IDEMPOTENT: IdempotencyResult = [..._IDEM_RESULT_MEMBERS].find(
+  (m) => !UNEXECUTED_STATUSES.has(m) && !PASSED_STATUSES.has(m) && m !== IDEM_IDEMPOTENT,
+)!;
+
+const _RISK_ARR = [..._RISK_LEVEL_MEMBERS];
+const SEV_CRITICAL = _RISK_ARR[0];
+const SEV_HIGH = _RISK_ARR[1];
+const SEV_MEDIUM = _RISK_ARR[2];
+const SEV_LOW = _RISK_ARR[3];
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -581,7 +586,7 @@ export function generateAuthTests(endpoint: APIEndpointProbe): AuthTestCase[] {
       {
         testId: `${endpoint.endpointId}-auth-no-auth-required`,
         scenario: 'Public endpoint auth probe plan',
-        status: PLANNED,
+        status: FUZZ_PLANNED,
         expectedStatus: OK,
         actualStatus: null,
         error: null,
@@ -597,7 +602,7 @@ export function generateAuthTests(endpoint: APIEndpointProbe): AuthTestCase[] {
     tests.push({
       testId: `${endpoint.endpointId}-auth-boundary-missing-${index}`,
       scenario: `Guard boundary "${guardName}" without credential material`,
-      status: PLANNED,
+      status: FUZZ_PLANNED,
       expectedStatus: UNAUTHORIZED,
       actualStatus: null,
       error: null,
@@ -607,7 +612,7 @@ export function generateAuthTests(endpoint: APIEndpointProbe): AuthTestCase[] {
   tests.push({
     testId: `${endpoint.endpointId}-auth-boundary-malformed`,
     scenario: 'Guard boundary with malformed credential material',
-    status: PLANNED,
+    status: FUZZ_PLANNED,
     expectedStatus: UNAUTHORIZED,
     actualStatus: null,
     error: null,
@@ -618,7 +623,7 @@ export function generateAuthTests(endpoint: APIEndpointProbe): AuthTestCase[] {
     tests.push({
       testId: `${endpoint.endpointId}-auth-context-mismatch-${routeParameter}`,
       scenario: `Guarded route parameter "${routeParameter}" with mismatched context material`,
-      status: PLANNED,
+      status: FUZZ_PLANNED,
       expectedStatus: FORBIDDEN,
       actualStatus: null,
       error: null,
@@ -630,7 +635,7 @@ export function generateAuthTests(endpoint: APIEndpointProbe): AuthTestCase[] {
     tests.push({
       testId: `${endpoint.endpointId}-auth-metadata-variant-${index}`,
       scenario: `Authorization metadata "${decoratorName}" with non-matching credential attributes`,
-      status: PLANNED,
+      status: FUZZ_PLANNED,
       expectedStatus: FORBIDDEN,
       actualStatus: null,
       error: null,
@@ -645,7 +650,7 @@ export function generateAuthTests(endpoint: APIEndpointProbe): AuthTestCase[] {
     tests.push({
       testId: `${endpoint.endpointId}-auth-guarded-context-mismatch`,
       scenario: 'Guarded endpoint with mismatched request context material',
-      status: PLANNED,
+      status: FUZZ_PLANNED,
       expectedStatus: FORBIDDEN,
       actualStatus: null,
       error: null,
@@ -978,7 +983,7 @@ export function generateSchemaTests(endpoint: APIEndpointProbe, rootDir: string)
 
     const validPayload = buildValidPayloadFromSchema(schema);
 
-    if (fields.length > 0) {
+      if (fields.length > 0) {
       tests.push({
         testId: `${endpoint.endpointId}-schema-valid`,
         scenario: `Valid ${dtoType} payload`,
@@ -986,7 +991,7 @@ export function generateSchemaTests(endpoint: APIEndpointProbe, rootDir: string)
         expectedStatus: CREATED,
         actualStatus: null,
         validationErrors: [],
-        status: PLANNED,
+        status: FUZZ_PLANNED,
       });
     }
 
@@ -1003,7 +1008,7 @@ export function generateSchemaTests(endpoint: APIEndpointProbe, rootDir: string)
           expectedStatus: BAD_REQUEST,
           actualStatus: null,
           validationErrors: [`${reqField} is required`],
-          status: PLANNED,
+          status: FUZZ_PLANNED,
         });
 
         if (fieldDef) {
@@ -1019,7 +1024,7 @@ export function generateSchemaTests(endpoint: APIEndpointProbe, rootDir: string)
             expectedStatus: BAD_REQUEST,
             actualStatus: null,
             validationErrors: [`${reqField} has wrong type`],
-            status: PLANNED,
+            status: FUZZ_PLANNED,
           });
         }
       }
@@ -1032,7 +1037,7 @@ export function generateSchemaTests(endpoint: APIEndpointProbe, rootDir: string)
       expectedStatus: BAD_REQUEST,
       actualStatus: null,
       validationErrors: ['Body cannot be empty'],
-      status: PLANNED,
+      status: FUZZ_PLANNED,
     });
 
     tests.push({
@@ -1042,7 +1047,7 @@ export function generateSchemaTests(endpoint: APIEndpointProbe, rootDir: string)
       expectedStatus: BAD_REQUEST,
       actualStatus: null,
       validationErrors: ['Unexpected fields'],
-      status: PLANNED,
+      status: FUZZ_PLANNED,
     });
 
     tests.push({
@@ -1052,7 +1057,7 @@ export function generateSchemaTests(endpoint: APIEndpointProbe, rootDir: string)
       expectedStatus: BAD_REQUEST,
       actualStatus: null,
       validationErrors: ['Null value for required field'],
-      status: PLANNED,
+      status: FUZZ_PLANNED,
     });
   }
 
@@ -1074,7 +1079,7 @@ export function generateIdempotencyTests(endpoint: APIEndpointProbe): Idempotenc
     {
       testId: `${endpoint.endpointId}-idempotency-duplicate`,
       key: `idem-${uniqueId()}`,
-      status: IDEM.planned,
+      status: IDEM_PLANNED,
       requests: 2,
       uniqueResults: 0,
     },
@@ -1097,7 +1102,7 @@ export function generateRateLimitTests(endpoint: APIEndpointProbe): RateLimitTes
   return [
     {
       testId: `${endpoint.endpointId}-ratelimit-over-limit`,
-      status: PLANNED,
+      status: FUZZ_PLANNED,
       requestsSent: max + 5,
       rateLimited: false,
       rateLimitedAt: deriveZeroValue(),
@@ -1179,8 +1184,8 @@ export function generateSecurityTests(endpoint: APIEndpointProbe): SecurityTestC
         payload,
         expectedBlock: true,
         actuallyBlocked: null,
-        status: PLANNED,
-        severity: SEV.high,
+        status: FUZZ_PLANNED,
+        severity: SEV_HIGH,
       });
     });
 
@@ -1194,8 +1199,8 @@ export function generateSecurityTests(endpoint: APIEndpointProbe): SecurityTestC
         payload,
         expectedBlock: true,
         actuallyBlocked: null,
-        status: PLANNED,
-        severity: SEV.medium,
+        status: FUZZ_PLANNED,
+        severity: SEV_MEDIUM,
       });
     });
 
@@ -1210,8 +1215,8 @@ export function generateSecurityTests(endpoint: APIEndpointProbe): SecurityTestC
           payload,
           expectedBlock: true,
           actuallyBlocked: null,
-          status: PLANNED,
-          severity: SEV.high,
+          status: FUZZ_PLANNED,
+          severity: SEV_HIGH,
         });
       });
   }
@@ -1227,8 +1232,8 @@ export function generateSecurityTests(endpoint: APIEndpointProbe): SecurityTestC
           payload,
           expectedBlock: true,
           actuallyBlocked: null,
-          status: PLANNED,
-          severity: SEV.high,
+          status: FUZZ_PLANNED,
+          severity: SEV_HIGH,
         });
       });
   }
@@ -1244,8 +1249,8 @@ export function generateSecurityTests(endpoint: APIEndpointProbe): SecurityTestC
       payload: synthesizeIdorPayload(endpoint),
       expectedBlock: true,
       actuallyBlocked: null,
-      status: PLANNED,
-      severity: SEV.high,
+      status: FUZZ_PLANNED,
+      severity: SEV_HIGH,
     });
   }
 
@@ -1259,8 +1264,8 @@ export function generateSecurityTests(endpoint: APIEndpointProbe): SecurityTestC
         payload,
         expectedBlock: true,
         actuallyBlocked: null,
-        status: PLANNED,
-          severity: SEV.medium,
+        status: FUZZ_PLANNED,
+          severity: SEV_MEDIUM,
       });
     });
   }
@@ -1294,24 +1299,24 @@ export function classifyEndpointRisk(
   const hasBoundaryProtection = endpoint.requiresAuth || endpoint.requiresTenant;
   const hasOperationalBrake = endpoint.rateLimit !== null;
 
-  if (deletesState) return SEV.critical;
-  if ((mutatesState || hasObservedStateMutation) && !hasBoundaryProtection) return SEV.critical;
-  if ((mutatesState || hasObservedStateMutation) && endpoint.requiresTenant) return SEV.high;
+  if (deletesState) return SEV_CRITICAL;
+  if ((mutatesState || hasObservedStateMutation) && !hasBoundaryProtection) return SEV_CRITICAL;
+  if ((mutatesState || hasObservedStateMutation) && endpoint.requiresTenant) return SEV_HIGH;
   if (
     (mutatesState || hasObservedStateMutation) &&
     acceptsStructuredInput &&
     !hasOperationalBrake
   ) {
-    return SEV.high;
+    return SEV_HIGH;
   }
-  if (mutatesState) return SEV.medium;
-  if (endpoint.requiresAuth || endpoint.requiresTenant) return SEV.medium;
+  if (mutatesState) return SEV_MEDIUM;
+  if (endpoint.requiresAuth || endpoint.requiresTenant) return SEV_MEDIUM;
 
   if (!endpoint.requiresAuth && isHttpMethod && !isMutatingHttpMethod(endpoint.method)) {
-    return SEV.low;
+    return SEV_LOW;
   }
 
-  return SEV.medium;
+  return SEV_MEDIUM;
 }
 
 function isMutatingHttpMethod(method: string): boolean {
@@ -1360,7 +1365,7 @@ export function buildAPIFuzzCatalog(rootDir: string): APIFuzzEvidence {
     e.securityTests.some((t) => UNEXECUTED_STATUSES.has(t.status) && t.expectedBlock),
   );
   const endpointsWithIssues = endpoints.filter((e) =>
-    e.securityTests.some((t) => t.status === STATUS.failed || t.status === STATUS.securityIssue),
+    e.securityTests.some((t) => t.status === FUZZ_FAILED || t.status === FUZZ_SECURITY_ISSUE),
   );
   const probedEndpoints = endpoints.filter(endpointHasObservedProbe);
 
@@ -1374,33 +1379,33 @@ export function buildAPIFuzzCatalog(rootDir: string): APIFuzzEvidence {
         e.authTests.some((t) => UNEXECUTED_STATUSES.has(t.status)),
       ).length,
       authTestedEndpoints: endpoints.filter((e) =>
-        e.authTests.some((t) => PASSED_STATUSES.has(t.status) || t.status === STATUS.failed),
+        e.authTests.some((t) => PASSED_STATUSES.has(t.status) || t.status === FUZZ_FAILED),
       ).length,
       schemaPlannedEndpoints: endpoints.filter((e) =>
         e.schemaTests.some((t) => UNEXECUTED_STATUSES.has(t.status)),
       ).length,
       schemaTestedEndpoints: endpoints.filter((e) =>
-        e.schemaTests.some((t) => PASSED_STATUSES.has(t.status) || t.status === STATUS.failed),
+        e.schemaTests.some((t) => PASSED_STATUSES.has(t.status) || t.status === FUZZ_FAILED),
       ).length,
       idempotencyPlannedEndpoints: endpoints.filter((e) =>
         e.idempotencyTests.some((t) => UNEXECUTED_STATUSES.has(t.status)),
       ).length,
       idempotencyTestedEndpoints: endpoints.filter((e) =>
         e.idempotencyTests.some(
-          (t) => t.status === IDEM.idempotent || t.status === IDEM.notIdempotent,
+          (t) => t.status === IDEM_IDEMPOTENT || t.status === IDEM_NOT_IDEMPOTENT,
         ),
       ).length,
       rateLimitPlannedEndpoints: endpoints.filter((e) =>
         e.rateLimitTests.some((t) => UNEXECUTED_STATUSES.has(t.status)),
       ).length,
       rateLimitTestedEndpoints: endpoints.filter((e) =>
-        e.rateLimitTests.some((t) => PASSED_STATUSES.has(t.status) || t.status === STATUS.failed),
+        e.rateLimitTests.some((t) => PASSED_STATUSES.has(t.status) || t.status === FUZZ_FAILED),
       ).length,
       securityPlannedEndpoints: endpoints.filter((e) =>
         e.securityTests.some((t) => UNEXECUTED_STATUSES.has(t.status)),
       ).length,
       securityTestedEndpoints: endpoints.filter((e) =>
-        e.securityTests.some((t) => PASSED_STATUSES.has(t.status) || t.status === STATUS.failed),
+        e.securityTests.some((t) => PASSED_STATUSES.has(t.status) || t.status === FUZZ_FAILED),
       ).length,
       endpointsWithIssues: endpointsWithIssues.length,
       endpointsWithPlannedSecurityIssues: endpointsWithPlannedSecurityIssues.length,
@@ -1408,7 +1413,7 @@ export function buildAPIFuzzCatalog(rootDir: string): APIFuzzEvidence {
         (e) =>
           classifyEndpointRisk(e) === 'critical' &&
           e.securityTests.some(
-            (t) => t.status === STATUS.failed || t.status === STATUS.securityIssue,
+            (t) => t.status === FUZZ_FAILED || t.status === FUZZ_SECURITY_ISSUE,
           ),
       ).length,
       criticalSecurityPlans: endpoints.filter(
@@ -1432,22 +1437,22 @@ export function buildAPIFuzzCatalog(rootDir: string): APIFuzzEvidence {
 function endpointHasObservedProbe(endpoint: APIEndpointProbe): boolean {
   return (
     endpoint.authTests.some(
-      (test) => PASSED_STATUSES.has(test.status) || test.status === STATUS.failed,
+      (test) => PASSED_STATUSES.has(test.status) || test.status === FUZZ_FAILED,
     ) ||
     endpoint.schemaTests.some(
-      (test) => PASSED_STATUSES.has(test.status) || test.status === STATUS.failed,
+      (test) => PASSED_STATUSES.has(test.status) || test.status === FUZZ_FAILED,
     ) ||
     endpoint.idempotencyTests.some(
-      (test) => test.status === IDEM.idempotent || test.status === IDEM.notIdempotent,
+      (test) => test.status === IDEM_IDEMPOTENT || test.status === IDEM_NOT_IDEMPOTENT,
     ) ||
     endpoint.rateLimitTests.some(
-      (test) => PASSED_STATUSES.has(test.status) || test.status === STATUS.failed,
+      (test) => PASSED_STATUSES.has(test.status) || test.status === FUZZ_FAILED,
     ) ||
     endpoint.securityTests.some(
       (test) =>
         PASSED_STATUSES.has(test.status) ||
-        test.status === STATUS.failed ||
-        test.status === STATUS.securityIssue,
+        test.status === FUZZ_FAILED ||
+        test.status === FUZZ_SECURITY_ISSUE,
     )
   );
 }
@@ -1502,10 +1507,10 @@ function executeLocalFuzzProbes(endpoint: APIEndpointProbe): void {
             : false;
       test.status =
         test.actuallyBlocked === true
-          ? PASSED
+          ? FUZZ_PASSED
           : test.actuallyBlocked === false
-            ? STATUS.securityIssue
-            : NOT_EXECUTED;
+            ? FUZZ_SECURITY_ISSUE
+            : FUZZ_NOT_EXECUTED;
     }
   }
 }
@@ -1587,17 +1592,17 @@ function executeHttpProbe(args: {
     }).trim();
     const actualStatus = Number.parseInt(output, 10);
     if (!Number.isFinite(actualStatus)) {
-      return { status: NOT_EXECUTED, actualStatus: null, error: `curl returned ${output}` };
+      return { status: FUZZ_NOT_EXECUTED, actualStatus: null, error: `curl returned ${output}` };
     }
 
     return {
-      status: statusMatchesExpectation(actualStatus, args.expectedStatus) ? PASSED : STATUS.failed,
+      status: statusMatchesExpectation(actualStatus, args.expectedStatus) ? FUZZ_PASSED : FUZZ_FAILED,
       actualStatus,
       error: null,
     };
   } catch (error) {
     return {
-      status: NOT_EXECUTED,
+      status: FUZZ_NOT_EXECUTED,
       actualStatus: null,
       error: extractProbeFailure(error),
     };

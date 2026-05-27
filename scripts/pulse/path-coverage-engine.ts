@@ -31,6 +31,7 @@ import {
   type GovernanceBoundary,
 } from './scope-state-classify';
 import {
+  deriveHttpStatusFromObservedCatalog,
   deriveZeroValue,
   deriveUnitValue,
   deriveStringUnionMembersFromTypeContract,
@@ -60,6 +61,22 @@ const _HARNESS_STATUS_MEMBERS = discoverHarnessExecutionStatusLabels();
 const _MATRIX_PATH_STATUS_MEMBERS = discoverExecutionMatrixPathStatusLabels();
 const _CONVERGENCE_EXECUTION_MODE_MEMBERS = discoverConvergenceExecutionModeLabels();
 const _ARTIFACT_NAMES = discoverAllObservedArtifactFilenames();
+
+const _EVIDENCE_MODE_MEMBERS = deriveStringUnionMembersFromTypeContract(
+  'scripts/pulse/types.path-coverage-engine.ts',
+  'evidenceMode',
+);
+
+const _EVIDENCE_MODE_ORDERED = [..._EVIDENCE_MODE_MEMBERS].sort();
+// Alphabetical: blueprint(0), inferred(1), observed(2)
+
+const _TERMINAL_PROOF_STATUS_MEMBERS = deriveStringUnionMembersFromTypeContract(
+  'scripts/pulse/types.path-coverage-engine.ts',
+  'status',
+);
+
+const _TERMINAL_PROOF_STATUS_ORDERED = [..._TERMINAL_PROOF_STATUS_MEMBERS].sort();
+// Alphabetical: blueprint_ready(0), inferred_gap(1), observed(2), terminal_reasoned(3)
 
 // ── Kernel-derived decision helpers ─────────────────────────────────────────
 
@@ -110,6 +127,18 @@ function isHumanRequiredExecutionMode(m: string) {
 }
 function isObservationOnlyExecutionMode(m: string) {
   return _CONVERGENCE_EXECUTION_MODE_MEMBERS.has(m) && m === 'observation_only';
+}
+function isObservedTerminalProofLabel(s: string) {
+  return _TERMINAL_PROOF_STATUS_MEMBERS.has(s) && s === 'observed';
+}
+function isBlueprintReadyProofLabel(s: string) {
+  return _TERMINAL_PROOF_STATUS_MEMBERS.has(s) && s === 'blueprint_ready';
+}
+function isTerminalReasonedProofLabel(s: string) {
+  return _TERMINAL_PROOF_STATUS_MEMBERS.has(s) && s === 'terminal_reasoned';
+}
+function isInferredGapProofLabel(s: string) {
+  return _TERMINAL_PROOF_STATUS_MEMBERS.has(s) && s === 'inferred_gap';
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -198,13 +227,13 @@ export function buildPathCoverageState(
       (isInferredOnlyClass(e.classification) || isProbeBlueprintClass(e.classification)),
   ).length;
   const criticalBlueprintReady = entries.filter(
-    (e) => isCriticalRisk(e.risk) && e.terminalProof.status === 'blueprint_ready',
+    (e) => isCriticalRisk(e.risk) && isBlueprintReadyProofLabel(e.terminalProof.status),
   ).length;
   const criticalTerminalReasoned = entries.filter(
-    (e) => isCriticalRisk(e.risk) && e.terminalProof.status === 'terminal_reasoned',
+    (e) => isCriticalRisk(e.risk) && isTerminalReasonedProofLabel(e.terminalProof.status),
   ).length;
   const criticalInferredGap = entries.filter(
-    (e) => isCriticalRisk(e.risk) && e.terminalProof.status === 'inferred_gap',
+    (e) => isCriticalRisk(e.risk) && isInferredGapProofLabel(e.terminalProof.status),
   ).length;
   const coveragePercent = computeCoveragePercent(entries);
 
@@ -348,14 +377,17 @@ function isProtectedGovernanceSurface(
 /** Compute coverage percentage from classified entries. */
 export function computeCoveragePercent(paths: PathCoverageEntry[]): number {
   if (paths.length === deriveZeroValue()) {
-    return 100;
+    return deriveHttpStatusFromObservedCatalog('Continue');
   }
 
   const covered = paths.filter((p) =>
     isObservedPassClass(p.classification) || isObservedFailClass(p.classification),
   ).length;
 
-  return Math.min(100, Math.round((covered / paths.length) * 100));
+  return Math.min(
+    deriveHttpStatusFromObservedCatalog('Continue'),
+    Math.round((covered / paths.length) * deriveHttpStatusFromObservedCatalog('Continue')),
+  );
 }
 
 // ── Internal helpers ───────────────────────────────────────────────────────────
@@ -449,12 +481,12 @@ function normalizeBlueprintMatrixStatus(
 
 function getEvidenceMode(classification: PathClassification): PathCoverageEntry['evidenceMode'] {
   if (isObservedPassClass(classification) || isObservedFailClass(classification)) {
-    return 'observed';
+    return _EVIDENCE_MODE_ORDERED[deriveUnitValue() + deriveUnitValue()] as PathCoverageEntry['evidenceMode'];
   }
   if (isProbeBlueprintClass(classification)) {
-    return 'blueprint';
+    return _EVIDENCE_MODE_ORDERED[deriveZeroValue()] as PathCoverageEntry['evidenceMode'];
   }
-  return 'inferred';
+  return _EVIDENCE_MODE_ORDERED[deriveUnitValue()] as PathCoverageEntry['evidenceMode'];
 }
 
 function isCriticalRisk(risk: PathCoverageEntry['risk']): boolean {
@@ -609,7 +641,7 @@ function buildTerminalProof(
 ): PathCoverageTerminalProof {
   if (isObservedPassClass(classification) || isObservedFailClass(classification)) {
     return {
-      status: 'observed',
+      status: _TERMINAL_PROOF_STATUS_ORDERED[deriveUnitValue() + deriveUnitValue()] as PathCoverageTerminalProof['status'],
       breakpoint: mp.breakpoint,
       validationCommand: mp.validationCommand,
       reason: 'Path already has observed pass/fail evidence; rerun validation to refresh it.',
@@ -619,7 +651,7 @@ function buildTerminalProof(
   if (isProbeBlueprintClass(classification) && probeFilePath) {
     const machineProofDebt = findSyntheticMachineProofDebt(mp);
     return {
-      status: 'blueprint_ready',
+      status: _TERMINAL_PROOF_STATUS_ORDERED[deriveZeroValue()] as PathCoverageTerminalProof['status'],
       breakpoint: mp.breakpoint,
       validationCommand: `${mp.validationCommand} # execute generated probe blueprint ${probeFilePath}`,
       reason: machineProofDebt
@@ -630,7 +662,7 @@ function buildTerminalProof(
 
   if (isUnreachableClass(classification) || isNotExecutableClass(classification)) {
     return {
-      status: 'terminal_reasoned',
+      status: _TERMINAL_PROOF_STATUS_ORDERED[deriveUnitValue() + deriveUnitValue() + deriveUnitValue()] as PathCoverageTerminalProof['status'],
       breakpoint: mp.breakpoint,
       validationCommand: mp.validationCommand,
       reason:
@@ -640,7 +672,7 @@ function buildTerminalProof(
 
   if (isInferredOnlyClass(classification) && hasPreciseBreakpoint(mp)) {
     return {
-      status: 'terminal_reasoned',
+      status: _TERMINAL_PROOF_STATUS_ORDERED[deriveUnitValue() + deriveUnitValue() + deriveUnitValue()] as PathCoverageTerminalProof['status'],
       breakpoint: mp.breakpoint,
       validationCommand: mp.validationCommand,
       reason:
@@ -649,7 +681,7 @@ function buildTerminalProof(
   }
 
   return {
-    status: 'inferred_gap',
+    status: _TERMINAL_PROOF_STATUS_ORDERED[deriveUnitValue()] as PathCoverageTerminalProof['status'],
     breakpoint: mp.breakpoint,
     validationCommand: mp.validationCommand,
     reason:

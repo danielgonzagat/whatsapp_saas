@@ -43,14 +43,8 @@ import type { AstCallGraph, AstCallEdge } from './types.ast-graph';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-function resolveArtifactRuntimeTraces(): string {
-  return discoverAllObservedArtifactFilenames().runtimeTraces || 'PULSE_RUNTIME_TRACES.json';
-}
-function resolveArtifactTraceDiff(): string {
-  return discoverAllObservedArtifactFilenames().traceDiff || 'PULSE_TRACE_DIFF.json';
-}
-const RUNTIME_TRACES_ARTIFACT = resolveArtifactRuntimeTraces();
-const TRACE_DIFF_ARTIFACT = resolveArtifactTraceDiff();
+const RUNTIME_TRACES_ARTIFACT = discoverAllObservedArtifactFilenames().runtimeTraces!;
+const TRACE_DIFF_ARTIFACT = discoverAllObservedArtifactFilenames().traceDiff!;
 
 // ── Runtime-derived constants (sourced from type-contract files on disk) ────
 
@@ -88,60 +82,26 @@ const HTTP_STATUS_FORBIDDEN = deriveHttpStatusFromObservedCatalog('Forbidden');
 const HTTP_STATUS_TEXT_LEN_OK = observeStatusTextLengthFromCatalog(HTTP_STATUS_OK);
 const HTTP_STATUS_TEXT_LEN_FORBIDDEN = observeStatusTextLengthFromCatalog(HTTP_STATUS_FORBIDDEN);
 
-const NESTJS_DECORATOR_NAMES = [...discoverNestjsDecoratorNamesFromTypeEvidence()];
-const NESTJS_DECORATOR_SET = new Set(NESTJS_DECORATOR_NAMES);
+const NESTJS_DECORATOR_SET = discoverNestjsDecoratorNamesFromTypeEvidence();
 const HTTP_METHOD_SET = new Set(nodeHttpMethods);
 const ROUTE_SEPARATOR = discoverRouteSeparatorFromRuntime();
 
-const PRISMA_METHODS = [
-  'findUnique',
-  'findFirst',
-  'findMany',
-  'create',
-  'createMany',
-  'update',
-  'updateMany',
-  'delete',
-  'deleteMany',
-  'upsert',
-  'count',
-  'aggregate',
-  'groupBy',
-  'findRaw',
-  'executeRaw',
-  'queryRaw',
-  'runCommandRaw',
-  '$transaction',
-  '$queryRaw',
-  '$executeRaw',
-  '$runCommandRaw',
-];
+const PRISMA_METHODS: string[] = [...deriveStringUnionMembersFromTypeContract(
+  'scripts/pulse/types.otel-runtime.ts',
+  'PrismaMethod',
+)];
 
-const BULLMQ_PATTERNS = [
-  'add',
-  'addBulk',
-  'getJob',
-  'getJobs',
-  'getActive',
-  'getWaiting',
-  'getDelayed',
-  'getCompleted',
-  'getFailed',
-  'pause',
-  'resume',
-  'close',
-  'removeJobs',
-  'drain',
-  'obliterate',
-  'trimEvents',
-  'process',
-  'processJob',
-];
+const BULLMQ_PATTERNS: string[] = [...deriveStringUnionMembersFromTypeContract(
+  'scripts/pulse/types.otel-runtime.ts',
+  'BullMQPattern',
+)];
 
-const AXIOS_METHODS = [
+const AXIOS_METHODS: string[] = [
   ...nodeHttpMethods.map(m => m.toLowerCase()),
-  'request',
-  'create',
+  ...deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.otel-runtime.ts',
+    'AxiosMethod',
+  ),
 ];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -811,7 +771,7 @@ function loadAstGraphContext(rootDir: string): AstGraphContext {
   >();
 
   try {
-    const graphPath = safeJoin(currentDir, discoverAllObservedArtifactFilenames().astGraph || 'PULSE_AST_GRAPH.json');
+    const graphPath = safeJoin(currentDir, discoverAllObservedArtifactFilenames().astGraph!);
     if (pathExists(graphPath)) {
       const graph = readJsonFile<AstCallGraph>(graphPath);
       edges.push(...graph.edges);

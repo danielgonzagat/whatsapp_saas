@@ -136,8 +136,8 @@ function buildRunOptions(
 
   return {
     rootDir,
-    dryRun: Boolean(flags.dryRun),
-    continuous: Boolean(flags.continuous),
+    dryRun: !!flags.dryRun,
+    continuous: !!flags.continuous,
     maxIterations:
       flags.maxIterations ||
       coercePositiveInt(process.env.PULSE_AUTONOMY_MAX_ITERATIONS, DEFAULT_MAX_ITERATIONS),
@@ -159,7 +159,7 @@ function buildRunOptions(
     plannerModel: flags.plannerModel || process.env.PULSE_AUTONOMY_MODEL || DEFAULT_PLANNER_MODEL,
     codexModel: flags.codexModel || process.env.PULSE_AUTONOMY_CODEX_MODEL || null,
     disableAgentPlanner:
-      Boolean(flags.disableAgentPlanner) ||
+      !!flags.disableAgentPlanner ||
       process.env.PULSE_AUTONOMY_DISABLE_AGENT_PLANNER === String(deriveUnitValue()),
     executor: flags.executor || null,
     validateCommands,

@@ -66,12 +66,7 @@ type MatrixSummaryKey =
 
 type MatrixSummarySnapshot = Partial<Record<MatrixSummaryKey, number>>;
 
-const GATE_STATUS_LABELS = [...discoverDoDGateStatusLabels()];
-const GATE_PASS = GATE_STATUS_LABELS[0];
-const GATE_FAIL = GATE_STATUS_LABELS[1];
-const GOVERNED_EXECUTION_MODES = new Set(
-  [...discoverConvergenceExecutionModeLabels()].slice(1),
-);
+const [GATE_PASS, GATE_FAIL] = discoverDoDGateStatusLabels();
 const OPEN_UNIT_STATUSES = discoverConvergenceUnitStatusLabels();
 const CERT_PROFILE_PULSE_CORE_FINAL = ((): string => {
   for (const p of discoverCertificationProfileLabels()) {
@@ -118,7 +113,8 @@ function hasValidatableAiSafeUnit(convergencePlan: PulseConvergencePlan): boolea
 }
 
 function isGovernedValidationExecutionMode(mode: QueueUnit['executionMode']): boolean {
-  return GOVERNED_EXECUTION_MODES.has(mode);
+  const allModes = discoverConvergenceExecutionModeLabels();
+  return allModes.has(mode) && mode !== allModes.values().next().value;
 }
 
 function countOpenGovernedValidationUnits(

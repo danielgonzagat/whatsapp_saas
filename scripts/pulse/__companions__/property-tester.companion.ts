@@ -425,18 +425,18 @@ function synthesizeFuzzStrategies(profile: EndpointProofProfile): FuzzStrategy[]
     profile.inputTypes.has('path_parameter') ||
     profile.inputTypes.has('request_body') ||
     profile.hasSchema ||
-    profile.stateEffect !== 'read_only'
+    discoverMutatingEffectsFromTypeEvidence().has(profile.stateEffect)
   ) {
     strategies.add('boundary');
   }
   if (
     profile.entrypointType === 'external_receiver' ||
-    profile.runtimeExposure !== 'protected' ||
+    !discoverProtectedExposuresFromTypeEvidence().has(profile.runtimeExposure) ||
     profile.hasSchema
   ) {
     strategies.add('random');
   }
-  if (profile.stateEffect !== 'read_only' && profile.hasSchema) {
+  if (discoverMutatingEffectsFromTypeEvidence().has(profile.stateEffect) && profile.hasSchema) {
     strategies.add('both');
   }
 
@@ -497,9 +497,9 @@ function addExpectedStatus(
 
 function strategyWeight(strategy: FuzzStrategy, profile: EndpointProofProfile): number {
   let surfaceWidth = Math.max(unitValue(), profile.inputTypes.size);
-  let stateWidth = surfaceWidth + unitWhen(profile.stateEffect !== 'read_only');
+  let stateWidth = surfaceWidth + unitWhen(discoverMutatingEffectsFromTypeEvidence().has(profile.stateEffect));
   let schemaWidth = stateWidth + unitWhen(profile.hasSchema);
-  let publicWidth = schemaWidth + unitWhen(profile.runtimeExposure === 'public');
+  let publicWidth = schemaWidth + unitWhen(discoverPublicExposuresFromTypeEvidence().has(profile.runtimeExposure));
   let observedWeights = new Map<FuzzStrategy, number[]>([
     ['valid_only', [surfaceWidth, unitValue()]],
     ['invalid_only', [publicWidth, surfaceWidth]],
@@ -533,7 +533,7 @@ function generateExpectedStatusCodes(
     case 'invalid_only':
       addExpectedStatus(codes, httpStatus('Bad Request'), surfaceWidth);
       addExpectedStatus(codes, httpStatus('Unprocessable Entity'), schemaWidth);
-      if (profile.runtimeExposure === 'protected') {
+      if (discoverProtectedExposuresFromTypeEvidence().has(profile.runtimeExposure)) {
         addExpectedStatus(codes, httpStatus('Unauthorized'), unitValue());
         addExpectedStatus(codes, httpStatus('Forbidden'), unitValue());
       }
@@ -554,7 +554,7 @@ function generateExpectedStatusCodes(
       if (endpoint.rateLimit !== undefined && endpoint.rateLimit !== null) {
         addExpectedStatus(codes, httpStatus('Too Many Requests'), unitValue());
       }
-      if (profile.runtimeExposure === 'protected') {
+      if (discoverProtectedExposuresFromTypeEvidence().has(profile.runtimeExposure)) {
         addExpectedStatus(codes, httpStatus('Unauthorized'), surfaceWidth);
         addExpectedStatus(codes, httpStatus('Forbidden'), unitValue());
       }
@@ -1956,7 +1956,7 @@ function generateGeneralPurityInputs(rng: () => number): GeneratedPropertyTestIn
         break;
       }
       case 2: {
-        value = rng() < 0.5;
+        value = rng() < inverseCatalogScale();
         description = `Random boolean #${i + 1}`;
         expected = 'pass';
         behavior = 'Should handle boolean inputs correctly';
@@ -1966,7 +1966,7 @@ function generateGeneralPurityInputs(rng: () => number): GeneratedPropertyTestIn
         let objLen = Math.floor(rng() * 5) + 1;
         let obj: Record<string, unknown> = {};
         for (let j = 0; j < objLen; j++) {
-          obj[`key_${j}`] = rng() < 0.5 ? `val_${j}` : Math.floor(rng() * 100);
+          obj[`key_${j}`] = rng() < inverseCatalogScale() ? `val_${j}` : Math.floor(rng() * 100);
         }
         value = obj;
         description = `Random object with ${objLen} keys #${i + 1}`;
@@ -2012,7 +2012,7 @@ function generateValueOfType(type: string, rng: () => number): unknown {
     case 'number':
       return randomNumber(rng);
     case 'boolean':
-      return rng() < 0.5;
+      return rng() < inverseCatalogScale();
     case 'object':
       return randomObject(rng);
     case 'array':

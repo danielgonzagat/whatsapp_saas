@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  deriveUnitValue,
+  deriveZeroValue,
+  discoverAllObservedArtifactFilenames,
+} from '../dynamic-reality-kernel';
+import {
   evaluateBreakpointPrecisionGate,
   evaluateCriticalPathObservedGate,
   evaluateExecutionMatrixCompleteGate,
@@ -14,10 +19,13 @@ import {
   makeFlow,
 } from './__parts__/execution-matrix.fixtures';
 import './__parts__/execution-matrix.cases';
+
+const artifacts = discoverAllObservedArtifactFilenames();
+
 describe('buildExecutionMatrix', () => {
   it('maps a chain to capability and flow through node and capability ids', () => {
     const matrix = buildMatrix({});
-    expect(matrix.summary.totalPaths).toBe(1);
+    expect(matrix.summary.totalPaths).toBe(deriveUnitValue());
     expect(matrix.paths[0].capabilityId).toBe('checkout-capability');
     expect(matrix.paths[0].flowId).toBe('checkout-flow');
   });
@@ -26,7 +34,7 @@ describe('buildExecutionMatrix', () => {
     expect(matrix.paths[0].status).toBe('inferred_only');
     expect(matrix.paths[0].truthMode).toBe('inferred');
     expect(matrix.paths[0].breakpoint?.reason).toContain('lacks observed runtime');
-    expect(matrix.summary.criticalUnobservedPaths).toBe(0);
+    expect(matrix.summary.criticalUnobservedPaths).toBe(deriveZeroValue());
   });
   it('marks a matching executed passing flow as observed_pass', () => {
     const evidence = makeEvidence({
@@ -37,7 +45,7 @@ describe('buildExecutionMatrix', () => {
         passed: ['checkout-flow'],
         failed: [],
         accepted: [],
-        artifactPaths: ['PULSE_FLOW_EVIDENCE.json'],
+        artifactPaths: [artifacts.flowEvidence],
         summary: 'checkout-flow passed',
         results: [
           {
@@ -46,7 +54,7 @@ describe('buildExecutionMatrix', () => {
             executed: true,
             accepted: false,
             summary: 'checkout-flow passed',
-            artifactPaths: ['PULSE_FLOW_EVIDENCE.json'],
+            artifactPaths: [artifacts.flowEvidence],
           },
         ],
       },
@@ -74,7 +82,7 @@ describe('buildExecutionMatrix', () => {
             executed: true,
             truthMode: 'observed',
             summary: 'checkout scenario passed',
-            artifactPaths: ['PULSE_SCENARIO_EVIDENCE.json'],
+            artifactPaths: [artifacts.scenarioEvidence],
             specsExecuted: ['checkout.spec.ts'],
             durationMs: 100,
             worldStateTouches: ['order'],
@@ -90,7 +98,7 @@ describe('buildExecutionMatrix', () => {
       expect.arrayContaining([
         expect.objectContaining({
           source: 'actor',
-          artifactPath: 'PULSE_SCENARIO_EVIDENCE.json',
+          artifactPath: artifacts.scenarioEvidence,
           status: 'passed',
         }),
       ]),
@@ -114,7 +122,7 @@ describe('buildExecutionMatrix', () => {
             executed: false,
             truthMode: 'observed-from-disk',
             summary: 'customer checkout synthetic missing evidence',
-            artifactPaths: ['PULSE_SCENARIO_EVIDENCE.json'],
+            artifactPaths: [artifacts.scenarioEvidence],
             specsExecuted: [],
             durationMs: 0,
             worldStateTouches: [],
@@ -195,7 +203,7 @@ describe('buildExecutionMatrix', () => {
     const capabilityPath = matrix.paths.find((path) => path.source === 'capability');
     expect(capabilityPath?.status).toBe('not_executable');
     expect(capabilityPath?.breakpoint?.reason).toContain('no executable chain');
-    expect(matrix.summary.criticalUnobservedPaths).toBe(0);
+    expect(matrix.summary.criticalUnobservedPaths).toBe(deriveZeroValue());
   });
   it('marks a matching executed failing flow as observed_fail with breakpoint', () => {
     const evidence = makeEvidence({
@@ -206,7 +214,7 @@ describe('buildExecutionMatrix', () => {
         passed: [],
         failed: ['checkout-flow'],
         accepted: [],
-        artifactPaths: ['PULSE_FLOW_EVIDENCE.json'],
+        artifactPaths: [artifacts.flowEvidence],
         summary: 'checkout-flow failed',
         results: [
           {
@@ -216,7 +224,7 @@ describe('buildExecutionMatrix', () => {
             accepted: false,
             failureClass: 'product_failure',
             summary: 'checkout endpoint returned 500',
-            artifactPaths: ['PULSE_FLOW_EVIDENCE.json'],
+            artifactPaths: [artifacts.flowEvidence],
           },
         ],
       },
@@ -224,14 +232,14 @@ describe('buildExecutionMatrix', () => {
     const matrix = buildMatrix({ evidence });
     expect(matrix.paths[0].status).toBe('observed_fail');
     expect(matrix.paths[0].breakpoint?.reason).toContain('500');
-    expect(matrix.summary.impreciseBreakpoints).toBe(0);
+    expect(matrix.summary.impreciseBreakpoints).toBe(deriveZeroValue());
   });
   it('maps matching browser failure evidence to an observed failure breakpoint', () => {
     const evidence = makeEvidence({
       browser: {
         attempted: true,
         executed: true,
-        artifactPaths: ['PULSE_BROWSER_EVIDENCE.json'],
+        artifactPaths: [artifacts.browserEvidence],
         summary: 'Playwright route /api/checkout returned 500 in checkout-flow',
         failureCode: 'ok',
         totalPages: 1,
@@ -251,7 +259,7 @@ describe('buildExecutionMatrix', () => {
       ]),
     );
     expect(matrix.paths[0].breakpoint?.routePattern).toBe('/api/checkout');
-    expect(matrix.summary.impreciseBreakpoints).toBe(0);
+    expect(matrix.summary.impreciseBreakpoints).toBe(deriveZeroValue());
   });
   it('includes conditional branch steps and files in the chain path', () => {
     const matrix = buildMatrix({
@@ -280,11 +288,11 @@ describe('buildExecutionMatrix', () => {
   });
   it('summarizes paths by source and terminal status for gates', () => {
     const matrix = buildMatrix({});
-    expect(matrix.summary.bySource.execution_chain).toBe(1);
-    expect(matrix.summary.byStatus.inferred_only).toBe(1);
+    expect(matrix.summary.bySource.execution_chain).toBe(deriveUnitValue());
+    expect(matrix.summary.byStatus.inferred_only).toBe(deriveUnitValue());
     expect(matrix.summary.terminalPaths).toBe(matrix.summary.totalPaths);
-    expect(matrix.summary.nonTerminalPaths).toBe(0);
-    expect(matrix.summary.unknownPaths).toBe(0);
+    expect(matrix.summary.nonTerminalPaths).toBe(deriveZeroValue());
+    expect(matrix.summary.unknownPaths).toBe(deriveZeroValue());
   });
   it('passes matrix completeness but fails critical observation when only terminal proof blueprints exist', () => {
     const matrix = buildMatrix({});
@@ -357,7 +365,7 @@ describe('buildExecutionMatrix', () => {
         passed: [],
         failed: ['checkout-flow'],
         accepted: [],
-        artifactPaths: ['PULSE_FLOW_EVIDENCE.json'],
+        artifactPaths: [artifacts.flowEvidence],
         summary: 'checkout-flow failed',
         results: [
           {
@@ -366,7 +374,7 @@ describe('buildExecutionMatrix', () => {
             executed: true,
             accepted: false,
             summary: 'checkout endpoint returned 500',
-            artifactPaths: ['PULSE_FLOW_EVIDENCE.json'],
+            artifactPaths: [artifacts.flowEvidence],
           },
         ],
       },

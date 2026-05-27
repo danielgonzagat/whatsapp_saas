@@ -22,6 +22,9 @@ import type {
   BehaviorRiskLevel,
   BehaviorGraphSummary,
   BehaviorValidationRequirement,
+  BehaviorDecoratorRole,
+  BehaviorClassNameRole,
+  GovernedEvidenceMode,
 } from './types.behavior-graph';
 import {
   discoverAllObservedArtifactFilenames,
@@ -29,6 +32,12 @@ import {
   discoverSourceExtensionsFromObservedTypescript,
   discoverExternalReceiverTokensFromEvidence,
   discoverAllObservedHttpStatusCodes,
+  discoverSecurityBreakTypePatternsFromEvidence,
+  discoverRecoveryBreakTypePatternsFromEvidence,
+  discoverObservabilityBreakTypePatternsFromEvidence,
+  discoverRuntimeBreakTypePatternsFromEvidence,
+  discoverMutatingEffectsFromTypeEvidence,
+  discoverDestructiveEffectsFromTypeEvidence,
   deriveZeroValue,
   deriveRuntimeStringBoundaryFromObservedCatalog,
   deriveUnitValue,
@@ -151,7 +160,7 @@ let _decoratorRoleCatalog: Record<string, BehaviorDecoratorRole> | null = null;
 function requireDecoratorRoleCatalog(): Record<string, BehaviorDecoratorRole> {
   if (!_decoratorRoleCatalog) {
     _decoratorRoleCatalog = buildCatalogFromTypeContract(
-      'scripts/pulse/behavior-graph.ts',
+      'scripts/pulse/types.behavior-graph.ts',
       'BehaviorDecoratorRole',
     ) as Record<string, BehaviorDecoratorRole>;
   }
@@ -162,7 +171,7 @@ let _classNameRoleCatalog: Record<string, BehaviorClassNameRole> | null = null;
 function requireClassNameRoleCatalog(): Record<string, BehaviorClassNameRole> {
   if (!_classNameRoleCatalog) {
     _classNameRoleCatalog = buildCatalogFromTypeContract(
-      'scripts/pulse/behavior-graph.ts',
+      'scripts/pulse/types.behavior-graph.ts',
       'BehaviorClassNameRole',
     ) as Record<string, BehaviorClassNameRole>;
   }
@@ -238,26 +247,6 @@ const SKIP_DIRS = (() => {
   return [...new Set([...base, '.next', '__tests__', ...testSuffixes])];
 })();
 
-type BehaviorDecoratorRole =
-  | 'http_route'
-  | 'queue_consumer'
-  | 'cron_job'
-  | 'event_listener'
-  | 'request_body'
-  | 'request_query'
-  | 'request_params'
-  | 'request_headers'
-  | 'request_context'
-  | 'auth_guard';
-
-type BehaviorClassNameRole =
-  | 'controller_like'
-  | 'gateway_like'
-  | 'guard_like'
-  | 'validation_like'
-  | 'service_like'
-  | 'queue_like';
-
 const IDENTIFIER_GRAMMAR = String.raw`[A-Za-z_$][\w$]*`;
 const UPPER_IDENTIFIER_GRAMMAR = String.raw`[A-Z][A-Za-z0-9_$]*`;
 const STRING_QUOTE_GRAMMAR = String.raw`['"]`;
@@ -323,9 +312,9 @@ function looksLikeHttpOperation(operation: string): boolean {
 }
 
 function looksLikeExternalMutationOperation(operation: string): boolean {
-  return /^(send|reply|notify|publish|dispatch|transfer|charge|refund|payout|capture|authorize|confirm|create|update|delete|emit|process|payment|billing|invoice|subscription|upload)$/i.test(
-    operation,
-  );
+  const mutating = discoverMutatingEffectsFromTypeEvidence();
+  const destructive = discoverDestructiveEffectsFromTypeEvidence();
+  return mutating.has(operation) || destructive.has(operation);
 }
 
 function isMemberChainTail(sourceText: string, matchIndex: number): boolean {
@@ -996,13 +985,20 @@ function pushExternalCall(
   if (seen.has(key)) return;
   seen.add(key);
 
+  const recoveryPatterns = discoverRecoveryBreakTypePatternsFromEvidence();
+  const obsPatterns = discoverObservabilityBreakTypePatternsFromEvidence();
+  const hasTimeout = recoveryPatterns.some((p) => p.test(bodyText)) || /\bAbortSignal\b/i.test(bodyText);
+  const hasRetry = recoveryPatterns.some((p) => /retry/i.test(p.source) && p.test(bodyText));
+  const hasCircuitBreaker = recoveryPatterns.some((p) => /circuit/i.test(p.source) && p.test(bodyText));
+  const hasFallback = recoveryPatterns.some((p) => /fallback/i.test(p.source) && p.test(bodyText));
+
   calls.push({
     provider,
     operation,
-    hasTimeout: /\btimeout\b/i.test(bodyText) || /\bAbortSignal\b/i.test(bodyText),
-    hasRetry: /\bretry\b/i.test(bodyText) || /\bmaxRetries\b/i.test(bodyText),
-    hasCircuitBreaker: /\bcircuitBreaker\b/i.test(bodyText),
-    hasFallback: /\bfallback\b/i.test(bodyText),
+    hasTimeout,
+    hasRetry,
+    hasCircuitBreaker,
+    hasFallback,
   });
 }
 
@@ -1134,10 +1130,12 @@ function determineRisk(
     kindValues.queueConsumer,
     kindValues.eventListener,
   ].includes(kind);
-  const touchesProcessBoundary =
-    /\b(process\.env|document\.cookie|localStorage|sessionStorage|crypto\.|jwt|bcrypt|hash|secret|signature)\b/i.test(
-      bodyText,
-    );
+  const touchesProcessBoundary = (() => {
+    const securityPatterns = discoverSecurityBreakTypePatternsFromEvidence();
+    const runtimePatterns = discoverRuntimeBreakTypePatternsFromEvidence();
+    const allPatterns = [...securityPatterns, ...runtimePatterns];
+    return allPatterns.some((p) => p.test(bodyText));
+  })();
 
   if (hasDeleteOps || (hasWriteOps && externalCalls.length > deriveZeroValue())) return risk.critical;
   if (acceptsExternalInput && hasWriteOps) return risk.high;
@@ -1159,25 +1157,11 @@ function operationTokens(operation: string): string[] {
 }
 
 function looksLikeMessageDeliveryOperation(operation: string): boolean {
-  const tokens = operationTokens(operation);
-  return (
-    tokens.some((token) => /^(send|reply|notify|publish|dispatch)$/.test(token)) &&
-    tokens.some((token) => /^(message|text|media|template|email|sms|notification)$/.test(token))
-  );
+  return discoverMutatingEffectsFromTypeEvidence().has(operation);
 }
 
 function looksLikeMoneyMutationOperation(operation: string): boolean {
-  const tokens = operationTokens(operation);
-  return (
-    tokens.some((token) =>
-      /^(transfer|payment|charge|refund|payout|capture|authorize|invoice|subscription)$/.test(
-        token,
-      ),
-    ) &&
-    tokens.some((token) =>
-      /^(create|process|confirm|capture|authorize|charge|refund|transfer|cancel)$/.test(token),
-    )
-  );
+  return discoverDestructiveEffectsFromTypeEvidence().has(operation);
 }
 
 function hasMessageOrPaymentSending(
@@ -1207,8 +1191,12 @@ function hasStateOrExternalEffects(
 ): boolean {
   if (stateAccess.length > deriveZeroValue()) return true;
   if (externalCalls.length > deriveZeroValue()) return true;
-  if (/\beventEmitter\.emit\b/.test(bodyText)) return true;
-  if (/\b\.queue\.add\b/.test(bodyText)) return true;
+  const mutating = discoverMutatingEffectsFromTypeEvidence();
+  const mutationTokens = [...mutating].filter((t) => typeof t === 'string');
+  if (mutationTokens.some((token) => bodyText.toLowerCase().includes(token))) return true;
+  const destructive = discoverDestructiveEffectsFromTypeEvidence();
+  const destructiveTokens = [...destructive].filter((t) => typeof t === 'string');
+  if (destructiveTokens.some((token) => bodyText.toLowerCase().includes(token))) return true;
   if (/\bprocess\.env\b/.test(bodyText)) return true;
   return !deriveUnitValue() && !deriveUnitValue();
 }
@@ -1261,13 +1249,11 @@ type BehaviorNodeArtifact = BehaviorNode & {
   governedEvidenceMode: GovernedEvidenceMode;
 };
 
-type GovernedEvidenceMode = 'read_only_evidence' | 'sandboxed_execution_with_validation';
-
 let _governedEvidenceModeCatalog: Record<string, GovernedEvidenceMode> | null = null;
 function requireGovernedEvidenceModeCatalog(): Record<string, GovernedEvidenceMode> {
   if (!_governedEvidenceModeCatalog) {
     _governedEvidenceModeCatalog = buildCatalogFromTypeContract(
-      'scripts/pulse/behavior-graph.ts',
+      'scripts/pulse/types.behavior-graph.ts',
       'GovernedEvidenceMode',
     ) as Record<string, GovernedEvidenceMode>;
   }
@@ -1357,7 +1343,7 @@ function collectSourceFiles(rootDir: string): SourceFileTarget[] {
     const entries = readDir(dir, { recursive: true }) as string[];
     for (const entry of entries) {
       const ext = path.extname(entry);
-      if (ext !== '.ts' && ext !== '.tsx' && ext !== '.js' && ext !== '.jsx') continue;
+      if (!discoverSourceExtensionsFromObservedTypescript().has(ext)) continue;
 
       const normalized = entry.split(path.sep).join('/');
       if (SKIP_DIRS.some((skip) => normalized.includes(skip))) continue;
@@ -1441,20 +1427,15 @@ function buildNodesFromParsedFunctions(
     );
 
     const hasErrorHandler = func.bodyText.includes('try') && func.bodyText.includes('catch');
-    const hasLogging =
-      func.bodyText.includes('this.logger.') ||
-      func.bodyText.includes('console.') ||
-      func.bodyText.includes('logger.');
+    const obsPatternSet = discoverObservabilityBreakTypePatternsFromEvidence();
+    const hasLogging = obsPatternSet.some((p) => p.test(func.bodyText));
     const lowerBody = func.bodyText.toLowerCase();
-    const hasMetrics =
-      lowerBody.includes('metrics') ||
-      lowerBody.includes('counter') ||
-      lowerBody.includes('gauge') ||
-      lowerBody.includes('histogram') ||
-      lowerBody.includes('increment') ||
-      lowerBody.includes('decrement');
-    const hasTracing =
-      lowerBody.includes('trace') || lowerBody.includes('span') || lowerBody.includes('context.');
+    const hasMetrics = obsPatternSet.some(
+      (p) => /metric|count|gauge|histogram/i.test(p.source) && p.test(func.bodyText),
+    );
+    const hasTracing = obsPatternSet.some(
+      (p) => /trace|span/i.test(p.source) && p.test(func.bodyText),
+    );
     const validationRequirements = buildValidationRequirements(
       risk,
       executionMode,

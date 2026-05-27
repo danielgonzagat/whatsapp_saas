@@ -10,11 +10,15 @@ import {
   discoverOperationalEvidenceKindLabels,
   discoverRuntimeFusionEvidenceStatusLabels,
   discoverSignalSeverityLabels,
+  discoverSignalSourceLabels,
+  discoverSignalTypeLabels,
 } from '../dynamic-reality-kernel';
 
 const _evidenceStatusLabels = discoverRuntimeFusionEvidenceStatusLabels();
 const _severityLabels = discoverSignalSeverityLabels();
 const _evidenceKindLabels = discoverOperationalEvidenceKindLabels();
+const _signalSourceLabels = discoverSignalSourceLabels();
+const _signalTypeLabels = discoverSignalTypeLabels();
 
 function _evidenceStatusIsObserved(value: string): boolean {
   return _evidenceStatusLabels.has(value) && value === 'observed';
@@ -33,6 +37,27 @@ function _evidenceStatusIsInferred(value: string): boolean {
 }
 function _isSeverityLabel(value: string): boolean {
   return _severityLabels.has(value);
+}
+function _isSeverityCritical(value: string): boolean {
+  return _severityLabels.has(value) && value === 'critical';
+}
+function _isSeverityHigh(value: string): boolean {
+  return _severityLabels.has(value) && value === 'high';
+}
+function _evidenceKindIsRuntime(value: string): boolean {
+  return _evidenceKindLabels.has(value) && value === 'runtime';
+}
+function _evidenceKindIsStatic(value: string): boolean {
+  return _evidenceKindLabels.has(value) && value === 'static';
+}
+function _signalTypeIsError(value: string): boolean {
+  return _signalTypeLabels.has(value) && value === 'error';
+}
+function _signalTypeIsCodeQuality(value: string): boolean {
+  return _signalTypeLabels.has(value) && value === 'code_quality';
+}
+function _sourceIsOtelRuntime(value: string): boolean {
+  return _signalSourceLabels.has(value) && value === 'otel_runtime';
 }
 
 let tempRoots: string[] = [];

@@ -1,5 +1,6 @@
 import { safeJoin, safeResolve } from './safe-path';
 import * as path from 'path';
+import * as ts from 'typescript';
 import type { PulseConfig, PulseManifest, PulseManifestLoadResult, Break } from './types';
 import type { CoreParserData } from './functional-map-types';
 import { pathExists, readTextFile } from './safe-fs';
@@ -18,34 +19,49 @@ export const PULSE_MANIFEST_FILENAME = 'pulse.manifest.json';
 /** Supported_stacks. */
 export const SUPPORTED_STACKS = new Set<string>();
 
-const REQUIRED_FIELDS: Array<keyof PulseManifest> = [
-  'version',
-  'projectId',
-  'projectName',
-  'systemType',
-  'supportedStacks',
-  'surfaces',
-  'criticalDomains',
-  'modules',
-  'actorProfiles',
-  'scenarioSpecs',
-  'externalIntegrations',
-  'jobs',
-  'webhooks',
-  'stateMachines',
-  'criticalFlows',
-  'invariants',
-  'flowSpecs',
-  'invariantSpecs',
-  'temporaryAcceptances',
-  'certificationTiers',
-  'finalReadinessCriteria',
-  'slos',
-  'securityRequirements',
-  'recoveryRequirements',
-  'excludedSurfaces',
-  'environments',
-];
+function discoverRequiredManifestPropertyNames(): string[] {
+  const fileName = 'scripts/pulse/types.manifest.ts';
+  const absolutePath = path.resolve(process.cwd(), fileName);
+  if (!pathExists(absolutePath)) {
+    throw new Error(`Cannot derive required manifest fields: file not found ${absolutePath}`);
+  }
+  const sourceText = readTextFile(absolutePath);
+  const sourceFile = ts.createSourceFile(
+    absolutePath,
+    sourceText,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+
+  const names: string[] = [];
+  let found = false;
+
+  function visit(node: ts.Node): void {
+    if (found) return;
+    if (ts.isInterfaceDeclaration(node) && node.name.text === 'PulseManifest') {
+      found = true;
+      for (const member of node.members) {
+        if (ts.isPropertySignature(member) && member.name && ts.isIdentifier(member.name)) {
+          if (!member.questionToken) {
+            names.push(member.name.text);
+          }
+        }
+      }
+      return;
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(sourceFile);
+
+  if (!found || names.length === 0) {
+    throw new Error('Cannot derive required manifest fields from PulseManifest interface');
+  }
+  return names;
+}
+
+const REQUIRED_FIELDS: Array<keyof PulseManifest> =
+  discoverRequiredManifestPropertyNames() as Array<keyof PulseManifest>;
 
 function manifestBreak(
   type: 'MANIFEST_MISSING' | 'MANIFEST_INVALID' | 'UNKNOWN_SURFACE',
@@ -822,7 +838,7 @@ export function loadPulseManifest(
 
   let rawContent = '';
   try {
-    rawContent = readTextFile(manifestPath, 'utf8');
+    rawContent = readTextFile(manifestPath);
   } catch (error) {
     return {
       manifest: null,

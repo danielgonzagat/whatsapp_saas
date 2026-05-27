@@ -34,12 +34,8 @@ import {
   deriveUnitValue,
   deriveZeroValue,
   discoverAllObservedArtifactFilenames,
-  discoverConvergenceExecutionModeLabels,
   discoverDirectorySkipHintsFromEvidence,
   discoverExternalReceiverTokensFromEvidence,
-  discoverHarnessExecutionFeasibilityLabels,
-  discoverHarnessExecutionStatusLabels,
-  discoverHarnessTargetKindLabels,
   discoverPropertyPassedStatusFromTypeEvidence,
   discoverPropertyUnexecutedStatusFromExecutionEvidence,
   discoverRouteSeparatorFromRuntime,
@@ -53,14 +49,20 @@ const EXTERNAL_TOKENS = discoverExternalReceiverTokensFromEvidence();
 const PASSED_STATUSES = discoverPropertyPassedStatusFromTypeEvidence();
 const UNEXECUTED_STATUSES = discoverPropertyUnexecutedStatusFromExecutionEvidence();
 
-const EXECUTION_MODES = [...discoverConvergenceExecutionModeLabels()].sort(
-  (a, b) => a.length - b.length,
-);
+const EXECUTION_MODES = [
+  ...deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.convergence.ts',
+    'PulseConvergenceExecutionMode',
+  ),
+].sort((a, b) => a.length - b.length);
 
 
-const KIND_LABELS = [...discoverHarnessTargetKindLabels()].sort(
-  (a, b) => a.length - b.length || a.localeCompare(b),
-);
+const KIND_LABELS = [
+  ...deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.execution-harness.ts',
+    'HarnessTargetKind',
+  ),
+].sort((a, b) => a.length - b.length || a.localeCompare(b));
 const CRO_KIND_LABEL = KIND_LABELS[deriveZeroValue()];
 const WORKER_KIND_LABEL = KIND_LABELS[deriveUnitValue() + deriveUnitValue()];
 const SERVICE_KIND_LABEL =
@@ -228,13 +230,16 @@ function requiresGovernedHarnessEvidence(target: HarnessTarget): boolean {
 }
 
 const INBOUND_KIND_LABELS = new Set(
-  [...discoverHarnessTargetKindLabels()].filter((k) => EXTERNAL_TOKENS.some((t) => k.includes(t))),
+  KIND_LABELS.filter((k) => EXTERNAL_TOKENS.some((t) => k.includes(t))),
 );
 function isInboundDeliveryHarnessKind(kind: HarnessTargetKind): boolean {
   return INBOUND_KIND_LABELS.has(kind);
 }
 
-const ALL_EXECUTION_STATUS_LABELS = discoverHarnessExecutionStatusLabels();
+const ALL_EXECUTION_STATUS_LABELS = deriveStringUnionMembersFromTypeContract(
+  'scripts/pulse/types.execution-harness.ts',
+  'HarnessExecutionStatus',
+);
 const PLANNED_STATUS = [...UNEXECUTED_STATUSES].sort(
   (a, b) => a.length - b.length,
 )[deriveZeroValue()];
@@ -243,9 +248,12 @@ const EXECUTED_NON_PASSED_STATUSES = [...ALL_EXECUTION_STATUS_LABELS]
   .filter((s) => !PASSED_STATUSES.has(s) && !UNEXECUTED_STATUSES.has(s))
   .sort((a, b) => a.length - b.length || a.localeCompare(b));
 
-const FEASIBILITY_LABELS = [...discoverHarnessExecutionFeasibilityLabels()].sort(
-  (a, b) => a.length - b.length,
-);
+const FEASIBILITY_LABELS = [
+  ...deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.execution-harness.ts',
+    'ExecutionFeasibility',
+  ),
+].sort((a, b) => a.length - b.length);
 const EXECUTABLE_FEASIBILITY = FEASIBILITY_LABELS[deriveZeroValue()] as ExecutionFeasibility;
 const NEEDS_STAGING_FEASIBILITY = FEASIBILITY_LABELS[deriveUnitValue()] as ExecutionFeasibility;
 const CANNOT_EXECUTE_FEASIBILITY = FEASIBILITY_LABELS[
@@ -878,13 +886,7 @@ export function discoverServices(config: PulseConfig): HarnessTarget[] {
 
   const sourceExtensions = [...discoverSourceExtensionsFromObservedTypescript()];
   const files = walkFiles(config.backendDir, sourceExtensions).filter(
-    (f) =>
-      isNonTestProductionArtifactSourceFile(f) &&
-      (/\.service\.(?:ts|tsx|js|jsx)$/.test(f) ||
-        /\.engine\.(?:ts|tsx|js|jsx)$/.test(f) ||
-        /\.guard\.(?:ts|tsx|js|jsx)$/.test(f) ||
-        /\.interceptor\.(?:ts|tsx|js|jsx)$/.test(f) ||
-        /\.middleware\.(?:ts|tsx|js|jsx)$/.test(f)),
+    isNonTestProductionArtifactSourceFile,
   );
 
   for (const file of files) {

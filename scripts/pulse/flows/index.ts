@@ -92,16 +92,8 @@ const FLOW_ACCEPTED = [
 ].sort()[deriveZeroValue()];
 
 const GFC_SORTED = [...discoverGateFailureClassLabels()].sort();
-const GFC_CHECKER_GAP = GFC_SORTED[deriveZeroValue()];
 const GFC_MISSING_EVIDENCE = GFC_SORTED[deriveUnitValue()];
 const GFC_PRODUCT_FAILURE = GFC_SORTED[deriveUnitValue() + deriveUnitValue()];
-
-const BFC_BACKEND_AUTH = [
-  ...deriveStringUnionMembersFromTypeContract(
-    'scripts/pulse/types.convergence.ts',
-    'PulseBrowserFailureCode',
-  ),
-].sort()[deriveZeroValue()];
 
 function deriveOracleBreakPatternMap(
   allRuntimePatterns: RegExp[],
@@ -512,7 +504,12 @@ async function fetchJsonWithAuth(
 }
 
 function inferWhatsappFailureCode(_summary: string): PulseBrowserFailureCode {
-  return BFC_BACKEND_AUTH;
+  return [
+    ...deriveStringUnionMembersFromTypeContract(
+      'scripts/pulse/types.convergence.ts',
+      'PulseBrowserFailureCode',
+    ),
+  ].sort()[deriveZeroValue()];
 }
 
 async function runWalletWithdrawalFlow(
@@ -1132,7 +1129,7 @@ function buildCheckerGapResult(
     providerModeUsed: spec.providerMode,
     smokeExecuted: false,
     replayExecuted: replayEnabled(spec),
-    failureClass: GFC_CHECKER_GAP,
+    failureClass: GFC_SORTED[deriveZeroValue()],
     summary: `Required flow preconditions are not loaded: ${missingChecks.join(', ')}.`,
     artifactPaths: getArtifactPaths(spec.id),
     metrics: {

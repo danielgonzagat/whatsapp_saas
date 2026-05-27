@@ -19,6 +19,8 @@ import {
   deriveUnitValue,
   deriveZeroValue,
   discoverAllObservedArtifactFilenames,
+  discoverDaemonCycleResultLabels,
+  discoverDaemonPhaseLabels,
   discoverPropertyPassedStatusFromTypeEvidence,
   observeStatusTextLengthFromCatalog,
 } from './dynamic-reality-kernel';
@@ -51,6 +53,19 @@ const REQUIRED_LONG_RUN_HOURS =
     deriveHttpStatusFromObservedCatalog('Not Found'),
   );
 const MAX_LONG_RUN_GAP_HOURS = _dcps * _dcps + _dcps;
+
+const _cycleResultLabels = discoverDaemonCycleResultLabels();
+const _nonRegressingCycleResults = new Set(
+  [..._cycleResultLabels].filter(
+    (r) => r !== 'regression' && r !== 'blocked' && r !== 'error',
+  ),
+);
+const _phaseLabels = discoverDaemonPhaseLabels();
+const _executionPhaseLabels = new Set(
+  [..._phaseLabels].filter(
+    (p) => p === 'executing' || p === 'validating' || p === 'committing',
+  ),
+);
 
 // ────────────────────────────────────────────────────────────────────────────
 // Gate Definitions (canonical 8-gate suite)
@@ -1036,7 +1051,7 @@ function isLongRunProofCycle(cycle: {
   scoreAfter?: number;
 }): boolean {
   const result = cycle.result ?? '';
-  if (result !== 'improvement' && result !== 'no_change') {
+  if (!_nonRegressingCycleResults.has(result)) {
     return false;
   }
 

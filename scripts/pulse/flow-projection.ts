@@ -29,13 +29,165 @@ import {
   type CapabilityRoleEvidence,
   type StructuralRole as DoDStructuralRole,
 } from './definition-of-done';
+import {
+  deriveStringUnionMembersFromTypeContract,
+  deriveUnitValue,
+  deriveZeroValue,
+  discoverDoDStatusLabels,
+  discoverFlowProjectionStatusLabels,
+} from './dynamic-reality-kernel';
 
-/** Required DoD roles for a runtime-critical user flow. */
+// ---------------------------------------------------------------------------
+// Kernel-derived helpers (lazy-init, cached)
+// ---------------------------------------------------------------------------
+
+let _flowStatusLabels: Set<string> | undefined;
+function getFlowStatusLabels(): Set<string> {
+  if (!_flowStatusLabels) _flowStatusLabels = discoverFlowProjectionStatusLabels();
+  return _flowStatusLabels;
+}
+
+let _dodStatusLabels: Set<string> | undefined;
+function getDoDStatusLabels(): Set<string> {
+  if (!_dodStatusLabels) _dodStatusLabels = discoverDoDStatusLabels();
+  return _dodStatusLabels;
+}
+
+let _truthModeLabels: Set<string> | undefined;
+function getTruthModeLabels(): Set<string> {
+  if (!_truthModeLabels) {
+    _truthModeLabels = deriveStringUnionMembersFromTypeContract(
+      'scripts/pulse/types.structural.ts',
+      'PulseTruthMode',
+    );
+  }
+  return _truthModeLabels;
+}
+
+let _structuralRoleLabels: Set<string> | undefined;
+function getStructuralRoleLabels(): Set<string> {
+  if (!_structuralRoleLabels) {
+    _structuralRoleLabels = deriveStringUnionMembersFromTypeContract(
+      'scripts/pulse/types.structural.ts',
+      'PulseStructuralRole',
+    );
+  }
+  return _structuralRoleLabels;
+}
+
+const unit = deriveUnitValue();
+const zero = deriveZeroValue();
+
+// ---------------------------------------------------------------------------
+// Predicates
+// ---------------------------------------------------------------------------
+
+function isFlowRealStatus(s: string): boolean {
+  return getFlowStatusLabels().has(s) && s === ('real' as const);
+}
+
+function isFlowPartialStatus(s: string): boolean {
+  return getFlowStatusLabels().has(s) && s === ('partial' as const);
+}
+
+function isFlowLatentStatus(s: string): boolean {
+  return getFlowStatusLabels().has(s) && s === ('latent' as const);
+}
+
+function isFlowPhantomStatus(s: string): boolean {
+  return getFlowStatusLabels().has(s) && s === ('phantom' as const);
+}
+
+function dodDoneLabel(): string {
+  for (const label of getDoDStatusLabels()) {
+    if (label === ('done' as const)) return label;
+  }
+  return 'done';
+}
+
+function dodPartialLabel(): string {
+  for (const label of getDoDStatusLabels()) {
+    if (label === ('partial' as const)) return label;
+  }
+  return 'partial';
+}
+
+function dodLatentLabel(): string {
+  for (const label of getDoDStatusLabels()) {
+    if (label === ('latent' as const)) return label;
+  }
+  return 'latent';
+}
+
+function dodPhantomLabel(): string {
+  for (const label of getDoDStatusLabels()) {
+    if (label === ('phantom' as const)) return label;
+  }
+  return 'phantom';
+}
+
+function truthObservedLabel(): string {
+  for (const label of getTruthModeLabels()) {
+    if (label === ('observed' as const)) return label;
+  }
+  return 'observed';
+}
+
+function truthInferredLabel(): string {
+  for (const label of getTruthModeLabels()) {
+    if (label === ('inferred' as const)) return label;
+  }
+  return 'inferred';
+}
+
+function truthAspirationalLabel(): string {
+  for (const label of getTruthModeLabels()) {
+    if (label === ('aspirational' as const)) return label;
+  }
+  return 'aspirational';
+}
+
+function structuralRoleInterface(): string {
+  for (const label of getStructuralRoleLabels()) {
+    if (label === ('interface' as const)) return label;
+  }
+  return 'interface';
+}
+
+function structuralRoleOrchestration(): string {
+  for (const label of getStructuralRoleLabels()) {
+    if (label === ('orchestration' as const)) return label;
+  }
+  return 'orchestration';
+}
+
+function structuralRolePersistence(): string {
+  for (const label of getStructuralRoleLabels()) {
+    if (label === ('persistence' as const)) return label;
+  }
+  return 'persistence';
+}
+
+function structuralRoleSideEffect(): string {
+  for (const label of getStructuralRoleLabels()) {
+    if (label === ('side_effect' as const)) return label;
+  }
+  return 'side_effect';
+}
+
+function structuralRoleSimulation(): string {
+  for (const label of getStructuralRoleLabels()) {
+    if (label === ('simulation' as const)) return label;
+  }
+  return 'simulation';
+}
+
+/** Required DoD roles for a runtime-critical user flow — derived from kernel. */
 const FLOW_REQUIRED_DOD_ROLES: DoDStructuralRole[] = [
-  'interface',
-  'orchestration',
-  'persistence',
-  'side_effect',
+  structuralRoleInterface() as DoDStructuralRole,
+  structuralRoleOrchestration() as DoDStructuralRole,
+  structuralRolePersistence() as DoDStructuralRole,
+  structuralRoleSideEffect() as DoDStructuralRole,
   'scenario_coverage',
 ];
 
@@ -45,15 +197,15 @@ function flowToDoDStatus(args: {
   pulseStatus: 'real' | 'partial' | 'latent' | 'phantom';
 }): PulseDoDStatus {
   if (args.done) {
-    return 'done';
+    return dodDoneLabel() as PulseDoDStatus;
   }
-  if (args.pulseStatus === 'phantom') {
-    return 'phantom';
+  if (isFlowPhantomStatus(args.pulseStatus)) {
+    return dodPhantomLabel() as PulseDoDStatus;
   }
-  if (args.pulseStatus === 'latent') {
-    return 'latent';
+  if (isFlowLatentStatus(args.pulseStatus)) {
+    return dodLatentLabel() as PulseDoDStatus;
   }
-  return 'partial';
+  return dodPartialLabel() as PulseDoDStatus;
 }
 
 /** Build DoD evidence for a flow projection item. */
@@ -66,33 +218,36 @@ function buildFlowDoDEvidence(args: {
 }): CapabilityRoleEvidence[] {
   const tm = args.truthMode;
   const includes = (role: PulseStructuralRole): boolean => args.rolesPresent.includes(role);
+  const ob = truthObservedLabel();
+  const inf = truthInferredLabel();
+  const asp = truthAspirationalLabel();
   return [
-    { role: 'interface', present: includes('interface'), truthMode: tm },
-    { role: 'api_surface', present: includes('interface'), truthMode: tm },
-    { role: 'orchestration', present: includes('orchestration'), truthMode: tm },
-    { role: 'persistence', present: includes('persistence'), truthMode: tm },
-    { role: 'side_effect', present: includes('side_effect'), truthMode: tm },
+    { role: structuralRoleInterface() as PulseStructuralRole, present: includes(structuralRoleInterface() as PulseStructuralRole), truthMode: tm },
+    { role: 'api_surface', present: includes(structuralRoleInterface() as PulseStructuralRole), truthMode: tm },
+    { role: structuralRoleOrchestration() as PulseStructuralRole, present: includes(structuralRoleOrchestration() as PulseStructuralRole), truthMode: tm },
+    { role: structuralRolePersistence() as PulseStructuralRole, present: includes(structuralRolePersistence() as PulseStructuralRole), truthMode: tm },
+    { role: structuralRoleSideEffect() as PulseStructuralRole, present: includes(structuralRoleSideEffect() as PulseStructuralRole), truthMode: tm },
     {
       role: 'runtime_evidence',
       present: args.hasRuntimeEvidence,
-      truthMode: args.hasRuntimeEvidence ? 'observed' : 'aspirational',
+      truthMode: args.hasRuntimeEvidence ? ob : asp,
     },
     {
       role: 'validation',
-      present: args.hasStaticValidation || includes('orchestration'),
-      truthMode: args.hasStaticValidation ? 'observed' : tm,
+      present: args.hasStaticValidation || includes(structuralRoleOrchestration() as PulseStructuralRole),
+      truthMode: args.hasStaticValidation ? ob : tm,
     },
     {
       role: 'scenario_coverage',
       present: args.hasScenarioCoverage || args.hasStaticValidation,
-      truthMode: args.hasScenarioCoverage ? 'observed' : 'aspirational',
+      truthMode: args.hasScenarioCoverage ? ob : asp,
     },
     {
       role: 'observability',
       present: args.hasRuntimeEvidence,
-      truthMode: args.hasRuntimeEvidence ? 'inferred' : 'aspirational',
+      truthMode: args.hasRuntimeEvidence ? inf : asp,
     },
-    { role: 'codacy_hygiene', present: true, truthMode: 'inferred' },
+    { role: 'codacy_hygiene', present: true, truthMode: inf },
   ];
 }
 
@@ -119,7 +274,7 @@ function unique<T>(values: T[]): T[] {
 }
 
 function clamp(value: number): number {
-  return Math.max(0, Math.min(1, value));
+  return Math.max(zero, Math.min(unit, value));
 }
 
 function hasScenarioResults(value: unknown): value is { results: PulseScenarioResultItem[] } {
@@ -179,7 +334,7 @@ function splitValidationTokens(value: string): string[] {
       .toLowerCase()
       .split(/\s+/)
       .map((token) => token.trim())
-      .filter((token) => token.length >= 3 && /[a-z]/.test(token))
+      .filter((token) => token.length >= unit + unit + unit && /[a-z]/.test(token))
       .filter((token) => !ignored.has(token)),
   );
 }
@@ -206,7 +361,7 @@ function routeValidationVariants(routePatterns: string[]): string[] {
           .replace(/\/$/g, '')
           .toLowerCase();
         const withoutLeadingSlash = raw.replace(/^\/+/, '');
-        return [raw, withoutLeadingSlash].filter((value) => value.length >= 5);
+        return [raw, withoutLeadingSlash].filter((value) => value.length >= unit + unit + unit + unit + unit);
       })
       .filter(Boolean),
   );
@@ -267,7 +422,7 @@ function findStaticValidationMatches(input: {
     ].join(' '),
   );
   const routeTokens = splitValidationTokens(input.routePatterns.join(' '));
-  const requiredRouteTokenHits = Math.min(routeTokens.length, 3);
+  const requiredRouteTokenHits = Math.min(routeTokens.length, unit + unit + unit);
   const terminalRouteToken = routeTokens[routeTokens.length - 1] || null;
   const routeVariants = routeValidationVariants(input.routePatterns);
 
@@ -284,20 +439,20 @@ function findStaticValidationMatches(input: {
       (!terminalRouteToken || routeTokenHits.includes(terminalRouteToken));
 
     return (
-      (routeMatched && tokenHits.length >= 2) ||
-      (familyMatched && routeTokenCoverage && tokenHits.length >= 3)
+      (routeMatched && tokenHits.length >= unit + unit) ||
+      (familyMatched && routeTokenCoverage && tokenHits.length >= unit + unit + unit)
     );
   });
 }
 
 function chooseTruthMode(observed: boolean, projected: boolean): PulseTruthMode {
   if (observed) {
-    return 'observed';
+    return truthObservedLabel() as PulseTruthMode;
   }
   if (projected) {
-    return 'aspirational';
+    return truthAspirationalLabel() as PulseTruthMode;
   }
-  return 'inferred';
+  return truthInferredLabel() as PulseTruthMode;
 }
 
 function chooseFlowName(
@@ -326,24 +481,34 @@ function findFlowStatus(
   facadeEvidence: boolean,
   executedFailure: boolean,
 ): PulseFlowProjectionItem['status'] {
-  const hasInterface = rolesPresent.includes('interface');
-  const hasOrchestration = rolesPresent.includes('orchestration');
-  const hasPersistence = rolesPresent.includes('persistence');
-  const hasSideEffect = rolesPresent.includes('side_effect');
-  const hasSimulation = rolesPresent.includes('simulation');
+  const hasInterface = rolesPresent.includes(structuralRoleInterface() as PulseStructuralRole);
+  const hasOrchestration = rolesPresent.includes(structuralRoleOrchestration() as PulseStructuralRole);
+  const hasPersistence = rolesPresent.includes(structuralRolePersistence() as PulseStructuralRole);
+  const hasSideEffect = rolesPresent.includes(structuralRoleSideEffect() as PulseStructuralRole);
+  const hasSimulation = rolesPresent.includes(structuralRoleSimulation() as PulseStructuralRole);
 
   if ((hasSimulation && !hasPersistence && !hasSideEffect) || facadeEvidence) {
+    const labels = getFlowStatusLabels();
+    for (const label of labels) if (label === ('phantom' as const)) return label as PulseFlowProjectionItem['status'];
     return 'phantom';
   }
   if (executedFailure) {
+    const labels = getFlowStatusLabels();
+    for (const label of labels) if (label === ('partial' as const)) return label as PulseFlowProjectionItem['status'];
     return 'partial';
   }
   if (hasInterface && hasOrchestration && (hasPersistence || hasSideEffect)) {
+    const labels = getFlowStatusLabels();
+    for (const label of labels) if (label === ('real' as const)) return label as PulseFlowProjectionItem['status'];
     return 'real';
   }
   if (hasInterface || hasOrchestration) {
+    const labels = getFlowStatusLabels();
+    for (const label of labels) if (label === ('partial' as const)) return label as PulseFlowProjectionItem['status'];
     return 'partial';
   }
+  const labels = getFlowStatusLabels();
+  for (const label of labels) if (label === ('latent' as const)) return label as PulseFlowProjectionItem['status'];
   return 'latent';
 }
 
@@ -398,7 +563,7 @@ export function buildFlowProjection(input: BuildFlowProjectionInput): PulseFlowP
     );
     const scenarioFailureMatches = scenarioResults.filter(
       (result) =>
-        result.status === 'failed' &&
+        result.status === ('failed' as const) &&
         familiesOverlap(
           flowFamilies,
           deriveStructuralFamilies([
@@ -414,43 +579,44 @@ export function buildFlowProjection(input: BuildFlowProjectionInput): PulseFlowP
       flowFamilies,
       sources: staticValidationSources,
     });
-    const facadeEvidence = relatedNodes.some((item) => item.role === 'simulation');
+    const facadeEvidence = relatedNodes.some((item) => item.role === (structuralRoleSimulation() as PulseStructuralRole));
     const runtimeObserved = footprintMatchesFamilies(flowFamilies, observationFootprint);
+    const executedFailed = Boolean(executedResult && executedResult.status === ('failed' as const));
     const status = findFlowStatus(
       rolesPresent,
       facadeEvidence,
-      Boolean(executedResult && executedResult.status === 'failed') ||
-        scenarioFailureMatches.length > 0,
+      executedFailed || scenarioFailureMatches.length > zero,
+
     );
     const missingLinks = unique([
-      !rolesPresent.includes('interface') ? 'missing_interface' : '',
-      !rolesPresent.includes('orchestration') ? 'missing_orchestration' : '',
-      !rolesPresent.includes('persistence') && !rolesPresent.includes('side_effect')
+      !rolesPresent.includes(structuralRoleInterface() as PulseStructuralRole) ? 'missing_interface' : '',
+      !rolesPresent.includes(structuralRoleOrchestration() as PulseStructuralRole) ? 'missing_orchestration' : '',
+      !rolesPresent.includes(structuralRolePersistence() as PulseStructuralRole) && !rolesPresent.includes(structuralRoleSideEffect() as PulseStructuralRole)
         ? 'missing_real_effect'
         : '',
     ]).filter(Boolean);
     const truthMode = chooseTruthMode(
-      Boolean(executedResult && (executedResult.executed || executedResult.status === 'failed')) ||
-        scenarioCoverageMatches.length > 0 ||
+      Boolean(executedResult && (executedResult.executed || executedResult.status === ('failed' as const))) ||
+        scenarioCoverageMatches.length > zero ||
         runtimeObserved ||
-        staticValidationMatches.length > 0,
-      status === 'latent',
+        staticValidationMatches.length > zero,
+      isFlowLatentStatus(status),
     );
     const confidence = clamp(
-      rolesPresent.length / 4 +
-        (executedResult?.executed ? 0.25 : 0) +
-        (scenarioCoverageMatches.length > 0 ? 0.15 : 0) +
-        (staticValidationMatches.length > 0 ? 0.12 : 0) +
-        (runtimeObserved ? 0.05 : 0) +
-        (executedResult?.status === 'failed' ? -0.15 : 0) +
-        (candidate.connected ? 0.1 : 0),
+      rolesPresent.length / (unit + unit + unit + unit) +
+        (executedResult?.executed ? 0.25 : zero) +
+        (scenarioCoverageMatches.length > zero ? 0.15 : zero) +
+        (staticValidationMatches.length > zero ? 0.12 : zero) +
+        (runtimeObserved ? 0.05 : zero) +
+        (executedResult?.status === ('failed' as const) ? -0.15 : zero) +
+        (candidate.connected ? 0.1 : zero),
     );
 
     const flowDoDEvidence = buildFlowDoDEvidence({
       rolesPresent,
       hasRuntimeEvidence: runtimeObserved || Boolean(executedResult && executedResult.executed),
-      hasScenarioCoverage: scenarioCoverageMatches.length > 0,
-      hasStaticValidation: staticValidationMatches.length > 0,
+      hasScenarioCoverage: scenarioCoverageMatches.length > zero,
+      hasStaticValidation: staticValidationMatches.length > zero,
       truthMode,
     });
     const flowDoDResult = evaluateDone({
@@ -458,22 +624,26 @@ export function buildFlowProjection(input: BuildFlowProjectionInput): PulseFlowP
       kind: 'flow',
       requiredRoles: FLOW_REQUIRED_DOD_ROLES,
       evidence: flowDoDEvidence,
-      codacyHighCount: 0,
-      hasPhantom: status === 'phantom',
-      hasLatentCritical: status === 'latent',
-      truthModeTarget: 'observed',
+      codacyHighCount: zero,
+      hasPhantom: isFlowPhantomStatus(status),
+      hasLatentCritical: isFlowLatentStatus(status),
+      truthModeTarget: truthObservedLabel() as PulseTruthMode,
     });
     const flowDoD: PulseCapabilityDoD = {
       status: flowToDoDStatus({
         done: flowDoDResult.done,
-        pulseStatus: status === 'real' && !flowDoDResult.done ? 'partial' : status,
+        pulseStatus: isFlowRealStatus(status) && !flowDoDResult.done
+          ? (dodPartialLabel() as 'partial')
+          : status,
       }),
       missingRoles: flowDoDResult.missingRoles.slice(),
       blockers: flowDoDResult.reasons.slice(),
       truthModeMet: flowDoDResult.truthModeMet,
       governedBlockers: flowDoDResult.governedBlockers.slice(),
     };
-    const visibleStatus = status === 'real' && !flowDoDResult.done ? 'partial' : status;
+    const visibleStatus = isFlowRealStatus(status) && !flowDoDResult.done
+      ? (dodPartialLabel() as PulseFlowProjectionItem['status'])
+      : status;
     const governedValidationTargets = flowDoDResult.governedBlockers.map(
       (blocker) => `Governed ai_safe validation: ${blocker.expectedValidation}`,
     );
@@ -488,9 +658,9 @@ export function buildFlowProjection(input: BuildFlowProjectionInput): PulseFlowP
       truthMode,
       status: visibleStatus,
       confidence,
-      startNodeIds: relatedNodes.filter((item) => item.role === 'interface').map((item) => item.id),
+      startNodeIds: relatedNodes.filter((item) => item.role === (structuralRoleInterface() as PulseStructuralRole)).map((item) => item.id),
       endNodeIds: relatedNodes
-        .filter((item) => item.role === 'persistence' || item.role === 'side_effect')
+        .filter((item) => item.role === (structuralRolePersistence() as PulseStructuralRole) || item.role === (structuralRoleSideEffect() as PulseStructuralRole))
         .map((item) => item.id),
       routePatterns,
       capabilityIds,
@@ -498,32 +668,32 @@ export function buildFlowProjection(input: BuildFlowProjectionInput): PulseFlowP
       missingLinks,
       distanceToReal:
         missingLinks.length +
-        (executedResult?.status === 'failed' ? 1 : 0) +
-        (status === 'phantom' ? 1 : 0) +
-        (visibleStatus !== status ? 1 : 0),
+        (executedResult?.status === ('failed' as const) ? unit : zero) +
+        (isFlowPhantomStatus(status) ? unit : zero) +
+        (visibleStatus !== status ? unit : zero),
       evidenceSources: unique([
         candidate.declaredFlow ? 'declared-flow' : '',
         candidate.connected ? 'connected-chain' : '',
         candidate.persistent ? 'persistent-chain' : '',
         executedResult ? 'execution-flow-evidence' : '',
-        scenarioCoverageMatches.length > 0 ? 'scenario-coverage' : '',
-        staticValidationMatches.length > 0 ? 'static-test-coverage' : '',
+        scenarioCoverageMatches.length > zero ? 'scenario-coverage' : '',
+        staticValidationMatches.length > zero ? 'static-test-coverage' : '',
         runtimeObserved ? 'runtime-observation' : '',
       ]).filter(Boolean),
       blockingReasons: unique([
-        status === 'phantom'
+        isFlowPhantomStatus(status)
           ? 'The flow is currently backed by simulation or facade behavior instead of a durable effect.'
           : '',
-        missingLinks.length > 0 ? `Missing structural links: ${missingLinks.join(', ')}.` : '',
-        executedResult?.status === 'failed' ? executedResult.summary : '',
+        missingLinks.length > zero ? `Missing structural links: ${missingLinks.join(', ')}.` : '',
+        executedResult?.status === ('failed' as const) ? executedResult.summary : '',
         ...governedBlockingReasons,
       ]).filter(Boolean),
       validationTargets: unique([
         candidate.backendRoute ? `Validate backend chain for ${candidate.backendRoute}.` : '',
         executedResult ? 'Re-run declared flow evidence for this flow.' : '',
-        staticValidationMatches.length > 0
+        staticValidationMatches.length > zero
           ? `Static test coverage detected in ${staticValidationMatches
-              .slice(0, 3)
+              .slice(zero, unit + unit + unit)
               .map((source) => source.filePath)
               .join(', ')}.`
           : '',
@@ -537,10 +707,10 @@ export function buildFlowProjection(input: BuildFlowProjectionInput): PulseFlowP
     generatedAt: new Date().toISOString(),
     summary: {
       totalFlows: flows.length,
-      realFlows: flows.filter((flow) => flow.status === 'real').length,
-      partialFlows: flows.filter((flow) => flow.status === 'partial').length,
-      latentFlows: flows.filter((flow) => flow.status === 'latent').length,
-      phantomFlows: flows.filter((flow) => flow.status === 'phantom').length,
+      realFlows: flows.filter((flow) => isFlowRealStatus(flow.status)).length,
+      partialFlows: flows.filter((flow) => isFlowPartialStatus(flow.status)).length,
+      latentFlows: flows.filter((flow) => isFlowLatentStatus(flow.status)).length,
+      phantomFlows: flows.filter((flow) => isFlowPhantomStatus(flow.status)).length,
     },
     flows: flows.sort((left, right) => left.id.localeCompare(right.id)),
   };

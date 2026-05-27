@@ -781,8 +781,9 @@ function detectExternalCalls(
 // ===== Output detection =====
 function detectOutputs(bodyText: string, kind: BehaviorNodeKind): BehaviorOutput[] {
   const outputs: BehaviorOutput[] = [];
+  const kindCatalog = requireBehaviorNodeKindCatalog();
 
-  if (bodyText.includes('return') && kind === 'api_endpoint') {
+  if (bodyText.includes('return') && kind === kindCatalog.apiEndpoint) {
     outputs.push({ kind: 'response', target: 'client', type: 'json', conditional: false });
   }
 
@@ -1226,7 +1227,7 @@ function buildNodesFromParsedFunctions(
  * @returns A BehaviorGraph with all nodes, call relationships, orphans, and summary.
  */
 export function buildBehaviorGraph(rootDir: string): BehaviorGraph {
-  _nextNodeId = 0;
+  _nextNodeId = deriveZeroValue();
   const tsMorphAvailable = loadTsMorph();
   const allNodes: BehaviorNode[] = [];
 
@@ -1354,22 +1355,28 @@ export function buildBehaviorGraph(rootDir: string): BehaviorGraph {
   const unreachableNodes = allNodes.filter((n) => !reachable.has(n.id)).map((n) => n.id);
 
   // Build summary
+  const summaryKindCatalog = requireBehaviorNodeKindCatalog();
+  const summaryRiskCatalog = requireBehaviorRiskLevelCatalog();
+  const summaryModeCatalog = requireExecutionModeCatalog();
   const summary: BehaviorGraphSummary = {
     totalNodes: allNodes.length,
-    handlerNodes: allNodes.filter((n) => n.kind === 'handler').length,
-    apiEndpointNodes: allNodes.filter((n) => n.kind === 'api_endpoint').length,
-    queueNodes: allNodes.filter((n) => n.kind === 'queue_consumer' || n.kind === 'queue_producer')
-      .length,
-    cronNodes: allNodes.filter((n) => n.kind === 'cron_job').length,
-    webhookNodes: allNodes.filter((n) => n.kind === 'webhook_receiver').length,
-    dbNodes: allNodes.filter((n) => n.kind === 'db_reader' || n.kind === 'db_writer').length,
+    handlerNodes: allNodes.filter((n) => n.kind === summaryKindCatalog.handler).length,
+    apiEndpointNodes: allNodes.filter((n) => n.kind === summaryKindCatalog.apiEndpoint).length,
+    queueNodes: allNodes.filter(
+      (n) => n.kind === summaryKindCatalog.queueConsumer || n.kind === summaryKindCatalog.queueProducer,
+    ).length,
+    cronNodes: allNodes.filter((n) => n.kind === summaryKindCatalog.cronJob).length,
+    webhookNodes: allNodes.filter((n) => n.kind === summaryKindCatalog.webhookReceiver).length,
+    dbNodes: allNodes.filter(
+      (n) => n.kind === summaryKindCatalog.dbReader || n.kind === summaryKindCatalog.dbWriter,
+    ).length,
     externalCallNodes: allNodes.filter((n) => n.externalCalls.length > 0).length,
-    aiSafeNodes: allNodes.filter((n) => n.executionMode === 'ai_safe').length,
+    aiSafeNodes: allNodes.filter((n) => n.executionMode === summaryModeCatalog.aiSafe).length,
     humanRequiredNodes: 0,
     nodesWithErrorHandler: allNodes.filter((n) => n.hasErrorHandler).length,
     nodesWithLogging: allNodes.filter((n) => n.hasLogging).length,
     nodesWithMetrics: allNodes.filter((n) => n.hasMetrics).length,
-    criticalRiskNodes: allNodes.filter((n) => n.risk === 'critical').length,
+    criticalRiskNodes: allNodes.filter((n) => n.risk === summaryRiskCatalog.critical).length,
   };
 
   return {
@@ -1389,8 +1396,9 @@ export function buildBehaviorGraph(rootDir: string): BehaviorGraph {
  * @returns Array of BehaviorNode objects that are high-risk without error handling.
  */
 export function getCriticalPaths(graph: BehaviorGraph): BehaviorNode[] {
+  const riskCatalog = requireBehaviorRiskLevelCatalog();
   return graph.nodes.filter(
-    (n) => (n.risk === 'critical' || n.risk === 'high') && !n.hasErrorHandler,
+    (n) => (n.risk === riskCatalog.critical || n.risk === riskCatalog.high) && !n.hasErrorHandler,
   );
 }
 
@@ -1443,17 +1451,16 @@ if (process.env.PULSE_BEHAVIOR_GRAPH_RUN === '1' || require.main === module) {
   console.warn(`[behavior-graph] Running standalone from ${projectRoot}`);
   const graph = generateBehaviorGraph(projectRoot);
   console.warn(`[behavior-graph] Done. Top 5 nodes by risk:`);
+  const cliRiskCatalog = requireBehaviorRiskLevelCatalog();
   const topRisks = graph.nodes
-    .filter((n) => n.risk === 'critical' || n.risk === 'high')
+    .filter((n) => n.risk === cliRiskCatalog.critical || n.risk === cliRiskCatalog.high)
     .sort((a, b) => {
-      const order: Record<BehaviorRiskLevel, number> = {
-        critical: 0,
-        high: 1,
-        medium: 2,
-        low: 3,
-        none: 4,
-      };
-      return order[a.risk] - order[b.risk];
+      const order: Record<string, number> = {};
+      const riskLabels = [cliRiskCatalog.critical, cliRiskCatalog.high, cliRiskCatalog.medium, cliRiskCatalog.low, cliRiskCatalog.none];
+      for (let i = 0; i < riskLabels.length; i++) {
+        order[riskLabels[i]] = i;
+      }
+      return (order[a.risk] ?? riskLabels.length) - (order[b.risk] ?? riskLabels.length);
     })
     .slice(0, 5);
   for (const node of topRisks) {

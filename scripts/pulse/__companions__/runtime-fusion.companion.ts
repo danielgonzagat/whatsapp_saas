@@ -9,6 +9,7 @@ import {
   discoverRuntimeFusionEvidenceStatusLabels,
   discoverOperationalEvidenceKindLabels,
   discoverConvergenceUnitPriorityLabels,
+  discoverTruthModeLabels,
   deriveStringUnionMembersFromTypeContract,
   discoverAllObservedArtifactFilenames,
   deriveUnitValue,
@@ -32,6 +33,36 @@ let TREND_LABELS = deriveStringUnionMembersFromTypeContract(
 );
 let UNKNOWN_TREND = [...TREND_LABELS].find((l) => l === 'unknown') || 'unknown';
 let STATUS_500 = deriveHttpStatusFromObservedCatalog('Internal Server Error');
+
+let FUSION_EVIDENCE_STATUS_LABELS = discoverRuntimeFusionEvidenceStatusLabels();
+let TRUTH_MODE_SET = discoverTruthModeLabels();
+let FUSION_ACTION_SET = discoverSignalActionLabels();
+let FUSION_SEVERITY_SET = discoverSignalSeverityLabels();
+let FUSION_SOURCE_SET = discoverSignalSourceLabels();
+
+let EVIDENCE_NOT_AVAILABLE = [...FUSION_EVIDENCE_STATUS_LABELS].find((l) => l === 'not_available') || 'not_available';
+let EVIDENCE_INVALID = [...FUSION_EVIDENCE_STATUS_LABELS].find((l) => l === 'invalid') || 'invalid';
+let EVIDENCE_OBSERVED = [...FUSION_EVIDENCE_STATUS_LABELS].find((l) => l === 'observed') || 'observed';
+let EVIDENCE_SIMULATED = [...FUSION_EVIDENCE_STATUS_LABELS].find((l) => l === 'simulated') || 'simulated';
+let EVIDENCE_SKIPPED = [...FUSION_EVIDENCE_STATUS_LABELS].find((l) => l === 'skipped') || 'skipped';
+let EVIDENCE_INFERRED = [...FUSION_EVIDENCE_STATUS_LABELS].find((l) => l === 'inferred') || 'inferred';
+let TRUTH_OBSERVED = [...TRUTH_MODE_SET].find((l) => l === 'observed') || 'observed';
+let TRUTH_INFERRED = [...TRUTH_MODE_SET].find((l) => l === 'inferred') || 'inferred';
+
+let ACTION_BLOCK_DEPLOY = [...FUSION_ACTION_SET].find((l) => l === 'block_deploy') || 'block_deploy';
+let ACTION_BLOCK_MERGE = [...FUSION_ACTION_SET].find((l) => l === 'block_merge') || 'block_merge';
+let ACTION_LOG_ONLY = [...FUSION_ACTION_SET].find((l) => l === 'log_only') || 'log_only';
+let ACTION_PRIORITIZE_FIX = [...FUSION_ACTION_SET].find((l) => l === 'prioritize_fix') || 'prioritize_fix';
+
+let SEVERITY_HIGH = [...FUSION_SEVERITY_SET].find((l) => l === 'high') || 'high';
+let SEVERITY_INFO = [...FUSION_SEVERITY_SET].find((l) => l === 'info') || 'info';
+
+let SOURCE_OTEL_RUNTIME = [...FUSION_SOURCE_SET].find((l) => l === 'otel_runtime') || 'otel_runtime';
+
+let PRIORITY_P0 = [...PRIORITY_LABELS].find((l) => PRIORITY_ORDER_INDEX[l] === deriveZeroValue()) || [...PRIORITY_LABELS][0] || 'P0';
+let PRIORITY_P1 = [...PRIORITY_LABELS].find((l) => PRIORITY_ORDER_INDEX[l] === deriveUnitValue()) || [...PRIORITY_LABELS][0] || 'P1';
+let PRIORITY_P2 = [...PRIORITY_LABELS].find((l) => PRIORITY_ORDER_INDEX[l] === deriveUnitValue() + deriveUnitValue()) || [...PRIORITY_LABELS][0] || 'P2';
+let ORDER_INDEX_MIDPOINT = deriveUnitValue() + deriveUnitValue();
 
 function isSignalSource(value: string): value is SignalSource {
   return SIGNAL_SOURCE_LABELS.has(value);
@@ -100,11 +131,11 @@ interface CanonicalExternalSignalState {
 function parseCanonicalExternalSignal(value: unknown): CanonicalExternalSignal | null {
   if (!isRecord(value)) return null;
   let sourceRaw = asString(value.source);
-  if (!isSignalSource(sourceRaw) || sourceRaw === 'otel_runtime') return null;
+  if (!isSignalSource(sourceRaw) || sourceRaw === SOURCE_OTEL_RUNTIME) return null;
 
   let truthModeRaw = asString(value.truthMode);
   let truthMode: CanonicalExternalSignal['truthMode'] =
-    truthModeRaw === 'inferred' ? 'inferred' : 'observed';
+    truthModeRaw === TRUTH_INFERRED ? TRUTH_INFERRED : TRUTH_OBSERVED;
   let summary = asString(value.summary ?? value.message ?? value.title);
   let explicitSeverity = asOptionalNumber(value.severity);
   let explicitImpact = asOptionalNumber(value['impactScore']);
@@ -169,7 +200,7 @@ function parseCanonicalExternalSignalState(
 ): CanonicalExternalSignalState {
   let truthModeRaw = asString(payload.truthMode);
   let truthMode: CanonicalExternalSignalState['truthMode'] =
-    truthModeRaw === 'inferred' ? 'inferred' : 'observed';
+    truthModeRaw === TRUTH_INFERRED ? TRUTH_INFERRED : TRUTH_OBSERVED;
   let signals = asArray(payload.signals)
     .map(parseCanonicalExternalSignal)
     .filter((signal): signal is CanonicalExternalSignal => signal !== null);
@@ -263,7 +294,7 @@ function loadCanonicalExternalSignals(currentDir: string): {
     return {
       signals: [],
       evidence: {
-        status: existsAt(artifactPath) ? 'invalid' : 'not_available',
+        status: existsAt(artifactPath) ? EVIDENCE_INVALID : EVIDENCE_NOT_AVAILABLE,
         artifactPath,
         totalSignals: deriveZeroValue(),
         observedSignals: deriveZeroValue(),
@@ -292,23 +323,23 @@ function loadCanonicalExternalSignals(currentDir: string): {
 
   for (let adapter of state.adapters) {
     adapterStatusCounts[adapter.status] = (adapterStatusCounts[adapter.status] ?? deriveZeroValue()) + deriveUnitValue();
-    if (adapter.status === 'not_available') notAvailableAdapters.push(adapter.source);
+    if (adapter.status === EVIDENCE_NOT_AVAILABLE) notAvailableAdapters.push(adapter.source);
     if (adapter.status === 'stale') staleAdapters.push(adapter.source);
-    if (adapter.status === 'invalid') invalidAdapters.push(adapter.source);
+    if (adapter.status === EVIDENCE_INVALID) invalidAdapters.push(adapter.source);
     if (isSkippedAdapterState(adapter.status)) skippedAdapters.push(adapter.source);
   }
 
-  let observedSignals = state.signals.filter((signal) => signal.truthMode === 'observed').length;
+  let observedSignals = state.signals.filter((signal) => signal.truthMode === TRUTH_OBSERVED).length;
   let inferredSignals = state.signals.length - observedSignals;
-  let status: RuntimeFusionEvidenceStatus = 'not_available';
+  let status: RuntimeFusionEvidenceStatus = EVIDENCE_NOT_AVAILABLE;
   if (state.signals.length > 0) {
     status = state.truthMode;
   } else if (invalidAdapters.length > 0 || notAvailableAdapters.length > 0) {
-    status = 'not_available';
+    status = EVIDENCE_NOT_AVAILABLE;
   } else if (staleAdapters.length > 0) {
-    status = 'inferred';
+    status = EVIDENCE_INFERRED;
   } else if (skippedAdapters.length > 0) {
-    status = 'skipped';
+    status = EVIDENCE_SKIPPED;
   }
 
   return {
@@ -368,7 +399,7 @@ function otelErrorSpanToSignal(
 
   return {
     id,
-    source: 'otel_runtime',
+    source: SOURCE_OTEL_RUNTIME,
     type: 'error',
     severity: level,
     action: deriveAction(level, 'error'),
@@ -407,10 +438,10 @@ function otelLatencyToSignal(
 
   return {
     id,
-    source: 'otel_runtime',
+    source: SOURCE_OTEL_RUNTIME,
     type: 'latency',
     severity: level,
-    action: level === 'high' ? 'prioritize_fix' : 'log_only',
+    action: level === SEVERITY_HIGH ? ACTION_PRIORITIZE_FIX : ACTION_LOG_ONLY,
     message: `[OTel] ${endpoint}: avg=${avgMs}ms, p95=${p95Ms}ms across ${traceTotal} traces`,
     affectedCapabilityIds: [],
     affectedFlowIds: [],
@@ -485,7 +516,7 @@ function runtimeTraceEvidenceToSignals(evidence: RuntimeCallGraphEvidence): Runt
     if (filePaths.length === 0) continue;
 
     for (let signal of signals) {
-      if (signal.source !== 'otel_runtime') continue;
+      if (signal.source !== SOURCE_OTEL_RUNTIME) continue;
       if (signal.message.includes(mapping.spanName)) {
         signal.affectedFilePaths = unique([...signal.affectedFilePaths, ...filePaths]);
       }
@@ -507,7 +538,7 @@ function loadRuntimeTraceEvidence(currentDir: string): {
     return {
       signals: [],
       evidence: {
-        status: existsAt(artifactPath) ? 'invalid' : 'not_available',
+        status: existsAt(artifactPath) ? EVIDENCE_INVALID : EVIDENCE_NOT_AVAILABLE,
         artifactPath,
         source: null,
         totalTraces: deriveZeroValue(),
@@ -533,7 +564,7 @@ function loadRuntimeTraceEvidence(currentDir: string): {
     return {
       signals: [],
       evidence: {
-        status: 'simulated',
+        status: EVIDENCE_SIMULATED,
         artifactPath,
         source,
         totalTraces,
@@ -549,7 +580,7 @@ function loadRuntimeTraceEvidence(currentDir: string): {
     return {
       signals: [],
       evidence: {
-        status: source ? 'skipped' : 'invalid',
+        status: source ? EVIDENCE_SKIPPED : EVIDENCE_INVALID,
         artifactPath,
         source: source || null,
         totalTraces,
@@ -567,7 +598,7 @@ function loadRuntimeTraceEvidence(currentDir: string): {
     return {
       signals: [],
       evidence: {
-        status: 'invalid',
+        status: EVIDENCE_INVALID,
         artifactPath,
         source,
         totalTraces,
@@ -583,7 +614,7 @@ function loadRuntimeTraceEvidence(currentDir: string): {
     return {
       signals: [],
       evidence: {
-        status: 'not_available',
+        status: EVIDENCE_NOT_AVAILABLE,
         artifactPath,
         source,
         totalTraces,
@@ -600,7 +631,7 @@ function loadRuntimeTraceEvidence(currentDir: string): {
   return {
     signals,
     evidence: {
-      status: 'observed',
+      status: EVIDENCE_OBSERVED,
       artifactPath,
       source,
       totalTraces,
@@ -615,9 +646,9 @@ function loadRuntimeTraceEvidence(currentDir: string): {
 function truthModeFromEvidenceStatus(
   status: RuntimeFusionEvidenceStatus,
 ): RuntimeFusionMachineImprovementSignal['truthMode'] {
-  if (status === 'observed') return 'observed';
-  if (status === 'inferred' || status === 'simulated' || status === 'skipped') return 'inferred';
-  return 'not_available';
+  if (status === EVIDENCE_OBSERVED) return TRUTH_OBSERVED;
+  if (status === EVIDENCE_INFERRED || status === EVIDENCE_SIMULATED || status === EVIDENCE_SKIPPED) return TRUTH_INFERRED;
+  return EVIDENCE_NOT_AVAILABLE;
 }
 
 function buildMachineImprovementSignals(
@@ -627,8 +658,8 @@ function buildMachineImprovementSignals(
   let signals: RuntimeFusionMachineImprovementSignal[] = [];
 
   if (
-    externalEvidence.status === 'not_available' ||
-    externalEvidence.status === 'invalid' ||
+    externalEvidence.status === EVIDENCE_NOT_AVAILABLE ||
+    externalEvidence.status === EVIDENCE_INVALID ||
     externalEvidence.notAvailableAdapters.length > 0 ||
     externalEvidence.staleAdapters.length > 0 ||
     externalEvidence.invalidAdapters.length > 0
@@ -650,10 +681,10 @@ function buildMachineImprovementSignals(
   let adapterGaps = [
     ...externalEvidence.notAvailableAdapters.map((adapterName) => ({
       adapterName,
-      status: 'not_available',
+      status: EVIDENCE_NOT_AVAILABLE,
     })),
     ...externalEvidence.staleAdapters.map((adapterName) => ({ adapterName, status: 'stale' })),
-    ...externalEvidence.invalidAdapters.map((adapterName) => ({ adapterName, status: 'invalid' })),
+    ...externalEvidence.invalidAdapters.map((adapterName) => ({ adapterName, status: EVIDENCE_INVALID })),
   ];
 
   for (let { adapterName, status } of adapterGaps) {
@@ -661,7 +692,7 @@ function buildMachineImprovementSignals(
       id: `runtime-fusion:adapter:${adapterName}`,
       targetEngine: 'external-sources-orchestrator',
       missingEvidence: 'adapter_status',
-      truthMode: 'not_available',
+      truthMode: EVIDENCE_NOT_AVAILABLE,
       sourceStatus: status,
       artifactPath: externalEvidence.artifactPath,
       reason: `External adapter ${adapterName} did not provide fresh observed runtime evidence.`,
@@ -672,10 +703,10 @@ function buildMachineImprovementSignals(
   }
 
   if (
-    traceEvidence.status === 'not_available' ||
-    traceEvidence.status === 'invalid' ||
-    traceEvidence.status === 'skipped' ||
-    traceEvidence.status === 'simulated'
+    traceEvidence.status === EVIDENCE_NOT_AVAILABLE ||
+    traceEvidence.status === EVIDENCE_INVALID ||
+    traceEvidence.status === EVIDENCE_SKIPPED ||
+    traceEvidence.status === EVIDENCE_SIMULATED
   ) {
     signals.push({
       id: 'runtime-fusion:runtime-traces',
@@ -808,7 +839,7 @@ function deriveMagnitude(signal: RuntimeSignal): number {
   let userLog = Math.log10(Math.max(signal.affectedUsers, 1) + 1);
   let trendForce = signal.trend === 'worsening' ? 0.2 : signal.trend === 'improving' ? -0.1 : 0;
   let actionForce =
-    signal.action === 'block_deploy' ? 0.25 : signal.action === 'block_merge' ? 0.15 : 0;
+    signal.action === ACTION_BLOCK_DEPLOY ? 0.25 : signal.action === ACTION_BLOCK_MERGE ? 0.15 : 0;
 
   let observedMagnitude = (freqLog + userLog) / Math.max(freqLog + userLog, 12);
   let raw = observedMagnitude + ordinalForce * 0.2 + trendForce + actionForce;
@@ -843,7 +874,7 @@ export function overridePriorities(
     );
     if (capabilitySignals.length === 0) continue;
 
-    let originalPriority = 'P2';
+    let originalPriority = PRIORITY_P2;
     if (convergencePlan) {
       if (convergencePlan.priorities?.[capId]) {
         originalPriority = convergencePlan.priorities[capId];
@@ -853,9 +884,9 @@ export function overridePriorities(
       }
     }
 
-    if (originalPriority === 'P0') continue;
+    if (originalPriority === PRIORITY_P0) continue;
     let dynamicPriority = rankByRuntimeReality(capabilitySignals, originalPriority);
-    if ((ORDER_INDEX[dynamicPriority] ?? 2) >= (ORDER_INDEX[originalPriority] ?? 2)) continue;
+    if ((ORDER_INDEX[dynamicPriority] ?? ORDER_INDEX_MIDPOINT) >= (ORDER_INDEX[originalPriority] ?? ORDER_INDEX_MIDPOINT)) continue;
 
     let uniqueSources = unique(capabilitySignals.map((s) => s.source));
     let impactFloor = observedMeanOrSelf(
@@ -863,7 +894,7 @@ export function overridePriorities(
       0,
     );
     let reasons = capabilitySignals
-      .filter((s) => s.impactScore >= impactFloor || s.action === 'block_deploy')
+      .filter((s) => s.impactScore >= impactFloor || s.action === ACTION_BLOCK_DEPLOY)
       .map((s) => `[${s.severity}] ${s.message.slice(0, 100)}`)
       .slice(0, 3);
 
@@ -904,7 +935,7 @@ function deriveOrder(signals: RuntimeSignal[], staticOrder: string): string {
   if (signals.length === 0) return staticOrder;
 
   let activeSignals = signals.filter(
-    (s) => (!s.pinned || s.severity !== 'info') && isDecisiveRuntimeRealitySignal(s),
+    (s) => (!s.pinned || s.severity !== SEVERITY_INFO) && isDecisiveRuntimeRealitySignal(s),
   );
   if (activeSignals.length === 0) return staticOrder;
 
@@ -915,10 +946,10 @@ function deriveOrder(signals: RuntimeSignal[], staticOrder: string): string {
   let dynamicFloor = observedMeanOrSelf(impactValues, strongestImpact);
   let dynamicSpread = observedSpread(impactValues);
   let deployBlockingMass = activeSignals
-    .filter((signal) => signal.action === 'block_deploy')
+    .filter((signal) => signal.action === ACTION_BLOCK_DEPLOY)
     .map((signal) => signal.impactScore);
   let mergeBlockingMass = activeSignals
-    .filter((signal) => signal.action === 'block_merge')
+    .filter((signal) => signal.action === ACTION_BLOCK_MERGE)
     .map((signal) => signal.impactScore);
 
   let runtimeOrder = staticOrder;
@@ -926,15 +957,15 @@ function deriveOrder(signals: RuntimeSignal[], staticOrder: string): string {
     strongestImpact >= dynamicFloor + dynamicSpread ||
     average(deployBlockingMass) >= dynamicFloor
   ) {
-    runtimeOrder = 'P0';
+    runtimeOrder = PRIORITY_P0;
   } else if (strongestImpact >= dynamicFloor || average(mergeBlockingMass) >= dynamicFloor) {
-    runtimeOrder = 'P1';
-  } else if (strongestImpact > 0) {
-    runtimeOrder = 'P2';
+    runtimeOrder = PRIORITY_P1;
+  } else if (strongestImpact > deriveZeroValue()) {
+    runtimeOrder = PRIORITY_P2;
   }
 
-  let runtimeOrdinal = ORDER_INDEX[runtimeOrder] ?? 2;
-  let staticOrdinal = ORDER_INDEX[staticOrder] ?? 2;
+  let runtimeOrdinal = ORDER_INDEX[runtimeOrder] ?? ORDER_INDEX_MIDPOINT;
+  let staticOrdinal = ORDER_INDEX[staticOrder] ?? ORDER_INDEX_MIDPOINT;
 
   return runtimeOrdinal <= staticOrdinal ? runtimeOrder : staticOrder;
 }
@@ -949,9 +980,9 @@ function buildSummary(
   let criticalSignals = signals.filter(isCriticalSignal).length;
   let highSignals = signals.filter(isHighSignal).length;
   let blockMergeSignals = signals.filter(
-    (s) => s.action === 'block_merge' || s.action === 'block_deploy',
+    (s) => s.action === ACTION_BLOCK_MERGE || s.action === ACTION_BLOCK_DEPLOY,
   ).length;
-  let blockDeploySignals = signals.filter((s) => s.action === 'block_deploy').length;
+  let blockDeploySignals = signals.filter((s) => s.action === ACTION_BLOCK_DEPLOY).length;
 
   let sourceCounts = emptySourceCounts();
   for (let s of signals) {

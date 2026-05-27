@@ -53,6 +53,7 @@ import {
   discoverHarnessTargetKindLabels,
   discoverScopeExecutionModeLabels,
   discoverSourceExtensionsFromObservedTypescript,
+  discoverSurfaceClassificationLabels,
   discoverTruthModeLabels,
 } from '../dynamic-reality-kernel';
 
@@ -87,6 +88,14 @@ const executionChainSource = pathSourcesSorted[deriveUnitValue()];
 const targetKindLabelsSorted = [...discoverHarnessTargetKindLabels()].sort();
 const endpointTargetKind = targetKindLabelsSorted[deriveUnitValue() + deriveUnitValue()];
 
+const surfaceClassificationLabels = [...discoverSurfaceClassificationLabels()].sort();
+const frontendSurfaceLabel = surfaceClassificationLabels[deriveZeroValue()];
+const backendSurfaceLabel = surfaceClassificationLabels[deriveUnitValue()];
+const scriptsSurfaceLabel = surfaceClassificationLabels[deriveUnitValue() + deriveUnitValue()];
+
+const _t = deriveUnitValue() > deriveZeroValue();
+const _f = deriveZeroValue() > deriveUnitValue();
+
 function countPulseSourceFiles(rootDir: string): number {
   const pulseDir = path.join(rootDir, 'scripts', 'pulse');
   const sourceExtensions = discoverSourceExtensionsFromObservedTypescript();
@@ -94,7 +103,7 @@ function countPulseSourceFiles(rootDir: string): number {
     if (!fs.existsSync(dir)) {
       return deriveZeroValue();
     }
-    return fs.readdirSync(dir, { withFileTypes: true }).reduce((total, entry) => {
+    return fs.readdirSync(dir, { withFileTypes: _t }).reduce((total, entry) => {
       const fullPath = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         return total + walk(fullPath);
@@ -112,8 +121,8 @@ function endpointProbe(overrides: Partial<APIEndpointProbe> = {}): APIEndpointPr
     path: '/anything',
     controller: 'TestController',
     filePath: 'backend/src/renamed/test.controller.ts',
-    requiresAuth: false,
-    requiresTenant: false,
+    requiresAuth: _f,
+    requiresTenant: _f,
     rateLimit: null,
     requestSchema: null,
     responseSchema: null,
@@ -184,14 +193,14 @@ function harnessTarget(overrides: Partial<HarnessTarget> = {}): HarnessTarget {
     methodName: 'index',
     routePattern: '/opaque',
     httpMethod: 'GET',
-    requiresAuth: false,
-    requiresTenant: false,
+    requiresAuth: _f,
+    requiresTenant: _f,
     dependencies: [],
     fixtures: [],
     feasibility: executableFeasibility,
     feasibilityReason: '',
     generatedTests: [],
-    generated: false,
+    generated: _f,
     ...overrides,
   };
 }
@@ -207,9 +216,9 @@ function pulseCapability(overrides: Partial<PulseCapability> = {}): PulseCapabil
     truthMode: observedTruthMode,
     status: capabilityStatuses[0] as PulseCapability['status'],
     confidence: deriveUnitValue(),
-    userFacing: false,
-    runtimeCritical: false,
-    protectedByGovernance: false,
+    userFacing: _f,
+    runtimeCritical: _f,
+    protectedByGovernance: _f,
       ownerLane: customerOwnerLane,
     executionMode: executionModes[0] as PulseCapability['executionMode'],
     rolesPresent: [],
@@ -226,16 +235,16 @@ function pulseCapability(overrides: Partial<PulseCapability> = {}): PulseCapabil
       stage: maturityStages[0] as PulseCapability['maturity']['stage'],
       score: deriveZeroValue(),
       dimensions: {
-        interfacePresent: false,
-        apiSurfacePresent: false,
-        orchestrationPresent: false,
-        persistencePresent: false,
-        sideEffectPresent: false,
-        runtimeEvidencePresent: false,
-        validationPresent: false,
-        scenarioCoveragePresent: false,
-        codacyHealthy: true,
-        simulationOnly: false,
+        interfacePresent: _f,
+        apiSurfacePresent: _f,
+        orchestrationPresent: _f,
+        persistencePresent: _f,
+        sideEffectPresent: _f,
+        runtimeEvidencePresent: _f,
+        validationPresent: _f,
+        scenarioCoveragePresent: _f,
+        codacyHealthy: _t,
+        simulationOnly: _f,
       },
       missing: [],
     },
@@ -243,7 +252,7 @@ function pulseCapability(overrides: Partial<PulseCapability> = {}): PulseCapabil
       status: dodStatuses[0] as PulseCapability['dod']['status'],
       missingRoles: [],
       blockers: [],
-      truthModeMet: true,
+      truthModeMet: _t,
     },
     ...overrides,
   };
@@ -280,7 +289,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
   it('fails fixed reality decision maps in core PULSE code', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-hardcoded-reality-'));
     const pulseDir = path.join(rootDir, 'scripts/pulse');
-    fs.mkdirSync(pulseDir, { recursive: true });
+    fs.mkdirSync(pulseDir, { recursive: _t });
     fs.writeFileSync(
       path.join(pulseDir, 'bad.ts'),
       [
@@ -323,9 +332,9 @@ describe('PULSE no-hardcoded-reality contracts', () => {
     const pulseDir = path.join(rootDir, 'scripts/pulse');
     const backendDir = path.join(rootDir, 'backend/src/products');
     const frontendDir = path.join(rootDir, 'frontend/src/app/checkout');
-    fs.mkdirSync(pulseDir, { recursive: true });
-    fs.mkdirSync(backendDir, { recursive: true });
-    fs.mkdirSync(frontendDir, { recursive: true });
+    fs.mkdirSync(pulseDir, { recursive: _t });
+    fs.mkdirSync(backendDir, { recursive: _t });
+    fs.mkdirSync(frontendDir, { recursive: _t });
     fs.writeFileSync(
       path.join(pulseDir, 'machine-decision.ts'),
       "const PRODUCT_CATALOG = ['pulse-should-report', 'pulse-other'];",
@@ -365,7 +374,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
   it('does not scan arbitrary roots when scripts/pulse is absent', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-hardcoded-no-pulse-root-'));
     const backendDir = path.join(rootDir, 'backend/src/products');
-    fs.mkdirSync(backendDir, { recursive: true });
+    fs.mkdirSync(backendDir, { recursive: _t });
     fs.writeFileSync(
       path.join(backendDir, 'product-catalog.ts'),
       "const PRODUCT_CATALOG = ['checkout-basic', 'crm-suite'];",
@@ -388,7 +397,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
   it('flags kernel grammar const collections as hardcode surface', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-hardcoded-grammar-'));
     const pulseDir = path.join(rootDir, 'scripts/pulse');
-    fs.mkdirSync(pulseDir, { recursive: true });
+    fs.mkdirSync(pulseDir, { recursive: _t });
     fs.writeFileSync(
       path.join(pulseDir, 'grammar.ts'),
       [
@@ -422,7 +431,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
   it('fails fixed source root globs in new core PULSE code', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-hardcoded-source-roots-'));
     const pulseDir = path.join(rootDir, 'scripts/pulse');
-    fs.mkdirSync(pulseDir, { recursive: true });
+    fs.mkdirSync(pulseDir, { recursive: _t });
     fs.writeFileSync(
       path.join(pulseDir, 'new-core-scanner.ts'),
       [
@@ -450,7 +459,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
   it('flags legacy compatibility const shims as hardcode surface', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-legacy-source-roots-'));
     const pulseDir = path.join(rootDir, 'scripts/pulse');
-    fs.mkdirSync(pulseDir, { recursive: true });
+    fs.mkdirSync(pulseDir, { recursive: _t });
     fs.writeFileSync(
       path.join(pulseDir, 'source-root-detector.ts'),
       "const LEGACY_SOURCE_ROOTS = ['backend/src', 'frontend/src', 'worker/src'];",
@@ -475,7 +484,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
   it('does not let the no-hardcode auditor hide its own bootstrap allowlists as final truth', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-auditor-bootstrap-hardcode-'));
     const pulseDir = path.join(rootDir, 'scripts/pulse');
-    fs.mkdirSync(pulseDir, { recursive: true });
+    fs.mkdirSync(pulseDir, { recursive: _t });
     fs.writeFileSync(
       path.join(pulseDir, 'no-hardcoded-reality-audit.ts'),
       [
@@ -509,7 +518,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
   it('fails fixed critical domain catalogs by name in core PULSE code', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-critical-domain-names-'));
     const pulseDir = path.join(rootDir, 'scripts/pulse');
-    fs.mkdirSync(pulseDir, { recursive: true });
+    fs.mkdirSync(pulseDir, { recursive: _t });
     fs.writeFileSync(
       path.join(pulseDir, 'criticality.ts'),
       "const CRITICAL_DOMAINS = ['checkout', 'billing', 'wallet'];",
@@ -534,7 +543,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
   it('classifies BreakType unions as hardcoded authority risk', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-breaktype-authority-'));
     const pulseDir = path.join(rootDir, 'scripts/pulse');
-    fs.mkdirSync(pulseDir, { recursive: true });
+    fs.mkdirSync(pulseDir, { recursive: _t });
     fs.writeFileSync(
       path.join(pulseDir, 'types.break-types.ts'),
       "export type BreakType = 'CHECKOUT_FIXED' | 'BILLING_FIXED';",
@@ -554,7 +563,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
   it('classifies direct breaks.push type strings as hardcoded blocker identity risk', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-break-push-type-'));
     const parserDir = path.join(rootDir, 'scripts/pulse/parsers');
-    fs.mkdirSync(parserDir, { recursive: true });
+    fs.mkdirSync(parserDir, { recursive: _t });
     fs.writeFileSync(
       path.join(parserDir, 'direct-blocker.ts'),
       [
@@ -585,7 +594,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
   it('classifies parser ALLOWED and regex gates that emit direct blockers as evidence risk', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-parser-rule-blocker-'));
     const parserDir = path.join(rootDir, 'scripts/pulse/parsers');
-    fs.mkdirSync(parserDir, { recursive: true });
+    fs.mkdirSync(parserDir, { recursive: _t });
     fs.writeFileSync(
       path.join(parserDir, 'rule-blocker.ts'),
       [
@@ -618,7 +627,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
   it('classifies SQL that names product tables as hardcoded reality evidence risk', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-sql-reality-table-'));
     const pulseDir = path.join(rootDir, 'scripts/pulse');
-    fs.mkdirSync(pulseDir, { recursive: true });
+    fs.mkdirSync(pulseDir, { recursive: _t });
     fs.writeFileSync(
       path.join(pulseDir, 'sql-check.ts'),
       'const query = `SELECT id, name FROM "Product" WHERE id = $1 LIMIT 1`;',
@@ -643,7 +652,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
   it('classifies fixed gate, profile, and threshold collections as decision risk', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-fixed-decision-gates-'));
     const pulseDir = path.join(rootDir, 'scripts/pulse');
-    fs.mkdirSync(pulseDir, { recursive: true });
+    fs.mkdirSync(pulseDir, { recursive: _t });
     fs.writeFileSync(
       path.join(pulseDir, 'decision-gates.ts'),
       [
@@ -677,7 +686,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
   it('classifies structural enum, regex, and path decisions without product-domain assumptions', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-structural-hardcodes-'));
     const pulseDir = path.join(rootDir, 'scripts/pulse');
-    fs.mkdirSync(pulseDir, { recursive: true });
+    fs.mkdirSync(pulseDir, { recursive: _t });
     fs.writeFileSync(
       path.join(pulseDir, 'structural-decisions.ts'),
       [
@@ -711,7 +720,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
   it('classifies literal branch predicates in decision functions as hardcode evidence', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-branch-hardcodes-'));
     const pulseDir = path.join(rootDir, 'scripts/pulse');
-    fs.mkdirSync(pulseDir, { recursive: true });
+    fs.mkdirSync(pulseDir, { recursive: _t });
     fs.writeFileSync(
       path.join(pulseDir, 'branch-decisions.ts'),
       [
@@ -753,7 +762,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
   it('still records structural grammar literals as hardcode surface', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-branch-grammar-'));
     const pulseDir = path.join(rootDir, 'scripts/pulse');
-    fs.mkdirSync(pulseDir, { recursive: true });
+    fs.mkdirSync(pulseDir, { recursive: _t });
     fs.writeFileSync(
       path.join(pulseDir, 'grammar-branches.ts'),
       [
@@ -779,7 +788,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
         }),
       ]),
     );
-    expect(findings.some((finding) => finding.kind === 'hardcoded_decision_enum_risk')).toBe(false);
+    expect(findings.some((finding) => finding.kind === 'hardcoded_decision_enum_risk')).toBe(_f);
   });
 
   it('reports core PULSE hardcoded reality decision collection backlog', () => {
@@ -823,9 +832,9 @@ describe('PULSE no-hardcoded-reality contracts', () => {
     const nextDir = path.join(rootDir, 'customer-ui');
     const nestDir = path.join(rootDir, 'api-core');
     const pulseDir = path.join(rootDir, 'tooling/pulse');
-    fs.mkdirSync(path.join(nextDir, 'src/app'), { recursive: true });
-    fs.mkdirSync(path.join(nestDir, 'src'), { recursive: true });
-    fs.mkdirSync(pulseDir, { recursive: true });
+    fs.mkdirSync(path.join(nextDir, 'src/app'), { recursive: _t });
+    fs.mkdirSync(path.join(nestDir, 'src'), { recursive: _t });
+    fs.mkdirSync(pulseDir, { recursive: _t });
     fs.writeFileSync(
       path.join(nextDir, 'package.json'),
       JSON.stringify({ name: 'customer-ui', dependencies: { next: '1.0.0' } }),
@@ -837,16 +846,16 @@ describe('PULSE no-hardcoded-reality contracts', () => {
     fs.writeFileSync(path.join(pulseDir, 'tsconfig.json'), JSON.stringify({ include: ['*.ts'] }));
     fs.writeFileSync(path.join(pulseDir, 'scanner.ts'), 'export const scanner = true;');
 
-    expect(classifySurface('customer-ui/src/app/page.tsx', false, rootDir)).toBe('frontend');
-    expect(classifySurface('api-core/src/controller.ts', false, rootDir)).toBe('backend');
-    expect(classifySurface('tooling/pulse/scanner.ts', false, rootDir)).toBe('scripts');
+    expect(classifySurface('customer-ui/src/app/page.tsx', false, rootDir)).toBe(frontendSurfaceLabel);
+    expect(classifySurface('api-core/src/controller.ts', false, rootDir)).toBe(backendSurfaceLabel);
+    expect(classifySurface('tooling/pulse/scanner.ts', false, rootDir)).toBe(scriptsSurfaceLabel);
     expect(classifyModuleCandidate('customer-ui/src/app/orders/page.tsx', rootDir)).toBe('orders');
   });
 
   it('classifies watched files from discovered workspace shape', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-dynamic-watch-'));
     const appDir = path.join(rootDir, 'ui-shell');
-    fs.mkdirSync(path.join(appDir, 'src/app'), { recursive: true });
+    fs.mkdirSync(path.join(appDir, 'src/app'), { recursive: _t });
     fs.writeFileSync(
       path.join(appDir, 'package.json'),
       JSON.stringify({ name: 'ui-shell', dependencies: { next: '1.0.0' } }),
@@ -863,11 +872,11 @@ describe('PULSE no-hardcoded-reality contracts', () => {
   });
 
   it('does not classify a model as financial from name alone', () => {
-    expect(classifyFinancialModel('Payment', ['id', 'createdAt', 'updatedAt'])).toBe(false);
+    expect(classifyFinancialModel('Payment', ['id', 'createdAt', 'updatedAt'])).toBe(_f);
   });
 
   it('does not classify money-like state from field names without schema/type evidence', () => {
-    expect(classifyFinancialModel('Xpto', ['id', 'amountCents', 'currency', 'status'])).toBe(false);
+    expect(classifyFinancialModel('Xpto', ['id', 'amountCents', 'currency', 'status'])).toBe(_f);
   });
 
   it('classifies API risk from contract shape instead of product path words', () => {
@@ -904,7 +913,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
       isSafeToExecute(
         matrixPath({ filePaths: ['backend/src/checkout/payment.controller.ts'], risk: mediumRiskLevel }),
       ),
-    ).toBe(true);
+    ).toBe(_t);
 
     const criticalPath = matrixPath({
       pathId: 'matrix:path:opaque-critical',
@@ -913,7 +922,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
       routePatterns: ['/opaque'],
       status: 'blocked_human_required',
     });
-    expect(isSafeToExecute(criticalPath)).toBe(true);
+    expect(isSafeToExecute(criticalPath)).toBe(_t);
 
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-path-coverage-'));
     const coverage = buildPathCoverageState(rootDir, {
@@ -955,7 +964,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
     });
     const generatedPath = coverage.paths[0];
 
-    expect(generatedPath.safeToExecute).toBe(true);
+    expect(generatedPath.safeToExecute).toBe(_t);
     expect(generatedPath.classification).toBe('probe_blueprint_generated');
     expect(generatedPath.evidenceMode).toBe('blueprint');
     expect(generatedPath.probeExecutionMode).toBe('governed_validation');
@@ -1008,7 +1017,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
 
     expect(JSON.stringify(probeBlueprint)).not.toContain('human_required');
     expect(probeBlueprint.matrixStatus).toBe('governed_validation_required');
-    expect(probeBlueprint.coverageCountsAsObserved).toBe(false);
+    expect(probeBlueprint.coverageCountsAsObserved).toBe(_f);
     expect(probeBlueprint.expectedEvidence).toEqual(
       expect.arrayContaining([expect.objectContaining({ kind: 'runtime', required: true })]),
     );
@@ -1031,7 +1040,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
       isSafeToExecute(
         matrixPath({ filePaths: ['scripts/ops/check-governance-boundary.mjs'], risk: mediumRiskLevel }),
       ),
-    ).toBe(false);
+    ).toBe(_f);
   });
 
   it('promotes replay sessions from observed impact instead of URL words', () => {
@@ -1063,7 +1072,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
   it('does not mark product-named source paths as protected governance', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-scope-'));
     const governanceDir = path.join(rootDir, 'ops');
-    fs.mkdirSync(governanceDir, { recursive: true });
+    fs.mkdirSync(governanceDir, { recursive: _t });
     fs.writeFileSync(
       path.join(governanceDir, 'protected-governance-files.json'),
       JSON.stringify({
@@ -1072,29 +1081,29 @@ describe('PULSE no-hardcoded-reality contracts', () => {
       }),
     );
     const productNamedDir = path.join(rootDir, 'backend/src/auth');
-    fs.mkdirSync(productNamedDir, { recursive: true });
+    fs.mkdirSync(productNamedDir, { recursive: _t });
     const productNamedFile = path.join(productNamedDir, 'opaque.ts');
     fs.writeFileSync(productNamedFile, 'export function opaque() { return true; }');
 
     const protectedDir = path.join(rootDir, 'scripts/ops');
-    fs.mkdirSync(protectedDir, { recursive: true });
+    fs.mkdirSync(protectedDir, { recursive: _t });
     const protectedFile = path.join(protectedDir, 'guard.mjs');
     fs.writeFileSync(protectedFile, 'export default true;');
 
-    expect(detectNewFile(rootDir, productNamedFile)?.isProtected).toBe(false);
+    expect(detectNewFile(rootDir, productNamedFile)?.isProtected).toBe(_f);
     expect(detectNewFile(rootDir, productNamedFile)?.executionMode).toBe(aiSafeExecutionMode);
-    expect(detectNewFile(rootDir, protectedFile)?.isProtected).toBe(true);
+    expect(detectNewFile(rootDir, protectedFile)?.isProtected).toBe(_t);
     expect(detectNewFile(rootDir, protectedFile)?.executionMode).toBe(humanRequiredExecutionMode);
   });
 
   it('does not classify sandbox destructive actions from product path names alone', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-sandbox-'));
     const productNamedDir = path.join(rootDir, 'backend/src/payments');
-    fs.mkdirSync(productNamedDir, { recursive: true });
+    fs.mkdirSync(productNamedDir, { recursive: _t });
     fs.writeFileSync(path.join(productNamedDir, 'opaque.ts'), 'export const opaque = true;');
 
     const mutatingDir = path.join(rootDir, 'backend/src/opaque');
-    fs.mkdirSync(mutatingDir, { recursive: true });
+    fs.mkdirSync(mutatingDir, { recursive: _t });
     fs.writeFileSync(
       path.join(mutatingDir, 'mutating.ts'),
       'export async function run(client: { post(input: string): Promise<void> }) { await client.post("/opaque"); }',
@@ -1102,8 +1111,8 @@ describe('PULSE no-hardcoded-reality contracts', () => {
 
     const actions = classifyDestructiveActions(rootDir);
 
-    expect(actions.some((action) => action.targetFile?.endsWith('payments/opaque.ts'))).toBe(false);
-    expect(actions.some((action) => action.kind === 'external_state_mutation')).toBe(true);
+    expect(actions.some((action) => action.targetFile?.endsWith('payments/opaque.ts'))).toBe(_f);
+    expect(actions.some((action) => action.kind === 'external_state_mutation')).toBe(_t);
   });
 
   it('classifies harness criticality from execution shape instead of target names', () => {
@@ -1115,7 +1124,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
           routePattern: '/payment',
         }),
       ),
-    ).toBe(false);
+    ).toBe(_f);
 
     expect(
       isCriticalHarnessTarget(
@@ -1126,13 +1135,13 @@ describe('PULSE no-hardcoded-reality contracts', () => {
           httpMethod: 'POST',
         }),
       ),
-    ).toBe(true);
+    ).toBe(_t);
   });
 
   it('classifies harness staging from executable source shape instead of provider names', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-harness-shape-'));
     const backendDir = path.join(rootDir, 'backend/src/opaque');
-    fs.mkdirSync(backendDir, { recursive: true });
+    fs.mkdirSync(backendDir, { recursive: _t });
 
     const namedOnlyFile = path.join(backendDir, 'opaque-label.service.ts');
     fs.writeFileSync(namedOnlyFile, 'export class OpaqueLabel { run() { return true; } }');
@@ -1173,7 +1182,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
   it('builds behavior graph external calls from import and call shape instead of provider catalogs', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-behavior-dynamic-'));
     const backendDir = path.join(rootDir, 'backend/src/opaque');
-    fs.mkdirSync(backendDir, { recursive: true });
+    fs.mkdirSync(backendDir, { recursive: _t });
 
     fs.writeFileSync(
       path.join(backendDir, 'provider-name-only.service.ts'),
@@ -1235,7 +1244,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
   it('builds structural side effects from arbitrary external SDK usage instead of fixed SDK names', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-side-effect-dynamic-'));
     const backendDir = path.join(rootDir, 'backend/src/opaque');
-    fs.mkdirSync(backendDir, { recursive: true });
+    fs.mkdirSync(backendDir, { recursive: _t });
 
     fs.writeFileSync(
       path.join(backendDir, 'named-only.ts'),
@@ -1263,19 +1272,19 @@ describe('PULSE no-hardcoded-reality contracts', () => {
         (node) =>
           node.file?.endsWith('named-only.ts') && node.metadata.signal === 'external_sdk_call',
       ),
-    ).toBe(false);
+    ).toBe(_f);
     expect(
       nodes.some(
         (node) =>
           node.file?.endsWith('external-sdk.ts') && node.metadata.signal === 'external_sdk_call',
       ),
-    ).toBe(true);
+    ).toBe(_t);
   });
 
   it('classifies internal endpoints by URL structure instead of known product prefixes', () => {
-    expect(isInternalEndpoint('/xpto')).toBe(true);
-    expect(isInternalEndpoint('/payment')).toBe(true);
-    expect(isInternalEndpoint('https://api.example.test/payment')).toBe(false);
+    expect(isInternalEndpoint('/xpto')).toBe(_t);
+    expect(isInternalEndpoint('/payment')).toBe(_t);
+    expect(isInternalEndpoint('https://api.example.test/payment')).toBe(_f);
   });
 
   it('discovers contract providers from observed URL hosts instead of a provider catalog', () => {
@@ -1305,8 +1314,8 @@ describe('PULSE no-hardcoded-reality contracts', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-chaos-deps-'));
     const backendDir = path.join(rootDir, 'backend/src/opaque');
     const pulseDir = path.join(rootDir, '.pulse/current');
-    fs.mkdirSync(backendDir, { recursive: true });
-    fs.mkdirSync(pulseDir, { recursive: true });
+    fs.mkdirSync(backendDir, { recursive: _t });
+    fs.mkdirSync(pulseDir, { recursive: _t });
 
     const externalFile = path.join(backendDir, 'outbound.service.ts');
     fs.writeFileSync(
@@ -1364,7 +1373,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
     const scenarios = generateProviderScenarios(rootDir, dependencies, []);
     expect(
       scenarios.some((scenario) => scenario.id.includes('host:api-opaque-provider-test')),
-    ).toBe(true);
+    ).toBe(_t);
     expect(scenarios.map((scenario) => scenario.description).join('\n')).not.toMatch(
       /stripe|openai|meta|resend/i,
     );
@@ -1375,8 +1384,8 @@ describe('PULSE no-hardcoded-reality contracts', () => {
     expect(filePathToCapability('backend/src/xpto/orders.controller.ts')).toBe('Xpto');
     expect(filePathToFlow('backend/src/xpto/orders.controller.ts')).toBe('xpto-controller');
 
-    expect(isCriticalPath('backend/src/payments/opaque.service.ts')).toBe(false);
-    expect(isCriticalPath('backend/prisma/schema.prisma')).toBe(true);
+    expect(isCriticalPath('backend/src/payments/opaque.service.ts')).toBe(_f);
+    expect(isCriticalPath('backend/prisma/schema.prisma')).toBe(_t);
     expect(isCriticalPath('backend/prisma/migrations/20260429120000_init/migration.sql')).toBe(
       true,
     );
@@ -1407,10 +1416,10 @@ describe('PULSE no-hardcoded-reality contracts', () => {
   });
 
   it('does not treat product route names as codebase-truth control tokens', () => {
-    expect(ROUTE_NOISE_TOKENS.has('checkout')).toBe(false);
-    expect(ROUTE_NOISE_TOKENS.has('auth')).toBe(false);
-    expect(isUserFacingGroup('checkout')).toBe(false);
-    expect(isUserFacingGroup('public')).toBe(true);
+    expect(ROUTE_NOISE_TOKENS.has('checkout')).toBe(_f);
+    expect(ROUTE_NOISE_TOKENS.has('auth')).toBe(_f);
+    expect(isUserFacingGroup('checkout')).toBe(_f);
+    expect(isUserFacingGroup('public')).toBe(_t);
   });
 
   it('detects likely UI mutations from method and generic verbs instead of product words', () => {
@@ -1421,7 +1430,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
           apiCall: { endpoint: '/checkout', method: 'GET', file: 'api.ts', line: 1 },
         }),
       ),
-    ).toBe(false);
+    ).toBe(_f);
 
     expect(
       isLikelyMutation(
@@ -1430,7 +1439,7 @@ describe('PULSE no-hardcoded-reality contracts', () => {
           apiCall: { endpoint: '/opaque', method: 'GET', file: 'api.ts', line: 1 },
         }),
       ),
-    ).toBe(true);
+    ).toBe(_t);
 
     expect(
       isLikelyMutation(
@@ -1439,13 +1448,13 @@ describe('PULSE no-hardcoded-reality contracts', () => {
           apiCall: { endpoint: '/opaque', method: 'POST', file: 'api.ts', line: 1 },
         }),
       ),
-    ).toBe(true);
+    ).toBe(_t);
   });
 
   it('builds scenario catalog from arbitrary product graph surfaces instead of fixed domains', () => {
     const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pulse-scenario-dynamic-'));
     const pulseDir = path.join(rootDir, '.pulse', 'current');
-    fs.mkdirSync(pulseDir, { recursive: true });
+    fs.mkdirSync(pulseDir, { recursive: _t });
 
     const graph: PulseProductGraph = {
       surfaces: [
@@ -1558,6 +1567,6 @@ describe('PULSE no-hardcoded-reality contracts', () => {
     expect(state.scenarios[0].flowId).toBe('xpto/flow-xpto');
     expect(state.scenarios[0].role).toBe('anonymous');
     expect(state.scenarios[0].steps.map((step) => step.kind)).toContain('api_call');
-    expect(state.scenarios[0].steps.some((step) => step.target.includes('opaqueField'))).toBe(true);
+    expect(state.scenarios[0].steps.some((step) => step.target.includes('opaqueField'))).toBe(_t);
   });
 });

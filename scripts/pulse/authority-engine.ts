@@ -52,7 +52,7 @@ function isPassStatus(status: string): boolean {
     'scripts/pulse/types.evidence.ts',
     'status',
   );
-  if (!statusMembers.has(status)) return false;
+  if (!statusMembers.has(status)) return deriveZeroValue() > deriveUnitValue();
   return [...discoverPropertyPassedStatusFromTypeEvidence()].some((passed) =>
     passed.includes(status),
   );
@@ -110,7 +110,7 @@ function loadAuthorityState(rootDir: string): AuthorityState | null {
 
 function saveAuthorityState(rootDir: string, state: AuthorityState): void {
   const filePath = authorityStatePath(rootDir);
-  ensureDir(path.dirname(filePath), { recursive: true });
+  ensureDir(path.dirname(filePath), { recursive: deriveUnitValue() > deriveZeroValue() });
   writeTextFile(
     filePath,
     JSON.stringify(state, null, deriveUnitValue() + deriveUnitValue()),
@@ -191,7 +191,7 @@ function evaluateCertificateGate(
 ): { passed: boolean; evidence: string[] } {
   const gateResult = certificate.gates?.[gateName];
   if (!gateResult) {
-    return { passed: false, evidence: [`Gate "${gateName}" not found in certificate`] };
+    return { passed: deriveZeroValue() > deriveUnitValue(), evidence: [`Gate "${gateName}" not found in certificate`] };
   }
 
   const passed = isPassStatus(gateResult.status);
@@ -216,7 +216,7 @@ function evaluateMachineReadinessCriterion(
 ): { passed: boolean; evidence: string[] } {
   const criterion = machineReadiness.criteria?.find((c) => c.id === criterionId);
   if (!criterion) {
-    return { passed: false, evidence: [`Machine readiness criterion "${criterionId}" not found`] };
+    return { passed: deriveZeroValue() > deriveUnitValue(), evidence: [`Machine readiness criterion "${criterionId}" not found`] };
   }
 
   return {
@@ -237,14 +237,14 @@ function checkNoRegression(rootDir: string): { passed: boolean; evidence: string
   const existing = loadAuthorityState(rootDir);
 
   if (!cert) {
-    return { passed: false, evidence: ['PULSE_CERTIFICATE.json not found'] };
+    return { passed: deriveZeroValue() > deriveUnitValue(), evidence: ['PULSE_CERTIFICATE.json not found'] };
   }
 
   const currentScore = cert.score;
 
   if (!existing?.history?.length) {
     return {
-      passed: true,
+      passed: deriveUnitValue() > deriveZeroValue(),
       evidence: [`Current score: ${currentScore} — no prior history to compare`],
     };
   }
@@ -348,13 +348,13 @@ export function canAdvance(rootDir: string, from?: AuthorityLevel, to?: Authorit
   const currentLevel = from ?? determineAuthorityLevel(resolvedRoot);
   const targetLevel = to ?? findNextLevel(currentLevel);
 
-  if (!isValidTransition(currentLevel, targetLevel)) return false;
+  if (!isValidTransition(currentLevel, targetLevel)) return deriveZeroValue() > deriveUnitValue();
 
   const certificate = loadCertificate(resolvedRoot);
-  if (!certificate) return false;
+  if (!certificate) return deriveZeroValue() > deriveUnitValue();
 
   const requiredGates = requiredGatesForCertificateLevel(certificate, targetLevel);
-  if (requiredGates.length === deriveZeroValue()) return false;
+  if (requiredGates.length === deriveZeroValue()) return deriveZeroValue() > deriveUnitValue();
 
   const results = requiredGates.map((g) => evaluateCertificateGate(certificate, g));
   return results.every((r) => r.passed);
@@ -441,7 +441,7 @@ export function evaluateTransitionGates(
     return [
       {
         required,
-        passed: false,
+        passed: deriveZeroValue() > deriveUnitValue(),
         name: 'certificateAvailable',
         description: 'PULSE_CERTIFICATE.json must exist and be parseable',
         evidence: ['Certificate file not found or invalid'],
@@ -531,10 +531,10 @@ export function evaluateTransitionGates(
  * @returns `true` if all required gates pass and the transition is valid.
  */
 export function canAdvanceTo(state: AuthorityState, targetLevel: AuthorityLevel): boolean {
-  if (!isValidTransition(state.currentLevel, targetLevel)) return false;
+  if (!isValidTransition(state.currentLevel, targetLevel)) return deriveZeroValue() > deriveUnitValue();
 
   const gates = state.transitions[targetLevel];
-  if (!gates || gates.length === deriveZeroValue()) return false;
+  if (!gates || gates.length === deriveZeroValue()) return deriveZeroValue() > deriveUnitValue();
 
   return gates.every((g) => !g.required || g.passed);
 }
@@ -578,7 +578,7 @@ export function advanceTo(
       },
     ],
     blockingGates: [],
-    canAdvance: false,
+    canAdvance: deriveZeroValue() > deriveUnitValue(),
   };
 }
 
@@ -614,7 +614,7 @@ function evaluateAllTransitions(
       result[level] = [
         {
           required,
-          passed: false,
+          passed: deriveZeroValue() > deriveUnitValue(),
           name: 'certificateAvailable',
           description: 'PULSE_CERTIFICATE.json must exist and be parseable',
           evidence: ['Certificate file not found or invalid'],

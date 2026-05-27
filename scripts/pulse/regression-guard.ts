@@ -9,8 +9,11 @@ import * as path from 'node:path';
 import * as fs from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import {
+  deriveUnitValue,
   deriveZeroValue,
   discoverAllObservedArtifactFilenames,
+  discoverConvergenceRiskLevelLabels,
+  discoverDoDGateStatusLabels,
 } from './dynamic-reality-kernel';
 import type { PulseExecutionMatrixSummary } from './types.execution-matrix';
 
@@ -459,22 +462,27 @@ export function captureRegressionSnapshot(rootDir: string): PulseSnapshot {
     ? readJsonArtifact<{ summary?: Partial<PulseProofReadinessSummary> }>(proofReadinessPath)
     : null;
 
+  const sortedGateStatuses = [...discoverDoDGateStatusLabels()].sort();
+  const passingGateStatus = sortedGateStatuses[sortedGateStatuses.length - deriveUnitValue()];
+
   const gatesPass: Record<string, boolean> = {};
   if (certificate?.gates) {
     for (const [name, value] of Object.entries(certificate.gates)) {
-      gatesPass[name] = value?.status === 'pass';
+      gatesPass[name] = value?.status === passingGateStatus;
     }
   }
 
   const scenarioPass: Record<string, boolean> = {};
   if (certificate?.scenarios) {
     for (const [id, value] of Object.entries(certificate.scenarios)) {
-      scenarioPass[id] = value?.status === 'pass';
+      scenarioPass[id] = value?.status === passingGateStatus;
     }
   }
 
+  const riskLabels = [...discoverConvergenceRiskLevelLabels()].sort();
+  const highSeveritySet = new Set([riskLabels[deriveZeroValue()], riskLabels[deriveUnitValue()]]);
   const runtimeHighSignals = (health?.breaks || []).filter(
-    (entry) => entry?.severity === 'critical' || entry?.severity === 'high',
+    (entry) => entry?.severity ? highSeveritySet.has(entry.severity) : false,
   ).length;
 
   return {

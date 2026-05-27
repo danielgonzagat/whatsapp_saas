@@ -13,20 +13,10 @@ import * as p from 'path';
 import { pathExists as existsAt, readTextFile, writeTextFile, ensureDir } from './safe-fs';
 import { tokenize, unique } from './signal-normalizers';
 import {
-  deriveCatalogPercentScaleFromObservedCatalog,
   deriveUnitValue,
   deriveZeroValue,
   discoverAllObservedArtifactFilenames,
-  discoverConvergenceUnitPriorityLabels,
-  discoverExternalAdapterStatusLabels,
-  discoverOperationalEvidenceKindLabels,
   discoverRouteSeparatorFromRuntime,
-  discoverRuntimeFusionEvidenceStatusLabels,
-  discoverSignalActionLabels,
-  discoverSignalSeverityLabels,
-  discoverSignalSourceLabels,
-  discoverSignalTypeLabels,
-  discoverTruthModeLabels,
   deriveStringUnionMembersFromTypeContract,
   deriveVerificationThresholdFromObservedCatalog,
 } from './dynamic-reality-kernel';

@@ -9,16 +9,22 @@ import { safeJoin } from './safe-path';
 import type { PulseArtifactRegistry } from './artifact-registry';
 import type { PulseConvergencePlan } from './types';
 import {
-  discoverAllObservedArtifactFilenames,
-  discoverConvergenceExecutionModeLabels,
+  deriveStringUnionMembersFromTypeContract,
   deriveUnitValue,
   deriveZeroValue,
+  discoverAllObservedArtifactFilenames,
+  discoverConvergenceExecutionModeLabels,
   discoverRouteSeparatorFromRuntime,
 } from './dynamic-reality-kernel';
 
 type SnapshotStatus = 'ready' | 'missing' | 'stale' | 'invalid';
 type LeaseStatus = 'active' | 'expired' | 'released' | 'conflicted';
 type GitNexusSourceMode = 'local_files' | 'cli' | 'missing';
+
+const _snapshotStatusContract = deriveStringUnionMembersFromTypeContract(
+  'scripts/pulse/context-broadcast.ts',
+  'SnapshotStatus',
+);
 
 let _artifactFilenames: ReturnType<typeof discoverAllObservedArtifactFilenames> | null = null;
 function artifactFilenames() {
@@ -28,6 +34,13 @@ function artifactFilenames() {
 
 function isAiSafeExecutionMode(mode: string): boolean {
   return discoverConvergenceExecutionModeLabels().has(mode) && mode === 'ai_safe';
+}
+
+function snapshotStatusIsReady(status: string): boolean {
+  return _snapshotStatusContract.has(status) && status === 'ready';
+}
+function snapshotStatusIsNotReady(status: string): boolean {
+  return _snapshotStatusContract.has(status) && !snapshotStatusIsReady(status);
 }
 
 interface ProtectedGovernanceConfig {
@@ -297,7 +310,7 @@ function buildGitNexusLocalSnapshot(input: {
   ref = `gitnexus:${lastIndexedCommit ?? 'unknown'}:${lastIndexedAt ?? 'unknown'}`;
   sourceMode = 'local_files';
   summary =
-    status === 'ready'
+    snapshotStatusIsReady(status)
       ? `GitNexus local index matches HEAD ${input.commit?.slice(0, 8) ?? 'unknown'}.`
       : 'GitNexus local index exists but does not prove freshness for current HEAD.';
   if (status === 'stale') {
@@ -308,7 +321,7 @@ function buildGitNexusLocalSnapshot(input: {
 }
 
 function gitNexusAutoReindexEnabled(): boolean {
-  return process.env.PULSE_GITNEXUS_AUTO_REINDEX !== '0';
+  return process.env.PULSE_GITNEXUS_AUTO_REINDEX !== String(deriveZeroValue());
 }
 
 function attemptGitNexusReindex(input: {
@@ -324,7 +337,7 @@ function attemptGitNexusReindex(input: {
   stderr: string | null;
   skippedReason: string | null;
 } {
-  const eligible = input.cliAvailable && (input.status === 'missing' || input.status === 'stale');
+  const eligible = input.cliAvailable && snapshotStatusIsNotReady(input.status);
   const command = 'npx -y gitnexus@latest analyze . --skip-agents-md';
   if (!eligible) {
     return {
@@ -433,7 +446,7 @@ export function buildGitNexusSnapshot(rootDir: string, generatedAt: string): Pul
       reindexSkippedReason: metadata.reindexSkippedReason,
       postReindexStatus: refreshedSnapshot.status,
       postReindexRef: refreshedSnapshot.ref,
-      postReindexFresh: refreshedSnapshot.status === 'ready',
+      postReindexFresh: snapshotStatusIsReady(refreshedSnapshot.status),
     };
     snapshot = {
       ...refreshedSnapshot,
@@ -451,7 +464,7 @@ export function buildGitNexusSnapshot(rootDir: string, generatedAt: string): Pul
     currentCommit: commit,
     sourceMode: snapshot.sourceMode,
     summary:
-      reindex.attempted && snapshot.status === 'ready'
+      reindex.attempted && snapshotStatusIsReady(snapshot.status)
         ? `GitNexus reindex refreshed local index for HEAD ${commit?.slice(0, 8) ?? 'unknown'}.`
         : snapshot.summary,
     warnings: [...cliWarnings, ...snapshot.warnings],
@@ -583,10 +596,8 @@ export function buildPulseContextFabricBundle(input: {
   const directiveRef = `${af.cliDirective}#${sha256(input.directiveContent).slice(0, 16)}`;
   const certificateRef = `${af.certificate}#${sha256(input.certificateContent).slice(0, 16)}`;
   const staleContextBlocksExecution =
-    gitnexusState.status === 'stale' ||
-    gitnexusState.status === 'missing' ||
-    beadsState.status === 'stale' ||
-    beadsState.status === 'missing';
+    snapshotStatusIsNotReady(gitnexusState.status) ||
+    snapshotStatusIsNotReady(beadsState.status);
   const contextDigest = buildContextDigest({
     runId: input.runId,
     gitnexusRef: gitnexusState.ref,
@@ -672,8 +683,8 @@ export function buildPulseContextFabricBundle(input: {
 
   const previousDigest = loadPreviousContextDigest(input.rootDir);
   const blockers = [
-    gitnexusState.status !== 'ready' ? `gitnexus:${gitnexusState.status}` : '',
-    beadsState.status !== 'ready' ? `beads:${beadsState.status}` : '',
+    !snapshotStatusIsReady(gitnexusState.status) ? `gitnexus:${gitnexusState.status}` : '',
+    !snapshotStatusIsReady(beadsState.status) ? `beads:${beadsState.status}` : '',
   ].filter(Boolean);
   return {
     gitnexusState,

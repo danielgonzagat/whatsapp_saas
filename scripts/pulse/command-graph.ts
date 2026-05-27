@@ -3,6 +3,7 @@ import { pathExists, readDir, readTextFile, statPath } from './safe-fs';
 import { safeJoin } from './lib/safe-path';
 import {
   deriveUnitValue,
+  deriveZeroValue,
   discoverDirectorySkipHintsFromEvidence,
   hasObservedToken,
 } from './dynamic-reality-kernel';
@@ -65,14 +66,20 @@ interface CandidateSource {
 const IGNORED_DIRS = discoverDirectorySkipHintsFromEvidence();
 IGNORED_DIRS.add('.git');
 
-const PACKAGE_DIR_ALLOWLIST = new Set([
-  '.',
-  'backend',
-  'frontend',
-  'frontend-admin',
-  'worker',
-  'e2e',
-]);
+function discoverPackageWorkspaceDirs(rootDir: string): Set<string> {
+  const allowed = new Set<string>(['.']);
+  try {
+    for (const entry of readDir(rootDir, { withFileTypes: true })) {
+      if (!entry.isDirectory() || IGNORED_DIRS.has(entry.name)) continue;
+      if (pathExists(safeJoin(rootDir, entry.name, 'package.json'))) {
+        allowed.add(entry.name);
+      }
+    }
+  } catch {
+    // keep root at minimum
+  }
+  return allowed;
+}
 
 function normalizeRepoPath(filePath: string): string {
   return filePath.replace(/\\/g, '/').replace(/^\.\//, '');
@@ -165,6 +172,7 @@ function classifyCommand(
 const MAX_TRAVERSAL_DEPTH = deriveUnitValue() + deriveUnitValue() + deriveUnitValue();
 
 function discoverPackageJsonFiles(rootDir: string): string[] {
+  const workspaceDirs = discoverPackageWorkspaceDirs(rootDir);
   const found: string[] = [];
   const visit = (relativeDir: string, depth: number): void => {
     if (depth > MAX_TRAVERSAL_DEPTH) {
@@ -174,7 +182,7 @@ function discoverPackageJsonFiles(rootDir: string): string[] {
     for (const entry of readDir(absoluteDir, { withFileTypes: true })) {
       if (entry.isDirectory()) {
         if (!IGNORED_DIRS.has(entry.name)) {
-          visit(normalizeRepoPath(path.join(relativeDir, entry.name)), depth + 1);
+          visit(normalizeRepoPath(path.join(relativeDir, entry.name)), depth + deriveUnitValue());
         }
         continue;
       }
@@ -182,12 +190,12 @@ function discoverPackageJsonFiles(rootDir: string): string[] {
         continue;
       }
       const packageDir = normalizeRepoPath(relativeDir || '.');
-      if (PACKAGE_DIR_ALLOWLIST.has(packageDir)) {
+      if (workspaceDirs.has(packageDir)) {
         found.push(normalizeRepoPath(path.join(relativeDir, entry.name)));
       }
     }
   };
-  visit('.', 0);
+  visit('.', deriveZeroValue());
   return uniqueSorted(found);
 }
 
@@ -205,7 +213,7 @@ function discoverStaticSources(rootDir: string): CandidateSource[] {
     for (const entry of readDir(absoluteDir, { withFileTypes: true })) {
       if (entry.isDirectory()) {
         if (!IGNORED_DIRS.has(entry.name)) {
-          visit(normalizeRepoPath(path.join(relativeDir, entry.name)), depth + 1);
+          visit(normalizeRepoPath(path.join(relativeDir, entry.name)), depth + deriveUnitValue());
         }
         continue;
       }
@@ -219,7 +227,7 @@ function discoverStaticSources(rootDir: string): CandidateSource[] {
       }
     }
   };
-  visit('.', 0);
+  visit('.', deriveZeroValue());
   return sources.sort((left, right) => left.relativePath.localeCompare(right.relativePath));
 }
 
@@ -235,6 +243,7 @@ function inferInstallCommands(
       return [];
     }
     const command = `${packagePrefix(packageDir)} ci`;
+    const lockfileName = path.basename(lockPath, '.json');
     return [
       {
         id: `install:${packageDir}`,
@@ -244,7 +253,7 @@ function inferInstallCommands(
         sourceKind: 'lockfile' as const,
         packagePath: relativePackagePath,
         confidence: 'high' as const,
-        signals: ['package-lock'],
+        signals: [lockfileName],
       },
     ];
   });
@@ -300,22 +309,27 @@ function inferTsconfigCommands(
       if (!pathExists(safeJoin(rootDir, packagePath))) {
         return [];
       }
+      const sourceKindLabel = source.sourceKind;
       return [
         {
           id: `tsconfig:${source.relativePath}`,
           purpose: 'typecheck' as const,
           command: `${packagePrefix(packageDir)} exec tsc --noEmit -p ${path.basename(source.relativePath)}`,
           sourcePath: source.relativePath,
-          sourceKind: 'tsconfig' as const,
+          sourceKind: sourceKindLabel,
           packagePath,
           confidence: 'medium' as const,
-          signals: ['tsconfig'],
+          signals: [sourceKindLabel],
         },
       ];
     });
 }
 
-function dockerCommands(sourcePath: string, text: string): PulseDiscoveredCommand[] {
+function dockerCommands(
+  sourcePath: string,
+  text: string,
+  sourceKind: PulseCommandSourceKind,
+): PulseDiscoveredCommand[] {
   const commands: PulseDiscoveredCommand[] = [];
   const lines = text.split(/\r?\n/);
   lines.forEach((line, index) => {
@@ -335,9 +349,9 @@ function dockerCommands(sourcePath: string, text: string): PulseDiscoveredComman
       purpose: classification.purpose,
       command: commandText,
       sourcePath,
-      sourceKind: 'dockerfile',
+      sourceKind,
       confidence: classification.confidence,
-      signals: ['dockerfile', ...classification.signals],
+      signals: [sourceKind, ...classification.signals],
     });
   });
   return commands;
@@ -376,7 +390,11 @@ function workflowRunBlocks(text: string): string[] {
   return commands;
 }
 
-function workflowCommands(sourcePath: string, text: string): PulseDiscoveredCommand[] {
+function workflowCommands(
+  sourcePath: string,
+  text: string,
+  sourceKind: PulseCommandSourceKind,
+): PulseDiscoveredCommand[] {
   return workflowRunBlocks(text).map((command, index) => {
     const classification = classifyCommand(null, command);
     return {
@@ -384,9 +402,9 @@ function workflowCommands(sourcePath: string, text: string): PulseDiscoveredComm
       purpose: classification.purpose,
       command,
       sourcePath,
-      sourceKind: 'github-workflow' as const,
+      sourceKind,
       confidence: classification.confidence,
-      signals: ['github-workflow', ...classification.signals],
+      signals: [sourceKind, ...classification.signals],
     };
   });
 }
@@ -607,10 +625,10 @@ export function buildPulseCommandGraph(rootDir = process.cwd()): PulseCommandGra
     const text = readTextFile(absolutePath, 'utf8');
     environmentVariables.push(...environmentVariablesForSource(source, text));
     if (source.sourceKind === 'dockerfile') {
-      commands.push(...dockerCommands(source.relativePath, text));
+      commands.push(...dockerCommands(source.relativePath, text, source.sourceKind));
     }
     if (source.sourceKind === 'github-workflow') {
-      commands.push(...workflowCommands(source.relativePath, text));
+      commands.push(...workflowCommands(source.relativePath, text, source.sourceKind));
     }
   }
 

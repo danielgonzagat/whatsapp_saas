@@ -19,6 +19,7 @@ import {
   writeTextFile,
 } from './safe-fs';
 import {
+  deriveStringUnionMembersFromTypeContract,
   deriveUnitValue,
   deriveZeroValue,
   discoverAllObservedArtifactFilenames,
@@ -33,6 +34,13 @@ import type {
   UnitMemory,
   UnitMemoryStatus,
 } from './types.structural-memory';
+
+// ── Kernel-derived adjudication labels (AST extraction at module load) ────
+
+const _adjudicationLabelSet = deriveStringUnionMembersFromTypeContract(
+  'scripts/pulse/structural-memory.ts',
+  'StructuralAdjudicationStatus',
+);
 
 const _oneMoreThanUnit = deriveUnitValue() + deriveUnitValue();
 const REPEATED_FAILURE_THRESHOLD =
@@ -105,13 +113,8 @@ function normalizeUnitStatus(status: LegacyUnitMemoryStatus): UnitMemoryStatus {
 function normalizeAdjudicationStatus(
   status: string | null | undefined,
 ): StructuralAdjudicationStatus | null {
-  if (
-    status === 'confirmed' ||
-    status === 'false_positive' ||
-    status === 'accepted_risk' ||
-    status === 'stale'
-  ) {
-    return status;
+  if (status && getAdjudicationStatusLabels().has(status)) {
+    return status as StructuralAdjudicationStatus;
   }
   return null;
 }
@@ -152,10 +155,10 @@ function normalizeLoadedMemory(memory: LegacyStructuralMemoryState): StructuralM
 }
 
 function recommendedStrategyForRepeatedFailure(status: AttemptStatus): string {
-  if (status === 'blocked') {
+  if (getAttemptStatusLabels().has(status) && status === 'blocked') {
     return 'governed_sandbox';
   }
-  if (status === 'timeout') {
+  if (getAttemptStatusLabels().has(status) && status === 'timeout') {
     return 'observation_only';
   }
   return REPEATED_FAILURE_STATUS;
@@ -215,8 +218,10 @@ function clearFailedStrategyBlock(unit: ExtendedUnitMemory): void {
 
 function classifyEvidenceDisposition(evidence: string): StructuralAdjudicationStatus | null {
   const normalized = evidence.toLowerCase();
+  const adjudicationTokens = [..._adjudicationLabelSet].join('|');
+  const prefixTokens = 'status|verdict|disposition|classification|outcome';
   const match = normalized.match(
-    /\b(?:status|verdict|disposition|classification|outcome)\s*[:=]\s*(false_positive|accepted_risk|stale|confirmed)\b/,
+    new RegExp(`\\b(?:${prefixTokens})\\s*[:=]\\s*(${adjudicationTokens})\\b`),
   );
   return match ? (match[1] as StructuralAdjudicationStatus) : null;
 }
@@ -258,6 +263,18 @@ function applyAdjudication(
   }
 
   unit.falsePositive = false;
+}
+
+function isSuccessAttemptStatus(status: string): boolean {
+  return getAttemptStatusLabels().has(status) && status === 'success';
+}
+
+function isResolvedLabel(status: string): boolean {
+  return getUnitMemoryStatusLabels().has(status) && status === 'resolved';
+}
+
+function isArchivedLabel(status: string): boolean {
+  return getUnitMemoryStatusLabels().has(status) && status === 'archived';
 }
 
 function loadAutonomyState(rootDir: string): PulseAutonomyState | null {
@@ -337,11 +354,13 @@ function computeSummary(
   units: UnitMemory[],
   learnedPatterns: LearnedPattern[],
 ): StructuralMemoryState['summary'] {
+  const activeLabel = deriveActiveStatusLabel();
+  const resolvedLabel = deriveResolvedStatusLabel();
   return {
     totalUnits: units.length,
-    activeUnits: units.filter((u) => u.status === 'active').length,
+    activeUnits: units.filter((u) => u.status === activeLabel).length,
     escalatedValidationUnits: units.filter((u) => u.status === REPEATED_FAILURE_STATUS).length,
-    resolvedUnits: units.filter((u) => u.status === 'resolved').length,
+    resolvedUnits: units.filter((u) => u.status === resolvedLabel).length,
     falsePositives: units.filter((u) => u.falsePositive).length,
     learnedStrategies: learnedPatterns.length,
   };
@@ -374,14 +393,17 @@ function recordAttemptInternal(
 
   if (adjudicationStatus) {
     applyAdjudication(unit, adjudicationStatus, evidence ?? `status=${adjudicationStatus}`);
-  } else if (status === 'success') {
+  } else if (isSuccessAttemptStatus(status)) {
     unit.successfulStrategies = [...new Set([...unit.successfulStrategies, strategy])];
     unit.repeatedFailures = 0;
     unit.recommendedStrategy = strategy;
     unit.avoidStrategyFingerprint = null;
     clearFailedStrategyBlock(unit);
-    if (unit.status !== 'resolved' && unit.status !== 'archived') {
-      unit.status = 'active';
+    if (
+      !isResolvedLabel(unit.status) &&
+      !isArchivedLabel(unit.status)
+    ) {
+      unit.status = deriveActiveStatusLabel() as UnitMemoryStatus;
     }
   } else {
     unit.failedStrategies = [...new Set([...unit.failedStrategies, strategy])];
@@ -508,7 +530,7 @@ export function markFalsePositive(
     ...newUnits[unitIndex],
     falsePositive: true,
     fpProof: proof,
-    status: 'resolved',
+    status: deriveResolvedStatusLabel() as UnitMemoryStatus,
   };
 
   const auditEntry: MemoryEntry = {
@@ -724,13 +746,10 @@ export function buildStructuralMemory(rootDir: string): StructuralMemoryState {
         (unitMap.get(unitId) as ExtendedUnitMemory | undefined) ?? createUnitMemory(unitId);
 
       const status: AttemptStatus =
-        iteration.status === 'completed' || iteration.status === 'validated'
-          ? 'success'
-          : iteration.status === 'failed'
-            ? 'failed'
-            : iteration.status === 'blocked'
-              ? 'blocked'
-              : 'failed';
+        iteration.status === 'completed' || iteration.status === 'validated' ? 'success'
+          : iteration.status === 'failed' ? 'failed'
+          : iteration.status === 'blocked' ? 'blocked'
+          : 'failed';
 
       const strategy = `${iteration.strategyMode ?? 'normal'}_${iteration.plannerMode}`;
       const strategyFingerprint = recordStrategyFingerprint(existing, strategy);
@@ -740,7 +759,7 @@ export function buildStructuralMemory(rootDir: string): StructuralMemoryState {
         existing.attempts += 1;
         existing.lastAttempt = iteration.finishedAt;
         applyAdjudication(existing, adjudicationStatus, iteration.summary);
-      } else if (status === 'success') {
+      } else if (isSuccessAttemptStatus(status)) {
         existing.attempts += 1;
         existing.lastAttempt = iteration.finishedAt;
         existing.successfulStrategies = [...new Set([...existing.successfulStrategies, strategy])];
@@ -748,8 +767,11 @@ export function buildStructuralMemory(rootDir: string): StructuralMemoryState {
         existing.recommendedStrategy = strategy;
         existing.avoidStrategyFingerprint = null;
         clearFailedStrategyBlock(existing);
-        if (existing.status !== 'resolved' && existing.status !== 'archived') {
-          existing.status = 'active';
+        if (
+          !isResolvedLabel(existing.status) &&
+          !isArchivedLabel(existing.status)
+        ) {
+          existing.status = deriveActiveStatusLabel() as UnitMemoryStatus;
         }
       } else {
         existing.attempts += 1;

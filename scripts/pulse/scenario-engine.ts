@@ -74,6 +74,74 @@ const HARNESS_EVIDENCE_FILENAME = _artifactNames.harnessEvidence;
 const PRODUCT_GRAPH_FILENAME = _artifactNames.productGraph;
 const SCENARIO_EVIDENCE_FILENAME = _artifactNames.scenarioEvidence;
 
+// ─── Type-contract derived kind sets ───────────────────────────────────────
+
+const _stepKinds = deriveStringUnionMembersFromTypeContract(
+  'scripts/pulse/types.scenario-engine.ts',
+  'ScenarioStepKind',
+);
+const _inputKinds = deriveStringUnionMembersFromTypeContract(
+  'scripts/pulse/types.behavior-graph.ts',
+  'BehaviorInputKind',
+);
+const _outputKinds = deriveStringUnionMembersFromTypeContract(
+  'scripts/pulse/types.behavior-graph.ts',
+  'BehaviorOutputKind',
+);
+const _entityOps = deriveStringUnionMembersFromTypeContract(
+  'scripts/pulse/types.dataflow-engine.ts',
+  'EntityOperation',
+);
+
+const _contextualInputKinds = new Set(
+  [..._inputKinds].filter((k) => k === 'context' || k === 'headers'),
+);
+const _bodyLikeInputKinds = new Set(
+  [..._inputKinds].filter((k) => k === 'body' || k === 'query' || k === 'params'),
+);
+const _asyncOutputKinds = new Set(
+  [..._outputKinds].filter((k) => k === 'event' || k === 'queue_message'),
+);
+const _mutatingOutputKinds = new Set(
+  [..._outputKinds].filter((k) => k === 'db_write'),
+);
+const _uiStepKinds = new Set(
+  [..._stepKinds].filter((k) => k === 'navigate' || k === 'click'),
+);
+const _apiStepKind = new Set(
+  [..._stepKinds].filter((k) => k === 'api_call'),
+);
+const _submitStepKinds = new Set(
+  [..._stepKinds].filter((k) => k === 'submit' || k === 'api_call'),
+);
+const _assertStepKind = new Set(
+  [..._stepKinds].filter((k) => k === 'assert'),
+);
+const _loginStepKind = new Set(
+  [..._stepKinds].filter((k) => k === 'login'),
+);
+const _navigateStepKind = new Set(
+  [..._stepKinds].filter((k) => k === 'navigate'),
+);
+const _clickStepKind = new Set(
+  [..._stepKinds].filter((k) => k === 'click'),
+);
+const _typeStepKind = new Set(
+  [..._stepKinds].filter((k) => k === 'type'),
+);
+const _submitStepKind = new Set(
+  [..._stepKinds].filter((k) => k === 'submit'),
+);
+const _seedDbStepKind = new Set(
+  [..._stepKinds].filter((k) => k === 'seed_db'),
+);
+const _cleanupStepKind = new Set(
+  [..._stepKinds].filter((k) => k === 'cleanup'),
+);
+const _waitStepKind = new Set(
+  [..._stepKinds].filter((k) => k === 'wait'),
+);
+
 function _noiseTokenSet(): Set<string> {
   return new Set([
     ...discoverDirectorySkipHintsFromEvidence(),
@@ -224,7 +292,7 @@ function getHttpDecorator(node: BehaviorNode): string {
       return d.toUpperCase();
     }
   }
-  return toPlaywrightHttpMethod('');
+  return toPlaywrightHttpMethod(d.toUpperCase());
 }
 
 function extractRoutePattern(node: BehaviorNode): string {

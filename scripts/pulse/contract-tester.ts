@@ -46,8 +46,6 @@ import {
 const CONTRACT_EVIDENCE_FILENAME =
   discoverAllObservedArtifactFilenames().contractEvidence ?? 'PULSE_CONTRACT_EVIDENCE.json';
 
-const MIGRATIONS_DIRS = ['backend/prisma/migrations', 'prisma/migrations'];
-
 const HTTP_METHOD_PATTERN = /\b(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\b/;
 
 // ── Kernel-derived type-union catalogs ──────────────────────────────────────
@@ -71,22 +69,6 @@ const NODE_KIND_LABELS = discoverStructuralNodeKindLabels();
 
 const NESTJS_DECORATOR_NAMES = discoverNestjsDecoratorNamesFromTypeEvidence();
 
-function isContractStatus(s: string, label: string): boolean {
-  return CONTRACT_STATUS_LABELS.has(s) && s === label;
-}
-
-function isDiffSeverity(s: string, label: string): boolean {
-  return DIFF_SEVERITY_LABELS.has(s) && s === label;
-}
-
-function isAuthType(s: string, label: string): boolean {
-  return AUTH_TYPE_LABELS.has(s) && s === label;
-}
-
-function isNodeKind(s: string, label: string): boolean {
-  return NODE_KIND_LABELS.has(s) && s === label;
-}
-
 function resolveAuthLabel(predicate: (s: string) => boolean): ProviderContract['authType'] {
   const found = [...AUTH_TYPE_LABELS].find(predicate);
   if (found) return found as ProviderContract['authType'];
@@ -109,6 +91,14 @@ function resolveStatusLabel(predicate: (s: string) => boolean): ContractStatus {
   const fallback = [...CONTRACT_STATUS_LABELS][0];
   if (!fallback) throw new Error('resolveStatusLabel: no status labels available from type contract');
   return fallback as ContractStatus;
+}
+
+function resolveNodeKindLabel(predicate: (s: string) => boolean): string {
+  const found = [...NODE_KIND_LABELS].find(predicate);
+  if (found) return found;
+  const fallback = [...NODE_KIND_LABELS][0];
+  if (!fallback) throw new Error('resolveNodeKindLabel: no node kind labels available');
+  return fallback;
 }
 
 // ---------------------------------------------------------------------------
@@ -147,12 +137,12 @@ export function buildContractTestEvidence(rootDir: string): ContractTestEvidence
   generateContractTestCases(merged);
 
   const totalContracts = merged.length;
-  const validContracts = merged.filter((c) => isContractStatus(c.status, 'valid')).length;
-  const brokenContracts = merged.filter((c) => isContractStatus(c.status, 'broken')).length;
+  const validContracts = merged.filter((c) => c.status === resolveStatusLabel(l => l === 'valid')).length;
+  const brokenContracts = merged.filter((c) => c.status === resolveStatusLabel(l => l === 'broken')).length;
   const untestedContracts = merged.filter(
-    (c) => isContractStatus(c.status, 'untested') || isContractStatus(c.status, 'unknown'),
+    (c) => c.status === resolveStatusLabel(l => l === 'untested') || c.status === resolveStatusLabel(l => l === 'unknown'),
   ).length;
-  const breakingChanges = schemaDiffs.filter((d) => isDiffSeverity(d.severity, 'breaking')).length;
+  const breakingChanges = schemaDiffs.filter((d) => d.severity === resolveSeverityLabel(l => l === 'breaking')).length;
   const destructiveMigrations = migrationChecks.filter((m) => m.destructive).length;
 
   const evidence: ContractTestEvidence = {
@@ -227,7 +217,7 @@ export function mergeContracts(
       result.push({
         ...baseline,
         expectedHeaders: uniqueStrings([...baseline.expectedHeaders, ...dc.expectedHeaders]),
-        authType:         isAuthType(baseline.authType, resolveAuthLabel(l => l === 'none')) ? dc.authType : baseline.authType,
+        authType:         baseline.authType === resolveAuthLabel(l => l === 'none') ? dc.authType : baseline.authType,
         status: resolveStatusLabel(l => l === 'untested'),
         lastValidated: null,
         issues: uniqueStrings([
@@ -271,8 +261,8 @@ export function mergeContracts(
 }
 
 function buildSdkImportContract(packageName: string): ProviderContract {
-  const noneAuth = resolveAuthLabel(() => true);
-  const generatedStatus = resolveStatusLabel(() => true);
+  const noneAuth = resolveAuthLabel(l => l === 'none');
+  const generatedStatus = resolveStatusLabel(l => l === 'generated');
   return {
     provider: packageName,
     endpoint: '/sdk-client',
@@ -542,7 +532,7 @@ function discoverContractsFromRuntimeArtifacts(rootDir: string): ProviderContrac
         expectedResponseSchema: observation.responseSchema ?? {},
         expectedHeaders: observation.headers,
         authType: inferAuthTypeFromObservation(observation),
-        status: 'generated',
+        status: resolveStatusLabel(l => l === 'generated'),
         lastValidated: null,
         issues: [`Discovered from runtime artifact ${entry.name}`],
       });
@@ -592,7 +582,7 @@ function discoverContractsFromGraphArtifacts(rootDir: string): ProviderContract[
         expectedResponseSchema: observation.responseSchema ?? {},
         expectedHeaders: observation.headers,
         authType: inferAuthTypeFromObservation(observation),
-        status: 'generated',
+        status: resolveStatusLabel(l => l === 'generated'),
         lastValidated: null,
         issues: [`Discovered from graph artifact ${fileName}`],
       });
@@ -764,7 +754,7 @@ function dedupeContracts(contracts: ProviderContract[]): ProviderContract[] {
           ? existing.expectedResponseSchema
           : contract.expectedResponseSchema,
       expectedHeaders: uniqueStrings([...existing.expectedHeaders, ...contract.expectedHeaders]),
-      authType: isAuthType(existing.authType, resolveAuthLabel(l => l === 'none')) ? contract.authType : existing.authType,
+      authType: existing.authType === resolveAuthLabel(l => l === 'none') ? contract.authType : existing.authType,
       issues: uniqueStrings([...existing.issues, ...contract.issues]),
     });
   }
@@ -793,7 +783,7 @@ export function generateContractTestCases(contracts: ProviderContract[]): number
   let count = deriveZeroValue();
 
   for (const contract of contracts) {
-    if (isContractStatus(contract.status, 'generated') || isContractStatus(contract.status, 'unknown')) {
+    if (contract.status === resolveStatusLabel(l => l === 'generated') || contract.status === resolveStatusLabel(l => l === 'unknown')) {
       contract.status = resolveStatusLabel(l => l === 'generated');
       if (!contract.issues.includes('Contract test case generated — awaiting live execution')) {
         contract.issues.push('Contract test case generated — awaiting live execution');
@@ -843,13 +833,15 @@ export function defineProviderContracts(rootDir: string): ProviderContract[] {
 }
 
 function findBackendDir(rootDir: string): string | null {
-  const candidates = ['backend/src', 'server/src', 'api/src', 'src'];
-  for (const candidate of candidates) {
-    const full = safeJoin(rootDir, candidate);
-    if (pathExists(full)) {
-      return full;
+  try {
+    const entries = readDir(rootDir);
+    for (const entry of entries) {
+      const srcPath = safeJoin(rootDir, entry, 'src');
+      if (pathExists(srcPath)) return srcPath;
     }
-  }
+  } catch {}
+  const rootSrc = safeJoin(rootDir, 'src');
+  if (pathExists(rootSrc)) return rootSrc;
   return null;
 }
 
@@ -1252,7 +1244,7 @@ function loadCurrentEndpoints(rootDir: string): EndpointDescriptor[] {
       const endpoints: EndpointDescriptor[] = [];
 
       for (const node of graph.nodes) {
-        if (isNodeKind(node.kind, 'backend_route') || isNodeKind(node.kind, 'proxy_route')) {
+        if (node.kind === resolveNodeKindLabel(l => l === 'backend_route') || node.kind === resolveNodeKindLabel(l => l === 'proxy_route')) {
           const method = extractNodeHttpMethod(node);
           const route = extractNodeRoute(node);
           if (method && route) {
@@ -1425,10 +1417,15 @@ export function checkMigrationSafety(rootDir: string): MigrationSafetyCheck[] {
 }
 
 function findMigrationsDir(rootDir: string): string | null {
-  for (const candidate of MIGRATIONS_DIRS) {
-    const full = safeJoin(rootDir, candidate);
-    if (pathExists(full)) return full;
-  }
+  try {
+    const entries = readDir(rootDir);
+    for (const entry of entries) {
+      const candidate = safeJoin(rootDir, entry, 'prisma', 'migrations');
+      if (pathExists(candidate)) return candidate;
+    }
+  } catch {}
+  const rootCandidate = safeJoin(rootDir, 'prisma', 'migrations');
+  if (pathExists(rootCandidate)) return rootCandidate;
   return null;
 }
 

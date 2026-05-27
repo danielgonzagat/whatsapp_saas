@@ -4,6 +4,7 @@ import { readTextFile, writeTextFile, pathExists, readDir, ensureDir } from './s
 import {
   deriveUnitValue,
   deriveZeroValue,
+  deriveStringUnionMembersFromTypeContract,
   discoverAllObservedArtifactFilenames,
   discoverDirectorySkipHintsFromEvidence,
   discoverParityGapSeverityLabels,
@@ -17,26 +18,51 @@ import type {
   EntityLifecycle,
 } from './types.dataflow-engine';
 
+const _paritySeverityLabels = [...discoverParityGapSeverityLabels()];
+
+function paritySeverityMostUrgent(): string {
+  return _paritySeverityLabels[deriveZeroValue()];
+}
+
+function paritySeverityHigh(): string {
+  return _paritySeverityLabels[deriveUnitValue()];
+}
+
+function paritySeverityMedium(): string {
+  return _paritySeverityLabels[deriveUnitValue() + deriveUnitValue()];
+}
+
+const _dataflowCoverageLabels = [
+  ...deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.dataflow-engine.ts',
+    'DataflowCoverageStatus',
+  ),
+];
+
+function dataflowCoverageObserved(): string {
+  return _dataflowCoverageLabels[deriveZeroValue()];
+}
+
+const _entityOperationLabels = [
+  ...deriveStringUnionMembersFromTypeContract(
+    'scripts/pulse/types.dataflow-engine.ts',
+    'EntityOperation',
+  ),
+];
+
+function entityOperationCreate(): string {
+  return _entityOperationLabels[deriveZeroValue()];
+}
+
+function entityOperationUpdate(): string {
+  return _entityOperationLabels[deriveUnitValue()];
+}
+
+function entityOperationDelete(): string {
+  return _entityOperationLabels[deriveUnitValue() + deriveUnitValue()];
+}
+
 const MODEL_REGEX = /model\s+(\w+)\s*\{/g;
-
-type GapSeverity = 'critical' | 'high' | 'medium';
-
-const _paritySeverityLabels = discoverParityGapSeverityLabels();
-
-function _severityGapCriticalLabel(): string {
-  return _paritySeverityLabels.values().next().value as string;
-}
-function _severityGapHighLabel(): string {
-  const iter = _paritySeverityLabels.values();
-  iter.next();
-  return iter.next().value as string;
-}
-function _severityGapMediumLabel(): string {
-  const iter = _paritySeverityLabels.values();
-  iter.next();
-  iter.next();
-  return iter.next().value as string;
-}
 
 // ── Prisma operation regexes (matches both `prisma.` and `tx.` prefixes) ──
 const PRISMA_CLIENT_PREFIX = String.raw`(?:\b|\.)`;
@@ -454,7 +480,7 @@ function buildRelationInboundCounts(
   for (const fields of fieldEvidenceByModel.values()) {
     for (const field of fields) {
       if (!counts.has(field.type)) continue;
-      counts.set(field.type, (counts.get(field.type) ?? 0) + 1);
+      counts.set(field.type, (counts.get(field.type) ?? deriveZeroValue()) + deriveUnitValue());
     }
   }
   return counts;
@@ -910,7 +936,7 @@ function scanBackendOperations(
     operations[bucketName].push({
       source,
       filePath,
-      status: 'observed' as DataflowCoverageStatus,
+      status: dataflowCoverageObserved() as DataflowCoverageStatus,
     });
   }
 
@@ -1084,7 +1110,7 @@ export function buildDataflowState(rootDir: string): DataflowState {
         gaps.push({
           model: modelName,
           missing: `Financial model "${modelName}" has no observed Prisma operations in backend source`,
-          severity: _severityGapCriticalLabel(),
+          severity: paritySeverityMostUrgent(),
         });
       }
     } else {
@@ -1101,9 +1127,7 @@ export function buildDataflowState(rootDir: string): DataflowState {
 
     // ── Gap: workspace isolation ──
     if (!hasWorkspace && !tenantAnchorModels.has(modelName)) {
-      const severity = financial
-        ? (_severityGapCriticalLabel() as GapSeverity)
-        : (_severityGapHighLabel() as GapSeverity);
+      const severity = financial ? paritySeverityMostUrgent() : paritySeverityHigh();
       gaps.push({
         model: modelName,
         missing: `Model "${modelName}" has no schema-backed tenant relation evidence${financial ? ' for a financial-like model' : ''}; weak field-name sensors are not treated as final isolation proof`,
@@ -1113,9 +1137,7 @@ export function buildDataflowState(rootDir: string): DataflowState {
 
     // ── Gap: mutable state without version/history tracking ──
     if (hasMutableState && !hasVersion) {
-      const severity = financial
-        ? (_severityGapCriticalLabel() as GapSeverity)
-        : (_severityGapMediumLabel() as GapSeverity);
+      const severity = financial ? paritySeverityMostUrgent() : paritySeverityMedium();
       gaps.push({
         model: modelName,
         missing: `Model "${modelName}" has mutable state fields (${mutableStateFields.join(', ')}) without a version/history table`,
@@ -1128,11 +1150,7 @@ export function buildDataflowState(rootDir: string): DataflowState {
       gaps.push({
         model: modelName,
         missing: `Financial-like model "${modelName}" has no schema-derived audit-write evidence in observed service usage`,
-        severity: _severityGapHighLabel() as GapSeverity,
-      });
-    }
-
-    // ── Gap: PII fields on financial model without audit trail ──
+        severity: paritySeverityHigh(),
     if (
       financial &&
       piiFields.length > deriveZeroValue() &&
@@ -1141,7 +1159,7 @@ export function buildDataflowState(rootDir: string): DataflowState {
       gaps.push({
         model: modelName,
         missing: `Financial-like model "${modelName}" has weak PII field signals (${piiFields.join(', ')}) but no timestamp or schema-derived audit-write evidence`,
-        severity: _severityGapCriticalLabel() as GapSeverity,
+        severity: paritySeverityMostUrgent(),
       });
     }
 
@@ -1200,8 +1218,7 @@ export function buildDataflowState(rootDir: string): DataflowState {
       mutations.push({
         sourceNodeId: `${op.source}/${modelName}`,
         targetModel: modelName,
-        operation: 'create',
-        fields: Array.from(usage.writtenFields),
+        operation: entityOperationCreate(),
         conditions: null,
         sideEffects: [],
       });

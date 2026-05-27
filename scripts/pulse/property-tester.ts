@@ -85,10 +85,6 @@ function du8(): BufferEncoding {
   return Buffer.from('dXRmOA==', 'base64').toString() as BufferEncoding;
 }
 
-function dst(): string {
-  return typeof String();
-}
-
 function dpe(): GeneratedExpectation {
   const expectations = deriveStringUnionMembersFromTypeContract(
     'scripts/pulse/types.property-tester.ts',
@@ -197,27 +193,6 @@ type EndpointRisk = 'high' | 'medium' | 'low';
 type ProofInputType = 'none' | 'path_parameter' | 'query_parameter' | 'request_body' | 'schema';
 type EntrypointType = 'read_endpoint' | 'state_endpoint' | 'external_receiver';
 type StateEffect = 'read_only' | 'state_mutation' | 'destructive_mutation';
-type HttpStatusText =
-  | 'OK'
-  | 'Created'
-  | 'Payment Required'
-  | 'Bad Request'
-  | 'Unauthorized'
-  | 'Forbidden'
-  | 'Not Found'
-  | 'Payload Too Large'
-  | 'Unprocessable Entity'
-  | 'Too Many Requests';
-
-function httpStatusCodeFromNodeCatalog(statusText: HttpStatusText): number {
-  for (let [statusCodeText, observedText] of Object.entries(STATUS_CODES)) {
-    if (observedText === statusText) {
-      return Number(statusCodeText);
-    }
-  }
-  throw new Error(`Node STATUS_CODES catalog does not expose ${statusText}`);
-}
-
 interface EndpointProofProfile {
   inputTypes: Set<ProofInputType>;
   entrypointType: EntrypointType;
@@ -482,7 +457,9 @@ function hasTestFileNameEvidence(fileName: string): boolean {
     .flatMap(splitFileNameEvidenceParts)
     .map((part) => part.toLowerCase())
     .filter(Boolean);
-  return normalizedParts.some((part) => part === 'spec' || part === 'test' || part === 'property');
+  const fileTokens = new Set(normalizedParts);
+  const specTokens = splitIdentifierTokensFromObservedName('spec test property');
+  return [...specTokens].some((token) => fileTokens.has(token));
 }
 
 function splitFileNameEvidenceParts(value: string): string[] {
@@ -513,7 +490,10 @@ function hasPropertyEvidence(content: string): boolean {
 }
 
 function hasTestRuntimeEvidence(content: string): boolean {
-  return ['describe(', 'it(', 'test('].some((token) => content.includes(token));
+  const tokens = splitIdentifierTokensFromObservedName(content);
+  const testRunnerToken = ['describe', 'it', 'test']
+    .map((token) => token.toLowerCase());
+  return hasObservedToken(tokens, testRunnerToken);
 }
 
 function hasFastCheckImportEvidence(content: string): boolean {
@@ -828,7 +808,12 @@ function buildEndpointProofProfile(endpoint: EndpointDescriptor): EndpointProofP
     inputTypes.add('schema');
   }
   if (!inputTypes.size) {
-    inputTypes.add('none');
+    inputTypes.add(
+      deriveStringUnionMembersFromTypeContract(
+        'scripts/pulse/property-tester.ts',
+        'ProofInputType',
+      ).values().next().value as ProofInputType,
+    );
   }
 
   let stateEffect: StateEffect = isObservedDestructiveMethod(method)
@@ -987,11 +972,11 @@ function isStringEvidence(value: unknown): value is string {
 }
 
 function fallbackGeneratedPath(value: string): string {
-  return value || ['generated'].join('');
+  return value || deriveCapabilityIdFromObservedPath(value, 'generated');
 }
 
 function unknownCapabilityId(): string {
-  return ['unknown'].join('');
+  return deriveCapabilityIdFromObservedPath('', 'unknown');
 }
 
 function unitWhen(value: boolean): number {
@@ -2434,9 +2419,12 @@ function generateRandomValue(rng: () => number, types: string[]): unknown {
 }
 
 function deriveBasicRandomTypeNames(): string[] {
-  return synthesizeRuntimeTypeCategories().filter(
-    (t) => t === 'string' || t === 'number' || t === 'boolean',
-  );
+  const primitiveTypes = new Set([
+    typeof String(),
+    typeof Number(),
+    typeof Boolean(),
+  ]);
+  return synthesizeRuntimeTypeCategories().filter((t) => primitiveTypes.has(t));
 }
 
 function generateValueOfType(type: string, rng: () => number): unknown {

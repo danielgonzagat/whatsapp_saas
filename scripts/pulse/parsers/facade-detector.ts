@@ -43,12 +43,12 @@ function startsWithAny(value: string, prefixes: readonly string[]): boolean {
   return prefixes.some((prefix) => value.startsWith(prefix));
 }
 
-function hasCommentMarker(line: string): boolean {
+function hasCommentMarkerEvidence(line: string): boolean {
   let trimmed = line.trim();
   return trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*');
 }
 
-function isSkippedSourcePath(file: string): boolean {
+function isSkippedSourcePathEvidence(file: string): boolean {
   let normalized = file.replaceAll('\\', '/').toLowerCase();
   let base = path.basename(normalized);
   return (
@@ -65,7 +65,7 @@ function isSkippedSourcePath(file: string): boolean {
 }
 
 // Context-aware discrimination: checks SURROUNDING lines, not just the file
-function isAnimationContext(lines: string[], idx: number): boolean {
+function hasAnimationContextEvidence(lines: string[], idx: number): boolean {
   // Check wide context (50 lines) for animation indicators
   let start = Math.max(deriveZeroValue(), idx - deriveCatalogPercentScaleFromObservedCatalog() * (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) * (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()));
   let end = Math.min(lines.length, idx + deriveCatalogPercentScaleFromObservedCatalog() * (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) * (deriveUnitValue() + deriveUnitValue()));
@@ -125,7 +125,7 @@ function isAnimationContext(lines: string[], idx: number): boolean {
   );
 }
 
-function isIdContext(lines: string[], idx: number): boolean {
+function hasIdContextEvidence(lines: string[], idx: number): boolean {
   let line = lines[idx];
   let lower = line.toLowerCase();
   return (
@@ -134,7 +134,7 @@ function isIdContext(lines: string[], idx: number): boolean {
   );
 }
 
-function isGuardedEmptyReturnContext(context: string): boolean {
+function hasGuardedEmptyReturnContextEvidence(context: string): boolean {
   let compact = compactCode(context);
   let lowerContext = lower(context);
   let lastIfIndex = compact.lastIndexOf('if(');
@@ -221,7 +221,7 @@ function hasMutationCallEvidence(range: FunctionRange | null): boolean {
     }
     if (ts.isCallExpression(node)) {
       let expression = node.expression;
-      if (ts.isIdentifier(expression) && isMutationOrFetchName(expression.text)) {
+      if (ts.isIdentifier(expression) && isMutationOrFetchNameEvidence(expression.text)) {
         found = Boolean(deriveUnitValue());
         return;
       }
@@ -249,7 +249,7 @@ function hasMutationCallEvidence(range: FunctionRange | null): boolean {
   return found;
 }
 
-function isMutationOrFetchName(name: string): boolean {
+function isMutationOrFetchNameEvidence(name: string): boolean {
   let normalized = lower(name);
   return (
     normalized === 'apifetch' ||
@@ -272,16 +272,16 @@ function isMutationOrFetchName(name: string): boolean {
   );
 }
 
-function isSetTimeoutStateReset(line: string): boolean {
+function isSetTimeoutStateResetEvidence(line: string): boolean {
   let compact = compactCode(line);
   return compact.includes('setTimeout(()=>set') || compact.includes('setTimeout(function(){set');
 }
 
-function isClipboardFeedback(context: string): boolean {
+function hasClipboardFeedbackEvidence(context: string): boolean {
   return includesAny(context, ['clipboard', 'navigator.clipboard', 'copytoclipboard', 'setcopied']);
 }
 
-function isUiStatusTimer(line: string): boolean {
+function hasUiStatusTimerEvidence(line: string): boolean {
   return includesAny(line, [
     'setisthinking',
     'setisloading',
@@ -296,7 +296,7 @@ function isUiStatusTimer(line: string): boolean {
   ]);
 }
 
-function resetsVisualFlag(line: string): boolean {
+function resetsVisualFlagEvidence(line: string): boolean {
   let compact = lower(compactCode(line));
   return (
     compact.includes('(false)') &&
@@ -305,7 +305,7 @@ function resetsVisualFlag(line: string): boolean {
   );
 }
 
-function clearsStatusMessage(line: string): boolean {
+function clearsStatusMessageEvidence(line: string): boolean {
   let compact = lower(compactCode(line));
   let clearsValue =
     compact.includes('(null)') || compact.includes("('')") || compact.includes('("")');
@@ -316,7 +316,7 @@ function clearsStatusMessage(line: string): boolean {
   );
 }
 
-function togglesVisibility(line: string): boolean {
+function togglesVisibilityEvidence(line: string): boolean {
   let compact = lower(compactCode(line));
   let togglesBoolean = compact.includes('(true)') || compact.includes('(false)');
   return (
@@ -332,18 +332,18 @@ function togglesVisibility(line: string): boolean {
   );
 }
 
-function usesMathRandom(line: string): boolean {
+function usesMathRandomEvidence(line: string): boolean {
   return compactCode(line).includes('Math.random()');
 }
 
-function isRandomIdGeneration(line: string): boolean {
+function hasRandomIdGenerationEvidence(line: string): boolean {
   let compact = lower(compactCode(line));
   return (
     compact.includes('*1e') || compact.includes('*1000000') || compact.includes('.tostring(36)')
   );
 }
 
-function isRetryJitter(line: string): boolean {
+function hasRetryJitterEvidence(line: string): boolean {
   let compact = lower(compactCode(line));
   return (
     compact.includes('*basedelay') ||
@@ -355,7 +355,7 @@ function isRetryJitter(line: string): boolean {
   );
 }
 
-function isDisplayedRandomDataContext(line: string): boolean {
+function hasDisplayedRandomDataContextEvidence(line: string): boolean {
   let compact = compactCode(line);
   return (
     (compact.includes('set') && compact.includes('(')) ||
@@ -369,11 +369,11 @@ function isDisplayedRandomDataContext(line: string): boolean {
   );
 }
 
-function initializesUseStateArray(line: string): boolean {
+function initializesStateArrayEvidence(line: string): boolean {
   return compactCode(line).includes('useState([');
 }
 
-function blockLooksLikeHardcodedObjectData(block: string): boolean {
+function blockLooksLikeHardcodedObjectDataEvidence(block: string): boolean {
   let compact = compactCode(block);
   let objectSegments = compact.split('{');
   return (
@@ -384,7 +384,7 @@ function blockLooksLikeHardcodedObjectData(block: string): boolean {
   );
 }
 
-function commentReferencesIntegrationGap(line: string): boolean {
+function commentReferencesIntegrationGapEvidence(line: string): boolean {
   let normalized = lower(line);
   return (
     ['todo', 'fixme', 'hack', 'stub'].some((token) => normalized.includes(token)) &&
@@ -394,30 +394,30 @@ function commentReferencesIntegrationGap(line: string): boolean {
   );
 }
 
-function hasEmptyInlineHandler(line: string): boolean {
+function hasEmptyInlineHandlerEvidence(line: string): boolean {
   let compact = compactCode(line);
   return compact.includes('onClick={()=>{}}') || compact.includes('onSubmit={()=>{}}');
 }
 
-function hasConsoleOnlyInlineHandler(line: string): boolean {
+function hasConsoleOnlyInlineHandlerEvidence(line: string): boolean {
   let compact = compactCode(line);
   return compact.includes('onClick={()=>console.') || compact.includes('onSubmit={()=>console.');
 }
 
-function isSilentCatch(line: string): boolean {
+function isSilentCatchEvidence(line: string): boolean {
   let compact = compactCode(line);
   return compact.startsWith('catch(') && compact.endsWith('{}');
 }
 
-function referencesFallbackResponses(line: string): boolean {
+function hasFallbackResponseEvidence(line: string): boolean {
   return includesAny(line, ['FALLBACK_RESPONSES', 'fallbackResponses', 'FALLBACK_MESSAGES']);
 }
 
-function startsInterval(line: string): boolean {
+function startsIntervalEvidence(line: string): boolean {
   return compactCode(line).includes('setInterval(');
 }
 
-function intervalBlockChangesDisplayedValue(block: string): boolean {
+function intervalBlockChangesDisplayedValueEvidence(block: string): boolean {
   let compact = compactCode(block);
   return (
     ['=>prev+', '=>prev-', '=>p+', '=>p-', '=>v+', '=>v-'].some((token) =>
@@ -426,7 +426,7 @@ function intervalBlockChangesDisplayedValue(block: string): boolean {
   );
 }
 
-function isServiceEmptyReturn(line: string): boolean {
+function isServiceEmptyReturnEvidence(line: string): boolean {
   let compact = compactCode(line);
   return (
     compact === 'return[];' ||
@@ -436,7 +436,7 @@ function isServiceEmptyReturn(line: string): boolean {
   );
 }
 
-function contextAllowsEmptyReturn(context: string): boolean {
+function contextAllowsEmptyReturnEvidence(context: string): boolean {
   return includesAny(context, [
     'catch',
     'default',
@@ -459,7 +459,7 @@ export function detectFacades(config: PulseConfig): FacadeEntry[] {
 
     for (let file of files) {
       // Skip test/spec/seed/migration files
-      if (isSkippedSourcePath(file)) {
+      if (isSkippedSourcePathEvidence(file)) {
         continue;
       }
 
@@ -475,37 +475,37 @@ export function detectFacades(config: PulseConfig): FacadeEntry[] {
           let trimmed = line.trim();
 
           // Skip comments
-          if (hasCommentMarker(trimmed)) {
+          if (hasCommentMarkerEvidence(trimmed)) {
             continue;
           }
 
           // === CRITICAL: Fake Save ===
           // Detect functions with setTimeout + setState but NO API call
-          if (isSetTimeoutStateReset(trimmed)) {
+          if (isSetTimeoutStateResetEvidence(trimmed)) {
             // Check if this is legitimate UI feedback (not fake save)
             let context5 = lines.slice(Math.max(deriveZeroValue(), i - (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue())), i + deriveUnitValue()).join('\n');
             // Clipboard feedback
-            if (isClipboardFeedback(context5)) {
+            if (hasClipboardFeedbackEvidence(context5)) {
               continue;
             }
             // UI state timers (thinking, loading indicators, toast auto-dismiss, animation triggers)
-            if (isUiStatusTimer(trimmed)) {
+            if (hasUiStatusTimerEvidence(trimmed)) {
               continue;
             }
             // UI visibility/animation timers (coupon modals, toasts, fade-in, mount)
-            if (isUiStatusTimer(trimmed)) {
+            if (hasUiStatusTimerEvidence(trimmed)) {
               continue;
             }
             // Timer that resets a visual indicator (not persistence)
-            if (resetsVisualFlag(trimmed)) {
+            if (resetsVisualFlagEvidence(trimmed)) {
               continue;
             }
             // Timer that clears a status/message indicator: setTimeout(() => setMsg(null), delay)
-            if (clearsStatusMessage(trimmed)) {
+            if (clearsStatusMessageEvidence(trimmed)) {
               continue;
             }
             // Visibility toggle: setTimeout(() => setVisible(true/false), delay) — animation
-            if (togglesVisibility(trimmed)) {
+            if (togglesVisibilityEvidence(trimmed)) {
               continue;
             }
 
@@ -529,25 +529,25 @@ export function detectFacades(config: PulseConfig): FacadeEntry[] {
           }
 
           // === CRITICAL: Math.random() as data ===
-          if (usesMathRandom(trimmed)) {
+          if (usesMathRandomEvidence(trimmed)) {
             // Per-CONTEXT discrimination (not per-file)
-            if (isAnimationContext(lines, i)) {
+            if (hasAnimationContextEvidence(lines, i)) {
               continue;
             }
-            if (isIdContext(lines, i)) {
+            if (hasIdContextEvidence(lines, i)) {
               continue;
             }
             // ID generation: Math.round(Math.random() * 1e9), Math.random().toString(36)
-            if (isRandomIdGeneration(trimmed)) {
+            if (hasRandomIdGenerationEvidence(trimmed)) {
               continue;
             }
             // Retry jitter: Math.random() * delay or Math.random() * baseDelay
-            if (isRetryJitter(trimmed)) {
+            if (hasRetryJitterEvidence(trimmed)) {
               continue;
             }
 
             // Check if result is displayed to user (assigned to state/variable that renders)
-            let isDataContext = isDisplayedRandomDataContext(trimmed);
+            let isDataContext = hasDisplayedRandomDataContextEvidence(trimmed);
 
             if (isDataContext) {
               appendFacade(facades, {
@@ -566,10 +566,10 @@ export function detectFacades(config: PulseConfig): FacadeEntry[] {
           }
 
           // === CRITICAL: Hardcoded data arrays in useState ===
-          if (initializesUseStateArray(trimmed)) {
+          if (initializesStateArrayEvidence(trimmed)) {
             // Check if it's a hardcoded array of objects with string values (looks like real data)
             let block = lines.slice(i, Math.min(i + (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()), lines.length)).join('\n');
-            if (blockLooksLikeHardcodedObjectData(block)) {
+            if (blockLooksLikeHardcodedObjectDataEvidence(block)) {
               appendFacade(facades, {
                 detector: 'use-state-data-static-predicate',
                 kind: 'hardcoded_data',
@@ -587,7 +587,7 @@ export function detectFacades(config: PulseConfig): FacadeEntry[] {
 
           // === WARNING: TODO/FIXME stubs referencing API/backend ===
           if (trimmed.startsWith('//')) {
-            if (commentReferencesIntegrationGap(trimmed)) {
+            if (commentReferencesIntegrationGapEvidence(trimmed)) {
               appendFacade(facades, {
                 detector: 'integration-comment-static-predicate',
                 kind: 'todo_stub',
@@ -604,7 +604,7 @@ export function detectFacades(config: PulseConfig): FacadeEntry[] {
           }
 
           // === WARNING: Noop onClick/onSubmit handlers ===
-          if (hasEmptyInlineHandler(trimmed)) {
+          if (hasEmptyInlineHandlerEvidence(trimmed)) {
             appendFacade(facades, {
               detector: 'empty-handler-static-predicate',
               kind: 'noop_handler',
@@ -619,7 +619,7 @@ export function detectFacades(config: PulseConfig): FacadeEntry[] {
           }
 
           // === WARNING: console.log as only handler body ===
-          if (hasConsoleOnlyInlineHandler(trimmed)) {
+          if (hasConsoleOnlyInlineHandlerEvidence(trimmed)) {
             appendFacade(facades, {
               detector: 'console-handler-static-predicate',
               kind: 'noop_handler',
@@ -635,7 +635,7 @@ export function detectFacades(config: PulseConfig): FacadeEntry[] {
           }
 
           // === LOW: Silent catch blocks ===
-          if (isSilentCatch(trimmed)) {
+          if (isSilentCatchEvidence(trimmed)) {
             appendFacade(facades, {
               detector: 'silent-catch-static-predicate',
               kind: 'silent_catch',
@@ -650,8 +650,8 @@ export function detectFacades(config: PulseConfig): FacadeEntry[] {
           }
 
           // === CRITICAL: FALLBACK_RESPONSES pattern (hardcoded chat responses) ===
-          if (referencesFallbackResponses(trimmed)) {
-            if (!isAnimationContext(lines, i)) {
+          if (hasFallbackResponseEvidence(trimmed)) {
+            if (!hasAnimationContextEvidence(lines, i)) {
               appendFacade(facades, {
                 detector: 'fallback-response-static-predicate',
                 kind: 'hardcoded_data',
@@ -668,12 +668,12 @@ export function detectFacades(config: PulseConfig): FacadeEntry[] {
           }
 
           // === CRITICAL: setInterval incrementing displayed values ===
-          if (startsInterval(trimmed)) {
-            if (isAnimationContext(lines, i)) {
+          if (startsIntervalEvidence(trimmed)) {
+            if (hasAnimationContextEvidence(lines, i)) {
               continue;
             }
             let block = lines.slice(i, Math.min(i + (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()), lines.length)).join('\n');
-            if (intervalBlockChangesDisplayedValue(block)) {
+            if (intervalBlockChangesDisplayedValueEvidence(block)) {
               appendFacade(facades, {
                 detector: 'interval-data-static-predicate',
                 kind: 'random_data',
@@ -691,11 +691,11 @@ export function detectFacades(config: PulseConfig): FacadeEntry[] {
 
           // === WARNING: return [] or return {} in service methods ===
           if (relFile.includes('backend') && file.endsWith('.service.ts')) {
-            if (isServiceEmptyReturn(trimmed)) {
+            if (isServiceEmptyReturnEvidence(trimmed)) {
               // Check if this is inside a catch block, fallback, or utility function
               let context10 = lines.slice(Math.max(deriveZeroValue(), i - (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue())), i).join('\n');
               // Skip: catch blocks, fallback patterns, utility normalizers, default returns
-              if (!contextAllowsEmptyReturn(context10) && !isGuardedEmptyReturnContext(context10)) {
+              if (!contextAllowsEmptyReturnEvidence(context10) && !hasGuardedEmptyReturnContextEvidence(context10)) {
                 appendFacade(facades, {
                   detector: 'service-empty-return-static-predicate',
                   kind: 'hardcoded_data',

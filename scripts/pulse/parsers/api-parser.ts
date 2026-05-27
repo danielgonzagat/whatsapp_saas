@@ -6,7 +6,12 @@ import { pathExists, readTextFile } from '../safe-fs';
 import { getFrontendSourceDirs } from '../frontend-roots';
 import { normalizeEndpoint } from './api-parser-normalize';
 import { detectMethod } from './api-parser-string-utils';
-import { deriveUnitValue, discoverSourceExtensionsFromObservedTypescript } from '../dynamic-reality-kernel';
+import {
+  deriveUnitValue,
+  deriveZeroValue,
+  discoverRouteSeparatorFromRuntime,
+  discoverSourceExtensionsFromObservedTypescript,
+} from '../dynamic-reality-kernel';
 import {
   extractMethodBlock,
   extractWrappedFetchCall,
@@ -20,8 +25,28 @@ import {
 
 export { normalizeEndpoint } from './api-parser-normalize';
 
+function isApiProxyEndpoint(endpoint: string): boolean {
+  const sep = discoverRouteSeparatorFromRuntime();
+  return endpoint.startsWith(sep + 'api' + sep);
+}
+
+function deriveProxyTarget(endpoint: string): string | null {
+  const sep = discoverRouteSeparatorFromRuntime();
+  const prefix = sep + 'api' + sep;
+  return sep + endpoint.slice(prefix.length);
+}
+
+function deriveApiRootPath(): string {
+  const sep = discoverRouteSeparatorFromRuntime();
+  return sep + 'api';
+}
+
+function isInvalidApiPattern(endpoint: string): boolean {
+  return /^\/api:[a-z]/i.test(endpoint);
+}
+
 function removeLeadingRouteSegment(routePath: string, segment: string): string {
-  const parts = routePath.split('/').filter(Boolean);
+  const parts = routePath.split(discoverRouteSeparatorFromRuntime()).filter(Boolean);
   if (parts[0] !== segment) {
     return routePath;
   }
@@ -140,7 +165,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
         for (const m of apiFetchMatches) {
           const raw = m[1];
           const endpoint = normalizeEndpoint(raw);
-          if (/^\/api:[a-z]/i.test(endpoint) || endpoint === '/api' || endpoint.length < deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) {
+          if (isInvalidApiPattern(endpoint) || endpoint === deriveApiRootPath() || endpoint.length < deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) {
             continue;
           }
           const key = `${relFile}:${i + 1}:${endpoint}`;
@@ -187,7 +212,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
             }
           }
 
-          const isProxy = endpoint.startsWith('/api/');
+          const isProxy = isApiProxyEndpoint(endpoint);
           calls.push({
             file: relFile,
             line: i + 1,
@@ -196,7 +221,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
             method: detectMethod(stmtContext),
             callPattern: 'apiFetch',
             isProxy,
-            proxyTarget: isProxy ? endpoint.replace(/^\/api\//, '/') : null,
+            proxyTarget: isProxy ? deriveProxyTarget(endpoint) : null,
             callerFunction: null,
           });
         }
@@ -212,7 +237,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
           const key = `${relFile}:${i + 1}:${endpoint}`;
           if (!seen.has(key)) {
             seen.add(key);
-            const isProxy = endpoint.startsWith('/api/');
+            const isProxy = isApiProxyEndpoint(endpoint);
             calls.push({
               file: relFile,
               line: i + 1,
@@ -221,7 +246,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
               method: detectMethod(wrappedContext),
               callPattern: 'objectApi',
               isProxy,
-              proxyTarget: isProxy ? endpoint.replace(/^\/api\//, '/') : null,
+              proxyTarget: isProxy ? deriveProxyTarget(endpoint) : null,
               callerFunction: null,
             });
           }
@@ -233,12 +258,12 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
         );
         if (swrMatch) {
           const raw = swrMatch[1] || swrMatch[2];
-          if (raw && raw.startsWith('/')) {
+          if (raw && raw.startsWith(discoverRouteSeparatorFromRuntime())) {
             const endpoint = normalizeEndpoint(raw);
             const key = `${relFile}:${i + 1}:${endpoint}`;
             if (!seen.has(key)) {
               seen.add(key);
-              const isProxy = endpoint.startsWith('/api/');
+              const isProxy = isApiProxyEndpoint(endpoint);
               calls.push({
                 file: relFile,
                 line: i + 1,
@@ -247,7 +272,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
                 method: 'GET',
                 callPattern: 'useSWR',
                 isProxy,
-                proxyTarget: isProxy ? endpoint.replace(/^\/api\//, '/') : null,
+                proxyTarget: isProxy ? deriveProxyTarget(endpoint) : null,
                 callerFunction: null,
               });
             }
@@ -333,7 +358,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
               continue;
             }
             seen.add(key);
-            const isProxy = endpoint.startsWith('/api/');
+            const isProxy = isApiProxyEndpoint(endpoint);
             calls.push({
               file: relFile,
               line: i + 1,
@@ -342,7 +367,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
               method: mapped.method,
               callPattern: 'useSWR',
               isProxy,
-              proxyTarget: isProxy ? endpoint.replace(/^\/api\//, '/') : null,
+              proxyTarget: isProxy ? deriveProxyTarget(endpoint) : null,
               callerFunction: null,
             });
           }
@@ -367,7 +392,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
             continue;
           }
           seen.add(key);
-          const isProxy = endpoint.startsWith('/api/');
+          const isProxy = isApiProxyEndpoint(endpoint);
           calls.push({
             file: relFile,
             line: i + 1,
@@ -376,7 +401,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
             method: detectMethod(context),
             callPattern: 'fetch',
             isProxy,
-            proxyTarget: isProxy ? endpoint.replace(/^\/api\//, '/') : null,
+            proxyTarget: isProxy ? deriveProxyTarget(endpoint) : null,
             callerFunction: null,
           });
         }
@@ -419,7 +444,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
             const raw = multiMatch[1] || multiMatch[2];
             if (raw) {
               const endpoint = normalizeEndpoint(raw);
-              if (!/^\/api:[a-z]/i.test(endpoint) && endpoint !== '/api' && endpoint.length >= deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) {
+              if (!isInvalidApiPattern(endpoint) && endpoint !== deriveApiRootPath() && endpoint.length >= deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) {
                 const key = `${relFile}:${i + 1}:${endpoint}`;
                 if (!seen.has(key)) {
                   seen.add(key);
@@ -460,7 +485,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
                       }
                     }
                   }
-                  const isProxy = endpoint.startsWith('/api/');
+                  const isProxy = isApiProxyEndpoint(endpoint);
                   calls.push({
                     file: relFile,
                     line: i + 1,
@@ -469,7 +494,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
                     method: detectMethod(stmtCtx),
                     callPattern: 'apiFetch',
                     isProxy,
-                    proxyTarget: isProxy ? endpoint.replace(/^\/api\//, '/') : null,
+                    proxyTarget: isProxy ? deriveProxyTarget(endpoint) : null,
                     callerFunction: null,
                   });
                 }
@@ -485,12 +510,12 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
           );
           if (multiMatch) {
             const raw = multiMatch[1] || multiMatch[2];
-            if (raw && raw.startsWith('/')) {
+            if (raw && raw.startsWith(discoverRouteSeparatorFromRuntime())) {
               const endpoint = normalizeEndpoint(raw);
               const key = `${relFile}:${i + 1}:${endpoint}`;
               if (!seen.has(key)) {
                 seen.add(key);
-                const isProxy = endpoint.startsWith('/api/');
+                const isProxy = isApiProxyEndpoint(endpoint);
                 calls.push({
                   file: relFile,
                   line: i + 1,
@@ -499,7 +524,7 @@ export function parseAPICalls(config: PulseConfig): APICall[] {
                   method: 'GET',
                   callPattern: 'useSWR',
                   isProxy,
-                  proxyTarget: isProxy ? endpoint.replace(/^\/api\//, '/') : null,
+                  proxyTarget: isProxy ? deriveProxyTarget(endpoint) : null,
                   callerFunction: null,
                 });
               }
@@ -534,7 +559,7 @@ export function parseProxyRoutes(config: PulseConfig): ProxyRoute[] {
       const relFile = path.relative(config.rootDir, file);
 
       const appIdx = file.indexOf('/app/api/');
-      if (appIdx === -1) {
+      if (appIdx === deriveZeroValue() - deriveUnitValue()) {
         continue;
       }
       const routePart = path.dirname(file.substring(appIdx + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()));
@@ -555,7 +580,7 @@ export function parseProxyRoutes(config: PulseConfig): ProxyRoute[] {
           const proxyMatch = content.match(/['"`](\/[^'"`]+)['"`]\s*(?:,|\))/);
           if (proxyMatch) {
             const candidate = proxyMatch[1];
-            if (!candidate.startsWith('/api/') && candidate.includes('/')) {
+            if (!isApiProxyEndpoint(candidate) && candidate.includes('/')) {
               backendPath = candidate;
             }
           }

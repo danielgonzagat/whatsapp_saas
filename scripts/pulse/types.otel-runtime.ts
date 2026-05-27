@@ -134,3 +134,80 @@ export interface RuntimeCallGraphEvidence extends Record<string, unknown> {
     spanName: string;
   }>;
 }
+
+export type PrismaMethod =
+  | 'findUnique'
+  | 'findFirst'
+  | 'findMany'
+  | 'create'
+  | 'createMany'
+  | 'update'
+  | 'updateMany'
+  | 'delete'
+  | 'deleteMany'
+  | 'upsert'
+  | 'count'
+  | 'aggregate'
+  | 'groupBy'
+  | 'findRaw'
+  | 'executeRaw'
+  | 'queryRaw'
+  | 'runCommandRaw'
+  | '$transaction'
+  | '$queryRaw'
+  | '$executeRaw'
+  | '$runCommandRaw';
+
+export type BullMQPattern =
+  | 'add'
+  | 'addBulk'
+  | 'getJob'
+  | 'getJobs'
+  | 'getActive'
+  | 'getWaiting'
+  | 'getDelayed'
+  | 'getCompleted'
+  | 'getFailed'
+  | 'pause'
+  | 'resume'
+  | 'close'
+  | 'removeJobs'
+  | 'drain'
+  | 'obliterate'
+  | 'trimEvents'
+  | 'process'
+  | 'processJob';
+
+export type AxiosMethod =
+  | 'get'
+  | 'post'
+  | 'put'
+  | 'patch'
+  | 'delete'
+  | 'options'
+  | 'head'
+  | 'request'
+  | 'create';
+
+export type OtelFrameworkCategory = 'prisma' | 'service' | 'controller' | 'util' | 'helper' | 'queue' | 'cache' | 'http';
+
+export type OtelSpanOperation =
+  | 'findMany'
+  | 'create'
+  | 'update'
+  | 'delete'
+  | 'validate'
+  | 'process'
+  | 'transform'
+  | 'enqueue'
+  | 'resolve'
+  | 'execute'
+  | 'save'
+  | 'load'
+  | 'send'
+  | 'fetch'
+  | 'compute';
+
+export type OtelFrameworkHint = 'nestjs' | 'prisma' | 'bullmq' | 'axios' | 'http' | 'redis';
+
+export type OtelServiceName = 'backend' | 'worker' | 'frontend';

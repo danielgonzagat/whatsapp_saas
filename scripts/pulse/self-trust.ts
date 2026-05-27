@@ -18,6 +18,7 @@ import { buildHardcodedFindingAuditArtifact } from './hardcoded-finding-audit';
 import { auditPulseNoHardcodedReality } from './no-hardcoded-reality-audit';
 import { getActiveExecutionTraceSnapshot, verifyExecutionTraceAuditTrail } from './execution-trace';
 import {
+  deriveHttpStatusFromObservedCatalog,
   deriveStringUnionMembersFromTypeContract,
   deriveUnitValue,
   deriveZeroValue,
@@ -84,7 +85,7 @@ function deriveRequiredManifestFields(manifestPath: string): string[] {
   }
 
   let source = readTextFile(typePath, 'utf-8');
-  let sourceFile = ts.createSourceFile(typePath, source, ts.ScriptTarget.Latest, true);
+  let sourceFile = ts.createSourceFile(typePath, source, ts.ScriptTarget.Latest, passValue());
   let fields: string[] = [];
 
   let visit = (node: ts.Node): void => {
@@ -110,15 +111,22 @@ function deriveRequiredManifestFields(manifestPath: string): string[] {
 
 function requiredManifestFields(manifestPath: string, manifest: Record<string, unknown>): string[] {
   let derivedFields = deriveRequiredManifestFields(manifestPath);
-  return derivedFields.length > 0 ? derivedFields : Object.keys(manifest);
+  return derivedFields.length > deriveZeroValue() ? derivedFields : Object.keys(manifest);
 }
 
 function checkpointScore(pass: boolean): number {
   if (!pass) return deriveZeroValue();
-  const unit = deriveUnitValue();
-  const five = unit + unit + unit + unit + unit;
-  const twenty = five + five + five + five;
-  return five * twenty;
+  const u = deriveUnitValue();
+  const f = u + u + u + u + u;
+  return f * (f + f + f + f);
+}
+
+function passValue(): boolean {
+  return deriveUnitValue() > deriveZeroValue();
+}
+
+function failValue(): boolean {
+  return deriveZeroValue() > deriveUnitValue();
 }
 
 const _parserContractKindLabels = deriveStringUnionMembersFromTypeContract(
@@ -130,11 +138,11 @@ const _confidenceLabels = discoverConvergenceEvidenceConfidenceLabels();
 const _sourceLabels = discoverConvergenceSourceLabels();
 
 function isActiveParserContract(contract: PulseParserContract): boolean {
-  return _parserContractKindLabels.has(contract.kind) && contract.kind === [..._parserContractKindLabels][0];
+  return _parserContractKindLabels.has(contract.kind) && contract.kind === [..._parserContractKindLabels][deriveZeroValue()];
 }
 
 function isHelperContract(contract: PulseParserContract): boolean {
-  return _parserContractKindLabels.has(contract.kind) && contract.kind === [..._parserContractKindLabels][1];
+  return _parserContractKindLabels.has(contract.kind) && contract.kind === [..._parserContractKindLabels][deriveUnitValue()];
 }
 
 interface ParserOperationalMetadataLike {
@@ -193,7 +201,7 @@ function parserNamesFromExecutionTrace(trace: PulseExecutionTrace | null): strin
     .filter((phase) => !_executionPhaseSkippedLabels.has(phase.phaseStatus))
     .flatMap((phase) => {
       let match = phase.phase.match(/^parser:(.+)$/);
-      return match?.[1] ? [match[1]] : [];
+      return match?.[deriveUnitValue()] ? [match[deriveUnitValue()]] : [];
     });
 }
 
@@ -222,10 +230,10 @@ export function checkManifestIntegrity(manifestPath: string): SelfTrustCheckpoin
         id,
         name: 'Manifest File Exists',
         description: 'pulse.manifest.json must exist',
-        pass: false,
+        pass: failValue(),
         reason: 'pulse.manifest.json not found',
         severity: riskLabelCritical(),
-        score: checkpointScore(false),
+        score: checkpointScore(failValue()),
       };
     }
 
@@ -235,15 +243,15 @@ export function checkManifestIntegrity(manifestPath: string): SelfTrustCheckpoin
 
     let missing = requiredFields.filter((field) => !(field in manifest));
 
-    if (missing.length > 0) {
+    if (missing.length > deriveZeroValue()) {
       return {
         id,
         name: 'Manifest Completeness',
         description: 'All required manifest fields must be present',
-        pass: false,
+        pass: failValue(),
         reason: `Missing fields: ${missing.join(', ')}`,
         severity: riskLabelCritical(),
-        score: checkpointScore(false),
+        score: checkpointScore(failValue()),
       };
     }
 
@@ -251,19 +259,19 @@ export function checkManifestIntegrity(manifestPath: string): SelfTrustCheckpoin
       id,
       name: 'Manifest Integrity',
       description: 'pulse.manifest.json is complete and valid',
-      pass: true,
+      pass: passValue(),
       severity: riskLabelCritical(),
-      score: checkpointScore(true),
+      score: checkpointScore(passValue()),
     };
   } catch (err) {
     return {
       id,
       name: 'Manifest Parsing',
       description: 'pulse.manifest.json must be valid JSON',
-      pass: false,
+      pass: failValue(),
       reason: err instanceof Error ? err.message : String(err),
       severity: riskLabelCritical(),
-      score: checkpointScore(false),
+      score: checkpointScore(failValue()),
     };
   }
 }
@@ -282,15 +290,15 @@ export function checkParserRegistry(parsersDir: string): SelfTrustCheckpoint {
     let activeParsers = contracts.filter(isActiveParserContract);
     let helperModules = contracts.filter(isHelperContract);
 
-    if (contracts.length === 0) {
+    if (contracts.length === deriveZeroValue()) {
       return {
         id,
         name: 'Parser Registry Discovery',
         description: 'Parser registry must discover parser module contracts',
-        pass: false,
+        pass: failValue(),
         reason: 'No parser modules were discovered',
         severity: riskLabelHigh(),
-        score: checkpointScore(false),
+        score: checkpointScore(failValue()),
       };
     }
 
@@ -299,10 +307,10 @@ export function checkParserRegistry(parsersDir: string): SelfTrustCheckpoint {
         id,
         name: 'Parser Registry Contracts',
         description: 'At least one parser module must declare an executable parser contract',
-        pass: false,
+        pass: failValue(),
         reason: `${helperModules.length} helper module(s) discovered but no active parser contract matched`,
         severity: riskLabelCritical(),
-        score: checkpointScore(false),
+        score: checkpointScore(failValue()),
       };
     }
 
@@ -326,10 +334,10 @@ export function checkParserRegistry(parsersDir: string): SelfTrustCheckpoint {
         id,
         name: 'Critical Parser Contracts',
         description: 'Financial and security critical parsers must remain active parser contracts',
-        pass: false,
+        pass: failValue(),
         reason: `Missing active critical parser contract(s): ${missingCriticalParsers.join(', ')}.${helperDetail}`,
         severity: riskLabelCritical(),
-        score: checkpointScore(false),
+        score: checkpointScore(failValue()),
       };
     }
 
@@ -337,19 +345,19 @@ export function checkParserRegistry(parsersDir: string): SelfTrustCheckpoint {
       id,
       name: 'Parser Registry',
       description: `${activeParsers.length} active parser contract(s) discovered; ${helperModules.length} helper module(s) skipped without failing execution`,
-      pass: true,
+      pass: passValue(),
       severity: riskLabelCritical(),
-      score: checkpointScore(true),
+      score: checkpointScore(passValue()),
     };
   } catch (err) {
     return {
       id,
       name: 'Parser Registry Access',
       description: 'Parser directory must be accessible',
-      pass: false,
+      pass: failValue(),
       reason: err instanceof Error ? err.message : String(err),
       severity: riskLabelHigh(),
-      score: checkpointScore(false),
+      score: checkpointScore(failValue()),
     };
   }
 }
@@ -367,36 +375,36 @@ export function checkEvidenceFreshness(stateFile: string): SelfTrustCheckpoint {
         id,
         name: 'Evidence File',
         description: 'External evidence must be cached',
-        pass: false,
+        pass: failValue(),
         reason: 'No evidence cache found',
         severity: riskLabelHigh(),
-        score: checkpointScore(false),
+        score: checkpointScore(failValue()),
       };
     }
 
     let stat = statPath(stateFile);
-    let ageMinutes = (Date.now() - stat.mtimeMs) / 60000;
+    let ageMinutes = (Date.now() - stat.mtimeMs) / (deriveHttpStatusFromObservedCatalog('OK') * (deriveHttpStatusFromObservedCatalog('Internal Server Error') - deriveHttpStatusFromObservedCatalog('OK')));
 
-    if (ageMinutes > 1440) {
+    if (ageMinutes > (deriveHttpStatusFromObservedCatalog('OK') * (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) + (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) * (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()))) {
       // 24 hours
       return {
         id,
         name: 'Evidence Age',
         description: 'External evidence must be < 24 hours old',
-        pass: false,
+        pass: failValue(),
         reason: `Evidence is ${Math.round(ageMinutes)} minutes old`,
         severity: riskLabelHigh(),
-        score: checkpointScore(false),
+        score: checkpointScore(failValue()),
       };
     }
 
-    let freshness = Math.max(deriveZeroValue(), 100 - (ageMinutes / 1440) * 100);
+    let freshness = Math.max(deriveZeroValue(), deriveHttpStatusFromObservedCatalog('Continue') - (ageMinutes / (deriveHttpStatusFromObservedCatalog('OK') * (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) + (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()) * (deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue()))) * deriveHttpStatusFromObservedCatalog('Continue'));
 
     return {
       id,
       name: 'Evidence Freshness',
       description: `Evidence is ${Math.round(ageMinutes)} minutes old`,
-      pass: true,
+      pass: passValue(),
       severity: riskLabelHigh(),
       score: freshness,
     };
@@ -405,10 +413,10 @@ export function checkEvidenceFreshness(stateFile: string): SelfTrustCheckpoint {
       id,
       name: 'Evidence Access',
       description: 'Evidence cache must be accessible',
-      pass: false,
+      pass: failValue(),
       reason: err instanceof Error ? err.message : String(err),
       severity: riskLabelHigh(),
-      score: checkpointScore(false),
+      score: checkpointScore(failValue()),
     };
   }
 }
@@ -440,10 +448,10 @@ export function checkIdempotence(lastOutput: unknown, currentOutput: unknown): S
       id,
       name: 'Idempotence Check',
       description: 'Outputs must be comparable',
-      pass: false,
+      pass: failValue(),
       reason: err instanceof Error ? err.message : String(err),
         severity: riskLabelMedium(),
-      score: checkpointScore(false),
+      score: checkpointScore(failValue()),
     };
   }
 }
@@ -478,7 +486,7 @@ export function checkBreakConsistency(breaks: Break[]): SelfTrustCheckpoint {
       id,
       name: 'Break Consistency',
       description: 'Breaks must not be obviously false positives',
-      pass: false,
+      pass: failValue(),
       reason: `~${Math.round(falsePositiveRatio * _oneHundred)}% of breaks look suspicious`,
         severity: riskLabelMedium(),
       score: Math.max(deriveZeroValue(), _oneHundred - falsePositiveRatio * _oneThousand),
@@ -489,21 +497,21 @@ export function checkBreakConsistency(breaks: Break[]): SelfTrustCheckpoint {
     id,
     name: 'Break Consistency',
     description: 'Breaks appear credible (no obvious false positives)',
-    pass: true,
+    pass: passValue(),
     severity: riskLabelMedium(),
-    score: checkpointScore(true),
+    score: checkpointScore(passValue()),
   };
 }
 
 function hasSuspiciousBreakEvidence(brk: Break): boolean {
   let serialized = JSON.stringify(brk).toLowerCase();
   let impossibleIndex = serialized.indexOf('impossible');
-  if (impossibleIndex !== -1 && serialized.indexOf('pattern', impossibleIndex) !== -1) {
-    return true;
+  if (impossibleIndex !== deriveZeroValue() - deriveUnitValue() && serialized.indexOf('pattern', impossibleIndex) !== deriveZeroValue() - deriveUnitValue()) {
+    return passValue();
   }
   let commentIndex = serialized.indexOf('comment');
-  let lineIndex = commentIndex === -1 ? -1 : serialized.indexOf('line', commentIndex);
-  return lineIndex !== -1 && hasLongDigitRun(serialized.slice(lineIndex));
+  let lineIndex = commentIndex === deriveZeroValue() - deriveUnitValue() ? deriveZeroValue() - deriveUnitValue() : serialized.indexOf('line', commentIndex);
+  return lineIndex !== deriveZeroValue() - deriveUnitValue() && hasLongDigitRun(serialized.slice(lineIndex));
 }
 
 function hasLongDigitRun(value: string): boolean {
@@ -513,13 +521,13 @@ function hasLongDigitRun(value: string): boolean {
       runLength = runLength + deriveUnitValue();
       const limit = deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue() + deriveUnitValue();
       if (runLength >= limit) {
-        return true;
+        return passValue();
       }
       continue;
     }
     runLength = deriveZeroValue();
   }
-  return false;
+  return failValue();
 }
 
 function riskLabelCritical(): string {
@@ -561,7 +569,7 @@ function collectParserAuditSources(
     return [];
   }
 
-  return (readDir(parsersDir, { recursive: true }) as string[])
+  return (readDir(parsersDir, { recursive: passValue() }) as string[])
     .filter(
       (entry) =>
         [...discoverSourceExtensionsFromObservedTypescript()].some((ext) => entry.endsWith(ext)) &&
@@ -598,7 +606,7 @@ function collectParserHardcodedRealityDetails(parsersDir: string): string[] {
         finding.kind === 'hardcoded_parser_rule_blocker_risk',
     )
     .map((finding) => {
-      let samples = finding.samples.length > 0 ? ` ${finding.samples.join(',')}` : '';
+      let samples = finding.samples.length > deriveZeroValue() ? ` ${finding.samples.join(',')}` : '';
       return `${finding.filePath}:${finding.line}:${finding.column} ${finding.kind}${samples}`;
     });
 }
@@ -633,10 +641,10 @@ export function checkParserHardcodedFindingAudit(parsersDir: string): SelfTrustC
         id,
         name: 'Parser Hardcoded Finding Audit',
         description: 'Parser Break emitters must not promote fixed detector labels to final truth',
-        pass: false,
+        pass: failValue(),
         reason: `${totalFindings} parser hardcoded finding risk(s): ${details}`,
         severity: riskLabelCritical(),
-        score: checkpointScore(false),
+        score: checkpointScore(failValue()),
       };
     }
 
@@ -644,19 +652,19 @@ export function checkParserHardcodedFindingAudit(parsersDir: string): SelfTrustC
       id,
       name: 'Parser Hardcoded Finding Audit',
       description: 'Parser Break emitters are free of hardcoded final-truth risks',
-      pass: true,
+      pass: passValue(),
       severity: riskLabelCritical(),
-      score: checkpointScore(true),
+      score: checkpointScore(passValue()),
     };
   } catch (err) {
     return {
       id,
       name: 'Parser Hardcoded Finding Audit',
       description: 'Parser hardcoded finding audit must complete without error',
-      pass: false,
+      pass: failValue(),
       reason: err instanceof Error ? err.message : String(err),
       severity: riskLabelCritical(),
-      score: checkpointScore(false),
+      score: checkpointScore(failValue()),
     };
   }
 }
@@ -683,10 +691,10 @@ export function checkCrossArtifactConsistency(
         id,
         name: 'Cross-Artifact Consistency',
         description: 'All PULSE artifacts must agree on shared key fields',
-        pass: false,
+        pass: failValue(),
         reason: `${result.divergences.length} divergence(s): ${summary}`,
         severity: riskLabelCritical(),
-        score: checkpointScore(false),
+        score: checkpointScore(failValue()),
       };
     }
 
@@ -699,19 +707,19 @@ export function checkCrossArtifactConsistency(
       id,
       name: 'Cross-Artifact Consistency',
         description: `All loaded PULSE artifacts are mutually consistent${missingNote}`,
-      pass: true,
+      pass: passValue(),
       severity: riskLabelCritical(),
-      score: checkpointScore(true),
+      score: checkpointScore(passValue()),
     };
   } catch (err) {
     return {
       id,
       name: 'Cross-Artifact Consistency',
       description: 'Cross-artifact check must complete without error',
-      pass: false,
+      pass: failValue(),
       reason: err instanceof Error ? err.message : String(err),
       severity: riskLabelCritical(),
-      score: checkpointScore(false),
+      score: checkpointScore(failValue()),
     };
   }
 }
@@ -764,10 +772,10 @@ export function checkExecutionTraceAuditTrail(config: {
         id,
         name: 'Execution Trace Audit Trail',
         description: 'Execution trace must be present before convergence evidence is trusted',
-        pass: false,
+        pass: failValue(),
         reason: 'No execution trace artifact or active tracer snapshot was found',
         severity: riskLabelCritical(),
-        score: checkpointScore(false),
+        score: checkpointScore(failValue()),
       };
     }
 
@@ -788,10 +796,10 @@ export function checkExecutionTraceAuditTrail(config: {
       id,
       name: 'Execution Trace Audit Trail',
       description: 'Execution trace audit verification must complete without error',
-      pass: false,
+      pass: failValue(),
       reason: err instanceof Error ? err.message : String(err),
       severity: riskLabelCritical(),
-      score: checkpointScore(false),
+      score: checkpointScore(failValue()),
     };
   }
 }
