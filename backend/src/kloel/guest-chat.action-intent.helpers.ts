@@ -172,10 +172,10 @@ export function detectActionIntent(
   if (
     /(gera|emiti)(?:r|ndo)?\s+(?:um[a]?\s+)?(?:o\s+|a\s+)?(pix|cobran[cç]a|pagamento)/.test(msg)
   ) {
-    return { tool: 'create_payment_link', args: extractPaymentArgs(msg) };
+    return { tool: 'sales.create_pix', args: extractPaymentArgs(msg) };
   }
   if (/(gera|emite|emiti)(?:r|ndo)?\s+(?:um[a]?\s+)?(?:o\s+|a\s+)?boleto/.test(msg)) {
-    return { tool: 'generate_boleto', args: extractPaymentArgs(msg) };
+    return { tool: 'sales.create_boleto', args: extractPaymentArgs(msg) };
   }
 
   // ── CARTEIRA ── (saque antes de saldo, extrato antes de saldo/carteira)

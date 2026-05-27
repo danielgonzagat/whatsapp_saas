@@ -70,6 +70,8 @@ import type {
   DispatcherCodeToolsMock,
   DispatcherCodeAnalysisMock,
 } from './kloel-tool-dispatcher.service.fixtures';
+import { SmartPaymentService } from './smart-payment.service';
+
 type ProductSubToolsMock = { executeTool: jest.Mock };
 
 function objectContaining<T extends object>(sample: T): T {
@@ -100,6 +102,7 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
   let codeToolsService: DispatcherCodeToolsMock;
   let codeAnalysisService: DispatcherCodeAnalysisMock;
   let productSubTools: ProductSubToolsMock;
+  let smartPaymentService: { createSmartPayment: jest.Mock };
 
   beforeEach(async () => {
     prisma = createPrismaMock();
@@ -113,6 +116,7 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
     codeToolsService = createCodeToolsMock();
     codeAnalysisService = createCodeAnalysisMock();
     productSubTools = { executeTool: jest.fn().mockResolvedValue({ success: true }) };
+    smartPaymentService = { createSmartPayment: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -128,6 +132,7 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
         { provide: KloelCodeAnalysisService, useValue: codeAnalysisService },
         { provide: OpsAlertService, useValue: opsAlert },
         { provide: KloelProductSubResourceToolsService, useValue: productSubTools },
+        { provide: SmartPaymentService, useValue: smartPaymentService },
         CapabilityRegistryV2Service,
       ],
     }).compile();
@@ -441,6 +446,152 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
           auditLogId: stringMatching(/^audit_/),
           idempotencyKey: stringContaining('coupons.delete'),
           success: true,
+        }),
+      );
+    });
+  });
+  describe('sales.* aliases', () => {
+    it('sales.create_pix executes SmartPaymentService and returns a material receipt', async () => {
+      smartPaymentService.createSmartPayment.mockResolvedValueOnce({
+        paymentId: 'pay-pix-1',
+        paymentUrl: 'https://pay.test/pix',
+        pixCopyPaste: '000201',
+        pixQrCode: 'base64qr',
+        billingType: 'PIX',
+        suggestedMessage: 'PIX gerado: pay-pix-1',
+      });
+      const paymentArgs = {
+        productName: 'PDRN',
+        amount: 197,
+        customerName: 'Joao',
+        customerPhone: '11999999999',
+      };
+
+      const dotted = await service.executeTool(
+        DEFAULT_WS_ID,
+        'sales.create_pix',
+        paymentArgs,
+        'user-42',
+      );
+
+      expect(smartPaymentService.createSmartPayment).toHaveBeenCalledWith({
+        workspaceId: DEFAULT_WS_ID,
+        phone: '11999999999',
+        customerName: 'Joao',
+        productName: 'PDRN',
+        amount: 197,
+      });
+      expect(dotted.success).toBe(true);
+      expect(dotted.capabilityId).toBe('sales.create_pix');
+      expect(dotted.outputs).toEqual(
+        objectContaining({
+          paymentId: 'pay-pix-1',
+          orderId: 'pay-pix-1',
+          pixCopiaECola: '000201',
+          qrCodeBase64: 'base64qr',
+        }),
+      );
+      expect(dotted.receipt).toEqual(
+        objectContaining({
+          capabilityId: 'sales.create_pix',
+          workspaceId: DEFAULT_WS_ID,
+          actorId: 'user-42',
+          inputs: paymentArgs,
+          outputs: objectContaining({ orderId: 'pay-pix-1', paymentId: 'pay-pix-1' }),
+          domainEvents: ['sale.created', 'payment.pix_generated'],
+          auditLogId: stringMatching(/^audit_/),
+          evidenceUrl: '/vendas/pay-pix-1',
+          idempotencyKey: stringContaining('sales.create_pix'),
+          success: true,
+        }),
+      );
+    });
+
+    it('sales.create_boleto executes SmartPaymentService and returns a material receipt', async () => {
+      smartPaymentService.createSmartPayment.mockResolvedValueOnce({
+        paymentId: 'pay-boleto-1',
+        paymentUrl: 'https://pay.test/boleto',
+        billingType: 'BOLETO',
+      });
+      const paymentArgs = {
+        productName: 'PDRN',
+        amount: 197,
+        customerName: 'Joao',
+        customerPhone: '11999999999',
+      };
+
+      const dotted = await service.executeTool(
+        DEFAULT_WS_ID,
+        'sales.create_boleto',
+        paymentArgs,
+        'user-42',
+      );
+
+      expect(smartPaymentService.createSmartPayment).toHaveBeenCalledWith({
+        workspaceId: DEFAULT_WS_ID,
+        phone: '11999999999',
+        customerName: 'Joao',
+        productName: 'PDRN',
+        amount: 197,
+      });
+      expect(dotted.success).toBe(true);
+      expect(dotted.capabilityId).toBe('sales.create_boleto');
+      expect(dotted.outputs).toEqual(
+        objectContaining({
+          paymentId: 'pay-boleto-1',
+          orderId: 'pay-boleto-1',
+          paymentUrl: 'https://pay.test/boleto',
+        }),
+      );
+      expect(dotted.receipt).toEqual(
+        objectContaining({
+          capabilityId: 'sales.create_boleto',
+          workspaceId: DEFAULT_WS_ID,
+          actorId: 'user-42',
+          inputs: paymentArgs,
+          outputs: objectContaining({ orderId: 'pay-boleto-1', paymentId: 'pay-boleto-1' }),
+          domainEvents: ['sale.created', 'payment.boleto_generated'],
+          auditLogId: stringMatching(/^audit_/),
+          evidenceUrl: '/vendas/pay-boleto-1',
+          idempotencyKey: stringContaining('sales.create_boleto'),
+          success: true,
+        }),
+      );
+    });
+
+    it('does not claim boleto success when the provider returns PIX', async () => {
+      smartPaymentService.createSmartPayment.mockResolvedValueOnce({
+        paymentId: 'pay-pix-instead-1',
+        paymentUrl: 'https://pay.test/pix',
+        billingType: 'PIX',
+        suggestedMessage: 'PIX gerado: pay-pix-instead-1',
+      });
+      const paymentArgs = {
+        productName: 'PDRN',
+        amount: 197,
+        customerName: 'Joao',
+        customerPhone: '11999999999',
+      };
+
+      const dotted = await service.executeTool(
+        DEFAULT_WS_ID,
+        'sales.create_boleto',
+        paymentArgs,
+        'user-42',
+      );
+
+      expect(dotted.success).toBe(false);
+      expect(dotted.error).toBe('boleto_provider_unavailable');
+      expect(dotted.receipt).toEqual(
+        objectContaining({
+          capabilityId: 'sales.create_boleto',
+          workspaceId: DEFAULT_WS_ID,
+          actorId: 'user-42',
+          inputs: paymentArgs,
+          outputs: {},
+          domainEvents: [],
+          auditLogId: stringMatching(/^audit_/),
+          success: false,
         }),
       );
     });

@@ -63,6 +63,16 @@ describe('guest chat action intent helpers', () => {
     );
   });
 
+  it('routes real payment intents through canonical sales capabilities', () => {
+    const pix = detectActionIntent('gera um pix de R$197 para Joao comprar PDRN');
+    const boleto = detectActionIntent('emite boleto de R$197 para Joao comprar PDRN');
+
+    expect(pix?.tool).toBe('sales.create_pix');
+    expect(pix?.args).toEqual(expect.objectContaining({ amount: 197, customerName: 'joao' }));
+    expect(boleto?.tool).toBe('sales.create_boleto');
+    expect(boleto?.args).toEqual(expect.objectContaining({ amount: 197, customerName: 'joao' }));
+  });
+
   it('routes mutable product sub-resource intents through canonical capability IDs', () => {
     expect(detectActionIntent('atualiza o produto Serum, preco R$ 197')?.tool).toBe(
       'products.update',

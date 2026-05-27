@@ -597,8 +597,16 @@ export class KloelToolDispatcherService {
           }
           return { success: false, error: 'product_sub_resource_tools_not_available' };
         case 'sales.create_pix': {
+          const startedAt = Date.now();
           if (!this.smartPaymentService) {
-            return { success: false, error: 'smart_payment_service_unavailable' };
+            return this.withCanonicalReceipt(
+              'sales.create_pix',
+              workspaceId,
+              args,
+              { success: false, error: 'smart_payment_service_unavailable' },
+              userId,
+              startedAt,
+            );
           }
           const pixResult = await this.smartPaymentService.createSmartPayment({
             workspaceId,
@@ -607,23 +615,37 @@ export class KloelToolDispatcherService {
             ...(typeof args.productName === 'string' ? { productName: args.productName } : {}),
             amount: asNumber(args.amount),
           });
-          return {
-            success: true,
-            capabilityId: 'sales.create_pix',
-            outputs: {
-              paymentId: pixResult.paymentId,
+          const pixPaymentId = pixResult.paymentId;
+          return this.withCanonicalReceipt(
+            'sales.create_pix',
+            workspaceId,
+            args,
+            {
+              success: true,
+              capabilityId: 'sales.create_pix',
+              orderId: pixPaymentId,
+              paymentId: pixPaymentId,
               paymentUrl: pixResult.paymentUrl,
               pixCopiaECola: pixResult.pixCopyPaste,
               qrCodeBase64: pixResult.pixQrCode,
               billingType: pixResult.billingType,
+              message: pixResult.suggestedMessage || `PIX gerado: ${pixPaymentId}`,
             },
-            evidenceUrl: `/vendas/${pixResult.paymentId}`,
-            message: pixResult.suggestedMessage || `PIX gerado: ${pixResult.paymentId}`,
-          };
+            userId,
+            startedAt,
+          );
         }
         case 'sales.create_boleto': {
+          const startedAt = Date.now();
           if (!this.smartPaymentService) {
-            return { success: false, error: 'smart_payment_service_unavailable' };
+            return this.withCanonicalReceipt(
+              'sales.create_boleto',
+              workspaceId,
+              args,
+              { success: false, error: 'smart_payment_service_unavailable' },
+              userId,
+              startedAt,
+            );
           }
           const boletoResult = await this.smartPaymentService.createSmartPayment({
             workspaceId,
@@ -632,17 +654,37 @@ export class KloelToolDispatcherService {
             ...(typeof args.productName === 'string' ? { productName: args.productName } : {}),
             amount: asNumber(args.amount),
           });
-          return {
-            success: true,
-            capabilityId: 'sales.create_boleto',
-            outputs: {
-              paymentId: boletoResult.paymentId,
+          if (boletoResult.billingType !== 'BOLETO') {
+            return this.withCanonicalReceipt(
+              'sales.create_boleto',
+              workspaceId,
+              args,
+              {
+                success: false,
+                error: 'boleto_provider_unavailable',
+                message: 'Boleto ainda não está conectado ao provedor real de pagamento.',
+              },
+              userId,
+              startedAt,
+            );
+          }
+          const boletoPaymentId = boletoResult.paymentId;
+          return this.withCanonicalReceipt(
+            'sales.create_boleto',
+            workspaceId,
+            args,
+            {
+              success: true,
+              capabilityId: 'sales.create_boleto',
+              orderId: boletoPaymentId,
+              paymentId: boletoPaymentId,
               paymentUrl: boletoResult.paymentUrl,
               billingType: boletoResult.billingType,
+              message: `Boleto gerado: ${boletoPaymentId}`,
             },
-            evidenceUrl: `/vendas/${boletoResult.paymentId}`,
-            message: `Boleto gerado: ${boletoResult.paymentId}`,
-          };
+            userId,
+            startedAt,
+          );
         }
         case 'delete_product':
           return await this.chatToolsService.toolDeleteProduct(workspaceId, asToolArgs(args));
