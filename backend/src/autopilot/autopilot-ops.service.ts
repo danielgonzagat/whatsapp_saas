@@ -32,6 +32,10 @@ export class AutopilotOpsService {
     this.redisClient = createRedisClient();
   }
 
+  /**
+   * @deprecated TODO(omnicore): migrate to `backend/src/common/phone/phone-normalization.util.ts`.
+   *   Tracking: DEPRECATION_MAP.md #39.
+   */
   private normalizePhone(phone?: string) {
     return digitsOnly(phone);
   }

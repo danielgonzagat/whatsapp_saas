@@ -18,6 +18,10 @@ export function normalizeEmail(value?: string | null) {
   return normalized || null;
 }
 
+/**
+ * @deprecated TODO(omnicore): migrate to `backend/src/common/phone/phone-normalization.util.ts`.
+ *   Tracking: DEPRECATION_MAP.md #39.
+ */
 export { digitsOrNull as normalizePhone } from '../common/phone';
 
 /** Extract address from enrichment. */

@@ -58,6 +58,10 @@ export class WhatsappCatchupHistoryService {
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
+  /**
+   * @deprecated TODO(omnicore): migrate to `backend/src/common/phone/phone-normalization.util.ts`.
+   *   Tracking: DEPRECATION_MAP.md #39.
+   */
   private normalizePhone(phone: string): string {
     return normalizePhoneExt(phone);
   }

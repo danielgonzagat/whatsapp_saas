@@ -10,6 +10,10 @@ import type { ProviderSettings } from './provider-settings.types';
 import { extractFallbackTopic as extractFallbackTopicValue } from './whatsapp-normalization.util';
 
 import { whatsappDigits } from '../common/phone';
+/**
+ * @deprecated TODO(omnicore): migrate to `backend/src/common/phone/phone-normalization.util.ts`.
+ *   Tracking: DEPRECATION_MAP.md #39.
+ */
 export { whatsappDigits as normalizePhone };
 
 function expandComparablePhoneVariants(phone: string): string[] {

@@ -552,6 +552,10 @@ export class MetaWhatsAppService implements OnModuleInit {
   getRequestedScopesForChannel(channel: MetaMarketingChannel): string[] {
     return getRequestedScopesForChannel(channel);
   }
+  /**
+   * @deprecated TODO(omnicore): migrate to `backend/src/common/phone/phone-normalization.util.ts`.
+   *   Tracking: DEPRECATION_MAP.md #39.
+   */
   private normalizePhone(value: string): string {
     return normalizeWhatsAppPhone(value);
   }

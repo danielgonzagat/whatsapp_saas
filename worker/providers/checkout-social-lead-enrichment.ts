@@ -197,6 +197,10 @@ function readStringField(value: unknown, keys: string[]) {
   return null;
 }
 
+/**
+ * @deprecated TODO(omnicore): migrate to `backend/src/common/phone/phone-normalization.util.ts`.
+ *   Tracking: DEPRECATION_MAP.md #39.
+ */
 function normalizePhone(value: string | null) {
   const digits = String(value || '').replace(D_RE, '');
   return digits || null;

@@ -35,7 +35,12 @@ export function collapseWhitespace(value: unknown): string {
   return coerceToString(value).replace(WHITESPACE_RE, ' ').trim();
 }
 
-/** Extract ascii digits. */
+/**
+ * Extract ascii digits.
+ *
+ * @deprecated TODO(omnicore): migrate to `backend/src/common/phone/phone-normalization.util.ts`.
+ *   Tracking: DEPRECATION_MAP.md #39.
+ */
 export function extractAsciiDigits(value: unknown): string {
   const input = coerceToString(value);
   let result = '';

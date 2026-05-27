@@ -6,7 +6,12 @@ import {
 
 export { extractAsciiDigits };
 
-/** Extract phone from chat id. */
+/**
+ * Extract phone from chat id.
+ *
+ * @deprecated TODO(omnicore): migrate to `backend/src/common/phone/phone-normalization.util.ts`.
+ *   Tracking: DEPRECATION_MAP.md #39.
+ */
 export function extractPhoneFromChatId(value: unknown): string {
   const input =
     typeof value === 'string'

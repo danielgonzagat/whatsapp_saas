@@ -3,16 +3,27 @@ import { flowQueue } from '../../queue/queue';
 import { formatBrlAmount } from '../../kloel/money-format.util';
 import { PaidCheckoutEffectClient, readPaidCheckoutOrderScope } from './shared';
 
-import { digitsOnly } from '../../common/phone';
+import { normalizePhone as canonicalNormalizePhone } from '../../common/phone/phone-normalization.util';
 
 /**
- * Local checkout-effects normalizer: digitsOnly with a 10-digit floor.
- * Returns null below the floor (avoids creating a WhatsApp conversation
- * for malformed numbers like inferred-from-cardholder-name attempts).
+ * Local checkout-effects normalizer: canonical normalize + 10-digit floor.
+ *
+ * The canonical {@link canonicalNormalizePhone} already applies an 8-digit
+ * floor and (for BR-domestic 10/11 digit inputs) promotes them to the full
+ * 12/13-digit international form. We tighten the floor here to 10 digits to
+ * avoid creating a WhatsApp conversation for malformed numbers like
+ * inferred-from-cardholder-name attempts.
+ *
+ * NOTE: after canonical normalize a BR domestic "1133334444" (10 digits) is
+ * promoted to "551133334444" (12 digits), so the floor here is effectively
+ * comparing the *normalized* length — what the rest of the file expects.
  */
 function normalizePhone(phone: string | null) {
-  const digits = digitsOnly(phone);
-  return digits.length >= 10 ? digits : null;
+  const normalized = canonicalNormalizePhone(phone);
+  if (!normalized) {
+    return null;
+  }
+  return normalized.digits.length >= 10 ? normalized.digits : null;
 }
 
 function readOptInFlag(customFields: Prisma.JsonValue | null | undefined) {
