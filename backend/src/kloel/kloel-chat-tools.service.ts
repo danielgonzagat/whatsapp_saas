@@ -430,12 +430,14 @@ export class KloelChatToolsService {
     workspaceId: string,
     args: Record<string, unknown>,
   ): Promise<ToolResult> {
+    void workspaceId;
     const planName = typeof args.planName === 'string' ? args.planName : '';
     const productName = typeof args.productName === 'string' ? args.productName : '';
     const imageUrl = typeof args.imageUrl === 'string' ? args.imageUrl : '';
     if (!imageUrl) {
       return {
-        success: true,
+        success: false,
+        error: 'image_url_required',
         message:
           'Envie a URL da foto do plano ou faça upload pelo chat. Ex: "foto do plano X url: https://..."',
       };
@@ -443,34 +445,12 @@ export class KloelChatToolsService {
     if (!planName && !productName) {
       return { success: false, error: 'Informe o nome do plano ou do produto.' };
     }
-    try {
-      let plan;
-      if (planName) {
-        plan = await this.prisma.productPlan.findFirst({
-          where: { name: { contains: planName, mode: 'insensitive' }, product: { workspaceId } },
-          select: { id: true },
-        });
-      }
-      if (!plan && productName) {
-        plan = await this.prisma.productPlan.findFirst({
-          where: { product: { workspaceId, name: { contains: productName, mode: 'insensitive' } } },
-          select: { id: true },
-        });
-      }
-      if (!plan) {
-        return { success: false, error: 'Plano nao encontrado.' };
-      }
-      await this.prisma.productPlan.update({
-        where: { id: plan.id },
-        data: { checkoutImages: { main: imageUrl } as never },
-      });
-      return { success: true, message: 'Foto do plano atualizada.' };
-    } catch (e: unknown) {
-      return {
-        success: false,
-        error: e instanceof Error ? e.message : 'Erro ao atualizar foto do plano.',
-      };
-    }
+    return {
+      success: false,
+      error: 'plan_image_service_required',
+      message:
+        'upload_plan_image exige PlanImageService ou MediaService.attachPlanImage antes de declarar foto do plano atualizada.',
+    };
   }
   async toolUploadProductImage(
     workspaceId: string,

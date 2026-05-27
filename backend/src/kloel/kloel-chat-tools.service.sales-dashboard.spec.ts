@@ -72,6 +72,10 @@ type ChatToolsPrismaMock = {
     findMany: AsyncMock<FlowRecord[], [Record<string, unknown>?]>;
     count: AsyncMock<number, [CountArgs?]>;
   };
+  productPlan: {
+    findFirst: AsyncMock<{ id: string } | null, [Record<string, unknown>?]>;
+    update: AsyncMock<unknown, [Record<string, unknown>?]>;
+  };
   contact: { count: AsyncMock<number, [CountArgs?]> };
   message: { count: AsyncMock<number, [CountArgs?]> };
   checkoutOrder: { aggregate: AsyncMock<CheckoutAggregateResult, [CheckoutAggregateArgs]> };
@@ -160,6 +164,12 @@ describe('KloelChatToolsService', () => {
         create: resolvedMock<unknown, [FlowCreateArgs]>({}),
         findMany: resolvedMock<FlowRecord[], [Record<string, unknown>?]>([]),
         count: resolvedMock<number, [CountArgs?]>(0),
+      },
+      productPlan: {
+        findFirst: resolvedMock<{ id: string } | null, [Record<string, unknown>?]>({
+          id: 'plan-1',
+        }),
+        update: resolvedMock<unknown, [Record<string, unknown>?]>({}),
       },
       contact: { count: resolvedMock<number, [CountArgs?]>(0) },
       message: { count: resolvedMock<number, [CountArgs?]>(0) },
@@ -321,6 +331,29 @@ describe('KloelChatToolsService', () => {
       const result = await service.toolRememberUserInfo(wsId, { key: '', value: '' });
       expect(result.success).toBe(false);
       expect(memoryService.saveMemory).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('toolUploadPlanImage', () => {
+    it('blocks direct plan image writes until a plan image domain service is wired', async () => {
+      const result = await service.toolUploadPlanImage(wsId, {
+        planName: 'Mensal',
+        imageUrl: 'https://cdn.test/plan.png',
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('plan_image_service_required');
+      expect(prisma.productPlan.findFirst).not.toHaveBeenCalled();
+      expect(prisma.productPlan.update).not.toHaveBeenCalled();
+    });
+
+    it('returns an honest missing image error', async () => {
+      const result = await service.toolUploadPlanImage(wsId, { planName: 'Mensal' });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('image_url_required');
+      expect(prisma.productPlan.findFirst).not.toHaveBeenCalled();
+      expect(prisma.productPlan.update).not.toHaveBeenCalled();
     });
   });
 
