@@ -24,6 +24,7 @@ vi.mock('@/components/kloel/theme/ThemeProvider', () => ({
   useTheme: () => ({ theme: 'dark' }),
 }));
 
+import { NAV } from '../sidebar/sidebar-config';
 import MarketingView from './MarketingView';
 
 afterEach(() => {
@@ -34,6 +35,12 @@ afterEach(() => {
 });
 
 describe('MarketingView — six-channel PreviewBar (canonical anexo contract)', () => {
+  it('keeps Marketing as one sidebar entry without redundant channel subitems', () => {
+    const marketingItem = NAV.find((item) => item.key === 'marketing');
+    expect(marketingItem?.label).toBe('Marketing');
+    expect(marketingItem?.sub).toEqual([]);
+  });
+
   it('renders exactly six channel buttons (lowercase tokens, CSS uppercase-transformed)', () => {
     render(<MarketingView defaultTab="whatsapp" />);
     // The reference JSX uses lowercase tokens with CSS text-transform.
