@@ -74,6 +74,8 @@ import {
   runCreatePaymentLink,
   runCreateOrder,
 } from './kloel-chat-tools.dashboard-payments.helpers';
+import { MemoryService } from './memory.service';
+
 interface ToolCreateFlowArgs {
   name: string;
   trigger: string;
@@ -98,6 +100,7 @@ export class KloelChatToolsService {
     private readonly productService: ProductService,
     private readonly prisma: PrismaService,
     private readonly smartPaymentService: SmartPaymentService,
+    @Optional() private readonly memoryService?: MemoryService,
     @Optional() private readonly agentScheduler?: AgentRuntimeSchedulerService,
     @Optional() private readonly agentSessions?: AgentRuntimeSessionStore,
     @Optional() private readonly agentSkills?: AgentRuntimeSkillRegistry,
@@ -155,7 +158,7 @@ export class KloelChatToolsService {
     args: ToolRememberUserInfoArgs,
     userId?: string,
   ): Promise<ToolResult> {
-    return runRememberUserInfo(this.prisma, workspaceId, args, userId);
+    return runRememberUserInfo(this.memoryService, workspaceId, args, userId);
   }
   toolCreateFlow(workspaceId: string, args: ToolCreateFlowArgs): Promise<ToolResult> {
     void workspaceId;

@@ -9,6 +9,7 @@ import {
   AgentRuntimeSkillRegistry,
   AgentRuntimeEvidenceStoreService,
 } from './agent-runtime';
+import { MemoryService } from './memory.service';
 
 jest.mock('../common/products/legacy-products.util', () => ({
   filterLegacyProducts: jest.fn((products: unknown[]) => products),
@@ -103,6 +104,7 @@ describe('KloelChatToolsService', () => {
   let service: KloelChatToolsService;
   let prisma: ChatToolsPrismaMock;
   let smartPayment: Pick<SmartPaymentService, 'createSmartPayment'>;
+  let memoryService: Pick<MemoryService, 'saveMemory'>;
   let agentScheduler: {
     upsertJob: jest.Mock;
     listJobs: jest.Mock;
@@ -181,6 +183,16 @@ describe('KloelChatToolsService', () => {
     smartPayment = {
       createSmartPayment: jest.fn().mockResolvedValue({ paymentUrl: 'https://pay.test' }),
     };
+    memoryService = {
+      saveMemory: jest.fn().mockResolvedValue({
+        id: 'mem-1',
+        workspaceId: wsId,
+        key: 'user_profile:user-1',
+        value: { pref_lang: 'pt-BR', updatedAt: '2026-05-27T00:00:00.000Z', userId: 'user-1' },
+        category: 'user_preferences',
+        content: 'pref_lang: pt-BR',
+      }),
+    };
     agentScheduler = {
       upsertJob: jest.fn().mockResolvedValue({ ok: true, key: 'agent_job:daily' }),
       listJobs: jest.fn().mockResolvedValue([]),
@@ -234,6 +246,7 @@ describe('KloelChatToolsService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: ProductService, useValue: productService },
         { provide: SmartPaymentService, useValue: smartPayment },
+        { provide: MemoryService, useValue: memoryService },
         { provide: AgentRuntimeSchedulerService, useValue: agentScheduler },
         { provide: AgentRuntimeSessionStore, useValue: agentSessions },
         { provide: AgentRuntimeSkillRegistry, useValue: agentSkills },
@@ -285,7 +298,7 @@ describe('KloelChatToolsService', () => {
   });
 
   describe('toolRememberUserInfo', () => {
-    it('upserts user profile in kloelMemory', async () => {
+    it('stores user profile through MemoryService without direct kloelMemory writes', async () => {
       const result = await service.toolRememberUserInfo(
         wsId,
         { key: 'pref_lang', value: 'pt-BR' },
@@ -293,12 +306,21 @@ describe('KloelChatToolsService', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(prisma.kloelMemory.upsert).toHaveBeenCalled();
+      expect(memoryService.saveMemory).toHaveBeenCalledWith(
+        wsId,
+        'user_profile:user-1',
+        expect.objectContaining({ pref_lang: 'pt-BR', userId: 'user-1' }),
+        'user_preferences',
+        'pref_lang: pt-BR',
+      );
+      expect(prisma.kloelMemory.findUnique).not.toHaveBeenCalled();
+      expect(prisma.kloelMemory.upsert).not.toHaveBeenCalled();
     });
 
     it('returns error for empty key or value', async () => {
       const result = await service.toolRememberUserInfo(wsId, { key: '', value: '' });
       expect(result.success).toBe(false);
+      expect(memoryService.saveMemory).not.toHaveBeenCalled();
     });
   });
 
