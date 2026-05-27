@@ -1,6 +1,5 @@
-const WILDCARD_SUFFIX = 'an' + 'y';
-export const WAHA_MESSAGE_EVENT = 'message';
-export const WAHA_MESSAGE_WILDCARD_EVENT = [WAHA_MESSAGE_EVENT, WILDCARD_SUFFIX].join('.');
-export function isWahaInboundMessageEvent(event: string): boolean {
-  return event === WAHA_MESSAGE_EVENT || event === WAHA_MESSAGE_WILDCARD_EVENT;
-}
+/**
+ * @deprecated Use 'backend/src/marketing/channels/whatsapp/providers/waha-message-event-name' directly.
+ *   Per ADR-0012 OmniCore Wave W3.
+ */
+export * from '../../marketing/channels/whatsapp/providers/waha-message-event-name';
