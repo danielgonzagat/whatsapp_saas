@@ -7,7 +7,7 @@ import type Redis from 'ioredis';
 import OpenAI from 'openai';
 import { createTextLlmClient, resolveTextLlmApiKey } from '../lib/llm-provider';
 import { OpsAlertService } from '../observability/ops-alert.service';
-import { MindEventSpine } from './mind/coordination';
+import { MindEventSpine } from './mind/coordination/mind-event-spine.service';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { UnifiedAgentService } from './unified-agent.service';
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';

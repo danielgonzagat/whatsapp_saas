@@ -57,9 +57,22 @@ export function detectActionIntent(
 
   // ── BROADCAST / CAMPANHA ──
   if (/cria(?:r|ndo)?\s+(?:uma\s+)?(?:campanha|broadcast|disparo)/i.test(msg)) {
-    const campaignName = extractProductName(msg) || 'Campanha';
-    const msgMatch = msg.match(/(?:mensagem|msg|texto)\s*:?\s*['\"]?([A-Za-zÀ-ÿ0-9\s\-.,!?%$@]{5,200}?)(?:\s*(?:,|\.|R\$|$))/i);
-    return { tool: 'create_broadcast', args: { name: campaignName, message: msgMatch?.[1]?.trim() || 'Campanha promocional', productName: campaignName } };
+    const campaignNameMatch = message.match(
+      /(?:campanha|broadcast|disparo)\s+([A-Za-zÀ-ÿ0-9\s\-.,!?%$@]{2,80}?)(?:\s+(?:mensagem|msg|texto)\b|$)/i,
+    );
+    const campaignName =
+      campaignNameMatch?.[1]?.trim() || extractProductName(message) || 'Campanha';
+    const msgMatch = message.match(
+      /(?:mensagem|msg|texto)\s*:?\s*['"]?([A-Za-zÀ-ÿ0-9\s\-.,!?%$@]{5,200}?)(?:\s*(?:,|\.|R\$|$))/i,
+    );
+    return {
+      tool: 'create_broadcast',
+      args: {
+        name: campaignName,
+        message: msgMatch?.[1]?.trim() || 'Campanha promocional',
+        productName: campaignName,
+      },
+    };
   }
 
   // ── CHECKOUTS ──
@@ -239,7 +252,10 @@ export function detectActionIntent(
   if (/garantia|warranty/.test(msg)) {
     const wmatch = msg.match(/(\d+)\s*(?:dias?|days?)/i);
     const wdays = wmatch?.[1] ? parseInt(wmatch[1], 10) : undefined;
-    return { tool: 'configure_warranty', args: { productName: extractProductName(msg), warrantyDays: wdays } };
+    return {
+      tool: 'configure_warranty',
+      args: { productName: extractProductName(message), warrantyDays: wdays },
+    };
   }
   if (/exit intent|popup.*sa[ií]da/.test(msg)) {
     return { tool: 'configure_exit_intent', args: { productName: extractProductName(msg) } };

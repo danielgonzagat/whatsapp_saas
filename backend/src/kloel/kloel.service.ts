@@ -1,4 +1,4 @@
-import { Injectable, Optional } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, Optional } from '@nestjs/common';
 import {
   runListFollowups,
   runListPersonas,
@@ -12,7 +12,7 @@ import { Response } from 'express';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelConversationStore } from './kloel-conversation-store';
-import { LeadMindCoordinator } from './mind/coordination';
+import { LeadMindCoordinator } from './mind/coordination/lead-mind-coordinator.service';
 import { KloelReplyEngineService } from './kloel-reply-engine.service';
 import { KloelThreadService } from './kloel-thread.service';
 import { KloelThinkerService, ThinkRequest, ThinkSyncResult } from './kloel-thinker.service';
@@ -66,6 +66,7 @@ export class KloelService {
     private readonly leadBrainService: LeadMindCoordinator,
     private readonly thinkerService: KloelThinkerService,
     private readonly replyEngineService: KloelReplyEngineService,
+    @Inject(forwardRef(() => KloelToolDispatcherService))
     private readonly toolDispatcher: KloelToolDispatcherService,
     @Optional() private readonly agentRuntime?: AgentRuntimeContextService,
   ) {

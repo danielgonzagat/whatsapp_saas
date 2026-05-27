@@ -49,8 +49,13 @@ describe('KloelChatToolsService — produto, autopilot e identidade', () => {
       expect(result.success).toBe(true);
       expect(ctx.productService.create).toHaveBeenCalledWith(
         ctx.wsId,
-        expect.objectContaining({ name: 'Curso', price: 199.9, description: 'Curso completo' }),
-        { id: 'kloel-chat' },
+        expect.objectContaining({
+          name: 'Curso',
+          price: 199.9,
+          description: 'Curso completo',
+          format: 'DIGITAL',
+        }),
+        { id: 'kloel-chat-tools' },
       );
     });
   });

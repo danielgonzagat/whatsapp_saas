@@ -136,7 +136,6 @@ export async function runGetProductReviews(
 ): Promise<ToolResult> {
   const pid = await resolveProductId(prisma, workspaceId, args.productName || args.productId);
   if (!pid && args.productId) {
-    // Direct productId provided — use it directly
     const product = await prisma.product.findFirst({
       where: { id: args.productId, workspaceId },
       select: { id: true, name: true },
@@ -148,21 +147,33 @@ export async function runGetProductReviews(
       orderBy: { createdAt: 'desc' },
       take: 20,
     });
-    return { success: true, product: { id: product.id, name: product.name }, reviews };
+    return {
+      success: true,
+      product: { id: product.id, name: product.name },
+      reviews,
+    };
   }
-  if (!pid) {return { success: false, error: 'productId_required' };}
+  if (!pid) {
+    return { success: false, error: 'productId_required' };
+  }
   const product = await prisma.product.findFirst({
     where: { id: pid, workspaceId },
     select: { id: true, name: true },
   });
-  if (!product) {return { success: false, error: 'product_not_found' };}
+  if (!product) {
+    return { success: false, error: 'product_not_found' };
+  }
   const reviews = await prisma.productReview.findMany({
     where: { productId: pid },
     select: { id: true, rating: true, comment: true, createdAt: true },
     orderBy: { createdAt: 'desc' },
     take: 20,
   });
-  return { success: true, product: { id: product.id, name: product.name }, reviews };
+  return {
+    success: true,
+    product: { id: product.id, name: product.name },
+    reviews,
+  };
 }
 
 export async function runGetProductAiConfig(

@@ -23,16 +23,14 @@ import { KLOEL_COMPOSER_E2E_GUARD, NoopKloelComposerE2EGuard } from './kloel-com
 import { KLOEL_LLM_E2E_GUARD, NoopKloelLLME2EGuard } from './kloel-llm-e2e-guard';
 import { KloelController } from './kloel.controller';
 import { KloelDataController } from './kloel-data.controller';
-import {
-  LeadMindCoordinator,
-  MindAutonomyCoordinator,
-  MindCapabilityExecutor,
-  MindCapabilityRegistry,
-  MindCommercialGraph,
-  MindEventSpine,
-  MindRuntime,
-  WhatsAppMindCoordinator,
-} from './mind/coordination';
+import { LeadMindCoordinator } from './mind/coordination/lead-mind-coordinator.service';
+import { MindAutonomyCoordinator } from './mind/coordination/mind-autonomy-coordinator.service';
+import { MindCapabilityExecutor } from './mind/coordination/mind-capability-executor.service';
+import { MindCapabilityRegistry } from './mind/coordination/mind-capability-registry.service';
+import { MindCommercialGraph } from './mind/coordination/mind-commercial-graph.service';
+import { MindEventSpine } from './mind/coordination/mind-event-spine.service';
+import { MindRuntime } from './mind/coordination/mind-runtime.service';
+import { WhatsAppMindCoordinator } from './mind/coordination/whatsapp-mind-coordinator.service';
 import { KloelLeadProcessorService } from './kloel-lead-processor.service';
 import { KloelReplyEngineService } from './kloel-reply-engine.service';
 import { KloelService } from './kloel.service';
@@ -189,7 +187,6 @@ import { InboxModule } from '../inbox/inbox.module';
 import { AccountService } from './account.service';
 import { CheckoutService } from './checkout.service';
 import { CouponService } from './coupon.service';
-import { PlanService } from './plan.service';
 import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
 import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service';
 import { ToolPlannerModule } from './toolplanner/toolplanner.module';
@@ -198,6 +195,7 @@ import { IntentRouterModule } from './intent-router/intent-router.module';
 import { SelfAwarenessModule } from './self-awareness/self-awareness.module';
 import { ProductsModule } from '../products/products.module';
 import { ProductCouponDomainService } from './product-coupon-domain.service';
+import { PlansModule } from '../plans/plans.module';
 
 /** Kloel module. */
 @Module({
@@ -225,6 +223,7 @@ import { ProductCouponDomainService } from './product-coupon-domain.service';
     ToolPlannerModule,
     SelfAwarenessModule,
     ProductsModule,
+    PlansModule,
   ],
   controllers: [
     KloelController,
@@ -279,7 +278,6 @@ import { ProductCouponDomainService } from './product-coupon-domain.service';
     CheckoutService,
     CouponService,
     ProductCouponDomainService,
-    PlanService,
     KloelProductSubResourceToolsService,
     KloelWalletSalesToolsService,
     KloelBusinessConfigToolsService,

@@ -154,6 +154,8 @@ export class KloelProductSubResourceToolsService {
       }
       if (args.itemsPerPlan !== undefined) {
         data.itemsPerPlan = this.num(args.itemsPerPlan);
+      } else if (args.quantity !== undefined) {
+        data.itemsPerPlan = this.num(args.quantity);
       }
       const plan = await this.prisma.productPlan.update({
         where: { id: planId },
@@ -161,7 +163,14 @@ export class KloelProductSubResourceToolsService {
       });
       return {
         success: true,
-        plan: { id: plan.id, name: plan.name, price: plan.price, itemsPerPlan: plan.itemsPerPlan },
+        plan: {
+          id: plan.id,
+          name: plan.name,
+          price: plan.price,
+          itemsPerPlan: plan.itemsPerPlan,
+          maxInstallments: plan.maxInstallments,
+          active: plan.active,
+        },
       };
     } catch (err: unknown) {
       return { success: false, error: err instanceof Error ? err.message : 'Erro' };

@@ -21,7 +21,7 @@ import { CANONICAL_FALLBACK_SYSTEM_PROMPT } from './kloel.prompts';
 import { LLM_MAX_COMPLETION_TOKENS } from './openai-wrapper';
 import { OPERATOR_CAPABILITIES } from './brain-capabilities.const';
 import { AbiBuilderService } from './abi/abi-builder.service';
-import { MindCapabilityExecutor } from './mind/coordination';
+import { MindCapabilityExecutor } from './mind/coordination/mind-capability-executor.service';
 import { validateAbiPayload } from './abi/abi-validator';
 import { computeHandoffConfidence, HANDOFF_THRESHOLD } from './handoff-confidence.helper';
 import { ChatCompletionMessageParam } from 'openai/resources/chat';

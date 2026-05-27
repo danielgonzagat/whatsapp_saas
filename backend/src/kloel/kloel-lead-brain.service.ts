@@ -6,7 +6,7 @@
  * @canonical backend/src/kloel/mind/coordination/lead-mind-coordinator.service.ts
  * @see docs/adr/0013-kloel-mind-unification.md
  */
-import { Injectable, Optional } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { KloelLead, Prisma } from '@prisma/client';
 import { LLMBudgetService, estimateChatCostCents } from './llm-budget.service';
@@ -30,7 +30,6 @@ import {
   detectBuyIntent,
 } from './kloel-lead-brain.helpers';
 import type { ChatMessage } from './kloel-lead-brain.helpers';
-import { AUTOPILOT_ANTI_INVENTION_PROMPT } from './autopilot-system-prompt.helper';
 export { NON_DIGIT_RE, safeStr, asUnknownRecord, detectBuyIntent };
 export type { ChatMessage };
 
@@ -49,6 +48,7 @@ export class KloelLeadBrainService {
     private readonly prisma: PrismaService,
     private readonly planLimits: PlanLimitsService,
     private readonly llmBudget: LLMBudgetService,
+    @Inject(forwardRef(() => UnifiedAgentService))
     private readonly unifiedAgentService: UnifiedAgentService,
     private readonly smartPaymentService: SmartPaymentService,
     @Optional() private readonly opsAlert?: OpsAlertService,
@@ -336,7 +336,6 @@ export class KloelLeadBrainService {
       }
 
       const messages: ChatMessage[] = [
-        { role: 'system', content: AUTOPILOT_ANTI_INVENTION_PROMPT },
         ...conversationHistory,
         { role: 'user', content: effectiveUserContent },
       ];

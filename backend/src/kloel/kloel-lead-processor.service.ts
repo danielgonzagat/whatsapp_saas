@@ -1,4 +1,4 @@
-import { Injectable, Optional } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -20,7 +20,6 @@ import {
   extractProductFromMessage,
   ChatMessage,
 } from './kloel-lead-processor-helpers';
-import { AUTOPILOT_ANTI_INVENTION_PROMPT } from './autopilot-system-prompt.helper';
 import OpenAI from 'openai';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { AbiBuilderService } from './abi/abi-builder.service';
@@ -37,6 +36,7 @@ export class KloelLeadProcessorService {
 
   constructor(
     private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => UnifiedAgentService))
     private readonly unifiedAgentService: UnifiedAgentService,
     private readonly smartPaymentService: SmartPaymentService,
     private readonly planLimits: PlanLimitsService,
@@ -171,7 +171,6 @@ export class KloelLeadProcessorService {
       }
 
       const messages: ChatMessage[] = [
-        { role: 'system', content: AUTOPILOT_ANTI_INVENTION_PROMPT },
         ...conversationHistory,
         { role: 'user', content: effectiveUserContent },
       ];

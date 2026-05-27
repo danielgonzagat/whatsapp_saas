@@ -7,7 +7,9 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import type { AuthenticatedRequest } from '../common/interfaces';
 import { Metrics } from '../observability/metrics';
 import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
-import { MindAutonomyCoordinator, MindCommercialGraph, MindRuntime } from './mind/coordination';
+import { MindAutonomyCoordinator } from './mind/coordination/mind-autonomy-coordinator.service';
+import { MindCommercialGraph } from './mind/coordination/mind-commercial-graph.service';
+import { MindRuntime } from './mind/coordination/mind-runtime.service';
 import { BrainDecideDto, BrainObserveDto } from './brain-runtime.dto';
 
 function escapeHtmlUnsafeJsonChars(json: string): string {

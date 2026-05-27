@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { randomIdSegment } from '../common/random-id';
 
 /**
  * @deprecated DUPLICATE of {@link ../checkout/checkout.service.ts CheckoutService}.
@@ -41,7 +42,7 @@ export class CheckoutService {
         productId: data.productId,
         name: data.name,
         active: true,
-        code: `chk_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
+        code: `chk_${Date.now().toString(36)}_${randomIdSegment(5)}`,
         config: {
           buttonText: data.buttonText || 'Comprar Agora',
           primaryColor: data.primaryColor || '#6366f1',

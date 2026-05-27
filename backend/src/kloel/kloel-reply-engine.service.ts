@@ -1,4 +1,4 @@
-import { Injectable, Optional } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
 import { createTextLlmClient, hasTextLlmApiKey } from '../lib/llm-provider';
@@ -45,6 +45,7 @@ export class KloelReplyEngineService {
     private readonly planLimits: PlanLimitsService,
     private readonly threadService: KloelThreadService,
     private readonly wsContextService: KloelWorkspaceContextService,
+    @Inject(forwardRef(() => UnifiedAgentService))
     private readonly unifiedAgentService: UnifiedAgentService,
     @Optional() private readonly marketingSkillService?: MarketingSkillService,
     @Optional() private readonly mindService?: MindService,

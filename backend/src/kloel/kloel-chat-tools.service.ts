@@ -108,12 +108,12 @@ export class KloelChatToolsService {
     const actorId =
       typeof actorRef.actorId === 'string' && actorRef.actorId.trim()
         ? actorRef.actorId
-        : 'kloel-chat';
+        : 'kloel-chat-tools';
     const rawFormat = typeof args.format === 'string' ? args.format.toUpperCase() : undefined;
-    const format: 'PHYSICAL' | 'DIGITAL' | 'HYBRID' | undefined =
+    const format: 'PHYSICAL' | 'DIGITAL' | 'HYBRID' =
       rawFormat === 'PHYSICAL' || rawFormat === 'DIGITAL' || rawFormat === 'HYBRID'
         ? rawFormat
-        : undefined;
+        : 'DIGITAL';
 
     return this.productService.create(
       workspaceId,
@@ -123,7 +123,7 @@ export class KloelChatToolsService {
         ...(args.description !== undefined ? { description: args.description } : {}),
         ...(args.category !== undefined ? { category: args.category } : {}),
         ...(args.imageUrl !== undefined ? { imageUrl: args.imageUrl } : {}),
-        ...(format !== undefined ? { format } : {}),
+        format,
       },
       { id: actorId },
     ) as Promise<ToolResult>;
