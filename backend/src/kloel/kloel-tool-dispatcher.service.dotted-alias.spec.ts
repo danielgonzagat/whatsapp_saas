@@ -450,6 +450,60 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
       );
     });
   });
+  describe('legacy payment link', () => {
+    it('create_payment_link returns a canonical material receipt with payment proof', async () => {
+      chatToolsService.toolCreatePaymentLink.mockResolvedValueOnce({
+        success: true,
+        paymentId: 'pay-link-1',
+        paymentUrl: 'https://pay.test/pay-link-1',
+        pixQrCode: 'data:image/png;base64,qr',
+        pixCopyPaste: '000201link',
+        billingType: 'PIX',
+      });
+      const paymentArgs = {
+        amount: 197,
+        description: 'PDRN',
+        customerName: 'Joao',
+      };
+
+      const result = await service.executeTool(
+        DEFAULT_WS_ID,
+        'create_payment_link',
+        paymentArgs,
+        'user-42',
+      );
+
+      expect(chatToolsService.toolCreatePaymentLink).toHaveBeenCalledWith(DEFAULT_WS_ID, paymentArgs);
+      expect(result.success).toBe(true);
+      expect(result.capabilityId).toBe('create_payment_link');
+      expect(result.outputs).toEqual(
+        objectContaining({
+          paymentId: 'pay-link-1',
+          paymentUrl: 'https://pay.test/pay-link-1',
+          pixCopyPaste: '000201link',
+          pixQrCode: 'data:image/png;base64,qr',
+        }),
+      );
+      expect(result.receipt).toEqual(
+        objectContaining({
+          capabilityId: 'create_payment_link',
+          workspaceId: DEFAULT_WS_ID,
+          actorId: 'user-42',
+          inputs: paymentArgs,
+          outputs: objectContaining({
+            paymentId: 'pay-link-1',
+            paymentUrl: 'https://pay.test/pay-link-1',
+            pixCopyPaste: '000201link',
+          }),
+          domainEvents: ['payment.link_created'],
+          auditLogId: stringMatching(/^audit_/),
+          idempotencyKey: stringContaining('create_payment_link'),
+          success: true,
+        }),
+      );
+    });
+  });
+
   describe('sales.* aliases', () => {
     it('sales.create_pix executes SalesService.createPixOrder and returns a real sale receipt', async () => {
       salesService.createPixOrder.mockResolvedValueOnce({

@@ -1210,10 +1210,15 @@ export class KloelToolDispatcherService {
     args: UnknownRecord,
     userId?: string,
   ): Promise<{ success: boolean; message?: string; error?: string; [key: string]: unknown }> {
-    const paymentArgs = args as never as {
+    const startedAt = Date.now();
+    const paymentArgs: {
       amount: number;
       description: string;
       customerName?: string;
+    } = {
+      amount: asNumber(args.amount),
+      description: asString(args.description),
+      ...(typeof args.customerName === 'string' ? { customerName: args.customerName } : {}),
     };
     const result = await this.chatToolsService.toolCreatePaymentLink(workspaceId, paymentArgs);
     try {
@@ -1227,7 +1232,7 @@ export class KloelToolDispatcherService {
             resource: 'KloelToolDispatcher',
             ...(resourceId !== undefined ? { resourceId } : {}),
             ...(userId !== undefined ? { agentId: userId } : {}),
-            details: sanitizeDetails(args),
+            details: sanitizeDetails(paymentArgs),
           });
         },
         { isolationLevel: 'ReadCommitted' },
@@ -1245,7 +1250,14 @@ export class KloelToolDispatcherService {
             : 'unknown';
       this.logger.warn(`Audit dispatch (payment link) failed: ${auditMsg}`);
     }
-    return result;
+    return this.withCanonicalReceipt(
+      'create_payment_link',
+      workspaceId,
+      paymentArgs,
+      result,
+      userId,
+      startedAt,
+    );
   }
 
   private async requestHighRiskApproval(
