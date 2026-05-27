@@ -16,7 +16,5 @@ export function rankOfferInsights(
     rankedProduct: insight.impactMultiplicative * insight.confidence,
   }));
 
-  return ranked.sort(
-    (a, b) => b.rankedProduct - a.rankedProduct,
-  );
+  return ranked.sort((a, b) => b.rankedProduct - a.rankedProduct);
 }

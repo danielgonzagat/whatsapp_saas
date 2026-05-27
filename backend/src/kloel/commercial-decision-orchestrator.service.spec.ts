@@ -199,8 +199,9 @@ describe('CommercialDecisionOrchestratorService', () => {
 
     const transferAction = decision.actions.find((a) => a.tool === 'transfer_to_human');
     expect(transferAction).toBeTruthy();
-    const handoffDecision = transferAction!.args
-      .handoffDecision as Record<string, unknown> | undefined;
+    const handoffDecision = transferAction!.args.handoffDecision as
+      | Record<string, unknown>
+      | undefined;
     expect(handoffDecision).toBeTruthy();
     expect(handoffDecision!.hierarchyJustification).toBeTruthy();
     expect(

@@ -5,6 +5,11 @@ import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
 import { AutopilotCycleMoneyService } from './autopilot-cycle-money.service';
 
 jest.mock('../common/redis/redis.util', () => ({
+  createBullMqConnectionOptions: () => ({
+    url: 'redis://localhost:6379',
+    maxRetriesPerRequest: null,
+    enableReadyCheck: true,
+  }),
   createRedisClient: () => ({
     get: jest.fn(),
     set: jest.fn(),

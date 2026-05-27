@@ -5,11 +5,7 @@ import { classifyMaturity } from './maturity.classifier';
 import { MaturityGoalFilterService } from './maturity-goal-filter.service';
 import { detectTransitions } from './maturity.transition-detector';
 import { refuse } from './maturity.guard';
-import type {
-  MaturityStage,
-  MaturityVerdict,
-  SignalSummary,
-} from './maturity.types';
+import type { MaturityStage, MaturityVerdict, SignalSummary } from './maturity.types';
 
 const NOW = Date.parse('2026-05-13T22:00:00.000Z');
 const WKS = 'wks_demo';
@@ -22,13 +18,27 @@ function ev(over?: Partial<SpineEventRef>): SpineEventRef {
     occurredAt: over?.occurredAt ?? '2026-05-13T20:00:00.000Z',
     truthMode: over?.truthMode ?? 'observed',
   };
-  if (over?.entityRef !== undefined) defaults['entityRef'] = over.entityRef;
-  if (over?.valence !== undefined) defaults['valence'] = over.valence;
-  if (over?.payload !== undefined) defaults['payload'] = over.payload;
-  if (over?.correlationId !== undefined) defaults['correlationId'] = over.correlationId;
-  if (over?.eventId) defaults['eventId'] = over.eventId;
-  if (over?.eventName) defaults['eventName'] = over.eventName;
-  if (over?.occurredAt) defaults['occurredAt'] = over.occurredAt;
+  if (over?.entityRef !== undefined) {
+    defaults['entityRef'] = over.entityRef;
+  }
+  if (over?.valence !== undefined) {
+    defaults['valence'] = over.valence;
+  }
+  if (over?.payload !== undefined) {
+    defaults['payload'] = over.payload;
+  }
+  if (over?.correlationId !== undefined) {
+    defaults['correlationId'] = over.correlationId;
+  }
+  if (over?.eventId) {
+    defaults['eventId'] = over.eventId;
+  }
+  if (over?.eventName) {
+    defaults['eventName'] = over.eventName;
+  }
+  if (over?.occurredAt) {
+    defaults['occurredAt'] = over.occurredAt;
+  }
   return defaults as SpineEventRef;
 }
 
@@ -61,10 +71,7 @@ function v(
   };
 }
 
-function emptySignals(
-  workspaceId: string,
-  over?: Partial<SignalSummary>,
-): SignalSummary {
+function emptySignals(workspaceId: string, over?: Partial<SignalSummary>): SignalSummary {
   return {
     conversionsPerMonth: over?.conversionsPerMonth ?? 0,
     uniqueLeads: over?.uniqueLeads ?? 0,
@@ -220,10 +227,7 @@ describe('UTP-MATURITY-003 — MaturityGoalFilterService', () => {
       gc({ summary: 'first sale attempt' }),
     ];
     const r = svc.filterForStage(candidates, verdict);
-    expect(r.allowed.map((g) => g.summary)).toEqual([
-      'bootstrap offer',
-      'first sale attempt',
-    ]);
+    expect(r.allowed.map((g) => g.summary)).toEqual(['bootstrap offer', 'first sale attempt']);
     expect(r.filteredOut).toHaveLength(1);
   });
 

@@ -9,9 +9,12 @@ import { KloelComposerService } from './kloel-composer.service';
 import { KloelConversationStore } from './kloel-conversation-store';
 import { KLOEL_LLM_E2E_GUARD, KloelLLME2EGuard } from './kloel-llm-e2e-guard';
 import {
+  createKloelContentEvent,
   createKloelErrorEvent,
   createKloelStatusEvent,
   createKloelThreadEvent,
+  createKloelToolCallEvent,
+  createKloelToolResultEvent,
   type KloelStreamEvent,
 } from './kloel-stream-events';
 import { KloelStreamWriter } from './kloel-stream-writer';
@@ -33,6 +36,7 @@ import {
   runToolPlanningBranch,
   type ThinkBranchContext,
 } from './kloel-thinker-think.helpers';
+import { detectActionIntent, formatToolResult } from './guest-chat.action-intent.helpers';
 
 export type { LocalToolExecutor } from './kloel-reply-engine.service';
 
@@ -102,6 +106,53 @@ export class KloelThinkerService {
     streamWriter.init();
 
     try {
+      if (mode === 'chat' && workspaceId) {
+        const deterministicAction = detectActionIntent(message);
+        if (deterministicAction) {
+          const callId = `detected_${deterministicAction.tool}`;
+          safeWrite(
+            createKloelToolCallEvent(callId, deterministicAction.tool, deterministicAction.args),
+          );
+          const toolResult = await executeLocalTool(
+            workspaceId,
+            deterministicAction.tool,
+            deterministicAction.args,
+            userId,
+          );
+          const toolError = typeof toolResult.error === 'string' ? toolResult.error : undefined;
+          safeWrite(
+            createKloelToolResultEvent({
+              callId,
+              tool: deterministicAction.tool,
+              success: toolResult.success !== false,
+              result: toolResult,
+              ...(toolError !== undefined ? { error: toolError } : {}),
+            }),
+          );
+          const reply = formatToolResult(deterministicAction.tool, toolResult);
+          safeWrite(createKloelContentEvent(reply));
+          await finalizeSuccessfulReply(reply, 0, {
+            workspaceId,
+            userId,
+            message,
+            mode,
+            metadata,
+            clientRequestId: undefined,
+            thread: null,
+            persistedUserMessage: null,
+            processingTraceEntries,
+            safeWrite,
+            streamWriter,
+            replyEngine: this.replyEngine,
+            threadService: this.threadService,
+            conversationStore: this.conversationStore,
+            planLimits: this.planLimits,
+          });
+          streamWriter.close();
+          return;
+        }
+      }
+
       if (!this.replyEngine.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) {
         safeWrite(
           createKloelErrorEvent({
@@ -203,8 +254,9 @@ export class KloelThinkerService {
 
       let finalSystemPrompt = systemPrompt;
       let finalUserMessage = message;
+      let prebuiltCognitiveState: Record<string, unknown> | undefined;
 
-      const useAbi = process.env['KLOEL_THINKER_USE_ABI'] === 'on';
+      const useAbi = process.env['KLOEL_THINKER_USE_ABI'] !== 'off';
       let abiOutcome = useAbi ? (this.abiBuilder ? 'attempted' : 'no_abiBuilder') : 'flag_off';
       let substrateBuilt = false;
       if (useAbi && this.abiBuilder) {
@@ -250,6 +302,7 @@ export class KloelThinkerService {
                 `ABI validation failed: ${JSON.stringify(validation.issues)}, falling back to legacy thinker prompt`,
               );
             } else {
+              prebuiltCognitiveState = { ...abiResult.abi };
               // BOUNDED ABI: cap arrays + hard size limit so a long
               // user prompt is NEVER inflated/crashed by the state
               // payload. The ABI goes to SYSTEM (structured state, B2 —
@@ -390,6 +443,7 @@ export class KloelThinkerService {
         marketingPromptAddendum,
         summaryMessage,
         recentMessages: historyState.recentMessages,
+        ...(prebuiltCognitiveState !== undefined ? { prebuiltCognitiveState } : {}),
         userMessage: finalUserMessage,
       });
       const streamWriterResponse = (
@@ -417,6 +471,7 @@ export class KloelThinkerService {
           signal,
           streamWriterResponse,
           branchCtx,
+          prebuiltCognitiveState,
         );
         return;
       }

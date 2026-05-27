@@ -375,6 +375,22 @@ describe('PaymentMethodService (P6-10)', () => {
 
       expect(result).toEqual({ paymentMethods: [] });
     });
+
+    it('returns an empty list when paymentMethods namespace exists but .list is undefined (NODE-S regression)', async () => {
+      // Sentry NODE-S exact shape: .paymentMethods is an object but .list
+      // is undefined. Probe in stripe-runtime.ts now blocks this at module
+      // load, but the service must still degrade safely if the field is
+      // monkey-patched away post-construction.
+      attachStripe(service, {
+        customers: { create: jest.fn(), retrieve: jest.fn(), update: jest.fn() },
+        paymentMethods: {} as StripeMock['paymentMethods'],
+        checkout: { sessions: { create: jest.fn() } },
+      });
+
+      const result = await service.listPaymentMethods('ws-1');
+
+      expect(result).toEqual({ paymentMethods: [] });
+    });
   });
 
   describe('getOrCreateCustomerId — malformed Stripe instance (Wave 22)', () => {
@@ -421,6 +437,42 @@ describe('PaymentMethodService (P6-10)', () => {
       await expect(service.getOrCreateCustomerId('ws-1')).rejects.toThrow(
         /Infraestrutura de cobran.a indispon.vel/,
       );
+    });
+
+    it('treats customers.create undefined as malformed (NODE-S regression)', async () => {
+      // Exact Sentry NODE-S shape: .customers is an object but .create is
+      // undefined. Without the deeper guard this raised
+      // `TypeError: Cannot read properties of undefined (reading 'create')`
+      // 1,026 times on GET /billing/payment-methods. Now it must degrade
+      // gracefully: return persisted customerId or throw the documented
+      // BILLING_UNAVAILABLE error.
+      const tx = {
+        workspace: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'ws-1',
+            name: 'Workspace 1',
+            stripeCustomerId: 'cus_persisted',
+          }),
+          update: jest.fn(),
+        },
+      };
+      prisma.$transaction.mockImplementation(async (cb: TransactionCallback) => cb(tx));
+
+      attachStripe(service, {
+        // .customers exists but .create is undefined — the exact NODE-S shape.
+        customers: {} as StripeMock['customers'],
+        paymentMethods: {
+          attach: jest.fn(),
+          detach: jest.fn(),
+          retrieve: jest.fn(),
+          list: jest.fn(),
+        },
+        checkout: { sessions: { create: jest.fn() } },
+      });
+
+      const result = await service.getOrCreateCustomerId('ws-1');
+
+      expect(result).toBe('cus_persisted');
     });
   });
 });

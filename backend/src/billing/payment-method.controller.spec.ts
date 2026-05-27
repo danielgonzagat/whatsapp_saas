@@ -32,7 +32,14 @@ describe('PaymentMethodController', () => {
     it('returns workspace payment methods via service.listPaymentMethods', async () => {
       const mockResult = {
         paymentMethods: [
-          { id: 'pm_1', brand: 'visa', last4: '4242', expMonth: 12, expYear: 2027, isDefault: true },
+          {
+            id: 'pm_1',
+            brand: 'visa',
+            last4: '4242',
+            expMonth: 12,
+            expYear: 2027,
+            isDefault: true,
+          },
         ],
       };
       listPaymentMethods.mockResolvedValue(mockResult);
@@ -59,7 +66,9 @@ describe('PaymentMethodController', () => {
       const mockResult = { url: 'https://checkout.stripe.com/setup', customerId: 'cus_1' };
       createSetupIntent.mockResolvedValue(mockResult);
 
-      const result = await controller.createSetupIntent(mockReq, { returnUrl: 'https://app.kloel.com/billing' });
+      const result = await controller.createSetupIntent(mockReq, {
+        returnUrl: 'https://app.kloel.com/billing',
+      });
 
       expect(createSetupIntent).toHaveBeenCalledWith('ws-1', 'https://app.kloel.com/billing');
       expect(result).toEqual(mockResult);

@@ -126,9 +126,7 @@ export async function recordJobExecutionSnapshot(
           lastResultStatus: result.status,
           lastResultSummary: sanitizeAgentRuntimeText(result.message, 1000),
           lastError:
-            result.status === 'failed'
-              ? sanitizeAgentRuntimeText(result.message, 500)
-              : undefined,
+            result.status === 'failed' ? sanitizeAgentRuntimeText(result.message, 500) : undefined,
         }),
         metadata: {
           ...metadata,

@@ -1,10 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type {
-  ChannelHealth,
-  ChannelHealthStatus,
-  ChannelKind,
-  DetectionInput,
-} from './types';
+import type { ChannelHealth, ChannelHealthStatus, ChannelKind, DetectionInput } from './types';
 import { clamp, daysSince, filterByWorkspace } from './types';
 
 const RECENT_WINDOW_DAYS = 14;
@@ -56,12 +51,9 @@ export class HealthMonitor {
     }
 
     const deliveryRate = deliveryTotal > 0 ? deliverySuccess / deliveryTotal : 1;
-    const engagementRate = channelEvents.length > 0
-      ? engagementSignals / Math.max(channelEvents.length, 1)
-      : 0;
-    const errorRate = channelEvents.length > 0
-      ? errorCount / channelEvents.length
-      : 0;
+    const engagementRate =
+      channelEvents.length > 0 ? engagementSignals / Math.max(channelEvents.length, 1) : 0;
+    const errorRate = channelEvents.length > 0 ? errorCount / channelEvents.length : 0;
 
     let degradationScore = 0;
     if (deliveryRate < DEGRADED_DELIVERY_THRESHOLD) {
@@ -110,18 +102,25 @@ export class HealthMonitor {
       return false;
     }
     const evt = e.eventName;
-    return evt.startsWith('commerce.whatsapp.') ||
+    return (
+      evt.startsWith('commerce.whatsapp.') ||
       evt.startsWith('commerce.campaign.') ||
-      evt.startsWith('commerce.crm.');
+      evt.startsWith('commerce.crm.')
+    );
   }
 
   private isDeliveryEvent(e: { eventName: string }): boolean {
-    return e.eventName.includes('sent') ||
+    return (
+      e.eventName.includes('sent') ||
       e.eventName.includes('delivered') ||
-      e.eventName.includes('dispatched');
+      e.eventName.includes('dispatched')
+    );
   }
 
-  private isDeliverySuccess(e: { eventName: string; payload?: Readonly<Record<string, unknown>> }): boolean {
+  private isDeliverySuccess(e: {
+    eventName: string;
+    payload?: Readonly<Record<string, unknown>>;
+  }): boolean {
     if (e.eventName.includes('delivered')) {
       return true;
     }
@@ -130,16 +129,20 @@ export class HealthMonitor {
   }
 
   private isEngagementEvent(e: { eventName: string }): boolean {
-    return e.eventName.includes('opened') ||
+    return (
+      e.eventName.includes('opened') ||
       e.eventName.includes('clicked') ||
       e.eventName.includes('replied') ||
-      e.eventName.includes('engaged');
+      e.eventName.includes('engaged')
+    );
   }
 
   private isErrorEvent(e: { eventName: string }): boolean {
-    return e.eventName.includes('error') ||
+    return (
+      e.eventName.includes('error') ||
       e.eventName.includes('failed') ||
       e.eventName.includes('bounced') ||
-      e.eventName.includes('rejected');
+      e.eventName.includes('rejected')
+    );
   }
 }

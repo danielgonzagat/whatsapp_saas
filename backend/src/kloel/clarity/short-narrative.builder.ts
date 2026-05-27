@@ -22,14 +22,9 @@ function buildNarrativeId(workspaceId: string, nowMs: number): string {
   return `nar_${workspaceId}_${nowMs}`;
 }
 
-function buildMessage(
-  topItems: readonly AttentionRanking[],
-  anxietyActive: boolean,
-): string {
+function buildMessage(topItems: readonly AttentionRanking[], anxietyActive: boolean): string {
   if (topItems.length === 0) {
-    return anxietyActive
-      ? '[ANSIEDADE] Nenhum item AGORA detectado.'
-      : 'Nada urgente agora.';
+    return anxietyActive ? '[ANSIEDADE] Nenhum item AGORA detectado.' : 'Nada urgente agora.';
   }
 
   const prefix = anxietyActive ? '[ANSIEDADE] AGORA: ' : '';
@@ -42,9 +37,7 @@ function selectTopItems(
   rankings: readonly AttentionRanking[],
   anxietyMode: AnxietyMode,
 ): readonly AttentionRanking[] {
-  const pool = anxietyMode.active
-    ? rankings.filter((r) => r.tier === 'AGORA')
-    : rankings;
+  const pool = anxietyMode.active ? rankings.filter((r) => r.tier === 'AGORA') : rankings;
 
   return pool.slice(0, NARRATIVE_MAX_ITEMS);
 }

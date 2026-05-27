@@ -139,7 +139,9 @@ describe('AgentRuntimeContextService', () => {
     expect(context.systemPromptBlock).toContain('checkout-recovery');
     expect(context.systemPromptBlock).toContain('delegation:');
     expect(context.systemPromptBlock).toContain('checkout-recovery[max=R3]');
-    expect(context.systemPromptBlock).toContain('[allowed_alone:R1] get_lead_details, list_products');
+    expect(context.systemPromptBlock).toContain(
+      '[allowed_alone:R1] get_lead_details, list_products',
+    );
     expect(context.systemPromptBlock).toContain('[escalate:R3] create_payment_link');
     expect(context.systemPromptBlock).toContain('user asked about checkout recovery');
     expect(context.systemPromptBlock).toContain('sessionRecall:');

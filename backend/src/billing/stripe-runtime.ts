@@ -1,5 +1,12 @@
 import { createRequire } from 'node:module';
 
+type StripeConstructor = typeof import('stripe');
+type StripeInteropModule = StripeConstructor | { default?: StripeConstructor; Stripe?: StripeConstructor };
+
+function isStripeConstructorCandidate(value: unknown): value is StripeConstructor {
+  return typeof value === 'function';
+}
+
 const stripeRequire = createRequire(__filename);
 
 // Resolve Stripe constructor robustly across Node ESM/CJS interop modes.
@@ -12,29 +19,23 @@ const stripeRequire = createRequire(__filename);
 // Strategy: enumerate callable candidates from every interop shape;
 // validate each by instantiating with a dummy key and probing .customers.
 // The first candidate that produces a valid instance wins.
-function resolveStripeConstructor(): typeof import('stripe') {
-  const mod = stripeRequire('stripe') as never as
-    | typeof import('stripe')
-    | { default: typeof import('stripe'); Stripe?: typeof import('stripe') };
+function resolveStripeConstructor(): StripeConstructor {
+  const mod = stripeRequire('stripe') as StripeInteropModule;
+  const moduleRecord = mod as { default?: unknown; Stripe?: unknown };
 
   // Gather every plausible constructor candidate across interop shapes.
-  const candidates: Array<{ fn: (...args: unknown[]) => unknown; source: string }> = [];
+  const candidates: Array<{ fn: StripeConstructor; source: string }> = [];
 
-  if (typeof mod === 'function') {
-    candidates.push({ fn: mod as (...args: unknown[]) => unknown, source: 'direct' });
+  if (isStripeConstructorCandidate(mod)) {
+    candidates.push({ fn: mod, source: 'direct' });
   }
-  if (mod && typeof (mod as { default?: unknown }).default === 'function') {
-    candidates.push({
-      fn: (mod as { default: (...args: unknown[]) => unknown }).default,
-      source: 'default',
-    });
+  if (isStripeConstructorCandidate(moduleRecord.default)) {
+    candidates.push({ fn: moduleRecord.default, source: 'default' });
   }
-  if (mod && typeof (mod as { Stripe?: unknown }).Stripe === 'function') {
-    candidates.push({
-      fn: (mod as { Stripe: (...args: unknown[]) => unknown }).Stripe,
-      source: 'Stripe',
-    });
+  if (isStripeConstructorCandidate(moduleRecord.Stripe)) {
+    candidates.push({ fn: moduleRecord.Stripe, source: 'Stripe' });
   }
+
 
   if (candidates.length === 0) {
     throw new Error(
@@ -44,28 +45,42 @@ function resolveStripeConstructor(): typeof import('stripe') {
   }
 
   // Validate each candidate by instantiating a probe and checking that
-  // the instance has the expected Stripe resource namespaces.
+  // the instance exposes the resource methods the service actually calls
+  // (.customers.create/.retrieve, .paymentMethods.list/.attach/.detach/.retrieve,
+  // .checkout.sessions.create). A shape with .customers as an object but
+  // .customers.create undefined is the exact failure mode that produced
+  // Sentry NODE-S — checking only the namespace let it through.
   const failures: string[] = [];
+  const requiredMethods: Array<[string, string]> = [
+    ['customers', 'create'],
+    ['customers', 'retrieve'],
+    ['paymentMethods', 'list'],
+    ['paymentMethods', 'attach'],
+  ];
   for (const { fn, source } of candidates) {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const Ctor = fn as unknown as new (...args: any[]) => unknown;
-      const probe: unknown = new Ctor('sk_test_stripe_runtime_probe');
-      // A valid Stripe instance MUST have .customers as a non-null object.
-      if (
-        probe &&
-        typeof probe === 'object' &&
-        'customers' in probe &&
-        typeof (probe as Record<string, unknown>).customers === 'object' &&
-        (probe as Record<string, unknown>).customers !== null
-      ) {
-        return fn as typeof import('stripe');
+      const probe: unknown = new fn('sk_test_stripe_runtime_probe');
+      if (!probe || typeof probe !== 'object') {
+        failures.push(`${source}: probe is ${typeof probe}`);
+        continue;
       }
-      failures.push(
-        `${source}: instance missing .customers (keys: ${
-          probe && typeof probe === 'object' ? Object.keys(probe).slice(0, 6).join(',') : 'n/a'
-        })`,
-      );
+      const probeObj = probe as Record<string, unknown>;
+      const missing: string[] = [];
+      for (const [namespace, method] of requiredMethods) {
+        const ns = probeObj[namespace];
+        if (!ns || typeof ns !== 'object') {
+          missing.push(`.${namespace} (${typeof ns})`);
+          continue;
+        }
+        const fnRef = (ns as Record<string, unknown>)[method];
+        if (typeof fnRef !== 'function') {
+          missing.push(`.${namespace}.${method} (${typeof fnRef})`);
+        }
+      }
+      if (missing.length === 0) {
+        return fn;
+      }
+      failures.push(`${source}: missing ${missing.join(', ')}`);
     } catch (err: unknown) {
       failures.push(`${source}: constructor threw — ${String(err)}`);
     }

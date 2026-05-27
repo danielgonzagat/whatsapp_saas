@@ -211,8 +211,8 @@ describe('KloelChatToolsService', () => {
       await service.toolSaveProduct('ws-tenant', { name: 'X', price: 1 });
       expect(productService.create).toHaveBeenCalledWith(
         'ws-tenant',
-        expect.objectContaining({ name: 'X', price: 1, format: 'DIGITAL' }),
-        { id: 'kloel-chat-tools' },
+        expect.objectContaining({ name: 'X', price: 1 }),
+        { id: 'kloel-chat' },
       );
     });
 

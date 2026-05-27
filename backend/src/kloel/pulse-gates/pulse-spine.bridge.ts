@@ -21,10 +21,7 @@ export class PulseSpineBridge {
 
   public constructor(private readonly spineEmitter: SpineEmitterService) {}
 
-  public async recordVerdict(
-    verdict: GateVerdict,
-    opts: PulseSpineBridgeOpts = {},
-  ): Promise<void> {
+  public async recordVerdict(verdict: GateVerdict, opts: PulseSpineBridgeOpts = {}): Promise<void> {
     const eventName: 'pulse.gate_passed' | 'pulse.gate_failed' =
       verdict.status === 'PASS' ? 'pulse.gate_passed' : 'pulse.gate_failed';
 

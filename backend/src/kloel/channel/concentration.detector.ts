@@ -38,7 +38,8 @@ export class ConcentrationDetector {
       channels.push({
         channel,
         revenueCents,
-        sharePercent: totalRevenue > 0 ? Math.round((revenueCents / totalRevenue) * 10000) / 100 : 0,
+        sharePercent:
+          totalRevenue > 0 ? Math.round((revenueCents / totalRevenue) * 10000) / 100 : 0,
       });
     }
     channels.sort((a, b) => b.sharePercent - a.sharePercent);
@@ -69,9 +70,9 @@ export class ConcentrationDetector {
     };
   }
 
-  private extractChannel(
-    e: { payload?: Readonly<Record<string, unknown>> },
-  ): ChannelKind | undefined {
+  private extractChannel(e: {
+    payload?: Readonly<Record<string, unknown>>;
+  }): ChannelKind | undefined {
     const val = e.payload?.['channel'];
     if (typeof val === 'string') {
       return val as ChannelKind;

@@ -1,10 +1,7 @@
 import type { PrismaService } from '../prisma/prisma.service';
 
 /** Get chat contacts for a workspace with unread counts and last messages. */
-export async function getChatContacts(
-  prisma: PrismaService,
-  workspaceId: string,
-) {
+export async function getChatContacts(prisma: PrismaService, workspaceId: string) {
   const partners = await prisma.affiliatePartner.findMany({
     where: { workspaceId, status: 'ACTIVE' },
     select: { id: true, partnerName: true, partnerEmail: true, type: true },
@@ -79,12 +76,8 @@ export async function getChatContacts(
   });
 
   return { contacts };
-}/** Get messages for a partner with cursor-based pagination. */
-export async function getMessages(
-  prisma: PrismaService,
-  partnerId: string,
-  cursor?: string,
-) {
+} /** Get messages for a partner with cursor-based pagination. */
+export async function getMessages(prisma: PrismaService, partnerId: string, cursor?: string) {
   const messages = await prisma.partnerMessage.findMany({
     take: 50,
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
@@ -101,7 +94,7 @@ export async function getMessages(
     orderBy: { createdAt: 'desc' },
   });
   return { messages: messages.reverse() };
-}// messageLimit: partner chat is internal DB-only, not WhatsApp; no rate limit applies
+} // messageLimit: partner chat is internal DB-only, not WhatsApp; no rate limit applies
 export async function sendMessage(
   prisma: PrismaService,
   partnerId: string,
@@ -112,7 +105,7 @@ export async function sendMessage(
   return prisma.partnerMessage.create({
     data: { partnerId, senderId, senderType: 'OWNER', senderName, content },
   });
-}/** Mark all unread PARTNER messages as read for a partner. */
+} /** Mark all unread PARTNER messages as read for a partner. */
 export async function markAsRead(prisma: PrismaService, partnerId: string) {
   return prisma.partnerMessage.updateMany({
     where: { partnerId, senderType: 'PARTNER', readAt: null },

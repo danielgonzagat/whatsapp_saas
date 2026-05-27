@@ -202,7 +202,7 @@ async function notifyOps(input: {
   }
 }
 
-function attachDlq(queue: BullQueue) {
+export function attachDlq(queue: BullQueue) {
   let dlq = _dlqQueues[queue.name];
   if (!dlq) {
     dlq = new BullQueue(`${queue.name}-dlq`, getQueueOptions());
@@ -217,12 +217,13 @@ function attachDlq(queue: BullQueue) {
   const events = _queueEvents[queue.name];
   if (!events) {
     warn('[QUEUE] QueueEvents not found for', queue.name);
-    return;
+    return dlq;
   }
 
   events.on('failed', (event) => {
     void handleQueueFailedEvent(queue, dlq, event);
   });
+  return dlq;
 }
 
 function hasAttemptsLeft(event: unknown, maxAttempts: number): boolean {

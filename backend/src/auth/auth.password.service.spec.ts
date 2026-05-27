@@ -71,9 +71,9 @@ describe('AuthPasswordService', () => {
   describe('register', () => {
     it('rejects with ConflictException when email already exists', async () => {
       prisma.agent.findFirst.mockResolvedValue({ id: 'a', workspaceId: 'ws-1' });
-      await expect(
-        service.register({ email: 'X@X.com', password: 'pw' }),
-      ).rejects.toThrow(ConflictException);
+      await expect(service.register({ email: 'X@X.com', password: 'pw' })).rejects.toThrow(
+        ConflictException,
+      );
     });
 
     it('creates workspace + agent + issues tokens on happy path', async () => {
@@ -101,9 +101,9 @@ describe('AuthPasswordService', () => {
   describe('login', () => {
     it('rejects with UnauthorizedException when agent not found', async () => {
       prisma.agent.findFirst.mockResolvedValue(null);
-      await expect(
-        service.login({ email: 'x@x.com', password: 'pw' }),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.login({ email: 'x@x.com', password: 'pw' })).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('rejects OAuth-only account (google) with provider-specific message', async () => {
@@ -118,9 +118,7 @@ describe('AuthPasswordService', () => {
         disabledAt: null,
         deletedAt: null,
       });
-      await expect(
-        service.login({ email: 'x@x.com', password: 'pw' }),
-      ).rejects.toThrow(/Google/);
+      await expect(service.login({ email: 'x@x.com', password: 'pw' })).rejects.toThrow(/Google/);
     });
 
     it('rejects with UnauthorizedException on wrong password', async () => {
@@ -136,9 +134,9 @@ describe('AuthPasswordService', () => {
         deletedAt: null,
       });
       (bcryptCompare as jest.Mock).mockResolvedValue(false);
-      await expect(
-        service.login({ email: 'x@x.com', password: 'wrong' }),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.login({ email: 'x@x.com', password: 'wrong' })).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('issues tokens when bcrypt verifies password', async () => {

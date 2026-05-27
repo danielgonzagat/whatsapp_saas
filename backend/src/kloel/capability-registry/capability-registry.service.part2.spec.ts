@@ -249,9 +249,7 @@ describe('CapabilityRegistryService', () => {
     });
 
     it('throws when demoting unregistered capability', () => {
-      expect(() => svc.demote('unknown', 'reason')).toThrow(
-        'Capability "unknown" not registered',
-      );
+      expect(() => svc.demote('unknown', 'reason')).toThrow('Capability "unknown" not registered');
     });
   });
 

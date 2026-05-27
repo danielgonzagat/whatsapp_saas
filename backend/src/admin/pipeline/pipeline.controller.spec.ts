@@ -28,12 +28,7 @@ describe('PipelineController', () => {
       state: 'active',
       reason: 'testing',
     });
-    expect(service.setState).toHaveBeenCalledWith(
-      'ws-1',
-      'active',
-      'admin',
-      'testing',
-    );
+    expect(service.setState).toHaveBeenCalledWith('ws-1', 'active', 'admin', 'testing');
     expect(result).toEqual({ workspaceId: 'ws-1', state: 'active' });
   });
 

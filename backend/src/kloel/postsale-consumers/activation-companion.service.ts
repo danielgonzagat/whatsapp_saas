@@ -170,8 +170,7 @@ function buildControl(input: {
       'Stay silent until post-sale activation starts or a customer risk signal appears; do not create a new owner task yet.',
     uncertainty:
       'No activation evidence exists in the observed events, so Kloel cannot infer progress.',
-    leadOutcomeGuardrail:
-      'Avoid contacting the customer without evidence that help is needed.',
+    leadOutcomeGuardrail: 'Avoid contacting the customer without evidence that help is needed.',
     rollback:
       'When activation evidence appears, reassess and choose the next safe step from the new evidence.',
   };

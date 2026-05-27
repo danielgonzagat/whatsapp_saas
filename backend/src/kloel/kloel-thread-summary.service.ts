@@ -112,9 +112,7 @@ export class KloelThreadSummaryService {
       const title = this.sanitizeGeneratedThreadTitle(rawTitle);
       const tokens = response?.usage?.total_tokens ?? 64;
       if (workspaceId) {
-        await this.planLimits
-          .trackAiUsage(workspaceId, tokens)
-          .catch(() => {});
+        await this.planLimits.trackAiUsage(workspaceId, tokens).catch(() => {});
       }
       this.logger.log(
         `thread-title ws=${workspaceId ?? 'anon'} model=writer baseLen=${message.length} outLen=${title.length} tokens=${tokens}`,
@@ -238,7 +236,9 @@ export class KloelThreadSummaryService {
           `thread-summary ws=${workspaceId} model=writer baseLen=${transcript.length} outLen=${rawSummary.length} tokens=${tokens}`,
         );
         if (!rawSummary || rawSummary.length < 10) {
-          this.logger.warn(`thread-summary short output ws=${workspaceId} len=${rawSummary.length}`);
+          this.logger.warn(
+            `thread-summary short output ws=${workspaceId} len=${rawSummary.length}`,
+          );
           summary = fallbackSummary;
         } else {
           summary = rawSummary;

@@ -3,6 +3,7 @@ import { KloelChatToolsService } from './kloel-chat-tools.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProductService } from '../products/product.service';
 import { SmartPaymentService } from './smart-payment.service';
+import { ProductService } from '../products/product.service';
 import {
   AgentRuntimeSchedulerService,
   AgentRuntimeSessionStore,

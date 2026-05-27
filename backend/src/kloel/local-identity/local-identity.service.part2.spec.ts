@@ -1,6 +1,10 @@
 import { LocalIdentityService } from './local-identity.service';
 import { VOLUME_THRESHOLD } from './local-identity.types';
-import { makeEvent, makeWorkspaceEvents, synthetic100 } from './local-identity.service.spec.helpers';
+import {
+  makeEvent,
+  makeWorkspaceEvents,
+  synthetic100,
+} from './local-identity.service.spec.helpers';
 
 describe('LocalIdentityService', () => {
   let service: LocalIdentityService;
@@ -97,7 +101,7 @@ describe('LocalIdentityService', () => {
 
       const profile = service.deriveProfile('wks_test_001', events);
       expect(profile).toBeDefined();
-      const notes = profile!.decisionPatterns.typicalNextSteps.filter(s =>
+      const notes = profile!.decisionPatterns.typicalNextSteps.filter((s) =>
         s.startsWith('learn_from_operator_feedback:'),
       );
       expect(notes).toHaveLength(0);
@@ -132,16 +136,12 @@ describe('LocalIdentityService', () => {
       });
       const noteA = 'soften objections with empathetic rephrase';
       const noteB = 'use shorter follow-up windows for this audience';
-      events.push(
-        makeOperatorFeedback(noteA, false, 'not human performance scoring'),
-      );
-      events.push(
-        makeOperatorFeedback(noteB, false, 'not human performance scoring'),
-      );
+      events.push(makeOperatorFeedback(noteA, false, 'not human performance scoring'));
+      events.push(makeOperatorFeedback(noteB, false, 'not human performance scoring'));
 
       const profile = service.deriveProfile('wks_test_001', events);
       expect(profile).toBeDefined();
-      const reflections = profile!.decisionPatterns.typicalNextSteps.filter(s =>
+      const reflections = profile!.decisionPatterns.typicalNextSteps.filter((s) =>
         s.startsWith('learn_from_operator_feedback:'),
       );
       expect(reflections).toHaveLength(0);
@@ -157,7 +157,7 @@ describe('LocalIdentityService', () => {
 
       const profile = service.deriveProfile('wks_test_001', events);
       expect(profile).toBeDefined();
-      const reflections = profile!.decisionPatterns.typicalNextSteps.filter(s =>
+      const reflections = profile!.decisionPatterns.typicalNextSteps.filter((s) =>
         s.startsWith('learn_from_operator_feedback:'),
       );
       expect(reflections).toHaveLength(0);
@@ -168,16 +168,12 @@ describe('LocalIdentityService', () => {
         workspaceId: 'wks_test_001',
       });
       const note = 'avoid rigid scheduling language for este perfil';
-      events.push(
-        makeOperatorFeedback(note, false, 'not human performance scoring'),
-      );
-      events.push(
-        makeOperatorFeedback(note, false, 'human review quality check'),
-      );
+      events.push(makeOperatorFeedback(note, false, 'not human performance scoring'));
+      events.push(makeOperatorFeedback(note, false, 'human review quality check'));
 
       const profile = service.deriveProfile('wks_test_001', events);
       expect(profile).toBeDefined();
-      const reflections = profile!.decisionPatterns.typicalNextSteps.filter(s =>
+      const reflections = profile!.decisionPatterns.typicalNextSteps.filter((s) =>
         s.startsWith('learn_from_operator_feedback:'),
       );
       expect(reflections).toHaveLength(0);
@@ -192,7 +188,7 @@ describe('LocalIdentityService', () => {
 
       const profile = service.deriveProfile('wks_test_001', events);
       expect(profile).toBeDefined();
-      const reflections = profile!.decisionPatterns.typicalNextSteps.filter(s =>
+      const reflections = profile!.decisionPatterns.typicalNextSteps.filter((s) =>
         s.startsWith('learn_from_operator_feedback:'),
       );
       expect(reflections).toHaveLength(0);
@@ -212,7 +208,7 @@ describe('LocalIdentityService', () => {
 
       const profile = service.deriveProfile('wks_test_001', events);
       expect(profile).toBeDefined();
-      const reflections = profile!.decisionPatterns.typicalNextSteps.filter(s =>
+      const reflections = profile!.decisionPatterns.typicalNextSteps.filter((s) =>
         s.startsWith('learn_from_operator_feedback:'),
       );
       expect(reflections).toHaveLength(0);
@@ -237,12 +233,9 @@ describe('LocalIdentityService', () => {
       const note = 'soften objections with empathetic rephrase';
       for (let i = 0; i < 3; i++) {
         events.push(
-          makeOperatorFeedback(
-            note,
-            false,
-            'not human performance scoring - pattern improvement',
-            { occurredAt: new Date(base.getTime() + i * 3600_000).toISOString() },
-          ),
+          makeOperatorFeedback(note, false, 'not human performance scoring - pattern improvement', {
+            occurredAt: new Date(base.getTime() + i * 3600_000).toISOString(),
+          }),
         );
       }
 

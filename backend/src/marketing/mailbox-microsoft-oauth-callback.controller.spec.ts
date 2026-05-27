@@ -24,12 +24,9 @@ describe('MailboxMicrosoftOAuthCallbackController', () => {
     it('completes oauth and redirects on success', async () => {
       completeOAuthCallback.mockResolvedValueOnce({ returnTo: '/marketing/email' });
 
-      await controller.handleCallback(
-        'auth-code-123',
-        'signed-state-abc',
-        undefined,
-        { redirect } as never,
-      );
+      await controller.handleCallback('auth-code-123', 'signed-state-abc', undefined, {
+        redirect,
+      } as never);
 
       expect(completeOAuthCallback).toHaveBeenCalledWith('auth-code-123', 'signed-state-abc');
       expect(redirect).toHaveBeenCalledTimes(1);
@@ -40,12 +37,9 @@ describe('MailboxMicrosoftOAuthCallbackController', () => {
     });
 
     it('redirects with error when oauth provider sends error query param', async () => {
-      await controller.handleCallback(
-        undefined,
-        'signed-state-abc',
-        'access_denied',
-        { redirect } as never,
-      );
+      await controller.handleCallback(undefined, 'signed-state-abc', 'access_denied', {
+        redirect,
+      } as never);
 
       expect(completeOAuthCallback).not.toHaveBeenCalled();
       expect(redirect).toHaveBeenCalledTimes(1);
@@ -56,12 +50,7 @@ describe('MailboxMicrosoftOAuthCallbackController', () => {
     });
 
     it('redirects with error when code or state is missing', async () => {
-      await controller.handleCallback(
-        undefined,
-        undefined,
-        undefined,
-        { redirect } as never,
-      );
+      await controller.handleCallback(undefined, undefined, undefined, { redirect } as never);
 
       expect(completeOAuthCallback).not.toHaveBeenCalled();
       expect(redirect).toHaveBeenCalledTimes(1);
@@ -74,12 +63,9 @@ describe('MailboxMicrosoftOAuthCallbackController', () => {
     it('redirects with error when service throws', async () => {
       completeOAuthCallback.mockRejectedValueOnce(new Error('token exchange failed'));
 
-      await controller.handleCallback(
-        'auth-code-456',
-        'signed-state-def',
-        undefined,
-        { redirect } as never,
-      );
+      await controller.handleCallback('auth-code-456', 'signed-state-def', undefined, {
+        redirect,
+      } as never);
 
       expect(completeOAuthCallback).toHaveBeenCalledWith('auth-code-456', 'signed-state-def');
       expect(redirect).toHaveBeenCalledTimes(1);
@@ -92,12 +78,7 @@ describe('MailboxMicrosoftOAuthCallbackController', () => {
     it('coerces code and state to strings before calling service', async () => {
       completeOAuthCallback.mockResolvedValueOnce({ returnTo: '/' });
 
-      await controller.handleCallback(
-        42 as never,
-        true as never,
-        undefined,
-        { redirect } as never,
-      );
+      await controller.handleCallback(42 as never, true as never, undefined, { redirect } as never);
 
       expect(completeOAuthCallback).toHaveBeenCalledWith('42', 'true');
     });

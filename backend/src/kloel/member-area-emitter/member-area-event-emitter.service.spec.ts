@@ -56,7 +56,9 @@ describe('MemberAreaEventEmitterService', () => {
     };
   }
 
-  function affiliatePerfContext(overrides?: Partial<AffiliatePerformanceContext>): AffiliatePerformanceContext {
+  function affiliatePerfContext(
+    overrides?: Partial<AffiliatePerformanceContext>,
+  ): AffiliatePerformanceContext {
     return {
       workspaceId: 'wks_test',
       window: 'weekly',
@@ -65,7 +67,9 @@ describe('MemberAreaEventEmitterService', () => {
     };
   }
 
-  function affiliateCommContext(overrides?: Partial<AffiliateCommissionContext>): AffiliateCommissionContext {
+  function affiliateCommContext(
+    overrides?: Partial<AffiliateCommissionContext>,
+  ): AffiliateCommissionContext {
     return {
       workspaceId: 'wks_test',
       affiliateLinkId: 'link_001',
@@ -155,7 +159,10 @@ describe('MemberAreaEventEmitterService', () => {
       expect(e.provenance.source).toBe('production');
       expect(e.valence).toBeUndefined();
       expect(e.correlationId).toBe('corr_perf');
-      expect(e.payload).toMatchObject({ window: 'weekly', metrics: { totalSales: 5, totalCommission: 1200 } });
+      expect(e.payload).toMatchObject({
+        window: 'weekly',
+        metrics: { totalSales: 5, totalCommission: 1200 },
+      });
     });
   });
 
@@ -175,7 +182,11 @@ describe('MemberAreaEventEmitterService', () => {
       expect(e.provenance.source).toBe('production');
       expect(e.valence).toBeUndefined();
       expect(e.correlationId).toBe('corr_comm');
-      expect(e.payload).toMatchObject({ commissionCents: 500, grossCents: 5000, affiliateWorkspaceId: 'wks_aff' });
+      expect(e.payload).toMatchObject({
+        commissionCents: 500,
+        grossCents: 5000,
+        affiliateWorkspaceId: 'wks_aff',
+      });
     });
   });
 
@@ -214,9 +225,7 @@ describe('MemberAreaEventEmitterService', () => {
   it('does not throw when progress is exactly 0', () => {
     const { emitter, spine } = buildEmitter();
     expect(() => {
-      emitter.emitProgressed(
-        progressContext({ progress: 0, totalLessons: 0 }),
-      );
+      emitter.emitProgressed(progressContext({ progress: 0, totalLessons: 0 }));
     }).not.toThrow();
     const events = spine.recentEvents();
     expect(events[0]?.payload).toMatchObject({ progress: 0, totalLessons: 0 });

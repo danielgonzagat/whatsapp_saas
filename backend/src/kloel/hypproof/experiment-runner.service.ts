@@ -8,14 +8,9 @@ export class ExperimentRunnerService {
   private readonly runs = new Map<string, ExperimentRun>();
   private readonly idempotencyKeys = new Set<string>();
 
-  run(
-    experiment: MicroExperiment,
-    observedEvents: readonly SpineSignal[],
-  ): ExperimentRun | null {
+  run(experiment: MicroExperiment, observedEvents: readonly SpineSignal[]): ExperimentRun | null {
     if (observedEvents.length === 0) {
-      this.logger.warn(
-        `Cannot run experiment ${experiment.id}: no observed events provided`,
-      );
+      this.logger.warn(`Cannot run experiment ${experiment.id}: no observed events provided`);
       return null;
     }
 

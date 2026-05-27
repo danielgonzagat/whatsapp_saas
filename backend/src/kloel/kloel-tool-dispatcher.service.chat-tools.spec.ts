@@ -40,6 +40,7 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 import { KloelCodeToolsService } from './kloel-code-tools.service';
 import { KloelCodeAnalysisService } from './kloel-code-analysis.service';
 import { AccountService } from './account.service';
+import { CapabilityRegistryV2Service } from './capability-registry-v2/capability-registry-v2.service';
 import {
   createPrismaMock,
   createPlanLimitsMock,
@@ -67,6 +68,21 @@ import type {
   DispatcherCodeAnalysisMock,
   DispatcherAccountMock,
 } from './kloel-tool-dispatcher.service.fixtures';
+
+function objectContaining<T extends object>(sample: T): T {
+  const matcher: unknown = expect.objectContaining(sample);
+  return matcher as T;
+}
+
+function stringMatching(pattern: RegExp): string {
+  const matcher: unknown = expect.stringMatching(pattern);
+  return matcher as string;
+}
+
+function stringContaining(sample: string): string {
+  const matcher: unknown = expect.stringContaining(sample);
+  return matcher as string;
+}
 
 describe('KloelToolDispatcherService — chat tools routing', () => {
   let service: KloelToolDispatcherService;
@@ -109,6 +125,7 @@ describe('KloelToolDispatcherService — chat tools routing', () => {
         { provide: KloelCodeAnalysisService, useValue: codeAnalysisService },
         { provide: OpsAlertService, useValue: opsAlert },
         { provide: AccountService, useValue: accountService },
+        CapabilityRegistryV2Service,
       ],
     }).compile();
 
@@ -125,6 +142,171 @@ describe('KloelToolDispatcherService — chat tools routing', () => {
       name: 'P',
       price: 10,
     });
+  });
+
+  it('routes canonical products.create with the requesting actor id', async () => {
+    await service.executeTool(
+      DEFAULT_WS_ID,
+      'products.create',
+      { name: 'P', price: 10 },
+      'user-42',
+    );
+    expect(chatToolsService.toolSaveProduct).toHaveBeenCalledWith(DEFAULT_WS_ID, {
+      name: 'P',
+      price: 10,
+      actorId: 'user-42',
+    });
+  });
+
+  it('returns a material receipt for canonical products.create executions', async () => {
+    jest.mocked(chatToolsService.toolSaveProduct).mockResolvedValueOnce({
+      success: true,
+      message: 'Produto criado',
+      product: { id: 'prod-123', slug: 'pdrn' },
+    });
+
+    const result = await service.executeTool(
+      DEFAULT_WS_ID,
+      'products.create',
+      { name: 'PDRN', price: 197 },
+      'user-42',
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.capabilityId).toBe('products.create');
+    expect(result.outputs).toEqual(objectContaining({ productId: 'prod-123' }));
+    expect(result.receipt).toEqual(
+      objectContaining({
+        capabilityId: 'products.create',
+        workspaceId: DEFAULT_WS_ID,
+        actorId: 'user-42',
+        inputs: { name: 'PDRN', price: 197 },
+        outputs: objectContaining({ productId: 'prod-123' }),
+        domainEvents: ['product.created'],
+        auditLogId: stringMatching(/^audit_/),
+        evidenceUrl: '/produtos/prod-123',
+        idempotencyKey: stringContaining('products.create'),
+        success: true,
+      }),
+    );
+  });
+
+  it('routes canonical products.update with actor id and a material receipt', async () => {
+    jest.mocked(chatToolsService.toolUpdateProduct).mockResolvedValueOnce({
+      success: true,
+      product: { id: 'prod-123', name: 'PDRN Plus' },
+    });
+
+    const result = await service.executeTool(
+      DEFAULT_WS_ID,
+      'products.update',
+      { productId: 'prod-123', name: 'PDRN Plus' },
+      'user-42',
+    );
+
+    expect(chatToolsService.toolUpdateProduct).toHaveBeenCalledWith(DEFAULT_WS_ID, {
+      productId: 'prod-123',
+      name: 'PDRN Plus',
+      actorId: 'user-42',
+    });
+    expect(result.success).toBe(true);
+    expect(result.capabilityId).toBe('products.update');
+    expect(result.receipt).toEqual(
+      objectContaining({
+        capabilityId: 'products.update',
+        workspaceId: DEFAULT_WS_ID,
+        actorId: 'user-42',
+        inputs: { productId: 'prod-123', name: 'PDRN Plus' },
+        outputs: objectContaining({ productId: 'prod-123' }),
+        domainEvents: ['product.updated'],
+        auditLogId: stringMatching(/^audit_/),
+        evidenceUrl: '/produtos/prod-123',
+        idempotencyKey: stringContaining('products.update'),
+        success: true,
+      }),
+    );
+  });
+
+  it('routes canonical products.upload_image with actor id and a material receipt', async () => {
+    jest.mocked(chatToolsService.toolUploadProductImage).mockResolvedValueOnce({
+      success: true,
+      product: { id: 'prod-123', imageUrl: 'https://img.test/pdrn.png' },
+    });
+
+    const result = await service.executeTool(
+      DEFAULT_WS_ID,
+      'products.upload_image',
+      { productId: 'prod-123', imageUrl: 'https://img.test/pdrn.png' },
+      'user-42',
+    );
+
+    expect(chatToolsService.toolUploadProductImage).toHaveBeenCalledWith(DEFAULT_WS_ID, {
+      productId: 'prod-123',
+      imageUrl: 'https://img.test/pdrn.png',
+      actorId: 'user-42',
+    });
+    expect(result.success).toBe(true);
+    expect(result.capabilityId).toBe('products.upload_image');
+    expect(result.receipt).toEqual(
+      objectContaining({
+        capabilityId: 'products.upload_image',
+        workspaceId: DEFAULT_WS_ID,
+        actorId: 'user-42',
+        inputs: { productId: 'prod-123', imageUrl: 'https://img.test/pdrn.png' },
+        outputs: objectContaining({ productId: 'prod-123' }),
+        domainEvents: ['product.updated'],
+        auditLogId: stringMatching(/^audit_/),
+        evidenceUrl: '/produtos/prod-123',
+        idempotencyKey: stringContaining('products.upload_image'),
+        success: true,
+      }),
+    );
+  });
+
+  it('does not produce a successful material receipt when products.upload_image is missing image input', async () => {
+    jest.mocked(chatToolsService.toolUploadProductImage).mockResolvedValueOnce({
+      success: false,
+      error: 'image_url_required',
+      message: 'Envie a URL da imagem ou faça upload pelo chat.',
+    });
+
+    const result = await service.executeTool(
+      DEFAULT_WS_ID,
+      'products.upload_image',
+      { productId: 'prod-123' },
+      'user-42',
+    );
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('image_url_required');
+    expect(result.domainEvents).toEqual([]);
+    expect(result.evidenceUrl).toBeUndefined();
+    expect(result.receipt).toEqual(
+      objectContaining({
+        capabilityId: 'products.upload_image',
+        workspaceId: DEFAULT_WS_ID,
+        actorId: 'user-42',
+        inputs: { productId: 'prod-123' },
+        outputs: {},
+        domainEvents: [],
+        error: 'image_url_required',
+        success: false,
+      }),
+    );
+  });
+
+  it('requires approval before canonical products.review_and_publish publishes', async () => {
+    const result = await service.executeTool(
+      DEFAULT_WS_ID,
+      'products.review_and_publish',
+      { productId: 'prod-123' },
+      'user-42',
+    );
+
+    expect(chatToolsService.toolPublishProduct).not.toHaveBeenCalled();
+    expect(result.success).toBe(true);
+    expect(result.approvalRequired).toBe(true);
+    expect(result.approvalRequestId).toBe('ap-1');
   });
 
   it('routes list_products to chatToolsService', async () => {

@@ -96,7 +96,11 @@ export async function finalizeSuccessfulReply(
         processingSummary: threadService.buildProcessingTraceSummary(processingTraceEntries),
       }),
     );
-    await threadService.maybeRefreshThreadSummary(thread.id, workspaceId, replyEngine.openai ?? undefined);
+    await threadService.maybeRefreshThreadSummary(
+      thread.id,
+      workspaceId,
+      replyEngine.openai ?? undefined,
+    );
     const title = await threadService.maybeGenerateThreadTitle(
       thread.id,
       thread.title ?? '',
@@ -163,7 +167,11 @@ export async function runComposerCapabilityBranch(
         ...(capResult.metadata || {}),
       }),
     );
-    await threadService.maybeRefreshThreadSummary(thread.id, workspaceId, replyEngine.openai ?? undefined);
+    await threadService.maybeRefreshThreadSummary(
+      thread.id,
+      workspaceId,
+      replyEngine.openai ?? undefined,
+    );
     const title = await threadService.maybeGenerateThreadTitle(
       thread.id,
       thread.title ?? '',
@@ -198,6 +206,7 @@ export async function runToolPlanningBranch(
     temp: number,
   ) => Promise<{ fullResponse: string; estimatedTokens: number } | null>,
   ctx: ThinkBranchContext,
+  prebuiltCognitiveState?: Record<string, unknown>,
 ): Promise<void> {
   const { workspaceId, userId, message, safeWrite, replyEngine, planLimits } = ctx;
   if (!workspaceId) {
@@ -254,6 +263,7 @@ export async function runToolPlanningBranch(
         marketingPromptAddendum,
         summaryMessage,
         recentMessages: [],
+        ...(prebuiltCognitiveState !== undefined ? { prebuiltCognitiveState } : {}),
         userMessage: message,
         assistantMessage: assistantMsg,
         toolMessages,

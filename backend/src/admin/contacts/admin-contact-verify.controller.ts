@@ -1,4 +1,13 @@
-import { Body, Controller, HttpCode, HttpStatus, NotFoundException, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  NotFoundException,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { AdminAction, AdminModule } from '@prisma/client';
 import { Public } from '../../auth/public.decorator';
 import { RequireAdminPermission } from '../auth/decorators/admin-permission.decorator';
@@ -36,10 +45,7 @@ export class AdminContactVerifyController {
   @Post(':contactId/verify-channel')
   @HttpCode(HttpStatus.OK)
   @RequireAdminPermission(AdminModule.CLIENTES, AdminAction.EDIT)
-  async verifyChannel(
-    @Param('contactId') contactId: string,
-    @Body() body: VerifyChannelDto,
-  ) {
+  async verifyChannel(@Param('contactId') contactId: string, @Body() body: VerifyChannelDto) {
     const contact = await this.prisma.contact.findUnique({
       where: { id: contactId },
       select: { id: true, workspaceId: true },

@@ -16,7 +16,11 @@ import { CiaRuntimeService } from '../cia/cia-runtime.service';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import { isPlaceholderContactName as isPlaceholderName } from './whatsapp-normalization.util';
-import { resolveTimestampExt, toIsoTimestamp } from './whatsapp-service.helpers';
+import {
+  resolveTimestampExt,
+  toIsoTimestamp,
+  normalizeNumber,
+} from '../marketing/channels/whatsapp/whatsapp-service.helpers';
 import {
   normalizeContactsArray,
   normalizeChatsArray,
@@ -28,7 +32,6 @@ import type { NormalizedContact, NormalizedChat } from './whatsapp-service.types
 import { WhatsappSessionService } from './whatsapp-session.service';
 import { WhatsappMessageDispatcherService } from './whatsapp-message-dispatcher.service';
 import { WhatsappReconcilerService } from './whatsapp-reconciler.service';
-import { NON_DIGIT_RE } from '../common/phone';
 
 type ExternalProviderPayload = Record<string, unknown>;
 
@@ -72,7 +75,7 @@ export class WhatsappService {
     return '';
   }
   private normalizeNumber(num: string): string {
-    return num.replace(NON_DIGIT_RE, '');
+    return normalizeNumber(num);
   }
   private isIndividualChatId(c?: string | null): boolean {
     const v = String(c || '').trim();
@@ -375,6 +378,13 @@ export class WhatsappService {
   }
 
   // ═══ DELEGATION: Message Dispatcher ═══
+  /**
+   * @canonical-status delegate — Wave 22 canonicalization
+   * @canonical-path backend/src/whatsapp/whatsapp-message-dispatcher.service.ts::sendMessage
+   * @notes Rate-guarded public facade; messageDispatcher carries the queue/direct
+   *        routing, opt-in enforcement, plan limits, persistence and event emission.
+   *        Long-term: route through backend/src/kloel/channel-transport.registry.ts.
+   */
   async sendMessage(
     ws: string,
     to: string,

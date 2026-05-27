@@ -18,9 +18,9 @@ describe('WhatsAppWatchdogSessionService', () => {
         findUnique: jest.fn(),
         update: jest.fn().mockResolvedValue({}),
       },
-      $transaction: jest.fn().mockImplementation((cb: (tx: unknown) => Promise<unknown>) =>
-        cb(prisma),
-      ),
+      $transaction: jest
+        .fn()
+        .mockImplementation((cb: (tx: unknown) => Promise<unknown>) => cb(prisma)),
     };
     recovery = {};
     const module: TestingModule = await Test.createTestingModule({

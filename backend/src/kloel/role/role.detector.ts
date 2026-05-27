@@ -18,6 +18,7 @@ import { clampConfidence } from './types';
 const PRODUCER_EVENTS = new Set([
   'commerce.product.created',
   'commerce.product.updated',
+  'commerce.product.published',
   'commerce.checkout.created',
   'commerce.checkout.completed',
   'commerce.payment.approved',
@@ -64,9 +65,7 @@ const SPECIALIST_EVENTS = new Set([
 /**
  * Build a fingerprint (event name → count) from a list of spine events.
  */
-function fingerprintEvents(
-  events: readonly SpineEventRef[],
-): Map<string, number> {
+function fingerprintEvents(events: readonly SpineEventRef[]): Map<string, number> {
   const fp = new Map<string, number>();
   for (const e of events) {
     fp.set(e.eventName, (fp.get(e.eventName) ?? 0) + 1);
@@ -77,12 +76,10 @@ function fingerprintEvents(
 /**
  * Compute a role candidate score based on matching event counts.
  */
-function scoreRole(
-  fp: Map<string, number>,
-  roleEvents: Set<string>,
-  totalEvents: number,
-): number {
-  if (totalEvents === 0) return 0;
+function scoreRole(fp: Map<string, number>, roleEvents: Set<string>, totalEvents: number): number {
+  if (totalEvents === 0) {
+    return 0;
+  }
   let hits = 0;
   for (const name of roleEvents) {
     hits += fp.get(name) ?? 0;
@@ -137,8 +134,7 @@ export function detectRoles(input: RoleDetectorInput): readonly RoleDetection[] 
 
   // Gestor is detected by exclusion: has events but low specialisation
   const maxSpecialised = Math.max(...rawScores.map((r) => r.score));
-  const isManager =
-    total > 5 && maxSpecialised < 0.2;
+  const isManager = total > 5 && maxSpecialised < 0.2;
   if (isManager) {
     rawScores.push({
       role: 'gestor',
@@ -148,9 +144,7 @@ export function detectRoles(input: RoleDetectorInput): readonly RoleDetection[] 
   }
 
   // Boost agency for multi-workspace events
-  const uniqueWorkspaces = new Set(
-    events.map((e) => e.workspaceId).filter(Boolean),
-  );
+  const uniqueWorkspaces = new Set(events.map((e) => e.workspaceId).filter(Boolean));
   if (uniqueWorkspaces.size > 1) {
     const agencyEntry = rawScores.find((r) => r.role === 'agencia');
     if (agencyEntry) {
@@ -204,12 +198,14 @@ export function detectRoles(input: RoleDetectorInput): readonly RoleDetection[] 
  * UTP-ROLE-001 helper: pick the primary role from detections.
  * Returns undefined if no detections exist.
  */
-export function primaryRoleFromDetections(
-  detections: readonly RoleDetection[],
-): Role | undefined {
-  if (detections.length === 0) return undefined;
+export function primaryRoleFromDetections(detections: readonly RoleDetection[]): Role | undefined {
+  if (detections.length === 0) {
+    return undefined;
+  }
   // Primary is the highest-confidence detection above 0.3
   const candidates = detections.filter((d) => d.confidence >= 0.3);
-  if (candidates.length === 0) return undefined;
+  if (candidates.length === 0) {
+    return undefined;
+  }
   return candidates[0]!.role;
 }

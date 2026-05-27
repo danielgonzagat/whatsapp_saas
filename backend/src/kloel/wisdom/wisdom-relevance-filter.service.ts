@@ -48,8 +48,12 @@ export class WisdomRelevanceFilter {
     const target: TargetWorkspaceContext = {
       workspaceId,
       ...(decisionContext?.vertical !== undefined && { vertical: decisionContext.vertical }),
-      ...(decisionContext?.ticketRange !== undefined && { ticketRange: decisionContext.ticketRange }),
-      ...(decisionContext?.maturityStage !== undefined && { maturityStage: decisionContext.maturityStage }),
+      ...(decisionContext?.ticketRange !== undefined && {
+        ticketRange: decisionContext.ticketRange,
+      }),
+      ...(decisionContext?.maturityStage !== undefined && {
+        maturityStage: decisionContext.maturityStage,
+      }),
       ...(activeChannels !== undefined && { activeChannels }),
     };
 

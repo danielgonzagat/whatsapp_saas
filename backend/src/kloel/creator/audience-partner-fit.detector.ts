@@ -9,11 +9,7 @@
  * Output: AudiencePartnerFit.
  */
 
-import type {
-  AudiencePartnerFit,
-  AudiencePartnerFitVerdict,
-  CreatorEvent,
-} from './types';
+import type { AudiencePartnerFit, AudiencePartnerFitVerdict, CreatorEvent } from './types';
 
 export interface PartnerProfile {
   readonly partnerId: string;
@@ -59,7 +55,9 @@ function classifyAudienceCategory(recentEvents: readonly CreatorEvent[]): string
 
   for (const ev of recentEvents) {
     const text = extractMessageText(ev);
-    if (!text) continue;
+    if (!text) {
+      continue;
+    }
 
     const lower = text.toLowerCase();
     for (const [category, keywords] of Object.entries(ENGAGEMENT_CATEGORY_SIGNALS)) {
@@ -71,7 +69,9 @@ function classifyAudienceCategory(recentEvents: readonly CreatorEvent[]): string
     }
   }
 
-  if (keywordHits.size === 0) return 'general';
+  if (keywordHits.size === 0) {
+    return 'general';
+  }
 
   let best = 'general';
   let bestCount = 0;
@@ -84,12 +84,13 @@ function classifyAudienceCategory(recentEvents: readonly CreatorEvent[]): string
   return best;
 }
 
-function computeAudienceRelevance(
-  audienceCategory: string,
-  partnerCategory: string,
-): number {
-  if (!audienceCategory || audienceCategory === 'general') return 0.5;
-  if (audienceCategory === partnerCategory) return 1.0;
+function computeAudienceRelevance(audienceCategory: string, partnerCategory: string): number {
+  if (!audienceCategory || audienceCategory === 'general') {
+    return 0.5;
+  }
+  if (audienceCategory === partnerCategory) {
+    return 1.0;
+  }
 
   const related: Record<string, readonly string[]> = {
     education: ['marketing', 'technology'],
@@ -108,14 +109,18 @@ function computeValueAlignment(
   recentEvents: readonly CreatorEvent[],
   valueKeywords: readonly string[],
 ): number {
-  if (valueKeywords.length === 0) return 0.5;
+  if (valueKeywords.length === 0) {
+    return 0.5;
+  }
 
   let hitCount = 0;
   let totalMessages = 0;
 
   for (const ev of recentEvents) {
     const text = extractMessageText(ev);
-    if (!text) continue;
+    if (!text) {
+      continue;
+    }
     totalMessages += 1;
 
     const lower = text.toLowerCase();
@@ -127,14 +132,13 @@ function computeValueAlignment(
     }
   }
 
-  if (totalMessages === 0) return 0.5;
+  if (totalMessages === 0) {
+    return 0.5;
+  }
   return Math.min(1, hitCount / Math.max(1, totalMessages));
 }
 
-function computeAuthenticityRisk(
-  recentEvents: readonly CreatorEvent[],
-  baseline: number,
-): number {
+function computeAuthenticityRisk(recentEvents: readonly CreatorEvent[], baseline: number): number {
   const negativeCount = recentEvents.filter(
     (e) => e.eventName === 'commerce.lead.objection_raised',
   ).length;
@@ -143,17 +147,20 @@ function computeAuthenticityRisk(
     (e) => e.eventName === 'commerce.lead.went_silent',
   ).length;
 
-  const riskFromSignals = Math.min(0.5, (negativeCount * 0.1) + (silenceCount * 0.08));
+  const riskFromSignals = Math.min(0.5, negativeCount * 0.1 + silenceCount * 0.08);
   return Math.min(1, baseline + riskFromSignals);
 }
 
-function determineVerdict(
-  fitScore: number,
-  config: FitConfig,
-): AudiencePartnerFitVerdict {
-  if (fitScore >= config.strongFitMinScore) return 'strong_fit';
-  if (fitScore >= config.moderateFitMinScore) return 'moderate_fit';
-  if (fitScore >= config.weakFitMinScore) return 'weak_fit';
+function determineVerdict(fitScore: number, config: FitConfig): AudiencePartnerFitVerdict {
+  if (fitScore >= config.strongFitMinScore) {
+    return 'strong_fit';
+  }
+  if (fitScore >= config.moderateFitMinScore) {
+    return 'moderate_fit';
+  }
+  if (fitScore >= config.weakFitMinScore) {
+    return 'weak_fit';
+  }
   return 'mismatch';
 }
 
@@ -197,10 +204,18 @@ function buildReasons(
 
 function extractMessageText(ev: CreatorEvent): string | undefined {
   const p = ev.payload;
-  if (!p) return undefined;
-  if (typeof p['messageBody'] === 'string') return p['messageBody'] as string;
-  if (typeof p['body'] === 'string') return p['body'] as string;
-  if (typeof p['text'] === 'string') return p['text'] as string;
+  if (!p) {
+    return undefined;
+  }
+  if (typeof p['messageBody'] === 'string') {
+    return p['messageBody'];
+  }
+  if (typeof p['body'] === 'string') {
+    return p['body'];
+  }
+  if (typeof p['text'] === 'string') {
+    return p['text'];
+  }
   return undefined;
 }
 
@@ -225,7 +240,9 @@ export function detectAudiencePartnerFit(
       valueAlignment: 0.3,
       authenticityRisk: partner.authenticityRiskBaseline,
       verdict: 'weak_fit',
-      reasons: [`insufficient audience data (${recentEvents.length}/${cfg.minEventsForAnalysis} events)`],
+      reasons: [
+        `insufficient audience data (${recentEvents.length}/${cfg.minEventsForAnalysis} events)`,
+      ],
       generatedAt: now,
     };
   }
@@ -241,7 +258,14 @@ export function detectAudiencePartnerFit(
     (1 - risk) * cfg.authenticityRiskWeight;
 
   const verdict = determineVerdict(fitScore, cfg);
-  const reasons = buildReasons(verdict, audienceCategory, partner.category, relevance, alignment, risk);
+  const reasons = buildReasons(
+    verdict,
+    audienceCategory,
+    partner.category,
+    relevance,
+    alignment,
+    risk,
+  );
 
   return {
     partnerId: partner.partnerId,

@@ -1,9 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type {
-  AggregatedLedgerEntry,
-  ExportedCapsule,
-  MemoryProjection,
-} from './commem.types';
+import type { AggregatedLedgerEntry, ExportedCapsule, MemoryProjection } from './commem.types';
 import { simpleHash, workspaceFilter } from './commem.types';
 import type { SpineEventRef } from '../mind/mind.types';
 import { CommemLedgerService } from './ledger.service';
@@ -49,10 +45,7 @@ export class CommemExporterService {
     private readonly guard: AttributionGuard,
   ) {}
 
-  public exportAggregated(
-    workspaceId: string,
-    events: readonly SpineEventRef[],
-  ): ComMemExport {
+  public exportAggregated(workspaceId: string, events: readonly SpineEventRef[]): ComMemExport {
     const scoped = workspaceFilter(events, workspaceId);
     const exportedAt = new Date().toISOString();
 
@@ -69,10 +62,7 @@ export class CommemExporterService {
       dimensions: [],
     });
 
-    const capsule =
-      scoped.length > 0
-        ? this.exporter.export(projections, workspaceId)
-        : null;
+    const capsule = scoped.length > 0 ? this.exporter.export(projections, workspaceId) : null;
 
     const guardResult = this.guard.validateProjections(projections, workspaceId);
 
@@ -158,8 +148,7 @@ export class CommemExporterService {
   }
 
   public toCsv(data: ComMemExport): string {
-    const header =
-      'eventId,eventName,occurredAt,truthMode,entityType,entityId,workspaceId';
+    const header = 'eventId,eventName,occurredAt,truthMode,entityType,entityId,workspaceId';
     const rows: string[] = [header];
 
     for (const entry of data.ledger) {
@@ -182,9 +171,7 @@ export class CommemExporterService {
   }
 
   public batchExportAggregated(
-    eventsByWorkspace: Readonly<
-      Record<string, readonly SpineEventRef[]>
-    >,
+    eventsByWorkspace: Readonly<Record<string, readonly SpineEventRef[]>>,
   ): readonly ComMemExport[] {
     return Object.entries(eventsByWorkspace).map(([wsId, evts]) =>
       this.exportAggregated(wsId, evts),

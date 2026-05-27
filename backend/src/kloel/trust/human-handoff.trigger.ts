@@ -49,10 +49,7 @@ export function shouldHandoff(
     };
   }
 
-  if (
-    state.fatigueLevel >= cfg.fatigueCeilingForHandoff &&
-    state.brandRiskFlags.length > 0
-  ) {
+  if (state.fatigueLevel >= cfg.fatigueCeilingForHandoff && state.brandRiskFlags.length > 0) {
     return {
       shouldHandoff: true,
       reason: `fatigue (${state.fatigueLevel.toFixed(2)}) combined with ${state.brandRiskFlags.length} brand risk flags — escalate`,
@@ -68,10 +65,7 @@ export function shouldHandoff(
     };
   }
 
-  if (
-    state.trustScore < 0.3 &&
-    state.fatigueLevel >= 0.6
-  ) {
+  if (state.trustScore < 0.3 && state.fatigueLevel >= 0.6) {
     return {
       shouldHandoff: true,
       reason: `low trust (${state.trustScore.toFixed(2)}) and elevated fatigue (${state.fatigueLevel.toFixed(2)}) — recommend handoff`,

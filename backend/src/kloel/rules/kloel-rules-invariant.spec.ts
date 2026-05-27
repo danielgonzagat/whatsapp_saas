@@ -1,5 +1,5 @@
 import { MIND_GUARD_REASON_TAGS } from '../mind-code-native.types';
-import { MindQualityService } from '../mind-quality.service';
+import { MindQualityService } from '../mind/policy/mind-quality.service';
 import { KLOEL_RULE_CATALOG } from './kloel-rules.catalog';
 import { KloelRuleEngineService } from './kloel-rule-engine.service';
 import type { RuleCategory } from './kloel-rules.types';

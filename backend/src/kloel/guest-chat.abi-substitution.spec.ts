@@ -30,14 +30,10 @@ jest.mock('../lib/llm-provider', () => ({
 }));
 
 jest.mock('../lib/openai-models', () => {
-  const actual = jest.requireActual<typeof import('../lib/openai-models')>(
-    '../lib/openai-models',
-  );
+  const actual = jest.requireActual<typeof import('../lib/openai-models')>('../lib/openai-models');
   return {
     ...actual,
-    resolveBackendOpenAIModel: jest
-      .fn()
-      .mockReturnValue(actual.CANONICAL_MODEL_IDS.openAiTextMock),
+    resolveBackendOpenAIModel: jest.fn().mockReturnValue(actual.CANONICAL_MODEL_IDS.openAiTextMock),
   };
 });
 
@@ -125,7 +121,9 @@ async function buildGuestMessages(
 }
 
 function expectNoSystemMessages(messages: GuestContextMessage[]) {
-  expect(messages).toEqual(expect.not.arrayContaining([expect.objectContaining({ role: 'system' })]));
+  expect(messages).toEqual(
+    expect.not.arrayContaining([expect.objectContaining({ role: 'system' })]),
+  );
 }
 
 function parseLastUserPayload(messages: GuestContextMessage[]): Record<string, unknown> {

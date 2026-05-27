@@ -14,6 +14,10 @@ jest.mock('../common/redis/redis.util', () => {
   const actual = jest.requireActual('../common/redis/redis.util');
   return {
     ...actual,
+    createBullMqConnectionOptions: jest.fn(() => {
+      const { RedisConfigurationError } = jest.requireActual('../common/redis/resolve-redis-url');
+      throw new RedisConfigurationError('Redis not available in test');
+    }),
     createRedisClient: jest.fn(() => {
       const { RedisConfigurationError } = jest.requireActual('../common/redis/resolve-redis-url');
       throw new RedisConfigurationError('Redis not available in test');
@@ -54,7 +58,9 @@ describe('GdprController', () => {
     chatMessage: ['findMany', 'updateMany'],
   });
   (prismaMock as any).$transaction = jest.fn((arg: unknown, _opts?: unknown) => {
-    if (typeof arg === 'function') return (arg as (tx: unknown) => unknown)(prismaMock);
+    if (typeof arg === 'function') {
+      return (arg as (tx: unknown) => unknown)(prismaMock);
+    }
     return Promise.all(arg as Promise<unknown>[]);
   });
 

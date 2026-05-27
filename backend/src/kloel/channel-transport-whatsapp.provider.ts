@@ -1,4 +1,4 @@
-import { Injectable, Optional  } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import type {
@@ -56,7 +56,9 @@ export class WhatsAppChannelTransport implements ChannelTransportProvider {
           ...(request.mediaUrl !== undefined ? { mediaUrl: request.mediaUrl } : {}),
           ...(request.mediaType !== undefined ? { mediaType: request.mediaType } : {}),
           ...(request.caption !== undefined ? { caption: request.caption } : {}),
-          ...(request.quotedMessageId !== undefined ? { quotedMessageId: request.quotedMessageId } : {}),
+          ...(request.quotedMessageId !== undefined
+            ? { quotedMessageId: request.quotedMessageId }
+            : {}),
         },
       );
 

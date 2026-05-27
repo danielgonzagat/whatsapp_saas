@@ -134,14 +134,9 @@ export function makeEvidenceProvenanceGate(
         }
       }
 
-      if (
-        input.truthMode === 'inferred' ||
-        input.truthMode === 'projected'
-      ) {
-        const hasCausedBy =
-          Array.isArray(input.causedBy) && input.causedBy.length > 0;
-        const hasUpstreamRef =
-          prov && isObject(prov) && nonEmptyString(prov.upstreamRef);
+      if (input.truthMode === 'inferred' || input.truthMode === 'projected') {
+        const hasCausedBy = Array.isArray(input.causedBy) && input.causedBy.length > 0;
+        const hasUpstreamRef = prov && isObject(prov) && nonEmptyString(prov.upstreamRef);
 
         if (!hasCausedBy && !hasUpstreamRef) {
           issues.push({

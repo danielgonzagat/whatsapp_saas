@@ -43,7 +43,7 @@ export function normalizeDate(value?: Date | string | null): Date | null {
 
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
-}// ── Message persistence helpers ──────────────────────────────────────────────
+} // ── Message persistence helpers ──────────────────────────────────────────────
 
 export function resolveConversationLastMessageAt(
   conversation: { lastMessageAt: Date | string | null | undefined },
@@ -71,7 +71,7 @@ export function buildConversationUpdate(
     update.unreadCount = { set: 0 };
   }
   return update;
-}// ── Conversation singleton-open (I14) ────────────────────────────────────────
+} // ── Conversation singleton-open (I14) ────────────────────────────────────────
 
 /**
  * Transaction-aware variant of `getOrCreateConversation`. Accepts
@@ -134,7 +134,7 @@ export async function getOrCreateConversationWithClient(
   throw new Error(
     `getOrCreateConversation: failed to resolve conversation after ${GET_OR_CREATE_CONVERSATION_MAX_ATTEMPTS} attempts`,
   );
-}// ── Inbound message atomicity (I15) ──────────────────────────────────────────
+} // ── Inbound message atomicity (I15) ──────────────────────────────────────────
 
 export async function saveMessageInTx(
   tx: Prisma.TransactionClient,

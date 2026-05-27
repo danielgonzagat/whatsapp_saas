@@ -22,6 +22,7 @@ import { JwtService } from '@nestjs/jwt';
 import { GdprStatus, GdprType } from '@prisma/client';
 import { Queue, Worker, type Job } from 'bullmq';
 import { createBullMqConnectionOptions } from '../common/redis/redis.util';
+import { attachDlq } from '../queue/queue';
 import { StorageService } from '../common/storage/storage.service';
 import { EmailService } from '../auth/email.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -68,6 +69,7 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(GdprService.name);
   private queue: Queue<GdprJobData> | null = null;
   private worker: Worker<GdprJobData> | null = null;
+  private dlq: Queue | null = null;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -79,7 +81,15 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
   onModuleInit(): void {
     try {
       const connection = createBullMqConnectionOptions();
-      this.queue = new Queue<GdprJobData>(GDPR_QUEUE, { connection });
+      this.queue = new Queue<GdprJobData>(GDPR_QUEUE, {
+        connection,
+        defaultJobOptions: {
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 1000 },
+          removeOnFail: false,
+        },
+      });
+      this.dlq = attachDlq(this.queue);
 
       this.worker = new Worker<GdprJobData>(
         GDPR_QUEUE,
@@ -118,6 +128,7 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
   async onModuleDestroy(): Promise<void> {
     await this.worker?.close();
     await this.queue?.close();
+    await this.dlq?.close();
   }
 
   /** Request data export. */

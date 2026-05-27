@@ -60,9 +60,7 @@ describe('InboxController', () => {
       const error = new Error('Service down');
       getMessages.mockRejectedValue(error);
 
-      await expect(controller.getMessages(req as never, 'conv-99')).rejects.toThrow(
-        'Service down',
-      );
+      await expect(controller.getMessages(req as never, 'conv-99')).rejects.toThrow('Service down');
     });
   });
 

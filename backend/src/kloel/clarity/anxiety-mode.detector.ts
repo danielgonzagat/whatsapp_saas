@@ -32,14 +32,8 @@ export function detectAnxietyMode(
   let shouldDeactivate = false;
 
   if (currentMode.active) {
-    const cooldownEnd = currentMode.cooldownUntil
-      ? Date.parse(currentMode.cooldownUntil)
-      : 0;
-    if (
-      Number.isFinite(cooldownEnd) &&
-      cooldownEnd > 0 &&
-      trigger.nowMs >= cooldownEnd
-    ) {
+    const cooldownEnd = currentMode.cooldownUntil ? Date.parse(currentMode.cooldownUntil) : 0;
+    if (Number.isFinite(cooldownEnd) && cooldownEnd > 0 && trigger.nowMs >= cooldownEnd) {
       shouldDeactivate = true;
       reasons.push('cooldown expired');
     }
@@ -53,33 +47,27 @@ export function detectAnxietyMode(
       reasons.push('all metrics below anxiety thresholds');
     }
   } else {
-    const overloadTriggered =
-      trigger.overloadFactor >= ANXIETY_OVERLOAD_FACTOR_THRESHOLD;
-    const urgentTriggered =
-      trigger.urgentItemCount >= ANXIETY_URGENT_COUNT_THRESHOLD;
-    const backlogTriggered =
-      trigger.decisionBacklog >= ANXIETY_BACKLOG_THRESHOLD;
+    const overloadTriggered = trigger.overloadFactor >= ANXIETY_OVERLOAD_FACTOR_THRESHOLD;
+    const urgentTriggered = trigger.urgentItemCount >= ANXIETY_URGENT_COUNT_THRESHOLD;
+    const backlogTriggered = trigger.decisionBacklog >= ANXIETY_BACKLOG_THRESHOLD;
 
-    const triggerCount = [
-      overloadTriggered,
-      urgentTriggered,
-      backlogTriggered,
-    ].filter(Boolean).length;
+    const triggerCount = [overloadTriggered, urgentTriggered, backlogTriggered].filter(
+      Boolean,
+    ).length;
 
     if (triggerCount >= 2) {
       shouldActivate = true;
-      if (overloadTriggered)
-        reasons.push(
-          `overload ${trigger.overloadFactor} >= ${ANXIETY_OVERLOAD_FACTOR_THRESHOLD}`,
-        );
-      if (urgentTriggered)
+      if (overloadTriggered) {
+        reasons.push(`overload ${trigger.overloadFactor} >= ${ANXIETY_OVERLOAD_FACTOR_THRESHOLD}`);
+      }
+      if (urgentTriggered) {
         reasons.push(
           `urgent items ${trigger.urgentItemCount} >= ${ANXIETY_URGENT_COUNT_THRESHOLD}`,
         );
-      if (backlogTriggered)
-        reasons.push(
-          `backlog ${trigger.decisionBacklog} >= ${ANXIETY_BACKLOG_THRESHOLD}`,
-        );
+      }
+      if (backlogTriggered) {
+        reasons.push(`backlog ${trigger.decisionBacklog} >= ${ANXIETY_BACKLOG_THRESHOLD}`);
+      }
     }
   }
 
@@ -90,9 +78,7 @@ export function detectAnxietyMode(
       active: true,
       triggeredAt: new Date(trigger.nowMs).toISOString(),
       triggerReason: reasons.join('; ') || null,
-      cooldownUntil: new Date(
-        trigger.nowMs + ANXIETY_COOLDOWN_MS,
-      ).toISOString(),
+      cooldownUntil: new Date(trigger.nowMs + ANXIETY_COOLDOWN_MS).toISOString(),
     };
   } else if (shouldDeactivate) {
     mode = {

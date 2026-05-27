@@ -33,7 +33,10 @@ describe('TikTokMarketingController', () => {
   describe('GET url', () => {
     it('calls generateAuthUrl with workspaceId and kind', async () => {
       const req = { user: { workspaceId: 'ws-1' }, headers: {} } as never;
-      generateAuthUrl.mockResolvedValueOnce({ url: 'https://tiktok.com/auth?x=1', kind: 'creator' });
+      generateAuthUrl.mockResolvedValueOnce({
+        url: 'https://tiktok.com/auth?x=1',
+        kind: 'creator',
+      });
 
       const result = await controller.url(req, 'creator');
 

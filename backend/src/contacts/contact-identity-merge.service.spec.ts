@@ -115,9 +115,11 @@ describe('ContactIdentityMergeService', () => {
     });
 
     it('returns existing link if reverse direction exists', async () => {
-      mockPrisma.contactIdentityLink.findUnique
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce({ id: 'link-2', contactId: 'contact-a', linkedContactId: 'contact-b' });
+      mockPrisma.contactIdentityLink.findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce({
+        id: 'link-2',
+        contactId: 'contact-a',
+        linkedContactId: 'contact-b',
+      });
 
       const result = await service.mergeContacts({
         workspaceId: 'ws-1',

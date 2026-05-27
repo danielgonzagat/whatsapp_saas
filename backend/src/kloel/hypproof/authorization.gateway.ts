@@ -22,9 +22,7 @@ export class AuthorizationGatewayService {
     };
 
     if (experiment.riskAssessment === 'high') {
-      this.logger.warn(
-        `High-risk experiment ${experiment.id} requires human approval`,
-      );
+      this.logger.warn(`High-risk experiment ${experiment.id} requires human approval`);
       return {
         request,
         authorized: false,
@@ -35,9 +33,7 @@ export class AuthorizationGatewayService {
     }
 
     if (experiment.evidenceThreshold < 1) {
-      this.logger.warn(
-        `Experiment ${experiment.id} has insufficient evidence threshold`,
-      );
+      this.logger.warn(`Experiment ${experiment.id} has insufficient evidence threshold`);
       return {
         request,
         authorized: false,

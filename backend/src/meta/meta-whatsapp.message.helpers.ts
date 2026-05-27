@@ -36,9 +36,7 @@ export function buildMediaMessageContent(
  *   - { message_id: "..." }
  *   - { id: "..." }
  */
-export function parseMessageIdFromResponse(
-  response: Record<string, unknown>,
-): string | null {
+export function parseMessageIdFromResponse(response: Record<string, unknown>): string | null {
   const msgs = Array.isArray(response.messages)
     ? (response.messages as Array<Record<string, unknown>>)
     : null;

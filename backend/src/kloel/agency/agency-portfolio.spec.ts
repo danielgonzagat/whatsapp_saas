@@ -12,10 +12,7 @@ import { clamp, clampScore } from './agency.types';
 const NOW = Date.parse('2026-05-14T12:00:00.000Z');
 const AGENCY = 'agency_001';
 
-function makeData(
-  workspaceId: string,
-  overrides: Partial<ClientData> = {},
-): ClientData {
+function makeData(workspaceId: string, overrides: Partial<ClientData> = {}): ClientData {
   return {
     workspaceId,
     revenueCents: overrides.revenueCents ?? 100_000n,
@@ -93,9 +90,7 @@ describe('AGENCY-009 — PortfolioStateService', () => {
   it('consolidates single client with margin correctly', () => {
     const input: ConsolidationInput = {
       agencyWorkspaceId: AGENCY,
-      clients: [
-        makeData('wks_01', { revenueCents: 200_000n, costCents: 50_000n }),
-      ],
+      clients: [makeData('wks_01', { revenueCents: 200_000n, costCents: 50_000n })],
       nowMs: NOW,
     };
     const { state } = svc.consolidate(input);
@@ -178,9 +173,7 @@ describe('AGENCY-009 — PortfolioStateService', () => {
     const { state } = svc.consolidate(input);
 
     expect(state.churnRiskPerClient[0]!.riskLevel).toBe('critical');
-    expect(state.churnRiskPerClient[0]!.riskProbability).toBeGreaterThanOrEqual(
-      0.7,
-    );
+    expect(state.churnRiskPerClient[0]!.riskProbability).toBeGreaterThanOrEqual(0.7);
     expect(state.churnRiskPerClient[0]!.signals).toContain('delayed_payment');
     expect(state.churnRiskPerClient[0]!.signals).toContain('no_recent_contact');
   });
@@ -243,11 +236,7 @@ describe('AGENCY-009 — PortfolioStateService', () => {
     ];
     const input: ConsolidationInput = {
       agencyWorkspaceId: AGENCY,
-      clients: [
-        makeData('wks_01'),
-        makeData('wks_02'),
-        makeData('wks_03'),
-      ],
+      clients: [makeData('wks_01'), makeData('wks_02'), makeData('wks_03')],
       teamMembers: members,
       nowMs: NOW,
     };

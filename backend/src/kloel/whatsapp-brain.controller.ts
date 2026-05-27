@@ -25,7 +25,7 @@ import {
   sendPlainTextResponse,
 } from '../common/utils/webhook-challenge-response.util';
 import { WebhooksService } from '../webhooks/webhooks.service';
-import { WhatsAppBrainService } from './whatsapp-brain.service';
+import { WhatsAppMindCoordinator } from './mind/coordination';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Whats app brain controller. */
@@ -35,7 +35,7 @@ export class WhatsAppBrainController {
   private readonly logger = StructuredLogger.from(WhatsAppBrainController.name);
 
   constructor(
-    private readonly whatsappBrain: WhatsAppBrainService,
+    private readonly whatsappBrain: WhatsAppMindCoordinator,
     private readonly webhooksService: WebhooksService,
     @InjectRedis() private readonly redis: Redis,
   ) {}

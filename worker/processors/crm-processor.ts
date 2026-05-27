@@ -3,7 +3,7 @@ import { forEachSequential } from '../utils/async-sequence';
 import { prisma } from '../db';
 import { FlowEngineGlobal } from '../flow-engine-global';
 import { WorkerLogger } from '../logger';
-import { processCheckoutSocialLeadEnrichment } from './checkout-social-lead-enrichment';
+import { processCheckoutSocialLeadEnrichment } from '../providers/checkout-social-lead-enrichment';
 import { PlanLimitsProvider } from '../providers/plan-limits';
 import { buildQueueOptions } from '../queue';
 import { isRetryableError, WorkerError } from '../src/utils/error-handler';

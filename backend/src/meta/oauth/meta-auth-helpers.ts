@@ -29,10 +29,17 @@ export function sanitizeReturnTo(
     raw.startsWith('/') &&
     !raw.startsWith('//') &&
     !raw.startsWith('/\\') &&
-    !/^\/%2f/i.test(raw) &&
-    !/^\/%5c/i.test(raw) &&
-    !/[\r\n\t]/.test(raw) &&
-    !/^[a-z][a-z0-9+.-]*:/i.test(raw);
+    // ReDoS mitigation: regex checks replaced with safe string operations.
+    // All four original patterns were applied to user-supplied `raw` input.
+    raw.slice(0, 4).toLowerCase() !== '/%2f' &&
+    raw.slice(0, 4).toLowerCase() !== '/%5c' &&
+    raw.indexOf('\r') === -1 &&
+    raw.indexOf('\n') === -1 &&
+    raw.indexOf('\t') === -1 &&
+    // Scheme-URI guard: replaced /^[a-z][a-z0-9+.-]*:/i with char-level scan
+    // (no backtracking). Redundant when startsWith('/') holds, but preserved
+    // as defense-in-depth against open-redirect.
+    !looksLikeUrlScheme(raw);
 
   if (looksSafe) {
     try {
@@ -200,6 +207,42 @@ export function buildDiagnosticsPayload(input: {
       webhookVerifyTokenPresent: verifyTokenSet,
     },
   };
+}
+
+/**
+ * ReDoS-safe non-regex check: does `s` start with a URL scheme
+ * (e.g. javascript:, data:, http:)?  Replaces /^[a-z][a-z0-9+.-]*:/i
+ * which could backtrack on long crafted inputs.
+ */
+function looksLikeUrlScheme(s: string): boolean {
+  if (s.length < 2) {
+    return false;
+  }
+  // charAt returns '' for OOB and string (not string|undefined) for in-bounds,
+  // satisfying TS strict-null-checks without runtime cost.
+  const c0 = s.charAt(0);
+  if (!((c0 >= 'a' && c0 <= 'z') || (c0 >= 'A' && c0 <= 'Z'))) {
+    return false;
+  }
+  for (let i = 1; i < s.length; i++) {
+    const c = s.charAt(i);
+    if (c === ':') {
+      return true;
+    }
+    if (
+      !(
+        (c >= 'a' && c <= 'z') ||
+        (c >= 'A' && c <= 'Z') ||
+        (c >= '0' && c <= '9') ||
+        c === '+' ||
+        c === '.' ||
+        c === '-'
+      )
+    ) {
+      return false;
+    }
+  }
+  return false;
 }
 
 /**

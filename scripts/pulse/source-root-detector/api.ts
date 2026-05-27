@@ -1,23 +1,28 @@
 import * as path from 'path';
-import { pathExists, readDir, statPath } from '../safe-fs';
+import { pathExists, readDir, readTextFile, statPath } from '../safe-fs';
 import { safeJoin } from '../safe-path';
 import {
   DetectedSourceRoot,
   SourceRootEvidenceBasis,
   WEAK_FALLBACK_SEGMENTS,
   CONVENTIONAL_SOURCE_DIR_NAMES,
+  sourceExtensionsSet,
   SKIP_DIR_NAMES,
   ZERO,
+  ONE,
 } from './types';
 import {
   normalizeRelative,
   hasSkippedSegment,
+  hasFrameworkFileSignal,
   inferKindFromFileEvidence,
   walkUnskippedFiles,
 } from './helpers';
 import { addRoot } from './source-resolution';
 import { addPackageRoots, addTsConfigRoots, discoverBuildConfigRoots } from './scanners';
 import { discoverPackageDirs } from './package-discovery';
+
+const sourceRootCache = new Map<string, DetectedSourceRoot[]>();
 
 function discoverConventionalSourceDirsFromTopLevel(rootDir: string): string[] {
   const candidates = new Set<string>();
@@ -45,9 +50,31 @@ function addFileEvidenceRoots(roots: Map<string, DetectedSourceRoot>, rootDir: s
     candidates.add(relativeDir);
   }
 
+  for (const entry of walkUnskippedFiles(rootDir)) {
+    const normalized = normalizeRelative(entry);
+    const segments = normalized.split('/');
+    if (!sourceExtensionsSet.has(path.extname(normalized))) continue;
+
+    const sourceIndex = segments.findIndex((segment) => CONVENTIONAL_SOURCE_DIR_NAMES.has(segment));
+    if (sourceIndex >= ZERO) {
+      candidates.add(segments.slice(ZERO, sourceIndex + ONE).join('/'));
+      continue;
+    }
+
+    let content = '';
+    try {
+      content = readTextFile(safeJoin(rootDir, normalized), 'utf8');
+    } catch {
+      content = '';
+    }
+    if (hasFrameworkFileSignal(content, normalized)) {
+      const dynamicRoot = normalizeRelative(path.dirname(normalized));
+      if (dynamicRoot && dynamicRoot !== '.') candidates.add(dynamicRoot);
+    }
+  }
+
   for (const relativePath of candidates) {
-    const segments = relativePath.split('/');
-    const kind = inferKindFromFileEvidence(rootDir, segments[ZERO] ?? relativePath);
+    const kind = inferKindFromFileEvidence(rootDir, relativePath);
     const basis: SourceRootEvidenceBasis = kind === 'unknown' ? 'file-evidence' : 'import-graph';
     addRoot(roots, rootDir, relativePath, null, `${basis}:source-files`, basis, { kind });
   }
@@ -73,6 +100,11 @@ function addWeakFallbackRoots(roots: Map<string, DetectedSourceRoot>, rootDir: s
 
 export function detectSourceRoots(rootDir: string): DetectedSourceRoot[] {
   const absoluteRoot = path.resolve(rootDir);
+  const cached = sourceRootCache.get(absoluteRoot);
+  if (cached) {
+    return cached;
+  }
+
   const roots = new Map<string, DetectedSourceRoot>();
   const packages = discoverPackageDirs(absoluteRoot);
 
@@ -82,7 +114,9 @@ export function detectSourceRoots(rootDir: string): DetectedSourceRoot[] {
   addFileEvidenceRoots(roots, absoluteRoot);
   addWeakFallbackRoots(roots, absoluteRoot);
 
-  return [...roots.values()].sort((a, b) => a.relativePath.localeCompare(b.relativePath));
+  const detected = [...roots.values()].sort((a, b) => a.relativePath.localeCompare(b.relativePath));
+  sourceRootCache.set(absoluteRoot, detected);
+  return detected;
 }
 
 export function sourceGlobsForTsMorph(rootDir: string): string[] {

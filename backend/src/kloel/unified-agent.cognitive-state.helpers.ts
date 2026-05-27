@@ -2,7 +2,7 @@ import type { StructuredLogger } from '../logging/structured-logger';
 import type { AbiBuilderService } from './abi/abi-builder.service';
 import type { AbiSnapshotCacheService } from './abi/abi-snapshot-cache.service';
 import { validateAbiPayload } from './abi/abi-validator';
-import type { BrainCapabilityExecutorService } from './brain-capability-executor.service';
+import type { MindCapabilityExecutor } from './mind/coordination';
 interface BuildAgentCognitiveStateParams {
   workspaceId: string;
   currentInput: {
@@ -12,7 +12,7 @@ interface BuildAgentCognitiveStateParams {
   };
   abiBuilder?: AbiBuilderService;
   abiSnapshotCache?: AbiSnapshotCacheService;
-  brainCapability?: BrainCapabilityExecutorService;
+  brainCapability?: MindCapabilityExecutor;
   logger: Pick<StructuredLogger, 'warn' | 'log'>;
 }
 /**
@@ -32,7 +32,7 @@ export async function buildAgentCognitiveState(
   };
 
   let cognitiveSubstrate:
-    | Awaited<ReturnType<BrainCapabilityExecutorService['buildCognitiveSubstrate']>>
+    | Awaited<ReturnType<MindCapabilityExecutor['buildCognitiveSubstrate']>>
     | undefined;
   if (brainCapability) {
     try {
@@ -75,9 +75,7 @@ export async function buildAgentCognitiveState(
         );
         const cached = await abiSnapshotCache?.getCachedSnapshot(workspaceId);
         if (cached) {
-          logger.log(
-            `Using cached ABI snapshot for workspace ${workspaceId} (validation failed)`,
-          );
+          logger.log(`Using cached ABI snapshot for workspace ${workspaceId} (validation failed)`);
           cognitiveState = cached as object as Record<string, unknown>;
         } else {
           logger.warn(

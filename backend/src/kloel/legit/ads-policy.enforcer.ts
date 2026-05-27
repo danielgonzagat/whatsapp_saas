@@ -17,8 +17,8 @@ export function enforceAdsPolicy(input: PolicyEnforcementInput): PolicyEnforceme
   const warnings: string[] = [];
   const lowerContent = input.content.toLowerCase();
 
-  const matchedCategories = ADS_RESTRICTED_CATEGORIES_BR.filter(
-    (cat) => containsAny(input.content, [cat]),
+  const matchedCategories = ADS_RESTRICTED_CATEGORIES_BR.filter((cat) =>
+    containsAny(input.content, [cat]),
   );
 
   for (const category of matchedCategories) {
@@ -36,7 +36,15 @@ export function enforceAdsPolicy(input: PolicyEnforcementInput): PolicyEnforceme
     });
   }
 
-  const healthClaims = ['cura', 'tratamento', 'clinico', 'comprovado', 'medico', 'remedio', 'doenca'];
+  const healthClaims = [
+    'cura',
+    'tratamento',
+    'clinico',
+    'comprovado',
+    'medico',
+    'remedio',
+    'doenca',
+  ];
   const hasHealthClaim = healthClaims.some((claim) => lowerContent.includes(claim));
   const hasAnvisaRef = lowerContent.includes('anvisa');
 
@@ -47,7 +55,8 @@ export function enforceAdsPolicy(input: PolicyEnforcementInput): PolicyEnforceme
       userId: input.userId,
       policyName: 'anvisa_rdc_96_2008',
       severity: 'severe',
-      description: 'Health claims detected without ANVISA reference — prohibited for non-regulated products.',
+      description:
+        'Health claims detected without ANVISA reference — prohibited for non-regulated products.',
       source: 'ads-policy.enforcer',
       evidence: ['health_claim_without_anvisa'],
       detectedAt: new Date(nowMs).toISOString(),

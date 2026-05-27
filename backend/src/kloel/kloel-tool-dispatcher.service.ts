@@ -7,6 +7,12 @@ import { KloelBusinessConfigToolsService } from './kloel-business-config-tools.s
 import { KloelChatToolsService } from './kloel-chat-tools.service';
 import { KloelComposerService } from './kloel-composer.service';
 import { runToolSearchWeb } from './kloel-tool-dispatcher.search-web.helpers';
+import {
+  handleCodeAndReportTool,
+  handleProductTool,
+  handleSelfAwarenessTool,
+  handleDottedAliasTool,
+} from './kloel-tool-dispatcher.meta.helpers';
 import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { KloelCodeToolsService } from './kloel-code-tools.service';
@@ -40,31 +46,6 @@ function asNumber(value: unknown, fallback = 0): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
 }
 
-/** Resolve a period label to a `Date` floor. */
-function periodToSince(period: string | undefined): Date {
-  switch (period) {
-    case 'today': {
-      const d = new Date();
-      d.setHours(0, 0, 0, 0);
-      return d;
-    }
-    case 'week':
-      return new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    case 'month':
-      return new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    case 'year':
-      return new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
-    default:
-      return new Date(0);
-  }
-}
-
-/**
- * Dispatcher for KloelService tool execution. Extracted from kloel.service.ts
- * to keep the orchestrator file under the size limit and to host the
- * transactional audit log for financial tool calls (e.g. create_payment_link).
- */
-/** Idempotency: enforced at HTTP layer via @Idempotent() guard + Stripe idempotencyKey. */
 @Injectable()
 export class KloelToolDispatcherService {
   private readonly logger = StructuredLogger.from(KloelToolDispatcherService.name);
@@ -102,6 +83,12 @@ export class KloelToolDispatcherService {
   ): Promise<{ success: boolean; message?: string; error?: string; [key: string]: unknown }> {
     const asToolArgs = <T>(value: UnknownRecord): T => value as T;
 
+    const receiptDeps = {
+      prisma: this.prisma,
+      chatToolsService: this.chatToolsService,
+      capRegistryV2: this.capRegistryV2,
+    };
+
     if (!workspaceId || typeof workspaceId !== 'string' || !workspaceId.trim()) {
       return { success: false, error: 'workspace_id_required' };
     }
@@ -123,200 +110,41 @@ export class KloelToolDispatcherService {
     }
     this.logger.log(`Executando ferramenta: ${toolName}`);
     try {
+      const productResult = await handleProductTool(receiptDeps, workspaceId, toolName, args, userId);
+      if (productResult) return productResult;
+
+      const selfAwarenessResult = await handleSelfAwarenessTool(
+        {
+          auditService: this.auditService,
+          selfHealth: this.selfHealth,
+          selfGaps: this.selfGaps,
+          capRegistryV2: this.capRegistryV2,
+        },
+        workspaceId,
+        toolName,
+        args,
+      );
+      if (selfAwarenessResult) return selfAwarenessResult;
+
+      const codeOrReportResult = await handleCodeAndReportTool(
+        {
+          codeToolsService: this.codeToolsService,
+          codeAnalysisService: this.codeAnalysisService,
+          reportService: this.reportService,
+        },
+        workspaceId,
+        toolName,
+        args,
+      );
+      if (codeOrReportResult) return codeOrReportResult;
+
+      const dottedAliasResult = await handleDottedAliasTool(
+        receiptDeps, workspaceId, toolName, args, userId,
+        (baseTool) => this.executeTool(workspaceId, baseTool, args, userId),
+      );
+      if (dottedAliasResult) return dottedAliasResult;
+
       switch (toolName) {
-        case 'save_product':
-        case 'create_product':
-          return await this.chatToolsService.toolSaveProduct(workspaceId, asToolArgs(args));
-        case 'products.create':
-          return this.executeTool(workspaceId, 'create_product', args, userId);
-        case 'list_products':
-          return await this.chatToolsService.toolListProducts(workspaceId);
-        case 'update_product':
-          return await this.chatToolsService.toolUpdateProduct(workspaceId, asToolArgs(args));
-        case 'products.update':
-          return this.executeTool(workspaceId, 'update_product', args, userId);
-        // ── SELF-AWARENESS (TIER-0 meta-cognitive capabilities) ──
-        case 'self.audit_log': {
-          const limit =
-            typeof args.limit === 'number' && args.limit > 0 ? Math.min(args.limit, 100) : 20;
-          const entries = await this.auditService.recentForWorkspace(workspaceId, limit);
-          return {
-            success: true,
-            capabilityId: 'self.audit_log',
-            outputs: {
-              entries: entries.map((e) => ({
-                id: e.id,
-                actor: e.agent?.name ?? e.agentId ?? 'system',
-                capability: e.action,
-                success: true,
-                timestamp: e.createdAt.toISOString(),
-                evidenceUrl: undefined,
-              })),
-            },
-            message: `Últimas ${entries.length} ações executadas`,
-          };
-        }
-
-        case 'self.explain': {
-          const capabilityId = typeof args.capabilityId === 'string' ? args.capabilityId : '';
-          const receiptId = typeof args.lastReceiptId === 'string' ? args.lastReceiptId : undefined;
-
-          if (receiptId) {
-            const entry = await this.auditService.findById(workspaceId, receiptId);
-            if (!entry) {
-              return { success: false, error: 'receipt_not_found' };
-            }
-            return {
-              success: true,
-              capabilityId: 'self.explain',
-              outputs: {
-                id: entry.id,
-                action: entry.action,
-                resource: entry.resource,
-                inputs: (entry.details ?? {}) as Record<string, unknown>,
-                timestamp: entry.createdAt.toISOString(),
-                agent: entry.agent?.name ?? entry.agentId ?? 'system',
-              },
-              message: `Detalhes da ação ${entry.action}`,
-            };
-          }
-
-          if (!capabilityId) {
-            return { success: false, error: 'capabilityId_or_lastReceiptId_required' };
-          }
-
-          const cap = this.capRegistryV2?.get(capabilityId);
-          if (!cap) {
-            return { success: false, error: 'capability_not_found' };
-          }
-          return {
-            success: true,
-            capabilityId: 'self.explain',
-            outputs: {
-              id: cap.id,
-              title: cap.title,
-              description: cap.description,
-              tier: cap.tier,
-              category: cap.category,
-              requiresConfirmation: cap.requiresConfirmation,
-              inputSchema: cap.inputSchema,
-              surface: cap.surface,
-            },
-            message: cap.description,
-          };
-        }
-
-        case 'self.gaps': {
-          if (!this.selfGaps) {
-            return { success: false, error: 'self_gaps_service_unavailable' };
-          }
-          const result = this.selfGaps.diffRegistryVsDispatcher();
-          return {
-            success: true,
-            capabilityId: 'self.gaps',
-            outputs: {
-              unwiredCount: result.unwired.length,
-              unwired: result.unwired.map((c) => ({
-                id: c.id,
-                title: c.title,
-                tier: c.tier,
-              })),
-            },
-            message: `${result.unwired.length} capacidades declaradas mas sem dispatcher case`,
-          };
-        }
-
-        case 'self.health': {
-          if (!this.selfHealth) {
-            return { success: false, error: 'self_health_service_unavailable' };
-          }
-          const snapshot = await this.selfHealth.snapshot(workspaceId);
-          return {
-            success: true,
-            capabilityId: 'self.health',
-            outputs: snapshot,
-          };
-        }
-
-        case 'self.capabilities':
-        case 'list_capabilities':
-          return {
-            success: true,
-            capabilities: [
-              'create_product',
-              'update_product',
-              'list_products',
-              'delete_product',
-              'create_plan',
-              'update_plan',
-              'get_product_plans',
-              'create_checkout',
-              'update_checkout',
-              'list_checkouts',
-              'create_coupon',
-              'update_coupon',
-              'delete_coupon',
-              'list_coupons',
-              'validate_coupon',
-              'generate_pix',
-              'generate_boleto',
-              'create_payment_link',
-              'list_orders',
-              'get_order_details',
-              'get_sales_summary',
-              'get_abandonments',
-              'list_leads',
-              'get_lead_details',
-              'get_wallet_balance',
-              'get_wallet_statement',
-              'request_withdrawal',
-              'request_anticipation',
-              'get_dashboard_summary',
-              'get_analytics',
-              'toggle_theme',
-              'get_settings',
-              'update_personal_data',
-              'update_fiscal_data',
-              'upload_document',
-              'configure_shipping',
-              'configure_warranty',
-              'configure_pixel',
-              'configure_social_proof',
-              'configure_exit_intent',
-              'configure_order_bump',
-              'configure_after_pay',
-              'list_affiliates',
-              'get_affiliate_config',
-              'update_affiliate_config',
-              'browse_marketplace',
-              'get_product_reviews',
-              'get_product_urls',
-              'list_subscriptions',
-              'update_subscription',
-              'search_agent_memory',
-              'search_agent_sessions',
-              'search_web',
-              'search_codebase',
-              'read_source_file',
-              'connect_whatsapp',
-              'get_whatsapp_status',
-              'send_whatsapp_message',
-              'send_channel_message',
-              'create_broadcast',
-              'create_campaign',
-              'create_flow',
-              'list_flows',
-              'toggle_autopilot',
-              'configure_ai_persona',
-              'update_billing_info',
-              'get_billing_status',
-              'change_plan',
-              'remember_user_info',
-              'get_product_details',
-              'self.inspect',
-              'self.health',
-            ],
-          };
         case 'toggle_autopilot':
           return await this.chatToolsService.toolToggleAutopilot(workspaceId, asToolArgs(args));
         case 'set_brand_voice':
@@ -390,18 +218,6 @@ export class KloelToolDispatcherService {
             });
           }
           return { success: false, error: 'checkout_service_unavailable' };
-        case 'plans.create':
-          return this.executeTool(workspaceId, 'create_plan', args, userId);
-        case 'plans.update':
-          return this.executeTool(workspaceId, 'update_plan', args, userId);
-        case 'checkouts.create':
-          return this.executeTool(workspaceId, 'create_checkout', args, userId);
-        case 'checkouts.update':
-          return this.executeTool(workspaceId, 'update_checkout', args, userId);
-        case 'coupons.create':
-          return this.executeTool(workspaceId, 'create_coupon', args, userId);
-        case 'coupons.delete':
-          return this.executeTool(workspaceId, 'delete_coupon', args, userId);
         case 'plan_create':
         case 'create_plan':
         case 'update_plan':
@@ -502,10 +318,6 @@ export class KloelToolDispatcherService {
           return await this.chatToolsService.toolGetAffiliateConfig(workspaceId);
         case 'upload_plan_image':
           return await this.chatToolsService.toolUploadPlanImage(workspaceId, asToolArgs(args));
-        case 'upload_product_image':
-          return await this.chatToolsService.toolUploadProductImage(workspaceId, asToolArgs(args));
-        case 'products.upload_image':
-          return this.executeTool(workspaceId, 'upload_product_image', args, userId);
         case 'update_personal_data':
           if (!this.accountService) {
             return { success: false, error: 'account_service_unavailable' };
@@ -695,108 +507,6 @@ export class KloelToolDispatcherService {
           return await this.bizConfigToolsService.toolGetBillingStatus(workspaceId);
         case 'change_plan':
           return await this.requestHighRiskApproval(workspaceId, toolName, args, userId);
-        case 'read_source_file':
-          return await this.codeToolsService.toolReadSourceFile(
-            typeof args.path === 'string' ? args.path : '',
-            typeof args.startLine === 'number' ? args.startLine : undefined,
-            typeof args.endLine === 'number' ? args.endLine : undefined,
-          );
-        case 'list_source_dir':
-          return await this.codeToolsService.toolListSourceDir(
-            typeof args.path === 'string' ? args.path : undefined,
-          );
-        case 'search_codebase':
-          return await this.codeToolsService.toolSearchCodebase(
-            typeof args.pattern === 'string' ? args.pattern : '',
-            typeof args.glob === 'string' ? args.glob : undefined,
-          );
-        case 'code_outline':
-          return await this.codeToolsService.toolCodeOutline(
-            typeof args.path === 'string' ? args.path : '',
-          );
-        case 'read_prisma_schema':
-          return await this.codeToolsService.toolReadPrismaSchema();
-        case 'git_log':
-          return await this.codeToolsService.toolGitLog(
-            typeof args.count === 'number' ? args.count : undefined,
-          );
-        case 'git_diff':
-          return await this.codeToolsService.toolGitDiff(
-            typeof args.target === 'string' ? args.target : undefined,
-          );
-        case 'git_status':
-          return await this.codeToolsService.toolGitStatus();
-        case 'run_backend_tests':
-          return await this.codeToolsService.toolRunBackendTests(
-            typeof args.pattern === 'string' ? args.pattern : undefined,
-          );
-        case 'build_status':
-          return await this.codeToolsService.toolBuildStatus(
-            typeof args.scope === 'string' ? args.scope : undefined,
-          );
-        case 'code_lint':
-          return await this.codeAnalysisService.toolCodeLint(
-            typeof args.path === 'string' ? args.path : '',
-          );
-        case 'code_detect_issues':
-          return await this.codeAnalysisService.toolCodeDetectIssues(
-            typeof args.path === 'string' ? args.path : '',
-          );
-        // ── CODEGRAPH (Meta 1 — knowledge-graph code intelligence) ──
-        case 'codegraph_status':
-          return await this.codeToolsService.toolCodeGraphStatus();
-        case 'codegraph_search':
-          return await this.codeToolsService.toolCodeGraphSearch(
-            typeof args.query === 'string' ? args.query : '',
-          );
-        case 'codegraph_context':
-          return await this.codeToolsService.toolCodeGraphContext(
-            typeof args.task === 'string' ? args.task : 'overview',
-          );
-        case 'codegraph_callers':
-          return await this.codeToolsService.toolCodeGraphCallers(
-            typeof args.symbol === 'string' ? args.symbol : '',
-          );
-        case 'codegraph_callees':
-          return await this.codeToolsService.toolCodeGraphCallees(
-            typeof args.symbol === 'string' ? args.symbol : '',
-          );
-        case 'codegraph_impact':
-          return await this.codeToolsService.toolCodeGraphImpact(
-            typeof args.symbol === 'string' ? args.symbol : '',
-          );
-        case 'codegraph_node':
-          return await this.codeToolsService.toolCodeGraphNode(
-            typeof args.symbol === 'string' ? args.symbol : '',
-          );
-        case 'codegraph_files':
-          return await this.codeToolsService.toolCodeGraphFiles();
-        // ── REPORTS (w25) ──
-        case 'reports.operations': {
-          if (!this.reportService) {
-            return { success: false, error: 'report_service_unavailable' };
-          }
-          const period = typeof args?.period === 'string' ? args.period : undefined;
-          const since = periodToSince(period);
-          const res = await this.reportService.operations(workspaceId, { since });
-          return { success: true, ...res };
-        }
-        case 'reports.abandonments': {
-          if (!this.reportService) {
-            return { success: false, error: 'report_service_unavailable' };
-          }
-          const period = typeof args?.period === 'string' ? args.period : undefined;
-          const since = periodToSince(period);
-          const res = await this.reportService.abandonments(workspaceId, { since });
-          return { success: true, ...res };
-        }
-        case 'crm.pipeline': {
-          if (!this.reportService) {
-            return { success: false, error: 'report_service_unavailable' };
-          }
-          const res = await this.reportService.pipeline(workspaceId);
-          return { success: true, ...res };
-        }
         default:
           return { success: false, error: `Ferramenta desconhecida: ${toolName}` };
       }
@@ -875,6 +585,11 @@ export class KloelToolDispatcherService {
     approvalRequestId: string;
     userId?: string;
   }): Promise<ApprovedToolExecutionResult> {
-    return runExecuteApprovedApprovalRequest(this.prisma, this.bizConfigToolsService, input);
+    return runExecuteApprovedApprovalRequest(
+      this.prisma,
+      this.bizConfigToolsService,
+      this.chatToolsService,
+      input,
+    );
   }
 }

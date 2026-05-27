@@ -39,15 +39,17 @@ function validAbi(): Record<string, unknown> {
     attention: { candidates: [] },
     memory: { workingMemory: [], episodicRefs: [], consolidatedRefs: [] },
     capabilities: {
-      available: [
-        { capabilityId: 'lineage', maturity: 'developing', runtimeEvidencePct: 5 },
-      ],
+      available: [{ capabilityId: 'lineage', maturity: 'developing', runtimeEvidencePct: 5 }],
       restricted: [],
     },
     valence: {
       recentTrace: [],
       aggregatedMood: {
-        positive: 0, negative: 0, neutral: 1, ambiguous: 0, windowHours: 24,
+        positive: 0,
+        negative: 0,
+        neutral: 1,
+        ambiguous: 0,
+        windowHours: 24,
       },
     },
     pulseTruth: {
@@ -73,13 +75,20 @@ function check(payload: unknown, mode?: 'log_only' | 'hard_fail'): GateVerdict {
   return makePromptLeakageGate(mode).check(payload);
 }
 
-function tamperCurrentInput(payload: Record<string, unknown>, raw: string): Record<string, unknown> {
+function tamperCurrentInput(
+  payload: Record<string, unknown>,
+  raw: string,
+): Record<string, unknown> {
   const out = { ...payload };
   out['currentInput'] = { ...(payload['currentInput'] as Record<string, unknown>), raw };
   return out;
 }
 
-function tamperDeep(payload: Record<string, unknown>, path: string[], value: string): Record<string, unknown> {
+function tamperDeep(
+  payload: Record<string, unknown>,
+  path: string[],
+  value: string,
+): Record<string, unknown> {
   const out = { ...payload };
   let cursor: Record<string, unknown> = out;
   for (let i = 0; i < path.length - 1; i++) {

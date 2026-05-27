@@ -47,9 +47,19 @@ describe('AdminAccountsController', () => {
       const mockResult = { items: [], total: 0 };
       accounts.list.mockResolvedValue(mockResult);
 
-      const result = await controller.list({ search: 'kloel', kycStatus: 'pending', skip: 0, take: 10 });
+      const result = await controller.list({
+        search: 'kloel',
+        kycStatus: 'pending',
+        skip: 0,
+        take: 10,
+      });
 
-      expect(accounts.list).toHaveBeenCalledWith({ search: 'kloel', kycStatus: 'pending', skip: 0, take: 10 });
+      expect(accounts.list).toHaveBeenCalledWith({
+        search: 'kloel',
+        kycStatus: 'pending',
+        skip: 0,
+        take: 10,
+      });
       expect(result).toBe(mockResult);
     });
 
@@ -93,7 +103,11 @@ describe('AdminAccountsController', () => {
       accounts.bulkUpdateState.mockResolvedValue(mockResult);
 
       const result = await controller.bulkUpdateState(
-        { workspaceIds: ['ws-1', 'ws-2'], action: AdminAccountStateAction.SUSPEND, reason: 'Violation' },
+        {
+          workspaceIds: ['ws-1', 'ws-2'],
+          action: AdminAccountStateAction.SUSPEND,
+          reason: 'Violation',
+        },
         admin,
       );
 
@@ -128,7 +142,11 @@ describe('AdminAccountsController', () => {
 
   describe('POST /admin/accounts/:workspaceId/reset-password (resetPassword)', () => {
     it('calls service.resetOwnerPassword with workspaceId, admin.id, and temporaryPassword', async () => {
-      const mockResult = { ownerAgentId: 'agent-1', ownerEmail: 'o@x.com', temporaryPassword: 'tmp123' };
+      const mockResult = {
+        ownerAgentId: 'agent-1',
+        ownerEmail: 'o@x.com',
+        temporaryPassword: 'tmp123',
+      };
       accounts.resetOwnerPassword.mockResolvedValue(mockResult);
 
       const result = await controller.resetPassword('ws-1', { temporaryPassword: 'tmp123' }, admin);

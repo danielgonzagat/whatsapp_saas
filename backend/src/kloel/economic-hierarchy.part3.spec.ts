@@ -1,4 +1,8 @@
-import { attributeHierarchy, type HierarchyDecision, type HierarchyLevel } from './economic-hierarchy';
+import {
+  attributeHierarchy,
+  type HierarchyDecision,
+  type HierarchyLevel,
+} from './economic-hierarchy';
 
 describe('economic-hierarchy', () => {
   const h = (overrides: Partial<HierarchyDecision> = {}): HierarchyDecision => ({
@@ -85,7 +89,12 @@ describe('economic-hierarchy', () => {
         h({
           type: 'apply_discount',
           chosen: 'coupon_10',
-          context: { discountPercent: 10, channelMaxDiscount: 15, marginRemaining: 30, churnRisk: 0.9 },
+          context: {
+            discountPercent: 10,
+            channelMaxDiscount: 15,
+            marginRemaining: 30,
+            churnRisk: 0.9,
+          },
         }),
       );
       expect(result.level).toBe('margin');

@@ -1,11 +1,23 @@
-import { IsBoolean, IsIn, IsNumber, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsIn,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 /** Set checkout timer dto. */
 export class SetCheckoutTimerDto {
   /** Enable timer property. */
   @IsOptional() @IsBoolean() enableTimer?: boolean;
   /** Timer type property. */
-  @IsOptional() @IsIn(['COUNTDOWN', 'EXPIRATION', 'STOCK']) timerType?: 'COUNTDOWN' | 'EXPIRATION' | 'STOCK';
+  @IsOptional() @IsIn(['COUNTDOWN', 'EXPIRATION', 'STOCK']) timerType?:
+    | 'COUNTDOWN'
+    | 'EXPIRATION'
+    | 'STOCK';
   /** Timer minutes property. */
   @IsOptional() @IsNumber() @Min(0) @Max(999999) timerMinutes?: number;
   /** Timer message property. */
