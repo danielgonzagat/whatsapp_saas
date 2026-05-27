@@ -105,7 +105,7 @@ describe('coverage-fill: Dial selection + small CTA size', () => {
     expect(btn.style.padding).toBe('0px 18px');
   });
 
-  it('Dial pre-selected segment paints ember and other segments use inactiveTrace', () => {
+  it('Dial pre-selected segment paints ember and inactive segments use the trace token', () => {
     const onChange = vi.fn();
     render(
       <Dial C={D} label="L" value={0} onChange={onChange} labels={['A', 'B', 'C'] as const} />,
