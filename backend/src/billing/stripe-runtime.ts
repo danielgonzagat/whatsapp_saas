@@ -58,8 +58,7 @@ function resolveStripeConstructor(): typeof import('stripe') {
   ];
   for (const { fn, source } of candidates) {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const Ctor = fn as unknown as new (...args: any[]) => unknown;
+      const Ctor = fn as unknown as new (...args: unknown[]) => unknown;
       const probe: unknown = new Ctor('sk_test_stripe_runtime_probe');
       if (!probe || typeof probe !== 'object') {
         failures.push(`${source}: probe is ${typeof probe}`);
