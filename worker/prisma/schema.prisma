@@ -216,6 +216,7 @@ model Workspace {
   kloelSales              KloelSale[]
   kloelWallets            KloelWallet[]
   kloelSites              KloelSite[]
+  sites                   Site[]
   kloelDesigns            KloelDesign[]
   checkoutSocialLeads     CheckoutSocialLead[]
   customerSubscriptions   CustomerSubscription[]
@@ -4583,4 +4584,71 @@ model LineageEntry {
   @@index([sequenceNumber])
   @@index([eventName])
   @@map("RAC_LineageEntry")
+}
+
+// ============================================
+// SITES MODULE — Site Builder CRUD
+// ============================================
+
+enum SiteStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum DnsStatus {
+  PENDING
+  VERIFIED
+  FAILED
+}
+
+model Site {
+  id          String     @id @default(uuid())
+  workspaceId String
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name        String
+  slug        String
+  status      SiteStatus @default(DRAFT)
+  template    String?
+  content     Json       @default("{}")
+  seoMeta     Json       @default("{}")
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  publishedAt DateTime?
+
+  domains SiteDomain[]
+  apps    SiteAppIntegration[]
+
+  @@unique([workspaceId, slug])
+  @@index([workspaceId])
+  @@index([workspaceId, status])
+  @@map("RAC_Site")
+}
+
+model SiteDomain {
+  id         String    @id @default(uuid())
+  siteId     String
+  site       Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  hostname   String    @unique
+  isCustom   Boolean   @default(false)
+  dnsStatus  DnsStatus @default(PENDING)
+  sslStatus  String    @default("PENDING")
+  createdAt  DateTime  @default(now())
+
+  @@index([siteId])
+  @@map("RAC_SiteDomain")
+}
+
+model SiteAppIntegration {
+  id        String   @id @default(uuid())
+  siteId    String
+  site      Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  appKey    String
+  config    Json     @default("{}")
+  enabled   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@unique([siteId, appKey])
+  @@index([siteId])
+  @@map("RAC_SiteAppIntegration")
 }
