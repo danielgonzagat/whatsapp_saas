@@ -6,7 +6,7 @@ import { SpineModule } from '../kloel/spine/spine.module';
 import { WhatsappModule } from '../whatsapp/whatsapp.module';
 import { CiaAutonomyAdvisorService } from '../kloel/mind/cia/cia-autonomy-advisor.service';
 import { CiaBacklogRunService } from './cia-backlog-run.service';
-import { CiaBootstrapService } from './cia-bootstrap.service';
+import { CiaBootstrapService } from '../kloel/mind/cia/cia-bootstrap.service';
 import { CiaChatFilterService } from '../kloel/mind/cia/cia-chat-filter.service';
 import { CiaCognitiveHealthService } from '../kloel/mind/cia/cia-cognitive-health.service';
 import { CiaInlineFallbackService } from './cia-inline-fallback.service';
