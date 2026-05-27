@@ -1,8 +1,8 @@
 # ADR-0013 Wave M5 — Batch 1 Physical Move Report
 
-**Date:** 2026-05-26  
-**Phase:** Wave M5 — Physical move of Mind* services into canonical sub-areas  
-**Batch:** 1 of N (3 self-contained, low-risk services)  
+**Date:** 2026-05-26
+**Phase:** Wave M5 — Physical move of Mind* services into canonical sub-areas
+**Batch:** 1 of N (3 self-contained, low-risk services)
 
 ---
 

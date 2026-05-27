@@ -1,8 +1,8 @@
 # SARIF Curly Autofix Report
 
-**Date**: 2026-05-26  
-**Scope**: `backend/src/**/*.ts` — curly rule autofix only  
-**Method**: `npx eslint --fix` with non-curly autofixable rules disabled via `--rule` overrides  
+**Date**: 2026-05-26
+**Scope**: `backend/src/**/*.ts` — curly rule autofix only
+**Method**: `npx eslint --fix` with non-curly autofixable rules disabled via `--rule` overrides
 
 ## Before / After
 
@@ -19,11 +19,11 @@
 ## Change Verification
 
 ### Git diff
-All 228 files show **pure brace additions** — `if (x) stmt;` → `if (x) { stmt; }`.  
+All 228 files show **pure brace additions** — `if (x) stmt;` → `if (x) { stmt; }`.
 Equal insert/delete counts (1,192 each) confirm no other rule changes leaked in.
 
 ### TypeScript compilation
-`tsc -p backend/tsconfig.json --noEmit` reports **33 pre-existing type errors**.  
+`tsc -p backend/tsconfig.json --noEmit` reports **33 pre-existing type errors**.
 **Zero new errors** introduced by the brace additions.
 
 ### SARIF regeneration
