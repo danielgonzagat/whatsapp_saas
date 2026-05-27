@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { StructuredLogger } from '../logging/structured-logger';
-import { PrismaService } from '../prisma/prisma.service';
-import type { MindPerceptEvent } from './mind.types';
+import { StructuredLogger } from '../../../logging/structured-logger';
+import { PrismaService } from '../../../prisma/prisma.service';
+import type { MindPerceptEvent } from '../../mind.types';
 
 @Injectable()
 export class MindPerceptionService {

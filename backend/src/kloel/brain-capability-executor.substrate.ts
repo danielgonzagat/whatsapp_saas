@@ -1,5 +1,5 @@
 import type { PrismaService } from '../prisma/prisma.service';
-import type { MindPerceptionService } from './mind-perception.service';
+import type { MindPerceptionService } from './mind/perception/mind-perception.service';
 import type { MemoryProjector } from './commem/memory.projector';
 import type { MindPerceptEvent } from './mind.types';
 import type { SpineEventRef } from './mind/mind.types';

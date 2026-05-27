@@ -152,7 +152,7 @@ import { MindEventProcessorService } from './mind-event-processor.service';
 import { MindGuardContextBuilderService } from './mind-guard-context-builder.service';
 import { MindGuardsService } from './mind/policy/mind-guards.service';
 import { MindObservabilityService } from './mind-observability.service';
-import { MindPerceptionService } from './mind-perception.service';
+import { MindPerceptionService } from './mind/perception/mind-perception.service';
 import { MindPolicyService } from './mind-policy.service';
 import { MindPredictorService } from './mind-predictor.service';
 import { MindProcessorService } from './mind-processor.service';

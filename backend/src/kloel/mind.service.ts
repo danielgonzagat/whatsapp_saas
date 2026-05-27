@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto';
 import { MindBeliefService } from './mind-belief.service';
 import { MindCaseMemoryService } from './mind-case-memory.service';
 import { MindEventProcessorService } from './mind-event-processor.service';
-import { MindPerceptionService } from './mind-perception.service';
+import { MindPerceptionService } from './mind/perception/mind-perception.service';
 import { MindPolicyService } from './mind-policy.service';
 import { MindSurpriseService } from './mind-surprise.service';
 import type { MindTick } from './mind.types';
