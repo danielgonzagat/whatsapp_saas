@@ -1,29 +1,29 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Inject, Injectable, Optional, forwardRef } from '@nestjs/common';
 import Redis from 'ioredis';
-import { forEachSequential } from '../common/async-sequence';
-import { createRedisClient } from '../common/redis/redis.util';
-import { NeuroCrmService } from '../crm/neuro-crm.service';
-import { INBOX_SERVICE } from '../inbox/inbox.token';
-import type { IInboxService } from '../inbox/inbox.interface';
-import { StructuredLogger } from '../logging/structured-logger';
-import { OpsAlertService } from '../observability/ops-alert.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { buildQueueDedupId, buildQueueJobId } from '../queue/job-id.util';
-import { autopilotQueue, flowQueue } from '../queue/queue';
-import { WorkspaceService } from '../workspaces/workspace.service';
-import { DecisionOutcomeService } from '../kloel/decision-outcome.service';
-import { WhatsAppProviderRegistry } from './providers/provider-registry';
-import { isPlaceholderContactName as isPlaceholderName } from '../marketing/channels/whatsapp/whatsapp-normalization.util';
-import { TAG_DEFAULT_COLORS } from '../common/kloel-colors';
+import { forEachSequential } from '../../../common/async-sequence';
+import { createRedisClient } from '../../../common/redis/redis.util';
+import { NeuroCrmService } from '../../../crm/neuro-crm.service';
+import { INBOX_SERVICE } from '../../../inbox/inbox.token';
+import type { IInboxService } from '../../../inbox/inbox.interface';
+import { StructuredLogger } from '../../../logging/structured-logger';
+import { OpsAlertService } from '../../../observability/ops-alert.service';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { buildQueueDedupId, buildQueueJobId } from '../../../queue/job-id.util';
+import { autopilotQueue, flowQueue } from '../../../queue/queue';
+import { WorkspaceService } from '../../../workspaces/workspace.service';
+import { DecisionOutcomeService } from '../../../kloel/decision-outcome.service';
+import { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
+import { isPlaceholderContactName as isPlaceholderName } from './whatsapp-normalization.util';
+import { TAG_DEFAULT_COLORS } from '../../../common/kloel-colors';
 import {
   normalizeJsonObjExt,
   normalizeHashExt,
   isAutonomousEnabledExt,
   normalizeNumber,
-} from '../marketing/channels/whatsapp/whatsapp-service.helpers';
+} from './whatsapp-service.helpers';
 import type { ProviderSettings } from './provider-settings.types';
-import { NON_DIGIT_RE } from '../common/phone';
+import { NON_DIGIT_RE } from '../../../common/phone';
 
 type ExternalProviderPayload = Record<string, unknown>;
 

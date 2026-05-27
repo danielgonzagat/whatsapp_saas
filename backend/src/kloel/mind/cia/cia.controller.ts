@@ -1,9 +1,9 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { WorkspaceGuard } from '../common/guards/workspace.guard';
-import { CiaService } from './cia.service';
-import { RouteClass } from '../common/throttler/route-class.decorator';
+import { JwtAuthGuard } from '../../../auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../../../common/guards/workspace.guard';
+import { CiaService } from '../../../cia/cia.service';
+import { RouteClass } from '../../../common/throttler/route-class.decorator';
 
 /** Cia controller. */
 @ApiTags('CIA')

@@ -1,17 +1,17 @@
-import { expectValueOf } from '../../test/expect-value-of';
+import { expectValueOf } from '../../../../test/expect-value-of';
 import { Test, TestingModule } from '@nestjs/testing';
 import Redis from 'ioredis';
-import { INBOX_SERVICE } from '../inbox/inbox.token';
-import type { IInboxService } from '../inbox/inbox.interface';
-import { DecisionOutcomeService } from '../kloel/decision-outcome.service';
-import { NeuroCrmService } from '../crm/neuro-crm.service';
-import { OpsAlertService } from '../observability/ops-alert.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { WorkspaceService } from '../workspaces/workspace.service';
-import { WhatsAppProviderRegistry } from './providers/provider-registry';
+import { INBOX_SERVICE } from '../../../inbox/inbox.token';
+import type { IInboxService } from '../../../inbox/inbox.interface';
+import { DecisionOutcomeService } from '../../../kloel/decision-outcome.service';
+import { NeuroCrmService } from '../../../crm/neuro-crm.service';
+import { OpsAlertService } from '../../../observability/ops-alert.service';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { WorkspaceService } from '../../../workspaces/workspace.service';
+import { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
 import { WhatsappReconcilerService } from './whatsapp-reconciler.service';
 
-jest.mock('../queue/queue', () => ({
+jest.mock('../../../queue/queue', () => ({
   flowQueue: { add: jest.fn().mockResolvedValue(undefined) },
   autopilotQueue: { add: jest.fn().mockResolvedValue(undefined) },
 }));
@@ -123,7 +123,7 @@ describe('WhatsappReconcilerService', () => {
     });
 
     it('enqueues resume-flow job', async () => {
-      const { flowQueue } = require('../queue/queue');
+      const { flowQueue } = require('../../../queue/queue');
       await service.handleIncoming('ws-1', '5511999991234', 'hello');
       expect(flowQueue.add).toHaveBeenCalledWith(
         'resume-flow',
@@ -137,7 +137,7 @@ describe('WhatsappReconcilerService', () => {
       workspaces.getWorkspace.mockResolvedValue(ws);
       inbox.saveMessageByPhone.mockResolvedValue({ id: 'msg-2', contactId: 'c-2' });
       redis.set.mockResolvedValue('OK');
-      const { autopilotQueue } = require('../queue/queue');
+      const { autopilotQueue } = require('../../../queue/queue');
       await service.handleIncoming('ws-1', '5511999991234', 'hello');
       expect(autopilotQueue.add).toHaveBeenCalledWith(
         'scan-contact',
@@ -149,7 +149,7 @@ describe('WhatsappReconcilerService', () => {
     it('enqueues hot-flow when keyword matches and hotFlowId is set', async () => {
       const ws = makeWorkspace({ autopilot: { enabled: false, hotFlowId: 'flow-99' } });
       workspaces.getWorkspace.mockResolvedValue(ws);
-      const { flowQueue } = require('../queue/queue');
+      const { flowQueue } = require('../../../queue/queue');
       flowQueue.add.mockClear();
       await service.handleIncoming('ws-1', '5511999991234', 'quanto custa?');
       const runFlowCall = flowQueue.add.mock.calls.find(
