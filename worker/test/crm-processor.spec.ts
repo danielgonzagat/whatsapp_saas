@@ -128,9 +128,7 @@ beforeAll(async () => {
   engineMock = mockEngine;
 
   const enrichment = await import('../providers/checkout-social-lead-enrichment');
-  enrichmentMock = enrichment.processCheckoutSocialLeadEnrichment as ReturnType<
-    typeof vi.fn
-  >;
+  enrichmentMock = enrichment.processCheckoutSocialLeadEnrichment as ReturnType<typeof vi.fn>;
 
   const pl = await import('../providers/plan-limits');
   planLimitsMock = pl.PlanLimitsProvider.checkMessageLimit as ReturnType<typeof vi.fn>;

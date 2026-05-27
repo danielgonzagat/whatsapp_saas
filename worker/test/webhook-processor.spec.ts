@@ -6,11 +6,11 @@ class MockWorkerLogger {
   public info = vi.fn();
   public warn = vi.fn();
   public error = vi.fn();
-  constructor(_context: string) {
+  constructor() {
     // no-op
   }
 
-  withContext(_correlationId: string, _workspaceId?: string) {
+  withContext() {
     return {
       info: vi.fn(),
       warn: vi.fn(),
@@ -181,7 +181,7 @@ describe('webhook-processor', () => {
       start: process.hrtime.bigint(),
     });
     validateUrlMock.mockResolvedValue({ valid: false, error: 'private IP blocked' });
-    throwIfRetryableMock.mockImplementation((err: Error, _ctx: string) => {
+    throwIfRetryableMock.mockImplementation((err: Error) => {
       throw err;
     });
 
@@ -245,7 +245,7 @@ describe('webhook-processor', () => {
     });
     validateUrlMock.mockResolvedValue({ valid: true });
     axiosPostMock.mockRejectedValue(new Error('socket hang up'));
-    throwIfRetryableMock.mockImplementation((err: Error, _ctx: string) => {
+    throwIfRetryableMock.mockImplementation((err: Error) => {
       throw err;
     });
 

@@ -41,7 +41,14 @@
  * that importing this module opens zero connections.
  */
 
-import { Queue as BullQueue, type ConnectionOptions, type Job, type QueueOptions, QueueEvents, Worker } from 'bullmq';
+import {
+  Queue as BullQueue,
+  type ConnectionOptions,
+  type Job,
+  type QueueOptions,
+  QueueEvents,
+  Worker,
+} from 'bullmq';
 import Redis, { type RedisOptions } from 'ioredis';
 import { maskRedisUrl, resolveRedisUrl } from './resolve-redis-url';
 
