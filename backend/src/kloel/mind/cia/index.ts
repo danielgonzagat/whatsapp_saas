@@ -46,3 +46,5 @@ export {
   type CiaBacklogOptions,
   type CiaRuntimePort,
 } from './cia-runtime.port';
+
+export { CiaRuntimeService as WhatsappCiaRuntimeService } from './cia-runtime.abstract';
