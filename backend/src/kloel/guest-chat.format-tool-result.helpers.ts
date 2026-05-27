@@ -70,8 +70,27 @@ export function formatToolResult(tool: string, result: unknown): string {
       return `Cupons: ${coupons.map((c) => `${s(c.code)} (${s(c.discountType)})`).join(', ')}`;
     }
     case 'self.capabilities':
-    case 'list_capabilities':
-      return 'Posso ajudar com: criar/editar produtos, planos, checkouts, cupons, PIX, boletos, vendas, CRM, carteira, relatorios, configuracoes e mais. Pergunte!';
+    case 'list_capabilities': {
+      if (typeof r.message === 'string') {
+        return r.message;
+      }
+      const outputs = (r.outputs as Record<string, unknown> | undefined) ?? {};
+      const total = typeof outputs.total === 'number' ? outputs.total : undefined;
+      return total === undefined
+        ? 'Capacidades consultadas no registry vivo.'
+        : `${total} capacidades carregadas do registry vivo.`;
+    }
+    case 'self.gaps':
+    case 'self.explain':
+      return typeof r.message === 'string' ? r.message : 'Auto-inspeção consultada.';
+    case 'self.health': {
+      if (typeof r.message === 'string') {
+        return r.message;
+      }
+      const outputs = (r.outputs as Record<string, unknown> | undefined) ?? {};
+      const status = typeof outputs.status === 'string' ? outputs.status : 'consultada';
+      return `Saúde do Kloel: ${status}.`;
+    }
     case 'get_product_urls': {
       const urls = Array.isArray(r.customUrls)
         ? (r.customUrls as Array<Record<string, unknown>>)

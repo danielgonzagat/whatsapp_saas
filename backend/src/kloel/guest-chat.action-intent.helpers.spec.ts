@@ -1,10 +1,40 @@
 import type { PrismaService } from '../prisma/prisma.service';
 import { detectActionIntent } from './guest-chat.action-intent.helpers';
+import { formatToolResult } from './guest-chat.format-tool-result.helpers';
 import { extractProductArgs, extractProductName } from './guest-chat.product-args.helpers';
 import { runGetProductReviews } from './kloel-chat-tools.product.helpers';
 import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
 
 describe('guest chat action intent helpers', () => {
+  it('routes self-awareness requests to deterministic self tools', () => {
+    expect(detectActionIntent('o que você consegue fazer agora?')?.tool).toBe('self.capabilities');
+    expect(detectActionIntent('quais capacidades estão quebradas?')?.tool).toBe('self.gaps');
+    expect(detectActionIntent('qual integração está com erro agora?')?.tool).toBe('self.health');
+    expect(detectActionIntent('explique a capacidade products.create')?.tool).toBe('self.explain');
+    expect(detectActionIntent('explique a capacidade products.create')?.args).toEqual({
+      capabilityId: 'products.create',
+    });
+  });
+
+  it('formats self-awareness results with live proof details', () => {
+    expect(
+      formatToolResult('self.capabilities', {
+        success: true,
+        message: '42 capacidades carregadas do registry vivo',
+        outputs: { total: 42 },
+      }),
+    ).toBe('42 capacidades carregadas do registry vivo');
+    expect(
+      formatToolResult('self.gaps', {
+        success: true,
+        message: '7 capacidades declaradas mas sem dispatcher case',
+      }),
+    ).toBe('7 capacidades declaradas mas sem dispatcher case');
+    expect(
+      formatToolResult('self.health', { success: true, outputs: { status: 'degraded' } }),
+    ).toBe('Saúde do Kloel: degraded.');
+  });
+
   it('routes URL deletion with the URL payload preserved', () => {
     const action = detectActionIntent('remove a url https://example.com/oferta no produto Serum?');
 
