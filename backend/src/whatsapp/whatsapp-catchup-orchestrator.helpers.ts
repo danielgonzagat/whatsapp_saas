@@ -10,7 +10,7 @@ import { autopilotQueue } from '../queue/queue';
 import { AgentEventsService } from './agent-events.service';
 import { asProviderSettings } from './provider-settings.types';
 import { WorkerRuntimeService } from './worker-runtime.service';
-import { isNowebStoreMisconfiguredExt } from './whatsapp-catchup.helpers';
+import { isNowebStoreMisconfiguredExt } from '../marketing/channels/whatsapp/whatsapp-catchup.helpers';
 import {
   safeStr,
   type GuestCheckSettings,

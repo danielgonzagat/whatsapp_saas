@@ -1,14 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { memoryQueue } from '../queue/queue';
+import { memoryQueue } from '../../../queue/queue';
 import { KnowledgeBaseService, htmlToText } from './knowledge-base.service';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 import { VectorService } from './vector.service';
-import { PlanLimitsService } from '../billing/plan-limits.service';
-import { AuditService } from '../audit/audit.service';
-import { WalletService } from '../wallet/wallet.service';
-import { InsufficientWalletBalanceError, UsagePriceNotFoundError } from '../wallet/wallet.types';
+import { PlanLimitsService } from '../../../billing/plan-limits.service';
+import { AuditService } from '../../../audit/audit.service';
+import { WalletService } from '../../../wallet/wallet.service';
+import {
+  InsufficientWalletBalanceError,
+  UsagePriceNotFoundError,
+} from '../../../wallet/wallet.types';
 
-jest.mock('../queue/queue', () => ({
+jest.mock('../../../queue/queue', () => ({
   memoryQueue: {
     add: jest.fn(),
   },

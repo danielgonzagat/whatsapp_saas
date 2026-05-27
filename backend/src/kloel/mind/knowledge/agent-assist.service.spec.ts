@@ -1,4 +1,4 @@
-jest.mock('../kloel/openai-wrapper', () => ({
+jest.mock('../../openai-wrapper', () => ({
   chatCompletionWithRetry: jest.fn().mockResolvedValue({
     usage: { total_tokens: 42 },
     choices: [{ message: { content: 'Resumo pronto' } }],
@@ -6,7 +6,7 @@ jest.mock('../kloel/openai-wrapper', () => ({
 }));
 
 import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../prisma/prisma.service';
+import { PrismaService } from '../../../prisma/prisma.service';
 import { AgentAssistService } from './agent-assist.service';
 
 describe('AgentAssistService', () => {

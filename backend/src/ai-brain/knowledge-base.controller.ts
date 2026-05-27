@@ -21,8 +21,8 @@ import { resolveWorkspaceId } from '../auth/workspace-access';
 import type { UploadedFileLike } from '../common/file-signature.util';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
-import { AgentAssistService } from './agent-assist.service';
-import { KnowledgeBaseService } from './knowledge-base.service';
+import { AgentAssistService } from '../kloel/mind/knowledge/agent-assist.service';
+import { KnowledgeBaseService } from '../kloel/mind/knowledge/knowledge-base.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /**

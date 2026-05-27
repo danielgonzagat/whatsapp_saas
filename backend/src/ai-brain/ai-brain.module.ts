@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from '../prisma/prisma.module';
-import { AgentAssistService } from './agent-assist.service';
+import { AgentAssistService } from '../kloel/mind/knowledge/agent-assist.service';
 import { HiddenDataExtractorService } from '../kloel/mind/knowledge/hidden-data.service';
 import { KnowledgeBaseController } from './knowledge-base.controller';
-import { KnowledgeBaseService } from './knowledge-base.service';
+import { KnowledgeBaseService } from '../kloel/mind/knowledge/knowledge-base.service';
 import { MediaFactoryService } from '../kloel/mind/knowledge/media-factory.service';
-import { VectorService } from './vector.service';
+import { VectorService } from '../kloel/mind/knowledge/vector.service';
 
 import { BillingModule } from '../billing/billing.module';
 import { WalletModule } from '../wallet/wallet.module';

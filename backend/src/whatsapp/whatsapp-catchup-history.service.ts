@@ -17,7 +17,7 @@ import {
   resolveCanonicalChatIdExt,
   getLidPnMapExt,
   resolveCanonicalPhoneExt,
-} from './whatsapp-catchup.helpers';
+} from '../marketing/channels/whatsapp/whatsapp-catchup.helpers';
 import {
   reconcileRemoteChatState as reconcileRemoteChatStateHelper,
   sanitizePlaceholderContacts as sanitizePlaceholderContactsHelper,

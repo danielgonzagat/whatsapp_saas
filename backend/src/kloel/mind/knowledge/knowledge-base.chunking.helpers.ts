@@ -1,4 +1,4 @@
-import { WHITESPACE_G_RE } from '../common/regex';
+import { WHITESPACE_G_RE } from '../../../common/regex';
 
 /**
  * Chunk-size constants for text splitting.

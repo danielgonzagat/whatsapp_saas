@@ -18,7 +18,7 @@ import {
   resolveCanonicalChatIdExt,
   getLidPnMapExt,
   isWorkspaceSelfChatIdExt,
-} from './whatsapp-catchup.helpers';
+} from '../marketing/channels/whatsapp/whatsapp-catchup.helpers';
 import {
   normalizeChatsExt,
   normalizeMessagesExt,

@@ -7,7 +7,7 @@ import type {
   NormalizedContact,
   NormalizedChat,
   ProviderMessageEnvelope,
-} from './whatsapp-service.types';
+} from '../../../whatsapp/whatsapp-service.types';
 
 function unwrapProviderArray(raw: unknown): unknown[] {
   if (Array.isArray(raw)) {

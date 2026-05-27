@@ -1,4 +1,4 @@
-import type { CatalogConversationSummary, WsDeps } from '../marketing/channels/whatsapp/whatsapp-service.types';
+import type { CatalogConversationSummary, WsDeps } from './whatsapp-service.types';
 import {
   normalizeJsonObjExt,
   normalizeProbabilityScoreExt,

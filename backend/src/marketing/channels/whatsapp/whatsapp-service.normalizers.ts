@@ -2,7 +2,7 @@ import type {
   NormalizedChat,
   NormalizedContact,
   ProviderMessageEnvelope,
-} from './whatsapp-service.types';
+} from '../../../whatsapp/whatsapp-service.types';
 import {
   normalizeNumber,
   resolveTimestampExt,
