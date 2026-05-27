@@ -76,7 +76,6 @@ export {
   scoreWhatsAppCatalog,
   // WhatsApp messaging
   type WhatsappTemplate,
-  connectWhatsapp,
   listWhatsappTemplates,
   whatsappOptIn,
   whatsappOptOut,

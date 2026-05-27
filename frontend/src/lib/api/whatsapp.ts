@@ -411,15 +411,6 @@ export interface WhatsappTemplate {
   [key: string]: unknown;
 }
 
-/** Connect whatsapp. */
-export async function connectWhatsapp(_workspaceId: string): Promise<unknown> {
-  const res = await apiFetch<unknown>(`/whatsapp-api/session/status`);
-  if (res.error) {
-    throw new Error('Failed to connect WhatsApp');
-  }
-  return res.data;
-}
-
 /** List whatsapp templates. */
 export async function listWhatsappTemplates(_workspaceId: string): Promise<WhatsappTemplate[]> {
   return [];

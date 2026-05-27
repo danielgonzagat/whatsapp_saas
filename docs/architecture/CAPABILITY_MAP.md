@@ -9,9 +9,9 @@ Each capability lists every implementation found across the codebase. A capabili
 - `SendMessageDto` (class) — `backend/src/admin/chat/dto/send-message.dto.ts:4`
 - `sendWhatsAppCode` (function) — `backend/src/auth/auth-service.whatsapp.ts:13`
 - `SendWhatsAppCodeDto` (class) — `backend/src/auth/dto/whatsapp-auth.dto.ts:4`
+- `sendMessage` (function) — `backend/src/marketing/channels/whatsapp/providers/provider-registry-messaging.ts:38`
+- `sendMessage` (function) — `backend/src/marketing/channels/whatsapp/providers/provider-send-message.helpers.ts:28`
 - `sendMessage` (function) — `backend/src/partnerships/partnerships.chat.helpers.ts:98`
-- `sendMessage` (function) — `backend/src/whatsapp/providers/provider-registry-messaging.ts:34`
-- `sendMessage` (function) — `backend/src/whatsapp/providers/provider-send-message.helpers.ts:28`
 - `sendMessage` (function) — `worker/flow-message-sender.helpers.ts:13`
 
 ## CAPABILITY: `normalize_phone` (5 implementations ⚠️ duplicated)
@@ -62,15 +62,14 @@ No implementation detected. May not be a feature of this codebase.
 - `AuthService` (class) — `backend/src/auth/auth.service.ts:45`
 - `JwtAuthGuard` (class) — `backend/src/auth/jwt-auth.guard.ts:34`
 
-## CAPABILITY: `connect_channel` (7 implementations ⚠️ duplicated)
+## CAPABILITY: `connect_channel` (6 implementations ⚠️ duplicated)
 
+- `startSession` (function) — `backend/src/marketing/channels/whatsapp/providers/provider-registry-session.ts:119`
+- `WhatsappSessionService` (class) — `backend/src/marketing/channels/whatsapp/whatsapp-session.service.ts:21`
 - `MetaConnectService` (class) — `backend/src/marketing/marketing-connect/meta-connect.service.ts:10`
 - `MetaConnectionStateService` (class) — `backend/src/meta/meta-connection-state.service.ts:37`
-- `startSession` (function) — `backend/src/whatsapp/providers/provider-registry-session.ts:112`
-- `WhatsappSessionService` (class) — `backend/src/whatsapp/whatsapp-session.service.ts:21`
 - `WhatsAppSessionHarness` (function) — `frontend/src/app/e2e/_components/whatsapp-session-harness.tsx:11`
 - `MetaConnectSection` (function) — `frontend/src/components/kloel/conta/ContaMetaConnectSection.tsx:12`
-- `connectWhatsapp` (function) — `frontend/src/lib/api/whatsapp.ts:415`
 
 ## CAPABILITY: `process_payment` (2 implementations ⚠️ duplicated)
 
