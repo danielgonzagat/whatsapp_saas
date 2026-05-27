@@ -103,7 +103,7 @@ export class KloelProductSubResourceToolsService {
             type: args.shippingType,
             value: args.shippingValue,
             originCep: args.originCep,
-          } as unknown as Prisma.InputJsonValue) : undefined,
+          } as Prisma.InputJsonValue) : undefined,
         },
       });
       return { success: true, plan: { id: plan.id, name: plan.name, price: plan.price } };
@@ -201,7 +201,7 @@ export class KloelProductSubResourceToolsService {
             warranty: args.warranty || false,
             exitIntent: args.exitIntent || false,
             linkedPlanNames: args.linkedPlanNames || [],
-          } as unknown as Prisma.InputJsonValue),
+          } as Prisma.InputJsonValue),
         },
       });
       return { success: true, checkout: { id: co.id, name: co.name } };
