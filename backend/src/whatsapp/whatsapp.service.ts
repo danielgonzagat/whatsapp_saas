@@ -29,9 +29,9 @@ import {
 import * as catalogOps from './whatsapp.service.catalog';
 import type { CatalogDeps } from './whatsapp.service.catalog';
 import type { NormalizedContact, NormalizedChat } from '../marketing/channels/whatsapp/whatsapp-service.types';
-import { WhatsappSessionService } from './whatsapp-session.service';
+import { WhatsappSessionService } from '../marketing/channels/whatsapp/whatsapp-session.service';
 import { WhatsappMessageDispatcherService } from '../marketing/channels/whatsapp/whatsapp-message-dispatcher.service';
-import { WhatsappReconcilerService } from './whatsapp-reconciler.service';
+import { WhatsappReconcilerService } from '../marketing/channels/whatsapp/whatsapp-reconciler.service';
 
 type ExternalProviderPayload = Record<string, unknown>;
 

@@ -12,7 +12,7 @@ import { INBOX_SERVICE } from '../../../inbox/inbox.token';
 import type { IInboxService } from '../../../inbox/inbox.interface';
 import { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
 import { WorkerRuntimeService } from '../../../whatsapp/worker-runtime.service';
-import { WhatsappSessionService } from '../../../whatsapp/whatsapp-session.service';
+import { WhatsappSessionService } from './whatsapp-session.service';
 import type { ContactCustomFields } from '../../../contacts/contact-custom-fields.types';
 import { WhatsAppEventEmitterService } from '../../../kloel/whatsapp-emitter/whatsapp-event-emitter.service';
 import { normalizeNumber } from './whatsapp-service.helpers';
