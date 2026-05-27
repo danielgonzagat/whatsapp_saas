@@ -1,6 +1,6 @@
 import type Redis from 'ioredis';
 import type { PlanLimitsService } from '../../../billing/plan-limits.service';
-import type { CiaRuntimeService } from '../../../cia/cia-runtime.service';
+import type { CiaRuntimeService } from '../../../kloel/mind/cia/cia-runtime.service';
 import type { NeuroCrmService } from '../../../crm/neuro-crm.service';
 import type { IInboxService } from '../../../inbox/inbox.interface';
 import type { OpsAlertService } from '../../../observability/ops-alert.service';

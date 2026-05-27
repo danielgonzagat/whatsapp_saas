@@ -89,7 +89,10 @@ import {
     WhatsappChatBacklogService,
     { provide: WHATSAPP_MESSAGING, useExisting: WhatsappService },
     { provide: INBOUND_PROCESSOR, useExisting: InboundProcessorService },
-    { provide: CIA_RUNTIME, useExisting: require('../../../cia/cia-runtime.service').CiaRuntimeService },
+    {
+      provide: CIA_RUNTIME,
+      useExisting: require('../../../kloel/mind/cia/cia-runtime.service').CiaRuntimeService,
+    },
     { provide: CATCHUP_HISTORY, useExisting: WhatsappCatchupHistoryService },
   ],
   exports: [
