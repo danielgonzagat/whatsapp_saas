@@ -6,22 +6,28 @@
  * Compares refund rate and satisfaction signals against conversion rate.
  */
 
-import type { OfferDetectorInput, OfferDetectorResult, OfferInsight } from '../offer.types';
+import type {
+  OfferDetectorInput,
+  OfferDetectorResult,
+  OfferInsight,
+} from '../offer.types';
 import { OFFER_EVENT_NAMES, withinWindow } from '../offer.types';
 
 const MIN_TRANSACTIONS = 5;
 const MISMATCH_REFUND_RATE = 0.2;
 const WINDOW_DAYS = 120;
 
-function extractProductId(payload: Readonly<Record<string, unknown>> | undefined): string {
-  if (!payload) {
-    return 'unknown';
-  }
+function extractProductId(
+  payload: Readonly<Record<string, unknown>> | undefined,
+): string {
+  if (!payload) {return 'unknown';}
   const pid = payload['productId'] ?? payload['productRef'] ?? payload['planId'];
   return typeof pid === 'string' ? pid : 'unknown';
 }
 
-export function detectPagePromiseMismatch(input: OfferDetectorInput): OfferDetectorResult {
+export function detectPagePromiseMismatch(
+  input: OfferDetectorInput,
+): OfferDetectorResult {
   const { events, workspaceId, nowMs = Date.now() } = input;
   const insights: OfferInsight[] = [];
 
@@ -57,9 +63,7 @@ export function detectPagePromiseMismatch(input: OfferDetectorInput): OfferDetec
   }
 
   for (const [productId, sales] of productSales) {
-    if (sales < MIN_TRANSACTIONS) {
-      continue;
-    }
+    if (sales < MIN_TRANSACTIONS) {continue;}
     const refunds = productRefunds.get(productId) ?? 0;
     const chargebacks = productChargebacks.get(productId) ?? 0;
     const badOutcomes = refunds + chargebacks;
@@ -68,8 +72,13 @@ export function detectPagePromiseMismatch(input: OfferDetectorInput): OfferDetec
     if (badRate >= MISMATCH_REFUND_RATE) {
       const satScores = productSatisfaction.get(productId) ?? [];
       const satAvg =
-        satScores.length > 0 ? satScores.reduce((a, b) => a + b, 0) / satScores.length : undefined;
-      const satDetail = satAvg !== undefined ? ` | avg satisfaction: ${satAvg.toFixed(1)}` : '';
+        satScores.length > 0
+          ? satScores.reduce((a, b) => a + b, 0) / satScores.length
+          : undefined;
+      const satDetail =
+        satAvg !== undefined
+          ? ` | avg satisfaction: ${satAvg.toFixed(1)}`
+          : '';
 
       insights.push({
         insightId: `offer_ppm_${workspaceId}_${productId}`,
@@ -78,7 +87,9 @@ export function detectPagePromiseMismatch(input: OfferDetectorInput): OfferDetec
         evidence: [
           `product ${productId}: ${sales} sales, ${refunds} refunds, ${chargebacks} chargebacks`,
           `bad outcome rate: ${(badRate * 100).toFixed(1)}%`,
-          ...(satAvg !== undefined ? [`avg satisfaction: ${satAvg.toFixed(1)}`] : []),
+          ...(satAvg !== undefined
+            ? [`avg satisfaction: ${satAvg.toFixed(1)}`]
+            : []),
         ],
         impactMultiplicative: Math.max(1.0, 1.0 + badRate * 5),
         confidence: Math.min(0.9, 0.4 + badRate * 2),

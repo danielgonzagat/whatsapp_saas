@@ -6,8 +6,7 @@ import {
   type IntentClassification,
   type ConfirmationRequest,
   type CapabilityContext,
-} from './capability-registry-v2.types';
-import { CAPABILITY_DEFINITIONS, CAPABILITY_MAP } from './capability-registry-v2.const';
+} from './capability-registry-v2.types';import { CAPABILITY_DEFINITIONS, CAPABILITY_MAP } from './capability-registry-v2.const';
 
 /**
  * Capability Registry v2 — Single source of truth for all Kloel capabilities.
@@ -30,9 +29,7 @@ export class CapabilityRegistryV2Service {
     for (const cap of CAPABILITY_DEFINITIONS) {
       this.maturities.set(cap.id, cap.maturity ?? 'registry');
     }
-    this.logger.log(
-      `CapabilityRegistry v2 initialized with ${CAPABILITY_DEFINITIONS.length} capabilities`,
-    );
+    this.logger.log(`CapabilityRegistry v2 initialized with ${CAPABILITY_DEFINITIONS.length} capabilities`);
   }
 
   list(): CapabilityDefinition[] {
@@ -61,9 +58,7 @@ export class CapabilityRegistryV2Service {
     caps: CapabilityDefinition[],
     permissions: string[],
   ): CapabilityDefinition[] {
-    if (permissions.includes('*')) {
-      return caps;
-    }
+    if (permissions.includes('*')) {return caps;}
     return caps.filter(
       (cap) =>
         cap.requiredPermissions.length === 0 ||
@@ -71,7 +66,10 @@ export class CapabilityRegistryV2Service {
     );
   }
 
-  filterFor(options: { surface: string; permissions: string[] }): CapabilityDefinition[] {
+  filterFor(options: {
+    surface: string;
+    permissions: string[];
+  }): CapabilityDefinition[] {
     const fromSurface = this.filterForSurface(options.surface);
     return this.filterForPermissions(fromSurface, options.permissions);
   }
@@ -115,18 +113,14 @@ export class CapabilityRegistryV2Service {
     });
 
     const best = scored.sort((a, b) => b.confidence - a.confidence)[0];
-    if (!best || best.confidence < 0.3) {
-      return null;
-    }
+    if (!best || best.confidence < 0.3) {return null;}
     const { capability, confidence } = best;
 
     const entities: Record<string, unknown> = {};
     for (const field of capability.inputSchema) {
       if (field.type === 'number') {
         const match = normalized.match(/(?:r?\$\s*)?(\d+(?:[.,]\d+)?)/i);
-        if (match?.[1]) {
-          entities[field.key] = parseFloat(match[1].replace(',', '.'));
-        }
+        if (match?.[1]) {entities[field.key] = parseFloat(match[1].replace(',', '.'));}
       }
     }
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { listFlows, getFlow, runFlow, listFlowExecutions, type Flow } from './flows';
+import { listFlows, getFlow, runFlow, listFlowExecutions } from './flows';
 
 beforeEach(() => {
   document.cookie = 'kloel_access_token=test-token; path=/';
@@ -20,7 +20,7 @@ function lastFetch(): { url: string; method: string; headers: Record<string, str
   const url = input instanceof Request ? input.url : String(input ?? '');
   const method = input instanceof Request ? input.method : 'GET';
   const headers: Record<string, string> = {};
-  if (input instanceof Request) {input.headers.forEach((v, k) => { headers[k] = v; });}
+  if (input instanceof Request) input.headers.forEach((v, k) => { headers[k] = v; });
   return { url, method, headers };
 }
 
@@ -55,8 +55,7 @@ describe('Flows API', () => {
 
   describe('runFlow', () => {
     it('POSTs to /flows/run', async () => {
-      const flow: Flow = { id: 'f1' };
-      await runFlow({ workspaceId: 'ws-1', flow, startNode: 'start', user: 'u1' });
+      await runFlow({ workspaceId: 'ws-1', flow: { id: 'f1' } as any, startNode: 'start', user: 'u1' });
       const { url, method } = lastFetch();
       expect(method).toBe('POST');
       expect(url).toContain('/flows/run');

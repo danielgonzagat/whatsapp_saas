@@ -129,21 +129,11 @@ describe('CognitiveBridgeService', () => {
 
   function mockReadFile(pathLike: string): string {
     const p = pathLike.toString();
-    if (p.includes('openapi')) {
-      return JSON.stringify(mockOpenApiDoc);
-    }
-    if (p.includes('asyncapi')) {
-      return JSON.stringify(mockAsyncApiDoc);
-    }
-    if (p.includes('manifest')) {
-      return JSON.stringify(mockManifest);
-    }
-    if (p.includes('backend.sarif')) {
-      return JSON.stringify(mockSarifDoc);
-    }
-    if (p.includes('frontend.sarif')) {
-      return JSON.stringify(mockSarifDocEmpty);
-    }
+    if (p.includes('openapi')) return JSON.stringify(mockOpenApiDoc);
+    if (p.includes('asyncapi')) return JSON.stringify(mockAsyncApiDoc);
+    if (p.includes('manifest')) return JSON.stringify(mockManifest);
+    if (p.includes('backend.sarif')) return JSON.stringify(mockSarifDoc);
+    if (p.includes('frontend.sarif')) return JSON.stringify(mockSarifDocEmpty);
     throw new Error('ENOENT: ' + p);
   }
 
@@ -231,8 +221,8 @@ describe('CognitiveBridgeService', () => {
   it('caches OpenAPI reads within TTL', async () => {
     await service.getOpenApiRoute('products');
     await service.getOpenApiRoute('orders');
-    const openApiReads = readFileSpy.mock.calls.filter((c: string[]) =>
-      (c[0] as string).includes('openapi'),
+    const openApiReads = readFileSpy.mock.calls.filter(
+      (c: string[]) => (c[0] as string).includes('openapi'),
     );
     expect(openApiReads.length).toBe(1);
   });

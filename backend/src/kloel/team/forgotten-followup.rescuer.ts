@@ -7,7 +7,11 @@
  * Default budget: 72 hours. Configurable per call.
  */
 
-import type { ForgottenFollowup, ForgottenFollowupInput, SuggestionR1Contract } from './team.types';
+import type {
+  ForgottenFollowup,
+  ForgottenFollowupInput,
+  SuggestionR1Contract,
+} from './team.types';
 import type { SpineEventRef } from '../mind/mind.types';
 
 const DEFAULT_BUDGET_HOURS = 72;
@@ -36,20 +40,17 @@ function collectSilentLeads(
   const silentMap = new Map<string, string>();
 
   for (const event of events) {
-    if (event.eventName !== 'commerce.lead.went_silent') {
-      continue;
-    }
-    if (event.workspaceId !== workspaceId) {
-      continue;
-    }
+    if (event.eventName !== 'commerce.lead.went_silent') {continue;}
+    if (event.workspaceId !== workspaceId) {continue;}
 
     const leadId = event.entityRef?.entityId;
-    if (!leadId) {
-      continue;
-    }
+    if (!leadId) {continue;}
 
     const existing = silentMap.get(leadId);
-    if (existing === undefined || parseTimestampMs(event.occurredAt) > parseTimestampMs(existing)) {
+    if (
+      existing === undefined ||
+      parseTimestampMs(event.occurredAt) > parseTimestampMs(existing)
+    ) {
       silentMap.set(leadId, event.occurredAt);
     }
   }
@@ -75,12 +76,12 @@ function findLastOperatorAction(
         e.eventName === 'commerce.crm.next_step_defined'),
   );
 
-  if (operatorEvents.length === 0) {
-    return undefined;
-  }
+  if (operatorEvents.length === 0) {return undefined;}
 
   return operatorEvents.reduce((latest, e) =>
-    parseTimestampMs(e.occurredAt) > parseTimestampMs(latest.occurredAt) ? e : latest,
+    parseTimestampMs(e.occurredAt) > parseTimestampMs(latest.occurredAt)
+      ? e
+      : latest,
   ).occurredAt;
 }
 
@@ -100,7 +101,9 @@ function hasQualifiedSilenceContext(
   );
 }
 
-function buildForgottenFollowupContract(qualifiedSilence: boolean): SuggestionR1Contract {
+function buildForgottenFollowupContract(
+  qualifiedSilence: boolean,
+): SuggestionR1Contract {
   return {
     riskClass: 'R1',
     delegationMode: 'allowed_alone',
@@ -121,12 +124,8 @@ function computeUrgency(
   budgetHours: number,
 ): ForgottenFollowup['urgency'] {
   const ratio = silentDurationHours / budgetHours;
-  if (ratio >= URGENCY_HIGH_FACTOR) {
-    return 'high';
-  }
-  if (ratio >= URGENCY_MEDIUM_FACTOR) {
-    return 'medium';
-  }
+  if (ratio >= URGENCY_HIGH_FACTOR) {return 'high';}
+  if (ratio >= URGENCY_MEDIUM_FACTOR) {return 'medium';}
   return 'low';
 }
 
@@ -142,20 +141,23 @@ export function rescueForgottenFollowups(
   for (const entry of silentLeads) {
     const silentDurationHours = hoursBetween(entry.silentAt, nowIso);
 
-    if (silentDurationHours < budgetHours) {
-      continue;
-    }
+    if (silentDurationHours < budgetHours) {continue;}
 
-    const lastOperatorAction = findLastOperatorAction(input.events, entry.leadId);
+    const lastOperatorAction = findLastOperatorAction(
+      input.events,
+      entry.leadId,
+    );
 
     if (lastOperatorAction !== undefined) {
       const sinceAction = hoursBetween(lastOperatorAction, nowIso);
-      if (sinceAction < budgetHours * 0.5) {
-        continue;
-      }
+      if (sinceAction < budgetHours * 0.5) {continue;}
     }
 
-    const qualifiedSilence = hasQualifiedSilenceContext(input.events, entry.leadId, entry.silentAt);
+    const qualifiedSilence = hasQualifiedSilenceContext(
+      input.events,
+      entry.leadId,
+      entry.silentAt,
+    );
 
     results.push({
       leadId: entry.leadId,
@@ -172,9 +174,7 @@ export function rescueForgottenFollowups(
   return results.sort((a, b) => {
     const ua = a.urgency === 'high' ? 3 : a.urgency === 'medium' ? 2 : 1;
     const ub = b.urgency === 'high' ? 3 : b.urgency === 'medium' ? 2 : 1;
-    if (ub !== ua) {
-      return ub - ua;
-    }
+    if (ub !== ua) {return ub - ua;}
     return b.silentDurationHours - a.silentDurationHours;
   });
 }

@@ -26,7 +26,7 @@ describe('SafeQueryService', () => {
     });
 
     it('rejects UPDATE queries', async () => {
-      const r = await service.query(ws, "UPDATE Product SET name = 'X'");
+      const r = await service.query(ws, 'UPDATE Product SET name = \'X\'');
       expect(r.ok).toBe(false);
       expect(r.error).toBe('only_select_allowed');
     });
@@ -56,7 +56,7 @@ describe('SafeQueryService', () => {
     });
 
     it('rejects unknown table names', async () => {
-      const r = await service.query(ws, "SELECT * FROM UnknownTable WHERE workspaceId = 'ws-1'");
+      const r = await service.query(ws, 'SELECT * FROM UnknownTable WHERE workspaceId = \'ws-1\'');
       expect(r.ok).toBe(false);
       expect(r.error).toContain('table_unknown');
     });

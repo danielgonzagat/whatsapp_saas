@@ -126,10 +126,8 @@ export class CognitiveBridgeService {
 
     for (const [route, methods] of Object.entries(doc.paths)) {
       for (const [method, op] of Object.entries(methods)) {
-        const opTyped = op;
-        if (!opTyped || !opTyped['x-controller-file']) {
-          continue;
-        }
+        const opTyped = op as OpenApiOperation;
+        if (!opTyped || !opTyped['x-controller-file']) continue;
         const controllerFile = opTyped['x-controller-file'];
         const controllerBase = path.basename(controllerFile, '.ts').toLowerCase();
         const routeLower = route.toLowerCase();
@@ -183,12 +181,8 @@ export class CognitiveBridgeService {
     const workspaceFromPath = this.inferWorkspace(file);
 
     for (const ws of manifest) {
-      if (workspaceFromPath && ws.workspace !== workspaceFromPath) {
-        continue;
-      }
-      if (ws.findings === 0) {
-        continue;
-      }
+      if (workspaceFromPath && ws.workspace !== workspaceFromPath) continue;
+      if (ws.findings === 0) continue;
 
       const index = await this.loadSarifIndex(ws);
       const matches = index.get(file) ?? this.suffixMatch(index, file);
@@ -205,18 +199,10 @@ export class CognitiveBridgeService {
 
   private inferWorkspace(file: string): string | null {
     const lower = file.toLowerCase().replace(/\\/g, '/');
-    if (lower.startsWith('backend/')) {
-      return 'backend';
-    }
-    if (lower.startsWith('frontend-admin/')) {
-      return 'frontend-admin';
-    }
-    if (lower.startsWith('frontend/')) {
-      return 'frontend';
-    }
-    if (lower.startsWith('worker/')) {
-      return 'worker';
-    }
+    if (lower.startsWith('backend/')) return 'backend';
+    if (lower.startsWith('frontend-admin/')) return 'frontend-admin';
+    if (lower.startsWith('frontend/')) return 'frontend';
+    if (lower.startsWith('worker/')) return 'worker';
     return null;
   }
 
@@ -244,10 +230,9 @@ export class CognitiveBridgeService {
     return parsed.workspaces;
   }
 
-  private async loadSarifIndex(ws: {
-    workspace: string;
-    file: string;
-  }): Promise<Map<string, StaticAnalysisIssue[]>> {
+  private async loadSarifIndex(
+    ws: { workspace: string; file: string },
+  ): Promise<Map<string, StaticAnalysisIssue[]>> {
     const cached = this.sarifCache.get(ws.workspace);
     if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
       return cached.data;

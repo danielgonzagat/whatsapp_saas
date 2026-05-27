@@ -151,29 +151,20 @@ function extractCampaignStats(events: readonly SpineEventRef[]): DomainStats {
   };
 }
 
-function inferThresholdLevel(autoRate: number, overrideRate: number): ThresholdLevel {
-  if (autoRate >= 0.8 && overrideRate <= 0.2) {
-    return 'low';
-  }
-  if (autoRate >= 0.5 && overrideRate <= 0.5) {
-    return 'medium';
-  }
-  if (autoRate >= 0.2) {
-    return 'high';
-  }
+function inferThresholdLevel(
+  autoRate: number,
+  overrideRate: number,
+): ThresholdLevel {
+  if (autoRate >= 0.8 && overrideRate <= 0.2) {return 'low';}
+  if (autoRate >= 0.5 && overrideRate <= 0.5) {return 'medium';}
+  if (autoRate >= 0.2) {return 'high';}
   return 'manual_only';
 }
 
 function computeConfidence(totalActions: number): number {
-  if (totalActions >= 20) {
-    return 0.9;
-  }
-  if (totalActions >= 10) {
-    return 0.7;
-  }
-  if (totalActions >= 5) {
-    return 0.5;
-  }
+  if (totalActions >= 20) {return 0.9;}
+  if (totalActions >= 10) {return 0.7;}
+  if (totalActions >= 5) {return 0.5;}
   return 0.35;
 }
 
@@ -205,7 +196,9 @@ function buildObservation(
  * Input: ObserverInput
  * Output: ApprovalThresholdObservation[] — one per domain with sufficient data
  */
-export function observeApprovalThresholds(input: ObserverInput): ApprovalThresholdObservation[] {
+export function observeApprovalThresholds(
+  input: ObserverInput,
+): ApprovalThresholdObservation[] {
   const observations: ApprovalThresholdObservation[] = [];
 
   const domains: DomainStats[] = [
@@ -218,7 +211,9 @@ export function observeApprovalThresholds(input: ObserverInput): ApprovalThresho
   for (const stats of domains) {
     const total = stats.autoApprovals + stats.manualOverrides;
     if (total >= MIN_EVENTS) {
-      observations.push(buildObservation(input.workspaceId, stats, input.nowMs));
+      observations.push(
+        buildObservation(input.workspaceId, stats, input.nowMs),
+      );
     }
   }
 

@@ -1,6 +1,9 @@
 import { Logger, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { refreshToken, REFRESH_TOKEN_ERROR_CODES } from './auth-service.tokens';
+import {
+  refreshToken,
+  REFRESH_TOKEN_ERROR_CODES,
+} from './auth-service.tokens';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   buildJwtMock,

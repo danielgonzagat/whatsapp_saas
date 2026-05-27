@@ -35,23 +35,15 @@ export class GapDetectorService {
 
     for (const metric of input.runtimeMetrics) {
       const domain = resolveDomain(metric.name);
-      if (!domain) {
-        continue;
-      }
+      if (!domain) {continue;}
 
       const profile = DOMAIN_RISK_PROFILES[domain];
-      if (!profile) {
-        continue;
-      }
+      if (!profile) {continue;}
 
-      if (metric.value <= metric.threshold) {
-        continue;
-      }
+      if (metric.value <= metric.threshold) {continue;}
 
       const confidence = clamp(metric.value, 0, 1);
-      if (confidence < 0.3) {
-        continue;
-      }
+      if (confidence < 0.3) {continue;}
 
       this.gapCounter += 1;
 
@@ -74,23 +66,15 @@ export class GapDetectorService {
 
     for (const capability of input.capabilities) {
       const domain = resolveDomain(capability.domain);
-      if (!domain) {
-        continue;
-      }
+      if (!domain) {continue;}
 
       const profile = DOMAIN_RISK_PROFILES[domain];
-      if (!profile) {
-        continue;
-      }
+      if (!profile) {continue;}
 
-      if (capability.evidenceScore >= 0.3) {
-        continue;
-      }
+      if (capability.evidenceScore >= 0.3) {continue;}
 
       const confidence = 1.0 - capability.evidenceScore;
-      if (confidence < 0.3) {
-        continue;
-      }
+      if (confidence < 0.3) {continue;}
 
       this.gapCounter += 1;
 
@@ -113,18 +97,12 @@ export class GapDetectorService {
 
     for (const delta of input.rTierDeltas) {
       const domain = resolveDomain(delta.module);
-      if (!domain) {
-        continue;
-      }
+      if (!domain) {continue;}
 
       const profile = DOMAIN_RISK_PROFILES[domain];
-      if (!profile) {
-        continue;
-      }
+      if (!profile) {continue;}
 
-      if (delta.direction !== 'downgraded') {
-        continue;
-      }
+      if (delta.direction !== 'downgraded') {continue;}
 
       const severity: 'critical' | 'high' =
         delta.currentTier === 'tier_4_shell' ? 'critical' : 'high';
@@ -138,15 +116,9 @@ export class GapDetectorService {
         description: `R-tier downgrade detected for module "${delta.module}": ${delta.previousTier} -> ${delta.currentTier}. Reason: ${delta.reason}`,
         severity,
         commercialImpact: profile.impact,
-        estimatedRevenueRiskCents: Math.round(
-          profile.baseRiskCents * 0.95 * commercialImpactWeight(profile.impact),
-        ),
+        estimatedRevenueRiskCents: Math.round(profile.baseRiskCents * 0.95 * commercialImpactWeight(profile.impact)),
         detectedAt: now,
-        sourceEvidence: [
-          `delta:${delta.module}`,
-          `previous:${delta.previousTier}`,
-          `current:${delta.currentTier}`,
-        ],
+        sourceEvidence: [`delta:${delta.module}`, `previous:${delta.previousTier}`, `current:${delta.currentTier}`],
         confidence: 0.95,
         truthMode: 'observed',
       });

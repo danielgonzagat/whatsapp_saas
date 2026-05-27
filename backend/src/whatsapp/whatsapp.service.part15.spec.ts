@@ -154,9 +154,7 @@ describe('WhatsappService', () => {
                     .catch(() => null);
                   const cf = contact?.customFields || {};
                   const readText = (v: unknown): string => {
-                    if (typeof v === 'string') {
-                      return v.trim();
-                    }
+                    if (typeof v === 'string') {return v.trim();}
                     return '';
                   };
                   const extraIds = [
@@ -164,9 +162,7 @@ describe('WhatsappService', () => {
                     readText(cf.lastCatalogChatId),
                     readText(cf.lastResolvedChatId),
                   ].filter((s): s is string => Boolean(s));
-                  for (const id of extraIds) {
-                    cs.add(id);
-                  }
+                  for (const id of extraIds) {cs.add(id);}
                 }
                 for (const c of cs) {
                   await providerRegistry.readChatMessages(ws, c).catch(() => {});
@@ -228,9 +224,7 @@ describe('WhatsappService', () => {
             content: message,
             direction: 'INBOUND',
           });
-          if (!saved.contactId) {
-            return saved;
-          }
+          if (!saved.contactId) {return saved;}
           const ws = await workspaceService.getWorkspace(workspaceId);
           const settings = ws?.providerSettings || {};
           const auto = (settings as Record<string, unknown>).autopilot as
@@ -258,9 +252,7 @@ describe('WhatsappService', () => {
         .fn()
         .mockImplementation(async (ws: string, phone: string, name?: string | null) => {
           const nPhone = (phone || '').replace(/\D/g, '');
-          if (!nPhone || !name) {
-            return false;
-          }
+          if (!nPhone || !name) {return false;}
           try {
             return await providerRegistry.upsertContactProfile(ws, { phone: nPhone, name });
           } catch {

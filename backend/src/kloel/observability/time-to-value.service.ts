@@ -36,17 +36,13 @@ interface WorkspaceState {
 }
 
 function percentile(sorted: number[], p: number): number {
-  if (sorted.length === 0) {
-    return 0;
-  }
+  if (sorted.length === 0) {return 0;}
   const idx = Math.ceil(sorted.length * (p / 100)) - 1;
   return sorted[Math.max(0, idx)] ?? 0;
 }
 
 function computeMedian(sorted: number[]): number {
-  if (sorted.length === 0) {
-    return 0;
-  }
+  if (sorted.length === 0) {return 0;}
   const mid = Math.floor(sorted.length / 2);
   if (sorted.length % 2 === 0) {
     return ((sorted[mid - 1] ?? 0) + (sorted[mid] ?? 0)) / 2;
@@ -59,7 +55,11 @@ export class TimeToValueService {
   private readonly logger = new Logger(TimeToValueService.name);
   private readonly store = new Map<string, WorkspaceState>();
 
-  recordEvent(workspaceId: string, eventName: string, occurredAt: Date): void {
+  recordEvent(
+    workspaceId: string,
+    eventName: string,
+    occurredAt: Date,
+  ): void {
     if (eventName === LEAD_CREATED) {
       const existing = this.store.get(workspaceId);
       if (existing) {
@@ -80,7 +80,10 @@ export class TimeToValueService {
     if (VALUE_CONFIRMED_EVENTS.has(eventName)) {
       const existing = this.store.get(workspaceId);
       if (existing) {
-        if (existing.valueConfirmedAt === null || occurredAt < existing.valueConfirmedAt) {
+        if (
+          existing.valueConfirmedAt === null ||
+          occurredAt < existing.valueConfirmedAt
+        ) {
           existing.valueConfirmedAt = occurredAt;
           existing.valueEventName = eventName;
         }
@@ -94,20 +97,16 @@ export class TimeToValueService {
       return;
     }
 
-    this.logger.debug(`Event "${eventName}" is not tracked by TimeToValueService`);
+    this.logger.debug(
+      `Event "${eventName}" is not tracked by TimeToValueService`,
+    );
   }
 
   getTimeToValueMs(workspaceId: string): number | null {
     const state = this.store.get(workspaceId);
-    if (!state) {
-      return null;
-    }
-    if (state.valueConfirmedAt === null) {
-      return null;
-    }
-    if (state.leadCreatedAt.getTime() === 0) {
-      return null;
-    }
+    if (!state) {return null;}
+    if (state.valueConfirmedAt === null) {return null;}
+    if (state.leadCreatedAt.getTime() === 0) {return null;}
     return state.valueConfirmedAt.getTime() - state.leadCreatedAt.getTime();
   }
 
@@ -137,7 +136,9 @@ export class TimeToValueService {
       minMs: durations[0] ?? 0,
       maxMs: durations[durations.length - 1] ?? 0,
       meanMs:
-        durations.length > 0 ? durations.reduce((sum, d) => sum + d, 0) / durations.length : 0,
+        durations.length > 0
+          ? durations.reduce((sum, d) => sum + d, 0) / durations.length
+          : 0,
       medianMs: computeMedian(durations),
       p75Ms: percentile(durations, 75),
       p90Ms: percentile(durations, 90),

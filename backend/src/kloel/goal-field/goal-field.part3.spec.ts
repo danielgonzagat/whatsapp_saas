@@ -12,10 +12,7 @@ import {
 import { runtimeCriticalWithoutObservabilityDetector } from './detectors/cognitive.detectors';
 import { backendWithoutSurfaceDetector } from './detectors/structural.detectors';
 import { discountWithoutJustificationDetector } from './detectors/financial.detectors';
-import {
-  humanHandoffOverdueDetector,
-  slowResponseDetector,
-} from './detectors/operational-ux.detectors';
+import { humanHandoffOverdueDetector, slowResponseDetector } from './detectors/operational-ux.detectors';
 
 const NOW = Date.parse('2026-05-13T22:00:00.000Z');
 
@@ -28,21 +25,13 @@ function ev(over: Partial<SpineEventRef>): SpineEventRef {
     truthMode: over.truthMode ?? 'observed',
   };
   if ('entityRef' in over) {
-    if (over.entityRef !== undefined) {
-      e['entityRef'] = over.entityRef;
-    }
+    if (over.entityRef !== undefined) {e['entityRef'] = over.entityRef;}
   } else {
     e['entityRef'] = { entityType: 'lead', entityId: 'lead_1' };
   }
-  if (over.valence !== undefined) {
-    e['valence'] = over.valence;
-  }
-  if (over.payload !== undefined) {
-    e['payload'] = over.payload;
-  }
-  if (over.correlationId !== undefined) {
-    e['correlationId'] = over.correlationId;
-  }
+  if (over.valence !== undefined) {e['valence'] = over.valence;}
+  if (over.payload !== undefined) {e['payload'] = over.payload;}
+  if (over.correlationId !== undefined) {e['correlationId'] = over.correlationId;}
   return e as SpineEventRef;
 }
 
@@ -63,7 +52,10 @@ describe('GoalFieldService — shadow accumulator integration', () => {
 
   it('active mode with non-eligible workspace stays in shadow (0 promoted)', () => {
     const acc = new GoalFieldShadowAccumulatorService();
-    const svc = new GoalFieldService([runtimeCriticalWithoutObservabilityDetector], acc);
+    const svc = new GoalFieldService(
+      [runtimeCriticalWithoutObservabilityDetector],
+      acc,
+    );
     const events: SpineEventRef[] = [
       ev({
         eventName: 'pulse.gate_failed',
@@ -177,7 +169,9 @@ describe('GoalFieldService — shadow accumulator integration', () => {
       promotionTopK: 10,
     });
 
-    const promotedWorkspaces = new Set(r.promoted.map((g) => g.workspaceId));
+    const promotedWorkspaces = new Set(
+      r.promoted.map((g) => g.workspaceId),
+    );
     expect(promotedWorkspaces.has('wks_eligible')).toBe(true);
     expect(promotedWorkspaces.has('wks_shadow')).toBe(false);
   });

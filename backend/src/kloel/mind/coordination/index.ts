@@ -14,10 +14,7 @@
  * @cluster Mind/Coordination
  * @see docs/adr/0013-kloel-mind-unification.md
  */
-export {
-  MindAutonomyCoordinator,
-  type BrainAutonomyProposal,
-} from './mind-autonomy-coordinator.service';
+export { MindAutonomyCoordinator, type BrainAutonomyProposal } from './mind-autonomy-coordinator.service';
 export { MindCapabilityExecutor, type CapabilityResult } from './mind-capability-executor.service';
 export { MindCapabilityRegistry } from './mind-capability-registry.service';
 export { MindCommercialGraph } from './mind-commercial-graph.service';

@@ -79,9 +79,7 @@ export class IndispensabilityTrackerService {
     for (let i = 1; i < sorted.length; i++) {
       const prev = sorted[i - 1];
       const curr = sorted[i];
-      if (prev === undefined || curr === undefined) {
-        continue;
-      }
+      if (prev === undefined || curr === undefined) {continue;}
       const prevEnd = new Date(prev.endedAt).getTime();
       const currStart = new Date(curr.startedAt).getTime();
       gaps.push(Math.max(currStart - prevEnd, 0) / MS_PER_HOUR);
@@ -138,15 +136,10 @@ export class IndispensabilityTrackerService {
     const pauseDetected30d = daysSinceLastActivity >= 30;
 
     let riskLevel: ChurnRiskAssessment['riskLevel'] = 'none';
-    if (daysSinceLastActivity >= 60) {
-      riskLevel = 'critical';
-    } else if (daysSinceLastActivity >= 30) {
-      riskLevel = 'high';
-    } else if (daysSinceLastActivity >= 14) {
-      riskLevel = 'medium';
-    } else if (daysSinceLastActivity >= 7) {
-      riskLevel = 'low';
-    }
+    if (daysSinceLastActivity >= 60) {riskLevel = 'critical';}
+    else if (daysSinceLastActivity >= 30) {riskLevel = 'high';}
+    else if (daysSinceLastActivity >= 14) {riskLevel = 'medium';}
+    else if (daysSinceLastActivity >= 7) {riskLevel = 'low';}
 
     const metrics = this.computeUsageMetrics(workspaceId, sessions, nowMs);
     const weeklyBeforePause = metrics.weeklyAverage;
@@ -215,8 +208,12 @@ export class IndispensabilityTrackerService {
     let usageDropAfterOffline = 0;
     if (unavailabilityEvents.length > 0 && sessions.length >= 2) {
       const lastOfflineStart = new Date(lastUnavailability.offlineStartedAt).getTime();
-      const before = sessions.filter((s) => new Date(s.startedAt).getTime() < lastOfflineStart);
-      const after = sessions.filter((s) => new Date(s.startedAt).getTime() >= lastOfflineStart);
+      const before = sessions.filter(
+        (s) => new Date(s.startedAt).getTime() < lastOfflineStart,
+      );
+      const after = sessions.filter(
+        (s) => new Date(s.startedAt).getTime() >= lastOfflineStart,
+      );
 
       if (before.length > 0) {
         const beforeRate = before.length / Math.max(before.length, 1);
@@ -353,7 +350,9 @@ export class IndispensabilityTrackerService {
     };
   }
 
-  public assessBatch(inputs: readonly IndispensabilityInput[]): readonly IndispensabilitySignal[] {
+  public assessBatch(
+    inputs: readonly IndispensabilityInput[],
+  ): readonly IndispensabilitySignal[] {
     return inputs.map((inp) => this.assess(inp));
   }
 

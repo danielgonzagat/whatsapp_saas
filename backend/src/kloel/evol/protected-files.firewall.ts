@@ -36,9 +36,7 @@ export class ProtectedFilesFirewallService {
 
   check(filePath: string, agentIdentity: string): ProtectedFilesFirewall | null {
     const violationKind = this.classify(filePath);
-    if (!violationKind) {
-      return null;
-    }
+    if (!violationKind) {return null;}
 
     this.counter += 1;
 
@@ -63,13 +61,7 @@ export class ProtectedFilesFirewallService {
   classify(filePath: string): ViolationKind | null {
     for (const pattern of PROTECTED_PATTERNS) {
       if (this.matches(pattern, filePath)) {
-        if (
-          pattern.includes('governance') ||
-          pattern.includes('.github') ||
-          pattern === 'CLAUDE.md' ||
-          pattern === 'AGENTS.md' ||
-          pattern === 'CODEX.md'
-        ) {
+        if (pattern.includes('governance') || pattern.includes('.github') || pattern === 'CLAUDE.md' || pattern === 'AGENTS.md' || pattern === 'CODEX.md') {
           return 'governance_breach';
         }
         if (pattern.includes('eslint') || pattern.includes('codacy')) {
@@ -115,10 +107,6 @@ export class ProtectedFilesFirewallService {
       return regex.test(normalized);
     }
 
-    return (
-      normalized === pattern ||
-      normalized.startsWith(pattern + '/') ||
-      normalized.endsWith('/' + pattern)
-    );
+    return normalized === pattern || normalized.startsWith(pattern + '/') || normalized.endsWith('/' + pattern);
   }
 }

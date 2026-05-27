@@ -84,7 +84,11 @@ describe('AdminTransactionsController', () => {
       operate.mockRejectedValue(error);
 
       await expect(
-        controller.operate('order-1', { action: AdminTransactionAction.CHARGEBACK }, admin),
+        controller.operate(
+          'order-1',
+          { action: AdminTransactionAction.CHARGEBACK },
+          admin,
+        ),
       ).rejects.toThrow('operation failed');
     });
   });

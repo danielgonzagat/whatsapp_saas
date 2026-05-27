@@ -149,7 +149,8 @@ export class PulseRuntimeService {
       const filtered =
         health.breaks?.filter(
           (b) =>
-            b.file.toLowerCase().includes(lower) || (b.surface ?? '').toLowerCase().includes(lower),
+            b.file.toLowerCase().includes(lower) ||
+            (b.surface ?? '').toLowerCase().includes(lower),
         ) ?? [];
 
       return {
@@ -185,9 +186,7 @@ export class PulseRuntimeService {
     let graph: BehaviorGraphJson | null = null;
     for (const fp of candidates) {
       graph = await this.readCached<BehaviorGraphJson>('behavior_graph', fp);
-      if (graph) {
-        break;
-      }
+      if (graph) break;
     }
 
     if (!graph || !graph.nodes) {
@@ -301,9 +300,7 @@ export class PulseRuntimeService {
     const errors: RuntimeErrorEntry[] = [];
 
     const sectionStart = md.search(/^#{2,3}\s+(?:Runtime\s+)?Errors?\s*$/im);
-    if (sectionStart === -1) {
-      return errors;
-    }
+    if (sectionStart === -1) return errors;
 
     const section = md.slice(sectionStart);
     const nextSection = section.slice(1).search(/^#{2,3}\s/m);
@@ -313,12 +310,8 @@ export class PulseRuntimeService {
     let match: RegExpExecArray | null;
     while ((match = rowRe.exec(body)) !== null) {
       const [, file, symbol, countStr, lastSeen] = match;
-      if (/^[-:]+$/.test(file?.trim() ?? '')) {
-        continue;
-      }
-      if (file?.toLowerCase().includes('file')) {
-        continue;
-      }
+      if (/^[-:]+$/.test(file?.trim() ?? '')) continue;
+      if (file?.toLowerCase().includes('file')) continue;
       const trimmedFile = file?.trim();
       errors.push({
         culprit: trimmedFile ?? 'unknown',

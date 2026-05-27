@@ -19,17 +19,9 @@ import {
   type ConceptRow,
 } from './commercial-decision-orchestrator/types';
 import { checkPipelineGate } from './commercial-decision-orchestrator/gating';
-import {
-  filterArsenalFormats,
-  intersectToneRepertoire,
-} from './commercial-decision-orchestrator/channel-select';
+import { filterArsenalFormats, intersectToneRepertoire } from './commercial-decision-orchestrator/channel-select';
 import { resolveDecisions } from './commercial-decision-orchestrator/scoring';
-import {
-  assertCustomerSafe,
-  composeCustomerMessage,
-  buildReplyPlan,
-  buildActions,
-} from './commercial-decision-orchestrator/compose';
+import { assertCustomerSafe, composeCustomerMessage, buildReplyPlan, buildActions } from './commercial-decision-orchestrator/compose';
 import {
   stableInboundKey,
   traceInboxRecorded,
@@ -51,10 +43,7 @@ import {
 import { allowedFormatsFor, allowedTonesFor, repertoireFor } from './channel-repertoire.config';
 
 export { type InternalReplyPlan } from './commercial-decision-orchestrator/types';
-export {
-  assertCustomerSafe,
-  composeCustomerMessage,
-} from './commercial-decision-orchestrator/compose';
+export { assertCustomerSafe, composeCustomerMessage } from './commercial-decision-orchestrator/compose';
 
 @Injectable()
 export class CommercialDecisionOrchestratorService {
@@ -78,21 +67,12 @@ export class CommercialDecisionOrchestratorService {
     const correlationId = inboundKey;
     const workspaceId = input.workspaceId;
 
-    traceInboxRecorded({
-      tracer: this.tracer,
-      workspaceId,
-      contactId,
-      correlationId,
-      channel,
-      messageLength: input.message.length,
-    });
+    traceInboxRecorded({ tracer: this.tracer, workspaceId, contactId, correlationId, channel, messageLength: input.message.length });
 
     const gateResult = await checkPipelineGate(this.prisma, workspaceId, channel);
     if (gateResult.mode === 'legacy') {
       traceLegacyGate({ tracer: this.tracer, workspaceId, contactId, correlationId });
-      this.logger.log(
-        `Pipeline legacy path for ${workspaceId}:${channel} — returning empty actions`,
-      );
+      this.logger.log(`Pipeline legacy path for ${workspaceId}:${channel} — returning empty actions`);
       return gateResult.decision;
     }
 
@@ -104,10 +84,7 @@ export class CommercialDecisionOrchestratorService {
     const effectiveContactId = resolvedContactId ?? contactId;
 
     traceContactResolved({
-      tracer: this.tracer,
-      workspaceId,
-      contactId: effectiveContactId,
-      correlationId,
+      tracer: this.tracer, workspaceId, contactId: effectiveContactId, correlationId,
       resolvedContactId: effectiveContactId,
       wasResolved: resolvedIdentity?.wasResolved ?? false,
       channel,
@@ -115,37 +92,22 @@ export class CommercialDecisionOrchestratorService {
 
     if (resolvedIdentity?.wasResolved) {
       await recordIdentityResolved(
-        this.events,
-        workspaceId,
-        effectiveSubject,
-        inboundKey,
-        resolvedIdentity.contactId,
-        resolvedIdentity.resolvedFromContactId,
+        this.events, workspaceId, effectiveSubject, inboundKey,
+        resolvedIdentity.contactId, resolvedIdentity.resolvedFromContactId,
       );
     }
 
     try {
       return await this.executeOrchestration(
-        input,
-        channel,
-        effectiveSubject,
-        inboundKey,
-        gateResult.pipelineMode,
-        effectiveContactId,
-        correlationId,
+        input, channel, effectiveSubject, inboundKey,
+        gateResult.pipelineMode, effectiveContactId, correlationId,
       );
     } catch (error) {
       this.logger.error(
         `Orchestration failed for ${workspaceId}:${channel}`,
         error instanceof Error ? error.message : String(error),
       );
-      await doHandleFallback(
-        this.prisma,
-        this.events,
-        workspaceId,
-        channel,
-        gateResult.pipelineMode,
-      );
+      await doHandleFallback(this.prisma, this.events, workspaceId, channel, gateResult.pipelineMode);
       throw error;
     }
   }
@@ -185,12 +147,7 @@ export class CommercialDecisionOrchestratorService {
     correlationId: string,
   ): Promise<InboundDecision> {
     const workspaceId = input.workspaceId;
-    const traceCtx = {
-      tracer: this.tracer,
-      workspaceId,
-      contactId: effectiveContactId,
-      correlationId,
-    };
+    const traceCtx = { tracer: this.tracer, workspaceId, contactId: effectiveContactId, correlationId };
 
     const detections = await this.concepts.detect({
       workspaceId,
@@ -223,13 +180,7 @@ export class CommercialDecisionOrchestratorService {
 
     const channelSetup = await this.setup.getState(workspaceId, channel).catch(() => null);
     await recordCaseMemoryConsulted(
-      this.events,
-      workspaceId,
-      subject,
-      inboundKey,
-      channel,
-      concept,
-      similarCases.length,
+      this.events, workspaceId, subject, inboundKey, channel, concept, similarCases.length,
     );
 
     const audioRatio = hasConcept(conceptRows, 'audio_preference') ? 0.25 : 0.05;
@@ -239,10 +190,10 @@ export class CommercialDecisionOrchestratorService {
 
     const allowedFormats = allowedFormatsFor(channel);
 
-    const { formatCandidates, decisions: arsenalDecisions } = filterArsenalFormats(
-      channel,
-      channelSetup?.arsenal,
-    );
+    const {
+      formatCandidates,
+      decisions: arsenalDecisions,
+    } = filterArsenalFormats(channel, channelSetup?.arsenal);
 
     let decisions: Record<string, unknown> = { ...arsenalDecisions };
 
@@ -252,19 +203,12 @@ export class CommercialDecisionOrchestratorService {
     }
 
     const scored = await resolveDecisions(this.mind, {
-      workspaceId,
-      channel,
-      message: input.message,
-      conceptRows,
-      concept,
+      workspaceId, channel, message: input.message,
+      conceptRows, concept,
       formatCandidates: channelSupportsAudio
-        ? formatCandidates
+        ? (formatCandidates)
         : (formatCandidates as string[]).filter((f) => f !== 'audio'),
-      audioRatio,
-      soldRate,
-      repliedRate,
-      priceBand,
-      channelSetup,
+      audioRatio, soldRate, repliedRate, priceBand, channelSetup,
     });
 
     decisions = { ...decisions, ...scored.decisions };
@@ -276,8 +220,7 @@ export class CommercialDecisionOrchestratorService {
 
     decisions.tom = {
       ...tone,
-      hierarchyJustification: (scored.decisions.tom as Record<string, unknown>)
-        ?.hierarchyJustification,
+      hierarchyJustification: (scored.decisions.tom as Record<string, unknown>)?.hierarchyJustification,
     };
 
     const repr = repertoireFor(channel);
@@ -305,12 +248,8 @@ export class CommercialDecisionOrchestratorService {
     const actions = buildActions({
       ...(scored.couponDecision !== undefined ? { couponDecision: scored.couponDecision } : {}),
       discountPercentFromCoupon,
-      ...(scored.productOfferDecision !== undefined
-        ? { productOfferDecision: scored.productOfferDecision }
-        : {}),
-      ...(scored.humanTransferDecision !== undefined
-        ? { humanTransferDecision: scored.humanTransferDecision }
-        : {}),
+      ...(scored.productOfferDecision !== undefined ? { productOfferDecision: scored.productOfferDecision } : {}),
+      ...(scored.humanTransferDecision !== undefined ? { humanTransferDecision: scored.humanTransferDecision } : {}),
       decisionTraceId: inboundKey,
       inboundKey,
       customerMessage,
@@ -327,15 +266,8 @@ export class CommercialDecisionOrchestratorService {
     });
 
     await recordPredecidedActionsBuilt(
-      this.events,
-      workspaceId,
-      subject,
-      inboundKey,
-      actions.map((a) => a.tool),
-      channel,
-      concept,
-      decisions,
-      channelSetup,
+      this.events, workspaceId, subject, inboundKey,
+      actions.map((a) => a.tool), channel, concept, decisions, channelSetup,
     );
 
     traceFullOutcomePipeline({
@@ -350,13 +282,8 @@ export class CommercialDecisionOrchestratorService {
 
     if (pipelineMode === 'shadow') {
       await recordShadow(
-        this.prisma,
-        this.events,
-        workspaceId,
-        channel,
-        inboundKey,
-        concept,
-        decisions,
+        this.prisma, this.events,
+        workspaceId, channel, inboundKey, concept, decisions,
       );
     }
 

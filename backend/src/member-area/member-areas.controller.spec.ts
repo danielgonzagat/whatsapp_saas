@@ -10,8 +10,9 @@ const mockSerializeArea = jest.fn(
   (_req: unknown, area: Record<string, unknown> | null | undefined) => area,
 );
 jest.mock('./member-area.helpers', () => {
-  const actual =
-    jest.requireActual<typeof import('./member-area.helpers')>('./member-area.helpers');
+  const actual = jest.requireActual<typeof import('./member-area.helpers')>(
+    './member-area.helpers',
+  );
   return {
     ...actual,
     serializeArea: (...args: unknown[]) => mockSerializeArea(...args),
@@ -66,7 +67,7 @@ describe('MemberAreasController', () => {
   });
 
   describe('listAreas', () => {
-    it('returns areas with count', async () => {
+    it('returns areas with count', async() => {
       const raw = [{ id: 'a1', name: 'Area 1', modules: [] }];
       prisma.memberArea.findMany.mockResolvedValue(raw);
 
@@ -78,7 +79,7 @@ describe('MemberAreasController', () => {
       expect(result).toEqual({ areas: raw, count: 1 });
     });
 
-    it('filters by type', async () => {
+    it('filters by type', async() => {
       prisma.memberArea.findMany.mockResolvedValue([]);
 
       await controller.listAreas(req(), 'COMMUNITY');
@@ -90,7 +91,7 @@ describe('MemberAreasController', () => {
       );
     });
 
-    it('filters active=true', async () => {
+    it('filters active=true', async() => {
       prisma.memberArea.findMany.mockResolvedValue([]);
 
       await controller.listAreas(req(), undefined, 'true');
@@ -102,7 +103,7 @@ describe('MemberAreasController', () => {
       );
     });
 
-    it('filters active=false', async () => {
+    it('filters active=false', async() => {
       prisma.memberArea.findMany.mockResolvedValue([]);
 
       await controller.listAreas(req(), undefined, 'false');
@@ -114,7 +115,7 @@ describe('MemberAreasController', () => {
       );
     });
 
-    it('adds OR search clause', async () => {
+    it('adds OR search clause', async() => {
       prisma.memberArea.findMany.mockResolvedValue([]);
 
       await controller.listAreas(req(), undefined, undefined, 'python');
@@ -132,7 +133,7 @@ describe('MemberAreasController', () => {
       );
     });
 
-    it('combines type + active + search', async () => {
+    it('combines type + active + search', async() => {
       prisma.memberArea.findMany.mockResolvedValue([]);
 
       await controller.listAreas(req(), 'COURSE', 'true', 'js');
@@ -145,7 +146,7 @@ describe('MemberAreasController', () => {
   });
 
   describe('getStats', () => {
-    it('aggregates area counts and stats', async () => {
+    it('aggregates area counts and stats', async() => {
       prisma.memberArea.count.mockResolvedValueOnce(10);
       prisma.memberArea.count.mockResolvedValueOnce(7);
       prisma.memberArea.findMany.mockResolvedValue([
@@ -165,7 +166,7 @@ describe('MemberAreasController', () => {
       });
     });
 
-    it('returns zeroed stats for empty workspace', async () => {
+    it('returns zeroed stats for empty workspace', async() => {
       prisma.memberArea.count.mockResolvedValueOnce(0);
       prisma.memberArea.count.mockResolvedValueOnce(0);
       prisma.memberArea.findMany.mockResolvedValue([]);
@@ -182,7 +183,7 @@ describe('MemberAreasController', () => {
       });
     });
 
-    it('scopes all queries to workspaceId', async () => {
+    it('scopes all queries to workspaceId', async() => {
       prisma.memberArea.count.mockResolvedValue(0);
       prisma.memberArea.findMany.mockResolvedValue([]);
 
@@ -198,7 +199,7 @@ describe('MemberAreasController', () => {
   });
 
   describe('getArea', () => {
-    it('returns area wrapped in { area }', async () => {
+    it('returns area wrapped in { area }', async() => {
       const raw = { id: 'a1', name: 'Area 1', modules: [] };
       prisma.memberArea.findFirst.mockResolvedValue(raw);
 
@@ -210,7 +211,7 @@ describe('MemberAreasController', () => {
       expect(result).toEqual({ area: raw });
     });
 
-    it('throws NotFoundException when area missing', async () => {
+    it('throws NotFoundException when area missing', async() => {
       prisma.memberArea.findFirst.mockResolvedValue(null);
 
       await expect(controller.getArea(req(), 'missing')).rejects.toThrow(NotFoundException);
@@ -218,7 +219,7 @@ describe('MemberAreasController', () => {
   });
 
   describe('createArea', () => {
-    it('creates an area and returns it', async () => {
+    it('creates an area and returns it', async() => {
       const created = { id: 'new_a', name: 'Test Area', slug: 'test-area-xxx' };
       prisma.memberArea.create.mockResolvedValue(created);
 
@@ -237,7 +238,7 @@ describe('MemberAreasController', () => {
       expect(result).toEqual({ area: created, success: true });
     });
 
-    it('auto-generates slug when not provided', async () => {
+    it('auto-generates slug when not provided', async() => {
       prisma.memberArea.create.mockResolvedValue({ id: 'a1', name: 'My Course' });
 
       await controller.createArea(req(), makeDto({ slug: undefined }) as never);
@@ -247,7 +248,7 @@ describe('MemberAreasController', () => {
       expect(typeof createArgs.data.slug).toBe('string');
     });
 
-    it('preserves explicit slug when provided', async () => {
+    it('preserves explicit slug when provided', async() => {
       prisma.memberArea.create.mockResolvedValue({ id: 'a1', slug: 'my-custom-slug' });
 
       await controller.createArea(req(), makeDto({ slug: 'my-custom-slug' }) as never);
@@ -256,7 +257,7 @@ describe('MemberAreasController', () => {
       expect(createArgs.data.slug).toBe('my-custom-slug');
     });
 
-    it('sets feature flags with defaults', async () => {
+    it('sets feature flags with defaults', async() => {
       prisma.memberArea.create.mockResolvedValue({});
 
       await controller.createArea(req(), makeDto() as never);
@@ -271,7 +272,7 @@ describe('MemberAreasController', () => {
       expect(createArgs.data.comments).toBe(true);
     });
 
-    it('throws BadRequestException on P2002 unique constraint', async () => {
+    it('throws BadRequestException on P2002 unique constraint', async() => {
       const p2002Error = Object.assign(new Error('Unique constraint'), { code: 'P2002' });
       prisma.memberArea.create.mockRejectedValue(p2002Error);
 
@@ -283,7 +284,7 @@ describe('MemberAreasController', () => {
       );
     });
 
-    it('wraps generic errors in BadRequestException', async () => {
+    it('wraps generic errors in BadRequestException', async() => {
       prisma.memberArea.create.mockRejectedValue(new Error('Database down'));
 
       await expect(controller.createArea(req(), makeDto() as never)).rejects.toThrow(
@@ -302,8 +303,8 @@ describe('MemberAreasController', () => {
       prisma.memberArea.updateMany.mockResolvedValue({ count: 1 });
     });
 
-    it('updates and returns updated area', async () => {
-      const result = await controller.updateArea(req(), 'a1', { name: 'Updated' });
+    it('updates and returns updated area', async() => {
+      const result = await controller.updateArea(req(), 'a1', { name: 'Updated' } as never);
 
       expect(prisma.memberArea.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -317,17 +318,17 @@ describe('MemberAreasController', () => {
       });
     });
 
-    it('throws NotFoundException when area missing', async () => {
+    it('throws NotFoundException when area missing', async() => {
       prisma.memberArea.findFirst.mockReset();
       prisma.memberArea.findFirst.mockResolvedValue(null);
 
-      await expect(controller.updateArea(req(), 'missing', { name: 'X' })).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        controller.updateArea(req(), 'missing', { name: 'X' } as never),
+      ).rejects.toThrow(NotFoundException);
     });
 
-    it('only updates provided fields', async () => {
-      await controller.updateArea(req(), 'a1', { name: 'New Name' });
+    it('only updates provided fields', async() => {
+      await controller.updateArea(req(), 'a1', { name: 'New Name' } as never);
 
       const updateData = prisma.memberArea.updateMany.mock.calls[0][0].data;
       expect(updateData).toHaveProperty('name', 'New Name');
@@ -339,7 +340,7 @@ describe('MemberAreasController', () => {
   describe('deleteArea', () => {
     const existing = { id: 'a1', name: 'To Delete', workspaceId: 'ws_test' };
 
-    it('deletes area and logs audit', async () => {
+    it('deletes area and logs audit', async() => {
       prisma.memberArea.findFirst.mockResolvedValue(existing);
       prisma.memberArea.deleteMany.mockResolvedValue({ count: 1 });
 
@@ -358,20 +359,20 @@ describe('MemberAreasController', () => {
       expect(result).toEqual({ success: true, deleted: 'a1' });
     });
 
-    it('throws NotFoundException when area does not exist', async () => {
+    it('throws NotFoundException when area does not exist', async() => {
       prisma.memberArea.findFirst.mockResolvedValue(null);
 
       await expect(controller.deleteArea(req(), 'missing')).rejects.toThrow(NotFoundException);
     });
 
-    it('throws NotFoundException when deleteMany returns count 0 (race)', async () => {
+    it('throws NotFoundException when deleteMany returns count 0 (race)', async() => {
       prisma.memberArea.findFirst.mockResolvedValue(existing);
       prisma.memberArea.deleteMany.mockResolvedValue({ count: 0 });
 
       await expect(controller.deleteArea(req(), 'a1')).rejects.toThrow(NotFoundException);
     });
 
-    it('scopes deletion to workspaceId', async () => {
+    it('scopes deletion to workspaceId', async() => {
       prisma.memberArea.findFirst.mockResolvedValue(existing);
       prisma.memberArea.deleteMany.mockResolvedValue({ count: 1 });
 

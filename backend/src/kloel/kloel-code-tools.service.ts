@@ -42,15 +42,15 @@ export class KloelCodeToolsService {
   // ── PULSE / Runtime awareness (Wave 7 PI-DD) ──
 
   async toolPulseHealth(moduleName?: string): Promise<ToolResult> {
-    return this.pulseRuntime.pulseHealth(moduleName);
+    return this.pulseRuntime.pulseHealth(moduleName) as Promise<ToolResult>;
   }
 
   async toolBehaviorGraphNode(symbol: string, file?: string): Promise<ToolResult> {
-    return this.pulseRuntime.behaviorGraphNode(symbol, file);
+    return this.pulseRuntime.behaviorGraphNode(symbol, file) as Promise<ToolResult>;
   }
 
   async toolRuntimeErrors(): Promise<ToolResult> {
-    return this.pulseRuntime.runtimeErrors();
+    return this.pulseRuntime.runtimeErrors() as Promise<ToolResult>;
   }
 
   // ── COGNITIVE BRIDGE (Wave 7 PI-CC) ──
@@ -188,20 +188,14 @@ export class KloelCodeToolsService {
       const stderrOut = (err as any)?.stdout as string | undefined;
       const stderrErr = (err as any)?.stderr as string | undefined;
       // rg exits with code 1 when no matches found — not an error
-      if (
-        (msg.includes('exit code 1') || msg.includes('Command failed')) &&
-        (stderrOut || stderrErr)
-      ) {
+      if ((msg.includes('exit code 1') || msg.includes('Command failed')) && (stderrOut || stderrErr)) {
         const lines = (stderrOut || '').trim().split('\n').filter(Boolean);
         if (lines.length > 0) {
-          return {
-            success: true,
-            pattern,
-            matchCount: lines.length,
+          return { success: true, pattern, matchCount: lines.length,
             results: lines.map((line: string) => {
               const [file, lnum, ...rest] = line.split(':');
               return { file, line: Number(lnum), content: rest.join(':').trim() };
-            }),
+            })
           };
         }
         return { success: true, pattern, matchCount: 0, results: [] };
@@ -256,14 +250,9 @@ export class KloelCodeToolsService {
         await fs.access(absPath);
       } catch {
         const fname = path.basename(relPath);
-        const { stdout } = await exec(
-          `rg --files '${REPO_ROOT}' 2>/dev/null | grep "/${fname}$" | head -1`,
-          { timeout: 8000, maxBuffer: 1024 * 1024 },
-        );
+        const { stdout } = await exec(`rg --files '${REPO_ROOT}' 2>/dev/null | grep "/${fname}$" | head -1`, { timeout: 8000, maxBuffer: 1024 * 1024 });
         const found = stdout.trim();
-        if (found) {
-          absPath = found;
-        }
+        if (found) {absPath = found;}
       }
       const content = await fs.readFile(absPath, 'utf-8');
       const lines = content.split('\n');
@@ -381,6 +370,7 @@ export class KloelCodeToolsService {
     }
   }
 
+
   // ── CODEGRAPH (Meta 1 — knowledge-graph code intelligence via MCP) ──  // ── CODEGRAPH (Meta 1 — knowledge-graph code intelligence real bridge) ──
 
   private async runCodeGraph(args: string, timeoutMs = 15_000): Promise<string> {
@@ -415,9 +405,7 @@ export class KloelCodeToolsService {
 
   async toolCodeGraphCallers(symbol: string): Promise<ToolResult> {
     const s = symbol.replace(/["'`]/g, '').trim();
-    if (!s) {
-      return { success: true, text: 'Informe o simbolo para buscar callers.' };
-    }
+    if (!s) {return { success: true, text: 'Informe o simbolo para buscar callers.' };}
     // Use query to search for symbol; MCP callers not available via CLI
     const output = await this.runCodeGraph(`query "callers of ${s}"`);
     return { success: true, text: `Callers de "${s}" (via query):\n${output}` };
@@ -425,27 +413,21 @@ export class KloelCodeToolsService {
 
   async toolCodeGraphCallees(symbol: string): Promise<ToolResult> {
     const s = symbol.replace(/["'`]/g, '').trim();
-    if (!s) {
-      return { success: true, text: 'Informe o simbolo para buscar callees.' };
-    }
+    if (!s) {return { success: true, text: 'Informe o simbolo para buscar callees.' };}
     const output = await this.runCodeGraph(`query "callees of ${s}"`);
     return { success: true, text: `Callees de "${s}" (via query):\n${output}` };
   }
 
   async toolCodeGraphImpact(symbol: string): Promise<ToolResult> {
     const s = symbol.replace(/["'`]/g, '').trim();
-    if (!s) {
-      return { success: true, text: 'Informe o simbolo para analisar impacto.' };
-    }
+    if (!s) {return { success: true, text: 'Informe o simbolo para analisar impacto.' };}
     const output = await this.runCodeGraph(`query "impact of changing ${s}"`);
     return { success: true, text: `Impacto de "${s}" (via query):\n${output}` };
   }
 
   async toolCodeGraphNode(symbol: string): Promise<ToolResult> {
     const s = symbol.replace(/["'`]/g, '').trim();
-    if (!s) {
-      return { success: true, text: 'Informe o simbolo para detalhes.' };
-    }
+    if (!s) {return { success: true, text: 'Informe o simbolo para detalhes.' };}
     const output = await this.runCodeGraph(`query "${s}"`);
     return { success: true, text: `Detalhes de "${s}" (via query):\n${output}` };
   }

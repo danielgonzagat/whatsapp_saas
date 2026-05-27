@@ -374,11 +374,7 @@ describe('MindPolicyService', () => {
         context: { channel: 'whatsapp' },
         channel: 'whatsapp',
         options: [
-          {
-            action: 'reply_option',
-            predicate: 'P(reply|template,hour,channel)',
-            context: { template: 'text', hour: 10, channel: 'whatsapp' },
-          },
+          { action: 'reply_option', predicate: 'P(reply|template,hour,channel)', context: { template: 'text', hour: 10, channel: 'whatsapp' } },
           { action: 'buy_option', predicate: 'P(buy|offer)', context: { offer: 'a' } },
         ],
         epsilon: 0.5,
@@ -454,7 +450,9 @@ describe('MindPolicyService', () => {
 
     it('no patterns in store → no shift, policy proceeds normally', async () => {
       const prisma = buildPrisma();
-      const beliefs = buildBeliefs([{ mean: 0.5, variance: 0.1 }]);
+      const beliefs = buildBeliefs([
+        { mean: 0.5, variance: 0.1 },
+      ]);
 
       const wisdomFilter = new WisdomRelevanceFilter();
       const wisdomStore = new WisdomPatternStore();
@@ -473,7 +471,9 @@ describe('MindPolicyService', () => {
         subject: 'contact:w3',
         decisionType: 'followup_timing',
         context: {},
-        options: [{ action: 'only_option', predicate: 'P(reply)', context: {} }],
+        options: [
+          { action: 'only_option', predicate: 'P(reply)', context: {} },
+        ],
         epsilon: 0.5,
         fallbackMinSamples: 999,
       });
@@ -543,6 +543,7 @@ describe('MindPolicyService', () => {
       expect(result.baselineMean).toBeCloseTo(0.55);
       expect(result.lift).toBeGreaterThan(0);
     });
+
 
     it('resolveOutcome: records global prior observation when globalPrior is injected', async () => {
       const recordObservation = jest.fn().mockResolvedValue(undefined);
@@ -703,12 +704,7 @@ describe('MindPolicyService', () => {
 
       expect(count).toBe(1);
       expect(recordObservation).toHaveBeenCalledTimes(1);
-      expect(recordObservation).toHaveBeenCalledWith(
-        'instagram',
-        'followup_timing',
-        'exploit_text_10h',
-        true,
-      );
+      expect(recordObservation).toHaveBeenCalledWith('instagram', 'followup_timing', 'exploit_text_10h', true);
     });
 
     it('resolveOpenForSubject: skips prior when channel is absent from context', async () => {

@@ -17,15 +17,13 @@ import type {
   CompromisedProjection,
 } from './identity-projector.service';
 
-const mockGuard = {
-  verify: jest.fn().mockResolvedValue({
-    status: 'intact' as const,
-    tailSequenceNumber: 42,
-    tailHash: 'abc123',
-    entryCount: 10,
-    checkedAt: '2026-05-27T12:00:00.000Z',
-  }),
-};
+const mockGuard = { verify: jest.fn().mockResolvedValue({
+  status: 'intact' as const,
+  tailSequenceNumber: 42,
+  tailHash: 'abc123',
+  entryCount: 10,
+  checkedAt: '2026-05-27T12:00:00.000Z',
+}) };
 
 describe('IdentityProjectorService', () => {
   let service: IdentityProjectorService;
@@ -34,7 +32,10 @@ describe('IdentityProjectorService', () => {
     mockGuard.verify.mockClear();
 
     const module = await Test.createTestingModule({
-      providers: [IdentityProjectorService, { provide: LineageGuardService, useValue: mockGuard }],
+      providers: [
+        IdentityProjectorService,
+        { provide: LineageGuardService, useValue: mockGuard },
+      ],
     }).compile();
 
     service = module.get(IdentityProjectorService);

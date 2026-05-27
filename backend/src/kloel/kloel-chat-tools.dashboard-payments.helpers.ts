@@ -4,11 +4,9 @@ import * as QRCode from 'qrcode';
 import type { PrismaService } from '../prisma/prisma.service';
 import type { SmartPaymentService } from './smart-payment.service';
 import type { ToolResult } from './kloel-chat-tools.agent-runtime.helpers';
-import { centsFromUnknown } from './kloel-chat-tools.service';
-export interface ToolDashboardSummaryArgs {
+import { centsFromUnknown } from './kloel-chat-tools.service';export interface ToolDashboardSummaryArgs {
   period?: 'today' | 'week' | 'month';
-}
-const logger = StructuredLogger.from('KloelChatToolsDashboardPayments');
+}const logger = StructuredLogger.from('KloelChatToolsDashboardPayments');
 
 export async function runGetDashboardSummary(
   prisma: PrismaService,
@@ -73,8 +71,7 @@ export async function runGetDashboardSummary(
       },
     },
   };
-}
-export async function runCreatePaymentLink(
+}export async function runCreatePaymentLink(
   prisma: PrismaService,
   smartPaymentService: SmartPaymentService,
   workspaceId: string,
@@ -107,9 +104,7 @@ export async function runCreatePaymentLink(
             data: { workspaceId, name: customerName, phone: '', leadScore: 30 },
           });
         }
-      } catch {
-        /* non-blocking */
-      }
+      } catch { /* non-blocking */ }
     }
     // Create sale record for reporting
     try {
@@ -124,17 +119,13 @@ export async function runCreatePaymentLink(
           ...(args.customerName ? { leadPhone: args.customerName } : {}),
         },
       });
-    } catch {
-      /* non-blocking */
-    }
+    } catch { /* non-blocking */ }
     // Generate real QR code as base64
     let qrCodeBase64 = '';
     const pixPayload = `00020126580014BR.GOV.BCB.PIX0136${mockId}520400005303986540${mockAmount.toFixed(2)}5802BR5925${customerName}6009SAO PAULO62070503***6304${randomIdSegment(4).toUpperCase()}`;
     try {
       qrCodeBase64 = await QRCode.toDataURL(pixPayload, { width: 300, margin: 2 });
-    } catch {
-      /* non-blocking */
-    }
+    } catch { /* non-blocking */ }
     return {
       success: true,
       paymentId: mockId,
@@ -153,23 +144,15 @@ export async function runCreatePaymentLink(
     phone: '',
   });
   return { success: true, ...paymentResult };
-}
-export async function runCreateOrder(
+}export async function runCreateOrder(
   prisma: PrismaService,
   workspaceId: string,
   args: Record<string, unknown>,
 ): Promise<ToolResult> {
   const amount = typeof args.amount === 'number' ? args.amount : 0;
-  const productName =
-    typeof args.productName === 'string'
-      ? args.productName
-      : typeof args.description === 'string'
-        ? args.description
-        : 'Produto';
+  const productName = typeof args.productName === 'string' ? args.productName : typeof args.description === 'string' ? args.description : 'Produto';
   const customerName = typeof args.customerName === 'string' ? args.customerName : 'Cliente';
-  if (!amount) {
-    return { success: false, error: 'Informe o valor da venda (ex: R$ 147).' };
-  }
+  if (!amount) {return { success: false, error: 'Informe o valor da venda (ex: R$ 147).' };}
   try {
     const sale = await prisma.kloelSale.create({
       data: {
@@ -184,26 +167,13 @@ export async function runCreateOrder(
     });
     if (customerName && customerName !== 'Cliente') {
       try {
-        const existing = await prisma.contact.findFirst({
-          where: { workspaceId, name: customerName },
-        });
+        const existing = await prisma.contact.findFirst({ where: { workspaceId, name: customerName } });
         if (!existing) {
-          await prisma.contact.create({
-            data: { workspaceId, name: customerName, phone: '', leadScore: 50 },
-          });
+          await prisma.contact.create({ data: { workspaceId, name: customerName, phone: '', leadScore: 50 } });
         }
-      } catch {
-        /* non-blocking */
-      }
+      } catch { /* non-blocking */ }
     }
-    return {
-      success: true,
-      saleId: sale.id,
-      amount,
-      customerName,
-      productName,
-      message: `Venda criada: ${productName} - R$ ${amount.toFixed(2)} para ${customerName}.`,
-    };
+    return { success: true, saleId: sale.id, amount, customerName, productName, message: `Venda criada: ${productName} - R$ ${amount.toFixed(2)} para ${customerName}.` };
   } catch (e: unknown) {
     return { success: false, error: e instanceof Error ? e.message : 'Erro ao criar venda.' };
   }

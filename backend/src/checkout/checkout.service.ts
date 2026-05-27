@@ -351,9 +351,7 @@ export class CheckoutService {
       include: {
         checkoutConfig: true,
         checkoutLinks: {
-          include: {
-            plan: { select: { id: true, name: true, priceInCents: true, isActive: true } },
-          },
+          include: { plan: { select: { id: true, name: true, priceInCents: true, isActive: true } } },
           orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
         },
       },
@@ -374,21 +372,38 @@ export class CheckoutService {
   }
 
   /** Set checkout coupon configuration. */
-  async setCoupons(workspaceId: string, checkoutId: string, couponConfig: SetCheckoutCouponsDto) {
+  async setCoupons(
+    workspaceId: string,
+    checkoutId: string,
+    couponConfig: SetCheckoutCouponsDto,
+  ) {
     await this.verifyCheckoutOwnership(checkoutId, workspaceId);
-    return this.productService.updateConfig(checkoutId, couponConfig);
+    return this.productService.updateConfig(
+      checkoutId,
+      couponConfig,
+    );
   }
 
   /** Set checkout timer configuration. */
   async setTimer(workspaceId: string, checkoutId: string, timerConfig: SetCheckoutTimerDto) {
     await this.verifyCheckoutOwnership(checkoutId, workspaceId);
-    return this.productService.updateConfig(checkoutId, timerConfig);
+    return this.productService.updateConfig(
+      checkoutId,
+      timerConfig,
+    );
   }
 
   /** Set checkout social proof configuration. */
-  async setSocialProof(workspaceId: string, checkoutId: string, config: SetCheckoutSocialProofDto) {
+  async setSocialProof(
+    workspaceId: string,
+    checkoutId: string,
+    config: SetCheckoutSocialProofDto,
+  ) {
     await this.verifyCheckoutOwnership(checkoutId, workspaceId);
-    return this.productService.updateConfig(checkoutId, config);
+    return this.productService.updateConfig(
+      checkoutId,
+      config,
+    );
   }
 
   /** Set checkout exit intent. */

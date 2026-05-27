@@ -1,5 +1,9 @@
 import type { SpineEventRef } from '../mind/mind.types';
-import type { OfferDetectorInput, OfferInsight, RankedOfferInsight } from './offer.types';
+import type {
+  OfferDetectorInput,
+  OfferInsight,
+  RankedOfferInsight,
+} from './offer.types';
 
 import { detectBonusDesirability } from './detectors/bonus-desirability.detector';
 import { detectPromiseStrength } from './detectors/promise-strength.detector';
@@ -34,15 +38,9 @@ function ev(over?: Partial<SpineEventRef>): SpineEventRef {
     occurredAt: over?.occurredAt ?? '2026-05-13T20:00:00.000Z',
     truthMode: over?.truthMode ?? ('observed' as const),
   };
-  if (over?.entityRef !== undefined) {
-    defaults['entityRef'] = over.entityRef;
-  }
-  if (over?.valence !== undefined) {
-    defaults['valence'] = over.valence;
-  }
-  if (over?.payload !== undefined) {
-    defaults['payload'] = over.payload;
-  }
+  if (over?.entityRef !== undefined) {defaults['entityRef'] = over.entityRef;}
+  if (over?.valence !== undefined) {defaults['valence'] = over.valence;}
+  if (over?.payload !== undefined) {defaults['payload'] = over.payload;}
   return defaults as SpineEventRef;
 }
 
@@ -64,7 +62,10 @@ function makeInsight(over?: Partial<OfferInsight>): OfferInsight {
   };
 }
 
-function makeRanked(over?: Partial<OfferInsight>, product?: number): RankedOfferInsight {
+function makeRanked(
+  over?: Partial<OfferInsight>,
+  product?: number,
+): RankedOfferInsight {
   const insight = makeInsight(over);
   return {
     ...insight,
@@ -166,22 +167,10 @@ describe('UTP-OFFER-002 — detectPromiseStrength', () => {
 describe('UTP-OFFER-003 — detectProductVersionFit', () => {
   it('detects product with high refund rate', () => {
     const events: SpineEventRef[] = [
-      ev({
-        eventName: 'commerce.payment.approved',
-        payload: { productId: 'p1', productTier: 'premium' },
-      }),
-      ev({
-        eventName: 'commerce.payment.approved',
-        payload: { productId: 'p1', productTier: 'premium' },
-      }),
-      ev({
-        eventName: 'commerce.payment.approved',
-        payload: { productId: 'p1', productTier: 'premium' },
-      }),
-      ev({
-        eventName: 'commerce.payment.approved',
-        payload: { productId: 'p1', productTier: 'premium' },
-      }),
+      ev({ eventName: 'commerce.payment.approved', payload: { productId: 'p1', productTier: 'premium' } }),
+      ev({ eventName: 'commerce.payment.approved', payload: { productId: 'p1', productTier: 'premium' } }),
+      ev({ eventName: 'commerce.payment.approved', payload: { productId: 'p1', productTier: 'premium' } }),
+      ev({ eventName: 'commerce.payment.approved', payload: { productId: 'p1', productTier: 'premium' } }),
       ev({ eventName: 'commerce.payment.refunded', payload: { productId: 'p1' } }),
       ev({ eventName: 'commerce.payment.refunded', payload: { productId: 'p1' } }),
     ];

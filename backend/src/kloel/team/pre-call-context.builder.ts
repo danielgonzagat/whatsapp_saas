@@ -49,16 +49,21 @@ function parseTimestampMs(iso: string): number {
   return new Date(iso).getTime();
 }
 
-function filterByLead(events: readonly SpineEventRef[], leadId: string): readonly SpineEventRef[] {
+function filterByLead(
+  events: readonly SpineEventRef[],
+  leadId: string,
+): readonly SpineEventRef[] {
   return events.filter(
-    (e) => e.entityRef?.entityType === 'lead' && e.entityRef.entityId === leadId,
+    (e) =>
+      e.entityRef?.entityType === 'lead' &&
+      e.entityRef.entityId === leadId,
   );
 }
 
-function normalizeValence(raw: SpineEventRef['valence']): AbiValence | undefined {
-  if (raw === undefined) {
-    return undefined;
-  }
+function normalizeValence(
+  raw: SpineEventRef['valence'],
+): AbiValence | undefined {
+  if (raw === undefined) {return undefined;}
   return raw;
 }
 
@@ -95,8 +100,12 @@ function findOpenQuestions(events: readonly SpineEventRef[]): readonly string[] 
 
   const silent = events.some((e) => e.eventName === 'commerce.lead.went_silent');
   if (silent) {
-    const hasObjection = events.some((e) => e.eventName === 'commerce.lead.objection_raised');
-    const hasCartAbandoned = events.some((e) => e.eventName === 'commerce.cart.abandoned');
+    const hasObjection = events.some(
+      (e) => e.eventName === 'commerce.lead.objection_raised',
+    );
+    const hasCartAbandoned = events.some(
+      (e) => e.eventName === 'commerce.cart.abandoned',
+    );
 
     if (hasObjection) {
       questions.push(
@@ -129,7 +138,9 @@ function findOpenQuestions(events: readonly SpineEventRef[]): readonly string[] 
     questions.push('payment completed - verify onboarding/delivery status');
   }
 
-  const hasChurnRisk = events.some((e) => e.eventName === 'commerce.post_sale.churn_risk_detected');
+  const hasChurnRisk = events.some(
+    (e) => e.eventName === 'commerce.post_sale.churn_risk_detected',
+  );
   if (hasChurnRisk) {
     questions.push(
       'post-sale churn risk flagged - confirm whether customer reached first value before every retention action; human review only',
@@ -142,7 +153,9 @@ function findOpenQuestions(events: readonly SpineEventRef[]): readonly string[] 
 function findCurrentStage(events: readonly SpineEventRef[]): string | undefined {
   const stageEvents = events
     .filter((e) => e.eventName === 'commerce.crm.stage_changed')
-    .sort((a, b) => parseTimestampMs(b.occurredAt) - parseTimestampMs(a.occurredAt));
+    .sort(
+      (a, b) => parseTimestampMs(b.occurredAt) - parseTimestampMs(a.occurredAt),
+    );
 
   if (stageEvents.length > 0) {
     const last = stageEvents[0]!;
@@ -158,9 +171,7 @@ function findLastContact(events: readonly SpineEventRef[]): string | undefined {
       e.eventName === 'commerce.whatsapp.message_replied' ||
       e.eventName === 'commerce.lead.contacted',
   );
-  if (contactEvents.length === 0) {
-    return undefined;
-  }
+  if (contactEvents.length === 0) {return undefined;}
 
   return contactEvents.reduce((latest, e) =>
     parseTimestampMs(e.occurredAt) > parseTimestampMs(latest.occurredAt) ? e : latest,
@@ -176,9 +187,8 @@ export function buildPreCallContext(input: PreCallContextInput): PreCallContext 
 
   const relevant = sorted.filter((e) => LEAD_RELEVANT_EVENTS.has(e.eventName));
 
-  const history: LeadHistoryEntry[] = relevant
-    .slice(0, MAX_HISTORY_ENTRIES)
-    .map((e): LeadHistoryEntry => {
+  const history: LeadHistoryEntry[] = relevant.slice(0, MAX_HISTORY_ENTRIES).map(
+    (e): LeadHistoryEntry => {
       const valence = e.valence !== undefined ? normalizeValence(e.valence) : undefined;
       const result: LeadHistoryEntry = {
         eventId: e.eventId,
@@ -190,18 +200,17 @@ export function buildPreCallContext(input: PreCallContextInput): PreCallContext 
         return { ...result, valence };
       }
       return result;
-    });
+    },
+  );
 
   const valenceTrace: ValenceTraceEntry[] = relevant
     .filter((e) => e.valence !== undefined)
-    .map(
-      (e): ValenceTraceEntry => ({
-        eventId: e.eventId,
-        valence: normalizeValence(e.valence)!,
-        weight: valenceWeight(normalizeValence(e.valence)!),
-        occurredAt: e.occurredAt,
-      }),
-    );
+    .map((e): ValenceTraceEntry => ({
+      eventId: e.eventId,
+      valence: normalizeValence(e.valence)!,
+      weight: valenceWeight(normalizeValence(e.valence)!),
+      occurredAt: e.occurredAt,
+    }));
 
   const openQuestions = findOpenQuestions(leadEvents);
   const currentStage = findCurrentStage(leadEvents);

@@ -47,7 +47,9 @@ export class LineageLedgerService {
    * Compute the canonical hash of a ledger entry. Excludes the `hash` field
    * itself (self-reference).
    */
-  public static computeEntryHash(entry: Omit<LineageEntry, 'hash'>): string {
+  public static computeEntryHash(
+    entry: Omit<LineageEntry, 'hash'>,
+  ): string {
     const canonical = canonicalizeJson({
       ledgerEntryId: entry.ledgerEntryId,
       sequenceNumber: entry.sequenceNumber,
@@ -85,19 +87,17 @@ export class LineageLedgerService {
           { firstEventName: first.eventName },
         );
       }
-      if (
-        !verifyGenesisEvent({
-          eventId: first.eventId,
-          eventName: first.eventName,
-          payload: first.payload,
-          hash: computeGenesisHash(first.payload as never),
-          timestamp: first.timestamp,
-          occurredAt: first.timestamp,
-          truthMode: 'observed',
-          valence: 'neutral',
-          provenance: GENESIS_EVENT.provenance,
-        })
-      ) {
+      if (!verifyGenesisEvent({
+        eventId: first.eventId,
+        eventName: first.eventName,
+        payload: first.payload,
+        hash: computeGenesisHash(first.payload as never),
+        timestamp: first.timestamp,
+        occurredAt: first.timestamp,
+        truthMode: 'observed',
+        valence: 'neutral',
+        provenance: GENESIS_EVENT.provenance,
+      })) {
         throw new LineageLedgerError(
           'LINEAGE_LEDGER_GENESIS_TAMPERED',
           'first entry diverges from canonical Genesis',
@@ -194,9 +194,7 @@ export class InMemoryLineageLedgerRepository implements LineageLedgerRepository 
   }
 
   public async tail(): Promise<LineageEntry | null> {
-    if (this.entries.length === 0) {
-      return null;
-    }
+    if (this.entries.length === 0) {return null;}
     const last = this.entries[this.entries.length - 1];
     return last ?? null;
   }
@@ -217,7 +215,9 @@ export class InMemoryLineageLedgerRepository implements LineageLedgerRepository 
         `hash ${entry.hash} already exists at seq=${existingByHash.sequenceNumber}`,
       );
     }
-    const existingBySeq = this.entries.find((e) => e.sequenceNumber === entry.sequenceNumber);
+    const existingBySeq = this.entries.find(
+      (e) => e.sequenceNumber === entry.sequenceNumber,
+    );
     if (existingBySeq) {
       throw new LineageLedgerError(
         'LINEAGE_LEDGER_DUPLICATE_SEQUENCE',

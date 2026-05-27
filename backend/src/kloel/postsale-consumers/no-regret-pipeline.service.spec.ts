@@ -46,8 +46,8 @@ describe('NoRegretPipelineService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     service = new NoRegretPipelineService(
-      mockAntiRemorse,
-      mockActivation,
+      mockAntiRemorse as any,
+      mockActivation as any,
       mockFirstValue as any,
       undefined,
     );
@@ -80,7 +80,9 @@ describe('NoRegretPipelineService', () => {
   it('returns no_payment_observed when no payment event exists', async () => {
     const result = await service.assess(
       baseInput({
-        events: [makeEvent({ eventName: 'commerce.lead.created' })],
+        events: [
+          makeEvent({ eventName: 'commerce.lead.created' }),
+        ],
       }),
     );
 
@@ -217,12 +219,17 @@ describe('NoRegretPipelineService', () => {
   it('passes refundRisk to anti-remorse assessment', async () => {
     await service.assess(baseInput(), 0.5);
 
-    expect(mockAntiRemorse.assess).toHaveBeenCalledWith(expect.anything(), 0.5);
+    expect(mockAntiRemorse.assess).toHaveBeenCalledWith(
+      expect.anything(),
+      0.5,
+    );
   });
 
   it('includes assessedAt as ISO string', async () => {
     const result = await service.assess(baseInput());
 
-    expect(result.assessedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+    expect(result.assessedAt).toMatch(
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/,
+    );
   });
 });

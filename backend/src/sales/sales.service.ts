@@ -11,7 +11,7 @@ const SCHEMA_VERSION = '1.0.0';
 const MP_WEBHOOK_PATH = '/webhooks/mercadopago';
 
 /** 30 minutes — standard MP PIX expiration window. */
-const PIX_EXPIRATION_MINUTES = 30; // ------- Types -------
+const PIX_EXPIRATION_MINUTES = 30;// ------- Types -------
 
 export interface BuyerData {
   name: string;
@@ -28,7 +28,7 @@ export interface CreatePixOrderResult {
   pixExpiresAt: Date;
   externalPaymentId: string;
   ticketUrl: string;
-} // ------- Helpers -------
+}// ------- Helpers -------
 
 function resolveBackendOrigin(): string {
   const raw =
@@ -43,7 +43,7 @@ function resolveBackendOrigin(): string {
     return `https://${trimmed}`;
   }
   return trimmed;
-} /**
+}/**
  * Sales service — creates sales (PIX, card, boleto) directly from chat flows.
  *
  * Unlike the checkout pipeline, this service targets in-chat conversion:
@@ -61,7 +61,7 @@ export class SalesService {
     private readonly mpPix: MercadoPagoPixChargeService,
     private readonly audit: AuditService,
     private readonly spine: SpineEmitterService,
-  ) {} /**
+  ) {}  /**
    * Create a PIX payment order directly from chat.
    *
    * Flow:
@@ -109,162 +109,160 @@ export class SalesService {
 
     const payerDocDigits = buyerData.cpf.replace(/\D/g, '');
 
-    return this.prisma
-      .$transaction(
-        async (tx) => {
-          // 1. Create the pending sale record
-          const sale = await tx.kloelSale.create({
-            data: {
-              workspaceId,
-              productName,
-              amount: plan.price,
-              status: 'pending',
-              paymentMethod: 'PIX',
-              leadPhone: buyerData.phone ?? null,
-              metadata: {
-                productId,
-                planId,
-                buyerName: buyerData.name,
-                buyerEmail: buyerData.email,
-              },
-            },
-          });
-
-          // 2. Audit: sale created
-          await this.audit.logWithTx(tx, {
+    return this.prisma.$transaction(
+      async (tx) => {
+        // 1. Create the pending sale record
+        const sale = await tx.kloelSale.create({
+          data: {
             workspaceId,
-            action: 'SALE_CREATED',
-            resource: 'KloelSale',
-            resourceId: sale.id,
-            details: {
+            productName,
+            amount: plan.price,
+            status: 'pending',
+            paymentMethod: 'PIX',
+            leadPhone: buyerData.phone ?? null,
+            metadata: {
               productId,
               planId,
-              amount: plan.price,
-              paymentMethod: 'PIX',
+              buyerName: buyerData.name,
+              buyerEmail: buyerData.email,
             },
-          });
+          },
+        });
 
-          // 3. Generate real PIX charge via Mercado Pago
-          const pixResult = await this.mpPix.create({
-            idempotencyKey,
-            amountCents,
-            payerEmail: buyerData.email,
-            payerName: buyerData.name,
-            ...(payerDocDigits ? { payerDocument: payerDocDigits } : {}),
-            description,
-            externalReference: sale.id,
-            expiresAt,
-            notificationUrl,
-          });
+        // 2. Audit: sale created
+        await this.audit.logWithTx(tx, {
+          workspaceId,
+          action: 'SALE_CREATED',
+          resource: 'KloelSale',
+          resourceId: sale.id,
+          details: {
+            productId,
+            planId,
+            amount: plan.price,
+            paymentMethod: 'PIX',
+          },
+        });
 
-          // 4. Update sale with external payment id
-          await tx.kloelSale.update({
-            where: { id: sale.id },
-            data: {
-              externalPaymentId: pixResult.externalId,
-              paymentLink: pixResult.ticketUrl || null,
-              metadata: {
-                productId,
-                planId,
-                buyerName: buyerData.name,
-                buyerEmail: buyerData.email,
-                pixExternalId: pixResult.externalId,
-                pixStatus: pixResult.status,
-              },
-            },
-          });
+        // 3. Generate real PIX charge via Mercado Pago
+        const pixResult = await this.mpPix.create({
+          idempotencyKey,
+          amountCents,
+          payerEmail: buyerData.email,
+          payerName: buyerData.name,
+          ...(payerDocDigits ? { payerDocument: payerDocDigits } : {}),
+          description,
+          externalReference: sale.id,
+          expiresAt,
+          notificationUrl,
+        });
 
-          // 5. Audit: payment pending
-          await this.audit.logWithTx(tx, {
-            workspaceId,
-            action: 'PAYMENT_PENDING',
-            resource: 'KloelSale',
-            resourceId: sale.id,
-            details: {
-              externalPaymentId: pixResult.externalId,
-              gateway: 'mercadopago',
-              method: 'PIX',
-              amount: plan.price,
-              status: pixResult.status,
-            },
-          });
-
-          return { sale, pixResult };
-        },
-        { isolationLevel: 'ReadCommitted' },
-      )
-      .then(({ sale, pixResult }) => {
-        // 6. Emit spine events (after transaction commits; fire-and-forget)
-        void this.spine
-          .emit({
-            eventName: 'sale.created',
-            workspaceId,
-            entityRef: { entityType: 'sale', entityId: sale.id },
-            truthMode: 'observed',
-            provenance: {
-              source: 'production',
-              processor: PROCESSOR,
-              processorVersion: PROCESSOR_VERSION,
-              schemaVersion: SCHEMA_VERSION,
-            },
-            payload: {
-              saleId: sale.id,
+        // 4. Update sale with external payment id
+        await tx.kloelSale.update({
+          where: { id: sale.id },
+          data: {
+            externalPaymentId: pixResult.externalId,
+            paymentLink: pixResult.ticketUrl || null,
+            metadata: {
               productId,
               planId,
-              amount: plan.price,
-              paymentMethod: 'PIX',
-              externalPaymentId: pixResult.externalId,
+              buyerName: buyerData.name,
+              buyerEmail: buyerData.email,
+              pixExternalId: pixResult.externalId,
+              pixStatus: pixResult.status,
             },
-          })
-          .catch((err: unknown) => {
-            this.logger.warn(
-              `sale.created emission failed: ${err instanceof Error ? err.message : String(err)}`,
-            );
-          });
+          },
+        });
 
-        void this.spine
-          .emit({
-            eventName: 'payment.pending',
-            workspaceId,
-            entityRef: { entityType: 'sale', entityId: sale.id },
-            truthMode: 'observed',
-            provenance: {
-              source: 'production',
-              processor: PROCESSOR,
-              processorVersion: PROCESSOR_VERSION,
-              schemaVersion: SCHEMA_VERSION,
-            },
-            payload: {
-              saleId: sale.id,
-              externalPaymentId: pixResult.externalId,
-              gateway: 'mercadopago',
-              method: 'PIX',
-              amount: plan.price,
-              status: 'pending',
-            },
-          })
-          .catch((err: unknown) => {
-            this.logger.warn(
-              `payment.pending emission failed: ${err instanceof Error ? err.message : String(err)}`,
-            );
-          });
+        // 5. Audit: payment pending
+        await this.audit.logWithTx(tx, {
+          workspaceId,
+          action: 'PAYMENT_PENDING',
+          resource: 'KloelSale',
+          resourceId: sale.id,
+          details: {
+            externalPaymentId: pixResult.externalId,
+            gateway: 'mercadopago',
+            method: 'PIX',
+            amount: plan.price,
+            status: pixResult.status,
+          },
+        });
 
-        this.logger.log(
-          `PIX sale created: saleId=${sale.id} externalPaymentId=${pixResult.externalId} workspace=${workspaceId}`,
-        );
+        return { sale, pixResult };
+      },
+      { isolationLevel: 'ReadCommitted' },
+    ).then(({ sale, pixResult }) => {
+      // 6. Emit spine events (after transaction commits; fire-and-forget)
+      void this.spine
+        .emit({
+          eventName: 'sale.created',
+          workspaceId,
+          entityRef: { entityType: 'sale', entityId: sale.id },
+          truthMode: 'observed',
+          provenance: {
+            source: 'production',
+            processor: PROCESSOR,
+            processorVersion: PROCESSOR_VERSION,
+            schemaVersion: SCHEMA_VERSION,
+          },
+          payload: {
+            saleId: sale.id,
+            productId,
+            planId,
+            amount: plan.price,
+            paymentMethod: 'PIX',
+            externalPaymentId: pixResult.externalId,
+          },
+        })
+        .catch((err: unknown) => {
+          this.logger.warn(
+            `sale.created emission failed: ${err instanceof Error ? err.message : String(err)}`,
+          );
+        });
 
-        // 7. Return PIX display data
-        return {
-          saleId: sale.id,
-          pixQrCode: pixResult.qrCode || pixResult.qrCodeBase64,
-          pixQrCodeBase64: pixResult.qrCodeBase64,
-          pixCopyPaste: pixResult.qrCode,
-          pixExpiresAt: expiresAt,
-          externalPaymentId: pixResult.externalId,
-          ticketUrl: pixResult.ticketUrl,
-        };
-      });
-  } /**
+      void this.spine
+        .emit({
+          eventName: 'payment.pending',
+          workspaceId,
+          entityRef: { entityType: 'sale', entityId: sale.id },
+          truthMode: 'observed',
+          provenance: {
+            source: 'production',
+            processor: PROCESSOR,
+            processorVersion: PROCESSOR_VERSION,
+            schemaVersion: SCHEMA_VERSION,
+          },
+          payload: {
+            saleId: sale.id,
+            externalPaymentId: pixResult.externalId,
+            gateway: 'mercadopago',
+            method: 'PIX',
+            amount: plan.price,
+            status: 'pending',
+          },
+        })
+        .catch((err: unknown) => {
+          this.logger.warn(
+            `payment.pending emission failed: ${err instanceof Error ? err.message : String(err)}`,
+          );
+        });
+
+      this.logger.log(
+        `PIX sale created: saleId=${sale.id} externalPaymentId=${pixResult.externalId} workspace=${workspaceId}`,
+      );
+
+      // 7. Return PIX display data
+      return {
+        saleId: sale.id,
+        pixQrCode: pixResult.qrCode || pixResult.qrCodeBase64,
+        pixQrCodeBase64: pixResult.qrCodeBase64,
+        pixCopyPaste: pixResult.qrCode,
+        pixExpiresAt: expiresAt,
+        externalPaymentId: pixResult.externalId,
+        ticketUrl: pixResult.ticketUrl,
+      };
+    });
+  }  /**
    * Look up a sale by id, scoped to workspace.
    */
   async findById(workspaceId: string, saleId: string) {

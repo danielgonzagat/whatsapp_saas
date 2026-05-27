@@ -1,16 +1,5 @@
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
-import type {
-  AbClaimEvidence,
-  AbCommercialOutcome,
-  AbCommercialOutcomeDetectorFn,
-  AbHarnessRecord,
-  AbPathRunnerFn,
-  AbPathRunnerResult,
-  AbPromotionDecision,
-  AbRCriterionDelta,
-  AbRCriterionDescriptor,
-  AbRCriterionName,
-} from './abi-ab.types';
+import type { AbClaimEvidence, AbCommercialOutcome, AbCommercialOutcomeDetectorFn, AbHarnessRecord, AbPathRunnerFn, AbPathRunnerResult, AbPromotionDecision, AbRCriterionDelta, AbRCriterionDescriptor, AbRCriterionName } from './abi-ab.types';
 import { randomIdSegment } from '../../common/random-id';
 export const ABI_PATH_RUNNER = Symbol('ABI_PATH_RUNNER');
 export const ABI_COMMERCIAL_OUTCOME_DETECTOR = Symbol('ABI_COMMERCIAL_OUTCOME_DETECTOR');
@@ -63,24 +52,16 @@ function sum(arr: number[]): number {
   return arr.reduce((a, b) => a + b, 0);
 }
 function avg(arr: number[], fallback: number = 0): number {
-  if (arr.length === 0) {
-    return fallback;
-  }
+  if (arr.length === 0) {return fallback;}
   return sum(arr) / arr.length;
 }
 function ratio(numerator: number, denominator: number, fallback: number = 0): number {
-  if (denominator === 0) {
-    return fallback;
-  }
+  if (denominator === 0) {return fallback;}
   return numerator / denominator;
 }
 function clamp01(value: number): number {
-  if (value <= 0) {
-    return 0;
-  }
-  if (value >= 1) {
-    return 1;
-  }
+  if (value <= 0) {return 0;}
+  if (value >= 1) {return 1;}
   return value;
 }
 function extractClaimsFromText(text: string): AbClaimEvidence[] {
@@ -88,10 +69,7 @@ function extractClaimsFromText(text: string): AbClaimEvidence[] {
   const sentences = text.split(/[.!?]+/).filter((s) => s.trim().length > 10);
   for (const sentence of sentences) {
     const trimmed = sentence.trim();
-    const hasProof =
-      /segundo|de acordo com|conforme|fonte|dados mostram|pesquisa|relat.rio|evid.ncia/i.test(
-        trimmed,
-      );
+    const hasProof = /segundo|de acordo com|conforme|fonte|dados mostram|pesquisa|relat.rio|evid.ncia/i.test(trimmed);
     claims.push({
       claim: trimmed.slice(0, 200),
       hasProof,
@@ -105,35 +83,11 @@ function estimateCommercialOutcome(params: {
   readonly workspaceId: string;
 }): AbCommercialOutcome | null {
   const text = params.responseText.toLowerCase();
-  const conversionKeywords = [
-    'comprar',
-    'clique aqui',
-    'aproveite',
-    'oferta',
-    'desconto',
-    'adquirir',
-    'garantir',
-    'última chance',
-    'exclusivo',
-    'compre agora',
-  ];
-  const satisfactionKeywords = [
-    'obrigado',
-    'obrigada',
-    'excelente',
-    'satisfeito',
-    'gostei',
-    'perfeito',
-    'resolvido',
-    'ajudou',
-    'agradeço',
-    'valeu',
-  ];
+  const conversionKeywords = ['comprar', 'clique aqui', 'aproveite', 'oferta', 'desconto', 'adquirir', 'garantir', 'última chance', 'exclusivo', 'compre agora'];
+  const satisfactionKeywords = ['obrigado', 'obrigada', 'excelente', 'satisfeito', 'gostei', 'perfeito', 'resolvido', 'ajudou', 'agradeço', 'valeu'];
   const hasConversion = conversionKeywords.some((kw) => text.includes(kw));
   const hasSatisfaction = satisfactionKeywords.some((kw) => text.includes(kw));
-  if (!hasConversion && !hasSatisfaction) {
-    return null;
-  }
+  if (!hasConversion && !hasSatisfaction) {return null;}
   return {
     conversionSignal: hasConversion,
     satisfactionSignal: hasSatisfaction ? hasSatisfaction : null,
@@ -147,9 +101,7 @@ export class AbiAbHarnessService {
   private readonly commercialOutcomeDetector: AbCommercialOutcomeDetectorFn;
   constructor(
     @Optional() @Inject(ABI_PATH_RUNNER) pathRunner: AbPathRunnerFn | null,
-    @Optional()
-    @Inject(ABI_COMMERCIAL_OUTCOME_DETECTOR)
-    commercialOutcomeDetector: AbCommercialOutcomeDetectorFn | null,
+    @Optional() @Inject(ABI_COMMERCIAL_OUTCOME_DETECTOR) commercialOutcomeDetector: AbCommercialOutcomeDetectorFn | null,
   ) {
     this.pathRunner = pathRunner ?? this.noopPathRunner;
     this.commercialOutcomeDetector = commercialOutcomeDetector ?? estimateCommercialOutcome;
@@ -189,9 +141,7 @@ export class AbiAbHarnessService {
     let count = 0;
     for (const r of records) {
       for (const c of r.claims) {
-        if (!c.hasProof) {
-          count++;
-        }
+        if (!c.hasProof) {count++;}
       }
     }
     return count;
@@ -205,9 +155,7 @@ export class AbiAbHarnessService {
   }
   public hallucinationRate(records: AbHarnessRecord[]): number {
     const total = this.totalClaims(records);
-    if (total === 0) {
-      return 0;
-    }
+    if (total === 0) {return 0;}
     return this.hallucinatedFacts(records) / total;
   }
   public computeRDelta(workspaceId: string): AbRCriterionDelta[] {
@@ -274,13 +222,9 @@ export class AbiAbHarnessService {
     let regressed = 0;
     let unchanged = 0;
     for (const d of deltas) {
-      if (d.direction === 'improved') {
-        improved++;
-      } else if (d.direction === 'regressed') {
-        regressed++;
-      } else {
-        unchanged++;
-      }
+      if (d.direction === 'improved') {improved++;}
+      else if (d.direction === 'regressed') {regressed++;}
+      else {unchanged++;}
     }
     if (regressed > 0) {
       return {
@@ -356,7 +300,9 @@ export class AbiAbHarnessService {
       collectedAt: new Date().toISOString(),
     };
   }
-  private aggregateMetrics(records: AbHarnessRecord[]): {
+  private aggregateMetrics(
+    records: AbHarnessRecord[],
+  ): {
     successRate: number;
     avgLatencyMs: number;
     avgTokens: number;
@@ -375,23 +321,15 @@ export class AbiAbHarnessService {
     for (const r of records) {
       latencies.push(r.latencyMs);
       tokens.push(r.tokensUsed);
-      if (r.success) {
-        successCount++;
-      }
+      if (r.success) {successCount++;}
       for (const c of r.claims) {
         claimTotal++;
-        if (!c.hasProof) {
-          claimNoProof++;
-        }
+        if (!c.hasProof) {claimNoProof++;}
       }
       if (r.commercialOutcome) {
         outcomeCount++;
-        if (r.commercialOutcome.conversionSignal) {
-          conversionCount++;
-        }
-        if (r.commercialOutcome.satisfactionSignal === true) {
-          satisfactionCount++;
-        }
+        if (r.commercialOutcome.conversionSignal) {conversionCount++;}
+        if (r.commercialOutcome.satisfactionSignal === true) {satisfactionCount++;}
       }
     }
     return {
@@ -453,9 +391,7 @@ export class AbiAbHarnessService {
       R38: () => satRate * 0.6 + s * 0.4,
     };
     const fn = byCriterion[criterion];
-    if (!fn) {
-      return 0;
-    }
+    if (!fn) {return 0;}
     return clamp01(fn());
   }
 }

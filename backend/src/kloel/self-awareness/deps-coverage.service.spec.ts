@@ -24,14 +24,12 @@ describe('DepsCoverageService', () => {
     });
 
     it('returns parsed dependencies from SBOM', async () => {
-      mockReadFile.mockResolvedValueOnce(
-        JSON.stringify({
-          components: [
-            { name: 'react', version: '18.2.0', type: 'library', purl: 'pkg:npm/react@18.2.0' },
-            { name: 'lodash', version: '4.17.21', type: 'library', group: 'lodash' },
-          ],
-        }),
-      );
+      mockReadFile.mockResolvedValueOnce(JSON.stringify({
+        components: [
+          { name: 'react', version: '18.2.0', type: 'library', purl: 'pkg:npm/react@18.2.0' },
+          { name: 'lodash', version: '4.17.21', type: 'library', group: 'lodash' },
+        ],
+      }));
 
       const result = await service.dependencies('backend');
       expect(result.success).toBe(true);
@@ -41,14 +39,12 @@ describe('DepsCoverageService', () => {
     });
 
     it('filters dependencies by pattern', async () => {
-      mockReadFile.mockResolvedValueOnce(
-        JSON.stringify({
-          components: [
-            { name: 'react', version: '18.2.0', type: 'library' },
-            { name: '@nestjs/core', version: '10.0.0', type: 'library', group: '@nestjs' },
-          ],
-        }),
-      );
+      mockReadFile.mockResolvedValueOnce(JSON.stringify({
+        components: [
+          { name: 'react', version: '18.2.0', type: 'library' },
+          { name: '@nestjs/core', version: '10.0.0', type: 'library', group: '@nestjs' },
+        ],
+      }));
 
       const result = await service.dependencies('backend', 'nestjs');
       expect(result.success).toBe(true);
@@ -66,16 +62,14 @@ describe('DepsCoverageService', () => {
 
   describe('codeCoverage', () => {
     it('returns summary from coverage-summary.json', async () => {
-      mockReadFile.mockResolvedValueOnce(
-        JSON.stringify({
-          total: {
-            lines: { total: 100, covered: 80, pct: 80 },
-            branches: { total: 20, covered: 15, pct: 75 },
-            functions: { total: 30, covered: 25, pct: 83.33 },
-            statements: { total: 120, covered: 100, pct: 83.33 },
-          },
-        }),
-      );
+      mockReadFile.mockResolvedValueOnce(JSON.stringify({
+        total: {
+          lines: { total: 100, covered: 80, pct: 80 },
+          branches: { total: 20, covered: 15, pct: 75 },
+          functions: { total: 30, covered: 25, pct: 83.33 },
+          statements: { total: 120, covered: 100, pct: 83.33 },
+        },
+      }));
 
       const result = await service.codeCoverage();
       expect(result.available).toBe(true);
@@ -90,16 +84,14 @@ describe('DepsCoverageService', () => {
     });
 
     it('scopes coverage to a specific workspace', async () => {
-      mockReadFile.mockResolvedValueOnce(
-        JSON.stringify({
-          total: {
-            lines: { total: 50, covered: 50, pct: 100 },
-            branches: { total: 10, covered: 10, pct: 100 },
-            functions: { total: 5, covered: 5, pct: 100 },
-            statements: { total: 60, covered: 60, pct: 100 },
-          },
-        }),
-      );
+      mockReadFile.mockResolvedValueOnce(JSON.stringify({
+        total: {
+          lines: { total: 50, covered: 50, pct: 100 },
+          branches: { total: 10, covered: 10, pct: 100 },
+          functions: { total: 5, covered: 5, pct: 100 },
+          statements: { total: 60, covered: 60, pct: 100 },
+        },
+      }));
 
       const result = await service.codeCoverage(undefined, 'worker');
       expect(result.available).toBe(true);
@@ -116,9 +108,7 @@ describe('DepsCoverageService', () => {
       mockReaddir.mockResolvedValueOnce([
         { name: 'foo.test.ts', isFile: () => true, isDirectory: () => false },
       ]);
-      mockReadFile.mockResolvedValueOnce(
-        "import { foo } from './foo';\ndescribe('foo', () => {});",
-      );
+      mockReadFile.mockResolvedValueOnce("import { foo } from './foo';\ndescribe('foo', () => {});");
       mockReadFile.mockResolvedValueOnce("const foo = require('./foo');");
 
       const result = await service.affectedTests(['worker/src/foo.ts']);

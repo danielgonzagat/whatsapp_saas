@@ -52,23 +52,15 @@ function collectLeadActivity(
   const leadMap = new Map<string, LeadActivity>();
 
   for (const event of events) {
-    if (event.workspaceId !== workspaceId) {
-      continue;
-    }
+    if (event.workspaceId !== workspaceId) {continue;}
 
     const leadId = event.entityRef?.entityId;
-    if (!leadId || event.entityRef?.entityType !== 'lead') {
-      continue;
-    }
+    if (!leadId || event.entityRef?.entityType !== 'lead') {continue;}
 
-    if (!HOT_LEAD_EVENTS.has(event.eventName)) {
-      continue;
-    }
+    if (!HOT_LEAD_EVENTS.has(event.eventName)) {continue;}
 
     const hours = hoursBetween(event.occurredAt, nowIso);
-    if (hours > windowHours) {
-      continue;
-    }
+    if (hours > windowHours) {continue;}
 
     const existing = leadMap.get(leadId);
     if (existing !== undefined) {
@@ -76,7 +68,8 @@ function collectLeadActivity(
         leadId,
         eventCount: existing.eventCount + 1,
         latestEventAt:
-          parseTimestampMs(event.occurredAt) > parseTimestampMs(existing.latestEventAt)
+          parseTimestampMs(event.occurredAt) >
+          parseTimestampMs(existing.latestEventAt)
             ? event.occurredAt
             : existing.latestEventAt,
       };
@@ -100,15 +93,9 @@ function hasOperatorAction(
   nowIso: string,
 ): boolean {
   return events.some((e) => {
-    if (!OPERATOR_ACTION_EVENTS.has(e.eventName)) {
-      return false;
-    }
-    if (e.entityRef?.entityId !== leadId) {
-      return false;
-    }
-    if (e.entityRef.entityType !== 'lead') {
-      return false;
-    }
+    if (!OPERATOR_ACTION_EVENTS.has(e.eventName)) {return false;}
+    if (e.entityRef?.entityId !== leadId) {return false;}
+    if (e.entityRef.entityType !== 'lead') {return false;}
     return hoursBetween(e.occurredAt, nowIso) <= windowHours;
   });
 }
@@ -123,20 +110,12 @@ function findLastTouch(
   let latestMs = 0;
 
   for (const event of events) {
-    if (event.entityRef?.entityId !== leadId) {
-      continue;
-    }
-    if (event.entityRef.entityType !== 'lead') {
-      continue;
-    }
-    if (!OPERATOR_ACTION_EVENTS.has(event.eventName)) {
-      continue;
-    }
+    if (event.entityRef?.entityId !== leadId) {continue;}
+    if (event.entityRef.entityType !== 'lead') {continue;}
+    if (!OPERATOR_ACTION_EVENTS.has(event.eventName)) {continue;}
 
     const ms = parseTimestampMs(event.occurredAt);
-    if (hoursBetween(event.occurredAt, nowIso) > windowHours * 2) {
-      continue;
-    }
+    if (hoursBetween(event.occurredAt, nowIso) > windowHours * 2) {continue;}
 
     if (ms > latestMs) {
       latestMs = ms;
@@ -147,11 +126,18 @@ function findLastTouch(
   return latest;
 }
 
-export function illuminateBlindSpots(input: BlindSpotInput): readonly BlindSpotEntry[] {
+export function illuminateBlindSpots(
+  input: BlindSpotInput,
+): readonly BlindSpotEntry[] {
   const windowHours = input.windowHours ?? DEFAULT_WINDOW_HOURS;
   const nowIso = input.nowIso ?? new Date().toISOString();
 
-  const activeLeads = collectLeadActivity(input.events, input.workspaceId, nowIso, windowHours);
+  const activeLeads = collectLeadActivity(
+    input.events,
+    input.workspaceId,
+    nowIso,
+    windowHours,
+  );
 
   const results: BlindSpotEntry[] = [];
 
@@ -160,7 +146,12 @@ export function illuminateBlindSpots(input: BlindSpotInput): readonly BlindSpotE
       continue;
     }
 
-    const lastTouch = findLastTouch(input.events, lead.leadId, nowIso, windowHours);
+    const lastTouch = findLastTouch(
+      input.events,
+      lead.leadId,
+      nowIso,
+      windowHours,
+    );
 
     const reason = lastTouch
       ? `lead active (${lead.eventCount} events) but no operator touch in ${windowHours}h window`

@@ -1,7 +1,5 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ProductController } from './product.controller';
-import { PrismaService } from '../prisma/prisma.service';
-import { createPartialPrismaMock, type PrismaMockRecord } from '../../test/helpers/prisma.mock';
 
 jest.mock('./product-memory-sync.helpers', () => ({
   syncProductToMemory: jest.fn(),
@@ -19,7 +17,17 @@ jest.mock('./product-metrics.helpers', () => ({
 }));
 
 describe('ProductController', () => {
-  let prisma: PrismaMockRecord;
+  const prisma = {
+    product: {
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      findFirstOrThrow: jest.fn(),
+      create: jest.fn(),
+      updateMany: jest.fn(),
+      deleteMany: jest.fn(),
+    },
+  } as never;
+
   let controller: ProductController;
 
   const mockReq = (overrides: Partial<{ sub: string; workspaceId: string }> = {}) =>
@@ -33,46 +41,46 @@ describe('ProductController', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    prisma = createPartialPrismaMock({
-      product: ['findMany', 'findFirst', 'findFirstOrThrow', 'create', 'updateMany', 'deleteMany'],
-    });
-    controller = new ProductController(prisma as unknown as PrismaService, undefined);
+    controller = new ProductController(prisma as never, undefined);
   });
 
   describe('listProducts', () => {
     it('returns products array with count', async () => {
       const raw = [{ id: 'p-1', name: 'Curso A' }];
-      prisma.product.findMany.mockResolvedValue(raw);
+      (prisma as never).product.findMany.mockResolvedValue(raw);
       const result = await controller.listProducts(mockReq());
       expect(result).toHaveProperty('products');
       expect(result).toHaveProperty('count', 1);
     });
 
     it('applies category filter', async () => {
-      prisma.product.findMany.mockResolvedValue([]);
+      (prisma as never).product.findMany.mockResolvedValue([]);
       await controller.listProducts(mockReq(), 'cursos');
-      const [query] = prisma.product.findMany.mock.calls[0] as [{ where: { category?: string } }];
-      expect(query.where.category).toBe('cursos');
+      expect((prisma as never).product.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ category: 'cursos' }) }),
+      );
     });
 
     it('applies active filter', async () => {
-      prisma.product.findMany.mockResolvedValue([]);
+      (prisma as never).product.findMany.mockResolvedValue([]);
       await controller.listProducts(mockReq(), undefined, 'true');
-      const [query] = prisma.product.findMany.mock.calls[0] as [{ where: { active?: boolean } }];
-      expect(query.where.active).toBe(true);
+      expect((prisma as never).product.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ active: true }) }),
+      );
     });
 
     it('applies search filter with OR', async () => {
-      prisma.product.findMany.mockResolvedValue([]);
+      (prisma as never).product.findMany.mockResolvedValue([]);
       await controller.listProducts(mockReq(), undefined, undefined, 'react');
-      const [query] = prisma.product.findMany.mock.calls[0] as [{ where: { OR?: unknown[] } }];
-      expect(Array.isArray(query.where.OR)).toBe(true);
+      expect((prisma as never).product.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ OR: expect.any(Array) }) }),
+      );
     });
   });
 
   describe('getProductStats', () => {
     it('returns aggregate counts', async () => {
-      prisma.product.findMany.mockResolvedValue([
+      (prisma as never).product.findMany.mockResolvedValue([
         { id: 'p-1', active: true, name: 'A' },
         { id: 'p-2', active: false, name: 'B' },
       ]);
@@ -88,27 +96,27 @@ describe('ProductController', () => {
 
   describe('getProduct', () => {
     it('returns product scoped to workspace', async () => {
-      prisma.product.findFirst.mockResolvedValue({
+      (prisma as never).product.findFirst.mockResolvedValue({
         id: 'p-1',
         name: 'A',
         workspaceId: 'ws-1',
       });
       const result = await controller.getProduct(mockReq(), 'p-1');
       expect(result).toHaveProperty('product');
-      expect(prisma.product.findFirst).toHaveBeenCalledWith({
+      expect((prisma as never).product.findFirst).toHaveBeenCalledWith({
         where: { id: 'p-1', workspaceId: 'ws-1' },
       });
     });
 
     it('throws NotFoundException when not found', async () => {
-      prisma.product.findFirst.mockResolvedValue(null);
+      (prisma as never).product.findFirst.mockResolvedValue(null);
       await expect(controller.getProduct(mockReq(), 'x')).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('createProduct', () => {
     it('creates product and returns success', async () => {
-      prisma.product.create.mockResolvedValue({
+      (prisma as never).product.create.mockResolvedValue({
         id: 'p-new',
         name: 'X',
         workspaceId: 'ws-1',
@@ -119,23 +127,23 @@ describe('ProductController', () => {
 
     it('returns existing on idempotent retry', async () => {
       const existing = { id: 'p-old', name: 'Retry', workspaceId: 'ws-1' };
-      prisma.product.findFirst.mockResolvedValue(existing);
+      (prisma as never).product.findFirst.mockResolvedValue(existing);
       const result = await controller.createProduct(mockReq(), {
         name: 'Retry',
         price: 50,
         idempotencyKey: 'ik',
       });
       expect(result).toHaveProperty('data', existing);
-      expect(prisma.product.create).not.toHaveBeenCalled();
+      expect((prisma as never).product.create).not.toHaveBeenCalled();
     });
   });
 
   describe('updateProduct', () => {
     it('updates and returns updated record', async () => {
-      prisma.product.findFirst
+      (prisma as never).product.findFirst
         .mockResolvedValueOnce({ id: 'p-1', name: 'Old', workspaceId: 'ws-1', price: 50 })
         .mockResolvedValueOnce({ id: 'p-1', name: 'New', workspaceId: 'ws-1', price: 99 });
-      prisma.product.updateMany.mockResolvedValue({ count: 1 });
+      (prisma as never).product.updateMany.mockResolvedValue({ count: 1 });
       const result = await controller.updateProduct(mockReq(), 'p-1', {
         name: 'New',
         price: 99,
@@ -144,14 +152,14 @@ describe('ProductController', () => {
     });
 
     it('throws NotFoundException when not in workspace', async () => {
-      prisma.product.findFirst.mockResolvedValue(null);
-      await expect(controller.updateProduct(mockReq(), 'p-other', { name: 'X' })).rejects.toThrow(
-        NotFoundException,
-      );
+      (prisma as never).product.findFirst.mockResolvedValue(null);
+      await expect(
+        controller.updateProduct(mockReq(), 'p-other', { name: 'X' }),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('rejects commissionPercent > 100', async () => {
-      prisma.product.findFirst.mockResolvedValue({
+      (prisma as never).product.findFirst.mockResolvedValue({
         id: 'p-1',
         workspaceId: 'ws-1',
       });
@@ -163,24 +171,24 @@ describe('ProductController', () => {
 
   describe('deleteProduct', () => {
     it('deletes and returns success', async () => {
-      prisma.product.findFirst.mockResolvedValue({
+      (prisma as never).product.findFirst.mockResolvedValue({
         id: 'p-1',
         workspaceId: 'ws-1',
       });
-      prisma.product.deleteMany.mockResolvedValue({ count: 1 });
+      (prisma as never).product.deleteMany.mockResolvedValue({ count: 1 });
       const result = await controller.deleteProduct(mockReq(), 'p-1');
       expect(result).toEqual({ success: true, deleted: 'p-1' });
     });
 
     it('throws NotFoundException when not found', async () => {
-      prisma.product.findFirst.mockResolvedValue(null);
+      (prisma as never).product.findFirst.mockResolvedValue(null);
       await expect(controller.deleteProduct(mockReq(), 'x')).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('getCategories', () => {
     it('returns distinct non-null categories', async () => {
-      prisma.product.findMany.mockResolvedValue([
+      (prisma as never).product.findMany.mockResolvedValue([
         { category: 'cursos' },
         { category: 'mentorias' },
         { category: null },
@@ -192,7 +200,7 @@ describe('ProductController', () => {
 
   describe('importProducts', () => {
     it('reports success/failure counts', async () => {
-      prisma.product.create
+      (prisma as never).product.create
         .mockResolvedValueOnce({ id: 'p-1', workspaceId: 'ws-1' })
         .mockRejectedValueOnce(new Error('dup'));
       const result = await controller.importProducts(mockReq(), {

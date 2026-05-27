@@ -1,4 +1,4 @@
-import { Injectable, Optional } from '@nestjs/common';
+import { Injectable, Optional  } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { InstagramService } from '../meta/instagram/instagram.service';
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
@@ -231,15 +231,9 @@ function hasEnvSmtpProvider(): boolean {
 }
 
 function hasEmailProvider(): 'resend' | 'sendgrid' | 'smtp' | null {
-  if (hasConfiguredEnv('RESEND_API_KEY')) {
-    return 'resend';
-  }
-  if (hasConfiguredEnv('SENDGRID_API_KEY')) {
-    return 'sendgrid';
-  }
-  if (hasEnvSmtpProvider()) {
-    return 'smtp';
-  }
+  if (hasConfiguredEnv('RESEND_API_KEY')) {return 'resend';}
+  if (hasConfiguredEnv('SENDGRID_API_KEY')) {return 'sendgrid';}
+  if (hasEnvSmtpProvider()) {return 'smtp';}
   return null;
 }
 

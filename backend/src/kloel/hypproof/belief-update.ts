@@ -88,12 +88,8 @@ export class BeliefUpdateService {
 }
 
 function estimatePriorMean(verdict: string): number {
-  if (verdict === 'confirmed') {
-    return 0.55;
-  }
-  if (verdict === 'refuted') {
-    return 0.45;
-  }
+  if (verdict === 'confirmed') {return 0.55;}
+  if (verdict === 'refuted') {return 0.45;}
   return 0.5;
 }
 

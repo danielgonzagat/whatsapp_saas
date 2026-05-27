@@ -14,12 +14,7 @@ function generateNarrativeSummary(events: readonly SpineEventRef[], periodDays: 
 
   const positiveCount = events.filter((e) => e.valence === 'positive').length;
   const negativeCount = events.filter((e) => e.valence === 'negative').length;
-  const netSignal =
-    positiveCount > negativeCount
-      ? 'positive'
-      : negativeCount > positiveCount
-        ? 'challenging'
-        : 'neutral';
+  const netSignal = positiveCount > negativeCount ? 'positive' : negativeCount > positiveCount ? 'challenging' : 'neutral';
 
   return (
     `Over ${periodDays} days, the workspace recorded ${events.length} cognitive events ` +
@@ -30,9 +25,7 @@ function generateNarrativeSummary(events: readonly SpineEventRef[], periodDays: 
 }
 
 function generateFindings(events: readonly SpineEventRef[]): readonly string[] {
-  if (events.length === 0) {
-    return ['No events to analyze'];
-  }
+  if (events.length === 0) {return ['No events to analyze'];}
 
   const findings: string[] = [];
   const domainCounts: Record<string, number> = {};
@@ -52,15 +45,9 @@ function generateFindings(events: readonly SpineEventRef[]): readonly string[] {
   const inferred = events.filter((e) => e.truthMode === 'inferred').length;
   const projected = events.filter((e) => e.truthMode === 'projected').length;
 
-  if (observed > 0) {
-    findings.push(`${observed} observed (real) events — ground truth`);
-  }
-  if (inferred > 0) {
-    findings.push(`${inferred} inferred events — pattern-based reasoning`);
-  }
-  if (projected > 0) {
-    findings.push(`${projected} projected events — forward-looking signals`);
-  }
+  if (observed > 0) {findings.push(`${observed} observed (real) events — ground truth`);}
+  if (inferred > 0) {findings.push(`${inferred} inferred events — pattern-based reasoning`);}
+  if (projected > 0) {findings.push(`${projected} projected events — forward-looking signals`);}
 
   const negativeEvents = events.filter((e) => e.valence === 'negative');
   if (negativeEvents.length > 0) {
@@ -73,7 +60,9 @@ function generateFindings(events: readonly SpineEventRef[]): readonly string[] {
   return findings;
 }
 
-function generateRecommendations(events: readonly SpineEventRef[]): readonly string[] {
+function generateRecommendations(
+  events: readonly SpineEventRef[],
+): readonly string[] {
   if (events.length === 0) {
     return ['Begin generating spine events to build cognitive capital'];
   }
@@ -126,9 +115,7 @@ export class NarrativeBuilder {
     const recommendations = generateRecommendations(timed);
 
     const confidence =
-      timed.length >= 10
-        ? clamp(0.5 + timed.length / 100, 0.5, 0.95)
-        : clamp(timed.length / 20, 0.1, 0.5);
+      timed.length >= 10 ? clamp(0.5 + timed.length / 100, 0.5, 0.95) : clamp(timed.length / 20, 0.1, 0.5);
 
     return {
       workspaceId: input.workspaceId,

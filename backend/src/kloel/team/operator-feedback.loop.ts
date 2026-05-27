@@ -45,21 +45,25 @@ export function buildFeedbackEntry(input: FeedbackInput): FeedbackEntry {
   return {
     suggestionId: input.suggestionId,
     accepted: input.accepted,
-    ...(input.operatorNote !== undefined ? { operatorNote: input.operatorNote } : {}),
+    ...(input.operatorNote !== undefined
+      ? { operatorNote: input.operatorNote }
+      : {}),
     submittedAt: new Date().toISOString(),
     workspaceId: input.workspaceId,
     operatorId: input.operatorId,
   };
 }
 
-export function feedbackToValence(entry: FeedbackEntry): AbiValence {
-  if (entry.accepted) {
-    return 'positive';
-  }
+export function feedbackToValence(
+  entry: FeedbackEntry,
+): AbiValence {
+  if (entry.accepted) {return 'positive';}
   return 'neutral';
 }
 
-export function feedbackToSpineInput(entry: FeedbackEntry): FeedbackSpineInput {
+export function feedbackToSpineInput(
+  entry: FeedbackEntry,
+): FeedbackSpineInput {
   return {
     eventName: 'cognition.valence_assigned',
     workspaceId: entry.workspaceId,
@@ -76,7 +80,9 @@ export function feedbackToSpineInput(entry: FeedbackEntry): FeedbackSpineInput {
       accepted: entry.accepted,
       operatorId: entry.operatorId,
       learningFraming: LEARNING_FRAMING,
-      ...(entry.operatorNote !== undefined ? { operatorNote: entry.operatorNote } : {}),
+      ...(entry.operatorNote !== undefined
+        ? { operatorNote: entry.operatorNote }
+        : {}),
     },
     entityRef: {
       entityType: 'operator',
@@ -86,10 +92,10 @@ export function feedbackToSpineInput(entry: FeedbackEntry): FeedbackSpineInput {
   };
 }
 
-export function computeOperatorAccuracy(feedbacks: readonly FeedbackEntry[]): number {
-  if (feedbacks.length === 0) {
-    return 0;
-  }
+export function computeOperatorAccuracy(
+  feedbacks: readonly FeedbackEntry[],
+): number {
+  if (feedbacks.length === 0) {return 0;}
   const accepted = feedbacks.filter((f) => f.accepted).length;
   return Math.round((accepted / feedbacks.length) * 100) / 100;
 }
@@ -122,15 +128,19 @@ export function extractFeedbackFromEvents(
         (e.payload as Record<string, unknown>)['suggestionId'] !== undefined &&
         e.entityRef?.entityType === 'operator',
     )
-    .map((e): FeedbackEntry => {
-      const p = e.payload as Record<string, unknown>;
-      return {
-        suggestionId: p['suggestionId'] as string,
-        accepted: p['accepted'] === true,
-        submittedAt: e.occurredAt,
-        workspaceId: e.workspaceId ?? '',
-        operatorId: e.entityRef!.entityId,
-        ...(typeof p['operatorNote'] === 'string' ? { operatorNote: p['operatorNote'] } : {}),
-      };
-    });
+    .map(
+      (e): FeedbackEntry => {
+        const p = e.payload as Record<string, unknown>;
+        return {
+          suggestionId: p['suggestionId'] as string,
+          accepted: p['accepted'] === true,
+          submittedAt: e.occurredAt,
+          workspaceId: e.workspaceId ?? '',
+          operatorId: e.entityRef!.entityId,
+          ...(typeof p['operatorNote'] === 'string'
+            ? { operatorNote: p['operatorNote'] }
+            : {}),
+        };
+      },
+    );
 }

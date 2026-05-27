@@ -24,17 +24,11 @@ function ev(over?: Partial<SpineEventRef>): SpineEventRef {
     eventName: over?.eventName ?? 'commerce.lead.replied',
     workspaceId: over?.workspaceId ?? WKS,
     occurredAt: over?.occurredAt ?? '2026-05-13T20:00:00.000Z',
-    truthMode: over?.truthMode ?? ('observed' as const),
+    truthMode: over?.truthMode ?? 'observed' as const,
   };
-  if (over?.entityRef !== undefined) {
-    defaults['entityRef'] = over.entityRef;
-  }
-  if (over?.valence !== undefined) {
-    defaults['valence'] = over.valence;
-  }
-  if (over?.payload !== undefined) {
-    defaults['payload'] = over.payload;
-  }
+  if (over?.entityRef !== undefined) {defaults['entityRef'] = over.entityRef;}
+  if (over?.valence !== undefined) {defaults['valence'] = over.valence;}
+  if (over?.payload !== undefined) {defaults['payload'] = over.payload;}
   return defaults as SpineEventRef;
 }
 
@@ -56,11 +50,15 @@ function makeInsight(over?: Partial<Insight>): Insight {
   };
 }
 
-function makeRanked(over?: Partial<Insight>, product?: number): RankedInsight {
+function makeRanked(
+  over?: Partial<Insight>,
+  product?: number,
+): RankedInsight {
   const insight = makeInsight(over);
   return {
     ...insight,
-    impactConfidenceProduct: product ?? insight.estimatedFinancialImpactCents * insight.confidence,
+    impactConfidenceProduct:
+      product ?? insight.estimatedFinancialImpactCents * insight.confidence,
   };
 }
 
@@ -109,11 +107,7 @@ describe('UTP-INSIGHT-DEL-001 — InsightDeliveryService', () => {
   const svc = new InsightDeliveryService();
 
   it('delivers urgent insights (qualification_leak) via whatsapp now', () => {
-    const insight = makeRanked({
-      kind: 'qualification_leak',
-      recommendedChannel: 'whatsapp',
-      recommendedTiming: 'now',
-    });
+    const insight = makeRanked({ kind: 'qualification_leak', recommendedChannel: 'whatsapp', recommendedTiming: 'now' });
     const d = svc.decide(insight);
     expect(d.deliver).toBe(true);
   });
@@ -147,18 +141,8 @@ describe('UTP-INSIGHT-DEL-001 — InsightDeliveryService', () => {
   });
 
   it('deliveryPlan returns sorted channel priorities', () => {
-    const i1 = makeRanked({
-      insightId: 'a',
-      kind: 'qualification_leak',
-      recommendedChannel: 'whatsapp',
-      recommendedTiming: 'now',
-    });
-    const i2 = makeRanked({
-      insightId: 'b',
-      kind: 'funnel_bottleneck',
-      recommendedChannel: 'dashboard',
-      recommendedTiming: 'weekly',
-    });
+    const i1 = makeRanked({ insightId: 'a', kind: 'qualification_leak', recommendedChannel: 'whatsapp', recommendedTiming: 'now' });
+    const i2 = makeRanked({ insightId: 'b', kind: 'funnel_bottleneck', recommendedChannel: 'dashboard', recommendedTiming: 'weekly' });
     const plan = svc.deliveryPlan([i1, i2]);
     expect(plan.length).toBeGreaterThanOrEqual(2);
     expect(plan[0]?.channel).toBe('whatsapp');

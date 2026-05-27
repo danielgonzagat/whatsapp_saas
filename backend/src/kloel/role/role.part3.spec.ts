@@ -57,19 +57,16 @@ function ev(over: Partial<SpineEventRef>): SpineEventRef {
     occurredAt: over.occurredAt ?? '2026-05-14T08:00:00.000Z',
     truthMode: over.truthMode ?? 'observed',
   };
-  if ('entityRef' in over && over.entityRef !== undefined) {
-    e['entityRef'] = over.entityRef;
-  }
-  if (over.valence !== undefined) {
-    e['valence'] = over.valence;
-  }
-  if (over.payload !== undefined) {
-    e['payload'] = over.payload;
-  }
+  if ('entityRef' in over && over.entityRef !== undefined)
+    {e['entityRef'] = over.entityRef;}
+  if (over.valence !== undefined) {e['valence'] = over.valence;}
+  if (over.payload !== undefined) {e['payload'] = over.payload;}
   return e as SpineEventRef;
 }
 
-function makeWisdomPattern(over: Partial<WisdomPattern>): WisdomPattern {
+function makeWisdomPattern(
+  over: Partial<WisdomPattern>,
+): WisdomPattern {
   return {
     patternId: over.patternId ?? `wp_${Math.random().toString(36).slice(2, 8)}`,
     description: over.description ?? 'pattern desc',
@@ -86,7 +83,9 @@ function makeWisdomPattern(over: Partial<WisdomPattern>): WisdomPattern {
   };
 }
 
-function makeRanking(over: Partial<AttentionRanking>): AttentionRanking {
+function makeRanking(
+  over: Partial<AttentionRanking>,
+): AttentionRanking {
   return {
     itemId: over.itemId ?? `it_${Math.random().toString(36).slice(2, 6)}`,
     workspaceId: over.workspaceId ?? 'wks_role_test',

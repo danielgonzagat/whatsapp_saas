@@ -9,7 +9,11 @@
  * Output: EngagementVsConversion.
  */
 
-import type { CreatorEvent, EngagementConversionBalance, EngagementVsConversion } from './types';
+import type {
+  CreatorEvent,
+  EngagementConversionBalance,
+  EngagementVsConversion,
+} from './types';
 
 export interface EngagementConfig {
   readonly recentWindowMinutes: number;
@@ -67,28 +71,22 @@ const ORGANIC_SIGNAL_KEYWORDS = [
 ];
 
 function computeEngagementRate(events: readonly CreatorEvent[]): number {
-  if (events.length === 0) {
-    return 0;
-  }
+  if (events.length === 0) {return 0;}
 
-  const engagementReplies = events.filter(
-    (e) => ENGAGEMENT_EVENTS.has(e.eventName) && e.valence === 'positive',
+  const engagementReplies = events.filter((e) =>
+    ENGAGEMENT_EVENTS.has(e.eventName) && e.valence === 'positive',
   ).length;
 
   return engagementReplies / events.length;
 }
 
 function computeConversionPressure(events: readonly CreatorEvent[]): number {
-  if (events.length === 0) {
-    return 0;
-  }
+  if (events.length === 0) {return 0;}
 
   let conversionSignals = 0;
   for (const ev of events) {
     const text = extractMessageText(ev);
-    if (!text) {
-      continue;
-    }
+    if (!text) {continue;}
     const lower = text.toLowerCase();
     if (CONVERSION_SIGNAL_KEYWORDS.some((kw) => lower.includes(kw))) {
       conversionSignals += 1;
@@ -99,16 +97,12 @@ function computeConversionPressure(events: readonly CreatorEvent[]): number {
 }
 
 function computeOrganicRatio(events: readonly CreatorEvent[]): number {
-  if (events.length === 0) {
-    return 0.5;
-  }
+  if (events.length === 0) {return 0.5;}
 
   let organicSignals = 0;
   for (const ev of events) {
     const text = extractMessageText(ev);
-    if (!text) {
-      continue;
-    }
+    if (!text) {continue;}
     const lower = text.toLowerCase();
     if (ORGANIC_SIGNAL_KEYWORDS.some((kw) => lower.includes(kw))) {
       organicSignals += 1;
@@ -119,9 +113,7 @@ function computeOrganicRatio(events: readonly CreatorEvent[]): number {
 }
 
 function computeResponseQuality(events: readonly CreatorEvent[]): number {
-  if (events.length === 0) {
-    return 0.5;
-  }
+  if (events.length === 0) {return 0.5;}
 
   const positiveCount = events.filter((e) => e.valence === 'positive').length;
   const negativeCount = events.filter((e) => e.valence === 'negative').length;
@@ -130,9 +122,7 @@ function computeResponseQuality(events: readonly CreatorEvent[]): number {
 }
 
 function computeInteractionFrequency(events: readonly CreatorEvent[]): number {
-  if (events.length < 2) {
-    return 0;
-  }
+  if (events.length < 2) {return 0;}
 
   let totalGapMs = 0;
   let gapCount = 0;
@@ -147,9 +137,7 @@ function computeInteractionFrequency(events: readonly CreatorEvent[]): number {
     }
   }
 
-  if (gapCount === 0) {
-    return 0;
-  }
+  if (gapCount === 0) {return 0;}
   const avgGapMinutes = totalGapMs / gapCount / (1000 * 60);
   const interactionsPerDay = 1440 / Math.max(1, avgGapMinutes);
 
@@ -161,32 +149,18 @@ function determineBalance(
   engagementRate: number,
   config: EngagementConfig,
 ): EngagementConversionBalance {
-  if (conversionPressure >= config.crisisConversionPressureThreshold) {
-    return 'crisis';
-  }
-  if (conversionPressure >= config.leaningConversionThreshold) {
-    return 'leaning_conversion';
-  }
-  if (engagementRate < config.healthyEngagementMinRate) {
-    return 'leaning_engagement';
-  }
+  if (conversionPressure >= config.crisisConversionPressureThreshold) {return 'crisis';}
+  if (conversionPressure >= config.leaningConversionThreshold) {return 'leaning_conversion';}
+  if (engagementRate < config.healthyEngagementMinRate) {return 'leaning_engagement';}
   return 'healthy';
 }
 
 function extractMessageText(ev: CreatorEvent): string | undefined {
   const p = ev.payload;
-  if (!p) {
-    return undefined;
-  }
-  if (typeof p['messageBody'] === 'string') {
-    return p['messageBody'];
-  }
-  if (typeof p['body'] === 'string') {
-    return p['body'];
-  }
-  if (typeof p['text'] === 'string') {
-    return p['text'];
-  }
+  if (!p) {return undefined;}
+  if (typeof p['messageBody'] === 'string') {return p['messageBody'];}
+  if (typeof p['body'] === 'string') {return p['body'];}
+  if (typeof p['text'] === 'string') {return p['text'];}
   return undefined;
 }
 

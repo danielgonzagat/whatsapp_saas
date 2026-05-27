@@ -78,13 +78,13 @@ describe('AuthController', () => {
     it('delegates to auth.register with body + ip and sets cookie', async () => {
       auth.register.mockResolvedValue({ access_token: 'tok', user: { id: 'u-1' } });
       const res = mockRes();
-      const result = await controller.register(mockReq(), res, {
-        email: 'new@test.com',
-        password: 'secret',
-        name: 'Jane',
-      });
+      const result = await controller.register(
+        mockReq(),
+        res,
+        { email: 'new@test.com', password: 'secret', name: 'Jane' } as never,
+      );
       expect(auth.register).toHaveBeenCalled();
-      expect((res as { cookie: jest.Mock }).cookie).toHaveBeenCalledWith(
+      expect((res as never as { cookie: jest.Mock }).cookie).toHaveBeenCalledWith(
         'kloel_token',
         'tok',
         expect.objectContaining({ httpOnly: true }),
@@ -100,7 +100,7 @@ describe('AuthController', () => {
           email: 'dup@test.com',
           password: 'x',
           name: 'X',
-        }),
+        } as never),
       ).rejects.toThrow(HttpException);
     });
   });
@@ -109,23 +109,25 @@ describe('AuthController', () => {
     it('delegates to auth.login with body + ip and sets cookie on success', async () => {
       auth.login.mockResolvedValue({ access_token: 'tok', user: { id: 'u-1' } });
       const res = mockRes();
-      const result = await controller.login(mockReq(), res, {
-        email: 'u@test.com',
-        password: 'pw',
-      });
+      const result = await controller.login(
+        mockReq(),
+        res,
+        { email: 'u@test.com', password: 'pw' } as never,
+      );
       expect(auth.login).toHaveBeenCalled();
-      expect((res as { cookie: jest.Mock }).cookie).toHaveBeenCalled();
+      expect((res as never as { cookie: jest.Mock }).cookie).toHaveBeenCalled();
       expect(result).toHaveProperty('access_token', 'tok');
     });
 
     it('does not set cookie when auth.login returns no token', async () => {
       auth.login.mockResolvedValue({ error: 'invalid' });
       const res = mockRes();
-      const result = await controller.login(mockReq(), res, {
-        email: 'bad@test.com',
-        password: 'x',
-      });
-      expect((res as { cookie: jest.Mock }).cookie).not.toHaveBeenCalled();
+      const result = await controller.login(
+        mockReq(),
+        res,
+        { email: 'bad@test.com', password: 'x' } as never,
+      );
+      expect((res as never as { cookie: jest.Mock }).cookie).not.toHaveBeenCalled();
       expect(result).toEqual({ error: 'invalid' });
     });
   });
@@ -135,7 +137,7 @@ describe('AuthController', () => {
       auth.loginWithGoogleCredential.mockResolvedValue({ access_token: 'tok' });
       const result = await controller.googleOAuthLogin(mockReq(), {
         credential: 'google-cred',
-      });
+      } as never);
       expect(auth.loginWithGoogleCredential).toHaveBeenCalledWith({
         credential: 'google-cred',
         ip: '127.0.0.1',
@@ -149,7 +151,7 @@ describe('AuthController', () => {
       auth.loginWithFacebookAccessToken.mockResolvedValue({ access_token: 'tok' });
       const result = await controller.facebookOAuthLogin(mockReq(), {
         accessToken: 'fb-tok',
-      });
+      } as never);
       expect(auth.loginWithFacebookAccessToken).toHaveBeenCalledWith({
         accessToken: 'fb-tok',
         ip: '127.0.0.1',
@@ -160,16 +162,16 @@ describe('AuthController', () => {
 
   describe('appleOAuthLogin', () => {
     it('throws when identityToken is missing', async () => {
-      await expect(controller.appleOAuthLogin(mockReq(), { identityToken: '' })).rejects.toThrow(
-        HttpException,
-      );
+      await expect(
+        controller.appleOAuthLogin(mockReq(), { identityToken: '' } as never),
+      ).rejects.toThrow(HttpException);
     });
 
     it('delegates to auth.loginWithAppleCredential', async () => {
       auth.loginWithAppleCredential.mockResolvedValue({ access_token: 'tok' });
       const result = await controller.appleOAuthLogin(mockReq(), {
         identityToken: 'apple-id-tok',
-      });
+      } as never);
       expect(auth.loginWithAppleCredential).toHaveBeenCalledWith(
         expect.objectContaining({ identityToken: 'apple-id-tok' }),
       );
@@ -182,7 +184,7 @@ describe('AuthController', () => {
       auth.loginWithTikTokAccessToken.mockResolvedValue({ access_token: 'tok' });
       const result = await controller.tikTokOAuthLogin(mockReq(), {
         accessToken: 'tt-tok',
-      });
+      } as never);
       expect(auth.loginWithTikTokAccessToken).toHaveBeenCalled();
       expect(result).toEqual({ access_token: 'tok' });
     });
@@ -191,7 +193,7 @@ describe('AuthController', () => {
       auth.loginWithTikTokAuthorizationCode.mockResolvedValue({ access_token: 'tok' });
       const result = await controller.tikTokOAuthLogin(mockReq(), {
         code: 'auth-code',
-      });
+      } as never);
       expect(auth.loginWithTikTokAuthorizationCode).toHaveBeenCalled();
       expect(result).toEqual({ access_token: 'tok' });
     });
@@ -202,7 +204,7 @@ describe('AuthController', () => {
       auth.requestMagicLink.mockResolvedValue({ success: true });
       const result = await controller.requestMagicLink(mockReq(), {
         email: 'u@test.com',
-      });
+      } as never);
       expect(auth.requestMagicLink).toHaveBeenCalledWith({
         email: 'u@test.com',
         ip: '127.0.0.1',
@@ -216,7 +218,7 @@ describe('AuthController', () => {
       auth.verifyMagicLink.mockResolvedValue({ access_token: 'tok' });
       const result = await controller.verifyMagicLink(mockReq(), {
         token: 'ml-tok',
-      });
+      } as never);
       expect(auth.verifyMagicLink).toHaveBeenCalledWith('ml-tok', '127.0.0.1');
       expect(result).toEqual({ access_token: 'tok' });
     });
@@ -227,7 +229,7 @@ describe('AuthController', () => {
       auth.sendWhatsAppCode.mockResolvedValue({ success: true });
       const result = await controller.sendWhatsAppCode(mockReq(), {
         phone: '+5511999999999',
-      });
+      } as never);
       expect(auth.sendWhatsAppCode).toHaveBeenCalledWith('+5511999999999', '127.0.0.1');
       expect(result).toEqual({ success: true });
     });
@@ -239,7 +241,7 @@ describe('AuthController', () => {
       const result = await controller.verifyWhatsAppCode(mockReq(), {
         phone: '+5511999999999',
         code: '123456',
-      });
+      } as never);
       expect(auth.verifyWhatsAppCode).toHaveBeenCalledWith('+5511999999999', '123456', '127.0.0.1');
       expect(result).toEqual({ access_token: 'tok' });
     });
@@ -259,7 +261,7 @@ describe('AuthController', () => {
       auth.forgotPassword.mockResolvedValue({ success: true });
       const result = await controller.forgotPassword(mockReq(), {
         email: 'u@test.com',
-      });
+      } as never);
       expect(auth.forgotPassword).toHaveBeenCalledWith('u@test.com', '127.0.0.1');
       expect(result).toEqual({ success: true });
     });
@@ -271,7 +273,7 @@ describe('AuthController', () => {
       const result = await controller.resetPassword(mockReq(), {
         token: 'rst-tok',
         newPassword: 'new-pw',
-      });
+      } as never);
       expect(auth.resetPassword).toHaveBeenCalledWith('rst-tok', 'new-pw', '127.0.0.1');
       expect(result).toEqual({ success: true });
     });
@@ -280,7 +282,7 @@ describe('AuthController', () => {
   describe('verifyEmail', () => {
     it('delegates to auth.verifyEmail', async () => {
       auth.verifyEmail.mockResolvedValue({ success: true });
-      const result = await controller.verifyEmail(mockReq(), { token: 'v-tok' });
+      const result = await controller.verifyEmail(mockReq(), { token: 'v-tok' } as never);
       expect(auth.verifyEmail).toHaveBeenCalledWith('v-tok', '127.0.0.1');
       expect(result).toEqual({ success: true });
     });
@@ -291,7 +293,7 @@ describe('AuthController', () => {
       auth.resendVerificationEmail.mockResolvedValue({ success: true });
       const result = await controller.resendVerificationEmail(mockReq(), {
         email: 'u@test.com',
-      });
+      } as never);
       expect(auth.resendVerificationEmail).toHaveBeenCalledWith('u@test.com', '127.0.0.1');
       expect(result).toEqual({ success: true });
     });
@@ -300,7 +302,9 @@ describe('AuthController', () => {
   describe('sendVerificationEmail', () => {
     it('delegates to auth.sendVerificationEmail with agent sub', async () => {
       auth.sendVerificationEmail.mockResolvedValue({ success: true });
-      const result = await controller.sendVerificationEmail(mockReq({ sub: 'agent-1' }));
+      const result = await controller.sendVerificationEmail(
+        mockReq({ sub: 'agent-1' }),
+      );
       expect(auth.sendVerificationEmail).toHaveBeenCalledWith('agent-1');
       expect(result).toEqual({ success: true });
     });

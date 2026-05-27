@@ -31,9 +31,7 @@ export function formatToolResult(tool: string, result: unknown): string {
     case 'create_plan': {
       const p = (r.plan as Record<string, unknown> | undefined) ?? {};
       const pn = s(p.name);
-      return pn === 'Plano'
-        ? `Plano criado! R$ ${s(p.price)}`
-        : `Plano ${pn} criado! R$ ${s(p.price)}`;
+      return pn === 'Plano' ? `Plano criado! R$ ${s(p.price)}` : `Plano ${pn} criado! R$ ${s(p.price)}`;
     }
     case 'get_product_plans': {
       const plans = Array.isArray(r.plans) ? (r.plans as Array<Record<string, unknown>>) : [];
@@ -49,14 +47,10 @@ export function formatToolResult(tool: string, result: unknown): string {
       return `Cupom ${s(cc.code || r.code)} criado!`;
     }
     case 'update_coupon':
-      return typeof r.message === 'string'
-        ? r.message
-        : `Cupom ${typeof (r as any).coupon?.code === 'string' ? (r as any).coupon.code : ''} atualizado.`;
+      return typeof r.message === 'string' ? r.message : `Cupom ${typeof (r as any).coupon?.code === 'string' ? (r as any).coupon.code : ''} atualizado.`;
     case 'list_checkouts': {
       const chk = Array.isArray((r as any).checkouts) ? (r as any).checkouts : [];
-      if (chk.length === 0) {
-        return 'Nenhum checkout encontrado.';
-      }
+      if (chk.length === 0) {return 'Nenhum checkout encontrado.';}
       return `Checkouts: ${chk.map((c: any) => c.name || c.id).join(', ')}`;
     }
     case 'delete_coupon':
@@ -72,18 +66,14 @@ export function formatToolResult(tool: string, result: unknown): string {
     case 'list_capabilities':
       return 'Posso ajudar com: criar/editar produtos, planos, checkouts, cupons, PIX, boletos, vendas, CRM, carteira, relatorios, configuracoes e mais. Pergunte!';
     case 'get_product_urls':
-      const urls = Array.isArray(r.customUrls)
-        ? (r.customUrls as Array<Record<string, unknown>>)
-        : [];
+      const urls = Array.isArray(r.customUrls) ? (r.customUrls as Array<Record<string, unknown>>) : [];
       if (urls.length === 0) {
         return `Nenhuma URL cadastrada para este produto.`;
       }
       return `URLs: ${urls.map((u) => `${s(u.description)} → ${s(u.url)}`).join(', ')}`;
     case 'get_product_reviews': {
       const revs = Array.isArray(r.reviews) ? (r.reviews as Array<Record<string, unknown>>) : [];
-      if (revs.length === 0) {
-        return 'Nenhuma avaliação encontrada.';
-      }
+      if (revs.length === 0) {return 'Nenhuma avaliação encontrada.';}
       return `Avaliações (${revs.length}): ${revs.map((rv) => `★${rv.rating || '?'} ${s(rv.comment)}`.substring(0, 60)).join(' | ')}`;
     }
     case 'get_product_ai_config':
@@ -127,9 +117,7 @@ export function formatToolResult(tool: string, result: unknown): string {
     }
     case 'list_refunds': {
       const rfunds = Array.isArray((r as any).orders) ? (r as any).orders : [];
-      if (rfunds.length === 0) {
-        return 'Nenhum estorno encontrado.';
-      }
+      if (rfunds.length === 0) {return 'Nenhum estorno encontrado.';}
       return `Estornos: ${rfunds.length} pedido(s).`;
     }
     case 'list_orders': {
@@ -169,12 +157,8 @@ export function formatToolResult(tool: string, result: unknown): string {
       return `Produto ${s(p.name)}: ${s(p.description || p.category)} - R$ ${s(p.price)}. ${plans} planos. Ativo: ${p.active ? 'sim' : 'nao'}. URL: ${s(p.salesPageUrl, 'nao definida')}`;
     }
     case 'list_subscriptions': {
-      const subs = Array.isArray(r.subscriptions)
-        ? (r.subscriptions as Array<Record<string, unknown>>)
-        : [];
-      if (subs.length === 0) {
-        return 'Nenhuma assinatura ativa.';
-      }
+      const subs = Array.isArray(r.subscriptions) ? (r.subscriptions as Array<Record<string, unknown>>) : [];
+      if (subs.length === 0) {return 'Nenhuma assinatura ativa.';}
       return `Assinaturas: ${subs.map((sub) => `${s(sub.plan)} (${s(sub.status)})`).join(', ')}`;
     }
     case 'request_withdrawal':
@@ -211,17 +195,10 @@ export function formatToolResult(tool: string, result: unknown): string {
       return `Configuracoes de ${name}.`;
     }
     case 'get_affiliate_config': {
-      const partners = Array.isArray(r.partners)
-        ? (r.partners as Array<Record<string, unknown>>)
-        : [];
+      const partners = Array.isArray(r.partners) ? (r.partners as Array<Record<string, unknown>>) : [];
       const active = typeof r.activeCount === 'number' ? r.activeCount : 0;
-      if (partners.length === 0) {
-        return 'Nenhum afiliado cadastrado.';
-      }
-      return `Afiliados: ${partners.length} total (${active} ativos). ${partners
-        .slice(0, 3)
-        .map((p) => `${s(p.partnerName)} (${s(p.commissionRate)}%)`)
-        .join(', ')}`;
+      if (partners.length === 0) {return 'Nenhum afiliado cadastrado.';}
+      return `Afiliados: ${partners.length} total (${active} ativos). ${partners.slice(0, 3).map((p) => `${s(p.partnerName)} (${s(p.commissionRate)}%)`).join(', ')}`;
     }
     case 'git_status': {
       const count = typeof r.fileCount === 'number' ? r.fileCount : 0;
@@ -260,18 +237,11 @@ export function formatToolResult(tool: string, result: unknown): string {
       return `Schema: ${tables.length} tabelas.`;
     }
     case 'search_codebase': {
-      const results = Array.isArray(r.results) ? r.results : [];
+      const results = Array.isArray(r.results) ? (r.results) : [];
       const err = typeof r.error === 'string' ? r.error : '';
-      if (err) {
-        return `Busca: ${err}`;
-      }
-      if (results.length === 0) {
-        return `Busca: nenhum resultado encontrado.`;
-      }
-      return `Busca: ${results.length} resultados: ${results
-        .slice(0, 5)
-        .map((x: any) => `${x.file}:${x.line}`)
-        .join(', ')}`;
+      if (err) {return `Busca: ${err}`;}
+      if (results.length === 0) {return `Busca: nenhum resultado encontrado.`;}
+      return `Busca: ${results.length} resultados: ${results.slice(0, 5).map((x: any) => `${x.file}:${x.line}`).join(', ')}`;
     }
     case 'run_backend_tests': {
       const passed = typeof r.passed === 'number' ? r.passed : 0;
@@ -305,9 +275,7 @@ export function formatToolResult(tool: string, result: unknown): string {
     case 'configure_after_pay':
       return typeof r.message === 'string' ? r.message : 'After Pay configurado.';
     case 'browse_marketplace':
-      if (Array.isArray(r.products)) {
-        return `${r.products.length} produtos no marketplace.`;
-      }
+      if (Array.isArray(r.products)) {return `${r.products.length} produtos no marketplace.`;}
       return typeof r.message === 'string' ? r.message : 'Marketplace consultado.';
     case 'get_social_channels':
       return typeof r.message === 'string' ? r.message : 'Canais consultados.';
@@ -334,13 +302,7 @@ export function formatToolResult(tool: string, result: unknown): string {
     case 'codegraph_files':
       return typeof r.text === 'string' ? r.text : 'CodeGraph consultado.';
     default:
-      if (typeof r.error === 'string') {
-        return `Erro: ${r.error}`;
-      }
-      return typeof r.text === 'string'
-        ? r.text
-        : typeof r.message === 'string'
-          ? r.message
-          : 'Acao concluida.';
+      if (typeof r.error === 'string') {return `Erro: ${r.error}`;}
+      return typeof r.text === 'string' ? r.text : typeof r.message === 'string' ? r.message : 'Acao concluida.';
   }
 }

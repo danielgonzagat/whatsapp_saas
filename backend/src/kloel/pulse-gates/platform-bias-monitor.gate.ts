@@ -25,16 +25,12 @@ const DEFAULT_WEIGHT_MARGIN_THRESHOLD = 0.2;
 const DEFAULT_MIN_SAMPLE_SIZE = 3;
 
 function mean(values: number[]): number {
-  if (values.length === 0) {
-    return 0;
-  }
+  if (values.length === 0) {return 0;}
   return values.reduce((a, b) => a + b, 0) / values.length;
 }
 
 function variance(values: number[], avg: number): number {
-  if (values.length <= 1) {
-    return 0;
-  }
+  if (values.length <= 1) {return 0;}
   const sumSq = values.reduce((s, v) => s + (v - avg) * (v - avg), 0);
   return sumSq / (values.length - 1);
 }
@@ -49,7 +45,8 @@ function normalCdf(x: number): number {
   const sign = x < 0 ? -1 : 1;
   const absX = Math.abs(x) / Math.sqrt(2);
   const t = 1 / (1 + p * absX);
-  const erf = 1 - ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-absX * absX);
+  const erf =
+    1 - ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t * Math.exp(-absX * absX);
   return 0.5 * (1 + sign * erf);
 }
 
@@ -72,8 +69,10 @@ export function makePlatformBiasMonitorGate(
     mode,
     check: (input: PlatformBiasMonitorInput): GateVerdict => {
       const evidence: GateEvidence[] = [];
-      const significanceThreshold = input.significanceThreshold ?? DEFAULT_SIGNIFICANCE_THRESHOLD;
-      const weightMarginThreshold = input.weightMarginThreshold ?? DEFAULT_WEIGHT_MARGIN_THRESHOLD;
+      const significanceThreshold =
+        input.significanceThreshold ?? DEFAULT_SIGNIFICANCE_THRESHOLD;
+      const weightMarginThreshold =
+        input.weightMarginThreshold ?? DEFAULT_WEIGHT_MARGIN_THRESHOLD;
       const minSampleSize = input.minSampleSize ?? DEFAULT_MIN_SAMPLE_SIZE;
 
       const recs = input.recommendations;
@@ -82,8 +81,12 @@ export function makePlatformBiasMonitorGate(
         return pass('platform-bias-monitor', mode, MEASURED_BY);
       }
 
-      const internalRecs = recs.filter((r) => r.productSource === 'internal');
-      const externalRecs = recs.filter((r) => r.productSource === 'external');
+      const internalRecs = recs.filter(
+        (r) => r.productSource === 'internal',
+      );
+      const externalRecs = recs.filter(
+        (r) => r.productSource === 'external',
+      );
 
       const internalWeights = internalRecs.map((r) => r.weight);
       const externalWeights = externalRecs.map((r) => r.weight);
@@ -92,16 +95,25 @@ export function makePlatformBiasMonitorGate(
       const externalMean = mean(externalWeights);
 
       // 1. Weight bias detection
-      if (internalRecs.length >= minSampleSize && externalRecs.length >= minSampleSize) {
+      if (
+        internalRecs.length >= minSampleSize &&
+        externalRecs.length >= minSampleSize
+      ) {
         const weightDiff = internalMean - externalMean;
-        const relativeDiff = externalMean > 0 ? weightDiff / externalMean : weightDiff > 0 ? 1 : 0;
+        const relativeDiff =
+          externalMean > 0
+            ? weightDiff / externalMean
+            : weightDiff > 0
+              ? 1
+              : 0;
 
         if (relativeDiff >= weightMarginThreshold) {
           const internalVar = variance(internalWeights, internalMean);
           const externalVar = variance(externalWeights, externalMean);
 
           const se = Math.sqrt(
-            internalVar / internalRecs.length + externalVar / externalRecs.length,
+            internalVar / internalRecs.length +
+              externalVar / externalRecs.length,
           );
           const zScore = se > 0 ? (internalMean - externalMean) / se : 0;
           const pValue = twoTailedPValue(zScore);
@@ -121,17 +133,19 @@ export function makePlatformBiasMonitorGate(
 
         for (const intRec of internalRecs) {
           const sameQualityExternals = externalRecs.filter(
-            (ext) => Math.abs(ext.qualityScore - intRec.qualityScore) <= 0.05,
+            (ext) =>
+              Math.abs(ext.qualityScore - intRec.qualityScore) <= 0.05,
           );
-          if (sameQualityExternals.length < minSampleSize) {
-            continue;
-          }
+          if (sameQualityExternals.length < minSampleSize) {continue;}
 
-          const extAvgWeight = mean(sameQualityExternals.map((e) => e.weight));
+          const extAvgWeight = mean(
+            sameQualityExternals.map((e) => e.weight),
+          );
 
           if (
             extAvgWeight > 0 &&
-            (intRec.weight - extAvgWeight) / extAvgWeight >= weightMarginThreshold
+            (intRec.weight - extAvgWeight) / extAvgWeight >=
+              weightMarginThreshold
           ) {
             qualityBiasIssues.push({
               path: `$.recommendations[productId=${intRec.productId}]`,
@@ -152,7 +166,9 @@ export function makePlatformBiasMonitorGate(
       }
 
       // 3. Disclosure violations
-      const undisclosedRecs = recs.filter((r) => r.hasCommercialLink && !r.commercialLinkDisclosed);
+      const undisclosedRecs = recs.filter(
+        (r) => r.hasCommercialLink && !r.commercialLinkDisclosed,
+      );
 
       if (undisclosedRecs.length > 0) {
         for (const rec of undisclosedRecs) {

@@ -2,7 +2,14 @@ import { Injectable, Logger } from '@nestjs/common';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
-const WORKSPACES = ['root', 'backend', 'frontend', 'frontend-admin', 'worker', 'e2e'] as const;
+const WORKSPACES = [
+  'root',
+  'backend',
+  'frontend',
+  'frontend-admin',
+  'worker',
+  'e2e',
+] as const;
 type Workspace = (typeof WORKSPACES)[number];
 
 function isWorkspace(s: string): s is Workspace {
@@ -38,15 +45,9 @@ interface CoverageDetailFile {
     path: string;
     statementMap: Record<string, { start: { line: number }; end: { line: number } }>;
     s: Record<string, number>;
-    branchMap: Record<
-      string,
-      { locations: Array<{ start: { line: number }; end: { line: number } }> }
-    >;
+    branchMap: Record<string, { locations: Array<{ start: { line: number }; end: { line: number } }> }>;
     b: Record<string, number[]>;
-    fnMap: Record<
-      string,
-      { name: string; decl: { start: { line: number }; end: { line: number } } }
-    >;
+    fnMap: Record<string, { name: string; decl: { start: { line: number }; end: { line: number } } }>;
     f: Record<string, number>;
   };
 }
@@ -127,14 +128,19 @@ export class DepsCoverageService {
     }
   }
 
-  async codeCoverage(filePath?: string, workspace?: string): Promise<CoverageResult> {
+  async codeCoverage(
+    filePath?: string,
+    workspace?: string,
+  ): Promise<CoverageResult> {
     if (filePath) {
       return this.fileCoverage(filePath, workspace);
     }
     return this.summaryCoverage(workspace);
   }
 
-  async affectedTests(sourceFiles: string[]): Promise<AffectedResult> {
+  async affectedTests(
+    sourceFiles: string[],
+  ): Promise<AffectedResult> {
     const result: AffectedResult = { sourceFiles, testFiles: [] };
     const seen = new Set<string>();
 
@@ -179,9 +185,7 @@ export class DepsCoverageService {
 
       const srcBase = path.basename(src).replace(/\.(ts|tsx|js|jsx)$/, '');
       for (const cand of candidates) {
-        if (seen.has(cand)) {
-          continue;
-        }
+        if (seen.has(cand)) continue;
         seen.add(cand);
 
         try {
@@ -195,9 +199,7 @@ export class DepsCoverageService {
           let m: RegExpExecArray | null;
           while ((m = importRe.exec(content)) !== null) {
             const imp = m[1] ?? m[2];
-            if (imp) {
-              imports.push(imp);
-            }
+            if (imp) imports.push(imp);
           }
 
           if (imports.length > 0) {
@@ -255,7 +257,10 @@ export class DepsCoverageService {
     return { available: false };
   }
 
-  private async fileCoverage(filePath: string, workspace?: string): Promise<CoverageResult> {
+  private async fileCoverage(
+    filePath: string,
+    workspace?: string,
+  ): Promise<CoverageResult> {
     const wss = workspace && isWorkspace(workspace) ? [workspace] : WORKSPACES;
 
     for (const ws of wss) {
@@ -265,14 +270,9 @@ export class DepsCoverageService {
         const final = JSON.parse(raw) as CoverageDetailFile;
 
         const matching = Object.entries(final).filter(([k]) => k.includes(filePath));
-        if (matching.length === 0) {
-          continue;
-        }
+        if (matching.length === 0) continue;
 
-        const uncoveredLines: Array<{
-          file: string;
-          ranges: Array<{ start: number; end: number }>;
-        }> = [];
+        const uncoveredLines: Array<{ file: string; ranges: Array<{ start: number; end: number }> }> = [];
 
         for (const [key, detail] of matching) {
           const uncovered = new Set<number>();
@@ -307,9 +307,7 @@ export class DepsCoverageService {
             let rangeEnd = sorted[0] ?? 0;
             for (let i = 1; i < sorted.length; i++) {
               const curr = sorted[i];
-              if (curr === undefined) {
-                continue;
-              }
+              if (curr === undefined) continue;
               if (curr === rangeEnd + 1) {
                 rangeEnd = curr;
               } else {
@@ -350,9 +348,7 @@ export class DepsCoverageService {
             if (stmt) {
               for (let l = stmt.start.line; l <= stmt.end.line; l++) {
                 allLines.add(l);
-                if (count > 0) {
-                  coveredLines.add(l);
-                }
+                if (count > 0) coveredLines.add(l);
               }
             }
           }
@@ -395,9 +391,7 @@ export class DepsCoverageService {
 
   private cacheGet<T>(key: string): T | undefined {
     const entry = this.cache.get(key) as CacheEntry<T> | undefined;
-    if (!entry) {
-      return undefined;
-    }
+    if (!entry) return undefined;
     if (Date.now() > entry.expiresAt) {
       this.cache.delete(key);
       return undefined;

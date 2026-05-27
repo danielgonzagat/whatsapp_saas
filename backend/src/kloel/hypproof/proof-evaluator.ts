@@ -23,7 +23,8 @@ export class ProofEvaluatorService {
     }
 
     const totalEvidence = Math.max(...observations.map((o) => o.evidenceCount));
-    const meanDelta = observations.reduce((sum, o) => sum + o.delta, 0) / observations.length;
+    const meanDelta =
+      observations.reduce((sum, o) => sum + o.delta, 0) / observations.length;
     const meanConfidence =
       observations.reduce((sum, o) => sum + o.confidence, 0) / observations.length;
 
@@ -78,11 +79,7 @@ export class ProofEvaluatorService {
 }
 
 function resolveVerdict(meanDelta: number): ProofVerdict {
-  if (meanDelta >= CONFIRMATION_DELTA_THRESHOLD) {
-    return 'confirmed';
-  }
-  if (meanDelta <= REFUTATION_DELTA_THRESHOLD) {
-    return 'refuted';
-  }
+  if (meanDelta >= CONFIRMATION_DELTA_THRESHOLD) {return 'confirmed';}
+  if (meanDelta <= REFUTATION_DELTA_THRESHOLD) {return 'refuted';}
   return 'inconclusive';
 }

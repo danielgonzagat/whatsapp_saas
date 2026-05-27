@@ -13,9 +13,7 @@ const MIN_INSTANCES = 3;
 const SIGNIFICANT_DROP = 0.3;
 
 function extractProductId(payload: Readonly<Record<string, unknown>> | undefined): string {
-  if (!payload) {
-    return 'unknown';
-  }
+  if (!payload) {return 'unknown';}
   const pid = payload['productId'] ?? payload['productRef'] ?? payload['planId'];
   return typeof pid === 'string' ? pid : 'unknown';
 }
@@ -50,9 +48,7 @@ export function detectOfferFit(input: DetectorInput): DetectorResult {
     }
   }
 
-  if (approvedProducts.length === 0) {
-    return { insights: [] };
-  }
+  if (approvedProducts.length === 0) {return { insights: [] };}
 
   const totalApprovals = approvedProducts.length;
   const productCounts = new Map<string, number>();
@@ -74,7 +70,9 @@ export function detectOfferFit(input: DetectorInput): DetectorResult {
           `avg share per product: ${(avgShare * 100).toFixed(1)}%`,
           `product share: ${(share * 100).toFixed(1)}%`,
         ],
-        estimatedFinancialImpactCents: Math.round((avgShare - share) * totalApprovals * 100_00),
+        estimatedFinancialImpactCents: Math.round(
+          (avgShare - share) * totalApprovals * 100_00,
+        ),
         confidence: Math.min(0.85, 0.4 + (1 - share / avgShare) * 0.4),
         recommendedChannel: 'dashboard',
         recommendedTiming: 'weekly',

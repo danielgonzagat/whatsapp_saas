@@ -61,15 +61,11 @@ export function buildNowFocus(
     ...(noRegretHighlight ? { noRegretHighlight } : {}),
   };
 }
-export function buildNoRegretHighlight(
-  events: readonly SpineEventRef[],
-): NoRegretHighlight | undefined {
+export function buildNoRegretHighlight(events: readonly SpineEventRef[]): NoRegretHighlight | undefined {
   const firstValueByEntity = new Map<string, SpineEventRef>();
   const riskyEntities = new Set<string>();
   for (const event of events) {
-    if (!event.entityRef) {
-      continue;
-    }
+    if (!event.entityRef) {continue;}
     const key = `${event.entityRef.entityType}:${event.entityRef.entityId}`;
     if (event.eventName === 'commerce.post_sale.first_value_obtained') {
       firstValueByEntity.set(key, event);
@@ -165,12 +161,8 @@ export function detectActionKind(
     const wentSilent = entityEvents.some((e) => e.eventName === 'commerce.lead.went_silent');
     const hadObjection = entityEvents.some((e) => e.eventName === 'commerce.lead.objection_raised');
     const hadAbandonedCart = entityEvents.some((e) => e.eventName === 'commerce.cart.abandoned');
-    if (wentSilent && hadObjection) {
-      return 'follow_up';
-    }
-    if (wentSilent && hadAbandonedCart) {
-      return 'recover_cart';
-    }
+    if (wentSilent && hadObjection) {return 'follow_up';}
+    if (wentSilent && hadAbandonedCart) {return 'recover_cart';}
   }
   const dim = goal.contributingTensions[0]?.dimension;
   switch (dim) {
@@ -190,9 +182,7 @@ export function silentLeadActions(events: readonly SpineEventRef[]): readonly Su
     { entityType: string; entityId: string; events: SpineEventRef[] }
   >();
   for (const e of events) {
-    if (e.eventName !== 'commerce.lead.went_silent' || !e.entityRef) {
-      continue;
-    }
+    if (e.eventName !== 'commerce.lead.went_silent' || !e.entityRef) {continue;}
     const key = `${e.entityRef.entityType}:${e.entityRef.entityId}`;
     if (!silentEntities.has(key)) {
       silentEntities.set(key, {
@@ -217,9 +207,7 @@ export function silentLeadActions(events: readonly SpineEventRef[]): readonly Su
     );
     const hadAbandonedCart = allEntityEvents.some((e) => e.eventName === 'commerce.cart.abandoned');
     const latestSilent = entry.events.reduce((latest, e) => {
-      if (!latest) {
-        return e;
-      }
+      if (!latest) {return e;}
       return Date.parse(e.occurredAt) > Date.parse(latest.occurredAt) ? e : latest;
     });
     const recencyBoost =
@@ -263,20 +251,12 @@ const OPERATOR_FEEDBACK_DECISION_SLOT_COUNT = 1;
 function findRepeatedOperatorNotes(events: readonly SpineEventRef[]): string[] {
   const noteCounts = new Map<string, number>();
   for (const event of events) {
-    if (event.eventName !== 'cognition.valence_assigned') {
-      continue;
-    }
-    if (!event.entityRef || event.entityRef.entityType !== 'operator') {
-      continue;
-    }
-    if (event.payload?.accepted !== false) {
-      continue;
-    }
+    if (event.eventName !== 'cognition.valence_assigned') {continue;}
+    if (!event.entityRef || event.entityRef.entityType !== 'operator') {continue;}
+    if (event.payload?.accepted !== false) {continue;}
     const operatorNote = event.payload?.operatorNote;
     const normalizedNote = typeof operatorNote === 'string' ? operatorNote.trim() : '';
-    if (normalizedNote.length === 0) {
-      continue;
-    }
+    if (normalizedNote.length === 0) {continue;}
     const learningFraming = event.payload?.learningFraming;
     if (
       typeof learningFraming !== 'string' ||
@@ -331,9 +311,7 @@ export function isUnqualifiedSilentLead(
     (e) => e.entityRef?.entityType === targetType && e.entityRef?.entityId === targetId,
   );
   const wentSilent = entityEvents.some((e) => e.eventName === 'commerce.lead.went_silent');
-  if (!wentSilent) {
-    return false;
-  }
+  if (!wentSilent) {return false;}
   const hasCommercialReason = entityEvents.some(
     (e) =>
       e.eventName === 'commerce.lead.objection_raised' || e.eventName === 'commerce.cart.abandoned',

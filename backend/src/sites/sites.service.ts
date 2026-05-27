@@ -14,27 +14,22 @@ import type { AddSiteDomainDto } from './dto/site-domain.dto';
 import type { UpdateSiteAppDto } from './dto/site-app.dto';
 
 function slugify(name: string): string {
-  return (
-    name
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .slice(0, 200) || 'site'
-  );
+  return name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 200) || 'site';
 }
 
-function isValidStatusTransition(from: string, to: string): boolean {
-  if (from === 'DRAFT' && to === 'PUBLISHED') {
-    return true;
-  }
-  if (from === 'PUBLISHED' && to === 'DRAFT') {
-    return true;
-  }
-  if (to === 'ARCHIVED') {
-    return true;
-  }
+function isValidStatusTransition(
+  from: string,
+  to: string,
+): boolean {
+  if (from === 'DRAFT' && to === 'PUBLISHED') return true;
+  if (from === 'PUBLISHED' && to === 'DRAFT') return true;
+  if (to === 'ARCHIVED') return true;
   return false;
 }
 
@@ -63,13 +58,14 @@ export class SitesService {
   // ── Sites ────────────────────────────────────────────────
 
   /** List sites for a workspace with optional filters. */
-  async list(workspaceId: string, filters: SiteListFilters = {}): Promise<SiteListResult> {
+  async list(
+    workspaceId: string,
+    filters: SiteListFilters = {},
+  ): Promise<SiteListResult> {
     const { status, search, page = 1, limit = 20 } = filters;
 
     const where: Prisma.SiteWhereInput = { workspaceId };
-    if (status) {
-      where.status = status as any;
-    }
+    if (status) {where.status = status as any;}
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
@@ -98,7 +94,10 @@ export class SitesService {
   }
 
   /** Create a new site. Slug is auto-generated from name if not provided. */
-  async create(workspaceId: string, dto: CreateSiteDto): Promise<Site> {
+  async create(
+    workspaceId: string,
+    dto: CreateSiteDto,
+  ): Promise<Site> {
     this.assertWorkspace(workspaceId);
 
     const slug = dto.slug || slugify(dto.name);
@@ -125,7 +124,11 @@ export class SitesService {
   }
 
   /** Update site content and/or SEO metadata. */
-  async update(workspaceId: string, siteId: string, dto: UpdateSiteDto): Promise<Site> {
+  async update(
+    workspaceId: string,
+    siteId: string,
+    dto: UpdateSiteDto,
+  ): Promise<Site> {
     this.assertWorkspace(workspaceId);
 
     const existing = await this.prisma.site.findUnique({ where: { id: siteId } });
@@ -137,15 +140,9 @@ export class SitesService {
     }
 
     const data: Prisma.SiteUpdateInput = {};
-    if (dto.name !== undefined) {
-      data.name = dto.name;
-    }
-    if (dto.content !== undefined) {
-      data.content = dto.content as Prisma.InputJsonValue;
-    }
-    if (dto.seoMeta !== undefined) {
-      data.seoMeta = dto.seoMeta as Prisma.InputJsonValue;
-    }
+    if (dto.name !== undefined) {data.name = dto.name;}
+    if (dto.content !== undefined) {data.content = dto.content as Prisma.InputJsonValue;}
+    if (dto.seoMeta !== undefined) {data.seoMeta = dto.seoMeta as Prisma.InputJsonValue;}
 
     return this.prisma.site.update({ where: { id: siteId }, data });
   }
@@ -180,7 +177,9 @@ export class SitesService {
       throw new ForbiddenException('Cross-workspace access denied');
     }
     if (!isValidStatusTransition(existing.status, 'PUBLISHED')) {
-      throw new BadRequestException(`Cannot publish a site with status ${existing.status}`);
+      throw new BadRequestException(
+        `Cannot publish a site with status ${existing.status}`,
+      );
     }
 
     return this.prisma.site.update({
@@ -201,7 +200,9 @@ export class SitesService {
       throw new ForbiddenException('Cross-workspace access denied');
     }
     if (!isValidStatusTransition(existing.status, 'DRAFT')) {
-      throw new BadRequestException(`Cannot unpublish a site with status ${existing.status}`);
+      throw new BadRequestException(
+        `Cannot unpublish a site with status ${existing.status}`,
+      );
     }
 
     return this.prisma.site.update({
@@ -222,7 +223,11 @@ export class SitesService {
   }
 
   /** Add a custom domain. */
-  async addDomain(workspaceId: string, siteId: string, dto: AddSiteDomainDto): Promise<SiteDomain> {
+  async addDomain(
+    workspaceId: string,
+    siteId: string,
+    dto: AddSiteDomainDto,
+  ): Promise<SiteDomain> {
     await this.ensureOwnership(workspaceId, siteId);
 
     const existingHost = await this.prisma.siteDomain.findUnique({
@@ -242,7 +247,11 @@ export class SitesService {
   }
 
   /** Remove a domain from a site. */
-  async removeDomain(workspaceId: string, siteId: string, domainId: string): Promise<void> {
+  async removeDomain(
+    workspaceId: string,
+    siteId: string,
+    domainId: string,
+  ): Promise<void> {
     await this.ensureOwnership(workspaceId, siteId);
 
     const domain = await this.prisma.siteDomain.findFirst({
@@ -298,7 +307,10 @@ export class SitesService {
     }
   }
 
-  private async ensureOwnership(workspaceId: string, siteId: string): Promise<Site> {
+  private async ensureOwnership(
+    workspaceId: string,
+    siteId: string,
+  ): Promise<Site> {
     this.assertWorkspace(workspaceId);
     const site = await this.prisma.site.findUnique({ where: { id: siteId } });
     if (!site) {

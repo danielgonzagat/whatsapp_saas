@@ -26,21 +26,13 @@ function ev(over: Partial<SpineEventRef> = {}): SpineEventRef {
     truthMode: over.truthMode ?? 'observed',
   };
   if ('entityRef' in over) {
-    if (over.entityRef !== undefined) {
-      e['entityRef'] = over.entityRef;
-    }
+    if (over.entityRef !== undefined) {e['entityRef'] = over.entityRef;}
   } else {
     e['entityRef'] = { entityType: 'lead', entityId: 'lead_owner' };
   }
-  if (over.valence !== undefined) {
-    e['valence'] = over.valence;
-  }
-  if (over.payload !== undefined) {
-    e['payload'] = over.payload;
-  }
-  if (over.correlationId !== undefined) {
-    e['correlationId'] = over.correlationId;
-  }
+  if (over.valence !== undefined) {e['valence'] = over.valence;}
+  if (over.payload !== undefined) {e['payload'] = over.payload;}
+  if (over.correlationId !== undefined) {e['correlationId'] = over.correlationId;}
   return e as SpineEventRef;
 }
 
@@ -151,10 +143,7 @@ describe('correction observer — explicit evidence gating (UTP-OWNER-CRIT-002)'
   it('action_reversal preserved via cognition.belief_updated with updateKind=reversal', () => {
     const events = [
       ev({ eventName: 'cognition.belief_updated', payload: { updateKind: 'reversal' } }),
-      ev({
-        eventName: 'cognition.belief_updated',
-        payload: { updateKind: 'reversal', reason: 'override' },
-      }),
+      ev({ eventName: 'cognition.belief_updated', payload: { updateKind: 'reversal', reason: 'override' } }),
     ];
     const result = observeCorrections(correctionInput(events));
     const reversals = result.filter((o) => o.correctionKind === 'action_reversal');
@@ -249,10 +238,17 @@ describe('OwnerCriterionProjector (UTP-OWNER-CRIT-007)', () => {
     ];
 
     projector.accumulateCorrections(corrections);
-    const projection = projector.project('wks_owner', Date.parse('2026-05-13T20:00:00.000Z'));
+    const projection = projector.project(
+      'wks_owner',
+      Date.parse('2026-05-13T20:00:00.000Z'),
+    );
 
-    expect(projection.correctionPattern.mostFrequentCorrectionKind).toBe('policy_adjustment');
-    expect(projection.correctionPattern.topCorrectedTargets).toContain('operator_feedback');
+    expect(projection.correctionPattern.mostFrequentCorrectionKind).toBe(
+      'policy_adjustment',
+    );
+    expect(projection.correctionPattern.topCorrectedTargets).toContain(
+      'operator_feedback',
+    );
     expect(projection.totalObservations).toBe(1);
   });
 });
@@ -283,12 +279,22 @@ describe('OwnerCriterionEvidenceBuilder (UTP-OWNER-CRIT-008)', () => {
   });
 
   it('aggregates confidence across all observation buckets', () => {
-    const decisions = [emptyObservation<DecisionObservation>({ confidence: 0.8 })];
-    const corrections = [emptyObservation<CorrectionObservation>({ confidence: 0.6 })];
+    const decisions = [
+      emptyObservation<DecisionObservation>({ confidence: 0.8 }),
+    ];
+    const corrections = [
+      emptyObservation<CorrectionObservation>({ confidence: 0.6 }),
+    ];
     const tones = [emptyObservation<ToneObservation>({ confidence: 0.4 })];
-    const risks = [emptyObservation<RiskToleranceObservation>({ confidence: 0.4 })];
-    const ethicals = [emptyObservation<EthicalLineObservation>({ confidence: 0.6 })];
-    const approvals = [emptyObservation<ApprovalThresholdObservation>({ confidence: 1.0 })];
+    const risks = [
+      emptyObservation<RiskToleranceObservation>({ confidence: 0.4 }),
+    ];
+    const ethicals = [
+      emptyObservation<EthicalLineObservation>({ confidence: 0.6 }),
+    ];
+    const approvals = [
+      emptyObservation<ApprovalThresholdObservation>({ confidence: 1.0 }),
+    ];
     const bundle = build().build({
       workspaceId: 'wks_owner',
       decisions,

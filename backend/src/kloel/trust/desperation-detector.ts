@@ -60,9 +60,7 @@ export function detectDesperation(
 
   for (const ev of sample) {
     const text = extractMessageText(ev);
-    if (!text) {
-      continue;
-    }
+    if (!text) {continue;}
 
     const lower = text.toLowerCase();
     for (const kw of DISCOUNT_ESCALATION_KEYWORDS) {
@@ -81,22 +79,12 @@ export function detectDesperation(
 
   const discountRatio = discountHits / sample.length;
   const promiseRatio = promiseHits / sample.length;
-  const level = Math.min(
-    1,
-    (discountRatio / cfg.discountEscalationThreshold +
-      promiseRatio / cfg.promiseInflationThreshold) /
-      2,
-  );
+  const level = Math.min(1, (discountRatio / cfg.discountEscalationThreshold + promiseRatio / cfg.promiseInflationThreshold) / 2);
 
-  const desperate =
-    discountRatio >= cfg.discountEscalationThreshold ||
-    promiseRatio >= cfg.promiseInflationThreshold;
+  const desperate = discountRatio >= cfg.discountEscalationThreshold || promiseRatio >= cfg.promiseInflationThreshold;
 
   let reason: string;
-  if (
-    discountRatio >= cfg.discountEscalationThreshold &&
-    promiseRatio >= cfg.promiseInflationThreshold
-  ) {
+  if (discountRatio >= cfg.discountEscalationThreshold && promiseRatio >= cfg.promiseInflationThreshold) {
     reason = `discount escalation (${(discountRatio * 100).toFixed(0)}%) and promise inflation (${(promiseRatio * 100).toFixed(0)}%) detected`;
   } else if (discountRatio >= cfg.discountEscalationThreshold) {
     reason = `discount escalation: ${discountHits}/${sample.length} messages with discount language`;
@@ -111,17 +99,9 @@ export function detectDesperation(
 
 function extractMessageText(ev: TrustEvent): string | undefined {
   const p = ev.payload;
-  if (!p) {
-    return undefined;
-  }
-  if (typeof p['messageBody'] === 'string') {
-    return p['messageBody'];
-  }
-  if (typeof p['body'] === 'string') {
-    return p['body'];
-  }
-  if (typeof p['text'] === 'string') {
-    return p['text'];
-  }
+  if (!p) {return undefined;}
+  if (typeof p['messageBody'] === 'string') {return p['messageBody'];}
+  if (typeof p['body'] === 'string') {return p['body'];}
+  if (typeof p['text'] === 'string') {return p['text'];}
   return undefined;
 }

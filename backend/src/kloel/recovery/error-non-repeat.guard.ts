@@ -33,7 +33,8 @@ export class ErrorNonRepeatGuard {
         repeatCount: existing.fingerprint.repeatCount + 1,
         lastSeenAt: error.detectedAt,
       };
-      existing.blockedUntil = Date.now() + DEFAULT_COOLDOWN_HOURS * 60 * 60 * 1000;
+      existing.blockedUntil =
+        Date.now() + DEFAULT_COOLDOWN_HOURS * 60 * 60 * 1000;
       this.ledger.set(key, {
         fingerprint: updated,
         blockedUntil: existing.blockedUntil,
@@ -52,18 +53,14 @@ export class ErrorNonRepeatGuard {
   public isBlocked(error: DetectedError): boolean {
     const key = this.fingerprintKey(error);
     const entry = this.ledger.get(key);
-    if (!entry) {
-      return false;
-    }
+    if (!entry) {return false;}
     return Date.now() < entry.blockedUntil;
   }
 
   public cooldownRemainingMs(error: DetectedError): number {
     const key = this.fingerprintKey(error);
     const entry = this.ledger.get(key);
-    if (!entry) {
-      return 0;
-    }
+    if (!entry) {return 0;}
     return Math.max(0, entry.blockedUntil - Date.now());
   }
 

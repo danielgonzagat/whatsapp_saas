@@ -20,7 +20,7 @@ import { WhatsAppApiProvider } from '../whatsapp/providers/whatsapp-api.provider
 import { WhatsAppCatchupService } from '../whatsapp/whatsapp-catchup.service';
 
 import { RouteClass } from '../common/throttler/route-class.decorator';
-import { Throttle } from '@nestjs/throttler';
+import { Throttle } from "@nestjs/throttler";
 
 interface WahaWebhookPayload {
   event?: string;

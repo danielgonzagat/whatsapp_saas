@@ -105,7 +105,7 @@ export function buildActions(params: {
   const couponDecision = params.couponDecision;
   const couponPercent =
     couponDecision && 'action' in couponDecision
-      ? discountFn(String(couponDecision.action))
+      ? discountFn(String((couponDecision).action))
       : undefined;
   if (couponDecision && couponPercent) {
     actions.push({
@@ -130,14 +130,16 @@ export function buildActions(params: {
         inboundCorrelationId: params.inboundKey,
         message: params.customerMessage,
         internalReplyPlan: params.internalReplyPlan,
-        ...(params.decisions ? { hierarchyTrace: params.decisions } : {}),
+        ...(params.decisions
+          ? { hierarchyTrace: params.decisions }
+          : {}),
       },
     });
   }
   if (
     params.humanTransferDecision &&
-    params.humanTransferDecision.action !== 'continue_ai' &&
-    params.humanTransferDecision.action !== 'pause_wait'
+    (params.humanTransferDecision).action !== 'continue_ai' &&
+    (params.humanTransferDecision).action !== 'pause_wait'
   ) {
     actions.push({
       tool: 'transfer_to_human',

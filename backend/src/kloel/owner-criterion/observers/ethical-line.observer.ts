@@ -98,7 +98,9 @@ function detectPrivacyBoundaries(events: readonly SpineEventRef[]): BoundarySign
   return signals;
 }
 
-function detectCustomerProtectionBoundaries(events: readonly SpineEventRef[]): BoundarySignal[] {
+function detectCustomerProtectionBoundaries(
+  events: readonly SpineEventRef[],
+): BoundarySignal[] {
   const signals: BoundarySignal[] = [];
 
   for (const e of events) {
@@ -171,9 +173,7 @@ export function observeEthicalLines(input: ObserverInput): EthicalLineObservatio
     ...detectCustomerProtectionBoundaries(input.events),
   ];
 
-  if (signals.length < MIN_EVENTS) {
-    return [];
-  }
+  if (signals.length < MIN_EVENTS) {return [];}
 
   return groupByBoundaryType(signals, input.workspaceId, input.nowMs);
 }

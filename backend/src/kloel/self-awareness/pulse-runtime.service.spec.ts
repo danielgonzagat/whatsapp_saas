@@ -1,10 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import {
-  PulseRuntimeService,
-  PulseHealthResult,
-  BehaviorGraphNodeResult,
-  RuntimeErrorsResult,
-} from './pulse-runtime.service';
+import { PulseRuntimeService, PulseHealthResult, BehaviorGraphNodeResult, RuntimeErrorsResult } from './pulse-runtime.service';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
