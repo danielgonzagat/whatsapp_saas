@@ -434,7 +434,10 @@ export class KloelChatToolsService {
     return runGetProductAiConfig(this.prisma, workspaceId, args);
   }
   toolValidateCoupon(_workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
-    return runValidateCoupon(this.prisma, _workspaceId, args as never);
+    const productId = typeof args.productId === 'string' ? args.productId.trim() : '';
+    const code = typeof args.code === 'string' ? args.code.trim() : '';
+
+    return runValidateCoupon(this.prisma, _workspaceId, { productId, code });
   }
   toolGetAnalytics(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     return runGetAnalytics(this.prisma, workspaceId, args as never);

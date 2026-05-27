@@ -17,6 +17,7 @@ jest.mock('../common/products/legacy-products.util', () => ({
 
 export type ChatToolsPrismaMock = {
   product: { create: jest.Mock; findMany: jest.Mock; findFirst: jest.Mock; updateMany: jest.Mock };
+  productCoupon: { findFirst: jest.Mock };
   workspace: { findUnique: jest.Mock; update: jest.Mock };
   kloelMemory: { upsert: jest.Mock; findUnique: jest.Mock };
   flow: { create: jest.Mock; findMany: jest.Mock; count: jest.Mock };
@@ -80,6 +81,7 @@ export async function setupChatToolsService(): Promise<ChatToolsSetup> {
       findFirst: jest.fn().mockResolvedValue(null),
       updateMany: jest.fn().mockResolvedValue({ count: 1 }),
     },
+    productCoupon: { findFirst: jest.fn().mockResolvedValue(null) },
     workspace: {
       findUnique: jest.fn().mockResolvedValue({ providerSettings: {} }),
       update: jest.fn().mockResolvedValue({}),

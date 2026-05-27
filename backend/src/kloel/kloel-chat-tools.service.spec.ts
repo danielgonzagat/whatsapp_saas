@@ -272,6 +272,41 @@ describe('KloelChatToolsService — produto, autopilot e identidade', () => {
     });
   });
 
+  describe('toolValidateCoupon', () => {
+    it('does not pass non-string product or coupon values into coupon lookup', async () => {
+      const result = await service.toolValidateCoupon(ctx.wsId, {
+        productId: 123,
+        code: ['SAVE10'],
+      });
+
+      expect(result).toEqual({ success: false, error: 'productId_and_code_required' });
+      expect(prisma.productCoupon.findFirst).not.toHaveBeenCalled();
+    });
+
+    it('validates coupon using normalized string inputs', async () => {
+      prisma.productCoupon.findFirst.mockResolvedValueOnce({
+        id: 'coupon-1',
+        code: 'SAVE10',
+        discountValue: 10,
+        discountType: 'PERCENTAGE',
+        expiresAt: null,
+        maxUses: null,
+        usedCount: 0,
+      });
+
+      const result = await service.toolValidateCoupon(ctx.wsId, {
+        productId: 'prod-1',
+        code: 'SAVE10',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.valid).toBe(true);
+      expect(prisma.productCoupon.findFirst).toHaveBeenCalledWith({
+        where: { productId: 'prod-1', code: 'SAVE10', active: true },
+      });
+    });
+  });
+
   describe('toolToggleAutopilot', () => {
     it('blocks activation when billing is suspended', async () => {
       prisma.workspace.findUnique.mockResolvedValue({
