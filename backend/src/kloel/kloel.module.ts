@@ -24,7 +24,6 @@ import { KLOEL_LLM_E2E_GUARD, NoopKloelLLME2EGuard } from './kloel-llm-e2e-guard
 import { KloelController } from './kloel.controller';
 import { KloelDataController } from './kloel-data.controller';
 import {
-  LeadMindCoordinator,
   MindAutonomyCoordinator,
   MindCapabilityExecutor,
   MindCapabilityRegistry,
@@ -33,6 +32,7 @@ import {
   MindRuntime,
   WhatsAppMindCoordinator,
 } from './mind/coordination';
+import { KloelLeadBrainService as LeadMindCoordinator } from './kloel-lead-brain.service';
 import { KloelLeadProcessorService } from './kloel-lead-processor.service';
 import { KloelReplyEngineService } from './kloel-reply-engine.service';
 import { KloelService } from './kloel.service';
@@ -198,7 +198,6 @@ import { SelfAwarenessModule } from './self-awareness/self-awareness.module';
 import { ProductsModule } from '../products/products.module';
 import { ProductCouponDomainService } from './product-coupon-domain.service';
 import { PlansModule } from '../plans/plans.module';
-import { PlanService } from '../plans/plan.service';
 
 /** Kloel module. */
 @Module({
@@ -281,7 +280,6 @@ import { PlanService } from '../plans/plan.service';
     CheckoutService,
     CouponService,
     ProductCouponDomainService,
-    PlanService,
     KloelProductSubResourceToolsService,
     KloelWalletSalesToolsService,
     KloelBusinessConfigToolsService,

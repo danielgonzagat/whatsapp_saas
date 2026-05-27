@@ -12,7 +12,7 @@ import type { StripePaymentIntent } from '../billing/stripe-types';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { FraudEngine } from '../payments/fraud/fraud.engine';
 import { PrismaService } from '../prisma/prisma.service';
-import { MindEventSpine } from './mind/coordination';
+import { MindEventSpine } from './mind/coordination/mind-event-spine.service';
 import type { SaleEventPayload } from './brain-event-taxonomy';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 

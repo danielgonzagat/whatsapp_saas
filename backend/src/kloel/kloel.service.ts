@@ -12,7 +12,7 @@ import { Response } from 'express';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelConversationStore } from './kloel-conversation-store';
-import { LeadMindCoordinator } from './mind/coordination';
+import { KloelLeadBrainService as LeadMindCoordinator } from './kloel-lead-brain.service';
 import { KloelReplyEngineService } from './kloel-reply-engine.service';
 import { KloelThreadService } from './kloel-thread.service';
 import { KloelThinkerService, ThinkRequest, ThinkSyncResult } from './kloel-thinker.service';

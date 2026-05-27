@@ -6,7 +6,7 @@
  * @canonical backend/src/kloel/mind/coordination/lead-mind-coordinator.service.ts
  * @see docs/adr/0013-kloel-mind-unification.md
  */
-import { Injectable, Optional } from '@nestjs/common';
+import { Inject, Injectable, Optional, forwardRef } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { KloelLead, Prisma } from '@prisma/client';
 import { LLMBudgetService, estimateChatCostCents } from './llm-budget.service';
@@ -48,6 +48,7 @@ export class KloelLeadBrainService {
     private readonly prisma: PrismaService,
     private readonly planLimits: PlanLimitsService,
     private readonly llmBudget: LLMBudgetService,
+    @Inject(forwardRef(() => UnifiedAgentService))
     private readonly unifiedAgentService: UnifiedAgentService,
     private readonly smartPaymentService: SmartPaymentService,
     @Optional() private readonly opsAlert?: OpsAlertService,
