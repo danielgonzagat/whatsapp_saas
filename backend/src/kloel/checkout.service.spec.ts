@@ -1,3 +1,4 @@
+import { Test, type TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { randomIdSegment } from '../common/random-id';
 import { CheckoutService } from './checkout.service';
@@ -23,6 +24,7 @@ type ProductCheckoutRecord = { id: string; name: string };
 type CheckoutPlanLinkCreateManyArgs = { data: Array<{ checkoutId: string; planId: string }> };
 
 describe('CheckoutService', () => {
+  let moduleRef: TestingModule | null = null;
   let productFindFirst: jest.Mock<Promise<ProductRecord | null>, [ProductFindFirstArgs]>;
   let productCheckoutCreate: jest.Mock<Promise<ProductCheckoutRecord>, [ProductCheckoutCreateArgs]>;
   let checkoutPlanLinkCreateMany: jest.Mock<
@@ -30,14 +32,18 @@ describe('CheckoutService', () => {
     [CheckoutPlanLinkCreateManyArgs]
   >;
 
-  function createService(): CheckoutService {
+  async function createService(): Promise<CheckoutService> {
     const prisma = {
       product: { findFirst: productFindFirst },
       productCheckout: { create: productCheckoutCreate },
       checkoutPlanLink: { createMany: checkoutPlanLinkCreateMany },
-    } as unknown as PrismaService;
+    };
 
-    return new CheckoutService(prisma);
+    moduleRef = await Test.createTestingModule({
+      providers: [CheckoutService, { provide: PrismaService, useValue: prisma }],
+    }).compile();
+
+    return moduleRef.get(CheckoutService);
   }
 
   beforeEach(() => {
@@ -54,18 +60,23 @@ describe('CheckoutService', () => {
       .mockResolvedValue({ count: 0 });
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    if (moduleRef) {
+      await moduleRef.close();
+      moduleRef = null;
+    }
+
     jest.restoreAllMocks();
   });
 
   it('generates checkout codes with the crypto-backed random segment helper', async () => {
     const timestamp = 1_700_000_000_000;
+    jest.spyOn(Date, 'now').mockReturnValue(timestamp);
+
+    const service = await createService();
     const mathRandomSpy = jest.spyOn(Math, 'random').mockImplementation(() => {
       throw new Error('CheckoutService.create must not use Math.random');
     });
-    jest.spyOn(Date, 'now').mockReturnValue(timestamp);
-
-    const service = createService();
 
     await expect(
       service.create('ws_1', { productId: 'prod_1', name: 'Main checkout' }),

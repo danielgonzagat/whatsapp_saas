@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { KloelChatToolsService } from './kloel-chat-tools.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { ProductService } from '../products/product.service';
 import { SmartPaymentService } from './smart-payment.service';
 import {
   AgentRuntimeSchedulerService,
@@ -149,11 +150,18 @@ describe('KloelChatToolsService', () => {
       verify: jest.fn().mockResolvedValue([]),
       summary: jest.fn().mockResolvedValue({ total: 1, byType: { validation: 1 } }),
     };
+    const productService = {
+      create: jest.fn().mockResolvedValue({
+        success: true,
+        product: { id: 'prod-1', name: 'Test', price: 99, active: true, format: 'DIGITAL' },
+      }),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         KloelChatToolsService,
         { provide: PrismaService, useValue: prisma },
+        { provide: ProductService, useValue: productService },
         { provide: SmartPaymentService, useValue: smartPayment },
         { provide: AgentRuntimeSchedulerService, useValue: agentScheduler },
         { provide: AgentRuntimeSessionStore, useValue: agentSessions },

@@ -39,12 +39,14 @@ export class InstagramMarketingController {
   @Get('posts')
   async listPosts(
     @Req() req: AuthenticatedRequest,
-    @Query('limit', new PaginationLimitPipe({ default: 25 })) limit: number,
+    @Query('limit', new PaginationLimitPipe({ default: 25 })) limit?: number | string,
     @Query('offset') offset?: string,
   ) {
     const workspaceId = resolveWorkspaceId(req);
+    const parsedLimit = Number(limit) || 25;
+    const clampedLimit = Math.min(Math.max(parsedLimit, 1), 100);
     const clampedOffset = Math.max(Number(offset) || 0, 0);
-    return this.instagramMarketingService.listPosts(workspaceId, limit, clampedOffset);
+    return this.instagramMarketingService.listPosts(workspaceId, clampedLimit, clampedOffset);
   }
 
   @Get('insights')

@@ -589,7 +589,10 @@ export class KloelToolDispatcherService {
         case 'set_agent_job_enabled':
           return await this.chatToolsService.toolSetAgentJobEnabled(workspaceId, asToolArgs(args));
         case 'search_agent_memory':
-          return await this.bizConfigToolsService.toolListLeads(workspaceId, asToolArgs(args));
+          return await this.chatToolsService.toolSearchAgentMemoryWithContacts(
+            workspaceId,
+            asToolArgs(args),
+          );
         case 'search_agent_sessions':
           return await this.chatToolsService.toolSearchAgentSessions(workspaceId, asToolArgs(args));
         case 'get_agent_artifact':
