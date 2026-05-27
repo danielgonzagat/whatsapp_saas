@@ -59,7 +59,7 @@ describe('StorageController', () => {
 
       const res = createMockRes();
 
-      await controller.serveSignedLocalFile('valid-token', res as never);
+      await controller.serveSignedLocalFile('valid-token', res);
 
       expect(resolveLocalAccessToken).toHaveBeenCalledWith('valid-token');
       expect(getMimeTypeForPath).toHaveBeenCalledWith('media/test.jpg');
@@ -84,7 +84,7 @@ describe('StorageController', () => {
 
       const res = createMockRes();
 
-      await controller.serveSignedLocalFile('remote-token', res as never);
+      await controller.serveSignedLocalFile('remote-token', res);
 
       expect(resolveLocalAccessToken).toHaveBeenCalledWith('remote-token');
       expect(readAccessFile).toHaveBeenCalledWith('media/remote.jpg');
@@ -103,7 +103,7 @@ describe('StorageController', () => {
 
       const res = createMockRes();
 
-      await expect(controller.serveSignedLocalFile('expired-token', res as never)).rejects.toThrow(
+      await expect(controller.serveSignedLocalFile('expired-token', res)).rejects.toThrow(
         'Link de arquivo expirado',
       );
     });
@@ -115,7 +115,7 @@ describe('StorageController', () => {
 
       const res = createMockRes();
 
-      await expect(controller.serveSignedLocalFile('bad-token', res as never)).rejects.toThrow(
+      await expect(controller.serveSignedLocalFile('bad-token', res)).rejects.toThrow(
         'Arquivo não encontrado',
       );
     });
@@ -131,7 +131,7 @@ describe('StorageController', () => {
 
       const res = createMockRes();
 
-      await expect(controller.serveSignedLocalFile('missing-token', res as never)).rejects.toThrow(
+      await expect(controller.serveSignedLocalFile('missing-token', res)).rejects.toThrow(
         'Arquivo não encontrado',
       );
     });
@@ -153,7 +153,7 @@ describe('StorageController', () => {
 
       const res = createMockRes();
 
-      await controller.serveSignedAccessFile('access-token', res as never);
+      await controller.serveSignedAccessFile('access-token', res);
 
       expect(resolveLocalAccessToken).toHaveBeenCalledWith('access-token');
       expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'application/pdf');

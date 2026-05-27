@@ -9,8 +9,7 @@ function makeEntry(overrides: Partial<RegisteredPrompt> = {}): RegisteredPrompt 
   return {
     id: 'assistant.analyze_sentiment.system',
     version: '1.0',
-    sha256:
-      'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2',
+    sha256: 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2',
     template: 'Classifique o sentimento.',
     params: [],
     model: 'brain',

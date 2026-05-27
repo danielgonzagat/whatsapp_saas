@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { forEachSequential } from '../common/async-sequence';
-import { createRedisClient } from '../common/redis/redis.util';
+import { createBullMqConnectionOptions } from '../common/redis/redis.util';
 import { PrismaService } from '../prisma/prisma.service';
 
 type ScraperStats = { status?: string; found?: number; [key: string]: unknown };
@@ -14,7 +14,7 @@ export class ScrapersService {
 
   constructor(private prisma: PrismaService) {
     this.logger.log('ScrapersService initialized');
-    const connection = createRedisClient();
+    const connection = createBullMqConnectionOptions();
 
     this.scraperQueue = new Queue('scraper-jobs', { connection });
   }

@@ -128,13 +128,7 @@ describe('CiaAutonomyAdvisorService', () => {
       0.9,
     );
     // Type B: 10% success, n=50 → z << -1.96 → DECREASE
-    const negRows = buildRows(
-      'coupon_offer',
-      50,
-      'payment.succeeded',
-      'inbound.silent_24h',
-      0.1,
-    );
+    const negRows = buildRows('coupon_offer', 50, 'payment.succeeded', 'inbound.silent_24h', 0.1);
     // Type C: only 10 samples → skipped
     const sparseRows = buildRows(
       'product_offer',
@@ -165,13 +159,7 @@ describe('CiaAutonomyAdvisorService', () => {
   });
   it('returns NO_CHANGE for non-significant result (z in (-1.96, 1.96))', async () => {
     // 55% success, n=30 → z ≈ 0.548 (not significant)
-    const rows = buildRows(
-      'neutral_type',
-      30,
-      'payment.succeeded',
-      'inbound.silent_24h',
-      0.55,
-    );
+    const rows = buildRows('neutral_type', 30, 'payment.succeeded', 'inbound.silent_24h', 0.55);
     decisionOutcome.findAllClosedSinceForWorkspace.mockResolvedValue(rows);
 
     const result = await service.analyzeAndAdvise('ws-1');
@@ -183,13 +171,7 @@ describe('CiaAutonomyAdvisorService', () => {
   });
   it('correctly computes z-statistic for known proportions', async () => {
     // 90% success, n=100 → p̂ = 0.9, SE = sqrt(0.25/100) = 0.05, z = 0.4/0.05 = 8.0
-    const rows = buildRows(
-      'strong_type',
-      100,
-      'payment.succeeded',
-      'inbound.silent_24h',
-      0.9,
-    );
+    const rows = buildRows('strong_type', 100, 'payment.succeeded', 'inbound.silent_24h', 0.9);
     decisionOutcome.findAllClosedSinceForWorkspace.mockResolvedValue(rows);
 
     const result = await service.analyzeAndAdvise('ws-1');
@@ -245,17 +227,8 @@ describe('CiaAutonomyAdvisorService', () => {
         'inbound.silent_24h',
         0.9,
       );
-      const negRows = buildRows(
-        'coupon_offer',
-        50,
-        'payment.succeeded',
-        'inbound.silent_24h',
-        0.1,
-      );
-      decisionOutcome.findAllClosedSinceForWorkspace.mockResolvedValue([
-        ...posRows,
-        ...negRows,
-      ]);
+      const negRows = buildRows('coupon_offer', 50, 'payment.succeeded', 'inbound.silent_24h', 0.1);
+      decisionOutcome.findAllClosedSinceForWorkspace.mockResolvedValue([...posRows, ...negRows]);
 
       const result = await service.analyzeAndApply('ws-1');
 
@@ -301,17 +274,8 @@ describe('CiaAutonomyAdvisorService', () => {
         'inbound.silent_24h',
         0.9,
       );
-      const negRows = buildRows(
-        'coupon_offer',
-        50,
-        'payment.succeeded',
-        'inbound.silent_24h',
-        0.1,
-      );
-      decisionOutcome.findAllClosedSinceForWorkspace.mockResolvedValue([
-        ...posRows,
-        ...negRows,
-      ]);
+      const negRows = buildRows('coupon_offer', 50, 'payment.succeeded', 'inbound.silent_24h', 0.1);
+      decisionOutcome.findAllClosedSinceForWorkspace.mockResolvedValue([...posRows, ...negRows]);
 
       // First call (INCREASE) throws, second (DECREASE) succeeds
       runtimeState.updateWorkspaceAutonomy

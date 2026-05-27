@@ -16,12 +16,16 @@ import { makeNoOverclaimGate } from '../pulse-gates/no-overclaim.gate';
 import { makePromptLeakageGate } from '../pulse-gates/prompt-leakage.gate';
 import { resolveGateMode } from '../pulse-gates/gate-mode-controller';
 import { SpineEmitterService } from '../spine/spine-emitter.service';
+import { VerificationVerdict, VtierCertificationResult, VtierOverall } from './v-tier.types';
 import {
-  VerificationVerdict,
-  VtierCertificationResult,
-  VtierOverall,
-} from './v-tier.types';
-import { certifyDissolucaoVerificavel, certifyGoalFieldCommercialDominance, certifyGoalFieldOperational, certifyIdentityProjectorAudience, certifyMachineHumanAuditable, certifyRemocaoDegradaCognicao, certifyWorkspaceLocalIdentity } from './v-tier-certifier.helpers';
+  certifyDissolucaoVerificavel,
+  certifyGoalFieldCommercialDominance,
+  certifyGoalFieldOperational,
+  certifyIdentityProjectorAudience,
+  certifyMachineHumanAuditable,
+  certifyRemocaoDegradaCognicao,
+  certifyWorkspaceLocalIdentity,
+} from './v-tier-certifier.helpers';
 const FORBIDDEN_V1_PATTERNS: readonly RegExp[] = [
   /\byou are\b/i,
   /\bvocê é\b/i,
@@ -109,7 +113,9 @@ export class VtierCertifierService {
       opts.kloelPromptsHelpersPath ?? join(__dirname, '..', 'kloel.prompts.helpers.ts'),
     ];
     for (const p of searchPaths) {
-      if (existsSync(p)) paths.push(p);
+      if (existsSync(p)) {
+        paths.push(p);
+      }
     }
     if (paths.length === 0) {
       return {
@@ -169,9 +175,7 @@ export class VtierCertifierService {
       }
       const validation = validateAbiPayload(result.abi);
       const structuralIssues = validation.issues.filter(
-        (i) =>
-          i.code !== 'PROMPT_LEAKAGE' &&
-          i.code !== 'NO_OVERCLAIM',
+        (i) => i.code !== 'PROMPT_LEAKAGE' && i.code !== 'NO_OVERCLAIM',
       );
       if (structuralIssues.length > 0) {
         return {
@@ -298,11 +302,15 @@ export class VtierCertifierService {
       perceptionSnapshot: { channel: 'internal' },
     });
     if (abiResult.status === 'ok') {
-      const overclaimResult = makeNoOverclaimGate(resolveGateMode('no-overclaim')).check(abiResult.abi);
+      const overclaimResult = makeNoOverclaimGate(resolveGateMode('no-overclaim')).check(
+        abiResult.abi,
+      );
       gateResults.push(`no-overclaim=${overclaimResult.status}`);
       const roleplayResult = lineageGate.check(abiResult.abi);
       gateResults.push(`no-roleplay=${roleplayResult.status}`);
-      const leakageResult = makePromptLeakageGate(resolveGateMode('prompt-leakage')).check(abiResult.abi);
+      const leakageResult = makePromptLeakageGate(resolveGateMode('prompt-leakage')).check(
+        abiResult.abi,
+      );
       gateResults.push(`prompt-leakage=${leakageResult.status}`);
     } else {
       gateResults.push(`ABI build failed: ${abiResult.reason}`);
@@ -352,7 +360,7 @@ export class VtierCertifierService {
       measuredAt: now,
     };
   }
-    private async v10IdentityProjectorAudience(): Promise<VerificationVerdict> {
+  private async v10IdentityProjectorAudience(): Promise<VerificationVerdict> {
     return certifyIdentityProjectorAudience(this.identityProjector);
   }
   private v11GoalFieldOperational(): VerificationVerdict {

@@ -18,6 +18,9 @@ type DispatcherPrismaMock = {
 type DispatcherChatToolsMock = Pick<
   KloelChatToolsService,
   | 'toolSaveProduct'
+  | 'toolUpdateProduct'
+  | 'toolUploadProductImage'
+  | 'toolPublishProduct'
   | 'toolListProducts'
   | 'toolDeleteProduct'
   | 'toolToggleAutopilot'
@@ -159,6 +162,9 @@ export function createPlanLimitsMock(): DispatcherPlanLimitsMock {
 export function createChatToolsMock(): DispatcherChatToolsMock {
   return {
     toolSaveProduct: jest.fn().mockResolvedValue({ success: true }),
+    toolUpdateProduct: jest.fn().mockResolvedValue({ success: true }),
+    toolUploadProductImage: jest.fn().mockResolvedValue({ success: true }),
+    toolPublishProduct: jest.fn().mockResolvedValue({ success: true }),
     toolListProducts: jest.fn().mockResolvedValue({ success: true, products: [] }),
     toolDeleteProduct: jest.fn().mockResolvedValue({ success: true }),
     toolToggleAutopilot: jest.fn().mockResolvedValue({ success: true, enabled: true }),

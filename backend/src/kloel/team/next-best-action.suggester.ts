@@ -62,8 +62,7 @@ const R1_REVIEW_DEFAULT: SuggestionR1Contract = {
 const R1_SILENT_QUALIFIED: SuggestionR1Contract = {
   riskClass: 'R1',
   delegationMode: 'allowed_alone',
-  safeNextStep:
-    'surface an honest re-engagement suggestion for owner review; do not send',
+  safeNextStep: 'surface an honest re-engagement suggestion for owner review; do not send',
   rollback: ['dismiss_suggestion', 'snooze_suggestion'],
   leadOutcomeGuardrail: {
     antiPressureLanguage: true,
@@ -75,8 +74,7 @@ const R1_SILENT_QUALIFIED: SuggestionR1Contract = {
 const R1_SILENT_UNQUALIFIED: SuggestionR1Contract = {
   riskClass: 'R1',
   delegationMode: 'allowed_alone',
-  safeNextStep:
-    'review timeline and gather context before every re-engagement suggestion',
+  safeNextStep: 'review timeline and gather context before every re-engagement suggestion',
   rollback: ['dismiss_suggestion', 'snooze_suggestion'],
   leadOutcomeGuardrail: {
     antiPressureLanguage: true,
@@ -100,8 +98,7 @@ const R2_HANDLE_OBJECTION: SuggestionR1Contract = {
 const R2_RECOVER_REVENUE: SuggestionR1Contract = {
   riskClass: 'R2',
   delegationMode: 'requires_review',
-  safeNextStep:
-    'prepare recovery recommendation with no discount or urgency pressure',
+  safeNextStep: 'prepare recovery recommendation with no discount or urgency pressure',
   rollback: ['dismiss_suggestion', 'snooze_suggestion', 'manual_review'],
   leadOutcomeGuardrail: {
     antiPressureLanguage: true,
@@ -137,8 +134,7 @@ const R2_CLOSE_QUALIFIED: SuggestionR1Contract = {
 const ACTION_TEMPLATES: readonly ActionTemplate[] = [
   {
     condition: (ctx) =>
-      !hasEvent(ctx, 'commerce.lead.contacted') &&
-      hasEvent(ctx, 'commerce.lead.created'),
+      !hasEvent(ctx, 'commerce.lead.contacted') && hasEvent(ctx, 'commerce.lead.created'),
     action: 'make_initial_contact',
     rationale: 'lead created but never contacted - first touch needed',
     baseConfidence: 0.82,
@@ -150,8 +146,7 @@ const ACTION_TEMPLATES: readonly ActionTemplate[] = [
     condition: (ctx) =>
       hasEvent(ctx, 'commerce.lead.went_silent') &&
       !hasEvent(ctx, 'commerce.lead.replied') &&
-      (hasEvent(ctx, 'commerce.lead.objection_raised') ||
-        hasEvent(ctx, 'commerce.cart.abandoned')),
+      (hasEvent(ctx, 'commerce.lead.objection_raised') || hasEvent(ctx, 'commerce.cart.abandoned')),
     action: 'reengage_silent_lead',
     rationale:
       'lead went silent after commercial context (objection or cart) - qualified re-engagement recommended',
@@ -167,8 +162,9 @@ const ACTION_TEMPLATES: readonly ActionTemplate[] = [
   {
     condition: (ctx) =>
       hasEvent(ctx, 'commerce.lead.went_silent') &&
-      !(hasEvent(ctx, 'commerce.lead.objection_raised') ||
-        hasEvent(ctx, 'commerce.cart.abandoned')),
+      !(
+        hasEvent(ctx, 'commerce.lead.objection_raised') || hasEvent(ctx, 'commerce.cart.abandoned')
+      ),
     action: 'review_silent_lead',
     rationale:
       'lead went silent without clear commercial context - review timeline before assuming disinterest',
@@ -182,8 +178,7 @@ const ACTION_TEMPLATES: readonly ActionTemplate[] = [
     r1Contract: R1_SILENT_UNQUALIFIED,
   },
   {
-    condition: (ctx) =>
-      hasEvent(ctx, 'commerce.lead.objection_raised'),
+    condition: (ctx) => hasEvent(ctx, 'commerce.lead.objection_raised'),
     action: 'handle_objection',
     rationale: 'lead raised objection - address before advancing',
     baseConfidence: 0.8,
@@ -193,8 +188,7 @@ const ACTION_TEMPLATES: readonly ActionTemplate[] = [
   },
   {
     condition: (ctx) =>
-      hasEvent(ctx, 'commerce.lead.replied') &&
-      !hasEvent(ctx, 'commerce.whatsapp.message_replied'),
+      hasEvent(ctx, 'commerce.lead.replied') && !hasEvent(ctx, 'commerce.whatsapp.message_replied'),
     action: 'respond_to_reply',
     rationale: 'lead replied but no operator response yet',
     baseConfidence: 0.85,
@@ -204,8 +198,7 @@ const ACTION_TEMPLATES: readonly ActionTemplate[] = [
   },
   {
     condition: (ctx) =>
-      ctx.currentStage !== undefined &&
-      hasEvent(ctx, 'commerce.crm.stage_changed'),
+      ctx.currentStage !== undefined && hasEvent(ctx, 'commerce.crm.stage_changed'),
     action: 'advance_pipeline_stage',
     rationale: 'lead is in active pipeline stage - define next CRM step',
     baseConfidence: 0.78,
@@ -215,8 +208,7 @@ const ACTION_TEMPLATES: readonly ActionTemplate[] = [
   },
   {
     condition: (ctx) =>
-      hasEvent(ctx, 'commerce.cart.abandoned') ||
-      hasEvent(ctx, 'commerce.payment.declined'),
+      hasEvent(ctx, 'commerce.cart.abandoned') || hasEvent(ctx, 'commerce.payment.declined'),
     action: 'recover_revenue',
     rationale: 'revenue signal detected - recovery opportunity',
     baseConfidence: 0.8,
@@ -225,8 +217,7 @@ const ACTION_TEMPLATES: readonly ActionTemplate[] = [
     r1Contract: R2_RECOVER_REVENUE,
   },
   {
-    condition: (ctx) =>
-      hasEvent(ctx, 'commerce.post_sale.churn_risk_detected'),
+    condition: (ctx) => hasEvent(ctx, 'commerce.post_sale.churn_risk_detected'),
     action: 'review_post_sale_value_gap',
     rationale:
       'post-sale churn risk detected - verify whether the customer reached first value before every retention action',
@@ -252,8 +243,7 @@ const ACTION_TEMPLATES: readonly ActionTemplate[] = [
   },
   {
     condition: (ctx) =>
-      hasEvent(ctx, 'commerce.lead.qualified') &&
-      !hasEvent(ctx, 'commerce.lead.converted'),
+      hasEvent(ctx, 'commerce.lead.qualified') && !hasEvent(ctx, 'commerce.lead.converted'),
     action: 'close_qualified_lead',
     rationale: 'lead qualified but not converted - closing window open',
     baseConfidence: 0.83,
@@ -272,23 +262,15 @@ const ACTION_TEMPLATES: readonly ActionTemplate[] = [
   },
 ];
 
-function adjustConfidence(
-  base: number,
-  ctx: PreCallContext,
-  maturityStage?: string,
-): number {
+function adjustConfidence(base: number, ctx: PreCallContext, maturityStage?: string): number {
   let adjusted = base;
 
   if (maturityStage === 'otimizacao' || maturityStage === 'maturidade') {
     adjusted += 0.05;
   }
 
-  const positiveCount = ctx.valenceTrace.filter(
-    (v) => v.valence === 'positive',
-  ).length;
-  const negativeCount = ctx.valenceTrace.filter(
-    (v) => v.valence === 'negative',
-  ).length;
+  const positiveCount = ctx.valenceTrace.filter((v) => v.valence === 'positive').length;
+  const negativeCount = ctx.valenceTrace.filter((v) => v.valence === 'negative').length;
 
   if (positiveCount > negativeCount) {
     adjusted += 0.03;
@@ -311,10 +293,7 @@ function adjustConfidence(
   return Math.max(MIN_CONFIDENCE, Math.min(0.95, adjusted));
 }
 
-function selectEvidence(
-  ctx: PreCallContext,
-  patterns: readonly string[],
-): readonly string[] {
+function selectEvidence(ctx: PreCallContext, patterns: readonly string[]): readonly string[] {
   const ids: string[] = [];
   for (const e of ctx.leadHistory) {
     if (patterns.includes(e.eventName) && !ids.includes(e.eventId)) {
@@ -346,7 +325,9 @@ export function suggestNextBestActions(input: SuggestInput): readonly NextBestAc
 
   const sorted = scored.sort((a, b) => {
     const diff = b.confidence - a.confidence;
-    if (Math.abs(diff) > 0.001) return diff > 0 ? 1 : -1;
+    if (Math.abs(diff) > 0.001) {
+      return diff > 0 ? 1 : -1;
+    }
     return a.scoreOrder - b.scoreOrder;
   });
 

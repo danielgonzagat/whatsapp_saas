@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import type { CashPosition, PayablesProjection, ReceivablesProjection, RunwayCalculation } from './types';
+import type {
+  CashPosition,
+  PayablesProjection,
+  ReceivablesProjection,
+  RunwayCalculation,
+} from './types';
 
 /**
  * CASH-004 — RunwayCalculator.
@@ -14,7 +19,6 @@ import type { CashPosition, PayablesProjection, ReceivablesProjection, RunwayCal
  */
 @Injectable()
 export class RunwayCalculator {
-
   public calculate(
     position: CashPosition,
     receivables: ReceivablesProjection,
@@ -41,7 +45,8 @@ export class RunwayCalculator {
     const marginOfSafety =
       minComfortable > 0 ? currentBalance / minComfortable : Number.POSITIVE_INFINITY;
 
-    const runwayDateMs = now + (Number.isFinite(runwayDays) ? runwayDays : 365) * 24 * 60 * 60 * 1000;
+    const runwayDateMs =
+      now + (Number.isFinite(runwayDays) ? runwayDays : 365) * 24 * 60 * 60 * 1000;
 
     return {
       workspaceId: position.workspaceId,

@@ -30,9 +30,7 @@ export interface GuardCheckInput {
  * Returns `allowed: false` with a reason when the lever is outside
  * the control radius.
  */
-export function guardRecommendation(
-  input: GuardCheckInput,
-): RecommendationGuardResult {
+export function guardRecommendation(input: GuardCheckInput): RecommendationGuardResult {
   const guardAppliedAt = new Date().toISOString();
 
   if (!ALL_ROLES.includes(input.targetRole)) {
@@ -56,7 +54,8 @@ export function guardRecommendation(
   const roleDesc = ROLE_DESCRIPTIONS[input.targetRole];
   return {
     allowed: false,
-    reason: `Acao '${input.suggestedLever}' esta FORA do raio de controle de ${input.targetRole} ` +
+    reason:
+      `Acao '${input.suggestedLever}' esta FORA do raio de controle de ${input.targetRole} ` +
       `(${roleDesc}). Sugerir esta acao a este papel viola B0.3.`,
     role: input.targetRole,
     guardAppliedAt,
@@ -75,9 +74,7 @@ export function guardRecommendations(
 /**
  * UTP-ROLE-005 helper: count how many suggestions in a batch were blocked.
  */
-export function countBlocked(
-  results: readonly RecommendationGuardResult[],
-): number {
+export function countBlocked(results: readonly RecommendationGuardResult[]): number {
   return results.filter((r) => !r.allowed).length;
 }
 

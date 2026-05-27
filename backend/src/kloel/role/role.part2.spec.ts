@@ -45,8 +45,6 @@ import {
   filterWisdomByMultiRole,
   explainRelevance,
 } from './aware-wisdom.extender';
-import type { WisdomPattern } from '../wisdom/wisdom.types';
-
 const NOW = Date.parse('2026-05-14T10:00:00.000Z');
 
 function ev(over: Partial<SpineEventRef>): SpineEventRef {
@@ -57,35 +55,19 @@ function ev(over: Partial<SpineEventRef>): SpineEventRef {
     occurredAt: over.occurredAt ?? '2026-05-14T08:00:00.000Z',
     truthMode: over.truthMode ?? 'observed',
   };
-  if ('entityRef' in over && over.entityRef !== undefined)
+  if ('entityRef' in over && over.entityRef !== undefined) {
     e['entityRef'] = over.entityRef;
-  if (over.valence !== undefined) e['valence'] = over.valence;
-  if (over.payload !== undefined) e['payload'] = over.payload;
+  }
+  if (over.valence !== undefined) {
+    e['valence'] = over.valence;
+  }
+  if (over.payload !== undefined) {
+    e['payload'] = over.payload;
+  }
   return e as SpineEventRef;
 }
 
-function makeWisdomPattern(
-  over: Partial<WisdomPattern>,
-): WisdomPattern {
-  return {
-    patternId: over.patternId ?? `wp_${Math.random().toString(36).slice(2, 8)}`,
-    description: over.description ?? 'pattern desc',
-    applicableConditions: over.applicableConditions ?? ['stage:validacao'],
-    evidenceWorkspacesCount: over.evidenceWorkspacesCount ?? 5,
-    confidence: over.confidence ?? 0.8,
-    signalKind: over.signalKind ?? 'conversion_rate',
-    taxonomy: over.taxonomy ?? {
-      verticalHint: undefined,
-      tickethint: undefined,
-      stageHint: 'validacao',
-      channelHint: undefined,
-    },
-  };
-}
-
-function makeRanking(
-  over: Partial<AttentionRanking>,
-): AttentionRanking {
+function makeRanking(over: Partial<AttentionRanking>): AttentionRanking {
   return {
     itemId: over.itemId ?? `it_${Math.random().toString(36).slice(2, 6)}`,
     workspaceId: over.workspaceId ?? 'wks_role_test',
@@ -211,9 +193,7 @@ describe('UTP-ROLE-006 — Multi-Hat Service', () => {
     expect(profile.primaryRole).toBe('closer');
     expect(profile.secondaryRoles).toContain('produtor');
     expect(profile.hatStackDepth).toBe(2);
-    expect(profile.combinedLevers.length).toBeGreaterThan(
-      getLeversForRole('closer').length,
-    );
+    expect(profile.combinedLevers.length).toBeGreaterThan(getLeversForRole('closer').length);
   });
 
   it('hasMultipleHats returns false for single-role workspace', () => {

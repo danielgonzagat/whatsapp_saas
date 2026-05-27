@@ -16,7 +16,10 @@
  */
 
 import { Test } from '@nestjs/testing';
-import { WisdomPatternExtractorService, type ExtractedPattern } from './wisdom-pattern-extractor.service';
+import {
+  WisdomPatternExtractorService,
+  type ExtractedPattern,
+} from './wisdom-pattern-extractor.service';
 import { WisdomPrivacyGuardService } from './wisdom-privacy-guard.service';
 import { WisdomOptService } from './wisdom-opt';
 import type { SpineEventRef } from '../mind/mind.types';
@@ -53,18 +56,29 @@ function buildEventSet(
   return { workspaceId, events };
 }
 
-function makeLeadEvents(workspaceId: string, baseDate: Date, count: number): Array<{ name: string }> {
+function makeLeadEvents(
+  workspaceId: string,
+  baseDate: Date,
+  count: number,
+): Array<{ name: string }> {
   return Array.from({ length: count }, () => ({ name: 'commerce.lead.created' as const }));
 }
 
-function makeConversionEvents(workspaceId: string, baseDate: Date, count: number): Array<{ name: string; overrides: Partial<SpineEventRef> }> {
+function makeConversionEvents(
+  workspaceId: string,
+  baseDate: Date,
+  count: number,
+): Array<{ name: string; overrides: Partial<SpineEventRef> }> {
   return Array.from({ length: count }, () => ({
     name: 'commerce.lead.converted' as const,
     overrides: { valence: 'positive' as const },
   }));
 }
 
-function makeObjectionEvents(count: number, keyword: string): Array<{ name: string; overrides: Partial<SpineEventRef> }> {
+function makeObjectionEvents(
+  count: number,
+  keyword: string,
+): Array<{ name: string; overrides: Partial<SpineEventRef> }> {
   return Array.from({ length: count }, () => ({
     name: 'commerce.lead.objection_raised' as const,
     overrides: {
@@ -74,7 +88,9 @@ function makeObjectionEvents(count: number, keyword: string): Array<{ name: stri
   }));
 }
 
-function makeWhatsappReplyEvents(count: number): Array<{ name: string; overrides: Partial<SpineEventRef> }> {
+function makeWhatsappReplyEvents(
+  count: number,
+): Array<{ name: string; overrides: Partial<SpineEventRef> }> {
   return [
     ...Array.from({ length: count }, () => ({
       name: 'commerce.whatsapp.message_replied' as const,
@@ -87,7 +103,9 @@ function makeWhatsappReplyEvents(count: number): Array<{ name: string; overrides
   ];
 }
 
-function makeStageTransitionEvents(stages: string[]): Array<{ name: string; overrides: Partial<SpineEventRef> }> {
+function makeStageTransitionEvents(
+  stages: string[],
+): Array<{ name: string; overrides: Partial<SpineEventRef> }> {
   const events: Array<{ name: string; overrides: Partial<SpineEventRef> }> = [];
   for (let i = 0; i < stages.length - 1; i++) {
     for (let j = 0; j < 10 - i; j++) {

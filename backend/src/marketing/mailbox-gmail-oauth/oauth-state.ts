@@ -20,24 +20,17 @@ export function expiresAtFromSeconds(seconds: unknown): Date | null {
 
 export function signState(payload: SignedGmailState, secret: string): string {
   const encoded = Buffer.from(JSON.stringify(payload)).toString('base64url');
-  const signature = createHmac('sha256', secret)
-    .update(encoded)
-    .digest('base64url');
+  const signature = createHmac('sha256', secret).update(encoded).digest('base64url');
   return `${encoded}.${signature}`;
 }
 
-export function verifyState(
-  rawState: string,
-  secret: string,
-): SignedGmailState | null {
+export function verifyState(rawState: string, secret: string): SignedGmailState | null {
   const [encoded, signature] = String(rawState || '').split('.');
   if (!encoded || !signature) {
     return null;
   }
 
-  const expected = createHmac('sha256', secret)
-    .update(encoded)
-    .digest('base64url');
+  const expected = createHmac('sha256', secret).update(encoded).digest('base64url');
   const actualBuffer = Buffer.from(signature);
   const expectedBuffer = Buffer.from(expected);
   if (

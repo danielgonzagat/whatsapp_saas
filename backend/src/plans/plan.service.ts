@@ -3,7 +3,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
-import { BrainEventSpineService } from '../kloel/brain-event-spine.service';
+import { MindEventSpine } from '../kloel/mind/coordination';
 
 export interface CreatePlanDto {
   productId: string;
@@ -46,6 +46,41 @@ export interface AffiliateConfig {
   customCommission?: number;
 }
 
+function checkoutImagesObject(value: unknown): Prisma.InputJsonObject {
+  if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+    return value;
+  }
+
+  return {};
+}
+
+function checkoutImagesWith(
+  current: unknown,
+  patch: Prisma.InputJsonObject,
+): Prisma.InputJsonObject {
+  return { ...checkoutImagesObject(current), ...patch };
+}
+
+function paymentMethodsJson(
+  methods: PaymentMethodsConfig,
+): Prisma.InputJsonObject & Record<string, unknown> {
+  return {
+    ...(methods.card !== undefined ? { card: methods.card } : {}),
+    ...(methods.pix !== undefined ? { pix: methods.pix } : {}),
+    ...(methods.boleto !== undefined ? { boleto: methods.boleto } : {}),
+  };
+}
+
+function shippingConfigJson(
+  config: ShippingConfig,
+): Prisma.InputJsonObject & Record<string, unknown> {
+  return {
+    ...(config.type !== undefined ? { type: config.type } : {}),
+    ...(config.fixedValue !== undefined ? { fixedValue: config.fixedValue } : {}),
+    ...(config.originCep !== undefined ? { originCep: config.originCep } : {}),
+  };
+}
+
 @Injectable()
 export class PlanService {
   private readonly logger = new Logger(PlanService.name);
@@ -54,7 +89,7 @@ export class PlanService {
     private readonly prisma: PrismaService,
     private readonly eventEmitter: EventEmitter2,
     private readonly audit: AuditService,
-    @Optional() private readonly brainSpine?: BrainEventSpineService,
+    @Optional() private readonly brainSpine?: MindEventSpine,
   ) {}
 
   async create(workspaceId: string, dto: CreatePlanDto, actor?: { id: string }) {
@@ -74,14 +109,11 @@ export class PlanService {
         maxInstallments: dto.maxInstallments ?? 1,
         billingType: dto.billingType ?? 'ONE_TIME',
         visibleToAffiliates: dto.visibleToAffiliates ?? false,
+        checkoutImages: checkoutImagesWith(null, {
+          acceptCoupons: dto.acceptCoupons ?? false,
+          ...(dto.imageUrl !== undefined ? { imageUrl: dto.imageUrl } : {}),
+        }),
         active: true,
-        checkoutImages:
-          dto.acceptCoupons !== undefined || dto.imageUrl !== undefined
-            ? {
-                ...(dto.acceptCoupons !== undefined ? { acceptCoupons: dto.acceptCoupons } : {}),
-                ...(dto.imageUrl !== undefined ? { main: dto.imageUrl } : {}),
-              }
-            : undefined,
       },
     });
 
@@ -120,7 +152,10 @@ export class PlanService {
     });
 
     this.logger.log(`Plan created: ${plan.id} "${plan.name}"`);
-    return { success: true, plan };
+    return {
+      success: true,
+      plan,
+    };
   }
 
   async findByProduct(workspaceId: string, productId: string) {
@@ -129,7 +164,10 @@ export class PlanService {
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
-    return { success: true, plans };
+    return {
+      success: true,
+      plans,
+    };
   }
 
   async listForProduct(workspaceId: string, productId: string) {
@@ -151,6 +189,11 @@ export class PlanService {
     }
 
     const updates: Record<string, unknown> = {};
+    const checkoutImageUpdates: Prisma.InputJsonObject = {
+      ...(dto.acceptCoupons !== undefined ? { acceptCoupons: Boolean(dto.acceptCoupons) } : {}),
+      ...(dto.imageUrl !== undefined ? { imageUrl: dto.imageUrl } : {}),
+    };
+
     if (dto.name !== undefined) {
       updates.name = dto.name;
     }
@@ -172,17 +215,16 @@ export class PlanService {
     if (dto.visibleToAffiliates !== undefined) {
       updates.visibleToAffiliates = Boolean(dto.visibleToAffiliates);
     }
-    if (dto.acceptCoupons !== undefined || dto.imageUrl !== undefined) {
-      const checkoutImages = (existing.checkoutImages as Record<string, unknown> | null) || {};
-      updates.checkoutImages = {
-        ...checkoutImages,
-        ...(dto.acceptCoupons !== undefined ? { acceptCoupons: Boolean(dto.acceptCoupons) } : {}),
-        ...(dto.imageUrl !== undefined ? { main: dto.imageUrl } : {}),
-      };
+    if (Object.keys(checkoutImageUpdates).length > 0) {
+      updates.checkoutImages = checkoutImagesWith(existing.checkoutImages, checkoutImageUpdates);
     }
 
     if (Object.keys(updates).length === 0) {
-      return { success: true, plan: existing, message: 'No changes' };
+      return {
+        success: true,
+        plan: existing,
+        message: 'No changes',
+      };
     }
 
     const plan = await this.prisma.productPlan.update({ where: { id: planId }, data: updates });
@@ -220,7 +262,10 @@ export class PlanService {
       },
     });
 
-    return { success: true, plan };
+    return {
+      success: true,
+      plan,
+    };
   }
 
   async delete(workspaceId: string, planId: string, actor?: { id: string }) {
@@ -251,7 +296,10 @@ export class PlanService {
       });
     }
 
-    return { success: true, message: `Plan "${plan.name}" deleted` };
+    return {
+      success: true,
+      message: `Plan "${plan.name}" deleted`,
+    };
   }
 
   async setPaymentMethods(
@@ -267,14 +315,13 @@ export class PlanService {
       throw new NotFoundException('Plan not found');
     }
 
-    const checkoutImages = (plan.checkoutImages as Record<string, unknown> | null) || {};
+    const paymentMethods = paymentMethodsJson(methods);
     const updated = await this.prisma.productPlan.update({
       where: { id: planId },
       data: {
-        checkoutImages: {
-          ...checkoutImages,
-          paymentMethods: methods,
-        } as unknown as Prisma.InputJsonValue,
+        checkoutImages: checkoutImagesWith(plan.checkoutImages, {
+          paymentMethods,
+        }),
       },
     });
 
@@ -285,10 +332,13 @@ export class PlanService {
         action: 'plan.setPaymentMethods',
         resource: 'ProductPlan',
         resourceId: planId,
-        details: { methods },
+        details: paymentMethods,
       });
     }
-    return { success: true, plan: updated };
+    return {
+      success: true,
+      plan: updated,
+    };
   }
 
   async setInstallments(
@@ -319,7 +369,10 @@ export class PlanService {
         details: { maxInstallments },
       });
     }
-    return { success: true, plan: updated };
+    return {
+      success: true,
+      plan: updated,
+    };
   }
 
   async setCoupons(
@@ -335,11 +388,10 @@ export class PlanService {
       throw new NotFoundException('Plan not found');
     }
 
-    const checkoutImages = (plan.checkoutImages as Record<string, unknown> | null) || {};
     const updated = await this.prisma.productPlan.update({
       where: { id: planId },
       data: {
-        checkoutImages: { ...checkoutImages, acceptCoupons },
+        checkoutImages: checkoutImagesWith(plan.checkoutImages, { acceptCoupons }),
       },
     });
 
@@ -353,7 +405,10 @@ export class PlanService {
         details: { acceptCoupons },
       });
     }
-    return { success: true, plan: updated };
+    return {
+      success: true,
+      plan: updated,
+    };
   }
 
   async setShipping(
@@ -369,10 +424,13 @@ export class PlanService {
       throw new NotFoundException('Plan not found');
     }
 
+    const shipping = shippingConfigJson(config);
     const updated = await this.prisma.productPlan.update({
       where: { id: planId },
       data: {
-        shippingConfig: config as Prisma.InputJsonValue,
+        checkoutImages: checkoutImagesWith(plan.checkoutImages, {
+          shipping,
+        }),
       },
     });
 
@@ -383,10 +441,13 @@ export class PlanService {
         action: 'plan.setShipping',
         resource: 'ProductPlan',
         resourceId: planId,
-        details: { config },
+        details: shipping,
       });
     }
-    return { success: true, plan: updated };
+    return {
+      success: true,
+      plan: updated,
+    };
   }
 
   async setAffiliateConfig(
@@ -403,12 +464,16 @@ export class PlanService {
     }
 
     const updates: Record<string, unknown> = {};
+    const details: Record<string, unknown> = {};
     if (config.visibleToAffiliates !== undefined) {
       updates.visibleToAffiliates = config.visibleToAffiliates;
+      details.visibleToAffiliates = config.visibleToAffiliates;
     }
     if (config.customCommission !== undefined) {
-      const checkoutImages = (plan.checkoutImages as Record<string, unknown>) || {};
-      updates.checkoutImages = { ...checkoutImages, customCommission: config.customCommission };
+      updates.checkoutImages = checkoutImagesWith(plan.checkoutImages, {
+        customCommission: config.customCommission,
+      });
+      details.customCommission = config.customCommission;
     }
 
     const updated = await this.prisma.productPlan.update({
@@ -423,9 +488,12 @@ export class PlanService {
         action: 'plan.setAffiliateConfig',
         resource: 'ProductPlan',
         resourceId: planId,
-        details: { config },
+        details,
       });
     }
-    return { success: true, plan: updated };
+    return {
+      success: true,
+      plan: updated,
+    };
   }
 }

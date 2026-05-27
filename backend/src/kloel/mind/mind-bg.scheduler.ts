@@ -3,6 +3,7 @@ import { Queue, Worker } from 'bullmq';
 import { MindBackgroundProcessor } from './mind-bg.processor';
 import { SpineEmitterService } from '../spine/spine-emitter.service';
 import { resolveRedisUrl } from '../../common/redis/resolve-redis-url';
+import { attachDlq } from '../../queue/queue';
 import { PrismaService } from '../../prisma/prisma.service';
 import { type SpineEventRef } from './mind.types';
 import { CiaCognitiveHealthService } from '../../cia/cia-cognitive-health.service';
@@ -18,6 +19,8 @@ export class MindBackgroundScheduler implements OnModuleInit, OnModuleDestroy {
   private worker: Worker | null = null;
 
   private queue: Queue | null = null;
+
+  private dlq: Queue | null = null;
 
   private readonly enabled: boolean;
 
@@ -47,7 +50,15 @@ export class MindBackgroundScheduler implements OnModuleInit, OnModuleDestroy {
     }
     const connection = { url: redisUrl };
 
-    this.queue = new Queue(MIND_BG_QUEUE, { connection });
+    this.queue = new Queue(MIND_BG_QUEUE, {
+      connection,
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 1000 },
+        removeOnFail: false,
+      },
+    });
+    this.dlq = attachDlq(this.queue);
 
     this.worker = new Worker(
       MIND_BG_QUEUE,
@@ -76,6 +87,9 @@ export class MindBackgroundScheduler implements OnModuleInit, OnModuleDestroy {
           .then(() => this.drainRepeatable())
           .catch(() => undefined),
       );
+    }
+    if (this.dlq) {
+      closes.push(this.dlq.close().catch(() => undefined));
     }
     if (closes.length > 0) {
       await Promise.all(closes);

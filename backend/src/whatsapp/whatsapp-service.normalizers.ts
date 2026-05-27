@@ -3,7 +3,11 @@ import type {
   NormalizedContact,
   ProviderMessageEnvelope,
 } from './whatsapp-service.types';
-import { normalizeNumber, resolveTimestampExt, toIsoTimestamp } from './whatsapp-service.helpers';
+import {
+  normalizeNumber,
+  resolveTimestampExt,
+  toIsoTimestamp,
+} from '../marketing/channels/whatsapp/whatsapp-service.helpers';
 import { NON_DIGIT_RE } from '../common/phone';
 import { readText } from '../common/utils';
 

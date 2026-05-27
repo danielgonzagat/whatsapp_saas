@@ -137,10 +137,9 @@ export class TikTokMarketingModeService {
       );
     }
 
-    this.logger.log(
-      `TikTok mode resolved for workspace ${workspaceId}: ${mode}`,
-      { context: 'TikTokMarketingModeService.resolveMode' },
-    );
+    this.logger.log(`TikTok mode resolved for workspace ${workspaceId}: ${mode}`, {
+      context: 'TikTokMarketingModeService.resolveMode',
+    });
 
     return result;
   }
@@ -176,6 +175,10 @@ export class TikTokMarketingModeService {
   }
 
   private readOutboundApproved(): boolean {
-    return String(process.env.TIKTOK_OUTBOUND_APPROVED || '').trim().toLowerCase() === 'true';
+    return (
+      String(process.env.TIKTOK_OUTBOUND_APPROVED || '')
+        .trim()
+        .toLowerCase() === 'true'
+    );
   }
 }

@@ -17,8 +17,8 @@ import { asProviderSettings } from './provider-settings.types';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { WhatsAppWatchdogRecoveryService } from './whatsapp-watchdog-recovery.service';
 
-export type { SessionHealth } from './whatsapp-watchdog.types';
-import type { SessionHealth } from './whatsapp-watchdog.types';
+export type { SessionHealth } from '../marketing/channels/whatsapp/whatsapp-watchdog.types';
+import type { SessionHealth } from '../marketing/channels/whatsapp/whatsapp-watchdog.types';
 
 /** Manages per-workspace session health state and check logic. */
 @Injectable()

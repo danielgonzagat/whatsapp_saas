@@ -285,9 +285,7 @@ const ROLE_LEVER_MAP: ReadonlyMap<Role, readonly LeverageEntry[]> = new Map([
 
 function buildLeverageMap(role: Role): LeverageMap {
   const entries = ROLE_LEVER_MAP.get(role) ?? [];
-  const directLevers = entries
-    .filter((e) => e.controlRadius === 'direct')
-    .map((e) => e.lever);
+  const directLevers = entries.filter((e) => e.controlRadius === 'direct').map((e) => e.lever);
   const influencedLevers = entries
     .filter((e) => e.controlRadius === 'influenced')
     .map((e) => e.lever);
@@ -308,9 +306,7 @@ for (const role of ALL_ROLES) {
  * UTP-ROLE-003: get the full leverage map for a role.
  */
 export function getLeverageMap(role: Role): LeverageMap {
-  return (
-    LEVERAGE_MAP_CACHE.get(role) ?? buildLeverageMap(role)
-  );
+  return LEVERAGE_MAP_CACHE.get(role) ?? buildLeverageMap(role);
 }
 
 /**
@@ -324,10 +320,7 @@ export function getLeversForRole(role: Role): readonly string[] {
  * UTP-ROLE-003 helper: check whether a lever is within the role's
  * control radius (direct OR influenced).
  */
-export function isLeverInControlRadius(
-  role: Role,
-  lever: string,
-): boolean {
+export function isLeverInControlRadius(role: Role, lever: string): boolean {
   const map = getLeverageMap(role);
   return map.directLevers.includes(lever) || map.influencedLevers.includes(lever);
 }

@@ -133,12 +133,16 @@ const TACTICS: Readonly<Record<string, readonly TacticTemplate[]>> = {
   ],
 };
 
-function selectTactic(
-  error: DetectedError,
-): TacticTemplate {
+function selectTactic(error: DetectedError): TacticTemplate {
   const options = TACTICS[error.category] ?? TACTICS['unknown']!;
   if (error.severity === 'high') {
-    return options[0] ?? { action: 'manual_review', description: 'Revisão manual necessária.', estimatedCostCents: 0 };
+    return (
+      options[0] ?? {
+        action: 'manual_review',
+        description: 'Revisão manual necessária.',
+        estimatedCostCents: 0,
+      }
+    );
   }
   if (error.severity === 'medium' && options.length > 1) {
     return options[1] ?? options[0]!;
@@ -146,10 +150,7 @@ function selectTactic(
   return options[options.length - 1] ?? options[0]!;
 }
 
-function safetyContractFor(
-  error: DetectedError,
-  tactic: TacticTemplate,
-): RecoverySafetyContract {
+function safetyContractFor(error: DetectedError, tactic: TacticTemplate): RecoverySafetyContract {
   switch (tactic.action) {
     case 'silence':
     case 'priority_review':
@@ -159,8 +160,7 @@ function safetyContractFor(
         delegationMode: 'allowed_alone',
         safeNextStep: 'surface the recovery recommendation without contacting the lead',
         rollback: ['dismiss_recovery_tactic', 'snooze_recovery_tactic'],
-        leadOutcomeGuardrail:
-          'no new pressure is applied to the lead while the issue is reviewed',
+        leadOutcomeGuardrail: 'no new pressure is applied to the lead while the issue is reviewed',
       };
     case 'apologize':
     case 'follow_up_personal':
@@ -168,8 +168,7 @@ function safetyContractFor(
       return {
         riskClass: 'R2',
         delegationMode: 'requires_review',
-        safeNextStep:
-          'prepare a human-reviewed repair message with no urgency pressure',
+        safeNextStep: 'prepare a human-reviewed repair message with no urgency pressure',
         rollback: ['discard_draft', 'escalate_to_human'],
         leadOutcomeGuardrail:
           'repair language must acknowledge the issue and avoid conversion pressure',
@@ -180,8 +179,7 @@ function safetyContractFor(
       return {
         riskClass: error.severity === 'high' ? 'R3' : 'R2',
         delegationMode: 'requires_review',
-        safeNextStep:
-          'request explicit owner approval before offering each commercial concession',
+        safeNextStep: 'request explicit owner approval before offering each commercial concession',
         rollback: ['do_not_offer_concession', 'escalate_to_owner'],
         leadOutcomeGuardrail:
           'commercial concession must repair trust, not manufacture urgency or pressure',

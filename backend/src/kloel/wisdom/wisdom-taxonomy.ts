@@ -121,9 +121,4 @@ export const ALL_STAGE_HINTS: readonly string[] = [
 /**
  * All supported channel hint values.
  */
-export const ALL_CHANNEL_HINTS: readonly string[] = [
-  'whatsapp',
-  'checkout',
-  'crm',
-  'campaign',
-];
+export const ALL_CHANNEL_HINTS: readonly string[] = ['whatsapp', 'checkout', 'crm', 'campaign'];

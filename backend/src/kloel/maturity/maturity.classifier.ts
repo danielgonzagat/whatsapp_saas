@@ -112,9 +112,10 @@ export function classifyMaturity(signals: SignalSummary): MaturityVerdict {
   // as validacao. Confidence is proportional to signal presence:
   // higher when some metrics are non-zero (showing activity).
   // ------------------------------------------------------------------
-  const rawPaymentCount = signals.observationWindowDays > 0
-    ? Math.round((signals.conversionsPerMonth / 30) * signals.observationWindowDays)
-    : 0;
+  const rawPaymentCount =
+    signals.observationWindowDays > 0
+      ? Math.round((signals.conversionsPerMonth / 30) * signals.observationWindowDays)
+      : 0;
 
   const conf = Math.min(
     0.7,

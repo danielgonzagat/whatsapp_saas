@@ -1,6 +1,6 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { CheckoutCatalogService } from './checkout-catalog.service';
-import { Prisma } from "@prisma/client";
+import { Prisma } from '@prisma/client';
 
 type PrismaMock = {
   checkoutProductPlan: { findUnique: jest.Mock };

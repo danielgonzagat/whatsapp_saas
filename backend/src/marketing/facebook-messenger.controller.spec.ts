@@ -116,13 +116,7 @@ describe('FacebookMessengerController', () => {
       await controller.sendMessage(req, { recipientPsid: 'psid-1', text: 'hi' });
 
       expect(mockResolveWorkspaceId).toHaveBeenCalledWith(req);
-      expect(fbSendMessage).toHaveBeenCalledWith(
-        'ws-99',
-        'page-1',
-        'psid-1',
-        'hi',
-        'pat-1',
-      );
+      expect(fbSendMessage).toHaveBeenCalledWith('ws-99', 'page-1', 'psid-1', 'hi', 'pat-1');
     });
   });
 

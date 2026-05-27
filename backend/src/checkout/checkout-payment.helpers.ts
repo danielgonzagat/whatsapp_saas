@@ -1,12 +1,7 @@
 import { Prisma } from '@prisma/client';
 
 /** Payment status discriminated union used by checkout payment flows. */
-export type CheckoutPaymentStatus =
-  | 'APPROVED'
-  | 'DECLINED'
-  | 'PENDING'
-  | 'PROCESSING'
-  | 'CANCELED';
+export type CheckoutPaymentStatus = 'APPROVED' | 'DECLINED' | 'PENDING' | 'PROCESSING' | 'CANCELED';
 
 /** PIX display payload extracted from Stripe PaymentIntent next_action. */
 export type PixDisplayData = {
@@ -16,9 +11,7 @@ export type PixDisplayData = {
 };
 
 /** Map a Stripe PaymentIntent status string to the checkout payment status. */
-export function mapStripePaymentStatus(
-  status?: string | null,
-): CheckoutPaymentStatus {
+export function mapStripePaymentStatus(status?: string | null): CheckoutPaymentStatus {
   switch (String(status || '').toLowerCase()) {
     case 'succeeded':
       return 'APPROVED';
@@ -44,9 +37,7 @@ export function extractPixDisplayData(paymentIntent: {
 }): PixDisplayData {
   const nextAction = paymentIntent.next_action;
   const pixAction =
-    nextAction?.type === 'pix_display_qr_code'
-      ? nextAction.pix_display_qr_code
-      : null;
+    nextAction?.type === 'pix_display_qr_code' ? nextAction.pix_display_qr_code : null;
 
   return {
     pixQrCode: pixAction?.image_url_png || null,
@@ -62,9 +53,7 @@ export function extractPixDisplayData(paymentIntent: {
 export function toJsonValue(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(
     JSON.stringify(value, (_key, currentValue) =>
-      typeof currentValue === 'bigint'
-        ? currentValue.toString()
-        : currentValue,
+      typeof currentValue === 'bigint' ? currentValue.toString() : currentValue,
     ),
   ) as Prisma.InputJsonValue;
 }

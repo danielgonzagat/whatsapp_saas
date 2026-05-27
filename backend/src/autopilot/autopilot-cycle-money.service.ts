@@ -3,7 +3,7 @@ import { StructuredLogger } from '../logging/structured-logger';
 import { Queue } from 'bullmq';
 import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
 import { forEachSequential } from '../common/async-sequence';
-import { createRedisClient } from '../common/redis/redis.util';
+import { createBullMqConnectionOptions } from '../common/redis/redis.util';
 import { PrismaService } from '../prisma/prisma.service';
 
 /**
@@ -23,7 +23,7 @@ export class AutopilotCycleMoneyService {
     private readonly prisma: PrismaService,
     private readonly smartTime: SmartTimeService,
   ) {
-    const connection = createRedisClient();
+    const connection = createBullMqConnectionOptions();
     this.campaignQueue = new Queue('campaign-jobs', { connection });
   }
 

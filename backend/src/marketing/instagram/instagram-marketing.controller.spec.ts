@@ -88,9 +88,13 @@ describe('InstagramMarketingController', () => {
       const mockResult = { insight: { id: 'i-1', impressions: 100 }, metaResponse: {} };
       getInsights.mockResolvedValueOnce(mockResult);
 
-      const result = await controller.getInsights(req, {} as never);
+      const result = await controller.getInsights(req, {});
 
-      expect(getInsights).toHaveBeenCalledWith('ws-1', ['impressions', 'reach', 'follower_count'], 'day');
+      expect(getInsights).toHaveBeenCalledWith(
+        'ws-1',
+        ['impressions', 'reach', 'follower_count'],
+        'day',
+      );
       expect(result).toBe(mockResult);
     });
 
@@ -98,7 +102,10 @@ describe('InstagramMarketingController', () => {
       const mockResult = { insight: { id: 'i-2' }, metaResponse: {} };
       getInsights.mockResolvedValueOnce(mockResult);
 
-      await controller.getInsights(req, { metrics: 'impressions,invalid_metric,reach', period: 'week' } as never);
+      await controller.getInsights(req, {
+        metrics: 'impressions,invalid_metric,reach',
+        period: 'week',
+      } as never);
 
       expect(getInsights).toHaveBeenCalledWith('ws-1', ['impressions', 'reach'], 'week');
     });
@@ -112,9 +119,9 @@ describe('InstagramMarketingController', () => {
     it('propagates error when service rejects', async () => {
       getInsights.mockRejectedValueOnce(new Error('Meta API failure'));
 
-      await expect(
-        controller.getInsights(req, { period: 'day' } as never),
-      ).rejects.toThrow('Meta API failure');
+      await expect(controller.getInsights(req, { period: 'day' } as never)).rejects.toThrow(
+        'Meta API failure',
+      );
     });
   });
 

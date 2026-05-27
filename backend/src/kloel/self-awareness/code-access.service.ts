@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
-import { execSync } from 'child_process';export interface FileEntry {
+import { execSync } from 'child_process';
+export interface FileEntry {
   name: string;
   path: string;
   size: number;
@@ -19,7 +20,7 @@ export interface CodeHit {
 const REPO_ROOT = process.env.KLOEL_REPO_ROOT || path.resolve(process.cwd(), '..');
 const MAX_FILE_SIZE_BYTES = 500_000;
 const MAX_SEARCH_RESULTS = 50;
-const MAX_LINES_READ = 200;/**
+const MAX_LINES_READ = 200; /**
  * CodeAccessService — read-only self-awareness of Kloel's own source code.
  *
  * Allows the Kloel chat to read, search, and traverse its own codebase
@@ -35,7 +36,8 @@ export class CodeAccessService {
   constructor() {
     this.root = this.resolveRepoRoot(REPO_ROOT);
     this.logger.log(`CodeAccessService initialized. Root: ${this.root}`);
-  }  private resolveRepoRoot(hint: string): string {
+  }
+  private resolveRepoRoot(hint: string): string {
     // Walk up to find the monorepo root (contains backend/, frontend/, worker/)
     let current = path.resolve(hint);
     for (let i = 0; i < 5; i++) {
@@ -45,15 +47,21 @@ export class CodeAccessService {
         return current;
       }
       const parent = path.dirname(current);
-      if (parent === current) break;
+      if (parent === current) {
+        break;
+      }
       current = parent;
     }
     return path.resolve(hint);
-  }  /** List files in a directory relative to repo root */
+  } /** List files in a directory relative to repo root */
   list(dirPath: string): FileEntry[] {
     const target = path.resolve(this.root, dirPath.replace(/^\.?\//, ''));
-    if (!target.startsWith(this.root)) return [];
-    if (!fs.existsSync(target)) return [];
+    if (!target.startsWith(this.root)) {
+      return [];
+    }
+    if (!fs.existsSync(target)) {
+      return [];
+    }
 
     try {
       const entries = fs.readdirSync(target, { withFileTypes: true });
@@ -68,12 +76,15 @@ export class CodeAccessService {
     } catch {
       return [];
     }
-  }  /** Read a file's contents with optional line range */
+  } /** Read a file's contents with optional line range */
   read(
     filePath: string,
     startLine?: number,
     endLine?: number,
   ): { ok: boolean; content?: string; error?: string; totalLines?: number } {
+    if (path.isAbsolute(filePath)) {
+      return { ok: false, error: 'path_outside_repo' };
+    }
     const target = path.resolve(this.root, filePath);
     if (!target.startsWith(this.root)) {
       return { ok: false, error: 'path_outside_repo' };
@@ -95,7 +106,10 @@ export class CodeAccessService {
 
       if (startLine !== undefined) {
         const s = Math.max(1, startLine);
-        const e = endLine !== undefined ? Math.min(lines.length, endLine) : Math.min(lines.length, s + MAX_LINES_READ - 1);
+        const e =
+          endLine !== undefined
+            ? Math.min(lines.length, endLine)
+            : Math.min(lines.length, s + MAX_LINES_READ - 1);
         return {
           ok: true,
           content: lines.slice(s - 1, e).join('\n'),
@@ -107,11 +121,8 @@ export class CodeAccessService {
     } catch (err) {
       return { ok: false, error: err instanceof Error ? err.message : 'read_failed' };
     }
-  }  /** Search code using ripgrep */
-  search(
-    query: string,
-    opts?: { glob?: string; max?: number },
-  ): CodeHit[] {
+  } /** Search code using ripgrep */
+  search(query: string, opts?: { glob?: string; max?: number }): CodeHit[] {
     const max = Math.min(opts?.max ?? MAX_SEARCH_RESULTS, MAX_SEARCH_RESULTS);
     const globFlag = opts?.glob ? `--glob '${opts.glob}'` : '';
     const cmd = `rg --no-heading --line-number --column --max-count ${max} ${globFlag} '${query.replace(/'/g, "\\'")}' ${this.root}`;
@@ -126,18 +137,21 @@ export class CodeAccessService {
       return this.parseRgOutput(stdout, max);
     } catch (err: unknown) {
       // rg exits with code 1 when no matches (which is fine)
-      if (err instanceof Error && 'status' in err && (err as any).status === 1) {
+      // execSync errors expose .status; narrow structurally instead of `as any`.
+      if (err instanceof Error && 'status' in err && (err as { status?: unknown }).status === 1) {
         return [];
       }
       this.logger.warn(`Search failed: ${err instanceof Error ? err.message : 'unknown'}`);
       return [];
     }
-  }  /** Parse ripgrep output into CodeHit[] */
+  } /** Parse ripgrep output into CodeHit[] */
   private parseRgOutput(stdout: string, max: number): CodeHit[] {
     const hits: CodeHit[] = [];
     const lines = stdout.trim().split('\n');
     for (const line of lines) {
-      if (hits.length >= max) break;
+      if (hits.length >= max) {
+        break;
+      }
       const match = line.match(/^([^:]+):(\d+):(\d+):(.*)$/);
       if (match) {
         const [, file = '', lineStr = '0', colStr = '0', content = ''] = match;
@@ -151,14 +165,14 @@ export class CodeAccessService {
       }
     }
     return hits;
-  }  /** Find usages of a symbol across the codebase */
+  } /** Find usages of a symbol across the codebase */
   findUsages(symbol: string): CodeHit[] {
     // Use ripgrep with word boundaries for symbol search
     return this.search(`\\b${symbol}\\b`, {
       glob: '*.{ts,tsx,js,jsx}',
       max: MAX_SEARCH_RESULTS,
     });
-  }  /** Map a capability ID to its domain service implementation */
+  } /** Map a capability ID to its domain service implementation */
   whichServiceImplements(capabilityId: string): CodeHit[] {
     // Search for the capability ID or domainService reference
     const hits = this.search(capabilityId, { glob: '*.ts', max: 10 });

@@ -58,7 +58,9 @@ describe('NeuroCrmController', () => {
       analyzeContact.mockRejectedValue(error);
 
       const req = mockReq();
-      await expect(controller.analyze(req, 'contact-error')).rejects.toThrow('AI service unavailable');
+      await expect(controller.analyze(req, 'contact-error')).rejects.toThrow(
+        'AI service unavailable',
+      );
     });
   });
 

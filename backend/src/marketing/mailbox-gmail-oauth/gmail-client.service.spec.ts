@@ -58,7 +58,7 @@ describe('GmailClientService', () => {
         ok: true,
         status: 200,
         json: async () => mockResponse,
-      } as never);
+      });
 
       const result = await service.exchangeCode('auth-code-123');
 
@@ -79,7 +79,7 @@ describe('GmailClientService', () => {
         ok: false,
         status: 400,
         json: async () => ({ error: 'invalid_grant', error_description: 'Malformed auth code.' }),
-      } as never);
+      });
 
       const promise = service.exchangeCode('bad-code');
       await expect(promise).rejects.toThrow(BadRequestException);
@@ -101,7 +101,7 @@ describe('GmailClientService', () => {
         ok: true,
         status: 200,
         json: async () => mockProfile,
-      } as never);
+      });
 
       const result = await service.fetchUserInfo('ya29.test-access');
 
@@ -116,7 +116,7 @@ describe('GmailClientService', () => {
         ok: false,
         status: 401,
         json: async () => ({ error: { message: 'Invalid Credentials' } }),
-      } as never);
+      });
 
       const promise = service.fetchUserInfo('expired-token');
       await expect(promise).rejects.toThrow(BadRequestException);
@@ -159,7 +159,7 @@ describe('GmailClientService', () => {
           access_token: 'ya29.new-access-token',
           expires_in: 3600,
         }),
-      } as never);
+      });
 
       const result = await service.resolveAccessToken(connection);
 
@@ -179,7 +179,7 @@ describe('GmailClientService', () => {
         ok: false,
         status: 400,
         json: async () => ({ error: 'invalid_grant' }),
-      } as never);
+      });
 
       const promise = service.resolveAccessToken(connection);
       await expect(promise).rejects.toThrow(BadRequestException);

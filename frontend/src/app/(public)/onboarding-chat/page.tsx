@@ -87,7 +87,9 @@ function OnboardingChatContent() {
 
   // Scroll para a última mensagem
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (typeof messagesEndRef.current?.scrollIntoView === 'function') {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages.length]);
 
   // Redirecionar para conexão do WhatsApp ao concluir onboarding

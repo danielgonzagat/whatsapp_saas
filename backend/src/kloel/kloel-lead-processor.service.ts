@@ -20,7 +20,6 @@ import {
   extractProductFromMessage,
   ChatMessage,
 } from './kloel-lead-processor-helpers';
-import { AUTOPILOT_ANTI_INVENTION_PROMPT } from './autopilot-system-prompt.helper';
 import OpenAI from 'openai';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { AbiBuilderService } from './abi/abi-builder.service';
@@ -171,7 +170,6 @@ export class KloelLeadProcessorService {
       }
 
       const messages: ChatMessage[] = [
-        { role: 'system', content: AUTOPILOT_ANTI_INVENTION_PROMPT },
         ...conversationHistory,
         { role: 'user', content: effectiveUserContent },
       ];
@@ -202,8 +200,7 @@ export class KloelLeadProcessorService {
         `lead-processor ws=${workspaceId} model=writer baseLen=${baseLen} outLen=${rawResponse.length} tokens=${tokens}`,
       );
 
-      const kloelResponse =
-        rawResponse || 'Olá! Como posso ajudá-lo hoje?';
+      const kloelResponse = rawResponse || 'Olá! Como posso ajudá-lo hoje?';
       if (!rawResponse || rawResponse.trim().length < 5) {
         this.logger.warn(`lead-processor short output ws=${workspaceId} len=${rawResponse.length}`);
       }

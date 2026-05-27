@@ -139,7 +139,9 @@ export class CheckoutSocialRecoveryService {
       return !entry || now - entry.fetchedAt > cacheTtl;
     });
 
-    if (missing.length === 0) return;
+    if (missing.length === 0) {
+      return;
+    }
 
     const workspaces = await this.prisma.workspace.findMany({
       where: { id: { in: missing } },
@@ -209,7 +211,9 @@ export class CheckoutSocialRecoveryService {
     age: number,
     channels: WorkspaceChannelState,
   ) {
-    if (!channels.whatsappActive) return false;
+    if (!channels.whatsappActive) {
+      return false;
+    }
     return age >= THIRTY_MINUTES_MS && !lead.recoveryWhatsAppSentAt;
   }
 
@@ -218,7 +222,9 @@ export class CheckoutSocialRecoveryService {
     age: number,
     channels: WorkspaceChannelState,
   ): lead is RecoveryLead & { email: string } {
-    if (!channels.emailActive) return false;
+    if (!channels.emailActive) {
+      return false;
+    }
     return age >= ONE_HOUR_MS && !lead.recoveryEmailSentAt && Boolean(lead.email);
   }
 

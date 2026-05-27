@@ -28,7 +28,12 @@ type UnifiedAgentPort = {
     contactId: string;
     channel: string;
     executeTools?: boolean;
-    context?: { deliveryMode?: string; externalId?: string; fromName?: string; metadata?: Record<string, unknown> };
+    context?: {
+      deliveryMode?: string;
+      externalId?: string;
+      fromName?: string;
+      metadata?: Record<string, unknown>;
+    };
   }): Promise<void>;
 };
 

@@ -15,7 +15,9 @@ import {
 import { clamp } from '../../common/math';
 
 function ratioOrZero(numerator: number, denominator: number): number {
-  if (denominator <= 0) return 0;
+  if (denominator <= 0) {
+    return 0;
+  }
   return numerator / denominator;
 }
 
@@ -29,8 +31,12 @@ const DIMENSION_LABELS: Record<string, string> = {
 };
 
 function classify(score: number): RevenueClassification {
-  if (score >= HEALTHY_THRESHOLD) return 'healthy';
-  if (score >= UNHEALTHY_THRESHOLD) return 'borderline';
+  if (score >= HEALTHY_THRESHOLD) {
+    return 'healthy';
+  }
+  if (score >= UNHEALTHY_THRESHOLD) {
+    return 'borderline';
+  }
   return 'unhealthy';
 }
 
@@ -40,22 +46,29 @@ function buildReasoning(
   classification: RevenueClassification,
 ): string {
   const parts: string[] = [];
+  const dimensionEntries = Object.entries(dimensions) as Array<
+    [keyof RevenueQualityDimensions, number]
+  >;
 
-  const worst = Object.entries(dimensions).reduce<{ key: string; value: number } | null>(
-    (acc, [key, value]) => {
-      if (acc === null || value < acc.value) return { key, value };
-      return acc;
-    },
-    null,
-  );
+  const worst = dimensionEntries.reduce<{
+    key: keyof RevenueQualityDimensions;
+    value: number;
+  } | null>((acc, [key, value]) => {
+    if (acc === null || value < acc.value) {
+      return { key, value };
+    }
+    return acc;
+  }, null);
 
-  const best = Object.entries(dimensions).reduce<{ key: string; value: number } | null>(
-    (acc, [key, value]) => {
-      if (acc === null || value > acc.value) return { key, value };
-      return acc;
-    },
-    null,
-  );
+  const best = dimensionEntries.reduce<{
+    key: keyof RevenueQualityDimensions;
+    value: number;
+  } | null>((acc, [key, value]) => {
+    if (acc === null || value > acc.value) {
+      return { key, value };
+    }
+    return acc;
+  }, null);
 
   const worstLabel = worst !== null ? (DIMENSION_LABELS[worst.key] ?? worst.key) : 'N/A';
   const bestLabel = best !== null ? (DIMENSION_LABELS[best.key] ?? best.key) : 'N/A';
@@ -117,7 +130,15 @@ export class RevenueQualityScorerService {
   private readonly logger = new Logger(RevenueQualityScorerService.name);
 
   score(input: RevenueQualityInput): RevenueQualityResult {
-    const { amountCents, marginPct, refundRiskScore, supportCostEstimateCents, churnRiskScore, brandWearScore, ltvProjectionCents } = input;
+    const {
+      amountCents,
+      marginPct,
+      refundRiskScore,
+      supportCostEstimateCents,
+      churnRiskScore,
+      brandWearScore,
+      ltvProjectionCents,
+    } = input;
 
     const marginScore = clamp(marginPct, 0, 1);
 
@@ -157,9 +178,7 @@ export class RevenueQualityScorerService {
     const blockerSuggestion =
       classification === 'unhealthy' ? buildBlockerSuggestion(dimensions, input) : undefined;
 
-    this.logger.debug(
-      `Revenue quality scored: ${qualityScore.toFixed(3)} — ${classification}`,
-    );
+    this.logger.debug(`Revenue quality scored: ${qualityScore.toFixed(3)} — ${classification}`);
 
     return {
       qualityScore,

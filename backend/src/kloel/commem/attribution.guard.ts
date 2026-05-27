@@ -63,10 +63,7 @@ export class AttributionGuard {
       });
     }
 
-    const projResult = this.validateProjections(
-      capsule.projections,
-      expectedWorkspaceId,
-    );
+    const projResult = this.validateProjections(capsule.projections, expectedWorkspaceId);
 
     return {
       workspaceId: expectedWorkspaceId,

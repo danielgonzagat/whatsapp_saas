@@ -463,6 +463,13 @@ export class FlowEngineGlobal {
     return executeNode(this.nodeExecutorDeps, state, node);
   }
 
+  /**
+   * @canonical-status delegate — Wave 22 canonicalization
+   * @canonical-path worker/flow-message-sender.helpers.ts::sendMessage
+   * @notes Private method exposed to flow nodes via nodeExecutorDeps. The
+   *        real send logic (rate limit, watchdog, retry, persistence,
+   *        realtime publish) lives in the canonical path.
+   */
   private async sendMessage(user: string, text: string, workspaceId?: string) {
     return sendMessageCompanion(
       { log: this.log, sleep: (ms) => this.sleep(ms) },

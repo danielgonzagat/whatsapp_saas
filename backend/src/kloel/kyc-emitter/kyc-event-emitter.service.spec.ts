@@ -145,9 +145,7 @@ describe('KycEventEmitterService (contract spec)', () => {
     it('does not throw when called with minimal params', () => {
       const { emitter, spine } = build();
 
-      expect(() =>
-        emitter.emitDocumentSubmitted({ agentId: 'a', workspaceId: 'w' }),
-      ).not.toThrow();
+      expect(() => emitter.emitDocumentSubmitted({ agentId: 'a', workspaceId: 'w' })).not.toThrow();
       expect(spine.recentEvents()).toHaveLength(1);
     });
   });

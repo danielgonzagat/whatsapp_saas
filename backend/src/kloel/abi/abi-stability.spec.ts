@@ -1,8 +1,4 @@
-import {
-  ABI_REQUIRED_KEYS,
-  ABI_VERSION,
-  CognitiveStateAbi,
-} from './abi-schema';
+import { ABI_REQUIRED_KEYS, ABI_VERSION, CognitiveStateAbi } from './abi-schema';
 import { compareAbiVersions, validateAbiPayload } from './abi-validator';
 
 /**
@@ -45,9 +41,7 @@ const v1_0_0_baseline: CognitiveStateAbi = Object.freeze({
   attention: { candidates: [] },
   memory: { workingMemory: [], episodicRefs: [], consolidatedRefs: [] },
   capabilities: {
-    available: [
-      { capabilityId: 'lineage', maturity: 'developing', runtimeEvidencePct: 5 },
-    ],
+    available: [{ capabilityId: 'lineage', maturity: 'developing', runtimeEvidencePct: 5 }],
     restricted: [],
   },
   valence: {

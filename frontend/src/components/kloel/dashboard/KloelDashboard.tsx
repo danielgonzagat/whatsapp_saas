@@ -13,6 +13,7 @@ import {
 import { productApi } from '@/lib/api/products';
 import {
   type KloelChatCapability,
+  type KloelChatRequestMetadata,
   type KloelLinkedProduct,
 } from '@/lib/kloel-chat';
 import { loadKloelThreadMessages } from '@/lib/kloel-conversations';
@@ -275,8 +276,9 @@ export default function KloelDashboard() {
     ],
   );
 
-  const handleSendMessage = useMemo(
-    () => createSendMessageHandler(sendMessageContext),
+  const handleSendMessage = useCallback(
+    (rawText: string, requestMetadata?: KloelChatRequestMetadata) =>
+      createSendMessageHandler(sendMessageContext)(rawText, requestMetadata),
     [sendMessageContext],
   );
 
@@ -362,11 +364,12 @@ export default function KloelDashboard() {
   useEffect(() => {
     if (!requestedConversationId) {
       if (messages.length > 0 || isThinking || activeConversationId) {return;}
-      resetToNewChat(false);
-      return;
+      const timeoutId = window.setTimeout(() => resetToNewChat(false), 0);
+      return () => window.clearTimeout(timeoutId);
     }
     if (loadedConversationIdRef.current === requestedConversationId) {return;}
     void loadConversation(requestedConversationId);
+    return undefined;
   }, [
     activeConversationId,
     isThinking,
@@ -377,12 +380,14 @@ export default function KloelDashboard() {
   ]);
 
   useEffect(() => {
-    setHasMounted(true);
+    const timeoutId = window.setTimeout(() => setHasMounted(true), 0);
+    return () => window.clearTimeout(timeoutId);
   }, []);
 
   useEffect(() => {
     if (!draft.trim()) {return;}
-    setInput(draft);
+    const timeoutId = window.setTimeout(() => setInput(draft), 0);
+    return () => window.clearTimeout(timeoutId);
   }, [draft]);
 
   useEffect(() => {
@@ -411,8 +416,8 @@ export default function KloelDashboard() {
 
   useEffect(() => {
     if (!isReplyInFlight) {
-      setShowSlowHint(false);
-      return;
+      const timeoutId = window.setTimeout(() => setShowSlowHint(false), 0);
+      return () => window.clearTimeout(timeoutId);
     }
     const timeoutId = window.setTimeout(() => {
       setShowSlowHint(true);

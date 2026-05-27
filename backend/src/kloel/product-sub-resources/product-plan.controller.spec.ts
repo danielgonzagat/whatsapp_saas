@@ -1,11 +1,15 @@
 jest.mock('./helpers/common.helpers', () => ({
-  ensureWorkspaceProductAccess: jest.fn().mockResolvedValue({ id: 'prod-1', workspaceId: 'ws-1', name: 'Product A' }),
+  ensureWorkspaceProductAccess: jest
+    .fn()
+    .mockResolvedValue({ id: 'prod-1', workspaceId: 'ws-1', name: 'Product A' }),
   getWorkspaceId: jest.fn().mockReturnValue('ws-1'),
 }));
 
 jest.mock('./helpers/plan.helpers', () => ({
   buildPlanData: jest.fn().mockReturnValue({ name: 'Basic Plan', price: 99 }),
-  serializePlan: jest.fn().mockImplementation((p: Record<string, unknown>) => ({ ...p, slug: 'basic-plan-slug' })),
+  serializePlan: jest
+    .fn()
+    .mockImplementation((p: Record<string, unknown>) => ({ ...p, slug: 'basic-plan-slug' })),
 }));
 
 import { BadRequestException, NotFoundException } from '@nestjs/common';
@@ -39,10 +43,17 @@ describe('ProductPlanController', () => {
     update.mockResolvedValue({ id: 'pl1', name: 'Updated', price: 199 });
     del.mockResolvedValue({ id: 'pl1' });
 
-    ensureWorkspaceProductAccessMock.mockResolvedValue({ id: 'prod-1', workspaceId: 'ws-1', name: 'Product A' });
+    ensureWorkspaceProductAccessMock.mockResolvedValue({
+      id: 'prod-1',
+      workspaceId: 'ws-1',
+      name: 'Product A',
+    });
     getWorkspaceIdMock.mockReturnValue('ws-1');
     buildPlanDataMock.mockReturnValue({ name: 'Basic Plan', price: 99 });
-    serializePlanMock.mockImplementation((p: Record<string, unknown>) => ({ ...p, slug: 'basic-plan-slug' }));
+    serializePlanMock.mockImplementation((p: Record<string, unknown>) => ({
+      ...p,
+      slug: 'basic-plan-slug',
+    }));
 
     controller = new ProductPlanController(
       {
@@ -96,7 +107,12 @@ describe('ProductPlanController', () => {
       expect(findFirst).toHaveBeenCalledWith({
         where: { id: 'pl1', productId: 'prod-1' },
       });
-      expect(serializePlanMock).toHaveBeenCalledWith({ id: 'pl1', productId: 'prod-1', name: 'Basic', price: 99 });
+      expect(serializePlanMock).toHaveBeenCalledWith({
+        id: 'pl1',
+        productId: 'prod-1',
+        name: 'Basic',
+        price: 99,
+      });
       expect(result).toHaveProperty('slug', 'basic-plan-slug');
     });
 
@@ -104,7 +120,9 @@ describe('ProductPlanController', () => {
       findFirst.mockResolvedValue(null);
 
       await expect(controller.getPlan('prod-1', 'pl1', req)).rejects.toThrow(NotFoundException);
-      await expect(controller.getPlan('prod-1', 'pl1', req)).rejects.toThrow('Plano não encontrado');
+      await expect(controller.getPlan('prod-1', 'pl1', req)).rejects.toThrow(
+        'Plano não encontrado',
+      );
     });
   });
 
@@ -142,7 +160,9 @@ describe('ProductPlanController', () => {
       buildPlanDataMock.mockReturnValue({ price: 99 });
 
       await expect(controller.createPlan('prod-1', {}, req)).rejects.toThrow(BadRequestException);
-      await expect(controller.createPlan('prod-1', {}, req)).rejects.toThrow('Nome do plano é obrigatório');
+      await expect(controller.createPlan('prod-1', {}, req)).rejects.toThrow(
+        'Nome do plano é obrigatório',
+      );
     });
   });
 
@@ -154,7 +174,12 @@ describe('ProductPlanController', () => {
 
       expect(getWorkspaceIdMock).toHaveBeenCalledWith(req);
       expect(ensureWorkspaceProductAccessMock).toHaveBeenCalled();
-      expect(buildPlanDataMock).toHaveBeenCalledWith(body, { id: 'pl1', productId: 'prod-1', name: 'Basic', price: 99 });
+      expect(buildPlanDataMock).toHaveBeenCalledWith(body, {
+        id: 'pl1',
+        productId: 'prod-1',
+        name: 'Basic',
+        price: 99,
+      });
       expect(update).toHaveBeenCalled();
       expect(result).toHaveProperty('slug', 'basic-plan-slug');
     });
@@ -162,7 +187,9 @@ describe('ProductPlanController', () => {
     it('throws NotFoundException when plan not found in transaction', async () => {
       findFirst.mockResolvedValue(null);
 
-      await expect(controller.updatePlan('prod-1', 'pl1', {}, req)).rejects.toThrow(NotFoundException);
+      await expect(controller.updatePlan('prod-1', 'pl1', {}, req)).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 

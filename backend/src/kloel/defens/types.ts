@@ -32,7 +32,12 @@ export type AssetStrength = 'nascent' | 'building' | 'established' | 'formidable
 
 export type GrowthTrend = 'declining' | 'flat' | 'growing' | 'accelerating';
 
-export type TacticalScore = 'strongly_tactical' | 'mostly_tactical' | 'balanced' | 'mostly_defensible' | 'strongly_defensible';
+export type TacticalScore =
+  | 'strongly_tactical'
+  | 'mostly_tactical'
+  | 'balanced'
+  | 'mostly_defensible'
+  | 'strongly_defensible';
 
 export type ProofKind =
   | 'testimonial'
@@ -205,15 +210,27 @@ import { filterByWorkspace } from '../spine-events.helpers';
 export { filterByWorkspace };
 
 export function assetStrengthFromScore(score: number): AssetStrength {
-  if (score >= 0.75) return 'formidable';
-  if (score >= 0.5) return 'established';
-  if (score >= 0.25) return 'building';
+  if (score >= 0.75) {
+    return 'formidable';
+  }
+  if (score >= 0.5) {
+    return 'established';
+  }
+  if (score >= 0.25) {
+    return 'building';
+  }
   return 'nascent';
 }
 
 export function growthTrendFromRate(rate: number): GrowthTrend {
-  if (rate > 0.2) return 'accelerating';
-  if (rate > 0.05) return 'growing';
-  if (rate < -0.05) return 'declining';
+  if (rate > 0.2) {
+    return 'accelerating';
+  }
+  if (rate > 0.05) {
+    return 'growing';
+  }
+  if (rate < -0.05) {
+    return 'declining';
+  }
   return 'flat';
 }

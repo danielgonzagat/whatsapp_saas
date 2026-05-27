@@ -15,15 +15,19 @@ import { WorkerLogger } from '../logger';
 import { LeadScorer } from '../providers/lead-scorer';
 import { buildQueueOptions } from '../queue';
 import { forEachSequential } from '../utils/async-sequence';
-import { processFactExtraction } from './fact-extractor';
+import { processFactExtraction } from '../providers/fact-extractor';
 import {
   type SerializedInputTokenBillingDescriptor,
   quoteSerializedInputTokenCostCents,
   settleQuotedUsageCharge,
-} from './prepaid-wallet-settlement';
+} from '../providers/prepaid-wallet-settlement';
 import { WorkerError } from '../src/utils/error-handler';
 import { checkIdempotent, endJob, logError, markCompleted, startJob } from '../processor-base';
-import { DEFAULT_CHUNK_OVERLAP, DEFAULT_CHUNK_SIZE, splitText } from './memory-text-splitter';
+import {
+  DEFAULT_CHUNK_OVERLAP,
+  DEFAULT_CHUNK_SIZE,
+  splitText,
+} from '../utils/memory-text-splitter';
 
 const DEFAULT_MAX_CHUNKS = 400;
 const WORKER_CONCURRENCY = 5;

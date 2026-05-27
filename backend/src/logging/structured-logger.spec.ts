@@ -247,11 +247,9 @@ describe('StructuredLogger', () => {
     it('handles 3-arg error(message, stack, extraObj) — auto-migrated compat', () => {
       const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-      logger.error(
-        'Failed to decrypt MFA secret',
-        'Error: bad key',
-        { context: 'AdminMfaService.resumeSetup' },
-      );
+      logger.error('Failed to decrypt MFA secret', 'Error: bad key', {
+        context: 'AdminMfaService.resumeSetup',
+      });
 
       const parsed = JSON.parse(spy.mock.calls[0][0] as string);
       expect(parsed).toMatchObject({
@@ -296,11 +294,10 @@ describe('StructuredLogger', () => {
     it('handles 3-arg warn(message, context, extraObj)', () => {
       const spy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
-      logger.warn(
-        'Failed to track AI usage',
-        'ConversationalOnboardingService',
-        { workspaceId: 'ws-2', retryable: true },
-      );
+      logger.warn('Failed to track AI usage', 'ConversationalOnboardingService', {
+        workspaceId: 'ws-2',
+        retryable: true,
+      });
 
       const parsed = JSON.parse(spy.mock.calls[0][0] as string);
       expect(parsed).toMatchObject({
@@ -364,7 +361,11 @@ describe('StructuredLogger', () => {
       const debugParsed = JSON.parse(spy.mock.calls[0][0] as string);
       expect(debugParsed).toMatchObject({ level: 'info', message: 'debug message' });
       const verboseParsed = JSON.parse(spy.mock.calls[1][0] as string);
-      expect(verboseParsed).toMatchObject({ level: 'info', message: 'verbose message', detail: 42 });
+      expect(verboseParsed).toMatchObject({
+        level: 'info',
+        message: 'verbose message',
+        detail: 42,
+      });
       spy.mockRestore();
     });
   });

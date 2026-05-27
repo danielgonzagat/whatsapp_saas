@@ -1,9 +1,11 @@
 import { Queue } from 'bullmq';
-import { connection } from './queue';
+import { buildBullMqConnectionOptions } from './queue';
 import { forEachSequential } from './utils/async-sequence';
 
 async function retryFailedJobs() {
-  const queue = new Queue('flow-jobs', { connection });
+  const queue = new Queue('flow-jobs', {
+    connection: buildBullMqConnectionOptions('retry failed flow-jobs'),
+  });
 
   const failed = await queue.getFailed();
   console.log(`Found ${failed.length} failed jobs.`);

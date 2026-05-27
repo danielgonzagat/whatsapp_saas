@@ -18,10 +18,7 @@ describe('CacheService', () => {
       del: jest.fn().mockResolvedValue(0),
     };
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        CacheService,
-        { provide: REDIS_TOKEN, useValue: redis },
-      ],
+      providers: [CacheService, { provide: REDIS_TOKEN, useValue: redis }],
     }).compile();
     service = module.get(CacheService);
   });

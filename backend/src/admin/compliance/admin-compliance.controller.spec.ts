@@ -25,11 +25,7 @@ describe('AdminComplianceController', () => {
 
       const result = await controller.overview(query);
 
-      expect(overview).toHaveBeenCalledWith(
-        AdminHomePeriodDto.D30,
-        query.from,
-        query.to,
-      );
+      expect(overview).toHaveBeenCalledWith(AdminHomePeriodDto.D30, query.from, query.to);
       expect(result).toBe(fakeResult);
     });
 
@@ -40,11 +36,7 @@ describe('AdminComplianceController', () => {
 
       await controller.overview(query);
 
-      expect(overview).toHaveBeenCalledWith(
-        AdminHomePeriodDto.TODAY,
-        undefined,
-        undefined,
-      );
+      expect(overview).toHaveBeenCalledWith(AdminHomePeriodDto.TODAY, undefined, undefined);
     });
 
     it('returns the service result unchanged', async () => {
@@ -62,15 +54,11 @@ describe('AdminComplianceController', () => {
       const error = new Error('Gateway timeout');
       overview.mockRejectedValue(error);
 
-      await expect(
-        controller.overview({ period: AdminHomePeriodDto.CUSTOM }),
-      ).rejects.toThrow('Gateway timeout');
-
-      expect(overview).toHaveBeenCalledWith(
-        AdminHomePeriodDto.CUSTOM,
-        undefined,
-        undefined,
+      await expect(controller.overview({ period: AdminHomePeriodDto.CUSTOM })).rejects.toThrow(
+        'Gateway timeout',
       );
+
+      expect(overview).toHaveBeenCalledWith(AdminHomePeriodDto.CUSTOM, undefined, undefined);
     });
   });
 });

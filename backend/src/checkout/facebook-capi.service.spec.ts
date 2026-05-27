@@ -80,9 +80,7 @@ describe('FacebookCAPIService', () => {
   });
 
   it('swallows fetch errors and returns false (never throws)', async () => {
-    global.fetch = jest
-      .fn()
-      .mockRejectedValue(new Error('network down')) as typeof fetch;
+    global.fetch = jest.fn().mockRejectedValue(new Error('network down')) as typeof fetch;
     const result = await service.sendEvent({
       pixelId: 'p',
       accessToken: 't',
@@ -103,8 +101,6 @@ describe('FacebookCAPIService', () => {
       amount: 100,
       currency: 'BRL',
     });
-    expect(fetchMock.mock.calls[0][0]).toBe(
-      'https://graph.facebook.com/v18.0/my-pixel/events',
-    );
+    expect(fetchMock.mock.calls[0][0]).toBe('https://graph.facebook.com/v18.0/my-pixel/events');
   });
 });

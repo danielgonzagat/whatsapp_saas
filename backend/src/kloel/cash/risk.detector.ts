@@ -1,5 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import type { CashPosition, RiskDetection, RiskInput, RiskLevel, RunwayCalculation, VolatilityTracking } from './types';
+import type {
+  CashPosition,
+  RiskDetection,
+  RiskInput,
+  RiskLevel,
+  RunwayCalculation,
+  VolatilityTracking,
+} from './types';
 
 /**
  * CASH-005 — RiskDetector.
@@ -95,10 +102,7 @@ export class RiskDetector {
       triggers.push(`trend_7d_medium_${position.trend7d.toFixed(1)}pct`);
       return 'medium';
     }
-    if (
-      position.currentBalanceCents <= 0n &&
-      position.projectedBalance30d <= 0n
-    ) {
+    if (position.currentBalanceCents <= 0n && position.projectedBalance30d <= 0n) {
       triggers.push('negative_balance_and_projection');
       return 'critical';
     }
@@ -110,8 +114,13 @@ export class RiskDetector {
     triggers: string[],
     _currentLevel: RiskLevel,
   ): RiskLevel {
-    if (volatility.dailyVolatility > RiskDetector.VOLATILITY_HIGH && volatility.trend === 'increasing') {
-      triggers.push(`volatility_extreme_${(volatility.dailyVolatility * 100).toFixed(1)}pct_trend_${volatility.trend}`);
+    if (
+      volatility.dailyVolatility > RiskDetector.VOLATILITY_HIGH &&
+      volatility.trend === 'increasing'
+    ) {
+      triggers.push(
+        `volatility_extreme_${(volatility.dailyVolatility * 100).toFixed(1)}pct_trend_${volatility.trend}`,
+      );
       return 'high';
     }
     if (volatility.dailyVolatility > RiskDetector.VOLATILITY_MEDIUM) {
@@ -121,17 +130,16 @@ export class RiskDetector {
     return 'none';
   }
 
-  private checkCoverage(
-    input: RiskInput,
-    triggers: string[],
-    _currentLevel: RiskLevel,
-  ): RiskLevel {
+  private checkCoverage(input: RiskInput, triggers: string[], _currentLevel: RiskLevel): RiskLevel {
     const net30d = input.receivables.dueNext30d - input.payables.dueNext30d;
     if (net30d < 0n && input.position.currentBalanceCents + net30d < 0n) {
       triggers.push('coverage_30d_negative_even_with_balance');
       return 'high';
     }
-    if (input.receivables.dueNext7d === 0n && input.position.currentBalanceCents < input.payables.dueNext7d) {
+    if (
+      input.receivables.dueNext7d === 0n &&
+      input.position.currentBalanceCents < input.payables.dueNext7d
+    ) {
       triggers.push('no_receivables_7d_payables_exceed_balance');
       return 'medium';
     }

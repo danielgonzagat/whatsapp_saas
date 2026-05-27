@@ -252,7 +252,9 @@ describe('LEGIT-004 — enforceEmailPolicy', () => {
       nowMs: NOW,
     };
     const result = enforceEmailPolicy(input);
-    expect(result.violations.some((v) => v.evidence.some((e) => e.startsWith('spam_subject')))).toBe(true);
+    expect(
+      result.violations.some((v) => v.evidence.some((e) => e.startsWith('spam_subject'))),
+    ).toBe(true);
   });
 });
 
@@ -280,7 +282,9 @@ describe('LEGIT-005 — enforceAdsPolicy', () => {
     };
     const result = enforceAdsPolicy(input);
     expect(result.allowed).toBe(false);
-    expect(result.violations.some((v) => v.evidence.includes('health_claim_without_anvisa'))).toBe(true);
+    expect(result.violations.some((v) => v.evidence.includes('health_claim_without_anvisa'))).toBe(
+      true,
+    );
   });
 });
 

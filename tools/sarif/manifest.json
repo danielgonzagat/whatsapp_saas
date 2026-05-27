@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-05-26T18:04:05.200Z",
+  "generatedAt": "2026-05-26T21:08:55.350Z",
   "workspaces": [
     {
       "workspace": "backend",
       "file": "tools/sarif/backend.sarif",
-      "findings": 8651
+      "findings": 8592
     },
     {
       "workspace": "frontend",
       "file": "tools/sarif/frontend.sarif",
-      "findings": 3
+      "findings": 5
     },
     {
       "workspace": "frontend-admin",

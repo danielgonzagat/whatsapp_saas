@@ -1,4 +1,10 @@
-import { BadRequestException, Inject, Injectable, NotFoundException, Optional } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import * as Sentry from '@sentry/node';
@@ -14,7 +20,13 @@ import { PrismaService } from '../prisma/prisma.service';
 
 import { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effects.service';
 import { CheckoutEventEmitterService } from '../kloel/checkout-emitter/checkout-event-emitter.service';
-import { mapStripePaymentStatus, extractPixDisplayData, toJsonValue, type CheckoutPaymentStatus, type PixDisplayData } from './checkout-payment.helpers';
+import {
+  mapStripePaymentStatus,
+  extractPixDisplayData,
+  toJsonValue,
+  type CheckoutPaymentStatus,
+  type PixDisplayData,
+} from './checkout-payment.helpers';
 
 type CheckoutPaymentMethod = 'CREDIT_CARD' | 'PIX' | 'BOLETO';
 type SaleChargeInput = Parameters<StripeChargeService['createSaleCharge']>[0];
@@ -22,7 +34,6 @@ type CardPaymentOptions = Extract<
   NonNullable<NonNullable<SaleChargeInput['paymentMethodOptions']>['card']>,
   object
 >;
-
 
 /** Checkout payment service. */
 @Injectable()

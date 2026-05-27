@@ -1,12 +1,6 @@
 import { GapDetectorService } from './gap-detector.service';
-import type {
-  GapDetectionInput,
-} from './gap-detector.service';
-import type {
-  RuntimeMetric,
-  CapabilityEntry,
-  RTierDelta,
-} from './evol.types';
+import type { GapDetectionInput } from './gap-detector.service';
+import type { RuntimeMetric, CapabilityEntry, RTierDelta } from './evol.types';
 
 /**
  * UTP-EVOL — focused contract spec for the wired GapDetectorService
@@ -92,17 +86,13 @@ describe('GapDetectorService (wired evol provider)', () => {
   });
 
   it('detects a capability gap when evidence score is below 0.3', () => {
-    const gaps = svc.detect(
-      emptyInput({ capabilities: [capability({ evidenceScore: 0.1 })] }),
-    );
+    const gaps = svc.detect(emptyInput({ capabilities: [capability({ evidenceScore: 0.1 })] }));
     expect(gaps.length).toBe(1);
     expect(gaps[0]?.estimatedRevenueRiskCents).toBeGreaterThan(0);
   });
 
   it('detects an R-tier downgrade gap', () => {
-    const gaps = svc.detect(
-      emptyInput({ rTierDeltas: [rTierDelta({ direction: 'downgraded' })] }),
-    );
+    const gaps = svc.detect(emptyInput({ rTierDeltas: [rTierDelta({ direction: 'downgraded' })] }));
     expect(gaps.length).toBe(1);
     expect(gaps[0]?.severity).toBe('critical');
   });
@@ -144,10 +134,7 @@ describe('GapDetectorService (wired evol provider)', () => {
       }),
     );
     const total = svc.estimateTotalRisk(gaps);
-    const manual = gaps.reduce(
-      (s, g) => s + g.estimatedRevenueRiskCents,
-      0,
-    );
+    const manual = gaps.reduce((s, g) => s + g.estimatedRevenueRiskCents, 0);
     expect(total).toBe(manual);
     expect(total).toBeGreaterThan(0);
   });

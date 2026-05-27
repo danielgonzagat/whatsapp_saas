@@ -41,9 +41,7 @@ export class TrafficWasteDetectorService {
     const rootCause = this.diagnoseRootCause(wasteScore, wastefulSegments, input.segments);
     const recommendation = this.buildRecommendation(wasteScore, wastefulSegments);
 
-    this.logger.debug(
-      `Traffic waste for campaign ${input.campaignId}: ${wasteScore.toFixed(3)}`,
-    );
+    this.logger.debug(`Traffic waste for campaign ${input.campaignId}: ${wasteScore.toFixed(3)}`);
 
     return {
       id: `tw_${randomUUID()}`,
@@ -79,10 +77,7 @@ export class TrafficWasteDetectorService {
     return 'Traffic efficiency is within acceptable range.';
   }
 
-  private buildRecommendation(
-    wasteScore: number,
-    wastefulSegments: readonly string[],
-  ): string {
+  private buildRecommendation(wasteScore: number, wastefulSegments: readonly string[]): string {
     if (wastefulSegments.length > 0) {
       return `Pause or exclude ${wastefulSegments.length} non-converting segment(s) immediately. Reallocate budget to converting audiences.`;
     }

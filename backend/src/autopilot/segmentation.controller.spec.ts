@@ -23,7 +23,11 @@ describe('SegmentationController', () => {
   describe('getPresets', () => {
     it('returns preset list from service', () => {
       const presets = [
-        { name: 'HOT_LEADS', description: 'Leads quentes', criteria: { engagement: 'hot' } as never },
+        {
+          name: 'HOT_LEADS',
+          description: 'Leads quentes',
+          criteria: { engagement: 'hot' } as never,
+        },
       ];
       getAvailablePresets.mockReturnValue(presets);
 
@@ -49,7 +53,11 @@ describe('SegmentationController', () => {
 
   describe('getContactScore', () => {
     it('passes contactId and workspaceId to service', async () => {
-      const score = { score: 85, level: 'hot' as const, factors: { recency: 20, frequency: 25, responseRate: 15, purchaseValue: 25 } };
+      const score = {
+        score: 85,
+        level: 'hot' as const,
+        factors: { recency: 20, frequency: 25, responseRate: 15, purchaseValue: 25 },
+      };
       calculateEngagementScore.mockResolvedValue(score);
 
       const result = await controller.getContactScore('ws-1', 'c-1');

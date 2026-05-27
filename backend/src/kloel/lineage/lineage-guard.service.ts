@@ -1,15 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import {
-  GENESIS_EVENT,
-  ORGANISM_CANONICAL_NAME,
-  computeGenesisHash,
-} from './genesis-event';
+import { GENESIS_EVENT, ORGANISM_CANONICAL_NAME, computeGenesisHash } from './genesis-event';
 import { LineageLedgerService } from './lineage-ledger.service';
-import {
-  LineageEntry,
-  LineageLedgerRepository,
-  ZERO_HASH,
-} from './lineage-ledger.types';
+import { LineageEntry, LineageLedgerRepository, ZERO_HASH } from './lineage-ledger.types';
 import { LINEAGE_LEDGER_REPOSITORY } from './lineage.tokens';
 
 /**

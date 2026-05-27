@@ -5,7 +5,12 @@ import type {
   ExpansionSignalKind,
   PostSaleDecisionControl,
 } from './postsale-consumers.types';
-import { clamp, daysSince, filterByWorkspaceAndEntity, latestEvent } from './postsale-consumers.types';
+import {
+  clamp,
+  daysSince,
+  filterByWorkspaceAndEntity,
+  latestEvent,
+} from './postsale-consumers.types';
 
 const EXPANSION_WINDOW_DAYS = 60;
 
@@ -139,7 +144,8 @@ function buildControl(
     return {
       riskClass: 'R2',
       delegationMode: 'owner_review',
-      safeNextStep: 'Draft an expansion suggestion for owner review only after confirming value and satisfaction.',
+      safeNextStep:
+        'Draft an expansion suggestion for owner review only after confirming value and satisfaction.',
       uncertainty:
         'Expansion fit is inferred from behavioral signals, not observed buyer intent for a larger offer.',
       leadOutcomeGuardrail:
@@ -152,7 +158,8 @@ function buildControl(
   return {
     riskClass: 'R1',
     delegationMode: 'silent_monitoring',
-    safeNextStep: 'Keep expansion closed and continue observing value, satisfaction, and usage signals.',
+    safeNextStep:
+      'Keep expansion closed and continue observing value, satisfaction, and usage signals.',
     uncertainty:
       signals.length > 0
         ? 'Usage signals exist, but the proof is not enough to treat expansion as healthy.'

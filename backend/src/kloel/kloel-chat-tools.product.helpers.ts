@@ -9,28 +9,36 @@ function stripAccents(s: string): string {
 }
 
 /** Resolve productId from productName with accent-tolerant search */
-async function resolveProductId(
+type ProductRef = { id: string; name: string };
+
+async function resolveProductRef(
   prisma: PrismaService,
   workspaceId: string,
   productName?: string,
-): Promise<string> {
-  if (!productName) return '';
-  // Try exact contains first (handles accents when user types them)
-  let p = await prisma.product.findFirst({
+): Promise<ProductRef | null> {
+  if (!productName) {
+    return null;
+  }
+
+  let product = await prisma.product.findFirst({
     where: { workspaceId, name: { contains: productName, mode: 'insensitive' } },
     select: { id: true, name: true },
   });
-  if (p) return p.id;
-  // Fallback: strip accents and try again (handles "serum"→"sérum")
+  if (product) {
+    return product;
+  }
+
   const stripped = stripAccents(productName);
   if (stripped !== productName) {
-    p = await prisma.product.findFirst({
+    product = await prisma.product.findFirst({
       where: { workspaceId, name: { contains: stripped, mode: 'insensitive' } },
       select: { id: true, name: true },
     });
-    if (p) return p.id;
+    if (product) {
+      return product;
+    }
   }
-  // Last resort: fetch all workspace products and compare accent-stripped names
+
   try {
     const all = await prisma.product.findMany({
       where: { workspaceId },
@@ -38,12 +46,22 @@ async function resolveProductId(
       take: 200,
     });
     const searchStripped = stripAccents(productName).toLowerCase();
-    const found = all.find((prod) => stripAccents(prod.name).toLowerCase().includes(searchStripped));
-    if (found) return found.id;
+    return (
+      all.find((candidate) =>
+        stripAccents(candidate.name).toLowerCase().includes(searchStripped),
+      ) ?? null
+    );
   } catch {
-    // gracefully skip
+    return null;
   }
-  return '';
+}
+
+async function resolveProductId(
+  prisma: PrismaService,
+  workspaceId: string,
+  productName?: string,
+): Promise<string> {
+  return (await resolveProductRef(prisma, workspaceId, productName))?.id ?? '';
 }
 
 export async function runGetProductPlans(
@@ -134,35 +152,59 @@ export async function runGetProductReviews(
   workspaceId: string,
   args: { productId?: string; productName?: string },
 ): Promise<ToolResult> {
-  const pid = await resolveProductId(prisma, workspaceId, args.productName || args.productId);
+  const productFromName = args.productName
+    ? await resolveProductRef(prisma, workspaceId, args.productName)
+    : null;
+  const pid =
+    productFromName?.id ??
+    (args.productId ? await resolveProductId(prisma, workspaceId, args.productId) : '');
+
   if (!pid && args.productId) {
-    // Direct productId provided — use it directly
     const product = await prisma.product.findFirst({
       where: { id: args.productId, workspaceId },
       select: { id: true, name: true },
     });
-    if (!product) return { success: false, error: 'product_not_found' };
+    if (!product) {
+      return { success: false, error: 'product_not_found' };
+    }
     const reviews = await prisma.productReview.findMany({
       where: { productId: args.productId },
       select: { id: true, rating: true, comment: true, createdAt: true },
       orderBy: { createdAt: 'desc' },
       take: 20,
     });
-    return { success: true, product: { id: product.id, name: product.name }, reviews };
+    return {
+      success: true,
+      product: { id: product.id, name: product.name },
+      reviews,
+    };
   }
-  if (!pid) return { success: false, error: 'productId_required' };
-  const product = await prisma.product.findFirst({
-    where: { id: pid, workspaceId },
-    select: { id: true, name: true },
-  });
-  if (!product) return { success: false, error: 'product_not_found' };
+
+  if (!pid) {
+    return { success: false, error: 'productId_required' };
+  }
+
+  const product =
+    productFromName ??
+    (await prisma.product.findFirst({
+      where: { id: pid, workspaceId },
+      select: { id: true, name: true },
+    }));
+  if (!product) {
+    return { success: false, error: 'product_not_found' };
+  }
+
   const reviews = await prisma.productReview.findMany({
     where: { productId: pid },
     select: { id: true, rating: true, comment: true, createdAt: true },
     orderBy: { createdAt: 'desc' },
     take: 20,
   });
-  return { success: true, product: { id: product.id, name: product.name }, reviews };
+  return {
+    success: true,
+    product: { id: product.id, name: product.name },
+    reviews,
+  };
 }
 
 export async function runGetProductAiConfig(
@@ -374,16 +416,28 @@ export async function runGetProductDetails(
     });
     pid = p?.id || '';
   }
-  if (!pid) return { success: false, error: 'product_not_found' };
+  if (!pid) {
+    return { success: false, error: 'product_not_found' };
+  }
   const product = await prisma.product.findFirst({
     where: { id: pid, workspaceId },
     select: {
-      id: true, name: true, description: true, category: true, price: true,
-      format: true, active: true, salesPageUrl: true, slug: true,
-      tags: true, supportEmail: true,
+      id: true,
+      name: true,
+      description: true,
+      category: true,
+      price: true,
+      format: true,
+      active: true,
+      salesPageUrl: true,
+      slug: true,
+      tags: true,
+      supportEmail: true,
     },
   });
-  if (!product) return { success: false, error: 'product_not_found' };
+  if (!product) {
+    return { success: false, error: 'product_not_found' };
+  }
   const plans = await prisma.productPlan.count({ where: { productId: pid } });
   return { success: true, product: { ...product, planCount: plans } };
 }
@@ -402,7 +456,9 @@ export async function runListSubscriptions(
   return {
     success: true,
     subscriptions: subs.map((s) => ({
-      id: s.id, plan: s.plan, status: s.status,
+      id: s.id,
+      plan: s.plan,
+      status: s.status,
       currentPeriodEnd: s.currentPeriodEnd?.toISOString() || null,
     })),
     count: subs.length,

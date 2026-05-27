@@ -2,11 +2,7 @@ import { ValenceTaggerService } from '../mind/valence-tagger.service';
 import { SpineEmitterService } from '../spine/spine-emitter.service';
 import type { SpineEventEnvelope } from '../spine/spine-event.types';
 import { PulseSpineBridge } from './pulse-spine.bridge';
-import {
-  type GateVerdict,
-  fail,
-  pass,
-} from './pulse-gates.types';
+import { type GateVerdict, fail, pass } from './pulse-gates.types';
 
 function build(opts: { ringCapacity?: number } = {}) {
   const emitter = new SpineEmitterService(new ValenceTaggerService(), opts);
@@ -118,7 +114,11 @@ describe('PulseSpineBridge', () => {
     emitter.subscribe((e) => captured.push(e));
 
     const bridge = new PulseSpineBridge(emitter);
-    const verdict: GateVerdict = pass('evidence-provenance', 'hard_fail', 'evidence-provenance.gate');
+    const verdict: GateVerdict = pass(
+      'evidence-provenance',
+      'hard_fail',
+      'evidence-provenance.gate',
+    );
 
     await bridge.recordVerdict(verdict);
 

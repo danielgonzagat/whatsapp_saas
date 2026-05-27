@@ -4,15 +4,7 @@ import { PromiseStrengthDetector } from './promise-strength.detector';
 import { PositioningMismatchDetector } from './positioning-mismatch.detector';
 
 @Module({
-  providers: [
-    OfferDeliveryService,
-    PromiseStrengthDetector,
-    PositioningMismatchDetector,
-  ],
-  exports: [
-    OfferDeliveryService,
-    PromiseStrengthDetector,
-    PositioningMismatchDetector,
-  ],
+  providers: [OfferDeliveryService, PromiseStrengthDetector, PositioningMismatchDetector],
+  exports: [OfferDeliveryService, PromiseStrengthDetector, PositioningMismatchDetector],
 })
 export class OfferModule {}

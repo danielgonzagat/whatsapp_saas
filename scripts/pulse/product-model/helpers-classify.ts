@@ -57,9 +57,10 @@ export function chooseCapabilityLabelNode(
 export function calculateSurfaceCompleteness(
   graph: PulseStructuralGraph,
   artifactIds: string[],
+  nodeById = new Map(graph.nodes.map((node) => [node.id, node] as const)),
 ): number {
   const nodes = artifactIds
-    .map((id) => graph.nodes.find((n) => n.id === id))
+    .map((id) => nodeById.get(id))
     .filter((n) => n !== undefined) as PulseStructuralNode[];
   if (nodes.length === deriveZeroValue()) {
     return deriveZeroValue();

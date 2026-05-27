@@ -22,7 +22,8 @@ import './voice-processor'; // Start Voice Worker
 import './processors/memory-processor'; // Start Memory Worker
 import './processors/webhook-processor'; // Start Webhook Worker
 import './processors/crm-processor'; // Start CRM Worker
-import './processors/silent-24h-resolver.processor'; // Start Silent 24h Resolver Worker
+import './processors/silent-24h-resolver-processor'; // Start Silent 24h Resolver Worker
+import './processors/mass-send-processor'; // Start Mass Send Worker
 import './metrics-server'; // Expose /metrics and /health
 import './dlq-monitor'; // Monitor DLQs and alert ops
 import { redisPub } from './redis-client';

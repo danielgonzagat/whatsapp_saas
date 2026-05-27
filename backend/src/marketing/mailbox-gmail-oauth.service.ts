@@ -130,6 +130,13 @@ export class MailboxGmailOAuthService {
     return this.syncService.syncLatestInbox(connection, requestedLimit);
   }
 
+  /**
+   * @canonical-status delegate — Wave 22 canonicalization
+   * @canonical-path backend/src/marketing/mailbox-gmail-oauth/send.service.ts::sendMessageFromMailbox
+   * @notes Composite facade for Gmail mailbox sub-services (connect, sync, send,
+   *        disconnect); the actual Gmail API call lives in the canonical path.
+   *        Long-term: route transactional sends through EmailDispatchAdapter.
+   */
   async sendMessageFromMailbox(
     workspaceId: string,
     input: {

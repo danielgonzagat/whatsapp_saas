@@ -3,7 +3,7 @@ import {
   WorkerInsufficientWalletBalanceError,
   quoteSerializedInputTokenCostCents,
   settleQuotedUsageCharge,
-} from '../processors/prepaid-wallet-settlement';
+} from '../providers/prepaid-wallet-settlement';
 
 type MockDb = NonNullable<Parameters<typeof settleQuotedUsageCharge>[1]>;
 type MockTx = Parameters<Parameters<MockDb['$transaction']>[0]>[0];

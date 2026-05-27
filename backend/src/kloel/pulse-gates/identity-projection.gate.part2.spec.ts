@@ -43,9 +43,7 @@ function validPayload(overrides?: Record<string, unknown>): Record<string, unkno
     attention: { candidates: [] },
     memory: { workingMemory: [], episodicRefs: [], consolidatedRefs: [] },
     capabilities: {
-      available: [
-        { capabilityId: 'lineage', maturity: 'developing', runtimeEvidencePct: 5 },
-      ],
+      available: [{ capabilityId: 'lineage', maturity: 'developing', runtimeEvidencePct: 5 }],
       restricted: [],
     },
     valence: {
@@ -142,7 +140,11 @@ describe('identity-projection gate — NEGATIVE (FAIL)', () => {
 
   it('FAIL: invalid audience value', () => {
     const payload = validPayload({
-      identityProjection: { audience: 'pirate', currentMaturity: 'developing', truthMode: 'observed' },
+      identityProjection: {
+        audience: 'pirate',
+        currentMaturity: 'developing',
+        truthMode: 'observed',
+      },
     });
     const v = gate().check(payload);
     expect(v.status).toBe('FAIL');
@@ -202,7 +204,11 @@ describe('identity-projection gate — NEGATIVE (FAIL)', () => {
 
   it('FAIL: truthMode inconsistency between lineage and identityProjection', () => {
     const payload = validPayload({
-      identityProjection: { audience: 'public', currentMaturity: 'developing', truthMode: 'observed' },
+      identityProjection: {
+        audience: 'public',
+        currentMaturity: 'developing',
+        truthMode: 'observed',
+      },
       lineage: {
         canonicalName: 'Kloel',
         genesisEventId: 'ev-genesis-001',
@@ -221,7 +227,11 @@ describe('identity-projection gate — NEGATIVE (FAIL)', () => {
 
   it('FAIL: invalid truthMode in identityProjection', () => {
     const payload = validPayload({
-      identityProjection: { audience: 'public', currentMaturity: 'developing', truthMode: 'magical' },
+      identityProjection: {
+        audience: 'public',
+        currentMaturity: 'developing',
+        truthMode: 'magical',
+      },
     });
     const v = gate().check(payload);
     expect(v.status).toBe('FAIL');
@@ -231,7 +241,11 @@ describe('identity-projection gate — NEGATIVE (FAIL)', () => {
 
   it('FAIL: both invalid audience AND canonicalName mismatch (2 issues)', () => {
     const payload = validPayload({
-      identityProjection: { audience: 'alien', currentMaturity: 'developing', truthMode: 'observed' },
+      identityProjection: {
+        audience: 'alien',
+        currentMaturity: 'developing',
+        truthMode: 'observed',
+      },
       lineage: {
         canonicalName: 'Impostor',
         genesisEventId: 'ev-genesis-001',
@@ -250,7 +264,11 @@ describe('identity-projection gate — NEGATIVE (FAIL)', () => {
 
   it('FAIL: public etymology leak + truthMode mismatch (2 issues)', () => {
     const payload = validPayload({
-      identityProjection: { audience: 'public', currentMaturity: 'developing', truthMode: 'projected' },
+      identityProjection: {
+        audience: 'public',
+        currentMaturity: 'developing',
+        truthMode: 'projected',
+      },
       lineage: {
         canonicalName: 'Kloel',
         genesisEventId: 'ev-genesis-001',
@@ -320,7 +338,11 @@ describe('identity-projection gate — EDGE', () => {
 
   it('PASS: technical audience, etymology AND origin present, truthMode present in lineage', () => {
     const payload = validPayload({
-      identityProjection: { audience: 'technical', currentMaturity: 'productionReady', truthMode: 'inferred' },
+      identityProjection: {
+        audience: 'technical',
+        currentMaturity: 'productionReady',
+        truthMode: 'inferred',
+      },
       lineage: {
         canonicalName: 'Kloel',
         genesisEventId: 'ev-genesis-001',

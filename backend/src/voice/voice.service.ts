@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { Queue } from 'bullmq';
-import { createRedisClient } from '../common/redis/redis.util';
+import { createBullMqConnectionOptions } from '../common/redis/redis.util';
 import { PrismaService } from '../prisma/prisma.service';
 
 /** Voice service. */
@@ -11,7 +11,7 @@ export class VoiceService {
 
   constructor(private prisma: PrismaService) {
     this.logger.log('VoiceService initialized');
-    const connection = createRedisClient();
+    const connection = createBullMqConnectionOptions();
     this.voiceQueue = new Queue('voice-jobs', { connection });
   }
 

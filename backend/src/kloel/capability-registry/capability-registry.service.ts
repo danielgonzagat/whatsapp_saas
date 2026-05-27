@@ -76,8 +76,9 @@ export class CapabilityRegistryService {
 
     if (record.maturity === 'operational') {
       const thresholdReached = criteria.rCriterionThresholdReached === true;
-      const nonRegressive = record.consecutiveFailures < CONSECUTIVE_FAILURES_CONSECUTIVE_THRESHOLD
-        && criteria.consecutivePulseGreenCycles >= MIN_NON_REGRESSIVE_CYCLES;
+      const nonRegressive =
+        record.consecutiveFailures < CONSECUTIVE_FAILURES_CONSECUTIVE_THRESHOLD &&
+        criteria.consecutivePulseGreenCycles >= MIN_NON_REGRESSIVE_CYCLES;
 
       if (thresholdReached && nonRegressive) {
         const previous = record.maturity;

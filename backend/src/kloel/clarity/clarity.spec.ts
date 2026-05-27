@@ -16,9 +16,7 @@ import type {
 const NOW = Date.parse('2026-05-14T12:00:00.000Z');
 const WKS = 'wks_clarity_test';
 
-function makeItem(
-  over?: Partial<RankingInput>,
-): RankingInput {
+function makeItem(over?: Partial<RankingInput>): RankingInput {
   return {
     itemId: over?.itemId ?? 'it_test',
     workspaceId: over?.workspaceId ?? WKS,
@@ -39,9 +37,7 @@ function makeItemFull(
   return { itemId, workspaceId: WKS, label, urgency, impact, reversibility };
 }
 
-function makeAnxietyMode(
-  over?: Partial<AnxietyMode>,
-): AnxietyMode {
+function makeAnxietyMode(over?: Partial<AnxietyMode>): AnxietyMode {
   return {
     active: over?.active ?? false,
     triggeredAt: over?.triggeredAt ?? null,
@@ -50,9 +46,7 @@ function makeAnxietyMode(
   };
 }
 
-function makeFeedback(
-  over?: Partial<ClarityFeedback>,
-): ClarityFeedback {
+function makeFeedback(over?: Partial<ClarityFeedback>): ClarityFeedback {
   return {
     feedbackId: over?.feedbackId ?? 'fb_test',
     itemId: over?.itemId ?? 'it_test',
@@ -116,9 +110,39 @@ describe('CLARITY-001 — rankAttention', () => {
 describe('CLARITY-002 — projectHierarchy', () => {
   it('projects items into correct tier buckets', () => {
     const rankings: AttentionRanking[] = [
-      { itemId: 'a', workspaceId: WKS, label: 'A', urgency: 1, impact: 1, reversibility: 0, score: 1, tier: 'AGORA', rankedAt: new Date(NOW).toISOString() },
-      { itemId: 'b', workspaceId: WKS, label: 'B', urgency: 0.5, impact: 0.5, reversibility: 0.5, score: 0.5, tier: 'ESTA_SEMANA', rankedAt: new Date(NOW).toISOString() },
-      { itemId: 'c', workspaceId: WKS, label: 'C', urgency: 0.2, impact: 0.2, reversibility: 1, score: 0.1, tier: 'ARQUIVO', rankedAt: new Date(NOW).toISOString() },
+      {
+        itemId: 'a',
+        workspaceId: WKS,
+        label: 'A',
+        urgency: 1,
+        impact: 1,
+        reversibility: 0,
+        score: 1,
+        tier: 'AGORA',
+        rankedAt: new Date(NOW).toISOString(),
+      },
+      {
+        itemId: 'b',
+        workspaceId: WKS,
+        label: 'B',
+        urgency: 0.5,
+        impact: 0.5,
+        reversibility: 0.5,
+        score: 0.5,
+        tier: 'ESTA_SEMANA',
+        rankedAt: new Date(NOW).toISOString(),
+      },
+      {
+        itemId: 'c',
+        workspaceId: WKS,
+        label: 'C',
+        urgency: 0.2,
+        impact: 0.2,
+        reversibility: 1,
+        score: 0.1,
+        tier: 'ARQUIVO',
+        rankedAt: new Date(NOW).toISOString(),
+      },
     ];
     const proj = projectHierarchy({ rankings });
     expect(proj.agoralCount).toBe(1);
@@ -142,8 +166,28 @@ describe('CLARITY-002 — projectHierarchy', () => {
 describe('CLARITY-003 — applyNoiseFilter', () => {
   it('silently drops items below threshold', () => {
     const rankings: AttentionRanking[] = [
-      { itemId: 'a', workspaceId: WKS, label: 'A', urgency: 1, impact: 1, reversibility: 0, score: 1, tier: 'AGORA', rankedAt: new Date(NOW).toISOString() },
-      { itemId: 'b', workspaceId: WKS, label: 'B', urgency: 0.1, impact: 0.1, reversibility: 1, score: 0.05, tier: 'ARQUIVO', rankedAt: new Date(NOW).toISOString() },
+      {
+        itemId: 'a',
+        workspaceId: WKS,
+        label: 'A',
+        urgency: 1,
+        impact: 1,
+        reversibility: 0,
+        score: 1,
+        tier: 'AGORA',
+        rankedAt: new Date(NOW).toISOString(),
+      },
+      {
+        itemId: 'b',
+        workspaceId: WKS,
+        label: 'B',
+        urgency: 0.1,
+        impact: 0.1,
+        reversibility: 1,
+        score: 0.05,
+        tier: 'ARQUIVO',
+        rankedAt: new Date(NOW).toISOString(),
+      },
     ];
     const result = applyNoiseFilter({
       rankings,
@@ -161,8 +205,28 @@ describe('CLARITY-003 — applyNoiseFilter', () => {
 
   it('keeps all items when silent is false', () => {
     const rankings: AttentionRanking[] = [
-      { itemId: 'a', workspaceId: WKS, label: 'A', urgency: 1, impact: 1, reversibility: 0, score: 1, tier: 'AGORA', rankedAt: new Date(NOW).toISOString() },
-      { itemId: 'b', workspaceId: WKS, label: 'B', urgency: 0.1, impact: 0.1, reversibility: 1, score: 0.05, tier: 'ARQUIVO', rankedAt: new Date(NOW).toISOString() },
+      {
+        itemId: 'a',
+        workspaceId: WKS,
+        label: 'A',
+        urgency: 1,
+        impact: 1,
+        reversibility: 0,
+        score: 1,
+        tier: 'AGORA',
+        rankedAt: new Date(NOW).toISOString(),
+      },
+      {
+        itemId: 'b',
+        workspaceId: WKS,
+        label: 'B',
+        urgency: 0.1,
+        impact: 0.1,
+        reversibility: 1,
+        score: 0.05,
+        tier: 'ARQUIVO',
+        rankedAt: new Date(NOW).toISOString(),
+      },
     ];
     const result = applyNoiseFilter({
       rankings,
@@ -176,7 +240,17 @@ describe('CLARITY-003 — applyNoiseFilter', () => {
 
   it('uses default threshold when input is zero', () => {
     const rankings: AttentionRanking[] = [
-      { itemId: 'a', workspaceId: WKS, label: 'A', urgency: 1, impact: 1, reversibility: 0, score: 0.2, tier: 'PARA_SABER', rankedAt: new Date(NOW).toISOString() },
+      {
+        itemId: 'a',
+        workspaceId: WKS,
+        label: 'A',
+        urgency: 1,
+        impact: 1,
+        reversibility: 0,
+        score: 0.2,
+        tier: 'PARA_SABER',
+        rankedAt: new Date(NOW).toISOString(),
+      },
     ];
     const result = applyNoiseFilter({
       rankings,
@@ -267,7 +341,17 @@ describe('CLARITY-004 — detectAnxietyMode', () => {
 describe('CLARITY-005 — applyFeedback', () => {
   it('boosts item score on positive feedback', () => {
     const rankings: AttentionRanking[] = [
-      { itemId: 'it_a', workspaceId: WKS, label: 'A', urgency: 0.5, impact: 0.5, reversibility: 0.5, score: 0.5, tier: 'ESTA_SEMANA', rankedAt: new Date(NOW).toISOString() },
+      {
+        itemId: 'it_a',
+        workspaceId: WKS,
+        label: 'A',
+        urgency: 0.5,
+        impact: 0.5,
+        reversibility: 0.5,
+        score: 0.5,
+        tier: 'ESTA_SEMANA',
+        rankedAt: new Date(NOW).toISOString(),
+      },
     ];
     const feedback = makeFeedback({ rating: 1, itemId: 'it_a' });
     const result = applyFeedback({ feedback, rankings, nowMs: NOW });
@@ -278,7 +362,17 @@ describe('CLARITY-005 — applyFeedback', () => {
 
   it('penalizes item score on negative feedback', () => {
     const rankings: AttentionRanking[] = [
-      { itemId: 'it_a', workspaceId: WKS, label: 'A', urgency: 0.5, impact: 0.5, reversibility: 0.5, score: 0.5, tier: 'ESTA_SEMANA', rankedAt: new Date(NOW).toISOString() },
+      {
+        itemId: 'it_a',
+        workspaceId: WKS,
+        label: 'A',
+        urgency: 0.5,
+        impact: 0.5,
+        reversibility: 0.5,
+        score: 0.5,
+        tier: 'ESTA_SEMANA',
+        rankedAt: new Date(NOW).toISOString(),
+      },
     ];
     const feedback = makeFeedback({ rating: -1, itemId: 'it_a' });
     const result = applyFeedback({ feedback, rankings, nowMs: NOW });
@@ -288,7 +382,17 @@ describe('CLARITY-005 — applyFeedback', () => {
 
   it('does not change score on neutral feedback', () => {
     const rankings: AttentionRanking[] = [
-      { itemId: 'it_a', workspaceId: WKS, label: 'A', urgency: 0.5, impact: 0.5, reversibility: 0.5, score: 0.5, tier: 'ESTA_SEMANA', rankedAt: new Date(NOW).toISOString() },
+      {
+        itemId: 'it_a',
+        workspaceId: WKS,
+        label: 'A',
+        urgency: 0.5,
+        impact: 0.5,
+        reversibility: 0.5,
+        score: 0.5,
+        tier: 'ESTA_SEMANA',
+        rankedAt: new Date(NOW).toISOString(),
+      },
     ];
     const feedback = makeFeedback({ rating: 0, itemId: 'it_a' });
     const result = applyFeedback({ feedback, rankings, nowMs: NOW });
@@ -298,8 +402,28 @@ describe('CLARITY-005 — applyFeedback', () => {
 
   it('leaves other items unchanged', () => {
     const rankings: AttentionRanking[] = [
-      { itemId: 'it_a', workspaceId: WKS, label: 'A', urgency: 0.5, impact: 0.5, reversibility: 0.5, score: 0.5, tier: 'ESTA_SEMANA', rankedAt: new Date(NOW).toISOString() },
-      { itemId: 'it_b', workspaceId: WKS, label: 'B', urgency: 0.5, impact: 0.5, reversibility: 0.5, score: 0.5, tier: 'ESTA_SEMANA', rankedAt: new Date(NOW).toISOString() },
+      {
+        itemId: 'it_a',
+        workspaceId: WKS,
+        label: 'A',
+        urgency: 0.5,
+        impact: 0.5,
+        reversibility: 0.5,
+        score: 0.5,
+        tier: 'ESTA_SEMANA',
+        rankedAt: new Date(NOW).toISOString(),
+      },
+      {
+        itemId: 'it_b',
+        workspaceId: WKS,
+        label: 'B',
+        urgency: 0.5,
+        impact: 0.5,
+        reversibility: 0.5,
+        score: 0.5,
+        tier: 'ESTA_SEMANA',
+        rankedAt: new Date(NOW).toISOString(),
+      },
     ];
     const feedback = makeFeedback({ rating: 1, itemId: 'it_a' });
     const result = applyFeedback({ feedback, rankings, nowMs: NOW });

@@ -10,7 +10,7 @@
  * ============================================
  */
 
-import { Injectable, OnModuleDestroy, OnModuleInit, Optional  } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit, Optional } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';

@@ -1,9 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type {
-  ChannelKind,
-  DetectionInput,
-  MigrationPlan,
-} from './types';
+import type { ChannelKind, DetectionInput, MigrationPlan } from './types';
 import { filterByWorkspace } from './types';
 
 @Injectable()
@@ -24,11 +20,7 @@ export class MigrationOrchestrator {
       (e) => e.eventName.includes('migration') || e.eventName.includes('channel_switch'),
     );
     const riskLevel: 'low' | 'medium' | 'high' =
-      migrationEvents.length > 10
-        ? 'low'
-        : audienceSize > 1000
-          ? 'high'
-          : 'medium';
+      migrationEvents.length > 10 ? 'low' : audienceSize > 1000 ? 'high' : 'medium';
 
     return {
       workspaceId: input.workspaceId,

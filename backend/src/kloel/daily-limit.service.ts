@@ -32,7 +32,9 @@ export class DailyLimitService {
     workspaceId: string,
     channel: string,
   ): Promise<{ allowed: boolean; remaining: number; capAtDay: number }> {
-    const normalizedChannel = String(channel || 'whatsapp').trim().toLowerCase();
+    const normalizedChannel = String(channel || 'whatsapp')
+      .trim()
+      .toLowerCase();
     const config = await this.prisma.channelConfig.findUnique({
       where: { workspaceId_channel: { workspaceId, channel: normalizedChannel } },
       select: { dailyMessageLimit: true },

@@ -5,7 +5,7 @@ import { RequireAdminPermission } from '../auth/decorators/admin-permission.deco
 import { AdminAuthGuard } from '../auth/guards/admin-auth.guard';
 import { AdminPermissionGuard } from '../auth/guards/admin-permission.guard';
 import { RouteClass } from '../../common/throttler/route-class.decorator';
-import { BrainSpineAuditService } from '../../brain/brain-spine-audit.service';
+import { MindSpineAudit } from '../../kloel/mind/observability';
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -14,7 +14,7 @@ const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)
 @RouteClass('read')
 export class BrainAuditController {
-  constructor(private readonly audit: BrainSpineAuditService) {}
+  constructor(private readonly audit: MindSpineAudit) {}
 
   @Get('spine-audit')
   @RequireAdminPermission(AdminModule.RELATORIOS, AdminAction.VIEW)

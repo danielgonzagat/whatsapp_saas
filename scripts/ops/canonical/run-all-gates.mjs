@@ -14,6 +14,7 @@ const GATES = [
   { name: 'G13: Math.random ban', script: 'gate-math-random.mjs' },
   { name: 'G1: prismaAny ban', script: 'gate-prisma-any.mjs' },
   { name: 'G5: Asaas ban', script: 'gate-asaas-ban.mjs' },
+  { name: 'G24: Event taxonomy namespace', script: 'gate-event-taxonomy-namespace.mjs' },
 ];
 
 let failures = 0;

@@ -63,12 +63,10 @@ describe('AdminSalesController', () => {
     it('getById happy — service called with id', () => {
       sales.getById.mockResolvedValue({ id: 'tx-1', status: 'PAID' });
 
-      return controller
-        .overview()
-        .then(() => {
-          expect(sales.list).toBeDefined();
-          expect(sales.getById).toBeDefined();
-        });
+      return controller.overview().then(() => {
+        expect(sales.list).toBeDefined();
+        expect(sales.getById).toBeDefined();
+      });
     });
 
     it('error path — propagates service rejection', async () => {

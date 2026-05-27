@@ -77,10 +77,8 @@ export function buildAcknowledgment(error: DetectedError): Acknowledgment {
     channel: channelFor(error.category),
     generatedAt: new Date().toISOString(),
     whatKloelKnows: `category=${error.category}`,
-    whatKloelDoesNotKnow:
-      'whether the same condition will recur under different inputs',
-    safeNextStep:
-      'pause similar operations and surface the issue to the operator for review',
+    whatKloelDoesNotKnow: 'whether the same condition will recur under different inputs',
+    safeNextStep: 'pause similar operations and surface the issue to the operator for review',
     repairStance: 'investigating',
   };
 }
