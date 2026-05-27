@@ -1,18 +1,18 @@
 import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
-import { findFirstSequential, forEachSequential } from '../common/async-sequence';
-import { UnifiedAgentService } from '../kloel/unified-agent.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { AgentEventsService } from '../whatsapp/agent-events.service';
+import { findFirstSequential, forEachSequential } from '../../../common/async-sequence';
+import { UnifiedAgentService } from '../../unified-agent.service';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { AgentEventsService } from '../../../whatsapp/agent-events.service';
 import { CiaChatFilterService } from './cia-chat-filter.service';
 import { CiaRuntimeStateService } from './cia-runtime-state.service';
 import { CIA_SHARED_REPLY_LOCK_MS, CiaSendHelpersService } from './cia-send-helpers.service';
-import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
-import { WahaChatSummary } from '../whatsapp/providers/whatsapp-api.provider';
-import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../marketing/channels/whatsapp/whatsapp-normalization.util';
-import { WHATSAPP_MESSAGING } from '../marketing/channels/whatsapp/whatsapp.tokens';
-import type { IWhatsappMessaging } from '../marketing/channels/whatsapp/whatsapp.interfaces';
-import type { BacklogMode } from '../whatsapp/cia-remote-backlog.helpers';
-import { loadRemotePendingBatchHelper } from '../whatsapp/cia-remote-backlog.helpers';
+import { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
+import { WahaChatSummary } from '../../../whatsapp/providers/whatsapp-api.provider';
+import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../../../marketing/channels/whatsapp/whatsapp-normalization.util';
+import { WHATSAPP_MESSAGING } from '../../../marketing/channels/whatsapp/whatsapp.tokens';
+import type { IWhatsappMessaging } from '../../../marketing/channels/whatsapp/whatsapp.interfaces';
+import type { BacklogMode } from '../../../whatsapp/cia-remote-backlog.helpers';
+import { loadRemotePendingBatchHelper } from '../../../whatsapp/cia-remote-backlog.helpers';
 
 /**
  * Handles remote backlog fallback: reads pending chats directly from the

@@ -1,19 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaService } from '../prisma/prisma.service';
-import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
-import { AgentEventsService } from '../whatsapp/agent-events.service';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
+import { AgentEventsService } from '../../../whatsapp/agent-events.service';
 import { CiaChatFilterService } from './cia-chat-filter.service';
 import { CiaRuntimeStateService } from './cia-runtime-state.service';
 import { CiaSendHelpersService } from './cia-send-helpers.service';
 import { CiaRemoteBacklogService } from './cia-remote-backlog.service';
-import { UnifiedAgentService } from '../kloel/unified-agent.service';
-import { WHATSAPP_MESSAGING } from '../marketing/channels/whatsapp/whatsapp.tokens';
-import type { WahaChatSummary } from '../whatsapp/providers/whatsapp-api.provider';
-import type { AgentStreamEvent } from '../whatsapp/agent-events.service';
+import { UnifiedAgentService } from '../../unified-agent.service';
+import { WHATSAPP_MESSAGING } from '../../../marketing/channels/whatsapp/whatsapp.tokens';
+import type { WahaChatSummary } from '../../../whatsapp/providers/whatsapp-api.provider';
+import type { AgentStreamEvent } from '../../../whatsapp/agent-events.service';
 
 const REDIS_TOKEN = 'default_IORedisModuleConnectionToken';
 
-jest.mock('../queue/queue', () => ({
+jest.mock('../../../queue/queue', () => ({
   autopilotQueue: { add: jest.fn().mockResolvedValue(undefined) },
 }));
 

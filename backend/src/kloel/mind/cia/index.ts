@@ -31,7 +31,7 @@ export { CiaBootstrapService } from './cia-bootstrap.service';
 export { CiaChatFilterService } from './cia-chat-filter.service';
 export { CiaCognitiveHealthService } from './cia-cognitive-health.service';
 export { CiaInlineFallbackService } from './cia-inline-fallback.service';
-export { CiaRemoteBacklogService } from '../../../cia/cia-remote-backlog.service';
+export { CiaRemoteBacklogService } from './cia-remote-backlog.service';
 export { CiaRuntimeStateService } from './cia-runtime-state.service';
 export { CiaRuntimeService } from '../../../cia/cia-runtime.service';
 export { CiaSendHelpersService } from './cia-send-helpers.service';

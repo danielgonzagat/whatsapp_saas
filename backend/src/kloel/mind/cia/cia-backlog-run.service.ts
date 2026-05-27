@@ -10,7 +10,7 @@ import { autopilotQueue } from '../../../queue/queue';
 import { AgentEventsService } from '../../../whatsapp/agent-events.service';
 import { CiaChatFilterService } from './cia-chat-filter.service';
 import { CiaInlineFallbackService } from './cia-inline-fallback.service';
-import { CiaRemoteBacklogService } from '../../../cia/cia-remote-backlog.service';
+import { CiaRemoteBacklogService } from './cia-remote-backlog.service';
 import { CiaRuntimeStateService } from './cia-runtime-state.service';
 import { asProviderSettings } from '../../../whatsapp/provider-settings.types';
 import { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
