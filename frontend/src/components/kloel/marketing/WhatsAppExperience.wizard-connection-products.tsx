@@ -34,7 +34,7 @@ export function ConnectionStep({
         {kloelT(`Conectar WhatsApp`)}
       </h2>
       <p style={{ fontSize: 13, color: S, marginBottom: 32, fontFamily: F }}>
-        {kloelT(`Escaneie o QR Code para a IA começar a vender pelo seu número`)}
+        {kloelT(`Conecte o WABA e o numero do cliente pelo fluxo oficial da Meta`)}
       </p>
       {effectiveConnection.connected ? (
         <ConnectedCelebration />

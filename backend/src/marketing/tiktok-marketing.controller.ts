@@ -24,4 +24,17 @@ export class TikTokMarketingController {
   complete(@Request() req: { user: { workspaceId: string } }, @Body() body: TikTokCompleteBody) {
     return this.tiktokMarketing.completeOAuth(req.user.workspaceId, body);
   }
+
+  @Get('profile')
+  profile(@Request() req: { user: { workspaceId: string } }) {
+    return this.tiktokMarketing.getCreatorProfile(req.user.workspaceId);
+  }
+
+  @Get('campaigns')
+  campaigns(
+    @Request() req: { user: { workspaceId: string } },
+    @Query('advertiserId') advertiserId?: string,
+  ) {
+    return this.tiktokMarketing.listAdvertiserCampaigns(req.user.workspaceId, advertiserId);
+  }
 }

@@ -104,7 +104,11 @@ function removeComingSoonChrome() {
       text === 'Em breveInstagram Marketing esta sendo finalizado.' ||
       text === 'Em breveTikTok Marketing esta sendo finalizado.' ||
       text === 'Em breveFacebook Messenger esta sendo finalizado.' ||
-      text === 'Em breveEmail Marketing esta sendo finalizado.'
+      text === 'Em breveEmail Marketing esta sendo finalizado.' ||
+      text === 'Instagram Marketing esta sendo finalizado.' ||
+      text === 'TikTok Marketing esta sendo finalizado.' ||
+      text === 'Facebook Messenger esta sendo finalizado.' ||
+      text === 'Email Marketing esta sendo finalizado.'
     ) {
       node.remove();
     }

@@ -8,6 +8,7 @@ import {
   CHANNEL_META,
   type ChannelKey,
   type ConnectStatus,
+  type GoogleAdsStatus,
   type TikTokStatus,
   statusText,
   trustedExternalUrl,
@@ -21,6 +22,8 @@ export function OfficialMarketingChannelPage({ channel }: Props) {
   const meta = CHANNEL_META[channel];
   const [status, setStatus] = useState<ConnectStatus | null>(null);
   const [tiktokStatus, setTikTokStatus] = useState<TikTokStatus | null>(null);
+  const [tiktokReadStatus, setTikTokReadStatus] = useState<Record<string, unknown> | null>(null);
+  const [googleAdsStatus, setGoogleAdsStatus] = useState<GoogleAdsStatus | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -33,8 +36,14 @@ export function OfficialMarketingChannelPage({ channel }: Props) {
         status: tiktokStatus?.status,
       };
     }
+    if (channel === 'google-ads') {
+      return {
+        connected: googleAdsStatus?.connected,
+        status: googleAdsStatus?.status,
+      };
+    }
     return status?.channels?.[channel] || null;
-  }, [channel, status, tiktokStatus]);
+  }, [channel, googleAdsStatus, status, tiktokStatus]);
 
   const refresh = useCallback(async () => {
     setIsLoading(true);
@@ -51,6 +60,15 @@ export function OfficialMarketingChannelPage({ channel }: Props) {
           throw new Error(nextTikTok.error);
         }
         setTikTokStatus(nextTikTok.data || null);
+      }
+      if (channel === 'google-ads') {
+        const nextGoogleAds = await apiFetch<GoogleAdsStatus>(
+          '/marketing/connect/google-ads/status',
+        );
+        if (nextGoogleAds.error) {
+          throw new Error(nextGoogleAds.error);
+        }
+        setGoogleAdsStatus(nextGoogleAds.data || null);
       }
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : 'Falha ao carregar status.');
@@ -144,7 +162,69 @@ export function OfficialMarketingChannelPage({ channel }: Props) {
     }
   }, []);
 
-  const details = channel === 'tiktok' ? tiktokStatus : connection;
+  const readTikTokProfile = useCallback(async () => {
+    setBusy('tiktok-profile');
+    setMessage(null);
+    const response = await apiFetch<Record<string, unknown>>('/marketing/connect/tiktok/profile');
+    setBusy(null);
+    if (response.error) {
+      setMessage(response.error);
+      return;
+    }
+    setTikTokReadStatus(response.data || null);
+    setMessage('Perfil TikTok lido pela API oficial.');
+  }, []);
+
+  const readTikTokCampaigns = useCallback(async () => {
+    setBusy('tiktok-campaigns');
+    setMessage(null);
+    const response = await apiFetch<Record<string, unknown>>('/marketing/connect/tiktok/campaigns');
+    setBusy(null);
+    if (response.error) {
+      setMessage(response.error);
+      return;
+    }
+    setTikTokReadStatus(response.data || null);
+    setMessage('Campanhas TikTok lidas pela Business API.');
+  }, []);
+
+  const openGoogleAds = useCallback(async () => {
+    setBusy('google-ads');
+    setMessage(null);
+    try {
+      const response = await apiFetch<{ url?: string }>('/marketing/connect/google-ads/url');
+      const url = String(response.data?.url || '').trim();
+      if (!url || !trustedExternalUrl(url, ['accounts.google.com'])) {
+        throw new Error('URL oficial do Google Ads indisponivel.');
+      }
+      window.location.assign(url);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Falha ao abrir Google Ads.');
+      setBusy(null);
+    }
+  }, []);
+
+  const syncGoogleAdsCustomers = useCallback(async () => {
+    setBusy('google-ads-customers');
+    setMessage(null);
+    const response = await apiFetch<{ customers?: string[] }>(
+      '/marketing/connect/google-ads/customers',
+    );
+    setBusy(null);
+    if (response.error) {
+      setMessage(response.error);
+      return;
+    }
+    setMessage(`${response.data?.customers?.length || 0} conta(s) Google Ads sincronizada(s).`);
+    await refresh();
+  }, [refresh]);
+
+  const details =
+    channel === 'tiktok'
+      ? tiktokReadStatus || tiktokStatus
+      : channel === 'google-ads'
+        ? googleAdsStatus
+        : connection;
   const setupUnavailable =
     connection?.status === 'server_not_configured' || connection?.status === 'unavailable';
   const badgeStatus = isLoading
@@ -162,22 +242,23 @@ export function OfficialMarketingChannelPage({ channel }: Props) {
       }}
     >
       <nav style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 28 }}>
-        {(['whatsapp', 'instagram', 'facebook', 'tiktok', 'email'] as ChannelKey[]).map((item) => (
-          <Link
-            key={item}
-            href={`/marketing/${item}`}
-            style={{
-              color: item === channel ? CHANNEL_META[item].color : KLOEL_THEME.textSecondary,
-              textDecoration: 'none',
-              border: `1px solid ${KLOEL_THEME.borderPrimary}`,
-              borderRadius: 6,
-              padding: '8px 12px',
-              fontSize: 12,
-            }}
-          >
-            {CHANNEL_META[item].label}
-          </Link>
-        ))}
+        {(['whatsapp', 'instagram', 'facebook', 'tiktok', 'google-ads', 'email'] as ChannelKey[])
+          .map((item) => (
+            <Link
+              key={item}
+              href={`/marketing/${item}`}
+              style={{
+                color: item === channel ? CHANNEL_META[item].color : KLOEL_THEME.textSecondary,
+                textDecoration: 'none',
+                border: `1px solid ${KLOEL_THEME.borderPrimary}`,
+                borderRadius: 6,
+                padding: '8px 12px',
+                fontSize: 12,
+              }}
+            >
+              {CHANNEL_META[item].label}
+            </Link>
+          ))}
       </nav>
 
       <section style={{ maxWidth: 920, margin: '0 auto' }}>
@@ -325,6 +406,33 @@ export function OfficialMarketingChannelPage({ channel }: Props) {
                 style={secondaryButtonStyle}
               >
                 {busy === 'tiktok-advertiser' ? 'Abrindo...' : 'Conectar advertiser'}
+              </button>
+              <button
+                type="button"
+                onClick={() => void readTikTokProfile()}
+                style={secondaryButtonStyle}
+              >
+                {busy === 'tiktok-profile' ? 'Lendo...' : 'Ler perfil'}
+              </button>
+              <button
+                type="button"
+                onClick={() => void readTikTokCampaigns()}
+                style={secondaryButtonStyle}
+              >
+                {busy === 'tiktok-campaigns' ? 'Lendo...' : 'Ler campanhas'}
+              </button>
+            </>
+          ) : channel === 'google-ads' ? (
+            <>
+              <button type="button" onClick={() => void openGoogleAds()} style={buttonStyle(meta.color)}>
+                {busy === 'google-ads' ? 'Abrindo...' : 'Conectar Google Ads'}
+              </button>
+              <button
+                type="button"
+                onClick={() => void syncGoogleAdsCustomers()}
+                style={secondaryButtonStyle}
+              >
+                {busy === 'google-ads-customers' ? 'Sincronizando...' : 'Sincronizar contas'}
               </button>
             </>
           ) : (

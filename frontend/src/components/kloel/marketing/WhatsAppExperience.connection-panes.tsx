@@ -206,11 +206,10 @@ export function NonWahaProviderHint() {
         lineHeight: 1.7,
       }}
     >
-      {kloelT(`O provider ativo deste workspace nao esta em WAHA. O QR Code so aparece quando o runtime do
-      WhatsApp opera em`)}{' '}
-      <span style={{ color: E, fontWeight: 600 }}>WAHA</span>
-      {kloelT(`. Atualize o provider
-      do backend e recarregue esta tela para iniciar a conexao por QR.`)}
+      <strong style={{ color: E, display: 'block', marginBottom: 8 }}>
+        {kloelT(`Conexao oficial Meta Cloud ativa`)}
+      </strong>
+      {kloelT(`Este workspace nao usa QR Code nem WAHA. Abra o fluxo oficial da Meta para vincular o WABA, o numero do cliente e os ativos autorizados.`)}
     </div>
   );
 }

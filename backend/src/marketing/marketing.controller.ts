@@ -10,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { EmailService } from '../auth/email.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { forEachSequential } from '../common/async-sequence';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -345,7 +346,9 @@ export class MarketingController {
       ? 'resend'
       : process.env.SENDGRID_API_KEY
         ? 'sendgrid'
-        : 'log';
+        : process.env.SMTP_HOST
+          ? 'smtp'
+          : 'log';
 
     if (!body.subject || !body.html || !body.recipients?.length) {
       return { error: 'Missing required fields: subject, html, recipients' };
@@ -421,6 +424,18 @@ export class MarketingController {
             signal: AbortSignal.timeout(30000),
           });
           if (res.ok || res.status === 202) {
+            sent++;
+          } else {
+            failed++;
+          }
+        } else if (provider === 'smtp') {
+          const success = await new EmailService(this.opsAlert).sendEmail({
+            to: recipient.email,
+            subject: body.subject,
+            html: htmlWithUnsub,
+            headers: emailHeaders,
+          });
+          if (success) {
             sent++;
           } else {
             failed++;

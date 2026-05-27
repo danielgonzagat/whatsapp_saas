@@ -32,10 +32,7 @@ import {
 } from './KloelDashboard.helpers';
 import { type DashboardMessage } from './KloelDashboard.message';
 import { S_RE, SLOW_HINT_DELAY_MS } from './KloelDashboard.subcomponents';
-import {
-  KloelDashboardView,
-  type KloelDashboardQuickAction,
-} from './KloelDashboard/__parts__/KloelDashboard.view';
+import { KloelDashboardView } from './KloelDashboard/__parts__/KloelDashboard.view';
 import {
   useKloelFiles,
   useKloelDragDrop,
@@ -244,23 +241,6 @@ export default function KloelDashboard() {
     }
     void handleSendMessage(input);
   }, [attachments, handleSendMessage, input, setComposerNotice]);
-
-  const handleQuickAction = useCallback(
-    (action: KloelDashboardQuickAction) => {
-      const linkedProductName = String(linkedProduct?.name || '').trim();
-      setComposerNotice(null);
-      setInput(linkedProductName ? `${action.prompt}${linkedProductName}` : action.prompt);
-      if (action.id === 'create-page') {
-        setActiveCapability('create_site');
-      } else if (action.id === 'analyze-product') {
-        setActiveCapability('search_web');
-      } else {
-        setActiveCapability(null);
-      }
-      window.setTimeout(() => inputRef.current?.focus(), 0);
-    },
-    [linkedProduct, setComposerNotice],
-  );
 
   const handleUserRetry = useCallback(
     async (messageId: string) => {
@@ -477,7 +457,6 @@ export default function KloelDashboard() {
       onDragLeave={handleDragLeave}
       onDropFiles={handleDropFiles}
       onQueueFilesForUpload={queueFilesForUpload}
-      onQuickAction={handleQuickAction}
       onUserEdit={handleUserEdit}
       onUserRetry={handleUserRetry}
       onAssistantFeedback={handleAssistantFeedback}

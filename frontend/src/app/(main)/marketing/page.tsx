@@ -1,6 +1,6 @@
-import MarketingView from '@/components/kloel/marketing/MarketingView';
+import { redirect } from 'next/navigation';
 
 /** Marketing page. */
 export default function MarketingPage() {
-  return <MarketingView defaultTab="conversas" />;
+  redirect('/marketing/whatsapp');
 }

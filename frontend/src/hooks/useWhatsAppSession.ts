@@ -63,28 +63,28 @@ const CIA_MANUAL_PAUSE_MODES = new Set(['HUMAN_ONLY', 'SUSPENDED']);
 
 const SESSION_COPY = {
   active: kloelT(`Sessão ativa e sincronizada.`),
-  waitingQr: kloelT(`Aguardando leitura do QR Code no aparelho.`),
+  waitingQr: kloelT(`Aguardando conclusao do fluxo oficial da Meta.`),
   disconnected: kloelT(`WhatsApp desconectado.`),
   workspaceReload: kloelT(
     `Workspace não carregado. Recarregue a página para sincronizar sua conta.`,
   ),
   workspaceRetry: kloelT(`Workspace não carregado. Tente novamente.`),
   loadStatusFailed: kloelT(`Não foi possível carregar o status agora.`),
-  scanQr: kloelT(`Escaneie o QR Code para conectar.`),
+  scanQr: kloelT(`Abra o fluxo oficial da Meta para conectar.`),
   connectedSuccess: kloelT(`Sessão conectada com sucesso.`),
   alreadyConnected: kloelT(`Sessão já estava conectada.`),
   connectFailed: kloelT(`Falha ao iniciar conexão.`),
   connectRetry: kloelT(`Falha ao iniciar conexão. Tente novamente.`),
   disconnectSuccess: kloelT(`Sessão desconectada.`),
   disconnectRetry: kloelT(`Falha ao desconectar. Tente novamente.`),
-  resetSuccess: kloelT(`Sessão resetada. Gere um novo QR Code para reconectar.`),
+  resetSuccess: kloelT(`Sessao resetada. Abra a conexao oficial da Meta para reconectar.`),
   resetRetry: kloelT(`Falha ao resetar a sessão. Tente novamente.`),
   pauseSuccess: kloelT(`IA pausada. O WhatsApp continua conectado.`),
   pauseRetry: kloelT(`Falha ao pausar a IA.`),
   resumeSuccess: kloelT(`IA retomada. O atendimento automático voltou a agir.`),
   resumeRetry: kloelT(`Falha ao retomar a IA.`),
   runtimeResumeSuccess: kloelT(`Sessão ativa. A autonomia total foi retomada automaticamente.`),
-  qrRefreshRetry: kloelT(`Falha ao atualizar o QR Code. Tente novamente.`),
+  qrRefreshRetry: kloelT(`Falha ao atualizar a conexao oficial. Tente novamente.`),
 } as const;
 
 const SESSION_LOG = {

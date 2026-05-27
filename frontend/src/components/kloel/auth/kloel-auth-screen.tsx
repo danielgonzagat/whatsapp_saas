@@ -3,7 +3,7 @@
 import { kloelT } from '@/lib/i18n/t';
 import { authApi } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
-import { buildAppUrl, sanitizeNextPath } from '@/lib/subdomains';
+import { buildAppUrl, buildAuthUrl, sanitizeNextPath } from '@/lib/subdomains';
 import Link from 'next/link';
 import { type FormEvent, useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useAuth } from './auth-provider';
@@ -292,7 +292,10 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
   const handleApple = async () => {
     setIsLoading(true);
     try {
-      const appleAuthUrl = `https://appleid.apple.com/auth/authorize?client_id=${encodeURIComponent(process.env.NEXT_PUBLIC_APPLE_CLIENT_ID || 'com.kloel.web')}&redirect_uri=${encodeURIComponent(`${window.location.origin}/api/auth/callback/apple`)}&response_type=code id_token&scope=name email&response_mode=form_post`;
+      const callbackUrl =
+        process.env.NEXT_PUBLIC_APPLE_CALLBACK_URL?.trim() ||
+        buildAuthUrl('/api/auth/callback/apple', window.location.host);
+      const appleAuthUrl = `https://appleid.apple.com/auth/authorize?client_id=${encodeURIComponent(process.env.NEXT_PUBLIC_APPLE_CLIENT_ID || 'com.kloel.web')}&redirect_uri=${encodeURIComponent(callbackUrl)}&response_type=code id_token&scope=name email&response_mode=form_post`;
       window.location.href = appleAuthUrl;
     } catch (e) {
       console.error('Apple Sign-In error:', e);

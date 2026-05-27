@@ -5,7 +5,6 @@ import { KloelChatComposer } from '@/components/kloel/dashboard/KloelChatCompose
 import {
   type KloelChatAttachment,
   type KloelChatCapability,
-  KLOEL_CHAT_QUICK_ACTIONS,
   type KloelLinkedProduct,
 } from '@/lib/kloel-chat';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -16,11 +15,8 @@ import {
   CHAT_MAX_WIDTH,
   CHAT_SAFE_BOTTOM,
   CHAT_SCROLL_BOTTOM_SPACE,
-  DIVIDER,
-  EMBER,
   F,
   MUTED,
-  SURFACE,
   TEXT,
   V,
   ChatDisclaimer,
@@ -28,10 +24,7 @@ import {
   DashboardEmptyGreeting,
   DashboardGlobalStyles,
   DropOverlay,
-  QuickActionIcon,
 } from '../../KloelDashboard.subcomponents';
-
-export type KloelDashboardQuickAction = (typeof KLOEL_CHAT_QUICK_ACTIONS)[number];
 
 interface KloelDashboardViewProps {
   isDragActive: boolean;
@@ -59,7 +52,6 @@ interface KloelDashboardViewProps {
   onDragLeave: (event: ReactDragEvent<HTMLElement>) => void;
   onDropFiles: (event: ReactDragEvent<HTMLElement>) => Promise<void>;
   onQueueFilesForUpload: (selectedFiles: FileList | File[] | null) => Promise<void>;
-  onQuickAction: (action: KloelDashboardQuickAction) => void;
   onUserEdit: (messageId: string, nextText: string) => Promise<void>;
   onUserRetry: (messageId: string) => Promise<void>;
   onAssistantFeedback: (messageId: string, type: 'positive' | 'negative' | null) => Promise<void>;
@@ -100,7 +92,6 @@ export function KloelDashboardView({
   onDragLeave,
   onDropFiles,
   onQueueFilesForUpload,
-  onQuickAction,
   onUserEdit,
   onUserRetry,
   onAssistantFeedback,
@@ -219,8 +210,8 @@ export function KloelDashboardView({
             display: 'flex',
             alignItems: hasMessages ? 'flex-end' : 'center',
             justifyContent: 'center',
-            paddingTop: hasMessages ? 18 : 32,
-            paddingBottom: CHAT_SAFE_BOTTOM,
+            paddingTop: hasMessages ? 18 : 0,
+            paddingBottom: hasMessages ? CHAT_SAFE_BOTTOM : 'clamp(52px, 10vh, 96px)',
             minHeight: 0,
           }}
         >
@@ -238,45 +229,6 @@ export function KloelDashboardView({
             <AnimatePresence initial={false}>
               {!hasMessages ? <DashboardEmptyGreeting greetingLine={greetingLine} /> : null}
             </AnimatePresence>
-
-            {!hasMessages ? (
-              <div
-                style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  justifyContent: 'center',
-                  gap: 10,
-                  margin: '0 auto 16px',
-                  maxWidth: CHAT_MAX_WIDTH,
-                }}
-              >
-                {KLOEL_CHAT_QUICK_ACTIONS.map((action) => (
-                  <button
-                    key={action.id}
-                    type="button"
-                    onClick={() => onQuickAction(action)}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      borderRadius: 8,
-                      border: `1px solid color-mix(in srgb, ${DIVIDER} 74%, ${EMBER} 14%)`,
-                      background: `color-mix(in srgb, ${SURFACE} 94%, ${V})`,
-                      color: TEXT,
-                      padding: '10px 14px',
-                      fontSize: 13,
-                      fontWeight: 600,
-                      letterSpacing: '-0.01em',
-                      cursor: 'pointer',
-                      boxShadow: '0 10px 24px rgba(0, 0, 0, 0.12)',
-                    }}
-                  >
-                    <QuickActionIcon icon={action.icon} />
-                    <span>{action.label}</span>
-                  </button>
-                ))}
-              </div>
-            ) : null}
 
             <motion.div layout transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}>
               <KloelChatComposer

@@ -6,6 +6,7 @@ import {
   buildListUnsubscribeHeader,
   buildUnsubscribeFooterHtml,
 } from '../common/utils/unsubscribe-footer.util';
+import { EmailService } from '../auth/email.service';
 
 const NAME_RE = /\{\{name\}\}/g;
 const EMAIL_RE = /\{\{email\}\}/g;
@@ -165,8 +166,7 @@ export class EmailCampaignService {
           return true;
         }
         case 'smtp':
-          this.logger.warn('SMTP campaign sending not yet implemented');
-          return false;
+          return new EmailService(this.opsAlert).sendEmail({ to, subject, html, headers });
         default:
           this.logger.log(`[DEV] Campaign email to ${to}: ${subject}`);
           return true;

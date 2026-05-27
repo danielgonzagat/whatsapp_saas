@@ -1,4 +1,10 @@
-export type ChannelKey = 'whatsapp' | 'instagram' | 'facebook' | 'email' | 'tiktok';
+export type ChannelKey =
+  | 'whatsapp'
+  | 'instagram'
+  | 'facebook'
+  | 'email'
+  | 'tiktok'
+  | 'google-ads';
 
 export interface ChannelConnection {
   connected?: boolean;
@@ -35,6 +41,18 @@ export interface TikTokStatus {
   advertiserIds?: string[];
   expiresAt?: string | null;
   secretConfigured?: boolean;
+}
+
+export interface GoogleAdsStatus {
+  connected?: boolean;
+  status?: string;
+  customerIds?: string[];
+  loginCustomerId?: string | null;
+  expiresAt?: string | null;
+  clientConfigured?: boolean;
+  secretConfigured?: boolean;
+  developerTokenConfigured?: boolean;
+  apiVersion?: string;
 }
 
 export const CHANNEL_META: Record<
@@ -94,6 +112,18 @@ export const CHANNEL_META: Record<
       'Conectar a conta TikTok do usuário',
       'Conectar o advertiser autorizado no Business API',
       'Voltar para o KLOEL com tokens do workspace salvos',
+    ],
+  },
+  'google-ads': {
+    label: 'Google Ads',
+    color: colors.ember.primary,
+    summary:
+      'Conecte a conta Google Ads para ler contas, campanhas e metricas sem execucao automatica.',
+    proof: ['OAuth Google Ads', 'Leitura de contas', 'Métricas de campanhas'],
+    steps: [
+      'Abrir OAuth oficial do Google',
+      'Autorizar acesso Google Ads do workspace',
+      'Voltar para o KLOEL com campanhas em modo leitura',
     ],
   },
 };
