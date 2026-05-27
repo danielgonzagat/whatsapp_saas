@@ -6,7 +6,7 @@ export type GuestCheckSettings = {
   auth?: { anonymous?: boolean };
 };
 
-export { safeStr } from '../common/string';
+export { safeStr } from '../../../common/string';
 
 export const CATCHUP_SWEEP_LIMIT = Math.max(
   1,

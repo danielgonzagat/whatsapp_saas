@@ -41,7 +41,7 @@ import {
   CATCHUP_FALLBACK_PAGES_PER_CHAT,
   CATCHUP_MARK_READ_WITHOUT_REPLY,
   CATCHUP_LID_MAP_CACHE_TTL_MS,
-} from './whatsapp-catchup-config';
+} from '../marketing/channels/whatsapp/whatsapp-catchup-config';
 import {
   getLockKey,
   getCooldownKey,
