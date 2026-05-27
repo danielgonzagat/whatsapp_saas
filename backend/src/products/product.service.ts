@@ -241,12 +241,12 @@ export class ProductService {
 
     const [products, count] = await Promise.all([
       this.prisma.product.findMany({
-        where,
+        where: { ...where, workspaceId },
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { createdAt: 'desc' },
       }),
-      this.prisma.product.count({ where }),
+      this.prisma.product.count({ where: { ...where, workspaceId } }),
     ]);
 
     return { success: true, products, count, page, limit };

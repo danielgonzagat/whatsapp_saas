@@ -79,12 +79,12 @@ export class SitesService {
 
     const [sites, count] = await Promise.all([
       this.prisma.site.findMany({
-        where,
+        where: { ...where, workspaceId },
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { updatedAt: 'desc' },
       }),
-      this.prisma.site.count({ where }),
+      this.prisma.site.count({ where: { ...where, workspaceId } }),
     ]);
 
     return { success: true, sites, count, page, limit };
