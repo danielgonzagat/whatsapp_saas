@@ -440,7 +440,13 @@ export class KloelChatToolsService {
     return runValidateCoupon(this.prisma, _workspaceId, { productId, code });
   }
   toolGetAnalytics(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
-    return runGetAnalytics(this.prisma, workspaceId, args as never);
+    const metric = typeof args.metric === 'string' && args.metric.trim() ? args.metric.trim() : 'overview';
+    const period = typeof args.period === 'string' && args.period.trim() ? args.period.trim() : undefined;
+
+    return runGetAnalytics(this.prisma, workspaceId, {
+      metric,
+      ...(period !== undefined ? { period } : {}),
+    });
   }
   toolCreateBroadcast(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     return runCreateBroadcast(workspaceId, args);

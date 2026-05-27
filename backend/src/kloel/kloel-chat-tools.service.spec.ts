@@ -307,6 +307,31 @@ describe('KloelChatToolsService — produto, autopilot e identidade', () => {
     });
   });
 
+  describe('toolGetAnalytics', () => {
+    it('normalizes non-string analytics period to the helper default', async () => {
+      const result = await service.toolGetAnalytics(ctx.wsId, {
+        metric: 123,
+        period: ['today'],
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.period).toBe('month');
+      expect(prisma.checkoutOrder.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ workspaceId: ctx.wsId }) }),
+      );
+    });
+
+    it('keeps valid string analytics period values', async () => {
+      const result = await service.toolGetAnalytics(ctx.wsId, {
+        metric: 'revenue',
+        period: 'today',
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.period).toBe('today');
+    });
+  });
+
   describe('toolToggleAutopilot', () => {
     it('blocks activation when billing is suspended', async () => {
       prisma.workspace.findUnique.mockResolvedValue({

@@ -23,7 +23,7 @@ export type ChatToolsPrismaMock = {
   flow: { create: jest.Mock; findMany: jest.Mock; count: jest.Mock };
   contact: { count: jest.Mock };
   message: { count: jest.Mock };
-  checkoutOrder: { aggregate: jest.Mock };
+  checkoutOrder: { aggregate: jest.Mock; count: jest.Mock; findMany: jest.Mock };
   kloelWallet: { findUnique: jest.Mock };
   auditLog: { create: jest.Mock };
   $transaction: jest.Mock;
@@ -99,6 +99,8 @@ export async function setupChatToolsService(): Promise<ChatToolsSetup> {
     message: { count: jest.fn().mockResolvedValue(0) },
     checkoutOrder: {
       aggregate: jest.fn().mockResolvedValue({ _count: { _all: 0 }, _sum: { totalInCents: 0 } }),
+      count: jest.fn().mockResolvedValue(0),
+      findMany: jest.fn().mockResolvedValue([]),
     },
     kloelWallet: { findUnique: jest.fn().mockResolvedValue(null) },
     auditLog: { create: jest.fn().mockResolvedValue({}) },
