@@ -464,8 +464,22 @@ export class KloelToolDispatcherService {
             startedAt,
           );
         }
-        case 'set_brand_voice':
-          return await this.chatToolsService.toolSetBrandVoice(workspaceId, asToolArgs(args));
+        case 'set_brand_voice': {
+          const startedAt = Date.now();
+          const result = await this.chatToolsService.toolSetBrandVoice(
+            workspaceId,
+            asToolArgs(args),
+          );
+          const resultWithTone = result.success ? { ...result, tone: asString(args.tone) } : result;
+          return this.withCanonicalReceipt(
+            'set_brand_voice',
+            workspaceId,
+            args,
+            resultWithTone,
+            userId,
+            startedAt,
+          );
+        }
         case 'set_sales_policy':
           return await this.chatToolsService.toolSetSalesPolicy(
             workspaceId,

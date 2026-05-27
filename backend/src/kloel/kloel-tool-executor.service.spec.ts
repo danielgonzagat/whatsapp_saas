@@ -206,9 +206,21 @@ describe('KloelToolExecutorService', () => {
       expect(result.capabilityId).toBe('toggle_autopilot');
       expect(result.receipt).toEqual(expect.objectContaining({ capabilityId: 'toggle_autopilot' }));
     });
-    it('routes set_brand_voice to helper', async () => {
-      const result = await service.executeTool(wsId, 'set_brand_voice', { tone: 'casual' });
+    it('routes set_brand_voice through dispatcher receipt path', async () => {
+      dispatcher.executeTool.mockResolvedValueOnce({
+        success: true,
+        capabilityId: 'set_brand_voice',
+        outputs: { tone: 'casual' },
+        receipt: { capabilityId: 'set_brand_voice', success: true },
+      });
+
+      const args = { tone: 'casual' };
+      const result = await service.executeTool(wsId, 'set_brand_voice', args, 'user-42');
+
+      expect(dispatcher.executeTool).toHaveBeenCalledWith(wsId, 'set_brand_voice', args, 'user-42');
       expect(result.success).toBe(true);
+      expect(result.capabilityId).toBe('set_brand_voice');
+      expect(result.receipt).toEqual(expect.objectContaining({ capabilityId: 'set_brand_voice' }));
     });
     it('routes remember_user_info to helper', async () => {
       const result = await service.executeTool(

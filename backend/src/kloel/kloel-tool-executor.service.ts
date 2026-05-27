@@ -6,11 +6,7 @@ import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
 import { KloelToolExecutorBillingService } from './kloel-tool-executor-billing.service';
 import { KloelToolExecutorCrmService } from './kloel-tool-executor-crm.service';
 import { KloelToolExecutorWhatsAppService } from './kloel-tool-executor-whatsapp.service';
-import {
-  toolListProducts,
-  toolSetBrandVoice,
-  toolRememberUserInfo,
-} from './kloel-tool-executor.helpers';
+import { toolListProducts, toolRememberUserInfo } from './kloel-tool-executor.helpers';
 export type * from './kloel-tool-executor.types';
 import type {
   ToolResult,
@@ -71,7 +67,7 @@ export class KloelToolExecutorService {
             userId,
           );
         case 'set_brand_voice':
-          return await this.toolSetBrandVoice(workspaceId, args as ToolSetBrandVoiceArgs);
+          return await this.toolSetBrandVoice(workspaceId, args as ToolSetBrandVoiceArgs, userId);
         case 'remember_user_info':
           return await this.toolRememberUserInfo(
             workspaceId,
@@ -231,8 +227,17 @@ export class KloelToolExecutorService {
   private async toolSetBrandVoice(
     workspaceId: string,
     args: ToolSetBrandVoiceArgs,
+    userId?: string,
   ): Promise<ToolResult> {
-    return toolSetBrandVoice(this.prisma, workspaceId, args);
+    if (!this.toolDispatcher) {
+      return {
+        success: false,
+        error: 'canonical_dispatcher_required',
+        message: 'set_brand_voice exige o dispatcher canonico para gerar receipt e prova.',
+      };
+    }
+
+    return this.toolDispatcher.executeTool(workspaceId, 'set_brand_voice', args, userId);
   }
 
   private async toolRememberUserInfo(

@@ -382,11 +382,37 @@ describe('KloelToolDispatcherService — chat tools routing', () => {
     );
   });
 
-  it('routes set_brand_voice to chatToolsService', async () => {
-    await service.executeTool(DEFAULT_WS_ID, 'set_brand_voice', { tone: 'formal' });
+  it('routes set_brand_voice to chatToolsService with a material receipt', async () => {
+    jest.mocked(chatToolsService.toolSetBrandVoice).mockResolvedValueOnce({
+      success: true,
+      message: 'Tom de voz definido como "formal"',
+    });
+
+    const result = await service.executeTool(
+      DEFAULT_WS_ID,
+      'set_brand_voice',
+      { tone: 'formal' },
+      'user-42',
+    );
+
     expect(chatToolsService.toolSetBrandVoice).toHaveBeenCalledWith(DEFAULT_WS_ID, {
       tone: 'formal',
     });
+    expect(result.success).toBe(true);
+    expect(result.capabilityId).toBe('set_brand_voice');
+    expect(result.receipt).toEqual(
+      objectContaining({
+        capabilityId: 'set_brand_voice',
+        workspaceId: DEFAULT_WS_ID,
+        actorId: 'user-42',
+        inputs: { tone: 'formal' },
+        outputs: objectContaining({ tone: 'formal' }),
+        domainEvents: ['brand.voice_updated'],
+        auditLogId: stringMatching(/^audit_/),
+        idempotencyKey: stringContaining('set_brand_voice'),
+        success: true,
+      }),
+    );
   });
 
   it('routes get_dashboard_summary to chatToolsService', async () => {
