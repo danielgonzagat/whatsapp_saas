@@ -204,7 +204,7 @@ import { SalesModule } from '../sales/sales.module';
 @Module({
   imports: [
     PrismaModule,
-    forwardRef(() => require('../whatsapp/whatsapp.module').WhatsappModule),
+    forwardRef(() => require('../marketing/channels/whatsapp/whatsapp.module').WhatsappModule),
     ScheduleModule.forRoot(),
     KycModule,
     forwardRef(() => CampaignsModule),

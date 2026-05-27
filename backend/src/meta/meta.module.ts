@@ -3,7 +3,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { InboxModule } from '../inbox/inbox.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { WebhooksModule } from '../webhooks/webhooks.module';
-import { WhatsappModule } from '../whatsapp/whatsapp.module';
+import { WhatsappModule } from '../marketing/channels/whatsapp/whatsapp.module';
 import { MetaAdsController } from './ads/meta-ads.controller';
 import { MetaAdsService } from './ads/meta-ads.service';
 import { InstagramController } from '../marketing/channels/instagram/instagram.controller';

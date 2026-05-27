@@ -3,7 +3,7 @@ import { GoalFieldModule } from '../../goal-field/goal-field.module';
 import { KloelModule } from '../../kloel.module';
 import { MindModule } from '../mind.module';
 import { SpineModule } from '../../spine/spine.module';
-import { WhatsappModule } from '../../../whatsapp/whatsapp.module';
+import { WhatsappModule } from '../../../marketing/channels/whatsapp/whatsapp.module';
 import { CiaAutonomyAdvisorService } from './cia-autonomy-advisor.service';
 import { CiaBacklogRunService } from './cia-backlog-run.service';
 import { CiaBootstrapService } from './cia-bootstrap.service';

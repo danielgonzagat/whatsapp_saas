@@ -43,7 +43,7 @@ import { ScrapersModule } from './scrapers/scrapers.module';
 import { TeamModule } from './team/team.module';
 import { VoiceModule } from './voice/voice.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
-import { WhatsappModule } from './whatsapp/whatsapp.module';
+import { WhatsappModule } from './marketing/channels/whatsapp/whatsapp.module';
 import { WorkspaceModule } from './workspaces/workspace.module';
 
 import { ThrottlerModule } from '@nestjs/throttler';

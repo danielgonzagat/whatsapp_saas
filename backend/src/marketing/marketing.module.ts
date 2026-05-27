@@ -2,7 +2,7 @@ import { Module, forwardRef } from '@nestjs/common';
 import { InboxModule } from '../inbox/inbox.module';
 import { KloelModule } from '../kloel/kloel.module';
 import { PrismaModule } from '../prisma/prisma.module';
-import { WhatsappModule } from '../whatsapp/whatsapp.module';
+import { WhatsappModule } from './channels/whatsapp/whatsapp.module';
 import { MarketingConnectController } from './marketing-connect.controller';
 import { MarketingController } from './marketing.controller';
 import { TikTokMarketingController } from './tiktok-marketing.controller';
