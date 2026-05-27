@@ -17,7 +17,7 @@ import { CiaRuntimeStateService } from './cia-runtime-state.service';
 import { CiaSendHelpersService } from './cia-send-helpers.service';
 import { CiaController } from './cia.controller';
 import { CiaService } from './cia.service';
-import { CIA_RUNTIME_SERVICE } from './cia-runtime.port';
+import { CIA_RUNTIME_SERVICE } from '../kloel/mind/cia/cia-runtime.port';
 
 /** Cia module. */
 @Module({

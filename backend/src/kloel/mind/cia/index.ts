@@ -38,3 +38,11 @@ export { CiaSendHelpersService } from '../../../cia/cia-send-helpers.service';
 
 export { CiaController } from '../../../cia/cia.controller';
 export { CiaModule } from '../../../cia/cia.module';
+
+// Wave M4 progress — physically moved here (no longer re-exported from legacy):
+export {
+  CIA_RUNTIME_SERVICE,
+  type CiaBacklogMode,
+  type CiaBacklogOptions,
+  type CiaRuntimePort,
+} from './cia-runtime.port';

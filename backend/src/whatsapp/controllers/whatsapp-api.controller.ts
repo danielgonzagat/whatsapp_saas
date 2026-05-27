@@ -17,7 +17,7 @@ import { AuthenticatedRequest } from '../../common/interfaces';
 import { WorkspaceService } from '../../workspaces/workspace.service';
 import { AccountAgentService } from '../account-agent.service';
 import { AgentEventsService } from '../agent-events.service';
-import { CIA_RUNTIME_SERVICE, type CiaRuntimePort } from '../../cia/cia-runtime.port';
+import { CIA_RUNTIME_SERVICE, type CiaRuntimePort } from '../../kloel/mind/cia/cia-runtime.port';
 import { asProviderSettings, type ProviderSessionSnapshot } from '../provider-settings.types';
 import { WhatsAppProviderRegistry } from '../providers/provider-registry';
 import { WhatsAppApiProvider } from '../providers/whatsapp-api.provider';
