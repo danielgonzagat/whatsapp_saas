@@ -348,11 +348,38 @@ describe('KloelToolDispatcherService — chat tools routing', () => {
     );
   });
 
-  it('routes toggle_autopilot to chatToolsService', async () => {
-    await service.executeTool(DEFAULT_WS_ID, 'toggle_autopilot', { enabled: true });
+  it('routes toggle_autopilot to chatToolsService with a material receipt', async () => {
+    jest.mocked(chatToolsService.toolToggleAutopilot).mockResolvedValueOnce({
+      success: true,
+      enabled: true,
+      message: 'Autopilot ativado.',
+    });
+
+    const result = await service.executeTool(
+      DEFAULT_WS_ID,
+      'toggle_autopilot',
+      { enabled: true },
+      'user-42',
+    );
+
     expect(chatToolsService.toolToggleAutopilot).toHaveBeenCalledWith(DEFAULT_WS_ID, {
       enabled: true,
     });
+    expect(result.success).toBe(true);
+    expect(result.capabilityId).toBe('toggle_autopilot');
+    expect(result.receipt).toEqual(
+      objectContaining({
+        capabilityId: 'toggle_autopilot',
+        workspaceId: DEFAULT_WS_ID,
+        actorId: 'user-42',
+        inputs: { enabled: true },
+        outputs: objectContaining({ enabled: true }),
+        domainEvents: ['autopilot.toggled'],
+        auditLogId: stringMatching(/^audit_/),
+        idempotencyKey: stringContaining('toggle_autopilot'),
+        success: true,
+      }),
+    );
   });
 
   it('routes set_brand_voice to chatToolsService', async () => {

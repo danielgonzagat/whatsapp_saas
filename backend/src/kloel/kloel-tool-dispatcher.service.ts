@@ -449,8 +449,21 @@ export class KloelToolDispatcherService {
             ],
           };
         }
-        case 'toggle_autopilot':
-          return await this.chatToolsService.toolToggleAutopilot(workspaceId, asToolArgs(args));
+        case 'toggle_autopilot': {
+          const startedAt = Date.now();
+          const result = await this.chatToolsService.toolToggleAutopilot(
+            workspaceId,
+            asToolArgs(args),
+          );
+          return this.withCanonicalReceipt(
+            'toggle_autopilot',
+            workspaceId,
+            args,
+            result,
+            userId,
+            startedAt,
+          );
+        }
         case 'set_brand_voice':
           return await this.chatToolsService.toolSetBrandVoice(workspaceId, asToolArgs(args));
         case 'set_sales_policy':

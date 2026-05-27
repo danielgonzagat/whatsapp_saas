@@ -184,19 +184,27 @@ describe('KloelToolExecutorService', () => {
       expect(result.capabilityId).toBe('delete_product');
       expect(result.receipt).toEqual(expect.objectContaining({ capabilityId: 'delete_product' }));
     });
-    it('routes toggle_autopilot — enables via transaction', async () => {
-      const result = await service.executeTool(wsId, 'toggle_autopilot', { enabled: true });
-      expect(result.success).toBe(true);
-      expect(result.enabled).toBe(true);
-      expect(prisma.$transaction).toHaveBeenCalled();
-    });
-    it('routes toggle_autopilot — blocks when billing suspended', async () => {
-      prisma.workspace.findUnique.mockResolvedValue({
-        providerSettings: { billingSuspended: true },
+    it('routes toggle_autopilot through dispatcher receipt path', async () => {
+      dispatcher.executeTool.mockResolvedValueOnce({
+        success: true,
+        capabilityId: 'toggle_autopilot',
+        outputs: { enabled: true },
+        receipt: { capabilityId: 'toggle_autopilot', success: true },
       });
-      const result = await service.executeTool(wsId, 'toggle_autopilot', { enabled: true });
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('suspenso');
+
+      const args = { enabled: true };
+      const result = await service.executeTool(wsId, 'toggle_autopilot', args, 'user-42');
+
+      expect(dispatcher.executeTool).toHaveBeenCalledWith(
+        wsId,
+        'toggle_autopilot',
+        args,
+        'user-42',
+      );
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(result.success).toBe(true);
+      expect(result.capabilityId).toBe('toggle_autopilot');
+      expect(result.receipt).toEqual(expect.objectContaining({ capabilityId: 'toggle_autopilot' }));
     });
     it('routes set_brand_voice to helper', async () => {
       const result = await service.executeTool(wsId, 'set_brand_voice', { tone: 'casual' });

@@ -1,7 +1,6 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { PlanLimitsService } from '../billing/plan-limits.service';
-import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
 import { KloelToolExecutorBillingService } from './kloel-tool-executor-billing.service';
@@ -30,8 +29,6 @@ import type {
   ToolSendDocumentArgs,
   ToolChangePlanArgs,
 } from './kloel-tool-executor.types';
-
-import { asProviderSettings } from '../whatsapp/provider-settings.types';
 
 import type { UnknownRecord } from '../common/types';
 
@@ -68,7 +65,11 @@ export class KloelToolExecutorService {
         case 'delete_product':
           return await this.toolDeleteProduct(workspaceId, args, userId);
         case 'toggle_autopilot':
-          return await this.toolToggleAutopilot(workspaceId, args as ToolToggleAutopilotArgs);
+          return await this.toolToggleAutopilot(
+            workspaceId,
+            args as ToolToggleAutopilotArgs,
+            userId,
+          );
         case 'set_brand_voice':
           return await this.toolSetBrandVoice(workspaceId, args as ToolSetBrandVoiceArgs);
         case 'remember_user_info':
@@ -214,44 +215,17 @@ export class KloelToolExecutorService {
   private async toolToggleAutopilot(
     workspaceId: string,
     args: ToolToggleAutopilotArgs,
+    userId?: string,
   ): Promise<ToolResult> {
-    const settingsSnapshot = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { providerSettings: true },
-    });
-    const currentSettings = asProviderSettings(settingsSnapshot?.providerSettings);
-    if (args.enabled && currentSettings.billingSuspended === true) {
+    if (!this.toolDispatcher) {
       return {
         success: false,
-        enabled: false,
-        error: 'Autopilot suspenso: regularize cobrança para ativar.',
+        error: 'canonical_dispatcher_required',
+        message: 'toggle_autopilot exige o dispatcher canonico para gerar receipt e prova.',
       };
     }
 
-    return this.prisma.$transaction(async (tx) => {
-      const workspace = await tx.workspace.findUnique({
-        where: { id: workspaceId },
-        select: { providerSettings: true },
-      });
-      const settings = asProviderSettings(workspace?.providerSettings);
-      const newSettings = {
-        ...settings,
-        autopilot: {
-          ...(settings.autopilot || {}),
-          enabled: args.enabled,
-        },
-        autopilotEnabled: args.enabled,
-      };
-      await tx.workspace.update({
-        where: { id: workspaceId },
-        data: { providerSettings: toPrismaJsonValue(newSettings) },
-      });
-      return {
-        success: true,
-        enabled: args.enabled,
-        message: args.enabled ? 'Autopilot ativado.' : 'Autopilot desativado.',
-      };
-    });
+    return this.toolDispatcher.executeTool(workspaceId, 'toggle_autopilot', args, userId);
   }
 
   private async toolSetBrandVoice(
