@@ -17,7 +17,7 @@ import {
   ChannelSendInput,
   ChannelSendResult,
 } from '../../../common/channel-dispatch/channel-dispatch.port';
-import { MessengerService } from '../../../meta/messenger/messenger.service';
+import { MessengerService } from './messenger.service';
 
 @Injectable()
 export class MessengerDispatchAdapter implements ChannelDispatchPort {

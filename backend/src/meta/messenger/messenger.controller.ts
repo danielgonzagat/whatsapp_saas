@@ -1,84 +1,14 @@
-import {
-  BadRequestException,
-  Body,
-  Controller,
-  Get,
-  Post,
-  Query,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
-import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
-import { resolveWorkspaceId } from '../../auth/workspace-access';
-import { WorkspaceGuard } from '../../common/guards/workspace.guard';
-import { AuthenticatedRequest } from '../../common/interfaces/authenticated-request.interface';
-import { MetaWhatsAppService } from '../meta-whatsapp.service';
-import { normalizeMetaGraphSegment } from '../meta-input.util';
-import { MessengerService } from './messenger.service';
-import { RouteClass } from '../../common/throttler/route-class.decorator';
-
-/** Messenger controller. Resolves access token from DB — never accepts it from client. */
-@Controller('meta/messenger')
-@UseGuards(JwtAuthGuard, WorkspaceGuard)
-@RouteClass('webhook')
-export class MessengerController {
-  constructor(
-    private readonly messengerService: MessengerService,
-    private readonly metaWhatsApp: MetaWhatsAppService,
-  ) {}
-
-  // messageLimit: enforced via PlanLimitsService.trackMessageSend
-  @Post('send')
-  async sendMessage(
-    @Req() req: AuthenticatedRequest,
-    @Body()
-    body: {
-      pageId?: string;
-      recipientId: string;
-      text?: string;
-      mediaType?: string;
-      mediaUrl?: string;
-    },
-  ) {
-    const workspaceId = resolveWorkspaceId(req);
-    const resolved = await this.metaWhatsApp.resolveConnection(workspaceId, 'facebook');
-    if (!resolved.accessToken) {
-      throw new BadRequestException('meta_connection_required');
-    }
-    const pageId = normalizeMetaGraphSegment(
-      body.pageId || resolved.pageId || '',
-      'Messenger page id',
-    );
-
-    if (body.mediaType && body.mediaUrl) {
-      return this.messengerService.sendMediaMessage(
-        pageId,
-        normalizeMetaGraphSegment(body.recipientId, 'Messenger recipient id'),
-        body.mediaType,
-        body.mediaUrl,
-        resolved.accessToken,
-      );
-    }
-
-    return this.messengerService.sendTextMessage(
-      pageId,
-      normalizeMetaGraphSegment(body.recipientId, 'Messenger recipient id'),
-      body.text || '',
-      resolved.accessToken,
-    );
-  }
-
-  /** Get conversations. */
-  @Get('conversations')
-  async getConversations(@Req() req: AuthenticatedRequest, @Query('pageId') pageId: string) {
-    const workspaceId = resolveWorkspaceId(req);
-    const resolved = await this.metaWhatsApp.resolveConnection(workspaceId, 'facebook');
-    if (!resolved.accessToken) {
-      throw new BadRequestException('meta_connection_required');
-    }
-    return this.messengerService.getConversations(
-      normalizeMetaGraphSegment(pageId || resolved.pageId || '', 'Messenger page id'),
-      resolved.accessToken,
-    );
-  }
-}
+/**
+ * @deprecated Moved to `backend/src/marketing/channels/messenger/messenger.controller.ts`
+ * as part of ADR-0012 OmniCore Wave W3 (channel co-location).
+ *
+ * This file is a re-export stub kept for backward compatibility with any
+ * downstream import that still references `src/meta/messenger/messenger.controller`.
+ * HTTP route paths (`meta/messenger/*`) are preserved by the canonical controller.
+ * Update consumers to import from `marketing/channels/messenger/messenger.controller`
+ * and delete this stub after Wave W4 (verified empty).
+ *
+ * @see docs/adr/0012-kloel-omnicore-channel-unification.md
+ * @see docs/architecture/DEPRECATION_MAP.md
+ */
+export { MessengerController } from '../../marketing/channels/messenger/messenger.controller';

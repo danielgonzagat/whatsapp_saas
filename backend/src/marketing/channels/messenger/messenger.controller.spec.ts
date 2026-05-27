@@ -1,7 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 
 jest.mock('@sentry/node', () => ({}), { virtual: true });
-jest.mock('../../observability/ops-alert.service', () => ({
+jest.mock('../../../observability/ops-alert.service', () => ({
   OpsAlertService: jest.fn(),
   AlertSeverity: { INFO: 'info', WARN: 'warn', CRITICAL: 'critical' },
 }));

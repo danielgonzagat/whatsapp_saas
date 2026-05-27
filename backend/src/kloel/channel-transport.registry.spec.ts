@@ -8,9 +8,9 @@ import {
   WhatsAppChannelTransport,
 } from './channel-transport.providers';
 import type { ChannelName, ChannelSendRequest } from './channel-transport.types';
-import { InstagramService } from '../meta/instagram/instagram.service';
+import { InstagramService } from '../marketing/channels/instagram/instagram.service';
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
-import { MessengerService } from '../meta/messenger/messenger.service';
+import { MessengerService } from '../marketing/channels/messenger/messenger.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 
 class StubWhatsAppRegistry {

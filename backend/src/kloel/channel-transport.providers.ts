@@ -1,8 +1,8 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
-import { InstagramService } from '../meta/instagram/instagram.service';
+import { InstagramService } from '../marketing/channels/instagram/instagram.service';
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
-import { MessengerService } from '../meta/messenger/messenger.service';
+import { MessengerService } from '../marketing/channels/messenger/messenger.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailCampaignService } from './email-campaign.service';
 import type { EmailDeliveryOverride } from './email-smtp-delivery';

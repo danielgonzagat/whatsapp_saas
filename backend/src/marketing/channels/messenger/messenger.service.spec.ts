@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
 import { MessengerService } from './messenger.service';
-import { MetaSdkService } from '../meta-sdk.service';
+import { MetaSdkService } from '../../../meta/meta-sdk.service';
 
 function createMockMetaSdk() {
   return {
