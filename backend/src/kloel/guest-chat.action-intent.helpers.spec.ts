@@ -1,5 +1,5 @@
 import type { PrismaService } from '../prisma/prisma.service';
-import { detectActionIntent } from './guest-chat.action-intent.helpers';
+import { detectActionIntent } from './guest-chat.action-intent';
 import { extractProductArgs, extractProductName } from './guest-chat.product-args.helpers';
 import { runGetProductReviews } from './kloel-chat-tools.product.helpers';
 import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';

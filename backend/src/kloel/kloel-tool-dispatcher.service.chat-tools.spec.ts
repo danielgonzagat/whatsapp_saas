@@ -199,9 +199,9 @@ describe('KloelToolDispatcherService — chat tools routing', () => {
     });
   });
 
-  it('routes search_agent_memory to chatToolsService memory/contact search', async () => {
+  it('routes search_agent_memory through the business-config search facade', async () => {
     await service.executeTool(DEFAULT_WS_ID, 'search_agent_memory', { query: 'checkout' });
-    expect(chatToolsService.toolSearchAgentMemoryWithContacts).toHaveBeenCalledWith(DEFAULT_WS_ID, {
+    expect(bizConfigToolsService.toolListLeads).toHaveBeenCalledWith(DEFAULT_WS_ID, {
       query: 'checkout',
     });
   });

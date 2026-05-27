@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { KloelBusinessConfigToolsService } from './kloel-business-config-tools.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { KloelChatToolsService } from './kloel-chat-tools.service';
+
 jest.mock('../billing/stripe-runtime', () => ({
   StripeRuntime: jest.fn().mockImplementation(() => ({
     billingPortal: {
@@ -51,6 +53,7 @@ describe('KloelBusinessConfigToolsService', () => {
   let service: KloelBusinessConfigToolsService;
   let prisma: BusinessConfigPrismaMock;
   let opsAlert: Pick<OpsAlertService, 'alertOnCriticalError'>;
+  let chatTools: Pick<KloelChatToolsService, 'toolSearchAgentMemoryWithContacts'>;
   const wsId = 'ws-1';
   beforeEach(async () => {
     prisma = {
@@ -73,11 +76,17 @@ describe('KloelBusinessConfigToolsService', () => {
       }),
     };
     opsAlert = { alertOnCriticalError: jest.fn() };
+    chatTools = {
+      toolSearchAgentMemoryWithContacts: jest
+        .fn()
+        .mockResolvedValue({ success: true, contacts: [] }),
+    };
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         KloelBusinessConfigToolsService,
         { provide: PrismaService, useValue: prisma },
         { provide: OpsAlertService, useValue: opsAlert },
+        { provide: KloelChatToolsService, useValue: chatTools },
       ],
     }).compile();
     service = module.get<KloelBusinessConfigToolsService>(KloelBusinessConfigToolsService);
@@ -127,6 +136,16 @@ describe('KloelBusinessConfigToolsService', () => {
       await service.toolListLeads(wsId, { status: 'cold' });
       const whereArg = prisma.contact.findMany.mock.calls[0][0].where;
       expect(whereArg.leadScore).toEqual({ lt: 30 });
+    });
+
+    it('delegates query searches to agent memory and contact search', async () => {
+      const result = await service.toolListLeads(wsId, { query: 'checkout' });
+
+      expect(chatTools.toolSearchAgentMemoryWithContacts).toHaveBeenCalledWith(wsId, {
+        query: 'checkout',
+      });
+      expect(prisma.contact.findMany).not.toHaveBeenCalled();
+      expect(result.success).toBe(true);
     });
   });
   describe('toolGetLeadDetails', () => {

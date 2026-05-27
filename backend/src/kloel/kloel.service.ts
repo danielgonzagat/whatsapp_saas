@@ -19,8 +19,7 @@ import { KloelThinkerService, ThinkRequest, ThinkSyncResult } from './kloel-thin
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
 import { AgentRuntimeContextService } from './agent-runtime';
-import { detectActionIntent } from './guest-chat.action-intent.helpers';
-import { formatToolResult } from './guest-chat.action-intent.helpers';
+import { detectActionIntent, formatToolResult } from './guest-chat.action-intent';
 
 type ComposerCapability = 'create_image' | 'create_site' | 'search_web';
 import type { UnknownRecord } from '../common/types';
