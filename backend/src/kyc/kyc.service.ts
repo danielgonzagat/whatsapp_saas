@@ -13,7 +13,7 @@ import { ConnectService } from '../payments/connect/connect.service';
 import { StorageService } from '../common/storage/storage.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { KycEventEmitterService } from '../kloel/kyc-emitter/kyc-event-emitter.service';
-import { ChangePasswordDto } from './dto/change-password.dto';
+import { KycChangePasswordDto } from './dto/change-password.dto';
 import { UpdateBankDto } from './dto/update-bank.dto';
 import { UpdateFiscalDto } from './dto/update-fiscal.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
@@ -268,7 +268,7 @@ export class KycService {
 
   // ═══ SECURITY ═══
 
-  async changePassword(agentId: string, dto: ChangePasswordDto) {
+  async changePassword(agentId: string, dto: KycChangePasswordDto) {
     return this.prisma.$transaction(
       async (tx) => {
         const agent = await tx.agent.findUnique({
