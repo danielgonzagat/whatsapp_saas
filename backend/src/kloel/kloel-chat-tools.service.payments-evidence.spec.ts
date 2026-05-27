@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { KloelChatToolsService } from './kloel-chat-tools.service';
+import { runCreateOrder as runAdditionalCreateOrder } from './kloel-chat-tools.additional.helpers';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProductService } from '../products/product.service';
 import { SmartPaymentService } from './smart-payment.service';
@@ -18,23 +19,6 @@ jest.mock('../common/products/legacy-products.util', () => ({
   filterLegacyProducts: jest.fn((products: unknown[]) => products),
 }));
 
-type ProductRecord = {
-  id: string;
-  name: string;
-  price: number;
-  description: string | null;
-  active: boolean;
-  status: string;
-};
-
-type FlowRecord = {
-  id: string;
-  name: string;
-  isActive: boolean;
-  createdAt: Date;
-  _count: { executions: number };
-};
-
 type ChatToolsPrismaMock = {
   product: { create: jest.Mock; findMany: jest.Mock; findFirst: jest.Mock; updateMany: jest.Mock };
   workspace: { findUnique: jest.Mock; update: jest.Mock };
@@ -48,6 +32,8 @@ type ChatToolsPrismaMock = {
   kloelSale: { create: jest.Mock };
   $transaction: jest.Mock;
 };
+
+type TransactionCallback = (tx: ChatToolsPrismaMock) => unknown;
 
 describe('KloelChatToolsService', () => {
   let service: KloelChatToolsService;
@@ -107,9 +93,10 @@ describe('KloelChatToolsService', () => {
       kloelWallet: { findUnique: jest.fn().mockResolvedValue(null) },
       auditLog: { create: jest.fn().mockResolvedValue({}) },
       kloelSale: { create: jest.fn().mockResolvedValue({ id: 'sale-1' }) },
-      $transaction: jest.fn().mockImplementation((arg: unknown) => {
+      $transaction: jest.fn().mockImplementation((arg: unknown): Promise<unknown> => {
         if (typeof arg === 'function') {
-          return arg(prisma);
+          const transaction = arg as TransactionCallback;
+          return Promise.resolve(transaction(prisma));
         }
         return Promise.resolve(undefined);
       }),
@@ -266,6 +253,37 @@ describe('KloelChatToolsService', () => {
         }),
       );
       expect(prisma.kloelSale.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('additional helper runCreateOrder', () => {
+    it('blocks the stale duplicate manual sale helper before it can fabricate an order', async () => {
+      const legacyKloelSaleCreate = jest.fn().mockResolvedValue({ id: 'sale-legacy' });
+      const legacyContactFindFirst = jest.fn().mockResolvedValue(null);
+      const legacyContactCreate = jest.fn().mockResolvedValue({ id: 'contact-legacy' });
+
+      const result = await runAdditionalCreateOrder(
+        {
+          kloelSale: { create: legacyKloelSaleCreate },
+          contact: { findFirst: legacyContactFindFirst, create: legacyContactCreate },
+        } as unknown as PrismaService,
+        wsId,
+        {
+          amount: 147,
+          productName: 'PDRN',
+          customerName: 'Joao',
+        },
+      );
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          success: false,
+          error: 'canonical_order_service_required',
+        }),
+      );
+      expect(legacyKloelSaleCreate).not.toHaveBeenCalled();
+      expect(legacyContactFindFirst).not.toHaveBeenCalled();
+      expect(legacyContactCreate).not.toHaveBeenCalled();
     });
   });
 

@@ -214,59 +214,22 @@ export function runSendChannelMessage(
   };
 }
 
-export async function runCreateOrder(
+export function runCreateOrder(
   prisma: PrismaService,
   workspaceId: string,
   args: Record<string, unknown>,
 ): Promise<ToolResult> {
-  const amount = typeof args.amount === 'number' ? args.amount : 0;
-  const productName =
-    typeof args.productName === 'string'
-      ? args.productName
-      : typeof args.description === 'string'
-        ? args.description
-        : 'Produto';
-  const customerName = typeof args.customerName === 'string' ? args.customerName : 'Cliente';
-  if (!amount) {
-    return { success: false, error: 'Informe o valor da venda (ex: R$ 147).' };
-  }
-  try {
-    const sale = await prisma.kloelSale.create({
-      data: {
-        workspaceId,
-        externalPaymentId: `ord_${Date.now().toString(36)}`,
-        productName,
-        amount,
-        status: 'pending',
-        paymentMethod: 'MANUAL',
-        leadPhone: customerName,
-      },
-    });
-    if (customerName && customerName !== 'Cliente') {
-      try {
-        const existing = await prisma.contact.findFirst({
-          where: { workspaceId, name: customerName },
-        });
-        if (!existing) {
-          await prisma.contact.create({
-            data: { workspaceId, name: customerName, phone: '', leadScore: 50 },
-          });
-        }
-      } catch {
-        /* non-blocking */
-      }
-    }
-    return {
-      success: true,
-      saleId: sale.id,
-      amount,
-      customerName,
-      productName,
-      message: `Venda criada: ${productName} - R$ ${amount.toFixed(2)} para ${customerName}.`,
-    };
-  } catch (e: unknown) {
-    return { success: false, error: e instanceof Error ? e.message : 'Erro ao criar venda.' };
-  }
+  void prisma;
+  void workspaceId;
+  void args;
+
+  return Promise.resolve({
+    success: false,
+    error: 'canonical_order_service_required',
+    message:
+      'A criacao de vendas pelo helper legado esta desativada ate existir caminho canonico com CheckoutService/PaymentService, receipt, auditoria, evento e prova material.',
+    requiredPath: 'CapabilityRegistry.sales.create_order -> CheckoutService.createOrder',
+  });
 }
 
 export async function runSearchAgentMemoryWithContacts(
