@@ -530,35 +530,36 @@ export class KloelChatToolsService {
     };
   }
 
+  private blockedConfigurationTool(
+    toolName: string,
+    error: string,
+    requiredPath: string,
+  ): Promise<ToolResult> {
+    return Promise.resolve({
+      success: false,
+      error,
+      message: `${toolName} exige ${requiredPath} antes de poder declarar configuracao feita.`,
+    });
+  }
+
   toolConfigurePixel(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     void workspaceId;
-    const productName = typeof args.productName === 'string' ? args.productName : '';
-    if (!productName) {
-      return Promise.resolve({
-        success: true,
-        message: 'Pixel configurado. Acesse Configurações > Pixel para inserir os códigos.',
-      });
-    }
-    // Store pixel intent — actual pixel IDs need to come from Meta/Google OAuth
-    return Promise.resolve({
-      success: true,
-      message: `Pixel configurado para "${productName}". Insira os códigos em Configurações > Pixel.`,
-    });
+    void args;
+    return this.blockedConfigurationTool(
+      'toolConfigurePixel',
+      'pixel_configuration_service_required',
+      'PixelService.configure ou CheckoutCatalogService.createPixel',
+    );
   }
 
   toolConfigureShipping(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     void workspaceId;
-    const productName = typeof args.productName === 'string' ? args.productName : '';
-    if (!productName) {
-      return Promise.resolve({
-        success: true,
-        message: 'Frete configurado. Acesse Produto > Entrega para detalhar.',
-      });
-    }
-    return Promise.resolve({
-      success: true,
-      message: `Frete configurado para "${productName}". Acesse Produto > Entrega para definir prazos e transportadoras.`,
-    });
+    void args;
+    return this.blockedConfigurationTool(
+      'toolConfigureShipping',
+      'shipping_configuration_service_required',
+      'ShippingService.configure',
+    );
   }
 
   toolConfigureSocialProof(
@@ -566,27 +567,28 @@ export class KloelChatToolsService {
     args: Record<string, unknown>,
   ): Promise<ToolResult> {
     void workspaceId;
-    const productName = typeof args.productName === 'string' ? args.productName : '';
-    return Promise.resolve({
-      success: true,
-      message: `Prova social ativada${productName ? ` para "${productName}"` : ''}. Depoimentos e contador exibidos no checkout.`,
-    });
+    void args;
+    return this.blockedConfigurationTool(
+      'toolConfigureSocialProof',
+      'checkout_social_proof_service_required',
+      'CheckoutService.update',
+    );
   }
 
   toolConfigureOrderBump(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     void workspaceId;
-    const productName = typeof args.productName === 'string' ? args.productName : '';
-    return Promise.resolve({
-      success: true,
-      message: `Order bump configurado${productName ? ` para "${productName}"` : ''}. Oferta adicional no checkout.`,
-    });
+    void args;
+    return this.blockedConfigurationTool(
+      'toolConfigureOrderBump',
+      'checkout_order_bump_service_required',
+      'CheckoutService.update',
+    );
   }
 
   async toolConfigureWarranty(
     workspaceId: string,
     args: Record<string, unknown>,
   ): Promise<ToolResult> {
-    void workspaceId;
     const productName = typeof args.productName === 'string' ? args.productName : '';
     if (productName) {
       const days = typeof args.warrantyDays === 'number' ? args.warrantyDays : 7;
@@ -595,25 +597,31 @@ export class KloelChatToolsService {
         warrantyDays: days,
       });
     }
-    return { success: true, message: 'Garantia configurada. Selo exibido na página de vendas.' };
+    return this.blockedConfigurationTool(
+      'toolConfigureWarranty',
+      'product_reference_required',
+      'ProductService.update com produto identificado',
+    );
   }
 
   toolConfigureExitIntent(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     void workspaceId;
-    const productName = typeof args.productName === 'string' ? args.productName : '';
-    return Promise.resolve({
-      success: true,
-      message: `Exit intent configurado${productName ? ` para "${productName}"` : ''}. Popup ao tentar sair da página.`,
-    });
+    void args;
+    return this.blockedConfigurationTool(
+      'toolConfigureExitIntent',
+      'checkout_exit_intent_service_required',
+      'CheckoutService.update',
+    );
   }
 
   toolConfigureAfterPay(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     void workspaceId;
-    const productName = typeof args.productName === 'string' ? args.productName : '';
-    return Promise.resolve({
-      success: true,
-      message: `After Pay configurado${productName ? ` para "${productName}"` : ''}. Cliente compra agora e paga depois.`,
-    });
+    void args;
+    return this.blockedConfigurationTool(
+      'toolConfigureAfterPay',
+      'checkout_after_pay_service_required',
+      'CheckoutService.update',
+    );
   }
 
   async toolBrowseMarketplace(

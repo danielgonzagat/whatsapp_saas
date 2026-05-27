@@ -852,25 +852,113 @@ export class KloelToolDispatcherService {
           return await this.bizConfigToolsService.toolUploadDocument(workspaceId, asToolArgs(args));
         case 'account.upload_document':
           return this.executeTool(workspaceId, 'upload_document', args, userId);
-        case 'configure_pixel':
-          return await this.chatToolsService.toolConfigurePixel(workspaceId, asToolArgs(args));
-        case 'configure_shipping':
-          return await this.chatToolsService.toolConfigureShipping(workspaceId, asToolArgs(args));
-        case 'configure_social_proof':
-          return await this.chatToolsService.toolConfigureSocialProof(
+        case 'configure_pixel': {
+          const startedAt = Date.now();
+          const result = await this.chatToolsService.toolConfigurePixel(
             workspaceId,
             asToolArgs(args),
           );
-        case 'configure_order_bump':
-          return await this.chatToolsService.toolConfigureOrderBump(workspaceId, asToolArgs(args));
+          return this.withCanonicalReceipt(
+            'configure_pixel',
+            workspaceId,
+            args,
+            result,
+            userId,
+            startedAt,
+          );
+        }
+        case 'configure_shipping': {
+          const startedAt = Date.now();
+          const result = await this.chatToolsService.toolConfigureShipping(
+            workspaceId,
+            asToolArgs(args),
+          );
+          return this.withCanonicalReceipt(
+            'configure_shipping',
+            workspaceId,
+            args,
+            result,
+            userId,
+            startedAt,
+          );
+        }
+        case 'configure_social_proof': {
+          const startedAt = Date.now();
+          const result = await this.chatToolsService.toolConfigureSocialProof(
+            workspaceId,
+            asToolArgs(args),
+          );
+          return this.withCanonicalReceipt(
+            'configure_social_proof',
+            workspaceId,
+            args,
+            result,
+            userId,
+            startedAt,
+          );
+        }
+        case 'configure_order_bump': {
+          const startedAt = Date.now();
+          const result = await this.chatToolsService.toolConfigureOrderBump(
+            workspaceId,
+            asToolArgs(args),
+          );
+          return this.withCanonicalReceipt(
+            'configure_order_bump',
+            workspaceId,
+            args,
+            result,
+            userId,
+            startedAt,
+          );
+        }
         case 'get_social_channels':
           return await this.bizConfigToolsService.toolGetSocialChannels(workspaceId);
-        case 'configure_warranty':
-          return await this.chatToolsService.toolConfigureWarranty(workspaceId, asToolArgs(args));
-        case 'configure_exit_intent':
-          return await this.chatToolsService.toolConfigureExitIntent(workspaceId, asToolArgs(args));
-        case 'configure_after_pay':
-          return await this.chatToolsService.toolConfigureAfterPay(workspaceId, asToolArgs(args));
+        case 'configure_warranty': {
+          const startedAt = Date.now();
+          const result = await this.chatToolsService.toolConfigureWarranty(
+            workspaceId,
+            asToolArgs(args),
+          );
+          return this.withCanonicalReceipt(
+            'configure_warranty',
+            workspaceId,
+            args,
+            result,
+            userId,
+            startedAt,
+          );
+        }
+        case 'configure_exit_intent': {
+          const startedAt = Date.now();
+          const result = await this.chatToolsService.toolConfigureExitIntent(
+            workspaceId,
+            asToolArgs(args),
+          );
+          return this.withCanonicalReceipt(
+            'configure_exit_intent',
+            workspaceId,
+            args,
+            result,
+            userId,
+            startedAt,
+          );
+        }
+        case 'configure_after_pay': {
+          const startedAt = Date.now();
+          const result = await this.chatToolsService.toolConfigureAfterPay(
+            workspaceId,
+            asToolArgs(args),
+          );
+          return this.withCanonicalReceipt(
+            'configure_after_pay',
+            workspaceId,
+            args,
+            result,
+            userId,
+            startedAt,
+          );
+        }
         case 'browse_marketplace':
           return await this.chatToolsService.toolBrowseMarketplace(workspaceId, asToolArgs(args));
         case 'get_nps':

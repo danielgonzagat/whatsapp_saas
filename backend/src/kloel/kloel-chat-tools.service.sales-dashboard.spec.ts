@@ -3,7 +3,6 @@ import { KloelChatToolsService } from './kloel-chat-tools.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProductService } from '../products/product.service';
 import { SmartPaymentService } from './smart-payment.service';
-import { ProductService } from '../products/product.service';
 import {
   AgentRuntimeSchedulerService,
   AgentRuntimeSessionStore,
@@ -15,13 +14,32 @@ jest.mock('../common/products/legacy-products.util', () => ({
   filterLegacyProducts: jest.fn((products: unknown[]) => products),
 }));
 
-type ProductRecord = {
-  id: string;
-  name: string;
-  price: number;
-  description: string | null;
-  active: boolean;
-  status: string;
+type AsyncMock<Result, Args extends unknown[] = []> = jest.Mock<Promise<Result>, Args>;
+
+type WorkspaceUpdateArgs = {
+  where: { id: string };
+  data: { providerSettings?: unknown };
+};
+
+type FlowCreateArgs = {
+  data: { workspaceId?: string; name?: string };
+};
+
+type CountArgs = {
+  where?: { workspaceId?: string };
+};
+
+type CheckoutAggregateArgs = {
+  where?: {
+    workspaceId?: string;
+    status?: string;
+    paidAt?: { gte?: Date };
+  };
+};
+
+type CheckoutAggregateResult = {
+  _count: { _all: number };
+  _sum: { totalInCents: number | null };
 };
 
 type FlowRecord = {
@@ -33,17 +51,52 @@ type FlowRecord = {
 };
 
 type ChatToolsPrismaMock = {
-  product: { create: jest.Mock; findMany: jest.Mock; findFirst: jest.Mock; updateMany: jest.Mock };
-  workspace: { findUnique: jest.Mock; update: jest.Mock };
-  kloelMemory: { upsert: jest.Mock; findUnique: jest.Mock };
-  flow: { create: jest.Mock; findMany: jest.Mock; count: jest.Mock };
-  contact: { count: jest.Mock };
-  message: { count: jest.Mock };
-  checkoutOrder: { aggregate: jest.Mock };
-  kloelWallet: { findUnique: jest.Mock };
-  auditLog: { create: jest.Mock };
-  $transaction: jest.Mock;
+  product: {
+    create: AsyncMock<unknown, [Record<string, unknown>?]>;
+    findMany: AsyncMock<unknown[], [Record<string, unknown>?]>;
+    findFirst: AsyncMock<Record<string, unknown> | null, [Record<string, unknown>?]>;
+    updateMany: AsyncMock<{ count: number }, [Record<string, unknown>?]>;
+  };
+  workspace: {
+    findUnique: AsyncMock<{ providerSettings?: unknown } | null, [Record<string, unknown>?]>;
+    update: AsyncMock<unknown, [WorkspaceUpdateArgs]>;
+  };
+  kloelMemory: {
+    upsert: AsyncMock<unknown, [Record<string, unknown>?]>;
+    findUnique: AsyncMock<Record<string, unknown> | null, [Record<string, unknown>?]>;
+  };
+  flow: {
+    create: AsyncMock<unknown, [FlowCreateArgs]>;
+    findMany: AsyncMock<FlowRecord[], [Record<string, unknown>?]>;
+    count: AsyncMock<number, [CountArgs?]>;
+  };
+  contact: { count: AsyncMock<number, [CountArgs?]> };
+  message: { count: AsyncMock<number, [CountArgs?]> };
+  checkoutOrder: { aggregate: AsyncMock<CheckoutAggregateResult, [CheckoutAggregateArgs]> };
+  kloelWallet: { findUnique: AsyncMock<Record<string, unknown> | null, [Record<string, unknown>]> };
+  auditLog: { create: AsyncMock<unknown, [Record<string, unknown>?]> };
+  $transaction: jest.Mock<unknown, [unknown]>;
 };
+
+type TransactionCallback = (client: ChatToolsPrismaMock) => unknown;
+
+function isTransactionCallback(arg: unknown): arg is TransactionCallback {
+  return typeof arg === 'function';
+}
+
+function resolvedMock<Result, Args extends unknown[] = []>(
+  result: Result,
+): AsyncMock<Result, Args> {
+  return jest.fn<Promise<Result>, Args>().mockResolvedValue(result);
+}
+
+function firstMockArg<Result, Arg>(mock: jest.Mock<Promise<Result>, [Arg]>): Arg {
+  const firstCall = mock.mock.calls[0];
+  if (!firstCall) {
+    throw new Error('Expected mock to have been called.');
+  }
+  return firstCall[0];
+}
 
 describe('KloelChatToolsService', () => {
   let service: KloelChatToolsService;
@@ -76,33 +129,42 @@ describe('KloelChatToolsService', () => {
   beforeEach(async () => {
     prisma = {
       product: {
-        create: jest.fn().mockResolvedValue({}),
-        findMany: jest.fn().mockResolvedValue([]),
-        findFirst: jest.fn().mockResolvedValue(null),
-        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        create: resolvedMock<unknown, [Record<string, unknown>?]>({}),
+        findMany: resolvedMock<unknown[], [Record<string, unknown>?]>([]),
+        findFirst: resolvedMock<Record<string, unknown> | null, [Record<string, unknown>?]>(null),
+        updateMany: resolvedMock<{ count: number }, [Record<string, unknown>?]>({ count: 1 }),
       },
       workspace: {
-        findUnique: jest.fn().mockResolvedValue({ providerSettings: {} }),
-        update: jest.fn().mockResolvedValue({}),
+        findUnique: resolvedMock<{ providerSettings?: unknown } | null, [Record<string, unknown>?]>(
+          {
+            providerSettings: {},
+          },
+        ),
+        update: resolvedMock<unknown, [WorkspaceUpdateArgs]>({}),
       },
       kloelMemory: {
-        upsert: jest.fn().mockResolvedValue({}),
-        findUnique: jest.fn().mockResolvedValue(null),
+        upsert: resolvedMock<unknown, [Record<string, unknown>?]>({}),
+        findUnique: resolvedMock<Record<string, unknown> | null, [Record<string, unknown>?]>(null),
       },
       flow: {
-        create: jest.fn().mockResolvedValue({}),
-        findMany: jest.fn().mockResolvedValue([]),
-        count: jest.fn().mockResolvedValue(0),
+        create: resolvedMock<unknown, [FlowCreateArgs]>({}),
+        findMany: resolvedMock<FlowRecord[], [Record<string, unknown>?]>([]),
+        count: resolvedMock<number, [CountArgs?]>(0),
       },
-      contact: { count: jest.fn().mockResolvedValue(0) },
-      message: { count: jest.fn().mockResolvedValue(0) },
+      contact: { count: resolvedMock<number, [CountArgs?]>(0) },
+      message: { count: resolvedMock<number, [CountArgs?]>(0) },
       checkoutOrder: {
-        aggregate: jest.fn().mockResolvedValue({ _count: { _all: 0 }, _sum: { totalInCents: 0 } }),
+        aggregate: resolvedMock<CheckoutAggregateResult, [CheckoutAggregateArgs]>({
+          _count: { _all: 0 },
+          _sum: { totalInCents: 0 },
+        }),
       },
-      kloelWallet: { findUnique: jest.fn().mockResolvedValue(null) },
-      auditLog: { create: jest.fn().mockResolvedValue({}) },
-      $transaction: jest.fn().mockImplementation((arg: unknown) => {
-        if (typeof arg === 'function') {
+      kloelWallet: {
+        findUnique: resolvedMock<Record<string, unknown> | null, [Record<string, unknown>]>(null),
+      },
+      auditLog: { create: resolvedMock<unknown, [Record<string, unknown>?]>({}) },
+      $transaction: jest.fn<unknown, [unknown]>().mockImplementation((arg: unknown) => {
+        if (isTransactionCallback(arg)) {
           return arg(prisma);
         }
         return Promise.resolve(undefined);
@@ -196,26 +258,21 @@ describe('KloelChatToolsService', () => {
       );
 
       expect(result.success).toBe(true);
-      expect(prisma.workspace.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: wsId },
-          data: {
-            providerSettings: expect.objectContaining({
-              autopilot: expect.objectContaining({
-                enabled: true,
-                salesPolicy: expect.objectContaining({
-                  aggressiveness: 'aggressive',
-                  tone: 'direto',
-                  instructions:
-                    'Se o lead abandonou checkout duas vezes, avance para oferta objetiva.',
-                  appliesTo: 'checkout_abandoned_twice',
-                  updatedByUserId: 'user-1',
-                }),
-              }),
-            }),
+      expect(prisma.workspace.update).toHaveBeenCalledTimes(1);
+      const updateArgs = firstMockArg(prisma.workspace.update);
+      expect(updateArgs.where).toEqual({ id: wsId });
+      expect(updateArgs.data.providerSettings).toMatchObject({
+        autopilot: {
+          enabled: true,
+          salesPolicy: {
+            aggressiveness: 'aggressive',
+            tone: 'direto',
+            instructions: 'Se o lead abandonou checkout duas vezes, avance para oferta objetiva.',
+            appliesTo: 'checkout_abandoned_twice',
+            updatedByUserId: 'user-1',
           },
-        }),
-      );
+        },
+      });
     });
   });
 
@@ -237,6 +294,57 @@ describe('KloelChatToolsService', () => {
     });
   });
 
+  describe('placeholder configuration tools', () => {
+    it('blocks fake success for unsupported product and checkout configuration actions', async () => {
+      const cases: Array<{
+        name: string;
+        execute: () => Promise<{ success: boolean; error?: unknown; message?: unknown }>;
+        error: string;
+      }> = [
+        {
+          name: 'toolConfigurePixel',
+          execute: () => service.toolConfigurePixel(wsId, { productName: 'PDRN' }),
+          error: 'pixel_configuration_service_required',
+        },
+        {
+          name: 'toolConfigureShipping',
+          execute: () => service.toolConfigureShipping(wsId, { productName: 'PDRN' }),
+          error: 'shipping_configuration_service_required',
+        },
+        {
+          name: 'toolConfigureSocialProof',
+          execute: () => service.toolConfigureSocialProof(wsId, { productName: 'PDRN' }),
+          error: 'checkout_social_proof_service_required',
+        },
+        {
+          name: 'toolConfigureOrderBump',
+          execute: () => service.toolConfigureOrderBump(wsId, { productName: 'PDRN' }),
+          error: 'checkout_order_bump_service_required',
+        },
+        {
+          name: 'toolConfigureExitIntent',
+          execute: () => service.toolConfigureExitIntent(wsId, { productName: 'PDRN' }),
+          error: 'checkout_exit_intent_service_required',
+        },
+        {
+          name: 'toolConfigureAfterPay',
+          execute: () => service.toolConfigureAfterPay(wsId, { productName: 'PDRN' }),
+          error: 'checkout_after_pay_service_required',
+        },
+      ];
+
+      await Promise.all(
+        cases.map(async ({ execute, error, name }) => {
+          const result = await execute();
+          expect(result.success).toBe(false);
+          expect(result.error).toBe(error);
+          expect(typeof result.message).toBe('string');
+          expect(result.message).toContain(name);
+        }),
+      );
+    });
+  });
+
   describe('toolCreateFlow', () => {
     it('creates flow with nodes and edges', async () => {
       const flow = {
@@ -254,11 +362,9 @@ describe('KloelChatToolsService', () => {
       });
 
       expect(result.success).toBe(true);
-      expect(prisma.flow.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ workspaceId: wsId, name: 'Boas Vindas' }),
-        }),
-      );
+      expect(prisma.flow.create).toHaveBeenCalledTimes(1);
+      const createArgs = firstMockArg(prisma.flow.create);
+      expect(createArgs.data).toMatchObject({ workspaceId: wsId, name: 'Boas Vindas' });
     });
   });
 
@@ -320,14 +426,12 @@ describe('KloelChatToolsService', () => {
           total: 259.01,
         },
       });
-      expect(prisma.checkoutOrder.aggregate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: wsId, status: 'PAID' }),
-        }),
-      );
-      expect(prisma.kloelWallet.findUnique).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { workspaceId: wsId } }),
-      );
+      expect(prisma.checkoutOrder.aggregate).toHaveBeenCalledTimes(1);
+      const aggregateArgs = firstMockArg(prisma.checkoutOrder.aggregate);
+      expect(aggregateArgs.where).toMatchObject({ workspaceId: wsId, status: 'PAID' });
+      expect(prisma.kloelWallet.findUnique).toHaveBeenCalledTimes(1);
+      const walletArgs = firstMockArg(prisma.kloelWallet.findUnique);
+      expect(walletArgs).toMatchObject({ where: { workspaceId: wsId } });
     });
 
     it('uses week filter for period=week', async () => {
@@ -341,18 +445,16 @@ describe('KloelChatToolsService', () => {
 
       await service.toolGetDashboardSummary(wsId, { period: 'week' });
 
-      expect(prisma.contact.count).toHaveBeenCalledWith(
-        expect.objectContaining({ where: expect.objectContaining({ workspaceId: wsId }) }),
-      );
-      const aggregateArgs = prisma.checkoutOrder.aggregate.mock.calls[0][0];
-      expect(aggregateArgs.where).toEqual(
-        expect.objectContaining({
-          workspaceId: wsId,
-          status: 'PAID',
-          paidAt: expect.objectContaining({ gte: aggregateArgs.where.paidAt.gte }),
-        }),
-      );
-      expect(aggregateArgs.where.paidAt.gte).toBeInstanceOf(Date);
+      expect(prisma.contact.count).toHaveBeenCalledTimes(1);
+      const contactCountArgs = firstMockArg(prisma.contact.count);
+      expect(contactCountArgs.where).toMatchObject({ workspaceId: wsId });
+      const aggregateArgs = firstMockArg(prisma.checkoutOrder.aggregate);
+      const paidAtFilter = aggregateArgs.where?.paidAt;
+      expect(aggregateArgs.where).toMatchObject({
+        workspaceId: wsId,
+        status: 'PAID',
+      });
+      expect(paidAtFilter?.gte).toBeInstanceOf(Date);
     });
   });
 });

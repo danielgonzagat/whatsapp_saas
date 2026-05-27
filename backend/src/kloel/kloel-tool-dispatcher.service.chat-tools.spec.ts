@@ -473,6 +473,109 @@ describe('KloelToolDispatcherService — chat tools routing', () => {
     );
   });
 
+  it('routes configure_warranty to chatToolsService with a material receipt', async () => {
+    jest.mocked(chatToolsService.toolConfigureWarranty).mockResolvedValueOnce({
+      success: true,
+      product: { id: 'prod-1', warrantyDays: 30 },
+      message: 'Garantia atualizada.',
+    });
+
+    const result = await service.executeTool(
+      DEFAULT_WS_ID,
+      'configure_warranty',
+      { productName: 'PDRN', warrantyDays: 30 },
+      'user-42',
+    );
+
+    expect(chatToolsService.toolConfigureWarranty).toHaveBeenCalledWith(DEFAULT_WS_ID, {
+      productName: 'PDRN',
+      warrantyDays: 30,
+    });
+    expect(result.success).toBe(true);
+    expect(result.capabilityId).toBe('configure_warranty');
+    expect(result.receipt).toEqual(
+      objectContaining({
+        capabilityId: 'configure_warranty',
+        workspaceId: DEFAULT_WS_ID,
+        actorId: 'user-42',
+        inputs: { productName: 'PDRN', warrantyDays: 30 },
+        outputs: objectContaining({ productId: 'prod-1' }),
+        domainEvents: ['product.updated'],
+        auditLogId: stringMatching(/^audit_/),
+        idempotencyKey: stringContaining('configure_warranty'),
+        success: true,
+      }),
+    );
+  });
+
+  it('returns canonical failure receipts for blocked placeholder configuration tools', async () => {
+    const cases = [
+      {
+        toolName: 'configure_pixel',
+        args: { productName: 'PDRN' },
+        error: 'pixel_configuration_service_required',
+        serviceCall: () => chatToolsService.toolConfigurePixel,
+      },
+      {
+        toolName: 'configure_shipping',
+        args: { productName: 'PDRN' },
+        error: 'shipping_configuration_service_required',
+        serviceCall: () => chatToolsService.toolConfigureShipping,
+      },
+      {
+        toolName: 'configure_social_proof',
+        args: { productName: 'PDRN' },
+        error: 'checkout_social_proof_service_required',
+        serviceCall: () => chatToolsService.toolConfigureSocialProof,
+      },
+      {
+        toolName: 'configure_order_bump',
+        args: { productName: 'PDRN' },
+        error: 'checkout_order_bump_service_required',
+        serviceCall: () => chatToolsService.toolConfigureOrderBump,
+      },
+      {
+        toolName: 'configure_exit_intent',
+        args: { productName: 'PDRN' },
+        error: 'checkout_exit_intent_service_required',
+        serviceCall: () => chatToolsService.toolConfigureExitIntent,
+      },
+      {
+        toolName: 'configure_after_pay',
+        args: { productName: 'PDRN' },
+        error: 'checkout_after_pay_service_required',
+        serviceCall: () => chatToolsService.toolConfigureAfterPay,
+      },
+    ];
+
+    for (const testCase of cases) {
+      const result = await service.executeTool(
+        DEFAULT_WS_ID,
+        testCase.toolName,
+        testCase.args,
+        'user-42',
+      );
+
+      expect(testCase.serviceCall()).toHaveBeenCalledWith(DEFAULT_WS_ID, testCase.args);
+      expect(result.success).toBe(false);
+      expect(result.error).toBe(testCase.error);
+      expect(result.receipt).toEqual(
+        objectContaining({
+          capabilityId: testCase.toolName,
+          workspaceId: DEFAULT_WS_ID,
+          actorId: 'user-42',
+          inputs: testCase.args,
+          outputs: {},
+          domainEvents: [],
+          error: testCase.error,
+          auditLogId: stringMatching(/^audit_/),
+          idempotencyKey: stringContaining(testCase.toolName),
+          success: false,
+        }),
+      );
+    }
+  });
+
   it('routes remember_user_info to chatToolsService with a material receipt', async () => {
     jest.mocked(chatToolsService.toolRememberUserInfo).mockResolvedValueOnce({
       success: true,

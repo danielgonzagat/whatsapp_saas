@@ -45,6 +45,13 @@ type DispatcherChatToolsMock = Pick<
   | 'toolListAgentEvidence'
   | 'toolVerifyAgentEvidence'
   | 'toolCreatePaymentLink'
+  | 'toolConfigurePixel'
+  | 'toolConfigureShipping'
+  | 'toolConfigureSocialProof'
+  | 'toolConfigureOrderBump'
+  | 'toolConfigureWarranty'
+  | 'toolConfigureExitIntent'
+  | 'toolConfigureAfterPay'
 >;
 
 type DispatcherAccountMock = Pick<AccountService, 'updatePersonalData'>;
@@ -195,6 +202,27 @@ export function createChatToolsMock(): DispatcherChatToolsMock {
     toolCreatePaymentLink: jest
       .fn()
       .mockResolvedValue({ success: true, paymentUrl: 'https://pay.test' }),
+    toolConfigurePixel: jest
+      .fn()
+      .mockResolvedValue({ success: false, error: 'pixel_configuration_service_required' }),
+    toolConfigureShipping: jest
+      .fn()
+      .mockResolvedValue({ success: false, error: 'shipping_configuration_service_required' }),
+    toolConfigureSocialProof: jest
+      .fn()
+      .mockResolvedValue({ success: false, error: 'checkout_social_proof_service_required' }),
+    toolConfigureOrderBump: jest
+      .fn()
+      .mockResolvedValue({ success: false, error: 'checkout_order_bump_service_required' }),
+    toolConfigureWarranty: jest
+      .fn()
+      .mockResolvedValue({ success: true, product: { id: 'prod-1' } }),
+    toolConfigureExitIntent: jest
+      .fn()
+      .mockResolvedValue({ success: false, error: 'checkout_exit_intent_service_required' }),
+    toolConfigureAfterPay: jest
+      .fn()
+      .mockResolvedValue({ success: false, error: 'checkout_after_pay_service_required' }),
   };
 }
 
