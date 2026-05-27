@@ -1,7 +1,6 @@
 'use client';
 
 import useCommandPalette from '@/hooks/useCommandPalette';
-import { useKycCompletion, useKycStatus } from '@/hooks/useKyc';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { KLOEL_CHAT_ROUTE } from '@/lib/kloel-dashboard-context';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
@@ -28,7 +27,7 @@ import {
   resolveActiveView,
   resolveActiveSubView,
 } from './AppShell.routes';
-import { MobileTopBar, KycBanner } from './AppShell.banners';
+import { MobileTopBar } from './AppShell.banners';
 
 interface AppShellProps {
   children: ReactNode;
@@ -43,8 +42,7 @@ export function AppShell({ children }: AppShellProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [paletteMode, setPaletteMode] = useState<'full' | 'conversations'>('full');
   const newChatTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { isDesktop, isMobile } = useResponsiveViewport();
-  const mobileHeaderOffset = isMobile ? 68 : 0;
+  const { isDesktop } = useResponsiveViewport();
   const appRailWidth = isDesktop
     ? sidebarExpanded
       ? SIDEBAR_WIDTH_EXPANDED
@@ -76,9 +74,6 @@ export function AppShell({ children }: AppShellProps) {
     }
   }, [isDesktop]);
 
-  const { status: kycData, isLoading: kycLoading, error: kycError } = useKycStatus();
-  const { completion } = useKycCompletion();
-
   const activeView = resolveActiveView(pathname);
   const activeSubView = resolveActiveSubView(pathname, searchParams);
   const currentRoute = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
@@ -104,19 +99,6 @@ export function AppShell({ children }: AppShellProps) {
       } catch {}
     }
   }, [router]);
-
-  const isExemptPage =
-    pathname.startsWith('/settings') ||
-    pathname.startsWith('/account') ||
-    pathname.startsWith('/canvas');
-  const kycComplete = (completion?.percentage ?? 0) >= 100;
-  const showKycBanner =
-    !kycLoading &&
-    !kycError &&
-    kycData &&
-    kycData.kycStatus !== 'approved' &&
-    !kycComplete &&
-    !isExemptPage;
 
   const handleNavigate = useCallback(
     (view: string, subView?: string) => {
@@ -220,19 +202,6 @@ export function AppShell({ children }: AppShellProps) {
             onSearch={handleSearch}
           />
         )}
-        {showKycBanner && (
-          <KycBanner
-            mobileHeaderOffset={mobileHeaderOffset}
-            isMobile={isMobile}
-            percentage={completion?.percentage ?? 0}
-            onComplete={() =>
-              startTransition(() => {
-                router.push('/settings');
-              })
-            }
-          />
-        )}
-
         <ErrorBoundary>{children}</ErrorBoundary>
       </div>
     </div>
