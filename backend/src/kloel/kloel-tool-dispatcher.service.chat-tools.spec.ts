@@ -787,6 +787,36 @@ describe('KloelToolDispatcherService — chat tools routing', () => {
     );
   });
 
+  it('returns a canonical failure receipt for blocked create_flow', async () => {
+    const result = await service.executeTool(
+      DEFAULT_WS_ID,
+      'create_flow',
+      { name: 'Flow', trigger: 'welcome' },
+      'user-42',
+    );
+
+    expect(chatToolsService.toolCreateFlow).toHaveBeenCalledWith(DEFAULT_WS_ID, {
+      name: 'Flow',
+      trigger: 'welcome',
+    });
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('flow_service_required');
+    expect(result.receipt).toEqual(
+      objectContaining({
+        capabilityId: 'create_flow',
+        workspaceId: DEFAULT_WS_ID,
+        actorId: 'user-42',
+        inputs: { name: 'Flow', trigger: 'welcome' },
+        outputs: {},
+        domainEvents: [],
+        auditLogId: stringMatching(/^audit_/),
+        idempotencyKey: stringContaining('create_flow'),
+        success: false,
+        error: 'flow_service_required',
+      }),
+    );
+  });
+
   it('routes list_flows to chatToolsService', async () => {
     await service.executeTool(DEFAULT_WS_ID, 'list_flows', {});
     expect(chatToolsService.toolListFlows).toHaveBeenCalledWith(DEFAULT_WS_ID);

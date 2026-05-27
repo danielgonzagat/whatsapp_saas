@@ -379,25 +379,15 @@ describe('KloelChatToolsService', () => {
   });
 
   describe('toolCreateFlow', () => {
-    it('creates flow with nodes and edges', async () => {
-      const flow = {
-        id: 'f-1',
-        name: 'Boas Vindas',
-        isActive: true,
-        createdAt: new Date(),
-        _count: { executions: 0 },
-      };
-      prisma.flow.create.mockResolvedValue(flow);
-
+    it('blocks create_flow until a flow domain service is wired', async () => {
       const result = await service.toolCreateFlow(wsId, {
         name: 'Boas Vindas',
         trigger: 'welcome',
       });
 
-      expect(result.success).toBe(true);
-      expect(prisma.flow.create).toHaveBeenCalledTimes(1);
-      const createArgs = firstMockArg(prisma.flow.create);
-      expect(createArgs.data).toMatchObject({ workspaceId: wsId, name: 'Boas Vindas' });
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('flow_service_required');
+      expect(prisma.flow.create).not.toHaveBeenCalled();
     });
   });
 

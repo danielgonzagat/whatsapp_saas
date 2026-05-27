@@ -157,33 +157,15 @@ export class KloelChatToolsService {
   ): Promise<ToolResult> {
     return runRememberUserInfo(this.prisma, workspaceId, args, userId);
   }
-  async toolCreateFlow(workspaceId: string, args: ToolCreateFlowArgs): Promise<ToolResult> {
-    const nodes = [
-      {
-        id: 'start',
-        type: 'trigger',
-        position: { x: 100, y: 100 },
-        data: { trigger: args.trigger },
-      },
-      {
-        id: 'msg1',
-        type: 'message',
-        position: { x: 100, y: 200 },
-        data: { message: args.actions?.[0] || 'Olá!' },
-      },
-    ];
-    const edges = [{ id: 'e1', source: 'start', target: 'msg1' }];
-    const flow = await this.prisma.flow.create({
-      data: {
-        workspaceId,
-        name: args.name,
-        description: `Fluxo criado via chat: ${args.trigger}`,
-        nodes,
-        edges,
-        isActive: true,
-      },
+  toolCreateFlow(workspaceId: string, args: ToolCreateFlowArgs): Promise<ToolResult> {
+    void workspaceId;
+    void args;
+    return Promise.resolve({
+      success: false,
+      error: 'flow_service_required',
+      message:
+        'create_flow exige FlowsService.create ou service equivalente antes de declarar fluxo criado.',
     });
-    return { success: true, flow, message: `Fluxo "${args.name}" criado com sucesso!` };
   }
   async toolListFlows(workspaceId: string): Promise<ToolResult> {
     const flows = await this.prisma.flow.findMany({

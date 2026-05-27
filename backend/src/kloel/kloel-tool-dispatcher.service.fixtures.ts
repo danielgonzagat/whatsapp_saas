@@ -180,7 +180,11 @@ export function createChatToolsMock(): DispatcherChatToolsMock {
     toolSetBrandVoice: jest.fn().mockResolvedValue({ success: true }),
     toolSetSalesPolicy: jest.fn().mockResolvedValue({ success: true }),
     toolRememberUserInfo: jest.fn().mockResolvedValue({ success: true }),
-    toolCreateFlow: jest.fn().mockResolvedValue({ success: true, flow: {} }),
+    toolCreateFlow: jest.fn().mockResolvedValue({
+      success: false,
+      error: 'flow_service_required',
+      message: 'create_flow exige FlowsService.create antes de declarar fluxo criado.',
+    }),
     toolListFlows: jest.fn().mockResolvedValue({ success: true, flows: [] }),
     toolGetDashboardSummary: jest.fn().mockResolvedValue({ success: true, stats: {} }),
     toolCreateAgentJob: jest.fn().mockResolvedValue({ success: true, key: 'agent_job:daily' }),
