@@ -185,8 +185,11 @@ export class KloelCodeToolsService {
       };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      const stderrOut = (err as any)?.stdout as string | undefined;
-      const stderrErr = (err as any)?.stderr as string | undefined;
+      // child_process exec errors carry stdout/stderr fields not on the base Error type;
+      // narrow with a structural cast instead of `as any` to keep type safety.
+      const ce = err as { stdout?: unknown; stderr?: unknown };
+      const stderrOut = typeof ce.stdout === 'string' ? ce.stdout : undefined;
+      const stderrErr = typeof ce.stderr === 'string' ? ce.stderr : undefined;
       // rg exits with code 1 when no matches found — not an error
       if (
         (msg.includes('exit code 1') || msg.includes('Command failed')) &&

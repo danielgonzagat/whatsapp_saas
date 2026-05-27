@@ -134,7 +134,12 @@ export class CodeAccessService {
       return this.parseRgOutput(stdout, max);
     } catch (err: unknown) {
       // rg exits with code 1 when no matches (which is fine)
-      if (err instanceof Error && 'status' in err && (err as any).status === 1) {
+      // execSync errors expose .status; narrow structurally instead of `as any`.
+      if (
+        err instanceof Error &&
+        'status' in err &&
+        (err as { status?: unknown }).status === 1
+      ) {
         return [];
       }
       this.logger.warn(`Search failed: ${err instanceof Error ? err.message : 'unknown'}`);
