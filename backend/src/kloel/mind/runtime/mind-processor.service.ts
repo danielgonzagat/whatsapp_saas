@@ -2,6 +2,7 @@ import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { StructuredLogger } from '../../../logging/structured-logger';
 import { Queue, Worker } from 'bullmq';
 import { createRedisClient, isRedisConfigured } from '../../../common/redis/redis.util';
+import { attachDlq } from '../../../queue/queue';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { MindReportService } from '../observability/mind-report.service';
 import { MindService } from '../../mind.service';
@@ -19,6 +20,8 @@ export class MindProcessorService implements OnModuleInit, OnModuleDestroy {
   private tickQueue?: Queue;
   private schedulerWorker?: Worker;
   private tickWorker?: Worker;
+  private schedulerDlq?: Queue;
+  private tickDlq?: Queue;
   private readonly dailyReportKeys = new Set<string>();
 
   constructor(
@@ -53,7 +56,16 @@ export class MindProcessorService implements OnModuleInit, OnModuleDestroy {
     const schedulerConnection = createRedisClient({ maxRetriesPerRequest: null });
     const tickConnection = createRedisClient({ maxRetriesPerRequest: null });
 
-    this.schedulerQueue = new Queue(MIND_SCHEDULER_QUEUE, { connection: schedulerConnection });
+    this.schedulerQueue = new Queue(MIND_SCHEDULER_QUEUE, {
+      connection: schedulerConnection,
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 1000 },
+        removeOnFail: false,
+      },
+    });
+    this.schedulerDlq = attachDlq(this.schedulerQueue);
+
     this.tickQueue = new Queue(MIND_TICK_QUEUE, {
       connection: tickConnection,
       defaultJobOptions: {
@@ -63,6 +75,7 @@ export class MindProcessorService implements OnModuleInit, OnModuleDestroy {
         removeOnFail: 100,
       },
     });
+    this.tickDlq = attachDlq(this.tickQueue);
 
     await this.schedulerQueue.add(
       'fanout',
@@ -118,7 +131,9 @@ export class MindProcessorService implements OnModuleInit, OnModuleDestroy {
     await this.tickWorker?.close();
     await this.schedulerWorker?.close();
     await this.tickQueue?.close();
+    await this.tickDlq?.close();
     await this.schedulerQueue?.close();
+    await this.schedulerDlq?.close();
   }
 
   private async enqueueActiveWorkspaces(): Promise<{ dispatched: number }> {

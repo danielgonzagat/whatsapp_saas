@@ -391,6 +391,7 @@ export class Queue {
     this.name = name;
     this.queue = new BullQueue(name, buildQueueOptions());
     attachQueueErrorLogger(this.queue, `legacyQueue:${name}`);
+    attachDlq(this.queue);
     console.log(`[PKG] [Queue] Criada fila "${name}" com conexão Redis configurada`);
   }
 

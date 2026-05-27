@@ -41,7 +41,11 @@ jest.mock('bullmq', () => {
     wClose,
   };
 
-  return { Queue: MockQueue, Worker: MockWorker };
+  const MockQueueEvents = jest.fn().mockImplementation(() => ({
+    on: jest.fn(),
+  }));
+
+  return { Queue: MockQueue, Worker: MockWorker, QueueEvents: MockQueueEvents };
 });
 
 function getMocks() {
@@ -185,7 +189,7 @@ describe('MindBackgroundScheduler (UTP gap B)', () => {
 
     await scheduler.onModuleInit();
 
-    expect(queue).toHaveBeenCalledTimes(1);
+    expect(queue).toHaveBeenCalledTimes(2); // main + dlq
     expect(worker).toHaveBeenCalledTimes(1);
     expect(qAdd).toHaveBeenCalledWith('tick', {}, {
       repeat: { every: 5_000 },
@@ -214,7 +218,7 @@ describe('MindBackgroundScheduler (UTP gap B)', () => {
     await scheduler.onModuleDestroy();
 
     expect(wClose).toHaveBeenCalledTimes(1);
-    expect(qClose).toHaveBeenCalledTimes(1);
+    expect(qClose).toHaveBeenCalledTimes(2); // main + dlq
   });
 
   // ── Wave 15: cognitive health on-tick wiring ──────────────────────

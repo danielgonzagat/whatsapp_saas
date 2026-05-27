@@ -26,11 +26,17 @@ jest.mock('bullmq', () => ({
       };
     },
   ),
+  QueueEvents: jest.fn().mockImplementation(() => ({
+    on: jest.fn(),
+    close: jest.fn().mockResolvedValue(undefined),
+  })),
 }));
 
 jest.mock('../../../common/redis/redis.util', () => ({
   createRedisClient: jest.fn(() => ({})),
   isRedisConfigured: jest.fn(() => true),
+  getRedisUrl: jest.fn(() => 'redis://localhost:6379'),
+  maskRedisUrl: jest.fn((url: string) => url),
 }));
 
 describe('MindProcessorService', () => {
