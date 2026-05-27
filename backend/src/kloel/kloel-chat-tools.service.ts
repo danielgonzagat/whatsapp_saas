@@ -104,22 +104,28 @@ export class KloelChatToolsService {
     @Optional() private readonly agentEvidence?: AgentRuntimeEvidenceStoreService,
   ) {}
   toolSaveProduct(workspaceId: string, args: ToolSaveProductArgs): Promise<ToolResult> {
-    const format =
-      args.format === 'PHYSICAL' || args.format === 'DIGITAL' || args.format === 'HYBRID'
-        ? args.format
-        : 'DIGITAL';
+    const actorRef = args as ToolSaveProductArgs & { actorId?: unknown };
+    const actorId =
+      typeof actorRef.actorId === 'string' && actorRef.actorId.trim()
+        ? actorRef.actorId
+        : 'kloel-chat';
+    const rawFormat = typeof args.format === 'string' ? args.format.toUpperCase() : undefined;
+    const format: 'PHYSICAL' | 'DIGITAL' | 'HYBRID' | undefined =
+      rawFormat === 'PHYSICAL' || rawFormat === 'DIGITAL' || rawFormat === 'HYBRID'
+        ? rawFormat
+        : undefined;
 
     return this.productService.create(
       workspaceId,
       {
         name: args.name,
-        description: args.description,
         price: args.price,
-        category: args.category,
-        imageUrl: args.imageUrl,
-        format,
+        ...(args.description !== undefined ? { description: args.description } : {}),
+        ...(args.category !== undefined ? { category: args.category } : {}),
+        ...(args.imageUrl !== undefined ? { imageUrl: args.imageUrl } : {}),
+        ...(format !== undefined ? { format } : {}),
       },
-      { id: 'kloel-chat-tools' },
+      { id: actorId },
     ) as Promise<ToolResult>;
   }
   toolListProducts(workspaceId: string): Promise<ToolResult> {
@@ -328,7 +334,49 @@ export class KloelChatToolsService {
   // === PRODUCT MANAGEMENT TOOL DELEGATORS ===
 
   toolUpdateProduct(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
-    return runUpdateProduct(this.prisma, workspaceId, args);
+    return runUpdateProduct(this.prisma, this.productService, workspaceId, args);
+  }
+
+  async toolPublishProduct(
+    workspaceId: string,
+    args: Record<string, unknown>,
+  ): Promise<ToolResult> {
+    const productId = typeof args.productId === 'string' ? args.productId.trim() : '';
+    const productName = typeof args.productName === 'string' ? args.productName.trim() : '';
+    const actorId =
+      typeof args.actorId === 'string' && args.actorId.trim() ? args.actorId : 'kloel-chat';
+
+    let resolvedProductId = productId;
+    if (resolvedProductId) {
+      const product = await this.prisma.product.findFirst({
+        where: { id: resolvedProductId, workspaceId },
+        select: { id: true },
+      });
+      resolvedProductId = product?.id ?? '';
+    } else if (productName) {
+      const product = await this.prisma.product.findFirst({
+        where: { workspaceId, name: { contains: productName, mode: 'insensitive' } },
+        select: { id: true },
+      });
+      resolvedProductId = product?.id ?? '';
+    }
+
+    if (!resolvedProductId) {
+      return { success: false, error: 'product_not_found' };
+    }
+
+    try {
+      const result = await this.productService.publish(workspaceId, resolvedProductId, {
+        id: actorId,
+      });
+      return {
+        success: result.success,
+        ...(result.product !== undefined ? { product: result.product } : {}),
+        ...(result.message !== undefined ? { message: result.message } : {}),
+      };
+    } catch {
+      return { success: false, error: 'product_not_found' };
+    }
   }
   toolGetProductPlans(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     return runGetProductPlans(this.prisma, workspaceId, args);
@@ -390,13 +438,47 @@ export class KloelChatToolsService {
       return { success: false, error: e instanceof Error ? e.message : 'Erro ao atualizar foto do plano.' };
     }
   }
-  async toolUploadProductImage(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
-    void workspaceId;
-    const productName = typeof args.productName === 'string' ? args.productName : '';
+  async toolUploadProductImage(
+    workspaceId: string,
+    args: Record<string, unknown>,
+  ): Promise<ToolResult> {
+    let productId = typeof args.productId === 'string' ? args.productId.trim() : '';
+    const productName = typeof args.productName === 'string' ? args.productName.trim() : '';
     const imageUrl = typeof args.imageUrl === 'string' ? args.imageUrl : '';
-    if (!productName) return { success: false, error: 'Informe o nome do produto.' };
-    if (!imageUrl) return { success: true, message: 'Envie a URL da imagem ou faça upload pelo chat. Ex: "imagem do produto X url: https://..."' };
-    return runUpdateProduct(this.prisma, workspaceId, { productName, imageUrl });
+    const actorId =
+      typeof args.actorId === 'string' && args.actorId.trim() ? args.actorId : 'kloel-chat';
+
+    if (!productId && !productName) {
+      return { success: false, error: 'Informe o ID ou nome do produto.' };
+    }
+    if (!imageUrl) {
+      return {
+        success: false,
+        error: 'image_url_required',
+        message: 'Envie a URL da imagem ou faça upload pelo chat.',
+      };
+    }
+
+    if (!productId && productName) {
+      const product = await this.prisma.product.findFirst({
+        where: { workspaceId, name: { contains: productName, mode: 'insensitive' } },
+        select: { id: true },
+      });
+      productId = product?.id ?? '';
+    }
+
+    if (!productId) {
+      return { success: false, error: 'product_not_found' };
+    }
+
+    const result = await this.productService.setImage(workspaceId, productId, imageUrl, {
+      id: actorId,
+    });
+    return {
+      success: result.success,
+      ...(result.product !== undefined ? { product: result.product } : {}),
+      ...(result.message !== undefined ? { message: result.message } : {}),
+    };
   }
 
   async toolConfigurePixel(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
@@ -431,7 +513,10 @@ export class KloelChatToolsService {
     const productName = typeof args.productName === 'string' ? args.productName : '';
     if (productName) {
       const days = typeof args.warrantyDays === 'number' ? args.warrantyDays : 7;
-      return runUpdateProduct(this.prisma, workspaceId, { productName, warrantyDays: days });
+      return runUpdateProduct(this.prisma, this.productService, workspaceId, {
+        productName,
+        warrantyDays: days,
+      });
     }
     return { success: true, message: 'Garantia configurada. Selo exibido na página de vendas.' };
   }
