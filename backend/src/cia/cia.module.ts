@@ -14,7 +14,7 @@ import { CiaRemoteBacklogService } from './cia-remote-backlog.service';
 import { CiaRuntimeService } from './cia-runtime.service';
 import { CiaRuntimeService as WhatsappCiaRuntimeService } from '../kloel/mind/cia/cia-runtime.abstract';
 import { CiaRuntimeStateService } from './cia-runtime-state.service';
-import { CiaSendHelpersService } from './cia-send-helpers.service';
+import { CiaSendHelpersService } from '../kloel/mind/cia/cia-send-helpers.service';
 import { CiaController } from './cia.controller';
 import { CiaService } from './cia.service';
 import { CIA_RUNTIME_SERVICE } from '../kloel/mind/cia/cia-runtime.port';

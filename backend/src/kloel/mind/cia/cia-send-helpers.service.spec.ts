@@ -1,10 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CiaSendHelpersService } from './cia-send-helpers.service';
-import { AgentEventsService } from '../whatsapp/agent-events.service';
-import { ChannelTransportRegistry } from '../kloel/channel-transport.registry';
-import { OpsAlertService } from '../observability/ops-alert.service';
-import { SpineEmitterService } from '../kloel/spine/spine-emitter.service';
-import { MindPolicyService } from '../kloel/mind-policy.service';
+import { AgentEventsService } from '../../../whatsapp/agent-events.service';
+import { ChannelTransportRegistry } from '../../channel-transport.registry';
+import { OpsAlertService } from '../../../observability/ops-alert.service';
+import { SpineEmitterService } from '../../spine/spine-emitter.service';
+import { MindPolicyService } from '../../mind-policy.service';
 
 const REDIS_TOKEN = 'default_IORedisModuleConnectionToken';
 

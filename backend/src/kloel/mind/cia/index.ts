@@ -34,7 +34,7 @@ export { CiaInlineFallbackService } from '../../../cia/cia-inline-fallback.servi
 export { CiaRemoteBacklogService } from '../../../cia/cia-remote-backlog.service';
 export { CiaRuntimeStateService } from '../../../cia/cia-runtime-state.service';
 export { CiaRuntimeService } from '../../../cia/cia-runtime.service';
-export { CiaSendHelpersService } from '../../../cia/cia-send-helpers.service';
+export { CiaSendHelpersService } from './cia-send-helpers.service';
 
 export { CiaController } from '../../../cia/cia.controller';
 export { CiaModule } from '../../../cia/cia.module';
