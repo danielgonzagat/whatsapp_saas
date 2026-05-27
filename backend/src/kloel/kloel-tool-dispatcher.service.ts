@@ -711,8 +711,21 @@ export class KloelToolDispatcherService {
             startedAt,
           );
         }
-        case 'delete_product':
-          return await this.chatToolsService.toolDeleteProduct(workspaceId, asToolArgs(args));
+        case 'delete_product': {
+          const startedAt = Date.now();
+          const result = await this.chatToolsService.toolDeleteProduct(
+            workspaceId,
+            asToolArgs(args),
+          );
+          return this.withCanonicalReceipt(
+            'delete_product',
+            workspaceId,
+            args,
+            result,
+            userId,
+            startedAt,
+          );
+        }
         case 'get_settings':
           return await this.chatToolsService.toolGetSettings(workspaceId);
         case 'request_withdrawal':

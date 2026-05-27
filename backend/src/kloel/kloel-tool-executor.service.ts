@@ -9,7 +9,6 @@ import { KloelToolExecutorCrmService } from './kloel-tool-executor-crm.service';
 import { KloelToolExecutorWhatsAppService } from './kloel-tool-executor-whatsapp.service';
 import {
   toolListProducts,
-  toolDeleteProduct,
   toolSetBrandVoice,
   toolRememberUserInfo,
   toolCreateFlow,
@@ -68,7 +67,7 @@ export class KloelToolExecutorService {
         case 'list_products':
           return await this.toolListProducts(workspaceId);
         case 'delete_product':
-          return await this.toolDeleteProduct(workspaceId, args);
+          return await this.toolDeleteProduct(workspaceId, args, userId);
         case 'toggle_autopilot':
           return await this.toolToggleAutopilot(workspaceId, args as ToolToggleAutopilotArgs);
         case 'set_brand_voice':
@@ -200,8 +199,17 @@ export class KloelToolExecutorService {
   private async toolDeleteProduct(
     workspaceId: string,
     args: ToolDeleteProductArgs,
+    userId?: string,
   ): Promise<ToolResult> {
-    return toolDeleteProduct(this.prisma, workspaceId, args);
+    if (!this.toolDispatcher) {
+      return {
+        success: false,
+        error: 'canonical_dispatcher_required',
+        message: 'delete_product exige o dispatcher canonico para gerar receipt e prova.',
+      };
+    }
+
+    return this.toolDispatcher.executeTool(workspaceId, 'delete_product', args, userId);
   }
 
   private async toolToggleAutopilot(

@@ -314,11 +314,38 @@ describe('KloelToolDispatcherService — chat tools routing', () => {
     expect(chatToolsService.toolListProducts).toHaveBeenCalledWith(DEFAULT_WS_ID);
   });
 
-  it('routes delete_product to chatToolsService', async () => {
-    await service.executeTool(DEFAULT_WS_ID, 'delete_product', { productId: 'p-1' });
+  it('routes delete_product to chatToolsService with a material receipt', async () => {
+    jest.mocked(chatToolsService.toolDeleteProduct).mockResolvedValueOnce({
+      success: true,
+      message: 'Produto removido',
+      product: { id: 'p-1', name: 'PDRN' },
+    });
+
+    const result = await service.executeTool(
+      DEFAULT_WS_ID,
+      'delete_product',
+      { productId: 'p-1' },
+      'user-42',
+    );
+
     expect(chatToolsService.toolDeleteProduct).toHaveBeenCalledWith(DEFAULT_WS_ID, {
       productId: 'p-1',
     });
+    expect(result.success).toBe(true);
+    expect(result.capabilityId).toBe('delete_product');
+    expect(result.receipt).toEqual(
+      objectContaining({
+        capabilityId: 'delete_product',
+        workspaceId: DEFAULT_WS_ID,
+        actorId: 'user-42',
+        inputs: { productId: 'p-1' },
+        outputs: objectContaining({ productId: 'p-1' }),
+        domainEvents: ['product.deleted'],
+        auditLogId: stringMatching(/^audit_/),
+        idempotencyKey: stringContaining('delete_product'),
+        success: true,
+      }),
+    );
   });
 
   it('routes toggle_autopilot to chatToolsService', async () => {

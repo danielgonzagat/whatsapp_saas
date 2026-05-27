@@ -168,9 +168,21 @@ describe('KloelToolExecutorService', () => {
       const result = await service.executeTool(wsId, 'list_products', {});
       expect(result.success).toBe(true);
     });
-    it('routes delete_product to helper', async () => {
-      const result = await service.executeTool(wsId, 'delete_product', { productId: 'p-1' });
+    it('routes delete_product through dispatcher receipt path', async () => {
+      dispatcher.executeTool.mockResolvedValueOnce({
+        success: true,
+        capabilityId: 'delete_product',
+        outputs: { productId: 'p-1' },
+        receipt: { capabilityId: 'delete_product', success: true },
+      });
+
+      const args = { productId: 'p-1' };
+      const result = await service.executeTool(wsId, 'delete_product', args, 'user-42');
+
+      expect(dispatcher.executeTool).toHaveBeenCalledWith(wsId, 'delete_product', args, 'user-42');
       expect(result.success).toBe(true);
+      expect(result.capabilityId).toBe('delete_product');
+      expect(result.receipt).toEqual(expect.objectContaining({ capabilityId: 'delete_product' }));
     });
     it('routes toggle_autopilot — enables via transaction', async () => {
       const result = await service.executeTool(wsId, 'toggle_autopilot', { enabled: true });
