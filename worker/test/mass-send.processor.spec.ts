@@ -79,7 +79,7 @@ beforeAll(async () => {
   isRetryableErrorMock = eh.isRetryableError as unknown as ReturnType<typeof vi.fn>;
 
   // Import the processor — this triggers Worker constructor with the handler
-  const mod = await import('../processors/mass-send.processor');
+  const mod = await import('../processors/mass-send-processor');
   expect(mod.massSendWorker).toBeDefined();
 
   // Extract handler from Worker mock calls
@@ -88,7 +88,7 @@ beforeAll(async () => {
   handler = calls[0][1] as (job: Record<string, unknown>) => Promise<unknown>;
 });
 
-describe('mass-send.processor', () => {
+describe('mass-send-processor', () => {
   beforeEach(() => {
     // Clear per-test mocks but preserve Worker constructor history
     checkIdempotentMock.mockReset();
