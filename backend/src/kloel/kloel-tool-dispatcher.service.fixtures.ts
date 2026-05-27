@@ -226,12 +226,16 @@ export function createChatToolsMock(): DispatcherChatToolsMock {
       .fn()
       .mockResolvedValue({ success: false, error: 'checkout_after_pay_service_required' }),
     toolCreateBroadcast: jest.fn().mockResolvedValue({
-      success: true,
-      campaign: { id: 'campaign-1', name: 'Launch', status: 'DRAFT' },
+      success: false,
+      error: 'campaign_service_required',
+      message:
+        'create_broadcast exige CampaignService.createBroadcast antes de declarar campanha criada.',
     }),
     toolConfigureAiPersona: jest.fn().mockResolvedValue({
-      success: true,
-      persona: { name: 'Kloel', tone: 'formal', personality: 'professional' },
+      success: false,
+      error: 'ai_config_service_required',
+      message:
+        'configure_ai_persona exige AIConfigService.update antes de declarar persona configurada.',
     }),
   };
 }

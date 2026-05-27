@@ -292,70 +292,36 @@ export async function runGetAnalytics(
   };
 }
 
-export async function runCreateBroadcast(
-  prisma: PrismaService,
+export function runCreateBroadcast(
   workspaceId: string,
-  args: { name: string; message: string; targetTags?: string[]; scheduleAt?: string },
+  args: Record<string, unknown>,
 ): Promise<ToolResult> {
-  if (!args.name || !args.message) {
-    return { success: false, error: 'name_and_message_required' };
+  void workspaceId;
+  const name = typeof args.name === 'string' ? args.name.trim() : '';
+  const message = typeof args.message === 'string' ? args.message.trim() : '';
+  if (!name || !message) {
+    return Promise.resolve({ success: false, error: 'name_and_message_required' });
   }
-  const campaign = await prisma.campaign.create({
-    data: {
-      workspaceId,
-      name: args.name,
-      messageTemplate: args.message,
-      ...(args.targetTags?.length ? { filters: { tags: args.targetTags } } : {}),
-      ...(args.scheduleAt ? { scheduledAt: new Date(args.scheduleAt) } : {}),
-      status: 'DRAFT',
-    },
+  return Promise.resolve({
+    success: false,
+    error: 'campaign_service_required',
+    message:
+      'create_broadcast exige CampaignService.createBroadcast ou CampaignsService.create via domain service antes de declarar campanha criada.',
   });
-  return {
-    success: true,
-    campaign: { id: campaign.id, name: campaign.name, status: campaign.status },
-    message: `Campanha "${args.name}" criada.`,
-  };
 }
 
-export async function runConfigureAiPersona(
-  prisma: PrismaService,
+export function runConfigureAiPersona(
   workspaceId: string,
-  args: {
-    name?: string;
-    personality?: string;
-    tone?: string;
-    language?: string;
-    useEmojis?: boolean;
-  },
+  args: Record<string, unknown>,
 ): Promise<ToolResult> {
-  const persona = {
-    name: args.name || 'KLOEL',
-    personality: args.personality || '',
-    tone: args.tone || 'professional',
-    language: args.language || 'pt-BR',
-    useEmojis: args.useEmojis ?? true,
-    updatedAt: new Date().toISOString(),
-  };
-  await prisma.kloelMemory.upsert({
-    where: { workspaceId_key: { workspaceId, key: 'aiPersona' } },
-    update: {
-      value: persona,
-      category: 'preferences',
-      type: 'persona',
-      content: `Persona: ${persona.name}, Tom: ${persona.tone}`,
-      metadata: persona,
-    },
-    create: {
-      workspaceId,
-      key: 'aiPersona',
-      value: persona,
-      category: 'preferences',
-      type: 'persona',
-      content: `Persona: ${persona.name}, Tom: ${persona.tone}`,
-      metadata: persona,
-    },
+  void workspaceId;
+  void args;
+  return Promise.resolve({
+    success: false,
+    error: 'ai_config_service_required',
+    message:
+      'configure_ai_persona exige AIConfigService.update ou service equivalente antes de declarar persona configurada.',
   });
-  return { success: true, persona, message: `Persona IA "${persona.name}" configurada.` };
 }
 
 export async function runToggleTheme(

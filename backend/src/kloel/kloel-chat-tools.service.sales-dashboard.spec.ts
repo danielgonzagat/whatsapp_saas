@@ -61,6 +61,7 @@ type ChatToolsPrismaMock = {
     findUnique: AsyncMock<{ providerSettings?: unknown } | null, [Record<string, unknown>?]>;
     update: AsyncMock<unknown, [WorkspaceUpdateArgs]>;
   };
+  campaign: { create: AsyncMock<Record<string, unknown>, [Record<string, unknown>?]> };
   kloelMemory: {
     upsert: AsyncMock<unknown, [Record<string, unknown>?]>;
     findUnique: AsyncMock<Record<string, unknown> | null, [Record<string, unknown>?]>;
@@ -141,6 +142,13 @@ describe('KloelChatToolsService', () => {
           },
         ),
         update: resolvedMock<unknown, [WorkspaceUpdateArgs]>({}),
+      },
+      campaign: {
+        create: resolvedMock<Record<string, unknown>, [Record<string, unknown>?]>({
+          id: 'campaign-1',
+          name: 'PDRN Launch',
+          status: 'DRAFT',
+        }),
       },
       kloelMemory: {
         upsert: resolvedMock<unknown, [Record<string, unknown>?]>({}),
@@ -291,6 +299,31 @@ describe('KloelChatToolsService', () => {
     it('returns error for empty key or value', async () => {
       const result = await service.toolRememberUserInfo(wsId, { key: '', value: '' });
       expect(result.success).toBe(false);
+    });
+  });
+
+  describe('broadcast and AI persona direct tool guards', () => {
+    it('blocks create_broadcast until a campaign domain service is wired', async () => {
+      const result = await service.toolCreateBroadcast(wsId, {
+        name: 'PDRN Launch',
+        message: 'Oferta hoje',
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('campaign_service_required');
+      expect(prisma.campaign.create).not.toHaveBeenCalled();
+    });
+
+    it('blocks configure_ai_persona until an AI config domain service is wired', async () => {
+      const result = await service.toolConfigureAiPersona(wsId, {
+        name: 'Kloel',
+        tone: 'formal',
+        personality: 'professional',
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('ai_config_service_required');
+      expect(prisma.kloelMemory.upsert).not.toHaveBeenCalled();
     });
   });
 

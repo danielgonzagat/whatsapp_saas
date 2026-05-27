@@ -546,6 +546,67 @@ describe('KloelToolDispatcherService — chat tools routing', () => {
     );
   });
 
+  it('returns a canonical failure receipt for blocked create_broadcast', async () => {
+    const result = await service.executeTool(
+      DEFAULT_WS_ID,
+      'create_broadcast',
+      { name: 'PDRN Launch', message: 'Oferta hoje' },
+      'user-42',
+    );
+
+    expect(chatToolsService.toolCreateBroadcast).toHaveBeenCalledWith(DEFAULT_WS_ID, {
+      name: 'PDRN Launch',
+      message: 'Oferta hoje',
+    });
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('campaign_service_required');
+    expect(result.receipt).toEqual(
+      objectContaining({
+        capabilityId: 'create_broadcast',
+        workspaceId: DEFAULT_WS_ID,
+        actorId: 'user-42',
+        inputs: { name: 'PDRN Launch', message: 'Oferta hoje' },
+        outputs: {},
+        domainEvents: [],
+        auditLogId: stringMatching(/^audit_/),
+        idempotencyKey: stringContaining('create_broadcast'),
+        success: false,
+        error: 'campaign_service_required',
+      }),
+    );
+  });
+
+  it('returns a canonical failure receipt for blocked configure_ai_persona', async () => {
+    const result = await service.executeTool(
+      DEFAULT_WS_ID,
+      'configure_ai_persona',
+      { name: 'Kloel', tone: 'formal', personality: 'professional' },
+      'user-42',
+    );
+
+    expect(chatToolsService.toolConfigureAiPersona).toHaveBeenCalledWith(DEFAULT_WS_ID, {
+      name: 'Kloel',
+      tone: 'formal',
+      personality: 'professional',
+    });
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('ai_config_service_required');
+    expect(result.receipt).toEqual(
+      objectContaining({
+        capabilityId: 'configure_ai_persona',
+        workspaceId: DEFAULT_WS_ID,
+        actorId: 'user-42',
+        inputs: { name: 'Kloel', tone: 'formal', personality: 'professional' },
+        outputs: {},
+        domainEvents: [],
+        auditLogId: stringMatching(/^audit_/),
+        idempotencyKey: stringContaining('configure_ai_persona'),
+        success: false,
+        error: 'ai_config_service_required',
+      }),
+    );
+  });
+
   it('routes configure_warranty to chatToolsService with a material receipt', async () => {
     jest.mocked(chatToolsService.toolConfigureWarranty).mockResolvedValueOnce({
       success: true,

@@ -421,10 +421,10 @@ export class KloelChatToolsService {
     return runGetAnalytics(this.prisma, workspaceId, args as never);
   }
   toolCreateBroadcast(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
-    return runCreateBroadcast(this.prisma, workspaceId, args as never);
+    return runCreateBroadcast(workspaceId, args);
   }
   toolConfigureAiPersona(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
-    return runConfigureAiPersona(this.prisma, workspaceId, args);
+    return runConfigureAiPersona(workspaceId, args);
   }
   toolToggleTheme(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     return runToggleTheme(this.prisma, workspaceId, args);
