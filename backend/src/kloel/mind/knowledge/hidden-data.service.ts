@@ -1,7 +1,13 @@
 /**
- * @deprecated Use {@link ../kloel/mind/knowledge/mind-hidden-data-extractor.service.ts MindHiddenDataExtractor}
- * (re-exported from `backend/src/kloel/mind/knowledge/`). This file remains
- * during the ADR-0013 Wave M2 alias window (4 weeks).
+ * MindHiddenDataExtractor implementation — canonical Mind/Knowledge service.
+ *
+ * Physically moved from `backend/src/ai-brain/hidden-data.service.ts` to its
+ * canonical home under `backend/src/kloel/mind/knowledge/` (ADR-0013 Wave M5,
+ * 2026-05-27). The legacy ai-brain path retains a thin `@deprecated`
+ * re-export during the alias window.
+ *
+ * Prefer importing as `MindHiddenDataExtractor` via the
+ * `backend/src/kloel/mind/knowledge` barrel.
  *
  * @cluster Mind/Knowledge
  * @canonical backend/src/kloel/mind/knowledge/mind-hidden-data-extractor.service.ts
@@ -9,15 +15,15 @@
  */
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { StructuredLogger } from '../logging/structured-logger';
+import { StructuredLogger } from '../../../logging/structured-logger';
 import OpenAI from 'openai';
-import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
-import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { chatCompletionWithRetry } from '../../openai-wrapper';
+import { resolveBackendOpenAIModel } from '../../../lib/openai-models';
 
 /** Hidden data extractor service. */
 @Injectable()
 /**
- * @cluster whatsapp_saas/backend/ai-brain
+ * @cluster whatsapp_saas/backend/kloel/mind/knowledge
  * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
  */
 export class HiddenDataExtractorService {

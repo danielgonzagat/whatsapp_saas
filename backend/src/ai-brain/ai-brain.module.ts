@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AgentAssistService } from './agent-assist.service';
-import { HiddenDataExtractorService } from './hidden-data.service';
+import { HiddenDataExtractorService } from '../kloel/mind/knowledge/hidden-data.service';
 import { KnowledgeBaseController } from './knowledge-base.controller';
 import { KnowledgeBaseService } from './knowledge-base.service';
 import { MediaFactoryService } from './media-factory.service';

@@ -1,4 +1,4 @@
-jest.mock('../kloel/openai-wrapper', () => ({
+jest.mock('../../openai-wrapper', () => ({
   chatCompletionWithRetry: jest.fn().mockResolvedValue({
     usage: { total_tokens: 100 },
     choices: [
@@ -19,7 +19,7 @@ jest.mock('../kloel/openai-wrapper', () => ({
 
 import { ConfigService } from '@nestjs/config';
 import { HiddenDataExtractorService } from './hidden-data.service';
-import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
+import { chatCompletionWithRetry } from '../../openai-wrapper';
 
 describe('HiddenDataExtractorService', () => {
   let service: HiddenDataExtractorService;
