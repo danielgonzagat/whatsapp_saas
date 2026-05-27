@@ -7,7 +7,7 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 import { ChannelTransportRegistry } from './channel-transport.registry';
 import { DailyLimitService } from './daily-limit.service';
 import { BrainEventSpineService } from './brain-event-spine.service';
-import type { IWhatsappMessaging } from '../whatsapp/whatsapp.interfaces';
+import type { IWhatsappMessaging } from '../marketing/channels/whatsapp/whatsapp.interfaces';
 import type { ChannelSendResult } from './channel-transport.types';
 
 jest.mock('../marketing/mailbox-gmail-oauth.service', () => ({

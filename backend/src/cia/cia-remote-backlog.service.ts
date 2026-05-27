@@ -10,7 +10,7 @@ import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registr
 import { WahaChatSummary } from '../whatsapp/providers/whatsapp-api.provider';
 import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../whatsapp/whatsapp-normalization.util';
 import { WHATSAPP_MESSAGING } from '../whatsapp/whatsapp.tokens';
-import type { IWhatsappMessaging } from '../whatsapp/whatsapp.interfaces';
+import type { IWhatsappMessaging } from '../marketing/channels/whatsapp/whatsapp.interfaces';
 import type { BacklogMode } from '../whatsapp/cia-remote-backlog.helpers';
 import { loadRemotePendingBatchHelper } from '../whatsapp/cia-remote-backlog.helpers';
 

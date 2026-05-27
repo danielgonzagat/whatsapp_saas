@@ -16,7 +16,7 @@ import {
   type GuestCheckSettings,
   CATCHUP_SWEEP_LIMIT,
 } from '../marketing/channels/whatsapp/whatsapp-catchup-config';
-import type { ICiaRuntime } from './whatsapp.interfaces';
+import type { ICiaRuntime } from '../marketing/channels/whatsapp/whatsapp.interfaces';
 
 export type CatchupRunSummary = {
   importedMessages: number;

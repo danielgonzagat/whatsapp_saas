@@ -31,7 +31,7 @@ import {
   type WahaMessagePayload,
 } from '../marketing/channels/whatsapp/whatsapp-catchup-history.shared';
 
-import type { CatchupBackfillCursor } from './whatsapp.interfaces';
+import type { CatchupBackfillCursor } from '../marketing/channels/whatsapp/whatsapp.interfaces';
 export type { CatchupBackfillCursor };
 
 @Injectable()

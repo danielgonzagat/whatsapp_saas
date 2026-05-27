@@ -19,14 +19,17 @@ import {
   getLidPnMapExt,
   isWorkspaceSelfChatIdExt,
 } from './whatsapp-catchup.helpers';
-import { normalizeChatsExt, normalizeMessagesExt } from './whatsapp-catchup.normalizers';
+import {
+  normalizeChatsExt,
+  normalizeMessagesExt,
+} from '../marketing/channels/whatsapp/whatsapp-catchup.normalizers';
 import { INBOUND_PROCESSOR, CIA_RUNTIME, CATCHUP_HISTORY } from './whatsapp.tokens';
 import type {
   IInboundProcessor,
   ICiaRuntime,
   ICatchupHistory,
   CatchupBackfillCursor,
-} from './whatsapp.interfaces';
+} from '../marketing/channels/whatsapp/whatsapp.interfaces';
 import {
   safeStr,
   CATCHUP_LOCK_TTL_SECONDS,
