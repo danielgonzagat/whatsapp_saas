@@ -342,6 +342,8 @@ export const autopilotQueue = lazyQueue('autopilot-jobs');
 export const webhookQueue = lazyQueue('webhook-jobs');
 /** Silent 24h resolver queue. */
 export const silent24hResolverQueue = lazyQueue('silent-24h-resolver');
+/** Mass send queue. */
+export const massSendQueue = lazyQueue('mass-send');
 
 // queueOptions is built lazily so reading it does not trigger
 // connection creation unless someone actually consumes it.
@@ -366,6 +368,7 @@ export const queueRegistry: BullQueue[] = [
   autopilotQueue,
   webhookQueue,
   silent24hResolverQueue,
+  massSendQueue,
 ];
 
 // ─── DLQ webhook notifier ─────────────────────────────────────────────────
