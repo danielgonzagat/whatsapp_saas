@@ -68,7 +68,7 @@ describe('coverage-fill: CTA visual states', () => {
     expect(btn.style.background).toBe('transparent');
   });
 
-  it('focus keeps the canonical CTA free of custom box shadow', () => {
+  it('focus applies the canonical CTA ember ring', () => {
     render(
       <CTA C={C} variant="ember">
         Focusable
@@ -76,9 +76,9 @@ describe('coverage-fill: CTA visual states', () => {
     );
     const btn = screen.getByRole('button');
     fireEvent.focus(btn);
-    expect(btn.style.boxShadow).toBe('');
+    expect(btn.style.boxShadow).toBe(`0 0 0 2px ${C.ember}`);
     fireEvent.blur(btn);
-    expect(btn.style.boxShadow).toBe('');
+    expect(btn.style.boxShadow).toBe('none');
   });
 
   it('focus stays inert when disabled', () => {
