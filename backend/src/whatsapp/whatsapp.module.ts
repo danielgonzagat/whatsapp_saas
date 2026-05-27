@@ -22,7 +22,7 @@ import { WahaProvider } from './providers/waha.provider';
 import { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import { WhatsappCatchupOrchestratorService } from './whatsapp-catchup-orchestrator.service';
-import { WhatsappCatchupHistoryService } from './whatsapp-catchup-history.service';
+import { WhatsappCatchupHistoryService } from '../marketing/channels/whatsapp/whatsapp-catchup-history.service';
 import { WhatsAppWatchdogService } from '../marketing/channels/whatsapp/whatsapp-watchdog.service';
 import { WhatsAppWatchdogRecoveryService } from '../marketing/channels/whatsapp/whatsapp-watchdog-recovery.service';
 import { WhatsAppWatchdogSessionService } from '../marketing/channels/whatsapp/whatsapp-watchdog-session.service';
