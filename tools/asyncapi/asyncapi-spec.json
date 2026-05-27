@@ -222,42 +222,6 @@
         }
       }
     },
-    "checkout.created": {
-      "description": "checkout domain event",
-      "parameters": {
-        "domain": "checkout"
-      },
-      "publish": {
-        "summary": "checkout.created",
-        "message": {
-          "$ref": "#/components/messages/checkout_created"
-        }
-      }
-    },
-    "checkout.deleted": {
-      "description": "checkout domain event",
-      "parameters": {
-        "domain": "checkout"
-      },
-      "publish": {
-        "summary": "checkout.deleted",
-        "message": {
-          "$ref": "#/components/messages/checkout_deleted"
-        }
-      }
-    },
-    "checkout.updated": {
-      "description": "checkout domain event",
-      "parameters": {
-        "domain": "checkout"
-      },
-      "publish": {
-        "summary": "checkout.updated",
-        "message": {
-          "$ref": "#/components/messages/checkout_updated"
-        }
-      }
-    },
     "cognition.analysis_completed": {
       "description": "cognition domain event",
       "parameters": {
@@ -1931,81 +1895,6 @@
             "eventName": {
               "type": "string",
               "const": "channel.message_sent"
-            },
-            "workspaceId": {
-              "type": "string"
-            },
-            "timestamp": {
-              "type": "string",
-              "format": "date-time"
-            },
-            "payload": {
-              "type": "object",
-              "description": "Event-specific payload (see spine-event.types.ts)"
-            }
-          }
-        }
-      },
-      "checkout_created": {
-        "name": "checkout.created",
-        "title": "created",
-        "summary": "checkout event",
-        "payload": {
-          "type": "object",
-          "properties": {
-            "eventName": {
-              "type": "string",
-              "const": "checkout.created"
-            },
-            "workspaceId": {
-              "type": "string"
-            },
-            "timestamp": {
-              "type": "string",
-              "format": "date-time"
-            },
-            "payload": {
-              "type": "object",
-              "description": "Event-specific payload (see spine-event.types.ts)"
-            }
-          }
-        }
-      },
-      "checkout_deleted": {
-        "name": "checkout.deleted",
-        "title": "deleted",
-        "summary": "checkout event",
-        "payload": {
-          "type": "object",
-          "properties": {
-            "eventName": {
-              "type": "string",
-              "const": "checkout.deleted"
-            },
-            "workspaceId": {
-              "type": "string"
-            },
-            "timestamp": {
-              "type": "string",
-              "format": "date-time"
-            },
-            "payload": {
-              "type": "object",
-              "description": "Event-specific payload (see spine-event.types.ts)"
-            }
-          }
-        }
-      },
-      "checkout_updated": {
-        "name": "checkout.updated",
-        "title": "updated",
-        "summary": "checkout event",
-        "payload": {
-          "type": "object",
-          "properties": {
-            "eventName": {
-              "type": "string",
-              "const": "checkout.updated"
             },
             "workspaceId": {
               "type": "string"
