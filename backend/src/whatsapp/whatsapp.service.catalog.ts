@@ -2,7 +2,7 @@ import { BadRequestException } from '@nestjs/common';
 import { forEachSequential } from '../common/async-sequence';
 import { buildQueueJobId } from '../queue/job-id.util';
 import { autopilotQueue } from '../queue/queue';
-import { collectCatalogContactEntriesExt } from './whatsapp-catalog-contact-collector';
+import { collectCatalogContactEntriesExt } from '../marketing/channels/whatsapp/whatsapp-catalog-contact-collector';
 import { rankByPurchaseProbability } from '../marketing/channels/whatsapp/whatsapp.service.ranking';
 import { readText } from '../common/utils';
 import { normalizeJsonObjExt } from '../marketing/channels/whatsapp/whatsapp-service.helpers';
