@@ -59,8 +59,12 @@ export class InstagramController {
     @Query('accessToken') accessToken: string,
   ) {
     const workspaceId = resolveWorkspaceId(req);
-    const connection = await this.resolveInstagramConnection(workspaceId, igAccountId, accessToken);
-    return this.instagramService.getProfile(connection.igAccountId, connection.accessToken);
+    const channelSession = await this.resolveInstagramConnection(
+      workspaceId,
+      igAccountId,
+      accessToken,
+    );
+    return this.instagramService.getProfile(channelSession.igAccountId, channelSession.accessToken);
   }
 
   /** Get media. */
@@ -72,8 +76,16 @@ export class InstagramController {
     @Query('accessToken') accessToken: string,
   ) {
     const workspaceId = resolveWorkspaceId(req);
-    const connection = await this.resolveInstagramConnection(workspaceId, igAccountId, accessToken);
-    return this.instagramService.getMedia(connection.igAccountId, limit, connection.accessToken);
+    const channelSession = await this.resolveInstagramConnection(
+      workspaceId,
+      igAccountId,
+      accessToken,
+    );
+    return this.instagramService.getMedia(
+      channelSession.igAccountId,
+      limit,
+      channelSession.accessToken,
+    );
   }
 
   /** Get account insights. */
@@ -86,13 +98,17 @@ export class InstagramController {
     @Query('accessToken') accessToken: string,
   ) {
     const workspaceId = resolveWorkspaceId(req);
-    const connection = await this.resolveInstagramConnection(workspaceId, igAccountId, accessToken);
+    const channelSession = await this.resolveInstagramConnection(
+      workspaceId,
+      igAccountId,
+      accessToken,
+    );
     const metricsList = metrics ? metrics.split(',') : ['impressions', 'reach', 'follower_count'];
     return this.instagramService.getAccountInsights(
-      connection.igAccountId,
+      channelSession.igAccountId,
       metricsList,
       period || 'day',
-      connection.accessToken,
+      channelSession.accessToken,
     );
   }
 
@@ -109,16 +125,16 @@ export class InstagramController {
     },
   ) {
     const workspaceId = resolveWorkspaceId(req);
-    const connection = await this.resolveInstagramConnection(
+    const channelSession = await this.resolveInstagramConnection(
       workspaceId,
       body.igAccountId,
       body.accessToken,
     );
     return this.instagramService.publishPhoto(
-      connection.igAccountId,
+      channelSession.igAccountId,
       body.imageUrl,
       body.caption,
-      connection.accessToken,
+      channelSession.accessToken,
     );
   }
 
@@ -126,10 +142,10 @@ export class InstagramController {
   @Get('media/:id/comments')
   async getComments(@Req() req: AuthenticatedRequest, @Param('id') mediaId: string) {
     const workspaceId = resolveWorkspaceId(req);
-    const connection = await this.resolveInstagramConnection(workspaceId);
+    const channelSession = await this.resolveInstagramConnection(workspaceId);
     return this.instagramService.getComments(
       normalizeMetaGraphSegment(mediaId, 'Instagram media id'),
-      connection.accessToken,
+      channelSession.accessToken,
     );
   }
 
@@ -141,11 +157,11 @@ export class InstagramController {
     @Body() body: { text: string },
   ) {
     const workspaceId = resolveWorkspaceId(req);
-    const connection = await this.resolveInstagramConnection(workspaceId);
+    const channelSession = await this.resolveInstagramConnection(workspaceId);
     return this.instagramService.replyToComment(
       normalizeMetaGraphSegment(commentId, 'Instagram comment id'),
       body.text,
-      connection.accessToken,
+      channelSession.accessToken,
     );
   }
 
@@ -162,16 +178,16 @@ export class InstagramController {
     },
   ) {
     const workspaceId = resolveWorkspaceId(req);
-    const connection = await this.resolveInstagramConnection(
+    const channelSession = await this.resolveInstagramConnection(
       workspaceId,
       body.igAccountId,
       body.accessToken,
     );
     return this.instagramService.sendMessage(
-      connection.igAccountId,
+      channelSession.igAccountId,
       normalizeMetaGraphSegment(body.recipientId, 'Instagram recipient id'),
       body.text,
-      connection.accessToken,
+      channelSession.accessToken,
     );
   }
 }

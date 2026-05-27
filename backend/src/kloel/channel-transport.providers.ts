@@ -61,8 +61,12 @@ export class InstagramChannelTransport implements ChannelTransportProvider {
         ['META_APP_SECRET', 'META_APP_ID'],
       );
     }
-    const connection = await this.metaConnection?.resolveConnection(workspaceId);
-    if (!connection?.instagramAccountId || !connection.accessToken || connection.tokenExpired) {
+    const channelSession = await this.metaConnection?.resolveConnection(workspaceId);
+    if (
+      !channelSession?.instagramAccountId ||
+      !channelSession.accessToken ||
+      channelSession.tokenExpired
+    ) {
       return blockedCapability(
         'instagram',
         'Instagram outbound bloqueado ate existir uma conta profissional conectada com token valido.',
@@ -78,18 +82,22 @@ export class InstagramChannelTransport implements ChannelTransportProvider {
     }
 
     try {
-      const connection = await this.metaConnection?.resolveConnection(workspaceId);
-      if (!connection?.instagramAccountId || !connection.accessToken || connection.tokenExpired) {
+      const channelSession = await this.metaConnection?.resolveConnection(workspaceId);
+      if (
+        !channelSession?.instagramAccountId ||
+        !channelSession.accessToken ||
+        channelSession.tokenExpired
+      ) {
         return blockedResult(
           'Instagram outbound bloqueado ate existir uma conta profissional conectada com token valido.',
         );
       }
 
       const response = await this.instagram.sendMessage(
-        connection.instagramAccountId,
+        channelSession.instagramAccountId,
         request.recipientId,
         request.content,
-        connection.accessToken,
+        channelSession.accessToken,
       );
 
       this.logger.log(
@@ -135,8 +143,12 @@ export class MessengerChannelTransport implements ChannelTransportProvider {
         ['META_APP_SECRET', 'META_APP_ID'],
       );
     }
-    const connection = await this.metaConnection?.resolveConnection(workspaceId);
-    if (!connection?.pageId || !connection.pageAccessToken || connection.tokenExpired) {
+    const channelSession = await this.metaConnection?.resolveConnection(workspaceId);
+    if (
+      !channelSession?.pageId ||
+      !channelSession.pageAccessToken ||
+      channelSession.tokenExpired
+    ) {
       return blockedCapability(
         'messenger',
         'Messenger outbound bloqueado ate existir pagina conectada com page token valido.',
@@ -152,18 +164,22 @@ export class MessengerChannelTransport implements ChannelTransportProvider {
     }
 
     try {
-      const connection = await this.metaConnection?.resolveConnection(workspaceId);
-      if (!connection?.pageId || !connection.pageAccessToken || connection.tokenExpired) {
+      const channelSession = await this.metaConnection?.resolveConnection(workspaceId);
+      if (
+        !channelSession?.pageId ||
+        !channelSession.pageAccessToken ||
+        channelSession.tokenExpired
+      ) {
         return blockedResult(
           'Messenger outbound bloqueado ate existir pagina conectada com page token valido.',
         );
       }
 
       const response = await this.messenger.sendTextMessage(
-        connection.pageId,
+        channelSession.pageId,
         request.recipientId,
         request.content,
-        connection.pageAccessToken,
+        channelSession.pageAccessToken,
       );
 
       this.logger.log(

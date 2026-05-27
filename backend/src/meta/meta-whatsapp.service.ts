@@ -167,7 +167,7 @@ export class MetaWhatsAppService implements OnModuleInit {
     workspaceId: string,
     channel: string = 'whatsapp',
   ): Promise<ResolvedMetaConnection> {
-    const connection = await this.prisma.metaConnection.findFirst({
+    const channelSession = await this.prisma.metaConnection.findFirst({
       where: { workspaceId, channel },
       select: {
         accessToken: true,
@@ -183,30 +183,31 @@ export class MetaWhatsAppService implements OnModuleInit {
       },
     });
     const accessToken = String(
-      decryptMetaToken(connection?.accessToken) || process.env.META_ACCESS_TOKEN || '',
+      decryptMetaToken(channelSession?.accessToken) || process.env.META_ACCESS_TOKEN || '',
     ).trim();
     const phoneNumberId = String(
-      connection?.whatsappPhoneNumberId || process.env.META_PHONE_NUMBER_ID || '',
+      channelSession?.whatsappPhoneNumberId || process.env.META_PHONE_NUMBER_ID || '',
     ).trim();
     const whatsappBusinessId = String(
-      connection?.whatsappBusinessId || process.env.META_WABA_ID || '',
+      channelSession?.whatsappBusinessId || process.env.META_WABA_ID || '',
     ).trim();
     const tokenExpired = Boolean(
-      connection?.tokenExpiresAt && new Date(connection.tokenExpiresAt).getTime() < Date.now(),
+      channelSession?.tokenExpiresAt &&
+        new Date(channelSession.tokenExpiresAt).getTime() < Date.now(),
     );
     return {
       workspaceId,
       accessToken,
       phoneNumberId,
       whatsappBusinessId: whatsappBusinessId || null,
-      pageId: connection?.pageId || null,
-      pageName: connection?.pageName || null,
-      pageAccessToken: decryptMetaToken(connection?.pageAccessToken),
-      instagramAccountId: connection?.instagramAccountId || null,
-      instagramUsername: connection?.instagramUsername || null,
-      adAccountId: connection?.adAccountId || null,
+      pageId: channelSession?.pageId || null,
+      pageName: channelSession?.pageName || null,
+      pageAccessToken: decryptMetaToken(channelSession?.pageAccessToken),
+      instagramAccountId: channelSession?.instagramAccountId || null,
+      instagramUsername: channelSession?.instagramUsername || null,
+      adAccountId: channelSession?.adAccountId || null,
       tokenExpired,
-      persistedConnection: Boolean(connection),
+      persistedConnection: Boolean(channelSession),
     };
   }
   async discoverWhatsAppAssets(accessToken: string): Promise<{

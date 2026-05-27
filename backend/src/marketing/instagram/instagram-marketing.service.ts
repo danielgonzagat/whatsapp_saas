@@ -10,8 +10,8 @@ type InstagramConnection = {
   instagramUsername: string | null;
 };
 
-function resolveInstagramConnection(connection: unknown): InstagramConnection {
-  const row = connection as Record<string, unknown> | null;
+function resolveInstagramConnection(channelSession: unknown): InstagramConnection {
+  const row = channelSession as Record<string, unknown> | null;
   return {
     accessToken: String(
       decryptMetaToken(typeof row?.accessToken === 'string' ? row.accessToken : null) ||
@@ -33,7 +33,7 @@ export class InstagramMarketingService {
   ) {}
 
   async listAccounts(workspaceId: string) {
-    const connection = await this.prisma.metaConnection.findFirst({
+    const channelSession = await this.prisma.metaConnection.findFirst({
       where: { workspaceId, channel: 'instagram' },
       select: {
         instagramAccountId: true,
@@ -43,17 +43,17 @@ export class InstagramMarketingService {
       },
     });
 
-    if (!connection?.instagramAccountId) {
+    if (!channelSession?.instagramAccountId) {
       return { accounts: [] };
     }
 
     return {
       accounts: [
         {
-          instagramAccountId: connection.instagramAccountId,
-          username: connection.instagramUsername,
-          pageName: connection.pageName,
-          status: connection.status,
+          instagramAccountId: channelSession.instagramAccountId,
+          username: channelSession.instagramUsername,
+          pageName: channelSession.pageName,
+          status: channelSession.status,
         },
       ],
     };
@@ -63,14 +63,14 @@ export class InstagramMarketingService {
     const row = await this.prisma.metaConnection.findFirst({
       where: { workspaceId, channel: 'instagram' },
     });
-    const connection = resolveInstagramConnection(row);
+    const channelSession = resolveInstagramConnection(row);
 
-    if (!connection.instagramAccountId) {
+    if (!channelSession.instagramAccountId) {
       throw new BadRequestException('instagram_account_not_connected');
     }
 
-    const igAccountId = connection.instagramAccountId;
-    const accessToken = connection.accessToken;
+    const igAccountId = channelSession.instagramAccountId;
+    const accessToken = channelSession.accessToken;
 
     const result = await this.instagramService.publishPhoto(
       igAccountId,
@@ -104,14 +104,14 @@ export class InstagramMarketingService {
     const row = await this.prisma.metaConnection.findFirst({
       where: { workspaceId, channel: 'instagram' },
     });
-    const connection = resolveInstagramConnection(row);
+    const channelSession = resolveInstagramConnection(row);
 
-    if (!connection.instagramAccountId) {
+    if (!channelSession.instagramAccountId) {
       throw new BadRequestException('instagram_account_not_connected');
     }
 
-    const igAccountId = connection.instagramAccountId;
-    const accessToken = connection.accessToken;
+    const igAccountId = channelSession.instagramAccountId;
+    const accessToken = channelSession.accessToken;
 
     const result = await this.instagramService.getAccountInsights(
       igAccountId,

@@ -271,15 +271,15 @@ export class FacebookMessengerService {
     pageId: string | null;
     pageName: string | null;
   }> {
-    const connection = await this.prisma.metaConnection.findFirst({
+    const channelSession = await this.prisma.metaConnection.findFirst({
       where: { workspaceId, channel: 'facebook' },
       select: { pageId: true, pageName: true },
     });
 
     return {
-      connected: Boolean(connection?.pageId),
-      pageId: connection?.pageId || null,
-      pageName: connection?.pageName || null,
+      connected: Boolean(channelSession?.pageId),
+      pageId: channelSession?.pageId || null,
+      pageName: channelSession?.pageName || null,
     };
   }
 
