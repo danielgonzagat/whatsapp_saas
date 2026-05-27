@@ -26,8 +26,8 @@ import {
   buildTextMessageContent,
   buildMediaMessageContent,
   parseMessageIdFromResponse,
-  normalizeWhatsAppPhone,
 } from './meta-whatsapp.message.helpers';
+import { digitsOnly } from '../common/phone';
 type ResolvedMetaConnection = {
   workspaceId: string;
   accessToken: string;
@@ -553,6 +553,6 @@ export class MetaWhatsAppService implements OnModuleInit {
     return getRequestedScopesForChannel(channel);
   }
   private normalizePhone(value: string): string {
-    return normalizeWhatsAppPhone(value);
+    return digitsOnly(value);
   }
 }

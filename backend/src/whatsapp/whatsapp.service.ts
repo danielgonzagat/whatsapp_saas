@@ -19,8 +19,8 @@ import { isPlaceholderContactName as isPlaceholderName } from './whatsapp-normal
 import {
   resolveTimestampExt,
   toIsoTimestamp,
-  normalizeNumber,
 } from '../marketing/channels/whatsapp/whatsapp-service.helpers';
+import { digitsOnly } from '../common/phone';
 import {
   normalizeContactsArray,
   normalizeChatsArray,
@@ -75,7 +75,7 @@ export class WhatsappService {
     return '';
   }
   private normalizeNumber(num: string): string {
-    return normalizeNumber(num);
+    return digitsOnly(num);
   }
   private isIndividualChatId(c?: string | null): boolean {
     const v = String(c || '').trim();

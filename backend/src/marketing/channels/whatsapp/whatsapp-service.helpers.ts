@@ -1,8 +1,8 @@
-import { NON_DIGIT_RE } from '../../../common/phone';
+import { digitsOnly } from '../../../common/phone';
 import { readText } from '../../../common/utils';
 
 export function normalizeNumber(num: string): string {
-  return num.replace(NON_DIGIT_RE, '');
+  return digitsOnly(num);
 }
 
 export function normalizeJsonObjExt(value: unknown): Record<string, unknown> {

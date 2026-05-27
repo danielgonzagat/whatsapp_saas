@@ -10,8 +10,8 @@ import {
 } from './providers/whatsapp-api.provider';
 import {
   normalizeJsonObjExt,
-  normalizeNumber,
 } from '../marketing/channels/whatsapp/whatsapp-service.helpers';
+import { digitsOnly } from '../common/phone';
 import type { ProviderSettings } from './provider-settings.types';
 import { WhatsAppEventEmitterService } from '../kloel/whatsapp-emitter/whatsapp-event-emitter.service';
 
@@ -40,7 +40,7 @@ export class WhatsappSessionService {
   }
 
   private normalizeNumber(num: string): string {
-    return normalizeNumber(num);
+    return digitsOnly(num);
   }
 
   private normalizeChatId(chatId: string): string {

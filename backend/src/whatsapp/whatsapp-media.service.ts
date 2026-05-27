@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
-import { normalizeNumber } from '../marketing/channels/whatsapp/whatsapp-service.helpers';
+import { digitsOnly } from '../common/phone';
 
 @Injectable()
 export class WhatsappMediaService {
@@ -11,7 +11,7 @@ export class WhatsappMediaService {
   }
 
   normalizeNumber(num: string): string {
-    return normalizeNumber(num);
+    return digitsOnly(num);
   }
 
   normalizeChatId(chatId: string): string {

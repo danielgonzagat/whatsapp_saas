@@ -1,4 +1,4 @@
-import { NON_DIGIT_RE } from '../common/phone';
+import { digitsOnly } from '../common/phone';
 
 /**
  * Build the `text` field content for a WhatsApp text message.
@@ -53,5 +53,5 @@ export function parseMessageIdFromResponse(response: Record<string, unknown>): s
  * Canonical alias for the private normalizePhone in MetaWhatsAppService.
  */
 export function normalizeWhatsAppPhone(value: string): string {
-  return String(value || '').replace(NON_DIGIT_RE, '');
+  return digitsOnly(value);
 }

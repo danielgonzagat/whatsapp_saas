@@ -20,10 +20,9 @@ import {
   normalizeJsonObjExt,
   normalizeHashExt,
   isAutonomousEnabledExt,
-  normalizeNumber,
 } from '../marketing/channels/whatsapp/whatsapp-service.helpers';
 import type { ProviderSettings } from './provider-settings.types';
-import { NON_DIGIT_RE } from '../common/phone';
+import { digitsOnly, NON_DIGIT_RE } from '../common/phone';
 
 type ExternalProviderPayload = Record<string, unknown>;
 
@@ -72,7 +71,7 @@ export class WhatsappReconcilerService {
   }
 
   private normalizeNumber(num: string): string {
-    return normalizeNumber(num);
+    return digitsOnly(num);
   }
 
   private normalizeJsonObject(v: unknown): ExternalProviderPayload {
