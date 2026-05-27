@@ -23,18 +23,25 @@ export function formatToolResult(tool: string, result: unknown): string {
       const cat = p.category ? ` [${p.category}]` : '';
       return `Produto ${s(p.name)}${cat}${fmt} criado! R$ ${s(p.price)}`;
     }
-    case 'update_product': {
+    case 'update_product':
+    case 'products.update': {
       const p = (r.product as Record<string, unknown> | undefined) ?? {};
       return `Produto ${s(p.name)} atualizado. Preco: R$ ${s(p.price)}`;
     }
     case 'delete_product':
       return 'Produto removido.';
-    case 'create_plan': {
+    case 'create_plan':
+    case 'plans.create': {
       const p = (r.plan as Record<string, unknown> | undefined) ?? {};
       const pn = s(p.name);
       return pn === 'Plano'
         ? `Plano criado! R$ ${s(p.price)}`
         : `Plano ${pn} criado! R$ ${s(p.price)}`;
+    }
+    case 'update_plan':
+    case 'plans.update': {
+      const p = (r.plan as Record<string, unknown> | undefined) ?? {};
+      return `Plano ${s(p.name)} atualizado. Preco: R$ ${s(p.price)}`;
     }
     case 'get_product_plans': {
       const plans = Array.isArray(r.plans) ? (r.plans as Array<Record<string, unknown>>) : [];
@@ -44,8 +51,13 @@ export function formatToolResult(tool: string, result: unknown): string {
       return `Planos: ${plans.map((p) => `${s(p.name)} - R$ ${s(p.price)}`).join(', ')}`;
     }
     case 'create_checkout':
+    case 'checkouts.create':
       return `Checkout ${s(r.name || r.checkoutName, 'criado')}!`;
-    case 'create_coupon': {
+    case 'update_checkout':
+    case 'checkouts.update':
+      return `Checkout ${s(r.name || r.checkoutName, 'criado')} atualizado.`;
+    case 'create_coupon':
+    case 'coupons.create': {
       const cc = (r.coupon as Record<string, unknown> | undefined) ?? {};
       return `Cupom ${s(cc.code || r.code)} criado!`;
     }
@@ -62,6 +74,7 @@ export function formatToolResult(tool: string, result: unknown): string {
       return `Checkouts: ${chk.map((c) => s(c.name || c.id)).join(', ')}`;
     }
     case 'delete_coupon':
+    case 'coupons.delete':
       return 'Cupom removido.';
     case 'list_coupons': {
       const coupons = Array.isArray(r.coupons) ? (r.coupons as Array<Record<string, unknown>>) : [];

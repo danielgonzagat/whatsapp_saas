@@ -63,6 +63,45 @@ describe('guest chat action intent helpers', () => {
     );
   });
 
+  it('routes mutable product sub-resource intents through canonical capability IDs', () => {
+    expect(detectActionIntent('atualiza o produto Serum, preco R$ 197')?.tool).toBe(
+      'products.update',
+    );
+    expect(detectActionIntent('cria plano Mensal para o produto Serum')?.tool).toBe('plans.create');
+    expect(detectActionIntent('muda o plano Mensal para 12 parcelas')?.tool).toBe('plans.update');
+    expect(detectActionIntent('cria checkout para Serum')?.tool).toBe('checkouts.create');
+    expect(detectActionIntent('vincula plano Mensal ao checkout Principal')?.tool).toBe(
+      'checkouts.update',
+    );
+    expect(detectActionIntent('cria cupom SAVE10 para Serum')?.tool).toBe('coupons.create');
+    expect(detectActionIntent('remove o cupom SAVE10')?.tool).toBe('coupons.delete');
+  });
+
+  it('formats canonical mutation aliases with domain-specific wording', () => {
+    expect(
+      formatToolResult('products.update', {
+        success: true,
+        product: { name: 'Serum', price: 197 },
+      }),
+    ).toBe('Produto Serum atualizado. Preco: R$ 197');
+    expect(
+      formatToolResult('plans.create', { success: true, plan: { name: 'Mensal', price: 99 } }),
+    ).toBe('Plano Mensal criado! R$ 99');
+    expect(
+      formatToolResult('plans.update', { success: true, plan: { name: 'Mensal', price: 147 } }),
+    ).toBe('Plano Mensal atualizado. Preco: R$ 147');
+    expect(formatToolResult('checkouts.create', { success: true, name: 'Principal' })).toBe(
+      'Checkout Principal!',
+    );
+    expect(formatToolResult('checkouts.update', { success: true, name: 'Principal' })).toBe(
+      'Checkout Principal atualizado.',
+    );
+    expect(formatToolResult('coupons.create', { success: true, coupon: { code: 'SAVE10' } })).toBe(
+      'Cupom SAVE10 criado!',
+    );
+    expect(formatToolResult('coupons.delete', { success: true })).toBe('Cupom removido.');
+  });
+
   it('extracts product names from no-produto contexts and explicit names', () => {
     expect(extractProductName('listar urls no produto Serum?')).toBe('Serum');
     expect(extractProductArgs('criar produto nome: Serum Pro, preco R$ 147')).toEqual(
@@ -76,12 +115,12 @@ describe('guest chat action intent helpers', () => {
 
   it('routes retained plan checkout warranty and broadcast intent deltas', () => {
     const disabledPlan = detectActionIntent('desativa o plano Mensal');
-    expect(disabledPlan?.tool).toBe('update_plan');
+    expect(disabledPlan?.tool).toBe('plans.update');
     expect(disabledPlan?.args.planName).toBe('mensal');
     expect(disabledPlan?.args.active).toBe(false);
 
     const enabledPlan = detectActionIntent('ativa o plano Mensal');
-    expect(enabledPlan?.tool).toBe('update_plan');
+    expect(enabledPlan?.tool).toBe('plans.update');
     expect(enabledPlan?.args.active).toBe(true);
 
     const checkouts = detectActionIntent('lista os checkouts');

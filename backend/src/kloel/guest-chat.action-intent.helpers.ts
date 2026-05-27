@@ -43,7 +43,7 @@ export function detectActionIntent(
       msg,
     )
   ) {
-    return { tool: 'update_product', args: extractProductArgs(msg) };
+    return { tool: 'products.update', args: extractProductArgs(msg) };
   }
   if (/(apaga|deleta|exclui|remove)(?:r|ndo)?\s+(?:um[a]?\s+)?(?:o\s+)?produto/.test(msg)) {
     return { tool: 'delete_product', args: { productName: extractProductName(msg) } };
@@ -94,7 +94,7 @@ export function detectActionIntent(
 
   // ── PLANOS ──
   if (/cria(r|ndo)?\s+(?:um[a]?\s+)?(?:o\s+|a\s+)?(plano|parcelamento)/.test(msg)) {
-    return { tool: 'create_plan', args: extractPlanArgs(msg) };
+    return { tool: 'plans.create', args: extractPlanArgs(msg) };
   }
   if (
     /(?:lista(?:r|ndo)?|mostra(?:r|ndo)?|ve(?:r|ndo)?|quais?\s+(?:s[aã]o\s+)?(?:os?\s+)?|meus?\s+)planos?/i.test(
@@ -108,7 +108,7 @@ export function detectActionIntent(
       msg,
     )
   ) {
-    return { tool: 'update_plan', args: extractPlanArgs(msg) };
+    return { tool: 'plans.update', args: extractPlanArgs(msg) };
   }
 
   // ── BROADCAST / CAMPANHA ──
@@ -133,14 +133,14 @@ export function detectActionIntent(
 
   // ── CHECKOUTS ──
   if (/cria(r|ndo)?\s+(?:um[a]?\s+)?(?:o\s+|a\s+)?checkout/.test(msg)) {
-    return { tool: 'create_checkout', args: extractPlanArgs(msg) };
+    return { tool: 'checkouts.create', args: extractPlanArgs(msg) };
   }
   if (
     /(?:vincula|adiciona|linka)(?:r|ndo)?\s+(?:o\s+|a\s+)?plano\s+[A-Za-zÀ-ÿ0-9\s\-.]+\s+(?:no|ao)\s+checkout/i.test(
       msg,
     )
   ) {
-    return { tool: 'update_checkout', args: extractPlanArgs(msg) };
+    return { tool: 'checkouts.update', args: extractPlanArgs(msg) };
   }
   if (
     /(?:lista(?:r|ndo)?|meus|ver|mostra)\s+(?:os\s+|as\s+)?(?:checkouts?|p[aá]ginas?\s+(?:de\s+)?checkouts?)/.test(
@@ -152,13 +152,13 @@ export function detectActionIntent(
 
   // ── CUPONS ──
   if (/cria(r|ndo)?\s+(?:um[a]?\s+)?(?:o\s+|a\s+)?cupom/.test(msg)) {
-    return { tool: 'create_coupon', args: extractCouponArgs(msg) };
+    return { tool: 'coupons.create', args: extractCouponArgs(msg) };
   }
   if (/lista(r|ndo)?\s+(?:meus\s+)?cupons?/.test(msg)) {
     return { tool: 'list_coupons', args: {} };
   }
   if (/(apaga|deleta|exclui|remove)(?:r|ndo)?\s+(?:o\s+|a\s+)?cupom/.test(msg)) {
-    return { tool: 'delete_coupon', args: extractCouponArgs(msg) };
+    return { tool: 'coupons.delete', args: extractCouponArgs(msg) };
   }
 
   // ── CRIAR VENDA / PEDIDO MANUAL ──
@@ -323,7 +323,7 @@ export function detectActionIntent(
     )
   ) {
     const isCheckout = /checkout/.test(msg);
-    return { tool: isCheckout ? 'update_checkout' : 'update_plan', args: extractPlanArgs(msg) };
+    return { tool: isCheckout ? 'checkouts.update' : 'plans.update', args: extractPlanArgs(msg) };
   }
 
   // ── CRM / PIPELINE ──
