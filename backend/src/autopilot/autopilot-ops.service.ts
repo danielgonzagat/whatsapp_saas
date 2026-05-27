@@ -17,7 +17,7 @@ import { AutopilotOpsConversionService } from './autopilot-ops-conversion.servic
  * @cluster whatsapp_saas/backend/autopilot
  * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
  */
-import { digitsOnly } from '../common/phone';
+import { extractAsciiDigits } from '../common/phone/phone-normalization.util';
 
 /** Autopilot operational methods: pipeline status, smoke test, enqueue. Retry/conversion delegated to AutopilotOpsConversionService. */
 @Injectable()
@@ -33,11 +33,18 @@ export class AutopilotOpsService {
   }
 
   /**
-   * @deprecated TODO(omnicore): migrate to `backend/src/common/phone/phone-normalization.util.ts`.
-   *   Tracking: DEPRECATION_MAP.md #39.
+   * Smoke-test phone normalizer: digits-only, empty-string-when-missing.
+   *
+   * Delegates to the canonical {@link extractAsciiDigits} so this autopilot
+   * call site shares a single normalization implementation with the rest of
+   * the backend. Returns `''` (never `null`) on empty input so the existing
+   * `this.normalizePhone(x) || this.normalizePhone(y) || fallback` chain
+   * keeps falling through cleanly.
+   *
+   * @see backend/src/common/phone/phone-normalization.util.ts
    */
   private normalizePhone(phone?: string) {
-    return digitsOnly(phone);
+    return extractAsciiDigits(phone);
   }
 
   private async sleep(ms: number) {
