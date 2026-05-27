@@ -76,8 +76,22 @@ export async function runCreatePaymentLink(
   _prisma: PrismaService,
   smartPaymentService: SmartPaymentService,
   workspaceId: string,
-  args: { amount: number; description: string; customerName?: string },
+  args: {
+    amount: number;
+    description: string;
+    customerName?: string;
+    executionPath?: 'dispatcher';
+  },
 ): Promise<ToolResult> {
+  if (args.executionPath !== 'dispatcher') {
+    return {
+      success: false,
+      error: 'canonical_dispatcher_required',
+      message:
+        'create_payment_link must be executed through the canonical dispatcher receipt path.',
+    };
+  }
+
   logger.log('Payment operation', {
     context: 'KloelChatTools.toolCreatePaymentLink',
     action: 'createSmartPayment',

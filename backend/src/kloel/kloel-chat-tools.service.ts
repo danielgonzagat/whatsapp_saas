@@ -217,7 +217,12 @@ export class KloelChatToolsService {
   }
   async toolCreatePaymentLink(
     workspaceId: string,
-    args: { amount: number; description: string; customerName?: string },
+    args: {
+      amount: number;
+      description: string;
+      customerName?: string;
+      executionPath?: 'dispatcher';
+    },
   ): Promise<ToolResult> {
     return runCreatePaymentLink(this.prisma, this.smartPaymentService, workspaceId, args);
   }

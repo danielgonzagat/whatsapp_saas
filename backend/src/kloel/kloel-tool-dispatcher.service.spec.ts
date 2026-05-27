@@ -255,6 +255,42 @@ describe('KloelToolDispatcherService', () => {
 
     describe('create_payment_link', () => {
       it('routes create_payment_link and writes audit log', async () => {
+        capRegistryV2Service.get.mockReturnValueOnce({
+          id: 'create_payment_link',
+          title: 'Criar link de pagamento',
+          emits: ['checkout.generated'],
+          evidenceUrlBuilder: '/pagamentos/${orderId}',
+        });
+        Object.assign(capRegistryV2Service, {
+          createReceipt: jest.fn(
+            (params: {
+              capabilityId: string;
+              title: string;
+              context: { workspaceId: string; actorId: string; idempotencyKey: string };
+              inputs: Record<string, unknown>;
+              outputs: Record<string, unknown>;
+              domainEvents: string[];
+              auditLogId: string;
+              evidenceUrl?: string;
+              durationMs: number;
+              success: boolean;
+            }) => ({
+              capabilityId: params.capabilityId,
+              title: params.title,
+              workspaceId: params.context.workspaceId,
+              actorId: params.context.actorId,
+              inputs: params.inputs,
+              outputs: params.outputs,
+              domainEvents: params.domainEvents,
+              auditLogId: params.auditLogId,
+              evidenceUrl: params.evidenceUrl,
+              timestamp: '2026-05-27T00:00:00.000Z',
+              durationMs: params.durationMs,
+              idempotencyKey: params.context.idempotencyKey,
+              success: params.success,
+            }),
+          ),
+        });
         chatToolsService.toolCreatePaymentLink = jest.fn().mockResolvedValue({
           success: true,
           paymentUrl: 'https://pay.test/checkout',
@@ -266,11 +302,18 @@ describe('KloelToolDispatcherService', () => {
           description: 'Produto',
         });
 
-        expect(result.success).toBe(true);
+        expect(result).toEqual(expect.objectContaining({ success: true }));
         expect(chatToolsService.toolCreatePaymentLink).toHaveBeenCalledWith(DEFAULT_WS_ID, {
           amount: 99.9,
           description: 'Produto',
+          executionPath: 'dispatcher',
         });
+        expect(result.receipt).toEqual(
+          expect.objectContaining({
+            capabilityId: 'create_payment_link',
+            success: true,
+          }),
+        );
         expect(prisma.$transaction).toHaveBeenCalled();
       });
     });

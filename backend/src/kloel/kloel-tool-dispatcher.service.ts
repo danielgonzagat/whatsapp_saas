@@ -1220,7 +1220,10 @@ export class KloelToolDispatcherService {
       description: asString(args.description),
       ...(typeof args.customerName === 'string' ? { customerName: args.customerName } : {}),
     };
-    const result = await this.chatToolsService.toolCreatePaymentLink(workspaceId, paymentArgs);
+    const result = await this.chatToolsService.toolCreatePaymentLink(workspaceId, {
+      ...paymentArgs,
+      executionPath: 'dispatcher',
+    });
     try {
       await this.prisma.$transaction(
         async (tx) => {

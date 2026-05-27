@@ -7,6 +7,18 @@ import { KloelToolExecutorBillingService } from './kloel-tool-executor-billing.s
 import { KloelToolExecutorCrmService } from './kloel-tool-executor-crm.service';
 import { KloelToolExecutorWhatsAppService } from './kloel-tool-executor-whatsapp.service';
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
+jest.mock('./product.service', () => ({
+  ProductService: class MockKloelProductService {},
+}));
+
+jest.mock('../products/product.service', () => ({
+  ProductService: class MockProductService {},
+}));
+
+jest.mock('./kloel-tool-dispatcher.service', () => ({
+  KloelToolDispatcherService: class MockKloelToolDispatcherService {},
+}));
+
 jest.mock('./kloel-tool-executor-whatsapp.service', () => ({
   KloelToolExecutorWhatsAppService: class MockKloelToolExecutorWhatsAppService {},
 }));

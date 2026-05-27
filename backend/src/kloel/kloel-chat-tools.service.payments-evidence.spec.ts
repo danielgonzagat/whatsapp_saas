@@ -10,6 +10,10 @@ import {
   AgentRuntimeEvidenceStoreService,
 } from './agent-runtime';
 
+jest.mock('../products/product.service', () => ({
+  ProductService: class MockProductService {},
+}));
+
 jest.mock('../common/products/legacy-products.util', () => ({
   filterLegacyProducts: jest.fn((products: unknown[]) => products),
 }));
@@ -184,7 +188,7 @@ describe('KloelChatToolsService', () => {
   });
 
   describe('toolCreatePaymentLink', () => {
-    it('delegates to SmartPaymentService in production mode', async () => {
+    it('blocks direct production payment links outside the canonical dispatcher receipt path', async () => {
       const originalNodeEnv = process.env.NODE_ENV;
       process.env.NODE_ENV = 'production';
       smartPayment.createSmartPayment = jest.fn().mockResolvedValue({
@@ -197,10 +201,13 @@ describe('KloelChatToolsService', () => {
           description: 'Produto Teste',
         });
 
-        expect(result.success).toBe(true);
-        expect(smartPayment.createSmartPayment).toHaveBeenCalledWith(
-          expect.objectContaining({ workspaceId: wsId, amount: 99.9 }),
+        expect(result).toEqual(
+          expect.objectContaining({
+            success: false,
+            error: 'canonical_dispatcher_required',
+          }),
         );
+        expect(smartPayment.createSmartPayment).not.toHaveBeenCalled();
       } finally {
         if (originalNodeEnv === undefined) {
           delete process.env.NODE_ENV;
@@ -224,13 +231,16 @@ describe('KloelChatToolsService', () => {
           customerName: 'Joao',
         });
 
-        expect(result.success).toBe(true);
+        expect(result).toEqual(
+          expect.objectContaining({
+            success: false,
+            error: 'canonical_dispatcher_required',
+          }),
+        );
         expect(result.pixCopyPaste).toBeUndefined();
         expect(result.pixQrCode).toBeUndefined();
         expect(prisma.kloelSale.create).not.toHaveBeenCalled();
-        expect(smartPayment.createSmartPayment).toHaveBeenCalledWith(
-          expect.objectContaining({ workspaceId: wsId, amount: 99.9 }),
-        );
+        expect(smartPayment.createSmartPayment).not.toHaveBeenCalled();
       } finally {
         if (originalNodeEnv === undefined) {
           delete process.env.NODE_ENV;

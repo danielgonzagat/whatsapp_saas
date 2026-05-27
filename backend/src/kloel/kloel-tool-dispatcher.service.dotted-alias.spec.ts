@@ -473,7 +473,10 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
         'user-42',
       );
 
-      expect(chatToolsService.toolCreatePaymentLink).toHaveBeenCalledWith(DEFAULT_WS_ID, paymentArgs);
+      expect(chatToolsService.toolCreatePaymentLink).toHaveBeenCalledWith(DEFAULT_WS_ID, {
+        ...paymentArgs,
+        executionPath: 'dispatcher',
+      });
       expect(result.success).toBe(true);
       expect(result.capabilityId).toBe('create_payment_link');
       expect(result.outputs).toEqual(
@@ -531,17 +534,12 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
         'user-42',
       );
 
-      expect(salesService.createPixOrder).toHaveBeenCalledWith(
-        DEFAULT_WS_ID,
-        'prod-1',
-        'plan-1',
-        {
-          name: 'Joao',
-          email: 'joao@test.com',
-          cpf: '123.456.789-00',
-          phone: '11999999999',
-        },
-      );
+      expect(salesService.createPixOrder).toHaveBeenCalledWith(DEFAULT_WS_ID, 'prod-1', 'plan-1', {
+        name: 'Joao',
+        email: 'joao@test.com',
+        cpf: '123.456.789-00',
+        phone: '11999999999',
+      });
       expect(dotted.success).toBe(true);
       expect(dotted.capabilityId).toBe('sales.create_pix');
       expect(dotted.outputs).toEqual(
