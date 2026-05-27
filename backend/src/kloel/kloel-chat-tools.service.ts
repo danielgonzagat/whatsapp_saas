@@ -412,7 +412,7 @@ export class KloelChatToolsService {
     return runConfigureAiPersona(workspaceId, args);
   }
   toolToggleTheme(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
-    return runToggleTheme(this.prisma, workspaceId, args);
+    return runToggleTheme(this.memoryService, workspaceId, args);
   }
   toolGetAffiliateConfig(workspaceId: string): Promise<ToolResult> {
     return runGetAffiliateConfig(this.prisma, workspaceId);

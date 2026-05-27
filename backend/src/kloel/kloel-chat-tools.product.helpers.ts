@@ -1,5 +1,6 @@
 import type { PrismaService } from '../prisma/prisma.service';
 import type { ToolResult } from './kloel-chat-tools.agent-runtime.helpers';
+import { type MemoryService } from './memory.service';
 
 // === PRODUCT MANAGEMENT TOOLS ===
 
@@ -325,22 +326,21 @@ export function runConfigureAiPersona(
 }
 
 export async function runToggleTheme(
-  prisma: PrismaService,
+  memoryService: Pick<MemoryService, 'saveMemory'> | undefined,
   workspaceId: string,
   args: Record<string, unknown>,
 ): Promise<ToolResult> {
   const theme = args.theme === 'dark' || args.theme === 'light' ? String(args.theme) : 'light';
+  if (!memoryService) {
+    return {
+      success: false,
+      error: 'memory_service_required',
+      message: 'toggle_theme exige MemoryService.saveMemory antes de declarar tema salvo.',
+    };
+  }
+
   try {
-    await prisma.kloelMemory.upsert({
-      where: { workspaceId_key: { workspaceId, key: 'uiTheme' } },
-      update: { value: { theme }, category: 'preferences' },
-      create: {
-        workspaceId,
-        key: 'uiTheme',
-        value: { theme },
-        category: 'preferences',
-      },
-    });
+    await memoryService.saveMemory(workspaceId, 'uiTheme', { theme }, 'preferences', `Tema: ${theme}`);
     return { success: true, theme, message: `Tema alterado para ${theme}.` };
   } catch (err: unknown) {
     return {

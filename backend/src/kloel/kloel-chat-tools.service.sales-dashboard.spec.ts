@@ -324,6 +324,23 @@ describe('KloelChatToolsService', () => {
     });
   });
 
+  describe('toolToggleTheme', () => {
+    it('stores ui theme through MemoryService without direct kloelMemory writes', async () => {
+      const result = await service.toolToggleTheme(wsId, { theme: 'dark' });
+
+      expect(result.success).toBe(true);
+      expect(result.theme).toBe('dark');
+      expect(memoryService.saveMemory).toHaveBeenCalledWith(
+        wsId,
+        'uiTheme',
+        { theme: 'dark' },
+        'preferences',
+        'Tema: dark',
+      );
+      expect(prisma.kloelMemory.upsert).not.toHaveBeenCalled();
+    });
+  });
+
   describe('broadcast and AI persona direct tool guards', () => {
     it('blocks create_broadcast until a campaign domain service is wired', async () => {
       const result = await service.toolCreateBroadcast(wsId, {
