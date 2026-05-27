@@ -32,7 +32,7 @@ import {
   restartSession as restartSessionFn,
   deleteSession as deleteSessionFn,
   syncSessionConfig as syncSessionConfigFn,
-} from './provider-registry-op';
+} from '../../marketing/channels/whatsapp/providers/provider-registry-op';
 import {
   isRegistered as isRegisteredFn,
   getClientInfo as getClientInfoFn,
