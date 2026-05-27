@@ -28,8 +28,7 @@ describe('ApiKeysController', () => {
       ];
       service.list.mockResolvedValue(keys);
 
-      const req = { user: { workspaceId: 'ws-1' } } as never;
-      const result = await controller.list(req);
+      const result = await controller.list('ws-1');
 
       expect(result).toEqual(keys);
       expect(service.list).toHaveBeenCalledWith('ws-1');
@@ -38,8 +37,7 @@ describe('ApiKeysController', () => {
     it('returns empty array when workspace has no keys', async () => {
       service.list.mockResolvedValue([]);
 
-      const req = { user: { workspaceId: 'ws-empty' } } as never;
-      const result = await controller.list(req);
+      const result = await controller.list('ws-empty');
 
       expect(result).toEqual([]);
       expect(service.list).toHaveBeenCalledWith('ws-empty');
@@ -48,9 +46,7 @@ describe('ApiKeysController', () => {
     it('delegates to service and propagates errors', async () => {
       service.list.mockRejectedValue(new Error('DB unavailable'));
 
-      const req = { user: { workspaceId: 'ws-1' } } as never;
-
-      await expect(controller.list(req)).rejects.toThrow('DB unavailable');
+      await expect(controller.list('ws-1')).rejects.toThrow('DB unavailable');
     });
   });
 
@@ -66,9 +62,8 @@ describe('ApiKeysController', () => {
       };
       service.create.mockResolvedValue(created);
 
-      const req = { user: { workspaceId: 'ws-1' } } as never;
       const body = { name: 'Production' };
-      const result = await controller.create(req, body);
+      const result = await controller.create('ws-1', body);
 
       expect(result).toEqual(created);
       expect(service.create).toHaveBeenCalledWith('ws-1', 'Production');
@@ -77,10 +72,9 @@ describe('ApiKeysController', () => {
     it('propagates errors from service', async () => {
       service.create.mockRejectedValue(new Error('constraint violation'));
 
-      const req = { user: { workspaceId: 'ws-1' } } as never;
       const body = { name: 'Test' };
 
-      await expect(controller.create(req, body)).rejects.toThrow('constraint violation');
+      await expect(controller.create('ws-1', body)).rejects.toThrow('constraint violation');
     });
   });
 
@@ -96,8 +90,7 @@ describe('ApiKeysController', () => {
       };
       service.rotate.mockResolvedValue(rotated);
 
-      const req = { user: { workspaceId: 'ws-1' } } as never;
-      const result = await controller.rotate(req, 'ak-1');
+      const result = await controller.rotate('ws-1', 'ak-1');
 
       expect(result).toEqual(rotated);
       expect(service.rotate).toHaveBeenCalledWith('ws-1', 'ak-1');
@@ -106,17 +99,13 @@ describe('ApiKeysController', () => {
     it('propagates NotFoundException when key does not exist', async () => {
       service.rotate.mockRejectedValue(new NotFoundException('API Key not found'));
 
-      const req = { user: { workspaceId: 'ws-1' } } as never;
-
-      await expect(controller.rotate(req, 'ak-nonexistent')).rejects.toThrow(NotFoundException);
+      await expect(controller.rotate('ws-1', 'ak-nonexistent')).rejects.toThrow(NotFoundException);
     });
 
     it('propagates NotFoundException when key belongs to other workspace', async () => {
       service.rotate.mockRejectedValue(new NotFoundException('API Key not found'));
 
-      const req = { user: { workspaceId: 'ws-2' } } as never;
-
-      await expect(controller.rotate(req, 'ak-1')).rejects.toThrow(NotFoundException);
+      await expect(controller.rotate('ws-2', 'ak-1')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -124,8 +113,7 @@ describe('ApiKeysController', () => {
     it('deletes key for the given id and workspace', async () => {
       service.delete.mockResolvedValue({ count: 1 });
 
-      const req = { user: { workspaceId: 'ws-1' } } as never;
-      const result = await controller.delete(req, 'ak-1');
+      const result = await controller.delete('ws-1', 'ak-1');
 
       expect(result).toEqual({ count: 1 });
       expect(service.delete).toHaveBeenCalledWith('ws-1', 'ak-1');
@@ -134,17 +122,13 @@ describe('ApiKeysController', () => {
     it('propagates NotFoundException when key does not exist', async () => {
       service.delete.mockRejectedValue(new NotFoundException('API Key not found'));
 
-      const req = { user: { workspaceId: 'ws-1' } } as never;
-
-      await expect(controller.delete(req, 'ak-nonexistent')).rejects.toThrow(NotFoundException);
+      await expect(controller.delete('ws-1', 'ak-nonexistent')).rejects.toThrow(NotFoundException);
     });
 
     it('propagates NotFoundException when key belongs to other workspace', async () => {
       service.delete.mockRejectedValue(new NotFoundException('API Key not found'));
 
-      const req = { user: { workspaceId: 'ws-2' } } as never;
-
-      await expect(controller.delete(req, 'ak-1')).rejects.toThrow(NotFoundException);
+      await expect(controller.delete('ws-2', 'ak-1')).rejects.toThrow(NotFoundException);
     });
   });
 });

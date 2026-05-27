@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Post, Query, Req, Request, UseGuards } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CurrentWorkspaceId } from '../common/decorators/current-workspace-id.decorator';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { PrismaService } from '../prisma/prisma.service';
@@ -28,6 +29,7 @@ export class AffiliateMarketplaceController {
    */
   @Get('marketplace')
   async listMarketplace(
+    @CurrentWorkspaceId() workspaceId: string,
     @Request() req: AuthenticatedRequest,
     @Query('category') category?: string,
     @Query('search') _search?: string,
@@ -64,7 +66,7 @@ export class AffiliateMarketplaceController {
       this.prisma,
       req,
       products,
-      req.user.workspaceId,
+      workspaceId,
     );
 
     return {
@@ -139,7 +141,7 @@ export class AffiliateMarketplaceController {
    * Get recommended (top temperature) products
    */
   @Get('marketplace/recommended')
-  async getRecommended(@Request() req: AuthenticatedRequest, @Query('limit') limit?: string) {
+  async getRecommended(@CurrentWorkspaceId() workspaceId: string, @Request() req: AuthenticatedRequest, @Query('limit') limit?: string) {
     const take = Math.min(Number.parseInt(limit || '10', 10), 50);
     const where = buildMarketplaceWhere({ listed: true });
 
@@ -152,7 +154,7 @@ export class AffiliateMarketplaceController {
       this.prisma,
       req,
       products,
-      req.user.workspaceId,
+      workspaceId,
     );
 
     return { products: enrichedProducts };
@@ -160,8 +162,7 @@ export class AffiliateMarketplaceController {
 
   /** Ai search. */
   @Post('ai-search')
-  async aiSearch(@Req() req: AuthenticatedRequest, @Body() body: { query: string }) {
-    const workspaceId = req.user.workspaceId;
+  async aiSearch(@CurrentWorkspaceId() workspaceId: string, @Req() req: AuthenticatedRequest, @Body() body: { query: string }) {
     const where = buildMarketplaceWhere({
       listed: true,
       OR: [
@@ -181,8 +182,7 @@ export class AffiliateMarketplaceController {
 
   /** Suggest. */
   @Post('suggest')
-  async suggest(@Req() req: AuthenticatedRequest) {
-    const workspaceId = req.user.workspaceId;
+  async suggest(@CurrentWorkspaceId() workspaceId: string, @Req() req: AuthenticatedRequest) {
     const myProducts = await this.prisma.product.findMany({
       where: { workspaceId },
       select: { category: true, name: true },

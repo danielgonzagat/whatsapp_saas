@@ -1,11 +1,11 @@
-import { Body, Controller, Delete, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
-import { resolveWorkspaceId } from '../auth/workspace-access';
+import { CurrentWorkspaceId } from '../common/decorators/current-workspace-id.decorator';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { Idempotent } from '../common/idempotency.guard';
-import { AuthenticatedRequest } from '../common/interfaces';
+
 import { AttachPaymentMethodDto } from './dto/attach-payment-method.dto';
 import { PaymentMethodService } from './payment-method.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
@@ -23,8 +23,7 @@ export class PaymentMethodController {
   @Get()
   @ApiOperation({ summary: 'List all payment methods for workspace' })
   @Roles('ADMIN', 'OWNER')
-  async listPaymentMethods(@Req() req: AuthenticatedRequest) {
-    const workspaceId = resolveWorkspaceId(req);
+  async listPaymentMethods(@CurrentWorkspaceId() workspaceId: string) {
     return this.paymentMethodService.listPaymentMethods(workspaceId);
   }
 
@@ -33,8 +32,7 @@ export class PaymentMethodController {
   @ApiOperation({ summary: 'Create a Stripe Setup Intent for adding a card' })
   @Roles('ADMIN', 'OWNER')
   @Idempotent()
-  async createSetupIntent(@Req() req: AuthenticatedRequest, @Body() body?: { returnUrl?: string }) {
-    const workspaceId = resolveWorkspaceId(req);
+  async createSetupIntent(@CurrentWorkspaceId() workspaceId: string, @Body() body?: { returnUrl?: string }) {
     return this.paymentMethodService.createSetupIntent(workspaceId, body?.returnUrl);
   }
 
@@ -44,10 +42,9 @@ export class PaymentMethodController {
   @Roles('ADMIN', 'OWNER')
   @Idempotent()
   async attachPaymentMethod(
-    @Req() req: AuthenticatedRequest,
+    @CurrentWorkspaceId() workspaceId: string,
     @Body() body: AttachPaymentMethodDto,
   ) {
-    const workspaceId = resolveWorkspaceId(req);
     return this.paymentMethodService.attachPaymentMethod(workspaceId, body.paymentMethodId);
   }
 
@@ -57,10 +54,9 @@ export class PaymentMethodController {
   @Roles('ADMIN', 'OWNER')
   @Idempotent()
   async setDefault(
-    @Req() req: AuthenticatedRequest,
+    @CurrentWorkspaceId() workspaceId: string,
     @Param('paymentMethodId') paymentMethodId: string,
   ) {
-    const workspaceId = resolveWorkspaceId(req);
     return this.paymentMethodService.setDefaultPaymentMethod(workspaceId, paymentMethodId);
   }
 
@@ -69,10 +65,9 @@ export class PaymentMethodController {
   @ApiOperation({ summary: 'Remove a payment method' })
   @Roles('ADMIN', 'OWNER')
   async detachPaymentMethod(
-    @Req() req: AuthenticatedRequest,
+    @CurrentWorkspaceId() workspaceId: string,
     @Param('paymentMethodId') paymentMethodId: string,
   ) {
-    const workspaceId = resolveWorkspaceId(req);
     return this.paymentMethodService.detachPaymentMethod(workspaceId, paymentMethodId);
   }
 }

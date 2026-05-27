@@ -44,6 +44,7 @@ describe('AffiliateMarketplaceController', () => {
       mockEnrichAffiliateProducts.mockResolvedValue(mockEnriched);
 
       const result = await controller.listMarketplace(
+        'ws-1',
         mockReq,
         'marketing',
         undefined,
@@ -87,7 +88,7 @@ describe('AffiliateMarketplaceController', () => {
       affiliateProductCount.mockResolvedValue(0);
       mockEnrichAffiliateProducts.mockResolvedValue([]);
 
-      await controller.listMarketplace(adminReq);
+      await controller.listMarketplace('ws-admin', adminReq);
 
       expect(mockEnrichAffiliateProducts).toHaveBeenCalledWith(
         prismaMock,
@@ -129,7 +130,7 @@ describe('AffiliateMarketplaceController', () => {
       const dbError = new Error('Connection refused');
       affiliateProductFindMany.mockRejectedValue(dbError);
 
-      await expect(controller.listMarketplace(mockReq)).rejects.toThrow('Connection refused');
+      await expect(controller.listMarketplace('ws-1', mockReq)).rejects.toThrow('Connection refused');
     });
   });
 });

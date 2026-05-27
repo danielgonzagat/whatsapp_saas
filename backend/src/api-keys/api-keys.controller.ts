@@ -6,15 +6,15 @@ import {
   Param,
   Patch,
   Post,
-  Request,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
-import { AuthenticatedRequest } from '../common/interfaces';
+
 import { ApiKeysService } from './api-keys.service';
 import { CreateApiKeyDto } from './dto/create-api-key.dto';
+import { CurrentWorkspaceId } from '../common/decorators/current-workspace-id.decorator';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Api keys controller. */
@@ -33,28 +33,28 @@ export class ApiKeysController {
   /** List. */
   @Get()
   @ApiOperation({ summary: 'List API Keys' })
-  async list(@Request() req: AuthenticatedRequest) {
-    return this.apiKeysService.list(req.user.workspaceId);
+  async list(@CurrentWorkspaceId() workspaceId: string) {
+    return this.apiKeysService.list(workspaceId);
   }
 
   /** Create. */
   @Post()
   @ApiOperation({ summary: 'Create a new API Key' })
-  async create(@Request() req: AuthenticatedRequest, @Body() body: CreateApiKeyDto) {
-    return this.apiKeysService.create(req.user.workspaceId, body.name);
+  async create(@CurrentWorkspaceId() workspaceId: string, @Body() body: CreateApiKeyDto) {
+    return this.apiKeysService.create(workspaceId, body.name);
   }
 
   /** Rotate. */
   @Patch(':id/rotate')
   @ApiOperation({ summary: 'Rotate (regenerate) an API Key' })
-  async rotate(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
-    return this.apiKeysService.rotate(req.user.workspaceId, id);
+  async rotate(@CurrentWorkspaceId() workspaceId: string, @Param('id') id: string) {
+    return this.apiKeysService.rotate(workspaceId, id);
   }
 
   /** Delete. */
   @Delete(':id')
   @ApiOperation({ summary: 'Revoke an API Key' })
-  async delete(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
-    return this.apiKeysService.delete(req.user.workspaceId, id);
+  async delete(@CurrentWorkspaceId() workspaceId: string, @Param('id') id: string) {
+    return this.apiKeysService.delete(workspaceId, id);
   }
 }
