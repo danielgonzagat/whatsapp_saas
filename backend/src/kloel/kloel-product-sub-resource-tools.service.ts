@@ -613,38 +613,18 @@ export class KloelProductSubResourceToolsService {
       return { success: false, error: e instanceof Error ? e.message : 'Erro ao deletar URL.' };
     }
   }
-  async toolGenerateBoleto(workspaceId: string, args: UnknownRecord) {
-    try {
-      const amount = this.num(args.amount);
-      const sale = await this.prisma.kloelSale.create({
-        data: {
-          workspaceId,
-          externalPaymentId: 'bol_' + Date.now(),
-          leadPhone: this.str(args.customerPhone),
-          productName: this.str(args.productName),
-          amount,
-          status: 'pending',
-          paymentMethod: 'BOLETO',
-        },
-      });
-      return {
-        success: true,
-        saleId: sale.id,
-        boletoCode:
-          '34191.79001 01043.510047 91020.150008 9 ' +
-          String(Math.round(amount * 100)).padStart(10, '0'),
-        boletoPdf: null, // PDF generation requires pdfkit library
-        boletoHtml: `<div style="font-family:monospace;padding:20px;border:1px solid #000">
-<h3>BOLETO BANCARIO</h3>
-<p>Valor: R$ ${amount.toFixed(2)}</p>
-<p>Codigo: 34191.79001 01043.510047 91020.150008 9 ${String(Math.round(amount * 100)).padStart(10, '0')}</p>
-<p>Beneficiario: ${this.str(args.customerPhone || args.productName)}</p>
-<p>Vencimento: ${new Date(Date.now() + 3 * 86400000).toLocaleDateString('pt-BR')}</p>
-</div>`,
-        amount,
-      };
-    } catch (err: unknown) {
-      return { success: false, error: err instanceof Error ? err.message : 'Erro' };
-    }
+  async toolGenerateBoleto(
+    _workspaceId: string,
+    _args: UnknownRecord,
+  ): Promise<ProductSubResourceToolResult> {
+    return {
+      success: false,
+      error: 'boleto_provider_unavailable',
+      message:
+        'Boleto ainda nao esta conectado ao servico de dominio real. Use sales.create_boleto quando houver provedor real com recibo e auditoria.',
+      capabilityId: 'sales.create_boleto',
+      outputs: {},
+      domainEvents: [],
+    };
   }
 }

@@ -196,14 +196,16 @@ describe('KloelProductSubResourceToolsService', () => {
       expect(result.success).toBe(true);
     });
 
-    it('dispatches generate_boleto', async () => {
+    it('dispatches generate_boleto as an honest unavailable capability', async () => {
       const result = await service.executeTool('generate_boleto', ws, {
         amount: 100,
         customerPhone: '5511999999999',
         productName: 'Widget',
       });
-      expect(result.success).toBe(true);
-      expect(result.boletoCode).toBeDefined();
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('boleto_provider_unavailable');
+      expect(result.boletoCode).toBeUndefined();
+      expect(prisma.kloelSale.create).not.toHaveBeenCalled();
     });
   });
 
@@ -314,15 +316,20 @@ describe('KloelProductSubResourceToolsService', () => {
   });
 
   describe('toolGenerateBoleto', () => {
-    it('generates boleto with amount and customer info', async () => {
+    it('returns an honest unavailable receipt instead of creating a fake boleto sale', async () => {
       const result = await service.toolGenerateBoleto(ws, {
         amount: 150,
         customerPhone: '5511999999999',
         productName: 'Widget',
       });
-      expect(result.success).toBe(true);
-      expect(result.saleId).toBeDefined();
-      expect(result.boletoHtml).toContain('BOLETO');
+      expect(result).toMatchObject({
+        success: false,
+        error: 'boleto_provider_unavailable',
+      });
+      expect(result.saleId).toBeUndefined();
+      expect(result.boletoCode).toBeUndefined();
+      expect(result.boletoHtml).toBeUndefined();
+      expect(prisma.kloelSale.create).not.toHaveBeenCalled();
     });
   });
 });
