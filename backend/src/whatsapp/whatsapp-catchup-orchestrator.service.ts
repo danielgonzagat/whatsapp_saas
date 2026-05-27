@@ -51,7 +51,7 @@ import {
   releaseLock,
 } from '../marketing/channels/whatsapp/whatsapp-catchup-lock.helpers';
 import { selectCandidateChats } from '../marketing/channels/whatsapp/whatsapp-catchup-chat-selector';
-import { loadCatchupMessages } from './whatsapp-catchup-message-loader';
+import { loadCatchupMessages } from '../marketing/channels/whatsapp/whatsapp-catchup-message-loader';
 import {
   getCatchupBlockReason as resolveCatchupBlockReason,
   getLifecycleBlockReason,
