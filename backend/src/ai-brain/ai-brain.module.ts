@@ -5,7 +5,7 @@ import { AgentAssistService } from './agent-assist.service';
 import { HiddenDataExtractorService } from '../kloel/mind/knowledge/hidden-data.service';
 import { KnowledgeBaseController } from './knowledge-base.controller';
 import { KnowledgeBaseService } from './knowledge-base.service';
-import { MediaFactoryService } from './media-factory.service';
+import { MediaFactoryService } from '../kloel/mind/knowledge/media-factory.service';
 import { VectorService } from './vector.service';
 
 import { BillingModule } from '../billing/billing.module';

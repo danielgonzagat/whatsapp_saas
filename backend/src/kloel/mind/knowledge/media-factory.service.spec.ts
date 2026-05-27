@@ -1,4 +1,4 @@
-jest.mock('../kloel/openai-wrapper', () => ({
+jest.mock('../../openai-wrapper', () => ({
   chatCompletionWithRetry: jest.fn().mockResolvedValue({
     usage: { total_tokens: 80 },
     choices: [
@@ -29,8 +29,8 @@ jest.mock('openai', () => {
 import { ConfigService } from '@nestjs/config';
 import { ServiceUnavailableException } from '@nestjs/common';
 import { MediaFactoryService } from './media-factory.service';
-import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
-import { CANONICAL_MODEL_IDS } from '../lib/openai-models';
+import { chatCompletionWithRetry } from '../../openai-wrapper';
+import { CANONICAL_MODEL_IDS } from '../../../lib/openai-models';
 
 describe('MediaFactoryService', () => {
   let service: MediaFactoryService;
