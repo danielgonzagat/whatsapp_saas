@@ -7,7 +7,7 @@ import type Redis from 'ioredis';
 import OpenAI from 'openai';
 import { createTextLlmClient, resolveTextLlmApiKey } from '../lib/llm-provider';
 import { OpsAlertService } from '../observability/ops-alert.service';
-import { BrainEventSpineService } from './brain-event-spine.service';
+import { MindEventSpine } from './mind/coordination';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { UnifiedAgentService } from './unified-agent.service';
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
@@ -44,7 +44,7 @@ export class GuestChatService implements OnModuleDestroy {
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() @InjectRedis() private readonly redis?: Redis,
     @Optional() private readonly abiBuilder?: AbiBuilderService,
-    @Optional() private readonly spine?: BrainEventSpineService,
+    @Optional() private readonly spine?: MindEventSpine,
     @Optional() private readonly unifiedAgent?: UnifiedAgentService,
     @Optional() private readonly toolDispatcher?: KloelToolDispatcherService,
     @Optional() private readonly intentRouter?: IntentRouterService,
@@ -94,10 +94,18 @@ export class GuestChatService implements OnModuleDestroy {
       // If productName provided, link image to product
       if (productName && this.toolDispatcher) {
         try {
-          await this.toolDispatcher.executeTool(workspaceId, 'update_product', { productName, imageUrl: url });
-        } catch { /* non-blocking */ }
+          await this.toolDispatcher.executeTool(workspaceId, 'update_product', {
+            productName,
+            imageUrl: url,
+          });
+        } catch {
+          /* non-blocking */
+        }
       }
-      return { url, message: `Arquivo ${originalname} enviado${productName ? ` e vinculado ao produto ${productName}` : ''}.` };
+      return {
+        url,
+        message: `Arquivo ${originalname} enviado${productName ? ` e vinculado ao produto ${productName}` : ''}.`,
+      };
     } catch (e: unknown) {
       return { message: `Erro: ${e instanceof Error ? e.message : 'desconhecido'}` };
     }
@@ -233,7 +241,9 @@ export class GuestChatService implements OnModuleDestroy {
    */
 
   private resolveDefaultWorkspaceId(): string | undefined {
-    if (process.env.NODE_ENV !== 'production') return 'ws-test-001';
+    if (process.env.NODE_ENV !== 'production') {
+      return 'ws-test-001';
+    }
     return undefined;
   }
 
@@ -323,7 +333,13 @@ export class GuestChatService implements OnModuleDestroy {
     sessionId: string,
     conversation: GuestConversation,
   ): Promise<void> {
-    return persistConversation(sessionId, conversation, this.redis, this.conversations, this.logger);
+    return persistConversation(
+      sessionId,
+      conversation,
+      this.redis,
+      this.conversations,
+      this.logger,
+    );
   }
 
   private async persistConversationMessage(
@@ -331,7 +347,14 @@ export class GuestChatService implements OnModuleDestroy {
     role: 'user' | 'assistant',
     content: string,
   ): Promise<void> {
-    return persistConversationMessage(sessionId, role, content, this.redis, this.conversations, this.logger);
+    return persistConversationMessage(
+      sessionId,
+      role,
+      content,
+      this.redis,
+      this.conversations,
+      this.logger,
+    );
   }
 
   /**

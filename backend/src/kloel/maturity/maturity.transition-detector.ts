@@ -20,11 +20,12 @@ export function detectTransitions(
 ): readonly TransitionRecord[] {
   const transitions: TransitionRecord[] = [];
 
-  if (history.length < 2) return transitions;
+  if (history.length < 2) {
+    return transitions;
+  }
 
   const sorted = [...history].sort(
-    (a, b) =>
-      new Date(a.classifiedAt).getTime() - new Date(b.classifiedAt).getTime(),
+    (a, b) => new Date(a.classifiedAt).getTime() - new Date(b.classifiedAt).getTime(),
   );
 
   const stageOrder: Readonly<Record<MaturityStage, number>> = {
@@ -39,7 +40,9 @@ export function detectTransitions(
     const prev = sorted[i - 1] as MaturityVerdict;
     const curr = sorted[i] as MaturityVerdict;
 
-    if (prev.stage === curr.stage) continue;
+    if (prev.stage === curr.stage) {
+      continue;
+    }
 
     const prevOrd = stageOrder[prev.stage] ?? 0;
     const currOrd = stageOrder[curr.stage] ?? 0;
@@ -53,21 +56,17 @@ export function detectTransitions(
       fromStage = prev.stage;
       toStage = curr.stage;
       isForward = true;
-      transitionConfidence = Math.min(
-        1,
-        curr.confidence * (1 + (currOrd - prevOrd) * 0.05),
-      );
+      transitionConfidence = Math.min(1, curr.confidence * (1 + (currOrd - prevOrd) * 0.05));
     } else {
       fromStage = prev.stage;
       toStage = curr.stage;
       isForward = false;
-      transitionConfidence = Math.min(
-        0.5,
-        curr.confidence * 0.5,
-      );
+      transitionConfidence = Math.min(0.5, curr.confidence * 0.5);
     }
 
-    if (transitionConfidence < MIN_TRANSITION_CONFIDENCE && isForward) continue;
+    if (transitionConfidence < MIN_TRANSITION_CONFIDENCE && isForward) {
+      continue;
+    }
 
     transitions.push({
       fromStage,

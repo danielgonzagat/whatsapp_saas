@@ -1,6 +1,11 @@
 import { Logger } from '@nestjs/common';
-import { Queue as BullQueue, QueueEvents } from 'bullmq';
-import { createRedisClient, getRedisUrl, maskRedisUrl } from '../common/redis/redis.util';
+import { Queue as BullQueue, QueueEvents, type QueueOptions } from 'bullmq';
+import {
+  createBullMqConnectionOptions,
+  createRedisClient,
+  getRedisUrl,
+  maskRedisUrl,
+} from '../common/redis/redis.util';
 import { classifyWebhook } from './webhook-classifier';
 
 type GlobalWithFetch = { fetch?: typeof fetch; [key: string]: unknown };
@@ -11,15 +16,7 @@ type GlobalWithFetch = { fetch?: typeof fetch; [key: string]: unknown };
 // ============================================================================
 
 let _connection: ReturnType<typeof createRedisClient> | null = null;
-let _queueOptions: {
-  connection: ReturnType<typeof createRedisClient>;
-  defaultJobOptions: {
-    attempts: number;
-    backoff: { type: string; delay: number };
-    removeOnComplete: boolean;
-    removeOnFail: { age: number; count: number };
-  };
-} | null = null;
+let _queueOptions: QueueOptions | null = null;
 let _initialized = false;
 
 const queueLogger = new Logger('Queue');
@@ -96,7 +93,7 @@ function ensureInitialized() {
 
   _connection = createRedisClient();
   _queueOptions = {
-    connection: _connection,
+    connection: createBullMqConnectionOptions(),
     defaultJobOptions: resolveDefaultQueueJobOptions(),
   };
 
@@ -205,7 +202,7 @@ async function notifyOps(input: {
   }
 }
 
-function attachDlq(queue: BullQueue) {
+export function attachDlq(queue: BullQueue) {
   let dlq = _dlqQueues[queue.name];
   if (!dlq) {
     dlq = new BullQueue(`${queue.name}-dlq`, getQueueOptions());
@@ -214,18 +211,19 @@ function attachDlq(queue: BullQueue) {
 
   if (!_queueEvents[queue.name]) {
     _queueEvents[queue.name] = new QueueEvents(queue.name, {
-      connection: getConnection(),
+      connection: getQueueOptions().connection,
     });
   }
   const events = _queueEvents[queue.name];
   if (!events) {
     warn('[QUEUE] QueueEvents not found for', queue.name);
-    return;
+    return dlq;
   }
 
   events.on('failed', (event) => {
     void handleQueueFailedEvent(queue, dlq, event);
   });
+  return dlq;
 }
 
 function hasAttemptsLeft(event: unknown, maxAttempts: number): boolean {

@@ -115,7 +115,9 @@ export class KloelComposerService {
 
   codeNativeSearchWeb(query: string): WebSearchDigest {
     const normalizedQuery = String(query || '').trim();
-    if (!normalizedQuery) return { answer: '', sources: [], totalTokens: 0 };
+    if (!normalizedQuery) {
+      return { answer: '', sources: [], totalTokens: 0 };
+    }
 
     const terms = normalizedQuery
       .split(/\s+/)
@@ -147,30 +149,33 @@ export class KloelComposerService {
       return this.e2EGuard.buildSearchResult(normalizedQuery);
     }
 
-    if (!this.openai) {
+    const openai = this.openai;
+    if (!openai) {
       this.logger.warn('searchWeb falling back to code-native — no OpenAI client');
       return this.codeNativeSearchWeb(normalizedQuery);
     }
 
     // Per WAVE3_LLM_PROMPT_AUDIT critical gap #8: wrap in retry helper to
     // survive transient 429 / 5xx / network blips from the responses API.
-    const response = await callOpenAIWithRetry(() => this.openai.responses.create({
-      model: KLOEL_SEARCH_WEB_MODEL,
-      input: normalizedQuery,
-      tools: [
-        {
-          type: 'web_search_preview',
-          search_context_size: 'medium',
-          user_location: {
-            type: 'approximate',
-            country: 'BR',
-            region: 'São Paulo',
-            timezone: 'America/Sao_Paulo',
+    const response = await callOpenAIWithRetry(() =>
+      openai.responses.create({
+        model: KLOEL_SEARCH_WEB_MODEL,
+        input: normalizedQuery,
+        tools: [
+          {
+            type: 'web_search_preview',
+            search_context_size: 'medium',
+            user_location: {
+              type: 'approximate',
+              country: 'BR',
+              region: 'São Paulo',
+              timezone: 'America/Sao_Paulo',
+            },
           },
-        },
-      ],
-      include: ['web_search_call.action.sources'],
-    }));
+        ],
+        include: ['web_search_call.action.sources'],
+      }),
+    );
 
     const outputText = String(response.output_text || '').trim();
     const rawSources = Array.isArray(response.output)
@@ -268,7 +273,8 @@ export class KloelComposerService {
       if (this.e2EGuard.isEnabled()) {
         return this.e2EGuard.buildImageResult();
       }
-      if (!this.openai) {
+      const openai = this.openai;
+      if (!openai) {
         throw new Error(ERR_IMAGE_API_KEY_MISSING);
       }
       if (!process.env.OPENAI_API_KEY) {
@@ -289,7 +295,7 @@ export class KloelComposerService {
         // Per WAVE3_LLM_PROMPT_AUDIT critical gap #8: wrap in retry helper
         // so transient 429/5xx don't fail the user's image-generation request.
         response = await callOpenAIWithRetry(() =>
-          this.openai.images.generate(imageRequest, requestOptions),
+          openai.images.generate(imageRequest, requestOptions),
         );
       } catch (error: unknown) {
         const errorRecord = asUnknownRecord(error);
@@ -374,7 +380,12 @@ export class KloelComposerService {
 
       const maxRetries = 3;
       let lastError: unknown;
-      let result: { content?: Array<{ text?: string }>; usage?: { input_tokens?: number; output_tokens?: number } } | undefined;
+      let result:
+        | {
+            content?: Array<{ text?: string }>;
+            usage?: { input_tokens?: number; output_tokens?: number };
+          }
+        | undefined;
 
       for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
@@ -397,7 +408,9 @@ export class KloelComposerService {
             const status = response.status;
             if (status === 429 || status >= 500) {
               lastError = new Error(`Anthropic ${status}: ${errorText}`);
-              this.logger.warn(`Anthropic site gen attempt ${attempt + 1}/${maxRetries} failed (${status}), retrying...`);
+              this.logger.warn(
+                `Anthropic site gen attempt ${attempt + 1}/${maxRetries} failed (${status}), retrying...`,
+              );
               await new Promise((r) => setTimeout(r, Math.pow(2, attempt) * 500));
               continue;
             }
@@ -407,10 +420,14 @@ export class KloelComposerService {
           result = await response.json();
           break;
         } catch (err: unknown) {
-          if (err instanceof InternalServerErrorException) throw err;
+          if (err instanceof InternalServerErrorException) {
+            throw err;
+          }
           lastError = err;
           if (attempt < maxRetries - 1) {
-            this.logger.warn(`Anthropic site gen attempt ${attempt + 1}/${maxRetries} network error, retrying...`);
+            this.logger.warn(
+              `Anthropic site gen attempt ${attempt + 1}/${maxRetries} network error, retrying...`,
+            );
             await new Promise((r) => setTimeout(r, Math.pow(2, attempt) * 500));
           }
         }

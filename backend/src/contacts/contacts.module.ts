@@ -4,7 +4,11 @@ import { ContactIdentityResolverService } from './contact-identity-resolver.serv
 import { ContactIdentityMergeService } from './contact-identity-merge.service';
 
 @Module({
-  providers: [ChannelIdentifierService, ContactIdentityResolverService, ContactIdentityMergeService],
+  providers: [
+    ChannelIdentifierService,
+    ContactIdentityResolverService,
+    ContactIdentityMergeService,
+  ],
   exports: [ChannelIdentifierService, ContactIdentityResolverService, ContactIdentityMergeService],
 })
 /**

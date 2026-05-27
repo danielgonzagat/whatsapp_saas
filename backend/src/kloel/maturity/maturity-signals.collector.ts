@@ -54,23 +54,29 @@ export function collectMaturitySignals(input: {
   const payerPaymentCounts = new Map<string, number>();
 
   for (const e of input.events) {
-    if (!isInWindow(e.occurredAt, cutoffMs)) continue;
+    if (!isInWindow(e.occurredAt, cutoffMs)) {
+      continue;
+    }
 
     switch (e.eventName) {
       case 'commerce.lead.created': {
         const id = e.entityRef?.entityId;
-        if (id) counters.uniqueLeadIds.add(id);
+        if (id) {
+          counters.uniqueLeadIds.add(id);
+        }
         break;
       }
       case 'commerce.payment.approved': {
         counters.paymentApproved++;
-        const payerId = payloadString(e.payload, 'payerId') ??
-          payloadString(e.payload, 'customerId');
+        const payerId =
+          payloadString(e.payload, 'payerId') ?? payloadString(e.payload, 'customerId');
         if (payerId) {
           counters.uniquePayerIds.add(payerId);
           const prev = payerPaymentCounts.get(payerId) ?? 0;
           payerPaymentCounts.set(payerId, prev + 1);
-          if (prev >= 1) counters.repeatPayerIds.add(payerId);
+          if (prev >= 1) {
+            counters.repeatPayerIds.add(payerId);
+          }
         }
         break;
       }
@@ -105,30 +111,25 @@ export function collectMaturitySignals(input: {
     }
 
     const pid = payloadString(e.payload, 'productId');
-    if (pid) counters.productIds.add(pid);
+    if (pid) {
+      counters.productIds.add(pid);
+    }
   }
 
   const totalPayerIds = counters.uniquePayerIds.size;
-  const repeatPaymentRate =
-    totalPayerIds > 0 ? counters.repeatPayerIds.size / totalPayerIds : 0;
+  const repeatPaymentRate = totalPayerIds > 0 ? counters.repeatPayerIds.size / totalPayerIds : 0;
 
   const churnRate =
-    counters.paymentApproved > 0
-      ? counters.churnDetected / counters.paymentApproved
-      : 0;
+    counters.paymentApproved > 0 ? counters.churnDetected / counters.paymentApproved : 0;
 
   const refundRate =
-    counters.paymentApproved > 0
-      ? counters.paymentRefunded / counters.paymentApproved
-      : 0;
+    counters.paymentApproved > 0 ? counters.paymentRefunded / counters.paymentApproved : 0;
 
   const totalDeals = counters.dealWon + counters.dealLost;
   const dealsClosedRate = totalDeals > 0 ? counters.dealWon / totalDeals : 0;
 
   const supportToSalesRatio =
-    counters.paymentApproved > 0
-      ? counters.handoffToHuman / counters.paymentApproved
-      : 0;
+    counters.paymentApproved > 0 ? counters.handoffToHuman / counters.paymentApproved : 0;
 
   const productCount = Math.min(counters.productIds.size, 1);
 
@@ -153,7 +154,9 @@ export function collectMaturitySignals(input: {
 }
 
 function isInWindow(occurredAt: string, cutoffMs: number): boolean {
-  if (!occurredAt) return false;
+  if (!occurredAt) {
+    return false;
+  }
   const ms = Date.parse(occurredAt);
   return !Number.isNaN(ms) && ms >= cutoffMs;
 }
@@ -162,7 +165,9 @@ function payloadString(
   payload: Readonly<Record<string, unknown>> | undefined,
   key: string,
 ): string | undefined {
-  if (!payload) return undefined;
+  if (!payload) {
+    return undefined;
+  }
   const v = payload[key];
   return typeof v === 'string' ? v : undefined;
 }

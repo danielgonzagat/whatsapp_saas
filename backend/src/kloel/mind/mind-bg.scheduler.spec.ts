@@ -2,9 +2,7 @@ import { MindBackgroundScheduler } from './mind-bg.scheduler';
 import { MindBackgroundProcessor } from './mind-bg.processor';
 import { MindPredictionService } from './mind-prediction.service';
 import { SpineEmitterService } from '../spine/spine-emitter.service';
-import {
-  MultiTimescaleCoordinator,
-} from './multi-timescale.coordinator';
+import { MultiTimescaleCoordinator } from './multi-timescale.coordinator';
 import { ValenceAggregatorService } from './valence-aggregator.service';
 import { HebbianService } from './hebbian.service';
 import { ConsolidationService } from './consolidation.service';
@@ -41,12 +39,15 @@ jest.mock('bullmq', () => {
     wClose,
   };
 
-  return { Queue: MockQueue, Worker: MockWorker };
+  const MockQueueEvents = jest.fn().mockImplementation(() => ({
+    on: jest.fn(),
+  }));
+
+  return { Queue: MockQueue, Worker: MockWorker, QueueEvents: MockQueueEvents };
 });
 
 function getMocks() {
-  return (globalThis as Record<string, unknown>)
-    .__mindBgMocks as {
+  return (globalThis as Record<string, unknown>).__mindBgMocks as {
     queue: jest.Mock;
     worker: jest.Mock;
     qAdd: jest.Mock<Promise<void>>;
@@ -65,9 +66,7 @@ function buildScheduler(opts?: {
   const aggregator = new ValenceAggregatorService();
   const hebbian = new HebbianService({ windowMs: 60_000 });
   const consolidation = new ConsolidationService();
-  const prediction = new MindPredictionService(
-    undefined as unknown as never,
-  );
+  const prediction = new MindPredictionService(undefined as never);
   // Stub runCycle — the test spine returns no events, so the DB fallback
   // would fail without a real Prisma.  The tick path uses `void` so the
   // promise rejection from a naked undefined-prisma would crash the test
@@ -86,19 +85,19 @@ function buildScheduler(opts?: {
     hebbian,
     consolidation,
     prediction,
-    undefined as unknown as never,
+    undefined as never,
   );
   const spine = {
     recentEventsAsRef: jest.fn().mockReturnValue([]),
   } as SpineEmitterService;
-  const cognitiveHealth = opts?.cognitiveHealth as unknown as
+  const cognitiveHealth = opts?.cognitiveHealth as
     | import('../../cia/cia-cognitive-health.service').CiaCognitiveHealthService
     | undefined;
   return {
     scheduler: new MindBackgroundScheduler(
       processor,
       spine,
-      undefined as unknown as never,
+      undefined as never,
       cognitiveHealth,
     ),
     spine,
@@ -185,11 +184,15 @@ describe('MindBackgroundScheduler (UTP gap B)', () => {
 
     await scheduler.onModuleInit();
 
-    expect(queue).toHaveBeenCalledTimes(1);
+    expect(queue).toHaveBeenCalledTimes(2); // main + dlq
     expect(worker).toHaveBeenCalledTimes(1);
-    expect(qAdd).toHaveBeenCalledWith('tick', {}, {
-      repeat: { every: 5_000 },
-    });
+    expect(qAdd).toHaveBeenCalledWith(
+      'tick',
+      {},
+      {
+        repeat: { every: 5_000 },
+      },
+    );
   });
 
   it('skips startup when Redis URL is not resolved', async () => {
@@ -214,7 +217,7 @@ describe('MindBackgroundScheduler (UTP gap B)', () => {
     await scheduler.onModuleDestroy();
 
     expect(wClose).toHaveBeenCalledTimes(1);
-    expect(qClose).toHaveBeenCalledTimes(1);
+    expect(qClose).toHaveBeenCalledTimes(2); // main + dlq
   });
 
   // ── Wave 15: cognitive health on-tick wiring ──────────────────────
@@ -265,9 +268,7 @@ describe('MindBackgroundScheduler (UTP gap B)', () => {
 
     it('continues tick processing when scanAndEscalate throws', async () => {
       process.env[cogHealthKey] = 'true';
-      const scanMock = jest
-        .fn()
-        .mockRejectedValue(new Error('goal-field explosion'));
+      const scanMock = jest.fn().mockRejectedValue(new Error('goal-field explosion'));
       const { scheduler } = buildScheduler({
         cognitiveHealth: { scanAndEscalate: scanMock },
       });

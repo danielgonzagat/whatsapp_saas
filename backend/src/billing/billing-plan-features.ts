@@ -1,6 +1,5 @@
 import { StructuredLogger } from '../logging/structured-logger';
 
-
 const logger = StructuredLogger.from('BillingPlanFeatures');
 
 const PLAN_LIMITS: Record<

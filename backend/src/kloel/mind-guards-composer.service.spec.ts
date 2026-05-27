@@ -1,5 +1,5 @@
 import { KloelComposerService } from './kloel-composer.service';
-import { MindGuardsService } from './mind-guards.service';
+import { MindGuardsService } from './mind/policy/mind-guards.service';
 import { KloelRuleEngineService } from './rules/kloel-rule-engine.service';
 
 describe('code-native MIND guards and composer', () => {

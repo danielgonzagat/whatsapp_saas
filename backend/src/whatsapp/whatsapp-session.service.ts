@@ -8,10 +8,12 @@ import {
   WhatsAppApiProvider,
   type WahaRuntimeConfigDiagnostics,
 } from './providers/whatsapp-api.provider';
-import { normalizeJsonObjExt } from './whatsapp-service.helpers';
+import {
+  normalizeJsonObjExt,
+  normalizeNumber,
+} from '../marketing/channels/whatsapp/whatsapp-service.helpers';
 import type { ProviderSettings } from './provider-settings.types';
 import { WhatsAppEventEmitterService } from '../kloel/whatsapp-emitter/whatsapp-event-emitter.service';
-import { NON_DIGIT_RE } from '../common/phone';
 
 import { UUID_DASH_RE } from '../common/regex';
 
@@ -38,7 +40,7 @@ export class WhatsappSessionService {
   }
 
   private normalizeNumber(num: string): string {
-    return num.replace(NON_DIGIT_RE, '');
+    return normalizeNumber(num);
   }
 
   private normalizeChatId(chatId: string): string {

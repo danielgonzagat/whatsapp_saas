@@ -6,7 +6,8 @@ import {
   type IntentClassification,
   type ConfirmationRequest,
   type CapabilityContext,
-} from './capability-registry-v2.types';import { CAPABILITY_DEFINITIONS, CAPABILITY_MAP } from './capability-registry-v2.const';
+} from './capability-registry-v2.types';
+import { CAPABILITY_DEFINITIONS, CAPABILITY_MAP } from './capability-registry-v2.const';
 
 /**
  * Capability Registry v2 — Single source of truth for all Kloel capabilities.
@@ -29,7 +30,9 @@ export class CapabilityRegistryV2Service {
     for (const cap of CAPABILITY_DEFINITIONS) {
       this.maturities.set(cap.id, cap.maturity ?? 'registry');
     }
-    this.logger.log(`CapabilityRegistry v2 initialized with ${CAPABILITY_DEFINITIONS.length} capabilities`);
+    this.logger.log(
+      `CapabilityRegistry v2 initialized with ${CAPABILITY_DEFINITIONS.length} capabilities`,
+    );
   }
 
   list(): CapabilityDefinition[] {
@@ -58,7 +61,9 @@ export class CapabilityRegistryV2Service {
     caps: CapabilityDefinition[],
     permissions: string[],
   ): CapabilityDefinition[] {
-    if (permissions.includes('*')) return caps;
+    if (permissions.includes('*')) {
+      return caps;
+    }
     return caps.filter(
       (cap) =>
         cap.requiredPermissions.length === 0 ||
@@ -66,10 +71,7 @@ export class CapabilityRegistryV2Service {
     );
   }
 
-  filterFor(options: {
-    surface: string;
-    permissions: string[];
-  }): CapabilityDefinition[] {
+  filterFor(options: { surface: string; permissions: string[] }): CapabilityDefinition[] {
     const fromSurface = this.filterForSurface(options.surface);
     return this.filterForPermissions(fromSurface, options.permissions);
   }
@@ -77,8 +79,12 @@ export class CapabilityRegistryV2Service {
   groupedByTier(): Record<number, CapabilityDefinition[]> {
     const groups: Record<number, CapabilityDefinition[]> = {};
     for (const cap of CAPABILITY_DEFINITIONS) {
-      if (!groups[cap.tier]) groups[cap.tier] = [];
-      groups[cap.tier].push(cap);
+      const entry = groups[cap.tier];
+      if (entry) {
+        entry.push(cap);
+      } else {
+        groups[cap.tier] = [cap];
+      }
     }
     return groups;
   }
@@ -109,27 +115,32 @@ export class CapabilityRegistryV2Service {
     });
 
     const best = scored.sort((a, b) => b.confidence - a.confidence)[0];
-    if (!best || best.confidence < 0.3) return null;
+    if (!best || best.confidence < 0.3) {
+      return null;
+    }
+    const { capability, confidence } = best;
 
     const entities: Record<string, unknown> = {};
-    for (const field of best.capability.inputSchema) {
+    for (const field of capability.inputSchema) {
       if (field.type === 'number') {
         const match = normalized.match(/(?:r?\$\s*)?(\d+(?:[.,]\d+)?)/i);
-        if (match) entities[field.key] = parseFloat(match[1].replace(',', '.'));
+        if (match?.[1]) {
+          entities[field.key] = parseFloat(match[1].replace(',', '.'));
+        }
       }
     }
 
-    const missingInputs = best.capability.inputSchema
+    const missingInputs = capability.inputSchema
       .filter((f) => f.required && !entities[f.key])
       .map((f) => f.key);
 
     return {
-      intent: best.capability.id,
-      capabilityId: best.capability.id,
+      intent: capability.id,
+      capabilityId: capability.id,
       entities,
-      confidence: best.confidence,
+      confidence,
       missingInputs,
-      requiresConfirmation: best.capability.requiresConfirmation,
+      requiresConfirmation: capability.requiresConfirmation,
     };
   }
 
@@ -171,12 +182,12 @@ export class CapabilityRegistryV2Service {
       outputs: params.outputs,
       domainEvents: params.domainEvents,
       auditLogId: params.auditLogId,
-      evidenceUrl: params.evidenceUrl,
+      ...(params.evidenceUrl !== undefined ? { evidenceUrl: params.evidenceUrl } : {}),
       timestamp: new Date().toISOString(),
       durationMs: params.durationMs,
       idempotencyKey: params.context.idempotencyKey,
       success: params.success,
-      error: params.error,
+      ...(params.error !== undefined ? { error: params.error } : {}),
     };
   }
 }

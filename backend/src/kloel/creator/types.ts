@@ -26,11 +26,7 @@ export interface AudiencePartnerFit {
   readonly generatedAt: string;
 }
 
-export type AudiencePartnerFitVerdict =
-  | 'strong_fit'
-  | 'moderate_fit'
-  | 'weak_fit'
-  | 'mismatch';
+export type AudiencePartnerFitVerdict = 'strong_fit' | 'moderate_fit' | 'weak_fit' | 'mismatch';
 
 /**
  * Advisory result for optimal mention/promotion timing.

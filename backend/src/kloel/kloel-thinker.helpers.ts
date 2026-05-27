@@ -12,7 +12,7 @@ import {
 import type { ChatMessage, ThinkRequest, ThinkSyncResult } from './kloel-thinker.types';
 import { type PrismaService } from '../prisma/prisma.service';
 import { type AbiBuilderService } from './abi/abi-builder.service';
-import { type BrainCapabilityExecutorService } from './brain-capability-executor.service';
+import { type MindCapabilityExecutor } from './mind/coordination';
 import { type LocalToolExecutor } from './kloel-reply-engine.types';
 
 const ERR_THREAD_NOT_FOUND = 'Conversa não encontrada.';
@@ -39,7 +39,7 @@ export async function thinkSyncImpl(
     conversationStore: KloelConversationStore;
     planLimits: PlanLimitsService;
     abiBuilder?: AbiBuilderService;
-    capabilityExecutor?: BrainCapabilityExecutorService;
+    capabilityExecutor?: MindCapabilityExecutor;
     executeLocalTool?: LocalToolExecutor;
   },
 ): Promise<ThinkSyncResult> {

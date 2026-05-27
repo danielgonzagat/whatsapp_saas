@@ -10,18 +10,21 @@ import { ChannelTransportRegistry } from './channel-transport.registry';
 import type { ChannelName, ChannelSendResult } from './channel-transport.types';
 import { buildUnsubscribeFooterHtml } from '../common/utils/unsubscribe-footer.util';
 import { assertCustomerSafe } from './commercial-decision-orchestrator.service';
-import { BrainEventSpineService } from './brain-event-spine.service';
+import { MindEventSpine } from './mind/coordination';
 import { DailyLimitService } from './daily-limit.service';
 
 import type { UnknownRecord } from '../common/types';
 
 type GmailMailboxPort = {
-  sendMessageFromMailbox(workspaceId: string, input: {
-    toEmail: string;
-    subject: string;
-    html: string;
-    proactive?: boolean;
-  }): Promise<{ sent: boolean; status?: string; messageId?: string }>;
+  sendMessageFromMailbox(
+    workspaceId: string,
+    input: {
+      toEmail: string;
+      subject: string;
+      html: string;
+      proactive?: boolean;
+    },
+  ): Promise<{ sent: boolean; status?: string; messageId?: string }>;
 };
 
 /**
@@ -39,7 +42,7 @@ export class UnifiedAgentActionsMessagingService {
     private readonly transports: ChannelTransportRegistry,
     private readonly dailyLimit: DailyLimitService,
     @Optional() private readonly opsAlert?: OpsAlertService,
-    @Optional() private readonly events?: BrainEventSpineService,
+    @Optional() private readonly events?: MindEventSpine,
     @Optional() @Inject(GMAIL_OAUTH_TOKEN) private readonly _gmailMailbox?: GmailMailboxPort,
   ) {}
 

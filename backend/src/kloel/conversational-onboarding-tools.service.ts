@@ -63,7 +63,6 @@ export class ConversationalOnboardingToolsService {
     return fallback;
   }
 
-
   readStringArray(value: unknown): string[] | undefined {
     if (!Array.isArray(value)) {
       return undefined;

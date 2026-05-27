@@ -33,15 +33,16 @@ function resolveOutcome(
   error: DetectedError,
   tactic: RecoveryTactic,
 ): ErrorNarrativeEntry['outcome'] {
-  if (tactic.action === 'silence') return 'unresolved';
-  if (error.severity === 'high') return 'pending';
+  if (tactic.action === 'silence') {
+    return 'unresolved';
+  }
+  if (error.severity === 'high') {
+    return 'pending';
+  }
   return 'recovered';
 }
 
-function makeEntry(
-  error: DetectedError,
-  tactic: RecoveryTactic | null,
-): ErrorNarrativeEntry {
+function makeEntry(error: DetectedError, tactic: RecoveryTactic | null): ErrorNarrativeEntry {
   return {
     errorId: error.errorId,
     category: error.category,
@@ -57,24 +58,34 @@ function computeTrustImpact(
   const resolved = entries.filter((e) => e.outcome === 'recovered').length;
   const unresolved = entries.filter((e) => e.outcome === 'unresolved').length;
 
-  if (unresolved > resolved) return 'declining';
-  if (resolved > 0 && unresolved === 0) return 'improving';
+  if (unresolved > resolved) {
+    return 'declining';
+  }
+  if (resolved > 0 && unresolved === 0) {
+    return 'improving';
+  }
   return 'stable';
 }
 
-function buildRecoverySummary(
-  entries: readonly ErrorNarrativeEntry[],
-): string {
-  if (entries.length === 0) return 'Nenhum erro detectado no período.';
+function buildRecoverySummary(entries: readonly ErrorNarrativeEntry[]): string {
+  if (entries.length === 0) {
+    return 'Nenhum erro detectado no período.';
+  }
 
   const recovered = entries.filter((e) => e.outcome === 'recovered').length;
   const pending = entries.filter((e) => e.outcome === 'pending').length;
   const unresolved = entries.filter((e) => e.outcome === 'unresolved').length;
 
   let summary = `${entries.length} erro(s) detectado(s): `;
-  if (recovered > 0) summary += `${recovered} recuperado(s), `;
-  if (pending > 0) summary += `${pending} pendente(s), `;
-  if (unresolved > 0) summary += `${unresolved} não resolvido(s)`;
+  if (recovered > 0) {
+    summary += `${recovered} recuperado(s), `;
+  }
+  if (pending > 0) {
+    summary += `${pending} pendente(s), `;
+  }
+  if (unresolved > 0) {
+    summary += `${unresolved} não resolvido(s)`;
+  }
   summary = summary.replace(/, $/, '.');
 
   return summary;

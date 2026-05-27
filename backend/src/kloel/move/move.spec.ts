@@ -104,7 +104,12 @@ describe('Move module (Layer XXXI — Real Movement)', () => {
 
     it('scores critical priority higher than low priority', () => {
       const critical = svc.detectStuck([
-        makeAction({ id: 'c1', createdAt: pastDays(2), lastProgressAt: null, priority: 'critical' }),
+        makeAction({
+          id: 'c1',
+          createdAt: pastDays(2),
+          lastProgressAt: null,
+          priority: 'critical',
+        }),
       ]);
       const low = svc.detectStuck([
         makeAction({ id: 'l1', createdAt: pastDays(2), lastProgressAt: null, priority: 'low' }),
@@ -123,7 +128,13 @@ describe('Move module (Layer XXXI — Real Movement)', () => {
 
     it('produces recommendation for never_started with high score', () => {
       const results = svc.detectStuck([
-        makeAction({ id: 'd1', createdAt: pastDays(5), lastProgressAt: null, priority: 'critical', estimatedMinutes: 300 }),
+        makeAction({
+          id: 'd1',
+          createdAt: pastDays(5),
+          lastProgressAt: null,
+          priority: 'critical',
+          estimatedMinutes: 300,
+        }),
       ]);
       expect(results).toHaveLength(1);
       expect(results[0].recommendation).toContain('15 min');

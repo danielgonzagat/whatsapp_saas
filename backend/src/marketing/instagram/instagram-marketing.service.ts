@@ -13,7 +13,11 @@ type InstagramConnection = {
 function resolveInstagramConnection(connection: unknown): InstagramConnection {
   const row = connection as Record<string, unknown> | null;
   return {
-    accessToken: String(decryptMetaToken(typeof row?.accessToken === 'string' ? row.accessToken : null) || process.env.META_ACCESS_TOKEN || '').trim(),
+    accessToken: String(
+      decryptMetaToken(typeof row?.accessToken === 'string' ? row.accessToken : null) ||
+        process.env.META_ACCESS_TOKEN ||
+        '',
+    ).trim(),
     instagramAccountId: (row?.instagramAccountId as string) || null,
     instagramUsername: (row?.instagramUsername as string) || null,
   };

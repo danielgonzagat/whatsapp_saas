@@ -9,11 +9,7 @@
  * Pure function — stateless feedback application.
  */
 
-import type {
-  AttentionRanking,
-  ClarityFeedback,
-  FeedbackInput,
-} from './clarity.types';
+import type { AttentionRanking, ClarityFeedback, FeedbackInput } from './clarity.types';
 import { clampScore } from './clarity.types';
 
 export interface FeedbackResult {
@@ -30,14 +26,12 @@ export function applyFeedback(input: FeedbackInput): FeedbackResult {
   const { feedback, rankings } = input;
 
   const delta =
-    feedback.rating === 1
-      ? FEEDBACK_BOOST
-      : feedback.rating === -1
-        ? -FEEDBACK_PENALTY
-        : 0;
+    feedback.rating === 1 ? FEEDBACK_BOOST : feedback.rating === -1 ? -FEEDBACK_PENALTY : 0;
 
   const updated = rankings.map((ranking) => {
-    if (ranking.itemId !== feedback.itemId) return ranking;
+    if (ranking.itemId !== feedback.itemId) {
+      return ranking;
+    }
 
     const newScore = clampScore(ranking.score + delta);
     return {

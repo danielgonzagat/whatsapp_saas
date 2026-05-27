@@ -7,7 +7,12 @@
  * All functions are pure — no side effects, no persistence.
  */
 
-import type { CandidatePattern, KAnonymityParams, DiffPrivacyParams, WisdomPattern } from './wisdom.types';
+import type {
+  CandidatePattern,
+  KAnonymityParams,
+  DiffPrivacyParams,
+  WisdomPattern,
+} from './wisdom.types';
 import { DEFAULT_K_ANONYMITY, DEFAULT_DIFF_PRIVACY_EPSILON } from './wisdom.types';
 import type { PatternTaxonomy } from './wisdom.types';
 import { secureUniform } from './wisdom-uniform.helper';
@@ -35,7 +40,7 @@ export function applyKAnonymity(
   params: Partial<KAnonymityParams> = {},
 ): CandidatePattern[] {
   const k = Math.max(1, params.k ?? DEFAULT_K_ANONYMITY);
-  return candidates.filter(c => c.evidenceWorkspacesCount >= k);
+  return candidates.filter((c) => c.evidenceWorkspacesCount >= k);
 }
 
 /**
@@ -52,7 +57,7 @@ export function applyDiffPrivacyNoise(
   const epsilon = Math.max(0.01, params.epsilon ?? DEFAULT_DIFF_PRIVACY_EPSILON);
   const scale = 1.0 / epsilon;
 
-  return candidates.map(c => ({
+  return candidates.map((c) => ({
     ...c,
     aggregatedValue: Math.max(0, c.aggregatedValue + laplacianNoise(scale)),
     confidence: Math.max(0, Math.min(0.95, c.confidence - Math.abs(laplacianNoise(scale * 0.5)))),

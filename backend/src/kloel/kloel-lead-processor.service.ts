@@ -200,8 +200,7 @@ export class KloelLeadProcessorService {
         `lead-processor ws=${workspaceId} model=writer baseLen=${baseLen} outLen=${rawResponse.length} tokens=${tokens}`,
       );
 
-      const kloelResponse =
-        rawResponse || 'Olá! Como posso ajudá-lo hoje?';
+      const kloelResponse = rawResponse || 'Olá! Como posso ajudá-lo hoje?';
       if (!rawResponse || rawResponse.trim().length < 5) {
         this.logger.warn(`lead-processor short output ws=${workspaceId} len=${rawResponse.length}`);
       }

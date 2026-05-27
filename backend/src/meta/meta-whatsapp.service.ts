@@ -409,7 +409,7 @@ export class MetaWhatsAppService implements OnModuleInit {
         error: response.error.message,
       };
     }
-    const msgId = parseMessageIdFromResponse(response as Record<string, unknown>);
+    const msgId = parseMessageIdFromResponse(response);
     return {
       success: true,
       messageId: msgId,
@@ -457,7 +457,7 @@ export class MetaWhatsAppService implements OnModuleInit {
         error: response.error.message,
       };
     }
-    const msgId = parseMessageIdFromResponse(response as Record<string, unknown>);
+    const msgId = parseMessageIdFromResponse(response);
     return {
       success: true,
       messageId: msgId,

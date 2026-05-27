@@ -70,7 +70,13 @@ export class ContactIdentityResolverService {
     if (socialHandle) {
       const match = await this.findCrossChannelMatch(workspaceId, socialHandle, 'INSTAGRAM');
       if (match) {
-        return this.linkAndReturn(match, workspaceId, normalizedChannel, externalId, 'social_handle_match');
+        return this.linkAndReturn(
+          match,
+          workspaceId,
+          normalizedChannel,
+          externalId,
+          'social_handle_match',
+        );
       }
     }
 
@@ -78,11 +84,7 @@ export class ContactIdentityResolverService {
     return this.createContact(workspaceId, normalizedChannel, externalId);
   }
 
-  private async findCrossChannelMatch(
-    workspaceId: string,
-    value: string,
-    channel: string,
-  ) {
+  private async findCrossChannelMatch(workspaceId: string, value: string, channel: string) {
     const identifier = await this.prisma.channelIdentifier.findFirst({
       where: {
         workspaceId,

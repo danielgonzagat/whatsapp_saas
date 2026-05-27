@@ -123,9 +123,10 @@ export function cleanupOldConversations(
     logger.log(`Cleaned up ${cleaned} old guest conversations`);
   }
 }
-export function getConversationStats(
-  conversations: Map<string, GuestConversation>,
-): { activeSessions: number; totalMessages: number } {
+export function getConversationStats(conversations: Map<string, GuestConversation>): {
+  activeSessions: number;
+  totalMessages: number;
+} {
   let totalMessages = 0;
   for (const conversation of conversations.values()) {
     totalMessages += conversation.messages.length;

@@ -81,9 +81,7 @@ export class FlowOptimizerService {
     this.logger.log(
       `flow-optimizer ws=${workspaceId} model=brain baseLen=${prompt.length} outLen=${rawSuggestion.length} tokens=${tokens}`,
     );
-    await this.planLimits
-      .trackAiUsage(workspaceId, tokens)
-      .catch(() => {});
+    await this.planLimits.trackAiUsage(workspaceId, tokens).catch(() => {});
     let suggestion: Record<string, unknown> = {};
     try {
       const parsed = JSON.parse(rawSuggestion) as unknown;

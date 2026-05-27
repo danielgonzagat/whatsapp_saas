@@ -4,7 +4,7 @@ import {
   normalizeProbabilityScoreExt,
   resolveTimestampExt,
   toIsoTimestamp,
-} from './whatsapp-service.helpers';
+} from '../marketing/channels/whatsapp/whatsapp-service.helpers';
 
 export async function collectCatalogContactEntriesExt(
   deps: Pick<WsDeps, 'prisma'> & { resolveName: (p: string, ...c: unknown[]) => string },

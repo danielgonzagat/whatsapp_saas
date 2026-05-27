@@ -40,7 +40,7 @@ describe('MessengerController', () => {
 
       const req = mockReq();
       const body = { recipientId: 'rec-1', text: 'Hello' };
-      const result = await controller.sendMessage(req as never, body as never);
+      const result = await controller.sendMessage(req as never, body);
 
       expect(resolveConnection).toHaveBeenCalledWith('ws-1', 'facebook');
       expect(sendTextMessage).toHaveBeenCalledWith('page-1', 'rec-1', 'Hello', 'at-1');
@@ -56,7 +56,7 @@ describe('MessengerController', () => {
 
       const req = mockReq();
       const body = { recipientId: 'rec-2', mediaType: 'image', mediaUrl: 'http://example.com/img' };
-      const result = await controller.sendMessage(req as never, body as never);
+      const result = await controller.sendMessage(req as never, body);
 
       expect(sendMediaMessage).toHaveBeenCalledWith(
         'page-2',
@@ -76,7 +76,7 @@ describe('MessengerController', () => {
 
       const req = mockReq();
       await expect(
-        controller.sendMessage(req as never, { recipientId: 'rec-3', text: 'Hello' } as never),
+        controller.sendMessage(req as never, { recipientId: 'rec-3', text: 'Hello' }),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -89,7 +89,7 @@ describe('MessengerController', () => {
 
       const req = mockReq();
       await expect(
-        controller.sendMessage(req as never, { recipientId: 'rec-4', text: 'Hi' } as never),
+        controller.sendMessage(req as never, { recipientId: 'rec-4', text: 'Hi' }),
       ).rejects.toThrow('Graph API down');
     });
 
@@ -101,7 +101,7 @@ describe('MessengerController', () => {
       sendTextMessage.mockResolvedValueOnce({ id: 'msg-5' });
 
       const req = mockReq({ user: { sub: 'u-2', workspaceId: 'ws-custom' } });
-      await controller.sendMessage(req as never, { recipientId: 'rec-5', text: 'Yo' } as never);
+      await controller.sendMessage(req as never, { recipientId: 'rec-5', text: 'Yo' });
 
       expect(resolveConnection).toHaveBeenCalledWith('ws-custom', 'facebook');
     });

@@ -32,9 +32,7 @@ import {
 import type { SpineEventRef } from '../mind/mind.types';
 import type { PreCallContext, NextBestAction } from './team.types';
 
-const baseEvent = (
-  over: Partial<SpineEventRef> = {},
-): SpineEventRef => ({
+const baseEvent = (over: Partial<SpineEventRef> = {}): SpineEventRef => ({
   eventId: over.eventId ?? `evt_test_${Math.random().toString(36).slice(2, 8)}`,
   eventName: over.eventName ?? 'commerce.lead.created',
   workspaceId: over.workspaceId ?? 'wks_demo',
@@ -43,9 +41,7 @@ const baseEvent = (
   ...(over.entityRef !== undefined ? { entityRef: over.entityRef } : {}),
   ...(over.valence !== undefined ? { valence: over.valence } : {}),
   ...(over.payload !== undefined ? { payload: over.payload } : {}),
-  ...(over.correlationId !== undefined
-    ? { correlationId: over.correlationId }
-    : {}),
+  ...(over.correlationId !== undefined ? { correlationId: over.correlationId } : {}),
 });
 
 const leadRef = (leadId: string) => ({
@@ -100,17 +96,13 @@ describe('ForgottenFollowupRescuer (UTP-TEAM-003)', () => {
   });
 
   it('adds an R1 delegation contract to forgotten follow-up candidates', () => {
-    const silentAt = new Date(
-      Date.now() - 4 * 24 * 60 * 60 * 1000,
-    ).toISOString();
+    const silentAt = new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString();
     const events: SpineEventRef[] = [
       baseEvent({
         eventName: 'commerce.lead.objection_raised',
         entityRef: leadRef(leadA),
         workspaceId: wks,
-        occurredAt: new Date(
-          Date.now() - 5 * 24 * 60 * 60 * 1000,
-        ).toISOString(),
+        occurredAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
       }),
       baseEvent({
         eventName: 'commerce.lead.went_silent',
@@ -129,15 +121,11 @@ describe('ForgottenFollowupRescuer (UTP-TEAM-003)', () => {
     expect(results[0]!.r1Contract.riskClass).toBe('R1');
     expect(results[0]!.r1Contract.delegationMode).toBe('allowed_alone');
     expect(results[0]!.r1Contract.safeNextStep).toContain('do not send');
-    expect(results[0]!.r1Contract.leadOutcomeGuardrail.antiPressureLanguage).toBe(
-      true,
-    );
+    expect(results[0]!.r1Contract.leadOutcomeGuardrail.antiPressureLanguage).toBe(true);
   });
 
   it('skips leads with recent operator action', () => {
-    const threeDaysAgo = new Date(
-      Date.now() - 3 * 24 * 60 * 60 * 1000,
-    ).toISOString();
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 
     const events: SpineEventRef[] = [
@@ -212,9 +200,7 @@ describe('BlindSpotIlluminator (UTP-TEAM-004)', () => {
 
   it('excludes leads with recent operator action', () => {
     const recentReply = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
-    const recentOpReply = new Date(
-      Date.now() - 60 * 60 * 1000,
-    ).toISOString();
+    const recentOpReply = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 
     const events: SpineEventRef[] = [
       baseEvent({
@@ -317,16 +303,12 @@ describe('SmartHandoffService (UTP-TEAM-005)', () => {
     expect(pkg.preCallContext.leadHistory).toHaveLength(1);
     expect(pkg.preCallContext.openQuestions[0]).toContain('first value');
 
-    const action = pkg.suggestedActions.find(
-      (s) => s.action === 'review_post_sale_value_gap',
-    );
+    const action = pkg.suggestedActions.find((s) => s.action === 'review_post_sale_value_gap');
 
     expect(action).toBeDefined();
     expect(action!.r1Contract.riskClass).toBe('R2');
     expect(action!.r1Contract.delegationMode).toBe('human_only');
-    expect(action!.guardrails).toContain(
-      'frame as customer support, not team failure',
-    );
+    expect(action!.guardrails).toContain('frame as customer support, not team failure');
   });
 });
 

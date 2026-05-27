@@ -57,20 +57,16 @@ describe('AdminConfigController', () => {
 
       await controller.updateWorkspace('ws-1', { guestMode: false }, admin);
 
-      expect(updateWorkspaceConfig).toHaveBeenCalledWith(
-        'ws-1',
-        'admin-id-42',
-        expect.anything(),
-      );
+      expect(updateWorkspaceConfig).toHaveBeenCalledWith('ws-1', 'admin-id-42', expect.anything());
     });
 
     it('propagates errors from service', async () => {
       const error = new Error('workspace not found');
       updateWorkspaceConfig.mockRejectedValue(error);
 
-      await expect(
-        controller.updateWorkspace('ws-1', {}, { id: 'a' } as never),
-      ).rejects.toThrow('workspace not found');
+      await expect(controller.updateWorkspace('ws-1', {}, { id: 'a' } as never)).rejects.toThrow(
+        'workspace not found',
+      );
     });
   });
 });

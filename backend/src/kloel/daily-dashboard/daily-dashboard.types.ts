@@ -1,5 +1,3 @@
-
-
 export interface SuggestedAction {
   readonly kind: 'contact_lead' | 'recover_cart' | 'follow_up' | 'review_deal' | 'investigate';
   readonly targetType: string;

@@ -20,9 +20,7 @@ import { toTrustEvent } from './trust.types';
 import type { TrustEvent } from './trust.types';
 import type { SpineEventRef } from '../mind/mind.types';
 
-const baseSpineEvent = (
-  over: Partial<SpineEventRef> = {},
-): SpineEventRef => ({
+const baseSpineEvent = (over: Partial<SpineEventRef> = {}): SpineEventRef => ({
   eventId: over.eventId ?? `evt_test_${Math.random().toString(36).slice(2, 8)}`,
   eventName: over.eventName ?? 'commerce.lead.replied',
   workspaceId: over.workspaceId ?? 'wks_demo',
@@ -33,9 +31,7 @@ const baseSpineEvent = (
   ...(over.payload !== undefined ? { payload: over.payload } : {}),
 });
 
-const baseTrustEvent = (
-  over: Partial<TrustEvent> = {},
-): TrustEvent => ({
+const baseTrustEvent = (over: Partial<TrustEvent> = {}): TrustEvent => ({
   eventId: over.eventId ?? `evt_test_${Math.random().toString(36).slice(2, 8)}`,
   eventName: over.eventName ?? 'commerce.lead.replied',
   occurredAt: over.occurredAt ?? new Date().toISOString(),
@@ -181,9 +177,7 @@ describe('TrustStateTrackerService (UTP-TRUST-001)', () => {
   });
 
   it('accumulates silent interactions when lead goes silent', () => {
-    const events: SpineEventRef[] = [
-      baseSpineEvent({ eventName: 'commerce.lead.went_silent' }),
-    ];
+    const events: SpineEventRef[] = [baseSpineEvent({ eventName: 'commerce.lead.went_silent' })];
     const state = tracker.trackConversation('wks_demo', conversationRef, events);
     expect(state.silentInteractionsCount).toBe(1);
   });

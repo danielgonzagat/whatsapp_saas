@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation';
-/** Page. */
+import { VendasView } from '@/components/kloel/vendas/VendasView';
+
 export default function Page() {
-  redirect('/vendas');
+  return <VendasView defaultTab="vendas" />;
 }

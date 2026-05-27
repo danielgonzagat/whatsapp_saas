@@ -2,24 +2,55 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { randomIdSegment } from '../common/random-id';
 
+/**
+ * @deprecated DUPLICATE of {@link ../checkout/checkout.service.ts CheckoutService}.
+ * This standalone variant is unused (0 callers, not registered in any NestJS
+ * module). It returns string-error shapes (`{ success: false, error: '…' }`)
+ * instead of throwing exceptions, and uses non-deterministic code generation
+ * for short codes — both anti-patterns. The canonical service lives at
+ * `backend/src/checkout/checkout.service.ts` (500 LOC façade with proper
+ * sub-services and event emitter).
+ *
+ * Migration path: this file will be deleted in a follow-up PR once
+ * `scripts/ops/check-canonical-services.mjs --strict` confirms 0 callers
+ * for 7 consecutive days.
+ *
+ * @cluster Checkout
+ * @canonical backend/src/checkout/checkout.service.ts
+ * @see docs/architecture/DEPRECATION_MAP.md#cross-cutting-duplications row 33
+ */
 @Injectable()
 export class CheckoutService {
   private readonly logger = new Logger(CheckoutService.name);
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(workspaceId: string, data: {
-    productId: string; name: string; description?: string;
-    acceptPix?: boolean; acceptCard?: boolean; acceptBoleto?: boolean;
-    buttonText?: string; primaryColor?: string; bgColor?: string;
-    planIds?: string[]; couponCode?: string;
-    showCounter?: boolean; showSocialProof?: boolean;
-    showGuarantee?: boolean; exitIntentPopup?: boolean;
-  }) {
+  async create(
+    workspaceId: string,
+    data: {
+      productId: string;
+      name: string;
+      description?: string;
+      acceptPix?: boolean;
+      acceptCard?: boolean;
+      acceptBoleto?: boolean;
+      buttonText?: string;
+      primaryColor?: string;
+      bgColor?: string;
+      planIds?: string[];
+      couponCode?: string;
+      showCounter?: boolean;
+      showSocialProof?: boolean;
+      showGuarantee?: boolean;
+      exitIntentPopup?: boolean;
+    },
+  ) {
     const product = await this.prisma.product.findFirst({
       where: { id: data.productId, workspaceId },
     });
-    if (!product) return { success: false, error: 'product_not_found' };
-    
+    if (!product) {
+      return { success: false, error: 'product_not_found' };
+    }
+
     const checkout = await this.prisma.productCheckout.create({
       data: {
         productId: data.productId,
@@ -65,11 +96,17 @@ export class CheckoutService {
     const checkout = await this.prisma.productCheckout.findFirst({
       where: { id: checkoutId, product: { workspaceId } },
     });
-    if (!checkout) return { success: false, error: 'checkout_not_found' };
+    if (!checkout) {
+      return { success: false, error: 'checkout_not_found' };
+    }
 
     const updates: Record<string, unknown> = {};
-    if (data.name) updates.name = String(data.name);
-    if (data.active !== undefined) updates.active = Boolean(data.active);
+    if (typeof data.name === 'string') {
+      updates.name = data.name;
+    }
+    if (data.active !== undefined) {
+      updates.active = Boolean(data.active);
+    }
 
     await this.prisma.productCheckout.update({ where: { id: checkoutId }, data: updates });
     return { success: true, message: 'Checkout updated' };
@@ -79,7 +116,9 @@ export class CheckoutService {
     const checkout = await this.prisma.productCheckout.findFirst({
       where: { id: checkoutId, product: { workspaceId } },
     });
-    if (!checkout) return { success: false, error: 'checkout_not_found' };
+    if (!checkout) {
+      return { success: false, error: 'checkout_not_found' };
+    }
     await this.prisma.productCheckout.delete({ where: { id: checkoutId } });
     return { success: true, message: `Checkout "${checkout.name}" deleted` };
   }

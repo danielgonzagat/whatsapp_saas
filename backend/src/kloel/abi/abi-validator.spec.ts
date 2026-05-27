@@ -1,9 +1,5 @@
 import { ABI_VERSION, CognitiveStateAbi } from './abi-schema';
-import {
-  assertValidAbi,
-  compareAbiVersions,
-  validateAbiPayload,
-} from './abi-validator';
+import { assertValidAbi, compareAbiVersions, validateAbiPayload } from './abi-validator';
 
 /**
  * UTP-ABI-003 contract spec.
@@ -33,9 +29,7 @@ describe('validateAbiPayload', () => {
       attention: { candidates: [] },
       memory: { workingMemory: [], episodicRefs: [], consolidatedRefs: [] },
       capabilities: {
-        available: [
-          { capabilityId: 'lineage', maturity: 'developing', runtimeEvidencePct: 5 },
-        ],
+        available: [{ capabilityId: 'lineage', maturity: 'developing', runtimeEvidencePct: 5 }],
         restricted: [],
       },
       valence: {
@@ -153,7 +147,11 @@ describe('validateAbiPayload', () => {
       capabilities: {
         ...p.capabilities,
         available: [
-          { capabilityId: 'magical-thinking', maturity: 'developing' as const, runtimeEvidencePct: 0 },
+          {
+            capabilityId: 'magical-thinking',
+            maturity: 'developing' as const,
+            runtimeEvidencePct: 0,
+          },
         ],
       },
     };

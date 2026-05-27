@@ -1,26 +1,30 @@
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
-
-import LandingPage from './page';
+import { cleanup, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/components/kloel/landing/KloelLanding', () => ({
-  default: () => <main data-testid="public-landing" />,
+  default: () => <main data-testid="public-landing">Marketing Artificial landing</main>,
 }));
 
 vi.mock('@/components/kloel/landing/FloatingChat', () => ({
-  FloatingChat: () => <aside data-testid="landing-floating-chat" />,
+  FloatingChat: () => <aside data-testid="public-floating-chat">Floating chat</aside>,
 }));
 
 vi.mock('@/components/kloel/home/HomeView', () => ({
-  default: () => <section data-testid="dashboard-home" />,
+  default: () => <main data-testid="dashboard-home">PAINEL OPERACIONAL</main>,
 }));
 
-describe('public root page', () => {
-  it('renders the public landing instead of the authenticated dashboard home', () => {
-    render(<LandingPage />);
+import HomePage from './page';
 
-    expect(screen.getByTestId('public-landing')).toBeVisible();
-    expect(screen.getByTestId('landing-floating-chat')).toBeVisible();
-    expect(screen.queryByTestId('dashboard-home')).not.toBeInTheDocument();
+afterEach(() => {
+  cleanup();
+});
+
+describe('public home page', () => {
+  it('renders the sales landing instead of the authenticated dashboard home', () => {
+    render(<HomePage />);
+
+    expect(screen.getByTestId('public-landing')).toBeTruthy();
+    expect(screen.getByTestId('public-floating-chat')).toBeTruthy();
+    expect(screen.queryByTestId('dashboard-home')).toBeNull();
   });
 });

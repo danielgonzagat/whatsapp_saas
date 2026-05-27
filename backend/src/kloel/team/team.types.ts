@@ -46,15 +46,9 @@ export interface PreCallContext {
 
 export type TeamDelegationRiskClass = 'R1' | 'R2' | 'R3' | 'R4';
 
-export type TeamDelegationMode =
-  | 'allowed_alone'
-  | 'requires_review'
-  | 'human_only';
+export type TeamDelegationMode = 'allowed_alone' | 'requires_review' | 'human_only';
 
-export type TeamRollbackAction =
-  | 'dismiss_suggestion'
-  | 'snooze_suggestion'
-  | 'manual_review';
+export type TeamRollbackAction = 'dismiss_suggestion' | 'snooze_suggestion' | 'manual_review';
 
 export interface LeadOutcomeGuardrail {
   readonly antiPressureLanguage: boolean;

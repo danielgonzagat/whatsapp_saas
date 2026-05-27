@@ -14,9 +14,7 @@ function ev(over: Partial<SpineEventRef> = {}): SpineEventRef {
     truthMode: over.truthMode ?? 'observed',
     ...(over.entityRef !== undefined ? { entityRef: over.entityRef } : {}),
     ...(over.payload !== undefined ? { payload: over.payload } : {}),
-    ...(over.correlationId !== undefined
-      ? { correlationId: over.correlationId }
-      : {}),
+    ...(over.correlationId !== undefined ? { correlationId: over.correlationId } : {}),
     ...(over.valence !== undefined ? { valence: over.valence } : {}),
   };
 }
@@ -43,30 +41,22 @@ describe('CiaCognitiveHealthService', () => {
     const tHigh = makeTension({ severity: 0.95, description: 'high' });
 
     const goalField = new GoalFieldService();
-    const runCycleSpy = jest
-      .spyOn(goalField, 'runCycle')
-      .mockReturnValue({
-        mode: 'shadow' as const,
-        tensions: [tLow, tMid, tHigh],
-        aggregated: [],
-        candidates: [],
-        promoted: [],
-        cycleAt: new Date().toISOString(),
-      });
+    const runCycleSpy = jest.spyOn(goalField, 'runCycle').mockReturnValue({
+      mode: 'shadow' as const,
+      tensions: [tLow, tMid, tHigh],
+      aggregated: [],
+      candidates: [],
+      promoted: [],
+      cycleAt: new Date().toISOString(),
+    });
 
     const createMock = jest.fn().mockResolvedValue({ id: 'mem-1' });
     const prisma = { kloelMemory: { create: createMock } };
     const spine = {
-      recentEventsAsRef: jest
-        .fn()
-        .mockReturnValue([ev({ workspaceId: 'ws_test' })]),
+      recentEventsAsRef: jest.fn().mockReturnValue([ev({ workspaceId: 'ws_test' })]),
     };
 
-    const svc = new CiaCognitiveHealthService(
-      prisma as never,
-      goalField,
-      spine as never,
-    );
+    const svc = new CiaCognitiveHealthService(prisma as never, goalField, spine as never);
 
     const result = await svc.scanAndEscalate('ws_test');
 
@@ -109,16 +99,14 @@ describe('CiaCognitiveHealthService', () => {
       }),
     );
 
-    const lowCall = createMock.mock.calls.find(
-      (call: unknown[]) => {
-        const arg = call?.[0] as Record<string, unknown> | undefined;
-        return (
-          arg?.data &&
-          typeof arg.data === 'object' &&
-          (arg.data as Record<string, unknown>).content === 'low'
-        );
-      },
-    );
+    const lowCall = createMock.mock.calls.find((call: unknown[]) => {
+      const arg = call?.[0] as Record<string, unknown> | undefined;
+      return (
+        arg?.data &&
+        typeof arg.data === 'object' &&
+        (arg.data as Record<string, unknown>).content === 'low'
+      );
+    });
     expect(lowCall).toBeUndefined();
 
     runCycleSpy.mockRestore();
@@ -126,16 +114,14 @@ describe('CiaCognitiveHealthService', () => {
 
   it('filters events to the target workspace', async () => {
     const goalField = new GoalFieldService();
-    const runCycleSpy = jest
-      .spyOn(goalField, 'runCycle')
-      .mockReturnValue({
-        mode: 'shadow' as const,
-        tensions: [],
-        aggregated: [],
-        candidates: [],
-        promoted: [],
-        cycleAt: new Date().toISOString(),
-      });
+    const runCycleSpy = jest.spyOn(goalField, 'runCycle').mockReturnValue({
+      mode: 'shadow' as const,
+      tensions: [],
+      aggregated: [],
+      candidates: [],
+      promoted: [],
+      cycleAt: new Date().toISOString(),
+    });
 
     const createMock = jest.fn().mockResolvedValue({ id: 'mem-1' });
     const prisma = { kloelMemory: { create: createMock } };
@@ -146,18 +132,12 @@ describe('CiaCognitiveHealthService', () => {
       recentEventsAsRef: jest.fn().mockReturnValue([...ws1Events, ...ws2Events]),
     };
 
-    const svc = new CiaCognitiveHealthService(
-      prisma as never,
-      goalField,
-      spine as never,
-    );
+    const svc = new CiaCognitiveHealthService(prisma as never, goalField, spine as never);
 
     await svc.scanAndEscalate('ws-1');
 
     expect(spine.recentEventsAsRef).toHaveBeenCalled();
-    const cycleEvents = runCycleSpy.mock.calls[0]?.[0]?.events as
-      | SpineEventRef[]
-      | undefined;
+    const cycleEvents = runCycleSpy.mock.calls[0]?.[0]?.events as SpineEventRef[] | undefined;
     expect(cycleEvents).toHaveLength(1);
     expect(cycleEvents?.[0]?.workspaceId).toBe('ws-1');
 
@@ -166,30 +146,22 @@ describe('CiaCognitiveHealthService', () => {
 
   it('returns escalated=0 when no tensions meet threshold', async () => {
     const goalField = new GoalFieldService();
-    const runCycleSpy = jest
-      .spyOn(goalField, 'runCycle')
-      .mockReturnValue({
-        mode: 'shadow' as const,
-        tensions: [makeTension({ severity: 0.4 }), makeTension({ severity: 0.55 })],
-        aggregated: [],
-        candidates: [],
-        promoted: [],
-        cycleAt: new Date().toISOString(),
-      });
+    const runCycleSpy = jest.spyOn(goalField, 'runCycle').mockReturnValue({
+      mode: 'shadow' as const,
+      tensions: [makeTension({ severity: 0.4 }), makeTension({ severity: 0.55 })],
+      aggregated: [],
+      candidates: [],
+      promoted: [],
+      cycleAt: new Date().toISOString(),
+    });
 
     const createMock = jest.fn().mockResolvedValue({ id: 'mem-1' });
     const prisma = { kloelMemory: { create: createMock } };
     const spine = {
-      recentEventsAsRef: jest
-        .fn()
-        .mockReturnValue([ev({ workspaceId: 'ws_test' })]),
+      recentEventsAsRef: jest.fn().mockReturnValue([ev({ workspaceId: 'ws_test' })]),
     };
 
-    const svc = new CiaCognitiveHealthService(
-      prisma as never,
-      goalField,
-      spine as never,
-    );
+    const svc = new CiaCognitiveHealthService(prisma as never, goalField, spine as never);
 
     const result = await svc.scanAndEscalate('ws_test');
 
@@ -201,33 +173,25 @@ describe('CiaCognitiveHealthService', () => {
 
   it('skips non-cognitive tensions even with high severity', async () => {
     const goalField = new GoalFieldService();
-    const runCycleSpy = jest
-      .spyOn(goalField, 'runCycle')
-      .mockReturnValue({
-        mode: 'shadow' as const,
-        tensions: [
-          makeTension({ dimension: 'commercial', severity: 0.95 }),
-          makeTension({ dimension: 'financial', severity: 0.85 }),
-        ],
-        aggregated: [],
-        candidates: [],
-        promoted: [],
-        cycleAt: new Date().toISOString(),
-      });
+    const runCycleSpy = jest.spyOn(goalField, 'runCycle').mockReturnValue({
+      mode: 'shadow' as const,
+      tensions: [
+        makeTension({ dimension: 'commercial', severity: 0.95 }),
+        makeTension({ dimension: 'financial', severity: 0.85 }),
+      ],
+      aggregated: [],
+      candidates: [],
+      promoted: [],
+      cycleAt: new Date().toISOString(),
+    });
 
     const createMock = jest.fn().mockResolvedValue({ id: 'mem-1' });
     const prisma = { kloelMemory: { create: createMock } };
     const spine = {
-      recentEventsAsRef: jest
-        .fn()
-        .mockReturnValue([ev({ workspaceId: 'ws_test' })]),
+      recentEventsAsRef: jest.fn().mockReturnValue([ev({ workspaceId: 'ws_test' })]),
     };
 
-    const svc = new CiaCognitiveHealthService(
-      prisma as never,
-      goalField,
-      spine as never,
-    );
+    const svc = new CiaCognitiveHealthService(prisma as never, goalField, spine as never);
 
     const result = await svc.scanAndEscalate('ws_test');
 
@@ -242,16 +206,14 @@ describe('CiaCognitiveHealthService', () => {
     const t2 = makeTension({ severity: 0.8, description: 'second' });
 
     const goalField = new GoalFieldService();
-    const runCycleSpy = jest
-      .spyOn(goalField, 'runCycle')
-      .mockReturnValue({
-        mode: 'shadow' as const,
-        tensions: [t1, t2],
-        aggregated: [],
-        candidates: [],
-        promoted: [],
-        cycleAt: new Date().toISOString(),
-      });
+    const runCycleSpy = jest.spyOn(goalField, 'runCycle').mockReturnValue({
+      mode: 'shadow' as const,
+      tensions: [t1, t2],
+      aggregated: [],
+      candidates: [],
+      promoted: [],
+      cycleAt: new Date().toISOString(),
+    });
 
     const createMock = jest
       .fn()
@@ -259,16 +221,10 @@ describe('CiaCognitiveHealthService', () => {
       .mockResolvedValueOnce({ id: 'mem-2' });
     const prisma = { kloelMemory: { create: createMock } };
     const spine = {
-      recentEventsAsRef: jest
-        .fn()
-        .mockReturnValue([ev({ workspaceId: 'ws_test' })]),
+      recentEventsAsRef: jest.fn().mockReturnValue([ev({ workspaceId: 'ws_test' })]),
     };
 
-    const svc = new CiaCognitiveHealthService(
-      prisma as never,
-      goalField,
-      spine as never,
-    );
+    const svc = new CiaCognitiveHealthService(prisma as never, goalField, spine as never);
 
     const result = await svc.scanAndEscalate('ws_test');
 

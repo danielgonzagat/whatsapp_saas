@@ -18,7 +18,13 @@ import { AuthorityBuilder } from './authority.builder';
 import { TacticalTradeoffAdvisor } from './tactical-tradeoff.advisor';
 import { DefensibilityNarrativeBuilder } from './defensibility-narrative.builder';
 
-import type { EvidenceInput, DefensibleAsset, OwnedAudience, PositioningUniqueness, AuthorityBuilding } from './types';
+import type {
+  EvidenceInput,
+  DefensibleAsset,
+  OwnedAudience,
+  PositioningUniqueness,
+  AuthorityBuilding,
+} from './types';
 import type { SpineEventRef } from '../mind/mind.types';
 
 const baseSpineEvent = (over: Partial<SpineEventRef> = {}): SpineEventRef => ({
@@ -75,15 +81,12 @@ describe('AssetRegistry (UTP-DEFENS-001)', () => {
     const first = registry.register(wsInput('wks_a', events.slice(0, 1)));
     const all = registry.register(wsInput('wks_a', events));
     const firstScore = first[0]?.score ?? 0;
-    const lastScore = all.length > 0 ? all[all.length - 1]?.score ?? 0 : 0;
+    const lastScore = all.length > 0 ? (all[all.length - 1]?.score ?? 0) : 0;
     expect(lastScore).toBeGreaterThan(firstScore);
   });
 
   it('lists assets ordered by score descending', () => {
-    const events = [
-      ...makeDealWonEvents('wks_a', 5),
-      ...makeConversionEvents('wks_a', 1),
-    ];
+    const events = [...makeDealWonEvents('wks_a', 5), ...makeConversionEvents('wks_a', 1)];
     registry.register(wsInput('wks_a', events));
     const list = registry.list('wks_a');
     expect(list.length).toBeGreaterThan(0);

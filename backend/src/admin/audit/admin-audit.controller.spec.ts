@@ -84,9 +84,7 @@ describe('AdminAuditController', () => {
 
       await controller.list(query);
 
-      expect(list).toHaveBeenCalledWith(
-        expect.objectContaining({ skip: 100, take: 50 }),
-      );
+      expect(list).toHaveBeenCalledWith(expect.objectContaining({ skip: 100, take: 50 }));
     });
 
     it('deve retornar lista vazia quando o service retorna zero itens', async () => {

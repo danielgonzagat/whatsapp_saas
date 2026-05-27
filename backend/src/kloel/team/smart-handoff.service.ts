@@ -12,10 +12,7 @@
 import { Injectable } from '@nestjs/common';
 import { buildPreCallContext } from './pre-call-context.builder';
 import { suggestNextBestActions } from './next-best-action.suggester';
-import type {
-  HandoffPackage,
-  PreCallContextInput,
-} from './team.types';
+import type { HandoffPackage, PreCallContextInput } from './team.types';
 
 @Injectable()
 export class SmartHandoffService {
@@ -40,16 +37,11 @@ export class SmartHandoffService {
 
     const suggestInput = {
       context: preCallContext,
-      ...(input.maturityStage !== undefined
-        ? { maturityStage: input.maturityStage }
-        : {}),
-      ...(input.trustState !== undefined
-        ? { trustState: input.trustState }
-        : {}),
+      ...(input.maturityStage !== undefined ? { maturityStage: input.maturityStage } : {}),
+      ...(input.trustState !== undefined ? { trustState: input.trustState } : {}),
     };
 
-    const suggestedActions =
-      suggestNextBestActions(suggestInput);
+    const suggestedActions = suggestNextBestActions(suggestInput);
 
     return {
       leadId: input.leadId,
@@ -57,12 +49,8 @@ export class SmartHandoffService {
       workspaceId: input.workspaceId,
       preCallContext,
       suggestedActions,
-      ...(input.maturityStage !== undefined
-        ? { maturityStage: input.maturityStage }
-        : {}),
-      ...(input.trustState !== undefined
-        ? { trustState: input.trustState }
-        : {}),
+      ...(input.maturityStage !== undefined ? { maturityStage: input.maturityStage } : {}),
+      ...(input.trustState !== undefined ? { trustState: input.trustState } : {}),
       packagedAt: input.nowIso ?? new Date().toISOString(),
     };
   }

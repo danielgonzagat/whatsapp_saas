@@ -1,3 +1,4 @@
+import { ProductCouponDomainService } from './product-coupon-domain.service';
 import { NotFoundException, type Provider } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { AuditService } from '../audit/audit.service';
@@ -387,7 +388,7 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
             },
           }),
         ),
-      });
+      }, [ProductCouponDomainService]);
       controller = mod.get(ProductCouponController);
     });
 

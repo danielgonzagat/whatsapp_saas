@@ -1,3 +1,12 @@
+/**
+ * @deprecated Use {@link ../kloel/mind/knowledge/mind-vector-store.service.ts MindVectorStore}
+ * (re-exported from `backend/src/kloel/mind/knowledge/`). This file remains
+ * during the ADR-0013 Wave M2 alias window (4 weeks).
+ *
+ * @cluster Mind/Knowledge
+ * @canonical backend/src/kloel/mind/knowledge/mind-vector-store.service.ts
+ * @see docs/adr/0013-kloel-mind-unification.md
+ */
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { StructuredLogger } from '../logging/structured-logger';

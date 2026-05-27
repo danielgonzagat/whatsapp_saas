@@ -1,7 +1,97 @@
 {
-  "score": 100,
-  "totalNodes": 1820,
+  "score": 99,
+  "totalNodes": 1830,
   "breaks": [
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/kloel/kloel.controller.ts",
+      "line": 464,
+      "description": "GET /kloel/onboarding/:workspaceId/status is not called by frontend code",
+      "detail": "Controller: getOnboardingStatus",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/marketing/google-ads-marketing.controller.ts",
+      "line": 33,
+      "description": "GET /marketing/connect/google-ads/customers is not called by frontend code",
+      "detail": "Controller: customers",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/marketing/google-ads-marketing.controller.ts",
+      "line": 38,
+      "description": "GET /marketing/connect/google-ads/campaigns is not called by frontend code",
+      "detail": "Controller: campaigns",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/marketing/marketing.controller.ts",
+      "line": 49,
+      "description": "GET /marketing/stats is not called by frontend code",
+      "detail": "Controller: getStats",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/marketing/marketing.controller.ts",
+      "line": 150,
+      "description": "GET /marketing/live-feed is not called by frontend code",
+      "detail": "Controller: getLiveFeed",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/marketing/marketing.controller.ts",
+      "line": 181,
+      "description": "GET /marketing/channel/:channel/stats is not called by frontend code",
+      "detail": "Controller: getChannelStats",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/marketing/marketing.controller.ts",
+      "line": 247,
+      "description": "GET /marketing/ai-brain is not called by frontend code",
+      "detail": "Controller: getAiBrain",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/marketing/tiktok-marketing.controller.ts",
+      "line": 32,
+      "description": "GET /marketing/connect/tiktok/profile is not called by frontend code",
+      "detail": "Controller: profile",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
+    {
+      "type": "graph-route-caller-unobserved",
+      "severity": "low",
+      "file": "backend/src/marketing/tiktok-marketing.controller.ts",
+      "line": 37,
+      "description": "GET /marketing/connect/tiktok/campaigns is not called by frontend code",
+      "detail": "Controller: campaigns",
+      "source": "graph:confirmed_static:route_caller_unobserved",
+      "surface": "route-connectivity"
+    },
     {
       "type": "graph-route-caller-unobserved",
       "severity": "low",
@@ -11,24 +101,14 @@
       "detail": "Controller: receive",
       "source": "graph:confirmed_static:route_caller_unobserved",
       "surface": "route-connectivity"
-    },
-    {
-      "type": "graph-ui-handler-effect-unobserved",
-      "severity": "medium",
-      "file": "frontend/src/components/kloel/marketing/OfficialMarketingChannelPage/StepArsenal.tsx",
-      "line": 126,
-      "description": "clickable \"(sem texto)\" has dead handler",
-      "detail": "Handler: () => remove(index)",
-      "source": "graph:confirmed_static:ui_handler_effect_unobserved",
-      "surface": "ui-interaction"
     }
   ],
   "stats": {
-    "uiElements": 1959,
-    "uiDeadHandlers": 1,
-    "apiCalls": 771,
+    "uiElements": 2031,
+    "uiDeadHandlers": 0,
+    "apiCalls": 773,
     "apiNoRoute": 0,
-    "backendRoutes": 876,
+    "backendRoutes": 884,
     "backendEmpty": 0,
     "prismaModels": 173,
     "modelOrphans": 0,
@@ -40,13 +120,13 @@
     },
     "proxyRoutes": 85,
     "proxyNoUpstream": 0,
-    "securityIssues": 2,
+    "securityIssues": 10,
     "dataSafetyIssues": 0,
     "qualityIssues": 0,
     "unavailableChecks": 0,
     "unknownSurfaces": 0
   },
-  "timestamp": "2026-05-23T23:42:27.442Z",
-  "runId": "4aaf6fe2-6be8-48ac-a562-7313a117a352",
-  "generatedAt": "2026-05-23T23:43:58.960Z"
+  "timestamp": "2026-05-26T23:36:59.905Z",
+  "runId": "e6429f11-e30c-425e-a987-9001f6908188",
+  "generatedAt": "2026-05-26T23:39:35.539Z"
 }

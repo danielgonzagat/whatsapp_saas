@@ -63,7 +63,7 @@ export function useKloelMessageHandlers(deps: UseKloelMessageHandlersDeps) {
         updatedMessage.metadata as KloelChatRequestMetadata | undefined,
       );
     },
-    [handleSendMessage],
+    [handleSendMessage, setMessages],
   );
 
   const handleAssistantFeedback = useCallback(
@@ -77,7 +77,7 @@ export function useKloelMessageHandlers(deps: UseKloelMessageHandlersDeps) {
         ),
       );
     },
-    [],
+    [setMessages],
   );
 
   const handleAssistantRegenerate = useCallback(
@@ -141,7 +141,13 @@ export function useKloelMessageHandlers(deps: UseKloelMessageHandlersDeps) {
         setStreamingMessageId(null);
       }
     },
-    [activeConversationId, refreshConversations],
+    [
+      activeConversationId,
+      refreshConversations,
+      setMessages,
+      setIsThinking,
+      setStreamingMessageId,
+    ],
   );
 
   return { handleUserRetry, handleUserEdit, handleAssistantFeedback, handleAssistantRegenerate };

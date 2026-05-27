@@ -3,15 +3,17 @@ import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
-import { apiFetch } from '@/lib/api';
-import { useState, useEffect } from 'react';
 import { IC, TEXT, TEXT_DIM, BORDER } from './SitesViewIcons';
 import { Card, Badge, Stat, SectionLabel, StatusDot, Btn } from './SitesViewAtoms';
 import { NeuralPulse } from './NeuralPulse';
-import type { SiteItem } from './SitesViewIcons';
+import type { Site } from '@/lib/api/sites';
 
-function OverviewSiteCard({ site, isMobile }: { site: SiteItem; isMobile: boolean }) {
-  const status: 'online' | 'offline' | 'warning' | 'building' = site.published ? 'online' : 'building';
+function published(s: Site): boolean {
+  return s.status === 'PUBLISHED';
+}
+
+function OverviewSiteCard({ site, isMobile }: { site: Site; isMobile: boolean }) {
+  const status: 'online' | 'offline' | 'warning' | 'building' = published(site) ? 'online' : 'building';
   return (
     <Card style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', flexDirection: isMobile ? 'column' : 'row', gap: 14 }}>
       <StatusDot status={status} />
@@ -29,30 +31,24 @@ function OverviewSiteCard({ site, isMobile }: { site: SiteItem; isMobile: boolea
   );
 }
 
-export function VisaoGeral({ switchTab }: { switchTab: (id: string) => void }) {
+export function VisaoGeral({ switchTab, sites = [], loading = false, error }: {
+  switchTab: (id: string) => void;
+  sites: Site[];
+  loading: boolean;
+  error?: Error | null;
+}) {
   const { isMobile } = useResponsiveViewport();
-  const [sites, setSites] = useState<SiteItem[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    apiFetch('/kloel/site/list')
-      .then((res) => {
-        const data = res.data as { sites?: SiteItem[] } | undefined;
-        if (data?.sites) {setSites(data.sites);}
-      })
-      .finally(() => setLoading(false));
-  }, []);
-
-  const publishedSites = sites.filter((s) => s.published);
+  const publishedSites = sites.filter((s) => s.status === 'PUBLISHED');
   const totalSites = sites.length;
   const publishedCount = publishedSites.length;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12 }}>
-        <Stat label={kloelT(`Sites`)} value={loading ? '...' : String(totalSites)} icon={IC.site} />
-        <Stat label={kloelT(`Publicados`)} value={loading ? '...' : String(publishedCount)} icon={IC.globe} />
-        <Stat label={kloelT(`Rascunhos`)} value={loading ? '...' : String(totalSites - publishedCount)} icon={IC.edit} />
+        <Stat label={kloelT(`Sites`)} value={loading && !error ? '...' : String(totalSites)} icon={IC.site} />
+        <Stat label={kloelT(`Publicados`)} value={loading && !error ? '...' : String(publishedCount)} icon={IC.globe} />
+        <Stat label={kloelT(`Rascunhos`)} value={loading && !error ? '...' : String(totalSites - publishedCount)} icon={IC.edit} />
       </div>
 
       <Card style={{ padding: 0, overflow: 'hidden' }}>
@@ -65,7 +61,9 @@ export function VisaoGeral({ switchTab }: { switchTab: (id: string) => void }) {
 
       <div>
         <SectionLabel>{kloelT(`Seus Sites`)}</SectionLabel>
-        {loading ? (
+        {error ? (
+          <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, color: TEXT_DIM }}>{kloelT(`Erro ao carregar sites`)}</div>
+        ) : loading ? (
           <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, color: TEXT_DIM }}>{kloelT(`Carregando...`)}</div>
         ) : sites.length === 0 ? (
           <Card style={{ textAlign: 'center', padding: 30 }}>

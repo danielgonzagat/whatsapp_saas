@@ -7,19 +7,14 @@ import { proposeRecoveryTactic } from './error-damage-recovery.tactics';
 import { buildErrorNarrative } from './error-narrative.builder';
 import { TrustAfterErrorTracker } from './trust-after-error.tracker';
 import { buildRecoveryProofPackage } from './recovery-proof-package.builder';
-import type {
-  DetectedError,
-  ErrorDetectorInput,
-  RecoveryTactic,
-} from './recovery.types';
+import type { DetectedError, ErrorDetectorInput, RecoveryTactic } from './recovery.types';
 import type { GuardStatus } from './recovery-proof-package.builder';
 
 const NOW = Date.parse('2026-05-13T22:00:00.000Z');
 const WKS = 'wks_recovery_test';
 
 function ev(over?: Partial<SpineEventRef>): SpineEventRef {
-  const id =
-    over?.eventId ?? `e_${Math.random().toString(36).slice(2, 10)}`;
+  const id = over?.eventId ?? `e_${Math.random().toString(36).slice(2, 10)}`;
   return {
     eventId: id,
     eventName: over?.eventName ?? 'commerce.lead.replied',
@@ -32,9 +27,7 @@ function ev(over?: Partial<SpineEventRef>): SpineEventRef {
   };
 }
 
-function input(
-  over?: Partial<ErrorDetectorInput>,
-): ErrorDetectorInput {
+function input(over?: Partial<ErrorDetectorInput>): ErrorDetectorInput {
   return {
     events: over?.events ?? ([] as readonly SpineEventRef[]),
     workspaceId: over?.workspaceId ?? WKS,
@@ -105,15 +98,12 @@ describe('UTP-RECOVERY-001 — detectErrors', () => {
   });
 
   it('handoff severity scales with count', () => {
-    const lowEvents: SpineEventRef[] = [
-      ev({ eventName: 'commerce.whatsapp.handoff_to_human' }),
-    ];
+    const lowEvents: SpineEventRef[] = [ev({ eventName: 'commerce.whatsapp.handoff_to_human' })];
     const low = detectErrors(input({ events: lowEvents }));
     expect(low[0]?.severity).toBe('low');
 
-    const highEvents: SpineEventRef[] = Array.from(
-      { length: 6 },
-      () => ev({ eventName: 'commerce.whatsapp.handoff_to_human' }),
+    const highEvents: SpineEventRef[] = Array.from({ length: 6 }, () =>
+      ev({ eventName: 'commerce.whatsapp.handoff_to_human' }),
     );
     const high = detectErrors(input({ events: highEvents }));
     expect(high[0]?.severity).toBe('high');
@@ -290,12 +280,7 @@ describe('UTP-RECOVERY-006 — buildErrorNarrative', () => {
   });
 
   it('empty error list produces empty narrative', () => {
-    const narrative = buildErrorNarrative(
-      [],
-      new Map(),
-      WKS,
-      NOW,
-    );
+    const narrative = buildErrorNarrative([], new Map(), WKS, NOW);
     expect(narrative.errors).toHaveLength(0);
     expect(narrative.recoverySummary).toContain('Nenhum erro');
     expect(narrative.trustImpact).toBe('stable');

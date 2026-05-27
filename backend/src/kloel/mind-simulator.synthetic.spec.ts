@@ -1,4 +1,4 @@
-import { MindQualityService } from './mind-quality.service';
+import { MindQualityService } from './mind/policy/mind-quality.service';
 import { MindReplayService } from './mind-replay.service';
 import { MindSimulatorService } from './mind-simulator.service';
 import { MindSyntheticGeneratorService } from './mind-synthetic-generator.service';

@@ -1,3 +1,14 @@
+/**
+ * @deprecated Use {@link ../kloel/mind/observability/mind-spine-audit.service.ts MindSpineAudit}
+ * (re-exported from `backend/src/kloel/mind/observability/`). This file remains
+ * during the ADR-0013 Wave M3 alias window (4 weeks) and will be removed once
+ * `scripts/ops/check-canonical-services.mjs --strict` reports 0 callers of
+ * `BrainSpineAuditService`.
+ *
+ * @cluster Mind/Observability
+ * @canonical backend/src/kloel/mind/observability/mind-spine-audit.service.ts
+ * @see docs/adr/0013-kloel-mind-unification.md
+ */
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 

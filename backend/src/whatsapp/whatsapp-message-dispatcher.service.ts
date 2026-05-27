@@ -15,7 +15,7 @@ import { WorkerRuntimeService } from './worker-runtime.service';
 import { WhatsappSessionService } from './whatsapp-session.service';
 import type { ContactCustomFields } from '../contacts/contact-custom-fields.types';
 import { WhatsAppEventEmitterService } from '../kloel/whatsapp-emitter/whatsapp-event-emitter.service';
-import { NON_DIGIT_RE } from '../common/phone';
+import { normalizeNumber } from '../marketing/channels/whatsapp/whatsapp-service.helpers';
 
 @Injectable()
 export class WhatsappMessageDispatcherService {
@@ -39,7 +39,7 @@ export class WhatsappMessageDispatcherService {
   }
 
   private normalizeNumber(num: string): string {
-    return num.replace(NON_DIGIT_RE, '');
+    return normalizeNumber(num);
   }
 
   private sleep(ms: number): Promise<void> {

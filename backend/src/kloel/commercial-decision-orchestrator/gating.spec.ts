@@ -28,7 +28,8 @@ describe('checkPipelineGate', () => {
     } else {
       process.env[envKey] = originalEnv;
     }
-  });  it('returns legacy mode when pipelineState is legacy', async () => {
+  });
+  it('returns legacy mode when pipelineState is legacy', async () => {
     const prisma = makePrisma({
       pipelineState: { state: 'legacy', fallbackRate1h: 0 },
     });
@@ -40,7 +41,8 @@ describe('checkPipelineGate', () => {
       expect(result.decision.actions).toEqual([]);
       expect(result.decision.trace.delegatedToLegacy).toBe(true);
     }
-  });  it('returns active mode when pipelineState is already active', async () => {
+  });
+  it('returns active mode when pipelineState is already active', async () => {
     const prisma = makePrisma({
       pipelineState: { state: 'active', fallbackRate1h: 0 },
     });
@@ -48,7 +50,8 @@ describe('checkPipelineGate', () => {
     const result = await checkPipelineGate(prisma, 'ws-1', 'whatsapp');
 
     expect(result.mode).toBe('active');
-  });  it('returns shadow when pipelineState is shadow and flag is off', async () => {
+  });
+  it('returns shadow when pipelineState is shadow and flag is off', async () => {
     process.env[envKey] = 'false';
 
     const prisma = makePrisma({
@@ -60,7 +63,8 @@ describe('checkPipelineGate', () => {
 
     expect(result.mode).toBe('shadow');
     expect(prisma.pipelineState.update).not.toHaveBeenCalled();
-  });  it('stays shadow with 29 positive-lift outcomes when flag is on', async () => {
+  });
+  it('stays shadow with 29 positive-lift outcomes when flag is on', async () => {
     process.env[envKey] = 'true';
 
     const prisma = makePrisma({
@@ -72,7 +76,8 @@ describe('checkPipelineGate', () => {
 
     expect(result.mode).toBe('shadow');
     expect(prisma.pipelineState.update).not.toHaveBeenCalled();
-  });  it('graduates to active with 30 positive-lift outcomes when flag is on', async () => {
+  });
+  it('graduates to active with 30 positive-lift outcomes when flag is on', async () => {
     process.env[envKey] = 'true';
 
     const prisma = makePrisma({
@@ -87,7 +92,8 @@ describe('checkPipelineGate', () => {
       where: { workspaceId: 'ws-1' },
       data: expect.objectContaining({ state: 'active' }),
     });
-  });  it('stays shadow with 30+ outcomes when flag is absent (default false)', async () => {
+  });
+  it('stays shadow with 30+ outcomes when flag is absent (default false)', async () => {
     delete process.env[envKey];
 
     const prisma = makePrisma({
@@ -99,7 +105,8 @@ describe('checkPipelineGate', () => {
 
     expect(result.mode).toBe('shadow');
     expect(prisma.pipelineState.update).not.toHaveBeenCalled();
-  });  it('does not query decisionOutcome when pipeline is already active', async () => {
+  });
+  it('does not query decisionOutcome when pipeline is already active', async () => {
     process.env[envKey] = 'true';
 
     const prisma = makePrisma({
@@ -110,7 +117,8 @@ describe('checkPipelineGate', () => {
 
     expect(result.mode).toBe('active');
     expect(prisma.decisionOutcome.count).not.toHaveBeenCalled();
-  });  it('filters count by correct decision types: tom, message_format, objection_response', async () => {
+  });
+  it('filters count by correct decision types: tom, message_format, objection_response', async () => {
     process.env[envKey] = 'true';
 
     const prisma = makePrisma({
@@ -129,4 +137,5 @@ describe('checkPipelineGate', () => {
         }),
       }),
     );
-  });});
+  });
+});

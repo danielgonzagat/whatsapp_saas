@@ -7,10 +7,8 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import type { AuthenticatedRequest } from '../common/interfaces';
 import { Metrics } from '../observability/metrics';
 import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
-import { BrainAutonomyService } from './brain-autonomy.service';
+import { MindAutonomyCoordinator, MindCommercialGraph, MindRuntime } from './mind/coordination';
 import { BrainDecideDto, BrainObserveDto } from './brain-runtime.dto';
-import { BrainCommercialGraphService } from './brain-commercial-graph.service';
-import { BrainRuntimeService } from './brain-runtime.service';
 
 function escapeHtmlUnsafeJsonChars(json: string): string {
   let escaped = '';
@@ -40,9 +38,9 @@ export class BrainRuntimeController {
   private readonly logger = StructuredLogger.from(BrainRuntimeController.name);
 
   constructor(
-    private readonly brain: BrainRuntimeService,
-    private readonly graph: BrainCommercialGraphService,
-    private readonly autonomy: BrainAutonomyService,
+    private readonly brain: MindRuntime,
+    private readonly graph: MindCommercialGraph,
+    private readonly autonomy: MindAutonomyCoordinator,
   ) {}
 
   @InternalEndpoint('brain capabilities endpoint')

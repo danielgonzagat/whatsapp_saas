@@ -52,9 +52,7 @@ describe('GoogleAdsEnhancedConversionsService', () => {
     it('returns empty string for empty input', () => {
       expect(GoogleAdsEnhancedConversionsService.hashEmail('')).toBe('');
       expect(GoogleAdsEnhancedConversionsService.hashEmail(null as string)).toBe('');
-      expect(GoogleAdsEnhancedConversionsService.hashEmail(undefined as string)).toBe(
-        '',
-      );
+      expect(GoogleAdsEnhancedConversionsService.hashEmail(undefined as string)).toBe('');
     });
   });
 

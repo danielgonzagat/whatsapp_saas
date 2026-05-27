@@ -1,10 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { GENESIS_EVENT } from './genesis-event';
 import { LineageGuardService } from './lineage-guard.service';
-import {
-  InMemoryLineageLedgerRepository,
-  LineageLedgerService,
-} from './lineage-ledger.service';
+import { InMemoryLineageLedgerRepository, LineageLedgerService } from './lineage-ledger.service';
 import { LineageBootstrapHook } from './lineage.module';
 import { LINEAGE_LEDGER_REPOSITORY } from './lineage.tokens';
 
@@ -100,9 +97,7 @@ describe('LineageBootstrapHook — OnModuleInit Genesis wiring', () => {
 
     it('guard checkedAt is an ISO timestamp', async () => {
       const verdict = await guard.verify();
-      expect(verdict.checkedAt).toMatch(
-        /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/,
-      );
+      expect(verdict.checkedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
     });
   });
 

@@ -1,4 +1,8 @@
-import { collapseWhitespace, extractAsciiDigits, isDigit } from './whatsapp-digits.util';
+import {
+  collapseWhitespace,
+  extractAsciiDigits,
+  isDigit,
+} from '../marketing/channels/whatsapp/whatsapp-digits.util';
 
 export { extractAsciiDigits };
 

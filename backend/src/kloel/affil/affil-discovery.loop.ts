@@ -9,7 +9,15 @@ interface DiscoveryInput {
 }
 
 interface AffilSignal {
-  readonly signalType: 'offer_quality' | 'producer_trust' | 'audience_fit' | 'angle_fatigue' | 'traffic_waste' | 'budget_risk' | 'account_risk' | 'commission_change';
+  readonly signalType:
+    | 'offer_quality'
+    | 'producer_trust'
+    | 'audience_fit'
+    | 'angle_fatigue'
+    | 'traffic_waste'
+    | 'budget_risk'
+    | 'account_risk'
+    | 'commission_change';
   readonly entityId: string;
   readonly currentValue: number;
   readonly baselineValue: number;
@@ -29,7 +37,10 @@ interface DiscoveryPattern {
   readonly patternId: string;
   readonly signalTypes: readonly string[];
   readonly condition: (signals: readonly AffilSignal[], context: DiscoveryContext) => boolean;
-  readonly generateInsight: (signals: readonly AffilSignal[], context: DiscoveryContext) => DiscoveryInsight;
+  readonly generateInsight: (
+    signals: readonly AffilSignal[],
+    context: DiscoveryContext,
+  ) => DiscoveryInsight;
 }
 
 interface DiscoveryInsight {
@@ -56,7 +67,8 @@ const DISCOVERY_PATTERNS: readonly DiscoveryPattern[] = [
       return {
         headline: `${count} offer(s) showing declining quality scores`,
         body: `Offer quality is declining for ${count} offer(s). This may indicate market saturation, increased competition, or product fatigue. Historical baseline was ${offerSignals[0]?.baselineValue.toFixed(2)}; current score is ${offerSignals[0]?.currentValue.toFixed(2)}.`,
-        actionableRecommendation: 'Re-evaluate offer positioning. Consider refreshing creatives, adjusting pricing, or testing new audience segments before quality degrades further.',
+        actionableRecommendation:
+          'Re-evaluate offer positioning. Consider refreshing creatives, adjusting pricing, or testing new audience segments before quality degrades further.',
         confidence: 0.75,
       };
     },
@@ -65,17 +77,14 @@ const DISCOVERY_PATTERNS: readonly DiscoveryPattern[] = [
     patternId: 'producer_trust_erosion',
     signalTypes: ['producer_trust'],
     condition: (signals, _ctx) =>
-      signals.some(
-        (s) =>
-          s.signalType === 'producer_trust' &&
-          s.currentValue < 0.4,
-      ),
+      signals.some((s) => s.signalType === 'producer_trust' && s.currentValue < 0.4),
     generateInsight: (signals, _ctx) => {
       const trustSignals = signals.filter((s) => s.signalType === 'producer_trust');
       return {
         headline: 'Producer trust score critically low',
         body: `Producer trust has fallen below safety threshold (current: ${trustSignals[0]?.currentValue.toFixed(2)}). This signals risk of payment delays, poor communication, or declining product quality.`,
-        actionableRecommendation: 'Immediately review payment history and communication patterns. Prepare alternative producers as backup. Consider pausing new campaigns until trust is restored.',
+        actionableRecommendation:
+          'Immediately review payment history and communication patterns. Prepare alternative producers as backup. Consider pausing new campaigns until trust is restored.',
         confidence: 0.85,
       };
     },
@@ -85,17 +94,15 @@ const DISCOVERY_PATTERNS: readonly DiscoveryPattern[] = [
     signalTypes: ['audience_fit'],
     condition: (signals, _ctx) =>
       signals.some(
-        (s) =>
-          s.signalType === 'audience_fit' &&
-          s.currentValue < 0.35 &&
-          s.trend === 'declining',
+        (s) => s.signalType === 'audience_fit' && s.currentValue < 0.35 && s.trend === 'declining',
       ),
     generateInsight: (signals, _ctx) => {
       const fitSignals = signals.filter((s) => s.signalType === 'audience_fit');
       return {
         headline: 'Critical audience-offer misalignment detected',
         body: `Audience fit score has dropped to ${fitSignals[0]?.currentValue.toFixed(2)} with declining trend. The current audience is no longer well-matched to the offer, wasting ad spend.`,
-        actionableRecommendation: 'Refresh audience targeting immediately. Test lookalike audiences based on converting segments. Consider offer switch if audience cannot be realigned.',
+        actionableRecommendation:
+          'Refresh audience targeting immediately. Test lookalike audiences based on converting segments. Consider offer switch if audience cannot be realigned.',
         confidence: 0.8,
       };
     },
@@ -104,17 +111,14 @@ const DISCOVERY_PATTERNS: readonly DiscoveryPattern[] = [
     patternId: 'angle_fatigue_warning',
     signalTypes: ['angle_fatigue'],
     condition: (signals, _ctx) =>
-      signals.some(
-        (s) =>
-          s.signalType === 'angle_fatigue' &&
-          s.currentValue > 0.5,
-      ),
+      signals.some((s) => s.signalType === 'angle_fatigue' && s.currentValue > 0.5),
     generateInsight: (signals, _ctx) => {
       const fatigueSignals = signals.filter((s) => s.signalType === 'angle_fatigue');
       return {
         headline: `Angle fatigue detected across ${fatigueSignals.length} angle(s)`,
         body: `Marketing angles are showing fatigue (score > 0.5). Continuing with fatigued angles will lead to declining CTR, higher CPAs, and wasted budget.`,
-        actionableRecommendation: 'Rotate creative angles immediately. Test 3-5 new hooks and angles. Archive fatigued angles for at least 30 days before retesting.',
+        actionableRecommendation:
+          'Rotate creative angles immediately. Test 3-5 new hooks and angles. Archive fatigued angles for at least 30 days before retesting.',
         confidence: 0.7,
       };
     },
@@ -134,7 +138,8 @@ const DISCOVERY_PATTERNS: readonly DiscoveryPattern[] = [
       return {
         headline: 'Significant budget inefficiency detected',
         body: `Traffic waste and budget risk signals indicate ${context.activeCampaigns} campaign(s) may be burning budget inefficiently. Cumulative waste signal: ${totalWaste.toFixed(2)}.`,
-        actionableRecommendation: 'Audit all active campaigns. Pause underperforming segments. Reallocate budget to top-performing offer and audiences. Implement stricter stop-loss rules.',
+        actionableRecommendation:
+          'Audit all active campaigns. Pause underperforming segments. Reallocate budget to top-performing offer and audiences. Implement stricter stop-loss rules.',
         confidence: 0.75,
       };
     },
@@ -144,16 +149,15 @@ const DISCOVERY_PATTERNS: readonly DiscoveryPattern[] = [
     signalTypes: ['commission_change'],
     condition: (signals, _ctx) =>
       signals.some(
-        (s) =>
-          s.signalType === 'commission_change' &&
-          s.currentValue > s.baselineValue * 1.2,
+        (s) => s.signalType === 'commission_change' && s.currentValue > s.baselineValue * 1.2,
       ),
     generateInsight: (signals, _ctx) => {
       const commSignals = signals.filter((s) => s.signalType === 'commission_change');
       return {
         headline: 'Commission improvement opportunity identified',
         body: `Commission rates have improved for ${commSignals.length} offer(s). Current effective rate is ${commSignals[0]?.currentValue.toFixed(2)} vs baseline ${commSignals[0]?.baselineValue.toFixed(2)}. This represents a significant earnings upside.`,
-        actionableRecommendation: 'Prioritize campaigns for higher-commission offers. Recalculate expected monthly earnings with new rates. Consider switching budget from lower-commission offers.',
+        actionableRecommendation:
+          'Prioritize campaigns for higher-commission offers. Recalculate expected monthly earnings with new rates. Consider switching budget from lower-commission offers.',
         confidence: 0.7,
       };
     },
@@ -162,16 +166,13 @@ const DISCOVERY_PATTERNS: readonly DiscoveryPattern[] = [
     patternId: 'account_risk_escalation',
     signalTypes: ['account_risk'],
     condition: (signals, _ctx) =>
-      signals.some(
-        (s) =>
-          s.signalType === 'account_risk' &&
-          s.currentValue > 0.6,
-      ),
+      signals.some((s) => s.signalType === 'account_risk' && s.currentValue > 0.6),
     generateInsight: (signals, _ctx) => {
       return {
         headline: 'Ad account risk level is critical',
         body: `Account risk score has exceeded safety threshold (${signals[0]?.currentValue.toFixed(2)}). This indicates elevated probability of policy enforcement, ad rejections, or account restriction.`,
-        actionableRecommendation: 'Pause all non-essential campaigns. Review all active ads for policy compliance. Resolve remaining outstanding policy violations. Wait for account health to recover before resuming.',
+        actionableRecommendation:
+          'Pause all non-essential campaigns. Review all active ads for policy compliance. Resolve remaining outstanding policy violations. Wait for account health to recover before resuming.',
         confidence: 0.9,
       };
     },
@@ -206,11 +207,13 @@ export class AffilDiscoveryLoopService {
     const results: DiscoveryLoopResult[] = [];
 
     for (const pattern of DISCOVERY_PATTERNS) {
-      const relevantSignals = input.signals.filter(
-        (s) => pattern.signalTypes.includes(s.signalType),
+      const relevantSignals = input.signals.filter((s) =>
+        pattern.signalTypes.includes(s.signalType),
       );
 
-      if (relevantSignals.length === 0) continue;
+      if (relevantSignals.length === 0) {
+        continue;
+      }
 
       if (pattern.condition(relevantSignals, input.context)) {
         const insight = pattern.generateInsight(relevantSignals, input.context);
@@ -227,9 +230,7 @@ export class AffilDiscoveryLoopService {
         };
 
         results.push(result);
-        this.logger.debug(
-          `Discovery: ${pattern.patternId} for workspace ${input.workspaceId}`,
-        );
+        this.logger.debug(`Discovery: ${pattern.patternId} for workspace ${input.workspaceId}`);
       }
     }
 

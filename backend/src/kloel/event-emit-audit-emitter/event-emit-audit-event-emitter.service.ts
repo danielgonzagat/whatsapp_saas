@@ -65,9 +65,7 @@ export class EventEmitAuditEventEmitterService {
         },
       });
     } catch (err) {
-      this.logger.error(
-        `failed to emit coverage gate event — ${(err as Error).message}`,
-      );
+      this.logger.error(`failed to emit coverage gate event — ${(err as Error).message}`);
     }
 
     return report;

@@ -68,6 +68,16 @@ import type {
   DispatcherAccountMock,
 } from './kloel-tool-dispatcher.service.fixtures';
 
+function objectContaining<T extends object>(sample: T): T {
+  const matcher: unknown = expect.objectContaining(sample);
+  return matcher as T;
+}
+
+function stringContaining(value: string): string {
+  const matcher: unknown = expect.stringContaining(value);
+  return matcher as string;
+}
+
 describe('KloelToolDispatcherService approval execution', () => {
   let service: KloelToolDispatcherService;
   let prisma: DispatcherPrismaMock;
@@ -193,6 +203,45 @@ describe('KloelToolDispatcherService approval execution', () => {
     });
   });
 
+  it('creates approval request for products.review_and_publish without publishing immediately', async () => {
+    const result = await service.executeTool(
+      DEFAULT_WS_ID,
+      'products.review_and_publish',
+      { productId: 'prod-123' },
+      'owner-1',
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.approvalRequired).toBe(true);
+    expect(chatToolsService.toolPublishProduct).not.toHaveBeenCalled();
+    expect(prisma.approvalRequest.create).toHaveBeenCalledWith({
+      data: {
+        workspaceId: DEFAULT_WS_ID,
+        kind: 'kloel_tool:products.review_and_publish',
+        scope: 'workspace',
+        entityType: 'KloelTool',
+        entityId: 'products.review_and_publish',
+        state: 'OPEN',
+        title: 'Aprovar publicacao de produto pela CIA',
+        prompt: stringContaining('prod-123'),
+        payload: {
+          toolName: 'products.review_and_publish',
+          args: { productId: 'prod-123' },
+          requestedByUserId: 'owner-1',
+          risk: 'high',
+          requiresApproval: true,
+        },
+      },
+      select: {
+        id: true,
+        kind: true,
+        state: true,
+        title: true,
+        createdAt: true,
+      },
+    });
+  });
+
   it('scopes create_campaign approval to the provided workspace', async () => {
     await service.executeTool('ws-isolated', 'create_campaign', {
       name: 'C',
@@ -264,7 +313,43 @@ describe('KloelToolDispatcherService approval execution', () => {
     });
     expect(prisma.approvalRequest.updateMany).toHaveBeenCalledWith({
       where: { id: 'ap-1', workspaceId: DEFAULT_WS_ID, state: 'APPROVED' },
-      data: expect.objectContaining({ state: 'COMPLETED' }),
+      data: objectContaining({ state: 'COMPLETED' }),
+    });
+  });
+
+  it('executes products.review_and_publish for approved request', async () => {
+    prisma.approvalRequest.findFirst.mockResolvedValueOnce({
+      id: 'ap-1',
+      workspaceId: DEFAULT_WS_ID,
+      kind: 'kloel_tool:products.review_and_publish',
+      state: 'APPROVED',
+      payload: {
+        toolName: 'products.review_and_publish',
+        args: { productId: 'prod-123' },
+      },
+      createdAt: new Date(),
+    });
+    jest.mocked(chatToolsService.toolPublishProduct).mockResolvedValueOnce({
+      success: true,
+      product: { id: 'prod-123', status: 'APPROVED', active: true },
+    });
+
+    const result = await service.executeApprovedApprovalRequest({
+      workspaceId: DEFAULT_WS_ID,
+      approvalRequestId: 'ap-1',
+      userId: 'owner-1',
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.executed).toBe(true);
+    expect(result.toolName).toBe('products.review_and_publish');
+    expect(chatToolsService.toolPublishProduct).toHaveBeenCalledWith(DEFAULT_WS_ID, {
+      productId: 'prod-123',
+      actorId: 'owner-1',
+    });
+    expect(prisma.approvalRequest.updateMany).toHaveBeenCalledWith({
+      where: { id: 'ap-1', workspaceId: DEFAULT_WS_ID, state: 'APPROVED' },
+      data: objectContaining({ state: 'COMPLETED' }),
     });
   });
 

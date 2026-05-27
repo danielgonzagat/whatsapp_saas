@@ -12,7 +12,6 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { AuditService } from '../../audit/audit.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../../common/interfaces';
@@ -29,6 +28,7 @@ import {
 } from './helpers/common.helpers';
 import { buildCouponData, serializeCoupon } from './helpers/plan.helpers';
 import { RouteClass } from '../../common/throttler/route-class.decorator';
+import { ProductCouponDomainService } from '../product-coupon-domain.service';
 
 /** Product coupon controller. */
 @Controller('products/:productId/coupons')
@@ -37,7 +37,7 @@ import { RouteClass } from '../../common/throttler/route-class.decorator';
 export class ProductCouponController {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly auditService: AuditService,
+    private readonly productCouponDomain: ProductCouponDomainService,
   ) {}
 
   /** List. */
@@ -187,31 +187,13 @@ export class ProductCouponController {
     @Param('couponId') couponId: string,
     @Request() req: AuthenticatedRequest,
   ) {
-    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
-
-    const coupon = await this.prisma.productCoupon.findFirst({
-      where: { id: couponId, productId },
-    });
-    if (!coupon) {
-      throw new NotFoundException('Cupom não encontrado');
-    }
-
-    await this.auditService.log({
-      workspaceId: getWorkspaceId(req),
-      action: 'DELETE_RECORD',
-      resource: 'ProductCoupon',
-      resourceId: couponId,
-      details: { deletedBy: 'user', productId },
-    });
-    const deleted = await this.prisma.productCoupon.delete({
-      where: { id: couponId },
-    });
-    await syncWorkspaceCheckoutCouponForProduct(
-      this.prisma,
-      getWorkspaceId(req),
+    const workspaceId = getWorkspaceId(req);
+    return this.productCouponDomain.deleteProductCoupon({
+      workspaceId,
       productId,
-      deleted.code,
-    );
-    return deleted;
+      couponId,
+      deletedBy: 'user',
+      notFoundMessage: 'Cupom não encontrado',
+    });
   }
 }

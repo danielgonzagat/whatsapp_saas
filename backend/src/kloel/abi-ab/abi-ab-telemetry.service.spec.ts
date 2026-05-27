@@ -76,25 +76,29 @@ describe('AbiAbTelemetryService (UTP-ABI-005)', () => {
 
       const report = service.reportDelta('f');
       expect(report.legacy.count).toBe(2);
-      expect(report.legacy.successRate).toBe(0.50);
+      expect(report.legacy.successRate).toBe(0.5);
       expect(report.abi.count).toBe(3);
       expect(report.abi.successRate).toBeCloseTo(2 / 3, 4);
     });
 
     it('computes latency P50 and P95 for both paths', () => {
       for (let i = 0; i < 10; i++) {
-        service.record(makeSample({
-          sampleId: `L${i}`,
-          flowName: 'f',
-          abiUsed: false,
-          latencyMs: 100 + i * 10,
-        }));
-        service.record(makeSample({
-          sampleId: `A${i}`,
-          flowName: 'f',
-          abiUsed: true,
-          latencyMs: 200 + i * 20,
-        }));
+        service.record(
+          makeSample({
+            sampleId: `L${i}`,
+            flowName: 'f',
+            abiUsed: false,
+            latencyMs: 100 + i * 10,
+          }),
+        );
+        service.record(
+          makeSample({
+            sampleId: `A${i}`,
+            flowName: 'f',
+            abiUsed: true,
+            latencyMs: 200 + i * 20,
+          }),
+        );
       }
 
       const report = service.reportDelta('f');
@@ -127,8 +131,24 @@ describe('AbiAbTelemetryService (UTP-ABI-005)', () => {
 
     it('returns shouldRollback=false when both paths have sufficient samples and ABI is not degraded', () => {
       for (let i = 0; i < 10; i++) {
-        service.record(makeSample({ sampleId: `L${i}`, flowName: 'f', abiUsed: false, success: true, latencyMs: 100 }));
-        service.record(makeSample({ sampleId: `A${i}`, flowName: 'f', abiUsed: true, success: true, latencyMs: 100 }));
+        service.record(
+          makeSample({
+            sampleId: `L${i}`,
+            flowName: 'f',
+            abiUsed: false,
+            success: true,
+            latencyMs: 100,
+          }),
+        );
+        service.record(
+          makeSample({
+            sampleId: `A${i}`,
+            flowName: 'f',
+            abiUsed: true,
+            success: true,
+            latencyMs: 100,
+          }),
+        );
       }
 
       const decision = service.shouldRollback('f');
@@ -139,10 +159,26 @@ describe('AbiAbTelemetryService (UTP-ABI-005)', () => {
 
     it('returns shouldRollback=true when ABI success rate is more than 5pp below legacy', () => {
       for (let i = 0; i < 10; i++) {
-        service.record(makeSample({ sampleId: `L${i}`, flowName: 'f', abiUsed: false, success: true, latencyMs: 100 }));
+        service.record(
+          makeSample({
+            sampleId: `L${i}`,
+            flowName: 'f',
+            abiUsed: false,
+            success: true,
+            latencyMs: 100,
+          }),
+        );
       }
       for (let i = 0; i < 10; i++) {
-        service.record(makeSample({ sampleId: `A${i}`, flowName: 'f', abiUsed: true, success: i < 4, latencyMs: 100 }));
+        service.record(
+          makeSample({
+            sampleId: `A${i}`,
+            flowName: 'f',
+            abiUsed: true,
+            success: i < 4,
+            latencyMs: 100,
+          }),
+        );
       }
 
       const decision = service.shouldRollback('f');
@@ -152,10 +188,26 @@ describe('AbiAbTelemetryService (UTP-ABI-005)', () => {
 
     it('returns shouldRollback=true when ABI latency P95 is more than 2× legacy', () => {
       for (let i = 0; i < 10; i++) {
-        service.record(makeSample({ sampleId: `L${i}`, flowName: 'f', abiUsed: false, success: true, latencyMs: 100 }));
+        service.record(
+          makeSample({
+            sampleId: `L${i}`,
+            flowName: 'f',
+            abiUsed: false,
+            success: true,
+            latencyMs: 100,
+          }),
+        );
       }
       for (let i = 0; i < 10; i++) {
-        service.record(makeSample({ sampleId: `A${i}`, flowName: 'f', abiUsed: true, success: true, latencyMs: 500 + i * 10 }));
+        service.record(
+          makeSample({
+            sampleId: `A${i}`,
+            flowName: 'f',
+            abiUsed: true,
+            success: true,
+            latencyMs: 500 + i * 10,
+          }),
+        );
       }
 
       const decision = service.shouldRollback('f');
@@ -171,10 +223,26 @@ describe('AbiAbTelemetryService (UTP-ABI-005)', () => {
       };
 
       for (let i = 0; i < 10; i++) {
-        service.record(makeSample({ sampleId: `L${i}`, flowName: 'f', abiUsed: false, success: true, latencyMs: 100 }));
+        service.record(
+          makeSample({
+            sampleId: `L${i}`,
+            flowName: 'f',
+            abiUsed: false,
+            success: true,
+            latencyMs: 100,
+          }),
+        );
       }
       for (let i = 0; i < 10; i++) {
-        service.record(makeSample({ sampleId: `A${i}`, flowName: 'f', abiUsed: true, success: i < 9, latencyMs: 100 }));
+        service.record(
+          makeSample({
+            sampleId: `A${i}`,
+            flowName: 'f',
+            abiUsed: true,
+            success: i < 9,
+            latencyMs: 100,
+          }),
+        );
       }
 
       const decision = service.shouldRollback('f', opts);
@@ -183,8 +251,24 @@ describe('AbiAbTelemetryService (UTP-ABI-005)', () => {
 
     it('returns shouldRollback=false when legacy latency P95 is zero (no legacy baseline)', () => {
       for (let i = 0; i < 10; i++) {
-        service.record(makeSample({ sampleId: `L${i}`, flowName: 'f', abiUsed: false, success: true, latencyMs: 0 }));
-        service.record(makeSample({ sampleId: `A${i}`, flowName: 'f', abiUsed: true, success: true, latencyMs: 500 }));
+        service.record(
+          makeSample({
+            sampleId: `L${i}`,
+            flowName: 'f',
+            abiUsed: false,
+            success: true,
+            latencyMs: 0,
+          }),
+        );
+        service.record(
+          makeSample({
+            sampleId: `A${i}`,
+            flowName: 'f',
+            abiUsed: true,
+            success: true,
+            latencyMs: 500,
+          }),
+        );
       }
 
       const decision = service.shouldRollback('f');
@@ -192,12 +276,16 @@ describe('AbiAbTelemetryService (UTP-ABI-005)', () => {
     });
 
     it('accepts undefined workspaceId in samples', () => {
-      service.record(makeSample({ sampleId: 'L1', flowName: 'f', abiUsed: false, workspaceId: undefined }));
+      service.record(
+        makeSample({ sampleId: 'L1', flowName: 'f', abiUsed: false, workspaceId: undefined }),
+      );
       expect(service.bufferSize()).toBe(1);
     });
 
     it('accepts samples with explicit workspaceId', () => {
-      service.record(makeSample({ sampleId: 'L1', flowName: 'f', abiUsed: false, workspaceId: 'wks_test' }));
+      service.record(
+        makeSample({ sampleId: 'L1', flowName: 'f', abiUsed: false, workspaceId: 'wks_test' }),
+      );
       expect(service.bufferSize()).toBe(1);
     });
 

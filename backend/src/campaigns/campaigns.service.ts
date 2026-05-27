@@ -6,11 +6,11 @@ import {
   NotFoundException,
   Optional,
 } from '@nestjs/common';
-import { Queue, Worker } from 'bullmq';
+import { Queue } from 'bullmq';
 import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
 import { AuditService } from '../audit/audit.service';
 import { forEachSequential } from '../common/async-sequence';
-import { createRedisClient } from '../common/redis/redis.util';
+import { createBullMqConnectionOptions } from '../common/redis/redis.util';
 import {
   buildListUnsubscribeHeader,
   buildUnsubscribeFooterHtml,
@@ -29,7 +29,6 @@ import { NAME_RE } from '../common/regex';
 export class CampaignsService {
   private readonly logger = new Logger(CampaignsService.name);
   private campaignQueue: Queue;
-  private campaignWorker: Worker;
 
   constructor(
     private prisma: PrismaService,
@@ -39,24 +38,9 @@ export class CampaignsService {
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() private readonly metaWhatsApp?: MetaWhatsAppService,
   ) {
-    const connection = createRedisClient();
+    const connection = createBullMqConnectionOptions();
 
     this.campaignQueue = new Queue('campaign-jobs', { connection });
-
-    // Worker that processes campaign jobs from the queue
-    this.campaignWorker = new Worker(
-      'campaign-jobs',
-      async (job) => {
-        if (job.name === 'process-campaign') {
-          await this.processCampaignJob(job);
-        }
-      },
-      { connection: createRedisClient() },
-    );
-
-    this.campaignWorker.on('failed', (job, err) => {
-      this.logger.error(`Campaign job ${job?.id} failed: ${err.message}`);
-    });
   }
 
   /** Create. */

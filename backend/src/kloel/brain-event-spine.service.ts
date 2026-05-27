@@ -1,3 +1,14 @@
+/**
+ * @deprecated Use {@link ./mind/coordination/mind-event-spine.service.ts MindEventSpine}.
+ * This is the central nervous system that re-emits raw CRUD events as
+ * canonical `mind.*` events. 22 cross-domain callers (products, plans,
+ * admin/pipeline, omnichannel, …) — alias is safe, physical move follows
+ * in a separate PR after the 4-week alias window per ADR-0013 Wave M1.
+ *
+ * @cluster Mind/Coordination
+ * @canonical backend/src/kloel/mind/coordination/mind-event-spine.service.ts
+ * @see docs/adr/0013-kloel-mind-unification.md
+ */
 import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
@@ -165,7 +176,9 @@ export class BrainEventSpineService {
     let recorded = 0;
     for (const event of events) {
       const id = await this.recordCommercial(event);
-      if (id) recorded += 1;
+      if (id) {
+        recorded += 1;
+      }
     }
     return recorded;
   }
@@ -383,19 +396,45 @@ export class BrainEventSpineService {
   }
 
   private resolveIntent(eventType: BrainEventName): string {
-    if (eventType.startsWith('sale.')) return 'sale_lifecycle';
-    if (eventType.startsWith('checkout.')) return 'checkout_lifecycle';
-    if (eventType.startsWith('message.')) return 'message_lifecycle';
-    if (eventType.startsWith('lead.')) return 'lead_lifecycle';
-    if (eventType.startsWith('campaign.')) return 'campaign_lifecycle';
-    if (eventType.startsWith('product.')) return 'product_lifecycle';
-    if (eventType.startsWith('brain.')) return 'brain_lifecycle';
-    if (eventType.startsWith('mind.')) return 'mind_lifecycle';
-    if (eventType.startsWith('capability.')) return 'capability_lifecycle';
-    if (eventType.startsWith('contact.')) return 'contact_lifecycle';
-    if (eventType.startsWith('channel.')) return 'channel_lifecycle';
-    if (eventType.startsWith('identity.')) return 'identity_lifecycle';
-    if (eventType.startsWith('concept.')) return 'concept_lifecycle';
+    if (eventType.startsWith('sale.')) {
+      return 'sale_lifecycle';
+    }
+    if (eventType.startsWith('checkout.')) {
+      return 'checkout_lifecycle';
+    }
+    if (eventType.startsWith('message.')) {
+      return 'message_lifecycle';
+    }
+    if (eventType.startsWith('lead.')) {
+      return 'lead_lifecycle';
+    }
+    if (eventType.startsWith('campaign.')) {
+      return 'campaign_lifecycle';
+    }
+    if (eventType.startsWith('product.')) {
+      return 'product_lifecycle';
+    }
+    if (eventType.startsWith('brain.')) {
+      return 'brain_lifecycle';
+    }
+    if (eventType.startsWith('mind.')) {
+      return 'mind_lifecycle';
+    }
+    if (eventType.startsWith('capability.')) {
+      return 'capability_lifecycle';
+    }
+    if (eventType.startsWith('contact.')) {
+      return 'contact_lifecycle';
+    }
+    if (eventType.startsWith('channel.')) {
+      return 'channel_lifecycle';
+    }
+    if (eventType.startsWith('identity.')) {
+      return 'identity_lifecycle';
+    }
+    if (eventType.startsWith('concept.')) {
+      return 'concept_lifecycle';
+    }
     return 'commercial_lifecycle';
   }
 

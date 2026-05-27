@@ -280,9 +280,7 @@ describe('AdminAuditService', () => {
     it('has no update or delete methods on the service', () => {
       const proto = Object.getOwnPropertyNames(Object.getPrototypeOf(service));
       const publicMethods = proto.filter(
-        (k) =>
-          k !== 'constructor' &&
-          typeof (service as Record<string, unknown>)[k] === 'function',
+        (k) => k !== 'constructor' && typeof (service as Record<string, unknown>)[k] === 'function',
       );
       expect(publicMethods).not.toContain('update');
       expect(publicMethods).not.toContain('delete');

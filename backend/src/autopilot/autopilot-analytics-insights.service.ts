@@ -436,13 +436,13 @@ Answer in Portuguese, short and actionable.`;
       this.logger.log(
         `analytics-insights ws=${workspaceId} model=writer baseLen=${prompt.length} outLen=${rawAnswer.length} tokens=${tokens}`,
       );
-      await this.planLimits
-        .trackAiUsage(workspaceId, tokens)
-        .catch(() => {});
+      await this.planLimits.trackAiUsage(workspaceId, tokens).catch(() => {});
 
       const answer = rawAnswer || enrichedSummary;
       if (!rawAnswer || rawAnswer.trim().length < 5) {
-        this.logger.warn(`analytics-insights short output ws=${workspaceId} len=${rawAnswer.length}`);
+        this.logger.warn(
+          `analytics-insights short output ws=${workspaceId} len=${rawAnswer.length}`,
+        );
       }
       await this.prisma.autopilotEvent
         .create({

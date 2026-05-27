@@ -187,6 +187,7 @@ import { InboxModule } from '../inbox/inbox.module';
 import { AccountService } from './account.service';
 import { CheckoutService } from './checkout.service';
 import { CouponService } from './coupon.service';
+import { ProductCouponDomainService } from './product-coupon-domain.service';
 import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
 import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service';
 import { ToolPlannerModule } from './toolplanner/toolplanner.module';
@@ -276,6 +277,7 @@ import { PlansModule } from '../plans/plans.module';
     AccountService,
     CheckoutService,
     CouponService,
+    ProductCouponDomainService,
     KloelProductSubResourceToolsService,
     KloelWalletSalesToolsService,
     KloelBusinessConfigToolsService,

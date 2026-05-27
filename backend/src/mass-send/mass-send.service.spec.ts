@@ -12,6 +12,11 @@ jest.mock('bullmq', () => ({
 }));
 
 jest.mock('../common/redis/redis.util', () => ({
+  createBullMqConnectionOptions: jest.fn(() => ({
+    url: 'redis://localhost:6379',
+    maxRetriesPerRequest: null,
+    enableReadyCheck: true,
+  })),
   createRedisClient: jest.fn(() => ({})),
 }));
 

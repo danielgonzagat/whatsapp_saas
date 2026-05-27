@@ -240,7 +240,7 @@ export class CalendarService {
     event: CalendarEvent,
   ): Promise<CalendarEvent | null> {
     const result = await this.googleHelper.createEvent(config, event);
-    return result as CalendarEvent | null;
+    return result;
   }
 
   /**
@@ -314,7 +314,7 @@ export class CalendarService {
       return [];
     }
     const results = await this.googleHelper.listEvents(config, startDate, endDate);
-    return results as CalendarEvent[];
+    return results;
   }
 
   /**

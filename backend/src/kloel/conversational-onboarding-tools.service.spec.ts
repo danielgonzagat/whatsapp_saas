@@ -224,7 +224,6 @@ describe('ConversationalOnboardingToolsService', () => {
       expect(service.readText(undefined)).toBe('');
       expect(service.readText('hello')).toBe('hello');
     });
-
   });
 
   describe('upstream errors', () => {

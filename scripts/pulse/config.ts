@@ -1,15 +1,15 @@
 import { safeJoin } from './safe-path';
 import * as path from 'path';
 import type { PulseConfig } from './types.manifest';
-import { pathExists, readDir, readTextFile } from './safe-fs';
+import { pathExists, readTextFile } from './safe-fs';
 import { detectSourceRoots } from './source-root-detector/api';
 import type { DetectedSourceRoot } from './source-root-detector/types';
-import { walkFiles } from './parsers/utils';
+import { walkUnskippedFiles } from './source-root-detector/helpers';
 
 function hasMatchingFile(rootDir: string, matcher: (relativePath: string) => boolean): boolean {
   if (!pathExists(rootDir)) return false;
   try {
-    const files = walkFiles(rootDir, ['.ts', '.tsx', '.js', '.jsx']);
+    const files = walkUnskippedFiles(rootDir);
     return files.some((file) => matcher(String(file).split(path.sep).join('/')));
   } catch {
     return false;
@@ -20,39 +20,46 @@ function sourceRootScore(root: DetectedSourceRoot): number {
   return (root.weakCandidate ? -100 : 0) + root.evidenceBasis.length * 10 + root.evidence.length;
 }
 
+function isRuntimeSourceRoot(root: DetectedSourceRoot): boolean {
+  const segments = root.relativePath.split('/');
+  return (
+    !root.relativePath.startsWith('scripts/') &&
+    !segments.some((segment) => segment === '__parts__' || segment === '__companions__') &&
+    segments[segments.length - 1] !== 'scripts' &&
+    segments[segments.length - 1] !== 'prisma'
+  );
+}
+
 function pickRoot(
   roots: DetectedSourceRoot[],
   role: DetectedSourceRoot['kind'],
   matcher: (root: DetectedSourceRoot) => boolean,
 ): DetectedSourceRoot | null {
-  const candidates = roots
-    .filter((root) => root.kind === role || matcher(root))
-    .sort((a, b) => sourceRootScore(b) - sourceRootScore(a));
+  const roleCandidates = roots.filter((root) => root.kind === role);
+  const candidates = (roleCandidates.length > 0 ? roleCandidates : roots.filter(matcher)).sort(
+    (a, b) => sourceRootScore(b) - sourceRootScore(a),
+  );
   return candidates[0] ?? null;
 }
 
 function findSchemaPath(rootDir: string): string {
-  const candidateDirs = [safeJoin(rootDir, 'prisma')];
   try {
-    for (const entry of readDir(rootDir)) {
-      if (entry.startsWith('.') || entry === 'node_modules' || entry === 'dist') continue;
-      const prismaDir = safeJoin(rootDir, entry, 'prisma');
-      if (pathExists(prismaDir)) candidateDirs.push(prismaDir);
-    }
+    const schemas = walkUnskippedFiles(rootDir)
+      .map((entry) => String(entry).split(path.sep).join('/'))
+      .filter(
+        (entry) => !entry.split('/').some((part) => part === 'node_modules' || part === 'dist'),
+      )
+      .filter((entry) => path.basename(entry) === 'schema.prisma')
+      .sort();
+    return schemas[0] ? safeJoin(rootDir, schemas[0]) : '';
   } catch {
-    // fall back to known dirs
+    return '';
   }
-
-  for (const candidate of candidateDirs) {
-    const schemaPath = safeJoin(candidate, 'schema.prisma');
-    if (pathExists(schemaPath)) return schemaPath;
-  }
-  return '';
 }
 
 function detectGlobalPrefix(backendRoot: string): string {
   if (!pathExists(backendRoot)) return '';
-  const mainFiles = (readDir(backendRoot, { recursive: true }) as string[])
+  const mainFiles = walkUnskippedFiles(backendRoot)
     .map((entry) => String(entry).split(path.sep).join('/'))
     .filter((entry) => path.basename(entry) === 'main.ts')
     .sort();
@@ -70,18 +77,19 @@ function detectGlobalPrefix(backendRoot: string): string {
 /** Detect config. */
 export function detectConfig(rootDir: string): PulseConfig {
   const detectedRoots = detectSourceRoots(rootDir);
-  const frontendRoot = pickRoot(detectedRoots, 'frontend', (root) =>
+  const runtimeRoots = detectedRoots.filter(isRuntimeSourceRoot);
+  const frontendRoot = pickRoot(runtimeRoots, 'frontend', (root) =>
     hasMatchingFile(root.absolutePath, (file) => file.endsWith('.tsx') || file.startsWith('app/')),
   );
-  const backendRoot = pickRoot(detectedRoots, 'backend', (root) =>
+  const backendRoot = pickRoot(runtimeRoots, 'backend', (root) =>
     hasMatchingFile(root.absolutePath, (file) => file.endsWith('.controller.ts')),
   );
-  const workerRoot = pickRoot(detectedRoots, 'worker', (root) =>
+  const workerRoot = pickRoot(runtimeRoots, 'worker', (root) =>
     hasMatchingFile(root.absolutePath, (file) =>
       /(?:^|\/)(queue|worker|processor|bootstrap)\.ts$/.test(file),
     ),
   );
-  const frontendDirs = detectedRoots
+  const frontendDirs = runtimeRoots
     .filter(
       (root) =>
         root.kind === 'frontend' ||

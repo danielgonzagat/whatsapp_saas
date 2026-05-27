@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CheckoutSocialLeadEnrichmentStatus, CheckoutSocialLeadStatus } from '@prisma/client';
-import { processCheckoutSocialLeadEnrichment } from '../processors/checkout-social-lead-enrichment';
+import { processCheckoutSocialLeadEnrichment } from '../providers/checkout-social-lead-enrichment';
 
 const mockPrisma = vi.hoisted(() => ({
   checkoutSocialLead: {

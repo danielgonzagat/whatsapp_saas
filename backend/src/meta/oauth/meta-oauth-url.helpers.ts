@@ -109,10 +109,15 @@ export function resolveOAuthRedirect(
   if (explicit && ABSOLUTE_URL_RE.test(explicit)) {
     try {
       const url = new URL(explicit);
+      // ReDoS mitigation: replaced new RegExp(user-supplied path) with
+      // non-regex endsWith/slice — eliminates polynomial backtracking risk
+      // while preserving identical URL-stripping semantics.
+      const baseCandidate = `${url.origin}${url.pathname.replace(TRAILING_SLASH_RE, '')}`;
       const baseUrl =
-        `${url.origin}${url.pathname.replace(TRAILING_SLASH_RE, '')}`
-          .replace(new RegExp(`${escapeForRegex(path)}$`), '')
-          .replace(TRAILING_SLASH_RE, '') || url.origin;
+        (path && baseCandidate.endsWith(path)
+          ? baseCandidate.slice(0, -path.length)
+          : baseCandidate
+        ).replace(TRAILING_SLASH_RE, '') || url.origin;
       return {
         redirectUri: url.toString().replace(TRAILING_SLASH_RE, ''),
         source: 'META_OAUTH_REDIRECT_URI',
@@ -167,8 +172,4 @@ export function resolveOAuthRedirect(
  */
 export function resolvePublicBackendBaseUrl(env: NodeJS.ProcessEnv): string {
   return resolveOAuthRedirect(env).baseUrl;
-}
-
-function escapeForRegex(input: string): string {
-  return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
