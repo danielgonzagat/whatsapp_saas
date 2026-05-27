@@ -48,7 +48,7 @@ import {
   healthCheck as healthCheckFn,
   getSessionDiagnostics as getSessionDiagnosticsFn,
   listLidMappings as listLidMappingsFn,
-} from './provider-registry-contacts';
+} from '../../marketing/channels/whatsapp/providers/provider-registry-contacts';
 
 export { SessionStatus } from './provider-registry.types';
 
