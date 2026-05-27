@@ -467,8 +467,18 @@ export class KloelToolDispatcherService {
           );
         case 'search_web':
           return await runToolSearchWeb(this.planLimits, this.composerService, workspaceId, args);
-        case 'create_flow':
-          return await this.chatToolsService.toolCreateFlow(workspaceId, asToolArgs(args));
+        case 'create_flow': {
+          const startedAt = Date.now();
+          const result = await this.chatToolsService.toolCreateFlow(workspaceId, asToolArgs(args));
+          return this.withCanonicalReceipt(
+            'create_flow',
+            workspaceId,
+            args,
+            result,
+            userId,
+            startedAt,
+          );
+        }
         case 'list_flows':
           return await this.chatToolsService.toolListFlows(workspaceId);
         case 'get_dashboard_summary':

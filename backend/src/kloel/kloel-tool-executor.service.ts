@@ -11,7 +11,6 @@ import {
   toolListProducts,
   toolSetBrandVoice,
   toolRememberUserInfo,
-  toolCreateFlow,
 } from './kloel-tool-executor.helpers';
 export type * from './kloel-tool-executor.types';
 import type {
@@ -81,7 +80,7 @@ export class KloelToolExecutorService {
         case 'search_web':
           return await this.toolSearchWeb(workspaceId, args as ToolSearchWebArgs, searchWebFn);
         case 'create_flow':
-          return await this.toolCreateFlow(workspaceId, args as ToolCreateFlowArgs);
+          return await this.toolCreateFlow(workspaceId, args as ToolCreateFlowArgs, userId);
         case 'list_flows':
           return await this.crmTools.toolListFlows(workspaceId);
         case 'get_dashboard_summary':
@@ -298,7 +297,19 @@ export class KloelToolExecutorService {
     }
   }
 
-  private async toolCreateFlow(workspaceId: string, args: ToolCreateFlowArgs): Promise<ToolResult> {
-    return toolCreateFlow(this.prisma, workspaceId, args);
+  private async toolCreateFlow(
+    workspaceId: string,
+    args: ToolCreateFlowArgs,
+    userId?: string,
+  ): Promise<ToolResult> {
+    if (!this.toolDispatcher) {
+      return {
+        success: false,
+        error: 'canonical_dispatcher_required',
+        message: 'create_flow exige o dispatcher canonico para gerar receipt e prova.',
+      };
+    }
+
+    return this.toolDispatcher.executeTool(workspaceId, 'create_flow', args, userId);
   }
 }

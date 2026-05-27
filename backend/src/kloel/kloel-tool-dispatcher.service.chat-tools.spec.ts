@@ -369,11 +369,39 @@ describe('KloelToolDispatcherService — chat tools routing', () => {
     });
   });
 
-  it('routes create_flow to chatToolsService', async () => {
-    await service.executeTool(DEFAULT_WS_ID, 'create_flow', { name: 'Flow' });
+  it('routes create_flow to chatToolsService with a material receipt', async () => {
+    jest.mocked(chatToolsService.toolCreateFlow).mockResolvedValueOnce({
+      success: true,
+      message: 'Fluxo criado',
+      flow: { id: 'flow-1', name: 'Flow' },
+    });
+
+    const result = await service.executeTool(
+      DEFAULT_WS_ID,
+      'create_flow',
+      { name: 'Flow', trigger: 'welcome' },
+      'user-42',
+    );
+
     expect(chatToolsService.toolCreateFlow).toHaveBeenCalledWith(DEFAULT_WS_ID, {
       name: 'Flow',
+      trigger: 'welcome',
     });
+    expect(result.success).toBe(true);
+    expect(result.capabilityId).toBe('create_flow');
+    expect(result.receipt).toEqual(
+      objectContaining({
+        capabilityId: 'create_flow',
+        workspaceId: DEFAULT_WS_ID,
+        actorId: 'user-42',
+        inputs: { name: 'Flow', trigger: 'welcome' },
+        outputs: objectContaining({ flow: objectContaining({ id: 'flow-1' }) }),
+        domainEvents: ['flow.created'],
+        auditLogId: stringMatching(/^audit_/),
+        idempotencyKey: stringContaining('create_flow'),
+        success: true,
+      }),
+    );
   });
 
   it('routes list_flows to chatToolsService', async () => {

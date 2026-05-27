@@ -237,12 +237,21 @@ describe('KloelToolExecutorService', () => {
       expect(result.summary).toBe('Resultado');
       expect(planLimits.ensureTokenBudget).toHaveBeenCalledWith(wsId);
     });
-    it('routes create_flow to helper', async () => {
-      const result = await service.executeTool(wsId, 'create_flow', {
-        name: 'Flow',
-        trigger: 'welcome',
+    it('routes create_flow through dispatcher receipt path', async () => {
+      dispatcher.executeTool.mockResolvedValueOnce({
+        success: true,
+        capabilityId: 'create_flow',
+        outputs: { flow: { id: 'flow-1', name: 'Flow' } },
+        receipt: { capabilityId: 'create_flow', success: true },
       });
+
+      const args = { name: 'Flow', trigger: 'welcome' };
+      const result = await service.executeTool(wsId, 'create_flow', args, 'user-42');
+
+      expect(dispatcher.executeTool).toHaveBeenCalledWith(wsId, 'create_flow', args, 'user-42');
       expect(result.success).toBe(true);
+      expect(result.capabilityId).toBe('create_flow');
+      expect(result.receipt).toEqual(expect.objectContaining({ capabilityId: 'create_flow' }));
     });
     it('routes list_flows to crmTools', async () => {
       await service.executeTool(wsId, 'list_flows', {});
