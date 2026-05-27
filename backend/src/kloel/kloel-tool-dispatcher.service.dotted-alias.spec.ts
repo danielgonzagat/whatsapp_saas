@@ -70,7 +70,7 @@ import type {
   DispatcherCodeToolsMock,
   DispatcherCodeAnalysisMock,
 } from './kloel-tool-dispatcher.service.fixtures';
-import { SmartPaymentService } from './smart-payment.service';
+import { SalesService } from '../sales/sales.service';
 
 type ProductSubToolsMock = { executeTool: jest.Mock };
 
@@ -102,7 +102,7 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
   let codeToolsService: DispatcherCodeToolsMock;
   let codeAnalysisService: DispatcherCodeAnalysisMock;
   let productSubTools: ProductSubToolsMock;
-  let smartPaymentService: { createSmartPayment: jest.Mock };
+  let salesService: { createPixOrder: jest.Mock };
 
   beforeEach(async () => {
     prisma = createPrismaMock();
@@ -116,7 +116,7 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
     codeToolsService = createCodeToolsMock();
     codeAnalysisService = createCodeAnalysisMock();
     productSubTools = { executeTool: jest.fn().mockResolvedValue({ success: true }) };
-    smartPaymentService = { createSmartPayment: jest.fn() };
+    salesService = { createPixOrder: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -132,7 +132,7 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
         { provide: KloelCodeAnalysisService, useValue: codeAnalysisService },
         { provide: OpsAlertService, useValue: opsAlert },
         { provide: KloelProductSubResourceToolsService, useValue: productSubTools },
-        { provide: SmartPaymentService, useValue: smartPaymentService },
+        { provide: SalesService, useValue: salesService },
         CapabilityRegistryV2Service,
       ],
     }).compile();
@@ -451,15 +451,79 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
     });
   });
   describe('sales.* aliases', () => {
-    it('sales.create_pix executes SmartPaymentService and returns a material receipt', async () => {
-      smartPaymentService.createSmartPayment.mockResolvedValueOnce({
-        paymentId: 'pay-pix-1',
-        paymentUrl: 'https://pay.test/pix',
+    it('sales.create_pix executes SalesService.createPixOrder and returns a real sale receipt', async () => {
+      salesService.createPixOrder.mockResolvedValueOnce({
+        saleId: 'sale-pix-1',
+        pixQrCode: '000201',
+        pixQrCodeBase64: 'base64qr',
         pixCopyPaste: '000201',
-        pixQrCode: 'base64qr',
-        billingType: 'PIX',
-        suggestedMessage: 'PIX gerado: pay-pix-1',
+        pixExpiresAt: new Date('2026-05-27T16:00:00.000Z'),
+        externalPaymentId: 'mp-pix-1',
+        ticketUrl: 'https://mp.test/ticket',
       });
+      const paymentArgs = {
+        productId: 'prod-1',
+        planId: 'plan-1',
+        customerName: 'Joao',
+        customerEmail: 'joao@test.com',
+        customerCpf: '123.456.789-00',
+        customerPhone: '11999999999',
+      };
+
+      const dotted = await service.executeTool(
+        DEFAULT_WS_ID,
+        'sales.create_pix',
+        paymentArgs,
+        'user-42',
+      );
+
+      expect(salesService.createPixOrder).toHaveBeenCalledWith(
+        DEFAULT_WS_ID,
+        'prod-1',
+        'plan-1',
+        {
+          name: 'Joao',
+          email: 'joao@test.com',
+          cpf: '123.456.789-00',
+          phone: '11999999999',
+        },
+      );
+      expect(dotted.success).toBe(true);
+      expect(dotted.capabilityId).toBe('sales.create_pix');
+      expect(dotted.outputs).toEqual(
+        objectContaining({
+          saleId: 'sale-pix-1',
+          orderId: 'sale-pix-1',
+          paymentId: 'mp-pix-1',
+          externalPaymentId: 'mp-pix-1',
+          pixCopiaECola: '000201',
+          qrCodeBase64: 'base64qr',
+          paymentUrl: 'https://mp.test/ticket',
+        }),
+      );
+      expect(dotted.receipt).toEqual(
+        objectContaining({
+          capabilityId: 'sales.create_pix',
+          workspaceId: DEFAULT_WS_ID,
+          actorId: 'user-42',
+          inputs: objectContaining({
+            productId: 'prod-1',
+            planId: 'plan-1',
+            customerName: 'Joao',
+            customerEmail: 'joao@test.com',
+            customerPhone: '11999999999',
+          }),
+          outputs: objectContaining({ orderId: 'sale-pix-1', paymentId: 'mp-pix-1' }),
+          domainEvents: ['sale.created', 'payment.pending'],
+          auditLogId: stringMatching(/^audit_/),
+          evidenceUrl: '/vendas/sale-pix-1',
+          idempotencyKey: stringContaining('sales.create_pix'),
+          success: true,
+        }),
+      );
+    });
+
+    it('sales.create_pix returns missing inputs before creating a sale', async () => {
       const paymentArgs = {
         productName: 'PDRN',
         amount: 197,
@@ -474,49 +538,31 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
         'user-42',
       );
 
-      expect(smartPaymentService.createSmartPayment).toHaveBeenCalledWith({
-        workspaceId: DEFAULT_WS_ID,
-        phone: '11999999999',
-        customerName: 'Joao',
-        productName: 'PDRN',
-        amount: 197,
-      });
-      expect(dotted.success).toBe(true);
-      expect(dotted.capabilityId).toBe('sales.create_pix');
-      expect(dotted.outputs).toEqual(
-        objectContaining({
-          paymentId: 'pay-pix-1',
-          orderId: 'pay-pix-1',
-          pixCopiaECola: '000201',
-          qrCodeBase64: 'base64qr',
-        }),
-      );
+      expect(salesService.createPixOrder).not.toHaveBeenCalled();
+      expect(dotted.success).toBe(false);
+      expect(dotted.error).toBe('sales_create_pix_inputs_required');
+      expect(dotted.missingInputs).toEqual(['productId', 'planId', 'customerEmail', 'customerCpf']);
       expect(dotted.receipt).toEqual(
         objectContaining({
           capabilityId: 'sales.create_pix',
           workspaceId: DEFAULT_WS_ID,
           actorId: 'user-42',
-          inputs: paymentArgs,
-          outputs: objectContaining({ orderId: 'pay-pix-1', paymentId: 'pay-pix-1' }),
-          domainEvents: ['sale.created', 'payment.pix_generated'],
+          inputs: objectContaining(paymentArgs),
+          outputs: {},
+          domainEvents: [],
           auditLogId: stringMatching(/^audit_/),
-          evidenceUrl: '/vendas/pay-pix-1',
-          idempotencyKey: stringContaining('sales.create_pix'),
-          success: true,
+          success: false,
         }),
       );
     });
 
-    it('sales.create_boleto executes SmartPaymentService and returns a material receipt', async () => {
-      smartPaymentService.createSmartPayment.mockResolvedValueOnce({
-        paymentId: 'pay-boleto-1',
-        paymentUrl: 'https://pay.test/boleto',
-        billingType: 'BOLETO',
-      });
+    it('sales.create_boleto does not claim success before a boleto domain service exists', async () => {
       const paymentArgs = {
-        productName: 'PDRN',
-        amount: 197,
+        productId: 'prod-1',
+        planId: 'plan-1',
         customerName: 'Joao',
+        customerEmail: 'joao@test.com',
+        customerCpf: '123.456.789-00',
         customerPhone: '11999999999',
       };
 
@@ -527,59 +573,7 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
         'user-42',
       );
 
-      expect(smartPaymentService.createSmartPayment).toHaveBeenCalledWith({
-        workspaceId: DEFAULT_WS_ID,
-        phone: '11999999999',
-        customerName: 'Joao',
-        productName: 'PDRN',
-        amount: 197,
-      });
-      expect(dotted.success).toBe(true);
-      expect(dotted.capabilityId).toBe('sales.create_boleto');
-      expect(dotted.outputs).toEqual(
-        objectContaining({
-          paymentId: 'pay-boleto-1',
-          orderId: 'pay-boleto-1',
-          paymentUrl: 'https://pay.test/boleto',
-        }),
-      );
-      expect(dotted.receipt).toEqual(
-        objectContaining({
-          capabilityId: 'sales.create_boleto',
-          workspaceId: DEFAULT_WS_ID,
-          actorId: 'user-42',
-          inputs: paymentArgs,
-          outputs: objectContaining({ orderId: 'pay-boleto-1', paymentId: 'pay-boleto-1' }),
-          domainEvents: ['sale.created', 'payment.boleto_generated'],
-          auditLogId: stringMatching(/^audit_/),
-          evidenceUrl: '/vendas/pay-boleto-1',
-          idempotencyKey: stringContaining('sales.create_boleto'),
-          success: true,
-        }),
-      );
-    });
-
-    it('does not claim boleto success when the provider returns PIX', async () => {
-      smartPaymentService.createSmartPayment.mockResolvedValueOnce({
-        paymentId: 'pay-pix-instead-1',
-        paymentUrl: 'https://pay.test/pix',
-        billingType: 'PIX',
-        suggestedMessage: 'PIX gerado: pay-pix-instead-1',
-      });
-      const paymentArgs = {
-        productName: 'PDRN',
-        amount: 197,
-        customerName: 'Joao',
-        customerPhone: '11999999999',
-      };
-
-      const dotted = await service.executeTool(
-        DEFAULT_WS_ID,
-        'sales.create_boleto',
-        paymentArgs,
-        'user-42',
-      );
-
+      expect(salesService.createPixOrder).not.toHaveBeenCalled();
       expect(dotted.success).toBe(false);
       expect(dotted.error).toBe('boleto_provider_unavailable');
       expect(dotted.receipt).toEqual(
@@ -587,7 +581,13 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
           capabilityId: 'sales.create_boleto',
           workspaceId: DEFAULT_WS_ID,
           actorId: 'user-42',
-          inputs: paymentArgs,
+          inputs: objectContaining({
+            productId: 'prod-1',
+            planId: 'plan-1',
+            customerName: 'Joao',
+            customerEmail: 'joao@test.com',
+            customerPhone: '11999999999',
+          }),
           outputs: {},
           domainEvents: [],
           auditLogId: stringMatching(/^audit_/),

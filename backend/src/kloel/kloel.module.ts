@@ -198,6 +198,7 @@ import { SelfAwarenessModule } from './self-awareness/self-awareness.module';
 import { ProductsModule } from '../products/products.module';
 import { ProductCouponDomainService } from './product-coupon-domain.service';
 import { PlansModule } from '../plans/plans.module';
+import { SalesModule } from '../sales/sales.module';
 
 /** Kloel module. */
 @Module({
@@ -226,6 +227,7 @@ import { PlansModule } from '../plans/plans.module';
     SelfAwarenessModule,
     ProductsModule,
     PlansModule,
+    SalesModule,
   ],
   controllers: [
     KloelController,

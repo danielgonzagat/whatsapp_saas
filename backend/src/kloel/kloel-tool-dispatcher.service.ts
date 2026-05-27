@@ -15,7 +15,7 @@ import { KloelProductSubResourceToolsService } from './kloel-product-sub-resourc
 import { CouponService } from './coupon.service';
 import { KloelChatCheckoutTool } from './kloel-chat-checkout.tool';
 import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service';
-import { SmartPaymentService } from './smart-payment.service';
+import { SalesService } from '../sales/sales.service';
 import { AccountService } from './account.service';
 import { SelfHealthService } from './self-awareness/self-health.service';
 import { SelfGapsService } from './self-awareness/self-gaps.service';
@@ -39,6 +39,25 @@ function asString(value: unknown, fallback = ''): string {
 /** Coerce `unknown` to number with a fallback, without unsafe casts. */
 function asNumber(value: unknown, fallback = 0): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+function missingStringInputs(args: UnknownRecord, keys: string[]): string[] {
+  return keys.filter((key) => !asString(args[key]).trim());
+}
+
+function buyerDataFromArgs(args: UnknownRecord): {
+  name: string;
+  email: string;
+  cpf: string;
+  phone?: string;
+} {
+  const phone = asString(args.customerPhone).trim();
+  return {
+    name: asString(args.customerName).trim(),
+    email: asString(args.customerEmail).trim(),
+    cpf: asString(args.customerCpf).trim(),
+    ...(phone ? { phone } : {}),
+  };
 }
 
 function buildReceiptEvidenceUrl(
@@ -139,7 +158,7 @@ export class KloelToolDispatcherService {
     @Optional() private readonly checkoutService?: KloelChatCheckoutTool,
     @Optional() private readonly productSubTools?: KloelProductSubResourceToolsService,
     @Optional() private readonly walletSalesTools?: KloelWalletSalesToolsService,
-    @Optional() private readonly smartPaymentService?: SmartPaymentService,
+    @Optional() private readonly salesService?: SalesService,
     @Optional() private readonly reportService?: ReportService,
 
     @Optional() private readonly opsAlert?: OpsAlertService,
@@ -590,97 +609,103 @@ export class KloelToolDispatcherService {
         case 'delete_url':
         case 'delete_coupon':
         case 'update_coupon':
-        case 'generate_boleto':
-        case 'generate_pix':
           if (this.productSubTools) {
             return await this.productSubTools.executeTool(toolName, workspaceId, asToolArgs(args));
           }
           return { success: false, error: 'product_sub_resource_tools_not_available' };
+        case 'generate_pix':
+          return await this.executeTool(workspaceId, 'sales.create_pix', args, userId);
+        case 'generate_boleto':
+          return await this.executeTool(workspaceId, 'sales.create_boleto', args, userId);
         case 'sales.create_pix': {
           const startedAt = Date.now();
-          if (!this.smartPaymentService) {
+          const missingInputs = missingStringInputs(args, [
+            'productId',
+            'planId',
+            'customerName',
+            'customerEmail',
+            'customerCpf',
+          ]);
+          if (missingInputs.length > 0) {
             return this.withCanonicalReceipt(
               'sales.create_pix',
               workspaceId,
               args,
-              { success: false, error: 'smart_payment_service_unavailable' },
-              userId,
-              startedAt,
-            );
-          }
-          const pixResult = await this.smartPaymentService.createSmartPayment({
-            workspaceId,
-            phone: asString(args.customerPhone),
-            customerName: asString(args.customerName),
-            ...(typeof args.productName === 'string' ? { productName: args.productName } : {}),
-            amount: asNumber(args.amount),
-          });
-          const pixPaymentId = pixResult.paymentId;
-          return this.withCanonicalReceipt(
-            'sales.create_pix',
-            workspaceId,
-            args,
-            {
-              success: true,
-              capabilityId: 'sales.create_pix',
-              orderId: pixPaymentId,
-              paymentId: pixPaymentId,
-              paymentUrl: pixResult.paymentUrl,
-              pixCopiaECola: pixResult.pixCopyPaste,
-              qrCodeBase64: pixResult.pixQrCode,
-              billingType: pixResult.billingType,
-              message: pixResult.suggestedMessage || `PIX gerado: ${pixPaymentId}`,
-            },
-            userId,
-            startedAt,
-          );
-        }
-        case 'sales.create_boleto': {
-          const startedAt = Date.now();
-          if (!this.smartPaymentService) {
-            return this.withCanonicalReceipt(
-              'sales.create_boleto',
-              workspaceId,
-              args,
-              { success: false, error: 'smart_payment_service_unavailable' },
-              userId,
-              startedAt,
-            );
-          }
-          const boletoResult = await this.smartPaymentService.createSmartPayment({
-            workspaceId,
-            phone: asString(args.customerPhone),
-            customerName: asString(args.customerName),
-            ...(typeof args.productName === 'string' ? { productName: args.productName } : {}),
-            amount: asNumber(args.amount),
-          });
-          if (boletoResult.billingType !== 'BOLETO') {
-            return this.withCanonicalReceipt(
-              'sales.create_boleto',
-              workspaceId,
-              args,
               {
                 success: false,
-                error: 'boleto_provider_unavailable',
-                message: 'Boleto ainda não está conectado ao provedor real de pagamento.',
+                error: 'sales_create_pix_inputs_required',
+                missingInputs,
+                message: `Dados faltantes para criar PIX real: ${missingInputs.join(', ')}`,
               },
               userId,
               startedAt,
             );
           }
-          const boletoPaymentId = boletoResult.paymentId;
+          if (!this.salesService) {
+            return this.withCanonicalReceipt(
+              'sales.create_pix',
+              workspaceId,
+              args,
+              { success: false, error: 'sales_service_unavailable' },
+              userId,
+              startedAt,
+            );
+          }
+          try {
+            const pixResult = await this.salesService.createPixOrder(
+              workspaceId,
+              asString(args.productId).trim(),
+              asString(args.planId).trim(),
+              buyerDataFromArgs(args),
+            );
+            return this.withCanonicalReceipt(
+              'sales.create_pix',
+              workspaceId,
+              args,
+              {
+                success: true,
+                capabilityId: 'sales.create_pix',
+                saleId: pixResult.saleId,
+                orderId: pixResult.saleId,
+                paymentId: pixResult.externalPaymentId,
+                externalPaymentId: pixResult.externalPaymentId,
+                paymentUrl: pixResult.ticketUrl,
+                pixCopiaECola: pixResult.pixCopyPaste,
+                pixQrCode: pixResult.pixQrCode,
+                qrCodeBase64: pixResult.pixQrCodeBase64,
+                pixExpiresAt: pixResult.pixExpiresAt,
+                message: `PIX gerado: ${pixResult.saleId}`,
+              },
+              userId,
+              startedAt,
+            );
+          } catch (pixError: unknown) {
+            const msg =
+              pixError instanceof Error
+                ? pixError.message
+                : typeof pixError === 'string'
+                  ? pixError
+                  : 'unknown error';
+            return this.withCanonicalReceipt(
+              'sales.create_pix',
+              workspaceId,
+              args,
+              { success: false, error: msg },
+              userId,
+              startedAt,
+            );
+          }
+        }
+        case 'sales.create_boleto': {
+          const startedAt = Date.now();
           return this.withCanonicalReceipt(
             'sales.create_boleto',
             workspaceId,
             args,
             {
-              success: true,
-              capabilityId: 'sales.create_boleto',
-              orderId: boletoPaymentId,
-              paymentId: boletoPaymentId,
-              paymentUrl: boletoResult.paymentUrl,
-              billingType: boletoResult.billingType,
-              message: `Boleto gerado: ${boletoPaymentId}`,
+              success: false,
+              error: 'boleto_provider_unavailable',
+              message: 'Boleto ainda não está conectado ao serviço de domínio real.',
             },
             userId,
             startedAt,
