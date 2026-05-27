@@ -29,7 +29,7 @@ export { CiaAutonomyAdvisorService } from '../../../cia/cia-autonomy-advisor.ser
 export { CiaBacklogRunService } from '../../../cia/cia-backlog-run.service';
 export { CiaBootstrapService } from '../../../cia/cia-bootstrap.service';
 export { CiaChatFilterService } from '../../../cia/cia-chat-filter.service';
-export { CiaCognitiveHealthService } from '../../../cia/cia-cognitive-health.service';
+export { CiaCognitiveHealthService } from './cia-cognitive-health.service';
 export { CiaInlineFallbackService } from '../../../cia/cia-inline-fallback.service';
 export { CiaRemoteBacklogService } from '../../../cia/cia-remote-backlog.service';
 export { CiaRuntimeStateService } from '../../../cia/cia-runtime-state.service';

@@ -91,7 +91,7 @@ function buildScheduler(opts?: {
     recentEventsAsRef: jest.fn().mockReturnValue([]),
   } as SpineEmitterService;
   const cognitiveHealth = opts?.cognitiveHealth as unknown as
-    | import('../../cia/cia-cognitive-health.service').CiaCognitiveHealthService
+    | import('./cia/cia-cognitive-health.service').CiaCognitiveHealthService
     | undefined;
   return {
     scheduler: new MindBackgroundScheduler(

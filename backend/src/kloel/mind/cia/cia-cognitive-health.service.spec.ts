@@ -1,7 +1,7 @@
 import { CiaCognitiveHealthService } from './cia-cognitive-health.service';
-import { GoalFieldService } from '../kloel/goal-field/goal-field.service';
-import type { SpineEventRef } from '../kloel/mind/mind.types';
-import type { Tension } from '../kloel/goal-field/goal-field.types';
+import { GoalFieldService } from '../../goal-field/goal-field.service';
+import type { SpineEventRef } from '../mind.types';
+import type { Tension } from '../../goal-field/goal-field.types';
 
 // ── helpers ───────────────────────────────────────────────────────────
 

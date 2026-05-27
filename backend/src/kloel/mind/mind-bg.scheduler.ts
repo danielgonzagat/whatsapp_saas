@@ -6,7 +6,7 @@ import { resolveRedisUrl } from '../../common/redis/resolve-redis-url';
 import { attachDlq } from '../../queue/queue';
 import { PrismaService } from '../../prisma/prisma.service';
 import { type SpineEventRef } from './mind.types';
-import { CiaCognitiveHealthService } from '../../cia/cia-cognitive-health.service';
+import { CiaCognitiveHealthService } from './cia/cia-cognitive-health.service';
 
 const MIND_BG_QUEUE = 'mind-bg-tick';
 
