@@ -19,10 +19,9 @@ import { SmartPaymentService } from './smart-payment.service';
 import { AccountService } from './account.service';
 import { SelfHealthService } from './self-awareness/self-health.service';
 import { SelfGapsService } from './self-awareness/self-gaps.service';
-import { DepsCoverageService } from './self-awareness/deps-coverage.service';
 import { CapabilityRegistryV2Service } from './capability-registry-v2/capability-registry-v2.service';
 import { ReportService } from './report.service';
-import { isRecord, sanitizeDetails } from './kloel-tool-dispatcher.high-risk.helpers';
+import { sanitizeDetails } from './kloel-tool-dispatcher.high-risk.helpers';
 import {
   runRequestHighRiskApproval,
   runExecuteApprovedApprovalRequest,
@@ -39,60 +38,6 @@ function asString(value: unknown, fallback = ''): string {
 /** Coerce `unknown` to number with a fallback, without unsafe casts. */
 function asNumber(value: unknown, fallback = 0): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
-}
-
-function buildReceiptEvidenceUrl(
-  template: string | undefined,
-  outputs: UnknownRecord,
-): string | undefined {
-  if (!template) {
-    return undefined;
-  }
-  return template
-    .replace('${productId}', asString(outputs.productId))
-    .replace('${orderId}', asString(outputs.orderId))
-    .replace('${planId}', asString(outputs.planId))
-    .replace('${checkoutId}', asString(outputs.checkoutId))
-    .replace('${couponId}', asString(outputs.couponId));
-}
-
-function deriveReceiptOutputs(result: UnknownRecord, inputs: UnknownRecord = {}): UnknownRecord {
-  const product = isRecord(result.product) ? result.product : null;
-  const plan = isRecord(result.plan) ? result.plan : null;
-  const checkout = isRecord(result.checkout) ? result.checkout : null;
-  const coupon = isRecord(result.coupon) ? result.coupon : null;
-  const productId = asString(
-    result.productId,
-    product
-      ? asString(product.id)
-      : asString(
-          plan?.productId,
-          asString(checkout?.productId, asString(coupon?.productId, asString(inputs.productId))),
-        ),
-  );
-  const orderId = asString(result.orderId, asString(result.saleId));
-  const planId = asString(result.planId, plan ? asString(plan.id, asString(inputs.planId)) : '');
-  const checkoutId = asString(
-    result.checkoutId,
-    checkout ? asString(checkout.id, asString(inputs.checkoutId)) : '',
-  );
-  const couponId = asString(
-    result.couponId,
-    coupon ? asString(coupon.id, asString(inputs.couponId)) : asString(inputs.couponId),
-  );
-
-  return {
-    ...result,
-    ...(productId ? { productId } : {}),
-    ...(orderId ? { orderId } : {}),
-    ...(planId ? { planId } : {}),
-    ...(checkoutId ? { checkoutId } : {}),
-    ...(couponId ? { couponId } : {}),
-  };
-}
-
-function receiptKeyPart(value: string): string {
-  return value.replace(/[^a-zA-Z0-9._-]/g, '_');
 }
 
 /** Resolve a period label to a `Date` floor. */
@@ -145,7 +90,6 @@ export class KloelToolDispatcherService {
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() private readonly selfHealth?: SelfHealthService,
     @Optional() private readonly selfGaps?: SelfGapsService,
-    @Optional() private readonly depsCoverage?: DepsCoverageService,
     @Optional() private readonly capRegistryV2?: CapabilityRegistryV2Service,
   ) {}
 
@@ -181,46 +125,16 @@ export class KloelToolDispatcherService {
     try {
       switch (toolName) {
         case 'save_product':
-        case 'create_product': {
-          const productArgs = userId ? { ...args, actorId: userId } : args;
-          return await this.chatToolsService.toolSaveProduct(workspaceId, asToolArgs(productArgs));
-        }
-        case 'products.create': {
-          const startedAt = Date.now();
-          const result = await this.executeTool(workspaceId, 'create_product', args, userId);
-          return this.withCanonicalReceipt(
-            'products.create',
-            workspaceId,
-            args,
-            result,
-            userId,
-            startedAt,
-          );
-        }
+        case 'create_product':
+          return await this.chatToolsService.toolSaveProduct(workspaceId, asToolArgs(args));
+        case 'products.create':
+          return this.executeTool(workspaceId, 'create_product', args, userId);
         case 'list_products':
           return await this.chatToolsService.toolListProducts(workspaceId);
-        case 'update_product': {
-          const productArgs = userId ? { ...args, actorId: userId } : args;
-          return await this.chatToolsService.toolUpdateProduct(
-            workspaceId,
-            asToolArgs(productArgs),
-          );
-        }
-        case 'products.update': {
-          const startedAt = Date.now();
-          const result = await this.executeTool(workspaceId, 'update_product', args, userId);
-          return this.withCanonicalReceipt(
-            'products.update',
-            workspaceId,
-            args,
-            result,
-            userId,
-            startedAt,
-          );
-        }
-        case 'publish_product':
-        case 'products.review_and_publish':
-          return await this.requestHighRiskApproval(workspaceId, toolName, args, userId);
+        case 'update_product':
+          return await this.chatToolsService.toolUpdateProduct(workspaceId, asToolArgs(args));
+        case 'products.update':
+          return this.executeTool(workspaceId, 'update_product', args, userId);
         // ── SELF-AWARENESS (TIER-0 meta-cognitive capabilities) ──
         case 'self.audit_log': {
           const limit =
@@ -325,35 +239,9 @@ export class KloelToolDispatcherService {
         }
 
         case 'self.capabilities':
-        case 'list_capabilities': {
-          const registryCapabilities = this.capRegistryV2?.list() ?? [];
-          if (registryCapabilities.length > 0) {
-            const capabilities = registryCapabilities.map((cap) => ({
-              id: cap.id,
-              title: cap.title,
-              category: cap.category,
-              tier: cap.tier,
-              requiresConfirmation: cap.requiresConfirmation,
-              requiredPermissions: cap.requiredPermissions,
-              surface: cap.surface,
-              maturity: cap.maturity ?? 'registry',
-            }));
-
-            return {
-              success: true,
-              capabilityId: 'self.capabilities',
-              capabilities: capabilities.map((cap) => cap.id),
-              outputs: {
-                total: capabilities.length,
-                capabilities,
-              },
-              message: `${capabilities.length} capacidades carregadas do registry vivo`,
-            };
-          }
-
+        case 'list_capabilities':
           return {
             success: true,
-            capabilityId: 'self.capabilities',
             capabilities: [
               'create_product',
               'update_product',
@@ -429,7 +317,6 @@ export class KloelToolDispatcherService {
               'self.health',
             ],
           };
-        }
         case 'toggle_autopilot':
           return await this.chatToolsService.toolToggleAutopilot(workspaceId, asToolArgs(args));
         case 'set_brand_voice':
@@ -503,78 +390,18 @@ export class KloelToolDispatcherService {
             });
           }
           return { success: false, error: 'checkout_service_unavailable' };
-        case 'plans.create': {
-          const startedAt = Date.now();
-          const result = await this.executeTool(workspaceId, 'create_plan', args, userId);
-          return this.withCanonicalReceipt(
-            'plans.create',
-            workspaceId,
-            args,
-            result,
-            userId,
-            startedAt,
-          );
-        }
-        case 'plans.update': {
-          const startedAt = Date.now();
-          const result = await this.executeTool(workspaceId, 'update_plan', args, userId);
-          return this.withCanonicalReceipt(
-            'plans.update',
-            workspaceId,
-            args,
-            result,
-            userId,
-            startedAt,
-          );
-        }
-        case 'checkouts.create': {
-          const startedAt = Date.now();
-          const result = await this.executeTool(workspaceId, 'create_checkout', args, userId);
-          return this.withCanonicalReceipt(
-            'checkouts.create',
-            workspaceId,
-            args,
-            result,
-            userId,
-            startedAt,
-          );
-        }
-        case 'checkouts.update': {
-          const startedAt = Date.now();
-          const result = await this.executeTool(workspaceId, 'update_checkout', args, userId);
-          return this.withCanonicalReceipt(
-            'checkouts.update',
-            workspaceId,
-            args,
-            result,
-            userId,
-            startedAt,
-          );
-        }
-        case 'coupons.create': {
-          const startedAt = Date.now();
-          const result = await this.executeTool(workspaceId, 'create_coupon', args, userId);
-          return this.withCanonicalReceipt(
-            'coupons.create',
-            workspaceId,
-            args,
-            result,
-            userId,
-            startedAt,
-          );
-        }
-        case 'coupons.delete': {
-          const startedAt = Date.now();
-          const result = await this.executeTool(workspaceId, 'delete_coupon', args, userId);
-          return this.withCanonicalReceipt(
-            'coupons.delete',
-            workspaceId,
-            args,
-            result,
-            userId,
-            startedAt,
-          );
-        }
+        case 'plans.create':
+          return this.executeTool(workspaceId, 'create_plan', args, userId);
+        case 'plans.update':
+          return this.executeTool(workspaceId, 'update_plan', args, userId);
+        case 'checkouts.create':
+          return this.executeTool(workspaceId, 'create_checkout', args, userId);
+        case 'checkouts.update':
+          return this.executeTool(workspaceId, 'update_checkout', args, userId);
+        case 'coupons.create':
+          return this.executeTool(workspaceId, 'create_coupon', args, userId);
+        case 'coupons.delete':
+          return this.executeTool(workspaceId, 'delete_coupon', args, userId);
         case 'plan_create':
         case 'create_plan':
         case 'update_plan':
@@ -675,25 +502,10 @@ export class KloelToolDispatcherService {
           return await this.chatToolsService.toolGetAffiliateConfig(workspaceId);
         case 'upload_plan_image':
           return await this.chatToolsService.toolUploadPlanImage(workspaceId, asToolArgs(args));
-        case 'upload_product_image': {
-          const productArgs = userId ? { ...args, actorId: userId } : args;
-          return await this.chatToolsService.toolUploadProductImage(
-            workspaceId,
-            asToolArgs(productArgs),
-          );
-        }
-        case 'products.upload_image': {
-          const startedAt = Date.now();
-          const result = await this.executeTool(workspaceId, 'upload_product_image', args, userId);
-          return this.withCanonicalReceipt(
-            'products.upload_image',
-            workspaceId,
-            args,
-            result,
-            userId,
-            startedAt,
-          );
-        }
+        case 'upload_product_image':
+          return await this.chatToolsService.toolUploadProductImage(workspaceId, asToolArgs(args));
+        case 'products.upload_image':
+          return this.executeTool(workspaceId, 'upload_product_image', args, userId);
         case 'update_personal_data':
           if (!this.accountService) {
             return { success: false, error: 'account_service_unavailable' };
@@ -959,74 +771,6 @@ export class KloelToolDispatcherService {
           );
         case 'codegraph_files':
           return await this.codeToolsService.toolCodeGraphFiles();
-        // ── COGNITIVE BRIDGE (Wave 7 PI-CC) ──
-        case 'lsp_diagnostics':
-          return await this.codeToolsService.toolLspDiagnostics(
-            typeof args.file === 'string' ? args.file : '',
-          );
-        case 'openapi_route':
-          return await this.codeToolsService.toolOpenApiRoute(
-            typeof args.query === 'string' ? args.query : '',
-          );
-        case 'asyncapi_events':
-          return await this.codeToolsService.toolAsyncApiEvents(
-            typeof args.domain === 'string' ? args.domain : '',
-          );
-        case 'static_analysis':
-          return await this.codeToolsService.toolStaticAnalysis(
-            typeof args.file === 'string' ? args.file : '',
-          );
-        // ── PULSE / Runtime awareness (Wave 7 PI-DD) ──
-        case 'pulse_health':
-          return await this.codeToolsService.toolPulseHealth(
-            typeof args.module === 'string' ? args.module : undefined,
-          );
-        case 'behavior_graph_node':
-          return await this.codeToolsService.toolBehaviorGraphNode(
-            typeof args.symbol === 'string' ? args.symbol : '',
-            typeof args.file === 'string' ? args.file : undefined,
-          );
-        case 'runtime_errors':
-          return await this.codeToolsService.toolRuntimeErrors();
-        // ── Deps + Coverage + Affected tests (Wave 7 PI-EE) ──
-        case 'dependencies': {
-          if (!this.depsCoverage) {
-            return { success: false, error: 'deps_coverage_service_unavailable' };
-          }
-          const ws = typeof args.workspace === 'string' ? args.workspace : '';
-          const pattern = typeof args.pattern === 'string' ? args.pattern : undefined;
-          const result = await this.depsCoverage.dependencies(ws, pattern);
-          return {
-            success: result.success,
-            capabilityId: 'dependencies',
-            outputs: result,
-            ...(result.error ? { error: result.error } : {}),
-          };
-        }
-        case 'code_coverage': {
-          if (!this.depsCoverage) {
-            return { success: false, error: 'deps_coverage_service_unavailable' };
-          }
-          const filePath = typeof args.filePath === 'string' ? args.filePath : undefined;
-          const ws = typeof args.workspace === 'string' ? args.workspace : undefined;
-          const result = await this.depsCoverage.codeCoverage(filePath, ws);
-          return { success: true, capabilityId: 'code_coverage', outputs: result };
-        }
-        case 'affected_tests': {
-          if (!this.depsCoverage) {
-            return { success: false, error: 'deps_coverage_service_unavailable' };
-          }
-          const filesRaw = typeof args.files === 'string' ? args.files : '';
-          const files = filesRaw
-            .split(',')
-            .map((f) => f.trim())
-            .filter(Boolean);
-          if (files.length === 0) {
-            return { success: false, error: 'files_required' };
-          }
-          const result = await this.depsCoverage.affectedTests(files);
-          return { success: true, capabilityId: 'affected_tests', outputs: result };
-        }
         // ── REPORTS (w25) ──
         case 'reports.operations': {
           if (!this.reportService) {
@@ -1067,70 +811,6 @@ export class KloelToolDispatcherService {
       this.logger.error(`Erro ao executar ferramenta ${toolName}:`, error);
       return { success: false, error: msg };
     }
-  }
-
-  private withCanonicalReceipt(
-    capabilityId: string,
-    workspaceId: string,
-    args: UnknownRecord,
-    result: { success: boolean; message?: string; error?: string; [key: string]: unknown },
-    userId: string | undefined,
-    startedAt: number,
-  ): { success: boolean; message?: string; error?: string; [key: string]: unknown } {
-    const cap = this.capRegistryV2?.get(capabilityId);
-    if (!cap || !this.capRegistryV2) {
-      return result;
-    }
-
-    const inputs = sanitizeDetails(args);
-    const outputs = result.success ? deriveReceiptOutputs(result, inputs) : {};
-    const actorId = userId ?? 'kloel-chat';
-    const idempotencyKey = [
-      receiptKeyPart(capabilityId),
-      receiptKeyPart(workspaceId),
-      receiptKeyPart(actorId),
-      receiptKeyPart(JSON.stringify(inputs)),
-    ].join(':');
-    const requestId = idempotencyKey.slice(0, 120);
-    const auditLogId = asString(result.auditLogId, `audit_${requestId}`);
-    const evidenceUrl = result.success
-      ? buildReceiptEvidenceUrl(cap.evidenceUrlBuilder, outputs)
-      : undefined;
-    const receiptParams: Parameters<CapabilityRegistryV2Service['createReceipt']>[0] = {
-      capabilityId: cap.id,
-      title: cap.title,
-      context: {
-        workspaceId,
-        actorId,
-        source: 'dashboard-chat',
-        idempotencyKey,
-        requestId,
-      },
-      inputs,
-      outputs,
-      domainEvents: result.success ? cap.emits : [],
-      auditLogId,
-      durationMs: Date.now() - startedAt,
-      success: result.success,
-    };
-
-    if (evidenceUrl) {
-      receiptParams.evidenceUrl = evidenceUrl;
-    }
-    if (typeof result.error === 'string') {
-      receiptParams.error = result.error;
-    }
-
-    const receipt = this.capRegistryV2.createReceipt(receiptParams);
-    return {
-      ...result,
-      capabilityId: cap.id,
-      outputs,
-      domainEvents: receipt.domainEvents,
-      auditLogId: receipt.auditLogId,
-      evidenceUrl: receipt.evidenceUrl,
-      receipt,
-    };
   }
 
   /**
@@ -1195,11 +875,6 @@ export class KloelToolDispatcherService {
     approvalRequestId: string;
     userId?: string;
   }): Promise<ApprovedToolExecutionResult> {
-    return runExecuteApprovedApprovalRequest(
-      this.prisma,
-      this.bizConfigToolsService,
-      this.chatToolsService,
-      input,
-    );
+    return runExecuteApprovedApprovalRequest(this.prisma, this.bizConfigToolsService, input);
   }
 }

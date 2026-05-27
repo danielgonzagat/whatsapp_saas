@@ -1,4 +1,4 @@
-import { Module, forwardRef, type Provider } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ConversationalOnboardingService } from './conversational-onboarding.service';
 import { ConversationalOnboardingToolsService } from './conversational-onboarding-tools.service';
@@ -23,16 +23,7 @@ import { KLOEL_COMPOSER_E2E_GUARD, NoopKloelComposerE2EGuard } from './kloel-com
 import { KLOEL_LLM_E2E_GUARD, NoopKloelLLME2EGuard } from './kloel-llm-e2e-guard';
 import { KloelController } from './kloel.controller';
 import { KloelDataController } from './kloel-data.controller';
-import {
-  MindAutonomyCoordinator,
-  MindCapabilityExecutor,
-  MindCapabilityRegistry,
-  MindCommercialGraph,
-  MindEventSpine,
-  MindRuntime,
-  WhatsAppMindCoordinator,
-} from './mind/coordination';
-import { KloelLeadBrainService as LeadMindCoordinator } from './kloel-lead-brain.service';
+import { KloelLeadBrainService } from './kloel-lead-brain.service';
 import { KloelLeadProcessorService } from './kloel-lead-processor.service';
 import { KloelReplyEngineService } from './kloel-reply-engine.service';
 import { KloelService } from './kloel.service';
@@ -49,6 +40,7 @@ import { OnboardingService } from './onboarding.service';
 import { PaymentController } from './payment.controller';
 import { PaymentService } from './payment.service';
 import { WhatsAppBrainController } from './whatsapp-brain.controller';
+import { WhatsAppBrainService } from './whatsapp-brain.service';
 
 import { LLMBudgetService } from './llm-budget.service';
 import { MemoryManagementService } from './memory-management.service';
@@ -126,8 +118,14 @@ import { UnifiedAgentService } from './unified-agent.service';
 import { UNIFIED_AGENT_TOKEN } from './tokens';
 import { UploadController } from './upload.controller';
 import { WebinarController } from './webinar.controller';
+import { BrainCapabilityRegistryService } from './brain-capability-registry.service';
+import { BrainCapabilityExecutorService } from './brain-capability-executor.service';
+import { BrainAutonomyService } from './brain-autonomy.service';
 import { LacunasController } from './lacunas.controller';
+import { BrainCommercialGraphService } from './brain-commercial-graph.service';
+import { BrainEventSpineService } from './brain-event-spine.service';
 import { BrainRuntimeController } from './brain-runtime.controller';
+import { BrainRuntimeService } from './brain-runtime.service';
 import {
   EmailChannelTransport,
   InstagramChannelTransport,
@@ -150,7 +148,7 @@ import { MindGlobalPriorService } from './mind-global-prior.service';
 import { MindController } from './mind-controller';
 import { MindEventProcessorService } from './mind-event-processor.service';
 import { MindGuardContextBuilderService } from './mind-guard-context-builder.service';
-import { MindGuardsService } from './mind/policy/mind-guards.service';
+import { MindGuardsService } from './mind-guards.service';
 import { MindObservabilityService } from './mind-observability.service';
 import { MindPerceptionService } from './mind-perception.service';
 import { MindPolicyService } from './mind-policy.service';
@@ -196,7 +194,6 @@ import { CapabilityRegistryV2Module } from './capability-registry-v2/capability-
 import { IntentRouterModule } from './intent-router/intent-router.module';
 import { SelfAwarenessModule } from './self-awareness/self-awareness.module';
 import { ProductsModule } from '../products/products.module';
-import { ProductCouponDomainService } from './product-coupon-domain.service';
 import { PlansModule } from '../plans/plans.module';
 
 /** Kloel module. */
@@ -279,7 +276,6 @@ import { PlansModule } from '../plans/plans.module';
     AccountService,
     CheckoutService,
     CouponService,
-    ProductCouponDomainService,
     KloelProductSubResourceToolsService,
     KloelWalletSalesToolsService,
     KloelBusinessConfigToolsService,
@@ -290,14 +286,14 @@ import { PlansModule } from '../plans/plans.module';
     KloelWhatsAppToolsService,
     UnifiedAgentToolExecutorService,
 
-    LeadMindCoordinator,
+    KloelLeadBrainService,
     KloelToolDispatcherService,
     KloelToolExecutorService,
     KloelComposerService,
     KloelLeadProcessorService,
     KloelWorkspaceContextService,
     GuestChatService,
-    WhatsAppMindCoordinator,
+    WhatsAppBrainService,
     PaymentService,
     OnboardingService,
     ConversationalOnboardingService,
@@ -342,12 +338,12 @@ import { PlansModule } from '../plans/plans.module';
     CartRecoveryService,
     WebhooksService,
     WebhookDispatcherService,
-    MindCapabilityRegistry,
-    MindCapabilityExecutor,
-    MindAutonomyCoordinator,
-    MindCommercialGraph,
-    MindEventSpine,
-    MindRuntime,
+    BrainCapabilityRegistryService,
+    BrainCapabilityExecutorService,
+    BrainAutonomyService,
+    BrainCommercialGraphService,
+    BrainEventSpineService,
+    BrainRuntimeService,
     InstagramChannelTransport,
     MessengerChannelTransport,
     TikTokChannelTransport,
@@ -397,7 +393,7 @@ import { PlansModule } from '../plans/plans.module';
     AgentRuntimeSchedulerService,
     AgentRuntimeSessionStore,
     AgentRuntimeSkillRegistry,
-  ] as Provider[],
+  ],
   exports: [
     KloelService,
     KloelCodeToolsService,
@@ -410,14 +406,14 @@ import { PlansModule } from '../plans/plans.module';
     KloelChatToolsService,
     KloelBusinessConfigToolsService,
     KloelWhatsAppToolsService,
-    LeadMindCoordinator,
+    KloelLeadBrainService,
     KloelToolDispatcherService,
     KloelToolExecutorService,
     KloelComposerService,
     KloelLeadProcessorService,
     KloelWorkspaceContextService,
     GuestChatService,
-    WhatsAppMindCoordinator,
+    WhatsAppBrainService,
     PaymentService,
 
     OnboardingService,
@@ -445,7 +441,7 @@ import { PlansModule } from '../plans/plans.module';
     AdRulesEngineService,
     EmailCampaignService,
     ChannelTransportRegistry,
-    MindEventSpine,
+    BrainEventSpineService,
     CommercialDecisionOrchestratorService,
     RuntimeConversationTracerService,
     MindBeliefService,

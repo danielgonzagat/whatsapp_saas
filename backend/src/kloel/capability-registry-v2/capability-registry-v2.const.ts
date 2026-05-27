@@ -48,84 +48,6 @@ export const CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     surface: ['dashboard-chat', 'whatsapp'],
   },
   {
-    id: 'dependencies',
-    title: 'Listar dependências',
-    description: 'Lista dependências (SBOM) de um workspace com versões',
-    category: 'SELF_AWARENESS',
-    tier: 0,
-    requiresConfirmation: false,
-    requiredPermissions: [],
-    inputSchema: [
-      {
-        key: 'workspace',
-        type: 'string',
-        label: 'Workspace',
-        required: true,
-        description: 'root|backend|frontend|frontend-admin|worker|e2e',
-      },
-      {
-        key: 'pattern',
-        type: 'string',
-        label: 'Filtro',
-        required: false,
-        description: 'Nome do pacote (parcial)',
-      },
-    ],
-    domainService: 'DepsCoverageService.dependencies',
-    emits: [],
-    surface: ['dashboard-chat'],
-  },
-  {
-    id: 'code_coverage',
-    title: 'Cobertura de código',
-    description:
-      'Retorna cobertura de testes (lines/branches/functions/statements) com linhas não cobertas',
-    category: 'SELF_AWARENESS',
-    tier: 0,
-    requiresConfirmation: false,
-    requiredPermissions: [],
-    inputSchema: [
-      {
-        key: 'filePath',
-        type: 'string',
-        label: 'Arquivo',
-        required: false,
-        description: 'Caminho do arquivo para cobertura específica',
-      },
-      {
-        key: 'workspace',
-        type: 'string',
-        label: 'Workspace',
-        required: false,
-        description: 'root|backend|frontend|frontend-admin|worker|e2e',
-      },
-    ],
-    domainService: 'DepsCoverageService.codeCoverage',
-    emits: [],
-    surface: ['dashboard-chat'],
-  },
-  {
-    id: 'affected_tests',
-    title: 'Testes afetados',
-    description: 'Dados arquivos fonte, retorna spec/test files que os exercitam',
-    category: 'SELF_AWARENESS',
-    tier: 0,
-    requiresConfirmation: false,
-    requiredPermissions: [],
-    inputSchema: [
-      {
-        key: 'files',
-        type: 'string',
-        label: 'Arquivos',
-        required: true,
-        description: 'Lista de paths separados por vírgula',
-      },
-    ],
-    domainService: 'DepsCoverageService.affectedTests',
-    emits: [],
-    surface: ['dashboard-chat'],
-  },
-  {
     id: 'self.audit_log',
     title: 'Log de ações',
     description: 'Mostra as últimas ações executadas pelo Kloel',
@@ -541,7 +463,7 @@ export const CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     requiredPermissions: ['product:write'],
     inputSchema: [{ key: 'productId', type: 'string', label: 'Produto', required: true }],
     domainService: 'MediaService.attach + ProductService.setImage',
-    emits: ['product.updated'],
+    emits: ['product.image_updated'],
     surface: ['dashboard-chat'],
   },
   {
@@ -1018,7 +940,6 @@ export const CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     ],
     domainService: 'PlanService.create',
     emits: ['plan.created'],
-    evidenceUrlBuilder: '/produtos/${productId}/planos/${planId}',
     surface: ['dashboard-chat'],
   },
   {
@@ -1567,7 +1488,7 @@ export const CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
       { key: 'imageFile', type: 'file', label: 'Arquivo de imagem', required: true },
     ],
     domainService: 'MediaService.attach + ProductService.setImage',
-    emits: ['product.updated'],
+    emits: ['product.image_updated'],
     evidenceUrlBuilder: '/produtos/${productId}',
     surface: ['dashboard-chat'],
   },
@@ -1624,7 +1545,6 @@ export const CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     ],
     domainService: 'PlanService.create',
     emits: ['plan.created'],
-    evidenceUrlBuilder: '/produtos/${productId}/planos/${planId}',
     surface: ['dashboard-chat'],
   },
   {
@@ -1642,7 +1562,6 @@ export const CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     ],
     domainService: 'PlanService.update',
     emits: ['plan.updated'],
-    evidenceUrlBuilder: '/produtos/${productId}/planos/${planId}',
     surface: ['dashboard-chat'],
   },
 
@@ -1671,7 +1590,6 @@ export const CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     ],
     domainService: 'CheckoutService.create',
     emits: ['checkout.created'],
-    evidenceUrlBuilder: '/produtos/${productId}/checkouts/${checkoutId}',
     surface: ['dashboard-chat'],
   },
   {
@@ -1689,7 +1607,6 @@ export const CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     ],
     domainService: 'CheckoutService.update',
     emits: ['checkout.updated'],
-    evidenceUrlBuilder: '/produtos/${productId}/checkouts/${checkoutId}',
     surface: ['dashboard-chat'],
   },
 
@@ -1717,7 +1634,6 @@ export const CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
     ],
     domainService: 'CouponService.create',
     emits: ['coupon.created'],
-    evidenceUrlBuilder: '/produtos/${productId}/cupons/${couponId}',
     surface: ['dashboard-chat'],
   },
   {
@@ -2274,11 +2190,9 @@ export const CAPABILITY_MAP = new Map<string, CapabilityDefinition>(
 /** Map capability ID -> tier grouping */
 export const CAPABILITIES_BY_TIER: Record<number, CapabilityDefinition[]> =
   CAPABILITY_DEFINITIONS.reduce<Record<number, CapabilityDefinition[]>>((acc, cap) => {
-    const entry = acc[cap.tier];
-    if (entry) {
-      entry.push(cap);
-    } else {
-      acc[cap.tier] = [cap];
+    if (!acc[cap.tier]) {
+      acc[cap.tier] = [];
     }
+    acc[cap.tier].push(cap);
     return acc;
   }, {});

@@ -9,12 +9,9 @@ import { KloelComposerService } from './kloel-composer.service';
 import { KloelConversationStore } from './kloel-conversation-store';
 import { KLOEL_LLM_E2E_GUARD, KloelLLME2EGuard } from './kloel-llm-e2e-guard';
 import {
-  createKloelContentEvent,
   createKloelErrorEvent,
   createKloelStatusEvent,
   createKloelThreadEvent,
-  createKloelToolCallEvent,
-  createKloelToolResultEvent,
   type KloelStreamEvent,
 } from './kloel-stream-events';
 import { KloelStreamWriter } from './kloel-stream-writer';
@@ -24,11 +21,10 @@ import { CANONICAL_FALLBACK_SYSTEM_PROMPT } from './kloel.prompts';
 import { LLM_MAX_COMPLETION_TOKENS } from './openai-wrapper';
 import { OPERATOR_CAPABILITIES } from './brain-capabilities.const';
 import { AbiBuilderService } from './abi/abi-builder.service';
-import { MindCapabilityExecutor } from './mind/coordination';
+import { BrainCapabilityExecutorService } from './brain-capability-executor.service';
 import { validateAbiPayload } from './abi/abi-validator';
 import { computeHandoffConfidence, HANDOFF_THRESHOLD } from './handoff-confidence.helper';
 import { ChatCompletionMessageParam } from 'openai/resources/chat';
-import { detectActionIntent, formatToolResult } from './guest-chat.action-intent.helpers';
 import { KloelReplyEngineService, LocalToolExecutor } from './kloel-reply-engine.service';
 import { thinkSyncImpl, regenerateThreadAssistantResponseImpl } from './kloel-thinker.helpers';
 import {
@@ -64,7 +60,7 @@ export class KloelThinkerService {
     private readonly replyEngine: KloelReplyEngineService,
     @Inject(KLOEL_LLM_E2E_GUARD) private readonly llmE2EGuard: KloelLLME2EGuard,
     @Optional() private readonly abiBuilder?: AbiBuilderService,
-    @Optional() private readonly capabilityExecutor?: MindCapabilityExecutor,
+    @Optional() private readonly capabilityExecutor?: BrainCapabilityExecutorService,
   ) {
     this.conversationStore = new KloelConversationStore(prisma, this.logger);
   }
@@ -106,6 +102,18 @@ export class KloelThinkerService {
     streamWriter.init();
 
     try {
+      if (!this.replyEngine.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) {
+        safeWrite(
+          createKloelErrorEvent({
+            content:
+              'Assistente IA não disponível no momento. Configure DEEPSEEK_API_KEY, LLM_API_KEY, OPENAI_API_KEY ou ANTHROPIC_API_KEY para habilitar o Kloel.',
+            error: 'ai_api_key_missing',
+            done: true,
+          }),
+        );
+        streamWriter.close();
+        return;
+      }
       if (isAborted()) {
         if (!isClientDisconnected()) {
           safeWrite(
@@ -117,120 +125,6 @@ export class KloelThinkerService {
             }),
           );
         }
-        streamWriter.close();
-        return;
-      }
-
-      const deterministicWorkspaceId =
-        mode === 'chat' && typeof workspaceId === 'string' && workspaceId.length > 0
-          ? workspaceId
-          : undefined;
-      const deterministicAction = deterministicWorkspaceId ? detectActionIntent(message) : null;
-      if (deterministicAction && deterministicWorkspaceId) {
-        const clientRequestId = this.threadService.resolveClientRequestId(metadata);
-        const thread = await this.threadService.resolveThread(
-          deterministicWorkspaceId,
-          conversationId,
-        );
-        if (thread?.id) {
-          safeWrite(createKloelThreadEvent(thread.id, thread.title));
-        }
-        const persistedUserMessage = thread?.id
-          ? await this.threadService.persistUserThreadMessage(
-              thread.id,
-              deterministicWorkspaceId,
-              message,
-              this.threadService.buildThreadMessageMetadata(metadata, {
-                clientRequestId,
-                mode,
-                transport: 'sse',
-                requestState: 'accepted',
-              }),
-            )
-          : null;
-        const branchCtx: ThinkBranchContext = {
-          workspaceId: deterministicWorkspaceId,
-          userId,
-          message,
-          mode,
-          metadata,
-          clientRequestId,
-          thread,
-          persistedUserMessage,
-          processingTraceEntries,
-          safeWrite,
-          streamWriter,
-          replyEngine: this.replyEngine,
-          threadService: this.threadService,
-          conversationStore: this.conversationStore,
-          planLimits: this.planLimits,
-        };
-        const callId = clientRequestId
-          ? `deterministic_${clientRequestId}`
-          : `deterministic_${Date.now()}`;
-        safeWrite(
-          createKloelStatusEvent('tool_calling', `Executando ${deterministicAction.tool}.`),
-        );
-        safeWrite(
-          createKloelToolCallEvent(callId, deterministicAction.tool, deterministicAction.args),
-        );
-        let toolResult: unknown;
-        try {
-          toolResult = await executeLocalTool(
-            deterministicWorkspaceId,
-            deterministicAction.tool,
-            deterministicAction.args,
-            userId,
-          );
-        } catch (error: unknown) {
-          toolResult = {
-            success: false,
-            error:
-              error instanceof Error
-                ? error.message
-                : typeof error === 'string'
-                  ? error
-                  : 'tool_execution_failed',
-          };
-        }
-        const toolResultRecord =
-          toolResult !== null && typeof toolResult === 'object' && !Array.isArray(toolResult)
-            ? (toolResult as Record<string, unknown>)
-            : {};
-        const toolSucceeded = toolResultRecord.success !== false;
-        const toolError =
-          typeof toolResultRecord.error === 'string'
-            ? toolResultRecord.error
-            : toolSucceeded
-              ? undefined
-              : 'tool_execution_failed';
-        safeWrite(
-          createKloelStatusEvent('tool_result', `Resultado de ${deterministicAction.tool}.`),
-        );
-        safeWrite(
-          createKloelToolResultEvent({
-            callId,
-            tool: deterministicAction.tool,
-            success: toolSucceeded,
-            result: toolResult,
-            ...(toolError !== undefined ? { error: toolError } : {}),
-          }),
-        );
-        const reply = formatToolResult(deterministicAction.tool, toolResult);
-        safeWrite(createKloelContentEvent(reply));
-        await finalizeSuccessfulReply(reply, 0, branchCtx);
-        return;
-      }
-
-      if (!this.replyEngine.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) {
-        safeWrite(
-          createKloelErrorEvent({
-            content:
-              'Assistente IA não disponível no momento. Configure DEEPSEEK_API_KEY, LLM_API_KEY, OPENAI_API_KEY ou ANTHROPIC_API_KEY para habilitar o Kloel.',
-            error: 'ai_api_key_missing',
-            done: true,
-          }),
-        );
         streamWriter.close();
         return;
       }
@@ -309,9 +203,8 @@ export class KloelThinkerService {
 
       let finalSystemPrompt = systemPrompt;
       let finalUserMessage = message;
-      let prebuiltCognitiveState: Record<string, unknown> | undefined;
 
-      const useAbi = process.env['KLOEL_THINKER_USE_ABI'] !== 'off';
+      const useAbi = process.env['KLOEL_THINKER_USE_ABI'] === 'on';
       let abiOutcome = useAbi ? (this.abiBuilder ? 'attempted' : 'no_abiBuilder') : 'flag_off';
       let substrateBuilt = false;
       if (useAbi && this.abiBuilder) {
@@ -364,11 +257,7 @@ export class KloelThinkerService {
               // EXACTLY the user's input (fixes long-message hang).
               const capArrays = (_k: string, v: unknown): unknown =>
                 Array.isArray(v) ? v.slice(0, 8) : v;
-              const boundedAbi = JSON.parse(JSON.stringify(abiResult.abi, capArrays)) as Record<
-                string,
-                unknown
-              >;
-              let abiStr = JSON.stringify(boundedAbi);
+              let abiStr = JSON.stringify(abiResult.abi, capArrays);
               // ROOT-CAUSE FIX (runtime-evidenced via KLOEL_ABI_PATH
               // abiLen=6018): the 6000 hard cap blind-sliced the JSON
               // and decapitated memory/episodicRefs/recentSalientEvents
@@ -381,8 +270,7 @@ export class KloelThinkerService {
               if (abiStr.length > ABI_MAX) {
                 abiStr = `${abiStr.slice(0, ABI_MAX)}…(state_truncated)`;
               }
-              prebuiltCognitiveState = boundedAbi;
-              finalSystemPrompt = CANONICAL_FALLBACK_SYSTEM;
+              finalSystemPrompt = `${CANONICAL_FALLBACK_SYSTEM}\nstate_payload=${abiStr}`;
               finalUserMessage = message;
               abiOutcome = `success(abiLen=${abiStr.length})`;
 
@@ -502,7 +390,6 @@ export class KloelThinkerService {
         marketingPromptAddendum,
         summaryMessage,
         recentMessages: historyState.recentMessages,
-        ...(prebuiltCognitiveState !== undefined ? { prebuiltCognitiveState } : {}),
         userMessage: finalUserMessage,
       });
       const streamWriterResponse = (
@@ -530,7 +417,6 @@ export class KloelThinkerService {
           signal,
           streamWriterResponse,
           branchCtx,
-          prebuiltCognitiveState,
         );
         return;
       }
