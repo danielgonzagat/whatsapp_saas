@@ -42,7 +42,11 @@ import {
   CATCHUP_MARK_READ_WITHOUT_REPLY,
   CATCHUP_LID_MAP_CACHE_TTL_MS,
 } from './whatsapp-catchup-config';
-import { getLockKey, getCooldownKey, releaseLock } from './whatsapp-catchup-lock.helpers';
+import {
+  getLockKey,
+  getCooldownKey,
+  releaseLock,
+} from '../marketing/channels/whatsapp/whatsapp-catchup-lock.helpers';
 import { selectCandidateChats } from './whatsapp-catchup-chat-selector';
 import { loadCatchupMessages } from './whatsapp-catchup-message-loader';
 import {
