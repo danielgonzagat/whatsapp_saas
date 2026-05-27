@@ -331,7 +331,7 @@ export class MetaWhatsAppService implements OnModuleInit {
       }
       const displayPhoneNumber = readStrictText(phoneInfo?.display_phone_number) ?? null;
       const verifiedName = readStrictText(phoneInfo?.verified_name) || resolved.pageName || null;
-      const phoneDigits = this.normalizePhone(displayPhoneNumber || '');
+      const phoneDigits = normalizeWhatsAppPhone(displayPhoneNumber || '');
       return {
         connected: true,
         status: 'CONNECTED',
@@ -389,7 +389,7 @@ export class MetaWhatsAppService implements OnModuleInit {
     const payload: Record<string, unknown> = {
       messaging_product: 'whatsapp',
       recipient_type: 'individual',
-      to: this.normalizePhone(to),
+      to: normalizeWhatsAppPhone(to),
       type: 'text',
       text: buildTextMessageContent(message),
     };
@@ -437,7 +437,7 @@ export class MetaWhatsAppService implements OnModuleInit {
     const payload: Record<string, unknown> = {
       messaging_product: 'whatsapp',
       recipient_type: 'individual',
-      to: this.normalizePhone(to),
+      to: normalizeWhatsAppPhone(to),
       type,
       [type]: mediaPayload,
     };
@@ -551,12 +551,5 @@ export class MetaWhatsAppService implements OnModuleInit {
   }
   getRequestedScopesForChannel(channel: MetaMarketingChannel): string[] {
     return getRequestedScopesForChannel(channel);
-  }
-  /**
-   * @deprecated TODO(omnicore): migrate to `backend/src/common/phone/phone-normalization.util.ts`.
-   *   Tracking: DEPRECATION_MAP.md #39.
-   */
-  private normalizePhone(value: string): string {
-    return normalizeWhatsAppPhone(value);
   }
 }

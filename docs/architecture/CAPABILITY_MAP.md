@@ -18,7 +18,7 @@ Each capability lists every implementation found across the codebase. A capabili
 
 - `normalizePhone` (function) — `backend/src/checkout/checkout-social-lead.util.ts:34`
 - `normalizePhone` (function) — `backend/src/common/phone/phone-normalization.util.ts:150`
-- `normalizeNumber` (function) — `backend/src/marketing/channels/whatsapp/whatsapp-service.helpers.ts:4`
+- `normalizeNumber` (function) — `backend/src/marketing/channels/whatsapp/whatsapp-service.helpers.ts:15`
 - `formatPhone` (function) — `frontend/src/app/(main)/followups/followups.helpers.ts:31`
 - `normalizePhone` (function) — `worker/utils/phone-normalization.util.ts:171`
 

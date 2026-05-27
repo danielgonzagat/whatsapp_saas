@@ -7,10 +7,22 @@ import {
 export { extractAsciiDigits };
 
 /**
- * Extract phone from chat id.
+ * Extract a phone digit string from any WhatsApp chat-id-shaped input.
  *
- * @deprecated TODO(omnicore): migrate to `backend/src/common/phone/phone-normalization.util.ts`.
- *   Tracking: DEPRECATION_MAP.md #39.
+ * Distinct from {@link import('../common/phone/phone-normalization.util').extractPhoneFromChatId}:
+ * the canonical helper returns `null` for groups / LIDs / broadcasts /
+ * newsletters (those have no canonical user phone). This local helper is
+ * the legacy "give me the digits before the @, no matter what" surface
+ * used by inbound WAHA paths that need to bucket *every* chat by the
+ * leading digits — including group ids — to dedupe within a single
+ * channel-side session.
+ *
+ * Routes the actual digit extraction through {@link extractAsciiDigits}
+ * (which itself wraps the canonical util), so there is no independent
+ * digit-strip implementation. Always returns a string (possibly `''`).
+ *
+ * @see backend/src/common/phone/phone-normalization.util.ts
+ * @see docs/architecture/DEPRECATION_MAP.md (phone normalization row)
  */
 export function extractPhoneFromChatId(value: unknown): string {
   const input =

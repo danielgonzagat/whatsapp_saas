@@ -9,8 +9,8 @@ import { type ProviderSettings } from './provider-settings.types';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { type WahaChatMessage, type WahaChatSummary } from './providers/whatsapp-api.provider';
 import { type InboundMessage } from './inbound-processor.service';
+import { whatsappDigits } from '../common/phone';
 import {
-  normalizePhoneExt,
   normalizeTimestampExt,
   normalizeJsonObjExt,
   resolveChatActivityTimestampExt,
@@ -58,13 +58,6 @@ export class WhatsappCatchupHistoryService {
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
-  /**
-   * @deprecated TODO(omnicore): migrate to `backend/src/common/phone/phone-normalization.util.ts`.
-   *   Tracking: DEPRECATION_MAP.md #39.
-   */
-  private normalizePhone(phone: string): string {
-    return normalizePhoneExt(phone);
-  }
   private normalizeTimestamp(value?: Date | string | number | null): Date | null {
     return normalizeTimestampExt(value);
   }
@@ -103,7 +96,7 @@ export class WhatsappCatchupHistoryService {
       return true;
     }
     const l = n.toLowerCase();
-    const pd = this.normalizePhone(String(phone || ''));
+    const pd = whatsappDigits(String(phone || ''));
     if (l === 'doe' || l === 'unknown' || l === 'desconhecido') {
       return true;
     }
@@ -113,14 +106,14 @@ export class WhatsappCatchupHistoryService {
     if (pd && l === `${pd} doe`) {
       return true;
     }
-    if (pd && this.normalizePhone(n) === pd) {
+    if (pd && whatsappDigits(n) === pd) {
       return true;
     }
     return false;
   }
 
   resolveRemoteContactName(chat: WahaChatSummary): string {
-    const fp = this.normalizePhone(this.providerRegistry.extractPhoneFromChatId(chat?.id || ''));
+    const fp = whatsappDigits(this.providerRegistry.extractPhoneFromChatId(chat?.id || ''));
     for (const c of [
       chat?.name,
       chat?.contact?.pushName,
@@ -145,7 +138,7 @@ export class WhatsappCatchupHistoryService {
     }
     const wS = s?.whatsappWebSession;
     const aS = s?.whatsappApiSession;
-    const sp = this.normalizePhone(safeStr(wS?.phoneNumber || aS?.phoneNumber));
+    const sp = whatsappDigits(safeStr(wS?.phoneNumber || aS?.phoneNumber));
     if (sp) {
       this.selfPhoneCache.set(ws, { expiresAt: Date.now() + this.selfPhoneCacheTtlMs, phone: sp });
       return sp;
@@ -163,7 +156,7 @@ export class WhatsappCatchupHistoryService {
       );
       return null;
     });
-    const rp = this.normalizePhone(String(r?.phoneNumber || '')) || null;
+    const rp = whatsappDigits(String(r?.phoneNumber || '')) || null;
     this.selfPhoneCache.set(ws, { expiresAt: Date.now() + this.selfPhoneCacheTtlMs, phone: rp });
     return rp;
   }
@@ -308,7 +301,7 @@ export class WhatsappCatchupHistoryService {
   }
 
   async persistHistoricalOutboundMessage(ws: string, message: WahaChatMessage): Promise<boolean> {
-    const phone = this.normalizePhone(String(message.chatId || message.from || '').trim());
+    const phone = whatsappDigits(String(message.chatId || message.from || '').trim());
     const pid = String(message.id || '').trim();
     if (!phone || !pid) {
       return false;

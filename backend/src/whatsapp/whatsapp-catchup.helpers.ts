@@ -1,7 +1,6 @@
 import type { WhatsAppProviderRegistry } from './providers/provider-registry';
 import type { WahaLidMapping } from './providers/whatsapp-api.provider';
 import { whatsappDigits } from '../common/phone';
-export { whatsappDigits as normalizePhoneExt };
 
 const LID_RE = /@lid$/i;
 

@@ -34,7 +34,7 @@ import {
   hasOutboundActionExt,
   buildInlineFallbackReplyExt,
 } from './inbound-processor.helpers';
-import { normalizePhone } from './inbound-processor.helpers';
+import { whatsappDigits as normalizePhone } from '../common/phone';
 
 function getSharedReplyLockKey(
   workspaceId: string,

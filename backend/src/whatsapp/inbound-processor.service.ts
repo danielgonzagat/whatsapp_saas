@@ -18,8 +18,8 @@ import {
   type InboundIngestMode,
   getDefaultContent,
   mapMessageType,
-  normalizePhone,
 } from './inbound-processor.helpers';
+import { whatsappDigits as normalizePhone } from '../common/phone';
 import { isPlaceholderContactName as isPlaceholderContactNameValue } from './whatsapp-normalization.util';
 import { WHATSAPP_MESSAGING } from './whatsapp.tokens';
 import type { IWhatsappMessaging } from './whatsapp.interfaces';
