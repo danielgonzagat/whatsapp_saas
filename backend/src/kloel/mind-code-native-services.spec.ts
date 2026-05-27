@@ -3,7 +3,7 @@ import { MindCaseMemoryService } from './mind-case-memory.service';
 import { MindConceptService } from './mind-concepts.service';
 import { MindGlobalPriorService } from './mind-global-prior.service';
 import { MindGuardsService } from './mind/policy/mind-guards.service';
-import { MindWorkspaceStateService } from './mind-workspace-state.service';
+import { MindWorkspaceStateService } from './mind/memory/mind-workspace-state.service';
 import { KloelRuleEngineService } from './rules/kloel-rule-engine.service';
 
 describe('code-native MIND services', () => {

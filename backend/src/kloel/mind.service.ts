@@ -8,7 +8,7 @@ import { MindPerceptionService } from './mind-perception.service';
 import { MindPolicyService } from './mind-policy.service';
 import { MindSurpriseService } from './mind-surprise.service';
 import type { MindTick } from './mind.types';
-import { MindWorkspaceStateService } from './mind-workspace-state.service';
+import { MindWorkspaceStateService } from './mind/memory/mind-workspace-state.service';
 import {
   resolveAggressivenessDecision,
   resolveAudioVsTextDecision,

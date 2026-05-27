@@ -159,15 +159,15 @@ import { MindProcessorService } from './mind-processor.service';
 import { MindQualityService } from './mind-quality.service';
 import { MindReportService } from './mind-report.service';
 import { MindReplayService } from './mind-replay.service';
-import { MindSimulatorService } from './mind-simulator.service';
-import { MindSyntheticGeneratorService } from './mind-synthetic-generator.service';
+import { MindSimulatorService } from './mind/synthetic/mind-simulator.service';
+import { MindSyntheticGeneratorService } from './mind/synthetic/mind-synthetic-generator.service';
 import { MindService } from './mind.service';
 import { DecisionOutcomeService } from './decision-outcome.service';
 import { DriftModule } from './drift/drift.module';
 import { MindLiftReportService } from './mind-lift-report.service';
 import { MindSurpriseService } from './mind-surprise.service';
 import { MindVerbalizerService } from './mind-verbalizer.service';
-import { MindWorkspaceStateService } from './mind-workspace-state.service';
+import { MindWorkspaceStateService } from './mind/memory/mind-workspace-state.service';
 import { AgentRuntimeJobRunnerService } from './agent-runtime/agent-runtime.job-runner';
 import {
   AgentRuntimeContextService,

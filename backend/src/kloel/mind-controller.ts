@@ -32,10 +32,10 @@ import { MindService } from './mind.service';
 import { MindObservabilityService } from './mind-observability.service';
 import { MindVerbalizerService } from './mind-verbalizer.service';
 import { MindGuardsService } from './mind/policy/mind-guards.service';
-import { MindSimulatorService } from './mind-simulator.service';
-import { MindSyntheticGeneratorService } from './mind-synthetic-generator.service';
+import { MindSimulatorService } from './mind/synthetic/mind-simulator.service';
+import { MindSyntheticGeneratorService } from './mind/synthetic/mind-synthetic-generator.service';
 import { MindGlobalPriorService } from './mind-global-prior.service';
-import type { SimulateActionEntry } from './mind-simulator.service';
+import type { SimulateActionEntry } from './mind/synthetic/mind-simulator.service';
 import type { ReplayInput } from './mind-replay.service';
 
 @Controller('mind')
