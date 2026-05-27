@@ -496,6 +496,12 @@ export class PartnershipsService {
   }
 
   // messageLimit: partner chat is internal DB-only, not WhatsApp; no rate limit applies
+  /**
+   * @canonical-status delegate — Wave 22 canonicalization
+   * @canonical-path backend/src/partnerships/partnerships.chat.helpers.ts::sendMessage
+   * @notes Intentional service-layer delegate to keep DI clean; the leaf writes
+   *        to the partnerMessage table (DB-only, no external dispatch).
+   */
   async sendMessage(partnerId: string, content: string, senderId: string, senderName: string) {
     return sendMessage(this.prisma, partnerId, content, senderId, senderName);
   }

@@ -374,6 +374,13 @@ export class WhatsappService {
   }
 
   // ═══ DELEGATION: Message Dispatcher ═══
+  /**
+   * @canonical-status delegate — Wave 22 canonicalization
+   * @canonical-path backend/src/whatsapp/whatsapp-message-dispatcher.service.ts::sendMessage
+   * @notes Rate-guarded public facade; messageDispatcher carries the queue/direct
+   *        routing, opt-in enforcement, plan limits, persistence and event emission.
+   *        Long-term: route through backend/src/kloel/channel-transport.registry.ts.
+   */
   async sendMessage(
     ws: string,
     to: string,

@@ -166,6 +166,12 @@ export class MarketingConnectController {
     return this.gmailMailbox.syncLatestInbox(req.user.workspaceId, Number(body.limit || 10));
   }
 
+  /**
+   * @canonical-status test-only — Wave 22 canonicalization
+   * @canonical-path backend/src/marketing/mailbox-gmail-oauth/send.service.ts::sendMessageFromMailbox
+   * @notes Diagnostic endpoint that fires a fixed test email from the connected
+   *        Gmail mailbox; not a production dispatch surface — exercise only.
+   */
   @WebhookEndpoint('Gmail mailbox send-test handler')
   @Post('connect/email/gmail/send-test')
   async sendGmailMailboxTest(
