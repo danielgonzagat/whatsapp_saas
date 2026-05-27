@@ -2,7 +2,7 @@ import {
   normalizeContactEntry,
   normalizeChatEntry,
   normalizeMessageEntry,
-} from '../../../whatsapp/whatsapp-service.normalizers';
+} from './whatsapp-service.normalizers';
 import type {
   NormalizedContact,
   NormalizedChat,
