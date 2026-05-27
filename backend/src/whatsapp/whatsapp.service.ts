@@ -25,7 +25,7 @@ import {
   normalizeContactsArray,
   normalizeChatsArray,
   normalizeMessagesArray,
-} from './whatsapp.service.normalizers';
+} from '../marketing/channels/whatsapp/whatsapp.service.normalizers';
 import * as catalogOps from './whatsapp.service.catalog';
 import type { CatalogDeps } from './whatsapp.service.catalog';
 import type { NormalizedContact, NormalizedChat } from './whatsapp-service.types';
