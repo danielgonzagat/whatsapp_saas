@@ -14,9 +14,9 @@
 |---|---|---|
 | Commits since 06:00 today | **135** | `git log --since="06:00"` |
 | Commits canonicalization-related | 92 | grep on commit subjects |
-| Files in legacy `backend/src/whatsapp/` | **3** | `find` (was 81 in v1) |
-| Non-`@deprecated` files at `backend/src/whatsapp/` | **0** | header scan (was 28 in v1) |
-| Substantive (non-stub) leftovers at `backend/src/whatsapp/` | **0** | every leftover is now an `@deprecated` re-export shim |
+| Files in legacy `backend/src/whatsapp/` | **0** — folder DELETED 2026-05-27 (ADR-0012 W4 finale, Wave 34) | `ls` (was 81 in v1, 3 in v2) |
+| Non-`@deprecated` files at `backend/src/whatsapp/` | **0** — folder gone | header scan |
+| Substantive (non-stub) leftovers at `backend/src/whatsapp/` | **0** — folder gone | folder dissolution complete |
 | Files in canonical `backend/src/marketing/channels/whatsapp/` | **138** | `find` (+14 since v1) |
 | Files in legacy `backend/src/cia/` | **15** | every file is an `@deprecated` re-export stub |
 | Files in canonical `backend/src/kloel/mind/cia/` | **33** | `find` |
@@ -108,17 +108,25 @@ each move stayed wired correctly.
 
 ## What's TRULY Remaining
 
-### A. `backend/src/whatsapp/` residual — 3 files, all `@deprecated` stubs
+### A. `backend/src/whatsapp/` residual — **COMPLETE / 100% DISSOLVED 2026-05-27**
 
-```
-backend/src/whatsapp/whatsapp.module.ts            (1-line stub)
-backend/src/whatsapp/provider-settings.types.ts    (1-line stub, heavily depended-on — 10+ outside imports)
-backend/src/whatsapp/providers/provider-registry.ts (re-export stub)
-```
+The legacy folder is **gone**. Wave 34 (subagent A) deleted the final two
+`@deprecated` stubs (`provider-settings.types.ts`, `providers/provider-registry.ts`)
+plus the now-empty parent directories. ADR-0012 W4 finale shipped.
 
-**Sunset plan:** keep stubs until 2026-06-24 (ADR-0012 W3 alias window),
-then delete + update the ~55 cross-boundary import sites that still go
-through them (mostly `provider-settings.types`).
+Historic timeline:
+- v1 snapshot: 81 files (28 substantive)
+- v2 snapshot (post-Wave 29): 3 files (all `@deprecated` re-export shims)
+- Wave 30 finale (2026-05-27): final 3 stubs removed in two steps — first
+  `whatsapp.module.ts`, then `provider-settings.types.ts` + `providers/provider-registry.ts`.
+  Folder `rm`-ed once empty.
+
+The ~55 cross-boundary import sites that historically routed through the
+shims now resolve directly to `backend/src/marketing/channels/whatsapp/`
+(the canonical home). Verified by:
+- TSC: zero whatsapp-related errors
+- Jest `src/marketing`: 84 suites / 684 tests passing
+- `npm run canonical:check`: OK (all 13 cross-boundary util pairs within tolerance)
 
 ### B. `backend/src/cia/` residual — 15 files, ALL `@deprecated` re-export stubs
 
@@ -181,11 +189,10 @@ Audit doc (`fd51701fd`) landed; no code moves yet. Worker has 0 SARIF
 findings, so risk is low. `worker/processors/*` layout still
 unenforced — no `scripts/ops/check-worker-processor-locations.mjs`.
 
-### H. `whatsapp.module.ts` final delete
+### H. `whatsapp.module.ts` final delete — **DONE 2026-05-27**
 
-The stub at `backend/src/whatsapp/whatsapp.module.ts` is safe to delete
-once the 4-week ADR-0013 alias window expires (2026-06-24). All callers
-already use the canonical path — verified by grep.
+Deleted earlier in Wave 34 alongside the last 2 stubs. The legacy
+`backend/src/whatsapp/` folder no longer exists. ADR-0012 W4 closed.
 
 ### I. Backend SARIF debt — 8 592 findings
 
