@@ -101,7 +101,8 @@ expected delta.
   `noReactSpecificProps: off`, `noExplicitAny: warn`, `useImportType: warn`.
 - `scripts/ops/codacy-discover-noise-patterns.mjs` Phase 0 helper script
   wired via `npm run codacy:discover-noise`.
-- Commit: `4c23e3a9 feat(codacy): phase 1 — engine surgery via biome.json + .codacy.yml`
+- Commit:
+  `4c23e3a9 feat(codacy): phase 1 — engine surgery via biome.json + .codacy.yml`
 
 ### Measured delta
 
@@ -178,7 +179,8 @@ Ratchet locked at 25,164 / 12,891 / 11,150.
   stripping NestJS reflect-metadata from constructor parameter types.
   Phase 2A.5 (deferred) will re-run biome on backend with the new
   ruleset.
-- Commit: `18bb157f chore(codacy): phase 2a — biome --write auto-fix on frontend, worker, scripts/ops`
+- Commit:
+  `18bb157f chore(codacy): phase 2a — biome --write auto-fix on frontend, worker, scripts/ops`
 
 ### Measured delta
 

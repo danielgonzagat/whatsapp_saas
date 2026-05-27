@@ -1,10 +1,12 @@
 # Reverse Engineering Viral Content
 
-Instead of guessing what works, systematically analyze top-performing content in your niche and extract proven patterns.
+Instead of guessing what works, systematically analyze top-performing content in
+your niche and extract proven patterns.
 
 ## Contents
 
-- The 6-Step Framework (Niche ID, Scrape, Analyze, Playbook, Layer Voice, Convert)
+- The 6-Step Framework (Niche ID, Scrape, Analyze, Playbook, Layer Voice,
+  Convert)
 - The Formula
 - Reverse Engineering Checklist
 

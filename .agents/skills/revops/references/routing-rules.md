@@ -1,6 +1,7 @@
 # Lead Routing Rules
 
-Decision trees, platform-specific configurations, territory routing, ABM routing, and speed-to-lead benchmarks.
+Decision trees, platform-specific configurations, territory routing, ABM
+routing, and speed-to-lead benchmarks.
 
 ## Routing Decision Tree
 
@@ -29,7 +30,8 @@ New Lead Arrives
    └─ If no rep available: Assign to team queue with 1-hour SLA
 ```
 
-Customize this tree for your business. The key principle: **route to the most specific match first, fall back to general.**
+Customize this tree for your business. The key principle: **route to the most
+specific match first, fall back to general.**
 
 ---
 
@@ -135,7 +137,8 @@ Lead arrives
 
 1. **Define target account list** (typically 50-500 accounts)
 2. **Assign account owners** in CRM (1 rep per account)
-3. **Match logic:** Any lead from a target account domain routes to account owner
+3. **Match logic:** Any lead from a target account domain routes to account
+   owner
 4. **Matching rules:**
    - Email domain match (primary)
    - Company name fuzzy match (secondary, requires manual review)
@@ -184,7 +187,8 @@ Source: Lead Connect, InsideSales.com
    - 15 min: Backup rep alerted
    - 30 min: Manager alerted
    - 1 hour: Lead reassigned to next available rep
-4. **Measure and report** — Track actual response times weekly; recognize fast responders
+4. **Measure and report** — Track actual response times weekly; recognize fast
+   responders
 
 ### Speed-to-Lead Automation
 

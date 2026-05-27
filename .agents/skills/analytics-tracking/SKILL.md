@@ -1,24 +1,38 @@
 ---
 name: analytics-tracking
-description: When the user wants to set up, improve, or audit analytics tracking and measurement. Also use when the user mentions "set up tracking," "GA4," "Google Analytics," "conversion tracking," "event tracking," "UTM parameters," "tag manager," "GTM," "analytics implementation," "tracking plan," "how do I measure this," "track conversions," "attribution," "Mixpanel," "Segment," "are my events firing," or "analytics isn't working." Use this whenever someone asks how to know if something is working or wants to measure marketing results. For A/B test measurement, see ab-test-setup.
+description: When the user wants to set up, improve, or audit analytics tracking
+and measurement. Also use when the user mentions "set up tracking," "GA4,"
+"Google Analytics," "conversion tracking," "event tracking," "UTM parameters,"
+"tag manager," "GTM," "analytics implementation," "tracking plan," "how do I
+measure this," "track conversions," "attribution," "Mixpanel," "Segment," "are
+my events firing," or "analytics isn't working." Use this whenever someone asks
+how to know if something is working or wants to measure marketing results. For
+A/B test measurement, see ab-test-setup.
 metadata:
   version: 1.1.0
 ---
 
 # Analytics Tracking
 
-You are an expert in analytics implementation and measurement. Your goal is to help set up tracking that provides actionable insights for marketing and product decisions.
+You are an expert in analytics implementation and measurement. Your goal is to
+help set up tracking that provides actionable insights for marketing and product
+decisions.
 
 ## Initial Assessment
 
 **Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+If `.agents/product-marketing-context.md` exists (or
+`.claude/product-marketing-context.md` in older setups), read it before asking
+questions. Use that context and only ask for information not already covered or
+specific to this task.
 
 Before implementing tracking, understand:
 
-1. **Business Context** - What decisions will this data inform? What are key conversions?
+1. **Business Context** - What decisions will this data inform? What are key
+   conversions?
 2. **Current State** - What tracking exists? What tools are in use?
-3. **Technical Context** - What's the tech stack? Any privacy/compliance requirements?
+3. **Technical Context** - What's the tech stack? Any privacy/compliance
+   requirements?
 
 ---
 
@@ -68,7 +82,8 @@ Event Name | Category | Properties | Trigger | Notes
 | System Events      | Signup completed, purchase, subscription changed |
 | Custom Conversions | Goal completions, funnel stages                  |
 
-**For comprehensive event lists**: See [references/event-library.md](references/event-library.md)
+**For comprehensive event lists**: See
+[references/event-library.md](references/event-library.md)
 
 ---
 
@@ -114,7 +129,8 @@ checkout_payment_completed
 | purchase_completed        | plan, value            |
 | subscription_cancelled    | reason                 |
 
-**For full event library by business type**: See [references/event-library.md](references/event-library.md)
+**For full event library by business type**: See
+[references/event-library.md](references/event-library.md)
 
 ---
 
@@ -157,7 +173,8 @@ gtag('event', 'signup_completed', {
 });
 ```
 
-**For detailed GA4 implementation**: See [references/ga4-implementation.md](references/ga4-implementation.md)
+**For detailed GA4 implementation**: See
+[references/ga4-implementation.md](references/ga4-implementation.md)
 
 ---
 
@@ -181,7 +198,8 @@ dataLayer.push({
 });
 ```
 
-**For detailed GTM implementation**: See [references/gtm-implementation.md](references/gtm-implementation.md)
+**For detailed GTM implementation**: See
+[references/gtm-implementation.md](references/gtm-implementation.md)
 
 ---
 
@@ -299,7 +317,8 @@ dataLayer.push({
 
 ## Tool Integrations
 
-For implementation, see the [tools registry](../../tools/REGISTRY.md). Key analytics tools:
+For implementation, see the [tools registry](../../tools/REGISTRY.md) . Key
+analytics tools:
 
 | Tool          | Best For                              | MCP | Guide                                                 |
 | ------------- | ------------------------------------- | :-: | ----------------------------------------------------- |

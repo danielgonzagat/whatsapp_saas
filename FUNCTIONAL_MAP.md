@@ -33,7 +33,9 @@ _Redirect to /settings_
 
 ### /analytics
 
-Files: `frontend/src/app/(main)/analytics/page.tsx`, `frontend/src/hooks/useReports.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`
+Files: `frontend/src/app/(main)/analytics/page.tsx` ,
+`frontend/src/hooks/useReports.ts` , `frontend/src/lib/fetcher.ts` ,
+`frontend/src/lib/api.ts`
 Status: 2 funciona, 7 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 **Data Sources:**
@@ -57,7 +59,10 @@ Status: 2 funciona, 7 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 ### /anuncios
 
-Files: `frontend/src/app/(main)/anuncios/page.tsx`, `frontend/src/components/kloel/anuncios/AnunciosView.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/lib/api/meta.ts` +1 more
+Files: `frontend/src/app/(main)/anuncios/page.tsx` ,
+`frontend/src/components/kloel/anuncios/AnunciosView.tsx` ,
+`frontend/src/lib/fetcher.ts` , `frontend/src/lib/api.ts` ,
+`frontend/src/lib/api/meta.ts` +1 more
 Status: 3 funciona, 4 fachada, 0 quebrado, 4 incompleto, 0 ausente
 
 **Data Sources:**
@@ -83,7 +88,10 @@ Status: 3 funciona, 4 fachada, 0 quebrado, 4 incompleto, 0 ausente
 
 ### /anuncios/google
 
-Files: `frontend/src/app/(main)/anuncios/google/page.tsx`, `frontend/src/components/kloel/anuncios/AnunciosView.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/lib/api/meta.ts` +1 more
+Files: `frontend/src/app/(main)/anuncios/google/page.tsx` ,
+`frontend/src/components/kloel/anuncios/AnunciosView.tsx` ,
+`frontend/src/lib/fetcher.ts` , `frontend/src/lib/api.ts` ,
+`frontend/src/lib/api/meta.ts` +1 more
 Status: 3 funciona, 4 fachada, 0 quebrado, 4 incompleto, 0 ausente
 
 **Data Sources:**
@@ -109,7 +117,10 @@ Status: 3 funciona, 4 fachada, 0 quebrado, 4 incompleto, 0 ausente
 
 ### /anuncios/meta
 
-Files: `frontend/src/app/(main)/anuncios/meta/page.tsx`, `frontend/src/components/kloel/anuncios/AnunciosView.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/lib/api/meta.ts` +1 more
+Files: `frontend/src/app/(main)/anuncios/meta/page.tsx` ,
+`frontend/src/components/kloel/anuncios/AnunciosView.tsx` ,
+`frontend/src/lib/fetcher.ts` , `frontend/src/lib/api.ts` ,
+`frontend/src/lib/api/meta.ts` +1 more
 Status: 3 funciona, 4 fachada, 0 quebrado, 4 incompleto, 0 ausente
 
 **Data Sources:**
@@ -135,7 +146,10 @@ Status: 3 funciona, 4 fachada, 0 quebrado, 4 incompleto, 0 ausente
 
 ### /anuncios/rastreamento
 
-Files: `frontend/src/app/(main)/anuncios/rastreamento/page.tsx`, `frontend/src/components/kloel/anuncios/AnunciosView.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/lib/api/meta.ts` +1 more
+Files: `frontend/src/app/(main)/anuncios/rastreamento/page.tsx` ,
+`frontend/src/components/kloel/anuncios/AnunciosView.tsx` ,
+`frontend/src/lib/fetcher.ts` , `frontend/src/lib/api.ts` ,
+`frontend/src/lib/api/meta.ts` +1 more
 Status: 3 funciona, 4 fachada, 0 quebrado, 4 incompleto, 0 ausente
 
 **Data Sources:**
@@ -161,7 +175,10 @@ Status: 3 funciona, 4 fachada, 0 quebrado, 4 incompleto, 0 ausente
 
 ### /anuncios/regras
 
-Files: `frontend/src/app/(main)/anuncios/regras/page.tsx`, `frontend/src/components/kloel/anuncios/AnunciosView.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/lib/api/meta.ts` +1 more
+Files: `frontend/src/app/(main)/anuncios/regras/page.tsx` ,
+`frontend/src/components/kloel/anuncios/AnunciosView.tsx` ,
+`frontend/src/lib/fetcher.ts` , `frontend/src/lib/api.ts` ,
+`frontend/src/lib/api/meta.ts` +1 more
 Status: 3 funciona, 4 fachada, 0 quebrado, 4 incompleto, 0 ausente
 
 **Data Sources:**
@@ -187,7 +204,10 @@ Status: 3 funciona, 4 fachada, 0 quebrado, 4 incompleto, 0 ausente
 
 ### /anuncios/tiktok
 
-Files: `frontend/src/app/(main)/anuncios/tiktok/page.tsx`, `frontend/src/components/kloel/anuncios/AnunciosView.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/lib/api/meta.ts` +1 more
+Files: `frontend/src/app/(main)/anuncios/tiktok/page.tsx` ,
+`frontend/src/components/kloel/anuncios/AnunciosView.tsx` ,
+`frontend/src/lib/fetcher.ts` , `frontend/src/lib/api.ts` ,
+`frontend/src/lib/api/meta.ts` +1 more
 Status: 3 funciona, 4 fachada, 0 quebrado, 4 incompleto, 0 ausente
 
 **Data Sources:**
@@ -213,7 +233,9 @@ Status: 3 funciona, 4 fachada, 0 quebrado, 4 incompleto, 0 ausente
 
 ### /autopilot
 
-Files: `frontend/src/app/(main)/autopilot/page.tsx`, `frontend/src/components/kloel/index.ts`, `frontend/src/lib/design-tokens.ts`, `frontend/src/hooks/useWorkspaceId.ts`, `frontend/src/lib/api.ts`
+Files: `frontend/src/app/(main)/autopilot/page.tsx` ,
+`frontend/src/components/kloel/index.ts` , `frontend/src/lib/design-tokens.ts` ,
+`frontend/src/hooks/useWorkspaceId.ts` , `frontend/src/lib/api.ts`
 Status: 0 funciona, 3 fachada, 2 quebrado, 7 incompleto, 0 ausente
 
 | Elemento                       | Tipo      | Handler              | API                              | Backend                        | Status     | Reason                                   |
@@ -233,7 +255,10 @@ Status: 0 funciona, 3 fachada, 2 quebrado, 7 incompleto, 0 ausente
 
 ### /billing
 
-Files: `frontend/src/app/(main)/billing/page.tsx`, `frontend/src/components/kloel/settings/billing-settings-section.tsx`, `frontend/src/components/ui/button.tsx`, `frontend/src/lib/utils.ts`, `frontend/src/components/ui/input.tsx` +8 more
+Files: `frontend/src/app/(main)/billing/page.tsx` ,
+`frontend/src/components/kloel/settings/billing-settings-section.tsx` ,
+`frontend/src/components/ui/button.tsx` , `frontend/src/lib/utils.ts` ,
+`frontend/src/components/ui/input.tsx` +8 more
 Status: 11 funciona, 3 fachada, 1 quebrado, 9 incompleto, 0 ausente
 
 | Elemento                       | Tipo      | Handler                   | API                                     | Backend                                 | Status     | Reason                                            |
@@ -273,7 +298,11 @@ _Redirect to /canvas/inicio_
 
 ### /canvas/editor
 
-Files: `frontend/src/app/(main)/canvas/editor/page.tsx`, `frontend/src/components/canvas/EditorErrorBoundary.tsx`, `frontend/src/components/canvas/CanvasEditor.tsx`, `frontend/src/lib/fabric/index.ts`, `frontend/src/lib/fabric/HistoryManager.ts` +19 more
+Files: `frontend/src/app/(main)/canvas/editor/page.tsx` ,
+`frontend/src/components/canvas/EditorErrorBoundary.tsx` ,
+`frontend/src/components/canvas/CanvasEditor.tsx` ,
+`frontend/src/lib/fabric/index.ts` , `frontend/src/lib/fabric/HistoryManager.ts`
++19 more
 Status: 40 funciona, 7 fachada, 1 quebrado, 7 incompleto, 0 ausente
 
 | Elemento                       | Tipo      | Handler                   | API                            | Backend                        | Status     | Reason                                   |
@@ -336,7 +365,11 @@ Status: 40 funciona, 7 fachada, 1 quebrado, 7 incompleto, 0 ausente
 
 ### /canvas/inicio
 
-Files: `frontend/src/app/(main)/canvas/inicio/page.tsx`, `frontend/src/components/canvas/CanvasIcons.tsx`, `frontend/src/components/canvas/FormatPills.tsx`, `frontend/src/lib/canvas-formats.ts`, `frontend/src/components/canvas/CreateModal.tsx` +4 more
+Files: `frontend/src/app/(main)/canvas/inicio/page.tsx` ,
+`frontend/src/components/canvas/CanvasIcons.tsx` ,
+`frontend/src/components/canvas/FormatPills.tsx` ,
+`frontend/src/lib/canvas-formats.ts` ,
+`frontend/src/components/canvas/CreateModal.tsx` +4 more
 Status: 1 funciona, 8 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 | Elemento                 | Tipo      | Handler                   | API                   | Backend            | Status     | Reason                                   |
@@ -355,7 +388,11 @@ Status: 1 funciona, 8 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 ### /canvas/modelos
 
-Files: `frontend/src/app/(main)/canvas/modelos/page.tsx`, `frontend/src/components/canvas/CanvasIcons.tsx`, `frontend/src/components/canvas/FormatCard.tsx`, `frontend/src/components/canvas/MockupSVGs.tsx`, `frontend/src/lib/canvas-formats.ts` +1 more
+Files: `frontend/src/app/(main)/canvas/modelos/page.tsx` ,
+`frontend/src/components/canvas/CanvasIcons.tsx` ,
+`frontend/src/components/canvas/FormatCard.tsx` ,
+`frontend/src/components/canvas/MockupSVGs.tsx` ,
+`frontend/src/lib/canvas-formats.ts` +1 more
 Status: 0 funciona, 3 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 | Elemento    | Tipo      | Handler                   | API                   | Backend          | Status     | Reason                                   |
@@ -368,7 +405,9 @@ Status: 0 funciona, 3 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 ### /canvas/projetos
 
-Files: `frontend/src/app/(main)/canvas/projetos/page.tsx`, `frontend/src/components/canvas/CanvasIcons.tsx`, `frontend/src/hooks/useCanvasDesigns.ts`, `frontend/src/lib/api.ts`
+Files: `frontend/src/app/(main)/canvas/projetos/page.tsx` ,
+`frontend/src/components/canvas/CanvasIcons.tsx` ,
+`frontend/src/hooks/useCanvasDesigns.ts` , `frontend/src/lib/api.ts`
 Status: 0 funciona, 3 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 | Elemento                       | Tipo      | Handler                   | API | Backend | Status  | Reason                                   |
@@ -379,7 +418,9 @@ Status: 0 funciona, 3 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 ### /carteira
 
-Files: `frontend/src/app/(main)/carteira/page.tsx`, `frontend/src/components/kloel/carteira.tsx`, `frontend/src/hooks/useWallet.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +1 more
+Files: `frontend/src/app/(main)/carteira/page.tsx` ,
+`frontend/src/components/kloel/carteira.tsx` , `frontend/src/hooks/useWallet.ts`
+, `frontend/src/lib/fetcher.ts` , `frontend/src/lib/api.ts` +1 more
 Status: 2 funciona, 15 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 **Data Sources:**
@@ -416,7 +457,9 @@ Status: 2 funciona, 15 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 ### /carteira/antecipacoes
 
-Files: `frontend/src/app/(main)/carteira/antecipacoes/page.tsx`, `frontend/src/components/kloel/carteira.tsx`, `frontend/src/hooks/useWallet.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +1 more
+Files: `frontend/src/app/(main)/carteira/antecipacoes/page.tsx` ,
+`frontend/src/components/kloel/carteira.tsx` , `frontend/src/hooks/useWallet.ts`
+, `frontend/src/lib/fetcher.ts` , `frontend/src/lib/api.ts` +1 more
 Status: 2 funciona, 15 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 **Data Sources:**
@@ -453,7 +496,9 @@ Status: 2 funciona, 15 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 ### /carteira/extrato
 
-Files: `frontend/src/app/(main)/carteira/extrato/page.tsx`, `frontend/src/components/kloel/carteira.tsx`, `frontend/src/hooks/useWallet.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +1 more
+Files: `frontend/src/app/(main)/carteira/extrato/page.tsx` ,
+`frontend/src/components/kloel/carteira.tsx` , `frontend/src/hooks/useWallet.ts`
+, `frontend/src/lib/fetcher.ts` , `frontend/src/lib/api.ts` +1 more
 Status: 2 funciona, 15 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 **Data Sources:**
@@ -490,7 +535,9 @@ Status: 2 funciona, 15 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 ### /carteira/movimentacoes
 
-Files: `frontend/src/app/(main)/carteira/movimentacoes/page.tsx`, `frontend/src/components/kloel/carteira.tsx`, `frontend/src/hooks/useWallet.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +1 more
+Files: `frontend/src/app/(main)/carteira/movimentacoes/page.tsx` ,
+`frontend/src/components/kloel/carteira.tsx` , `frontend/src/hooks/useWallet.ts`
+, `frontend/src/lib/fetcher.ts` , `frontend/src/lib/api.ts` +1 more
 Status: 2 funciona, 15 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 **Data Sources:**
@@ -527,7 +574,9 @@ Status: 2 funciona, 15 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 ### /carteira/saldo
 
-Files: `frontend/src/app/(main)/carteira/saldo/page.tsx`, `frontend/src/components/kloel/carteira.tsx`, `frontend/src/hooks/useWallet.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +1 more
+Files: `frontend/src/app/(main)/carteira/saldo/page.tsx` ,
+`frontend/src/components/kloel/carteira.tsx` , `frontend/src/hooks/useWallet.ts`
+, `frontend/src/lib/fetcher.ts` , `frontend/src/lib/api.ts` +1 more
 Status: 2 funciona, 15 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 **Data Sources:**
@@ -564,7 +613,9 @@ Status: 2 funciona, 15 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 ### /carteira/saques
 
-Files: `frontend/src/app/(main)/carteira/saques/page.tsx`, `frontend/src/components/kloel/carteira.tsx`, `frontend/src/hooks/useWallet.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +1 more
+Files: `frontend/src/app/(main)/carteira/saques/page.tsx` ,
+`frontend/src/components/kloel/carteira.tsx` , `frontend/src/hooks/useWallet.ts`
+, `frontend/src/lib/fetcher.ts` , `frontend/src/lib/api.ts` +1 more
 Status: 2 funciona, 15 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 **Data Sources:**
@@ -605,7 +656,9 @@ _Redirect to /dashboard_
 
 ### /checkout/:planId
 
-Files: `frontend/src/app/(main)/checkout/[planId]/page.tsx`, `frontend/src/hooks/useCheckoutEditor.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`
+Files: `frontend/src/app/(main)/checkout/[planId]/page.tsx` ,
+`frontend/src/hooks/useCheckoutEditor.ts` , `frontend/src/lib/fetcher.ts` ,
+`frontend/src/lib/api.ts`
 Status: 2 funciona, 24 fachada, 2 quebrado, 0 incompleto, 0 ausente
 
 **Data Sources:**
@@ -645,7 +698,9 @@ Status: 2 funciona, 24 fachada, 2 quebrado, 0 incompleto, 0 ausente
 
 ### /cia
 
-Files: `frontend/src/app/(main)/cia/page.tsx`, `frontend/src/components/kloel/index.ts`, `frontend/src/lib/design-tokens.ts`, `frontend/src/lib/api.ts`, `frontend/src/hooks/useWorkspaceId.ts`
+Files: `frontend/src/app/(main)/cia/page.tsx` ,
+`frontend/src/components/kloel/index.ts` , `frontend/src/lib/design-tokens.ts` ,
+`frontend/src/lib/api.ts` , `frontend/src/hooks/useWorkspaceId.ts`
 Status: 8 funciona, 1 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 | Elemento              | Tipo      | Handler                   | API                       | Backend        | Status   | Reason                                   |
@@ -662,7 +717,11 @@ Status: 8 funciona, 1 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 ### /dashboard
 
-Files: `frontend/src/app/(main)/dashboard/page.tsx`, `frontend/src/components/kloel/dashboard/KloelDashboard.tsx`, `frontend/src/components/kloel/auth/auth-provider.tsx`, `frontend/src/lib/api.ts`, `frontend/src/components/kloel/loading-screen.tsx` +1 more
+Files: `frontend/src/app/(main)/dashboard/page.tsx` ,
+`frontend/src/components/kloel/dashboard/KloelDashboard.tsx` ,
+`frontend/src/components/kloel/auth/auth-provider.tsx` ,
+`frontend/src/lib/api.ts` , `frontend/src/components/kloel/loading-screen.tsx`
++1 more
 Status: 0 funciona, 1 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 | Elemento    | Tipo   | Handler | API | Backend | Status  | Reason                                   |
@@ -671,7 +730,10 @@ Status: 0 funciona, 1 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 ### /ferramentas
 
-Files: `frontend/src/app/(main)/ferramentas/page.tsx`, `frontend/src/components/kloel/SectionPage.tsx`, `frontend/src/components/kloel/Card.tsx`, `frontend/src/components/kloel/Val.tsx`, `frontend/src/lib/design-tokens.ts`
+Files: `frontend/src/app/(main)/ferramentas/page.tsx` ,
+`frontend/src/components/kloel/SectionPage.tsx` ,
+`frontend/src/components/kloel/Card.tsx` ,
+`frontend/src/components/kloel/Val.tsx` , `frontend/src/lib/design-tokens.ts`
 Status: 1 funciona, 3 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 | Elemento    | Tipo      | Handler                   | API                              | Backend                        | Status   | Reason                                   |
@@ -692,7 +754,9 @@ Status: 1 funciona, 0 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 ### /ferramentas/gerencie
 
-Files: `frontend/src/app/(main)/ferramentas/gerencie/page.tsx`, `frontend/src/components/kloel/SectionPage.tsx`, `frontend/src/components/kloel/ToolCard.tsx`
+Files: `frontend/src/app/(main)/ferramentas/gerencie/page.tsx` ,
+`frontend/src/components/kloel/SectionPage.tsx` ,
+`frontend/src/components/kloel/ToolCard.tsx`
 Status: 1 funciona, 3 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 | Elemento    | Tipo      | Handler                   | API                              | Backend                        | Status   | Reason                                   |
@@ -704,7 +768,9 @@ Status: 1 funciona, 3 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 ### /ferramentas/impulsione
 
-Files: `frontend/src/app/(main)/ferramentas/impulsione/page.tsx`, `frontend/src/components/kloel/SectionPage.tsx`, `frontend/src/components/kloel/ToolCard.tsx`
+Files: `frontend/src/app/(main)/ferramentas/impulsione/page.tsx` ,
+`frontend/src/components/kloel/SectionPage.tsx` ,
+`frontend/src/components/kloel/ToolCard.tsx`
 Status: 1 funciona, 3 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 | Elemento    | Tipo      | Handler                   | API                              | Backend                        | Status   | Reason                                   |
@@ -716,7 +782,10 @@ Status: 1 funciona, 3 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 ### /ferramentas/launchpad
 
-Files: `frontend/src/app/(main)/ferramentas/launchpad/page.tsx`, `frontend/src/components/kloel/SectionPage.tsx`, `frontend/src/components/kloel/Card.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +3 more
+Files: `frontend/src/app/(main)/ferramentas/launchpad/page.tsx` ,
+`frontend/src/components/kloel/SectionPage.tsx` ,
+`frontend/src/components/kloel/Card.tsx` , `frontend/src/lib/fetcher.ts` ,
+`frontend/src/lib/api.ts` +3 more
 Status: 7 funciona, 3 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 | Elemento                       | Tipo      | Handler                   | API                              | Backend                        | Status     | Reason                                   |
@@ -736,7 +805,11 @@ Status: 7 funciona, 3 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 ### /ferramentas/ver-todas
 
-Files: `frontend/src/app/(main)/ferramentas/ver-todas/page.tsx`, `frontend/src/components/kloel/SectionPage.tsx`, `frontend/src/components/kloel/ToolCard.tsx`, `frontend/src/components/kloel/Card.tsx`, `frontend/src/components/kloel/Val.tsx` +1 more
+Files: `frontend/src/app/(main)/ferramentas/ver-todas/page.tsx` ,
+`frontend/src/components/kloel/SectionPage.tsx` ,
+`frontend/src/components/kloel/ToolCard.tsx` ,
+`frontend/src/components/kloel/Card.tsx` ,
+`frontend/src/components/kloel/Val.tsx` +1 more
 Status: 1 funciona, 4 fachada, 0 quebrado, 1 incompleto, 0 ausente
 
 | Elemento              | Tipo      | Handler                   | API                              | Backend                        | Status     | Reason                                   |
@@ -750,7 +823,11 @@ Status: 1 funciona, 4 fachada, 0 quebrado, 1 incompleto, 0 ausente
 
 ### /flow
 
-Files: `frontend/src/app/(main)/flow/page.tsx`, `frontend/src/components/flow/FlowBuilder.tsx`, `frontend/src/components/flow/FlowSidebar.tsx`, `frontend/src/components/flow/NodeProperties.tsx`, `frontend/src/components/flow/nodes/MessageNode.tsx` +11 more
+Files: `frontend/src/app/(main)/flow/page.tsx` ,
+`frontend/src/components/flow/FlowBuilder.tsx` ,
+`frontend/src/components/flow/FlowSidebar.tsx` ,
+`frontend/src/components/flow/NodeProperties.tsx` ,
+`frontend/src/components/flow/nodes/MessageNode.tsx` +11 more
 Status: 14 funciona, 1 fachada, 1 quebrado, 1 incompleto, 0 ausente
 
 | Elemento                       | Tipo      | Handler                   | API                            | Backend        | Status     | Reason                                   |
@@ -775,7 +852,8 @@ Status: 14 funciona, 1 fachada, 1 quebrado, 1 incompleto, 0 ausente
 
 ### /followups
 
-Files: `frontend/src/app/(main)/followups/page.tsx`, `frontend/src/lib/http.ts`, `frontend/src/hooks/useWorkspaceId.ts`, `frontend/src/lib/api.ts`
+Files: `frontend/src/app/(main)/followups/page.tsx` , `frontend/src/lib/http.ts`
+, `frontend/src/hooks/useWorkspaceId.ts` , `frontend/src/lib/api.ts`
 Status: 0 funciona, 1 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 | Elemento    | Tipo      | Handler       | API | Backend | Status  | Reason                                   |
@@ -784,7 +862,10 @@ Status: 0 funciona, 1 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 ### /funnels
 
-Files: `frontend/src/app/(main)/funnels/page.tsx`, `frontend/src/components/kloel/auth/auth-provider.tsx`, `frontend/src/lib/api.ts`, `frontend/src/components/kloel/loading-screen.tsx`, `frontend/src/lib/anonymous-session.ts` +1 more
+Files: `frontend/src/app/(main)/funnels/page.tsx` ,
+`frontend/src/components/kloel/auth/auth-provider.tsx` ,
+`frontend/src/lib/api.ts` , `frontend/src/components/kloel/loading-screen.tsx` ,
+`frontend/src/lib/anonymous-session.ts` +1 more
 Status: 1 funciona, 0 fachada, 0 quebrado, 1 incompleto, 0 ausente
 
 | Elemento    | Tipo      | Handler                   | API                   | Backend            | Status     | Reason                                   |
@@ -794,7 +875,10 @@ Status: 1 funciona, 0 fachada, 0 quebrado, 1 incompleto, 0 ausente
 
 ### /inbox
 
-Files: `frontend/src/app/(main)/inbox/page.tsx`, `frontend/src/components/kloel/auth/auth-provider.tsx`, `frontend/src/lib/api.ts`, `frontend/src/components/kloel/loading-screen.tsx`, `frontend/src/lib/anonymous-session.ts` +4 more
+Files: `frontend/src/app/(main)/inbox/page.tsx` ,
+`frontend/src/components/kloel/auth/auth-provider.tsx` ,
+`frontend/src/lib/api.ts` , `frontend/src/components/kloel/loading-screen.tsx` ,
+`frontend/src/lib/anonymous-session.ts` +4 more
 Status: 5 funciona, 1 fachada, 0 quebrado, 3 incompleto, 0 ausente
 
 | Elemento                       | Tipo      | Handler                   | API                            | Backend                        | Status     | Reason                                   |
@@ -811,7 +895,10 @@ Status: 5 funciona, 1 fachada, 0 quebrado, 3 incompleto, 0 ausente
 
 ### /leads
 
-Files: `frontend/src/app/(main)/leads/page.tsx`, `frontend/src/components/kloel/auth/auth-provider.tsx`, `frontend/src/lib/api.ts`, `frontend/src/components/kloel/loading-screen.tsx`, `frontend/src/lib/anonymous-session.ts` +1 more
+Files: `frontend/src/app/(main)/leads/page.tsx` ,
+`frontend/src/components/kloel/auth/auth-provider.tsx` ,
+`frontend/src/lib/api.ts` , `frontend/src/components/kloel/loading-screen.tsx` ,
+`frontend/src/lib/anonymous-session.ts` +1 more
 Status: 2 funciona, 1 fachada, 0 quebrado, 1 incompleto, 0 ausente
 
 | Elemento                       | Tipo      | Handler                   | API                       | Backend            | Status     | Reason                                   |
@@ -823,7 +910,10 @@ Status: 2 funciona, 1 fachada, 0 quebrado, 1 incompleto, 0 ausente
 
 ### /marketing
 
-Files: `frontend/src/app/(main)/marketing/page.tsx`, `frontend/src/components/kloel/marketing/MarketingView.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/hooks/useMarketing.ts` +2 more
+Files: `frontend/src/app/(main)/marketing/page.tsx` ,
+`frontend/src/components/kloel/marketing/MarketingView.tsx` ,
+`frontend/src/lib/fetcher.ts` , `frontend/src/lib/api.ts` ,
+`frontend/src/hooks/useMarketing.ts` +2 more
 Status: 2 funciona, 0 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 **Data Sources:**
@@ -849,7 +939,10 @@ Status: 2 funciona, 0 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 ### /marketing/email
 
-Files: `frontend/src/app/(main)/marketing/email/page.tsx`, `frontend/src/components/kloel/marketing/MarketingView.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/hooks/useMarketing.ts` +2 more
+Files: `frontend/src/app/(main)/marketing/email/page.tsx` ,
+`frontend/src/components/kloel/marketing/MarketingView.tsx` ,
+`frontend/src/lib/fetcher.ts` , `frontend/src/lib/api.ts` ,
+`frontend/src/hooks/useMarketing.ts` +2 more
 Status: 2 funciona, 0 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 **Data Sources:**
@@ -875,7 +968,10 @@ Status: 2 funciona, 0 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 ### /marketing/facebook
 
-Files: `frontend/src/app/(main)/marketing/facebook/page.tsx`, `frontend/src/components/kloel/marketing/MarketingView.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/hooks/useMarketing.ts` +2 more
+Files: `frontend/src/app/(main)/marketing/facebook/page.tsx` ,
+`frontend/src/components/kloel/marketing/MarketingView.tsx` ,
+`frontend/src/lib/fetcher.ts` , `frontend/src/lib/api.ts` ,
+`frontend/src/hooks/useMarketing.ts` +2 more
 Status: 2 funciona, 0 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 **Data Sources:**
@@ -901,7 +997,10 @@ Status: 2 funciona, 0 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 ### /marketing/instagram
 
-Files: `frontend/src/app/(main)/marketing/instagram/page.tsx`, `frontend/src/components/kloel/marketing/MarketingView.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/hooks/useMarketing.ts` +2 more
+Files: `frontend/src/app/(main)/marketing/instagram/page.tsx` ,
+`frontend/src/components/kloel/marketing/MarketingView.tsx` ,
+`frontend/src/lib/fetcher.ts` , `frontend/src/lib/api.ts` ,
+`frontend/src/hooks/useMarketing.ts` +2 more
 Status: 2 funciona, 0 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 **Data Sources:**
@@ -927,7 +1026,10 @@ Status: 2 funciona, 0 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 ### /marketing/tiktok
 
-Files: `frontend/src/app/(main)/marketing/tiktok/page.tsx`, `frontend/src/components/kloel/marketing/MarketingView.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/hooks/useMarketing.ts` +2 more
+Files: `frontend/src/app/(main)/marketing/tiktok/page.tsx` ,
+`frontend/src/components/kloel/marketing/MarketingView.tsx` ,
+`frontend/src/lib/fetcher.ts` , `frontend/src/lib/api.ts` ,
+`frontend/src/hooks/useMarketing.ts` +2 more
 Status: 2 funciona, 0 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 **Data Sources:**
@@ -953,7 +1055,10 @@ Status: 2 funciona, 0 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 ### /marketing/whatsapp
 
-Files: `frontend/src/app/(main)/marketing/whatsapp/page.tsx`, `frontend/src/components/kloel/marketing/MarketingView.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/hooks/useMarketing.ts` +2 more
+Files: `frontend/src/app/(main)/marketing/whatsapp/page.tsx` ,
+`frontend/src/components/kloel/marketing/MarketingView.tsx` ,
+`frontend/src/lib/fetcher.ts` , `frontend/src/lib/api.ts` ,
+`frontend/src/hooks/useMarketing.ts` +2 more
 Status: 2 funciona, 0 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 **Data Sources:**
@@ -983,7 +1088,10 @@ _Redirect to /analytics_
 
 ### /parcerias
 
-Files: `frontend/src/app/(main)/parcerias/page.tsx`, `frontend/src/components/kloel/parcerias/ParceriasView.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/hooks/usePartnerships.ts` +3 more
+Files: `frontend/src/app/(main)/parcerias/page.tsx` ,
+`frontend/src/components/kloel/parcerias/ParceriasView.tsx` ,
+`frontend/src/lib/fetcher.ts` , `frontend/src/lib/api.ts` ,
+`frontend/src/hooks/usePartnerships.ts` +3 more
 Status: 13 funciona, 0 fachada, 0 quebrado, 5 incompleto, 0 ausente
 
 **Data Sources:**
@@ -1020,7 +1128,10 @@ Status: 13 funciona, 0 fachada, 0 quebrado, 5 incompleto, 0 ausente
 
 ### /parcerias/afiliados
 
-Files: `frontend/src/app/(main)/parcerias/afiliados/page.tsx`, `frontend/src/components/kloel/parcerias/ParceriasView.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/hooks/usePartnerships.ts` +3 more
+Files: `frontend/src/app/(main)/parcerias/afiliados/page.tsx` ,
+`frontend/src/components/kloel/parcerias/ParceriasView.tsx` ,
+`frontend/src/lib/fetcher.ts` , `frontend/src/lib/api.ts` ,
+`frontend/src/hooks/usePartnerships.ts` +3 more
 Status: 13 funciona, 0 fachada, 0 quebrado, 5 incompleto, 0 ausente
 
 **Data Sources:**
@@ -1057,7 +1168,10 @@ Status: 13 funciona, 0 fachada, 0 quebrado, 5 incompleto, 0 ausente
 
 ### /parcerias/chat
 
-Files: `frontend/src/app/(main)/parcerias/chat/page.tsx`, `frontend/src/components/kloel/parcerias/ParceriasView.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/hooks/usePartnerships.ts` +3 more
+Files: `frontend/src/app/(main)/parcerias/chat/page.tsx` ,
+`frontend/src/components/kloel/parcerias/ParceriasView.tsx` ,
+`frontend/src/lib/fetcher.ts` , `frontend/src/lib/api.ts` ,
+`frontend/src/hooks/usePartnerships.ts` +3 more
 Status: 13 funciona, 0 fachada, 0 quebrado, 5 incompleto, 0 ausente
 
 **Data Sources:**
@@ -1094,7 +1208,10 @@ Status: 13 funciona, 0 fachada, 0 quebrado, 5 incompleto, 0 ausente
 
 ### /parcerias/colaboradores
 
-Files: `frontend/src/app/(main)/parcerias/colaboradores/page.tsx`, `frontend/src/components/kloel/parcerias/ParceriasView.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/hooks/usePartnerships.ts` +3 more
+Files: `frontend/src/app/(main)/parcerias/colaboradores/page.tsx` ,
+`frontend/src/components/kloel/parcerias/ParceriasView.tsx` ,
+`frontend/src/lib/fetcher.ts` , `frontend/src/lib/api.ts` ,
+`frontend/src/hooks/usePartnerships.ts` +3 more
 Status: 13 funciona, 0 fachada, 0 quebrado, 5 incompleto, 0 ausente
 
 **Data Sources:**
@@ -1135,7 +1252,9 @@ _Redirect to /carteira_
 
 ### /pricing
 
-Files: `frontend/src/app/(main)/pricing/page.tsx`, `frontend/src/components/kloel/index.ts`, `frontend/src/lib/design-tokens.ts`, `frontend/src/hooks/useWorkspaceId.ts`, `frontend/src/lib/api.ts` +4 more
+Files: `frontend/src/app/(main)/pricing/page.tsx` ,
+`frontend/src/components/kloel/index.ts` , `frontend/src/lib/design-tokens.ts` ,
+`frontend/src/hooks/useWorkspaceId.ts` , `frontend/src/lib/api.ts` +4 more
 Status: 0 funciona, 2 fachada, 1 quebrado, 0 incompleto, 0 ausente
 
 | Elemento                       | Tipo      | Handler                   | API                                     | Backend | Status   | Reason                                            |
@@ -1146,7 +1265,10 @@ Status: 0 funciona, 2 fachada, 1 quebrado, 0 incompleto, 0 ausente
 
 ### /products
 
-Files: `frontend/src/app/(main)/products/page.tsx`, `frontend/src/components/kloel/produtos/ProdutosView.tsx`, `frontend/src/hooks/useProducts.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +3 more
+Files: `frontend/src/app/(main)/products/page.tsx` ,
+`frontend/src/components/kloel/produtos/ProdutosView.tsx` ,
+`frontend/src/hooks/useProducts.ts` , `frontend/src/lib/fetcher.ts` ,
+`frontend/src/lib/api.ts` +3 more
 Status: 13 funciona, 13 fachada, 0 quebrado, 12 incompleto, 0 ausente
 
 **Data Sources:**
@@ -1201,7 +1323,10 @@ Status: 13 funciona, 13 fachada, 0 quebrado, 12 incompleto, 0 ausente
 
 ### /products/:id
 
-Files: `frontend/src/app/(main)/products/[id]/page.tsx`, `frontend/src/components/kloel/products/ProductNerveCenter.tsx`, `frontend/src/hooks/useProducts.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +2 more
+Files: `frontend/src/app/(main)/products/[id]/page.tsx` ,
+`frontend/src/components/kloel/products/ProductNerveCenter.tsx` ,
+`frontend/src/hooks/useProducts.ts` , `frontend/src/lib/fetcher.ts` ,
+`frontend/src/lib/api.ts` +2 more
 Status: 49 funciona, 0 fachada, 0 quebrado, 12 incompleto, 0 ausente
 
 **Data Sources:**
@@ -1283,7 +1408,10 @@ Status: 49 funciona, 0 fachada, 0 quebrado, 12 incompleto, 0 ausente
 
 ### /products/:id/plans/:planId
 
-Files: `frontend/src/app/(main)/products/[id]/plans/[planId]/page.tsx`, `frontend/src/components/plans/PlanStoreTab.tsx`, `frontend/src/components/kloel/FormExtras.tsx`, `frontend/src/lib/api.ts`, `frontend/src/components/kloel/ToastProvider.tsx` +9 more
+Files: `frontend/src/app/(main)/products/[id]/plans/[planId]/page.tsx` ,
+`frontend/src/components/plans/PlanStoreTab.tsx` ,
+`frontend/src/components/kloel/FormExtras.tsx` , `frontend/src/lib/api.ts` ,
+`frontend/src/components/kloel/ToastProvider.tsx` +9 more
 Status: 30 funciona, 3 fachada, 3 quebrado, 8 incompleto, 0 ausente
 
 **Data Sources:**
@@ -1345,7 +1473,9 @@ Status: 30 funciona, 3 fachada, 3 quebrado, 8 incompleto, 0 ausente
 
 ### /products/new
 
-Files: `frontend/src/app/(main)/products/new/page.tsx`, `frontend/src/lib/design-tokens.ts`, `frontend/src/lib/api.ts`, `frontend/src/hooks/useWorkspaceId.ts`, `frontend/src/lib/categories.ts`
+Files: `frontend/src/app/(main)/products/new/page.tsx` ,
+`frontend/src/lib/design-tokens.ts` , `frontend/src/lib/api.ts` ,
+`frontend/src/hooks/useWorkspaceId.ts` , `frontend/src/lib/categories.ts`
 Status: 3 funciona, 0 fachada, 1 quebrado, 8 incompleto, 0 ausente
 
 | Elemento                    | Tipo      | Handler                   | API                              | Backend                        | Status     | Reason                                   |
@@ -1365,7 +1495,10 @@ Status: 3 funciona, 0 fachada, 1 quebrado, 8 incompleto, 0 ausente
 
 ### /produtos/afiliar-se
 
-Files: `frontend/src/app/(main)/produtos/afiliar-se/page.tsx`, `frontend/src/components/kloel/produtos/ProdutosView.tsx`, `frontend/src/hooks/useProducts.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +3 more
+Files: `frontend/src/app/(main)/produtos/afiliar-se/page.tsx` ,
+`frontend/src/components/kloel/produtos/ProdutosView.tsx` ,
+`frontend/src/hooks/useProducts.ts` , `frontend/src/lib/fetcher.ts` ,
+`frontend/src/lib/api.ts` +3 more
 Status: 13 funciona, 13 fachada, 0 quebrado, 12 incompleto, 0 ausente
 
 **Data Sources:**
@@ -1420,7 +1553,10 @@ Status: 13 funciona, 13 fachada, 0 quebrado, 12 incompleto, 0 ausente
 
 ### /produtos/area-membros
 
-Files: `frontend/src/app/(main)/produtos/area-membros/page.tsx`, `frontend/src/components/kloel/produtos/ProdutosView.tsx`, `frontend/src/hooks/useProducts.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +3 more
+Files: `frontend/src/app/(main)/produtos/area-membros/page.tsx` ,
+`frontend/src/components/kloel/produtos/ProdutosView.tsx` ,
+`frontend/src/hooks/useProducts.ts` , `frontend/src/lib/fetcher.ts` ,
+`frontend/src/lib/api.ts` +3 more
 Status: 13 funciona, 13 fachada, 0 quebrado, 12 incompleto, 0 ausente
 
 **Data Sources:**
@@ -1475,7 +1611,8 @@ Status: 13 funciona, 13 fachada, 0 quebrado, 12 incompleto, 0 ausente
 
 ### /produtos/area-membros/preview/:areaId
 
-Files: `frontend/src/app/(main)/produtos/area-membros/preview/[areaId]/page.tsx`, `frontend/src/lib/api.ts`
+Files: `frontend/src/app/(main)/produtos/area-membros/preview/[areaId]/page.tsx`
+, `frontend/src/lib/api.ts`
 Status: 2 funciona, 0 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 | Elemento    | Tipo      | Handler                   | API                       | Backend        | Status   | Reason                |
@@ -1489,7 +1626,10 @@ _Redirect to /vendas_
 
 ### /scrapers
 
-Files: `frontend/src/app/(main)/scrapers/page.tsx`, `frontend/src/components/kloel/SectionPage.tsx`, `frontend/src/components/kloel/Card.tsx`, `frontend/src/hooks/useScrapers.ts`, `frontend/src/lib/fetcher.ts` +7 more
+Files: `frontend/src/app/(main)/scrapers/page.tsx` ,
+`frontend/src/components/kloel/SectionPage.tsx` ,
+`frontend/src/components/kloel/Card.tsx` , `frontend/src/hooks/useScrapers.ts` ,
+`frontend/src/lib/fetcher.ts` +7 more
 Status: 7 funciona, 5 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 **Data Sources:**
@@ -1514,7 +1654,10 @@ Status: 7 funciona, 5 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 ### /settings
 
-Files: `frontend/src/app/(main)/settings/page.tsx`, `frontend/src/components/kloel/conta/ContaView.tsx`, `frontend/src/lib/api/core.ts`, `frontend/src/lib/http.ts`, `frontend/src/hooks/useKyc.ts` +3 more
+Files: `frontend/src/app/(main)/settings/page.tsx` ,
+`frontend/src/components/kloel/conta/ContaView.tsx` ,
+`frontend/src/lib/api/core.ts` , `frontend/src/lib/http.ts` ,
+`frontend/src/hooks/useKyc.ts` +3 more
 Status: 15 funciona, 0 fachada, 6 quebrado, 9 incompleto, 0 ausente
 
 **Data Sources:**
@@ -1562,7 +1705,9 @@ Status: 15 funciona, 0 fachada, 6 quebrado, 9 incompleto, 0 ausente
 
 ### /sites
 
-Files: `frontend/src/app/(main)/sites/page.tsx`, `frontend/src/components/kloel/sites/SitesView.tsx`, `frontend/src/lib/api.ts`, `frontend/src/hooks/useProducts.ts`, `frontend/src/lib/fetcher.ts` +1 more
+Files: `frontend/src/app/(main)/sites/page.tsx` ,
+`frontend/src/components/kloel/sites/SitesView.tsx` , `frontend/src/lib/api.ts`
+, `frontend/src/hooks/useProducts.ts` , `frontend/src/lib/fetcher.ts` +1 more
 Status: 19 funciona, 0 fachada, 0 quebrado, 9 incompleto, 0 ausente
 
 **Data Sources:**
@@ -1604,7 +1749,9 @@ Status: 19 funciona, 0 fachada, 0 quebrado, 9 incompleto, 0 ausente
 
 ### /sites/apps
 
-Files: `frontend/src/app/(main)/sites/apps/page.tsx`, `frontend/src/components/kloel/sites/SitesView.tsx`, `frontend/src/lib/api.ts`, `frontend/src/hooks/useProducts.ts`, `frontend/src/lib/fetcher.ts` +1 more
+Files: `frontend/src/app/(main)/sites/apps/page.tsx` ,
+`frontend/src/components/kloel/sites/SitesView.tsx` , `frontend/src/lib/api.ts`
+, `frontend/src/hooks/useProducts.ts` , `frontend/src/lib/fetcher.ts` +1 more
 Status: 19 funciona, 0 fachada, 0 quebrado, 9 incompleto, 0 ausente
 
 **Data Sources:**
@@ -1646,7 +1793,9 @@ Status: 19 funciona, 0 fachada, 0 quebrado, 9 incompleto, 0 ausente
 
 ### /sites/criar
 
-Files: `frontend/src/app/(main)/sites/criar/page.tsx`, `frontend/src/components/kloel/sites/SitesView.tsx`, `frontend/src/lib/api.ts`, `frontend/src/hooks/useProducts.ts`, `frontend/src/lib/fetcher.ts` +1 more
+Files: `frontend/src/app/(main)/sites/criar/page.tsx` ,
+`frontend/src/components/kloel/sites/SitesView.tsx` , `frontend/src/lib/api.ts`
+, `frontend/src/hooks/useProducts.ts` , `frontend/src/lib/fetcher.ts` +1 more
 Status: 19 funciona, 0 fachada, 0 quebrado, 9 incompleto, 0 ausente
 
 **Data Sources:**
@@ -1688,7 +1837,9 @@ Status: 19 funciona, 0 fachada, 0 quebrado, 9 incompleto, 0 ausente
 
 ### /sites/dominios
 
-Files: `frontend/src/app/(main)/sites/dominios/page.tsx`, `frontend/src/components/kloel/sites/SitesView.tsx`, `frontend/src/lib/api.ts`, `frontend/src/hooks/useProducts.ts`, `frontend/src/lib/fetcher.ts` +1 more
+Files: `frontend/src/app/(main)/sites/dominios/page.tsx` ,
+`frontend/src/components/kloel/sites/SitesView.tsx` , `frontend/src/lib/api.ts`
+, `frontend/src/hooks/useProducts.ts` , `frontend/src/lib/fetcher.ts` +1 more
 Status: 19 funciona, 0 fachada, 0 quebrado, 9 incompleto, 0 ausente
 
 **Data Sources:**
@@ -1730,7 +1881,9 @@ Status: 19 funciona, 0 fachada, 0 quebrado, 9 incompleto, 0 ausente
 
 ### /sites/editar
 
-Files: `frontend/src/app/(main)/sites/editar/page.tsx`, `frontend/src/components/kloel/sites/SitesView.tsx`, `frontend/src/lib/api.ts`, `frontend/src/hooks/useProducts.ts`, `frontend/src/lib/fetcher.ts` +1 more
+Files: `frontend/src/app/(main)/sites/editar/page.tsx` ,
+`frontend/src/components/kloel/sites/SitesView.tsx` , `frontend/src/lib/api.ts`
+, `frontend/src/hooks/useProducts.ts` , `frontend/src/lib/fetcher.ts` +1 more
 Status: 19 funciona, 0 fachada, 0 quebrado, 9 incompleto, 0 ausente
 
 **Data Sources:**
@@ -1772,7 +1925,9 @@ Status: 19 funciona, 0 fachada, 0 quebrado, 9 incompleto, 0 ausente
 
 ### /sites/hospedagem
 
-Files: `frontend/src/app/(main)/sites/hospedagem/page.tsx`, `frontend/src/components/kloel/sites/SitesView.tsx`, `frontend/src/lib/api.ts`, `frontend/src/hooks/useProducts.ts`, `frontend/src/lib/fetcher.ts` +1 more
+Files: `frontend/src/app/(main)/sites/hospedagem/page.tsx` ,
+`frontend/src/components/kloel/sites/SitesView.tsx` , `frontend/src/lib/api.ts`
+, `frontend/src/hooks/useProducts.ts` , `frontend/src/lib/fetcher.ts` +1 more
 Status: 19 funciona, 0 fachada, 0 quebrado, 9 incompleto, 0 ausente
 
 **Data Sources:**
@@ -1814,7 +1969,9 @@ Status: 19 funciona, 0 fachada, 0 quebrado, 9 incompleto, 0 ausente
 
 ### /sites/protecao
 
-Files: `frontend/src/app/(main)/sites/protecao/page.tsx`, `frontend/src/components/kloel/sites/SitesView.tsx`, `frontend/src/lib/api.ts`, `frontend/src/hooks/useProducts.ts`, `frontend/src/lib/fetcher.ts` +1 more
+Files: `frontend/src/app/(main)/sites/protecao/page.tsx` ,
+`frontend/src/components/kloel/sites/SitesView.tsx` , `frontend/src/lib/api.ts`
+, `frontend/src/hooks/useProducts.ts` , `frontend/src/lib/fetcher.ts` +1 more
 Status: 19 funciona, 0 fachada, 0 quebrado, 9 incompleto, 0 ausente
 
 **Data Sources:**
@@ -1860,7 +2017,10 @@ _Redirect to /ferramentas_
 
 ### /vendas
 
-Files: `frontend/src/app/(main)/vendas/page.tsx`, `frontend/src/components/kloel/vendas/VendasView.tsx`, `frontend/src/hooks/useSales.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +7 more
+Files: `frontend/src/app/(main)/vendas/page.tsx` ,
+`frontend/src/components/kloel/vendas/VendasView.tsx` ,
+`frontend/src/hooks/useSales.ts` , `frontend/src/lib/fetcher.ts` ,
+`frontend/src/lib/api.ts` +7 more
 Status: 32 funciona, 0 fachada, 1 quebrado, 3 incompleto, 0 ausente
 
 **Data Sources:**
@@ -1922,7 +2082,10 @@ Status: 32 funciona, 0 fachada, 1 quebrado, 3 incompleto, 0 ausente
 
 ### /vendas/assinaturas
 
-Files: `frontend/src/app/(main)/vendas/assinaturas/page.tsx`, `frontend/src/components/kloel/vendas/VendasView.tsx`, `frontend/src/hooks/useSales.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +7 more
+Files: `frontend/src/app/(main)/vendas/assinaturas/page.tsx` ,
+`frontend/src/components/kloel/vendas/VendasView.tsx` ,
+`frontend/src/hooks/useSales.ts` , `frontend/src/lib/fetcher.ts` ,
+`frontend/src/lib/api.ts` +7 more
 Status: 32 funciona, 0 fachada, 1 quebrado, 3 incompleto, 0 ausente
 
 **Data Sources:**
@@ -1984,7 +2147,10 @@ Status: 32 funciona, 0 fachada, 1 quebrado, 3 incompleto, 0 ausente
 
 ### /vendas/fisicos
 
-Files: `frontend/src/app/(main)/vendas/fisicos/page.tsx`, `frontend/src/components/kloel/vendas/VendasView.tsx`, `frontend/src/hooks/useSales.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +7 more
+Files: `frontend/src/app/(main)/vendas/fisicos/page.tsx` ,
+`frontend/src/components/kloel/vendas/VendasView.tsx` ,
+`frontend/src/hooks/useSales.ts` , `frontend/src/lib/fetcher.ts` ,
+`frontend/src/lib/api.ts` +7 more
 Status: 32 funciona, 0 fachada, 1 quebrado, 3 incompleto, 0 ausente
 
 **Data Sources:**
@@ -2046,7 +2212,9 @@ Status: 32 funciona, 0 fachada, 1 quebrado, 3 incompleto, 0 ausente
 
 ### /vendas/gestao-vendas
 
-Files: `frontend/src/app/(main)/vendas/gestao-vendas/page.tsx`, `frontend/src/hooks/useCRM.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/lib/normalizer.ts` +5 more
+Files: `frontend/src/app/(main)/vendas/gestao-vendas/page.tsx` ,
+`frontend/src/hooks/useCRM.ts` , `frontend/src/lib/fetcher.ts` ,
+`frontend/src/lib/api.ts` , `frontend/src/lib/normalizer.ts` +5 more
 Status: 5 funciona, 1 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 **Data Sources:**
@@ -2067,7 +2235,10 @@ Status: 5 funciona, 1 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 ### /vendas/pipeline
 
-Files: `frontend/src/app/(main)/vendas/pipeline/page.tsx`, `frontend/src/components/kloel/vendas/VendasView.tsx`, `frontend/src/hooks/useSales.ts`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts` +7 more
+Files: `frontend/src/app/(main)/vendas/pipeline/page.tsx` ,
+`frontend/src/components/kloel/vendas/VendasView.tsx` ,
+`frontend/src/hooks/useSales.ts` , `frontend/src/lib/fetcher.ts` ,
+`frontend/src/lib/api.ts` +7 more
 Status: 32 funciona, 0 fachada, 1 quebrado, 3 incompleto, 0 ausente
 
 **Data Sources:**
@@ -2129,7 +2300,9 @@ Status: 32 funciona, 0 fachada, 1 quebrado, 3 incompleto, 0 ausente
 
 ### /video
 
-Files: `frontend/src/app/(main)/video/page.tsx`, `frontend/src/lib/fetcher.ts`, `frontend/src/lib/api.ts`, `frontend/src/components/kloel/SectionPage.tsx`, `frontend/src/components/kloel/Card.tsx` +6 more
+Files: `frontend/src/app/(main)/video/page.tsx` , `frontend/src/lib/fetcher.ts`
+, `frontend/src/lib/api.ts` , `frontend/src/components/kloel/SectionPage.tsx` ,
+`frontend/src/components/kloel/Card.tsx` +6 more
 Status: 6 funciona, 5 fachada, 0 quebrado, 4 incompleto, 0 ausente
 
 **Data Sources:**
@@ -2156,7 +2329,10 @@ Status: 6 funciona, 5 fachada, 0 quebrado, 4 incompleto, 0 ausente
 
 ### /webinarios
 
-Files: `frontend/src/app/(main)/webinarios/page.tsx`, `frontend/src/components/kloel/auth/auth-provider.tsx`, `frontend/src/lib/api.ts`, `frontend/src/components/kloel/loading-screen.tsx`, `frontend/src/lib/anonymous-session.ts` +4 more
+Files: `frontend/src/app/(main)/webinarios/page.tsx` ,
+`frontend/src/components/kloel/auth/auth-provider.tsx` ,
+`frontend/src/lib/api.ts` , `frontend/src/components/kloel/loading-screen.tsx` ,
+`frontend/src/lib/anonymous-session.ts` +4 more
 Status: 16 funciona, 0 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 | Elemento    | Tipo      | Handler                   | API                       | Backend           | Status     | Reason                                   |
@@ -2182,7 +2358,10 @@ Status: 16 funciona, 0 fachada, 0 quebrado, 2 incompleto, 0 ausente
 
 ### /whatsapp
 
-Files: `frontend/src/app/(main)/whatsapp/page.tsx`, `frontend/src/components/kloel/AgentDesktopViewer.tsx`, `frontend/src/lib/api.ts`, `frontend/src/lib/anonymous-session.ts`, `frontend/src/lib/api/index.ts` +4 more
+Files: `frontend/src/app/(main)/whatsapp/page.tsx` ,
+`frontend/src/components/kloel/AgentDesktopViewer.tsx` ,
+`frontend/src/lib/api.ts` , `frontend/src/lib/anonymous-session.ts` ,
+`frontend/src/lib/api/index.ts` +4 more
 Status: 4 funciona, 5 fachada, 1 quebrado, 4 incompleto, 0 ausente
 
 | Elemento                       | Tipo      | Handler                   | API                            | Backend                        | Status     | Reason                                   |
@@ -2206,7 +2385,10 @@ Status: 4 funciona, 5 fachada, 1 quebrado, 4 incompleto, 0 ausente
 
 ### /
 
-Files: `frontend/src/app/(public)/page.tsx`, `frontend/src/components/kloel/auth/auth-provider.tsx`, `frontend/src/lib/api.ts`, `frontend/src/components/kloel/loading-screen.tsx`, `frontend/src/lib/anonymous-session.ts` +5 more
+Files: `frontend/src/app/(public)/page.tsx` ,
+`frontend/src/components/kloel/auth/auth-provider.tsx` ,
+`frontend/src/lib/api.ts` , `frontend/src/components/kloel/loading-screen.tsx` ,
+`frontend/src/lib/anonymous-session.ts` +5 more
 Status: 2 funciona, 0 fachada, 1 quebrado, 1 incompleto, 0 ausente
 
 | Elemento    | Tipo      | Handler                   | API                                | Backend                        | Status     | Reason                                       |
@@ -2218,7 +2400,11 @@ Status: 2 funciona, 0 fachada, 1 quebrado, 1 incompleto, 0 ausente
 
 ### /login
 
-Files: `frontend/src/app/(public)/login/page.tsx`, `frontend/src/components/kloel/auth/kloel-auth-screen.tsx`, `frontend/src/lib/api.ts`, `frontend/src/components/kloel/auth/auth-provider.tsx`, `frontend/src/components/kloel/loading-screen.tsx` +2 more
+Files: `frontend/src/app/(public)/login/page.tsx` ,
+`frontend/src/components/kloel/auth/kloel-auth-screen.tsx` ,
+`frontend/src/lib/api.ts` ,
+`frontend/src/components/kloel/auth/auth-provider.tsx` ,
+`frontend/src/components/kloel/loading-screen.tsx` +2 more
 Status: 3 funciona, 0 fachada, 1 quebrado, 0 incompleto, 0 ausente
 
 | Elemento          | Tipo      | Handler                   | API                            | Backend | Status   | Reason                                   |
@@ -2239,7 +2425,10 @@ Status: 1 funciona, 0 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 ### /onboarding-chat
 
-Files: `frontend/src/app/(public)/onboarding-chat/page.tsx`, `frontend/src/lib/http.ts`, `frontend/src/lib/api.ts`, `frontend/src/components/kloel/auth/auth-provider.tsx`, `frontend/src/components/kloel/loading-screen.tsx` +2 more
+Files: `frontend/src/app/(public)/onboarding-chat/page.tsx` ,
+`frontend/src/lib/http.ts` , `frontend/src/lib/api.ts` ,
+`frontend/src/components/kloel/auth/auth-provider.tsx` ,
+`frontend/src/components/kloel/loading-screen.tsx` +2 more
 Status: 0 funciona, 0 fachada, 0 quebrado, 1 incompleto, 0 ausente
 
 | Elemento    | Tipo      | Handler     | API                            | Backend                       | Status     | Reason                                   |
@@ -2255,7 +2444,8 @@ _No interactive elements detected_
 
 ### /privacy
 
-Files: `frontend/src/app/(public)/privacy/page.tsx`, `frontend/src/lib/design-tokens.ts`
+Files: `frontend/src/app/(public)/privacy/page.tsx` ,
+`frontend/src/lib/design-tokens.ts`
 Status: 1 funciona, 0 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 | Elemento    | Tipo      | Handler             | API | Backend | Status   | Reason                                   |
@@ -2264,7 +2454,11 @@ Status: 1 funciona, 0 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 ### /register
 
-Files: `frontend/src/app/(public)/register/page.tsx`, `frontend/src/components/kloel/auth/kloel-auth-screen.tsx`, `frontend/src/lib/api.ts`, `frontend/src/components/kloel/auth/auth-provider.tsx`, `frontend/src/components/kloel/loading-screen.tsx` +2 more
+Files: `frontend/src/app/(public)/register/page.tsx` ,
+`frontend/src/components/kloel/auth/kloel-auth-screen.tsx` ,
+`frontend/src/lib/api.ts` ,
+`frontend/src/components/kloel/auth/auth-provider.tsx` ,
+`frontend/src/components/kloel/loading-screen.tsx` +2 more
 Status: 3 funciona, 0 fachada, 1 quebrado, 0 incompleto, 0 ausente
 
 | Elemento          | Tipo      | Handler                   | API                            | Backend | Status   | Reason                                   |
@@ -2276,7 +2470,8 @@ Status: 3 funciona, 0 fachada, 1 quebrado, 0 incompleto, 0 ausente
 
 ### /terms
 
-Files: `frontend/src/app/(public)/terms/page.tsx`, `frontend/src/lib/design-tokens.ts`
+Files: `frontend/src/app/(public)/terms/page.tsx` ,
+`frontend/src/lib/design-tokens.ts`
 Status: 1 funciona, 0 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 | Elemento    | Tipo      | Handler             | API | Backend | Status   | Reason                                   |
@@ -2287,7 +2482,11 @@ Status: 1 funciona, 0 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 ### /:slug
 
-Files: `frontend/src/app/(checkout)/[slug]/page.tsx`, `frontend/src/app/(checkout)/[slug]/CheckoutClient.tsx`, `frontend/src/app/(checkout)/components/CheckoutShell.tsx`, `frontend/src/lib/http.ts`, `frontend/src/app/(checkout)/components/CheckoutNoir.tsx` +1 more
+Files: `frontend/src/app/(checkout)/[slug]/page.tsx` ,
+`frontend/src/app/(checkout)/[slug]/CheckoutClient.tsx` ,
+`frontend/src/app/(checkout)/components/CheckoutShell.tsx` ,
+`frontend/src/lib/http.ts` ,
+`frontend/src/app/(checkout)/components/CheckoutNoir.tsx` +1 more
 Status: 30 funciona, 0 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 | Elemento           | Tipo      | Handler                   | API | Backend | Status   | Reason                                   |
@@ -2325,7 +2524,8 @@ Status: 30 funciona, 0 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 ### /order/:orderId/boleto
 
-Files: `frontend/src/app/(checkout)/order/[orderId]/boleto/page.tsx`, `frontend/src/app/(checkout)/hooks/useCheckout.ts`, `frontend/src/lib/http.ts`
+Files: `frontend/src/app/(checkout)/order/[orderId]/boleto/page.tsx` ,
+`frontend/src/app/(checkout)/hooks/useCheckout.ts` , `frontend/src/lib/http.ts`
 Status: 1 funciona, 0 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 | Elemento    | Tipo      | Handler    | API | Backend | Status   | Reason                                   |
@@ -2334,7 +2534,8 @@ Status: 1 funciona, 0 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 ### /order/:orderId/pix
 
-Files: `frontend/src/app/(checkout)/order/[orderId]/pix/page.tsx`, `frontend/src/app/(checkout)/hooks/useCheckout.ts`, `frontend/src/lib/http.ts`
+Files: `frontend/src/app/(checkout)/order/[orderId]/pix/page.tsx` ,
+`frontend/src/app/(checkout)/hooks/useCheckout.ts` , `frontend/src/lib/http.ts`
 Status: 1 funciona, 0 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 | Elemento    | Tipo      | Handler    | API | Backend | Status   | Reason                                   |
@@ -2343,14 +2544,16 @@ Status: 1 funciona, 0 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 ### /order/:orderId/success
 
-Files: `frontend/src/app/(checkout)/order/[orderId]/success/page.tsx`, `frontend/src/app/(checkout)/hooks/useCheckout.ts`, `frontend/src/lib/http.ts`
+Files: `frontend/src/app/(checkout)/order/[orderId]/success/page.tsx` ,
+`frontend/src/app/(checkout)/hooks/useCheckout.ts` , `frontend/src/lib/http.ts`
 Status: 0 funciona, 0 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 _No interactive elements detected_
 
 ### /order/:orderId/upsell
 
-Files: `frontend/src/app/(checkout)/order/[orderId]/upsell/page.tsx`, `frontend/src/lib/http.ts`, `frontend/src/app/(checkout)/hooks/useCheckout.ts`
+Files: `frontend/src/app/(checkout)/order/[orderId]/upsell/page.tsx` ,
+`frontend/src/lib/http.ts` , `frontend/src/app/(checkout)/hooks/useCheckout.ts`
 Status: 0 funciona, 2 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 | Elemento    | Tipo      | Handler       | API | Backend | Status  | Reason                                   |
@@ -2360,7 +2563,11 @@ Status: 0 funciona, 2 fachada, 0 quebrado, 0 incompleto, 0 ausente
 
 ### /preview/:planId
 
-Files: `frontend/src/app/(checkout)/preview/[planId]/page.tsx`, `frontend/src/app/(checkout)/components/CheckoutNoir.tsx`, `frontend/src/components/checkout/SocialProofToast.tsx`, `frontend/src/lib/http.ts`, `frontend/src/components/checkout/KloelChatBubble.tsx` +7 more
+Files: `frontend/src/app/(checkout)/preview/[planId]/page.tsx` ,
+`frontend/src/app/(checkout)/components/CheckoutNoir.tsx` ,
+`frontend/src/components/checkout/SocialProofToast.tsx` ,
+`frontend/src/lib/http.ts` ,
+`frontend/src/components/checkout/KloelChatBubble.tsx` +7 more
 Status: 34 funciona, 2 fachada, 0 quebrado, 1 incompleto, 0 ausente
 
 | Elemento                       | Tipo      | Handler                   | API                            | Backend                       | Status     | Reason                                   |
@@ -2405,7 +2612,11 @@ Status: 34 funciona, 2 fachada, 0 quebrado, 1 incompleto, 0 ausente
 
 ### /r/:code
 
-Files: `frontend/src/app/(checkout)/r/[code]/page.tsx`, `frontend/src/app/(checkout)/components/CheckoutShell.tsx`, `frontend/src/lib/http.ts`, `frontend/src/app/(checkout)/components/CheckoutNoir.tsx`, `frontend/src/components/checkout/SocialProofToast.tsx` +8 more
+Files: `frontend/src/app/(checkout)/r/[code]/page.tsx` ,
+`frontend/src/app/(checkout)/components/CheckoutShell.tsx` ,
+`frontend/src/lib/http.ts` ,
+`frontend/src/app/(checkout)/components/CheckoutNoir.tsx` ,
+`frontend/src/components/checkout/SocialProofToast.tsx` +8 more
 Status: 34 funciona, 2 fachada, 0 quebrado, 1 incompleto, 0 ausente
 
 | Elemento                       | Tipo      | Handler                   | API                            | Backend                       | Status     | Reason                                   |
@@ -2452,7 +2663,10 @@ Status: 34 funciona, 2 fachada, 0 quebrado, 1 incompleto, 0 ausente
 
 ### /e2e/whatsapp-console
 
-Files: `frontend/src/app/e2e/whatsapp-console/page.tsx`, `frontend/src/components/kloel/WhatsAppConsole.tsx`, `frontend/src/lib/utils.ts`, `frontend/src/lib/design-tokens.ts`, `frontend/src/lib/api.ts` +3 more
+Files: `frontend/src/app/e2e/whatsapp-console/page.tsx` ,
+`frontend/src/components/kloel/WhatsAppConsole.tsx` ,
+`frontend/src/lib/utils.ts` , `frontend/src/lib/design-tokens.ts` ,
+`frontend/src/lib/api.ts` +3 more
 Status: 1 funciona, 3 fachada, 0 quebrado, 3 incompleto, 0 ausente
 
 | Elemento                       | Tipo      | Handler                   | API                                | Backend                            | Status     | Reason                                       |
@@ -2467,7 +2681,9 @@ Status: 1 funciona, 3 fachada, 0 quebrado, 3 incompleto, 0 ausente
 
 ### /e2e/whatsapp-session
 
-Files: `frontend/src/app/e2e/whatsapp-session/page.tsx`, `frontend/src/hooks/useWhatsAppSession.ts`, `frontend/src/lib/api.ts`, `frontend/src/lib/anonymous-session.ts`, `frontend/src/lib/api/index.ts`
+Files: `frontend/src/app/e2e/whatsapp-session/page.tsx` ,
+`frontend/src/hooks/useWhatsAppSession.ts` , `frontend/src/lib/api.ts` ,
+`frontend/src/lib/anonymous-session.ts` , `frontend/src/lib/api/index.ts`
 Status: 0 funciona, 0 fachada, 0 quebrado, 1 incompleto, 0 ausente
 
 | Elemento    | Tipo      | Handler | API                                | Backend                            | Status     | Reason                                       |

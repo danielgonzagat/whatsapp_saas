@@ -56,7 +56,7 @@ Use Google's predefined events when possible for enhanced reporting:
 - level_up, unlock_achievement
 - post_score, spend_virtual_currency
 
-Reference: https://support.google.com/analytics/answer/9267735
+Reference: <https://support.google.com/analytics/answer/9267735>
 
 ---
 
@@ -278,7 +278,8 @@ Reports > Real-time
 
 ### Filters
 
-Admin > Data streams > [Stream] > Configure tag settings > Define internal traffic
+Admin > Data streams > [Stream] > Configure tag settings > Define internal
+traffic
 
 **Exclude:**
 

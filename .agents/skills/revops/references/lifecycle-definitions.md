@@ -1,6 +1,7 @@
 # Lifecycle Stage Definitions
 
-Complete templates for lead lifecycle stages, MQL criteria by business type, SLAs, and rejection/recycling workflows.
+Complete templates for lead lifecycle stages, MQL criteria by business type,
+SLAs, and rejection/recycling workflows.
 
 ## Stage Templates
 
@@ -288,7 +289,8 @@ Complete templates for lead lifecycle stages, MQL criteria by business type, SLA
 2. CRM updates lifecycle stage to "Recycled"
 3. Lead enters recycling nurture sequence (different from original nurture)
 4. Engagement score resets to baseline (keep fit score)
-5. If lead re-engages and crosses MQL threshold, re-route to sales with "Recycled MQL" flag
+5. If lead re-engages and crosses MQL threshold, re-route to sales with
+   "Recycled MQL" flag
 6. Track recycled MQL conversion rate separately
 
 ### Recycling Nurture Sequence

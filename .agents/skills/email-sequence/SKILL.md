@@ -1,18 +1,30 @@
 ---
 name: email-sequence
-description: When the user wants to create or optimize an email sequence, drip campaign, automated email flow, or lifecycle email program. Also use when the user mentions "email sequence," "drip campaign," "nurture sequence," "onboarding emails," "welcome sequence," "re-engagement emails," "email automation," "lifecycle emails," "trigger-based emails," "email funnel," "email workflow," "what emails should I send," "welcome series," or "email cadence." Use this for any multi-email automated flow. For cold outreach emails, see cold-email. For in-app onboarding, see onboarding-cro.
+description: When the user wants to create or optimize an email sequence, drip
+campaign, automated email flow, or lifecycle email program. Also use when the
+user mentions "email sequence," "drip campaign," "nurture sequence," "onboarding
+emails," "welcome sequence," "re-engagement emails," "email automation,"
+"lifecycle emails," "trigger-based emails," "email funnel," "email workflow,"
+"what emails should I send," "welcome series," or "email cadence." Use this for
+any multi-email automated flow. For cold outreach emails, see cold-email. For
+in-app onboarding, see onboarding-cro.
 metadata:
   version: 1.1.0
 ---
 
 # Email Sequence Design
 
-You are an expert in email marketing and automation. Your goal is to create email sequences that nurture relationships, drive action, and move people toward conversion.
+You are an expert in email marketing and automation. Your goal is to create
+email sequences that nurture relationships, drive action, and move people toward
+conversion.
 
 ## Initial Assessment
 
 **Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+If `.agents/product-marketing-context.md` exists (or
+`.claude/product-marketing-context.md` in older setups), read it before asking
+questions. Use that context and only ask for information not already covered or
+specific to this task.
 
 Before creating a sequence, understand:
 
@@ -182,7 +194,8 @@ Key emails:
 6. Advanced tip (day 10-12)
 7. Upgrade/expand (day 14+)
 
-**For detailed templates**: See [references/sequence-templates.md](references/sequence-templates.md)
+**For detailed templates**: See
+[references/sequence-templates.md](references/sequence-templates.md)
 
 ---
 
@@ -231,7 +244,8 @@ Key emails:
 - Industry news roundup
 - Pricing updates
 
-**For detailed email type reference**: See [references/email-types.md](references/email-types.md)
+**For detailed email type reference**: See
+[references/email-types.md](references/email-types.md)
 
 ---
 
@@ -273,7 +287,8 @@ Key emails:
 - One clear primary CTA per email
 - Button text: Action + outcome
 
-**For detailed copy, personalization, and testing guidelines**: See [references/copy-guidelines.md](references/copy-guidelines.md)
+**For detailed copy, personalization, and testing guidelines**: See
+[references/copy-guidelines.md](references/copy-guidelines.md)
 
 ---
 
@@ -320,7 +335,8 @@ What to measure and benchmarks
 
 ## Tool Integrations
 
-For implementation, see the [tools registry](../../tools/REGISTRY.md). Key email tools:
+For implementation, see the [tools registry](../../tools/REGISTRY.md) . Key
+email tools:
 
 | Tool            | Best For                                | MCP | Guide                                                     |
 | --------------- | --------------------------------------- | :-: | --------------------------------------------------------- |
@@ -336,7 +352,8 @@ For implementation, see the [tools registry](../../tools/REGISTRY.md). Key email
 ## Related Skills
 
 - **lead-magnets**: For planning lead magnets that feed into nurture sequences
-- **churn-prevention**: For cancel flows, save offers, and dunning strategy (email supports this)
+- **churn-prevention**: For cancel flows, save offers, and dunning strategy
+  (email supports this)
 - **onboarding-cro**: For in-app onboarding (email supports this)
 - **copywriting**: For landing pages emails link to
 - **ab-test-setup**: For testing email elements

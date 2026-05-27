@@ -51,12 +51,23 @@ Last updated: 2026-04-18
 
 ## Notes
 
-- `META_WEBHOOK_VERIFY_TOKEN` is the explicit production token read by the public Meta webhook controller. The code also accepts `META_VERIFY_TOKEN` as a fallback alias for compatibility.
-- `VISITOR_CHAT_ENABLED` is the canonical public-chat flag. `GUEST_CHAT_ENABLED` is still accepted as a migration fallback, but new environments should set only `VISITOR_CHAT_ENABLED`.
-- `WHATSAPP_PROVIDER_DEFAULT` should stay `meta-cloud` in production. Legacy values such as `whatsapp-api` / `waha` remain migration-only fallbacks.
-- `RESEND_API_KEY` remains the preferred transactional email provider, but the backend now has a real SMTP fallback through `SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASS`.
-- `META_EMBEDDED_SIGNUP_CONFIG_ID` is the primary production env for Embedded Signup. The code still accepts legacy `META_CONFIG_ID` as a fallback alias during migration.
+- `META_WEBHOOK_VERIFY_TOKEN` is the explicit production token read by the
+  public Meta webhook controller. The code also accepts `META_VERIFY_TOKEN` as a
+  fallback alias for compatibility.
+- `VISITOR_CHAT_ENABLED` is the canonical public-chat flag. `GUEST_CHAT_ENABLED`
+  is still accepted as a migration fallback, but new environments should set
+  only `VISITOR_CHAT_ENABLED` .
+- `WHATSAPP_PROVIDER_DEFAULT` should stay `meta-cloud` in production. Legacy
+  values such as `whatsapp-api` / `waha` remain migration-only fallbacks.
+- `RESEND_API_KEY` remains the preferred transactional email provider, but the
+  backend now has a real SMTP fallback through `SMTP_HOST` / `SMTP_PORT` /
+  `SMTP_USER` / `SMTP_PASS` .
+- `META_EMBEDDED_SIGNUP_CONFIG_ID` is the primary production env for Embedded
+  Signup. The code still accepts legacy `META_CONFIG_ID` as a fallback alias
+  during migration.
 - Keep `GOOGLE_CLIENT_ID` and `NEXT_PUBLIC_GOOGLE_CLIENT_ID` synchronized.
 - Keep `META_APP_ID` and `NEXT_PUBLIC_META_APP_ID` synchronized.
-- Keep `KLOEL_FEATURE_GOOGLE_PEOPLE_PREFILL` and `NEXT_PUBLIC_KLOEL_FEATURE_GOOGLE_PEOPLE_PREFILL` aligned.
-- Do not enable either People API prefill flag until Google approves the sensitive scopes.
+- Keep `KLOEL_FEATURE_GOOGLE_PEOPLE_PREFILL` and
+  `NEXT_PUBLIC_KLOEL_FEATURE_GOOGLE_PEOPLE_PREFILL` aligned.
+- Do not enable either People API prefill flag until Google approves the
+  sensitive scopes.

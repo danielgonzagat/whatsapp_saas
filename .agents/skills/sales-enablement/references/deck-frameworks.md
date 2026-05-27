@@ -1,16 +1,21 @@
 # Sales Deck Frameworks
 
-Detailed slide-by-slide guidance for building sales decks that tell a story and close deals.
+Detailed slide-by-slide guidance for building sales decks that tell a story and
+close deals.
 
 ## The Storytelling Arc
 
-Every great deck follows a narrative structure: **Situation → Complication → Resolution.**
+Every great deck follows a narrative structure: **Situation → Complication →
+Resolution.**
 
-- **Situation** (Slides 1-3): The world your buyer lives in. Establish shared understanding.
-- **Complication** (Slides 2-3): Why the status quo is no longer sustainable. Create urgency.
+- **Situation** (Slides 1-3): The world your buyer lives in. Establish shared
+  understanding.
+- **Complication** (Slides 2-3): Why the status quo is no longer sustainable.
+  Create urgency.
 - **Resolution** (Slides 4-11): Your approach, proof, and path forward.
 
-The goal is not to present features. The goal is to make the buyer feel understood, then show them a better way.
+The goal is not to present features. The goal is to make the buyer feel
+understood, then show them a better way.
 
 ---
 
@@ -30,7 +35,8 @@ The goal is not to present features. The goal is to make the buyer feel understo
 - Generic industry trends that don't connect to pain
 - More than one core problem
 
-**Copy prompt:** "What is the one problem that, if you could describe it perfectly, would make your buyer say 'that's exactly my situation'?"
+**Copy prompt:** "What is the one problem that, if you could describe it
+perfectly, would make your buyer say 'that's exactly my situation'?"
 
 ---
 
@@ -49,7 +55,8 @@ The goal is not to present features. The goal is to make the buyer feel understo
 - Fear-mongering without substance
 - Too many metrics (pick 2-3 that hit hardest)
 
-**Copy prompt:** "If your buyer does nothing for the next 12 months, what does it cost them?"
+**Copy prompt:** "If your buyer does nothing for the next 12 months, what does
+it cost them?"
 
 ---
 
@@ -67,7 +74,8 @@ The goal is not to present features. The goal is to make the buyer feel understo
 - Making it about your product yet
 - Overly technical explanations
 
-**Copy prompt:** "What has changed in the market that makes the old approach unsustainable?"
+**Copy prompt:** "What has changed in the market that makes the old approach
+unsustainable?"
 
 ---
 
@@ -85,7 +93,8 @@ The goal is not to present features. The goal is to make the buyer feel understo
 - Jargon or acronyms
 - Claiming to be "the only" or "the first" unless provably true
 
-**Copy prompt:** "What do you believe about solving this problem that most people get wrong?"
+**Copy prompt:** "What do you believe about solving this problem that most
+people get wrong?"
 
 ---
 
@@ -103,7 +112,8 @@ The goal is not to present features. The goal is to make the buyer feel understo
 - Dense UI screenshots without callouts
 - Talking about technology instead of outcomes
 
-**Copy prompt:** "Walk through 3 things the buyer would do in your product in their first week."
+**Copy prompt:** "Walk through 3 things the buyer would do in your product in
+their first week."
 
 ---
 
@@ -140,7 +150,8 @@ The goal is not to present features. The goal is to make the buyer feel understo
 - Generic outcomes without specifics
 - Customers from irrelevant industries
 
-**Copy prompt:** "Tell the story of one customer who went from struggling to succeeding with your product."
+**Copy prompt:** "Tell the story of one customer who went from struggling to
+succeeding with your product."
 
 ---
 
@@ -148,7 +159,8 @@ The goal is not to present features. The goal is to make the buyer feel understo
 
 **What to include:**
 
-- Clear phases with timeline (e.g., Week 1: Setup, Week 2-3: Integration, Week 4: Live)
+- Clear phases with timeline (e.g., Week 1: Setup, Week 2-3: Integration, Week
+  4: Live)
 - What's required from their side vs. yours
 - Support resources available
 
@@ -158,7 +170,8 @@ The goal is not to present features. The goal is to make the buyer feel understo
 - Hiding time requirements
 - Skipping the "what do I need to do?" question
 
-**Copy prompt:** "How does a customer get from signing to live? What does each week look like?"
+**Copy prompt:** "How does a customer get from signing to live? What does each
+week look like?"
 
 ---
 
@@ -177,7 +190,8 @@ The goal is not to present features. The goal is to make the buyer feel understo
 - ROI without showing your math
 - Generic numbers not tied to their situation
 
-**Copy prompt:** "If they buy today, what does the next 12 months look like in dollars and hours?"
+**Copy prompt:** "If they buy today, what does the next 12 months look like in
+dollars and hours?"
 
 ---
 
@@ -195,7 +209,8 @@ The goal is not to present features. The goal is to make the buyer feel understo
 - Too many options (3 tiers max)
 - Surprising them with hidden costs
 
-**Copy prompt:** "What does it cost, what do they get, and which plan is right for them?"
+**Copy prompt:** "What does it cost, what do they get, and which plan is right
+for them?"
 
 ---
 
@@ -233,7 +248,8 @@ The goal is not to present features. The goal is to make the buyer feel understo
 - ROI calculations (they care about capability, not cost)
 - High-level market trends (they want specifics)
 
-**Adjust tone:** Precise, no fluff, respect their expertise. Avoid marketing superlatives.
+**Adjust tone:** Precise, no fluff, respect their expertise. Avoid marketing
+superlatives.
 
 ### Economic Buyer Deck
 
@@ -250,7 +266,8 @@ The goal is not to present features. The goal is to make the buyer feel understo
 - Feature-level walkthroughs
 - Implementation specifics (they'll delegate)
 
-**Adjust tone:** Business-focused, outcome-driven. Speak in dollars and percentages.
+**Adjust tone:** Business-focused, outcome-driven. Speak in dollars and
+percentages.
 
 ### Champion Deck
 
@@ -274,24 +291,30 @@ The goal is not to present features. The goal is to make the buyer feel understo
 
 ### The Feature Dump
 
-Every slide is a feature with a screenshot. No story, no "so what," no connection to the buyer's world. Reps click through it; prospects tune out.
+Every slide is a feature with a screenshot. No story, no "so what," no
+connection to the buyer's world. Reps click through it; prospects tune out.
 
 ### The Wall of Text
 
-Slides with 200+ words. Nobody reads them during a presentation. If the slide requires reading, it belongs in a leave-behind.
+Slides with 200+ words. Nobody reads them during a presentation. If the slide
+requires reading, it belongs in a leave-behind.
 
 ### The Missing Story Arc
 
-Slides exist in isolation — no narrative flow from problem to solution to proof. The deck feels like a brochure, not a conversation.
+Slides exist in isolation — no narrative flow from problem to solution to proof.
+The deck feels like a brochure, not a conversation.
 
 ### The Generic Screenshot
 
-Product screenshots without callouts, annotations, or context. The prospect can't tell what they're looking at or why it matters.
+Product screenshots without callouts, annotations, or context. The prospect
+can't tell what they're looking at or why it matters.
 
 ### The Premature Demo
 
-Jumping to product features before establishing the problem. The buyer has no frame of reference for why your features matter.
+Jumping to product features before establishing the problem. The buyer has no
+frame of reference for why your features matter.
 
 ### The Kitchen Sink
 
-Trying to address every persona, every use case, every feature in one deck. The result is a 40-slide monster that nobody wants to sit through.
+Trying to address every persona, every use case, every feature in one deck. The
+result is a 40-slide monster that nobody wants to sit through.

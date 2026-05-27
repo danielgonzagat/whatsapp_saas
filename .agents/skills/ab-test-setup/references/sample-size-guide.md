@@ -6,7 +6,8 @@ Reference for calculating sample sizes and test duration.
 
 - Sample Size Fundamentals (required inputs, what these mean)
 - Sample Size Quick Reference Tables
-- Duration Calculator (formula, examples, minimum duration rules, maximum duration guidelines)
+- Duration Calculator (formula, examples, minimum duration rules, maximum
+  duration guidelines)
 - Online Calculators
 - Adjusting for Multiple Variants
 - Common Sample Size Mistakes
@@ -27,15 +28,18 @@ Reference for calculating sample sizes and test duration.
 
 **Baseline conversion rate**: If your page converts at 5%, that's your baseline.
 
-**MDE (Minimum Detectable Effect)**: The smallest improvement you care about detecting. Set this based on:
+**MDE (Minimum Detectable Effect)**: The smallest improvement you care about
+detecting. Set this based on:
 
 - Business impact (is a 5% lift meaningful?)
 - Implementation cost (worth the effort?)
 - Realistic expectations (what have past tests shown?)
 
-**Statistical significance (95%)**: Means there's less than 5% chance the observed difference is due to random chance.
+**Statistical significance (95%)**: Means there's less than 5% chance the
+observed difference is due to random chance.
 
-**Statistical power (80%)**: Means if there's a real effect of size MDE, you have 80% chance of detecting it.
+**Statistical power (80%)**: Means if there's a real effect of size MDE, you
+have 80% chance of detecting it.
 
 ---
 
@@ -148,25 +152,25 @@ Avoid running tests longer than 4-8 weeks:
 ### Recommended Tools
 
 **Evan Miller's Calculator**
-https://www.evanmiller.org/ab-testing/sample-size.html
+<https://www.evanmiller.org/ab-testing/sample-size.html>
 
 - Simple interface
 - Bookmark-worthy
 
 **Optimizely's Calculator**
-https://www.optimizely.com/sample-size-calculator/
+<https://www.optimizely.com/sample-size-calculator/>
 
 - Business-friendly language
 - Duration estimates
 
 **AB Test Guide Calculator**
-https://www.abtestguide.com/calc/
+<https://www.abtestguide.com/calc/>
 
 - Includes Bayesian option
 - Multiple test types
 
 **VWO Duration Calculator**
-https://vwo.com/tools/ab-test-duration-calculator/
+<https://vwo.com/tools/ab-test-duration-calculator/>
 
 - Duration-focused
 - Good for planning

@@ -8,7 +8,8 @@
 
 ## 📋 Visão Geral
 
-Este documento consolida todos os passos necessários para lançar o MVP do KLOEL WhatsApp SaaS em produção.
+Este documento consolida todos os passos necessários para lançar o MVP do KLOEL
+WhatsApp SaaS em produção.
 
 ### Arquitetura Final
 
@@ -108,7 +109,7 @@ GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=GOCSPX-xxx
 ```
 
-3. **Redirect URI (Google Console):**
+1. **Redirect URI (Google Console):**
 
 - `${NEXTAUTH_URL}/api/auth/callback/google`
 
@@ -130,12 +131,14 @@ Usuário → /login → NextAuth (Google/Apple)
 ### Migrations (produção)
 
 - O backend executa `npx prisma migrate deploy` automaticamente no startup.
-- Se o schema/migrations não estiverem prontos, endpoints de auth retornam `503` com mensagem clara.
+- Se o schema/migrations não estiverem prontos, endpoints de auth retornam `503`
+  com mensagem clara.
 
 ### Redis / RateLimit (produção)
 
 - Configure `REDIS_URL` (recomendado): rate limit distribuído + filas/queues.
-- Se Redis estiver indisponível, auth usa fallback local (por processo) e loga WARN (não quebra login, evita abuso óbvio).
+- Se Redis estiver indisponível, auth usa fallback local (por processo) e loga
+  WARN (não quebra login, evita abuso óbvio).
 
 ---
 
@@ -222,7 +225,7 @@ STRIPE_PRICE_PRO=price_xxx
 STRIPE_PRICE_ENTERPRISE=price_xxx
 ```
 
-3. **Eventos Stripe (webhook):**
+1. **Eventos Stripe (webhook):**
    - `checkout.session.completed`
    - `customer.subscription.updated`
    - `customer.subscription.deleted`
@@ -321,8 +324,10 @@ cd e2e && npm test
 
 ### Gate final (Go-Live) — executado em 2025-12-16
 
-- `npm --prefix /workspaces/whatsapp_saas/backend test` → **PASS** (19/19 suites, 106/106 tests)
-- `npm --prefix /workspaces/whatsapp_saas/backend run test:e2e` → **PASS** (10/10 suites; 22 passed; 1 skipped já era do suite)
+- `npm --prefix /workspaces/whatsapp_saas/backend test` → **PASS** (19/19
+  suites, 106/106 tests)
+- `npm --prefix /workspaces/whatsapp_saas/backend run test:e2e` → **PASS**
+  (10/10 suites; 22 passed; 1 skipped já era do suite)
 - `npm --prefix /workspaces/whatsapp_saas/frontend run build` → **SUCESSO**
 - `npm --prefix /workspaces/whatsapp_saas/frontend run lint` → **SUCESSO**
 
@@ -432,7 +437,8 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxx
 - [ ] Stripe webhook configurado
 - [ ] Google OAuth URLs autorizadas
 - [ ] Backup do banco de dados
-- [ ] Migrations: confirmar estratégia (automática no startup) e/ou rodar `npx prisma migrate deploy` como passo controlado
+- [ ] Migrations: confirmar estratégia (automática no startup) e/ou rodar
+  `npx prisma migrate deploy` como passo controlado
 
 ### Deploy
 
@@ -461,8 +467,10 @@ curl https://app.kloel.com
 
 ### 1) Pré-voo (DNS/SSL)
 
-- DNS: apontar o domínio de produção para o endpoint do NGINX/load balancer (ex.: `app.kloel.com` e `api.kloel.com`).
-- SSL: confirmar certificado válido (cadeia completa) e renovação automática via certbot (se aplicável).
+- DNS: apontar o domínio de produção para o endpoint do NGINX/load balancer
+  (ex.: `app.kloel.com` e `api.kloel.com` ).
+- SSL: confirmar certificado válido (cadeia completa) e renovação automática via
+  certbot (se aplicável).
 
 ### 2) OAuth (Google/Apple) — validação obrigatória
 
@@ -470,7 +478,8 @@ curl https://app.kloel.com
   - `${NEXTAUTH_URL}/api/auth/callback/google`
 - Apple Sign-In → Callback:
   - `${NEXTAUTH_URL}/api/auth/callback/apple`
-- Validar `NEXTAUTH_URL`/`AUTH_URL` como **base** do frontend (sem `/auth` e sem `/api/auth`).
+- Validar `NEXTAUTH_URL` / `AUTH_URL` como **base** do frontend (sem `/auth` e
+  sem `/api/auth` ).
 
 ### 3) Fluxos críticos (smoke manual)
 
@@ -483,12 +492,15 @@ curl https://app.kloel.com
 ### 4) Segurança / Rate limit
 
 - Confirmar que endpoints de auth retornam **429** após excesso de tentativas.
-- Em produção multi-instância: garantir `REDIS_URL` configurado (rate limit distribuído + filas).
+- Em produção multi-instância: garantir `REDIS_URL` configurado (rate limit
+  distribuído + filas).
 
 ### 5) Prisma/Migrations
 
-- Confirmar que o backend sobe e executa `npx prisma migrate deploy` no primeiro deploy.
-- Se houver falha de schema/migrations, endpoints de auth devem retornar **503** com mensagem clara (não erro genérico).
+- Confirmar que o backend sobe e executa `npx prisma migrate deploy` no primeiro
+  deploy.
+- Se houver falha de schema/migrations, endpoints de auth devem retornar **503**
+  com mensagem clara (não erro genérico).
 
 ---
 
@@ -496,27 +508,33 @@ curl https://app.kloel.com
 
 ### Logs
 
-- Backend: logs estruturados de request (inclui `requestId`) e logs de erro com severidade adequada (4xx como warn/info; 5xx como error).
-- Auth: observar warnings de fallback de rate limit (Redis indisponível) e erros OAuth com `errorId` para rastreio.
+- Backend: logs estruturados de request (inclui `requestId` ) e logs de erro com
+  severidade adequada (4xx como warn/info; 5xx como error).
+- Auth: observar warnings de fallback de rate limit (Redis indisponível) e erros
+  OAuth com `errorId` para rastreio.
 
 ### Métricas
 
-- Backend: `/metrics` (Prometheus) — manter protegido por token/segurança conforme configuração do ambiente.
+- Backend: `/metrics` (Prometheus) — manter protegido por token/segurança
+  conforme configuração do ambiente.
 - Filas/Jobs: Bull Board em `/admin/queues`.
 
 ### Alertas recomendados (sem mudança de código)
 
 - Alertar em picos de **5xx** em rotas `/auth/*`.
-- Alertar em aumento de **429** (possível abuso/ataque) e/ou queda de autenticação OAuth.
+- Alertar em aumento de **429** (possível abuso/ataque) e/ou queda de
+  autenticação OAuth.
 - Alertar em falhas de migrations (logs de startup e/ou health checks).
 
 ---
 
 ## 🧯 Plano de Rollback (Operação)
 
-- Reverter para a imagem/tag anterior (backend/worker/frontend) e reiniciar o stack.
+- Reverter para a imagem/tag anterior (backend/worker/frontend) e reiniciar o
+  stack.
 - Se houver alteração de schema:
-  - **não** executar rollback automático de migrations sem validação; preferir restore de backup.
+  - **não** executar rollback automático de migrations sem validação; preferir
+    restore de backup.
 - Banco de dados:
   - garantir backup recente antes do Go-Live;
   - em incidentes críticos, restaurar backup + retornar versão anterior.
@@ -559,9 +577,11 @@ curl -X POST http://localhost:3030/session/default/start
 
 1. Acesse Vercel → Projeto frontend → Settings → Environment Variables
 2. Adicione ou edite:
+
    ```
    NEXT_PUBLIC_API_URL = https://whatsappsaas-production-fc69.up.railway.app
    ```
+
    (SEM barra no final)
 3. Marque para `Production`, `Preview` e `Development`
 4. Redeploy o frontend (Deployments → Redeploy)

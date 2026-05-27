@@ -1,18 +1,31 @@
 ---
 name: ad-creative
-description: "When the user wants to generate, iterate, or scale ad creative — headlines, descriptions, primary text, or full ad variations — for any paid advertising platform. Also use when the user mentions 'ad copy variations,' 'ad creative,' 'generate headlines,' 'RSA headlines,' 'bulk ad copy,' 'ad iterations,' 'creative testing,' 'ad performance optimization,' 'write me some ads,' 'Facebook ad copy,' 'Google ad headlines,' 'LinkedIn ad text,' or 'I need more ad variations.' Use this whenever someone needs to produce ad copy at scale or iterate on existing ads. For campaign strategy and targeting, see paid-ads. For landing page copy, see copywriting."
+description: "When the user wants to generate, iterate, or scale ad creative —
+headlines, descriptions, primary text, or full ad variations — for any paid
+advertising platform. Also use when the user mentions 'ad copy variations,' 'ad
+creative,' 'generate headlines,' 'RSA headlines,' 'bulk ad copy,' 'ad
+iterations,' 'creative testing,' 'ad performance optimization,' 'write me some
+ads,' 'Facebook ad copy,' 'Google ad headlines,' 'LinkedIn ad text,' or 'I need
+more ad variations.' Use this whenever someone needs to produce ad copy at scale
+or iterate on existing ads. For campaign strategy and targeting, see paid-ads.
+For landing page copy, see copywriting."
 metadata:
   version: 1.1.0
 ---
 
 # Ad Creative
 
-You are an expert performance creative strategist. Your goal is to generate high-performing ad creative at scale — headlines, descriptions, and primary text that drive clicks and conversions — and iterate based on real performance data.
+You are an expert performance creative strategist. Your goal is to generate
+high-performing ad creative at scale — headlines, descriptions, and primary text
+that drive clicks and conversions — and iterate based on real performance data.
 
 ## Before Starting
 
 **Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+If `.agents/product-marketing-context.md` exists (or
+`.claude/product-marketing-context.md` in older setups), read it before asking
+questions. Use that context and only ask for information not already covered or
+specific to this task.
 
 Gather this context (ask if not provided):
 
@@ -55,11 +68,14 @@ This skill supports two modes:
 
 ### Mode 1: Generate from Scratch
 
-When starting fresh, you generate a full set of ad creative based on product context, audience insights, and platform best practices.
+When starting fresh, you generate a full set of ad creative based on product
+context, audience insights, and platform best practices.
 
 ### Mode 2: Iterate from Performance Data
 
-When the user provides performance data (CSV, paste, or API output), you analyze what's working, identify patterns in top performers, and generate new variations that build on winning themes while exploring new angles.
+When the user provides performance data (CSV, paste, or API output), you analyze
+what's working, identify patterns in top performers, and generate new variations
+that build on winning themes while exploring new angles.
 
 The core loop:
 
@@ -71,7 +87,8 @@ Pull performance data → Identify winning patterns → Generate new variations 
 
 ## Platform Specs
 
-Platforms reject or truncate creative that exceeds these limits, so verify every piece of copy fits before delivering.
+Platforms reject or truncate creative that exceeds these limits, so verify every
+piece of copy fits before delivering.
 
 ### Google Ads (Responsive Search Ads)
 
@@ -121,17 +138,23 @@ Platforms reject or truncate creative that exceeds these limits, so verify every
 | Headline    | 70 characters  | Card headline    |
 | Description | 200 characters | Card description |
 
-For detailed specs and format variations, see [references/platform-specs.md](references/platform-specs.md).
+For detailed specs and format variations, see
+[references/platform-specs.md](references/platform-specs.md) .
 
 ---
 
 ## Generating Ad Visuals
 
-For image and video ad creative, use generative AI tools and code-based video rendering. See [references/generative-tools.md](references/generative-tools.md) for the complete guide covering:
+For image and video ad creative, use generative AI tools and code-based video
+rendering. See [references/generative-tools.md](references/generative-tools.md)
+for the complete guide covering:
 
-- **Image generation** — Nano Banana Pro (Gemini), Flux, Ideogram for static ad images
-- **Video generation** — Veo, Kling, Runway, Sora, Seedance, Higgsfield for video ads
-- **Voice & audio** — ElevenLabs, OpenAI TTS, Cartesia for voiceovers, cloning, multilingual
+- **Image generation** — Nano Banana Pro (Gemini), Flux, Ideogram for static ad
+  images
+- **Video generation** — Veo, Kling, Runway, Sora, Seedance, Higgsfield for
+  video ads
+- **Voice & audio** — ElevenLabs, OpenAI TTS, Cartesia for voiceovers, cloning,
+  multilingual
 - **Code-based video** — Remotion for templated, data-driven video at scale
 - **Platform image specs** — Correct dimensions for every ad placement
 - **Cost comparison** — Pricing for 100+ ad variations across tools
@@ -149,7 +172,9 @@ For image and video ad creative, use generative AI tools and code-based video re
 
 ### Step 1: Define Your Angles
 
-Before writing individual headlines, establish 3-5 distinct **angles** — different reasons someone would click. Each angle should tap into a different motivation.
+Before writing individual headlines, establish 3-5 distinct **angles** —
+different reasons someone would click. Each angle should tap into a different
+motivation.
 
 **Common angle categories:**
 
@@ -175,11 +200,13 @@ For each angle, generate multiple variations. Vary:
 
 ### Step 3: Validate Against Specs
 
-Before delivering, check every piece of creative against the platform's character limits. Flag anything that's over and provide a trimmed alternative.
+Before delivering, check every piece of creative against the platform's
+character limits. Flag anything that's over and provide a trimmed alternative.
 
 ### Step 4: Organize for Upload
 
-Present creative in a structured format that maps to the ad platform's upload requirements.
+Present creative in a structured format that maps to the ad platform's upload
+requirements.
 
 ---
 
@@ -189,7 +216,8 @@ When the user provides performance data, follow this process:
 
 ### Step 1: Analyze Winners
 
-Look at the top-performing creative (by CTR, conversion rate, or ROAS — ask which metric matters most) and identify:
+Look at the top-performing creative (by CTR, conversion rate, or ROAS — ask
+which metric matters most) and identify:
 
 - **Winning themes** — What topics or pain points appear in top performers?
 - **Winning structures** — Questions? Statements? Commands? Numbers?
@@ -309,7 +337,8 @@ When iterating, include a summary:
 
 ## Batch Generation Workflow
 
-For large-scale creative production (Anthropic's growth team generates 100+ variations per cycle):
+For large-scale creative production (Anthropic's growth team generates 100+
+variations per cycle):
 
 ### 1. Break into sub-tasks
 
@@ -334,10 +363,12 @@ For large-scale creative production (Anthropic's growth team generates 100+ vari
 
 ## Common Mistakes
 
-- **Writing headlines that only work together** — RSA headlines get combined randomly
+- **Writing headlines that only work together** — RSA headlines get combined
+  randomly
 - **Ignoring character limits** — Platforms truncate without warning
 - **All variations sound the same** — Vary angles, not just word choice
-- **No CTA headlines** — RSAs need action-oriented headlines to drive clicks; include at least 2-3
+- **No CTA headlines** — RSAs need action-oriented headlines to drive clicks;
+  include at least 2-3
 - **Generic descriptions** — "Learn more about our solution" wastes the slot
 - **Iterating without data** — Gut feelings are less reliable than metrics
 - **Testing too many things at once** — Change one variable per test cycle
@@ -347,7 +378,8 @@ For large-scale creative production (Anthropic's growth team generates 100+ vari
 
 ## Tool Integrations
 
-For pulling performance data and managing campaigns, see the [tools registry](../../tools/REGISTRY.md).
+For pulling performance data and managing campaigns, see the
+[tools registry](../../tools/REGISTRY.md) .
 
 | Platform         |                 Pull Performance Data                 |       Manage Campaigns        | Guide                                                       |
 | ---------------- | :---------------------------------------------------: | :---------------------------: | ----------------------------------------------------------- |
@@ -375,5 +407,6 @@ node tools/clis/google-ads.js reports get --type ad_performance --date-range las
 - **paid-ads**: For campaign strategy, targeting, budgets, and optimization
 - **copywriting**: For landing page copy (where ad traffic lands)
 - **ab-test-setup**: For structuring creative tests with statistical rigor
-- **marketing-psychology**: For psychological principles behind high-performing creative
+- **marketing-psychology**: For psychological principles behind high-performing
+  creative
 - **copy-editing**: For polishing ad copy before launch

@@ -1,18 +1,30 @@
 ---
 name: form-cro
-description: When the user wants to optimize any form that is NOT signup/registration — including lead capture forms, contact forms, demo request forms, application forms, survey forms, or checkout forms. Also use when the user mentions "form optimization," "lead form conversions," "form friction," "form fields," "form completion rate," "contact form," "nobody fills out our form," "form abandonment," "too many fields," "demo request form," or "lead form isn't converting." Use this for any non-signup form that captures information. For signup/registration forms, see signup-flow-cro. For popups containing forms, see popup-cro.
+description: When the user wants to optimize any form that is NOT
+signup/registration — including lead capture forms, contact forms, demo request
+forms, application forms, survey forms, or checkout forms. Also use when the
+user mentions "form optimization," "lead form conversions," "form friction,"
+"form fields," "form completion rate," "contact form," "nobody fills out our
+form," "form abandonment," "too many fields," "demo request form," or "lead form
+isn't converting." Use this for any non-signup form that captures information.
+For signup/registration forms, see signup-flow-cro. For popups containing forms,
+see popup-cro.
 metadata:
   version: 1.1.0
 ---
 
 # Form CRO
 
-You are an expert in form optimization. Your goal is to maximize form completion rates while capturing the data that matters.
+You are an expert in form optimization. Your goal is to maximize form completion
+rates while capturing the data that matters.
 
 ## Initial Assessment
 
 **Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+If `.agents/product-marketing-context.md` exists (or
+`.claude/product-marketing-context.md` in older setups), read it before asking
+questions. Use that context and only ask for information not already covered or
+specific to this task.
 
 Before providing recommendations, identify:
 
@@ -135,7 +147,8 @@ For each field, ask:
 
 ### Labels and Placeholders
 
-- Labels: Keep visible (not just placeholder) — placeholders disappear when typing, leaving users unsure what they're filling in
+- Labels: Keep visible (not just placeholder) — placeholders disappear when
+  typing, leaving users unsure what they're filling in
 - Placeholders: Examples, not labels
 - Help text: Only when genuinely helpful
 
@@ -209,7 +222,7 @@ Email
 - Positioned near the field
 - Don't clear their input
 
-**Good:** "Please enter a valid email address (e.g., name@company.com)"
+**Good:** "Please enter a valid email address (e.g., <name@company.com>)"
 **Bad:** "Invalid input"
 
 ### On Submit

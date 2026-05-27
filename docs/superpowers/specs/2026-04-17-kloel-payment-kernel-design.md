@@ -2,13 +2,19 @@
 
 - Date: 2026-04-17
 - Status: Approved
-- Scope: Product/payment architecture contract for Kloel storefronts, multi-role split, ledger, payout control, and Stripe execution rail
+- Scope: Product/payment architecture contract for Kloel storefronts, multi-role
+  split, ledger, payout control, and Stripe execution rail
 
 ## Capability
 
-Kloel offers seller-branded storefronts under the seller's own domain while retaining full operational control of checkout, attribution, financial orchestration, payout timing, and stakeholder visibility.
+Kloel offers seller-branded storefronts under the seller's own domain while
+retaining full operational control of checkout, attribution, financial
+orchestration, payout timing, and stakeholder visibility.
 
-The buyer buys inside the seller experience. Kloel controls the runtime, computes the canonical sale allocation, governs pending versus available balances, and releases payouts according to Kloel policy. Stripe is treated as the payment rail and execution layer, not as the source of product truth.
+The buyer buys inside the seller experience. Kloel controls the runtime,
+computes the canonical sale allocation, governs pending versus available
+balances, and releases payouts according to Kloel policy. Stripe is treated as
+the payment rail and execution layer, not as the source of product truth.
 
 ## Product Thesis
 
@@ -18,13 +24,18 @@ Kloel combines:
 - Hotmart/Braip-style affiliate and multi-stakeholder payment logic
 - A Kloel-owned ledger, payout, and risk layer
 
-This architecture is only defensible if the storefront runtime, checkout runtime, domain routing, and post-payment state transitions stay under Kloel control.
+This architecture is only defensible if the storefront runtime, checkout
+runtime, domain routing, and post-payment state transitions stay under Kloel
+control.
 
 ## Core Constraints
 
-- Domain, DNS routing, hosting, and storefront runtime must stay under Kloel control.
-- Checkout must always originate from a Kloel-controlled runtime, even when rendered on the seller domain.
-- Seller cannot replace or bypass the Kloel payment kernel for products that use Kloel split logic.
+- Domain, DNS routing, hosting, and storefront runtime must stay under Kloel
+  control.
+- Checkout must always originate from a Kloel-controlled runtime, even when
+  rendered on the seller domain.
+- Seller cannot replace or bypass the Kloel payment kernel for products that use
+  Kloel split logic.
 - All financial math uses integer cents only. Never floats.
 - The canonical allocation order is fixed:
   - Kloel
@@ -34,19 +45,25 @@ This architecture is only defensible if the storefront runtime, checkout runtime
   - Manager
   - Seller
 - Supplier and affiliate are protected by priority.
-- Coproducer, manager, and seller can be clamped to zero if earlier priorities consume the available remainder.
-- Dashboard balances shown by Kloel are ledger balances, not raw provider balances.
+- Coproducer, manager, and seller can be clamped to zero if earlier priorities
+  consume the available remainder.
+- Dashboard balances shown by Kloel are ledger balances, not raw provider
+  balances.
 - Payouts are Kloel-controlled and manual/orchestrated.
-- Refunds, disputes, reversals, and maturity transitions are ledger events before they are UI events.
-- Every remunerated stakeholder needs a Kloel identity and a payout-capable connected/receiving account.
+- Refunds, disputes, reversals, and maturity transitions are ledger events
+  before they are UI events.
+- Every remunerated stakeholder needs a Kloel identity and a payout-capable
+  connected/receiving account.
 
 ## Strategic Clarification
 
-Kloel is not designed around what Stripe exposes as a complete product. Kloel is designed around its own product contract.
+Kloel is not designed around what Stripe exposes as a complete product. Kloel is
+designed around its own product contract.
 
 Stripe is an execution rail.
 
-Anything Stripe does not expose natively but that Kloel requires at product level must be implemented in Kloel's own layers:
+Anything Stripe does not expose natively but that Kloel requires at product
+level must be implemented in Kloel's own layers:
 
 - Split rules
 - Priority clamping
@@ -65,13 +82,15 @@ Anything Stripe does not expose natively but that Kloel requires at product leve
 - Affiliate: attributed promoter paid according to attribution and product rules
 - Coproducer: secondary percentage stakeholder
 - Manager: secondary percentage stakeholder
-- Kloel Operator: platform actor responsible for policy, risk, payout release, reconciliation, and dispute operations
+- Kloel Operator: platform actor responsible for policy, risk, payout release,
+  reconciliation, and dispute operations
 
 ## Surfaces
 
 ### 1. Storefront Runtime
 
-The seller storefront is rendered from Kloel infrastructure under a seller-branded domain.
+The seller storefront is rendered from Kloel infrastructure under a
+seller-branded domain.
 
 Responsibilities:
 
@@ -83,7 +102,9 @@ Responsibilities:
 
 ### 2. Checkout Runtime
 
-The checkout runtime is controlled by Kloel and rendered in the seller experience. It is not seller-editable in any way that can affect financial integrity.
+The checkout runtime is controlled by Kloel and rendered in the seller
+experience. It is not seller-editable in any way that can affect financial
+integrity.
 
 Responsibilities:
 
@@ -109,7 +130,8 @@ The seller configures:
 
 ### 4. Stakeholder Dashboards
 
-Each role sees only its own financial truth and the sale context relevant to that role.
+Each role sees only its own financial truth and the sale context relevant to
+that role.
 
 Examples:
 
@@ -196,7 +218,8 @@ Translates the canonical Kloel sale into provider operations:
 
 ### Payout Scheduler
 
-Moves ledger balances from pending to available according to role and product policy.
+Moves ledger balances from pending to available according to role and product
+policy.
 
 ### Risk / Fraud Engine
 
@@ -250,7 +273,8 @@ Protected against falling behind residual roles:
 
 ### Commission Base
 
-The exact commission base must be explicitly configured and versioned by product policy. Kloel must not depend on implicit provider math for this.
+The exact commission base must be explicitly configured and versioned by product
+policy. Kloel must not depend on implicit provider math for this.
 
 ## Canonical Sale State Machine
 
@@ -305,7 +329,10 @@ For the Stripe adapter:
 - payout timing must remain under Kloel control
 - dispute and refund handling must map back into the ledger
 
-If a Stripe primitive does not fully match the Kloel contract, Kloel adapts around it with ledger, policy, and orchestration. If Stripe becomes the bottleneck, the rail can be swapped later without changing Kloel's product contract.
+If a Stripe primitive does not fully match the Kloel contract, Kloel adapts
+around it with ledger, policy, and orchestration. If Stripe becomes the
+bottleneck, the rail can be swapped later without changing Kloel's product
+contract.
 
 ## Adapter Contract
 
@@ -334,17 +361,24 @@ This keeps the Kloel product model stable even if payment rails evolve.
 
 - Which Stripe charge pattern will be used for the first production adapter?
 - Will Kloel require full domain transfer or only mandatory DNS pointing?
-- What is the default attribution policy: last click, first click, or configurable?
+- What is the default attribution policy: last click, first click, or
+  configurable?
 - What are the standard payout maturity windows by role?
 - Is supplier always fixed-value or can it also be percentage-based?
-- In chargeback and refund scenarios, is the debit cascade proportional or seller-first with fallback?
-- Which parts of the seller-visible payment statement must reflect the seller versus the platform?
+- In chargeback and refund scenarios, is the debit cascade proportional or
+  seller-first with fallback?
+- Which parts of the seller-visible payment statement must reflect the seller
+  versus the platform?
 
 ## Immediate Execution Implications
 
-- The existing `split`, `ledger`, and `connect` modules in the repository should be treated as the nucleus of the Kloel Payment Kernel.
-- Production operations on Stripe, Railway, and Vercel must follow this spec, not isolated gateway defaults.
-- Pix readiness, environment variable setup, and provider onboarding structure should be judged by whether they support this kernel cleanly, not by whether the provider has a single turnkey switch.
+- The existing `split` , `ledger` , and `connect` modules in the repository
+  should be treated as the nucleus of the Kloel Payment Kernel.
+- Production operations on Stripe, Railway, and Vercel must follow this spec,
+  not isolated gateway defaults.
+- Pix readiness, environment variable setup, and provider onboarding structure
+  should be judged by whether they support this kernel cleanly, not by whether
+  the provider has a single turnkey switch.
 
 ## References
 
@@ -353,10 +387,10 @@ This keeps the Kloel product model stable even if payment rails evolve.
 - [Ledger types](../../../backend/src/payments/ledger/ledger.types.ts)
 - [Connect types](../../../backend/src/payments/connect/connect.types.ts)
 - Stripe docs:
-  - https://docs.stripe.com/connect/direct-charges
-  - https://docs.stripe.com/connect/separate-charges-and-transfers
-  - https://docs.stripe.com/connect/destination-charges
-  - https://docs.stripe.com/connect/manual-payouts
-  - https://docs.stripe.com/connect/disputes
-  - https://docs.stripe.com/connect/statement-descriptors
-  - https://docs.stripe.com/connect/saas/tasks/app-fees
+  - <https://docs.stripe.com/connect/direct-charges>
+  - <https://docs.stripe.com/connect/separate-charges-and-transfers>
+  - <https://docs.stripe.com/connect/destination-charges>
+  - <https://docs.stripe.com/connect/manual-payouts>
+  - <https://docs.stripe.com/connect/disputes>
+  - <https://docs.stripe.com/connect/statement-descriptors>
+  - <https://docs.stripe.com/connect/saas/tasks/app-fees>

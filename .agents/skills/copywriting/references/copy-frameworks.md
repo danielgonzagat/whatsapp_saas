@@ -4,10 +4,13 @@ Headline formulas, page section types, and structural templates.
 
 ## Contents
 
-- Headline Formulas (outcome-focused, problem-focused, audience-focused, differentiation-focused, proof-focused, additional formulas)
+- Headline Formulas (outcome-focused, problem-focused, audience-focused,
+  differentiation-focused, proof-focused, additional formulas)
 - Landing Page Section Types (core sections, supporting sections)
-- Page Structure Templates (feature-heavy page, varied engaging page, compact landing page, enterprise/B2B landing page, product launch page)
-- Section Writing Tips (problem section, benefits section, how it works section, testimonial selection)
+- Page Structure Templates (feature-heavy page, varied engaging page, compact
+  landing page, enterprise/B2B landing page, product launch page)
+- Section Writing Tips (problem section, benefits section, how it works section,
+  testimonial selection)
 
 ## Headline Formulas
 
@@ -15,7 +18,8 @@ Headline formulas, page section types, and structural templates.
 
 **{Achieve desirable outcome} without {pain point}**
 
-> Understand how users are really experiencing your site without drowning in numbers
+> Understand how users are really experiencing your site without drowning in
+  numbers
 
 **{Achieve desirable outcome} by {how product makes it possible}**
 
@@ -59,7 +63,8 @@ Headline formulas, page section types, and structural templates.
 
 **You don't have to {skills or resources} to {achieve desirable outcome}**
 
-> With Ahrefs, you don't have to be an SEO pro to rank higher and get more traffic
+> With Ahrefs, you don't have to be an SEO pro to rank higher and get more
+  traffic
 
 ---
 

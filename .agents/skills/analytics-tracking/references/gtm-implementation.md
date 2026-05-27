@@ -7,11 +7,13 @@ Detailed guide for implementing tracking via Google Tag Manager.
 - Container Structure (tags, triggers, variables)
 - Naming Conventions
 - Data Layer Patterns
-- Common Tag Configurations (GA4 configuration tag, GA4 event tag, Facebook pixel)
+- Common Tag Configurations (GA4 configuration tag, GA4 event tag, Facebook
+  pixel)
 - Preview and Debug
 - Workspaces and Versioning
 - Consent Management
-- Advanced Patterns (tag sequencing, exception handling, custom JavaScript variables)
+- Advanced Patterns (tag sequencing, exception handling, custom JavaScript
+  variables)
 
 ## Container Structure
 

@@ -2,15 +2,19 @@
 
 ## Objective
 
-Staging is the mandatory environment between local development and production. Nothing that changes checkout, auth, wallet, messaging, queues, or billing should jump from localhost straight into production.
+Staging is the mandatory environment between local development and production.
+Nothing that changes checkout, auth, wallet, messaging, queues, or billing
+should jump from localhost straight into production.
 
 ## Topology
 
 - Frontend staging: Vercel preview/staging deployment for the `frontend/` app.
 - Backend staging: Railway service for `backend/`.
 - Worker staging: Railway service for `worker/`.
-- Database staging: isolated PostgreSQL instance, never production clone mounted directly to prod.
-- Redis staging: isolated Redis instance for queue, cache, and rate-limit validation.
+- Database staging: isolated PostgreSQL instance, never production clone mounted
+  directly to prod.
+- Redis staging: isolated Redis instance for queue, cache, and rate-limit
+  validation.
 
 ## GitHub Actions
 
@@ -46,7 +50,8 @@ Set these in the `staging` environment:
 ## Data Policy
 
 - Production data restores happen in staging first.
-- Staging must use masked or controlled data when production snapshots are restored.
+- Staging must use masked or controlled data when production snapshots are
+  restored.
 - Payment providers in staging must use sandbox credentials.
 - Staging webhooks must point to staging endpoints only.
 

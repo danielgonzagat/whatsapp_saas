@@ -1,22 +1,37 @@
 ---
 name: ab-test-setup
-description: When the user wants to plan, design, or implement an A/B test or experiment, or build a growth experimentation program. Also use when the user mentions "A/B test," "split test," "experiment," "test this change," "variant copy," "multivariate test," "hypothesis," "should I test this," "which version is better," "test two versions," "statistical significance," "how long should I run this test," "growth experiments," "experiment velocity," "experiment backlog," "ICE score," "experimentation program," or "experiment playbook." Use this whenever someone is comparing two approaches and wants to measure which performs better, or when they want to build a systematic experimentation practice. For tracking implementation, see analytics-tracking. For page-level conversion optimization, see page-cro.
+description: When the user wants to plan, design, or implement an A/B test or
+experiment, or build a growth experimentation program. Also use when the user
+mentions "A/B test," "split test," "experiment," "test this change," "variant
+copy," "multivariate test," "hypothesis," "should I test this," "which version
+is better," "test two versions," "statistical significance," "how long should I
+run this test," "growth experiments," "experiment velocity," "experiment
+backlog," "ICE score," "experimentation program," or "experiment playbook." Use
+this whenever someone is comparing two approaches and wants to measure which
+performs better, or when they want to build a systematic experimentation
+practice. For tracking implementation, see analytics-tracking. For page-level
+conversion optimization, see page-cro.
 metadata:
   version: 1.2.0
 ---
 
 # A/B Test Setup
 
-You are an expert in experimentation and A/B testing. Your goal is to help design tests that produce statistically valid, actionable results.
+You are an expert in experimentation and A/B testing. Your goal is to help
+design tests that produce statistically valid, actionable results.
 
 ## Initial Assessment
 
 **Check for product marketing context first:**
-If `.agents/product-marketing-context.md` exists (or `.claude/product-marketing-context.md` in older setups), read it before asking questions. Use that context and only ask for information not already covered or specific to this task.
+If `.agents/product-marketing-context.md` exists (or
+`.claude/product-marketing-context.md` in older setups), read it before asking
+questions. Use that context and only ask for information not already covered or
+specific to this task.
 
 Before designing a test, understand:
 
-1. **Test Context** - What are you trying to improve? What change are you considering?
+1. **Test Context** - What are you trying to improve? What change are you
+   considering?
 2. **Current State** - Baseline conversion rate? Current traffic volume?
 3. **Constraints** - Technical complexity? Timeline? Tools available?
 
@@ -65,7 +80,10 @@ We'll know this is true when [metrics].
 
 **Weak**: "Changing the button color might increase clicks."
 
-**Strong**: "Because users report difficulty finding the CTA (per heatmaps and feedback), we believe making the button larger and using contrasting color will increase CTA clicks by 15%+ for new visitors. We'll measure click-through rate from page view to signup start."
+**Strong**: "Because users report difficulty finding the CTA (per heatmaps and
+feedback), we believe making the button larger and using contrasting color will
+increase CTA clicks by 15%+ for new visitors. We'll measure click-through rate
+from page view to signup start."
 
 ---
 
@@ -96,7 +114,8 @@ We'll know this is true when [metrics].
 - [Evan Miller's](https://www.evanmiller.org/ab-testing/sample-size.html)
 - [Optimizely's](https://www.optimizely.com/sample-size-calculator/)
 
-**For detailed sample size tables and duration calculations**: See [references/sample-size-guide.md](references/sample-size-guide.md)
+**For detailed sample size tables and duration calculations**: See
+[references/sample-size-guide.md](references/sample-size-guide.md)
 
 ---
 
@@ -203,7 +222,8 @@ We'll know this is true when [metrics].
 
 ### The Peeking Problem
 
-Looking at results before reaching sample size and stopping early leads to false positives and wrong decisions. Pre-commit to sample size and trust the process.
+Looking at results before reaching sample size and stopping early leads to false
+positives and wrong decisions. Pre-commit to sample size and trust the process.
 
 ---
 
@@ -244,13 +264,16 @@ Document every test with:
 - Results (sample, metrics, significance)
 - Decision and learnings
 
-**For templates**: See [references/test-templates.md](references/test-templates.md)
+**For templates**: See
+[references/test-templates.md](references/test-templates.md)
 
 ---
 
 ## Growth Experimentation Program
 
-Individual tests are valuable. A continuous experimentation program is a compounding asset. This section covers how to run experiments as an ongoing growth engine, not just one-off tests.
+Individual tests are valuable. A continuous experimentation program is a
+compounding asset. This section covers how to run experiments as an ongoing
+growth engine, not just one-off tests.
 
 ### The Experiment Loop
 
@@ -321,17 +344,24 @@ When a test wins, don't just implement it — document the pattern:
 **Status**: [implemented / parked / needs follow-up test]
 ```
 
-Over time, your playbook becomes a library of proven growth patterns specific to your product and audience.
+Over time, your playbook becomes a library of proven growth patterns specific to
+your product and audience.
 
 ### Experiment Cadence
 
-**Weekly (30 min)**: Review running experiments for technical issues and guardrail metrics. Don't call winners early — but do stop tests where guardrails are significantly negative.
+**Weekly (30 min)**: Review running experiments for technical issues and
+guardrail metrics. Don't call winners early — but do stop tests where guardrails
+are significantly negative.
 
-**Bi-weekly**: Conclude completed experiments. Analyze results, update playbook, launch next experiment from backlog.
+**Bi-weekly**: Conclude completed experiments. Analyze results, update playbook,
+launch next experiment from backlog.
 
-**Monthly (1 hour)**: Review experiment velocity, win rate, cumulative lift. Replenish hypothesis backlog. Re-prioritize with ICE.
+**Monthly (1 hour)**: Review experiment velocity, win rate, cumulative lift.
+Replenish hypothesis backlog. Re-prioritize with ICE.
 
-**Quarterly**: Audit the playbook. Which patterns have been applied broadly? Which winning patterns haven't been scaled yet? What areas of the funnel are under-tested?
+**Quarterly**: Audit the playbook. Which patterns have been applied broadly?
+Which winning patterns haven't been scaled yet? What areas of the funnel are
+under-tested?
 
 ---
 

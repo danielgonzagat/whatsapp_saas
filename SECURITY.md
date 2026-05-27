@@ -2,7 +2,8 @@
 
 ## Arquitetura de Segurança
 
-O KLOEL implementa segurança em múltiplas camadas para garantir proteção de dados e isolamento multi-tenant.
+O KLOEL implementa segurança em múltiplas camadas para garantir proteção de
+dados e isolamento multi-tenant.
 
 ---
 
@@ -251,7 +252,7 @@ await auditService.log({
 
 Encontrou uma vulnerabilidade?
 
-**Email:** security@kloel.com.br
+**Email:** <security@kloel.com.br>
 
 **Expectativas:**
 

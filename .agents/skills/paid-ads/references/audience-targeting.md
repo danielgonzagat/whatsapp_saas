@@ -6,7 +6,8 @@ Detailed targeting strategies for each major ad platform.
 
 - Google Ads Audiences (Search Campaign Targeting, Display/YouTube Targeting)
 - Meta Audiences (Core Audiences, Custom Audiences, Lookalike Audiences)
-- LinkedIn Audiences (Job-Based Targeting, Company-Based Targeting, High-Performing Combinations)
+- LinkedIn Audiences (Job-Based Targeting, Company-Based Targeting,
+  High-Performing Combinations)
 - Twitter/X Audiences
 - TikTok Audiences
 - Audience Size Guidelines
@@ -209,7 +210,7 @@ Detailed targeting strategies for each major ad platform.
 
 ## Twitter/X Audiences
 
-### Targeting options:
+### Targeting options
 
 - Follower lookalikes (accounts similar to followers of X)
 - Interest categories
@@ -218,7 +219,7 @@ Detailed targeting strategies for each major ad platform.
 - Events
 - Tailored audiences (your lists)
 
-### Best practices:
+### Best practices
 
 - Follower lookalikes of relevant accounts work well
 - Keyword targeting catches active conversations
@@ -229,7 +230,7 @@ Detailed targeting strategies for each major ad platform.
 
 ## TikTok Audiences
 
-### Targeting options:
+### Targeting options
 
 - Demographics (age, gender, location)
 - Interests (TikTok's categories)
@@ -238,7 +239,7 @@ Detailed targeting strategies for each major ad platform.
 - Custom audiences (pixel, customer file)
 - Lookalike audiences
 
-### Best practices:
+### Best practices
 
 - Younger skew (18-34 primarily)
 - Interest targeting is broad

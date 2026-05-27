@@ -1,6 +1,7 @@
 # adm.kloel.com — SP-4 — Contas + KYC Queue — Implementation Plan
 
-**Spec:** [2026-04-15-adm-kloel-sp4-contas-kyc-design.md](../specs/2026-04-15-adm-kloel-sp4-contas-kyc-design.md)
+**Spec:**
+[2026-04-15-adm-kloel-sp4-contas-kyc-design.md](../specs/2026-04-15-adm-kloel-sp4-contas-kyc-design.md)
 **Branch (planned):** `feat/adm-sp4-contas-kyc`
 **Date:** 2026-04-15
 

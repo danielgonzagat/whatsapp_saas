@@ -60,7 +60,7 @@
 
 1. Automated alert fires (Sentry / Railway health check)
 2. On-call engineer acknowledges within response time
-3. If P1/P2: notify daniel@kloel.com immediately
+3. If P1/P2: notify <daniel@kloel.com> immediately
 4. Status updates every 30 minutes during active incident
 
 ### External Communication
@@ -71,7 +71,7 @@
 
 ### Communication Channels
 
-- Primary: Email (daniel@kloel.com)
+- Primary: Email (<daniel@kloel.com>)
 - Secondary: WhatsApp group (engineering team)
 - Status page: Update at each milestone
 
@@ -81,7 +81,8 @@
 
 ### Scenario 1: Database Loss
 
-**Symptoms:** Application returns 500 errors, Prisma connection timeouts, "relation does not exist" errors.
+**Symptoms:** Application returns 500 errors, Prisma connection timeouts,
+"relation does not exist" errors.
 
 **Steps:**
 
@@ -124,7 +125,8 @@
 
 ### Scenario 2: Redis Loss
 
-**Symptoms:** Slow responses, BullMQ jobs not processing, rate limiting not working, stale cache data.
+**Symptoms:** Slow responses, BullMQ jobs not processing, rate limiting not
+working, stale cache data.
 
 **Steps:**
 
@@ -134,7 +136,8 @@
    redis-cli -u "$REDIS_URL" PING
    ```
 
-2. **Application auto-degrades** -- The backend handles Redis unavailability gracefully:
+2. **Application auto-degrades** -- The backend handles Redis unavailability
+   gracefully:
    - Rate limiting falls back to in-memory
    - BullMQ retries with exponential backoff
    - Cache misses serve from database
@@ -151,6 +154,7 @@
    ```
 
 5. **Verify BullMQ queues are draining**
+
    ```bash
    # Check via Bull Board or API
    curl -s https://api.kloel.com/health | jq .redis
@@ -160,7 +164,8 @@
 
 ### Scenario 3: Application Crash (Backend)
 
-**Symptoms:** 502/503 errors from Railway, health check failing, no logs being produced.
+**Symptoms:** 502/503 errors from Railway, health check failing, no logs being
+produced.
 
 **Steps:**
 
@@ -201,7 +206,8 @@
 
 ### Scenario 4: DNS Failure
 
-**Symptoms:** Domain not resolving, SSL certificate errors, "site can't be reached".
+**Symptoms:** Domain not resolving, SSL certificate errors, "site can't be
+reached".
 
 **Steps:**
 
@@ -236,14 +242,15 @@
 
 ### Scenario 5: Provider Outage (Railway / Vercel / AWS)
 
-**Symptoms:** Multiple services down simultaneously, provider status page shows incident.
+**Symptoms:** Multiple services down simultaneously, provider status page shows
+incident.
 
 **Steps:**
 
 1. **Check provider status pages**
-   - Railway: https://status.railway.app
-   - Vercel: https://www.vercel-status.com
-   - AWS: https://health.aws.amazon.com
+   - Railway: <https://status.railway.app>
+   - Vercel: <https://www.vercel-status.com>
+   - AWS: <https://health.aws.amazon.com>
 
 2. **If Railway is down (backend + DB):**
    - Enable Vercel maintenance page
@@ -313,9 +320,9 @@ Complete this for every P1 and P2 incident:
 
 | Role             | Contact             | Method            |
 | ---------------- | ------------------- | ----------------- |
-| Engineering Lead | daniel@kloel.com    | Email / WhatsApp  |
-| Railway Support  | support@railway.app | Email / Dashboard |
-| Vercel Support   | support@vercel.com  | Email / Dashboard |
+| Engineering Lead | <daniel@kloel.com>    | Email / WhatsApp  |
+| Railway Support  | <support@railway.app> | Email / Dashboard |
+| Vercel Support   | <support@vercel.com>  | Email / Dashboard |
 | AWS Support      | AWS Console         | Support ticket    |
 
 ---

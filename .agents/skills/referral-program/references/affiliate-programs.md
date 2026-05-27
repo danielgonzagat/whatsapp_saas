@@ -8,7 +8,8 @@ Detailed guidance for building and managing affiliate programs.
 - Cookie Duration
 - Affiliate Recruitment
 - Affiliate Enablement
-- Tools & Platforms (Referral Program Tools, Affiliate Program Tools, Choosing a Tool)
+- Tools & Platforms (Referral Program Tools, Affiliate Program Tools, Choosing a
+  Tool)
 - Fraud Prevention (Common Referral Fraud, Prevention Measures)
 
 ## Commission Structures
@@ -54,7 +55,7 @@ How long after click does affiliate get credit?
 
 ## Affiliate Recruitment
 
-### Where to find affiliates:
+### Where to find affiliates
 
 - Existing customers who create content
 - Industry bloggers and reviewers
@@ -63,7 +64,7 @@ How long after click does affiliate get credit?
 - Complementary tool companies
 - Consultants and agencies
 
-### Outreach template:
+### Outreach template
 
 ```
 Subject: Partnership opportunity — [Your Product]
@@ -131,7 +132,9 @@ Provide affiliates with:
 
 **Partner Relationship Management (PRM):**
 
-- Introw — Full PRM with deal registration, commissions, tiers, QBRs, and partner engagement tracking ([integration guide](../../../tools/integrations/introw.md))
+- Introw — Full PRM with deal registration, commissions, tiers, QBRs, and
+  partner engagement tracking (
+  [integration guide](../../../tools/integrations/introw.md) )
 
 **Self-hosted:**
 
