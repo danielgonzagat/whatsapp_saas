@@ -3,7 +3,6 @@ import { KloelChatToolsService } from './kloel-chat-tools.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProductService } from '../products/product.service';
 import { SmartPaymentService } from './smart-payment.service';
-import { ProductService } from '../products/product.service';
 import {
   AgentRuntimeSchedulerService,
   AgentRuntimeSessionStore,
@@ -42,6 +41,7 @@ type ChatToolsPrismaMock = {
   checkoutOrder: { aggregate: jest.Mock };
   kloelWallet: { findUnique: jest.Mock };
   auditLog: { create: jest.Mock };
+  kloelSale: { create: jest.Mock };
   $transaction: jest.Mock;
 };
 
@@ -50,7 +50,6 @@ describe('KloelChatToolsService', () => {
   let prisma: ChatToolsPrismaMock;
   let productService: { create: jest.Mock };
   let smartPayment: Pick<SmartPaymentService, 'createSmartPayment'>;
-  let productService: { create: jest.Mock };
   let agentScheduler: {
     upsertJob: jest.Mock;
     listJobs: jest.Mock;
@@ -103,6 +102,7 @@ describe('KloelChatToolsService', () => {
       },
       kloelWallet: { findUnique: jest.fn().mockResolvedValue(null) },
       auditLog: { create: jest.fn().mockResolvedValue({}) },
+      kloelSale: { create: jest.fn().mockResolvedValue({ id: 'sale-1' }) },
       $transaction: jest.fn().mockImplementation((arg: unknown) => {
         if (typeof arg === 'function') {
           return arg(prisma);
@@ -198,6 +198,36 @@ describe('KloelChatToolsService', () => {
         });
 
         expect(result.success).toBe(true);
+        expect(smartPayment.createSmartPayment).toHaveBeenCalledWith(
+          expect.objectContaining({ workspaceId: wsId, amount: 99.9 }),
+        );
+      } finally {
+        if (originalNodeEnv === undefined) {
+          delete process.env.NODE_ENV;
+        } else {
+          process.env.NODE_ENV = originalNodeEnv;
+        }
+      }
+    });
+
+    it('does not fabricate PIX or sales in non-production mode', async () => {
+      const originalNodeEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'test';
+      smartPayment.createSmartPayment = jest.fn().mockResolvedValue({
+        paymentUrl: 'https://pay.test/checkout',
+      });
+
+      try {
+        const result = await service.toolCreatePaymentLink(wsId, {
+          amount: 99.9,
+          description: 'Produto Teste',
+          customerName: 'Joao',
+        });
+
+        expect(result.success).toBe(true);
+        expect(result.pixCopyPaste).toBeUndefined();
+        expect(result.pixQrCode).toBeUndefined();
+        expect(prisma.kloelSale.create).not.toHaveBeenCalled();
         expect(smartPayment.createSmartPayment).toHaveBeenCalledWith(
           expect.objectContaining({ workspaceId: wsId, amount: 99.9 }),
         );
