@@ -24,6 +24,7 @@ import { KLOEL_LLM_E2E_GUARD, NoopKloelLLME2EGuard } from './kloel-llm-e2e-guard
 import { KloelController } from './kloel.controller';
 import { KloelDataController } from './kloel-data.controller';
 import {
+  LeadMindCoordinator,
   MindAutonomyCoordinator,
   MindCapabilityExecutor,
   MindCapabilityRegistry,
@@ -32,7 +33,6 @@ import {
   MindRuntime,
   WhatsAppMindCoordinator,
 } from './mind/coordination';
-import { KloelLeadBrainService as LeadMindCoordinator } from './kloel-lead-brain.service';
 import { KloelLeadProcessorService } from './kloel-lead-processor.service';
 import { KloelReplyEngineService } from './kloel-reply-engine.service';
 import { KloelService } from './kloel.service';
