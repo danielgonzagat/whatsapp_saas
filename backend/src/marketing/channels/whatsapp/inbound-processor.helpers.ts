@@ -1,7 +1,7 @@
 import type { IInboxService } from '../../../inbox/inbox.interface';
 import type { PrismaService } from '../../../prisma/prisma.service';
 import type { UnifiedAgentService } from '../../../kloel/unified-agent.service';
-import type { AccountAgentService } from '../../../whatsapp/account-agent.service';
+import type { AccountAgentService } from './account-agent.service';
 import type { WorkerRuntimeService } from '../../../whatsapp/worker-runtime.service';
 import type { WhatsappService } from './whatsapp.service';
 import type { OpsAlertService } from '../../../observability/ops-alert.service';

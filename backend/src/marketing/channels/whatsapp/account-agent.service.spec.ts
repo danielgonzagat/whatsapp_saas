@@ -1,4 +1,4 @@
-import { expectValueOf } from '../../test/expect-value-of';
+import { expectValueOf } from '../../../../test/expect-value-of';
 import { AccountAgentService } from './account-agent.service';
 import { ACCOUNT_CAPABILITY_REGISTRY } from './account-agent.registry';
 import {
@@ -9,11 +9,11 @@ import {
   createMockStores,
 } from './account-agent.service.spec.helpers';
 
-jest.mock('../queue/queue', () => ({
+jest.mock('../../../queue/queue', () => ({
   autopilotQueue: { add: jest.fn().mockResolvedValue(undefined) },
 }));
 
-const { autopilotQueue } = jest.requireMock('../queue/queue');
+const { autopilotQueue } = jest.requireMock('../../../queue/queue');
 
 describe('AccountAgentService', () => {
   let service: AccountAgentService;

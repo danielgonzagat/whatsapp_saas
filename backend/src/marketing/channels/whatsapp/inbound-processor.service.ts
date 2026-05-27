@@ -12,7 +12,7 @@ import { ChannelInboundHookService } from '../../../omnichannel/channel-inbound-
 import { PrismaService } from '../../../prisma/prisma.service';
 import { buildQueueDedupId, buildQueueJobId } from '../../../queue/job-id.util';
 import { autopilotQueue, flowQueue, voiceQueue } from '../../../queue/queue';
-import { AccountAgentService } from '../../../whatsapp/account-agent.service';
+import { AccountAgentService } from './account-agent.service';
 import {
   InboundMessage,
   type InboundIngestMode,

@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
+import { toPrismaJsonValue } from '../../../common/prisma/prisma-json.util';
 import type { AccountDeps } from './account-agent.gap-detector';
 
 function toJson(value: unknown): Prisma.InputJsonValue {

@@ -1,5 +1,5 @@
 import type { Prisma } from '@prisma/client';
-import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
+import { toPrismaJsonValue } from '../../../common/prisma/prisma-json.util';
 import { AccountDeps } from './account-agent.gap-detector';
 import type { AccountInputSessionPayload } from './account-agent.types';
 import { asRecord, getPromptForStage } from './account-agent.parsers';

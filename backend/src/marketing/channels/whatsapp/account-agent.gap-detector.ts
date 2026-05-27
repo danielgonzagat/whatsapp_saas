@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import type { Prisma } from '@prisma/client';
-import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
-import type { PrismaService } from '../prisma/prisma.service';
-import type { AgentEventsService } from './agent-events.service';
+import { toPrismaJsonValue } from '../../../common/prisma/prisma-json.util';
+import type { PrismaService } from '../../../prisma/prisma.service';
+import type { AgentEventsService } from '../../../whatsapp/agent-events.service';
 import type { AccountApprovalPayload } from './account-agent.types';
 import { detectCatalogGap as detectGap, slugifyCatalogKey } from './account-agent.util';
 import { asRecord, parseApprovalPayload, readString } from './account-agent.parsers';

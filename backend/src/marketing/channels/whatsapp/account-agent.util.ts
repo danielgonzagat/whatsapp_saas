@@ -4,7 +4,7 @@ import {
   PRODUCT_CUE_WORDS,
   STOPWORDS,
 } from './account-agent.util.helpers';
-import { formatBrlAmount } from '../kloel/money-format.util';
+import { formatBrlAmount } from '../../../kloel/money-format.util';
 
 /** Catalog gap detection shape. */
 interface CatalogGapDetection {

@@ -12,10 +12,10 @@ import type {
   ApprovalStatus,
   InputSessionStatus,
 } from './account-agent.types';
-import { readStringOrNull as readString } from '../common/parse';
+import { readStringOrNull as readString } from '../../../common/parse';
 export { readString };
 
-import { asRecord } from '../common/types';
+import { asRecord } from '../../../common/types';
 export { asRecord };
 
 function readNullableString(value: unknown): string | null {
