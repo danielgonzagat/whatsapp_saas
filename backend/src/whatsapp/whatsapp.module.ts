@@ -30,7 +30,7 @@ import { WhatsappController } from './whatsapp.controller';
 import { WhatsappSendRateGuardService } from '../marketing/channels/whatsapp/whatsapp-send-rate-guard.service';
 import { WhatsappService } from './whatsapp.service';
 import { WhatsappSessionService } from './whatsapp-session.service';
-import { WhatsappMessageDispatcherService } from './whatsapp-message-dispatcher.service';
+import { WhatsappMessageDispatcherService } from '../marketing/channels/whatsapp/whatsapp-message-dispatcher.service';
 import { WhatsappMediaService } from '../marketing/channels/whatsapp/whatsapp-media.service';
 import { WhatsappReconcilerService } from './whatsapp-reconciler.service';
 import { WorkerRuntimeService } from './worker-runtime.service';

@@ -1,16 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PlanLimitsService } from '../billing/plan-limits.service';
-import { INBOX_SERVICE } from '../inbox/inbox.token';
-import type { IInboxService } from '../inbox/inbox.interface';
-import { OpsAlertService } from '../observability/ops-alert.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { WorkspaceService } from '../workspaces/workspace.service';
-import { WhatsAppProviderRegistry } from './providers/provider-registry';
-import { WorkerRuntimeService } from './worker-runtime.service';
-import { WhatsappSessionService } from './whatsapp-session.service';
+import { PlanLimitsService } from '../../../billing/plan-limits.service';
+import { INBOX_SERVICE } from '../../../inbox/inbox.token';
+import type { IInboxService } from '../../../inbox/inbox.interface';
+import { OpsAlertService } from '../../../observability/ops-alert.service';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { WorkspaceService } from '../../../workspaces/workspace.service';
+import { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
+import { WorkerRuntimeService } from '../../../whatsapp/worker-runtime.service';
+import { WhatsappSessionService } from '../../../whatsapp/whatsapp-session.service';
 import { WhatsappMessageDispatcherService } from './whatsapp-message-dispatcher.service';
 
-jest.mock('../queue/queue', () => ({
+jest.mock('../../../queue/queue', () => ({
   flowQueue: {
     add: jest.fn<(...args: unknown[]) => Promise<unknown>>().mockResolvedValue(undefined),
   },
@@ -19,7 +19,7 @@ jest.mock('../queue/queue', () => ({
 
 const mockFlowQueueAdd = jest.requireMock<{
   flowQueue: { add: jest.Mock<(...args: unknown[]) => Promise<unknown>> };
-}>('../queue/queue').flowQueue.add;
+}>('../../../queue/queue').flowQueue.add;
 
 function getFlowQueueAddMock(): jest.Mock<(...args: unknown[]) => Promise<unknown>> {
   return mockFlowQueueAdd;
