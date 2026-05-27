@@ -8,7 +8,10 @@ import {
   WhatsAppApiProvider,
   type WahaRuntimeConfigDiagnostics,
 } from './providers/whatsapp-api.provider';
-import { normalizeJsonObjExt, normalizeNumber } from './whatsapp-service.helpers';
+import {
+  normalizeJsonObjExt,
+  normalizeNumber,
+} from '../marketing/channels/whatsapp/whatsapp-service.helpers';
 import type { ProviderSettings } from './provider-settings.types';
 import { WhatsAppEventEmitterService } from '../kloel/whatsapp-emitter/whatsapp-event-emitter.service';
 

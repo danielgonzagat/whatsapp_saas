@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
-import { normalizeNumber } from './whatsapp-service.helpers';
+import { normalizeNumber } from '../marketing/channels/whatsapp/whatsapp-service.helpers';
 
 @Injectable()
 export class WhatsappMediaService {

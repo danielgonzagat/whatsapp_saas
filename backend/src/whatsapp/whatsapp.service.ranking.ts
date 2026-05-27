@@ -1,4 +1,4 @@
-import { resolveTimestampExt } from './whatsapp-service.helpers';
+import { resolveTimestampExt } from '../marketing/channels/whatsapp/whatsapp-service.helpers';
 
 interface ProbabilisticEntry {
   purchaseProbabilityScore: number;
