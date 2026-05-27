@@ -9,14 +9,10 @@ import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 
 const mockQueueAdd = jest.fn();
-const mockWorkerOn = jest.fn();
 
 jest.mock('bullmq', () => ({
   Queue: jest.fn().mockImplementation(() => ({
     add: mockQueueAdd,
-  })),
-  Worker: jest.fn().mockImplementation(() => ({
-    on: mockWorkerOn,
   })),
 }));
 
@@ -74,7 +70,6 @@ describe('CampaignsService', () => {
 
   beforeEach(async () => {
     mockQueueAdd.mockResolvedValue(undefined);
-    mockWorkerOn.mockReturnValue(undefined);
     mockPrisma = buildMockPrisma();
     mockAudit = {
       log: jest.fn().mockResolvedValue(undefined),
