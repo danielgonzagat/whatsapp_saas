@@ -16,7 +16,7 @@ import { safeCompareStrings } from '../common/utils/crypto-compare.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { AgentEventsService } from '../whatsapp/agent-events.service';
 import { CIA_RUNTIME_SERVICE, type CiaRuntimePort } from '../kloel/mind/cia/cia-runtime.port';
-import { InboundProcessorService } from '../whatsapp/inbound-processor.service';
+import { InboundProcessorService } from '../marketing/channels/whatsapp/inbound-processor.service';
 import { WhatsAppApiProvider } from '../whatsapp/providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from '../whatsapp/whatsapp-catchup.service';
 

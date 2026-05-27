@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
-import { InboundProcessorService } from './inbound-processor.service';
+import { InboundProcessorService } from '../marketing/channels/whatsapp/inbound-processor.service';
 import { WorkspaceService } from '../workspaces/workspace.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from './whatsapp.service';

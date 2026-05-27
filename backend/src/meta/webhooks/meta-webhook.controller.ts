@@ -28,7 +28,7 @@ import {
 } from '../../common/utils/webhook-challenge-response.util';
 import { OmnichannelService } from '../../inbox/omnichannel.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { InboundProcessorService } from '../../whatsapp/inbound-processor.service';
+import { InboundProcessorService } from '../../marketing/channels/whatsapp/inbound-processor.service';
 import { WebhooksService } from '../../webhooks/webhooks.service';
 import { MetaWhatsAppService } from '../meta-whatsapp.service';
 import { RouteClass } from '../../common/throttler/route-class.decorator';

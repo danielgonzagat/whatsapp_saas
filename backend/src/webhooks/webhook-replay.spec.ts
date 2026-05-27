@@ -1,5 +1,5 @@
 import * as crypto from 'node:crypto';
-jest.mock('../whatsapp/inbound-processor.service', () => ({
+jest.mock('../marketing/channels/whatsapp/inbound-processor.service', () => ({
   InboundProcessorService: jest.fn().mockImplementation(() => ({
     process: jest.fn().mockResolvedValue(undefined),
   })),

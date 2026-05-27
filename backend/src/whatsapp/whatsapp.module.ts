@@ -15,7 +15,7 @@ import { AgentEventsService } from './agent-events.service';
 import { WhatsAppApiController } from './controllers/whatsapp-api.controller';
 import { WhatsAppCatalogController } from './controllers/whatsapp-catalog.controller';
 import { WhatsAppMetaCompatController } from './controllers/whatsapp-meta-compat.controller';
-import { InboundProcessorService } from './inbound-processor.service';
+import { InboundProcessorService } from '../marketing/channels/whatsapp/inbound-processor.service';
 import { InternalWhatsAppRuntimeController } from './internal-whatsapp-runtime.controller';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WahaProvider } from './providers/waha.provider';
@@ -34,8 +34,8 @@ import { WhatsappMessageDispatcherService } from '../marketing/channels/whatsapp
 import { WhatsappMediaService } from '../marketing/channels/whatsapp/whatsapp-media.service';
 import { WhatsappReconcilerService } from '../marketing/channels/whatsapp/whatsapp-reconciler.service';
 import { WorkerRuntimeService } from './worker-runtime.service';
-import { WhatsappChatBacklogService } from './whatsapp.service.chats.backlog';
-import { WhatsappChatMessagesService } from './whatsapp.service.chats.messages';
+import { WhatsappChatBacklogService } from '../marketing/channels/whatsapp/whatsapp.service.chats.backlog';
+import { WhatsappChatMessagesService } from '../marketing/channels/whatsapp/whatsapp.service.chats.messages';
 import {
   WHATSAPP_MESSAGING,
   INBOUND_PROCESSOR,

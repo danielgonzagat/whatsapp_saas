@@ -17,7 +17,7 @@ import { ChannelTransportRegistry } from '../kloel/channel-transport.registry';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WorkspaceService } from '../workspaces/workspace.service';
-import { InboundMessage, InboundProcessorService } from './inbound-processor.service';
+import { InboundMessage, InboundProcessorService } from '../marketing/channels/whatsapp/inbound-processor.service';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import type { ContactCustomFields } from '../contacts/contact-custom-fields.types';
 import { WhatsappService } from './whatsapp.service';

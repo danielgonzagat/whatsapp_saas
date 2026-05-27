@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
 
 import { ChannelInboundHookService } from '../../../omnichannel/channel-inbound-hook.service';
-import type { InboundMessage } from '../../../whatsapp/inbound-processor.helpers';
+import type { InboundMessage } from './inbound-processor.helpers';
 
 interface TriggerWhatsappMindPerceptInput {
   mindHook?: ChannelInboundHookService;

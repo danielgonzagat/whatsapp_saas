@@ -22,7 +22,7 @@ jest.mock('../marketing/channels/whatsapp/whatsapp-catchup-config', () => {
 
 const { autopilotQueue: _autopilotQueue } = jest.requireMock('../queue/queue');
 
-import type { InboundMessage } from './inbound-processor.service';
+import type { InboundMessage } from '../marketing/channels/whatsapp/inbound-processor.service';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import { CATCHUP_MAX_MESSAGES_PER_CHAT } from '../marketing/channels/whatsapp/whatsapp-catchup-config';
 import {

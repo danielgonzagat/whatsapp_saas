@@ -1,6 +1,6 @@
 import { InboundProcessorService } from './inbound-processor.service';
 
-jest.mock('../queue/queue', () => ({
+jest.mock('../../../queue/queue', () => ({
   autopilotQueue: { add: jest.fn() },
   flowQueue: { add: jest.fn() },
   voiceQueue: { add: jest.fn() },
@@ -110,7 +110,7 @@ describe('InboundProcessorService', () => {
   }
 
   beforeEach(() => {
-    const queueModule = jest.requireMock<QueueModuleMock>('../queue/queue');
+    const queueModule = jest.requireMock<QueueModuleMock>('../../../queue/queue');
     mockAutopilotAdd = queueModule.autopilotQueue.add;
 
     prisma = {

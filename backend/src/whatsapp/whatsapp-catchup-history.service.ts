@@ -8,7 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { type ProviderSettings } from './provider-settings.types';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { type WahaChatMessage, type WahaChatSummary } from './providers/whatsapp-api.provider';
-import { type InboundMessage } from './inbound-processor.service';
+import { type InboundMessage } from '../marketing/channels/whatsapp/inbound-processor.service';
 import { whatsappDigits } from '../common/phone';
 import {
   normalizeTimestampExt,

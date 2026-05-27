@@ -1,5 +1,5 @@
 import type { PrismaService } from '../../prisma/prisma.service';
-import type { InboundProcessorService } from '../../whatsapp/inbound-processor.service';
+import type { InboundProcessorService } from '../../marketing/channels/whatsapp/inbound-processor.service';
 import type { WebhooksService } from '../../webhooks/webhooks.service';
 import type { MetaWhatsAppService } from '../meta-whatsapp.service';
 import type { OmnichannelService } from '../../inbox/omnichannel.service';
