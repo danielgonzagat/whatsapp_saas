@@ -43,6 +43,7 @@ import { KloelWorkspaceContextService } from './kloel-workspace-context.service'
 import { KloelComposerService } from './kloel-composer.service';
 import { KloelReplyEngineService, LocalToolExecutor } from './kloel-reply-engine.service';
 import { KLOEL_LLM_E2E_GUARD, KloelLLME2EGuard } from './kloel-llm-e2e-guard';
+import { KloelStreamWriter } from './kloel-stream-writer';
 
 jest.mock('./kloel-thinker.helpers', () => ({
   thinkSyncImpl: jest.fn(),
@@ -255,6 +256,89 @@ describe('KloelThinkerService', () => {
           jest.fn() as LocalToolExecutor,
         ),
       ).resolves.toBeUndefined();
+    });
+
+    it('routes detected operational SSE actions before the LLM key guard', async () => {
+      replyEngine.hasOpenAiKey = jest.fn().mockReturnValue(false);
+      jest.replaceProperty(process, 'env', { ...process.env, ANTHROPIC_API_KEY: '' });
+      const executeLocalTool = jest
+        .fn()
+        .mockResolvedValue({ success: true, products: [{ name: 'PDRN', price: 197 }] });
+
+      await service.think(
+        { message: 'listar produtos', workspaceId: wsId, userId: 'agent-1' },
+        {} as Response,
+        null,
+        undefined,
+        undefined,
+        executeLocalTool as LocalToolExecutor,
+      );
+
+      expect(executeLocalTool).toHaveBeenCalledWith(wsId, 'list_products', {}, 'agent-1');
+      expect(replyEngine.hasOpenAiKey).not.toHaveBeenCalled();
+      expect(replyEngine.buildChatModelMessages).not.toHaveBeenCalled();
+      const streamWriter = (KloelStreamWriter as unknown as jest.Mock).mock.results.at(-1)
+        ?.value as { write: jest.Mock<void, [unknown]> };
+      expect(streamWriter.write).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'tool_call', tool: 'list_products' }),
+      );
+      expect(streamWriter.write).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'tool_result', tool: 'list_products', success: true }),
+      );
+      expect(
+        streamWriter.write.mock.calls.some(([event]) => {
+          if (event === null || typeof event !== 'object' || Array.isArray(event)) {
+            return false;
+          }
+          const maybeEvent = event as { type?: unknown; content?: unknown };
+          return (
+            maybeEvent.type === 'content' &&
+            typeof maybeEvent.content === 'string' &&
+            maybeEvent.content.includes('PDRN')
+          );
+        }),
+      ).toBe(true);
+      expect(finalizeSuccessfulReply).toHaveBeenCalledWith(
+        expect.stringContaining('PDRN'),
+        0,
+        expect.objectContaining({ workspaceId: wsId, message: 'listar produtos' }),
+      );
+    });
+
+    it('returns an honest tool failure on SSE without falling through to the LLM', async () => {
+      const executeLocalTool = jest
+        .fn()
+        .mockResolvedValue({ success: false, error: 'tool_not_allowed' });
+
+      await service.think(
+        { message: 'listar produtos', workspaceId: wsId, allowedTools: ['search_web'] },
+        {} as Response,
+        null,
+        undefined,
+        undefined,
+        executeLocalTool as LocalToolExecutor,
+      );
+
+      expect(executeLocalTool).toHaveBeenCalledWith(wsId, 'list_products', {}, undefined);
+      expect(replyEngine.buildChatModelMessages).not.toHaveBeenCalled();
+      const streamWriter = (KloelStreamWriter as unknown as jest.Mock).mock.results.at(-1)
+        ?.value as { write: jest.Mock<void, [unknown]> };
+      expect(streamWriter.write).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'tool_result',
+          tool: 'list_products',
+          success: false,
+          error: 'tool_not_allowed',
+        }),
+      );
+      expect(streamWriter.write).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'content', content: 'Erro: tool_not_allowed' }),
+      );
+      expect(finalizeSuccessfulReply).toHaveBeenCalledWith(
+        'Erro: tool_not_allowed',
+        0,
+        expect.objectContaining({ workspaceId: wsId, message: 'listar produtos' }),
+      );
     });
 
     it('builds conversational ABI by default and sends cognitive state to model messages', async () => {

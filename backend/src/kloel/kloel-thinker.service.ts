@@ -9,9 +9,12 @@ import { KloelComposerService } from './kloel-composer.service';
 import { KloelConversationStore } from './kloel-conversation-store';
 import { KLOEL_LLM_E2E_GUARD, KloelLLME2EGuard } from './kloel-llm-e2e-guard';
 import {
+  createKloelContentEvent,
   createKloelErrorEvent,
   createKloelStatusEvent,
   createKloelThreadEvent,
+  createKloelToolCallEvent,
+  createKloelToolResultEvent,
   type KloelStreamEvent,
 } from './kloel-stream-events';
 import { KloelStreamWriter } from './kloel-stream-writer';
@@ -25,6 +28,7 @@ import { MindCapabilityExecutor } from './mind/coordination';
 import { validateAbiPayload } from './abi/abi-validator';
 import { computeHandoffConfidence, HANDOFF_THRESHOLD } from './handoff-confidence.helper';
 import { ChatCompletionMessageParam } from 'openai/resources/chat';
+import { detectActionIntent, formatToolResult } from './guest-chat.action-intent.helpers';
 import { KloelReplyEngineService, LocalToolExecutor } from './kloel-reply-engine.service';
 import { thinkSyncImpl, regenerateThreadAssistantResponseImpl } from './kloel-thinker.helpers';
 import {
@@ -102,18 +106,6 @@ export class KloelThinkerService {
     streamWriter.init();
 
     try {
-      if (!this.replyEngine.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) {
-        safeWrite(
-          createKloelErrorEvent({
-            content:
-              'Assistente IA não disponível no momento. Configure DEEPSEEK_API_KEY, LLM_API_KEY, OPENAI_API_KEY ou ANTHROPIC_API_KEY para habilitar o Kloel.',
-            error: 'ai_api_key_missing',
-            done: true,
-          }),
-        );
-        streamWriter.close();
-        return;
-      }
       if (isAborted()) {
         if (!isClientDisconnected()) {
           safeWrite(
@@ -125,6 +117,120 @@ export class KloelThinkerService {
             }),
           );
         }
+        streamWriter.close();
+        return;
+      }
+
+      const deterministicWorkspaceId =
+        mode === 'chat' && typeof workspaceId === 'string' && workspaceId.length > 0
+          ? workspaceId
+          : undefined;
+      const deterministicAction = deterministicWorkspaceId ? detectActionIntent(message) : null;
+      if (deterministicAction && deterministicWorkspaceId) {
+        const clientRequestId = this.threadService.resolveClientRequestId(metadata);
+        const thread = await this.threadService.resolveThread(
+          deterministicWorkspaceId,
+          conversationId,
+        );
+        if (thread?.id) {
+          safeWrite(createKloelThreadEvent(thread.id, thread.title));
+        }
+        const persistedUserMessage = thread?.id
+          ? await this.threadService.persistUserThreadMessage(
+              thread.id,
+              deterministicWorkspaceId,
+              message,
+              this.threadService.buildThreadMessageMetadata(metadata, {
+                clientRequestId,
+                mode,
+                transport: 'sse',
+                requestState: 'accepted',
+              }),
+            )
+          : null;
+        const branchCtx: ThinkBranchContext = {
+          workspaceId: deterministicWorkspaceId,
+          userId,
+          message,
+          mode,
+          metadata,
+          clientRequestId,
+          thread,
+          persistedUserMessage,
+          processingTraceEntries,
+          safeWrite,
+          streamWriter,
+          replyEngine: this.replyEngine,
+          threadService: this.threadService,
+          conversationStore: this.conversationStore,
+          planLimits: this.planLimits,
+        };
+        const callId = clientRequestId
+          ? `deterministic_${clientRequestId}`
+          : `deterministic_${Date.now()}`;
+        safeWrite(
+          createKloelStatusEvent('tool_calling', `Executando ${deterministicAction.tool}.`),
+        );
+        safeWrite(
+          createKloelToolCallEvent(callId, deterministicAction.tool, deterministicAction.args),
+        );
+        let toolResult: unknown;
+        try {
+          toolResult = await executeLocalTool(
+            deterministicWorkspaceId,
+            deterministicAction.tool,
+            deterministicAction.args,
+            userId,
+          );
+        } catch (error: unknown) {
+          toolResult = {
+            success: false,
+            error:
+              error instanceof Error
+                ? error.message
+                : typeof error === 'string'
+                  ? error
+                  : 'tool_execution_failed',
+          };
+        }
+        const toolResultRecord =
+          toolResult !== null && typeof toolResult === 'object' && !Array.isArray(toolResult)
+            ? (toolResult as Record<string, unknown>)
+            : {};
+        const toolSucceeded = toolResultRecord.success !== false;
+        const toolError =
+          typeof toolResultRecord.error === 'string'
+            ? toolResultRecord.error
+            : toolSucceeded
+              ? undefined
+              : 'tool_execution_failed';
+        safeWrite(
+          createKloelStatusEvent('tool_result', `Resultado de ${deterministicAction.tool}.`),
+        );
+        safeWrite(
+          createKloelToolResultEvent({
+            callId,
+            tool: deterministicAction.tool,
+            success: toolSucceeded,
+            result: toolResult,
+            ...(toolError !== undefined ? { error: toolError } : {}),
+          }),
+        );
+        const reply = formatToolResult(deterministicAction.tool, toolResult);
+        safeWrite(createKloelContentEvent(reply));
+        await finalizeSuccessfulReply(reply, 0, branchCtx);
+        return;
+      }
+
+      if (!this.replyEngine.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) {
+        safeWrite(
+          createKloelErrorEvent({
+            content:
+              'Assistente IA não disponível no momento. Configure DEEPSEEK_API_KEY, LLM_API_KEY, OPENAI_API_KEY ou ANTHROPIC_API_KEY para habilitar o Kloel.',
+            error: 'ai_api_key_missing',
+            done: true,
+          }),
+        );
         streamWriter.close();
         return;
       }
