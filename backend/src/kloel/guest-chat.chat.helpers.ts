@@ -5,7 +5,7 @@ import { findFirstSequential } from '../common/async-sequence';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { chatCompletionWithFallback, chatCompletionWithRetry } from './openai-wrapper';
 import { OpsAlertService } from '../observability/ops-alert.service';
-import { BrainEventSpineService } from './brain-event-spine.service';
+import { MindEventSpine } from './mind/coordination';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { validateAbiPayload } from './abi/abi-validator';
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
@@ -208,7 +208,7 @@ export async function runDeterministicAction(
   workspaceId: string,
   toolDispatcher: KloelToolDispatcherService,
   intentRouter: IntentRouterService | undefined,
-  spine: BrainEventSpineService | undefined,
+  spine: MindEventSpine | undefined,
   redis: import('ioredis').default | undefined,
   conversations: Map<string, GuestConversation>,
   logger: StructuredLogger,
