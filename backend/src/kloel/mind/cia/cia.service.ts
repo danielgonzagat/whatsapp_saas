@@ -16,9 +16,9 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { buildQueueJobId } from '../../../queue/job-id.util';
 import { flowQueue } from '../../../queue/queue';
-import { AccountAgentService } from '../../../whatsapp/account-agent.service';
+import { AccountAgentService } from '../../../marketing/channels/whatsapp/account-agent.service';
 import { AgentEventsService } from '../../../whatsapp/agent-events.service';
-import { CiaRuntimeService } from '../../../cia/cia-runtime.service';
+import { CiaRuntimeService } from './cia-runtime.service';
 import { MindService } from '../../mind.service';
 import { readNumberForce } from '../../../common/parse';
 

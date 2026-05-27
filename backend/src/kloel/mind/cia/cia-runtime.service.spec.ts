@@ -1,4 +1,4 @@
-import { expectValueOf } from '../../test/expect-value-of';
+import { expectValueOf } from '../../../../test/expect-value-of';
 import { CiaRuntimeService } from './cia-runtime.service';
 import {
   makePrismaMock,
@@ -25,9 +25,9 @@ import {
   type CiaBacklogRunMock,
 } from './cia-runtime.service.fixtures';
 
-const { autopilotQueue } = jest.requireMock('../queue/queue');
+const { autopilotQueue } = jest.requireMock('../../../queue/queue');
 
-jest.mock('../queue/queue', () => ({
+jest.mock('../../../queue/queue', () => ({
   autopilotQueue: { add: jest.fn().mockResolvedValue(undefined) },
 }));
 

@@ -11,7 +11,7 @@ import { CiaChatFilterService } from '../kloel/mind/cia/cia-chat-filter.service'
 import { CiaCognitiveHealthService } from '../kloel/mind/cia/cia-cognitive-health.service';
 import { CiaInlineFallbackService } from '../kloel/mind/cia/cia-inline-fallback.service';
 import { CiaRemoteBacklogService } from '../kloel/mind/cia/cia-remote-backlog.service';
-import { CiaRuntimeService } from './cia-runtime.service';
+import { CiaRuntimeService } from '../kloel/mind/cia/cia-runtime.service';
 import { CiaRuntimeService as WhatsappCiaRuntimeService } from '../kloel/mind/cia/cia-runtime.abstract';
 import { CiaRuntimeStateService } from './cia-runtime-state.service';
 import { CiaSendHelpersService } from '../kloel/mind/cia/cia-send-helpers.service';
