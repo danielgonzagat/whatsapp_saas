@@ -111,6 +111,110 @@ export const MIND_EVENT_ALIASES = {
 export type MindEventLegacyName = keyof typeof MIND_EVENT_ALIASES;
 export type MindEventCanonicalName = (typeof MIND_EVENT_ALIASES)[MindEventLegacyName];
 
+/**
+ * Reverse lookup table: canonical `mind.*` name → legacy event string. Computed
+ * once at module-load so consumer code (SQL aggregators, decision-catalog
+ * branches, `readReplayEvents` filters) can expand a canonical filter into the
+ * union of both spellings during the cutover window without recomputing the
+ * inverse on every call.
+ *
+ * Direction is canonical → legacy by design. `MIND_EVENT_ALIASES` itself stays
+ * legacy → canonical (the only direction emit-site migration needs).
+ *
+ * @internal — exported for `expandEventNameAliases` only.
+ */
+const MIND_EVENT_LEGACY_BY_CANONICAL: Readonly<
+  Record<MindEventCanonicalName, MindEventLegacyName>
+> = Object.freeze(
+  Object.entries(MIND_EVENT_ALIASES).reduce<Record<string, string>>((acc, [legacy, canonical]) => {
+    acc[canonical] = legacy;
+    return acc;
+  }, {}) as Record<MindEventCanonicalName, MindEventLegacyName>,
+);
+
+/**
+ * Resolve a (possibly legacy) event name to its canonical `mind.*` form. Returns
+ * the input unchanged when the name has no alias mapping (canonical name itself,
+ * or an unrelated event).
+ *
+ * **One-way only**: `'product.created' → 'mind.product.observed'`. The inverse
+ * direction is intentionally not exposed at the public API surface — consumers
+ * that need to match both spellings should use {@link expandEventNameAliases}
+ * instead, which returns the union as an array suitable for SQL `IN (...)` /
+ * `Prisma.in` filters.
+ *
+ * @example
+ * ```ts
+ * resolveCanonicalEventName('product.created') // 'mind.product.observed'
+ * resolveCanonicalEventName('mind.product.observed') // 'mind.product.observed'
+ * resolveCanonicalEventName('sale.created') // 'sale.created' (untouched)
+ * ```
+ */
+export function resolveCanonicalEventName(name: BrainEventName): BrainEventName {
+  if (Object.prototype.hasOwnProperty.call(MIND_EVENT_ALIASES, name)) {
+    return MIND_EVENT_ALIASES[name as MindEventLegacyName];
+  }
+  return name;
+}
+
+/**
+ * Expand a single event name into the dual-name array required to match both
+ * the legacy and canonical spellings during the ADR-0013 §4 cutover window.
+ * Used by consumer-side filters (e.g. `readReplayEvents` Prisma `in` clauses)
+ * so a caller asking for canonical `mind.product.observed` automatically also
+ * receives historical rows still tagged with the legacy `product.created`.
+ *
+ * - Legacy input: returns `[legacy, canonical]` (length 2).
+ * - Canonical input: returns `[canonical, legacy]` (length 2).
+ * - Unrelated input: returns `[name]` (length 1, identity).
+ *
+ * Order is `[input, alias]` so the caller's original intent is preserved at
+ * index 0 — useful for logs / debug ordering.
+ *
+ * @example
+ * ```ts
+ * expandEventNameAliases('product.created')        // ['product.created', 'mind.product.observed']
+ * expandEventNameAliases('mind.product.observed')  // ['mind.product.observed', 'product.created']
+ * expandEventNameAliases('sale.created')           // ['sale.created']
+ * ```
+ */
+export function expandEventNameAliases(name: BrainEventName): BrainEventName[] {
+  if (Object.prototype.hasOwnProperty.call(MIND_EVENT_ALIASES, name)) {
+    return [name, MIND_EVENT_ALIASES[name as MindEventLegacyName]];
+  }
+  if (Object.prototype.hasOwnProperty.call(MIND_EVENT_LEGACY_BY_CANONICAL, name)) {
+    return [name, MIND_EVENT_LEGACY_BY_CANONICAL[name as MindEventCanonicalName]];
+  }
+  return [name];
+}
+
+/**
+ * Expand an array of event names so every legacy/canonical alias pair is
+ * represented in the output. De-duplicates so the result is safe to use as a
+ * Prisma `in: [...]` filter. Stable order: the first occurrence of each name
+ * wins (input ordering is preserved for primary entries; aliases append in
+ * iteration order).
+ *
+ * @example
+ * ```ts
+ * expandEventNameAliasesAll(['product.created', 'plan.created'])
+ * // → ['product.created', 'mind.product.observed', 'plan.created', 'mind.plan.observed']
+ * ```
+ */
+export function expandEventNameAliasesAll(names: readonly BrainEventName[]): BrainEventName[] {
+  const seen = new Set<BrainEventName>();
+  const out: BrainEventName[] = [];
+  for (const name of names) {
+    for (const expanded of expandEventNameAliases(name)) {
+      if (!seen.has(expanded)) {
+        seen.add(expanded);
+        out.push(expanded);
+      }
+    }
+  }
+  return out;
+}
+
 export interface CommercialEventPayload {
   occurredAt: Date;
   workspaceId: string;

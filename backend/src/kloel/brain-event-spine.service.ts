@@ -16,6 +16,7 @@ import { randomUUID } from 'crypto';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import type { BrainEventName, CommercialEventPayload } from './brain-event-taxonomy';
+import { expandEventNameAliasesAll } from './brain-event-taxonomy';
 
 type AutopilotEventIdRow = { id: string } | null;
 
@@ -224,10 +225,19 @@ export class BrainEventSpineService {
       lastError: string | null;
     }>;
   }> {
+    // ADR-0013 §4 / Wave 31 — claim under either legacy or canonical mind.*
+    // spelling. Expansion is a no-op for event names without an alias mapping
+    // (`agent.job.due`, sale.*, etc.), so existing callers are unaffected.
+    const expandedTypes = expandEventNameAliasesAll([params.eventType as BrainEventName]);
+    const eventTypeFilter =
+      expandedTypes.length > 1
+        ? { eventType: { in: expandedTypes } }
+        : { eventType: params.eventType };
+
     const rows = await this.prisma.mindOutboxEvent.findMany({
       where: {
         workspaceId: params.workspaceId,
-        eventType: params.eventType,
+        ...eventTypeFilter,
         status: 'pending',
       },
       orderBy: { createdAt: 'asc' },
@@ -244,7 +254,7 @@ export class BrainEventSpineService {
       where: {
         id: { in: ids },
         workspaceId: params.workspaceId,
-        eventType: params.eventType,
+        ...eventTypeFilter,
         status: 'pending',
       },
       data: {
@@ -259,7 +269,7 @@ export class BrainEventSpineService {
       where: {
         id: { in: ids },
         workspaceId: params.workspaceId,
-        eventType: params.eventType,
+        ...eventTypeFilter,
         status: 'processing',
       },
       orderBy: { createdAt: 'asc' },
@@ -316,10 +326,19 @@ export class BrainEventSpineService {
       status: string;
     }>;
   }> {
+    // ADR-0013 §4 / Wave 31 — accept BOTH legacy and canonical mind.* names
+    // during the alias cutover window. A caller filtering on the canonical
+    // `mind.product.observed` will also receive historical rows still tagged
+    // `product.created`, and vice versa. See `MIND_EVENT_ALIASES` in
+    // brain-event-taxonomy.ts and EVENT_TAXONOMY_KLOEL_TO_MIND_MIGRATION.md §E.
+    const expandedEventTypes = params.eventTypes?.length
+      ? expandEventNameAliasesAll(params.eventTypes)
+      : undefined;
+
     const rows = await this.prisma.mindOutboxEvent.findMany({
       where: {
         workspaceId: params.workspaceId,
-        ...(params.eventTypes?.length ? { eventType: { in: params.eventTypes } } : {}),
+        ...(expandedEventTypes ? { eventType: { in: expandedEventTypes } } : {}),
         ...(params.since ? { occurredAt: { gte: params.since } } : {}),
         status: { in: ['dispatched', 'pending'] },
       },

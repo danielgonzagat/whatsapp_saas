@@ -121,6 +121,47 @@ describe('BrainEventSpineService diagnostics', () => {
         }),
       );
     });
+
+    it('expands MIND_EVENT_ALIASES legacy names to include the canonical mind.* spelling', async () => {
+      prisma.mindOutboxEvent.findMany.mockResolvedValueOnce([]);
+
+      await service.readReplayEvents({
+        workspaceId: 'ws-1',
+        eventTypes: ['product.created', 'plan.created'],
+      });
+
+      expect(prisma.mindOutboxEvent.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            eventType: {
+              in: [
+                'product.created',
+                'mind.product.observed',
+                'plan.created',
+                'mind.plan.observed',
+              ],
+            },
+          }),
+        }),
+      );
+    });
+
+    it('expands MIND_EVENT_ALIASES canonical names to also accept the legacy spelling', async () => {
+      prisma.mindOutboxEvent.findMany.mockResolvedValueOnce([]);
+
+      await service.readReplayEvents({
+        workspaceId: 'ws-1',
+        eventTypes: ['mind.product.observed'],
+      });
+
+      expect(prisma.mindOutboxEvent.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            eventType: { in: ['mind.product.observed', 'product.created'] },
+          }),
+        }),
+      );
+    });
   });
 
   describe('readPendingEvents', () => {
