@@ -8,10 +8,7 @@
  * Part of Camada XIII — UTP-DELEG-001.
  */
 
-import type {
-  ActionTarget,
-  RiskClassification,
-} from './risk-class.types';
+import type { ActionTarget, RiskClassification } from './risk-class.types';
 
 export type GateVerdict = 'allow' | 'warn' | 'block';
 

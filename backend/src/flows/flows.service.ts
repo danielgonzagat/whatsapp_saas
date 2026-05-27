@@ -3,14 +3,13 @@ import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 
-const D_RE = /\D/g;
-
 import type { WaitForReplyNodeData, WaitState, ResumeResult } from './flows.wait-for-reply';
 import {
   pauseForWaitNode as pauseForWaitNodeFn,
   resumeFromWait as resumeFromWaitFn,
   expireWaitTimeouts as expireWaitTimeoutsFn,
 } from './flows.wait-for-reply';
+import { NON_DIGIT_RE } from '../common/phone';
 export type { WaitForReplyNodeData, WaitState, ResumeResult };
 
 /** Flows service. */
@@ -158,7 +157,7 @@ export class FlowsService {
 
   /** Create execution. */
   async createExecution(workspaceId: string, flowId: string, user: string) {
-    const normalizedUser = (user || '').replace(D_RE, '');
+    const normalizedUser = (user || '').replace(NON_DIGIT_RE, '');
 
     // Tenta achar contato ou cria
     let contact = await this.prisma.contact.findUnique({

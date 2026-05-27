@@ -19,9 +19,7 @@ describe('StorageDriversService', () => {
     s3SendMock.mockClear();
     config = { get: jest.fn().mockReturnValue(undefined) };
 
-    service = new StorageDriversService(
-      config as ConfigService,
-    );
+    service = new StorageDriversService(config as ConfigService);
   });
 
   describe('uploadToS3', () => {
@@ -49,8 +47,12 @@ describe('StorageDriversService', () => {
 
     it('uploads to S3 when bucket is configured', async () => {
       config.get.mockImplementation((key: string) => {
-        if (key === 'S3_BUCKET') return 'my-bucket';
-        if (key === 'S3_REGION') return 'us-east-1';
+        if (key === 'S3_BUCKET') {
+          return 'my-bucket';
+        }
+        if (key === 'S3_REGION') {
+          return 'us-east-1';
+        }
         return undefined;
       });
 
@@ -62,7 +64,9 @@ describe('StorageDriversService', () => {
 
     it('falls back to local when S3 upload fails', async () => {
       config.get.mockImplementation((key: string) => {
-        if (key === 'S3_BUCKET') return 'my-bucket';
+        if (key === 'S3_BUCKET') {
+          return 'my-bucket';
+        }
         return undefined;
       });
       s3SendMock.mockRejectedValueOnce(new Error('Network error'));
@@ -99,8 +103,12 @@ describe('StorageDriversService', () => {
 
     it('deletes from S3 successfully when bucket is configured', async () => {
       config.get.mockImplementation((key: string) => {
-        if (key === 'S3_BUCKET') return 'my-bucket';
-        if (key === 'S3_REGION') return 'us-east-1';
+        if (key === 'S3_BUCKET') {
+          return 'my-bucket';
+        }
+        if (key === 'S3_REGION') {
+          return 'us-east-1';
+        }
         return undefined;
       });
 
@@ -122,7 +130,9 @@ describe('StorageDriversService', () => {
 
     it('returns UP when bucket is accessible', async () => {
       config.get.mockImplementation((key: string) => {
-        if (key === 'S3_BUCKET') return 'my-bucket';
+        if (key === 'S3_BUCKET') {
+          return 'my-bucket';
+        }
         return undefined;
       });
       s3SendMock.mockResolvedValueOnce(undefined);

@@ -1,9 +1,7 @@
 import { MindBackgroundScheduler } from './mind-bg.scheduler';
 import { MindBackgroundProcessor } from './mind-bg.processor';
 import { SpineEmitterService } from '../spine/spine-emitter.service';
-import {
-  MultiTimescaleCoordinator,
-} from './multi-timescale.coordinator';
+import { MultiTimescaleCoordinator } from './multi-timescale.coordinator';
 import { ValenceAggregatorService } from './valence-aggregator.service';
 import { HebbianService } from './hebbian.service';
 import { ConsolidationService } from './consolidation.service';
@@ -44,8 +42,7 @@ jest.mock('bullmq', () => {
 });
 
 function getMocks() {
-  return (globalThis as Record<string, unknown>)
-    .__mindBgMocks as {
+  return (globalThis as Record<string, unknown>).__mindBgMocks as {
     queue: jest.Mock;
     worker: jest.Mock;
     qAdd: jest.Mock<Promise<void>>;
@@ -60,12 +57,7 @@ function buildScheduler() {
   const aggregator = new ValenceAggregatorService();
   const hebbian = new HebbianService({ windowMs: 60_000 });
   const consolidation = new ConsolidationService();
-  const processor = new MindBackgroundProcessor(
-    coordinator,
-    aggregator,
-    hebbian,
-    consolidation,
-  );
+  const processor = new MindBackgroundProcessor(coordinator, aggregator, hebbian, consolidation);
   const spine = {
     recentEventsAsRef: jest.fn().mockReturnValue([]),
   } as SpineEmitterService;
@@ -153,9 +145,13 @@ describe('MindBackgroundScheduler (UTP gap B)', () => {
 
     expect(queue).toHaveBeenCalledTimes(1);
     expect(worker).toHaveBeenCalledTimes(1);
-    expect(qAdd).toHaveBeenCalledWith('tick', {}, {
-      repeat: { every: 5_000 },
-    });
+    expect(qAdd).toHaveBeenCalledWith(
+      'tick',
+      {},
+      {
+        repeat: { every: 5_000 },
+      },
+    );
   });
 
   it('skips startup when Redis URL is not resolved', async () => {

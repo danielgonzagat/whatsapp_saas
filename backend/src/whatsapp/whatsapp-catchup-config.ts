@@ -6,13 +6,7 @@ export type GuestCheckSettings = {
   auth?: { anonymous?: boolean };
 };
 
-export function safeStr(v: unknown, fb = ''): string {
-  return typeof v === 'string'
-    ? v
-    : typeof v === 'number' || typeof v === 'boolean'
-      ? String(v)
-      : fb;
-}
+export { safeStr } from '../common/string';
 
 export const CATCHUP_SWEEP_LIMIT = Math.max(
   1,

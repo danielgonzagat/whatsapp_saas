@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AgentEventsService } from '../whatsapp/agent-events.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { CiaRuntimeStateService } from './cia-runtime-state.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 jest.mock('../queue/queue', () => {
   const mockAdd = jest.fn().mockResolvedValue(undefined);
@@ -11,40 +12,32 @@ jest.mock('../queue/queue', () => {
 
 describe('CiaRuntimeStateService', () => {
   let service: CiaRuntimeStateService;
-  let prisma: {
-    workspace: { findUnique: jest.Mock; update: jest.Mock };
-    autonomyRun: { create: jest.Mock; updateMany: jest.Mock };
-    autonomyExecution: { create: jest.Mock; updateMany: jest.Mock };
-    $transaction: jest.Mock;
-  };
+  let prisma: ReturnType<typeof createPartialPrismaMock>;
   let agentEvents: { publish: jest.Mock };
   let opsAlert: { alertOnCriticalError: jest.Mock; alertOnDegradation: jest.Mock };
 
   beforeEach(async () => {
-    prisma = {
-      workspace: {
-        findUnique: jest.fn().mockResolvedValue({
-          id: 'ws-1',
-          providerSettings: { ciaRuntime: { state: 'IDLE' } },
-        }),
-        update: jest.fn().mockResolvedValue({}),
-      },
-      autonomyRun: {
-        create: jest.fn().mockResolvedValue({}),
-        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
-      },
-      autonomyExecution: {
-        create: jest.fn().mockResolvedValue({ id: 'exec-1' }),
-        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
-      },
-      $transaction: jest.fn().mockImplementation(async (fn: Function) => {
-        return fn({
-          workspace: prisma.workspace,
-          autonomyRun: prisma.autonomyRun,
-          autonomyExecution: prisma.autonomyExecution,
-        });
-      }),
-    };
+    prisma = createPartialPrismaMock({
+      workspace: ['findUnique', 'update'],
+      autonomyRun: ['create', 'updateMany'],
+      autonomyExecution: ['create', 'updateMany'],
+    });
+    prisma.workspace.findUnique.mockResolvedValue({
+      id: 'ws-1',
+      providerSettings: { ciaRuntime: { state: 'IDLE' } },
+    });
+    prisma.workspace.update.mockResolvedValue({});
+    prisma.autonomyRun.create.mockResolvedValue({});
+    prisma.autonomyRun.updateMany.mockResolvedValue({ count: 1 });
+    prisma.autonomyExecution.create.mockResolvedValue({ id: 'exec-1' });
+    prisma.autonomyExecution.updateMany.mockResolvedValue({ count: 1 });
+    prisma.$transaction = jest.fn().mockImplementation(async (fn: Function) => {
+      return fn({
+        workspace: prisma.workspace,
+        autonomyRun: prisma.autonomyRun,
+        autonomyExecution: prisma.autonomyExecution,
+      });
+    });
     agentEvents = { publish: jest.fn().mockResolvedValue(undefined) };
     opsAlert = {
       alertOnCriticalError: jest.fn(),
@@ -103,7 +96,11 @@ describe('CiaRuntimeStateService', () => {
 
   describe('resetStaleRuntimeRunIfNeeded', () => {
     it('returns null when currentRunId is empty', async () => {
-      const result = await service.resetStaleRuntimeRunIfNeeded('ws-1', { currentRunId: '' }, 'test');
+      const result = await service.resetStaleRuntimeRunIfNeeded(
+        'ws-1',
+        { currentRunId: '' },
+        'test',
+      );
       expect(result).toBeNull();
     });
 
@@ -131,7 +128,10 @@ describe('CiaRuntimeStateService', () => {
       );
 
       expect(prisma.autonomyRun.updateMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id: 'run-stale', workspaceId: 'ws-1' }, data: expect.objectContaining({ status: 'FAILED' }) }),
+        expect.objectContaining({
+          where: { id: 'run-stale', workspaceId: 'ws-1' },
+          data: expect.objectContaining({ status: 'FAILED' }),
+        }),
       );
       expect(result).not.toBeNull();
       expect(result?.state).toBe('LIVE_READY');
@@ -154,9 +154,7 @@ describe('CiaRuntimeStateService', () => {
 
     it('returns scheduled=false when job is already waiting', async () => {
       const { autopilotQueue } = require('../queue/queue');
-      (autopilotQueue.add as jest.Mock).mockRejectedValueOnce(
-        new Error('Job is already waiting'),
-      );
+      (autopilotQueue.add as jest.Mock).mockRejectedValueOnce(new Error('Job is already waiting'));
       const result = await service.scheduleContactCatalogRefresh('ws-1', 'boot_complete');
       expect(result.scheduled).toBe(false);
       expect(result.reason).toBe('already_waiting');

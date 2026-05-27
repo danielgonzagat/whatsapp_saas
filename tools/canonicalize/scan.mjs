@@ -8,7 +8,11 @@ import { readFileSync, writeFileSync, mkdirSync, statSync, readdirSync } from 'n
 import { join, relative, dirname, basename } from 'node:path';
 
 const ROOT = '/Users/danielpenin/whatsapp_saas';
-const OUT_DIR = join(ROOT, 'docs/architecture');
+// OUT_DIR is env-overridable so the scanner can run NON-DESTRUCTIVELY for analysis
+// (several docs/architecture/*.md are hand-curated — never blind-overwrite them).
+const OUT_DIR = process.env.CANON_OUT_DIR
+  ? (process.env.CANON_OUT_DIR.startsWith('/') ? process.env.CANON_OUT_DIR : join(ROOT, process.env.CANON_OUT_DIR))
+  : join(ROOT, 'docs/architecture');
 
 const ROOTS = [
   'backend/src',
@@ -281,4 +285,4 @@ const eventDuplicates = [...eventCanonical.entries()].filter(([, variants]) => v
 
 // ─────────── write outputs ───────────
 import { writeOutputs } from './scan-writers.mjs';
-writeOutputs({ OUT_DIR, domains, services, controllers, modules, processors, events, queues, routes, prismaUsage, symbols });
+writeOutputs({ OUT_DIR, domains, services, controllers, modules, processors, events, queues, routes, prismaUsage, symbols, fileCount: tsFiles.length, domainOf, capabilityMap, eventDuplicates, exactDuplicates });

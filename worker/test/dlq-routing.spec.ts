@@ -222,7 +222,12 @@ describe('dlq routing — structured error payload', () => {
     // payload expectations via the queue interface.
     const opts = buildQueueOptions();
     expect(opts.defaultJobOptions.removeOnComplete).toBe(true);
-    expect(opts.defaultJobOptions.removeOnFail).toBeGreaterThanOrEqual(0);
+    const removeOnFail = opts.defaultJobOptions.removeOnFail;
+    if (typeof removeOnFail === 'object' && removeOnFail !== null) {
+      expect(removeOnFail.age).toBeGreaterThan(0);
+    } else {
+      expect(removeOnFail).toBeGreaterThanOrEqual(0);
+    }
   });
 
   it('Worker options propagate exponential backoff defaults', async () => {

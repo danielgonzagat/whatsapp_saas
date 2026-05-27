@@ -1,32 +1,32 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { DashboardService } from './dashboard.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 const REDIS_TOKEN = 'default_IORedisModuleConnectionToken';
 
 describe('DashboardService.getStats', () => {
   let service: DashboardService;
-  let prisma: {
-    workspace: { findUnique: jest.Mock };
-    contact: { count: jest.Mock };
-    campaign: { count: jest.Mock };
-    flow: { count: jest.Mock };
-    message: { groupBy: jest.Mock };
-    conversation: { count: jest.Mock };
-    flowExecution: { groupBy: jest.Mock };
-  };
+  let prisma: ReturnType<typeof createPartialPrismaMock>;
   let redis: { lrange: jest.Mock };
 
   beforeEach(async () => {
-    prisma = {
-      workspace: { findUnique: jest.fn().mockResolvedValue({ providerSettings: {} }) },
-      contact: { count: jest.fn().mockResolvedValue(0) },
-      campaign: { count: jest.fn().mockResolvedValue(0) },
-      flow: { count: jest.fn().mockResolvedValue(0) },
-      message: { groupBy: jest.fn().mockResolvedValue([]) },
-      conversation: { count: jest.fn().mockResolvedValue(0) },
-      flowExecution: { groupBy: jest.fn().mockResolvedValue([]) },
-    };
+    prisma = createPartialPrismaMock({
+      workspace: ['findUnique'],
+      contact: ['count'],
+      campaign: ['count'],
+      flow: ['count'],
+      message: ['groupBy'],
+      conversation: ['count'],
+      flowExecution: ['groupBy'],
+    });
+    prisma.workspace.findUnique.mockResolvedValue({ providerSettings: {} });
+    prisma.contact.count.mockResolvedValue(0);
+    prisma.campaign.count.mockResolvedValue(0);
+    prisma.flow.count.mockResolvedValue(0);
+    prisma.message.groupBy.mockResolvedValue([]);
+    prisma.conversation.count.mockResolvedValue(0);
+    prisma.flowExecution.groupBy.mockResolvedValue([]);
     redis = { lrange: jest.fn().mockResolvedValue([]) };
     const module: TestingModule = await Test.createTestingModule({
       providers: [

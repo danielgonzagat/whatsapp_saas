@@ -4,13 +4,7 @@ import { AutopilotAnalyticsService } from './autopilot-analytics.service';
 import { AutopilotAnalyticsInsightsService } from './autopilot-analytics-insights.service';
 import { AutopilotAnalyticsReportService } from './autopilot-analytics-report.service';
 import { PrismaService } from '../prisma/prisma.service';
-
-type FlexMock = jest.Mock & {
-  mockResolvedValue: (v: unknown) => FlexMock;
-  mockResolvedValueOnce: (v: unknown) => FlexMock;
-  mockRejectedValue: (err: unknown) => FlexMock;
-};
-
+import { type FlexMock } from '../../test/helpers/prisma.mock';
 describe('AutopilotAnalyticsService', () => {
   let service: AutopilotAnalyticsService;
 

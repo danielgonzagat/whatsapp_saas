@@ -3,18 +3,12 @@
 
 import { BadRequestException } from '@nestjs/common';
 
+import { asRecord } from '../../common/types';
 import type {
   ConnectPayoutApprovalDecision,
   ConnectPayoutApprovalPayload,
   ConnectPayoutApprovalSummary,
 } from './connect-payout-approval.types';
-
-/** Narrow an unknown value to a record (or null). */
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
-}
 
 /** Coerce an unknown to a non-empty trimmed string or throw. */
 function asNonEmptyString(value: unknown, field: string): string {

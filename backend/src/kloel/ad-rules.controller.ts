@@ -9,15 +9,12 @@ import {
   Put,
   Request,
   UseGuards,
-  Optional,
 } from '@nestjs/common';
-import { StructuredLogger } from '../logging/structured-logger';
 import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
-import { OpsAlertService } from '../observability/ops-alert.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 
 /** Ad rules controller. */
@@ -25,27 +22,19 @@ import { RouteClass } from '../common/throttler/route-class.decorator';
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @RouteClass('ai')
 export class AdRulesController {
-  private readonly logger = StructuredLogger.from(AdRulesController.name);
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
-    @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   /** List. */
   @Get()
   async list(@Request() req: AuthenticatedRequest) {
-    try {
-      const workspaceId = req.user.workspaceId;
-      return await this.prisma.adRule.findMany({
-        where: { workspaceId },
-        orderBy: { createdAt: 'desc' },
-      });
-    } catch (e: unknown) {
-      void this.opsAlert?.alertOnCriticalError(e, 'AdRulesController.findMany');
-      this.logger.warn(`AdRule table may not exist yet: ${(e as Error).message}`);
-      return [];
-    }
+    const workspaceId = req.user.workspaceId;
+    return await this.prisma.adRule.findMany({
+      where: { workspaceId },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   /** Create. */

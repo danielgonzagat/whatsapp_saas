@@ -20,8 +20,7 @@ export function offerConfidenceFloor(
   insight: OfferInsight,
   floor?: number,
 ): { readonly pass: boolean; readonly reason?: string } {
-  const effectiveFloor =
-    floor ?? PER_KIND_FLOOR.get(insight.kind) ?? DEFAULT_CONFIDENCE_FLOOR;
+  const effectiveFloor = floor ?? PER_KIND_FLOOR.get(insight.kind) ?? DEFAULT_CONFIDENCE_FLOOR;
 
   if (insight.confidence < effectiveFloor) {
     return {

@@ -3,8 +3,7 @@ import { toDataURL as qrToDataURL } from 'qrcode';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { RouteClass } from '../common/throttler/route-class.decorator';
-
-const D_RE = /\D/g;
+import { NON_DIGIT_RE } from '../common/phone';
 
 /** Growth controller. */
 @Controller('growth')
@@ -16,7 +15,7 @@ export class GrowthController {
 
   @Post('qr/whatsapp')
   async generateQr(@Body() body: { phone: string; message?: string }) {
-    const phone = (body?.phone || '').replace(D_RE, '');
+    const phone = (body?.phone || '').replace(NON_DIGIT_RE, '');
     const message = body?.message || 'Olá, quero saber mais!';
     if (!phone) {
       throw new BadRequestException('phone é obrigatório');

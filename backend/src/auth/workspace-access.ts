@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { ForbiddenException, UnauthorizedException  } from '@nestjs/common';
+import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
 
 interface TokenUser {
   workspaceId?: string;

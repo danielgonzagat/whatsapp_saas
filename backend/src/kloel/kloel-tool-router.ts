@@ -9,9 +9,9 @@ import {
 } from './kloel-stream-events';
 
 import type { UnknownRecord } from '../common/types';
+import { WHITESPACE_G_RE } from '../common/regex';
 
 const PATTERN_RE = /[_-]+/g;
-const S_RE = /\s+/g;
 const MAX_TOOL_MESSAGE_CONTENT_CHARS = 6000;
 const ARTIFACT_PREFIX = 'tool_artifact';
 
@@ -71,7 +71,7 @@ function formatToolLabel(toolName: string) {
   const normalized = String(toolName || 'ferramenta')
     .trim()
     .replace(PATTERN_RE, ' ')
-    .replace(S_RE, ' ')
+    .replace(WHITESPACE_G_RE, ' ')
     .toLowerCase();
 
   return normalized || 'ferramenta';

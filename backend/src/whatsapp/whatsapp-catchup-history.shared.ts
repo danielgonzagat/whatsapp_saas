@@ -1,22 +1,8 @@
 const CONTACT_NAME_DOE_RE = /^\+?\d[\d\s-]*\s+doe$/i;
 
-export function safeStr(v: unknown, fb = ''): string {
-  return typeof v === 'string'
-    ? v
-    : typeof v === 'number' || typeof v === 'boolean'
-      ? String(v)
-      : fb;
-}
+export { safeStr } from '../common/string';
 
-export function normalizeOptionalText(value: unknown): string {
-  if (typeof value === 'string') {
-    return value.trim();
-  }
-  if (typeof value === 'number' || typeof value === 'boolean') {
-    return String(value).trim();
-  }
-  return '';
-}
+export { readText as normalizeOptionalText } from '../common/utils';
 
 export function isDoePlaceholderName(value: string): boolean {
   return CONTACT_NAME_DOE_RE.test(value);

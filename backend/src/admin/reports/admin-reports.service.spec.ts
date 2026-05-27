@@ -5,6 +5,7 @@ import { AdminReportsService } from './admin-reports.service';
 import { AdminDashboardService } from '../dashboard/admin-dashboard.service';
 import { AdminAuditService } from '../audit/admin-audit.service';
 import { listAdminTransactions } from '../transactions/queries/list-transactions.query';
+import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
 jest.mock('../transactions/queries/list-transactions.query', () => ({
   listAdminTransactions: jest.fn(),
@@ -61,13 +62,13 @@ describe('AdminReportsService', () => {
     },
   });
 
-  const mockAuditLogFindMany = jest.fn<Promise<unknown>, unknown[]>();
   const mockAuditAppend = jest.fn<Promise<void>, unknown[]>();
   const mockDashboardGetHome = jest.fn<Promise<unknown>, unknown[]>();
 
-  const prismaMock = {
-    adminAuditLog: { findMany: mockAuditLogFindMany },
-  };
+  const prismaMock = createPartialPrismaMock({
+    adminAuditLog: ['findMany'],
+  }) as never as { adminAuditLog: { findMany: jest.Mock } };
+  const mockAuditLogFindMany = prismaMock.adminAuditLog.findMany;
 
   const dashboardMock = {
     getHome: mockDashboardGetHome,

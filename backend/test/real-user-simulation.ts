@@ -25,9 +25,11 @@ async function api(method: string, path: string, body?: any, authToken?: string)
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
-  if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
   const res = await fetch(`${API}${path}`, {
-    method: method as 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
+    method: method,
     headers,
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
@@ -57,7 +59,9 @@ async function runTest(name: string, fn: () => Promise<string>) {
   }
 }
 function assert(condition: any, msg: string) {
-  if (!condition) throw new Error(msg);
+  if (!condition) {
+    throw new Error(msg);
+  }
 }
 async function main() {
   console.log('\n═══════════════════════════════════════════');
@@ -162,7 +166,9 @@ async function main() {
     await api('POST', '/kyc/submit', {}, token);
     await api('POST', '/kyc/auto-check', {}, token);
     let { data } = await api('GET', '/kyc/status', undefined, token);
-    if (data.kycStatus === 'approved') return 'KYC auto-approved!';
+    if (data.kycStatus === 'approved') {
+      return 'KYC auto-approved!';
+    }
     await api('POST', `/kyc/${userId}/approve`, {}, token);
     ({ data } = await api('GET', '/kyc/status', undefined, token));
     return `KYC status: ${data.kycStatus}`;
@@ -247,7 +253,9 @@ async function main() {
     return `Checkout product creation returned ${status}: ${JSON.stringify(data).slice(0, 200)}`;
   });
   await runTest('11. Create checkout plan', async () => {
-    if (!checkoutProductId) return 'SKIPPED - no checkout product';
+    if (!checkoutProductId) {
+      return 'SKIPPED - no checkout product';
+    }
     planSlug = `test-plan-${TS}`;
     const { status, data } = await api(
       'POST',
@@ -268,7 +276,9 @@ async function main() {
     return `Plan creation returned ${status}: ${JSON.stringify(data).slice(0, 200)}`;
   });
   await runTest('12. Create order (public checkout)', async () => {
-    if (!planId) return 'SKIPPED - no plan';
+    if (!planId) {
+      return 'SKIPPED - no plan';
+    }
     const { status, data } = await api('POST', '/checkout/public/order', {
       planId,
       workspaceId,
@@ -299,7 +309,9 @@ async function main() {
     return `Order creation returned ${status}: ${JSON.stringify(data).slice(0, 300)}`;
   });
   await runTest('13. Stripe webhook (payment confirmed)', async () => {
-    if (!orderId && !paymentId && !paymentExternalId) return 'SKIPPED - no order';
+    if (!orderId && !paymentId && !paymentExternalId) {
+      return 'SKIPPED - no order';
+    }
     const externalId = paymentExternalId || `pi_sim_${TS}`;
     const { status, data } = await api('POST', '/webhook/payment/stripe', {
       id: `evt_sim_${TS}`,
@@ -471,7 +483,9 @@ async function main() {
     return `Ad spend: ${status} ${JSON.stringify(data).slice(0, 200)}`;
   });
   await runTest('35. Delete product', async () => {
-    if (!productId) return 'SKIPPED - no product';
+    if (!productId) {
+      return 'SKIPPED - no product';
+    }
     const { status, data } = await api('DELETE', `/products/${productId}`, undefined, token);
     return `Delete: ${status} ${JSON.stringify(data).slice(0, 200)}`;
   });

@@ -5,6 +5,7 @@ import { EmailService } from '../auth/email.service';
 import { StorageService } from '../common/storage/storage.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { GdprService } from './gdpr.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 jest.mock('../common/redis/redis.util', () => ({
   createRedisClient: jest.fn(() => {
@@ -18,14 +19,12 @@ jest.mock('../common/redis/redis.util', () => ({
 describe('GdprService getStatus', () => {
   let service: GdprService;
   const requestedAt = new Date('2026-05-10T12:00:00.000Z');
-  const prismaMock = {
-    gdprRequest: {
-      findFirst: jest.fn(),
-    },
-  };
+  let prismaMock: ReturnType<typeof createPartialPrismaMock>;
 
   beforeEach(async () => {
-    jest.clearAllMocks();
+    prismaMock = createPartialPrismaMock({
+      gdprRequest: ['findFirst'],
+    });
     prismaMock.gdprRequest.findFirst.mockResolvedValue({
       id: 'gdpr_1',
       workspaceId: 'ws_1',

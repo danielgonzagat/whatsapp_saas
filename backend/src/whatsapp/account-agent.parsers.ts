@@ -12,17 +12,11 @@ import type {
   ApprovalStatus,
   InputSessionStatus,
 } from './account-agent.types';
+import { readStringOrNull as readString } from '../common/parse';
+export { readString };
 
-export function asRecord(value: unknown): Record<string, unknown> | null {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return null;
-  }
-  return value as Record<string, unknown>;
-}
-
-export function readString(value: unknown): string | null {
-  return typeof value === 'string' && value.trim() ? value : null;
-}
+import { asRecord } from '../common/types';
+export { asRecord };
 
 function readNullableString(value: unknown): string | null {
   if (value === null || value === undefined) {

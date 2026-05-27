@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdminClientsService } from './admin-clients.service';
+import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
 const mockBuildRow = jest.fn();
 
@@ -20,24 +21,15 @@ describe('AdminClientsService', () => {
     subscription: { plan: 'free', status: 'active' },
   };
 
-  const mockWorkspaceFindMany = jest.fn();
-  const mockWorkspaceCount = jest.fn();
-  const mockOrderGroupBy = jest.fn();
-  const mockProductGroupBy = jest.fn();
-
-  const prismaMock = {
-    workspace: {
-      findMany: mockWorkspaceFindMany,
-      count: mockWorkspaceCount,
-    },
-    checkoutOrder: {
-      groupBy: mockOrderGroupBy,
-    },
-    product: {
-      groupBy: mockProductGroupBy,
-    },
-    $transaction: jest.fn(),
-  };
+  const prismaMock = createPartialPrismaMock({
+    workspace: ['findMany', 'count'],
+    checkoutOrder: ['groupBy'],
+    product: ['groupBy'],
+  });
+  const mockWorkspaceFindMany = prismaMock.workspace.findMany;
+  const mockWorkspaceCount = prismaMock.workspace.count;
+  const mockOrderGroupBy = prismaMock.checkoutOrder.groupBy;
+  const mockProductGroupBy = prismaMock.product.groupBy;
 
   beforeEach(async () => {
     jest.clearAllMocks();

@@ -17,7 +17,7 @@ import { AutopilotOpsConversionService } from './autopilot-ops-conversion.servic
  * @cluster whatsapp_saas/backend/autopilot
  * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
  */
-const D_RE_OPS = /\D/g;
+import { digitsOnly } from '../common/phone';
 
 /** Autopilot operational methods: pipeline status, smoke test, enqueue. Retry/conversion delegated to AutopilotOpsConversionService. */
 @Injectable()
@@ -33,7 +33,7 @@ export class AutopilotOpsService {
   }
 
   private normalizePhone(phone?: string) {
-    return String(phone || '').replace(D_RE_OPS, '');
+    return digitsOnly(phone);
   }
 
   private async sleep(ms: number) {

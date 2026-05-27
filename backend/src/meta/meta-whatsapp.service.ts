@@ -22,7 +22,7 @@ import {
   getRequestedScopesForChannel,
   type MetaMarketingChannel,
 } from './oauth/meta-scopes.helpers';
-const D_RE = /\D/g;
+import { NON_DIGIT_RE } from '../common/phone';
 type ResolvedMetaConnection = {
   workspaceId: string;
   accessToken: string;
@@ -577,6 +577,6 @@ export class MetaWhatsAppService implements OnModuleInit {
     return getRequestedScopesForChannel(channel);
   }
   private normalizePhone(value: string): string {
-    return String(value || '').replace(D_RE, '');
+    return String(value || '').replace(NON_DIGIT_RE, '');
   }
 }

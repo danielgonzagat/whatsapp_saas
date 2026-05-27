@@ -6,7 +6,7 @@ type Classification = OfferQualityOutput['classification'];
 
 const WEIGHTS = {
   commissionPct: 0.25,
-  conversionRateHistorical: 0.30,
+  conversionRateHistorical: 0.3,
   supportQuality: 0.15,
   refundRatePenalty: 0.15,
   audienceFitScore: 0.15,
@@ -21,9 +21,15 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 function classify(score: number): Classification {
-  if (score >= SCORE_EXCELLENT) return 'excellent';
-  if (score >= SCORE_GOOD) return 'good';
-  if (score >= SCORE_AVERAGE) return 'average';
+  if (score >= SCORE_EXCELLENT) {
+    return 'excellent';
+  }
+  if (score >= SCORE_GOOD) {
+    return 'good';
+  }
+  if (score >= SCORE_AVERAGE) {
+    return 'average';
+  }
   return 'poor';
 }
 
@@ -62,10 +68,10 @@ export class OfferQualityScorerService {
     const classification = classify(score);
     const recommendation = recommendationFor(classification);
 
-    this.logger.debug(
-      `Offer quality scored: ${score} (${classification})`,
-      { score, classification },
-    );
+    this.logger.debug(`Offer quality scored: ${score} (${classification})`, {
+      score,
+      classification,
+    });
 
     return { score, classification, recommendation };
   }

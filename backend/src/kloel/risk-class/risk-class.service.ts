@@ -8,9 +8,24 @@ import type {
 } from './risk-class.types';
 
 const R1_ROLLBACK: readonly string[] = ['revert_locally', 'notify_operator'];
-const R2_ROLLBACK: readonly string[] = ['request_approval_reversal', 'audit_log_entry', 'notify_owner'];
-const R3_ROLLBACK: readonly string[] = ['escalate_to_human', 'freeze_action', 'audit_trail_full', 'notify_owner_manager'];
-const R4_ROLLBACK: readonly string[] = ['block_immediately', 'escalate_to_human_ceo', 'full_audit_required', 'legal_review_recommended', 'notify_governance_board'];
+const R2_ROLLBACK: readonly string[] = [
+  'request_approval_reversal',
+  'audit_log_entry',
+  'notify_owner',
+];
+const R3_ROLLBACK: readonly string[] = [
+  'escalate_to_human',
+  'freeze_action',
+  'audit_trail_full',
+  'notify_owner_manager',
+];
+const R4_ROLLBACK: readonly string[] = [
+  'block_immediately',
+  'escalate_to_human_ceo',
+  'full_audit_required',
+  'legal_review_recommended',
+  'notify_governance_board',
+];
 
 @Injectable()
 export class RiskClassService {

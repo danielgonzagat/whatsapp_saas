@@ -5,6 +5,7 @@ import { CampaignsService } from './campaigns.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 const mockQueueAdd = jest.fn();
 const mockWorkerOn = jest.fn();
@@ -22,43 +23,40 @@ jest.mock('../common/redis/redis.util', () => ({
   createRedisClient: jest.fn(() => ({})),
 }));
 
-function buildMockPrisma(overrides: Record<string, unknown> = {}) {
-  return {
-    campaign: {
-      create: jest.fn().mockResolvedValue({
-        id: 'camp-1',
-        name: 'Test Campaign',
-        status: 'DRAFT',
-        stats: { sent: 0, delivered: 0, read: 0, failed: 0 },
-      }),
-      findMany: jest.fn().mockResolvedValue([]),
-      findFirst: jest.fn().mockResolvedValue({
-        id: 'camp-1',
-        name: 'Test Campaign',
-        status: 'DRAFT',
-        stats: { sent: 0, delivered: 0, read: 0, failed: 0 },
-        workspaceId: 'ws-1',
-        filters: {},
-        messageTemplate: 'Hello {{name}}',
-        aiStrategy: null,
-        parentId: null,
-        scheduledAt: null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }),
-      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
-    },
-    workspace: {
-      findUnique: jest.fn().mockResolvedValue({
-        id: 'ws-1',
-        providerSettings: { whatsappApiSession: { status: 'connected' } },
-      }),
-    },
-    contact: {
-      findMany: jest.fn().mockResolvedValue([]),
-    },
-    ...overrides,
-  };
+function buildMockPrisma(): ReturnType<typeof createPartialPrismaMock> {
+  const base = createPartialPrismaMock({
+    campaign: ['create', 'findMany', 'findFirst', 'updateMany'],
+    workspace: ['findUnique'],
+    contact: ['findMany'],
+  });
+  (base.campaign.create as jest.Mock).mockResolvedValue({
+    id: 'camp-1',
+    name: 'Test Campaign',
+    status: 'DRAFT',
+    stats: { sent: 0, delivered: 0, read: 0, failed: 0 },
+  });
+  (base.campaign.findFirst as jest.Mock).mockResolvedValue({
+    id: 'camp-1',
+    name: 'Test Campaign',
+    status: 'DRAFT',
+    stats: { sent: 0, delivered: 0, read: 0, failed: 0 },
+    workspaceId: 'ws-1',
+    filters: {},
+    messageTemplate: 'Hello {{name}}',
+    aiStrategy: null,
+    parentId: null,
+    scheduledAt: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
+  (base.campaign.findMany as jest.Mock).mockResolvedValue([]);
+  (base.campaign.updateMany as jest.Mock).mockResolvedValue({ count: 1 });
+  (base.workspace.findUnique as jest.Mock).mockResolvedValue({
+    id: 'ws-1',
+    providerSettings: { whatsappApiSession: { status: 'connected' } },
+  });
+  (base.contact.findMany as jest.Mock).mockResolvedValue([]);
+  return base;
 }
 
 describe('CampaignsService', () => {

@@ -11,6 +11,7 @@ import { Server, Socket } from 'socket.io';
 import { createRedisClient } from '../common/redis/redis.util';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
+import { readString } from '../common/parse';
 type GatewayPayload = Record<string, unknown>;
 
 function isGatewayPayload(value: unknown): value is GatewayPayload {
@@ -24,10 +25,6 @@ function parseJsonRecord(raw: string): GatewayPayload | null {
   } catch {
     return null;
   }
-}
-
-function readString(value: unknown): string | undefined {
-  return typeof value === 'string' && value.trim() ? value : undefined;
 }
 
 function readWorkspaceId(payload: unknown): string | undefined {

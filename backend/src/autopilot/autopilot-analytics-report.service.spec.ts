@@ -2,12 +2,8 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AutopilotAnalyticsReportService } from './autopilot-analytics-report.service';
 import { PrismaService } from '../prisma/prisma.service';
-type FlexMock = jest.Mock & {
-  mockResolvedValue: (v: unknown) => FlexMock;
-  mockResolvedValueOnce: (v: unknown) => FlexMock;
-  mockRejectedValue: (err: unknown) => FlexMock;
-  mockRejectedValueOnce: (err: unknown) => FlexMock;
-};
+import { type FlexMock } from '../../test/helpers/prisma.mock';
+
 jest.mock('../common/async-sequence', () => ({
   forEachSequential: jest.fn(async <T>(arr: T[], fn: (item: T) => Promise<void>) => {
     for (const item of arr) {

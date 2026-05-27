@@ -8,7 +8,7 @@ import { applyEdits, replaceText, renameSymbol, replaceLiteral, validate, wrapRa
 import { resolveAllowedRootForAbsolutePath, resolveSafeTarget, REPO_ROOT } from './guard.js';
 import { buildTrace, levelFor, shapePayload, writeTrace } from './trace.js';
 import { browse, outline, readSymbol } from './nav.js';
-import { editSymbol, renameSymbolCrossFile, previewDiff, characterDiff, addNamedImport, removeNamedImport, replacePropertyValue, type SymbolOp, type SemanticEditResult, renamePropertyKey, addAwaitToCall } from './advanced.js';
+import { editSymbol, renameSymbolCrossFile, renameMemberCrossFile, previewDiff, characterDiff, addNamedImport, removeNamedImport, replacePropertyValue, type SymbolOp, type SemanticEditResult, renamePropertyKey, addAwaitToCall } from './advanced.js';
 import { sha256, guardSha, log, atomicWrite, readUtf8, normalizeRepoRelPath, normalizeAllowedPath, relPathAllowed, changedSpanMetrics, hasArg, normalizeEslintDryRunArgs, requireEslintDryRunArgs, parseEslintJson, targetDetails, shellPath, nearestPackageRelPath, type EslintDryRunResult } from './server-helpers-io.js';
 import { runPostEditVerify, packageVerificationPlan, unusedSymbolFromLintMessage } from './server-helpers-verify.js';
 import { buildLintResidueActionCandidates, applyKnownLintResidueFixes } from './server-helpers-lint-fix.js';
@@ -139,6 +139,67 @@ server.registerTool(
         ...(stringReplacedCount > 0
           ? { stringReplacedCount, stringReplacedByKind }
           : {}),
+      });
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : String(e));
+    }
+  },
+);
+
+server.registerTool(
+  'atomic_rename_member',
+  {
+    title: 'Name-addressed cross-file rename of a class/interface member',
+    description:
+      'Rename a class/interface MEMBER by NAME — no line/column. Give the file where the owner ' +
+      'type is declared, the owner class/interface name, the current member name, and the new name. ' +
+      'Resolves the member internally then renames it + ALL references across the project (including ' +
+      'test-double property accesses and DI doubles), all-or-nothing. PREFER this over ' +
+      'atomic_rename_symbol_cross_file for renaming a class method/property: it removes the ' +
+      'coordinate-guessing surface (no "position is not an identifier" failures). Supports preview.',
+    inputSchema: {
+      file: z.string().describe('file where the owner class/interface is declared'),
+      className: z.string().min(1).describe('owner class or interface name'),
+      memberName: z.string().min(1).describe('current member (method/property) name'),
+      newName: z.string().min(1),
+      preview: z.boolean().optional().describe('dry-run: list files + refs, do not write'),
+    },
+  },
+  async (a) => {
+    try {
+      const { absPath, repoRoot } = resolveSafeTarget(a.file);
+      const r = await renameMemberCrossFile(absPath, repoRoot, a.className, a.memberName, a.newName);
+      const bad = r.validations.filter((v) => !v.ok);
+      if (bad.length > 0) {
+        return fail(
+          `rejected: rename would break ${bad.length} file(s): ` +
+            bad.map((b) => `${b.file} (${b.introduced ?? 'syntax error'})`).join('; ') +
+            ' — NOTHING written.',
+        );
+      }
+      for (const rel of r.changes.keys()) resolveSafeTarget(path.join(repoRoot, rel));
+      if (a.preview ?? false) {
+        return ok({
+          ok: true,
+          preview: true,
+          changed: false,
+          symbol: r.symbol,
+          references: r.totalReferences,
+          files: [...r.changes.keys()],
+        });
+      }
+      for (const [rel, content] of r.changes) {
+        atomicWrite(path.join(repoRoot, rel), content);
+      }
+      log(
+        `rename_member ${a.className}.${a.memberName} -> ${a.newName}: ${r.changes.size} file(s), ${r.totalReferences} refs`,
+      );
+      return ok({
+        ok: true,
+        changed: true,
+        symbol: r.symbol,
+        references: r.totalReferences,
+        files: [...r.changes.keys()],
       });
     } catch (e) {
       return fail(e instanceof Error ? e.message : String(e));

@@ -3,7 +3,7 @@ import {
   buildUnsubscribeFooterHtml,
 } from '../common/utils/unsubscribe-footer.util';
 
-const NAME_RE = /\{\{name\}\}/g;
+import { NAME_RE } from '../common/regex';
 
 export function resolveEmailMarketingProvider(): 'resend' | 'sendgrid' | 'smtp' | 'log' {
   if (process.env.RESEND_API_KEY) {

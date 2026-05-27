@@ -142,6 +142,86 @@ describe('PaymentMethodService (P6-10)', () => {
       expect(stripe.customers.create).not.toHaveBeenCalled();
     });
 
+    it('recreates customer when persisted stripeCustomerId no longer exists in Stripe (resource_missing)', async () => {
+      const tx = {
+        workspace: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'ws-1',
+            name: 'Workspace 1',
+            stripeCustomerId: 'cus_deleted_999',
+          }),
+          update: jest.fn().mockResolvedValue({}),
+        },
+      };
+      prisma.$transaction.mockImplementation(async (cb: TransactionCallback) => cb(tx));
+
+      const resourceMissing = Object.assign(new Error("No such customer: 'cus_deleted_999'"), {
+        code: 'resource_missing',
+        statusCode: 404,
+      });
+      stripe.customers.retrieve.mockRejectedValue(resourceMissing);
+      stripe.customers.create.mockResolvedValue({ id: 'cus_new_recovered' });
+
+      const result = await service.getOrCreateCustomerId('ws-1');
+
+      expect(result).toBe('cus_new_recovered');
+      expect(stripe.customers.retrieve).toHaveBeenCalledWith('cus_deleted_999');
+      expect(tx.workspace.update).toHaveBeenCalledTimes(2); // first to null, then to new id
+      expect(tx.workspace.update).toHaveBeenNthCalledWith(1, {
+        where: { id: 'ws-1' },
+        data: { stripeCustomerId: null },
+      });
+      expect(tx.workspace.update).toHaveBeenNthCalledWith(2, {
+        where: { id: 'ws-1' },
+        data: { stripeCustomerId: 'cus_new_recovered' },
+      });
+    });
+
+    it('recreates customer when Stripe returns a deleted-customer shape', async () => {
+      const tx = {
+        workspace: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'ws-1',
+            name: 'Workspace 1',
+            stripeCustomerId: 'cus_marked_deleted',
+          }),
+          update: jest.fn().mockResolvedValue({}),
+        },
+      };
+      prisma.$transaction.mockImplementation(async (cb: TransactionCallback) => cb(tx));
+
+      stripe.customers.retrieve.mockResolvedValue({ id: 'cus_marked_deleted', deleted: true });
+      stripe.customers.create.mockResolvedValue({ id: 'cus_recovered_2' });
+
+      const result = await service.getOrCreateCustomerId('ws-1');
+
+      expect(result).toBe('cus_recovered_2');
+      expect(stripe.customers.create).toHaveBeenCalled();
+    });
+
+    it('propagates unexpected Stripe errors (not resource_missing)', async () => {
+      const tx = {
+        workspace: {
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'ws-1',
+            name: 'Workspace 1',
+            stripeCustomerId: 'cus_existing_ok',
+          }),
+          update: jest.fn(),
+        },
+      };
+      prisma.$transaction.mockImplementation(async (cb: TransactionCallback) => cb(tx));
+
+      const apiError = Object.assign(new Error('API connection error'), {
+        code: 'api_connection_error',
+        statusCode: 503,
+      });
+      stripe.customers.retrieve.mockRejectedValue(apiError);
+
+      await expect(service.getOrCreateCustomerId('ws-1')).rejects.toThrow(/API connection error/);
+      expect(stripe.customers.create).not.toHaveBeenCalled();
+    });
+
     it('throws when the workspace does not exist', async () => {
       prisma.$transaction.mockImplementation(async (cb: TransactionCallback) => {
         const tx = {

@@ -1,4 +1,4 @@
-import { Injectable, NotImplementedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
 /** Status de cada fonte de scraping. */
 type ScraperSourceStatus = 'available' | 'available_direct' | 'available_worker' | 'unavailable';
@@ -17,6 +17,8 @@ export interface ScraperSourceCapability {
 export interface ScraperResult {
   leads: unknown[];
   stats: { found: number; valid: number };
+  unavailable?: boolean;
+  reason?: string;
 }
 
 /** Estrategia de scraping com autodescricao de capacidade. */
@@ -43,7 +45,12 @@ export class GoogleMapsStrategy implements IScraperStrategy {
   }
 
   scrape(_query: string, _filters: Record<string, unknown>): Promise<ScraperResult> {
-    throw new NotImplementedException(WORKER_MSG);
+    return Promise.resolve({
+      leads: [],
+      stats: { found: 0, valid: 0 },
+      unavailable: true,
+      reason: WORKER_MSG,
+    });
   }
 }
 
@@ -62,7 +69,12 @@ export class LinkedInStrategy implements IScraperStrategy {
   }
 
   scrape(_query: string, _filters: Record<string, unknown>): Promise<ScraperResult> {
-    throw new NotImplementedException('LinkedIn scraping nao esta implementado.');
+    return Promise.resolve({
+      leads: [],
+      stats: { found: 0, valid: 0 },
+      unavailable: true,
+      reason: 'LinkedIn scraping nao esta implementado.',
+    });
   }
 }
 
@@ -80,8 +92,11 @@ export class InstagramStrategy implements IScraperStrategy {
   }
 
   scrape(_query: string, _filters: Record<string, unknown>): Promise<ScraperResult> {
-    throw new NotImplementedException(
-      'Instagram scraper (Puppeteer) runs in the worker process. Use POST /scrapers/jobs.',
-    );
+    return Promise.resolve({
+      leads: [],
+      stats: { found: 0, valid: 0 },
+      unavailable: true,
+      reason: 'Instagram scraper (Puppeteer) runs in the worker process. Use POST /scrapers/jobs.',
+    });
   }
 }

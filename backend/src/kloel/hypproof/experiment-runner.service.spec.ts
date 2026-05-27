@@ -1,9 +1,7 @@
 import { ExperimentRunnerService } from './experiment-runner.service';
 import type { MicroExperiment } from './types';
 
-function makeExperiment(
-  overrides: Partial<MicroExperiment> = {},
-): MicroExperiment {
+function makeExperiment(overrides: Partial<MicroExperiment> = {}): MicroExperiment {
   return {
     id: 'exp-1',
     hypothesisId: 'hyp-1',

@@ -34,7 +34,12 @@ function findRepoRoot(start: string): string {
 }
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-export const REPO_ROOT = findRepoRoot(HERE);
+// Optional explicit root override (dynamic scope rooting): when set, the OS
+// operates rooted at that dir instead of where its code lives. Lets a harness/
+// worktree arm run the SAME OS binary while resolving relative paths against —
+// and being sandboxed to — its own tree, never the code's repo.
+const ROOT_OVERRIDE = process.env.ATOMIC_EDIT_REPO_ROOT?.trim();
+export const REPO_ROOT = ROOT_OVERRIDE ? canonicalPath(ROOT_OVERRIDE) : findRepoRoot(HERE);
 
 function canonicalPath(target: string): string {
   const resolved = path.resolve(target);
@@ -82,9 +87,13 @@ function gitWorktreeRoots(): string[] {
 }
 
 function allowedRepoRoots(): string[] {
-  return uniqueResolved([REPO_ROOT, ...gitWorktreeRoots(), ...envAllowedRoots()]).sort(
-    (a, b) => b.length - a.length,
-  );
+  // Explicit root override = sandbox: ONLY that root (+ any explicit
+  // ATOMIC_EDIT_ALLOWED_ROOTS), never the sibling-worktree list. Prevents an
+  // arm rooted at a worktree from reaching the main repo or sibling worktrees.
+  const roots = ROOT_OVERRIDE
+    ? [REPO_ROOT, ...envAllowedRoots()]
+    : [REPO_ROOT, ...gitWorktreeRoots(), ...envAllowedRoots()];
+  return uniqueResolved(roots).sort((a, b) => b.length - a.length);
 }
 
 function containsPath(root: string, target: string): boolean {

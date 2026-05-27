@@ -87,6 +87,14 @@ const queueGauge = new Gauge({
   registers: [registry],
 });
 
+/** Queue lag gauge (ms). */
+export const queueLagGauge = new Gauge({
+  name: 'worker_queue_lag_ms',
+  help: 'Lag (ms) between job creation and processing start',
+  labelNames: ['queue'],
+  registers: [registry],
+});
+
 /** Get metrics. */
 export async function getMetrics() {
   await refreshQueueMetrics();

@@ -1,11 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Post,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { AdminAction, AdminModule } from '@prisma/client';
 import { RequireAdminPermission } from '../auth/decorators/admin-permission.decorator';
 import { AdminAuthGuard } from '../auth/guards/admin-auth.guard';
@@ -36,12 +29,7 @@ export class PipelineController {
       reason?: string;
     },
   ) {
-    return this.service.setState(
-      body.workspaceId,
-      body.state,
-      'admin',
-      body.reason,
-    );
+    return this.service.setState(body.workspaceId, body.state, 'admin', body.reason);
   }
 
   @InternalEndpoint('admin pipeline health')

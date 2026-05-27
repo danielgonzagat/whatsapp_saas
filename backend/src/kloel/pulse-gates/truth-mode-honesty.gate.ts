@@ -76,18 +76,9 @@ const COMPATIBLE: Record<ProducedBy, ReadonlySet<TruthModeKey>> = {
   simulation: new Set(['projected']),
 };
 
-const VALID_TRUTH_MODES: ReadonlySet<string> = new Set([
-  'observed',
-  'inferred',
-  'projected',
-]);
+const VALID_TRUTH_MODES: ReadonlySet<string> = new Set(['observed', 'inferred', 'projected']);
 
-const VALID_AUDIENCES: ReadonlySet<string> = new Set([
-  'public',
-  'technical',
-  'origin',
-  'internal',
-]);
+const VALID_AUDIENCES: ReadonlySet<string> = new Set(['public', 'technical', 'origin', 'internal']);
 
 const VALID_VALENCES: ReadonlySet<string> = new Set([
   'positive',
@@ -98,18 +89,16 @@ const VALID_VALENCES: ReadonlySet<string> = new Set([
 
 // ─── type guards ────────────────────────────────────────────────────────
 
-function isCognitiveCheck(
-  v: unknown,
-): v is TruthModeCognitiveCheck {
+function isCognitiveCheck(v: unknown): v is TruthModeCognitiveCheck {
   return (
-    typeof v === 'object' &&
-    v !== null &&
-    (v as Record<string, unknown>)['kind'] === 'cognitive'
+    typeof v === 'object' && v !== null && (v as Record<string, unknown>)['kind'] === 'cognitive'
   );
 }
 
 function isTruthModeItem(v: unknown): v is TruthModeItem {
-  if (typeof v !== 'object' || v === null) return false;
+  if (typeof v !== 'object' || v === null) {
+    return false;
+  }
   const o = v as Record<string, unknown>;
   return typeof o['truthMode'] === 'string' && typeof o['producedBy'] === 'string';
 }
@@ -149,7 +138,8 @@ function checkAbi(abi: TruthModeAbiCheck): Offense[] {
     if (tm === undefined || tm === '') {
       offenses.push({
         path: '$.identityProjection.truthMode',
-        detail: 'identityProjection must declare truthMode — claim without epistemic tag is dishonesty',
+        detail:
+          'identityProjection must declare truthMode — claim without epistemic tag is dishonesty',
       });
     } else if (!VALID_TRUTH_MODES.has(tm)) {
       offenses.push({
@@ -174,13 +164,15 @@ function checkAbi(abi: TruthModeAbiCheck): Offense[] {
     if (abi.lineage.etymology !== undefined) {
       offenses.push({
         path: '$.lineage.etymology',
-        detail: 'etymology must not be present in audience "public" — origin spiritual never contaminates public audience (PCI.5 §4.2, PCI.4 §3.3)',
+        detail:
+          'etymology must not be present in audience "public" — origin spiritual never contaminates public audience (PCI.5 §4.2, PCI.4 §3.3)',
       });
     }
     if (abi.lineage.origin !== undefined) {
       offenses.push({
         path: '$.lineage.origin',
-        detail: 'origin must not be present in audience "public" — origin spiritual never contaminates public audience (PCI.5 §4.2, PCI.4 §3.3)',
+        detail:
+          'origin must not be present in audience "public" — origin spiritual never contaminates public audience (PCI.5 §4.2, PCI.4 §3.3)',
       });
     }
   }
@@ -194,9 +186,7 @@ function checkAbi(abi: TruthModeAbiCheck): Offense[] {
  *   (d) Terminal event without valence
  *   (e) Invalid valence value
  */
-function checkCognitionEntries(
-  entries: readonly TruthModeCognitiveEntry[],
-): Offense[] {
+function checkCognitionEntries(entries: readonly TruthModeCognitiveEntry[]): Offense[] {
   const offenses: Offense[] = [];
 
   // (c) Detect mixed truthMode per cognition key
@@ -228,11 +218,7 @@ function checkCognitionEntries(
         detail: `terminal event "${e.key}" must declare valence (PCI.5 §3.3)`,
       });
     }
-    if (
-      e.valence !== undefined &&
-      e.valence !== '' &&
-      !VALID_VALENCES.has(e.valence)
-    ) {
+    if (e.valence !== undefined && e.valence !== '' && !VALID_VALENCES.has(e.valence)) {
       offenses.push({
         path: e.path ?? `cognition.${e.key}`,
         detail: `invalid valence "${e.valence}" — must be ${[...VALID_VALENCES].join('|')}`,
@@ -257,17 +243,29 @@ export function makeTruthModeHonestyGate(
       if (Array.isArray(input)) {
         for (const element of input) {
           if (isCognitiveCheck(element)) {
-            if (element.items) allOffenses.push(...checkItems(element.items));
-            if (element.abi) allOffenses.push(...checkAbi(element.abi));
-            if (element.entries) allOffenses.push(...checkCognitionEntries(element.entries));
+            if (element.items) {
+              allOffenses.push(...checkItems(element.items));
+            }
+            if (element.abi) {
+              allOffenses.push(...checkAbi(element.abi));
+            }
+            if (element.entries) {
+              allOffenses.push(...checkCognitionEntries(element.entries));
+            }
           } else if (isTruthModeItem(element)) {
             allOffenses.push(...checkItems([element]));
           }
         }
       } else if (isCognitiveCheck(input)) {
-        if (input.items) allOffenses.push(...checkItems(input.items));
-        if (input.abi) allOffenses.push(...checkAbi(input.abi));
-        if (input.entries) allOffenses.push(...checkCognitionEntries(input.entries));
+        if (input.items) {
+          allOffenses.push(...checkItems(input.items));
+        }
+        if (input.abi) {
+          allOffenses.push(...checkAbi(input.abi));
+        }
+        if (input.entries) {
+          allOffenses.push(...checkCognitionEntries(input.entries));
+        }
       } else if (isTruthModeItem(input)) {
         allOffenses.push(...checkItems([input]));
       }

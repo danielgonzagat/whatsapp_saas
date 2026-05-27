@@ -38,10 +38,10 @@ import {
   WalletNotFoundError,
 } from '../wallet/wallet.types';
 
+import { SLUG_EDGE_HYPHEN_RE } from '../common/regex';
 import { RouteClass } from '../common/throttler/route-class.decorator';
-const U0300__U036F_RE = /[\u0300-\u036f]/g;
+import { DIACRITICS_RE } from '../common/regex';
 const A_Z0_9_RE = /[^a-z0-9]+/g;
-const PATTERN_RE = /^-|-$/g;
 const SITE_GENERATION_MAX_OUTPUT_TOKENS = 4096;
 
 type SiteProvider = 'openai' | 'anthropic';
@@ -462,9 +462,9 @@ export class SiteController {
     const baseSlug = (existing.name || 'site')
       .toLowerCase()
       .normalize('NFD')
-      .replace(U0300__U036F_RE, '')
+      .replace(DIACRITICS_RE, '')
       .replace(A_Z0_9_RE, '-')
-      .replace(PATTERN_RE, '');
+      .replace(SLUG_EDGE_HYPHEN_RE, '');
     const slug = `${baseSlug}-${id.slice(0, 6)}`;
 
     await this.prisma.kloelSite.updateMany({

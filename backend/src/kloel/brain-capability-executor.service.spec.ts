@@ -1,21 +1,21 @@
 import { BrainCapabilityExecutorService } from './brain-capability-executor.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 describe('BrainCapabilityExecutorService', () => {
-  const productFindMany = jest.fn();
-  const contactFindMany = jest.fn();
-  const conversationFindMany = jest.fn();
-  const orderAggregate = jest.fn();
-  const orderCount = jest.fn();
-
   const eventsRecord = jest.fn().mockResolvedValue(undefined);
   const ensureTokenBudget = jest.fn().mockResolvedValue(undefined);
 
-  const prismaMock = {
-    product: { findMany: productFindMany },
-    contact: { findMany: contactFindMany },
-    conversation: { findMany: conversationFindMany },
-    checkoutOrder: { aggregate: orderAggregate, count: orderCount },
-  };
+  const prismaMock = createPartialPrismaMock({
+    product: ['findMany'],
+    contact: ['findMany'],
+    conversation: ['findMany'],
+    checkoutOrder: ['aggregate', 'count'],
+  });
+  const productFindMany = prismaMock.product.findMany;
+  const contactFindMany = prismaMock.contact.findMany;
+  const conversationFindMany = prismaMock.conversation.findMany;
+  const orderAggregate = prismaMock.checkoutOrder.aggregate;
+  const orderCount = prismaMock.checkoutOrder.count;
 
   let service: BrainCapabilityExecutorService;
 
@@ -125,7 +125,10 @@ describe('BrainCapabilityExecutorService', () => {
 
   describe('queryRevenueSummary', () => {
     it('isolates checkout aggregations by workspaceId', async () => {
-      orderAggregate.mockResolvedValue({ _sum: { totalInCents: 10000 }, _avg: { totalInCents: 1000 } });
+      orderAggregate.mockResolvedValue({
+        _sum: { totalInCents: 10000 },
+        _avg: { totalInCents: 1000 },
+      });
       orderCount.mockResolvedValueOnce(10).mockResolvedValueOnce(7);
 
       const result = await service.queryRevenueSummary('ws-rev', { days: 7 });

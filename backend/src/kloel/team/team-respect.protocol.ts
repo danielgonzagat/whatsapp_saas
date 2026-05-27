@@ -20,11 +20,11 @@ import type {
 const SUGGESTION_FRAME_PREFIX =
   'suggestion (not command): operator may dismiss or override at all times';
 
-export function formatSuggestionForDisplay(
-  suggestion: NextBestAction,
-): string {
-  return `[#${suggestion.rank}] ${suggestion.action}: ${suggestion.rationale} ` +
-    `(confidence: ${(suggestion.confidence * 100).toFixed(0)}%)`;
+export function formatSuggestionForDisplay(suggestion: NextBestAction): string {
+  return (
+    `[#${suggestion.rank}] ${suggestion.action}: ${suggestion.rationale} ` +
+    `(confidence: ${(suggestion.confidence * 100).toFixed(0)}%)`
+  );
 }
 
 export interface SuggestionMessage {
@@ -42,9 +42,7 @@ export interface SuggestionMessage {
   };
 }
 
-export function buildSuggestionMessage(
-  suggestion: NextBestAction,
-): SuggestionMessage {
+export function buildSuggestionMessage(suggestion: NextBestAction): SuggestionMessage {
   return {
     frame: SUGGESTION_FRAME_PREFIX,
     action: suggestion.action,

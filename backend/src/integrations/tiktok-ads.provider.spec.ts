@@ -2,10 +2,11 @@ import { Test } from '@nestjs/testing';
 import { TikTokAdsProvider } from './tiktok-ads.provider';
 import { PrismaService } from '../prisma/prisma.service';
 import { TikTokAdsService } from '../marketing/tiktok-ads.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 describe('TikTokAdsProvider', () => {
   let provider: TikTokAdsProvider;
-  let prismaService: jest.Mocked<PrismaService>;
+  let prismaService: ReturnType<typeof createPartialPrismaMock>;
   let tiktokAdsService: jest.Mocked<TikTokAdsService>;
 
   const workspaceId = 'ws-test-123';
@@ -17,23 +18,18 @@ describe('TikTokAdsProvider', () => {
       getAccessTokenAndAdvertiserIds: jest.fn(),
     } as jest.Mocked<TikTokAdsService>;
 
-    prismaService = {
-      workspace: {
-        findUnique: jest.fn(),
-        update: jest.fn(),
-      },
-      integrationCredential: {
-        findUnique: jest.fn().mockResolvedValue(null),
-        upsert: jest.fn().mockResolvedValue({}),
-        delete: jest.fn().mockResolvedValue({}),
-        update: jest.fn().mockResolvedValue({}),
-      },
-      adAccount: {
-        findMany: jest.fn().mockResolvedValue([]),
-        upsert: jest.fn().mockResolvedValue({}),
-      },
-      $transaction: jest.fn(async (cb: (tx: unknown) => unknown) => cb(prismaService)),
-    } as jest.Mocked<PrismaService>;
+    prismaService = createPartialPrismaMock({
+      workspace: ['findUnique', 'update'],
+      integrationCredential: ['findUnique', 'upsert', 'delete', 'update'],
+      adAccount: ['findMany', 'upsert'],
+    });
+    prismaService.integrationCredential.findUnique.mockResolvedValue(null);
+    prismaService.integrationCredential.upsert.mockResolvedValue({});
+    prismaService.integrationCredential.delete.mockResolvedValue({});
+    prismaService.integrationCredential.update.mockResolvedValue({});
+    prismaService.adAccount.findMany.mockResolvedValue([]);
+    prismaService.adAccount.upsert.mockResolvedValue({});
+    prismaService.$transaction = jest.fn(async (cb: (tx: unknown) => unknown) => cb(prismaService));
 
     const module = await Test.createTestingModule({
       providers: [

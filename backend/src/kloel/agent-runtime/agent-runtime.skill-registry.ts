@@ -107,7 +107,7 @@ const DEFAULT_SKILLS: AgentSkillDefinition[] = [
   },
 ];
 
-const VALID_SKILL_ID_RE = /^[a-z0-9][a-z0-9._-]{0,63}$/;
+import { VALID_SKILL_ID_RE } from '../../common/regex';
 const MAX_SKILL_CONTENT_CHARS = 100_000;
 
 @Injectable()

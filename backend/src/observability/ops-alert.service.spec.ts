@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import * as Sentry from '@sentry/node';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from './ops-alert.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 jest.mock('@sentry/node', () => ({
   captureException: jest.fn(),
@@ -24,18 +25,10 @@ function getLogger(service: OpsAlertService): MockLogger {
 
 describe('OpsAlertService', () => {
   let service: OpsAlertService;
-  let prisma: {
-    opsEvent: {
-      create: jest.Mock;
-    };
-  };
+  let prisma: ReturnType<typeof createPartialPrismaMock>;
 
   beforeEach(async () => {
-    prisma = {
-      opsEvent: {
-        create: jest.fn(),
-      },
-    };
+    prisma = createPartialPrismaMock({ opsEvent: ['create'] });
 
     jest.clearAllMocks();
 

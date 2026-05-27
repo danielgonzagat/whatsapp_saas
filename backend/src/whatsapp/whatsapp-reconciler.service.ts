@@ -22,10 +22,9 @@ import {
   isAutonomousEnabledExt,
 } from './whatsapp-service.helpers';
 import type { ProviderSettings } from './provider-settings.types';
+import { NON_DIGIT_RE } from '../common/phone';
 
 type ExternalProviderPayload = Record<string, unknown>;
-
-const D_RE = /\D/g;
 
 @Injectable()
 export class WhatsappReconcilerService {
@@ -72,7 +71,7 @@ export class WhatsappReconcilerService {
   }
 
   private normalizeNumber(num: string): string {
-    return num.replace(D_RE, '');
+    return num.replace(NON_DIGIT_RE, '');
   }
 
   private normalizeJsonObject(v: unknown): ExternalProviderPayload {
@@ -104,7 +103,7 @@ export class WhatsappReconcilerService {
     if (
       ['stop', 'sair', 'cancelar', 'cancel', 'parar', 'unsubscribe'].some((k) => lower.includes(k))
     ) {
-      await this.optOutContact(workspaceId, from.replace(D_RE, '')).catch(() => {});
+      await this.optOutContact(workspaceId, from.replace(NON_DIGIT_RE, '')).catch(() => {});
     }
 
     const saved = await this.inbox.saveMessageByPhone({

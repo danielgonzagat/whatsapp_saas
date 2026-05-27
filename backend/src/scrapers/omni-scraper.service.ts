@@ -35,11 +35,6 @@ export class OmniScraperService {
       throw new NotImplementedException(`Strategy ${source} not implemented`);
     }
 
-    const cap = strategy.capability();
-    if (cap.status !== 'available' && cap.status !== 'available_direct') {
-      throw new NotImplementedException(cap.message);
-    }
-
     this.logger.log(`Starting scrape for ${source}: ${query}`);
     return strategy.scrape(query, filters);
   }

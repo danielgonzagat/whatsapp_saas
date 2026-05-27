@@ -33,7 +33,12 @@ describe('AdminUsersController', () => {
 
   describe('GET /admin/users/me', () => {
     it('returns current admin payload', async () => {
-      const expected = { id: 'a-1', name: 'Owner Admin', email: 'owner@kloel.com', role: AdminRole.OWNER };
+      const expected = {
+        id: 'a-1',
+        name: 'Owner Admin',
+        email: 'owner@kloel.com',
+        role: AdminRole.OWNER,
+      };
       users.findMe.mockResolvedValue(expected);
 
       const result = await controller.me(admin);
@@ -67,7 +72,12 @@ describe('AdminUsersController', () => {
         temporaryPassword: 'TempPass12345!',
         role: AdminRole.ADMIN,
       };
-      const created = { id: 'a-3', name: 'New Admin', email: 'new@kloel.com', role: AdminRole.ADMIN };
+      const created = {
+        id: 'a-3',
+        name: 'New Admin',
+        email: 'new@kloel.com',
+        role: AdminRole.ADMIN,
+      };
       users.create.mockResolvedValue(created);
 
       const result = await controller.create(dto, admin);

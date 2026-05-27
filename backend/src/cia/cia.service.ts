@@ -6,6 +6,7 @@ import { AccountAgentService } from '../whatsapp/account-agent.service';
 import { AgentEventsService } from '../whatsapp/agent-events.service';
 import { CiaRuntimeService } from './cia-runtime.service';
 import { MindService } from '../kloel/mind.service';
+import { readNumberForce } from '../common/parse';
 
 type JsonRecord = Record<string, unknown>;
 
@@ -71,14 +72,22 @@ export class CiaService {
     const activeChannels = new Set<string>();
     if (metaConnections && metaConnections.length > 0) {
       for (const mc of metaConnections) {
-        if (mc.whatsappPhoneNumberId) activeChannels.add('whatsapp');
-        if (mc.instagramAccountId) activeChannels.add('instagram');
-        if (mc.pageId) activeChannels.add('facebook');
+        if (mc.whatsappPhoneNumberId) {
+          activeChannels.add('whatsapp');
+        }
+        if (mc.instagramAccountId) {
+          activeChannels.add('instagram');
+        }
+        if (mc.pageId) {
+          activeChannels.add('facebook');
+        }
       }
     }
     for (const integration of integrations) {
       const lower = integration.type.toLowerCase();
-      if (lower === 'instagram') activeChannels.add('instagram');
+      if (lower === 'instagram') {
+        activeChannels.add('instagram');
+      }
     }
 
     const channels = [...activeChannels];
@@ -558,15 +567,6 @@ export class CiaService {
   }
 
   private readNumber(value: unknown): number {
-    if (typeof value === 'number' && Number.isFinite(value)) {
-      return value;
-    }
-
-    if (typeof value === 'string') {
-      const parsed = Number(value);
-      return Number.isFinite(parsed) ? parsed : 0;
-    }
-
-    return 0;
+    return readNumberForce(value);
   }
 }

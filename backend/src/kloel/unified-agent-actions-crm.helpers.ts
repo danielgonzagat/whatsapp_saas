@@ -1,7 +1,6 @@
 import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
-
-const D_RE = /\D/g;
+import { NON_DIGIT_RE } from '../common/phone';
 
 export async function actionImportContacts(
   prisma: PrismaService,
@@ -29,7 +28,7 @@ export async function actionImportContacts(
         const val = values[idx];
         if (val !== undefined) {
           if (h.includes('phone') || h.includes('telefone') || h.includes('whatsapp')) {
-            contact.phone = val.replace(D_RE, '');
+            contact.phone = val.replace(NON_DIGIT_RE, '');
           } else if (h.includes('name') || h.includes('nome')) {
             contact.name = val;
           } else if (h.includes('email')) {

@@ -63,9 +63,9 @@ describe('BillingService', () => {
   });
 
   it('delegates createCheckoutSession to webhook service', async () => {
-    await expect(
-      service.createCheckoutSession('ws-1', 'PRO', 'user@test.com'),
-    ).resolves.toEqual({ url: 'https://stripe/test' });
+    await expect(service.createCheckoutSession('ws-1', 'PRO', 'user@test.com')).resolves.toEqual({
+      url: 'https://stripe/test',
+    });
   });
 
   it('delegates handleWebhook', async () => {

@@ -96,7 +96,11 @@ export async function finalizeSuccessfulReply(
         processingSummary: threadService.buildProcessingTraceSummary(processingTraceEntries),
       }),
     );
-    await threadService.maybeRefreshThreadSummary(thread.id, workspaceId, replyEngine.openai ?? undefined);
+    await threadService.maybeRefreshThreadSummary(
+      thread.id,
+      workspaceId,
+      replyEngine.openai ?? undefined,
+    );
     const title = await threadService.maybeGenerateThreadTitle(
       thread.id,
       thread.title ?? '',
@@ -163,7 +167,11 @@ export async function runComposerCapabilityBranch(
         ...(capResult.metadata || {}),
       }),
     );
-    await threadService.maybeRefreshThreadSummary(thread.id, workspaceId, replyEngine.openai ?? undefined);
+    await threadService.maybeRefreshThreadSummary(
+      thread.id,
+      workspaceId,
+      replyEngine.openai ?? undefined,
+    );
     const title = await threadService.maybeGenerateThreadTitle(
       thread.id,
       thread.title ?? '',

@@ -25,7 +25,7 @@
  *   - Workspace isolation: rate buckets are keyed by `workspaceId`.
  */
 
-import { Injectable, type OnModuleInit  } from '@nestjs/common';
+import { Injectable, type OnModuleInit } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { WhatsappService } from './whatsapp.service';

@@ -5,6 +5,7 @@ import { ReportsOrdersService } from './reports-orders.service';
 import { ReportsAffiliateService } from './reports-affiliate.service';
 import { ReportsService } from './reports.service';
 import type { ReportFiltersDto } from './dto/report-filters.dto';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 jest.mock('./reports-orders.service', () => {
   const actual = jest.requireActual('./reports-orders.service');
@@ -19,22 +20,23 @@ jest.mock('./reports-orders.service', () => {
 
 describe('ReportsService', () => {
   let service: ReportsService;
-  let prisma: {
-    customerSubscription: { count: jest.Mock; findMany: jest.Mock; groupBy: jest.Mock };
-    $queryRaw: jest.Mock;
-  };
+  let prisma: ReturnType<typeof createPartialPrismaMock>;
   let ordersService: { getVendas: jest.Mock; [k: string]: jest.Mock };
-  let affiliateService: { resolveAffiliateIds: jest.Mock; getAfiliados: jest.Mock; getIndicadores: jest.Mock; getIndicadoresProduto: jest.Mock };
+  let affiliateService: {
+    resolveAffiliateIds: jest.Mock;
+    getAfiliados: jest.Mock;
+    getIndicadores: jest.Mock;
+    getIndicadoresProduto: jest.Mock;
+  };
 
   beforeEach(async () => {
-    prisma = {
-      customerSubscription: {
-        count: jest.fn().mockResolvedValue(0),
-        findMany: jest.fn().mockResolvedValue([]),
-        groupBy: jest.fn().mockResolvedValue([]),
-      },
-      $queryRaw: jest.fn().mockResolvedValue([]),
-    };
+    prisma = createPartialPrismaMock({
+      customerSubscription: ['count', 'findMany', 'groupBy'],
+    });
+    (prisma as Record<string, unknown>).$queryRaw = jest.fn().mockResolvedValue([]);
+    prisma.customerSubscription.count.mockResolvedValue(0);
+    prisma.customerSubscription.findMany.mockResolvedValue([]);
+    prisma.customerSubscription.groupBy.mockResolvedValue([]);
     ordersService = {
       getVendas: jest.fn().mockResolvedValue({ rows: [] }),
       getVendasSummary: jest.fn().mockResolvedValue({ total: 0 }),
@@ -66,7 +68,7 @@ describe('ReportsService', () => {
   describe('delegations', () => {
     it('getVendas resolves affiliate IDs when affiliateEmail filter is set', async () => {
       affiliateService.resolveAffiliateIds.mockResolvedValue(['p1', 'p2']);
-      await service.getVendas('ws-1', { affiliateEmail: 'aff@x.com' } as ReportFiltersDto);
+      await service.getVendas('ws-1', { affiliateEmail: 'aff@x.com' });
       expect(affiliateService.resolveAffiliateIds).toHaveBeenCalledWith('ws-1', 'aff@x.com');
       expect(ordersService.getVendas).toHaveBeenCalledWith(
         'ws-1',
@@ -76,7 +78,7 @@ describe('ReportsService', () => {
     });
 
     it('getVendas passes undefined affiliateIds when no affiliateEmail filter', async () => {
-      await service.getVendas('ws-1', {} as ReportFiltersDto);
+      await service.getVendas('ws-1', {});
       expect(ordersService.getVendas).toHaveBeenCalledWith('ws-1', {}, undefined);
     });
 
@@ -88,10 +90,7 @@ describe('ReportsService', () => {
       ['getChargeback', 'getChargeback'],
       ['getAfterPay', 'getAfterPay'],
     ])('delegates %s to ReportsOrdersService.%s', (method, ordersMethod) => {
-      void (service as Record<string, (...args: unknown[]) => unknown>)[method]?.(
-        'ws-1',
-        {},
-      );
+      void (service as Record<string, (...args: unknown[]) => unknown>)[method]?.('ws-1', {});
       expect(ordersService[ordersMethod]).toHaveBeenCalledWith('ws-1', {});
     });
 
@@ -100,20 +99,18 @@ describe('ReportsService', () => {
       ['getIndicadores', 'getIndicadores'],
       ['getIndicadoresProduto', 'getIndicadoresProduto'],
     ])('delegates %s to ReportsAffiliateService.%s', (method, affMethod) => {
-      void (service as Record<string, (...args: unknown[]) => unknown>)[method]?.(
+      void (service as Record<string, (...args: unknown[]) => unknown>)[method]?.('ws-1', {});
+      expect((affiliateService as Record<string, jest.Mock>)[affMethod]).toHaveBeenCalledWith(
         'ws-1',
         {},
       );
-      expect(
-        (affiliateService as Record<string, jest.Mock>)[affMethod],
-      ).toHaveBeenCalledWith('ws-1', {});
     });
   });
 
   describe('getChurn', () => {
     it('counts subscriptions with status=CANCELLED scoped to workspace', async () => {
       prisma.customerSubscription.count.mockResolvedValue(7);
-      const result = await service.getChurn('ws-1', { perPage: 5, page: 1 } as ReportFiltersDto);
+      const result = await service.getChurn('ws-1', { perPage: 5, page: 1 });
       expect(result.total).toBe(7);
       const countArg = prisma.customerSubscription.count.mock.calls[0][0];
       expect(countArg.where.workspaceId).toBe('ws-1');
@@ -122,21 +119,21 @@ describe('ReportsService', () => {
 
     it('returns empty monthly array when raw query fails', async () => {
       prisma.$queryRaw.mockRejectedValue(new Error('SQL boom'));
-      const result = await service.getChurn('ws-1', {} as ReportFiltersDto);
+      const result = await service.getChurn('ws-1', {});
       expect(result.monthly).toEqual([]);
     });
   });
 
   describe('getAssinaturas', () => {
     it('filters by status when supplied', async () => {
-      await service.getAssinaturas('ws-1', { status: 'ACTIVE' } as ReportFiltersDto);
+      await service.getAssinaturas('ws-1', { status: 'ACTIVE' });
       const findManyArg = prisma.customerSubscription.findMany.mock.calls[0][0];
       expect(findManyArg.where.status).toBe('ACTIVE');
       expect(findManyArg.where.workspaceId).toBe('ws-1');
     });
 
     it('caps perPage at 100', async () => {
-      await service.getAssinaturas('ws-1', { perPage: 999, page: 1 } as ReportFiltersDto);
+      await service.getAssinaturas('ws-1', { perPage: 999, page: 1 });
       const findManyArg = prisma.customerSubscription.findMany.mock.calls[0][0];
       expect(findManyArg.take).toBe(100);
     });
@@ -149,7 +146,7 @@ describe('ReportsService', () => {
           amount: 100,
           platform: 'meta',
           date: 'not-a-date',
-        } as never),
+        }),
       ).rejects.toThrow(BadRequestException);
     });
   });

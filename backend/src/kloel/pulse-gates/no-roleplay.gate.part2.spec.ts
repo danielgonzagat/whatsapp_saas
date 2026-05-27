@@ -39,15 +39,17 @@ function validAbi(): Record<string, unknown> {
     attention: { candidates: [] },
     memory: { workingMemory: [], episodicRefs: [], consolidatedRefs: [] },
     capabilities: {
-      available: [
-        { capabilityId: 'lineage', maturity: 'developing', runtimeEvidencePct: 5 },
-      ],
+      available: [{ capabilityId: 'lineage', maturity: 'developing', runtimeEvidencePct: 5 }],
       restricted: [],
     },
     valence: {
       recentTrace: [],
       aggregatedMood: {
-        positive: 0, negative: 0, neutral: 1, ambiguous: 0, windowHours: 24,
+        positive: 0,
+        negative: 0,
+        neutral: 1,
+        ambiguous: 0,
+        windowHours: 24,
       },
     },
     pulseTruth: {
@@ -73,25 +75,40 @@ function check(payload: unknown, mode?: 'log_only' | 'hard_fail'): GateVerdict {
   return makeNoRoleplayGate(mode).check(payload);
 }
 
-function tamperCurrentInput(payload: Record<string, unknown>, raw: string): Record<string, unknown> {
+function tamperCurrentInput(
+  payload: Record<string, unknown>,
+  raw: string,
+): Record<string, unknown> {
   const out = { ...payload };
   out['currentInput'] = { ...(payload['currentInput'] as Record<string, unknown>), raw };
   return out;
 }
 
-function tamperIdentityProjection(payload: Record<string, unknown>, patch: Record<string, unknown>): Record<string, unknown> {
+function tamperIdentityProjection(
+  payload: Record<string, unknown>,
+  patch: Record<string, unknown>,
+): Record<string, unknown> {
   const out = { ...payload };
-  out['identityProjection'] = { ...(payload['identityProjection'] as Record<string, unknown>), ...patch };
+  out['identityProjection'] = {
+    ...(payload['identityProjection'] as Record<string, unknown>),
+    ...patch,
+  };
   return out;
 }
 
-function tamperLineage(payload: Record<string, unknown>, patch: Record<string, unknown>): Record<string, unknown> {
+function tamperLineage(
+  payload: Record<string, unknown>,
+  patch: Record<string, unknown>,
+): Record<string, unknown> {
   const out = { ...payload };
   out['lineage'] = { ...(payload['lineage'] as Record<string, unknown>), ...patch };
   return out;
 }
 
-function tamperPerception(payload: Record<string, unknown>, patch: Record<string, unknown>): Record<string, unknown> {
+function tamperPerception(
+  payload: Record<string, unknown>,
+  patch: Record<string, unknown>,
+): Record<string, unknown> {
   const out = { ...payload };
   out['perception'] = { ...(payload['perception'] as Record<string, unknown>), ...patch };
   return out;

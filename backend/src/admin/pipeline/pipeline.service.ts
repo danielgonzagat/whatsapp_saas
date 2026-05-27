@@ -93,9 +93,7 @@ export class PipelineService {
       },
     });
 
-    this.logger.log(
-      `Pipeline state ${workspaceId}: ${previousState} -> ${state}`,
-    );
+    this.logger.log(`Pipeline state ${workspaceId}: ${previousState} -> ${state}`);
     return row;
   }
 
@@ -145,10 +143,7 @@ export class PipelineService {
     });
 
     const state = await this.getState(workspaceId);
-    if (
-      state.state === 'active' &&
-      state.fallbackRate1h >= FALLBACK_THRESHOLD
-    ) {
+    if (state.state === 'active' && state.fallbackRate1h >= FALLBACK_THRESHOLD) {
       await this.setState(
         workspaceId,
         'shadow',

@@ -44,19 +44,13 @@ describe('evidence-provenance gate — complete detection surface (>= 15 scenari
   it('3. FAIL — provenance is null (not an object)', () => {
     const v = gate.check({ eventId: 'e1', eventName: 'x', provenance: null as ProvenanceLike });
     expect(v.status).toBe('FAIL');
-    expect(v.evidence).toContainEqual(
-      expect.objectContaining({ path: '$.provenance' }),
-    );
+    expect(v.evidence).toContainEqual(expect.objectContaining({ path: '$.provenance' }));
   });
 
   it('4. FAIL — provenance.origin missing (empty string)', () => {
-    const v = gate.check(
-      validInput({ provenance: { ...completeProv(), origin: '' } }),
-    );
+    const v = gate.check(validInput({ provenance: { ...completeProv(), origin: '' } }));
     expect(v.status).toBe('FAIL');
-    expect(v.evidence).toContainEqual(
-      expect.objectContaining({ path: '$.provenance.origin' }),
-    );
+    expect(v.evidence).toContainEqual(expect.objectContaining({ path: '$.provenance.origin' }));
   });
 
   it('5. FAIL — provenance.origin missing (undefined)', () => {
@@ -64,19 +58,13 @@ describe('evidence-provenance gate — complete detection surface (>= 15 scenari
     delete (prov as Record<string, unknown>).origin;
     const v = gate.check(validInput({ provenance: prov }));
     expect(v.status).toBe('FAIL');
-    expect(v.evidence).toContainEqual(
-      expect.objectContaining({ path: '$.provenance.origin' }),
-    );
+    expect(v.evidence).toContainEqual(expect.objectContaining({ path: '$.provenance.origin' }));
   });
 
   it('6. FAIL — provenance.source is invalid (not synthetic|production)', () => {
-    const v = gate.check(
-      validInput({ provenance: { ...completeProv(), source: 'magic' } }),
-    );
+    const v = gate.check(validInput({ provenance: { ...completeProv(), source: 'magic' } }));
     expect(v.status).toBe('FAIL');
-    expect(v.evidence).toContainEqual(
-      expect.objectContaining({ path: '$.provenance.source' }),
-    );
+    expect(v.evidence).toContainEqual(expect.objectContaining({ path: '$.provenance.source' }));
   });
 
   it('7. FAIL — provenance.source is missing (undefined)', () => {
@@ -84,9 +72,7 @@ describe('evidence-provenance gate — complete detection surface (>= 15 scenari
     delete (prov as Record<string, unknown>).source;
     const v = gate.check(validInput({ provenance: prov }));
     expect(v.status).toBe('FAIL');
-    expect(v.evidence).toContainEqual(
-      expect.objectContaining({ path: '$.provenance.source' }),
-    );
+    expect(v.evidence).toContainEqual(expect.objectContaining({ path: '$.provenance.source' }));
   });
 
   it('8. FAIL — synthetic evidence in production pipeline without syntheticOverride flag', () => {
@@ -141,9 +127,7 @@ describe('evidence-provenance gate — complete detection surface (>= 15 scenari
   it('12. PASS — workerId present without processor (at least one required)', () => {
     const prov = { ...completeProv() };
     delete (prov as Record<string, unknown>).processor;
-    const v = gate.check(
-      validInput({ provenance: { ...prov, workerId: 'worker-007' } }),
-    );
+    const v = gate.check(validInput({ provenance: { ...prov, workerId: 'worker-007' } }));
     expect(v.status).toBe('PASS');
   });
 
@@ -158,9 +142,7 @@ describe('evidence-provenance gate — complete detection surface (>= 15 scenari
   });
 
   it('14. FAIL — schemaVersion is not semver ("v1")', () => {
-    const v = gate.check(
-      validInput({ provenance: { ...completeProv(), schemaVersion: 'v1' } }),
-    );
+    const v = gate.check(validInput({ provenance: { ...completeProv(), schemaVersion: 'v1' } }));
     expect(v.status).toBe('FAIL');
     expect(v.evidence).toContainEqual(
       expect.objectContaining({ path: '$.provenance.schemaVersion' }),
@@ -168,9 +150,7 @@ describe('evidence-provenance gate — complete detection surface (>= 15 scenari
   });
 
   it('15. FAIL — environment is invalid (not dev|staging|prod)', () => {
-    const v = gate.check(
-      validInput({ provenance: { ...completeProv(), environment: 'space' } }),
-    );
+    const v = gate.check(validInput({ provenance: { ...completeProv(), environment: 'space' } }));
     expect(v.status).toBe('FAIL');
     expect(v.evidence).toContainEqual(
       expect.objectContaining({ path: '$.provenance.environment' }),
@@ -233,9 +213,7 @@ describe('evidence-provenance gate — complete detection surface (>= 15 scenari
       }),
     );
     expect(v.status).toBe('FAIL');
-    expect(v.evidence).toContainEqual(
-      expect.objectContaining({ path: '$.causedBy' }),
-    );
+    expect(v.evidence).toContainEqual(expect.objectContaining({ path: '$.causedBy' }));
   });
 
   it('21. PASS — projected event with causedBy proof anchor', () => {

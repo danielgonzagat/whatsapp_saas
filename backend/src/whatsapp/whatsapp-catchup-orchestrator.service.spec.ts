@@ -12,10 +12,7 @@ jest.mock('../queue/queue', () => ({
   autopilotQueue: { add: jest.fn().mockResolvedValue(undefined) },
 }));
 
-const makeWorkspace = (
-  overrides: Record<string, unknown> = {},
-  name = 'Test Workspace',
-) => ({
+const makeWorkspace = (overrides: Record<string, unknown> = {}, name = 'Test Workspace') => ({
   id: 'ws-1',
   name,
   providerSettings: {
@@ -60,9 +57,9 @@ describe('WhatsappCatchupOrchestratorService', () => {
         findUnique: jest.fn().mockResolvedValue(makeWorkspace()),
         update: jest.fn().mockResolvedValue({}),
       },
-      $transaction: jest.fn().mockImplementation((cb: (tx: unknown) => Promise<unknown>) =>
-        cb(prisma),
-      ),
+      $transaction: jest
+        .fn()
+        .mockImplementation((cb: (tx: unknown) => Promise<unknown>) => cb(prisma)),
     };
     providerRegistry = {
       getChats: jest.fn().mockResolvedValue([]),
@@ -124,9 +121,7 @@ describe('WhatsappCatchupOrchestratorService', () => {
     });
 
     it('blocks catchup for guest workspace', async () => {
-      prisma.workspace.findUnique.mockResolvedValue(
-        makeWorkspace({}, 'Guest Workspace'),
-      );
+      prisma.workspace.findUnique.mockResolvedValue(makeWorkspace({}, 'Guest Workspace'));
       const result = await service.triggerCatchup('ws-1', 'test');
       expect(result.scheduled).toBe(false);
       expect(result.reason).toBe('guest_workspace_disabled');
@@ -144,9 +139,7 @@ describe('WhatsappCatchupOrchestratorService', () => {
     });
 
     it('returns catchup_locked when another catchup is running', async () => {
-      redis.set
-        .mockResolvedValueOnce('OK')
-        .mockResolvedValueOnce(null);
+      redis.set.mockResolvedValueOnce('OK').mockResolvedValueOnce(null);
       const result = await service.triggerCatchup('ws-1', 'test');
       expect(result).toEqual({ scheduled: false, reason: 'catchup_locked' });
     });

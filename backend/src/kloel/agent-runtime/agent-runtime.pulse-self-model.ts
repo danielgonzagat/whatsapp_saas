@@ -1,15 +1,12 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { PulseArtifactService } from '../../pulse/pulse-artifact.service';
 import type { AgentPulseSelfModel } from './agent-runtime.types';
+import { readStringArray } from '../../common/parse';
 
 function readRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
     : {};
-}
-
-function readStringArray(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : [];
 }
 
 @Injectable()
@@ -30,7 +27,8 @@ export class AgentRuntimePulseSelfModelService {
       const directive = readRecord(directivePayload.data);
 
       const score = typeof certificate.score === 'number' ? certificate.score : null;
-      const status = snapshot.status === 'ready' || snapshot.status === 'degraded' ? snapshot.status : 'empty';
+      const status =
+        snapshot.status === 'ready' || snapshot.status === 'degraded' ? snapshot.status : 'empty';
       const authorityMode =
         typeof snapshot.authorityMode === 'string' ? snapshot.authorityMode : 'advisory';
       const readiness = readRecord(machineReadiness.readiness);

@@ -1,7 +1,7 @@
-export const NON_DIGIT_RE = /\D/g;
-
+import { NON_DIGIT_RE } from '../common/phone';
 import { safeStr } from '../common/string';
-export { safeStr };
+
+export { NON_DIGIT_RE, safeStr };
 
 export function asUnknownRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value)

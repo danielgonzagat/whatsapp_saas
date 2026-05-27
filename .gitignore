@@ -107,3 +107,9 @@ state/FINDINGS_AGGREGATE.json
 .atomic-edit-locks/
 .kloel/
 # atomic-edit operation traces (per-call audit; aggregate via
+.canon-fleet/
+
+# codegraph build artifacts
+.codegraph/
+.world/
+.task-graph/

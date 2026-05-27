@@ -22,7 +22,7 @@ import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
-const NAME_RE = /\{\{name\}\}/g;
+import { NAME_RE } from '../common/regex';
 
 /** Campaigns service. */
 @Injectable()

@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { AdminSalesService } from './admin-sales.service';
 import { AdminDashboardService } from '../dashboard/admin-dashboard.service';
 import { listAdminTransactions } from '../transactions/queries/list-transactions.query';
+import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
 jest.mock('../transactions/queries/list-transactions.query', () => ({
   listAdminTransactions: jest.fn(),
@@ -64,7 +65,7 @@ describe('AdminSalesService', () => {
     getHome: mockDashboardGetHome,
   };
 
-  const prismaMock = {};
+  const prismaMock = createPartialPrismaMock({});
 
   const mockListAdminTransactions = listAdminTransactions as jest.MockedFunction<
     typeof listAdminTransactions

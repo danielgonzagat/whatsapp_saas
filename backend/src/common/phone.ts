@@ -14,7 +14,20 @@
  * semantic it wants, no per-caller surprise.
  */
 
-const NON_DIGIT_RE = /\D/g;
+/**
+ * Canonical "non-digit characters" regex.
+ *
+ * Wave F (2026-05-21) found 22 local `const D_RE = /\D/g` declarations
+ * across `backend/src/auth/`, `whatsapp/`, `checkout/`, `meta/`, `cia/`,
+ * `flows/`, etc. — all byte-identical. Exported here so callers can
+ * import the canonical instance instead of re-declaring it.
+ *
+ * Use via {@link digitsOnly} when possible (preferred — encapsulates
+ * the regex). Use the bare constant only when the value must be passed
+ * to a non-string `.replace` invocation that this module's facets don't
+ * cover.
+ */
+export const NON_DIGIT_RE = /\D/g;
 const WHATSAPP_USER_SUFFIX = '@c.us';
 const WHATSAPP_NET_SUFFIX = '@s.whatsapp.net';
 

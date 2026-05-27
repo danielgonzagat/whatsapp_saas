@@ -19,9 +19,7 @@ import type { TrustState } from '../trust/trust.types';
 
 const NOW = Date.parse('2026-05-14T00:00:00.000Z');
 
-function baseCreatorEvent(
-  over: Partial<CreatorEvent> = {},
-): CreatorEvent {
+function baseCreatorEvent(over: Partial<CreatorEvent> = {}): CreatorEvent {
   return {
     eventId: over.eventId ?? `evt_${Math.random().toString(36).slice(2, 8)}`,
     eventName: over.eventName ?? 'commerce.lead.replied',
@@ -55,9 +53,7 @@ describe('AudiencePartnerFitDetector (UTP-CREATOR-001)', () => {
   };
 
   it('returns weak fit with insufficient events', () => {
-    const events: CreatorEvent[] = [
-      baseCreatorEvent({ payload: { messageBody: 'Olá!' } }),
-    ];
+    const events: CreatorEvent[] = [baseCreatorEvent({ payload: { messageBody: 'Olá!' } })];
     const fit = detectAudiencePartnerFit(events, partner);
     expect(fit.verdict).toBe('weak_fit');
     expect(fit.reasons.some((r) => r.includes('insufficient'))).toBe(true);
@@ -66,7 +62,9 @@ describe('AudiencePartnerFitDetector (UTP-CREATOR-001)', () => {
   it('detects strong fit when audience category matches partner', () => {
     const events: CreatorEvent[] = Array.from({ length: 10 }, () =>
       baseCreatorEvent({
-        payload: { messageBody: 'Quero aprender mais sobre investimentos e conhecimento financeiro' },
+        payload: {
+          messageBody: 'Quero aprender mais sobre investimentos e conhecimento financeiro',
+        },
       }),
     );
     const fit = detectAudiencePartnerFit(events, partner);
@@ -171,9 +169,7 @@ describe('MentionTimingAdvisor (UTP-CREATOR-002)', () => {
   });
 
   it('recommends wait when engagement is low', () => {
-    const events: CreatorEvent[] = [
-      baseCreatorEvent({ eventName: 'commerce.lead.went_silent' }),
-    ];
+    const events: CreatorEvent[] = [baseCreatorEvent({ eventName: 'commerce.lead.went_silent' })];
     const timing = adviseMentionTiming(events, []);
     expect(timing.recommendation).toBe('wait');
   });
@@ -346,7 +342,10 @@ describe('EngagementVsConversionTracker (UTP-CREATOR-005)', () => {
   it('computes organic ratio from keyword signals', () => {
     const organicEvents: CreatorEvent[] = Array.from({ length: 6 }, () =>
       baseCreatorEvent({
-        payload: { messageBody: 'Hoje vou compartilhar minha experiência e reflexão sobre o processo de aprendizado.' },
+        payload: {
+          messageBody:
+            'Hoje vou compartilhar minha experiência e reflexão sobre o processo de aprendizado.',
+        },
       }),
     );
     const result = trackEngagementVsConversion(organicEvents);

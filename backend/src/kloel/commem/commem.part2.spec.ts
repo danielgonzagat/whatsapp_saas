@@ -7,24 +7,9 @@ import { NarrativeBuilder } from './narrative.builder';
 import { AttributionGuard } from './attribution.guard';
 import type { SpineEventRef } from '../mind/mind.types';
 import type { MemoryDimension, MemoryProjection, ProjectionInput } from './commem.types';
+import { makeEventFactoryMs } from '../../../test/helpers/spine-event-factory';
 
-let seq = 0;
-function makeEvent(
-  eventName: string,
-  workspaceId: string,
-  occurredAtMs: number,
-  overrides: Partial<SpineEventRef> = {},
-): SpineEventRef {
-  seq++;
-  return {
-    eventId: `evt_${String(seq).padStart(5, '0')}`,
-    eventName,
-    workspaceId,
-    occurredAt: new Date(occurredAtMs).toISOString(),
-    truthMode: 'observed',
-    ...overrides,
-  };
-}
+const makeEvent = makeEventFactoryMs();
 
 function nowMs(): number {
   return Date.now();
@@ -210,12 +195,14 @@ describe('COMMEM-007 — AttributionGuard', () => {
     const ledgerSvc = new CommemLedgerService();
     const events = [makeEvent('commerce.payment.approved', 'wks_a', nowMs())];
 
-    const entries = [ledgerSvc.aggregate({
-      events,
-      workspaceId: 'wks_a',
-      windowStartMs: nowMs() - 10000,
-      windowEndMs: nowMs() + 1000,
-    })];
+    const entries = [
+      ledgerSvc.aggregate({
+        events,
+        workspaceId: 'wks_a',
+        windowStartMs: nowMs() - 10000,
+        windowEndMs: nowMs() + 1000,
+      }),
+    ];
 
     const result = svc.validateLedger(entries, 'wks_b');
     expect(result.passed).toBe(false);

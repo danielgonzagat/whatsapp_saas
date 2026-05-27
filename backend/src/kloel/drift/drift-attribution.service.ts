@@ -14,7 +14,11 @@ const ATTRIBUTABLE_EVENT_PATTERNS: ReadonlyArray<{
   label: string;
   score: number;
 }> = [
-  { eventName: 'commerce.campaign.performance_drop_detected', label: 'campaign performance drop', score: 3 },
+  {
+    eventName: 'commerce.campaign.performance_drop_detected',
+    label: 'campaign performance drop',
+    score: 3,
+  },
   { eventName: 'commerce.campaign.creative_swapped', label: 'creative swap', score: 2 },
   { eventName: 'evolution.gap_detected', label: 'system gap detected', score: 3 },
   { eventName: 'commerce.lead.objection_raised', label: 'objection spike', score: 2 },
@@ -34,18 +38,16 @@ export function attributeDrift(
 ): AttributedDrift {
   const workspaceId = driftSnapshot.workspaceId;
   const weekEvents = allEvents.filter(
-    (e) =>
-      e.workspaceId === workspaceId &&
-      eventInWindow(e, driftSnapshot.weekStart),
+    (e) => e.workspaceId === workspaceId && eventInWindow(e, driftSnapshot.weekStart),
   );
 
   const causes: AttributedCause[] = [];
 
   for (const pattern of ATTRIBUTABLE_EVENT_PATTERNS) {
-    const matching = weekEvents.filter(
-      (e) => e.eventName === pattern.eventName,
-    );
-    if (matching.length === 0) continue;
+    const matching = weekEvents.filter((e) => e.eventName === pattern.eventName);
+    if (matching.length === 0) {
+      continue;
+    }
 
     const count = matching.length;
     const e = matching[matching.length - 1]!;

@@ -91,7 +91,11 @@ export async function runSetAgentJobEnabled(
   if (!jobId) {
     return { success: false, error: 'missing_agent_job_id' };
   }
-  const result = await scheduler.setJobEnabled({ workspaceId, jobId, enabled: args.enabled === true });
+  const result = await scheduler.setJobEnabled({
+    workspaceId,
+    jobId,
+    enabled: args.enabled === true,
+  });
   return {
     success: result.ok,
     key: result.key,
@@ -171,8 +175,12 @@ export async function runGetAgentArtifact(
 }
 
 function safeStr(value: unknown, fallback = ''): string {
-  if (typeof value === 'string') return value;
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
   return fallback;
 }
 

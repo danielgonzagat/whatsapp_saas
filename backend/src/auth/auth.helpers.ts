@@ -1,7 +1,7 @@
 import { UnauthorizedException } from '@nestjs/common';
+import { UUID_DASH_RE } from '../common/regex';
 
-/** Regex used by anonymous-uid generation to strip dashes from a UUID. */
-export const PATTERN_RE = /-/g;
+export { UUID_DASH_RE };
 
 /** Build a structured log line for auth events. */
 export function buildAuthLogMessage(event: string, payload: Record<string, unknown>): string {

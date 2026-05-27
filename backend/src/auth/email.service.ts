@@ -44,7 +44,7 @@ const TEMPLATE_NAMES: ReadonlyArray<TemplateName> = [
 ];
 
 const TEMPLATE_DIR = join(__dirname, 'email-templates');
-const PLACEHOLDER_RE = /\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g;
+import { PLACEHOLDER_RE } from '../common/regex';
 
 /**
  * Load every email template from disk once at module init. Templates live as

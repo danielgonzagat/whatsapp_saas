@@ -1,6 +1,5 @@
 import { StructuredLogger } from '../../logging/structured-logger';
 
-
 import type {
   CentsBigInt,
   PercentRoleInput,

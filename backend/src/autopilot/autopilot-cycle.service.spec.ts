@@ -8,7 +8,9 @@ import { AutopilotCycleService } from './autopilot-cycle.service';
 jest.mock('../queue/queue', () => ({
   autopilotQueue: {
     add: jest.fn().mockResolvedValue(undefined),
-    getJobCounts: jest.fn().mockResolvedValue({ waiting: 3, delayed: 0, active: 1, failed: 2, completed: 10 }),
+    getJobCounts: jest
+      .fn()
+      .mockResolvedValue({ waiting: 3, delayed: 0, active: 1, failed: 2, completed: 10 }),
   },
 }));
 
@@ -33,9 +35,20 @@ describe('AutopilotCycleService', () => {
       message: { findFirst: jest.fn().mockResolvedValue(null) },
       contact: { findFirst: jest.fn().mockResolvedValue(null) },
     };
-    smartTime = { getBestTime: jest.fn().mockResolvedValue({ peakHour: 14, bestHours: [14], bestDays: ['Ter'] }) };
-    money = { moneyMachine: jest.fn().mockResolvedValue({ created: [] }), nextBestAction: jest.fn().mockResolvedValue({ action: 'FOLLOW_UP_SOFT' }) };
-    executor = { analyzeContext: jest.fn().mockResolvedValue({}), decideAction: jest.fn().mockResolvedValue('wait'), executeAction: jest.fn().mockResolvedValue(undefined) };
+    smartTime = {
+      getBestTime: jest
+        .fn()
+        .mockResolvedValue({ peakHour: 14, bestHours: [14], bestDays: ['Ter'] }),
+    };
+    money = {
+      moneyMachine: jest.fn().mockResolvedValue({ created: [] }),
+      nextBestAction: jest.fn().mockResolvedValue({ action: 'FOLLOW_UP_SOFT' }),
+    };
+    executor = {
+      analyzeContext: jest.fn().mockResolvedValue({}),
+      decideAction: jest.fn().mockResolvedValue('wait'),
+      executeAction: jest.fn().mockResolvedValue(undefined),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -75,7 +88,9 @@ describe('AutopilotCycleService', () => {
 
     it('blocks workspace that is billing-suspended (tenant isolation)', async () => {
       process.env.ENABLE_LEGACY_BACKEND_AUTOPILOT = 'true';
-      prisma.workspace.findUnique.mockResolvedValue({ providerSettings: { billingSuspended: true } });
+      prisma.workspace.findUnique.mockResolvedValue({
+        providerSettings: { billingSuspended: true },
+      });
       await expect(service.runAutopilotCycle('ws-bad')).rejects.toThrow(/suspenso/i);
       delete process.env.ENABLE_LEGACY_BACKEND_AUTOPILOT;
     });
@@ -93,10 +108,16 @@ describe('AutopilotCycleService', () => {
     it('checks suspension then delegates to money service', async () => {
       prisma.workspace.findUnique.mockResolvedValue({ providerSettings: {} });
       prisma.subscription.findUnique.mockResolvedValue({ status: 'ACTIVE' });
-      money.moneyMachine.mockResolvedValue({ created: ['c1', 'c2', 'c3'], segments: { hot: 1, warm: 0, cold: 0 } });
+      money.moneyMachine.mockResolvedValue({
+        created: ['c1', 'c2', 'c3'],
+        segments: { hot: 1, warm: 0, cold: 0 },
+      });
       const result = await service.moneyMachine('ws-1');
       expect(money.moneyMachine).toHaveBeenCalledWith('ws-1', 200, false, false);
-      expect(result).toEqual({ created: ['c1', 'c2', 'c3'], segments: { hot: 1, warm: 0, cold: 0 } });
+      expect(result).toEqual({
+        created: ['c1', 'c2', 'c3'],
+        segments: { hot: 1, warm: 0, cold: 0 },
+      });
     });
   });
 

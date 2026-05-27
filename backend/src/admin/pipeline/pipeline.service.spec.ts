@@ -1,18 +1,11 @@
 import { PipelineService, type DecisionShadowInput } from './pipeline.service';
+import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
 describe('PipelineService', () => {
-  const prisma = {
-    pipelineState: {
-      findUnique: jest.fn(),
-      create: jest.fn(),
-      upsert: jest.fn(),
-      update: jest.fn(),
-      updateMany: jest.fn(),
-    },
-    decisionShadow: {
-      upsert: jest.fn(),
-    },
-  };
+  const prisma = createPartialPrismaMock({
+    pipelineState: ['findUnique', 'create', 'upsert', 'update', 'updateMany'],
+    decisionShadow: ['upsert'],
+  });
   const events = {
     recordCommercial: jest.fn(),
   };
@@ -237,7 +230,8 @@ describe('PipelineService', () => {
         ([arg]) => (arg as { eventType?: string }).eventType === 'pipeline.state.changed',
       );
       expect(stateChangedEvent).toBeDefined();
-      const payload = (stateChangedEvent![0] as { payload: { reason: string; by: string } }).payload;
+      const payload = (stateChangedEvent![0] as { payload: { reason: string; by: string } })
+        .payload;
       expect(payload.reason).toMatch(/auto-fallback/);
       expect(payload.by).toBe('system');
     });

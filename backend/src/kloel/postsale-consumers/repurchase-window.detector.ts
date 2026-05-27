@@ -1,7 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SpineEmitterService } from '../spine/spine-emitter.service';
-import type { RepurchaseWindow, DetectionInput, PostSaleDecisionControl } from './postsale-consumers.types';
-import { clamp, daysSince, filterByWorkspaceAndEntity, latestEvent } from './postsale-consumers.types';
+import type {
+  RepurchaseWindow,
+  DetectionInput,
+  PostSaleDecisionControl,
+} from './postsale-consumers.types';
+import {
+  clamp,
+  daysSince,
+  filterByWorkspaceAndEntity,
+  latestEvent,
+} from './postsale-consumers.types';
 
 const WINDOW_MIN_DAYS = 14;
 const WINDOW_MAX_DAYS = 90;
@@ -101,10 +110,7 @@ export class RepurchaseWindowDetector {
 
     windowScore = clamp(windowScore, 0, 1);
     const windowOpen =
-      windowScore >= 0.5 &&
-      hasRecentFirstValue &&
-      hasPositiveSatisfaction &&
-      !hasRecentObjection;
+      windowScore >= 0.5 && hasRecentFirstValue && hasPositiveSatisfaction && !hasRecentObjection;
 
     if (windowOpen) {
       await this.emitWindow(input.workspaceId, entityRef, signals);
@@ -163,31 +169,35 @@ function build(
 
 function buildControl(windowOpen: boolean, signals: readonly string[]): PostSaleDecisionControl {
   if (!windowOpen) {
-    const uncertainty =
-      signals.includes('recent_objection_guardrail')
-        ? 'Customer has recent objection recovery evidence; repurchase timing may still feel like pressure.'
-        : signals.includes('missing_first_value_guardrail')
-          ? 'Repurchase window is closed because first value has not been evidenced for this customer.'
-          : signals.includes('missing_positive_satisfaction_guardrail')
-            ? 'Repurchase window is closed because positive satisfaction is not evidenced for this customer.'
-            : 'Repurchase window is closed until timing and value evidence mature.';
+    const uncertainty = signals.includes('recent_objection_guardrail')
+      ? 'Customer has recent objection recovery evidence; repurchase timing may still feel like pressure.'
+      : signals.includes('missing_first_value_guardrail')
+        ? 'Repurchase window is closed because first value has not been evidenced for this customer.'
+        : signals.includes('missing_positive_satisfaction_guardrail')
+          ? 'Repurchase window is closed because positive satisfaction is not evidenced for this customer.'
+          : 'Repurchase window is closed until timing and value evidence mature.';
 
     return {
       riskClass: 'R1',
       delegationMode: 'silent_monitoring',
       safeNextStep: 'Keep the repurchase window closed and continue observing post-sale value.',
       uncertainty,
-      leadOutcomeGuardrail: 'Do not create a repurchase prompt from weak, cross-customer, or recently contested evidence.',
-      rollback: 'If a repurchase prompt was prepared from this signal, cancel it and return to post-sale support.',
+      leadOutcomeGuardrail:
+        'Do not create a repurchase prompt from weak, cross-customer, or recently contested evidence.',
+      rollback:
+        'If a repurchase prompt was prepared from this signal, cancel it and return to post-sale support.',
     };
   }
 
   return {
     riskClass: 'R2',
     delegationMode: 'owner_review',
-    safeNextStep: 'Prepare repurchase context for owner review; do not send an offer automatically.',
-    uncertainty: 'Repurchase readiness is inferred from first value, positive satisfaction, and timing evidence.',
+    safeNextStep:
+      'Prepare repurchase context for owner review; do not send an offer automatically.',
+    uncertainty:
+      'Repurchase readiness is inferred from first value, positive satisfaction, and timing evidence.',
     leadOutcomeGuardrail: 'Frame each repurchase as optional next value, not urgency or pressure.',
-    rollback: 'Owner can close the window, discard the offer draft, or wait for stronger satisfaction evidence.',
+    rollback:
+      'Owner can close the window, discard the offer draft, or wait for stronger satisfaction evidence.',
   };
 }

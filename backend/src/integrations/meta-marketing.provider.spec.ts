@@ -1,16 +1,10 @@
 import type { PrismaService } from '../prisma/prisma.service';
 import { MetaMarketingProvider } from './meta-marketing.provider';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 describe('MetaMarketingProvider', () => {
   let provider: MetaMarketingProvider;
-  let mockPrisma: {
-    metaConnection: {
-      upsert: jest.Mock;
-      findFirst: jest.Mock;
-      delete: jest.Mock;
-      update: jest.Mock;
-    };
-  };
+  let mockPrisma: ReturnType<typeof createPartialPrismaMock>;
   let mockMetaSdk: {
     graphApiGet: jest.Mock;
     graphApiDelete: jest.Mock;
@@ -23,14 +17,12 @@ describe('MetaMarketingProvider', () => {
   };
 
   beforeEach(() => {
-    mockPrisma = {
-      metaConnection: {
-        upsert: jest.fn().mockResolvedValue({}),
-        findFirst: jest.fn(),
-        delete: jest.fn().mockResolvedValue({}),
-        update: jest.fn().mockResolvedValue({}),
-      },
-    };
+    mockPrisma = createPartialPrismaMock({
+      metaConnection: ['upsert', 'findFirst', 'delete', 'update'],
+    });
+    mockPrisma.metaConnection.upsert.mockResolvedValue({});
+    mockPrisma.metaConnection.delete.mockResolvedValue({});
+    mockPrisma.metaConnection.update.mockResolvedValue({});
 
     mockMetaSdk = {
       graphApiGet: jest.fn().mockResolvedValue({ data: [] }),

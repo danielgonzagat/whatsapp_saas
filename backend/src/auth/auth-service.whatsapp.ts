@@ -2,14 +2,13 @@ import { randomInt } from 'node:crypto';
 import { UnauthorizedException } from '@nestjs/common';
 import { issueTokens, type TokenIssuanceResult } from './auth-service.tokens';
 import type { AuthPartsDeps } from './auth-service.register-login';
+import { NON_DIGIT_RE } from '../common/phone';
 
 export interface WhatsAppCodeResult {
   success: boolean;
   message: string;
   code?: string;
 }
-
-const D_RE = /\D/g;
 
 export async function sendWhatsAppCode(
   deps: AuthPartsDeps,
@@ -41,7 +40,7 @@ export async function sendWhatsAppCode(
         },
         body: JSON.stringify({
           messaging_product: 'whatsapp',
-          to: phone.replace(D_RE, ''),
+          to: phone.replace(NON_DIGIT_RE, ''),
           type: 'text',
           text: { body: message },
         }),

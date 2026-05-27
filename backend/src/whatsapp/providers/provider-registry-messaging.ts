@@ -9,7 +9,6 @@ import { Logger } from '@nestjs/common';
  * as SendMessageOptions before delegating.
  */
 
-
 import { OpsAlertService } from '../../observability/ops-alert.service';
 import { WahaProvider } from './waha.provider';
 import { WhatsAppApiProvider } from './whatsapp-api.provider';

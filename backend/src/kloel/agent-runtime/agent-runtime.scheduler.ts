@@ -117,7 +117,10 @@ export class AgentRuntimeSchedulerService {
       .filter((job): job is NonNullable<ReturnType<typeof this.parseDueJob>> => job !== null);
   }
 
-  async listJobs(workspaceId: string, limit = 50): Promise<
+  async listJobs(
+    workspaceId: string,
+    limit = 50,
+  ): Promise<
     Array<{
       key: string;
       title: string;

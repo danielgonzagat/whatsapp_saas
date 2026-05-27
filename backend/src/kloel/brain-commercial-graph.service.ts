@@ -280,10 +280,10 @@ export class BrainCommercialGraphService {
       if (confidence === 0 || (hasToxicity && confidence < 0.3)) {
         let reason = `Priorizar correção: ${stat.wins}/${stat.total} successes`;
         if (hasToxicity) {
-          reason += ` — ${signal!.toxic} sinal(is) tóxico(s)`;
+          reason += ` — ${signal.toxic} sinal(is) tóxico(s)`;
         }
         if (hasRegression) {
-          reason += ` — ${signal!.regressions} regressão(ões) vs baseline`;
+          reason += ` — ${signal.regressions} regressão(ões) vs baseline`;
         }
         recommendations.push({
           action,
@@ -296,10 +296,10 @@ export class BrainCommercialGraphService {
         const clamped = Math.min(confidence, 0.35);
         let reason = `${stat.wins}/${stat.total} successes — toxicidade detectada`;
         if (hasRegression) {
-          reason += ` (${signal!.regressions} regressões)`;
+          reason += ` (${signal.regressions} regressões)`;
         }
         if (hasToxicity) {
-          reason += ` (${signal!.toxic} resultados ≤ 0)`;
+          reason += ` (${signal.toxic} resultados ≤ 0)`;
         }
         recommendations.push({
           action,
@@ -349,7 +349,8 @@ export class BrainCommercialGraphService {
     const rankedRecommendations = recommendations
       .sort((left, right) => {
         const leftFix = left.toxicityFlag === 'toxic' || left.toxicityFlag === 'regression' ? 0 : 1;
-        const rightFix = right.toxicityFlag === 'toxic' || right.toxicityFlag === 'regression' ? 0 : 1;
+        const rightFix =
+          right.toxicityFlag === 'toxic' || right.toxicityFlag === 'regression' ? 0 : 1;
         if (leftFix !== rightFix) {
           return leftFix - rightFix;
         }

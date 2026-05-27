@@ -24,10 +24,7 @@ describe('MindGuardContextBuilderService', () => {
       kloelSale: { findFirst: jest.fn().mockResolvedValue(null) },
     };
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        MindGuardContextBuilderService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [MindGuardContextBuilderService, { provide: PrismaService, useValue: prisma }],
     }).compile();
     service = module.get(MindGuardContextBuilderService);
   });
@@ -37,7 +34,7 @@ describe('MindGuardContextBuilderService', () => {
       const result = await service.buildForSend(
         'ws-1',
         { complianceMode: 'reactive' } as ChannelSendRequest,
-        {} as MindActionContext,
+        {},
       );
       expect(result.withinComplianceWindow).toBe(true);
       expect(result.templateApproved).toBe(true);
@@ -48,7 +45,7 @@ describe('MindGuardContextBuilderService', () => {
       const result = await service.buildForSend(
         'ws-1',
         { complianceMode: 'proactive' } as ChannelSendRequest,
-        { contactId: 'c1' } as MindActionContext,
+        { contactId: 'c1' },
       );
       expect(result.withinComplianceWindow).toBe(true);
     });
@@ -57,7 +54,7 @@ describe('MindGuardContextBuilderService', () => {
       const result = await service.buildForSend(
         'ws-1',
         { complianceMode: 'proactive' } as ChannelSendRequest,
-        { withinComplianceWindow: false } as MindActionContext,
+        { withinComplianceWindow: false },
       );
       expect(result.withinComplianceWindow).toBe(false);
     });
@@ -65,7 +62,7 @@ describe('MindGuardContextBuilderService', () => {
 
   describe('buildForDiscount', () => {
     it('defaults maxDiscountPercent=30 and minMarginPercent=0', async () => {
-      const result = await service.buildForDiscount('ws-1', {} as MindActionContext);
+      const result = await service.buildForDiscount('ws-1', {});
       expect(result.maxDiscountPercent).toBe(30);
       expect(result.minMarginPercent).toBe(0);
     });
@@ -74,7 +71,7 @@ describe('MindGuardContextBuilderService', () => {
       const result = await service.buildForDiscount('ws-1', {
         maxDiscountPercent: 50,
         minMarginPercent: 5,
-      } as MindActionContext);
+      });
       expect(result.maxDiscountPercent).toBe(50);
       expect(result.minMarginPercent).toBe(5);
     });
@@ -82,7 +79,7 @@ describe('MindGuardContextBuilderService', () => {
 
   describe('buildForPayment', () => {
     it('defaults maxPaymentAmount=5000 and paymentProcessed=false (no external id)', async () => {
-      const result = await service.buildForPayment('ws-1', {} as MindActionContext);
+      const result = await service.buildForPayment('ws-1', {});
       expect(result.maxPaymentAmount).toBe(5000);
       expect(result.paymentProcessed).toBe(false);
     });
@@ -91,7 +88,7 @@ describe('MindGuardContextBuilderService', () => {
       prisma.kloelSale.findFirst.mockResolvedValue({ id: 'sale-1' });
       const result = await service.buildForPayment('ws-1', {
         paymentExternalId: 'pay_123',
-      } as MindActionContext);
+      });
       expect(result.paymentProcessed).toBe(true);
     });
   });
@@ -101,7 +98,7 @@ describe('MindGuardContextBuilderService', () => {
       prisma.conversation.findFirst.mockResolvedValue({ id: 'c1' });
       const result = await service.buildForTransfer('ws-1', {
         contactId: 'contact-1',
-      } as MindActionContext);
+      });
       expect(result.escalationInProgress).toBe(true);
       expect(result.humanAvailable).toBe(true);
     });
@@ -109,14 +106,14 @@ describe('MindGuardContextBuilderService', () => {
     it('escalationInProgress=false when no HUMAN conversation', async () => {
       const result = await service.buildForTransfer('ws-1', {
         contactId: 'contact-1',
-      } as MindActionContext);
+      });
       expect(result.escalationInProgress).toBe(false);
     });
   });
 
   describe('buildForBroadcast', () => {
     it('defaults: campaignActive=true, campaignBudgetExhausted=false, withinComplianceWindow=false', async () => {
-      const result = await service.buildForBroadcast('ws-1', {} as MindActionContext);
+      const result = await service.buildForBroadcast('ws-1', {});
       expect(result.campaignActive).toBe(true);
       expect(result.campaignBudgetExhausted).toBe(false);
       expect(result.withinComplianceWindow).toBe(false);
@@ -129,7 +126,7 @@ describe('MindGuardContextBuilderService', () => {
       const result = await service.buildForSend(
         'ws-1',
         { complianceMode: 'reactive' } as ChannelSendRequest,
-        { contactId: 'c1' } as MindActionContext,
+        { contactId: 'c1' },
       );
       expect(result.contactOptOut).toBe(true);
     });
@@ -139,7 +136,7 @@ describe('MindGuardContextBuilderService', () => {
       const result = await service.buildForSend(
         'ws-1',
         { complianceMode: 'reactive' } as ChannelSendRequest,
-        { contactId: 'c1' } as MindActionContext,
+        { contactId: 'c1' },
       );
       expect(result.contactOptOut).toBe(true);
     });

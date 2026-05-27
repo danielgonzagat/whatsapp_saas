@@ -80,9 +80,7 @@ export interface LineageEntry<E extends LineageEventName = LineageEventName> {
  * Input shape used when appending a new entry. The ledger fills in
  * `sequenceNumber`, `prevEntryHash`, and `hash`.
  */
-export type LineageEntryInput<
-  E extends Exclude<LineageEventName, 'lineage.genesis'>,
-> = {
+export type LineageEntryInput<E extends Exclude<LineageEventName, 'lineage.genesis'>> = {
   readonly ledgerEntryId: string;
   readonly eventId: string;
   readonly eventName: E;

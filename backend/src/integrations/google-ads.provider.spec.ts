@@ -1,5 +1,6 @@
 import type { PrismaService } from '../prisma/prisma.service';
 import { GoogleAdsProvider } from './google-ads.provider';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 type IntegrationCredentialUpsertPayload = {
   where: unknown;
@@ -9,34 +10,19 @@ type IntegrationCredentialUpsertPayload = {
 
 describe('GoogleAdsProvider', () => {
   let provider: GoogleAdsProvider;
-  let mockPrisma: {
-    integrationCredential: {
-      findUnique: jest.Mock;
-      upsert: jest.MockedFunction<
-        (payload: IntegrationCredentialUpsertPayload) => Promise<unknown>
-      >;
-      delete: jest.Mock;
-      update: jest.Mock;
-    };
-    adAccount: {
-      findMany: jest.Mock;
-      upsert: jest.Mock;
-    };
-  };
+  let mockPrisma: ReturnType<typeof createPartialPrismaMock>;
 
   beforeEach(() => {
-    mockPrisma = {
-      integrationCredential: {
-        findUnique: jest.fn(),
-        upsert: jest.fn(async () => ({})),
-        delete: jest.fn().mockResolvedValue({}),
-        update: jest.fn().mockResolvedValue({}),
-      },
-      adAccount: {
-        findMany: jest.fn().mockResolvedValue([]),
-        upsert: jest.fn().mockResolvedValue({}),
-      },
-    };
+    mockPrisma = createPartialPrismaMock({
+      integrationCredential: ['findUnique', 'upsert', 'delete', 'update'],
+      adAccount: ['findMany', 'upsert'],
+    });
+
+    mockPrisma.integrationCredential.upsert.mockImplementation(async () => ({}));
+    mockPrisma.integrationCredential.delete.mockResolvedValue({});
+    mockPrisma.integrationCredential.update.mockResolvedValue({});
+    mockPrisma.adAccount.findMany.mockResolvedValue([]);
+    mockPrisma.adAccount.upsert.mockResolvedValue({});
 
     provider = new GoogleAdsProvider(mockPrisma as PrismaService);
   });

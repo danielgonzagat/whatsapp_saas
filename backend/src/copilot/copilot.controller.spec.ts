@@ -167,4 +167,42 @@ describe('CopilotController', () => {
       });
     });
   });
+
+  describe('suggestForInbox', () => {
+    it('delegates to copilot.suggestMultiple with workspaceId and contactId from params', async () => {
+      (resolveWorkspaceId as jest.Mock).mockReturnValue('ws-1');
+      copilot.suggestMultiple.mockResolvedValue({ suggestions: ['A', 'B', 'C'], context: 'geral' });
+
+      const req = { user: { sub: 'u-1', workspaceId: 'ws-1' } } as never;
+
+      const result = await controller.suggestForInbox(req, 'ws-1', 'c-1');
+
+      expect(result).toEqual({ suggestions: ['A', 'B', 'C'], context: 'geral' });
+      expect(copilot.suggestMultiple).toHaveBeenCalledWith({
+        workspaceId: 'ws-1',
+        contactId: 'c-1',
+        count: 3,
+      });
+    });
+
+    it('returns empty suggestions when contact has no messages', async () => {
+      (resolveWorkspaceId as jest.Mock).mockReturnValue('ws-1');
+      copilot.suggestMultiple.mockResolvedValue({ suggestions: [] });
+
+      const req = { user: { sub: 'u-1' } } as never;
+
+      const result = await controller.suggestForInbox(req, 'ws-1', 'c-empty');
+
+      expect(result).toEqual({ suggestions: [] });
+    });
+
+    it('propagates errors from copilot service', async () => {
+      (resolveWorkspaceId as jest.Mock).mockReturnValue('ws-1');
+      copilot.suggestMultiple.mockRejectedValue(new Error('Rate limited'));
+
+      const req = { user: { sub: 'u-1' } } as never;
+
+      await expect(controller.suggestForInbox(req, 'ws-1', 'c-1')).rejects.toThrow('Rate limited');
+    });
+  });
 });

@@ -18,8 +18,7 @@ import { adminErrors } from '../common/admin-api-errors';
 import { asProviderSettings } from '../../whatsapp/provider-settings.types';
 import { AdminAuditService } from '../audit/admin-audit.service';
 import { AdminAccountStateAction } from './dto/update-account-state.dto';
-
-const PATTERN_RE = /-/g;
+import { UUID_DASH_RE } from '../../common/regex';
 
 /** List accounts response shape. */
 export interface ListAccountsResponse {
@@ -229,7 +228,7 @@ export class AdminAccountsService {
 
     const nextPassword =
       temporaryPassword?.trim() ||
-      `Kloel${randomInt(1000, 9999)}!${randomUUID().replace(PATTERN_RE, '').slice(0, 8)}`;
+      `Kloel${randomInt(1000, 9999)}!${randomUUID().replace(UUID_DASH_RE, '').slice(0, 8)}`;
 
     const passwordHash = await bcryptHash(nextPassword, BCRYPT_ROUNDS);
     await this.prisma.$transaction(

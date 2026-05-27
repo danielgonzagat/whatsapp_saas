@@ -1,37 +1,18 @@
 import { ConfigService } from '@nestjs/config';
 import { CalendarService } from './calendar.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 describe('CalendarService', () => {
-  let prisma: {
-    workspace: {
-      findUnique: jest.Mock;
-    };
-    contact: {
-      findFirst: jest.Mock;
-    };
-    appointment: {
-      create: jest.Mock;
-      findMany: jest.Mock;
-      update: jest.Mock;
-    };
-  };
+  let prisma: ReturnType<typeof createPartialPrismaMock>;
   let configService: Pick<ConfigService, 'get'>;
   let service: CalendarService;
 
   beforeEach(() => {
-    prisma = {
-      workspace: {
-        findUnique: jest.fn(),
-      },
-      contact: {
-        findFirst: jest.fn(),
-      },
-      appointment: {
-        create: jest.fn(),
-        findMany: jest.fn(),
-        update: jest.fn(),
-      },
-    };
+    prisma = createPartialPrismaMock({
+      workspace: ['findUnique'],
+      contact: ['findFirst'],
+      appointment: ['create', 'findMany', 'update'],
+    });
     configService = {
       get: jest.fn(),
     };

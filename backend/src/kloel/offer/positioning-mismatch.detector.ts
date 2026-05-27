@@ -22,20 +22,20 @@ const GAP_SEVERITY_THRESHOLD = 0.3;
 const CRITICAL_SEVERITY_THRESHOLD = 0.7;
 const MODERATE_SEVERITY_THRESHOLD = 0.5;
 
-function promiseMatchesPainPoint(
-  promise: string,
-  painPoint: string,
-): boolean {
-  const promiseLower = promise.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  const painLower = painPoint.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+function promiseMatchesPainPoint(promise: string, painPoint: string): boolean {
+  const promiseLower = promise
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+  const painLower = painPoint
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
   const painWords = painLower.split(/\s+/).filter((w) => w.length >= 4);
   return painWords.some((pw) => promiseLower.includes(pw));
 }
 
-function detectPainPointGaps(
-  promise: string,
-  audience: AudienceProfile,
-): PositioningGapDetail[] {
+function detectPainPointGaps(promise: string, audience: AudienceProfile): PositioningGapDetail[] {
   const gaps: PositioningGapDetail[] = [];
   const unmatched: string[] = [];
 
@@ -107,10 +107,14 @@ function detectTrustGap(
   const authorityObj = feedback.objectionKinds['authority'] ?? 0;
   const totalObj = trustObj + credibilityObj + authorityObj;
 
-  if (totalObj === 0) return undefined;
+  if (totalObj === 0) {
+    return undefined;
+  }
 
   const totalObjections = Object.values(feedback.objectionKinds).reduce((a, b) => a + b, 0);
-  if (totalObjections === 0) return undefined;
+  if (totalObjections === 0) {
+    return undefined;
+  }
 
   const ratio = totalObj / totalObjections;
   const hasProofSignals = /comprovad|provado|estudo|casos|clientes|depoimento/i.test(promise);
@@ -142,9 +146,7 @@ function detectTrustGap(
   return undefined;
 }
 
-function detectFeedbackGaps(
-  feedback: ConversionFeedback,
-): PositioningGapDetail[] {
+function detectFeedbackGaps(feedback: ConversionFeedback): PositioningGapDetail[] {
   const gaps: PositioningGapDetail[] = [];
 
   if (feedback.totalLeads < MIN_LEADS_FOR_FEEDBACK) {
@@ -201,16 +203,24 @@ function detectFeedbackGaps(
   return gaps;
 }
 
-function aggregateSeverity(gaps: readonly PositioningGapDetail[]): 'none' | 'minor' | 'moderate' | 'critical' {
-  if (gaps.length === 0) return 'none';
+function aggregateSeverity(
+  gaps: readonly PositioningGapDetail[],
+): 'none' | 'minor' | 'moderate' | 'critical' {
+  if (gaps.length === 0) {
+    return 'none';
+  }
 
   const maxSeverity = Math.max(...gaps.map((g) => g.severity));
   const avgSeverity = gaps.reduce((s, g) => s + g.severity, 0) / gaps.length;
 
   const score = maxSeverity * 0.6 + avgSeverity * 0.4;
 
-  if (score >= CRITICAL_SEVERITY_THRESHOLD) return 'critical';
-  if (score >= MODERATE_SEVERITY_THRESHOLD) return 'moderate';
+  if (score >= CRITICAL_SEVERITY_THRESHOLD) {
+    return 'critical';
+  }
+  if (score >= MODERATE_SEVERITY_THRESHOLD) {
+    return 'moderate';
+  }
   return 'minor';
 }
 

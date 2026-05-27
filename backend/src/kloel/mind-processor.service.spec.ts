@@ -15,17 +15,15 @@ jest.mock('bullmq', () => ({
     add: queueAddMock,
     close: queueCloseMock,
   })),
-  Worker: jest.fn().mockImplementation(
-    (name: string, processor: unknown, _opts?: unknown) => {
-      if (name === 'mind-scheduler' && typeof processor === 'function') {
-        capturedSchedulerProcessor = processor as ProcessorFn;
-      }
-      return {
-        on: jest.fn(),
-        close: workerCloseMock,
-      };
-    },
-  ),
+  Worker: jest.fn().mockImplementation((name: string, processor: unknown, _opts?: unknown) => {
+    if (name === 'mind-scheduler' && typeof processor === 'function') {
+      capturedSchedulerProcessor = processor as ProcessorFn;
+    }
+    return {
+      on: jest.fn(),
+      close: workerCloseMock,
+    };
+  }),
 }));
 
 jest.mock('../common/redis/redis.util', () => ({

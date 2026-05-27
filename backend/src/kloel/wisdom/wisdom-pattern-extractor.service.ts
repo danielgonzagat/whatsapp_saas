@@ -1,7 +1,27 @@
 import { Injectable } from '@nestjs/common';
 import { WisdomPrivacyGuardService } from './wisdom-privacy-guard.service';
-import { extractChannelEfficiencyPatterns, extractConversionDecayPatterns, extractEngagementPeakPatterns, extractObjectionPatterns, extractOfferObjectionCorrelationPatterns } from './wisdom-pattern-extracted.helpers';
-import { MIN_WORKSPACES, aggregateSignals, conversionRate, dealCloseRate, emitCampaignPatterns, emitProductConcentrationPatterns, emitRatePatterns, emitStagePatterns, emitVolumePatterns, enrichSignal, handoffRate, refundRate, replyRate } from './wisdom-pattern-signal.helpers';
+import {
+  extractChannelEfficiencyPatterns,
+  extractConversionDecayPatterns,
+  extractEngagementPeakPatterns,
+  extractObjectionPatterns,
+  extractOfferObjectionCorrelationPatterns,
+} from './wisdom-pattern-extracted.helpers';
+import {
+  MIN_WORKSPACES,
+  aggregateSignals,
+  conversionRate,
+  dealCloseRate,
+  emitCampaignPatterns,
+  emitProductConcentrationPatterns,
+  emitRatePatterns,
+  emitStagePatterns,
+  emitVolumePatterns,
+  enrichSignal,
+  handoffRate,
+  refundRate,
+  replyRate,
+} from './wisdom-pattern-signal.helpers';
 import type { CandidatePattern, ExtractedPattern, WorkspaceEventSet } from './wisdom.types';
 /**
  * WISDOM-001 — Pattern Extractor (enhanced).
@@ -26,7 +46,9 @@ export class WisdomPatternExtractorService {
    * pipeline, use extractPatterns() instead.
    */
   public extract(sets: readonly WorkspaceEventSet[]): CandidatePattern[] {
-    if (sets.length < MIN_WORKSPACES) return [];
+    if (sets.length < MIN_WORKSPACES) {
+      return [];
+    }
     const signals = sets.map((s) => aggregateSignals(s.events, s.workspaceId));
     const patterns: CandidatePattern[] = [];
     patterns.push(...emitRatePatterns(signals, 'conversion_rate', conversionRate, 0));
@@ -52,7 +74,9 @@ export class WisdomPatternExtractorService {
    *   - offer_objection_correlation (offer types linked to objections)
    */
   public extractPatterns(sets: readonly WorkspaceEventSet[]): ExtractedPattern[] {
-    if (sets.length < MIN_WORKSPACES) return [];
+    if (sets.length < MIN_WORKSPACES) {
+      return [];
+    }
     const signals = sets.map((s) => aggregateSignals(s.events, s.workspaceId));
     const enriched = signals.map((sig, i) => enrichSignal(sets[i]?.events ?? [], sig));
     const patterns: ExtractedPattern[] = [];

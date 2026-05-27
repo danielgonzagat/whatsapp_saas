@@ -7,14 +7,11 @@ import { MindObservabilityService } from '../../kloel/mind-observability.service
 import { MindReportService } from '../../kloel/mind-report.service';
 import { MindLiftReportService } from '../../kloel/mind-lift-report.service';
 import { AdminMindService } from './admin-mind.service';
+import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
 describe('AdminMindService', () => {
   let service: AdminMindService;
-  let prisma: {
-    workspace: { findUnique: jest.Mock };
-    mindPrediction: { findMany: jest.Mock };
-    $queryRaw: jest.Mock;
-  };
+  let prisma: ReturnType<typeof createPartialPrismaMock> & { $queryRaw: jest.Mock };
   let beliefs: { list: jest.Mock };
   let policy: { harness: jest.Mock };
   let observability: {
@@ -27,11 +24,12 @@ describe('AdminMindService', () => {
   let liftReport: { aggregate: jest.Mock };
 
   beforeEach(async () => {
-    prisma = {
-      workspace: { findUnique: jest.fn() },
-      mindPrediction: { findMany: jest.fn().mockResolvedValue([]) },
-      $queryRaw: jest.fn().mockResolvedValue([]),
-    };
+    const prismaMock = createPartialPrismaMock({
+      workspace: ['findUnique'],
+      mindPrediction: ['findMany'],
+    });
+    prismaMock.mindPrediction.findMany.mockResolvedValue([]);
+    prisma = Object.assign(prismaMock, { $queryRaw: jest.fn().mockResolvedValue([]) });
     beliefs = { list: jest.fn().mockResolvedValue([]) };
     policy = { harness: jest.fn().mockResolvedValue({}) };
     observability = {

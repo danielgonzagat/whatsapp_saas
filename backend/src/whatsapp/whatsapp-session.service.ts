@@ -11,9 +11,9 @@ import {
 import { normalizeJsonObjExt } from './whatsapp-service.helpers';
 import type { ProviderSettings } from './provider-settings.types';
 import { WhatsAppEventEmitterService } from '../kloel/whatsapp-emitter/whatsapp-event-emitter.service';
+import { NON_DIGIT_RE } from '../common/phone';
 
-const D_RE = /\D/g;
-const PATTERN_RE = /-/g;
+import { UUID_DASH_RE } from '../common/regex';
 
 @Injectable()
 export class WhatsappSessionService {
@@ -38,7 +38,7 @@ export class WhatsappSessionService {
   }
 
   private normalizeNumber(num: string): string {
-    return num.replace(D_RE, '');
+    return num.replace(NON_DIGIT_RE, '');
   }
 
   private normalizeChatId(chatId: string): string {
@@ -197,13 +197,13 @@ export class WhatsappSessionService {
       d.session = await this.providerRegistry.getSessionStatus(ws);
       if (!d.session.connected) {
         issues.push(
-          `${pt.replace(PATTERN_RE, '_')}_session_${String(d.session.status || 'unknown').toLowerCase()}`,
+          `${pt.replace(UUID_DASH_RE, '_')}_session_${String(d.session.status || 'unknown').toLowerCase()}`,
         );
       }
     } catch (e: unknown) {
       const errMsg = e instanceof Error ? e.message : 'unknown_error';
       this.logger.error(`Session status check failed for ws=${ws}: ${errMsg}`);
-      issues.push(`${pt.replace(PATTERN_RE, '_')}_session_status_unavailable`);
+      issues.push(`${pt.replace(UUID_DASH_RE, '_')}_session_status_unavailable`);
       d.session = {
         connected: false,
         status: 'UNKNOWN',

@@ -1,5 +1,5 @@
-import { ValenceTaggerService } from '../mind/valence-tagger.service';
 import { SpineEmitterService } from '../spine/spine-emitter.service';
+import { makeSpine } from '../../../test/helpers/spine-factory';
 import type { SpineEventRef } from '../mind/mind.types';
 import { AntiRemorseService } from './anti-remorse.service';
 import { ActivationCompanionService } from './activation-companion.service';
@@ -15,33 +15,10 @@ import { WinBackWindowAdvisor } from './winback-window.advisor';
 import { LtvProjectionService } from './ltv-projection.service';
 import { NoRegretPipelineService } from './no-regret-pipeline.service';
 import type { DetectionInput, LtvProjection } from './postsale-consumers.types';
+import { makeEventFactory } from '../../../test/helpers/spine-event-factory';
+import { baseInput } from '../../../test/helpers/detection-input-factory';
 
-function makeEvent(
-  eventName: string,
-  workspaceId: string,
-  occurredAt: string,
-  overrides: Partial<SpineEventRef> = {},
-): SpineEventRef {
-  let seq = (makeEvent as { _seq: number })._seq ?? 0;
-  seq++;
-  (makeEvent as { _seq: number })._seq = seq;
-  return {
-    eventId: `evt_${String(seq).padStart(5, '0')}`,
-    eventName,
-    workspaceId,
-    occurredAt,
-    truthMode: 'observed',
-    ...overrides,
-  };
-}
-
-function makeSpine(): SpineEmitterService {
-  return new SpineEmitterService(new ValenceTaggerService());
-}
-
-function baseInput(events: SpineEventRef[], workspaceId: string, nowMs?: number): DetectionInput {
-  return { events, workspaceId, nowMs: nowMs ?? Date.now() };
-}
+const makeEvent = makeEventFactory();
 
 async function flushAsyncConsumers(): Promise<void> {
   await new Promise((resolve) => setImmediate(resolve));

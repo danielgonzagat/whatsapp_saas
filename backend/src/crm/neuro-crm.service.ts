@@ -233,8 +233,7 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
     );
 
     if (result.intent === 'COMPLAINT' || result.sentiment === 'NEGATIVE') {
-      const objectionKind =
-        result.intent === 'COMPLAINT' ? 'complaint' : 'negative_sentiment';
+      const objectionKind = result.intent === 'COMPLAINT' ? 'complaint' : 'negative_sentiment';
       void this.crmEmitter
         ?.emitObjectionRaised(workspaceId, contactId, objectionKind)
         .catch(() => {});

@@ -1,27 +1,27 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { Agent } from '@prisma/client';
 import {
-  PATTERN_RE,
+  UUID_DASH_RE,
   assertAgentCanAuthenticate,
   buildAuthLogMessage,
   normalizeEmail,
 } from './auth.helpers';
 
 describe('auth.helpers', () => {
-  describe('PATTERN_RE', () => {
+  describe('UUID_DASH_RE', () => {
     it('should be a regex pattern', () => {
-      expect(Object.prototype.toString.call(PATTERN_RE)).toBe('[object RegExp]');
+      expect(Object.prototype.toString.call(UUID_DASH_RE)).toBe('[object RegExp]');
     });
 
     it('should match hyphens in UUIDs', () => {
       const uuid = '550e8400-e29b-41d4-a716-446655440000';
-      const matches = Array.from(uuid.matchAll(PATTERN_RE));
+      const matches = Array.from(uuid.matchAll(UUID_DASH_RE));
       expect(matches.length).toBeGreaterThan(0);
     });
 
     it('should remove hyphens when used in replace', () => {
       const uuid = '550e8400-e29b-41d4-a716-446655440000';
-      const result = uuid.replace(PATTERN_RE, '');
+      const result = uuid.replace(UUID_DASH_RE, '');
       expect(result).not.toContain('-');
     });
   });

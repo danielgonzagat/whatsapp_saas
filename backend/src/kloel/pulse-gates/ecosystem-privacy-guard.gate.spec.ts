@@ -7,9 +7,7 @@ const TARGET = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
 const FOREIGN_1 = '11111111-2222-3333-4444-555555555555';
 const FOREIGN_2 = '66666666-7777-8888-9999-000000000000';
 
-function cleanInput(
-  overrides?: Partial<EcosystemPrivacyGuardInput>,
-): EcosystemPrivacyGuardInput {
+function cleanInput(overrides?: Partial<EcosystemPrivacyGuardInput>): EcosystemPrivacyGuardInput {
   return {
     targetWorkspaceId: TARGET,
     ...overrides,
@@ -24,11 +22,7 @@ describe('ecosystem-privacy-guard gate — 18 full-surface scenarios', () => {
   });
 
   it('2. PASS — wisdomPayload is undefined', () => {
-    expect(
-      gate.check(
-        cleanInput({ wisdomPayload: undefined }),
-      ).status,
-    ).toBe('PASS');
+    expect(gate.check(cleanInput({ wisdomPayload: undefined })).status).toBe('PASS');
   });
 
   it('3. PASS — wisdomPayload contains no workspace IDs', () => {
@@ -42,9 +36,7 @@ describe('ecosystem-privacy-guard gate — 18 full-surface scenarios', () => {
   });
 
   it('4. FAIL — wisdomPayload is a string matching a foreign workspaceId', () => {
-    const v = gate.check(
-      cleanInput({ wisdomPayload: FOREIGN_1 }),
-    );
+    const v = gate.check(cleanInput({ wisdomPayload: FOREIGN_1 }));
     expect(v.status).toBe('FAIL');
     expect(v.evidence).toEqual(
       expect.arrayContaining([
@@ -57,9 +49,7 @@ describe('ecosystem-privacy-guard gate — 18 full-surface scenarios', () => {
   });
 
   it('5. FAIL — wisdomPayload object has workspaceId field with foreign UUID', () => {
-    const v = gate.check(
-      cleanInput({ wisdomPayload: { workspaceId: FOREIGN_1 } }),
-    );
+    const v = gate.check(cleanInput({ wisdomPayload: { workspaceId: FOREIGN_1 } }));
     expect(v.status).toBe('FAIL');
     expect(v.evidence).toEqual(
       expect.arrayContaining([
@@ -72,9 +62,7 @@ describe('ecosystem-privacy-guard gate — 18 full-surface scenarios', () => {
   });
 
   it('6. FAIL — wisdomPayload object has workspace_id field with foreign UUID', () => {
-    const v = gate.check(
-      cleanInput({ wisdomPayload: { workspace_id: FOREIGN_2 } }),
-    );
+    const v = gate.check(cleanInput({ wisdomPayload: { workspace_id: FOREIGN_2 } }));
     expect(v.status).toBe('FAIL');
     expect(v.evidence).toEqual(
       expect.arrayContaining([
@@ -106,10 +94,7 @@ describe('ecosystem-privacy-guard gate — 18 full-surface scenarios', () => {
   it('8. FAIL — wisdomPayload array item contains foreign workspaceId', () => {
     const v = gate.check(
       cleanInput({
-        wisdomPayload: [
-          { name: 'ok' },
-          { workspaceId: FOREIGN_1 },
-        ],
+        wisdomPayload: [{ name: 'ok' }, { workspaceId: FOREIGN_1 }],
       }),
     );
     expect(v.status).toBe('FAIL');

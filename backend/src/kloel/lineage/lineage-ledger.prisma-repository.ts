@@ -49,9 +49,7 @@ export class PrismaLineageLedgerRepository implements LineageLedgerRepository {
   }
 
   public async append(entry: LineageEntry): Promise<void> {
-    const payloadJson: Prisma.InputJsonValue = JSON.parse(
-      JSON.stringify(entry.payload),
-    );
+    const payloadJson: Prisma.InputJsonValue = JSON.parse(JSON.stringify(entry.payload));
     try {
       await this.prisma.lineageEntry.create({
         data: {

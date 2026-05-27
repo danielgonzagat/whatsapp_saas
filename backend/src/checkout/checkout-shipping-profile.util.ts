@@ -1,8 +1,8 @@
-const D_RE = /\D/g;
+import { NON_DIGIT_RE } from '../common/phone';
 function toDigits(value: unknown) {
   return (
     typeof value === 'string' ? value : typeof value === 'number' ? String(value) : ''
-  ).replace(D_RE, '');
+  ).replace(NON_DIGIT_RE, '');
 }
 
 function clamp(value: number, min: number, max: number) {

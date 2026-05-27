@@ -28,20 +28,26 @@ set -a
 source "$ENV_FILE"
 set +a
 
+# Map from .env.pulse.local naming (DATADOG_*) to datadog-mcp-server naming (DD_*)
+if [[ -z "${DD_API_KEY:-}" ]] && [[ -n "${DATADOG_API_KEY:-}" ]]; then
+  export DD_API_KEY="${DATADOG_API_KEY}"
+fi
+if [[ -z "${DD_APP_KEY:-}" ]] && [[ -n "${DATADOG_APP_KEY:-}" ]]; then
+  export DD_APP_KEY="${DATADOG_APP_KEY}"
+fi
+
 if [[ -z "${DD_API_KEY:-}" ]]; then
-  echo >&2 "datadog-mcp: DD_API_KEY is not set in .env.pulse.local"
+  echo >&2 "datadog-mcp: DD_API_KEY/DATADOG_API_KEY is not set in .env.pulse.local"
   echo >&2 "  Get it from: Datadog → Organization Settings → API Keys"
   exit 1
 fi
 
 if [[ -z "${DD_APP_KEY:-}" ]] || [[ "${DD_APP_KEY:-}" == PLACEHOLDER* ]]; then
-  echo >&2 "datadog-mcp: DD_APP_KEY is not set in .env.pulse.local"
+  echo >&2 "datadog-mcp: DD_APP_KEY/DATADOG_APP_KEY is not set in .env.pulse.local"
   echo >&2 "  Get it from: Datadog → Organization Settings → Application Keys → New Key"
   exit 1
 fi
 
-export DD_API_KEY
-export DD_APP_KEY
 export DD_SITE="${DD_SITE:-datadoghq.com}"
 export DD_ALLOW_WRITE="${DD_ALLOW_WRITE:-false}"
 

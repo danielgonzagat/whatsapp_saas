@@ -15,10 +15,7 @@ import type {
   RecommendedChannel,
 } from './offer.types';
 
-const STAGE_CHANNEL_FILTER: Readonly<Record<
-  MaturityStage,
-  readonly RecommendedChannel[]
->> = {
+const STAGE_CHANNEL_FILTER: Readonly<Record<MaturityStage, readonly RecommendedChannel[]>> = {
   validacao: ['whatsapp', 'email'],
   tracao: ['whatsapp', 'email', 'dashboard'],
   crescimento: ['whatsapp', 'email', 'dashboard'],
@@ -43,9 +40,7 @@ function channelPriority(channel: RecommendedChannel): number {
 
 @Injectable()
 export class OfferDeliveryService {
-  public decide(
-    insight: RankedOfferInsight,
-  ): DeliveryDecision {
+  public decide(insight: RankedOfferInsight): DeliveryDecision {
     const channel = insight.recommendedChannel;
 
     if (channel === 'silent') {
@@ -70,14 +65,14 @@ export class OfferDeliveryService {
     return { insight, deliver: true };
   }
 
-  public deliveryPlan(
-    insights: readonly RankedOfferInsight[],
-  ): readonly ChannelTiming[] {
+  public deliveryPlan(insights: readonly RankedOfferInsight[]): readonly ChannelTiming[] {
     const decisions = insights.map((i) => this.decide(i));
     const plans = new Map<string, ChannelTiming>();
 
     for (const d of decisions) {
-      if (!d.deliver) continue;
+      if (!d.deliver) {
+        continue;
+      }
       const i = d.insight;
       const channel = i.recommendedChannel;
       const timing = i.recommendedTiming;
@@ -90,8 +85,6 @@ export class OfferDeliveryService {
       }
     }
 
-    return Array.from(plans.values()).sort(
-      (a, b) => b.priority - a.priority,
-    );
+    return Array.from(plans.values()).sort((a, b) => b.priority - a.priority);
   }
 }

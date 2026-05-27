@@ -7,7 +7,8 @@ import { BCRYPT_ROUNDS } from '../common/constants';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuthPartnerService } from './auth-partner.service';
-import { assertAgentCanAuthenticate, normalizeEmail, PATTERN_RE } from './auth.helpers';
+import { UUID_DASH_RE } from '../common/regex';
+import { assertAgentCanAuthenticate, normalizeEmail } from './auth.helpers';
 import { AuthTokenService } from './auth.token.service';
 import { DbInitErrorService } from './db-init-error.service';
 import { RateLimitService } from './rate-limit.service';
@@ -60,7 +61,7 @@ export class AuthPasswordService {
   async createAnonymous(ip?: string) {
     await this.rateLimitService.checkRateLimit(`anonymous:${ip || 'ip-unknown'}`, 3, 60_000);
 
-    const uid = randomUUID().replace(PATTERN_RE, '').slice(0, 12);
+    const uid = randomUUID().replace(UUID_DASH_RE, '').slice(0, 12);
     const email = `guest_${uid}@guest.kloel.local`;
     const name = 'Guest';
 

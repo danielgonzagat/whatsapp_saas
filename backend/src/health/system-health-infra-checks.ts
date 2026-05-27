@@ -5,9 +5,10 @@ import { QueueHealthService } from '../metrics/queue-health.service';
 import { ObservabilityQueriesService } from '../metrics/observability-queries.service';
 import { WhatsAppApiProvider } from '../whatsapp/providers/whatsapp-api.provider';
 
+import { TRAILING_SLASH_RE } from '../common/regex';
+
 const HEALTH_RE = /\/health$/i;
 const S____S____S_RE = /^\s*\{\s*\}\s*/;
-const PATTERN_RE = /\/+$/;
 const HTTPS_RE = /^https?:\/\//i;
 const LOCALHOST_127__0__0__1_RE = /^(localhost|127\.0\.0\.1)(:\d+)?$/i;
 const RAILWAY__INTERNAL_RE = /\.railway\.internal(?::\d+)?$/i;
@@ -77,7 +78,7 @@ function normalizeServiceUrl(candidate: string | undefined): string {
   const raw = String(candidate || '')
     .replace(S____S____S_RE, '')
     .trim()
-    .replace(PATTERN_RE, '');
+    .replace(TRAILING_SLASH_RE, '');
 
   if (!raw) {
     return '';

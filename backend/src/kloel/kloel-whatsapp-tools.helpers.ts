@@ -1,8 +1,8 @@
 import type { PrismaClient } from '@prisma/client';
 
-export const NON_DIGIT_RE = /\D/g;
-
 import type { ToolResult } from './kloel-tool-executor.types';
+import { digitsOnly } from '../common/phone';
+
 export type { ToolResult };
 export interface ToolSendWhatsAppMessageArgs {
   phone: string;
@@ -103,7 +103,7 @@ export async function toolSendAudio(
   try {
     const audioBuffer = await deps.audioService.textToSpeech(text, voice, workspaceId);
     const dataUri = `data:audio/mpeg;base64,${audioBuffer.toString('base64')}`;
-    const normalizedPhone = phone.replace(NON_DIGIT_RE, '');
+    const normalizedPhone = digitsOnly(phone);
     await deps.planLimits.ensureDailyMessageQuota(workspaceId);
     const send = await deps.transports.send(workspaceId, {
       workspaceId,
@@ -146,7 +146,7 @@ export async function toolSendDocument(
     return { success: false, error: 'Parâmetro obrigatório: phone' };
   }
   try {
-    const normalizedPhone = phone.replace(NON_DIGIT_RE, '');
+    const normalizedPhone = digitsOnly(phone);
     let documentUrl = url;
     if (!documentUrl && documentName) {
       const doc = await deps.prisma.document?.findFirst({

@@ -1,10 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type {
-  ChannelKind,
-  DetectionInput,
-  PolicyChange,
-  PolicySeverity,
-} from './types';
+import type { ChannelKind, DetectionInput, PolicyChange, PolicySeverity } from './types';
 import { filterByWorkspace } from './types';
 
 @Injectable()
@@ -29,7 +24,9 @@ export class PolicyChangeWatcher {
       requiresAction = true;
       affectedFeatures.push('entire_channel');
     } else if (
-      terms.includes('restrict') || terms.includes('limit') || terms.includes('deprecate')
+      terms.includes('restrict') ||
+      terms.includes('limit') ||
+      terms.includes('deprecate')
     ) {
       severity = 'major';
       impactPercent = 50;
@@ -42,8 +39,7 @@ export class PolicyChangeWatcher {
     }
 
     const hasAutomationEvents = wsEvents.some(
-      (e) =>
-        e.eventName.includes('autopilot') || e.eventName.includes('campaign.sent'),
+      (e) => e.eventName.includes('autopilot') || e.eventName.includes('campaign.sent'),
     );
     if (hasAutomationEvents && severity !== 'existential' && severity !== 'informational') {
       affectedFeatures.push('autopilot_pause_recommended');

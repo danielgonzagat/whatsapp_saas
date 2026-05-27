@@ -26,7 +26,7 @@ import {
   finalizePartnerInviteRegistration,
 } from './auth-service.partner-invite';
 import { issueTokens, type TokenIssuanceResult } from './auth-service.tokens';
-
+import { UUID_DASH_RE } from '../common/regex';
 
 export interface AuthPartsDeps {
   prisma: PrismaService;
@@ -64,8 +64,7 @@ export async function createAnonymous(
 ): Promise<TokenIssuanceResult> {
   await deps.rateLimitService.checkRateLimit(`anonymous:${ip || 'ip-unknown'}`, 3, 60_000);
 
-  const PATTERN_RE = /-/g;
-  const uid = randomUUID().replace(PATTERN_RE, '').slice(0, 12);
+  const uid = randomUUID().replace(UUID_DASH_RE, '').slice(0, 12);
   const email = `guest_${uid}@guest.kloel.local`;
   const name = 'Guest';
 

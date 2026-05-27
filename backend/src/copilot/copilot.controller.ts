@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, Req, UseGuards, Get, Param } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
@@ -43,6 +43,21 @@ export class CopilotController {
       ...(body.contactId !== undefined ? { contactId: body.contactId } : {}),
       ...(body.phone !== undefined ? { phone: body.phone } : {}),
       ...(body.kbSnippet !== undefined ? { kbSnippet: body.kbSnippet } : {}),
+    });
+  }
+
+  @InternalEndpoint('inbox ai reply suggestions')
+  @Get('suggest/:workspaceId/:contactId')
+  @ApiOperation({ summary: 'Get AI reply suggestions for inbox contact' })
+  suggestForInbox(
+    @Req() req: CopilotRequest,
+    @Param('workspaceId') workspaceId: string,
+    @Param('contactId') contactId: string,
+  ) {
+    return this.copilot.suggestMultiple({
+      workspaceId: resolveWorkspaceId(req, workspaceId),
+      contactId,
+      count: 3,
     });
   }
 

@@ -24,16 +24,13 @@ describe('OmniScraperService', () => {
   });
 
   it('throws NotImplementedException for unknown source', async () => {
-    await expect(service.scrape('unknown', 'q', {})).rejects.toThrow(
-      NotImplementedException,
-    );
+    await expect(service.scrape('unknown', 'q', {})).rejects.toThrow(NotImplementedException);
   });
 
-  it('throws NotImplementedException for worker-only and unavailable strategies', async () => {
+  it('returns unavailable result for worker-only strategies (no longer throws)', async () => {
     const caps = service.getCapabilities();
     const nonDirectCapabilities = caps.filter(
-      (capability) =>
-        capability.status !== 'available' && capability.status !== 'available_direct',
+      (capability) => capability.status !== 'available' && capability.status !== 'available_direct',
     );
 
     expect(nonDirectCapabilities.map((capability) => capability.name).sort()).toEqual([
@@ -43,9 +40,9 @@ describe('OmniScraperService', () => {
     ]);
 
     for (const capability of nonDirectCapabilities) {
-      await expect(service.scrape(capability.name, 'q', {})).rejects.toThrow(
-        NotImplementedException,
-      );
+      const result = await service.scrape(capability.name, 'q', {});
+      expect(result.unavailable).toBe(true);
+      expect(result.leads).toEqual([]);
     }
   });
 });

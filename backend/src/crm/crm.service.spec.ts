@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CrmService } from './crm.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 type ContactCreateArg = {
   data: { workspace: { connect: { id: string } } };
@@ -42,38 +43,22 @@ function firstMockArg<T>(mock: jest.Mock): T {
 
 describe('CrmService', () => {
   let service: CrmService;
-  let prisma: {
-    contact: {
-      create: jest.Mock;
-      upsert: jest.Mock;
-      findUnique: jest.Mock;
-      findMany: jest.Mock;
-      count: jest.Mock;
-    };
-    pipeline: { create: jest.Mock; findMany: jest.Mock };
-    deal: { findFirst: jest.Mock; findUnique: jest.Mock; delete: jest.Mock };
-  };
+  let prisma: ReturnType<typeof createPartialPrismaMock>;
   let auditService: { log: jest.Mock };
 
   beforeEach(async () => {
-    prisma = {
-      contact: {
-        create: jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'c1', ...data })),
-        upsert: jest.fn().mockResolvedValue({ id: 'c1' }),
-        findUnique: jest.fn(),
-        findMany: jest.fn().mockResolvedValue([]),
-        count: jest.fn().mockResolvedValue(0),
-      },
-      pipeline: {
-        create: jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'p1', ...data })),
-        findMany: jest.fn().mockResolvedValue([]),
-      },
-      deal: {
-        findFirst: jest.fn(),
-        findUnique: jest.fn(),
-        delete: jest.fn().mockResolvedValue({}),
-      },
-    };
+    prisma = createPartialPrismaMock({
+      contact: ['create', 'upsert', 'findUnique', 'findMany', 'count'],
+      pipeline: ['create', 'findMany'],
+      deal: ['findFirst', 'findUnique', 'delete'],
+    });
+    prisma.contact.create.mockImplementation(({ data }) => Promise.resolve({ id: 'c1', ...data }));
+    prisma.contact.upsert.mockResolvedValue({ id: 'c1' });
+    prisma.contact.findMany.mockResolvedValue([]);
+    prisma.contact.count.mockResolvedValue(0);
+    prisma.pipeline.create.mockImplementation(({ data }) => Promise.resolve({ id: 'p1', ...data }));
+    prisma.pipeline.findMany.mockResolvedValue([]);
+    prisma.deal.delete.mockResolvedValue({});
     auditService = { log: jest.fn().mockResolvedValue(undefined) };
     const module: TestingModule = await Test.createTestingModule({
       providers: [

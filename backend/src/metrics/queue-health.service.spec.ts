@@ -31,7 +31,17 @@ describe('QueueHealthService', () => {
     const result = await service.getQueuesStatus();
     expect(result).toHaveLength(9);
     expect(result.map((r) => r.name).sort()).toEqual(
-      ['autopilot', 'campaign', 'crm', 'flow', 'media', 'memory', 'scraper', 'voice', 'webhook'].sort(),
+      [
+        'autopilot',
+        'campaign',
+        'crm',
+        'flow',
+        'media',
+        'memory',
+        'scraper',
+        'voice',
+        'webhook',
+      ].sort(),
     );
   });
 
@@ -50,8 +60,6 @@ describe('QueueHealthService', () => {
     expect(result[0].main).toEqual(
       expect.objectContaining({ waiting: 1, active: 0, delayed: 0, failed: 0 }),
     );
-    expect(result[0].dlq).toEqual(
-      expect.objectContaining({ waiting: 0 }),
-    );
+    expect(result[0].dlq).toEqual(expect.objectContaining({ waiting: 0 }));
   });
 });

@@ -238,12 +238,7 @@ export class MindController {
     if (expectedInternalKey && internalKey !== expectedInternalKey) {
       throw new ForbiddenException('Invalid internal key');
     }
-    return this.mind.resolveBestVariant(
-      workspaceId,
-      body.flow,
-      body.variantIds,
-      body.context,
-    );
+    return this.mind.resolveBestVariant(workspaceId, body.flow, body.variantIds, body.context);
   }
 
   @Post(':workspaceId/simulate')

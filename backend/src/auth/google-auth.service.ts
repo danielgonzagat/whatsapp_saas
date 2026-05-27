@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  ServiceUnavailableException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { StructuredLogger } from '../logging/structured-logger';
 import { LoginTicket, OAuth2Client, TokenPayload } from 'google-auth-library';

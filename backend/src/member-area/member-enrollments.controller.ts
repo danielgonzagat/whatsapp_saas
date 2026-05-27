@@ -52,7 +52,7 @@ export class MemberEnrollmentsController {
         where: { id: areaId, workspaceId },
       });
       if (!area) {
-        return [];
+        throw new NotFoundException('Member area not found');
       }
       const where: Record<string, unknown> = { memberAreaId: areaId, workspaceId };
       if (q) {

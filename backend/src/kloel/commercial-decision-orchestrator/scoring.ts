@@ -1,9 +1,6 @@
 import { attributeHierarchy } from '../economic-hierarchy';
 import { MindService } from '../mind.service';
-import {
-  hasConcept,
-  type ConceptRow,
-} from './types';
+import { hasConcept, type ConceptRow } from './types';
 
 export type ScoringInput = {
   workspaceId: string;
@@ -64,21 +61,9 @@ export async function resolveDecisions(
 
   const [toneRaw, aggressivenessRaw, format, channelChoice] = await Promise.all([
     mind.resolveTone(workspaceId, channel, repliedRate, soldRate, concept),
-    mind.resolveAggressiveness(
-      workspaceId,
-      `inbound:${channel}`,
-      soldRate,
-      repliedRate,
-      0,
-    ),
+    mind.resolveAggressiveness(workspaceId, `inbound:${channel}`, soldRate, repliedRate, 0),
     mind.resolveMessageFormat(workspaceId, channel, concept, formatCandidates),
-    mind.resolveChannelChoice(
-      workspaceId,
-      [channel],
-      concept,
-      new Date().getHours(),
-      concept,
-    ),
+    mind.resolveChannelChoice(workspaceId, [channel], concept, new Date().getHours(), concept),
   ]);
 
   decisions.audio_vs_text = {
@@ -133,17 +118,20 @@ export async function resolveDecisions(
   let couponDecision: Record<string, unknown> | undefined;
   if (hasConcept(conceptRows, 'price_objection')) {
     const coupon = await mind.resolveCoupon(workspaceId, priceBand, soldRate, concept);
-    const objection = await mind.resolveObjectionResponse(
-      workspaceId,
-      channel,
-      concept,
-      priceBand,
-    );
+    const objection = await mind.resolveObjectionResponse(workspaceId, channel, concept, priceBand);
     const discountPct = (() => {
-      if (coupon.action === 'coupon_5') return 5;
-      if (coupon.action === 'coupon_10') return 10;
-      if (coupon.action === 'coupon_15') return 15;
-      if (coupon.action === 'coupon_20') return 20;
+      if (coupon.action === 'coupon_5') {
+        return 5;
+      }
+      if (coupon.action === 'coupon_10') {
+        return 10;
+      }
+      if (coupon.action === 'coupon_15') {
+        return 15;
+      }
+      if (coupon.action === 'coupon_20') {
+        return 20;
+      }
       return 0;
     })();
     decisions.coupon_offer = {
@@ -170,7 +158,8 @@ export async function resolveDecisions(
     };
     couponDecision = {
       ...coupon,
-      hierarchyJustification: (decisions.coupon_offer as { hierarchyJustification?: unknown }).hierarchyJustification,
+      hierarchyJustification: (decisions.coupon_offer as { hierarchyJustification?: unknown })
+        .hierarchyJustification,
     };
     couponAction = coupon.action;
   }
@@ -217,7 +206,8 @@ export async function resolveDecisions(
       };
       productOfferDecision = {
         ...product,
-        hierarchyJustification: (decisions.product_offer as { hierarchyJustification?: unknown }).hierarchyJustification,
+        hierarchyJustification: (decisions.product_offer as { hierarchyJustification?: unknown })
+          .hierarchyJustification,
       };
       productOffer = product.offer;
     }
@@ -226,9 +216,15 @@ export async function resolveDecisions(
   const aggressivenessCeiling = String(channelSetup?.config?.aggressiveness || '').toLowerCase();
   const brainAggressiveness = String(aggressivenessRaw.aggressiveness || '').toLowerCase();
   const aggressivenessRank = (label: string): number => {
-    if (label.includes('alta') || label.includes('agress')) return 3;
-    if (label.includes('normal') || label.includes('moder')) return 2;
-    if (label.includes('baixa')) return 1;
+    if (label.includes('alta') || label.includes('agress')) {
+      return 3;
+    }
+    if (label.includes('normal') || label.includes('moder')) {
+      return 2;
+    }
+    if (label.includes('baixa')) {
+      return 1;
+    }
     return 2;
   };
   const effectiveAggressiveness =
@@ -268,12 +264,7 @@ export async function resolveDecisions(
     const transferConcept = hasConcept(conceptRows, 'trust_objection')
       ? 'trust_objection'
       : 'fatigue_risk';
-    const transfer = await mind.resolveHumanTransfer(
-      workspaceId,
-      channel,
-      transferConcept,
-      0.7,
-    );
+    const transfer = await mind.resolveHumanTransfer(workspaceId, channel, transferConcept, 0.7);
     decisions.human_transfer = {
       ...transfer,
       hierarchyJustification: attributeHierarchy({
@@ -288,7 +279,8 @@ export async function resolveDecisions(
     };
     humanTransferDecision = {
       ...transfer,
-      hierarchyJustification: (decisions.human_transfer as { hierarchyJustification?: unknown }).hierarchyJustification,
+      hierarchyJustification: (decisions.human_transfer as { hierarchyJustification?: unknown })
+        .hierarchyJustification,
     };
   }
 

@@ -36,7 +36,9 @@ export class MultiTimescaleCoordinator {
   private readonly config: Readonly<Record<Timescale, TimescaleConfig>>;
 
   public constructor(
-    @Optional() @Inject('MULTI_TIMESCALE_CONFIG') config?: Partial<Record<Timescale, TimescaleConfig>>,
+    @Optional()
+    @Inject('MULTI_TIMESCALE_CONFIG')
+    config?: Partial<Record<Timescale, TimescaleConfig>>,
   ) {
     const cfg = config ?? {};
     this.config = Object.freeze({

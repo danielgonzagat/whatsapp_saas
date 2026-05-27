@@ -2,9 +2,7 @@ import { ProofEvaluatorService } from './proof-evaluator.service';
 import type { ProofEvaluationResult } from './proof-evaluator.service';
 import type { Hypothesis, SpineSignal } from './types';
 
-function makeHypothesis(
-  overrides: Partial<Hypothesis> = {},
-): Hypothesis {
+function makeHypothesis(overrides: Partial<Hypothesis> = {}): Hypothesis {
   return {
     id: 'hyp-1',
     workspaceId: 'ws-1',

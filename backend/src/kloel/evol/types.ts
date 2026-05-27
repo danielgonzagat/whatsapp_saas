@@ -6,7 +6,12 @@
 
 export type GapSeverity = 'critical' | 'high' | 'medium' | 'low';
 
-export type CommercialImpact = 'revenue_blocking' | 'trust_eroding' | 'quality_degrading' | 'opportunity_missed' | 'neutral';
+export type CommercialImpact =
+  | 'revenue_blocking'
+  | 'trust_eroding'
+  | 'quality_degrading'
+  | 'opportunity_missed'
+  | 'neutral';
 
 export type RTier = 'tier_1_functional' | 'tier_2_partial' | 'tier_3_facade' | 'tier_4_shell';
 
@@ -16,7 +21,11 @@ export type Role = 'advisory' | 'tool_limited' | 'human_required';
 
 type RunStatus = 'pending' | 'running' | 'completed' | 'failed';
 
-export type ViolationKind = 'protected_file_touch' | 'codacy_weakening' | 'bypass_suppression' | 'governance_breach';
+export type ViolationKind =
+  | 'protected_file_touch'
+  | 'codacy_weakening'
+  | 'bypass_suppression'
+  | 'governance_breach';
 
 export interface SelfGap {
   readonly id: string;

@@ -6,6 +6,8 @@ import { AdminAccountsService } from './admin-accounts.service';
 import { AdminAccountStateAction } from './dto/update-account-state.dto';
 import { AdminKycService } from './kyc/admin-kyc.service';
 import { AdminAuditService } from '../audit/admin-audit.service';
+import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
+
 const mockListAccounts = jest.fn<Promise<unknown>, unknown[]>();
 const mockGetDetail = jest.fn<Promise<unknown>, unknown[]>();
 const mockListKycQueue = jest.fn<Promise<unknown>, unknown[]>();
@@ -47,12 +49,10 @@ describe('AdminAccountsService', () => {
   };
 
   const mockPrismaTransaction = jest.fn<Promise<unknown>, unknown[]>();
-  const mockPrismaWorkspaceFindUnique = jest.fn<Promise<unknown>, unknown[]>();
 
-  const prismaMock = {
-    $transaction: mockPrismaTransaction,
-    workspace: { findUnique: mockPrismaWorkspaceFindUnique },
-  };
+  const prismaMock = createPartialPrismaMock({ workspace: ['findUnique'] });
+  const mockPrismaWorkspaceFindUnique = prismaMock.workspace.findUnique;
+  prismaMock.$transaction = mockPrismaTransaction;
 
   const workspaceRecord = {
     id: 'ws_1',

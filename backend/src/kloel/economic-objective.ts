@@ -1,4 +1,5 @@
 import type { MindJson } from './mind.types';
+import { readNumberOr as readNumber } from '../common/parse';
 
 type EconomicObjectiveProfile = 'b2c_ecommerce' | 'b2b_saas' | 'recurring_subscription';
 
@@ -13,15 +14,12 @@ export type EconomicObjectiveBreakdown = {
   score: number;
 };
 
-function readNumber(value: unknown, fallback: number): number {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : fallback;
-}
-
 function readProfile(context: MindJson): EconomicObjectiveProfile {
   const candidate = context.economicProfile ?? context.profile;
   const raw = typeof candidate === 'string' ? candidate.trim() : '';
-  if (raw === 'b2b_saas' || raw === 'recurring_subscription') return raw;
+  if (raw === 'b2b_saas' || raw === 'recurring_subscription') {
+    return raw;
+  }
   return 'b2c_ecommerce';
 }
 

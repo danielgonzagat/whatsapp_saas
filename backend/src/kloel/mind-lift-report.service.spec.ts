@@ -9,30 +9,25 @@ describe('MindLiftReportService', () => {
   let service: MindLiftReportService;
   let decisionOutcome: DecisionOutcomeService;
 
-  type ClosedOutcomeRow = Awaited<
-    ReturnType<DecisionOutcomeService['findAllClosedSince']>
-  >[number];
+  type ClosedOutcomeRow = Awaited<ReturnType<DecisionOutcomeService['findAllClosedSince']>>[number];
 
-  const outcomeRow = (
-    overrides: Partial<ClosedOutcomeRow> = {},
-  ): ClosedOutcomeRow =>
-    ({
-      id: 'do-1',
-      workspaceId: 'ws-1',
-      decisionType: 'followup_timing',
-      chosenAction: 'send_now',
-      baselineAction: 'delay_24h',
-      outcomeKey: 'k1',
-      expectedWindow: 24,
-      contextSnapshot: { channel: 'whatsapp' },
-      outcomeAt: new Date(),
-      outcomeName: 'payment.succeeded',
-      outcomeValue: null,
-      economicValue: 99.9,
-      wonVsBaseline: true,
-      createdAt: new Date(),
-      ...overrides,
-    }) as ClosedOutcomeRow;
+  const outcomeRow = (overrides: Partial<ClosedOutcomeRow> = {}): ClosedOutcomeRow => ({
+    id: 'do-1',
+    workspaceId: 'ws-1',
+    decisionType: 'followup_timing',
+    chosenAction: 'send_now',
+    baselineAction: 'delay_24h',
+    outcomeKey: 'k1',
+    expectedWindow: 24,
+    contextSnapshot: { channel: 'whatsapp' },
+    outcomeAt: new Date(),
+    outcomeName: 'payment.succeeded',
+    outcomeValue: null,
+    economicValue: 99.9,
+    wonVsBaseline: true,
+    createdAt: new Date(),
+    ...overrides,
+  });
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -375,18 +370,16 @@ describe('MindLiftReportService', () => {
     });
 
     it('builds empty failureReasonCounts when outcomeValue has no reason field', async () => {
-      jest.spyOn(decisionOutcome, 'findAllClosedSince').mockResolvedValue([
-        outcomeRow({ outcomeValue: { total: 100, currency: 'BRL' } }),
-      ]);
+      jest
+        .spyOn(decisionOutcome, 'findAllClosedSince')
+        .mockResolvedValue([outcomeRow({ outcomeValue: { total: 100, currency: 'BRL' } })]);
 
       const report = await service.aggregate();
       expect(report.rows[0]!.failureReasonCounts).toEqual([]);
     });
 
     it('builds empty failureReasonCounts when outcomeValue is null', async () => {
-      jest.spyOn(decisionOutcome, 'findAllClosedSince').mockResolvedValue([
-        outcomeRow(),
-      ]);
+      jest.spyOn(decisionOutcome, 'findAllClosedSince').mockResolvedValue([outcomeRow()]);
 
       const report = await service.aggregate();
       expect(report.rows[0]!.failureReasonCounts).toEqual([]);
@@ -404,12 +397,8 @@ describe('MindLiftReportService', () => {
       ]);
 
       const report = await service.aggregate();
-      expect(report.rows[0]!.failureReasonCounts[0]!.reason).toBe(
-        'unclassified_reason',
-      );
-      expect(report.rows[0]!.failureReasonCounts[0]!.chosenAction).toBe(
-        'send_now',
-      );
+      expect(report.rows[0]!.failureReasonCounts[0]!.reason).toBe('unclassified_reason');
+      expect(report.rows[0]!.failureReasonCounts[0]!.chosenAction).toBe('send_now');
     });
   });
 
@@ -488,9 +477,7 @@ describe('MindLiftReportService', () => {
     });
 
     it('omits failure reason summary section when no outcomes have reasons', async () => {
-      jest.spyOn(decisionOutcome, 'findAllClosedSince').mockResolvedValue([
-        outcomeRow(),
-      ]);
+      jest.spyOn(decisionOutcome, 'findAllClosedSince').mockResolvedValue([outcomeRow()]);
 
       const md = await service.generateMarkdownReport(7);
       expect(md).not.toContain('## Failure Reason Summary');

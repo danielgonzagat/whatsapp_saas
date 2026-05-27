@@ -19,3 +19,48 @@
  * qualidade de IA" (output validado/parseado quando usado como ação).
  */
 export type UnknownRecord = Record<string, unknown>;
+
+/**
+ * Narrow an `unknown` to a plain record (or null) at runtime.
+ *
+ * The "plain record" criterion is: truthy, `typeof === 'object'`,
+ * and NOT an Array. Returns the same value cast to `UnknownRecord`
+ * so the caller can safely index into it after the null check.
+ *
+ * Found 5 byte-identical local declarations across `backend/src/payments`,
+ * `backend/src/kloel`, and `backend/src/webhooks` before this canonical
+ * home was introduced (Round 10, 2026-05-21).
+ *
+ * Two NON-canonical sibling shapes exist and stay separate:
+ * - `agent-runtime.session-store.search.ts` returns `{}` instead of
+ *   null (different no-match semantics)
+ * - `webhooks.service.ts` accepts Arrays (no Array.isArray guard).
+ */
+export function asRecord(value: unknown): UnknownRecord | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as UnknownRecord)
+    : null;
+}
+
+/**
+ * Narrow an `unknown` to a non-empty string (or null).
+ * Length-based emptiness check (not trim).
+ */
+export function asString(value: unknown): string | null {
+  return typeof value === 'string' && value.length > 0 ? value : null;
+}
+
+/**
+ * Boolean type guard: returns true iff `value` is a plain object
+ * (not null, not array, not other special objects).
+ *
+ * Different from {@link asRecord} which RETURNS the narrowed value;
+ * `isObject` returns a boolean predicate suitable for early-return
+ * guard patterns.
+ *
+ * Wave F (2026-05-21) found 8 byte-identical declarations across
+ * `backend/src/kloel/abi/` and `backend/src/kloel/pulse-gates/`.
+ */
+export function isObject(value: unknown): value is UnknownRecord {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}

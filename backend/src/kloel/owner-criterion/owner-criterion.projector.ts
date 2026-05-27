@@ -9,7 +9,21 @@
  * Injectable service — stateful (accumulates observations across windows).
  */
 import { Injectable } from '@nestjs/common';
-import type { ApprovalThresholdObservation, CorrectionObservation, DecisionObservation, EthicalLineObservation, OwnerApprovalProfile, OwnerCorrectionPattern, OwnerCriterionProjection, OwnerDecisionPattern, OwnerEthicalProfile, OwnerRiskProfile, OwnerToneProfile, RiskToleranceObservation, ToneObservation } from './owner-criterion.types';
+import type {
+  ApprovalThresholdObservation,
+  CorrectionObservation,
+  DecisionObservation,
+  EthicalLineObservation,
+  OwnerApprovalProfile,
+  OwnerCorrectionPattern,
+  OwnerCriterionProjection,
+  OwnerDecisionPattern,
+  OwnerEthicalProfile,
+  OwnerRiskProfile,
+  OwnerToneProfile,
+  RiskToleranceObservation,
+  ToneObservation,
+} from './owner-criterion.types';
 interface WorkspaceAccumulator {
   readonly workspaceId: string;
   decisions: DecisionObservation[];
@@ -49,9 +63,7 @@ export class OwnerCriterionProjector {
       this.ensureAccumulator(obs.workspaceId).ethicalLines.push(obs);
     }
   }
-  public accumulateApprovalThresholds(
-    observations: readonly ApprovalThresholdObservation[],
-  ): void {
+  public accumulateApprovalThresholds(observations: readonly ApprovalThresholdObservation[]): void {
     for (const obs of observations) {
       this.ensureAccumulator(obs.workspaceId).approvalThresholds.push(obs);
     }
@@ -115,9 +127,7 @@ export class OwnerCriterionProjector {
     }
     return acc;
   }
-  private projectDecisionPattern(
-    acc: WorkspaceAccumulator,
-  ): OwnerDecisionPattern {
+  private projectDecisionPattern(acc: WorkspaceAccumulator): OwnerDecisionPattern {
     const all = acc.decisions;
     if (all.length === 0) {
       return {
@@ -150,8 +160,7 @@ export class OwnerCriterionProjector {
       .slice(0, 3)
       .map(([domain]) => domain);
     const total = all.length;
-    const avgConfidence =
-      all.reduce((sum, d) => sum + d.confidence, 0) / total;
+    const avgConfidence = all.reduce((sum, d) => sum + d.confidence, 0) / total;
     return {
       mostFrequentDecisionKind: mostFrequent ?? 'override',
       overrideRate: Math.round((overrideCount / total) * 100) / 100,
@@ -161,9 +170,7 @@ export class OwnerCriterionProjector {
       confidence: Math.round(avgConfidence * 100) / 100,
     };
   }
-  private projectCorrectionPattern(
-    acc: WorkspaceAccumulator,
-  ): OwnerCorrectionPattern {
+  private projectCorrectionPattern(acc: WorkspaceAccumulator): OwnerCorrectionPattern {
     const all = acc.corrections;
     if (all.length === 0) {
       return {
@@ -176,34 +183,27 @@ export class OwnerCriterionProjector {
         confidence: 0,
       };
     }
-    const rewriteCount = all.filter(
-      (c) => c.correctionKind === 'message_rewrite',
-    ).length;
-    const classificationCount = all.filter(
-      (c) => c.correctionKind === 'classification_fix',
-    ).length;
-    const reversalCount = all.filter(
-      (c) => c.correctionKind === 'action_reversal',
-    ).length;
+    const rewriteCount = all.filter((c) => c.correctionKind === 'message_rewrite').length;
+    const classificationCount = all.filter((c) => c.correctionKind === 'classification_fix').length;
+    const reversalCount = all.filter((c) => c.correctionKind === 'action_reversal').length;
     const kindCounts = new Map<string, number>();
     const targetCounts = new Map<string, number>();
     for (const c of all) {
       kindCounts.set(c.correctionKind, (kindCounts.get(c.correctionKind) ?? 0) + 1);
-      targetCounts.set(
-        c.correctedTarget,
-        (targetCounts.get(c.correctedTarget) ?? 0) + 1,
-      );
+      targetCounts.set(c.correctedTarget, (targetCounts.get(c.correctedTarget) ?? 0) + 1);
     }
-    const mostFrequent = [...kindCounts.entries()].sort(
-      (a, b) => b[1] - a[1],
-    )[0]?.[0] as 'message_rewrite' | 'classification_fix' | 'action_reversal' | 'policy_adjustment' | undefined;
+    const mostFrequent = [...kindCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] as
+      | 'message_rewrite'
+      | 'classification_fix'
+      | 'action_reversal'
+      | 'policy_adjustment'
+      | undefined;
     const topTargets = [...targetCounts.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3)
       .map(([target]) => target);
     const total = all.length;
-    const avgConfidence =
-      all.reduce((sum, c) => sum + c.confidence, 0) / total;
+    const avgConfidence = all.reduce((sum, c) => sum + c.confidence, 0) / total;
     return {
       mostFrequentCorrectionKind: mostFrequent ?? 'message_rewrite',
       correctionRate: Math.round((total / Math.max(1, acc.windows)) * 100) / 100,
@@ -225,18 +225,13 @@ export class OwnerCriterionProjector {
         confidence: 0,
       };
     }
-    const directness =
-      all.reduce((sum, t) => sum + t.directness, 0) / all.length;
-    const formality =
-      all.reduce((sum, t) => sum + t.formality, 0) / all.length;
-    const vocabComplexity =
-      all.reduce((sum, t) => sum + t.vocabularyComplexity, 0) / all.length;
+    const directness = all.reduce((sum, t) => sum + t.directness, 0) / all.length;
+    const formality = all.reduce((sum, t) => sum + t.formality, 0) / all.length;
+    const vocabComplexity = all.reduce((sum, t) => sum + t.vocabularyComplexity, 0) / all.length;
     const directnessVariance =
-      all.reduce((sum, t) => sum + (t.directness - directness) ** 2, 0) /
-      all.length;
+      all.reduce((sum, t) => sum + (t.directness - directness) ** 2, 0) / all.length;
     const stabilityScore = Math.max(0, 1 - directnessVariance * 2);
-    const avgConfidence =
-      all.reduce((sum, t) => sum + t.confidence, 0) / all.length;
+    const avgConfidence = all.reduce((sum, t) => sum + t.confidence, 0) / all.length;
     return {
       directness: Math.round(directness * 100) / 100,
       formality: Math.round(formality * 100) / 100,
@@ -258,29 +253,33 @@ export class OwnerCriterionProjector {
     for (const r of all) {
       appetiteCounts.set(r.riskAppetite, (appetiteCounts.get(r.riskAppetite) ?? 0) + 1);
     }
-    const mostFrequent = [...appetiteCounts.entries()].sort(
-      (a, b) => b[1] - a[1],
-    )[0]?.[0] as 'conservative' | 'moderate' | 'aggressive' | undefined;
+    const mostFrequent = [...appetiteCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] as
+      | 'conservative'
+      | 'moderate'
+      | 'aggressive'
+      | undefined;
     const topCount = appetiteCounts.get(mostFrequent ?? 'moderate') ?? 0;
     const stabilityScore = topCount / all.length;
-    const avgConfidence =
-      all.reduce((sum, r) => sum + r.confidence, 0) / all.length;
+    const avgConfidence = all.reduce((sum, r) => sum + r.confidence, 0) / all.length;
     return {
       riskAppetite: mostFrequent ?? 'moderate',
       stabilityScore: Math.round(stabilityScore * 100) / 100,
       confidence: Math.round(avgConfidence * 100) / 100,
     };
   }
-  private projectEthicalProfile(
-    acc: WorkspaceAccumulator,
-  ): OwnerEthicalProfile {
+  private projectEthicalProfile(acc: WorkspaceAccumulator): OwnerEthicalProfile {
     const all = acc.ethicalLines;
     if (all.length === 0) {
       return { boundaries: [], confidence: 0 };
     }
     const boundaryMap = new Map<
       string,
-      { readonly boundaryType: string; readonly description: string; confidence: number; count: number }
+      {
+        readonly boundaryType: string;
+        readonly description: string;
+        confidence: number;
+        count: number;
+      }
     >();
     for (const e of all) {
       const existing = boundaryMap.get(e.boundaryType);
@@ -297,21 +296,23 @@ export class OwnerCriterionProjector {
       }
     }
     const boundaries = [...boundaryMap.values()].map((b) => ({
-      boundaryType: b.boundaryType as 'compliance_hard' | 'compliance_soft' | 'reputation' | 'customer_protection' | 'data_privacy',
+      boundaryType: b.boundaryType as
+        | 'compliance_hard'
+        | 'compliance_soft'
+        | 'reputation'
+        | 'customer_protection'
+        | 'data_privacy',
       description: b.description,
       confidence: Math.round(b.confidence * 100) / 100,
     }));
     const avgConfidence =
-      boundaries.reduce((sum, b) => sum + b.confidence, 0) /
-      Math.max(1, boundaries.length);
+      boundaries.reduce((sum, b) => sum + b.confidence, 0) / Math.max(1, boundaries.length);
     return {
       boundaries,
       confidence: Math.round(avgConfidence * 100) / 100,
     };
   }
-  private projectApprovalProfile(
-    acc: WorkspaceAccumulator,
-  ): OwnerApprovalProfile {
+  private projectApprovalProfile(acc: WorkspaceAccumulator): OwnerApprovalProfile {
     const all = acc.approvalThresholds;
     if (all.length === 0) {
       return { thresholds: [], overallAutoApprovalRate: 0, confidence: 0 };
@@ -325,26 +326,26 @@ export class OwnerCriterionProjector {
       });
     }
     const thresholds = [...domainMap.values()].map((d) => ({
-      domain: d.domain as 'autopilot_auto_reply' | 'lead_qualification' | 'deal_advancement' | 'payment_processing' | 'campaign_launch',
+      domain: d.domain as
+        | 'autopilot_auto_reply'
+        | 'lead_qualification'
+        | 'deal_advancement'
+        | 'payment_processing'
+        | 'campaign_launch',
       level: d.level as 'low' | 'medium' | 'high' | 'manual_only',
       confidence: Math.round(d.confidence * 100) / 100,
     }));
     const overallAutoRate =
-      all.reduce((sum, a) => sum + a.autoApprovalRate, 0) /
-      Math.max(1, all.length);
+      all.reduce((sum, a) => sum + a.autoApprovalRate, 0) / Math.max(1, all.length);
     const avgConfidence =
-      thresholds.reduce((sum, t) => sum + t.confidence, 0) /
-      Math.max(1, thresholds.length);
+      thresholds.reduce((sum, t) => sum + t.confidence, 0) / Math.max(1, thresholds.length);
     return {
       thresholds,
       overallAutoApprovalRate: Math.round(overallAutoRate * 100) / 100,
       confidence: Math.round(avgConfidence * 100) / 100,
     };
   }
-  private emptyProjection(
-    workspaceId: string,
-    nowMs: number,
-  ): OwnerCriterionProjection {
+  private emptyProjection(workspaceId: string, nowMs: number): OwnerCriterionProjection {
     return {
       workspaceId,
       decisionPattern: {

@@ -1,14 +1,3 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaService } from '../prisma/prisma.service';
-import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
-import { AgentEventsService } from '../whatsapp/agent-events.service';
-import { CiaChatFilterService } from './cia-chat-filter.service';
-import { CiaRuntimeStateService } from './cia-runtime-state.service';
-import { CiaInlineFallbackService } from './cia-inline-fallback.service';
-import { CiaRemoteBacklogService } from './cia-remote-backlog.service';
-import { CiaBootstrapService } from './cia-bootstrap.service';
-import { WorkerRuntimeService } from '../whatsapp/worker-runtime.service';
-import { WhatsAppCatchupService } from '../whatsapp/whatsapp-catchup.service';
 import { CiaBacklogRunService } from './cia-backlog-run.service';
 import { AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB } from '../contracts/autopilot-jobs';
 
@@ -19,13 +8,9 @@ jest.mock('../queue/queue', () => ({
 describe('CiaBacklogRunService', () => {
   let service: CiaBacklogRunService;
   let prisma: { workspace: { findUnique: jest.Mock } };
-  let providerRegistry: { getSessionStatus: jest.Mock; getChats: jest.Mock };
+  let providerRegistry: { getSessionStatus: jest.Mock };
   let agentEvents: { publish: jest.Mock };
-  let chatFilter: {
-    resolveInlineBacklogFallbackLimit: jest.Mock;
-    normalizeChats: jest.Mock;
-    selectRemotePendingChats: jest.Mock;
-  };
+  let chatFilter: Record<string, jest.Mock>;
   let runtimeState: {
     createAutonomyRun: jest.Mock;
     updateWorkspaceAutonomy: jest.Mock;
@@ -43,28 +28,27 @@ describe('CiaBacklogRunService', () => {
     listPendingConversations: jest.Mock;
     resolveActiveSessionKey: jest.Mock;
   };
+  let catchupService: Record<string, jest.Mock>;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     prisma = {
       workspace: {
         findUnique: jest.fn().mockResolvedValue({
           id: 'ws-1',
-          providerSettings: {},
+          autonomyMode: 'reply_all_recent_first',
         }),
       },
     };
     providerRegistry = {
       getSessionStatus: jest.fn().mockResolvedValue({ connected: true, status: 'CONNECTED' }),
-      getChats: jest.fn().mockResolvedValue({ chats: [] }),
     };
     agentEvents = { publish: jest.fn().mockResolvedValue(undefined) };
     chatFilter = {
-      resolveInlineBacklogFallbackLimit: jest.fn().mockReturnValue(50),
-      normalizeChats: jest.fn().mockReturnValue([]),
-      selectRemotePendingChats: jest.fn().mockReturnValue([]),
+      applyFilter: jest.fn().mockResolvedValue(true),
+      resolveInlineBacklogFallbackLimit: jest.fn().mockReturnValue(20),
     };
     runtimeState = {
-      createAutonomyRun: jest.fn().mockResolvedValue(undefined),
+      createAutonomyRun: jest.fn().mockResolvedValue({ id: 'run-1' }),
       updateWorkspaceAutonomy: jest.fn().mockResolvedValue(undefined),
       updateAutonomyRunStatus: jest.fn().mockResolvedValue(undefined),
       persistRuntimeSnapshot: jest.fn().mockResolvedValue(undefined),
@@ -86,23 +70,22 @@ describe('CiaBacklogRunService', () => {
       listPendingConversations: jest.fn().mockResolvedValue([]),
       resolveActiveSessionKey: jest.fn().mockResolvedValue('session-key'),
     };
+    catchupService = {};
 
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        CiaBacklogRunService,
-        { provide: PrismaService, useValue: prisma },
-        { provide: WhatsAppProviderRegistry, useValue: providerRegistry },
-        { provide: AgentEventsService, useValue: agentEvents },
-        { provide: CiaChatFilterService, useValue: chatFilter },
-        { provide: CiaRuntimeStateService, useValue: runtimeState },
-        { provide: WorkerRuntimeService, useValue: workerRuntime },
-        { provide: CiaInlineFallbackService, useValue: inlineFallback },
-        { provide: CiaRemoteBacklogService, useValue: remoteBacklog },
-        { provide: CiaBootstrapService, useValue: bootstrapService },
-        { provide: WhatsAppCatchupService, useValue: {} },
-      ],
-    }).compile();
-    service = module.get(CiaBacklogRunService);
+    // Direct constructor call — bypasses NestJS DI to avoid metadata
+    // resolution issues when run in isolation with forwardRef.
+    service = new CiaBacklogRunService(
+      prisma as never,
+      providerRegistry as never,
+      agentEvents as never,
+      chatFilter as never,
+      runtimeState as never,
+      workerRuntime as never,
+      inlineFallback as never,
+      remoteBacklog as never,
+      bootstrapService as never,
+      catchupService as never,
+    );
   });
 
   describe('startBacklogRun', () => {

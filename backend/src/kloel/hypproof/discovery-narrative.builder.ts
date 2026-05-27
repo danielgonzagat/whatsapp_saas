@@ -14,9 +14,7 @@ export class DiscoveryNarrativeBuilderService {
     const headline = buildHeadline(evaluation.verdict, hypothesis.domain);
     const body = buildBody(hypothesis, evaluation);
 
-    this.logger.debug(
-      `Narrative built for hypothesis ${hypothesis.id}: ${headline}`,
-    );
+    this.logger.debug(`Narrative built for hypothesis ${hypothesis.id}: ${headline}`);
 
     return {
       id: `nar_${randomUUID()}`,

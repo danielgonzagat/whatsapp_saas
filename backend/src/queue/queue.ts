@@ -17,7 +17,7 @@ let _queueOptions: {
     attempts: number;
     backoff: { type: string; delay: number };
     removeOnComplete: boolean;
-    removeOnFail: number;
+    removeOnFail: { age: number; count: number };
   };
 } | null = null;
 let _initialized = false;
@@ -81,7 +81,7 @@ function resolveDefaultQueueJobOptions() {
       delay: readIntEnvWithFloor('QUEUE_BACKOFF_MS', 5000, 1000),
     },
     removeOnComplete: true,
-    removeOnFail: 50,
+    removeOnFail: { age: 60 * 60 * 24 * 7, count: 100 },
   };
 }
 

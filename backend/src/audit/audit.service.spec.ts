@@ -2,16 +2,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import type { Prisma } from '@prisma/client';
 import { AuditService } from './audit.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
-function buildMockPrisma(overrides: Record<string, unknown> = {}) {
-  return {
-    auditLog: {
-      create: jest.fn().mockResolvedValue({ id: 'log-1' }),
-      findMany: jest.fn().mockResolvedValue([]),
-      count: jest.fn().mockResolvedValue(0),
-    },
-    ...overrides,
-  };
+function buildMockPrisma() {
+  return createPartialPrismaMock({
+    auditLog: ['create', 'findMany', 'count'],
+  });
 }
 
 function isUnknownArray(value: unknown): value is readonly unknown[] {

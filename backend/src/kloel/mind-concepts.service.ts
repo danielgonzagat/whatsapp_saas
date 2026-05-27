@@ -61,7 +61,9 @@ export class MindConceptService {
   }) {
     const detections = RULES.flatMap((rule) => {
       const matched = rule.patterns.filter((pattern) => pattern.test(input.text));
-      if (matched.length === 0) return [];
+      if (matched.length === 0) {
+        return [];
+      }
       return [
         {
           concept: rule.concept,

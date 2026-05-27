@@ -1,5 +1,6 @@
 import { GmailSyncService } from './sync.service';
 import type { GmailMailboxRecord, GmailListResponse, GmailMessageResponse } from './types';
+import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
 type MailboxUpdateMetadata = {
   syncedMessageIds?: string[];
@@ -65,9 +66,7 @@ function buildMessageResponse(
 }
 
 describe('GmailSyncService', () => {
-  let prismaMock: {
-    mailboxConnection: { update: jest.Mock<Promise<{ id: string }>, [MailboxUpdateArgs]> };
-  };
+  let prismaMock: ReturnType<typeof createPartialPrismaMock>;
   let omnichannelMock: { handleIncomingMessage: jest.Mock<Promise<void>, [unknown]> };
   let gmailClientMock: {
     resolveAccessToken: jest.Mock<Promise<string>, [GmailMailboxRecord]>;
@@ -79,13 +78,10 @@ describe('GmailSyncService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    prismaMock = {
-      mailboxConnection: {
-        update: jest.fn<Promise<{ id: string }>, [MailboxUpdateArgs]>().mockResolvedValue({
-          id: 'mb-1',
-        }),
-      },
-    };
+    prismaMock = createPartialPrismaMock({
+      mailboxConnection: ['update'],
+    });
+    (prismaMock.mailboxConnection.update as jest.Mock).mockResolvedValue({ id: 'mb-1' });
     omnichannelMock = {
       handleIncomingMessage: jest.fn<Promise<void>, [unknown]>().mockResolvedValue(undefined),
     };

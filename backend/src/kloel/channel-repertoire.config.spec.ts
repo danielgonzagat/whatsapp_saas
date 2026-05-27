@@ -10,7 +10,14 @@ import type { ChannelKey } from './channel-repertoire.config';
 describe('channel-repertoire.config', () => {
   describe('CHANNEL_REPERTOIRE', () => {
     it('defines all six channels', () => {
-      const keys: ChannelKey[] = ['whatsapp', 'instagram', 'messenger', 'facebook', 'tiktok', 'email'];
+      const keys: ChannelKey[] = [
+        'whatsapp',
+        'instagram',
+        'messenger',
+        'facebook',
+        'tiktok',
+        'email',
+      ];
       for (const key of keys) {
         expect(CHANNEL_REPERTOIRE[key]).toBeDefined();
         expect(CHANNEL_REPERTOIRE[key].channel).toBe(key);
@@ -131,7 +138,7 @@ describe('channel-repertoire.config', () => {
 
     it('returns a copy, not a mutable reference', () => {
       const fmts = allowedFormatsFor('whatsapp');
-      fmts.push('html_rich' as never);
+      fmts.push('html_rich');
       expect(allowedFormatsFor('whatsapp')).not.toContain('html_rich');
     });
 

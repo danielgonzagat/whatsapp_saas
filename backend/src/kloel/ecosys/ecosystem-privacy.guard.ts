@@ -36,11 +36,7 @@ export class EcosystemPrivacyGuardService {
     };
   }
 
-  private walk(
-    value: unknown,
-    path: string,
-    visit: (s: string, path: string) => void,
-  ): void {
+  private walk(value: unknown, path: string, visit: (s: string, path: string) => void): void {
     if (typeof value === 'string') {
       visit(value, path);
       return;

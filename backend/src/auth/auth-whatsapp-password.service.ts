@@ -16,12 +16,12 @@ import { hash as bcryptHash } from 'bcrypt';
 import type { Redis } from 'ioredis';
 import { EmailService } from './email.service';
 import { RateLimitService } from './rate-limit.service';
+import { digitsOnly } from '../common/phone';
 
 /**
  * @cluster whatsapp_saas/backend/auth
  * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
  */
-const D_RE = /\D/g;
 
 /**
  * Normalize a phone number to digits-only so Redis OTP keys, rate-limit
@@ -29,7 +29,7 @@ const D_RE = /\D/g;
  * regardless of caller formatting (`+55…` vs `55…` vs `(11) 9...`).
  */
 function normalizePhone(phone: string): string {
-  return String(phone || '').replace(D_RE, '');
+  return digitsOnly(phone);
 }
 
 /**

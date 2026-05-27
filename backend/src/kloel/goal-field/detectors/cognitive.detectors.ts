@@ -49,7 +49,9 @@ const decisionWithoutPersistenceDetector: Detector = {
           e.correlationId &&
           e.correlationId === r.correlationId,
       );
-      if (cognitionTrace) continue;
+      if (cognitionTrace) {
+        continue;
+      }
       out.push(
         tensionFor(
           'cognitive.decision_without_persistence',
@@ -89,7 +91,9 @@ const conversationWithoutValenceDetector: Detector = {
           e.correlationId &&
           e.correlationId === t.correlationId,
       );
-      if (valenceTrace) continue;
+      if (valenceTrace) {
+        continue;
+      }
       out.push(
         tensionFor(
           'cognitive.conversation_without_valence',
@@ -113,20 +117,22 @@ const repeatedAgentFailureDetector: Detector = {
   name: 'cognitive.repeated_agent_failure',
   dimension: 'cognitive',
   detect: (events, nowMs) => {
-    const handoffs = events.filter(
-      (e) => e.eventName === 'commerce.whatsapp.handoff_to_human',
-    );
+    const handoffs = events.filter((e) => e.eventName === 'commerce.whatsapp.handoff_to_human');
     const out: Tension[] = [];
     const byEntity = new Map<string, SpineEventRef[]>();
     for (const h of handoffs) {
-      if (!h.entityRef) continue;
+      if (!h.entityRef) {
+        continue;
+      }
       const k = `${h.entityRef.entityType}:${h.entityRef.entityId}`;
       const cur = byEntity.get(k) ?? [];
       cur.push(h);
       byEntity.set(k, cur);
     }
     for (const [, list] of byEntity) {
-      if (list.length < 2) continue;
+      if (list.length < 2) {
+        continue;
+      }
       const last = list[list.length - 1]!;
       out.push(
         tensionFor(
@@ -155,13 +161,17 @@ const capabilityWithoutRuntimeEvidenceDetector: Detector = {
     const out: Tension[] = [];
     for (const p of promotions) {
       const cap = p.payload?.['capabilityId'] as string | undefined;
-      if (!cap) continue;
+      if (!cap) {
+        continue;
+      }
       const usageEvidence = events.some(
         (e) =>
           (e.eventName === 'pulse.gate_passed' || e.eventName.startsWith('cognition.')) &&
           (e.payload?.['capabilityId'] as string | undefined) === cap,
       );
-      if (usageEvidence) continue;
+      if (usageEvidence) {
+        continue;
+      }
       out.push(
         tensionFor(
           'cognitive.capability_without_runtime_evidence',

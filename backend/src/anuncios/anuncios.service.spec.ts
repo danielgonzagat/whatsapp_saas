@@ -133,9 +133,7 @@ describe('AnunciosService', () => {
 
   it('syncAccounts upserts every account returned by providers, scoped to workspace', async () => {
     meta.syncAccounts.mockResolvedValue({
-      accounts: [
-        { platform: 'meta', accountId: 'acc-1', accountName: 'Meta Acc' },
-      ],
+      accounts: [{ platform: 'meta', accountId: 'acc-1', accountName: 'Meta Acc' }],
     });
     await service.syncAccounts('ws-1');
     expect(prisma.adAccount.upsert).toHaveBeenCalled();

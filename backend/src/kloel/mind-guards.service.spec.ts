@@ -78,7 +78,7 @@ describe('MindGuardsService', () => {
     engine.evaluate.mockReturnValue({ blocked: false });
     await service.evaluate({
       ...baseInput,
-      context: { channel: 'whatsapp', contactOptOut: false } as MindActionContext,
+      context: { channel: 'whatsapp', contactOptOut: false },
     });
     const ctx = engine.evaluate.mock.calls[0][0];
     expect(ctx.action).toBe('send_template');

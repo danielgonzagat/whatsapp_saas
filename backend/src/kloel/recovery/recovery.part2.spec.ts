@@ -7,19 +7,14 @@ import { proposeRecoveryTactic } from './error-damage-recovery.tactics';
 import { buildErrorNarrative } from './error-narrative.builder';
 import { TrustAfterErrorTracker } from './trust-after-error.tracker';
 import { buildRecoveryProofPackage } from './recovery-proof-package.builder';
-import type {
-  DetectedError,
-  ErrorDetectorInput,
-  RecoveryTactic,
-} from './recovery.types';
+import type { DetectedError, ErrorDetectorInput, RecoveryTactic } from './recovery.types';
 import type { GuardStatus } from './recovery-proof-package.builder';
 
 const NOW = Date.parse('2026-05-13T22:00:00.000Z');
 const WKS = 'wks_recovery_test';
 
 function ev(over?: Partial<SpineEventRef>): SpineEventRef {
-  const id =
-    over?.eventId ?? `e_${Math.random().toString(36).slice(2, 10)}`;
+  const id = over?.eventId ?? `e_${Math.random().toString(36).slice(2, 10)}`;
   return {
     eventId: id,
     eventName: over?.eventName ?? 'commerce.lead.replied',
@@ -32,9 +27,7 @@ function ev(over?: Partial<SpineEventRef>): SpineEventRef {
   };
 }
 
-function input(
-  over?: Partial<ErrorDetectorInput>,
-): ErrorDetectorInput {
+function input(over?: Partial<ErrorDetectorInput>): ErrorDetectorInput {
   return {
     events: over?.events ?? ([] as readonly SpineEventRef[]),
     workspaceId: over?.workspaceId ?? WKS,
@@ -131,7 +124,10 @@ describe('UTP-RECOVERY-008 — buildRecoveryProofPackage', () => {
 
   it('autonomyRaised, messageSent, and concessionOffered are always false', () => {
     const categories: DetectedError['category'][] = [
-      'handoff', 'decline', 'missed_opportunity', 'unknown',
+      'handoff',
+      'decline',
+      'missed_opportunity',
+      'unknown',
     ];
 
     for (const category of categories) {
@@ -145,8 +141,14 @@ describe('UTP-RECOVERY-008 — buildRecoveryProofPackage', () => {
 
   it('non-repeat commitment has learnedFrom, preventiveChange, and commitmentStatement for every category', () => {
     const categories: DetectedError['category'][] = [
-      'handoff', 'decline', 'misclassification', 'missed_opportunity',
-      'wrong_action', 'double_send', 'delay', 'inappropriate_timing',
+      'handoff',
+      'decline',
+      'misclassification',
+      'missed_opportunity',
+      'wrong_action',
+      'double_send',
+      'delay',
+      'inappropriate_timing',
       'unknown',
     ];
 
@@ -171,9 +173,7 @@ describe('UTP-RECOVERY-008 — buildRecoveryProofPackage', () => {
     const proof = buildRecoveryProofPackage(de, guardStatus);
 
     expect(proof.nonRepeatCommitment.guardActive).toBe(true);
-    expect(proof.nonRepeatCommitment.repeatBlockedUntil).toBe(
-      '2026-05-15T00:00:00.000Z',
-    );
+    expect(proof.nonRepeatCommitment.repeatBlockedUntil).toBe('2026-05-15T00:00:00.000Z');
   });
 
   it('guard status integration: unblocked error has guardActive=false and null blockedUntil', () => {
@@ -219,15 +219,16 @@ describe('UTP-RECOVERY-008 — buildRecoveryProofPackage', () => {
 
   it('repair stance is non_defensive or investigating, never correcting', () => {
     const categories: DetectedError['category'][] = [
-      'handoff', 'decline', 'missed_opportunity', 'double_send',
+      'handoff',
+      'decline',
+      'missed_opportunity',
+      'double_send',
     ];
 
     for (const category of categories) {
       const de = dummyError(category, 'medium');
       const proof = buildRecoveryProofPackage(de);
-      expect(['non_defensive', 'investigating']).toContain(
-        proof.repairStance,
-      );
+      expect(['non_defensive', 'investigating']).toContain(proof.repairStance);
     }
   });
 });

@@ -28,21 +28,14 @@ export class ScaleVsAbandonAdvisorService {
   private readonly logger = new Logger(ScaleVsAbandonAdvisorService.name);
 
   advise(input: ScaleVsAbandonInput): ScaleVsAbandon {
-    const roi = input.totalSpend > 0
-      ? input.totalRevenue / input.totalSpend
-      : 0;
+    const roi = input.totalSpend > 0 ? input.totalRevenue / input.totalSpend : 0;
 
     if (input.totalSpend === 0 && input.conversionCount === 0) {
       return this.buildResult(input, 'hold', 0.3, roi);
     }
 
     if (input.daysRunning < MIN_DAYS_FOR_DECISION) {
-      return this.buildResult(
-        input,
-        'hold',
-        0.4,
-        roi,
-      );
+      return this.buildResult(input, 'hold', 0.4, roi);
     }
 
     const { decision, confidence } = this.evaluate(input, roi);
@@ -54,7 +47,8 @@ export class ScaleVsAbandonAdvisorService {
     roi: number,
   ): { decision: 'scale' | 'hold' | 'abandon'; confidence: number } {
     if (roi >= SCALE_ROI_THRESHOLD && input.conversionCount >= MIN_CONVERSIONS_FOR_SCALE) {
-      const trendConfidence = input.trendDirection === 'up' ? 0.9 : input.trendDirection === 'stable' ? 0.75 : 0.55;
+      const trendConfidence =
+        input.trendDirection === 'up' ? 0.9 : input.trendDirection === 'stable' ? 0.75 : 0.55;
       return { decision: 'scale', confidence: trendConfidence };
     }
 
@@ -77,17 +71,24 @@ export class ScaleVsAbandonAdvisorService {
     confidence: number,
     roi: number,
   ): ScaleVsAbandon {
-    const projectedRevenue = input.totalRevenue > 0 && input.daysRunning > 0
-      ? Math.round((input.totalRevenue / input.daysRunning) * 30 * 100) / 100
-      : 0;
+    const projectedRevenue =
+      input.totalRevenue > 0 && input.daysRunning > 0
+        ? Math.round((input.totalRevenue / input.daysRunning) * 30 * 100) / 100
+        : 0;
 
-    const projectedCost = input.totalSpend > 0 && input.daysRunning > 0
-      ? Math.round((input.totalSpend / input.daysRunning) * 30 * 100) / 100
-      : 0;
+    const projectedCost =
+      input.totalSpend > 0 && input.daysRunning > 0
+        ? Math.round((input.totalSpend / input.daysRunning) * 30 * 100) / 100
+        : 0;
 
-    const breakEvenDays = input.avgRevenuePerConversion > 0 && input.totalSpend > 0
-      ? Math.ceil(input.totalSpend / (input.avgRevenuePerConversion * Math.max(input.conversionCount, 1) / Math.max(input.daysRunning, 1)))
-      : 0;
+    const breakEvenDays =
+      input.avgRevenuePerConversion > 0 && input.totalSpend > 0
+        ? Math.ceil(
+            input.totalSpend /
+              ((input.avgRevenuePerConversion * Math.max(input.conversionCount, 1)) /
+                Math.max(input.daysRunning, 1)),
+          )
+        : 0;
 
     const reason = this.buildReason(decision, input, roi);
 

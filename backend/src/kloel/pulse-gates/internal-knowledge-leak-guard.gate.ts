@@ -1,4 +1,5 @@
 import { fail, Gate, GateEvidence, GateMode, GateVerdict, pass } from './pulse-gates.types';
+import { isObject } from '../../common/types';
 
 export interface SiblingClientDescriptor {
   readonly clientId: string;
@@ -39,10 +40,6 @@ export interface InternalKnowledgeLeakInput {
  */
 const MEASURED_BY = 'internal-knowledge-leak-guard.gate' as const;
 
-function isObject(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
-}
-
 function normalizeIdentifier(value: string): string {
   return value.replace(/[\s\-_.()]/g, '').toLowerCase();
 }
@@ -53,7 +50,9 @@ function buildNameWordPattern(name: string): RegExp {
     .split(/\s+/)
     .filter((w) => w.length >= 2)
     .map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-  if (words.length === 0) return /(?!)/;
+  if (words.length === 0) {
+    return /(?!)/;
+  }
   const joined = words.join('\\s+');
   return new RegExp(`\\b${joined}\\b`, 'i');
 }

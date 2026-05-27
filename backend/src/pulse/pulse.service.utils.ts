@@ -1,6 +1,5 @@
 import type { PulseAdviceLevel, PulseOrganismStatus } from './pulse.service.contract';
-
-const S_RE = /\s+/g;
+import { WHITESPACE_G_RE } from '../common/regex';
 
 /** Safe json parse. */
 export function safeJsonParse<T>(value: string | null | undefined): T | null {
@@ -15,7 +14,7 @@ export function safeJsonParse<T>(value: string | null | undefined): T | null {
 }
 /** Compact text. */
 export function compactText(value: string, max = 600) {
-  const compact = value.replace(S_RE, ' ').trim();
+  const compact = value.replace(WHITESPACE_G_RE, ' ').trim();
   if (compact.length <= max) {
     return compact;
   }

@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../common/storage/storage.service';
 import { MediaService } from './media.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 type MediaJobRecord = {
   id: string;
@@ -52,18 +53,7 @@ jest.mock('../common/utils/url-validator', () => ({
 
 describe('MediaService', () => {
   let service: MediaService;
-  let prisma: {
-    mediaJob: {
-      create: jest.Mock<Promise<MediaJobRecord>, [MediaJobCreateArgs]>;
-      findFirst: jest.Mock<Promise<MediaJobRecord | null>, [FindFirstArgs]>;
-    };
-    document: {
-      create: jest.Mock<Promise<DocumentRecord>, [DocumentCreateArgs]>;
-      findMany: jest.Mock<Promise<DocumentRecord[]>, [unknown?]>;
-      findFirst: jest.Mock<Promise<DocumentRecord | null>, [FindFirstArgs]>;
-      updateMany: jest.Mock<Promise<{ count: number }>, [unknown?]>;
-    };
-  };
+  let prisma: ReturnType<typeof createPartialPrismaMock>;
   let config: { get: jest.Mock<string | undefined, [string, string?]> };
   let storage: {
     upload: jest.Mock<Promise<StorageUploadResult>, [Buffer, Record<string, unknown>]>;
@@ -75,31 +65,23 @@ describe('MediaService', () => {
   beforeEach(() => {
     queueAddMock.mockClear();
 
-    prisma = {
-      mediaJob: {
-        create: jest.fn<Promise<MediaJobRecord>, [MediaJobCreateArgs]>().mockResolvedValue({
-          id: 'job-1',
-          status: 'PENDING',
-        }),
-        findFirst: jest
-          .fn<Promise<MediaJobRecord | null>, [FindFirstArgs]>()
-          .mockResolvedValue(null),
-      },
-      document: {
-        create: jest.fn<Promise<DocumentRecord>, [DocumentCreateArgs]>().mockResolvedValue({
-          id: 'doc-1',
-          name: 'test',
-          filePath: '/uploads/test.pdf',
-        }),
-        findMany: jest.fn<Promise<DocumentRecord[]>, [unknown?]>().mockResolvedValue([]),
-        findFirst: jest
-          .fn<Promise<DocumentRecord | null>, [FindFirstArgs]>()
-          .mockResolvedValue(null),
-        updateMany: jest
-          .fn<Promise<{ count: number }>, [unknown?]>()
-          .mockResolvedValue({ count: 1 }),
-      },
-    };
+    prisma = createPartialPrismaMock({
+      mediaJob: ['create', 'findFirst'],
+      document: ['create', 'findMany', 'findFirst', 'updateMany'],
+    });
+    prisma.mediaJob.create.mockResolvedValue({
+      id: 'job-1',
+      status: 'PENDING',
+    });
+    prisma.mediaJob.findFirst.mockResolvedValue(null);
+    prisma.document.create.mockResolvedValue({
+      id: 'doc-1',
+      name: 'test',
+      filePath: '/uploads/test.pdf',
+    });
+    prisma.document.findMany.mockResolvedValue([]);
+    prisma.document.findFirst.mockResolvedValue(null);
+    prisma.document.updateMany.mockResolvedValue({ count: 1 });
     config = { get: jest.fn<string | undefined, [string, string?]>().mockReturnValue(undefined) };
     storage = {
       upload: jest

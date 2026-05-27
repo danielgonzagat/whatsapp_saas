@@ -10,20 +10,11 @@ import { InboxGateway } from '../inbox/inbox.gateway';
 import { OmnichannelService } from '../inbox/omnichannel.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WebhooksService } from './webhooks.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 describe('WebhooksService', () => {
   let service: WebhooksService;
-  let prisma: {
-    message: {
-      updateMany: jest.Mock;
-      findMany: jest.Mock;
-      findFirst: jest.Mock;
-      update: jest.Mock;
-    };
-    auditLog: { create: jest.Mock };
-    flow: { findFirst: jest.Mock };
-    workspace: { findUnique: jest.Mock };
-  };
+  let prisma: ReturnType<typeof createPartialPrismaMock>;
   let gateway: {
     emitToWorkspace: jest.Mock;
   };
@@ -36,17 +27,15 @@ describe('WebhooksService', () => {
 
   beforeEach(async () => {
     mockFlowQueueAdd.mockReset().mockResolvedValue({ id: 'job-1' });
-    prisma = {
-      message: {
-        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
-        findMany: jest.fn().mockResolvedValue([]),
-        findFirst: jest.fn().mockResolvedValue(null),
-        update: jest.fn(),
-      },
-      auditLog: { create: jest.fn() },
-      flow: { findFirst: jest.fn() },
-      workspace: { findUnique: jest.fn() },
-    };
+    prisma = createPartialPrismaMock({
+      message: ['updateMany', 'findMany', 'findFirst', 'update'],
+      auditLog: ['create'],
+      flow: ['findFirst'],
+      workspace: ['findUnique'],
+    });
+    prisma.message.updateMany.mockResolvedValue({ count: 0 });
+    prisma.message.findMany.mockResolvedValue([]);
+    prisma.message.findFirst.mockResolvedValue(null);
     gateway = { emitToWorkspace: jest.fn() };
     redis = { publish: jest.fn() };
     omnichannel = {};

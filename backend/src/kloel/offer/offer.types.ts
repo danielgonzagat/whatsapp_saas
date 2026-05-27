@@ -26,12 +26,7 @@ type OfferInsightKind =
   | 'page_promise_mismatch'
   | 'pricing_psychology';
 
-export type RecommendedChannel =
-  | 'whatsapp'
-  | 'email'
-  | 'dashboard'
-  | 'silent'
-  | 'report';
+export type RecommendedChannel = 'whatsapp' | 'email' | 'dashboard' | 'silent' | 'report';
 
 export interface OfferInsight {
   readonly insightId: string;
@@ -109,21 +104,21 @@ function timestampMs(iso: string): number {
   return Date.parse(iso);
 }
 
-export function withinWindow(
-  iso: string,
-  nowMs: number,
-  windowDays: number,
-): boolean {
+export function withinWindow(iso: string, nowMs: number, windowDays: number): boolean {
   const cutoff = nowMs - windowDays * 24 * 60 * 60 * 1000;
   const ts = timestampMs(iso);
   return Number.isFinite(ts) && ts >= cutoff;
 }
 
 export function median(values: number[]): number {
-  if (values.length === 0) return 0;
+  if (values.length === 0) {
+    return 0;
+  }
   const sorted = [...values].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
-  if (sorted.length % 2 !== 0) return sorted[mid] ?? 0;
+  if (sorted.length % 2 !== 0) {
+    return sorted[mid] ?? 0;
+  }
   return ((sorted[mid - 1] ?? 0) + (sorted[mid] ?? 0)) / 2;
 }
 

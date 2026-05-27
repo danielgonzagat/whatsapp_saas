@@ -2,34 +2,25 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { EmailInboundService, type InboundEmail } from './email-inbound.service';
 import { OmnichannelService } from '../inbox/omnichannel.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 describe('EmailInboundService', () => {
   let service: EmailInboundService;
   let omnichannel: jest.Mocked<Partial<OmnichannelService>>;
-  let prisma: {
-    contact: {
-      findUnique: jest.Mock;
-      updateMany: jest.Mock;
-    };
-    workspace: {
-      findFirst: jest.Mock;
-    };
-  };
+  let prisma: ReturnType<typeof createPartialPrismaMock>;
 
   beforeEach(async () => {
     omnichannel = {
       handleIncomingMessage: jest.fn().mockResolvedValue({ id: 'msg-01' }),
     };
 
-    prisma = {
-      contact: {
-        findUnique: jest.fn().mockResolvedValue(null),
-        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
-      },
-      workspace: {
-        findFirst: jest.fn().mockResolvedValue(null),
-      },
-    };
+    prisma = createPartialPrismaMock({
+      contact: ['findUnique', 'updateMany'],
+      workspace: ['findFirst'],
+    });
+    prisma.contact.findUnique.mockResolvedValue(null);
+    prisma.contact.updateMany.mockResolvedValue({ count: 1 });
+    prisma.workspace.findFirst.mockResolvedValue(null);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [

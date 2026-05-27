@@ -24,7 +24,7 @@ function extractOverrides(events: readonly SpineEventRef[]): DecisionSignal[] {
   return events
     .filter((e) => e.eventName === 'commerce.crm.stage_changed')
     .map((e) => ({
-      decisionKind: 'override' as DecisionKind,
+      decisionKind: 'override',
       targetDomain: 'crm_pipeline',
       eventId: e.eventId,
       occurredAt: e.occurredAt,
@@ -35,7 +35,7 @@ function extractEscalations(events: readonly SpineEventRef[]): DecisionSignal[] 
   return events
     .filter((e) => e.eventName === 'commerce.whatsapp.handoff_to_human')
     .map((e) => ({
-      decisionKind: 'escalation' as DecisionKind,
+      decisionKind: 'escalation',
       targetDomain: 'conversation',
       eventId: e.eventId,
       occurredAt: e.occurredAt,
@@ -46,7 +46,7 @@ function extractRejections(events: readonly SpineEventRef[]): DecisionSignal[] {
   return events
     .filter((e) => e.eventName === 'commerce.lead.lost')
     .map((e) => ({
-      decisionKind: 'rejection' as DecisionKind,
+      decisionKind: 'rejection',
       targetDomain: 'lead_qualification',
       eventId: e.eventId,
       occurredAt: e.occurredAt,
@@ -61,7 +61,7 @@ function extractAutonomyGrants(events: readonly SpineEventRef[]): DecisionSignal
       return payload?.['assignedTo'] === 'autopilot';
     })
     .map((e) => ({
-      decisionKind: 'autonomy_grant' as DecisionKind,
+      decisionKind: 'autonomy_grant',
       targetDomain: 'crm_ownership',
       eventId: e.eventId,
       occurredAt: e.occurredAt,
@@ -120,19 +120,13 @@ export function observeDecisions(input: ObserverInput): DecisionObservation[] {
   const autonomyGrants = extractAutonomyGrants(input.events);
 
   if (overrides.length >= MIN_EVENTS_FOR_OBSERVATION) {
-    observations.push(
-      buildObservation(input.workspaceId, 'override', overrides, input.nowMs),
-    );
+    observations.push(buildObservation(input.workspaceId, 'override', overrides, input.nowMs));
   }
   if (escalations.length >= MIN_EVENTS_FOR_OBSERVATION) {
-    observations.push(
-      buildObservation(input.workspaceId, 'escalation', escalations, input.nowMs),
-    );
+    observations.push(buildObservation(input.workspaceId, 'escalation', escalations, input.nowMs));
   }
   if (rejections.length >= MIN_EVENTS_FOR_OBSERVATION) {
-    observations.push(
-      buildObservation(input.workspaceId, 'rejection', rejections, input.nowMs),
-    );
+    observations.push(buildObservation(input.workspaceId, 'rejection', rejections, input.nowMs));
   }
   if (autonomyGrants.length >= MIN_EVENTS_FOR_OBSERVATION) {
     observations.push(

@@ -23,8 +23,8 @@ import {
 import type { CheckoutOrderStatusValue } from './checkout-order-status';
 import type { ShippingAddress } from './checkout-shipping.types';
 import { CheckoutEventEmitterService } from '../kloel/checkout-emitter/checkout-event-emitter.service';
+import { NON_DIGIT_RE } from '../common/phone';
 
-const D_RE = /\D/g;
 const DEFAULT_MARKETPLACE_FEE_PERCENT = 9.9;
 
 /** Manages order lifecycle: create, query, status transitions, upsell accept/decline. */
@@ -158,7 +158,7 @@ export class CheckoutOrderService {
         ? Math.max(1, Math.round(Number(orderData.installments || 1)))
         : 1;
     const qualityGate = {
-      documentDigits: String(orderData.customerCPF || '').replace(D_RE, ''),
+      documentDigits: String(orderData.customerCPF || '').replace(NON_DIGIT_RE, ''),
       phoneDigits: this.orderSupport.normalizePhoneDigits(orderData.customerPhone),
       payerAddress: address,
     };

@@ -1,7 +1,7 @@
 import { type Job, Worker } from 'bullmq';
 import { FlowEngineGlobal } from './flow-engine-global';
 import { WorkerLogger } from './logger';
-import { jobCounter, jobDuration } from './metrics';
+import { jobCounter, jobDuration, queueLagGauge } from './metrics';
 import {
   checkFlowSubscription,
   checkIdempotentCompletion,
@@ -314,6 +314,11 @@ export const flowWorker = SHOULD_EXECUTE
 /* ------------------------------------------------------------------ */
 /*  Worker event handlers                                              */
 /* ------------------------------------------------------------------ */
+
+flowWorker?.on('active', (job: Job) => {
+  const lagMs = Date.now() - (job.timestamp || Date.now());
+  queueLagGauge.labels(job.queueName || 'flow-jobs').set(lagMs);
+});
 
 flowWorker?.on('completed', (job: Job) => {
   log.info('job_completed', { jobId: job?.id });

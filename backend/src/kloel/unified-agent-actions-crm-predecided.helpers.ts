@@ -6,6 +6,7 @@ import { resolveFollowupTimingDecision } from './mind-recovery-decision-resolver
 
 import type { UnknownRecord } from '../common/types';
 
+import { readStringOrUntrimmed as readString } from '../common/parse';
 export interface FollowUpTimingResult {
   delayHours: number;
   meta: {
@@ -18,10 +19,6 @@ export interface FollowUpTimingResult {
 
 function isRecord(value: unknown): value is UnknownRecord {
   return typeof value === 'object' && value !== null;
-}
-
-function readString(value: unknown, fallback = ''): string {
-  return typeof value === 'string' ? value : fallback;
 }
 
 function nearestFollowUpBucket(
@@ -94,15 +91,16 @@ export function predecidedFollowUpTiming(
   requestedDelayHours: number,
 ): FollowUpTimingResult {
   const timing = isRecord(args.followupTimingDecision) ? args.followupTimingDecision : {};
-  return {
-    delayHours: requestedDelayHours,
-    meta: {
-      baseline: 'orchestrator_predecided',
-      chosen: readString(timing.chosen, readString(timing.bucket, 'orchestrator_predecided')),
-      outcomeKey: readString(timing.outcomeKey, undefined),
-      reasonInternal: 'orchestrator_predecided',
-    },
+  const outcomeKey = typeof timing.outcomeKey === 'string' ? timing.outcomeKey : undefined;
+  const meta: FollowUpTimingResult['meta'] = {
+    baseline: 'orchestrator_predecided',
+    chosen: readString(timing.chosen, readString(timing.bucket, 'orchestrator_predecided')),
+    reasonInternal: 'orchestrator_predecided',
   };
+  if (outcomeKey !== undefined) {
+    meta.outcomeKey = outcomeKey;
+  }
+  return { delayHours: requestedDelayHours, meta };
 }
 
 export function predecidedHumanTransfer(args: ToolArgs): {

@@ -233,7 +233,7 @@ describe('WhatsAppEventEmitterService', () => {
                 processorVersion: '0.0.0',
                 schemaVersion: '1.0.0',
               },
-              payload: undefined as Record<string, unknown>,
+              payload: undefined,
             });
           } catch {
             // If the spine throws, the emitter's safeEmit should have caught it.

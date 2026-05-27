@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { sanitizePayload } from '../common/sanitize-payload';
 import { AuditService } from './audit.service';
+import { readStringProperty } from '../common/parse';
 
 /** Audit action metadata. */
 /**
@@ -24,14 +25,6 @@ interface AuditRequest {
 
 function isRecord(value: unknown): value is AuditRequestRecord {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function readStringProperty(source: unknown, key: string): string | undefined {
-  if (!isRecord(source)) {
-    return undefined;
-  }
-  const value = source[key];
-  return typeof value === 'string' && value.trim() ? value : undefined;
 }
 
 function readHeader(headers: unknown, key: string): string | undefined {

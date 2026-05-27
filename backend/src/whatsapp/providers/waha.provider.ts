@@ -24,7 +24,7 @@ type WahaChatEntry = {
   [key: string]: unknown;
 };
 
-const S_RE = /\s+/;
+import { WHITESPACE_G_RE } from '../../common/regex';
 
 /**
  * Waha provider — messaging, contacts, and chat utilities.
@@ -177,7 +177,7 @@ export class WahaProvider extends WahaSessionProvider {
       return false;
     }
 
-    const [firstName, ...rest] = fullName.split(S_RE).filter(Boolean);
+    const [firstName, ...rest] = fullName.split(WHITESPACE_G_RE).filter(Boolean);
     const lastName = rest.join(' ').trim();
     const scopedPayload = {
       firstName: firstName || fullName,

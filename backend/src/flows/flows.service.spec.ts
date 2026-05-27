@@ -3,56 +3,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { FlowsService } from './flows.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 describe('FlowsService', () => {
   let service: FlowsService;
-  type AsyncMock<TResult = unknown> = jest.MockedFunction<(input?: unknown) => Promise<TResult>>;
-
-  const mockPrisma: {
-    flow: {
-      upsert: AsyncMock;
-      findFirst: AsyncMock;
-      findMany: AsyncMock;
-    };
-    flowVersion: {
-      create: AsyncMock;
-      findMany: AsyncMock;
-      findFirst: AsyncMock;
-    };
-    flowExecution: {
-      findFirst: AsyncMock;
-      findMany: AsyncMock;
-      create: AsyncMock;
-      findUnique: AsyncMock;
-      update: AsyncMock;
-    };
-    contact: {
-      findUnique: AsyncMock;
-      create: AsyncMock;
-    };
-  } = {
-    flow: {
-      upsert: jest.fn(),
-      findFirst: jest.fn(),
-      findMany: jest.fn(),
-    },
-    flowVersion: {
-      create: jest.fn(),
-      findMany: jest.fn(),
-      findFirst: jest.fn(),
-    },
-    flowExecution: {
-      findFirst: jest.fn(),
-      findMany: jest.fn(),
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      update: jest.fn(),
-    },
-    contact: {
-      findUnique: jest.fn(),
-      create: jest.fn(),
-    },
-  };
+  let mockPrisma: ReturnType<typeof createPartialPrismaMock>;
 
   const mockAudit: {
     log: jest.Mock;
@@ -61,6 +16,12 @@ describe('FlowsService', () => {
   };
 
   beforeEach(async () => {
+    mockPrisma = createPartialPrismaMock({
+      flow: ['upsert', 'findFirst', 'findMany'],
+      flowVersion: ['create', 'findMany', 'findFirst'],
+      flowExecution: ['findFirst', 'findMany', 'create', 'findUnique', 'update'],
+      contact: ['findUnique', 'create'],
+    });
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         FlowsService,

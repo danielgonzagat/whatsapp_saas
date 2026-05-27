@@ -4,7 +4,12 @@ import type {
   PostSaleDecisionControl,
   TestimonialReadiness,
 } from './postsale-consumers.types';
-import { clamp, daysSince, filterByWorkspaceAndEntity, latestEvent } from './postsale-consumers.types';
+import {
+  clamp,
+  daysSince,
+  filterByWorkspaceAndEntity,
+  latestEvent,
+} from './postsale-consumers.types';
 
 const REFERRAL_COOLDOWN_DAYS = 30;
 const MIN_PURCHASE_DAYS = 5;
@@ -93,7 +98,11 @@ export class ReferralPromptTimingAdvisor {
 }
 
 function hasRecentPostSaleRisk(
-  events: readonly { readonly eventName: string; readonly occurredAt: string; readonly payload?: Readonly<Record<string, unknown>> }[],
+  events: readonly {
+    readonly eventName: string;
+    readonly occurredAt: string;
+    readonly payload?: Readonly<Record<string, unknown>>;
+  }[],
   nowMs: number,
 ): boolean {
   return events.some((event) => {
@@ -148,7 +157,8 @@ function buildControl(
     return {
       riskClass: 'R2',
       delegationMode: 'owner_review',
-      safeNextStep: 'Draft a referral ask for owner review only after confirmed value and positive satisfaction.',
+      safeNextStep:
+        'Draft a referral ask for owner review only after confirmed value and positive satisfaction.',
       uncertainty:
         'Referral readiness is inferred from behavior and satisfaction, not an explicit customer intent to refer.',
       leadOutcomeGuardrail:

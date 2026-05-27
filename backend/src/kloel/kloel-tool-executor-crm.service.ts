@@ -13,7 +13,7 @@ import type {
   ToolSetBusinessHoursArgs,
 } from './kloel-tool-executor.types';
 
-const NON_DIGIT_RE = /\D/g;
+import { digitsOnly } from '../common/phone';
 
 function centsFromUnknown(value: unknown): number {
   if (typeof value === 'bigint') {
@@ -89,7 +89,7 @@ export class KloelToolExecutorCrmService {
         include: contactInclude,
       });
     } else if (phone) {
-      const normalizedPhone = phone.replace(NON_DIGIT_RE, '');
+      const normalizedPhone = digitsOnly(phone);
       contact = await this.prisma.contact.findFirst({
         where: { phone: { contains: normalizedPhone }, workspaceId },
         include: contactInclude,

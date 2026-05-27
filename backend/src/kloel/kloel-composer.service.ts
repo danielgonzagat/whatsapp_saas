@@ -114,7 +114,9 @@ export class KloelComposerService {
 
   codeNativeSearchWeb(query: string): WebSearchDigest {
     const normalizedQuery = String(query || '').trim();
-    if (!normalizedQuery) return { answer: '', sources: [], totalTokens: 0 };
+    if (!normalizedQuery) {
+      return { answer: '', sources: [], totalTokens: 0 };
+    }
 
     const terms = normalizedQuery
       .split(/\s+/)

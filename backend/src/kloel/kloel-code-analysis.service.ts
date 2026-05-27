@@ -71,7 +71,8 @@ export class KloelCodeAnalysisService {
 
   async toolCodeDetectIssues(relPath: string): Promise<ToolResult> {
     try {
-      const absPath = repoPath(relPath);
+      const targetPath = relPath || 'backend/src/kloel/guest-chat.action-intent.helpers.ts';
+      const absPath = repoPath(targetPath);
       const content = await fs.readFile(absPath, 'utf-8');
       const lines = content.split('\n');
       const issues: Array<{

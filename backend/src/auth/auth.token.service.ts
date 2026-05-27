@@ -1,9 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import {
-  Optional,
-  ServiceUnavailableException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Optional, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';

@@ -3,6 +3,7 @@ import { OrderStatus, PaymentStatus } from '@prisma/client';
 
 import { AdminTransactionsService } from './admin-transactions.service';
 import { AdminTransactionAction } from './dto/operate-transaction.dto';
+import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
 function buildPaidStripeOrder() {
   return {
@@ -24,19 +25,13 @@ function buildPaidStripeOrder() {
 
 describe('AdminTransactionsService — Stripe runtime', () => {
   it('requests a Stripe refund with idempotency and marks the linked sale as refund_requested without mutating legacy balances locally', async () => {
-    const prisma = {
-      checkoutOrder: {
-        findUnique: jest.fn().mockResolvedValue(buildPaidStripeOrder()),
-      },
-      kloelSale: {
-        findFirst: jest.fn().mockResolvedValue({
-          id: 'sale-1',
-          status: 'paid',
-        }),
-        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
-      },
-      $transaction: jest.fn(),
-    };
+    const prisma = createPartialPrismaMock({
+      checkoutOrder: ['findUnique'],
+      kloelSale: ['findFirst', 'updateMany'],
+    });
+    prisma.checkoutOrder.findUnique.mockResolvedValue(buildPaidStripeOrder());
+    prisma.kloelSale.findFirst.mockResolvedValue({ id: 'sale-1', status: 'paid' });
+    prisma.kloelSale.updateMany.mockResolvedValue({ count: 1 });
     const audit = {
       append: jest.fn().mockResolvedValue(undefined),
     };
@@ -102,19 +97,15 @@ describe('AdminTransactionsService — Stripe runtime', () => {
   });
 
   it('does not issue a second Stripe refund when the linked sale is already refund_requested', async () => {
-    const prisma = {
-      checkoutOrder: {
-        findUnique: jest.fn().mockResolvedValue(buildPaidStripeOrder()),
-      },
-      kloelSale: {
-        findFirst: jest.fn().mockResolvedValue({
-          id: 'sale-1',
-          status: 'refund_requested',
-        }),
-        updateMany: jest.fn(),
-      },
-      $transaction: jest.fn(),
-    };
+    const prisma = createPartialPrismaMock({
+      checkoutOrder: ['findUnique'],
+      kloelSale: ['findFirst', 'updateMany'],
+    });
+    prisma.checkoutOrder.findUnique.mockResolvedValue(buildPaidStripeOrder());
+    prisma.kloelSale.findFirst.mockResolvedValue({
+      id: 'sale-1',
+      status: 'refund_requested',
+    });
     const audit = {
       append: jest.fn().mockResolvedValue(undefined),
     };
@@ -165,11 +156,10 @@ describe('AdminTransactionsService — Stripe runtime', () => {
   });
 
   it('rejects manual Stripe chargebacks and requires provider webhook flow', async () => {
-    const prisma = {
-      checkoutOrder: {
-        findUnique: jest.fn().mockResolvedValue(buildPaidStripeOrder()),
-      },
-    };
+    const prisma = createPartialPrismaMock({
+      checkoutOrder: ['findUnique'],
+    });
+    prisma.checkoutOrder.findUnique.mockResolvedValue(buildPaidStripeOrder());
 
     const service = new AdminTransactionsService(
       prisma as never,

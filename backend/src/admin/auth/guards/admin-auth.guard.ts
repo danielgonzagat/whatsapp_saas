@@ -9,7 +9,7 @@ import type { AdminJwtPayload, AuthenticatedAdmin } from '../admin-token.types';
 import { ADMIN_PUBLIC_METADATA } from '../decorators/admin-public.decorator';
 import { ALLOW_PENDING_MFA_METADATA } from '../decorators/allow-pending-mfa.decorator';
 
-const S_RE = /\s+/;
+import { WHITESPACE_G_RE } from '../../../common/regex';
 
 /**
  * Resolve the admin JWT secret at verify time. The app-level
@@ -35,7 +35,7 @@ function extractBearerToken(header: string | undefined): string | null {
   if (!header) {
     return null;
   }
-  const parts = header.split(S_RE);
+  const parts = header.split(WHITESPACE_G_RE);
   if (parts.length !== 2) {
     return null;
   }

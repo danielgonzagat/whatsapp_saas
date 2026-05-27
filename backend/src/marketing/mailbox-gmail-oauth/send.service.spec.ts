@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { MailboxProvider, MailboxStatus } from '@prisma/client';
 import { GmailSendService } from './send.service';
+import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
 jest.mock('../../observability/metrics', () => ({
   Metrics: {
@@ -21,15 +22,11 @@ jest.mock('./mime-builder', () => ({
 }));
 
 describe('GmailSendService', () => {
-  const connectionFindFirst = jest.fn();
-  const connectionUpdate = jest.fn();
-  const contactFindFirst = jest.fn();
   const resolveAccessToken = jest.fn();
-
-  const prismaMock = {
-    mailboxConnection: { findFirst: connectionFindFirst, update: connectionUpdate },
-    contact: { findFirst: contactFindFirst },
-  };
+  let prismaMock: ReturnType<typeof createPartialPrismaMock>;
+  let connectionFindFirst: jest.Mock;
+  let connectionUpdate: jest.Mock;
+  let contactFindFirst: jest.Mock;
   const configMock = { get: jest.fn().mockReturnValue('Kloel') };
   const gmailClientMock = { resolveAccessToken };
 
@@ -38,6 +35,13 @@ describe('GmailSendService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    prismaMock = createPartialPrismaMock({
+      mailboxConnection: ['findFirst', 'update'],
+      contact: ['findFirst'],
+    });
+    connectionFindFirst = prismaMock.mailboxConnection.findFirst;
+    connectionUpdate = prismaMock.mailboxConnection.update;
+    contactFindFirst = prismaMock.contact.findFirst;
     fetchMock = jest.fn();
     global.fetch = fetchMock as never;
     contactFindFirst.mockResolvedValue(null);

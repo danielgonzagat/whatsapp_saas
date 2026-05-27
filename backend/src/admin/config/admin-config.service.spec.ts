@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdminConfigService } from './admin-config.service';
+import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
 const mockAsProviderSettings = jest.fn();
 
@@ -23,10 +24,15 @@ describe('AdminConfigService', () => {
     _count: { apiKeys: 0, webhookSubscriptions: 0 },
   };
 
-  const mockWorkspaceCount = jest.fn();
-  const mockApiKeyCount = jest.fn();
-  const mockWebhookCount = jest.fn();
-  const mockWorkspaceFindMany = jest.fn();
+  const prismaMock = createPartialPrismaMock({
+    workspace: ['count', 'findMany'],
+    apiKey: ['count'],
+    webhookSubscription: ['count'],
+  });
+  const mockWorkspaceCount = prismaMock.workspace.count;
+  const mockWorkspaceFindMany = prismaMock.workspace.findMany;
+  const mockApiKeyCount = prismaMock.apiKey.count;
+  const mockWebhookCount = prismaMock.webhookSubscription.count;
 
   const mockTxWorkspaceFindUnique = jest.fn();
   const mockTxWorkspaceUpdate = jest.fn();
@@ -35,16 +41,6 @@ describe('AdminConfigService', () => {
   const mockTx = {
     workspace: { findUnique: mockTxWorkspaceFindUnique, update: mockTxWorkspaceUpdate },
     adminAuditLog: { create: mockTxAuditLogCreate },
-  };
-
-  const prismaMock = {
-    workspace: {
-      count: mockWorkspaceCount,
-      findMany: mockWorkspaceFindMany,
-    },
-    apiKey: { count: mockApiKeyCount },
-    webhookSubscription: { count: mockWebhookCount },
-    $transaction: jest.fn(),
   };
 
   beforeEach(async () => {

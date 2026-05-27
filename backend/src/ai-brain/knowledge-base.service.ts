@@ -29,7 +29,7 @@ import { OpsAlertService } from '../observability/ops-alert.service';
  * @cluster whatsapp_saas/backend/ai-brain
  * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
  */
-const S_RE = /\s+/g;
+import { WHITESPACE_G_RE } from '../common/regex';
 const SENTENCE_ENDINGS = ['. ', '? ', '! '];
 const KNOWLEDGE_BASE_EMBEDDING_MODEL = 'text-embedding-3-small';
 const KNOWLEDGE_BASE_CHUNK_SIZE = 1000;
@@ -87,7 +87,7 @@ const splitKnowledgeBaseText = (
   if (!text) {
     return [];
   }
-  const cleanText = text.replace(S_RE, ' ').trim();
+  const cleanText = text.replace(WHITESPACE_G_RE, ' ').trim();
   if (cleanText.length <= chunkSize) {
     return [cleanText];
   }
@@ -511,7 +511,7 @@ export class KnowledgeBaseService {
     parser.write(html);
     parser.end();
 
-    return parts.join(' ').replace(S_RE, ' ').trim();
+    return parts.join(' ').replace(WHITESPACE_G_RE, ' ').trim();
   }
 
   /**

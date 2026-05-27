@@ -13,6 +13,7 @@ import { StructuredLogger } from '../../logging/structured-logger';
 import { IS_PUBLIC_METADATA } from '../../auth/public.decorator';
 import { PrismaService } from '../../prisma/prisma.service';
 import { asProviderSettings } from '../../whatsapp/provider-settings.types';
+import { readStringProperty } from '../../common/parse';
 
 /**
  * Decorator para marcar rotas como públicas do KLOEL
@@ -39,18 +40,6 @@ interface KloelGuardRequest {
   user?: unknown;
   workspace?: unknown;
   userRole?: string;
-}
-
-function isRecord(value: unknown): value is RequestRecord {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function readStringProperty(source: unknown, key: string): string | undefined {
-  if (!isRecord(source)) {
-    return undefined;
-  }
-  const value = source[key];
-  return typeof value === 'string' && value.trim() ? value : undefined;
 }
 
 function getWorkspaceId(request: KloelGuardRequest): string | undefined {

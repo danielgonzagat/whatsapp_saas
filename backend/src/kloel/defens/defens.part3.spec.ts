@@ -18,7 +18,13 @@ import { AuthorityBuilder } from './authority.builder';
 import { TacticalTradeoffAdvisor } from './tactical-tradeoff.advisor';
 import { DefensibilityNarrativeBuilder } from './defensibility-narrative.builder';
 
-import type { EvidenceInput, DefensibleAsset, OwnedAudience, PositioningUniqueness, AuthorityBuilding } from './types';
+import type {
+  EvidenceInput,
+  DefensibleAsset,
+  OwnedAudience,
+  PositioningUniqueness,
+  AuthorityBuilding,
+} from './types';
 import type { SpineEventRef } from '../mind/mind.types';
 
 const baseSpineEvent = (over: Partial<SpineEventRef> = {}): SpineEventRef => ({
@@ -65,33 +71,37 @@ describe('TacticalTradeoffAdvisor (UTP-DEFENS-008)', () => {
   });
 
   it('reports balanced when assets and tactics are moderate', () => {
-    const assets: DefensibleAsset[] = [{
-      workspaceId: 'wks_a',
-      assetId: 'a1',
-      kind: 'owned_audience',
-      label: 'Audience',
-      strength: 'established',
-      score: 0.55,
-      firstRecordedAt: new Date().toISOString(),
-      lastUpdatedAt: new Date().toISOString(),
-      evidence: [],
-    }];
+    const assets: DefensibleAsset[] = [
+      {
+        workspaceId: 'wks_a',
+        assetId: 'a1',
+        kind: 'owned_audience',
+        label: 'Audience',
+        strength: 'established',
+        score: 0.55,
+        firstRecordedAt: new Date().toISOString(),
+        lastUpdatedAt: new Date().toISOString(),
+        evidence: [],
+      },
+    ];
     const result = advisor.advise('wks_a', assets, 0.4);
     expect(['balanced', 'mostly_defensible']).toContain(result.tacticalScore);
   });
 
   it('identifies at-risk nascent assets', () => {
-    const assets: DefensibleAsset[] = [{
-      workspaceId: 'wks_a',
-      assetId: 'a1',
-      kind: 'owned_audience',
-      label: 'Nascent',
-      strength: 'nascent',
-      score: 0.05,
-      firstRecordedAt: new Date().toISOString(),
-      lastUpdatedAt: new Date().toISOString(),
-      evidence: [],
-    }];
+    const assets: DefensibleAsset[] = [
+      {
+        workspaceId: 'wks_a',
+        assetId: 'a1',
+        kind: 'owned_audience',
+        label: 'Nascent',
+        strength: 'nascent',
+        score: 0.05,
+        firstRecordedAt: new Date().toISOString(),
+        lastUpdatedAt: new Date().toISOString(),
+        evidence: [],
+      },
+    ];
     const result = advisor.advise('wks_a', assets, 0.7);
     expect(result.atRiskAssets).toContain('a1');
   });
@@ -115,53 +125,61 @@ describe('DefensibilityNarrativeBuilder (UTP-DEFENS-009)', () => {
   });
 
   it('generates building-moat narrative with moderate assets', () => {
-    const assets: DefensibleAsset[] = [{
-      workspaceId: 'wks_a',
-      assetId: 'a1',
-      kind: 'owned_audience',
-      label: 'Audience',
-      strength: 'established',
-      score: 0.6,
-      firstRecordedAt: new Date().toISOString(),
-      lastUpdatedAt: new Date().toISOString(),
-      evidence: [],
-    }];
+    const assets: DefensibleAsset[] = [
+      {
+        workspaceId: 'wks_a',
+        assetId: 'a1',
+        kind: 'owned_audience',
+        label: 'Audience',
+        strength: 'established',
+        score: 0.6,
+        firstRecordedAt: new Date().toISOString(),
+        lastUpdatedAt: new Date().toISOString(),
+        evidence: [],
+      },
+    ];
     const narrative = narrativeBuilder.build('wks_a', assets, [], [], []);
     expect(narrative.defensibilityScore).toBeGreaterThan(0);
     expect(narrative.topAssets.length).toBeGreaterThan(0);
   });
 
   it('computes composite score from all asset categories', () => {
-    const assets: DefensibleAsset[] = [{
-      workspaceId: 'wks_a',
-      assetId: 'a1',
-      kind: 'owned_audience',
-      label: 'Audience',
-      strength: 'established',
-      score: 0.7,
-      firstRecordedAt: new Date().toISOString(),
-      lastUpdatedAt: new Date().toISOString(),
-      evidence: [],
-    }];
+    const assets: DefensibleAsset[] = [
+      {
+        workspaceId: 'wks_a',
+        assetId: 'a1',
+        kind: 'owned_audience',
+        label: 'Audience',
+        strength: 'established',
+        score: 0.7,
+        firstRecordedAt: new Date().toISOString(),
+        lastUpdatedAt: new Date().toISOString(),
+        evidence: [],
+      },
+    ];
 
-    const positioning: PositioningUniqueness[] = [{
-      workspaceId: 'wks_a',
-      signalKind: 'unique_methodology',
-      strength: 0.6,
-      evidence: [],
-      competitorOverlap: 0.2,
-      assessedAt: new Date().toISOString(),
-    }];
+    const positioning: PositioningUniqueness[] = [
+      {
+        workspaceId: 'wks_a',
+        signalKind: 'unique_methodology',
+        strength: 0.6,
+        evidence: [],
+        competitorOverlap: 0.2,
+        assessedAt: new Date().toISOString(),
+      },
+    ];
 
-    const authorities: AuthorityBuilding[] = [{
-      workspaceId: 'wks_a',
-      platform: 'blog',
-      contentCount: 10,
-      consistencyScore: 0.7,
-      reachScore: 0.5,
-      depthScore: 0.6,
-      assessedAt: new Date().toISOString(),
-    }];
+    const authorities: AuthorityBuilding[] = [
+      {
+        workspaceId: 'wks_a',
+        platform: 'blog',
+        contentCount: 10,
+        consistencyScore: 0.7,
+        reachScore: 0.5,
+        depthScore: 0.6,
+        assessedAt: new Date().toISOString(),
+      },
+    ];
 
     const narrative = narrativeBuilder.build('wks_a', assets, positioning, authorities, []);
     expect(narrative.defensibilityScore).toBeGreaterThan(0.3);
@@ -171,17 +189,19 @@ describe('DefensibilityNarrativeBuilder (UTP-DEFENS-009)', () => {
   });
 
   it('keeps replacement pain honest when switching-cost evidence is still partial', () => {
-    const assets: DefensibleAsset[] = [{
-      workspaceId: 'wks_a',
-      assetId: 'switching_1',
-      kind: 'switching_cost',
-      label: 'Conversion Track Record',
-      strength: 'building',
-      score: 0.32,
-      firstRecordedAt: new Date().toISOString(),
-      lastUpdatedAt: new Date().toISOString(),
-      evidence: ['evt_conversion_1', 'evt_conversion_2'],
-    }];
+    const assets: DefensibleAsset[] = [
+      {
+        workspaceId: 'wks_a',
+        assetId: 'switching_1',
+        kind: 'switching_cost',
+        label: 'Conversion Track Record',
+        strength: 'building',
+        score: 0.32,
+        firstRecordedAt: new Date().toISOString(),
+        lastUpdatedAt: new Date().toISOString(),
+        evidence: ['evt_conversion_1', 'evt_conversion_2'],
+      },
+    ];
 
     const narrative = narrativeBuilder.build('wks_a', assets, [], [], []);
 
@@ -195,10 +215,15 @@ describe('DefensibilityNarrativeBuilder (UTP-DEFENS-009)', () => {
         expect.objectContaining({ dimension: 'context', evidenceLevel: 'emerging' }),
         expect.objectContaining({ dimension: 'criterion', evidenceLevel: 'not_yet_proven' }),
         expect.objectContaining({ dimension: 'judgment', evidenceLevel: 'not_yet_proven' }),
-        expect.objectContaining({ dimension: 'commercial_capital', evidenceLevel: 'not_yet_proven' }),
+        expect.objectContaining({
+          dimension: 'commercial_capital',
+          evidenceLevel: 'not_yet_proven',
+        }),
       ]),
     );
-    expect(narrative.replacementPainNarrative).toContain('commercial capital remains not_yet_proven');
+    expect(narrative.replacementPainNarrative).toContain(
+      'commercial capital remains not_yet_proven',
+    );
     expect(narrative.switchingCostReasoning).toContain('Emerging switching-cost evidence');
   });
 

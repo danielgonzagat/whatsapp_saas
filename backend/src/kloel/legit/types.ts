@@ -8,8 +8,21 @@
  * Legal Consult Trigger.
  */
 export type Jurisdiction = 'BR' | 'US' | 'EU' | 'UK' | 'GLOBAL';
-export type DataSubjectRight = 'access' | 'rectification' | 'erasure' | 'portability' | 'restriction' | 'objection' | 'automated_decision';
-export type ConsentBasis = 'explicit' | 'legitimate_interest' | 'contractual' | 'legal_obligation' | 'vital_interest' | 'public_interest';
+export type DataSubjectRight =
+  | 'access'
+  | 'rectification'
+  | 'erasure'
+  | 'portability'
+  | 'restriction'
+  | 'objection'
+  | 'automated_decision';
+export type ConsentBasis =
+  | 'explicit'
+  | 'legitimate_interest'
+  | 'contractual'
+  | 'legal_obligation'
+  | 'vital_interest'
+  | 'public_interest';
 type ConsentStatus = 'granted' | 'withdrawn' | 'expired' | 'never_granted' | 'pending';
 export type PolicyViolationSeverity = 'warning' | 'minor' | 'moderate' | 'severe' | 'critical';
 export type RegulatedCategory =
@@ -26,8 +39,20 @@ export type RegulatedCategory =
   | 'political'
   | 'hate_speech'
   | 'restricted_product';
-type ImageRightsSource = 'stock' | 'licensed' | 'ai_generated' | 'user_uploaded' | 'third_party' | 'commissioned';
-export type ImageRightsStatus = 'verified' | 'missing_attribution' | 'license_expired' | 'unlicensed' | 'pending_review' | 'violation_detected';
+type ImageRightsSource =
+  | 'stock'
+  | 'licensed'
+  | 'ai_generated'
+  | 'user_uploaded'
+  | 'third_party'
+  | 'commissioned';
+export type ImageRightsStatus =
+  | 'verified'
+  | 'missing_attribution'
+  | 'license_expired'
+  | 'unlicensed'
+  | 'pending_review'
+  | 'violation_detected';
 type RiskFlagCategory =
   | 'lgpd_violation'
   | 'gdpr_violation'
@@ -42,7 +67,14 @@ type RiskFlagCategory =
   | 'data_breach'
   | 'legal_threat'
   | 'regulatory_notice';
-type RiskFlagStatus = 'open' | 'acknowledged' | 'investigating' | 'escalated' | 'resolved' | 'dismissed' | 'requires_legal';
+type RiskFlagStatus =
+  | 'open'
+  | 'acknowledged'
+  | 'investigating'
+  | 'escalated'
+  | 'resolved'
+  | 'dismissed'
+  | 'requires_legal';
 type BlockReason =
   | 'policy_violation'
   | 'legal_requirement'

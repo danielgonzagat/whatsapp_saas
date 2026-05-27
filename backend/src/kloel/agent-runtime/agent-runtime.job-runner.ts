@@ -320,7 +320,15 @@ export class AgentRuntimeJobRunnerService {
     payload: AgentJobPayload,
     entry: AgentJobExecutionHistory,
   ): Promise<void> {
-    return recordJobHistory(this.prisma, this.opsAlert, this.logWarn, workspaceId, event, payload, entry);
+    return recordJobHistory(
+      this.prisma,
+      this.opsAlert,
+      this.logWarn,
+      workspaceId,
+      event,
+      payload,
+      entry,
+    );
   }
 
   private async recordJobExecutionSnapshot(
@@ -328,7 +336,14 @@ export class AgentRuntimeJobRunnerService {
     payload: AgentJobPayload,
     result: { status: 'succeeded' | 'failed'; eventId: string; message: string },
   ): Promise<void> {
-    return recordJobExecutionSnapshot(this.prisma, this.opsAlert, this.logWarn, workspaceId, payload, result);
+    return recordJobExecutionSnapshot(
+      this.prisma,
+      this.opsAlert,
+      this.logWarn,
+      workspaceId,
+      payload,
+      result,
+    );
   }
 
   private parsePayload(payload: Prisma.JsonValue, fallbackKey: string): AgentJobPayload {

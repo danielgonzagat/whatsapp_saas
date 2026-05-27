@@ -1,10 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type {
-  ChannelKind,
-  ContingencyPlan,
-  DetectionInput,
-  MigrationReadiness,
-} from './types';
+import type { ChannelKind, ContingencyPlan, DetectionInput, MigrationReadiness } from './types';
 import { filterByWorkspace } from './types';
 
 @Injectable()
@@ -60,7 +55,16 @@ export class ContingencyPlanBuilder {
   }
 
   private rankAlternativeChannels(failingChannel: ChannelKind): ChannelKind[] {
-    const priority: ChannelKind[] = ['email', 'whatsapp', 'sms', 'push', 'instagram', 'messenger', 'tiktok', 'owned_site'];
+    const priority: ChannelKind[] = [
+      'email',
+      'whatsapp',
+      'sms',
+      'push',
+      'instagram',
+      'messenger',
+      'tiktok',
+      'owned_site',
+    ];
     return priority.filter((ch) => ch !== failingChannel);
   }
 

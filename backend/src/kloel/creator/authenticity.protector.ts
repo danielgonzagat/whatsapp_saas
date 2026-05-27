@@ -30,7 +30,10 @@ const DEFAULT_AUTHENTICITY_CONFIG: AuthenticityConfig = {
   forcedEndorsementKeywordCount: 3,
 };
 
-const OVERSELLING_PATTERNS: ReadonlyArray<{ readonly pattern: string; readonly confidence: number }> = [
+const OVERSELLING_PATTERNS: ReadonlyArray<{
+  readonly pattern: string;
+  readonly confidence: number;
+}> = [
   { pattern: 'só hoje', confidence: 0.6 },
   { pattern: 'última chance', confidence: 0.7 },
   { pattern: 'nunca mais', confidence: 0.65 },
@@ -40,7 +43,10 @@ const OVERSELLING_PATTERNS: ReadonlyArray<{ readonly pattern: string; readonly c
   { pattern: 'oportunidade única', confidence: 0.65 },
 ];
 
-const MISLEADING_CLAIM_PATTERNS: ReadonlyArray<{ readonly pattern: string; readonly confidence: number }> = [
+const MISLEADING_CLAIM_PATTERNS: ReadonlyArray<{
+  readonly pattern: string;
+  readonly confidence: number;
+}> = [
   { pattern: 'fature 10k', confidence: 0.7 },
   { pattern: 'sem esforço', confidence: 0.8 },
   { pattern: 'garantia de resultado', confidence: 0.75 },
@@ -135,7 +141,12 @@ function detectMisleadingClaims(
   let bestPattern = '';
 
   for (const text of texts) {
-    const flags = scanPatterns(text, MISLEADING_CLAIM_PATTERNS, 'misleading_claim', config.misleadingClaimMinConfidence);
+    const flags = scanPatterns(
+      text,
+      MISLEADING_CLAIM_PATTERNS,
+      'misleading_claim',
+      config.misleadingClaimMinConfidence,
+    );
     for (const f of flags) {
       if (f.confidence > bestConfidence) {
         bestConfidence = f.confidence;
@@ -166,7 +177,9 @@ function detectForcedEndorsement(
     const lower = text.toLowerCase();
     let hits = 0;
     for (const kw of FORCED_ENDORSEMENT_KEYWORDS) {
-      if (lower.includes(kw)) hits += 1;
+      if (lower.includes(kw)) {
+        hits += 1;
+      }
     }
     if (hits > maxHitsInOne) {
       maxHitsInOne = hits;
@@ -185,9 +198,7 @@ function detectForcedEndorsement(
   return null;
 }
 
-function detectValueMisalignment(
-  texts: readonly string[],
-): AuthenticityWarningFlag | null {
+function detectValueMisalignment(texts: readonly string[]): AuthenticityWarningFlag | null {
   for (const text of texts) {
     const lower = text.toLowerCase();
     for (const trigger of VALUE_MISALIGNMENT_TRIGGERS) {
@@ -204,9 +215,7 @@ function detectValueMisalignment(
   return null;
 }
 
-function detectAudienceGaslighting(
-  texts: readonly string[],
-): AuthenticityWarningFlag | null {
+function detectAudienceGaslighting(texts: readonly string[]): AuthenticityWarningFlag | null {
   let maxConfidence = 0;
   let bestPattern = '';
 
@@ -214,9 +223,11 @@ function detectAudienceGaslighting(
     const lower = text.toLowerCase();
     for (const pattern of GASLIGHTING_PATTERNS) {
       if (lower.includes(pattern)) {
-        const confidence = pattern.startsWith('você precisa') ? 0.75
-          : pattern.startsWith('se você não') ? 0.8
-          : 0.55;
+        const confidence = pattern.startsWith('você precisa')
+          ? 0.75
+          : pattern.startsWith('se você não')
+            ? 0.8
+            : 0.55;
         if (confidence > maxConfidence) {
           maxConfidence = confidence;
           bestPattern = pattern;
@@ -238,10 +249,18 @@ function detectAudienceGaslighting(
 
 function extractMessageText(ev: CreatorEvent): string | undefined {
   const p = ev.payload;
-  if (!p) return undefined;
-  if (typeof p['messageBody'] === 'string') return p['messageBody'] as string;
-  if (typeof p['body'] === 'string') return p['body'] as string;
-  if (typeof p['text'] === 'string') return p['text'] as string;
+  if (!p) {
+    return undefined;
+  }
+  if (typeof p['messageBody'] === 'string') {
+    return p['messageBody'];
+  }
+  if (typeof p['body'] === 'string') {
+    return p['body'];
+  }
+  if (typeof p['text'] === 'string') {
+    return p['text'];
+  }
   return undefined;
 }
 
@@ -263,19 +282,29 @@ export function protectAuthenticity(
   const warningFlags: AuthenticityWarningFlag[] = [];
 
   const overselling = detectOverselling(texts, cfg);
-  if (overselling) warningFlags.push(overselling);
+  if (overselling) {
+    warningFlags.push(overselling);
+  }
 
   const misleading = detectMisleadingClaims(texts, cfg);
-  if (misleading) warningFlags.push(misleading);
+  if (misleading) {
+    warningFlags.push(misleading);
+  }
 
   const forced = detectForcedEndorsement(texts, cfg);
-  if (forced) warningFlags.push(forced);
+  if (forced) {
+    warningFlags.push(forced);
+  }
 
   const misalignment = detectValueMisalignment(texts);
-  if (misalignment) warningFlags.push(misalignment);
+  if (misalignment) {
+    warningFlags.push(misalignment);
+  }
 
   const gaslighting = detectAudienceGaslighting(texts);
-  if (gaslighting) warningFlags.push(gaslighting);
+  if (gaslighting) {
+    warningFlags.push(gaslighting);
+  }
 
   const atRisk = warningFlags.length > 0;
 
@@ -300,15 +329,13 @@ export function protectAuthenticity(
       endorsementCount += 1;
     }
   }
-  const endorsementConsistency = texts.length > 0
-    ? 1 - Math.min(1, endorsementCount / texts.length)
-    : 1;
+  const endorsementConsistency =
+    texts.length > 0 ? 1 - Math.min(1, endorsementCount / texts.length) : 1;
 
-  const authenticityScore = Math.max(0, Math.min(1,
-    (1 - flagPenalty) * 0.5 +
-    organicRatio * 0.25 +
-    endorsementConsistency * 0.25,
-  ));
+  const authenticityScore = Math.max(
+    0,
+    Math.min(1, (1 - flagPenalty) * 0.5 + organicRatio * 0.25 + endorsementConsistency * 0.25),
+  );
 
   return {
     authenticityScore: parseFloat(authenticityScore.toFixed(3)),

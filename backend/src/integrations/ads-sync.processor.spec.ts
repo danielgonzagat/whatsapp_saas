@@ -1,14 +1,10 @@
 import type { PrismaService } from '../prisma/prisma.service';
 import { AdsSyncProcessor } from './ads-sync.processor';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 describe('AdsSyncProcessor', () => {
   let processor: AdsSyncProcessor;
-  let mockPrisma: {
-    adAccount: { upsert: jest.Mock; findFirst: jest.Mock };
-    adCampaign: { upsert: jest.Mock; findFirst: jest.Mock };
-    adInsight: { upsert: jest.Mock };
-    metaConnection: { findFirst: jest.Mock };
-  };
+  let mockPrisma: ReturnType<typeof createPartialPrismaMock>;
   let mockGoogleAds: {
     syncAccounts: jest.Mock;
     syncCampaigns: jest.Mock;
@@ -21,18 +17,12 @@ describe('AdsSyncProcessor', () => {
   };
 
   beforeEach(() => {
-    mockPrisma = {
-      adAccount: {
-        upsert: jest.fn().mockResolvedValue({}),
-        findFirst: jest.fn().mockResolvedValue(null),
-      },
-      adCampaign: {
-        upsert: jest.fn().mockResolvedValue({}),
-        findFirst: jest.fn().mockResolvedValue(null),
-      },
-      adInsight: { upsert: jest.fn().mockResolvedValue({}) },
-      metaConnection: { findFirst: jest.fn().mockResolvedValue(null) },
-    };
+    mockPrisma = createPartialPrismaMock({
+      adAccount: ['upsert', 'findFirst'],
+      adCampaign: ['upsert', 'findFirst'],
+      adInsight: ['upsert'],
+      metaConnection: ['findFirst'],
+    });
 
     mockGoogleAds = {
       syncAccounts: jest.fn().mockResolvedValue({ accounts: [] }),

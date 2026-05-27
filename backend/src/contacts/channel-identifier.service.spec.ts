@@ -1,27 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ChannelIdentifierService } from './channel-identifier.service';
 import { PrismaService } from '../prisma/prisma.service';
-
-type FlexMock<T extends (...args: never[]) => unknown> = jest.Mock<ReturnType<T>, Parameters<T>> & {
-  mockResolvedValue: (v: Awaited<ReturnType<T>>) => FlexMock<T>;
-  mockResolvedValueOnce: (v: Awaited<ReturnType<T>>) => FlexMock<T>;
-  mockRejectedValue: (e: unknown) => FlexMock<T>;
-};
-
-interface MockPrisma {
-  channelIdentifier: {
-    findUnique: FlexMock<(args: unknown) => unknown>;
-    findFirst: FlexMock<(args: unknown) => unknown>;
-    findMany: FlexMock<(args: unknown) => unknown>;
-    create: FlexMock<(args: unknown) => unknown>;
-    updateMany: FlexMock<(args: unknown) => unknown>;
-    update: FlexMock<(args: unknown) => unknown>;
-  };
-  contact: {
-    create: FlexMock<(args: unknown) => unknown>;
-  };
-  $transaction: FlexMock<(ops: unknown[]) => unknown>;
-}
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 function makeContactStub(overrides: Record<string, unknown> = {}) {
   return {
@@ -49,23 +29,13 @@ function makeIdentifierStub(overrides: Record<string, unknown> = {}) {
 
 describe('ChannelIdentifierService', () => {
   let service: ChannelIdentifierService;
-  let mockPrisma: MockPrisma;
+  let mockPrisma: ReturnType<typeof createPartialPrismaMock>;
 
   beforeEach(async () => {
-    mockPrisma = {
-      channelIdentifier: {
-        findUnique: jest.fn(),
-        findFirst: jest.fn(),
-        findMany: jest.fn(),
-        create: jest.fn(),
-        updateMany: jest.fn(),
-        update: jest.fn(),
-      },
-      contact: {
-        create: jest.fn(),
-      },
-      $transaction: jest.fn(),
-    };
+    mockPrisma = createPartialPrismaMock({
+      channelIdentifier: ['findUnique', 'findFirst', 'findMany', 'create', 'updateMany', 'update'],
+      contact: ['create'],
+    });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [ChannelIdentifierService, { provide: PrismaService, useValue: mockPrisma }],

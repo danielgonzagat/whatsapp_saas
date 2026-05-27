@@ -42,7 +42,7 @@ export class AdminSupportController {
     @CurrentAdmin() admin: AuthenticatedAdmin,
   ) {
     await this.support.updateStatus(conversationId, dto.status, admin.id);
-    return { ok: true };
+    return { conversationId, ok: true };
   }
 
   /** Reply. */
@@ -54,6 +54,6 @@ export class AdminSupportController {
     @CurrentAdmin() admin: AuthenticatedAdmin,
   ) {
     await this.support.reply(conversationId, admin.id, dto.content);
-    return { ok: true };
+    return { conversationId, ok: true };
   }
 }
