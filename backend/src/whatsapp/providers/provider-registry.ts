@@ -21,7 +21,7 @@ import {
   startSession as startSessionFn,
   getSessionStatus as getSessionStatusFn,
   getQrCode as getQrCodeFn,
-} from './provider-registry-session';
+} from '../../marketing/channels/whatsapp/providers/provider-registry-session';
 import {
   sendMessage as sendMessageFn,
   sendMedia as sendMediaFn,
