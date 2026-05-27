@@ -18,7 +18,7 @@ import {
   ChannelSendInput,
   ChannelSendResult,
 } from '../../../common/channel-dispatch/channel-dispatch.port';
-import { InstagramService } from '../../../meta/instagram/instagram.service';
+import { InstagramService } from './instagram.service';
 
 @Injectable()
 export class InstagramDispatchAdapter implements ChannelDispatchPort {

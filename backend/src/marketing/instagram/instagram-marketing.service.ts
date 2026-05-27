@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { InstagramService } from '../../meta/instagram/instagram.service';
+import { InstagramService } from '../channels/instagram/instagram.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { decryptMetaToken } from '../../meta/meta-token-crypto';
 
