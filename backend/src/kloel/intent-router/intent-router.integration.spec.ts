@@ -33,7 +33,7 @@ describe('IntentRouter + CapabilityRegistry Integration', () => {
       '*',
     ]);
     expect(result.isChat).toBe(false);
-    expect(result.classification?.capabilityId).toBe('create_product');
+    expect(result.classification?.capabilityId).toBe('products.create');
     expect(result.classification?.confidence).toBeGreaterThanOrEqual(0.9);
   });
   it('classifies product listing', () => {
@@ -48,7 +48,7 @@ describe('IntentRouter + CapabilityRegistry Integration', () => {
       ['*'],
     );
     expect(result.isChat).toBe(false);
-    expect(result.classification?.capabilityId).toBe('generate_pix');
+    expect(result.classification?.capabilityId).toBe('sales.create_pix');
     expect(result.classification?.requiresConfirmation).toBe(true);
   });
   it('classifies plan creation', () => {
@@ -69,7 +69,7 @@ describe('IntentRouter + CapabilityRegistry Integration', () => {
   it('classifies Boleto generation', () => {
     const result = router.classify('Gera um boleto para João', 'dashboard-chat', ['*']);
     expect(result.isChat).toBe(false);
-    expect(result.classification?.capabilityId).toBe('generate_boleto');
+    expect(result.classification?.capabilityId).toBe('sales.create_boleto');
   });
   it('classifies wallet balance query', () => {
     const result = router.classify('Qual meu saldo?', 'dashboard-chat', ['*']);
