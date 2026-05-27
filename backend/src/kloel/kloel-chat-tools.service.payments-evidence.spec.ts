@@ -251,6 +251,24 @@ describe('KloelChatToolsService', () => {
     });
   });
 
+  describe('toolCreateOrder', () => {
+    it('blocks the legacy direct manual sale path before it can fabricate an order', async () => {
+      const result = await service.toolCreateOrder(wsId, {
+        amount: 147,
+        productName: 'PDRN',
+        customerName: 'Joao',
+      });
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          success: false,
+          error: 'canonical_order_service_required',
+        }),
+      );
+      expect(prisma.kloelSale.create).not.toHaveBeenCalled();
+    });
+  });
+
   describe('tenant isolation', () => {
     it('toolSaveProduct uses correct workspaceId', async () => {
       await service.toolSaveProduct('ws-tenant', { name: 'X', price: 1 });
