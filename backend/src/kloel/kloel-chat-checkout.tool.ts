@@ -3,25 +3,37 @@ import { PrismaService } from '../prisma/prisma.service';
 import { randomIdSegment } from '../common/random-id';
 
 /**
- * @deprecated DUPLICATE of {@link ../checkout/checkout.service.ts CheckoutService}.
- * This standalone variant is unused (0 callers, not registered in any NestJS
- * module). It returns string-error shapes (`{ success: false, error: '…' }`)
- * instead of throwing exceptions, and uses non-deterministic code generation
- * for short codes — both anti-patterns. The canonical service lives at
- * `backend/src/checkout/checkout.service.ts` (500 LOC façade with proper
- * sub-services and event emitter).
+ * AI-chat tool surface that creates/lists/updates/deletes records on the
+ * **legacy** `ProductCheckout` Prisma model (mapped to `RAC_ProductCheckout`).
  *
- * Migration path: this file will be deleted in a follow-up PR once
- * `scripts/ops/check-canonical-services.mjs --strict` confirms 0 callers
- * for 7 consecutive days.
+ * NOT the canonical checkout service. The canonical HTTP-facing checkout
+ * façade lives at `backend/src/checkout/checkout.service.ts` and operates on
+ * the current `CheckoutProductPlan` (kind='CHECKOUT') model with sub-services,
+ * event emission, and HTTP-layer idempotency.
  *
- * @cluster Checkout
- * @canonical backend/src/checkout/checkout.service.ts
- * @see docs/architecture/DEPRECATION_MAP.md#cross-cutting-duplications row 33
+ * This tool exists because:
+ *   1. The kloel AI tool dispatcher (`kloel-tool-dispatcher.service.ts`)
+ *      executes the `checkout_create` chat tool against the legacy product
+ *      checkout model that some controllers and
+ *      `kloel-product-sub-resource-tools.service.ts` still maintain.
+ *   2. Returning a `{ success, error }` shape (rather than throwing) is the
+ *      kloel chat-tool contract — chat tools never throw because the LLM
+ *      needs a parseable result to relay to the user.
+ *
+ * If/when the legacy `ProductCheckout` model is decommissioned and all chat
+ * tools migrate onto the canonical `CheckoutProductPlan` surface, this file
+ * can be deleted. Until then, it is a deliberate, named, single-purpose tool
+ * — NOT a duplicate of `CheckoutService`. Renamed from `CheckoutService` on
+ * 2026-05-27 to remove the class-name collision (P0 dup #33).
+ *
+ * @cluster Kloel/ChatTools
+ * @canonicalSibling backend/src/checkout/checkout.service.ts (different surface, different model)
+ * @see backend/src/kloel/kloel-tool-dispatcher.service.ts (only caller)
+ * @see docs/architecture/DEPRECATION_MAP.md (rename history)
  */
 @Injectable()
-export class CheckoutService {
-  private readonly logger = new Logger(CheckoutService.name);
+export class KloelChatCheckoutTool {
+  private readonly logger = new Logger(KloelChatCheckoutTool.name);
   constructor(private readonly prisma: PrismaService) {}
 
   async create(

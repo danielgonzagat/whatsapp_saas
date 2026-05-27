@@ -1,7 +1,7 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { randomIdSegment } from '../common/random-id';
-import { CheckoutService } from './checkout.service';
+import { KloelChatCheckoutTool } from './kloel-chat-checkout.tool';
 
 jest.mock('../common/random-id', () => ({
   randomIdSegment: jest.fn(() => 'abcde'),
@@ -23,7 +23,7 @@ type ProductCheckoutCreateArgs = {
 type ProductCheckoutRecord = { id: string; name: string };
 type CheckoutPlanLinkCreateManyArgs = { data: Array<{ checkoutId: string; planId: string }> };
 
-describe('CheckoutService', () => {
+describe('KloelChatCheckoutTool', () => {
   let moduleRef: TestingModule | null = null;
   let productFindFirst: jest.Mock<Promise<ProductRecord | null>, [ProductFindFirstArgs]>;
   let productCheckoutCreate: jest.Mock<Promise<ProductCheckoutRecord>, [ProductCheckoutCreateArgs]>;
@@ -32,7 +32,7 @@ describe('CheckoutService', () => {
     [CheckoutPlanLinkCreateManyArgs]
   >;
 
-  async function createService(): Promise<CheckoutService> {
+  async function createService(): Promise<KloelChatCheckoutTool> {
     const prisma = {
       product: { findFirst: productFindFirst },
       productCheckout: { create: productCheckoutCreate },
@@ -40,10 +40,10 @@ describe('CheckoutService', () => {
     };
 
     moduleRef = await Test.createTestingModule({
-      providers: [CheckoutService, { provide: PrismaService, useValue: prisma }],
+      providers: [KloelChatCheckoutTool, { provide: PrismaService, useValue: prisma }],
     }).compile();
 
-    return moduleRef.get(CheckoutService);
+    return moduleRef.get(KloelChatCheckoutTool);
   }
 
   beforeEach(() => {
@@ -75,7 +75,7 @@ describe('CheckoutService', () => {
 
     const service = await createService();
     const mathRandomSpy = jest.spyOn(Math, 'random').mockImplementation(() => {
-      throw new Error('CheckoutService.create must not use Math.random');
+      throw new Error('KloelChatCheckoutTool.create must not use Math.random');
     });
 
     await expect(

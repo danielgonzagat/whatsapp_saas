@@ -187,7 +187,7 @@ import { LineageModule } from './lineage/lineage.module';
 import { RiskClassModule } from './risk-class/risk-class.module';
 import { InboxModule } from '../inbox/inbox.module';
 import { AccountService } from './account.service';
-import { CheckoutService } from './checkout.service';
+import { KloelChatCheckoutTool } from './kloel-chat-checkout.tool';
 import { CouponService } from './coupon.service';
 import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
 import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service';
@@ -277,7 +277,7 @@ import { PlansModule } from '../plans/plans.module';
     KloelChatToolsService,
     KloelCodeToolsService,
     AccountService,
-    CheckoutService,
+    KloelChatCheckoutTool,
     CouponService,
     ProductCouponDomainService,
     KloelProductSubResourceToolsService,

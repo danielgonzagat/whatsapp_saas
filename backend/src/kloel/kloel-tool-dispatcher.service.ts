@@ -13,7 +13,7 @@ import { KloelCodeToolsService } from './kloel-code-tools.service';
 import { KloelCodeAnalysisService } from './kloel-code-analysis.service';
 import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
 import { CouponService } from './coupon.service';
-import { CheckoutService } from './checkout.service';
+import { KloelChatCheckoutTool } from './kloel-chat-checkout.tool';
 import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service';
 import { SmartPaymentService } from './smart-payment.service';
 import { AccountService } from './account.service';
@@ -136,7 +136,7 @@ export class KloelToolDispatcherService {
     private readonly codeAnalysisService: KloelCodeAnalysisService,
     @Optional() private readonly accountService?: AccountService,
     @Optional() private readonly couponService?: CouponService,
-    @Optional() private readonly checkoutService?: CheckoutService,
+    @Optional() private readonly checkoutService?: KloelChatCheckoutTool,
     @Optional() private readonly productSubTools?: KloelProductSubResourceToolsService,
     @Optional() private readonly walletSalesTools?: KloelWalletSalesToolsService,
     @Optional() private readonly smartPaymentService?: SmartPaymentService,
