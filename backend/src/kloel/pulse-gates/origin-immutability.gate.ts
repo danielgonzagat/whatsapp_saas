@@ -7,12 +7,7 @@ import {
   verifyGenesisEvent,
 } from '../lineage/genesis-event';
 import { LineageGuardService } from '../lineage/lineage-guard.service';
-import {
-  fail,
-  GateMode,
-  GateVerdict,
-  pass,
-} from './pulse-gates.types';
+import { fail, GateMode, GateVerdict, pass } from './pulse-gates.types';
 
 /**
  * UTP-PULSE-005 — `origin-immutability` gate.

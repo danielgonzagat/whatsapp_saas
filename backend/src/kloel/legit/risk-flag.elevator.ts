@@ -13,10 +13,7 @@
 import type { RiskFlagInput, RiskFlagResult } from './types';
 import { generateId } from './types';
 
-function requiresElevation(
-  category: string,
-  severity: string,
-): boolean {
+function requiresElevation(category: string, severity: string): boolean {
   if (severity === 'critical' || severity === 'severe') {
     return true;
   }
@@ -30,10 +27,7 @@ function requiresElevation(
   return elevatedCategories.includes(category) && severity !== 'warning';
 }
 
-function recommendAction(
-  category: string,
-  severity: string,
-): string {
+function recommendAction(category: string, severity: string): string {
   if (severity === 'critical') {
     return `CRITICAL: ${category} requires immediate legal review and possible content takedown.`;
   }
@@ -59,7 +53,7 @@ export function elevateRiskFlag(input: RiskFlagInput): RiskFlagResult {
     description: input.description,
     sourceEvent: input.sourceEvent,
     affectedResources: input.affectedResources,
-    status: needsElevation ? 'escalated' as const : 'open' as const,
+    status: needsElevation ? ('escalated' as const) : ('open' as const),
     assignedTo: null,
     escalatedAt: needsElevation ? new Date(nowMs).toISOString() : null,
     resolvedAt: null,

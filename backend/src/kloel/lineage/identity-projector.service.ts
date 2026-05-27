@@ -1,8 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  GENESIS_EVENT,
-  ORGANISM_CANONICAL_NAME,
-} from './genesis-event';
+import { GENESIS_EVENT, ORGANISM_CANONICAL_NAME } from './genesis-event';
 import { LineageGuardService, LineageStatus } from './lineage-guard.service';
 
 /**
@@ -259,8 +256,6 @@ export function isInternalProjection(p: IdentityProjection): p is InternalProjec
   return p.audience === 'internal' && !('status' in p);
 }
 
-export function isCompromisedProjection(
-  p: IdentityProjection,
-): p is CompromisedProjection {
+export function isCompromisedProjection(p: IdentityProjection): p is CompromisedProjection {
   return 'status' in p && p.status === 'compromised';
 }

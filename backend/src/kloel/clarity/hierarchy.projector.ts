@@ -25,16 +25,9 @@ export interface HierarchyProjection {
   readonly totalItems: number;
 }
 
-const TIER_ORDER: readonly DecisionTier[] = [
-  'AGORA',
-  'ESTA_SEMANA',
-  'PARA_SABER',
-  'ARQUIVO',
-];
+const TIER_ORDER: readonly DecisionTier[] = ['AGORA', 'ESTA_SEMANA', 'PARA_SABER', 'ARQUIVO'];
 
-export function projectHierarchy(
-  input: HierarchyProjectionInput,
-): HierarchyProjection {
+export function projectHierarchy(input: HierarchyProjectionInput): HierarchyProjection {
   const grouped = new Map<DecisionTier, AttentionRanking[]>();
   for (const tier of TIER_ORDER) {
     grouped.set(tier, []);

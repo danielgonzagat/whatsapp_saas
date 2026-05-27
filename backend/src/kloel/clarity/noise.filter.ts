@@ -8,11 +8,7 @@
  * Pure function — stateless filtering.
  */
 
-import type {
-  AttentionRanking,
-  NoiseFilter,
-  NoiseFilterInput,
-} from './clarity.types';
+import type { AttentionRanking, NoiseFilter, NoiseFilterInput } from './clarity.types';
 import { DEFAULT_NOISE_THRESHOLD } from './clarity.types';
 
 export interface NoiseFilterResult {
@@ -22,9 +18,7 @@ export interface NoiseFilterResult {
 }
 
 export function applyNoiseFilter(input: NoiseFilterInput): NoiseFilterResult {
-  const threshold = input.threshold > 0
-    ? input.threshold
-    : DEFAULT_NOISE_THRESHOLD;
+  const threshold = input.threshold > 0 ? input.threshold : DEFAULT_NOISE_THRESHOLD;
 
   const kept: AttentionRanking[] = [];
   const filtered: AttentionRanking[] = [];

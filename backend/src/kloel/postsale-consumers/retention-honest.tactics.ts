@@ -135,14 +135,11 @@ function buildControl(
     return {
       riskClass: 'R1',
       delegationMode: 'silent_monitoring',
-      safeNextStep:
-        'Stay silent and keep monitoring until a concrete retention signal appears.',
-      uncertainty:
-        'Current evidence is insufficient for an outbound retention action.',
+      safeNextStep: 'Stay silent and keep monitoring until a concrete retention signal appears.',
+      uncertainty: 'Current evidence is insufficient for an outbound retention action.',
       leadOutcomeGuardrail:
         'Avoid creating customer noise when the relationship does not need intervention.',
-      rollback:
-        'Reassess when churn, support, satisfaction, or first-value evidence changes.',
+      rollback: 'Reassess when churn, support, satisfaction, or first-value evidence changes.',
     };
   }
 

@@ -59,10 +59,7 @@ const RISK_PATTERNS: readonly PatternRule[] = [
   },
   {
     kind: 'inappropriate_timing',
-    patterns: [
-      /mesmo (de madrugada|domingo|feriado)/gi,
-      /a qualquer hora/gi,
-    ],
+    patterns: [/mesmo (de madrugada|domingo|feriado)/gi, /a qualquer hora/gi],
   },
 ];
 

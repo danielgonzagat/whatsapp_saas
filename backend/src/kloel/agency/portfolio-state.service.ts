@@ -65,9 +65,7 @@ export class PortfolioStateService {
     const marginPerClient = this.buildMarginSnapshots(clients, nowMs);
     const churnRiskPerClient = this.buildChurnSnapshots(clients, nowMs);
     const priorityRanking = this.buildPriorityRankings(clients, nowMs);
-    const teamLoad = input.teamMembers
-      ? this.buildTeamLoad(input.teamMembers, clients)
-      : null;
+    const teamLoad = input.teamMembers ? this.buildTeamLoad(input.teamMembers, clients) : null;
 
     const healthScore = this.computeHealthScore(clients);
 
@@ -86,10 +84,7 @@ export class PortfolioStateService {
     return { state, summary };
   }
 
-  private emptyState(
-    agencyWorkspaceId: string,
-    nowMs: number,
-  ): ConsolidatedPortfolioState {
+  private emptyState(agencyWorkspaceId: string, nowMs: number): ConsolidatedPortfolioState {
     return {
       agencyWorkspaceId,
       clientCount: 0,
@@ -109,9 +104,7 @@ export class PortfolioStateService {
     return clients.map((c) => {
       const marginCents = c.revenueCents - c.costCents;
       const marginPercent =
-        c.revenueCents > 0n
-          ? Number((marginCents * 10000n) / c.revenueCents) / 100
-          : 0;
+        c.revenueCents > 0n ? Number((marginCents * 10000n) / c.revenueCents) / 100 : 0;
 
       let trend: MarginSnapshot['trend'] = 'stable';
       if (c.revenueCents === 0n) {
@@ -187,9 +180,7 @@ export class PortfolioStateService {
     return clampScore(p);
   }
 
-  private riskLevelFromProbability(
-    probability: number,
-  ): ChurnRiskSnapshot['riskLevel'] {
+  private riskLevelFromProbability(probability: number): ChurnRiskSnapshot['riskLevel'] {
     if (probability >= 0.7) {
       return 'critical';
     }
@@ -244,10 +235,7 @@ export class PortfolioStateService {
     );
 
     const scored = clients.map((c) => {
-      const revenueWeight =
-        maxRevenue > 0n
-          ? Number(c.revenueCents) / Number(maxRevenue)
-          : 0;
+      const revenueWeight = maxRevenue > 0n ? Number(c.revenueCents) / Number(maxRevenue) : 0;
       const recencyWeight = Math.max(0, 1 - c.lastContactDaysAgo / 30);
       const issueWeight = Math.max(0, 1 - c.openIssues / 10);
       const satisfactionWeight = c.satisfactionScore;
@@ -316,8 +304,7 @@ export class PortfolioStateService {
 
     for (const m of members) {
       const assignedCount = m.assignedClientIds.length;
-      const loadPercent =
-        m.maxCapacity > 0 ? assignedCount / m.maxCapacity : 0;
+      const loadPercent = m.maxCapacity > 0 ? assignedCount / m.maxCapacity : 0;
 
       if (loadPercent >= 0.85) {
         overworkedCount++;
@@ -372,19 +359,14 @@ export class PortfolioStateService {
     return clampScore(activeRatio * 0.4 + riskRatio * 0.3 + avgSatisfaction * 0.3);
   }
 
-  private buildSummary(
-    state: ConsolidatedPortfolioState,
-    healthScore: number,
-  ): string {
+  private buildSummary(state: ConsolidatedPortfolioState, healthScore: number): string {
     if (state.clientCount === 0) {
       return 'Portfolio vazio — sem clientes ativos.';
     }
     const criticalClients = state.churnRiskPerClient.filter(
       (c) => c.riskLevel === 'critical',
     ).length;
-    const atRiskClients = state.churnRiskPerClient.filter(
-      (c) => c.riskLevel === 'high',
-    ).length;
+    const atRiskClients = state.churnRiskPerClient.filter((c) => c.riskLevel === 'high').length;
     if (criticalClients > 0) {
       return `${criticalClients} cliente(s) critico(s). Acao urgente necessaria.`;
     }

@@ -35,9 +35,7 @@ function assessPromiseSeverity(
   return 'critical';
 }
 
-export function guardCommercialPromise(
-  input: CommercialPromiseInput,
-): CommercialPromiseResult {
+export function guardCommercialPromise(input: CommercialPromiseInput): CommercialPromiseResult {
   const nowMs = input.nowMs ?? Date.now();
   const violations: PolicyViolation[] = [];
   const disclaimers: string[] = [];

@@ -99,11 +99,7 @@ export class UnifiedAgentResponseService {
       this.logger.log(
         `writer-reply ws=${workspaceId ?? 'anon'} model=${writerModel} baseLen=${baseLen} outLen=${outLen} tokens=${tokens}`,
       );
-      return this.finalizeReplyStyle(
-        customerMessage,
-        rawWriterReply,
-        historyTurns,
-      );
+      return this.finalizeReplyStyle(customerMessage, rawWriterReply, historyTurns);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : typeof err === 'string' ? err : 'unknown';
       this.logger.warn(`Writer model failed: ${msg}`);
@@ -229,9 +225,7 @@ export class UnifiedAgentResponseService {
       this.logger.log(
         `quoted-reply-plan ws=${params.workspaceId} model=${writerModel} baseLen=${params.draftReply.length} outLen=${String(response.choices?.[0]?.message?.content || '').length} tokens=${tokens}`,
       );
-      await planLimits
-        .trackAiUsage(params.workspaceId, tokens)
-        .catch(() => {});
+      await planLimits.trackAiUsage(params.workspaceId, tokens).catch(() => {});
 
       const raw = String(response.choices?.[0]?.message?.content || '')
         .replace(JSON_RE, '')

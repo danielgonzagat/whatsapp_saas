@@ -27,9 +27,7 @@ export interface ProjectRoleContextInput {
  * resolves the primary role, collects real levers, and
  * attaches relevant metric snapshots.
  */
-export function projectRoleContext(
-  input: ProjectRoleContextInput,
-): AbiRoleContext {
+export function projectRoleContext(input: ProjectRoleContextInput): AbiRoleContext {
   const detections = input.detections;
   const primaryRole = detections.length > 0 ? detections[0]!.role : undefined;
 
@@ -45,9 +43,7 @@ export function projectRoleContext(
 
   if (primaryRole) {
     const relevantMetrics = getRelevantMetricsForRole(primaryRole);
-    const snapshotMap = new Map(
-      (input.metricSnapshots ?? []).map((m) => [m.metricName, m]),
-    );
+    const snapshotMap = new Map((input.metricSnapshots ?? []).map((m) => [m.metricName, m]));
     for (const rm of relevantMetrics) {
       const snap = snapshotMap.get(rm.metricName);
       metrics.push({
@@ -68,9 +64,7 @@ export function projectRoleContext(
 /**
  * UTP-ROLE-002 helper: project a single RoleDetection to AbiRoleDetection.
  */
-export function projectSingleDetection(
-  detection: RoleDetection,
-): AbiRoleDetection {
+export function projectSingleDetection(detection: RoleDetection): AbiRoleDetection {
   return {
     role: detection.role,
     confidence: detection.confidence,

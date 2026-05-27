@@ -21,9 +21,7 @@ const DEFAULT_STATE: AbiPulseTruth = {
 export class PulseTruthSnapshotService implements PulseTruthSnapshot {
   private readonly state: AbiPulseTruth;
 
-  constructor(
-    @Optional() @Inject('ABI_PULSE_TRUTH_STATE') state?: AbiPulseTruth,
-  ) {
+  constructor(@Optional() @Inject('ABI_PULSE_TRUTH_STATE') state?: AbiPulseTruth) {
     this.state = state ?? DEFAULT_STATE;
   }
 

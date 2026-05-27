@@ -12,12 +12,7 @@
 
 import type { GoalCandidate } from '../goal-field/goal-field.types';
 
-export type MaturityStage =
-  | 'validacao'
-  | 'tracao'
-  | 'crescimento'
-  | 'maturidade'
-  | 'otimizacao';
+export type MaturityStage = 'validacao' | 'tracao' | 'crescimento' | 'maturidade' | 'otimizacao';
 
 export const MATURITY_STAGES_ORDERED: readonly MaturityStage[] = [
   'validacao',

@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import type { SpineEventRef } from '../mind/mind.types';
-import type { AntiRemorseControl, AntiRemorseSignal, DetectionInput } from './postsale-consumers.types';
+import type {
+  AntiRemorseControl,
+  AntiRemorseSignal,
+  DetectionInput,
+} from './postsale-consumers.types';
 import {
   clamp,
   daysSince,
@@ -25,14 +29,24 @@ export class AntiRemorseService {
     let remorseRiskScore = 0;
 
     const paymentEvent = latestEvent(wsEvents, 'commerce.payment.approved');
-    const entityRef = input.entityRef ?? paymentEvent?.entityRef ?? { entityType: 'order', entityId: 'unknown' };
+    const entityRef = input.entityRef ??
+      paymentEvent?.entityRef ?? { entityType: 'order', entityId: 'unknown' };
     if (!paymentEvent) {
       return finalize(input.workspaceId, entityRef, '', 0, [], false, 'monitor', nowMs);
     }
 
     const hoursSincePayment = daysSince(paymentEvent.occurredAt, nowMs) * 24;
     if (hoursSincePayment > REMORSE_WINDOW_HOURS) {
-      return finalize(input.workspaceId, entityRef, paymentEvent.eventId, 0, [], false, 'none', nowMs);
+      return finalize(
+        input.workspaceId,
+        entityRef,
+        paymentEvent.eventId,
+        0,
+        [],
+        false,
+        'none',
+        nowMs,
+      );
     }
 
     const objectionRecoveryDetected = hasRecentPriorObjection(wsEvents, paymentEvent, entityRef);
@@ -181,10 +195,12 @@ function buildControl(
       return {
         riskClass: 'R1',
         requiresHumanApproval: false,
-        safeNextStep: 'Stay silent and keep watching for support, refund, inactivity, or satisfaction signals.',
+        safeNextStep:
+          'Stay silent and keep watching for support, refund, inactivity, or satisfaction signals.',
         leadOutcomeGuardrail:
           'Avoid adding noise when the customer has not shown remorse risk; silence is safer than a weak post-sale touch.',
-        rollback: 'If a new risk signal appears, reassess before recommending each outbound message.',
+        rollback:
+          'If a new risk signal appears, reassess before recommending each outbound message.',
       };
 
     case 'none':

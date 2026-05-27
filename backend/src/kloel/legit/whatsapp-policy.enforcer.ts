@@ -18,8 +18,8 @@ export function enforceWhatsappPolicy(input: PolicyEnforcementInput): PolicyEnfo
   const warnings: string[] = [];
 
   const lowerContent = input.content.toLowerCase();
-  const matchedPatterns = WHATSAPP_FORBIDDEN_CONTENT_PATTERNS.filter(
-    (pattern) => containsAny(input.content, [pattern]),
+  const matchedPatterns = WHATSAPP_FORBIDDEN_CONTENT_PATTERNS.filter((pattern) =>
+    containsAny(input.content, [pattern]),
   );
 
   for (const pattern of matchedPatterns) {
@@ -28,7 +28,10 @@ export function enforceWhatsappPolicy(input: PolicyEnforcementInput): PolicyEnfo
       workspaceId: input.workspaceId,
       userId: input.userId,
       policyName: 'whatsapp_commerce_policy',
-      severity: pattern === 'child_exploitation' || pattern === 'violence_incitement' ? 'critical' : 'severe',
+      severity:
+        pattern === 'child_exploitation' || pattern === 'violence_incitement'
+          ? 'critical'
+          : 'severe',
       description: `Content contains forbidden pattern '${pattern}' as per WhatsApp Commerce Policy.`,
       source: 'whatsapp-policy.enforcer',
       evidence: [`matched_pattern:${pattern}`],

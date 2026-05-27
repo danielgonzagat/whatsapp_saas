@@ -15,10 +15,7 @@ import type {
   PrivacyComplianceInput,
   PrivacyComplianceResult,
 } from './types';
-import {
-  CCPA_REQUIRED_DISCLOSURES,
-  generateId,
-} from './types';
+import { CCPA_REQUIRED_DISCLOSURES, generateId } from './types';
 
 function requiresConsentForJurisdiction(jurisdiction: Jurisdiction): boolean {
   return jurisdiction === 'BR' || jurisdiction === 'EU' || jurisdiction === 'UK';
@@ -43,10 +40,7 @@ function validateDataSubjectRight(
     'automated_decision',
   ];
 
-  const supportedRightsEU: readonly DataSubjectRight[] = [
-    ...supportedRightsBR,
-    'restriction',
-  ];
+  const supportedRightsEU: readonly DataSubjectRight[] = [...supportedRightsBR, 'restriction'];
 
   const supportedRightsUS: readonly DataSubjectRight[] = ['access', 'erasure'];
 
@@ -107,7 +101,10 @@ export function assessPrivacyCompliance(input: PrivacyComplianceInput): PrivacyC
     requiredActions.push('obtain_explicit_consent');
   }
 
-  if (input.consentBasis && !['explicit', 'contractual', 'legal_obligation'].includes(input.consentBasis)) {
+  if (
+    input.consentBasis &&
+    !['explicit', 'contractual', 'legal_obligation'].includes(input.consentBasis)
+  ) {
     violations.push({
       violationId: generateId('viol'),
       workspaceId: input.workspaceId,
@@ -134,8 +131,7 @@ export function assessPrivacyCompliance(input: PrivacyComplianceInput): PrivacyC
     requiredActions.push('document_processing_justification');
   }
 
-  const requiredDisclosures =
-    input.jurisdiction === 'US' ? CCPA_REQUIRED_DISCLOSURES : [];
+  const requiredDisclosures = input.jurisdiction === 'US' ? CCPA_REQUIRED_DISCLOSURES : [];
 
   const compliant = violations.length === 0;
 

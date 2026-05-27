@@ -20,7 +20,12 @@ function defaultTier(): RTier {
 export class RTierDeltaMonitor {
   private deltas: RTierDelta[] = [];
 
-  record(module: string, currentTier: RTier, metrics: Readonly<Record<string, number>>, reason: string): RTierDelta {
+  record(
+    module: string,
+    currentTier: RTier,
+    metrics: Readonly<Record<string, number>>,
+    reason: string,
+  ): RTierDelta {
     const previousTier = MODULE_TIERS.get(module) ?? defaultTier();
     MODULE_TIERS.set(module, currentTier);
 

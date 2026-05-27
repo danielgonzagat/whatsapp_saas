@@ -110,10 +110,7 @@ const STAGE_KEYWORDS: Readonly<Record<MaturityStage, readonly string[]>> = {
   ],
 };
 
-export function refuse(
-  goal: GoalCandidate,
-  verdict: MaturityVerdict,
-): GuardVerdict {
+export function refuse(goal: GoalCandidate, verdict: MaturityVerdict): GuardVerdict {
   const summaryLower = goal.summary.toLowerCase();
   const currentIdx = STAGE_ORDERED.indexOf(verdict.stage);
 
