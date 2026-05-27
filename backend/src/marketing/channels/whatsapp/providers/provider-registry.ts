@@ -1,14 +1,14 @@
 import { Injectable, Optional } from '@nestjs/common';
-import { StructuredLogger } from '../../logging/structured-logger';
+import { StructuredLogger } from '../../../../logging/structured-logger';
 import { Prisma } from '@prisma/client';
-import { OpsAlertService } from '../../observability/ops-alert.service';
-import { PrismaService } from '../../prisma/prisma.service';
+import { OpsAlertService } from '../../../../observability/ops-alert.service';
+import { PrismaService } from '../../../../prisma/prisma.service';
 import { asProviderSettings } from '../provider-settings.types';
 import type { ProviderSessionSnapshot } from '../provider-settings.types';
-import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../../marketing/channels/whatsapp/whatsapp-normalization.util';
-import { resolveDefaultWhatsAppProvider } from '../../marketing/channels/whatsapp/providers/provider-env';
+import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../whatsapp-normalization.util';
+import { resolveDefaultWhatsAppProvider } from './provider-env';
 import { WahaProvider } from './waha.provider';
-import { WhatsAppApiProvider } from '../../marketing/channels/whatsapp/providers/whatsapp-api.provider';
+import { WhatsAppApiProvider } from './whatsapp-api.provider';
 import type {
   WhatsAppProviderType,
   SendMessageOptions,
@@ -21,18 +21,18 @@ import {
   startSession as startSessionFn,
   getSessionStatus as getSessionStatusFn,
   getQrCode as getQrCodeFn,
-} from '../../marketing/channels/whatsapp/providers/provider-registry-session';
+} from './provider-registry-session';
 import {
   sendMessage as sendMessageFn,
   sendMedia as sendMediaFn,
-} from '../../marketing/channels/whatsapp/providers/provider-registry-messaging';
+} from './provider-registry-messaging';
 import {
   disconnect as disconnectFn,
   logout as logoutFn,
   restartSession as restartSessionFn,
   deleteSession as deleteSessionFn,
   syncSessionConfig as syncSessionConfigFn,
-} from '../../marketing/channels/whatsapp/providers/provider-registry-op';
+} from './provider-registry-op';
 import {
   isRegistered as isRegisteredFn,
   getClientInfo as getClientInfoFn,
@@ -48,7 +48,7 @@ import {
   healthCheck as healthCheckFn,
   getSessionDiagnostics as getSessionDiagnosticsFn,
   listLidMappings as listLidMappingsFn,
-} from '../../marketing/channels/whatsapp/providers/provider-registry-contacts';
+} from './provider-registry-contacts';
 
 export { SessionStatus } from './provider-registry.types';
 

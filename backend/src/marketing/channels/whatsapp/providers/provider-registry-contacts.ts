@@ -9,9 +9,9 @@
  * with the resolved session status via injected getSessionStatus.
  */
 
-import { WahaProvider } from '../../../../whatsapp/providers/waha.provider';
+import { WahaProvider } from './waha.provider';
 import { WhatsAppApiProvider } from './whatsapp-api.provider';
-import type { SessionStatus } from '../../../../whatsapp/providers/provider-registry.types';
+import type { SessionStatus } from './provider-registry.types';
 
 export interface ContactsDeps {
   isWahaMode: () => boolean;

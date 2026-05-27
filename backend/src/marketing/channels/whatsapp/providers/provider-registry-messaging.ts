@@ -10,14 +10,14 @@ import { Logger } from '@nestjs/common';
  */
 
 import { OpsAlertService } from '../../../../observability/ops-alert.service';
-import { WahaProvider } from '../../../../whatsapp/providers/waha.provider';
+import { WahaProvider } from './waha.provider';
 import { WhatsAppApiProvider } from './whatsapp-api.provider';
-import { sendMessage as companionSendMessage } from '../../../../whatsapp/providers/provider-send-message.helpers';
+import { sendMessage as companionSendMessage } from './provider-send-message.helpers';
 import type {
   UnknownRecord,
   SendMessageOptions,
   SendResult,
-} from '../../../../whatsapp/providers/provider-registry.types';
+} from './provider-registry.types';
 
 export interface MessagingDeps {
   isWahaMode: () => boolean;

@@ -3,15 +3,15 @@ import { PrismaService } from '../../../../prisma/prisma.service';
 import {
   asProviderSettings,
   type ProviderSessionSnapshot,
-} from '../../../../whatsapp/provider-settings.types';
-import { WahaProvider } from '../../../../whatsapp/providers/waha.provider';
+} from '../provider-settings.types';
+import { WahaProvider } from './waha.provider';
 import { WhatsAppApiProvider } from './whatsapp-api.provider';
 import type {
   WhatsAppProviderType,
   SessionStatus,
   UnknownRecord,
-} from '../../../../whatsapp/providers/provider-registry.types';
-import { MissingWahaProviderError } from '../../../../whatsapp/providers/provider-registry.types';
+} from './provider-registry.types';
+import { MissingWahaProviderError } from './provider-registry.types';
 
 import { readString, readStringArrayOr } from '../../../../common/parse';
 export function readRecord(value: unknown): UnknownRecord {

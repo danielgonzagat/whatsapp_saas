@@ -17,11 +17,11 @@ import { WhatsAppCatalogController } from '../marketing/channels/whatsapp/contro
 import { WhatsAppMetaCompatController } from '../marketing/channels/whatsapp/controllers/whatsapp-meta-compat.controller';
 import { InboundProcessorService } from '../marketing/channels/whatsapp/inbound-processor.service';
 import { InternalWhatsAppRuntimeController } from '../marketing/channels/whatsapp/controllers/internal-whatsapp-runtime.controller';
-import { WhatsAppProviderRegistry } from './providers/provider-registry';
+import { WhatsAppProviderRegistry } from '../marketing/channels/whatsapp/providers/provider-registry';
 import { WahaProvider } from '../marketing/channels/whatsapp/providers/waha.provider';
 import { WhatsAppApiProvider } from '../marketing/channels/whatsapp/providers/whatsapp-api.provider';
-import { WhatsAppCatchupService } from './whatsapp-catchup.service';
-import { WhatsappCatchupOrchestratorService } from './whatsapp-catchup-orchestrator.service';
+import { WhatsAppCatchupService } from '../marketing/channels/whatsapp/whatsapp-catchup.service';
+import { WhatsappCatchupOrchestratorService } from '../marketing/channels/whatsapp/whatsapp-catchup-orchestrator.service';
 import { WhatsappCatchupHistoryService } from '../marketing/channels/whatsapp/whatsapp-catchup-history.service';
 import { WhatsAppWatchdogService } from '../marketing/channels/whatsapp/whatsapp-watchdog.service';
 import { WhatsAppWatchdogRecoveryService } from '../marketing/channels/whatsapp/whatsapp-watchdog-recovery.service';
@@ -33,7 +33,7 @@ import { WhatsappSessionService } from '../marketing/channels/whatsapp/whatsapp-
 import { WhatsappMessageDispatcherService } from '../marketing/channels/whatsapp/whatsapp-message-dispatcher.service';
 import { WhatsappMediaService } from '../marketing/channels/whatsapp/whatsapp-media.service';
 import { WhatsappReconcilerService } from '../marketing/channels/whatsapp/whatsapp-reconciler.service';
-import { WorkerRuntimeService } from './worker-runtime.service';
+import { WorkerRuntimeService } from '../marketing/channels/whatsapp/worker-runtime.service';
 import { WhatsappChatBacklogService } from '../marketing/channels/whatsapp/whatsapp.service.chats.backlog';
 import { WhatsappChatMessagesService } from '../marketing/channels/whatsapp/whatsapp.service.chats.messages';
 import {

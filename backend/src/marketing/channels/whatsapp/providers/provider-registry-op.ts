@@ -8,9 +8,9 @@
  * logout is a direct alias for disconnect.
  */
 
-import { WahaProvider } from '../../../../whatsapp/providers/waha.provider';
+import { WahaProvider } from './waha.provider';
 import { WhatsAppApiProvider } from './whatsapp-api.provider';
-import type { ProviderSessionSnapshot } from '../../../../whatsapp/provider-settings.types';
+import type { ProviderSessionSnapshot } from '../provider-settings.types';
 
 export interface OpDeps {
   isWahaMode: () => boolean;
