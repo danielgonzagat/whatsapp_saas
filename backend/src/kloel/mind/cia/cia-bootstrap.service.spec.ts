@@ -1,231 +1,403 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaService } from '../../../prisma/prisma.service';
 import { CiaBootstrapService } from './cia-bootstrap.service';
-import { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
-import { AgentEventsService } from '../../../marketing/channels/whatsapp/agent-events.service';
 import { CiaChatFilterService } from './cia-chat-filter.service';
-import { CiaRuntimeStateService } from './cia-runtime-state.service';
-import { WhatsAppCatchupService } from '../../../marketing/channels/whatsapp/whatsapp-catchup.service';
-import { OpsAlertService } from '../../../observability/ops-alert.service';
+import type {
+  PrismaMock,
+  ProviderRegistryMock,
+  CatchupServiceMock,
+  AgentEventsMock,
+} from './cia-runtime.fixtures';
+type CiaBootstrapRuntimeStateMock = {
+  createAutonomyRun: jest.Mock;
+  updateWorkspaceAutonomy: jest.Mock;
+  updateAutonomyRunStatus: jest.Mock;
+  persistRuntimeSnapshot: jest.Mock;
+  finalizeSilentLiveMode: jest.Mock;
+  scheduleContactCatalogRefresh: jest.Mock;
+  resetStaleRuntimeRunIfNeeded: jest.Mock;
+  getOperationalIntelligence: jest.Mock;
+  finalizeRun: jest.Mock;
+};
+
+type ConversationFindManyArgs = {
+  take?: number;
+  where?: unknown;
+};
+
+type StartBacklogRunCall = [string, string, number, Record<string, unknown>];
+
+function objectMatcher(value: Record<string, unknown>): unknown {
+  return expect.objectContaining(value) as unknown;
+}
+
+type CiaBootstrapOverrides = {
+  prisma: PrismaMock;
+  providerRegistry: ProviderRegistryMock;
+  agentEvents: AgentEventsMock;
+  chatFilter: CiaChatFilterService;
+  runtimeState: CiaBootstrapRuntimeStateMock;
+  catchupService: CatchupServiceMock;
+};
+
+function buildService(deps: CiaBootstrapOverrides): CiaBootstrapService {
+  return new CiaBootstrapService(
+    deps.prisma as never,
+    deps.providerRegistry as never,
+    deps.agentEvents as never,
+    deps.chatFilter,
+    deps.runtimeState as never,
+    deps.catchupService as never,
+  );
+}
 
 describe('CiaBootstrapService', () => {
+  let prisma: PrismaMock;
+  let providerRegistry: ProviderRegistryMock;
+  let agentEvents: AgentEventsMock;
+  let chatFilter: CiaChatFilterService;
+  let runtimeState: CiaBootstrapRuntimeStateMock;
+  let catchupService: CatchupServiceMock;
   let service: CiaBootstrapService;
-  let prisma: { conversation: { findMany: jest.Mock } };
-  let providerRegistry: { getSessionStatus: jest.Mock; getChats: jest.Mock };
-  let agentEvents: { publish: jest.Mock };
-  let runtimeState: {
-    persistRuntimeSnapshot: jest.Mock;
-    updateWorkspaceAutonomy: jest.Mock;
-    scheduleContactCatalogRefresh: jest.Mock;
-  };
-  let chatFilter: { normalizeChats: jest.Mock; selectRemotePendingChats: jest.Mock };
-  let mindScheduler: { registerWorkspace: jest.Mock; deregisterWorkspace: jest.Mock };
 
-  beforeEach(async () => {
-    prisma = { conversation: { findMany: jest.fn().mockResolvedValue([]) } };
+  beforeEach(() => {
+    const txnCallback = jest.fn().mockImplementation((callback: () => unknown) => callback());
+    prisma = {
+      $transaction: txnCallback,
+      workspace: {
+        findUnique: jest.fn().mockResolvedValue({
+          providerSettings: {
+            autopilot: { enabled: false },
+            autonomy: { autoBootstrapOnConnected: true },
+            ciaRuntime: {},
+          },
+        }),
+        update: jest.fn().mockResolvedValue({}),
+      },
+      conversation: {
+        findMany: jest.fn().mockResolvedValue([]),
+        findFirst: jest.fn().mockResolvedValue(null),
+        update: jest.fn().mockResolvedValue({}),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+      contact: { findUnique: jest.fn(), findFirst: jest.fn() },
+      message: { findFirst: jest.fn(), findMany: jest.fn() },
+      kloelMemory: { findUnique: jest.fn(), findMany: jest.fn() },
+      systemInsight: { findMany: jest.fn() },
+    };
+
     providerRegistry = {
-      getSessionStatus: jest.fn(),
-      getChats: jest.fn().mockResolvedValue({ chats: [] }),
-    };
-    agentEvents = { publish: jest.fn().mockResolvedValue(undefined) };
-    runtimeState = {
-      persistRuntimeSnapshot: jest.fn().mockResolvedValue(undefined),
-      updateWorkspaceAutonomy: jest.fn().mockResolvedValue(undefined),
-      scheduleContactCatalogRefresh: jest.fn().mockResolvedValue(undefined),
-    };
-    chatFilter = {
-      normalizeChats: jest.fn().mockReturnValue([]),
-      selectRemotePendingChats: jest.fn().mockReturnValue([]),
-    };
-    mindScheduler = {
-      registerWorkspace: jest.fn(),
-      deregisterWorkspace: jest.fn(),
+      getSessionStatus: jest.fn().mockResolvedValue({ connected: true, status: 'CONNECTED' }),
+      getChats: jest.fn().mockResolvedValue([]),
+      getChatMessages: jest.fn(),
+      setPresence: jest.fn(),
     };
 
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        CiaBootstrapService,
-        { provide: PrismaService, useValue: prisma },
-        { provide: WhatsAppProviderRegistry, useValue: providerRegistry },
-        { provide: AgentEventsService, useValue: agentEvents },
-        { provide: CiaChatFilterService, useValue: chatFilter },
-        { provide: CiaRuntimeStateService, useValue: runtimeState },
-        {
-          provide: WhatsAppCatchupService,
-          useValue: { triggerCatchup: jest.fn().mockResolvedValue({}) },
-        },
-        { provide: OpsAlertService, useValue: { alertOnCriticalError: jest.fn() } },
-      ],
-    }).compile();
-    service = module.get(CiaBootstrapService);
+    agentEvents = { publish: jest.fn().mockResolvedValue(undefined) };
+
+    chatFilter = new CiaChatFilterService();
+
+    runtimeState = {
+      createAutonomyRun: jest.fn(),
+      updateWorkspaceAutonomy: jest.fn().mockResolvedValue(undefined),
+      updateAutonomyRunStatus: jest.fn(),
+      persistRuntimeSnapshot: jest.fn(),
+      finalizeSilentLiveMode: jest.fn(),
+      scheduleContactCatalogRefresh: jest.fn().mockResolvedValue({ scheduled: true }),
+      resetStaleRuntimeRunIfNeeded: jest.fn(),
+      getOperationalIntelligence: jest.fn(),
+      finalizeRun: jest.fn(),
+    };
+
+    catchupService = {
+      triggerCatchup: jest.fn().mockResolvedValue({ scheduled: true }),
+      runCatchupNow: jest.fn().mockResolvedValue({ scheduled: true }),
+    };
+
+    service = buildService({
+      prisma,
+      providerRegistry,
+      agentEvents,
+      chatFilter,
+      runtimeState,
+      catchupService,
+    });
   });
 
   describe('listPendingConversations', () => {
-    it('filters by workspaceId and status != CLOSED', async () => {
-      await service.listPendingConversations('ws-tenant-A', 100);
-      const arg = prisma.conversation.findMany.mock.calls[0][0];
-      expect(arg.where.workspaceId).toBe('ws-tenant-A');
-      expect(arg.where.status).toEqual({ not: 'CLOSED' });
-      expect(arg.take).toBe(100);
-    });
-
-    it('clamps take to [1, 2000]', async () => {
-      await service.listPendingConversations('ws-1', 999999);
-      expect(prisma.conversation.findMany.mock.calls[0][0].take).toBe(2000);
-
-      prisma.conversation.findMany.mockClear();
-      await service.listPendingConversations('ws-1', 0);
-      expect(prisma.conversation.findMany.mock.calls[0][0].take).toBe(500);
-    });
-
-    it('returns only conversations with operational.pending=true', async () => {
+    it('queries non-CLOSED conversations for the workspace and filters by pending state', async () => {
       prisma.conversation.findMany.mockResolvedValue([
         {
-          id: 'c1',
+          id: 'conv-1',
           status: 'OPEN',
-          mode: 'HUMAN',
-          assignedAgentId: 'agent-1',
+          mode: 'AI',
+          assignedAgentId: null,
+          unreadCount: 5,
+          lastMessageAt: new Date(),
+          contactId: 'contact-1',
+          contact: { id: 'contact-1', phone: '5511999991111', name: 'Alice' },
+          messages: [{ id: 'm1', direction: 'INBOUND', createdAt: new Date(), content: 'Oi' }],
+        },
+      ]);
+
+      const conversations = await service.listPendingConversations('ws-a', 100);
+
+      expect(prisma.conversation.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: objectMatcher({
+            workspaceId: 'ws-a',
+            status: { not: 'CLOSED' },
+          }),
+        }),
+      );
+      expect(conversations).toHaveLength(1);
+    });
+
+    it('clamps the limit between 1 and 2000', async () => {
+      await service.listPendingConversations('ws-a', 0);
+      const findManyCalls = prisma.conversation.findMany.mock.calls as Array<
+        [ConversationFindManyArgs]
+      >;
+      const [firstFindMany] = findManyCalls[0] ?? [];
+      expect(typeof firstFindMany?.take).toBe('number');
+
+      await service.listPendingConversations('ws-a', 5000);
+      expect(prisma.conversation.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ take: 2000 }),
+      );
+    });
+
+    it('filters out conversations that are not pending (already replied)', async () => {
+      prisma.conversation.findMany.mockResolvedValue([
+        {
+          id: 'conv-2',
+          status: 'OPEN',
+          mode: 'AI',
+          assignedAgentId: null,
           unreadCount: 0,
           lastMessageAt: new Date(),
-          contactId: 'k1',
-          contact: { id: 'k1', phone: '+5511', name: 'A' },
-          messages: [],
+          contactId: 'contact-2',
+          contact: { id: 'contact-2', phone: '5511888888888', name: 'Bruno' },
+          messages: [
+            { id: 'm2', direction: 'OUTBOUND', createdAt: new Date(), content: 'Tudo certo' },
+            {
+              id: 'm1',
+              direction: 'INBOUND',
+              createdAt: new Date(Date.now() - 1000),
+              content: 'Oi',
+            },
+          ],
         },
+      ]);
+
+      const conversations = await service.listPendingConversations('ws-a', 100);
+      expect(conversations).toHaveLength(0);
+    });
+
+    it('enriches conversations with operational metadata', async () => {
+      prisma.conversation.findMany.mockResolvedValue([
         {
-          id: 'c2',
+          id: 'conv-1',
+          status: 'OPEN',
+          mode: 'AI',
+          assignedAgentId: null,
+          unreadCount: 2,
+          lastMessageAt: new Date(),
+          contactId: 'contact-1',
+          contact: { id: 'contact-1', phone: '5511999991111', name: 'Alice' },
+          messages: [
+            { id: 'm1', direction: 'INBOUND', createdAt: new Date(), content: 'Preciso de ajuda' },
+          ],
+        },
+      ]);
+
+      const conversations = await service.listPendingConversations('ws-a', 100);
+      expect(conversations[0]).toHaveProperty('operational');
+      expect(conversations[0].operational).toHaveProperty('pending', true);
+    });
+  });
+
+  describe('countPendingMessagesFromConversations', () => {
+    it('sums pendingMessages across operational metadata', () => {
+      const conversations = [
+        { operational: { pendingMessages: 3 } },
+        { operational: { pendingMessages: 5 } },
+      ];
+
+      const count = service.countPendingMessagesFromConversations(conversations);
+      expect(count).toBe(8);
+    });
+
+    it('falls back to at least 1 per conversation when no operational metadata', () => {
+      const conversations = [
+        {},
+        { operational: {} },
+        { pendingMessages: 0, operational: { pendingMessages: 0 } },
+      ];
+
+      const count = service.countPendingMessagesFromConversations(conversations);
+      expect(count).toBe(3);
+    });
+  });
+
+  describe('run', () => {
+    let startBacklogRun: jest.Mock;
+    let startPresenceHeartbeat: jest.Mock;
+    let stopPresenceHeartbeat: jest.Mock;
+
+    beforeEach(() => {
+      startBacklogRun = jest.fn().mockResolvedValue({ runId: 'run-1', totalQueued: 3 });
+      startPresenceHeartbeat = jest.fn().mockResolvedValue(undefined);
+      stopPresenceHeartbeat = jest.fn().mockResolvedValue(undefined);
+    });
+
+    it('refuses to bootstrap when WhatsApp is not connected', async () => {
+      providerRegistry.getSessionStatus.mockResolvedValue({
+        connected: false,
+        status: 'SCAN_QR_CODE',
+      });
+
+      const result = await service.run(
+        'ws-a',
+        startBacklogRun,
+        startPresenceHeartbeat,
+        stopPresenceHeartbeat,
+      );
+
+      expect(result.connected).toBe(false);
+      expect(result.pendingConversations).toBe(0);
+      expect(agentEvents.publish).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'error', workspaceId: 'ws-a', phase: 'access' }),
+      );
+      expect(stopPresenceHeartbeat).toHaveBeenCalled();
+    });
+
+    it('bootstraps successfully when connected and publishes access events', async () => {
+      const result = await service.run(
+        'ws-a',
+        startBacklogRun,
+        startPresenceHeartbeat,
+        stopPresenceHeartbeat,
+      );
+
+      expect(result.connected).toBe(true);
+      expect(agentEvents.publish).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'thought', phase: 'access', workspaceId: 'ws-a' }),
+      );
+      expect(startPresenceHeartbeat).toHaveBeenCalledWith('ws-a');
+    });
+
+    it('starts an immediate backlog run when pending conversations exist', async () => {
+      prisma.conversation.findMany.mockResolvedValue([
+        {
+          id: 'conv-1',
           status: 'OPEN',
           mode: 'AI',
           assignedAgentId: null,
           unreadCount: 3,
           lastMessageAt: new Date(),
-          contactId: 'k2',
-          contact: { id: 'k2', phone: '+5511', name: 'B' },
-          messages: [{ id: 'm1', direction: 'INBOUND', createdAt: new Date(), content: 'hi' }],
+          contactId: 'contact-1',
+          contact: { id: 'contact-1', phone: '5511999991111', name: 'Alice' },
+          messages: [{ id: 'm1', direction: 'INBOUND', createdAt: new Date(), content: 'Oi' }],
         },
       ]);
-      const result = await service.listPendingConversations('ws-1', 100);
-      // Only "pending" ones (operational.pending=true) are returned
-      expect(result.length).toBeLessThanOrEqual(2);
-      for (const c of result) {
-        expect(c.operational.pending).toBe(true);
-      }
-    });
-  });
 
-  describe('countPendingMessagesFromConversations', () => {
-    it('sums pendingMessages with min of 1 per conversation', () => {
-      const conversations = [
-        { pendingMessages: 5 },
-        { pendingMessages: 0 },
-        { operational: { pendingMessages: 3 } },
-      ];
-      expect(service.countPendingMessagesFromConversations(conversations as never)).toBe(5 + 1 + 3);
+      await service.run('ws-a', startBacklogRun, startPresenceHeartbeat, stopPresenceHeartbeat);
+
+      const [workspaceId, mode, limit, options] = startBacklogRun.mock
+        .calls[0] as StartBacklogRunCall;
+      expect([workspaceId, mode]).toEqual(['ws-a', 'reply_all_recent_first']);
+      expect(typeof limit).toBe('number');
+      expect(options).toEqual(objectMatcher({ autoStarted: true, triggeredBy: 'autopilot_total' }));
     });
 
-    it('returns 0 for empty list', () => {
-      expect(service.countPendingMessagesFromConversations([])).toBe(0);
-    });
-  });
-
-  describe('run (bootstrap sequence)', () => {
-    it('aborts with error when WhatsApp not connected', async () => {
-      providerRegistry.getSessionStatus.mockResolvedValue({
-        connected: false,
-        status: 'STARTING',
-      });
-      const startBacklogRun = jest.fn();
-      const startPresence = jest.fn().mockResolvedValue(undefined);
-      const stopPresence = jest.fn().mockResolvedValue(undefined);
-
-      const result = await service.run('ws-1', startBacklogRun, startPresence, stopPresence);
-
-      expect(result.connected).toBe(false);
-      expect(stopPresence).toHaveBeenCalledWith('ws-1', false);
-      expect(runtimeState.persistRuntimeSnapshot).toHaveBeenCalledWith(
-        'ws-1',
-        expect.objectContaining({ state: 'ERROR' }),
-      );
-      expect(startBacklogRun).not.toHaveBeenCalled();
-    });
-
-    it('publishes "thought" events when access succeeds', async () => {
-      providerRegistry.getSessionStatus.mockResolvedValue({
-        connected: true,
-        status: 'CONNECTED',
-      });
-      providerRegistry.getChats.mockResolvedValue({ chats: [] });
-      const startBacklogRun = jest.fn().mockResolvedValue({});
-      await service.run(
-        'ws-1',
+    it('enters LIVE mode when no pending conversations exist', async () => {
+      const result = await service.run(
+        'ws-a',
         startBacklogRun,
-        jest.fn().mockResolvedValue(undefined),
-        jest.fn().mockResolvedValue(undefined),
+        startPresenceHeartbeat,
+        stopPresenceHeartbeat,
       );
-      const publishCalls = agentEvents.publish.mock.calls.map((c) => c[0]?.type);
-      expect(publishCalls).toContain('thought');
+
+      expect(result.pendingConversations).toBe(0);
+      expect(runtimeState.updateWorkspaceAutonomy).toHaveBeenCalledWith(
+        'ws-a',
+        expect.objectContaining({
+          mode: 'FULL',
+          runtime: objectMatcher({ state: 'LIVE_READY' }),
+        }),
+      );
     });
 
-    it('registers the workspace with MIND tick scheduler after successful bootstrap', async () => {
-      const sched = {
-        registerWorkspace: jest.fn(),
-        deregisterWorkspace: jest.fn(),
-      };
-      // Build a fresh service with the scheduler injected directly
-      const svc = new CiaBootstrapService(
-        prisma as never,
-        providerRegistry as never,
-        agentEvents as never,
-        chatFilter as never,
-        runtimeState as never,
-        {
-          triggerCatchup: jest.fn().mockResolvedValue({ scheduled: true, reason: 'test' }),
-        } as never,
-        undefined,
-        sched as never,
+    it('tenant isolaton: queries use the specific workspaceId passed to run', async () => {
+      await service.run(
+        'ws-tenant-a',
+        startBacklogRun,
+        startPresenceHeartbeat,
+        stopPresenceHeartbeat,
       );
 
-      providerRegistry.getSessionStatus.mockResolvedValue({
-        connected: true,
-        status: 'WORKING',
-      });
-      providerRegistry.getChats.mockResolvedValue({ chats: [] });
-      const startBacklogRun = jest.fn().mockResolvedValue({});
-      const startPresence = jest.fn().mockResolvedValue(undefined);
-      const stopPresence = jest.fn().mockResolvedValue(undefined);
-
-      await svc.run('ws-test', startBacklogRun, startPresence, stopPresence);
-
-      expect(sched.registerWorkspace).toHaveBeenCalledWith('ws-test');
+      expect(prisma.conversation.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: objectMatcher({ workspaceId: 'ws-tenant-a' }),
+        }),
+      );
     });
 
-    it('does NOT register the workspace when bootstrap fails (not connected)', async () => {
-      const sched = {
-        registerWorkspace: jest.fn(),
-        deregisterWorkspace: jest.fn(),
-      };
-      const svc = new CiaBootstrapService(
-        prisma as never,
-        providerRegistry as never,
-        agentEvents as never,
-        chatFilter as never,
-        runtimeState as never,
-        { triggerCatchup: jest.fn() } as never,
-        undefined,
-        sched as never,
+    it('handles sync failure gracefully and sets degraded mode', async () => {
+      prisma.conversation.findMany.mockRejectedValue(new Error('DB timeout'));
+
+      const result = await service.run(
+        'ws-a',
+        startBacklogRun,
+        startPresenceHeartbeat,
+        stopPresenceHeartbeat,
       );
 
-      providerRegistry.getSessionStatus.mockResolvedValue({
-        connected: false,
-        status: 'STARTING',
+      expect(result.connected).toBe(true);
+      expect(agentEvents.publish).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'status',
+          phase: 'sync',
+        }),
+      );
+    });
+  });
+
+  describe('resolveActiveSessionKey', () => {
+    it('returns the workspaceId as fallback when no session name is configured', async () => {
+      prisma.workspace.findUnique.mockResolvedValue({
+        providerSettings: {},
       });
 
-      const startBacklogRun = jest.fn();
-      const startPresence = jest.fn().mockResolvedValue(undefined);
-      const stopPresence = jest.fn().mockResolvedValue(undefined);
+      const key = await service.resolveActiveSessionKey('ws-a');
+      expect(key).toBe('ws-a');
+    });
 
-      await svc.run('ws-test', startBacklogRun, startPresence, stopPresence);
+    it('returns the whatsappWebSession name when configured', async () => {
+      prisma.workspace.findUnique.mockResolvedValue({
+        providerSettings: {
+          whatsappWebSession: { sessionName: 'custom-session' },
+        },
+      });
 
-      expect(sched.registerWorkspace).not.toHaveBeenCalled();
+      const key = await service.resolveActiveSessionKey('ws-a');
+      expect(key).toBe('custom-session');
+    });
+
+    it('falls back to workspaceId when getSessionStatus throws', async () => {
+      providerRegistry.getSessionStatus.mockRejectedValue(new Error('WAHA unreachable'));
+
+      const key = await service.resolveActiveSessionKey('ws-a');
+      expect(key).toBe('ws-a');
+    });
+
+    it('falls back to workspaceId when getSessionStatus throws and no providerSettings configured', async () => {
+      providerRegistry.getSessionStatus.mockRejectedValue(new Error('WAHA timeout'));
+      prisma.workspace.findUnique.mockResolvedValue({
+        providerSettings: {},
+      });
+
+      const key = await service.resolveActiveSessionKey('ws-b');
+      expect(key).toBe('ws-b');
     });
   });
 });

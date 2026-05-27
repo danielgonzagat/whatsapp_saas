@@ -14,7 +14,7 @@ import type {
   CiaRuntimeStateMock,
   CiaBootstrapMock,
   CiaBacklogRunMock,
-} from '../../../whatsapp/cia-runtime.fixtures';
+} from './cia-runtime.fixtures';
 
 export type {
   PrismaMock,

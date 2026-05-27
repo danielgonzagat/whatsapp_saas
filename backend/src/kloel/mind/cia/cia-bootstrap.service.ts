@@ -17,7 +17,7 @@ import {
   CIA_BOOTSTRAP_IMMEDIATE_LIMIT,
   CIA_BOOTSTRAP_AUTO_CONTINUE,
   CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT,
-} from '../../../whatsapp/cia-bootstrap.constants';
+} from './cia-bootstrap.constants';
 import { MindBackgroundScheduler } from '../mind-bg.scheduler';
 
 export { CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT };

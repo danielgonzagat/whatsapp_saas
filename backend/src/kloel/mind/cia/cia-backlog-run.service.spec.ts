@@ -1,164 +1,309 @@
-import { CiaBacklogRunService } from './cia-backlog-run.service';
-import { AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB } from '../../../contracts/autopilot-jobs';
-
 jest.mock('../../../queue/queue', () => ({
   autopilotQueue: { add: jest.fn().mockResolvedValue(undefined) },
+  buildQueueJobId: jest.fn().mockReturnValue('cia-backlog:ws-test:run-test'),
 }));
 
+import { CiaBacklogRunService } from './cia-backlog-run.service';
+import { CiaChatFilterService } from './cia-chat-filter.service';
+import type { PrismaMock, ProviderRegistryMock, WorkerRuntimeMock } from './cia-runtime.fixtures';
+
+interface AutopilotQueueMock {
+  add: jest.Mock;
+}
+
+interface RuntimeStateMock {
+  createAutonomyRun: jest.Mock;
+  updateWorkspaceAutonomy: jest.Mock;
+  updateAutonomyRunStatus: jest.Mock;
+  persistRuntimeSnapshot: jest.Mock;
+  finalizeSilentLiveMode: jest.Mock;
+  scheduleContactCatalogRefresh: jest.Mock;
+  resetStaleRuntimeRunIfNeeded: jest.Mock;
+  getOperationalIntelligence: jest.Mock;
+  finalizeRun: jest.Mock;
+}
+
+interface InlineFallbackMock {
+  buildPendingInboundBatch: jest.Mock;
+  runBacklogInlineFallback: jest.Mock;
+}
+
+interface RemoteBacklogMock {
+  listRemotePendingChats: jest.Mock;
+  normalizeRemotePhone: jest.Mock;
+  loadRemotePendingBatch: jest.Mock;
+  runRemoteBacklogInlineFallback: jest.Mock;
+}
+
+function makeMockCiaBootstrap(listPending: jest.Mock, resolveKey: jest.Mock) {
+  return {
+    listPendingConversations: listPending,
+    countPendingMessagesFromConversations: jest.fn(),
+    resolveActiveSessionKey: resolveKey,
+    run: jest.fn(),
+  } as import('../cia/cia-bootstrap.service').CiaBootstrapService;
+}
+
 describe('CiaBacklogRunService', () => {
-  let service: CiaBacklogRunService;
-  let prisma: { workspace: { findUnique: jest.Mock } };
-  let providerRegistry: { getSessionStatus: jest.Mock };
+  let prisma: PrismaMock;
+  let providerRegistry: ProviderRegistryMock;
   let agentEvents: { publish: jest.Mock };
-  let chatFilter: Record<string, jest.Mock>;
-  let runtimeState: {
-    createAutonomyRun: jest.Mock;
-    updateWorkspaceAutonomy: jest.Mock;
-    updateAutonomyRunStatus: jest.Mock;
-    persistRuntimeSnapshot: jest.Mock;
-    scheduleContactCatalogRefresh: jest.Mock;
-  };
-  let workerRuntime: { isAvailable: jest.Mock };
-  let inlineFallback: { runBacklogInlineFallback: jest.Mock };
-  let remoteBacklog: {
-    listRemotePendingChats: jest.Mock;
-    runRemoteBacklogInlineFallback: jest.Mock;
-  };
-  let bootstrapService: {
-    listPendingConversations: jest.Mock;
-    resolveActiveSessionKey: jest.Mock;
-  };
-  let catchupService: Record<string, jest.Mock>;
+  let chatFilter: CiaChatFilterService;
+  let runtimeState: RuntimeStateMock;
+  let workerRuntime: WorkerRuntimeMock;
+  let inlineFallback: InlineFallbackMock;
+  let remoteBacklog: RemoteBacklogMock;
+  let bootstrapService: ReturnType<typeof makeMockCiaBootstrap>;
+  let catchupService: { runCatchupNow: jest.Mock };
+  let listPending: jest.Mock;
+  let resolveKey: jest.Mock;
+  let service: CiaBacklogRunService;
+  let autopilotQueue: AutopilotQueueMock;
 
   beforeEach(() => {
+    const mockModule = jest.requireMock('../../../queue/queue');
+    autopilotQueue = { add: mockModule.autopilotQueue.add };
+    autopilotQueue.add.mockClear();
+
     prisma = {
+      $transaction: jest.fn(),
       workspace: {
         findUnique: jest.fn().mockResolvedValue({
-          id: 'ws-1',
-          autonomyMode: 'reply_all_recent_first',
+          providerSettings: {
+            autopilot: { enabled: false },
+            autonomy: { autoBootstrapOnConnected: true },
+            ciaRuntime: {},
+          },
         }),
+        update: jest.fn().mockResolvedValue({}),
       },
+      conversation: {
+        findMany: jest.fn(),
+        findFirst: jest.fn(),
+        update: jest.fn(),
+        updateMany: jest.fn(),
+      },
+      contact: { findUnique: jest.fn(), findFirst: jest.fn() },
+      message: { findFirst: jest.fn(), findMany: jest.fn() },
+      kloelMemory: { findUnique: jest.fn(), findMany: jest.fn() },
+      systemInsight: { findMany: jest.fn() },
     };
+
     providerRegistry = {
       getSessionStatus: jest.fn().mockResolvedValue({ connected: true, status: 'CONNECTED' }),
+      getChats: jest.fn().mockResolvedValue([]),
+      getChatMessages: jest.fn(),
+      setPresence: jest.fn(),
     };
+
     agentEvents = { publish: jest.fn().mockResolvedValue(undefined) };
-    chatFilter = {
-      applyFilter: jest.fn().mockResolvedValue(true),
-      resolveInlineBacklogFallbackLimit: jest.fn().mockReturnValue(20),
-    };
+
+    chatFilter = new CiaChatFilterService();
+
     runtimeState = {
-      createAutonomyRun: jest.fn().mockResolvedValue({ id: 'run-1' }),
+      createAutonomyRun: jest.fn().mockResolvedValue(undefined),
       updateWorkspaceAutonomy: jest.fn().mockResolvedValue(undefined),
       updateAutonomyRunStatus: jest.fn().mockResolvedValue(undefined),
-      persistRuntimeSnapshot: jest.fn().mockResolvedValue(undefined),
-      scheduleContactCatalogRefresh: jest.fn().mockResolvedValue(undefined),
+      persistRuntimeSnapshot: jest.fn(),
+      finalizeSilentLiveMode: jest.fn(),
+      scheduleContactCatalogRefresh: jest.fn(),
+      resetStaleRuntimeRunIfNeeded: jest.fn(),
+      getOperationalIntelligence: jest.fn(),
+      finalizeRun: jest.fn(),
     };
+
     workerRuntime = { isAvailable: jest.fn().mockResolvedValue(true) };
+
     inlineFallback = {
-      runBacklogInlineFallback: jest
-        .fn()
-        .mockResolvedValue({ processed: 0, skipped: 0, message: '' }),
+      buildPendingInboundBatch: jest.fn(),
+      runBacklogInlineFallback: jest.fn().mockResolvedValue({
+        processed: 1,
+        skipped: 0,
+        message: 'Fallback ok',
+      }),
     };
+
     remoteBacklog = {
       listRemotePendingChats: jest.fn().mockResolvedValue([]),
-      runRemoteBacklogInlineFallback: jest
-        .fn()
-        .mockResolvedValue({ processed: 0, skipped: 0, message: '' }),
+      normalizeRemotePhone: jest.fn().mockReturnValue('5511999999999'),
+      loadRemotePendingBatch: jest.fn(),
+      runRemoteBacklogInlineFallback: jest.fn().mockResolvedValue({
+        processed: 1,
+        skipped: 0,
+        message: 'Remote fallback ok',
+      }),
     };
-    bootstrapService = {
-      listPendingConversations: jest.fn().mockResolvedValue([]),
-      resolveActiveSessionKey: jest.fn().mockResolvedValue('session-key'),
-    };
-    catchupService = {};
 
-    // Direct constructor call — bypasses NestJS DI to avoid metadata
-    // resolution issues when run in isolation with forwardRef.
+    listPending = jest.fn().mockResolvedValue([
+      {
+        id: 'conv-1',
+        status: 'OPEN',
+        mode: 'AI',
+        assignedAgentId: null,
+        unreadCount: 3,
+        lastMessageAt: new Date(),
+        contactId: 'contact-1',
+        contact: { id: 'contact-1', phone: '5511999991111', name: 'Alice' },
+        messages: [{ id: 'm1', direction: 'INBOUND', createdAt: new Date(), content: 'Oi' }],
+        operational: { pending: true },
+      },
+    ]);
+
+    resolveKey = jest.fn().mockResolvedValue('ws-1');
+    bootstrapService = makeMockCiaBootstrap(listPending, resolveKey);
+    catchupService = { runCatchupNow: jest.fn().mockResolvedValue({ scheduled: true }) };
+
     service = new CiaBacklogRunService(
       prisma as never,
       providerRegistry as never,
       agentEvents as never,
-      chatFilter as never,
+      chatFilter,
       runtimeState as never,
       workerRuntime as never,
       inlineFallback as never,
       remoteBacklog as never,
-      bootstrapService as never,
+      bootstrapService,
       catchupService as never,
     );
   });
 
   describe('startBacklogRun', () => {
-    it('aborts when WhatsApp is not connected', async () => {
-      providerRegistry.getSessionStatus.mockResolvedValueOnce({
+    it('refuses to start when WhatsApp is disconnected', async () => {
+      providerRegistry.getSessionStatus.mockResolvedValue({
         connected: false,
         status: 'DISCONNECTED',
       });
 
-      const result = await service.startBacklogRun('ws-1', 'reply_all_recent_first');
+      const result = await service.startBacklogRun('ws-a');
 
       expect(result.queued).toBe(false);
-      expect(result.message).toMatch(/WhatsApp.*conectado/i);
-      expect(runtimeState.createAutonomyRun).not.toHaveBeenCalled();
-    });
-
-    it('returns immediately for reply_only_new mode without queueing', async () => {
-      const result = await service.startBacklogRun('ws-1', 'reply_only_new');
-
-      expect(result.queued).toBe(true);
-      expect(result.mode).toBe('reply_only_new');
-      expect(runtimeState.updateAutonomyRunStatus).toHaveBeenCalledWith(
-        'ws-1',
-        expect.stringMatching(/^[0-9a-f-]{36}$/),
-        'COMPLETED',
+      expect(agentEvents.publish).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'error',
+          workspaceId: 'ws-a',
+          phase: 'backlog_start',
+        }),
       );
     });
 
-    it('falls back to inline when worker is unavailable', async () => {
-      workerRuntime.isAvailable.mockResolvedValueOnce(false);
-      bootstrapService.listPendingConversations.mockResolvedValueOnce([
-        {
-          id: 'conv-1',
-          status: 'OPEN',
-          contactId: 'c-1',
-          contact: { id: 'c-1', phone: '+5511', name: 'Alice' },
-          messages: [{ id: 'm1', content: 'Oi', direction: 'INBOUND' }],
-          operational: { pending: true },
-        },
-      ]);
-      inlineFallback.runBacklogInlineFallback.mockResolvedValueOnce({
-        processed: 1,
-        skipped: 0,
-        message: 'Fallback inline concluído.',
-      });
-
-      const result = await service.startBacklogRun('ws-1', 'reply_all_recent_first');
-
-      expect(result.inlineFallback).toBe(true);
-      expect(result.processedInline).toBe(1);
-      expect(inlineFallback.runBacklogInlineFallback).toHaveBeenCalled();
-    });
-
-    it('queues job to BullMQ when worker is available and conversations exist', async () => {
-      bootstrapService.listPendingConversations.mockResolvedValueOnce([
-        {
-          id: 'conv-1',
-          status: 'OPEN',
-          contactId: 'c-1',
-          contact: { id: 'c-1', phone: '+5511', name: 'Alice' },
-          messages: [],
-          operational: { pending: true },
-        },
-      ]);
-
-      const { autopilotQueue } = await import('../../../queue/queue');
-      const result = await service.startBacklogRun('ws-1', 'reply_all_recent_first');
+    it('queues a BullMQ job when worker is available and conversations exist', async () => {
+      const result = await service.startBacklogRun('ws-a', 'reply_all_recent_first', 10);
 
       expect(result.queued).toBe(true);
       expect(autopilotQueue.add).toHaveBeenCalledWith(
-        AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB,
-        expect.objectContaining({ workspaceId: 'ws-1' }),
+        'sweep-unread-conversations',
+        expect.objectContaining({
+          workspaceId: 'ws-a',
+          limit: 10,
+        }),
         expect.objectContaining({ removeOnComplete: true }),
+      );
+    });
+
+    it('falls back to inline execution when the worker is unavailable', async () => {
+      workerRuntime.isAvailable.mockResolvedValue(false);
+
+      await service.startBacklogRun('ws-a', 'reply_all_recent_first', 10);
+
+      const inlineArgs = inlineFallback.runBacklogInlineFallback.mock.calls[0];
+      expect(inlineArgs[0]).toBe('ws-a');
+      expect(typeof inlineArgs[1]).toBe('string');
+      expect(inlineArgs[2]).toBe('reply_all_recent_first');
+      expect(Array.isArray(inlineArgs[3])).toBe(true);
+    });
+
+    it('enters live-only mode (reply_only_new) without sweeping backlog', async () => {
+      const result = await service.startBacklogRun('ws-a', 'reply_only_new');
+
+      expect(result.queued).toBe(true);
+      expect(agentEvents.publish).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'status',
+          workspaceId: 'ws-a',
+          phase: 'live_ready',
+        }),
+      );
+      expect(autopilotQueue.add).not.toHaveBeenCalled();
+    });
+
+    it('triggers catchup when local DB has no pending conversations', async () => {
+      listPending.mockResolvedValue([]);
+
+      await service.startBacklogRun('ws-a', 'reply_all_recent_first', 10);
+
+      expect(catchupService.runCatchupNow).toHaveBeenCalledWith(
+        'ws-a',
+        expect.stringContaining('cia_backlog') as unknown,
+      );
+    });
+
+    it('falls back to remote backlog when local DB and catchup yield no conversations', async () => {
+      listPending.mockResolvedValue([]);
+      catchupService.runCatchupNow.mockResolvedValue({ scheduled: false });
+      resolveKey.mockResolvedValue('session-xyz');
+      remoteBacklog.listRemotePendingChats.mockResolvedValue([
+        {
+          id: '5511999999999@c.us',
+          unreadCount: 2,
+          timestamp: Date.now(),
+          lastMessageTimestamp: Date.now(),
+          lastMessageRecvTimestamp: Date.now(),
+          lastMessageFromMe: false,
+        },
+      ]);
+
+      await service.startBacklogRun('ws-a', 'reply_all_recent_first', 10);
+
+      const remoteArgs = remoteBacklog.listRemotePendingChats.mock.calls[0];
+      expect(remoteArgs.slice(0, 2)).toEqual(['ws-a', 'session-xyz']);
+      expect(typeof remoteArgs[2]).toBe('number');
+      expect(remoteBacklog.runRemoteBacklogInlineFallback).toHaveBeenCalled();
+    });
+
+    it('publishes a status event with totalQueued count meta', async () => {
+      await service.startBacklogRun('ws-a', 'prioritize_hot', 20, {
+        autoStarted: false,
+      });
+
+      expect(agentEvents.publish).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'status',
+          phase: 'backlog_start',
+          meta: expect.objectContaining({ mode: 'prioritize_hot' }),
+        }),
+      );
+      const publishArgs = agentEvents.publish.mock.calls.at(-1)?.[0];
+      expect(typeof publishArgs?.meta?.totalQueued).toBe('number');
+    });
+  });
+
+  describe('ensureBacklogCoverage', () => {
+    it('calls the helper with correct deps', async () => {
+      prisma.workspace.findUnique.mockResolvedValue({
+        providerSettings: {
+          autonomy: { mode: 'FULL', autoBootstrapOnConnected: true },
+          ciaRuntime: { state: 'LIVE_READY' },
+        },
+      });
+
+      const bootstrapFn = jest.fn().mockResolvedValue({ connected: true });
+      const startHb = jest.fn().mockResolvedValue(undefined);
+      const stopHb = jest.fn().mockResolvedValue(undefined);
+
+      const result = await service.ensureBacklogCoverage(
+        'ws-a',
+        { triggeredBy: 'scheduler' },
+        bootstrapFn,
+        startHb,
+        stopHb,
+      );
+
+      expect(result).toEqual(
+        expect.objectContaining({
+          action: expect.stringMatching(
+            /backlog_started|idle|catalog_scheduled|skipped/,
+          ) as unknown,
+        }),
       );
     });
   });

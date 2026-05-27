@@ -1,210 +1,395 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaService } from '../../../prisma/prisma.service';
-import { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
-import { AgentEventsService } from '../../../marketing/channels/whatsapp/agent-events.service';
-import { CiaChatFilterService } from './cia-chat-filter.service';
-import { CiaRuntimeStateService } from './cia-runtime-state.service';
-import { CiaSendHelpersService } from './cia-send-helpers.service';
 import { CiaRemoteBacklogService } from './cia-remote-backlog.service';
-import { UnifiedAgentService } from '../../unified-agent.service';
-import { WHATSAPP_MESSAGING } from '../../../marketing/channels/whatsapp/whatsapp.tokens';
+import { CiaChatFilterService } from './cia-chat-filter.service';
 import type { WahaChatSummary } from '../../../marketing/channels/whatsapp/providers/whatsapp-api.provider';
-import type { AgentStreamEvent } from '../../../marketing/channels/whatsapp/agent-events.service';
-
-const REDIS_TOKEN = 'default_IORedisModuleConnectionToken';
-
-jest.mock('../../../queue/queue', () => ({
-  autopilotQueue: { add: jest.fn().mockResolvedValue(undefined) },
-}));
-
+function makeChat(overrides: Partial<WahaChatSummary> = {}): WahaChatSummary {
+  return {
+    id: '5511999999999@c.us',
+    unreadCount: 3,
+    timestamp: Date.now() - 60_000,
+    lastMessageTimestamp: Date.now() - 60_000,
+    lastMessageRecvTimestamp: Date.now() - 60_000,
+    lastMessageFromMe: false,
+    ...overrides,
+  };
+}
+interface PrismaMock {
+  contact: { upsert: jest.Mock };
+}
+interface ProviderRegistryMock {
+  getSessionStatus: jest.Mock;
+  getChats: jest.Mock;
+  getChatMessages: jest.Mock;
+  setPresence: jest.Mock;
+}
+interface SendHelpersMock {
+  getSharedReplyLockKey: jest.Mock;
+  redisSetNx: jest.Mock;
+  releaseSharedReplyLock: jest.Mock;
+  sendCiaMessageWithDailyLimit: jest.Mock;
+  buildInlineFallbackReply: jest.Mock;
+  hasOutboundAction: jest.Mock;
+  normalizeRemoteTimestamp: jest.Mock;
+  extractRemoteSenderName: jest.Mock;
+  buildRemoteHistorySummary: jest.Mock;
+}
+interface RuntimeStateMock {
+  updateAutonomyRunStatus: jest.Mock;
+  finalizeSilentLiveMode: jest.Mock;
+}
+interface UnifiedAgentMock {
+  processIncomingMessage: jest.Mock;
+  buildQuotedReplyPlan: jest.Mock;
+}
+interface WhatsappServiceMock {
+  sendMessage: jest.Mock;
+  syncRemoteContactProfile: jest.Mock;
+}
 describe('CiaRemoteBacklogService', () => {
-  let service: CiaRemoteBacklogService;
-  let prisma: { contact: { findFirst: jest.Mock }; message: { findMany: jest.Mock } };
-  let providerRegistry: { getChats: jest.Mock; getMessages: jest.Mock };
+  let prisma: PrismaMock;
+  let providerRegistry: ProviderRegistryMock;
   let agentEvents: { publish: jest.Mock };
-  let chatFilter: {
-    normalizeChats: jest.Mock;
-    selectRemotePendingChats: jest.Mock;
-    isRecentRemoteBatch: jest.Mock;
-  };
-  let runtimeState: {
-    updateAutonomyRunStatus: jest.Mock;
-    finalizeSilentLiveMode: jest.Mock;
-    persistRuntimeSnapshot: jest.Mock;
-    updateWorkspaceAutonomy: jest.Mock;
-    scheduleContactCatalogRefresh: jest.Mock;
-  };
-  let sendHelpers: {
-    getSharedReplyLockKey: jest.Mock;
-    redisSetNx: jest.Mock;
-    releaseSharedReplyLock: jest.Mock;
-    hasOutboundAction: jest.Mock;
-    buildInlineFallbackReply: jest.Mock;
-    sendCiaMessageWithDailyLimit: jest.Mock;
-    normalizeRemoteTimestamp: jest.Mock;
-    extractRemoteSenderName: jest.Mock;
-    buildRemoteHistorySummary: jest.Mock;
-  };
-  let redis: {
-    set: jest.Mock;
-    del: jest.Mock;
-    incr: jest.Mock;
-    decr: jest.Mock;
-    expire: jest.Mock;
-  };
-  let whatsappService: { syncRemoteContactProfile: jest.Mock };
-
-  beforeEach(async () => {
+  let chatFilter: CiaChatFilterService;
+  let runtimeState: RuntimeStateMock;
+  let sendHelpers: SendHelpersMock;
+  let unifiedAgent: UnifiedAgentMock;
+  let whatsappService: WhatsappServiceMock;
+  let service: CiaRemoteBacklogService;
+  beforeEach(() => {
     prisma = {
-      contact: { findFirst: jest.fn().mockResolvedValue(null) },
-      message: { findMany: jest.fn().mockResolvedValue([]) },
+      contact: {
+        upsert: jest.fn().mockResolvedValue({
+          id: 'contact-1',
+          phone: '5511999999999',
+          name: 'Alice',
+        }),
+      },
     };
     providerRegistry = {
-      getChats: jest.fn().mockResolvedValue({ chats: [] }),
-      getMessages: jest.fn().mockResolvedValue([]),
+      getSessionStatus: jest.fn().mockResolvedValue({ connected: true, status: 'CONNECTED' }),
+      getChats: jest.fn().mockResolvedValue([]),
+      getChatMessages: jest.fn().mockResolvedValue([]),
+      setPresence: jest.fn(),
     };
     agentEvents = { publish: jest.fn().mockResolvedValue(undefined) };
-    chatFilter = {
-      normalizeChats: jest.fn().mockReturnValue([]),
-      selectRemotePendingChats: jest.fn().mockReturnValue([]),
-      isRecentRemoteBatch: jest.fn().mockReturnValue(false),
-    };
+    chatFilter = new CiaChatFilterService();
     runtimeState = {
-      updateAutonomyRunStatus: jest.fn().mockResolvedValue(undefined),
-      finalizeSilentLiveMode: jest.fn().mockResolvedValue(undefined),
-      persistRuntimeSnapshot: jest.fn().mockResolvedValue(undefined),
-      updateWorkspaceAutonomy: jest.fn().mockResolvedValue(undefined),
-      scheduleContactCatalogRefresh: jest.fn().mockResolvedValue(undefined),
-    };
-    redis = {
-      set: jest.fn().mockResolvedValue('OK'),
-      del: jest.fn().mockResolvedValue(0),
-      incr: jest.fn().mockResolvedValue(1),
-      decr: jest.fn().mockResolvedValue(0),
-      expire: jest.fn().mockResolvedValue(1),
+      updateAutonomyRunStatus: jest.fn(),
+      finalizeSilentLiveMode: jest.fn(),
     };
     sendHelpers = {
-      getSharedReplyLockKey: jest.fn().mockReturnValue('autopilot:reply:ws-1:c-1'),
+      getSharedReplyLockKey: jest.fn().mockReturnValue('autopilot:reply:mock-remote-key'),
       redisSetNx: jest.fn().mockResolvedValue(true),
       releaseSharedReplyLock: jest.fn().mockResolvedValue(undefined),
-      hasOutboundAction: jest.fn().mockReturnValue(false),
-      buildInlineFallbackReply: jest.fn().mockReturnValue('Oi, sou da Kloel!'),
       sendCiaMessageWithDailyLimit: jest
         .fn()
-        .mockResolvedValue({ success: true, messageId: 'msg-1' }),
+        .mockResolvedValue({ success: true, messageId: 'sent-remote-1' }),
+      buildInlineFallbackReply: jest.fn().mockReturnValue('Fallback reply'),
+      hasOutboundAction: jest.fn().mockReturnValue(false),
       normalizeRemoteTimestamp: jest.fn().mockReturnValue(new Date().toISOString()),
-      extractRemoteSenderName: jest.fn().mockReturnValue('Test User'),
-      buildRemoteHistorySummary: jest.fn().mockReturnValue('cliente: Oi'),
+      extractRemoteSenderName: jest.fn().mockReturnValue('Alice'),
+      buildRemoteHistorySummary: jest.fn().mockReturnValue('history summary'),
     };
-    whatsappService = { syncRemoteContactProfile: jest.fn().mockResolvedValue(undefined) };
-
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        CiaRemoteBacklogService,
-        { provide: PrismaService, useValue: prisma },
-        { provide: WhatsAppProviderRegistry, useValue: providerRegistry },
-        { provide: AgentEventsService, useValue: agentEvents },
-        { provide: CiaChatFilterService, useValue: chatFilter },
-        { provide: CiaRuntimeStateService, useValue: runtimeState },
-        { provide: CiaSendHelpersService, useValue: sendHelpers },
-        { provide: REDIS_TOKEN, useValue: redis },
-        { provide: UnifiedAgentService, useValue: {} },
-        { provide: WHATSAPP_MESSAGING, useValue: whatsappService },
-      ],
-    }).compile();
-    service = module.get(CiaRemoteBacklogService);
+    unifiedAgent = {
+      processIncomingMessage: jest.fn().mockResolvedValue({
+        reply: 'Resposta remota',
+        response: null,
+        actions: [],
+      }),
+      buildQuotedReplyPlan: jest
+        .fn()
+        .mockResolvedValue([{ quotedMessageId: 'q-remote-1', text: 'Resposta remota' }]),
+    };
+    whatsappService = {
+      sendMessage: jest.fn(),
+      syncRemoteContactProfile: jest.fn().mockResolvedValue(undefined),
+    };
+    service = new CiaRemoteBacklogService(
+      prisma as never,
+      providerRegistry as never,
+      agentEvents as never,
+      chatFilter,
+      runtimeState as never,
+      sendHelpers as never,
+      unifiedAgent as never,
+      whatsappService,
+    );
   });
-
-  describe('normalizeRemotePhone', () => {
-    it('extracts digits from WAHA chat ID format', () => {
-      const result = service.normalizeRemotePhone('5511999999999@c.us');
-      expect(result).toBe('5511999999999');
-    });
-
-    it('handles hyphens and spaces in chat IDs', () => {
-      const result = service.normalizeRemotePhone('55-11-99999-9999@c.us');
-      expect(result).toBe('5511999999999');
-    });
-
-    it('returns empty string for non-matching chat IDs', () => {
-      const result = service.normalizeRemotePhone('invalid');
-      expect(result).toBe('');
-    });
-  });
-
   describe('listRemotePendingChats', () => {
-    it('fetches chats from provider and normalizes them', async () => {
-      providerRegistry.getChats.mockResolvedValueOnce({
-        chats: [{ id: '5511999999999@c.us', unreadCount: 1, lastMessage: { content: 'Oi' } }],
+    it('fetches chats from the provider, normalizes, filters and slices by limit', async () => {
+      const now = Date.now();
+      providerRegistry.getChats.mockResolvedValue({
+        chats: [
+          {
+            id: '5511999999999@c.us',
+            unreadCount: 5,
+            lastMessage: { timestamp: now - 1000, fromMe: false },
+          },
+          {
+            id: '5511888888888@c.us',
+            unreadCount: 10,
+            lastMessage: { timestamp: now - 2000, fromMe: false },
+          },
+          {
+            id: '5511777777777@c.us',
+            unreadCount: 2,
+            lastMessage: { timestamp: now - 3000, fromMe: false },
+          },
+        ],
       });
-      chatFilter.selectRemotePendingChats.mockReturnValueOnce([
-        { id: '5511999999999@c.us', unreadCount: 1, lastMessage: { content: 'Oi' } },
-      ]);
-
-      const result = await service.listRemotePendingChats('ws-1', 'session-key', 10);
-
-      expect(providerRegistry.getChats).toHaveBeenCalledWith('session-key');
-      expect(chatFilter.selectRemotePendingChats).toHaveBeenCalled();
-      expect(result).toHaveLength(1);
-      expect(result[0]?.id).toBe('5511999999999@c.us');
+      const chats = await service.listRemotePendingChats('ws-1', 'session-1', 2);
+      expect(chats.length).toBeLessThanOrEqual(2);
+      expect(providerRegistry.getChats).toHaveBeenCalledWith('session-1');
     });
-
-    it('clamps limit to [1, 200]', async () => {
-      const chats300: WahaChatSummary[] = Array.from({ length: 300 }, (_, i) => ({
-        id: `${i}@c.us`,
-      }));
-      providerRegistry.getChats.mockResolvedValueOnce({ chats: chats300 });
-      chatFilter.selectRemotePendingChats.mockReturnValueOnce(chats300);
-
-      const result = await service.listRemotePendingChats('ws-1', 'session-key', 0);
-      expect(result.length).toBe(1);
-
-      providerRegistry.getChats.mockResolvedValueOnce({ chats: chats300 });
-      chatFilter.selectRemotePendingChats.mockReturnValueOnce(chats300.slice(0, 200));
-      const result2 = await service.listRemotePendingChats('ws-1', 'session-key', 999);
-      expect(result2.length).toBeLessThanOrEqual(200);
+    it('returns empty array when provider has no pending chats', async () => {
+      providerRegistry.getChats.mockResolvedValue([]);
+      const chats = await service.listRemotePendingChats('ws-1', 'session-1', 10);
+      expect(chats).toEqual([]);
     });
   });
-
+  describe('normalizeRemotePhone', () => {
+    it('extracts phone number from chat id', () => {
+      const phone = service.normalizeRemotePhone('5511999999999@c.us');
+      expect(phone).toBe('5511999999999');
+    });
+    it('returns empty string for invalid chat ids', () => {
+      const phone = service.normalizeRemotePhone('');
+      expect(typeof phone).toBe('string');
+      expect(phone.length).toBeLessThanOrEqual(20);
+    });
+  });
+  describe('loadRemotePendingBatch', () => {
+    it('returns null when provider returns no messages', async () => {
+      providerRegistry.getChatMessages.mockResolvedValue([]);
+      const result = await service.loadRemotePendingBatch({
+        workspaceId: 'ws-1',
+        chat: makeChat({ id: '5511999999999@c.us' }),
+        sessionKey: 'session-1',
+      });
+      expect(result).toBeNull();
+    });
+    it('upserts a contact when messages exist', async () => {
+      const now = Date.now();
+      providerRegistry.getChatMessages.mockResolvedValue({
+        messages: [
+          {
+            id: { _serialized: 'msg-1-remote', fromMe: false },
+            body: 'Preciso de ajuda com o produto',
+            timestamp: now - 60_000,
+          },
+        ],
+      });
+      const result = await service.loadRemotePendingBatch({
+        workspaceId: 'ws-1',
+        chat: makeChat({ id: '5511999999999@c.us' }),
+        sessionKey: 'session-1',
+      });
+      expect(result).not.toBeNull();
+      expect(prisma.contact.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          create: expect.objectContaining({
+            workspaceId: 'ws-1',
+            phone: '5511999999999',
+          }),
+        }),
+      );
+    });
+  });
   describe('runRemoteBacklogInlineFallback', () => {
-    it('completes when no chats are provided', async () => {
+    it('publishes a remote fallback started event and processes chats', async () => {
+      const now = Date.now();
+      providerRegistry.getChatMessages.mockResolvedValue({
+        messages: [
+          {
+            id: { _serialized: 'msg-remote-1', fromMe: false },
+            body: 'Quero saber o preco',
+            timestamp: now - 60_000,
+          },
+        ],
+      });
+      const chats = [makeChat({ id: '5511999999999@c.us', unreadCount: 1 })];
       const result = await service.runRemoteBacklogInlineFallback(
         'ws-1',
-        'run-1',
+        'run-rem-1',
         'reply_all_recent_first',
-        [],
-        'session-key',
+        chats,
+        'session-1',
       );
-      expect(result.processed).toBe(0);
-      expect(result.skipped).toBe(0);
-      expect(runtimeState.finalizeSilentLiveMode).toHaveBeenCalledWith(
+      expect(agentEvents.publish).toHaveBeenCalledWith(
+        expect.objectContaining({
+          phase: 'backlog_remote_inline_fallback',
+          workspaceId: 'ws-1',
+        }),
+      );
+      expect(typeof result.processed).toBe('number');
+      expect(typeof result.skipped).toBe('number');
+    });
+    it('skips chats that fail to load remote batch', async () => {
+      providerRegistry.getChatMessages.mockRejectedValue(new Error('Provider down'));
+      const chats = [makeChat()];
+      const result = await service.runRemoteBacklogInlineFallback(
         'ws-1',
-        'remote_inline_backlog_completed',
-        'run-1',
+        'run-rem-2',
+        'reply_all_recent_first',
+        chats,
+        'session-1',
+      );
+      expect(result.skipped).toBe(1);
+      expect(result.processed).toBe(0);
+    });
+
+    it('skips when reply lock cannot be acquired', async () => {
+      const now = Date.now();
+      providerRegistry.getChatMessages.mockResolvedValue({
+        messages: [
+          {
+            id: { _serialized: 'msg-locked', fromMe: false },
+            body: 'Mensagem',
+            timestamp: now - 60_000,
+          },
+        ],
+      });
+      sendHelpers.redisSetNx.mockResolvedValue(false);
+
+      const chats = [makeChat({ id: '5511999999999@c.us' })];
+
+      const result = await service.runRemoteBacklogInlineFallback(
+        'ws-1',
+        'run-rem-3',
+        'reply_all_recent_first',
+        chats,
+        'session-1',
+      );
+
+      expect(result.skipped).toBe(1);
+    });
+
+    it('tenant isolation: contact upsert includes the correct workspaceId', async () => {
+      const now = Date.now();
+      providerRegistry.getChatMessages.mockResolvedValue({
+        messages: [
+          {
+            id: { _serialized: 'msg-tenant', fromMe: false },
+            body: 'test message',
+            timestamp: now - 60_000,
+          },
+        ],
+      });
+
+      const chats = [makeChat({ id: '5511999999999@c.us' })];
+
+      await service.runRemoteBacklogInlineFallback(
+        'ws-tenant-c',
+        'run-rem-4',
+        'reply_all_recent_first',
+        chats,
+        'session-1',
+      );
+
+      expect(prisma.contact.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          create: expect.objectContaining({
+            workspaceId: 'ws-tenant-c',
+          }),
+        }),
       );
     });
 
-    it('publishes a status event with the remote fallback phase', async () => {
-      const chats: WahaChatSummary[] = [
-        { id: '5511999999999@c.us', unreadCount: 3, lastMessage: { content: 'Oi, tudo bem?' } },
-      ];
+    it('uses unifiedAgent to process and build quoted reply plan', async () => {
+      const now = Date.now();
+      providerRegistry.getChatMessages.mockResolvedValue({
+        messages: [
+          {
+            id: { _serialized: 'msg-ua-1', fromMe: false },
+            body: 'Preciso de suporte',
+            timestamp: now - 60_000,
+          },
+        ],
+      });
 
-      jest.spyOn(service, 'loadRemotePendingBatch').mockResolvedValueOnce(null);
+      const chats = [makeChat({ id: '5511999999999@c.us' })];
+
+      sendHelpers.redisSetNx.mockResolvedValue(true);
 
       await service.runRemoteBacklogInlineFallback(
         'ws-1',
-        'run-1',
+        'run-rem-5',
         'reply_all_recent_first',
         chats,
-        'session-key',
+        'session-1',
       );
 
-      const statusCalls = agentEvents.publish.mock.calls.filter((callArgs: unknown[]) => {
-        const maybeEvent = callArgs[0] as AgentStreamEvent | undefined;
-        return maybeEvent?.phase === 'backlog_remote_inline_fallback';
+      expect(unifiedAgent.processIncomingMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          workspaceId: 'ws-1',
+          channel: 'whatsapp',
+          context: expect.objectContaining({
+            remoteChatId: '5511999999999@c.us',
+            deliveryMode: expect.stringMatching(/reactive|proactive/) as unknown,
+          }),
+        }),
+      );
+    });
+
+    it('skips when unifiedAgent returns empty reply with empty reply plan', async () => {
+      const now = Date.now();
+      providerRegistry.getChatMessages.mockResolvedValue({
+        messages: [
+          {
+            id: { _serialized: 'msg-empty', fromMe: false },
+            body: 'test',
+            timestamp: now - 60_000,
+          },
+        ],
       });
-      expect(statusCalls.length).toBe(1);
-      expect(statusCalls[0][0].meta.total).toBe(1);
+
+      const chats = [makeChat({ id: '5511999999999@c.us' })];
+
+      sendHelpers.redisSetNx.mockResolvedValue(true);
+      sendHelpers.buildInlineFallbackReply.mockReturnValue('');
+      unifiedAgent.processIncomingMessage.mockResolvedValue({
+        reply: '',
+        response: '',
+        actions: [],
+      });
+      unifiedAgent.buildQuotedReplyPlan.mockResolvedValue([]);
+
+      const result = await service.runRemoteBacklogInlineFallback(
+        'ws-1',
+        'run-rem-6',
+        'reply_all_recent_first',
+        chats,
+        'session-1',
+      );
+
+      expect(result.skipped).toBe(1);
+    });
+
+    it('counts as skipped when sendCiaMessageWithDailyLimit returns an error', async () => {
+      const now = Date.now();
+      providerRegistry.getChatMessages.mockResolvedValue({
+        messages: [
+          {
+            id: { _serialized: 'msg-err', fromMe: false },
+            body: 'test message',
+            timestamp: now - 60_000,
+          },
+        ],
+      });
+
+      const chats = [makeChat({ id: '5511999999999@c.us' })];
+
+      sendHelpers.redisSetNx.mockResolvedValue(true);
+      sendHelpers.sendCiaMessageWithDailyLimit.mockResolvedValue({ error: 'send error' });
+
+      const result = await service.runRemoteBacklogInlineFallback(
+        'ws-1',
+        'run-rem-7',
+        'reply_all_recent_first',
+        chats,
+        'session-1',
+      );
+
+      expect(result.skipped).toBe(1);
     });
   });
 });

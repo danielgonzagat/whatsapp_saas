@@ -17,8 +17,8 @@ import { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-r
 import { WhatsAppCatchupService } from '../../../marketing/channels/whatsapp/whatsapp-catchup.service';
 import { WorkerRuntimeService } from '../../../marketing/channels/whatsapp/worker-runtime.service';
 import { CiaBootstrapService } from './cia-bootstrap.service';
-import type { BacklogMode, WorkspaceAutonomyMode } from '../../../whatsapp/cia-backlog-run.helpers';
-import { ensureBacklogCoverageHelper } from '../../../whatsapp/cia-backlog-run.helpers';
+import type { BacklogMode, WorkspaceAutonomyMode } from './cia-backlog-run.helpers';
+import { ensureBacklogCoverageHelper } from './cia-backlog-run.helpers';
 
 /**
  * Orchestrates the backlog run: decides between queue-based (BullMQ worker),
