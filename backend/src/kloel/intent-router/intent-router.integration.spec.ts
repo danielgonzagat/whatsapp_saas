@@ -43,6 +43,15 @@ describe('IntentRouter + CapabilityRegistry Integration', () => {
       dependsOn: ['sales.create_boleto'],
     });
   });
+
+  it('declares sales.create_boleto as blocked until a real boleto provider exists', () => {
+    expect(registry.get('sales.create_boleto')).toMatchObject({
+      maturity: 'blocked',
+      domainService: 'Blocked: boleto provider unavailable',
+      emits: [],
+      dependsOn: ['PaymentService.generateBoleto'],
+    });
+  });
   it('classifies product creation', () => {
     const result = router.classify('Cria um produto chamado PDRN por R$197', 'dashboard-chat', [
       '*',

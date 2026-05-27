@@ -1819,7 +1819,7 @@ export const CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
   {
     id: 'sales.create_boleto',
     title: 'Gerar boleto',
-    description: 'Cria venda real com boleto bancário. Retorna PDF + código.',
+    description: 'Boleto ainda nao esta conectado ao provedor real; roteia para falha honesta.',
     category: 'MUTATION_SENSITIVE',
     tier: 5,
     requiresConfirmation: true,
@@ -1832,10 +1832,12 @@ export const CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
       { key: 'customerEmail', type: 'string', label: 'Email', required: true },
       { key: 'customerCpf', type: 'string', label: 'CPF', required: true },
     ],
-    domainService: 'CheckoutService.createOrder + PaymentService.generateBoleto',
-    emits: ['sale.created', 'payment.boleto_generated'],
+    domainService: 'Blocked: boleto provider unavailable',
+    emits: [],
     evidenceUrlBuilder: '/vendas/${orderId}',
     surface: ['dashboard-chat'],
+    maturity: 'blocked',
+    dependsOn: ['PaymentService.generateBoleto'],
   },
 
   // ═══════════ Tier 6 — URLs ═══════════
