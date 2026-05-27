@@ -16,7 +16,11 @@ import { CiaRuntimeService } from '../cia/cia-runtime.service';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import { isPlaceholderContactName as isPlaceholderName } from './whatsapp-normalization.util';
-import { resolveTimestampExt, toIsoTimestamp, normalizeNumber } from './whatsapp-service.helpers';
+import {
+  resolveTimestampExt,
+  toIsoTimestamp,
+  normalizeNumber,
+} from '../marketing/channels/whatsapp/whatsapp-service.helpers';
 import {
   normalizeContactsArray,
   normalizeChatsArray,

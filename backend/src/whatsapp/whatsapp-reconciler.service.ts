@@ -21,7 +21,7 @@ import {
   normalizeHashExt,
   isAutonomousEnabledExt,
   normalizeNumber,
-} from './whatsapp-service.helpers';
+} from '../marketing/channels/whatsapp/whatsapp-service.helpers';
 import type { ProviderSettings } from './provider-settings.types';
 import { NON_DIGIT_RE } from '../common/phone';
 

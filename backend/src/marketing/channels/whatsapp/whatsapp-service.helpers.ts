@@ -1,5 +1,5 @@
-import { NON_DIGIT_RE } from '../common/phone';
-import { readText } from '../common/utils';
+import { NON_DIGIT_RE } from '../../../common/phone';
+import { readText } from '../../../common/utils';
 
 export function normalizeNumber(num: string): string {
   return num.replace(NON_DIGIT_RE, '');
