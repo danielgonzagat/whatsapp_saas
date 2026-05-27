@@ -93,7 +93,7 @@ vi.mock('../providers/plan-limits', () => ({
   },
 }));
 
-vi.mock('../processors/checkout-social-lead-enrichment', () => ({
+vi.mock('../providers/checkout-social-lead-enrichment', () => ({
   processCheckoutSocialLeadEnrichment: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -125,7 +125,7 @@ beforeAll(async () => {
   const fg = await import('../flow-engine-global');
   engineMock = mockEngine;
 
-  const enrichment = await import('../processors/checkout-social-lead-enrichment');
+  const enrichment = await import('../providers/checkout-social-lead-enrichment');
   enrichmentMock = enrichment.processCheckoutSocialLeadEnrichment as unknown as ReturnType<typeof vi.fn>;
 
   const pl = await import('../providers/plan-limits');
