@@ -891,6 +891,18 @@ export class KloelToolDispatcherService {
           return await this.codeToolsService.toolStaticAnalysis(
             typeof args.file === 'string' ? args.file : '',
           );
+        // ── PULSE / Runtime awareness (Wave 7 PI-DD) ──
+        case 'pulse_health':
+          return await this.codeToolsService.toolPulseHealth(
+            typeof args.module === 'string' ? args.module : undefined,
+          );
+        case 'behavior_graph_node':
+          return await this.codeToolsService.toolBehaviorGraphNode(
+            typeof args.symbol === 'string' ? args.symbol : '',
+            typeof args.file === 'string' ? args.file : undefined,
+          );
+        case 'runtime_errors':
+          return await this.codeToolsService.toolRuntimeErrors();
         // ── REPORTS (w25) ──
         case 'reports.operations': {
           if (!this.reportService) {
