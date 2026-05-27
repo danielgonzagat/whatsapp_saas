@@ -8,7 +8,7 @@ import {
   isPlaceholderContactName as isPlaceholderContactNameValue,
   extractPhoneFromChatId as normalizePhoneFromChatId,
 } from '../whatsapp-normalization.util';
-import { WahaSessionProvider } from '../../../../whatsapp/providers/waha-session.provider';
+import { WahaSessionProvider } from './waha-session.provider';
 
 type WahaChatPayload = {
   chats?: unknown[];
