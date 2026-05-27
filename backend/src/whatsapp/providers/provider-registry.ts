@@ -25,7 +25,7 @@ import {
 import {
   sendMessage as sendMessageFn,
   sendMedia as sendMediaFn,
-} from './provider-registry-messaging';
+} from '../../marketing/channels/whatsapp/providers/provider-registry-messaging';
 import {
   disconnect as disconnectFn,
   logout as logoutFn,
