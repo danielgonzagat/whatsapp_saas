@@ -18,7 +18,10 @@ import {
   getQrCode,
   listLidMappings,
 } from './waha-session-lifecycle.util';
-import { listSessionsHelper, logoutSessionHelper } from './waha-session.helpers';
+import {
+  listSessionsHelper,
+  logoutSessionHelper,
+} from '../../marketing/channels/whatsapp/providers/waha-session.helpers';
 
 /**
  * Session lifecycle layer for WAHA.
