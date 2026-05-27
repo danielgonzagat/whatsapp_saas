@@ -24,7 +24,25 @@ import { CreateSiteDto } from './dto/create-site.dto';
 import { AddSiteDomainDto } from './dto/site-domain.dto';
 import { UpdateSiteAppDto } from './dto/site-app.dto';
 import { UpdateSiteDto } from './dto/update-site.dto';
+import { SiteStatus } from '@prisma/client';
 import { SitesService } from './sites.service';
+
+function parseSiteStatus(status?: string): SiteStatus | undefined {
+  if (status === undefined) {
+    return undefined;
+  }
+
+  switch (status) {
+    case SiteStatus.DRAFT:
+      return SiteStatus.DRAFT;
+    case SiteStatus.PUBLISHED:
+      return SiteStatus.PUBLISHED;
+    case SiteStatus.ARCHIVED:
+      return SiteStatus.ARCHIVED;
+    default:
+      throw new BadRequestException('Status de site invalido');
+  }
+}
 
 /** Sites controller — REST endpoints for site builder CRUD. */
 @Controller('sites')
@@ -45,8 +63,10 @@ export class SitesController {
     @Query('limit') limit?: string,
   ) {
     const workspaceId = resolveWorkspaceId(req);
+    const parsedStatus = parseSiteStatus(status);
+
     return this.sites.list(workspaceId, {
-      ...(status !== undefined ? { status } : {}),
+      ...(parsedStatus !== undefined ? { status: parsedStatus } : {}),
       ...(search !== undefined ? { search } : {}),
       ...(page ? { page: Number(page) } : {}),
       ...(limit ? { limit: Math.min(Number(limit), 100) } : {}),
