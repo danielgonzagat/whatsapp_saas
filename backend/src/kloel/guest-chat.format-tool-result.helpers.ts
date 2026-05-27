@@ -122,27 +122,46 @@ export function formatToolResult(tool: string, result: unknown): string {
       return `Avaliações (${revs.length}): ${revs.map((rv) => `★${rv.rating || '?'} ${s(rv.comment)}`.substring(0, 60)).join(' | ')}`;
     }
     case 'get_product_ai_config':
-    case 'create_payment_link': {
-      const pix = s(r.pixCopyPaste);
-      const qr = s(r.pixQrCode);
-      if (qr) {
-        return `PIX gerado! QR code disponivel (base64). Copia e cola: ${pix}`;
-      }
+      return s(r.message, 'Configuracao de IA consultada.');
+    case 'create_payment_link':
+    case 'generate_pix':
+    case 'sales.create_pix': {
+      const outputs = readRecord(r.outputs);
+      const pix = s(
+        r.pixCopiaECola || r.pixCopyPaste || outputs.pixCopiaECola || outputs.pixCopyPaste,
+      );
+      const qr = s(r.pixQrCode || r.qrCodeBase64 || outputs.pixQrCode || outputs.qrCodeBase64);
+      const link = s(r.paymentLink || r.paymentUrl || r.url || outputs.paymentLink || outputs.paymentUrl);
+      const id = s(r.saleId || r.orderId || r.paymentId || r.id || outputs.saleId || outputs.orderId);
       if (pix) {
-        return `PIX copia e cola: ${pix}`;
+        const proofId = id ? ` ID: ${id}.` : '';
+        const qrProof = qr ? ' QR code disponivel.' : '';
+        return `PIX gerado.${proofId}${qrProof} PIX copia e cola: ${pix}`;
       }
-      const link = s(r.paymentLink || r.url);
       if (link) {
         return `Link de pagamento: ${link}`;
       }
-      const boleto = s(r.boletoCode || r.boletoBarcode, 'N/A');
-      if (boleto !== 'N/A') {
-        return `Boleto: ${boleto}`;
-      }
-      return `Pagamento gerado. ID: ${s(r.paymentId || r.id, 'N/A')}`;
+      return 'Erro: pix_receipt_missing';
     }
-    case 'generate_boleto':
-      return `Boleto: ${s(r.boletoUrl || r.boletoCode, 'gerado')}`;
+    case 'sales.create_boleto':
+    case 'generate_boleto': {
+      const outputs = readRecord(r.outputs);
+      const boleto = s(
+        r.boletoCode ||
+          r.boletoBarcode ||
+          r.boletoUrl ||
+          r.boletoPdf ||
+          outputs.boletoCode ||
+          outputs.boletoBarcode ||
+          outputs.boletoUrl ||
+          outputs.boletoPdf,
+      );
+      if (!boleto) {
+        return 'Erro: boleto_receipt_missing';
+      }
+      const id = s(r.saleId || r.orderId || r.paymentId || r.id || outputs.saleId || outputs.orderId);
+      return `Boleto gerado${id ? ` para venda ${id}` : ''}: ${boleto}`;
+    }
     case 'get_wallet_balance': {
       const bal = (r.balance as Record<string, unknown> | undefined) ?? {};
       const avail = typeof bal.available === 'number' ? bal.available : 0;

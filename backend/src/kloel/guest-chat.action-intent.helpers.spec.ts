@@ -112,6 +112,26 @@ describe('guest chat action intent helpers', () => {
     expect(formatToolResult('coupons.delete', { success: true })).toBe('Cupom removido.');
   });
 
+  it('formats canonical payment receipts only when material proof exists', () => {
+    expect(
+      formatToolResult('sales.create_pix', {
+        success: true,
+        saleId: 'sale-1',
+        pixCopiaECola: '000201pix',
+        pixQrCode: 'qr-base64',
+      }),
+    ).toContain('PIX copia e cola: 000201pix');
+    expect(
+      formatToolResult('sales.create_boleto', {
+        success: true,
+        saleId: 'sale-2',
+      }),
+    ).toBe('Erro: boleto_receipt_missing');
+    expect(formatToolResult('generate_boleto', { success: true })).toBe(
+      'Erro: boleto_receipt_missing',
+    );
+  });
+
   it('extracts product names from no-produto contexts and explicit names', () => {
     expect(extractProductName('listar urls no produto Serum?')).toBe('Serum');
     expect(extractProductArgs('criar produto nome: Serum Pro, preco R$ 147')).toEqual(
