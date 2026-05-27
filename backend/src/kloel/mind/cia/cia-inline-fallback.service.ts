@@ -1,12 +1,12 @@
 import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
-import { findFirstSequential, forEachSequential } from '../common/async-sequence';
-import { UnifiedAgentService } from '../kloel/unified-agent.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { AgentEventsService } from '../whatsapp/agent-events.service';
+import { findFirstSequential, forEachSequential } from '../../../common/async-sequence';
+import { UnifiedAgentService } from '../../unified-agent.service';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { AgentEventsService } from '../../../whatsapp/agent-events.service';
 import { CiaChatFilterService } from './cia-chat-filter.service';
 import { CiaRuntimeStateService } from './cia-runtime-state.service';
 import { CIA_SHARED_REPLY_LOCK_MS, CiaSendHelpersService } from './cia-send-helpers.service';
-import { safeStr } from '../common/string';
+import { safeStr } from '../../../common/string';
 
 type BacklogMode = 'reply_all_recent_first' | 'reply_only_new' | 'prioritize_hot';
 type InlineFallbackConversation = Record<string, unknown>;

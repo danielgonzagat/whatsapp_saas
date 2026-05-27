@@ -1,16 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaService } from '../prisma/prisma.service';
-import { AgentEventsService } from '../whatsapp/agent-events.service';
-import type { AgentStreamEvent } from '../whatsapp/agent-events.service';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { AgentEventsService } from '../../../whatsapp/agent-events.service';
+import type { AgentStreamEvent } from '../../../whatsapp/agent-events.service';
 import { CiaChatFilterService } from './cia-chat-filter.service';
 import { CiaRuntimeStateService } from './cia-runtime-state.service';
 import { CiaSendHelpersService } from './cia-send-helpers.service';
 import { CiaInlineFallbackService } from './cia-inline-fallback.service';
-import { UnifiedAgentService } from '../kloel/unified-agent.service';
+import { UnifiedAgentService } from '../../unified-agent.service';
 
 const REDIS_TOKEN = 'default_IORedisModuleConnectionToken';
 
-jest.mock('../queue/queue', () => ({
+jest.mock('../../../queue/queue', () => ({
   autopilotQueue: { add: jest.fn().mockResolvedValue(undefined) },
 }));
 
