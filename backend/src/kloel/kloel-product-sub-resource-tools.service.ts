@@ -549,20 +549,20 @@ export class KloelProductSubResourceToolsService {
         });
         pid = p?.id ?? '';
       }
-      const whereClause: Record<string, unknown> = {
+      const whereClause: Prisma.ProductUrlWhereInput = {
         description: { contains: label, mode: 'insensitive' },
       };
       if (pid) {
         whereClause.productId = pid;
       }
       const existing = await this.prisma.productUrl.findFirst({
-        where: whereClause as never,
+        where: whereClause,
         select: { id: true },
       });
       if (!existing) {
         return { success: false, error: 'URL nao encontrada.' };
       }
-      const data: Record<string, unknown> = {};
+      const data: Prisma.ProductUrlUpdateInput = {};
       if (newUrl) {
         data.url = newUrl;
       }
@@ -572,7 +572,7 @@ export class KloelProductSubResourceToolsService {
       if (args.isPrivate !== undefined) {
         data.isPrivate = args.isPrivate === true;
       }
-      await this.prisma.productUrl.update({ where: { id: existing.id }, data: data as never });
+      await this.prisma.productUrl.update({ where: { id: existing.id }, data });
       return { success: true, message: 'URL atualizada.' };
     } catch (e: unknown) {
       return { success: false, error: e instanceof Error ? e.message : 'Erro ao atualizar URL.' };

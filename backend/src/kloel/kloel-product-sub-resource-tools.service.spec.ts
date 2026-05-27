@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
@@ -44,6 +46,16 @@ describe('KloelProductSubResourceToolsService', () => {
   let productCouponDomain: { deleteProductCoupon: jest.Mock };
 
   const ws = 'ws-1';
+
+  it('keeps product URL update typed without unsafe never casts', () => {
+    const source = readFileSync(
+      join(__dirname, 'kloel-product-sub-resource-tools.service.ts'),
+      'utf8',
+    );
+
+    expect(source).not.toContain('where: whereClause as never');
+    expect(source).not.toContain('data: data as never');
+  });
 
   beforeEach(async () => {
     prisma = {
