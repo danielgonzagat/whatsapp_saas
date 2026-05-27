@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { ChatHelperDeps } from './whatsapp.service.chats.types';
+import type { ChatHelperDeps } from '../marketing/channels/whatsapp/whatsapp.service.chats.types';
 
 const isProviderMessage = (m: unknown): m is { timestamp: number } & Record<string, unknown> =>
   m !== null &&

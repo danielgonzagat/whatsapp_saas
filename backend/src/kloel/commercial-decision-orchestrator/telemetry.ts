@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { Prisma } from '@prisma/client';
-import { BrainEventSpineService } from '../brain-event-spine.service';
+import { MindEventSpine } from '../mind/coordination/mind-event-spine.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RuntimeConversationTracerService } from '../runtime-conversation-tracer.service';
 import type { InboundOrchestrationInput } from './types';
@@ -223,7 +223,7 @@ export function traceFullOutcomePipeline(
 }
 
 export async function recordIdentityResolved(
-  events: BrainEventSpineService,
+  events: MindEventSpine,
   workspaceId: string,
   effectiveSubject: string,
   inboundKey: string,
@@ -245,7 +245,7 @@ export async function recordIdentityResolved(
 }
 
 export async function recordCaseMemoryConsulted(
-  events: BrainEventSpineService,
+  events: MindEventSpine,
   workspaceId: string,
   subject: string,
   inboundKey: string,
@@ -264,7 +264,7 @@ export async function recordCaseMemoryConsulted(
 }
 
 export async function recordPredecidedActionsBuilt(
-  events: BrainEventSpineService,
+  events: MindEventSpine,
   workspaceId: string,
   subject: string,
   inboundKey: string,
@@ -302,7 +302,7 @@ export async function recordPredecidedActionsBuilt(
 
 export async function recordShadow(
   prisma: PrismaService,
-  events: BrainEventSpineService,
+  events: MindEventSpine,
   workspaceId: string,
   channel: string,
   inboundKey: string,
@@ -347,7 +347,7 @@ export async function recordShadow(
 
 export async function handleOrchestrationFallback(
   prisma: PrismaService,
-  events: BrainEventSpineService,
+  events: MindEventSpine,
   workspaceId: string,
   channel: string,
   pipelineMode: string,

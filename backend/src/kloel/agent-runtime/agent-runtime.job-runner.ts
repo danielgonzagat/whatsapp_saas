@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client';
 import { StructuredLogger } from '../../logging/structured-logger';
 import { OpsAlertService } from '../../observability/ops-alert.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { BrainEventSpineService } from '../brain-event-spine.service';
+import { MindEventSpine } from '../mind/coordination/mind-event-spine.service';
 import { KloelService } from '../kloel.service';
 import { AgentRuntimeSessionStore } from './agent-runtime.session-store';
 import { sanitizeAgentRuntimeText, toInputJsonValue } from './agent-runtime.sanitizer';
@@ -26,7 +26,7 @@ export class AgentRuntimeJobRunnerService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly brainEvents: BrainEventSpineService,
+    private readonly brainEvents: MindEventSpine,
     private readonly sessions: AgentRuntimeSessionStore,
     private readonly kloel: KloelService,
     @Optional() private readonly opsAlert?: OpsAlertService,

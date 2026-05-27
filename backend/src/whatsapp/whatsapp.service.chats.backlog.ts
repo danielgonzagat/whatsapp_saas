@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { ChatHelperDeps, ChatNormalized } from './whatsapp.service.chats.types';
+import type { ChatHelperDeps, ChatNormalized } from '../marketing/channels/whatsapp/whatsapp.service.chats.types';
 import {
   buildOperationalBacklogItem,
   buildOperationalBacklogSummary,
