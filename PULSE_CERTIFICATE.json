@@ -1,9 +1,9 @@
 {
   "projectId": "kloel",
   "projectName": "KLOEL",
-  "commitSha": "6be57fd7a4d85dc8c386e34a7ebb53881f81c1e2",
+  "commitSha": "1358b0de856ba91a0593ce66beb4be93bf332312",
   "environment": "scan",
-  "timestamp": "2026-05-08T20:52:00.038Z",
+  "timestamp": "2026-05-08T23:16:47.376Z",
   "status": "NOT_CERTIFIED",
   "humanReplacementStatus": "NOT_READY",
   "profile": null,
@@ -118,7 +118,7 @@
     },
     "evidenceFresh": {
       "status": "fail",
-      "reason": "Codacy snapshot is stale (22462 minute(s) old).",
+      "reason": "Codacy snapshot is stale (22608 minute(s) old).",
       "failureClass": "missing_evidence"
     },
     "pulseSelfTrustPass": {
@@ -129,20 +129,20 @@
     },
     "noOverclaimPass": {
       "status": "fail",
-      "reason": "overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=3322, inferred=0, not_available=0, nonObserved=3322, executableUnproved=3322).",
+      "reason": "overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=3320, inferred=0, not_available=0, nonObserved=3320, executableUnproved=3320).",
       "failureClass": "checker_gap",
       "evidenceMode": "observed",
       "confidence": "high"
     },
     "executionMatrixCompletePass": {
       "status": "pass",
-      "reason": "Execution matrix classified 6293 path(s) with zero unknown and zero non-terminal paths.",
+      "reason": "Execution matrix classified 6292 path(s) with zero unknown and zero non-terminal paths.",
       "evidenceMode": "inferred",
       "confidence": "high"
     },
     "criticalPathObservedPass": {
       "status": "fail",
-      "reason": "5163 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "reason": "5162 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "failureClass": "missing_evidence",
       "affectedCapabilityIds": [
         "capability:account-agent",
@@ -193,37 +193,37 @@
     "operatorPass: operator synthetic scenarios have no observed (runtime-executed) evidence — 0 scenario(s) passed via structural inference only (truthMode='inferred'). Real HTTP/Playwright/DB execution is required.",
     "adminPass: admin synthetic evidence is missing for: admin-settings-kyc-banking, admin-whatsapp-session-control.",
     "soakPass: soak synthetic evidence is missing for: operator-campaigns-and-flows, operator-autopilot-run, system-payment-reconciliation.",
-    "evidenceFresh: Codacy snapshot is stale (22462 minute(s) old).",
-    "noOverclaimPass: overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=3322, inferred=0, not_available=0, nonObserved=3322, executableUnproved=3322).",
-    "criticalPathObservedPass: 5163 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+    "evidenceFresh: Codacy snapshot is stale (22608 minute(s) old).",
+    "noOverclaimPass: overclaim:completionProofReadiness — certification cannot complete while .pulse/current/PULSE_PROOF_READINESS.json has non-observed production proof (status=executable_unproved, canAdvance=false, planned=3320, inferred=0, not_available=0, nonObserved=3320, executableUnproved=3320).",
+    "criticalPathObservedPass: 5162 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
     "multiCycleConvergencePass: multiCycleConvergence: no autonomy iteration history found; production-autonomy verdict requires proven cycles."
   ],
   "dynamicBlockingReasons": [
     "Codacy still reports 1076 HIGH issue(s).",
-    "Codacy snapshot is stale (22462 minute(s) old).",
+    "Codacy snapshot is stale (22608 minute(s) old).",
     "Observed external high-impact signals remain active: 3.",
     "Required external adapters are missing: 2.",
-    "Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=3322, inferred=0, not_available=0, nonObserved=3322, executableUnproved=3322.",
-    "No-hardcoded-reality state still has hardcoded reality authority: 218164 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.."
+    "Proof readiness still has non-observed production proof: status=executable_unproved, canAdvance=false, planned=3320, inferred=0, not_available=0, nonObserved=3320, executableUnproved=3320.",
+    "No-hardcoded-reality state still has hardcoded reality authority: 218219 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.."
   ],
   "noHardcodedRealityState": {
     "artifact": "PULSE_NO_HARDCODED_REALITY",
     "version": 1,
-    "generatedAt": "2026-05-08T20:52:00.038Z",
+    "generatedAt": "2026-05-08T23:16:47.376Z",
     "operationalIdentity": "dynamic_hardcode_evidence_event",
     "scannedFiles": 499,
-    "totalEvents": 218164,
+    "totalEvents": 218219,
     "summary": {
-      "totalFindings": 218164,
+      "totalFindings": 218219,
       "byKind": {
-        "hardcoded_literal_surface_risk": 14770,
-        "hardcoded_const_declaration_risk": 7985,
+        "hardcoded_literal_surface_risk": 14783,
+        "hardcoded_const_declaration_risk": 8011,
         "hardcoded_predeclared_authority_context_risk": 201,
         "hardcoded_fixed_boolean_decision_risk": 99,
-        "hardcoded_numeric_surface_risk": 4313,
+        "hardcoded_numeric_surface_risk": 4319,
         "hardcoded_numeric_decision_literal_risk": 390,
         "hardcoded_fixed_literal_decision_risk": 736,
-        "hardcoded_boolean_surface_risk": 1219,
+        "hardcoded_boolean_surface_risk": 1222,
         "hardcoded_regex_surface_risk": 1103,
         "hardcoded_gate_profile_threshold_risk": 14,
         "hardcoded_decision_regex_risk": 20,
@@ -232,7 +232,7 @@
         "hardcoded_sql_reality_table_risk": 2,
         "hardcoded_parser_rule_blocker_risk": 5,
         "hardcoded_auditor_mutation_risk": 1,
-        "hardcoded_replacement_cheat_risk": 187270
+        "hardcoded_replacement_cheat_risk": 187277
       },
       "topFiles": [
         {
@@ -1532,9 +1532,9 @@
   },
   "selfTrustReport": null,
   "scopeStateSummary": {
-    "totalFiles": 3495,
-    "totalLines": 751221,
-    "runtimeCriticalFiles": 2535,
+    "totalFiles": 3496,
+    "totalLines": 751999,
+    "runtimeCriticalFiles": 2536,
     "userFacingFiles": 948,
     "governedValidationFiles": 0,
     "surfaceCounts": {
@@ -1544,7 +1544,7 @@
       "worker": 0,
       "prisma": 66,
       "e2e": 33,
-      "scripts": 2032,
+      "scripts": 2033,
       "docs": 230,
       "infra": 3,
       "governance": 125,
@@ -1553,7 +1553,7 @@
       "misc": 29
     },
     "kindCounts": {
-      "source": 2463,
+      "source": 2464,
       "spec": 395,
       "migration": 44,
       "config": 341,
@@ -2253,7 +2253,7 @@
     "snapshotAvailable": true,
     "sourcePath": "/Users/danielpenin/whatsapp_saas_pr266_sota/PULSE_CODACY_STATE.json",
     "syncedAt": "2026-04-23T06:27:53.909Z",
-    "ageMinutes": 22462,
+    "ageMinutes": 22608,
     "stale": true,
     "loc": 463549,
     "totalIssues": 7548,
@@ -3420,7 +3420,7 @@
       "impactScore": 0.8,
       "confidence": 0.95,
       "summary": "37 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.",
-      "observedAt": "2026-05-08T20:50:08.108Z",
+      "observedAt": "2026-05-08T23:16:24.378Z",
       "relatedFiles": [
         "backend/prisma/migrations/20251209150035_init_baseline/migration.sql"
       ],
@@ -3466,7 +3466,7 @@
       "impactScore": 0.8,
       "confidence": 0.95,
       "summary": "2 HIGH Codacy issue(s) remain in backend/src/auth/email.service.ts.",
-      "observedAt": "2026-05-08T20:50:08.108Z",
+      "observedAt": "2026-05-08T23:16:24.378Z",
       "relatedFiles": [
         "backend/src/auth/email.service.ts"
       ],
@@ -3667,7 +3667,7 @@
       "impactScore": 0.8,
       "confidence": 0.95,
       "summary": "1 HIGH Codacy issue(s) remain in backend/src/autopilot/autopilot.service.ts.",
-      "observedAt": "2026-05-08T20:50:08.108Z",
+      "observedAt": "2026-05-08T23:16:24.378Z",
       "relatedFiles": [
         "backend/src/autopilot/autopilot.service.ts"
       ],
@@ -3880,7 +3880,7 @@
       "impactScore": 0.55,
       "confidence": 0.95,
       "summary": "1 HIGH Codacy issue(s) remain in package.json.",
-      "observedAt": "2026-05-08T20:50:08.108Z",
+      "observedAt": "2026-05-08T23:16:24.378Z",
       "relatedFiles": [
         "package.json"
       ],
@@ -3920,13 +3920,13 @@
     }
   ],
   "structuralGraphSummary": {
-    "totalNodes": 8880,
-    "totalEdges": 15405,
+    "totalNodes": 8886,
+    "totalEdges": 15417,
     "roleCounts": {
       "interface": 4366,
-      "orchestration": 3414,
+      "orchestration": 3417,
       "persistence": 149,
-      "side_effect": 951,
+      "side_effect": 954,
       "simulation": 0
     },
     "interfaceChains": 2557,
@@ -3935,14 +3935,14 @@
     "simulatedChains": 0
   },
   "capabilityStateSummary": {
-    "totalCapabilities": 399,
+    "totalCapabilities": 397,
     "realCapabilities": 0,
-    "partialCapabilities": 387,
+    "partialCapabilities": 385,
     "latentCapabilities": 12,
     "phantomCapabilities": 0,
     "governedValidationCapabilities": 0,
     "foundationalCapabilities": 1,
-    "connectedCapabilities": 398,
+    "connectedCapabilities": 396,
     "operationalCapabilities": 0,
     "productionReadyCapabilities": 0,
     "runtimeObservedCapabilities": 0,
@@ -6404,11 +6404,11 @@
     }
   ],
   "productVision": {
-    "generatedAt": "2026-05-08T20:52:21.239Z",
+    "generatedAt": "2026-05-08T23:17:09.969Z",
     "truthMode": "aspirational",
     "evidenceBasis": {
       "observed": 72,
-      "inferred": 372,
+      "inferred": 371,
       "projected": 0
     },
     "currentCheckpoint": {
@@ -6421,8 +6421,8 @@
       "flowRealnessRatio": 1,
       "projectedProductionReadiness": "yellow"
     },
-    "currentStateSummary": "The current product-facing system materializes 369 partial capability(ies), 0 latent capability(ies). System-wide phantom capability count is 0.",
-    "projectedProductSummary": "If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 369/369 capability(ies) and 75/75 flow(s) at least partially real, with readiness yellow.",
+    "currentStateSummary": "The current product-facing system materializes 368 partial capability(ies), 0 latent capability(ies). System-wide phantom capability count is 0.",
+    "projectedProductSummary": "If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 368/368 capability(ies) and 75/75 flow(s) at least partially real, with readiness yellow.",
     "inferredProductIdentity": "If the currently connected structures converge, the product resolves toward a unified operational platform centered on Analytics, Anuncios/Ads, Autopilot, Billing, Campaigns, Checkout, CIA/Agent, CRM, Dashboard, Followups, Inbox/Chat, Onboarding, Partnerships, Sales/Vendas, Scrapers, Video/Voice, Settings, Area, Canvas, Carteira, Ferramentas, Launch, Payments.",
     "distanceSummary": "Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 52 structural parity gap(s), and 1076 HIGH Codacy issue(s).",
     "promiseToProductionDelta": {
@@ -12503,16 +12503,7 @@
           "/ai/kb/create",
           "/ai/kb/source",
           "/analytics",
-          "/analytics/activity",
-          "/analytics/advanced",
-          "/analytics/advanced${query}",
           "/analytics/dashboard",
-          "/analytics/flow/${flowId}",
-          "/analytics/flow/:flowId",
-          "/analytics/flow/:id",
-          "/analytics/reports",
-          "/analytics/reports${query}",
-          "/analytics/reports/ai",
           "/analytics/smart-time",
           "/analytics/stats",
           "/analytics/workspaceId",
@@ -12535,7 +12526,6 @@
           "/api/checkout/social/apple/start",
           "/api/kloel/download-image",
           "/api/v1/messages",
-          "/api/webhooks/tiktok",
           "/api/whatsapp-api/agent/stream",
           "/api/whatsapp-api/backlog",
           "/api/whatsapp-api/catalog/contacts",
@@ -12543,34 +12533,15 @@
           "/api/whatsapp-api/catalog/refresh",
           "/api/whatsapp-api/catalog/score",
           "/api/whatsapp-api/chats",
-          "/api/whatsapp-api/chats/[chatId]/messages",
-          "/api/whatsapp-api/chats/[chatId]/presence",
           "/api/whatsapp-api/contacts",
           "/api/whatsapp-api/live",
           "/api/whatsapp-api/provider-status",
-          "/api/whatsapp-api/session/action",
-          "/api/whatsapp-api/session/action-turn",
           "/api/whatsapp-api/session/backlog/start",
-          "/api/whatsapp-api/session/bootstrap",
-          "/api/whatsapp-api/session/claim",
           "/api/whatsapp-api/session/diagnostics",
-          "/api/whatsapp-api/session/disconnect",
           "/api/whatsapp-api/session/force-check",
           "/api/whatsapp-api/session/force-reconnect",
-          "/api/whatsapp-api/session/link",
-          "/api/whatsapp-api/session/logout",
-          "/api/whatsapp-api/session/pause-agent",
-          "/api/whatsapp-api/session/proofs",
-          "/api/whatsapp-api/session/qr",
-          "/api/whatsapp-api/session/reconcile",
-          "/api/whatsapp-api/session/recreate-if-invalid",
           "/api/whatsapp-api/session/repair-config",
-          "/api/whatsapp-api/session/resume-agent",
           "/api/whatsapp-api/session/start",
-          "/api/whatsapp-api/session/status",
-          "/api/whatsapp-api/session/stream-token",
-          "/api/whatsapp-api/session/takeover",
-          "/api/whatsapp-api/session/view",
           "/api/whatsapp-api/sync",
           "/api/workspace/me",
           "/audit",
@@ -12767,7 +12738,6 @@
           "/crm/stage",
           "/crm/workspaceId",
           "/email-inbound/receive",
-          "/email-inbound/status",
           "/flow",
           "/flow-templates",
           "/flow-templates/:id",
@@ -12817,22 +12787,12 @@
           "/health/live",
           "/health/ready",
           "/health/system",
-          "/hooks",
           "/hooks/catch/:workspaceId/:flowId",
           "/hooks/email-status",
           "/hooks/finance/:workspaceId",
-          "/hooks/finance/:workspaceId/recent",
           "/hooks/instagram/:workspaceId",
           "/hooks/message-status",
-          "/inbox/${encodeURIComponent(workspaceId)}/conversations",
-          "/inbox/:workspaceId/conversations",
-          "/inbox/conversations/${encodeURIComponent(conversationId)}/messages",
-          "/inbox/conversations/${encodeURIComponent(selectedConversationId)}/reply",
-          "/inbox/conversations/:conversationId/assign",
-          "/inbox/conversations/:conversationId/close",
-          "/inbox/conversations/:conversationId/messages",
           "/inbox/conversations/:conversationId/reply",
-          "/inbox/conversations/:selectedConversationId/reply",
           "/internal/whatsapp-runtime/chatId",
           "/internal/whatsapp-runtime/chats",
           "/internal/whatsapp-runtime/inbound",
@@ -13245,13 +13205,7 @@
           "/webhook/payment/shopify",
           "/webhook/payment/stripe",
           "/webhook/payment/woocommerce",
-          "/webhooks/email-inbound",
           "/webhooks/meta",
-          "/webhooks/meta/hub.challenge",
-          "/webhooks/meta/hub.mode",
-          "/webhooks/meta/hub.verify_token",
-          "/webhooks/tiktok",
-          "/webhooks/whatsapp-api",
           "/webinarios",
           "/webinars",
           "/webinars/${encodeURIComponent(id)}",
@@ -13266,40 +13220,18 @@
           "/whatsapp-api/catalog/refresh",
           "/whatsapp-api/catalog/score",
           "/whatsapp-api/chats",
-          "/whatsapp-api/chats/${encodeURIComponent(chatId)}/presence",
           "/whatsapp-api/chats/:chatId/messages",
           "/whatsapp-api/chats/:chatId/presence",
-          "/whatsapp-api/chats/[chatId]/messages",
-          "/whatsapp-api/chats/[chatId]/presence",
           "/whatsapp-api/contacts",
           "/whatsapp-api/live",
           "/whatsapp-api/provider-status",
           "/whatsapp-api/send/:phone",
-          "/whatsapp-api/session/action",
-          "/whatsapp-api/session/action-turn",
           "/whatsapp-api/session/backlog/start",
-          "/whatsapp-api/session/bootstrap",
-          "/whatsapp-api/session/claim",
           "/whatsapp-api/session/diagnostics",
-          "/whatsapp-api/session/disconnect",
           "/whatsapp-api/session/force-check",
           "/whatsapp-api/session/force-reconnect",
-          "/whatsapp-api/session/link",
-          "/whatsapp-api/session/logout",
-          "/whatsapp-api/session/pause-agent",
-          "/whatsapp-api/session/proofs",
-          "/whatsapp-api/session/proofs${query}",
-          "/whatsapp-api/session/qr",
-          "/whatsapp-api/session/reconcile",
-          "/whatsapp-api/session/recreate-if-invalid",
           "/whatsapp-api/session/repair-config",
-          "/whatsapp-api/session/resume-agent",
           "/whatsapp-api/session/start",
-          "/whatsapp-api/session/status",
-          "/whatsapp-api/session/stream-health",
-          "/whatsapp-api/session/stream-token",
-          "/whatsapp-api/session/takeover",
-          "/whatsapp-api/session/view",
           "/whatsapp-api/sync",
           "/whatsapp/${workspaceId}/send",
           "/whatsapp/:workspaceId/incoming",
@@ -13307,24 +13239,12 @@
           "/whatsapp/:workspaceId/opt-out/bulk",
           "/whatsapp/:workspaceId/opt-status/:phone",
           "/whatsapp/:workspaceId/send",
-          "/workspace/${workspaceId}",
-          "/workspace/${workspaceId}/account",
-          "/workspace/${workspaceId}/channels",
-          "/workspace/${workspaceId}/jitter",
-          "/workspace/${workspaceId}/provider",
-          "/workspace/${workspaceId}/settings",
           "/workspace/:id",
           "/workspace/:id/account",
           "/workspace/:id/channels",
           "/workspace/:id/jitter",
           "/workspace/:id/provider",
           "/workspace/:id/settings",
-          "/workspace/:workspaceId",
-          "/workspace/:workspaceId/account",
-          "/workspace/:workspaceId/channels",
-          "/workspace/:workspaceId/jitter",
-          "/workspace/:workspaceId/provider",
-          "/workspace/:workspaceId/settings",
           "/workspace/me",
           "admin",
           "carteira",
@@ -13367,7 +13287,6 @@
           "capability:admin-transactions",
           "capability:admin-users",
           "capability:ai-assistant",
-          "capability:analytics-analytic",
           "capability:audit",
           "capability:audit-interceptor",
           "capability:audit-limit",
@@ -13409,14 +13328,11 @@
           "capability:copilot-suggest",
           "capability:crm-deals",
           "capability:crm-neuro",
-          "capability:email-inbound",
           "capability:flows-flow",
           "capability:followups-followup",
           "capability:gdpr-delete",
           "capability:health-system",
           "capability:i18n",
-          "capability:inbox-conversations",
-          "capability:instagram",
           "capability:kloel",
           "capability:kloel-agent",
           "capability:kloel-audio",
@@ -13453,7 +13369,6 @@
           "capability:media-category",
           "capability:media-documents",
           "capability:member-areas",
-          "capability:messages-message",
           "capability:mind",
           "capability:mind-observability",
           "capability:mind-policy",
@@ -13474,25 +13389,10 @@
           "capability:unified-agent",
           "capability:wallet-prepaid",
           "capability:webhook-payment",
-          "capability:webhooks-webhook",
           "capability:webinars-webinar",
-          "capability:whats-what",
-          "capability:whatsapp-backlog",
-          "capability:whatsapp-catalog",
-          "capability:whatsapp-chats",
-          "capability:whatsapp-contacts",
           "capability:whatsapp-incoming",
           "capability:whatsapp-runtime",
-          "capability:whatsapp-send",
-          "capability:whatsapp-session",
-          "capability:whatsapp-status",
-          "capability:worker-runtime",
-          "capability:workspace",
-          "capability:workspace-account",
-          "capability:workspace-channels",
-          "capability:workspace-jitter",
-          "capability:workspace-me",
-          "capability:workspace-settings"
+          "capability:whatsapp-send"
         ],
         "flowIds": [
           "analytics-post-reports-send-email",
@@ -20315,11 +20215,7 @@
           "/ai/kb/create",
           "/ai/kb/source",
           "/analytics",
-          "/analytics/dashboard",
-          "/analytics/stats",
-          "/analytics/workspaceId",
           "/anuncios",
-          "/api/v1/messages",
           "/api/whatsapp-api/agent/stream",
           "/api/whatsapp-api/backlog",
           "/api/whatsapp-api/catalog/contacts",
@@ -20337,7 +20233,6 @@
           "/api/whatsapp-api/session/repair-config",
           "/api/whatsapp-api/session/start",
           "/api/whatsapp-api/sync",
-          "/api/workspace/me",
           "/audit",
           "/audit/limit",
           "/audit/offset",
@@ -20419,7 +20314,6 @@
           "/internal/whatsapp-runtime/read",
           "/internal/whatsapp-runtime/send-media",
           "/internal/whatsapp-runtime/send-text",
-          "/internal/whatsapp-runtime/session-connected",
           "/internal/whatsapp-runtime/workspaceId",
           "/kloel/agent/${wsId}/tools",
           "/kloel/agent/:workspaceId/process",
@@ -20553,13 +20447,7 @@
           "/whatsapp-api/sync",
           "/whatsapp/:workspaceId/incoming",
           "/whatsapp/:workspaceId/send",
-          "/workspace/:id",
           "/workspace/:id/account",
-          "/workspace/:id/channels",
-          "/workspace/:id/jitter",
-          "/workspace/:id/provider",
-          "/workspace/:id/settings",
-          "/workspace/me",
           "cron:'0 */15 * * * *'",
           "cron:CronExpression.EVERY_MINUTE",
           "lifecycle:onModuleInit",
@@ -32029,7 +31917,7 @@
       ]
     },
     "worldState": {
-      "generatedAt": "2026-05-08T20:52:02.536Z",
+      "generatedAt": "2026-05-08T23:16:50.106Z",
       "actorProfiles": [
         "synthetic-customer",
         "synthetic-operator",
@@ -32137,9 +32025,9 @@
       ]
     },
     "executionTrace": {
-      "runId": "pulse-1778273379288",
-      "generatedAt": "2026-05-08T20:49:39.288Z",
-      "updatedAt": "2026-05-08T20:51:55.955Z",
+      "runId": "pulse-1778282154788",
+      "generatedAt": "2026-05-08T23:15:54.788Z",
+      "updatedAt": "2026-05-08T23:16:42.827Z",
       "environment": "scan",
       "certificationTarget": {
         "tier": null,
@@ -32151,84 +32039,84 @@
         {
           "phase": "scan:core-parsers",
           "phaseStatus": "passed",
-          "startedAt": "2026-05-08T20:49:39.288Z",
+          "startedAt": "2026-05-08T23:15:54.788Z",
           "metadata": {
             "apiCalls": 748,
             "backendRoutes": 998,
             "facades": 0,
             "prismaModels": 149,
             "proxyRoutes": 83,
-            "serviceTraces": 2333,
+            "serviceTraces": 2336,
             "uiElements": 3618
           },
-          "finishedAt": "2026-05-08T20:49:57.911Z",
-          "durationMs": 18623
+          "finishedAt": "2026-05-08T23:16:13.957Z",
+          "durationMs": 19169
         },
         {
           "phase": "scan:extended-parser-inventory",
           "phaseStatus": "passed",
-          "startedAt": "2026-05-08T20:49:57.911Z",
+          "startedAt": "2026-05-08T23:16:13.957Z",
           "metadata": {
             "discoveredChecks": 5,
             "loadedChecks": 0,
             "unavailableChecks": 0
           },
-          "finishedAt": "2026-05-08T20:49:57.914Z",
+          "finishedAt": "2026-05-08T23:16:13.960Z",
           "durationMs": 3
         },
         {
           "phase": "scan:extended-parsers",
           "phaseStatus": "passed",
-          "startedAt": "2026-05-08T20:49:57.914Z",
+          "startedAt": "2026-05-08T23:16:13.960Z",
           "metadata": {
             "parserCount": 0,
             "breakCount": 0
           },
-          "finishedAt": "2026-05-08T20:49:57.914Z",
+          "finishedAt": "2026-05-08T23:16:13.960Z",
           "durationMs": 0
         },
         {
           "phase": "scan:manifest",
           "phaseStatus": "passed",
-          "startedAt": "2026-05-08T20:49:57.914Z",
+          "startedAt": "2026-05-08T23:16:13.960Z",
           "metadata": {
             "issues": 0,
             "unknownSurfaces": 0,
             "unsupportedStacks": 0
           },
-          "finishedAt": "2026-05-08T20:49:57.916Z",
-          "durationMs": 2
+          "finishedAt": "2026-05-08T23:16:13.963Z",
+          "durationMs": 3
         },
         {
           "phase": "scan:graph",
           "phaseStatus": "passed",
-          "startedAt": "2026-05-08T20:49:57.916Z",
+          "startedAt": "2026-05-08T23:16:13.963Z",
           "metadata": {
             "score": 94,
             "breakCount": 306
           },
-          "finishedAt": "2026-05-08T20:50:00.584Z",
-          "durationMs": 2668
+          "finishedAt": "2026-05-08T23:16:16.685Z",
+          "durationMs": 2722
         },
         {
           "phase": "scan:truth",
           "phaseStatus": "passed",
-          "startedAt": "2026-05-08T20:50:00.584Z",
+          "startedAt": "2026-05-08T23:16:16.685Z",
           "metadata": {
             "pages": 132,
             "modules": 44,
             "flowGroups": 88,
-            "scopeFiles": 3495,
-            "capabilities": 399,
+            "scopeFiles": 3496,
+            "capabilities": 397,
             "projectedFlows": 75
           },
-          "finishedAt": "2026-05-08T20:51:55.955Z",
-          "durationMs": 115371
+          "finishedAt": "2026-05-08T23:16:42.826Z",
+          "durationMs": 26141
         },
         {
           "phase": "scan:certification",
           "phaseStatus": "running",
-          "startedAt": "2026-05-08T20:51:55.955Z"
+          "startedAt": "2026-05-08T23:16:42.827Z"
         }
       ],
       "summary": "Execution in progress: 6 passed, 0 failed, 0 timed out, 1 running.",
@@ -32238,7 +32126,7 @@
       "auditTrail": {
         "algorithm": "sha256",
         "eventCount": 7,
-        "chainHead": "0b1a94604bef9f2c5a9bf161b1212434b650d905bbbdcb5aa43ae05988c67be4",
+        "chainHead": "1b128bb61976da23b7e99d0f7358233fc6da3c72ded57a706758d36ad1b2b545",
         "verified": true
       }
     }
@@ -32254,7 +32142,7 @@
           "PULSE_CERTIFICATE.json"
         ],
         "metrics": {
-          "inventoryFiles": 3495,
+          "inventoryFiles": 3496,
           "codacyObservedFiles": 60,
           "codacyObservedFilesCovered": 60,
           "confidence": "medium"
@@ -32818,7 +32706,7 @@
         ],
         "metrics": {
           "codacySnapshotAvailable": true,
-          "codacyAgeMinutes": 22462,
+          "codacyAgeMinutes": 22608,
           "codacyStale": true,
           "externalStaleAdapters": 0,
           "externalMissingAdapters": 2
@@ -32829,12 +32717,12 @@
       {
         "kind": "artifact",
         "executed": true,
-        "summary": "Execution matrix classified 6293 path(s); unknown=0.",
+        "summary": "Execution matrix classified 6292 path(s); unknown=0.",
         "artifactPaths": [
           "PULSE_EXECUTION_MATRIX.json"
         ],
         "metrics": {
-          "totalPaths": 6293,
+          "totalPaths": 6292,
           "unknownPaths": 0,
           "coveragePercent": 100
         }
@@ -32876,18 +32764,18 @@
       {
         "kind": "artifact",
         "executed": true,
-        "summary": "Proof readiness blocks completion: status=executable_unproved, canAdvance=false, planned=3322, inferred=0, not_available=0, nonObserved=3322, executableUnproved=3322.",
+        "summary": "Proof readiness blocks completion: status=executable_unproved, canAdvance=false, planned=3320, inferred=0, not_available=0, nonObserved=3320, executableUnproved=3320.",
         "artifactPaths": [
           ".pulse/current/PULSE_PROOF_READINESS.json"
         ],
         "metrics": {
           "canAdvance": 0,
-          "plannedEvidence": 3322,
-          "plannedOrUnexecutedEvidence": 3322,
+          "plannedEvidence": 3320,
+          "plannedOrUnexecutedEvidence": 3320,
           "inferredEvidence": 0,
           "notAvailableEvidence": 0,
-          "nonObservedEvidence": 3322,
-          "executableUnproved": 3322,
+          "nonObservedEvidence": 3320,
+          "executableUnproved": 3320,
           "observationOnlyRequired": 0,
           "blockedNotExecutable": 0
         }
@@ -32895,12 +32783,12 @@
       {
         "kind": "artifact",
         "executed": true,
-        "summary": "No-hardcoded-reality state blocks completion: 218164 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.",
+        "summary": "No-hardcoded-reality state blocks completion: 218219 hardcoded reality event(s) across 499 scanned PULSE file(s). Top files: scripts/pulse/convergence-plan.ts, scripts/pulse/__companions__/autopilot-processor.companion.ts, scripts/pulse/property-tester.ts, scripts/pulse/types.ts, scripts/pulse/certification.ts, scripts/pulse/observability-coverage.ts, scripts/pulse/chaos-engine.ts, scripts/pulse/behavior-graph.ts. First event: scripts/pulse/__kernel_additions__/discoverAutonomyConceptTypeLabels.ts:9.",
         "artifactPaths": [
           null
         ],
         "metrics": {
-          "totalEvents": 218164,
+          "totalEvents": 218219,
           "scannedFiles": 499
         }
       }
@@ -32909,7 +32797,7 @@
   "pulseMachineReadiness": {
     "scope": "pulse_machine_not_kloel_product",
     "status": "NOT_READY",
-    "generatedAt": "2026-05-08T20:52:00.038Z",
+    "generatedAt": "2026-05-08T23:16:47.376Z",
     "productCertificationStatus": "NOT_CERTIFIED",
     "productCertificationExcludedFromVerdict": true,
     "canRunBoundedAutonomousCycle": false,
@@ -32938,9 +32826,9 @@
       {
         "id": "execution_matrix",
         "status": "pass",
-        "reason": "Execution matrix classified 6293 path(s) with zero unknown and zero non-terminal paths.",
+        "reason": "Execution matrix classified 6292 path(s) with zero unknown and zero non-terminal paths.",
         "evidence": {
-          "totalPaths": 6293,
+          "totalPaths": 6292,
           "unknownPaths": 0,
           "criticalUnobservedPaths": 0,
           "impreciseBreakpoints": 0,
@@ -32950,12 +32838,12 @@
       {
         "id": "critical_path_terminal",
         "status": "fail",
-        "reason": "5163 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+        "reason": "5162 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
         "evidence": {
           "criticalUnobservedPaths": 0,
           "observedPass": 0,
           "observedFail": 248,
-          "terminalWithoutObservedEvidence": 5163,
+          "terminalWithoutObservedEvidence": 5162,
           "firstTerminalPathId": "matrix:capability:capability:account-agent",
           "terminalArtifact": "PULSE_EXECUTION_MATRIX.json",
           "coverageArtifact": "PULSE_PATH_COVERAGE.json",
@@ -33014,11 +32902,11 @@
     ],
     "blockers": [
       "artifact_consistency: Cross-artifact consistency has not produced a passing check.",
-      "critical_path_terminal: 5163 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
+      "critical_path_terminal: 5162 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.",
       "external_reality: 2 missing, 0 stale, and 0 invalid external adapter(s) remain.",
       "multi_cycle: multiCycleConvergence: no autonomy iteration history found; production-autonomy verdict requires proven cycles. Cycle proof: 0/3 successful non-regressing real cycle(s)."
     ]
   },
-  "runId": "ac1d47fc-b7fd-47f9-b3ce-5dc9dccbd0ba",
-  "generatedAt": "2026-05-08T20:53:40.839Z"
+  "runId": "4f9a6e42-2717-48ec-8803-86b097b6272f",
+  "generatedAt": "2026-05-08T23:18:37.320Z"
 }

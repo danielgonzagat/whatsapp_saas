@@ -1,4 +1,4 @@
-# PULSE REPORT — 2026-05-08T20:52:00.038Z
+# PULSE REPORT — 2026-05-08T23:16:47.376Z
 
 ## PULSE VERDICT
 
@@ -19,8 +19,8 @@
 - Can declare Kloel product certified: NAO
 - bounded_run: PASS - Bounded next autonomous cycle exposes 8 ai_safe unit(s).
 - artifact_consistency: FAIL - Cross-artifact consistency has not produced a passing check.
-- execution_matrix: PASS - Execution matrix classified 6293 path(s) with zero unknown and zero non-terminal paths.
-- critical_path_terminal: FAIL - 5163 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.
+- execution_matrix: PASS - Execution matrix classified 6292 path(s) with zero unknown and zero non-terminal paths.
+- critical_path_terminal: FAIL - 5162 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-chat, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-dashboard, matrix:capability:capability:admin-destructive. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.
 - breakpoint_precision: PASS - Every observed failure in the execution matrix has a breakpoint.
 - external_reality: FAIL - 2 missing, 0 stale, and 0 invalid external adapter(s) remain.
 - self_trust: PASS - All parsers loaded and no phantom capability/flow remains. 12 aspirational structure(s) remain explicitly marked as aspirational.
@@ -34,10 +34,10 @@
 - Blocking tier: 0
 - Scope parity: PASS (medium)
 - Structural chains: 785/2557 complete
-- Capabilities: real=0, partial=387, latent=12, phantom=0
-- Capability maturity: foundational=1, connected=398, operational=0, productionReady=0
+- Capabilities: real=0, partial=385, latent=12, phantom=0
+- Capability maturity: foundational=1, connected=396, operational=0, productionReady=0
 - Flows: real=0, partial=75, latent=0, phantom=0
-- Execution matrix: paths=6293, observedPass=0, observedFail=248, criticalUnobserved=0, unknown=0
+- Execution matrix: paths=6292, observedPass=0, observedFail=248, criticalUnobserved=0, unknown=0
 - Structural parity gaps: total=52, critical=12, high=38
 - Finding events: totalSignals=306, uniqueEvents=248, observed=0, confirmedStatic=306, weakSignals=0
 - Codacy HIGH issues: 1076
@@ -60,18 +60,18 @@
 
 - Inventory Coverage: 100%
 - Classification Coverage: 99%
-- Structural Graph Coverage: 32% (942/2950 connected)
-  Reason: 942/2950 structural files connected.
+- Structural Graph Coverage: 32% (942/2951 connected)
+  Reason: 942/2951 structural files connected.
 - Test Coverage: 10%
-  Reason: 241/2462 source modules have spec files.
+  Reason: 241/2463 source modules have spec files.
 - Scenario Coverage: 100% (declared=100%, executed=100%, passed=0%)
 - Runtime Evidence Coverage: 0% (fresh=0%, stale=0%)
   Reason: No runtime probes executed.
 - Production Proof Coverage: 0%
-  Reason: 0/399 capabilities real.
+  Reason: 0/397 capabilities real.
 - Unknown Files: 29
 - Orphan Files: 200
-- Excluded Directories: 8
+- Excluded Directories: 10
 - Manifest role: semantic overlay, NOT scope boundary
 - Scope source: repo_filesystem
 
@@ -90,7 +90,7 @@
 
 ### Aspirational (product vision projection)
 - 37 projected surfaces
-- Target: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 369/369 capability(ies) and 75/75 flow(s) at least partially real, with readiness yellow.
+- Target: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 368/368 capability(ies) and 75/75 flow(s) at least partially real, with readiness yellow.
 
 ## External Reality
 
@@ -101,9 +101,9 @@
 
 ## Product Identity
 
-- Current checkpoint: The current product-facing system materializes 369 partial capability(ies), 0 latent capability(ies). System-wide phantom capability count is 0.
+- Current checkpoint: The current product-facing system materializes 368 partial capability(ies), 0 latent capability(ies). System-wide phantom capability count is 0.
 - Inferred product: If the currently connected structures converge, the product resolves toward a unified operational platform centered on Analytics, Anuncios/Ads, Autopilot, Billing, Campaigns, Checkout, CIA/Agent, CRM, Dashboard, Followups, Inbox/Chat, Onboarding, Partnerships, Sales/Vendas, Scrapers, Video/Voice, Settings, Area, Canvas, Carteira, Ferramentas, Launch, Payments.
-- Projected checkpoint: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 369/369 capability(ies) and 75/75 flow(s) at least partially real, with readiness yellow.
+- Projected checkpoint: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 368/368 capability(ies) and 75/75 flow(s) at least partially real, with readiness yellow.
 - Distance: Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 52 structural parity gap(s), and 1076 HIGH Codacy issue(s).
 
 ## Product Surfaces
@@ -117,7 +117,7 @@
 - CIA/Agent: status=partial, completion=100%, capabilities=94, flows=54, blocker=Maturity is still missing: runtime_evidence, validation, scenario_coverage, codacy_hygiene.
 - CRM: status=partial, completion=100%, capabilities=66, flows=70, blocker=Maturity is still missing: runtime_evidence, validation, scenario_coverage, codacy_hygiene.
 - Dashboard: status=partial, completion=100%, capabilities=9, flows=36
-- Followups: status=partial, completion=100%, capabilities=152, flows=70, blocker=Maturity is still missing: runtime_evidence, validation, scenario_coverage, codacy_hygiene.
+- Followups: status=partial, completion=100%, capabilities=132, flows=70, blocker=Maturity is still missing: runtime_evidence, validation, scenario_coverage, codacy_hygiene.
 - Inbox/Chat: status=partial, completion=100%, capabilities=97, flows=54, blocker=Maturity is still missing: runtime_evidence, validation, scenario_coverage, codacy_hygiene.
 - Onboarding: status=partial, completion=100%, capabilities=34, flows=52, blocker=Maturity is still missing: runtime_evidence, validation, scenario_coverage, codacy_hygiene.
 
