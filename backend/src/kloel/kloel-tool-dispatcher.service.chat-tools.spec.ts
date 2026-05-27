@@ -415,6 +415,64 @@ describe('KloelToolDispatcherService — chat tools routing', () => {
     );
   });
 
+  it('routes set_sales_policy to chatToolsService with a material receipt', async () => {
+    const policy = {
+      aggressiveness: 'aggressive',
+      tone: 'direto',
+      instructions: 'Avancar para oferta objetiva apos dois abandonos.',
+      appliesTo: 'checkout_abandoned_twice',
+      updatedByUserId: 'user-42',
+    };
+    jest.mocked(chatToolsService.toolSetSalesPolicy).mockResolvedValueOnce({
+      success: true,
+      policy,
+      message: 'Politica comercial atualizada.',
+    });
+
+    const result = await service.executeTool(
+      DEFAULT_WS_ID,
+      'set_sales_policy',
+      {
+        aggressiveness: 'aggressive',
+        tone: 'direto',
+        instructions: 'Avancar para oferta objetiva apos dois abandonos.',
+        appliesTo: 'checkout_abandoned_twice',
+      },
+      'user-42',
+    );
+
+    expect(chatToolsService.toolSetSalesPolicy).toHaveBeenCalledWith(
+      DEFAULT_WS_ID,
+      {
+        aggressiveness: 'aggressive',
+        tone: 'direto',
+        instructions: 'Avancar para oferta objetiva apos dois abandonos.',
+        appliesTo: 'checkout_abandoned_twice',
+      },
+      'user-42',
+    );
+    expect(result.success).toBe(true);
+    expect(result.capabilityId).toBe('set_sales_policy');
+    expect(result.receipt).toEqual(
+      objectContaining({
+        capabilityId: 'set_sales_policy',
+        workspaceId: DEFAULT_WS_ID,
+        actorId: 'user-42',
+        inputs: {
+          aggressiveness: 'aggressive',
+          tone: 'direto',
+          instructions: 'Avancar para oferta objetiva apos dois abandonos.',
+          appliesTo: 'checkout_abandoned_twice',
+        },
+        outputs: objectContaining({ policy: objectContaining({ aggressiveness: 'aggressive' }) }),
+        domainEvents: ['workspace.updated'],
+        auditLogId: stringMatching(/^audit_/),
+        idempotencyKey: stringContaining('set_sales_policy'),
+        success: true,
+      }),
+    );
+  });
+
   it('routes remember_user_info to chatToolsService with a material receipt', async () => {
     jest.mocked(chatToolsService.toolRememberUserInfo).mockResolvedValueOnce({
       success: true,

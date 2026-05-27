@@ -480,12 +480,22 @@ export class KloelToolDispatcherService {
             startedAt,
           );
         }
-        case 'set_sales_policy':
-          return await this.chatToolsService.toolSetSalesPolicy(
+        case 'set_sales_policy': {
+          const startedAt = Date.now();
+          const result = await this.chatToolsService.toolSetSalesPolicy(
             workspaceId,
             asToolArgs(args),
             userId,
           );
+          return this.withCanonicalReceipt(
+            'set_sales_policy',
+            workspaceId,
+            args,
+            result,
+            userId,
+            startedAt,
+          );
+        }
         case 'remember_user_info': {
           const startedAt = Date.now();
           const result = await this.chatToolsService.toolRememberUserInfo(
