@@ -17,7 +17,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { buildQueueJobId } from '../../../queue/job-id.util';
 import { flowQueue } from '../../../queue/queue';
 import { AccountAgentService } from '../../../marketing/channels/whatsapp/account-agent.service';
-import { AgentEventsService } from '../../../whatsapp/agent-events.service';
+import { AgentEventsService } from '../../../marketing/channels/whatsapp/agent-events.service';
 import { CiaRuntimeService } from './cia-runtime.service';
 import { MindService } from '../../mind.service';
 import { readNumberForce } from '../../../common/parse';

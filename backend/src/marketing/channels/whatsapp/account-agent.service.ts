@@ -33,7 +33,7 @@ export type {
   AccountInputSessionListItem,
   AccountInputSessionPayload,
 } from './account-agent.types';
-import { AgentEventsService } from '../../../whatsapp/agent-events.service';
+import { AgentEventsService } from './agent-events.service';
 import { detectCatalogGapExt } from './account-agent.gap-detector';
 import { respondToInputSessionExt } from './account-agent.input-session';
 import {

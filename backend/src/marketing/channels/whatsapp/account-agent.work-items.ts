@@ -1,7 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { toPrismaJsonValue } from '../../../common/prisma/prisma-json.util';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { AgentEventsService } from '../../../whatsapp/agent-events.service';
+import { AgentEventsService } from './agent-events.service';
 import { materializeAccountCapabilityGapsExt } from './account-agent.capability-gaps';
 import { getPromptForStage } from './account-agent.parsers';
 import type { AccountApprovalPayload, AccountInputSessionPayload } from './account-agent.types';

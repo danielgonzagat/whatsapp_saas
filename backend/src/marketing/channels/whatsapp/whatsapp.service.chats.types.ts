@@ -1,4 +1,4 @@
-import type { ConversationOperationalState } from '../../../whatsapp/agent-conversation-state.util';
+import type { ConversationOperationalState } from './agent-conversation-state.util';
 import type { PrismaService } from '../../../prisma/prisma.service';
 import type { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
 

@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { AgentEventsService } from '../../../whatsapp/agent-events.service';
+import { AgentEventsService } from '../../../marketing/channels/whatsapp/agent-events.service';
 import { OpsAlertService } from '../../../observability/ops-alert.service';
 import { CiaRuntimeStateService } from './cia-runtime-state.service';
 import { createPartialPrismaMock } from '../../../../test/helpers/prisma.mock';

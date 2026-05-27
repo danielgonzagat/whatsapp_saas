@@ -1,4 +1,4 @@
-import type { ConversationOperationalState } from '../../../whatsapp/agent-conversation-state.util';
+import type { ConversationOperationalState } from './agent-conversation-state.util';
 import type { ChatHelperDeps, ChatNormalized } from './whatsapp.service.chats.types';
 
 /**

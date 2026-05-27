@@ -6,7 +6,7 @@ import { WebhookDispatcherService } from '../webhooks/webhook-dispatcher.service
 import {
   type ConversationOperationalLike,
   buildConversationOperationalState,
-} from '../whatsapp/agent-conversation-state.util';
+} from '../marketing/channels/whatsapp/agent-conversation-state.util';
 import { InboxGateway } from './inbox.gateway';
 import {
   isQueuedSendResult,

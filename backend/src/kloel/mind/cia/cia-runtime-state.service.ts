@@ -4,7 +4,7 @@ import { OpsAlertService } from '../../../observability/ops-alert.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { buildQueueJobId } from '../../../queue/job-id.util';
 import { autopilotQueue } from '../../../queue/queue';
-import { AgentEventsService } from '../../../whatsapp/agent-events.service';
+import { AgentEventsService } from '../../../marketing/channels/whatsapp/agent-events.service';
 import { asProviderSettings } from '../../../whatsapp/provider-settings.types';
 
 const CIA_CONTACT_CATALOG_LOOKBACK_DAYS = Math.max(

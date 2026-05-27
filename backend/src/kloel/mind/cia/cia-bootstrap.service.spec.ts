@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { CiaBootstrapService } from './cia-bootstrap.service';
 import { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
-import { AgentEventsService } from '../../../whatsapp/agent-events.service';
+import { AgentEventsService } from '../../../marketing/channels/whatsapp/agent-events.service';
 import { CiaChatFilterService } from './cia-chat-filter.service';
 import { CiaRuntimeStateService } from './cia-runtime-state.service';
 import { WhatsAppCatchupService } from '../../../whatsapp/whatsapp-catchup.service';

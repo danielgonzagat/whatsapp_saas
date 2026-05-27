@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException, OnModuleDestroy, Optional } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { AgentEventsService } from '../../../whatsapp/agent-events.service';
+import { AgentEventsService } from '../../../marketing/channels/whatsapp/agent-events.service';
 import { CiaBacklogRunService } from './cia-backlog-run.service';
 import { CiaBootstrapService } from './cia-bootstrap.service';
 import { CiaRuntimeStateService } from './cia-runtime-state.service';

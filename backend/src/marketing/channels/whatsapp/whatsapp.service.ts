@@ -7,7 +7,7 @@ import {
   buildConversationOperationalState,
   type ConversationOperationalLike,
   type ConversationOperationalState,
-} from '../../../whatsapp/agent-conversation-state.util';
+} from './agent-conversation-state.util';
 import * as chatHelpers from './whatsapp.service.chats';
 import type { ChatHelperDeps } from './whatsapp.service.chats';
 import { WhatsappChatBacklogService } from './whatsapp.service.chats.backlog';

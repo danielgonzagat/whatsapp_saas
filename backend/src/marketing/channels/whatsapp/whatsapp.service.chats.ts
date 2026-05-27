@@ -1,4 +1,4 @@
-import { buildConversationOperationalState } from '../../../whatsapp/agent-conversation-state.util';
+import { buildConversationOperationalState } from './agent-conversation-state.util';
 import { shouldReplaceRemoteChat } from './whatsapp.service.chats.backlog.helpers';
 export type { ChatNormalized, ChatHelperDeps } from './whatsapp.service.chats.types';
 import type { ChatNormalized, ChatHelperDeps } from './whatsapp.service.chats.types';

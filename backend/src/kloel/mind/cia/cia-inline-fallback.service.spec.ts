@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { AgentEventsService } from '../../../whatsapp/agent-events.service';
-import type { AgentStreamEvent } from '../../../whatsapp/agent-events.service';
+import { AgentEventsService } from '../../../marketing/channels/whatsapp/agent-events.service';
+import type { AgentStreamEvent } from '../../../marketing/channels/whatsapp/agent-events.service';
 import { CiaChatFilterService } from './cia-chat-filter.service';
 import { CiaRuntimeStateService } from './cia-runtime-state.service';
 import { CiaSendHelpersService } from './cia-send-helpers.service';

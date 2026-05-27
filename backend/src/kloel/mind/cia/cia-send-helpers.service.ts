@@ -3,7 +3,7 @@ import { Inject, Injectable, Logger, Optional, forwardRef } from '@nestjs/common
 import type Redis from 'ioredis';
 import { ChannelTransportRegistry } from '../../channel-transport.registry';
 import { OpsAlertService } from '../../../observability/ops-alert.service';
-import { AgentEventsService } from '../../../whatsapp/agent-events.service';
+import { AgentEventsService } from '../../../marketing/channels/whatsapp/agent-events.service';
 import { NON_DIGIT_RE } from '../../../common/phone';
 import { WHITESPACE_G_RE } from '../../../common/regex';
 import { SpineEmitterService } from '../../spine/spine-emitter.service';

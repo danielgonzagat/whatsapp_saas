@@ -1,6 +1,6 @@
 import { Inject, Injectable, Optional, forwardRef, Logger } from '@nestjs/common';
-import { buildConversationOperationalState } from '../../../whatsapp/agent-conversation-state.util';
-import { AgentEventsService } from '../../../whatsapp/agent-events.service';
+import { buildConversationOperationalState } from '../../../marketing/channels/whatsapp/agent-conversation-state.util';
+import { AgentEventsService } from '../../../marketing/channels/whatsapp/agent-events.service';
 import { CiaChatFilterService } from './cia-chat-filter.service';
 import { CiaRuntimeStateService } from './cia-runtime-state.service';
 import { OpsAlertService } from '../../../observability/ops-alert.service';
