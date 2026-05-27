@@ -4,7 +4,7 @@ import { KloelToolExecutorWhatsAppService } from './kloel-tool-executor-whatsapp
 import { PrismaService } from '../prisma/prisma.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { WhatsappService } from '../marketing/channels/whatsapp/whatsapp.service';
 import { AudioService } from './audio.service';
 import { ChannelTransportRegistry } from './channel-transport.registry';
 import { OpsAlertService } from '../observability/ops-alert.service';

@@ -1,12 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Inject, Injectable, Optional, forwardRef } from '@nestjs/common';
-import { StructuredLogger } from '../logging/structured-logger';
+import { StructuredLogger } from '../../../logging/structured-logger';
 import Redis from 'ioredis';
-import { forEachSequential } from '../common/async-sequence';
-import { OpsAlertService } from '../observability/ops-alert.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { AgentEventsService } from '../marketing/channels/whatsapp/agent-events.service';
+import { forEachSequential } from '../../../common/async-sequence';
+import { OpsAlertService } from '../../../observability/ops-alert.service';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { AgentEventsService } from './agent-events.service';
 import { asProviderSettings, type ProviderSessionSnapshot } from './provider-settings.types';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WorkerRuntimeService } from './worker-runtime.service';
@@ -18,18 +18,18 @@ import {
   resolveCanonicalChatIdExt,
   getLidPnMapExt,
   isWorkspaceSelfChatIdExt,
-} from '../marketing/channels/whatsapp/whatsapp-catchup.helpers';
+} from './whatsapp-catchup.helpers';
 import {
   normalizeChatsExt,
   normalizeMessagesExt,
-} from '../marketing/channels/whatsapp/whatsapp-catchup.normalizers';
-import { INBOUND_PROCESSOR, CIA_RUNTIME, CATCHUP_HISTORY } from '../marketing/channels/whatsapp/whatsapp.tokens';
+} from './whatsapp-catchup.normalizers';
+import { INBOUND_PROCESSOR, CIA_RUNTIME, CATCHUP_HISTORY } from './whatsapp.tokens';
 import type {
   IInboundProcessor,
   ICiaRuntime,
   ICatchupHistory,
   CatchupBackfillCursor,
-} from '../marketing/channels/whatsapp/whatsapp.interfaces';
+} from './whatsapp.interfaces';
 import {
   safeStr,
   CATCHUP_LOCK_TTL_SECONDS,
@@ -44,14 +44,14 @@ import {
   CATCHUP_FALLBACK_PAGES_PER_CHAT,
   CATCHUP_MARK_READ_WITHOUT_REPLY,
   CATCHUP_LID_MAP_CACHE_TTL_MS,
-} from '../marketing/channels/whatsapp/whatsapp-catchup-config';
+} from './whatsapp-catchup-config';
 import {
   getLockKey,
   getCooldownKey,
   releaseLock,
-} from '../marketing/channels/whatsapp/whatsapp-catchup-lock.helpers';
-import { selectCandidateChats } from '../marketing/channels/whatsapp/whatsapp-catchup-chat-selector';
-import { loadCatchupMessages } from '../marketing/channels/whatsapp/whatsapp-catchup-message-loader';
+} from './whatsapp-catchup-lock.helpers';
+import { selectCandidateChats } from './whatsapp-catchup-chat-selector';
+import { loadCatchupMessages } from './whatsapp-catchup-message-loader';
 import {
   getCatchupBlockReason as resolveCatchupBlockReason,
   getLifecycleBlockReason,

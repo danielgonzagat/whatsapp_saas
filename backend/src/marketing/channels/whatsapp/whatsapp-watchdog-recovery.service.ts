@@ -18,7 +18,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { CIA_RUNTIME_SERVICE, type CiaRuntimePort } from '../../../kloel/mind/cia/cia-runtime.port';
 import { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
 import { asProviderSettings } from './provider-settings.types';
-import { WhatsAppCatchupService } from '../../../whatsapp/whatsapp-catchup.service';
+import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import { toPrismaJsonValue } from '../../../common/prisma/prisma-json.util';
 import type { SessionHealth } from './whatsapp-watchdog.types';
 import { alertOpsHelper } from './whatsapp-watchdog.helpers';

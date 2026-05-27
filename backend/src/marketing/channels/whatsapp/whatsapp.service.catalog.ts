@@ -7,7 +7,7 @@ import { rankByPurchaseProbability } from './whatsapp.service.ranking';
 import { readText } from '../../../common/utils';
 import { normalizeJsonObjExt } from './whatsapp-service.helpers';
 import type { PrismaService } from '../../../prisma/prisma.service';
-import type { WhatsAppCatchupService } from '../../../whatsapp/whatsapp-catchup.service';
+import type { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import type { CiaRuntimeService } from '../../../kloel/mind/cia/cia-runtime.service';
 
 export interface CatalogDeps {

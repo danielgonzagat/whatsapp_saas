@@ -102,7 +102,7 @@ export class BillingCheckoutHelperService {
 
   async resolveWhatsappService(): Promise<WhatsappNotifier | null> {
     try {
-      const { WhatsappService } = await import('../whatsapp/whatsapp.service');
+      const { WhatsappService } = await import('../marketing/channels/whatsapp/whatsapp.service');
       return this.moduleRef.get(WhatsappService, { strict: false }) ?? null;
     } catch {
       return null;

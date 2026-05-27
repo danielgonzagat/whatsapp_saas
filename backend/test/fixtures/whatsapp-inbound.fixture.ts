@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import type { InboundMessage } from '../../src/whatsapp/inbound-processor.service';
+import type { InboundMessage } from '../../src/marketing/channels/whatsapp/inbound-processor.service';
 
 export interface SyntheticInboundParams {
   workspaceId: string;

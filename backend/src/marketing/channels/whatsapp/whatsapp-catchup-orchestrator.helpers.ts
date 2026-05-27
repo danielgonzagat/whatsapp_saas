@@ -1,22 +1,22 @@
 import { randomUUID } from 'node:crypto';
-import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
+import { toPrismaJsonValue } from '../../../common/prisma/prisma-json.util';
 import {
   AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB,
   buildSweepUnreadConversationsJobData,
-} from '../contracts/autopilot-jobs';
-import { PrismaService } from '../prisma/prisma.service';
-import { buildQueueJobId } from '../queue/job-id.util';
-import { autopilotQueue } from '../queue/queue';
-import { AgentEventsService } from '../marketing/channels/whatsapp/agent-events.service';
+} from '../../../contracts/autopilot-jobs';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { buildQueueJobId } from '../../../queue/job-id.util';
+import { autopilotQueue } from '../../../queue/queue';
+import { AgentEventsService } from './agent-events.service';
 import { asProviderSettings } from './provider-settings.types';
 import { WorkerRuntimeService } from './worker-runtime.service';
-import { isNowebStoreMisconfiguredExt } from '../marketing/channels/whatsapp/whatsapp-catchup.helpers';
+import { isNowebStoreMisconfiguredExt } from './whatsapp-catchup.helpers';
 import {
   safeStr,
   type GuestCheckSettings,
   CATCHUP_SWEEP_LIMIT,
-} from '../marketing/channels/whatsapp/whatsapp-catchup-config';
-import type { ICiaRuntime } from '../marketing/channels/whatsapp/whatsapp.interfaces';
+} from './whatsapp-catchup-config';
+import type { ICiaRuntime } from './whatsapp.interfaces';
 
 export type CatchupRunSummary = {
   importedMessages: number;

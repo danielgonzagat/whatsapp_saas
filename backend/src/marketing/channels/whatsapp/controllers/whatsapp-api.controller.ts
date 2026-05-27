@@ -21,7 +21,7 @@ import { CIA_RUNTIME_SERVICE, type CiaRuntimePort } from '../../../../kloel/mind
 import { asProviderSettings, type ProviderSessionSnapshot } from '../provider-settings.types';
 import { WhatsAppProviderRegistry } from '../../../../whatsapp/providers/provider-registry';
 import { WhatsAppApiProvider } from '../providers/whatsapp-api.provider';
-import { WhatsAppCatchupService } from '../../../../whatsapp/whatsapp-catchup.service';
+import { WhatsAppCatchupService } from '../whatsapp-catchup.service';
 import { WhatsAppWatchdogService } from '../whatsapp-watchdog.service';
 import { WhatsappService } from '../whatsapp.service';
 import { InternalEndpoint } from '../../../../common/decorators/internal-endpoint.decorator';

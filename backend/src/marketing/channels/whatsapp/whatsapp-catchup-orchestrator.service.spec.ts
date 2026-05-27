@@ -1,13 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaService } from '../prisma/prisma.service';
-import { OpsAlertService } from '../observability/ops-alert.service';
-import { AgentEventsService } from '../marketing/channels/whatsapp/agent-events.service';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { OpsAlertService } from '../../../observability/ops-alert.service';
+import { AgentEventsService } from './agent-events.service';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WorkerRuntimeService } from './worker-runtime.service';
-import { INBOUND_PROCESSOR, CIA_RUNTIME, CATCHUP_HISTORY } from '../marketing/channels/whatsapp/whatsapp.tokens';
+import { INBOUND_PROCESSOR, CIA_RUNTIME, CATCHUP_HISTORY } from './whatsapp.tokens';
 import { WhatsappCatchupOrchestratorService } from './whatsapp-catchup-orchestrator.service';
 
-jest.mock('../queue/queue', () => ({
+jest.mock('../../../queue/queue', () => ({
   flowQueue: { add: jest.fn().mockResolvedValue(undefined) },
   autopilotQueue: { add: jest.fn().mockResolvedValue(undefined) },
 }));

@@ -6,7 +6,7 @@ import { OpsAlertService } from '../../../observability/ops-alert.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { WorkspaceService } from '../../../workspaces/workspace.service';
 import { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
-import { WorkerRuntimeService } from '../../../whatsapp/worker-runtime.service';
+import { WorkerRuntimeService } from './worker-runtime.service';
 import { WhatsappSessionService } from './whatsapp-session.service';
 import { WhatsappMessageDispatcherService } from './whatsapp-message-dispatcher.service';
 

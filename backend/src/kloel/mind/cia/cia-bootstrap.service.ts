@@ -6,7 +6,7 @@ import { CiaRuntimeStateService } from './cia-runtime-state.service';
 import { OpsAlertService } from '../../../observability/ops-alert.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
-import { WhatsAppCatchupService } from '../../../whatsapp/whatsapp-catchup.service';
+import { WhatsAppCatchupService } from '../../../marketing/channels/whatsapp/whatsapp-catchup.service';
 import { asProviderSettings } from '../../../whatsapp/provider-settings.types';
 
 type BootstrapConversation = Record<string, unknown>;

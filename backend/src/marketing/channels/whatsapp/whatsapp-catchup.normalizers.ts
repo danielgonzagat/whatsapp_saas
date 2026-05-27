@@ -1,4 +1,7 @@
-import type { WahaChatMessage, WahaChatSummary } from './providers/whatsapp-api.provider';
+import type {
+  WahaChatMessage,
+  WahaChatSummary,
+} from './providers/whatsapp-api.provider';
 import { resolveTimestampExt } from './whatsapp-catchup.helpers';
 
 function pickBooleanFromMe(

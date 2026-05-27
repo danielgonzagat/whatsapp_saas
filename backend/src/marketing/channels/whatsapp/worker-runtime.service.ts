@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { StructuredLogger } from '../logging/structured-logger';
+import { StructuredLogger } from '../../../logging/structured-logger';
 
 type WorkerRuntimePayload = { status?: string | number; [key: string]: unknown };
 

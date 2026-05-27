@@ -18,7 +18,7 @@ import { AgentEventsService } from '../marketing/channels/whatsapp/agent-events.
 import { CIA_RUNTIME_SERVICE, type CiaRuntimePort } from '../kloel/mind/cia/cia-runtime.port';
 import { InboundProcessorService } from '../marketing/channels/whatsapp/inbound-processor.service';
 import { WhatsAppApiProvider } from '../marketing/channels/whatsapp/providers/whatsapp-api.provider';
-import { WhatsAppCatchupService } from '../whatsapp/whatsapp-catchup.service';
+import { WhatsAppCatchupService } from '../marketing/channels/whatsapp/whatsapp-catchup.service';
 
 import { RouteClass } from '../common/throttler/route-class.decorator';
 import { Throttle } from '@nestjs/throttler';

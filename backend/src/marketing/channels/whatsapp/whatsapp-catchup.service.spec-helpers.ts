@@ -1,7 +1,7 @@
-import type { PrismaService } from '../prisma/prisma.service';
+import type { PrismaService } from '../../../prisma/prisma.service';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import { WhatsappCatchupOrchestratorService } from './whatsapp-catchup-orchestrator.service';
-import { WhatsappCatchupHistoryService } from '../marketing/channels/whatsapp/whatsapp-catchup-history.service';
+import { WhatsappCatchupHistoryService } from './whatsapp-catchup-history.service';
 
 /** Catchup prisma mock type. */
 export type CatchupPrismaMock = {

@@ -1,8 +1,8 @@
-jest.mock('../queue/queue', () => ({
+jest.mock('../../../queue/queue', () => ({
   autopilotQueue: { add: jest.fn().mockResolvedValue(undefined) },
 }));
 
-const { autopilotQueue } = jest.requireMock('../queue/queue');
+const { autopilotQueue } = jest.requireMock('../../../queue/queue');
 
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import {

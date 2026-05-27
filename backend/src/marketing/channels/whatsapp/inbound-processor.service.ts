@@ -23,7 +23,7 @@ import { whatsappDigits as normalizePhone } from '../../../common/phone';
 import { isPlaceholderContactName as isPlaceholderContactNameValue } from './whatsapp-normalization.util';
 import { WHATSAPP_MESSAGING } from './whatsapp.tokens';
 import type { IWhatsappMessaging } from './whatsapp.interfaces';
-import { WorkerRuntimeService } from '../../../whatsapp/worker-runtime.service';
+import { WorkerRuntimeService } from './worker-runtime.service';
 import { asProviderSettings, type ProviderSettings } from '../../../whatsapp/provider-settings.types';
 import type { ContactCustomFields } from '../../../contacts/contact-custom-fields.types';
 import { executeInlineAutopilot } from './inbound-processor.inline-autopilot';

@@ -5,7 +5,7 @@ import { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-r
 import { AgentEventsService } from '../../../marketing/channels/whatsapp/agent-events.service';
 import { CiaChatFilterService } from './cia-chat-filter.service';
 import { CiaRuntimeStateService } from './cia-runtime-state.service';
-import { WhatsAppCatchupService } from '../../../whatsapp/whatsapp-catchup.service';
+import { WhatsAppCatchupService } from '../../../marketing/channels/whatsapp/whatsapp-catchup.service';
 import { OpsAlertService } from '../../../observability/ops-alert.service';
 
 describe('CiaBootstrapService', () => {

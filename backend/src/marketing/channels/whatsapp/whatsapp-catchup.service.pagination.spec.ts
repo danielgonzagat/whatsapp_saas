@@ -6,13 +6,13 @@
  * whatsapp-catchup.service.spec.ts for the broader catchup suite.
  */
 
-jest.mock('../queue/queue', () => ({
+jest.mock('../../../queue/queue', () => ({
   autopilotQueue: { add: jest.fn().mockResolvedValue(undefined) },
 }));
 
-jest.mock('../marketing/channels/whatsapp/whatsapp-catchup-config', () => {
-  const actual = jest.requireActual<typeof import('../marketing/channels/whatsapp/whatsapp-catchup-config')>(
-    '../marketing/channels/whatsapp/whatsapp-catchup-config',
+jest.mock('./whatsapp-catchup-config', () => {
+  const actual = jest.requireActual<typeof import('./whatsapp-catchup-config')>(
+    './whatsapp-catchup-config',
   );
   return {
     ...actual,
@@ -20,11 +20,11 @@ jest.mock('../marketing/channels/whatsapp/whatsapp-catchup-config', () => {
   };
 });
 
-const { autopilotQueue: _autopilotQueue } = jest.requireMock('../queue/queue');
+const { autopilotQueue: _autopilotQueue } = jest.requireMock('../../../queue/queue');
 
-import type { InboundMessage } from '../marketing/channels/whatsapp/inbound-processor.service';
+import type { InboundMessage } from './inbound-processor.service';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
-import { CATCHUP_MAX_MESSAGES_PER_CHAT } from '../marketing/channels/whatsapp/whatsapp-catchup-config';
+import { CATCHUP_MAX_MESSAGES_PER_CHAT } from './whatsapp-catchup-config';
 import {
   applyCatchupEnvDefaults,
   buildCatchupMocks,

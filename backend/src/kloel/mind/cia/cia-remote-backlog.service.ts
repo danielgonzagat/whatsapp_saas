@@ -11,8 +11,8 @@ import { WahaChatSummary } from '../../../marketing/channels/whatsapp/providers/
 import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../../../marketing/channels/whatsapp/whatsapp-normalization.util';
 import { WHATSAPP_MESSAGING } from '../../../marketing/channels/whatsapp/whatsapp.tokens';
 import type { IWhatsappMessaging } from '../../../marketing/channels/whatsapp/whatsapp.interfaces';
-import type { BacklogMode } from '../../../whatsapp/cia-remote-backlog.helpers';
-import { loadRemotePendingBatchHelper } from '../../../whatsapp/cia-remote-backlog.helpers';
+import type { BacklogMode } from '../../../marketing/channels/whatsapp/cia-remote-backlog.helpers';
+import { loadRemotePendingBatchHelper } from '../../../marketing/channels/whatsapp/cia-remote-backlog.helpers';
 
 /**
  * Handles remote backlog fallback: reads pending chats directly from the

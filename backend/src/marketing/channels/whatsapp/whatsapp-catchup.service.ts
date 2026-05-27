@@ -1,5 +1,5 @@
 import { Inject, Injectable, forwardRef } from '@nestjs/common';
-import { StructuredLogger } from '../logging/structured-logger';
+import { StructuredLogger } from '../../../logging/structured-logger';
 import { WhatsappCatchupOrchestratorService } from './whatsapp-catchup-orchestrator.service';
 
 type CatchupRunSummary = {

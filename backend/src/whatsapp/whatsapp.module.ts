@@ -10,7 +10,7 @@ import { WorkspaceModule } from '../workspaces/workspace.module';
 import { WhatsAppEventEmitterModule } from '../kloel/whatsapp-emitter/whatsapp-event-emitter.module';
 
 const { KloelModule } = require('../kloel/kloel.module');
-import { AccountAgentService } from './account-agent.service';
+import { AccountAgentService } from '../marketing/channels/whatsapp/account-agent.service';
 import { AgentEventsService } from '../marketing/channels/whatsapp/agent-events.service';
 import { WhatsAppApiController } from '../marketing/channels/whatsapp/controllers/whatsapp-api.controller';
 import { WhatsAppCatalogController } from '../marketing/channels/whatsapp/controllers/whatsapp-catalog.controller';
@@ -28,7 +28,7 @@ import { WhatsAppWatchdogRecoveryService } from '../marketing/channels/whatsapp/
 import { WhatsAppWatchdogSessionService } from '../marketing/channels/whatsapp/whatsapp-watchdog-session.service';
 import { WhatsappController } from '../marketing/channels/whatsapp/controllers/whatsapp.controller';
 import { WhatsappSendRateGuardService } from '../marketing/channels/whatsapp/whatsapp-send-rate-guard.service';
-import { WhatsappService } from './whatsapp.service';
+import { WhatsappService } from '../marketing/channels/whatsapp/whatsapp.service';
 import { WhatsappSessionService } from '../marketing/channels/whatsapp/whatsapp-session.service';
 import { WhatsappMessageDispatcherService } from '../marketing/channels/whatsapp/whatsapp-message-dispatcher.service';
 import { WhatsappMediaService } from '../marketing/channels/whatsapp/whatsapp-media.service';
