@@ -1,8 +1,8 @@
 const CONTACT_NAME_DOE_RE = /^\+?\d[\d\s-]*\s+doe$/i;
 
-export { safeStr } from '../common/string';
+export { safeStr } from '../../../common/string';
 
-export { readText as normalizeOptionalText } from '../common/utils';
+export { readText as normalizeOptionalText } from '../../../common/utils';
 
 export function isDoePlaceholderName(value: string): boolean {
   return CONTACT_NAME_DOE_RE.test(value);
