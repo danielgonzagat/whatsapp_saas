@@ -1,9 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type {
-  MemoryDimension,
-  TimeMachineQuery,
-  TimeMachineResult,
-} from './commem.types';
+import type { MemoryDimension, TimeMachineQuery, TimeMachineResult } from './commem.types';
 import { workspaceFilter } from './commem.types';
 import type { SpineEventRef } from '../mind/mind.types';
 import { MemoryProjector } from './memory.projector';
@@ -12,10 +8,7 @@ import { MemoryProjector } from './memory.projector';
 export class TimeMachineService {
   private readonly projector = new MemoryProjector();
 
-  public query(
-    allEvents: readonly SpineEventRef[],
-    query: TimeMachineQuery,
-  ): TimeMachineResult {
+  public query(allEvents: readonly SpineEventRef[], query: TimeMachineQuery): TimeMachineResult {
     const scoped = workspaceFilter(allEvents, query.workspaceId);
 
     const pastEvents = scoped.filter(
@@ -39,15 +32,16 @@ export class TimeMachineService {
     };
   }
 
-  public diff(
-    before: TimeMachineResult,
-    after: TimeMachineResult,
-  ): readonly MemoryDiffEntry[] {
+  public diff(before: TimeMachineResult, after: TimeMachineResult): readonly MemoryDiffEntry[] {
     const diffs: MemoryDiffEntry[] = [];
 
     const allDimensions = new Set<MemoryDimension>();
-    for (const p of before.projections) {allDimensions.add(p.dimension);}
-    for (const p of after.projections) {allDimensions.add(p.dimension);}
+    for (const p of before.projections) {
+      allDimensions.add(p.dimension);
+    }
+    for (const p of after.projections) {
+      allDimensions.add(p.dimension);
+    }
 
     for (const dim of allDimensions) {
       const b = before.projections.find((p) => p.dimension === dim);

@@ -11,13 +11,21 @@ function ev(over: Partial<SpineEventRef> = {}): SpineEventRef {
     truthMode: over.truthMode ?? 'observed',
   };
   if ('entityRef' in over) {
-    if (over.entityRef !== undefined) {e['entityRef'] = over.entityRef;}
+    if (over.entityRef !== undefined) {
+      e['entityRef'] = over.entityRef;
+    }
   } else {
     e['entityRef'] = { entityType: 'lead', entityId: 'lead_owner' };
   }
-  if (over.valence !== undefined) {e['valence'] = over.valence;}
-  if (over.payload !== undefined) {e['payload'] = over.payload;}
-  if (over.correlationId !== undefined) {e['correlationId'] = over.correlationId;}
+  if (over.valence !== undefined) {
+    e['valence'] = over.valence;
+  }
+  if (over.payload !== undefined) {
+    e['payload'] = over.payload;
+  }
+  if (over.correlationId !== undefined) {
+    e['correlationId'] = over.correlationId;
+  }
   return e as SpineEventRef;
 }
 
@@ -62,11 +70,19 @@ describe('owner correction — future behavior evidence (UTP-OWNER-CRIT-002-B)',
     const events = [
       ev({
         eventName: 'commerce.whatsapp.message_replied',
-        payload: { ownerCorrected: true, originalOutput: 'Buy now!', correctedOutput: 'Hi, are you interested?' },
+        payload: {
+          ownerCorrected: true,
+          originalOutput: 'Buy now!',
+          correctedOutput: 'Hi, are you interested?',
+        },
       }),
       ev({
         eventName: 'commerce.whatsapp.message_replied',
-        payload: { ownerCorrected: true, originalOutput: 'Buy now 2!', correctedOutput: 'Let me help you decide' },
+        payload: {
+          ownerCorrected: true,
+          originalOutput: 'Buy now 2!',
+          correctedOutput: 'Let me help you decide',
+        },
       }),
     ];
     const result = observeCorrections(correctionInput(events));
@@ -152,7 +168,12 @@ describe('owner correction — future behavior evidence (UTP-OWNER-CRIT-002-B)',
     const events = [
       ev({
         eventName: 'commerce.whatsapp.message_replied',
-        payload: { ownerCorrected: true, originalOutput: 'a', correctedOutput: 'b', rejectionReason: 'owner refused initial suggestion' },
+        payload: {
+          ownerCorrected: true,
+          originalOutput: 'a',
+          correctedOutput: 'b',
+          rejectionReason: 'owner refused initial suggestion',
+        },
       }),
       ev({
         eventName: 'commerce.whatsapp.message_replied',
@@ -169,7 +190,12 @@ describe('owner correction — future behavior evidence (UTP-OWNER-CRIT-002-B)',
     const events = [
       ev({
         eventName: 'commerce.whatsapp.message_replied',
-        payload: { ownerCorrected: true, originalOutput: 'a', correctedOutput: 'b', ownerDisagreed: true },
+        payload: {
+          ownerCorrected: true,
+          originalOutput: 'a',
+          correctedOutput: 'b',
+          ownerDisagreed: true,
+        },
       }),
       ev({
         eventName: 'commerce.whatsapp.message_replied',
@@ -207,7 +233,9 @@ describe('owner correction — future behavior evidence (UTP-OWNER-CRIT-002-B)',
     const highObs = firstRewrite(highResult);
 
     expect(highObs.confidence).toBeGreaterThan(lowObs.confidence);
-    expect(highObs.futureBehaviorChange.confidence).toBeGreaterThan(lowObs.futureBehaviorChange.confidence);
+    expect(highObs.futureBehaviorChange.confidence).toBeGreaterThan(
+      lowObs.futureBehaviorChange.confidence,
+    );
   });
 
   it('observationId retains cor_ prefix for traceability', () => {
@@ -229,8 +257,14 @@ describe('owner correction — future behavior evidence (UTP-OWNER-CRIT-002-B)',
 
   it('futureBehaviorChange always carries a declarativeRule for every correction kind', () => {
     const rewriteEvents = [
-      ev({ eventName: 'commerce.whatsapp.message_replied', payload: { ownerCorrected: true, originalOutput: 'a', correctedOutput: 'b' } }),
-      ev({ eventName: 'commerce.whatsapp.message_replied', payload: { ownerCorrected: true, originalOutput: 'c', correctedOutput: 'd' } }),
+      ev({
+        eventName: 'commerce.whatsapp.message_replied',
+        payload: { ownerCorrected: true, originalOutput: 'a', correctedOutput: 'b' },
+      }),
+      ev({
+        eventName: 'commerce.whatsapp.message_replied',
+        payload: { ownerCorrected: true, originalOutput: 'c', correctedOutput: 'd' },
+      }),
     ];
     const classificationEvents = [
       ev({ eventName: 'commerce.lead.objection_raised', payload: { causedByEventId: 'e1' } }),
@@ -288,8 +322,6 @@ describe('owner correction — future behavior evidence (UTP-OWNER-CRIT-002-B)',
     expect(obs.learnedCriterion).toContain('Operator/team feedback');
     expect(obs.learnedCriterion).toContain('human performance scoring');
     expect(obs.futureBehaviorChange.declarativeRule).toContain('Kloel learning');
-    expect(obs.futureBehaviorChange.behaviorConstraint).toContain(
-      'operator correction notes',
-    );
+    expect(obs.futureBehaviorChange.behaviorConstraint).toContain('operator correction notes');
   });
 });

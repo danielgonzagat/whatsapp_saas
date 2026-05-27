@@ -10,11 +10,7 @@
  */
 
 import { Injectable } from '@nestjs/common';
-import type {
-  DetectedError,
-  ErrorFingerprint,
-  TrustAfterErrorSnapshot,
-} from './recovery.types';
+import type { DetectedError, ErrorFingerprint, TrustAfterErrorSnapshot } from './recovery.types';
 
 interface WorkspaceErrorHistory {
   readonly workspaceId: string;
@@ -53,10 +49,14 @@ export class TrustAfterErrorTracker {
 
   public markRecovered(workspaceId: string, errorId: string): boolean {
     const entry = this.history.get(workspaceId);
-    if (!entry) {return false;}
+    if (!entry) {
+      return false;
+    }
 
     const record = entry.errors.find((e) => e.errorId === errorId);
-    if (!record) {return false;}
+    if (!record) {
+      return false;
+    }
 
     (record as { recovered: boolean }).recovered = true;
     return true;
@@ -64,25 +64,29 @@ export class TrustAfterErrorTracker {
 
   public nonRepetitionRate(workspaceId: string): number {
     const entry = this.history.get(workspaceId);
-    if (!entry || entry.errors.length === 0) {return 1;}
+    if (!entry || entry.errors.length === 0) {
+      return 1;
+    }
 
     const uniquePatterns = new Set<string>();
     let total = 0;
 
     for (const err of entry.errors) {
       total++;
-      uniquePatterns.add(
-        `${err.category}:${err.fingerprint.eventPatternHash}`,
-      );
+      uniquePatterns.add(`${err.category}:${err.fingerprint.eventPatternHash}`);
     }
 
-    if (total === 0) {return 1;}
+    if (total === 0) {
+      return 1;
+    }
     return 1 - (total - uniquePatterns.size) / total;
   }
 
   public autoDetectionRate(workspaceId: string): number {
     const entry = this.history.get(workspaceId);
-    if (!entry || entry.errors.length === 0) {return 1;}
+    if (!entry || entry.errors.length === 0) {
+      return 1;
+    }
 
     const autoDetected = entry.errors.filter(
       (e) =>
@@ -100,9 +104,7 @@ export class TrustAfterErrorTracker {
     windowDays: number = DEFAULT_WINDOW_DAYS,
   ): TrustAfterErrorSnapshot {
     const entry = this.history.get(workspaceId);
-    const windowStart = new Date(
-      nowMs - windowDays * 24 * 60 * 60 * 1000,
-    ).toISOString();
+    const windowStart = new Date(nowMs - windowDays * 24 * 60 * 60 * 1000).toISOString();
 
     const errorsInWindow =
       entry?.errors.filter(
@@ -110,27 +112,23 @@ export class TrustAfterErrorTracker {
       ) ?? [];
 
     const totalErrors = errorsInWindow.length;
-    const autoDetected = errorsInWindow.filter(
-      (e) => e.category !== 'unknown',
-    ).length;
+    const autoDetected = errorsInWindow.filter((e) => e.category !== 'unknown').length;
     const autoDetectRate = totalErrors > 0 ? autoDetected / totalErrors : 1;
 
     const uniquePatterns = new Set<string>();
     for (const err of errorsInWindow) {
-      uniquePatterns.add(
-        `${err.category}:${err.fingerprint.eventPatternHash}`,
-      );
+      uniquePatterns.add(`${err.category}:${err.fingerprint.eventPatternHash}`);
     }
-    const nonRepeat =
-      totalErrors > 0
-        ? 1 - (totalErrors - uniquePatterns.size) / totalErrors
-        : 1;
+    const nonRepeat = totalErrors > 0 ? 1 - (totalErrors - uniquePatterns.size) / totalErrors : 1;
 
     const r18Score = (autoDetectRate + nonRepeat) / 2;
 
     let trustTrend: TrustAfterErrorSnapshot['trustTrend'] = 'flat';
-    if (r18Score >= 0.8) {trustTrend = 'up';}
-    else if (r18Score < 0.4) {trustTrend = 'down';}
+    if (r18Score >= 0.8) {
+      trustTrend = 'up';
+    } else if (r18Score < 0.4) {
+      trustTrend = 'down';
+    }
 
     return {
       workspaceId,

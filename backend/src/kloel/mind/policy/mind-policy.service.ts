@@ -309,18 +309,16 @@ export class MindPolicyService {
           continue;
         }
         try {
-          await this.globalPrior.recordObservation(
-            channel,
-            row.decisionType,
-            row.chosen,
-            success,
-          );
+          await this.globalPrior.recordObservation(channel, row.decisionType, row.chosen, success);
         } catch (err: unknown) {
-          this.logger.error('Failed to record global prior observation from resolveOpenForSubject', {
-            subject: input.subject,
-            decisionType: input.decisionType,
-            error: err instanceof Error ? err.message : String(err),
-          });
+          this.logger.error(
+            'Failed to record global prior observation from resolveOpenForSubject',
+            {
+              subject: input.subject,
+              decisionType: input.decisionType,
+              error: err instanceof Error ? err.message : String(err),
+            },
+          );
         }
       }
     }
@@ -432,7 +430,7 @@ export class MindPolicyService {
       await this.prisma.mindPolicy.update({
         where: { id: row.id },
         data: {
-          context: { ...ctx, outcomeConfidence: newConfidence } as Prisma.InputJsonValue,
+          context: { ...ctx, outcomeConfidence: newConfidence },
         },
       });
 

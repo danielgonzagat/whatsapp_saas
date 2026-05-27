@@ -19,7 +19,14 @@ export interface GapSignal {
 }
 
 const DOMAIN_RISK_PROFILES: Readonly<
-  Record<string, { readonly severity: GapSeverity; readonly impact: CommercialImpact; readonly baseRiskCents: number }>
+  Record<
+    string,
+    {
+      readonly severity: GapSeverity;
+      readonly impact: CommercialImpact;
+      readonly baseRiskCents: number;
+    }
+  >
 > = {
   payments: { severity: 'critical', impact: 'revenue_blocking', baseRiskCents: 100000 },
   wallet: { severity: 'critical', impact: 'revenue_blocking', baseRiskCents: 50000 },
@@ -44,14 +51,19 @@ export class GapDetector {
 
     for (const signal of signals) {
       const profile = DOMAIN_RISK_PROFILES[signal.domain];
-      if (!profile) {continue;}
+      if (!profile) {
+        continue;
+      }
 
       const confidence = clamp([0, 1], signal.severityScore);
 
-      if (confidence < 0.3) {continue;}
+      if (confidence < 0.3) {
+        continue;
+      }
 
-      const projectedRisk =
-        Math.round(profile.baseRiskCents * signal.severityScore * commercialImpactWeight(profile.impact));
+      const projectedRisk = Math.round(
+        profile.baseRiskCents * signal.severityScore * commercialImpactWeight(profile.impact),
+      );
 
       this.gapCounter += 1;
 

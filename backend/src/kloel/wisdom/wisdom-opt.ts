@@ -64,7 +64,9 @@ export class WisdomOptService {
    */
   public isWorkspaceOptedIn(workspaceId: string): boolean {
     for (const [, entry] of this.registry) {
-      if (entry.workspaceId === workspaceId && entry.optedIn) {return true;}
+      if (entry.workspaceId === workspaceId && entry.optedIn) {
+        return true;
+      }
     }
     return false;
   }
@@ -73,7 +75,7 @@ export class WisdomOptService {
    * Get all opted-in workspace-role pairs.
    */
   public optedInEntries(): OptEntry[] {
-    return [...this.registry.values()].filter(e => e.optedIn);
+    return [...this.registry.values()].filter((e) => e.optedIn);
   }
 
   /**
@@ -82,7 +84,9 @@ export class WisdomOptService {
   public optedInWorkspaceIds(): string[] {
     const ids = new Set<string>();
     for (const [, entry] of this.registry) {
-      if (entry.optedIn) {ids.add(entry.workspaceId);}
+      if (entry.optedIn) {
+        ids.add(entry.workspaceId);
+      }
     }
     return [...ids];
   }

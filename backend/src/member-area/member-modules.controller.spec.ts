@@ -1,30 +1,12 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { AuditService } from '../audit/audit.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { createPartialPrismaMock, type PrismaMockRecord } from '../../test/helpers/prisma.mock';
 import { MemberModulesController } from './member-modules.controller';
 
 describe('MemberModulesController', () => {
-  const auditService = { log: jest.fn() };
-
-  const prisma = {
-    memberArea: {
-      findFirst: jest.fn(),
-      updateMany: jest.fn(),
-    },
-    memberModule: {
-      findFirst: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-      count: jest.fn(),
-    },
-    memberLesson: {
-      findFirst: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-      count: jest.fn(),
-    },
-  } as never;
-
+  let auditService: { log: jest.Mock };
+  let prisma: PrismaMockRecord;
   let controller: MemberModulesController;
 
   const mockReq = (overrides: Partial<{ sub: string; workspaceId: string }> = {}) =>
@@ -38,22 +20,31 @@ describe('MemberModulesController', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    controller = new MemberModulesController(prisma as never, auditService as never);
+    auditService = { log: jest.fn() };
+    prisma = createPartialPrismaMock({
+      memberArea: ['findFirst', 'updateMany'],
+      memberModule: ['findFirst', 'create', 'update', 'delete', 'count'],
+      memberLesson: ['findFirst', 'create', 'update', 'delete', 'count'],
+    });
+    controller = new MemberModulesController(
+      prisma as unknown as PrismaService,
+      auditService as unknown as AuditService,
+    );
   });
 
   describe('createModule', () => {
     it('creates a module inside a member area', async () => {
-      (prisma as never).memberArea.findFirst.mockResolvedValue({
+      prisma.memberArea.findFirst.mockResolvedValue({
         id: 'area-1',
         workspaceId: 'ws-1',
       });
-      (prisma as never).memberModule.create.mockResolvedValue({
+      prisma.memberModule.create.mockResolvedValue({
         id: 'mod-1',
         name: 'Module 1',
         memberAreaId: 'area-1',
       });
-      (prisma as never).memberModule.count.mockResolvedValue(1);
-      (prisma as never).memberArea.updateMany.mockResolvedValue({ count: 1 });
+      prisma.memberModule.count.mockResolvedValue(1);
+      prisma.memberArea.updateMany.mockResolvedValue({ count: 1 });
 
       const dto = { name: 'Module 1', description: 'Desc', position: 0 };
       const result = await controller.createModule(mockReq(), 'area-1', dto);
@@ -63,18 +54,18 @@ describe('MemberModulesController', () => {
     });
 
     it('throws NotFoundException when member area not found', async () => {
-      (prisma as never).memberArea.findFirst.mockResolvedValue(null);
+      prisma.memberArea.findFirst.mockResolvedValue(null);
       await expect(
         controller.createModule(mockReq(), 'nonexistent', { name: 'M' }),
       ).rejects.toThrow(NotFoundException);
     });
 
     it('returns existing module on duplicate name (idempotent)', async () => {
-      (prisma as never).memberArea.findFirst.mockResolvedValue({
+      prisma.memberArea.findFirst.mockResolvedValue({
         id: 'area-1',
         workspaceId: 'ws-1',
       });
-      (prisma as never).memberModule.findFirst.mockResolvedValue({
+      prisma.memberModule.findFirst.mockResolvedValue({
         id: 'mod-old',
         name: 'Duplicate',
       });
@@ -89,15 +80,15 @@ describe('MemberModulesController', () => {
 
   describe('updateModule', () => {
     it('updates a module', async () => {
-      (prisma as never).memberArea.findFirst.mockResolvedValue({
+      prisma.memberArea.findFirst.mockResolvedValue({
         id: 'area-1',
         workspaceId: 'ws-1',
       });
-      (prisma as never).memberModule.findFirst.mockResolvedValue({
+      prisma.memberModule.findFirst.mockResolvedValue({
         id: 'mod-1',
         memberAreaId: 'area-1',
       });
-      (prisma as never).memberModule.update.mockResolvedValue({
+      prisma.memberModule.update.mockResolvedValue({
         id: 'mod-1',
         name: 'Updated',
         memberAreaId: 'area-1',
@@ -111,38 +102,38 @@ describe('MemberModulesController', () => {
     });
 
     it('throws NotFoundException when area not found', async () => {
-      (prisma as never).memberArea.findFirst.mockResolvedValue(null);
-      await expect(
-        controller.updateModule(mockReq(), 'nonexistent', 'mod-1', {}),
-      ).rejects.toThrow(NotFoundException);
+      prisma.memberArea.findFirst.mockResolvedValue(null);
+      await expect(controller.updateModule(mockReq(), 'nonexistent', 'mod-1', {})).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('throws NotFoundException when module not found', async () => {
-      (prisma as never).memberArea.findFirst.mockResolvedValue({
+      prisma.memberArea.findFirst.mockResolvedValue({
         id: 'area-1',
         workspaceId: 'ws-1',
       });
-      (prisma as never).memberModule.findFirst.mockResolvedValue(null);
-      await expect(
-        controller.updateModule(mockReq(), 'area-1', 'nonexistent', {}),
-      ).rejects.toThrow(NotFoundException);
+      prisma.memberModule.findFirst.mockResolvedValue(null);
+      await expect(controller.updateModule(mockReq(), 'area-1', 'nonexistent', {})).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
   describe('deleteModule', () => {
     it('deletes a module and updates counts', async () => {
-      (prisma as never).memberArea.findFirst.mockResolvedValue({
+      prisma.memberArea.findFirst.mockResolvedValue({
         id: 'area-1',
         workspaceId: 'ws-1',
       });
-      (prisma as never).memberModule.findFirst.mockResolvedValue({
+      prisma.memberModule.findFirst.mockResolvedValue({
         id: 'mod-1',
         memberAreaId: 'area-1',
       });
-      (prisma as never).memberModule.delete.mockResolvedValue({ id: 'mod-1' });
-      (prisma as never).memberModule.count.mockResolvedValue(0);
-      (prisma as never).memberLesson.count.mockResolvedValue(0);
-      (prisma as never).memberArea.updateMany.mockResolvedValue({ count: 1 });
+      prisma.memberModule.delete.mockResolvedValue({ id: 'mod-1' });
+      prisma.memberModule.count.mockResolvedValue(0);
+      prisma.memberLesson.count.mockResolvedValue(0);
+      prisma.memberArea.updateMany.mockResolvedValue({ count: 1 });
 
       const result = await controller.deleteModule(mockReq(), 'area-1', 'mod-1');
       expect(result.success).toBe(true);
@@ -150,34 +141,34 @@ describe('MemberModulesController', () => {
     });
 
     it('throws NotFoundException when module not found', async () => {
-      (prisma as never).memberArea.findFirst.mockResolvedValue({
+      prisma.memberArea.findFirst.mockResolvedValue({
         id: 'area-1',
         workspaceId: 'ws-1',
       });
-      (prisma as never).memberModule.findFirst.mockResolvedValue(null);
-      await expect(
-        controller.deleteModule(mockReq(), 'area-1', 'nonexistent'),
-      ).rejects.toThrow(NotFoundException);
+      prisma.memberModule.findFirst.mockResolvedValue(null);
+      await expect(controller.deleteModule(mockReq(), 'area-1', 'nonexistent')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
   describe('createLesson', () => {
     it('creates a lesson inside a module', async () => {
-      (prisma as never).memberArea.findFirst.mockResolvedValue({
+      prisma.memberArea.findFirst.mockResolvedValue({
         id: 'area-1',
         workspaceId: 'ws-1',
       });
-      (prisma as never).memberModule.findFirst.mockResolvedValue({
+      prisma.memberModule.findFirst.mockResolvedValue({
         id: 'mod-1',
         memberAreaId: 'area-1',
       });
-      (prisma as never).memberLesson.create.mockResolvedValue({
+      prisma.memberLesson.create.mockResolvedValue({
         id: 'les-1',
         name: 'Lesson 1',
         moduleId: 'mod-1',
       });
-      (prisma as never).memberLesson.count.mockResolvedValue(1);
-      (prisma as never).memberArea.updateMany.mockResolvedValue({ count: 1 });
+      prisma.memberLesson.count.mockResolvedValue(1);
+      prisma.memberArea.updateMany.mockResolvedValue({ count: 1 });
 
       const result = await controller.createLesson(mockReq(), 'area-1', 'mod-1', {
         name: 'Lesson 1',
@@ -188,18 +179,18 @@ describe('MemberModulesController', () => {
     });
 
     it('throws NotFoundException when area not found', async () => {
-      (prisma as never).memberArea.findFirst.mockResolvedValue(null);
+      prisma.memberArea.findFirst.mockResolvedValue(null);
       await expect(
         controller.createLesson(mockReq(), 'nonexistent', 'mod-1', { name: 'L' }),
       ).rejects.toThrow(NotFoundException);
     });
 
     it('throws NotFoundException when module not found in area', async () => {
-      (prisma as never).memberArea.findFirst.mockResolvedValue({
+      prisma.memberArea.findFirst.mockResolvedValue({
         id: 'area-1',
         workspaceId: 'ws-1',
       });
-      (prisma as never).memberModule.findFirst.mockResolvedValue(null);
+      prisma.memberModule.findFirst.mockResolvedValue(null);
       await expect(
         controller.createLesson(mockReq(), 'area-1', 'nonexistent', { name: 'L' }),
       ).rejects.toThrow(NotFoundException);
@@ -208,16 +199,16 @@ describe('MemberModulesController', () => {
 
   describe('updateLesson', () => {
     it('updates a lesson', async () => {
-      (prisma as never).memberArea.findFirst.mockResolvedValue({
+      prisma.memberArea.findFirst.mockResolvedValue({
         id: 'area-1',
         workspaceId: 'ws-1',
       });
-      (prisma as never).memberLesson.findFirst.mockResolvedValue({
+      prisma.memberLesson.findFirst.mockResolvedValue({
         id: 'les-1',
         name: 'Old',
         moduleId: 'mod-1',
       });
-      (prisma as never).memberLesson.update.mockResolvedValue({
+      prisma.memberLesson.update.mockResolvedValue({
         id: 'les-1',
         name: 'Updated',
         moduleId: 'mod-1',
@@ -231,31 +222,31 @@ describe('MemberModulesController', () => {
     });
 
     it('throws NotFoundException when lesson not found', async () => {
-      (prisma as never).memberArea.findFirst.mockResolvedValue({
+      prisma.memberArea.findFirst.mockResolvedValue({
         id: 'area-1',
         workspaceId: 'ws-1',
       });
-      (prisma as never).memberLesson.findFirst.mockResolvedValue(null);
-      await expect(
-        controller.updateLesson(mockReq(), 'area-1', 'nonexistent', {}),
-      ).rejects.toThrow(NotFoundException);
+      prisma.memberLesson.findFirst.mockResolvedValue(null);
+      await expect(controller.updateLesson(mockReq(), 'area-1', 'nonexistent', {})).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
   describe('deleteLesson', () => {
     it('deletes a lesson and updates count', async () => {
-      (prisma as never).memberArea.findFirst.mockResolvedValue({
+      prisma.memberArea.findFirst.mockResolvedValue({
         id: 'area-1',
         workspaceId: 'ws-1',
       });
-      (prisma as never).memberLesson.findFirst.mockResolvedValue({
+      prisma.memberLesson.findFirst.mockResolvedValue({
         id: 'les-1',
         name: 'Lesson',
         moduleId: 'mod-1',
       });
-      (prisma as never).memberLesson.delete.mockResolvedValue({ id: 'les-1' });
-      (prisma as never).memberLesson.count.mockResolvedValue(0);
-      (prisma as never).memberArea.updateMany.mockResolvedValue({ count: 1 });
+      prisma.memberLesson.delete.mockResolvedValue({ id: 'les-1' });
+      prisma.memberLesson.count.mockResolvedValue(0);
+      prisma.memberArea.updateMany.mockResolvedValue({ count: 1 });
 
       const result = await controller.deleteLesson(mockReq(), 'area-1', 'les-1');
       expect(result.success).toBe(true);
@@ -263,20 +254,20 @@ describe('MemberModulesController', () => {
     });
 
     it('throws NotFoundException when lesson not found', async () => {
-      (prisma as never).memberArea.findFirst.mockResolvedValue({
+      prisma.memberArea.findFirst.mockResolvedValue({
         id: 'area-1',
         workspaceId: 'ws-1',
       });
-      (prisma as never).memberLesson.findFirst.mockResolvedValue(null);
-      await expect(
-        controller.deleteLesson(mockReq(), 'area-1', 'nonexistent'),
-      ).rejects.toThrow(NotFoundException);
+      prisma.memberLesson.findFirst.mockResolvedValue(null);
+      await expect(controller.deleteLesson(mockReq(), 'area-1', 'nonexistent')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
   describe('parseReleaseDate', () => {
     it('rejects invalid date strings via createModule', async () => {
-      (prisma as never).memberArea.findFirst.mockResolvedValue({
+      prisma.memberArea.findFirst.mockResolvedValue({
         id: 'area-1',
         workspaceId: 'ws-1',
       });

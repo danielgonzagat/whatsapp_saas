@@ -6,11 +6,7 @@
  * based on refund rate, churn risk, and engagement signals.
  */
 
-import type {
-  OfferDetectorInput,
-  OfferDetectorResult,
-  OfferInsight,
-} from '../offer.types';
+import type { OfferDetectorInput, OfferDetectorResult, OfferInsight } from '../offer.types';
 import { OFFER_EVENT_NAMES, withinWindow } from '../offer.types';
 
 const MIN_SALES_PER_PRODUCT = 4;
@@ -18,10 +14,10 @@ const HIGH_REFUND_RATE = 0.25;
 const HIGH_CHURN_SIGNAL_RATE = 0.3;
 const WINDOW_DAYS = 120;
 
-function extractProductId(
-  payload: Readonly<Record<string, unknown>> | undefined,
-): string {
-  if (!payload) {return 'unknown';}
+function extractProductId(payload: Readonly<Record<string, unknown>> | undefined): string {
+  if (!payload) {
+    return 'unknown';
+  }
   const pid = payload['productId'] ?? payload['productRef'] ?? payload['planId'];
   return typeof pid === 'string' ? pid : 'unknown';
 }
@@ -29,14 +25,14 @@ function extractProductId(
 function extractProductTier(
   payload: Readonly<Record<string, unknown>> | undefined,
 ): string | undefined {
-  if (!payload) {return undefined;}
+  if (!payload) {
+    return undefined;
+  }
   const tier = payload['productTier'] ?? payload['tier'];
   return typeof tier === 'string' ? tier : undefined;
 }
 
-export function detectProductVersionFit(
-  input: OfferDetectorInput,
-): OfferDetectorResult {
+export function detectProductVersionFit(input: OfferDetectorInput): OfferDetectorResult {
   const { events, workspaceId, nowMs = Date.now() } = input;
   const insights: OfferInsight[] = [];
 
@@ -55,7 +51,9 @@ export function detectProductVersionFit(
   for (const event of filtered) {
     const pid = extractProductId(event.payload);
     const tier = extractProductTier(event.payload);
-    if (tier) {productTiers.set(pid, tier);}
+    if (tier) {
+      productTiers.set(pid, tier);
+    }
 
     if (event.eventName === 'commerce.payment.approved') {
       productSales.set(pid, (productSales.get(pid) ?? 0) + 1);
@@ -67,7 +65,9 @@ export function detectProductVersionFit(
   }
 
   for (const [productId, sales] of productSales) {
-    if (sales < MIN_SALES_PER_PRODUCT) {continue;}
+    if (sales < MIN_SALES_PER_PRODUCT) {
+      continue;
+    }
     const refunds = productRefunds.get(productId) ?? 0;
     const churn = productChurn.get(productId) ?? 0;
     const refundRate = refunds / sales;
@@ -94,7 +94,10 @@ export function detectProductVersionFit(
       });
     }
 
-    if (churnRate > HIGH_CHURN_SIGNAL_RATE && !insights.some((i) => i.insightId.includes(productId))) {
+    if (
+      churnRate > HIGH_CHURN_SIGNAL_RATE &&
+      !insights.some((i) => i.insightId.includes(productId))
+    ) {
       insights.push({
         insightId: `offer_pvf_churn_${workspaceId}_${productId}`,
         kind: 'product_version_fit',

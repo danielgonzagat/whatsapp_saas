@@ -43,13 +43,13 @@ jest.mock('./helpers/common.helpers', () => ({
   ),
   getWorkspaceId: jest.fn(() => 'ws-1'),
   normalizeOptionalText: jest.fn((v: string) => v),
-  parseNumber: jest.fn((v: unknown) =>
-    v !== undefined && v !== null ? Number(v) : undefined,
-  ),
+  parseNumber: jest.fn((v: unknown) => (v !== undefined && v !== null ? Number(v) : undefined)),
   removeUndefined: jest.fn((obj: Record<string, unknown>) => {
     const result: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(obj)) {
-      if (v !== undefined) result[k] = v;
+      if (v !== undefined) {
+        result[k] = v;
+      }
     }
     return result;
   }),
@@ -93,7 +93,7 @@ describe('ProductAffiliateController', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    controller = new ProductAffiliateController(prisma as never);
+    controller = new ProductAffiliateController(prisma);
   });
 
   describe('getSummary', () => {
@@ -106,8 +106,8 @@ describe('ProductAffiliateController', () => {
 
   describe('updateConfig', () => {
     it('updates product affiliate config and returns summary', async () => {
-      (prisma as never).product.updateMany.mockResolvedValue({ count: 1 });
-      (prisma as never).product.findFirstOrThrow.mockResolvedValue({
+      prisma.product.updateMany.mockResolvedValue({ count: 1 });
+      prisma.product.findFirstOrThrow.mockResolvedValue({
         id: 'p-1',
         workspaceId: 'ws-1',
         affiliateEnabled: true,
@@ -119,8 +119,8 @@ describe('ProductAffiliateController', () => {
         commissionOtherClicksPercent: 30,
         imageUrl: null,
       });
-      (prisma as never).affiliateProduct.findUnique.mockResolvedValue(null);
-      (prisma as never).affiliateProduct.upsert.mockResolvedValue({ id: 'ap-1' });
+      prisma.affiliateProduct.findUnique.mockResolvedValue(null);
+      prisma.affiliateProduct.upsert.mockResolvedValue({ id: 'ap-1' });
 
       const result = await controller.updateConfig('p-1', { commissionPercent: 50 }, mockReq());
       expect(result).toHaveProperty('product');
@@ -149,29 +149,29 @@ describe('ProductAffiliateController', () => {
 
   describe('approveRequest', () => {
     it('approves a pending request and creates link', async () => {
-      (prisma as never).affiliateRequest.findFirst.mockResolvedValue({
+      prisma.affiliateRequest.findFirst.mockResolvedValue({
         id: 'req-1',
         affiliateProductId: 'ap-1',
         affiliateWorkspaceId: 'ws-2',
       });
-      (prisma as never).affiliateLink.findFirst.mockResolvedValue(null);
-      (prisma as never).affiliateLink.create.mockResolvedValue({ id: 'link-1', code: 'ABC' });
+      prisma.affiliateLink.findFirst.mockResolvedValue(null);
+      prisma.affiliateLink.create.mockResolvedValue({ id: 'link-1', code: 'ABC' });
 
       const result = await controller.approveRequest('p-1', 'req-1', mockReq());
       expect(result).toHaveProperty('product');
     });
 
     it('throws NotFoundException when request not found', async () => {
-      (prisma as never).affiliateRequest.findFirst.mockResolvedValue(null);
-      await expect(
-        controller.approveRequest('p-1', 'nonexistent', mockReq()),
-      ).rejects.toThrow(NotFoundException);
+      prisma.affiliateRequest.findFirst.mockResolvedValue(null);
+      await expect(controller.approveRequest('p-1', 'nonexistent', mockReq())).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
   describe('rejectRequest', () => {
     it('rejects a request and deactivates associated links', async () => {
-      (prisma as never).affiliateRequest.findFirst.mockResolvedValue({
+      prisma.affiliateRequest.findFirst.mockResolvedValue({
         id: 'req-1',
         affiliateProductId: 'ap-1',
         affiliateWorkspaceId: 'ws-2',
@@ -182,16 +182,16 @@ describe('ProductAffiliateController', () => {
     });
 
     it('throws NotFoundException when request not found', async () => {
-      (prisma as never).affiliateRequest.findFirst.mockResolvedValue(null);
-      await expect(
-        controller.rejectRequest('p-1', 'nonexistent', mockReq()),
-      ).rejects.toThrow(NotFoundException);
+      prisma.affiliateRequest.findFirst.mockResolvedValue(null);
+      await expect(controller.rejectRequest('p-1', 'nonexistent', mockReq())).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
   describe('updateLink', () => {
     it('updates link active state', async () => {
-      (prisma as never).affiliateLink.findFirst.mockResolvedValue({
+      prisma.affiliateLink.findFirst.mockResolvedValue({
         id: 'link-1',
         affiliateProductId: 'ap-1',
         affiliateWorkspaceId: 'ws-2',
@@ -203,13 +203,13 @@ describe('ProductAffiliateController', () => {
     });
 
     it('throws BadRequestException when active field is missing', async () => {
-      await expect(
-        controller.updateLink('p-1', 'link-1', {}, mockReq()),
-      ).rejects.toThrow(BadRequestException);
+      await expect(controller.updateLink('p-1', 'link-1', {}, mockReq())).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('throws NotFoundException when link not found', async () => {
-      (prisma as never).affiliateLink.findFirst.mockResolvedValue(null);
+      prisma.affiliateLink.findFirst.mockResolvedValue(null);
       await expect(
         controller.updateLink('p-1', 'nonexistent', { active: true }, mockReq()),
       ).rejects.toThrow(NotFoundException);

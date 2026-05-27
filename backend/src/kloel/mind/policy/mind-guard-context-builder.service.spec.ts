@@ -24,10 +24,7 @@ describe('MindGuardContextBuilderService', () => {
       kloelSale: { findFirst: jest.fn().mockResolvedValue(null) },
     };
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        MindGuardContextBuilderService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [MindGuardContextBuilderService, { provide: PrismaService, useValue: prisma }],
     }).compile();
     service = module.get(MindGuardContextBuilderService);
   });

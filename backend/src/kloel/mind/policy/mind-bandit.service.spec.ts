@@ -23,10 +23,7 @@ describe('MindBanditService', () => {
       },
     };
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        MindBanditService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [MindBanditService, { provide: PrismaService, useValue: prisma }],
     }).compile();
     service = module.get(MindBanditService);
   });

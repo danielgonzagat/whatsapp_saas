@@ -350,12 +350,7 @@ export class KloelChatToolsService {
   // === PRODUCT MANAGEMENT TOOL DELEGATORS ===
 
   toolUpdateProduct(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
-    return runUpdateProduct(
-      this.prisma,
-      this.productService,
-      workspaceId,
-      args as Parameters<typeof runUpdateProduct>[3],
-    );
+    return runUpdateProduct(this.prisma, this.productService, workspaceId, args);
   }
 
   async toolPublishProduct(

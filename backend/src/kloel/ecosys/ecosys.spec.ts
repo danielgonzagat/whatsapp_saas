@@ -102,18 +102,12 @@ describe('OpportunityRankerService (UTP-ECOSYS-006)', () => {
   });
 
   it('caps results when cap is provided', () => {
-    const out = ranker.rank(
-      [fit(0.9, 'a'), fit(0.7, 'b'), fit(0.5, 'c')],
-      { cap: 2 },
-    );
+    const out = ranker.rank([fit(0.9, 'a'), fit(0.7, 'b'), fit(0.5, 'c')], { cap: 2 });
     expect(out).toHaveLength(2);
   });
 
   it('drops opportunities with composite score 0', () => {
-    const out = ranker.rank(
-      [fit(0.9, 'a')],
-      { conflictRiskByFitId: new Map([['a', 1]]) },
-    );
+    const out = ranker.rank([fit(0.9, 'a')], { conflictRiskByFitId: new Map([['a', 1]]) });
     expect(out).toHaveLength(0);
   });
 });
@@ -254,7 +248,9 @@ describe('SuggestionDeliveryService (UTP-ECOSYS-009)', () => {
       disclosure: 'Kloel has commercial link with the recommended party',
     });
     expect(r.status).toBe('delivered');
-    if (r.status !== 'delivered') {return;}
+    if (r.status !== 'delivered') {
+      return;
+    }
     expect(r.suggestion.disclosure).toBeTruthy();
   });
 });

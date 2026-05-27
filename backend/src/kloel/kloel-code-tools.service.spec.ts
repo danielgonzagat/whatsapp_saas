@@ -29,31 +29,43 @@ jest.mock('util', () => {
   const actual = jest.requireActual('util');
   return {
     ...actual,
-    promisify: () => jest.fn().mockImplementation((cmd: string, opts?: Record<string, unknown>) => {
-      if (typeof cmd !== 'string') return Promise.reject(new Error('bad cmd'));
-      if (cmd.includes('git log')) {
-        return Promise.resolve({ stdout: 'abc123 feat: test\ndef456 fix: bug', stderr: '' });
-      }
-      if (cmd.includes('git diff')) {
-        return Promise.resolve({ stdout: 'src/file.ts | 10 +++', stderr: '' });
-      }
-      if (cmd.includes('git status')) {
-        return Promise.resolve({ stdout: 'M src/file.ts', stderr: '' });
-      }
-      if (cmd.includes('rg --line-number')) {
-        return Promise.resolve({ stdout: 'src/file.ts:10:match', stderr: '' });
-      }
-      if (cmd.includes('npx jest')) {
-        return Promise.resolve({ stdout: JSON.stringify({ success: true, numTotalTests: 5, numPassedTests: 5, numFailedTests: 0, testResults: [] }), stderr: '' });
-      }
-      if (cmd.includes('npx tsc')) {
+    promisify: () =>
+      jest.fn().mockImplementation((cmd: string, opts?: Record<string, unknown>) => {
+        if (typeof cmd !== 'string') {
+          return Promise.reject(new Error('bad cmd'));
+        }
+        if (cmd.includes('git log')) {
+          return Promise.resolve({ stdout: 'abc123 feat: test\ndef456 fix: bug', stderr: '' });
+        }
+        if (cmd.includes('git diff')) {
+          return Promise.resolve({ stdout: 'src/file.ts | 10 +++', stderr: '' });
+        }
+        if (cmd.includes('git status')) {
+          return Promise.resolve({ stdout: 'M src/file.ts', stderr: '' });
+        }
+        if (cmd.includes('rg --line-number')) {
+          return Promise.resolve({ stdout: 'src/file.ts:10:match', stderr: '' });
+        }
+        if (cmd.includes('npx jest')) {
+          return Promise.resolve({
+            stdout: JSON.stringify({
+              success: true,
+              numTotalTests: 5,
+              numPassedTests: 5,
+              numFailedTests: 0,
+              testResults: [],
+            }),
+            stderr: '',
+          });
+        }
+        if (cmd.includes('npx tsc')) {
+          return Promise.resolve({ stdout: '', stderr: '' });
+        }
+        if (cmd.includes('codegraph')) {
+          return Promise.resolve({ stdout: 'ok', stderr: '' });
+        }
         return Promise.resolve({ stdout: '', stderr: '' });
-      }
-      if (cmd.includes('codegraph')) {
-        return Promise.resolve({ stdout: 'ok', stderr: '' });
-      }
-      return Promise.resolve({ stdout: '', stderr: '' });
-    }),
+      }),
   };
 });
 
@@ -168,7 +180,9 @@ describe('KloelCodeToolsService', () => {
   describe('toolCodeOutline', () => {
     it('detects symbols from source code', async () => {
       mockAccess.mockResolvedValue(undefined);
-      mockReadFile.mockResolvedValue('export function foo() {}\nexport class Bar {}\nconst baz = 1;\n');
+      mockReadFile.mockResolvedValue(
+        'export function foo() {}\nexport class Bar {}\nconst baz = 1;\n',
+      );
       const result = await service.toolCodeOutline('src/test.ts');
       expect(result.success).toBe(true);
     });
@@ -184,7 +198,9 @@ describe('KloelCodeToolsService', () => {
 
   describe('toolReadPrismaSchema', () => {
     it('parses Prisma schema models and enums', async () => {
-      mockReadFile.mockResolvedValue('model User {\n  id String\n}\nmodel Product {\n  id String\n}\nenum Role {\n  ADMIN\n}');
+      mockReadFile.mockResolvedValue(
+        'model User {\n  id String\n}\nmodel Product {\n  id String\n}\nenum Role {\n  ADMIN\n}',
+      );
       const result = await service.toolReadPrismaSchema();
       expect(result.success).toBe(true);
       expect(result.modelCount).toBe(2);

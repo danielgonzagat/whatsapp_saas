@@ -15,11 +15,10 @@ export class ExperimentRunner {
   private runs = new Map<string, ExperimentRun>();
   private counter = 0;
 
-  start(
-    proposal: ImprovementProposal,
-    authorization: HumanAuthorization,
-  ): ExperimentRun | null {
-    if (authorization.status !== 'approved') {return null;}
+  start(proposal: ImprovementProposal, authorization: HumanAuthorization): ExperimentRun | null {
+    if (authorization.status !== 'approved') {
+      return null;
+    }
 
     this.counter += 1;
     const now = new Date().toISOString();
@@ -40,10 +39,18 @@ export class ExperimentRunner {
     return run;
   }
 
-  complete(runId: string, evidenceCount: number, verdict: 'confirmed' | 'refuted' | 'inconclusive'): ExperimentRun | null {
+  complete(
+    runId: string,
+    evidenceCount: number,
+    verdict: 'confirmed' | 'refuted' | 'inconclusive',
+  ): ExperimentRun | null {
     const run = this.runs.get(runId);
-    if (!run) {return null;}
-    if (run.status !== 'running') {return run;}
+    if (!run) {
+      return null;
+    }
+    if (run.status !== 'running') {
+      return run;
+    }
 
     const completed: ExperimentRun = {
       ...run,
@@ -59,7 +66,9 @@ export class ExperimentRunner {
 
   fail(runId: string, _error: string): ExperimentRun | null {
     const run = this.runs.get(runId);
-    if (!run) {return null;}
+    if (!run) {
+      return null;
+    }
 
     const failed: ExperimentRun = {
       ...run,

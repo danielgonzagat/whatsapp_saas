@@ -10,10 +10,7 @@ describe('WorkerRuntimeService', () => {
   beforeEach(async () => {
     config = { get: jest.fn() };
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        WorkerRuntimeService,
-        { provide: ConfigService, useValue: config },
-      ],
+      providers: [WorkerRuntimeService, { provide: ConfigService, useValue: config }],
     }).compile();
     service = module.get(WorkerRuntimeService);
   });
@@ -46,8 +43,12 @@ describe('WorkerRuntimeService', () => {
 
   it('returns true when worker health endpoint reports {status: "ok"}', async () => {
     config.get.mockImplementation((key: string) => {
-      if (key === 'WORKER_FORCE_AVAILABLE') {return undefined;}
-      if (key === 'WORKER_HEALTH_URL') {return 'http://worker/health';}
+      if (key === 'WORKER_FORCE_AVAILABLE') {
+        return undefined;
+      }
+      if (key === 'WORKER_HEALTH_URL') {
+        return 'http://worker/health';
+      }
       return undefined;
     });
     global.fetch = jest.fn().mockResolvedValue({
@@ -103,8 +104,12 @@ describe('WorkerRuntimeService', () => {
 
   it('sends Authorization header when WORKER_METRICS_TOKEN configured', async () => {
     config.get.mockImplementation((key: string) => {
-      if (key === 'WORKER_HEALTH_URL') {return 'http://worker/health';}
-      if (key === 'WORKER_METRICS_TOKEN') {return 'sk-test-token';}
+      if (key === 'WORKER_HEALTH_URL') {
+        return 'http://worker/health';
+      }
+      if (key === 'WORKER_METRICS_TOKEN') {
+        return 'sk-test-token';
+      }
       return undefined;
     });
     const fetchMock = jest.fn().mockResolvedValue({

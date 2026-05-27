@@ -18,8 +18,12 @@ describe('CodeAccessService', () => {
       callCount++;
       // First call: backend/ under hint
       // Service walks up; let first call fail so it walks to parent
-      if (callCount <= 3) return false;
-      if (p.endsWith('backend') || p.endsWith('frontend')) return true;
+      if (callCount <= 3) {
+        return false;
+      }
+      if (p.endsWith('backend') || p.endsWith('frontend')) {
+        return true;
+      }
       return false;
     });
     const m: TestingModule = await Test.createTestingModule({
@@ -71,13 +75,17 @@ describe('CodeAccessService', () => {
     it('returns empty array when no matches (exit code 1)', () => {
       const err = new Error('no matches') as any;
       err.status = 1;
-      mockExecSync.mockImplementation(() => { throw err; });
+      mockExecSync.mockImplementation(() => {
+        throw err;
+      });
       const hits = service.search('nonexistent');
       expect(hits).toEqual([]);
     });
 
     it('survives exec failures', () => {
-      mockExecSync.mockImplementation(() => { throw new Error('rg not found'); });
+      mockExecSync.mockImplementation(() => {
+        throw new Error('rg not found');
+      });
       const hits = service.search('something');
       expect(hits).toEqual([]);
     });
@@ -93,7 +101,9 @@ describe('CodeAccessService', () => {
     it('returns empty when symbol not found', () => {
       const err = new Error('none') as any;
       err.status = 1;
-      mockExecSync.mockImplementation(() => { throw err; });
+      mockExecSync.mockImplementation(() => {
+        throw err;
+      });
       const hits = service.findUsages('nonexistentSymbol');
       expect(hits).toEqual([]);
     });
@@ -109,7 +119,9 @@ describe('CodeAccessService', () => {
     it('falls back to domainService search when empty', () => {
       const err = new Error('none') as any;
       err.status = 1;
-      mockExecSync.mockImplementation(() => { throw err; });
+      mockExecSync.mockImplementation(() => {
+        throw err;
+      });
       const hits = service.whichServiceImplements('cap-x');
       expect(hits).toEqual([]);
     });

@@ -66,7 +66,9 @@ describe('SpineEmitterService', () => {
 
   it('recentEvents(limit) returns the tail slice', async () => {
     const svc = build();
-    for (let i = 0; i < 10; i += 1) {await svc.emit({ ...baseInput, payload: { i } });}
+    for (let i = 0; i < 10; i += 1) {
+      await svc.emit({ ...baseInput, payload: { i } });
+    }
     const last3 = svc.recentEvents(3);
     expect(last3).toHaveLength(3);
     expect(last3[2]?.payload?.['i']).toBe(9);
@@ -131,7 +133,9 @@ describe('SpineEmitterService', () => {
   it('ringSize tracks buffered count', async () => {
     const svc = build({ ringCapacity: 5 });
     expect(svc.ringSize()).toBe(0);
-    for (let i = 0; i < 3; i += 1) {await svc.emit(baseInput);}
+    for (let i = 0; i < 3; i += 1) {
+      await svc.emit(baseInput);
+    }
     expect(svc.ringSize()).toBe(3);
   });
 
@@ -155,8 +159,7 @@ describe('SpineEmitterService', () => {
       await svc.emit(baseInput);
 
       expect(mockXadd).toHaveBeenCalledTimes(1);
-      const [key, maxlenArg, approxArg, maxlenVal, idArg, field, value] =
-        mockXadd.mock.calls[0];
+      const [key, maxlenArg, approxArg, maxlenVal, idArg, field, value] = mockXadd.mock.calls[0];
       expect(key).toBe('spine:events:wks_demo');
       expect(maxlenArg).toBe('MAXLEN');
       expect(approxArg).toBe('~');
@@ -227,11 +230,7 @@ describe('SpineEmitterService', () => {
 
       await svc.replayFromStream('wks_demo', '1620000000000-0');
 
-      expect(mockXrange).toHaveBeenCalledWith(
-        'spine:events:wks_demo',
-        '1620000000000-0',
-        '+',
-      );
+      expect(mockXrange).toHaveBeenCalledWith('spine:events:wks_demo', '1620000000000-0', '+');
     });
 
     it('replayFromStream returns empty array when redis is absent', async () => {

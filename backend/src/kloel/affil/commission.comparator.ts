@@ -18,13 +18,13 @@ export class CommissionComparatorService {
       return null;
     }
 
-    const monthlySales = input.estimatedMonthlySales > 0
-      ? input.estimatedMonthlySales
-      : DEFAULT_ESTIMATED_SALES;
+    const monthlySales =
+      input.estimatedMonthlySales > 0 ? input.estimatedMonthlySales : DEFAULT_ESTIMATED_SALES;
 
     const comparisons: CommissionEntry[] = input.entries.map((entry) => ({
       ...entry,
-      expectedMonthlyEarnings: Math.round(entry.effectiveRate * entry.avgTicket * monthlySales * 100) / 100,
+      expectedMonthlyEarnings:
+        Math.round(entry.effectiveRate * entry.avgTicket * monthlySales * 100) / 100,
     }));
 
     const sorted = [...comparisons].sort(
@@ -47,9 +47,7 @@ export class CommissionComparatorService {
   }
 
   findBestByRate(comparison: CommissionComparison): CommissionEntry {
-    const sorted = [...comparison.comparisons].sort(
-      (a, b) => b.effectiveRate - a.effectiveRate,
-    );
+    const sorted = [...comparison.comparisons].sort((a, b) => b.effectiveRate - a.effectiveRate);
     return sorted[0]!;
   }
 
@@ -60,9 +58,15 @@ export class CommissionComparatorService {
   ): number | null {
     const current = comparison.comparisons.find((c) => c.offerId === currentOfferId);
     const target = comparison.comparisons.find((c) => c.offerId === targetOfferId);
-    if (!current || !target || current.expectedMonthlyEarnings === 0) {return null;}
-    return Math.round(
-      ((target.expectedMonthlyEarnings - current.expectedMonthlyEarnings) / current.expectedMonthlyEarnings) * 1000,
-    ) / 1000;
+    if (!current || !target || current.expectedMonthlyEarnings === 0) {
+      return null;
+    }
+    return (
+      Math.round(
+        ((target.expectedMonthlyEarnings - current.expectedMonthlyEarnings) /
+          current.expectedMonthlyEarnings) *
+          1000,
+      ) / 1000
+    );
   }
 }

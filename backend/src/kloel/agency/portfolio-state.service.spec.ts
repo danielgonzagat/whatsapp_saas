@@ -43,9 +43,7 @@ describe('UTP-AGENCY-009 — PortfolioStateService', () => {
 
   it('computes margin snapshot with positive margin', () => {
     const input = baseInput({
-      clients: [
-        baseClient({ workspaceId: 'ws-m', revenueCents: 100_00n, costCents: 30_00n }),
-      ],
+      clients: [baseClient({ workspaceId: 'ws-m', revenueCents: 100_00n, costCents: 30_00n })],
     });
 
     const result = service.consolidate(input);

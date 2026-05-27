@@ -73,7 +73,9 @@ describe('InternalWhatsAppRuntimeController', () => {
     });
 
     it('throws ForbiddenException with invalid key', async () => {
-      await expect(controller.ingestInbound({ from: 'x' }, 'wrong-key')).rejects.toThrow(ForbiddenException);
+      await expect(controller.ingestInbound({ from: 'x' }, 'wrong-key')).rejects.toThrow(
+        ForbiddenException,
+      );
     });
   });
 
@@ -82,9 +84,12 @@ describe('InternalWhatsAppRuntimeController', () => {
       const result = await controller.sessionConnected({ workspaceId: ws }, INTERNAL_KEY);
       expect(result.success).toBe(true);
       expect(result.autopilotEnabled).toBe(true);
-      expect(workspaceService.patchSettings).toHaveBeenCalledWith(ws, expect.objectContaining({
-        whatsappProvider: 'meta-cloud',
-      }));
+      expect(workspaceService.patchSettings).toHaveBeenCalledWith(
+        ws,
+        expect.objectContaining({
+          whatsappProvider: 'meta-cloud',
+        }),
+      );
     });
 
     it('returns failure when workspaceId is missing', async () => {
@@ -95,21 +100,42 @@ describe('InternalWhatsAppRuntimeController', () => {
 
   describe('sendText', () => {
     it('sends a text message via whatsapp service', async () => {
-      const result = await controller.sendText({ workspaceId: ws, to: '5511999999999', message: 'Hi' }, INTERNAL_KEY);
-      expect(whatsappService.sendMessage).toHaveBeenCalledWith(ws, '5511999999999', 'Hi', expect.objectContaining({ forceDirect: true }));
+      const result = await controller.sendText(
+        { workspaceId: ws, to: '5511999999999', message: 'Hi' },
+        INTERNAL_KEY,
+      );
+      expect(whatsappService.sendMessage).toHaveBeenCalledWith(
+        ws,
+        '5511999999999',
+        'Hi',
+        expect.objectContaining({ forceDirect: true }),
+      );
     });
 
     it('throws UnauthorizedException without internal key', async () => {
       delete process.env.INTERNAL_API_KEY;
-      await expect(controller.sendText({ workspaceId: ws, to: 'x', message: 'Hi' })).rejects.toThrow(UnauthorizedException);
+      await expect(
+        controller.sendText({ workspaceId: ws, to: 'x', message: 'Hi' }),
+      ).rejects.toThrow(UnauthorizedException);
       process.env.INTERNAL_API_KEY = INTERNAL_KEY;
     });
   });
 
   describe('sendMedia', () => {
     it('sends media via channel transport', async () => {
-      await controller.sendMedia({ workspaceId: ws, to: '5511999999999', mediaUrl: 'https://img.example/pic.jpg', caption: 'Look' }, INTERNAL_KEY);
-      expect(transports.send).toHaveBeenCalledWith(ws, expect.objectContaining({ mediaUrl: 'https://img.example/pic.jpg' }));
+      await controller.sendMedia(
+        {
+          workspaceId: ws,
+          to: '5511999999999',
+          mediaUrl: 'https://img.example/pic.jpg',
+          caption: 'Look',
+        },
+        INTERNAL_KEY,
+      );
+      expect(transports.send).toHaveBeenCalledWith(
+        ws,
+        expect.objectContaining({ mediaUrl: 'https://img.example/pic.jpg' }),
+      );
     });
   });
 
@@ -130,17 +156,26 @@ describe('InternalWhatsAppRuntimeController', () => {
   describe('getMessages', () => {
     it('returns messages with clamped pagination', async () => {
       await controller.getMessages(ws, 'chat-1', '50', '0', INTERNAL_KEY);
-      expect(whatsappService.getChatMessages).toHaveBeenCalledWith(ws, 'chat-1', { limit: 50, offset: 0 });
+      expect(whatsappService.getChatMessages).toHaveBeenCalledWith(ws, 'chat-1', {
+        limit: 50,
+        offset: 0,
+      });
     });
 
     it('clamps limit to max 100', async () => {
       await controller.getMessages(ws, 'chat-1', '999', '0', INTERNAL_KEY);
-      expect(whatsappService.getChatMessages).toHaveBeenCalledWith(ws, 'chat-1', { limit: 100, offset: 0 });
+      expect(whatsappService.getChatMessages).toHaveBeenCalledWith(ws, 'chat-1', {
+        limit: 100,
+        offset: 0,
+      });
     });
 
     it('defaults limit to 100 when invalid', async () => {
-      await controller.getMessages(ws, 'chat-1', undefined as unknown as string, undefined as unknown as string, INTERNAL_KEY);
-      expect(whatsappService.getChatMessages).toHaveBeenCalledWith(ws, 'chat-1', { limit: 100, offset: 0 });
+      await controller.getMessages(ws, 'chat-1', undefined, undefined, INTERNAL_KEY);
+      expect(whatsappService.getChatMessages).toHaveBeenCalledWith(ws, 'chat-1', {
+        limit: 100,
+        offset: 0,
+      });
     });
   });
 
@@ -153,20 +188,29 @@ describe('InternalWhatsAppRuntimeController', () => {
 
   describe('syncContact', () => {
     it('syncs a contact and upserts in DB', async () => {
-      const result = await controller.syncContact({ workspaceId: ws, phone: '(11) 99999-9999', name: 'John' }, INTERNAL_KEY);
+      const result = await controller.syncContact(
+        { workspaceId: ws, phone: '(11) 99999-9999', name: 'John' },
+        INTERNAL_KEY,
+      );
       expect(result.success).toBe(true);
       expect(result.contactId).toBe('c-1');
     });
 
     it('returns failure when fields are missing', async () => {
-      const result = await controller.syncContact({ workspaceId: '', phone: '', name: '' }, INTERNAL_KEY);
+      const result = await controller.syncContact(
+        { workspaceId: '', phone: '', name: '' },
+        INTERNAL_KEY,
+      );
       expect(result.success).toBe(false);
       expect(result.reason).toBe('missing_fields');
     });
 
     it('throws ForbiddenException with invalid key', async () => {
       await expect(
-        controller.syncContact({ workspaceId: ws, phone: '11999999999', name: 'John' }, 'wrong-key'),
+        controller.syncContact(
+          { workspaceId: ws, phone: '11999999999', name: 'John' },
+          'wrong-key',
+        ),
       ).rejects.toThrow(ForbiddenException);
     });
   });

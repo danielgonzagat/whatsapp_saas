@@ -16,10 +16,7 @@ describe('MindCaseMemoryService', () => {
       },
     };
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        MindCaseMemoryService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [MindCaseMemoryService, { provide: PrismaService, useValue: prisma }],
     }).compile();
     service = module.get(MindCaseMemoryService);
   });

@@ -18,9 +18,7 @@ export function detectCoolingWindow(input: DetectorInput): DetectorResult {
   const insights: Insight[] = [];
 
   const filtered = events.filter(
-    (e) =>
-      e.workspaceId === workspaceId &&
-      withinWindow(e.occurredAt, nowMs, windowDays),
+    (e) => e.workspaceId === workspaceId && withinWindow(e.occurredAt, nowMs, windowDays),
   );
 
   const leadCreationTimes = new Map<string, number>();
@@ -43,7 +41,9 @@ export function detectCoolingWindow(input: DetectorInput): DetectorResult {
         const payload = event.payload;
         if (payload) {
           const pid = payload['leadId'] ?? payload['leadRef'];
-          if (typeof pid === 'string') {leadId = pid;}
+          if (typeof pid === 'string') {
+            leadId = pid;
+          }
         }
       }
       if (leadId) {
@@ -58,14 +58,14 @@ export function detectCoolingWindow(input: DetectorInput): DetectorResult {
     }
   }
 
-  if (conversionDurations.length < MIN_CONVERSIONS) {return { insights: [] };}
+  if (conversionDurations.length < MIN_CONVERSIONS) {
+    return { insights: [] };
+  }
 
   const med = median(conversionDurations);
 
   if (med >= COOLING_WARNING_DAYS) {
-    const estimatedLoss = Math.round(
-      conversionDurations.length * 0.2 * 100_00,
-    );
+    const estimatedLoss = Math.round(conversionDurations.length * 0.2 * 100_00);
 
     insights.push({
       insightId: `insight_cw_${workspaceId}`,

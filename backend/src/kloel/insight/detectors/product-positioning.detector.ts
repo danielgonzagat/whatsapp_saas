@@ -12,19 +12,18 @@ import { withinWindow } from '../insight.types';
 
 const MIN_TRANSACTIONS = 5;
 
-function extractProductRole(
-  payload: Readonly<Record<string, unknown>> | undefined,
-): string {
-  if (!payload) {return 'unknown';}
-  const role =
-    payload['productRole'] ?? payload['role'] ?? payload['tier'] ?? payload['category'];
+function extractProductRole(payload: Readonly<Record<string, unknown>> | undefined): string {
+  if (!payload) {
+    return 'unknown';
+  }
+  const role = payload['productRole'] ?? payload['role'] ?? payload['tier'] ?? payload['category'];
   return typeof role === 'string' ? role : 'unknown';
 }
 
-function extractProductId(
-  payload: Readonly<Record<string, unknown>> | undefined,
-): string {
-  if (!payload) {return 'unknown';}
+function extractProductId(payload: Readonly<Record<string, unknown>> | undefined): string {
+  if (!payload) {
+    return 'unknown';
+  }
   const pid = payload['productId'] ?? payload['productRef'];
   return typeof pid === 'string' ? pid : 'unknown';
 }
@@ -44,7 +43,9 @@ export function detectProductPositioning(input: DetectorInput): DetectorResult {
       withinWindow(e.occurredAt, nowMs, windowDays),
   );
 
-  if (approved.length < MIN_TRANSACTIONS) {return { insights: [] };}
+  if (approved.length < MIN_TRANSACTIONS) {
+    return { insights: [] };
+  }
 
   const productRoles = new Map<
     string,
@@ -75,7 +76,9 @@ export function detectProductPositioning(input: DetectorInput): DetectorResult {
   for (const event of refunds) {
     const pid = extractProductId(event.payload);
     const entry = productRoles.get(pid);
-    if (entry) {entry.refundCount++;}
+    if (entry) {
+      entry.refundCount++;
+    }
   }
 
   for (const [productId, { declaredRole, purchaseCount, refundCount }] of productRoles) {
@@ -95,9 +98,7 @@ export function detectProductPositioning(input: DetectorInput): DetectorResult {
           `purchase count: ${purchaseCount}`,
           `refund rate: ${(refundRate * 100).toFixed(1)}%`,
         ],
-        estimatedFinancialImpactCents: Math.round(
-          refundCount * 150_00,
-        ),
+        estimatedFinancialImpactCents: Math.round(refundCount * 150_00),
         confidence: Math.min(0.8, 0.4 + refundRate * 1.5),
         recommendedChannel: 'dashboard',
         recommendedTiming: 'weekly',

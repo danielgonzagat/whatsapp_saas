@@ -6,18 +6,46 @@ const QUERY_TIMEOUT_MS = 5000;
 
 // Tables that are ALWAYS allowed to be read
 const READABLE_TABLES = new Set([
-  'Product', 'Plan', 'Checkout', 'Order', 'Coupon', 'Contact',
-  'Deal', 'Stage', 'Pipeline', 'ChatThread', 'ChatMessage',
-  'Workspace', 'Campaign', 'Flow', 'Affiliate', 'ProductUrl',
-  'ProductReview', 'ProductAIConfig', 'CheckoutPlan',
-  'KloelMemory', 'KloelSale', 'BrainEvent', 'AuditLog',
-  'Lead', 'Subscription', 'Wallet', 'Payment', 'Refund',
+  'Product',
+  'Plan',
+  'Checkout',
+  'Order',
+  'Coupon',
+  'Contact',
+  'Deal',
+  'Stage',
+  'Pipeline',
+  'ChatThread',
+  'ChatMessage',
+  'Workspace',
+  'Campaign',
+  'Flow',
+  'Affiliate',
+  'ProductUrl',
+  'ProductReview',
+  'ProductAIConfig',
+  'CheckoutPlan',
+  'KloelMemory',
+  'KloelSale',
+  'BrainEvent',
+  'AuditLog',
+  'Lead',
+  'Subscription',
+  'Wallet',
+  'Payment',
+  'Refund',
 ]);
 
 // Tables NEVER readable via chat
 const BLOCKED_TABLES = new Set([
-  'User', 'Auth', 'AuthPassword', 'ApiToken', 'WebhookSecret',
-  'ProviderSettings', 'StripeAccount', 'Session',
+  'User',
+  'Auth',
+  'AuthPassword',
+  'ApiToken',
+  'WebhookSecret',
+  'ProviderSettings',
+  'StripeAccount',
+  'Session',
 ]);
 
 /**
@@ -28,7 +56,6 @@ const BLOCKED_TABLES = new Set([
  */
 @Injectable()
 export class SafeQueryService {
-
   constructor(private readonly prisma: PrismaService) {}
 
   async query(
@@ -90,7 +117,9 @@ export class SafeQueryService {
     const matches = upper.matchAll(/(?:FROM|JOIN|INTO|UPDATE)\s+"?(\w+)"?/gi);
     for (const m of matches) {
       const name = m[1];
-      if (name && !names.includes(name)) {names.push(name);}
+      if (name && !names.includes(name)) {
+        names.push(name);
+      }
     }
     return names;
   }

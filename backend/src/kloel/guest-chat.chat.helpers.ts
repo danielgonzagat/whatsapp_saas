@@ -163,7 +163,10 @@ export async function generateGuestReply(
     if (primaryReply && primaryReply.length >= 2) {
       return primaryReply;
     }
-    logger.warn('[guest-chat] primary model returned empty/short reply, falling through to emergency chain', { sessionId, model: primaryModel });
+    logger.warn(
+      '[guest-chat] primary model returned empty/short reply, falling through to emergency chain',
+      { sessionId, model: primaryModel },
+    );
   } catch (error: unknown) {
     void opsAlert?.alertOnCriticalError(error, 'GuestChatService.resolveBackendOpenAIModel');
     logger.warn(
@@ -187,10 +190,7 @@ export async function generateGuestReply(
       logger.warn('[guest-chat] emergency model returned empty/short reply', { sessionId, model });
       return undefined;
     } catch (error: unknown) {
-      void opsAlert?.alertOnCriticalError(
-        error,
-        'GuestChatService.resolveBackendOpenAIModel',
-      );
+      void opsAlert?.alertOnCriticalError(error, 'GuestChatService.resolveBackendOpenAIModel');
       logger.warn(
         `Guest emergency model ${model} failed (${error instanceof Error ? error.message : 'unknown_error'}).`,
       );
@@ -229,25 +229,40 @@ export async function runDeterministicAction(
       try {
         await persistConversationMessage(sessionId, 'user', message, redis, conversations, logger);
         const result = await toolDispatcher.executeTool(workspaceId, action.tool, action.args);
-        void writeOperationReceipt(buildReceipt({
-          workspaceId,
-          toolName: action.tool,
-          args: action.args,
-          result: result,
-          channel: 'web',
-        }));
+        void writeOperationReceipt(
+          buildReceipt({
+            workspaceId,
+            toolName: action.tool,
+            args: action.args,
+            result: result,
+            channel: 'web',
+          }),
+        );
         if (spine && result.success) {
           const resultMeta = buildResultMeta(action.tool, result);
-          void spine.record({
-            workspaceId,
-            action: 'tool_executed' as never,
-            intent: action.tool,
-            status: 'executed',
-            meta: { args: action.args, userPreview: message.slice(0, 120), ...resultMeta } as never,
-          }).catch(() => {});
+          void spine
+            .record({
+              workspaceId,
+              action: 'tool_executed' as never,
+              intent: action.tool,
+              status: 'executed',
+              meta: {
+                args: action.args,
+                userPreview: message.slice(0, 120),
+                ...resultMeta,
+              } as never,
+            })
+            .catch(() => {});
         }
         const reply = formatToolResult(action.tool, result);
-        await persistConversationMessage(sessionId, 'assistant', reply, redis, conversations, logger);
+        await persistConversationMessage(
+          sessionId,
+          'assistant',
+          reply,
+          redis,
+          conversations,
+          logger,
+        );
         return reply;
       } catch (err: unknown) {
         logger.warn(
@@ -260,7 +275,9 @@ export async function runDeterministicAction(
   // Stage 2: Legacy detectActionIntent (fallback)
   const legacyAction = detectActionIntent(message);
   if (legacyAction) {
-    logger.log(`Legacy deterministic: tool=${legacyAction.tool} ws=${workspaceId} session=${sessionId}`);
+    logger.log(
+      `Legacy deterministic: tool=${legacyAction.tool} ws=${workspaceId} session=${sessionId}`,
+    );
     try {
       await persistConversationMessage(sessionId, 'user', message, redis, conversations, logger);
       const result = await toolDispatcher.executeTool(
@@ -268,22 +285,30 @@ export async function runDeterministicAction(
         legacyAction.tool,
         legacyAction.args,
       );
-      void writeOperationReceipt(buildReceipt({
-        workspaceId,
-        toolName: legacyAction.tool,
-        args: legacyAction.args,
-        result: result,
-        channel: 'web',
-      }));
+      void writeOperationReceipt(
+        buildReceipt({
+          workspaceId,
+          toolName: legacyAction.tool,
+          args: legacyAction.args,
+          result: result,
+          channel: 'web',
+        }),
+      );
       if (spine && result.success) {
         const resultMeta = buildResultMeta(legacyAction.tool, result);
-        void spine.record({
-          workspaceId,
-          action: 'tool_executed' as never,
-          intent: legacyAction.tool,
-          status: 'executed',
-          meta: { args: legacyAction.args, userPreview: message.slice(0, 120), ...resultMeta } as never,
-        }).catch(() => {});
+        void spine
+          .record({
+            workspaceId,
+            action: 'tool_executed' as never,
+            intent: legacyAction.tool,
+            status: 'executed',
+            meta: {
+              args: legacyAction.args,
+              userPreview: message.slice(0, 120),
+              ...resultMeta,
+            } as never,
+          })
+          .catch(() => {});
       }
       const reply = formatToolResult(legacyAction.tool, result);
       await persistConversationMessage(sessionId, 'assistant', reply, redis, conversations, logger);

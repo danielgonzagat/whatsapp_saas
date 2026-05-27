@@ -1,10 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { ComMemExport } from './commem-exporter.service';
-import {
-  eventDomain,
-  clamp,
-  workspaceFilter,
-} from './commem.types';
+import { eventDomain, clamp, workspaceFilter } from './commem.types';
 import type { SpineEventRef } from '../mind/mind.types';
 
 export interface ValueBreakdown {
@@ -40,9 +36,7 @@ const LTV_SIGNALS: readonly LtvSignal[] = [
   { eventName: 'commerce.post_sale.win_back_window_opened', baseCents: 2500 },
 ];
 
-const LTV_SIGNAL_NAMES: ReadonlySet<string> = new Set(
-  LTV_SIGNALS.map((s) => s.eventName),
-);
+const LTV_SIGNAL_NAMES: ReadonlySet<string> = new Set(LTV_SIGNALS.map((s) => s.eventName));
 
 function ltvBaseCents(eventName: string): number {
   const signal = LTV_SIGNALS.find((s) => s.eventName === eventName);
@@ -75,28 +69,25 @@ function isLtvEvent(eventName: string): boolean {
   return LTV_SIGNAL_NAMES.has(eventName);
 }
 
-function computeKnowledgeMultiplier(
-  events: readonly SpineEventRef[],
-  domainCount: number,
-): number {
-  if (events.length === 0) {return 0;}
+function computeKnowledgeMultiplier(events: readonly SpineEventRef[], domainCount: number): number {
+  if (events.length === 0) {
+    return 0;
+  }
 
-  const observedRatio =
-    events.filter((e) => e.truthMode === 'observed').length / events.length;
-  const inferredRatio =
-    events.filter((e) => e.truthMode === 'inferred').length / events.length;
+  const observedRatio = events.filter((e) => e.truthMode === 'observed').length / events.length;
+  const inferredRatio = events.filter((e) => e.truthMode === 'inferred').length / events.length;
 
   const dimensionBonus = Math.min(1, domainCount / 10);
-  return clamp(
-    observedRatio * 0.5 + inferredRatio * 0.3 + dimensionBonus * 0.2,
-    0,
-    1,
-  );
+  return clamp(observedRatio * 0.5 + inferredRatio * 0.3 + dimensionBonus * 0.2, 0, 1);
 }
 
 function valenceMultiplier(event: SpineEventRef): number {
-  if (event.valence === 'positive') {return VALENCE_POSITIVE_MULTIPLIER;}
-  if (event.valence === 'negative') {return VALENCE_NEGATIVE_PENALTY;}
+  if (event.valence === 'positive') {
+    return VALENCE_POSITIVE_MULTIPLIER;
+  }
+  if (event.valence === 'negative') {
+    return VALENCE_NEGATIVE_PENALTY;
+  }
   return 1.0;
 }
 
@@ -192,7 +183,8 @@ export class ValueQuantifierService {
       eventCountDelta: after.sourceEventCount - before.sourceEventCount,
       domainDelta: after.distinctDomains - before.distinctDomains,
       ltvDelta: after.breakdown.inferredLtvCents - before.breakdown.inferredLtvCents,
-      insightsDelta: after.breakdown.confirmedInsightsCents - before.breakdown.confirmedInsightsCents,
+      insightsDelta:
+        after.breakdown.confirmedInsightsCents - before.breakdown.confirmedInsightsCents,
       discoveriesDelta: after.breakdown.discoveriesCents - before.breakdown.discoveriesCents,
       totalDelta: after.totalEstimatedCents - before.totalEstimatedCents,
     };

@@ -264,10 +264,7 @@ export class PaymentMethodService {
     // Sentry NODE-S regression guard: an ESM/CJS interop shape can pass the
     // module-load probe but expose .paymentMethods without .list. Bail to
     // the empty-state contract instead of letting `.list` throw.
-    if (
-      !this.stripe.paymentMethods ||
-      typeof this.stripe.paymentMethods.list !== 'function'
-    ) {
+    if (!this.stripe.paymentMethods || typeof this.stripe.paymentMethods.list !== 'function') {
       this.logger.error(
         'Stripe client missing paymentMethods.list — returning empty payment-method list',
       );

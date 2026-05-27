@@ -17,7 +17,9 @@ export class ValenceAggregatorService {
   ): AbiAggregatedMood {
     const cutoff = nowMs - windowHours * 60 * 60 * 1000;
     const inWindow = events.filter((e) => {
-      if (!e.valence) {return false;}
+      if (!e.valence) {
+        return false;
+      }
       const ts = Date.parse(e.occurredAt);
       return Number.isFinite(ts) && ts >= cutoff;
     });
@@ -59,10 +61,7 @@ export class ValenceAggregatorService {
     };
   }
 
-  public toRecentTrace(
-    events: readonly SpineEventRef[],
-    cap = 20,
-  ): readonly AbiValenceTrace[] {
+  public toRecentTrace(events: readonly SpineEventRef[], cap = 20): readonly AbiValenceTrace[] {
     const sorted = [...events]
       .filter((e): e is SpineEventRef & { valence: NonNullable<SpineEventRef['valence']> } =>
         Boolean(e.valence),

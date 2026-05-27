@@ -17,8 +17,7 @@ import {
 @Injectable()
 export class ToolPlannerService {
   private readonly logger = new Logger(ToolPlannerService.name);
-  constructor(
-  ) {}
+  constructor() {}
   /**
    * Validate inputs against a capability's schema.
    * Returns missing required fields.
@@ -57,7 +56,9 @@ export class ToolPlannerService {
 
     for (const field of cap.inputSchema) {
       const value = coerced[field.key];
-      if (value === undefined || value === null) {continue;}
+      if (value === undefined || value === null) {
+        continue;
+      }
 
       switch (field.type) {
         case 'number': {
@@ -82,7 +83,9 @@ export class ToolPlannerService {
                 opt.toLowerCase().startsWith(normalized) ||
                 opt[0]?.toLowerCase() === normalized[0],
             );
-            if (match) {coerced[field.key] = match;}
+            if (match) {
+              coerced[field.key] = match;
+            }
           }
           break;
         }
@@ -118,7 +121,8 @@ export class ToolPlannerService {
     const auditLogId = `audit_${ctx.requestId}`;
 
     const evidenceUrl = cap.evidenceUrlBuilder
-      ? cap.evidenceUrlBuilder.replace('${productId}', String(outputs.productId || ''))
+      ? cap.evidenceUrlBuilder
+          .replace('${productId}', String(outputs.productId || ''))
           .replace('${orderId}', String(outputs.orderId || ''))
           .replace('${planId}', String(outputs.planId || ''))
       : undefined;
@@ -203,13 +207,11 @@ export class ToolPlannerService {
   /**
    * Log an action to the audit system.
    */
-  async logAuditEntry(
-    receipt: ExecutionReceipt,
-  ): Promise<void> {
+  async logAuditEntry(receipt: ExecutionReceipt): Promise<void> {
     this.logger.log(
       `[AUDIT] ${receipt.success ? 'OK' : 'FAIL'} ${receipt.capabilityId} ` +
-      `ws=${receipt.workspaceId} duration=${receipt.durationMs}ms ` +
-      `key=${receipt.idempotencyKey}`,
+        `ws=${receipt.workspaceId} duration=${receipt.durationMs}ms ` +
+        `key=${receipt.idempotencyKey}`,
     );
   }
 }

@@ -46,20 +46,20 @@ export class AttentionService {
     cap = 10,
   ): readonly AbiAttentionCandidate[] {
     const halfLifeMs = halfLifeMinutes * 60 * 1000;
-    const scored = new Map<
-      string,
-      { weight: number; targetType: string; targetId: string }
-    >();
+    const scored = new Map<string, { weight: number; targetType: string; targetId: string }>();
     for (const e of events) {
-      if (!e.entityRef) {continue;}
+      if (!e.entityRef) {
+        continue;
+      }
       const key = `${e.entityRef.entityType}:${e.entityRef.entityId}`;
       const ts = Date.parse(e.occurredAt);
-      if (!Number.isFinite(ts)) {continue;}
+      if (!Number.isFinite(ts)) {
+        continue;
+      }
       const ageMs = Math.max(0, nowMs - ts);
       const recencyDecay = Math.pow(0.5, ageMs / halfLifeMs);
       const classWeight = EVENT_CLASS_PRIORITY.get(e.eventName) ?? FALLBACK_WEIGHT;
-      const valenceBoost =
-        e.valence === 'negative' ? 1.2 : e.valence === 'positive' ? 1.05 : 1.0;
+      const valenceBoost = e.valence === 'negative' ? 1.2 : e.valence === 'positive' ? 1.05 : 1.0;
       const w = classWeight * recencyDecay * valenceBoost;
       const cur = scored.get(key);
       if (!cur) {
@@ -72,10 +72,10 @@ export class AttentionService {
         cur.weight += w;
       }
     }
-    const ranked = [...scored.values()]
-      .sort((a, b) => b.weight - a.weight)
-      .slice(0, cap);
-    if (ranked.length === 0) {return [];}
+    const ranked = [...scored.values()].sort((a, b) => b.weight - a.weight).slice(0, cap);
+    if (ranked.length === 0) {
+      return [];
+    }
     const max = ranked[0]!.weight;
     return ranked.map((r) => ({
       targetType: r.targetType,
@@ -92,11 +92,7 @@ export class AttentionService {
       readonly focalThreshold?: number;
     } = {},
   ): AbiAttention {
-    const candidates = this.computeCandidates(
-      events,
-      options.nowMs,
-      options.halfLifeMinutes,
-    );
+    const candidates = this.computeCandidates(events, options.nowMs, options.halfLifeMinutes);
     const top = candidates[0];
     const focalThreshold = options.focalThreshold ?? 0.6;
     if (!top || top.weight < focalThreshold) {
