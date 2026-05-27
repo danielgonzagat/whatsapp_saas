@@ -48,16 +48,17 @@ export function formatToolResult(tool: string, result: unknown): string {
       const cc = (r.coupon as Record<string, unknown> | undefined) ?? {};
       return `Cupom ${s(cc.code || r.code)} criado!`;
     }
-    case 'update_coupon':
-      return typeof r.message === 'string'
-        ? r.message
-        : `Cupom ${typeof (r as any).coupon?.code === 'string' ? (r as any).coupon.code : ''} atualizado.`;
+    case 'update_coupon': {
+      const coupon = (r.coupon as Record<string, unknown> | undefined) ?? {};
+      const code = typeof coupon.code === 'string' ? coupon.code : '';
+      return typeof r.message === 'string' ? r.message : `Cupom ${code} atualizado.`;
+    }
     case 'list_checkouts': {
-      const chk = Array.isArray((r as any).checkouts) ? (r as any).checkouts : [];
+      const chk = Array.isArray(r.checkouts) ? (r.checkouts as Array<Record<string, unknown>>) : [];
       if (chk.length === 0) {
         return 'Nenhum checkout encontrado.';
       }
-      return `Checkouts: ${chk.map((c: any) => c.name || c.id).join(', ')}`;
+      return `Checkouts: ${chk.map((c) => s(c.name || c.id)).join(', ')}`;
     }
     case 'delete_coupon':
       return 'Cupom removido.';
@@ -127,7 +128,7 @@ export function formatToolResult(tool: string, result: unknown): string {
       return `Extrato: ${items.length} movimentacoes, total R$ ${total.toFixed(2)}.`;
     }
     case 'list_refunds': {
-      const rfunds = Array.isArray((r as any).orders) ? (r as any).orders : [];
+      const rfunds = Array.isArray(r.orders) ? (r.orders as Array<Record<string, unknown>>) : [];
       if (rfunds.length === 0) {
         return 'Nenhum estorno encontrado.';
       }
@@ -261,7 +262,7 @@ export function formatToolResult(tool: string, result: unknown): string {
       return `Schema: ${tables.length} tabelas.`;
     }
     case 'search_codebase': {
-      const results = Array.isArray(r.results) ? r.results : [];
+      const results = Array.isArray(r.results) ? (r.results as Array<Record<string, unknown>>) : [];
       const err = typeof r.error === 'string' ? r.error : '';
       if (err) {
         return `Busca: ${err}`;
@@ -271,7 +272,7 @@ export function formatToolResult(tool: string, result: unknown): string {
       }
       return `Busca: ${results.length} resultados: ${results
         .slice(0, 5)
-        .map((x: any) => `${x.file}:${x.line}`)
+        .map((x) => `${s(x.file)}:${s(x.line)}`)
         .join(', ')}`;
     }
     case 'run_backend_tests': {

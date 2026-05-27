@@ -101,8 +101,8 @@ export class CheckoutService {
     }
 
     const updates: Record<string, unknown> = {};
-    if (data.name) {
-      updates.name = String(data.name);
+    if (typeof data.name === 'string') {
+      updates.name = data.name;
     }
     if (data.active !== undefined) {
       updates.active = Boolean(data.active);

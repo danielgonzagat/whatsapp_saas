@@ -45,8 +45,6 @@ import {
   filterWisdomByMultiRole,
   explainRelevance,
 } from './aware-wisdom.extender';
-import type { WisdomPattern } from '../wisdom/wisdom.types';
-
 const NOW = Date.parse('2026-05-14T10:00:00.000Z');
 
 function ev(over: Partial<SpineEventRef>): SpineEventRef {
@@ -67,23 +65,6 @@ function ev(over: Partial<SpineEventRef>): SpineEventRef {
     e['payload'] = over.payload;
   }
   return e as SpineEventRef;
-}
-
-function makeWisdomPattern(over: Partial<WisdomPattern>): WisdomPattern {
-  return {
-    patternId: over.patternId ?? `wp_${Math.random().toString(36).slice(2, 8)}`,
-    description: over.description ?? 'pattern desc',
-    applicableConditions: over.applicableConditions ?? ['stage:validacao'],
-    evidenceWorkspacesCount: over.evidenceWorkspacesCount ?? 5,
-    confidence: over.confidence ?? 0.8,
-    signalKind: over.signalKind ?? 'conversion_rate',
-    taxonomy: over.taxonomy ?? {
-      verticalHint: undefined,
-      tickethint: undefined,
-      stageHint: 'validacao',
-      channelHint: undefined,
-    },
-  };
 }
 
 function makeRanking(over: Partial<AttentionRanking>): AttentionRanking {

@@ -29,10 +29,11 @@ export class AccountService {
   }
 
   async updateFiscalData(workspaceId: string, data: Record<string, unknown>) {
+    const fiscalData = { ...data };
     const doc = await this.prisma.fiscalData.upsert({
       where: { workspaceId },
-      create: { workspaceId, ...(data as any) },
-      update: { ...(data as any) },
+      create: { workspaceId, ...fiscalData },
+      update: fiscalData,
     });
     return { success: true, fiscal: doc };
   }

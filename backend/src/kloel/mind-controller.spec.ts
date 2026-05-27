@@ -400,12 +400,12 @@ describe('MindController', () => {
         confidence: 0.72,
         fallback: false,
       });
-      expect(mind.resolveBestVariant).toHaveBeenCalledWith(
+      expect(mind.resolveBestVariant.mock.calls).toContainEqual([
         'ws-1',
         'followup',
         ['a', 'b'],
         undefined,
-      );
+      ]);
     });
 
     it('REFUSES caller (503) when INTERNAL_API_KEY is unset and NODE_ENV=production (fail-closed)', async () => {
@@ -426,12 +426,12 @@ describe('MindController', () => {
       await expect(controller.variantDecision('ws-2', body, 'secret-key')).resolves.toMatchObject({
         variant: 'followup:proof',
       });
-      expect(mind.resolveBestVariant).toHaveBeenCalledWith(
+      expect(mind.resolveBestVariant.mock.calls).toContainEqual([
         'ws-2',
         'payment_recovery',
         ['x', 'y'],
         undefined,
-      );
+      ]);
     });
 
     it('rejects caller with wrong internal key', async () => {
@@ -462,10 +462,15 @@ describe('MindController', () => {
         context: { domain: 'fitness', intent: 'reschedule' },
       } as never;
       await controller.variantDecision('ws-5', body, undefined);
-      expect(mind.resolveBestVariant).toHaveBeenCalledWith('ws-5', 'followup', ['a'], {
-        domain: 'fitness',
-        intent: 'reschedule',
-      });
+      expect(mind.resolveBestVariant.mock.calls).toContainEqual([
+        'ws-5',
+        'followup',
+        ['a'],
+        {
+          domain: 'fitness',
+          intent: 'reschedule',
+        },
+      ]);
     });
   });
 });

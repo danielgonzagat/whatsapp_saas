@@ -1,5 +1,5 @@
 import type { SpineEventRef } from '../mind/mind.types';
-import type { DetectorInput, Insight, RankedInsight } from './insight.types';
+import type { DetectorInput, Insight } from './insight.types';
 import { median } from './insight.types';
 
 import { detectFunnelBottleneck } from './detectors/funnel-bottleneck.detector';
@@ -53,14 +53,6 @@ function makeInsight(over?: Partial<Insight>): Insight {
     generatedAt: over?.generatedAt ?? new Date(NOW).toISOString(),
     maturityStage: over?.maturityStage,
     valence: over?.valence,
-  };
-}
-
-function makeRanked(over?: Partial<Insight>, product?: number): RankedInsight {
-  const insight = makeInsight(over);
-  return {
-    ...insight,
-    impactConfidenceProduct: product ?? insight.estimatedFinancialImpactCents * insight.confidence,
   };
 }
 

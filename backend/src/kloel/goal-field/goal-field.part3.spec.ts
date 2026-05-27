@@ -12,11 +12,6 @@ import {
 import { runtimeCriticalWithoutObservabilityDetector } from './detectors/cognitive.detectors';
 import { backendWithoutSurfaceDetector } from './detectors/structural.detectors';
 import { discountWithoutJustificationDetector } from './detectors/financial.detectors';
-import {
-  humanHandoffOverdueDetector,
-  slowResponseDetector,
-} from './detectors/operational-ux.detectors';
-
 const NOW = Date.parse('2026-05-13T22:00:00.000Z');
 
 function ev(over: Partial<SpineEventRef>): SpineEventRef {

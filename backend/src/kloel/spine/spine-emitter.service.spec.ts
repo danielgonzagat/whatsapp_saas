@@ -2,6 +2,8 @@ import { ValenceTaggerService } from '../mind/valence-tagger.service';
 import { SpineEmitterService } from './spine-emitter.service';
 import type { SpineEventInput } from './spine-event.types';
 
+type RedisXaddCall = [string, string, string, number, string, string, string];
+
 const baseInput: SpineEventInput = {
   eventName: 'commerce.lead.replied',
   workspaceId: 'wks_demo',
@@ -159,7 +161,8 @@ describe('SpineEmitterService', () => {
       await svc.emit(baseInput);
 
       expect(mockXadd).toHaveBeenCalledTimes(1);
-      const [key, maxlenArg, approxArg, maxlenVal, idArg, field, value] = mockXadd.mock.calls[0];
+      const [key, maxlenArg, approxArg, maxlenVal, idArg, field, value] = mockXadd.mock
+        .calls[0] as RedisXaddCall;
       expect(key).toBe('spine:events:wks_demo');
       expect(maxlenArg).toBe('MAXLEN');
       expect(approxArg).toBe('~');

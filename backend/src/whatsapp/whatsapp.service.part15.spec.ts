@@ -161,7 +161,7 @@ describe('WhatsappService', () => {
                       select: { customFields: true },
                     })
                     .catch(() => null);
-                  const cf = (contact?.customFields ?? {}) as Record<string, unknown>;
+                  const cf = contact?.customFields ?? {};
                   const readText = (v: unknown): string => {
                     if (typeof v === 'string') {
                       return v.trim();

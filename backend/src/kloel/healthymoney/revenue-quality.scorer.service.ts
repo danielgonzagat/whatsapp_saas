@@ -46,26 +46,29 @@ function buildReasoning(
   classification: RevenueClassification,
 ): string {
   const parts: string[] = [];
+  const dimensionEntries = Object.entries(dimensions) as Array<
+    [keyof RevenueQualityDimensions, number]
+  >;
 
-  const worst = Object.entries(dimensions).reduce<{ key: string; value: number } | null>(
-    (acc, [key, value]) => {
-      if (acc === null || value < acc.value) {
-        return { key, value };
-      }
-      return acc;
-    },
-    null,
-  );
+  const worst = dimensionEntries.reduce<{
+    key: keyof RevenueQualityDimensions;
+    value: number;
+  } | null>((acc, [key, value]) => {
+    if (acc === null || value < acc.value) {
+      return { key, value };
+    }
+    return acc;
+  }, null);
 
-  const best = Object.entries(dimensions).reduce<{ key: string; value: number } | null>(
-    (acc, [key, value]) => {
-      if (acc === null || value > acc.value) {
-        return { key, value };
-      }
-      return acc;
-    },
-    null,
-  );
+  const best = dimensionEntries.reduce<{
+    key: keyof RevenueQualityDimensions;
+    value: number;
+  } | null>((acc, [key, value]) => {
+    if (acc === null || value > acc.value) {
+      return { key, value };
+    }
+    return acc;
+  }, null);
 
   const worstLabel = worst !== null ? (DIMENSION_LABELS[worst.key] ?? worst.key) : 'N/A';
   const bestLabel = best !== null ? (DIMENSION_LABELS[best.key] ?? best.key) : 'N/A';

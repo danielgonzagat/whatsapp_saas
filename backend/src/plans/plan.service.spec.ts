@@ -260,9 +260,9 @@ describe('PlanService', () => {
       prisma.productPlan.update.mockResolvedValue({ id: 'p1' });
       await service.setCoupons(ws, 'p1', false);
       expect(prisma.productPlan.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            checkoutImages: expect.objectContaining({ acceptCoupons: false }),
+        objectContaining({
+          data: objectContaining({
+            checkoutImages: objectContaining({ acceptCoupons: false }),
           }),
         }),
       );

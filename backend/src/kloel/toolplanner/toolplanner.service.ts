@@ -14,6 +14,10 @@ import {
  * 4. Execute via existing tool dispatcher
  * 5. Build ExecutionReceipt for every action
  */
+function outputString(value: unknown): string {
+  return typeof value === 'string' ? value : '';
+}
+
 @Injectable()
 export class ToolPlannerService {
   private readonly logger = new Logger(ToolPlannerService.name);
@@ -122,9 +126,9 @@ export class ToolPlannerService {
 
     const evidenceUrl = cap.evidenceUrlBuilder
       ? cap.evidenceUrlBuilder
-          .replace('${productId}', String(outputs.productId || ''))
-          .replace('${orderId}', String(outputs.orderId || ''))
-          .replace('${planId}', String(outputs.planId || ''))
+          .replace('${productId}', outputString(outputs.productId))
+          .replace('${orderId}', outputString(outputs.orderId))
+          .replace('${planId}', outputString(outputs.planId))
       : undefined;
 
     return {
@@ -207,7 +211,7 @@ export class ToolPlannerService {
   /**
    * Log an action to the audit system.
    */
-  async logAuditEntry(receipt: ExecutionReceipt): Promise<void> {
+  logAuditEntry(receipt: ExecutionReceipt): void {
     this.logger.log(
       `[AUDIT] ${receipt.success ? 'OK' : 'FAIL'} ${receipt.capabilityId} ` +
         `ws=${receipt.workspaceId} duration=${receipt.durationMs}ms ` +

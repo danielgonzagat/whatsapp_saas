@@ -1,5 +1,5 @@
 import type { SpineEventRef } from '../mind/mind.types';
-import type { OfferDetectorInput, OfferInsight, RankedOfferInsight } from './offer.types';
+import type { OfferDetectorInput, OfferInsight } from './offer.types';
 
 import { detectBonusDesirability } from './detectors/bonus-desirability.detector';
 import { detectPromiseStrength } from './detectors/promise-strength.detector';
@@ -61,14 +61,6 @@ function makeInsight(over?: Partial<OfferInsight>): OfferInsight {
     generatedAt: over?.generatedAt ?? new Date(NOW).toISOString(),
     maturityStage: over?.maturityStage,
     valence: over?.valence,
-  };
-}
-
-function makeRanked(over?: Partial<OfferInsight>, product?: number): RankedOfferInsight {
-  const insight = makeInsight(over);
-  return {
-    ...insight,
-    rankedProduct: product ?? insight.impactMultiplicative * insight.confidence,
   };
 }
 

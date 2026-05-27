@@ -39,7 +39,6 @@ import {
   roleAwareReTier,
   countTierChanges,
 } from './aware-hierarchy.extender';
-import type { AttentionRanking } from '../clarity/clarity.types';
 import {
   filterWisdomByRole,
   filterWisdomByMultiRole,
@@ -83,20 +82,6 @@ function makeWisdomPattern(over: Partial<WisdomPattern>): WisdomPattern {
       stageHint: 'validacao',
       channelHint: undefined,
     },
-  };
-}
-
-function makeRanking(over: Partial<AttentionRanking>): AttentionRanking {
-  return {
-    itemId: over.itemId ?? `it_${Math.random().toString(36).slice(2, 6)}`,
-    workspaceId: over.workspaceId ?? 'wks_role_test',
-    label: over.label ?? 'test item',
-    urgency: over.urgency ?? 0.6,
-    impact: over.impact ?? 0.5,
-    reversibility: over.reversibility ?? 0.4,
-    score: over.score ?? 0.45,
-    tier: over.tier ?? 'ESTA_SEMANA',
-    rankedAt: over.rankedAt ?? '2026-05-14T09:00:00.000Z',
   };
 }
 
