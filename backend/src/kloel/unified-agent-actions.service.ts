@@ -5,7 +5,7 @@ import OpenAI from 'openai';
 import { AuditService } from '../audit/audit.service';
 import { StorageService } from '../common/storage/storage.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { WHATSAPP_MESSAGING } from '../whatsapp/whatsapp.tokens';
+import { WHATSAPP_MESSAGING } from '../marketing/channels/whatsapp/whatsapp.tokens';
 import type { IWhatsappMessaging } from '../marketing/channels/whatsapp/whatsapp.interfaces';
 import { UnifiedAgentActionsBillingService } from './unified-agent-actions-billing.service';
 import { UnifiedAgentActionsCommerceService } from './unified-agent-actions-commerce.service';

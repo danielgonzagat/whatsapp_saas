@@ -41,7 +41,7 @@ import {
   INBOUND_PROCESSOR,
   CIA_RUNTIME,
   CATCHUP_HISTORY,
-} from './whatsapp.tokens';
+} from '../marketing/channels/whatsapp/whatsapp.tokens';
 
 /** Whatsapp module. */
 @Module({

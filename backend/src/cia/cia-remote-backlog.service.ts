@@ -9,7 +9,7 @@ import { CIA_SHARED_REPLY_LOCK_MS, CiaSendHelpersService } from './cia-send-help
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import { WahaChatSummary } from '../whatsapp/providers/whatsapp-api.provider';
 import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../whatsapp/whatsapp-normalization.util';
-import { WHATSAPP_MESSAGING } from '../whatsapp/whatsapp.tokens';
+import { WHATSAPP_MESSAGING } from '../marketing/channels/whatsapp/whatsapp.tokens';
 import type { IWhatsappMessaging } from '../marketing/channels/whatsapp/whatsapp.interfaces';
 import type { BacklogMode } from '../whatsapp/cia-remote-backlog.helpers';
 import { loadRemotePendingBatchHelper } from '../whatsapp/cia-remote-backlog.helpers';

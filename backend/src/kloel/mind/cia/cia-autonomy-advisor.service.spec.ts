@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CiaAutonomyAdvisorService } from './cia-autonomy-advisor.service';
-import { CiaRuntimeStateService } from './cia-runtime-state.service';
-import { DecisionOutcomeService } from '../kloel/decision-outcome.service';
+import { CiaRuntimeStateService } from '../../../cia/cia-runtime-state.service';
+import { DecisionOutcomeService } from '../../decision-outcome.service';
 type ClosedRow = {
   id: string;
   workspaceId: string;

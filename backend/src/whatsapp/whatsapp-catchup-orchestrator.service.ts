@@ -23,7 +23,7 @@ import {
   normalizeChatsExt,
   normalizeMessagesExt,
 } from '../marketing/channels/whatsapp/whatsapp-catchup.normalizers';
-import { INBOUND_PROCESSOR, CIA_RUNTIME, CATCHUP_HISTORY } from './whatsapp.tokens';
+import { INBOUND_PROCESSOR, CIA_RUNTIME, CATCHUP_HISTORY } from '../marketing/channels/whatsapp/whatsapp.tokens';
 import type {
   IInboundProcessor,
   ICiaRuntime,

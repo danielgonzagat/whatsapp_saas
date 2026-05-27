@@ -21,7 +21,7 @@ import {
 } from './inbound-processor.helpers';
 import { whatsappDigits as normalizePhone } from '../common/phone';
 import { isPlaceholderContactName as isPlaceholderContactNameValue } from './whatsapp-normalization.util';
-import { WHATSAPP_MESSAGING } from './whatsapp.tokens';
+import { WHATSAPP_MESSAGING } from '../marketing/channels/whatsapp/whatsapp.tokens';
 import type { IWhatsappMessaging } from '../marketing/channels/whatsapp/whatsapp.interfaces';
 import { WorkerRuntimeService } from './worker-runtime.service';
 import { asProviderSettings, type ProviderSettings } from './provider-settings.types';

@@ -7,7 +7,7 @@ import { CiaRuntimeStateService } from './cia-runtime-state.service';
 import { CiaSendHelpersService } from './cia-send-helpers.service';
 import { CiaRemoteBacklogService } from './cia-remote-backlog.service';
 import { UnifiedAgentService } from '../kloel/unified-agent.service';
-import { WHATSAPP_MESSAGING } from '../whatsapp/whatsapp.tokens';
+import { WHATSAPP_MESSAGING } from '../marketing/channels/whatsapp/whatsapp.tokens';
 import type { WahaChatSummary } from '../whatsapp/providers/whatsapp-api.provider';
 import type { AgentStreamEvent } from '../whatsapp/agent-events.service';
 

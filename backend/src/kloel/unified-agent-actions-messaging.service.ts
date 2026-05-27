@@ -1,6 +1,6 @@
 import { Inject, Injectable, forwardRef, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
-import { WHATSAPP_MESSAGING } from '../whatsapp/whatsapp.tokens';
+import { WHATSAPP_MESSAGING } from '../marketing/channels/whatsapp/whatsapp.tokens';
 import type { IWhatsappMessaging } from '../marketing/channels/whatsapp/whatsapp.interfaces';
 import { AudioService } from './audio.service';
 import type { ToolArgs } from './unified-agent.types';

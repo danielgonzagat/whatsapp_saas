@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ModuleRef } from '@nestjs/core';
 import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-messaging.service';
-import { WHATSAPP_MESSAGING } from '../whatsapp/whatsapp.tokens';
+import { WHATSAPP_MESSAGING } from '../marketing/channels/whatsapp/whatsapp.tokens';
 import { AudioService } from './audio.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { ChannelTransportRegistry } from './channel-transport.registry';

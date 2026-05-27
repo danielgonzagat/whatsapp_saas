@@ -1,0 +1,4 @@
+export const WHATSAPP_MESSAGING = Symbol('WHATSAPP_MESSAGING');
+export const INBOUND_PROCESSOR = Symbol('INBOUND_PROCESSOR');
+export const CIA_RUNTIME = Symbol('CIA_RUNTIME');
+export const CATCHUP_HISTORY = Symbol('CATCHUP_HISTORY');
