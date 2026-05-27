@@ -144,7 +144,7 @@ export class KloelChatToolsService {
     return runToggleAutopilot(this.prisma, workspaceId, args);
   }
   async toolSetBrandVoice(workspaceId: string, args: ToolSetBrandVoiceArgs): Promise<ToolResult> {
-    return runSetBrandVoice(this.prisma, workspaceId, args);
+    return runSetBrandVoice(this.memoryService, workspaceId, args);
   }
   async toolSetSalesPolicy(
     workspaceId: string,

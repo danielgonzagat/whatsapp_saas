@@ -9,6 +9,7 @@ import {
   AgentRuntimeSkillRegistry,
   AgentRuntimeEvidenceStoreService,
 } from './agent-runtime';
+import { MemoryService } from './memory.service';
 
 jest.mock('../common/products/legacy-products.util', () => ({
   filterLegacyProducts: jest.fn((products: unknown[]) => products),
@@ -44,6 +45,7 @@ export type ChatToolsSetup = {
   prisma: ChatToolsPrismaMock;
   productService: ProductServiceMock;
   smartPayment: Pick<SmartPaymentService, 'createSmartPayment'>;
+  memoryService: Pick<MemoryService, 'saveMemory'>;
   agentScheduler: {
     upsertJob: jest.Mock;
     listJobs: jest.Mock;
@@ -108,6 +110,17 @@ export async function setupChatToolsService(): Promise<ChatToolsSetup> {
 
   const smartPayment: Pick<SmartPaymentService, 'createSmartPayment'> = {
     createSmartPayment: jest.fn().mockResolvedValue({ paymentUrl: 'https://pay.test' }),
+  };
+
+  const memoryService: Pick<MemoryService, 'saveMemory'> = {
+    saveMemory: jest.fn().mockResolvedValue({
+      id: 'mem-1',
+      workspaceId: wsId,
+      key: 'brandVoice',
+      value: { style: 'formal', personality: 'profissional' },
+      category: 'preferences',
+      content: 'Tom: formal. profissional',
+    }),
   };
 
   const agentScheduler = {
@@ -181,6 +194,7 @@ export async function setupChatToolsService(): Promise<ChatToolsSetup> {
       KloelChatToolsService,
       { provide: PrismaService, useValue: prisma },
       { provide: SmartPaymentService, useValue: smartPayment },
+      { provide: MemoryService, useValue: memoryService },
       { provide: AgentRuntimeSchedulerService, useValue: agentScheduler },
       { provide: AgentRuntimeSessionStore, useValue: agentSessions },
       { provide: AgentRuntimeSkillRegistry, useValue: agentSkills },
@@ -196,6 +210,7 @@ export async function setupChatToolsService(): Promise<ChatToolsSetup> {
     prisma,
     productService: mockProductService,
     smartPayment,
+    memoryService,
     agentScheduler,
     agentSessions,
     agentSkills,

@@ -268,19 +268,21 @@ describe('KloelChatToolsService — produto, autopilot e identidade', () => {
   });
 
   describe('toolSetBrandVoice', () => {
-    it('upserts brandVoice in kloelMemory', async () => {
+    it('stores brandVoice through MemoryService without direct kloelMemory writes', async () => {
       const result = await service.toolSetBrandVoice(ctx.wsId, {
         tone: 'formal',
         personality: 'profissional',
       });
 
       expect(result.success).toBe(true);
-      expect(prisma.kloelMemory.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { workspaceId_key: { workspaceId: ctx.wsId, key: 'brandVoice' } },
-          create: expect.objectContaining({ workspaceId: ctx.wsId }),
-        }),
+      expect(ctx.memoryService.saveMemory).toHaveBeenCalledWith(
+        ctx.wsId,
+        'brandVoice',
+        { style: 'formal', personality: 'profissional' },
+        'preferences',
+        'Tom: formal. profissional',
       );
+      expect(prisma.kloelMemory.upsert).not.toHaveBeenCalled();
     });
   });
 });

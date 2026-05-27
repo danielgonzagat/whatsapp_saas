@@ -75,30 +75,28 @@ export async function runToggleAutopilot(
   });
 }
 export async function runSetBrandVoice(
-  prisma: PrismaService,
+  memoryService: Pick<MemoryService, 'saveMemory'> | undefined,
   workspaceId: string,
   args: ToolSetBrandVoiceArgs,
 ): Promise<ToolResult> {
-  await prisma.kloelMemory.upsert({
-    where: { workspaceId_key: { workspaceId, key: 'brandVoice' } },
-    update: {
-      value: { style: args.tone, personality: args.personality || '' },
-      category: 'preferences',
-      type: 'persona',
-      content: `Tom: ${args.tone}. ${args.personality || ''}`.trim(),
-      metadata: { tone: args.tone, personality: args.personality || '' },
-    },
-    create: {
-      workspaceId,
-      key: 'brandVoice',
-      value: { style: args.tone, personality: args.personality || '' },
-      category: 'preferences',
-      type: 'persona',
-      content: `Tom: ${args.tone}. ${args.personality || ''}`.trim(),
-      metadata: { tone: args.tone, personality: args.personality || '' },
-    },
-  });
-  return { success: true, message: `Tom de voz definido como "${args.tone}"` };
+  if (!memoryService) {
+    return {
+      success: false,
+      error: 'memory_service_required',
+      message: 'set_brand_voice exige MemoryService.saveMemory antes de declarar tom salvo.',
+    };
+  }
+
+  const tone = safeStr(args.tone, '').trim();
+  const personality = safeStr(args.personality, '').trim();
+  if (!tone) {
+    return { success: false, error: 'missing_brand_voice_tone' };
+  }
+
+  const value = { style: tone, personality };
+  const content = `Tom: ${tone}. ${personality}`.trim();
+  await memoryService.saveMemory(workspaceId, 'brandVoice', value, 'preferences', content);
+  return { success: true, message: `Tom de voz definido como "${tone}"` };
 }
 export async function runSetSalesPolicy(
   prisma: PrismaService,
