@@ -1,16 +1,16 @@
 import type Redis from 'ioredis';
-import type { PrismaService } from '../prisma/prisma.service';
-import type { WhatsAppProviderRegistry } from './providers/provider-registry';
-import type { PlanLimitsService } from '../billing/plan-limits.service';
-import type { WorkspaceService } from '../workspaces/workspace.service';
-import type { IInboxService } from '../inbox/inbox.interface';
-import type { NeuroCrmService } from '../crm/neuro-crm.service';
-import type { OpsAlertService } from '../observability/ops-alert.service';
-import type { WhatsAppCatchupService } from './whatsapp-catchup.service';
-import type { CiaRuntimeService } from '../cia/cia-runtime.service';
-import type { WorkerRuntimeService } from './worker-runtime.service';
-import type { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
-import type { ConversationOperationalState } from './agent-conversation-state.util';
+import type { PrismaService } from '../../../prisma/prisma.service';
+import type { WhatsAppProviderRegistry } from '../../../whatsapp/providers/provider-registry';
+import type { PlanLimitsService } from '../../../billing/plan-limits.service';
+import type { WorkspaceService } from '../../../workspaces/workspace.service';
+import type { IInboxService } from '../../../inbox/inbox.interface';
+import type { NeuroCrmService } from '../../../crm/neuro-crm.service';
+import type { OpsAlertService } from '../../../observability/ops-alert.service';
+import type { WhatsAppCatchupService } from '../../../whatsapp/whatsapp-catchup.service';
+import type { CiaRuntimeService } from '../../../cia/cia-runtime.service';
+import type { WorkerRuntimeService } from '../../../whatsapp/worker-runtime.service';
+import type { WhatsAppApiProvider } from '../../../whatsapp/providers/whatsapp-api.provider';
+import type { ConversationOperationalState } from '../../../whatsapp/agent-conversation-state.util';
 
 export interface ProviderMessageEnvelope {
   id: string;
