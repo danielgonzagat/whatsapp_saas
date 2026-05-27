@@ -6,7 +6,7 @@ import { AudioService } from './audio.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { ChannelTransportRegistry } from './channel-transport.registry';
 import { DailyLimitService } from './daily-limit.service';
-import { BrainEventSpineService } from './brain-event-spine.service';
+import { MindEventSpine } from './mind/coordination';
 import type { IWhatsappMessaging } from '../marketing/channels/whatsapp/whatsapp.interfaces';
 import type { ChannelSendResult } from './channel-transport.types';
 
@@ -25,7 +25,7 @@ describe('UnifiedAgentActionsMessagingService', () => {
   let opsAlert: Pick<OpsAlertService, 'alertOnCriticalError'>;
   let dailyLimit: Pick<DailyLimitService, 'ensureProactiveDailyLimit' | 'isReply'>;
   let transports: Pick<ChannelTransportRegistry, 'send'>;
-  let events: Pick<BrainEventSpineService, 'record'>;
+  let events: Pick<MindEventSpine, 'record'>;
 
   const wsId = 'ws-1';
   const phone = '5511999999999';
@@ -114,7 +114,7 @@ describe('UnifiedAgentActionsMessagingService', () => {
         { provide: OpsAlertService, useValue: opsAlert },
         { provide: ChannelTransportRegistry, useValue: transports },
         { provide: DailyLimitService, useValue: dailyLimit },
-        { provide: BrainEventSpineService, useValue: events },
+        { provide: MindEventSpine, useValue: events },
       ],
     }).compile();
 
