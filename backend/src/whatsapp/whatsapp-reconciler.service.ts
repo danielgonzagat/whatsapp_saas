@@ -16,11 +16,7 @@ import { DecisionOutcomeService } from '../kloel/decision-outcome.service';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { isPlaceholderContactName as isPlaceholderName } from './whatsapp-normalization.util';
 import { TAG_DEFAULT_COLORS } from '../common/kloel-colors';
-import {
-  normalizeJsonObjExt,
-  normalizeHashExt,
-  isAutonomousEnabledExt,
-} from './whatsapp-service.helpers';
+import { normalizeJsonObjExt, normalizeHashExt, isAutonomousEnabledExt, normalizeNumber } from './whatsapp-service.helpers';
 import type { ProviderSettings } from './provider-settings.types';
 import { NON_DIGIT_RE } from '../common/phone';
 
@@ -71,7 +67,7 @@ export class WhatsappReconcilerService {
   }
 
   private normalizeNumber(num: string): string {
-    return num.replace(NON_DIGIT_RE, '');
+    return normalizeNumber(num);
   }
 
   private normalizeJsonObject(v: unknown): ExternalProviderPayload {
