@@ -338,18 +338,10 @@ export class ConversationalOnboardingService {
     const history = await this.toolsService.getOnboardingHistory(workspaceId);
     const onboardingStateMessage = await this.buildOnboardingStateMessage(workspaceId, userMessage);
 
-    const messages: OnboardingMessage[] = [
-      onboardingStateMessage,
-      ...history.map((h) => ({
-        role: h.role as OnboardingMessage['role'],
-        content: h.content,
-      })),
-      { role: 'user', content: userMessage },
-    ];
-
     let degradedReason: string | null = null;
+    let intentAdvisory: string | null = null;
 
-    // Log-only IntentRouter classification telemetry (PI-k3) — zero behavioral change
+    // IntentRouter classification telemetry + advisory prompt injection (PI-k3→PI-k5)
     try {
       const classificationResult = this.intentRouter?.classify(userMessage, 'onboarding', []);
       if (classificationResult) {
@@ -358,12 +350,28 @@ export class ConversationalOnboardingService {
           isChat: classificationResult.isChat,
           message_preview: userMessage.slice(0, 80),
         });
+        // PI-k5: inject classification as advisory context into LLM system messages
+        if (classificationResult.classification) {
+          intentAdvisory = `Sinal interno: o classificador detectou intenção '${classificationResult.classification.intent}' (isChat=${classificationResult.isChat}). Use isso só como contexto, não branching.`;
+        } else {
+          intentAdvisory = `Sinal interno: o classificador não detectou intenção específica (isChat=${classificationResult.isChat}). Use isso só como contexto, não branching.`;
+        }
       }
     } catch (err) {
       this.logger.log('kloel_onboarding_intent_skipped', {
         reason: err instanceof Error ? err.message : String(err),
       });
     }
+
+    const messages: OnboardingMessage[] = [
+      onboardingStateMessage,
+      ...(intentAdvisory ? [{ role: 'system' as const, content: intentAdvisory }] : []),
+      ...history.map((h) => ({
+        role: h.role as OnboardingMessage['role'],
+        content: h.content,
+      })),
+      { role: 'user', content: userMessage },
+    ];
 
     try {
       const response = await this.runOnboardingCompletion(workspaceId, messages, 'brain');

@@ -266,6 +266,19 @@ describe('ConversationalOnboardingService intent-router log telemetry', () => {
       const result = await service.chat('ws-1', 'Olá');
       expect(result).toBe('Bem-vindo ao KLOEL! Vamos configurar sua conta.');
     });
+
+    it('injects chat advisory into LLM system messages', async () => {
+      await service.chat('ws-1', 'Olá, quero configurar');
+
+      const messages = chatCompletionWithRetryMock.mock.calls[0]?.[1]?.messages as Array<{ role: string; content: string }> | undefined;
+      expect(messages).toBeDefined();
+      const advisory = messages!.find(
+        (m) => m.role === 'system' && m.content.includes('Sinal interno'),
+      );
+      expect(advisory).toBeDefined();
+      expect(advisory!.content).toContain('não detectou intenção específica');
+      expect(advisory!.content).toContain('isChat=true');
+    });
   }); // --------------------------------------------------------------
   describe('when IntentRouter is provided and classifies an intent', () => {
     beforeEach(async () => {
@@ -302,6 +315,19 @@ describe('ConversationalOnboardingService intent-router log telemetry', () => {
     it('does NOT branch behavior — returns normal assistant response', async () => {
       const result = await service.chat('ws-1', 'Buscar Maria');
       expect(result).toBe('Bem-vindo ao KLOEL! Vamos configurar sua conta.');
+    });
+
+    it('injects intent advisory into LLM system messages', async () => {
+      await service.chat('ws-1', 'Buscar Maria');
+
+      const messages = chatCompletionWithRetryMock.mock.calls[0]?.[1]?.messages as Array<{ role: string; content: string }> | undefined;
+      expect(messages).toBeDefined();
+      const advisory = messages!.find(
+        (m) => m.role === 'system' && m.content.includes('Sinal interno'),
+      );
+      expect(advisory).toBeDefined();
+      expect(advisory!.content).toContain("intenção 'crm.search_contact'");
+      expect(advisory!.content).toContain('isChat=false');
     });
   }); // --------------------------------------------------------------
   describe('when IntentRouter is absent (@Optional not provided)', () => {
@@ -343,6 +369,17 @@ describe('ConversationalOnboardingService intent-router log telemetry', () => {
     it('still returns normal assistant response', async () => {
       const result = await service.chat('ws-1', 'Olá');
       expect(result).toBe('Bem-vindo ao KLOEL! Vamos configurar sua conta.');
+    });
+
+    it('does NOT inject advisory into LLM messages', async () => {
+      await service.chat('ws-1', 'Olá');
+
+      const messages = chatCompletionWithRetryMock.mock.calls[0]?.[1]?.messages as Array<{ role: string; content: string }> | undefined;
+      expect(messages).toBeDefined();
+      const advisory = messages!.find(
+        (m) => m.role === 'system' && m.content.includes('Sinal interno'),
+      );
+      expect(advisory).toBeUndefined();
     });
   });
 });
