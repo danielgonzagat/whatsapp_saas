@@ -1,5 +1,6 @@
 import { buildMindSignals } from './build-mind-signals.helper';
 import { mockLogger, mockPrisma } from './build-mind-signals.helper.fixtures';
+import type { KnowledgeBaseService } from './knowledge/knowledge-base.service';
 
 describe('buildMindSignals — knowledge base search (PI-K17-A)', () => {
   afterEach(() => {
