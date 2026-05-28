@@ -24,6 +24,15 @@ import {
   toSafeCents,
   uniqueWalletIds,
 } from './wallet.helpers';
+import {
+  appendFailureAndCheckFirst,
+  buildAnticipationLedgerCreditMetadata,
+  buildAnticipationLedgerDebitMetadata,
+  buildReconciliationFailureSummary,
+  buildWithdrawalLedgerMetadata,
+  computeReconciliationCutoff,
+  type ReconciliationFailure,
+} from './wallet.reconcile.helpers';
 
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 // All dates stored as UTC via Prisma DateTime (toISOString)
@@ -317,7 +326,7 @@ export class WalletService {
             bucket: 'available',
             amountInCents: BigInt(amountInCents),
             reason: 'withdrawal_debit',
-            metadata: { hasPix: !!bankInfo.pixKey },
+            metadata: buildWithdrawalLedgerMetadata(bankInfo),
           });
 
           return created;
@@ -439,7 +448,7 @@ export class WalletService {
             bucket: 'pending',
             amountInCents: BigInt(amountInCents),
             reason: 'withdrawal_debit',
-            metadata: { anticipation: true, feePercent, feeAmountInCents },
+            metadata: buildAnticipationLedgerDebitMetadata({ feePercent, feeAmountInCents }),
           });
           await this.walletLedger.appendWithinTx(tx, {
             workspaceId,
@@ -449,7 +458,7 @@ export class WalletService {
             bucket: 'available',
             amountInCents: netAmountInCents,
             reason: 'confirm_payment_credit',
-            metadata: { anticipation: true },
+            metadata: buildAnticipationLedgerCreditMetadata(),
           });
 
           return created;
@@ -490,7 +499,7 @@ export class WalletService {
   @Cron('0 0 */6 * * *')
   async reconcilePendingPayments() {
     try {
-      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const sevenDaysAgo = computeReconciliationCutoff(new Date(), 7);
 
       // Find pending transactions older than 7 days
       const pendingTxs = await this.prisma.kloelWalletTransaction.findMany({
@@ -537,7 +546,7 @@ export class WalletService {
       // Per-tx errors are isolated so one failed settlement doesn't abort
       // the rest, BUT we aggregate them into a structured ops alert at the
       // end so drift is never silently lost (Wave 2 I8).
-      const perTxFailures: Array<{ txId: string; error: string }> = [];
+      const perTxFailures: ReconciliationFailure[] = [];
 
       await forEachSequential(pendingTxs, async (tx) => {
         try {
@@ -599,8 +608,10 @@ export class WalletService {
         } catch (err: unknown) {
           void this.opsAlert?.alertOnCriticalError(err, 'WalletService.async');
           const message = err instanceof Error ? err.message : String(err);
-          const isFirstFailure = perTxFailures.length === 0;
-          perTxFailures.push({ txId: tx.id, error: message });
+          const isFirstFailure = appendFailureAndCheckFirst(perTxFailures, {
+            txId: tx.id,
+            error: message,
+          });
           this.logger.error(`Failed to settle tx ${tx.id}: ${message}`);
           if (isFirstFailure) {
             const alert = 'wallet reconciliation encountered settlement failures';
@@ -611,12 +622,12 @@ export class WalletService {
         }
       });
 
-      if (perTxFailures.length > 0) {
+      const failureSummary = buildReconciliationFailureSummary(perTxFailures, pendingTxs.length);
+      if (failureSummary) {
         // Visibility for ops — drift must not hide in per-tx logs.
-        this.financialAlert.reconciliationAlert(
-          `wallet reconciliation: ${perTxFailures.length} of ${pendingTxs.length} settlements failed`,
-          { details: { failures: perTxFailures } },
-        );
+        this.financialAlert.reconciliationAlert(failureSummary.message, {
+          details: failureSummary.details,
+        });
       }
     } catch (err: unknown) {
       void this.opsAlert?.alertOnCriticalError(err, 'WalletService.reconciliationAlert');
