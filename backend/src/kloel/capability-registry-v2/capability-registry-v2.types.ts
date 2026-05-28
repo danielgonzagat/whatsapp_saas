@@ -89,6 +89,7 @@ export interface ExecutionReceipt {
   domainEvents: string[];
   auditLogId: string;
   evidenceUrl?: string;
+  executionRail?: CapabilityExecutionRail;
   timestamp: string;
   durationMs: number;
   idempotencyKey: string;

@@ -9,6 +9,16 @@ import {
 } from './capability-registry-v2.types';
 import { CAPABILITY_DEFINITIONS, CAPABILITY_MAP } from './capability-registry-v2.const';
 
+function confirmationValue(value: unknown): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  return JSON.stringify(value) ?? '';
+}
+
 /**
  * Capability Registry v2 — Single source of truth for all Kloel capabilities.
  *
@@ -150,7 +160,7 @@ export class CapabilityRegistryV2Service {
   ): ConfirmationRequest {
     const fields = Object.entries(inputs)
       .filter(([, v]) => v !== undefined && v !== '')
-      .map(([k, v]) => `${k}: ${v}`)
+      .map(([k, v]) => `${k}: ${confirmationValue(v)}`)
       .join(', ');
     return {
       capabilityId: cap.id,
@@ -169,6 +179,7 @@ export class CapabilityRegistryV2Service {
     domainEvents: string[];
     auditLogId: string;
     evidenceUrl?: string;
+    executionRail?: CapabilityDefinition['executionRail'];
     durationMs: number;
     success: boolean;
     error?: string;
@@ -183,6 +194,7 @@ export class CapabilityRegistryV2Service {
       domainEvents: params.domainEvents,
       auditLogId: params.auditLogId,
       ...(params.evidenceUrl !== undefined ? { evidenceUrl: params.evidenceUrl } : {}),
+      ...(params.executionRail !== undefined ? { executionRail: params.executionRail } : {}),
       timestamp: new Date().toISOString(),
       durationMs: params.durationMs,
       idempotencyKey: params.context.idempotencyKey,

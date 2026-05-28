@@ -15,7 +15,13 @@ import {
  * 5. Build ExecutionReceipt for every action
  */
 function outputString(value: unknown): string {
-  return typeof value === 'string' ? value : '';
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  return '';
 }
 
 @Injectable()
@@ -106,7 +112,10 @@ export class ToolPlannerService {
     for (const field of cap.inputSchema) {
       const value = inputs[field.key];
       if (value !== undefined && value !== null && value !== '') {
-        parts.push(`${field.label}: ${value}`);
+        const text = outputString(value);
+        if (text) {
+          parts.push(`${field.label}: ${text}`);
+        }
       }
     }
     return `${cap.title}: ${parts.join(', ')}`;
@@ -141,6 +150,7 @@ export class ToolPlannerService {
       domainEvents: cap.emits,
       auditLogId,
       ...(evidenceUrl !== undefined ? { evidenceUrl } : {}),
+      ...(cap.executionRail !== undefined ? { executionRail: cap.executionRail } : {}),
       timestamp: new Date().toISOString(),
       durationMs,
       idempotencyKey: ctx.idempotencyKey,
@@ -167,6 +177,7 @@ export class ToolPlannerService {
       outputs: { error },
       domainEvents: [],
       auditLogId: `audit_fail_${ctx.requestId}`,
+      ...(cap.executionRail !== undefined ? { executionRail: cap.executionRail } : {}),
       timestamp: new Date().toISOString(),
       durationMs,
       idempotencyKey: ctx.idempotencyKey,
@@ -183,20 +194,26 @@ export class ToolPlannerService {
     }
 
     const lines: string[] = [`✅ ${receipt.title} executado com sucesso.`];
+    const productId = outputString(receipt.outputs.productId);
+    const planId = outputString(receipt.outputs.planId);
+    const orderId = outputString(receipt.outputs.orderId);
+    const paymentLink = outputString(receipt.outputs.paymentLink);
 
-    if (receipt.outputs.productId) {
-      lines.push(`Produto: ${receipt.outputs.productId}`);
+    if (productId) {
+      lines.push(`Produto: ${productId}`);
     }
-    if (receipt.outputs.planId) {
-      lines.push(`Plano: ${receipt.outputs.planId}`);
+    if (planId) {
+      lines.push(`Plano: ${planId}`);
     }
-    if (receipt.outputs.orderId) {
-      lines.push(`Venda: ${receipt.outputs.orderId}`);
+    if (orderId) {
+      lines.push(`Venda: ${orderId}`);
     }
-    if (receipt.outputs.paymentLink) {
-      lines.push(`Link: ${receipt.outputs.paymentLink}`);
+    if (paymentLink) {
+      lines.push(`Link: ${paymentLink}`);
     }
-    const pixCopyPaste = outputString(receipt.outputs.pixCopiaECola || receipt.outputs.pixCopyPaste);
+    const pixCopyPaste = outputString(
+      receipt.outputs.pixCopiaECola || receipt.outputs.pixCopyPaste,
+    );
     if (pixCopyPaste) {
       lines.push(`PIX copia e cola: ${pixCopyPaste}`);
     }

@@ -120,6 +120,41 @@ import { ToolPlannerService } from '../toolplanner/toolplanner.service';
     expect(receipt.actorId).toBe('user-test');
     expect(receipt.idempotencyKey).toBe('key-123');
   });
+  it('ToolPlanner keeps payment execution rail on success and failure receipts', () => {
+    const cap = registry.get('sales.create_pix')!;
+    const ctx = {
+      workspaceId: 'ws-test',
+      actorId: 'user-test',
+      source: 'dashboard-chat',
+      idempotencyKey: 'key-pix-rail',
+      requestId: 'req-pix-rail',
+    };
+
+    const successReceipt = planner.buildReceipt(
+      cap,
+      ctx,
+      { amount: 197 },
+      { orderId: 'order-1', pixCopiaECola: '000201pix', pixQrCode: 'qr-base64' },
+      Date.now() - 150,
+    );
+    const failureReceipt = planner.buildErrorReceipt(
+      cap,
+      ctx,
+      { amount: 197 },
+      'sales_create_pix_inputs_required',
+      Date.now() - 150,
+    );
+
+    expect(successReceipt.executionRail).toEqual({
+      provider: 'mercadopago',
+      paymentMethod: 'PIX',
+      providerMethod: 'pix',
+      providerService: 'MercadoPagoPixChargeService.create',
+      webhookPath: '/webhooks/mercadopago',
+      proofFields: ['saleId', 'externalPaymentId', 'pixCopiaECola', 'pixQrCode'],
+    });
+    expect(failureReceipt.executionRail).toEqual(successReceipt.executionRail);
+  });
   it('ToolPlanner verbalizes receipt in PT-BR', () => {
     const cap = registry.get('products.create')!;
     const ctx = {

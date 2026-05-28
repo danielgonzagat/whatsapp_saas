@@ -62,6 +62,7 @@ export function buildCanonicalReceipt(
     outputs,
     domainEvents: result.success ? cap.emits : [],
     auditLogId,
+    ...(cap.executionRail !== undefined ? { executionRail: cap.executionRail } : {}),
     durationMs: Date.now() - startedAt,
     success: result.success,
   };

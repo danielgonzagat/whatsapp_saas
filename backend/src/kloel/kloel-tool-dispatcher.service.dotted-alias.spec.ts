@@ -578,6 +578,12 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
           domainEvents: ['sale.created', 'payment.pending'],
           auditLogId: stringMatching(/^audit_/),
           evidenceUrl: '/vendas/sale-pix-1',
+          executionRail: objectContaining({
+            provider: 'mercadopago',
+            paymentMethod: 'PIX',
+            providerMethod: 'pix',
+            proofFields: ['saleId', 'externalPaymentId', 'pixCopiaECola', 'pixQrCode'],
+          }),
           idempotencyKey: stringContaining('sales.create_pix'),
           success: true,
         }),
@@ -648,6 +654,12 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
           domainEvents: ['sale.created', 'payment.pending'],
           auditLogId: stringMatching(/^audit_/),
           evidenceUrl: '/vendas/sale-card-1',
+          executionRail: objectContaining({
+            provider: 'stripe',
+            paymentMethod: 'CREDIT_CARD',
+            providerMethod: 'card',
+            proofFields: ['saleId', 'externalPaymentId', 'checkoutSessionId', 'checkoutUrl'],
+          }),
           idempotencyKey: stringContaining('sales.create_card_link'),
           success: true,
         }),
@@ -682,6 +694,11 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
           outputs: {},
           domainEvents: [],
           auditLogId: stringMatching(/^audit_/),
+          executionRail: objectContaining({
+            provider: 'mercadopago',
+            paymentMethod: 'PIX',
+            providerMethod: 'pix',
+          }),
           success: false,
         }),
       );
@@ -765,6 +782,12 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
           domainEvents: ['sale.created', 'payment.pending'],
           auditLogId: stringMatching(/^audit_/),
           evidenceUrl: '/vendas/sale-boleto-1',
+          executionRail: objectContaining({
+            provider: 'mercadopago',
+            paymentMethod: 'BOLETO',
+            providerMethod: 'boleto',
+            proofFields: ['saleId', 'externalPaymentId', 'boletoBarcode', 'boletoUrl'],
+          }),
           idempotencyKey: stringContaining('sales.create_boleto'),
           success: true,
         }),
@@ -812,6 +835,11 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
           outputs: {},
           domainEvents: [],
           auditLogId: stringMatching(/^audit_/),
+          executionRail: objectContaining({
+            provider: 'mercadopago',
+            paymentMethod: 'BOLETO',
+            providerMethod: 'boleto',
+          }),
           success: false,
         }),
       );
