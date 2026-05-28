@@ -134,7 +134,7 @@ interface ProviderPlanLimitSettings {
 export interface ProviderSettings {
   /** Whatsapp provider property. */
   whatsappProvider?: string;
-  /** Connection status property. */
+  /** Channel session status property. */
   connectionStatus?: string;
   /** Whatsapp api session property. */
   whatsappApiSession?: ProviderSessionSnapshot;

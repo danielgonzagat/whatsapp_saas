@@ -1,4 +1,4 @@
-// WhatsApp Connection API functions
+// WhatsApp channel session API functions
 import { apiFetch } from './core';
 import {
   createWhatsAppApiError,
@@ -44,7 +44,7 @@ export async function getWhatsAppStatus(_workspaceId: string): Promise<WhatsAppC
   return mapWhatsAppStatusPayload(data, connected, normalizedStatus);
 }
 
-/** Initiate whats app connection. */
+/** Initiate whats app channel session. */
 export async function initiateWhatsAppConnection(
   _workspaceId: string,
 ): Promise<WhatsAppConnectResponse> {

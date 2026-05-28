@@ -59,7 +59,7 @@ const CONNECT_COPY: Record<ChannelKey, { provider: string; how: string[] }> = {
 };
 
 /**
- * Step 0 hero. Explains the OFFICIAL connection (no QR Code) for the channel.
+ * Step 0 hero. Explains the OFFICIAL channel session (no QR Code) for the channel.
  * The real connect action lives in <ActionButtons/> below the panel; this is
  * the contextual explanation + status. Theme-token based (light/dark).
  */

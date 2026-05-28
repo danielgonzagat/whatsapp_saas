@@ -41,7 +41,7 @@ export {
 // Leads
 export { type Lead, getLeads } from './leads';
 
-// WhatsApp connection + messaging
+// WhatsApp channel session + messaging
 export {
   getWhatsAppScreencastWsBase,
   getWhatsAppStatus,

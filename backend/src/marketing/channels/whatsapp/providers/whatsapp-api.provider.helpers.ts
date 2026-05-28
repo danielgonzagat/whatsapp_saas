@@ -1,4 +1,4 @@
-/** Connection state surfaced by WhatsAppApiProvider responses. */
+/** Channel session state surfaced by WhatsAppApiProvider responses. */
 export type WhatsAppSessionState =
   | 'CONNECTED'
   | 'DISCONNECTED'
@@ -45,7 +45,7 @@ export function deriveSessionStateFromDetails(details: {
 }
 
 /**
- * Returns the human-readable QR-code message keyed off the connection state.
+ * Returns the human-readable QR-code message keyed off the channel session state.
  * Mirrors the previous inline ternary in WhatsAppApiProvider.getQrCode without changing the
  * public message contract consumed by the frontend.
  */
