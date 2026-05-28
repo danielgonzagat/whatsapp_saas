@@ -148,7 +148,7 @@ import { MindBanditService } from './mind/policy/mind-bandit.service';
 import { MindCaseMemoryService } from './mind/memory/mind-case-memory.service';
 import { MindConceptService } from './mind/memory/mind-concepts.service';
 import { MindGlobalPriorService } from './mind/memory/mind-global-prior.service';
-import { MindController } from './mind-controller';
+import { MindController } from './mind/coordination/mind-controller';
 import { MindEventProcessorService } from './mind/runtime/mind-event-processor.service';
 import { MindGuardContextBuilderService } from './mind/policy/mind-guard-context-builder.service';
 import { MindGuardsService } from './mind/policy/mind-guards.service';
