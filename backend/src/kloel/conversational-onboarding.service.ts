@@ -10,6 +10,7 @@ import { chatCompletionWithRetry } from './openai-wrapper';
 import { ConversationalOnboardingToolsService } from './conversational-onboarding-tools.service';
 import { ONBOARDING_TOOLS } from './conversational-onboarding-tools-schema';
 import { AbiBuilderService } from './abi/abi-builder.service';
+import { IntentRouterService } from './intent-router/intent-router.service';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 const ONBOARDING_SAFE_SETUP_TOOL_NAMES = [
@@ -129,6 +130,7 @@ export class ConversationalOnboardingService {
     private readonly planLimits: PlanLimitsService,
     private readonly toolsService: ConversationalOnboardingToolsService,
     @Optional() private readonly abiBuilder?: AbiBuilderService,
+    @Optional() private readonly intentRouter?: IntentRouterService,
   ) {
     this.prismaExt = prisma as object as PrismaWithDynamicModels;
     this.openai = createTextLlmClient() ?? new OpenAI({ apiKey: 'missing' });
@@ -339,6 +341,22 @@ export class ConversationalOnboardingService {
     ];
 
     let degradedReason: string | null = null;
+
+    // Log-only IntentRouter classification telemetry (PI-k3) — zero behavioral change
+    try {
+      const classificationResult = this.intentRouter?.classify(userMessage, 'onboarding', []);
+      if (classificationResult) {
+        this.logger.log('kloel_onboarding_intent', {
+          classification: classificationResult.classification,
+          isChat: classificationResult.isChat,
+          message_preview: userMessage.slice(0, 80),
+        });
+      }
+    } catch (err) {
+      this.logger.log('kloel_onboarding_intent_skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
 
     try {
       const response = await this.runOnboardingCompletion(workspaceId, messages, 'brain');
