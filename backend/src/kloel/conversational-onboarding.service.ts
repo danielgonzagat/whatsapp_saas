@@ -197,7 +197,12 @@ export class ConversationalOnboardingService {
     messages: OnboardingMessage[],
     role: 'brain' | 'writer',
   ): Promise<OpenAI.Chat.ChatCompletion> {
-    await this.planLimits.ensureTokenBudget(workspaceId);
+    try {
+      await this.planLimits.ensureTokenBudget(workspaceId);
+    } catch (err: unknown) {
+      (err as Record<string, unknown>).__onboarding_reason = 'token_budget';
+      throw err;
+    }
     this.logger.log('Calling primary LLM for onboarding', {
       context: 'ConversationalOnboardingService.runOnboardingCompletion',
       workspaceId,
@@ -205,14 +210,20 @@ export class ConversationalOnboardingService {
       model: resolveBackendOpenAIModel(role),
       messageCount: messages.length,
     });
-    const response = await chatCompletionWithRetry(this.openai, {
-      model: resolveBackendOpenAIModel(role),
-      messages: messages as OpenAI.ChatCompletionMessageParam[],
-      tools: ONBOARDING_SAFE_SETUP_TOOLS,
-      tool_choice: ONBOARDING_SAFE_SETUP_TOOLS.length > 0 ? 'auto' : 'none',
-      temperature: 0.7,
-      max_tokens: 1000,
-    });
+    let response: OpenAI.Chat.ChatCompletion;
+    try {
+      response = await chatCompletionWithRetry(this.openai, {
+        model: resolveBackendOpenAIModel(role),
+        messages: messages as OpenAI.ChatCompletionMessageParam[],
+        tools: ONBOARDING_SAFE_SETUP_TOOLS,
+        tool_choice: ONBOARDING_SAFE_SETUP_TOOLS.length > 0 ? 'auto' : 'none',
+        temperature: 0.7,
+        max_tokens: 1000,
+      });
+    } catch (err: unknown) {
+      (err as Record<string, unknown>).__onboarding_reason = 'llm_call';
+      throw err;
+    }
     await this.planLimits
       .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)
       .catch((err: unknown) => {
@@ -291,6 +302,28 @@ export class ConversationalOnboardingService {
     res.end();
   }
 
+  private buildOnboardingFallback(
+    reason: string,
+    ctx: {
+      error: unknown;
+      workspaceId: string;
+      hasResponseHeaders: boolean;
+      willingWrite: boolean;
+    },
+  ): string {
+    const FALLBACK_REPLY =
+      'Tive uma instabilidade momentânea pra processar agora. Pode repetir a mensagem em alguns segundos? Estou aqui pra continuar o onboarding.';
+    this.logger.warn('Onboarding degraded', {
+      tag: 'kloel_onboarding_degraded',
+      reason,
+      errorMessage: ctx.error instanceof Error ? ctx.error.message : String(ctx.error ?? ''),
+      errorName: ctx.error instanceof Error ? ctx.error.constructor.name : typeof ctx.error,
+      hasResponseHeaders: ctx.hasResponseHeaders,
+      willingWrite: ctx.willingWrite,
+    });
+    return FALLBACK_REPLY;
+  }
+
   /** Inicia ou continua o onboarding conversacional */
   async chat(workspaceId: string, userMessage: string, res?: Response): Promise<string | void> {
     const history = await this.toolsService.getOnboardingHistory(workspaceId);
@@ -305,6 +338,8 @@ export class ConversationalOnboardingService {
       { role: 'user', content: userMessage },
     ];
 
+    let degradedReason: string | null = null;
+
     try {
       const response = await this.runOnboardingCompletion(workspaceId, messages, 'brain');
       const assistantChoice = response.choices[0];
@@ -316,14 +351,30 @@ export class ConversationalOnboardingService {
 
       const initialToolCalls = assistantMessage.tool_calls;
       if (initialToolCalls && initialToolCalls.length > 0) {
-        responseText = await this.handleInitialToolCalls(workspaceId, messages, initialToolCalls);
+        try {
+          responseText = await this.handleInitialToolCalls(workspaceId, messages, initialToolCalls);
+        } catch (e: unknown) {
+          degradedReason =
+            ((e as Record<string, unknown>)?.__onboarding_reason as string) ?? 'tool_execution';
+          throw e;
+        }
       }
 
-      await this.toolsService.saveOnboardingMessage(workspaceId, 'user', userMessage);
-      await this.toolsService.saveOnboardingMessage(workspaceId, 'assistant', responseText);
+      try {
+        await this.toolsService.saveOnboardingMessage(workspaceId, 'user', userMessage);
+        await this.toolsService.saveOnboardingMessage(workspaceId, 'assistant', responseText);
+      } catch (e: unknown) {
+        degradedReason = 'persist';
+        throw e;
+      }
 
       if (res) {
-        this.writeSseResponse(res, responseText);
+        try {
+          this.writeSseResponse(res, responseText);
+        } catch (e: unknown) {
+          degradedReason = 'sse_write';
+          throw e;
+        }
         return;
       }
 
@@ -334,18 +385,21 @@ export class ConversationalOnboardingService {
         error instanceof Error ? error.message : String(error),
         { context: 'ConversationalOnboardingService.chat', workspaceId },
       );
-      // Per WAVE3_LLM_PROMPT_AUDIT critical gap #9: previously rethrew the
-      // raw error, leaving the onboarding UI with no honest reply. Now we
-      // return a Portuguese-Brazil fallback so the user sees a graceful
-      // 'try again' instead of an unhandled exception. The error is still
-      // logged above for observability.
-      const FALLBACK_REPLY =
-        'Tive uma instabilidade momentânea pra processar agora. Pode repetir a mensagem em alguns segundos? Estou aqui pra continuar o onboarding.';
+      const reason =
+        degradedReason ??
+        ((error as Record<string, unknown>)?.__onboarding_reason as string) ??
+        'unknown';
+      const fallback = this.buildOnboardingFallback(reason, {
+        error,
+        workspaceId,
+        hasResponseHeaders: !!res,
+        willingWrite: !!res,
+      });
       if (res) {
-        this.writeSseResponse(res, FALLBACK_REPLY);
+        this.writeSseResponse(res, fallback);
         return;
       }
-      return FALLBACK_REPLY;
+      return fallback;
     }
   }
 
