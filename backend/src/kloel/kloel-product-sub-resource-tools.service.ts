@@ -5,6 +5,14 @@ import { SalesService } from '../sales/sales.service';
 
 import type { UnknownRecord } from '../common/types';
 import { ProductCouponDomainService } from './product-coupon-domain.service';
+import {
+  boletoBuyerDataFromArgs,
+  missingStringInputs,
+  parseNum,
+  parseStr,
+  resolveProductIdByName,
+  resolveProductIdWithAccentFallback,
+} from './kloel-product-sub-resource-tools.helpers';
 
 export interface ProductSubResourceToolResult {
   [key: string]: unknown;
@@ -63,53 +71,15 @@ export class KloelProductSubResourceToolsService {
   }
 
   private str(v: unknown, fb = ''): string {
-    return typeof v === 'string'
-      ? v
-      : typeof v === 'number' || typeof v === 'boolean'
-        ? String(v)
-        : fb;
+    return parseStr(v, fb);
   }
   private num(v: unknown, fb = 0): number {
-    const n = Number(v);
-    return Number.isFinite(n) ? n : fb;
-  }
-
-  private missingStringInputs(args: UnknownRecord, keys: string[]): string[] {
-    return keys.filter((key) => !this.str(args[key]).trim());
-  }
-
-  private boletoBuyerDataFromArgs(args: UnknownRecord) {
-    const neighborhood = this.str(args.customerNeighborhood).trim();
-    return {
-      name: this.str(args.customerName).trim(),
-      email: this.str(args.customerEmail).trim(),
-      cpf: this.str(args.customerCpf).trim(),
-      phone: this.str(args.customerPhone).trim(),
-      address: {
-        zipCode: this.str(args.customerZipCode).replace(/\D/g, ''),
-        street: this.str(args.customerStreet).trim(),
-        number: this.str(args.customerNumber).trim(),
-        ...(neighborhood ? { neighborhood } : {}),
-        city: this.str(args.customerCity).trim(),
-        state: this.str(args.customerState)
-          .replace(/[^a-z]/gi, '')
-          .toUpperCase(),
-      },
-    };
+    return parseNum(v, fb);
   }
 
   async toolCreatePlan(workspaceId: string, args: UnknownRecord) {
     try {
-      let pid = this.str(args.productId);
-      if (!pid && args.productName) {
-        const p = await this.prisma.product.findFirst({
-          where: {
-            workspaceId,
-            name: { contains: this.str(args.productName), mode: 'insensitive' },
-          },
-        });
-        pid = p?.id ?? '';
-      }
+      const pid = await resolveProductIdByName(this.prisma, workspaceId, args);
       if (!pid) {
         return { success: false, error: 'Produto nao encontrado' };
       }
@@ -205,16 +175,7 @@ export class KloelProductSubResourceToolsService {
 
   async toolCreateCheckout(workspaceId: string, args: UnknownRecord) {
     try {
-      let pid = this.str(args.productId);
-      if (!pid && args.productName) {
-        const p = await this.prisma.product.findFirst({
-          where: {
-            workspaceId,
-            name: { contains: this.str(args.productName), mode: 'insensitive' },
-          },
-        });
-        pid = p?.id ?? '';
-      }
+      const pid = await resolveProductIdByName(this.prisma, workspaceId, args);
       if (!pid) {
         return { success: false, error: 'Produto nao encontrado' };
       }
@@ -286,16 +247,7 @@ export class KloelProductSubResourceToolsService {
 
   async toolCreateCoupon(workspaceId: string, args: UnknownRecord) {
     try {
-      let pid = this.str(args.productId);
-      if (!pid && args.productName) {
-        const p = await this.prisma.product.findFirst({
-          where: {
-            workspaceId,
-            name: { contains: this.str(args.productName), mode: 'insensitive' },
-          },
-        });
-        pid = p?.id ?? '';
-      }
+      let pid = await resolveProductIdByName(this.prisma, workspaceId, args);
       if (!pid) {
         const firstProduct = await this.prisma.product.findFirst({
           where: { workspaceId },
@@ -327,16 +279,7 @@ export class KloelProductSubResourceToolsService {
 
   async toolListCoupons(workspaceId: string, args: UnknownRecord) {
     try {
-      let pid = this.str(args.productId);
-      if (!pid && args.productName) {
-        const p = await this.prisma.product.findFirst({
-          where: {
-            workspaceId,
-            name: { contains: this.str(args.productName), mode: 'insensitive' },
-          },
-        });
-        pid = p?.id ?? '';
-      }
+      const pid = await resolveProductIdByName(this.prisma, workspaceId, args);
       const coupons = pid
         ? await this.prisma.productCoupon.findMany({ where: { productId: pid } })
         : await this.prisma.productCoupon.findMany({ where: { product: { workspaceId } } });
@@ -517,31 +460,7 @@ export class KloelProductSubResourceToolsService {
       return { success: false, error: 'Informe a URL (ex: https://...).' };
     }
     try {
-      let pid = this.str(args.productId);
-      if (!pid) {
-        const p = await this.prisma.product.findFirst({
-          where: { workspaceId, name: { contains: productName, mode: 'insensitive' } },
-          select: { id: true },
-        });
-        pid = p?.id ?? '';
-      }
-      // Accent fallback
-      if (!pid) {
-        const stripped = productName.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        const all = await this.prisma.product.findMany({
-          where: { workspaceId },
-          select: { id: true, name: true },
-          take: 200,
-        });
-        const found = all.find((prod) =>
-          prod.name
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
-            .toLowerCase()
-            .includes(stripped.toLowerCase()),
-        );
-        pid = found?.id ?? '';
-      }
+      const pid = await resolveProductIdWithAccentFallback(this.prisma, workspaceId, args);
       if (!pid) {
         return { success: false, error: 'Produto nao encontrado.' };
       }
@@ -643,7 +562,7 @@ export class KloelProductSubResourceToolsService {
     workspaceId: string,
     args: UnknownRecord,
   ): Promise<ProductSubResourceToolResult> {
-    const missingInputs = this.missingStringInputs(args, [
+    const missing = missingStringInputs(args, [
       'productId',
       'planId',
       'customerName',
@@ -656,13 +575,13 @@ export class KloelProductSubResourceToolsService {
       'customerCity',
       'customerState',
     ]);
-    if (missingInputs.length > 0) {
+    if (missing.length > 0) {
       return {
         success: false,
         error: 'sales_create_boleto_inputs_required',
-        message: `Dados faltantes para criar boleto real: ${missingInputs.join(', ')}`,
+        message: `Dados faltantes para criar boleto real: ${missing.join(', ')}`,
         capabilityId: 'sales.create_boleto',
-        missingInputs,
+        missingInputs: missing,
         outputs: {},
         domainEvents: [],
       };
@@ -681,7 +600,7 @@ export class KloelProductSubResourceToolsService {
       workspaceId,
       this.str(args.productId).trim(),
       this.str(args.planId).trim(),
-      this.boletoBuyerDataFromArgs(args),
+      boletoBuyerDataFromArgs(args),
     );
 
     return {
