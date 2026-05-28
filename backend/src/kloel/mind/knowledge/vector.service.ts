@@ -3,8 +3,8 @@
  *
  * Physically moved from `backend/src/ai-brain/vector.service.ts` to its
  * canonical home under `backend/src/kloel/mind/knowledge/` (ADR-0013 Wave M2,
- * 2026-05-27). The legacy ai-brain path retains a thin `@deprecated`
- * re-export during the alias window.
+ * 2026-05-27). The legacy `ai-brain/vector.service.ts` re-export stub was
+ * deleted in Wave 51 (zero consumers).
  *
  * Prefer importing as `MindVectorStore` via the
  * `backend/src/kloel/mind/knowledge` barrel.

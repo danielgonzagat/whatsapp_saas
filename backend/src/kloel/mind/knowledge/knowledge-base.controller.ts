@@ -14,16 +14,16 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { StructuredLogger } from '../logging/structured-logger';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { Roles } from '../auth/roles.decorator';
-import { resolveWorkspaceId } from '../auth/workspace-access';
-import type { UploadedFileLike } from '../common/file-signature.util';
-import { WorkspaceGuard } from '../common/guards/workspace.guard';
-import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
-import { AgentAssistService } from '../kloel/mind/knowledge/agent-assist.service';
-import { KnowledgeBaseService } from '../kloel/mind/knowledge/knowledge-base.service';
-import { RouteClass } from '../common/throttler/route-class.decorator';
+import { StructuredLogger } from '../../../logging/structured-logger';
+import { JwtAuthGuard } from '../../../auth/jwt-auth.guard';
+import { Roles } from '../../../auth/roles.decorator';
+import { resolveWorkspaceId } from '../../../auth/workspace-access';
+import type { UploadedFileLike } from '../../../common/file-signature.util';
+import { WorkspaceGuard } from '../../../common/guards/workspace.guard';
+import type { AuthenticatedRequest } from '../../../common/interfaces/authenticated-request.interface';
+import { AgentAssistService } from './agent-assist.service';
+import { KnowledgeBaseService } from './knowledge-base.service';
+import { RouteClass } from '../../../common/throttler/route-class.decorator';
 
 /**
  * Uploaded file shape consumed by `uploadSource`. Extends the minimal

@@ -1,13 +1,13 @@
 import { KnowledgeBaseController } from './knowledge-base.controller';
 
-jest.mock('../auth/workspace-access', () => ({
+jest.mock('../../../auth/workspace-access', () => ({
   resolveWorkspaceId: jest.fn(),
 }));
 
-import { resolveWorkspaceId } from '../auth/workspace-access';
+import { resolveWorkspaceId } from '../../../auth/workspace-access';
 const resolveWorkspaceIdMock = resolveWorkspaceId as jest.Mock;
 
-jest.mock('../logging/structured-logger', () => ({
+jest.mock('../../../logging/structured-logger', () => ({
   StructuredLogger: {
     from: jest.fn().mockReturnValue({
       warn: jest.fn(),

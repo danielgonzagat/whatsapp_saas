@@ -9,15 +9,15 @@ import {
   buildSuggestReplyMessages,
   buildPitchMessages,
 } from './agent-assist.helpers';
-import { UnknownProviderPricingModelError } from '../wallet/provider-pricing';
-import * as providerLlmBilling from '../wallet/provider-llm-billing';
+import { UnknownProviderPricingModelError } from '../../../wallet/provider-pricing';
+import * as providerLlmBilling from '../../../wallet/provider-llm-billing';
 
-jest.mock('../wallet/wallet.service');
-jest.mock('../wallet/provider-llm-billing', () => ({
+jest.mock('../../../wallet/wallet.service');
+jest.mock('../../../wallet/provider-llm-billing', () => ({
   estimateOpenAiChatQuoteCostCents: jest.fn(() => BigInt(1000)),
   quoteOpenAiChatActualCostCents: jest.fn(() => BigInt(1200)),
 }));
-jest.mock('../wallet/provider-pricing');
+jest.mock('../../../wallet/provider-pricing');
 
 describe('agent-assist.helpers', () => {
   describe('AgentAssistWalletAccessError', () => {

@@ -3,8 +3,10 @@
  * (ADR-0013 Wave M2 row #22). Moved here from `backend/src/ai-brain/` so the
  * canonical path now lives alongside the rest of `kloel/mind/knowledge/`.
  *
- * A `@deprecated` re-export stub at the old `ai-brain/agent-assist.service`
- * path keeps the alias window open until 2026-06-24.
+ * The legacy `ai-brain/agent-assist.service` re-export stub was retired in
+ * Wave 51 cleanup (had zero consumers); only `ai-brain/ai-brain.module.ts`
+ * remains in `ai-brain/` as the Nest module wiring (imports the canonical
+ * services from this folder).
  *
  * @cluster Mind/Knowledge
  * @canonical backend/src/kloel/mind/knowledge/agent-assist.service.ts
@@ -35,7 +37,7 @@ import {
   readWorkspaceId,
   refundAiUsageIfNeeded,
   settleAiUsageIfNeeded,
-} from '../../../ai-brain/agent-assist.helpers';
+} from './agent-assist.helpers';
 
 /**
  * @cluster whatsapp_saas/backend/ai-brain

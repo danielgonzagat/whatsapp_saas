@@ -3,7 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AgentAssistService } from '../kloel/mind/knowledge/agent-assist.service';
 import { HiddenDataExtractorService } from '../kloel/mind/knowledge/hidden-data.service';
-import { KnowledgeBaseController } from './knowledge-base.controller';
+import { KnowledgeBaseController } from '../kloel/mind/knowledge/knowledge-base.controller';
 import { KnowledgeBaseService } from '../kloel/mind/knowledge/knowledge-base.service';
 import { MediaFactoryService } from '../kloel/mind/knowledge/media-factory.service';
 import { VectorService } from '../kloel/mind/knowledge/vector.service';

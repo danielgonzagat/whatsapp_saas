@@ -1,13 +1,13 @@
 import { refundAiUsageIfNeeded } from './agent-assist.helpers';
-import { WalletService } from '../wallet/wallet.service';
+import { WalletService } from '../../../wallet/wallet.service';
 import { makeMockWalletService } from './agent-assist.helpers.spec.helpers';
 
-jest.mock('../wallet/wallet.service');
-jest.mock('../wallet/provider-llm-billing', () => ({
+jest.mock('../../../wallet/wallet.service');
+jest.mock('../../../wallet/provider-llm-billing', () => ({
   estimateOpenAiChatQuoteCostCents: jest.fn(() => BigInt(1000)),
   quoteOpenAiChatActualCostCents: jest.fn(() => BigInt(1200)),
 }));
-jest.mock('../wallet/provider-pricing');
+jest.mock('../../../wallet/provider-pricing');
 
 describe('agent-assist.helpers — refund', () => {
   describe('refundAiUsageIfNeeded', () => {

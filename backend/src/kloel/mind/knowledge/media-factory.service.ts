@@ -3,8 +3,9 @@
  *
  * Physically moved from `backend/src/ai-brain/media-factory.service.ts` to its
  * canonical home under `backend/src/kloel/mind/knowledge/` (ADR-0013 Wave M5,
- * 2026-05-27, MIND_SERVICES_CANONICAL row #21). The legacy ai-brain path
- * retains a thin `@deprecated` re-export during the alias window.
+ * 2026-05-27, MIND_SERVICES_CANONICAL row #21). The legacy
+ * `ai-brain/media-factory.service.ts` re-export stub was deleted in Wave 51
+ * (zero consumers).
  *
  * Prefer importing as `MindMediaFactory` via the
  * `backend/src/kloel/mind/knowledge` barrel.

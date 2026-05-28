@@ -1,14 +1,14 @@
 import {
   estimateOpenAiChatQuoteCostCents,
   quoteOpenAiChatActualCostCents,
-} from '../wallet/provider-llm-billing';
-import { UnknownProviderPricingModelError } from '../wallet/provider-pricing';
-import { WalletService } from '../wallet/wallet.service';
+} from '../../../wallet/provider-llm-billing';
+import { UnknownProviderPricingModelError } from '../../../wallet/provider-pricing';
+import { WalletService } from '../../../wallet/wallet.service';
 import {
   InsufficientWalletBalanceError,
   UsagePriceNotFoundError,
   WalletNotFoundError,
-} from '../wallet/wallet.types';
+} from '../../../wallet/wallet.types';
 
 type ChatCompletionMessageParam = {
   role: 'system' | 'user';

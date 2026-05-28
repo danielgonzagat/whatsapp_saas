@@ -1,6 +1,6 @@
 import type { PrepaidWalletTransaction } from '@prisma/client';
-import type { ChargeUsageResult } from '../wallet/wallet.types';
-import { WalletService } from '../wallet/wallet.service';
+import type { ChargeUsageResult } from '../../../wallet/wallet.types';
+import { WalletService } from '../../../wallet/wallet.service';
 
 /**
  * Build a fully auto-mocked WalletService instance whose methods are all
