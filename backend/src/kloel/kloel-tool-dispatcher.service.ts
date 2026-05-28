@@ -27,13 +27,6 @@ import {
   runExecuteApprovedApprovalRequest,
   type ApprovedToolExecutionResult,
 } from './kloel-tool-dispatcher.approval.helpers';
-import { asString, asNumber } from './kloel-tool-dispatcher.helpers';
-import {
-  buildPaymentLinkArgs,
-  buildPaymentLinkAuditEntry,
-  extractAuditErrorMessage,
-  type PaymentLinkArgs,
-} from './kloel-tool-dispatcher.payment-link.helpers';
 import { buildCanonicalReceipt } from './kloel-tool-dispatcher.receipt.helpers';
 import { dispatchWhatsAppTool, isWhatsAppTool } from './kloel-tool-dispatcher.whatsapp.handlers';
 import { dispatchCodeTool, isCodeTool } from './kloel-tool-dispatcher.code.handlers';
@@ -59,8 +52,28 @@ import {
   dispatchBizConfigTool,
   isBizConfigTool,
 } from './kloel-tool-dispatcher.biz-config.handlers';
+import {
+  dispatchProductCatalogTool,
+  isProductCatalogTool,
+} from './kloel-tool-dispatcher.product-catalog.handlers';
+import {
+  dispatchWorkspaceInfoTool,
+  isWorkspaceInfoTool,
+} from './kloel-tool-dispatcher.workspace-info.handlers';
+import {
+  dispatchWorkspaceActionTool,
+  isWorkspaceActionTool,
+} from './kloel-tool-dispatcher.workspace-actions.handlers';
+import { runCreatePaymentLink } from './kloel-tool-dispatcher.create-payment-link.helpers';
 
 import type { UnknownRecord } from '../common/types';
+
+type ToolResult = {
+  success: boolean;
+  message?: string;
+  error?: string;
+  [key: string]: unknown;
+};
 
 /**
  * Dispatcher for KloelService tool execution. Extracted from kloel.service.ts
@@ -103,9 +116,7 @@ export class KloelToolDispatcherService {
     toolName: string,
     args: UnknownRecord,
     userId?: string,
-  ): Promise<{ success: boolean; message?: string; error?: string; [key: string]: unknown }> {
-    const asToolArgs = <T>(value: UnknownRecord): T => value as T;
-
+  ): Promise<ToolResult> {
     if (!workspaceId || typeof workspaceId !== 'string' || !workspaceId.trim()) {
       return { success: false, error: 'workspace_id_required' };
     }
@@ -127,408 +138,11 @@ export class KloelToolDispatcherService {
     }
     this.logger.log(`Executando ferramenta: ${toolName}`);
     try {
-      if (isWhatsAppTool(toolName)) {
-        const whatsappResult = await dispatchWhatsAppTool(
-          this.whatsappToolsService,
-          workspaceId,
-          toolName,
-          args,
-        );
-        if (whatsappResult !== null) {
-          return whatsappResult;
-        }
+      const fastPathResult = await this.runFastPathDispatch(workspaceId, toolName, args, userId);
+      if (fastPathResult !== null) {
+        return fastPathResult;
       }
-      if (isCodeTool(toolName)) {
-        const codeResult = await dispatchCodeTool(
-          this.codeToolsService,
-          this.codeAnalysisService,
-          toolName,
-          args,
-        );
-        if (codeResult !== null) {
-          return codeResult;
-        }
-      }
-      if (isSelfTool(toolName)) {
-        const selfResult = await dispatchSelfTool(
-          {
-            auditService: this.auditService,
-            selfGaps: this.selfGaps,
-            selfHealth: this.selfHealth,
-            capRegistryV2: this.capRegistryV2,
-          },
-          workspaceId,
-          toolName,
-          args,
-        );
-        if (selfResult !== null) {
-          return selfResult;
-        }
-      }
-      if (isConfigureTool(toolName)) {
-        const configureResult = await dispatchConfigureTool(
-          this.chatToolsService,
-          this.capRegistryV2,
-          workspaceId,
-          toolName,
-          args,
-          userId,
-        );
-        if (configureResult !== null) {
-          return configureResult;
-        }
-      }
-      if (isSalesTool(toolName)) {
-        const salesResult = await dispatchSalesTool(
-          {
-            salesService: this.salesService,
-            capRegistryV2: this.capRegistryV2,
-            userId,
-          },
-          workspaceId,
-          toolName,
-          args,
-        );
-        if (salesResult !== null) {
-          return salesResult;
-        }
-      }
-      if (isAgentTool(toolName)) {
-        const agentResult = await dispatchAgentTool(
-          this.chatToolsService,
-          workspaceId,
-          toolName,
-          args,
-        );
-        if (agentResult !== null) {
-          return agentResult;
-        }
-      }
-      if (isAccountTool(toolName)) {
-        const accountResult = await dispatchAccountTool(
-          {
-            accountService: this.accountService,
-            walletSalesTools: this.walletSalesTools,
-            executeTool: (ws, name, a, u) => this.executeTool(ws, name, a, u),
-            userId,
-          },
-          workspaceId,
-          toolName,
-          args,
-        );
-        if (accountResult !== null) {
-          return accountResult;
-        }
-      }
-      if (isDottedAliasTool(toolName)) {
-        const aliasResult = await dispatchDottedAliasTool(
-          {
-            capRegistryV2: this.capRegistryV2,
-            executeTool: (ws, name, a, u) => this.executeTool(ws, name, a, u),
-            userId,
-          },
-          workspaceId,
-          toolName,
-          args,
-        );
-        if (aliasResult !== null) {
-          return aliasResult;
-        }
-      }
-      if (isReportsTool(toolName)) {
-        const reportsResult = await dispatchReportsTool(
-          { reportService: this.reportService },
-          workspaceId,
-          toolName,
-          args,
-        );
-        if (reportsResult !== null) {
-          return reportsResult;
-        }
-      }
-      if (isDepsCoverageTool(toolName)) {
-        const depsResult = await dispatchDepsCoverageTool(
-          { depsCoverage: this.depsCoverage },
-          toolName,
-          args,
-        );
-        if (depsResult !== null) {
-          return depsResult;
-        }
-      }
-      if (isWalletSalesTool(toolName)) {
-        const walletSalesResult = await dispatchWalletSalesTool(
-          { walletSalesTools: this.walletSalesTools },
-          workspaceId,
-          toolName,
-          args,
-        );
-        if (walletSalesResult !== null) {
-          return walletSalesResult;
-        }
-      }
-      if (isBizConfigTool(toolName)) {
-        const bizConfigResult = await dispatchBizConfigTool(
-          { bizConfigToolsService: this.bizConfigToolsService },
-          workspaceId,
-          toolName,
-          args,
-        );
-        if (bizConfigResult !== null) {
-          return bizConfigResult;
-        }
-      }
-      switch (toolName) {
-        case 'save_product':
-        case 'create_product': {
-          const productArgs = userId ? { ...args, actorId: userId } : args;
-          return await this.chatToolsService.toolSaveProduct(workspaceId, asToolArgs(productArgs));
-        }
-        // ── products.create handled via isDottedAliasTool fast-path above ──
-        case 'list_products':
-          return await this.chatToolsService.toolListProducts(workspaceId);
-        case 'update_product': {
-          const productArgs = userId ? { ...args, actorId: userId } : args;
-          return await this.chatToolsService.toolUpdateProduct(
-            workspaceId,
-            asToolArgs(productArgs),
-          );
-        }
-        // ── products.update handled via isDottedAliasTool fast-path above ──
-        case 'publish_product':
-        case 'products.review_and_publish':
-          return await this.requestHighRiskApproval(workspaceId, toolName, args, userId);
-        // ── SELF-AWARENESS handled via isSelfTool fast-path above ──
-        case 'toggle_autopilot': {
-          const startedAt = Date.now();
-          const result = await this.chatToolsService.toolToggleAutopilot(
-            workspaceId,
-            asToolArgs(args),
-          );
-          return this.withCanonicalReceipt(
-            'toggle_autopilot',
-            workspaceId,
-            args,
-            result,
-            userId,
-            startedAt,
-          );
-        }
-        case 'set_brand_voice': {
-          const startedAt = Date.now();
-          const result = await this.chatToolsService.toolSetBrandVoice(
-            workspaceId,
-            asToolArgs(args),
-          );
-          const resultWithTone = result.success ? { ...result, tone: asString(args.tone) } : result;
-          return this.withCanonicalReceipt(
-            'set_brand_voice',
-            workspaceId,
-            args,
-            resultWithTone,
-            userId,
-            startedAt,
-          );
-        }
-        case 'set_sales_policy': {
-          const startedAt = Date.now();
-          const result = await this.chatToolsService.toolSetSalesPolicy(
-            workspaceId,
-            asToolArgs(args),
-            userId,
-          );
-          return this.withCanonicalReceipt(
-            'set_sales_policy',
-            workspaceId,
-            args,
-            result,
-            userId,
-            startedAt,
-          );
-        }
-        case 'remember_user_info': {
-          const startedAt = Date.now();
-          const result = await this.chatToolsService.toolRememberUserInfo(
-            workspaceId,
-            asToolArgs(args),
-            userId,
-          );
-          const resultWithMemory = result.success
-            ? { ...result, key: asString(args.key), value: asString(args.value) }
-            : result;
-          return this.withCanonicalReceipt(
-            'remember_user_info',
-            workspaceId,
-            args,
-            resultWithMemory,
-            userId,
-            startedAt,
-          );
-        }
-        case 'search_web':
-          return await runToolSearchWeb(this.planLimits, this.composerService, workspaceId, args);
-        case 'create_flow': {
-          const startedAt = Date.now();
-          const result = await this.chatToolsService.toolCreateFlow(workspaceId, asToolArgs(args));
-          return this.withCanonicalReceipt(
-            'create_flow',
-            workspaceId,
-            args,
-            result,
-            userId,
-            startedAt,
-          );
-        }
-        case 'list_flows':
-          return await this.chatToolsService.toolListFlows(workspaceId);
-        case 'get_dashboard_summary':
-          return await this.chatToolsService.toolGetDashboardSummary(workspaceId, asToolArgs(args));
-        case 'get_product_plans':
-          return await this.chatToolsService.toolGetProductPlans(workspaceId, asToolArgs(args));
-        case 'get_product_ai_config':
-          return await this.chatToolsService.toolGetProductAiConfig(workspaceId, asToolArgs(args));
-        case 'get_product_reviews':
-          return await this.chatToolsService.toolGetProductReviews(workspaceId, asToolArgs(args));
-        case 'get_product_urls':
-          return await this.chatToolsService.toolGetProductUrls(workspaceId, asToolArgs(args));
-        case 'validate_coupon':
-          return await this.chatToolsService.toolValidateCoupon(workspaceId, asToolArgs(args));
-        // ── wallet/sales tools handled via isWalletSalesTool fast-path above ──
-        // ── sales.list handled via isAccountTool fast-path above ──
-        case 'toggle_theme':
-          return await this.chatToolsService.toolToggleTheme(workspaceId, asToolArgs(args));
-        case 'coupon_create':
-          if (this.couponService) {
-            return this.couponService.create(workspaceId, {
-              productId: asString(args.productId),
-              code: asString(args.code),
-              discountType: asString(args.discountType, 'percentage'),
-              discountValue: asNumber(args.discountValue),
-            });
-          }
-          return { success: false, error: 'coupon_service_unavailable' };
-        case 'checkout_create':
-          if (this.checkoutService) {
-            return this.checkoutService.create(workspaceId, {
-              productId: asString(args.productId),
-              name: asString(args.name) || asString(args.checkoutName, 'Checkout'),
-            });
-          }
-          return { success: false, error: 'checkout_service_unavailable' };
-        // ── plans.*, checkouts.*, coupons.* aliases handled via isDottedAliasTool fast-path above ──
-        case 'plan_create':
-        case 'create_plan':
-        case 'update_plan':
-        case 'create_checkout':
-        case 'update_checkout':
-        case 'list_checkouts':
-        case 'create_coupon':
-        case 'list_coupons':
-        case 'delete_plan':
-        case 'delete_checkout':
-        case 'add_url':
-        case 'update_url':
-        case 'delete_url':
-        case 'delete_coupon':
-        case 'update_coupon':
-          if (this.productSubTools) {
-            return await this.productSubTools.executeTool(toolName, workspaceId, asToolArgs(args));
-          }
-          return { success: false, error: 'product_sub_resource_tools_not_available' };
-        // ── generate_pix / generate_boleto handled via isDottedAliasTool fast-path above ──
-        // ── sales.create_pix / sales.create_boleto handled via isSalesTool fast-path above ──
-        case 'delete_product': {
-          const startedAt = Date.now();
-          const result = await this.chatToolsService.toolDeleteProduct(
-            workspaceId,
-            asToolArgs(args),
-          );
-          return this.withCanonicalReceipt(
-            'delete_product',
-            workspaceId,
-            args,
-            result,
-            userId,
-            startedAt,
-          );
-        }
-        case 'get_settings':
-          return await this.chatToolsService.toolGetSettings(workspaceId);
-        // ── request_withdrawal handled via isWalletSalesTool fast-path above ──
-        case 'get_analytics':
-          return await this.chatToolsService.toolGetAnalytics(workspaceId, asToolArgs(args));
-        case 'get_product_details':
-          return await this.chatToolsService.toolGetProductDetails(workspaceId, asToolArgs(args));
-        case 'list_subscriptions':
-          return await this.chatToolsService.toolListSubscriptions(workspaceId, asToolArgs(args));
-        case 'update_subscription':
-          return {
-            success: true,
-            message: args.action === 'cancel' ? 'Assinatura cancelada.' : 'Assinatura pausada.',
-          };
-        case 'get_affiliate_config':
-          return await this.chatToolsService.toolGetAffiliateConfig(workspaceId);
-        case 'upload_plan_image':
-          return await this.chatToolsService.toolUploadPlanImage(workspaceId, asToolArgs(args));
-        case 'upload_product_image': {
-          const productArgs = userId ? { ...args, actorId: userId } : args;
-          return await this.chatToolsService.toolUploadProductImage(
-            workspaceId,
-            asToolArgs(productArgs),
-          );
-        }
-        // ── products.upload_image handled via isDottedAliasTool fast-path above ──
-        // ── update_personal_data + account.* aliases handled via isAccountTool fast-path above ──
-        // ── CONFIGURE_* family handled via isConfigureTool fast-path above ──
-        case 'browse_marketplace':
-          return await this.chatToolsService.toolBrowseMarketplace(workspaceId, asToolArgs(args));
-        // ── get_nps / get_churn / list_refunds / request_anticipation handled via isWalletSalesTool fast-path above ──
-        case 'send_channel_message':
-          return await this.chatToolsService.toolSendChannelMessage(workspaceId, asToolArgs(args));
-        case 'create_broadcast': {
-          const startedAt = Date.now();
-          const result = await this.chatToolsService.toolCreateBroadcast(
-            workspaceId,
-            asToolArgs(args),
-          );
-          return this.withCanonicalReceipt(
-            'create_broadcast',
-            workspaceId,
-            args,
-            result,
-            userId,
-            startedAt,
-          );
-        }
-        case 'configure_ai_persona': {
-          const startedAt = Date.now();
-          const result = await this.chatToolsService.toolConfigureAiPersona(
-            workspaceId,
-            asToolArgs(args),
-          );
-          return this.withCanonicalReceipt(
-            'configure_ai_persona',
-            workspaceId,
-            args,
-            result,
-            userId,
-            startedAt,
-          );
-        }
-        // ── agent_* family handled via isAgentTool fast-path above ──
-        case 'create_order':
-          return await this.chatToolsService.toolCreateOrder(workspaceId, asToolArgs(args));
-        case 'create_payment_link':
-          return await this.dispatchCreatePaymentLink(workspaceId, args, userId);
-        case 'create_campaign':
-          return await this.requestHighRiskApproval(workspaceId, toolName, args, userId);
-        case 'change_plan':
-          return await this.requestHighRiskApproval(workspaceId, toolName, args, userId);
-        // ── Deps + Coverage + Affected tests (Wave 7 PI-EE) handled via isDepsCoverageTool fast-path above ──
-        // ── REPORTS (w25) handled via isReportsTool fast-path above ──
-        default:
-          return { success: false, error: `Ferramenta desconhecida: ${toolName}` };
-      }
+      return await this.runDirectDispatch(workspaceId, toolName, args, userId);
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'KloelToolDispatcherService.toolChangePlan');
       const msg =
@@ -542,14 +156,263 @@ export class KloelToolDispatcherService {
     }
   }
 
+  /**
+   * Walk the `is*Tool` fast-path checks in declaration order. Each handler
+   * returns `null` when the tool name is not part of its domain; the first
+   * non-null result wins.
+   */
+  private async runFastPathDispatch(
+    workspaceId: string,
+    toolName: string,
+    args: UnknownRecord,
+    userId: string | undefined,
+  ): Promise<ToolResult | null> {
+    if (isWhatsAppTool(toolName)) {
+      const result = await dispatchWhatsAppTool(
+        this.whatsappToolsService,
+        workspaceId,
+        toolName,
+        args,
+      );
+      if (result !== null) {
+        return result;
+      }
+    }
+    if (isCodeTool(toolName)) {
+      const result = await dispatchCodeTool(
+        this.codeToolsService,
+        this.codeAnalysisService,
+        toolName,
+        args,
+      );
+      if (result !== null) {
+        return result;
+      }
+    }
+    if (isSelfTool(toolName)) {
+      const result = await dispatchSelfTool(
+        {
+          auditService: this.auditService,
+          selfGaps: this.selfGaps,
+          selfHealth: this.selfHealth,
+          capRegistryV2: this.capRegistryV2,
+        },
+        workspaceId,
+        toolName,
+        args,
+      );
+      if (result !== null) {
+        return result;
+      }
+    }
+    if (isConfigureTool(toolName)) {
+      const result = await dispatchConfigureTool(
+        this.chatToolsService,
+        this.capRegistryV2,
+        workspaceId,
+        toolName,
+        args,
+        userId,
+      );
+      if (result !== null) {
+        return result;
+      }
+    }
+    if (isSalesTool(toolName)) {
+      const result = await dispatchSalesTool(
+        {
+          salesService: this.salesService,
+          capRegistryV2: this.capRegistryV2,
+          userId,
+        },
+        workspaceId,
+        toolName,
+        args,
+      );
+      if (result !== null) {
+        return result;
+      }
+    }
+    if (isAgentTool(toolName)) {
+      const result = await dispatchAgentTool(
+        this.chatToolsService,
+        workspaceId,
+        toolName,
+        args,
+      );
+      if (result !== null) {
+        return result;
+      }
+    }
+    if (isAccountTool(toolName)) {
+      const result = await dispatchAccountTool(
+        {
+          accountService: this.accountService,
+          walletSalesTools: this.walletSalesTools,
+          executeTool: (ws, name, a, u) => this.executeTool(ws, name, a, u),
+          userId,
+        },
+        workspaceId,
+        toolName,
+        args,
+      );
+      if (result !== null) {
+        return result;
+      }
+    }
+    if (isDottedAliasTool(toolName)) {
+      const result = await dispatchDottedAliasTool(
+        {
+          capRegistryV2: this.capRegistryV2,
+          executeTool: (ws, name, a, u) => this.executeTool(ws, name, a, u),
+          userId,
+        },
+        workspaceId,
+        toolName,
+        args,
+      );
+      if (result !== null) {
+        return result;
+      }
+    }
+    if (isReportsTool(toolName)) {
+      const result = await dispatchReportsTool(
+        { reportService: this.reportService },
+        workspaceId,
+        toolName,
+        args,
+      );
+      if (result !== null) {
+        return result;
+      }
+    }
+    if (isDepsCoverageTool(toolName)) {
+      const result = await dispatchDepsCoverageTool(
+        { depsCoverage: this.depsCoverage },
+        toolName,
+        args,
+      );
+      if (result !== null) {
+        return result;
+      }
+    }
+    if (isWalletSalesTool(toolName)) {
+      const result = await dispatchWalletSalesTool(
+        { walletSalesTools: this.walletSalesTools },
+        workspaceId,
+        toolName,
+        args,
+      );
+      if (result !== null) {
+        return result;
+      }
+    }
+    if (isBizConfigTool(toolName)) {
+      const result = await dispatchBizConfigTool(
+        { bizConfigToolsService: this.bizConfigToolsService },
+        workspaceId,
+        toolName,
+        args,
+      );
+      if (result !== null) {
+        return result;
+      }
+    }
+    if (isProductCatalogTool(toolName)) {
+      const result = await dispatchProductCatalogTool(
+        {
+          chatToolsService: this.chatToolsService,
+          couponService: this.couponService,
+          checkoutService: this.checkoutService,
+          productSubTools: this.productSubTools,
+        },
+        workspaceId,
+        toolName,
+        args,
+        userId,
+      );
+      if (result !== null) {
+        return result;
+      }
+    }
+    if (isWorkspaceInfoTool(toolName)) {
+      const result = await dispatchWorkspaceInfoTool(
+        { chatToolsService: this.chatToolsService },
+        workspaceId,
+        toolName,
+        args,
+      );
+      if (result !== null) {
+        return result;
+      }
+    }
+    if (isWorkspaceActionTool(toolName)) {
+      const result = await dispatchWorkspaceActionTool(
+        {
+          chatToolsService: this.chatToolsService,
+          applyReceipt: (cap, ws, a, r, u, started) =>
+            this.withCanonicalReceipt(cap, ws, a, r, u, started),
+          userId,
+        },
+        workspaceId,
+        toolName,
+        args,
+      );
+      if (result !== null) {
+        return result;
+      }
+    }
+    return null;
+  }
+
+  /** Handle the small set of tools that remain on the dispatcher directly. */
+  private async runDirectDispatch(
+    workspaceId: string,
+    toolName: string,
+    args: UnknownRecord,
+    userId: string | undefined,
+  ): Promise<ToolResult> {
+    const asToolArgs = <T>(value: UnknownRecord): T => value as T;
+    switch (toolName) {
+      case 'publish_product':
+      case 'products.review_and_publish':
+        return await this.requestHighRiskApproval(workspaceId, toolName, args, userId);
+      case 'search_web':
+        return await runToolSearchWeb(this.planLimits, this.composerService, workspaceId, args);
+      case 'delete_product': {
+        const startedAt = Date.now();
+        const result = await this.chatToolsService.toolDeleteProduct(
+          workspaceId,
+          asToolArgs(args),
+        );
+        return this.withCanonicalReceipt(
+          'delete_product',
+          workspaceId,
+          args,
+          result,
+          userId,
+          startedAt,
+        );
+      }
+      case 'create_payment_link':
+        return await this.dispatchCreatePaymentLink(workspaceId, args, userId);
+      case 'create_campaign':
+        return await this.requestHighRiskApproval(workspaceId, toolName, args, userId);
+      case 'change_plan':
+        return await this.requestHighRiskApproval(workspaceId, toolName, args, userId);
+      default:
+        return { success: false, error: `Ferramenta desconhecida: ${toolName}` };
+    }
+  }
+
   private withCanonicalReceipt(
     capabilityId: string,
     workspaceId: string,
     args: UnknownRecord,
-    result: { success: boolean; message?: string; error?: string; [key: string]: unknown },
+    result: ToolResult,
     userId: string | undefined,
     startedAt: number,
-  ): { success: boolean; message?: string; error?: string; [key: string]: unknown } {
+  ): ToolResult {
     return buildCanonicalReceipt(
       this.capRegistryV2,
       capabilityId,
@@ -570,39 +433,20 @@ export class KloelToolDispatcherService {
     workspaceId: string,
     args: UnknownRecord,
     userId?: string,
-  ): Promise<{ success: boolean; message?: string; error?: string; [key: string]: unknown }> {
-    const startedAt = Date.now();
-    const paymentArgs: PaymentLinkArgs = buildPaymentLinkArgs(args);
-    const result = await this.chatToolsService.toolCreatePaymentLink(workspaceId, {
-      ...paymentArgs,
-      executionPath: 'dispatcher',
-    });
-    try {
-      await this.prisma.$transaction(
-        async (tx) => {
-          await this.auditService.logWithTx(tx, {
-            workspaceId,
-            ...buildPaymentLinkAuditEntry(paymentArgs, result, userId),
-          });
-        },
-        { isolationLevel: 'ReadCommitted' },
-      );
-    } catch (auditError: unknown) {
-      void this.opsAlert?.alertOnCriticalError(
-        auditError,
-        'KloelToolDispatcherService.sanitizeDetails',
-      );
-      this.logger.warn(
-        `Audit dispatch (payment link) failed: ${extractAuditErrorMessage(auditError)}`,
-      );
-    }
-    return this.withCanonicalReceipt(
-      'create_payment_link',
+  ): Promise<ToolResult> {
+    return runCreatePaymentLink(
+      {
+        prisma: this.prisma,
+        auditService: this.auditService,
+        chatToolsService: this.chatToolsService,
+        opsAlert: this.opsAlert,
+        logger: { warn: (message) => this.logger.warn(message) },
+        applyReceipt: (cap, ws, a, r, u, started) =>
+          this.withCanonicalReceipt(cap, ws, a, r, u, started),
+      },
       workspaceId,
-      paymentArgs as unknown as UnknownRecord,
-      result,
+      args,
       userId,
-      startedAt,
     );
   }
 
