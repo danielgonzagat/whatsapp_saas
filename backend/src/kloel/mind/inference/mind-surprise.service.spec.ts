@@ -146,4 +146,61 @@ describe('MindSurpriseService', () => {
       expect(result).toBe(0);
     });
   });
+
+  describe('computeSurprise', () => {
+    const makeService = () => {
+      const prisma = {
+        mindPrediction: { findMany: jest.fn() },
+        $queryRaw: jest.fn(),
+        $executeRaw: jest.fn(),
+        $transaction: jest.fn(),
+      };
+      const beliefs = { observeBinary: jest.fn() };
+      const predictor = { findOpen: jest.fn(), resolve: jest.fn() };
+      return new MindSurpriseService(prisma as never, beliefs as never, predictor as never);
+    };
+
+    it('returns high surprise when predicted low (0.1) and observed=1', () => {
+      const svc = makeService();
+      const s = svc.computeSurprise(0.1, 1);
+      expect(s).toBeCloseTo(-Math.log(0.1));
+      expect(s).toBeGreaterThan(1.5);
+    });
+
+    it('returns high surprise when predicted high (0.9) and observed=0', () => {
+      const svc = makeService();
+      const s = svc.computeSurprise(0.9, 0);
+      expect(s).toBeCloseTo(-Math.log(0.1));
+      expect(s).toBeGreaterThan(1.5);
+    });
+
+    it('returns low surprise when predicted matches observation', () => {
+      const svc = makeService();
+      const s = svc.computeSurprise(0.9, 1);
+      expect(s).toBeCloseTo(-Math.log(0.9));
+      expect(s).toBeLessThan(0.3);
+    });
+
+    it('clamps extreme predicted values to avoid log(0)', () => {
+      const svc = makeService();
+      // predicted=0 clamped to 1e-6, observed=1 → -ln(1e-6)
+      expect(svc.computeSurprise(0, 1)).toBeCloseTo(-Math.log(1e-6));
+      // predicted=1 clamped to 1-1e-6, observed=0 → -ln(1e-6)
+      expect(svc.computeSurprise(1, 0)).toBeCloseTo(-Math.log(1e-6));
+    });
+
+    it('returns surprise > 0.3 when predicted=0.7 and observed=0', () => {
+      const svc = makeService();
+      const s = svc.computeSurprise(0.7, 0);
+      expect(s).toBeCloseTo(-Math.log(0.3));
+      expect(s).toBeGreaterThan(0.3);
+    });
+
+    it('returns surprise <= 0.3 when predicted=0.75 and observed=1', () => {
+      const svc = makeService();
+      const s = svc.computeSurprise(0.75, 1);
+      expect(s).toBeCloseTo(-Math.log(0.75));
+      expect(s).toBeLessThan(0.3);
+    });
+  });
 });

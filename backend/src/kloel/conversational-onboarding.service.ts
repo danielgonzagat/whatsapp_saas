@@ -22,6 +22,7 @@ import { buildMindSignals, type BuildMindSignalsDeps } from './mind/build-mind-s
 import { SpineEmitterService } from './spine/spine-emitter.service';
 import { randomIdSegment } from '../common/random-id';
 import { DecisionOutcomeService } from './decision-outcome.service';
+import { MindSurpriseService } from './mind/inference/mind-surprise.service';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 const ONBOARDING_SAFE_SETUP_TOOL_NAMES = [
@@ -101,6 +102,7 @@ export class ConversationalOnboardingService {
     @Optional() private readonly selfGapsService?: SelfGapsService,
     @Optional() private readonly decisionOutcomeService?: DecisionOutcomeService,
     @Optional() private readonly riskClassService?: RiskClassService,
+    @Optional() private readonly mindSurpriseService?: MindSurpriseService,
   ) {
     this.prismaExt = prisma as object as PrismaWithDynamicModels;
     this.openai = createTextLlmClient() ?? new OpenAI({ apiKey: 'missing' });
@@ -301,6 +303,49 @@ export class ConversationalOnboardingService {
       willingWrite: ctx.willingWrite,
     });
     return FALLBACK_REPLY;
+  }
+
+  private async computeChatSurprise(
+    workspaceId: string,
+    observed: 0 | 1,
+    surface: string,
+    degraded: boolean,
+  ): Promise<void> {
+    if (!this.mindSurpriseService || !this.mindBeliefService) {
+      return;
+    }
+
+    try {
+      const belief = await Promise.race([
+        this.mindBeliefService.getOrInit(
+          workspaceId,
+          workspaceId,
+          'replied_to_user',
+          { surface, degraded },
+        ),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('SURPRISE_TIMEOUT')), 30),
+        ),
+      ]);
+
+      const predicted = belief.mean;
+      const surprise = this.mindSurpriseService.computeSurprise(predicted, observed);
+
+      if (surprise > 0.3) {
+        this.logger.log({
+          event: 'kloel_chat_surprise_detected',
+          workspaceId,
+          predicted,
+          observed,
+          surpriseValue: surprise,
+          surface,
+        });
+      }
+    } catch (err: unknown) {
+      this.logger.warn('kloel_surprise_skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
   }
 
   /** Inicia ou continua o onboarding conversacional */
@@ -510,6 +555,7 @@ export class ConversationalOnboardingService {
               }),
             );
         }
+        void this.computeChatSurprise(workspaceId, 1, 'onboarding', false);
         return;
       }
 
@@ -539,6 +585,7 @@ export class ConversationalOnboardingService {
               reason: err instanceof Error ? err.message : String(err),
             }),
           );
+        void this.computeChatSurprise(workspaceId, 1, 'onboarding', false);
       }
       return responseText;
     } catch (error: unknown) {
@@ -586,6 +633,7 @@ export class ConversationalOnboardingService {
               }),
             );
         }
+        void this.computeChatSurprise(workspaceId, 0, 'onboarding', true);
         return;
       }
       if (this.mindBeliefService) {
@@ -602,6 +650,7 @@ export class ConversationalOnboardingService {
               reason: err instanceof Error ? err.message : String(err),
             }),
           );
+        void this.computeChatSurprise(workspaceId, 0, 'onboarding', true);
       }
       return fallback;
     }

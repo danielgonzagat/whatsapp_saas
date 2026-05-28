@@ -90,6 +90,16 @@ export class MindSurpriseService {
     });
   }
 
+  /**
+   * Compute surprise value for a predicted vs observed outcome.
+   * Pure math — no I/O. Predicted is a probability in [0,1], observed is 0 or 1.
+   * Returns -ln(1-predicted) when observed=1, or -ln(predicted) when observed=0.
+   */
+  computeSurprise(predicted: number, observed: 0 | 1): number {
+    const probability = this.clamp(predicted, 1e-6, 1 - 1e-6);
+    return observed === 1 ? -Math.log(probability) : -Math.log(1 - probability);
+  }
+
   private clamp(value: number, min: number, max: number): number {
     return Math.min(max, Math.max(min, value));
   }
