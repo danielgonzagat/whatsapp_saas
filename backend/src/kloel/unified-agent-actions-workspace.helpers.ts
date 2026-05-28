@@ -1,6 +1,222 @@
-import type { PrismaClient } from '@prisma/client';
+import type { Prisma, PrismaClient } from '@prisma/client';
 
 import type { UnknownRecord } from '../common/types';
+import { readStringOr as readString } from '../common/parse';
+import { WHITESPACE_G_RE } from '../common/regex';
+import type { ToolArgs } from './unified-agent.types';
+
+type ChannelChoice = {
+  channel: string;
+  confidence: number;
+  fallback: boolean;
+};
+
+type BroadcastWindow = {
+  window: string;
+  confidence: number;
+  fallback: boolean;
+};
+
+function coerceString(value: unknown, fallback = ''): string {
+  return typeof value === 'string'
+    ? value
+    : typeof value === 'number' || typeof value === 'boolean'
+      ? String(value)
+      : fallback;
+}
+
+/**
+ * Returns the broadcast channel list from operator hint or default fallbacks.
+ */
+export function resolveBroadcastChannels(args: ToolArgs): string[] {
+  const requested = coerceString(args.source).toLowerCase();
+  if (requested) {
+    return [requested];
+  }
+  return ['whatsapp', 'instagram', 'messenger', 'email'];
+}
+
+/**
+ * Resolves a concrete ISO timestamp for the broadcast window classifier.
+ * `now` returns the call moment; `pause` returns null; named windows roll
+ * forward to the next valid slot.
+ */
+export function resolveBroadcastScheduleAt(window: string, now: Date = new Date()): string | null {
+  if (window === 'pause') {
+    return null;
+  }
+  if (window === 'now') {
+    return now.toISOString();
+  }
+  const scheduled = new Date(now);
+  if (window === 'tonight_20h') {
+    scheduled.setHours(20, 0, 0, 0);
+    if (scheduled <= now) {
+      scheduled.setDate(scheduled.getDate() + 1);
+    }
+    return scheduled.toISOString();
+  }
+  if (window === 'friday_21h') {
+    const friday = 5;
+    const daysUntilFriday = (friday - scheduled.getDay() + 7) % 7 || 7;
+    scheduled.setDate(scheduled.getDate() + daysUntilFriday);
+    scheduled.setHours(21, 0, 0, 0);
+    return scheduled.toISOString();
+  }
+  scheduled.setDate(scheduled.getDate() + 1);
+  scheduled.setHours(9, 0, 0, 0);
+  return scheduled.toISOString();
+}
+
+/**
+ * Builds the channel choice from a predecided orchestrator payload, defaulting
+ * to the first available channel (or `whatsapp` if empty).
+ */
+export function resolvePredecidedChannelChoice(
+  predecided: UnknownRecord | null,
+  availableChannels: string[],
+): ChannelChoice {
+  return {
+    channel: readString(predecided?.channel, availableChannels[0] ?? 'whatsapp'),
+    confidence: typeof predecided?.confidence === 'number' ? predecided.confidence : 0,
+    fallback: predecided?.fallback === true,
+  };
+}
+
+/**
+ * Builds the broadcast window decision from a predecided orchestrator payload.
+ * When `scheduleAt` is provided, the default window is `operator_fixed`;
+ * otherwise it falls back to `now`.
+ */
+export function resolvePredecidedBroadcastWindow(
+  predecided: UnknownRecord | null,
+  scheduleAt: string | undefined,
+): BroadcastWindow {
+  return {
+    window: readString(predecided?.window, scheduleAt ? 'operator_fixed' : 'now'),
+    confidence: typeof predecided?.confidence === 'number' ? predecided.confidence : 0,
+    fallback: predecided?.fallback === true,
+  };
+}
+
+/**
+ * Default mind decision used when the Mind service is unavailable.
+ */
+export function defaultChannelChoiceWhenMindUnavailable(
+  availableChannels: string[],
+): ChannelChoice {
+  return { channel: availableChannels[0] ?? 'whatsapp', confidence: 0, fallback: true };
+}
+
+export function defaultBroadcastWindowWhenMindUnavailable(
+  scheduleAt: string | undefined,
+): BroadcastWindow {
+  return { window: scheduleAt ? 'operator_fixed' : 'now', confidence: 0, fallback: true };
+}
+
+/**
+ * Builds the AI persona record applied to settings memory.
+ */
+export function buildAIPersonaData(args: ToolArgs, now: Date = new Date()) {
+  return {
+    name: args.name || 'KLOEL',
+    personality: args.personality || 'Profissional, amigável e focada em resultados',
+    tone: args.tone || 'friendly',
+    language: args.language || 'pt-BR',
+    useEmojis: args.useEmojis !== undefined ? args.useEmojis : true,
+    updatedAt: now.toISOString(),
+  };
+}
+
+/**
+ * Builds the autopilot config block stamped into providerSettings.
+ */
+export function buildAutopilotConfig(args: ToolArgs, now: Date = new Date()) {
+  const { enabled, mode = 'full', workingHoursOnly = false } = args;
+  return {
+    enabled,
+    mode,
+    workingHoursOnly,
+    updatedAt: now.toISOString(),
+    updatedBy: 'kloel-ai',
+  };
+}
+
+/**
+ * Generates the deterministic memory key for a product persisted via Unified Agent.
+ */
+export function buildProductMemoryKey(args: ToolArgs, now: Date = new Date()): string {
+  const slug = String(args.name || '')
+    .toLowerCase()
+    .replace(WHITESPACE_G_RE, '_');
+  return `product_${now.getTime()}_${slug}`;
+}
+
+/**
+ * Builds the product memory value persisted into kloelMemory.
+ */
+export function buildProductMemoryValue(args: ToolArgs, now: Date = new Date()) {
+  return {
+    name: args.name,
+    price: args.price,
+    description: args.description || '',
+    category: args.category || 'default',
+    imageUrl: args.imageUrl || null,
+    paymentLink: args.paymentLink || null,
+    active: true,
+    createdAt: now.toISOString(),
+  };
+}
+
+/**
+ * Computes the partial update payload for a product memory based on incoming args.
+ */
+export function buildProductMemoryUpdate(
+  currentValue: UnknownRecord,
+  args: ToolArgs,
+  now: Date = new Date(),
+): Prisma.InputJsonValue {
+  return {
+    ...(currentValue as Prisma.JsonObject),
+    ...(args.name && { name: args.name }),
+    ...(args.price !== undefined && { price: args.price }),
+    ...(args.description && { description: args.description }),
+    ...(args.active !== undefined && { active: args.active }),
+    updatedAt: now.toISOString(),
+  };
+}
+
+/**
+ * Generates the deterministic memory key for a Flow persisted via Unified Agent.
+ */
+export function buildFlowMemoryKey(args: ToolArgs, now: Date = new Date()): string {
+  const slug = String(args.name || '')
+    .toLowerCase()
+    .replace(WHITESPACE_G_RE, '_');
+  return `flow_${now.getTime()}_${slug}`;
+}
+
+/**
+ * Builds the flow memory value persisted into kloelMemory.
+ */
+export function buildFlowMemoryValue(args: ToolArgs, now: Date = new Date()) {
+  return {
+    name: args.name,
+    trigger: args.trigger,
+    triggerValue: args.triggerValue || null,
+    steps: args.steps || [],
+    active: true,
+    createdAt: now.toISOString(),
+  };
+}
+
+/**
+ * Source tag persisted on broadcast decisions so observability can distinguish
+ * orchestrator-driven plans from legacy Unified Agent decisions.
+ */
+export function broadcastDecisionSource(predecided: boolean): string {
+  return predecided ? 'orchestrator_predecided' : 'legacy_action_decision';
+}
 
 interface WorkspaceActionArgs {
   includeMetrics?: boolean;

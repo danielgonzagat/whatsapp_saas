@@ -11,6 +11,7 @@ jest.mock('./openai-wrapper', () => ({
   chatCompletionWithFallback: jest.fn(),
 }));
 jest.mock('./unified-agent-actions-workspace.helpers', () => ({
+  ...jest.requireActual('./unified-agent-actions-workspace.helpers'),
   actionGetWorkspaceStatus: jest.fn(),
 }));
 type WorkspacePrismaMock = {
