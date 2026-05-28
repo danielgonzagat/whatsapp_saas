@@ -15,6 +15,7 @@ import { MindService } from './mind.service';
 import { AttentionService } from './mind/attention.service';
 import { ValenceAggregatorService } from './mind/valence-aggregator.service';
 import { MindBeliefService } from './mind/inference/mind-belief.service';
+import { SpineEventRef } from './mind/mind.types';
 import { UnifiedAgentService } from './unified-agent.service';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { validateAbiPayload } from './abi/abi-validator';
@@ -217,12 +218,54 @@ export class KloelReplyEngineService {
       perceptionSnapshot: { channel: 'web' },
     };
 
-    // Mind signals — wire attention + valence into cognitiveState (PI-k3)
+    // Mind signals — wire attention + valence into cognitiveState (PI-k4)
     if (this.attentionService && this.valenceAggregatorService && params.workspaceId) {
       try {
-        // No in-process event cache reachable from this injection scope.
-        // MindEventSpine has no synchronous recent-events getter.
-        cognitiveState.mindSignals = { status: 'no_event_source' };
+        const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
+        let recentEvents: SpineEventRef[] = [];
+
+        try {
+          const rows = await Promise.race([
+            this.prisma.autopilotEvent.findMany({
+              where: {
+                workspaceId: params.workspaceId,
+                createdAt: { gte: thirtyMinAgo },
+              },
+              orderBy: { createdAt: 'desc' },
+              take: 50,
+              select: { id: true, intent: true, action: true, createdAt: true },
+            }),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error('timeout')), 50),
+            ),
+          ]);
+
+          const wsIdForEvents = params.workspaceId;
+          if (wsIdForEvents) {
+            recentEvents = rows.map((r) => ({
+              eventId: r.id,
+              eventName: r.intent || r.action || 'unknown',
+              workspaceId: wsIdForEvents,
+              occurredAt: r.createdAt.toISOString(),
+              truthMode: 'observed' as const,
+            }));
+          }
+        } catch (error: unknown) {
+          this.logger.warn('kloel_event_source_timeout', {
+            reason: error instanceof Error ? error.message : 'unknown error',
+          });
+        }
+
+        const attention = this.attentionService.allocate(recentEvents, {
+          nowMs: Date.now(),
+          halfLifeMinutes: 30,
+        });
+
+        cognitiveState.mindSignals = {
+          attention,
+          source: 'autopilot_events',
+          eventCount: recentEvents.length,
+        };
       } catch (error: unknown) {
         this.logger.warn('kloel_mind_signal_skipped', {
           reason: error instanceof Error ? error.message : 'unknown error',

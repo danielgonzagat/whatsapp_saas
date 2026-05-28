@@ -41,8 +41,8 @@ jest.mock('./kloel-reply-engine.helpers', () => ({
   buildDynamicRuntimeContextHelper: jest.fn().mockResolvedValue('Dynamic context'),
   buildAssistantReplyImpl: jest.fn().mockResolvedValue('Assistant reply'),
 }));
-describe('KloelReplyEngineService mind-signal wiring (PI-k3)', () => {
-  let prisma: { workspace: { findUnique: jest.Mock } };
+describe('KloelReplyEngineService mind-signal wiring (PI-k4)', () => {
+  let prisma: { workspace: { findUnique: jest.Mock }; autopilotEvent: { findMany: jest.Mock } };
   let planLimits: Pick<PlanLimitsService, 'ensureTokenBudget' | 'trackAiUsage'>;
   let threadService: Pick<KloelThreadService, 'resolveThread' | 'getThreadConversationState'>;
   let wsContextService: {
@@ -51,9 +51,17 @@ describe('KloelReplyEngineService mind-signal wiring (PI-k3)', () => {
   };
   let unifiedAgent: Pick<UnifiedAgentService, 'processIncomingMessage'>;
 
+  const makeAutopilotRow = (overrides: Partial<{ id: string; intent: string; action: string; createdAt: Date }> = {}) => ({
+    id: overrides.id ?? 'evt-001',
+    intent: overrides.intent ?? 'commerce.lead.replied',
+    action: overrides.action ?? '',
+    createdAt: overrides.createdAt ?? new Date(),
+  });
+
   beforeEach(() => {
     prisma = {
       workspace: { findUnique: jest.fn().mockResolvedValue({ name: 'Test Co' }) },
+      autopilotEvent: { findMany: jest.fn().mockResolvedValue([]) },
     };
     planLimits = {
       ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
@@ -84,7 +92,65 @@ describe('KloelReplyEngineService mind-signal wiring (PI-k3)', () => {
     jest.clearAllMocks();
   });
   describe('buildChatModelMessages mindSignals', () => {
-    it('populates mindSignals with {status: "no_event_source"} when services are injected', async () => {
+    it('queries Prisma with correct shape and feeds AttentionService when services are injected', async () => {
+      const now = new Date('2026-05-28T12:00:00Z');
+      const rows = [
+        makeAutopilotRow({ id: 'evt-1', intent: 'commerce.lead.replied', createdAt: new Date('2026-05-28T11:55:00Z') }),
+        makeAutopilotRow({ id: 'evt-2', intent: 'commerce.cart.abandoned', action: '', createdAt: new Date('2026-05-28T11:50:00Z') }),
+      ];
+      prisma.autopilotEvent.findMany.mockResolvedValue(rows);
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          KloelReplyEngineService,
+          { provide: PrismaService, useValue: prisma },
+          { provide: PlanLimitsService, useValue: planLimits },
+          { provide: KloelThreadService, useValue: threadService },
+          { provide: KloelWorkspaceContextService, useValue: wsContextService },
+          { provide: UnifiedAgentService, useValue: unifiedAgent },
+          AttentionService,
+          ValenceAggregatorService,
+        ],
+      }).compile();
+
+      const service = module.get<KloelReplyEngineService>(KloelReplyEngineService);
+
+      const messages = await service.buildChatModelMessages({
+        systemPrompt: 'S',
+        dynamicContext: 'D',
+        recentMessages: [],
+        userMessage: 'Hello',
+        workspaceId: 'ws-1',
+      });
+
+      // Verify Prisma was queried with the right shape
+      expect(prisma.autopilotEvent.findMany).toHaveBeenCalledTimes(1);
+      const findManyArg = prisma.autopilotEvent.findMany.mock.calls[0][0];
+      expect(findManyArg.where.workspaceId).toBe('ws-1');
+      expect(findManyArg.where.createdAt.gte).toBeInstanceOf(Date);
+      expect(findManyArg.orderBy).toEqual({ createdAt: 'desc' });
+      expect(findManyArg.take).toBe(50);
+      expect(findManyArg.select).toEqual({ id: true, intent: true, action: true, createdAt: true });
+
+      // Verify mindSignals contains real attention, not a status stub
+      const lastContent = messages[messages.length - 1]?.content;
+      const lastContentStr = typeof lastContent === 'string' ? lastContent : '{}';
+      const userPayload = JSON.parse(lastContentStr) as Record<string, unknown>;
+      const cs = userPayload['cognitiveState'] as Record<string, unknown>;
+      const ms = cs['mindSignals'] as Record<string, unknown>;
+
+      expect(ms['source']).toBe('autopilot_events');
+      expect(ms['eventCount']).toBe(2);
+      expect(ms['attention']).toBeDefined();
+      const att = ms['attention'] as Record<string, unknown>;
+      expect(att['candidates']).toBeInstanceOf(Array);
+      // Attention should have no focal without entityRef
+      expect(att['focal']).toBeUndefined();
+    });
+
+    it('falls back to empty events on Prisma timeout, logs kloel_event_source_timeout', async () => {
+      prisma.autopilotEvent.findMany.mockRejectedValue(new Error('timeout'));
+
       const module: TestingModule = await Test.createTestingModule({
         providers: [
           KloelReplyEngineService,
@@ -112,7 +178,13 @@ describe('KloelReplyEngineService mind-signal wiring (PI-k3)', () => {
       const lastContentStr = typeof lastContent === 'string' ? lastContent : '{}';
       const userPayload = JSON.parse(lastContentStr) as Record<string, unknown>;
       const cs = userPayload['cognitiveState'] as Record<string, unknown>;
-      expect(cs['mindSignals']).toEqual({ status: 'no_event_source' });
+      const ms = cs['mindSignals'] as Record<string, unknown>;
+
+      expect(ms['source']).toBe('autopilot_events');
+      expect(ms['eventCount']).toBe(0);
+      expect(ms['attention']).toBeDefined();
+      const att = ms['attention'] as Record<string, unknown>;
+      expect(att['candidates']).toEqual([]);
     });
 
     it('sets mindSignals to {status: "no_services"} when attention service is absent', async () => {
