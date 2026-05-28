@@ -87,6 +87,9 @@ describe('KloelService', () => {
       auditLog: { create: jest.fn().mockResolvedValue({}) },
       $transaction: jest.fn().mockResolvedValue(undefined),
     };
+    (prisma as KloelPrismaMock & { autopilotEvent: { create: jest.Mock } }).autopilotEvent = {
+      create: jest.fn().mockResolvedValue({}),
+    };
 
     mocks = {
       planLimits: {
@@ -392,6 +395,48 @@ describe('KloelService', () => {
           credentials: { apiKey: 'k' },
         },
       });
+    });
+  });
+
+  describe('thinkSync deterministic actions', () => {
+    it('returns Mercado Pago provider proof for pix receipts', async () => {
+      mocks.toolDispatcher.executeTool.mockResolvedValueOnce({
+        success: true,
+        pixCopyPaste: 'pix-code',
+        receipt: {
+          capabilityId: 'sales.create_pix',
+          evidenceUrl: '/vendas/order-pix',
+          auditLogId: 'audit-pix',
+          domainEvents: ['commerce.payment.initiated'],
+          idempotencyKey: 'idem-pix',
+          executionRail: {
+            provider: 'mercadopago',
+            paymentMethod: 'PIX',
+            providerMethod: 'pix',
+            proofFields: ['pixCopyPaste', 'pixQrCode', 'providerPaymentId'],
+          },
+        },
+      });
+
+      const result = await service.thinkSync({
+        message: 'gera um pix para PDRN',
+        workspaceId: 'ws-1',
+        userId: 'user-1',
+      });
+
+      type ToolDispatcherCall = [string, string, Record<string, unknown>, string | undefined];
+      const [workspaceId, toolName, , userId] = mocks.toolDispatcher.executeTool.mock
+        .calls[0] as ToolDispatcherCall;
+      expect(workspaceId).toBe('ws-1');
+      expect(toolName).toBe('create_payment_link');
+      expect(userId).toBe('user-1');
+      expect(result.response).toContain('PIX copia e cola: pix-code');
+      expect(result.response).toContain('Provedor: mercadopago');
+      expect(result.response).toContain('Forma: PIX');
+      expect(result.response).toContain('Forma do provedor: pix');
+      expect(result.response).toContain(
+        'Contrato de prova: pixCopyPaste, pixQrCode, providerPaymentId',
+      );
     });
   });
 

@@ -258,15 +258,25 @@ describe('KloelThinkerService', () => {
       ).resolves.toBeUndefined();
     });
 
-    it('routes detected operational SSE actions before the LLM key guard', async () => {
+    it('routes detected operational SSE actions before the LLM key guard with rail proof', async () => {
       replyEngine.hasOpenAiKey = jest.fn().mockReturnValue(false);
       jest.replaceProperty(process, 'env', { ...process.env, ANTHROPIC_API_KEY: '' });
-      const executeLocalTool = jest
-        .fn()
-        .mockResolvedValue({ success: true, products: [{ name: 'PDRN', price: 197 }] });
+      const executeLocalTool = jest.fn().mockResolvedValue({
+        success: true,
+        pixCopyPaste: 'pix-code',
+        receipt: {
+          capabilityId: 'sales.create_pix',
+          executionRail: {
+            provider: 'mercadopago',
+            paymentMethod: 'PIX',
+            providerMethod: 'pix',
+            proofFields: ['pixCopyPaste', 'pixQrCode', 'providerPaymentId'],
+          },
+        },
+      });
 
       await service.think(
-        { message: 'listar produtos', workspaceId: wsId, userId: 'agent-1' },
+        { message: 'gera um pix para PDRN', workspaceId: wsId, userId: 'agent-1' },
         {} as Response,
         null,
         undefined,
@@ -274,35 +284,37 @@ describe('KloelThinkerService', () => {
         executeLocalTool as LocalToolExecutor,
       );
 
-      expect(executeLocalTool).toHaveBeenCalledWith(wsId, 'list_products', {}, 'agent-1');
+      type LocalToolCall = [string, string, Record<string, unknown>, string | undefined];
+      const [calledWorkspaceId, calledTool, , calledUserId] = executeLocalTool.mock
+        .calls[0] as LocalToolCall;
+      expect(calledWorkspaceId).toBe(wsId);
+      expect(calledTool).toBe('create_payment_link');
+      expect(calledUserId).toBe('agent-1');
       expect(replyEngine.hasOpenAiKey).not.toHaveBeenCalled();
       expect(replyEngine.buildChatModelMessages).not.toHaveBeenCalled();
       const streamWriter = (KloelStreamWriter as jest.Mock).mock.results.at(-1)
         ?.value as { write: jest.Mock<void, [unknown]> };
-      expect(streamWriter.write).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'tool_call', tool: 'list_products' }),
-      );
-      expect(streamWriter.write).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'tool_result', tool: 'list_products', success: true }),
-      );
+      const writtenEvents = streamWriter.write.mock.calls.map(([event]) => {
+        return event as { type?: unknown; tool?: unknown; success?: unknown; content?: unknown };
+      });
       expect(
-        streamWriter.write.mock.calls.some(([event]) => {
-          if (event === null || typeof event !== 'object' || Array.isArray(event)) {
-            return false;
-          }
-          const maybeEvent = event as { type?: unknown; content?: unknown };
-          return (
-            maybeEvent.type === 'content' &&
-            typeof maybeEvent.content === 'string' &&
-            maybeEvent.content.includes('PDRN')
-          );
-        }),
+        writtenEvents.some(
+          (event) => event.type === 'tool_call' && event.tool === 'create_payment_link',
+        ),
       ).toBe(true);
-      expect(finalizeSuccessfulReply).toHaveBeenCalledWith(
-        expect.stringContaining('PDRN'),
-        0,
-        expect.objectContaining({ workspaceId: wsId, message: 'listar produtos' }),
-      );
+      expect(
+        writtenEvents.some(
+          (event) =>
+            event.type === 'tool_result' &&
+            event.tool === 'create_payment_link' &&
+            event.success === true,
+        ),
+      ).toBe(true);
+      const contentEvent = writtenEvents.find((event) => event.type === 'content');
+      expect(contentEvent?.content).toContain('PIX copia e cola: pix-code');
+      expect(contentEvent?.content).toContain('Provedor: mercadopago');
+      expect(contentEvent?.content).toContain('Forma: PIX');
+      expect(finalizeSuccessfulReply).toHaveBeenCalled();
     });
 
     it('returns an honest tool failure on SSE without falling through to the LLM', async () => {

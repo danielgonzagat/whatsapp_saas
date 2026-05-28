@@ -12,6 +12,7 @@ import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
 import { IntentRouterService } from './intent-router/intent-router.service';
 import { buildReceipt, writeOperationReceipt, buildResultMeta } from './operation-receipt.helpers';
 import { detectActionIntent, formatToolResult } from './guest-chat.action-intent.helpers';
+import { appendToolResultProof } from './guest-chat.format-tool-result.helpers';
 import {
   GuestConversation,
   getOrCreateConversation,
@@ -252,7 +253,7 @@ export async function runDeterministicAction(
             })
             .catch(() => {});
         }
-        const reply = formatToolResult(action.tool, result);
+        const reply = appendToolResultProof(formatToolResult(action.tool, result), result);
         await persistConversationMessage(
           sessionId,
           'assistant',
@@ -308,7 +309,7 @@ export async function runDeterministicAction(
           })
           .catch(() => {});
       }
-      const reply = formatToolResult(legacyAction.tool, result);
+      const reply = appendToolResultProof(formatToolResult(legacyAction.tool, result), result);
       await persistConversationMessage(sessionId, 'assistant', reply, redis, conversations, logger);
       return reply;
     } catch (err: unknown) {

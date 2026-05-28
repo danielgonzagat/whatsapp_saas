@@ -1,6 +1,6 @@
 import type { PrismaService } from '../prisma/prisma.service';
 import { detectActionIntent } from './guest-chat.action-intent.helpers';
-import { formatToolResult } from './guest-chat.format-tool-result.helpers';
+import { appendToolResultProof, formatToolResult } from './guest-chat.format-tool-result.helpers';
 import { extractProductArgs, extractProductName } from './guest-chat.product-args.helpers';
 import { runGetProductReviews } from './kloel-chat-tools.product.helpers';
 import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
@@ -38,6 +38,78 @@ describe('guest chat action intent helpers', () => {
   it('routes abandonment and anticipation intents to their dedicated tools', () => {
     expect(detectActionIntent('listar carrinhos abandonados')?.tool).toBe('get_abandonments');
     expect(detectActionIntent('quero antecipacao do saldo')?.tool).toBe('request_anticipation');
+  });
+
+  it('appends canonical payment rail proof for Mercado Pago pix/boleto and Stripe card', () => {
+    const pixResult = {
+      success: true,
+      pixCopyPaste: 'pix-code',
+      receipt: {
+        capabilityId: 'sales.create_pix',
+        evidenceUrl: '/vendas/order-pix',
+        auditLogId: 'audit-pix',
+        domainEvents: ['commerce.payment.initiated'],
+        idempotencyKey: 'idem-pix',
+        executionRail: {
+          provider: 'mercadopago',
+          paymentMethod: 'PIX',
+          providerMethod: 'pix',
+          proofFields: ['pixCopyPaste', 'pixQrCode', 'providerPaymentId'],
+        },
+      },
+    };
+    const boletoResult = {
+      success: true,
+      boletoUrl: 'https://mp.example/boleto.pdf',
+      receipt: {
+        capabilityId: 'sales.create_boleto',
+        executionRail: {
+          provider: 'mercadopago',
+          paymentMethod: 'BOLETO',
+          providerMethod: 'bolbradesco',
+          proofFields: ['boletoPdfUrl', 'boletoBarcode', 'providerPaymentId'],
+        },
+      },
+    };
+    const cardResult = {
+      success: true,
+      paymentLink: 'https://stripe.example/pay',
+      receipt: {
+        capabilityId: 'sales.create_card_link',
+        executionRail: {
+          provider: 'stripe',
+          paymentMethod: 'CARD',
+          providerMethod: 'checkout_session',
+          proofFields: ['paymentLink', 'checkoutSessionId'],
+        },
+      },
+    };
+
+    const pixReply = appendToolResultProof(
+      formatToolResult('create_payment_link', pixResult),
+      pixResult,
+    );
+    const boletoReply = appendToolResultProof(
+      formatToolResult('generate_boleto', boletoResult),
+      boletoResult,
+    );
+    const cardReply = appendToolResultProof(
+      formatToolResult('create_payment_link', cardResult),
+      cardResult,
+    );
+
+    expect(pixReply).toContain('PIX copia e cola: pix-code');
+    expect(pixReply).toContain('Provedor: mercadopago');
+    expect(pixReply).toContain('Forma: PIX');
+    expect(pixReply).toContain('Forma do provedor: pix');
+    expect(pixReply).toContain('Contrato de prova: pixCopyPaste, pixQrCode, providerPaymentId');
+    expect(boletoReply).toContain('Provedor: mercadopago');
+    expect(boletoReply).toContain('Forma: BOLETO');
+    expect(boletoReply).toContain('Forma do provedor: bolbradesco');
+    expect(cardReply).toContain('Provedor: stripe');
+    expect(cardReply).toContain('Forma: CARD');
+    expect(cardReply).toContain('Forma do provedor: checkout_session');
+    expect(cardReply).not.toContain('Provedor: mercadopago');
   });
 
   it('extracts product names from no-produto contexts and explicit names', () => {

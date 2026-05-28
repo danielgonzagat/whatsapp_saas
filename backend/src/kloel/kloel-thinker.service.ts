@@ -37,6 +37,7 @@ import {
   type ThinkBranchContext,
 } from './kloel-thinker-think.helpers';
 import { detectActionIntent, formatToolResult } from './guest-chat.action-intent.helpers';
+import { appendToolResultProof } from './guest-chat.format-tool-result.helpers';
 
 export type { LocalToolExecutor } from './kloel-reply-engine.service';
 
@@ -129,7 +130,10 @@ export class KloelThinkerService {
               ...(toolError !== undefined ? { error: toolError } : {}),
             }),
           );
-          const reply = formatToolResult(deterministicAction.tool, toolResult);
+          const reply = appendToolResultProof(
+            formatToolResult(deterministicAction.tool, toolResult),
+            toolResult,
+          );
           safeWrite(createKloelContentEvent(reply));
           await finalizeSuccessfulReply(reply, 0, {
             workspaceId,
