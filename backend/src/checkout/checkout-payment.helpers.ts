@@ -221,3 +221,396 @@ export function buildPaymentDescription(productName: string | undefined, orderId
 
 /** Stripe `request_three_d_secure` enum value extracted as a constant to avoid inline string assembly. */
 export const STRIPE_THREE_DS_REQUEST_ANY = 'any' as const;
+
+/**
+ * Extracted checkout order monetary + fraud signal context. Pure read-through of the
+ * order's free-form metadata blob: all amount fields are exact integers in cents and
+ * are NOT mutated, scaled, or rounded here — the money path is preserved.
+ */
+export type CheckoutOrderMetadataView = {
+  baseTotalInCents: number;
+  chargedTotalInCents: number;
+  marketplaceFeeInCents: number;
+  interestInCents: number;
+  deviceFingerprint: string | null;
+  cardBin: string | null;
+  cardCountry: string | null;
+  orderCountry: string;
+};
+
+/**
+ * Parse the JSON metadata blob attached to a checkout order into a typed view. Falls
+ * back to deterministic defaults when fields are missing or shaped incorrectly. Pure
+ * function — no money arithmetic, no I/O. The amount fields are read verbatim via
+ * `Number(...)` exactly as the service did inline, preserving any prior coercion
+ * semantics. `requestedTotalInCents` is the request-supplied total used as the final
+ * fallback for chargedTotalInCents.
+ */
+export function extractOrderMetadataView(
+  rawMetadata: unknown,
+  orderTotalInCents: unknown,
+  requestedTotalInCents: unknown,
+): CheckoutOrderMetadataView {
+  const metadata: Record<string, unknown> =
+    rawMetadata && typeof rawMetadata === 'object' && !Array.isArray(rawMetadata)
+      ? (rawMetadata as Record<string, unknown>)
+      : {};
+
+  const baseTotalInCents = Number(metadata.baseTotalInCents || orderTotalInCents || 0);
+  const chargedTotalInCents = Number(
+    metadata.chargedTotalInCents || baseTotalInCents || requestedTotalInCents || 0,
+  );
+  const marketplaceFeeInCents = Number(metadata.marketplaceFeeInCents || 0);
+  const interestInCents = Number(metadata.installmentInterestInCents || 0);
+
+  const deviceFingerprint =
+    typeof metadata.deviceFingerprint === 'string' ? metadata.deviceFingerprint : null;
+  const cardBin = typeof metadata.cardBin === 'string' ? metadata.cardBin : null;
+  const cardCountry = typeof metadata.cardCountry === 'string' ? metadata.cardCountry : null;
+  const orderCountry = typeof metadata.orderCountry === 'string' ? metadata.orderCountry : 'BR';
+
+  return {
+    baseTotalInCents,
+    chargedTotalInCents,
+    marketplaceFeeInCents,
+    interestInCents,
+    deviceFingerprint,
+    cardBin,
+    cardCountry,
+    orderCountry,
+  };
+}
+
+/**
+ * Extract a trimmed product name from a checkout order's plan, falling back to
+ * `undefined` when missing or empty. Pure read-through.
+ */
+export function extractProductName(
+  plan: { product?: { name?: unknown } | null } | null,
+): string | undefined {
+  const name = plan?.product?.name;
+  if (typeof name === 'string') {
+    const trimmed = name.trim();
+    if (trimmed) {
+      return trimmed;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Deterministic empty PIX display payload, used by the Stripe (card) flow that does
+ * not emit any PIX artifacts. Frozen to prevent accidental mutation by callers.
+ */
+export const EMPTY_PIX_DATA: PixDisplayData = Object.freeze({
+  pixQrCode: null,
+  pixCopyPaste: null,
+  pixExpiresAt: null,
+});
+
+/** Sentry breadcrumb level used for checkout payment lifecycle events. */
+type PaymentBreadcrumbInput = {
+  message: string;
+  orderId: string;
+  workspaceId: string;
+  amount: number;
+  paymentMethod: CheckoutPaymentMethod;
+};
+
+/** Build a Sentry breadcrumb payload for a checkout payment lifecycle step. Pure. */
+export function buildPaymentBreadcrumb(input: PaymentBreadcrumbInput): {
+  message: string;
+  category: 'payment';
+  level: 'info';
+  data: {
+    orderId: string;
+    workspaceId: string;
+    amount: number;
+    paymentMethod: CheckoutPaymentMethod;
+  };
+} {
+  return {
+    message: input.message,
+    category: 'payment',
+    level: 'info',
+    data: {
+      orderId: input.orderId,
+      workspaceId: input.workspaceId,
+      amount: input.amount,
+      paymentMethod: input.paymentMethod,
+    },
+  };
+}
+
+/** Build a Sentry capture context for a payment-processing failure. Pure. */
+export function buildPaymentCaptureContext(input: {
+  operation: string;
+  workspaceId: string;
+  orderId: string;
+  amount: number;
+  gateway: 'stripe' | 'mercadopago';
+}): {
+  tags: { type: 'financial_alert'; operation: string };
+  extra: { workspaceId: string; orderId: string; amount: number; gateway: string };
+  level: 'fatal';
+} {
+  return {
+    tags: { type: 'financial_alert', operation: input.operation },
+    extra: {
+      workspaceId: input.workspaceId,
+      orderId: input.orderId,
+      amount: input.amount,
+      gateway: input.gateway,
+    },
+    level: 'fatal',
+  };
+}
+
+/** Build the financial-alert context for a payment-processing failure. Pure. */
+export function buildFinancialAlertContext(input: {
+  workspaceId: string;
+  orderId: string;
+  amount: number;
+  gateway: 'stripe' | 'mercadopago';
+}): { workspaceId: string; orderId: string; amount: number; gateway: 'stripe' | 'mercadopago' } {
+  return {
+    workspaceId: input.workspaceId,
+    orderId: input.orderId,
+    amount: input.amount,
+    gateway: input.gateway,
+  };
+}
+
+/** Extract a deterministic error message from an unknown thrown value. Pure. */
+export function describeError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+/** Boleto display payload returned alongside Mercado Pago boleto charges. */
+export type BoletoDisplayData = {
+  boletoUrl: string | null;
+  boletoBarcode: string | null;
+  boletoExpiresAt: string | null;
+};
+
+/** Deterministic empty boleto display payload used by non-boleto flows. */
+export const EMPTY_BOLETO_DATA: BoletoDisplayData = Object.freeze({
+  boletoUrl: null,
+  boletoBarcode: null,
+  boletoExpiresAt: null,
+});
+
+/**
+ * Build the PIX display payload persisted/returned for a Mercado Pago PIX charge.
+ * Pure formatter — wraps the QR base64 into a renderable data URL, normalizes the
+ * copy-paste value to nullable, and serializes the expiration timestamp to ISO.
+ */
+export function buildMercadoPagoPixDisplay(charge: {
+  qrCodeBase64: string;
+  qrCode?: string | null;
+  expiresAt: Date;
+}): PixDisplayData {
+  return {
+    pixQrCode: formatMercadoPagoQrImage(charge.qrCodeBase64),
+    pixCopyPaste: charge.qrCode || null,
+    pixExpiresAt: charge.expiresAt.toISOString(),
+  };
+}
+
+/**
+ * Build the audit-log payload (`AuditService.logWithTx` second argument) for a
+ * newly-created checkout payment. Centralizes the shape so the three persist arms
+ * (Stripe card, Mercado Pago PIX, Mercado Pago boleto) emit identical envelopes.
+ * Pure formatter — no money math, no I/O.
+ */
+export function buildCheckoutPaymentCreatedAuditPayload(input: {
+  workspaceId: string;
+  paymentId: string;
+  paymentMethod: CheckoutPaymentMethod;
+  amount: number;
+  orderId: string;
+  gateway: 'stripe' | 'mercadopago';
+  externalId: string;
+  approved: boolean;
+  installments: number | undefined;
+  providerPaymentStatus: string;
+}): {
+  workspaceId: string;
+  action: 'CHECKOUT_PAYMENT_CREATED';
+  resource: 'CheckoutPayment';
+  resourceId: string;
+  details: {
+    method: CheckoutPaymentMethod;
+    amount: number;
+    orderId: string;
+    gateway: 'stripe' | 'mercadopago';
+    externalId: string;
+    approved: boolean;
+    installments: number | undefined;
+    paymentStatus: string;
+  };
+} {
+  return {
+    workspaceId: input.workspaceId,
+    action: 'CHECKOUT_PAYMENT_CREATED',
+    resource: 'CheckoutPayment',
+    resourceId: input.paymentId,
+    details: {
+      method: input.paymentMethod,
+      amount: input.amount,
+      orderId: input.orderId,
+      gateway: input.gateway,
+      externalId: input.externalId,
+      approved: input.approved,
+      installments: input.installments,
+      paymentStatus: input.providerPaymentStatus,
+    },
+  };
+}
+
+/**
+ * Build the boleto display payload persisted/returned for a Mercado Pago boleto
+ * charge. Pure formatter — picks the digitable line when present and falls back to
+ * the raw barcode content, serializes the expiration timestamp to ISO.
+ */
+export function buildMercadoPagoBoletoDisplay(charge: {
+  ticketUrl: string;
+  digitableLine?: string | null;
+  barcodeContent: string;
+  expiresAt: Date;
+}): BoletoDisplayData {
+  return {
+    boletoUrl: charge.ticketUrl,
+    boletoBarcode: charge.digitableLine || charge.barcodeContent,
+    boletoExpiresAt: charge.expiresAt.toISOString(),
+  };
+}
+
+/**
+ * Build the canonical checkout-payment-result shape returned by `processPayment`
+ * across all three payment-method arms. Pure formatter — no money math, no I/O.
+ */
+export function buildCheckoutPaymentResult<TPayment>(input: {
+  payment: TPayment;
+  type: CheckoutPaymentMethod;
+  approved: boolean;
+  clientSecret: string | null;
+  paymentIntentId: string;
+  pixData: PixDisplayData;
+  boletoData: BoletoDisplayData;
+}): {
+  payment: TPayment;
+  type: CheckoutPaymentMethod;
+  approved: boolean;
+  clientSecret: string | null;
+  paymentIntentId: string;
+  pixQrCode: string | null;
+  pixCopyPaste: string | null;
+  pixExpiresAt: string | null;
+  boletoUrl: string | null;
+  boletoBarcode: string | null;
+  boletoExpiresAt: string | null;
+} {
+  return {
+    payment: input.payment,
+    type: input.type,
+    approved: input.approved,
+    clientSecret: input.clientSecret,
+    paymentIntentId: input.paymentIntentId,
+    pixQrCode: input.pixData.pixQrCode,
+    pixCopyPaste: input.pixData.pixCopyPaste,
+    pixExpiresAt: input.pixData.pixExpiresAt,
+    boletoUrl: input.boletoData.boletoUrl,
+    boletoBarcode: input.boletoData.boletoBarcode,
+    boletoExpiresAt: input.boletoData.boletoExpiresAt,
+  };
+}
+
+/**
+ * Minimal structural type of the checkout event emitter consumed by the lifecycle
+ * helpers below. Mirrors only the surface the helpers touch so callers may pass any
+ * compatible emitter (real or mock) without importing the concrete class.
+ */
+export type CheckoutLifecycleEmitter = {
+  paymentInitiated(payload: {
+    workspaceId: string;
+    orderId: string;
+    paymentIntentId: string;
+    paymentMethod: CheckoutPaymentMethod;
+    amountInCents: number;
+    correlationId?: string | undefined;
+  }): unknown;
+  paymentApproved(payload: {
+    workspaceId: string;
+    orderId: string;
+    paymentIntentId: string;
+    amountInCents: number;
+    correlationId?: string | undefined;
+  }): unknown;
+  paymentDeclined(payload: {
+    workspaceId: string;
+    orderId: string;
+    paymentIntentId: string | undefined;
+    correlationId?: string | undefined;
+    reason: string;
+  }): unknown;
+};
+
+/**
+ * Fire the `paymentInitiated` lifecycle event and, when approved, the `paymentApproved`
+ * event on the optional emitter. Both calls are fire-and-forget — failures are not
+ * awaited and do not affect the caller. Pure orchestration, no money math.
+ */
+export function emitPaymentLifecycleEvents(
+  emitter: CheckoutLifecycleEmitter | undefined,
+  input: {
+    workspaceId: string;
+    orderId: string;
+    paymentIntentId: string;
+    paymentMethod: CheckoutPaymentMethod;
+    amountInCents: number;
+    correlationId?: string | undefined;
+    approved: boolean;
+  },
+): void {
+  void emitter?.paymentInitiated({
+    workspaceId: input.workspaceId,
+    orderId: input.orderId,
+    paymentIntentId: input.paymentIntentId,
+    paymentMethod: input.paymentMethod,
+    amountInCents: input.amountInCents,
+    correlationId: input.correlationId,
+  });
+  if (input.approved) {
+    void emitter?.paymentApproved({
+      workspaceId: input.workspaceId,
+      orderId: input.orderId,
+      paymentIntentId: input.paymentIntentId,
+      amountInCents: input.amountInCents,
+      correlationId: input.correlationId,
+    });
+  }
+}
+
+/**
+ * Fire the `paymentDeclined` lifecycle event when a provider charge throws. The
+ * declined event always carries `paymentIntentId: undefined` because the intent was
+ * not created. Fire-and-forget. Pure.
+ */
+export function emitPaymentDeclined(
+  emitter: CheckoutLifecycleEmitter | undefined,
+  input: {
+    workspaceId: string;
+    orderId: string;
+    correlationId?: string | undefined;
+    error: unknown;
+  },
+): void {
+  void emitter?.paymentDeclined({
+    workspaceId: input.workspaceId,
+    orderId: input.orderId,
+    paymentIntentId: undefined,
+    correlationId: input.correlationId,
+    reason: describeError(input.error),
+  });
+}

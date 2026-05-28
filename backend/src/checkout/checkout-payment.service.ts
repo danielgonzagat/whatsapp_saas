@@ -25,13 +25,26 @@ import { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effec
 import { CheckoutEventEmitterService } from '../kloel/checkout-emitter/checkout-event-emitter.service';
 import {
   BOLETO_EXPIRATION_DAYS,
+  EMPTY_BOLETO_DATA,
+  EMPTY_PIX_DATA,
   FRAUD_ACTION_AUDIT_MAP,
   MP_WEBHOOK_PATH,
   PIX_EXPIRATION_MINUTES,
   STRIPE_THREE_DS_REQUEST_ANY,
   assertCanonicalProvider,
+  buildCheckoutPaymentCreatedAuditPayload,
+  buildCheckoutPaymentResult,
+  buildFinancialAlertContext,
+  buildMercadoPagoBoletoDisplay,
+  buildMercadoPagoPixDisplay,
+  buildPaymentBreadcrumb,
+  buildPaymentCaptureContext,
   buildPaymentDescription,
-  formatMercadoPagoQrImage,
+  describeError,
+  emitPaymentDeclined,
+  emitPaymentLifecycleEvents,
+  extractOrderMetadataView,
+  extractProductName,
   mapMercadoPagoPaymentStatus,
   mapStripePaymentStatus,
   normalizeBoletoAddress,
@@ -162,7 +175,80 @@ export class CheckoutPaymentService {
     return base;
   }
 
-  private async persistPayment(
+  /**
+   * Shared persistence kernel for the three payment-method arms (Stripe card,
+   * Mercado Pago PIX, Mercado Pago boleto). Runs inside an isolated `ReadCommitted`
+   * transaction and performs four steps:
+   *   1. Idempotency check — return the existing payment when externalId matches.
+   *   2. Create the `checkoutPayment` row from the caller-supplied `data` block.
+   *   3. When approved, transition the order to PAID.
+   *   4. Emit the `CHECKOUT_PAYMENT_CREATED` audit log.
+   *
+   * The caller owns the per-arm `data` payload (gateway, externalId, pix/boleto
+   * fields, webhookData) — this kernel never touches money fields and never mutates
+   * provider-specific values. Money path preserved.
+   */
+  private async runPersistPaymentTx(input: {
+    params: {
+      orderId: string;
+      workspaceId: string;
+      paymentMethod: CheckoutPaymentMethod;
+      installments?: number;
+    };
+    externalId: string;
+    chargeLabel: string;
+    provider: 'stripe' | 'mercadopago';
+    providerPaymentStatus: string;
+    paymentStatus: CheckoutPaymentStatus;
+    amount: number;
+    data: Prisma.CheckoutPaymentUncheckedCreateInput;
+  }) {
+    const approved = input.paymentStatus === 'APPROVED';
+    return this.prisma.$transaction(
+      async (tx) => {
+        const idempotent = await this.resolveExistingPaymentForIdempotency(
+          tx,
+          input.params.orderId,
+          input.externalId,
+          input.chargeLabel,
+        );
+        if (idempotent) {
+          return idempotent;
+        }
+
+        const createdPayment = await tx.checkoutPayment.create({ data: input.data });
+
+        if (approved) {
+          await this.transitionOrderToApproved(tx, input.params.orderId, input.params.workspaceId, {
+            paymentId: createdPayment.id,
+            provider: input.provider,
+            externalId: input.externalId,
+          });
+        }
+
+        await this.auditService.logWithTx(
+          tx,
+          buildCheckoutPaymentCreatedAuditPayload({
+            workspaceId: input.params.workspaceId,
+            paymentId: createdPayment.id,
+            paymentMethod: input.params.paymentMethod,
+            amount: input.amount,
+            orderId: input.params.orderId,
+            gateway: input.provider,
+            externalId: input.externalId,
+            approved,
+            installments: input.params.installments,
+            providerPaymentStatus: input.providerPaymentStatus,
+          }),
+        );
+
+        return createdPayment;
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
+  }
+
+  private persistPayment(
     params: {
       orderId: string;
       workspaceId: string;
@@ -175,79 +261,38 @@ export class CheckoutPaymentService {
     pixData: PixDisplayData,
     amount: number,
   ) {
-    const approved = paymentStatus === 'APPROVED';
-    return this.prisma.$transaction(
-      async (tx) => {
-        const existingPayment = await tx.checkoutPayment.findFirst({
-          where: { orderId: params.orderId },
-        });
-        if (existingPayment) {
-          if (existingPayment.externalId === charge.paymentIntentId) {
-            this.logger.log(
-              `Idempotency: payment already exists for order ${params.orderId} with same PaymentIntent ${charge.paymentIntentId}`,
-            );
-            return existingPayment;
-          }
-          this.logger.warn(
-            `Idempotency: payment exists for order ${params.orderId} but with different externalId (existing=${existingPayment.externalId}, new=${charge.paymentIntentId})`,
-          );
-        }
-
-        const createdPayment = await tx.checkoutPayment.create({
-          data: {
-            orderId: params.orderId,
-            gateway: 'stripe',
-            externalId: charge.paymentIntentId,
-            pixQrCode: pixData.pixQrCode,
-            pixCopyPaste: pixData.pixCopyPaste,
-            pixExpiresAt: pixData.pixExpiresAt ? new Date(pixData.pixExpiresAt) : null,
-            boletoUrl: null,
-            boletoBarcode: null,
-            boletoExpiresAt: null,
-            cardLast4: params.cardLast4 || null,
-            cardBrand: null,
-            status: paymentStatus,
-            webhookData: toJsonValue({
-              provider: 'stripe',
-              paymentIntent: charge.stripePaymentIntent,
-              split: charge.split,
-              splitInput: charge.splitInput,
-            }),
-          },
-        });
-
-        if (approved) {
-          await this.transitionOrderToApproved(tx, params.orderId, params.workspaceId, {
-            paymentId: createdPayment.id,
-            provider: 'stripe',
-            externalId: charge.paymentIntentId,
-          });
-        }
-
-        await this.auditService.logWithTx(tx, {
-          workspaceId: params.workspaceId,
-          action: 'CHECKOUT_PAYMENT_CREATED',
-          resource: 'CheckoutPayment',
-          resourceId: createdPayment.id,
-          details: {
-            method: params.paymentMethod,
-            amount,
-            orderId: params.orderId,
-            gateway: 'stripe',
-            externalId: charge.paymentIntentId,
-            approved,
-            installments: params.installments,
-            paymentStatus: charge.stripePaymentIntent.status,
-          },
-        });
-
-        return createdPayment;
+    return this.runPersistPaymentTx({
+      params,
+      externalId: charge.paymentIntentId,
+      chargeLabel: 'PaymentIntent',
+      provider: 'stripe',
+      providerPaymentStatus: charge.stripePaymentIntent.status,
+      paymentStatus,
+      amount,
+      data: {
+        orderId: params.orderId,
+        gateway: 'stripe',
+        externalId: charge.paymentIntentId,
+        pixQrCode: pixData.pixQrCode,
+        pixCopyPaste: pixData.pixCopyPaste,
+        pixExpiresAt: pixData.pixExpiresAt ? new Date(pixData.pixExpiresAt) : null,
+        boletoUrl: null,
+        boletoBarcode: null,
+        boletoExpiresAt: null,
+        cardLast4: params.cardLast4 || null,
+        cardBrand: null,
+        status: paymentStatus,
+        webhookData: toJsonValue({
+          provider: 'stripe',
+          paymentIntent: charge.stripePaymentIntent,
+          split: charge.split,
+          splitInput: charge.splitInput,
+        }),
       },
-      { isolationLevel: 'ReadCommitted' },
-    );
+    });
   }
 
-  private async persistMercadoPagoPixPayment(
+  private persistMercadoPagoPixPayment(
     params: {
       orderId: string;
       workspaceId: string;
@@ -259,78 +304,37 @@ export class CheckoutPaymentService {
     pixData: PixDisplayData,
     amount: number,
   ) {
-    const approved = paymentStatus === 'APPROVED';
-    return this.prisma.$transaction(
-      async (tx) => {
-        const existingPayment = await tx.checkoutPayment.findFirst({
-          where: { orderId: params.orderId },
-        });
-        if (existingPayment) {
-          if (existingPayment.externalId === charge.externalId) {
-            this.logger.log(
-              `Idempotency: payment already exists for order ${params.orderId} with same Mercado Pago payment ${charge.externalId}`,
-            );
-            return existingPayment;
-          }
-          this.logger.warn(
-            `Idempotency: payment exists for order ${params.orderId} but with different externalId (existing=${existingPayment.externalId}, new=${charge.externalId})`,
-          );
-        }
-
-        const createdPayment = await tx.checkoutPayment.create({
-          data: {
-            orderId: params.orderId,
-            gateway: 'mercadopago',
-            externalId: charge.externalId,
-            pixQrCode: pixData.pixQrCode,
-            pixCopyPaste: pixData.pixCopyPaste,
-            pixExpiresAt: pixData.pixExpiresAt ? new Date(pixData.pixExpiresAt) : null,
-            boletoUrl: null,
-            boletoBarcode: null,
-            boletoExpiresAt: null,
-            cardLast4: null,
-            cardBrand: null,
-            status: paymentStatus,
-            webhookData: toJsonValue({
-              provider: 'mercadopago',
-              paymentMethod: 'pix',
-              payment: charge.raw,
-            }),
-          },
-        });
-
-        if (approved) {
-          await this.transitionOrderToApproved(tx, params.orderId, params.workspaceId, {
-            paymentId: createdPayment.id,
-            provider: 'mercadopago',
-            externalId: charge.externalId,
-          });
-        }
-
-        await this.auditService.logWithTx(tx, {
-          workspaceId: params.workspaceId,
-          action: 'CHECKOUT_PAYMENT_CREATED',
-          resource: 'CheckoutPayment',
-          resourceId: createdPayment.id,
-          details: {
-            method: params.paymentMethod,
-            amount,
-            orderId: params.orderId,
-            gateway: 'mercadopago',
-            externalId: charge.externalId,
-            approved,
-            installments: params.installments,
-            paymentStatus: charge.status,
-          },
-        });
-
-        return createdPayment;
+    return this.runPersistPaymentTx({
+      params,
+      externalId: charge.externalId,
+      chargeLabel: 'Mercado Pago payment',
+      provider: 'mercadopago',
+      providerPaymentStatus: charge.status,
+      paymentStatus,
+      amount,
+      data: {
+        orderId: params.orderId,
+        gateway: 'mercadopago',
+        externalId: charge.externalId,
+        pixQrCode: pixData.pixQrCode,
+        pixCopyPaste: pixData.pixCopyPaste,
+        pixExpiresAt: pixData.pixExpiresAt ? new Date(pixData.pixExpiresAt) : null,
+        boletoUrl: null,
+        boletoBarcode: null,
+        boletoExpiresAt: null,
+        cardLast4: null,
+        cardBrand: null,
+        status: paymentStatus,
+        webhookData: toJsonValue({
+          provider: 'mercadopago',
+          paymentMethod: 'pix',
+          payment: charge.raw,
+        }),
       },
-      { isolationLevel: 'ReadCommitted' },
-    );
+    });
   }
 
-  private async persistMercadoPagoBoletoPayment(
+  private persistMercadoPagoBoletoPayment(
     params: {
       orderId: string;
       workspaceId: string;
@@ -341,75 +345,34 @@ export class CheckoutPaymentService {
     paymentStatus: CheckoutPaymentStatus,
     amount: number,
   ) {
-    const approved = paymentStatus === 'APPROVED';
-    return this.prisma.$transaction(
-      async (tx) => {
-        const existingPayment = await tx.checkoutPayment.findFirst({
-          where: { orderId: params.orderId },
-        });
-        if (existingPayment) {
-          if (existingPayment.externalId === charge.externalId) {
-            this.logger.log(
-              `Idempotency: payment already exists for order ${params.orderId} with same Mercado Pago boleto ${charge.externalId}`,
-            );
-            return existingPayment;
-          }
-          this.logger.warn(
-            `Idempotency: payment exists for order ${params.orderId} but with different externalId (existing=${existingPayment.externalId}, new=${charge.externalId})`,
-          );
-        }
-
-        const createdPayment = await tx.checkoutPayment.create({
-          data: {
-            orderId: params.orderId,
-            gateway: 'mercadopago',
-            externalId: charge.externalId,
-            pixQrCode: null,
-            pixCopyPaste: null,
-            pixExpiresAt: null,
-            boletoUrl: charge.ticketUrl,
-            boletoBarcode: charge.digitableLine || charge.barcodeContent,
-            boletoExpiresAt: charge.expiresAt,
-            cardLast4: null,
-            cardBrand: null,
-            status: paymentStatus,
-            webhookData: toJsonValue({
-              provider: 'mercadopago',
-              paymentMethod: 'boleto',
-              payment: charge.raw,
-            }),
-          },
-        });
-
-        if (approved) {
-          await this.transitionOrderToApproved(tx, params.orderId, params.workspaceId, {
-            paymentId: createdPayment.id,
-            provider: 'mercadopago',
-            externalId: charge.externalId,
-          });
-        }
-
-        await this.auditService.logWithTx(tx, {
-          workspaceId: params.workspaceId,
-          action: 'CHECKOUT_PAYMENT_CREATED',
-          resource: 'CheckoutPayment',
-          resourceId: createdPayment.id,
-          details: {
-            method: params.paymentMethod,
-            amount,
-            orderId: params.orderId,
-            gateway: 'mercadopago',
-            externalId: charge.externalId,
-            approved,
-            installments: params.installments,
-            paymentStatus: charge.status,
-          },
-        });
-
-        return createdPayment;
+    return this.runPersistPaymentTx({
+      params,
+      externalId: charge.externalId,
+      chargeLabel: 'Mercado Pago boleto',
+      provider: 'mercadopago',
+      providerPaymentStatus: charge.status,
+      paymentStatus,
+      amount,
+      data: {
+        orderId: params.orderId,
+        gateway: 'mercadopago',
+        externalId: charge.externalId,
+        pixQrCode: null,
+        pixCopyPaste: null,
+        pixExpiresAt: null,
+        boletoUrl: charge.ticketUrl,
+        boletoBarcode: charge.digitableLine || charge.barcodeContent,
+        boletoExpiresAt: charge.expiresAt,
+        cardLast4: null,
+        cardBrand: null,
+        status: paymentStatus,
+        webhookData: toJsonValue({
+          provider: 'mercadopago',
+          paymentMethod: 'boleto',
+          payment: charge.raw,
+        }),
       },
-      { isolationLevel: 'ReadCommitted' },
-    );
+    });
   }
 
   /** Process payment. */
@@ -445,30 +408,23 @@ export class CheckoutPaymentService {
       });
     }
 
-    const orderMetadata =
-      order.metadata && typeof order.metadata === 'object' && !Array.isArray(order.metadata)
-        ? (order.metadata as Record<string, unknown>)
-        : {};
-    const baseTotalInCents = Number(orderMetadata.baseTotalInCents || order.totalInCents || 0);
-    const chargedTotalInCents = Number(
-      orderMetadata.chargedTotalInCents || baseTotalInCents || params.totalInCents || 0,
+    const metadataView = extractOrderMetadataView(
+      order.metadata,
+      order.totalInCents,
+      params.totalInCents,
     );
-    const marketplaceFeeInCents = Number(orderMetadata.marketplaceFeeInCents || 0);
-    const interestInCents = Number(orderMetadata.installmentInterestInCents || 0);
+    const { baseTotalInCents, chargedTotalInCents, marketplaceFeeInCents, interestInCents } =
+      metadataView;
     const fraudDecision = await this.fraudEngine.evaluate({
       workspaceId: params.workspaceId,
       buyerEmail: params.customerEmail,
       buyerCpf: params.customerCPF || null,
       buyerCnpj: null,
       buyerIp: order.ipAddress || null,
-      deviceFingerprint:
-        typeof orderMetadata.deviceFingerprint === 'string'
-          ? orderMetadata.deviceFingerprint
-          : null,
-      cardBin: typeof orderMetadata.cardBin === 'string' ? orderMetadata.cardBin : null,
-      cardCountry: typeof orderMetadata.cardCountry === 'string' ? orderMetadata.cardCountry : null,
-      orderCountry:
-        typeof orderMetadata.orderCountry === 'string' ? orderMetadata.orderCountry : 'BR',
+      deviceFingerprint: metadataView.deviceFingerprint,
+      cardBin: metadataView.cardBin,
+      cardCountry: metadataView.cardCountry,
+      orderCountry: metadataView.orderCountry,
       amountCents: BigInt(chargedTotalInCents),
     });
 
@@ -502,22 +458,17 @@ export class CheckoutPaymentService {
     if (params.paymentMethod === 'PIX') {
       assertCanonicalProvider(providerDecision, 'mercadopago', params.paymentMethod);
       try {
-        Sentry.addBreadcrumb({
-          message: `checkout payment processing via Mercado Pago`,
-          category: 'payment',
-          level: 'info',
-          data: {
+        Sentry.addBreadcrumb(
+          buildPaymentBreadcrumb({
+            message: `checkout payment processing via Mercado Pago`,
             orderId: params.orderId,
             workspaceId: params.workspaceId,
             amount,
             paymentMethod: params.paymentMethod,
-          },
-        });
+          }),
+        );
 
-        const productName =
-          typeof order.plan?.product?.name === 'string' && order.plan.product.name.trim()
-            ? order.plan.product.name
-            : undefined;
+        const productName = extractProductName(order.plan);
         const payerDocument = params.customerCPF?.replace(/\D/g, '') || undefined;
         const expiresAt = new Date(Date.now() + PIX_EXPIRATION_MINUTES * 60_000);
         const charge = await this.mercadoPagoPix.create({
@@ -531,11 +482,7 @@ export class CheckoutPaymentService {
           expiresAt,
           notificationUrl: `${resolveBackendOrigin()}${MP_WEBHOOK_PATH}`,
         });
-        const pixData: PixDisplayData = {
-          pixQrCode: formatMercadoPagoQrImage(charge.qrCodeBase64),
-          pixCopyPaste: charge.qrCode || null,
-          pixExpiresAt: charge.expiresAt.toISOString(),
-        };
+        const pixData: PixDisplayData = buildMercadoPagoPixDisplay(charge);
         const paymentStatus = mapMercadoPagoPaymentStatus(charge.status);
         const approved = paymentStatus === 'APPROVED';
         const payment = await this.persistMercadoPagoPixPayment(
@@ -546,77 +493,58 @@ export class CheckoutPaymentService {
           amount,
         );
 
-        void this.eventEmitter?.paymentInitiated({
+        emitPaymentLifecycleEvents(this.eventEmitter, {
           workspaceId: params.workspaceId,
           orderId: params.orderId,
           paymentIntentId: charge.externalId,
           paymentMethod: params.paymentMethod,
           amountInCents: chargedTotalInCents,
           correlationId: params.idempotencyKey,
+          approved,
         });
 
         if (approved) {
-          void this.eventEmitter?.paymentApproved({
-            workspaceId: params.workspaceId,
-            orderId: params.orderId,
-            paymentIntentId: charge.externalId,
-            amountInCents: chargedTotalInCents,
-            correlationId: params.idempotencyKey,
-          });
-          await this.postPaymentEffects
-            .markLeadConverted(order, params.workspaceId)
-            .catch((error) => {
-              this.logger.warn(
-                `Checkout post-payment lead conversion failed for order ${params.orderId}: ${error instanceof Error ? error.message : String(error)}`,
-              );
-            });
-          await this.postPaymentEffects.sendPurchaseSignals(order, amount).catch((error) => {
-            this.logger.warn(
-              `Checkout post-payment purchase signals failed for order ${params.orderId}: ${error instanceof Error ? error.message : String(error)}`,
-            );
-          });
+          await this.runApprovedPostPaymentEffects(order, params, amount);
         }
 
-        return {
+        return buildCheckoutPaymentResult({
           payment,
           type: params.paymentMethod,
           approved,
           clientSecret: null,
           paymentIntentId: charge.externalId,
-          pixQrCode: pixData.pixQrCode,
-          pixCopyPaste: pixData.pixCopyPaste,
-          pixExpiresAt: pixData.pixExpiresAt,
-          boletoUrl: null,
-          boletoBarcode: null,
-          boletoExpiresAt: null,
-        };
+          pixData,
+          boletoData: EMPTY_BOLETO_DATA,
+        });
       } catch (error: unknown) {
-        void this.eventEmitter?.paymentDeclined({
+        emitPaymentDeclined(this.eventEmitter, {
           workspaceId: params.workspaceId,
           orderId: params.orderId,
-          paymentIntentId: undefined,
           correlationId: params.idempotencyKey,
-          reason: error instanceof Error ? error.message : String(error),
+          error,
         });
         this.logger.error(
-          `Mercado Pago PIX processing failed for order ${params.orderId}: ${error instanceof Error ? error.message : String(error)}`,
+          `Mercado Pago PIX processing failed for order ${params.orderId}: ${describeError(error)}`,
         );
-        Sentry.captureException(error, {
-          tags: { type: 'financial_alert', operation: 'checkout_mercadopago_pix_payment' },
-          extra: {
+        Sentry.captureException(
+          error,
+          buildPaymentCaptureContext({
+            operation: 'checkout_mercadopago_pix_payment',
             workspaceId: params.workspaceId,
             orderId: params.orderId,
             amount,
             gateway: 'mercadopago',
-          },
-          level: 'fatal',
-        });
-        this.financialAlert.paymentFailed(error as Error, {
-          workspaceId: params.workspaceId,
-          orderId: params.orderId,
-          amount,
-          gateway: 'mercadopago',
-        });
+          }),
+        );
+        this.financialAlert.paymentFailed(
+          error as Error,
+          buildFinancialAlertContext({
+            workspaceId: params.workspaceId,
+            orderId: params.orderId,
+            amount,
+            gateway: 'mercadopago',
+          }),
+        );
         throw error;
       }
     }
@@ -637,22 +565,17 @@ export class CheckoutPaymentService {
       }
 
       try {
-        Sentry.addBreadcrumb({
-          message: `checkout boleto payment processing via Mercado Pago`,
-          category: 'payment',
-          level: 'info',
-          data: {
+        Sentry.addBreadcrumb(
+          buildPaymentBreadcrumb({
+            message: `checkout boleto payment processing via Mercado Pago`,
             orderId: params.orderId,
             workspaceId: params.workspaceId,
             amount,
             paymentMethod: params.paymentMethod,
-          },
-        });
+          }),
+        );
 
-        const productName =
-          typeof order.plan?.product?.name === 'string' && order.plan.product.name.trim()
-            ? order.plan.product.name
-            : undefined;
+        const productName = extractProductName(order.plan);
         const expiresAt = new Date(Date.now() + BOLETO_EXPIRATION_DAYS * 24 * 60 * 60_000);
         const charge = await this.mercadoPagoBoleto.create({
           idempotencyKey: params.idempotencyKey || params.orderId,
@@ -675,77 +598,58 @@ export class CheckoutPaymentService {
           amount,
         );
 
-        void this.eventEmitter?.paymentInitiated({
+        emitPaymentLifecycleEvents(this.eventEmitter, {
           workspaceId: params.workspaceId,
           orderId: params.orderId,
           paymentIntentId: charge.externalId,
           paymentMethod: params.paymentMethod,
           amountInCents: chargedTotalInCents,
           correlationId: params.idempotencyKey,
+          approved,
         });
 
         if (approved) {
-          void this.eventEmitter?.paymentApproved({
-            workspaceId: params.workspaceId,
-            orderId: params.orderId,
-            paymentIntentId: charge.externalId,
-            amountInCents: chargedTotalInCents,
-            correlationId: params.idempotencyKey,
-          });
-          await this.postPaymentEffects
-            .markLeadConverted(order, params.workspaceId)
-            .catch((error) => {
-              this.logger.warn(
-                `Checkout post-payment lead conversion failed for order ${params.orderId}: ${error instanceof Error ? error.message : String(error)}`,
-              );
-            });
-          await this.postPaymentEffects.sendPurchaseSignals(order, amount).catch((error) => {
-            this.logger.warn(
-              `Checkout post-payment purchase signals failed for order ${params.orderId}: ${error instanceof Error ? error.message : String(error)}`,
-            );
-          });
+          await this.runApprovedPostPaymentEffects(order, params, amount);
         }
 
-        return {
+        return buildCheckoutPaymentResult({
           payment,
           type: params.paymentMethod,
           approved,
           clientSecret: null,
           paymentIntentId: charge.externalId,
-          pixQrCode: null,
-          pixCopyPaste: null,
-          pixExpiresAt: null,
-          boletoUrl: charge.ticketUrl,
-          boletoBarcode: charge.digitableLine || charge.barcodeContent,
-          boletoExpiresAt: charge.expiresAt.toISOString(),
-        };
+          pixData: EMPTY_PIX_DATA,
+          boletoData: buildMercadoPagoBoletoDisplay(charge),
+        });
       } catch (error: unknown) {
-        void this.eventEmitter?.paymentDeclined({
+        emitPaymentDeclined(this.eventEmitter, {
           workspaceId: params.workspaceId,
           orderId: params.orderId,
-          paymentIntentId: undefined,
           correlationId: params.idempotencyKey,
-          reason: error instanceof Error ? error.message : String(error),
+          error,
         });
         this.logger.error(
-          `Mercado Pago boleto processing failed for order ${params.orderId}: ${error instanceof Error ? error.message : String(error)}`,
+          `Mercado Pago boleto processing failed for order ${params.orderId}: ${describeError(error)}`,
         );
-        Sentry.captureException(error, {
-          tags: { type: 'financial_alert', operation: 'checkout_mercadopago_boleto_payment' },
-          extra: {
+        Sentry.captureException(
+          error,
+          buildPaymentCaptureContext({
+            operation: 'checkout_mercadopago_boleto_payment',
             workspaceId: params.workspaceId,
             orderId: params.orderId,
             amount,
             gateway: 'mercadopago',
-          },
-          level: 'fatal',
-        });
-        this.financialAlert.paymentFailed(error as Error, {
-          workspaceId: params.workspaceId,
-          orderId: params.orderId,
-          amount,
-          gateway: 'mercadopago',
-        });
+          }),
+        );
+        this.financialAlert.paymentFailed(
+          error as Error,
+          buildFinancialAlertContext({
+            workspaceId: params.workspaceId,
+            orderId: params.orderId,
+            amount,
+            gateway: 'mercadopago',
+          }),
+        );
         throw error;
       }
     }
@@ -756,17 +660,15 @@ export class CheckoutPaymentService {
     const sellerStripeAccountId = await this.ensureSellerStripeAccountId(params.workspaceId);
 
     try {
-      Sentry.addBreadcrumb({
-        message: `checkout payment processing via Stripe`,
-        category: 'payment',
-        level: 'info',
-        data: {
+      Sentry.addBreadcrumb(
+        buildPaymentBreadcrumb({
+          message: `checkout payment processing via Stripe`,
           orderId: params.orderId,
           workspaceId: params.workspaceId,
           amount,
           paymentMethod: params.paymentMethod,
-        },
-      });
+        }),
+      );
       const charge = await this.stripeCharge.createSaleCharge(
         this.buildChargeInput(params, {
           sellerStripeAccountId,
@@ -781,87 +683,122 @@ export class CheckoutPaymentService {
 
       const paymentStatus = mapStripePaymentStatus(charge.stripePaymentIntent.status);
       const approved = paymentStatus === 'APPROVED';
-      const pixData: PixDisplayData = {
-        pixQrCode: null,
-        pixCopyPaste: null,
-        pixExpiresAt: null,
-      };
+      const pixData: PixDisplayData = EMPTY_PIX_DATA;
 
       const payment = await this.persistPayment(params, charge, paymentStatus, pixData, amount);
 
-      void this.eventEmitter?.paymentInitiated({
+      emitPaymentLifecycleEvents(this.eventEmitter, {
         workspaceId: params.workspaceId,
         orderId: params.orderId,
         paymentIntentId: charge.paymentIntentId,
         paymentMethod: params.paymentMethod,
         amountInCents: chargedTotalInCents,
         correlationId: params.idempotencyKey,
+        approved,
       });
 
       if (approved) {
-        void this.eventEmitter?.paymentApproved({
-          workspaceId: params.workspaceId,
-          orderId: params.orderId,
-          paymentIntentId: charge.paymentIntentId,
-          amountInCents: chargedTotalInCents,
-          correlationId: params.idempotencyKey,
-        });
-        await this.postPaymentEffects
-          .markLeadConverted(order, params.workspaceId)
-          .catch((error) => {
-            this.logger.warn(
-              `Checkout post-payment lead conversion failed for order ${params.orderId}: ${error instanceof Error ? error.message : String(error)}`,
-            );
-          });
-        await this.postPaymentEffects.sendPurchaseSignals(order, amount).catch((error) => {
-          this.logger.warn(
-            `Checkout post-payment purchase signals failed for order ${params.orderId}: ${error instanceof Error ? error.message : String(error)}`,
-          );
-        });
+        await this.runApprovedPostPaymentEffects(order, params, amount);
       }
 
-      return {
+      return buildCheckoutPaymentResult({
         payment,
         type: params.paymentMethod,
         approved,
         clientSecret: charge.clientSecret,
         paymentIntentId: charge.paymentIntentId,
-        pixQrCode: pixData.pixQrCode,
-        pixCopyPaste: pixData.pixCopyPaste,
-        pixExpiresAt: pixData.pixExpiresAt,
-        boletoUrl: null,
-        boletoBarcode: null,
-        boletoExpiresAt: null,
-      };
+        pixData,
+        boletoData: EMPTY_BOLETO_DATA,
+      });
     } catch (error: unknown) {
-      void this.eventEmitter?.paymentDeclined({
+      emitPaymentDeclined(this.eventEmitter, {
         workspaceId: params.workspaceId,
         orderId: params.orderId,
-        paymentIntentId: undefined,
         correlationId: params.idempotencyKey,
-        reason: error instanceof Error ? error.message : String(error),
+        error,
       });
       this.logger.error(
-        `Stripe payment processing failed for order ${params.orderId}: ${error instanceof Error ? error.message : String(error)}`,
+        `Stripe payment processing failed for order ${params.orderId}: ${describeError(error)}`,
       );
-      Sentry.captureException(error, {
-        tags: { type: 'financial_alert', operation: 'checkout_stripe_payment' },
-        extra: {
+      Sentry.captureException(
+        error,
+        buildPaymentCaptureContext({
+          operation: 'checkout_stripe_payment',
           workspaceId: params.workspaceId,
           orderId: params.orderId,
           amount,
           gateway: 'stripe',
-        },
-        level: 'fatal',
-      });
-      this.financialAlert.paymentFailed(error as Error, {
-        workspaceId: params.workspaceId,
-        orderId: params.orderId,
-        amount,
-        gateway: 'stripe',
-      });
+        }),
+      );
+      this.financialAlert.paymentFailed(
+        error as Error,
+        buildFinancialAlertContext({
+          workspaceId: params.workspaceId,
+          orderId: params.orderId,
+          amount,
+          gateway: 'stripe',
+        }),
+      );
       throw error;
     }
+  }
+
+  /**
+   * Look up an existing checkout payment for the order inside an open transaction
+   * and decide whether the current charge is a no-op replay. Returns the existing
+   * payment iff `externalId` matches the new charge (idempotency hit); otherwise
+   * returns null so the caller proceeds to create a fresh payment row, logging a
+   * divergence warning when an existing row carries a different externalId.
+   *
+   * `chargeLabel` is the human-readable provider label embedded in the log line
+   * (e.g. `PaymentIntent`, `Mercado Pago payment`, `Mercado Pago boleto`) to keep
+   * the per-arm log surface stable.
+   */
+  private async resolveExistingPaymentForIdempotency<TExisting extends { externalId: string }>(
+    tx: Prisma.TransactionClient,
+    orderId: string,
+    newExternalId: string,
+    chargeLabel: string,
+  ): Promise<TExisting | null> {
+    const existingPayment = (await tx.checkoutPayment.findFirst({
+      where: { orderId },
+    })) as unknown as TExisting | null;
+    if (!existingPayment) {
+      return null;
+    }
+    if (existingPayment.externalId === newExternalId) {
+      this.logger.log(
+        `Idempotency: payment already exists for order ${orderId} with same ${chargeLabel} ${newExternalId}`,
+      );
+      return existingPayment;
+    }
+    this.logger.warn(
+      `Idempotency: payment exists for order ${orderId} but with different externalId (existing=${existingPayment.externalId}, new=${newExternalId})`,
+    );
+    return null;
+  }
+
+  /**
+   * Run the post-payment effects that fire after a charge is approved across all
+   * payment-method arms (Stripe card, Mercado Pago PIX, Mercado Pago boleto). Each
+   * effect is awaited but its rejection is swallowed and logged at warn level —
+   * preserving the original per-arm behavior. Pure I/O orchestration, no money math.
+   */
+  private async runApprovedPostPaymentEffects(
+    order: NonNullable<Awaited<ReturnType<CheckoutPaymentService['findOrder']>>>,
+    params: { orderId: string; workspaceId: string },
+    amount: number,
+  ): Promise<void> {
+    await this.postPaymentEffects.markLeadConverted(order, params.workspaceId).catch((error) => {
+      this.logger.warn(
+        `Checkout post-payment lead conversion failed for order ${params.orderId}: ${describeError(error)}`,
+      );
+    });
+    await this.postPaymentEffects.sendPurchaseSignals(order, amount).catch((error) => {
+      this.logger.warn(
+        `Checkout post-payment purchase signals failed for order ${params.orderId}: ${describeError(error)}`,
+      );
+    });
   }
 
   private findOrder(orderId: string, workspaceId: string) {
