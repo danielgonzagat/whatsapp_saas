@@ -5,7 +5,7 @@ import type {
   ConceptEventPayload,
   LeadEventPayload,
   ProductEventPayload,
-} from '../../brain-event-taxonomy';
+} from './mind-event-taxonomy';
 
 function objectContaining<T extends object>(sample: T): T {
   const matcher: unknown = expect.objectContaining(sample);

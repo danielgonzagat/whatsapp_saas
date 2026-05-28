@@ -13,7 +13,7 @@ import { FinancialAlertService } from '../common/financial-alert.service';
 import { FraudEngine } from '../payments/fraud/fraud.engine';
 import { PrismaService } from '../prisma/prisma.service';
 import { MindEventSpine } from './mind/coordination/mind-event-spine.service';
-import type { SaleEventPayload } from './brain-event-taxonomy';
+import type { SaleEventPayload } from './mind/coordination/mind-event-taxonomy';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 const MP_WEBHOOK_PATH = '/webhooks/mercadopago';

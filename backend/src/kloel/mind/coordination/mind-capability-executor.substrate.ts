@@ -1,8 +1,8 @@
-import type { PrismaService } from '../prisma/prisma.service';
-import type { MindPerceptionService } from './mind/perception/mind-perception.service';
-import type { MemoryProjector } from './commem/memory.projector';
-import type { MindPerceptEvent } from './mind.types';
-import type { SpineEventRef } from './mind/mind.types';
+import type { PrismaService } from '../../../prisma/prisma.service';
+import type { MindPerceptionService } from '../perception/mind-perception.service';
+import type { MemoryProjector } from '../../commem/memory.projector';
+import type { MindPerceptEvent } from '../../mind.types';
+import type { SpineEventRef } from '../mind.types';
 import type {
   AbiAttention,
   AbiBelief,
@@ -14,11 +14,11 @@ import type {
   AbiValence,
   AbiValenceSection,
   AbiWorkingMemoryItem,
-} from './abi/abi-schema';
+} from '../../abi/abi-schema';
 import {
   computeDissolutionGaps,
   type DissolutionGap,
-} from './mind/coordination/mind-capability-executor.substrate.helpers';
+} from './mind-capability-executor.substrate.helpers';
 
 export interface CognitiveSubstrate {
   recentSalientEvents: AbiSalientEvent[];

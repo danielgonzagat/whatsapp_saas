@@ -4,7 +4,7 @@ import type {
   CheckoutEventPayload,
   MessageEventPayload,
   SaleEventPayload,
-} from '../../brain-event-taxonomy';
+} from './mind-event-taxonomy';
 
 function buildSaleCreatedEvent(occurredAt: Date): SaleEventPayload {
   return {

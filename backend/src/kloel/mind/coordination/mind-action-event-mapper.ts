@@ -1,4 +1,4 @@
-import type { BrainEventName } from '../../brain-event-taxonomy';
+import type { BrainEventName } from './mind-event-taxonomy';
 
 const ACTION_TO_EVENT = new Map<string, BrainEventName>([
   ['create_product', 'product.created'],

@@ -30,7 +30,7 @@ import { MindPerceptionService } from '../perception/mind-perception.service';
 import { OPERATOR_CAPABILITIES } from './mind-capabilities.const';
 import { MemoryProjector } from '../../commem/memory.projector';
 
-import { buildCognitiveSubstrate as buildCognitiveSubstrateImpl } from '../../brain-capability-executor.substrate';
+import { buildCognitiveSubstrate as buildCognitiveSubstrateImpl } from './mind-capability-executor.substrate';
 
 import { CapabilityRegistryV2Service } from '../../capability-registry-v2/capability-registry-v2.service';
 import { CodeAccessService } from '../../self-awareness/code-access.service';

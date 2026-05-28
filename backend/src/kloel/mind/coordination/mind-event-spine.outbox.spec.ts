@@ -1,5 +1,5 @@
 import { MindEventSpine } from './mind-event-spine.service';
-import type { SaleEventPayload } from '../../brain-event-taxonomy';
+import type { SaleEventPayload } from './mind-event-taxonomy';
 
 describe('MindEventSpine outbox helpers', () => {
   let prisma: {

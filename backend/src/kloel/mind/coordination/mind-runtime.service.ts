@@ -30,7 +30,7 @@ import { MindCapabilityRegistry } from './mind-capability-registry.service';
 import { MindCommercialGraph } from './mind-commercial-graph.service';
 import type { CommercialGraphRecommendation } from './mind-commercial-graph.types';
 import { MindEventSpine } from './mind-event-spine.service';
-import { BRAIN_EVENT_TAXONOMY } from '../../brain-event-taxonomy';
+import { BRAIN_EVENT_TAXONOMY } from './mind-event-taxonomy';
 import { BrainDecideDto, BrainObserveDto } from './mind-runtime.dto';
 import { KloelThreadService } from '../../kloel-thread.service';
 import { UnifiedAgentContextDataService } from '../../unified-agent-context-data.service';

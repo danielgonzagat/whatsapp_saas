@@ -21,8 +21,8 @@ import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { OpsAlertService } from '../../../observability/ops-alert.service';
 import { PrismaService } from '../../../prisma/prisma.service';
-import type { BrainEventName, CommercialEventPayload } from '../../brain-event-taxonomy';
-import { expandEventNameAliasesAll } from '../../brain-event-taxonomy';
+import type { BrainEventName, CommercialEventPayload } from './mind-event-taxonomy';
+import { expandEventNameAliasesAll } from './mind-event-taxonomy';
 
 type AutopilotEventIdRow = { id: string } | null;
 

@@ -4,9 +4,9 @@ import {
   expandEventNameAliases,
   expandEventNameAliasesAll,
   resolveCanonicalEventName,
-} from './brain-event-taxonomy';
+} from './mind-event-taxonomy';
 
-describe('brain-event-taxonomy — MIND_EVENT_ALIASES helpers', () => {
+describe('mind-event-taxonomy — MIND_EVENT_ALIASES helpers', () => {
   describe('MIND_EVENT_ALIASES table integrity', () => {
     it('exposes the four ADR-0013 §4 legacy→canonical mappings', () => {
       expect(MIND_EVENT_ALIASES).toEqual({
