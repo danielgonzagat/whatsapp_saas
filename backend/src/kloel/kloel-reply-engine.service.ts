@@ -572,12 +572,17 @@ export class KloelReplyEngineService {
           surface: 'dashboard',
           observed: 0,
         });
-        void computeChatSurpriseHelper(this.mindSurpriseService, this.mindBeliefService, this.logger, {
-          workspaceId: params.workspaceId,
-          observed: 0,
-          surface: 'dashboard',
-          degraded: true,
-        });
+        void computeChatSurpriseHelper(
+          this.mindSurpriseService,
+          this.mindBeliefService,
+          this.logger,
+          {
+            workspaceId: params.workspaceId,
+            observed: 0,
+            surface: 'dashboard',
+            degraded: true,
+          },
+        );
       }
       closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
         outcomeKey,
@@ -628,12 +633,17 @@ export class KloelReplyEngineService {
         surface: 'dashboard',
         observed: replyOutcome,
       });
-      void computeChatSurpriseHelper(this.mindSurpriseService, this.mindBeliefService, this.logger, {
-        workspaceId: params.workspaceId,
-        observed: replyOutcome,
-        surface: 'dashboard',
-        degraded: replyOutcome === 0,
-      });
+      void computeChatSurpriseHelper(
+        this.mindSurpriseService,
+        this.mindBeliefService,
+        this.logger,
+        {
+          workspaceId: params.workspaceId,
+          observed: replyOutcome,
+          surface: 'dashboard',
+          degraded: replyOutcome === 0,
+        },
+      );
     }
     return assistantMessage;
   }
