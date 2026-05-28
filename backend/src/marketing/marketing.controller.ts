@@ -15,17 +15,21 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 import { EmailCampaignService } from '../kloel/email-campaign.service';
 import { PrismaService } from '../prisma/prisma.service';
-
-const CHANNELS = ['WHATSAPP', 'INSTAGRAM', 'MESSENGER', 'EMAIL', 'TIKTOK'];
-
-type DirectEmailRecipient = { email: string; name?: string };
-type DirectEmailSendBody = {
-  subject?: string;
-  html?: string;
-  recipients?: DirectEmailRecipient[];
-  campaignName?: string;
-  approvalRequestId?: string;
-};
+import {
+  buildChannelMetrics,
+  buildSendBodyFromApproval,
+  computeAverageFirstReplyMs,
+  computeResponseStats,
+  distinctConversationIds,
+  formatAvgResponseTime,
+  mapLiveFeedMessage,
+  MARKETING_CHANNELS,
+  minInboundCreatedAt,
+  normalizeApprovalRequestId,
+  validateDirectEmailSendBody,
+  type DirectEmailRecipient,
+  type DirectEmailSendBody,
+} from './marketing.controller.helpers';
 
 /**
  * Marketing Command Center Controller
@@ -86,62 +90,39 @@ export class MarketingController {
     const workspaceId = req.user.workspaceId;
 
     // Batch: count conversations (leads) per channel
-    const convGroups = await this.prisma.conversation.groupBy({
+    const conversationGroups = await this.prisma.conversation.groupBy({
       by: ['channel'],
-      where: { workspaceId, channel: { in: CHANNELS } },
+      where: { workspaceId, channel: { in: [...MARKETING_CHANNELS] } },
       _count: { id: true },
     });
-    const leadsByChannel = new Map(convGroups.map((g) => [g.channel, g._count.id]));
 
     // Batch: count messages per channel via conversation join
-    const msgGroups = await this.prisma.message.groupBy({
+    const messageGroups = await this.prisma.message.groupBy({
       by: ['conversationId'],
       where: {
         workspaceId,
-        conversation: { channel: { in: CHANNELS } },
+        conversation: { channel: { in: [...MARKETING_CHANNELS] } },
       },
       _count: { id: true },
     });
 
     // Resolve conversationId → channel for message counts
-    const convIds = msgGroups.map((g) => g.conversationId).filter((v): v is string => Boolean(v));
-    const convs =
+    const convIds = messageGroups
+      .map((g) => g.conversationId)
+      .filter((v): v is string => Boolean(v));
+    const conversationRows =
       convIds.length > 0
         ? await this.prisma.conversation.findMany({
             where: { workspaceId, id: { in: convIds } },
             select: { id: true, channel: true },
           })
         : [];
-    const channelByConvId = new Map(convs.map((c) => [c.id, c.channel]));
 
-    const msgsByChannel = new Map<string, number>();
-    for (const g of msgGroups) {
-      const convId = g.conversationId;
-      if (!convId) {
-        continue;
-      }
-      const ch = channelByConvId.get(convId);
-      if (ch) {
-        msgsByChannel.set(ch, (msgsByChannel.get(ch) || 0) + g._count.id);
-      }
-    }
-
-    const channelResults: Record<
-      string,
-      { status: string; messages: number; leads: number; sales: number }
-    > = {};
-
-    for (const channel of CHANNELS) {
-      const messages = msgsByChannel.get(channel) || 0;
-      channelResults[channel] = {
-        status: messages > 0 ? 'live' : 'setup',
-        messages,
-        leads: leadsByChannel.get(channel) || 0,
-        sales: 0,
-      };
-    }
-
-    return channelResults;
+    return buildChannelMetrics({
+      conversationGroups,
+      messageGroups,
+      conversationRows,
+    });
   }
 
   /**
@@ -162,16 +143,7 @@ export class MarketingController {
     });
 
     return {
-      messages: messages.map((m) => ({
-        id: m.id,
-        content: m.content,
-        direction: m.direction,
-        type: m.type,
-        channel: m.conversation?.channel || 'WHATSAPP',
-        contactName: m.contact?.name || m.contact?.phone || 'Unknown',
-        createdAt: m.createdAt,
-        status: m.status,
-      })),
+      messages: messages.map((m) => mapLiveFeedMessage(m)),
     };
   }
 
@@ -222,13 +194,12 @@ export class MarketingController {
       }),
     ]);
 
-    // responseRate: percentage of outbound messages that got an inbound reply
-    const responseRate =
-      outboundMessages > 0 ? Math.round((inboundMessages / outboundMessages) * 100) : 0;
-
-    // conversionRate: percentage of conversations that reached CONVERTED status
-    const conversionRate =
-      totalConversations > 0 ? Math.round((convertedConversations / totalConversations) * 100) : 0;
+    const { responseRate, conversionRate } = computeResponseStats({
+      outboundMessages,
+      inboundMessages,
+      totalConversations,
+      convertedConversations,
+    });
 
     return {
       channel: channelUpper,
@@ -271,18 +242,10 @@ export class MarketingController {
       orderBy: { createdAt: 'desc' },
     });
 
-    let totalResponseMs = 0;
-    let responseCount = 0;
-    if (recentInbound.length > 0) {
-      const convIds = [
-        ...new Set(
-          recentInbound.map((m) => m.conversationId).filter((v): v is string => Boolean(v)),
-        ),
-      ];
-      const minCreatedAt = recentInbound.reduce(
-        (min, m) => (m.createdAt < min ? m.createdAt : min),
-        recentInbound[0]!.createdAt,
-      );
+    let avgMs: number | null = null;
+    const minCreatedAt = minInboundCreatedAt(recentInbound);
+    if (minCreatedAt !== null) {
+      const convIds = distinctConversationIds(recentInbound);
       const outboundReplies = await this.prisma.message.findMany({
         take: 500,
         where: {
@@ -294,31 +257,12 @@ export class MarketingController {
         select: { conversationId: true, createdAt: true },
         orderBy: { createdAt: 'asc' },
       });
-      const firstReplyByConv = new Map<string, Date>();
-      for (const r of outboundReplies) {
-        const cid = r.conversationId;
-        if (cid && !firstReplyByConv.has(cid)) {
-          firstReplyByConv.set(cid, r.createdAt);
-        }
-      }
-      for (const msg of recentInbound) {
-        const cid = msg.conversationId;
-        if (!cid) {
-          continue;
-        }
-        const reply = firstReplyByConv.get(cid);
-        if (reply && reply > msg.createdAt) {
-          totalResponseMs += reply.getTime() - msg.createdAt.getTime();
-          responseCount += 1;
-        }
-      }
+      avgMs = computeAverageFirstReplyMs({
+        inbound: recentInbound,
+        outbound: outboundReplies,
+      });
     }
-    const avgMs = responseCount > 0 ? totalResponseMs / responseCount : null;
-    const avgResponseTime = avgMs
-      ? avgMs < 60000
-        ? `${(avgMs / 1000).toFixed(1)}s`
-        : `${Math.round(avgMs / 60000)}m`
-      : '--';
+    const avgResponseTime = formatAvgResponseTime(avgMs);
 
     return {
       productsLoaded,
@@ -339,9 +283,8 @@ export class MarketingController {
     @Body() body: DirectEmailSendBody,
   ) {
     const workspaceId = req.user?.workspaceId;
-    const approvalRequestId =
-      typeof body.approvalRequestId === 'string' ? body.approvalRequestId.trim() : '';
-    let sendBody = body;
+    const approvalRequestId = normalizeApprovalRequestId(body.approvalRequestId);
+    let sendBody: DirectEmailSendBody = body;
 
     if (approvalRequestId) {
       const approval = await this.prisma.approvalRequest.findFirst({
@@ -357,39 +300,30 @@ export class MarketingController {
       if (!approval || !approval.payload || typeof approval.payload !== 'object') {
         throw new BadRequestException('Approved direct email send request not found');
       }
-      const payload = approval.payload as Record<string, unknown>;
-      const recipients: DirectEmailRecipient[] = Array.isArray(payload.recipients)
-        ? payload.recipients
-            .filter((recipient): recipient is Record<string, unknown> =>
-              Boolean(recipient && typeof recipient === 'object'),
-            )
-            .map((recipient) => {
-              const parsed: DirectEmailRecipient = {
-                email: typeof recipient.email === 'string' ? recipient.email : '',
-              };
-              if (typeof recipient.name === 'string') {
-                parsed.name = recipient.name;
-              }
-              return parsed;
-            })
-            .filter((recipient) => recipient.email)
-        : [];
-      sendBody = {
-        recipients,
-        ...(typeof payload.subject === 'string' ? { subject: payload.subject } : {}),
-        ...(typeof payload.html === 'string' ? { html: payload.html } : {}),
-        ...(typeof payload.campaignName === 'string' ? { campaignName: payload.campaignName } : {}),
-      };
+      sendBody = buildSendBodyFromApproval(approval.payload as Record<string, unknown>);
     }
 
-    if (!sendBody.subject || !sendBody.html || !sendBody.recipients?.length) {
+    const missing = validateDirectEmailSendBody(sendBody);
+    if (missing.length > 0) {
       throw new BadRequestException('Missing required fields: subject, html, recipients');
     }
-    const subject = sendBody.subject;
-    const htmlTemplate = sendBody.html;
-    const recipients = sendBody.recipients;
+    const subject = sendBody.subject as string;
+    const htmlTemplate = sendBody.html as string;
+    const recipients = sendBody.recipients as DirectEmailRecipient[];
 
     if (!approvalRequestId) {
+      const payload = {
+        subject,
+        html: htmlTemplate,
+        recipients: recipients.map((recipient) => ({
+          email: recipient.email,
+          name: recipient.name ?? null,
+        })),
+        campaignName: sendBody.campaignName || null,
+        requestedByEmail: req.user.email || null,
+        risk: 'high',
+        requiresApproval: true,
+      };
       const approval = await this.prisma.approvalRequest.create({
         data: {
           workspaceId,
@@ -400,15 +334,7 @@ export class MarketingController {
           state: 'OPEN',
           title: `Aprovar envio direto de email: ${sendBody.campaignName || subject}`,
           prompt: `Envio direto de email para ${recipients.length} destinatario(s). Revise assunto, HTML e destinatarios antes de autorizar.`,
-          payload: {
-            subject,
-            html: htmlTemplate,
-            recipients,
-            campaignName: sendBody.campaignName || null,
-            requestedByEmail: req.user.email || null,
-            risk: 'high',
-            requiresApproval: true,
-          },
+          payload,
         },
         select: { id: true, state: true, title: true, createdAt: true },
       });
