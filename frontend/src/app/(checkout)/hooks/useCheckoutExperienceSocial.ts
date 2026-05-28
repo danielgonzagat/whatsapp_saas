@@ -24,8 +24,18 @@ import {
   CHECKOUT_FORM_DRAFT_VERSION,
   type CheckoutFormDraft,
 } from './useCheckoutExperienceSocial.draft';
-
-const D_RE = /\D/g;
+import {
+  buildAddressLeadProgress,
+  buildIdentityLeadProgress,
+  buildSafeSuccessRedirect,
+  countCpfDigits,
+  formatCheckoutFieldValue,
+  normalizeAcceptedCouponDiscount,
+  resolveApplyCouponErrorMessage,
+  resolveCouponPopupDelay,
+  resolveFinalizeOrderErrorMessage,
+  resolveStripeConfirmationErrorMessage,
+} from './useCheckoutExperienceSocial.helpers';
 
 /** Use checkout experience social. */
 export function useCheckoutExperienceSocial({
@@ -189,7 +199,7 @@ export function useCheckoutExperienceSocial({
     setDynamicShippingInCents,
     couponEnabled: config?.enableCoupon !== false,
     couponPopupEnabled: config?.showCouponPopup === true,
-    couponPopupDelay: Number(config?.couponPopupDelay || 1800),
+    couponPopupDelay: resolveCouponPopupDelay(config?.couponPopupDelay),
     popupCouponCode,
     couponPopupHandled,
     setCouponCode,
@@ -199,16 +209,7 @@ export function useCheckoutExperienceSocial({
   const updateField = useCallback(
     (field: keyof CheckoutExperienceForm) =>
       (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        let value = event.target.value;
-        if (field === 'cpf' || field === 'cardCpf') {
-          value = fmt.cpf(value);
-        }
-        if (field === 'phone') {
-          value = fmt.phone(value);
-        }
-        if (field === 'cep') {
-          value = fmt.cep(value);
-        }
+        const value = formatCheckoutFieldValue(field, event.target.value, fmt);
         setForm((prev) => ({ ...prev, [field]: value }));
       },
     [fmt],
@@ -235,17 +236,14 @@ export function useCheckoutExperienceSocial({
     setLoadingStep(true);
     setPixelEvent('InitiateCheckout');
     await social.updateLeadProgress({
-      name: form.name,
-      email: form.email,
-      phone: form.phone,
-      cpf: form.cpf,
+      ...buildIdentityLeadProgress(form),
       stepReached: 2,
     });
     window.setTimeout(() => {
       setStep(2);
       setLoadingStep(false);
     }, 600);
-  }, [form.cpf, form.email, form.name, form.phone, social, validateStep1]);
+  }, [form, social, validateStep1]);
 
   const advanceToStep3 = useCallback(async () => {
     if (!validateStep2()) {
@@ -256,35 +254,11 @@ export function useCheckoutExperienceSocial({
     setSubmitError('');
     setPixelEvent('AddPaymentInfo');
     await social.updateLeadProgress({
-      name: form.name,
-      email: form.email,
-      phone: form.phone,
-      cpf: form.cpf,
-      cep: form.cep,
-      street: form.street,
-      number: form.number,
-      neighborhood: form.neighborhood,
-      city: form.city,
-      state: form.state,
-      complement: form.complement,
+      ...buildAddressLeadProgress(form),
       stepReached: 3,
     });
     setStep(3);
-  }, [
-    form.cep,
-    form.city,
-    form.complement,
-    form.cpf,
-    form.email,
-    form.name,
-    form.neighborhood,
-    form.number,
-    form.phone,
-    form.state,
-    form.street,
-    social,
-    validateStep2,
-  ]);
+  }, [form, social, validateStep2]);
 
   const goStep = useCallback(
     async (target: number) => {
@@ -318,7 +292,7 @@ export function useCheckoutExperienceSocial({
 
   const acceptCoupon = useCallback(
     (result: { valid: boolean; discountAmount?: number; code?: string }, nextCode: string) => {
-      setDiscount(Math.max(0, Math.round(Number(result.discountAmount || 0))));
+      setDiscount(normalizeAcceptedCouponDiscount(result.discountAmount));
       setCouponApplied(true);
       setCouponCode((result.code || nextCode).toUpperCase());
       setCouponPopupHandled(true);
@@ -348,7 +322,7 @@ export function useCheckoutExperienceSocial({
         }
         return acceptCoupon(result, nextCode);
       } catch (error) {
-        return rejectCoupon(error instanceof Error ? error.message : 'Cupom inválido ou expirado.');
+        return rejectCoupon(resolveApplyCouponErrorMessage(error));
       }
     },
     [acceptCoupon, config?.enableCoupon, couponCode, plan, rejectCoupon, subtotal, workspaceId],
@@ -373,16 +347,12 @@ export function useCheckoutExperienceSocial({
   }, [checkoutFormDraftKey, stripeReturnUrl]);
 
   const handleStripePaymentError = useCallback((message: string) => {
-    setSubmitError(message || 'Erro ao confirmar o pagamento no Stripe.');
+    setSubmitError(resolveStripeConfirmationErrorMessage(message));
   }, []);
 
   const applyFinalizedCheckoutResult = useCallback(
     (result: Awaited<ReturnType<typeof finalizeCheckoutOrder>>) => {
-      const safeSuccessUrl = new URL(result.successPath, window.location.origin);
-      if (safeSuccessUrl.origin !== window.location.origin) {
-        throw new Error('Redirecionamento bloqueado: destino externo detectado.');
-      }
-      const safePath = `${safeSuccessUrl.pathname}${safeSuccessUrl.search}${safeSuccessUrl.hash}`;
+      const safeRedirect = buildSafeSuccessRedirect(result.successPath, window.location.origin);
 
       setPixelEvent('Purchase');
 
@@ -390,12 +360,12 @@ export function useCheckoutExperienceSocial({
         setSuccessOrderNumber(result.orderNumber);
         setStripeClientSecret(result.clientSecret);
         setStripePaymentIntentId(result.paymentIntentId);
-        setStripeReturnUrl(safeSuccessUrl.href);
+        setStripeReturnUrl(safeRedirect.href);
         return;
       }
 
       window.localStorage.removeItem(checkoutFormDraftKey);
-      router.push(safePath);
+      router.push(safeRedirect.path);
     },
     [checkoutFormDraftKey, router],
   );
@@ -411,7 +381,7 @@ export function useCheckoutExperienceSocial({
         supportsCard,
         supportsPix,
         supportsBoleto,
-        cpfDigits: form.cpf.replace(D_RE, '').length,
+        cpfDigits: countCpfDigits(form.cpf),
       }),
     [
       checkoutUnavailableReason,
@@ -487,9 +457,7 @@ export function useCheckoutExperienceSocial({
       const result = await dispatchFinalizeCheckout(planId);
       applyFinalizedCheckoutResult(result);
     } catch (error) {
-      setSubmitError(
-        error instanceof Error ? error.message : 'Erro ao processar o checkout. Tente novamente.',
-      );
+      setSubmitError(resolveFinalizeOrderErrorMessage(error));
     } finally {
       setIsSubmitting(false);
     }
