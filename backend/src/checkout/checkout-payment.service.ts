@@ -23,7 +23,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effects.service';
 import { CheckoutEventEmitterService } from '../kloel/checkout-emitter/checkout-event-emitter.service';
 import {
+  BOLETO_EXPIRATION_DAYS,
+  MP_WEBHOOK_PATH,
+  PIX_EXPIRATION_MINUTES,
+  formatMercadoPagoQrImage,
+  mapMercadoPagoPaymentStatus,
   mapStripePaymentStatus,
+  normalizeBoletoAddress,
+  resolveBackendOrigin,
   toJsonValue,
   type CheckoutPaymentStatus,
   type PixDisplayData,
@@ -37,105 +44,6 @@ type CardPaymentOptions = Extract<
 >;
 type MercadoPagoBoletoCharge = Awaited<ReturnType<MercadoPagoBoletoChargeService['create']>>;
 type MercadoPagoPixCharge = Awaited<ReturnType<MercadoPagoPixChargeService['create']>>;
-type MercadoPagoBoletoAddress = Parameters<
-  MercadoPagoBoletoChargeService['create']
->[0]['payerAddress'];
-
-const MP_WEBHOOK_PATH = '/webhooks/mercadopago';
-const BOLETO_EXPIRATION_DAYS = 3;
-const PIX_EXPIRATION_MINUTES = 30;
-
-function resolveBackendOrigin(): string {
-  const raw =
-    process.env.BACKEND_PUBLIC_URL ||
-    process.env.PUBLIC_BACKEND_URL ||
-    process.env.BACKEND_URL ||
-    process.env.API_PUBLIC_URL ||
-    process.env.APP_URL ||
-    'http://localhost:3001';
-  const trimmed = raw.replace(/\/+$/, '');
-  if (!/^https?:\/\//i.test(trimmed)) {
-    return `https://${trimmed}`;
-  }
-  return trimmed;
-}
-
-function mapMercadoPagoPaymentStatus(
-  status: MercadoPagoBoletoCharge['status'] | MercadoPagoPixCharge['status'],
-): CheckoutPaymentStatus {
-  switch (status) {
-    case 'approved':
-      return 'APPROVED';
-    case 'rejected':
-      return 'DECLINED';
-    case 'cancelled':
-    case 'expired':
-    case 'refunded':
-      return 'CANCELED';
-    case 'in_process':
-      return 'PROCESSING';
-    case 'pending':
-    default:
-      return 'PENDING';
-  }
-}
-
-function formatMercadoPagoQrImage(qrCodeBase64: string): string | null {
-  if (!qrCodeBase64) {
-    return null;
-  }
-  if (/^data:image\//i.test(qrCodeBase64)) {
-    return qrCodeBase64;
-  }
-  return `data:image/png;base64,${qrCodeBase64}`;
-}
-
-function readBoletoAddressField(value: unknown, keys: string[]): string {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    return '';
-  }
-  const record = value as Record<string, unknown>;
-  for (const key of keys) {
-    const raw = record[key];
-    if (typeof raw === 'string') {
-      const trimmed = raw.trim();
-      if (trimmed) {
-        return trimmed;
-      }
-    }
-    if (typeof raw === 'number' && Number.isFinite(raw)) {
-      return String(raw);
-    }
-  }
-  return '';
-}
-
-function normalizeBoletoAddress(value: unknown): MercadoPagoBoletoAddress | null {
-  const zipCode = readBoletoAddressField(value, ['cep', 'zipCode', 'zip', 'postalCode']).replace(
-    /\D/g,
-    '',
-  );
-  const street = readBoletoAddressField(value, ['street', 'streetName', 'rua', 'logradouro']);
-  const number = readBoletoAddressField(value, ['number', 'streetNumber', 'numero']);
-  const neighborhood = readBoletoAddressField(value, ['neighborhood', 'bairro']);
-  const city = readBoletoAddressField(value, ['city', 'cidade']);
-  const state = readBoletoAddressField(value, ['state', 'uf', 'federalUnit'])
-    .replace(/[^a-z]/gi, '')
-    .toUpperCase();
-
-  if (!zipCode || !street || !number || !city || !state) {
-    return null;
-  }
-
-  return {
-    zipCode,
-    street,
-    number,
-    ...(neighborhood ? { neighborhood } : {}),
-    city,
-    state,
-  };
-}
 
 /** Checkout payment service. */
 @Injectable()
