@@ -17,6 +17,8 @@ import { ConnectService } from '../payments/connect/connect.service';
 import { FraudEngine } from '../payments/fraud/fraud.engine';
 import { MercadoPagoBoletoChargeService } from '../payments/mercadopago/mercadopago-boleto-charge.service';
 import { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
+import { PaymentProviderRouterService } from '../payments/provider-router/provider-router.service';
+import type { PaymentMethod, ProviderRoutingDecision } from '../payments/provider-router/provider-router.types';
 import { StripeChargeService } from '../payments/stripe/stripe-charge.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -45,6 +47,33 @@ type CardPaymentOptions = Extract<
 type MercadoPagoBoletoCharge = Awaited<ReturnType<MercadoPagoBoletoChargeService['create']>>;
 type MercadoPagoPixCharge = Awaited<ReturnType<MercadoPagoPixChargeService['create']>>;
 
+function toProviderPaymentMethod(method: CheckoutPaymentMethod): PaymentMethod {
+  switch (method) {
+    case 'PIX':
+      return 'pix';
+    case 'BOLETO':
+      return 'boleto';
+    case 'CREDIT_CARD':
+      return 'card';
+    default: {
+      const exhaustive: never = method;
+      throw new Error(`unknown_checkout_payment_method:${String(exhaustive)}`);
+    }
+  }
+}
+
+function assertCanonicalProvider(
+  decision: ProviderRoutingDecision,
+  expectedProvider: ProviderRoutingDecision['provider'],
+  method: CheckoutPaymentMethod,
+): void {
+  if (decision.provider !== expectedProvider) {
+    throw new Error(
+      `payment_provider_route_mismatch:${method}:expected_${expectedProvider}:got_${decision.provider}`,
+    );
+  }
+}
+
 /** Checkout payment service. */
 @Injectable()
 export class CheckoutPaymentService {
@@ -55,6 +84,7 @@ export class CheckoutPaymentService {
     private readonly stripeCharge: StripeChargeService,
     private readonly mercadoPagoBoleto: MercadoPagoBoletoChargeService,
     private readonly mercadoPagoPix: MercadoPagoPixChargeService,
+    private readonly providerRouter: PaymentProviderRouterService,
     private readonly connectService: ConnectService,
     private readonly fraudEngine: FraudEngine,
     private readonly financialAlert: FinancialAlertService,
@@ -492,8 +522,12 @@ export class CheckoutPaymentService {
     }
 
     const amount = chargedTotalInCents / 100;
+    const providerDecision = this.providerRouter.resolve({
+      method: toProviderPaymentMethod(params.paymentMethod),
+    });
 
     if (params.paymentMethod === 'PIX') {
+      assertCanonicalProvider(providerDecision, 'mercadopago', params.paymentMethod);
       try {
         Sentry.addBreadcrumb({
           message: `checkout payment processing via Mercado Pago`,
@@ -615,6 +649,7 @@ export class CheckoutPaymentService {
     }
 
     if (params.paymentMethod === 'BOLETO') {
+      assertCanonicalProvider(providerDecision, 'mercadopago', params.paymentMethod);
       const payerDocument = params.customerCPF?.replace(/\D/g, '') || '';
       if (!payerDocument) {
         throw new BadRequestException(
@@ -742,6 +777,7 @@ export class CheckoutPaymentService {
       }
     }
 
+    assertCanonicalProvider(providerDecision, 'stripe', params.paymentMethod);
     const forceThreeDS =
       params.paymentMethod === 'CREDIT_CARD' && fraudDecision.action === 'require_3ds';
     const sellerStripeAccountId = await this.ensureSellerStripeAccountId(params.workspaceId);

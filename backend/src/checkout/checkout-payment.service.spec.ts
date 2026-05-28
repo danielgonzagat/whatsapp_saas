@@ -8,6 +8,7 @@ import { FraudEngine } from '../payments/fraud/fraud.engine';
 import { StripeChargeService } from '../payments/stripe/stripe-charge.service';
 import { MercadoPagoBoletoChargeService } from '../payments/mercadopago/mercadopago-boleto-charge.service';
 import { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
+import { PaymentProviderRouterService } from '../payments/provider-router/provider-router.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { CheckoutPaymentService } from './checkout-payment.service';
@@ -33,6 +34,7 @@ describe('CheckoutPaymentService.processPayment — provider routing', () => {
   let stripeCharge: { createSaleCharge: jest.Mock };
   let mercadoPagoBoleto: { create: jest.Mock };
   let mercadoPagoPix: { create: jest.Mock };
+  let providerRouter: { resolve: jest.Mock };
   let connectService: { createCustomAccount: jest.Mock };
   let fraudEngine: { evaluate: jest.Mock };
   let financialAlert: { paymentFailed: jest.Mock };
@@ -94,6 +96,11 @@ describe('CheckoutPaymentService.processPayment — provider routing', () => {
         raw: { id: 'mp_pix_1', status: 'pending' },
       }),
     };
+    providerRouter = {
+      resolve: jest.fn(({ method }: { method: 'pix' | 'card' | 'boleto' }) =>
+        PaymentProviderRouterService.resolveStatic(method),
+      ),
+    };
     connectService = {
       createCustomAccount: jest.fn().mockResolvedValue({
         accountBalanceId: 'cab_seller_created',
@@ -126,6 +133,7 @@ describe('CheckoutPaymentService.processPayment — provider routing', () => {
         { provide: StripeChargeService, useValue: stripeCharge },
         { provide: MercadoPagoBoletoChargeService, useValue: mercadoPagoBoleto },
         { provide: MercadoPagoPixChargeService, useValue: mercadoPagoPix },
+        { provide: PaymentProviderRouterService, useValue: providerRouter },
         { provide: ConnectService, useValue: connectService },
         { provide: FraudEngine, useValue: fraudEngine },
         { provide: FinancialAlertService, useValue: financialAlert },
@@ -193,6 +201,7 @@ describe('CheckoutPaymentService.processPayment — provider routing', () => {
       totalInCents: 10_000,
     });
 
+    expect(providerRouter.resolve).toHaveBeenCalledWith({ method: 'boleto' });
     expect(stripeCharge.createSaleCharge).not.toHaveBeenCalled();
     expect(mercadoPagoBoleto.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -271,6 +280,7 @@ describe('CheckoutPaymentService.processPayment — provider routing', () => {
       installments: 3,
     });
 
+    expect(providerRouter.resolve).toHaveBeenCalledWith({ method: 'card' });
     expect(stripeCharge.createSaleCharge).toHaveBeenCalledWith(
       expect.objectContaining({
         workspaceId: 'ws-1',
@@ -343,6 +353,7 @@ describe('CheckoutPaymentService.processPayment — provider routing', () => {
       totalInCents: 10_000,
     });
 
+    expect(providerRouter.resolve).toHaveBeenCalledWith({ method: 'pix' });
     expect(stripeCharge.createSaleCharge).not.toHaveBeenCalled();
     expect(mercadoPagoPix.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -375,6 +386,48 @@ describe('CheckoutPaymentService.processPayment — provider routing', () => {
       pixCopyPaste: '000201mp-pix-copia-e-cola',
       type: 'PIX',
     });
+  });
+
+  it('fails closed before provider calls when the router sends PIX away from Mercado Pago', async () => {
+    providerRouter.resolve.mockReturnValueOnce({ provider: 'stripe', reason: 'drift-test' });
+
+    await expect(
+      service.processPayment({
+        orderId: 'order-1',
+        workspaceId: 'ws-1',
+        customerName: 'Cliente Pix',
+        customerEmail: 'pix@example.com',
+        customerCPF: '12345678909',
+        customerPhone: '11999999999',
+        paymentMethod: 'PIX',
+        totalInCents: 10_000,
+      }),
+    ).rejects.toThrow('payment_provider_route_mismatch:PIX');
+
+    expect(mercadoPagoPix.create).not.toHaveBeenCalled();
+    expect(stripeCharge.createSaleCharge).not.toHaveBeenCalled();
+  });
+
+  it('fails closed before provider calls when the router sends card away from Stripe', async () => {
+    providerRouter.resolve.mockReturnValueOnce({ provider: 'mercadopago', reason: 'drift-test' });
+
+    await expect(
+      service.processPayment({
+        orderId: 'order-1',
+        workspaceId: 'ws-1',
+        customerName: 'Cliente Card',
+        customerEmail: 'card@example.com',
+        customerCPF: '12345678909',
+        customerPhone: '11999999999',
+        paymentMethod: 'CREDIT_CARD',
+        totalInCents: 10_000,
+      }),
+    ).rejects.toThrow('payment_provider_route_mismatch:CREDIT_CARD');
+
+    expect(connectService.createCustomAccount).not.toHaveBeenCalled();
+    expect(stripeCharge.createSaleCharge).not.toHaveBeenCalled();
+    expect(mercadoPagoPix.create).not.toHaveBeenCalled();
+    expect(mercadoPagoBoleto.create).not.toHaveBeenCalled();
   });
 
   it('creates the seller connect account automatically when the workspace does not have one yet', async () => {

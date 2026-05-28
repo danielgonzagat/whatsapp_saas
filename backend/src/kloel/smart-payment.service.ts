@@ -240,7 +240,7 @@ export class SmartPaymentService {
     } catch (err: unknown) {
       const message =
         err instanceof Error ? (err instanceof Error ? err.message : String(err)) : String(err);
-      this.logger.error(`Stripe payment failed: ${message}`);
+      this.logger.error(`Mercado Pago PIX payment failed: ${message}`);
       Sentry.captureException(err, {
         tags: { type: 'financial_alert', operation: 'smart_payment_create' },
         extra: { workspaceId, contactId: context.contactId, amount },
