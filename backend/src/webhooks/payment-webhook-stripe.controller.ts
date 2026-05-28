@@ -269,6 +269,21 @@ export class PaymentWebhookStripeController {
         this.logger.warn(`Failed to log Stripe webhook event: ${errMsg?.message}`);
       }
 
+      // Post-TTL replay guard: WebhooksService.logWebhookEvent is an `upsert`,
+      // so on a second delivery the existing row is updated rather than
+      // throwing P2002. Combined with the 300s Redis NX TTL, a Stripe retry
+      // arriving > 5 minutes later (Stripe can retry for up to 3 days) would
+      // re-enter the handler chain and double-process the sale, ledger
+      // credit, autopilot conversion, and post-purchase flow. Short-circuit
+      // here when the event was already marked `processed` on a previous
+      // delivery to preserve financial idempotency.
+      if (webhookEvent?.status === 'processed') {
+        this.logger.log(
+          `Stripe webhook ${stripeExternalId} already processed; skipping replay`,
+        );
+        return { received: true, skipped: true, reason: 'already_processed' };
+      }
+
       if (event?.type === 'refund.created') {
         await handleRefundCreated(this.deps, event, webhookEvent);
         return { received: true };
