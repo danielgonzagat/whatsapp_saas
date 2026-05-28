@@ -22,8 +22,8 @@ import {
   createPolicyRow,
   estimateCounterfactualBaselineOutcome,
   persistResolvedPolicyMemories,
-} from '../../mind-policy.helpers';
-import { applyWisdomPriors } from '../../mind-policy.wisdom-prior.helpers';
+} from './mind-policy.helpers';
+import { applyWisdomPriors } from './mind-policy.wisdom-prior.helpers';
 
 const FALLBACK_MIN_SAMPLES = 30;
 const COLD_START_THRESHOLD = 30;

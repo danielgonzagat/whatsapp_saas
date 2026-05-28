@@ -10,7 +10,7 @@ import {
   type GuardReasonTag,
   type MindActionContext,
   type MindGuardResult,
-} from '../../mind-code-native.types';
+} from './mind-code-native.types';
 
 const GUARD_REASON_TAGS = new Set<string>(MIND_GUARD_REASON_TAGS);
 
