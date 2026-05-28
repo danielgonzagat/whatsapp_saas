@@ -40,6 +40,13 @@
 
 import { Queue as BullQueue, type Job, QueueEvents, Worker } from 'bullmq';
 import Redis, { type RedisOptions } from 'ioredis';
+import {
+  collectRedisDuplicateOverrides,
+  extractWorkspaceIdFromJobData,
+  hasErrorEmitter,
+  resolveQueueAttempts,
+  resolveQueueBackoffMs,
+} from './queue.helpers';
 import { maskRedisUrl, resolveRedisUrl } from './resolve-redis-url';
 
 // ─── Lazy Redis connection ────────────────────────────────────────────────
@@ -65,16 +72,6 @@ const resolveRequiredRedisUrl = (context: string): string => {
     process.exit(1);
   }
   return resolved;
-};
-
-const collectRedisDuplicateOverrides = (args: unknown[]): RedisOptions => {
-  const overrides: RedisOptions = {};
-  for (const arg of args) {
-    if (arg && typeof arg === 'object' && !Array.isArray(arg)) {
-      Object.assign(overrides, arg);
-    }
-  }
-  return overrides;
 };
 
 const createRedisConnection = (
@@ -142,11 +139,8 @@ export const connection = new Proxy({} as Redis, {
 
 // ─── Lazy queue, DLQ, QueueEvents creation ────────────────────────────────
 
-const defaultAttempts = Math.max(1, Number.parseInt(process.env.QUEUE_ATTEMPTS || '3', 10) || 3);
-const defaultBackoff = Math.max(
-  1000,
-  Number.parseInt(process.env.QUEUE_BACKOFF_MS || '5000', 10) || 5000,
-);
+const defaultAttempts = resolveQueueAttempts(process.env.QUEUE_ATTEMPTS);
+const defaultBackoff = resolveQueueBackoffMs(process.env.QUEUE_BACKOFF_MS);
 
 export function buildQueueOptions() {
   return {
@@ -169,19 +163,6 @@ function logBullMqBackgroundError(label: string, err: Error): void {
   console.warn(`[QUEUE] ${label} background error: ${err.message}`);
 }
 
-type ErrorEmitter = {
-  on: (event: 'error', handler: (err: Error) => void) => unknown;
-};
-
-function hasErrorEmitter(value: unknown): value is ErrorEmitter {
-  return Boolean(
-    value &&
-    typeof value === 'object' &&
-    'on' in value &&
-    typeof (value as { on?: unknown }).on === 'function',
-  );
-}
-
 function attachQueueErrorLogger(queue: BullQueue, label: string): void {
   if (hasErrorEmitter(queue)) {
     queue.on('error', (err) => logBullMqBackgroundError(label, err));
@@ -198,21 +179,6 @@ function attachWorkerErrorLogger(worker: Worker, label: string): void {
   if (hasErrorEmitter(worker)) {
     worker.on('error', (err) => logBullMqBackgroundError(label, err));
   }
-}
-
-function extractWorkspaceIdFromJobData(data: unknown): unknown {
-  if (!data || typeof data !== 'object' || Array.isArray(data)) {
-    return undefined;
-  }
-  const record = data as Record<string, unknown>;
-  if (typeof record.workspaceId === 'string') {
-    return record.workspaceId;
-  }
-  const workspace = record.workspace;
-  if (workspace && typeof workspace === 'object' && !Array.isArray(workspace)) {
-    return (workspace as Record<string, unknown>).id;
-  }
-  return undefined;
 }
 
 function getOrCreateQueue(name: string): BullQueue {
