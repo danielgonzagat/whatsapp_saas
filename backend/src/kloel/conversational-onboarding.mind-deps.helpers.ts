@@ -118,9 +118,7 @@ export function buildOnboardingMindSignalsDeps(
     ...(services.knowledgeBaseService !== undefined
       ? { knowledgeBaseService: services.knowledgeBaseService }
       : {}),
-    ...(services.vectorService !== undefined
-      ? { vectorService: services.vectorService }
-      : {}),
+    ...(services.vectorService !== undefined ? { vectorService: services.vectorService } : {}),
   };
 }
 

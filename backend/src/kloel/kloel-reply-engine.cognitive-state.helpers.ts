@@ -120,9 +120,7 @@ export function buildKloelMindSignalsDeps(
     ...(services.mindPerceptionService !== undefined
       ? { mindPerceptionService: services.mindPerceptionService }
       : {}),
-    ...(services.vectorService !== undefined
-      ? { vectorService: services.vectorService }
-      : {}),
+    ...(services.vectorService !== undefined ? { vectorService: services.vectorService } : {}),
   };
 }
 

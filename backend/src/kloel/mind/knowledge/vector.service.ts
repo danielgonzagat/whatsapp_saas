@@ -116,9 +116,7 @@ export class VectorService {
 
     const vectorString = `[${embedding.join(',')}]`;
 
-    const results = await this.prisma.$queryRaw<
-      Array<{ content: string; distance: number }>
-    >`
+    const results = await this.prisma.$queryRaw<Array<{ content: string; distance: number }>>`
       SELECT v.content, (v.embedding <=> ${vectorString}::vector) as distance
       FROM "RAC_Vector" v
       JOIN "RAC_KnowledgeSource" s ON v."sourceId" = s.id

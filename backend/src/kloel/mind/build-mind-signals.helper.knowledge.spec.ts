@@ -13,10 +13,12 @@ describe('buildMindSignals — knowledge base search (PI-K17-A)', () => {
   });
 
   it('attaches knowledge when knowledgeBaseService returns results', async () => {
-    const search = jest.fn().mockResolvedValue([
-      makeKbResult('FAQ: Preços', 'Nossos preços são calculados com base no plano...', 0.87),
-      makeKbResult('Política de Reembolso', 'Reembolsos são processados em até 7 dias...', 0.72),
-    ]);
+    const search = jest
+      .fn()
+      .mockResolvedValue([
+        makeKbResult('FAQ: Preços', 'Nossos preços são calculados com base no plano...', 0.87),
+        makeKbResult('Política de Reembolso', 'Reembolsos são processados em até 7 dias...', 0.72),
+      ]);
 
     const result = await buildMindSignals(
       {
@@ -30,8 +32,16 @@ describe('buildMindSignals — knowledge base search (PI-K17-A)', () => {
 
     expect(search).toHaveBeenCalledWith('ws-1', 'quanto custa o plano premium?', 3);
     expect(result.knowledge).toEqual([
-      { title: 'FAQ: Preços', snippet: 'Nossos preços são calculados com base no plano...', relevance: 0.87 },
-      { title: 'Política de Reembolso', snippet: 'Reembolsos são processados em até 7 dias...', relevance: 0.72 },
+      {
+        title: 'FAQ: Preços',
+        snippet: 'Nossos preços são calculados com base no plano...',
+        relevance: 0.87,
+      },
+      {
+        title: 'Política de Reembolso',
+        snippet: 'Reembolsos são processados em até 7 dias...',
+        relevance: 0.72,
+      },
     ]);
   });
 
@@ -89,12 +99,8 @@ describe('buildMindSignals — knowledge base search (PI-K17-A)', () => {
   });
 
   it('coexists with other mind signals (concepts still populate)', async () => {
-    const search = jest.fn().mockResolvedValue([
-      makeKbResult('FAQ', 'Texto de exemplo...', 0.91),
-    ]);
-    const detect = jest.fn().mockResolvedValue([
-      { concept: 'pricing', confidence: 0.85 },
-    ]);
+    const search = jest.fn().mockResolvedValue([makeKbResult('FAQ', 'Texto de exemplo...', 0.91)]);
+    const detect = jest.fn().mockResolvedValue([{ concept: 'pricing', confidence: 0.85 }]);
 
     const result = await buildMindSignals(
       {

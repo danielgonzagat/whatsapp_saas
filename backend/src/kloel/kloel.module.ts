@@ -172,6 +172,7 @@ import { MindLiftReportService } from './mind/observability/mind-lift-report.ser
 import { MindSurpriseService } from './mind/inference/mind-surprise.service';
 import { MindVerbalizerService } from './mind/synthetic/mind-verbalizer.service';
 import { MindWorkspaceStateService } from './mind/memory/mind-workspace-state.service';
+import { VectorService } from './mind/knowledge/vector.service';
 import { AgentRuntimeJobRunnerService } from './agent-runtime/agent-runtime.job-runner';
 import {
   AgentRuntimeContextService,

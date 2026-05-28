@@ -419,9 +419,7 @@ export class ConversationalOnboardingService {
         ...(this.knowledgeBaseService !== undefined
           ? { knowledgeBaseService: this.knowledgeBaseService }
           : {}),
-        ...(this.vectorService !== undefined
-          ? { vectorService: this.vectorService }
-          : {}),
+        ...(this.vectorService !== undefined ? { vectorService: this.vectorService } : {}),
       });
       const mindSignals = await buildMindSignals(mindDeps, workspaceId, userMessage);
       messages.push({

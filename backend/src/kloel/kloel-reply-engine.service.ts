@@ -305,9 +305,7 @@ export class KloelReplyEngineService {
         ...(this.mindPerceptionService !== undefined
           ? { mindPerceptionService: this.mindPerceptionService }
           : {}),
-        ...(this.vectorService !== undefined
-          ? { vectorService: this.vectorService }
-          : {}),
+        ...(this.vectorService !== undefined ? { vectorService: this.vectorService } : {}),
       },
     };
     if (this.abiBuilder !== undefined) {

@@ -392,7 +392,9 @@ export class KnowledgeBaseService {
       }));
     } catch (err: unknown) {
       void this.opsAlert?.alertOnCriticalError(err, 'KnowledgeBaseService.search');
-      this.logger.warn(`Knowledge base search skipped: ${err instanceof Error ? err.message : String(err)}`);
+      this.logger.warn(
+        `Knowledge base search skipped: ${err instanceof Error ? err.message : String(err)}`,
+      );
       return [];
     }
   }
