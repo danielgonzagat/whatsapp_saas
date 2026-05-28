@@ -195,6 +195,9 @@ export class AuthTokenService {
 
     let stored: Prisma.RefreshTokenGetPayload<{ include: { agent: true } }> | null;
     let revokedFirst = false;
+    // Race-loser flag: distinguishes a concurrent claim loss (winner exists,
+    // do NOT burn sibling sessions) from a true replay attack (sweep siblings).
+    let raceLost = false;
     try {
       // Atomic claim: only one concurrent refresh wins the right to revoke
       // an active token; the loser sees count=0 and is rejected below.
@@ -222,6 +225,7 @@ export class AuthTokenService {
 
           if (claim.count === 0) {
             // Lost the race; another concurrent call already revoked it.
+            raceLost = true;
             return { ...found, revoked: true };
           }
 
@@ -266,21 +270,60 @@ export class AuthTokenService {
     }
 
     if (!revokedFirst && stored.revoked) {
-      // Token was revoked before or during our transaction (replay or race loss).
-      // Defensively revoke remaining active tokens for the agent.
-      this.prisma.refreshToken
-        .updateMany({
-          where: { agentId: stored.agent.id, revoked: false },
-          data: { revoked: true },
-        })
-        .catch(() => {});
-      this.logger.warn(
-        buildAuthLogMessage('refresh_token_replay_or_race', {
-          tokenHash,
-          agentId: stored.agent.id,
-          workspaceId: stored.agent.workspaceId,
-        }),
-      );
+      // Token was revoked before or during our transaction. Two distinct
+      // shapes share this branch:
+      //
+      //   (a) Concurrent claim loser — a sibling call already won the
+      //       atomic claim within this same instant. The winner just
+      //       minted a fresh pair; sweeping its tokens would log the
+      //       legitimate user out across every tab.
+      //
+      //   (b) Stale-replay window — the same token surfaces again within
+      //       a small grace window (e.g. two tabs reading the same
+      //       cookie before the new pair propagated). Treat identically:
+      //       reject this call but preserve the winner's session.
+      //
+      //   (c) True replay — the token was revoked long enough ago that
+      //       any honest client should have rotated. Sweep all sibling
+      //       refresh tokens to invalidate the suspected attacker.
+      const GRACE_WINDOW_MS = 15_000;
+      const revokedRecently =
+        Date.now() - stored.updatedAt.getTime() <= GRACE_WINDOW_MS;
+      const shouldSweep = !raceLost && !revokedRecently;
+
+      if (shouldSweep) {
+        this.prisma.refreshToken
+          .updateMany({
+            where: { agentId: stored.agent.id, revoked: false },
+            data: { revoked: true },
+          })
+          .catch((sweepError: unknown) => {
+            this.logger.warn(
+              buildAuthLogMessage('refresh_token_sibling_sweep_failed', {
+                tokenHash,
+                agentId: stored?.agent.id,
+                error: sweepError instanceof Error ? sweepError.message : String(sweepError),
+              }),
+            );
+          });
+        this.logger.warn(
+          buildAuthLogMessage('refresh_token_replay_detected', {
+            tokenHash,
+            agentId: stored.agent.id,
+            workspaceId: stored.agent.workspaceId,
+          }),
+        );
+      } else {
+        this.logger.warn(
+          buildAuthLogMessage('refresh_token_race_or_grace_skip_sweep', {
+            tokenHash,
+            agentId: stored.agent.id,
+            workspaceId: stored.agent.workspaceId,
+            raceLost,
+            revokedRecently,
+          }),
+        );
+      }
       throw new UnauthorizedException('Refresh token inválido ou expirado');
     }
 
