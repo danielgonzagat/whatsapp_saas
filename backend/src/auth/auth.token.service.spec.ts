@@ -1,6 +1,6 @@
 import { ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { Agent } from '@prisma/client';
+import { Agent, Prisma } from '@prisma/client';
 import { AuthTokenService } from './auth.token.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -388,6 +388,63 @@ describe('AuthTokenService', () => {
       };
       prismaMock.refreshToken.findUnique.mockResolvedValueOnce(stored);
       prismaMock.refreshToken.updateMany.mockRejectedValueOnce(new Error('Serialization failure'));
+
+      await expect(service.refresh('rt-stub-1')).rejects.toThrow(ServiceUnavailableException);
+    });
+
+    it('retries the Serializable claim once on Prisma P2034 then succeeds', async () => {
+      // Prisma signals true serialization conflicts (Serializable isolation
+      // write/write race) with code P2034. The service must retry the
+      // optimistic claim once before downgrading the request to a 503 —
+      // otherwise two simultaneous tabs each refreshing trigger a transient
+      // conflict that boots both clients to /login.
+      const stored = {
+        ...mockRefreshToken,
+        agent: mockAgent,
+      };
+      // Build a real PrismaClientKnownRequestError so the `instanceof` guard
+      // in the service matches; tests for other Prisma codes in the repo
+      // construct the same shape (see inbox.service.spec.ts).
+      const p2034 = new Prisma.PrismaClientKnownRequestError('write conflict', {
+        code: 'P2034',
+        clientVersion: 'test',
+      });
+
+      // First $transaction call rejects with P2034. Subsequent calls run the
+      // callback against the mock client (rotateRefreshToken also uses
+      // $transaction, so we have to keep the default behaviour for those).
+      const defaultTx = prismaMock.$transaction.getMockImplementation()!;
+      prismaMock.$transaction
+        .mockImplementationOnce(() => Promise.reject(p2034))
+        .mockImplementation(defaultTx);
+
+      prismaMock.refreshToken.findUnique.mockResolvedValue(stored);
+      prismaMock.refreshToken.updateMany
+        .mockResolvedValueOnce({ count: 1 }) // retried claim succeeds
+        .mockResolvedValueOnce({ count: 0 }); // rotateRefreshToken sibling sweep
+      prismaMock.workspace.findUnique.mockResolvedValueOnce(mockWorkspace);
+      prismaMock.refreshToken.create.mockResolvedValueOnce(mockRefreshToken);
+      jwtMock.signAsync.mockResolvedValueOnce('access-token-after-retry');
+
+      const result = await service.refresh('rt-stub-1');
+
+      expect(result.access_token).toBe('access-token-after-retry');
+      // First call rejected, second succeeded, third = rotation tx. The exact
+      // count matters less than: it was retried (>= 2 attempts).
+      expect(prismaMock.$transaction.mock.calls.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('returns 503 when both Serializable claim attempts fail with P2034', async () => {
+      // Sustained contention (e.g. database under load): the retry policy is
+      // ONE retry, not infinite. A second P2034 must downgrade to 503 so the
+      // client backs off instead of hammering the DB.
+      const p2034 = new Prisma.PrismaClientKnownRequestError('write conflict', {
+        code: 'P2034',
+        clientVersion: 'test',
+      });
+      prismaMock.$transaction
+        .mockImplementationOnce(() => Promise.reject(p2034))
+        .mockImplementationOnce(() => Promise.reject(p2034));
 
       await expect(service.refresh('rt-stub-1')).rejects.toThrow(ServiceUnavailableException);
     });

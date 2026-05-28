@@ -198,10 +198,18 @@ export class AuthTokenService {
     // Race-loser flag: distinguishes a concurrent claim loss (winner exists,
     // do NOT burn sibling sessions) from a true replay attack (sweep siblings).
     let raceLost = false;
-    try {
-      // Atomic claim: only one concurrent refresh wins the right to revoke
-      // an active token; the loser sees count=0 and is rejected below.
-      stored = await this.prisma.$transaction(
+    // Serializable transactions can fail with P2034 ("Transaction failed due
+    // to a write conflict or a deadlock") under contention. The first attempt
+    // is the optimistic happy path; a single retry handles the legitimate
+    // serialization conflict before downgrading to a 503. Two simultaneous
+    // refreshes by the same token should converge on one winner + one
+    // race-loser, not both 503ing.
+    const claimToken = async (): Promise<Prisma.RefreshTokenGetPayload<{
+      include: { agent: true };
+    }> | null> => {
+      revokedFirst = false;
+      raceLost = false;
+      return this.prisma.$transaction(
         async (tx) => {
           const found = await tx.refreshToken.findUnique({
             where: { token: refreshToken },
@@ -234,6 +242,28 @@ export class AuthTokenService {
         },
         { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
       );
+    };
+    try {
+      // Atomic claim: only one concurrent refresh wins the right to revoke
+      // an active token; the loser sees count=0 and is rejected below.
+      try {
+        stored = await claimToken();
+      } catch (firstAttemptError: unknown) {
+        if (
+          firstAttemptError instanceof Prisma.PrismaClientKnownRequestError &&
+          firstAttemptError.code === 'P2034'
+        ) {
+          this.logger.warn(
+            buildAuthLogMessage('refresh_token_serialization_retry', {
+              tokenHash,
+              attempt: 1,
+            }),
+          );
+          stored = await claimToken();
+        } else {
+          throw firstAttemptError;
+        }
+      }
     } catch (error: unknown) {
       this.logger.error(
         buildAuthLogMessage('refresh_token_db_transaction_failed', {
