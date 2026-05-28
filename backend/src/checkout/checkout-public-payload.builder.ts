@@ -109,23 +109,40 @@ export class CheckoutPublicPayloadBuilder {
   }
 }
 
+function isMercadoPagoConfigured() {
+  const accessToken = String(process.env.MERCADOPAGO_ACCESS_TOKEN || '').trim();
+  const publicKey = String(process.env.MERCADOPAGO_PUBLIC_KEY || '').trim();
+  return Boolean(accessToken && publicKey);
+}
+
 function buildPaymentProvider(stripeAccountId: string | null | undefined) {
-  const publishableKey = String(process.env.STRIPE_PUBLISHABLE_KEY || '').trim() || null;
+  const stripePublishableKey = String(process.env.STRIPE_PUBLISHABLE_KEY || '').trim() || null;
+  const stripeCardReady = Boolean(stripePublishableKey);
+  const mercadoPagoReady = isMercadoPagoConfigured();
+  const availablePaymentMethodIds = [
+    ...(stripeCardReady ? ['card'] : []),
+    ...(mercadoPagoReady ? ['pix', 'boleto'] : []),
+  ];
+  const checkoutEnabled = availablePaymentMethodIds.length > 0;
+
   return {
     provider: 'stripe',
-    connected: Boolean(stripeAccountId),
-    checkoutEnabled: Boolean(publishableKey),
-    publicKey: publishableKey,
-    unavailableReason: publishableKey
+    cardProvider: 'stripe',
+    pixProvider: 'mercadopago',
+    boletoProvider: 'mercadopago',
+    connected: Boolean(stripeAccountId) || mercadoPagoReady,
+    checkoutEnabled,
+    publicKey: stripePublishableKey,
+    unavailableReason: checkoutEnabled
       ? null
-      : 'Stripe não está configurado no ambiente atual do checkout.',
+      : 'Stripe e Mercado Pago não estão configurados no ambiente atual do checkout.',
     marketplaceFeePercent: DEFAULT_PLATFORM_FEE_PERCENT,
     installmentInterestMonthlyPercent: DEFAULT_INSTALLMENT_INTEREST_MONTHLY_PERCENT,
-    availablePaymentMethodIds: ['card', 'pix'],
-    availablePaymentMethodTypes: ['card', 'pix'],
-    supportsCreditCard: true,
-    supportsPix: true,
-    supportsBoleto: false,
+    availablePaymentMethodIds,
+    availablePaymentMethodTypes: availablePaymentMethodIds,
+    supportsCreditCard: stripeCardReady,
+    supportsPix: mercadoPagoReady,
+    supportsBoleto: mercadoPagoReady,
   };
 }
 
