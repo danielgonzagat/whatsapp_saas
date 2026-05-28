@@ -696,12 +696,10 @@ export class KloelReplyEngineService {
 
     try {
       const belief = await Promise.race([
-        this.mindBeliefService.getOrInit(
-          workspaceId,
-          workspaceId,
-          'replied_to_user',
-          { surface, degraded },
-        ),
+        this.mindBeliefService.getOrInit(workspaceId, workspaceId, 'replied_to_user', {
+          surface,
+          degraded,
+        }),
         new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error('SURPRISE_TIMEOUT')), 30),
         ),

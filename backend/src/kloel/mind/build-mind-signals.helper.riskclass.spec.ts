@@ -126,12 +126,7 @@ describe('buildMindSignals — riskClass (PI-k8)', () => {
       class: 'R3' as const,
       autonomyMode: 'must_escalate' as const,
       requiredEvidenceLevel: 'N4' as const,
-      rollback: [
-        'escalate_to_human',
-        'freeze_action',
-        'audit_trail_full',
-        'notify_owner_manager',
-      ],
+      rollback: ['escalate_to_human', 'freeze_action', 'audit_trail_full', 'notify_owner_manager'],
     });
 
     const result = await buildMindSignals(

@@ -176,7 +176,7 @@ describe('kloel_chat_surprise_detection (PI-k9)', () => {
     );
     // Find structured log with event=kloel_chat_surprise_detected
     const detected = surpriseLogs.find(([, meta]) => {
-      return (meta as Record<string, unknown>).event === 'kloel_chat_surprise_detected';
+      return meta.event === 'kloel_chat_surprise_detected';
     });
     if (!detected) {
       // Also check direct string logs
@@ -184,7 +184,7 @@ describe('kloel_chat_surprise_detection (PI-k9)', () => {
       expect(direct).toBeDefined();
       return;
     }
-    const meta = detected[1] as Record<string, unknown>;
+    const meta = detected[1];
     expect(meta.surpriseValue).toBeGreaterThan(0.3);
     expect(meta.predicted).toBeCloseTo(predicted);
     expect(meta.observed).toBe(1);
@@ -201,9 +201,7 @@ describe('kloel_chat_surprise_detection (PI-k9)', () => {
   }
 
   function expectNoSurpriseDetected() {
-    const detected = logCalls.filter(
-      ([, meta]) => (meta as Record<string, unknown>).event === 'kloel_chat_surprise_detected',
-    );
+    const detected = logCalls.filter(([, meta]) => meta.event === 'kloel_chat_surprise_detected');
     const direct = logCalls.filter(([msg]) => msg === 'kloel_chat_surprise_detected');
     expect(detected.length + direct.length).toBe(0);
   }
@@ -405,10 +403,10 @@ describe('kloel_chat_surprise_detection (PI-k9)', () => {
     it('does not fire surprise for empty reply (outcome=0)', async () => {
       const deps = makeBaseDeps();
 
-      const { buildAssistantReplyImpl } = jest.requireMock<
-        typeof import('./kloel-reply-engine.helpers')
-      >('./kloel-reply-engine.helpers');
-      buildAssistantReplyImpl.mockResolvedValueOnce('');
+      const helpersMock = jest.requireMock<typeof import('./kloel-reply-engine.helpers')>(
+        './kloel-reply-engine.helpers',
+      );
+      (helpersMock.buildAssistantReplyImpl as jest.Mock).mockResolvedValueOnce('');
 
       const beliefService = makeBeliefService(0.5);
       const surpriseService = makeSurpriseService();
@@ -437,11 +435,9 @@ describe('kloel_chat_surprise_detection (PI-k9)', () => {
       // Empty reply means degraded — surprise should be high when belief predicts p=0.5 and outcome=0
       // -ln(1-0.5) = -ln(0.5) ≈ 0.69 > 0.3 → should fire
       // Check surprise log directly — observed is 0 (degraded)
-      const detected = logCalls.find(
-        ([, meta]) => (meta as Record<string, unknown>).event === 'kloel_chat_surprise_detected',
-      );
+      const detected = logCalls.find(([, meta]) => meta.event === 'kloel_chat_surprise_detected');
       expect(detected).toBeDefined();
-      const meta = detected![1] as Record<string, unknown>;
+      const meta = detected![1];
       expect(meta.surpriseValue).toBeGreaterThan(0.3);
       expect(meta.predicted).toBeCloseTo(0.5);
       expect(meta.observed).toBe(0);
