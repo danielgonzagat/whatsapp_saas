@@ -13,6 +13,7 @@
  * @see docs/adr/0013-kloel-mind-unification.md
  */
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { buildQueueJobId } from '../../../queue/job-id.util';
 import { flowQueue } from '../../../queue/queue';
@@ -23,11 +24,20 @@ import { MindService } from '../../mind.service';
 import { readNumberForce } from '../../../common/parse';
 import {
   buildChannelSubtitle,
+  buildHumanTaskApprovalMessage,
+  buildHumanTaskMetadataUpdate,
+  buildHumanTaskRejectionMessage,
+  buildNowEvent,
+  buildRejectedHumanTaskValue,
+  buildResolvedHumanTaskValue,
   collectActiveChannels,
+  isActiveHumanTask,
   mapAccountProofRecord,
   mapConversationProofRecord,
   mapCycleProofRecord,
+  mapHumanTaskListItem,
   mapMindLift,
+  matchHumanTaskCandidate,
   readRecord,
   readText,
   serializeCognitiveHighlight,
@@ -104,14 +114,7 @@ export class CiaService {
         activeConversations: readNumberForce(businessState.openBacklog),
         pendingPayments: readNumberForce(businessState.pendingPaymentCount),
       },
-      now: latest
-        ? {
-            message: latest.message,
-            phase: latest.phase || null,
-            type: latest.type,
-            ts: latest.ts,
-          }
-        : null,
+      now: buildNowEvent(latest),
       recent,
       businessState: intelligence.businessState,
       humanTasks: humanTasks.slice(0, 5),
@@ -156,17 +159,7 @@ export class CiaService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return items
-      .map((item) => {
-        const task = readRecord(item.value);
-        return {
-          memoryId: item.id,
-          key: item.key,
-          ...task,
-          status: readText(task.status) || 'OPEN',
-        };
-      })
-      .filter((task) => task.status !== 'REJECTED' && task.status !== 'RESOLVED');
+    return items.map(mapHumanTaskListItem).filter(isActiveHumanTask);
   }
 
   /** Approve human task. */
@@ -206,12 +199,8 @@ export class CiaService {
       await this.runtime.resumeConversationAutonomy(workspaceId, taskConversationId);
     }
 
-    const nextValue = {
-      ...task,
-      status: 'RESOLVED',
-      resolvedAt: new Date().toISOString(),
-      approvedReply: approvedReply || null,
-    };
+    const resolvedAt = new Date().toISOString();
+    const nextValue = buildResolvedHumanTaskValue(task, approvedReply, resolvedAt);
 
     await this.prisma.kloelMemory.update({
       where: {
@@ -221,12 +210,12 @@ export class CiaService {
         },
       },
       data: {
-        value: nextValue,
-        metadata: {
-          ...readRecord(record.metadata),
-          status: 'RESOLVED',
-          resolvedAt: nextValue.resolvedAt,
-        },
+        value: nextValue as Prisma.InputJsonValue,
+        metadata: buildHumanTaskMetadataUpdate(
+          record.metadata,
+          'RESOLVED',
+          resolvedAt,
+        ) as Prisma.InputJsonValue,
       },
     });
 
@@ -235,9 +224,7 @@ export class CiaService {
       workspaceId,
       phase: 'human_task_approved',
       persistent: true,
-      message: approvedReply
-        ? `Validação concluída. Enviei a resposta aprovada para ${taskPhone || 'o contato'}.`
-        : `Validação concluída. Retomei a autonomia da conversa ${taskConversationId}.`,
+      message: buildHumanTaskApprovalMessage(approvedReply, taskPhone, taskConversationId),
       meta: {
         taskId,
         conversationId: taskConversationId || null,
@@ -256,11 +243,9 @@ export class CiaService {
   /** Reject human task. */
   async rejectHumanTask(workspaceId: string, taskId: string) {
     const { record, task } = await this.findHumanTask(workspaceId, taskId);
-    const nextValue = {
-      ...task,
-      status: 'REJECTED',
-      resolvedAt: new Date().toISOString(),
-    };
+    const resolvedAt = new Date().toISOString();
+    const nextValue = buildRejectedHumanTaskValue(task, resolvedAt);
+    const taskPhone = readText(task.phone);
 
     await this.prisma.kloelMemory.update({
       where: {
@@ -270,12 +255,12 @@ export class CiaService {
         },
       },
       data: {
-        value: nextValue,
-        metadata: {
-          ...readRecord(record.metadata),
-          status: 'REJECTED',
-          resolvedAt: nextValue.resolvedAt,
-        },
+        value: nextValue as Prisma.InputJsonValue,
+        metadata: buildHumanTaskMetadataUpdate(
+          record.metadata,
+          'REJECTED',
+          resolvedAt,
+        ) as Prisma.InputJsonValue,
       },
     });
 
@@ -284,11 +269,11 @@ export class CiaService {
       workspaceId,
       phase: 'human_task_rejected',
       persistent: true,
-      message: `Exceção humana dispensada para ${readText(task.phone) || 'o contato'}.`,
+      message: buildHumanTaskRejectionMessage(taskPhone),
       meta: {
         taskId,
         conversationId: readText(task.conversationId) || null,
-        phone: readText(task.phone) || null,
+        phone: taskPhone || null,
       },
     });
 
@@ -443,10 +428,7 @@ export class CiaService {
       take: 100,
     });
 
-    const record = candidates.find((item) => {
-      const value = readRecord(item.value);
-      return readText(value.id) === taskId;
-    });
+    const record = candidates.find((item) => matchHumanTaskCandidate(item, taskId));
 
     if (!record) {
       throw new NotFoundException('Tarefa humana não encontrada');

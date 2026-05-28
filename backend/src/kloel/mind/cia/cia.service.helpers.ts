@@ -257,3 +257,138 @@ export function serializeCognitiveHighlight(item: CognitiveHighlightItem) {
     updatedAt: value.updatedAt || item.createdAt,
   };
 }
+
+type LatestAgentEvent = {
+  message: string;
+  phase?: string | null;
+  type: string;
+  ts: number | string | Date;
+} | null;
+
+/**
+ * Project the most recent agent event into the public `now` surface slot. Pure
+ * — does not query agent-events; receives the event directly.
+ */
+export function buildNowEvent(latest: LatestAgentEvent) {
+  if (!latest) {
+    return null;
+  }
+  return {
+    message: latest.message,
+    phase: latest.phase || null,
+    type: latest.type,
+    ts: latest.ts,
+  };
+}
+
+type HumanTaskRecord = {
+  id: string;
+  workspaceId: string;
+  category: string | null;
+  key: string;
+  value: unknown;
+  createdAt: Date;
+};
+
+/**
+ * Project a single kloelMemory `human_task` row into the public surface DTO,
+ * preserving malformed payloads as empty objects so the spread never explodes
+ * a string into char-indexed keys.
+ */
+export function mapHumanTaskListItem(item: HumanTaskRecord) {
+  const task = readRecord(item.value);
+  return {
+    memoryId: item.id,
+    key: item.key,
+    ...task,
+    status: readText(task.status) || 'OPEN',
+  };
+}
+
+/** Predicate: only OPEN / non-resolved / non-rejected tasks survive. */
+export function isActiveHumanTask(task: { status: string }): boolean {
+  return task.status !== 'REJECTED' && task.status !== 'RESOLVED';
+}
+
+/** Build the next `value` JSON for an approved human task (status=RESOLVED). */
+export function buildResolvedHumanTaskValue(
+  task: JsonRecord,
+  approvedReply: string,
+  resolvedAt: string,
+): JsonRecord {
+  return {
+    ...task,
+    status: 'RESOLVED',
+    resolvedAt,
+    approvedReply: approvedReply || null,
+  };
+}
+
+/** Build the next `value` JSON for a rejected human task (status=REJECTED). */
+export function buildRejectedHumanTaskValue(
+  task: JsonRecord,
+  resolvedAt: string,
+): JsonRecord {
+  return {
+    ...task,
+    status: 'REJECTED',
+    resolvedAt,
+  };
+}
+
+/**
+ * Merge the prior metadata record with the new resolution status — used by
+ * both `approveHumanTask` and `rejectHumanTask` to normalize malformed
+ * metadata (string/null/array → {}) before persisting.
+ */
+export function buildHumanTaskMetadataUpdate(
+  priorMetadata: unknown,
+  status: 'RESOLVED' | 'REJECTED',
+  resolvedAt: string,
+): JsonRecord {
+  return {
+    ...readRecord(priorMetadata),
+    status,
+    resolvedAt,
+  };
+}
+
+/** Build the Portuguese status-line message for an approved human task. */
+export function buildHumanTaskApprovalMessage(
+  approvedReply: string,
+  taskPhone: string,
+  taskConversationId: string,
+): string {
+  if (approvedReply) {
+    return `Validação concluída. Enviei a resposta aprovada para ${taskPhone || 'o contato'}.`;
+  }
+  return `Validação concluída. Retomei a autonomia da conversa ${taskConversationId}.`;
+}
+
+/** Build the Portuguese status-line message for a rejected human task. */
+export function buildHumanTaskRejectionMessage(taskPhone: string): string {
+  return `Exceção humana dispensada para ${taskPhone || 'o contato'}.`;
+}
+
+type HumanTaskCandidate = {
+  id: string;
+  key: string;
+  value: unknown;
+  category?: string | null;
+  type?: string | null;
+  content?: string | null;
+  metadata?: unknown;
+  createdAt: Date;
+};
+
+/**
+ * Predicate: match a `kloelMemory` row whose decoded `value.id` equals the
+ * caller-supplied taskId. Used by {@link CiaService.findHumanTask}.
+ */
+export function matchHumanTaskCandidate(
+  item: HumanTaskCandidate,
+  taskId: string,
+): boolean {
+  const value = readRecord(item.value);
+  return readText(value.id) === taskId;
+}
