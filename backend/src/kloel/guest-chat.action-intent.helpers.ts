@@ -445,7 +445,7 @@ export function detectActionIntent(
   return null;
 }
 
-export function extractProductName(msg: string): string {
+function extractProductName(msg: string): string {
   // Strip trailing question/exclamation marks that break lazy regex terminators
   const cleanMsg = msg.replace(/[?!]+\s*$/, '').trim();
   // Try "para o Produto X" / "para a Oferta X" pattern (requires article to avoid matching "para X" in descriptions)
@@ -478,7 +478,7 @@ export function extractProductName(msg: string): string {
     .trim();
 }
 
-export function extractProductArgs(msg: string): Record<string, unknown> {
+function extractProductArgs(msg: string): Record<string, unknown> {
   const args: Record<string, unknown> = {};
   // Priority 1: Explicit "nome é X" / "nome: X" / "chamado X" / "nome do produto: X"
   const nameExplicit = msg.match(/(?:nome(?:\s+do\s+produto)?|name|chama(?:do)?)\s*(?:[eé]|:)\s*["']?([A-Za-zÀ-ÿ0-9\s\-\.+]{2,60}?)(?:\s*(?:,|\.|R\$|pre[çc]o|categoria|formato|tipo|tags?|garantia|descri[cç]|pagamento|disponível|ativo|$))/i);
@@ -552,7 +552,7 @@ export function extractProductArgs(msg: string): Record<string, unknown> {
   return args;
 }
 
-export function extractPlanArgs(msg: string): Record<string, unknown> {
+function extractPlanArgs(msg: string): Record<string, unknown> {
   const args: Record<string, unknown> = {};
   // Product name: after "para o/a" — requires article (avoids matching "para X" in unrelated text)
   const prodMatch = msg.match(/para\s+(?:o\s+|a\s+)\s*(?:produto|oferta|plano|checkout|item)?\s*["']?([A-Za-zÀ-ÿ0-9\s\-\.+]{2,60}?)(?:\s*(?:,|\.|R\$|pre[çc]o|valor|\bcom\b|\bpor\b|\bpara\b|\burl\b|https?|\bcor\b|\bdescri[cç][aã]o\b|\bdescricao\b|$)|$)/i);
@@ -654,7 +654,7 @@ export function extractPlanArgs(msg: string): Record<string, unknown> {
   return args;
 }
 
-export function extractPaymentArgs(msg: string): Record<string, unknown> {
+function extractPaymentArgs(msg: string): Record<string, unknown> {
   const args: Record<string, unknown> = {};
   const name = extractProductName(msg);
   if (name) {
@@ -680,7 +680,7 @@ export function extractPaymentArgs(msg: string): Record<string, unknown> {
   return args;
 }
 
-export function extractCouponArgs(msg: string): Record<string, unknown> {
+function extractCouponArgs(msg: string): Record<string, unknown> {
   const args: Record<string, unknown> = {};
   const codeMatch = msg.match(/(?:cupom|desconto)\s+([A-Z0-9_]{3,20})/i);
   if (codeMatch?.[1]) {
@@ -710,7 +710,7 @@ export function extractCouponArgs(msg: string): Record<string, unknown> {
   return args;
 }
 
-export function extractUrlArgs(msg: string): Record<string, unknown> {
+function extractUrlArgs(msg: string): Record<string, unknown> {
   const args: Record<string, unknown> = {};
   args.productName = extractProductName(msg);
   const labelMatch = msg.match(/(?:descri[cç][aã]o|label|nome)\s*:?\s*['"]?([A-Za-zÀ-ÿ0-9\s\-.]{2,40}?)(?:\s*(?:,|\.|url|https?|$))/i);
@@ -723,7 +723,7 @@ export function extractUrlArgs(msg: string): Record<string, unknown> {
   return args;
 }
 
-export function extractAffiliateArgs(msg: string): Record<string, unknown> {
+function extractAffiliateArgs(msg: string): Record<string, unknown> {
   const args: Record<string, unknown> = {};
   if (/\b(participar|ativar|sim|entrar)\b.*\b(programa|afiliado)\b/i.test(msg)) args.participate = true;
   if (/\b(vis[ií]vel|mostrar|p[uú]blico)\b.*\b(loja|vitrine)\b/i.test(msg)) args.visibleInStore = true;
@@ -743,7 +743,7 @@ export function extractAffiliateArgs(msg: string): Record<string, unknown> {
   return args;
 }
 
-export function extractFiscalArgs(msg: string): Record<string, unknown> {
+function extractFiscalArgs(msg: string): Record<string, unknown> {
   const args: Record<string, unknown> = {};
   const cnpj = msg.match(/(\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2})/);
   if (cnpj?.[1]) args.cnpj = cnpj[1];

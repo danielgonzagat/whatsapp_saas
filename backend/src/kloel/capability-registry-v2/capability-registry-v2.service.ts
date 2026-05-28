@@ -7,7 +7,7 @@ import {
   type ConfirmationRequest,
   type CapabilityContext,
 } from './capability-registry-v2.types';
-import { CAPABILITY_DEFINITIONS, CAPABILITY_MAP } from './capability-registry-v2.const';
+import { CAPABILITIES_BY_TIER, CAPABILITY_DEFINITIONS, CAPABILITY_MAP } from './capability-registry-v2.const';
 
 /**
  * Capability Registry v2 — Single source of truth for all Kloel capabilities.
@@ -77,17 +77,13 @@ export class CapabilityRegistryV2Service {
   }
 
   groupedByTier(): Record<number, CapabilityDefinition[]> {
-    const groups: Record<number, CapabilityDefinition[]> = {};
-    for (const cap of CAPABILITY_DEFINITIONS) {
-      const entry = groups[cap.tier];
-      if (entry) {
-        entry.push(cap);
-      } else {
-        groups[cap.tier] = [cap];
-      }
+      return Object.fromEntries(
+        Object.entries(CAPABILITIES_BY_TIER).map(([tier, capabilities]) => [
+          Number(tier),
+          [...capabilities],
+        ]),
+      );
     }
-    return groups;
-  }
 
   listGaps(permissions: string[], surface: string): CapabilityDefinition[] {
     const available = this.filterFor({ surface, permissions });

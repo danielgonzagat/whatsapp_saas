@@ -183,7 +183,6 @@ import {
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { LineageModule } from './lineage/lineage.module';
 import { RiskClassModule } from './risk-class/risk-class.module';
-import { InboxModule } from '../inbox/inbox.module';
 import { AccountService } from './account.service';
 import { CheckoutService } from './checkout.service';
 import { CouponService } from './coupon.service';
@@ -213,7 +212,6 @@ import { PlansModule } from '../plans/plans.module';
     MetricsModule,
     KloelAudioModule,
     KloelRulesModule,
-    forwardRef(() => InboxModule),
     ContactsModule,
     LineageModule,
     DriftModule,

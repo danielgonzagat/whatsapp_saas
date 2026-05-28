@@ -2,7 +2,7 @@ import type { StructuredLogger } from '../logging/structured-logger';
 import type { AbiBuilderService } from './abi/abi-builder.service';
 import type { AbiSnapshotCacheService } from './abi/abi-snapshot-cache.service';
 import { validateAbiPayload } from './abi/abi-validator';
-import type { MindCapabilityExecutor } from './mind/coordination';
+import type { MindCapabilityExecutor } from './mind/coordination/mind-capability-executor.service';
 interface BuildAgentCognitiveStateParams {
   workspaceId: string;
   currentInput: {

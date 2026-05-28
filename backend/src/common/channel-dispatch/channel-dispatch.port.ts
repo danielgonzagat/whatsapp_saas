@@ -37,7 +37,7 @@ export interface WhatsAppSendInput {
   forceDirect?: boolean;
 }
 
-export interface InstagramSendInput {
+interface InstagramSendInput {
   channelKind: ChannelKind.INSTAGRAM;
   workspaceId: string;
   igAccountId: string;
@@ -46,7 +46,7 @@ export interface InstagramSendInput {
   accessToken: string;
 }
 
-export interface MessengerSendInput {
+interface MessengerSendInput {
   channelKind: ChannelKind.MESSENGER;
   workspaceId: string;
   pageId: string;
@@ -57,7 +57,7 @@ export interface MessengerSendInput {
   mediaType?: string;
 }
 
-export interface FacebookSendInput {
+interface FacebookSendInput {
   channelKind: ChannelKind.FACEBOOK;
   workspaceId: string;
   pageId: string;
@@ -66,7 +66,7 @@ export interface FacebookSendInput {
   pageAccessToken: string;
 }
 
-export interface EmailSendInput {
+interface EmailSendInput {
   channelKind: ChannelKind.EMAIL;
   workspaceId: string;
   toEmail: string;
@@ -75,7 +75,7 @@ export interface EmailSendInput {
   proactive?: boolean;
 }
 
-export interface InternalPartnershipSendInput {
+interface InternalPartnershipSendInput {
   channelKind: ChannelKind.INTERNAL_PARTNERSHIP;
   partnerId: string;
   content: string;
@@ -83,7 +83,7 @@ export interface InternalPartnershipSendInput {
   senderName: string;
 }
 
-export interface InternalAdminSendInput {
+interface InternalAdminSendInput {
   channelKind: ChannelKind.INTERNAL_ADMIN;
   adminUserId: string;
   adminRole: string;
@@ -139,7 +139,7 @@ export interface ChannelDispatchPort {
 
 // ─── Channel capability shape ──────────────────────────────
 
-export interface ChannelCapability {
+interface ChannelCapability {
   channel: ChannelKind;
   sendAvailable: boolean;
   sendBlockedReason: string | null;
