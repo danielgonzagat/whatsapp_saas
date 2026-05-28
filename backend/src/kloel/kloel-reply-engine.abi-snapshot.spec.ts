@@ -17,7 +17,7 @@ jest.mock('../logging/structured-logger', () => {
     ...actual,
     StructuredLogger: class extends actual.StructuredLogger {
       static override from(context: string | { name?: string }) {
-        const inst = new this(typeof context === 'string' ? context : context.name ?? 'unknown');
+        const inst = new this(typeof context === 'string' ? context : (context.name ?? 'unknown'));
         return inst;
       }
       override warn(a: string | Record<string, unknown>, b?: unknown): void {
@@ -30,7 +30,8 @@ jest.mock('../logging/structured-logger', () => {
       }
     },
   };
-});jest.mock('openai', () => ({
+});
+jest.mock('openai', () => ({
   default: jest.fn().mockImplementation(() => ({
     chat: { completions: { create: jest.fn() } },
   })),
@@ -54,7 +55,8 @@ jest.mock('./kloel-reply-engine.helpers', () => ({
   KLOEL_STREAM_ABORT_REASON_CLIENT_DISCONNECTED: 'client_disconnected',
   buildDynamicRuntimeContextHelper: jest.fn().mockResolvedValue('Dynamic context'),
   buildAssistantReplyImpl: jest.fn().mockResolvedValue('Assistant reply'),
-}));describe('KloelReplyEngineService ABI snapshot cache (PI-k5)', () => {
+}));
+describe('KloelReplyEngineService ABI snapshot cache (PI-k5)', () => {
   let service: KloelReplyEngineService;
 
   const validAbi = {
@@ -111,16 +113,31 @@ jest.mock('./kloel-reply-engine.helpers', () => ({
   };
 
   function makeKloelMemoryRow(content: string, updatedAt: Date) {
-    return { id: 'mem-1', workspaceId: 'ws-1', key: 'abi_snapshot_cache', category: 'abi_snapshot', content, value: {}, updatedAt };
+    return {
+      id: 'mem-1',
+      workspaceId: 'ws-1',
+      key: 'abi_snapshot_cache',
+      category: 'abi_snapshot',
+      content,
+      value: {},
+      updatedAt,
+    };
   }
 
-  function extractCognitiveState(messages: Array<{ role: string; content: unknown }>): Record<string, unknown> {
+  function extractCognitiveState(
+    messages: Array<{ role: string; content: unknown }>,
+  ): Record<string, unknown> {
     const last = messages[messages.length - 1];
     const str = typeof last?.content === 'string' ? last.content : '{}';
     const payload = JSON.parse(str) as Record<string, unknown>;
     return payload['cognitiveState'] as Record<string, unknown>;
-  }  describe('fresh cache hit', () => {
-    const cachedContent = JSON.stringify({ abiVersion: '1.1.0', fromCache: true, mindSignals: { status: 'cached' } });
+  }
+  describe('fresh cache hit', () => {
+    const cachedContent = JSON.stringify({
+      abiVersion: '1.1.0',
+      fromCache: true,
+      mindSignals: { status: 'cached' },
+    });
     const recentDate = new Date(Date.now() - 30_000); // 30 seconds ago
 
     let abiBuilder: { build: jest.Mock };
@@ -137,11 +154,44 @@ jest.mock('./kloel-reply-engine.helpers', () => ({
       const module: TestingModule = await Test.createTestingModule({
         providers: [
           KloelReplyEngineService,
-          { provide: PrismaService, useValue: { kloelMemory, workspace: { findUnique: jest.fn().mockResolvedValue({ name: 'Test Co' }) } } },
-          { provide: PlanLimitsService, useValue: { ensureTokenBudget: jest.fn().mockResolvedValue(undefined), trackAiUsage: jest.fn().mockResolvedValue(undefined) } },
-          { provide: KloelThreadService, useValue: { resolveThread: jest.fn().mockResolvedValue({ id: 't1', title: 'T' }), getThreadConversationState: jest.fn().mockResolvedValue({ recentMessages: [], totalMessages: 0 }) } },
-          { provide: KloelWorkspaceContextService, useValue: { getWorkspaceContext: jest.fn().mockResolvedValue('ctx'), contextFormatter: { sanitizeUserNameForAssistant: jest.fn((n: string | null) => String(n || '').split(' ')[0] || 'U') } } },
-          { provide: UnifiedAgentService, useValue: { processIncomingMessage: jest.fn().mockResolvedValue({ reply: 'ok' }) } },
+          {
+            provide: PrismaService,
+            useValue: {
+              kloelMemory,
+              workspace: { findUnique: jest.fn().mockResolvedValue({ name: 'Test Co' }) },
+            },
+          },
+          {
+            provide: PlanLimitsService,
+            useValue: {
+              ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
+              trackAiUsage: jest.fn().mockResolvedValue(undefined),
+            },
+          },
+          {
+            provide: KloelThreadService,
+            useValue: {
+              resolveThread: jest.fn().mockResolvedValue({ id: 't1', title: 'T' }),
+              getThreadConversationState: jest
+                .fn()
+                .mockResolvedValue({ recentMessages: [], totalMessages: 0 }),
+            },
+          },
+          {
+            provide: KloelWorkspaceContextService,
+            useValue: {
+              getWorkspaceContext: jest.fn().mockResolvedValue('ctx'),
+              contextFormatter: {
+                sanitizeUserNameForAssistant: jest.fn(
+                  (n: string | null) => String(n || '').split(' ')[0] || 'U',
+                ),
+              },
+            },
+          },
+          {
+            provide: UnifiedAgentService,
+            useValue: { processIncomingMessage: jest.fn().mockResolvedValue({ reply: 'ok' }) },
+          },
           { provide: AbiBuilderService, useValue: abiBuilder },
         ],
       }).compile();
@@ -167,7 +217,8 @@ jest.mock('./kloel-reply-engine.helpers', () => ({
         where: { workspaceId_key: { workspaceId: 'ws-1', key: 'abi_snapshot_cache' } },
       });
     });
-  });  describe('stale cache miss', () => {
+  });
+  describe('stale cache miss', () => {
     const staleContent = JSON.stringify({ abiVersion: '0.9.0', stale: true });
     const staleDate = new Date(Date.now() - 90_000); // 90 seconds ago — beyond 60s TTL
 
@@ -185,11 +236,44 @@ jest.mock('./kloel-reply-engine.helpers', () => ({
       const module: TestingModule = await Test.createTestingModule({
         providers: [
           KloelReplyEngineService,
-          { provide: PrismaService, useValue: { kloelMemory, workspace: { findUnique: jest.fn().mockResolvedValue({ name: 'Test Co' }) } } },
-          { provide: PlanLimitsService, useValue: { ensureTokenBudget: jest.fn().mockResolvedValue(undefined), trackAiUsage: jest.fn().mockResolvedValue(undefined) } },
-          { provide: KloelThreadService, useValue: { resolveThread: jest.fn().mockResolvedValue({ id: 't1', title: 'T' }), getThreadConversationState: jest.fn().mockResolvedValue({ recentMessages: [], totalMessages: 0 }) } },
-          { provide: KloelWorkspaceContextService, useValue: { getWorkspaceContext: jest.fn().mockResolvedValue('ctx'), contextFormatter: { sanitizeUserNameForAssistant: jest.fn((n: string | null) => String(n || '').split(' ')[0] || 'U') } } },
-          { provide: UnifiedAgentService, useValue: { processIncomingMessage: jest.fn().mockResolvedValue({ reply: 'ok' }) } },
+          {
+            provide: PrismaService,
+            useValue: {
+              kloelMemory,
+              workspace: { findUnique: jest.fn().mockResolvedValue({ name: 'Test Co' }) },
+            },
+          },
+          {
+            provide: PlanLimitsService,
+            useValue: {
+              ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
+              trackAiUsage: jest.fn().mockResolvedValue(undefined),
+            },
+          },
+          {
+            provide: KloelThreadService,
+            useValue: {
+              resolveThread: jest.fn().mockResolvedValue({ id: 't1', title: 'T' }),
+              getThreadConversationState: jest
+                .fn()
+                .mockResolvedValue({ recentMessages: [], totalMessages: 0 }),
+            },
+          },
+          {
+            provide: KloelWorkspaceContextService,
+            useValue: {
+              getWorkspaceContext: jest.fn().mockResolvedValue('ctx'),
+              contextFormatter: {
+                sanitizeUserNameForAssistant: jest.fn(
+                  (n: string | null) => String(n || '').split(' ')[0] || 'U',
+                ),
+              },
+            },
+          },
+          {
+            provide: UnifiedAgentService,
+            useValue: { processIncomingMessage: jest.fn().mockResolvedValue({ reply: 'ok' }) },
+          },
           { provide: AbiBuilderService, useValue: abiBuilder },
         ],
       }).compile();
@@ -213,7 +297,8 @@ jest.mock('./kloel-reply-engine.helpers', () => ({
       expect(upsertArgs.update.category).toBe('abi_snapshot');
       expect(upsertArgs.create.category).toBe('abi_snapshot');
     });
-  });  describe('not found', () => {
+  });
+  describe('not found', () => {
     let abiBuilder: { build: jest.Mock };
     let kloelMemory: { findUnique: jest.Mock; upsert: jest.Mock };
 
@@ -228,11 +313,44 @@ jest.mock('./kloel-reply-engine.helpers', () => ({
       const module: TestingModule = await Test.createTestingModule({
         providers: [
           KloelReplyEngineService,
-          { provide: PrismaService, useValue: { kloelMemory, workspace: { findUnique: jest.fn().mockResolvedValue({ name: 'Test Co' }) } } },
-          { provide: PlanLimitsService, useValue: { ensureTokenBudget: jest.fn().mockResolvedValue(undefined), trackAiUsage: jest.fn().mockResolvedValue(undefined) } },
-          { provide: KloelThreadService, useValue: { resolveThread: jest.fn().mockResolvedValue({ id: 't1', title: 'T' }), getThreadConversationState: jest.fn().mockResolvedValue({ recentMessages: [], totalMessages: 0 }) } },
-          { provide: KloelWorkspaceContextService, useValue: { getWorkspaceContext: jest.fn().mockResolvedValue('ctx'), contextFormatter: { sanitizeUserNameForAssistant: jest.fn((n: string | null) => String(n || '').split(' ')[0] || 'U') } } },
-          { provide: UnifiedAgentService, useValue: { processIncomingMessage: jest.fn().mockResolvedValue({ reply: 'ok' }) } },
+          {
+            provide: PrismaService,
+            useValue: {
+              kloelMemory,
+              workspace: { findUnique: jest.fn().mockResolvedValue({ name: 'Test Co' }) },
+            },
+          },
+          {
+            provide: PlanLimitsService,
+            useValue: {
+              ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
+              trackAiUsage: jest.fn().mockResolvedValue(undefined),
+            },
+          },
+          {
+            provide: KloelThreadService,
+            useValue: {
+              resolveThread: jest.fn().mockResolvedValue({ id: 't1', title: 'T' }),
+              getThreadConversationState: jest
+                .fn()
+                .mockResolvedValue({ recentMessages: [], totalMessages: 0 }),
+            },
+          },
+          {
+            provide: KloelWorkspaceContextService,
+            useValue: {
+              getWorkspaceContext: jest.fn().mockResolvedValue('ctx'),
+              contextFormatter: {
+                sanitizeUserNameForAssistant: jest.fn(
+                  (n: string | null) => String(n || '').split(' ')[0] || 'U',
+                ),
+              },
+            },
+          },
+          {
+            provide: UnifiedAgentService,
+            useValue: { processIncomingMessage: jest.fn().mockResolvedValue({ reply: 'ok' }) },
+          },
           { provide: AbiBuilderService, useValue: abiBuilder },
         ],
       }).compile();
@@ -251,7 +369,8 @@ jest.mock('./kloel-reply-engine.helpers', () => ({
       expect(upsertArgs.where.workspaceId_key.key).toBe('abi_snapshot_cache');
       expect(upsertArgs.create.workspaceId).toBe('ws-1');
     });
-  });  describe('db-error on read', () => {
+  });
+  describe('db-error on read', () => {
     let abiBuilder: { build: jest.Mock };
     let kloelMemory: { findUnique: jest.Mock; upsert: jest.Mock };
 
@@ -266,11 +385,44 @@ jest.mock('./kloel-reply-engine.helpers', () => ({
       const module: TestingModule = await Test.createTestingModule({
         providers: [
           KloelReplyEngineService,
-          { provide: PrismaService, useValue: { kloelMemory, workspace: { findUnique: jest.fn().mockResolvedValue({ name: 'Test Co' }) } } },
-          { provide: PlanLimitsService, useValue: { ensureTokenBudget: jest.fn().mockResolvedValue(undefined), trackAiUsage: jest.fn().mockResolvedValue(undefined) } },
-          { provide: KloelThreadService, useValue: { resolveThread: jest.fn().mockResolvedValue({ id: 't1', title: 'T' }), getThreadConversationState: jest.fn().mockResolvedValue({ recentMessages: [], totalMessages: 0 }) } },
-          { provide: KloelWorkspaceContextService, useValue: { getWorkspaceContext: jest.fn().mockResolvedValue('ctx'), contextFormatter: { sanitizeUserNameForAssistant: jest.fn((n: string | null) => String(n || '').split(' ')[0] || 'U') } } },
-          { provide: UnifiedAgentService, useValue: { processIncomingMessage: jest.fn().mockResolvedValue({ reply: 'ok' }) } },
+          {
+            provide: PrismaService,
+            useValue: {
+              kloelMemory,
+              workspace: { findUnique: jest.fn().mockResolvedValue({ name: 'Test Co' }) },
+            },
+          },
+          {
+            provide: PlanLimitsService,
+            useValue: {
+              ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
+              trackAiUsage: jest.fn().mockResolvedValue(undefined),
+            },
+          },
+          {
+            provide: KloelThreadService,
+            useValue: {
+              resolveThread: jest.fn().mockResolvedValue({ id: 't1', title: 'T' }),
+              getThreadConversationState: jest
+                .fn()
+                .mockResolvedValue({ recentMessages: [], totalMessages: 0 }),
+            },
+          },
+          {
+            provide: KloelWorkspaceContextService,
+            useValue: {
+              getWorkspaceContext: jest.fn().mockResolvedValue('ctx'),
+              contextFormatter: {
+                sanitizeUserNameForAssistant: jest.fn(
+                  (n: string | null) => String(n || '').split(' ')[0] || 'U',
+                ),
+              },
+            },
+          },
+          {
+            provide: UnifiedAgentService,
+            useValue: { processIncomingMessage: jest.fn().mockResolvedValue({ reply: 'ok' }) },
+          },
           { provide: AbiBuilderService, useValue: abiBuilder },
         ],
       }).compile();
@@ -286,11 +438,14 @@ jest.mock('./kloel-reply-engine.helpers', () => ({
       expect(cs['abiVersion']).toBe('1.1.0');
 
       // Log emitted
-      const cacheSkips = mockWarnCalls.filter(([msg]) => msg === 'kloel_abi_snapshot_cache_skipped');
+      const cacheSkips = mockWarnCalls.filter(
+        ([msg]) => msg === 'kloel_abi_snapshot_cache_skipped',
+      );
       expect(cacheSkips).toHaveLength(1);
       expect(cacheSkips[0][1]).toMatchObject({ reason: 'connection refused' });
     });
-  });  describe('db-error on write', () => {
+  });
+  describe('db-error on write', () => {
     let abiBuilder: { build: jest.Mock };
     let kloelMemory: { findUnique: jest.Mock; upsert: jest.Mock };
 
@@ -305,11 +460,44 @@ jest.mock('./kloel-reply-engine.helpers', () => ({
       const module: TestingModule = await Test.createTestingModule({
         providers: [
           KloelReplyEngineService,
-          { provide: PrismaService, useValue: { kloelMemory, workspace: { findUnique: jest.fn().mockResolvedValue({ name: 'Test Co' }) } } },
-          { provide: PlanLimitsService, useValue: { ensureTokenBudget: jest.fn().mockResolvedValue(undefined), trackAiUsage: jest.fn().mockResolvedValue(undefined) } },
-          { provide: KloelThreadService, useValue: { resolveThread: jest.fn().mockResolvedValue({ id: 't1', title: 'T' }), getThreadConversationState: jest.fn().mockResolvedValue({ recentMessages: [], totalMessages: 0 }) } },
-          { provide: KloelWorkspaceContextService, useValue: { getWorkspaceContext: jest.fn().mockResolvedValue('ctx'), contextFormatter: { sanitizeUserNameForAssistant: jest.fn((n: string | null) => String(n || '').split(' ')[0] || 'U') } } },
-          { provide: UnifiedAgentService, useValue: { processIncomingMessage: jest.fn().mockResolvedValue({ reply: 'ok' }) } },
+          {
+            provide: PrismaService,
+            useValue: {
+              kloelMemory,
+              workspace: { findUnique: jest.fn().mockResolvedValue({ name: 'Test Co' }) },
+            },
+          },
+          {
+            provide: PlanLimitsService,
+            useValue: {
+              ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
+              trackAiUsage: jest.fn().mockResolvedValue(undefined),
+            },
+          },
+          {
+            provide: KloelThreadService,
+            useValue: {
+              resolveThread: jest.fn().mockResolvedValue({ id: 't1', title: 'T' }),
+              getThreadConversationState: jest
+                .fn()
+                .mockResolvedValue({ recentMessages: [], totalMessages: 0 }),
+            },
+          },
+          {
+            provide: KloelWorkspaceContextService,
+            useValue: {
+              getWorkspaceContext: jest.fn().mockResolvedValue('ctx'),
+              contextFormatter: {
+                sanitizeUserNameForAssistant: jest.fn(
+                  (n: string | null) => String(n || '').split(' ')[0] || 'U',
+                ),
+              },
+            },
+          },
+          {
+            provide: UnifiedAgentService,
+            useValue: { processIncomingMessage: jest.fn().mockResolvedValue({ reply: 'ok' }) },
+          },
           { provide: AbiBuilderService, useValue: abiBuilder },
         ],
       }).compile();
@@ -325,18 +513,23 @@ jest.mock('./kloel-reply-engine.helpers', () => ({
       expect(cs['abiVersion']).toBe('1.1.0');
 
       // Persistence errored but log was emitted
-      const cacheSkips = mockWarnCalls.filter(([msg]) => msg === 'kloel_abi_snapshot_cache_skipped');
+      const cacheSkips = mockWarnCalls.filter(
+        ([msg]) => msg === 'kloel_abi_snapshot_cache_skipped',
+      );
       expect(cacheSkips).toHaveLength(1);
       expect(cacheSkips[0][1]).toMatchObject({ reason: 'disk full' });
     });
-  });  describe('oversized snapshot', () => {
+  });
+  describe('oversized snapshot', () => {
     let abiBuilder: { build: jest.Mock };
     let kloelMemory: { findUnique: jest.Mock; upsert: jest.Mock };
 
     beforeEach(async () => {
       mockWarnCalls.length = 0;
       // Build an ABI with a very large property to exceed 16KB
-      const largeArray = new Array(2000).fill('padding-data-to-exceed-sixteen-kilobytes-xxxxxxxxxxxxxxxxxxxxx');
+      const largeArray = new Array(2000).fill(
+        'padding-data-to-exceed-sixteen-kilobytes-xxxxxxxxxxxxxxxxxxxxx',
+      );
       const largeAbi = {
         ...validAbi,
         abi: { ...validAbi.abi, largeField: largeArray },
@@ -350,11 +543,44 @@ jest.mock('./kloel-reply-engine.helpers', () => ({
       const module: TestingModule = await Test.createTestingModule({
         providers: [
           KloelReplyEngineService,
-          { provide: PrismaService, useValue: { kloelMemory, workspace: { findUnique: jest.fn().mockResolvedValue({ name: 'Test Co' }) } } },
-          { provide: PlanLimitsService, useValue: { ensureTokenBudget: jest.fn().mockResolvedValue(undefined), trackAiUsage: jest.fn().mockResolvedValue(undefined) } },
-          { provide: KloelThreadService, useValue: { resolveThread: jest.fn().mockResolvedValue({ id: 't1', title: 'T' }), getThreadConversationState: jest.fn().mockResolvedValue({ recentMessages: [], totalMessages: 0 }) } },
-          { provide: KloelWorkspaceContextService, useValue: { getWorkspaceContext: jest.fn().mockResolvedValue('ctx'), contextFormatter: { sanitizeUserNameForAssistant: jest.fn((n: string | null) => String(n || '').split(' ')[0] || 'U') } } },
-          { provide: UnifiedAgentService, useValue: { processIncomingMessage: jest.fn().mockResolvedValue({ reply: 'ok' }) } },
+          {
+            provide: PrismaService,
+            useValue: {
+              kloelMemory,
+              workspace: { findUnique: jest.fn().mockResolvedValue({ name: 'Test Co' }) },
+            },
+          },
+          {
+            provide: PlanLimitsService,
+            useValue: {
+              ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
+              trackAiUsage: jest.fn().mockResolvedValue(undefined),
+            },
+          },
+          {
+            provide: KloelThreadService,
+            useValue: {
+              resolveThread: jest.fn().mockResolvedValue({ id: 't1', title: 'T' }),
+              getThreadConversationState: jest
+                .fn()
+                .mockResolvedValue({ recentMessages: [], totalMessages: 0 }),
+            },
+          },
+          {
+            provide: KloelWorkspaceContextService,
+            useValue: {
+              getWorkspaceContext: jest.fn().mockResolvedValue('ctx'),
+              contextFormatter: {
+                sanitizeUserNameForAssistant: jest.fn(
+                  (n: string | null) => String(n || '').split(' ')[0] || 'U',
+                ),
+              },
+            },
+          },
+          {
+            provide: UnifiedAgentService,
+            useValue: { processIncomingMessage: jest.fn().mockResolvedValue({ reply: 'ok' }) },
+          },
           { provide: AbiBuilderService, useValue: abiBuilder },
         ],
       }).compile();
@@ -379,7 +605,8 @@ jest.mock('./kloel-reply-engine.helpers', () => ({
       expect(typeof oversizedLogs[0][1].size).toBe('number');
       expect(oversizedLogs[0][1].size as number).toBeGreaterThan(16384);
     });
-  });  describe('no workspaceId', () => {
+  });
+  describe('no workspaceId', () => {
     let abiBuilder: { build: jest.Mock };
     let kloelMemory: { findUnique: jest.Mock; upsert: jest.Mock };
 
@@ -394,11 +621,44 @@ jest.mock('./kloel-reply-engine.helpers', () => ({
       const module: TestingModule = await Test.createTestingModule({
         providers: [
           KloelReplyEngineService,
-          { provide: PrismaService, useValue: { kloelMemory, workspace: { findUnique: jest.fn().mockResolvedValue({ name: 'Test Co' }) } } },
-          { provide: PlanLimitsService, useValue: { ensureTokenBudget: jest.fn().mockResolvedValue(undefined), trackAiUsage: jest.fn().mockResolvedValue(undefined) } },
-          { provide: KloelThreadService, useValue: { resolveThread: jest.fn().mockResolvedValue({ id: 't1', title: 'T' }), getThreadConversationState: jest.fn().mockResolvedValue({ recentMessages: [], totalMessages: 0 }) } },
-          { provide: KloelWorkspaceContextService, useValue: { getWorkspaceContext: jest.fn().mockResolvedValue('ctx'), contextFormatter: { sanitizeUserNameForAssistant: jest.fn((n: string | null) => String(n || '').split(' ')[0] || 'U') } } },
-          { provide: UnifiedAgentService, useValue: { processIncomingMessage: jest.fn().mockResolvedValue({ reply: 'ok' }) } },
+          {
+            provide: PrismaService,
+            useValue: {
+              kloelMemory,
+              workspace: { findUnique: jest.fn().mockResolvedValue({ name: 'Test Co' }) },
+            },
+          },
+          {
+            provide: PlanLimitsService,
+            useValue: {
+              ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
+              trackAiUsage: jest.fn().mockResolvedValue(undefined),
+            },
+          },
+          {
+            provide: KloelThreadService,
+            useValue: {
+              resolveThread: jest.fn().mockResolvedValue({ id: 't1', title: 'T' }),
+              getThreadConversationState: jest
+                .fn()
+                .mockResolvedValue({ recentMessages: [], totalMessages: 0 }),
+            },
+          },
+          {
+            provide: KloelWorkspaceContextService,
+            useValue: {
+              getWorkspaceContext: jest.fn().mockResolvedValue('ctx'),
+              contextFormatter: {
+                sanitizeUserNameForAssistant: jest.fn(
+                  (n: string | null) => String(n || '').split(' ')[0] || 'U',
+                ),
+              },
+            },
+          },
+          {
+            provide: UnifiedAgentService,
+            useValue: { processIncomingMessage: jest.fn().mockResolvedValue({ reply: 'ok' }) },
+          },
           { provide: AbiBuilderService, useValue: abiBuilder },
         ],
       }).compile();

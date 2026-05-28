@@ -270,7 +270,10 @@ describe('ConversationalOnboardingService intent-router log telemetry', () => {
     it('injects chat advisory into LLM system messages', async () => {
       await service.chat('ws-1', 'Olá, quero configurar');
 
-      const messages = chatCompletionWithRetryMock.mock.calls[0]?.[1]?.messages as Array<{ role: string; content: string }> | undefined;
+      const calls = chatCompletionWithRetryMock.mock.calls as Array<
+        [unknown, { messages?: Array<{ role: string; content: string }> }]
+      >;
+      const messages = calls[0]?.[1]?.messages;
       expect(messages).toBeDefined();
       const advisory = messages!.find(
         (m) => m.role === 'system' && m.content.includes('Sinal interno'),
@@ -320,7 +323,10 @@ describe('ConversationalOnboardingService intent-router log telemetry', () => {
     it('injects intent advisory into LLM system messages', async () => {
       await service.chat('ws-1', 'Buscar Maria');
 
-      const messages = chatCompletionWithRetryMock.mock.calls[0]?.[1]?.messages as Array<{ role: string; content: string }> | undefined;
+      const calls = chatCompletionWithRetryMock.mock.calls as Array<
+        [unknown, { messages?: Array<{ role: string; content: string }> }]
+      >;
+      const messages = calls[0]?.[1]?.messages;
       expect(messages).toBeDefined();
       const advisory = messages!.find(
         (m) => m.role === 'system' && m.content.includes('Sinal interno'),
@@ -374,7 +380,10 @@ describe('ConversationalOnboardingService intent-router log telemetry', () => {
     it('does NOT inject advisory into LLM messages', async () => {
       await service.chat('ws-1', 'Olá');
 
-      const messages = chatCompletionWithRetryMock.mock.calls[0]?.[1]?.messages as Array<{ role: string; content: string }> | undefined;
+      const calls = chatCompletionWithRetryMock.mock.calls as Array<
+        [unknown, { messages?: Array<{ role: string; content: string }> }]
+      >;
+      const messages = calls[0]?.[1]?.messages;
       expect(messages).toBeDefined();
       const advisory = messages!.find(
         (m) => m.role === 'system' && m.content.includes('Sinal interno'),
