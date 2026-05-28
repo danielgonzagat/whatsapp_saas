@@ -55,6 +55,10 @@ import {
   dispatchWalletSalesTool,
   isWalletSalesTool,
 } from './kloel-tool-dispatcher.wallet-sales.handlers';
+import {
+  dispatchBizConfigTool,
+  isBizConfigTool,
+} from './kloel-tool-dispatcher.biz-config.handlers';
 
 import type { UnknownRecord } from '../common/types';
 
@@ -263,6 +267,17 @@ export class KloelToolDispatcherService {
           return walletSalesResult;
         }
       }
+      if (isBizConfigTool(toolName)) {
+        const bizConfigResult = await dispatchBizConfigTool(
+          { bizConfigToolsService: this.bizConfigToolsService },
+          workspaceId,
+          toolName,
+          args,
+        );
+        if (bizConfigResult !== null) {
+          return bizConfigResult;
+        }
+      }
       switch (toolName) {
         case 'save_product':
         case 'create_product': {
@@ -451,13 +466,6 @@ export class KloelToolDispatcherService {
             success: true,
             message: args.action === 'cancel' ? 'Assinatura cancelada.' : 'Assinatura pausada.',
           };
-        case 'update_affiliate_config':
-          return await this.bizConfigToolsService.toolUpdateAffiliateConfig(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'list_affiliates':
-          return await this.bizConfigToolsService.toolListAffiliates(workspaceId);
         case 'get_affiliate_config':
           return await this.chatToolsService.toolGetAffiliateConfig(workspaceId);
         case 'upload_plan_image':
@@ -471,21 +479,10 @@ export class KloelToolDispatcherService {
         }
         // ── products.upload_image handled via isDottedAliasTool fast-path above ──
         // ── update_personal_data + account.* aliases handled via isAccountTool fast-path above ──
-        case 'update_fiscal_data':
-          return await this.bizConfigToolsService.toolSaveBusinessInfo(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'upload_document':
-          return await this.bizConfigToolsService.toolUploadDocument(workspaceId, asToolArgs(args));
         // ── CONFIGURE_* family handled via isConfigureTool fast-path above ──
-        case 'get_social_channels':
-          return await this.bizConfigToolsService.toolGetSocialChannels(workspaceId);
         case 'browse_marketplace':
           return await this.chatToolsService.toolBrowseMarketplace(workspaceId, asToolArgs(args));
         // ── get_nps / get_churn / list_refunds / request_anticipation handled via isWalletSalesTool fast-path above ──
-        case 'connect_channel':
-          return await this.bizConfigToolsService.toolConnectChannel(workspaceId, asToolArgs(args));
         case 'send_channel_message':
           return await this.chatToolsService.toolSendChannelMessage(workspaceId, asToolArgs(args));
         case 'create_broadcast': {
@@ -518,39 +515,13 @@ export class KloelToolDispatcherService {
             startedAt,
           );
         }
-        case 'update_workspace_settings':
-          return await this.bizConfigToolsService.toolSaveBusinessInfo(
-            workspaceId,
-            asToolArgs(args),
-          );
         // ── agent_* family handled via isAgentTool fast-path above ──
         case 'create_order':
           return await this.chatToolsService.toolCreateOrder(workspaceId, asToolArgs(args));
         case 'create_payment_link':
           return await this.dispatchCreatePaymentLink(workspaceId, args, userId);
-        case 'list_leads':
-          return await this.bizConfigToolsService.toolListLeads(workspaceId, asToolArgs(args));
-        case 'get_lead_details':
-          return await this.bizConfigToolsService.toolGetLeadDetails(workspaceId, asToolArgs(args));
-        case 'save_business_info':
-          return await this.bizConfigToolsService.toolSaveBusinessInfo(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'set_business_hours':
-          return await this.bizConfigToolsService.toolSetBusinessHours(
-            workspaceId,
-            asToolArgs(args),
-          );
         case 'create_campaign':
           return await this.requestHighRiskApproval(workspaceId, toolName, args, userId);
-        case 'update_billing_info':
-          return await this.bizConfigToolsService.toolUpdateBillingInfo(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'get_billing_status':
-          return await this.bizConfigToolsService.toolGetBillingStatus(workspaceId);
         case 'change_plan':
           return await this.requestHighRiskApproval(workspaceId, toolName, args, userId);
         // ── Deps + Coverage + Affected tests (Wave 7 PI-EE) handled via isDepsCoverageTool fast-path above ──
