@@ -15,6 +15,16 @@ import {
   hasAutonomyExecutionClient,
   isDeterministicPipeline,
 } from './unified-agent-actions-crm.helpers';
+import {
+  buildConnectingProviderSettings,
+  classifyLogEventError,
+  isWhatsAppAlreadyConnected,
+  WHATSAPP_ALREADY_CONNECTED_MESSAGE,
+  WHATSAPP_DEFAULT_PROVIDER,
+  WHATSAPP_MANUAL_CONNECT_HINT,
+  WHATSAPP_META_OAUTH_START_MESSAGE,
+  WHATSAPP_NEXT_STEP_AUTHORIZE,
+} from './unified-agent-actions-crm.connect-whatsapp.helpers';
 import { flowQueue } from '../queue/queue';
 import { WhatsAppProviderRegistry } from '../marketing/channels/whatsapp/providers/provider-registry';
 import type { ToolArgs } from './unified-agent.types';
@@ -446,14 +456,11 @@ export class UnifiedAgentActionsCrmService {
     } catch (err: unknown) {
       void this.opsAlert?.alertOnCriticalError(err, 'UnifiedAgentActionsCrmService.create');
       const msg = describeThrown(err);
-      const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
-      if (!isTestEnv) {
-        const code = (err as { code?: string } | null)?.code;
-        if (code === 'P2003') {
-          this.logger.debug(`Skipping autopilot event log due to FK (contactId=${contactId})`);
-        } else {
-          this.logger.warn(`Failed to log event: ${msg}`);
-        }
+      const severity = classifyLogEventError(err);
+      if (severity === 'debug') {
+        this.logger.debug(`Skipping autopilot event log due to FK (contactId=${contactId})`);
+      } else if (severity === 'warn') {
+        this.logger.warn(`Failed to log event: ${msg}`);
       }
     }
     return { success: true, event: eventName };
@@ -461,16 +468,16 @@ export class UnifiedAgentActionsCrmService {
 
   async actionConnectWhatsApp(workspaceId: string, _args: ToolArgs) {
     try {
-      const provider = 'meta-cloud';
+      const provider = WHATSAPP_DEFAULT_PROVIDER;
       const existing = await this.prisma.workspace.findUnique({
         where: { id: workspaceId },
         select: { providerSettings: true },
       });
       const current = (existing?.providerSettings ?? {}) as UnknownRecord;
-      if (current.whatsappProvider === provider && current.connectionStatus === 'connected') {
+      if (isWhatsAppAlreadyConnected(current, provider)) {
         return {
           success: true,
-          message: 'WhatsApp já está conectado.',
+          message: WHATSAPP_ALREADY_CONNECTED_MESSAGE,
           sessionId: workspaceId,
           provider,
           deduplicated: true,
@@ -487,12 +494,7 @@ export class UnifiedAgentActionsCrmService {
           await tx.workspace.update({
             where: { id: workspaceId },
             data: {
-              providerSettings: {
-                ...latest,
-                whatsappProvider: provider,
-                connectionStatus: 'connecting',
-                connectionInitiatedAt: new Date().toISOString(),
-              },
+              providerSettings: buildConnectingProviderSettings(latest, provider),
             },
           });
         },
@@ -502,11 +504,11 @@ export class UnifiedAgentActionsCrmService {
       this.logger.log(`[AGENT] Sessão WhatsApp criada para ${workspaceId}`);
       return {
         success: session.success,
-        message: session.message || 'Conexão oficial com a Meta iniciada.',
+        message: session.message || WHATSAPP_META_OAUTH_START_MESSAGE,
         sessionId: workspaceId,
         provider,
         authUrl: session.authUrl,
-        nextStep: 'Conclua a autorização oficial da Meta para ativar o canal.',
+        nextStep: WHATSAPP_NEXT_STEP_AUTHORIZE,
       };
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'UnifiedAgentActionsCrmService.async');
@@ -515,7 +517,7 @@ export class UnifiedAgentActionsCrmService {
       return {
         success: false,
         error: msg,
-        nextStep: 'Tente novamente ou acesse /whatsapp para conectar manualmente',
+        nextStep: WHATSAPP_MANUAL_CONNECT_HINT,
       };
     }
   }
