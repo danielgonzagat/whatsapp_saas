@@ -52,7 +52,7 @@ import { RouteClassGuard } from './common/throttler/route-class.guard';
 
 import { AdminModule } from './admin/admin.module';
 import { AffiliateModule } from './affiliate/affiliate.module';
-import { AiBrainModule } from './ai-brain/ai-brain.module';
+import { MindKnowledgeModule } from './kloel/mind/knowledge/knowledge.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { AnunciosModule } from './anuncios/anuncios.module';
 import { AudioModule } from './audio/audio.module';
@@ -269,7 +269,7 @@ function setRedisClientListenerBudget(client: Redis): void {
     AuditModule,
     AutopilotModule,
 
-    AiBrainModule,
+    MindKnowledgeModule,
     GrowthModule,
     CalendarModule, // 📅 Integração com calendários
     ChatModule, // 💬 Chat conversation persistence
