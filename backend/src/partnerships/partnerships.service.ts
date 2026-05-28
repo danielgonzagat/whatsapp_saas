@@ -1,4 +1,3 @@
-import { createHash, randomBytes } from 'node:crypto';
 import { OrderStatus } from '@prisma/client';
 import {
   ConflictException,
@@ -14,16 +13,13 @@ import { generateUniquePublicCheckoutCode } from '../checkout/checkout-code.util
 import { buildPayCheckoutUrl } from '../checkout/checkout-public-url.util';
 import { isPublicCodeTaken } from './partnerships.helpers';
 import { getChatContacts, getMessages, sendMessage, markAsRead } from './partnerships.chat.helpers';
+import { generateOpaqueToken, hashOpaqueToken } from './partnerships.crypto.helpers';
+import {
+  INVITABLE_PARTNER_TYPES,
+  buildPartnerInviteUrl,
+  getPartnerRoleLabel,
+} from './partnerships.invite.helpers';
 import { PrismaService } from '../prisma/prisma.service';
-
-const INVITABLE_PARTNER_TYPES = new Set(['AFFILIATE', 'SUPPLIER', 'COPRODUCER', 'MANAGER']);
-const PARTNER_ROLE_LABELS: Record<string, string> = {
-  AFFILIATE: 'afiliado',
-  SUPPLIER: 'fornecedor',
-  COPRODUCER: 'coprodutor',
-  MANAGER: 'gerente',
-  PRODUCER: 'produtor',
-};
 
 // cache.invalidate — partnerships data fetched live from Prisma; no Redis cache to invalidate
 @Injectable()
@@ -36,33 +32,6 @@ export class PartnershipsService {
     private readonly configService: ConfigService,
     private readonly emailService: EmailService,
   ) {}
-
-  private generateOpaqueToken(size = 32) {
-    return randomBytes(size).toString('base64url');
-  }
-
-  private hashOpaqueToken(token: string) {
-    return createHash('sha256').update(token).digest('hex');
-  }
-
-  private buildPartnerInviteUrl(params: {
-    inviteToken: string;
-    partnerEmail: string;
-    partnerName: string;
-    workspaceName: string;
-  }) {
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
-    const url = new URL('/register', frontendUrl);
-    url.searchParams.set('affiliateInviteToken', params.inviteToken);
-    url.searchParams.set('email', params.partnerEmail);
-    url.searchParams.set('partnerName', params.partnerName);
-    url.searchParams.set('inviterWorkspaceName', params.workspaceName);
-    return url.toString();
-  }
-
-  private getPartnerRoleLabel(type: string) {
-    return PARTNER_ROLE_LABELS[type] || 'parceiro';
-  }
 
   private async isPublicCodeTaken(code: string) {
     return isPublicCodeTaken(this.prisma, code);
@@ -304,8 +273,8 @@ export class PartnershipsService {
     }
 
     const requiresInvite = INVITABLE_PARTNER_TYPES.has(partnerType);
-    const inviteToken = requiresInvite ? this.generateOpaqueToken() : null;
-    const inviteTokenHash = inviteToken ? this.hashOpaqueToken(inviteToken) : null;
+    const inviteToken = requiresInvite ? generateOpaqueToken() : null;
+    const inviteTokenHash = inviteToken ? hashOpaqueToken(inviteToken) : null;
     const workspace = requiresInvite
       ? await this.prisma.workspace.findUnique({
           where: { id: workspaceId },
@@ -341,18 +310,19 @@ export class PartnershipsService {
       return partner;
     }
 
-    const inviteUrl = this.buildPartnerInviteUrl({
+    const inviteUrl = buildPartnerInviteUrl({
       inviteToken,
       partnerEmail: partner.partnerEmail,
       partnerName: partner.partnerName,
       workspaceName: workspace?.name || 'Kloel',
+      frontendUrl: this.configService.get<string>('FRONTEND_URL') || undefined,
     });
     const delivered = await this.emailService.sendPartnerInviteEmail(
       partner.partnerEmail,
       partner.partnerName,
       workspace?.name || 'Kloel',
       inviteUrl,
-      this.getPartnerRoleLabel(partnerType),
+      getPartnerRoleLabel(partnerType),
     );
 
     if (!delivered) {
