@@ -4,7 +4,6 @@ import {
   Controller,
   Delete,
   Get,
-  NotFoundException,
   Param,
   Post,
   Put,
@@ -42,7 +41,21 @@ import {
   updateThreadMessage,
   updateMessageFeedback,
 } from './kloel-thread.controller-helpers';
-import { handleUploadFile, handleUploadChatFile } from './kloel-upload.controller-helpers';
+import {
+  handleUploadFile,
+  handleUploadChatFile,
+  KLOEL_UPLOAD_GENERIC_MIME_RE,
+  KLOEL_UPLOAD_CHAT_MIME_RE,
+  KLOEL_UPLOAD_MAX_BYTES,
+  kloelGenericUploadFileFilter,
+  kloelChatUploadFileFilter,
+} from './kloel-upload.controller-helpers';
+import {
+  ApprovalDecisionDto,
+  readUserId,
+  readWorkspaceId,
+  transitionApprovalRequest,
+} from './kloel-approval.controller-helpers';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 interface ThinkDto {
@@ -61,15 +74,6 @@ interface MemoryDto {
 interface OnboardingChatDto {
   message: string;
 }
-interface ApprovalDecisionDto {
-  note?: string;
-  adjustment?: Prisma.InputJsonValue;
-}
-const KLOEL_UPLOAD_GENERIC_MIME_RE =
-  /^(image\/(jpeg|png|gif|webp)|application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document)$/;
-const KLOEL_UPLOAD_CHAT_MIME_RE =
-  /^(image\/(jpeg|png|gif|webp)|application\/pdf|application\/msword|application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.document|application\/vnd\.ms-excel|application\/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet|text\/plain|text\/csv|audio\/(mpeg|wav|webm|ogg|mp4|x-m4a))$/;
-const UPLOAD_MAX = 25 * 1024 * 1024;
 @Controller('kloel')
 @RouteClass('ai')
 export class KloelController {
@@ -81,75 +85,6 @@ export class KloelController {
     private readonly threadSearchService: KloelThreadSearchService,
     private readonly toolDispatcher: KloelToolDispatcherService,
   ) {}
-  private readUserId(user: unknown) {
-    if (!user || typeof user !== 'object') {
-      return undefined;
-    }
-    const sub = 'sub' in user ? user.sub : undefined;
-    if (typeof sub === 'string' && sub.trim()) {
-      return sub;
-    }
-    const legacyId = 'id' in user ? user.id : undefined;
-    return typeof legacyId === 'string' && legacyId.trim() ? legacyId : undefined;
-  }
-  private readWorkspaceId(req: AuthenticatedRequest) {
-    const workspaceId = req.workspaceId || req.user?.workspaceId;
-    if (!workspaceId) {
-      throw new BadRequestException('workspace_id_required');
-    }
-    return workspaceId;
-  }
-  private normalizeApprovalNote(body?: ApprovalDecisionDto) {
-    return typeof body?.note === 'string' && body.note.trim() ? body.note.trim() : null;
-  }
-  private async transitionApprovalRequest(input: {
-    approvalRequestId: string;
-    req: AuthenticatedRequest;
-    state: 'APPROVED' | 'REJECTED' | 'ADJUSTMENT_REQUESTED';
-    body?: ApprovalDecisionDto;
-  }) {
-    const approvalRequestId = String(input.approvalRequestId || '').trim();
-    if (!approvalRequestId) {
-      throw new BadRequestException('approval_request_id_required');
-    }
-    const workspaceId = this.readWorkspaceId(input.req);
-    const approval = await this.prisma.approvalRequest.findFirst({
-      where: { id: approvalRequestId, workspaceId },
-      select: { id: true, state: true },
-    });
-    if (!approval) {
-      throw new NotFoundException('approval_request_not_found');
-    }
-    if (approval.state !== 'OPEN') {
-      throw new BadRequestException('approval_request_not_open');
-    }
-    const userId = this.readUserId(input.req.user);
-    const response: Prisma.InputJsonObject = {
-      action: input.state.toLowerCase(),
-      decidedAt: new Date().toISOString(),
-      ...(userId ? { decidedByUserId: userId } : {}),
-      note: this.normalizeApprovalNote(input.body),
-      ...(input.state === 'ADJUSTMENT_REQUESTED'
-        ? { adjustment: input.body?.adjustment ?? null }
-        : {}),
-    };
-    const result = await this.prisma.approvalRequest.updateMany({
-      where: { id: approvalRequestId, workspaceId, state: 'OPEN' },
-      data: {
-        state: input.state,
-        respondedAt: new Date(),
-        response,
-      },
-    });
-    if (result.count !== 1) {
-      throw new BadRequestException('approval_request_not_open');
-    }
-    return {
-      success: true,
-      approvalRequestId,
-      state: input.state,
-    };
-  }
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('think')
   async think(
@@ -158,7 +93,7 @@ export class KloelController {
     @Request() req: AuthenticatedRequest,
   ): Promise<void> {
     const workspaceId = req.workspaceId || req.user?.workspaceId;
-    const userId = this.readUserId(req.user);
+    const userId = readUserId(req.user);
     const userName = typeof req.user?.name === 'string' ? req.user.name : undefined;
     const abortController = new AbortController();
     const abortWithReason = (reason: string) => {
@@ -228,15 +163,13 @@ export class KloelController {
     @Body() body: ApprovalDecisionDto,
     @Request() req: AuthenticatedRequest,
   ) {
-    const transition = await this.transitionApprovalRequest({
-      approvalRequestId,
-      req,
-      state: 'APPROVED',
-      body,
-    });
-    const userId = this.readUserId(req.user);
+    const transition = await transitionApprovalRequest(
+      { prisma: this.prisma },
+      { approvalRequestId, req, state: 'APPROVED', body },
+    );
+    const userId = readUserId(req.user);
     const execution = await this.toolDispatcher.executeApprovedApprovalRequest({
-      workspaceId: this.readWorkspaceId(req),
+      workspaceId: readWorkspaceId(req),
       approvalRequestId: transition.approvalRequestId,
       ...(userId !== undefined ? { userId } : {}),
     });
@@ -257,12 +190,10 @@ export class KloelController {
     @Body() body: ApprovalDecisionDto,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.transitionApprovalRequest({
-      approvalRequestId,
-      req,
-      state: 'REJECTED',
-      body,
-    });
+    return transitionApprovalRequest(
+      { prisma: this.prisma },
+      { approvalRequestId, req, state: 'REJECTED', body },
+    );
   }
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @InternalEndpoint('approval request adjust')
@@ -272,18 +203,16 @@ export class KloelController {
     @Body() body: ApprovalDecisionDto,
     @Request() req: AuthenticatedRequest,
   ) {
-    return this.transitionApprovalRequest({
-      approvalRequestId,
-      req,
-      state: 'ADJUSTMENT_REQUESTED',
-      body,
-    });
+    return transitionApprovalRequest(
+      { prisma: this.prisma },
+      { approvalRequestId, req, state: 'ADJUSTMENT_REQUESTED', body },
+    );
   }
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('think/sync')
   async thinkSync(@Body() dto: ThinkDto, @Request() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId || req.user?.workspaceId;
-    const userId = this.readUserId(req.user);
+    const userId = readUserId(req.user);
     const userName = typeof req.user?.name === 'string' ? req.user.name : undefined;
     const { metadata: rawMetadata, ...requestDto } = dto;
     const metadata = rawMetadata as Prisma.InputJsonValue | undefined;
@@ -330,29 +259,15 @@ export class KloelController {
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
-      limits: { fileSize: UPLOAD_MAX },
-      fileFilter: (_req, file, cb) => {
-        const allowed = [
-          'image/jpeg',
-          'image/png',
-          'image/gif',
-          'image/webp',
-          'application/pdf',
-          'application/msword',
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        ];
-        cb(
-          allowed.includes(file.mimetype) ? null : new Error('Tipo de arquivo não permitido'),
-          allowed.includes(file.mimetype),
-        );
-      },
+      limits: { fileSize: KLOEL_UPLOAD_MAX_BYTES },
+      fileFilter: kloelGenericUploadFileFilter,
     }),
   )
   async uploadGenericFile(
     @UploadedFile(
       new ParseFilePipe({
         validators: [
-          new MaxFileSizeValidator({ maxSize: UPLOAD_MAX }),
+          new MaxFileSizeValidator({ maxSize: KLOEL_UPLOAD_MAX_BYTES }),
           new FileTypeValidator({ fileType: KLOEL_UPLOAD_GENERIC_MIME_RE }),
         ],
         fileIsRequired: false,
@@ -374,39 +289,15 @@ export class KloelController {
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
-      limits: { fileSize: UPLOAD_MAX },
-      fileFilter: (_req, file, cb) => {
-        const allowed = [
-          'image/jpeg',
-          'image/png',
-          'image/gif',
-          'image/webp',
-          'application/pdf',
-          'application/msword',
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-          'application/vnd.ms-excel',
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-          'text/plain',
-          'text/csv',
-          'audio/mpeg',
-          'audio/wav',
-          'audio/webm',
-          'audio/ogg',
-          'audio/mp4',
-          'audio/x-m4a',
-        ];
-        cb(
-          allowed.includes(file.mimetype) ? null : new Error('Tipo de arquivo não permitido'),
-          allowed.includes(file.mimetype),
-        );
-      },
+      limits: { fileSize: KLOEL_UPLOAD_MAX_BYTES },
+      fileFilter: kloelChatUploadFileFilter,
     }),
   )
   async uploadFile(
     @UploadedFile(
       new ParseFilePipe({
         validators: [
-          new MaxFileSizeValidator({ maxSize: UPLOAD_MAX }),
+          new MaxFileSizeValidator({ maxSize: KLOEL_UPLOAD_MAX_BYTES }),
           new FileTypeValidator({ fileType: KLOEL_UPLOAD_CHAT_MIME_RE }),
         ],
         fileIsRequired: false,
