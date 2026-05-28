@@ -16,7 +16,6 @@
 import { randomUUID } from 'node:crypto';
 import { BadRequestException, Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../../../logging/structured-logger';
-import { Parser } from 'htmlparser2';
 import { AuditService } from '../../../audit/audit.service';
 import { getTraceHeaders } from '../../../common/trace-headers'; // propagates X-Request-ID
 import {
@@ -26,11 +25,6 @@ import {
 } from '../../../common/utils/url-validator';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { memoryQueue } from '../../../queue/queue';
-import {
-  buildSerializedOpenAiEmbeddingBillingDescriptor,
-  type SerializedInputTokenBillingDescriptor,
-  quoteOpenAiEmbeddingCostCents,
-} from '../../../wallet/provider-pricing';
 import { WalletService } from '../../../wallet/wallet.service';
 import {
   InsufficientWalletBalanceError,
@@ -40,93 +34,22 @@ import {
 import { VectorService } from './vector.service';
 import { OpsAlertService } from '../../../observability/ops-alert.service';
 import {
-  KNOWLEDGE_BASE_CHUNK_OVERLAP,
-  KNOWLEDGE_BASE_CHUNK_SIZE,
-  splitKnowledgeBaseText,
-} from './knowledge-base.chunking.helpers';
+  KnowledgeBaseWalletAccessError,
+  type KnowledgeBaseWalletUsagePayload,
+  estimateKnowledgeBaseEmbeddingQuote,
+  htmlToText,
+  knowledgeBaseInsufficientWalletMessage,
+} from './knowledge-base.helpers';
 
 /**
  * @cluster whatsapp_saas/backend/kloel/mind/knowledge
  * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
  */
-import { WHITESPACE_G_RE } from '../../../common/regex';
 
-const KNOWLEDGE_BASE_EMBEDDING_MODEL = 'text-embedding-3-small';
-
-export function htmlToText(html: string): string {
-  if (!html) {
-    return '';
-  }
-
-  const blockTags = new Set([
-    'p',
-    'div',
-    'br',
-    'li',
-    'h1',
-    'h2',
-    'h3',
-    'h4',
-    'h5',
-    'h6',
-    'section',
-    'article',
-    'header',
-    'footer',
-  ]);
-  const ignoredStack: string[] = [];
-  const parts: string[] = [];
-
-  const parser = new Parser(
-    {
-      onopentag: (name) => {
-        const lower = name.toLowerCase();
-        if (lower === 'script' || lower === 'style') {
-          ignoredStack.push(lower);
-          return;
-        }
-        if (blockTags.has(lower)) {
-          parts.push(' ');
-        }
-      },
-      ontext: (text) => {
-        if (ignoredStack.length === 0) {
-          parts.push(text);
-        }
-      },
-      onclosetag: (name) => {
-        const lower = name.toLowerCase();
-        if (ignoredStack.length > 0 && ignoredStack[ignoredStack.length - 1] === lower) {
-          ignoredStack.pop();
-          return;
-        }
-        if (blockTags.has(lower)) {
-          parts.push(' ');
-        }
-      },
-    },
-    { decodeEntities: true },
-  );
-
-  parser.write(html);
-  parser.end();
-
-  return parts.join(' ').replace(WHITESPACE_G_RE, ' ').trim();
-}
-
-type KnowledgeBaseWalletUsagePayload = {
-  operation: 'kb_ingestion';
-  requestId: string;
-  billing: SerializedInputTokenBillingDescriptor;
-};
-
-/** Knowledge-base wallet access error. */
-class KnowledgeBaseWalletAccessError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'KnowledgeBaseWalletAccessError';
-  }
-}
+// Re-export the pure HTML-to-text helper so existing test imports
+// (`import { htmlToText } from './knowledge-base.service'`) keep working
+// after the Wave 78 helper extraction.
+export { htmlToText } from './knowledge-base.helpers';
 
 /** Knowledge base service. */
 @Injectable()
@@ -146,11 +69,6 @@ export class KnowledgeBaseService {
     return this.prisma.knowledgeBase.create({
       data: { workspaceId, name },
     });
-  }
-
-  /** Add source. */
-  private insufficientWalletMessage() {
-    return 'Saldo insuficiente na wallet prepaid para indexar conteudo na base de conhecimento. Recarregue via PIX ou aguarde a auto-recarga antes de tentar novamente.';
   }
 
   private async chargeUsageIfNeeded(input: {
@@ -182,7 +100,7 @@ export class KnowledgeBaseService {
       }
 
       if (error instanceof InsufficientWalletBalanceError || error instanceof WalletNotFoundError) {
-        throw new KnowledgeBaseWalletAccessError(this.insufficientWalletMessage());
+        throw new KnowledgeBaseWalletAccessError(knowledgeBaseInsufficientWalletMessage());
       }
 
       throw error;
@@ -211,38 +129,6 @@ export class KnowledgeBaseService {
         }`,
       );
     }
-  }
-
-  private estimateEmbeddingQuote(
-    content: string,
-    maxChunks: number,
-  ): {
-    billing: SerializedInputTokenBillingDescriptor;
-    estimatedCostCents: bigint;
-    estimatedInputTokens: bigint;
-  } | null {
-    const chunks = splitKnowledgeBaseText(
-      content,
-      KNOWLEDGE_BASE_CHUNK_SIZE,
-      KNOWLEDGE_BASE_CHUNK_OVERLAP,
-    ).slice(0, maxChunks);
-    const estimatedInputTokens = chunks.reduce(
-      (total, chunk) => total + BigInt(Buffer.byteLength(chunk, 'utf8')),
-      0n,
-    );
-
-    if (estimatedInputTokens <= 0n) {
-      return null;
-    }
-
-    return {
-      billing: buildSerializedOpenAiEmbeddingBillingDescriptor(KNOWLEDGE_BASE_EMBEDDING_MODEL),
-      estimatedCostCents: quoteOpenAiEmbeddingCostCents({
-        model: KNOWLEDGE_BASE_EMBEDDING_MODEL,
-        inputTokens: estimatedInputTokens,
-      }),
-      estimatedInputTokens,
-    };
   }
 
   /** Add source. */
@@ -306,7 +192,7 @@ export class KnowledgeBaseService {
           }
 
           const html = new TextDecoder('utf-8').decode(new Uint8Array(buf));
-          finalContent = this.htmlToText(html);
+          finalContent = htmlToText(html);
         } finally {
           clearTimeout(timer);
         }
@@ -326,7 +212,7 @@ export class KnowledgeBaseService {
     // Limita tamanho para evitar estouro no payload do Redis/BullMQ
     finalContent = (finalContent || '').slice(0, 200_000);
     const requestId = options?.requestId || randomUUID();
-    const providerQuote = this.estimateEmbeddingQuote(finalContent, maxChunks);
+    const providerQuote = estimateKnowledgeBaseEmbeddingQuote(finalContent, maxChunks);
     const usageMetadata = {
       channel: 'knowledge_base',
       capability: 'source_ingestion',
@@ -461,10 +347,6 @@ export class KnowledgeBaseService {
       this.logger.error(`RAG Search Error: ${String(err)}`);
       return '';
     }
-  }
-
-  private htmlToText(html: string): string {
-    return htmlToText(html);
   }
 
   /**
