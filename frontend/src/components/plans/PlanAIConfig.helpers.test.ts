@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
+  AI_CONFIG_SUMMARY_LABELS,
   type AIConfigState,
   assignBoolean,
   assignNumber,
@@ -8,8 +9,10 @@ import {
   assignStringArray,
   buildAIConfigPayload,
   buildAIConfigSummary,
+  buildAIConfigSummaryItems,
   computeAIConfigCompleteness,
   isProductsSwrKey,
+  parseSiblingPlansResponse,
   toggleListValue,
 } from './PlanAIConfig.helpers';
 
@@ -297,5 +300,120 @@ describe('buildAIConfigSummary', () => {
       tier: 'MAIN',
     });
     expect(s).toContain('Plano');
+  });
+});
+
+describe('parseSiblingPlansResponse', () => {
+  it('returns [] for non-array input', () => {
+    expect(parseSiblingPlansResponse(null, 'p1')).toEqual([]);
+    expect(parseSiblingPlansResponse(undefined, 'p1')).toEqual([]);
+    expect(parseSiblingPlansResponse('not-array', 'p1')).toEqual([]);
+    expect(parseSiblingPlansResponse({ id: 'p1' }, 'p1')).toEqual([]);
+  });
+
+  it('filters out the current plan id', () => {
+    const out = parseSiblingPlansResponse(
+      [
+        { id: 'p1', name: 'Plano A' },
+        { id: 'p2', name: 'Plano B' },
+      ],
+      'p1',
+    );
+    expect(out).toEqual([{ id: 'p2', name: 'Plano B' }]);
+  });
+
+  it('falls back through name -> title -> "Plano <id>"', () => {
+    const out = parseSiblingPlansResponse(
+      [
+        { id: 'a', name: 'Premium' },
+        { id: 'b', title: 'Starter' },
+        { id: 'c' },
+      ],
+      'self',
+    );
+    expect(out).toEqual([
+      { id: 'a', name: 'Premium' },
+      { id: 'b', name: 'Starter' },
+      { id: 'c', name: 'Plano c' },
+    ]);
+  });
+
+  it('drops rows missing a string id', () => {
+    const out = parseSiblingPlansResponse(
+      [{ id: 'ok', name: 'Plano OK' }, { name: 'no-id' }, null, undefined],
+      'self',
+    );
+    expect(out).toEqual([{ id: 'ok', name: 'Plano OK' }]);
+  });
+});
+
+describe('buildAIConfigSummaryItems', () => {
+  function completenessOf(overrides: Partial<{ [k: string]: boolean | number }> = {}) {
+    return {
+      s1Complete: false,
+      s1Partial: false,
+      s2Complete: false,
+      s2Partial: false,
+      s3Complete: false,
+      s3Partial: false,
+      s4Complete: false,
+      s4Partial: false,
+      s5Complete: false,
+      s5Partial: false,
+      s6Complete: false,
+      s7Complete: false,
+      s7Partial: false,
+      activeObjections: 0,
+      totalArgs: 0,
+      ...overrides,
+    } as ReturnType<typeof computeAIConfigCompleteness>;
+  }
+
+  it('emits exactly the seven labelled rows in canonical order', () => {
+    const items = buildAIConfigSummaryItems(completenessOf());
+    expect(items.map((i) => i.label)).toEqual([
+      'Perfil',
+      'Posição',
+      'Objeções',
+      'Argumentos',
+      'Up/Down',
+      'Comportamento',
+      'Técnico',
+    ]);
+    expect(AI_CONFIG_SUMMARY_LABELS).toHaveLength(items.length);
+  });
+
+  it('forces the Comportamento row to partial=true regardless of input', () => {
+    const items = buildAIConfigSummaryItems(completenessOf({ s6Complete: false }));
+    const comportamento = items.find((i) => i.label === 'Comportamento');
+    expect(comportamento?.partial).toBe(true);
+  });
+
+  it('propagates each section flag to the matching row', () => {
+    const items = buildAIConfigSummaryItems(
+      completenessOf({
+        s1Complete: true,
+        s1Partial: true,
+        s4Complete: true,
+        s4Partial: true,
+        s7Complete: true,
+        s7Partial: true,
+      }),
+    );
+    expect(items.find((i) => i.label === 'Perfil')).toEqual({
+      label: 'Perfil',
+      complete: true,
+      partial: true,
+    });
+    expect(items.find((i) => i.label === 'Argumentos')).toEqual({
+      label: 'Argumentos',
+      complete: true,
+      partial: true,
+    });
+    expect(items.find((i) => i.label === 'Técnico')).toEqual({
+      label: 'Técnico',
+      complete: true,
+      partial: true,
+    });
   });
 });

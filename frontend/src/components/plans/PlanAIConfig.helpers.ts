@@ -253,3 +253,71 @@ export function buildAIConfigSummary(input: {
 export function toggleListValue(list: string[], item: string): string[] {
   return list.includes(item) ? list.filter((x) => x !== item) : [...list, item];
 }
+
+/**
+ * Shape of a single plan row returned by `GET /products/:id/plans`.
+ * `name` / `title` are both optional — the API has used both historically.
+ */
+export interface SiblingPlanResponseRow {
+  id: string;
+  name?: string;
+  title?: string;
+}
+
+/** Normalized sibling-plan row consumed by the upsell/downsell pickers. */
+export interface SiblingPlanRow {
+  id: string;
+  name: string;
+}
+
+/**
+ * Filter the current plan out of the sibling-plan list and fall back through
+ * `name -> title -> "Plano <id>"`. Pure — extracted from the tab's effect.
+ */
+export function parseSiblingPlansResponse(
+  rows: unknown,
+  currentPlanId: string,
+): SiblingPlanRow[] {
+  if (!Array.isArray(rows)) {
+    return [];
+  }
+  return (rows as SiblingPlanResponseRow[])
+    .filter((p) => p && typeof p.id === 'string' && p.id !== currentPlanId)
+    .map((p) => ({ id: p.id, name: p.name || p.title || `Plano ${p.id}` }));
+}
+
+/** Ordered labels rendered in the AISummaryBox checklist. */
+export const AI_CONFIG_SUMMARY_LABELS = [
+  'Perfil',
+  'Posição',
+  'Objeções',
+  'Argumentos',
+  'Up/Down',
+  'Comportamento',
+  'Técnico',
+] as const;
+
+export interface AIConfigSummaryItem {
+  label: (typeof AI_CONFIG_SUMMARY_LABELS)[number];
+  complete: boolean;
+  partial: boolean;
+}
+
+/**
+ * Build the AISummaryBox `items` array from a computed completeness record.
+ * The Comportamento row is always considered partial=true (matches the
+ * pre-extraction inline literal in PlanAIConfigTab).
+ */
+export function buildAIConfigSummaryItems(
+  completeness: AIConfigCompleteness,
+): AIConfigSummaryItem[] {
+  return [
+    { label: 'Perfil', complete: completeness.s1Complete, partial: completeness.s1Partial },
+    { label: 'Posição', complete: completeness.s2Complete, partial: completeness.s2Partial },
+    { label: 'Objeções', complete: completeness.s3Complete, partial: completeness.s3Partial },
+    { label: 'Argumentos', complete: completeness.s4Complete, partial: completeness.s4Partial },
+    { label: 'Up/Down', complete: completeness.s5Complete, partial: completeness.s5Partial },
+    { label: 'Comportamento', complete: completeness.s6Complete, partial: true },
+    { label: 'Técnico', complete: completeness.s7Complete, partial: completeness.s7Partial },
+  ];
+}

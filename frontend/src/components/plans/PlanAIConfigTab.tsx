@@ -16,9 +16,13 @@ import {
   assignStringArray,
   buildAIConfigPayload,
   buildAIConfigSummary,
+  buildAIConfigSummaryItems,
   computeAIConfigCompleteness,
   isProductsSwrKey,
+  parseSiblingPlansResponse,
   toggleListValue,
+  type SiblingPlanResponseRow,
+  type SiblingPlanRow,
 } from './PlanAIConfig.helpers';
 import { AISummaryBox } from './PlanAIConfig.summary';
 import { BehaviorSection } from './PlanAIConfig.behavior';
@@ -86,7 +90,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
   const [downsellTargetPlan, setDownsellTargetPlan] = useState('');
   const [downsellWhen, setDownsellWhen] = useState<string[]>([]);
   const [downsellArgument, setDownsellArgument] = useState('');
-  const [siblingPlans, setSiblingPlans] = useState<{ id: string; name: string }[]>([]);
+  const [siblingPlans, setSiblingPlans] = useState<SiblingPlanRow[]>([]);
 
   // Section 6 — AI Behavior
   const [tone, setTone] = useState('CONSULTIVE');
@@ -165,16 +169,8 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
   useEffect(() => {
     const loadPlans = async () => {
       try {
-        const data = await apiFetch<{ id: string; name?: string; title?: string }[]>(
-          `/products/${productId}/plans`,
-        );
-        if (Array.isArray(data.data)) {
-          setSiblingPlans(
-            data.data
-              .filter((p) => p.id !== planId)
-              .map((p) => ({ id: p.id, name: p.name || p.title || `Plano ${p.id}` })),
-          );
-        }
+        const data = await apiFetch<SiblingPlanResponseRow[]>(`/products/${productId}/plans`);
+        setSiblingPlans(parseSiblingPlansResponse(data.data, planId));
       } catch {}
     };
     loadPlans();
@@ -290,23 +286,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
   );
 
   // Completeness indicators — derived purely from form state
-  const {
-    s1Complete,
-    s1Partial,
-    s2Complete,
-    s2Partial,
-    s3Complete,
-    s3Partial,
-    s4Complete,
-    s4Partial,
-    s5Complete,
-    s5Partial,
-    s6Complete,
-    s7Complete,
-    s7Partial,
-    activeObjections,
-    totalArgs,
-  } = computeAIConfigCompleteness({
+  const completeness = computeAIConfigCompleteness({
     genders,
     ages,
     problem,
@@ -328,6 +308,8 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
     usageMode,
     contraindications,
   });
+  const { activeObjections, totalArgs } = completeness;
+  const summaryItems = useMemo(() => buildAIConfigSummaryItems(completeness), [completeness]);
 
   const summary = useMemo(
     () =>
@@ -512,18 +494,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
       />
 
       {/* AI Summary Box */}
-      <AISummaryBox
-        summary={summary}
-        items={[
-          { label: 'Perfil', complete: s1Complete, partial: s1Partial },
-          { label: 'Posição', complete: s2Complete, partial: s2Partial },
-          { label: 'Objeções', complete: s3Complete, partial: s3Partial },
-          { label: 'Argumentos', complete: s4Complete, partial: s4Partial },
-          { label: 'Up/Down', complete: s5Complete, partial: s5Partial },
-          { label: 'Comportamento', complete: s6Complete, partial: true },
-          { label: 'Técnico', complete: s7Complete, partial: s7Partial },
-        ]}
-      />
+      <AISummaryBox summary={summary} items={summaryItems} />
 
       {/* Save Button */}
       <div className="flex justify-end">
