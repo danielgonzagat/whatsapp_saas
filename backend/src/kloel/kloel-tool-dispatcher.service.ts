@@ -196,10 +196,7 @@ export class KloelToolDispatcherService {
    * Check MindGuardsService for MUTATION_SENSITIVE tools before dispatch.
    * Returns a block result if the guard vetoes execution; null otherwise.
    */
-  private async checkMindGuard(
-    workspaceId: string,
-    toolName: string,
-  ): Promise<ToolResult | null> {
+  private async checkMindGuard(workspaceId: string, toolName: string): Promise<ToolResult | null> {
     if (!this.mindGuards || !this.capRegistryV2) {
       return null;
     }

@@ -21,7 +21,8 @@ export const ENGAGEMENT_INTENT_PATTERNS: IntentPattern[] = [
     extract: () => ({}),
   },
   {
-    regex: /(?:manda|envi[ae]r?|dispara)\s+(?:uma?\s+)?(?:mensagem|msg|zap)(?:\s+(?:no|via|por|pra)\s+(?:whatsapp|whats|zap))?/i,
+    regex:
+      /(?:manda|envi[ae]r?|dispara)\s+(?:uma?\s+)?(?:mensagem|msg|zap)(?:\s+(?:no|via|por|pra)\s+(?:whatsapp|whats|zap))?/i,
     capabilityId: 'whatsapp.send',
     extract: () => ({}),
   },

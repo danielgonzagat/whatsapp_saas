@@ -86,9 +86,8 @@ export class MindAutonomyCoordinator {
   async listPendingProposals(workspaceId: string, limit: number): Promise<Proposal[]> {
     const result = await this.propose(workspaceId);
     const proposals = result.proposals.slice(0, limit).map((proposal, index) => {
-      const title = proposal.mode === 'fix'
-        ? `Corrigir: ${proposal.action}`
-        : `Escalar: ${proposal.action}`;
+      const title =
+        proposal.mode === 'fix' ? `Corrigir: ${proposal.action}` : `Escalar: ${proposal.action}`;
       return {
         id: `proposal-${workspaceId}-${index}`,
         title,
