@@ -66,6 +66,7 @@ export interface BuildMindSignalsDeps {
   selfHealthService?: SelfHealthService;
   selfGapsService?: SelfGapsService;
   riskClassService?: RiskClassService;
+  mindVerbalizerService?: { narrate?: (workspaceId: string) => Promise<string> };
   logger: Pick<StructuredLogger, 'warn'>;
 }
 /**
@@ -262,6 +263,20 @@ export async function buildMindSignals(
       };
     } catch (error: unknown) {
       deps.logger.warn('kloel_risk_class_skipped', {
+        reason: error instanceof Error ? error.message : 'unknown error',
+      });
+    }
+  }
+
+  // ── Verbalizer (PI-K12-A) ─────────────────────────────────────────
+  if (deps.mindVerbalizerService?.narrate) {
+    try {
+      const summary = await deps.mindVerbalizerService.narrate(workspaceId);
+      if (summary) {
+        mindSignals.verbalSummary = summary;
+      }
+    } catch (error: unknown) {
+      deps.logger.warn('kloel_mind_verbalizer_skipped', {
         reason: error instanceof Error ? error.message : 'unknown error',
       });
     }

@@ -22,6 +22,7 @@ import { buildMindSignals } from './mind/build-mind-signals.helper';
 import { SpineEmitterService } from './spine/spine-emitter.service';
 import { DecisionOutcomeService } from './decision-outcome.service';
 import { MindSurpriseService } from './mind/inference/mind-surprise.service';
+import { MindVerbalizerService } from './mind/synthetic/mind-verbalizer.service';
 import {
   buildChatOutcomeKey,
   recordChatReplyDecision,
@@ -113,6 +114,7 @@ export class ConversationalOnboardingService {
     @Optional() private readonly decisionOutcomeService?: DecisionOutcomeService,
     @Optional() private readonly riskClassService?: RiskClassService,
     @Optional() private readonly mindSurpriseService?: MindSurpriseService,
+    @Optional() private readonly mindVerbalizerService?: MindVerbalizerService,
   ) {
     this.prismaExt = prisma as object as PrismaWithDynamicModels;
     this.openai = createTextLlmClient() ?? new OpenAI({ apiKey: 'missing' });
@@ -382,6 +384,9 @@ export class ConversationalOnboardingService {
           : {}),
         ...(this.selfGapsService !== undefined ? { selfGapsService: this.selfGapsService } : {}),
         ...(this.riskClassService !== undefined ? { riskClassService: this.riskClassService } : {}),
+        ...(this.mindVerbalizerService !== undefined
+          ? { mindVerbalizerService: this.mindVerbalizerService }
+          : {}),
       });
       const mindSignals = await buildMindSignals(mindDeps, workspaceId, userMessage);
       messages.push({

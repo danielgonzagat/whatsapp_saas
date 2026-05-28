@@ -36,6 +36,7 @@ interface KloelMindServices {
   selfHealthService?: SelfHealthService;
   selfGapsService?: SelfGapsService;
   riskClassService?: RiskClassService;
+  mindVerbalizerService?: { narrate?: (workspaceId: string) => Promise<string> };
 }
 
 export const ABI_SNAPSHOT_KEY = 'abi_snapshot_cache';
@@ -71,6 +72,9 @@ export function buildKloelMindSignalsDeps(
       : {}),
     ...(services.riskClassService !== undefined
       ? { riskClassService: services.riskClassService }
+      : {}),
+    ...(services.mindVerbalizerService !== undefined
+      ? { mindVerbalizerService: services.mindVerbalizerService }
       : {}),
   };
 }

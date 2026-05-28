@@ -32,6 +32,7 @@ interface OnboardingMindServices {
   selfHealthService?: SelfHealthService;
   selfGapsService?: SelfGapsService;
   riskClassService?: RiskClassService;
+  mindVerbalizerService?: { narrate?: (workspaceId: string) => Promise<string> };
 }
 
 /**
@@ -66,6 +67,9 @@ export function buildOnboardingMindSignalsDeps(
       : {}),
     ...(services.riskClassService !== undefined
       ? { riskClassService: services.riskClassService }
+      : {}),
+    ...(services.mindVerbalizerService !== undefined
+      ? { mindVerbalizerService: services.mindVerbalizerService }
       : {}),
   };
 }
