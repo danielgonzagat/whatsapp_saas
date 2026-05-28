@@ -28,9 +28,14 @@ import {
   buildVariantFallbackCopy,
   computeCampaignDeliveryReadiness,
   computeSmartTimeDelayMs,
-  scoreCampaignStats,
   validateVariantCopy,
 } from './campaigns.helpers';
+import {
+  buildCampaignDefaultStats,
+  isCampaignAlreadyProcessed,
+  isCampaignPausable,
+  scoreCampaignRow,
+} from './campaigns.service.helpers';
 
 /** Campaigns service. */
 @Injectable()
@@ -69,7 +74,7 @@ export class CampaignsService {
         ...(data as Prisma.CampaignCreateInput),
         workspace: { connect: { id: workspaceId } },
         status: 'DRAFT',
-        stats: { sent: 0, delivered: 0, read: 0, failed: 0 },
+        stats: buildCampaignDefaultStats(),
       },
     });
   }
@@ -110,7 +115,7 @@ export class CampaignsService {
 
     await this.ensureCampaignDeliveryReady(workspaceId);
 
-    if (campaign.status === 'RUNNING' || campaign.status === 'COMPLETED') {
+    if (isCampaignAlreadyProcessed(campaign.status)) {
       throw new BadRequestException('Campaign already processed');
     }
 
@@ -380,9 +385,9 @@ export class CampaignsService {
       aiStrategy: parent.aiStrategy,
       stats: parent.stats,
     };
-    let bestScore = this.scoreCampaign(parent);
+    let bestScore = scoreCampaignRow(parent);
     for (const v of variants) {
-      const score = this.scoreCampaign(v);
+      const score = scoreCampaignRow(v);
       if (score > bestScore) {
         best = v;
         bestScore = score;
@@ -422,10 +427,6 @@ export class CampaignsService {
       score: bestScore,
       promotedTo: parent.id,
     };
-  }
-
-  private scoreCampaign(c: Record<string, unknown>): number {
-    return scoreCampaignStats(c?.stats);
   }
 
   /**
@@ -482,7 +483,7 @@ Retorne apenas a nova mensagem.`;
     if (!campaign) {
       throw new NotFoundException('Campaign not found');
     }
-    if (campaign.status !== 'RUNNING' && campaign.status !== 'SCHEDULED') {
+    if (!isCampaignPausable(campaign.status)) {
       throw new BadRequestException('Only running or scheduled campaigns can be paused');
     }
     await this.prisma.campaign.updateMany({
