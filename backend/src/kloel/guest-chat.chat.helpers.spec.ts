@@ -33,6 +33,76 @@ describe('runDeterministicAction', () => {
     expect(reply).toContain('não foi concluída');
   });
 
+  it('requires confirmation before executing a sensitive routed action', async () => {
+    const paymentArgs = {
+      productId: 'prod-1',
+      planId: 'plan-1',
+      customerName: 'Joao',
+      customerEmail: 'joao@test.com',
+      customerCpf: '123.456.789-00',
+    };
+    const executeTool = jest.fn().mockResolvedValue({
+      success: true,
+      saleId: 'sale-pix-1',
+      pixCopiaECola: '000201pix',
+      pixQrCode: 'qr-base64',
+    });
+    const intentRouter = {
+      classify: jest
+        .fn()
+        .mockReturnValueOnce({
+          isChat: false,
+          classification: {
+            capabilityId: 'sales.create_pix',
+            entities: paymentArgs,
+            missingInputs: [],
+            requiresConfirmation: true,
+          },
+        })
+        .mockReturnValueOnce({ isChat: true }),
+    };
+    const logger = {
+      log: jest.fn(),
+      warn: jest.fn(),
+      debug: jest.fn(),
+      error: jest.fn(),
+    };
+    const conversations = new Map();
+
+    const confirmation = await runDeterministicAction(
+      'Gera um PIX para Joao comprar PDRN',
+      'session-confirm-pix',
+      'ws-1',
+      { executeTool } as never,
+      intentRouter as never,
+      undefined,
+      undefined,
+      conversations,
+      logger as never,
+    );
+
+    expect(executeTool).not.toHaveBeenCalled();
+    expect(confirmation).toContain('sales.create_pix');
+    expect(confirmation).toContain('Confirma');
+
+    const reply = await runDeterministicAction(
+      'sim, confirma',
+      'session-confirm-pix',
+      'ws-1',
+      { executeTool } as never,
+      intentRouter as never,
+      undefined,
+      undefined,
+      conversations,
+      logger as never,
+    );
+
+    expect(executeTool).toHaveBeenCalledTimes(1);
+    expect(executeTool).toHaveBeenCalledWith('ws-1', 'sales.create_pix', paymentArgs);
+    expect(reply).toContain('PIX gerado');
+    expect(reply).toContain('000201pix');
+  });
+
   it('keeps boleto as an operational action failure without falling back', async () => {
     const registry = new CapabilityRegistryV2Service();
     const intentRouter = new IntentRouterService(registry);

@@ -14,6 +14,7 @@ import { buildReceipt, writeOperationReceipt, buildResultMeta } from './operatio
 import { detectActionIntent, formatToolResult } from './guest-chat.action-intent.helpers';
 import {
   GuestConversation,
+  PendingOperationalAction,
   getOrCreateConversation,
   persistConversation,
   persistConversationMessage,
@@ -220,6 +221,22 @@ function formatOperationalToolReply(tool: string, result: unknown): string {
   return formatToolResult(tool, result);
 }
 
+function isConfirmingPendingAction(message: string): boolean {
+  return /^(sim|s|confirmo|confirma|confirmado|ok|pode executar|executa|autorizo)\b/i.test(
+    message.trim(),
+  );
+}
+
+function isCancellingPendingAction(message: string): boolean {
+  return /^(n[aã]o|nao|cancel[ae]?|cancela|desiste|para|pare)\b/i.test(message.trim());
+}
+
+function buildPendingActionConfirmation(action: PendingOperationalAction): string {
+  const keys = Object.keys(action.args);
+  const summary = keys.length > 0 ? ` com dados: ${keys.join(', ')}` : '';
+  return `Vou executar a ação real ${action.tool}${summary}. Confirma?`;
+}
+
 export async function runDeterministicAction(
   message: string,
   sessionId: string,
@@ -232,6 +249,85 @@ export async function runDeterministicAction(
   logger: StructuredLogger,
 ): Promise<string | null> {
   const hasIntentRouter = intentRouter !== undefined;
+  const conversation = await getOrCreateConversation(sessionId, redis, conversations, logger);
+  const pendingAction = conversation.pendingAction;
+
+  if (pendingAction) {
+    if (isCancellingPendingAction(message)) {
+      await persistConversationMessage(sessionId, 'user', message, redis, conversations, logger);
+      delete conversation.pendingAction;
+      await persistConversation(sessionId, conversation, redis, conversations, logger);
+      const reply = `Ação ${pendingAction.tool} cancelada. Nenhuma ação real foi executada.`;
+      await persistConversationMessage(sessionId, 'assistant', reply, redis, conversations, logger);
+      return reply;
+    }
+
+    if (!isConfirmingPendingAction(message)) {
+      await persistConversationMessage(sessionId, 'user', message, redis, conversations, logger);
+      const reply = `${buildPendingActionConfirmation(pendingAction)} Responda sim para executar ou não para cancelar.`;
+      await persistConversationMessage(sessionId, 'assistant', reply, redis, conversations, logger);
+      return reply;
+    }
+
+    await persistConversationMessage(sessionId, 'user', message, redis, conversations, logger);
+    delete conversation.pendingAction;
+    await persistConversation(sessionId, conversation, redis, conversations, logger);
+    logger.log(`Confirmed action: tool=${pendingAction.tool} ws=${workspaceId} session=${sessionId}`);
+    try {
+      const result = await toolDispatcher.executeTool(
+        workspaceId,
+        pendingAction.tool,
+        pendingAction.args,
+      );
+      void writeOperationReceipt(
+        buildReceipt({
+          workspaceId,
+          toolName: pendingAction.tool,
+          args: pendingAction.args,
+          result,
+          channel: 'web',
+        }),
+      );
+      if (spine && result.success) {
+        const resultMeta = buildResultMeta(pendingAction.tool, result);
+        void spine
+          .record({
+            workspaceId,
+            action: 'tool_executed' as never,
+            intent: pendingAction.tool,
+            status: 'executed',
+            meta: {
+              args: pendingAction.args,
+              userPreview: pendingAction.prompt.slice(0, 120),
+              ...resultMeta,
+            } as never,
+          })
+          .catch(() => {});
+      }
+      const reply = formatOperationalToolReply(pendingAction.tool, result);
+      await persistConversationMessage(sessionId, 'assistant', reply, redis, conversations, logger);
+      return reply;
+    } catch (err: unknown) {
+      const reason = err instanceof Error ? err.message : 'unknown';
+      logger.warn(`Confirmed action failed: ${reason}`);
+      const failureResult = {
+        success: false,
+        error: `${pendingAction.tool}: ${reason}`,
+      };
+      void writeOperationReceipt(
+        buildReceipt({
+          workspaceId,
+          toolName: pendingAction.tool,
+          args: pendingAction.args,
+          result: failureResult,
+          channel: 'web',
+        }),
+      );
+      const reply = `A ação ${pendingAction.tool} não foi concluída. A ferramenta real falhou: ${reason}. Nenhum sucesso foi registrado.`;
+      await persistConversationMessage(sessionId, 'assistant', reply, redis, conversations, logger);
+      return reply;
+    }
+  }
 
   // Stage 1: IntentRouter (new CapabilityRegistry-based)
   if (hasIntentRouter) {
@@ -242,6 +338,35 @@ export async function runDeterministicAction(
         args: classification.classification.entities,
       };
       logger.log(`IntentRouter: tool=${action.tool} ws=${workspaceId} session=${sessionId}`);
+      const missingInputs = Array.isArray(classification.classification.missingInputs)
+        ? classification.classification.missingInputs
+        : [];
+      if (classification.classification.requiresConfirmation && missingInputs.length === 0) {
+        await persistConversationMessage(sessionId, 'user', message, redis, conversations, logger);
+        const pendingConversation = await getOrCreateConversation(
+          sessionId,
+          redis,
+          conversations,
+          logger,
+        );
+        pendingConversation.pendingAction = {
+          tool: action.tool,
+          args: action.args,
+          createdAt: new Date().toISOString(),
+          prompt: message,
+        };
+        await persistConversation(sessionId, pendingConversation, redis, conversations, logger);
+        const reply = buildPendingActionConfirmation(pendingConversation.pendingAction);
+        await persistConversationMessage(
+          sessionId,
+          'assistant',
+          reply,
+          redis,
+          conversations,
+          logger,
+        );
+        return reply;
+      }
       try {
         await persistConversationMessage(sessionId, 'user', message, redis, conversations, logger);
         const result = await toolDispatcher.executeTool(workspaceId, action.tool, action.args);

@@ -1,14 +1,42 @@
 import type Redis from 'ioredis';
 import { StructuredLogger } from '../logging/structured-logger';
+export interface PendingOperationalAction {
+  tool: string;
+  args: Record<string, unknown>;
+  createdAt: string;
+  prompt: string;
+}
+
 export interface GuestConversation {
   messages: { role: 'user' | 'assistant'; content: string }[];
   createdAt: Date;
   lastMessageAt: Date;
+  pendingAction?: PendingOperationalAction;
 }
 export const GUEST_CONVERSATION_TTL_SECONDS = 24 * 60 * 60;
 export function getRedisKey(sessionId: string): string {
   return `kloel:guest-chat:${sessionId}`;
 }
+
+function readPendingOperationalAction(value: unknown): PendingOperationalAction | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return undefined;
+  }
+  const record = value as Record<string, unknown>;
+  if (typeof record.tool !== 'string' || !record.tool.trim()) {
+    return undefined;
+  }
+  if (!record.args || typeof record.args !== 'object' || Array.isArray(record.args)) {
+    return undefined;
+  }
+  return {
+    tool: record.tool,
+    args: record.args as Record<string, unknown>,
+    createdAt: typeof record.createdAt === 'string' ? record.createdAt : new Date().toISOString(),
+    prompt: typeof record.prompt === 'string' ? record.prompt : '',
+  };
+}
+
 export function parseConversation(raw: string | null): GuestConversation | null {
   if (!raw) {
     return null;
@@ -18,10 +46,12 @@ export function parseConversation(raw: string | null): GuestConversation | null 
       messages?: GuestConversation['messages'];
       createdAt?: string;
       lastMessageAt?: string;
+      pendingAction?: unknown;
     };
     if (!Array.isArray(parsed.messages)) {
       return null;
     }
+    const pendingAction = readPendingOperationalAction(parsed.pendingAction);
     return {
       messages: parsed.messages.filter(
         (message): message is GuestConversation['messages'][number] =>
@@ -29,6 +59,7 @@ export function parseConversation(raw: string | null): GuestConversation | null 
       ),
       createdAt: parsed.createdAt ? new Date(parsed.createdAt) : new Date(),
       lastMessageAt: parsed.lastMessageAt ? new Date(parsed.lastMessageAt) : new Date(),
+      ...(pendingAction ? { pendingAction } : {}),
     };
   } catch {
     return null;
