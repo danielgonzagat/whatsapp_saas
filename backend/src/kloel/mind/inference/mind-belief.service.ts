@@ -178,7 +178,14 @@ export class MindBeliefService {
       this.logSuccess('mind.belief.get_active_beliefs', startedAt, workspaceId);
       return rows as MindBelief[];
     } catch (error: unknown) {
-      this.logFailure('mind.belief.get_active_beliefs', startedAt, workspaceId, undefined, undefined, error);
+      this.logFailure(
+        'mind.belief.get_active_beliefs',
+        startedAt,
+        workspaceId,
+        undefined,
+        undefined,
+        error,
+      );
       throw error;
     }
   }

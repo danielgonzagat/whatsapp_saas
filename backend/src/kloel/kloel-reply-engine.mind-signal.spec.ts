@@ -7,11 +7,8 @@ import { KloelWorkspaceContextService } from './kloel-workspace-context.service'
 import { UnifiedAgentService } from './unified-agent.service';
 import { AttentionService } from './mind/attention.service';
 import { ValenceAggregatorService } from './mind/valence-aggregator.service';
-<<<<<<< HEAD
 import { MindBeliefService } from './mind/inference/mind-belief.service';
-=======
 import { MindConceptService } from './mind/memory/mind-concepts.service';
->>>>>>> 0cdc86ea5 (feat(kloel): wire MindConceptService.detect into cognitiveState (PI-k4))
 
 jest.mock('openai', () => ({
   default: jest.fn().mockImplementation(() => ({
@@ -55,7 +52,9 @@ describe('KloelReplyEngineService mind-signal wiring (PI-k4)', () => {
   };
   let unifiedAgent: Pick<UnifiedAgentService, 'processIncomingMessage'>;
 
-  const makeAutopilotRow = (overrides: Partial<{ id: string; intent: string; action: string; createdAt: Date }> = {}) => ({
+  const makeAutopilotRow = (
+    overrides: Partial<{ id: string; intent: string; action: string; createdAt: Date }> = {},
+  ) => ({
     id: overrides.id ?? 'evt-001',
     intent: overrides.intent ?? 'commerce.lead.replied',
     action: overrides.action ?? '',
@@ -99,8 +98,17 @@ describe('KloelReplyEngineService mind-signal wiring (PI-k4)', () => {
     it('queries Prisma with correct shape and feeds AttentionService when services are injected', async () => {
       const now = new Date('2026-05-28T12:00:00Z');
       const rows = [
-        makeAutopilotRow({ id: 'evt-1', intent: 'commerce.lead.replied', createdAt: new Date('2026-05-28T11:55:00Z') }),
-        makeAutopilotRow({ id: 'evt-2', intent: 'commerce.cart.abandoned', action: '', createdAt: new Date('2026-05-28T11:50:00Z') }),
+        makeAutopilotRow({
+          id: 'evt-1',
+          intent: 'commerce.lead.replied',
+          createdAt: new Date('2026-05-28T11:55:00Z'),
+        }),
+        makeAutopilotRow({
+          id: 'evt-2',
+          intent: 'commerce.cart.abandoned',
+          action: '',
+          createdAt: new Date('2026-05-28T11:50:00Z'),
+        }),
       ];
       prisma.autopilotEvent.findMany.mockResolvedValue(rows);
 
@@ -182,17 +190,12 @@ describe('KloelReplyEngineService mind-signal wiring (PI-k4)', () => {
       const lastContentStr = typeof lastContent === 'string' ? lastContent : '{}';
       const userPayload = JSON.parse(lastContentStr) as Record<string, unknown>;
       const cs = userPayload['cognitiveState'] as Record<string, unknown>;
-<<<<<<< HEAD
       const ms = cs['mindSignals'] as Record<string, unknown>;
-
       expect(ms['source']).toBe('autopilot_events');
       expect(ms['eventCount']).toBe(0);
       expect(ms['attention']).toBeDefined();
       const att = ms['attention'] as Record<string, unknown>;
       expect(att['candidates']).toEqual([]);
-=======
-      expect(cs['mindSignals']).toEqual({ status: 'no_event_source', concepts: [] });
->>>>>>> 0cdc86ea5 (feat(kloel): wire MindConceptService.detect into cognitiveState (PI-k4))
     });
 
     it('sets mindSignals to {status: "no_services"} when attention service is absent', async () => {
@@ -518,7 +521,12 @@ describe('KloelReplyEngineService mind-signal wiring (PI-k4)', () => {
       const cs = userPayload['cognitiveState'] as Record<string, unknown>;
       const ms = cs['mindSignals'] as Record<string, unknown>;
       expect(ms['beliefs']).toEqual([
-        { subject: 'lead-1', predicate: 'responds_to_offer', mean: 0.72, confidence: 1 / (1 + 0.04) },
+        {
+          subject: 'lead-1',
+          predicate: 'responds_to_offer',
+          mean: 0.72,
+          confidence: 1 / (1 + 0.04),
+        },
         { subject: 'lead-2', predicate: 'clicks_link', mean: 0.35, confidence: 1 / (1 + 0.09) },
       ]);
       expect(mockMindBeliefService.getActiveBeliefs).toHaveBeenCalledWith('ws-1');
