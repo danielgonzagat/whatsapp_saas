@@ -129,7 +129,6 @@ describe('UnifiedAgentService', () => {
     );
     const commerce = new UnifiedAgentActionsCommerceService(
       prisma as never,
-      configMock,
       paymentService as never,
       {} as never,
       messaging,
