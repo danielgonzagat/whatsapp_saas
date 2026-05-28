@@ -8,6 +8,18 @@ import { flowQueue } from '../queue/queue';
 import { AutopilotAnalyticsService } from './autopilot-analytics.service';
 import { AutopilotCycleService } from './autopilot-cycle.service';
 import { AutopilotOpsService } from './autopilot-ops.service';
+import {
+  applyAutopilotConfigPatch,
+  buildAutonomyPatch,
+  buildAutopilotEnabledPatch,
+  buildPostPurchaseMessage,
+  coerceFlowIdLabel,
+  computeStatusEnabled,
+  getPostPurchaseFlowId,
+  isBillingSuspended,
+  isWhatsAppConnected,
+  readRecord,
+} from './autopilot.helpers';
 
 /** Autopilot orchestration service — delegates to sub-services. */
 @Injectable()
@@ -107,15 +119,11 @@ export class AutopilotService {
 
   // ─── Core methods (owned by this service) ─────────────────────────────────
 
-  private readRecord(value: unknown): Record<string, unknown> {
-    return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
-  }
-
   private async ensureBillingAllowsAutopilot(
     workspaceId: string,
     settings: Record<string, unknown>,
   ) {
-    const suspended = (settings?.billingSuspended ?? false) === true;
+    const suspended = isBillingSuspended(settings);
     if (suspended) {
       try {
         await this.prisma.autopilotEvent.create({
@@ -173,8 +181,7 @@ export class AutopilotService {
   }
 
   private ensureWhatsAppConnectedOrThrow(settings: Record<string, unknown>) {
-    const status = (settings?.whatsappApiSession as Record<string, unknown>)?.status;
-    if (status !== 'connected') {
+    if (!isWhatsAppConnected(settings)) {
       throw new ForbiddenException(
         'Conecte/configure o WhatsApp antes de ativar o Autopilot. Faltando: whatsappApiSession.status=connected',
       );
@@ -187,22 +194,19 @@ export class AutopilotService {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const settings = this.readRecord(workspace?.providerSettings);
+    const settings = readRecord(workspace?.providerSettings);
 
     if (enabled) {
       await this.ensureBillingAllowsAutopilot(workspaceId, settings);
       this.ensureWhatsAppConnectedOrThrow(settings);
     }
 
-    const autopilotCfg = { ...((settings.autopilot as Record<string, unknown>) || {}), enabled };
-    const autonomy = {
-      ...((settings.autonomy as Record<string, unknown>) || {}),
-      mode: enabled ? 'LIVE' : 'OFF',
-      reactiveEnabled: enabled,
-      proactiveEnabled: false,
-      reason: enabled ? 'manual_toggle_on' : 'manual_toggle_off',
-      lastTransitionAt: new Date().toISOString(),
-    };
+    const autopilotCfg = buildAutopilotEnabledPatch(readRecord(settings.autopilot), enabled);
+    const autonomy = buildAutonomyPatch(
+      readRecord(settings.autonomy),
+      enabled,
+      new Date().toISOString(),
+    );
     await this.prisma.workspace.update({
       where: { id: workspaceId },
       data: {
@@ -210,7 +214,7 @@ export class AutopilotService {
           ...settings,
           autopilot: autopilotCfg,
           autonomy,
-        },
+        } as Prisma.InputJsonValue,
       },
     });
     return { workspaceId, enabled };
@@ -232,17 +236,8 @@ export class AutopilotService {
         where: { id: workspaceId },
         select: { providerSettings: true },
       });
-      const settings = (workspace?.providerSettings as Record<string, unknown>) || {};
-      const autopilotCfg = { ...((settings.autopilot as Record<string, unknown>) || {}) };
-      if (payload.conversionFlowId !== undefined) {
-        autopilotCfg.conversionFlowId = payload.conversionFlowId;
-      }
-      if (payload.currencyDefault) {
-        autopilotCfg.currencyDefault = payload.currencyDefault;
-      }
-      if (payload.recoveryTemplateName !== undefined) {
-        autopilotCfg.recoveryTemplateName = payload.recoveryTemplateName;
-      }
+      const settings = readRecord(workspace?.providerSettings);
+      const autopilotCfg = applyAutopilotConfigPatch(readRecord(settings.autopilot), payload);
       await this.prisma.workspace.update({
         where: { id: workspaceId },
         data: {
@@ -281,19 +276,12 @@ export class AutopilotService {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const settings = (workspace?.providerSettings as Record<string, unknown>) || {};
-    const billingSuspended = settings.billingSuspended === true;
-    const rawAutonomyMode = (settings?.autonomy as Record<string, unknown>)?.mode;
-    const autonomyMode = (typeof rawAutonomyMode === 'string' ? rawAutonomyMode : '').toUpperCase();
+    const settings = readRecord(workspace?.providerSettings);
     return {
       workspaceId,
-      enabled:
-        autonomyMode === 'LIVE' ||
-        autonomyMode === 'BACKLOG' ||
-        autonomyMode === 'FULL' ||
-        !!(settings.autopilot as Record<string, unknown>)?.enabled,
+      enabled: computeStatusEnabled(settings),
       autonomy: (settings.autonomy as Record<string, unknown>) || null,
-      billingSuspended,
+      billingSuspended: isBillingSuspended(settings),
     };
   }
 
@@ -303,8 +291,8 @@ export class AutopilotService {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const settings = (workspace?.providerSettings as Record<string, unknown>) || {};
-    return { workspaceId, autopilot: (settings.autopilot as Record<string, unknown>) || {} };
+    const settings = readRecord(workspace?.providerSettings);
+    return { workspaceId, autopilot: readRecord(settings.autopilot) };
   }
 
   /**
@@ -337,8 +325,8 @@ export class AutopilotService {
       select: { providerSettings: true },
     });
 
-    const settings = this.readRecord(ws?.providerSettings);
-    const postPurchaseFlowId = this.readRecord(settings.autopilot).postPurchaseFlowId;
+    const settings = readRecord(ws?.providerSettings);
+    const postPurchaseFlowId = getPostPurchaseFlowId(settings);
 
     if (postPurchaseFlowId) {
       await flowQueue.add('run-flow', {
@@ -352,14 +340,13 @@ export class AutopilotService {
         },
       });
 
-      const flowIdLabel = typeof postPurchaseFlowId === 'string' ? postPurchaseFlowId : 'unknown';
-      this.logger.log(`[PostPurchase] Flow ${flowIdLabel} triggered for ${contact.phone}`);
+      this.logger.log(
+        `[PostPurchase] Flow ${coerceFlowIdLabel(postPurchaseFlowId)} triggered for ${contact.phone}`,
+      );
       return { triggered: true, flowId: postPurchaseFlowId };
     }
 
-    const thankYouMessage = purchaseInfo.productName
-      ? `Obrigado pela sua compra de *${purchaseInfo.productName}*. Seu acesso e os próximos passos seguem pelo canal cadastrado.`
-      : `Obrigado pela sua compra. Seu acesso e os próximos passos seguem pelo canal cadastrado.`;
+    const thankYouMessage = buildPostPurchaseMessage(purchaseInfo.productName);
 
     await this.planLimits.ensureDailyMessageQuota(workspaceId);
     await this.planLimits.ensureMessageRate(workspaceId);
