@@ -17,21 +17,22 @@ import { UpdateSocialLeadDto } from './dto/update-social-lead.dto';
 import { findLatestCandidate as companionFindLatestCandidate } from './checkout-social-lead.candidate';
 import {
   mergeGooglePeopleProfile,
-  mergeLeadAddressSnapshot,
   normalizeEmail,
   normalizeOptional,
   normalizePhone,
-  toJsonValue,
 } from './checkout-social-lead.util';
 import { buildLeadPrefill, parseProvider } from './checkout-social-lead.helpers';
 import type { CheckoutSocialLeadPrefill } from './checkout-social-lead.helpers';
-
-type CheckoutPlanContext = {
-  id: string;
-  slug: string;
-  productId: string;
-  workspaceId: string;
-};
+import {
+  buildCaptureLeadCreateData,
+  buildCaptureLeadResponse,
+  buildContactUpsertArgs,
+  buildConvertedUpdateData,
+  buildLeadUpdateData,
+  buildPrefillOrFilter,
+  computeUpdatedLeadFields,
+  type CheckoutPlanContext,
+} from './checkout-social-lead.service.helpers';
 
 type ConversionInput = {
   workspaceId: string;
@@ -61,34 +62,7 @@ export class CheckoutSocialLeadService {
 
     const verified = await this.verifySocialProvider(provider, dto);
     const lead = await this.prisma.checkoutSocialLead.create({
-      data: {
-        workspaceId: plan.workspaceId,
-        planId: plan.id,
-        productId: plan.productId,
-        checkoutSlug: plan.slug,
-        checkoutCode: normalizeOptional(dto.checkoutCode),
-        provider,
-        providerId: verified.providerId,
-        providerEmailVerified: verified.emailVerified,
-        name: normalizeOptional(verified.name),
-        email: normalizeEmail(verified.email),
-        avatarUrl: normalizeOptional(verified.image),
-        sourceUrl: normalizeOptional(dto.sourceUrl),
-        refererUrl: normalizeOptional(dto.refererUrl),
-        utmSource: normalizeOptional(dto.utmSource),
-        utmMedium: normalizeOptional(dto.utmMedium),
-        utmCampaign: normalizeOptional(dto.utmCampaign),
-        utmContent: normalizeOptional(dto.utmContent),
-        utmTerm: normalizeOptional(dto.utmTerm),
-        fbclid: normalizeOptional(dto.fbclid),
-        gclid: normalizeOptional(dto.gclid),
-        deviceFingerprint: normalizeOptional(dto.deviceFingerprint),
-        providerPayload: toJsonValue({
-          provider: verified.provider,
-          providerId: verified.providerId,
-          emailVerified: verified.emailVerified,
-        }),
-      },
+      data: buildCaptureLeadCreateData(plan, provider, verified, dto),
       select: {
         id: true,
         provider: true,
@@ -103,16 +77,7 @@ export class CheckoutSocialLeadService {
 
     await this.enqueueEnrichment(lead.id);
 
-    return {
-      leadId: lead.id,
-      provider: dto.provider,
-      name: lead.name,
-      email: lead.email,
-      avatarUrl: lead.avatarUrl,
-      deviceFingerprint: lead.deviceFingerprint,
-      workspaceId: lead.workspaceId,
-      checkoutSlug: lead.checkoutSlug,
-    };
+    return buildCaptureLeadResponse(lead, dto.provider);
   }
 
   /** Get lead prefill. */
@@ -133,10 +98,7 @@ export class CheckoutSocialLeadService {
       where: {
         workspaceId: plan.workspaceId,
         deviceFingerprint: fingerprint,
-        OR: [
-          { checkoutSlug: plan.slug },
-          ...(normalizedCheckoutCode ? [{ checkoutCode: normalizedCheckoutCode }] : []),
-        ],
+        OR: buildPrefillOrFilter(plan.slug, normalizedCheckoutCode),
       },
       orderBy: [{ enrichedAt: 'desc' }, { createdAt: 'desc' }],
       select: {
@@ -261,29 +223,16 @@ export class CheckoutSocialLeadService {
           throw new NotFoundException('Lead social do checkout não encontrado.');
         }
 
-        const normalizedPhone = normalizePhone(dto.phone) || existing.phone || null;
-        const normalizedName = normalizeOptional(dto.name) || existing.name || null;
-        const normalizedEmail = normalizeEmail(dto.email) || existing.email || null;
-        const nextStep = Math.max(existing.stepReached, dto.stepReached || existing.stepReached);
-        const mergedEnrichmentData = mergeLeadAddressSnapshot(existing.enrichmentData, dto);
+        const fields = computeUpdatedLeadFields(existing, dto);
 
         return {
-          workspaceId: existing.workspaceId,
-          normalizedPhone,
-          normalizedName,
-          normalizedEmail,
+          workspaceId: fields.workspaceId,
+          normalizedPhone: fields.normalizedPhone,
+          normalizedName: fields.normalizedName,
+          normalizedEmail: fields.normalizedEmail,
           updated: await tx.checkoutSocialLead.update({
             where: { id: leadId },
-            data: {
-              name: normalizedName,
-              email: normalizedEmail,
-              phone: normalizedPhone,
-              cpf: normalizeOptional(dto.cpf) || existing.cpf || null,
-              stepReached: nextStep,
-              ...(mergedEnrichmentData !== undefined
-                ? { enrichmentData: mergedEnrichmentData }
-                : {}),
-            },
+            data: buildLeadUpdateData(fields),
             select: {
               id: true,
               workspaceId: true,
@@ -335,12 +284,7 @@ export class CheckoutSocialLeadService {
 
     return this.prisma.checkoutSocialLead.update({
       where: { id: target.id },
-      data: {
-        status: CheckoutSocialLeadStatus.CONVERTED,
-        convertedAt: new Date(),
-        convertedOrderId: input.orderId,
-        stepReached: 3,
-      },
+      data: buildConvertedUpdateData(input.orderId, CheckoutSocialLeadStatus.CONVERTED),
       select: {
         id: true,
         workspaceId: true,
@@ -454,33 +398,13 @@ export class CheckoutSocialLeadService {
     email?: string | null;
     phone: string;
   }) {
-    const phone = normalizePhone(input.phone);
-    if (!phone) {
+    const args = buildContactUpsertArgs(input);
+    if (!args) {
       return null;
     }
 
     const contact = await this.prisma.contact.upsert({
-      where: {
-        workspaceId_phone: {
-          workspaceId: input.workspaceId,
-          phone,
-        },
-      },
-      create: {
-        workspaceId: input.workspaceId,
-        phone,
-        name: normalizeOptional(input.name),
-        email: normalizeEmail(input.email),
-        customFields: {
-          checkoutSocialLead: true,
-        },
-      },
-      update: {
-        ...(normalizeOptional(input.name) ? { name: normalizeOptional(input.name) } : {}),
-        ...(normalizeEmail(input.email) !== undefined
-          ? { email: normalizeEmail(input.email) }
-          : {}),
-      },
+      ...args,
       select: { id: true },
     });
 
