@@ -9,6 +9,11 @@ import { CheckoutProductService } from './checkout-product.service';
 import { CheckoutPublicPayloadBuilder } from './checkout-public-payload.builder';
 import { CheckoutEventEmitterService } from '../kloel/checkout-emitter/checkout-event-emitter.service';
 import { getCheckoutByCode as companionGetCheckoutByCode } from './checkout-code-lookup.helper';
+import {
+  buildDuplicateCheckoutInput,
+  mapPixelsForDuplicate,
+  stripConfigMetadata,
+} from './checkout.service.helpers';
 import type { CreateCheckoutInput } from './checkout-product.types';
 import type { SetCheckoutThemeDto } from './dto/set-checkout-theme.dto';
 import type { SetCheckoutCouponsDto } from './dto/set-checkout-coupons.dto';
@@ -16,8 +21,6 @@ import type { SetCheckoutTimerDto } from './dto/set-checkout-timer.dto';
 import type { SetCheckoutSocialProofDto } from './dto/set-checkout-social-proof.dto';
 
 export type { CheckoutOrderStatusValue } from './checkout-order-status';
-
-type CheckoutConfigRecord = Record<string, unknown>;
 
 /**
  * Checkout façade — delegates product/plan, catalog, and order concerns to
@@ -411,18 +414,7 @@ export class CheckoutService {
       throw new NotFoundException('Checkout nao encontrado');
     }
 
-    const createInput = {
-      name: `${checkout.name} (Copia)`,
-      priceInCents: checkout.priceInCents,
-      currency: checkout.currency,
-      maxInstallments: checkout.maxInstallments,
-      installmentsFee: checkout.installmentsFee,
-      quantity: checkout.quantity,
-      freeShipping: checkout.freeShipping,
-      brandName: checkout.checkoutConfig?.brandName ?? checkout.name,
-      ...(checkout.compareAtPrice != null ? { compareAtPrice: checkout.compareAtPrice } : {}),
-      ...(checkout.shippingPrice != null ? { shippingPrice: checkout.shippingPrice } : {}),
-    };
+    const createInput = buildDuplicateCheckoutInput(checkout);
     const duplicated = await this.productService.createCheckout(
       checkout.productId,
       createInput,
@@ -435,14 +427,7 @@ export class CheckoutService {
     }
 
     if (checkout.checkoutConfig) {
-      const {
-        id: _id,
-        planId: _planId,
-        pixels: _pixels,
-        createdAt: _ca,
-        updatedAt: _ua,
-        ...configRest
-      } = checkout.checkoutConfig as CheckoutConfigRecord;
+      const configRest = stripConfigMetadata(checkout.checkoutConfig as Record<string, unknown>);
       await this.productService.updateConfig(duplicatedId, configRest);
 
       if (checkout.checkoutConfig.pixels?.length) {
@@ -452,16 +437,10 @@ export class CheckoutService {
         });
         if (createdConfig?.id) {
           await this.prisma.checkoutPixel.createMany({
-            data: checkout.checkoutConfig.pixels.map((pixel) => ({
-              checkoutConfigId: createdConfig.id,
-              type: pixel.type,
-              pixelId: pixel.pixelId,
-              accessToken: pixel.accessToken,
-              trackPageView: pixel.trackPageView,
-              trackInitiateCheckout: pixel.trackInitiateCheckout,
-              trackAddPaymentInfo: pixel.trackAddPaymentInfo,
-              trackPurchase: pixel.trackPurchase,
-            })),
+            data: mapPixelsForDuplicate(
+              checkout.checkoutConfig.pixels,
+              createdConfig.id,
+            ),
           });
         }
       }
