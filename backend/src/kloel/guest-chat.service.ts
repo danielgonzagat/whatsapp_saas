@@ -289,8 +289,13 @@ export class GuestChatService implements OnModuleDestroy {
           eventName: 'cognition.decision_made',
           workspaceId: chatWsId,
           truthMode: 'observed',
-          provenance: { source: 'production', surface: 'guest' },
-          payload: { decision: 'engage', messageLength: message.length },
+          provenance: {
+            source: 'production',
+            processor: 'guest-chat',
+            processorVersion: '1.0.0',
+            schemaVersion: '1.0.0',
+          },
+          payload: { decision: 'engage', messageLength: message.length, surface: 'guest' },
         })
         .catch(() => {});
 
@@ -426,8 +431,13 @@ export class GuestChatService implements OnModuleDestroy {
         eventName: 'cognition.decision_made',
         workspaceId: metricWsId,
         truthMode: 'observed',
-        provenance: { source: 'production', surface: 'guest' },
-        payload: { decision: 'engage', messageLength: message.length },
+        provenance: {
+          source: 'production',
+          processor: 'guest-chat',
+          processorVersion: '1.0.0',
+          schemaVersion: '1.0.0',
+        },
+        payload: { decision: 'engage', messageLength: message.length, surface: 'guest' },
       })
       .catch(() => {});
 
