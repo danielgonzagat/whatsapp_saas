@@ -822,8 +822,8 @@ describe('MindPolicyService', () => {
         },
         select: { id: true, context: true, resolvedAt: true },
       });
-      expect(prisma.mindPolicy.updateMany).toHaveBeenCalledWith({
-        where: { id: 'policy-1', workspaceId: 'ws-1' },
+      expect(prisma.mindPolicy.update).toHaveBeenCalledWith({
+        where: { id: 'policy-1' },
         data: { context: { source: 'autopilot', outcomeConfidence: 'confirmed' } },
       });
     });
@@ -845,7 +845,7 @@ describe('MindPolicyService', () => {
       });
 
       expect(result).toEqual({ confirmed: 0, unanswered: 0 });
-      expect(prisma.mindPolicy.updateMany).not.toHaveBeenCalled();
+      expect(prisma.mindPolicy.update).not.toHaveBeenCalled();
     });
   });
 });
