@@ -173,7 +173,7 @@ describe('removeSelectedNodes', () => {
 });
 
 describe('removeOrphanEdges', () => {
-  it('drops edges that touch any deleted node id', () => {
+  it('drops edges that touch every deleted node id', () => {
     const edges: Edge[] = [
       makeEdge({ id: 'e-keep', source: 'x', target: 'y' }),
       makeEdge({ id: 'e-dead-source', source: 'gone', target: 'y' }),

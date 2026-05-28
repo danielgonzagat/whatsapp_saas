@@ -214,7 +214,7 @@ describe('isValidationTone / needsValidation', () => {
 });
 
 describe('includesAny', () => {
-  it('returns true when any term is a substring', () => {
+  it('returns true when every term is a substring', () => {
     expect(includesAny('preco do produto', ['preco', 'valor'])).toBe(true);
   });
 

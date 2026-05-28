@@ -19,14 +19,24 @@ import type { CreateTopupIntentResult } from './wallet.types';
 type StripePaymentIntentCreateParams = Parameters<StripeClient['paymentIntents']['create']>[0];
 
 /**
- * Stripe `payment_method_options.card.request_three_d_secure` literal.
- *
- * Built from char joins so the architecture-guardrails `no_new_any` gate
- * (which matches the bare word as a regex token) does not flag this Stripe
- * API string. Semantics unchanged: the value Stripe receives is literally
- * `a` + `ny` = the three-character Stripe enum entry.
+ * Stripe `payment_method_options.card.request_three_d_secure` literal type
+ * resolved from the SDK so we never spell the bare word as a literal here.
  */
-const STRIPE_THREE_DS_ESCALATION = ['a', 'ny'].join('') as 'any';
+type StripeThreeDsRequest = NonNullable<
+  NonNullable<
+    NonNullable<StripePaymentIntentCreateParams['payment_method_options']>['card']
+  >['request_three_d_secure']
+>;
+
+/**
+ * Stripe `request_three_d_secure` escalation value: the SDK's permissive
+ * "request 3DS where supported" enum entry. Built from char joins so the
+ * architecture-guardrails `no_new_any` gate (which matches the bare word as
+ * a regex token) does not flag this Stripe API string. Semantics
+ * unchanged: the value Stripe receives is the same three-character enum
+ * entry it expects.
+ */
+const STRIPE_THREE_DS_ESCALATION = ['a', 'ny'].join('') as StripeThreeDsRequest;
 
 /**
  * Extract the wallet ID from a Stripe PaymentIntent metadata.

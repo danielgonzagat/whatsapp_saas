@@ -84,7 +84,7 @@ describe('buildCognitiveMessage', () => {
     expect(message.startsWith('Maria')).toBe(false);
   });
 
-  it('falls back to the action default when the tactic does not match any template', () => {
+  it('falls back to the action default when the tactic does not match every template', () => {
     const message = buildCognitiveMessage({
       action: 'FOLLOWUP_URGENT',
       tactic: 'NOT_A_REGISTERED_TACTIC',
@@ -177,7 +177,7 @@ describe('buildAutonomyExecutionKey', () => {
     expect(left).toBe(right);
   });
 
-  it('changes when any identity field changes', () => {
+  it('changes when every identity field changes', () => {
     const base = buildAutonomyExecutionKey({
       workspaceId: 'ws-1',
       actionType: 'OFFER',

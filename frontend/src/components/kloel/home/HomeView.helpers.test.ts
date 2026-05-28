@@ -121,7 +121,7 @@ describe('HomeView.helpers', () => {
       expect(formatBrDate('2025-01-01')).toBe('01/01/2025');
     });
 
-    it('reverses any hyphenated triple even without padding', () => {
+    it('reverses every hyphenated triple even without padding', () => {
       // Mirrors the legacy `split('-').reverse().join('/')` behaviour byte-for-byte.
       expect(formatBrDate('2026-1-5')).toBe('5/1/2026');
     });

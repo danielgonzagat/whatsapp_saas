@@ -69,24 +69,23 @@ describe('CookieProvider.helpers', () => {
     });
 
     it('forces necessary to true even when input claims otherwise', () => {
-      const result = normalizeConsent({
-        // @ts-expect-error - exercising defensive boolean coercion at runtime
+      const loose: Partial<CookieConsentPreferences> = {
         necessary: false,
         analytics: true,
         marketing: true,
-      });
+      };
+      const result = normalizeConsent(loose as CookieConsentPreferences);
       expect(result).not.toBeNull();
       expect(result?.necessary).toBe(true);
     });
 
     it('coerces analytics and marketing to booleans (truthy)', () => {
-      const result = normalizeConsent({
+      const loose = {
         necessary: true,
-        // @ts-expect-error - simulating loose JSON shape from storage
         analytics: 1,
-        // @ts-expect-error - simulating loose JSON shape from storage
         marketing: 'yes',
-      });
+      } as unknown as CookieConsentPreferences;
+      const result = normalizeConsent(loose);
       expect(result).toEqual({
         necessary: true,
         analytics: true,
@@ -95,13 +94,12 @@ describe('CookieProvider.helpers', () => {
     });
 
     it('coerces analytics and marketing to booleans (falsy)', () => {
-      const result = normalizeConsent({
+      const loose = {
         necessary: true,
-        // @ts-expect-error - simulating loose JSON shape from storage
         analytics: 0,
-        // @ts-expect-error - simulating loose JSON shape from storage
         marketing: null,
-      });
+      } as unknown as CookieConsentPreferences;
+      const result = normalizeConsent(loose);
       expect(result).toEqual({
         necessary: true,
         analytics: false,

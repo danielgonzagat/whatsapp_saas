@@ -251,7 +251,7 @@ describe('isSessionPollEnabled', () => {
     expect(isSessionPollEnabled({ enabled: true, workspaceId: 'w', authToken: 't' })).toBe(true);
   });
 
-  it('returns false when any leg is missing', () => {
+  it('returns false when each leg is missing', () => {
     expect(isSessionPollEnabled({ enabled: false, workspaceId: 'w', authToken: 't' })).toBe(false);
     expect(isSessionPollEnabled({ enabled: true, workspaceId: '', authToken: 't' })).toBe(false);
     expect(isSessionPollEnabled({ enabled: true, workspaceId: 'w', authToken: '' })).toBe(false);

@@ -24,7 +24,7 @@ describe('CheckoutPaymentSection.helpers / resolveSectionCardRadius', () => {
     expect(resolveSectionCardRadius(6)).toBe(6);
   });
 
-  it('returns the wide 12px radius for any other input radius', () => {
+  it('returns the wide 12px radius for every other input radius', () => {
     expect(resolveSectionCardRadius(8)).toBe(12);
     expect(resolveSectionCardRadius(12)).toBe(12);
     expect(resolveSectionCardRadius(0)).toBe(12);

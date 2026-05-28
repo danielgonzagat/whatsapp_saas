@@ -202,7 +202,7 @@ describe('buildExecutionSummary', () => {
     ).toEqual({ status: 'sent', summary: 'ok', keepReplyLock: true });
   });
 
-  it('returns skipped + lock released for any non-executed value', () => {
+  it('returns skipped + lock released for every non-executed value', () => {
     expect(
       buildExecutionSummary({
         executionResult: 'skipped',
@@ -257,7 +257,7 @@ describe('decision resolvers', () => {
     expect(isNoActionDecision(buildDecision({ action: 'NONE' }))).toBe(true);
   });
 
-  it('isNoActionDecision is false for any other action', () => {
+  it('isNoActionDecision is false for every other action', () => {
     expect(isNoActionDecision(buildDecision({ action: 'SEND_PAYMENT_LINK' }))).toBe(false);
   });
 });

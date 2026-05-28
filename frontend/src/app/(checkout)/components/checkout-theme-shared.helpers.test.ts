@@ -72,8 +72,7 @@ describe('checkout-theme-shared.helpers — clampQty', () => {
 
   it('defaults falsy input to 1', () => {
     expect(clampQty(Number.NaN)).toBe(1);
-    // @ts-expect-error explicit falsy check
-    expect(clampQty(undefined)).toBe(1);
+    expect(clampQty(undefined as unknown as number)).toBe(1);
   });
 });
 

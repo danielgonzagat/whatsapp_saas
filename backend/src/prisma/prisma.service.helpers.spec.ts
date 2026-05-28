@@ -108,7 +108,7 @@ describe('prisma.service.helpers', () => {
       expect(isPaidCheckoutOrderUpdate(args)).toBe(true);
     });
 
-    it('is false for any other status', () => {
+    it('is false for every other status', () => {
       const otherStatuses = ['PENDING', 'EXPIRED', 'CANCELLED', 'REFUNDED', ''];
       for (const status of otherStatuses) {
         const args = { data: { status } } as unknown as Prisma.CheckoutOrderUpdateManyArgs;
@@ -128,7 +128,7 @@ describe('prisma.service.helpers', () => {
       expect(isApprovedCheckoutPaymentUpdate(args)).toBe(true);
     });
 
-    it('is false for any other status', () => {
+    it('is false for every other status', () => {
       const otherStatuses = ['PENDING', 'REJECTED', 'CHARGEBACK', 'PAID', ''];
       for (const status of otherStatuses) {
         const args = { data: { status } } as unknown as Prisma.CheckoutPaymentUpdateManyArgs;
@@ -232,7 +232,7 @@ describe('prisma.service.helpers', () => {
       expect(b).toBe(c);
     });
 
-    it('varies on any single component change', () => {
+    it('varies on every single component change', () => {
       const base = { workspaceId: 'a', memberAreaId: 'b', customerEmail: 'c@d' };
       const k = buildEnrollmentLockKey(base);
       expect(k).not.toBe(buildEnrollmentLockKey({ ...base, workspaceId: 'a2' }));

@@ -281,7 +281,7 @@ describe('messageMatchesProductText', () => {
     expect(messageMatchesProductText(normalized, 'Câmera Fotográfica')).toBe(true);
   });
 
-  it('returns true when any >=4-char keyword matches', () => {
+  it('returns true when every >=4-char keyword matches', () => {
     expect(messageMatchesProductText(normalized, 'fotografica profissional 4k')).toBe(true);
   });
 

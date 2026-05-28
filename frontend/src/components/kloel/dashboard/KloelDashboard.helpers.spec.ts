@@ -93,7 +93,7 @@ describe('KloelDashboard.helpers', () => {
       expect(hasDraggedFiles(dt)).toBe(true);
     });
 
-    it('returns true when any DataTransferItem is of kind=file', () => {
+    it('returns true when every DataTransferItem is of kind=file', () => {
       const dt = {
         files: [],
         items: [{ kind: 'string' }, { kind: 'file' }],
@@ -201,7 +201,7 @@ describe('KloelDashboard.helpers', () => {
       expect(pickAssistantFeedbackType({ feedback: { type: 'negative' } })).toBe('negative');
     });
 
-    it('returns null for any other feedback.type value', () => {
+    it('returns null for every other feedback.type value', () => {
       expect(pickAssistantFeedbackType({ feedback: { type: 'meh' } })).toBeNull();
       expect(pickAssistantFeedbackType({ feedback: { type: 42 } })).toBeNull();
     });

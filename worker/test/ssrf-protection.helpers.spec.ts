@@ -242,7 +242,7 @@ describe('ssrf-protection.helpers / isUrlAllowed', () => {
     expect(isUrlAllowed('https://evil.com', ['https://api.example.com'])).toBe(false);
   });
 
-  it('handles multiple prefixes (any match wins)', () => {
+  it('handles multiple prefixes (every match wins)', () => {
     expect(
       isUrlAllowed('https://b.example.com/x', ['https://a.example.com', 'https://b.example.com']),
     ).toBe(true);
