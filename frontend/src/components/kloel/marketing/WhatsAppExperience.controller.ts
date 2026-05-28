@@ -66,7 +66,7 @@ export interface WhatsAppExperienceControllerProps {
   mode?: string;
   channelData: ChannelRealData | null;
   liveFeed: string[];
-  connection?: MarketingWhatsAppConnection;
+  channelSession?: MarketingWhatsAppConnection;
   onConnectionRefresh?: () => Promise<unknown> | unknown;
 }
 
@@ -76,7 +76,7 @@ export function useWhatsAppExperienceController({
   mode,
   channelData,
   liveFeed,
-  connection,
+  channelSession,
   onConnectionRefresh,
 }: WhatsAppExperienceControllerProps) {
   const fid = useId();
@@ -152,7 +152,7 @@ export function useWhatsAppExperienceController({
 
   const { isWahaProvider, effectiveProvider } = resolveEffectiveProvider(
     liveStatus?.provider,
-    connection?.provider,
+    channelSession?.provider,
     settingsData?.providerSettings?.whatsappProvider,
     sessionSnapshot.provider,
     sessionSnapshot.phoneNumberId,
@@ -163,11 +163,11 @@ export function useWhatsAppExperienceController({
       buildEffectiveConnection({
         sessionSnapshot,
         liveStatus: liveStatus as LiveStatusShape | undefined,
-        connection,
+        channelSession,
         effectiveProvider,
         isWahaProvider,
       }),
-    [connection, effectiveProvider, isWahaProvider, liveStatus, sessionSnapshot],
+    [channelSession, effectiveProvider, isWahaProvider, liveStatus, sessionSnapshot],
   );
 
   const requestQrCodeRef = useRef<
@@ -241,7 +241,7 @@ export function useWhatsAppExperienceController({
     [draft.selectedProducts, productMap],
   );
 
-  const metaAuthUrl = connection?.authUrl || null;
+  const metaAuthUrl = channelSession?.authUrl || null;
   const isMetaProvider = effectiveProvider === 'meta-cloud';
 
   const summaryProducts = useMemo(() => {

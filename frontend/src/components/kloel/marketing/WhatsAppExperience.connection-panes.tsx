@@ -76,20 +76,20 @@ export function resolveEffectiveProvider(
 export function buildEffectiveConnection(params: {
   sessionSnapshot: ConnectionSnapshot;
   liveStatus?: LiveStatusShape | undefined;
-  connection?: MarketingWhatsAppConnection | undefined;
+  channelSession?: MarketingWhatsAppConnection | undefined;
   effectiveProvider: string;
   isWahaProvider: boolean;
 }) {
-  const { sessionSnapshot, liveStatus, connection, effectiveProvider, isWahaProvider } = params;
+  const { sessionSnapshot, liveStatus, channelSession, effectiveProvider, isWahaProvider } = params;
   const snapshotStatus = String(
-    sessionSnapshot.status || sessionSnapshot.rawStatus || connection?.status || 'disconnected',
+    sessionSnapshot.status || sessionSnapshot.rawStatus || channelSession?.status || 'disconnected',
   ).toLowerCase();
   const snapshotConnected = snapshotStatus === 'connected' || snapshotStatus === 'working';
   const remoteConnected = isWahaProvider
     ? snapshotConnected
-    : connection?.connected === true || snapshotConnected;
+    : channelSession?.connected === true || snapshotConnected;
   const connected = liveStatus?.connected === true || remoteConnected;
-  const statusBase = isWahaProvider ? snapshotStatus : connection?.status;
+  const statusBase = isWahaProvider ? snapshotStatus : channelSession?.status;
   const status = String(
     liveStatus?.status || statusBase || snapshotStatus || 'disconnected',
   ).toLowerCase();
@@ -99,15 +99,18 @@ export function buildEffectiveConnection(params: {
     connected,
     status,
     phoneNumber: String(
-      liveStatus?.phone || sessionSnapshot.phoneNumber || connection?.phoneNumber || '',
+      liveStatus?.phone || sessionSnapshot.phoneNumber || channelSession?.phoneNumber || '',
     ),
     pushName: String(
-      liveStatus?.pushName || sessionSnapshot.pushName || connection?.pushName || '',
+      liveStatus?.pushName || sessionSnapshot.pushName || channelSession?.pushName || '',
     ),
     phoneNumberId: String(
-      liveStatus?.phoneNumberId || sessionSnapshot.phoneNumberId || connection?.phoneNumberId || '',
+      liveStatus?.phoneNumberId ||
+        sessionSnapshot.phoneNumberId ||
+        channelSession?.phoneNumberId ||
+        '',
     ),
-    degradedReason: String(liveStatus?.degradedReason || connection?.degradedReason || ''),
+    degradedReason: String(liveStatus?.degradedReason || channelSession?.degradedReason || ''),
   };
 }
 
