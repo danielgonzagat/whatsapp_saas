@@ -1,8 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
+  awaitCloserOrTimeout,
+  closeWithWarn,
   collectRedisDuplicateOverrides,
   extractWorkspaceIdFromJobData,
   hasErrorEmitter,
+  logBullMqBackgroundError,
   resolveQueueAttempts,
   resolveQueueBackoffMs,
 } from '../queue.helpers';
@@ -131,5 +134,60 @@ describe('resolveQueueBackoffMs', () => {
     expect(resolveQueueBackoffMs('500')).toBe(1000);
     expect(resolveQueueBackoffMs('1000')).toBe(1000);
     expect(resolveQueueBackoffMs('15000')).toBe(15000);
+  });
+});
+
+// ─── logBullMqBackgroundError ─────────────────────────────────────────
+
+describe('logBullMqBackgroundError', () => {
+  it('logs a warning with the label and error message', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    logBullMqBackgroundError('queue:flow-jobs', new Error('connection lost'));
+    expect(warn).toHaveBeenCalledWith('[QUEUE] queue:flow-jobs background error: connection lost');
+    warn.mockRestore();
+  });
+});
+
+// ─── closeWithWarn ────────────────────────────────────────────────────
+
+describe('closeWithWarn', () => {
+  it('calls close and returns the promise', async () => {
+    const close = vi.fn().mockResolvedValue(undefined);
+    await closeWithWarn({ close }, 'test-queue');
+    expect(close).toHaveBeenCalledTimes(1);
+  });
+
+  it('warns when close rejects', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const close = vi.fn().mockRejectedValue(new Error('already closed'));
+    await closeWithWarn({ close }, 'test-dlq');
+    expect(warn).toHaveBeenCalledWith('[SHUTDOWN] test-dlq close failed:', expect.any(Error));
+    warn.mockRestore();
+  });
+});
+
+// ─── awaitCloserOrTimeout ─────────────────────────────────────────────
+
+describe('awaitCloserOrTimeout', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('resolves when all closers resolve before the timeout', async () => {
+    const closers = [Promise.resolve('a'), Promise.resolve('b')];
+    const promise = awaitCloserOrTimeout(closers, 1000);
+    await vi.runAllTimersAsync();
+    await expect(promise).resolves.toBeUndefined();
+  });
+
+  it('resolves when the timeout elapses first', async () => {
+    const closers = [new Promise(() => {})]; // never settles
+    const promise = awaitCloserOrTimeout(closers, 1000);
+    vi.advanceTimersByTime(1000);
+    await expect(promise).resolves.toBeUndefined();
   });
 });

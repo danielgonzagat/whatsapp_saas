@@ -93,3 +93,30 @@ export function resolveQueueBackoffMs(raw: string | undefined): number {
   }
   return Math.max(1000, parsed);
 }
+
+// ─── Shutdown helpers ──────────────────────────────────────────────────
+
+/** Minimal closeable contract used by shutdown orchestrators. */
+export interface Closeable {
+  close: () => Promise<unknown>;
+}
+
+/** Log a BullMQ background error at warn level. */
+export function logBullMqBackgroundError(label: string, err: Error): void {
+  console.warn(`[QUEUE] ${label} background error: ${err.message}`);
+}
+
+/** Call `.close()` on a closeable item, warn on failure. */
+export const closeWithWarn = (item: Closeable, label: string): Promise<unknown> =>
+  item.close().catch((err) => console.warn(`[SHUTDOWN] ${label} close failed:`, err));
+
+/** Resolve when all closers settle or the timeout elapses, whichever first. */
+export const awaitCloserOrTimeout = async (
+  closers: Promise<unknown>[],
+  timeoutMs: number,
+): Promise<void> => {
+  await Promise.race([
+    Promise.allSettled(closers),
+    new Promise<void>((resolve) => setTimeout(resolve, timeoutMs)),
+  ]);
+};

@@ -51,9 +51,12 @@ import {
 } from 'bullmq';
 import Redis, { type RedisOptions } from 'ioredis';
 import {
+  awaitCloserOrTimeout,
+  closeWithWarn,
   collectRedisDuplicateOverrides,
   extractWorkspaceIdFromJobData,
   hasErrorEmitter,
+  logBullMqBackgroundError,
   resolveQueueAttempts,
   resolveQueueBackoffMs,
 } from './queue.helpers';
@@ -168,10 +171,6 @@ const queueRegistryMap = new Map<string, BullQueue>();
 const dlqRegistryMap = new Map<string, BullQueue>();
 const queueEventsRegistry = new Map<string, QueueEvents>();
 const additionalWorkers: Worker[] = [];
-
-function logBullMqBackgroundError(label: string, err: Error): void {
-  console.warn(`[QUEUE] ${label} background error: ${err.message}`);
-}
 
 function attachQueueErrorLogger(queue: BullQueue, label: string): void {
   if (hasErrorEmitter(queue)) {
@@ -425,12 +424,6 @@ export class Queue {
  * @param timeoutMs Maximum total time to wait for all closes. After
  *                   this elapses the function returns regardless.
  */
-interface Closeable {
-  close: () => Promise<unknown>;
-}
-
-const closeWithWarn = (item: Closeable, label: string): Promise<unknown> =>
-  item.close().catch((err) => console.warn(`[SHUTDOWN] ${label} close failed:`, err));
 
 const collectClosers = (): Promise<unknown>[] => {
   const closers: Promise<unknown>[] = [];
@@ -447,16 +440,6 @@ const collectClosers = (): Promise<unknown>[] => {
     closers.push(closeWithWarn(q, 'queue'));
   }
   return closers;
-};
-
-const awaitCloserOrTimeout = async (
-  closers: Promise<unknown>[],
-  timeoutMs: number,
-): Promise<void> => {
-  await Promise.race([
-    Promise.allSettled(closers),
-    new Promise<void>((resolve) => setTimeout(resolve, timeoutMs)),
-  ]);
 };
 
 const closeSharedConnection = async (): Promise<void> => {
