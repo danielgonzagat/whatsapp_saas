@@ -6,6 +6,18 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  PAYMENT_KEYWORDS,
+  aggregateEventTaxonomy,
+  averageRoundedOrNull,
+  buildLatestContactActionMap,
+  computeReplyAggregates,
+  filterImpactableEvents,
+  groupInboundByContact,
+  safeRate,
+  summarizeDailyTimeline,
+  summarizeTopIntents,
+} from './autopilot-analytics-insights.helpers';
 
 /**
  * Impact analysis and InsightBot for Autopilot.
@@ -42,22 +54,8 @@ export class AutopilotAnalyticsInsightsService {
         take: 5000,
       });
 
-      const impactableEvents = events.filter((event) => {
-        const status = event.status || 'executed';
-        return status === 'executed' || event.action === 'CONVERSION';
-      });
-
-      const contactActions = new Map<string, number>();
-      for (const ev of impactableEvents) {
-        if (!ev.contactId) {
-          continue;
-        }
-        const ts = ev.createdAt.getTime();
-        const current = contactActions.get(ev.contactId);
-        if (!current || ts > current) {
-          contactActions.set(ev.contactId, ts);
-        }
-      }
+      const impactableEvents = filterImpactableEvents(events);
+      const contactActions = buildLatestContactActionMap(impactableEvents);
 
       const contactIds = Array.from(contactActions.keys());
       const contacts = await this.prisma.contact.findMany({
@@ -78,16 +76,6 @@ export class AutopilotAnalyticsInsightsService {
         allContactIds.length > 0
           ? new Date(Math.min(...Array.from(contactActions.values())))
           : since;
-      const paymentKeywords = [
-        'paguei',
-        'pago',
-        'pix',
-        'pague',
-        'comprei',
-        'compre',
-        'boleto',
-        'assinatura',
-      ];
 
       const [inboundMessages, conversionMessages] = await Promise.all([
         allContactIds.length > 0
@@ -111,7 +99,7 @@ export class AutopilotAnalyticsInsightsService {
                 contactId: { in: allContactIds.filter((id) => !conversionEventContacts.has(id)) },
                 direction: 'INBOUND',
                 createdAt: { gte: minActionTs },
-                OR: paymentKeywords.map((kw) => ({
+                OR: PAYMENT_KEYWORDS.map((kw) => ({
                   content: { contains: kw, mode: 'insensitive' },
                 })),
               },
@@ -120,51 +108,14 @@ export class AutopilotAnalyticsInsightsService {
           : Promise.resolve([]),
       ]);
 
-      const inboundByContact = new Map<string, Date[]>();
-      for (const msg of inboundMessages) {
-        if (!msg.contactId) {
-          continue;
-        }
-        const list = inboundByContact.get(msg.contactId) || [];
-        list.push(msg.createdAt);
-        inboundByContact.set(msg.contactId, list);
-      }
+      const inboundByContact = groupInboundByContact(inboundMessages);
 
-      let repliedContacts = 0;
-      let totalReplies = 0;
-      const replyDelays: number[] = [];
-      const samples: Array<{
-        contactId: string;
-        contact: string;
-        replyAt: Date;
-        delayMinutes: number;
-      }> = [];
+      const { repliedContacts, totalReplies, replyDelays, samples } = computeReplyAggregates(
+        contactActions,
+        inboundByContact,
+        contactMap,
+      );
       let conversions = conversionEvents.length;
-
-      for (const [contactId, actionTs] of contactActions.entries()) {
-        const replies = (inboundByContact.get(contactId) || []).filter(
-          (d) => d.getTime() > actionTs,
-        );
-        if (replies.length > 0) {
-          const firstReply = replies[0];
-          if (!firstReply) {
-            continue;
-          }
-          repliedContacts += 1;
-          totalReplies += replies.length;
-          const delay = Math.round((firstReply.getTime() - actionTs) / 60000);
-          replyDelays.push(delay);
-          const contact = contactMap.get(contactId);
-          if (samples.length < 5 && contact) {
-            samples.push({
-              contactId,
-              contact: contact.name || contact.phone,
-              replyAt: firstReply,
-              delayMinutes: delay,
-            });
-          }
-        }
-      }
 
       const keywordConversionContactIds = new Set(
         conversionMessages.map((m) => m.contactId).filter(Boolean),
@@ -173,10 +124,7 @@ export class AutopilotAnalyticsInsightsService {
         keywordConversionContactIds.size > 0
           ? [...keywordConversionContactIds].filter((id) => !conversionEventContacts.has(id)).length
           : 0;
-      const avgReplyMinutes =
-        replyDelays.length > 0
-          ? Math.round(replyDelays.reduce((a, b) => a + b, 0) / replyDelays.length)
-          : null;
+      const avgReplyMinutes = averageRoundedOrNull(replyDelays);
 
       const result = {
         workspaceId,
@@ -185,9 +133,9 @@ export class AutopilotAnalyticsInsightsService {
         repliedContacts,
         totalReplies,
         avgReplyMinutes,
-        replyRate: actionsAnalyzed > 0 ? repliedContacts / actionsAnalyzed : 0,
+        replyRate: safeRate(repliedContacts, actionsAnalyzed),
         conversions,
-        conversionRate: actionsAnalyzed > 0 ? conversions / actionsAnalyzed : 0,
+        conversionRate: safeRate(conversions, actionsAnalyzed),
         samples,
       };
       this.logger.log(
@@ -221,23 +169,7 @@ export class AutopilotAnalyticsInsightsService {
       select: { createdAt: true, intent: true, action: true, status: true },
     });
 
-    let executed = 0;
-    let errors = 0;
-    const intents: Record<string, number> = {};
-    const acts: Record<string, number> = {};
-
-    events.forEach((e) => {
-      const intent = e.intent || 'UNKNOWN';
-      const action = e.action || 'UNKNOWN';
-      intents[intent] = (intents[intent] || 0) + 1;
-      acts[action] = (acts[action] || 0) + 1;
-      if (e.status === 'error' || e.status === 'failed') {
-        errors += 1;
-      }
-      if (e.status === 'executed') {
-        executed += 1;
-      }
-    });
+    const { executed, errors, intents, actions: acts } = aggregateEventTaxonomy(events);
 
     const impact = await this.getImpact(workspaceId);
     const dealsWon = await this.prisma.deal.aggregate({
@@ -346,25 +278,8 @@ export class AutopilotAnalyticsInsightsService {
           _count: { _all: true },
         })
         .catch(() => []);
-      const timelineSummary = Array.isArray(timeline)
-        ? timeline
-            .map((entry) => {
-              const createdAt =
-                entry?.createdAt instanceof Date
-                  ? entry.createdAt.toISOString()
-                  : String(entry?.createdAt ?? 'unknown');
-              const count = typeof entry?._count?._all === 'number' ? entry._count._all : 0;
-              return `${createdAt}:${count}`;
-            })
-            .sort((left, right) => left.localeCompare(right))
-            .join(', ')
-        : 'n/a';
-
-      const topIntentsSummary = Object.entries(insights.intents || {})
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 3)
-        .map(([intent, count]) => `${intent}:${count}`)
-        .join(', ');
+      const timelineSummary = summarizeDailyTimeline(timeline);
+      const topIntentsSummary = summarizeTopIntents(insights.intents || {});
 
       const summary = `\nExecuted: ${insights.executed}\nErrors: ${insights.errors}\nReplyRate: ${(insights.replyRate * 100).toFixed(1)}%\nConversion: ${(insights.conversionRate * 100).toFixed(1)}%\nTop intents: ${topIntentsSummary}\n`;
 
