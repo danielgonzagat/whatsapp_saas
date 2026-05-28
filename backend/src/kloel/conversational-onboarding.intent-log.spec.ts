@@ -259,7 +259,7 @@ describe('ConversationalOnboardingService intent-router log telemetry', () => {
       await service.chat('ws-1', longMessage);
 
       const intents = logCalls.filter(([msg]) => msg === 'kloel_onboarding_intent');
-      expect(intents[0]![1]!.message_preview).toHaveLength(80);
+      expect(intents[0]?.[1]?.message_preview).toHaveLength(80);
     });
 
     it('returns the normal assistant response unchanged', async () => {
