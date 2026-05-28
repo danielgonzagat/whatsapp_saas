@@ -428,9 +428,22 @@ export class KloelReplyEngineService {
           const serialized = JSON.stringify(cognitiveState);
           if (serialized.length <= 16384) {
             await this.prisma.kloelMemory.upsert({
-              where: { workspaceId_key: { workspaceId: params.workspaceId, key: ABI_SNAPSHOT_KEY } },
-              update: { content: serialized, category: 'abi_snapshot', value: {}, updatedAt: new Date() },
-              create: { workspaceId: params.workspaceId, key: ABI_SNAPSHOT_KEY, content: serialized, category: 'abi_snapshot', value: {} },
+              where: {
+                workspaceId_key: { workspaceId: params.workspaceId, key: ABI_SNAPSHOT_KEY },
+              },
+              update: {
+                content: serialized,
+                category: 'abi_snapshot',
+                value: {},
+                updatedAt: new Date(),
+              },
+              create: {
+                workspaceId: params.workspaceId,
+                key: ABI_SNAPSHOT_KEY,
+                content: serialized,
+                category: 'abi_snapshot',
+                value: {},
+              },
             });
           } else {
             this.logger.warn('kloel_abi_snapshot_oversized', {
