@@ -8,69 +8,30 @@ import {
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
-import type { Product, Prisma } from '@prisma/client';
+import type { Product } from '@prisma/client';
 import { MindEventSpine } from '../kloel/mind/coordination';
+import {
+  assertWorkspaceId,
+  buildCommercialPayload,
+  buildListWhere,
+  resolvePagination,
+} from './product.helpers';
+import type {
+  CreateProductDto,
+  UpdateProductDto,
+  ProductListFilters,
+  ProductResult,
+  ProductListResult,
+} from './product.types';
 
-export interface CreateProductDto {
-  name: string;
-  description?: string;
-  price: number;
-  category?: string;
-  sku?: string;
-  tags?: string[];
-  format?: 'PHYSICAL' | 'DIGITAL' | 'HYBRID';
-  imageUrl?: string;
-  salesPageUrl?: string;
-  thankyouUrl?: string;
-  thankyouBoletoUrl?: string;
-  thankyouPixUrl?: string;
-  reclameAquiUrl?: string;
-  supportEmail?: string;
-  warrantyDays?: number;
-  shippingType?: string;
-  shippingValue?: number;
-  originCep?: string;
-  affiliateEnabled?: boolean;
-  affiliateVisible?: boolean;
-  affiliateAutoApprove?: boolean;
-  affiliateAccessData?: boolean;
-  affiliateAccessAbandoned?: boolean;
-  affiliateFirstInstallment?: boolean;
-  commissionType?: string;
-  commissionPercent?: number;
-  commissionCookieDays?: number;
-  stockQuantity?: number;
-  trackStock?: boolean;
-}
-
-export interface UpdateProductDto extends Partial<CreateProductDto> {
-  active?: boolean;
-  status?: string;
-}
-
-export interface ProductListFilters {
-  search?: string;
-  category?: string;
-  active?: boolean;
-  status?: string;
-  format?: string;
-  page?: number;
-  limit?: number;
-}
-
-export interface ProductResult {
-  success: boolean;
-  product?: Product;
-  message?: string;
-}
-
-export interface ProductListResult {
-  success: boolean;
-  products: Product[];
-  count: number;
-  page: number;
-  limit: number;
-}
+// Re-export DTOs / result shapes to preserve the historical import surface.
+export type {
+  CreateProductDto,
+  UpdateProductDto,
+  ProductListFilters,
+  ProductResult,
+  ProductListResult,
+};
 
 @Injectable()
 export class ProductService {
@@ -92,7 +53,7 @@ export class ProductService {
     dto: CreateProductDto,
     actor: { id: string; email?: string },
   ): Promise<ProductResult> {
-    this.assertWorkspace(workspaceId);
+    assertWorkspaceId(workspaceId);
 
     const product = await this.prisma.product.create({
       data: {
@@ -128,12 +89,7 @@ export class ProductService {
       subject: `product:${product.id}`,
       eventType: 'mind.product.observed',
       occurredAt: new Date(),
-      payload: {
-        productId: product.id,
-        name: product.name,
-        priceInCents: Math.round(product.price * 100),
-        format: product.format,
-      },
+      payload: buildCommercialPayload(product),
     });
 
     this.logger.log(`Product created: ${product.id} by ${actor.id}`);
@@ -149,19 +105,8 @@ export class ProductService {
     dto: UpdateProductDto,
     actor: { id: string; email?: string },
   ): Promise<ProductResult> {
-    this.assertWorkspace(workspaceId);
-
-    const existing = await this.prisma.product.findUnique({
-      where: { id: productId },
-    });
-
-    if (!existing) {
-      throw new NotFoundException(`Product ${productId} not found`);
-    }
-
-    if (existing.workspaceId !== workspaceId) {
-      throw new ForbiddenException('Cross-workspace access denied');
-    }
+    assertWorkspaceId(workspaceId);
+    await this.assertOwnedProduct(workspaceId, productId);
 
     const product = await this.prisma.product.update({
       where: { id: productId },
@@ -189,15 +134,7 @@ export class ProductService {
       subject: `product:${product.id}`,
       eventType: 'product.updated',
       occurredAt: new Date(),
-      payload: {
-        productId: product.id,
-        name: product.name,
-        priceInCents: Math.round(Number(product.price) * 100),
-        format: product.format,
-        status: product.status,
-        active: product.active,
-        changes: Object.keys(dto),
-      },
+      payload: buildCommercialPayload(product, { changes: Object.keys(dto) }),
     });
 
     return { success: true, product };
@@ -216,33 +153,13 @@ export class ProductService {
    * List products for a workspace with optional filters.
    */
   async list(workspaceId: string, filters: ProductListFilters = {}): Promise<ProductListResult> {
-    const { search, category, active, status, format, page = 1, limit = 20 } = filters;
-
-    const where: Prisma.ProductWhereInput = { workspaceId };
-
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-    if (category) {
-      where.category = category;
-    }
-    if (active !== undefined) {
-      where.active = active;
-    }
-    if (status) {
-      where.status = status;
-    }
-    if (format) {
-      where.format = format;
-    }
+    const where = buildListWhere(workspaceId, filters);
+    const { page, limit, skip } = resolvePagination(filters);
 
     const [products, count] = await Promise.all([
       this.prisma.product.findMany({
         where,
-        skip: (page - 1) * limit,
+        skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
       }),
@@ -261,19 +178,8 @@ export class ProductService {
     imageUrl: string,
     actor: { id: string },
   ): Promise<ProductResult> {
-    this.assertWorkspace(workspaceId);
-
-    const existing = await this.prisma.product.findUnique({
-      where: { id: productId },
-    });
-
-    if (!existing) {
-      throw new NotFoundException(`Product ${productId} not found`);
-    }
-
-    if (existing.workspaceId !== workspaceId) {
-      throw new ForbiddenException('Cross-workspace access denied');
-    }
+    assertWorkspaceId(workspaceId);
+    await this.assertOwnedProduct(workspaceId, productId);
 
     const product = await this.prisma.product.update({
       where: { id: productId },
@@ -301,16 +207,7 @@ export class ProductService {
       subject: `product:${product.id}`,
       eventType: 'product.updated',
       occurredAt: new Date(),
-      payload: {
-        productId: product.id,
-        name: product.name,
-        priceInCents: Math.round(Number(product.price) * 100),
-        format: product.format,
-        status: product.status,
-        active: product.active,
-        imageUrl,
-        changes: ['imageUrl'],
-      },
+      payload: buildCommercialPayload(product, { imageUrl, changes: ['imageUrl'] }),
     });
 
     return { success: true, product };
@@ -324,19 +221,8 @@ export class ProductService {
     productId: string,
     actor: { id: string },
   ): Promise<ProductResult> {
-    this.assertWorkspace(workspaceId);
-
-    const existing = await this.prisma.product.findUnique({
-      where: { id: productId },
-    });
-
-    if (!existing) {
-      throw new NotFoundException(`Product ${productId} not found`);
-    }
-
-    if (existing.workspaceId !== workspaceId) {
-      throw new ForbiddenException('Cross-workspace access denied');
-    }
+    assertWorkspaceId(workspaceId);
+    await this.assertOwnedProduct(workspaceId, productId);
 
     const product = await this.prisma.product.update({
       where: { id: productId },
@@ -362,14 +248,7 @@ export class ProductService {
       subject: `product:${product.id}`,
       eventType: 'product.published',
       occurredAt: new Date(),
-      payload: {
-        productId: product.id,
-        name: product.name,
-        priceInCents: Math.round(Number(product.price) * 100),
-        format: product.format,
-        status: product.status,
-        active: product.active,
-      },
+      payload: buildCommercialPayload(product),
     });
 
     return { success: true, product };
@@ -384,19 +263,8 @@ export class ProductService {
     available: boolean,
     actor: { id: string },
   ): Promise<ProductResult> {
-    this.assertWorkspace(workspaceId);
-
-    const existing = await this.prisma.product.findUnique({
-      where: { id: productId },
-    });
-
-    if (!existing) {
-      throw new NotFoundException(`Product ${productId} not found`);
-    }
-
-    if (existing.workspaceId !== workspaceId) {
-      throw new ForbiddenException('Cross-workspace access denied');
-    }
+    assertWorkspaceId(workspaceId);
+    await this.assertOwnedProduct(workspaceId, productId);
 
     const product = await this.prisma.product.update({
       where: { id: productId },
@@ -422,15 +290,7 @@ export class ProductService {
       subject: `product:${product.id}`,
       eventType: 'product.updated',
       occurredAt: new Date(),
-      payload: {
-        productId: product.id,
-        name: product.name,
-        priceInCents: Math.round(Number(product.price) * 100),
-        format: product.format,
-        status: product.status,
-        active: product.active,
-        changes: ['active'],
-      },
+      payload: buildCommercialPayload(product, { changes: ['active'] }),
     });
 
     return { success: true, product };
@@ -444,19 +304,8 @@ export class ProductService {
     productId: string,
     actor: { id: string },
   ): Promise<ProductResult> {
-    this.assertWorkspace(workspaceId);
-
-    const existing = await this.prisma.product.findUnique({
-      where: { id: productId },
-    });
-
-    if (!existing) {
-      throw new NotFoundException(`Product ${productId} not found`);
-    }
-
-    if (existing.workspaceId !== workspaceId) {
-      throw new ForbiddenException('Cross-workspace access denied');
-    }
+    assertWorkspaceId(workspaceId);
+    await this.assertOwnedProduct(workspaceId, productId);
 
     const product = await this.prisma.product.update({
       where: { id: productId },
@@ -482,22 +331,32 @@ export class ProductService {
       subject: `product:${product.id}`,
       eventType: 'product.deleted',
       occurredAt: new Date(),
-      payload: {
-        productId: product.id,
-        name: product.name,
-        priceInCents: Math.round(Number(product.price) * 100),
-        format: product.format,
-        status: product.status,
-        active: product.active,
-      },
+      payload: buildCommercialPayload(product),
     });
 
     return { success: true, message: 'Product deleted' };
   }
 
-  private assertWorkspace(workspaceId: string): void {
-    if (!workspaceId) {
-      throw new ForbiddenException('Workspace ID is required');
+  /**
+   * Ensure the product exists and belongs to the workspace.
+   * Throws NotFound / Forbidden — callers don't need to repeat the pattern.
+   */
+  private async assertOwnedProduct(
+    workspaceId: string,
+    productId: string,
+  ): Promise<Product> {
+    const existing = await this.prisma.product.findUnique({
+      where: { id: productId },
+    });
+
+    if (!existing) {
+      throw new NotFoundException(`Product ${productId} not found`);
     }
+
+    if (existing.workspaceId !== workspaceId) {
+      throw new ForbiddenException('Cross-workspace access denied');
+    }
+
+    return existing;
   }
 }
