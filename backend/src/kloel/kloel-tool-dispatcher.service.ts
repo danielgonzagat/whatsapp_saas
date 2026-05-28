@@ -28,22 +28,13 @@ import {
   runExecuteApprovedApprovalRequest,
   type ApprovedToolExecutionResult,
 } from './kloel-tool-dispatcher.approval.helpers';
-import {
-  asString,
-  asNumber,
-  missingStringInputs,
-  buyerDataFromArgs,
-  boletoBuyerDataFromArgs,
-  periodToSince,
-} from './kloel-tool-dispatcher.helpers';
+import { asString, asNumber, periodToSince } from './kloel-tool-dispatcher.helpers';
 import { buildCanonicalReceipt } from './kloel-tool-dispatcher.receipt.helpers';
 import { dispatchWhatsAppTool, isWhatsAppTool } from './kloel-tool-dispatcher.whatsapp.handlers';
 import { dispatchCodeTool, isCodeTool } from './kloel-tool-dispatcher.code.handlers';
 import { dispatchSelfTool, isSelfTool } from './kloel-tool-dispatcher.self.handlers';
-import {
-  dispatchConfigureTool,
-  isConfigureTool,
-} from './kloel-tool-dispatcher.configure.handlers';
+import { dispatchConfigureTool, isConfigureTool } from './kloel-tool-dispatcher.configure.handlers';
+import { dispatchSalesTool, isSalesTool } from './kloel-tool-dispatcher.sales.handlers';
 
 import type { UnknownRecord } from '../common/types';
 
@@ -161,6 +152,21 @@ export class KloelToolDispatcherService {
         );
         if (configureResult !== null) {
           return configureResult;
+        }
+      }
+      if (isSalesTool(toolName)) {
+        const salesResult = await dispatchSalesTool(
+          {
+            salesService: this.salesService,
+            capRegistryV2: this.capRegistryV2,
+            userId,
+          },
+          workspaceId,
+          toolName,
+          args,
+        );
+        if (salesResult !== null) {
+          return salesResult;
         }
       }
       switch (toolName) {
@@ -434,168 +440,7 @@ export class KloelToolDispatcherService {
           return await this.executeTool(workspaceId, 'sales.create_pix', args, userId);
         case 'generate_boleto':
           return await this.executeTool(workspaceId, 'sales.create_boleto', args, userId);
-        case 'sales.create_pix': {
-          const startedAt = Date.now();
-          const missingInputs = missingStringInputs(args, [
-            'productId',
-            'planId',
-            'customerName',
-            'customerEmail',
-            'customerCpf',
-          ]);
-          if (missingInputs.length > 0) {
-            return this.withCanonicalReceipt(
-              'sales.create_pix',
-              workspaceId,
-              args,
-              {
-                success: false,
-                error: 'sales_create_pix_inputs_required',
-                missingInputs,
-                message: `Dados faltantes para criar PIX real: ${missingInputs.join(', ')}`,
-              },
-              userId,
-              startedAt,
-            );
-          }
-          if (!this.salesService) {
-            return this.withCanonicalReceipt(
-              'sales.create_pix',
-              workspaceId,
-              args,
-              { success: false, error: 'sales_service_unavailable' },
-              userId,
-              startedAt,
-            );
-          }
-          try {
-            const pixResult = await this.salesService.createPixOrder(
-              workspaceId,
-              asString(args.productId).trim(),
-              asString(args.planId).trim(),
-              buyerDataFromArgs(args),
-            );
-            return this.withCanonicalReceipt(
-              'sales.create_pix',
-              workspaceId,
-              args,
-              {
-                success: true,
-                capabilityId: 'sales.create_pix',
-                saleId: pixResult.saleId,
-                orderId: pixResult.saleId,
-                paymentId: pixResult.externalPaymentId,
-                externalPaymentId: pixResult.externalPaymentId,
-                paymentUrl: pixResult.ticketUrl,
-                pixCopiaECola: pixResult.pixCopyPaste,
-                pixQrCode: pixResult.pixQrCode,
-                qrCodeBase64: pixResult.pixQrCodeBase64,
-                pixExpiresAt: pixResult.pixExpiresAt,
-                message: `PIX gerado: ${pixResult.saleId}`,
-              },
-              userId,
-              startedAt,
-            );
-          } catch (pixError: unknown) {
-            const msg =
-              pixError instanceof Error
-                ? pixError.message
-                : typeof pixError === 'string'
-                  ? pixError
-                  : 'unknown error';
-            return this.withCanonicalReceipt(
-              'sales.create_pix',
-              workspaceId,
-              args,
-              { success: false, error: msg },
-              userId,
-              startedAt,
-            );
-          }
-        }
-        case 'sales.create_boleto': {
-          const startedAt = Date.now();
-          const missingInputs = missingStringInputs(args, [
-            'productId',
-            'planId',
-            'customerName',
-            'customerEmail',
-            'customerCpf',
-            'customerPhone',
-            'customerZipCode',
-            'customerStreet',
-            'customerNumber',
-            'customerCity',
-            'customerState',
-          ]);
-          if (missingInputs.length > 0) {
-            return this.withCanonicalReceipt(
-              'sales.create_boleto',
-              workspaceId,
-              args,
-              {
-                success: false,
-                error: 'sales_create_boleto_inputs_required',
-                missingInputs,
-                message: `Dados faltantes para criar boleto real: ${missingInputs.join(', ')}`,
-              },
-              userId,
-              startedAt,
-            );
-          }
-          if (!this.salesService) {
-            return this.withCanonicalReceipt(
-              'sales.create_boleto',
-              workspaceId,
-              args,
-              { success: false, error: 'sales_service_unavailable' },
-              userId,
-              startedAt,
-            );
-          }
-          try {
-            const boletoResult = await this.salesService.createBoletoOrder(
-              workspaceId,
-              asString(args.productId).trim(),
-              asString(args.planId).trim(),
-              boletoBuyerDataFromArgs(args),
-            );
-            return this.withCanonicalReceipt(
-              'sales.create_boleto',
-              workspaceId,
-              args,
-              {
-                success: true,
-                capabilityId: 'sales.create_boleto',
-                saleId: boletoResult.saleId,
-                orderId: boletoResult.saleId,
-                paymentId: boletoResult.externalPaymentId,
-                externalPaymentId: boletoResult.externalPaymentId,
-                boletoBarcode: boletoResult.boletoBarcode,
-                boletoUrl: boletoResult.boletoUrl,
-                boletoExpiresAt: boletoResult.boletoExpiresAt,
-                message: `Boleto gerado: ${boletoResult.saleId}`,
-              },
-              userId,
-              startedAt,
-            );
-          } catch (boletoError: unknown) {
-            const msg =
-              boletoError instanceof Error
-                ? boletoError.message
-                : typeof boletoError === 'string'
-                  ? boletoError
-                  : 'unknown error';
-            return this.withCanonicalReceipt(
-              'sales.create_boleto',
-              workspaceId,
-              args,
-              { success: false, error: msg },
-              userId,
-              startedAt,
-            );
-          }
-        }
+        // ── sales.create_pix / sales.create_boleto handled via isSalesTool fast-path above ──
         case 'delete_product': {
           const startedAt = Date.now();
           const result = await this.chatToolsService.toolDeleteProduct(
