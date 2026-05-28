@@ -12,7 +12,6 @@ import * as Sentry from '@sentry/node';
 import { AuditService } from '../audit/audit.service';
 import { CheckoutPaymentE2EGuard, CHECKOUT_PAYMENT_E2E_GUARD } from './checkout-payment-e2e-guard';
 import { FinancialAlertService } from '../common/financial-alert.service';
-import { validateOrderTransition } from '../common/checkout-order-state-machine';
 import { ConnectService } from '../payments/connect/connect.service';
 import { FraudEngine } from '../payments/fraud/fraud.engine';
 import { MercadoPagoBoletoChargeService } from '../payments/mercadopago/mercadopago-boleto-charge.service';
@@ -27,7 +26,6 @@ import {
   BOLETO_EXPIRATION_DAYS,
   EMPTY_BOLETO_DATA,
   EMPTY_PIX_DATA,
-  FRAUD_ACTION_AUDIT_MAP,
   MP_WEBHOOK_PATH,
   PIX_EXPIRATION_MINUTES,
   assertCanonicalProvider,
@@ -48,12 +46,15 @@ import {
   emitPaymentLifecycleEvents,
   extractOrderMetadataView,
   extractProductName,
+  logCheckoutFraudDecision,
   mapMercadoPagoPaymentStatus,
   mapStripePaymentStatus,
   normalizeBoletoAddress,
   resolveBackendOrigin,
+  resolveExistingCheckoutPaymentForIdempotency,
+  runApprovedCheckoutPostPaymentEffects,
   toProviderPaymentMethod,
-  type AuditableFraudAction,
+  transitionCheckoutOrderToApproved,
   type CheckoutPaymentMethod,
   type CheckoutPaymentStatus,
   type PixDisplayData,
@@ -82,41 +83,6 @@ export class CheckoutPaymentService {
     @Optional()
     private readonly eventEmitter?: CheckoutEventEmitterService,
   ) {}
-
-  private async logFraudDecision(params: {
-    workspaceId: string;
-    orderId: string;
-    paymentMethod: CheckoutPaymentMethod;
-    chargedTotalInCents: number;
-    decision: {
-      action: 'allow' | 'review' | 'require_3ds' | 'block';
-      score: number;
-      reasons: Array<{ signal: string; detail: string }>;
-    };
-  }) {
-    if (params.decision.action === 'allow') {
-      return;
-    }
-
-    const auditableAction: AuditableFraudAction = params.decision.action;
-    await this.auditService.log({
-      workspaceId: params.workspaceId,
-      action: FRAUD_ACTION_AUDIT_MAP[auditableAction],
-      resource: 'CheckoutOrder',
-      resourceId: params.orderId,
-      details: {
-        orderId: params.orderId,
-        paymentMethod: params.paymentMethod,
-        chargedTotalInCents: params.chargedTotalInCents,
-        fraudDecision: {
-          action: params.decision.action,
-          score: params.decision.score,
-          reasonSignals: params.decision.reasons.map((reason) => reason.signal),
-          reasons: params.decision.reasons,
-        },
-      },
-    });
-  }
 
   /**
    * Shared persistence kernel for the three payment-method arms (Stripe card,
@@ -149,8 +115,9 @@ export class CheckoutPaymentService {
     const approved = input.paymentStatus === 'APPROVED';
     return this.prisma.$transaction(
       async (tx) => {
-        const idempotent = await this.resolveExistingPaymentForIdempotency(
+        const idempotent = await resolveExistingCheckoutPaymentForIdempotency(
           tx,
+          this.logger,
           input.params.orderId,
           input.externalId,
           input.chargeLabel,
@@ -162,11 +129,11 @@ export class CheckoutPaymentService {
         const createdPayment = await tx.checkoutPayment.create({ data: input.data });
 
         if (approved) {
-          await this.transitionOrderToApproved(tx, input.params.orderId, input.params.workspaceId, {
-            paymentId: createdPayment.id,
-            provider: input.provider,
-            externalId: input.externalId,
-          });
+          await transitionCheckoutOrderToApproved(
+            tx,
+            input.params.orderId,
+            input.params.workspaceId,
+          );
         }
 
         await this.auditService.logWithTx(
@@ -331,7 +298,7 @@ export class CheckoutPaymentService {
       amountCents: BigInt(chargedTotalInCents),
     });
 
-    await this.logFraudDecision({
+    await logCheckoutFraudDecision(this.auditService, {
       workspaceId: params.workspaceId,
       orderId: params.orderId,
       paymentMethod: params.paymentMethod,
@@ -407,7 +374,13 @@ export class CheckoutPaymentService {
         });
 
         if (approved) {
-          await this.runApprovedPostPaymentEffects(order, params, amount);
+          await runApprovedCheckoutPostPaymentEffects(
+            this.postPaymentEffects,
+            this.logger,
+            order,
+            params,
+            amount,
+          );
         }
 
         return buildCheckoutPaymentResult({
@@ -512,7 +485,13 @@ export class CheckoutPaymentService {
         });
 
         if (approved) {
-          await this.runApprovedPostPaymentEffects(order, params, amount);
+          await runApprovedCheckoutPostPaymentEffects(
+            this.postPaymentEffects,
+            this.logger,
+            order,
+            params,
+            amount,
+          );
         }
 
         return buildCheckoutPaymentResult({
@@ -601,7 +580,13 @@ export class CheckoutPaymentService {
       });
 
       if (approved) {
-        await this.runApprovedPostPaymentEffects(order, params, amount);
+        await runApprovedCheckoutPostPaymentEffects(
+          this.postPaymentEffects,
+          this.logger,
+          order,
+          params,
+          amount,
+        );
       }
 
       return buildCheckoutPaymentResult({
@@ -644,64 +629,6 @@ export class CheckoutPaymentService {
       );
       throw error;
     }
-  }
-
-  /**
-   * Look up an existing checkout payment for the order inside an open transaction
-   * and decide whether the current charge is a no-op replay. Returns the existing
-   * payment iff `externalId` matches the new charge (idempotency hit); otherwise
-   * returns null so the caller proceeds to create a fresh payment row, logging a
-   * divergence warning when an existing row carries a different externalId.
-   *
-   * `chargeLabel` is the human-readable provider label embedded in the log line
-   * (e.g. `PaymentIntent`, `Mercado Pago payment`, `Mercado Pago boleto`) to keep
-   * the per-arm log surface stable.
-   */
-  private async resolveExistingPaymentForIdempotency<TExisting extends { externalId: string }>(
-    tx: Prisma.TransactionClient,
-    orderId: string,
-    newExternalId: string,
-    chargeLabel: string,
-  ): Promise<TExisting | null> {
-    const existingPayment = (await tx.checkoutPayment.findFirst({
-      where: { orderId },
-    })) as unknown as TExisting | null;
-    if (!existingPayment) {
-      return null;
-    }
-    if (existingPayment.externalId === newExternalId) {
-      this.logger.log(
-        `Idempotency: payment already exists for order ${orderId} with same ${chargeLabel} ${newExternalId}`,
-      );
-      return existingPayment;
-    }
-    this.logger.warn(
-      `Idempotency: payment exists for order ${orderId} but with different externalId (existing=${existingPayment.externalId}, new=${newExternalId})`,
-    );
-    return null;
-  }
-
-  /**
-   * Run the post-payment effects that fire after a charge is approved across all
-   * payment-method arms (Stripe card, Mercado Pago PIX, Mercado Pago boleto). Each
-   * effect is awaited but its rejection is swallowed and logged at warn level —
-   * preserving the original per-arm behavior. Pure I/O orchestration, no money math.
-   */
-  private async runApprovedPostPaymentEffects(
-    order: NonNullable<Awaited<ReturnType<CheckoutPaymentService['findOrder']>>>,
-    params: { orderId: string; workspaceId: string },
-    amount: number,
-  ): Promise<void> {
-    const warn = (label: string, error: unknown) =>
-      this.logger.warn(
-        `Checkout post-payment ${label} failed for order ${params.orderId}: ${describeError(error)}`,
-      );
-    await this.postPaymentEffects
-      .markLeadConverted(order, params.workspaceId)
-      .catch((error) => warn('lead conversion', error));
-    await this.postPaymentEffects
-      .sendPurchaseSignals(order, amount)
-      .catch((error) => warn('purchase signals', error));
   }
 
   private findOrder(orderId: string, workspaceId: string) {
@@ -753,40 +680,5 @@ export class CheckoutPaymentService {
       displayName: workspace.name,
     });
     return created.stripeAccountId;
-  }
-
-  private async transitionOrderToApproved(
-    tx: Prisma.TransactionClient,
-    orderId: string,
-    workspaceId: string,
-    _transitionContext: {
-      paymentId: string;
-      provider: 'stripe' | 'mercadopago';
-      externalId: string;
-    },
-  ) {
-    const currentOrder = await tx.checkoutOrder.findFirst({
-      where: { id: orderId, workspaceId },
-      select: { status: true },
-    });
-    let currentStatus = currentOrder?.status || 'PENDING';
-    const transitionContext = { orderId, workspaceId };
-    if (currentStatus !== 'PROCESSING') {
-      if (!validateOrderTransition(currentStatus, 'PROCESSING', transitionContext)) {
-        return;
-      }
-      await tx.checkoutOrder.updateMany({
-        where: { id: orderId, workspaceId },
-        data: { status: 'PROCESSING' },
-      });
-      currentStatus = 'PROCESSING';
-    }
-    if (!validateOrderTransition(currentStatus, 'PAID', transitionContext)) {
-      return;
-    }
-    await tx.checkoutOrder.updateMany({
-      where: { id: orderId, workspaceId },
-      data: { status: 'PAID', paidAt: new Date() },
-    });
   }
 }

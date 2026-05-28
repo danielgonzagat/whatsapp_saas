@@ -1,5 +1,8 @@
 import { Prisma } from '@prisma/client';
 
+import type { AuditService } from '../audit/audit.service';
+import { validateOrderTransition } from '../common/checkout-order-state-machine';
+import type { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effects.service';
 import type { MercadoPagoBoletoChargeService } from '../payments/mercadopago/mercadopago-boleto-charge.service';
 import type { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
 import type {
@@ -7,6 +10,12 @@ import type {
   ProviderRoutingDecision,
 } from '../payments/provider-router/provider-router.types';
 import type { StripeChargeService } from '../payments/stripe/stripe-charge.service';
+
+/** Minimal logger surface used by the extracted checkout-payment helpers. */
+export type CheckoutPaymentHelperLogger = {
+  log: (message: string) => void;
+  warn: (message: string) => void;
+};
 
 type SaleChargeInput = Parameters<StripeChargeService['createSaleCharge']>[0];
 type StripeSaleCharge = Awaited<ReturnType<StripeChargeService['createSaleCharge']>>;
@@ -774,4 +783,154 @@ export function buildMercadoPagoBoletoPaymentData(input: {
       payment: input.charge.raw,
     }),
   };
+}
+
+/**
+ * Record an audit log entry for a non-allow fraud decision. No-op when the
+ * decision action is `allow`. Pure I/O: takes the AuditService as an argument
+ * so the helper stays free of instance state. Money path untouched.
+ */
+export async function logCheckoutFraudDecision(
+  auditService: Pick<AuditService, 'log'>,
+  params: {
+    workspaceId: string;
+    orderId: string;
+    paymentMethod: CheckoutPaymentMethod;
+    chargedTotalInCents: number;
+    decision: {
+      action: 'allow' | 'review' | 'require_3ds' | 'block';
+      score: number;
+      reasons: Array<{ signal: string; detail: string }>;
+    };
+  },
+): Promise<void> {
+  if (params.decision.action === 'allow') {
+    return;
+  }
+
+  const auditableAction: AuditableFraudAction = params.decision.action;
+  await auditService.log({
+    workspaceId: params.workspaceId,
+    action: FRAUD_ACTION_AUDIT_MAP[auditableAction],
+    resource: 'CheckoutOrder',
+    resourceId: params.orderId,
+    details: {
+      orderId: params.orderId,
+      paymentMethod: params.paymentMethod,
+      chargedTotalInCents: params.chargedTotalInCents,
+      fraudDecision: {
+        action: params.decision.action,
+        score: params.decision.score,
+        reasonSignals: params.decision.reasons.map((reason) => reason.signal),
+        reasons: params.decision.reasons,
+      },
+    },
+  });
+}
+
+/**
+ * Look up an existing checkout payment for the order inside an open transaction
+ * and decide whether the current charge is a no-op replay. Returns the existing
+ * payment iff `externalId` matches the new charge (idempotency hit); otherwise
+ * returns null so the caller proceeds to create a fresh payment row, logging a
+ * divergence warning when an existing row carries a different externalId.
+ *
+ * `chargeLabel` is the human-readable provider label embedded in the log line
+ * (e.g. `PaymentIntent`, `Mercado Pago payment`, `Mercado Pago boleto`) to keep
+ * the per-arm log surface stable. Pure: takes the logger as an argument.
+ */
+export async function resolveExistingCheckoutPaymentForIdempotency<
+  TExisting extends { externalId: string },
+>(
+  tx: Prisma.TransactionClient,
+  logger: CheckoutPaymentHelperLogger,
+  orderId: string,
+  newExternalId: string,
+  chargeLabel: string,
+): Promise<TExisting | null> {
+  const existingPayment = (await tx.checkoutPayment.findFirst({
+    where: { orderId },
+  })) as unknown as TExisting | null;
+  if (!existingPayment) {
+    return null;
+  }
+  if (existingPayment.externalId === newExternalId) {
+    logger.log(
+      `Idempotency: payment already exists for order ${orderId} with same ${chargeLabel} ${newExternalId}`,
+    );
+    return existingPayment;
+  }
+  logger.warn(
+    `Idempotency: payment exists for order ${orderId} but with different externalId (existing=${existingPayment.externalId}, new=${newExternalId})`,
+  );
+  return null;
+}
+
+/**
+ * Transition a checkout order to PAID inside an open transaction, advancing
+ * through PROCESSING when needed. Validates every hop with the canonical
+ * state-machine guard; silently aborts when a transition is illegal so the
+ * caller's persist-tx commits the payment row without flipping the order
+ * status. Pure tx logic — no money math, no `this` dependencies.
+ */
+export async function transitionCheckoutOrderToApproved(
+  tx: Prisma.TransactionClient,
+  orderId: string,
+  workspaceId: string,
+): Promise<void> {
+  const currentOrder = await tx.checkoutOrder.findFirst({
+    where: { id: orderId, workspaceId },
+    select: { status: true },
+  });
+  let currentStatus = currentOrder?.status || 'PENDING';
+  const transitionContext = { orderId, workspaceId };
+  if (currentStatus !== 'PROCESSING') {
+    if (!validateOrderTransition(currentStatus, 'PROCESSING', transitionContext)) {
+      return;
+    }
+    await tx.checkoutOrder.updateMany({
+      where: { id: orderId, workspaceId },
+      data: { status: 'PROCESSING' },
+    });
+    currentStatus = 'PROCESSING';
+  }
+  if (!validateOrderTransition(currentStatus, 'PAID', transitionContext)) {
+    return;
+  }
+  await tx.checkoutOrder.updateMany({
+    where: { id: orderId, workspaceId },
+    data: { status: 'PAID', paidAt: new Date() },
+  });
+}
+
+type CheckoutOrderForPostEffects = Parameters<
+  CheckoutPostPaymentEffectsService['markLeadConverted']
+>[0];
+
+/**
+ * Run the post-payment effects that fire after a charge is approved across all
+ * payment-method arms (Stripe card, Mercado Pago PIX, Mercado Pago boleto). Each
+ * effect is awaited but its rejection is swallowed and logged at warn level —
+ * preserving the original per-arm behavior. Pure I/O orchestration, no money math.
+ */
+export async function runApprovedCheckoutPostPaymentEffects(
+  postPaymentEffects: Pick<
+    CheckoutPostPaymentEffectsService,
+    'markLeadConverted' | 'sendPurchaseSignals'
+  >,
+  logger: CheckoutPaymentHelperLogger,
+  order: CheckoutOrderForPostEffects,
+  params: { orderId: string; workspaceId: string },
+  amount: number,
+): Promise<void> {
+  const warn = (label: string, error: unknown) =>
+    logger.warn(
+      `Checkout post-payment ${label} failed for order ${params.orderId}: ${describeError(error)}`,
+    );
+  await postPaymentEffects
+    .markLeadConverted(order, params.workspaceId)
+    .catch((error) => warn('lead conversion', error));
+  await postPaymentEffects
+    .sendPurchaseSignals(order, amount)
+    .catch((error) => warn('purchase signals', error));
 }
