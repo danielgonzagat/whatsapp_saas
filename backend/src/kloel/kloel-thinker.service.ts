@@ -29,6 +29,14 @@ import { detectActionIntent } from './guest-chat.action-intent.helpers';
 import { KloelReplyEngineService, LocalToolExecutor } from './kloel-reply-engine.service';
 import { thinkSyncImpl, regenerateThreadAssistantResponseImpl } from './kloel-thinker.helpers';
 import {
+  buildBoundedAbiPayload,
+  buildHandoffEscalationLog,
+  extractAbiBuildExceptionMessage,
+  initialAbiOutcomeLabel,
+  readHandoffGateFlags,
+  shouldEscalateForHandoff,
+} from './kloel-thinker.abi.helpers';
+import {
   finalizeSuccessfulReply,
   persistChatTurnToSpine,
   runComposerCapabilityBranch,
@@ -239,7 +247,7 @@ export class KloelThinkerService {
       let prebuiltCognitiveState: Record<string, unknown> | undefined;
 
       const useAbi = process.env['KLOEL_THINKER_USE_ABI'] !== 'off';
-      let abiOutcome = useAbi ? (this.abiBuilder ? 'attempted' : 'no_abiBuilder') : 'flag_off';
+      let abiOutcome = initialAbiOutcomeLabel({ useAbi, hasAbiBuilder: !!this.abiBuilder });
       let substrateBuilt = false;
       if (useAbi && this.abiBuilder) {
         try {
@@ -289,37 +297,20 @@ export class KloelThinkerService {
               // payload. The ABI goes to SYSTEM (structured state, B2 —
               // not a behavioral instruction); the user message stays
               // EXACTLY the user's input (fixes long-message hang).
-              const capArrays = (_k: string, v: unknown): unknown =>
-                Array.isArray(v) ? v.slice(0, 8) : v;
-              const boundedAbi = JSON.parse(JSON.stringify(abiResult.abi, capArrays)) as Record<
-                string,
-                unknown
-              >;
-              let abiStr = JSON.stringify(boundedAbi);
-              // ROOT-CAUSE FIX (runtime-evidenced via KLOEL_ABI_PATH
-              // abiLen=6018): the 6000 hard cap blind-sliced the JSON
-              // and decapitated memory/episodicRefs/recentSalientEvents
-              // (where recallable facts live) → cross-session recall
-              // never worked substrate-driven. Arrays are already capped
-              // to 8 (capArrays); 24000 fits the full enriched ABI well
-              // within DeepSeek V4 Pro's context. Slice stays only as a
-              // never-reached last resort.
-              const ABI_MAX = 24000;
-              if (abiStr.length > ABI_MAX) {
-                abiStr = `${abiStr.slice(0, ABI_MAX)}…(state_truncated)`;
-              }
+              // Bounding constants/logic live in `kloel-thinker.abi.helpers.ts`.
+              const { boundedAbi, abiStrLen } = buildBoundedAbiPayload(
+                abiResult.abi as unknown as Record<string, unknown>,
+              );
               prebuiltCognitiveState = boundedAbi;
               finalSystemPrompt = CANONICAL_FALLBACK_SYSTEM;
               finalUserMessage = message;
-              abiOutcome = `success(abiLen=${abiStr.length})`;
+              abiOutcome = `success(abiLen=${abiStrLen})`;
 
               // Wave 10 Phase 2: handoff-confidence collection (flag-gated,
               // observe-only). Gate defaults OFF — no escalation, no
               // blocking, just a structured log for telemetry baselining.
-              if (
-                process.env['HANDOFF_CONFIDENCE_GATE_ENABLED'] === 'true' ||
-                process.env['HANDOFF_CONFIDENCE_GATE_BLOCKING_ENABLED'] === 'true'
-              ) {
+              const handoffFlags = readHandoffGateFlags();
+              if (handoffFlags.observe) {
                 const snapshot = computeHandoffConfidence(
                   abiResult.abi.beliefs,
                   abiResult.abi.pulseTruth,
@@ -329,20 +320,15 @@ export class KloelThinkerService {
                   ...snapshot,
                 });
 
-                if (
-                  process.env['HANDOFF_CONFIDENCE_GATE_BLOCKING_ENABLED'] === 'true' &&
-                  snapshot.wouldEscalateAtThreshold04
-                ) {
-                  this.logger.warn('Handoff confidence gate: escalation to human', {
-                    context: 'kloel.handoff.confidence.blocking',
-                    workspaceId,
-                    composite: snapshot.composite,
-                    meanBeliefConfidence: snapshot.meanBeliefConfidence,
-                    capabilityHealth: snapshot.capabilityHealth,
-                    overclaimRisk: snapshot.overclaimRisk,
-                    beliefCount: snapshot.beliefCount,
-                    threshold: HANDOFF_THRESHOLD,
-                  });
+                if (shouldEscalateForHandoff(snapshot, handoffFlags)) {
+                  this.logger.warn(
+                    'Handoff confidence gate: escalation to human',
+                    buildHandoffEscalationLog({
+                      snapshot,
+                      workspaceId,
+                      threshold: HANDOFF_THRESHOLD,
+                    }),
+                  );
                   safeWrite(
                     createKloelErrorEvent({
                       content:
@@ -359,12 +345,7 @@ export class KloelThinkerService {
             }
           }
         } catch (error: unknown) {
-          const msg =
-            error instanceof Error
-              ? error.message
-              : typeof error === 'string'
-                ? error
-                : 'unknown error';
+          const msg = extractAbiBuildExceptionMessage(error);
           abiOutcome = `exception:${msg}`;
           this.logger.warn(`ABI build exception: ${msg}, falling back to legacy thinker prompt`);
         }
