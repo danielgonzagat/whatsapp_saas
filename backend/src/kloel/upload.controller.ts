@@ -40,15 +40,19 @@ import {
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import {
+  ALLOWED_UPLOAD_MIMES,
+  MEMORY_TEXT_PREVIEW_LIMIT,
+  UPLOAD_FILENAME_RE,
+  countAnalysisItems,
   deleteStoredFileIfNeeded as companionDeleteStored,
+  extractPdfText,
   insufficientWalletMessage as companionInsufficientWallet,
+  isWordDocumentLike,
   storeUploadedFile as companionStoreFile,
 } from './upload-helpers';
 
 import { RouteClass } from '../common/throttler/route-class.decorator';
 import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
-const JPG_JPEG_PNG_GIF_WEBP_RE = /\.(jpg|jpeg|png|gif|webp|pdf|txt|doc|docx|xls|xlsx)$/i;
-const DOC_DOCX_RE = /\.(doc|docx)$/i;
 
 interface UploadedFileType {
   fieldname: string;
@@ -57,23 +61,6 @@ interface UploadedFileType {
   mimetype: string;
   size: number;
   buffer: Buffer;
-}
-
-const ALLOWED_UPLOAD_MIMES = new Set([
-  'application/pdf',
-  'text/plain',
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'image/gif',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-excel',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-]);
-
-function countAnalysisItems(value: unknown): number {
-  return Array.isArray(value) ? value.length : 0;
 }
 
 /** Upload controller. */
@@ -266,7 +253,7 @@ export class UploadController {
     FilesInterceptor('files', 10, {
       limits: { fileSize: 10 * 1024 * 1024 },
       fileFilter: (_req, file, cb) => {
-        const allowed = JPG_JPEG_PNG_GIF_WEBP_RE;
+        const allowed = UPLOAD_FILENAME_RE;
         cb(null, allowed.test(file.originalname));
       },
     }),
@@ -318,28 +305,9 @@ export class UploadController {
 
     // PDF - extrair texto e processar
     if (mimetype === 'application/pdf') {
-      let extractedText = '';
-      try {
-        const mod = (await import('pdf-parse')) as Record<string, unknown>;
-        const pdfParse = (mod.default ?? mod) as (data: Buffer) => Promise<{
-          text: string;
-          numpages?: number;
-        }>;
-        const textResult = await pdfParse(file.buffer);
-        extractedText = textResult.text;
-      } catch (error: unknown) {
-        void this.opsAlert?.alertOnCriticalError(error, 'UploadController.pdfParse');
-        this.logger.error(
-          `Erro ao extrair PDF do upload ${originalname}: ${error instanceof Error ? error.message : String(error)}`,
-        );
-        throw new BadRequestException(
-          'Não foi possível extrair texto do PDF. Verifique se o arquivo é um PDF válido.',
-        );
-      }
-
-      if (!extractedText || extractedText.trim().length < 10) {
-        throw new BadRequestException('O documento não contém texto suficiente para análise.');
-      }
+      const extractedText = await extractPdfText(file.buffer, originalname, this.logger, (err) =>
+        this.opsAlert?.alertOnCriticalError(err, 'UploadController.pdfParse'),
+      );
 
       const requestId = `${workspaceId}:${originalname}:${file.size}`;
       const estimatedCostCents = this.estimatePdfAnalysisQuote(extractedText, originalname);
@@ -429,7 +397,7 @@ export class UploadController {
           storageUrl: stored.url,
         },
         'text',
-        text.substring(0, 5000), // Limite para memória
+        text.substring(0, MEMORY_TEXT_PREVIEW_LIMIT),
       );
 
       return {
@@ -468,11 +436,7 @@ export class UploadController {
     }
 
     // Documentos Word/outros
-    if (
-      mimetype.includes('document') ||
-      mimetype.includes('msword') ||
-      originalname.match(DOC_DOCX_RE)
-    ) {
+    if (isWordDocumentLike(mimetype, originalname)) {
       const stored = await this.storeUploadedFile(file, workspaceId);
       await this.memoryService.saveMemory(
         workspaceId,
