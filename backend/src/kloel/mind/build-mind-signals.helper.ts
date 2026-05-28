@@ -69,6 +69,12 @@ export interface BuildMindSignalsDeps {
   selfGapsService?: SelfGapsService;
   riskClassService?: RiskClassService;
   mindVerbalizerService?: { narrate?: (workspaceId: string) => Promise<string> };
+  mindBanditService?: {
+    selectArm?: (
+      workspaceId: string,
+      decisionType: string,
+    ) => Promise<{ arm: string; confidence: number; rationale?: string } | null>;
+  };
   logger: Pick<StructuredLogger, 'warn'>;
 }
 /**
@@ -265,6 +271,27 @@ export async function buildMindSignals(
       };
     } catch (error: unknown) {
       deps.logger.warn('kloel_risk_class_skipped', {
+        reason: error instanceof Error ? error.message : 'unknown error',
+      });
+    }
+  }
+
+  // ── Bandit strategy selection (PI-K14-B) ─────────────────────────
+  if (deps.mindBanditService?.selectArm) {
+    try {
+      const banditResult = await deps.mindBanditService.selectArm(
+        workspaceId,
+        'chat_strategy',
+      );
+      if (banditResult) {
+        mindSignals.strategy = {
+          arm: banditResult.arm,
+          confidence: banditResult.confidence,
+          rationale: banditResult.rationale ?? `Bandit selected arm "${banditResult.arm}"`,
+        };
+      }
+    } catch (error: unknown) {
+      deps.logger.warn('kloel_mind_bandit_skipped', {
         reason: error instanceof Error ? error.message : 'unknown error',
       });
     }

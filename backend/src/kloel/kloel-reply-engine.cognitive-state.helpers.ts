@@ -41,6 +41,12 @@ interface KloelMindServices {
   riskClassService?: RiskClassService;
   mindVerbalizerService?: { narrate?: (workspaceId: string) => Promise<string> };
   mindAutonomyCoordinator?: MindAutonomyCoordinator;
+  mindBanditService?: {
+    selectArm?: (
+      workspaceId: string,
+      decisionType: string,
+    ) => Promise<{ arm: string; confidence: number; rationale?: string } | null>;
+  };
 }
 
 export const ABI_SNAPSHOT_KEY = 'abi_snapshot_cache';
@@ -82,6 +88,9 @@ export function buildKloelMindSignalsDeps(
       : {}),
     ...(services.mindVerbalizerService !== undefined
       ? { mindVerbalizerService: services.mindVerbalizerService }
+      : {}),
+    ...(services.mindBanditService !== undefined
+      ? { mindBanditService: services.mindBanditService }
       : {}),
   };
 }

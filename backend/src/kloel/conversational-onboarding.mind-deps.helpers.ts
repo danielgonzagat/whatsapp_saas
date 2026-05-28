@@ -35,6 +35,12 @@ interface OnboardingMindServices {
   selfGapsService?: SelfGapsService;
   riskClassService?: RiskClassService;
   mindVerbalizerService?: { narrate?: (workspaceId: string) => Promise<string> };
+  mindBanditService?: {
+    selectArm?: (
+      workspaceId: string,
+      decisionType: string,
+    ) => Promise<{ arm: string; confidence: number; rationale?: string } | null>;
+  };
 }
 
 /**
@@ -75,6 +81,9 @@ export function buildOnboardingMindSignalsDeps(
       : {}),
     ...(services.mindVerbalizerService !== undefined
       ? { mindVerbalizerService: services.mindVerbalizerService }
+      : {}),
+    ...(services.mindBanditService !== undefined
+      ? { mindBanditService: services.mindBanditService }
       : {}),
   };
 }

@@ -127,6 +127,65 @@ export class MindBanditService {
     }
   }
 
+  /**
+   * Read-only arm selection for mind signals — never increments pulls.
+   * Returns the best arm by UCB score with confidence (Bayesian mean) and
+   * a human-readable rationale.
+   */
+  async selectArm(
+    workspaceId: string,
+    decisionType: string,
+  ): Promise<{ arm: string; confidence: number; rationale: string } | null> {
+    const startedAt = Date.now();
+    try {
+      const arms = await this.prisma.mindBanditArm.findMany({
+        where: { workspaceId, decisionType, isActive: true },
+      });
+      if (arms.length === 0) {
+        return null;
+      }
+
+      const totalPulls = arms.reduce((sum, a) => sum + a.pulls, 0);
+      const best = arms.reduce(
+        (leader, arm) => {
+          const s = score(arm.alpha, arm.beta, arm.pulls, totalPulls);
+          return s > leader.score ? { arm, score: s } : leader;
+        },
+        { arm: arms[0], score: score(arms[0].alpha, arms[0].beta, arms[0].pulls, totalPulls) },
+      );
+
+      const chosenMean =
+        best.arm.pulls > 0
+          ? best.arm.alpha / (best.arm.alpha + best.arm.beta)
+          : 0.5;
+      const rationale =
+        totalPulls === 0
+          ? `Exploring arm "${best.arm.arm}" (no prior data)`
+          : `Exploiting arm "${best.arm.arm}" (mean reward ${(chosenMean * 100).toFixed(0)}% over ${best.arm.pulls} pulls, UCB score ${best.score.toFixed(3)})`;
+
+      this.logger.debug({
+        operation: 'mind.bandit.select_arm',
+        status: 'ok',
+        durationMs: Date.now() - startedAt,
+        workspaceId,
+        decisionType,
+        arm: best.arm.arm,
+        confidence: chosenMean,
+      });
+      return { arm: best.arm.arm, confidence: chosenMean, rationale };
+    } catch (error: unknown) {
+      this.logger.warn({
+        operation: 'mind.bandit.select_arm',
+        status: 'error',
+        durationMs: Date.now() - startedAt,
+        workspaceId,
+        decisionType,
+        errorCode: error instanceof Error ? error.message : 'unknown',
+      });
+      throw error;
+    }
+  }
+
   async recordOutcome(input: {
     arm: string;
     decisionType: string;

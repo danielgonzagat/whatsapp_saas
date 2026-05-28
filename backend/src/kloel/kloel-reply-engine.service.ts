@@ -37,6 +37,7 @@ import { MindSurpriseService } from './mind/inference/mind-surprise.service';
 import { MindPredictionService } from './mind/mind-prediction.service';
 import { MindVerbalizerService } from './mind/synthetic/mind-verbalizer.service';
 import { MindAutonomyCoordinator } from './mind/coordination/mind-autonomy-coordinator.service';
+import { MindBanditService } from './mind/policy/mind-bandit.service';
 import {
   buildChatOutcomeKey,
   recordChatReplyDecision,
@@ -83,6 +84,7 @@ export class KloelReplyEngineService {
     @Optional() private readonly mindPredictionService?: MindPredictionService,
     @Optional() private readonly mindVerbalizerService?: MindVerbalizerService,
     @Optional() private readonly mindAutonomyCoordinator?: MindAutonomyCoordinator,
+    @Optional() private readonly mindBanditService?: MindBanditService,
   ) {
     this.openai = createTextLlmClient(undefined, { timeout: 60_000, maxRetries: 0 });
     this.toolRouter = new KloelToolRouter(
@@ -277,6 +279,9 @@ export class KloelReplyEngineService {
           : {}),
         ...(this.mindAutonomyCoordinator !== undefined
           ? { mindAutonomyCoordinator: this.mindAutonomyCoordinator }
+          : {}),
+        ...(this.mindBanditService !== undefined
+          ? { mindBanditService: this.mindBanditService }
           : {}),
       },
     };
