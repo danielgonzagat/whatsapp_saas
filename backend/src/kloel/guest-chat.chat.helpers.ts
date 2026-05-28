@@ -202,6 +202,24 @@ export async function generateGuestReply(
 
   return unavailableMessage;
 }
+
+function formatOperationalToolReply(tool: string, result: unknown): string {
+  const record = (result as Record<string, unknown> | undefined) ?? {};
+  const missingInputs = Array.isArray(record.missingInputs)
+    ? record.missingInputs.filter((input): input is string => typeof input === 'string')
+    : [];
+
+  if (record.success === false && missingInputs.length > 0) {
+    const message =
+      typeof record.message === 'string' && record.message.trim()
+        ? record.message.trim()
+        : `Dados faltantes para executar ${tool}: ${missingInputs.join(', ')}`;
+    return `${message}. Nenhuma ação real foi executada ainda.`;
+  }
+
+  return formatToolResult(tool, result);
+}
+
 export async function runDeterministicAction(
   message: string,
   sessionId: string,
@@ -252,7 +270,7 @@ export async function runDeterministicAction(
             })
             .catch(() => {});
         }
-        const reply = formatToolResult(action.tool, result);
+        const reply = formatOperationalToolReply(action.tool, result);
         await persistConversationMessage(
           sessionId,
           'assistant',
@@ -330,7 +348,7 @@ export async function runDeterministicAction(
           })
           .catch(() => {});
       }
-      const reply = formatToolResult(legacyAction.tool, result);
+      const reply = formatOperationalToolReply(legacyAction.tool, result);
       await persistConversationMessage(sessionId, 'assistant', reply, redis, conversations, logger);
       return reply;
     } catch (err: unknown) {

@@ -62,4 +62,74 @@ describe('runDeterministicAction', () => {
     expect(reply).toContain('mercado_pago_boleto_down');
     expect(reply).toContain('não foi concluída');
   });
+
+  it('asks for missing Pix inputs instead of exposing an internal error code', async () => {
+    const registry = new CapabilityRegistryV2Service();
+    const intentRouter = new IntentRouterService(registry);
+    const executeTool = jest.fn().mockResolvedValue({
+      success: false,
+      error: 'sales_create_pix_inputs_required',
+      missingInputs: ['productId', 'planId', 'customerEmail', 'customerCpf'],
+      message: 'Dados faltantes para criar PIX real: productId, planId, customerEmail, customerCpf',
+    });
+    const logger = {
+      log: jest.fn(),
+      warn: jest.fn(),
+      debug: jest.fn(),
+      error: jest.fn(),
+    };
+
+    const reply = await runDeterministicAction(
+      'Gera um PIX de R$197 para Joao comprar PDRN',
+      'session-pix-missing-inputs',
+      'ws-1',
+      { executeTool } as never,
+      intentRouter,
+      undefined,
+      undefined,
+      new Map(),
+      logger as never,
+    );
+
+    expect(executeTool).toHaveBeenCalledTimes(1);
+    expect(reply).toContain('Dados faltantes para criar PIX real');
+    expect(reply).toContain('productId');
+    expect(reply).toContain('customerCpf');
+    expect(reply).not.toContain('Erro: sales_create_pix_inputs_required');
+  });
+
+  it('asks for missing boleto inputs instead of exposing an internal error code', async () => {
+    const registry = new CapabilityRegistryV2Service();
+    const intentRouter = new IntentRouterService(registry);
+    const executeTool = jest.fn().mockResolvedValue({
+      success: false,
+      error: 'sales_create_boleto_inputs_required',
+      missingInputs: ['customerPhone', 'customerZipCode', 'customerStreet'],
+      message: 'Dados faltantes para criar boleto real: customerPhone, customerZipCode, customerStreet',
+    });
+    const logger = {
+      log: jest.fn(),
+      warn: jest.fn(),
+      debug: jest.fn(),
+      error: jest.fn(),
+    };
+
+    const reply = await runDeterministicAction(
+      'Emite boleto de R$197 para Joao comprar PDRN',
+      'session-boleto-missing-inputs',
+      'ws-1',
+      { executeTool } as never,
+      intentRouter,
+      undefined,
+      undefined,
+      new Map(),
+      logger as never,
+    );
+
+    expect(executeTool).toHaveBeenCalledTimes(1);
+    expect(reply).toContain('Dados faltantes para criar boleto real');
+    expect(reply).toContain('customerPhone');
+    expect(reply).toContain('customerZipCode');
+    expect(reply).not.toContain('Erro: sales_create_boleto_inputs_required');
+  });
 });
