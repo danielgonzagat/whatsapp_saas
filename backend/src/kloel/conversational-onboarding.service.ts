@@ -11,6 +11,11 @@ import { ConversationalOnboardingToolsService } from './conversational-onboardin
 import { ONBOARDING_TOOLS } from './conversational-onboarding-tools-schema';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { IntentRouterService } from './intent-router/intent-router.service';
+import { AttentionService } from './mind/attention.service';
+import { ValenceAggregatorService } from './mind/valence-aggregator.service';
+import { MindBeliefService } from './mind/inference/mind-belief.service';
+import { MindConceptService } from './mind/memory/mind-concepts.service';
+import { buildMindSignals, type BuildMindSignalsDeps } from './mind/build-mind-signals.helper';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 const ONBOARDING_SAFE_SETUP_TOOL_NAMES = [
@@ -131,6 +136,10 @@ export class ConversationalOnboardingService {
     private readonly toolsService: ConversationalOnboardingToolsService,
     @Optional() private readonly abiBuilder?: AbiBuilderService,
     @Optional() private readonly intentRouter?: IntentRouterService,
+    @Optional() private readonly attentionService?: AttentionService,
+    @Optional() private readonly valenceAggregatorService?: ValenceAggregatorService,
+    @Optional() private readonly mindBeliefService?: MindBeliefService,
+    @Optional() private readonly mindConceptService?: MindConceptService,
   ) {
     this.prismaExt = prisma as object as PrismaWithDynamicModels;
     this.openai = createTextLlmClient() ?? new OpenAI({ apiKey: 'missing' });
@@ -372,6 +381,34 @@ export class ConversationalOnboardingService {
       })),
       { role: 'user', content: userMessage },
     ];
+
+    // Mind signals — inject attention, beliefs, concepts into onboarding prompt (PI-k5-A).
+    // Builds deps conditionally so exactOptionalPropertyTypes accepts only defined services.
+    try {
+      const mindDeps: BuildMindSignalsDeps = {
+        prisma: this.prismaExt as unknown as BuildMindSignalsDeps['prisma'],
+        logger: this.logger,
+        ...(this.attentionService !== undefined ? { attentionService: this.attentionService } : {}),
+        ...(this.valenceAggregatorService !== undefined
+          ? { valenceAggregatorService: this.valenceAggregatorService }
+          : {}),
+        ...(this.mindBeliefService !== undefined
+          ? { mindBeliefService: this.mindBeliefService }
+          : {}),
+        ...(this.mindConceptService !== undefined
+          ? { mindConceptService: this.mindConceptService }
+          : {}),
+      };
+      const mindSignals = await buildMindSignals(mindDeps, workspaceId, userMessage);
+      messages.push({
+        role: 'user',
+        content: JSON.stringify({ onboardingMindSignals: mindSignals }),
+      });
+    } catch (error: unknown) {
+      this.logger.warn('kloel_onboarding_mind_signal_skipped', {
+        reason: error instanceof Error ? error.message : 'unknown error',
+      });
+    }
 
     try {
       const response = await this.runOnboardingCompletion(workspaceId, messages, 'brain');

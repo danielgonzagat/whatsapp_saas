@@ -16,7 +16,7 @@ import { AttentionService } from './mind/attention.service';
 import { ValenceAggregatorService } from './mind/valence-aggregator.service';
 import { MindBeliefService } from './mind/inference/mind-belief.service';
 import { MindConceptService } from './mind/memory/mind-concepts.service';
-import { SpineEventRef } from './mind/mind.types';
+import { buildMindSignals, type BuildMindSignalsDeps } from './mind/build-mind-signals.helper';
 import { UnifiedAgentService } from './unified-agent.service';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { validateAbiPayload } from './abi/abi-validator';
@@ -244,118 +244,28 @@ export class KloelReplyEngineService {
     }
 
     if (!cacheHit) {
-      // Mind signals — wire attention + valence into cognitiveState (PI-k4)
-      if (this.attentionService && this.valenceAggregatorService && params.workspaceId) {
-        try {
-          const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
-          let recentEvents: SpineEventRef[] = [];
-
-          try {
-            const rows = await Promise.race([
-              this.prisma.autopilotEvent.findMany({
-                where: {
-                  workspaceId: params.workspaceId,
-                  createdAt: { gte: thirtyMinAgo },
-                },
-                orderBy: { createdAt: 'desc' },
-                take: 50,
-                select: { id: true, intent: true, action: true, createdAt: true },
-              }),
-              new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 50)),
-            ]);
-
-            const wsIdForEvents = params.workspaceId;
-            if (wsIdForEvents) {
-              recentEvents = rows.map((r) => ({
-                eventId: r.id,
-                eventName: r.intent || r.action || 'unknown',
-                workspaceId: wsIdForEvents,
-                occurredAt: r.createdAt.toISOString(),
-                truthMode: 'observed' as const,
-              }));
-            }
-          } catch (error: unknown) {
-            this.logger.warn('kloel_event_source_timeout', {
-              reason: error instanceof Error ? error.message : 'unknown error',
-            });
-          }
-
-          const attention = this.attentionService.allocate(recentEvents, {
-            nowMs: Date.now(),
-            halfLifeMinutes: 30,
-          });
-
-          cognitiveState.mindSignals = {
-            attention,
-            source: 'autopilot_events',
-            eventCount: recentEvents.length,
-          };
-        } catch (error: unknown) {
-          this.logger.warn('kloel_mind_signal_skipped', {
-            reason: error instanceof Error ? error.message : 'unknown error',
-          });
-        }
-      } else {
-        cognitiveState.mindSignals = { status: 'no_services' };
-      }
-
-      // Mind beliefs — wire MindBeliefService top active beliefs (PI-k4)
-      if (this.mindBeliefService && params.workspaceId) {
-        try {
-          const beliefs = await Promise.race([
-            this.mindBeliefService.getActiveBeliefs(params.workspaceId),
-            new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error('kloel_mind_belief_timeout')), 100),
-            ),
-          ]);
-          const mindSignals = (cognitiveState.mindSignals ?? {}) as Record<string, unknown>;
-          mindSignals.beliefs = beliefs.map((b) => ({
-            subject: b.subject,
-            predicate: b.predicate,
-            mean: b.mean,
-            confidence: 1 / (1 + b.variance),
-          }));
-          cognitiveState.mindSignals = mindSignals;
-        } catch (error: unknown) {
-          this.logger.warn('kloel_mind_belief_skipped', {
-            reason: error instanceof Error ? error.message : 'unknown error',
-          });
-        }
-      }
-
-      // Mind concept detection — wire concept labels into cognitiveState (PI-k4)
-      if (this.mindConceptService && params.workspaceId) {
-        try {
-          const detections = await Promise.race([
-            this.mindConceptService.detect({
-              workspaceId: params.workspaceId,
-              text: params.userMessage,
-              subject: 'kloel_chat',
-            }),
-            new Promise<never>((_, reject) =>
-              setTimeout(
-                () => reject(new Error('MindConceptService.detect timed out after 200ms')),
-                200,
-              ),
-            ),
-          ]);
-          const mindSignals = (cognitiveState.mindSignals ?? {}) as Record<string, unknown>;
-          mindSignals.concepts = detections
-            .slice(0, 5)
-            .map((d: { concept: string; confidence: number }) => ({
-              concept: d.concept,
-              confidence: d.confidence,
-            }));
-          cognitiveState.mindSignals = mindSignals;
-        } catch (error: unknown) {
-          this.logger.warn('kloel_mind_concept_skipped', {
-            reason: error instanceof Error ? error.message : 'unknown error',
-          });
-          const mindSignals = (cognitiveState.mindSignals ?? {}) as Record<string, unknown>;
-          mindSignals.concepts = [];
-          cognitiveState.mindSignals = mindSignals;
-        }
-      }
+      // Mind signals — wire attention, valence, beliefs, concepts via shared helper (PI-k4/K5-A).
+      // The helper centralizes the same Mind block now used by conversational-onboarding.service.
+      // Build deps conditionally so exactOptionalPropertyTypes accepts only defined services.
+      const mindDeps: BuildMindSignalsDeps = {
+        prisma: this.prisma,
+        logger: this.logger,
+        ...(this.attentionService !== undefined ? { attentionService: this.attentionService } : {}),
+        ...(this.valenceAggregatorService !== undefined
+          ? { valenceAggregatorService: this.valenceAggregatorService }
+          : {}),
+        ...(this.mindBeliefService !== undefined
+          ? { mindBeliefService: this.mindBeliefService }
+          : {}),
+        ...(this.mindConceptService !== undefined
+          ? { mindConceptService: this.mindConceptService }
+          : {}),
+      };
+      cognitiveState.mindSignals = await buildMindSignals(
+        mindDeps,
+        params.workspaceId ?? '',
+        params.userMessage,
+      );
 
       if (this.abiBuilder) {
         if (params.prebuiltCognitiveState) {
