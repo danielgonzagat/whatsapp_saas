@@ -21,16 +21,19 @@ describe('normalizeSmartPaymentResult', () => {
     });
   });
 
-  it('does not surface unsupported boleto results as an available smart-payment method', () => {
+  it('surfaces Mercado Pago boleto results as an available smart-payment method', () => {
     expect(
       normalizeSmartPaymentResult({
-        paymentId: 'legacy_boleto',
-        paymentUrl: 'https://example.test/boleto',
+        paymentId: 'mp_boleto_1',
+        paymentUrl: 'https://www.mercadopago.com.br/payments/mp_boleto_1/ticket',
         billingType: 'BOLETO',
+        suggestedMessage: 'Boleto pronto',
       }),
     ).toEqual({
-      id: 'legacy_boleto',
-      paymentLink: 'https://example.test/boleto',
+      id: 'mp_boleto_1',
+      paymentLink: 'https://www.mercadopago.com.br/payments/mp_boleto_1/ticket',
+      billingType: 'BOLETO',
+      suggestedMessage: 'Boleto pronto',
     });
   });
 });

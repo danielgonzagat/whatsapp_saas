@@ -4,7 +4,7 @@ export interface SmartPaymentResultPayload {
   id: string;
   paymentLink?: string;
   pixCode?: string;
-  billingType?: 'PIX' | 'CREDIT_CARD';
+  billingType?: 'PIX' | 'BOLETO' | 'CREDIT_CARD';
   suggestedMessage?: string;
 }
 
@@ -36,7 +36,11 @@ export function normalizeSmartPaymentResult(
     result.pixCode = pixCode;
   }
 
-  if (payload.billingType === 'PIX' || payload.billingType === 'CREDIT_CARD') {
+  if (
+    payload.billingType === 'PIX' ||
+    payload.billingType === 'BOLETO' ||
+    payload.billingType === 'CREDIT_CARD'
+  ) {
     result.billingType = payload.billingType;
   }
 
