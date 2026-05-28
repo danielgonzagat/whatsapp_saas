@@ -5,7 +5,6 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelComposerService } from './kloel-composer.service';
 import { KloelConversationStore } from './kloel-conversation-store';
-import { buildTimestampedRuntimeId } from './kloel-id.util';
 import {
   createKloelContentEvent,
   createKloelDoneEvent,
@@ -27,6 +26,10 @@ import { chatCompletionWithFallback } from './openai-wrapper';
 import { KLOEL_SAFE_READ_TOOLS } from './kloel-chat-tools.definition';
 import type { LocalToolExecutor } from './kloel-reply-engine.service';
 import { appendToolResultProof, formatToolResult } from './guest-chat.action-intent.helpers';
+import {
+  buildDeterministicCallId,
+  buildResponseVersionId,
+} from './kloel-thinker.substrate.helpers';
 
 /** Shape returned by detectActionIntent — kept local to avoid coupling to the deeper module. */
 export interface DeterministicAction {
@@ -80,7 +83,7 @@ export async function finalizeSuccessfulReply(
   const completedAt = new Date().toISOString();
   const responseVersions: StoredResponseVersion[] = [
     {
-      id: clientRequestId ? `resp_${clientRequestId}` : buildTimestampedRuntimeId('resp'),
+      id: buildResponseVersionId(clientRequestId),
       content: normalizedText,
       createdAt: completedAt,
       source: 'initial',
@@ -392,9 +395,7 @@ export async function runDeterministicActionBranch(
     conversationStore,
     planLimits,
   };
-  const callId = clientRequestId
-    ? `deterministic_${clientRequestId}`
-    : `deterministic_${Date.now()}`;
+  const callId = buildDeterministicCallId(clientRequestId);
   safeWrite(createKloelStatusEvent('tool_calling', `Executando ${action.tool}.`));
   safeWrite(createKloelToolCallEvent(callId, action.tool, action.args));
   let toolResult: unknown;

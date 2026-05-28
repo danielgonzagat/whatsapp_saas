@@ -37,6 +37,13 @@ import {
   shouldEscalateForHandoff,
 } from './kloel-thinker.abi.helpers';
 import {
+  AI_KEY_MISSING_MESSAGE,
+  isAiProviderConfigured,
+  resolveAbortBeforeStartCode,
+  resolveThinkErrorCode,
+  resolveThinkerSystemPrompt,
+} from './kloel-thinker.substrate.helpers';
+import {
   finalizeSuccessfulReply,
   persistChatTurnToSpine,
   runComposerCapabilityBranch,
@@ -118,8 +125,7 @@ export class KloelThinkerService {
           safeWrite(
             createKloelErrorEvent({
               content: this.replyEngine.buildStreamAbortMessage(abortReason(), opts?.timeoutMs),
-              error:
-                typeof abortReason() === 'string' ? abortReason() : 'request_aborted_before_start',
+              error: resolveAbortBeforeStartCode(abortReason()),
               done: true,
             }),
           );
@@ -157,11 +163,10 @@ export class KloelThinkerService {
         return;
       }
 
-      if (!this.replyEngine.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) {
+      if (!isAiProviderConfigured({ hasOpenAiKey: this.replyEngine.hasOpenAiKey() })) {
         safeWrite(
           createKloelErrorEvent({
-            content:
-              'Assistente IA não disponível no momento. Configure DEEPSEEK_API_KEY, LLM_API_KEY, OPENAI_API_KEY ou ANTHROPIC_API_KEY para habilitar o Kloel.',
+            content: AI_KEY_MISSING_MESSAGE,
             error: 'ai_api_key_missing',
             done: true,
           }),
@@ -231,16 +236,16 @@ export class KloelThinkerService {
       const clientRequestId = this.threadService.resolveClientRequestId(metadata);
 
       void context;
-      const systemPrompt =
-        mode === 'onboarding'
-          ? CANONICAL_FALLBACK_SYSTEM_PROMPT
-          : mode === 'sales'
-            ? CANONICAL_FALLBACK_SYSTEM_PROMPT
-            : this.replyEngine.buildDashboardPrompt({
-                userName,
-                workspaceName: companyName,
-                expertiseLevel,
-              });
+      const systemPrompt = resolveThinkerSystemPrompt({
+        mode,
+        canonicalFallbackPrompt: CANONICAL_FALLBACK_SYSTEM_PROMPT,
+        buildDashboardPrompt: () =>
+          this.replyEngine.buildDashboardPrompt({
+            userName,
+            workspaceName: companyName,
+            expertiseLevel,
+          }),
+      });
 
       let finalSystemPrompt = systemPrompt;
       let finalUserMessage = message;
@@ -488,8 +493,7 @@ export class KloelThinkerService {
     } catch (error: unknown) {
       this.logger.error('Erro no KLOEL Thinker:', error);
       if (!isClientDisconnected()) {
-        const code =
-          typeof abortReason() === 'string' ? String(abortReason()) : 'Erro ao processar mensagem';
+        const code = resolveThinkErrorCode(abortReason(), 'Erro ao processar mensagem');
         const content = isAborted()
           ? this.replyEngine.buildStreamAbortMessage(abortReason(), opts?.timeoutMs)
           : this.replyEngine.unavailableMessage;
