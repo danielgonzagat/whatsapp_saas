@@ -4,17 +4,24 @@ function makeMockSpine() {
   return { emit: jest.fn().mockResolvedValue(undefined) };
 }
 
-type MockSpine = ReturnType<typeof makeMockSpine>;function makeDeps(overrides: { spine?: MockSpine; openai?: Record<string, unknown> } = {}) {
+type MockSpine = ReturnType<typeof makeMockSpine>;
+function makeDeps(overrides: { spine?: MockSpine; openai?: Record<string, unknown> } = {}) {
   const spine = overrides.spine;
   const mockOpenai = (overrides.openai ?? {
     chat: { completions: { create: jest.fn().mockResolvedValue(mockChatCompletion()) } },
   }) as unknown as import('openai').default;
 
   const mockPrisma = {
-    chatThread: { count: jest.fn().mockResolvedValue(0), findFirst: jest.fn().mockResolvedValue(null) },
+    chatThread: {
+      count: jest.fn().mockResolvedValue(0),
+      findFirst: jest.fn().mockResolvedValue(null),
+    },
     workspace: { findUnique: jest.fn().mockResolvedValue({ id: 'ws-1', name: 'Test' }) },
     agent: { findFirst: jest.fn().mockResolvedValue(null) },
-    kloelMemory: { upsert: jest.fn().mockResolvedValue(undefined), findUnique: jest.fn().mockResolvedValue(null) },
+    kloelMemory: {
+      upsert: jest.fn().mockResolvedValue(undefined),
+      findUnique: jest.fn().mockResolvedValue(null),
+    },
   } as unknown as import('../prisma/prisma.service').PrismaService;
 
   const mockPlanLimits = {
@@ -37,7 +44,9 @@ type MockSpine = ReturnType<typeof makeMockSpine>;function makeDeps(overrides: {
   } as unknown as import('./kloel-context-formatter').KloelContextFormatter;
 
   const mockToolRouter = {
-    executeAssistantToolCalls: jest.fn().mockResolvedValue({ toolMessages: [], usedSearchWeb: false }),
+    executeAssistantToolCalls: jest
+      .fn()
+      .mockResolvedValue({ toolMessages: [], usedSearchWeb: false }),
   } as unknown as import('./kloel-tool-router').KloelToolRouter;
 
   return {
@@ -60,7 +69,8 @@ type MockSpine = ReturnType<typeof makeMockSpine>;function makeDeps(overrides: {
     buildDynamicRuntimeContext: () => Promise.resolve(''),
     ...(spine !== undefined ? { spine } : {}),
   };
-}function mockChatCompletion(overrides: Partial<Record<string, unknown>> = {}) {
+}
+function mockChatCompletion(overrides: Partial<Record<string, unknown>> = {}) {
   return {
     id: 'cmpl-1',
     object: 'chat.completion',
@@ -79,16 +89,14 @@ type MockSpine = ReturnType<typeof makeMockSpine>;function makeDeps(overrides: {
     ],
     usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
   };
-}describe('cognition.decision_made emission', () => {
+}
+describe('cognition.decision_made emission', () => {
   describe('buildAssistantReplyImpl (dashboard reply)', () => {
     it('emits cognition.decision_made with correct shape on successful reply', async () => {
       const spine = makeMockSpine();
       const deps = makeDeps({ spine });
 
-      await buildAssistantReplyImpl(
-        { message: 'Olá', workspaceId: 'ws-1', mode: 'chat' },
-        deps,
-      );
+      await buildAssistantReplyImpl({ message: 'Olá', workspaceId: 'ws-1', mode: 'chat' }, deps);
 
       // The emit is fire-and-forget via void IIFE; wait a tick
       await new Promise((r) => setTimeout(r, 10));
@@ -107,19 +115,17 @@ type MockSpine = ReturnType<typeof makeMockSpine>;function makeDeps(overrides: {
             surface: 'dashboard',
             toolCallsCount: 0,
             fallbackReason: null,
-            durationMs: expect.any(Number),
+            durationMs: expect.anything(),
             modelUsed: 'deepseek-chat',
           }),
         }),
       );
-    });    it('reports fallbackReason as null when primary model succeeds', async () => {
+    });
+    it('reports fallbackReason as null when primary model succeeds', async () => {
       const spine = makeMockSpine();
       const deps = makeDeps({ spine });
 
-      await buildAssistantReplyImpl(
-        { message: 'Olá', workspaceId: 'ws-1', mode: 'chat' },
-        deps,
-      );
+      await buildAssistantReplyImpl({ message: 'Olá', workspaceId: 'ws-1', mode: 'chat' }, deps);
       await new Promise((r) => setTimeout(r, 10));
 
       expect(spine.emit).toHaveBeenCalledTimes(1);
@@ -127,7 +133,8 @@ type MockSpine = ReturnType<typeof makeMockSpine>;function makeDeps(overrides: {
       // fallbackReason is null on the happy path (primary model succeeded)
       expect(payload.fallbackReason).toBeNull();
       expect(payload.modelUsed).toBe('deepseek-chat');
-    });    it('includes toolCallsCount from assistant response', async () => {
+    });
+    it('includes toolCallsCount from assistant response', async () => {
       const spine = makeMockSpine();
       const deps = makeDeps({
         spine,
@@ -156,14 +163,12 @@ type MockSpine = ReturnType<typeof makeMockSpine>;function makeDeps(overrides: {
       expect(spine.emit).toHaveBeenCalledTimes(1);
       const payload = (spine.emit as jest.Mock).mock.calls[0][0].payload;
       expect(payload.toolCallsCount).toBe(2);
-    });    it('tolerates absent spine — does not crash', async () => {
+    });
+    it('tolerates absent spine — does not crash', async () => {
       const deps = makeDeps({});
 
       await expect(
-        buildAssistantReplyImpl(
-          { message: 'Olá', workspaceId: 'ws-1', mode: 'chat' },
-          deps,
-        ),
+        buildAssistantReplyImpl({ message: 'Olá', workspaceId: 'ws-1', mode: 'chat' }, deps),
       ).resolves.toBeDefined();
     });
 
@@ -171,10 +176,7 @@ type MockSpine = ReturnType<typeof makeMockSpine>;function makeDeps(overrides: {
       const spine = makeMockSpine();
       const deps = makeDeps({ spine });
 
-      await buildAssistantReplyImpl(
-        { message: 'Olá', mode: 'chat' },
-        deps,
-      );
+      await buildAssistantReplyImpl({ message: 'Olá', mode: 'chat' }, deps);
       await new Promise((r) => setTimeout(r, 10));
 
       expect(spine.emit).not.toHaveBeenCalled();
@@ -186,10 +188,7 @@ type MockSpine = ReturnType<typeof makeMockSpine>;function makeDeps(overrides: {
       const deps = makeDeps({ spine });
 
       await expect(
-        buildAssistantReplyImpl(
-          { message: 'Olá', workspaceId: 'ws-1', mode: 'chat' },
-          deps,
-        ),
+        buildAssistantReplyImpl({ message: 'Olá', workspaceId: 'ws-1', mode: 'chat' }, deps),
       ).resolves.toBeDefined();
     });
   });

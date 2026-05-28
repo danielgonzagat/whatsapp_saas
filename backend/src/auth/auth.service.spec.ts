@@ -66,16 +66,13 @@ const mockPrismaService = {
     return Promise.all(arg as Array<Promise<unknown>>);
   }),
 };
-
 const mockJwtService = {
   signAsync: jest.fn().mockResolvedValue('mock-jwt-token'),
 };
-
 const mockEmailService = {
   sendPasswordResetEmail: jest.fn().mockResolvedValue(true),
   sendVerificationEmail: jest.fn().mockResolvedValue(true),
 };
-
 const mockConfigService = {
   get: jest.fn((key: string) => {
     const config: Record<string, string> = {
