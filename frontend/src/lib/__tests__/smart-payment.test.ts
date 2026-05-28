@@ -1,6 +1,17 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { normalizeSmartPaymentResult } from '../api/smart-payment';
+import { apiFetch } from '../api/core';
+import { normalizeSmartPaymentResult, smartPaymentApi } from '../api/smart-payment';
+
+vi.mock('../api/core', () => ({
+  apiFetch: vi.fn(),
+}));
+
+const mockedApiFetch = vi.mocked(apiFetch);
+
+beforeEach(() => {
+  mockedApiFetch.mockReset();
+});
 
 describe('normalizeSmartPaymentResult', () => {
   it('maps the backend Pix smart-payment payload to the UI result shape', () => {
@@ -34,6 +45,41 @@ describe('normalizeSmartPaymentResult', () => {
       paymentLink: 'https://www.mercadopago.com.br/payments/mp_boleto_1/ticket',
       billingType: 'BOLETO',
       suggestedMessage: 'Boleto pronto',
+    });
+  });
+});
+
+describe('smartPaymentApi.create', () => {
+  it('translates the UI smart-payment form payload to the backend contract', async () => {
+    mockedApiFetch.mockResolvedValueOnce({
+      status: 200,
+      data: {
+        paymentId: 'mp_pix_1',
+        billingType: 'PIX',
+      },
+    });
+
+    await smartPaymentApi.create('ws-1', {
+      amount: 197,
+      description: 'PDRN offer',
+      customerName: 'Joao Silva',
+      customerPhone: '5511999999999',
+      customerEmail: 'joao@example.com',
+      method: 'pix',
+      dueDate: '2026-06-05',
+    });
+
+    expect(mockedApiFetch).toHaveBeenCalledWith('/kloel/payment/ws-1/create', {
+      method: 'POST',
+      body: {
+        amount: 197,
+        productName: 'PDRN offer',
+        customerName: 'Joao Silva',
+        phone: '5511999999999',
+        customerEmail: 'joao@example.com',
+        method: 'pix',
+        dueDate: '2026-06-05',
+      },
     });
   });
 });

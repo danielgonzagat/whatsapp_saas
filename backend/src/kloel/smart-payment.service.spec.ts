@@ -1,6 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 
+import { buildCreateSmartPaymentContext } from './smart-payment.controller';
 import { SmartPaymentService } from './smart-payment.service';
 
 type SmartPaymentPrismaMock = {
@@ -36,6 +37,29 @@ type SmartPaymentPlanLimitsMock = {
   ensureTokenBudget: jest.Mock<void, [string]>;
   trackAiUsage: jest.Mock<Promise<void>, [string, number]>;
 };
+
+describe('buildCreateSmartPaymentContext', () => {
+  it('maps modal payload aliases to the SmartPaymentService contract', () => {
+    expect(
+      buildCreateSmartPaymentContext('ws-1', {
+        amount: 197,
+        description: 'PDRN offer',
+        customerName: 'Joao Silva',
+        customerPhone: '5511999999999',
+        customerEmail: 'joao@example.com',
+        method: 'pix',
+        dueDate: '2026-06-05',
+      }),
+    ).toEqual({
+      workspaceId: 'ws-1',
+      phone: '5511999999999',
+      customerName: 'Joao Silva',
+      customerEmail: 'joao@example.com',
+      amount: 197,
+      productName: 'PDRN offer',
+    });
+  });
+});
 
 describe('SmartPaymentService — canonical Pix payment kernel', () => {
   let prisma: SmartPaymentPrismaMock;

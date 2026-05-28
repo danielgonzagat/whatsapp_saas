@@ -22,6 +22,36 @@ import { RouteClass } from '../common/throttler/route-class.decorator';
 import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator';
 import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 
+
+type CreateSmartPaymentBody = {
+  phone?: string;
+  customerPhone?: string;
+  customerName: string;
+  customerEmail?: string;
+  amount: number;
+  productName?: string;
+  description?: string;
+  contactId?: string;
+  conversation?: string;
+  method?: string;
+  dueDate?: string;
+};
+
+export function buildCreateSmartPaymentContext(workspaceId: string, body: CreateSmartPaymentBody) {
+  const phone = body.phone || body.customerPhone || '';
+  const productName = body.productName || body.description;
+
+  return {
+    workspaceId,
+    phone,
+    customerName: body.customerName,
+    ...(body.customerEmail !== undefined ? { customerEmail: body.customerEmail } : {}),
+    amount: body.amount,
+    ...(productName !== undefined ? { productName } : {}),
+    ...(body.contactId !== undefined ? { contactId: body.contactId } : {}),
+    ...(body.conversation !== undefined ? { conversation: body.conversation } : {}),
+  };
+}
 // All dates stored as UTC via Prisma DateTime (toISOString)
 @ApiTags('smart-payment')
 @Controller('kloel/payment')
@@ -101,25 +131,12 @@ export class SmartPaymentController {
     @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
     @Body()
-    body: {
-      phone: string;
-      customerName: string;
-      amount: number;
-      productName?: string;
-      contactId?: string;
-      conversation?: string;
-    },
+    body: CreateSmartPaymentBody,
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
-    const result = await this.paymentService.createSmartPayment({
-      workspaceId: effectiveWorkspaceId,
-      phone: body.phone,
-      customerName: body.customerName,
-      amount: body.amount,
-      ...(body.productName !== undefined ? { productName: body.productName } : {}),
-      ...(body.contactId !== undefined ? { contactId: body.contactId } : {}),
-      ...(body.conversation !== undefined ? { conversation: body.conversation } : {}),
-    });
+    const result = await this.paymentService.createSmartPayment(
+      buildCreateSmartPaymentContext(effectiveWorkspaceId, body),
+    );
 
     return {
       success: true,
