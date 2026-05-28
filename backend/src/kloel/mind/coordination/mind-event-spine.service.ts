@@ -23,53 +23,13 @@ import { OpsAlertService } from '../../../observability/ops-alert.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import type { BrainEventName, CommercialEventPayload } from './mind-event-taxonomy';
 import { expandEventNameAliasesAll } from './mind-event-taxonomy';
+import {
+  resolveEventIntent,
+  resolveEventStatus,
+  toInputJsonObject,
+} from './mind-event-spine.helpers';
 
 type AutopilotEventIdRow = { id: string } | null;
-
-function isJsonRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function toUnsupportedJsonValue(value: unknown): string {
-  const valueType = typeof value;
-  const candidates: Array<[boolean, string]> = [
-    [valueType === 'bigint', String(value)],
-    [valueType === 'function', 'function'],
-    [valueType === 'symbol', 'symbol'],
-    [valueType === 'undefined', 'undefined'],
-  ];
-  return candidates.find(([matches]) => matches)?.[1] ?? 'unsupported';
-}
-
-function toInputJsonValue(value: unknown): Prisma.InputJsonValue | null {
-  if (value === null || typeof value === 'undefined') {
-    return null;
-  }
-  if (typeof value === 'string' || typeof value === 'boolean') {
-    return value;
-  }
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? value : String(value);
-  }
-  if (Array.isArray(value)) {
-    return value.map((item) => toInputJsonValue(item));
-  }
-  if (value instanceof Date) {
-    return value.toISOString();
-  }
-  if (isJsonRecord(value)) {
-    return toInputJsonObject(value);
-  }
-  return toUnsupportedJsonValue(value);
-}
-
-function toInputJsonObject(payload: Record<string, unknown>): Prisma.InputJsonObject {
-  return Object.fromEntries(
-    Object.entries(payload)
-      .filter(([, value]) => typeof value !== 'undefined')
-      .map(([key, value]) => [key, toInputJsonValue(value)]),
-  );
-}
 
 @Injectable()
 export class MindEventSpine {
@@ -155,9 +115,9 @@ export class MindEventSpine {
           data: {
             workspaceId: event.workspaceId,
             contactId: event.contactId ?? null,
-            intent: this.resolveIntent(event.eventType),
+            intent: resolveEventIntent(event.eventType),
             action: event.eventType,
-            status: this.resolveStatus(event.eventType),
+            status: resolveEventStatus(event.eventType),
             meta: {
               commercial: true,
               subject: event.subject,
@@ -418,64 +378,6 @@ export class MindEventSpine {
     ]);
 
     return { pending, dispatched, failed, total };
-  }
-
-  private resolveIntent(eventType: BrainEventName): string {
-    if (eventType.startsWith('sale.')) {
-      return 'sale_lifecycle';
-    }
-    if (eventType.startsWith('checkout.')) {
-      return 'checkout_lifecycle';
-    }
-    if (eventType.startsWith('message.')) {
-      return 'message_lifecycle';
-    }
-    if (eventType.startsWith('lead.')) {
-      return 'lead_lifecycle';
-    }
-    if (eventType.startsWith('campaign.')) {
-      return 'campaign_lifecycle';
-    }
-    if (eventType.startsWith('product.')) {
-      return 'product_lifecycle';
-    }
-    if (eventType.startsWith('brain.')) {
-      return 'brain_lifecycle';
-    }
-    if (eventType.startsWith('mind.')) {
-      return 'mind_lifecycle';
-    }
-    if (eventType.startsWith('capability.')) {
-      return 'capability_lifecycle';
-    }
-    if (eventType.startsWith('contact.')) {
-      return 'contact_lifecycle';
-    }
-    if (eventType.startsWith('channel.')) {
-      return 'channel_lifecycle';
-    }
-    if (eventType.startsWith('identity.')) {
-      return 'identity_lifecycle';
-    }
-    if (eventType.startsWith('concept.')) {
-      return 'concept_lifecycle';
-    }
-    return 'commercial_lifecycle';
-  }
-
-  private resolveStatus(eventType: BrainEventName): string {
-    if (
-      eventType.endsWith('.cancelled') ||
-      eventType.endsWith('.refunded') ||
-      eventType.endsWith('.abandoned') ||
-      eventType.endsWith('.disconnected')
-    ) {
-      return 'skipped';
-    }
-    if (eventType.endsWith('.failed') || eventType.endsWith('.externally_blocked')) {
-      return 'error';
-    }
-    return 'executed';
   }
 
   private async checkIdempotency(
