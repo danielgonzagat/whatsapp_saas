@@ -1,8 +1,22 @@
 import { Injectable, Logger } from '@nestjs/common';
 
 import { MercadoPagoConfigService } from './mercadopago.config';
-import type { CreatePixChargeInput, PixChargeResult } from './mercadopago.types';
-import { toPixChargeStatus } from './mercadopago.types';
+import type {
+  BoletoOrderResult,
+  CreateBoletoOrderInput,
+  CreatePixChargeInput,
+  PixChargeResult,
+} from './mercadopago.types';
+import { toBoletoOrderStatus, toPixChargeStatus } from './mercadopago.types';
+
+async function parseJsonRecordOrNull(response: Response): Promise<Record<string, unknown> | null> {
+  try {
+    const json: unknown = await response.json();
+    return typeof json === 'object' && json !== null ? (json as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Creates a PIX charge via Mercado Pago's `POST /v1/payments` endpoint.
@@ -92,7 +106,7 @@ export class MercadoPagoPixChargeService {
       clearTimeout(timeoutId);
     }
 
-    const json = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+    const json = await parseJsonRecordOrNull(response);
     if (!response.ok || !json) {
       this.logger.error(
         `mp_pix_charge_error externalRef=${input.externalReference} status=${response.status}`,
@@ -169,7 +183,7 @@ export class MercadoPagoPixChargeService {
     if (!response.ok) {
       throw new Error(`mp_pix_status_http_${response.status}`);
     }
-    const json = (await response.json().catch(() => null)) as Record<string, unknown> | null;
+    const json = await parseJsonRecordOrNull(response);
     if (!json) {
       throw new Error('mp_pix_status_invalid_response');
     }
@@ -177,5 +191,162 @@ export class MercadoPagoPixChargeService {
       typeof json['status'] === 'string' ? json['status'] : undefined,
     );
     return { status, raw: json };
+  }
+}
+
+@Injectable()
+export class MercadoPagoBoletoOrderService {
+  private readonly logger = new Logger(MercadoPagoBoletoOrderService.name);
+
+  private static readonly REQUEST_TIMEOUT_MS = 15_000;
+
+  constructor(private readonly config: MercadoPagoConfigService) {}
+
+  async create(input: CreateBoletoOrderInput): Promise<BoletoOrderResult> {
+    if (!this.config.isAvailable()) {
+      throw new Error('mercadopago_not_configured');
+    }
+    const cfg = this.config.get();
+
+    const totalAmount = Number(input.amountCents) / 100;
+    if (!Number.isFinite(totalAmount) || totalAmount <= 0) {
+      throw new Error(`invalid_amount: ${input.amountCents.toString()}`);
+    }
+
+    const totalAmountText = totalAmount.toFixed(2);
+    const body = {
+      type: 'online',
+      external_reference: input.externalReference,
+      processing_mode: 'automatic',
+      total_amount: totalAmountText,
+      description: input.description,
+      payer: {
+        email: input.payerEmail,
+        first_name: input.payerName,
+        identification: {
+          type: input.payerDocument.length === 11 ? 'CPF' : 'CNPJ',
+          number: input.payerDocument,
+        },
+        address: {
+          street_name: input.payerAddress.streetName,
+          street_number: input.payerAddress.streetNumber,
+          zip_code: input.payerAddress.zipCode,
+          neighborhood: input.payerAddress.neighborhood,
+          state: input.payerAddress.state,
+          city: input.payerAddress.city,
+        },
+      },
+      transactions: {
+        payments: [
+          {
+            amount: totalAmountText,
+            payment_method: {
+              id: 'boleto',
+              type: 'ticket',
+            },
+            ...(input.expirationTime ? { expiration_time: input.expirationTime } : {}),
+          },
+        ],
+      },
+    };
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(
+      () => controller.abort(),
+      MercadoPagoBoletoOrderService.REQUEST_TIMEOUT_MS,
+    );
+
+    let response: Response;
+    try {
+      response = await fetch(`${this.config.baseUrl}/v1/orders`, {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          accept: 'application/json',
+          Authorization: `Bearer ${cfg.accessToken}`,
+          'Content-Type': 'application/json',
+          'X-Idempotency-Key': input.idempotencyKey,
+        },
+        body: JSON.stringify(body),
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.logger.error(
+        `mp_boleto_order_request_failed externalRef=${input.externalReference} err=${msg}`,
+      );
+      throw new Error(`mp_boleto_order_request_failed: ${msg}`);
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
+    const json = await parseJsonRecordOrNull(response);
+    if (!response.ok || !json) {
+      this.logger.error(
+        `mp_boleto_order_error externalRef=${input.externalReference} status=${response.status}`,
+      );
+      const errorMsg =
+        json && typeof json === 'object' && typeof json['message'] === 'string'
+          ? json['message']
+          : `http_${response.status}`;
+      throw new Error(`mp_boleto_order_create_failed: ${errorMsg}`);
+    }
+
+    const orderId = MercadoPagoBoletoOrderService.readString(json['id']);
+    if (!orderId) {
+      throw new Error('mp_boleto_order_response_missing_id');
+    }
+
+    const payment = MercadoPagoBoletoOrderService.firstPayment(json);
+    const paymentId = MercadoPagoBoletoOrderService.readString(payment?.['id']);
+    const paymentMethod = MercadoPagoBoletoOrderService.readRecord(payment?.['payment_method']);
+    const ticketUrl = MercadoPagoBoletoOrderService.readString(paymentMethod?.['ticket_url']);
+    const barcodeContent = MercadoPagoBoletoOrderService.readString(
+      paymentMethod?.['barcode_content'],
+    );
+    const digitableLine = MercadoPagoBoletoOrderService.readString(
+      paymentMethod?.['digitable_line'],
+    );
+
+    if (!paymentId || !ticketUrl || !digitableLine) {
+      throw new Error('mp_boleto_order_response_missing_ticket_data');
+    }
+
+    const status = toBoletoOrderStatus(
+      MercadoPagoBoletoOrderService.readString(json['status']),
+      MercadoPagoBoletoOrderService.readString(payment?.['status']),
+    );
+
+    this.logger.log(
+      `mp_boleto_order_created externalRef=${input.externalReference} orderId=${orderId} paymentId=${paymentId} status=${status}`,
+    );
+
+    return {
+      externalId: orderId,
+      paymentId,
+      status,
+      ticketUrl,
+      barcodeContent,
+      digitableLine,
+      raw: json,
+    };
+  }
+
+  private static readRecord(value: unknown): Record<string, unknown> | undefined {
+    return value && typeof value === 'object' && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : undefined;
+  }
+
+  private static readString(value: unknown): string {
+    return typeof value === 'string' || typeof value === 'number' ? String(value) : '';
+  }
+
+  private static firstPayment(json: Record<string, unknown>): Record<string, unknown> | undefined {
+    const transactions = MercadoPagoBoletoOrderService.readRecord(json['transactions']);
+    const payments = transactions?.['payments'];
+    if (!Array.isArray(payments)) {
+      return undefined;
+    }
+    return MercadoPagoBoletoOrderService.readRecord(payments[0]);
   }
 }

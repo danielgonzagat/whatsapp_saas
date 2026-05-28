@@ -47,6 +47,39 @@ export interface PixChargeResult {
   readonly raw: unknown; // full MP response for audit
 }
 
+export interface MercadoPagoBoletoAddress {
+  readonly zipCode: string;
+  readonly streetName: string;
+  readonly streetNumber: string;
+  readonly neighborhood: string;
+  readonly city: string;
+  readonly state: string;
+}
+
+export interface CreateBoletoOrderInput {
+  readonly idempotencyKey: string;
+  readonly amountCents: bigint;
+  readonly payerEmail: string;
+  readonly payerName: string;
+  readonly payerDocument: string; // CPF/CNPJ digits-only
+  readonly payerAddress: MercadoPagoBoletoAddress;
+  readonly description: string;
+  readonly externalReference: string; // our sale/order idempotency ref
+  readonly expirationTime?: string; // ISO-8601 duration, e.g. P3D
+}
+
+export type BoletoOrderStatus = 'approved' | 'pending' | 'rejected' | 'cancelled' | 'unknown';
+
+export interface BoletoOrderResult {
+  readonly externalId: string; // MP order id
+  readonly paymentId: string; // MP payment transaction id
+  readonly status: BoletoOrderStatus;
+  readonly ticketUrl: string;
+  readonly barcodeContent: string;
+  readonly digitableLine: string;
+  readonly raw: unknown; // full MP response for audit
+}
+
 /** Canonical PIX charge status (mapped from MP's status strings). */
 export type PixChargeStatus =
   | 'pending'
@@ -76,6 +109,32 @@ export function toPixChargeStatus(mpStatus: string | null | undefined): PixCharg
       return 'pending';
     default:
       return 'pending';
+  }
+}
+
+export function toBoletoOrderStatus(
+  orderStatus: string | null | undefined,
+  paymentStatus?: string | null,
+): BoletoOrderStatus {
+  const status = paymentStatus || orderStatus;
+  switch (status) {
+    case 'approved':
+    case 'authorized':
+    case 'processed':
+    case 'accredited':
+      return 'approved';
+    case 'action_required':
+    case 'pending':
+    case 'in_process':
+      return 'pending';
+    case 'rejected':
+      return 'rejected';
+    case 'cancelled':
+    case 'canceled':
+    case 'expired':
+      return 'cancelled';
+    default:
+      return 'unknown';
   }
 }
 

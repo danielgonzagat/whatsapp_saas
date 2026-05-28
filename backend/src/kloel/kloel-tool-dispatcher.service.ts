@@ -21,6 +21,7 @@ import { KloelProductSubResourceToolsService } from './kloel-product-sub-resourc
 import { CouponService } from './coupon.service';
 import { CheckoutService } from './checkout.service';
 import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service';
+import { PaymentService } from './payment.service';
 import { SmartPaymentService } from './smart-payment.service';
 import { AccountService } from './account.service';
 import { SelfHealthService } from './self-awareness/self-health.service';
@@ -66,6 +67,7 @@ export class KloelToolDispatcherService {
     @Optional() private readonly productSubTools?: KloelProductSubResourceToolsService,
     @Optional() private readonly walletSalesTools?: KloelWalletSalesToolsService,
     @Optional() private readonly smartPaymentService?: SmartPaymentService,
+    @Optional() private readonly paymentService?: PaymentService,
     @Optional() private readonly reportService?: ReportService,
 
     @Optional() private readonly opsAlert?: OpsAlertService,
@@ -243,7 +245,6 @@ export class KloelToolDispatcherService {
         case 'delete_url':
         case 'delete_coupon':
         case 'update_coupon':
-        case 'generate_boleto':
         case 'generate_pix':
           if (this.productSubTools) {
             return await this.productSubTools.executeTool(toolName, workspaceId, asToolArgs(args));
@@ -277,14 +278,45 @@ export class KloelToolDispatcherService {
             message: pixResult.suggestedMessage || `PIX gerado: ${pixResult.paymentId}`,
           };
         }
-        case 'sales.create_boleto':
+        case 'generate_boleto':
+        case 'sales.create_boleto': {
+          if (!this.paymentService) {
+            return { success: false, error: 'payment_service_unavailable' };
+          }
+          const boletoResult = await this.paymentService.createBoletoPayment({
+            workspaceId,
+            leadId: asString(args.contactId, asString(args.customerPhone)),
+            customerName: asString(args.customerName),
+            customerPhone: asString(args.customerPhone),
+            customerEmail: asString(args.customerEmail),
+            customerCpf: asString(args.customerCpf),
+            amount: asNumber(args.amount),
+            description: asString(args.productName, 'Pagamento KLOEL'),
+            boletoAddress: {
+              zipCode: asString(args.zipCode),
+              streetName: asString(args.streetName),
+              streetNumber: asString(args.streetNumber),
+              neighborhood: asString(args.neighborhood),
+              city: asString(args.city),
+              state: asString(args.state),
+            },
+          });
           return {
-            success: false,
+            success: true,
             capabilityId: 'sales.create_boleto',
-            error: 'mercadopago_boleto_not_connected',
-            message:
-              'Boleto Mercado Pago ainda não está conectado ao Orders API real. Não gerei cobrança para evitar PIX ou boleto falso.',
+            outputs: {
+              orderId: boletoResult.id,
+              providerPaymentId: boletoResult.providerPaymentId,
+              boletoPdfUrl: boletoResult.boletoPdfUrl,
+              boletoCode: boletoResult.boletoCode,
+              barcodeContent: boletoResult.barcodeContent,
+              paymentUrl: boletoResult.paymentLink || boletoResult.invoiceUrl,
+              billingType: 'BOLETO',
+            },
+            evidenceUrl: `/vendas/${boletoResult.id}`,
+            message: `Boleto Mercado Pago gerado: ${boletoResult.id}`,
           };
+        }
         case 'delete_product':
           return await this.chatToolsService.toolDeleteProduct(workspaceId, asToolArgs(args));
         case 'get_settings':

@@ -43,6 +43,7 @@ import { AccountService } from './account.service';
 import { SelfHealthService } from './self-awareness/self-health.service';
 import { SelfGapsService } from './self-awareness/self-gaps.service';
 import { CapabilityRegistryV2Service } from './capability-registry-v2/capability-registry-v2.service';
+import { PaymentService } from './payment.service';
 import {
   createPrismaMock,
   createPlanLimitsMock,
@@ -93,6 +94,7 @@ describe('KloelToolDispatcherService', () => {
   let selfHealthService: DispatcherSelfHealthMock;
   let selfGapsService: DispatcherSelfGapsMock;
   let capRegistryV2Service: DispatcherCapRegistryV2Mock;
+  let paymentService: { createBoletoPayment: jest.Mock };
 
   beforeEach(async () => {
     prisma = createPrismaMock();
@@ -109,6 +111,18 @@ describe('KloelToolDispatcherService', () => {
     selfHealthService = createSelfHealthMock();
     selfGapsService = createSelfGapsMock();
     capRegistryV2Service = createCapRegistryV2Mock();
+    paymentService = {
+      createBoletoPayment: jest.fn().mockResolvedValue({
+        id: 'ORD01J6TC8BYRR0T4ZKY0QR39WGYE',
+        providerPaymentId: 'PAY01J6TC8BYRR0T4ZKY0QRTZ0E24',
+        invoiceUrl: 'https://www.mercadopago.com.br/payments/boleto/ticket',
+        boletoPdfUrl: 'https://www.mercadopago.com.br/payments/boleto/ticket',
+        boletoCode: '23793380296060054351030006333303799140000020000',
+        barcodeContent: '3335008800000000006004835002100020000242462010',
+        paymentLink: 'https://www.mercadopago.com.br/payments/boleto/ticket',
+        status: 'pending',
+      }),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -127,6 +141,7 @@ describe('KloelToolDispatcherService', () => {
         { provide: SelfHealthService, useValue: selfHealthService },
         { provide: SelfGapsService, useValue: selfGapsService },
         { provide: CapabilityRegistryV2Service, useValue: capRegistryV2Service },
+        { provide: PaymentService, useValue: paymentService },
       ],
     }).compile();
 
@@ -276,18 +291,73 @@ describe('KloelToolDispatcherService', () => {
     });
 
     describe('sales.create_boleto', () => {
-      it('does not generate PIX while Mercado Pago boleto Orders rail is not connected', async () => {
+      it('delegates to PaymentService boleto Orders rail and returns material proof', async () => {
         const result = await service.executeTool(DEFAULT_WS_ID, 'sales.create_boleto', {
           amount: 99.9,
           productName: 'Produto',
           customerName: 'Cliente',
           customerPhone: '5511999999999',
           customerEmail: 'cliente@example.com',
+          customerCpf: '12345678909',
+          zipCode: '06233903',
+          streetName: 'Av. das Nações Unidas',
+          streetNumber: '3003',
+          neighborhood: 'Bonfim',
+          city: 'Osasco',
+          state: 'SP',
         });
 
-        expect(result.success).toBe(false);
+        expect(result.success).toBe(true);
+        expect(paymentService.createBoletoPayment).toHaveBeenCalledWith({
+          workspaceId: DEFAULT_WS_ID,
+          leadId: '5511999999999',
+          customerName: 'Cliente',
+          customerPhone: '5511999999999',
+          customerEmail: 'cliente@example.com',
+          customerCpf: '12345678909',
+          amount: 99.9,
+          description: 'Produto',
+          boletoAddress: {
+            zipCode: '06233903',
+            streetName: 'Av. das Nações Unidas',
+            streetNumber: '3003',
+            neighborhood: 'Bonfim',
+            city: 'Osasco',
+            state: 'SP',
+          },
+        });
         expect(result.capabilityId).toBe('sales.create_boleto');
-        expect(result.error).toBe('mercadopago_boleto_not_connected');
+        expect(result.outputs).toMatchObject({
+          orderId: 'ORD01J6TC8BYRR0T4ZKY0QR39WGYE',
+          providerPaymentId: 'PAY01J6TC8BYRR0T4ZKY0QRTZ0E24',
+          boletoPdfUrl: 'https://www.mercadopago.com.br/payments/boleto/ticket',
+          boletoCode: '23793380296060054351030006333303799140000020000',
+          barcodeContent: '3335008800000000006004835002100020000242462010',
+          paymentUrl: 'https://www.mercadopago.com.br/payments/boleto/ticket',
+          billingType: 'BOLETO',
+        });
+        expect(result.evidenceUrl).toBe('/vendas/ORD01J6TC8BYRR0T4ZKY0QR39WGYE');
+      });
+
+      it('routes legacy generate_boleto alias through the same real boleto rail', async () => {
+        const result = await service.executeTool(DEFAULT_WS_ID, 'generate_boleto', {
+          amount: 99.9,
+          productName: 'Produto',
+          customerName: 'Cliente',
+          customerPhone: '5511999999999',
+          customerEmail: 'cliente@example.com',
+          customerCpf: '12345678909',
+          zipCode: '06233903',
+          streetName: 'Av. das Nações Unidas',
+          streetNumber: '3003',
+          neighborhood: 'Bonfim',
+          city: 'Osasco',
+          state: 'SP',
+        });
+
+        expect(result.success).toBe(true);
+        expect(paymentService.createBoletoPayment).toHaveBeenCalledTimes(1);
+        expect(result.capabilityId).toBe('sales.create_boleto');
       });
     });
 

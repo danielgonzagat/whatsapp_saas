@@ -3,7 +3,10 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../prisma/prisma.module';
 
 import { MercadoPagoConfigService } from './mercadopago.config';
-import { MercadoPagoPixChargeService } from './mercadopago-pix-charge.service';
+import {
+  MercadoPagoBoletoOrderService,
+  MercadoPagoPixChargeService,
+} from './mercadopago-pix-charge.service';
 import { MercadoPagoWebhookController } from './mercadopago-webhook.controller';
 import { MercadoPagoWebhookSignatureVerifier } from './mercadopago-webhook-signature.verifier';
 
@@ -29,7 +32,8 @@ import { MercadoPagoWebhookSignatureVerifier } from './mercadopago-webhook-signa
     MercadoPagoConfigService,
     MercadoPagoWebhookSignatureVerifier,
     MercadoPagoPixChargeService,
+    MercadoPagoBoletoOrderService,
   ],
-  exports: [MercadoPagoConfigService, MercadoPagoPixChargeService],
+  exports: [MercadoPagoConfigService, MercadoPagoPixChargeService, MercadoPagoBoletoOrderService],
 })
 export class MercadoPagoModule {}
