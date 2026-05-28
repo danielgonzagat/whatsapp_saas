@@ -120,6 +120,16 @@ interface PrismaWithDynamicModels {
     findUnique(args: Record<string, unknown>): Promise<Record<string, unknown> | null>;
     findMany(args: Record<string, unknown>): Promise<Array<Record<string, unknown>>>;
   };
+  autopilotEvent: {
+    findMany(args: {
+      where: { workspaceId: string; createdAt: { gte: Date } };
+      orderBy: { createdAt: 'desc' };
+      take: number;
+      select: { id: true; intent: true; action: true; createdAt: true };
+    }): Promise<
+      Array<{ id: string; intent: string | null; action: string | null; createdAt: Date }>
+    >;
+  };
   $transaction: <T>(fn: (tx: PrismaWithDynamicModels) => Promise<T>) => Promise<T>;
 }
 
@@ -386,7 +396,7 @@ export class ConversationalOnboardingService {
     // Builds deps conditionally so exactOptionalPropertyTypes accepts only defined services.
     try {
       const mindDeps: BuildMindSignalsDeps = {
-        prisma: this.prismaExt as unknown as BuildMindSignalsDeps['prisma'],
+        prisma: this.prismaExt,
         logger: this.logger,
         ...(this.attentionService !== undefined ? { attentionService: this.attentionService } : {}),
         ...(this.valenceAggregatorService !== undefined
