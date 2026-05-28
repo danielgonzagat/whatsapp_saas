@@ -416,3 +416,77 @@ export function buildPaymentPendingPayload(
     ...(input.checkoutSessionId ? { checkoutSessionId: input.checkoutSessionId } : {}),
   };
 }
+
+/**
+ * Unified input for the `sale.created` + `payment.pending` event pair every
+ * `createXxxOrder` flow emits after the persistence transaction commits.
+ */
+export interface SaleEventPairInput {
+  saleId: string;
+  productId: string;
+  planId: string;
+  amount: number;
+  paymentMethod: SalesPaymentMethod;
+  externalPaymentId: string;
+  gateway: 'mercadopago' | 'stripe';
+  checkoutSessionId?: string;
+}
+
+/**
+ * Build the `(sale.created, payment.pending)` payload pair used by PIX, boleto
+ * and Stripe card flows. Collapses the triple-duplicated post-transaction emit
+ * block in `SalesService` into a single pure call site per method.
+ */
+export function buildSaleEventPair(input: SaleEventPairInput): {
+  saleCreated: Record<string, unknown>;
+  paymentPending: Record<string, unknown>;
+} {
+  const saleCreated = buildSaleCreatedPayload({
+    saleId: input.saleId,
+    productId: input.productId,
+    planId: input.planId,
+    amount: input.amount,
+    paymentMethod: input.paymentMethod,
+    externalPaymentId: input.externalPaymentId,
+    ...(input.checkoutSessionId ? { checkoutSessionId: input.checkoutSessionId } : {}),
+  });
+  const paymentPending = buildPaymentPendingPayload({
+    saleId: input.saleId,
+    externalPaymentId: input.externalPaymentId,
+    gateway: input.gateway,
+    method: input.paymentMethod,
+    amount: input.amount,
+    ...(input.checkoutSessionId ? { checkoutSessionId: input.checkoutSessionId } : {}),
+  });
+  return { saleCreated, paymentPending };
+}
+
+/**
+ * Input for the in-transaction `PAYMENT_PENDING` audit row written right after
+ * the external payment provider returns. Mirrors the audit `details` object
+ * each `createXxxOrder` flow constructs inline.
+ */
+export interface PaymentPendingAuditDetailsInput {
+  externalPaymentId: string;
+  gateway: 'mercadopago' | 'stripe';
+  method: SalesPaymentMethod;
+  amount: number;
+  status?: string;
+}
+
+/**
+ * Build the `PAYMENT_PENDING` audit `details` envelope. Defaults `status` to
+ * `'pending'` so callers don't have to remember the literal for Stripe checkout
+ * sessions (where the provider does not echo a status on session.create).
+ */
+export function buildPaymentPendingAuditDetails(
+  input: PaymentPendingAuditDetailsInput,
+): Record<string, unknown> {
+  return {
+    externalPaymentId: input.externalPaymentId,
+    gateway: input.gateway,
+    method: input.method,
+    amount: input.amount,
+    status: input.status ?? 'pending',
+  };
+}

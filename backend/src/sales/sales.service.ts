@@ -13,12 +13,12 @@ import {
   buildBoletoSaleCreateMetadata,
   buildBoletoSaleUpdateMetadata,
   buildMercadoPagoNotificationUrl,
-  buildPaymentPendingPayload,
+  buildPaymentPendingAuditDetails,
   buildPixSaleUpdateMetadata,
   buildSaleBuyerMetadata,
   pickSaleBuyerMetadataInput,
-  buildSaleCreatedPayload,
   buildSaleDescription,
+  buildSaleEventPair,
   buildSpineSaleEnvelope,
   buildStripeCheckoutLineItems,
   buildStripeCheckoutUrls,
@@ -178,13 +178,19 @@ export class SalesService {
           });
 
           // 5. Audit: payment pending
-          await this.auditSale(tx, sale.id, workspaceId, 'PAYMENT_PENDING', {
-            externalPaymentId: pixResult.externalId,
-            gateway: 'mercadopago',
-            method: 'PIX',
-            amount: plan.price,
-            status: pixResult.status,
-          });
+          await this.auditSale(
+            tx,
+            sale.id,
+            workspaceId,
+            'PAYMENT_PENDING',
+            buildPaymentPendingAuditDetails({
+              externalPaymentId: pixResult.externalId,
+              gateway: 'mercadopago',
+              method: 'PIX',
+              amount: plan.price,
+              status: pixResult.status,
+            }),
+          );
 
           return { sale, pixResult };
         },
@@ -192,30 +198,26 @@ export class SalesService {
       )
       .then(({ sale, pixResult }) => {
         // 6. Emit spine events (after transaction commits; fire-and-forget)
+        const { saleCreated, paymentPending } = buildSaleEventPair({
+          saleId: sale.id,
+          productId,
+          planId,
+          amount: plan.price,
+          paymentMethod: 'PIX',
+          externalPaymentId: pixResult.externalId,
+          gateway: 'mercadopago',
+        });
         this.emitSaleEvent({
           eventName: 'sale.created',
           workspaceId,
           saleId: sale.id,
-          payload: buildSaleCreatedPayload({
-            saleId: sale.id,
-            productId,
-            planId,
-            amount: plan.price,
-            paymentMethod: 'PIX',
-            externalPaymentId: pixResult.externalId,
-          }),
+          payload: saleCreated,
         });
         this.emitSaleEvent({
           eventName: 'payment.pending',
           workspaceId,
           saleId: sale.id,
-          payload: buildPaymentPendingPayload({
-            saleId: sale.id,
-            externalPaymentId: pixResult.externalId,
-            gateway: 'mercadopago',
-            method: 'PIX',
-            amount: plan.price,
-          }),
+          payload: paymentPending,
         });
 
         this.logger.log(
@@ -309,43 +311,45 @@ export class SalesService {
             },
           });
 
-          await this.auditSale(tx, sale.id, workspaceId, 'PAYMENT_PENDING', {
-            externalPaymentId: boletoResult.externalId,
-            gateway: 'mercadopago',
-            method: 'BOLETO',
-            amount: plan.price,
-            status: boletoResult.status,
-          });
+          await this.auditSale(
+            tx,
+            sale.id,
+            workspaceId,
+            'PAYMENT_PENDING',
+            buildPaymentPendingAuditDetails({
+              externalPaymentId: boletoResult.externalId,
+              gateway: 'mercadopago',
+              method: 'BOLETO',
+              amount: plan.price,
+              status: boletoResult.status,
+            }),
+          );
 
           return { sale, boletoResult };
         },
         { isolationLevel: 'ReadCommitted' },
       )
       .then(({ sale, boletoResult }) => {
+        const { saleCreated, paymentPending } = buildSaleEventPair({
+          saleId: sale.id,
+          productId,
+          planId,
+          amount: plan.price,
+          paymentMethod: 'BOLETO',
+          externalPaymentId: boletoResult.externalId,
+          gateway: 'mercadopago',
+        });
         this.emitSaleEvent({
           eventName: 'sale.created',
           workspaceId,
           saleId: sale.id,
-          payload: buildSaleCreatedPayload({
-            saleId: sale.id,
-            productId,
-            planId,
-            amount: plan.price,
-            paymentMethod: 'BOLETO',
-            externalPaymentId: boletoResult.externalId,
-          }),
+          payload: saleCreated,
         });
         this.emitSaleEvent({
           eventName: 'payment.pending',
           workspaceId,
           saleId: sale.id,
-          payload: buildPaymentPendingPayload({
-            saleId: sale.id,
-            externalPaymentId: boletoResult.externalId,
-            gateway: 'mercadopago',
-            method: 'BOLETO',
-            amount: plan.price,
-          }),
+          payload: paymentPending,
         });
 
         this.logger.log(
@@ -442,45 +446,45 @@ export class SalesService {
             },
           });
 
-          await this.auditSale(tx, sale.id, workspaceId, 'PAYMENT_PENDING', {
-            externalPaymentId,
-            gateway: 'stripe',
-            method: 'CREDIT_CARD',
-            amount: plan.price,
-            status: 'pending',
-          });
+          await this.auditSale(
+            tx,
+            sale.id,
+            workspaceId,
+            'PAYMENT_PENDING',
+            buildPaymentPendingAuditDetails({
+              externalPaymentId,
+              gateway: 'stripe',
+              method: 'CREDIT_CARD',
+              amount: plan.price,
+            }),
+          );
 
           return { sale, session, externalPaymentId, checkoutUrl: session.url };
         },
         { isolationLevel: 'ReadCommitted' },
       )
       .then(({ sale, session, externalPaymentId, checkoutUrl }) => {
+        const { saleCreated, paymentPending } = buildSaleEventPair({
+          saleId: sale.id,
+          productId,
+          planId,
+          amount: plan.price,
+          paymentMethod: 'CREDIT_CARD',
+          externalPaymentId,
+          gateway: 'stripe',
+          checkoutSessionId: session.id,
+        });
         this.emitSaleEvent({
           eventName: 'sale.created',
           workspaceId,
           saleId: sale.id,
-          payload: buildSaleCreatedPayload({
-            saleId: sale.id,
-            productId,
-            planId,
-            amount: plan.price,
-            paymentMethod: 'CREDIT_CARD',
-            externalPaymentId,
-            checkoutSessionId: session.id,
-          }),
+          payload: saleCreated,
         });
         this.emitSaleEvent({
           eventName: 'payment.pending',
           workspaceId,
           saleId: sale.id,
-          payload: buildPaymentPendingPayload({
-            saleId: sale.id,
-            externalPaymentId,
-            gateway: 'stripe',
-            method: 'CREDIT_CARD',
-            amount: plan.price,
-            checkoutSessionId: session.id,
-          }),
+          payload: paymentPending,
         });
 
         this.logger.log(

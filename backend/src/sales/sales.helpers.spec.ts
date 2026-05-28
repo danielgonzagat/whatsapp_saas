@@ -4,7 +4,9 @@ import {
   SALES_PROVENANCE,
   buildBoletoAddressMetadata,
   buildMercadoPagoNotificationUrl,
+  buildPaymentPendingAuditDetails,
   buildSaleDescription,
+  buildSaleEventPair,
   buildStripeCheckoutUrls,
   computeBoletoExpiresAt,
   computePixExpiresAt,
@@ -187,6 +189,104 @@ describe('sales.helpers', () => {
         processor: 'sales-service',
         processorVersion: '1.0.0',
         schemaVersion: '1.0.0',
+      });
+    });
+  });
+
+  describe('buildSaleEventPair', () => {
+    it('builds the PIX/boleto pair without checkoutSessionId', () => {
+      const { saleCreated, paymentPending } = buildSaleEventPair({
+        saleId: 'sale-1',
+        productId: 'prod-1',
+        planId: 'plan-1',
+        amount: 49.9,
+        paymentMethod: 'PIX',
+        externalPaymentId: 'mp-ext-1',
+        gateway: 'mercadopago',
+      });
+      expect(saleCreated).toEqual({
+        saleId: 'sale-1',
+        productId: 'prod-1',
+        planId: 'plan-1',
+        amount: 49.9,
+        paymentMethod: 'PIX',
+        externalPaymentId: 'mp-ext-1',
+      });
+      expect(paymentPending).toEqual({
+        saleId: 'sale-1',
+        externalPaymentId: 'mp-ext-1',
+        gateway: 'mercadopago',
+        method: 'PIX',
+        amount: 49.9,
+        status: 'pending',
+      });
+    });
+
+    it('forwards checkoutSessionId to both payloads for Stripe card flows', () => {
+      const { saleCreated, paymentPending } = buildSaleEventPair({
+        saleId: 'sale-2',
+        productId: 'prod-2',
+        planId: 'plan-2',
+        amount: 199,
+        paymentMethod: 'CREDIT_CARD',
+        externalPaymentId: 'pi_123',
+        gateway: 'stripe',
+        checkoutSessionId: 'cs_test_456',
+      });
+      expect(saleCreated.checkoutSessionId).toBe('cs_test_456');
+      expect(paymentPending.checkoutSessionId).toBe('cs_test_456');
+      expect(paymentPending.gateway).toBe('stripe');
+      expect(paymentPending.method).toBe('CREDIT_CARD');
+    });
+
+    it('omits checkoutSessionId when not supplied', () => {
+      const { saleCreated, paymentPending } = buildSaleEventPair({
+        saleId: 'sale-3',
+        productId: 'p',
+        planId: 'pl',
+        amount: 10,
+        paymentMethod: 'BOLETO',
+        externalPaymentId: 'mp-b-1',
+        gateway: 'mercadopago',
+      });
+      expect(saleCreated).not.toHaveProperty('checkoutSessionId');
+      expect(paymentPending).not.toHaveProperty('checkoutSessionId');
+    });
+  });
+
+  describe('buildPaymentPendingAuditDetails', () => {
+    it('forwards the provider status when supplied (PIX / boleto)', () => {
+      expect(
+        buildPaymentPendingAuditDetails({
+          externalPaymentId: 'mp-1',
+          gateway: 'mercadopago',
+          method: 'PIX',
+          amount: 50,
+          status: 'pending_payment',
+        }),
+      ).toEqual({
+        externalPaymentId: 'mp-1',
+        gateway: 'mercadopago',
+        method: 'PIX',
+        amount: 50,
+        status: 'pending_payment',
+      });
+    });
+
+    it("defaults status to 'pending' for Stripe checkout sessions (no echoed status)", () => {
+      expect(
+        buildPaymentPendingAuditDetails({
+          externalPaymentId: 'pi_abc',
+          gateway: 'stripe',
+          method: 'CREDIT_CARD',
+          amount: 1000,
+        }),
+      ).toEqual({
+        externalPaymentId: 'pi_abc',
+        gateway: 'stripe',
+        method: 'CREDIT_CARD',
+        amount: 1000,
+        status: 'pending',
       });
     });
   });
