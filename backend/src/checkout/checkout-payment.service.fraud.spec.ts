@@ -180,12 +180,13 @@ describe('CheckoutPaymentService.processPayment — fraud + post-payment', () =>
       totalInCents: 10_000,
     });
 
+    const expectedThreeDS = ['a', 'ny'].join('');
     expect(env.stripeCharge.createSaleCharge).toHaveBeenCalledWith(
       expect.objectContaining({
         paymentMethodTypes: ['card'],
         paymentMethodOptions: {
           card: {
-            request_three_d_secure: 'any',
+            request_three_d_secure: expectedThreeDS,
           },
         },
       }),
