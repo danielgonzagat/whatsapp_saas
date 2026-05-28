@@ -8,19 +8,14 @@ import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
 import { CrmEventEmitterService } from '../kloel/crm-emitter/crm-event-emitter.service';
 import { buildFallbackAnalysis, normalizeAnalysis } from './neuro-crm.helpers';
+import {
+  clusterContactProjections,
+  decideNextBestAction,
+  deriveSentimentChangeInsight,
+  detectObjectionKind,
+  mergeNeuroCrmCustomFields,
+} from './neuro-crm.service.helpers';
 import { type AnalysisContact, type AnalysisResult, type RawAnalysis } from './neuro-crm.types';
-
-interface ClusterPoint {
-  contact: {
-    id: string;
-    name: string | null;
-    phone: string;
-    leadScore: number;
-    updatedAt: Date;
-  };
-  x: number;
-  y: number;
-}
 
 /** Neuro crm service. */
 @Injectable()
@@ -56,28 +51,12 @@ export class NeuroCrmService {
       throw new NotFoundException('Contato não encontrado');
     }
 
-    const lastMsg = contact.messages[0];
-    const hoursSince = lastMsg ? (Date.now() - lastMsg.createdAt.getTime()) / 3600000 : 999;
-
-    let action = 'FOLLOW_UP_SOFT';
-    let reason = 'contato sem atividade recente';
-
-    if (
-      contact.leadScore > 70 ||
-      contact.purchaseProbability === 'HIGH' ||
-      contact.purchaseProbability === 'VERY_HIGH'
-    ) {
-      action = hoursSince > 12 ? 'CLOSE_NOW' : 'CTA_PRECO';
-      reason = 'lead quente';
-    } else if (contact.sentiment === 'NEGATIVE') {
-      action = 'TRATAR_OBJECAO';
-      reason = 'sentimento negativo';
-    } else if (hoursSince > 48) {
-      action = 'REATIVAR';
-      reason = 'silêncio longo';
-    }
-
-    return { action, reason, lastMessageAtHours: Math.round(hoursSince) };
+    return decideNextBestAction({
+      leadScore: contact.leadScore,
+      sentiment: contact.sentiment,
+      purchaseProbability: contact.purchaseProbability,
+      lastMessageAt: contact.messages[0]?.createdAt ?? null,
+    });
   }
 
   /**
@@ -95,59 +74,7 @@ export class NeuroCrmService {
         updatedAt: true,
       },
     });
-    const points: ClusterPoint[] = contacts.map((c) => ({
-      contact: {
-        ...c,
-        leadScore: c.leadScore ?? 0,
-      },
-      x: c.leadScore ?? 0,
-      y: (Date.now() - c.updatedAt.getTime()) / 3600000,
-    }));
-
-    const k = Math.min(3, Math.max(1, points.length));
-    let centroids = points.slice(0, k).map((p) => ({ x: p.x, y: p.y }));
-    for (let iter = 0; iter < 5; iter += 1) {
-      const buckets: ClusterPoint[][] = Array.from({ length: k }, () => []);
-      for (const p of points) {
-        let best = 0;
-        let bestDist = Number.POSITIVE_INFINITY;
-        centroids.forEach((c, idx) => {
-          const d = Math.hypot(p.x - c.x, p.y - c.y);
-          if (d < bestDist) {
-            bestDist = d;
-            best = idx;
-          }
-        });
-        const bucket = buckets[best];
-        if (bucket) {
-          bucket.push(p);
-        }
-      }
-      centroids = buckets.map((bucket, idx) => {
-        if (!bucket.length) {
-          const fallback = centroids[idx];
-          return fallback ?? { x: 0, y: 0 };
-        }
-        const xSum = bucket.reduce((a, b) => a + b.x, 0);
-        const ySum = bucket.reduce((a, b) => a + b.y, 0);
-        return { x: xSum / bucket.length, y: ySum / bucket.length };
-      });
-    }
-
-    const clusters = points.map((p) => {
-      let best = 0;
-      let bestDist = Number.POSITIVE_INFINITY;
-      centroids.forEach((c, idx) => {
-        const d = Math.hypot(p.x - c.x, p.y - c.y);
-        if (d < bestDist) {
-          bestDist = d;
-          best = idx;
-        }
-      });
-      return { cluster: best, contact: p.contact };
-    });
-
-    return { centroids, clusters };
+    return clusterContactProjections(contacts);
   }
 
   /**
@@ -241,8 +168,8 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
       contact.customFields,
     );
 
-    if (result.intent === 'COMPLAINT' || result.sentiment === 'NEGATIVE') {
-      const objectionKind = result.intent === 'COMPLAINT' ? 'complaint' : 'negative_sentiment';
+    const objectionKind = detectObjectionKind(result);
+    if (objectionKind) {
       void this.crmEmitter
         ?.emitObjectionRaised(workspaceId, contactId, objectionKind)
         .catch(() => {});
@@ -342,13 +269,6 @@ Return strictly JSON with:
       reasons?: string[];
     },
   ) {
-    const customFields: Prisma.JsonObject =
-      currentCustomFields &&
-      typeof currentCustomFields === 'object' &&
-      !Array.isArray(currentCustomFields)
-        ? currentCustomFields
-        : {};
-
     await this.prisma.contact.updateMany({
       where: { id: contactId, workspaceId },
       data: {
@@ -357,14 +277,7 @@ Return strictly JSON with:
         purchaseProbability: result.purchaseProbability,
         aiSummary: result.summary,
         nextBestAction: result.nextBestAction,
-        customFields: {
-          ...customFields,
-          purchaseProbabilityScore: result.purchaseProbabilityScore,
-          probabilityReasons: result.reasons || [],
-          intent: result.intent,
-          cluster: result.cluster || null,
-          lastNeuroCrmAnalysisAt: new Date().toISOString(),
-        } satisfies Prisma.InputJsonObject,
+        customFields: mergeNeuroCrmCustomFields(currentCustomFields, result),
       },
     });
   }
@@ -430,20 +343,14 @@ Return strictly JSON with:
     contact: AnalysisContact,
     result: AnalysisResult,
   ) {
-    const oldSentiment = contact.sentiment || 'NEUTRAL';
-    if (oldSentiment !== result.sentiment) {
-      const description =
-        result.sentiment === 'POSITIVE'
-          ? `Sentimento melhorou de ${oldSentiment} para POSITIVE`
-          : result.sentiment === 'NEGATIVE'
-            ? `Sentimento piorou de ${oldSentiment} para NEGATIVE`
-            : `Sentimento neutralizou para ${result.sentiment}`;
+    const insight = deriveSentimentChangeInsight(contact.sentiment, result);
+    if (insight) {
       await this.createInsight(
         contactId,
         workspaceId,
         'SENTIMENT_CHANGE',
-        description,
-        result.sentiment === 'POSITIVE' ? 5 : result.sentiment === 'NEGATIVE' ? -5 : 0,
+        insight.description,
+        insight.scoreChange,
       );
     }
   }
