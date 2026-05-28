@@ -130,7 +130,7 @@ function StatusBadge({ status }: { status: MotorStatus['status'] }) {
           display: 'inline-block',
           width: 6,
           height: 6,
-          borderRadius: '50%',
+          borderRadius: 6,
           background: fg,
         }}
       />
@@ -147,7 +147,7 @@ function BoolDot({ value }: { value: boolean }) {
         display: 'inline-block',
         width: 7,
         height: 7,
-        borderRadius: '50%',
+        borderRadius: 6,
         background: fg,
         marginRight: 8,
         verticalAlign: 'middle',
