@@ -51,6 +51,19 @@ describe('guest chat action intent helpers', () => {
     );
   });
 
+  it('routes real PIX intents through the canonical sales capability', () => {
+    const pixGenerate = detectActionIntent('gera um pix de R$197 para Joao comprar PDRN');
+    const pixImperative = detectActionIntent('emite um PIX de R$197 para Joao comprar PDRN');
+    const boleto = detectActionIntent('emite boleto de R$197 para Joao comprar PDRN');
+
+    expect(pixGenerate?.tool).toBe('sales.create_pix');
+    expect(pixGenerate?.args).toEqual(expect.objectContaining({ amount: 197 }));
+    expect(pixImperative?.tool).toBe('sales.create_pix');
+    expect(pixImperative?.args).toEqual(expect.objectContaining({ amount: 197 }));
+    expect(boleto?.tool).toBe('sales.create_boleto');
+    expect(boleto?.args).toEqual(expect.objectContaining({ amount: 197 }));
+  });
+
   it('routes retained plan checkout warranty and broadcast intent deltas', () => {
     const disabledPlan = detectActionIntent('desativa o plano Mensal');
     expect(disabledPlan?.tool).toBe('update_plan');
