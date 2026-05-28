@@ -161,7 +161,9 @@ describe('closeWithWarn', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const close = vi.fn().mockRejectedValue(new Error('already closed'));
     await closeWithWarn({ close }, 'test-dlq');
-    expect(warn).toHaveBeenCalledWith('[SHUTDOWN] test-dlq close failed:', expect.any(Error));
+    const [label, errorArg] = warn.mock.calls[0] as [string, Error];
+    expect(label).toBe('[SHUTDOWN] test-dlq close failed:');
+    expect(errorArg).toBeInstanceOf(Error);
     warn.mockRestore();
   });
 });
