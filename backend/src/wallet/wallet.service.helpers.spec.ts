@@ -1,10 +1,12 @@
 import { BadRequestException } from '@nestjs/common';
+import type { PrepaidWalletTransaction } from '@prisma/client';
 
 import {
   DEFAULT_BACKEND_ORIGIN,
   MP_WEBHOOK_PATH,
   PIX_EXPIRATION_MINUTES,
   WALLET_MERCADOPAGO_REFERENCE_TYPE,
+  WALLET_TX_OPTIONS,
   absAmountCents,
   assertExclusivePricingBasis,
   assertNonNegativeActualCost,
@@ -13,15 +15,24 @@ import {
   assertValidUsageUnits,
   buildExistingTxQuery,
   buildFraudReasonsLog,
+  buildIdempotentChargeUsageResult,
   buildInsufficientBalanceReport,
+  buildMercadoPagoTopupCreditTxData,
   buildMercadoPagoTopupTransactionMetadata,
   buildPixTopupChargeRequest,
+  buildRefundCompensationTxData,
   buildRefundMetadata,
+  buildRefundReferenceType,
+  buildSettlementAdjustmentTxData,
   buildSettlementMetadata,
+  buildSettlementReferenceType,
+  buildStripeTopupCreditTxData,
   buildStripeTopupIntentParams,
   buildStripeTopupMetadata,
   buildStripeTopupTransactionMetadata,
+  buildUsageDebitTxData,
   buildUsageMetadata,
+  buildUsageReferenceType,
   buildWalletNotFoundOnMercadoPagoWebhookReport,
   buildWalletNotFoundOnStripeWebhookReport,
   classifyTopupFraudDecision,
@@ -610,6 +621,253 @@ describe('wallet.service.helpers', () => {
         costCents: '100',
         balanceCents: '50',
       });
+    });
+  });
+
+  describe('WALLET_TX_OPTIONS', () => {
+    it('uses ReadCommitted isolation level by default', () => {
+      expect(WALLET_TX_OPTIONS.isolationLevel).toBe('ReadCommitted');
+    });
+
+    it('is frozen so callers cannot mutate the shared options literal', () => {
+      expect(Object.isFrozen(WALLET_TX_OPTIONS)).toBe(true);
+    });
+  });
+
+  describe('reference-type builders', () => {
+    it('builds the canonical usage prefix', () => {
+      expect(buildUsageReferenceType('autopilot_message')).toBe('usage:autopilot_message');
+    });
+
+    it('builds the canonical settlement prefix on top of the usage prefix', () => {
+      expect(buildSettlementReferenceType('autopilot_message')).toBe(
+        'adjust:usage:autopilot_message',
+      );
+    });
+
+    it('builds the canonical refund prefix on top of the usage prefix', () => {
+      expect(buildRefundReferenceType('autopilot_message')).toBe('refund:usage:autopilot_message');
+    });
+
+    it('keeps the settlement/refund prefixes consistent with the usage prefix', () => {
+      const operation = 'whatsapp_template_send';
+      const usagePrefix = buildUsageReferenceType(operation);
+      expect(buildSettlementReferenceType(operation)).toBe(`adjust:${usagePrefix}`);
+      expect(buildRefundReferenceType(operation)).toBe(`refund:${usagePrefix}`);
+    });
+  });
+
+  describe('ledger create-data builders', () => {
+    it('shapes Stripe TOPUP create-data with positive amount and stripe_topup reference', () => {
+      const data = buildStripeTopupCreditTxData({
+        walletId: 'w1',
+        amountCents: 5000n,
+        newBalanceCents: 12000n,
+        paymentIntentId: 'pi_123',
+        paymentMethod: 'card',
+      });
+      expect(data).toEqual({
+        walletId: 'w1',
+        type: 'TOPUP',
+        amountCents: 5000n,
+        balanceAfterCents: 12000n,
+        referenceType: 'stripe_topup',
+        referenceId: 'pi_123',
+        metadata: { method: 'card' },
+      });
+    });
+
+    it('null-coalesces an absent Stripe paymentMethod to null in metadata', () => {
+      const data = buildStripeTopupCreditTxData({
+        walletId: 'w1',
+        amountCents: 1n,
+        newBalanceCents: 1n,
+        paymentIntentId: 'pi_x',
+        paymentMethod: undefined,
+      });
+      expect(data.metadata).toEqual({ method: null });
+    });
+
+    it('shapes Mercado Pago TOPUP create-data with the MP reference type and provider metadata', () => {
+      const data = buildMercadoPagoTopupCreditTxData({
+        walletId: 'w1',
+        amountCents: 9900n,
+        newBalanceCents: 10000n,
+        externalId: 'mp_999',
+        status: 'approved',
+      });
+      expect(data).toEqual({
+        walletId: 'w1',
+        type: 'TOPUP',
+        amountCents: 9900n,
+        balanceAfterCents: 10000n,
+        referenceType: WALLET_MERCADOPAGO_REFERENCE_TYPE,
+        referenceId: 'mp_999',
+        metadata: { provider: 'mercadopago', method: 'pix', status: 'approved' },
+      });
+    });
+
+    it('shapes USAGE debit create-data with negated cost', () => {
+      const usageMetadata = {
+        operation: 'autopilot_message',
+        billingMode: 'provider_quote' as const,
+        quotedCostCents: '750',
+      };
+      const data = buildUsageDebitTxData({
+        walletId: 'w1',
+        costCents: 750n,
+        newBalanceCents: 9250n,
+        referenceType: 'usage:autopilot_message',
+        requestId: 'req-1',
+        usageMetadata,
+      });
+      expect(data).toEqual({
+        walletId: 'w1',
+        type: 'USAGE',
+        amountCents: -750n,
+        balanceAfterCents: 9250n,
+        referenceType: 'usage:autopilot_message',
+        referenceId: 'req-1',
+        metadata: usageMetadata,
+      });
+    });
+
+    it('preserves the negated-cost convention for zero-cost debits', () => {
+      // -0n === 0n in bigint, so we only assert the sign-flipping logic
+      // doesn't introduce a stray negative on the boundary.
+      const data = buildUsageDebitTxData({
+        walletId: 'w1',
+        costCents: 0n,
+        newBalanceCents: 10000n,
+        referenceType: 'usage:noop',
+        requestId: 'req-0',
+        usageMetadata: { operation: 'noop' },
+      });
+      expect(data.amountCents).toBe(0n);
+    });
+
+    it('shapes settlement ADJUSTMENT create-data with negated delta', () => {
+      const settlementMetadata = {
+        operation: 'autopilot_message',
+        reason: 'provider_actual',
+        actualCostCents: '900',
+        chargedCostCents: '750',
+        deltaCents: '150',
+        originalUsageTransactionId: 'tx-1',
+      };
+      const data = buildSettlementAdjustmentTxData({
+        walletId: 'w1',
+        deltaCents: 150n,
+        newBalanceCents: 9100n,
+        settlementReferenceType: 'adjust:usage:autopilot_message',
+        requestId: 'req-1',
+        settlementMetadata,
+      });
+      expect(data).toEqual({
+        walletId: 'w1',
+        type: 'ADJUSTMENT',
+        amountCents: -150n,
+        balanceAfterCents: 9100n,
+        referenceType: 'adjust:usage:autopilot_message',
+        referenceId: 'req-1',
+        metadata: settlementMetadata,
+      });
+    });
+
+    it('renders settlement create-data as a credit when delta is negative (partial refund)', () => {
+      // Provider charged less than originally debited: deltaCents < 0,
+      // so -deltaCents > 0 -- the row becomes a credit-style ADJUSTMENT.
+      const data = buildSettlementAdjustmentTxData({
+        walletId: 'w1',
+        deltaCents: -200n,
+        newBalanceCents: 9450n,
+        settlementReferenceType: 'adjust:usage:op',
+        requestId: 'req-2',
+        settlementMetadata: { reason: 'provider_partial_refund' },
+      });
+      expect(data.amountCents).toBe(200n);
+    });
+
+    it('shapes REFUND create-data with positive refunded amount and refund reference', () => {
+      const refundMetadata = {
+        operation: 'autopilot_message',
+        reason: 'downstream_failure',
+        originalUsageTransactionId: 'tx-1',
+      };
+      const data = buildRefundCompensationTxData({
+        walletId: 'w1',
+        refundedCents: 750n,
+        newBalanceCents: 10000n,
+        refundReferenceType: 'refund:usage:autopilot_message',
+        requestId: 'req-1',
+        refundMetadata,
+      });
+      expect(data).toEqual({
+        walletId: 'w1',
+        type: 'REFUND',
+        amountCents: 750n,
+        balanceAfterCents: 10000n,
+        referenceType: 'refund:usage:autopilot_message',
+        referenceId: 'req-1',
+        metadata: refundMetadata,
+      });
+    });
+  });
+
+  describe('buildIdempotentChargeUsageResult', () => {
+    function fakeUsageTx(amountCents: bigint): PrepaidWalletTransaction {
+      return {
+        id: 'tx-1',
+        walletId: 'w1',
+        type: 'USAGE',
+        amountCents,
+        balanceAfterCents: 9250n,
+        referenceType: 'usage:autopilot_message',
+        referenceId: 'req-1',
+        metadata: { operation: 'autopilot_message' },
+        createdAt: new Date('2026-05-28T00:00:00Z'),
+      };
+    }
+
+    it('flips sign of stored negative amountCents to surface positive costCents', () => {
+      const existing = fakeUsageTx(-750n);
+      const result = buildIdempotentChargeUsageResult({
+        existing,
+        walletBalanceCents: 9250n,
+      });
+      expect(result).toEqual({
+        newBalanceCents: 9250n,
+        costCents: 750n,
+        transaction: existing,
+      });
+    });
+
+    it('defaults a missing wallet balance to 0n so the result stays type-safe', () => {
+      const existing = fakeUsageTx(-750n);
+      const result = buildIdempotentChargeUsageResult({
+        existing,
+        walletBalanceCents: undefined,
+      });
+      expect(result.newBalanceCents).toBe(0n);
+    });
+
+    it('defaults a null wallet balance to 0n (Prisma findFirst nullable shape)', () => {
+      const existing = fakeUsageTx(-100n);
+      const result = buildIdempotentChargeUsageResult({
+        existing,
+        walletBalanceCents: null,
+      });
+      expect(result.newBalanceCents).toBe(0n);
+      expect(result.costCents).toBe(100n);
+    });
+
+    it('returns the same transaction reference passed in (no copy)', () => {
+      const existing = fakeUsageTx(-1n);
+      const result = buildIdempotentChargeUsageResult({
+        existing,
+        walletBalanceCents: 1n,
+      });
+      expect(result.transaction).toBe(existing);
     });
   });
 });

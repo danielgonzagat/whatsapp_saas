@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
-import type { Prisma, PrepaidWalletTransaction } from '@prisma/client';
+import type { PrepaidWalletTransaction } from '@prisma/client';
 import * as Sentry from '@sentry/node';
 
 import { StripeService } from '../billing/stripe.service';
@@ -24,6 +24,7 @@ import {
 } from './wallet.types';
 import {
   WALLET_MERCADOPAGO_REFERENCE_TYPE,
+  WALLET_TX_OPTIONS,
   absAmountCents,
   buildExistingTxQuery,
   assertExclusivePricingBasis,
@@ -34,16 +35,23 @@ import {
   buildFraudReasonsLog,
   buildFraudGateWarningMessage,
   buildFraudGateUserMessage,
+  buildIdempotentChargeUsageResult,
+  buildMercadoPagoTopupCreditTxData,
+  buildRefundCompensationTxData,
+  buildRefundReferenceType,
+  buildSettlementAdjustmentTxData,
+  buildSettlementReferenceType,
+  buildStripeTopupCreditTxData,
+  buildUsageDebitTxData,
+  buildUsageReferenceType,
   classifyTopupFraudDecision,
   extractStripeTopupWalletId,
   isValidStripeTopupPaymentIntent,
   buildInsufficientBalanceReport,
-  buildMercadoPagoTopupTransactionMetadata,
   buildPixTopupChargeRequest,
   buildRefundMetadata,
   buildSettlementMetadata,
   buildStripeTopupIntentParams,
-  buildStripeTopupTransactionMetadata,
   buildUsageMetadata,
   buildWalletNotFoundOnMercadoPagoWebhookReport,
   buildWalletNotFoundOnStripeWebhookReport,
@@ -160,57 +168,50 @@ export class WalletService {
     }
     const amountCents = BigInt(paymentIntent.amount);
 
-    return this.prisma.$transaction(
-      async (tx) => {
-        const existing = await tx.prepaidWalletTransaction.findFirst(
-          buildExistingTxQuery('stripe_topup', paymentIntent.id, 'TOPUP'),
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.prepaidWalletTransaction.findFirst(
+        buildExistingTxQuery('stripe_topup', paymentIntent.id, 'TOPUP'),
+      );
+      if (existing) {
+        this.logger.debug(`creditFromWebhook idempotent skip: pi=${paymentIntent.id}`);
+        return existing;
+      }
+
+      const webhookWorkspaceId = paymentIntent.metadata?.workspace_id;
+      const wallet = await tx.prepaidWallet.findFirst({
+        where: {
+          id: walletId,
+          ...(webhookWorkspaceId ? { workspaceId: webhookWorkspaceId } : {}),
+        },
+      });
+      if (!wallet) {
+        this.logger.error(
+          `creditFromWebhook: wallet ${walletId} referenced by PaymentIntent ${paymentIntent.id} not found`,
         );
-        if (existing) {
-          this.logger.debug(`creditFromWebhook idempotent skip: pi=${paymentIntent.id}`);
-          return existing;
-        }
-
-        const webhookWorkspaceId = paymentIntent.metadata?.workspace_id;
-        const wallet = await tx.prepaidWallet.findFirst({
-          where: {
-            id: walletId,
-            ...(webhookWorkspaceId ? { workspaceId: webhookWorkspaceId } : {}),
-          },
+        const report = buildWalletNotFoundOnStripeWebhookReport({
+          walletId,
+          paymentIntentId: paymentIntent.id,
         });
-        if (!wallet) {
-          this.logger.error(
-            `creditFromWebhook: wallet ${walletId} referenced by PaymentIntent ${paymentIntent.id} not found`,
-          );
-          const report = buildWalletNotFoundOnStripeWebhookReport({
-            walletId,
-            paymentIntentId: paymentIntent.id,
-          });
-          Sentry.captureException(report.error, { extra: report.extra });
-          throw new WalletNotFoundError(walletId);
-        }
+        Sentry.captureException(report.error, { extra: report.extra });
+        throw new WalletNotFoundError(walletId);
+      }
 
-        const newBalance = wallet.balanceCents + amountCents;
-        await tx.prepaidWallet.updateMany({
-          where: { id: wallet.id, workspaceId: wallet.workspaceId },
-          data: { balanceCents: newBalance },
-        });
+      const newBalance = wallet.balanceCents + amountCents;
+      await tx.prepaidWallet.updateMany({
+        where: { id: wallet.id, workspaceId: wallet.workspaceId },
+        data: { balanceCents: newBalance },
+      });
 
-        return tx.prepaidWalletTransaction.create({
-          data: {
-            walletId: wallet.id,
-            type: 'TOPUP',
-            amountCents,
-            balanceAfterCents: newBalance,
-            referenceType: 'stripe_topup',
-            referenceId: paymentIntent.id,
-            metadata: buildStripeTopupTransactionMetadata({
-              paymentMethod: paymentIntent.metadata?.method,
-            }),
-          },
-        });
-      },
-      { isolationLevel: 'ReadCommitted' },
-    );
+      return tx.prepaidWalletTransaction.create({
+        data: buildStripeTopupCreditTxData({
+          walletId: wallet.id,
+          amountCents,
+          newBalanceCents: newBalance,
+          paymentIntentId: paymentIntent.id,
+          paymentMethod: paymentIntent.metadata?.method,
+        }),
+      });
+    }, WALLET_TX_OPTIONS);
   }
 
   async creditMercadoPagoTopup(input: {
@@ -235,54 +236,47 @@ export class WalletService {
       return null;
     }
 
-    return this.prisma.$transaction(
-      async (tx) => {
-        const existing = await tx.prepaidWalletTransaction.findFirst(
-          buildExistingTxQuery(WALLET_MERCADOPAGO_REFERENCE_TYPE, input.externalId, 'TOPUP'),
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.prepaidWalletTransaction.findFirst(
+        buildExistingTxQuery(WALLET_MERCADOPAGO_REFERENCE_TYPE, input.externalId, 'TOPUP'),
+      );
+      if (existing) {
+        this.logger.debug(`creditMercadoPagoTopup idempotent skip: mp=${input.externalId}`);
+        return existing;
+      }
+
+      const wallet = await tx.prepaidWallet.findFirst({
+        where: { id: reference.walletId, workspaceId: reference.workspaceId },
+      });
+      if (!wallet) {
+        this.logger.error(
+          `creditMercadoPagoTopup: wallet ${reference.walletId} workspace=${reference.workspaceId} externalId=${input.externalId} not found`,
         );
-        if (existing) {
-          this.logger.debug(`creditMercadoPagoTopup idempotent skip: mp=${input.externalId}`);
-          return existing;
-        }
-
-        const wallet = await tx.prepaidWallet.findFirst({
-          where: { id: reference.walletId, workspaceId: reference.workspaceId },
+        const report = buildWalletNotFoundOnMercadoPagoWebhookReport({
+          walletId: reference.walletId,
+          workspaceId: reference.workspaceId,
+          externalId: input.externalId,
         });
-        if (!wallet) {
-          this.logger.error(
-            `creditMercadoPagoTopup: wallet ${reference.walletId} workspace=${reference.workspaceId} externalId=${input.externalId} not found`,
-          );
-          const report = buildWalletNotFoundOnMercadoPagoWebhookReport({
-            walletId: reference.walletId,
-            workspaceId: reference.workspaceId,
-            externalId: input.externalId,
-          });
-          Sentry.captureException(report.error, { extra: report.extra });
-          throw new WalletNotFoundError(reference.workspaceId);
-        }
+        Sentry.captureException(report.error, { extra: report.extra });
+        throw new WalletNotFoundError(reference.workspaceId);
+      }
 
-        const newBalance = wallet.balanceCents + amountCents;
-        await tx.prepaidWallet.updateMany({
-          where: { id: wallet.id, workspaceId: wallet.workspaceId },
-          data: { balanceCents: newBalance },
-        });
+      const newBalance = wallet.balanceCents + amountCents;
+      await tx.prepaidWallet.updateMany({
+        where: { id: wallet.id, workspaceId: wallet.workspaceId },
+        data: { balanceCents: newBalance },
+      });
 
-        return tx.prepaidWalletTransaction.create({
-          data: {
-            walletId: wallet.id,
-            type: 'TOPUP',
-            amountCents,
-            balanceAfterCents: newBalance,
-            referenceType: WALLET_MERCADOPAGO_REFERENCE_TYPE,
-            referenceId: input.externalId,
-            metadata: buildMercadoPagoTopupTransactionMetadata({
-              status: input.status,
-            }),
-          },
-        });
-      },
-      { isolationLevel: 'ReadCommitted' },
-    );
+      return tx.prepaidWalletTransaction.create({
+        data: buildMercadoPagoTopupCreditTxData({
+          walletId: wallet.id,
+          amountCents,
+          newBalanceCents: newBalance,
+          externalId: input.externalId,
+          status: input.status,
+        }),
+      });
+    }, WALLET_TX_OPTIONS);
   }
 
   /**
@@ -331,65 +325,60 @@ export class WalletService {
       });
     }
 
-    const referenceType = `usage:${input.operation}`;
+    const referenceType = buildUsageReferenceType(input.operation);
 
-    return this.prisma.$transaction(
-      async (tx) => {
-        const existing = await tx.prepaidWalletTransaction.findFirst(
-          buildExistingTxQuery(referenceType, input.requestId, 'USAGE'),
-        );
-        if (existing) {
-          const wallet = await tx.prepaidWallet.findFirst({
-            where: { id: existing.walletId, workspaceId: input.workspaceId },
-          });
-          return {
-            newBalanceCents: wallet?.balanceCents ?? 0n,
-            costCents: -existing.amountCents,
-            transaction: existing,
-          };
-        }
-
-        const wallet = await tx.prepaidWallet.findUnique({
-          where: { workspaceId: input.workspaceId },
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.prepaidWalletTransaction.findFirst(
+        buildExistingTxQuery(referenceType, input.requestId, 'USAGE'),
+      );
+      if (existing) {
+        const wallet = await tx.prepaidWallet.findFirst({
+          where: { id: existing.walletId, workspaceId: input.workspaceId },
         });
-        if (!wallet) {
-          throw new WalletNotFoundError(input.workspaceId);
-        }
-
-        if (wallet.balanceCents < costCents) {
-          const report = buildInsufficientBalanceReport({
-            walletId: wallet.id,
-            workspaceId: wallet.workspaceId,
-            operation: input.operation,
-            costCents,
-            balanceCents: wallet.balanceCents,
-          });
-          Sentry.captureException(report.error, { extra: report.extra });
-          throw new InsufficientWalletBalanceError(wallet.id, costCents, wallet.balanceCents);
-        }
-
-        const newBalance = wallet.balanceCents - costCents;
-        await tx.prepaidWallet.updateMany({
-          where: { id: wallet.id, workspaceId: input.workspaceId },
-          data: { balanceCents: newBalance },
+        return buildIdempotentChargeUsageResult({
+          existing,
+          walletBalanceCents: wallet?.balanceCents,
         });
+      }
 
-        const transaction = await tx.prepaidWalletTransaction.create({
-          data: {
-            walletId: wallet.id,
-            type: 'USAGE',
-            amountCents: -costCents,
-            balanceAfterCents: newBalance,
-            referenceType,
-            referenceId: input.requestId,
-            metadata: usageMetadata as Prisma.InputJsonValue,
-          },
+      const wallet = await tx.prepaidWallet.findUnique({
+        where: { workspaceId: input.workspaceId },
+      });
+      if (!wallet) {
+        throw new WalletNotFoundError(input.workspaceId);
+      }
+
+      if (wallet.balanceCents < costCents) {
+        const report = buildInsufficientBalanceReport({
+          walletId: wallet.id,
+          workspaceId: wallet.workspaceId,
+          operation: input.operation,
+          costCents,
+          balanceCents: wallet.balanceCents,
         });
+        Sentry.captureException(report.error, { extra: report.extra });
+        throw new InsufficientWalletBalanceError(wallet.id, costCents, wallet.balanceCents);
+      }
 
-        return { newBalanceCents: newBalance, costCents, transaction };
-      },
-      { isolationLevel: 'ReadCommitted' },
-    );
+      const newBalance = wallet.balanceCents - costCents;
+      await tx.prepaidWallet.updateMany({
+        where: { id: wallet.id, workspaceId: input.workspaceId },
+        data: { balanceCents: newBalance },
+      });
+
+      const transaction = await tx.prepaidWalletTransaction.create({
+        data: buildUsageDebitTxData({
+          walletId: wallet.id,
+          costCents,
+          newBalanceCents: newBalance,
+          referenceType,
+          requestId: input.requestId,
+          usageMetadata,
+        }),
+      });
+
+      return { newBalanceCents: newBalance, costCents, transaction };
+    }, WALLET_TX_OPTIONS);
   }
 
   /**
@@ -399,71 +388,67 @@ export class WalletService {
   async settleUsageCharge(input: SettleUsageInput): Promise<PrepaidWalletTransaction | null> {
     assertNonNegativeActualCost(input.actualCostCents);
 
-    const usageReferenceType = `usage:${input.operation}`;
-    const settlementReferenceType = `adjust:${usageReferenceType}`;
+    const usageReferenceType = buildUsageReferenceType(input.operation);
+    const settlementReferenceType = buildSettlementReferenceType(input.operation);
 
-    return this.prisma.$transaction(
-      async (tx) => {
-        const existing = await tx.prepaidWalletTransaction.findFirst(
-          buildExistingTxQuery(settlementReferenceType, input.requestId, 'ADJUSTMENT'),
-        );
-        if (existing) {
-          return existing;
-        }
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.prepaidWalletTransaction.findFirst(
+        buildExistingTxQuery(settlementReferenceType, input.requestId, 'ADJUSTMENT'),
+      );
+      if (existing) {
+        return existing;
+      }
 
-        const originalUsage = await tx.prepaidWalletTransaction.findFirst(
-          buildExistingTxQuery(usageReferenceType, input.requestId, 'USAGE'),
-        );
-        if (!originalUsage) {
-          return null;
-        }
+      const originalUsage = await tx.prepaidWalletTransaction.findFirst(
+        buildExistingTxQuery(usageReferenceType, input.requestId, 'USAGE'),
+      );
+      if (!originalUsage) {
+        return null;
+      }
 
-        const wallet = await tx.prepaidWallet.findFirst({
-          where: { id: originalUsage.walletId, workspaceId: input.workspaceId },
-        });
-        if (!wallet) {
-          throw new WalletNotFoundError(input.workspaceId);
-        }
+      const wallet = await tx.prepaidWallet.findFirst({
+        where: { id: originalUsage.walletId, workspaceId: input.workspaceId },
+      });
+      if (!wallet) {
+        throw new WalletNotFoundError(input.workspaceId);
+      }
 
-        const chargedCents = absAmountCents(originalUsage.amountCents);
-        const deltaCents = input.actualCostCents - chargedCents;
-        if (deltaCents === 0n) {
-          return null;
-        }
+      const chargedCents = absAmountCents(originalUsage.amountCents);
+      const deltaCents = input.actualCostCents - chargedCents;
+      if (deltaCents === 0n) {
+        return null;
+      }
 
-        if (deltaCents > 0n && wallet.balanceCents < deltaCents) {
-          throw new InsufficientWalletBalanceError(wallet.id, deltaCents, wallet.balanceCents);
-        }
+      if (deltaCents > 0n && wallet.balanceCents < deltaCents) {
+        throw new InsufficientWalletBalanceError(wallet.id, deltaCents, wallet.balanceCents);
+      }
 
-        const newBalance =
-          deltaCents > 0n ? wallet.balanceCents - deltaCents : wallet.balanceCents + -deltaCents;
-        await tx.prepaidWallet.updateMany({
-          where: { id: wallet.id, workspaceId: input.workspaceId },
-          data: { balanceCents: newBalance },
-        });
+      const newBalance =
+        deltaCents > 0n ? wallet.balanceCents - deltaCents : wallet.balanceCents + -deltaCents;
+      await tx.prepaidWallet.updateMany({
+        where: { id: wallet.id, workspaceId: input.workspaceId },
+        data: { balanceCents: newBalance },
+      });
 
-        return tx.prepaidWalletTransaction.create({
-          data: {
-            walletId: wallet.id,
-            type: 'ADJUSTMENT',
-            amountCents: -deltaCents,
-            balanceAfterCents: newBalance,
-            referenceType: settlementReferenceType,
-            referenceId: input.requestId,
-            metadata: buildSettlementMetadata({
-              operation: input.operation,
-              reason: input.reason,
-              actualCostCents: input.actualCostCents,
-              chargedCostCents: chargedCents,
-              deltaCents,
-              originalUsageTransactionId: originalUsage.id,
-              callerMetadata: input.metadata,
-            }) as Prisma.InputJsonValue,
-          },
-        });
-      },
-      { isolationLevel: 'ReadCommitted' },
-    );
+      return tx.prepaidWalletTransaction.create({
+        data: buildSettlementAdjustmentTxData({
+          walletId: wallet.id,
+          deltaCents,
+          newBalanceCents: newBalance,
+          settlementReferenceType,
+          requestId: input.requestId,
+          settlementMetadata: buildSettlementMetadata({
+            operation: input.operation,
+            reason: input.reason,
+            actualCostCents: input.actualCostCents,
+            chargedCostCents: chargedCents,
+            deltaCents,
+            originalUsageTransactionId: originalUsage.id,
+            callerMetadata: input.metadata,
+          }),
+        }),
+      });
+    }, WALLET_TX_OPTIONS);
   }
 
   /**
@@ -471,58 +456,54 @@ export class WalletService {
    * the wallet had already been charged.
    */
   async refundUsageCharge(input: RefundUsageInput): Promise<PrepaidWalletTransaction | null> {
-    const usageReferenceType = `usage:${input.operation}`;
-    const refundReferenceType = `refund:${usageReferenceType}`;
+    const usageReferenceType = buildUsageReferenceType(input.operation);
+    const refundReferenceType = buildRefundReferenceType(input.operation);
 
-    return this.prisma.$transaction(
-      async (tx) => {
-        const existingRefund = await tx.prepaidWalletTransaction.findFirst(
-          buildExistingTxQuery(refundReferenceType, input.requestId, 'REFUND'),
-        );
-        if (existingRefund) {
-          return existingRefund;
-        }
+    return this.prisma.$transaction(async (tx) => {
+      const existingRefund = await tx.prepaidWalletTransaction.findFirst(
+        buildExistingTxQuery(refundReferenceType, input.requestId, 'REFUND'),
+      );
+      if (existingRefund) {
+        return existingRefund;
+      }
 
-        const originalUsage = await tx.prepaidWalletTransaction.findFirst(
-          buildExistingTxQuery(usageReferenceType, input.requestId, 'USAGE'),
-        );
-        if (!originalUsage) {
-          return null;
-        }
+      const originalUsage = await tx.prepaidWalletTransaction.findFirst(
+        buildExistingTxQuery(usageReferenceType, input.requestId, 'USAGE'),
+      );
+      if (!originalUsage) {
+        return null;
+      }
 
-        const wallet = await tx.prepaidWallet.findFirst({
-          where: { id: originalUsage.walletId, workspaceId: input.workspaceId },
-        });
-        if (!wallet) {
-          throw new WalletNotFoundError(input.workspaceId);
-        }
+      const wallet = await tx.prepaidWallet.findFirst({
+        where: { id: originalUsage.walletId, workspaceId: input.workspaceId },
+      });
+      if (!wallet) {
+        throw new WalletNotFoundError(input.workspaceId);
+      }
 
-        const refundedCents = absAmountCents(originalUsage.amountCents);
-        const newBalance = wallet.balanceCents + refundedCents;
-        await tx.prepaidWallet.updateMany({
-          where: { id: wallet.id, workspaceId: input.workspaceId },
-          data: { balanceCents: newBalance },
-        });
+      const refundedCents = absAmountCents(originalUsage.amountCents);
+      const newBalance = wallet.balanceCents + refundedCents;
+      await tx.prepaidWallet.updateMany({
+        where: { id: wallet.id, workspaceId: input.workspaceId },
+        data: { balanceCents: newBalance },
+      });
 
-        return tx.prepaidWalletTransaction.create({
-          data: {
-            walletId: wallet.id,
-            type: 'REFUND',
-            amountCents: refundedCents,
-            balanceAfterCents: newBalance,
-            referenceType: refundReferenceType,
-            referenceId: input.requestId,
-            metadata: buildRefundMetadata({
-              operation: input.operation,
-              reason: input.reason,
-              originalUsageTransactionId: originalUsage.id,
-              callerMetadata: input.metadata,
-            }) as Prisma.InputJsonValue,
-          },
-        });
-      },
-      { isolationLevel: 'ReadCommitted' },
-    );
+      return tx.prepaidWalletTransaction.create({
+        data: buildRefundCompensationTxData({
+          walletId: wallet.id,
+          refundedCents,
+          newBalanceCents: newBalance,
+          refundReferenceType,
+          requestId: input.requestId,
+          refundMetadata: buildRefundMetadata({
+            operation: input.operation,
+            reason: input.reason,
+            originalUsageTransactionId: originalUsage.id,
+            callerMetadata: input.metadata,
+          }),
+        }),
+      });
+    }, WALLET_TX_OPTIONS);
   }
 
   /** Get balance. */

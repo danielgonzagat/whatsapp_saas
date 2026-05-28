@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 
-import type { Prisma, PrepaidWalletTxType } from '@prisma/client';
+import type { Prisma, PrepaidWalletTransaction, PrepaidWalletTxType } from '@prisma/client';
 
 import type { StripeClient, StripePaymentIntent } from '../billing/stripe-types';
 import type { FraudReason } from '../payments/fraud/fraud.types';
@@ -10,7 +10,7 @@ import type { FraudReason } from '../payments/fraud/fraud.types';
  * verbose union by hand. */
 type StripePaymentIntentCreateParams = Parameters<StripeClient['paymentIntents']['create']>[0];
 
-import type { CreateTopupIntentResult } from './wallet.types';
+import type { ChargeUsageResult, CreateTopupIntentResult } from './wallet.types';
 
 /**
  * Pure helpers extracted from `wallet.service.ts` so the service stays focused
@@ -581,5 +581,189 @@ export function buildInsufficientBalanceReport(input: {
       costCents: input.costCents.toString(),
       balanceCents: input.balanceCents.toString(),
     },
+  };
+}
+
+/**
+ * Default `prisma.$transaction` options for every wallet ledger write.
+ * Centralized so all ledger paths share the same isolation level — drift
+ * here would silently change concurrency behavior across credit/debit/refund
+ * flows.
+ */
+export const WALLET_TX_OPTIONS = Object.freeze({
+  isolationLevel: 'ReadCommitted' as const,
+});
+
+/** Canonical `referenceType` prefix for a usage debit row. */
+export function buildUsageReferenceType(operation: string): string {
+  return `usage:${operation}`;
+}
+
+/** Canonical `referenceType` prefix for a settlement adjustment row. */
+export function buildSettlementReferenceType(operation: string): string {
+  return `adjust:usage:${operation}`;
+}
+
+/** Canonical `referenceType` prefix for a refund/compensation row. */
+export function buildRefundReferenceType(operation: string): string {
+  return `refund:usage:${operation}`;
+}
+
+/**
+ * Shape the `prepaidWalletTransaction.create` data for a Stripe-confirmed
+ * TOPUP row. Pure projection: receives the already-resolved wallet id,
+ * the credited amount (positive bigint), and the post-credit balance — the
+ * service has already done all arithmetic inside the `$transaction`.
+ *
+ * Returning `Prisma.PrepaidWalletTransactionUncheckedCreateInput` keeps the
+ * service body free of `as Prisma.InputJsonValue` casts.
+ */
+export function buildStripeTopupCreditTxData(input: {
+  walletId: string;
+  amountCents: bigint;
+  newBalanceCents: bigint;
+  paymentIntentId: string;
+  paymentMethod: string | null | undefined;
+}): Prisma.PrepaidWalletTransactionUncheckedCreateInput {
+  return {
+    walletId: input.walletId,
+    type: 'TOPUP',
+    amountCents: input.amountCents,
+    balanceAfterCents: input.newBalanceCents,
+    referenceType: 'stripe_topup',
+    referenceId: input.paymentIntentId,
+    metadata: buildStripeTopupTransactionMetadata({
+      paymentMethod: input.paymentMethod,
+    }),
+  };
+}
+
+/**
+ * Shape the `prepaidWalletTransaction.create` data for a Mercado Pago-confirmed
+ * TOPUP row. Mirrors `buildStripeTopupCreditTxData` but tags the row with the
+ * MP-specific provider/method/status metadata so cross-provider audits work.
+ */
+export function buildMercadoPagoTopupCreditTxData(input: {
+  walletId: string;
+  amountCents: bigint;
+  newBalanceCents: bigint;
+  externalId: string;
+  status: string;
+}): Prisma.PrepaidWalletTransactionUncheckedCreateInput {
+  return {
+    walletId: input.walletId,
+    type: 'TOPUP',
+    amountCents: input.amountCents,
+    balanceAfterCents: input.newBalanceCents,
+    referenceType: WALLET_MERCADOPAGO_REFERENCE_TYPE,
+    referenceId: input.externalId,
+    metadata: buildMercadoPagoTopupTransactionMetadata({
+      status: input.status,
+    }),
+  };
+}
+
+/**
+ * Shape the `prepaidWalletTransaction.create` data for a USAGE debit. The
+ * service has already proven balance sufficiency and computed
+ * `newBalanceCents`; this helper just stamps the row with the negated cost
+ * (debit) and the caller-supplied usage metadata blob.
+ *
+ * `usageMetadata` is accepted as `Record<string, unknown>` so the catalog vs.
+ * provider_quote shape (built by `buildUsageMetadata`) flows through without
+ * forcing the service to cast at the call site.
+ */
+export function buildUsageDebitTxData(input: {
+  walletId: string;
+  costCents: bigint;
+  newBalanceCents: bigint;
+  referenceType: string;
+  requestId: string;
+  usageMetadata: Record<string, unknown>;
+}): Prisma.PrepaidWalletTransactionUncheckedCreateInput {
+  return {
+    walletId: input.walletId,
+    type: 'USAGE',
+    amountCents: -input.costCents,
+    balanceAfterCents: input.newBalanceCents,
+    referenceType: input.referenceType,
+    referenceId: input.requestId,
+    metadata: input.usageMetadata as Prisma.InputJsonValue,
+  };
+}
+
+/**
+ * Shape the `prepaidWalletTransaction.create` data for a settlement
+ * ADJUSTMENT row. The service computes `deltaCents` (signed: positive when
+ * the provider charged more than the original debit, negative for a partial
+ * refund) and `newBalanceCents`; this helper just renders the row.
+ *
+ * Sign convention follows the rest of the ledger: a debit-style adjustment
+ * is stored as `-deltaCents` so summing `amountCents` reproduces the
+ * balance.
+ */
+export function buildSettlementAdjustmentTxData(input: {
+  walletId: string;
+  deltaCents: bigint;
+  newBalanceCents: bigint;
+  settlementReferenceType: string;
+  requestId: string;
+  settlementMetadata: Record<string, unknown>;
+}): Prisma.PrepaidWalletTransactionUncheckedCreateInput {
+  return {
+    walletId: input.walletId,
+    type: 'ADJUSTMENT',
+    amountCents: -input.deltaCents,
+    balanceAfterCents: input.newBalanceCents,
+    referenceType: input.settlementReferenceType,
+    referenceId: input.requestId,
+    metadata: input.settlementMetadata as Prisma.InputJsonValue,
+  };
+}
+
+/**
+ * Shape the `prepaidWalletTransaction.create` data for a REFUND row that
+ * compensates a previously-debited USAGE entry. `refundedCents` is the
+ * positive amount being returned to the wallet, and `newBalanceCents` is
+ * the post-credit balance the service computed inside the `$transaction`.
+ */
+export function buildRefundCompensationTxData(input: {
+  walletId: string;
+  refundedCents: bigint;
+  newBalanceCents: bigint;
+  refundReferenceType: string;
+  requestId: string;
+  refundMetadata: Record<string, unknown>;
+}): Prisma.PrepaidWalletTransactionUncheckedCreateInput {
+  return {
+    walletId: input.walletId,
+    type: 'REFUND',
+    amountCents: input.refundedCents,
+    balanceAfterCents: input.newBalanceCents,
+    referenceType: input.refundReferenceType,
+    referenceId: input.requestId,
+    metadata: input.refundMetadata as Prisma.InputJsonValue,
+  };
+}
+
+/**
+ * Shape the early-return `ChargeUsageResult` when an idempotent
+ * `chargeForUsage` retry finds an existing USAGE row. The wallet balance is
+ * read fresh inside the `$transaction`; this helper just packages it
+ * alongside the previously-recorded transaction so the caller doesn't see a
+ * fake/zero balance.
+ *
+ * Note on sign: stored `amountCents` is negative for USAGE rows, so the
+ * caller-facing `costCents` projection flips the sign with `-` to keep the
+ * external contract (positive `costCents` = positive debit) stable.
+ */
+export function buildIdempotentChargeUsageResult(input: {
+  existing: PrepaidWalletTransaction;
+  walletBalanceCents: bigint | null | undefined;
+}): ChargeUsageResult {
+  return {
+    newBalanceCents: input.walletBalanceCents ?? 0n,
+    costCents: -input.existing.amountCents,
+    transaction: input.existing,
   };
 }
