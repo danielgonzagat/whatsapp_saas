@@ -340,6 +340,223 @@ describe('buildMindSignals', () => {
     });
   });
 
+  describe('selfModel (PI-k7)', () => {
+    const mockOkHealth = {
+      db: 'ok' as const,
+      redis: 'ok' as const,
+      whatsapp: 'connected' as const,
+      llm: 'ok' as const,
+      lastChecked: '2026-05-28T12:00:00Z',
+    };
+
+    it('populates selfModel when selfHealthService is injected and healthy', async () => {
+      const result = await buildMindSignals(
+        {
+          prisma: mockPrisma(),
+          selfHealthService: { snapshot: jest.fn().mockResolvedValue(mockOkHealth) },
+          logger: mockLogger,
+        },
+        'ws-1',
+        'hello',
+      );
+
+      const sm = result.selfModel as Record<string, unknown> | undefined;
+      expect(sm).toBeDefined();
+      expect(sm!.pulseHealth).toEqual(mockOkHealth);
+      expect(sm!.knownGapsCount).toBe(0);
+      expect(sm!.lastFailureKind).toBeNull();
+    });
+
+    it('populates selfModel when selfGapsService is injected', async () => {
+      const result = await buildMindSignals(
+        {
+          prisma: mockPrisma(),
+          selfGapsService: {
+            diffRegistryVsDispatcher: jest.fn().mockReturnValue({
+              unwired: [{ id: 'cap-1' }, { id: 'cap-2' }],
+              wired: ['cap-3'],
+            }),
+          },
+          logger: mockLogger,
+        },
+        'ws-1',
+        'hello',
+      );
+
+      const sm = result.selfModel as Record<string, unknown> | undefined;
+      expect(sm).toBeDefined();
+      expect(sm!.pulseHealth).toBeNull();
+      expect(sm!.knownGapsCount).toBe(2);
+      expect(sm!.lastFailureKind).toBeNull();
+    });
+
+    it('sets lastFailureKind db when db is down', async () => {
+      const result = await buildMindSignals(
+        {
+          prisma: mockPrisma(),
+          selfHealthService: {
+            snapshot: jest.fn().mockResolvedValue({
+              ...mockOkHealth,
+              db: 'down' as const,
+            }),
+          },
+          logger: mockLogger,
+        },
+        'ws-1',
+        'hello',
+      );
+
+      const sm = result.selfModel as Record<string, unknown>;
+      expect(sm.lastFailureKind).toBe('db');
+    });
+
+    it('sets lastFailureKind redis when redis is down (and db ok)', async () => {
+      const result = await buildMindSignals(
+        {
+          prisma: mockPrisma(),
+          selfHealthService: {
+            snapshot: jest.fn().mockResolvedValue({
+              ...mockOkHealth,
+              redis: 'down' as const,
+            }),
+          },
+          logger: mockLogger,
+        },
+        'ws-1',
+        'hello',
+      );
+
+      const sm = result.selfModel as Record<string, unknown>;
+      expect(sm.lastFailureKind).toBe('redis');
+    });
+
+    it('sets lastFailureKind whatsapp when disconnected (and db/redis ok)', async () => {
+      const result = await buildMindSignals(
+        {
+          prisma: mockPrisma(),
+          selfHealthService: {
+            snapshot: jest.fn().mockResolvedValue({
+              ...mockOkHealth,
+              whatsapp: 'disconnected' as const,
+            }),
+          },
+          logger: mockLogger,
+        },
+        'ws-1',
+        'hello',
+      );
+
+      const sm = result.selfModel as Record<string, unknown>;
+      expect(sm.lastFailureKind).toBe('whatsapp');
+    });
+
+    it('sets lastFailureKind llm when degraded (and others ok)', async () => {
+      const result = await buildMindSignals(
+        {
+          prisma: mockPrisma(),
+          selfHealthService: {
+            snapshot: jest.fn().mockResolvedValue({
+              ...mockOkHealth,
+              llm: 'degraded' as const,
+            }),
+          },
+          logger: mockLogger,
+        },
+        'ws-1',
+        'hello',
+      );
+
+      const sm = result.selfModel as Record<string, unknown>;
+      expect(sm.lastFailureKind).toBe('llm');
+    });
+
+    it('does NOT attach selfModel when neither service is injected', async () => {
+      const result = await buildMindSignals(
+        {
+          prisma: mockPrisma(),
+          logger: mockLogger,
+        },
+        'ws-1',
+        'hello',
+      );
+
+      expect(result.selfModel).toBeUndefined();
+    });
+
+    it('tolerates health snapshot failure gracefully', async () => {
+      const result = await buildMindSignals(
+        {
+          prisma: mockPrisma(),
+          selfHealthService: {
+            snapshot: jest.fn().mockRejectedValue(new Error('db down hard')),
+          },
+          selfGapsService: {
+            diffRegistryVsDispatcher: jest.fn().mockReturnValue({
+              unwired: [],
+              wired: ['cap-a'],
+            }),
+          },
+          logger: mockLogger,
+        },
+        'ws-1',
+        'hello',
+      );
+
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        'kloel_self_health_skipped',
+        expect.objectContaining({}),
+      );
+
+      const sm = result.selfModel as Record<string, unknown>;
+      expect(sm).toBeDefined();
+      expect(sm.pulseHealth).toBeNull();
+      expect(sm.knownGapsCount).toBe(0);
+      expect(sm.lastFailureKind).toBeNull();
+    });
+
+    it('tolerates gaps service failure gracefully', async () => {
+      const result = await buildMindSignals(
+        {
+          prisma: mockPrisma(),
+          selfGapsService: {
+            diffRegistryVsDispatcher: jest.fn().mockImplementation(() => {
+              throw new Error('code access broken');
+            }),
+          },
+          logger: mockLogger,
+        },
+        'ws-1',
+        'hello',
+      );
+
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        'kloel_self_gaps_skipped',
+        expect.objectContaining({}),
+      );
+
+      const sm = result.selfModel as Record<string, unknown>;
+      expect(sm).toBeDefined();
+      expect(sm.knownGapsCount).toBe(0);
+    });
+
+    it('selfModel still present when only one of the two services is injected', async () => {
+      const result = await buildMindSignals(
+        {
+          prisma: mockPrisma(),
+          selfHealthService: { snapshot: jest.fn().mockResolvedValue(mockOkHealth) },
+          logger: mockLogger,
+        },
+        'ws-1',
+        'hello',
+      );
+
+      const sm = result.selfModel as Record<string, unknown> | undefined;
+      expect(sm).toBeDefined();
+      expect(sm!.pulseHealth).toEqual(mockOkHealth);
+      expect(sm!.knownGapsCount).toBe(0);
+    });
+  });
+
   describe('all four services combined', () => {
     it('assembles attention, beliefs, and concepts in one result', async () => {
       const rows = [makeAutopilotRow({ id: 'evt-1' })];

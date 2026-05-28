@@ -16,6 +16,8 @@ import { AttentionService } from './mind/attention.service';
 import { ValenceAggregatorService } from './mind/valence-aggregator.service';
 import { MindBeliefService } from './mind/inference/mind-belief.service';
 import { MindConceptService } from './mind/memory/mind-concepts.service';
+import { SelfHealthService } from './self-awareness/self-health.service';
+import { SelfGapsService } from './self-awareness/self-gaps.service';
 import { buildMindSignals, type BuildMindSignalsDeps } from './mind/build-mind-signals.helper';
 import { SpineEmitterService } from './spine/spine-emitter.service';
 import { UnifiedAgentService } from './unified-agent.service';
@@ -61,6 +63,8 @@ export class KloelReplyEngineService {
     @Optional() private readonly mindBeliefService?: MindBeliefService,
     @Optional() private readonly mindConceptService?: MindConceptService,
     @Optional() private readonly spine?: SpineEmitterService,
+    @Optional() private readonly selfHealthService?: SelfHealthService,
+    @Optional() private readonly selfGapsService?: SelfGapsService,
   ) {
     this.openai = createTextLlmClient(undefined, { timeout: 60_000, maxRetries: 0 });
     this.toolRouter = new KloelToolRouter(
@@ -261,6 +265,12 @@ export class KloelReplyEngineService {
           : {}),
         ...(this.mindConceptService !== undefined
           ? { mindConceptService: this.mindConceptService }
+          : {}),
+        ...(this.selfHealthService !== undefined
+          ? { selfHealthService: this.selfHealthService }
+          : {}),
+        ...(this.selfGapsService !== undefined
+          ? { selfGapsService: this.selfGapsService }
           : {}),
       };
       cognitiveState.mindSignals = await buildMindSignals(

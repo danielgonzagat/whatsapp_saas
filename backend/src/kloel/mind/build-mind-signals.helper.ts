@@ -4,6 +4,8 @@ import { AttentionService } from './attention.service';
 import { ValenceAggregatorService } from './valence-aggregator.service';
 import { MindBeliefService } from './inference/mind-belief.service';
 import { MindConceptService } from './memory/mind-concepts.service';
+import type { SelfHealthService } from '../self-awareness/self-health.service';
+import type { SelfGapsService } from '../self-awareness/self-gaps.service';
 /** Minimal prisma surface needed by the helper — only autopilotEvent queries. */
 export interface MindSignalsPrisma {
   autopilotEvent: {
@@ -24,6 +26,8 @@ export interface BuildMindSignalsDeps {
   valenceAggregatorService?: ValenceAggregatorService;
   mindBeliefService?: MindBeliefService;
   mindConceptService?: MindConceptService;
+  selfHealthService?: SelfHealthService;
+  selfGapsService?: SelfGapsService;
   logger: Pick<StructuredLogger, 'warn'>;
 }
 /**
@@ -142,6 +146,63 @@ export async function buildMindSignals(
     }
   } else {
     mindSignals.concepts = [];
+  }
+
+  // ── SelfModel (PI-k7) ────────────────────────────────────────────
+  if (deps.selfHealthService || deps.selfGapsService) {
+    try {
+      const selfModel: Record<string, unknown> = {};
+
+      let healthSnap: Awaited<ReturnType<SelfHealthService['snapshot']>> | null = null;
+      if (deps.selfHealthService) {
+        try {
+          healthSnap = await Promise.race([
+            deps.selfHealthService.snapshot(workspaceId),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error('kloel_self_health_timeout')), 50),
+            ),
+          ]);
+        } catch (healthErr: unknown) {
+          deps.logger.warn('kloel_self_health_skipped', {
+            reason: healthErr instanceof Error ? healthErr.message : 'unknown error',
+          });
+        }
+      }
+
+      let gapsResult: ReturnType<SelfGapsService['diffRegistryVsDispatcher']> | null = null;
+      if (deps.selfGapsService) {
+        try {
+          gapsResult = deps.selfGapsService.diffRegistryVsDispatcher();
+        } catch (gapsErr: unknown) {
+          deps.logger.warn('kloel_self_gaps_skipped', {
+            reason: gapsErr instanceof Error ? gapsErr.message : 'unknown error',
+          });
+        }
+      }
+
+      let lastFailureKind: string | null = null;
+      if (healthSnap) {
+        if (healthSnap.db === 'down') {
+          lastFailureKind = 'db';
+        } else if (healthSnap.redis === 'down') {
+          lastFailureKind = 'redis';
+        } else if (healthSnap.whatsapp === 'disconnected') {
+          lastFailureKind = 'whatsapp';
+        } else if (healthSnap.llm === 'degraded') {
+          lastFailureKind = 'llm';
+        }
+      }
+
+      selfModel.pulseHealth = healthSnap;
+      selfModel.knownGapsCount = gapsResult?.unwired?.length ?? 0;
+      selfModel.lastFailureKind = lastFailureKind;
+
+      mindSignals.selfModel = selfModel;
+    } catch (error: unknown) {
+      deps.logger.warn('kloel_self_model_skipped', {
+        reason: error instanceof Error ? error.message : 'unknown error',
+      });
+    }
   }
 
   return mindSignals;
