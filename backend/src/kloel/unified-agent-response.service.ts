@@ -38,14 +38,14 @@ export class UnifiedAgentResponseService {
     fallbackWriterModel: string,
     params: {
       workspaceId?: string;
-      customerMessage: string;
+      contactMessage: string;
       assistantDraft?: string | null;
       actions: ActionEntry[];
       historyTurns: number;
     },
   ): Promise<string | undefined> {
-    const { workspaceId, customerMessage, assistantDraft, actions, historyTurns } = params;
-    const fallbackReply = this.finalizeReplyStyle(customerMessage, assistantDraft, historyTurns);
+    const { workspaceId, contactMessage, assistantDraft, actions, historyTurns } = params;
+    const fallbackReply = this.finalizeReplyStyle(contactMessage, assistantDraft, historyTurns);
 
     if (!openai) {
       return fallbackReply;
@@ -74,10 +74,10 @@ export class UnifiedAgentResponseService {
             {
               role: 'user',
               content: [
-                `Mensagem do cliente: ${customerMessage}`,
+                `Mensagem do cliente: ${contactMessage}`,
                 `Rascunho do cérebro: ${assistantDraft || 'sem rascunho'}`,
                 `Ações executadas: ${JSON.stringify(compactActions)}`,
-                this.buildReplyStyleInstruction(customerMessage, historyTurns),
+                this.buildReplyStyleInstruction(contactMessage, historyTurns),
                 'Escreva apenas a mensagem final pronta para enviar.',
               ].join('\n\n'),
             },
@@ -94,12 +94,12 @@ export class UnifiedAgentResponseService {
       }
       const rawWriterReply = writerResponse.choices[0]?.message?.content || assistantDraft;
       const tokens = writerResponse?.usage?.total_tokens ?? 500;
-      const baseLen = customerMessage.length + (assistantDraft?.length ?? 0);
+      const baseLen = contactMessage.length + (assistantDraft?.length ?? 0);
       const outLen = (writerResponse.choices[0]?.message?.content || '').length;
       this.logger.log(
         `writer-reply ws=${workspaceId ?? 'anon'} model=${writerModel} baseLen=${baseLen} outLen=${outLen} tokens=${tokens}`,
       );
-      return this.finalizeReplyStyle(customerMessage, rawWriterReply, historyTurns);
+      return this.finalizeReplyStyle(contactMessage, rawWriterReply, historyTurns);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : typeof err === 'string' ? err : 'unknown';
       this.logger.warn(`Writer model failed: ${msg}`);
@@ -110,7 +110,7 @@ export class UnifiedAgentResponseService {
   buildReplyStyleInstruction = buildReplyStyleInstruction;
 
   finalizeReplyStyle(
-    customerMessage: string,
+    contactMessage: string,
     reply?: string | null,
     historyTurns = 0,
   ): string | undefined {
@@ -123,8 +123,8 @@ export class UnifiedAgentResponseService {
       return undefined;
     }
 
-    const budget = computeReplyStyleBudget(customerMessage, historyTurns);
-    const allowEmoji = Array.from(customerMessage).some((character) =>
+    const budget = computeReplyStyleBudget(contactMessage, historyTurns);
+    const allowEmoji = Array.from(contactMessage).some((character) =>
       P_EXTENDED_PICTOGRAPHIC_RE.test(character),
     );
     const withoutEmoji = allowEmoji

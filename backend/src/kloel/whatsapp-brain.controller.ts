@@ -147,12 +147,12 @@ export class WhatsAppBrainController {
   @Post('simulate/:workspaceId')
   async simulateConversation(
     @Param('workspaceId') workspaceId: string,
-    @Body() body: { customerMessage: string; customerPhone: string },
+    @Body() body: { contactMessage: string; customerPhone: string },
   ) {
     const response = await this.whatsappBrain.handleIncomingMessage({
       from: body.customerPhone,
       to: 'kloel_business',
-      message: body.customerMessage,
+      message: body.contactMessage,
       messageType: 'text',
       timestamp: new Date(),
       messageId: `sim_${Date.now()}`,

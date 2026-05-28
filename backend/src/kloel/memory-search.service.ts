@@ -81,11 +81,11 @@ export class MemorySearchService {
   /**
    * 📚 Busca contexto relevante para vendas
    */
-  async getSalesContext(workspaceId: string, customerMessage: string): Promise<string> {
+  async getSalesContext(workspaceId: string, contactMessage: string): Promise<string> {
     try {
-      const productSearch = await this.searchMemory(workspaceId, customerMessage, 3, 'product');
-      const scriptSearch = await this.searchMemory(workspaceId, customerMessage, 2, 'script');
-      const objectionSearch = await this.searchMemory(workspaceId, customerMessage, 2, 'objection');
+      const productSearch = await this.searchMemory(workspaceId, contactMessage, 3, 'product');
+      const scriptSearch = await this.searchMemory(workspaceId, contactMessage, 2, 'script');
+      const objectionSearch = await this.searchMemory(workspaceId, contactMessage, 2, 'objection');
 
       const contextParts: string[] = [];
 

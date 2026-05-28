@@ -61,7 +61,7 @@ function buildNegotiationAiPrompt(params: {
   maxDiscount: number;
   minPurchaseForDiscount: number;
   originalAmount: number;
-  customerMessage: string;
+  contactMessage: string;
 }): string {
   return [
     'Você é um gerente de vendas decidindo sobre um pedido de desconto.',
@@ -76,7 +76,7 @@ function buildNegotiationAiPrompt(params: {
     `- Valor mínimo para desconto: ${formatBrlAmount(params.minPurchaseForDiscount)}`,
     '',
     `Valor original: ${formatBrlAmount(params.originalAmount)}`,
-    `Mensagem do cliente: "${params.customerMessage}"`,
+    `Mensagem do cliente: "${params.contactMessage}"`,
     '',
     'Analise e responda em JSON:',
     '{',
@@ -255,14 +255,14 @@ export class SmartPaymentService {
     workspaceId: string;
     contactId: string;
     originalAmount: number;
-    customerMessage: string;
+    contactMessage: string;
     maxDiscountPercent?: number;
   }): Promise<PaymentNegotiation> {
     const {
       workspaceId,
       contactId,
       originalAmount,
-      customerMessage,
+      contactMessage,
       maxDiscountPercent = 15,
     } = params;
 
@@ -322,7 +322,7 @@ export class SmartPaymentService {
               maxDiscount: rules.maxDiscount,
               minPurchaseForDiscount: rules.minPurchaseForDiscount,
               originalAmount,
-              customerMessage,
+              contactMessage,
             }),
           },
         ],

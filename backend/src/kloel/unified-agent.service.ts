@@ -296,7 +296,7 @@ export class UnifiedAgentService {
         this.fallbackWriterModel,
         {
           workspaceId,
-          customerMessage: message,
+          contactMessage: message,
           assistantDraft: buildPredecidedActionDraft(actionsList),
           actions: actionsList,
           historyTurns: conversationHistory.length,
@@ -410,7 +410,7 @@ export class UnifiedAgentService {
       this.fallbackWriterModel,
       {
         workspaceId,
-        customerMessage: message,
+        contactMessage: message,
         assistantDraft: assistantMessage.content,
         actions: actionsList,
         historyTurns: conversationHistory.length,

@@ -46,8 +46,8 @@ export class MemoryService {
   /**
    * 📚 Busca contexto relevante para vendas
    */
-  async getSalesContext(workspaceId: string, customerMessage: string): Promise<string> {
-    return this.memorySearch.getSalesContext(workspaceId, customerMessage);
+  async getSalesContext(workspaceId: string, contactMessage: string): Promise<string> {
+    return this.memorySearch.getSalesContext(workspaceId, contactMessage);
   }
 
   /**

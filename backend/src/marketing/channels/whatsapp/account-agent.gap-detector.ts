@@ -103,7 +103,7 @@ export async function detectCatalogGapExt(
     contactName: contact?.name || previous?.contactName || null,
     phone: input.phone || contact?.phone || previous?.phone || null,
     conversationId: input.conversationId || previous?.conversationId || null,
-    customerMessage: messageContent,
+    contactMessage: messageContent,
     operatorPrompt:
       previous?.operatorPrompt ||
       `Cliente ${contact?.name || input.phone || 'sem nome'} está querendo comprar ${missingProductName}. Deseja criar esse produto?`,

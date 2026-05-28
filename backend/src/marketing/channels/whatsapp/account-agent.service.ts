@@ -436,7 +436,7 @@ export class AccountAgentService {
       contactId: approval.contactId,
       contactName: approval.contactName,
       phone: approval.phone,
-      customerMessage: approval.customerMessage,
+      contactMessage: approval.contactMessage,
       answers: {},
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -505,7 +505,7 @@ export class AccountAgentService {
           workspaceId,
           contactId: session.contactId || undefined,
           phone: session.phone || undefined,
-          messageContent: session.customerMessage,
+          messageContent: session.contactMessage,
         },
         {
           jobId: buildQueueJobId(

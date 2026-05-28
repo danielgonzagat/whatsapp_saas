@@ -141,7 +141,7 @@ export class SmartPaymentController {
     body: {
       contactId: string;
       originalAmount: number;
-      customerMessage: string;
+      contactMessage: string;
       maxDiscountPercent?: number;
     },
   ) {
@@ -150,7 +150,7 @@ export class SmartPaymentController {
       workspaceId: effectiveWorkspaceId,
       contactId: body.contactId,
       originalAmount: body.originalAmount,
-      customerMessage: body.customerMessage,
+      contactMessage: body.contactMessage,
       ...(body.maxDiscountPercent !== undefined
         ? { maxDiscountPercent: body.maxDiscountPercent }
         : {}),

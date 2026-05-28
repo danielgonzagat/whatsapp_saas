@@ -40,7 +40,7 @@ export function computeReplyStyleBudget(
 }
 
 export function finalizeReplyStyle(
-  customerMessage: string,
+  contactMessage: string,
   reply?: string | null,
   historyTurns = 0,
 ): string | undefined {
@@ -53,8 +53,8 @@ export function finalizeReplyStyle(
     return undefined;
   }
 
-  const budget = computeReplyStyleBudget(customerMessage, historyTurns);
-  const allowEmoji = EMOJI_U_RE.test(customerMessage || '');
+  const budget = computeReplyStyleBudget(contactMessage, historyTurns);
+  const allowEmoji = EMOJI_U_RE.test(contactMessage || '');
   const withoutEmoji = allowEmoji ? normalized : normalized.replace(EMOJI_GU_RE, '').trim();
   const sentenceMatches =
     withoutEmoji

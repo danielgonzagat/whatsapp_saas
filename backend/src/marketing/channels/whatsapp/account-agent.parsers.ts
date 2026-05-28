@@ -64,7 +64,10 @@ export function parseApprovalPayload(value: unknown): AccountApprovalPayload | n
   const id = readString(payload.id);
   const requestedProductName = readString(payload.requestedProductName);
   const normalizedProductName = readString(payload.normalizedProductName);
-  const customerMessage = readString(payload.customerMessage);
+  // Backward-compat read: canonical field is contactMessage but legacy persisted
+  // payloads (pre-rename) still carry customerMessage. Accept either.
+  const contactMessage =
+    readString(payload.contactMessage) ?? readString(payload.customerMessage);
   const operatorPrompt = readString(payload.operatorPrompt);
   const firstDetectedAt = readString(payload.firstDetectedAt);
   const lastDetectedAt = readString(payload.lastDetectedAt);
@@ -73,7 +76,7 @@ export function parseApprovalPayload(value: unknown): AccountApprovalPayload | n
     !id ||
     !requestedProductName ||
     !normalizedProductName ||
-    !customerMessage ||
+    !contactMessage ||
     !operatorPrompt ||
     !firstDetectedAt ||
     !lastDetectedAt
@@ -91,7 +94,7 @@ export function parseApprovalPayload(value: unknown): AccountApprovalPayload | n
     contactName: readNullableString(payload.contactName),
     phone: readNullableString(payload.phone),
     conversationId: readNullableString(payload.conversationId),
-    customerMessage,
+    contactMessage,
     operatorPrompt,
     source: 'inbound_catalog_gap',
     firstDetectedAt,
@@ -111,7 +114,10 @@ export function parseInputSessionPayload(value: unknown): AccountInputSessionPay
   const approvalId = readString(payload.approvalId);
   const productName = readString(payload.productName);
   const normalizedProductName = readString(payload.normalizedProductName);
-  const customerMessage = readString(payload.customerMessage);
+  // Backward-compat read: canonical field is contactMessage but legacy persisted
+  // payloads (pre-rename) still carry customerMessage. Accept either.
+  const contactMessage =
+    readString(payload.contactMessage) ?? readString(payload.customerMessage);
   const createdAt = readString(payload.createdAt);
   const updatedAt = readString(payload.updatedAt);
 
@@ -120,7 +126,7 @@ export function parseInputSessionPayload(value: unknown): AccountInputSessionPay
     !approvalId ||
     !productName ||
     !normalizedProductName ||
-    !customerMessage ||
+    !contactMessage ||
     !createdAt ||
     !updatedAt
   ) {
@@ -139,7 +145,7 @@ export function parseInputSessionPayload(value: unknown): AccountInputSessionPay
     contactId: readNullableString(payload.contactId),
     contactName: readNullableString(payload.contactName),
     phone: readNullableString(payload.phone),
-    customerMessage,
+    contactMessage,
     answers: {
       description: readNullableString(answers.description),
       offers: readNullableString(answers.offers),

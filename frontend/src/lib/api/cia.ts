@@ -170,8 +170,8 @@ export interface CiaAccountApproval {
   phone: string | null;
   /** Conversation id property. */
   conversationId: string | null;
-  /** Customer message property. */
-  customerMessage: string;
+  /** Contact message property. */
+  contactMessage: string;
   /** Operator prompt property. */
   operatorPrompt: string;
   /** Source property. */
@@ -212,8 +212,8 @@ export interface CiaInputSession {
   contactName: string | null;
   /** Phone property. */
   phone: string | null;
-  /** Customer message property. */
-  customerMessage: string;
+  /** Contact message property. */
+  contactMessage: string;
   /** Current prompt property. */
   currentPrompt?: string;
   /** Answers property. */
