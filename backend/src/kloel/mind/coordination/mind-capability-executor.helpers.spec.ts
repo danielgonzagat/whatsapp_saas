@@ -1,15 +1,24 @@
 import {
+  buildConversationStatusFilter,
+  buildContactSearchOr,
+  buildInspectSelfWorkQueue,
+  buildProductSearchClause,
   buildRailwayDeploymentsQuery,
+  buildRevenueWindow,
   buildSelfRuntimeSnapshot,
   buildVercelDeploymentsUrl,
   computeCognitiveGaps,
+  computeRevenueSummary,
   getRailwayRuntimeConfig,
   getVercelRuntimeConfig,
+  normalizeIdentityAudience,
   parseRailwayDeploymentResponse,
   parseVercelDeploymentResponse,
   readOptionalNum,
   readOptionalStr,
   runtimeErrorMessage,
+  selectSilentSurfaces,
+  type DissolutionGapLike,
 } from './mind-capability-executor.helpers';
 
 describe('mind-capability-executor.helpers', () => {
@@ -362,6 +371,190 @@ describe('mind-capability-executor.helpers', () => {
       expect(runtimeErrorMessage(null, 'fb')).toBe('fb');
       expect(runtimeErrorMessage(undefined, 'fb')).toBe('fb');
       expect(runtimeErrorMessage({ message: 'x' }, 'fb')).toBe('fb');
+    });
+  });
+
+  describe('normalizeIdentityAudience', () => {
+    it('returns each known audience unchanged', () => {
+      expect(normalizeIdentityAudience('public')).toBe('public');
+      expect(normalizeIdentityAudience('technical')).toBe('technical');
+      expect(normalizeIdentityAudience('origin')).toBe('origin');
+      expect(normalizeIdentityAudience('internal')).toBe('internal');
+    });
+
+    it('falls back to "internal" for unknown or non-string values', () => {
+      expect(normalizeIdentityAudience('admin')).toBe('internal');
+      expect(normalizeIdentityAudience('')).toBe('internal');
+      expect(normalizeIdentityAudience(undefined)).toBe('internal');
+      expect(normalizeIdentityAudience(null)).toBe('internal');
+      expect(normalizeIdentityAudience(42)).toBe('internal');
+      expect(normalizeIdentityAudience({})).toBe('internal');
+    });
+  });
+
+  describe('buildInspectSelfWorkQueue', () => {
+    const dissolution: readonly DissolutionGapLike[] = [
+      { surface: 'alpha', status: 'silent' },
+      { surface: 'beta', status: 'dissolved' },
+      { surface: 'gamma', status: 'partial' },
+      { surface: 'delta', status: 'silent' },
+    ];
+
+    it('preserves gaps first, then silent dissolves, then partial emits', () => {
+      expect(buildInspectSelfWorkQueue(['gap_a', 'gap_b'], dissolution)).toEqual([
+        'gap_a',
+        'gap_b',
+        'dissolve_surface:alpha',
+        'dissolve_surface:delta',
+        'emit_canonical_events:gamma',
+      ]);
+    });
+
+    it('returns just the gaps when nothing in dissolution needs work', () => {
+      expect(buildInspectSelfWorkQueue(['x'], [{ surface: 'beta', status: 'dissolved' }])).toEqual([
+        'x',
+      ]);
+    });
+
+    it('returns an empty queue when both inputs are empty', () => {
+      expect(buildInspectSelfWorkQueue([], [])).toEqual([]);
+    });
+  });
+
+  describe('selectSilentSurfaces', () => {
+    it('returns surfaces that are not yet dissolved', () => {
+      const dissolution: readonly DissolutionGapLike[] = [
+        { surface: 'alpha', status: 'silent' },
+        { surface: 'beta', status: 'dissolved' },
+        { surface: 'gamma', status: 'partial' },
+      ];
+      expect(selectSilentSurfaces(dissolution)).toEqual(['alpha', 'gamma']);
+    });
+
+    it('returns empty when every surface has dissolved', () => {
+      expect(
+        selectSilentSurfaces([
+          { surface: 'alpha', status: 'dissolved' },
+          { surface: 'beta', status: 'dissolved' },
+        ]),
+      ).toEqual([]);
+    });
+
+    it('returns empty for an empty input', () => {
+      expect(selectSilentSurfaces([])).toEqual([]);
+    });
+  });
+
+  describe('computeRevenueSummary', () => {
+    it('derives totals, rounded ticket and conversion for a typical period', () => {
+      expect(
+        computeRevenueSummary({
+          sumTotalInCents: 12_345,
+          avgTotalInCents: 411.5,
+          totalCount: 30,
+          paidCount: 9,
+          periodDays: 7,
+        }),
+      ).toEqual({
+        totalRevenue: 12_345,
+        ticketMedio: 412,
+        totalCount: 30,
+        paidCount: 9,
+        conversao: 30,
+        periodDays: 7,
+      });
+    });
+
+    it('falls back to zero when Prisma returns null aggregates', () => {
+      expect(
+        computeRevenueSummary({
+          sumTotalInCents: null,
+          avgTotalInCents: null,
+          totalCount: 0,
+          paidCount: 0,
+          periodDays: 30,
+        }),
+      ).toEqual({
+        totalRevenue: 0,
+        ticketMedio: 0,
+        totalCount: 0,
+        paidCount: 0,
+        conversao: 0,
+        periodDays: 30,
+      });
+    });
+
+    it('rounds conversion to two decimals', () => {
+      const summary = computeRevenueSummary({
+        sumTotalInCents: 1000,
+        avgTotalInCents: 100,
+        totalCount: 3,
+        paidCount: 1,
+        periodDays: 1,
+      });
+      expect(summary.conversao).toBe(33.33);
+    });
+  });
+
+  describe('buildRevenueWindow', () => {
+    const now = new Date('2026-05-15T12:34:56.000Z');
+
+    it('clamps absurd values within [1, 365] and normalises midnight', () => {
+      const window = buildRevenueWindow(10_000, 30, 365, now);
+      expect(window.days).toBe(365);
+      expect(window.start.getHours()).toBe(0);
+      expect(window.start.getMinutes()).toBe(0);
+      expect(window.start.getSeconds()).toBe(0);
+      expect(window.start.getMilliseconds()).toBe(0);
+    });
+
+    it('uses the default when the input is missing or invalid', () => {
+      expect(buildRevenueWindow(undefined, 30, 365, now).days).toBe(30);
+      expect(buildRevenueWindow('not-a-number', 30, 365, now).days).toBe(30);
+      expect(buildRevenueWindow(-5, 30, 365, now).days).toBe(30);
+    });
+
+    it('honours small positive values', () => {
+      expect(buildRevenueWindow(7, 30, 365, now).days).toBe(7);
+    });
+  });
+
+  describe('buildProductSearchClause', () => {
+    it('returns undefined when no search term is supplied', () => {
+      expect(buildProductSearchClause(undefined)).toBeUndefined();
+      expect(buildProductSearchClause('')).toBeUndefined();
+    });
+
+    it('builds a case-insensitive contains clause when a term is supplied', () => {
+      expect(buildProductSearchClause('Curso')).toEqual({
+        name: { contains: 'Curso', mode: 'insensitive' },
+      });
+    });
+  });
+
+  describe('buildContactSearchOr', () => {
+    it('builds matchers for name, phone and email', () => {
+      expect(buildContactSearchOr('joao')).toEqual([
+        { name: { contains: 'joao', mode: 'insensitive' } },
+        { phone: { contains: 'joao' } },
+        { email: { contains: 'joao', mode: 'insensitive' } },
+      ]);
+    });
+  });
+
+  describe('buildConversationStatusFilter', () => {
+    it('matches open conversations when "open"', () => {
+      expect(buildConversationStatusFilter('open')).toEqual({ status: { not: 'closed' } });
+    });
+
+    it('matches closed conversations when "closed"', () => {
+      expect(buildConversationStatusFilter('closed')).toEqual({ status: 'closed' });
+    });
+
+    it('returns an empty fragment for "all" or unknown values', () => {
+      expect(buildConversationStatusFilter('all')).toEqual({});
+      expect(buildConversationStatusFilter(undefined)).toEqual({});
+      expect(buildConversationStatusFilter('mystery')).toEqual({});
     });
   });
 });

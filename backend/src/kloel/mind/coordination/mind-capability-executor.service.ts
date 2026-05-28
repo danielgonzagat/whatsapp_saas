@@ -32,17 +32,25 @@ import { MemoryProjector } from '../../commem/memory.projector';
 
 import { buildCognitiveSubstrate as buildCognitiveSubstrateImpl } from './mind-capability-executor.substrate';
 import {
+  buildConversationStatusFilter,
+  buildContactSearchOr,
+  buildInspectSelfWorkQueue,
+  buildProductSearchClause,
   buildRailwayDeploymentsQuery,
+  buildRevenueWindow,
   buildSelfRuntimeSnapshot,
   buildVercelDeploymentsUrl,
   computeCognitiveGaps,
+  computeRevenueSummary,
   getRailwayRuntimeConfig,
   getVercelRuntimeConfig,
+  normalizeIdentityAudience,
   parseRailwayDeploymentResponse,
   parseVercelDeploymentResponse,
   readOptionalNum,
   readOptionalStr,
   runtimeErrorMessage,
+  selectSilentSurfaces,
 } from './mind-capability-executor.helpers';
 
 import { CapabilityRegistryV2Service } from '../../capability-registry-v2/capability-registry-v2.service';
@@ -182,12 +190,7 @@ export class MindCapabilityExecutor {
   async inspectSelf(workspaceId: string, args?: UnknownRecord): Promise<CapabilityResult> {
     const startedAt = Date.now();
     try {
-      const requested = readOptionalStr(args?.audience);
-      const audience: IdentityAudience = (
-        ['public', 'technical', 'origin', 'internal'] as const
-      ).includes(requested as IdentityAudience)
-        ? (requested as IdentityAudience)
-        : 'internal';
+      const audience: IdentityAudience = normalizeIdentityAudience(readOptionalStr(args?.audience));
       const cognitiveSubstrate = await this.buildCognitiveSubstrate(workspaceId);
       const input: AbiBuildInput = {
         audience,
@@ -210,18 +213,8 @@ export class MindCapabilityExecutor {
       }
       const gaps = computeCognitiveGaps(result.abi);
       const dissolution = cognitiveSubstrate.dissolution;
-      const silentSurfaces = dissolution
-        .filter((d) => d.status !== 'dissolved')
-        .map((d) => d.surface);
-      const workQueue = [
-        ...gaps,
-        ...dissolution
-          .filter((d) => d.status === 'silent')
-          .map((d) => `dissolve_surface:${d.surface}`),
-        ...dissolution
-          .filter((d) => d.status === 'partial')
-          .map((d) => `emit_canonical_events:${d.surface}`),
-      ];
+      const silentSurfaces = selectSilentSurfaces(dissolution);
+      const workQueue = buildInspectSelfWorkQueue(gaps, dissolution);
       await this.emitCapabilityInvoked(workspaceId, 'inspect_self', startedAt, true);
       return {
         ok: true,
@@ -246,10 +239,11 @@ export class MindCapabilityExecutor {
     try {
       const search = readOptionalStr(args?.search);
       const limit = Math.min(readOptionalNum(args?.limit, 50), 100);
+      const searchClause = buildProductSearchClause(search);
       const products = await this.prisma.product.findMany({
         where: {
           workspaceId,
-          ...(search ? { name: { contains: search, mode: 'insensitive' as const } } : {}),
+          ...(searchClause ?? {}),
         },
         select: { id: true, name: true, price: true, active: true, createdAt: true },
         orderBy: { createdAt: 'desc' },
@@ -276,11 +270,7 @@ export class MindCapabilityExecutor {
       const contacts = await this.prisma.contact.findMany({
         where: {
           workspaceId,
-          OR: [
-            { name: { contains: query, mode: 'insensitive' } },
-            { phone: { contains: query } },
-            { email: { contains: query, mode: 'insensitive' } },
-          ],
+          OR: buildContactSearchOr(query),
         },
         select: { id: true, name: true, phone: true, email: true, tags: true, leadScore: true },
         orderBy: { name: 'asc' },
@@ -306,8 +296,7 @@ export class MindCapabilityExecutor {
       const conversations = await this.prisma.conversation.findMany({
         where: {
           workspaceId,
-          ...(statusFilter === 'open' ? { status: { not: 'closed' } } : {}),
-          ...(statusFilter === 'closed' ? { status: 'closed' } : {}),
+          ...buildConversationStatusFilter(statusFilter),
         },
         select: {
           id: true,
@@ -386,10 +375,7 @@ export class MindCapabilityExecutor {
   async queryRevenueSummary(workspaceId: string, args?: UnknownRecord): Promise<CapabilityResult> {
     const startedAt = Date.now();
     try {
-      const days = Math.min(readOptionalNum(args?.days, 30), 365);
-      const start = new Date();
-      start.setDate(start.getDate() - days);
-      start.setHours(0, 0, 0, 0);
+      const { days, start } = buildRevenueWindow(args?.days);
 
       const [agg, total, paid] = await Promise.all([
         this.prisma.checkoutOrder.aggregate({
@@ -405,17 +391,16 @@ export class MindCapabilityExecutor {
         }),
       ]);
 
-      const summary = {
-        totalRevenue: agg._sum.totalInCents || 0,
-        ticketMedio: Math.round(agg._avg.totalInCents || 0),
+      const summary = computeRevenueSummary({
+        sumTotalInCents: agg._sum.totalInCents,
+        avgTotalInCents: agg._avg.totalInCents,
         totalCount: total,
         paidCount: paid,
-        conversao: total > 0 ? Math.round((paid / total) * 10000) / 100 : 0,
         periodDays: days,
-      };
+      });
 
       await this.emitCapabilityInvoked(workspaceId, 'query_revenue_summary', startedAt, true);
-      return { ok: true, data: summary };
+      return { ok: true, data: { ...summary } };
     } catch (error: unknown) {
       const msg = runtimeErrorMessage(error, 'unknown');
       this.logger.error(`query_revenue_summary failed: ${msg}`);
