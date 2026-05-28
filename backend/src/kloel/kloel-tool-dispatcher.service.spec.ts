@@ -324,11 +324,10 @@ describe('KloelToolDispatcherService', () => {
           KloelToolDispatcherService,
         );
 
-        const result = await serviceNoPayment.executeTool(
-          DEFAULT_WS_ID,
-          'create_payment_link',
-          { amount: 99.9, description: 'Produto' },
-        );
+        const result = await serviceNoPayment.executeTool(DEFAULT_WS_ID, 'create_payment_link', {
+          amount: 99.9,
+          description: 'Produto',
+        });
 
         expect(result.success).toBe(false);
         expect(result.error).toBe('smart_payment_unavailable');
@@ -531,9 +530,7 @@ describe('KloelToolDispatcherService', () => {
         const result = await service.executeTool(DEFAULT_WS_ID, 'self.capabilities', {});
 
         expect(result.success).toBe(true);
-        expect((capRegistryV2Service as { list: jest.Mock }).list).toHaveBeenCalledTimes(
-          1,
-        );
+        expect((capRegistryV2Service as { list: jest.Mock }).list).toHaveBeenCalledTimes(1);
         expect(result.capabilities).toEqual([
           'self.capabilities',
           'products.create',

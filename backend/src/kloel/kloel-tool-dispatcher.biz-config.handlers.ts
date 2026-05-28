@@ -67,17 +67,11 @@ export async function dispatchBizConfigTool(
 
   switch (toolName) {
     case 'update_affiliate_config':
-      return await bizConfigToolsService.toolUpdateAffiliateConfig(
-        workspaceId,
-        asToolArgs(args),
-      );
+      return await bizConfigToolsService.toolUpdateAffiliateConfig(workspaceId, asToolArgs(args));
     case 'list_affiliates':
       return await bizConfigToolsService.toolListAffiliates(workspaceId);
     case 'update_fiscal_data':
-      return await bizConfigToolsService.toolSaveBusinessInfo(
-        workspaceId,
-        asToolArgs(args),
-      );
+      return await bizConfigToolsService.toolSaveBusinessInfo(workspaceId, asToolArgs(args));
     case 'upload_document':
       if (!bizConfigToolsService?.toolUploadDocument) {
         return { success: false, error: 'document_service_unavailable' };
@@ -88,29 +82,17 @@ export async function dispatchBizConfigTool(
     case 'connect_channel':
       return await bizConfigToolsService.toolConnectChannel(workspaceId, asToolArgs(args));
     case 'update_workspace_settings':
-      return await bizConfigToolsService.toolSaveBusinessInfo(
-        workspaceId,
-        asToolArgs(args),
-      );
+      return await bizConfigToolsService.toolSaveBusinessInfo(workspaceId, asToolArgs(args));
     case 'list_leads':
       return await bizConfigToolsService.toolListLeads(workspaceId, asToolArgs(args));
     case 'get_lead_details':
       return await bizConfigToolsService.toolGetLeadDetails(workspaceId, asToolArgs(args));
     case 'save_business_info':
-      return await bizConfigToolsService.toolSaveBusinessInfo(
-        workspaceId,
-        asToolArgs(args),
-      );
+      return await bizConfigToolsService.toolSaveBusinessInfo(workspaceId, asToolArgs(args));
     case 'set_business_hours':
-      return await bizConfigToolsService.toolSetBusinessHours(
-        workspaceId,
-        asToolArgs(args),
-      );
+      return await bizConfigToolsService.toolSetBusinessHours(workspaceId, asToolArgs(args));
     case 'update_billing_info':
-      return await bizConfigToolsService.toolUpdateBillingInfo(
-        workspaceId,
-        asToolArgs(args),
-      );
+      return await bizConfigToolsService.toolUpdateBillingInfo(workspaceId, asToolArgs(args));
     case 'get_billing_status':
       return await bizConfigToolsService.toolGetBillingStatus(workspaceId);
     default:

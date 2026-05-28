@@ -236,12 +236,7 @@ export class KloelToolDispatcherService {
       }
     }
     if (isAgentTool(toolName)) {
-      const result = await dispatchAgentTool(
-        this.chatToolsService,
-        workspaceId,
-        toolName,
-        args,
-      );
+      const result = await dispatchAgentTool(this.chatToolsService, workspaceId, toolName, args);
       if (result !== null) {
         return result;
       }
@@ -386,10 +381,7 @@ export class KloelToolDispatcherService {
         return await runToolSearchWeb(this.planLimits, this.composerService, workspaceId, args);
       case 'delete_product': {
         const startedAt = Date.now();
-        const result = await this.chatToolsService.toolDeleteProduct(
-          workspaceId,
-          asToolArgs(args),
-        );
+        const result = await this.chatToolsService.toolDeleteProduct(workspaceId, asToolArgs(args));
         return this.withCanonicalReceipt(
           'delete_product',
           workspaceId,
