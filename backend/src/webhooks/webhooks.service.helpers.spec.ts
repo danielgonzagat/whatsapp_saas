@@ -2,10 +2,10 @@ import {
   asRecord,
   extractPhone,
   normalizeMessageStatus,
-  normalizePhoneDigits,
   resolveFinanceFlowId,
   toPrismaJsonValue,
 } from './webhooks.service.helpers';
+import { extractAsciiDigits } from '../common/phone/phone-normalization.util';
 
 describe('webhooks.service.helpers', () => {
   describe('asRecord', () => {
@@ -137,21 +137,30 @@ describe('webhooks.service.helpers', () => {
     });
   });
 
-  describe('normalizePhoneDigits', () => {
+  // Phone-digit normalization is delegated to the canonical
+  // {@link extractAsciiDigits} helper from
+  // `backend/src/common/phone/phone-normalization.util.ts`. The webhooks
+  // service composes `extractAsciiDigits(input.phone) || undefined` at the
+  // call site to preserve the "omit-when-empty" semantic the Prisma write
+  // expects. Tests below pin that composition so the contract stays stable.
+  describe('canonical phone-digit composition', () => {
+    const normalizeForWebhook = (phone: string | undefined): string | undefined =>
+      extractAsciiDigits(phone) || undefined;
+
     it('strips non-digit characters', () => {
-      expect(normalizePhoneDigits('+55 (11) 99999-0000')).toBe('5511999990000');
+      expect(normalizeForWebhook('+55 (11) 99999-0000')).toBe('5511999990000');
     });
 
     it('returns undefined for undefined input', () => {
-      expect(normalizePhoneDigits(undefined)).toBeUndefined();
+      expect(normalizeForWebhook(undefined)).toBeUndefined();
     });
 
     it('returns undefined for empty string input', () => {
-      expect(normalizePhoneDigits('')).toBeUndefined();
+      expect(normalizeForWebhook('')).toBeUndefined();
     });
 
     it('returns undefined when stripping yields an empty string', () => {
-      expect(normalizePhoneDigits('---')).toBeUndefined();
+      expect(normalizeForWebhook('---')).toBeUndefined();
     });
   });
 });

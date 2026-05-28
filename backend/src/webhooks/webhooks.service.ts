@@ -19,12 +19,12 @@ import { flowQueue } from '../queue/queue';
 import {
   extractPhone as extractPhoneHelper,
   normalizeMessageStatus,
-  normalizePhoneDigits,
   resolveFinanceFlowId,
   toPrismaJsonValue,
   type PhoneBearingPayload,
   type WebhookFinanceSettings,
 } from './webhooks.service.helpers';
+import { extractAsciiDigits } from '../common/phone/phone-normalization.util';
 
 /** Arbitrary JSON payload received on the generic catch-hook endpoint. */
 type WebhookJsonPayload = Record<string, unknown>;
@@ -353,7 +353,10 @@ export class WebhooksService {
     const status = normalizeMessageStatus(input.status);
     const workspaceId = input.workspaceId;
     const externalId = input.externalId;
-    const phone = normalizePhoneDigits(input.phone);
+    // Canonical phone normalization (ADR-0012): use `extractAsciiDigits` and
+    // collapse the empty-string result to `undefined` so the downstream
+    // Prisma write skips the field when the inbound webhook lacks a phone.
+    const phone = extractAsciiDigits(input.phone) || undefined;
     const errorCode = input.errorCode || null;
 
     if (!workspaceId) {

@@ -2,6 +2,13 @@ import { Prisma } from '@prisma/client';
 import { NON_DIGIT_RE } from '../common/phone';
 import type { UnknownRecord } from '../common/types';
 
+// NOTE: a former `normalizePhoneDigits` helper used to live here. It was a
+// near-duplicate of {@link extractAsciiDigits} from
+// `backend/src/common/phone/phone-normalization.util.ts` (canonical per
+// ADR-0012). Per the canonicalization gate, callers now consume the
+// canonical {@link extractAsciiDigits} directly and apply `|| undefined`
+// at the call site when the field must be omitted from a Prisma write.
+
 /**
  * Loose shape consumed by {@link extractPhone} — arbitrary JSON bag from an
  * upstream provider (Stripe, Hotmart, Shopify, etc.).
@@ -113,17 +120,3 @@ export function normalizeMessageStatus(status: string | undefined): string {
   return (status || '').toUpperCase();
 }
 
-/**
- * Strips non-digit characters from a phone candidate. Returns `undefined`
- * when the input is empty/undefined, matching the existing
- * `phone?.replace(NON_DIGIT_RE, '') || undefined` idiom inside the service.
- *
- * Pure — no I/O, deterministic.
- */
-export function normalizePhoneDigits(phone: string | undefined): string | undefined {
-  if (!phone) {
-    return undefined;
-  }
-  const cleaned = phone.replace(NON_DIGIT_RE, '');
-  return cleaned || undefined;
-}
