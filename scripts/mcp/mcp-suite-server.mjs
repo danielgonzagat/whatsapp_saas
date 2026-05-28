@@ -1,7 +1,17 @@
 #!/usr/bin/env node
-import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, unlinkSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { spawn } from 'node:child_process';
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  writeFileSync,
+  unlinkSync,
+} from 'node:fs';
+import { join } from 'node:path';
+import { childAvailable, childCommands, mcpChildRequest, walk } from './mcp-suite-child-proxy.mjs';
+import { postgresTool } from './mcp-suite-postgres.mjs';
+import { TOOLSETS } from './mcp-suite-toolsets.mjs';
 const ROOT = process.env.MCP_SUITE_ROOT || process.cwd();
 const KIND = process.argv[2] || process.env.MCP_SUITE_KIND;
 const PROTO_VERSION = '2024-11-05';
@@ -11,143 +21,12 @@ if (!KIND) {
   process.exit(1);
 }
 const SERVER_INFO = { name: KIND, version: '0.1.0' };
-const TOOLSETS = {
-  pulse: [
-    tool('pulse_status', 'Report PULSE launcher health and known artifact locations.'),
-    tool('pulse_scan', 'Run a PULSE scan mode and return structured command output.', {
-      mode: { type: 'string', enum: ['json', 'report', 'certify', 'ci', 'deep-ci', 'autonomous-dry'] },
-      timeoutMs: { type: 'number' },
-    }),
-    tool('pulse_scan_module', 'Run a PULSE JSON scan scoped to a module when the underlying CLI supports it.', {
-      module: { type: 'string' },
-      timeoutMs: { type: 'number' },
-    }, ['module']),
-    tool('pulse_report', 'Run the PULSE report command.'),
-    tool('pulse_health_by_module', 'Summarize available PULSE module health artifacts.'),
-    tool('pulse_top_gates', 'Return recent gate/failure hints from PULSE artifacts when present.'),
-    tool('pulse_dispatch_fix', 'Dispatch or dry-run PULSE autonomous remediation.', {
-      dryRun: { type: 'boolean' },
-      confirm: { type: 'boolean' },
-      timeoutMs: { type: 'number' },
-    }),
-    tool('pulse_history', 'List recent PULSE artifacts generated in this repository.'),
-    tool('pulse_mesh_routes', 'Describe how PULSE composes with atomic-edit, test-runner, task-graph, and kaisser.'),
-  ],
-  'test-runner': [
-    tool('run_tsc', 'Run typecheck for all, backend, frontend, or worker.', {
-      package: { type: 'string', enum: ['all', 'backend', 'frontend', 'worker'] },
-      timeoutMs: { type: 'number' },
-    }),
-    tool('run_eslint', 'Run lint check for all, backend, frontend, or worker.', {
-      package: { type: 'string', enum: ['all', 'backend', 'frontend', 'worker'] },
-      timeoutMs: { type: 'number' },
-    }),
-    tool('run_jest', 'Run backend Jest tests.', {
-      testPath: { type: 'string' },
-      timeoutMs: { type: 'number' },
-    }),
-    tool('run_vitest', 'Run frontend or worker Vitest tests.', {
-      package: { type: 'string', enum: ['frontend', 'worker'] },
-      filter: { type: 'string' },
-      timeoutMs: { type: 'number' },
-    }),
-    tool('coverage_for_module', 'Run or preview the coverage command for a package.', {
-      package: { type: 'string', enum: ['backend', 'frontend', 'worker'] },
-      run: { type: 'boolean' },
-      timeoutMs: { type: 'number' },
-    }),
-    tool('affected_tests', 'Find likely affected test files from changed/source files.', {
-      files: { type: 'array', items: { type: 'string' } },
-    }, ['files']),
-    tool('test_summary', 'Return the test command inventory exposed by this repo.'),
-    tool('test_mesh_routes', 'Describe how test-runner composes with graphify-plus, pulse, and task-graph.'),
-  ],
-  'task-graph': [
-    tool('task_import_plan', 'Import tasks from explicit task objects or plan text.', {
-      tasks: { type: 'array', items: { type: 'object' } },
-      planText: { type: 'string' },
-      source: { type: 'string' },
-    }),
-    tool('task_list', 'List tasks, optionally filtered by status.', {
-      status: { type: 'string' },
-    }),
-    tool('task_next', 'Return and optionally claim the next ready task.', {
-      claimBy: { type: 'string' },
-    }),
-    tool('task_update', 'Update a task status or fields.', {
-      id: { type: 'string' },
-      status: { type: 'string' },
-      fields: { type: 'object' },
-    }, ['id']),
-    tool('task_lock_acquire', 'Acquire a persistent lock key for a worker.', {
-      key: { type: 'string' },
-      owner: { type: 'string' },
-      ttlMs: { type: 'number' },
-    }, ['key', 'owner']),
-    tool('task_lock_release', 'Release a persistent lock key when owner matches.', {
-      key: { type: 'string' },
-      owner: { type: 'string' },
-    }, ['key', 'owner']),
-    tool('task_stats', 'Return task and lock counts.'),
-    tool('task_mesh_routes', 'Describe how task-graph coordinates PULSE, kaisser, and test-runner.'),
-  ],
-  postgres: [
-    tool('pg_status', 'Report read-only Postgres connection configuration without exposing secrets.'),
-    tool('pg_query', 'Run a read-only SELECT/WITH/SHOW query with a row cap.', {
-      sql: { type: 'string' },
-      limit: { type: 'number' },
-      timeoutMs: { type: 'number' },
-    }, ['sql']),
-    tool('pg_tables', 'List visible public tables.'),
-    tool('pg_table_describe', 'Describe columns for a table.', {
-      table: { type: 'string' },
-      schema: { type: 'string' },
-    }, ['table']),
-    tool('pg_count', 'Count rows in a table.', {
-      table: { type: 'string' },
-      schema: { type: 'string' },
-    }, ['table']),
-    tool('pg_recent', 'Return recent rows ordered by a timestamp column.', {
-      table: { type: 'string' },
-      schema: { type: 'string' },
-      orderBy: { type: 'string' },
-      limit: { type: 'number' },
-    }, ['table']),
-    tool('pg_explain', 'Run EXPLAIN on a read-only query.', {
-      sql: { type: 'string' },
-      timeoutMs: { type: 'number' },
-    }, ['sql']),
-    tool('pg_mesh_routes', 'Describe how postgres composes with PULSE, graphify-plus, and codebody.'),
-  ],
-  'kloel-os': [
-    tool('kloel_os_status', 'Report child MCP availability and optional tool counts.', {
-      includeToolCounts: { type: 'boolean' },
-      timeoutMs: { type: 'number' },
-    }),
-    tool('os_status', 'Alias for kloel_os_status.', {
-      includeToolCounts: { type: 'boolean' },
-      timeoutMs: { type: 'number' },
-    }),
-    tool('kloel_os_child_tools', 'List tools exposed by a child MCP.', {
-      child: { type: 'string' },
-      timeoutMs: { type: 'number' },
-    }, ['child']),
-    tool('kloel_os_call_child_tool', 'Call a tool on a child MCP through the Kloel OS proxy.', {
-      child: { type: 'string' },
-      toolName: { type: 'string' },
-      arguments: { type: 'object' },
-      timeoutMs: { type: 'number' },
-    }, ['child', 'toolName']),
-    tool('kloel_os_mesh_routes', 'Return active MCP composition routes for Kloel work.'),
-    tool('kloel_os_governance', 'Return protected-surface and tier information without weakening governance.'),
-  ],
-};
 
 async function callTool(name, args = {}) {
   if (KIND === 'pulse') return pulseTool(name, args);
   if (KIND === 'test-runner') return testRunnerTool(name, args);
   if (KIND === 'task-graph') return taskGraphTool(name, args);
-  if (KIND === 'postgres') return postgresTool(name, args);
+  if (KIND === 'postgres') return postgresTool(name, args, ROOT, runCommand);
   if (KIND === 'kloel-os') return kloelOsTool(name, args);
   throw new Error(`unknown server kind: ${KIND}`);
 }
@@ -175,9 +54,14 @@ async function pulseTool(name, args) {
     return runCommand(commands[mode] || commands.json, { timeoutMs: args.timeoutMs || 120_000 });
   }
   if (name === 'pulse_scan_module') {
-    return runCommand(['node', 'scripts/pulse/run.js', '--json', '--module', args.module], { timeoutMs: args.timeoutMs || 120_000 });
+    return runCommand(['node', 'scripts/pulse/run.js', '--json', '--module', args.module], {
+      timeoutMs: args.timeoutMs || 120_000,
+    });
   }
-  if (name === 'pulse_report') return runCommand(['node', 'scripts/pulse/run.js', '--report'], { timeoutMs: args.timeoutMs || 120_000 });
+  if (name === 'pulse_report')
+    return runCommand(['node', 'scripts/pulse/run.js', '--report'], {
+      timeoutMs: args.timeoutMs || 120_000,
+    });
   if (name === 'pulse_health_by_module') return pulseArtifactSummary('module');
   if (name === 'pulse_top_gates') return pulseArtifactSummary('gate');
   if (name === 'pulse_history') return { ok: true, artifacts: listPulseArtifacts().slice(0, 200) };
@@ -205,8 +89,10 @@ async function pulseTool(name, args) {
 }
 
 async function testRunnerTool(name, args) {
-  if (name === 'run_tsc') return runPackageCommand(args.package || 'all', 'typecheck', args.timeoutMs);
-  if (name === 'run_eslint') return runPackageCommand(args.package || 'all', 'lint', args.timeoutMs, true);
+  if (name === 'run_tsc')
+    return runPackageCommand(args.package || 'all', 'typecheck', args.timeoutMs);
+  if (name === 'run_eslint')
+    return runPackageCommand(args.package || 'all', 'lint', args.timeoutMs, true);
   if (name === 'run_jest') {
     const cmd = ['npm', '--prefix', 'backend', 'run', 'test', '--', '--runInBand'];
     if (args.testPath) cmd.push(args.testPath);
@@ -239,7 +125,14 @@ async function testRunnerTool(name, args) {
     };
   }
   if (name === 'test_mesh_routes') {
-    return { ok: true, routes: ['affected_tests -> run_jest/run_vitest', 'graphify-plus affected_specs -> test-runner', 'pulse gates -> test-runner verification'] };
+    return {
+      ok: true,
+      routes: [
+        'affected_tests -> run_jest/run_vitest',
+        'graphify-plus affected_specs -> test-runner',
+        'pulse gates -> test-runner verification',
+      ],
+    };
   }
   throw new Error(`unknown test-runner tool: ${name}`);
 }
@@ -247,7 +140,9 @@ async function testRunnerTool(name, args) {
 async function taskGraphTool(name, args) {
   if (name === 'task_import_plan') {
     const tasks = loadTasks();
-    const incoming = Array.isArray(args.tasks) ? args.tasks : tasksFromPlanText(args.planText || '');
+    const incoming = Array.isArray(args.tasks)
+      ? args.tasks
+      : tasksFromPlanText(args.planText || '');
     const now = new Date().toISOString();
     const created = incoming.map((task, index) => ({
       id: task.id || `task-${Date.now()}-${index}`,
@@ -265,12 +160,17 @@ async function taskGraphTool(name, args) {
   }
   if (name === 'task_list') {
     const tasks = loadTasks();
-    return { ok: true, tasks: args.status ? tasks.filter((task) => task.status === args.status) : tasks };
+    return {
+      ok: true,
+      tasks: args.status ? tasks.filter((task) => task.status === args.status) : tasks,
+    };
   }
   if (name === 'task_next') {
     const tasks = loadTasks();
     const locks = lockKeys();
-    const next = tasks.find((task) => task.status === 'pending' && !locks.has(task.id) && depsDone(task, tasks));
+    const next = tasks.find(
+      (task) => task.status === 'pending' && !locks.has(task.id) && depsDone(task, tasks),
+    );
     if (!next) return { ok: true, task: null };
     if (args.claimBy) {
       next.status = 'claimed';
@@ -291,7 +191,8 @@ async function taskGraphTool(name, args) {
     saveTasks(tasks);
     return { ok: true, task };
   }
-  if (name === 'task_lock_acquire') return acquireLock(args.key, args.owner, args.ttlMs || 3_600_000);
+  if (name === 'task_lock_acquire')
+    return acquireLock(args.key, args.owner, args.ttlMs || 3_600_000);
   if (name === 'task_lock_release') return releaseLock(args.key, args.owner);
   if (name === 'task_stats') {
     const tasks = loadTasks();
@@ -300,61 +201,37 @@ async function taskGraphTool(name, args) {
     return { ok: true, total: tasks.length, byStatus, locks: lockKeys().size };
   }
   if (name === 'task_mesh_routes') {
-    return { ok: true, routes: ['pulse findings -> task_import_plan', 'task_next -> kaisser plan/task round', 'task_lock_acquire -> atomic-edit lock discipline'] };
+    return {
+      ok: true,
+      routes: [
+        'pulse findings -> task_import_plan',
+        'task_next -> kaisser plan/task round',
+        'task_lock_acquire -> atomic-edit lock discipline',
+      ],
+    };
   }
   throw new Error(`unknown task-graph tool: ${name}`);
-}
-
-async function postgresTool(name, args) {
-  if (name === 'pg_status') {
-    const cfg = postgresConfig();
-    return { ok: true, configured: !!cfg, psqlAvailable: commandExists('psql'), source: cfg?.source || null, host: cfg?.safe.host || null, database: cfg?.safe.database || null, user: cfg?.safe.user || null };
-  }
-  if (name === 'pg_query') {
-    const sql = capSelect(args.sql, args.limit || 100);
-    return runPsql(sql, args.timeoutMs || 30_000);
-  }
-  if (name === 'pg_tables') {
-    return runPsql("select table_schema, table_name from information_schema.tables where table_schema not in ('pg_catalog','information_schema') order by table_schema, table_name limit 250", 30_000);
-  }
-  if (name === 'pg_table_describe') {
-    const schema = ident(args.schema || 'public');
-    const table = ident(args.table);
-    return runPsql(`select column_name, data_type, is_nullable from information_schema.columns where table_schema='${schema}' and table_name='${table}' order by ordinal_position`, 30_000);
-  }
-  if (name === 'pg_count') {
-    const schema = ident(args.schema || 'public');
-    const table = ident(args.table);
-    return runPsql(`select count(*) from "${schema}"."${table}"`, 30_000);
-  }
-  if (name === 'pg_recent') {
-    const schema = ident(args.schema || 'public');
-    const table = ident(args.table);
-    const orderBy = ident(args.orderBy || 'createdAt');
-    const limit = Math.min(Number(args.limit || 25), 100);
-    return runPsql(`select * from "${schema}"."${table}" order by "${orderBy}" desc limit ${limit}`, 30_000);
-  }
-  if (name === 'pg_explain') {
-    const sql = assertReadOnly(args.sql);
-    return runPsql(`explain ${sql}`, args.timeoutMs || 30_000);
-  }
-  if (name === 'pg_mesh_routes') {
-    return { ok: true, routes: ['pg_tables -> codebody nav_trace_prisma_model', 'pg_query -> runtime proof receipts', 'pg_recent -> sentry/railway incident triage'] };
-  }
-  throw new Error(`unknown postgres tool: ${name}`);
 }
 
 async function kloelOsTool(name, args) {
   if (name === 'os_status') name = 'kloel_os_status';
   if (name === 'kloel_os_status') {
     const include = args.includeToolCounts !== false;
+    const commands = childCommands(ROOT);
     const children = {};
-    for (const child of Object.keys(childCommands())) {
-      const command = childCommands()[child];
+    for (const child of Object.keys(commands)) {
+      const command = commands[child];
       const available = childAvailable(command);
       const entry = { available, command: command.command, args: command.args };
       if (include && available) {
-        const listed = await mcpChildRequest(command, 'tools/list', {}, args.timeoutMs || 8_000);
+        const listed = await mcpChildRequest(
+          ROOT,
+          PROTO_VERSION,
+          command,
+          'tools/list',
+          {},
+          args.timeoutMs || 8_000,
+        );
         entry.toolCount = listed.ok ? listed.result?.tools?.length || 0 : 0;
         if (!listed.ok) entry.error = listed.error;
       }
@@ -363,15 +240,29 @@ async function kloelOsTool(name, args) {
     return { ok: true, root: ROOT, tier: process.env.KLOEL_OS_TIER || 'NAVIGATE', children };
   }
   if (name === 'kloel_os_child_tools') {
-    const command = childCommands()[args.child];
+    const command = childCommands(ROOT)[args.child];
     if (!command) return { ok: false, error: `unknown child: ${args.child}` };
-    const listed = await mcpChildRequest(command, 'tools/list', {}, args.timeoutMs || 15_000);
+    const listed = await mcpChildRequest(
+      ROOT,
+      PROTO_VERSION,
+      command,
+      'tools/list',
+      {},
+      args.timeoutMs || 15_000,
+    );
     return listed.ok ? { ok: true, child: args.child, tools: listed.result.tools || [] } : listed;
   }
   if (name === 'kloel_os_call_child_tool') {
-    const command = childCommands()[args.child];
+    const command = childCommands(ROOT)[args.child];
     if (!command) return { ok: false, error: `unknown child: ${args.child}` };
-    return mcpChildRequest(command, 'tools/call', { name: args.toolName, arguments: args.arguments || {} }, args.timeoutMs || 60_000);
+    return mcpChildRequest(
+      ROOT,
+      PROTO_VERSION,
+      command,
+      'tools/call',
+      { name: args.toolName, arguments: args.arguments || {} },
+      args.timeoutMs || 60_000,
+    );
   }
   if (name === 'kloel_os_mesh_routes') {
     return {
@@ -388,21 +279,26 @@ async function kloelOsTool(name, args) {
     const protectedPath = join(ROOT, 'ops/protected-governance-files.json');
     let protectedFiles = null;
     if (existsSync(protectedPath)) {
-      try { protectedFiles = JSON.parse(readFileSync(protectedPath, 'utf8')); } catch { protectedFiles = 'unparseable'; }
+      try {
+        protectedFiles = JSON.parse(readFileSync(protectedPath, 'utf8'));
+      } catch {
+        protectedFiles = 'unparseable';
+      }
     }
     return {
       ok: true,
       tier: process.env.KLOEL_OS_TIER || 'NAVIGATE',
       protectedConfigPresent: existsSync(protectedPath),
       protectedFiles,
-      rules: ['no protected governance edits without explicit human approval', 'no git restore', 'read-only postgres by default', 'atomic-edit first for code edits'],
+      rules: [
+        'no protected governance edits without explicit human approval',
+        'no destructive git file restore command',
+        'read-only postgres by default',
+        'atomic-edit first for code edits',
+      ],
     };
   }
   throw new Error(`unknown kloel-os tool: ${name}`);
-}
-
-function tool(name, description, properties = {}, required = []) {
-  return { name, description, inputSchema: { type: 'object', properties, required } };
 }
 
 function runPackageCommand(pkg, script, timeoutMs, lintCheck = false) {
@@ -411,40 +307,81 @@ function runPackageCommand(pkg, script, timeoutMs, lintCheck = false) {
     return runCommand(['npm', 'run', rootScript], { timeoutMs: timeoutMs || 180_000 });
   }
   const actualScript = lintCheck && pkg !== 'frontend' ? 'lint:check' : script;
-  return runCommand(['npm', '--prefix', pkg, 'run', actualScript], { timeoutMs: timeoutMs || 120_000 });
+  return runCommand(['npm', '--prefix', pkg, 'run', actualScript], {
+    timeoutMs: timeoutMs || 120_000,
+  });
 }
 
 function runCommand(command, { timeoutMs = 120_000, env = {} } = {}) {
   return new Promise((resolvePromise) => {
     let stdout = '';
     let stderr = '';
-    const child = spawn(command[0], command.slice(1), { cwd: ROOT, env: { ...process.env, ...env }, stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(command[0], command.slice(1), {
+      cwd: ROOT,
+      env: { ...process.env, ...env },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
     const timer = setTimeout(() => {
       child.kill('SIGTERM');
-      resolvePromise({ ok: false, timedOut: true, exitCode: null, command: command.join(' '), stdout: stdout.slice(-MAX_OUTPUT), stderr: stderr.slice(-MAX_OUTPUT) });
+      resolvePromise({
+        ok: false,
+        timedOut: true,
+        exitCode: null,
+        command: command.join(' '),
+        stdout: stdout.slice(-MAX_OUTPUT),
+        stderr: stderr.slice(-MAX_OUTPUT),
+      });
     }, timeoutMs);
-    child.stdout.on('data', (data) => { stdout += data.toString(); });
-    child.stderr.on('data', (data) => { stderr += data.toString(); });
+    child.stdout.on('data', (data) => {
+      stdout += data.toString();
+    });
+    child.stderr.on('data', (data) => {
+      stderr += data.toString();
+    });
     child.on('error', (error) => {
       clearTimeout(timer);
-      resolvePromise({ ok: false, exitCode: -1, command: command.join(' '), stdout: stdout.slice(-MAX_OUTPUT), stderr: `${stderr}\n${error.message}`.slice(-MAX_OUTPUT) });
+      resolvePromise({
+        ok: false,
+        exitCode: -1,
+        command: command.join(' '),
+        stdout: stdout.slice(-MAX_OUTPUT),
+        stderr: `${stderr}\n${error.message}`.slice(-MAX_OUTPUT),
+      });
     });
     child.on('exit', (code) => {
       clearTimeout(timer);
-      resolvePromise({ ok: code === 0, exitCode: code, command: command.join(' '), stdout: stdout.slice(-MAX_OUTPUT), stderr: stderr.slice(-MAX_OUTPUT) });
+      resolvePromise({
+        ok: code === 0,
+        exitCode: code,
+        command: command.join(' '),
+        stdout: stdout.slice(-MAX_OUTPUT),
+        stderr: stderr.slice(-MAX_OUTPUT),
+      });
     });
   });
 }
 
 function affectedTests(files) {
-  const stems = files.map((file) => file.split('/').pop()?.replace(/\.(tsx?|jsx?|mjs|cjs)$/, '')).filter(Boolean);
+  const stems = files
+    .map((file) =>
+      file
+        .split('/')
+        .pop()
+        ?.replace(/\.(tsx?|jsx?|mjs|cjs)$/, ''),
+    )
+    .filter(Boolean);
   const allFiles = walk(ROOT, 16_000).filter((file) => /\.(test|spec)\.(tsx?|jsx?)$/.test(file));
   const matches = allFiles.filter((file) => stems.some((stem) => file.includes(stem)));
   return { ok: true, files, tests: matches.slice(0, 200) };
 }
 
 function artifactDirs() {
-  return [join(ROOT, 'pulse-out'), join(ROOT, '.pulse'), join(ROOT, 'artifacts/pulse'), join(ROOT, 'scripts/pulse/artifacts')];
+  return [
+    join(ROOT, 'pulse-out'),
+    join(ROOT, '.pulse'),
+    join(ROOT, 'artifacts/pulse'),
+    join(ROOT, 'scripts/pulse/artifacts'),
+  ];
 }
 
 function listPulseArtifacts() {
@@ -459,7 +396,13 @@ function listPulseArtifacts() {
 function pulseArtifactSummary(kind) {
   const artifacts = listPulseArtifacts();
   const hints = artifacts.filter((file) => new RegExp(kind, 'i').test(file)).slice(0, 50);
-  return { ok: true, kind, artifactCount: artifacts.length, hints, note: hints.length ? undefined : 'No matching artifact names found; run pulse_scan first.' };
+  return {
+    ok: true,
+    kind,
+    artifactCount: artifacts.length,
+    hints,
+    note: hints.length ? undefined : 'No matching artifact names found; run pulse_scan first.',
+  };
 }
 
 function taskDir() {
@@ -480,7 +423,14 @@ function locksDir() {
 
 function loadTasks() {
   if (!existsSync(tasksPath())) return [];
-  try { return JSON.parse(readFileSync(tasksPath(), 'utf8')); } catch { return []; }
+  try {
+    return JSON.parse(readFileSync(tasksPath(), 'utf8'));
+  } catch (error) {
+    process.stderr.write(
+      `[mcp-suite:task-graph] failed to read tasks: ${error.message || String(error)}\n`,
+    );
+    return [];
+  }
 }
 
 function saveTasks(tasks) {
@@ -488,11 +438,17 @@ function saveTasks(tasks) {
 }
 
 function tasksFromPlanText(text) {
-  return text.split(/\r?\n/).map((line) => line.replace(/^[-*]\s+\[[ x]\]\s*/i, '').trim()).filter(Boolean).map((title) => ({ title }));
+  return text
+    .split(/\r?\n/)
+    .map((line) => line.replace(/^[-*]\s+\[[ x]\]\s*/i, '').trim())
+    .filter(Boolean)
+    .map((title) => ({ title }));
 }
 
 function depsDone(task, tasks) {
-  return (task.dependsOn || []).every((id) => tasks.find((item) => item.id === id)?.status === 'done');
+  return (task.dependsOn || []).every(
+    (id) => tasks.find((item) => item.id === id)?.status === 'done',
+  );
 }
 
 function lockPath(key) {
@@ -510,8 +466,12 @@ function acquireLock(key, owner, ttlMs) {
   if (existsSync(path)) {
     try {
       const current = JSON.parse(readFileSync(path, 'utf8'));
-      if (current.expiresAt > now && current.owner !== owner) return { ok: false, locked: true, current };
-    } catch { return { ok: false, error: 'lock file is corrupt', key }; }
+      if (current.expiresAt > now && current.owner !== owner)
+        return { ok: false, locked: true, current };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return { ok: false, error: `lock file is corrupt: ${message}`, key };
+    }
   }
   const lock = { key, owner, acquiredAt: new Date(now).toISOString(), expiresAt: now + ttlMs };
   writeFileSync(path, JSON.stringify(lock, null, 2));
@@ -527,217 +487,23 @@ function releaseLock(key, owner) {
   return { ok: true, released: true };
 }
 
-function postgresConfig() {
-  const direct = process.env.DATABASE_URL || readEnvValue(join(ROOT, 'backend/.env'), 'DATABASE_URL') || readEnvValue(join(ROOT, '.env'), 'DATABASE_URL');
-  if (!direct) return null;
-  try {
-    const url = new URL(stripQuotes(direct));
-    return {
-      source: process.env.DATABASE_URL ? 'env' : 'backend/.env',
-      env: {
-        PGHOST: url.hostname,
-        PGPORT: url.port || '5432',
-        PGUSER: decodeURIComponent(url.username),
-        PGPASSWORD: decodeURIComponent(url.password),
-        PGDATABASE: decodeURIComponent(url.pathname.replace(/^\//, '')),
-        PGSSLMODE: url.searchParams.get('sslmode') || process.env.PGSSLMODE || 'prefer',
-      },
-      safe: {
-        host: url.hostname,
-        database: decodeURIComponent(url.pathname.replace(/^\//, '')),
-        user: decodeURIComponent(url.username),
-      },
-    };
-  } catch {
-    return null;
-  }
-}
-
-function readEnvValue(file, key) {
-  if (!existsSync(file)) return null;
-  const lines = readFileSync(file, 'utf8').split(/\r?\n/);
-  for (const line of lines) {
-    if (line.startsWith(`${key}=`)) return line.slice(key.length + 1);
-  }
-  return null;
-}
-
-function stripQuotes(value) {
-  return value.replace(/^['"]|['"]$/g, '');
-}
-
-function assertReadOnly(sql) {
-  const trimmed = sql.trim().replace(/;+\s*$/, '');
-  const normalized = trimmed.replace(/--.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '').trim();
-  if (!/^(select|with|show)\b/i.test(normalized)) throw new Error('only SELECT/WITH/SHOW queries are allowed');
-  if (/\b(insert|update|delete|drop|alter|truncate|create|grant|revoke|copy|call|do|merge)\b/i.test(normalized)) {
-    throw new Error('query contains a forbidden write/DDL keyword');
-  }
-  return trimmed;
-}
-
-function capSelect(sql, limit) {
-  const checked = assertReadOnly(sql);
-  if (/^show\b/i.test(checked)) return checked;
-  const capped = Math.min(Number(limit || 100), 100);
-  return `select * from (${checked}) as mcp_readonly_query limit ${capped}`;
-}
-
-function ident(value) {
-  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(value || '')) throw new Error(`invalid SQL identifier: ${value}`);
-  return value;
-}
-
-function runPsql(sql, timeoutMs) {
-  const cfg = postgresConfig();
-  if (!cfg) return { ok: false, error: 'DATABASE_URL is not configured' };
-  if (!commandExists('psql')) return { ok: false, error: 'psql is not installed or not on PATH' };
-  return runCommand(['psql', '-X', '--csv', '--set=ON_ERROR_STOP=1', '-c', sql], { timeoutMs, env: cfg.env });
-}
-
-function childCommands() {
-  return {
-    'atomic-edit': { command: 'bash', args: [join(ROOT, 'scripts/mcp/atomic-edit-mcp-launcher.sh')], transport: 'line' },
-    'graphify-plus': { command: 'bash', args: [join(ROOT, 'scripts/mcp/graphify-plus-mcp/launcher.sh')], transport: 'line' },
-    'saas-compiler': { command: 'bash', args: [join(ROOT, 'scripts/mcp/saas-compiler-mcp/launcher.sh')], transport: 'line' },
-    'codebody-navigator': { command: 'bash', args: [join(ROOT, 'scripts/mcp/codebody-navigator-mcp/launcher.sh')], transport: 'line' },
-    kaisser: { command: 'bash', args: [join(ROOT, 'scripts/mcp/kaisser-mcp/launcher.sh')], transport: 'lsp' },
-    pulse: { command: 'bash', args: [join(ROOT, 'scripts/mcp/pulse-mcp/launcher.sh')], transport: 'line' },
-    'test-runner': { command: 'bash', args: [join(ROOT, 'scripts/mcp/test-runner-mcp/launcher.sh')], transport: 'line' },
-    'task-graph': { command: 'bash', args: [join(ROOT, 'scripts/mcp/task-graph-mcp/launcher.sh')], transport: 'line' },
-    postgres: { command: 'bash', args: [join(ROOT, 'scripts/mcp/postgres-mcp/launcher.sh')], transport: 'line' },
-    'sentry-bridge': { command: 'bash', args: [join(ROOT, 'scripts/mcp/sentry-bridge-mcp/launcher.sh')], transport: 'lsp' },
-    mercadopago: { command: 'bash', args: [join(ROOT, 'scripts/mcp/mercadopago-mcp-launcher.sh')], transport: 'line' },
-    gitnexus: { command: '/opt/homebrew/bin/gitnexus', args: ['mcp'], transport: 'line' },
-    codegraph: { command: 'codegraph', args: ['serve', '--mcp'], transport: 'line' },
-  };
-}
-
-function childAvailable(command) {
-  if (command.command === 'bash') return existsSync(command.args[0]);
-  return commandExists(command.command);
-}
-
-function mcpChildRequest(command, method, params, timeoutMs) {
-  if (!childAvailable(command)) return Promise.resolve({ ok: false, error: 'child command unavailable' });
-  return new Promise((resolvePromise) => {
-    const child = spawn(command.command, command.args, { cwd: ROOT, env: process.env, stdio: ['pipe', 'pipe', 'pipe'] });
-    let buffer = Buffer.alloc(0);
-    let stderr = '';
-    let nextId = 1;
-    const pending = new Map();
-    const timer = setTimeout(() => {
-      child.kill('SIGTERM');
-      resolvePromise({ ok: false, error: `timeout after ${timeoutMs}ms`, stderr: stderr.slice(-20_000) });
-    }, timeoutMs);
-
-    function done(value) {
-      clearTimeout(timer);
-      child.kill('SIGTERM');
-      resolvePromise(value);
-    }
-
-    function writeMessage(message) {
-      const json = JSON.stringify(message);
-      if (command.transport === 'lsp') child.stdin.write(`Content-Length: ${Buffer.byteLength(json, 'utf8')}\r\n\r\n${json}`);
-      else child.stdin.write(`${json}\n`);
-    }
-
-    function sendRequest(reqMethod, reqParams) {
-      const id = nextId++;
-      writeMessage({ jsonrpc: '2.0', id, method: reqMethod, params: reqParams || {} });
-      return new Promise((resolveReq, rejectReq) => pending.set(id, { resolveReq, rejectReq }));
-    }
-
-    function parseChunk(chunk) {
-      buffer = Buffer.concat([buffer, chunk]);
-      while (true) {
-        const headerEnd = buffer.indexOf('\r\n\r\n');
-        if (headerEnd === -1) {
-          const newline = buffer.indexOf('\n');
-          if (newline === -1) break;
-          const line = buffer.slice(0, newline).toString('utf8').trim();
-          buffer = buffer.slice(newline + 1);
-          if (line) dispatchMessage(line);
-          continue;
-        }
-        const header = buffer.slice(0, headerEnd).toString('utf8');
-        const match = /Content-Length: (\d+)/i.exec(header);
-        if (!match) {
-          buffer = buffer.slice(headerEnd + 4);
-          continue;
-        }
-        const length = Number(match[1]);
-        const total = headerEnd + 4 + length;
-        if (buffer.length < total) break;
-        const body = buffer.slice(headerEnd + 4, total).toString('utf8');
-        buffer = buffer.slice(total);
-        dispatchMessage(body);
-      }
-    }
-
-    function dispatchMessage(text) {
-      let message;
-      try { message = JSON.parse(text); } catch { return; }
-      if (!pending.has(message.id)) return;
-      const p = pending.get(message.id);
-      pending.delete(message.id);
-      if (message.error) p.rejectReq(new Error(message.error.message || JSON.stringify(message.error)));
-      else p.resolveReq(message.result);
-    }
-
-    child.stdout.on('data', parseChunk);
-    child.stderr.on('data', (data) => { stderr += data.toString(); });
-    child.on('error', (error) => done({ ok: false, error: error.message, stderr: stderr.slice(-20_000) }));
-    child.on('exit', (code) => {
-      if (pending.size) done({ ok: false, error: `child exited before response code=${code}`, stderr: stderr.slice(-20_000) });
-    });
-
-    (async () => {
-      await sendRequest('initialize', { protocolVersion: PROTO_VERSION, capabilities: {}, clientInfo: { name: 'kloel-os-proxy', version: '0.1.0' } });
-      writeMessage({ jsonrpc: '2.0', method: 'notifications/initialized', params: {} });
-      const result = await sendRequest(method, params || {});
-      done({ ok: true, result });
-    })().catch((error) => done({ ok: false, error: error.message, stderr: stderr.slice(-20_000) }));
-  });
-}
-
-function commandExists(command) {
-  const result = spawnSync('sh', ['-lc', `command -v ${shellQuote(command)} >/dev/null 2>&1`], { stdio: 'ignore' });
-  return result.status === 0;
-}
-
-function walk(start, maxFiles) {
-  const out = [];
-  const stack = [resolve(start)];
-  while (stack.length && out.length < maxFiles) {
-    const dir = stack.pop();
-    let entries;
-    try { entries = readdirSync(dir, { withFileTypes: true }); } catch { continue; }
-    for (const entry of entries) {
-      if (entry.name === 'node_modules' || entry.name === '.git' || entry.name === '.next') continue;
-      const full = join(dir, entry.name);
-      if (entry.isDirectory()) stack.push(full);
-      else out.push(full);
-      if (out.length >= maxFiles) break;
-    }
-  }
-  return out;
-}
-
-function shellQuote(value) {
-  return `'${String(value).replace(/'/g, `'\\''`)}'`;
-}
-
 async function dispatch(method, params) {
   switch (method) {
     case 'initialize':
-      return { protocolVersion: PROTO_VERSION, capabilities: { tools: {} }, serverInfo: SERVER_INFO };
+      return {
+        protocolVersion: PROTO_VERSION,
+        capabilities: { tools: {} },
+        serverInfo: SERVER_INFO,
+      };
     case 'tools/list':
       return { tools: TOOLSETS[KIND] || [] };
     case 'tools/call': {
       const out = await callTool(params.name, params.arguments || {});
-      return { content: [{ type: 'text', text: typeof out === 'string' ? out : JSON.stringify(out, null, 2) }] };
+      return {
+        content: [
+          { type: 'text', text: typeof out === 'string' ? out : JSON.stringify(out, null, 2) },
+        ],
+      };
     }
     case 'ping':
     case 'notifications/initialized':
@@ -781,13 +547,26 @@ process.stdin.on('data', (chunk) => {
 
 async function handleMessage(text) {
   let request;
-  try { request = JSON.parse(text); } catch { return; }
+  try {
+    request = JSON.parse(text);
+  } catch (error) {
+    send({
+      jsonrpc: '2.0',
+      id: null,
+      error: { code: -32700, message: error.message || String(error) },
+    });
+    return;
+  }
   if (request.id === undefined) return;
   try {
     const result = await dispatch(request.method, request.params || {});
     send({ jsonrpc: '2.0', id: request.id, result });
   } catch (error) {
-    send({ jsonrpc: '2.0', id: request.id, error: { code: -32603, message: error.message || String(error) } });
+    send({
+      jsonrpc: '2.0',
+      id: request.id,
+      error: { code: -32603, message: error.message || String(error) },
+    });
   }
 }
 function send(message) {
