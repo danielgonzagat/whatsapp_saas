@@ -21,7 +21,6 @@ import {
   CIA_RUNTIME_SERVICE,
   type CiaRuntimePort,
 } from '../../../../kloel/mind/cia/cia-runtime.port';
-import { asProviderSettings, type ProviderSessionSnapshot } from '../provider-settings.types';
 import { WhatsAppProviderRegistry } from '../providers/provider-registry';
 import { WhatsAppApiProvider } from '../providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from '../whatsapp-catchup.service';
@@ -29,7 +28,13 @@ import { WhatsAppWatchdogService } from '../whatsapp-watchdog.service';
 import { WhatsappService } from '../whatsapp.service';
 import { InternalEndpoint } from '../../../../common/decorators/internal-endpoint.decorator';
 import { RouteClass } from '../../../../common/throttler/route-class.decorator';
-type BacklogMode = Exclude<Parameters<CiaRuntimePort['startBacklogRun']>[1], undefined>;
+import {
+  buildProviderStatusCatchup,
+  deriveProviderStatusDegradedReasons,
+  readBacklogMode,
+  readSessionSnapshot,
+  readText,
+} from './whatsapp-api.controller.helpers';
 
 /** Whats app api controller. */
 @Controller('whatsapp-api')
@@ -50,10 +55,10 @@ export class WhatsAppApiController {
 
   private async getSessionDiagnostics(workspaceId: string) {
     const workspace = await this.workspaces.getWorkspace(workspaceId);
-    const sessionSnapshot = this.readSessionSnapshot(workspace?.providerSettings);
+    const sessionSnapshot = readSessionSnapshot(workspace?.providerSettings);
     const providerType = await this.providerRegistry.getProviderType(workspaceId);
     const sessionName =
-      this.readText(sessionSnapshot?.sessionName).trim() ||
+      readText(sessionSnapshot?.sessionName).trim() ||
       this.whatsappApi.getResolvedSessionId(workspaceId);
     const [status, configDiagnostics, clientInfo, operationalIntelligence] = await Promise.all([
       this.providerRegistry.getSessionStatus(workspaceId).catch(() => null),
@@ -167,7 +172,7 @@ export class WhatsAppApiController {
     }
     return this.ciaRuntime.startBacklogRun(
       req.workspaceId!,
-      this.readBacklogMode(body?.mode),
+      readBacklogMode(body?.mode),
       body?.limit,
     );
   }
@@ -399,9 +404,9 @@ export class WhatsAppApiController {
   async getProviderStatus(@Req() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId!;
     const workspace = await this.workspaces.getWorkspace(workspaceId).catch(() => null);
-    const sessionMeta = this.readSessionSnapshot(workspace?.providerSettings);
+    const sessionMeta = readSessionSnapshot(workspace?.providerSettings);
     const sessionName =
-      this.readText(sessionMeta?.sessionName).trim() ||
+      readText(sessionMeta?.sessionName).trim() ||
       this.whatsappApi.getResolvedSessionId(workspaceId);
     const providerType = await this.providerRegistry.getProviderType(workspaceId);
     const status = await this.providerRegistry.getSessionStatus(workspaceId);
@@ -409,48 +414,13 @@ export class WhatsAppApiController {
     const runtimeDiagnostics = this.whatsappApi.getRuntimeConfigDiagnostics();
     const sessionDiagnostics = await this.whatsappApi.getSessionConfigDiagnostics(sessionName);
     const backlog = await this.whatsappService.getBacklog(workspaceId).catch(() => null);
-    const degradedReasons: string[] = [];
-    if (!runtimeDiagnostics.webhookConfigured) {
-      degradedReasons.push('meta_webhook_missing');
-    } else if (!runtimeDiagnostics.inboundEventsConfigured) {
-      degradedReasons.push('meta_webhook_events_missing_inbound');
-    }
-    if (!runtimeDiagnostics.storeEnabled) {
-      degradedReasons.push('meta_store_disabled_in_runtime');
-    }
-    if (!runtimeDiagnostics.storeFullSync) {
-      degradedReasons.push('meta_store_full_sync_disabled_in_runtime');
-    }
-    if (sessionDiagnostics.available) {
-      if (!sessionDiagnostics.configPresent) {
-        degradedReasons.push('meta_session_config_missing');
-      }
-      if (!sessionDiagnostics.webhookConfigured) {
-        degradedReasons.push('meta_session_webhook_missing');
-      } else if (!sessionDiagnostics.inboundEventsConfigured) {
-        degradedReasons.push('meta_session_webhook_events_missing_inbound');
-      }
-      if (sessionDiagnostics.storeEnabled === false) {
-        degradedReasons.push('meta_session_store_disabled');
-      }
-      if (sessionDiagnostics.storeFullSync === false) {
-        degradedReasons.push('meta_session_store_full_sync_disabled');
-      }
-    } else if (status.connected) {
-      degradedReasons.push('meta_session_config_unavailable');
-    }
-    const recoveryBlockedReason = this.readText(sessionMeta?.recoveryBlockedReason).trim();
-    if (recoveryBlockedReason) {
-      degradedReasons.push(recoveryBlockedReason);
-    }
-    if (
-      status.connected &&
-      backlog &&
-      Number(backlog.pendingConversations || 0) === 0 &&
-      sessionMeta?.lastCatchupError
-    ) {
-      degradedReasons.push('backlog_empty_after_catchup_error');
-    }
+    const degradedReasons = deriveProviderStatusDegradedReasons({
+      runtimeDiagnostics,
+      sessionDiagnostics,
+      sessionStatus: status,
+      sessionMeta,
+      backlog,
+    });
     return {
       workspaceId,
       configuredProvider: providerType,
@@ -461,38 +431,9 @@ export class WhatsAppApiController {
       diagnostics: {
         runtime: runtimeDiagnostics,
         sessionConfig: sessionDiagnostics,
-        catchup: {
-          lastCatchupAt: sessionMeta?.lastCatchupAt || null,
-          lastCatchupReason: sessionMeta?.lastCatchupReason || null,
-          lastCatchupImportedMessages: sessionMeta?.lastCatchupImportedMessages ?? null,
-          lastCatchupTouchedChats: sessionMeta?.lastCatchupTouchedChats ?? null,
-          lastCatchupProcessedChats: sessionMeta?.lastCatchupProcessedChats ?? null,
-          lastCatchupOverflow: sessionMeta?.lastCatchupOverflow ?? null,
-          lastCatchupError: sessionMeta?.lastCatchupError || null,
-          lastCatchupFailedAt: sessionMeta?.lastCatchupFailedAt || null,
-          recoveryBlockedReason: sessionMeta?.recoveryBlockedReason || null,
-          recoveryBlockedAt: sessionMeta?.recoveryBlockedAt || null,
-          backfillCursor: sessionMeta?.backfillCursor || null,
-        },
+        catchup: buildProviderStatusCatchup(sessionMeta),
         backlog,
       },
     };
-  }
-  private readText(value: unknown, fallback = '') {
-    return typeof value === 'string' ? value : fallback;
-  }
-  private readSessionSnapshot(providerSettings: unknown): ProviderSessionSnapshot | null {
-    const settings = asProviderSettings(providerSettings);
-    return settings.whatsappWebSession ?? settings.whatsappApiSession ?? null;
-  }
-  private readBacklogMode(value: unknown): BacklogMode {
-    switch (value) {
-      case 'reply_only_new':
-      case 'prioritize_hot':
-      case 'reply_all_recent_first':
-        return value;
-      default:
-        return 'reply_all_recent_first';
-    }
   }
 }
