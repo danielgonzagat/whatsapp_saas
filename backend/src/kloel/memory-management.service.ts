@@ -11,6 +11,15 @@ import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { computeMemoryStats, type MemoryStats } from './memory-stats';
+import {
+  MEMORY_EXPIRATION_DAYS,
+  cutoffDateForCategory,
+  findDuplicateMemoryIds,
+  findOrphanWorkspaceIds,
+  groupMemoriesByKeyPrefix,
+  knownMemoryCategories,
+  pickStaleSemanticDuplicateIds,
+} from './memory-management.policies';
 
 interface MemoryCleanupResult {
   expiredRemoved: number;
@@ -26,18 +35,9 @@ interface MemoryCleanupResult {
 export class MemoryManagementService {
   private readonly logger = StructuredLogger.from(MemoryManagementService.name);
 
-  // Configurações de expiração por categoria (em dias)
-  private readonly EXPIRATION_DAYS: Record<string, number> = {
-    products: 365, // Produtos duram 1 ano
-    objection: 365, // Respostas de objeção duram 1 ano
-    script: 365, // Scripts duram 1 ano
-    leads: 90, // Dados de leads expiram em 90 dias
-    followups: 30, // Follow-ups antigos expiram em 30 dias
-    appointments: 90, // Agendamentos antigos expiram em 90 dias
-    conversation_context: 7, // Contexto de conversa expira em 7 dias
-    temporary: 1, // Dados temporários expiram em 1 dia
-    default: 180, // Padrão: 6 meses
-  };
+  // Configurações de expiração por categoria (em dias).
+  // Source of truth lives in `memory-management.policies` for reuse and testing.
+  private readonly EXPIRATION_DAYS: Readonly<Record<string, number>> = MEMORY_EXPIRATION_DAYS;
 
   // Métricas
   private readonly memoriesGauge =
@@ -172,13 +172,12 @@ export class MemoryManagementService {
 
     let totalRemoved = 0;
 
-    await forEachSequential(Object.entries(this.EXPIRATION_DAYS), async ([category, days]) => {
+    await forEachSequential(Object.entries(this.EXPIRATION_DAYS), async ([category, _days]) => {
       if (category === 'default') {
         return;
       }
 
-      const cutoffDate = new Date();
-      cutoffDate.setDate(cutoffDate.getDate() - days);
+      const cutoffDate = cutoffDateForCategory(category, this.EXPIRATION_DAYS);
 
       try {
         // @CrossWorkspaceMaintenance: cron purge of expired memories across all workspaces
@@ -205,11 +204,8 @@ export class MemoryManagementService {
       }
     });
 
-    const defaultDays = this.EXPIRATION_DAYS.default ?? 180;
-    const defaultCutoff = new Date();
-    defaultCutoff.setDate(defaultCutoff.getDate() - defaultDays);
-
-    const knownCategories = Object.keys(this.EXPIRATION_DAYS).filter((c) => c !== 'default');
+    const defaultCutoff = cutoffDateForCategory('default', this.EXPIRATION_DAYS);
+    const knownCategories = knownMemoryCategories(this.EXPIRATION_DAYS);
 
     try {
       // @CrossWorkspaceMaintenance: cron purge of uncategorized stale memories
@@ -264,16 +260,7 @@ export class MemoryManagementService {
         });
 
         // Manter apenas entradas únicas (por key)
-        const seenKeys = new Set<string>();
-        const toDelete: string[] = [];
-
-        for (const mem of memories) {
-          if (seenKeys.has(mem.key)) {
-            toDelete.push(mem.id);
-          } else {
-            seenKeys.add(mem.key);
-          }
-        }
+        const toDelete = findDuplicateMemoryIds(memories);
 
         if (toDelete.length > 0) {
           await this.prisma.kloelMemory.deleteMany({
@@ -318,8 +305,10 @@ export class MemoryManagementService {
         take: 1000,
       });
 
-      const existingIds = new Set(existingWorkspaces.map((w) => w.id));
-      const orphanIds = workspaceIds.filter((id: string) => !existingIds.has(id));
+      const orphanIds = findOrphanWorkspaceIds(
+        workspaceIds,
+        existingWorkspaces.map((w) => w.id),
+      );
 
       if (orphanIds.length === 0) {
         return 0;
@@ -432,32 +421,13 @@ export class MemoryManagementService {
     }
 
     // Agrupar por prefixo de key (ex: "product_", "lead_")
-    const groups = new Map<string, typeof memories>();
-
-    for (const mem of memories) {
-      const prefix = mem.key.split('_').slice(0, 2).join('_');
-      const group = groups.get(prefix);
-      if (group) {
-        group.push(mem);
-      } else {
-        groups.set(prefix, [mem]);
-      }
-    }
+    const groups = groupMemoriesByKeyPrefix(memories);
 
     let merged = 0;
 
     await forEachSequential(groups, async ([_prefix, mems]) => {
-      if (mems.length <= 1) {
-        return;
-      }
-
       // Manter o mais recente, deletar os outros
-      const sorted = mems.sort(
-        (a: { updatedAt: Date | string }, b: { updatedAt: Date | string }) =>
-          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-      );
-
-      const toDelete = sorted.slice(1).map((m: { id: string }) => m.id);
+      const toDelete = pickStaleSemanticDuplicateIds(mems);
 
       if (toDelete.length > 0) {
         await this.prisma.kloelMemory.deleteMany({
