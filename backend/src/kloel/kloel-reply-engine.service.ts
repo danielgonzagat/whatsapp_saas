@@ -1,11 +1,7 @@
 import { Inject, Injectable, Optional, forwardRef } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
-import {
-  createTextLlmClient,
-  hasTextLlmApiKey,
-  resolveTextLlmProvider,
-} from '../lib/llm-provider';
+import { createTextLlmClient, hasTextLlmApiKey, resolveTextLlmProvider } from '../lib/llm-provider';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelContextFormatter } from './kloel-context-formatter';
