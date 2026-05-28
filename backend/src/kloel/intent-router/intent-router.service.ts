@@ -378,7 +378,8 @@ export class IntentRouterService {
 
     // === Payment link ===
     {
-      regex: /(?:cri[ae]r?|ger[ae]r?)\s+(?:link\s+(?:de\s+)?pagamento|payment\s+link)/i,
+      regex:
+        /^(?!.*\b(?:cart[aã]o|card|cr[eé]dito)\b)(?:cri[ae]r?|ger[ae]r?)\s+(?:link\s+(?:de\s+)?pagamento|payment\s+link)/i,
       capabilityId: 'create_payment_link',
       extract: (match) => {
         const amount =
@@ -728,6 +729,13 @@ export class IntentRouterService {
       }
     }
 
+
+    if (
+      /\b(?:cart[aã]o|card|cr[eé]dito)\b/i.test(normalized) &&
+      /(?:pagamento|payment|cobran[cç]a|link)/i.test(normalized)
+    ) {
+      return { isChat: true };
+    }
     // Stage 2: Registry-based classification
     const registryResult = this.registry.classifyIntent(normalized, surface, permissions);
     if (registryResult && registryResult.confidence >= 0.5) {

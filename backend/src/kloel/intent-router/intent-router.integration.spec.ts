@@ -109,6 +109,13 @@ describe('IntentRouter + CapabilityRegistry Integration', () => {
     expect(result.isChat).toBe(false);
     expect(result.classification?.capabilityId).toBe('self.capabilities');
   });
+  it('does not classify card payment links as the legacy PIX payment-link capability', () => {
+    const result = router.classify('Gerar link de pagamento no cartao para Joao', 'dashboard-chat', [
+      '*',
+    ]);
+
+    expect(result.classification?.capabilityId).not.toBe('create_payment_link');
+  });
   it('classifies health check', () => {
     const result = router.classify('Qual a saude do sistema?', 'dashboard-chat', ['*']);
     expect(result.isChat).toBe(false);
