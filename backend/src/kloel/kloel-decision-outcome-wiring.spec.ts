@@ -133,7 +133,17 @@ describe('KloelReplyEngineService decision-outcome wiring (PI-k8)', () => {
       });
 
       expect(decisionOutcome.recordDecision).toHaveBeenCalledTimes(1);
-      const call = decisionOutcome.recordDecision.mock.calls[0][0];
+      type RecordArg = {
+        workspaceId: string;
+        decisionType: string;
+        chosenAction: string;
+        baselineAction: string;
+        expectedWindow: number;
+        contextSnapshot: { surface: string; messageLength: number };
+        outcomeKey: string;
+      };
+      const recCalls = decisionOutcome.recordDecision.mock.calls as Array<[RecordArg]>;
+      const call = recCalls[0]?.[0] as RecordArg;
       expect(call.workspaceId).toBe('ws-1');
       expect(call.decisionType).toBe('chat_reply');
       expect(call.chosenAction).toBe('engage');
@@ -194,21 +204,26 @@ describe('KloelReplyEngineService decision-outcome wiring (PI-k8)', () => {
       });
 
       expect(decisionOutcome.closeOutcome).toHaveBeenCalledTimes(1);
-      const call = decisionOutcome.closeOutcome.mock.calls[0][0];
+      const _closeCalls = decisionOutcome.closeOutcome.mock.calls as Array<
+        [{ outcomeName: string; wonVsBaseline: boolean; economicValue?: number | undefined }]
+      >;
+      const call = _closeCalls[0]?.[0] as {
+        outcomeName: string;
+        wonVsBaseline: boolean;
+        economicValue?: number;
+      };
       expect(call.outcomeName).toBe('chat.replied');
       expect(call.wonVsBaseline).toBe(true);
-      expect(call.economicValue).toBeNull();
+      expect(call.economicValue).toBeUndefined();
     });
   });
 
   describe('closeOutcome on error', () => {
     it('closes with chat.error and wonVsBaseline=false when buildAssistantReplyImpl throws', async () => {
       const deps = makeBaseDeps();
-      const {
-        buildAssistantReplyImpl,
-      } = jest.requireMock<typeof import('./kloel-reply-engine.helpers')>(
-        './kloel-reply-engine.helpers',
-      );
+      const { buildAssistantReplyImpl } = jest.requireMock<
+        typeof import('./kloel-reply-engine.helpers')
+      >('./kloel-reply-engine.helpers');
       buildAssistantReplyImpl.mockRejectedValueOnce(new Error('LLM timeout'));
 
       const module: TestingModule = await Test.createTestingModule({
@@ -233,7 +248,14 @@ describe('KloelReplyEngineService decision-outcome wiring (PI-k8)', () => {
       ).rejects.toThrow('LLM timeout');
 
       expect(decisionOutcome.closeOutcome).toHaveBeenCalledTimes(1);
-      const call = decisionOutcome.closeOutcome.mock.calls[0][0];
+      const _closeCalls = decisionOutcome.closeOutcome.mock.calls as Array<
+        [{ outcomeName: string; wonVsBaseline: boolean; economicValue?: number | undefined }]
+      >;
+      const call = _closeCalls[0]?.[0] as {
+        outcomeName: string;
+        wonVsBaseline: boolean;
+        economicValue?: number;
+      };
       expect(call.outcomeName).toBe('chat.error');
       expect(call.wonVsBaseline).toBe(false);
     });
@@ -338,15 +360,14 @@ describe('ConversationalOnboardingService decision-outcome wiring (PI-k8)', () =
       const call = onboardingDecisionOutcome.closeOutcome.mock.calls[0][0];
       expect(call.outcomeName).toBe('chat.replied');
       expect(call.wonVsBaseline).toBe(true);
-      expect(call.economicValue).toBeNull();
+      expect(call.economicValue).toBeUndefined();
     });
   });
 
   describe('closeOutcome on error', () => {
     it('closes with chat.error and wonVsBaseline=false when LLM fails', async () => {
-      const { chatCompletionWithRetry } = jest.requireMock<typeof import('./openai-wrapper')>(
-        './openai-wrapper',
-      );
+      const { chatCompletionWithRetry } =
+        jest.requireMock<typeof import('./openai-wrapper')>('./openai-wrapper');
       chatCompletionWithRetry.mockRejectedValueOnce(new Error('Rate limit'));
 
       const service = await buildService(onboardingDecisionOutcome);
@@ -364,9 +385,8 @@ describe('ConversationalOnboardingService decision-outcome wiring (PI-k8)', () =
 
   describe('closeOutcome on degraded (empty_choice)', () => {
     it('closes with chat.degraded.empty_choice when LLM returns no choices', async () => {
-      const { chatCompletionWithRetry } = jest.requireMock<typeof import('./openai-wrapper')>(
-        './openai-wrapper',
-      );
+      const { chatCompletionWithRetry } =
+        jest.requireMock<typeof import('./openai-wrapper')>('./openai-wrapper');
       chatCompletionWithRetry.mockResolvedValueOnce({
         choices: [],
         model: 'gpt-4o',

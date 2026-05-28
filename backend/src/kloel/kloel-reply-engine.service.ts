@@ -595,7 +595,6 @@ export class KloelReplyEngineService {
           ?.closeOutcome({
             outcomeKey,
             outcomeName: 'chat.degraded.no_llm_client',
-            economicValue: null,
             wonVsBaseline: false,
           })
           .catch((err: unknown) =>
@@ -634,7 +633,6 @@ export class KloelReplyEngineService {
           ?.closeOutcome({
             outcomeKey,
             outcomeName: 'chat.replied',
-            economicValue: null,
             wonVsBaseline: true,
           })
           .catch((err: unknown) =>
@@ -650,7 +648,6 @@ export class KloelReplyEngineService {
           ?.closeOutcome({
             outcomeKey,
             outcomeName: 'chat.error',
-            economicValue: null,
             wonVsBaseline: false,
           })
           .catch((err: unknown) =>

@@ -84,14 +84,14 @@ describe('text LLM provider resolution', () => {
   });
 
   it('keeps DeepSeek endpoint and model defaults when DEEPSEEK_API_KEY is configured', () => {
-    process.env.DEEPSEEK_API_KEY = 'sk-deepseek-test';
+    process.env.DEEPSEEK_API_KEY = 'fake-key';
 
     const client = createTextLlmClient();
 
     expect(client).not.toBeNull();
     expect(resolveTextLlmProvider()).toBe('deepseek');
     expect(OpenAI).toHaveBeenCalledWith({
-      apiKey: 'sk-deepseek-test',
+      apiKey: 'fake-key',
       baseURL: 'https://api.deepseek.com/v1',
       timeout: 60_000,
       maxRetries: 0,

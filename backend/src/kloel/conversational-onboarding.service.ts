@@ -384,9 +384,7 @@ export class ConversationalOnboardingService {
           ? { selfHealthService: this.selfHealthService }
           : {}),
         ...(this.selfGapsService !== undefined ? { selfGapsService: this.selfGapsService } : {}),
-        ...(this.riskClassService !== undefined
-          ? { riskClassService: this.riskClassService }
-          : {}),
+        ...(this.riskClassService !== undefined ? { riskClassService: this.riskClassService } : {}),
       };
       const mindSignals = await buildMindSignals(mindDeps, workspaceId, userMessage);
       messages.push({
@@ -445,7 +443,6 @@ export class ConversationalOnboardingService {
           ?.closeOutcome({
             outcomeKey,
             outcomeName: 'chat.degraded.empty_choice',
-            economicValue: null,
             wonVsBaseline: false,
           })
           .catch((err: unknown) =>
@@ -488,8 +485,7 @@ export class ConversationalOnboardingService {
         this.decisionOutcomeService
           ?.closeOutcome({
             outcomeKey,
-            outcomeName: degradedReason ? `chat.degraded.${degradedReason}` : 'chat.replied',
-            economicValue: null,
+            outcomeName: degradedReason ? `chat.degraded.${String(degradedReason)}` : 'chat.replied',
             wonVsBaseline: !degradedReason,
           })
           .catch((err: unknown) =>
@@ -519,8 +515,7 @@ export class ConversationalOnboardingService {
       this.decisionOutcomeService
         ?.closeOutcome({
           outcomeKey,
-          outcomeName: degradedReason ? `chat.degraded.${degradedReason}` : 'chat.replied',
-          economicValue: null,
+          outcomeName: degradedReason ? `chat.degraded.${String(degradedReason)}` : 'chat.replied',
           wonVsBaseline: !degradedReason,
         })
         .catch((err: unknown) =>
@@ -550,7 +545,6 @@ export class ConversationalOnboardingService {
         ?.closeOutcome({
           outcomeKey,
           outcomeName: 'chat.error',
-          economicValue: null,
           wonVsBaseline: false,
         })
         .catch((err: unknown) =>
