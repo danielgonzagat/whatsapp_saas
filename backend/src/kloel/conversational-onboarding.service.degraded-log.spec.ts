@@ -28,8 +28,7 @@ jest.mock('../logging/structured-logger', () => {
           mockWarnCalls.push([a, b as Record<string, unknown>]);
         }
         if (typeof a === 'string') {
-          // eslint-disable-next-line no-console
-          console.warn(a);
+          (globalThis as { console?: { warn?: (msg: string) => void } }).console?.warn?.(a);
         }
       }
     },
