@@ -1,5 +1,4 @@
 import { Prisma } from '@prisma/client';
-import * as QRCode from 'qrcode';
 import type { StructuredLogger } from '../logging/structured-logger';
 import type { PrismaService } from '../prisma/prisma.service';
 import type { SmartPaymentService } from './smart-payment.service';
@@ -14,8 +13,6 @@ import {
   type ToolSetBrandVoiceArgs,
   type ToolSetSalesPolicyArgs,
 } from './kloel-chat-tools.types';
-import { randomBytes } from 'node:crypto';
-
 export async function runSetBrandVoice(
   prisma: PrismaService,
   workspaceId: string,
@@ -273,7 +270,7 @@ export async function runGetDashboardSummary(
 }
 
 export async function runCreatePaymentLink(
-  prisma: PrismaService,
+  _prisma: PrismaService,
   smartPaymentService: SmartPaymentService,
   logger: Pick<StructuredLogger, 'log'>,
   workspaceId: string,
@@ -285,39 +282,7 @@ export async function runCreatePaymentLink(
     amount: Number(args.amount) || 0,
     hasDescription: !!args.description,
   });
-  if (process.env.NODE_ENV !== 'production') {
-    const localAmount = Number(args.amount) || 0;
-    const localPaymentId = `pay_dev_${Date.now().toString(36)}`;
-    const customerName = args.customerName || 'Cliente';
-    const checksum = randomBytes(2).toString('hex').toUpperCase();
-    if (args.customerName) {
-      await upsertDevContact(prisma, workspaceId, customerName);
-    }
-    await createDevSale(
-      prisma,
-      workspaceId,
-      localPaymentId,
-      args.description || 'Produto',
-      localAmount,
-      args.customerName,
-    );
-    const pixPayload = `00020126580014BR.GOV.BCB.PIX0136${localPaymentId}520400005303986540${localAmount.toFixed(2)}5802BR5925${customerName}6009SAO PAULO62070503***6304${checksum}`;
-    let qrCodeBase64 = '';
-    try {
-      qrCodeBase64 = await QRCode.toDataURL(pixPayload, { width: 300, margin: 2 });
-    } catch {
-      // QR code is non-blocking for local checkout smoke paths.
-    }
-    return {
-      success: true,
-      paymentId: localPaymentId,
-      pixCopyPaste: pixPayload,
-      pixQrCode: qrCodeBase64 || undefined,
-      billingType: 'PIX',
-      customerName,
-      message: `PIX de R$ ${localAmount.toFixed(2)} gerado para ${customerName}.`,
-    };
-  }
+
   const paymentResult = await smartPaymentService.createSmartPayment({
     workspaceId,
     amount: Number(args.amount) || 0,
@@ -330,47 +295,4 @@ export async function runCreatePaymentLink(
     success: true,
     ...paymentResult,
   };
-}
-
-async function upsertDevContact(prisma: PrismaService, workspaceId: string, customerName: string) {
-  try {
-    const existing = await prisma.contact.findFirst({ where: { workspaceId, name: customerName } });
-    if (existing) {
-      await prisma.contact.updateMany({
-        where: { id: existing.id, workspaceId },
-        data: { updatedAt: new Date() },
-      });
-    } else {
-      await prisma.contact.create({
-        data: { workspaceId, name: customerName, phone: '', leadScore: 30 },
-      });
-    }
-  } catch {
-    // Local payment evidence should not fail on optional CRM sync.
-  }
-}
-
-async function createDevSale(
-  prisma: PrismaService,
-  workspaceId: string,
-  externalPaymentId: string,
-  productName: string,
-  amount: number,
-  customerName?: string,
-) {
-  try {
-    await prisma.kloelSale.create({
-      data: {
-        workspaceId,
-        externalPaymentId,
-        productName,
-        amount,
-        status: 'pending',
-        paymentMethod: 'PIX',
-        ...(customerName ? { leadPhone: customerName } : {}),
-      },
-    });
-  } catch {
-    // Local payment evidence should not fail on optional sales sync.
-  }
 }

@@ -204,6 +204,40 @@ describe('KloelChatToolsService', () => {
         }
       }
     });
+
+    it('delegates to SmartPaymentService outside production instead of synthesizing local PIX', async () => {
+      const originalNodeEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'test';
+      smartPayment.createSmartPayment = jest.fn().mockResolvedValue({
+        paymentUrl: 'https://pay.test/checkout',
+        pixCopyPaste: '000201mercadopago',
+      });
+
+      try {
+        const result = await service.toolCreatePaymentLink(wsId, {
+          amount: 147,
+          description: 'Produto Real',
+          customerName: 'Cliente Real',
+        });
+
+        expect(result.success).toBe(true);
+        expect(result.pixCopyPaste).toBe('000201mercadopago');
+        expect(smartPayment.createSmartPayment).toHaveBeenCalledWith(
+          expect.objectContaining({
+            workspaceId: wsId,
+            amount: 147,
+            productName: 'Produto Real',
+            customerName: 'Cliente Real',
+          }),
+        );
+      } finally {
+        if (originalNodeEnv === undefined) {
+          delete process.env.NODE_ENV;
+        } else {
+          process.env.NODE_ENV = originalNodeEnv;
+        }
+      }
+    });
   });
 
   describe('tenant isolation', () => {

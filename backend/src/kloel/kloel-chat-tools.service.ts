@@ -219,7 +219,7 @@ export class KloelChatToolsService {
     workspaceId: string,
     args: { amount: number; description: string; customerName?: string },
   ): Promise<ToolResult> {
-    return runCreatePaymentLink(this.prisma, this.smartPaymentService, workspaceId, args);
+    return runCreatePaymentLink(this.smartPaymentService, workspaceId, args);
   }
   async toolCreateAgentJob(workspaceId: string, args: ToolCreateAgentJobArgs): Promise<ToolResult> {
     return runCreateAgentJob(this.agentScheduler, workspaceId, args);
