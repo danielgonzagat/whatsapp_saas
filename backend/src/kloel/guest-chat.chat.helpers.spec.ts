@@ -1,6 +1,7 @@
 import { CapabilityRegistryV2Service } from './capability-registry-v2/capability-registry-v2.service';
 import { IntentRouterService } from './intent-router/intent-router.service';
 import { runDeterministicAction } from './guest-chat.chat.helpers';
+import type { GuestConversation } from './guest-chat.conversation.helpers';
 
 describe('runDeterministicAction', () => {
   it('returns an honest execution failure for routed operational actions without falling back', async () => {
@@ -46,6 +47,20 @@ describe('runDeterministicAction', () => {
       saleId: 'sale-pix-1',
       pixCopiaECola: '000201pix',
       pixQrCode: 'qr-base64',
+      capabilityId: 'sales.create_pix',
+      evidenceUrl: '/vendas/sale-pix-1',
+      auditLogId: 'audit-pix-1',
+      receipt: {
+        capabilityId: 'sales.create_pix',
+        evidenceUrl: '/vendas/sale-pix-1',
+        auditLogId: 'audit-pix-1',
+        executionRail: {
+          provider: 'mercadopago',
+          paymentMethod: 'PIX',
+          providerMethod: 'pix',
+          proofFields: ['saleId', 'externalPaymentId', 'pixCopiaECola', 'pixQrCode'],
+        },
+      },
     });
     const intentRouter = {
       classify: jest
@@ -67,7 +82,7 @@ describe('runDeterministicAction', () => {
       debug: jest.fn(),
       error: jest.fn(),
     };
-    const conversations = new Map();
+    const conversations = new Map<string, GuestConversation>();
 
     const confirmation = await runDeterministicAction(
       'Gera um PIX para Joao comprar PDRN',
@@ -101,6 +116,9 @@ describe('runDeterministicAction', () => {
     expect(executeTool).toHaveBeenCalledWith('ws-1', 'sales.create_pix', paymentArgs);
     expect(reply).toContain('PIX gerado');
     expect(reply).toContain('000201pix');
+    expect(reply).toContain('Provedor: mercadopago');
+    expect(reply).toContain('Método: PIX');
+    expect(reply).toContain('Método do provedor: pix');
   });
 
   it('collects missing payment inputs before asking for final confirmation', async () => {
@@ -140,7 +158,7 @@ describe('runDeterministicAction', () => {
       debug: jest.fn(),
       error: jest.fn(),
     };
-    const conversations = new Map();
+    const conversations = new Map<string, GuestConversation>();
 
     const missingReply = await runDeterministicAction(
       'Gera um PIX de R$197 para Joao comprar PDRN',
@@ -270,7 +288,8 @@ describe('runDeterministicAction', () => {
       success: false,
       error: 'sales_create_boleto_inputs_required',
       missingInputs: ['customerPhone', 'customerZipCode', 'customerStreet'],
-      message: 'Dados faltantes para criar boleto real: customerPhone, customerZipCode, customerStreet',
+      message:
+        'Dados faltantes para criar boleto real: customerPhone, customerZipCode, customerStreet',
     });
     const logger = {
       log: jest.fn(),

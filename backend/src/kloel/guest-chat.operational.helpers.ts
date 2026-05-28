@@ -1,5 +1,5 @@
 import { StructuredLogger } from '../logging/structured-logger';
-import { formatToolResult } from './guest-chat.action-intent.helpers';
+import { appendToolResultProof, formatToolResult } from './guest-chat.action-intent.helpers';
 import {
   GuestConversation,
   PendingOperationalAction,
@@ -37,7 +37,7 @@ export function formatOperationalToolReply(tool: string, result: unknown): strin
     return `${message}. Nenhuma ação real foi executada ainda.`;
   }
 
-  return formatToolResult(tool, result);
+  return appendToolResultProof(formatToolResult(tool, result), result);
 }
 
 const OPERATIONAL_INPUT_LABELS: Record<string, readonly string[]> = {
@@ -111,7 +111,12 @@ export async function persistPendingAction(
   logger: StructuredLogger,
   missingInputs: readonly string[] = [],
 ): Promise<PendingOperationalAction> {
-  const pendingConversation = await getOrCreateConversation(sessionId, redis, conversations, logger);
+  const pendingConversation = await getOrCreateConversation(
+    sessionId,
+    redis,
+    conversations,
+    logger,
+  );
   const pendingAction: PendingOperationalAction = {
     tool: action.tool,
     args: action.args,

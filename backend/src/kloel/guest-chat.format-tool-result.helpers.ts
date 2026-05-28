@@ -451,15 +451,24 @@ export function appendToolResultProof(reply: string, result: unknown): string {
   }
 
   const receipt = readRecord(r.receipt);
+  const executionRail = readRecord(r.executionRail ?? receipt.executionRail);
   const capabilityId = readStringField(r.capabilityId, receipt.capabilityId);
   const evidenceUrl = readStringField(r.evidenceUrl, receipt.evidenceUrl);
   const auditLogId = readStringField(r.auditLogId, receipt.auditLogId);
   const idempotencyKey = readStringField(r.idempotencyKey, receipt.idempotencyKey);
   const domainEvents = readStringList(r.domainEvents, receipt.domainEvents);
+  const provider = readStringField(executionRail.provider);
+  const paymentMethod = readStringField(executionRail.paymentMethod);
+  const providerMethod = readStringField(executionRail.providerMethod);
+  const proofFields = readStringList(executionRail.proofFields);
   const proofLines = [
     capabilityId ? `Capacidade: ${capabilityId}` : '',
     evidenceUrl ? `Evidência: ${evidenceUrl}` : '',
     auditLogId ? `AuditLog: ${auditLogId}` : '',
+    provider ? `Provedor: ${provider}` : '',
+    paymentMethod ? `Método: ${paymentMethod}` : '',
+    providerMethod ? `Método do provedor: ${providerMethod}` : '',
+    proofFields.length > 0 ? `Contrato de prova: ${proofFields.join(', ')}` : '',
     domainEvents.length > 0 ? `Eventos: ${domainEvents.join(', ')}` : '',
     idempotencyKey ? `Idempotência: ${idempotencyKey}` : '',
   ].filter((line) => line.length > 0);

@@ -19,8 +19,11 @@ import { KloelThinkerService, ThinkRequest, ThinkSyncResult } from './kloel-thin
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
 import { AgentRuntimeContextService } from './agent-runtime';
-import { detectActionIntent } from './guest-chat.action-intent.helpers';
-import { formatToolResult } from './guest-chat.action-intent.helpers';
+import {
+  appendToolResultProof,
+  detectActionIntent,
+  formatToolResult,
+} from './guest-chat.action-intent.helpers';
 
 type ComposerCapability = 'create_image' | 'create_site' | 'search_web';
 import type { UnknownRecord } from '../common/types';
@@ -299,7 +302,7 @@ export class KloelService {
             action.args,
             request.userId,
           );
-          const reply = formatToolResult(action.tool, result);
+          const reply = appendToolResultProof(formatToolResult(action.tool, result), result);
           // Persist to conversation store and spine
           void this.conversationStore.saveMessage(workspaceId, 'user', message);
           void this.conversationStore.saveMessage(workspaceId, 'assistant', reply);

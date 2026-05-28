@@ -1,6 +1,6 @@
 import type { PrismaService } from '../prisma/prisma.service';
 import { detectActionIntent } from './guest-chat.action-intent.helpers';
-import { formatToolResult } from './guest-chat.format-tool-result.helpers';
+import { appendToolResultProof, formatToolResult } from './guest-chat.format-tool-result.helpers';
 import { extractProductArgs, extractProductName } from './guest-chat.product-args.helpers';
 import { runGetProductReviews } from './kloel-chat-tools.product.helpers';
 import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
@@ -144,6 +144,92 @@ describe('guest chat action intent helpers', () => {
     expect(formatToolResult('generate_boleto', { success: true })).toBe(
       'Erro: boleto_receipt_missing',
     );
+  });
+
+  it('adds provider rail proof to canonical payment replies', () => {
+    const pixResult = {
+      success: true,
+      capabilityId: 'sales.create_pix',
+      saleId: 'sale-pix-1',
+      pixCopiaECola: '000201pix',
+      pixQrCode: 'qr-base64',
+      evidenceUrl: '/vendas/sale-pix-1',
+      auditLogId: 'audit-pix-1',
+      domainEvents: ['sale.created', 'payment.pending'],
+      receipt: {
+        capabilityId: 'sales.create_pix',
+        evidenceUrl: '/vendas/sale-pix-1',
+        auditLogId: 'audit-pix-1',
+        domainEvents: ['sale.created', 'payment.pending'],
+        executionRail: {
+          provider: 'mercadopago',
+          paymentMethod: 'PIX',
+          providerMethod: 'pix',
+          proofFields: ['saleId', 'externalPaymentId', 'pixCopiaECola', 'pixQrCode'],
+        },
+      },
+    };
+    const boletoResult = {
+      success: true,
+      capabilityId: 'sales.create_boleto',
+      saleId: 'sale-boleto-1',
+      boletoUrl: 'https://mercadopago.com/boleto.pdf',
+      boletoCode: '23790.00000 00000.000000 00000.000000 1 00000000019700',
+      evidenceUrl: '/vendas/sale-boleto-1',
+      auditLogId: 'audit-boleto-1',
+      receipt: {
+        capabilityId: 'sales.create_boleto',
+        evidenceUrl: '/vendas/sale-boleto-1',
+        auditLogId: 'audit-boleto-1',
+        executionRail: {
+          provider: 'mercadopago',
+          paymentMethod: 'BOLETO',
+          providerMethod: 'bolbradesco',
+          proofFields: ['saleId', 'externalPaymentId', 'boletoUrl', 'boletoCode'],
+        },
+      },
+    };
+    const cardResult = {
+      success: true,
+      capabilityId: 'sales.create_card_link',
+      saleId: 'sale-card-1',
+      checkoutUrl: 'https://checkout.stripe.com/c/pay/cs_card_1',
+      receipt: {
+        capabilityId: 'sales.create_card_link',
+        executionRail: {
+          provider: 'stripe',
+          paymentMethod: 'CARD',
+          providerMethod: 'checkout_session',
+          proofFields: ['saleId', 'stripeCheckoutSessionId', 'checkoutUrl'],
+        },
+      },
+    };
+
+    const pixReply = appendToolResultProof(
+      formatToolResult('sales.create_pix', pixResult),
+      pixResult,
+    );
+    const boletoReply = appendToolResultProof(
+      formatToolResult('sales.create_boleto', boletoResult),
+      boletoResult,
+    );
+    const cardReply = appendToolResultProof(
+      formatToolResult('sales.create_card_link', cardResult),
+      cardResult,
+    );
+
+    expect(pixReply).toContain('Provedor: mercadopago');
+    expect(pixReply).toContain('Método: PIX');
+    expect(pixReply).toContain('Método do provedor: pix');
+    expect(pixReply).toContain(
+      'Contrato de prova: saleId, externalPaymentId, pixCopiaECola, pixQrCode',
+    );
+    expect(boletoReply).toContain('Provedor: mercadopago');
+    expect(boletoReply).toContain('Método: BOLETO');
+    expect(boletoReply).toContain('Método do provedor: bolbradesco');
+    expect(cardReply).toContain('Provedor: stripe');
+    expect(cardReply).toContain('Método: CARD');
+    expect(cardReply).not.toContain('Provedor: mercadopago');
   });
 
   it('extracts product names from no-produto contexts and explicit names', () => {
