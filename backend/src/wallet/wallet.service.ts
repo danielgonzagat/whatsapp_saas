@@ -159,15 +159,12 @@ export class WalletService {
         notificationUrl: `${resolveBackendOrigin()}${MP_WEBHOOK_PATH}`,
       });
 
+      const pixQrCodeUrl = formatMercadoPagoQrImage(charge.qrCodeBase64) ?? charge.ticketUrl;
       return {
         paymentIntentId: charge.externalId,
         clientSecret: null,
         ...(charge.qrCode ? { pixQrCode: charge.qrCode } : {}),
-        ...(formatMercadoPagoQrImage(charge.qrCodeBase64)
-          ? { pixQrCodeUrl: formatMercadoPagoQrImage(charge.qrCodeBase64) }
-          : charge.ticketUrl
-            ? { pixQrCodeUrl: charge.ticketUrl }
-            : {}),
+        ...(pixQrCodeUrl ? { pixQrCodeUrl } : {}),
       };
     }
 
