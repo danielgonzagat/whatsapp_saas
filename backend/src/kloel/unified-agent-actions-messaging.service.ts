@@ -23,7 +23,7 @@ import {
   resolveComplianceMode,
   type ComplianceMode,
   type WhatsAppSendOptions,
-} from './unified-agent-actions-messaging.helpers';
+} from './unified-agent-actions-messaging.service.helpers';
 
 import type { UnknownRecord } from '../common/types';
 
@@ -58,7 +58,7 @@ export class UnifiedAgentActionsMessagingService {
     @Optional() @Inject(GMAIL_OAUTH_TOKEN) private readonly _gmailMailbox?: GmailMailboxPort,
   ) {}
 
-  // ───────── helpers (delegated to ./unified-agent-actions-messaging.helpers) ─────────
+  // ───────── helpers (delegated to ./unified-agent-actions-messaging.service.helpers) ─────────
 
   /** Coerce tool-arg primitives to string. Public so other services can reuse. */
   str(v: unknown, fb = ''): string {

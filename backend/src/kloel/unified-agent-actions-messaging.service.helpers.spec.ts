@@ -7,9 +7,7 @@ import {
   readText,
   resolveChannel,
   resolveComplianceMode,
-} from './unified-agent-actions-messaging.helpers';
-
-describe('unified-agent-actions-messaging.helpers', () => {
+} from './unified-agent-actions-messaging.service.helpers';describe('unified-agent-actions-messaging.service.helpers', () => {
   describe('isRecord', () => {
     it('returns true for plain objects', () => {
       expect(isRecord({})).toBe(true);

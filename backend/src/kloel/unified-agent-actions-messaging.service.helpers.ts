@@ -6,16 +6,10 @@
  * while the deterministic input shaping lives here. All functions in this
  * module MUST stay stateless and free of NestJS DI / network access so
  * they can be exercised by fast unit tests.
- */
+ */import type { ChannelName } from './channel-transport.types';
+import type { UnknownRecord } from '../common/types';export type ComplianceMode = 'reactive' | 'proactive';
 
-import type { ChannelName } from './channel-transport.types';
-import type { UnknownRecord } from '../common/types';
-
-export type ComplianceMode = 'reactive' | 'proactive';
-
-export type WhatsAppSendMediaType = 'document' | 'image' | 'audio' | 'video';
-
-/**
+export type WhatsAppSendMediaType = 'document' | 'image' | 'audio' | 'video';/**
  * Index-signature keeps the historic compatibility with
  * {@link IWhatsappMessaging.sendMessage} which accepts `Record<string, unknown>`.
  */
@@ -28,14 +22,10 @@ export interface WhatsAppSendOptions {
   forceDirect: boolean;
   quotedMessageId?: string;
   [key: string]: unknown;
-}
-
-/** Type guard for plain object records. */
+}/** Type guard for plain object records. */
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
-}
-
-/**
+}/**
  * Coerce primitive scalars to string; everything else falls back.
  * Mirrors the historic `readText` behaviour from the messaging service.
  */
@@ -47,15 +37,11 @@ export function readText(value: unknown, fallback = ''): string {
     return String(value);
   }
   return fallback;
-}
-
-/** Trim + return undefined when blank — used to skip empty optional fields. */
+}/** Trim + return undefined when blank — used to skip empty optional fields. */
 export function readOptionalText(value: unknown): string | undefined {
   const normalized = readText(value).trim();
   return normalized || undefined;
-}
-
-/**
+}/**
  * Lighter coercion used by tool args (`str(args.message)`).
  *
  * Differs from {@link readText} in two ways:
@@ -68,14 +54,10 @@ export function coerceStr(value: unknown, fallback = ''): string {
     : typeof value === 'number' || typeof value === 'boolean'
       ? String(value)
       : fallback;
-}
-
-/** Reactive when explicitly tagged in context; defaults to proactive otherwise. */
+}/** Reactive when explicitly tagged in context; defaults to proactive otherwise. */
 export function resolveComplianceMode(context?: UnknownRecord): ComplianceMode {
   return context?.deliveryMode === 'reactive' ? 'reactive' : 'proactive';
-}
-
-/** Resolve outbound channel; falls back to whatsapp on missing/unknown values. */
+}/** Resolve outbound channel; falls back to whatsapp on missing/unknown values. */
 export function resolveChannel(context?: UnknownRecord): ChannelName {
   const rawChannel =
     readOptionalText(context?.channel) ||
@@ -92,9 +74,7 @@ export function resolveChannel(context?: UnknownRecord): ChannelName {
     return channel;
   }
   return 'whatsapp';
-}
-
-/**
+}/**
  * Compose the option bag passed to WhatsApp/transport send calls.
  *
  * Keeps the omit-when-undefined shape so downstream layers can spread the
@@ -131,9 +111,7 @@ export function buildWhatsAppSendOptions(
     complianceMode: resolveComplianceMode(context),
     forceDirect: context?.forceDirect === true,
   };
-}
-
-/** Minimal HTML escape for Gmail HTML bodies (subset Gmail expects). */
+}/** Minimal HTML escape for Gmail HTML bodies (subset Gmail expects). */
 export function escapeHtml(value: string): string {
   return value
     .replace(/&/g, '&amp;')
