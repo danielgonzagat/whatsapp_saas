@@ -335,7 +335,17 @@ describe('ConversationalOnboardingService decision-outcome wiring (PI-k8)', () =
       await service.chat('ws-1', 'Olá, quero configurar');
 
       expect(onboardingDecisionOutcome.recordDecision).toHaveBeenCalledTimes(1);
-      const call = onboardingDecisionOutcome.recordDecision.mock.calls[0][0];
+      type _ROnb = {
+        workspaceId: string;
+        decisionType: string;
+        chosenAction: string;
+        baselineAction: string;
+        expectedWindow: number;
+        contextSnapshot: { surface: string; messageLength: number };
+        outcomeKey: string;
+      };
+      const _rcalls = onboardingDecisionOutcome.recordDecision.mock.calls as Array<[_ROnb]>;
+      const call = _rcalls[0]?.[0] as _ROnb;
       expect(call.workspaceId).toBe('ws-1');
       expect(call.decisionType).toBe('chat_reply');
       expect(call.chosenAction).toBe('engage');
@@ -357,7 +367,9 @@ describe('ConversationalOnboardingService decision-outcome wiring (PI-k8)', () =
       await service.chat('ws-1', 'Olá');
 
       expect(onboardingDecisionOutcome.closeOutcome).toHaveBeenCalledTimes(1);
-      const call = onboardingDecisionOutcome.closeOutcome.mock.calls[0][0];
+      type _COnb = { outcomeName: string; wonVsBaseline: boolean; economicValue?: number };
+      const _ccalls = onboardingDecisionOutcome.closeOutcome.mock.calls as Array<[_COnb]>;
+      const call = _ccalls[0]?.[0] as _COnb;
       expect(call.outcomeName).toBe('chat.replied');
       expect(call.wonVsBaseline).toBe(true);
       expect(call.economicValue).toBeUndefined();
@@ -377,7 +389,9 @@ describe('ConversationalOnboardingService decision-outcome wiring (PI-k8)', () =
       expect(typeof result).toBe('string');
       expect(result).toContain('instabilidade');
       expect(onboardingDecisionOutcome.closeOutcome).toHaveBeenCalledTimes(1);
-      const call = onboardingDecisionOutcome.closeOutcome.mock.calls[0][0];
+      type _COnb = { outcomeName: string; wonVsBaseline: boolean; economicValue?: number };
+      const _ccalls = onboardingDecisionOutcome.closeOutcome.mock.calls as Array<[_COnb]>;
+      const call = _ccalls[0]?.[0] as _COnb;
       expect(call.outcomeName).toBe('chat.error');
       expect(call.wonVsBaseline).toBe(false);
     });
@@ -399,7 +413,9 @@ describe('ConversationalOnboardingService decision-outcome wiring (PI-k8)', () =
 
       expect(result).toBe('');
       expect(onboardingDecisionOutcome.closeOutcome).toHaveBeenCalledTimes(1);
-      const call = onboardingDecisionOutcome.closeOutcome.mock.calls[0][0];
+      type _COnb = { outcomeName: string; wonVsBaseline: boolean; economicValue?: number };
+      const _ccalls = onboardingDecisionOutcome.closeOutcome.mock.calls as Array<[_COnb]>;
+      const call = _ccalls[0]?.[0] as _COnb;
       expect(call.outcomeName).toBe('chat.degraded.empty_choice');
       expect(call.wonVsBaseline).toBe(false);
     });

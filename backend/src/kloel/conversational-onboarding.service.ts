@@ -485,7 +485,9 @@ export class ConversationalOnboardingService {
         this.decisionOutcomeService
           ?.closeOutcome({
             outcomeKey,
-            outcomeName: degradedReason ? `chat.degraded.${String(degradedReason)}` : 'chat.replied',
+            outcomeName: degradedReason
+              ? `chat.degraded.${String(degradedReason)}`
+              : 'chat.replied',
             wonVsBaseline: !degradedReason,
           })
           .catch((err: unknown) =>
