@@ -31,6 +31,22 @@ export interface MindPolicyResolutionRow {
 }
 
 /**
+ * Shared Prisma `select` shape for resolution queries across
+ * {@link MindPolicyService.resolveOutcome}, {@link resolveOpenForSubject},
+ * and {@link sweepExpiredOutcomes}.
+ */
+export const RESOLUTION_ROW_SELECT = {
+  id: true,
+  workspaceId: true,
+  subject: true,
+  decisionType: true,
+  context: true,
+  chosen: true,
+  baseline: true,
+  outcomeKey: true,
+} as const;
+
+/**
  * Build the `data:` payload for a `mindPolicy.updateMany` that resolves an
  * open policy row. Centralises the duplicated inline expression used by all
  * three resolution paths: it stamps a `resolvedAt` timestamp and computes
@@ -84,6 +100,70 @@ export function extractGlobalPriorRow(row: {
     return null;
   }
   return { channel, decisionType: row.decisionType, action: row.chosen };
+}
+
+/**
+ * Filter-map resolved rows into `{channel, decisionType, action}` triples
+ * consumable by {@link KloelGlobalPriorService.recordObservation}. Rows
+ * whose context lacks a string `channel` are silently dropped.
+ */
+export function collectGlobalPriorRows(
+  rows: ReadonlyArray<{ context: unknown; decisionType: string; chosen: string }>,
+): Array<{ channel: string; decisionType: string; action: string }> {
+  const out: Array<{ channel: string; decisionType: string; action: string }> = [];
+  for (const row of rows) {
+    const triple = extractGlobalPriorRow(row);
+    if (triple) {
+      out.push(triple);
+    }
+  }
+  return out;
+}
+
+/**
+ * Gap 6: feed resolved outcomes back into the cross-workspace global prior.
+ * Iterates resolved rows, extracts channel/decisionType/action triples via
+ * {@link extractGlobalPriorRow}, and calls `recordObservation` on the
+ * global-prior service. Errors are logged but never block the caller.
+ *
+ * Shared by {@link MindPolicyService.resolveOutcome} and
+ * {@link resolveOpenForSubject} to deduplicate the observation loop.
+ */
+export async function recordOutcomeGlobalPrior(params: {
+  globalPrior: {
+    recordObservation(
+      channel: string,
+      decisionType: string,
+      action: string,
+      success: boolean,
+    ): Promise<void>;
+  };
+  rows: ReadonlyArray<{ context: unknown; decisionType: string; chosen: string }>;
+  outcome: number;
+  logContext: Record<string, unknown>;
+  logger: { error(msg: string, ctx: Record<string, unknown>): void };
+}): Promise<void> {
+  const { globalPrior, rows, outcome, logContext, logger } = params;
+  const success = outcome >= 0.5;
+  for (const row of rows) {
+    const triple = extractGlobalPriorRow(row);
+    if (!triple) {
+      continue;
+    }
+    try {
+      await globalPrior.recordObservation(
+        triple.channel,
+        triple.decisionType,
+        triple.action,
+        success,
+      );
+    } catch (err: unknown) {
+      logger.error('Failed to record global prior observation', {
+        ...logContext,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
 }
 
 export function mean(values: number[]): number {

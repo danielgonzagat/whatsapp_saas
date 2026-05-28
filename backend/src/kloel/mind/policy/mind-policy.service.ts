@@ -21,11 +21,13 @@ import {
 import {
   buildResolveOutcomeUpdateData,
   createPolicyRow,
-  extractGlobalPriorRow,
   persistResolvedPolicyMemories,
+  recordOutcomeGlobalPrior,
+  RESOLUTION_ROW_SELECT,
 } from './mind-policy.helpers';
 import { applyWisdomPriors } from './mind-policy.wisdom-prior.helpers';
 import {
+  buildBeliefMeanSummaries,
   classifyAutopilotConfirmation,
   computeGlobalPriorMix,
   shouldSkipGlobalPriorMix,
@@ -86,9 +88,6 @@ export class MindPolicyService {
       ),
     );
 
-    let usedGlobalPrior = false;
-    let maxPriorWeight = 0;
-
     const mixedBeliefs = await this.mixWithGlobalPrior({
       beliefs: rawBeliefs,
       channel,
@@ -109,15 +108,8 @@ export class MindPolicyService {
       logger: this.logger,
     });
 
-    const beliefs = wisdomNudged.map((m) => {
-      if (m.usedPrior) {
-        usedGlobalPrior = true;
-        if (m.priorWeight > maxPriorWeight) {
-          maxPriorWeight = m.priorWeight;
-        }
-      }
-      return { mean: m.mixedMean, variance: m.belief.variance };
-    });
+    const { summaries: beliefs, usedGlobalPrior, maxPriorWeight } =
+      buildBeliefMeanSummaries(wisdomNudged);
 
     const artifacts = buildPolicyArtifacts({
       beliefs,
@@ -158,9 +150,11 @@ export class MindPolicyService {
     outcome: number,
     baselineOutcome?: number,
   ): Promise<void> {
-    // Gap 6: collect (channel, decisionType, action) tuples to feed back into
-    // the global prior after the transaction commits.
-    const priorRows: Array<{ channel: string; decisionType: string; action: string }> = [];
+    let resolutionRows: Array<{
+      context: unknown;
+      decisionType: string;
+      chosen: string;
+    }> = [];
 
     await this.prisma.$transaction(async (tx) => {
       await tx.$executeRaw /* raw justified: PostgreSQL advisory lock for outcome resolution */ `
@@ -168,16 +162,7 @@ export class MindPolicyService {
       `;
       const rows = await tx.mindPolicy.findMany({
         where: { outcomeKey, workspaceId, resolvedAt: null },
-        select: {
-          id: true,
-          workspaceId: true,
-          subject: true,
-          decisionType: true,
-          context: true,
-          chosen: true,
-          baseline: true,
-          outcomeKey: true,
-        },
+        select: RESOLUTION_ROW_SELECT,
       });
 
       if (rows.length === 0) {
@@ -196,12 +181,7 @@ export class MindPolicyService {
       }
 
       if (resolvedCount > 0) {
-        for (const row of rows) {
-          const priorRow = extractGlobalPriorRow(row);
-          if (priorRow) {
-            priorRows.push(priorRow);
-          }
-        }
+        resolutionRows = rows;
 
         await this.persistResolvedMemories(
           rows.map((r) => ({
@@ -216,23 +196,14 @@ export class MindPolicyService {
     });
 
     // Gap 6: feed resolved outcomes back into the cross-workspace global prior.
-    if (this.globalPrior && priorRows.length > 0) {
-      const success = outcome >= 0.5;
-      for (const row of priorRows) {
-        try {
-          await this.globalPrior.recordObservation(
-            row.channel,
-            row.decisionType,
-            row.action,
-            success,
-          );
-        } catch (err: unknown) {
-          this.logger.error('Failed to record global prior observation from resolveOutcome', {
-            outcomeKey,
-            error: err instanceof Error ? err.message : String(err),
-          });
-        }
-      }
+    if (this.globalPrior && resolutionRows.length > 0) {
+      await recordOutcomeGlobalPrior({
+        globalPrior: this.globalPrior,
+        rows: resolutionRows,
+        outcome,
+        logContext: { outcomeKey },
+        logger: this.logger,
+      });
     }
   }
 
@@ -250,16 +221,7 @@ export class MindPolicyService {
         decisionType: input.decisionType,
         resolvedAt: null,
       },
-      select: {
-        id: true,
-        workspaceId: true,
-        subject: true,
-        decisionType: true,
-        context: true,
-        chosen: true,
-        baseline: true,
-        outcomeKey: true,
-      },
+      select: RESOLUTION_ROW_SELECT,
     });
 
     if (rows.length > 0) {
@@ -284,31 +246,14 @@ export class MindPolicyService {
 
     // Gap 6: feed resolved outcomes from this subject back into the
     // cross-workspace global prior.
-    if (this.globalPrior && rows.length > 0) {
-      const success = input.outcome >= 0.5;
-      for (const row of rows) {
-        const priorRow = extractGlobalPriorRow(row);
-        if (!priorRow) {
-          continue;
-        }
-        try {
-          await this.globalPrior.recordObservation(
-            priorRow.channel,
-            priorRow.decisionType,
-            priorRow.action,
-            success,
-          );
-        } catch (err: unknown) {
-          this.logger.error(
-            'Failed to record global prior observation from resolveOpenForSubject',
-            {
-              subject: input.subject,
-              decisionType: input.decisionType,
-              error: err instanceof Error ? err.message : String(err),
-            },
-          );
-        }
-      }
+    if (this.globalPrior) {
+      await recordOutcomeGlobalPrior({
+        globalPrior: this.globalPrior,
+        rows,
+        outcome: input.outcome,
+        logContext: { subject: input.subject, decisionType: input.decisionType },
+        logger: this.logger,
+      });
     }
 
     return rows.length;
@@ -329,16 +274,7 @@ export class MindPolicyService {
         resolvedAt: null,
         createdAt: { lt: cutoff },
       },
-      select: {
-        id: true,
-        workspaceId: true,
-        subject: true,
-        decisionType: true,
-        context: true,
-        chosen: true,
-        baseline: true,
-        outcomeKey: true,
-      },
+      select: RESOLUTION_ROW_SELECT,
     });
 
     if (rows.length > 0) {

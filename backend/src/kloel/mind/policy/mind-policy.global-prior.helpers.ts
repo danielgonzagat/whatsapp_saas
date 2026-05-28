@@ -125,3 +125,47 @@ export function classifyAutopilotConfirmation(
   const isWithinWindow = input.resolvedAt != null && input.resolvedAt >= input.windowCutoff;
   return isWithinWindow ? 'confirmed' : 'unanswered';
 }
+
+/**
+ * Shape produced by {@link applyWisdomPriors} consumed by
+ * {@link buildBeliefMeanSummaries}.
+ */
+export interface WisdomNudgedEntry {
+  belief: { mean: number; variance: number };
+  mixedMean: number;
+  usedPrior: boolean;
+  priorWeight: number;
+}
+
+/** Result of {@link buildBeliefMeanSummaries}. */
+export interface BeliefMeanSummary {
+  summaries: Array<{ mean: number; variance: number }>;
+  usedGlobalPrior: boolean;
+  maxPriorWeight: number;
+}
+
+/**
+ * Fold wisdom-nudged belief entries into the flat `{mean, variance}` array
+ * consumed by {@link buildPolicyArtifacts}, while tracking whether any entry
+ * used the global prior and the highest prior weight across all entries.
+ *
+ * Pure — no side effects. The returned `usedGlobalPrior` and
+ * `maxPriorWeight` replace the mutable locals the service previously tracked
+ * inline.
+ */
+export function buildBeliefMeanSummaries(
+  nudged: ReadonlyArray<WisdomNudgedEntry>,
+): BeliefMeanSummary {
+  let usedGlobalPrior = false;
+  let maxPriorWeight = 0;
+  const summaries = nudged.map((m) => {
+    if (m.usedPrior) {
+      usedGlobalPrior = true;
+      if (m.priorWeight > maxPriorWeight) {
+        maxPriorWeight = m.priorWeight;
+      }
+    }
+    return { mean: m.mixedMean, variance: m.belief.variance };
+  });
+  return { summaries, usedGlobalPrior, maxPriorWeight };
+}

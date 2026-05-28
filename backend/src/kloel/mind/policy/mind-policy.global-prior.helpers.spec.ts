@@ -1,5 +1,6 @@
 import {
   MIND_POLICY_COLD_START_THRESHOLD,
+  buildBeliefMeanSummaries,
   classifyAutopilotConfirmation,
   computeGlobalPriorMix,
   shouldSkipGlobalPriorMix,
@@ -222,6 +223,87 @@ describe('mind-policy.global-prior.helpers', () => {
           windowCutoff,
         }),
       ).toBe('unanswered');
+    });
+  });
+
+  describe('buildBeliefMeanSummaries', () => {
+    it('extracts mean/variance and tracks prior usage flags', () => {
+      const result = buildBeliefMeanSummaries([
+        {
+          belief: { mean: 0.6, variance: 0.04 },
+          mixedMean: 0.65,
+          usedPrior: true,
+          priorWeight: 0.3,
+        },
+        {
+          belief: { mean: 0.8, variance: 0.01 },
+          mixedMean: 0.85,
+          usedPrior: true,
+          priorWeight: 0.15,
+        },
+        {
+          belief: { mean: 0.4, variance: 0.09 },
+          mixedMean: 0.4,
+          usedPrior: false,
+          priorWeight: 0,
+        },
+      ]);
+
+      expect(result.usedGlobalPrior).toBe(true);
+      expect(result.maxPriorWeight).toBe(0.3);
+      expect(result.summaries).toEqual([
+        { mean: 0.65, variance: 0.04 },
+        { mean: 0.85, variance: 0.01 },
+        { mean: 0.4, variance: 0.09 },
+      ]);
+    });
+
+    it('returns false and 0 when no entry uses the prior', () => {
+      const result = buildBeliefMeanSummaries([
+        {
+          belief: { mean: 0.5, variance: 0.02 },
+          mixedMean: 0.5,
+          usedPrior: false,
+          priorWeight: 0,
+        },
+      ]);
+
+      expect(result.usedGlobalPrior).toBe(false);
+      expect(result.maxPriorWeight).toBe(0);
+      expect(result.summaries).toEqual([{ mean: 0.5, variance: 0.02 }]);
+    });
+
+    it('handles an empty input array', () => {
+      const result = buildBeliefMeanSummaries([]);
+
+      expect(result.usedGlobalPrior).toBe(false);
+      expect(result.maxPriorWeight).toBe(0);
+      expect(result.summaries).toEqual([]);
+    });
+
+    it('tracks the highest priorWeight as maxPriorWeight', () => {
+      const result = buildBeliefMeanSummaries([
+        {
+          belief: { mean: 0.5, variance: 0.1 },
+          mixedMean: 0.55,
+          usedPrior: true,
+          priorWeight: 0.1,
+        },
+        {
+          belief: { mean: 0.5, variance: 0.1 },
+          mixedMean: 0.55,
+          usedPrior: true,
+          priorWeight: 0.9,
+        },
+        {
+          belief: { mean: 0.5, variance: 0.1 },
+          mixedMean: 0.55,
+          usedPrior: true,
+          priorWeight: 0.5,
+        },
+      ]);
+
+      expect(result.maxPriorWeight).toBe(0.9);
     });
   });
 });
