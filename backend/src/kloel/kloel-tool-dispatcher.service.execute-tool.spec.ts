@@ -47,6 +47,7 @@ import { AccountService } from './account.service';
 import { SelfHealthService } from './self-awareness/self-health.service';
 import { SelfGapsService } from './self-awareness/self-gaps.service';
 import { CapabilityRegistryV2Service } from './capability-registry-v2/capability-registry-v2.service';
+import { SmartPaymentService } from './smart-payment.service';
 import {
   createPrismaMock,
   createPlanLimitsMock,
@@ -64,23 +65,20 @@ import {
   createCapRegistryV2Mock,
   createSmartPaymentMock,
   DEFAULT_WS_ID,
-} from './kloel-tool-dispatcher.service.fixtures';
-import { SmartPaymentService } from './smart-payment.service';
-import type {
-  DispatcherPrismaMock,
-  DispatcherChatToolsMock,
-  DispatcherBizConfigMock,
-  DispatcherWhatsappMock,
-  DispatcherComposerMock,
-  DispatcherAuditMock,
-  DispatcherOpsAlertMock,
-  DispatcherPlanLimitsMock,
-  DispatcherCodeToolsMock,
-  DispatcherCodeAnalysisMock,
-  DispatcherAccountMock,
-  DispatcherSelfHealthMock,
-  DispatcherSelfGapsMock,
-  DispatcherCapRegistryV2Mock,
+  type DispatcherPrismaMock,
+  type DispatcherChatToolsMock,
+  type DispatcherBizConfigMock,
+  type DispatcherWhatsappMock,
+  type DispatcherComposerMock,
+  type DispatcherAuditMock,
+  type DispatcherOpsAlertMock,
+  type DispatcherPlanLimitsMock,
+  type DispatcherCodeToolsMock,
+  type DispatcherCodeAnalysisMock,
+  type DispatcherAccountMock,
+  type DispatcherSelfHealthMock,
+  type DispatcherSelfGapsMock,
+  type DispatcherCapRegistryV2Mock,
 } from './kloel-tool-dispatcher.service.fixtures';
 
 describe('KloelToolDispatcherService (executeTool)', () => {
@@ -139,56 +137,45 @@ describe('KloelToolDispatcherService (executeTool)', () => {
 
     service = module.get<KloelToolDispatcherService>(KloelToolDispatcherService);
   });
-
   afterEach(() => {
     jest.clearAllMocks();
   });
-
   describe('executeTool', () => {
     it('returns error when workspaceId is empty', async () => {
       const result = await service.executeTool('', 'save_product', {});
       expect(result.success).toBe(false);
       expect(result.error).toBe('workspace_id_required');
     });
-
     it('returns error when workspace not found', async () => {
       prisma.workspace.findUnique.mockResolvedValueOnce(null);
 
       const result = await service.executeTool('unknown-ws', 'save_product', {});
-
       expect(result.success).toBe(false);
       expect(result.error).toBe('workspace_not_found');
     });
-
     it('returns error when billing is suspended', async () => {
       prisma.workspace.findUnique.mockResolvedValueOnce({
         id: DEFAULT_WS_ID,
         providerSettings: { billingSuspended: true },
       });
-
       const result = await service.executeTool(DEFAULT_WS_ID, 'save_product', {});
-
       expect(result.success).toBe(false);
       expect(result.error).toBe('billing_suspended');
     });
-
     it('returns error for unknown tool', async () => {
       const result = await service.executeTool(DEFAULT_WS_ID, 'unknown_tool', {});
       expect(result.success).toBe(false);
       expect(result.error).toContain('Ferramenta desconhecida');
     });
-
     describe('whatsapp tools routing', () => {
       it('routes connect_whatsapp to whatsappToolsService', async () => {
         await service.executeTool(DEFAULT_WS_ID, 'connect_whatsapp', {});
         expect(whatsappToolsService.toolConnectWhatsapp).toHaveBeenCalledWith(DEFAULT_WS_ID);
       });
-
       it('routes get_whatsapp_status to whatsappToolsService', async () => {
         await service.executeTool(DEFAULT_WS_ID, 'get_whatsapp_status', {});
         expect(whatsappToolsService.toolGetWhatsAppStatus).toHaveBeenCalledWith(DEFAULT_WS_ID);
       });
-
       it('routes send_whatsapp_message to whatsappToolsService', async () => {
         await service.executeTool(DEFAULT_WS_ID, 'send_whatsapp_message', {
           phone: '123',
@@ -199,7 +186,6 @@ describe('KloelToolDispatcherService (executeTool)', () => {
           message: 'Hi',
         });
       });
-
       it('routes list_whatsapp_contacts to whatsappToolsService', async () => {
         await service.executeTool(DEFAULT_WS_ID, 'list_whatsapp_contacts', {});
         expect(whatsappToolsService.toolListWhatsAppContacts).toHaveBeenCalledWith(
@@ -207,7 +193,6 @@ describe('KloelToolDispatcherService (executeTool)', () => {
           {},
         );
       });
-
       it('routes send_audio to whatsappToolsService', async () => {
         await service.executeTool(DEFAULT_WS_ID, 'send_audio', {
           phone: '123',
@@ -218,7 +203,6 @@ describe('KloelToolDispatcherService (executeTool)', () => {
           audioUrl: 'url',
         });
       });
-
       it('routes transcribe_audio to whatsappToolsService', async () => {
         await service.executeTool(DEFAULT_WS_ID, 'transcribe_audio', { audioUrl: 'url' });
         expect(whatsappToolsService.toolTranscribeAudio).toHaveBeenCalledWith(DEFAULT_WS_ID, {
@@ -226,14 +210,12 @@ describe('KloelToolDispatcherService (executeTool)', () => {
         });
       });
     });
-
     describe('business config tools routing', () => {
       it('routes list_leads to bizConfigToolsService', async () => {
         const result = await service.executeTool(DEFAULT_WS_ID, 'list_leads', {});
         expect(result.success).toBe(true);
         expect(bizConfigToolsService.toolListLeads).toHaveBeenCalledWith(DEFAULT_WS_ID, {});
       });
-
       it('routes get_lead_details to bizConfigToolsService', async () => {
         const result = await service.executeTool(DEFAULT_WS_ID, 'get_lead_details', {
           leadId: 'l-1',
@@ -243,7 +225,6 @@ describe('KloelToolDispatcherService (executeTool)', () => {
           leadId: 'l-1',
         });
       });
-
       it('routes save_business_info to bizConfigToolsService', async () => {
         const result = await service.executeTool(DEFAULT_WS_ID, 'save_business_info', {
           name: 'Biz',
@@ -253,7 +234,6 @@ describe('KloelToolDispatcherService (executeTool)', () => {
           name: 'Biz',
         });
       });
-
       it('routes save_business_info with businessHours and socialChannels coerced', async () => {
         const result = await service.executeTool(DEFAULT_WS_ID, 'save_business_info', {
           businessName: 'Biz',
@@ -267,7 +247,6 @@ describe('KloelToolDispatcherService (executeTool)', () => {
           socialChannels: { instagram: '@biz' },
         });
       });
-
       it('routes upload_document to bizConfigToolsService', async () => {
         const result = await service.executeTool(DEFAULT_WS_ID, 'upload_document', {
           docType: 'identidade',
@@ -277,7 +256,6 @@ describe('KloelToolDispatcherService (executeTool)', () => {
           docType: 'identidade',
         });
       });
-
       it('returns document_service_unavailable when toolUploadDocument is absent', async () => {
         const originalUpload = bizConfigToolsService.toolUploadDocument;
         (bizConfigToolsService as Record<string, unknown>).toolUploadDocument = undefined;
@@ -285,19 +263,16 @@ describe('KloelToolDispatcherService (executeTool)', () => {
         const result = await service.executeTool(DEFAULT_WS_ID, 'upload_document', {
           docType: 'identidade',
         });
-
         expect(result.success).toBe(false);
         expect(result.error).toBe('document_service_unavailable');
 
         (bizConfigToolsService as Record<string, unknown>).toolUploadDocument = originalUpload;
       });
-
       it('routes change_plan to bizConfigToolsService', async () => {
         const result = await service.executeTool(DEFAULT_WS_ID, 'change_plan', { plan: 'pro' });
         expect(result.success).toBe(true);
       });
     });
-
     describe('create_payment_link', () => {
       it('returns smart_payment_unavailable when SmartPaymentService is absent', async () => {
         const moduleWithoutPayment: TestingModule = await Test.createTestingModule({
@@ -328,11 +303,9 @@ describe('KloelToolDispatcherService (executeTool)', () => {
           amount: 99.9,
           description: 'Produto',
         });
-
         expect(result.success).toBe(false);
         expect(result.error).toBe('smart_payment_unavailable');
       });
-
       it('routes create_payment_link and writes audit log', async () => {
         capRegistryV2Service.get.mockReturnValueOnce({
           id: 'create_payment_link',
@@ -375,12 +348,10 @@ describe('KloelToolDispatcherService (executeTool)', () => {
           paymentUrl: 'https://pay.test/checkout',
           paymentId: 'pay-1',
         });
-
         const result = await service.executeTool(DEFAULT_WS_ID, 'create_payment_link', {
           amount: 99.9,
           description: 'Produto',
         });
-
         expect(result).toEqual(expect.objectContaining({ success: true }));
         expect(chatToolsService.toolCreatePaymentLink).toHaveBeenCalledWith(DEFAULT_WS_ID, {
           amount: 99.9,
@@ -396,24 +367,20 @@ describe('KloelToolDispatcherService (executeTool)', () => {
         expect(prisma.$transaction).toHaveBeenCalled();
       });
     });
-
     describe('search_web', () => {
       it('routes search_web to composer service', async () => {
         const result = await service.executeTool(DEFAULT_WS_ID, 'search_web', {
           query: 'test query',
         });
-
         expect(result.success).toBe(true);
         expect(composerService.searchWeb).toHaveBeenCalledWith('test query');
         expect(planLimits.ensureTokenBudget).toHaveBeenCalledWith(DEFAULT_WS_ID);
       });
-
       it('returns error for missing query', async () => {
         const result = await service.executeTool(DEFAULT_WS_ID, 'search_web', {});
         expect(result.success).toBe(false);
         expect(result.error).toBe('missing_query');
       });
-
       it('returns search_unavailable when composerService.searchWeb is absent', async () => {
         const originalSearchWeb = composerService.searchWeb;
         (composerService as Record<string, unknown>).searchWeb = undefined;
@@ -421,7 +388,6 @@ describe('KloelToolDispatcherService (executeTool)', () => {
         const result = await service.executeTool(DEFAULT_WS_ID, 'search_web', {
           query: 'test query',
         });
-
         expect(result.success).toBe(false);
         expect(result.error).toBe('search_unavailable');
 
