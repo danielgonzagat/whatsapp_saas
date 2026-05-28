@@ -2,15 +2,13 @@
 import { colors as designTokens } from '@/lib/design-tokens';
 import { CHECKOUT_VISUAL } from './checkout-theme-tokens';
 import { kloelT } from '@/lib/i18n/t';
-import type {
-  PublicCheckoutTestimonial,
-  PublicCheckoutThemeProps,
-} from '@/lib/public-checkout-contract';
+import type { PublicCheckoutThemeProps } from '@/lib/public-checkout-contract';
 import type * as React from 'react';
 import { useId } from 'react';
 import { useCheckoutExperience } from '../hooks/useCheckoutExperience';
 import PixelTracker from './PixelTracker';
-import { type CheckoutThemeInputTokens, type CheckoutThemeStepTokens, StepBubble as SharedStepBubble, StepLine as SharedStepLine, buildFooterPrimaryLine, fmt, formatCnpj, normalizeTestimonials as normalizeThemeTestimonials, PAYMENT_BADGES } from './checkout-theme-shared';
+import { type CheckoutThemeStepTokens, StepBubble as SharedStepBubble, StepLine as SharedStepLine, buildFooterPrimaryLine, fmt, formatCnpj, PAYMENT_BADGES } from './checkout-theme-shared';
+import { BLANC, DEFAULT_INPUT_THEME, DEFAULT_PRODUCT, DEFAULT_STEP_THEME, DEFAULT_TESTIMONIALS, normalizeTestimonials } from './CheckoutBlanc.helpers';
 import { BlancAddressStep } from './CheckoutBlanc.address-step';
 import { BlancIdentityStep } from './CheckoutBlanc.identity-step';
 import { BlancCouponPopup, BlancSuccessModal } from './CheckoutBlanc.modals';
@@ -24,46 +22,7 @@ import { BlancPaymentStep } from './CheckoutBlanc.payment-step';
 
 type CheckoutBlancProps = PublicCheckoutThemeProps;
 
-const DEFAULT_PRODUCT = { name: 'Produto', priceInCents: 0, brand: 'Kloel' };
 
-const DEFAULT_TESTIMONIALS: Array<{ name: string; stars: number; text: string; avatar: string }> = [];
-
-const BLANC = {
-  white: 'rgb(255 255 255)',
-  dark: 'rgb(26 26 26)',
-  muted: 'rgb(110 110 115)',
-  stroke: 'rgb(209 213 219)',
-  softLine: 'rgb(229 231 235)',
-  accent: 'rgb(16 185 129)',
-  tagStroke: 'rgb(187 187 187)',
-} as const;
-
-const DEFAULT_STEP_THEME: CheckoutThemeStepTokens = {
-  activeBubbleBg: BLANC.dark,
-  lockedBubbleBg: BLANC.stroke,
-  activeLabelColor: BLANC.dark,
-  lockedLabelColor: BLANC.muted,
-  activeShadow: '0 2px 10px rgba(0,0,0,0.2)',
-  lineActive: BLANC.accent,
-  lineInactive: BLANC.softLine,
-};
-
-const DEFAULT_INPUT_THEME: CheckoutThemeInputTokens = {
-  background: BLANC.white,
-  border: BLANC.stroke,
-  text: BLANC.dark,
-  radius: 8,
-  focusBorder: BLANC.accent,
-  focusShadow: '0 0 0 2px rgba(16,185,129,0.12)',
-  tagStroke: BLANC.tagStroke,
-  editStroke: BLANC.muted,
-};
-
-const normalizeTestimonials = (
-  brandName: string,
-  testimonials?: PublicCheckoutTestimonial[],
-  enabled?: boolean,
-) => normalizeThemeTestimonials(brandName, DEFAULT_TESTIMONIALS, testimonials, enabled);
 
 /** Checkout blanc — light theme. */
 export default function CheckoutBlanc({
