@@ -22,8 +22,16 @@ import type { ExecutionState, FlowNode } from './flow-engine.types';
 import { prisma } from './db';
 import { CRM } from './providers/crm';
 import { redis } from './redis-client';
-
-const PATTERN_RE = /\{\{(.*?)\}\}/g;
+import {
+  classifyEmotionFromMessage,
+  evaluateConditionOperator,
+  findSwitchTarget,
+  matchWaitNodeKeywords,
+  parseKeywordsList,
+  parseSwitchCases,
+  renderTemplate,
+  resolveEmotionTarget,
+} from './flow-node-executor.helpers';
 
 import { executeActionNode, executeInputNode } from './flow-node-executor.actions';
 import { executeAiNode } from './flow-node-executor.ai';
@@ -44,10 +52,7 @@ export async function executeNode(
   switch (node.type) {
     case 'messageNode': {
       const template = readString(node.data, 'text');
-      const text = template.replace(PATTERN_RE, (_, key) => {
-        const k = String(key).trim();
-        return varAsString(state.variables[k]);
-      });
+      const text = renderTemplate(template, state.variables);
       await deps.sendMessage(state.user, text, state.workspaceId);
       return node.next ?? 'END';
     }
@@ -82,15 +87,8 @@ export async function executeNode(
       }
 
       if (pendingMessage) {
-        const raw = pendingMessage;
-        const keywords = readString(node.data, 'expectedKeywords')
-          .split(',')
-          .map((k: string) => k.trim().toLowerCase())
-          .filter(Boolean);
-        const matched =
-          keywords.length === 0
-            ? true
-            : keywords.some((k: string) => raw.toLowerCase().includes(k));
+        const keywords = parseKeywordsList(readString(node.data, 'expectedKeywords'));
+        const matched = matchWaitNodeKeywords(pendingMessage, keywords);
 
         state.variables.last_user_message = undefined;
 
@@ -153,26 +151,7 @@ export async function executeNode(
       const expectedValue = node.data?.value;
       const actualValue = variableName ? state.variables[variableName] : undefined;
 
-      let result = false;
-      switch (operator) {
-        case '==':
-          result = String(actualValue) === String(expectedValue);
-          break;
-        case '!=':
-          result = String(actualValue) !== String(expectedValue);
-          break;
-        case '>':
-          result = Number(actualValue) > Number(expectedValue);
-          break;
-        case '<':
-          result = Number(actualValue) < Number(expectedValue);
-          break;
-        case 'contains':
-          result = String(actualValue || '').includes(String(expectedValue));
-          break;
-        default:
-          result = String(actualValue) === String(expectedValue);
-      }
+      const result = evaluateConditionOperator(operator, actualValue, expectedValue);
       return result ? node.yes || node.next || 'END' : node.no || node.next || 'END';
     }
 
@@ -290,26 +269,10 @@ export async function executeNode(
 
     case 'switch': {
       const variable = readString(node.data, 'variable');
-      const casesRaw = node.data?.cases;
       const defaultCase = readString(node.data, 'defaultCase');
       const value = variable ? state.variables[variable] : undefined;
-
-      type SwitchCase = { value: unknown; target: string };
-      const cases: SwitchCase[] = Array.isArray(casesRaw)
-        ? casesRaw.filter(
-            (c): c is SwitchCase =>
-              !!c &&
-              typeof c === 'object' &&
-              'target' in c &&
-              typeof (c as { target: unknown }).target === 'string',
-          )
-        : [];
-      const match = cases.find((c) => String(c.value) === String(value));
-      if (match) {
-        return match.target;
-      }
-
-      return defaultCase || node.next || 'END';
+      const cases = parseSwitchCases(node.data?.cases);
+      return findSwitchTarget(cases, value, defaultCase, node.next);
     }
 
     case 'goToNode': {
@@ -330,32 +293,12 @@ export async function executeNode(
     }
 
     case 'emotionNode': {
-      const msg = varAsString(state.variables.last_user_message).toLowerCase();
-      const has = (...ks: string[]) => ks.some((k) => msg.includes(k));
-
-      let emotion = 'neutral';
-      if (
-        has('raiva', 'irrit', 'p*to', 'p...to', 'odio', 'odiei', 'horrivel', 'péssimo', 'pessimo')
-      ) {
-        emotion = 'angry';
-      } else if (has('não entendi', 'nao entendi', 'confuso', 'confusão', 'como assim', '??')) {
-        emotion = 'confused';
-      } else if (has('ansioso', 'ansiosa', 'preocup', 'urgente', 'agora', 'imediato')) {
-        emotion = 'anxious';
-      } else if (has('ótimo', 'otimo', 'perfeito', 'gostei', 'massa', 'legal', 'show')) {
-        emotion = 'happy';
-      } else if (
-        has('comprar', 'quanto custa', 'fechar', 'preço', 'preco', 'quero', 'vamos fechar')
-      ) {
-        emotion = 'buying';
-      }
-
+      const msg = varAsString(state.variables.last_user_message);
+      const emotion = classifyEmotionFromMessage(msg);
       state.variables.emotion = emotion;
 
       const emotionMap = readObject(node.data, 'map');
-      const mapped = emotionMap?.[emotion];
-      const target = (typeof mapped === 'string' ? mapped : '') || node.next || 'END';
-      return target;
+      return resolveEmotionTarget(emotion, emotionMap, node.next);
     }
 
     case 'autoPitchNode':
