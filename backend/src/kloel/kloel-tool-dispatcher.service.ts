@@ -245,11 +245,11 @@ export class KloelToolDispatcherService {
         case 'delete_url':
         case 'delete_coupon':
         case 'update_coupon':
-        case 'generate_pix':
           if (this.productSubTools) {
             return await this.productSubTools.executeTool(toolName, workspaceId, asToolArgs(args));
           }
           return { success: false, error: 'product_sub_resource_tools_not_available' };
+        case 'generate_pix':
         case 'sales.create_pix': {
           if (!this.smartPaymentService) {
             return { success: false, error: 'smart_payment_service_unavailable' };

@@ -77,6 +77,7 @@ import type {
   DispatcherSelfGapsMock,
   DispatcherCapRegistryV2Mock,
 } from './kloel-tool-dispatcher.service.fixtures';
+import { SmartPaymentService } from './smart-payment.service';
 
 describe('KloelToolDispatcherService', () => {
   let service: KloelToolDispatcherService;
@@ -94,6 +95,7 @@ describe('KloelToolDispatcherService', () => {
   let selfHealthService: DispatcherSelfHealthMock;
   let selfGapsService: DispatcherSelfGapsMock;
   let capRegistryV2Service: DispatcherCapRegistryV2Mock;
+  let smartPaymentService: { createSmartPayment: jest.Mock };
   let paymentService: { createBoletoPayment: jest.Mock };
 
   beforeEach(async () => {
@@ -111,6 +113,16 @@ describe('KloelToolDispatcherService', () => {
     selfHealthService = createSelfHealthMock();
     selfGapsService = createSelfGapsMock();
     capRegistryV2Service = createCapRegistryV2Mock();
+    smartPaymentService = {
+      createSmartPayment: jest.fn().mockResolvedValue({
+        paymentId: 'mp_pix_1',
+        paymentUrl: 'https://www.mercadopago.com.br/payments/mp_pix_1/ticket',
+        pixCopyPaste: '000201mercadopago',
+        pixQrCode: 'data:image/png;base64,mercadopagoqr',
+        billingType: 'PIX',
+        suggestedMessage: 'PIX Mercado Pago gerado',
+      }),
+    };
     paymentService = {
       createBoletoPayment: jest.fn().mockResolvedValue({
         id: 'ORD01J6TC8BYRR0T4ZKY0QR39WGYE',
@@ -141,6 +153,7 @@ describe('KloelToolDispatcherService', () => {
         { provide: SelfHealthService, useValue: selfHealthService },
         { provide: SelfGapsService, useValue: selfGapsService },
         { provide: CapabilityRegistryV2Service, useValue: capRegistryV2Service },
+        { provide: SmartPaymentService, useValue: smartPaymentService },
         { provide: PaymentService, useValue: paymentService },
       ],
     }).compile();
@@ -287,6 +300,37 @@ describe('KloelToolDispatcherService', () => {
           description: 'Produto',
         });
         expect(prisma.$transaction).toHaveBeenCalled();
+      });
+    });
+
+    describe('sales.create_pix', () => {
+      it('routes legacy generate_pix alias through the same Mercado Pago PIX rail', async () => {
+        const result = await service.executeTool(DEFAULT_WS_ID, 'generate_pix', {
+          amount: 99.9,
+          productName: 'Produto',
+          customerName: 'Cliente',
+          customerPhone: '5511999999999',
+          customerEmail: 'cliente@example.com',
+        });
+
+        expect(result.success).toBe(true);
+        expect(smartPaymentService.createSmartPayment).toHaveBeenCalledWith({
+          workspaceId: DEFAULT_WS_ID,
+          phone: '5511999999999',
+          customerName: 'Cliente',
+          customerEmail: 'cliente@example.com',
+          productName: 'Produto',
+          amount: 99.9,
+        });
+        expect(result.capabilityId).toBe('sales.create_pix');
+        expect(result.outputs).toMatchObject({
+          paymentId: 'mp_pix_1',
+          paymentUrl: 'https://www.mercadopago.com.br/payments/mp_pix_1/ticket',
+          pixCopiaECola: '000201mercadopago',
+          qrCodeBase64: 'data:image/png;base64,mercadopagoqr',
+          billingType: 'PIX',
+        });
+        expect(result.evidenceUrl).toBe('/vendas/mp_pix_1');
       });
     });
 
