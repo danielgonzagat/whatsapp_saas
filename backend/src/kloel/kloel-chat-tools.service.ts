@@ -73,6 +73,17 @@ import {
   runCreatePaymentLink,
   runCreateOrder,
 } from './kloel-chat-tools.dashboard-payments.helpers';
+import {
+  runSaveProductViaService,
+  runDeleteProductViaService,
+  runPublishProductViaService,
+  runUploadProductImage,
+} from './kloel-chat-tools.product-write.helpers';
+import {
+  runBrowseMarketplace,
+  runListFlows,
+  runSearchAgentMemoryWithContacts,
+} from './kloel-chat-tools.flows-marketplace.helpers';
 import { MemoryService } from './memory.service';
 
 interface ToolCreateFlowArgs {
@@ -106,70 +117,14 @@ export class KloelChatToolsService {
     @Optional() private readonly agentEvidence?: AgentRuntimeEvidenceStoreService,
   ) {}
   toolSaveProduct(workspaceId: string, args: ToolSaveProductArgs): Promise<ToolResult> {
-    const actorRef = args as ToolSaveProductArgs & { actorId?: unknown };
-    const actorId =
-      typeof actorRef.actorId === 'string' && actorRef.actorId.trim()
-        ? actorRef.actorId
-        : 'kloel-chat';
-    const rawFormat = typeof args.format === 'string' ? args.format.toUpperCase() : undefined;
-    const format: 'PHYSICAL' | 'DIGITAL' | 'HYBRID' | undefined =
-      rawFormat === 'PHYSICAL' || rawFormat === 'DIGITAL' || rawFormat === 'HYBRID'
-        ? rawFormat
-        : undefined;
-
-    return this.productService.create(
-      workspaceId,
-      {
-        name: args.name,
-        price: args.price,
-        ...(args.description !== undefined ? { description: args.description } : {}),
-        ...(args.category !== undefined ? { category: args.category } : {}),
-        ...(args.imageUrl !== undefined ? { imageUrl: args.imageUrl } : {}),
-        ...(format !== undefined ? { format } : {}),
-      },
-      { id: actorId },
-    ) as Promise<ToolResult>;
+    return runSaveProductViaService(this.productService, workspaceId, args);
   }
   toolListProducts(workspaceId: string): Promise<ToolResult> {
     return runListProducts(this.prisma, workspaceId);
   }
 
-  private async resolveProductIdByName(
-    workspaceId: string,
-    args: ToolDeleteProductArgs,
-  ): Promise<string | undefined> {
-    const productName =
-      typeof args.productName === 'string' && args.productName.trim()
-        ? args.productName.trim()
-        : undefined;
-    if (!productName) {
-      return undefined;
-    }
-
-    const product = await this.prisma.product.findFirst({
-      where: { workspaceId, name: { contains: productName, mode: 'insensitive' } },
-      select: { id: true },
-    });
-    return typeof product?.id === 'string' ? product.id : undefined;
-  }
-
   async toolDeleteProduct(workspaceId: string, args: ToolDeleteProductArgs): Promise<ToolResult> {
-    const actorId =
-      typeof args.actorId === 'string' && args.actorId.trim() ? args.actorId : 'kloel-chat';
-    const directProductId =
-      typeof args.productId === 'string' && args.productId.trim()
-        ? args.productId.trim()
-        : undefined;
-
-    const resolvedProductId =
-      directProductId ?? (await this.resolveProductIdByName(workspaceId, args));
-    if (!resolvedProductId) {
-      return { success: false, error: 'Produto não encontrado.' };
-    }
-
-    return this.productService.delete(workspaceId, resolvedProductId, {
-      id: actorId,
-    }) as Promise<ToolResult>;
+    return runDeleteProductViaService(this.prisma, this.productService, workspaceId, args);
   }
   async toolToggleAutopilot(
     workspaceId: string,
@@ -205,28 +160,7 @@ export class KloelChatToolsService {
     });
   }
   async toolListFlows(workspaceId: string): Promise<ToolResult> {
-    const flows = await this.prisma.flow.findMany({
-      where: { workspaceId },
-      select: {
-        id: true,
-        name: true,
-        isActive: true,
-        createdAt: true,
-        _count: { select: { executions: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 10,
-    });
-    return {
-      success: true,
-      flows: flows.map((f) => ({
-        id: f.id,
-        name: f.name,
-        active: f.isActive,
-        executions: f._count.executions,
-      })),
-      message: `Você tem ${flows.length} fluxo(s) cadastrado(s).`,
-    };
+    return runListFlows(this.prisma, workspaceId);
   }
   async toolGetDashboardSummary(
     workspaceId: string,
@@ -269,56 +203,7 @@ export class KloelChatToolsService {
     workspaceId: string,
     args: Record<string, unknown>,
   ): Promise<ToolResult> {
-    const query = typeof args.query === 'string' ? args.query : '';
-    const cleanQuery = query
-      .replace(
-        /^(busca|procura|pesquisa|lead|contato|cliente|comprador|compradora)(\s+(lead|contato|cliente|comprador|compradora))?\s+/i,
-        '',
-      )
-      .trim();
-    const searchName =
-      cleanQuery ||
-      query
-        .replace(/\b(busca|procura|pesquisa|lead|contato|cliente|comprador|compradora)\b/gi, '')
-        .trim();
-    try {
-      // Search contacts by name
-      const contacts = await this.prisma.contact.findMany({
-        where: {
-          workspaceId,
-          OR: [
-            { name: { contains: searchName, mode: 'insensitive' } },
-            { phone: { contains: searchName } },
-          ],
-        },
-        select: {
-          id: true,
-          name: true,
-          phone: true,
-          leadScore: true,
-          sentiment: true,
-          updatedAt: true,
-        },
-        take: 10,
-      });
-      if (contacts.length > 0) {
-        return {
-          success: true,
-          contacts: contacts.map((c) => ({
-            name: c.name,
-            phone: c.phone,
-            score: c.leadScore || 0,
-            sentiment: c.sentiment,
-            lastUpdate: c.updatedAt,
-          })),
-          message: `Encontrei ${contacts.length} contato(s): ${contacts.map((c) => c.name).join(', ')}`,
-        };
-      }
-      // Fallback to agent memory if no contacts found
-      return runSearchAgentMemory(this.agentSessions, workspaceId, { query: searchName, limit: 5 });
-    } catch {
-      return { success: true, message: 'Nenhuma memoria encontrada.' };
-    }
+    return runSearchAgentMemoryWithContacts(this.prisma, this.agentSessions, workspaceId, args);
   }
   async toolSearchAgentSessions(
     workspaceId: string,
@@ -381,42 +266,7 @@ export class KloelChatToolsService {
     workspaceId: string,
     args: Record<string, unknown>,
   ): Promise<ToolResult> {
-    const productId = typeof args.productId === 'string' ? args.productId.trim() : '';
-    const productName = typeof args.productName === 'string' ? args.productName.trim() : '';
-    const actorId =
-      typeof args.actorId === 'string' && args.actorId.trim() ? args.actorId : 'kloel-chat';
-
-    let resolvedProductId = productId;
-    if (resolvedProductId) {
-      const product = await this.prisma.product.findFirst({
-        where: { id: resolvedProductId, workspaceId },
-        select: { id: true },
-      });
-      resolvedProductId = product?.id ?? '';
-    } else if (productName) {
-      const product = await this.prisma.product.findFirst({
-        where: { workspaceId, name: { contains: productName, mode: 'insensitive' } },
-        select: { id: true },
-      });
-      resolvedProductId = product?.id ?? '';
-    }
-
-    if (!resolvedProductId) {
-      return { success: false, error: 'product_not_found' };
-    }
-
-    try {
-      const result = await this.productService.publish(workspaceId, resolvedProductId, {
-        id: actorId,
-      });
-      return {
-        success: result.success,
-        ...(result.product !== undefined ? { product: result.product } : {}),
-        ...(result.message !== undefined ? { message: result.message } : {}),
-      };
-    } catch {
-      return { success: false, error: 'product_not_found' };
-    }
+    return runPublishProductViaService(this.prisma, this.productService, workspaceId, args);
   }
   toolGetProductPlans(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     return runGetProductPlans(this.prisma, workspaceId, args);
@@ -499,43 +349,7 @@ export class KloelChatToolsService {
     workspaceId: string,
     args: Record<string, unknown>,
   ): Promise<ToolResult> {
-    let productId = typeof args.productId === 'string' ? args.productId.trim() : '';
-    const productName = typeof args.productName === 'string' ? args.productName.trim() : '';
-    const imageUrl = typeof args.imageUrl === 'string' ? args.imageUrl : '';
-    const actorId =
-      typeof args.actorId === 'string' && args.actorId.trim() ? args.actorId : 'kloel-chat';
-
-    if (!productId && !productName) {
-      return { success: false, error: 'Informe o ID ou nome do produto.' };
-    }
-    if (!imageUrl) {
-      return {
-        success: false,
-        error: 'image_url_required',
-        message: 'Envie a URL da imagem ou faça upload pelo chat.',
-      };
-    }
-
-    if (!productId && productName) {
-      const product = await this.prisma.product.findFirst({
-        where: { workspaceId, name: { contains: productName, mode: 'insensitive' } },
-        select: { id: true },
-      });
-      productId = product?.id ?? '';
-    }
-
-    if (!productId) {
-      return { success: false, error: 'product_not_found' };
-    }
-
-    const result = await this.productService.setImage(workspaceId, productId, imageUrl, {
-      id: actorId,
-    });
-    return {
-      success: result.success,
-      ...(result.product !== undefined ? { product: result.product } : {}),
-      ...(result.message !== undefined ? { message: result.message } : {}),
-    };
+    return runUploadProductImage(this.prisma, this.productService, workspaceId, args);
   }
 
   private blockedConfigurationTool(
@@ -636,30 +450,7 @@ export class KloelChatToolsService {
     workspaceId: string,
     _args: Record<string, unknown>,
   ): Promise<ToolResult> {
-    try {
-      const products = await this.prisma.product.findMany({
-        where: { affiliateEnabled: true, workspaceId: { not: workspaceId } },
-        select: { id: true, name: true, price: true, workspaceId: true },
-        take: 20,
-      });
-      if (products.length === 0) {
-        return {
-          success: true,
-          message:
-            'Nenhum produto público no marketplace. Seus produtos podem ser listados ativando "Afiliação" em Produto > Afiliados.',
-        };
-      }
-      return {
-        success: true,
-        products,
-        message: `${products.length} produtos disponíveis no marketplace.`,
-      };
-    } catch (e: unknown) {
-      return {
-        success: false,
-        error: e instanceof Error ? e.message : 'Erro ao buscar marketplace.',
-      };
-    }
+    return runBrowseMarketplace(this.prisma, workspaceId);
   }
 
   toolSendChannelMessage(
