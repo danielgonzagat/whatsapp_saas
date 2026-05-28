@@ -12,6 +12,7 @@ import { KloelThreadService } from './kloel-thread.service';
 import { KloelToolRouter } from './kloel-tool-router';
 import { createKloelStatusEvent, type KloelStreamEvent } from './kloel-stream-events';
 import { CANONICAL_FALLBACK_SYSTEM_PROMPT } from './kloel.prompts';
+import { SpineEmitterService } from './spine/spine-emitter.service';
 import { chatCompletionWithFallback, LLM_MAX_COMPLETION_TOKENS } from './openai-wrapper';
 import { KLOEL_CHAT_TOOLS } from './kloel-chat-tools.definition';
 import type { ExpertiseLevel, LocalToolExecutor, ReplyMessage } from './kloel-reply-engine.types';
@@ -205,6 +206,7 @@ interface BuildAssistantReplyDeps {
     expertiseLevel: ExpertiseLevel;
     companyContext?: string;
   }) => Promise<string>;
+  spine?: SpineEmitterService;
 }
 
 /** buildAssistantReply extracted to keep KloelReplyEngineService ≤ 400 lines. */
@@ -236,7 +238,7 @@ export async function buildAssistantReplyImpl(
     onTraceEvent,
     executeLocalTool,
   } = params;
-  const { openai, prisma, planLimits, threadService, wsContextService, toolRouter } = deps;
+  const { openai, prisma, planLimits, threadService, wsContextService, toolRouter, spine } = deps;
 
   if (!deps.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) {
     helperLogger.error('kloel_motor_unavailable', {
@@ -326,10 +328,12 @@ export async function buildAssistantReplyImpl(
 
   const isChatMode = mode === 'chat';
   const chatTools = filterChatToolsByAllowedTools(allowedTools);
+  const primaryModel = resolveBackendOpenAIModel(isChatMode ? 'brain' : 'writer');
+  const completionStartMs = Date.now();
   const response = await chatCompletionWithFallback(
     openai,
     {
-      model: resolveBackendOpenAIModel(isChatMode ? 'brain' : 'writer'),
+      model: primaryModel,
       messages,
       ...(isChatMode ? { tools: chatTools } : {}),
       ...(isChatMode
@@ -345,6 +349,43 @@ export async function buildAssistantReplyImpl(
     },
     resolveBackendOpenAIModel(isChatMode ? 'brain_fallback' : 'writer_fallback'),
   );
+
+  // PI-k6: emit cognition.decision_made after the primary LLM completion
+  const fallbackModel = resolveBackendOpenAIModel(isChatMode ? 'brain_fallback' : 'writer_fallback');
+  const toolCallsCount = response.choices[0]?.message?.tool_calls?.length ?? 0;
+  void (async () => {
+    if (spine && workspaceId) {
+      try {
+        await spine.emit({
+          eventName: 'cognition.decision_made',
+          workspaceId,
+          truthMode: 'observed',
+          provenance: {
+            source: 'production',
+            processor: 'kloel-reply-engine',
+            processorVersion: '1.0.0',
+            schemaVersion: '1.0.0',
+          },
+          payload: {
+            surface: 'dashboard',
+            toolCallsCount,
+            fallbackReason: response.model === fallbackModel ? 'primary_failed_fallback_used' : null,
+            durationMs: Date.now() - completionStartMs,
+            modelUsed: response.model,
+          },
+        });
+      } catch (err: unknown) {
+        helperLogger.warn('kloel_cognition_event_skipped', {
+          reason: err instanceof Error ? err.message : String(err),
+        });
+      }
+    } else {
+      helperLogger.warn('kloel_cognition_event_skipped', {
+        reason: spine ? 'workspace_id_missing' : 'spine_not_injected',
+      });
+    }
+  })();
+
   if (workspaceId) {
     await planLimits
       .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)

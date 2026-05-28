@@ -16,6 +16,7 @@ import { ValenceAggregatorService } from './mind/valence-aggregator.service';
 import { MindBeliefService } from './mind/inference/mind-belief.service';
 import { MindConceptService } from './mind/memory/mind-concepts.service';
 import { buildMindSignals, type BuildMindSignalsDeps } from './mind/build-mind-signals.helper';
+import { SpineEmitterService } from './spine/spine-emitter.service';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 const ONBOARDING_SAFE_SETUP_TOOL_NAMES = [
@@ -150,6 +151,7 @@ export class ConversationalOnboardingService {
     @Optional() private readonly valenceAggregatorService?: ValenceAggregatorService,
     @Optional() private readonly mindBeliefService?: MindBeliefService,
     @Optional() private readonly mindConceptService?: MindConceptService,
+    @Optional() private readonly spine?: SpineEmitterService,
   ) {
     this.prismaExt = prisma as object as PrismaWithDynamicModels;
     this.openai = createTextLlmClient() ?? new OpenAI({ apiKey: 'missing' });
@@ -420,9 +422,46 @@ export class ConversationalOnboardingService {
       });
     }
 
+    const completionStartMs = Date.now();
     try {
       const response = await this.runOnboardingCompletion(workspaceId, messages, 'brain');
       const assistantChoice = response.choices[0];
+
+      // PI-k6: emit cognition.decision_made after the primary brain completion
+      const toolCallsCount = assistantChoice?.message?.tool_calls?.length ?? 0;
+      const primaryModel = response.model;
+      void (async () => {
+        if (this.spine) {
+          try {
+            await this.spine.emit({
+              eventName: 'cognition.decision_made',
+              workspaceId,
+              truthMode: 'observed',
+              provenance: {
+                source: 'production',
+                processor: 'conversational-onboarding',
+                processorVersion: '1.0.0',
+                schemaVersion: '1.0.0',
+              },
+              payload: {
+                surface: 'onboarding',
+                toolCallsCount,
+                fallbackReason: null,
+                durationMs: Date.now() - completionStartMs,
+                modelUsed: primaryModel,
+              },
+            });
+          } catch (err: unknown) {
+            this.logger.warn('kloel_cognition_event_skipped', {
+              reason: err instanceof Error ? err.message : String(err),
+            });
+          }
+        } else {
+          this.logger.warn('kloel_cognition_event_skipped', {
+            reason: 'spine_not_injected',
+          });
+        }
+      })();
       if (!assistantChoice) {
         return '';
       }

@@ -200,6 +200,7 @@ import { ToolPlannerModule } from './toolplanner/toolplanner.module';
 import { CapabilityRegistryV2Module } from './capability-registry-v2/capability-registry-v2.module';
 import { IntentRouterModule } from './intent-router/intent-router.module';
 import { SelfAwarenessModule } from './self-awareness/self-awareness.module';
+import { SpineModule } from './spine/spine.module';
 import { ProductsModule } from '../products/products.module';
 import { PlansModule } from '../plans/plans.module';
 import { SalesModule } from '../sales/sales.module';
@@ -230,6 +231,7 @@ import { SalesModule } from '../sales/sales.module';
     IntentRouterModule,
     ToolPlannerModule,
     SelfAwarenessModule,
+    SpineModule,
     ProductsModule,
     PlansModule,
     SalesModule,

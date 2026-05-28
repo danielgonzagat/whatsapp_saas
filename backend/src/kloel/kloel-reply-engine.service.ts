@@ -17,6 +17,7 @@ import { ValenceAggregatorService } from './mind/valence-aggregator.service';
 import { MindBeliefService } from './mind/inference/mind-belief.service';
 import { MindConceptService } from './mind/memory/mind-concepts.service';
 import { buildMindSignals, type BuildMindSignalsDeps } from './mind/build-mind-signals.helper';
+import { SpineEmitterService } from './spine/spine-emitter.service';
 import { UnifiedAgentService } from './unified-agent.service';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { validateAbiPayload } from './abi/abi-validator';
@@ -59,6 +60,7 @@ export class KloelReplyEngineService {
     @Optional() private readonly valenceAggregatorService?: ValenceAggregatorService,
     @Optional() private readonly mindBeliefService?: MindBeliefService,
     @Optional() private readonly mindConceptService?: MindConceptService,
+    @Optional() private readonly spine?: SpineEmitterService,
   ) {
     this.openai = createTextLlmClient(undefined, { timeout: 60_000, maxRetries: 0 });
     this.toolRouter = new KloelToolRouter(
@@ -550,6 +552,7 @@ export class KloelReplyEngineService {
         this.buildMarketingPromptAddendum(wid, mode, msg),
       buildChatModelMessages: async (p) => this.buildChatModelMessages(p),
       buildDynamicRuntimeContext: (p) => this.buildDynamicRuntimeContext(p),
+      ...(this.spine !== undefined ? { spine: this.spine } : {}),
       ...(params.abiStateJson !== undefined ? { abiStateJson: params.abiStateJson } : {}),
     });
   }
