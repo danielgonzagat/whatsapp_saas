@@ -28,7 +28,7 @@ import {
   runExecuteApprovedApprovalRequest,
   type ApprovedToolExecutionResult,
 } from './kloel-tool-dispatcher.approval.helpers';
-import { asString, asNumber, periodToSince } from './kloel-tool-dispatcher.helpers';
+import { asString, asNumber } from './kloel-tool-dispatcher.helpers';
 import { buildCanonicalReceipt } from './kloel-tool-dispatcher.receipt.helpers';
 import { dispatchWhatsAppTool, isWhatsAppTool } from './kloel-tool-dispatcher.whatsapp.handlers';
 import { dispatchCodeTool, isCodeTool } from './kloel-tool-dispatcher.code.handlers';
@@ -41,6 +41,15 @@ import {
   dispatchDottedAliasTool,
   isDottedAliasTool,
 } from './kloel-tool-dispatcher.dotted-alias.handlers';
+import { dispatchReportsTool, isReportsTool } from './kloel-tool-dispatcher.reports.handlers';
+import {
+  dispatchDepsCoverageTool,
+  isDepsCoverageTool,
+} from './kloel-tool-dispatcher.deps-coverage.handlers';
+import {
+  dispatchWalletSalesTool,
+  isWalletSalesTool,
+} from './kloel-tool-dispatcher.wallet-sales.handlers';
 
 import type { UnknownRecord } from '../common/types';
 
@@ -217,6 +226,38 @@ export class KloelToolDispatcherService {
           return aliasResult;
         }
       }
+      if (isReportsTool(toolName)) {
+        const reportsResult = await dispatchReportsTool(
+          { reportService: this.reportService },
+          workspaceId,
+          toolName,
+          args,
+        );
+        if (reportsResult !== null) {
+          return reportsResult;
+        }
+      }
+      if (isDepsCoverageTool(toolName)) {
+        const depsResult = await dispatchDepsCoverageTool(
+          { depsCoverage: this.depsCoverage },
+          toolName,
+          args,
+        );
+        if (depsResult !== null) {
+          return depsResult;
+        }
+      }
+      if (isWalletSalesTool(toolName)) {
+        const walletSalesResult = await dispatchWalletSalesTool(
+          { walletSalesTools: this.walletSalesTools },
+          workspaceId,
+          toolName,
+          args,
+        );
+        if (walletSalesResult !== null) {
+          return walletSalesResult;
+        }
+      }
       switch (toolName) {
         case 'save_product':
         case 'create_product': {
@@ -332,16 +373,7 @@ export class KloelToolDispatcherService {
           return await this.chatToolsService.toolGetProductUrls(workspaceId, asToolArgs(args));
         case 'validate_coupon':
           return await this.chatToolsService.toolValidateCoupon(workspaceId, asToolArgs(args));
-        case 'get_wallet_balance':
-        case 'get_wallet_statement':
-        case 'list_orders':
-        case 'get_order_details':
-        case 'get_sales_summary':
-        case 'get_abandonments':
-          if (this.walletSalesTools) {
-            return await this.walletSalesTools.executeTool(toolName, workspaceId, asToolArgs(args));
-          }
-          return { success: false, error: 'wallet_sales_tools_not_available' };
+        // ── wallet/sales tools handled via isWalletSalesTool fast-path above ──
         // ── sales.list handled via isAccountTool fast-path above ──
         case 'toggle_theme':
           return await this.chatToolsService.toolToggleTheme(workspaceId, asToolArgs(args));
@@ -402,11 +434,7 @@ export class KloelToolDispatcherService {
         }
         case 'get_settings':
           return await this.chatToolsService.toolGetSettings(workspaceId);
-        case 'request_withdrawal':
-          if (this.walletSalesTools) {
-            return await this.walletSalesTools.executeTool(toolName, workspaceId, asToolArgs(args));
-          }
-          return { success: false, error: 'wallet_sales_tools_not_available' };
+        // ── request_withdrawal handled via isWalletSalesTool fast-path above ──
         case 'get_analytics':
           return await this.chatToolsService.toolGetAnalytics(workspaceId, asToolArgs(args));
         case 'get_product_details':
@@ -450,30 +478,7 @@ export class KloelToolDispatcherService {
           return await this.bizConfigToolsService.toolGetSocialChannels(workspaceId);
         case 'browse_marketplace':
           return await this.chatToolsService.toolBrowseMarketplace(workspaceId, asToolArgs(args));
-        case 'get_nps':
-        case 'get_churn':
-          if (this.walletSalesTools) {
-            return await this.walletSalesTools.executeTool(toolName, workspaceId, asToolArgs(args));
-          }
-          return { success: false, error: 'wallet_sales_tools_not_available' };
-        case 'list_refunds':
-          if (this.walletSalesTools) {
-            return await this.walletSalesTools.executeTool(
-              'list_orders',
-              workspaceId,
-              asToolArgs({ status: 'refunded' }),
-            );
-          }
-          return { success: false, error: 'wallet_sales_tools_not_available' };
-        case 'request_anticipation':
-          if (this.walletSalesTools) {
-            return await this.walletSalesTools.executeTool(
-              'request_anticipation',
-              workspaceId,
-              asToolArgs(args),
-            );
-          }
-          return { success: false, error: 'wallet_sales_tools_not_available' };
+        // ── get_nps / get_churn / list_refunds / request_anticipation handled via isWalletSalesTool fast-path above ──
         case 'connect_channel':
           return await this.bizConfigToolsService.toolConnectChannel(workspaceId, asToolArgs(args));
         case 'send_channel_message':
@@ -543,71 +548,8 @@ export class KloelToolDispatcherService {
           return await this.bizConfigToolsService.toolGetBillingStatus(workspaceId);
         case 'change_plan':
           return await this.requestHighRiskApproval(workspaceId, toolName, args, userId);
-        // ── Deps + Coverage + Affected tests (Wave 7 PI-EE) ──
-        case 'dependencies': {
-          if (!this.depsCoverage) {
-            return { success: false, error: 'deps_coverage_service_unavailable' };
-          }
-          const ws = typeof args.workspace === 'string' ? args.workspace : '';
-          const pattern = typeof args.pattern === 'string' ? args.pattern : undefined;
-          const result = await this.depsCoverage.dependencies(ws, pattern);
-          return {
-            success: result.success,
-            capabilityId: 'dependencies',
-            outputs: result,
-            ...(result.error ? { error: result.error } : {}),
-          };
-        }
-        case 'code_coverage': {
-          if (!this.depsCoverage) {
-            return { success: false, error: 'deps_coverage_service_unavailable' };
-          }
-          const filePath = typeof args.filePath === 'string' ? args.filePath : undefined;
-          const ws = typeof args.workspace === 'string' ? args.workspace : undefined;
-          const result = await this.depsCoverage.codeCoverage(filePath, ws);
-          return { success: true, capabilityId: 'code_coverage', outputs: result };
-        }
-        case 'affected_tests': {
-          if (!this.depsCoverage) {
-            return { success: false, error: 'deps_coverage_service_unavailable' };
-          }
-          const filesRaw = typeof args.files === 'string' ? args.files : '';
-          const files = filesRaw
-            .split(',')
-            .map((f) => f.trim())
-            .filter(Boolean);
-          if (files.length === 0) {
-            return { success: false, error: 'files_required' };
-          }
-          const result = await this.depsCoverage.affectedTests(files);
-          return { success: true, capabilityId: 'affected_tests', outputs: result };
-        }
-        // ── REPORTS (w25) ──
-        case 'reports.operations': {
-          if (!this.reportService) {
-            return { success: false, error: 'report_service_unavailable' };
-          }
-          const period = typeof args?.period === 'string' ? args.period : undefined;
-          const since = periodToSince(period);
-          const res = await this.reportService.operations(workspaceId, { since });
-          return { success: true, ...res };
-        }
-        case 'reports.abandonments': {
-          if (!this.reportService) {
-            return { success: false, error: 'report_service_unavailable' };
-          }
-          const period = typeof args?.period === 'string' ? args.period : undefined;
-          const since = periodToSince(period);
-          const res = await this.reportService.abandonments(workspaceId, { since });
-          return { success: true, ...res };
-        }
-        case 'crm.pipeline': {
-          if (!this.reportService) {
-            return { success: false, error: 'report_service_unavailable' };
-          }
-          const res = await this.reportService.pipeline(workspaceId);
-          return { success: true, ...res };
-        }
+        // ── Deps + Coverage + Affected tests (Wave 7 PI-EE) handled via isDepsCoverageTool fast-path above ──
+        // ── REPORTS (w25) handled via isReportsTool fast-path above ──
         default:
           return { success: false, error: `Ferramenta desconhecida: ${toolName}` };
       }
