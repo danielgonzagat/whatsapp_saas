@@ -1,5 +1,6 @@
 import type { ResolvedOAuthRedirect } from './meta-oauth-url.helpers';
 import type { MetaMarketingChannel } from './meta-scopes.helpers';
+import { readRecord, readStrictText } from '../read-model/meta-read-helpers';
 
 /**
  * Defense-in-depth open-redirect filter for the `returnTo` query param fed
@@ -258,4 +259,222 @@ function maskAppId(raw: string): string | null {
     return '****';
   }
   return `${raw.slice(0, 4)}…${raw.slice(-4)}`;
+}
+
+// ─── State + Graph response shaping ─────────────────────────────────
+
+export interface ParsedOAuthState {
+  workspaceId: string;
+  channel?: string | null;
+  returnTo?: string | null;
+}
+
+/**
+ * Parse the `state` query parameter Meta echoes back in the OAuth callback.
+ *
+ * Accepted shapes (in order of preference):
+ *  1. URL-encoded JSON: `%7B%22workspaceId%22%3A%22ws-1%22%7D` →
+ *     `{ workspaceId, channel?, returnTo? }`
+ *  2. Raw JSON: `{"workspaceId":"ws-1"}`
+ *  3. Legacy plain workspaceId string: `ws-1`
+ *
+ * Always returns a value; `workspaceId === ''` signals invalid_state.
+ */
+export function parseOAuthState(rawState: string | null | undefined): ParsedOAuthState {
+  const raw = String(rawState || '').trim();
+  if (!raw) {
+    return { workspaceId: '' };
+  }
+
+  const candidates = [raw];
+  try {
+    const decoded = decodeURIComponent(raw);
+    if (decoded && decoded !== raw) {
+      candidates.unshift(decoded);
+    }
+  } catch {
+    void 0;
+  }
+
+  for (const candidate of candidates) {
+    if (!candidate.startsWith('{')) {
+      continue;
+    }
+    try {
+      const parsed = readRecord(JSON.parse(candidate) as unknown);
+      return {
+        workspaceId: readStrictText(parsed.workspaceId)?.trim() || '',
+        channel: readStrictText(parsed.channel)?.trim() || null,
+        returnTo: readStrictText(parsed.returnTo)?.trim() || null,
+      };
+    } catch {
+      continue;
+    }
+  }
+
+  return { workspaceId: raw };
+}
+
+interface MetaAuthPageLike {
+  id?: unknown;
+  name?: unknown;
+  access_token?: unknown;
+  instagram_business_account?: unknown;
+  [key: string]: unknown;
+}
+
+export interface PrimaryPageInfo {
+  pageId: string | null;
+  pageName: string | null;
+  pageAccessToken: string | null;
+  instagramAccountId: string | null;
+  instagramUsername: string | null;
+}
+
+/**
+ * Extract the first Meta Page from `me/accounts` and its linked Instagram
+ * Business Account, if any. Pure shape coercion — defensively typed for the
+ * Graph API's permissive responses.
+ */
+export function extractPrimaryPageInfo(pages: unknown): PrimaryPageInfo {
+  const empty: PrimaryPageInfo = {
+    pageId: null,
+    pageName: null,
+    pageAccessToken: null,
+    instagramAccountId: null,
+    instagramUsername: null,
+  };
+  if (!Array.isArray(pages) || pages.length === 0) {
+    return empty;
+  }
+  const first = pages[0] as MetaAuthPageLike | undefined;
+  if (!first || typeof first !== 'object') {
+    return empty;
+  }
+
+  const pageId = typeof first.id === 'string' ? first.id : null;
+  const pageName = typeof first.name === 'string' ? first.name : null;
+  const pageAccessToken = typeof first.access_token === 'string' ? first.access_token : null;
+
+  const igRaw = first.instagram_business_account;
+  const ig =
+    igRaw && typeof igRaw === 'object' && !Array.isArray(igRaw)
+      ? (igRaw as { id?: unknown; username?: unknown })
+      : null;
+  const instagramAccountId = ig && typeof ig.id === 'string' ? ig.id : null;
+  const instagramUsername = ig && typeof ig.username === 'string' ? ig.username : null;
+
+  return { pageId, pageName, pageAccessToken, instagramAccountId, instagramUsername };
+}
+
+/**
+ * Extract the first ad account ID from `me/adaccounts`. Returns null when the
+ * user has no ad accounts or the response shape is unexpected.
+ */
+export function extractPrimaryAdAccountId(adAccounts: unknown): string | null {
+  if (!Array.isArray(adAccounts) || adAccounts.length === 0) {
+    return null;
+  }
+  const first = adAccounts[0] as { id?: unknown } | undefined;
+  if (!first || typeof first !== 'object') {
+    return null;
+  }
+  return typeof first.id === 'string' ? first.id : null;
+}
+
+// ─── Connection status shaping ──────────────────────────────────────
+
+export interface MetaConnectionStatusRow {
+  pageId?: string | null;
+  pageName?: string | null;
+  instagramAccountId?: string | null;
+  instagramUsername?: string | null;
+  whatsappPhoneNumberId?: string | null;
+  whatsappBusinessId?: string | null;
+  adAccountId?: string | null;
+  pixelId?: string | null;
+  catalogId?: string | null;
+  tokenExpiresAt?: Date | null;
+}
+
+/**
+ * Merge multiple MetaConnection rows (one per channel) into a single record by
+ * keeping the first non-empty value for each field. Pure — no mutation of
+ * inputs, deterministic over input order.
+ */
+export function mergeMetaConnections(
+  connections: MetaConnectionStatusRow[],
+): Record<string, unknown> {
+  return connections.reduce<Record<string, unknown>>((acc, c) => {
+    if (c.pageId) {
+      acc.pageId = c.pageId;
+    }
+    if (c.pageName) {
+      acc.pageName = c.pageName;
+    }
+    if (c.instagramAccountId) {
+      acc.instagramAccountId = c.instagramAccountId;
+    }
+    if (c.instagramUsername) {
+      acc.instagramUsername = c.instagramUsername;
+    }
+    if (c.whatsappPhoneNumberId) {
+      acc.whatsappPhoneNumberId = c.whatsappPhoneNumberId;
+    }
+    if (c.whatsappBusinessId) {
+      acc.whatsappBusinessId = c.whatsappBusinessId;
+    }
+    if (c.adAccountId) {
+      acc.adAccountId = c.adAccountId;
+    }
+    if (c.pixelId) {
+      acc.pixelId = c.pixelId;
+    }
+    if (c.catalogId) {
+      acc.catalogId = c.catalogId;
+    }
+    if (c.tokenExpiresAt) {
+      acc.tokenExpiresAt = c.tokenExpiresAt;
+    }
+    return acc;
+  }, {});
+}
+
+/**
+ * Project the merged MetaConnection record into the per-channel status shape
+ * returned by GET /meta/auth/status. Pure over the merged record.
+ */
+export function buildMetaChannelsStatus(
+  merged: Record<string, unknown>,
+): Record<'whatsapp' | 'instagram' | 'messenger' | 'facebook' | 'ads', Record<string, unknown>> {
+  return {
+    whatsapp: {
+      connected: Boolean(merged.whatsappPhoneNumberId),
+      provider: 'meta-cloud',
+      phoneNumberId: merged.whatsappPhoneNumberId,
+      whatsappBusinessId: merged.whatsappBusinessId,
+      status: merged.whatsappPhoneNumberId ? 'connected' : 'connection_incomplete',
+    },
+    instagram: {
+      connected: Boolean(merged.instagramAccountId),
+      instagramAccountId: merged.instagramAccountId,
+      username: merged.instagramUsername,
+      status: merged.instagramAccountId ? 'connected' : 'disconnected',
+    },
+    messenger: {
+      connected: Boolean(merged.pageId),
+      pageId: merged.pageId,
+      status: merged.pageId ? 'connected' : 'disconnected',
+    },
+    facebook: {
+      connected: Boolean(merged.pageId),
+      pageId: merged.pageId,
+      status: merged.pageId ? 'connected' : 'disconnected',
+    },
+    ads: {
+      connected: Boolean(merged.adAccountId),
+      adAccountId: merged.adAccountId,
+      status: merged.adAccountId ? 'connected' : 'disconnected',
+    },
+  };
 }
