@@ -60,6 +60,36 @@ function buyerDataFromArgs(args: UnknownRecord): {
   };
 }
 
+function boletoBuyerDataFromArgs(args: UnknownRecord): {
+  name: string;
+  email: string;
+  cpf: string;
+  phone?: string;
+  address: {
+    zipCode: string;
+    street: string;
+    number: string;
+    neighborhood?: string;
+    city: string;
+    state: string;
+  };
+} {
+  const neighborhood = asString(args.customerNeighborhood).trim();
+  return {
+    ...buyerDataFromArgs(args),
+    address: {
+      zipCode: asString(args.customerZipCode).replace(/\D/g, ''),
+      street: asString(args.customerStreet).trim(),
+      number: asString(args.customerNumber).trim(),
+      ...(neighborhood ? { neighborhood } : {}),
+      city: asString(args.customerCity).trim(),
+      state: asString(args.customerState)
+        .replace(/[^a-z]/gi, '')
+        .toUpperCase(),
+    },
+  };
+}
+
 function buildReceiptEvidenceUrl(
   template: string | undefined,
   outputs: UnknownRecord,
@@ -764,18 +794,86 @@ export class KloelToolDispatcherService {
         }
         case 'sales.create_boleto': {
           const startedAt = Date.now();
-          return this.withCanonicalReceipt(
-            'sales.create_boleto',
-            workspaceId,
-            args,
-            {
-              success: false,
-              error: 'boleto_provider_unavailable',
-              message: 'Boleto ainda não está conectado ao serviço de domínio real.',
-            },
-            userId,
-            startedAt,
-          );
+          const missingInputs = missingStringInputs(args, [
+            'productId',
+            'planId',
+            'customerName',
+            'customerEmail',
+            'customerCpf',
+            'customerPhone',
+            'customerZipCode',
+            'customerStreet',
+            'customerNumber',
+            'customerCity',
+            'customerState',
+          ]);
+          if (missingInputs.length > 0) {
+            return this.withCanonicalReceipt(
+              'sales.create_boleto',
+              workspaceId,
+              args,
+              {
+                success: false,
+                error: 'sales_create_boleto_inputs_required',
+                missingInputs,
+                message: `Dados faltantes para criar boleto real: ${missingInputs.join(', ')}`,
+              },
+              userId,
+              startedAt,
+            );
+          }
+          if (!this.salesService) {
+            return this.withCanonicalReceipt(
+              'sales.create_boleto',
+              workspaceId,
+              args,
+              { success: false, error: 'sales_service_unavailable' },
+              userId,
+              startedAt,
+            );
+          }
+          try {
+            const boletoResult = await this.salesService.createBoletoOrder(
+              workspaceId,
+              asString(args.productId).trim(),
+              asString(args.planId).trim(),
+              boletoBuyerDataFromArgs(args),
+            );
+            return this.withCanonicalReceipt(
+              'sales.create_boleto',
+              workspaceId,
+              args,
+              {
+                success: true,
+                capabilityId: 'sales.create_boleto',
+                saleId: boletoResult.saleId,
+                orderId: boletoResult.saleId,
+                paymentId: boletoResult.externalPaymentId,
+                externalPaymentId: boletoResult.externalPaymentId,
+                boletoBarcode: boletoResult.boletoBarcode,
+                boletoUrl: boletoResult.boletoUrl,
+                boletoExpiresAt: boletoResult.boletoExpiresAt,
+                message: `Boleto gerado: ${boletoResult.saleId}`,
+              },
+              userId,
+              startedAt,
+            );
+          } catch (boletoError: unknown) {
+            const msg =
+              boletoError instanceof Error
+                ? boletoError.message
+                : typeof boletoError === 'string'
+                  ? boletoError
+                  : 'unknown error';
+            return this.withCanonicalReceipt(
+              'sales.create_boleto',
+              workspaceId,
+              args,
+              { success: false, error: msg },
+              userId,
+              startedAt,
+            );
+          }
         }
         case 'delete_product': {
           const startedAt = Date.now();

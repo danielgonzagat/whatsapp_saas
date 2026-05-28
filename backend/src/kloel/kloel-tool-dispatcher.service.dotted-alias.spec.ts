@@ -102,7 +102,7 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
   let codeToolsService: DispatcherCodeToolsMock;
   let codeAnalysisService: DispatcherCodeAnalysisMock;
   let productSubTools: ProductSubToolsMock;
-  let salesService: { createPixOrder: jest.Mock };
+  let salesService: { createBoletoOrder: jest.Mock; createPixOrder: jest.Mock };
 
   beforeEach(async () => {
     prisma = createPrismaMock();
@@ -116,7 +116,7 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
     codeToolsService = createCodeToolsMock();
     codeAnalysisService = createCodeAnalysisMock();
     productSubTools = { executeTool: jest.fn().mockResolvedValue({ success: true }) };
-    salesService = { createPixOrder: jest.fn() };
+    salesService = { createBoletoOrder: jest.fn(), createPixOrder: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -608,7 +608,14 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
       );
     });
 
-    it('sales.create_boleto does not claim success before a boleto domain service exists', async () => {
+    it('sales.create_boleto executes SalesService.createBoletoOrder and returns boleto proof', async () => {
+      salesService.createBoletoOrder.mockResolvedValueOnce({
+        saleId: 'sale-boleto-1',
+        boletoBarcode: '23793.38128 60000.000001 12345.678901 2 99990000019700',
+        boletoExpiresAt: new Date('2026-06-03T12:00:00.000Z'),
+        boletoUrl: 'https://mp.test/boleto/1',
+        externalPaymentId: 'mp-boleto-1',
+      });
       const paymentArgs = {
         productId: 'prod-1',
         planId: 'plan-1',
@@ -616,6 +623,12 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
         customerEmail: 'joao@test.com',
         customerCpf: '123.456.789-00',
         customerPhone: '11999999999',
+        customerZipCode: '01310-100',
+        customerStreet: 'Av Paulista',
+        customerNumber: '1000',
+        customerNeighborhood: 'Bela Vista',
+        customerCity: 'Sao Paulo',
+        customerState: 'SP',
       };
 
       const dotted = await service.executeTool(
@@ -626,8 +639,37 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
       );
 
       expect(salesService.createPixOrder).not.toHaveBeenCalled();
-      expect(dotted.success).toBe(false);
-      expect(dotted.error).toBe('boleto_provider_unavailable');
+      expect(salesService.createBoletoOrder).toHaveBeenCalledWith(
+        DEFAULT_WS_ID,
+        'prod-1',
+        'plan-1',
+        {
+          name: 'Joao',
+          email: 'joao@test.com',
+          cpf: '123.456.789-00',
+          phone: '11999999999',
+          address: {
+            zipCode: '01310100',
+            street: 'Av Paulista',
+            number: '1000',
+            neighborhood: 'Bela Vista',
+            city: 'Sao Paulo',
+            state: 'SP',
+          },
+        },
+      );
+      expect(dotted.success).toBe(true);
+      expect(dotted.capabilityId).toBe('sales.create_boleto');
+      expect(dotted.outputs).toEqual(
+        objectContaining({
+          boletoBarcode: '23793.38128 60000.000001 12345.678901 2 99990000019700',
+          boletoUrl: 'https://mp.test/boleto/1',
+          externalPaymentId: 'mp-boleto-1',
+          orderId: 'sale-boleto-1',
+          paymentId: 'mp-boleto-1',
+          saleId: 'sale-boleto-1',
+        }),
+      );
       expect(dotted.receipt).toEqual(
         objectContaining({
           capabilityId: 'sales.create_boleto',
@@ -639,6 +681,54 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
             customerName: 'Joao',
             customerEmail: 'joao@test.com',
             customerPhone: '11999999999',
+          }),
+          outputs: objectContaining({ orderId: 'sale-boleto-1', paymentId: 'mp-boleto-1' }),
+          domainEvents: ['sale.created', 'payment.pending'],
+          auditLogId: stringMatching(/^audit_/),
+          evidenceUrl: '/vendas/sale-boleto-1',
+          idempotencyKey: stringContaining('sales.create_boleto'),
+          success: true,
+        }),
+      );
+    });
+
+    it('sales.create_boleto returns missing inputs before creating a sale', async () => {
+      const paymentArgs = {
+        productId: 'prod-1',
+        planId: 'plan-1',
+        customerName: 'Joao',
+        customerEmail: 'joao@test.com',
+        customerCpf: '123.456.789-00',
+      };
+
+      const dotted = await service.executeTool(
+        DEFAULT_WS_ID,
+        'sales.create_boleto',
+        paymentArgs,
+        'user-42',
+      );
+
+      expect(salesService.createBoletoOrder).not.toHaveBeenCalled();
+      expect(dotted.success).toBe(false);
+      expect(dotted.error).toBe('sales_create_boleto_inputs_required');
+      expect(dotted.missingInputs).toEqual([
+        'customerPhone',
+        'customerZipCode',
+        'customerStreet',
+        'customerNumber',
+        'customerCity',
+        'customerState',
+      ]);
+      expect(dotted.receipt).toEqual(
+        objectContaining({
+          capabilityId: 'sales.create_boleto',
+          workspaceId: DEFAULT_WS_ID,
+          actorId: 'user-42',
+          inputs: objectContaining({
+            productId: paymentArgs.productId,
+            planId: paymentArgs.planId,
+            customerName: paymentArgs.customerName,
+            customerEmail: paymentArgs.customerEmail,
           }),
           outputs: {},
           domainEvents: [],

@@ -2,7 +2,9 @@ import { Injectable, Logger, NotFoundException, ServiceUnavailableException } fr
 import { randomUUID } from 'node:crypto';
 import { AuditService } from '../audit/audit.service';
 import { SpineEmitterService } from '../kloel/spine/spine-emitter.service';
+import { MercadoPagoBoletoChargeService } from '../payments/mercadopago/mercadopago-boleto-charge.service';
 import { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
+import type { BoletoChargeAddress } from '../payments/mercadopago/mercadopago.types';
 import { PrismaService } from '../prisma/prisma.service';
 const PROCESSOR = 'sales-service';
 const PROCESSOR_VERSION = '1.0.0';
@@ -11,13 +13,21 @@ const SCHEMA_VERSION = '1.0.0';
 const MP_WEBHOOK_PATH = '/webhooks/mercadopago';
 
 /** 30 minutes — standard MP PIX expiration window. */
-const PIX_EXPIRATION_MINUTES = 30; // ------- Types -------
+const PIX_EXPIRATION_MINUTES = 30;
+
+/** 3 days — standard boleto settlement window exposed to chat receipts. */
+const BOLETO_EXPIRATION_DAYS = 3;
+// ------- Types -------
 
 export interface BuyerData {
   name: string;
   email: string;
   cpf: string;
   phone?: string;
+}
+
+export interface BoletoBuyerData extends BuyerData {
+  address: BoletoChargeAddress;
 }
 
 export interface CreatePixOrderResult {
@@ -28,7 +38,16 @@ export interface CreatePixOrderResult {
   pixExpiresAt: Date;
   externalPaymentId: string;
   ticketUrl: string;
-} // ------- Helpers -------
+}
+
+export interface CreateBoletoOrderResult {
+  saleId: string;
+  boletoBarcode: string;
+  boletoExpiresAt: Date;
+  boletoUrl: string;
+  externalPaymentId: string;
+}
+// ------- Helpers -------
 
 function resolveBackendOrigin(): string {
   const raw =
@@ -58,6 +77,7 @@ export class SalesService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly mpBoleto: MercadoPagoBoletoChargeService,
     private readonly mpPix: MercadoPagoPixChargeService,
     private readonly audit: AuditService,
     private readonly spine: SpineEmitterService,
@@ -264,7 +284,206 @@ export class SalesService {
           ticketUrl: pixResult.ticketUrl,
         };
       });
-  } /**
+  }
+
+  /**
+   * Create a boleto payment order directly from chat using Mercado Pago.
+   */
+  async createBoletoOrder(
+    workspaceId: string,
+    productId: string,
+    planId: string,
+    buyerData: BoletoBuyerData,
+  ): Promise<CreateBoletoOrderResult> {
+    const plan = await this.prisma.productPlan.findFirst({
+      where: {
+        id: planId,
+        productId,
+        product: { workspaceId },
+        active: true,
+      },
+      include: { product: { select: { name: true } } },
+    });
+
+    if (!plan) {
+      throw new NotFoundException(
+        `Plano ${planId} não encontrado para produto ${productId} neste workspace.`,
+      );
+    }
+
+    const amountCents = BigInt(Math.round(plan.price * 100));
+    if (amountCents <= 0n) {
+      throw new ServiceUnavailableException('O plano possui preço inválido.');
+    }
+
+    const productName = plan.product.name;
+    const description = productName || `Plano ${plan.name}`;
+    const idempotencyKey = `sale_${randomUUID()}`;
+    const notificationUrl = `${resolveBackendOrigin()}${MP_WEBHOOK_PATH}`;
+    const expiresAt = new Date(Date.now() + BOLETO_EXPIRATION_DAYS * 24 * 60 * 60_000);
+    const payerDocDigits = buyerData.cpf.replace(/\D/g, '');
+    const buyerAddressMetadata: Record<string, string> = {
+      zipCode: buyerData.address.zipCode,
+      street: buyerData.address.street,
+      number: buyerData.address.number,
+      ...(buyerData.address.neighborhood ? { neighborhood: buyerData.address.neighborhood } : {}),
+      city: buyerData.address.city,
+      state: buyerData.address.state,
+    };
+
+    return this.prisma
+      .$transaction(
+        async (tx) => {
+          const sale = await tx.kloelSale.create({
+            data: {
+              workspaceId,
+              productName,
+              amount: plan.price,
+              status: 'pending',
+              paymentMethod: 'BOLETO',
+              leadPhone: buyerData.phone ?? null,
+              metadata: {
+                productId,
+                planId,
+                buyerName: buyerData.name,
+                buyerEmail: buyerData.email,
+                buyerAddress: buyerAddressMetadata,
+              },
+            },
+          });
+
+          await this.audit.logWithTx(tx, {
+            workspaceId,
+            action: 'SALE_CREATED',
+            resource: 'KloelSale',
+            resourceId: sale.id,
+            details: {
+              productId,
+              planId,
+              amount: plan.price,
+              paymentMethod: 'BOLETO',
+            },
+          });
+
+          const boletoResult = await this.mpBoleto.create({
+            idempotencyKey,
+            amountCents,
+            payerEmail: buyerData.email,
+            payerName: buyerData.name,
+            payerDocument: payerDocDigits,
+            payerAddress: buyerData.address,
+            description,
+            externalReference: sale.id,
+            expiresAt,
+            notificationUrl,
+          });
+
+          await tx.kloelSale.update({
+            where: { id: sale.id },
+            data: {
+              externalPaymentId: boletoResult.externalId,
+              paymentLink: boletoResult.ticketUrl,
+              metadata: {
+                productId,
+                planId,
+                buyerName: buyerData.name,
+                buyerEmail: buyerData.email,
+                buyerAddress: buyerAddressMetadata,
+                boletoExternalId: boletoResult.externalId,
+                boletoStatus: boletoResult.status,
+                boletoBarcode: boletoResult.digitableLine || boletoResult.barcodeContent,
+              },
+            },
+          });
+
+          await this.audit.logWithTx(tx, {
+            workspaceId,
+            action: 'PAYMENT_PENDING',
+            resource: 'KloelSale',
+            resourceId: sale.id,
+            details: {
+              externalPaymentId: boletoResult.externalId,
+              gateway: 'mercadopago',
+              method: 'BOLETO',
+              amount: plan.price,
+              status: boletoResult.status,
+            },
+          });
+
+          return { sale, boletoResult };
+        },
+        { isolationLevel: 'ReadCommitted' },
+      )
+      .then(({ sale, boletoResult }) => {
+        void this.spine
+          .emit({
+            eventName: 'sale.created',
+            workspaceId,
+            entityRef: { entityType: 'sale', entityId: sale.id },
+            truthMode: 'observed',
+            provenance: {
+              source: 'production',
+              processor: PROCESSOR,
+              processorVersion: PROCESSOR_VERSION,
+              schemaVersion: SCHEMA_VERSION,
+            },
+            payload: {
+              saleId: sale.id,
+              productId,
+              planId,
+              amount: plan.price,
+              paymentMethod: 'BOLETO',
+              externalPaymentId: boletoResult.externalId,
+            },
+          })
+          .catch((err: unknown) => {
+            this.logger.warn(
+              `sale.created emission failed: ${err instanceof Error ? err.message : String(err)}`,
+            );
+          });
+
+        void this.spine
+          .emit({
+            eventName: 'payment.pending',
+            workspaceId,
+            entityRef: { entityType: 'sale', entityId: sale.id },
+            truthMode: 'observed',
+            provenance: {
+              source: 'production',
+              processor: PROCESSOR,
+              processorVersion: PROCESSOR_VERSION,
+              schemaVersion: SCHEMA_VERSION,
+            },
+            payload: {
+              saleId: sale.id,
+              externalPaymentId: boletoResult.externalId,
+              gateway: 'mercadopago',
+              method: 'BOLETO',
+              amount: plan.price,
+              status: 'pending',
+            },
+          })
+          .catch((err: unknown) => {
+            this.logger.warn(
+              `payment.pending emission failed: ${err instanceof Error ? err.message : String(err)}`,
+            );
+          });
+
+        this.logger.log(
+          `Boleto sale created: saleId=${sale.id} externalPaymentId=${boletoResult.externalId} workspace=${workspaceId}`,
+        );
+
+        return {
+          saleId: sale.id,
+          boletoBarcode: boletoResult.digitableLine || boletoResult.barcodeContent,
+          boletoExpiresAt: boletoResult.expiresAt,
+          boletoUrl: boletoResult.ticketUrl,
+          externalPaymentId: boletoResult.externalId,
+        };
+      });
+  }
+
+  /**
    * Look up a sale by id, scoped to workspace.
    */
   async findById(workspaceId: string, saleId: string) {

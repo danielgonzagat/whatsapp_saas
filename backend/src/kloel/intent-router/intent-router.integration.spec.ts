@@ -44,12 +44,11 @@ describe('IntentRouter + CapabilityRegistry Integration', () => {
     });
   });
 
-  it('declares sales.create_boleto as blocked until a real boleto provider exists', () => {
+  it('declares sales.create_boleto as a real Mercado Pago boleto capability', () => {
     expect(registry.get('sales.create_boleto')).toMatchObject({
-      maturity: 'blocked',
-      domainService: 'Blocked: boleto provider unavailable',
-      emits: [],
-      dependsOn: ['PaymentService.generateBoleto'],
+      domainService: 'SalesService.createBoletoOrder',
+      emits: ['sale.created', 'payment.pending'],
+      evidenceUrlBuilder: '/vendas/${orderId}',
     });
   });
   it('classifies product creation', () => {
