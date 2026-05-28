@@ -10,37 +10,19 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { mutate } from 'swr';
 
-interface Plan {
-  id: string;
-  name: string;
-  price: number;
-  billingType: string;
-  itemsPerPlan: number;
-  visibleToAffiliates: boolean;
-  active: boolean;
-  salesCount: number;
-}
-
-const PRODUCT_PLANS_COPY = {
-  loadError: kloelT(`Falha ao carregar planos`),
-  createError: kloelT(`Falha ao criar plano`),
-  duplicateError: kloelT(`Falha ao duplicar plano`),
-  closeModalAria: kloelT(`Fechar modal`),
-  closeErrorAria: kloelT(`Fechar erro`),
-  copied: kloelT(`Copiado`),
-  copy: kloelT(`Copiar`),
-  visible: kloelT(`VISIVEL`),
-  hidden: kloelT(`OCULTO`),
-  active: kloelT(`ATIVO`),
-  inactive: kloelT(`INATIVO`),
-  nameInputAria: kloelT(`Nome do plano`),
-  priceInputAria: kloelT(`Valor do plano em reais`),
-  itemsInputAria: kloelT(`Itens por plano`),
-} as const;
-
-function toPlanErrorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error && error.message ? error.message : fallback;
-}
+import {
+  INITIAL_NEW_PLAN,
+  PRODUCT_PLANS_COPY,
+  buildDuplicatedPlanBody,
+  buildPlanLinks,
+  isProductsCacheKey,
+  normalizePlansResponse,
+  parseCreatePlanBody,
+  parseItemsPerPlan,
+  shortPlanId,
+  toPlanErrorMessage,
+  type Plan,
+} from './ProductPlansTab.helpers';
 
 /** Product plans tab. */
 export function ProductPlansTab({ productId }: { productId: string }) {
@@ -50,12 +32,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [newPlan, setNewPlan] = useState({
-    name: '',
-    price: '',
-    billingType: 'ONE_TIME',
-    itemsPerPlan: 1,
-  });
+  const [newPlan, setNewPlan] = useState(INITIAL_NEW_PLAN);
   const [creating, setCreating] = useState(false);
   const [linkModalPlan, setLinkModalPlan] = useState<Plan | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
@@ -83,7 +60,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
     setLoading(true);
     try {
       const response = await apiFetch<Plan[]>(`/products/${productId}/plans`);
-      setPlans(Array.isArray(response) ? response : []);
+      setPlans(normalizePlansResponse(response));
       setError(null);
     } catch (caughtError: unknown) {
       setPlans([]);
@@ -103,11 +80,11 @@ export function ProductPlansTab({ productId }: { productId: string }) {
     try {
       await apiFetch(`/products/${productId}/plans`, {
         method: 'POST',
-        body: { ...newPlan, price: Number.parseFloat(newPlan.price) || 0 },
+        body: parseCreatePlanBody(newPlan),
       });
       setShowModal(false);
-      setNewPlan({ name: '', price: '', billingType: 'ONE_TIME', itemsPerPlan: 1 });
-      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
+      setNewPlan(INITIAL_NEW_PLAN);
+      mutate(isProductsCacheKey);
       await fetchPlans();
     } catch (caughtError: unknown) {
       setError(toPlanErrorMessage(caughtError, PRODUCT_PLANS_COPY.createError));
@@ -121,12 +98,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
     try {
       await apiFetch(`/products/${productId}/plans`, {
         method: 'POST',
-        body: {
-          name: `${plan.name} (Copia)`,
-          price: plan.price,
-          billingType: plan.billingType || 'ONE_TIME',
-          itemsPerPlan: plan.itemsPerPlan || 1,
-        },
+        body: buildDuplicatedPlanBody(plan),
       });
       await fetchPlans();
     } catch (caughtError: unknown) {
@@ -199,7 +171,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
             width: '12%',
             render: (v) => (
               <span className="font-mono text-xs" style={{ color: colors.text.dim }}>
-                {String(v).slice(0, 8)}
+                {shortPlanId(v)}
               </span>
             ),
           },
@@ -361,17 +333,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                 <X className="h-5 w-5" style={{ color: colors.text.dust }} aria-hidden="true" />
               </button>
             </div>
-            {[
-              { label: 'Abrir produto', url: `${window.location.origin}/products/${productId}` },
-              {
-                label: 'Abrir tab de planos',
-                url: `${window.location.origin}/products/${productId}?tab=planos`,
-              },
-              {
-                label: 'Abrir checkouts',
-                url: `${window.location.origin}/products/${productId}?tab=checkouts`,
-              },
-            ].map((link) => (
+            {buildPlanLinks(productId, window.location.origin).map((link) => (
               <div
                 key={link.label}
                 style={{
@@ -528,7 +490,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                   onChange={(e) =>
                     setNewPlan({
                       ...newPlan,
-                      itemsPerPlan: Number.parseInt(e.target.value, 10) || 1,
+                      itemsPerPlan: parseItemsPerPlan(e.target.value),
                     })
                   }
                   style={inputStyle}
