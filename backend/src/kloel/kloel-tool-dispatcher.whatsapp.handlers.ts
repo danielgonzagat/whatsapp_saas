@@ -30,7 +30,6 @@ export const WHATSAPP_TOOL_NAMES = new Set<string>([
   'get_whatsapp_status',
   'send_whatsapp_message',
   'list_whatsapp_contacts',
-  'create_whatsapp_contact',
   'list_whatsapp_chats',
   'get_whatsapp_messages',
   'get_whatsapp_backlog',
@@ -69,8 +68,6 @@ export async function dispatchWhatsAppTool(
       return await whatsappToolsService.toolSendWhatsAppMessage(workspaceId, asToolArgs(args));
     case 'list_whatsapp_contacts':
       return await whatsappToolsService.toolListWhatsAppContacts(workspaceId, asToolArgs(args));
-    case 'create_whatsapp_contact':
-      return await whatsappToolsService.toolCreateWhatsAppContact(workspaceId, asToolArgs(args));
     case 'list_whatsapp_chats':
       return await whatsappToolsService.toolListWhatsAppChats(workspaceId, asToolArgs(args));
     case 'get_whatsapp_messages':

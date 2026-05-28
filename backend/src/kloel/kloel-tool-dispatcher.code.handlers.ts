@@ -55,7 +55,6 @@ export const CODE_TOOL_NAMES = new Set<string>([
   'static_analysis',
   // PULSE / Runtime awareness
   'pulse_health',
-  'behavior_graph_node',
   'runtime_errors',
 ]);
 
@@ -138,8 +137,6 @@ export async function dispatchCodeTool(
     // ── PULSE / Runtime awareness (Wave 7 PI-DD) ──
     case 'pulse_health':
       return await codeToolsService.toolPulseHealth(asOptStr(args.module));
-    case 'behavior_graph_node':
-      return await codeToolsService.toolBehaviorGraphNode(asStr(args.symbol), asOptStr(args.file));
     case 'runtime_errors':
       return await codeToolsService.toolRuntimeErrors();
     default:

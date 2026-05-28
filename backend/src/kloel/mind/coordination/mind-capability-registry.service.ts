@@ -79,6 +79,15 @@ export class MindCapabilityRegistry {
       .map((capability) => capability.name);
   }
 
+  /**
+   * List capabilities available for a workspace. Currently returns the full
+   * registry; workspace-scoped filtering (e.g. plan-gated capabilities) is a
+   * future concern. Accepts workspaceId to reserve the API contract.
+   */
+  listAvailable(_workspaceId: string): BrainCapabilityDefinition[] {
+    return this.list();
+  }
+
   grouped(): Record<BrainCapabilityDomain, BrainCapabilityDefinition[]> {
     return this.list().reduce<Record<BrainCapabilityDomain, BrainCapabilityDefinition[]>>(
       (groups, capability) => {

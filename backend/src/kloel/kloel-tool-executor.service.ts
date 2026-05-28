@@ -19,7 +19,6 @@ import type {
   ToolCreateFlowArgs,
   ToolDashboardSummaryArgs,
   ToolSendWhatsAppMessageArgs,
-  ToolCreateWhatsAppContactArgs,
   ToolCreateCampaignArgs,
   ToolSendAudioArgs,
   ToolSendDocumentArgs,
@@ -94,8 +93,6 @@ export class KloelToolExecutorService {
             workspaceId,
             args as ToolCreateCampaignArgs,
           );
-        case 'list_leads':
-          return await this.crmTools.toolListLeads(workspaceId, args);
         case 'get_lead_details':
           return await this.crmTools.toolGetLeadDetails(workspaceId, args);
         case 'create_payment_link':
@@ -124,11 +121,6 @@ export class KloelToolExecutorService {
           );
         case 'list_whatsapp_contacts':
           return await this.whatsappTools.toolListWhatsAppContacts(workspaceId, args);
-        case 'create_whatsapp_contact':
-          return await this.whatsappTools.toolCreateWhatsAppContact(
-            workspaceId,
-            args as ToolCreateWhatsAppContactArgs,
-          );
         case 'list_whatsapp_chats':
           return await this.whatsappTools.toolListWhatsAppChats(workspaceId, args);
         case 'get_whatsapp_messages':

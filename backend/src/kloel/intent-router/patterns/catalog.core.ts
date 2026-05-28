@@ -120,13 +120,6 @@ export const CORE_INTENT_PATTERNS: IntentPattern[] = [
     extract: () => ({}),
   },
 
-  // === Leads / CRM ===
-  {
-    regex: /(?:meus?\s+)?(?:leads?|contatos?|pipeline)/i,
-    capabilityId: 'list_leads',
-    extract: () => ({}),
-  },
-
   // === Wallet ===
   {
     regex: /(?:extrato|hist[oó]rico\s+(?:de\s+)?(?:transa[cç][aã]o|financeiro))/i,

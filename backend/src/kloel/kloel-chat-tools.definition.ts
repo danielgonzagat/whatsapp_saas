@@ -244,23 +244,6 @@ const KLOEL_CHAT_TOOLS_CORE: ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
-      name: 'create_whatsapp_contact',
-      description:
-        'Cria ou atualiza um contato operacional no CRM para uso imediato pela IA no WhatsApp',
-      parameters: {
-        type: 'object',
-        properties: {
-          phone: { type: 'string', description: 'Número do telefone (apenas números ou chatId)' },
-          name: { type: 'string', description: 'Nome do contato' },
-          email: { type: 'string', description: 'E-mail opcional do contato' },
-        },
-        required: ['phone'],
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
       name: 'list_whatsapp_chats',
       description: 'Lista as conversas reais do WhatsApp, incluindo não lidas e pendentes',
       parameters: {
@@ -330,24 +313,6 @@ const KLOEL_CHAT_TOOLS_CORE: ChatCompletionTool[] = [
       },
     },
   },
-  // === LEADS/CRM ===
-  {
-    type: 'function',
-    function: {
-      name: 'list_leads',
-      description: 'Lista os leads/contatos recentes',
-      parameters: {
-        type: 'object',
-        properties: {
-          limit: { type: 'number', description: 'Quantidade máxima de leads' },
-          status: {
-            type: 'string',
-            description: 'Filtrar por status (new, contacted, qualified, converted)',
-          },
-        },
-      },
-    },
-  },
   {
     type: 'function',
     function: {
@@ -360,6 +325,23 @@ const KLOEL_CHAT_TOOLS_CORE: ChatCompletionTool[] = [
           leadId: { type: 'string', description: 'ID do lead (alternativa ao phone)' },
         },
       },
+    },
+  },
+  // === SELF / META ===
+  {
+    type: 'function',
+    function: {
+      name: 'self_list_capabilities',
+      description: 'Lista o que o Kloel sabe fazer agora neste workspace.',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'self_recent_events',
+      description: 'Lista os últimos eventos comerciais do workspace nos últimos 30 minutos.',
+      parameters: { type: 'object', properties: {} },
     },
   },
   // === EMAIL ===
@@ -436,10 +418,11 @@ const KLOEL_SAFE_READ_TOOL_NAMES = [
   'list_whatsapp_chats',
   'get_whatsapp_messages',
   'get_whatsapp_backlog',
-  'list_leads',
   'get_lead_details',
   'transcribe_audio',
   'get_billing_status',
+  'self_list_capabilities',
+  'self_recent_events',
 ] as const;
 
 function isFunctionChatTool(

@@ -20,12 +20,6 @@ export const ENGAGEMENT_INTENT_PATTERNS: IntentPattern[] = [
     capabilityId: 'list_whatsapp_contacts',
     extract: () => ({}),
   },
-  {
-    regex: /(?:cri[ae]r?|adicion[ae]r?)\s+(?:nov[oa]?\s+)?(?:contato)\s+(?:no\s+)?whatsapp/i,
-    capabilityId: 'create_whatsapp_contact',
-    extract: () => ({}),
-  },
-
   // === Profile / Bio ===
   {
     regex:

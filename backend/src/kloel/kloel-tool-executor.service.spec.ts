@@ -305,10 +305,6 @@ describe('KloelToolExecutorService', () => {
         message: 'msg',
       });
     });
-    it('routes list_leads to crmTools', async () => {
-      await service.executeTool(wsId, 'list_leads', {});
-      expect(crmTools.toolListLeads).toHaveBeenCalledWith(wsId, {});
-    });
     it('routes get_lead_details to crmTools', async () => {
       await service.executeTool(wsId, 'get_lead_details', { leadId: 'l-1' });
       expect(crmTools.toolGetLeadDetails).toHaveBeenCalledWith(wsId, { leadId: 'l-1' });
@@ -355,10 +351,6 @@ describe('KloelToolExecutorService', () => {
     it('routes list_whatsapp_contacts to whatsappTools', async () => {
       await service.executeTool(wsId, 'list_whatsapp_contacts', {});
       expect(whatsappTools.toolListWhatsAppContacts).toHaveBeenCalledWith(wsId, {});
-    });
-    it('routes create_whatsapp_contact to whatsappTools', async () => {
-      await service.executeTool(wsId, 'create_whatsapp_contact', { phone: '5511' });
-      expect(whatsappTools.toolCreateWhatsAppContact).toHaveBeenCalledWith(wsId, { phone: '5511' });
     });
     it('routes list_whatsapp_chats to whatsappTools', async () => {
       await service.executeTool(wsId, 'list_whatsapp_chats', {});

@@ -34,7 +34,6 @@ export const BIZ_CONFIG_TOOL_NAMES = new Set<string>([
   'get_social_channels',
   'connect_channel',
   'update_workspace_settings',
-  'list_leads',
   'get_lead_details',
   'save_business_info',
   'set_business_hours',
@@ -83,8 +82,6 @@ export async function dispatchBizConfigTool(
       return await bizConfigToolsService.toolConnectChannel(workspaceId, asToolArgs(args));
     case 'update_workspace_settings':
       return await bizConfigToolsService.toolSaveBusinessInfo(workspaceId, asToolArgs(args));
-    case 'list_leads':
-      return await bizConfigToolsService.toolListLeads(workspaceId, asToolArgs(args));
     case 'get_lead_details':
       return await bizConfigToolsService.toolGetLeadDetails(workspaceId, asToolArgs(args));
     case 'save_business_info':

@@ -248,30 +248,6 @@ export const KLOEL_CHAT_TOOLS_CODE: ChatCompletionTool[] = [
   {
     type: 'function',
     function: {
-      name: 'behavior_graph_node',
-      description:
-        'Consulta o PULSE Behavior Graph por símbolo ou arquivo. ' +
-        'Retorna: ai_safe, classe de comportamento, status de governança, contagem de blockers.',
-      parameters: {
-        type: 'object',
-        properties: {
-          symbol: {
-            type: 'string',
-            description:
-              'Nome do símbolo (função, método, classe) ou caminho de arquivo para buscar.',
-          },
-          file: {
-            type: 'string',
-            description: 'Caminho do arquivo para escopo opcional.',
-          },
-        },
-        required: ['symbol'],
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
       name: 'runtime_errors',
       description:
         'Retorna os 10 erros runtime mais recentes (Sentry/Railway) mapeados para arquivos/símbolos do código.',

@@ -60,13 +60,6 @@ export function detectAffiliatesIntent(msg: string): ActionIntent {
   }
 
   // ── CRM / PIPELINE ──
-  if (
-    /pipeline|funil|oportunidades|meu(s)?\s+(pipeline|leads?|funil)|lista(?:r|ndo)?\s+(?:meus\s+)?leads?/.test(
-      msg,
-    )
-  ) {
-    return { tool: 'list_leads', args: {} };
-  }
   if (/(detalhes|info)\s+(do\s+)?lead/.test(msg)) {
     return { tool: 'get_lead_details', args: { leadName: extractProductName(msg) } };
   }

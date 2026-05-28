@@ -32,7 +32,7 @@ const CAPABILITIES = [
   'update_checkout', 'list_checkouts', 'create_coupon', 'update_coupon',
   'delete_coupon', 'list_coupons', 'validate_coupon', 'generate_pix',
   'generate_boleto', 'create_payment_link', 'list_orders', 'get_order_details',
-  'get_sales_summary', 'get_abandonments', 'list_leads', 'get_lead_details',
+  'get_sales_summary', 'get_abandonments', 'get_lead_details',
   'get_wallet_balance', 'get_wallet_statement', 'request_withdrawal',
   'request_anticipation', 'get_dashboard_summary', 'get_analytics',
   'toggle_theme', 'get_settings', 'update_personal_data', 'update_fiscal_data',

@@ -172,22 +172,6 @@ export const TIER_10_REPORTS_CAPABILITIES: CapabilityDefinition[] = [
     surface: ['dashboard-chat'],
   },
   {
-    id: 'create_whatsapp_contact',
-    title: 'Criar contato WhatsApp',
-    description: 'Cria novo contato no WhatsApp',
-    category: 'MUTATION_SAFE',
-    tier: 10,
-    requiresConfirmation: false,
-    requiredPermissions: ['whatsapp:write'],
-    inputSchema: [
-      { key: 'phone', type: 'string', label: 'Telefone', required: true },
-      { key: 'name', type: 'string', label: 'Nome', required: true },
-    ],
-    domainService: 'WhatsAppService.createContact',
-    emits: ['whatsapp.contact_created'],
-    surface: ['dashboard-chat'],
-  },
-  {
     id: 'reports.operations',
     title: 'Operações',
     description: 'Mostra relatório de operações: vendas, receita, ticket médio',

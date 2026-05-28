@@ -2,17 +2,18 @@
  * Self-awareness (TIER-0 meta-cognitive) tool dispatch helpers extracted from
  * KloelToolDispatcherService. Covers the `self.*` capability surface plus the
  * `list_capabilities` legacy alias, including audit-log replay, capability
- * explanation, dispatcher gaps diff, infrastructure health snapshot, and the
- * canonical capability list (live registry first, hardcoded fallback last).
+ * explanation, dispatcher gaps diff, infrastructure health snapshot, workspace
+ * capability listing, recent-event replay, and the canonical capability list
+ * (live registry first, hardcoded fallback last).
  *
  * Each case is a thin delegation to {@link AuditService},
- * {@link SelfGapsService}, {@link SelfHealthService}, and
- * {@link CapabilityRegistryV2Service}. Behaviour and argument coercion are
- * preserved one-for-one from the previous inline switch.
+ * {@link SelfGapsService}, {@link SelfHealthService},
+ * {@link MindCapabilityRegistry}, and the Prisma autopilot-event source.
  */
 
 import type { AuditService } from '../audit/audit.service';
 import type { CapabilityRegistryV2Service } from './capability-registry-v2/capability-registry-v2.service';
+import type { MindCapabilityRegistry } from './mind/coordination/mind-capability-registry.service';
 import type { SelfGapsService } from './self-awareness/self-gaps.service';
 import type { SelfHealthService } from './self-awareness/self-health.service';
 import type { UnknownRecord } from '../common/types';
@@ -34,11 +35,30 @@ export const SELF_TOOL_NAMES = new Set<string>([
   'self.gaps',
   'self.health',
   'self.capabilities',
+  'self_list_capabilities',
+  'self_recent_events',
   'list_capabilities',
 ]);
 
 export function isSelfTool(toolName: string): boolean {
   return SELF_TOOL_NAMES.has(toolName);
+}
+
+/**
+ * Minimal Prisma surface for autopilot-event reads used by
+ * {@link dispatchSelfTool} (self_recent_events path).
+ */
+export interface SelfToolPrisma {
+  autopilotEvent: {
+    findMany(args: {
+      where: { workspaceId: string; createdAt: { gte: Date } };
+      orderBy: { createdAt: 'desc' };
+      take: number;
+      select: { id: true; intent: true; action: true; createdAt: true };
+    }): Promise<
+      Array<{ id: string; intent: string | null; action: string | null; createdAt: Date }>
+    >;
+  };
 }
 
 /** Dependencies required by the self-awareness dispatcher. */
@@ -47,6 +67,8 @@ export interface SelfToolDeps {
   selfGaps: SelfGapsService | undefined;
   selfHealth: SelfHealthService | undefined;
   capRegistryV2: CapabilityRegistryV2Service | undefined;
+  mindCapabilityRegistry: MindCapabilityRegistry | undefined;
+  prisma: SelfToolPrisma | undefined;
 }
 
 const FALLBACK_CAPABILITIES: string[] = [
@@ -72,7 +94,6 @@ const FALLBACK_CAPABILITIES: string[] = [
   'get_order_details',
   'get_sales_summary',
   'get_abandonments',
-  'list_leads',
   'get_lead_details',
   'get_wallet_balance',
   'get_wallet_statement',
@@ -236,6 +257,58 @@ export async function dispatchSelfTool(
         success: true,
         capabilityId: 'self.health',
         outputs: snapshot,
+      };
+    }
+
+    case 'self_list_capabilities': {
+      if (!deps.mindCapabilityRegistry) {
+        return { success: false, error: 'capability_registry_unavailable' };
+      }
+      const caps = deps.mindCapabilityRegistry.listAvailable(workspaceId);
+      return {
+        success: true,
+        capabilityId: 'self_list_capabilities',
+        outputs: {
+          total: caps.length,
+          capabilities: caps.map((c) => ({
+            name: c.name,
+            domain: c.domain,
+            description: c.description,
+            risk: c.risk,
+          })),
+        },
+        message: `${caps.length} capacidades disponíveis neste workspace`,
+      };
+    }
+
+    case 'self_recent_events': {
+      if (!deps.prisma) {
+        return { success: false, error: 'event_source_unavailable' };
+      }
+      const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
+      const rows = await deps.prisma.autopilotEvent.findMany({
+        where: {
+          workspaceId,
+          createdAt: { gte: thirtyMinAgo },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+        select: { id: true, intent: true, action: true, createdAt: true },
+      });
+      const events = rows.map((r) => ({
+        id: r.id,
+        event: r.intent || r.action || 'unknown',
+        occurredAt: r.createdAt.toISOString(),
+      }));
+      return {
+        success: true,
+        capabilityId: 'self_recent_events',
+        outputs: {
+          total: events.length,
+          windowMinutes: 30,
+          events,
+        },
+        message: `${events.length} eventos nos últimos 30 minutos`,
       };
     }
 

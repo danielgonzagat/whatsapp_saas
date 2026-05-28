@@ -211,11 +211,6 @@ describe('KloelToolDispatcherService (executeTool)', () => {
       });
     });
     describe('business config tools routing', () => {
-      it('routes list_leads to bizConfigToolsService', async () => {
-        const result = await service.executeTool(DEFAULT_WS_ID, 'list_leads', {});
-        expect(result.success).toBe(true);
-        expect(bizConfigToolsService.toolListLeads).toHaveBeenCalledWith(DEFAULT_WS_ID, {});
-      });
       it('routes get_lead_details to bizConfigToolsService', async () => {
         const result = await service.executeTool(DEFAULT_WS_ID, 'get_lead_details', {
           leadId: 'l-1',

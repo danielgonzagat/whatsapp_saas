@@ -181,10 +181,10 @@ describe('IntentRouter + CapabilityRegistry Integration', () => {
     expect(result.isChat).toBe(false);
     expect(result.classification?.capabilityId).toBe('reports.abandonments');
   });
-  it('classifies CRM pipeline query', () => {
-    const result = router.classify('Mostra meu pipeline CRM', 'dashboard-chat', ['*']);
+  it('classifies CRM lead detail query', () => {
+    const result = router.classify('Detalhes do lead de maria', 'dashboard-chat', ['*']);
     expect(result.isChat).toBe(false);
-    expect(result.classification?.capabilityId).toBe('list_leads');
+    expect(result.classification?.capabilityId).toBe('get_lead_details');
   });
   it('classifies theme toggle', () => {
     const result = router.classify('Muda para tema escuro', 'dashboard-chat', ['*']);

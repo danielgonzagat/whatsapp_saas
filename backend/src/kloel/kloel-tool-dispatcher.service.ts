@@ -21,6 +21,7 @@ import { SelfHealthService } from './self-awareness/self-health.service';
 import { SelfGapsService } from './self-awareness/self-gaps.service';
 import { DepsCoverageService } from './self-awareness/deps-coverage.service';
 import { CapabilityRegistryV2Service } from './capability-registry-v2/capability-registry-v2.service';
+import { MindCapabilityRegistry } from './mind/coordination/mind-capability-registry.service';
 import { ReportService } from './report.service';
 import {
   runRequestHighRiskApproval,
@@ -112,6 +113,7 @@ export class KloelToolDispatcherService {
     @Optional() private readonly selfGaps?: SelfGapsService,
     @Optional() private readonly depsCoverage?: DepsCoverageService,
     @Optional() private readonly capRegistryV2?: CapabilityRegistryV2Service,
+    @Optional() private readonly mindCapabilityRegistry?: MindCapabilityRegistry,
     @Optional() private readonly smartPaymentService?: SmartPaymentService,
     @Optional() private readonly transports?: ChannelTransportRegistry,
     @Optional() private readonly riskGate?: RiskGateService,
@@ -203,6 +205,8 @@ export class KloelToolDispatcherService {
           selfGaps: this.selfGaps,
           selfHealth: this.selfHealth,
           capRegistryV2: this.capRegistryV2,
+          mindCapabilityRegistry: this.mindCapabilityRegistry,
+          prisma: this.prisma,
         },
         workspaceId,
         toolName,

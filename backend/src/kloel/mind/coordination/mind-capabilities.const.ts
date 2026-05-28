@@ -28,7 +28,6 @@ export const OPERATOR_CAPABILITIES = [
   'get_order_details',
   'get_sales_summary',
   'get_abandonments',
-  'list_leads',
   'get_lead_details',
   'get_dashboard_summary',
   'get_analytics',

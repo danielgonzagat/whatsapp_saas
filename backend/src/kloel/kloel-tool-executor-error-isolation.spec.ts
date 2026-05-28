@@ -128,10 +128,10 @@ describe('KloelToolExecutorService error and isolation paths', () => {
   });
 
   it('handles null/undefined thrown values gracefully', async () => {
-    const { service, crmTools } = await buildSubject();
-    crmTools.toolListLeads = jest.fn().mockRejectedValue(null);
+    const { service, whatsappTools } = await buildSubject();
+    whatsappTools.toolConnectWhatsapp = jest.fn().mockRejectedValue(null);
 
-    const result = await service.executeTool(wsId, 'list_leads', {});
+    const result = await service.executeTool(wsId, 'connect_whatsapp', {});
 
     expect(result.success).toBe(false);
     expect(result.error).toBe('unknown error');
@@ -148,10 +148,11 @@ describe('KloelToolExecutorService error and isolation paths', () => {
   });
 
   it('passes correct workspaceId to sub-services', async () => {
-    const { service, crmTools } = await buildSubject();
+    const { service, whatsappTools } = await buildSubject();
+    whatsappTools.toolConnectWhatsapp = jest.fn().mockResolvedValue({ success: true });
 
-    await service.executeTool('ws-tenant', 'list_leads', {});
+    await service.executeTool('ws-tenant', 'connect_whatsapp', {});
 
-    expect(crmTools.toolListLeads).toHaveBeenCalledWith('ws-tenant', {});
+    expect(whatsappTools.toolConnectWhatsapp).toHaveBeenCalledWith('ws-tenant');
   });
 });
