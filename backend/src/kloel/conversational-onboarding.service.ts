@@ -318,7 +318,14 @@ export class ConversationalOnboardingService {
     this.logger.warn('Onboarding degraded', {
       tag: 'kloel_onboarding_degraded',
       reason,
-      errorMessage: ctx.error instanceof Error ? ctx.error.message : String(ctx.error ?? ''),
+      errorMessage:
+        ctx.error instanceof Error
+          ? ctx.error.message
+          : typeof ctx.error === 'string'
+            ? ctx.error
+            : ctx.error == null
+              ? ''
+              : JSON.stringify(ctx.error),
       errorName: ctx.error instanceof Error ? ctx.error.constructor.name : typeof ctx.error,
       hasResponseHeaders: ctx.hasResponseHeaders,
       willingWrite: ctx.willingWrite,
