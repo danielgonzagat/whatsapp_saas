@@ -35,6 +35,7 @@ import { dispatchCodeTool, isCodeTool } from './kloel-tool-dispatcher.code.handl
 import { dispatchSelfTool, isSelfTool } from './kloel-tool-dispatcher.self.handlers';
 import { dispatchConfigureTool, isConfigureTool } from './kloel-tool-dispatcher.configure.handlers';
 import { dispatchSalesTool, isSalesTool } from './kloel-tool-dispatcher.sales.handlers';
+import { dispatchAgentTool, isAgentTool } from './kloel-tool-dispatcher.agent.handlers';
 
 import type { UnknownRecord } from '../common/types';
 
@@ -167,6 +168,17 @@ export class KloelToolDispatcherService {
         );
         if (salesResult !== null) {
           return salesResult;
+        }
+      }
+      if (isAgentTool(toolName)) {
+        const agentResult = await dispatchAgentTool(
+          this.chatToolsService,
+          workspaceId,
+          toolName,
+          args,
+        );
+        if (agentResult !== null) {
+          return agentResult;
         }
       }
       switch (toolName) {
@@ -590,41 +602,7 @@ export class KloelToolDispatcherService {
             workspaceId,
             asToolArgs(args),
           );
-        case 'create_agent_job':
-          return await this.chatToolsService.toolCreateAgentJob(workspaceId, asToolArgs(args));
-        case 'list_agent_jobs':
-          return await this.chatToolsService.toolListAgentJobs(workspaceId);
-        case 'set_agent_job_enabled':
-          return await this.chatToolsService.toolSetAgentJobEnabled(workspaceId, asToolArgs(args));
-        case 'search_agent_memory':
-          return await this.chatToolsService.toolSearchAgentMemoryWithContacts(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'search_agent_sessions':
-          return await this.chatToolsService.toolSearchAgentSessions(workspaceId, asToolArgs(args));
-        case 'get_agent_artifact':
-          return await this.chatToolsService.toolGetAgentArtifact(workspaceId, asToolArgs(args));
-        case 'upsert_agent_skill':
-          return await this.chatToolsService.toolUpsertAgentSkill(workspaceId, asToolArgs(args));
-        case 'record_agent_skill_outcome':
-          return await this.chatToolsService.toolRecordAgentSkillOutcome(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'record_agent_delegation':
-          return await this.chatToolsService.toolRecordAgentDelegation(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'record_agent_evidence':
-          return await this.chatToolsService.toolRecordAgentEvidence(workspaceId, asToolArgs(args));
-        case 'search_agent_evidence':
-          return await this.chatToolsService.toolSearchAgentEvidence(workspaceId, asToolArgs(args));
-        case 'list_agent_evidence':
-          return await this.chatToolsService.toolListAgentEvidence(workspaceId, asToolArgs(args));
-        case 'verify_agent_evidence':
-          return await this.chatToolsService.toolVerifyAgentEvidence(workspaceId);
+        // ── agent_* family handled via isAgentTool fast-path above ──
         case 'create_order':
           return await this.chatToolsService.toolCreateOrder(workspaceId, asToolArgs(args));
         case 'create_payment_link':
