@@ -12,15 +12,13 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import * as Sentry from '@sentry/node';
-import { ConnectAccountType, type ConnectLedgerEntryType } from '@prisma/client';
+import { ConnectAccountType } from '@prisma/client';
 
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
 import { Idempotent } from '../../common/idempotency.guard';
 import { PrismaService } from '../../prisma/prisma.service';
 import { LedgerService } from '../ledger/ledger.service';
-
-type ConnectPayoutDetails = Record<string, unknown>;
 
 import { ConnectPayoutApprovalService } from './connect-payout-approval.service';
 import { ConnectLedgerReconciliationService } from '../ledger/connect-ledger-reconciliation.service';
@@ -29,7 +27,21 @@ import {
   ConnectAccountAlreadyExistsError,
   type SubmitOnboardingProfileInput,
 } from './connect.types';
-import { CONNECT_LEDGER_ENTRY_TYPES, parseSkip, parseTake } from './connect-helpers';
+import {
+  buildBalanceById,
+  buildOnboardingProfileInput,
+  hasOnboardingProfileUpdate,
+  mapConnectLedgerEntry,
+  mapPayoutAuditItem,
+  parseConnectLedgerEntryType,
+  parseForwardedIp,
+  parsePaginationSkip,
+  parsePaginationTake,
+  parsePositiveIntegerCents,
+  parseSkip,
+  parseTake,
+  resolveTosAcceptance,
+} from './connect-helpers';
 import { RouteClass } from '../../common/throttler/route-class.decorator';
 import { WebhookEndpoint } from '../../common/decorators/webhook-endpoint.decorator';
 import { InternalEndpoint } from '../../common/decorators/internal-endpoint.decorator';
@@ -154,77 +166,13 @@ export class ConnectController {
       throw new NotFoundException('Connect account balance not found for this workspace');
     }
 
-    const hasProfileUpdate = [
-      typeof body.email === 'string' && body.email.trim(),
-      typeof body.country === 'string' && body.country.trim(),
-      typeof body.businessType === 'string' && body.businessType.trim(),
-      body.businessProfile && Object.keys(body.businessProfile).length > 0,
-      body.individual && Object.keys(body.individual).length > 0,
-      body.company && Object.keys(body.company).length > 0,
-      body.externalAccount && Object.keys(body.externalAccount).length > 0,
-      body.tosAcceptance && Object.keys(body.tosAcceptance).length > 0,
-      body.metadata && Object.keys(body.metadata).length > 0,
-    ].some(Boolean);
-    if (!hasProfileUpdate) {
+    if (!hasOnboardingProfileUpdate(body)) {
       throw new BadRequestException('at least one onboarding field is required');
     }
 
-    const forwardedIp =
-      typeof forwardedFor === 'string' && forwardedFor.trim()
-        ? forwardedFor.split(',')[0]?.trim() || undefined
-        : undefined;
-    const tosAcceptanceRaw = body.tosAcceptance
-      ? {
-          ...body.tosAcceptance,
-          ipAddress: body.tosAcceptance.ipAddress || forwardedIp,
-          userAgent: body.tosAcceptance.userAgent || userAgent,
-        }
-      : undefined;
-
-    const tosAcceptance = tosAcceptanceRaw
-      ? {
-          ...(tosAcceptanceRaw.ipAddress !== undefined
-            ? { ipAddress: tosAcceptanceRaw.ipAddress }
-            : {}),
-          ...(tosAcceptanceRaw.userAgent !== undefined
-            ? { userAgent: tosAcceptanceRaw.userAgent }
-            : {}),
-          ...(tosAcceptanceRaw.acceptedAt !== undefined
-            ? { acceptedAt: tosAcceptanceRaw.acceptedAt }
-            : {}),
-        }
-      : undefined;
-
-    const profileInput: SubmitOnboardingProfileInput = {
-      stripeAccountId: balance.stripeAccountId,
-    };
-    if (body.email !== undefined) {
-      profileInput.email = body.email;
-    }
-    if (body.country !== undefined) {
-      profileInput.country = body.country;
-    }
-    if (body.businessType !== undefined) {
-      profileInput.businessType = body.businessType;
-    }
-    if (body.businessProfile !== undefined) {
-      profileInput.businessProfile = body.businessProfile;
-    }
-    if (body.individual !== undefined) {
-      profileInput.individual = body.individual;
-    }
-    if (body.company !== undefined) {
-      profileInput.company = body.company;
-    }
-    if (body.externalAccount !== undefined) {
-      profileInput.externalAccount = body.externalAccount;
-    }
-    if (tosAcceptance !== undefined) {
-      profileInput.tosAcceptance = tosAcceptance;
-    }
-    if (body.metadata !== undefined) {
-      profileInput.metadata = body.metadata;
-    }
+    const forwardedIp = parseForwardedIp(forwardedFor);
+    const tosAcceptance = resolveTosAcceptance(body.tosAcceptance, forwardedIp, userAgent);
+    const profileInput = buildOnboardingProfileInput(balance.stripeAccountId, body, tosAcceptance);
 
     const result = await this.connectService.submitOnboardingProfile(profileInput);
 
@@ -310,21 +258,12 @@ export class ConnectController {
       };
     }
 
-    const balanceById = new Map(
-      balances.map((balance) => [
-        balance.id,
-        {
-          accountType: balance.accountType,
-          stripeAccountId: balance.stripeAccountId,
-        },
-      ]),
-    );
-    const accountBalanceIds: string[] = [...balanceById.keys()];
-    const parsedSkip = Math.max(0, Number(skip ?? 0) || 0);
-    const parsedTake = Math.min(200, Math.max(1, Number(take ?? 50) || 50));
+    const balanceById = buildBalanceById(balances);
+    const parsedSkip = parsePaginationSkip(skip);
+    const parsedTake = parsePaginationTake(take);
     const where = {
       entityType: 'connect_account_balance',
-      entityId: { in: accountBalanceIds },
+      entityId: { in: [...balanceById.keys()] },
       action: { contains: 'connect.payout' },
     };
 
@@ -342,30 +281,7 @@ export class ConnectController {
     );
 
     return {
-      items: items.map((item) => {
-        const details =
-          item.details && typeof item.details === 'object' && !Array.isArray(item.details)
-            ? (item.details as ConnectPayoutDetails)
-            : {};
-        const balance =
-          item.entityId && typeof item.entityId === 'string'
-            ? balanceById.get(item.entityId)
-            : null;
-
-        return {
-          id: item.id,
-          action: item.action,
-          createdAt: item.createdAt.toISOString(),
-          accountBalanceId: item.entityId,
-          accountType: balance?.accountType ?? null,
-          stripeAccountId: balance?.stripeAccountId ?? null,
-          requestId: typeof details.requestId === 'string' ? details.requestId : null,
-          payoutId: typeof details.payoutId === 'string' ? details.payoutId : null,
-          status: typeof details.status === 'string' ? details.status : null,
-          amountCents: typeof details.amountCents === 'string' ? details.amountCents : null,
-          error: typeof details.error === 'string' ? details.error : null,
-        };
-      }),
+      items: items.map((item) => mapPayoutAuditItem(item, balanceById)),
       total,
     };
   }
@@ -403,23 +319,12 @@ export class ConnectController {
       };
     }
 
-    const balanceById = new Map(
-      balances.map((balance) => [
-        balance.id,
-        {
-          accountType: balance.accountType,
-          stripeAccountId: balance.stripeAccountId,
-        },
-      ]),
-    );
-    const parsedSkip = Math.max(0, Number(skip ?? 0) || 0);
-    const parsedTake = Math.min(200, Math.max(1, Number(take ?? 50) || 50));
-    const parsedEntryType =
-      entryType && CONNECT_LEDGER_ENTRY_TYPES.includes(entryType as ConnectLedgerEntryType)
-        ? (entryType as ConnectLedgerEntryType)
-        : undefined;
+    const balanceById = buildBalanceById(balances);
+    const parsedSkip = parsePaginationSkip(skip);
+    const parsedTake = parsePaginationTake(take);
+    const parsedEntryType = parseConnectLedgerEntryType(entryType);
     const where = {
-      accountBalanceId: { in: [...balanceById.keys()] as string[] },
+      accountBalanceId: { in: [...balanceById.keys()] },
       ...(parsedEntryType ? { type: parsedEntryType } : {}),
     };
 
@@ -437,24 +342,7 @@ export class ConnectController {
     );
 
     return {
-      items: items.map((item) => {
-        const balance = balanceById.get(item.accountBalanceId) ?? null;
-        return {
-          id: item.id,
-          accountBalanceId: item.accountBalanceId,
-          accountType: balance?.accountType ?? null,
-          stripeAccountId: balance?.stripeAccountId ?? null,
-          type: item.type,
-          amountCents: item.amountCents.toString(),
-          balanceAfterPendingCents: item.balanceAfterPendingCents.toString(),
-          balanceAfterAvailableCents: item.balanceAfterAvailableCents.toString(),
-          referenceType: item.referenceType,
-          referenceId: item.referenceId,
-          scheduledFor: item.scheduledFor?.toISOString() ?? null,
-          matured: item.matured,
-          createdAt: item.createdAt.toISOString(),
-        };
-      }),
+      items: items.map((item) => mapConnectLedgerEntry(item, balanceById)),
       total,
     };
   }
@@ -477,8 +365,8 @@ export class ConnectController {
       throw new BadRequestException('accountBalanceId is required');
     }
 
-    const requestedAmount = Math.trunc(Number(body.amountCents || 0));
-    if (!Number.isSafeInteger(requestedAmount) || requestedAmount <= 0) {
+    const requestedAmount = parsePositiveIntegerCents(body.amountCents);
+    if (requestedAmount === null) {
       throw new BadRequestException('amountCents must be a positive integer');
     }
 
@@ -520,8 +408,8 @@ export class ConnectController {
       throw new BadRequestException('accountBalanceId is required');
     }
 
-    const requestedAmount = Math.trunc(Number(body.amountCents || 0));
-    if (!Number.isSafeInteger(requestedAmount) || requestedAmount <= 0) {
+    const requestedAmount = parsePositiveIntegerCents(body.amountCents);
+    if (requestedAmount === null) {
       throw new BadRequestException('amountCents must be a positive integer');
     }
 
