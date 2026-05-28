@@ -49,7 +49,6 @@ import { OnboardingService } from './onboarding.service';
 import { PaymentController } from './payment.controller';
 import { PaymentService } from './payment.service';
 import { WhatsAppBrainController } from './whatsapp-brain.controller';
-import { WhatsAppBrainService } from './whatsapp-brain.service';
 
 import { LLMBudgetService } from './llm-budget.service';
 import { MemoryManagementService } from './memory-management.service';
@@ -128,9 +127,6 @@ import { UnifiedAgentService } from './unified-agent.service';
 import { UNIFIED_AGENT_TOKEN } from './tokens';
 import { UploadController } from './upload.controller';
 import { WebinarController } from './webinar.controller';
-import { BrainCapabilityRegistryService } from './brain-capability-registry.service';
-import { BrainCapabilityExecutorService } from './brain-capability-executor.service';
-import { BrainAutonomyService } from './brain-autonomy.service';
 import { LacunasController } from './lacunas.controller';
 import { BrainRuntimeController } from './mind/coordination/mind-runtime.controller';
 import {
@@ -298,14 +294,14 @@ import { SalesModule } from '../sales/sales.module';
     KloelWhatsAppToolsService,
     UnifiedAgentToolExecutorService,
 
-    KloelLeadBrainService,
+    LeadMindCoordinator,
     KloelToolDispatcherService,
     KloelToolExecutorService,
     KloelComposerService,
     KloelLeadProcessorService,
     KloelWorkspaceContextService,
     GuestChatService,
-    WhatsAppBrainService,
+    WhatsAppMindCoordinator,
     PaymentService,
     OnboardingService,
     ConversationalOnboardingService,
@@ -350,12 +346,12 @@ import { SalesModule } from '../sales/sales.module';
     CartRecoveryService,
     WebhooksService,
     WebhookDispatcherService,
-    BrainCapabilityRegistryService,
-    BrainCapabilityExecutorService,
-    BrainAutonomyService,
-    BrainCommercialGraphService,
-    BrainEventSpineService,
-    BrainRuntimeService,
+    MindCapabilityRegistry,
+    MindCapabilityExecutor,
+    MindAutonomyCoordinator,
+    MindCommercialGraph,
+    MindEventSpine,
+    MindRuntime,
     InstagramChannelTransport,
     MessengerChannelTransport,
     TikTokChannelTransport,
@@ -418,14 +414,14 @@ import { SalesModule } from '../sales/sales.module';
     KloelChatToolsService,
     KloelBusinessConfigToolsService,
     KloelWhatsAppToolsService,
-    KloelLeadBrainService,
+    LeadMindCoordinator,
     KloelToolDispatcherService,
     KloelToolExecutorService,
     KloelComposerService,
     KloelLeadProcessorService,
     KloelWorkspaceContextService,
     GuestChatService,
-    WhatsAppBrainService,
+    WhatsAppMindCoordinator,
     PaymentService,
 
     OnboardingService,
@@ -453,7 +449,7 @@ import { SalesModule } from '../sales/sales.module';
     AdRulesEngineService,
     EmailCampaignService,
     ChannelTransportRegistry,
-    BrainEventSpineService,
+    MindEventSpine,
     CommercialDecisionOrchestratorService,
     RuntimeConversationTracerService,
     MindBeliefService,
