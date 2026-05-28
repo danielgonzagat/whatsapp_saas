@@ -55,7 +55,7 @@ export function openCommandPalette(options?: Partial<Omit<CommandPaletteState, '
 }
 
 /**
- * Fecha o Command Palette programaticamente
+ * Fecha o Command Palette programaticamente de qualquer lugar
  */
 export function closeCommandPalette() {
   if (globalCloseCallback) {
@@ -224,38 +224,6 @@ export function useCommandPalette(options: UseCommandPaletteOptions = {}) {
       initialSearch: state.initialQuery,
     },
   };
-}
-
-// ============================================
-// ATALHOS PARA CATEGORIAS ESPECÍFICAS
-// ============================================
-
-/**
- * Abre o palette na categoria de navegação
- */
-export function openNavigationPalette() {
-  openCommandPalette({ initialCategory: 'navigate' });
-}
-
-/**
- * Abre o palette na categoria de criação
- */
-export function openCreatePalette() {
-  openCommandPalette({ initialCategory: 'create' });
-}
-
-/**
- * Abre o palette na categoria de autopilot
- */
-export function openAutopilotPalette() {
-  openCommandPalette({ initialCategory: 'autopilot' });
-}
-
-/**
- * Abre o palette na categoria de diagnósticos
- */
-export function openDiagnosticsPalette() {
-  openCommandPalette({ initialCategory: 'diagnostic' });
 }
 
 export default useCommandPalette;
