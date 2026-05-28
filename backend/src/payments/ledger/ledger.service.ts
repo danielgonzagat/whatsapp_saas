@@ -8,7 +8,11 @@ import { toPrismaJsonValue } from '../../common/prisma/prisma-json.util';
 
 import { FINANCIAL_TRANSACTION_OPTIONS, logLedgerWrite } from './ledger-audit.helper';
 import { creditAvailableByAdjustmentImpl } from './ledger-adjustments.helper';
-import { assertPositiveAmount, computeAbsorptionSplit } from './ledger-math.helper';
+import {
+  applyAbsorptionDebit,
+  assertPositiveAmount,
+  buildAbsorptionMetadata,
+} from './ledger-math.helper';
 import {
   AccountBalanceNotFoundError,
   type BalanceSnapshot,
@@ -356,12 +360,11 @@ export class LedgerService {
         throw new AccountBalanceNotFoundError(input.accountBalanceId);
       }
 
-      const { fromPending, fromAvailable } = computeAbsorptionSplit(
+      const { fromPending, fromAvailable, newPending, newAvailable } = applyAbsorptionDebit(
         input.amountCents,
         balance.pendingBalanceCents,
+        balance.availableBalanceCents,
       );
-      const newPending = balance.pendingBalanceCents - fromPending;
-      const newAvailable = balance.availableBalanceCents - fromAvailable;
       const newLifetimeChargebacks = balance.lifetimeChargebacksCents + input.amountCents;
 
       await tx.connectAccountBalance.update({
@@ -383,11 +386,9 @@ export class LedgerService {
           balanceAfterAvailableCents: newAvailable,
           referenceType: input.reference.type,
           referenceId: input.reference.id,
-          metadata: {
-            ...(input.metadata ?? {}),
-            absorbedFromPendingCents: fromPending.toString(),
-            absorbedFromAvailableCents: fromAvailable.toString(),
-          },
+          metadata: toPrismaJsonValue(
+            buildAbsorptionMetadata(input.metadata, fromPending, fromAvailable),
+          ),
         },
       });
 
@@ -451,12 +452,11 @@ export class LedgerService {
         throw new AccountBalanceNotFoundError(input.accountBalanceId);
       }
 
-      const { fromPending, fromAvailable } = computeAbsorptionSplit(
+      const { fromPending, fromAvailable, newPending, newAvailable } = applyAbsorptionDebit(
         input.amountCents,
         balance.pendingBalanceCents,
+        balance.availableBalanceCents,
       );
-      const newPending = balance.pendingBalanceCents - fromPending;
-      const newAvailable = balance.availableBalanceCents - fromAvailable;
 
       await tx.connectAccountBalance.update({
         where: { id: balance.id },
@@ -476,11 +476,9 @@ export class LedgerService {
           balanceAfterAvailableCents: newAvailable,
           referenceType: input.reference.type,
           referenceId: input.reference.id,
-          metadata: {
-            ...(input.metadata ?? {}),
-            absorbedFromPendingCents: fromPending.toString(),
-            absorbedFromAvailableCents: fromAvailable.toString(),
-          },
+          metadata: toPrismaJsonValue(
+            buildAbsorptionMetadata(input.metadata, fromPending, fromAvailable),
+          ),
         },
       });
 

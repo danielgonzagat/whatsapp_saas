@@ -51,3 +51,49 @@ export function computeAbsorptionSplit(
   const fromAvailable = amountCents - fromPending;
   return { fromPending, fromAvailable };
 }
+
+/**
+ * Full PENDING-first absorption: returns the split and the post-debit balances.
+ *
+ * Shared by chargeback + refund. AVAILABLE may go negative when PENDING is
+ * exhausted — that is the documented contract (caller must not clamp).
+ *
+ * Pure — no Prisma, no logging. Both inputs and outputs are bigint cents.
+ */
+export function applyAbsorptionDebit(
+  amountCents: bigint,
+  pendingBalanceCents: bigint,
+  availableBalanceCents: bigint,
+): {
+  fromPending: bigint;
+  fromAvailable: bigint;
+  newPending: bigint;
+  newAvailable: bigint;
+} {
+  const { fromPending, fromAvailable } = computeAbsorptionSplit(amountCents, pendingBalanceCents);
+  return {
+    fromPending,
+    fromAvailable,
+    newPending: pendingBalanceCents - fromPending,
+    newAvailable: availableBalanceCents - fromAvailable,
+  };
+}
+
+/**
+ * Merge caller-supplied metadata with the canonical absorbed-from-* fields.
+ *
+ * Shared by chargeback + refund persistence. Both absorbed amounts are
+ * stringified bigints so they round-trip through Prisma `Json` columns.
+ * Pure — no I/O.
+ */
+export function buildAbsorptionMetadata(
+  callerMetadata: Record<string, unknown> | undefined,
+  fromPending: bigint,
+  fromAvailable: bigint,
+): Record<string, unknown> {
+  return {
+    ...(callerMetadata ?? {}),
+    absorbedFromPendingCents: fromPending.toString(),
+    absorbedFromAvailableCents: fromAvailable.toString(),
+  };
+}
