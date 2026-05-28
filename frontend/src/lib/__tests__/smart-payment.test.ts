@@ -6,15 +6,15 @@ describe('normalizeSmartPaymentResult', () => {
   it('maps the backend Pix smart-payment payload to the UI result shape', () => {
     expect(
       normalizeSmartPaymentResult({
-        paymentId: 'pi_pix_1',
-        paymentUrl: 'https://pay.stripe.com/pix/pi_pix_1',
+        paymentId: 'mp_pix_1',
+        paymentUrl: 'https://www.mercadopago.com.br/payments/mp_pix_1/ticket',
         pixCopyPaste: '000201pixcopy',
         billingType: 'PIX',
         suggestedMessage: 'Pix pronto',
       }),
     ).toEqual({
-      id: 'pi_pix_1',
-      paymentLink: 'https://pay.stripe.com/pix/pi_pix_1',
+      id: 'mp_pix_1',
+      paymentLink: 'https://www.mercadopago.com.br/payments/mp_pix_1/ticket',
       pixCode: '000201pixcopy',
       billingType: 'PIX',
       suggestedMessage: 'Pix pronto',

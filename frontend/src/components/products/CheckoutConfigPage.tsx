@@ -43,7 +43,7 @@ interface Props {
 function createInitialCheckoutConfigState(
   config: CheckoutConfigInput | null | undefined,
 ): CheckoutConfigState {
-  const { enableBoleto: _enableBoleto, ...safeConfig } = config ?? {};
+  const safeConfig = config ?? {};
   return {
     checkoutName: '',
     enableCreditCard: false,
@@ -140,10 +140,7 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
   const set = (key: string, value: unknown) => {
     setState((prev) => ({ ...prev, [key]: value }));
   };
-  const saveState = {
-    ...state,
-    enableBoleto: false,
-  };
+  const saveState = { ...state };
 
   return (
     <div
@@ -222,10 +219,9 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
           <h3 style={sectionTitleStyle}>{kloelT(`Pagamento`)}</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <Checkbox
-              checked={false}
-              onChange={() => set('enableBoleto', false)}
-              label={kloelT(`Boleto indisponivel no checkout Stripe atual`)}
-              disabled
+              checked={state.enableBoleto}
+              onChange={(v) => set('enableBoleto', v)}
+              label={kloelT(`Boleto`)}
             />
             <Checkbox
               checked={state.enableCreditCard}
