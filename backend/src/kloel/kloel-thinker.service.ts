@@ -39,7 +39,6 @@ import {
 import {
   AI_KEY_MISSING_MESSAGE,
   isAiProviderConfigured,
-  resolveAbortBeforeStartCode,
   resolveThinkErrorCode,
   resolveThinkerSystemPrompt,
 } from './kloel-thinker.substrate.helpers';
@@ -120,21 +119,6 @@ export class KloelThinkerService {
     streamWriter.init();
 
     try {
-      if (mode === 'chat' && workspaceId) {
-        const deterministicAction = detectActionIntent(message);
-        if (deterministicAction) {
-          safeWrite(
-            createKloelErrorEvent({
-              content: this.replyEngine.buildStreamAbortMessage(abortReason(), opts?.timeoutMs),
-              error: resolveAbortBeforeStartCode(abortReason()),
-              done: true,
-            }),
-          );
-        }
-        streamWriter.close();
-        return;
-      }
-
       const deterministicWorkspaceId =
         mode === 'chat' && typeof workspaceId === 'string' && workspaceId.length > 0
           ? workspaceId
