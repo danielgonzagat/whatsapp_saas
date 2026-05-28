@@ -127,6 +127,9 @@ describe('WalletService', () => {
       });
 
       expect(result.success).toBe(true);
+      if (!result.success) {
+        throw new Error('expected requestWithdrawal to succeed');
+      }
       expect(result.transactionId).toBe('wtx-1');
     });
 

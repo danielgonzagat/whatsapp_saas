@@ -289,6 +289,9 @@ describe('WalletService', () => {
       const result = await service.requestAnticipation('ws-1', 1000);
 
       expect(result.success).toBe(true);
+      if (!result.success) {
+        throw new Error('expected requestAnticipation to succeed');
+      }
       expect(result.originalAmount).toBe(1000);
       expect(result.feePercent).toBe(3.0);
       expect(result.feeAmount).toBe(30);
@@ -384,6 +387,9 @@ describe('WalletService', () => {
 
       const result = await service.requestAnticipation('ws-1', 1000, undefined, 5.0);
 
+      if (!result.success) {
+        throw new Error('expected requestAnticipation to succeed with custom fee');
+      }
       expect(result.feePercent).toBe(5.0);
       expect(result.feeAmount).toBe(50);
       expect(result.netAmount).toBe(950);

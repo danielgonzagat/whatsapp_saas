@@ -280,3 +280,247 @@ export function buildWalletIndex<W extends { id: string }>(
 ): Map<string, W> {
   return new Map(wallets.map((w) => [w.id, w]));
 }
+
+/**
+ * Build the structured log line emitted by `processSale` after the pure
+ * `calculateSaleSplit` math runs and BEFORE any Prisma I/O. Pulled out so the
+ * format string is reviewable from a spec — there is no money arithmetic
+ * happening here, only string projection of already-computed cents.
+ *
+ * `formatBalance` is injected (same convention as `buildInsufficientBalanceMessage`)
+ * to keep this helper free of the `money-format.util` dependency.
+ */
+export function buildSaleSplitLogMessage(
+  split: SaleSplit,
+  formatBalance: (value: number) => string,
+): string {
+  const { grossAmount, grossAmountInCents, gatewayFeeInCents, kloelFeeInCents, netAmount, netAmountInCents } = split;
+  return (
+    `Split: ${formatBalance(grossAmount)} -> Líquido: ${formatBalance(netAmount)} ` +
+    `(cents: gross=${grossAmountInCents}, gateway=${gatewayFeeInCents}, ` +
+    `kloel=${kloelFeeInCents}, net=${netAmountInCents})`
+  );
+}
+
+/**
+ * Build the inline ledger metadata literal that `processSale` attaches to the
+ * `sale_credit` ledger entry. Same shape it always wrote — pure projection of
+ * already-computed cents plus the caller's `saleId`. No money arithmetic.
+ */
+export function buildSaleLedgerMetadata(input: {
+  saleId: string;
+  split: Pick<SaleSplit, 'grossAmountInCents' | 'gatewayFeeInCents' | 'kloelFeeInCents'>;
+}): {
+  saleId: string;
+  grossAmountInCents: number;
+  gatewayFeeInCents: number;
+  kloelFeeInCents: number;
+} {
+  return {
+    saleId: input.saleId,
+    grossAmountInCents: input.split.grossAmountInCents,
+    gatewayFeeInCents: input.split.gatewayFeeInCents,
+    kloelFeeInCents: input.split.kloelFeeInCents,
+  };
+}
+
+/** Response envelope returned by `processSale` to the caller. */
+export interface ProcessSaleResponse {
+  grossAmount: number;
+  gatewayFee: number;
+  kloelFee: number;
+  netAmount: number;
+  transactionId: string;
+}
+
+/**
+ * Build the `processSale` response envelope. Pure projection of the SaleSplit
+ * plus the persisted transaction id. The Real-valued fields here are the same
+ * Real projections the SaleSplit already carries; the helper exists so the
+ * field order + shape can be asserted from a spec without spinning Prisma.
+ */
+export function buildProcessSaleResponse(input: {
+  split: Pick<SaleSplit, 'grossAmount' | 'gatewayFee' | 'kloelFee' | 'netAmount'>;
+  transactionId: string;
+}): ProcessSaleResponse {
+  return {
+    grossAmount: input.split.grossAmount,
+    gatewayFee: input.split.gatewayFee,
+    kloelFee: input.split.kloelFee,
+    netAmount: input.split.netAmount,
+    transactionId: input.transactionId,
+  };
+}
+
+/** Success envelope returned by `requestWithdrawal`. */
+export interface WithdrawalSuccessResponse {
+  success: true;
+  message: 'Saque solicitado';
+  transactionId: string;
+}
+
+/**
+ * Build the success envelope for `requestWithdrawal`. The message is a fixed
+ * PT-BR literal; the helper exists so the controller-visible shape can be
+ * locked from a spec.
+ */
+export function buildWithdrawalSuccessResponse(transactionId: string): WithdrawalSuccessResponse {
+  return {
+    success: true,
+    message: 'Saque solicitado',
+    transactionId,
+  };
+}
+
+/** Failure envelope returned by `requestWithdrawal` / `requestAnticipation`. */
+export interface MonetaryRequestFailureResponse {
+  success: false;
+  message: string;
+}
+
+/**
+ * Build the canonical "invalid monetary amount" failure envelope. The two
+ * existing call sites (`requestWithdrawal` and `requestAnticipation`) each
+ * passed a slightly different PT-BR sentence; this helper preserves the
+ * existing strings as a labeled discriminator so the controller-visible shape
+ * stays identical to the pre-refactor responses.
+ */
+export function buildInvalidMonetaryAmountResponse(
+  flow: 'withdrawal' | 'anticipation',
+): MonetaryRequestFailureResponse {
+  const message =
+    flow === 'withdrawal' ? 'Valor de saque invalido.' : 'Valor de antecipação inválido.';
+  return { success: false, message };
+}
+
+/**
+ * Build the insufficient-balance failure envelope returned to the chat surface
+ * when a withdrawal/anticipation cannot proceed. Wraps the existing
+ * `buildInsufficientBalanceMessage` projection into the `{success,message}`
+ * shape both flows already returned — kept as a separate helper so the spec
+ * can lock both the discriminator and the wording in one place.
+ */
+export function buildInsufficientBalanceFailureResponse(
+  bucket: 'available' | 'pending',
+  balance: number,
+  formatBalance: (value: number) => string,
+): MonetaryRequestFailureResponse {
+  return {
+    success: false,
+    message: buildInsufficientBalanceMessage(bucket, balance, formatBalance),
+  };
+}
+
+/** Success envelope returned by `requestAnticipation`. */
+export interface AnticipationSuccessResponse {
+  success: true;
+  message: 'Antecipação realizada com sucesso.';
+  transactionId: string;
+  originalAmount: number;
+  feePercent: number;
+  feeAmount: number;
+  netAmount: number;
+}
+
+/**
+ * Build the `requestAnticipation` success envelope. Pure projection of the
+ * AnticipationSplit (originalAmount + feeAmount + netAmount) plus the
+ * persisted transaction id. No money arithmetic — the Real-valued numbers
+ * come straight from the already-computed `AnticipationSplit`.
+ */
+export function buildAnticipationSuccessResponse(input: {
+  transactionId: string;
+  amount: number;
+  feePercent: number;
+  split: Pick<AnticipationSplit, 'feeAmount' | 'netAmount'>;
+}): AnticipationSuccessResponse {
+  return {
+    success: true,
+    message: 'Antecipação realizada com sucesso.',
+    transactionId: input.transactionId,
+    originalAmount: input.amount,
+    feePercent: input.feePercent,
+    feeAmount: input.split.feeAmount,
+    netAmount: input.split.netAmount,
+  };
+}
+
+/**
+ * Build the data payload persisted as a `WalletAnticipation` row by
+ * `requestAnticipation`. Normalizes `installments` to `null` when absent so
+ * the column stays schema-stable — same normalization
+ * `buildAnticipationTransactionMetadata` already applies. Pure projection;
+ * never reads or writes anything.
+ */
+export function buildWalletAnticipationRowData(input: {
+  workspaceId: string;
+  amount: number;
+  feePercent: number;
+  feeAmount: number;
+  netAmount: number;
+  transactionId: string;
+  installments?: number;
+}): {
+  workspaceId: string;
+  originalAmount: number;
+  feePercent: number;
+  feeAmount: number;
+  netAmount: number;
+  installments: number | null;
+  status: 'COMPLETED';
+  transactionId: string;
+} {
+  return {
+    workspaceId: input.workspaceId,
+    originalAmount: input.amount,
+    feePercent: input.feePercent,
+    feeAmount: input.feeAmount,
+    netAmount: input.netAmount,
+    installments: input.installments ?? null,
+    status: 'COMPLETED',
+    transactionId: input.transactionId,
+  };
+}
+
+/**
+ * Build the log line emitted by `reconcilePendingPayments` after each
+ * successful settlement. `formatBalance` is injected to keep the helper free
+ * of the `money-format.util` dependency, matching the convention used by
+ * `buildInsufficientBalanceMessage` / `buildSaleSplitLogMessage`.
+ */
+export function buildReconciliationSettledLogMessage(
+  txId: string,
+  amount: number,
+  formatBalance: (value: number) => string,
+): string {
+  return `Settled tx ${txId}: ${formatBalance(amount)} -> available`;
+}
+
+/**
+ * Build the log line emitted by `reconcilePendingPayments` at the start of a
+ * non-empty sweep. Pure string projection of the batch size.
+ */
+export function buildReconciliationStartLogMessage(batchSize: number): string {
+  return `Reconciling ${batchSize} pending transaction(s)...`;
+}
+
+/**
+ * Build the log line emitted by `confirmPayment` when it returns `false`.
+ * The three no-op reasons (`not_found`, `not_pending`, `race_lost`) are kept
+ * verbatim so ops dashboards already parsing this string keep working.
+ */
+export function buildConfirmPaymentNoopLogMessage(
+  transactionId: string,
+  reason: 'not_found' | 'not_pending' | 'race_lost',
+): string {
+  return `confirmPayment noop for ${transactionId}: ${reason}`;
+}
+
+/**
+ * Build the log line emitted by `reconcilePendingPayments` when a per-tx
+ * settlement fails. Pure string projection so the parser-facing wording stays
+ * locked.
+ */
+export function buildReconciliationFailedLogMessage(txId: string, errorMessage: string): string {
+  return `Failed to settle tx ${txId}: ${errorMessage}`;
+}

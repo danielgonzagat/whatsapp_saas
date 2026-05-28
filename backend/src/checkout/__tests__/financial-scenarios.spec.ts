@@ -96,6 +96,9 @@ describe('Financial Scenarios', () => {
       });
 
       expect(result.success).toBe(true);
+      if (!result.success) {
+        throw new Error('expected requestWithdrawal to succeed');
+      }
       expect(result.transactionId).toBe('tx-withdraw-1');
       expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);
     });

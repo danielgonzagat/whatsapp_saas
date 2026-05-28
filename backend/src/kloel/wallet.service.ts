@@ -13,11 +13,22 @@ import {
   ConcurrentWalletUpdateError,
   KloelWalletNotFoundError,
   buildAnticipationDescription,
+  buildAnticipationSuccessResponse,
   buildAnticipationTransactionMetadata,
-  buildInsufficientBalanceMessage,
+  buildConfirmPaymentNoopLogMessage,
+  buildInsufficientBalanceFailureResponse,
+  buildInvalidMonetaryAmountResponse,
+  buildProcessSaleResponse,
+  buildReconciliationFailedLogMessage,
+  buildReconciliationSettledLogMessage,
+  buildReconciliationStartLogMessage,
+  buildSaleLedgerMetadata,
+  buildSaleSplitLogMessage,
   buildSaleTransactionMetadata,
+  buildWalletAnticipationRowData,
   buildWalletIndex,
   buildWithdrawalDescription,
+  buildWithdrawalSuccessResponse,
   calculateAnticipationSplit,
   calculateSaleSplit,
   isValidMonetaryAmount,
@@ -85,14 +96,10 @@ export class WalletService {
       kloelFeePercent,
       gatewayFeePercent,
     });
-    const { grossAmountInCents, gatewayFeeInCents, kloelFeeInCents, netAmountInCents } = split;
-    const { gatewayFee, kloelFee, netAmount } = split;
+    const { netAmountInCents } = split;
+    const { netAmount } = split;
 
-    this.logger.log(
-      `Split: ${formatBrlAmount(saleAmount)} -> Líquido: ${formatBrlAmount(netAmount)} ` +
-        `(cents: gross=${grossAmountInCents}, gateway=${gatewayFeeInCents}, ` +
-        `kloel=${kloelFeeInCents}, net=${netAmountInCents})`,
-    );
+    this.logger.log(buildSaleSplitLogMessage(split, formatBrlAmount));
 
     const wallet = await this.getWalletOrThrow(workspaceId);
 
@@ -134,12 +141,7 @@ export class WalletService {
           bucket: 'pending',
           amountInCents: BigInt(netAmountInCents),
           reason: 'sale_credit',
-          metadata: {
-            saleId,
-            grossAmountInCents,
-            gatewayFeeInCents,
-            kloelFeeInCents,
-          },
+          metadata: buildSaleLedgerMetadata({ saleId, split }),
         });
 
         return created;
@@ -147,13 +149,7 @@ export class WalletService {
       { isolationLevel: 'ReadCommitted' },
     );
 
-    return {
-      grossAmount: saleAmount,
-      gatewayFee,
-      kloelFee,
-      netAmount,
-      transactionId: transaction.id,
-    };
+    return buildProcessSaleResponse({ split, transactionId: transaction.id });
   }
 
   /**
@@ -261,7 +257,7 @@ export class WalletService {
       return true;
     }
     // Structured log so ops can tell the three no-op reasons apart.
-    this.logger.log(`confirmPayment noop for ${transactionId}: ${outcome.kind}`);
+    this.logger.log(buildConfirmPaymentNoopLogMessage(transactionId, outcome.kind));
     return false;
   }
 
@@ -270,20 +266,17 @@ export class WalletService {
    */
   async requestWithdrawal(workspaceId: string, amount: number, bankInfo: Record<string, unknown>) {
     if (!isValidMonetaryAmount(amount)) {
-      return { success: false, message: 'Valor de saque invalido.' };
+      return buildInvalidMonetaryAmountResponse('withdrawal');
     }
 
     const wallet = await this.getWalletOrThrow(workspaceId);
 
     if (wallet.availableBalance < amount) {
-      return {
-        success: false,
-        message: buildInsufficientBalanceMessage(
-          'available',
-          wallet.availableBalance,
-          formatBrlAmount,
-        ),
-      };
+      return buildInsufficientBalanceFailureResponse(
+        'available',
+        wallet.availableBalance,
+        formatBrlAmount,
+      );
     }
 
     // Integer-cent representation for I11 dual-write.
@@ -342,11 +335,7 @@ export class WalletService {
       throw err;
     }
 
-    return {
-      success: true,
-      message: 'Saque solicitado',
-      transactionId: transaction.id,
-    };
+    return buildWithdrawalSuccessResponse(transaction.id);
   }
 
   /**
@@ -367,20 +356,17 @@ export class WalletService {
     feePercent = 3.0,
   ) {
     if (!isValidMonetaryAmount(amount)) {
-      return { success: false, message: 'Valor de antecipação inválido.' };
+      return buildInvalidMonetaryAmountResponse('anticipation');
     }
 
     const wallet = await this.getWalletOrThrow(workspaceId);
 
     if (wallet.pendingBalance < amount) {
-      return {
-        success: false,
-        message: buildInsufficientBalanceMessage(
-          'pending',
-          wallet.pendingBalance,
-          formatBrlAmount,
-        ),
-      };
+      return buildInsufficientBalanceFailureResponse(
+        'pending',
+        wallet.pendingBalance,
+        formatBrlAmount,
+      );
     }
 
     // Integer-cent arithmetic for I11 dual-write — pure math in wallet.helpers.ts.
@@ -426,16 +412,15 @@ export class WalletService {
 
           // Persist the anticipation record for reporting.
           await tx.walletAnticipation.create({
-            data: {
+            data: buildWalletAnticipationRowData({
               workspaceId,
-              originalAmount: amount,
+              amount,
               feePercent,
               feeAmount,
               netAmount,
-              installments: installments ?? null,
-              status: 'COMPLETED',
               transactionId: created.id,
-            },
+              ...(installments !== undefined ? { installments } : {}),
+            }),
           });
 
           // I12 — ledger entries: debit pending for the full amount,
@@ -474,15 +459,12 @@ export class WalletService {
       throw err;
     }
 
-    return {
-      success: true,
-      message: 'Antecipação realizada com sucesso.',
+    return buildAnticipationSuccessResponse({
       transactionId: transaction.id,
-      originalAmount: amount,
+      amount,
       feePercent,
-      feeAmount,
-      netAmount,
-    };
+      split: anticipation,
+    });
   }
 
   /**
@@ -524,7 +506,7 @@ export class WalletService {
         return;
       }
 
-      this.logger.log(`Reconciling ${pendingTxs.length} pending transaction(s)...`);
+      this.logger.log(buildReconciliationStartLogMessage(pendingTxs.length));
 
       // Batch-fetch wallets for all pending transactions
       const walletIds = uniqueWalletIds(pendingTxs);
@@ -604,7 +586,9 @@ export class WalletService {
             { isolationLevel: 'ReadCommitted' },
           );
 
-          this.logger.log(`Settled tx ${tx.id}: ${formatBrlAmount(tx.amount)} -> available`);
+          this.logger.log(
+            buildReconciliationSettledLogMessage(tx.id, tx.amount, formatBrlAmount),
+          );
         } catch (err: unknown) {
           void this.opsAlert?.alertOnCriticalError(err, 'WalletService.async');
           const message = err instanceof Error ? err.message : String(err);
@@ -612,7 +596,7 @@ export class WalletService {
             txId: tx.id,
             error: message,
           });
-          this.logger.error(`Failed to settle tx ${tx.id}: ${message}`);
+          this.logger.error(buildReconciliationFailedLogMessage(tx.id, message));
           if (isFirstFailure) {
             const alert = 'wallet reconciliation encountered settlement failures';
             this.financialAlert.reconciliationAlert(alert, {
