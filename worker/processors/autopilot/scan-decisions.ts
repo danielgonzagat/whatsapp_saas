@@ -5,7 +5,6 @@ import {
   extractTextResponse,
   mapUnifiedActionsToAutopilot,
   processWithUnifiedAgent,
-  shouldUseUnifiedAgent,
 } from '../../providers/unified-agent-integrator';
 import { log, type UnknownRecord, type AutopilotDecision } from './shared';
 import { maybeEscalateToHumanControl } from './backlog';
@@ -17,6 +16,27 @@ import {
   generateAutonomousFallbackResponse,
 } from './cognition';
 import { executeAction, sendDirectAutopilotText } from './execution';
+import {
+  AUTONOMOUS_FALLBACK_ACTION,
+  UNIFIED_AGENT_EXECUTED_ACTION,
+  UNIFIED_AGENT_TEXT_ACTION,
+  buildAlreadyExecutedResult,
+  buildExecutionSummary,
+  buildIdempotencyContext,
+  buildPreviewResult,
+  buildSkippedResult,
+  formatActionExecutedSummary,
+  formatActionSkippedSummary,
+  isNoActionDecision,
+  isPreviewMode,
+  resolveFallbackIntent,
+  resolveFallbackReason,
+  resolveUsedKb,
+  shouldRouteToUnifiedAgent,
+  type ScanDecisionResult,
+} from './scan-decisions.helpers';
+
+export type { ScanDecisionResult } from './scan-decisions.helpers';
 
 const scanLog = new WorkerLogger('autopilot:scan-decisions');
 
@@ -47,12 +67,6 @@ export interface ScanDecisionInput {
   conversationId?: string;
 }
 
-export interface ScanDecisionResult {
-  status: 'sent' | 'failed' | 'skipped';
-  summary: string;
-  keepReplyLock: boolean;
-}
-
 export async function runScanDecisions(params: ScanDecisionInput): Promise<ScanDecisionResult> {
   const {
     workspaceId,
@@ -79,10 +93,13 @@ export async function runScanDecisions(params: ScanDecisionInput): Promise<ScanD
 
   const cognitiveState = cognitiveStateRaw as UnknownRecord;
 
-  const useUnifiedAgent =
-    cognitiveState.nextBestAction === 'RESPOND' ||
-    productMatches.length > 0 ||
-    shouldUseUnifiedAgent({ messageContent, leadScore: leadScore || undefined, settings });
+  const useUnifiedAgent = shouldRouteToUnifiedAgent({
+    cognitiveState,
+    productMatches,
+    messageContent,
+    leadScore: leadScore ?? undefined,
+    settings,
+  });
 
   let decision: AutopilotDecision;
 
@@ -114,12 +131,12 @@ export async function runScanDecisions(params: ScanDecisionInput): Promise<ScanD
       if (decision.alreadyExecuted) {
         const observedExecution = await beginAutonomyExecution({
           workspaceId,
-          actionType: 'UNIFIED_AGENT_EXECUTED',
+          actionType: UNIFIED_AGENT_EXECUTED_ACTION,
           contactId,
           conversationId: conversationId || undefined,
           idempotencyKey: buildAutonomyExecutionKey({
             workspaceId,
-            actionType: 'UNIFIED_AGENT_EXECUTED',
+            actionType: UNIFIED_AGENT_EXECUTED_ACTION,
             contactId,
             conversationId: conversationId || undefined,
             phone,
@@ -160,11 +177,7 @@ export async function runScanDecisions(params: ScanDecisionInput): Promise<ScanD
           stage: 'unified_agent',
           result: 'already_executed',
         });
-        return {
-          status: 'sent',
-          summary: 'A resposta já havia sido executada.',
-          keepReplyLock: true,
-        };
+        return buildAlreadyExecutedResult('A resposta já havia sido executada.');
       }
 
       if (unifiedAgentResponse && !decision.alreadyExecuted) {
@@ -185,19 +198,15 @@ export async function runScanDecisions(params: ScanDecisionInput): Promise<ScanD
           decisionEnvelope,
           messageContent,
           intent: decision.intent,
-          action: 'UNIFIED_AGENT_TEXT',
+          action: UNIFIED_AGENT_TEXT_ACTION,
         });
         if (humanGate.blocked) {
-          return { status: 'skipped', summary: humanGate.summary, keepReplyLock: false };
+          return buildSkippedResult(humanGate.summary);
         }
 
-        if (smokeTestId && smokeMode !== 'live') {
+        if (isPreviewMode(smokeTestId, smokeMode)) {
           autopilotPipelineCounter.inc({ workspaceId, stage: 'reply', result: 'preview' });
-          return {
-            status: 'skipped',
-            summary: 'Resposta gerada em modo preview.',
-            keepReplyLock: false,
-          };
+          return buildPreviewResult('Resposta gerada em modo preview.');
         }
 
         const sendResult = await sendDirectAutopilotText({
@@ -212,7 +221,7 @@ export async function runScanDecisions(params: ScanDecisionInput): Promise<ScanD
           reason: decision.reason,
           workspaceRecord,
           intentConfidence: decision.confidence,
-          actionLabel: 'UNIFIED_AGENT_TEXT',
+          actionLabel: UNIFIED_AGENT_TEXT_ACTION,
           usedHistory: true,
           usedKb: productMatches.length > 0,
           deliveryMode,
@@ -220,21 +229,18 @@ export async function runScanDecisions(params: ScanDecisionInput): Promise<ScanD
           smokeMode,
           runId,
           customerMessages,
-          idempotencyContext: {
+          idempotencyContext: buildIdempotencyContext({
             source: 'scan_contact_unified_agent_text',
             messageIds,
             providerMessageIds,
-            runId: runId || null,
-          },
+            runId,
+          }),
         });
-        return {
-          status: sendResult === 'executed' ? 'sent' : 'skipped',
-          summary:
-            sendResult === 'executed'
-              ? 'Resposta enviada com texto gerado pelo Unified Agent.'
-              : 'A resposta foi pulada por política operacional.',
-          keepReplyLock: sendResult === 'executed',
-        };
+        return buildExecutionSummary({
+          executionResult: sendResult,
+          executedSummary: 'Resposta enviada com texto gerado pelo Unified Agent.',
+          skippedSummary: 'A resposta foi pulada por política operacional.',
+        });
       }
     } else {
       log.warn('autopilot_unified_fallback', { workspaceId });
@@ -252,10 +258,11 @@ export async function runScanDecisions(params: ScanDecisionInput): Promise<ScanD
 
   log.info('autopilot_decision', { decision });
 
-  if (!decision.action || decision.action === 'NONE') {
+  if (isNoActionDecision(decision)) {
+    const fallbackIntent = resolveFallbackIntent(decision);
     const decisionEnvelope = buildDecisionEnvelope({
-      intent: decision.intent || 'GENERAL_ASSISTANCE',
-      action: 'AUTONOMOUS_FALLBACK',
+      intent: fallbackIntent,
+      action: AUTONOMOUS_FALLBACK_ACTION,
       confidence: decision.confidence,
       messageContent,
       demandState: undefined,
@@ -269,11 +276,11 @@ export async function runScanDecisions(params: ScanDecisionInput): Promise<ScanD
       runId,
       decisionEnvelope,
       messageContent,
-      intent: decision.intent || 'GENERAL_ASSISTANCE',
-      action: 'AUTONOMOUS_FALLBACK',
+      intent: fallbackIntent,
+      action: AUTONOMOUS_FALLBACK_ACTION,
     });
     if (humanGate.blocked) {
-      return { status: 'skipped', summary: humanGate.summary, keepReplyLock: false };
+      return buildSkippedResult(humanGate.summary);
     }
 
     const fallbackText = await generateAutonomousFallbackResponse({
@@ -288,13 +295,9 @@ export async function runScanDecisions(params: ScanDecisionInput): Promise<ScanD
       cognitiveState: cognitiveStateRaw as never,
     });
 
-    if (smokeTestId && smokeMode !== 'live') {
+    if (isPreviewMode(smokeTestId, smokeMode)) {
       autopilotPipelineCounter.inc({ workspaceId, stage: 'reply', result: 'preview' });
-      return {
-        status: 'skipped',
-        summary: 'Fallback gerado em modo preview.',
-        keepReplyLock: false,
-      };
+      return buildPreviewResult('Fallback gerado em modo preview.');
     }
 
     const sendResult = await sendDirectAutopilotText({
@@ -305,34 +308,31 @@ export async function runScanDecisions(params: ScanDecisionInput): Promise<ScanD
       contactName,
       text: fallbackText,
       settings,
-      intent: decision.intent || 'GENERAL_ASSISTANCE',
-      reason: decision.reason || 'autonomous_fallback',
+      intent: fallbackIntent,
+      reason: resolveFallbackReason(decision),
       workspaceRecord,
       intentConfidence: decision.confidence,
-      actionLabel: 'AUTONOMOUS_FALLBACK',
+      actionLabel: AUTONOMOUS_FALLBACK_ACTION,
       usedHistory: true,
-      usedKb: productMatches.length > 0 || decision.usedKb,
+      usedKb: resolveUsedKb(decision, productMatches),
       deliveryMode,
       smokeTestId,
       smokeMode,
       runId,
       customerMessages,
-      idempotencyContext: {
+      idempotencyContext: buildIdempotencyContext({
         source: 'scan_contact_autonomous_fallback',
         messageIds,
         providerMessageIds,
-        runId: runId || null,
-      },
+        runId,
+      }),
     });
 
-    return {
-      status: sendResult === 'executed' ? 'sent' : 'skipped',
-      summary:
-        sendResult === 'executed'
-          ? 'Resposta enviada com fallback autônomo.'
-          : 'Fallback pulado por política operacional.',
-      keepReplyLock: sendResult === 'executed',
-    };
+    return buildExecutionSummary({
+      executionResult: sendResult,
+      executedSummary: 'Resposta enviada com fallback autônomo.',
+      skippedSummary: 'Fallback pulado por política operacional.',
+    });
   }
 
   const decisionEnvelope = buildDecisionEnvelope({
@@ -355,7 +355,7 @@ export async function runScanDecisions(params: ScanDecisionInput): Promise<ScanD
     action: decision.action,
   });
   if (humanGate.blocked) {
-    return { status: 'skipped', summary: humanGate.summary, keepReplyLock: false };
+    return buildSkippedResult(humanGate.summary);
   }
 
   const executeResult = await executeAction(decision.action, {
@@ -372,28 +372,25 @@ export async function runScanDecisions(params: ScanDecisionInput): Promise<ScanD
     workspaceRecord,
     intentConfidence: decision.confidence,
     usedHistory: true,
-    usedKb: productMatches.length > 0 || decision.usedKb,
+    usedKb: resolveUsedKb(decision, productMatches),
     deliveryMode,
     smokeTestId,
     smokeMode,
     runId,
     customerMessages,
-    idempotencyContext: {
+    idempotencyContext: buildIdempotencyContext({
       source: 'scan_contact_action',
       messageIds,
       providerMessageIds,
-      runId: runId || null,
-    },
+      runId,
+    }),
   });
 
-  return {
-    status: executeResult === 'executed' ? 'sent' : 'skipped',
-    summary:
-      executeResult === 'executed'
-        ? `Ação ${decision.action} executada com sucesso.`
-        : `Ação ${decision.action} pulada por política operacional.`,
-    keepReplyLock: executeResult === 'executed',
-  };
+  return buildExecutionSummary({
+    executionResult: executeResult,
+    executedSummary: formatActionExecutedSummary(decision.action),
+    skippedSummary: formatActionSkippedSummary(decision.action),
+  });
 }
 
 export { scanLog };
