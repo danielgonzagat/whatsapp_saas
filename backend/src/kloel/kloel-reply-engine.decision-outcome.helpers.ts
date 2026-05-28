@@ -111,9 +111,15 @@ export function observeRepliedToUserBelief(
 }
 
 /**
- * PI-k9: compute chat surprise (predicted vs observed) and log when it exceeds
- * the 0.3 threshold. Uses a 30ms timeout on the belief lookup to avoid blocking
- * the reply path; failures are warn-logged and swallowed.
+ * PI-k9 / PI-K12-C: compute chat surprise (predicted vs observed) and log when
+ * it exceeds the 0.3 threshold.
+ *
+ * When `mindSignals?.prediction` is present, its `confidence` is used as the
+ * predicted probability (closing the predictive-coding loop). Otherwise falls
+ * back to the `replied_to_user` belief baseline.
+ *
+ * Uses a 30ms timeout on the belief lookup to avoid blocking the reply path;
+ * failures are warn-logged and swallowed.
  */
 export async function computeChatSurprise(
   mindSurpriseService: MindSurpriseService | undefined,
@@ -125,23 +131,42 @@ export async function computeChatSurprise(
     surface: string;
     degraded: boolean;
   },
+  mindSignals?: Record<string, unknown>,
 ): Promise<void> {
-  if (!mindSurpriseService || !mindBeliefService) {
+  if (!mindSurpriseService) {
     return;
   }
 
   try {
-    const belief = await Promise.race([
-      mindBeliefService.getOrInit(params.workspaceId, params.workspaceId, 'replied_to_user', {
-        surface: params.surface,
-        degraded: params.degraded,
-      }),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('SURPRISE_TIMEOUT')), 30),
-      ),
-    ]);
+    let predicted: number;
+    let source: 'prediction' | 'belief' = 'belief';
 
-    const predicted = belief.mean;
+    // PI-K12-C: use mindSignals.prediction.confidence when available
+    const predictionSignal = mindSignals?.prediction as
+      | { expected?: string; confidence?: number }
+      | undefined;
+    if (
+      predictionSignal !== undefined &&
+      typeof predictionSignal.confidence === 'number' &&
+      !Number.isNaN(predictionSignal.confidence)
+    ) {
+      predicted = predictionSignal.confidence;
+      source = 'prediction';
+    } else if (mindBeliefService) {
+      const belief = await Promise.race([
+        mindBeliefService.getOrInit(params.workspaceId, params.workspaceId, 'replied_to_user', {
+          surface: params.surface,
+          degraded: params.degraded,
+        }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('SURPRISE_TIMEOUT')), 30),
+        ),
+      ]);
+      predicted = belief.mean;
+    } else {
+      return;
+    }
+
     const surprise = mindSurpriseService.computeSurprise(predicted, params.observed);
 
     if (surprise > 0.3) {
@@ -152,6 +177,7 @@ export async function computeChatSurprise(
         observed: params.observed,
         surpriseValue: surprise,
         surface: params.surface,
+        source,
       });
     }
   } catch (err: unknown) {

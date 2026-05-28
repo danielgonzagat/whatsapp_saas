@@ -34,6 +34,7 @@ import {
 } from './kloel-reply-engine.helpers';
 import { DecisionOutcomeService } from './decision-outcome.service';
 import { MindSurpriseService } from './mind/inference/mind-surprise.service';
+import { MindPredictionService } from './mind/mind-prediction.service';
 import { MindVerbalizerService } from './mind/synthetic/mind-verbalizer.service';
 import {
   buildChatOutcomeKey,
@@ -78,6 +79,7 @@ export class KloelReplyEngineService {
     @Optional() private readonly decisionOutcomeService?: DecisionOutcomeService,
     @Optional() private readonly riskClassService?: RiskClassService,
     @Optional() private readonly mindSurpriseService?: MindSurpriseService,
+    @Optional() private readonly mindPredictionService?: MindPredictionService,
     @Optional() private readonly mindVerbalizerService?: MindVerbalizerService,
   ) {
     this.openai = createTextLlmClient(undefined, { timeout: 60_000, maxRetries: 0 });
@@ -265,6 +267,9 @@ export class KloelReplyEngineService {
           : {}),
         ...(this.selfGapsService !== undefined ? { selfGapsService: this.selfGapsService } : {}),
         ...(this.riskClassService !== undefined ? { riskClassService: this.riskClassService } : {}),
+        ...(this.mindPredictionService !== undefined
+          ? { mindPredictionService: this.mindPredictionService }
+          : {}),
         ...(this.mindVerbalizerService !== undefined
           ? { mindVerbalizerService: this.mindVerbalizerService }
           : {}),
@@ -331,8 +336,12 @@ export class KloelReplyEngineService {
         })),
       );
     }
+    this._lastCognitiveState = cognitiveState;
     return msgs;
   }
+
+  /** Expose the most recent cognitive state for surprise-computation linkage (PI-K12-C). */
+  private _lastCognitiveState?: Record<string, unknown>;
 
   async buildMarketingPromptAddendum(
     workspaceId: string | undefined,
@@ -468,6 +477,7 @@ export class KloelReplyEngineService {
             surface: 'dashboard',
             degraded: true,
           },
+          this._lastCognitiveState?.mindSignals as Record<string, unknown> | undefined,
         );
       }
       closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
@@ -529,6 +539,7 @@ export class KloelReplyEngineService {
           surface: 'dashboard',
           degraded: replyOutcome === 0,
         },
+        this._lastCognitiveState?.mindSignals as Record<string, unknown> | undefined,
       );
     }
     return assistantMessage;

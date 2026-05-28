@@ -47,6 +47,7 @@ import { MindPredictionService } from './mind-prediction.service';
     MultiTimescaleCoordinator,
     MindBackgroundProcessor,
     MindBackgroundScheduler,
+    MindPredictionService,
   ],
 })
 export class MindModule {}

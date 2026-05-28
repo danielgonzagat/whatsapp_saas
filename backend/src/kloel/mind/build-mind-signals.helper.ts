@@ -4,6 +4,7 @@ import { AttentionService } from './attention.service';
 import { ValenceAggregatorService } from './valence-aggregator.service';
 import { MindBeliefService } from './inference/mind-belief.service';
 import { MindConceptService } from './memory/mind-concepts.service';
+import type { MindPredictionService } from './mind-prediction.service';
 import type { SelfHealthService } from '../self-awareness/self-health.service';
 import type { SelfGapsService } from '../self-awareness/self-gaps.service';
 import type { RiskClassService } from '../risk-class/risk-class.service';
@@ -63,6 +64,7 @@ export interface BuildMindSignalsDeps {
   valenceAggregatorService?: ValenceAggregatorService;
   mindBeliefService?: MindBeliefService;
   mindConceptService?: MindConceptService;
+  mindPredictionService?: MindPredictionService;
   selfHealthService?: SelfHealthService;
   selfGapsService?: SelfGapsService;
   riskClassService?: RiskClassService;
@@ -263,6 +265,26 @@ export async function buildMindSignals(
       };
     } catch (error: unknown) {
       deps.logger.warn('kloel_risk_class_skipped', {
+        reason: error instanceof Error ? error.message : 'unknown error',
+      });
+    }
+  }
+
+  // ── Prediction (PI-K12-C) ────────────────────────────────────────
+  if (deps.mindPredictionService) {
+    try {
+      const prediction = deps.mindPredictionService.predict({
+        workspaceId,
+        userMessage,
+      });
+      if (prediction) {
+        mindSignals.prediction = {
+          expected: prediction.expected,
+          confidence: prediction.confidence,
+        };
+      }
+    } catch (error: unknown) {
+      deps.logger.warn('kloel_mind_prediction_skipped', {
         reason: error instanceof Error ? error.message : 'unknown error',
       });
     }

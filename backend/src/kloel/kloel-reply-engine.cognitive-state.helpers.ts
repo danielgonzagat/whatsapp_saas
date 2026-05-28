@@ -20,6 +20,7 @@ import type { AttentionService } from './mind/attention.service';
 import type { ValenceAggregatorService } from './mind/valence-aggregator.service';
 import type { MindBeliefService } from './mind/inference/mind-belief.service';
 import type { MindConceptService } from './mind/memory/mind-concepts.service';
+import type { MindPredictionService } from './mind/mind-prediction.service';
 import type { SelfHealthService } from './self-awareness/self-health.service';
 import type { SelfGapsService } from './self-awareness/self-gaps.service';
 import type { RiskClassService } from './risk-class/risk-class.service';
@@ -33,6 +34,7 @@ interface KloelMindServices {
   valenceAggregatorService?: ValenceAggregatorService;
   mindBeliefService?: MindBeliefService;
   mindConceptService?: MindConceptService;
+  mindPredictionService?: MindPredictionService;
   selfHealthService?: SelfHealthService;
   selfGapsService?: SelfGapsService;
   riskClassService?: RiskClassService;
@@ -72,6 +74,9 @@ export function buildKloelMindSignalsDeps(
       : {}),
     ...(services.riskClassService !== undefined
       ? { riskClassService: services.riskClassService }
+      : {}),
+    ...(services.mindPredictionService !== undefined
+      ? { mindPredictionService: services.mindPredictionService }
       : {}),
     ...(services.mindVerbalizerService !== undefined
       ? { mindVerbalizerService: services.mindVerbalizerService }
