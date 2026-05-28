@@ -7,8 +7,15 @@ import type { UnknownRecord } from '../common/types';
 import { ProductCouponDomainService } from './product-coupon-domain.service';
 import {
   boletoBuyerDataFromArgs,
+  buildBoletoSuccessResponse,
+  buildCreateCheckoutConfig,
+  buildCreateCouponData,
+  buildCreatePlanData,
+  buildUpdateCouponData,
+  buildUpdatePlanData,
+  findCheckoutByNames,
+  findPlanByNames,
   missingStringInputs,
-  parseNum,
   parseStr,
   resolveProductIdByName,
   resolveProductIdWithAccentFallback,
@@ -73,9 +80,6 @@ export class KloelProductSubResourceToolsService {
   private str(v: unknown, fb = ''): string {
     return parseStr(v, fb);
   }
-  private num(v: unknown, fb = 0): number {
-    return parseNum(v, fb);
-  }
 
   async toolCreatePlan(workspaceId: string, args: UnknownRecord) {
     try {
@@ -83,30 +87,7 @@ export class KloelProductSubResourceToolsService {
       if (!pid) {
         return { success: false, error: 'Produto nao encontrado' };
       }
-      const plan = await this.prisma.productPlan.create({
-        data: {
-          productId: pid,
-          name: this.str(args.planName, 'Plano'),
-          price: this.num(args.price),
-          billingType: this.str(args.billingType, 'ONE_TIME'),
-          itemsPerPlan: args.quantity ? this.num(args.quantity) : 1,
-          maxInstallments: args.maxInstallments ? this.num(args.maxInstallments) : null,
-          recurringInterval: this.str(args.recurringInterval) || null,
-          trialEnabled: args.trialEnabled === true,
-          trialDays: args.trialDays ? this.num(args.trialDays) : null,
-          visibleToAffiliates:
-            args.visibleToAffiliates !== undefined ? args.visibleToAffiliates === true : true,
-          ...(args.shippingType
-            ? {
-                shippingConfig: {
-                  type: args.shippingType,
-                  value: args.shippingValue,
-                  originCep: args.originCep,
-                } as unknown as Prisma.InputJsonValue,
-              }
-            : {}),
-        },
-      });
+      const plan = await this.prisma.productPlan.create({ data: buildCreatePlanData(pid, args) });
       return { success: true, plan: { id: plan.id, name: plan.name, price: plan.price } };
     } catch (err: unknown) {
       return { success: false, error: err instanceof Error ? err.message : 'Erro' };
@@ -132,30 +113,9 @@ export class KloelProductSubResourceToolsService {
       return { success: false, error: 'planId required' };
     }
     try {
-      const data: UnknownRecord = {};
-      if (args.planName !== undefined) {
-        data.name = this.str(args.planName);
-      }
-      if (args.price !== undefined) {
-        data.price = this.num(args.price);
-      }
-      if (args.active !== undefined) {
-        data.active = Boolean(args.active);
-      }
-      if (args.maxInstallments !== undefined) {
-        data.maxInstallments = this.num(args.maxInstallments);
-      }
-      if (args.couponEnabled !== undefined) {
-        data.couponEnabled = Boolean(args.couponEnabled);
-      }
-      if (args.itemsPerPlan !== undefined) {
-        data.itemsPerPlan = this.num(args.itemsPerPlan);
-      } else if (args.quantity !== undefined) {
-        data.itemsPerPlan = this.num(args.quantity);
-      }
       const plan = await this.prisma.productPlan.update({
         where: { id: planId },
-        data,
+        data: buildUpdatePlanData(args),
       });
       return {
         success: true,
@@ -183,24 +143,7 @@ export class KloelProductSubResourceToolsService {
         data: {
           productId: pid,
           name: this.str(args.checkoutName || args.planName, 'Checkout'),
-          config: {
-            paymentMethods: (Array.isArray(args.paymentMethods)
-              ? args.paymentMethods
-              : ['card', 'pix', 'boleto']) as Prisma.InputJsonArray,
-            couponEnabled: args.couponEnabled !== false,
-            couponAuto: this.str(args.couponAuto) || null,
-            counterEnabled: args.counterEnabled === true,
-            primaryColor: this.str(args.primaryColor, '#7c3aed'),
-            backgroundColor: this.str(args.backgroundColor, '#ffffff'),
-            buttonText: this.str(args.buttonText, 'Comprar agora'),
-            layout: this.str(args.layout, 'standard'),
-            socialProof: args.socialProof === true,
-            warranty: args.warranty === true,
-            exitIntent: args.exitIntent === true,
-            linkedPlanNames: (Array.isArray(args.linkedPlanNames)
-              ? args.linkedPlanNames
-              : []) as Prisma.InputJsonArray,
-          },
+          config: buildCreateCheckoutConfig(args),
         },
       });
       return { success: true, checkout: { id: co.id, name: co.name } };
@@ -259,17 +202,7 @@ export class KloelProductSubResourceToolsService {
         return { success: false, error: 'Nenhum produto no workspace. Crie um produto primeiro.' };
       }
       const c = await this.prisma.productCoupon.create({
-        data: {
-          productId: pid,
-          code: this.str(args.code),
-          discountType: this.str(args.discountType) === 'FIXED' ? 'FIXED' : 'PERCENT',
-          discountValue: this.num(args.discountValue),
-          maxUses: this.num(args.usageLimit) || null,
-          expiresAt: args.expiresInDays
-            ? new Date(Date.now() + this.num(args.expiresInDays) * 86400000)
-            : null,
-          active: true,
-        },
+        data: buildCreateCouponData(pid, args),
       });
       return { success: true, coupon: { id: c.id, code: c.code } };
     } catch (err: unknown) {
@@ -339,21 +272,7 @@ export class KloelProductSubResourceToolsService {
       if (!c) {
         return { success: false, error: 'Cupom nao encontrado.' };
       }
-      const data: Record<string, unknown> = {};
-      if (args.discountValue !== undefined) {
-        data.discountValue = Number(args.discountValue);
-      }
-      if (args.discountType) {
-        data.discountType = args.discountType;
-      }
-      if (args.usageLimit !== undefined) {
-        data.usageLimit = Number(args.usageLimit);
-      }
-      if (args.expiresInDays !== undefined) {
-        const d = new Date();
-        d.setDate(d.getDate() + Number(args.expiresInDays));
-        data.expiresAt = d;
-      }
+      const data = buildUpdateCouponData(args);
       await this.prisma.productCoupon.update({ where: { id: c.id }, data });
       return { success: true, coupon: { code, ...data } };
     } catch (err: unknown) {
@@ -371,27 +290,7 @@ export class KloelProductSubResourceToolsService {
       return { success: false, error: 'Informe o nome do plano ou do produto.' };
     }
     try {
-      let plan;
-      if (planName) {
-        plan = await this.prisma.productPlan.findFirst({
-          where: {
-            name: { contains: planName, mode: 'insensitive' },
-            product: { workspaceId: _workspaceId },
-          },
-          select: { id: true, name: true },
-        });
-      }
-      if (!plan && productName) {
-        plan = await this.prisma.productPlan.findFirst({
-          where: {
-            product: {
-              workspaceId: _workspaceId,
-              name: { contains: productName, mode: 'insensitive' },
-            },
-          },
-          select: { id: true, name: true },
-        });
-      }
+      const plan = await findPlanByNames(this.prisma, _workspaceId, planName, productName);
       if (!plan) {
         return {
           success: false,
@@ -412,27 +311,7 @@ export class KloelProductSubResourceToolsService {
       return { success: false, error: 'Informe o nome do checkout ou do produto.' };
     }
     try {
-      let co;
-      if (checkoutName) {
-        co = await this.prisma.productCheckout.findFirst({
-          where: {
-            name: { contains: checkoutName, mode: 'insensitive' },
-            product: { workspaceId: _workspaceId },
-          },
-          select: { id: true, name: true },
-        });
-      }
-      if (!co && productName) {
-        co = await this.prisma.productCheckout.findFirst({
-          where: {
-            product: {
-              workspaceId: _workspaceId,
-              name: { contains: productName, mode: 'insensitive' },
-            },
-          },
-          select: { id: true, name: true },
-        });
-      }
+      const co = await findCheckoutByNames(this.prisma, _workspaceId, checkoutName, productName);
       if (!co) {
         return {
           success: false,
@@ -603,27 +482,6 @@ export class KloelProductSubResourceToolsService {
       boletoBuyerDataFromArgs(args),
     );
 
-    return {
-      success: true,
-      capabilityId: 'sales.create_boleto',
-      saleId: boletoResult.saleId,
-      orderId: boletoResult.saleId,
-      paymentId: boletoResult.externalPaymentId,
-      externalPaymentId: boletoResult.externalPaymentId,
-      boletoBarcode: boletoResult.boletoBarcode,
-      boletoUrl: boletoResult.boletoUrl,
-      boletoExpiresAt: boletoResult.boletoExpiresAt,
-      outputs: {
-        saleId: boletoResult.saleId,
-        orderId: boletoResult.saleId,
-        paymentId: boletoResult.externalPaymentId,
-        externalPaymentId: boletoResult.externalPaymentId,
-        boletoBarcode: boletoResult.boletoBarcode,
-        boletoUrl: boletoResult.boletoUrl,
-        boletoExpiresAt: boletoResult.boletoExpiresAt,
-      },
-      domainEvents: ['sale.created', 'payment.pending'],
-      message: `Boleto gerado: ${boletoResult.saleId}`,
-    };
+    return buildBoletoSuccessResponse(boletoResult);
   }
 }
