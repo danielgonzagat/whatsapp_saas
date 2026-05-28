@@ -25,12 +25,16 @@ describe('ValenceTaggerService — chat.replied outcome tagging (PI-K16-D)', () 
 
       const emitSpy = spine.emit as jest.Mock;
       expect(emitSpy).toHaveBeenCalledTimes(1);
-      const emitCalls = emitSpy.mock.calls as Array<[{
-        eventName: string;
-        workspaceId: string;
-        valence: string;
-        payload: { surface: string; success: boolean; degraded: boolean };
-      }]>;
+      const emitCalls = emitSpy.mock.calls as Array<
+        [
+          {
+            eventName: string;
+            workspaceId: string;
+            valence: string;
+            payload: { surface: string; success: boolean; degraded: boolean };
+          },
+        ]
+      >;
       const call = emitCalls[0]?.[0];
       expect(call?.eventName).toBe('chat.replied');
       expect(call?.workspaceId).toBe('ws-1');

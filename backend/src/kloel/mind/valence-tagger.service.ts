@@ -29,9 +29,7 @@ export interface ChatOutcomeEvent {
  */
 @Injectable()
 export class ValenceTaggerService {
-  public constructor(
-    @Optional() private readonly spine?: SpineEmitterService,
-  ) {}
+  public constructor(@Optional() private readonly spine?: SpineEmitterService) {}
 
   public tag(event: SpineEventRef): SpineEventRef;
   public tag(event: ChatOutcomeEvent): void;
@@ -102,20 +100,22 @@ export class ValenceTaggerService {
 
     const valence: AbiValence = event.payload.success ? 'positive' : 'negative';
 
-    void this.spine.emit({
-      eventName: event.eventName,
-      workspaceId: event.workspaceId,
-      truthMode: 'observed',
-      provenance: {
-        source: 'production',
-        processor: 'ValenceTaggerService',
-        processorVersion: '1.0.0',
-        schemaVersion: '1.0.0',
-      },
-      valence,
-      payload: event.payload as Readonly<Record<string, unknown>>,
-    }).catch(() => {
-      // fire-and-forget — emission failure is silent
-    });
+    void this.spine
+      .emit({
+        eventName: event.eventName,
+        workspaceId: event.workspaceId,
+        truthMode: 'observed',
+        provenance: {
+          source: 'production',
+          processor: 'ValenceTaggerService',
+          processorVersion: '1.0.0',
+          schemaVersion: '1.0.0',
+        },
+        valence,
+        payload: event.payload as Readonly<Record<string, unknown>>,
+      })
+      .catch(() => {
+        // fire-and-forget — emission failure is silent
+      });
   }
 }
