@@ -20,7 +20,6 @@ import {
   mapMessageType,
 } from './inbound-processor.helpers';
 import { whatsappDigits as normalizePhone } from '../../../common/phone';
-import { isPlaceholderContactName as isPlaceholderContactNameValue } from './whatsapp-normalization.util';
 import { WHATSAPP_MESSAGING } from './whatsapp.tokens';
 import type { IWhatsappMessaging } from './whatsapp.interfaces';
 import { WorkerRuntimeService } from './worker-runtime.service';
@@ -28,7 +27,6 @@ import {
   asProviderSettings,
   type ProviderSettings,
 } from './provider-settings.types';
-import type { ContactCustomFields } from '../../../contacts/contact-custom-fields.types';
 import { executeInlineAutopilot } from './inbound-processor.inline-autopilot';
 import { triggerWhatsappMindPercept } from './inbound-mind-percept';
 import { WhatsAppEventEmitterService } from '../../../kloel/whatsapp-emitter/whatsapp-event-emitter.service';
@@ -40,35 +38,32 @@ import {
   shouldUseInlineReactiveProcessingExt,
   shouldForceLiveAutonomyFallbackExt,
 } from './inbound-processor.helpers';
+import {
+  buildAutopilotScanKey,
+  buildContactCustomFieldsPatch,
+  buildFlowReplyKey,
+  buildInboundDedupeKey,
+  collectSenderNameCandidates,
+  isHotFlowSignalContent,
+  parseContactDebounceMs,
+  parseSharedReplyLockMs,
+  resolveTrustedContactNameFromCandidates,
+  shouldDispatchVoiceTranscription,
+  shouldEnqueueFlowContext,
+  type InboundRawPayload,
+  type ProcessResult,
+} from './inbound-processor.service.helpers';
 
 export type { InboundMessage } from './inbound-processor.helpers';
-
-type InboundRawPayload = {
-  pushName?: string;
-  notifyName?: string;
-  _data?: { pushName?: string; notifyName?: string; [key: string]: unknown };
-  message?: { pushName?: string; notifyName?: string; [key: string]: unknown };
-  sender?: { pushName?: string; name?: string; [key: string]: unknown };
-  contact?: { pushName?: string; name?: string; [key: string]: unknown };
-  [key: string]: unknown;
-};
-
-interface ProcessResult {
-  deduped: boolean;
-  messageId?: string;
-  contactId?: string;
-}
 
 @Injectable()
 export class InboundProcessorService {
   private readonly logger = StructuredLogger.from(InboundProcessorService.name);
-  private readonly contactDebounceMs = Math.max(
-    500,
-    Number.parseInt(process.env.AUTOPILOT_CONTACT_DEBOUNCE_MS || '2000', 10) || 2000,
+  private readonly contactDebounceMs = parseContactDebounceMs(
+    process.env.AUTOPILOT_CONTACT_DEBOUNCE_MS,
   );
-  private readonly sharedReplyLockMs = Math.max(
-    10_000,
-    Number.parseInt(process.env.AUTOPILOT_SHARED_REPLY_LOCK_MS || '45000', 10) || 45_000,
+  private readonly sharedReplyLockMs = parseSharedReplyLockMs(
+    process.env.AUTOPILOT_SHARED_REPLY_LOCK_MS,
   );
 
   constructor(
@@ -85,25 +80,6 @@ export class InboundProcessorService {
     @Optional() private readonly mindHook?: ChannelInboundHookService,
     @Optional() private readonly whatsappEmitter?: WhatsAppEventEmitterService,
   ) {}
-
-  private isPlaceholderContactName(value: unknown, phone?: string | null): boolean {
-    return isPlaceholderContactNameValue(value, phone);
-  }
-
-  private resolveTrustedContactName(phone: string, ...candidates: unknown[]): string {
-    for (const c of candidates) {
-      const n =
-        typeof c === 'string'
-          ? c.trim()
-          : typeof c === 'number' || typeof c === 'boolean'
-            ? String(c).trim()
-            : '';
-      if (n && !this.isPlaceholderContactName(n, phone)) {
-        return n;
-      }
-    }
-    return '';
-  }
 
   private isWorkspaceSelfInbound(settings: ProviderSettings, from: string, phone: string): boolean {
     return isWorkspaceSelfInboundExt(settings, from, phone);
@@ -131,19 +107,9 @@ export class InboundProcessorService {
       return { deduped: true };
     }
     const raw = (msg.raw ?? {}) as InboundRawPayload;
-    const trustedSenderName = this.resolveTrustedContactName(
+    const trustedSenderName = resolveTrustedContactNameFromCandidates(
       phone,
-      msg.senderName,
-      raw?.pushName,
-      raw?.notifyName,
-      raw?._data?.pushName,
-      raw?._data?.notifyName,
-      raw?.message?.pushName,
-      raw?.message?.notifyName,
-      raw?.sender?.pushName,
-      raw?.sender?.name,
-      raw?.contact?.pushName,
-      raw?.contact?.name,
+      collectSenderNameCandidates(msg, raw),
     );
     const contact = await this.prisma.contact.upsert({
       where: { workspaceId_phone: { workspaceId: msg.workspaceId, phone } },
@@ -152,20 +118,15 @@ export class InboundProcessorService {
       select: { id: true, customFields: true },
     });
     if (trustedSenderName) {
-      const cf =
-        contact.customFields &&
-        typeof contact.customFields === 'object' &&
-        !Array.isArray(contact.customFields)
-          ? { ...(contact.customFields as ContactCustomFields) }
-          : {};
+      const customFieldsPatch = buildContactCustomFieldsPatch(
+        contact.customFields,
+        trustedSenderName,
+        new Date().toISOString(),
+      );
       await this.prisma.contact.updateMany({
         where: { id: contact.id, workspaceId: msg.workspaceId },
         data: {
-          customFields: {
-            ...cf,
-            remotePushName: trustedSenderName,
-            remotePushNameUpdatedAt: new Date().toISOString(),
-          } as Prisma.InputJsonObject,
+          customFields: customFieldsPatch as Prisma.InputJsonObject,
         },
       });
       await this.whatsappService
@@ -195,7 +156,7 @@ export class InboundProcessorService {
         });
         if (existing) {
           await this.redis.set(
-            `inbound:dedupe:${msg.workspaceId}:${msg.providerMessageId}`,
+            buildInboundDedupeKey(msg.workspaceId, msg.providerMessageId),
             existing.id,
             'EX',
             300,
@@ -206,7 +167,7 @@ export class InboundProcessorService {
       throw error;
     }
     await this.redis.set(
-      `inbound:dedupe:${msg.workspaceId}:${msg.providerMessageId}`,
+      buildInboundDedupeKey(msg.workspaceId, msg.providerMessageId),
       savedMessage.id,
       'EX',
       300,
@@ -234,10 +195,10 @@ export class InboundProcessorService {
       });
     }
 
-    if (!isCatchup) {
+    if (shouldEnqueueFlowContext(msg.ingestMode)) {
       await this.deliverToFlowContext(phone, processedContent, msg.workspaceId);
     }
-    if (!isCatchup && msg.type === 'audio' && msg.mediaUrl) {
+    if (shouldDispatchVoiceTranscription(msg)) {
       await voiceQueue.add('transcribe-audio', {
         workspaceId: msg.workspaceId,
         contactId: contact.id,
@@ -285,7 +246,7 @@ export class InboundProcessorService {
   }
 
   private async deliverToFlowContext(phone: string, message: string, workspaceId: string) {
-    const k = `reply:${normalizePhone(phone)}`;
+    const k = buildFlowReplyKey(normalizePhone(phone));
     await this.redis.rpush(k, message).catch(() => {});
     await this.redis.expire(k, 60 * 60 * 24).catch(() => {});
     await flowQueue.add(
@@ -363,7 +324,7 @@ export class InboundProcessorService {
           );
           return;
         }
-        const scanKey = `autopilot:scan-contact:${workspaceId}:${contactId}`;
+        const scanKey = buildAutopilotScanKey(workspaceId, contactId);
         const reserved = await this.redis.set(
           scanKey,
           messageId,
@@ -397,21 +358,7 @@ export class InboundProcessorService {
         }
       }
       const hotFlowId = settings?.autopilot?.hotFlowId;
-      const lower = (messageContent || '').toLowerCase();
-      if (
-        hotFlowId &&
-        [
-          'preco',
-          'preço',
-          'price',
-          'quanto',
-          'pix',
-          'boleto',
-          'garantia',
-          'comprar',
-          'assinar',
-        ].some((k) => lower.includes(k))
-      ) {
+      if (hotFlowId && isHotFlowSignalContent(messageContent)) {
         await flowQueue.add('run-flow', {
           workspaceId,
           flowId: hotFlowId,
