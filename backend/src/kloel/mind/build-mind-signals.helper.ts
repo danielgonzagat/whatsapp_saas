@@ -55,9 +55,7 @@ export async function buildMindSignals(
             take: 50,
             select: { id: true, intent: true, action: true, createdAt: true },
           }),
-          new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('timeout')), 50),
-          ),
+          new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 50)),
         ]);
 
         recentEvents = rows.map((r) => ({

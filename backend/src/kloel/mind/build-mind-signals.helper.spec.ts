@@ -23,8 +23,17 @@ describe('buildMindSignals', () => {
   describe('attention + valence', () => {
     it('builds attention when both services are present and events exist', async () => {
       const rows = [
-        makeAutopilotRow({ id: 'evt-1', intent: 'commerce.lead.replied', createdAt: new Date('2026-05-28T11:55:00Z') }),
-        makeAutopilotRow({ id: 'evt-2', intent: 'commerce.cart.abandoned', action: '', createdAt: new Date('2026-05-28T11:50:00Z') }),
+        makeAutopilotRow({
+          id: 'evt-1',
+          intent: 'commerce.lead.replied',
+          createdAt: new Date('2026-05-28T11:55:00Z'),
+        }),
+        makeAutopilotRow({
+          id: 'evt-2',
+          intent: 'commerce.cart.abandoned',
+          action: '',
+          createdAt: new Date('2026-05-28T11:50:00Z'),
+        }),
       ];
 
       const result = await buildMindSignals(
@@ -80,7 +89,10 @@ describe('buildMindSignals', () => {
         'hello',
       );
 
-      expect(mockLogger.warn).toHaveBeenCalledWith('kloel_event_source_timeout', expect.objectContaining({ reason: 'timeout' }));
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        'kloel_event_source_timeout',
+        expect.objectContaining({ reason: 'timeout' }),
+      );
       expect(result.source).toBe('autopilot_events');
       expect(result.eventCount).toBe(0);
       expect(result.attention).toBeDefined();
@@ -136,8 +148,32 @@ describe('buildMindSignals', () => {
   describe('beliefs', () => {
     it('populates beliefs when MindBeliefService returns active beliefs', async () => {
       const mockBeliefs = [
-        { id: 'b1', workspaceId: 'ws-1', subject: 'lead-1', predicate: 'responds_to_offer', context: {}, mean: 0.72, variance: 0.04, samples: 12, alpha: 9, beta: 3, updatedAt: new Date() },
-        { id: 'b2', workspaceId: 'ws-1', subject: 'lead-2', predicate: 'clicks_link', context: {}, mean: 0.35, variance: 0.09, samples: 5, alpha: 2, beta: 5, updatedAt: new Date() },
+        {
+          id: 'b1',
+          workspaceId: 'ws-1',
+          subject: 'lead-1',
+          predicate: 'responds_to_offer',
+          context: {},
+          mean: 0.72,
+          variance: 0.04,
+          samples: 12,
+          alpha: 9,
+          beta: 3,
+          updatedAt: new Date(),
+        },
+        {
+          id: 'b2',
+          workspaceId: 'ws-1',
+          subject: 'lead-2',
+          predicate: 'clicks_link',
+          context: {},
+          mean: 0.35,
+          variance: 0.09,
+          samples: 5,
+          alpha: 2,
+          beta: 5,
+          updatedAt: new Date(),
+        },
       ];
 
       const result = await buildMindSignals(
@@ -151,7 +187,12 @@ describe('buildMindSignals', () => {
       );
 
       expect(result.beliefs).toEqual([
-        { subject: 'lead-1', predicate: 'responds_to_offer', mean: 0.72, confidence: 1 / (1 + 0.04) },
+        {
+          subject: 'lead-1',
+          predicate: 'responds_to_offer',
+          mean: 0.72,
+          confidence: 1 / (1 + 0.04),
+        },
         { subject: 'lead-2', predicate: 'clicks_link', mean: 0.35, confidence: 1 / (1 + 0.09) },
       ]);
     });
@@ -187,7 +228,9 @@ describe('buildMindSignals', () => {
       const result = await buildMindSignals(
         {
           prisma: mockPrisma(),
-          mindBeliefService: { getActiveBeliefs: jest.fn().mockRejectedValue(new Error('kloel_mind_belief_timeout')) },
+          mindBeliefService: {
+            getActiveBeliefs: jest.fn().mockRejectedValue(new Error('kloel_mind_belief_timeout')),
+          },
           logger: mockLogger,
         },
         'ws-1',
@@ -260,7 +303,10 @@ describe('buildMindSignals', () => {
         'caro demais',
       );
 
-      expect(mockLogger.warn).toHaveBeenCalledWith('kloel_mind_concept_skipped', expect.any(Object));
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        'kloel_mind_concept_skipped',
+        expect.any(Object),
+      );
       expect(result.concepts).toEqual([]);
     });
 
@@ -294,7 +340,21 @@ describe('buildMindSignals', () => {
   describe('all four services combined', () => {
     it('assembles attention, beliefs, and concepts in one result', async () => {
       const rows = [makeAutopilotRow({ id: 'evt-1' })];
-      const mockBeliefs = [{ id: 'b1', workspaceId: 'ws-1', subject: 's', predicate: 'p', context: {}, mean: 0.5, variance: 0.1, samples: 3, alpha: 2, beta: 2, updatedAt: new Date() }];
+      const mockBeliefs = [
+        {
+          id: 'b1',
+          workspaceId: 'ws-1',
+          subject: 's',
+          predicate: 'p',
+          context: {},
+          mean: 0.5,
+          variance: 0.1,
+          samples: 3,
+          alpha: 2,
+          beta: 2,
+          updatedAt: new Date(),
+        },
+      ];
       const mockDetections = [{ concept: 'hot_lead', confidence: 0.9 }];
 
       const result = await buildMindSignals(
