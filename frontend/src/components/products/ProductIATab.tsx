@@ -8,14 +8,21 @@ import { useEffect, useRef, useState } from 'react';
 import { mutate } from 'swr';
 
 import {
-  createDefaultAIConfig,
-  type AIConfig,
-  type AIConfigPayload,
+  appendEmptyObjection,
   buildAIConfigBody,
+  clampMessageLimit,
+  clampPersistence,
+  createDefaultAIConfig,
   FOLLOW_UP_OPTIONS,
+  getObjectionKey,
+  getSaveButtonLabel,
+  isProductsCacheKey,
   mergeAIConfigPayload,
   PRODUCT_IA_COPY,
+  setObjectionFieldAt,
   TONE_OPTIONS,
+  type AIConfig,
+  type AIConfigPayload,
 } from './ProductIATab.helpers';
 
 const SORA = "var(--font-sora), 'Sora', sans-serif";
@@ -147,7 +154,7 @@ export function ProductIATab({ productId }: { productId: string }) {
         method: 'PUT',
         body: buildAIConfigBody(config),
       });
-      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
+      mutate(isProductsCacheKey);
       setSaved(true);
       if (savedTimer.current) {
         clearTimeout(savedTimer.current);
@@ -304,7 +311,7 @@ export function ProductIATab({ productId }: { productId: string }) {
           )}
           {objections.map((o, i) => (
             <div
-              key={`objection-${o.q.trim()}-${o.a.trim()}`}
+              key={getObjectionKey(o, i)}
               style={{
                 padding: '8px 0',
                 borderBottom: i < objections.length - 1 ? `1px solid ${V.b}` : 'none',
@@ -313,22 +320,14 @@ export function ProductIATab({ productId }: { productId: string }) {
               <input
                 aria-label={PRODUCT_IA_COPY.objectionInputAria}
                 value={o.q}
-                onChange={(e) => {
-                  const next = [...objections];
-                  next[i] = { ...next[i], q: e.target.value };
-                  update('objections', next);
-                }}
+                onChange={(e) => update('objections', setObjectionFieldAt(objections, i, 'q', e.target.value))}
                 style={{ ...is, marginBottom: 4 }}
                 placeholder={PRODUCT_IA_COPY.objectionInputPlaceholder}
               />
               <input
                 aria-label={PRODUCT_IA_COPY.objectionResponseAria}
                 value={o.a}
-                onChange={(e) => {
-                  const next = [...objections];
-                  next[i] = { ...next[i], a: e.target.value };
-                  update('objections', next);
-                }}
+                onChange={(e) => update('objections', setObjectionFieldAt(objections, i, 'a', e.target.value))}
                 style={is}
                 placeholder={PRODUCT_IA_COPY.objectionResponsePlaceholder}
               />
@@ -336,7 +335,7 @@ export function ProductIATab({ productId }: { productId: string }) {
           ))}
           <button
             type="button"
-            onClick={() => update('objections', [...objections, { q: '', a: '' }])}
+            onClick={() => update('objections', appendEmptyObjection(objections))}
             style={{
               width: '100%',
               marginTop: 10,
@@ -420,7 +419,7 @@ export function ProductIATab({ productId }: { productId: string }) {
             <input
               aria-label={PRODUCT_IA_COPY.persistenceInputAria}
               value={config.persistence ?? 3}
-              onChange={(e) => update('persistence', Number(e.target.value))}
+              onChange={(e) => update('persistence', clampPersistence(e.target.value))}
               style={is}
             />
           </div>
@@ -442,7 +441,7 @@ export function ProductIATab({ productId }: { productId: string }) {
             <input
               aria-label={PRODUCT_IA_COPY.messageLimitInputAria}
               value={config.messageLimit ?? 10}
-              onChange={(e) => update('messageLimit', Number(e.target.value))}
+              onChange={(e) => update('messageLimit', clampMessageLimit(e.target.value))}
               style={is}
             />
           </div>
@@ -515,11 +514,7 @@ export function ProductIATab({ productId }: { productId: string }) {
         <svg width={14} height={14} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
           <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
         </svg>
-        {saved
-          ? PRODUCT_IA_COPY.saveSuccess
-          : saving
-            ? PRODUCT_IA_COPY.saveSaving
-            : PRODUCT_IA_COPY.saveIdle}
+        {getSaveButtonLabel(saved, saving)}
       </button>
     </div>
   );

@@ -173,3 +173,104 @@ export function buildAIConfigBody(config: AIConfig): Record<string, unknown> {
     salesArguments: buildAIConfigSalesArguments(config),
   };
 }
+
+/** Lower bound for persistence slider value. */
+export const PERSISTENCE_MIN = 1;
+/** Upper bound for persistence slider value. */
+export const PERSISTENCE_MAX = 5;
+/** Lower bound for message-limit numeric input. */
+export const MESSAGE_LIMIT_MIN = 0;
+
+/**
+ * Clamp persistence to the inclusive [1, 5] range, falling back to 3 when
+ * NaN / non-finite. Returns an integer.
+ */
+export function clampPersistence(raw: unknown, fallback = 3): number {
+  const num = typeof raw === 'number' ? raw : Number(raw);
+  if (!Number.isFinite(num)) {
+    return fallback;
+  }
+  const truncated = Math.trunc(num);
+  if (truncated < PERSISTENCE_MIN) {
+    return PERSISTENCE_MIN;
+  }
+  if (truncated > PERSISTENCE_MAX) {
+    return PERSISTENCE_MAX;
+  }
+  return truncated;
+}
+
+/**
+ * Clamp message-limit to a non-negative integer, falling back to 10 when
+ * NaN / non-finite.
+ */
+export function clampMessageLimit(raw: unknown, fallback = 10): number {
+  const num = typeof raw === 'number' ? raw : Number(raw);
+  if (!Number.isFinite(num)) {
+    return fallback;
+  }
+  const truncated = Math.trunc(num);
+  return truncated < MESSAGE_LIMIT_MIN ? MESSAGE_LIMIT_MIN : truncated;
+}
+
+/**
+ * Stable React key for an objection row. Combines a trimmed question + answer
+ * with the row index so duplicate empty rows still get unique keys.
+ */
+export function getObjectionKey(o: { q: string; a: string }, index: number): string {
+  return `objection-${index}-${o.q.trim()}-${o.a.trim()}`;
+}
+
+/**
+ * Immutable update of a single objection field at `index`. Returns the original
+ * list unchanged when the index is out of bounds.
+ */
+export function setObjectionFieldAt(
+  list: ReadonlyArray<{ q: string; a: string }>,
+  index: number,
+  field: 'q' | 'a',
+  value: string,
+): Array<{ q: string; a: string }> {
+  if (index < 0 || index >= list.length) {
+    return list.slice();
+  }
+  const next = list.slice();
+  next[index] = { ...next[index], [field]: value };
+  return next;
+}
+
+/** Append an empty objection row to the end of the list (immutable). */
+export function appendEmptyObjection(
+  list: ReadonlyArray<{ q: string; a: string }>,
+): Array<{ q: string; a: string }> {
+  return [...list, { q: '', a: '' }];
+}
+
+/**
+ * Derive the save-button label from the (saved, saving) state machine.
+ *
+ * - `saved`   -> success copy (overrides saving so the "✓ saved" flash wins)
+ * - `saving`  -> saving copy
+ * - otherwise -> idle copy
+ */
+export function getSaveButtonLabel(
+  saved: boolean,
+  saving: boolean,
+  copy: { saveSuccess: string; saveSaving: string; saveIdle: string } = PRODUCT_IA_COPY,
+): string {
+  if (saved) {
+    return copy.saveSuccess;
+  }
+  if (saving) {
+    return copy.saveSaving;
+  }
+  return copy.saveIdle;
+}
+
+/**
+ * SWR cache-key predicate: should this key be revalidated after saving the
+ * AI config? Matches every key that begins with `/products`.
+ */
+export function isProductsCacheKey(key: unknown): boolean {
+  return typeof key === 'string' && key.startsWith('/products');
+}
