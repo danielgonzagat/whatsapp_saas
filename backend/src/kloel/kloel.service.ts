@@ -19,7 +19,6 @@ import { KloelThinkerService, ThinkRequest, ThinkSyncResult } from './kloel-thin
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
 import { AgentRuntimeContextService } from './agent-runtime';
-import { MindWorkspaceStateService } from './mind/memory/mind-workspace-state.service';
 import {
   appendToolResultProof,
   detectActionIntent,
@@ -53,7 +52,6 @@ export class KloelService {
     private readonly replyEngineService: KloelReplyEngineService,
     private readonly toolDispatcher: KloelToolDispatcherService,
     @Optional() private readonly agentRuntime?: AgentRuntimeContextService,
-    @Optional() private readonly mindWorkspaceStateService?: MindWorkspaceStateService,
   ) {
     this.conversationStore = new KloelConversationStore(prisma, this.logger);
   }
