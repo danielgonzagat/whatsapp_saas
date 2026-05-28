@@ -1,6 +1,8 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { CiaModule } from './cia/cia.module';
 import { SpineModule } from '../spine/spine.module';
+import { MindKnowledgeModule } from './knowledge/knowledge.module';
+import { KnowledgeBaseService } from './knowledge/knowledge-base.service';
 import { AttentionService } from './attention.service';
 import { ConsolidationService } from './consolidation.service';
 import { HebbianService } from './hebbian.service';
@@ -27,7 +29,7 @@ import { MindPredictionService } from './mind-prediction.service';
  * to read recent spine events for each background tick.
  */
 @Module({
-  imports: [forwardRef(() => CiaModule), forwardRef(() => SpineModule)],
+  imports: [forwardRef(() => CiaModule), forwardRef(() => SpineModule), MindKnowledgeModule],
   providers: [
     ValenceTaggerService,
     ValenceAggregatorService,
@@ -45,6 +47,7 @@ import { MindPredictionService } from './mind-prediction.service';
     MindCaseMemoryService,
     MindGlobalPriorService,
     MindWorkspaceStateService,
+    KnowledgeBaseService,
   ],
   exports: [
     ValenceTaggerService,
@@ -60,6 +63,7 @@ import { MindPredictionService } from './mind-prediction.service';
     MindCaseMemoryService,
     MindGlobalPriorService,
     MindWorkspaceStateService,
+    KnowledgeBaseService,
   ],
 })
 export class MindModule {}

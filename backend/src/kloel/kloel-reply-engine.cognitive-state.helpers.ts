@@ -27,6 +27,7 @@ import type { SelfHealthService } from './self-awareness/self-health.service';
 import type { SelfGapsService } from './self-awareness/self-gaps.service';
 import type { RiskClassService } from './risk-class/risk-class.service';
 import type { MindAutonomyCoordinator } from './mind/coordination/mind-autonomy-coordinator.service';
+import type { KnowledgeBaseService } from './mind/knowledge/knowledge-base.service';
 
 interface CognitiveStateLogger {
   warn: (event: string, ctx?: Record<string, unknown>) => void;
@@ -59,6 +60,7 @@ interface KloelMindServices {
       semanticContext: Record<string, unknown>;
     };
   };
+  knowledgeBaseService?: KnowledgeBaseService;
 }
 
 export const ABI_SNAPSHOT_KEY = 'abi_snapshot_cache';
@@ -112,6 +114,9 @@ export function buildKloelMindSignalsDeps(
       : {}),
     ...(services.mindPerceptionService !== undefined
       ? { mindPerceptionService: services.mindPerceptionService }
+      : {}),
+    ...(services.knowledgeBaseService !== undefined
+      ? { knowledgeBaseService: services.knowledgeBaseService }
       : {}),
   };
 }

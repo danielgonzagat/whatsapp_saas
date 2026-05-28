@@ -29,6 +29,7 @@ import { MindBanditService } from './mind/policy/mind-bandit.service';
 import { MindCaseMemoryService } from './mind/memory/mind-case-memory.service';
 import { MindGlobalPriorService } from './mind/memory/mind-global-prior.service';
 import { MindPerceptionService } from './mind/perception/mind-perception.service';
+import { KnowledgeBaseService } from './mind/knowledge/knowledge-base.service';
 import {
   buildChatOutcomeKey,
   recordChatReplyDecision,
@@ -126,6 +127,7 @@ export class ConversationalOnboardingService {
     @Optional() private readonly mindCaseMemoryService?: MindCaseMemoryService,
     @Optional() private readonly mindGlobalPriorService?: MindGlobalPriorService,
     @Optional() private readonly mindPerceptionService?: MindPerceptionService,
+    @Optional() private readonly knowledgeBaseService?: KnowledgeBaseService,
     @Optional() private readonly valenceTagger?: ValenceTaggerService,
   ) {
     this.prismaExt = prisma as object as PrismaWithDynamicModels;
@@ -411,6 +413,9 @@ export class ConversationalOnboardingService {
           : {}),
         ...(this.mindPerceptionService !== undefined
           ? { mindPerceptionService: this.mindPerceptionService }
+          : {}),
+        ...(this.knowledgeBaseService !== undefined
+          ? { knowledgeBaseService: this.knowledgeBaseService }
           : {}),
       });
       const mindSignals = await buildMindSignals(mindDeps, workspaceId, userMessage);

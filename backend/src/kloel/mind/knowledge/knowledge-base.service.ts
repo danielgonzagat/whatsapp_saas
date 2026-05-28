@@ -350,6 +350,54 @@ export class KnowledgeBaseService {
   }
 
   /**
+   * Search knowledge base entries by semantic similarity.
+   * Returns structured results for mindSignals injection during chat.
+   *
+   * PI-K17-A: wired into buildMindSignals so the LLM receives knowledge-base
+   * context alongside concepts, beliefs, and other cognitive signals.
+   */
+  async search(
+    workspaceId: string,
+    query: string,
+    limit = 3,
+  ): Promise<Array<{ title: string; snippet: string; relevance: number }>> {
+    try {
+      const { embedding } = await this.vectorService.getEmbedding(query);
+      if (!embedding.length) {
+        return [];
+      }
+
+      const vectorString = `[${embedding.join(',')}]`;
+
+      const results = await this.prisma.$queryRaw<
+        { name: string; content: string; distance: number }[]
+      >`
+        SELECT kb.name, v.content, (v.embedding <=> ${vectorString}::vector) as distance
+        FROM "RAC_Vector" v
+        JOIN "RAC_KnowledgeSource" s ON v."sourceId" = s.id
+        JOIN "RAC_KnowledgeBase" kb ON s."knowledgeBaseId" = kb.id
+        WHERE kb."workspaceId" = ${workspaceId}
+        ORDER BY distance ASC
+        LIMIT ${limit}
+      `;
+
+      if (!results || results.length === 0) {
+        return [];
+      }
+
+      return results.map((r) => ({
+        title: r.name || r.content.slice(0, 80),
+        snippet: r.content.slice(0, 200),
+        relevance: Math.round((1 / (1 + r.distance)) * 100) / 100,
+      }));
+    } catch (err: unknown) {
+      void this.opsAlert?.alertOnCriticalError(err, 'KnowledgeBaseService.search');
+      this.logger.warn(`Knowledge base search skipped: ${err instanceof Error ? err.message : String(err)}`);
+      return [];
+    }
+  }
+
+  /**
    * Bloqueia SSRF e destinos privados; se KB_URL_ALLOWLIST estiver definido, só permite prefixos listados.
    */
   private enforceUrlAllowlist(rawUrl: string): void {

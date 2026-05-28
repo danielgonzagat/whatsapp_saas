@@ -22,6 +22,7 @@ import type { MindPredictionService } from './mind/mind-prediction.service';
 import type { SelfHealthService } from './self-awareness/self-health.service';
 import type { SelfGapsService } from './self-awareness/self-gaps.service';
 import type { RiskClassService } from './risk-class/risk-class.service';
+import type { KnowledgeBaseService } from './mind/knowledge/knowledge-base.service';
 
 interface OnboardingHelperLogger {
   warn: (event: string, ctx?: Record<string, unknown>) => void;
@@ -53,6 +54,7 @@ interface OnboardingMindServices {
       semanticContext: Record<string, unknown>;
     };
   };
+  knowledgeBaseService?: KnowledgeBaseService;
 }
 
 /**
@@ -105,6 +107,9 @@ export function buildOnboardingMindSignalsDeps(
       : {}),
     ...(services.mindPerceptionService !== undefined
       ? { mindPerceptionService: services.mindPerceptionService }
+      : {}),
+    ...(services.knowledgeBaseService !== undefined
+      ? { knowledgeBaseService: services.knowledgeBaseService }
       : {}),
   };
 }

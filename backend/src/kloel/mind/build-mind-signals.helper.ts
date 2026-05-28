@@ -8,6 +8,7 @@ import type { MindPredictionService } from './mind-prediction.service';
 import type { SelfHealthService } from '../self-awareness/self-health.service';
 import type { SelfGapsService } from '../self-awareness/self-gaps.service';
 import type { RiskClassService } from '../risk-class/risk-class.service';
+import type { KnowledgeBaseService } from './knowledge/knowledge-base.service';
 import type { ActionDescriptor } from '../risk-class/risk-class.types';
 
 /** Infer an ActionDescriptor from user message and concept detections. */
@@ -87,6 +88,7 @@ export interface BuildMindSignalsDeps {
       limit: number,
     ) => Promise<Array<{ predicate: string; mean: number; samples: number }>>;
   };
+  knowledgeBaseService?: KnowledgeBaseService;
   mindPerceptionService?: {
     perceive?: (ctx: { source: string; channel: string; raw: string; workspaceId: string }) => {
       subject: string;
@@ -251,6 +253,24 @@ export async function buildMindSignals(
     }
   } else {
     mindSignals.concepts = [];
+  }
+
+  // ── Knowledge base search (PI-K17-A) ─────────────────────────────
+  if (deps.knowledgeBaseService) {
+    try {
+      const kbResults = await deps.knowledgeBaseService.search(
+        workspaceId,
+        userMessage,
+        3,
+      );
+      if (kbResults.length > 0) {
+        mindSignals.knowledge = kbResults;
+      }
+    } catch (error: unknown) {
+      deps.logger.warn('kloel_knowledge_base_skipped', {
+        reason: error instanceof Error ? error.message : 'unknown error',
+      });
+    }
   }
 
   // ── Case memory — prior similar cases (PI-K15-B) ──────────────

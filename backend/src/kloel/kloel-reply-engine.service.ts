@@ -43,6 +43,7 @@ import { MindCaseMemoryService } from './mind/memory/mind-case-memory.service';
 import { MindGlobalPriorService } from './mind/memory/mind-global-prior.service';
 import { MindPerceptionService } from './mind/perception/mind-perception.service';
 import { MindWorkspaceStateService } from './mind/memory/mind-workspace-state.service';
+import { KnowledgeBaseService } from './mind/knowledge/knowledge-base.service';
 import { randomUUID } from 'crypto';
 import {
   buildChatOutcomeKey,
@@ -95,6 +96,7 @@ export class KloelReplyEngineService {
     @Optional() private readonly mindGlobalPriorService?: MindGlobalPriorService,
     @Optional() private readonly mindPerceptionService?: MindPerceptionService,
     @Optional() private readonly mindWorkspaceStateService?: MindWorkspaceStateService,
+    @Optional() private readonly knowledgeBaseService?: KnowledgeBaseService,
     @Optional() private readonly valenceTagger?: ValenceTaggerService,
   ) {
     this.openai = createTextLlmClient(undefined, { timeout: 60_000, maxRetries: 0 });
@@ -302,6 +304,9 @@ export class KloelReplyEngineService {
           : {}),
         ...(this.mindPerceptionService !== undefined
           ? { mindPerceptionService: this.mindPerceptionService }
+          : {}),
+        ...(this.knowledgeBaseService !== undefined
+          ? { knowledgeBaseService: this.knowledgeBaseService }
           : {}),
       },
     };
