@@ -196,14 +196,14 @@ describe('KloelProductSubResourceToolsService', () => {
       expect(result.success).toBe(true);
     });
 
-    it('dispatches generate_boleto', async () => {
+    it('does not dispatch generate_boleto from product sub-resource tools', async () => {
       const result = await service.executeTool('generate_boleto', ws, {
         amount: 100,
         customerPhone: '5511999999999',
         productName: 'Widget',
       });
-      expect(result.success).toBe(true);
-      expect(result.boletoCode).toBeDefined();
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('Unknown: generate_boleto');
     });
   });
 
@@ -310,19 +310,6 @@ describe('KloelProductSubResourceToolsService', () => {
     it('returns error when url is missing', async () => {
       const result = await service.toolAddUrl(ws, { productName: 'Test Product' });
       expect(result.success).toBe(false);
-    });
-  });
-
-  describe('toolGenerateBoleto', () => {
-    it('generates boleto with amount and customer info', async () => {
-      const result = await service.toolGenerateBoleto(ws, {
-        amount: 150,
-        customerPhone: '5511999999999',
-        productName: 'Widget',
-      });
-      expect(result.success).toBe(true);
-      expect(result.saleId).toBeDefined();
-      expect(result.boletoHtml).toContain('BOLETO');
     });
   });
 });
