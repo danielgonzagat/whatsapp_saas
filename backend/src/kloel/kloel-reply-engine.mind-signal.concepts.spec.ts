@@ -133,7 +133,10 @@ describe('KloelReplyEngineService mind-signal concept detection (PI-k4)', () => 
       const userPayload = JSON.parse(lastContentStr) as Record<string, unknown>;
       const cs = userPayload['cognitiveState'] as Record<string, unknown>;
       const ms = cs['mindSignals'] as Record<string, unknown>;
-      expect(ms['status']).toBe('no_event_source');
+      // PI-k4: production code wires AutopilotEvent as the real event source,
+      // so mindSignals.source = 'autopilot_events' (the old 'no_event_source'
+      // shortcut was removed in 6a2b13315).
+      expect(ms['source']).toBe('autopilot_events');
       expect(ms['concepts']).toEqual([
         { concept: 'price_objection', confidence: 0.8 },
         { concept: 'hot_lead', confidence: 0.7 },

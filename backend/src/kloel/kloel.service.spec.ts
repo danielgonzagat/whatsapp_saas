@@ -175,7 +175,7 @@ describe('KloelService', () => {
       });
 
       const result = await service.thinkSync({
-        message: 'emite um PIX de R$197 para Joao comprar PDRN',
+        message: 'gera um pix de R$197 para Joao comprar PDRN',
         workspaceId: 'ws-1',
         userId: 'user-42',
       });
