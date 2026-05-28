@@ -26,10 +26,24 @@ import { UnifiedAgentToolExecutorService } from './unified-agent-tool-executor';
 import { buildAgentCognitiveState } from './unified-agent.cognitive-state.helpers';
 import {
   UNIFIED_AGENT_PROVIDER_CONFIG_REQUIRED,
-  actionSucceeded,
   formatPromptValue,
   isAllowedTool,
 } from './unified-agent.helpers';
+import {
+  PRODUCT_AI_CONFIG_BATCH_SIZE,
+  PRODUCT_AI_CONFIG_SELECT,
+  SEED_SYSTEM_MESSAGE_CONTENT,
+  buildAgentUserPayload,
+  buildBlockedActionEntry,
+  buildBlockedToolResult,
+  buildContactSummary,
+  buildCurrentInput,
+  buildLayeredSystemPrompt,
+  confidenceForPredecidedActions,
+  extractProductIds,
+  mapActionsForTurnOutcome,
+  parseToolArguments,
+} from './unified-agent.service.helpers';
 
 import type { UnknownRecord } from '../common/types';
 
@@ -140,29 +154,17 @@ export class UnifiedAgentService {
     ]);
 
     // 1b. Load AI config per product (commercial brain)
-    const productIds = products
-      .map((product: UnknownRecord) => {
-        const productValue = this.ctx.readRecord(product.value);
-        return this.ctx.readOptionalText(productValue.id) || this.ctx.readOptionalText(product.id);
-      })
-      .filter((productId): productId is string => Boolean(productId));
+    const productIds = extractProductIds(products, {
+      readRecord: this.ctx.readRecord.bind(this.ctx),
+      readOptionalText: this.ctx.readOptionalText.bind(this.ctx),
+    });
     let aiConfigs: UnknownRecord[] = [];
     if (productIds.length > 0) {
       try {
         aiConfigs = await this.prisma.productAIConfig.findMany({
-          take: 50,
+          take: PRODUCT_AI_CONFIG_BATCH_SIZE,
           where: { productId: { in: productIds } },
-          select: {
-            id: true,
-            productId: true,
-            tone: true,
-            persistenceLevel: true,
-            messageLimit: true,
-            customerProfile: true,
-            positioning: true,
-            objections: true,
-            salesArguments: true,
-          },
+          select: PRODUCT_AI_CONFIG_SELECT,
         });
       } catch {
         /* ProductAIConfig may not exist yet */
@@ -189,28 +191,29 @@ export class UnifiedAgentService {
       contactId,
       ...(params.allowedTools !== undefined ? { allowedTools: params.allowedTools } : {}),
     });
-    const systemPrompt = [
-      `COGNITIVE STATE: capabilities.available=[], memory.workingMemory=[], memory.episodicRefs=[], memory.consolidatedRefs=[], beliefs=[], predictions.active=[], pulseTruth.verdict=INSUFFICIENT_EVIDENCE.`,
-      this.ctx.buildSystemPrompt(workspace, products, aiConfigs),
-      agentRuntimeContext.systemPromptBlock,
-    ].join('\n\n');
+    const systemPrompt = buildLayeredSystemPrompt({
+      workspaceProductBlock: this.ctx.buildSystemPrompt(workspace, products, aiConfigs),
+      agentRuntimeBlock: agentRuntimeContext.systemPromptBlock,
+    });
     const stylePolicy = this.response.buildReplyStyleInstruction(
       message,
       conversationHistory.length,
     );
     const contactData: Record<string, unknown> = this.ctx.isRecord(contact) ? contact : {};
-    const contactName = this.ctx.readText(contactData.name).trim() || phone;
-    const contactSentiment = this.ctx.readText(contactData.sentiment).trim() || 'NEUTRAL';
-    const leadScore = this.ctx.readText(contactData.leadScore, '0');
-    const tagNames = this.ctx.readTagList(contactData.tags);
+    const contactSummary = buildContactSummary({
+      rawName: this.ctx.readText(contactData.name),
+      rawSentiment: this.ctx.readText(contactData.sentiment),
+      rawLeadScore: this.ctx.readText(contactData.leadScore, '0'),
+      tags: this.ctx.readTagList(contactData.tags),
+      fallbackIdentifier: phone,
+    });
 
     // 3. Build messages array
     const additionalContext = context ? formatPromptValue(context) : '';
-    const currentInput = {
-      raw: message,
+    const currentInput = buildCurrentInput({
+      message,
       channel: this.ctx.readText(context?.channel, 'whatsapp'),
-      arrivalTimestamp: new Date().toISOString(),
-    };
+    });
     const cognitiveState = await buildAgentCognitiveState({
       workspaceId,
       currentInput,
@@ -220,34 +223,26 @@ export class UnifiedAgentService {
       logger: this.logger,
     });
 
+    const userPayload = buildAgentUserPayload({
+      cognitiveState,
+      systemPrompt,
+      compressedContext,
+      additionalContext,
+      tacticalHint,
+      stylePolicy,
+      contact: contactSummary,
+      currentInput,
+    });
+
     const messages: ChatCompletionMessageParam[] = [
       {
         role: 'system',
-        content:
-          'Voce e o assistente comercial Kloel. Suas capacidades dependem do workspace e das ferramentas disponiveis. Use as tools quando o usuario pedir acoes reais. Nao invente capacidades que nao tem. Seja honesto sobre suas limitacoes.',
+        content: SEED_SYSTEM_MESSAGE_CONTENT,
       },
       ...conversationHistory,
       {
         role: 'user',
-        content: JSON.stringify({
-          contextInstruction:
-            'Your cognitive state (cognitiveState) is your source of truth. You MUST respect it. Your capabilities are LIMITED to what cognitiveState.capabilities.available lists. Your memories are ONLY what cognitiveState.memory contains. Your beliefs are ONLY what cognitiveState.beliefs contains. NEVER claim to have capabilities, memories, beliefs, or predictions that are not present in your cognitiveState. If a field is empty, say it is empty.',
-          cognitiveState,
-          runtimeContext: {
-            workspaceProductContext: systemPrompt,
-            compressedMemory: compressedContext || null,
-            additionalContext,
-            tacticalHint: tacticalHint || 'responder com clareza, valor concreto e próximo passo.',
-            responsePolicy: stylePolicy,
-          },
-          contact: {
-            name: contactName,
-            sentiment: contactSentiment,
-            leadScore,
-            tags: tagNames,
-          },
-          currentInput,
-        }),
+        content: JSON.stringify(userPayload),
       },
     ];
 
@@ -276,6 +271,7 @@ export class UnifiedAgentService {
         },
       );
 
+      const predecidedConfidence = confidenceForPredecidedActions(actionsList);
       await this.recordAgentRuntimeTurn({
         workspaceId,
         channel: this.ctx.readText(context?.channel, 'whatsapp'),
@@ -283,19 +279,15 @@ export class UnifiedAgentService {
         ...(draftedReply !== undefined ? { assistantMessage: draftedReply } : {}),
         contactId,
         intent,
-        confidence: actionsList.length > 0 ? 0.85 : 0.55,
-        actions: actionsList.map((action) => ({
-          toolName: action.tool,
-          success: actionSucceeded(action.result),
-          result: action.result,
-        })),
+        confidence: predecidedConfidence,
+        actions: mapActionsForTurnOutcome(actionsList),
       });
 
       return {
         actions: actionsList,
         ...(draftedReply !== undefined ? { response: draftedReply } : {}),
         intent,
-        confidence: actionsList.length > 0 ? 0.85 : 0.55,
+        confidence: predecidedConfidence,
       };
     }
 
@@ -350,17 +342,14 @@ export class UnifiedAgentService {
           this.logger.warn(
             `Blocked disallowed agent tool call: workspaceId=${workspaceId} tool=${toolName}`,
           );
-          const blockedResult = { blocked: true, reason: 'capability_not_allowed' };
-          actionsList.push({ tool: toolName, args: {}, result: blockedResult });
+          const blockedResult = buildBlockedToolResult();
+          actionsList.push(buildBlockedActionEntry(toolName));
           await this.actions.logAutopilotEvent(workspaceId, contactId, toolName, {}, blockedResult);
           return;
         }
-        let toolArgs: Record<string, unknown> = {};
-        try {
-          toolArgs = JSON.parse(toolCall.function.arguments || '{}') as Record<string, unknown>;
-        } catch {
+        const toolArgs = parseToolArguments(toolCall.function.arguments, () => {
           this.logger.warn(`Failed to parse tool args for ${toolName}`);
-        }
+        });
         const result = await this.executeToolAction(
           workspaceId,
           contactId,
@@ -398,11 +387,7 @@ export class UnifiedAgentService {
       contactId,
       intent,
       confidence,
-      actions: actionsList.map((action) => ({
-        toolName: action.tool,
-        success: actionSucceeded(action.result),
-        result: action.result,
-      })),
+      actions: mapActionsForTurnOutcome(actionsList),
     });
 
     return {
