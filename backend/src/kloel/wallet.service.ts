@@ -12,9 +12,17 @@ import { getWalletBalance, getWalletTransactionHistory } from './wallet.read.hel
 import {
   ConcurrentWalletUpdateError,
   KloelWalletNotFoundError,
+  buildAnticipationDescription,
+  buildAnticipationTransactionMetadata,
+  buildInsufficientBalanceMessage,
+  buildSaleTransactionMetadata,
+  buildWalletIndex,
+  buildWithdrawalDescription,
   calculateAnticipationSplit,
   calculateSaleSplit,
+  isValidMonetaryAmount,
   toSafeCents,
+  uniqueWalletIds,
 } from './wallet.helpers';
 
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
@@ -102,16 +110,7 @@ export class WalletService {
             description: `Venda: ${description}`,
             reference: saleId,
             status: 'pending',
-            metadata: {
-              grossAmount: saleAmount,
-              grossAmountInCents,
-              gatewayFee,
-              gatewayFeeInCents,
-              kloelFee,
-              kloelFeeInCents,
-              netAmount,
-              netAmountInCents,
-            },
+            metadata: buildSaleTransactionMetadata(split),
           },
         });
 
@@ -261,7 +260,7 @@ export class WalletService {
    * 💸 Solicita saque
    */
   async requestWithdrawal(workspaceId: string, amount: number, bankInfo: Record<string, unknown>) {
-    if (!amount || amount <= 0 || !Number.isFinite(amount)) {
+    if (!isValidMonetaryAmount(amount)) {
       return { success: false, message: 'Valor de saque invalido.' };
     }
 
@@ -270,7 +269,11 @@ export class WalletService {
     if (wallet.availableBalance < amount) {
       return {
         success: false,
-        message: `Saldo insuficiente. Disponível: ${formatBrlAmount(wallet.availableBalance)}`,
+        message: buildInsufficientBalanceMessage(
+          'available',
+          wallet.availableBalance,
+          formatBrlAmount,
+        ),
       };
     }
 
@@ -298,7 +301,7 @@ export class WalletService {
               type: 'withdrawal',
               amount: -amount,
               amountInCents: BigInt(-amountInCents),
-              description: `Saque via ${bankInfo.pixKey ? 'PIX' : 'TED'}`,
+              description: buildWithdrawalDescription(bankInfo),
               status: 'pending',
               metadata: bankInfo as Prisma.InputJsonValue,
             },
@@ -354,7 +357,7 @@ export class WalletService {
     installments?: number,
     feePercent = 3.0,
   ) {
-    if (!amount || amount <= 0 || !Number.isFinite(amount)) {
+    if (!isValidMonetaryAmount(amount)) {
       return { success: false, message: 'Valor de antecipação inválido.' };
     }
 
@@ -363,7 +366,11 @@ export class WalletService {
     if (wallet.pendingBalance < amount) {
       return {
         success: false,
-        message: `Saldo pendente insuficiente para antecipação. Disponível: ${formatBrlAmount(wallet.pendingBalance)}`,
+        message: buildInsufficientBalanceMessage(
+          'pending',
+          wallet.pendingBalance,
+          formatBrlAmount,
+        ),
       };
     }
 
@@ -396,16 +403,15 @@ export class WalletService {
               type: 'anticipation',
               amount: netAmount,
               amountInCents: netAmountInCents,
-              description: `Antecipação de recebíveis (taxa ${feePercent}%)`,
+              description: buildAnticipationDescription(feePercent),
               status: 'completed',
-              metadata: {
-                originalAmount: amount,
+              metadata: buildAnticipationTransactionMetadata({
+                amount,
                 feePercent,
                 feeAmount,
                 netAmount,
-                installments: installments ?? null,
-                anticipationType: 'pending_settlement',
-              },
+                ...(installments !== undefined ? { installments } : {}),
+              }),
             },
           });
 
@@ -512,13 +518,7 @@ export class WalletService {
       this.logger.log(`Reconciling ${pendingTxs.length} pending transaction(s)...`);
 
       // Batch-fetch wallets for all pending transactions
-      const walletIds = [
-        ...new Set(
-          pendingTxs
-            .map((tx: { walletId?: string | null }) => tx.walletId)
-            .filter((id): id is string => typeof id === 'string' && id.length > 0),
-        ),
-      ];
+      const walletIds = uniqueWalletIds(pendingTxs);
       const walletsList = await this.prisma.kloelWallet.findMany({
         where: { id: { in: walletIds } },
         take: walletIds.length,
@@ -530,8 +530,8 @@ export class WalletService {
           blockedBalance: true,
         },
       });
-      const walletsById = new Map<string, { id: string; [key: string]: unknown }>(
-        walletsList.map((w: { id: string; [key: string]: unknown }) => [w.id, w]),
+      const walletsById = buildWalletIndex<{ id: string; [key: string]: unknown }>(
+        walletsList as Array<{ id: string; [key: string]: unknown }>,
       );
 
       // Per-tx errors are isolated so one failed settlement doesn't abort
