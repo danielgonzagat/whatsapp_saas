@@ -451,12 +451,17 @@ export class ConversationalOnboardingService {
           observed: 1,
           degraded: false,
         });
-        void computeChatSurpriseHelper(this.mindSurpriseService, this.mindBeliefService, this.logger, {
-          workspaceId,
-          observed: 1,
-          surface: 'onboarding',
-          degraded: false,
-        });
+        void computeChatSurpriseHelper(
+          this.mindSurpriseService,
+          this.mindBeliefService,
+          this.logger,
+          {
+            workspaceId,
+            observed: 1,
+            surface: 'onboarding',
+            degraded: false,
+          },
+        );
       };
       if (res) {
         try {
@@ -498,12 +503,17 @@ export class ConversationalOnboardingService {
           observed: 0,
           degraded: true,
         });
-        void computeChatSurpriseHelper(this.mindSurpriseService, this.mindBeliefService, this.logger, {
-          workspaceId,
-          observed: 0,
-          surface: 'onboarding',
-          degraded: true,
-        });
+        void computeChatSurpriseHelper(
+          this.mindSurpriseService,
+          this.mindBeliefService,
+          this.logger,
+          {
+            workspaceId,
+            observed: 0,
+            surface: 'onboarding',
+            degraded: true,
+          },
+        );
       };
       if (res) {
         this.writeSseResponse(res, fallback);
