@@ -13,6 +13,7 @@ import { AbiBuilderService } from './abi/abi-builder.service';
 import { IntentRouterService } from './intent-router/intent-router.service';
 import { AttentionService } from './mind/attention.service';
 import { ValenceAggregatorService } from './mind/valence-aggregator.service';
+import { ValenceTaggerService } from './mind/valence-tagger.service';
 import { MindBeliefService } from './mind/inference/mind-belief.service';
 import { MindConceptService } from './mind/memory/mind-concepts.service';
 import { SelfHealthService } from './self-awareness/self-health.service';
@@ -125,6 +126,7 @@ export class ConversationalOnboardingService {
     @Optional() private readonly mindCaseMemoryService?: MindCaseMemoryService,
     @Optional() private readonly mindGlobalPriorService?: MindGlobalPriorService,
     @Optional() private readonly mindPerceptionService?: MindPerceptionService,
+    @Optional() private readonly valenceTagger?: ValenceTaggerService,
   ) {
     this.prismaExt = prisma as object as PrismaWithDynamicModels;
     this.openai = createTextLlmClient() ?? new OpenAI({ apiKey: 'missing' });
@@ -490,6 +492,21 @@ export class ConversationalOnboardingService {
             degraded: false,
           },
         );
+        try {
+          this.valenceTagger?.tag({
+            eventName: 'chat.replied',
+            workspaceId,
+            payload: {
+              surface: 'onboarding',
+              success: true,
+              degraded: !!degradedReason,
+            },
+          });
+        } catch (err: unknown) {
+          this.logger.warn('kloel_valence_tagger_skipped', {
+            reason: err instanceof Error ? err.message : String(err),
+          });
+        }
       };
       if (res) {
         try {
@@ -542,6 +559,21 @@ export class ConversationalOnboardingService {
             degraded: true,
           },
         );
+        try {
+          this.valenceTagger?.tag({
+            eventName: 'chat.replied',
+            workspaceId,
+            payload: {
+              surface: 'onboarding',
+              success: false,
+              degraded: true,
+            },
+          });
+        } catch (err: unknown) {
+          this.logger.warn('kloel_valence_tagger_skipped', {
+            reason: err instanceof Error ? err.message : String(err),
+          });
+        }
       };
       if (res) {
         this.writeSseResponse(res, fallback);

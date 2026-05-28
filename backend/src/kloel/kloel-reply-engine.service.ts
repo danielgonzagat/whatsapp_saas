@@ -14,6 +14,7 @@ import { MarketingSkillService } from './marketing-skills/marketing-skill.servic
 import { MindService } from './mind.service';
 import { AttentionService } from './mind/attention.service';
 import { ValenceAggregatorService } from './mind/valence-aggregator.service';
+import { ValenceTaggerService } from './mind/valence-tagger.service';
 import { MindBeliefService } from './mind/inference/mind-belief.service';
 import { MindConceptService } from './mind/memory/mind-concepts.service';
 import { SelfHealthService } from './self-awareness/self-health.service';
@@ -94,6 +95,7 @@ export class KloelReplyEngineService {
     @Optional() private readonly mindGlobalPriorService?: MindGlobalPriorService,
     @Optional() private readonly mindPerceptionService?: MindPerceptionService,
     @Optional() private readonly mindWorkspaceStateService?: MindWorkspaceStateService,
+    @Optional() private readonly valenceTagger?: ValenceTaggerService,
   ) {
     this.openai = createTextLlmClient(undefined, { timeout: 60_000, maxRetries: 0 });
     this.toolRouter = new KloelToolRouter(
@@ -531,6 +533,17 @@ export class KloelReplyEngineService {
         outcomeName: 'chat.degraded.no_llm_client',
         wonVsBaseline: false,
       });
+      try {
+        this.valenceTagger?.tag({
+          eventName: 'chat.replied',
+          workspaceId: params.workspaceId,
+          payload: { surface: 'dashboard', success: false, degraded: true },
+        });
+      } catch (err: unknown) {
+        this.logger.warn('kloel_valence_tagger_skipped', {
+          reason: err instanceof Error ? err.message : String(err),
+        });
+      }
       return this.unavailableMessage;
     }
     let assistantMessage: string;
@@ -587,6 +600,21 @@ export class KloelReplyEngineService {
         },
         this._lastCognitiveState?.mindSignals as Record<string, unknown> | undefined,
       );
+      try {
+        this.valenceTagger?.tag({
+          eventName: 'chat.replied',
+          workspaceId: params.workspaceId,
+          payload: {
+            surface: 'dashboard',
+            success: replyOutcome === 1,
+            degraded: replyOutcome === 0,
+          },
+        });
+      } catch (err: unknown) {
+        this.logger.warn('kloel_valence_tagger_skipped', {
+          reason: err instanceof Error ? err.message : String(err),
+        });
+      }
     }
     return assistantMessage;
     } finally {

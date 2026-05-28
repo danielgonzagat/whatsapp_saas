@@ -3,12 +3,54 @@ import { StructuredLogger } from '../../../logging/structured-logger';
 import { PrismaService } from '../../../prisma/prisma.service';
 import type { MindPerceptEvent } from '../../mind.types';
 
+export interface PerceiveInput {
+  source: string;
+  channel: string;
+  raw: string;
+  workspaceId: string;
+}
+
+export interface Perception {
+  subject: string;
+  intent: string;
+  salience: number;
+  semanticContext: Record<string, unknown>;
+}
+
 @Injectable()
 export class MindPerceptionService {
   private readonly logger = StructuredLogger.from(MindPerceptionService.name);
 
   constructor(private readonly prisma: PrismaService) {
     this.logger.debug?.(`MindPerceptionService initialized`);
+  }
+
+  /**
+   * Interpret a raw signal (chat, webhook, scheduled event) into a
+   * structured Perception — subject, intent, salience, and semantic context.
+   *
+   * PI-K16-C: wired into buildMindSignals so the LLM receives richer
+   * structured input alongside the raw userMessage.
+   */
+  perceive(input: PerceiveInput): Perception {
+    const normalized = input.raw.toLowerCase().trim();
+    const intent = this.classifyIntent(normalized);
+    const salience = this.estimateSalience(normalized);
+    const subject = this.extractSubject(normalized, intent);
+
+    return {
+      subject,
+      intent,
+      salience,
+      semanticContext: {
+        source: input.source,
+        channel: input.channel,
+        workspaceId: input.workspaceId,
+        length: input.raw.length,
+        hasQuestion: /[?¿]/.test(input.raw),
+        hasUrgency: /\b(urgente|rápido|agora|imediato|já|agora mesmo)\b/i.test(input.raw),
+      },
+    };
   }
 
   async since(workspaceId: string, watermark: Date): Promise<MindPerceptEvent[]> {
@@ -208,5 +250,66 @@ export class MindPerceptionService {
       .trim()
       .toLowerCase();
     return normalized || 'unknown';
+  }
+
+  // ── perceive() helpers ──────────────────────────────────────────
+
+  private classifyIntent(normalized: string): string {
+    if (/\b(oi|olá|ola|hey|bom dia|boa tarde|boa noite|hi|hello)\b/i.test(normalized)) {
+      return 'greeting';
+    }
+    if (/\b(comprar|quero|comprar|preço|valor|custa|quanto|pagamento|pagar|carrinho|checkout)\b/i.test(normalized)) {
+      return 'purchase_intent';
+    }
+    if (/\b(reclamação|reclamar|problema|não funciona|erro|bug|quebrado|defeito|ruim|péssimo|horrível)\b/i.test(normalized)) {
+      return 'complaint';
+    }
+    if (/\b(ajuda|help|socorro|como|duvida|dúvida|não sei|não consigo|como faço|explica|tutorial)\b/i.test(normalized)) {
+      return 'support_request';
+    }
+    if (/\b(obrigad[oa]|valeu|brigad[oa]|thanks|thank|show|legal|top|ótimo|excelente|perfeito|incrível)\b/i.test(normalized)) {
+      return 'gratitude';
+    }
+    if (/\b(cancelar|cancelamento|reembolso|devolver|estorno|desistência)\b/i.test(normalized)) {
+      return 'cancellation';
+    }
+    if (normalized.length < 15 && !normalized.includes(' ')) {
+      return 'fragment';
+    }
+    return 'statement';
+  }
+
+  private estimateSalience(normalized: string): number {
+    let score = 0.3;
+    if (/\b(urgente|rápido|agora|imediato|já|emergência)\b/i.test(normalized)) score += 0.3;
+    if (/!{2,}/.test(normalized) || /[A-ZÀ-Ú]{4,}/.test(normalized)) score += 0.15;
+    if (/[?¿]/.test(normalized)) score += 0.1;
+    if (/\b(reclamação|problema|erro|ódio|raiva|péssimo|horrível|processo|procon|reclame aqui)\b/i.test(normalized)) score += 0.15;
+    if (/\b(comprar|quero|pagamento|pagar|carrinho)\b/i.test(normalized)) score += 0.1;
+    if (normalized.length > 200) score += 0.05;
+    return Math.min(score, 1.0);
+  }
+
+  private extractSubject(normalized: string, intent: string): string {
+    if (intent === 'greeting') return 'social_greeting';
+    if (intent === 'gratitude') return 'social_gratitude';
+    if (intent === 'fragment') return 'unclear';
+
+    const topicPatterns: Array<{ re: RegExp; label: string }> = [
+      { re: /\b(preço|valor|custa|quanto|precinho|barato|caro|desconto|cupom)\b/i, label: 'pricing' },
+      { re: /\b(pagamento|pagar|pix|boleto|cartão|cartao|crédito|débito|transferência|picpay)\b/i, label: 'payment' },
+      { re: /\b(entrega|envio|frete|prazo|rastreio|recebi|chegou|chegar|código de rastreio)\b/i, label: 'shipping' },
+      { re: /\b(produto|item|mercadoria|pedido|compra|order|encomenda|cesta)\b/i, label: 'product' },
+      { re: /\b(conta|cadastro|login|senha|acesso|entrar|registrar|email|autenticação)\b/i, label: 'account' },
+      { re: /\b(cancelar|cancelamento|reembolso|devolver|estorno|arrependimento|devolução)\b/i, label: 'cancellation_refund' },
+      { re: /\b(reclamação|problema|defeito|quebrado|erro|bug|não funciona|suporte)\b/i, label: 'complaint' },
+      { re: /\b(horário|funcionamento|atendimento|demora|hora|aberto|fechado|disponível)\b/i, label: 'availability' },
+    ];
+
+    for (const { re, label } of topicPatterns) {
+      if (re.test(normalized)) return label;
+    }
+
+    return 'general_inquiry';
   }
 }
