@@ -33,6 +33,8 @@ import {
   buildDynamicRuntimeContextHelper,
   buildAssistantReplyImpl,
 } from './kloel-reply-engine.helpers';
+import { randomIdSegment } from '../common/random-id';
+import { DecisionOutcomeService } from './decision-outcome.service';
 
 type ChatCompletionMessageParam = OpenAI.Chat.ChatCompletionMessageParam;
 
@@ -65,6 +67,7 @@ export class KloelReplyEngineService {
     @Optional() private readonly spine?: SpineEmitterService,
     @Optional() private readonly selfHealthService?: SelfHealthService,
     @Optional() private readonly selfGapsService?: SelfGapsService,
+    @Optional() private readonly decisionOutcomeService?: DecisionOutcomeService,
   ) {
     this.openai = createTextLlmClient(undefined, { timeout: 60_000, maxRetries: 0 });
     this.toolRouter = new KloelToolRouter(
@@ -534,6 +537,31 @@ export class KloelReplyEngineService {
     abiStateJson?: string;
     prebuiltCognitiveState?: Record<string, unknown>;
   }): Promise<string> {
+    // PI-k8: record decision outcome at start of every chat reply
+    const outcomeKey = params.workspaceId
+      ? `chat:${params.workspaceId}:${Date.now()}:${randomIdSegment(6)}`
+      : null;
+    if (outcomeKey && params.workspaceId) {
+      this.decisionOutcomeService
+        ?.recordDecision({
+          workspaceId: params.workspaceId,
+          decisionType: 'chat_reply',
+          chosenAction: 'engage',
+          baselineAction: 'silence',
+          outcomeKey,
+          expectedWindow: 1,
+          contextSnapshot: {
+            surface: 'dashboard',
+            messageLength: params.message.length,
+          },
+        })
+        .catch((err: unknown) =>
+          this.logger.warn('kloel_decision_record_skipped', {
+            reason: err instanceof Error ? err.message : String(err),
+          }),
+        );
+    }
+
     if (!this.openai) {
       this.logger.error('kloel_motor_unavailable', {
         reason: 'no_llm_client',
@@ -556,9 +584,26 @@ export class KloelReplyEngineService {
             }),
           );
       }
+      // PI-k8: close outcome as degraded
+      if (outcomeKey) {
+        this.decisionOutcomeService
+          ?.closeOutcome({
+            outcomeKey,
+            outcomeName: 'chat.degraded.no_llm_client',
+            economicValue: null,
+            wonVsBaseline: false,
+          })
+          .catch((err: unknown) =>
+            this.logger.warn('kloel_decision_close_skipped', {
+              reason: err instanceof Error ? err.message : String(err),
+            }),
+          );
+      }
       return this.unavailableMessage;
     }
-    const assistantMessage = await buildAssistantReplyImpl(params, {
+    let assistantMessage: string;
+    try {
+      assistantMessage = await buildAssistantReplyImpl(params, {
       openai: this.openai,
       prisma: this.prisma,
       planLimits: this.planLimits,
@@ -578,6 +623,39 @@ export class KloelReplyEngineService {
       ...(this.spine !== undefined ? { spine: this.spine } : {}),
       ...(params.abiStateJson !== undefined ? { abiStateJson: params.abiStateJson } : {}),
     });
+      // PI-k8: close outcome on success
+      if (outcomeKey) {
+        this.decisionOutcomeService
+          ?.closeOutcome({
+            outcomeKey,
+            outcomeName: 'chat.replied',
+            economicValue: null,
+            wonVsBaseline: true,
+          })
+          .catch((err: unknown) =>
+            this.logger.warn('kloel_decision_close_skipped', {
+              reason: err instanceof Error ? err.message : String(err),
+            }),
+          );
+      }
+    } catch (error: unknown) {
+      // PI-k8: close outcome on error
+      if (outcomeKey) {
+        this.decisionOutcomeService
+          ?.closeOutcome({
+            outcomeKey,
+            outcomeName: 'chat.error',
+            economicValue: null,
+            wonVsBaseline: false,
+          })
+          .catch((err: unknown) =>
+            this.logger.warn('kloel_decision_close_skipped', {
+              reason: err instanceof Error ? err.message : String(err),
+            }),
+          );
+      }
+      throw error;
+    }
     if (params.workspaceId) {
       this.mindBeliefService
         ?.observeBinary(

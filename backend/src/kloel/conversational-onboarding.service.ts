@@ -19,6 +19,8 @@ import { SelfHealthService } from './self-awareness/self-health.service';
 import { SelfGapsService } from './self-awareness/self-gaps.service';
 import { buildMindSignals, type BuildMindSignalsDeps } from './mind/build-mind-signals.helper';
 import { SpineEmitterService } from './spine/spine-emitter.service';
+import { randomIdSegment } from '../common/random-id';
+import { DecisionOutcomeService } from './decision-outcome.service';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 const ONBOARDING_SAFE_SETUP_TOOL_NAMES = [
@@ -96,6 +98,7 @@ export class ConversationalOnboardingService {
     @Optional() private readonly spine?: SpineEmitterService,
     @Optional() private readonly selfHealthService?: SelfHealthService,
     @Optional() private readonly selfGapsService?: SelfGapsService,
+    @Optional() private readonly decisionOutcomeService?: DecisionOutcomeService,
   ) {
     this.prismaExt = prisma as object as PrismaWithDynamicModels;
     this.openai = createTextLlmClient() ?? new OpenAI({ apiKey: 'missing' });
@@ -303,6 +306,27 @@ export class ConversationalOnboardingService {
     const history = await this.toolsService.getOnboardingHistory(workspaceId);
     const onboardingStateMessage = await this.buildOnboardingStateMessage(workspaceId, userMessage);
 
+    // PI-k8: record decision outcome at start of every onboarding chat reply
+    const outcomeKey = `chat:${workspaceId}:${Date.now()}:${randomIdSegment(6)}`;
+    this.decisionOutcomeService
+      ?.recordDecision({
+        workspaceId,
+        decisionType: 'chat_reply',
+        chosenAction: 'engage',
+        baselineAction: 'silence',
+        outcomeKey,
+        expectedWindow: 1,
+        contextSnapshot: {
+          surface: 'onboarding',
+          messageLength: userMessage.length,
+        },
+      })
+      .catch((err: unknown) =>
+        this.logger.warn('kloel_decision_record_skipped', {
+          reason: err instanceof Error ? err.message : String(err),
+        }),
+      );
+
     let degradedReason: string | null = null;
     let intentAdvisory: string | null = null;
 
@@ -411,6 +435,19 @@ export class ConversationalOnboardingService {
         }
       })();
       if (!assistantChoice) {
+        // PI-k8: close outcome as degraded
+        this.decisionOutcomeService
+          ?.closeOutcome({
+            outcomeKey,
+            outcomeName: 'chat.degraded.empty_choice',
+            economicValue: null,
+            wonVsBaseline: false,
+          })
+          .catch((err: unknown) =>
+            this.logger.warn('kloel_decision_close_skipped', {
+              reason: err instanceof Error ? err.message : String(err),
+            }),
+          );
         return '';
       }
       const assistantMessage = assistantChoice.message;
@@ -442,6 +479,19 @@ export class ConversationalOnboardingService {
           degradedReason = 'sse_write';
           throw e;
         }
+        // PI-k8: close outcome on success
+        this.decisionOutcomeService
+          ?.closeOutcome({
+            outcomeKey,
+            outcomeName: degradedReason ? `chat.degraded.${degradedReason}` : 'chat.replied',
+            economicValue: null,
+            wonVsBaseline: !degradedReason,
+          })
+          .catch((err: unknown) =>
+            this.logger.warn('kloel_decision_close_skipped', {
+              reason: err instanceof Error ? err.message : String(err),
+            }),
+          );
         if (this.mindBeliefService) {
           this.mindBeliefService
             .observeBinary(
@@ -460,6 +510,19 @@ export class ConversationalOnboardingService {
         return;
       }
 
+      // PI-k8: close outcome on success
+      this.decisionOutcomeService
+        ?.closeOutcome({
+          outcomeKey,
+          outcomeName: degradedReason ? `chat.degraded.${degradedReason}` : 'chat.replied',
+          economicValue: null,
+          wonVsBaseline: !degradedReason,
+        })
+        .catch((err: unknown) =>
+          this.logger.warn('kloel_decision_close_skipped', {
+            reason: err instanceof Error ? err.message : String(err),
+          }),
+        );
       if (this.mindBeliefService) {
         this.mindBeliefService
           .observeBinary(
@@ -477,6 +540,19 @@ export class ConversationalOnboardingService {
       }
       return responseText;
     } catch (error: unknown) {
+      // PI-k8: close outcome on error
+      this.decisionOutcomeService
+        ?.closeOutcome({
+          outcomeKey,
+          outcomeName: 'chat.error',
+          economicValue: null,
+          wonVsBaseline: false,
+        })
+        .catch((err: unknown) =>
+          this.logger.warn('kloel_decision_close_skipped', {
+            reason: err instanceof Error ? err.message : String(err),
+          }),
+        );
       this.logger.error(
         'Erro no onboarding conversacional',
         error instanceof Error ? error.message : String(error),
