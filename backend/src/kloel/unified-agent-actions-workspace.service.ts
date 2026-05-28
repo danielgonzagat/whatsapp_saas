@@ -23,22 +23,17 @@ import {
   buildProductMemoryKey,
   buildProductMemoryUpdate,
   buildProductMemoryValue,
+  coerceString,
   defaultBroadcastWindowWhenMindUnavailable,
   defaultChannelChoiceWhenMindUnavailable,
+  isDeterministicPipeline,
+  readRecord,
   resolveBroadcastChannels,
   resolveBroadcastScheduleAt,
   resolvePredecidedBroadcastWindow,
   resolvePredecidedChannelChoice,
 } from './unified-agent-actions-workspace.helpers';
 type MemoryValue = Record<string, unknown>;
-
-function isDeterministicPipeline(context?: UnknownRecord): boolean {
-  return context?.deterministicPipeline === true;
-}
-
-function readRecord(value: unknown): UnknownRecord | null {
-  return typeof value === 'object' && value !== null ? (value as UnknownRecord) : null;
-}
 
 /**
  * Handles workspace, product, flow, and AI persona tool actions for the Unified Agent.
@@ -57,16 +52,6 @@ export class UnifiedAgentActionsWorkspaceService {
     @Optional() private readonly guardContextBuilder?: MindGuardContextBuilderService,
     @Optional() private readonly guards?: MindGuardsService,
   ) {}
-
-  // ───────── helpers ─────────
-
-  str(v: unknown, fb = ''): string {
-    return typeof v === 'string'
-      ? v
-      : typeof v === 'number' || typeof v === 'boolean'
-        ? String(v)
-        : fb;
-  }
 
   private async updateWorkspaceProviderSettings(
     workspaceId: string,
@@ -143,7 +128,7 @@ export class UnifiedAgentActionsWorkspaceService {
       const dbProduct = await this.prisma.product.create({
         data: {
           workspaceId,
-          name: this.str(args.name),
+          name: coerceString(args.name),
           price: args.price || 0,
           description: args.description || '',
           category: args.category || 'default',
@@ -249,7 +234,7 @@ export class UnifiedAgentActionsWorkspaceService {
 
   async actionCreateBroadcast(workspaceId: string, args: ToolArgs, context?: UnknownRecord) {
     const broadcastKey = `broadcast_${Date.now()}`;
-    const segment = this.str(args.stage, 'general');
+    const segment = coerceString(args.stage, 'general');
     const availableChannels = resolveBroadcastChannels(args);
     const predecided = isDeterministicPipeline(context);
     const predecidedChannelChoice = readRecord(args.channelChoice);

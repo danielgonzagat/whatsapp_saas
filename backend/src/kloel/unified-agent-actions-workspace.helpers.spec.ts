@@ -8,8 +8,11 @@ import {
   buildProductMemoryKey,
   buildProductMemoryUpdate,
   buildProductMemoryValue,
+  coerceString,
   defaultBroadcastWindowWhenMindUnavailable,
   defaultChannelChoiceWhenMindUnavailable,
+  isDeterministicPipeline,
+  readRecord,
   resolveBroadcastChannels,
   resolveBroadcastScheduleAt,
   resolvePredecidedBroadcastWindow,
@@ -333,6 +336,66 @@ describe('Flow memory builders', () => {
       active: true,
       createdAt: now.toISOString(),
     });
+  });
+});
+
+describe('coerceString', () => {
+  it('returns the string value unchanged', () => {
+    expect(coerceString('hello')).toBe('hello');
+  });
+
+  it('converts numbers and booleans to strings', () => {
+    expect(coerceString(42)).toBe('42');
+    expect(coerceString(true)).toBe('true');
+    expect(coerceString(false)).toBe('false');
+  });
+
+  it('returns the fallback for non-string/number/boolean values', () => {
+    expect(coerceString(null)).toBe('');
+    expect(coerceString(null, 'n/a')).toBe('n/a');
+    expect(coerceString(undefined, 'missing')).toBe('missing');
+    expect(coerceString({}, 'fallback')).toBe('fallback');
+    expect(coerceString([], 'fallback')).toBe('fallback');
+  });
+
+  it('defaults fallback to empty string', () => {
+    expect(coerceString(undefined)).toBe('');
+  });
+});
+
+describe('isDeterministicPipeline', () => {
+  it('returns true when context.deterministicPipeline is true', () => {
+    expect(isDeterministicPipeline({ deterministicPipeline: true })).toBe(true);
+  });
+
+  it('returns false when context.deterministicPipeline is false', () => {
+    expect(isDeterministicPipeline({ deterministicPipeline: false })).toBe(false);
+  });
+
+  it('returns false when context is missing or lacks the field', () => {
+    expect(isDeterministicPipeline(undefined)).toBe(false);
+    expect(isDeterministicPipeline({})).toBe(false);
+    expect(isDeterministicPipeline({ deterministicPipeline: undefined })).toBe(false);
+  });
+});
+
+describe('readRecord', () => {
+  it('returns the object when value is a plain record', () => {
+    const obj = { a: 1, b: 'x' };
+    expect(readRecord(obj)).toBe(obj);
+  });
+
+  it('returns the array when value is an array (typeof === object)', () => {
+    const arr: unknown = [1, 2, 3];
+    expect(readRecord(arr)).toBe(arr);
+  });
+
+  it('returns null for non-object values', () => {
+    expect(readRecord(null)).toBeNull();
+    expect(readRecord(undefined)).toBeNull();
+    expect(readRecord(42)).toBeNull();
+    expect(readRecord('string')).toBeNull();
+    expect(readRecord(true)).toBeNull();
   });
 });
 

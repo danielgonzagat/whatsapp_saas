@@ -17,7 +17,7 @@ type BroadcastWindow = {
   fallback: boolean;
 };
 
-function coerceString(value: unknown, fallback = ''): string {
+export function coerceString(value: unknown, fallback = ''): string {
   return typeof value === 'string'
     ? value
     : typeof value === 'number' || typeof value === 'boolean'
@@ -216,6 +216,22 @@ export function buildFlowMemoryValue(args: ToolArgs, now: Date = new Date()) {
  */
 export function broadcastDecisionSource(predecided: boolean): string {
   return predecided ? 'orchestrator_predecided' : 'legacy_action_decision';
+}
+
+/**
+ * Type-narrowing guard: true when the orchestration context signals a
+ * deterministic / predecided pipeline run.
+ */
+export function isDeterministicPipeline(context?: UnknownRecord): boolean {
+  return context?.deterministicPipeline === true;
+}
+
+/**
+ * Coerce an unknown value into a plain record (or null).
+ * Arrays pass through (typeof array === 'object').
+ */
+export function readRecord(value: unknown): UnknownRecord | null {
+  return typeof value === 'object' && value !== null ? (value as UnknownRecord) : null;
 }
 
 interface WorkspaceActionArgs {
