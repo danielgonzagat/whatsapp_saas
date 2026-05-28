@@ -8,10 +8,9 @@
  * @canonical backend/src/kloel/mind/observability/mind-spine-audit.service.ts
  * @see docs/adr/0013-kloel-mind-unification.md (Wave M3)
  *
- * Legacy alias `BrainSpineAuditService` (re-exported from
- * `backend/src/brain/brain-spine-audit.service.ts`) is kept during the
- * 4-week alias window and is also re-exported at the bottom of this
- * file for callers still typed against the old name.
+ * The legacy alias `BrainSpineAuditService` was sunset after the ADR-0013
+ * Wave M3 4-week alias window; the `backend/src/brain/` directory and all
+ * known callers were removed prior to this commit.
  */
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -127,9 +126,3 @@ export class MindSpineAudit {
   }
 }
 
-/**
- * @deprecated Use {@link MindSpineAudit}. Kept during the ADR-0013 Wave M3
- * 4-week alias window for back-compat with callers still typed against the
- * pre-canonicalization name.
- */
-export { MindSpineAudit as BrainSpineAuditService };
