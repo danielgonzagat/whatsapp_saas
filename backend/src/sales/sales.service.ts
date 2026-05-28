@@ -7,17 +7,20 @@ import { MercadoPagoBoletoChargeService } from '../payments/mercadopago/mercadop
 import { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
 import type { BoletoChargeAddress } from '../payments/mercadopago/mercadopago.types';
 import { PrismaService } from '../prisma/prisma.service';
-const PROCESSOR = 'sales-service';
-const PROCESSOR_VERSION = '1.0.0';
-const SCHEMA_VERSION = '1.0.0';
-
-const MP_WEBHOOK_PATH = '/webhooks/mercadopago';
-
-/** 30 minutes — standard MP PIX expiration window. */
-const PIX_EXPIRATION_MINUTES = 30;
-
-/** 3 days — standard boleto settlement window exposed to chat receipts. */
-const BOLETO_EXPIRATION_DAYS = 3;
+import {
+  SALES_PROVENANCE,
+  buildBoletoAddressMetadata,
+  buildMercadoPagoNotificationUrl,
+  buildSaleDescription,
+  buildStripeCheckoutUrls,
+  computeBoletoExpiresAt,
+  computePixExpiresAt,
+  pickStripeExternalPaymentId,
+  planPriceToCents,
+  planPriceToCentsNumber,
+  resolveFrontendOrigin,
+  sanitizeDocumentDigits,
+} from './sales.helpers';
 // ------- Types -------
 
 export interface BuyerData {
@@ -55,37 +58,6 @@ export interface CreateStripeCardLinkResult {
   checkoutUrl: string;
   externalPaymentId: string;
 }
-// ------- Helpers -------
-
-function resolveBackendOrigin(): string {
-  const raw =
-    process.env.BACKEND_PUBLIC_URL ||
-    process.env.PUBLIC_BACKEND_URL ||
-    process.env.BACKEND_URL ||
-    process.env.API_PUBLIC_URL ||
-    process.env.APP_URL ||
-    'http://localhost:3001';
-  const trimmed = raw.replace(/\/+$/, '');
-  if (!/^https?:\/\//i.test(trimmed)) {
-    return `https://${trimmed}`;
-  }
-  return trimmed;
-}
-
-function resolveFrontendOrigin(): string {
-  const raw =
-    process.env.FRONTEND_PUBLIC_URL ||
-    process.env.PUBLIC_FRONTEND_URL ||
-    process.env.FRONTEND_URL ||
-    process.env.APP_URL ||
-    'http://localhost:3000';
-  const trimmed = raw.replace(/\/+$/, '');
-  if (!/^https?:\/\//i.test(trimmed)) {
-    return `https://${trimmed}`;
-  }
-  return trimmed;
-}
-
 /**
  * Sales service — creates sales (PIX, card, boleto) directly from chat flows.
  *
@@ -142,19 +114,19 @@ export class SalesService {
       );
     }
 
-    const amountCents = BigInt(Math.round(plan.price * 100));
+    const amountCents = planPriceToCents(plan.price);
     if (amountCents <= 0n) {
       throw new ServiceUnavailableException('O plano possui preço inválido.');
     }
 
     const productName = plan.product.name;
-    const description = productName || `Plano ${plan.name}`;
+    const description = buildSaleDescription(productName, plan.name);
 
     const idempotencyKey = `sale_${randomUUID()}`;
-    const notificationUrl = `${resolveBackendOrigin()}${MP_WEBHOOK_PATH}`;
-    const expiresAt = new Date(Date.now() + PIX_EXPIRATION_MINUTES * 60_000);
+    const notificationUrl = buildMercadoPagoNotificationUrl();
+    const expiresAt = computePixExpiresAt();
 
-    const payerDocDigits = buyerData.cpf.replace(/\D/g, '');
+    const payerDocDigits = sanitizeDocumentDigits(buyerData.cpf);
 
     return this.prisma
       .$transaction(
@@ -248,12 +220,7 @@ export class SalesService {
             workspaceId,
             entityRef: { entityType: 'sale', entityId: sale.id },
             truthMode: 'observed',
-            provenance: {
-              source: 'production',
-              processor: PROCESSOR,
-              processorVersion: PROCESSOR_VERSION,
-              schemaVersion: SCHEMA_VERSION,
-            },
+            provenance: SALES_PROVENANCE,
             payload: {
               saleId: sale.id,
               productId,
@@ -275,12 +242,7 @@ export class SalesService {
             workspaceId,
             entityRef: { entityType: 'sale', entityId: sale.id },
             truthMode: 'observed',
-            provenance: {
-              source: 'production',
-              processor: PROCESSOR,
-              processorVersion: PROCESSOR_VERSION,
-              schemaVersion: SCHEMA_VERSION,
-            },
+            provenance: SALES_PROVENANCE,
             payload: {
               saleId: sale.id,
               externalPaymentId: pixResult.externalId,
@@ -338,25 +300,18 @@ export class SalesService {
       );
     }
 
-    const amountCents = BigInt(Math.round(plan.price * 100));
+    const amountCents = planPriceToCents(plan.price);
     if (amountCents <= 0n) {
       throw new ServiceUnavailableException('O plano possui preço inválido.');
     }
 
     const productName = plan.product.name;
-    const description = productName || `Plano ${plan.name}`;
+    const description = buildSaleDescription(productName, plan.name);
     const idempotencyKey = `sale_${randomUUID()}`;
-    const notificationUrl = `${resolveBackendOrigin()}${MP_WEBHOOK_PATH}`;
-    const expiresAt = new Date(Date.now() + BOLETO_EXPIRATION_DAYS * 24 * 60 * 60_000);
-    const payerDocDigits = buyerData.cpf.replace(/\D/g, '');
-    const buyerAddressMetadata: Record<string, string> = {
-      zipCode: buyerData.address.zipCode,
-      street: buyerData.address.street,
-      number: buyerData.address.number,
-      ...(buyerData.address.neighborhood ? { neighborhood: buyerData.address.neighborhood } : {}),
-      city: buyerData.address.city,
-      state: buyerData.address.state,
-    };
+    const notificationUrl = buildMercadoPagoNotificationUrl();
+    const expiresAt = computeBoletoExpiresAt();
+    const payerDocDigits = sanitizeDocumentDigits(buyerData.cpf);
+    const buyerAddressMetadata = buildBoletoAddressMetadata(buyerData.address);
 
     return this.prisma
       .$transaction(
@@ -448,12 +403,7 @@ export class SalesService {
             workspaceId,
             entityRef: { entityType: 'sale', entityId: sale.id },
             truthMode: 'observed',
-            provenance: {
-              source: 'production',
-              processor: PROCESSOR,
-              processorVersion: PROCESSOR_VERSION,
-              schemaVersion: SCHEMA_VERSION,
-            },
+            provenance: SALES_PROVENANCE,
             payload: {
               saleId: sale.id,
               productId,
@@ -475,12 +425,7 @@ export class SalesService {
             workspaceId,
             entityRef: { entityType: 'sale', entityId: sale.id },
             truthMode: 'observed',
-            provenance: {
-              source: 'production',
-              processor: PROCESSOR,
-              processorVersion: PROCESSOR_VERSION,
-              schemaVersion: SCHEMA_VERSION,
-            },
+            provenance: SALES_PROVENANCE,
             payload: {
               saleId: sale.id,
               externalPaymentId: boletoResult.externalId,
@@ -535,7 +480,7 @@ export class SalesService {
       );
     }
 
-    const amountCents = Math.round(plan.price * 100);
+    const amountCents = planPriceToCentsNumber(plan.price);
     if (amountCents <= 0) {
       throw new ServiceUnavailableException('O plano possui preço inválido.');
     }
@@ -576,12 +521,7 @@ export class SalesService {
           });
 
           const frontendOrigin = resolveFrontendOrigin();
-          const successUrl =
-            `${frontendOrigin}/vendas/gestao-vendas` +
-            `?stripe_checkout=success&saleId=${encodeURIComponent(sale.id)}`;
-          const cancelUrl =
-            `${frontendOrigin}/vendas/gestao-vendas` +
-            `?stripe_checkout=canceled&saleId=${encodeURIComponent(sale.id)}`;
+          const { successUrl, cancelUrl } = buildStripeCheckoutUrls(frontendOrigin, sale.id);
           const session = await this.stripeService.stripe.checkout.sessions.create(
             {
               mode: 'payment',
@@ -631,9 +571,7 @@ export class SalesService {
             throw new ServiceUnavailableException('Stripe não retornou URL de checkout.');
           }
 
-          const paymentIntent = session.payment_intent;
-          const externalPaymentId =
-            typeof paymentIntent === 'string' ? paymentIntent : paymentIntent?.id || session.id;
+          const externalPaymentId = pickStripeExternalPaymentId(session.payment_intent, session.id);
 
           await tx.kloelSale.update({
             where: { id: sale.id },
@@ -676,12 +614,7 @@ export class SalesService {
             workspaceId,
             entityRef: { entityType: 'sale', entityId: sale.id },
             truthMode: 'observed',
-            provenance: {
-              source: 'production',
-              processor: PROCESSOR,
-              processorVersion: PROCESSOR_VERSION,
-              schemaVersion: SCHEMA_VERSION,
-            },
+            provenance: SALES_PROVENANCE,
             payload: {
               saleId: sale.id,
               productId,
@@ -704,12 +637,7 @@ export class SalesService {
             workspaceId,
             entityRef: { entityType: 'sale', entityId: sale.id },
             truthMode: 'observed',
-            provenance: {
-              source: 'production',
-              processor: PROCESSOR,
-              processorVersion: PROCESSOR_VERSION,
-              schemaVersion: SCHEMA_VERSION,
-            },
+            provenance: SALES_PROVENANCE,
             payload: {
               saleId: sale.id,
               externalPaymentId,
