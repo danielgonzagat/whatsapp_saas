@@ -11,6 +11,7 @@ import { RateLimitService } from './rate-limit.service';
 import { TikTokAuthService } from './tiktok-auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConnectService } from '../payments/connect/connect.service';
+import { AuthTokenService } from './auth.token.service';
 
 const mockPrismaService = {
   agent: {
@@ -155,6 +156,16 @@ describe('AuthService OAuth login', () => {
         { provide: TikTokAuthService, useValue: mockTikTokAuthService },
         { provide: ConnectService, useValue: mockConnectService },
         { provide: RateLimitService, useValue: mockRateLimitService },
+        {
+          provide: AuthTokenService,
+          useValue: {
+            issueTokens: jest.fn(),
+            issueTokensForAgentId: jest.fn(),
+            refresh: jest.fn(),
+            revokeAccessToken: jest.fn(),
+            isAccessTokenRevoked: jest.fn(),
+          },
+        },
       ],
     }).compile();
 

@@ -191,6 +191,19 @@ export async function issueTokensForAgentId(
   return issueTokens(prisma, jwt, logger, agent);
 }
 
+/**
+ * @deprecated Use `AuthTokenService.refresh()` (backend/src/auth/auth.token.service.ts).
+ *
+ * Kept as an internal fallback for any test still wiring the functional
+ * surface directly. The production `/auth/refresh` path now goes through
+ * `AuthService.refresh` → `AuthTokenService.refresh`, which adds:
+ *  - `jti` claim on issued access tokens
+ *  - `OpsAlertService` integration for critical errors
+ *  - 15s grace window so cross-tab refresh races don't sweep sibling sessions
+ *
+ * Do not import this from new code. Migrate any remaining callers to the
+ * class-based service before removing this fallback.
+ */
 export async function refreshToken(
   prisma: PrismaService,
   jwt: JwtService,

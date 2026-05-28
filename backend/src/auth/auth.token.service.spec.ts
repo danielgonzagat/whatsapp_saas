@@ -225,9 +225,12 @@ describe('AuthTokenService', () => {
     });
 
     it('should throw when refresh token is revoked', async () => {
+      // updatedAt set well outside the 15s grace window so the replay-sweep
+      // path is exercised (true replay = revoked long ago).
       const revokedToken = {
         ...mockRefreshToken,
         revoked: true,
+        updatedAt: new Date(Date.now() - 60_000),
         agent: mockAgent,
       };
       prismaMock.refreshToken.findUnique.mockResolvedValueOnce(revokedToken);
@@ -253,9 +256,12 @@ describe('AuthTokenService', () => {
     });
 
     it('should detect and revoke replayed refresh tokens', async () => {
+      // updatedAt set well outside the 15s grace window — this is a true
+      // replay (token revoked minutes ago, attacker resurfacing it).
       const revokedToken = {
         ...mockRefreshToken,
         revoked: true,
+        updatedAt: new Date(Date.now() - 60_000),
         agent: mockAgent,
       };
       prismaMock.refreshToken.findUnique.mockResolvedValueOnce(revokedToken);
@@ -265,6 +271,29 @@ describe('AuthTokenService', () => {
 
       await expect(service.refresh('replayed-token')).rejects.toThrow(UnauthorizedException);
       expect(prismaMock.refreshToken.updateMany).toHaveBeenCalledWith({
+        where: { agentId: 'agent-123', revoked: false },
+        data: { revoked: true },
+      });
+    });
+
+    it('does not REPLAY-sweep when stale token was rotated within 15s grace window', async () => {
+      // Cross-tab race: two browser tabs read the same refresh token, the
+      // first tab rotates it, the second tab presents the (now revoked)
+      // stale copy a beat later. The second call must STILL 401 (so the
+      // client retries with the fresh cookie), but must NOT sweep sibling
+      // refresh tokens — that would log the legitimate user out of the
+      // tab that just succeeded.
+      const recentlyRevokedToken = {
+        ...mockRefreshToken,
+        revoked: true,
+        updatedAt: new Date(Date.now() - 5_000), // 5s ago — inside 15s grace
+        agent: mockAgent,
+      };
+      prismaMock.refreshToken.findUnique.mockResolvedValueOnce(recentlyRevokedToken);
+
+      await expect(service.refresh('stale-but-fresh')).rejects.toThrow(UnauthorizedException);
+      // The defensive sweep must NOT have fired.
+      expect(prismaMock.refreshToken.updateMany).not.toHaveBeenCalledWith({
         where: { agentId: 'agent-123', revoked: false },
         data: { revoked: true },
       });

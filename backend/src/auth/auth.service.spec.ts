@@ -10,6 +10,7 @@ import { AppleAuthService } from './apple-auth.service';
 import { ConnectService } from '../payments/connect/connect.service';
 import { TikTokAuthService } from './tiktok-auth.service';
 import { RateLimitService } from './rate-limit.service';
+import { AuthTokenService } from './auth.token.service';
 import {
   BadRequestException,
   ConflictException,
@@ -115,6 +116,14 @@ const mockRateLimitService = {
   checkRateLimit: jest.fn().mockResolvedValue(undefined),
 };
 
+const mockAuthTokenService = {
+  issueTokens: jest.fn(),
+  issueTokensForAgentId: jest.fn(),
+  refresh: jest.fn(),
+  revokeAccessToken: jest.fn(),
+  isAccessTokenRevoked: jest.fn(),
+};
+
 describe('AuthService', () => {
   let service: AuthService;
   let prisma: typeof mockPrismaService;
@@ -148,6 +157,7 @@ describe('AuthService', () => {
         { provide: TikTokAuthService, useValue: mockTikTokAuthService },
         { provide: ConnectService, useValue: mockConnectService },
         { provide: RateLimitService, useValue: mockRateLimitService },
+        { provide: AuthTokenService, useValue: mockAuthTokenService },
       ],
     }).compile();
 
@@ -429,6 +439,7 @@ describe('AuthService', () => {
           mockTikTokAuthService as never,
           mockConnectService as never,
           new RateLimitService(mockRedis as never),
+          mockAuthTokenService as never,
         );
 
         prisma.agent.findFirst.mockResolvedValue(null);
@@ -476,6 +487,7 @@ describe('AuthService', () => {
             incr: jest.fn().mockRejectedValue(new Error('redis down')),
             expire: jest.fn(),
           } as never),
+          mockAuthTokenService as never,
         );
 
         prisma.agent.findFirst.mockResolvedValue(null);

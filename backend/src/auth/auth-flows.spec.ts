@@ -10,6 +10,7 @@ import { AppleAuthService } from './apple-auth.service';
 import { ConnectService } from '../payments/connect/connect.service';
 import { TikTokAuthService } from './tiktok-auth.service';
 import { RateLimitService } from './rate-limit.service';
+import { AuthTokenService } from './auth.token.service';
 import { ConflictException } from '@nestjs/common';
 
 const mockPrisma = {
@@ -116,6 +117,16 @@ describe('AuthFlows', () => {
         { provide: TikTokAuthService, useValue: mockTikTokAuth },
         { provide: ConnectService, useValue: mockConnect },
         { provide: RateLimitService, useValue: mockRateLimit },
+        {
+          provide: AuthTokenService,
+          useValue: {
+            issueTokens: jest.fn(),
+            issueTokensForAgentId: jest.fn(),
+            refresh: jest.fn(),
+            revokeAccessToken: jest.fn(),
+            isAccessTokenRevoked: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
