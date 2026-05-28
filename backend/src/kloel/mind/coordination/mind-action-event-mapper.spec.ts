@@ -2,7 +2,7 @@ import {
   didBrainActionSucceed,
   mapBrainActionToDomainEvent,
   readBrainActionName,
-} from './brain-action-event-mapper';
+} from './mind-action-event-mapper';
 
 describe('brain action event mapper', () => {
   it('maps tool names to domain events', () => {
