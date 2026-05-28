@@ -24,9 +24,13 @@ import {
   persistResolvedPolicyMemories,
 } from './mind-policy.helpers';
 import { applyWisdomPriors } from './mind-policy.wisdom-prior.helpers';
+import {
+  classifyAutopilotConfirmation,
+  computeGlobalPriorMix,
+  shouldSkipGlobalPriorMix,
+} from './mind-policy.global-prior.helpers';
 
 const FALLBACK_MIN_SAMPLES = 30;
-const COLD_START_THRESHOLD = 30;
 
 @Injectable()
 export class MindPolicyService {
@@ -420,21 +424,23 @@ export class MindPolicyService {
 
     for (const row of rows) {
       const ctx = (row.context as Record<string, unknown>) ?? {};
-      if (ctx.outcomeConfidence !== undefined && ctx.outcomeConfidence !== null) {
+      const decision = classifyAutopilotConfirmation({
+        existingConfidence: ctx.outcomeConfidence,
+        resolvedAt: row.resolvedAt,
+        windowCutoff,
+      });
+      if (decision === 'skip') {
         continue;
       }
-
-      const isWithinWindow = row.resolvedAt != null && row.resolvedAt >= windowCutoff;
-      const newConfidence: string = isWithinWindow ? 'confirmed' : 'unanswered';
 
       await this.prisma.mindPolicy.update({
         where: { id: row.id },
         data: {
-          context: { ...ctx, outcomeConfidence: newConfidence },
+          context: { ...ctx, outcomeConfidence: decision },
         },
       });
 
-      if (isWithinWindow) {
+      if (decision === 'confirmed') {
         confirmed += 1;
       } else {
         unanswered += 1;
@@ -485,13 +491,19 @@ export class MindPolicyService {
   }): Promise<
     Array<{ belief: MindBelief; mixedMean: number; usedPrior: boolean; priorWeight: number }>
   > {
+    const globalPrior = this.globalPrior;
+    const channel = input.channel;
     return Promise.all(
       input.beliefs.map(async (belief, index) => {
         if (
-          input.workspaceOptedOut ||
-          !input.channel ||
-          !this.globalPrior ||
-          belief.samples >= COLD_START_THRESHOLD
+          shouldSkipGlobalPriorMix({
+            workspaceOptedOut: input.workspaceOptedOut,
+            channel,
+            hasGlobalPrior: !!globalPrior,
+            beliefSamples: belief.samples,
+          }) ||
+          !globalPrior ||
+          !channel
         ) {
           return {
             belief,
@@ -506,20 +518,18 @@ export class MindPolicyService {
           return { belief, mixedMean: belief.mean, usedPrior: false, priorWeight: 0 };
         }
 
-        const prior = await this.globalPrior.getPrior(input.channel, input.decisionType, action);
+        const prior = await globalPrior.getPrior(channel, input.decisionType, action);
 
         if (!prior) {
           return { belief, mixedMean: belief.mean, usedPrior: false, priorWeight: 0 };
         }
 
-        const localN = belief.samples;
-        const localMean = belief.mean;
-        const globalN = prior.observations;
-        const globalMean = prior.mean;
-        const globalNWeight = Math.min(globalN, COLD_START_THRESHOLD - localN);
-        const mixedMean =
-          (localN * localMean + globalNWeight * globalMean) / (localN + globalNWeight);
-        const priorWeight = globalNWeight / (localN + globalNWeight);
+        const { mixedMean, priorWeight } = computeGlobalPriorMix({
+          localN: belief.samples,
+          localMean: belief.mean,
+          globalN: prior.observations,
+          globalMean: prior.mean,
+        });
 
         return { belief, mixedMean, usedPrior: true, priorWeight };
       }),
