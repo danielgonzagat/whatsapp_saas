@@ -158,7 +158,7 @@ function makeSurpriseService() {
   const predictor = { findOpen: jest.fn(), resolve: jest.fn() } as never;
   return new MindSurpriseService(prisma as never, beliefs, predictor);
 }
-describe('kloel_chat_surprise_detection (PI-k9)', () => {
+describe('kloel_chat_surprise_detection — replyEngine extended (PI-k9)', () => {
   beforeEach(() => {
     logCalls.length = 0;
     warnCalls.length = 0;
@@ -168,7 +168,7 @@ describe('kloel_chat_surprise_detection (PI-k9)', () => {
     jest.clearAllMocks();
   });
 
-  function expectSurpriseDetected(predicted: number) {
+  function _expectSurpriseDetected(predicted: number) {
     const surpriseLogs = logCalls.filter(
       ([msg]) => msg === 'structured' || msg === 'kloel_chat_surprise_detected',
     );
@@ -209,14 +209,19 @@ describe('kloel_chat_surprise_detection (PI-k9)', () => {
     await new Promise<void>((resolve) => setTimeout(resolve, 50));
   }
 
-  function _expectNoSurpriseSkipped() {
+  function expectNoSurpriseSkipped() {
     const skipped = warnCalls.filter(([msg]) => msg === 'kloel_surprise_skipped');
     expect(skipped.length).toBe(0);
   }
   describe('KloelReplyEngineService surprise detection', () => {
-    it('fires kloel_chat_surprise_detected when belief predicts low but reply succeeds', async () => {
+    it('skips and logs kloel_surprise_skipped when getOrInit throws', async () => {
       const deps = makeBaseDeps();
-      const beliefService = makeBeliefService(0.1); // low predicted probability
+      const beliefService = {
+        getOrInit: jest.fn().mockRejectedValue(new Error('DB unavailable')),
+        observeBinary: jest.fn().mockResolvedValue(makeBelief(0.5)),
+        list: jest.fn(),
+        getActiveBeliefs: jest.fn(),
+      };
       const surpriseService = makeSurpriseService();
 
       const module: TestingModule = await Test.createTestingModule({
@@ -241,17 +246,19 @@ describe('kloel_chat_surprise_detection (PI-k9)', () => {
       await flushAsync();
 
       expect(result).toBe('Resposta do assistente');
-      expect(beliefService.observeBinary).toHaveBeenCalled();
-      expect(beliefService.getOrInit).toHaveBeenCalledWith('ws-1', 'ws-1', 'replied_to_user', {
-        surface: 'dashboard',
-        degraded: false,
-      });
-      expectSurpriseDetected(0.1);
+      expectSurpriseSkipped('DB unavailable');
+      expectNoSurpriseDetected();
     });
 
-    it('does NOT fire surprise log when belief already predicts high reply probability', async () => {
+    it('does not fire surprise for empty reply (outcome=0)', async () => {
       const deps = makeBaseDeps();
-      const beliefService = makeBeliefService(0.9); // high predicted probability
+
+      const helpersMock = jest.requireMock<typeof import('./kloel-reply-engine.helpers')>(
+        './kloel-reply-engine.helpers',
+      );
+      (helpersMock.buildAssistantReplyImpl as jest.Mock).mockResolvedValueOnce('');
+
+      const beliefService = makeBeliefService(0.5);
       const surpriseService = makeSurpriseService();
 
       const module: TestingModule = await Test.createTestingModule({
@@ -273,93 +280,50 @@ describe('kloel_chat_surprise_detection (PI-k9)', () => {
         message: 'Olá',
         workspaceId: 'ws-1',
       });
-
-      expectNoSurpriseDetected();
-    });
-
-    it('tolerates absent MindSurpriseService without throwing', async () => {
-      const deps = makeBaseDeps();
-      const beliefService = makeBeliefService(0.1);
-
-      const module: TestingModule = await Test.createTestingModule({
-        providers: [
-          KloelReplyEngineService,
-          { provide: PrismaService, useValue: deps.prisma },
-          { provide: PlanLimitsService, useValue: deps.planLimits },
-          { provide: KloelThreadService, useValue: deps.threadService },
-          { provide: KloelWorkspaceContextService, useValue: deps.wsContextService },
-          { provide: UnifiedAgentService, useValue: deps.unifiedAgent },
-          { provide: MindBeliefService, useValue: beliefService },
-          // MindSurpriseService NOT provided
-        ],
-      }).compile();
-
-      const service = module.get<KloelReplyEngineService>(KloelReplyEngineService);
-
-      const result = await service.buildAssistantReply({
-        message: 'Olá',
-        workspaceId: 'ws-1',
-      });
-
-      expect(result).toBe('Resposta do assistente');
-      // Reply still works, no crash
-    });
-
-    it('tolerates absent MindBeliefService without throwing', async () => {
-      const deps = makeBaseDeps();
-      const surpriseService = makeSurpriseService();
-
-      const module: TestingModule = await Test.createTestingModule({
-        providers: [
-          KloelReplyEngineService,
-          { provide: PrismaService, useValue: deps.prisma },
-          { provide: PlanLimitsService, useValue: deps.planLimits },
-          { provide: KloelThreadService, useValue: deps.threadService },
-          { provide: KloelWorkspaceContextService, useValue: deps.wsContextService },
-          { provide: UnifiedAgentService, useValue: deps.unifiedAgent },
-          { provide: MindSurpriseService, useValue: surpriseService },
-          // MindBeliefService NOT provided
-        ],
-      }).compile();
-
-      const service = module.get<KloelReplyEngineService>(KloelReplyEngineService);
-
-      const result = await service.buildAssistantReply({
-        message: 'Olá',
-        workspaceId: 'ws-1',
-      });
-
-      expect(result).toBe('Resposta do assistente');
-    });
-    it('skips and logs kloel_surprise_skipped when getOrInit takes >30ms', async () => {
-      const deps = makeBaseDeps();
-      const beliefService = makeBeliefService(0.1, 100); // 100ms delay → timeout
-      const surpriseService = makeSurpriseService();
-
-      const module: TestingModule = await Test.createTestingModule({
-        providers: [
-          KloelReplyEngineService,
-          { provide: PrismaService, useValue: deps.prisma },
-          { provide: PlanLimitsService, useValue: deps.planLimits },
-          { provide: KloelThreadService, useValue: deps.threadService },
-          { provide: KloelWorkspaceContextService, useValue: deps.wsContextService },
-          { provide: UnifiedAgentService, useValue: deps.unifiedAgent },
-          { provide: MindBeliefService, useValue: beliefService },
-          { provide: MindSurpriseService, useValue: surpriseService },
-        ],
-      }).compile();
-
-      const service = module.get<KloelReplyEngineService>(KloelReplyEngineService);
-
-      const result = await service.buildAssistantReply({
-        message: 'Olá',
-        workspaceId: 'ws-1',
-      });
       await flushAsync();
 
-      expect(result).toBe('Resposta do assistente');
-      expectSurpriseSkipped('SURPRISE_TIMEOUT');
+      // Empty reply means degraded — surprise should be high when belief predicts p=0.5 and outcome=0
+      // -ln(1-0.5) = -ln(0.5) ≈ 0.69 > 0.3 → should fire
+      // Check surprise log directly — observed is 0 (degraded)
+      const detected = logCalls.find(([, meta]) => meta.event === 'kloel_chat_surprise_detected');
+      expect(detected).toBeDefined();
+      const meta = detected![1];
+      expect(meta.surpriseValue).toBeGreaterThan(0.3);
+      expect(meta.predicted).toBeCloseTo(0.5);
+      expect(meta.observed).toBe(0);
+      expect(meta.workspaceId).toBe('ws-1');
+      expect(meta.surface).toBe('dashboard');
+    });
+
+    it('does not attempt surprise when workspaceId is undefined', async () => {
+      const deps = makeBaseDeps();
+      const beliefService = makeBeliefService(0.1);
+      const surpriseService = makeSurpriseService();
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          KloelReplyEngineService,
+          { provide: PrismaService, useValue: deps.prisma },
+          { provide: PlanLimitsService, useValue: deps.planLimits },
+          { provide: KloelThreadService, useValue: deps.threadService },
+          { provide: KloelWorkspaceContextService, useValue: deps.wsContextService },
+          { provide: UnifiedAgentService, useValue: deps.unifiedAgent },
+          { provide: MindBeliefService, useValue: beliefService },
+          { provide: MindSurpriseService, useValue: surpriseService },
+        ],
+      }).compile();
+
+      const service = module.get<KloelReplyEngineService>(KloelReplyEngineService);
+
+      await service.buildAssistantReply({
+        message: 'Olá',
+        // workspaceId intentionally omitted
+      });
+
+      expect(beliefService.observeBinary).not.toHaveBeenCalled();
+      expect(beliefService.getOrInit).not.toHaveBeenCalled();
       expectNoSurpriseDetected();
+      expectNoSurpriseSkipped();
     });
   });
 });
