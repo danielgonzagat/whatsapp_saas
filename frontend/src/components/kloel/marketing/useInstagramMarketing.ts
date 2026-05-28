@@ -14,7 +14,7 @@ import type { IgAccount, IgPostData, IgInsightData } from '@/lib/api/meta';
 export interface UseInstagramMarketingReturn {
   igProfile: IgProfileData | null;
   igInsights: IgInsightsData | null;
-  connection: InstagramChannelConnection | undefined;
+  channelSession: InstagramChannelConnection | undefined;
   isConnected: boolean;
   accounts: IgAccount[];
   accountsLoading: boolean;
@@ -95,7 +95,7 @@ export function useInstagramMarketing(
   return {
     igProfile: igProfile ?? null,
     igInsights: igInsights ?? null,
-    connection: connectionStatus?.channels?.instagram,
+    channelSession: connectionStatus?.channels?.instagram,
     isConnected,
     accounts: accountsData?.accounts ?? [],
     accountsLoading,

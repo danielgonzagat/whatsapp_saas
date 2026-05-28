@@ -52,8 +52,8 @@ export class MetaAdsController {
   @Get('campaigns')
   async getCampaigns(@Req() req: AuthenticatedRequest, @Query('adAccountId') adAccountId: string) {
     const workspaceId = resolveWorkspaceId(req);
-    const connection = await this.resolveAdAccountAccess(workspaceId, adAccountId);
-    return this.metaAdsService.getCampaigns(connection.adAccountId, connection.accessToken);
+    const channelSession = await this.resolveAdAccountAccess(workspaceId, adAccountId);
+    return this.metaAdsService.getCampaigns(channelSession.adAccountId, channelSession.accessToken);
   }
 
   /** Update campaign status. */
@@ -156,8 +156,8 @@ export class MetaAdsController {
     @Query() query: MetaAdsInsightsQueryDto,
   ) {
     const workspaceId = resolveWorkspaceId(req);
-    const connection = await this.resolveAdAccountAccess(workspaceId, query.adAccountId);
-    return this.metaAdsService.getAccountInsights(connection.adAccountId, connection.accessToken, {
+    const channelSession = await this.resolveAdAccountAccess(workspaceId, query.adAccountId);
+    return this.metaAdsService.getAccountInsights(channelSession.adAccountId, channelSession.accessToken, {
       since: query.since,
       until: query.until,
       ...(query.level !== undefined ? { level: query.level } : {}),

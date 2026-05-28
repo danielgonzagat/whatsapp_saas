@@ -4,7 +4,7 @@ import type {
 } from '../marketing/channels/whatsapp/provider-settings.types';
 import type { ResolvedWhatsAppProvider } from '../marketing/channels/whatsapp/providers/provider-env';
 
-/** Normalized connection status type. */
+/** Normalized channel-session status type. */
 export type NormalizedConnectionStatus =
   | 'connected'
   | 'connecting'
@@ -38,7 +38,7 @@ export function extractPhoneNumberId(
 }
 
 /**
- * Maps WAHA raw session statuses to our normalized connection-status vocabulary.
+ * Maps WAHA raw session statuses to our normalized channel-session-status vocabulary.
  * Declared as a dispatch table so `resolveWahaStatus` stays at CCN 2 instead
  * of ballooning into a chain of string-OR branches.
  */

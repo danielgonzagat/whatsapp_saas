@@ -6,7 +6,7 @@ import type {
 } from './MarketingTypes';
 
 export interface UseFacebookMarketingReturn {
-  connection: FacebookChannelConnection | undefined;
+  channelSession: FacebookChannelConnection | undefined;
   isConnected: boolean;
 }
 
@@ -14,7 +14,7 @@ export function useFacebookMarketing(
   connectionStatus?: MarketingConnectStatus | null,
 ): UseFacebookMarketingReturn {
   return {
-    connection: connectionStatus?.channels?.facebook,
+    channelSession: connectionStatus?.channels?.facebook,
     isConnected: connectionStatus?.channels?.facebook?.connected === true,
   };
 }

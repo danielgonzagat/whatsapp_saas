@@ -401,12 +401,12 @@ export class MetaWebhookController {
       return null;
     }
 
-    const connection = await this.prisma.metaConnection.findFirst({
+    const channelSession = await this.prisma.metaConnection.findFirst({
       where: { pageId },
       select: { workspaceId: true },
     });
 
-    return connection?.workspaceId || null;
+    return channelSession?.workspaceId || null;
   }
 
   private normalizeWhatsAppMessageType(
