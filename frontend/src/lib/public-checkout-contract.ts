@@ -268,7 +268,13 @@ export interface PublicCheckoutConfig {
 /** Public checkout payment provider shape. */
 export interface PublicCheckoutPaymentProvider {
   /** Provider property. */
-  provider: 'stripe';
+  provider: 'stripe' | 'kloel_multi_provider';
+  /** Credit-card rail provider. */
+  cardProvider?: 'stripe' | undefined;
+  /** Pix rail provider. */
+  pixProvider?: 'mercadopago' | undefined;
+  /** Boleto rail provider. */
+  boletoProvider?: 'mercadopago' | undefined;
   /** Connected property. */
   connected: boolean;
   /** Checkout enabled property. */

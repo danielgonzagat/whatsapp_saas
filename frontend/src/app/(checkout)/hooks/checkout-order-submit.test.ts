@@ -38,12 +38,15 @@ const baseArgs = {
   installments: 1,
   payMethod: 'card' as const,
   paymentProvider: {
-    provider: 'stripe' as const,
+    provider: 'kloel_multi_provider' as const,
+    cardProvider: 'stripe' as const,
+    pixProvider: 'mercadopago' as const,
+    boletoProvider: 'mercadopago' as const,
     connected: true,
     checkoutEnabled: true,
     supportsCreditCard: true,
     supportsPix: true,
-    supportsBoleto: false,
+    supportsBoleto: true,
     publicKey: 'pk_test_123',
   },
   planId: 'plan_123',
@@ -55,7 +58,7 @@ const baseArgs = {
   workspaceId: 'ws_123',
 };
 
-describe('finalizeCheckoutOrder — Stripe-only checkout', () => {
+describe('finalizeCheckoutOrder — split payment rails checkout', () => {
   beforeEach(() => {
     mockedCreateOrder.mockReset();
   });

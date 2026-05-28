@@ -324,7 +324,12 @@ export function normalizePublicCheckoutResponse(input: unknown): PublicCheckoutR
       : undefined,
     paymentProvider: providerRecord
       ? {
-          provider: 'stripe',
+          provider:
+            providerRecord.provider === 'kloel_multi_provider' ? 'kloel_multi_provider' : 'stripe',
+          cardProvider: providerRecord.cardProvider === 'stripe' ? 'stripe' : undefined,
+          pixProvider: providerRecord.pixProvider === 'mercadopago' ? 'mercadopago' : undefined,
+          boletoProvider:
+            providerRecord.boletoProvider === 'mercadopago' ? 'mercadopago' : undefined,
           connected: asBoolean(providerRecord.connected),
           checkoutEnabled: asBoolean(providerRecord.checkoutEnabled),
           publicKey: asOptionalString(providerRecord.publicKey) || null,

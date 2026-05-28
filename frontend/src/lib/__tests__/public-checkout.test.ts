@@ -51,6 +51,10 @@ describe('normalizePublicCheckoutResponse', () => {
         enableBoleto: true,
       },
       paymentProvider: {
+        provider: 'kloel_multi_provider',
+        cardProvider: 'stripe',
+        pixProvider: 'mercadopago',
+        boletoProvider: 'mercadopago',
         connected: true,
         checkoutEnabled: true,
         supportsPix: true,
@@ -62,8 +66,14 @@ describe('normalizePublicCheckoutResponse', () => {
     expect(payload.checkoutConfig?.theme).toBe('NOIR');
     expect(payload.checkoutConfig?.showCouponPopup).toBe(true);
     expect(payload.checkoutConfig?.enableBoleto).toBe(true);
-    expect(payload.paymentProvider?.supportsPix).toBe(true);
-    expect(payload.paymentProvider?.supportsBoleto).toBe(true);
+    expect(payload.paymentProvider).toMatchObject({
+      provider: 'kloel_multi_provider',
+      cardProvider: 'stripe',
+      pixProvider: 'mercadopago',
+      boletoProvider: 'mercadopago',
+      supportsPix: true,
+      supportsBoleto: true,
+    });
     expect(payload.product.images).toEqual(['https://cdn.kloel.com/a.png']);
   });
 
@@ -92,7 +102,11 @@ describe('normalizePublicCheckoutResponse', () => {
     ['null input', null, /inválido/i],
     ['string input', 'string', /inválido/i],
     ['array input', [], /inválido/i],
-    ['missing id', { name: 'Plano 1', slug: 'plano-1', product: { id: 'prod_1', name: 'Produto 1' } }, /id/i],
+    [
+      'missing id',
+      { name: 'Plano 1', slug: 'plano-1', product: { id: 'prod_1', name: 'Produto 1' } },
+      /id/i,
+    ],
     ['missing product', { id: 'plan_1', name: 'Plano 1', slug: 'plano-1' }, /produto/i],
     ['null product', basePayload({ product: null }), /produto/i],
   ])('rejects %s', (_label, input, message) => {
@@ -134,10 +148,19 @@ describe('normalizePublicCheckoutResponse', () => {
   });
 
   it('normalizes merchant records and brand fallback order', () => {
-    const workspaceBrand = normalize({ merchant: { workspaceName: 'My Workspace' }, checkoutConfig: {} });
+    const workspaceBrand = normalize({
+      merchant: { workspaceName: 'My Workspace' },
+      checkoutConfig: {},
+    });
     const nullMerchant = normalize({ merchant: null });
     const falsyStrings = normalize({
-      merchant: { companyName: 'ACME', brandLogo: '', customDomain: '', cnpj: 0, addressLine: false },
+      merchant: {
+        companyName: 'ACME',
+        brandLogo: '',
+        customDomain: '',
+        cnpj: 0,
+        addressLine: false,
+      },
     });
 
     expect(workspaceBrand.checkoutConfig?.brandName).toBe('My Workspace');
@@ -272,14 +295,18 @@ describe('normalizePublicCheckoutResponse', () => {
   it('normalizes payment provider records', () => {
     const payload = normalize({
       paymentProvider: {
+        provider: 'kloel_multi_provider',
+        cardProvider: 'stripe',
+        pixProvider: 'mercadopago',
+        boletoProvider: 'mercadopago',
         connected: true,
         checkoutEnabled: false,
         publicKey: '',
         unavailableReason: '   ',
         marketplaceFeePercent: 5,
         installmentInterestMonthlyPercent: 1.5,
-        availablePaymentMethodIds: ['card', 'pix'],
-        availablePaymentMethodTypes: ['credit_card'],
+        availablePaymentMethodIds: ['card', 'pix', 'boleto'],
+        availablePaymentMethodTypes: ['card', 'pix', 'boleto'],
         supportsCreditCard: true,
         supportsPix: false,
         supportsBoleto: true,
@@ -287,14 +314,17 @@ describe('normalizePublicCheckoutResponse', () => {
     });
 
     expect(payload.paymentProvider).toMatchObject({
-      provider: 'stripe',
+      provider: 'kloel_multi_provider',
+      cardProvider: 'stripe',
+      pixProvider: 'mercadopago',
+      boletoProvider: 'mercadopago',
       checkoutEnabled: false,
       publicKey: null,
       unavailableReason: null,
       marketplaceFeePercent: 5,
       installmentInterestMonthlyPercent: 1.5,
-      availablePaymentMethodIds: ['card', 'pix'],
-      availablePaymentMethodTypes: ['credit_card'],
+      availablePaymentMethodIds: ['card', 'pix', 'boleto'],
+      availablePaymentMethodTypes: ['card', 'pix', 'boleto'],
       supportsCreditCard: true,
       supportsPix: false,
       supportsBoleto: true,
