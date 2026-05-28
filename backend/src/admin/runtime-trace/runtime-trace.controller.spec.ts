@@ -72,9 +72,7 @@ describe('RuntimeTraceController', () => {
 
     it('maps trace event timestamps to ISO strings', () => {
       const timestamp = 1715700000000;
-      getTrace.mockReturnValue([
-        { kind: 'step1_inbox_recorded', timestamp, detail: {} },
-      ]);
+      getTrace.mockReturnValue([{ kind: 'step1_inbox_recorded', timestamp, detail: {} }]);
 
       const result = controller.getTrace('ws-1', 'ct-1', 'corr-1');
 

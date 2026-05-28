@@ -1,8 +1,4 @@
-import {
-  buildMetadata,
-  readSyncedMessageIds,
-  mergeSyncMetadata,
-} from './metadata-helpers';
+import { buildMetadata, readSyncedMessageIds, mergeSyncMetadata } from './metadata-helpers';
 
 describe('metadata-helpers', () => {
   describe('buildMetadata', () => {
@@ -48,10 +44,7 @@ describe('metadata-helpers', () => {
     });
 
     it('returns the syncedMessageIds array', () => {
-      expect(readSyncedMessageIds({ syncedMessageIds: ['a', 'b'] })).toEqual([
-        'a',
-        'b',
-      ]);
+      expect(readSyncedMessageIds({ syncedMessageIds: ['a', 'b'] })).toEqual(['a', 'b']);
     });
 
     it('caps at 500 entries', () => {
@@ -64,10 +57,9 @@ describe('metadata-helpers', () => {
 
   describe('mergeSyncMetadata', () => {
     it('merges syncedMessageIds into existing metadata', () => {
-      const result = mergeSyncMetadata(
-        { existingKey: 'value', syncedMessageIds: ['old'] },
-        ['new'],
-      );
+      const result = mergeSyncMetadata({ existingKey: 'value', syncedMessageIds: ['old'] }, [
+        'new',
+      ]);
 
       expect(result.existingKey).toBe('value');
       expect(result.syncedMessageIds).toEqual(['new']);

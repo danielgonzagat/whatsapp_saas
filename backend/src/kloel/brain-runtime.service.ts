@@ -1,4 +1,12 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+/**
+ * @deprecated Use {@link ./mind/coordination/mind-runtime.service.ts MindRuntime}.
+ * ADR-0013 Wave M1 alias window (4 weeks).
+ *
+ * @cluster Mind/Coordination
+ * @canonical backend/src/kloel/mind/coordination/mind-runtime.service.ts
+ * @see docs/adr/0013-kloel-mind-unification.md
+ */
+import { BadRequestException, Inject, Injectable, forwardRef } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
@@ -64,6 +72,7 @@ export class BrainRuntimeService {
   private readonly logger = StructuredLogger.from(BrainRuntimeService.name);
 
   constructor(
+    @Inject(forwardRef(() => UnifiedAgentService))
     private readonly unifiedAgent: UnifiedAgentService,
     private readonly contextData: UnifiedAgentContextDataService,
     private readonly capabilities: BrainCapabilityRegistryService,
@@ -299,6 +308,18 @@ export class BrainRuntimeService {
         break;
       case 'inspect_runtime':
         capabilityResult = await this.executor.inspectRuntime(workspaceId);
+        break;
+      case 'search_code':
+        capabilityResult = await this.executor.searchCode(workspaceId, context);
+        break;
+      case 'read_source_file':
+        capabilityResult = await this.executor.readSourceFile(workspaceId, context);
+        break;
+      case 'safe_query':
+        capabilityResult = await this.executor.runSafeQuery(workspaceId, context);
+        break;
+      case 'list_capabilities_detail':
+        capabilityResult = await this.executor.listCapabilitiesDetail(workspaceId);
         break;
       default:
         capabilityResult = { ok: false, error: 'unknown_operator_intent' };

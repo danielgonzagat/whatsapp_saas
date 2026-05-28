@@ -2,10 +2,8 @@ import { Logger } from '@nestjs/common';
 
 import { KloelLead, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-export interface ChatMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-}
+import type { ChatMessage } from './kloel-thinker.types';
+export type { ChatMessage };
 
 import { NON_DIGIT_RE } from '../common/phone';
 import { safeStr } from '../common/string';

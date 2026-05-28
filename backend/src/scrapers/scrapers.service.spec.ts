@@ -4,6 +4,11 @@ import { ScrapersService } from './scrapers.service';
 import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 jest.mock('../common/redis/redis.util', () => ({
+  createBullMqConnectionOptions: jest.fn(() => ({
+    url: 'redis://localhost:6379',
+    maxRetriesPerRequest: null,
+    enableReadyCheck: true,
+  })),
   createRedisClient: () => ({}),
   isRedisConfigured: () => true,
 }));
@@ -39,7 +44,7 @@ describe('ScrapersService', () => {
       await service.createJob('ws-1', {
         type: 'google-maps',
         query: 'restaurant',
-      } as never);
+      });
       expect(prisma.scrapingJob.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           workspaceId: 'ws-1',

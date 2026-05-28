@@ -121,7 +121,9 @@ function scanRecommendationItemsForForeignWorkspaceIds(
 
 function hasCrossWorkspaceContent(input: EcosystemPrivacyGuardInput): boolean {
   const r = input.recommendation;
-  if (!r) return false;
+  if (!r) {
+    return false;
+  }
   const src = r.sourceWorkspaceIds ?? [];
   const ctx = r.contextWorkspaces ?? [];
   const allForeign = [...src, ...ctx].filter((id) => id !== input.targetWorkspaceId);

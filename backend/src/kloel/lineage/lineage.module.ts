@@ -23,9 +23,7 @@ export class LineageBootstrapHook implements OnModuleInit {
     try {
       await this.ledger.bootstrapGenesis();
     } catch (err: unknown) {
-      this.logger.error(
-        `bootstrapGenesis failed during module init: ${(err as Error).message}`,
-      );
+      this.logger.error(`bootstrapGenesis failed during module init: ${(err as Error).message}`);
     }
   }
 }

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../../logging/structured-logger';
 import type { ConnectLedgerEntry } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../prisma/prisma.service';
 import { toPrismaJsonValue } from '../../common/prisma/prisma-json.util';
@@ -134,82 +135,100 @@ export class LedgerService {
    * is a no-op once `matured` is true).
    */
   async moveFromPendingToAvailable(pendingEntryId: string): Promise<void> {
-    await this.prisma.$transaction(async (tx) => {
-      const entry = await tx.connectLedgerEntry.findUnique({
-        where: { id: pendingEntryId },
-      });
-      if (!entry) {
-        throw new Error(`moveFromPendingToAvailable: entry not found id=${pendingEntryId}`);
-      }
-      if (entry.type !== 'CREDIT_PENDING') {
-        throw new Error(
-          `moveFromPendingToAvailable: entry ${pendingEntryId} is not CREDIT_PENDING (type=${entry.type})`,
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        const entry = await tx.connectLedgerEntry.findUnique({
+          where: { id: pendingEntryId },
+        });
+        if (!entry) {
+          throw new Error(`moveFromPendingToAvailable: entry not found id=${pendingEntryId}`);
+        }
+        if (entry.type !== 'CREDIT_PENDING') {
+          throw new Error(
+            `moveFromPendingToAvailable: entry ${pendingEntryId} is not CREDIT_PENDING (type=${entry.type})`,
+          );
+        }
+        if (entry.matured) {
+          this.logger.debug(`moveFromPendingToAvailable idempotent skip: entry=${pendingEntryId}`);
+          return;
+        }
+
+        const balance = await tx.connectAccountBalance.findUnique({
+          where: { id: entry.accountBalanceId },
+          select: {
+            id: true,
+            workspaceId: true,
+            pendingBalanceCents: true,
+            availableBalanceCents: true,
+          },
+        });
+        if (!balance) {
+          throw new AccountBalanceNotFoundError(entry.accountBalanceId);
+        }
+
+        const newPending = balance.pendingBalanceCents - entry.amountCents;
+        const newAvailable = balance.availableBalanceCents + entry.amountCents;
+
+        await tx.connectAccountBalance.update({
+          where: { id: balance.id },
+          data: {
+            pendingBalanceCents: newPending,
+            availableBalanceCents: newAvailable,
+          },
+          select: { workspaceId: true },
+        });
+
+        await tx.connectLedgerEntry.update({
+          where: { id: entry.id },
+          data: { matured: true },
+        });
+
+        const matureEntry = await tx.connectLedgerEntry.create({
+          data: {
+            accountBalanceId: balance.id,
+            type: 'MATURE',
+            amountCents: entry.amountCents,
+            balanceAfterPendingCents: newPending,
+            balanceAfterAvailableCents: newAvailable,
+            referenceType: entry.referenceType,
+            referenceId: entry.referenceId,
+            metadata: { promotedFromEntryId: entry.id },
+          },
+        });
+
+        logLedgerWrite(
+          this.logger,
+          'mature',
+          {
+            accountBalanceId: balance.id,
+            workspaceId: balance.workspaceId,
+            entryId: matureEntry.id,
+            amountCents: entry.amountCents,
+          },
+          {
+            promotedFromEntryId: entry.id,
+            newPendingBalanceCents: newPending.toString(),
+            newAvailableBalanceCents: newAvailable.toString(),
+          },
         );
+      }, FINANCIAL_TRANSACTION_OPTIONS);
+    } catch (error: unknown) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          this.logger.info(
+            `moveFromPendingToAvailable idempotent skip (P2002 concurrent): entry=${pendingEntryId}`,
+          );
+          return;
+        }
+        if (error.code === 'P2025') {
+          this.logger.info(
+            `moveFromPendingToAvailable idempotent skip (P2025 stale row): entry=${pendingEntryId}`,
+          );
+          return;
+        }
       }
-      if (entry.matured) {
-        this.logger.debug(`moveFromPendingToAvailable idempotent skip: entry=${pendingEntryId}`);
-        return;
-      }
-
-      const balance = await tx.connectAccountBalance.findUnique({
-        where: { id: entry.accountBalanceId },
-        select: {
-          id: true,
-          workspaceId: true,
-          pendingBalanceCents: true,
-          availableBalanceCents: true,
-        },
-      });
-      if (!balance) {
-        throw new AccountBalanceNotFoundError(entry.accountBalanceId);
-      }
-
-      const newPending = balance.pendingBalanceCents - entry.amountCents;
-      const newAvailable = balance.availableBalanceCents + entry.amountCents;
-
-      await tx.connectAccountBalance.update({
-        where: { id: balance.id },
-        data: {
-          pendingBalanceCents: newPending,
-          availableBalanceCents: newAvailable,
-        },
-        select: { workspaceId: true },
-      });
-
-      await tx.connectLedgerEntry.update({
-        where: { id: entry.id },
-        data: { matured: true },
-      });
-
-      const matureEntry = await tx.connectLedgerEntry.create({
-        data: {
-          accountBalanceId: balance.id,
-          type: 'MATURE',
-          amountCents: entry.amountCents,
-          balanceAfterPendingCents: newPending,
-          balanceAfterAvailableCents: newAvailable,
-          referenceType: entry.referenceType,
-          referenceId: entry.referenceId,
-          metadata: { promotedFromEntryId: entry.id },
-        },
-      });
-
-      logLedgerWrite(
-        this.logger,
-        'mature',
-        {
-          accountBalanceId: balance.id,
-          workspaceId: balance.workspaceId,
-          entryId: matureEntry.id,
-          amountCents: entry.amountCents,
-        },
-        {
-          promotedFromEntryId: entry.id,
-          newPendingBalanceCents: newPending.toString(),
-          newAvailableBalanceCents: newAvailable.toString(),
-        },
-      );
-    }, FINANCIAL_TRANSACTION_OPTIONS);
+      throw error;
+    }
   }
 
   /**

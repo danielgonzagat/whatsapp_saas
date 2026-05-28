@@ -12,7 +12,7 @@ import { Response } from 'express';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelConversationStore } from './kloel-conversation-store';
-import { KloelLeadBrainService } from './kloel-lead-brain.service';
+import { KloelLeadBrainService as LeadMindCoordinator } from './kloel-lead-brain.service';
 import { KloelReplyEngineService } from './kloel-reply-engine.service';
 import { KloelThreadService } from './kloel-thread.service';
 import { KloelThinkerService, ThinkRequest, ThinkSyncResult } from './kloel-thinker.service';
@@ -50,18 +50,7 @@ interface ComposerMetadata {
 }
 
 /** Followup list item shape. */
-export interface FollowupListItem {
-  id: string;
-  key: string;
-  phone?: unknown;
-  contactId?: unknown;
-  message: unknown;
-  scheduledFor?: unknown;
-  delayMinutes?: unknown;
-  status: unknown;
-  createdAt: Date;
-  executedAt?: unknown;
-}
+export type { FollowupListItem } from './kloel.service.lists.helpers';
 
 /** Kloel main service — thin orchestrator over focused sub-services. */
 @Injectable()
@@ -74,7 +63,7 @@ export class KloelService {
     private readonly planLimits: PlanLimitsService,
     private readonly threadService: KloelThreadService,
     private readonly wsContextService: KloelWorkspaceContextService,
-    private readonly leadBrainService: KloelLeadBrainService,
+    private readonly leadBrainService: LeadMindCoordinator,
     private readonly thinkerService: KloelThinkerService,
     private readonly replyEngineService: KloelReplyEngineService,
     private readonly toolDispatcher: KloelToolDispatcherService,

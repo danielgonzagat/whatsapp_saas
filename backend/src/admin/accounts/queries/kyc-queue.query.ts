@@ -1,5 +1,6 @@
 import type { Prisma } from '@prisma/client';
 import type { PrismaService } from '../../../prisma/prisma.service';
+import { clampLimit } from '../../../common/pagination-clamp.pipe';
 
 /** Kyc queue row shape. */
 interface KycQueueRow {
@@ -45,7 +46,7 @@ export async function listKycQueue(prisma: PrismaService, limit = 50): Promise<K
       prisma.agent.findMany({
         where,
         orderBy: [{ kycSubmittedAt: 'asc' }, { createdAt: 'asc' }],
-        take: Math.min(200, Math.max(1, limit)),
+        take: clampLimit(limit, { default: 50, max: 200 }),
         select: {
           id: true,
           name: true,

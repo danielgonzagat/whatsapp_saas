@@ -1,3 +1,20 @@
+/**
+ * @deprecated DUPLICATE of {@link ../payments/mercadopago/mercadopago-webhook.controller.ts MercadoPagoWebhookController}.
+ *
+ * This controller is NOT registered in any NestJS module (verified via
+ * `grep -rn MercadoPagoWebhookController backend/src --include='*.module.ts'`,
+ * which finds it ONLY in `backend/src/payments/mercadopago/mercadopago.module.ts`).
+ * The canonical webhook receiver lives in the `payments/mercadopago/` domain,
+ * where Stripe-style provider handlers cohabit.
+ *
+ * Migration path: delete this file in a follow-up PR once
+ * `scripts/ops/check-canonical-services.mjs --strict` confirms 0 module
+ * registrations for 7 consecutive days.
+ *
+ * @cluster Payment/MercadoPago
+ * @canonical backend/src/payments/mercadopago/mercadopago-webhook.controller.ts
+ * @see docs/architecture/DEPRECATION_MAP.md#cross-cutting-duplications row 35
+ */
 import { Body, Controller, ForbiddenException, Headers, Post, Query } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { Public } from '../auth/public.decorator';

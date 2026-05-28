@@ -16,9 +16,7 @@ export function buildMetadata(
   } satisfies Prisma.InputJsonObject;
 }
 
-export function readSyncedMessageIds(
-  metadata: Prisma.JsonValue | null,
-): string[] {
+export function readSyncedMessageIds(metadata: Prisma.JsonValue | null): string[] {
   if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
     return [];
   }

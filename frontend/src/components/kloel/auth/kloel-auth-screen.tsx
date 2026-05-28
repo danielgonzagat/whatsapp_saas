@@ -11,6 +11,7 @@ import { TheMachine } from './kloel-auth-screen.machine';
 import { useFacebookSignIn, useGoogleSignIn } from './kloel-auth-screen.hooks';
 import { SocialButtons } from './kloel-auth-screen.social-buttons';
 import { AuthFormFields } from './kloel-auth-screen.form-fields';
+import { AuthHeader } from './kloel-auth-screen.header';
 
 /* ─── types ─── */
 interface KloelAuthScreenProps {
@@ -21,7 +22,6 @@ type Mode = 'login' | 'register';
 
 /* ─── constants ─── */
 const sora = "var(--font-sora), 'Sora', sans-serif";
-const jetbrains = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
 function navigateCurrentWindow(url: string) {
   if (typeof document === 'undefined') {
@@ -379,76 +379,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
           }}
         >
           <div style={{ width: '100%', maxWidth: 408, margin: '0 auto' }}>
-            {/* header */}
-            <div
-              style={{
-                marginBottom: 36,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                textAlign: 'center',
-                gap: 12,
-              }}
-            >
-              <span
-                style={{
-                  fontFamily: jetbrains,
-                  fontSize: 11,
-                  fontWeight: 500,
-                  color: colors.ember.primary,
-                  letterSpacing: '0.16em',
-                  textTransform: 'uppercase',
-                }}
-              >
-                {mode === 'login' ? kloelT('Acesso seguro') : kloelT('Nova conta')}
-              </span>
-              <h1
-                style={{
-                  fontFamily: sora,
-                  fontSize: 'clamp(28px, 4vw, 34px)',
-                  fontWeight: 700,
-                  color: colors.text.silver,
-                  lineHeight: 1.12,
-                  margin: 0,
-                  textWrap: 'balance',
-                }}
-              >
-                {mode === 'login' ? kloelT('Entrar') : kloelT('Criar conta')}
-              </h1>
-              <p
-                style={{
-                  fontFamily: sora,
-                  fontSize: 14,
-                  color: colors.text.muted,
-                  lineHeight: 1.6,
-                  margin: 0,
-                  maxWidth: 340,
-                  textWrap: 'balance',
-                }}
-              >
-                {mode === 'login'
-                  ? kloelT('Acesse sua conta.')
-                  : kloelT('Crie sua conta e comece a usar a inteligencia comercial autonoma.')}
-              </p>
-              {mode === 'register' && affiliateInviteToken ? (
-                <p
-                  style={{
-                    fontFamily: jetbrains,
-                    fontSize: 11,
-                    color: colors.ember.primary,
-                    lineHeight: 1.6,
-                    margin: 0,
-                    maxWidth: 360,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.08em',
-                  }}
-                >
-                  {affiliateInviteWorkspaceName
-                    ? kloelT(`Convite de afiliado para ${affiliateInviteWorkspaceName}`)
-                    : kloelT('Convite de afiliado detectado')}
-                </p>
-              ) : null}
-            </div>
+            <AuthHeader mode={mode} affiliateInviteToken={affiliateInviteToken} affiliateInviteWorkspaceName={affiliateInviteWorkspaceName} />
 
             {/* social buttons */}
             <SocialButtons

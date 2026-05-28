@@ -1,0 +1,448 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { PlanLimitsService } from '../billing/plan-limits.service';
+
+jest.mock('./kloel-chat-tools.service', () => ({
+  KloelChatToolsService: class MockKloelChatToolsService {},
+}));
+
+jest.mock('./kloel-business-config-tools.service', () => ({
+  KloelBusinessConfigToolsService: class MockKloelBusinessConfigToolsService {},
+}));
+
+jest.mock('./kloel-whatsapp-tools.service', () => ({
+  KloelWhatsAppToolsService: class MockKloelWhatsAppToolsService {},
+}));
+
+jest.mock('./kloel-composer.service', () => ({
+  KloelComposerService: class MockKloelComposerService {},
+}));
+
+jest.mock('../audit/audit.service', () => ({
+  AuditService: class MockAuditService {},
+}));
+
+jest.mock('../observability/ops-alert.service', () => ({
+  OpsAlertService: class MockOpsAlertService {},
+}));
+
+jest.mock('./kloel-code-tools.service', () => ({
+  KloelCodeToolsService: class MockKloelCodeToolsService {},
+}));
+
+jest.mock('./kloel-product-sub-resource-tools.service', () => ({
+  KloelProductSubResourceToolsService: class MockProductSubToolsService {},
+}));
+
+import { KloelChatToolsService } from './kloel-chat-tools.service';
+import { KloelBusinessConfigToolsService } from './kloel-business-config-tools.service';
+import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
+import { KloelComposerService } from './kloel-composer.service';
+import { AuditService } from '../audit/audit.service';
+import { OpsAlertService } from '../observability/ops-alert.service';
+import { KloelCodeToolsService } from './kloel-code-tools.service';
+import { KloelCodeAnalysisService } from './kloel-code-analysis.service';
+import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
+import { CapabilityRegistryV2Service } from './capability-registry-v2/capability-registry-v2.service';
+import {
+  createPrismaMock,
+  createPlanLimitsMock,
+  createChatToolsMock,
+  createBizConfigToolsMock,
+  createWhatsappToolsMock,
+  createComposerMock,
+  createAuditMock,
+  createOpsAlertMock,
+  createCodeToolsMock,
+  createCodeAnalysisMock,
+  DEFAULT_WS_ID,
+} from './kloel-tool-dispatcher.service.fixtures';
+import type {
+  DispatcherPrismaMock,
+  DispatcherChatToolsMock,
+  DispatcherBizConfigMock,
+  DispatcherWhatsappMock,
+  DispatcherComposerMock,
+  DispatcherAuditMock,
+  DispatcherOpsAlertMock,
+  DispatcherPlanLimitsMock,
+  DispatcherCodeToolsMock,
+  DispatcherCodeAnalysisMock,
+} from './kloel-tool-dispatcher.service.fixtures';
+type ProductSubToolsMock = { executeTool: jest.Mock };
+
+function objectContaining<T extends object>(sample: T): T {
+  const matcher: unknown = expect.objectContaining(sample);
+  return matcher as T;
+}
+
+function stringMatching(pattern: RegExp): string {
+  const matcher: unknown = expect.stringMatching(pattern);
+  return matcher as string;
+}
+
+function stringContaining(sample: string): string {
+  const matcher: unknown = expect.stringContaining(sample);
+  return matcher as string;
+}
+
+describe('KloelToolDispatcherService — dotted aliases', () => {
+  let service: KloelToolDispatcherService;
+  let prisma: DispatcherPrismaMock;
+  let planLimits: DispatcherPlanLimitsMock;
+  let chatToolsService: DispatcherChatToolsMock;
+  let bizConfigToolsService: DispatcherBizConfigMock;
+  let whatsappToolsService: DispatcherWhatsappMock;
+  let composerService: DispatcherComposerMock;
+  let auditService: DispatcherAuditMock;
+  let opsAlert: DispatcherOpsAlertMock;
+  let codeToolsService: DispatcherCodeToolsMock;
+  let codeAnalysisService: DispatcherCodeAnalysisMock;
+  let productSubTools: ProductSubToolsMock;
+
+  beforeEach(async () => {
+    prisma = createPrismaMock();
+    planLimits = createPlanLimitsMock();
+    chatToolsService = createChatToolsMock();
+    bizConfigToolsService = createBizConfigToolsMock();
+    whatsappToolsService = createWhatsappToolsMock();
+    composerService = createComposerMock();
+    auditService = createAuditMock();
+    opsAlert = createOpsAlertMock();
+    codeToolsService = createCodeToolsMock();
+    codeAnalysisService = createCodeAnalysisMock();
+    productSubTools = { executeTool: jest.fn().mockResolvedValue({ success: true }) };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        KloelToolDispatcherService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: PlanLimitsService, useValue: planLimits },
+        { provide: KloelChatToolsService, useValue: chatToolsService },
+        { provide: KloelBusinessConfigToolsService, useValue: bizConfigToolsService },
+        { provide: KloelWhatsAppToolsService, useValue: whatsappToolsService },
+        { provide: KloelComposerService, useValue: composerService },
+        { provide: AuditService, useValue: auditService },
+        { provide: KloelCodeToolsService, useValue: codeToolsService },
+        { provide: KloelCodeAnalysisService, useValue: codeAnalysisService },
+        { provide: OpsAlertService, useValue: opsAlert },
+        { provide: KloelProductSubResourceToolsService, useValue: productSubTools },
+        CapabilityRegistryV2Service,
+      ],
+    }).compile();
+
+    service = module.get<KloelToolDispatcherService>(KloelToolDispatcherService);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  const args = { name: 'Test', price: 99 };
+  describe('products.* aliases', () => {
+    it('products.create forwards to create_product and returns a material receipt', async () => {
+      chatToolsService.toolSaveProduct = jest.fn().mockResolvedValue({
+        success: true,
+        product: { id: 'prod-1', name: 'Test' },
+      });
+
+      const prodResult = await service.executeTool(
+        DEFAULT_WS_ID,
+        'products.create',
+        args,
+        'user-42',
+      );
+
+      expect(chatToolsService.toolSaveProduct).toHaveBeenCalledWith(DEFAULT_WS_ID, {
+        ...args,
+        actorId: 'user-42',
+      });
+      expect(prodResult).toEqual(
+        objectContaining({
+          success: true,
+          capabilityId: 'products.create',
+          outputs: objectContaining({ productId: 'prod-1' }),
+          receipt: objectContaining({
+            capabilityId: 'products.create',
+            actorId: 'user-42',
+            inputs: args,
+            outputs: objectContaining({ productId: 'prod-1' }),
+            domainEvents: ['product.created'],
+            evidenceUrl: '/produtos/prod-1',
+            success: true,
+          }),
+        }),
+      );
+    });
+
+    it('products.update forwards to update_product and returns a material receipt', async () => {
+      chatToolsService.toolUpdateProduct = jest.fn().mockResolvedValue({
+        success: true,
+        product: { id: 'prod-1', name: 'Test' },
+      });
+
+      const dotted = await service.executeTool(DEFAULT_WS_ID, 'products.update', args, 'user-42');
+
+      expect(chatToolsService.toolUpdateProduct).toHaveBeenCalledWith(DEFAULT_WS_ID, {
+        ...args,
+        actorId: 'user-42',
+      });
+      expect(dotted).toEqual(
+        objectContaining({
+          success: true,
+          capabilityId: 'products.update',
+          outputs: objectContaining({ productId: 'prod-1' }),
+          receipt: objectContaining({
+            capabilityId: 'products.update',
+            actorId: 'user-42',
+            inputs: args,
+            outputs: objectContaining({ productId: 'prod-1' }),
+            domainEvents: ['product.updated'],
+            evidenceUrl: '/produtos/prod-1',
+            success: true,
+          }),
+        }),
+      );
+    });
+
+    it('products.upload_image reaches upload_product_image', async () => {
+      chatToolsService.toolUploadProductImage = jest
+        .fn()
+        .mockResolvedValue({ success: true, url: 'https://img.test/x.png' });
+
+      await service.executeTool(DEFAULT_WS_ID, 'products.upload_image', args);
+
+      expect(chatToolsService.toolUploadProductImage).toHaveBeenCalledWith(DEFAULT_WS_ID, args);
+    });
+  });
+  describe('plans.* aliases', () => {
+    it('plans.create forwards to create_plan and returns a material receipt', async () => {
+      productSubTools.executeTool.mockResolvedValue({
+        success: true,
+        plan: { id: 'plan-1', name: 'Basic' },
+      });
+
+      const dotted = await service.executeTool(
+        DEFAULT_WS_ID,
+        'plans.create',
+        { productId: 'prod-1', name: 'Basic', price: 99 },
+        'user-42',
+      );
+
+      expect(productSubTools.executeTool).toHaveBeenCalledWith('create_plan', DEFAULT_WS_ID, {
+        productId: 'prod-1',
+        name: 'Basic',
+        price: 99,
+      });
+      expect(dotted.success).toBe(true);
+      expect(dotted.capabilityId).toBe('plans.create');
+      expect(dotted.outputs).toEqual(objectContaining({ planId: 'plan-1' }));
+      expect(dotted.receipt).toEqual(
+        objectContaining({
+          capabilityId: 'plans.create',
+          workspaceId: DEFAULT_WS_ID,
+          actorId: 'user-42',
+          inputs: { productId: 'prod-1', name: 'Basic', price: 99 },
+          outputs: objectContaining({ planId: 'plan-1' }),
+          domainEvents: ['plan.created'],
+          auditLogId: stringMatching(/^audit_/),
+          evidenceUrl: '/produtos/prod-1/planos/plan-1',
+          idempotencyKey: stringContaining('plans.create'),
+          success: true,
+        }),
+      );
+    });
+
+    it('plans.update forwards to update_plan and returns a material receipt', async () => {
+      productSubTools.executeTool.mockResolvedValue({
+        success: true,
+        plan: { id: 'plan-1', name: 'Pro' },
+      });
+
+      const planArgs = { productId: 'prod-1', planId: 'plan-1', name: 'Pro', price: 199 };
+      const dotted = await service.executeTool(DEFAULT_WS_ID, 'plans.update', planArgs, 'user-42');
+
+      expect(productSubTools.executeTool).toHaveBeenCalledWith(
+        'update_plan',
+        DEFAULT_WS_ID,
+        planArgs,
+      );
+      expect(dotted.success).toBe(true);
+      expect(dotted.capabilityId).toBe('plans.update');
+      expect(dotted.outputs).toEqual(objectContaining({ planId: 'plan-1' }));
+      expect(dotted.receipt).toEqual(
+        objectContaining({
+          capabilityId: 'plans.update',
+          workspaceId: DEFAULT_WS_ID,
+          actorId: 'user-42',
+          inputs: planArgs,
+          outputs: objectContaining({ productId: 'prod-1', planId: 'plan-1' }),
+          domainEvents: ['plan.updated'],
+          auditLogId: stringMatching(/^audit_/),
+          evidenceUrl: '/produtos/prod-1/planos/plan-1',
+          idempotencyKey: stringContaining('plans.update'),
+          success: true,
+        }),
+      );
+    });
+  });
+  describe('checkouts.* aliases', () => {
+    it('checkouts.create forwards to create_checkout and returns a material receipt', async () => {
+      productSubTools.executeTool.mockResolvedValue({
+        success: true,
+        checkout: { id: 'chk-1', name: 'Checkout Principal' },
+      });
+
+      const dotted = await service.executeTool(
+        DEFAULT_WS_ID,
+        'checkouts.create',
+        { productId: 'prod-1', name: 'Checkout Principal' },
+        'user-42',
+      );
+
+      expect(productSubTools.executeTool).toHaveBeenCalledWith('create_checkout', DEFAULT_WS_ID, {
+        productId: 'prod-1',
+        name: 'Checkout Principal',
+      });
+      expect(dotted.success).toBe(true);
+      expect(dotted.capabilityId).toBe('checkouts.create');
+      expect(dotted.outputs).toEqual(objectContaining({ checkoutId: 'chk-1' }));
+      expect(dotted.receipt).toEqual(
+        objectContaining({
+          capabilityId: 'checkouts.create',
+          workspaceId: DEFAULT_WS_ID,
+          actorId: 'user-42',
+          inputs: { productId: 'prod-1', name: 'Checkout Principal' },
+          outputs: objectContaining({ checkoutId: 'chk-1' }),
+          domainEvents: ['checkout.created'],
+          auditLogId: stringMatching(/^audit_/),
+          evidenceUrl: '/produtos/prod-1/checkouts/chk-1',
+          idempotencyKey: stringContaining('checkouts.create'),
+          success: true,
+        }),
+      );
+    });
+
+    it('checkouts.update forwards to update_checkout and returns a material receipt', async () => {
+      productSubTools.executeTool.mockResolvedValue({
+        success: true,
+        checkout: { id: 'chk-1', name: 'Checkout Pro' },
+      });
+
+      const checkoutArgs = {
+        productId: 'prod-1',
+        checkoutId: 'chk-1',
+        name: 'Checkout Pro',
+        buttonText: 'Comprar Agora',
+      };
+      const dotted = await service.executeTool(
+        DEFAULT_WS_ID,
+        'checkouts.update',
+        checkoutArgs,
+        'user-42',
+      );
+
+      expect(productSubTools.executeTool).toHaveBeenCalledWith(
+        'update_checkout',
+        DEFAULT_WS_ID,
+        checkoutArgs,
+      );
+      expect(dotted.success).toBe(true);
+      expect(dotted.capabilityId).toBe('checkouts.update');
+      expect(dotted.outputs).toEqual(objectContaining({ checkoutId: 'chk-1' }));
+      expect(dotted.receipt).toEqual(
+        objectContaining({
+          capabilityId: 'checkouts.update',
+          workspaceId: DEFAULT_WS_ID,
+          actorId: 'user-42',
+          inputs: checkoutArgs,
+          outputs: objectContaining({ productId: 'prod-1', checkoutId: 'chk-1' }),
+          domainEvents: ['checkout.updated'],
+          auditLogId: stringMatching(/^audit_/),
+          evidenceUrl: '/produtos/prod-1/checkouts/chk-1',
+          idempotencyKey: stringContaining('checkouts.update'),
+          success: true,
+        }),
+      );
+    });
+  });
+  describe('coupons.* aliases', () => {
+    it('coupons.create forwards to create_coupon and returns a material receipt', async () => {
+      productSubTools.executeTool.mockResolvedValue({
+        success: true,
+        coupon: { id: 'coupon-1', code: 'PDRN10' },
+      });
+
+      const dotted = await service.executeTool(
+        DEFAULT_WS_ID,
+        'coupons.create',
+        { productId: 'prod-1', code: 'PDRN10', discountType: 'percentage', discountValue: 10 },
+        'user-42',
+      );
+
+      expect(productSubTools.executeTool).toHaveBeenCalledWith('create_coupon', DEFAULT_WS_ID, {
+        productId: 'prod-1',
+        code: 'PDRN10',
+        discountType: 'percentage',
+        discountValue: 10,
+      });
+      expect(dotted.success).toBe(true);
+      expect(dotted.capabilityId).toBe('coupons.create');
+      expect(dotted.outputs).toEqual(objectContaining({ couponId: 'coupon-1' }));
+      expect(dotted.receipt).toEqual(
+        objectContaining({
+          capabilityId: 'coupons.create',
+          workspaceId: DEFAULT_WS_ID,
+          actorId: 'user-42',
+          inputs: {
+            productId: 'prod-1',
+            code: 'PDRN10',
+            discountType: 'percentage',
+            discountValue: 10,
+          },
+          outputs: objectContaining({ couponId: 'coupon-1' }),
+          domainEvents: ['coupon.created'],
+          auditLogId: stringMatching(/^audit_/),
+          evidenceUrl: '/produtos/prod-1/cupons/coupon-1',
+          idempotencyKey: stringContaining('coupons.create'),
+          success: true,
+        }),
+      );
+    });
+
+    it('coupons.delete forwards to delete_coupon and returns a material receipt', async () => {
+      productSubTools.executeTool.mockResolvedValue({ success: true, couponId: 'coupon-1' });
+
+      const deleteArgs = { couponId: 'coupon-1' };
+      const dotted = await service.executeTool(
+        DEFAULT_WS_ID,
+        'coupons.delete',
+        deleteArgs,
+        'user-42',
+      );
+
+      expect(productSubTools.executeTool).toHaveBeenCalledWith(
+        'delete_coupon',
+        DEFAULT_WS_ID,
+        deleteArgs,
+      );
+      expect(dotted.success).toBe(true);
+      expect(dotted.capabilityId).toBe('coupons.delete');
+      expect(dotted.outputs).toEqual(objectContaining({ couponId: 'coupon-1' }));
+      expect(dotted.receipt).toEqual(
+        objectContaining({
+          capabilityId: 'coupons.delete',
+          workspaceId: DEFAULT_WS_ID,
+          actorId: 'user-42',
+          inputs: deleteArgs,
+          outputs: objectContaining({ couponId: 'coupon-1' }),
+          domainEvents: ['coupon.deleted'],
+          auditLogId: stringMatching(/^audit_/),
+          idempotencyKey: stringContaining('coupons.delete'),
+          success: true,
+        }),
+      );
+    });
+  });
+});

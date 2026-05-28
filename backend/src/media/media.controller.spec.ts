@@ -1,4 +1,3 @@
-
 jest.mock('@sentry/node', () => ({}), { virtual: true });
 
 jest.mock('../auth/workspace-access', () => ({
@@ -131,11 +130,15 @@ describe('MediaController', () => {
 
       expect(resolveWorkspaceIdMock).toHaveBeenCalledWith(mockReq, 'ws-1');
       expect(detectUploadedMimeMock).toHaveBeenCalledWith(mockFile);
-      expect(uploadDocument).toHaveBeenCalledWith('ws-1', expect.objectContaining({ mimetype: 'application/pdf' }), {
-        name: 'My Catalog',
-        description: 'A catalog',
-        category: 'sales',
-      });
+      expect(uploadDocument).toHaveBeenCalledWith(
+        'ws-1',
+        expect.objectContaining({ mimetype: 'application/pdf' }),
+        {
+          name: 'My Catalog',
+          description: 'A catalog',
+          category: 'sales',
+        },
+      );
       expect(result.success).toBe(true);
     });
   });
@@ -194,7 +197,7 @@ describe('MediaController', () => {
         send: jest.fn(),
       } as never;
 
-      await controller.getDocumentFile(mockReq, 'doc-1', res as never);
+      await controller.getDocumentFile(mockReq, 'doc-1', res);
 
       expect(resolveWorkspaceIdMock).toHaveBeenCalledWith(mockReq);
       expect(getDocumentFile).toHaveBeenCalledWith('ws-1', 'doc-1');
@@ -220,9 +223,7 @@ describe('MediaController', () => {
     it('propagates rejection from service.deleteDocument', async () => {
       deleteDocument.mockRejectedValueOnce(new Error('Deletion failed'));
 
-      await expect(controller.deleteDocument(mockReq, 'doc-99')).rejects.toThrow(
-        'Deletion failed',
-      );
+      await expect(controller.deleteDocument(mockReq, 'doc-99')).rejects.toThrow('Deletion failed');
     });
   });
 

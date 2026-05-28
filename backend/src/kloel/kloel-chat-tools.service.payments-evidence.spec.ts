@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { KloelChatToolsService } from './kloel-chat-tools.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { ProductService } from '../products/product.service';
 import { SmartPaymentService } from './smart-payment.service';
 import {
   AgentRuntimeSchedulerService,
@@ -46,6 +47,7 @@ type ChatToolsPrismaMock = {
 describe('KloelChatToolsService', () => {
   let service: KloelChatToolsService;
   let prisma: ChatToolsPrismaMock;
+  let productService: { create: jest.Mock };
   let smartPayment: Pick<SmartPaymentService, 'createSmartPayment'>;
   let agentScheduler: {
     upsertJob: jest.Mock;
@@ -149,11 +151,18 @@ describe('KloelChatToolsService', () => {
       verify: jest.fn().mockResolvedValue([]),
       summary: jest.fn().mockResolvedValue({ total: 1, byType: { validation: 1 } }),
     };
+    productService = {
+      create: jest.fn().mockResolvedValue({
+        success: true,
+        product: { id: 'prod-1', name: 'Test', price: 99, active: true, format: 'DIGITAL' },
+      }),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         KloelChatToolsService,
         { provide: PrismaService, useValue: prisma },
+        { provide: ProductService, useValue: productService },
         { provide: SmartPaymentService, useValue: smartPayment },
         { provide: AgentRuntimeSchedulerService, useValue: agentScheduler },
         { provide: AgentRuntimeSessionStore, useValue: agentSessions },
@@ -170,28 +179,40 @@ describe('KloelChatToolsService', () => {
   });
 
   describe('toolCreatePaymentLink', () => {
-    it('delegates to SmartPaymentService', async () => {
+    it('delegates to SmartPaymentService in production mode', async () => {
+      const originalNodeEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'production';
       smartPayment.createSmartPayment = jest.fn().mockResolvedValue({
         paymentUrl: 'https://pay.test/checkout',
       });
 
-      const result = await service.toolCreatePaymentLink(wsId, {
-        amount: 99.9,
-        description: 'Produto Teste',
-      });
+      try {
+        const result = await service.toolCreatePaymentLink(wsId, {
+          amount: 99.9,
+          description: 'Produto Teste',
+        });
 
-      expect(result.success).toBe(true);
-      expect(smartPayment.createSmartPayment).toHaveBeenCalledWith(
-        expect.objectContaining({ workspaceId: wsId, amount: 99.9 }),
-      );
+        expect(result.success).toBe(true);
+        expect(smartPayment.createSmartPayment).toHaveBeenCalledWith(
+          expect.objectContaining({ workspaceId: wsId, amount: 99.9 }),
+        );
+      } finally {
+        if (originalNodeEnv === undefined) {
+          delete process.env.NODE_ENV;
+        } else {
+          process.env.NODE_ENV = originalNodeEnv;
+        }
+      }
     });
   });
 
   describe('tenant isolation', () => {
     it('toolSaveProduct uses correct workspaceId', async () => {
       await service.toolSaveProduct('ws-tenant', { name: 'X', price: 1 });
-      expect(prisma.product.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ workspaceId: 'ws-tenant' }) }),
+      expect(productService.create).toHaveBeenCalledWith(
+        'ws-tenant',
+        expect.objectContaining({ name: 'X', price: 1 }),
+        { id: 'kloel-chat' },
       );
     });
 
@@ -204,9 +225,11 @@ describe('KloelChatToolsService', () => {
   });
 
   describe('error handling', () => {
-    it('toolSaveProduct propagates Prisma error', async () => {
-      prisma.product.create.mockRejectedValue(new Error('unique constraint'));
-      await expect(service.toolSaveProduct(wsId, { name: 'X', price: 1 })).rejects.toThrow();
+    it('toolSaveProduct propagates ProductService error', async () => {
+      productService.create.mockRejectedValue(new Error('unique constraint'));
+      await expect(service.toolSaveProduct(wsId, { name: 'X', price: 1 })).rejects.toThrow(
+        'unique constraint',
+      );
     });
 
     it('toolListProducts propagates Prisma error', async () => {

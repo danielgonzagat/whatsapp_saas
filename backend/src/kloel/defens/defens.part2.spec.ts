@@ -18,7 +18,13 @@ import { AuthorityBuilder } from './authority.builder';
 import { TacticalTradeoffAdvisor } from './tactical-tradeoff.advisor';
 import { DefensibilityNarrativeBuilder } from './defensibility-narrative.builder';
 
-import type { EvidenceInput, DefensibleAsset, OwnedAudience, PositioningUniqueness, AuthorityBuilding } from './types';
+import type {
+  EvidenceInput,
+  DefensibleAsset,
+  OwnedAudience,
+  PositioningUniqueness,
+  AuthorityBuilding,
+} from './types';
 import type { SpineEventRef } from '../mind/mind.types';
 
 const baseSpineEvent = (over: Partial<SpineEventRef> = {}): SpineEventRef => ({
@@ -59,64 +65,74 @@ describe('GrowthTracker (UTP-DEFENS-002)', () => {
   });
 
   it('reports flat trend for no prior history', () => {
-    const assets: DefensibleAsset[] = [{
-      workspaceId: 'wks_a',
-      assetId: 'asset_1',
-      kind: 'owned_audience',
-      label: 'Test Asset',
-      strength: 'nascent',
-      score: 0.3,
-      firstRecordedAt: new Date().toISOString(),
-      lastUpdatedAt: new Date().toISOString(),
-      evidence: [],
-    }];
+    const assets: DefensibleAsset[] = [
+      {
+        workspaceId: 'wks_a',
+        assetId: 'asset_1',
+        kind: 'owned_audience',
+        label: 'Test Asset',
+        strength: 'nascent',
+        score: 0.3,
+        firstRecordedAt: new Date().toISOString(),
+        lastUpdatedAt: new Date().toISOString(),
+        evidence: [],
+      },
+    ];
     const growth = tracker.track(assets, 30);
     expect(growth[0]?.trend).toBe('flat');
   });
 
   it('detects growth when score increases between periods', () => {
-    const assets: DefensibleAsset[] = [{
-      workspaceId: 'wks_a',
-      assetId: 'asset_1',
-      kind: 'owned_audience',
-      label: 'Test Asset',
-      strength: 'building',
-      score: 0.5,
-      firstRecordedAt: new Date().toISOString(),
-      lastUpdatedAt: new Date().toISOString(),
-      evidence: [],
-    }];
+    const assets: DefensibleAsset[] = [
+      {
+        workspaceId: 'wks_a',
+        assetId: 'asset_1',
+        kind: 'owned_audience',
+        label: 'Test Asset',
+        strength: 'building',
+        score: 0.5,
+        firstRecordedAt: new Date().toISOString(),
+        lastUpdatedAt: new Date().toISOString(),
+        evidence: [],
+      },
+    ];
     tracker.track(assets, 30);
 
-    const updatedAssets: DefensibleAsset[] = [{
-      ...assets[0],
-      score: 0.55,
-      strength: 'building',
-    }];
+    const updatedAssets: DefensibleAsset[] = [
+      {
+        ...assets[0],
+        score: 0.55,
+        strength: 'building',
+      },
+    ];
     const growth = tracker.track(updatedAssets, 30);
     expect(growth[0]?.trend).toBe('growing');
     expect(growth[0]?.growthRate).toBeGreaterThan(0);
   });
 
   it('detects declining trend when score drops', () => {
-    const assets: DefensibleAsset[] = [{
-      workspaceId: 'wks_a',
-      assetId: 'asset_2',
-      kind: 'social_proof',
-      label: 'Test Proof',
-      strength: 'established',
-      score: 0.8,
-      firstRecordedAt: new Date().toISOString(),
-      lastUpdatedAt: new Date().toISOString(),
-      evidence: [],
-    }];
+    const assets: DefensibleAsset[] = [
+      {
+        workspaceId: 'wks_a',
+        assetId: 'asset_2',
+        kind: 'social_proof',
+        label: 'Test Proof',
+        strength: 'established',
+        score: 0.8,
+        firstRecordedAt: new Date().toISOString(),
+        lastUpdatedAt: new Date().toISOString(),
+        evidence: [],
+      },
+    ];
     tracker.track(assets, 30);
 
-    const updated: DefensibleAsset[] = [{
-      ...assets[0],
-      score: 0.4,
-      strength: 'building',
-    }];
+    const updated: DefensibleAsset[] = [
+      {
+        ...assets[0],
+        score: 0.4,
+        strength: 'building',
+      },
+    ];
     const growth = tracker.track(updated, 30);
     expect(growth[0]?.trend).toBe('declining');
     expect(growth[0]?.growthRate).toBeLessThan(0);

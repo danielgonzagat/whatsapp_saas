@@ -48,6 +48,28 @@ export function CiaHeader({
               {accountRuntime.mode}
             </Badge>
           )}
+          {surface?.commercial?.pipelineMode === 'shadow' && (
+            <span
+              className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+              style={{
+                backgroundColor: 'rgb(58, 58, 63)',
+                color: 'rgb(155, 155, 160)',
+              }}
+            >
+              Shadow
+            </span>
+          )}
+          {surface?.commercial?.pipelineMode === 'active' && (
+            <span
+              className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium"
+              style={{
+                backgroundColor: 'rgba(16,185,129,0.12)',
+                color: 'rgb(127, 226, 188)',
+              }}
+            >
+              Active
+            </span>
+          )}
         </div>
       </div>
 

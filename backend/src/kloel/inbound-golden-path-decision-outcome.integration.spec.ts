@@ -254,7 +254,7 @@ describe('Inbound Golden Path — P12 WhatsApp integration proof', () => {
       identity as never,
       setupService as never,
       prisma as never,
-      tracer as never,
+      tracer,
     );
   }
   function traceBeforeOrchestration(input: {

@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { EmailCampaignService } from '../kloel/email-campaign.service';
 import { MarketingController } from './marketing.controller';
 
 type PrismaMock = {
@@ -15,11 +16,13 @@ describe('MarketingController direct email send approval gate', () => {
   const req = { user: { workspaceId: 'ws-1', email: 'owner@example.com' } };
   const originalResendKey = process.env.RESEND_API_KEY;
   const originalSendgridKey = process.env.SENDGRID_API_KEY;
+  const originalSmtpHost = process.env.SMTP_HOST;
   const originalJwtSecret = process.env.JWT_SECRET;
 
   beforeEach(() => {
     process.env.RESEND_API_KEY = '';
     process.env.SENDGRID_API_KEY = '';
+    process.env.SMTP_HOST = '';
     process.env.JWT_SECRET = 'test-unsubscribe-secret';
     prisma = {
       approvalRequest: {
@@ -36,9 +39,14 @@ describe('MarketingController direct email send approval gate', () => {
     controller = new MarketingController(prisma as never);
   });
 
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   afterAll(() => {
     process.env.RESEND_API_KEY = originalResendKey;
     process.env.SENDGRID_API_KEY = originalSendgridKey;
+    process.env.SMTP_HOST = originalSmtpHost;
     process.env.JWT_SECRET = originalJwtSecret;
   });
 
@@ -103,6 +111,49 @@ describe('MarketingController direct email send approval gate', () => {
       expect.objectContaining({
         where: { id: 'ap-direct-1', workspaceId: 'ws-1', state: 'APPROVED' },
         data: expect.objectContaining({ state: 'COMPLETED' }),
+      }),
+    );
+  });
+
+  it('routes approved direct sends through SMTP when SMTP is the configured provider', async () => {
+    process.env.SMTP_HOST = 'smtp.example.com';
+    prisma.approvalRequest.findFirst.mockResolvedValueOnce({
+      id: 'ap-direct-1',
+      payload: {
+        subject: 'Oferta SMTP',
+        html: '<p>Oi {{name}}</p>',
+        recipients: [{ email: 'lead@example.com', name: 'Lead' }],
+        campaignName: 'Oferta SMTP',
+      },
+    });
+    jest.spyOn(EmailCampaignService.prototype, 'resolveDelivery').mockReturnValue({
+      provider: 'smtp',
+      fromEmail: 'noreply@kloel.com',
+      fromName: 'KLOEL',
+      smtp: { host: 'smtp.example.com', port: 587, secure: false },
+    });
+    const sendCampaign = jest
+      .spyOn(EmailCampaignService.prototype, 'sendCampaign')
+      .mockResolvedValue({ sent: 1, failed: 0, errors: [] });
+
+    const result = await controller.sendEmailCampaign(req, {
+      approvalRequestId: 'ap-direct-1',
+    });
+
+    expect(sendCampaign).toHaveBeenCalledWith({
+      workspaceId: 'ws-1',
+      subject: 'Oferta SMTP',
+      html: '<p>Oi {{name}}</p>',
+      recipients: [{ email: 'lead@example.com', name: 'Lead' }],
+      campaignName: 'Oferta SMTP',
+    });
+    expect(result).toEqual(
+      expect.objectContaining({
+        sent: 1,
+        failed: 0,
+        total: 1,
+        provider: 'smtp',
+        approvalExecuted: true,
       }),
     );
   });

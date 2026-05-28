@@ -10,6 +10,7 @@ export const BRAIN_EVENT_TAXONOMY = [
   'sale.refunded',
   'sale.cancelled',
   'checkout.created',
+  'checkout.updated',
   'checkout.paid',
   'checkout.cancelled',
   'checkout.viewed',
@@ -27,6 +28,14 @@ export const BRAIN_EVENT_TAXONOMY = [
   'lead.abandoned',
   'contact.segmented',
   'product.created',
+  'product.updated',
+  'product.published',
+  'product.deleted',
+  'coupon.created',
+  'coupon.updated',
+  'coupon.deleted',
+  'plan.created',
+  'plan.updated',
   'campaign.scheduled',
   'campaign.sent',
   'campaign.clicked',
@@ -88,6 +97,7 @@ export interface SaleEventPayload extends CommercialEventPayload {
 export interface CheckoutEventPayload extends CommercialEventPayload {
   eventType:
     | 'checkout.created'
+    | 'checkout.updated'
     | 'checkout.paid'
     | 'checkout.cancelled'
     | 'checkout.viewed'
@@ -126,11 +136,30 @@ export interface CampaignEventPayload extends CommercialEventPayload {
 }
 
 export interface ProductEventPayload extends CommercialEventPayload {
-  eventType: 'product.created';
+  eventType: 'product.created' | 'product.updated' | 'product.published' | 'product.deleted';
   payload: {
     productId: string;
     name: string;
     priceInCents?: number;
+    format?: string;
+    status?: string;
+    active?: boolean;
+    imageUrl?: string | null;
+    changes?: string[];
+  };
+}
+
+export interface CouponEventPayload extends CommercialEventPayload {
+  eventType: 'coupon.created' | 'coupon.updated' | 'coupon.deleted';
+  payload: {
+    couponId?: string;
+    productId?: string;
+    code?: string;
+    discountType?: string;
+    discountValue?: number;
+    usageLimit?: number | null;
+    expiresAt?: string | null;
+    changes?: string[];
   };
 }
 

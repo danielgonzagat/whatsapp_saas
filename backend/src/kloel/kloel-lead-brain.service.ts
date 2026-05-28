@@ -1,4 +1,12 @@
-import { Injectable, Optional } from '@nestjs/common';
+/**
+ * @deprecated Use {@link ./mind/coordination/lead-mind-coordinator.service.ts LeadMindCoordinator}.
+ * ADR-0013 Wave M1 alias window (4 weeks).
+ *
+ * @cluster Mind/Coordination
+ * @canonical backend/src/kloel/mind/coordination/lead-mind-coordinator.service.ts
+ * @see docs/adr/0013-kloel-mind-unification.md
+ */
+import { Inject, Injectable, Optional, forwardRef } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { KloelLead, Prisma } from '@prisma/client';
 import { LLMBudgetService, estimateChatCostCents } from './llm-budget.service';
@@ -40,6 +48,7 @@ export class KloelLeadBrainService {
     private readonly prisma: PrismaService,
     private readonly planLimits: PlanLimitsService,
     private readonly llmBudget: LLMBudgetService,
+    @Inject(forwardRef(() => UnifiedAgentService))
     private readonly unifiedAgentService: UnifiedAgentService,
     private readonly smartPaymentService: SmartPaymentService,
     @Optional() private readonly opsAlert?: OpsAlertService,
@@ -350,12 +359,18 @@ export class KloelLeadBrainService {
       await this.llmBudget
         .recordSpend(workspaceId, response?.usage?.total_tokens ?? 0)
         .catch(() => {});
-      await this.planLimits
-        .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)
-        .catch(() => {});
+      const tokens = response?.usage?.total_tokens ?? 500;
+      const rawResponse = response.choices[0]?.message?.content || '';
+      const baseLen = messages.reduce((sum, m) => sum + (m.content?.length ?? 0), 0);
+      this.logger.log(
+        `lead-brain ws=${workspaceId} model=writer baseLen=${baseLen} outLen=${rawResponse.length} tokens=${tokens}`,
+      );
+      await this.planLimits.trackAiUsage(workspaceId, tokens).catch(() => {});
 
-      const kloelResponse =
-        response.choices[0]?.message?.content || 'Olá! Como posso ajudá-lo hoje?';
+      const kloelResponse = rawResponse || 'Olá! Como posso ajudá-lo hoje?';
+      if (!rawResponse || rawResponse.trim().length < 5) {
+        this.logger.warn(`lead-brain short output ws=${workspaceId} len=${rawResponse.length}`);
+      }
       await this.saveLeadMessage(lead.id, workspaceId, 'assistant', kloelResponse);
       await this.updateLeadFromConversation(workspaceId, lead.id, message, kloelResponse);
       return kloelResponse;

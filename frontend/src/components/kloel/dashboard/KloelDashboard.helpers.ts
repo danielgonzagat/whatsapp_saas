@@ -1,7 +1,6 @@
 // Pure helpers extracted from KloelDashboard.tsx to reduce cyclomatic
 // complexity. No React, no JSX — these are data-shape transforms only.
 
-import { secureRandomFloat } from '@/lib/secure-random';
 import {
   KLOEL_CHAT_CAPABILITY_PLACEHOLDERS,
   type KloelChatAttachment,
@@ -84,13 +83,8 @@ export function capabilityPromptLabel(
   return hasMessages ? 'Responder...' : 'Como posso ajudar você hoje?';
 }
 
-/** Create client request id. */
-export function createClientRequestId() {
-  return (
-    globalThis.crypto?.randomUUID?.() ||
-    `kloel_${Date.now()}_${secureRandomFloat().toString(36).slice(2, 10)}`
-  );
-}
+/** Create client request id. Re-exported from chat-container.helpers (canonical). */
+export { createClientRequestId } from '../chat-container.helpers';
 
 /** Has dragged files. */
 export function hasDraggedFiles(dataTransfer: DataTransfer | null | undefined) {

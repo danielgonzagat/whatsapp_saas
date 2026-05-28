@@ -293,34 +293,15 @@ O estado de rigor maximo do Codacy faz parte da governance.
 <claude-mem-context>
 # Memory Context
 
-# [whatsapp_saas] recent context, 2026-05-18 6:03pm GMT-3
+# [whatsapp_saas] recent context, 2026-05-26 10:47pm GMT-3
 
 Legend: 🎯session 🔴bugfix 🟣feature 🔄refactor ✅change 🔵discovery ⚖️decision
 Format: ID TIME TYPE TITLE
 Fetch details: get_observations([IDs]) | Search: mem-search skill
 
-Stats: 50 obs (20,276t read) | 1,688,324t work | 99% savings
+Stats: 50 obs (21,947t read) | 2,065,159t work | 99% savings
 
 ### May 11, 2026
-1341 2:43p 🔵 Visual Diff (Chromium) CI Gate Failed — login-desktop 180px Diff + Chat Test Context Disposed
-1342 2:44p 🔴 Backend TypeScript Typecheck and Build Now Pass Clean — Zero Errors
-1343 2:45p 🔵 Working Railway CLI Deploy Command for Kloel Backend Service
-1345 2:47p 🔵 New PR Push Triggered Fresh CI Run — Visual Snapshot Baseline Fix Attempt
-1346 2:49p 🟣 Kloel Backend Successfully Deployed to Railway Production
-1347 2:50p 🔵 Worker Service Health Check Confirmed Healthy — Redis Connected, Autopilot Queue Active
-1348 " 🔴 WhatsAppProviderRegistry Added to WhatsappModule Exports
-1349 2:51p 🔴 Visual Baseline Updated — signup-mobile.png Snapshot Regenerated from CI Artifact
-1350 2:57p ⚖️ Kloel CIA v3 Execution Contract — Full Mission Definition Issued
-1351 " 🔵 PR #266 Gap Analysis — Foundation Delivered, Production State Not Reached
-1352 " 🔵 Baseline Lift Bug — outcome and baselineOutcome Always Equal, Lift Always Zero
-1353 " ⚖️ Email Channel Architecture Mandate — Per-Workspace OAuth Mailbox, Not Shared Sender
-1354 " 🔵 Meta OAuth Error Root Cause — 11-Step Diagnostic Tree Defined
-1355 2:58p 🔵 Fourth CI Push — New Run Group 25687403xxx, Both Vercel Deploys Passing, Visual Diff Still Pending After 300s
-1356 3:00p 🔵 CI Quality Job Failure — Prettier Lint Errors in 5 Backend Files on codex/pr266-exec Branch
-1357 " 🔵 Visual Diff CI Failure — login-mobile Playwright Snapshot Has 123 Pixel Mismatch on Linux
-1358 " 🔵 Worktree at /private/tmp/kloel-pr266-exec Has No node_modules — Fixed by Symlinking from Main Repo
-1359 " ✅ Worktree Branch Fast-Forward Merged to origin/main (v0.4.1) — PR #287 and #288 Now Incorporated
-1360 3:01p ⚖️ Railway Full Automation Mandate — Auto-Deploy on PR Merge + Production Perfection
 1361 3:02p 🔵 Backend Docker Build — 5 npm Vulnerabilities Found During Railway Deploy
 1362 " 🔵 Worktree Full npm ci Install — Node v25.9.0 Used Despite Package Engine Requiring Node 20.x
 1363 3:03p ⚖️ 4-Problem Production Fix Mandate Issued — Kloel Platform (Eighth Issuance)
@@ -352,8 +333,30 @@ Stats: 50 obs (20,276t read) | 1,688,324t work | 99% savings
 1413 " 🔵 Backend Railway Deployment Startup Sequence — Full NestJS Boot Captured
 1414 " 🔵 Working Tree State — Branch chore/purga-total-debt Has ~160 Modified Files Pre-Commit
 1415 3:31p ⚖️ Kloel CIA v3 Execution Contract Re-Issued in New Session — Full Mandate Active
+### May 22, 2026
+1416 8:04p 🔵 User Iniciou Auditoria Operacional de MCPs Ativos
+1417 8:05p 🔵 Ecossistema MCP Completo Mapeado via ps aux no whatsapp_saas
+1418 " 🔵 check-test-integrity.mjs: Proteção Avançada de Cobertura de Testes no whatsapp_saas
+1419 " 🔵 GitHub API Inacessível em Sessão de Agente (session_id 4445)
+### May 25, 2026
+1420 1:01p 🔴 Codex config.toml: deprecated `codex_hooks` replaced with `hooks`
+### May 26, 2026
+1421 8:22a 🔵 PI Subagent System — How to Launch and Monitor
+1422 11:32a ✅ Git Merge Conflict Resolution Across Monorepo
+1423 11:36a 🔵 Stripe App Connector Verified for whatsapp_saas Project
+1424 4:02p 🔵 MCP Servers cognitive-hub and lsp-mesh Failing Handshake Due to Non-Standard Initialize Response
+1425 4:13p 🔵 MCP Handshake Protocol Mismatch on cognitive-hub and lsp-mesh
+1426 4:16p 🟣 KLOEL Channel Onboarding — Exact React Component Implementation Required
+1427 7:33p 🔵 Code Review of PR #445 for check-ai-constitution Violations in kloel Backend
+1428 " 🔵 Memory context loaded for PR #445 backend typecheck investigation
+1429 " 🔵 PR #445 AI-Constitution Violations Found in kloel Backend — as never Casts and Direct Prisma in Tool Layer
+1430 10:40p 🔵 AsyncAPI commerce domain lacked coupon events — full gap map traced
+1431 " 🟣 commerce.coupon.created/updated/deleted now exposed in AsyncAPI and passes contract test
+1432 " 🔵 asyncapi-extract.mjs extraction pipeline architecture — two independent sources
+1433 " 🔵 Coupon event flow: capability registry → withCanonicalReceipt → receipt.domainEvents (no EventEmitter2)
+1434 " 🔵 Existing coupon tests cover capability/receipt layer but not AsyncAPI contract or brain action→event mapping
 
-Access 1688k tokens of past work via get_observations([IDs]) or mem-search skill.
+Access 2065k tokens of past work via get_observations([IDs]) or mem-search skill.
 </claude-mem-context>
 
 ## PULSE Auditor Immutability
@@ -371,3 +374,14 @@ dynamic production replacement, including accumulated Git history debt.
 
 Any required auditor change must stop the agent workflow and be performed by the
 human owner outside autonomous AI execution.
+
+## Cognitive Interface Layer
+
+Every agent (Claude / Codex / Hermes / OpenCode) gets unified access to LSP,
+DAP, CDP, OpenAPI, AsyncAPI, SARIF, SBOM, OpenTelemetry, Tree-sitter, and
+Test reports through two MCPs auto-loaded from `.mcp.json`:
+
+- **`cognitive-hub`** — 6 query tools over pre-generated protocol data files
+- **`lsp-mesh`** — 10 LSP tools over 14 language servers in 7 workspaces
+
+Full reference: [`docs/architecture/COGNITIVE_INTERFACE_LAYER.md`](docs/architecture/COGNITIVE_INTERFACE_LAYER.md).

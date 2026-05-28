@@ -11,7 +11,11 @@
 
 import { randomUUID } from 'node:crypto';
 import type { SpineEventRef } from '../../mind/mind.types';
-import type { ObserverInput, RiskAppetite, RiskToleranceObservation } from '../owner-criterion.types';
+import type {
+  ObserverInput,
+  RiskAppetite,
+  RiskToleranceObservation,
+} from '../owner-criterion.types';
 
 const MIN_EVENTS = 3;
 
@@ -25,15 +29,18 @@ function inferRiskAppetite(
   handoffRate: number,
   totalEvents: number,
 ): RiskAppetite {
-  if (totalEvents === 0) return 'moderate';
+  if (totalEvents === 0) {
+    return 'moderate';
+  }
 
-  const aggressionScore =
-    (1 - declineRate) * 0.4 +
-    (1 - lossRate) * 0.3 +
-    (1 - handoffRate) * 0.3;
+  const aggressionScore = (1 - declineRate) * 0.4 + (1 - lossRate) * 0.3 + (1 - handoffRate) * 0.3;
 
-  if (aggressionScore > 0.75) return 'aggressive';
-  if (aggressionScore > 0.4) return 'moderate';
+  if (aggressionScore > 0.75) {
+    return 'aggressive';
+  }
+  if (aggressionScore > 0.4) {
+    return 'moderate';
+  }
   return 'conservative';
 }
 
@@ -44,20 +51,38 @@ function collectEvidenceSignals(
 ): readonly string[] {
   const signals: string[] = [];
 
-  if (declineRate < 0.1) signals.push('low_payment_decline_tolerance');
-  if (declineRate > 0.3) signals.push('high_payment_decline_observed');
-  if (lossRate < 0.1) signals.push('low_deal_loss_tolerance');
-  if (lossRate > 0.3) signals.push('high_deal_loss_observed');
-  if (handoffRate < 0.15) signals.push('low_handoff_preference');
-  if (handoffRate > 0.4) signals.push('high_handoff_preference');
+  if (declineRate < 0.1) {
+    signals.push('low_payment_decline_tolerance');
+  }
+  if (declineRate > 0.3) {
+    signals.push('high_payment_decline_observed');
+  }
+  if (lossRate < 0.1) {
+    signals.push('low_deal_loss_tolerance');
+  }
+  if (lossRate > 0.3) {
+    signals.push('high_deal_loss_observed');
+  }
+  if (handoffRate < 0.15) {
+    signals.push('low_handoff_preference');
+  }
+  if (handoffRate > 0.4) {
+    signals.push('high_handoff_preference');
+  }
 
   return signals;
 }
 
 function computeConfidence(totalEvents: number): number {
-  if (totalEvents >= 20) return 0.85;
-  if (totalEvents >= 10) return 0.7;
-  if (totalEvents >= 5) return 0.5;
+  if (totalEvents >= 20) {
+    return 0.85;
+  }
+  if (totalEvents >= 10) {
+    return 0.7;
+  }
+  if (totalEvents >= 5) {
+    return 0.5;
+  }
   return 0.35;
 }
 
@@ -69,19 +94,20 @@ function computeConfidence(totalEvents: number): number {
  */
 export function observeRiskTolerance(input: ObserverInput): RiskToleranceObservation[] {
   const totalEvents = input.events.length;
-  if (totalEvents < MIN_EVENTS) return [];
+  if (totalEvents < MIN_EVENTS) {
+    return [];
+  }
 
   const declineCount = countByEventName(input.events, 'commerce.payment.declined');
   const lossCount =
     countByEventName(input.events, 'commerce.crm.deal_lost') +
     countByEventName(input.events, 'commerce.lead.lost');
-  const handoffCount = countByEventName(
-    input.events,
-    'commerce.whatsapp.handoff_to_human',
-  );
+  const handoffCount = countByEventName(input.events, 'commerce.whatsapp.handoff_to_human');
 
   const totalTerminal =
-    declineCount + lossCount + handoffCount +
+    declineCount +
+    lossCount +
+    handoffCount +
     countByEventName(input.events, 'commerce.payment.approved') +
     countByEventName(input.events, 'commerce.crm.deal_won');
 

@@ -1,10 +1,10 @@
-import { Injectable, Optional } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { WHATSAPP_MESSAGING } from '../whatsapp/whatsapp.tokens';
 import { AudioService } from './audio.service';
 import { ChannelTransportRegistry } from './channel-transport.registry';
 import {
@@ -38,6 +38,40 @@ export type {
   ToolTranscribeAudioArgs,
 };
 
+type WhatsappContactRecord = {
+  name?: string | null;
+  phone?: string | null;
+  [key: string]: unknown;
+};
+type WhatsappChatRecord = { unreadCount?: unknown; [key: string]: unknown };
+type WhatsappBacklog = {
+  connected?: boolean;
+  pendingConversations?: number;
+  pendingMessages?: number;
+  [key: string]: unknown;
+};
+type WhatsappSyncResult = { scheduled?: boolean; reason?: string; [key: string]: unknown };
+type WhatsappMessagingPort = {
+  listContacts(workspaceId: string): Promise<WhatsappContactRecord[]>;
+  createContact(
+    workspaceId: string,
+    input: { phone?: string; name?: string; email?: string },
+  ): Promise<WhatsappContactRecord>;
+  listChats(workspaceId: string): Promise<WhatsappChatRecord[]>;
+  getChatMessages(
+    workspaceId: string,
+    chatId: string,
+    options: { limit: number; offset: number },
+  ): Promise<unknown[]>;
+  getBacklog(workspaceId: string): Promise<WhatsappBacklog>;
+  setPresence(
+    workspaceId: string,
+    chatId: string,
+    presence: 'typing' | 'paused' | 'seen',
+  ): Promise<Record<string, unknown>>;
+  triggerSync(workspaceId: string, reason: string): Promise<WhatsappSyncResult>;
+};
+
 /** Handles all WhatsApp-related tool calls from the AI chat. */
 @Injectable()
 export class KloelWhatsAppToolsService {
@@ -45,7 +79,9 @@ export class KloelWhatsAppToolsService {
 
   constructor(
     private readonly prisma: PrismaService,
-    @Optional() private readonly whatsappService: WhatsappService,
+    @Optional()
+    @Inject(WHATSAPP_MESSAGING)
+    private readonly whatsappService: WhatsappMessagingPort,
     @Optional() private readonly providerRegistry: WhatsAppProviderRegistry,
     private readonly transports: ChannelTransportRegistry,
     private readonly audioService: AudioService,

@@ -68,6 +68,33 @@ export class PaymentMethodService {
           throw new Error(ERROR_BILLING_UNAVAILABLE);
         }
 
+        // Defense-in-depth: validate the Stripe client is fully initialized.
+        // The probe in stripe-runtime.ts now enforces .customers.create AND
+        // .paymentMethods.list at module load; this branch is the runtime
+        // belt for the (rare) shape where the namespace passed probe but a
+        // specific method later became undefined (lazy initialization,
+        // partial monkey-patching, etc.).
+        const stripeBroken =
+          !this.stripe.customers ||
+          typeof this.stripe.customers.create !== 'function' ||
+          typeof this.stripe.customers.retrieve !== 'function';
+        if (stripeBroken) {
+          this.logger.error(
+            'Stripe client loaded but customer methods are unavailable — ' +
+              'ESM/CJS interop failure. Disabling Stripe for this request.',
+          );
+          Sentry.captureMessage('Stripe client missing customer methods', {
+            level: 'error',
+            tags: { type: 'stripe_interop', operation: 'payment_method' },
+            extra: { workspaceId },
+          });
+          this.stripe = null;
+          if (workspace.stripeCustomerId) {
+            return workspace.stripeCustomerId;
+          }
+          throw new Error(ERROR_BILLING_UNAVAILABLE);
+        }
+
         // If we have a persisted customer id, verify it still exists in Stripe.
         // A deleted (or test-data-wiped) customer surfaces as
         // StripeInvalidRequestError code='resource_missing'.
@@ -232,6 +259,20 @@ export class PaymentMethodService {
    */
   async listPaymentMethods(workspaceId: string) {
     if (!this.stripe) {
+      return { paymentMethods: [] };
+    }
+    // Sentry NODE-S regression guard: an ESM/CJS interop shape can pass the
+    // module-load probe but expose .paymentMethods without .list. Bail to
+    // the empty-state contract instead of letting `.list` throw.
+    if (!this.stripe.paymentMethods || typeof this.stripe.paymentMethods.list !== 'function') {
+      this.logger.error(
+        'Stripe client missing paymentMethods.list — returning empty payment-method list',
+      );
+      Sentry.captureMessage('Stripe client missing paymentMethods.list', {
+        level: 'error',
+        tags: { type: 'stripe_interop', operation: 'payment_method_list' },
+        extra: { workspaceId },
+      });
       return { paymentMethods: [] };
     }
 

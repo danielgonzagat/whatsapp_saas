@@ -131,6 +131,33 @@ describe('WhatsAppApiProvider', () => {
     });
   });
 
+  it('marks runtime config as configured from accepted Meta env aliases', () => {
+    process.env.FACEBOOK_APP_ID = 'facebook-app-id';
+    process.env.FACEBOOK_APP_SECRET = 'facebook-app-secret';
+    process.env.META_WEBHOOK_VERIFY_TOKEN = 'verify-token';
+
+    try {
+      const provider = new WhatsAppApiProvider(
+        asPrismaArg(prisma),
+        createConfig(),
+        asMetaArg(metaWhatsApp),
+      );
+
+      expect(provider.getRuntimeConfigDiagnostics()).toEqual(
+        expect.objectContaining({
+          webhookConfigured: true,
+          secretConfigured: true,
+          appIdConfigured: true,
+          appSecretConfigured: true,
+        }),
+      );
+    } finally {
+      delete process.env.FACEBOOK_APP_ID;
+      delete process.env.FACEBOOK_APP_SECRET;
+      delete process.env.META_WEBHOOK_VERIFY_TOKEN;
+    }
+  });
+
   it('lists the configured Meta phone number as the active session', async () => {
     const provider = new WhatsAppApiProvider(
       asPrismaArg(prisma),

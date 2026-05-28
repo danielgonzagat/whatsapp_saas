@@ -3,12 +3,8 @@
 import { swrFetcher } from '@/lib/fetcher';
 import useSWR from 'swr';
 
-export interface EmailTemplatePreset {
-  id: string;
-  label: string;
-  subject: string;
-  html: string;
-}
+import type { EmailTemplatePreset } from '@/components/kloel/marketing/MarketingTypes';
+export type { EmailTemplatePreset };
 
 const FALLBACK_PRESETS: EmailTemplatePreset[] = [
   {

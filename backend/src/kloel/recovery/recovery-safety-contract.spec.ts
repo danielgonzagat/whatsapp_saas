@@ -26,9 +26,7 @@ function detectedError(
 
 describe('recovery safety contract', () => {
   it('keeps silence recovery as R1 allowed alone', () => {
-    const tactic = proposeRecoveryTactic(
-      detectedError('inappropriate_timing', 'low'),
-    );
+    const tactic = proposeRecoveryTactic(detectedError('inappropriate_timing', 'low'));
 
     expect(tactic.action).toBe('silence');
     expect(tactic.safetyContract.riskClass).toBe('R1');
@@ -37,16 +35,12 @@ describe('recovery safety contract', () => {
   });
 
   it('requires review for personal follow-up after missed opportunity', () => {
-    const tactic = proposeRecoveryTactic(
-      detectedError('missed_opportunity', 'high'),
-    );
+    const tactic = proposeRecoveryTactic(detectedError('missed_opportunity', 'high'));
 
     expect(tactic.action).toBe('follow_up_personal');
     expect(tactic.safetyContract.riskClass).toBe('R2');
     expect(tactic.safetyContract.delegationMode).toBe('requires_review');
-    expect(tactic.safetyContract.leadOutcomeGuardrail).toContain(
-      'avoid conversion pressure',
-    );
+    expect(tactic.safetyContract.leadOutcomeGuardrail).toContain('avoid conversion pressure');
   });
 
   it('requires explicit owner approval before commercial concessions', () => {

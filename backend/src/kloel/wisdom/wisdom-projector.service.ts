@@ -21,8 +21,8 @@ export class WisdomProjectorService {
    */
   public project(patterns: readonly WisdomPattern[]): AbiWisdomPattern[] {
     return patterns
-      .filter(p => p.description.length > 0)
-      .map(p => ({
+      .filter((p) => p.description.length > 0)
+      .map((p) => ({
         patternId: p.patternId,
         description: p.description,
         applicableConditions: p.applicableConditions,
@@ -52,9 +52,9 @@ export class WisdomProjectorService {
     patterns: readonly AbiWisdomPattern[],
     maxPatterns: number,
   ): AbiWisdomPattern[] {
-    if (patterns.length <= maxPatterns) return [...patterns];
-    return [...patterns]
-      .sort((a, b) => b.confidence - a.confidence)
-      .slice(0, maxPatterns);
+    if (patterns.length <= maxPatterns) {
+      return [...patterns];
+    }
+    return [...patterns].sort((a, b) => b.confidence - a.confidence).slice(0, maxPatterns);
   }
 }

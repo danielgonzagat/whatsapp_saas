@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { BrainEventSpineService } from '../../kloel/brain-event-spine.service';
+import { MindEventSpine } from '../../kloel/mind/coordination';
 
 type PipelineStateValue = 'legacy' | 'shadow' | 'active';
 
@@ -31,7 +31,7 @@ export class PipelineService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly events: BrainEventSpineService,
+    private readonly events: MindEventSpine,
   ) {}
 
   async getState(workspaceId: string): Promise<PipelineStateRow> {
@@ -93,9 +93,7 @@ export class PipelineService {
       },
     });
 
-    this.logger.log(
-      `Pipeline state ${workspaceId}: ${previousState} -> ${state}`,
-    );
+    this.logger.log(`Pipeline state ${workspaceId}: ${previousState} -> ${state}`);
     return row;
   }
 
@@ -145,10 +143,7 @@ export class PipelineService {
     });
 
     const state = await this.getState(workspaceId);
-    if (
-      state.state === 'active' &&
-      state.fallbackRate1h >= FALLBACK_THRESHOLD
-    ) {
+    if (state.state === 'active' && state.fallbackRate1h >= FALLBACK_THRESHOLD) {
       await this.setState(
         workspaceId,
         'shadow',

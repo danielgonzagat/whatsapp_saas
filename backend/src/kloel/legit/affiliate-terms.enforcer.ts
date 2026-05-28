@@ -20,7 +20,12 @@ export function enforceAffiliateTerms(input: PolicyEnforcementInput): PolicyEnfo
   const isAffiliate = input.metadata?.['channel'] === 'affiliate';
 
   if (!isAffiliate) {
-    return { allowed: true, violations: [], warnings: [], assessedAt: new Date(nowMs).toISOString() };
+    return {
+      allowed: true,
+      violations: [],
+      warnings: [],
+      assessedAt: new Date(nowMs).toISOString(),
+    };
   }
 
   const hasDisclosure = lowerContent.includes('affiliate') || lowerContent.includes('afiliado');
@@ -31,7 +36,8 @@ export function enforceAffiliateTerms(input: PolicyEnforcementInput): PolicyEnfo
       userId: input.userId,
       policyName: 'ftc_affiliate_disclosure',
       severity: 'critical',
-      description: 'Affiliate content missing material connection disclosure — required by FTC and CONAR.',
+      description:
+        'Affiliate content missing material connection disclosure — required by FTC and CONAR.',
       source: 'affiliate-terms.enforcer',
       evidence: ['missing_affiliate_disclosure'],
       detectedAt: new Date(nowMs).toISOString(),
@@ -59,7 +65,8 @@ export function enforceAffiliateTerms(input: PolicyEnforcementInput): PolicyEnfo
   }
 
   if (lowerContent.includes('faturei') || lowerContent.includes('ganhei')) {
-    const hasIncomeDisclaimer = lowerContent.includes('nao representa') || lowerContent.includes('resultados tipicos');
+    const hasIncomeDisclaimer =
+      lowerContent.includes('nao representa') || lowerContent.includes('resultados tipicos');
     if (!hasIncomeDisclaimer) {
       violations.push({
         violationId: generateId('aff_viol'),

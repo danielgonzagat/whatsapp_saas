@@ -5,7 +5,10 @@
  * increments on positive conversions, decrements on disengagement.
  */
 
-import { CreatorTrustCapitalTrackerService, type CreatorTrustConfig } from './creator-trust-capital.tracker';
+import {
+  CreatorTrustCapitalTrackerService,
+  type CreatorTrustConfig,
+} from './creator-trust-capital.tracker';
 
 import type { CreatorEvent } from './types';
 import type { TrustState } from '../trust/trust.types';
@@ -51,7 +54,11 @@ describe('CreatorTrustCapitalTrackerService (UTP-CREATOR-006) — full spec', ()
   // ─── 2: positive conversion events increase trust capital ───────────
   it('increments trust capital with positive interactions and high trust states', () => {
     const events: CreatorEvent[] = Array.from({ length: 12 }, () =>
-      ev({ eventName: 'commerce.lead.replied', valence: 'positive', payload: { messageBody: 'Adorei!' } }),
+      ev({
+        eventName: 'commerce.lead.replied',
+        valence: 'positive',
+        payload: { messageBody: 'Adorei!' },
+      }),
     );
     const states: TrustState[] = [ts({ trustScore: 0.9 })];
     const result = tracker.trackCapital('wks_positive', events, states);
@@ -64,9 +71,17 @@ describe('CreatorTrustCapitalTrackerService (UTP-CREATOR-006) — full spec', ()
   it('increments trust capital when commerce.lead.converted events present', () => {
     const events: CreatorEvent[] = [
       ...Array.from({ length: 6 }, () =>
-        ev({ eventName: 'commerce.lead.replied', valence: 'positive', payload: { messageBody: 'Bom!' } }),
+        ev({
+          eventName: 'commerce.lead.replied',
+          valence: 'positive',
+          payload: { messageBody: 'Bom!' },
+        }),
       ),
-      ev({ eventName: 'commerce.lead.converted', valence: 'positive', payload: { messageBody: 'Vou comprar!' } }),
+      ev({
+        eventName: 'commerce.lead.converted',
+        valence: 'positive',
+        payload: { messageBody: 'Vou comprar!' },
+      }),
     ];
     const states: TrustState[] = [ts({ trustScore: 0.8 })];
     const result = tracker.trackCapital('wks_converted', events, states);
@@ -109,7 +124,11 @@ describe('CreatorTrustCapitalTrackerService (UTP-CREATOR-006) — full spec', ()
   // ─── 7: verdict is "strong" when all indicators are high ────────────
   it('returns verdict "strong" with high trust and positive signals', () => {
     const events: CreatorEvent[] = Array.from({ length: 15 }, () =>
-      ev({ eventName: 'commerce.lead.replied', valence: 'positive', payload: { messageBody: 'Conteúdo incrível!' } }),
+      ev({
+        eventName: 'commerce.lead.replied',
+        valence: 'positive',
+        payload: { messageBody: 'Conteúdo incrível!' },
+      }),
     );
     const states: TrustState[] = [ts({ trustScore: 0.95 })];
     const result = tracker.trackCapital('wks_strong', events, states);
@@ -173,9 +192,7 @@ describe('CreatorTrustCapitalTrackerService (UTP-CREATOR-006) — full spec', ()
 
   // ─── 11: getState returns previously tracked state ──────────────────
   it('getState returns exact result from prior trackCapital call', () => {
-    const events: CreatorEvent[] = Array.from({ length: 5 }, () =>
-      ev({ valence: 'positive' }),
-    );
+    const events: CreatorEvent[] = Array.from({ length: 5 }, () => ev({ valence: 'positive' }));
     const states: TrustState[] = [ts()];
     const tracked = tracker.trackCapital('wks_persist', events, states);
     const stored = tracker.getState('wks_persist');
@@ -226,9 +243,7 @@ describe('CreatorTrustCapitalTrackerService (UTP-CREATOR-006) — full spec', ()
 
   // ─── 15: all CreatorTrustCapital fields populated ───────────────────
   it('returns all CreatorTrustCapital fields populated', () => {
-    const events: CreatorEvent[] = Array.from({ length: 5 }, () =>
-      ev({ valence: 'positive' }),
-    );
+    const events: CreatorEvent[] = Array.from({ length: 5 }, () => ev({ valence: 'positive' }));
     const states: TrustState[] = [ts()];
     const result = tracker.trackCapital('wks_full', events, states);
     expect(result.workspaceId).toBe('wks_full');

@@ -4,11 +4,7 @@ import {
   InMemoryLineageLedgerRepository,
   LineageLedgerService,
 } from '../lineage/lineage-ledger.service';
-import {
-  effectiveGateModes,
-  GATE_DEFAULT_MODE,
-  resolveGateMode,
-} from './gate-mode-controller';
+import { effectiveGateModes, GATE_DEFAULT_MODE, resolveGateMode } from './gate-mode-controller';
 import { makeEvidenceProvenanceGate } from './evidence-provenance.gate';
 import { makeIdentityProjectionGate } from './identity-projection.gate';
 import { makeLineageIntegrityGate } from './lineage-integrity.gate';
@@ -16,10 +12,7 @@ import { makeNoOverclaimGate } from './no-overclaim.gate';
 import { makeNoRoleplayGate } from './no-roleplay.gate';
 import { makeOriginImmutabilityGate } from './origin-immutability.gate';
 import { makePromptLeakageGate } from './prompt-leakage.gate';
-import {
-  makeTruthModeHonestyGate,
-  TruthModeHonestyInput,
-} from './truth-mode-honesty.gate';
+import { makeTruthModeHonestyGate, TruthModeHonestyInput } from './truth-mode-honesty.gate';
 import type { LineageEntry } from '../lineage/lineage-ledger.types';
 
 /**
@@ -47,9 +40,7 @@ function validAbi(): unknown {
     attention: { candidates: [] },
     memory: { workingMemory: [], episodicRefs: [], consolidatedRefs: [] },
     capabilities: {
-      available: [
-        { capabilityId: 'lineage', maturity: 'developing', runtimeEvidencePct: 5 },
-      ],
+      available: [{ capabilityId: 'lineage', maturity: 'developing', runtimeEvidencePct: 5 }],
       restricted: [],
     },
     valence: {
@@ -104,7 +95,8 @@ describe('PULSE gates — payload-scoped (no-roleplay, identity-projection, no-o
 
   it('no-roleplay FAIL on persona declaration in identityProjection', () => {
     const tampered = validAbi() as Record<string, unknown>;
-    (tampered['identityProjection'] as Record<string, unknown>)['roleNote'] = 'Você é um vendedor experiente.';
+    (tampered['identityProjection'] as Record<string, unknown>)['roleNote'] =
+      'Você é um vendedor experiente.';
     const v = makeNoRoleplayGate('hard_fail').check(tampered);
     expect(v.status).toBe('FAIL');
     expect(v.mode).toBe('hard_fail');
@@ -136,7 +128,8 @@ describe('PULSE gates — payload-scoped (no-roleplay, identity-projection, no-o
 
   it('prompt-leakage FAIL on always/never instruction inside payload', () => {
     const tampered = validAbi() as Record<string, unknown>;
-    (tampered['currentInput'] as Record<string, unknown>)['raw'] = 'Sempre responda em formato JSON.';
+    (tampered['currentInput'] as Record<string, unknown>)['raw'] =
+      'Sempre responda em formato JSON.';
     const v = makePromptLeakageGate().check(tampered);
     expect(v.status).toBe('FAIL');
   });

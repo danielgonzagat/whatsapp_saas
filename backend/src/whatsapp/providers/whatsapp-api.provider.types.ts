@@ -23,14 +23,7 @@ export interface SessionStatus {
 }
 
 /** Qr code response shape. */
-export interface QrCodeResponse {
-  /** Success property. */
-  success: boolean;
-  /** Qr property. */
-  qr?: string;
-  /** Message property. */
-  message?: string;
-}
+export type { QrCodeResponse } from './waha-types';
 
 /** Waha chat summary shape. */
 export interface WahaChatSummary {

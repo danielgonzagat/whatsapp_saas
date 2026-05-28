@@ -49,15 +49,9 @@ export type AppleVerifiedToken = {
   raw: AppleTokenResponse | null;
 };
 
-export function sanitizeAppleError(error: unknown): string {
-  if (error instanceof Error && error.message.trim()) {
-    return error.message.trim();
-  }
-  if (typeof error === 'string' && error.trim()) {
-    return error.trim();
-  }
-  return 'unknown_error';
-}
+// sanitizeAppleError is an alias for the canonical sanitizeAuthError —
+// kept as a named export so apple-auth.service's existing imports work.
+export { sanitizeAuthError as sanitizeAppleError } from './sanitize-auth-error.helper';
 
 export function decodeBase64UrlJson<T>(segment: string): T {
   const decoded = Buffer.from(segment, 'base64url').toString('utf8');

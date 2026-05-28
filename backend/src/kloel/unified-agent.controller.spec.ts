@@ -120,6 +120,29 @@ describe('UnifiedAgentController', () => {
       expect(callArgs).not.toHaveProperty('context');
     });
 
+    it('passes planned actions and tool scope into service call', async () => {
+      processMessageMock.mockResolvedValueOnce({
+        actions: [],
+        intent: 'checkout',
+        confidence: 0.85,
+      });
+
+      const predecidedActions = [{ tool: 'create_payment_link', args: { productId: 'prod-1' } }];
+      await controller.processMessage('ws-1', {
+        phone: '+5511999999999',
+        message: 'Quero pagar agora',
+        predecidedActions,
+        allowedTools: ['create_payment_link'],
+      });
+
+      expect(processMessageMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          predecidedActions,
+          allowedTools: ['create_payment_link'],
+        }),
+      );
+    });
+
     describe('internal key validation', () => {
       const originalInternalKey = process.env.INTERNAL_API_KEY;
 

@@ -66,9 +66,7 @@ function addDays(value: Date, amount: number) {
   return addMs(value, amount * DAY_MS);
 }
 
-function isValidDate(value: Date | null | undefined): value is Date {
-  return value instanceof Date && Number.isFinite(value.getTime());
-}
+import { isValidDate } from '../common/parse';
 
 function parseInputDate(raw: string | undefined, fallback: Date) {
   if (!raw) {

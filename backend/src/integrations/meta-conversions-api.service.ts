@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { decryptMetaToken } from './meta-token-crypto';
 import { getTraceHeaders } from '../common/trace-headers';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { hashPii } from './pii-hash.helper';
 
 interface CapiUserData {
   email?: string;
@@ -63,17 +64,6 @@ interface CapiResponse {
   events_received?: number;
   error?: { message?: string; code?: number };
   [key: string]: unknown;
-}
-
-function hashPii(value: string | undefined | null): string {
-  if (!value) {
-    return '';
-  }
-  const normalized = String(value).trim().toLowerCase();
-  if (!normalized) {
-    return '';
-  }
-  return crypto.createHash('sha256').update(normalized).digest('hex');
 }
 
 function buildUserDataPayload(userData: CapiUserData): Record<string, string> {

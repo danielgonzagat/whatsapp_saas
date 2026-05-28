@@ -1,3 +1,24 @@
+/**
+ * @deprecated DUPLICATE of {@link ../email/email-inbound.controller.ts EmailInboundController}.
+ *
+ * Status: this file is the **forward-canonical target per ADR-0012**
+ * (OmniCore — email is a channel under marketing/). But today it is NOT
+ * registered in any NestJS module — the wired controller is in
+ * `backend/src/email/email.module.ts`. Until the OmniCore move executes
+ * (Wave W3 of ADR-0012), the **live canonical is `email/`**, not this file.
+ *
+ * Migration path (inverted): in Wave W3 of ADR-0012, the `email/` controller
+ * is MOVED here, NestJS module wiring is transferred to a new
+ * `marketing/email/email.module.ts`, and this @deprecated banner is REMOVED.
+ * Until then, this file remains as a draft of the post-migration shape and
+ * MUST NOT be wired into any module.
+ *
+ * @cluster Marketing/Email
+ * @canonical backend/src/email/email-inbound.controller.ts (today)
+ * @future-canonical THIS file (after ADR-0012 Wave W3)
+ * @see docs/adr/0012-kloel-omnicore-channel-unification.md
+ * @see docs/architecture/DEPRECATION_MAP.md#cross-cutting-duplications row 36
+ */
 import {
   Body,
   Controller,
@@ -14,6 +35,8 @@ import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { randomUUID, timingSafeEqual } from 'node:crypto';
 import type { Request } from 'express';
 import { Public } from '../auth/public.decorator';
+import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
+import { PrismaService } from '../prisma/prisma.service';
 import { EmailInboundService, type InboundEmail } from '../email/email-inbound.service';
 import { ensureError } from '../inbox/omnichannel.helpers';
 
@@ -127,7 +150,10 @@ function parseForwardedEmailHeaders(req: Request) {
 export class EmailInboundController {
   private readonly logger = new Logger(EmailInboundController.name);
 
-  constructor(@Optional() private readonly emailInbound?: EmailInboundService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly emailInbound?: EmailInboundService,
+  ) {}
 
   @Public()
   @Get()
@@ -161,6 +187,27 @@ export class EmailInboundController {
         reason: 'invalid_secret',
       });
       throw new ForbiddenException('email_inbound_forbidden');
+    }
+
+    // Idempotency: dedup by Message-ID header
+    const rawMessageId = bodyString(req, 'message_id', 'Message-Id');
+    if (rawMessageId) {
+      try {
+        await this.prisma.webhookEvent.create({
+          data: {
+            provider: 'email-inbound',
+            externalId: rawMessageId,
+            eventType: 'email_received',
+            payload: toPrismaJsonValue(body),
+          },
+        });
+      } catch (err: unknown) {
+        if ((err as { code?: string }).code === 'P2002') {
+          this.logger.log(`Duplicate inbound email: ${rawMessageId}`);
+          return { received: true, duplicate: true };
+        }
+        throw err;
+      }
     }
 
     const { from, to, subject, content, messageId, inReplyTo } = parseForwardedEmailHeaders(req);

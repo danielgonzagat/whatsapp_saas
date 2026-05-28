@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../../logging/structured-logger';
 import type { OfferQualityInput, OfferQualityOutput } from './affil.types';
+import { clamp } from '../../common/math';
 
 type Classification = OfferQualityOutput['classification'];
 
 const WEIGHTS = {
   commissionPct: 0.25,
-  conversionRateHistorical: 0.30,
+  conversionRateHistorical: 0.3,
   supportQuality: 0.15,
   refundRatePenalty: 0.15,
   audienceFitScore: 0.15,
@@ -16,14 +17,16 @@ const SCORE_EXCELLENT = 80;
 const SCORE_GOOD = 65;
 const SCORE_AVERAGE = 45;
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
-}
-
 function classify(score: number): Classification {
-  if (score >= SCORE_EXCELLENT) return 'excellent';
-  if (score >= SCORE_GOOD) return 'good';
-  if (score >= SCORE_AVERAGE) return 'average';
+  if (score >= SCORE_EXCELLENT) {
+    return 'excellent';
+  }
+  if (score >= SCORE_GOOD) {
+    return 'good';
+  }
+  if (score >= SCORE_AVERAGE) {
+    return 'average';
+  }
   return 'poor';
 }
 
@@ -62,10 +65,10 @@ export class OfferQualityScorerService {
     const classification = classify(score);
     const recommendation = recommendationFor(classification);
 
-    this.logger.debug(
-      `Offer quality scored: ${score} (${classification})`,
-      { score, classification },
-    );
+    this.logger.debug(`Offer quality scored: ${score} (${classification})`, {
+      score,
+      classification,
+    });
 
     return { score, classification, recommendation };
   }

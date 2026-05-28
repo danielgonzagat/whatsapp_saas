@@ -8,22 +8,13 @@ import type {
   ToolSetBrandVoiceArgs,
   ToolCreateFlowArgs,
 } from './kloel-tool-executor.types';
+import { safeStr } from '../common/string';
 
 type WorkItemMetadata = Record<string, unknown>;
 
 const NON_SLUG_CHAR_RE = /[^a-z0-9_:-]+/g;
 
 /** Safely coerce unknown values to string. */
-function safeStr(value: unknown, fallback = ''): string {
-  if (typeof value === 'string') {
-    return value;
-  }
-  if (typeof value === 'number' || typeof value === 'boolean') {
-    return String(value);
-  }
-  return fallback;
-}
-
 /** Save a new product for a workspace. */
 export async function toolSaveProduct(
   prisma: PrismaService,

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
+import { clampLimit } from '../common/pagination-clamp.pipe';
 
 type LeadRow = {
   id: string;
@@ -43,7 +44,9 @@ const COMMERCIAL_SCORE_SIGNALS: Record<string, number> = {
 function computeCommercialScore(lead: LeadRow): number | null {
   const intent = (lead.lastIntent || 'general').toLowerCase();
   const messages = lead.totalMessages ?? 0;
-  if (messages === 0) return null;
+  if (messages === 0) {
+    return null;
+  }
 
   const intentScore =
     COMMERCIAL_SCORE_SIGNALS[intent] ??
@@ -92,7 +95,7 @@ export class LeadsService {
     workspaceId: string,
     options?: { status?: string; search?: string; limit?: number },
   ) {
-    const limit = Math.min(Math.max(options?.limit ?? 200, 1), 500);
+    const limit = clampLimit(options?.limit, { default: 200, max: 500 });
 
     const statusFilter = options?.status ? { status: options.status } : {};
     const search = options?.search?.trim();

@@ -24,6 +24,7 @@ vi.mock('@/components/kloel/theme/ThemeProvider', () => ({
   useTheme: () => ({ theme: 'dark' }),
 }));
 
+import { NAV } from '../sidebar/sidebar-config';
 import MarketingView from './MarketingView';
 
 afterEach(() => {
@@ -33,11 +34,17 @@ afterEach(() => {
   mockPathname = '/marketing/whatsapp';
 });
 
-describe('MarketingView — five-channel PreviewBar (canonical anexo contract)', () => {
-  it('renders exactly five channel buttons (lowercase tokens, CSS uppercase-transformed)', () => {
+describe('MarketingView — six-channel PreviewBar (canonical anexo contract)', () => {
+  it('keeps Marketing as one sidebar entry without redundant channel subitems', () => {
+    const marketingItem = NAV.find((item) => item.key === 'marketing');
+    expect(marketingItem?.label).toBe('Marketing');
+    expect(marketingItem?.sub).toEqual([]);
+  });
+
+  it('renders exactly six channel buttons (lowercase tokens, CSS uppercase-transformed)', () => {
     render(<MarketingView defaultTab="whatsapp" />);
     // The reference JSX uses lowercase tokens with CSS text-transform.
-    for (const k of ['whatsapp', 'instagram', 'tiktok', 'facebook', 'email']) {
+    for (const k of ['whatsapp', 'instagram', 'tiktok', 'google-ads', 'facebook', 'email']) {
       expect(screen.getByText(k)).toBeTruthy();
     }
     // Conversas must not appear (spec §15).
@@ -57,6 +64,16 @@ describe('MarketingView — five-channel PreviewBar (canonical anexo contract)',
     mockPathname = '/marketing/email';
     render(<MarketingView defaultTab="email" />);
     expect(screen.getByTestId('channel-onboarding-stub').textContent).toContain('channel=email');
+  });
+
+  it('centers the floating channel selector inside the app content rail', () => {
+    render(<MarketingView defaultTab="whatsapp" />);
+    const bar = screen.getByText('whatsapp').parentElement;
+    expect(bar).toBeInstanceOf(HTMLElement);
+    expect((bar as HTMLElement).style.left).toBe(
+      'calc(var(--kloel-main-rail-width, 0px) + ((100vw - var(--kloel-main-rail-width, 0px)) / 2))',
+    );
+    expect((bar as HTMLElement).style.transform).toBe('translateX(-50%)');
   });
 
   it('redirects /marketing/conversas to /inbox and /marketing to /marketing/whatsapp', () => {

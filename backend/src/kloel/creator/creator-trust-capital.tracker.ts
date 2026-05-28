@@ -15,11 +15,7 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 
-import type {
-  CreatorTrustCapital,
-  CreatorTrustVerdict,
-  CreatorEvent,
-} from './types';
+import type { CreatorTrustCapital, CreatorTrustVerdict, CreatorEvent } from './types';
 import type { TrustState } from '../trust/trust.types';
 
 export interface CreatorTrustConfig {
@@ -52,60 +48,58 @@ const INITIAL_TRUST_CAPITAL = 0.6;
 const TRUST_CAPITAL_FLOOR = 0.0;
 const TRUST_CAPITAL_CEILING = 1.0;
 
-function computeAudienceTrust(
-  trustStates: readonly TrustState[],
-): number {
-  if (trustStates.length === 0) return 0.6;
+function computeAudienceTrust(trustStates: readonly TrustState[]): number {
+  if (trustStates.length === 0) {
+    return 0.6;
+  }
 
   const avgTrust = trustStates.reduce((sum, ts) => sum + ts.trustScore, 0) / trustStates.length;
   return Math.max(0, Math.min(1, avgTrust));
 }
 
-function computeAuthenticityIndex(
-  recentEvents: readonly CreatorEvent[],
-): number {
-  if (recentEvents.length === 0) return 0.7;
+function computeAuthenticityIndex(recentEvents: readonly CreatorEvent[]): number {
+  if (recentEvents.length === 0) {
+    return 0.7;
+  }
 
   const objectionCount = recentEvents.filter(
     (e) => e.eventName === 'commerce.lead.objection_raised',
   ).length;
 
-  const negativeCount = recentEvents.filter((e) =>
-    e.valence === 'negative',
-  ).length;
+  const negativeCount = recentEvents.filter((e) => e.valence === 'negative').length;
 
-  const penalty = (objectionCount * 0.1) + (negativeCount * 0.05);
+  const penalty = objectionCount * 0.1 + negativeCount * 0.05;
   return Math.max(0, Math.min(1, 0.8 - penalty));
 }
 
-function computeConsistencyScore(
-  recentEvents: readonly CreatorEvent[],
-): number {
-  if (recentEvents.length < 3) return 0.5;
+function computeConsistencyScore(recentEvents: readonly CreatorEvent[]): number {
+  if (recentEvents.length < 3) {
+    return 0.5;
+  }
 
-  const positiveRatio = recentEvents.filter((e) =>
-    e.valence === 'positive',
-  ).length / recentEvents.length;
+  const positiveRatio =
+    recentEvents.filter((e) => e.valence === 'positive').length / recentEvents.length;
 
-  const negativeRatio = recentEvents.filter((e) =>
-    e.valence === 'negative',
-  ).length / recentEvents.length;
+  const negativeRatio =
+    recentEvents.filter((e) => e.valence === 'negative').length / recentEvents.length;
 
   return Math.max(0, Math.min(1, 0.5 + positiveRatio - negativeRatio));
 }
 
-function computeRecommendationFidelity(
-  recentEvents: readonly CreatorEvent[],
-): number {
+function computeRecommendationFidelity(recentEvents: readonly CreatorEvent[]): number {
   const totalWithPayload = recentEvents.filter((e) => e.payload).length;
-  if (totalWithPayload === 0) return 0.5;
+  if (totalWithPayload === 0) {
+    return 0.5;
+  }
 
   const endorsementKeywords = ['recomendo', 'uso e recomendo', 'parceiro', 'parceria'];
   let roughEndorsements = 0;
 
   for (const ev of recentEvents) {
     const text = extractMessageText(ev);
-    if (!text) continue;
+    if (!text) {
+      continue;
+    }
     const lower = text.toLowerCase();
     if (endorsementKeywords.some((kw) => lower.includes(kw))) {
       roughEndorsements += 1;
@@ -116,27 +110,30 @@ function computeRecommendationFidelity(
   return 1 - endorsementRatio;
 }
 
-function computeRecoveryCapacity(
-  recentEvents: readonly CreatorEvent[],
-): number {
+function computeRecoveryCapacity(recentEvents: readonly CreatorEvent[]): number {
   const silenceCount = recentEvents.filter(
     (e) => e.eventName === 'commerce.lead.went_silent',
   ).length;
 
-  if (silenceCount === 0) return 0.8;
+  if (silenceCount === 0) {
+    return 0.8;
+  }
 
   const repliesAfterSilence = recentEvents.filter((e, i) => {
-    if (i === 0) return false;
+    if (i === 0) {
+      return false;
+    }
     const prev = recentEvents[i - 1];
-    if (!prev || !recentEvents[i]) return false;
+    if (!prev || !recentEvents[i]) {
+      return false;
+    }
 
     return (
-      prev.eventName === 'commerce.lead.went_silent' &&
-      e.eventName === 'commerce.lead.replied'
+      prev.eventName === 'commerce.lead.went_silent' && e.eventName === 'commerce.lead.replied'
     );
   }).length;
 
-  return Math.max(0, Math.min(1, 0.8 - (silenceCount * 0.15) + (repliesAfterSilence * 0.1)));
+  return Math.max(0, Math.min(1, 0.8 - silenceCount * 0.15 + repliesAfterSilence * 0.1));
 }
 
 function computeAudienceRetentionRate(
@@ -151,7 +148,9 @@ function computeAudienceRetentionRate(
     return now - t <= windowMs;
   });
 
-  if (recentInWindow.length === 0) return 0.5;
+  if (recentInWindow.length === 0) {
+    return 0.5;
+  }
 
   const positiveInteractionCount = recentInWindow.filter((e) => {
     return e.eventName === 'commerce.lead.replied' && e.valence !== 'negative';
@@ -160,13 +159,16 @@ function computeAudienceRetentionRate(
   return Math.min(1, positiveInteractionCount / Math.max(1, recentInWindow.length));
 }
 
-function determineVerdict(
-  trustCapital: number,
-  config: CreatorTrustConfig,
-): CreatorTrustVerdict {
-  if (trustCapital >= config.strongCapitalMin) return 'strong';
-  if (trustCapital >= config.stableCapitalMin) return 'stable';
-  if (trustCapital >= config.erodingCapitalMin) return 'eroding';
+function determineVerdict(trustCapital: number, config: CreatorTrustConfig): CreatorTrustVerdict {
+  if (trustCapital >= config.strongCapitalMin) {
+    return 'strong';
+  }
+  if (trustCapital >= config.stableCapitalMin) {
+    return 'stable';
+  }
+  if (trustCapital >= config.erodingCapitalMin) {
+    return 'eroding';
+  }
   return 'depleted';
 }
 
@@ -191,10 +193,18 @@ function buildReason(
 
 function extractMessageText(ev: CreatorEvent): string | undefined {
   const p = ev.payload;
-  if (!p) return undefined;
-  if (typeof p['messageBody'] === 'string') return p['messageBody'] as string;
-  if (typeof p['body'] === 'string') return p['body'] as string;
-  if (typeof p['text'] === 'string') return p['text'] as string;
+  if (!p) {
+    return undefined;
+  }
+  if (typeof p['messageBody'] === 'string') {
+    return p['messageBody'];
+  }
+  if (typeof p['body'] === 'string') {
+    return p['body'];
+  }
+  if (typeof p['text'] === 'string') {
+    return p['text'];
+  }
   return undefined;
 }
 
@@ -223,14 +233,18 @@ export class CreatorTrustCapitalTrackerService {
     const recoveryCapacity = computeRecoveryCapacity(recentEvents);
     const audienceRetentionRate = computeAudienceRetentionRate(recentEvents, cfg);
 
-    const trustCapital = Math.max(TRUST_CAPITAL_FLOOR, Math.min(TRUST_CAPITAL_CEILING,
-      audienceTrust * cfg.audienceTrustWeight +
-      authenticityIndex * cfg.authenticityWeight +
-      consistencyScore * cfg.consistencyWeight +
-      recommendationFidelity * cfg.fidelityWeight +
-      audienceRetentionRate * cfg.retentionWeight +
-      recoveryCapacity * cfg.recoveryWeight,
-    ));
+    const trustCapital = Math.max(
+      TRUST_CAPITAL_FLOOR,
+      Math.min(
+        TRUST_CAPITAL_CEILING,
+        audienceTrust * cfg.audienceTrustWeight +
+          authenticityIndex * cfg.authenticityWeight +
+          consistencyScore * cfg.consistencyWeight +
+          recommendationFidelity * cfg.fidelityWeight +
+          audienceRetentionRate * cfg.retentionWeight +
+          recoveryCapacity * cfg.recoveryWeight,
+      ),
+    );
 
     const verdict = determineVerdict(trustCapital, cfg);
 
@@ -244,7 +258,13 @@ export class CreatorTrustCapitalTrackerService {
       recoveryCapacity: parseFloat(recoveryCapacity.toFixed(3)),
       audienceRetentionRate: parseFloat(audienceRetentionRate.toFixed(3)),
       verdict,
-      reason: buildReason(trustCapital, verdict, audienceTrust, authenticityIndex, consistencyScore),
+      reason: buildReason(
+        trustCapital,
+        verdict,
+        audienceTrust,
+        authenticityIndex,
+        consistencyScore,
+      ),
       generatedAt: now,
     };
 

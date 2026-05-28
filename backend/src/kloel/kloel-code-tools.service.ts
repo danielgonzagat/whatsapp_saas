@@ -4,22 +4,16 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { exec as cpExec } from 'child_process';
 import { promisify } from 'util';
+import { REPO_ROOT, repoPath } from './kloel-code-analysis.service';
+import { CognitiveBridgeService } from './self-awareness/cognitive-bridge.service';
+import { PulseRuntimeService } from './self-awareness/pulse-runtime.service';
 
 const exec = promisify(cpExec);
 
-const REPO_ROOT = path.resolve(process.cwd(), '..');
 const MAX_FILE_BYTES = 100_000;
 const MAX_GREP_RESULTS = 30;
 const GIT_LOG_MAX_COUNT = 20;
 const DIR_MAX_ENTRIES = 50;
-
-function repoPath(input: string): string {
-  const resolved = path.resolve(REPO_ROOT, input);
-  if (!resolved.startsWith(REPO_ROOT + path.sep) && resolved !== REPO_ROOT) {
-    throw new Error(`Path outside repo: ${input}`);
-  }
-  return resolved;
-}
 
 interface ToolResult {
   success: boolean;
@@ -39,6 +33,67 @@ interface JestOutput {
 @Injectable()
 export class KloelCodeToolsService {
   private readonly logger = StructuredLogger.from(KloelCodeToolsService.name);
+
+  constructor(
+    private readonly cognitiveBridge: CognitiveBridgeService,
+    private readonly pulseRuntime: PulseRuntimeService,
+  ) {}
+
+  // ── PULSE / Runtime awareness (Wave 7 PI-DD) ──
+
+  async toolPulseHealth(moduleName?: string): Promise<ToolResult> {
+    return this.pulseRuntime.pulseHealth(moduleName);
+  }
+
+  async toolBehaviorGraphNode(symbol: string, file?: string): Promise<ToolResult> {
+    return this.pulseRuntime.behaviorGraphNode(symbol, file);
+  }
+
+  async toolRuntimeErrors(): Promise<ToolResult> {
+    return this.pulseRuntime.runtimeErrors();
+  }
+
+  // ── COGNITIVE BRIDGE (Wave 7 PI-CC) ──
+
+  async toolLspDiagnostics(file: string): Promise<ToolResult> {
+    try {
+      const diagnostics = await this.cognitiveBridge.getLspDiagnostics(file);
+      return { success: true, file, total: diagnostics.length, diagnostics };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return { success: false, error: msg };
+    }
+  }
+
+  async toolOpenApiRoute(pathOrController: string): Promise<ToolResult> {
+    try {
+      const routes = await this.cognitiveBridge.getOpenApiRoute(pathOrController);
+      return { success: true, query: pathOrController, total: routes.length, routes };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return { success: false, error: msg };
+    }
+  }
+
+  async toolAsyncApiEvents(domain: string): Promise<ToolResult> {
+    try {
+      const events = await this.cognitiveBridge.getAsyncApiEvents(domain);
+      return { success: true, domain, total: events.length, events };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return { success: false, error: msg };
+    }
+  }
+
+  async toolStaticAnalysis(file: string): Promise<ToolResult> {
+    try {
+      const issues = await this.cognitiveBridge.getStaticAnalysisIssues(file);
+      return { success: true, file, total: issues.length, issues };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return { success: false, error: msg };
+    }
+  }
 
   async toolReadSourceFile(
     relPath: string,
@@ -111,7 +166,8 @@ export class KloelCodeToolsService {
   async toolSearchCodebase(pattern: string, glob?: string): Promise<ToolResult> {
     try {
       const globArg = glob ? `--glob '${glob.replace(/'/g, "'\\''")}'` : '';
-      const cmd = `cd '${REPO_ROOT}' && rg --line-number --max-count ${MAX_GREP_RESULTS} ${globArg} '${pattern.replace(/'/g, "'\\''")}' 2>&1`;
+      const searchPath = glob ? '' : ' backend/src/ frontend/src/ worker/src/';
+      const cmd = `cd '${REPO_ROOT}' && rg --line-number -i --max-count ${MAX_GREP_RESULTS} ${globArg} '${pattern.replace(/'/g, "'\\''")}'${searchPath} 2>&1`;
       const { stdout, stderr } = await exec(cmd, { timeout: 15_000, maxBuffer: 1024 * 1024 });
       if (stderr && !stdout) {
         return { success: false, error: stderr.trim() };
@@ -129,7 +185,28 @@ export class KloelCodeToolsService {
       };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes('exit code 1') && msg.includes('stdout')) {
+      // child_process exec errors carry stdout/stderr fields not on the base Error type;
+      // narrow with a structural cast instead of `as any` to keep type safety.
+      const ce = err as { stdout?: unknown; stderr?: unknown };
+      const stderrOut = typeof ce.stdout === 'string' ? ce.stdout : undefined;
+      const stderrErr = typeof ce.stderr === 'string' ? ce.stderr : undefined;
+      // rg exits with code 1 when no matches found — not an error
+      if (
+        (msg.includes('exit code 1') || msg.includes('Command failed')) &&
+        (stderrOut || stderrErr)
+      ) {
+        const lines = (stderrOut || '').trim().split('\n').filter(Boolean);
+        if (lines.length > 0) {
+          return {
+            success: true,
+            pattern,
+            matchCount: lines.length,
+            results: lines.map((line: string) => {
+              const [file, lnum, ...rest] = line.split(':');
+              return { file, line: Number(lnum), content: rest.join(':').trim() };
+            }),
+          };
+        }
         return { success: true, pattern, matchCount: 0, results: [] };
       }
       return { success: false, error: msg };
@@ -176,7 +253,21 @@ export class KloelCodeToolsService {
 
   async toolCodeOutline(relPath: string): Promise<ToolResult> {
     try {
-      const absPath = repoPath(relPath);
+      let absPath = repoPath(relPath);
+      // Fallback: if file doesn't exist at resolved path, search for it via rg
+      try {
+        await fs.access(absPath);
+      } catch {
+        const fname = path.basename(relPath);
+        const { stdout } = await exec(
+          `rg --files '${REPO_ROOT}' 2>/dev/null | grep "/${fname}$" | head -1`,
+          { timeout: 8000, maxBuffer: 1024 * 1024 },
+        );
+        const found = stdout.trim();
+        if (found) {
+          absPath = found;
+        }
+      }
       const content = await fs.readFile(absPath, 'utf-8');
       const lines = content.split('\n');
       const symbols: Array<{ name: string; kind: string; line: number }> = [];
@@ -291,6 +382,80 @@ export class KloelCodeToolsService {
       const msg = err instanceof Error ? err.message : String(err);
       return { success: false, error: msg };
     }
+  }
+
+  // ── CODEGRAPH (Meta 1 — knowledge-graph code intelligence via MCP) ──  // ── CODEGRAPH (Meta 1 — knowledge-graph code intelligence real bridge) ──
+
+  private async runCodeGraph(args: string, timeoutMs = 15_000): Promise<string> {
+    try {
+      const cmd = `cd '${REPO_ROOT}' && /opt/homebrew/bin/codegraph ${args} 2>&1`;
+      const { stdout, stderr } = await exec(cmd, { timeout: timeoutMs, maxBuffer: 500_000 });
+      return (stdout + stderr).trim().slice(0, 8000);
+    } catch (e: unknown) {
+      const errStr = e instanceof Error ? e.message : String(e);
+      return errStr.includes('ETIMEDOUT') || errStr.includes('killed')
+        ? 'CodeGraph timeout. Tente uma query mais especifica.'
+        : `CodeGraph error: ${errStr.slice(0, 500)}`;
+    }
+  }
+
+  async toolCodeGraphStatus(): Promise<ToolResult> {
+    const output = await this.runCodeGraph('status');
+    return { success: true, text: output };
+  }
+
+  async toolCodeGraphSearch(query: string): Promise<ToolResult> {
+    const q = query.replace(/["'`]/g, '').trim() || 'overview';
+    const output = await this.runCodeGraph(`query "${q}"`);
+    return { success: true, text: output };
+  }
+
+  async toolCodeGraphContext(task: string): Promise<ToolResult> {
+    const t = task.replace(/["'`]/g, '').trim() || 'overview';
+    const output = await this.runCodeGraph(`context "${t}"`, 30_000);
+    return { success: true, text: output };
+  }
+
+  async toolCodeGraphCallers(symbol: string): Promise<ToolResult> {
+    const s = symbol.replace(/["'`]/g, '').trim();
+    if (!s) {
+      return { success: true, text: 'Informe o simbolo para buscar callers.' };
+    }
+    // Use query to search for symbol; MCP callers not available via CLI
+    const output = await this.runCodeGraph(`query "callers of ${s}"`);
+    return { success: true, text: `Callers de "${s}" (via query):\n${output}` };
+  }
+
+  async toolCodeGraphCallees(symbol: string): Promise<ToolResult> {
+    const s = symbol.replace(/["'`]/g, '').trim();
+    if (!s) {
+      return { success: true, text: 'Informe o simbolo para buscar callees.' };
+    }
+    const output = await this.runCodeGraph(`query "callees of ${s}"`);
+    return { success: true, text: `Callees de "${s}" (via query):\n${output}` };
+  }
+
+  async toolCodeGraphImpact(symbol: string): Promise<ToolResult> {
+    const s = symbol.replace(/["'`]/g, '').trim();
+    if (!s) {
+      return { success: true, text: 'Informe o simbolo para analisar impacto.' };
+    }
+    const output = await this.runCodeGraph(`query "impact of changing ${s}"`);
+    return { success: true, text: `Impacto de "${s}" (via query):\n${output}` };
+  }
+
+  async toolCodeGraphNode(symbol: string): Promise<ToolResult> {
+    const s = symbol.replace(/["'`]/g, '').trim();
+    if (!s) {
+      return { success: true, text: 'Informe o simbolo para detalhes.' };
+    }
+    const output = await this.runCodeGraph(`query "${s}"`);
+    return { success: true, text: `Detalhes de "${s}" (via query):\n${output}` };
+  }
+
+  async toolCodeGraphFiles(): Promise<ToolResult> {
+    const output = await this.runCodeGraph('files');
+    return { success: true, text: output };
   }
 
   async toolReadPrismaSchema(): Promise<ToolResult> {

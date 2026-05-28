@@ -99,11 +99,19 @@ if (/\bgit\s+rm\b[^|;&]*\b(?!.*node_modules)[^|;&\s]+\.(?:tsx?|mjs|cjs|jsx?)\b/.
 // Regra: edição de settings.json/hooks/protected via shell.
 // Leitura precisa continuar liberada para que Claude, Codex, OpenCode e outras
 // CLIs consigam carregar CLAUDE.md/AGENTS.md/CODEX.md antes de agir.
-const PROTECTED_PATHS_RE =
-  /(?:^|[\s'\"`(])(\.claude\/settings\.json|\.husky\/pre-commit|\.husky\/pre-push|scripts\/decomp\/|scripts\/ops\/check-|scripts\/ops\/lib\/|backend\/eslint\.config\.mjs|frontend\/eslint\.config\.mjs|worker\/eslint\.config\.mjs|backend\/src\/lib\/ai-models\.ts|scripts\/pulse\/no-hardcoded-reality-audit\.ts|CLAUDE\.md|AGENTS\.md|CODEX\.md|\.github\/workflows\/ci-cd\.yml|ops\/[A-Za-z0-9_-]+\.json)\b/;
+const PROTECTED_PATH_FRAGMENT = String.raw`\.claude\/settings\.json|\.husky\/pre-commit|\.husky\/pre-push|scripts\/decomp\/|scripts\/ops\/check-|scripts\/ops\/lib\/|backend\/eslint\.config\.mjs|frontend\/eslint\.config\.mjs|worker\/eslint\.config\.mjs|backend\/src\/lib\/ai-models\.ts|scripts\/pulse\/no-hardcoded-reality-audit\.ts|CLAUDE\.md|AGENTS\.md|CODEX\.md|\.github\/workflows\/ci-cd\.yml|ops\/[A-Za-z0-9_-]+\.json`;
+const PROTECTED_PATHS_RE = new RegExp(
+  String.raw`(?:^|[\s'"\`(])(${PROTECTED_PATH_FRAGMENT})\b`,
+);
 const SHELL_WRITE_TO_PROTECTED_RE =
-  /(?:\b(?:sed\s+-i|perl\s+-p?i|python\s+-c[^|;&]*(?:write|open\(|Path\()[^|;&]*|tee\b|cat\s+>|awk\b[^|;&]*(?:>|-i\s+inplace))[^|;&]*|(?:>>|>)[^|;&]*)/;
-if (SHELL_WRITE_TO_PROTECTED_RE.test(cmd) && PROTECTED_PATHS_RE.test(cmd)) {
+  /\b(?:sed\s+-i|perl\s+-p?i|python\s+-c[^|;&]*(?:write|open\(|Path\()[^|;&]*|tee\b|cat\s+>|awk\b[^|;&]*(?:>|-i\s+inplace))[^|;&]*/;
+const REDIRECT_TO_PROTECTED_RE = new RegExp(
+  String.raw`(?<!\d)(?:>>|>)\s*['"]?(?:${PROTECTED_PATH_FRAGMENT})\b`,
+);
+if (
+  (SHELL_WRITE_TO_PROTECTED_RE.test(cmd) && PROTECTED_PATHS_RE.test(cmd)) ||
+  REDIRECT_TO_PROTECTED_RE.test(cmd)
+) {
   reasons.push(
     'Tentativa de editar arquivo PROTECTED ou SELF-IMMUTABLE via shell. Apenas Daniel pode. Path detectado em: ' +
       cmd.slice(0, 240),

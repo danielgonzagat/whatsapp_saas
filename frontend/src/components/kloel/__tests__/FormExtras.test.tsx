@@ -106,14 +106,16 @@ describe('RadioGroup', () => {
     const onChange = vi.fn();
     render(<RadioGroup value="a" onChange={onChange} options={options} label="Choose" />);
     expect(screen.getByText('Choose')).toBeInTheDocument();
-    expect(screen.getByLabelText('Option A')).toBeChecked();
-    expect(screen.getByLabelText('Option B')).not.toBeChecked();
+    const radioA = screen.getByRole('radio', { name: /Option A/ });
+    const radioB = screen.getByRole('radio', { name: /Option B/ });
+    expect(radioA).toBeChecked();
+    expect(radioB).not.toBeChecked();
   });
 
   it('calls onChange on selection', () => {
     const onChange = vi.fn();
     render(<RadioGroup value="a" onChange={onChange} options={options} />);
-    fireEvent.click(screen.getByLabelText('Option B'));
+    fireEvent.click(screen.getByRole('radio', { name: /Option B/ }));
     expect(onChange).toHaveBeenCalledWith('b');
   });
 

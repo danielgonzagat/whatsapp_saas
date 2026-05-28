@@ -16,21 +16,14 @@ import {
   type KloelChatRequestMetadata,
   type KloelLinkedProduct,
 } from '@/lib/kloel-chat';
-import {
-  loadKloelThreadMessages,
-  regenerateKloelConversationMessage,
-  updateKloelMessageFeedback,
-  updateKloelThreadMessage,
-} from '@/lib/kloel-conversations';
+import { loadKloelThreadMessages } from '@/lib/kloel-conversations';
 import { KLOEL_CHAT_ROUTE } from '@/lib/kloel-dashboard-context';
-import { getAssistantResponseVersions } from '@/lib/kloel-message-ui';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import useSWR from 'swr';
 import {
   capabilityPromptLabel,
   getGreeting,
-  toErrorMessage,
   toMessageMetadata,
   unwrapApiPayload,
   mapLinkableProducts,
@@ -39,6 +32,7 @@ import {
 } from './KloelDashboard.helpers';
 import { type DashboardMessage } from './KloelDashboard.message';
 import { S_RE, SLOW_HINT_DELAY_MS } from './KloelDashboard.subcomponents';
+import { useKloelMessageHandlers } from './KloelDashboard.messageHandlers';
 import {
   KloelDashboardView,
   type KloelDashboardQuickAction,
@@ -282,8 +276,9 @@ export default function KloelDashboard() {
     ],
   );
 
-  const handleSendMessage = useMemo(
-    () => createSendMessageHandler(sendMessageContext),
+  const handleSendMessage = useCallback(
+    (rawText: string, requestMetadata?: KloelChatRequestMetadata) =>
+      createSendMessageHandler(sendMessageContext)(rawText, requestMetadata),
     [sendMessageContext],
   );
 
@@ -351,128 +346,30 @@ export default function KloelDashboard() {
     [linkedProduct, setComposerNotice],
   );
 
-  const handleUserRetry = useCallback(
-    async (messageId: string) => {
-      const sourceMessage = messages.find(
-        (message) => message.id === messageId && message.role === 'user',
-      );
-      if (!sourceMessage) {return;}
-      await handleSendMessage(
-        sourceMessage.text,
-        sourceMessage.metadata as KloelChatRequestMetadata | undefined,
-      );
-    },
-    [handleSendMessage, messages],
-  );
-
-  const handleUserEdit = useCallback(
-    async (messageId: string, nextText: string) => {
-      const updatedMessage = await updateKloelThreadMessage(messageId, nextText);
-      setMessages((current) =>
-        current.map((message) =>
-          message.id === messageId
-            ? {
-                ...message,
-                text: updatedMessage.content,
-                metadata: toMessageMetadata(updatedMessage.metadata),
-              }
-            : message,
-        ),
-      );
-      await handleSendMessage(
-        nextText,
-        updatedMessage.metadata as KloelChatRequestMetadata | undefined,
-      );
-    },
-    [handleSendMessage],
-  );
-
-  const handleAssistantFeedback = useCallback(
-    async (messageId: string, type: 'positive' | 'negative' | null) => {
-      const updatedMessage = await updateKloelMessageFeedback(messageId, type);
-      setMessages((current) =>
-        current.map((message) =>
-          message.id === messageId
-            ? { ...message, metadata: toMessageMetadata(updatedMessage.metadata) }
-            : message,
-        ),
-      );
-    },
-    [],
-  );
-
-  const handleAssistantRegenerate = useCallback(
-    async (messageId: string) => {
-      if (!activeConversationId) {return;}
-      setStreamingMessageId(messageId);
-      setIsThinking(true);
-      setMessages((current) => {
-        const targetIndex = current.findIndex((message) => message.id === messageId);
-        if (targetIndex === -1) {return current;}
-        const targetMessage = current[targetIndex];
-        const preservedVersions = getAssistantResponseVersions(
-          targetMessage.metadata,
-          targetMessage.text,
-          targetMessage.id,
-        );
-        return [
-          ...current.slice(0, targetIndex),
-          {
-            ...targetMessage,
-            text: '',
-            metadata: { ...(targetMessage.metadata || {}), responseVersions: preservedVersions },
-          },
-        ];
-      });
-      try {
-        const regenerated = await regenerateKloelConversationMessage(
-          activeConversationId,
-          messageId,
-        );
-        setMessages((current) => {
-          const targetIndex = current.findIndex((message) => message.id === messageId);
-          if (targetIndex === -1) {return current;}
-          return [
-            ...current.slice(0, targetIndex),
-            {
-              id: regenerated.id,
-              role: 'assistant',
-              text: regenerated.content,
-              metadata: toMessageMetadata(regenerated.metadata),
-            },
-          ];
-        });
-        void refreshConversations();
-      } catch (error: unknown) {
-        setMessages((current) =>
-          current.map((message) =>
-            message.id === messageId
-              ? {
-                  ...message,
-                  text: toErrorMessage(
-                    error,
-                    'Desculpe, ocorreu uma instabilidade ao tentar gerar uma nova versão.',
-                  ),
-                }
-              : message,
-          ),
-        );
-      } finally {
-        setIsThinking(false);
-        setStreamingMessageId(null);
-      }
-    },
-    [activeConversationId, refreshConversations],
-  );
+  const {
+    handleUserRetry,
+    handleUserEdit,
+    handleAssistantFeedback,
+    handleAssistantRegenerate,
+  } = useKloelMessageHandlers({
+    messages,
+    setMessages,
+    handleSendMessage,
+    activeConversationId,
+    refreshConversations,
+    setIsThinking,
+    setStreamingMessageId,
+  });
 
   useEffect(() => {
     if (!requestedConversationId) {
       if (messages.length > 0 || isThinking || activeConversationId) {return;}
-      resetToNewChat(false);
-      return;
+      const timeoutId = window.setTimeout(() => resetToNewChat(false), 0);
+      return () => window.clearTimeout(timeoutId);
     }
     if (loadedConversationIdRef.current === requestedConversationId) {return;}
     void loadConversation(requestedConversationId);
+    return undefined;
   }, [
     activeConversationId,
     isThinking,
@@ -483,12 +380,14 @@ export default function KloelDashboard() {
   ]);
 
   useEffect(() => {
-    setHasMounted(true);
+    const timeoutId = window.setTimeout(() => setHasMounted(true), 0);
+    return () => window.clearTimeout(timeoutId);
   }, []);
 
   useEffect(() => {
     if (!draft.trim()) {return;}
-    setInput(draft);
+    const timeoutId = window.setTimeout(() => setInput(draft), 0);
+    return () => window.clearTimeout(timeoutId);
   }, [draft]);
 
   useEffect(() => {
@@ -517,8 +416,8 @@ export default function KloelDashboard() {
 
   useEffect(() => {
     if (!isReplyInFlight) {
-      setShowSlowHint(false);
-      return;
+      const timeoutId = window.setTimeout(() => setShowSlowHint(false), 0);
+      return () => window.clearTimeout(timeoutId);
     }
     const timeoutId = window.setTimeout(() => {
       setShowSlowHint(true);

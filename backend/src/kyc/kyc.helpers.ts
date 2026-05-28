@@ -20,18 +20,12 @@ export interface ConnectAddressInput {
   cep?: string | null;
 }
 
-export function trimToUndefined(value: unknown): string | undefined {
-  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
-}
+export { readTrimmedString as trimToUndefined } from '../common/parse';
+import { readTrimmedString as trimToUndefined } from '../common/parse';
 
-export function digitsOnly(value: unknown): string | undefined {
-  const raw = trimToUndefined(value);
-  if (!raw) {
-    return undefined;
-  }
-  const normalized = raw.replace(/\D/g, '');
-  return normalized || undefined;
-}
+// digitsOnly here matches the KYC-specific 'undefined when empty' semantics.
+// Re-exported from the canonical common/phone module.
+export { digitsOrUndefined as digitsOnly } from '../common/phone';
 
 export function buildPersonName(name: string | null | undefined): {
   firstName?: string;

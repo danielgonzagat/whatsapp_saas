@@ -44,9 +44,7 @@ function getSharedReplyLockKey(
   return `autopilot:reply:${workspaceId}:${contactId || normalizePhone(String(phone || ''))}`;
 }
 
-async function sleep(ms: number) {
-  await new Promise((r) => setTimeout(r, ms));
-}
+import { sleep } from '../common/async-sequence';
 
 async function recordAutopilotSkip(
   deps: {

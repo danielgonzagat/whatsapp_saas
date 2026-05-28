@@ -11,7 +11,9 @@ function makePrisma() {
 
 function makeMemoryManager() {
   return {
-    onPreCompress: jest.fn().mockResolvedValue('<provider-insight>known checkout gap</provider-insight>'),
+    onPreCompress: jest
+      .fn()
+      .mockResolvedValue('<provider-insight>known checkout gap</provider-insight>'),
   };
 }
 
@@ -69,7 +71,9 @@ describe('AgentRuntimeContextCompressorService', () => {
     });
     expect(prisma.kloelMemory.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { workspaceId_key: { workspaceId: 'ws_1', key: 'agent_compressed_context:thread_1' } },
+        where: {
+          workspaceId_key: { workspaceId: 'ws_1', key: 'agent_compressed_context:thread_1' },
+        },
         update: expect.objectContaining({
           category: 'agent_curated',
           type: 'context_summary',
@@ -107,7 +111,9 @@ describe('AgentRuntimeContextCompressorService', () => {
     expect(result?.source.truthMode).toBe('observed');
     expect(prisma.kloelMemory.findUnique).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { workspaceId_key: { workspaceId: 'ws_1', key: 'agent_compressed_context:thread_1' } },
+        where: {
+          workspaceId_key: { workspaceId: 'ws_1', key: 'agent_compressed_context:thread_1' },
+        },
       }),
     );
   });

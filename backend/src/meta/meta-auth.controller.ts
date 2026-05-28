@@ -33,6 +33,10 @@ import {
 } from './oauth/meta-auth-helpers';
 import { readRecord, readStrictText } from './read-model/meta-read-helpers';
 
+function readFirstEnv(keys: string[]): string {
+  return keys.map((key) => String(process.env[key] || '').trim()).find(Boolean) || '';
+}
+
 interface MetaAuthPage {
   id?: string;
   name?: string;
@@ -65,8 +69,12 @@ interface MetaAuthAdAccount {
 export class MetaAuthController {
   private readonly logger = new Logger(MetaAuthController.name);
 
-  private readonly appId = process.env.META_APP_ID || '';
-  private readonly appSecret = process.env.META_APP_SECRET || '';
+  private readonly appId = readFirstEnv(['META_APP_ID', 'FACEBOOK_APP_ID', 'META_CLIENT_ID']);
+  private readonly appSecret = readFirstEnv([
+    'META_APP_SECRET',
+    'FACEBOOK_APP_SECRET',
+    'META_CLIENT_SECRET',
+  ]);
   private readonly frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 
   constructor(

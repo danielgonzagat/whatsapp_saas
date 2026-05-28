@@ -6,12 +6,39 @@ const MIN_EVENTS_FOR_SIGNAL = 10;
 export const MIN_WORKSPACES = 2;
 export const K_ANONYMITY_THRESHOLD = 5;
 const COMMON_OBJECTION_KEYWORDS: readonly string[] = [
-  'preco', 'preço', 'valor', 'caro', 'custo', 'orcamento', 'orçamento',
-  'prazo', 'tempo', 'urgente', 'espera', 'demora',
-  'concorrente', 'concorrencia', 'concorrência', 'outro', 'alternativa',
-  'garantia', 'reembolso', 'devolucao', 'devolução', 'cancelar',
-  'pensar', 'depois', 'futuro', 'momento', 'agora',
-  'marido', 'esposa', 'socio', 'sócio', 'equipe', 'time',
+  'preco',
+  'preço',
+  'valor',
+  'caro',
+  'custo',
+  'orcamento',
+  'orçamento',
+  'prazo',
+  'tempo',
+  'urgente',
+  'espera',
+  'demora',
+  'concorrente',
+  'concorrencia',
+  'concorrência',
+  'outro',
+  'alternativa',
+  'garantia',
+  'reembolso',
+  'devolucao',
+  'devolução',
+  'cancelar',
+  'pensar',
+  'depois',
+  'futuro',
+  'momento',
+  'agora',
+  'marido',
+  'esposa',
+  'socio',
+  'sócio',
+  'equipe',
+  'time',
 ];
 
 export interface InternalSignal extends AggregatedSignal {
@@ -22,7 +49,10 @@ export interface InternalSignal extends AggregatedSignal {
     readonly campaignConversionRate: number;
   };
 }
-export function aggregateSignals(events: readonly SpineEventRef[], workspaceId: string): AggregatedSignal {
+export function aggregateSignals(
+  events: readonly SpineEventRef[],
+  workspaceId: string,
+): AggregatedSignal {
   let totalEvents = 0;
   let conversionCount = 0;
   let leadCount = 0;
@@ -45,13 +75,21 @@ export function aggregateSignals(events: readonly SpineEventRef[], workspaceId: 
     totalEvents++;
     const ts = Date.parse(event.occurredAt);
     if (Number.isFinite(ts)) {
-      if (ts < minTimestamp) minTimestamp = ts;
-      if (ts > maxTimestamp) maxTimestamp = ts;
+      if (ts < minTimestamp) {
+        minTimestamp = ts;
+      }
+      if (ts > maxTimestamp) {
+        maxTimestamp = ts;
+      }
     }
     const hour = new Date(event.occurredAt).getUTCHours();
     hourCounts.set(hour, (hourCounts.get(hour) ?? 0) + 1);
-    if (event.valence === 'positive') positiveValenceCount++;
-    if (event.valence === 'negative') negativeValenceCount++;
+    if (event.valence === 'positive') {
+      positiveValenceCount++;
+    }
+    if (event.valence === 'negative') {
+      negativeValenceCount++;
+    }
     switch (event.eventName) {
       case 'commerce.lead.converted':
         conversionCount++;
@@ -89,9 +127,13 @@ export function aggregateSignals(events: readonly SpineEventRef[], workspaceId: 
     const payload = event.payload as Record<string, unknown> | undefined;
     if (payload) {
       const pid = payload['productId'];
-      if (typeof pid === 'string') productIds.add(pid);
+      if (typeof pid === 'string') {
+        productIds.add(pid);
+      }
       const stage = payload['toStage'] ?? payload['stage'];
-      if (typeof stage === 'string') stages.add(stage);
+      if (typeof stage === 'string') {
+        stages.add(stage);
+      }
     }
   }
   const observationWindowDays =
@@ -124,7 +166,10 @@ export function aggregateSignals(events: readonly SpineEventRef[], workspaceId: 
     observationWindowDays,
   };
 }
-export function enrichSignal(events: readonly SpineEventRef[], signal: AggregatedSignal): InternalSignal {
+export function enrichSignal(
+  events: readonly SpineEventRef[],
+  signal: AggregatedSignal,
+): InternalSignal {
   const objectionKeywords = new Map<string, number>();
   const stageTransitions = new Map<string, number>();
   let whatsappConversions = 0;
@@ -154,12 +199,16 @@ export function enrichSignal(events: readonly SpineEventRef[], signal: Aggregate
     if (event.eventName === 'commerce.whatsapp.message_replied') {
       whatsappLeads++;
       const payload = event.payload as Record<string, unknown> | undefined;
-      if (payload?.['converted'] === true) whatsappConversions++;
+      if (payload?.['converted'] === true) {
+        whatsappConversions++;
+      }
     }
     if (event.eventName === 'commerce.campaign.clicked') {
       campaignLeads++;
       const payload = event.payload as Record<string, unknown> | undefined;
-      if (payload?.['converted'] === true) campaignConversions++;
+      if (payload?.['converted'] === true) {
+        campaignConversions++;
+      }
     }
   }
   return {
@@ -173,28 +222,40 @@ export function enrichSignal(events: readonly SpineEventRef[], signal: Aggregate
   };
 }
 export function conversionRate(s: AggregatedSignal): number {
-  if (s.leadCount === 0) return 0;
+  if (s.leadCount === 0) {
+    return 0;
+  }
   return s.conversionCount / s.leadCount;
 }
 export function replyRate(s: AggregatedSignal): number {
-  if (s.totalEvents === 0) return 0;
+  if (s.totalEvents === 0) {
+    return 0;
+  }
   return s.replyCount / s.totalEvents;
 }
 export function refundRate(s: AggregatedSignal): number {
-  if (s.paymentCount === 0) return 0;
+  if (s.paymentCount === 0) {
+    return 0;
+  }
   return s.refundCount / s.paymentCount;
 }
 export function handoffRate(s: AggregatedSignal): number {
-  if (s.totalEvents === 0) return 0;
+  if (s.totalEvents === 0) {
+    return 0;
+  }
   return s.handoffCount / s.totalEvents;
 }
 export function dealCloseRate(s: AggregatedSignal): number {
   const total = s.dealWonCount + s.dealLostCount;
-  if (total === 0) return 0;
+  if (total === 0) {
+    return 0;
+  }
   return s.dealWonCount / total;
 }
 export function confidenceFromCount(workspacesWithSignal: number, totalWorkspaces: number): number {
-  if (totalWorkspaces === 0) return 0;
+  if (totalWorkspaces === 0) {
+    return 0;
+  }
   const ratio = workspacesWithSignal / totalWorkspaces;
   return Math.min(0.95, 0.4 + ratio * 0.55);
 }
@@ -206,8 +267,12 @@ export function passesKAnonymity(
   wsIds: readonly string[],
   patternId: string,
 ): boolean {
-  if (wsIds.length < K_ANONYMITY_THRESHOLD) return false;
-  if (!guard) return true;
+  if (wsIds.length < K_ANONYMITY_THRESHOLD) {
+    return false;
+  }
+  if (!guard) {
+    return true;
+  }
   const candidate: CandidatePattern = {
     patternId,
     description: '',
@@ -225,11 +290,7 @@ export function passesKAnonymity(
     return false;
   }
 }
-function describeRate(
-  kind: SignalKind,
-  value: number,
-  workspaceCount: number,
-): string {
+function describeRate(kind: SignalKind, value: number, workspaceCount: number): string {
   const pct = `${(value * 100).toFixed(0)}%`;
   const wsLabel = `${workspaceCount} workspaces`;
   switch (kind) {
@@ -262,7 +323,9 @@ export function emitRatePatterns(
   threshold: number,
 ): CandidatePattern[] {
   const matching = signals.filter((s) => s.totalEvents >= MIN_EVENTS_FOR_SIGNAL && compute(s) > 0);
-  if (matching.length < MIN_WORKSPACES) return [];
+  if (matching.length < MIN_WORKSPACES) {
+    return [];
+  }
   const avg = matching.reduce((sum, s) => sum + compute(s), 0) / matching.length;
   const description = describeRate(kind, avg, matching.length);
   return [
@@ -280,7 +343,9 @@ export function emitRatePatterns(
 }
 export function emitVolumePatterns(signals: AggregatedSignal[]): CandidatePattern[] {
   const withLeads = signals.filter((s) => s.leadCount >= MIN_EVENTS_FOR_SIGNAL);
-  if (withLeads.length < MIN_WORKSPACES) return [];
+  if (withLeads.length < MIN_WORKSPACES) {
+    return [];
+  }
   const totalLeads = withLeads.reduce((sum, s) => sum + s.leadCount, 0);
   const avgLeads = totalLeads / withLeads.length;
   return [
@@ -298,7 +363,9 @@ export function emitVolumePatterns(signals: AggregatedSignal[]): CandidatePatter
 }
 export function emitCampaignPatterns(signals: AggregatedSignal[]): CandidatePattern[] {
   const withClicks = signals.filter((s) => s.campaignClickCount >= 1);
-  if (withClicks.length < MIN_WORKSPACES) return [];
+  if (withClicks.length < MIN_WORKSPACES) {
+    return [];
+  }
   const total = withClicks.reduce((sum, s) => sum + s.campaignClickCount, 0);
   const avg = total / withClicks.length;
   return [
@@ -321,7 +388,9 @@ export function emitStagePatterns(signals: AggregatedSignal[]): CandidatePattern
       stageCounts.set(stage, (stageCounts.get(stage) ?? 0) + 1);
     }
   }
-  if (stageCounts.size === 0) return [];
+  if (stageCounts.size === 0) {
+    return [];
+  }
   const top = Array.from(stageCounts.entries())
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3);
@@ -343,7 +412,9 @@ export function emitStagePatterns(signals: AggregatedSignal[]): CandidatePattern
 }
 export function emitProductConcentrationPatterns(signals: AggregatedSignal[]): CandidatePattern[] {
   const withProducts = signals.filter((s) => s.uniqueProductIds >= 1);
-  if (withProducts.length < MIN_WORKSPACES) return [];
+  if (withProducts.length < MIN_WORKSPACES) {
+    return [];
+  }
   const totalProducts = withProducts.reduce((sum, s) => sum + s.uniqueProductIds, 0);
   const avgProducts = totalProducts / withProducts.length;
   return [

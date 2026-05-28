@@ -8,7 +8,8 @@ import {
   PLAN_AI_LABEL_STYLE,
   PLAN_AI_SELECT_CLASS,
 } from './PlanAIConfig.shared';
-import { Toggle } from './PlanAIConfig.toggle';
+import { colors } from '@/lib/design-tokens';
+import { Toggle } from '@/components/kloel/primitives/Toggle';
 
 interface TechInfoSectionProps {
   uid: string;
@@ -47,6 +48,8 @@ export function TechInfoSection({
         checked={hasTechInfo}
         onChange={setHasTechInfo}
         label={kloelT(`Este plano tem informações técnicas?`)}
+        accentColor={colors.accent.webb}
+        offTrackColor={colors.background.corona}
       />
       {hasTechInfo && (
         <div className="grid gap-4 md:grid-cols-2 mt-4">

@@ -1,11 +1,11 @@
-# PULSE REPORT — 2026-05-18T17:01:23.749Z
+# PULSE REPORT — 2026-05-26T23:37:57.988Z
 
 ## PULSE VERDICT
 
 - Produto pronto para producao? NAO
 - IA pode trabalhar autonomamente ate producao? NAO
 - Proximo passo seguro? SIM
-- Self-trust: FAIL
+- Self-trust: PASS
 - No-overclaim: FAIL
 - Principal blocker: github_actions/deploy_failure: Deploy Production failed in GitHub Actions.
 - Proxima acao: UI without persistence: /autopilot
@@ -15,63 +15,63 @@
 - Machine readiness: NOT_READY
 - Scope: pulse_machine_not_kloel_product
 - Product certification excluded from machine verdict: SIM (NOT_CERTIFIED)
-- Can run bounded autonomous cycle: NAO
+- Can run bounded autonomous cycle: SIM
 - Can declare Kloel product certified: NAO
 - bounded_run: PASS - Bounded next autonomous cycle exposes 8 ai_safe unit(s).
 - artifact_consistency: PASS - Cross-artifact consistency passed.
-- execution_matrix: PASS - Execution matrix classified 11377 path(s) with zero unknown and zero non-terminal paths.
-- critical_path_terminal: FAIL - 4884 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:account-agent, matrix:capability:capability:admin-brain, matrix:capability:capability:admin-clients, matrix:capability:capability:admin-compliance, matrix:capability:capability:admin-config, matrix:capability:capability:admin-contacts. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.
+- execution_matrix: PASS - Execution matrix classified 17867 path(s) with zero unknown and zero non-terminal paths.
+- critical_path_terminal: FAIL - 5349 terminal critical path(s) have precise proof blueprints but still need observed pass/fail evidence: matrix:capability:capability:abi-ab, matrix:capability:capability:abi-builder, matrix:capability:capability:abi-snapshot, matrix:capability:capability:account, matrix:capability:capability:account-agent, matrix:capability:capability:ad-rules, matrix:capability:capability:admin-accounts, matrix:capability:capability:admin-audit. Next ai_safe action: run the listed validation command(s), attach runtime/flow/browser/external evidence, and refresh PULSE_EXECUTION_MATRIX.json plus PULSE_PATH_COVERAGE.json.
 - breakpoint_precision: PASS - Every observed failure in the execution matrix has a breakpoint.
 - external_reality: FAIL - 0 missing, 2 stale, and 0 invalid external adapter(s) remain.
-- self_trust: FAIL - PULSE still reconstructs 1 phantom capability(ies) and 0 phantom flow(s); self-trust stays degraded until illusion collapses into real chains.
+- self_trust: PASS - All parsers loaded and no phantom capability/flow remains. 20 aspirational structure(s) remain explicitly marked as aspirational.
 - multi_cycle: PASS - 3 non-regressing real autonomous cycle(s) observed (>= 3 required).
 
 ## Current State
 
 - Certification: NOT_CERTIFIED
 - Human replacement: NOT_READY
-- Score: 55/100
+- Score: 52/100
 - Blocking tier: 0
 - Scope parity: FAIL (low)
-- Structural chains: 798/2854 complete
-- Capabilities: real=0, partial=437, latent=17, phantom=1
-- Capability maturity: foundational=4, connected=451, operational=0, productionReady=0
-- Flows: real=0, partial=48, latent=0, phantom=0
-- Execution matrix: paths=11377, observedPass=0, observedFail=248, criticalUnobserved=0, unknown=0
-- Structural parity gaps: total=46, critical=0, high=45
-- Finding events: totalSignals=17, uniqueEvents=17, observed=0, confirmedStatic=17, weakSignals=0
+- Structural chains: 796/2800 complete
+- Capabilities: real=0, partial=442, latent=20, phantom=0
+- Capability maturity: foundational=2, connected=460, operational=0, productionReady=0
+- Flows: real=0, partial=86, latent=0, phantom=0
+- Execution matrix: paths=17867, observedPass=0, observedFail=41, criticalUnobserved=0, unknown=0
+- Structural parity gaps: total=39, critical=0, high=38
+- Finding events: totalSignals=10, uniqueEvents=10, observed=0, confirmedStatic=10, weakSignals=0
 - Codacy HIGH issues: 2225
 - GitNexus Code Graph: not configured
-- External signals: total=53, runtime=0, change=46, dependency=0, high-impact=5
+- External signals: total=53, runtime=0, change=46, dependency=0, high-impact=3
 
 ## Dynamic Finding Events
 
 - Operational finding names are derived from evidence text, source, location and truth mode. Internal parser labels are compatibility metadata, not final truth.
-- [hardcoded_data] Service method returns empty collection/object without guard evidence: count=1, truth=confirmed_static, action=fix_now, falsePositiveRisk=13%
-- clickable "(sem texto)" has dead handler: count=1, truth=confirmed_static, action=fix_now, falsePositiveRisk=13%
-- clickable "(sem texto)" has dead handler: count=1, truth=confirmed_static, action=fix_now, falsePositiveRisk=13%
-- clickable "onAdded" has dead handler: count=1, truth=confirmed_static, action=fix_now, falsePositiveRisk=13%
-- clickable "onCreated" has dead handler: count=1, truth=confirmed_static, action=fix_now, falsePositiveRisk=13%
-- clickable "onTitle" has dead handler: count=1, truth=confirmed_static, action=fix_now, falsePositiveRisk=13%
-- GET /admin/runtime/trace is not called by frontend code: count=1, truth=confirmed_static, action=needs_context, falsePositiveRisk=13%
-- GET /health/deep is not called by frontend code: count=1, truth=confirmed_static, action=needs_context, falsePositiveRisk=13%
+- GET /kloel/onboarding/:workspaceId/status is not called by frontend code: count=1, truth=confirmed_static, action=needs_context, falsePositiveRisk=13%
+- GET /marketing/ai-brain is not called by frontend code: count=1, truth=confirmed_static, action=needs_context, falsePositiveRisk=13%
+- GET /marketing/channel/:channel/stats is not called by frontend code: count=1, truth=confirmed_static, action=needs_context, falsePositiveRisk=13%
+- GET /marketing/connect/google-ads/campaigns is not called by frontend code: count=1, truth=confirmed_static, action=needs_context, falsePositiveRisk=13%
+- GET /marketing/connect/google-ads/customers is not called by frontend code: count=1, truth=confirmed_static, action=needs_context, falsePositiveRisk=13%
+- GET /marketing/connect/tiktok/campaigns is not called by frontend code: count=1, truth=confirmed_static, action=needs_context, falsePositiveRisk=13%
+- GET /marketing/connect/tiktok/profile is not called by frontend code: count=1, truth=confirmed_static, action=needs_context, falsePositiveRisk=13%
+- GET /marketing/live-feed is not called by frontend code: count=1, truth=confirmed_static, action=needs_context, falsePositiveRisk=13%
 
 ## Coverage Truth
 
 - Inventory Coverage: 100%
-- Classification Coverage: 72%
-- Structural Graph Coverage: 29% (1424/4867 connected)
-  Reason: 1424/4867 structural files connected.
+- Classification Coverage: 86%
+- Structural Graph Coverage: 28% (1469/5264 connected)
+  Reason: 1469/5264 structural files connected.
 - Test Coverage: 18%
-  Reason: 679/3759 source modules have spec files.
+  Reason: 719/4016 source modules have spec files.
 - Scenario Coverage: 100% (declared=100%, executed=100%, passed=0%)
 - Runtime Evidence Coverage: 0% (fresh=0%, stale=0%)
   Reason: No runtime probes executed.
 - Production Proof Coverage: 0%
-  Reason: 0/455 capabilities real.
-- Unknown Files: 2831
+  Reason: 0/462 capabilities real.
+- Unknown Files: 2328
 - Orphan Files: 200
-- Excluded Directories: 89
+- Excluded Directories: 25
 - Manifest role: semantic overlay, NOT scope boundary
 - Scope source: repo_filesystem
 
@@ -80,50 +80,50 @@
 ### Observed (direct evidence)
 - Runtime probes executed: 0
 - External signals: 53 total
-- Self-trust: FAIL
+- Self-trust: PASS
 - No-overclaim: FAIL
 
 ### Inferred (structural analysis)
-- 2854 structural chains
+- 2800 structural chains
 - 0 real capabilities
 - 0 real flows
 
 ### Aspirational (product vision projection)
-- 38 projected surfaces
-- Target: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 423/423 capability(ies) and 48/48 flow(s) at least partially real, with readiness yellow.
+- 39 projected surfaces
+- Target: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 421/421 capability(ies) and 86/86 flow(s) at least partially real, with readiness yellow.
 
 ## External Reality
 
-- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=5, mappedFlows=20, summary=7 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.
-- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=202, mappedFlows=46, summary=1 HIGH Codacy issue(s) remain in backend/src/meta/__parts__/meta-auth-helpers.ts.
-- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=187, mappedFlows=46, summary=1 HIGH Codacy issue(s) remain in backend/src/meta/__parts__/meta-oauth-url.helpers.ts.
-- codacy/static_hotspot: impact=55%, mode=ai_safe, mappedCapabilities=5, mappedFlows=46, summary=17 HIGH Codacy issue(s) remain in scripts/__parts__/obsidian-mirror-daemon-content.mjs.
-- codacy/static_hotspot: impact=55%, mode=ai_safe, mappedCapabilities=4, mappedFlows=4, summary=5 HIGH Codacy issue(s) remain in scripts/__parts__/obsidian-mirror-daemon-utils.mjs.
-- codacy/static_hotspot: impact=55%, mode=observation_only, mappedCapabilities=4, mappedFlows=4, summary=1 HIGH Codacy issue(s) remain in package.json.
+- codacy/static_hotspot: impact=80%, mode=ai_safe, mappedCapabilities=6, mappedFlows=33, summary=7 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.
+- codacy/static_hotspot: impact=55%, mode=ai_safe, mappedCapabilities=5, mappedFlows=84, summary=17 HIGH Codacy issue(s) remain in scripts/__parts__/obsidian-mirror-daemon-content.mjs.
+- codacy/static_hotspot: impact=55%, mode=ai_safe, mappedCapabilities=4, mappedFlows=6, summary=5 HIGH Codacy issue(s) remain in scripts/__parts__/obsidian-mirror-daemon-utils.mjs.
+- codacy/static_hotspot: impact=55%, mode=ai_safe, mappedCapabilities=195, mappedFlows=85, summary=1 HIGH Codacy issue(s) remain in backend/src/meta/__parts__/meta-auth-helpers.ts.
+- codacy/static_hotspot: impact=55%, mode=ai_safe, mappedCapabilities=180, mappedFlows=85, summary=1 HIGH Codacy issue(s) remain in backend/src/meta/__parts__/meta-oauth-url.helpers.ts.
+- codacy/static_hotspot: impact=55%, mode=observation_only, mappedCapabilities=4, mappedFlows=6, summary=1 HIGH Codacy issue(s) remain in package.json.
 - codacy/static_hotspot: impact=55%, mode=ai_safe, mappedCapabilities=2, mappedFlows=0, summary=2 HIGH Codacy issue(s) remain in scripts/__parts__/obsidian-mirror-daemon-indexes.mjs.
 - github/pull_request_change: impact=68%, mode=observation_only, mappedCapabilities=0, mappedFlows=0, summary=chore: release 0.4.0
 
 ## Product Identity
 
-- Current checkpoint: The current product-facing system materializes 423 partial capability(ies), 0 latent capability(ies), 0 phantom capability(ies). System-wide phantom capability count is 1.
-- Inferred product: If the currently connected structures converge, the product resolves toward a unified operational platform centered on Analytics, Anuncios/Ads, Auth, Autopilot, Billing, Campaigns, Checkout, CIA/Agent, CRM, Dashboard, Followups, Inbox/Chat, Onboarding, Partnerships, Products, Sales/Vendas, Scrapers, Video/Voice, Marketing, Account, Area, Canvas, Carteira.
-- Projected checkpoint: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 423/423 capability(ies) and 48/48 flow(s) at least partially real, with readiness yellow.
-- Distance: Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 1 system-wide phantom capability(ies), 0 phantom flow(s), 46 structural parity gap(s), and 2225 HIGH Codacy issue(s).
+- Current checkpoint: The current product-facing system materializes 421 partial capability(ies), 0 latent capability(ies). System-wide phantom capability count is 0.
+- Inferred product: If the currently connected structures converge, the product resolves toward a unified operational platform centered on Analytics, Autopilot, Billing, Campaigns, Checkout, CIA/Agent, CRM, Dashboard, Followups, Inbox/Chat, Onboarding, Partnerships, Products, Sales/Vendas, Scrapers, Settings, Account, Canvas, Carteira, Cookies, Ferramentas, Launch, Media, Parcerias.
+- Projected checkpoint: If the currently connected partial and latent structures converge without introducing new phantom paths, the product projects to 421/421 capability(ies) and 86/86 flow(s) at least partially real, with readiness yellow.
+- Distance: Distance to projected readiness is driven by 0 product-facing phantom capability(ies), 0 system-wide phantom capability(ies), 0 phantom flow(s), 39 structural parity gap(s), and 2225 HIGH Codacy issue(s).
 
 ## Product Surfaces
 
-- Analytics: status=partial, completion=100%, capabilities=167, flows=46
-- Anuncios/Ads: status=partial, completion=100%, capabilities=206, flows=46, blocker=Missing structural roles: interface, orchestration, side_effect.
-- Auth: status=partial, completion=100%, capabilities=172, flows=46, blocker=Missing structural roles: interface, persistence.
-- Autopilot: status=partial, completion=100%, capabilities=195, flows=46
-- Billing: status=partial, completion=100%, capabilities=10, flows=46
-- Campaigns: status=partial, completion=100%, capabilities=170, flows=46
-- Checkout: status=partial, completion=100%, capabilities=177, flows=46
-- CIA/Agent: status=partial, completion=100%, capabilities=177, flows=46
-- CRM: status=partial, completion=100%, capabilities=169, flows=46
-- Dashboard: status=partial, completion=100%, capabilities=7, flows=46
-- Followups: status=partial, completion=100%, capabilities=225, flows=46
-- Inbox/Chat: status=partial, completion=100%, capabilities=8, flows=46
+- Analytics: status=partial, completion=100%, capabilities=159, flows=85
+- Autopilot: status=partial, completion=100%, capabilities=195, flows=85
+- Billing: status=partial, completion=100%, capabilities=10, flows=84
+- Campaigns: status=partial, completion=100%, capabilities=162, flows=85
+- Checkout: status=partial, completion=100%, capabilities=174, flows=85
+- CIA/Agent: status=partial, completion=100%, capabilities=178, flows=85
+- CRM: status=partial, completion=100%, capabilities=150, flows=85
+- Dashboard: status=partial, completion=100%, capabilities=7, flows=84
+- Followups: status=partial, completion=100%, capabilities=195, flows=85
+- Inbox/Chat: status=partial, completion=100%, capabilities=8, flows=84
+- Onboarding: status=partial, completion=100%, capabilities=151, flows=85
+- Partnerships: status=partial, completion=100%, capabilities=151, flows=85
 
 ## Experience Projection
 
@@ -138,49 +138,52 @@
 
 ## Promise To Production Delta
 
-- Declared surfaces: 38
-- Real surfaces: 28
-- Partial surfaces: 0
-- Latent surfaces: 0
-- Phantom surfaces: 10
+- Declared surfaces: 39
+- Real surfaces: 27
+- Partial surfaces: 12
+- Latent surfaces: 12
+- Phantom surfaces: 12
 - Critical gaps:
-  - Cookies: phantom surface with incomplete materialization.
-  - Parcerias: phantom surface with incomplete materialization.
-  - Pay: phantom surface with incomplete materialization.
-  - Privacy: phantom surface with incomplete materialization.
-  - Produtos: phantom surface with incomplete materialization.
-  - Terms: phantom surface with incomplete materialization.
-  - Tools: phantom surface with incomplete materialization.
+  - Anuncios/Ads: Missing structural roles: interface, orchestration, side_effect.
+  - Auth: Missing structural roles: interface, persistence.
+  - Marketing: Missing structural roles: interface, persistence, side_effect.
+  - Area: Missing structural roles: interface, persistence.
+  - Pay: latent surface with incomplete materialization.
+  - Privacy: latent surface with incomplete materialization.
+  - Produtos: latent surface with incomplete materialization.
+  - Terms: latent surface with incomplete materialization.
 
 ## Structural Parity Gaps
 
 - Back without front: Audio Synthesize: severity=high, mode=ai_safe, route=/audio/synthesize, summary=Capability Audio Synthesize is structurally live on backend/runtime paths but still lacks an identified product surface.
 - Back without front: Diag Db: severity=high, mode=ai_safe, route=/diag-db, summary=Capability Diag Db is structurally live on backend/runtime paths but still lacks an identified product surface.
 - Flow without validation: (sem texto): severity=high, mode=ai_safe, route=/canvas/generate, summary=Flow (sem texto) is structurally present but still lacks executed validation evidence.
-- Flow without validation: canvas-post-canvas-generate: severity=high, mode=ai_safe, route=/canvas/generate, summary=canvas-post-canvas-generate -> /canvas/modelos still exists as a connected product flow candidate without declared validation/oracle coverage.
-- Front without back: /chat: severity=high, mode=ai_safe, route=/, summary=/chat (api=1, backedData=0/0) still exposes a frontend-facing surface whose backend chain is incomplete or absent.
+- Flow without validation: onDelete: severity=high, mode=ai_safe, route=/canvas/designs/:id, summary=Flow onDelete is structurally present but still lacks executed validation evidence.
+- Front without back: Admin Change: severity=high, mode=ai_safe, summary=Capability Admin Change exposes UI or interaction entry points without an orchestrated backend/materialized effect.
 - Front without back: Autopilot Mission: severity=high, mode=ai_safe, summary=Capability Autopilot Mission exposes UI or interaction entry points without an orchestrated backend/materialized effect.
-- Front without back: Capabilities Capability: severity=high, mode=ai_safe, route=/capabilities, summary=Capability Capabilities Capability exposes UI or interaction entry points without an orchestrated backend/materialized effect.
 - Front without back: Ferramentas Ferramenta: severity=high, mode=ai_safe, summary=Capability Ferramentas Ferramenta exposes UI or interaction entry points without an orchestrated backend/materialized effect.
 - Front without back: Global Error: severity=high, mode=ai_safe, summary=Capability Global Error exposes UI or interaction entry points without an orchestrated backend/materialized effect.
-- Front without back: Health System: severity=high, mode=ai_safe, route=/health/system, summary=Capability Health System exposes UI or interaction entry points without an orchestrated backend/materialized effect.
+- Front without back: Help Section: severity=high, mode=ai_safe, summary=Capability Help Section exposes UI or interaction entry points without an orchestrated backend/materialized effect.
+- Front without back: Kyc Banks: severity=high, mode=ai_safe, route=/kyc/banks, summary=Capability Kyc Banks exposes UI or interaction entry points without an orchestrated backend/materialized effect.
 
 ## Execution Matrix
 
 - Coverage: 100% classified, unknown=0, criticalUnobserved=0
 - matrix:capability:capability:abi-ab: status=untested, truth=inferred, mode=governed_validation, route=n/a, breakpoint=Path is structurally inferred but lacks observed runtime, flow, actor, browser, or external evidence.
-- matrix:capability:capability:abi-builder: status=inferred_only, truth=inferred, mode=governed_validation, route=/brain/decide, breakpoint=Path is structurally inferred but lacks observed runtime, flow, actor, browser, or external evidence.
+- matrix:capability:capability:abi-builder: status=inferred_only, truth=inferred, mode=governed_validation, route=/kloel/onboarding/:workspaceId/chat, breakpoint=Path is structurally inferred but lacks observed runtime, flow, actor, browser, or external evidence.
+- matrix:capability:capability:abi-snapshot: status=untested, truth=inferred, mode=governed_validation, route=n/a, breakpoint=Path is structurally inferred but lacks observed runtime, flow, actor, browser, or external evidence.
+- matrix:capability:capability:account: status=inferred_only, truth=inferred, mode=governed_validation, route=n/a, breakpoint=Path is structurally inferred but lacks observed runtime, flow, actor, browser, or external evidence.
 - matrix:capability:capability:account-agent: status=inferred_only, truth=inferred, mode=governed_validation, route=n/a, breakpoint=Path is structurally inferred but lacks observed runtime, flow, actor, browser, or external evidence.
-- matrix:capability:capability:ad-rules: status=observed_fail, truth=observed, mode=governed_validation, route=/ad-rules, breakpoint=1 HIGH Codacy issue(s) remain in backend/src/meta/__parts__/meta-auth-helpers.ts.
-- matrix:capability:capability:admin-accounts: status=observed_fail, truth=observed, mode=governed_validation, route=/accounts/${encodeURIComponent(workspaceId)}, breakpoint=1 HIGH Codacy issue(s) remain in backend/src/meta/__parts__/meta-auth-helpers.ts.
-- matrix:capability:capability:admin-audit: status=observed_fail, truth=observed, mode=governed_validation, route=/ad-rules, breakpoint=1 HIGH Codacy issue(s) remain in backend/src/meta/__parts__/meta-auth-helpers.ts.
-- matrix:capability:capability:admin-auth: status=observed_fail, truth=observed, mode=governed_validation, route=/ad-rules, breakpoint=1 HIGH Codacy issue(s) remain in backend/src/meta/__parts__/meta-auth-helpers.ts.
+- matrix:capability:capability:ad-rules: status=inferred_only, truth=inferred, mode=governed_validation, route=/ad-rules, breakpoint=Path is structurally inferred but lacks observed runtime, flow, actor, browser, or external evidence.
+- matrix:capability:capability:admin-accounts: status=inferred_only, truth=inferred, mode=governed_validation, route=/accounts/${encodeURIComponent(workspaceId)}, breakpoint=Path is structurally inferred but lacks observed runtime, flow, actor, browser, or external evidence.
+- matrix:capability:capability:admin-audit: status=inferred_only, truth=inferred, mode=governed_validation, route=/ad-rules/:id, breakpoint=Path is structurally inferred but lacks observed runtime, flow, actor, browser, or external evidence.
+- matrix:capability:capability:admin-auth: status=inferred_only, truth=inferred, mode=governed_validation, route=/ad-rules/:id, breakpoint=Path is structurally inferred but lacks observed runtime, flow, actor, browser, or external evidence.
 - matrix:capability:capability:admin-brain: status=inferred_only, truth=inferred, mode=governed_validation, route=/admin/brain/spine-audit, breakpoint=Path is structurally inferred but lacks observed runtime, flow, actor, browser, or external evidence.
-- matrix:capability:capability:admin-carteira: status=observed_fail, truth=observed, mode=governed_validation, route=/ad-rules, breakpoint=1 HIGH Codacy issue(s) remain in backend/src/meta/__parts__/meta-auth-helpers.ts.
-- matrix:capability:capability:admin-chat: status=observed_fail, truth=observed, mode=governed_validation, route=/ad-rules, breakpoint=1 HIGH Codacy issue(s) remain in backend/src/meta/__parts__/meta-auth-helpers.ts.
 
 ## Capability Maturity
 
+- Admin Change: stage=connected, score=30%, missing=api_surface, orchestration, persistence, side_effect
+- Admin Mfa: stage=connected, score=30%, missing=api_surface, orchestration, persistence, side_effect
 - Ai Insights: stage=connected, score=30%, missing=api_surface, orchestration, persistence, side_effect
 - Ai Section: stage=connected, score=30%, missing=api_surface, orchestration, persistence, side_effect
 - Area Slug: stage=connected, score=30%, missing=api_surface, orchestration, persistence, side_effect
@@ -189,16 +192,12 @@
 - Autopilot Overview: stage=connected, score=30%, missing=api_surface, orchestration, persistence, side_effect
 - Billing Form: stage=connected, score=30%, missing=api_surface, orchestration, persistence, side_effect
 - Checkout Bundles: stage=connected, score=30%, missing=api_surface, orchestration, persistence, side_effect
-- Checkout Editor: stage=connected, score=30%, missing=api_surface, orchestration, persistence, side_effect
-- Cognitive Section: stage=connected, score=30%, missing=api_surface, orchestration, persistence, side_effect
 
 ## Top Blockers
 
 - github_actions/deploy_failure: Deploy Production failed in GitHub Actions.
 - github_actions/deploy_failure: Deploy Staging failed in GitHub Actions.
 - codacy/static_hotspot: 7 HIGH Codacy issue(s) remain in backend/prisma/migrations/20251209150035_init_baseline/migration.sql.
-- codacy/static_hotspot: 1 HIGH Codacy issue(s) remain in backend/src/meta/__parts__/meta-auth-helpers.ts.
-- codacy/static_hotspot: 1 HIGH Codacy issue(s) remain in backend/src/meta/__parts__/meta-oauth-url.helpers.ts.
 - github_actions/build_failure: CI failed in GitHub Actions.
 - github_actions/build_failure: Dependabot Auto Merge failed in GitHub Actions.
 - github_actions/build_failure: CodeQL failed in GitHub Actions.
@@ -224,6 +223,8 @@
 - github/pull_request_change: chore(deps): bump protobufjs from 7.5.5 to 7.5.8 in /backend in the npm_and_yarn group across 1 directory
 - codacy/static_hotspot: 17 HIGH Codacy issue(s) remain in scripts/__parts__/obsidian-mirror-daemon-content.mjs.
 - codacy/static_hotspot: 5 HIGH Codacy issue(s) remain in scripts/__parts__/obsidian-mirror-daemon-utils.mjs.
+- codacy/static_hotspot: 1 HIGH Codacy issue(s) remain in backend/src/meta/__parts__/meta-auth-helpers.ts.
+- codacy/static_hotspot: 1 HIGH Codacy issue(s) remain in backend/src/meta/__parts__/meta-oauth-url.helpers.ts.
 - codacy/static_hotspot: 1 HIGH Codacy issue(s) remain in package.json.
 - codacy/static_hotspot: 2 HIGH Codacy issue(s) remain in scripts/__parts__/obsidian-mirror-daemon-indexes.mjs.
 - github/recent_change: Merge pull request #301 from danielgonzagat/fix/meta-marketing-oauth-domains feat(meta): make Marketing > WhatsApp/Facebook/Instagram OAuth robust + diagnose-able
@@ -247,22 +248,21 @@
 - github/recent_change: feat(meta): pin OAuth redirect via META_OAUTH_REDIRECT_URI override Make the URL Meta sees for `redirect_uri` independent of BACKEND_URL heuristics. Resolution order is now: 1. META_OAUTH_REDIRECT_URI (full URL — recommended in prod) 2. ...
 - github/recent_change: feat(frontend): allow NEXT_PUBLIC_PROD_ROOT_DOMAIN to override kloel.com The prod root domain was hardcoded, blocking white-label / staging clones and forcing the Meta panel of every install to whitelist kloel.com. Read from NEXT_PUBLIC_...
 - github/pull_request: fix(meta): use backend callback for OAuth
-- Cookies: phantom surface with incomplete materialization.
-- Parcerias: phantom surface with incomplete materialization.
-- Pay: phantom surface with incomplete materialization.
-- Privacy: phantom surface with incomplete materialization.
-- Produtos: phantom surface with incomplete materialization.
+- Anuncios/Ads: Missing structural roles: interface, orchestration, side_effect.
+- Auth: Missing structural roles: interface, persistence.
+- Marketing: Missing structural roles: interface, persistence, side_effect.
+- Area: Missing structural roles: interface, persistence.
 
 ## Next Work
 
 - [P0] UI without persistence: /autopilot | impact=transformational | mode=ai_safe | evidence=observed/high | risk=high | Converts a user-facing illusion into a real product chain for /.
 - [P0] UI without persistence: /checkout/:planId | impact=transformational | mode=ai_safe | evidence=observed/high | risk=high | Converts a user-facing illusion into a real product chain for /.
-- [P0] Front without back: /chat | impact=transformational | mode=ai_safe | evidence=observed/high | risk=high | Converts a user-facing illusion into a real product chain for /.
-- [P0] UI without persistence: /chat | impact=transformational | mode=ai_safe | evidence=observed/high | risk=high | Converts a user-facing illusion into a real product chain for /.
-- [P0] Recover Customer Whatsapp And Inbox | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=critical | Closes pending asynchronous evidence for Customer Whatsapp And Inbox so convergence is based on settled world-state proof.
 - [P0] Recover Operator Autopilot Run | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=critical | Closes pending asynchronous evidence for Operator Autopilot Run so convergence is based on settled world-state proof.
-- [P0] Recover Admin Whatsapp Session Control | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=critical | Closes pending asynchronous evidence for Admin Whatsapp Session Control so convergence is based on settled world-state proof.
+- [P0] Recover Customer Whatsapp And Inbox | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=critical | Closes pending asynchronous evidence for Customer Whatsapp And Inbox so convergence is based on settled world-state proof.
 - [P0] Recover Operator Campaigns And Flows | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=critical | Closes pending asynchronous evidence for Operator Campaigns And Flows so convergence is based on settled world-state proof.
+- [P0] Recover Admin Whatsapp Session Control | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=critical | Closes pending asynchronous evidence for Admin Whatsapp Session Control so convergence is based on settled world-state proof.
+- [P0] UI without persistence: /cia | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=high | Converts a user-facing illusion into a real product chain for /.
+- [P0] UI without persistence: /marketing/facebook | impact=transformational | mode=ai_safe | evidence=inferred/medium | risk=high | Converts a user-facing illusion into a real product chain for /.
 
 ## Cross-Artifact Consistency
 

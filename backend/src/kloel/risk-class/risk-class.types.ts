@@ -26,11 +26,7 @@ export interface ActionDescriptor {
 
 export type RiskClass = 'R1' | 'R2' | 'R3' | 'R4';
 
-export type AutonomyMode =
-  | 'allowed_alone'
-  | 'requires_approval'
-  | 'must_escalate'
-  | 'forbidden';
+export type AutonomyMode = 'allowed_alone' | 'requires_approval' | 'must_escalate' | 'forbidden';
 
 export type EvidenceLevel = 'N1' | 'N2' | 'N3' | 'N4' | 'N5' | 'N6';
 

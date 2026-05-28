@@ -9,7 +9,6 @@ import { Logger } from '@nestjs/common';
  * as SendMessageOptions before delegating.
  */
 
-
 import { OpsAlertService } from '../../observability/ops-alert.service';
 import { WahaProvider } from './waha.provider';
 import { WhatsAppApiProvider } from './whatsapp-api.provider';
@@ -25,6 +24,13 @@ export interface MessagingDeps {
   readRecord: (value: unknown) => UnknownRecord;
 }
 
+/**
+ * @canonical-status delegate — Wave 22 canonicalization
+ * @canonical-path backend/src/whatsapp/providers/provider-send-message.helpers.ts::sendMessage
+ * @notes Thin wrapper that remaps MessagingDeps -> SendMessageDeps; the leaf
+ *        that actually hits WAHA/Meta Cloud API lives in the canonical path.
+ *        Long-term: route through backend/src/kloel/channel-transport.registry.ts.
+ */
 export async function sendMessage(
   deps: MessagingDeps,
   workspaceId: string,

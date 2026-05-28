@@ -52,7 +52,7 @@ export function toInputJsonValue(value: unknown): Prisma.InputJsonValue {
       Object.entries(value as Record<string, unknown>)
         .filter(([, entry]) => typeof entry !== 'undefined')
         .map(([key, entry]) => [key, toInputJsonValue(entry)]),
-    ) as Prisma.InputJsonObject;
+    );
   }
   return String(value);
 }

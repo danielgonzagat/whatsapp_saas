@@ -10,18 +10,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { forEachSequential } from '../common/async-sequence';
-import { WorkspaceGuard } from '../common/guards/workspace.guard';
-import { getTraceHeaders } from '../common/trace-headers';
-import {
-  buildListUnsubscribeHeader,
-  buildUnsubscribeFooterHtml,
-} from '../common/utils/unsubscribe-footer.util';
-import { PrismaService } from '../prisma/prisma.service';
-
-import { RouteClass } from '../common/throttler/route-class.decorator';
 import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
-import { NAME_RE } from '../common/regex';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { RouteClass } from '../common/throttler/route-class.decorator';
+import { EmailCampaignService } from '../kloel/email-campaign.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 const CHANNELS = ['WHATSAPP', 'INSTAGRAM', 'MESSENGER', 'EMAIL', 'TIKTOK'];
 
@@ -428,95 +421,22 @@ export class MarketingController {
       };
     }
 
-    // Since this controller doesn't inject EmailCampaignService, we use a simpler approach
-    // Just validate and forward - the actual sending uses the same Resend/SendGrid infra
-    const fromEmail = process.env.EMAIL_FROM || 'noreply@kloel.com';
-    const provider = process.env.RESEND_API_KEY
-      ? 'resend'
-      : process.env.SENDGRID_API_KEY
-        ? 'sendgrid'
-        : 'log';
+    const emailCampaign = new EmailCampaignService();
+    const provider = emailCampaign.resolveDelivery().provider;
 
     this.logger.log(
       `Email campaign "${sendBody.campaignName || subject}" to ${recipients.length} recipients via ${provider}`,
     );
 
-    let sent = 0;
-    let failed = 0;
-
-    await forEachSequential(recipients, async (recipient) => {
-      const personalizedBody = htmlTemplate.replace(NAME_RE, recipient.name || 'Cliente');
-      const footerHtml = buildUnsubscribeFooterHtml({
-        email: recipient.email,
-        workspaceId,
-      });
-      const htmlWithUnsub = `${personalizedBody}${footerHtml}`;
-
-      const listUnsubscribe = buildListUnsubscribeHeader({
-        email: recipient.email,
-        workspaceId,
-      });
-      const emailHeaders = {
-        'List-Unsubscribe': listUnsubscribe,
-        'List-Unsubscribe-Post': `List-Unsubscribe=One-Click`,
-      };
-
-      try {
-        if (provider === 'resend') {
-          // Not SSRF: hardcoded Resend API endpoint
-          const res = await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: {
-              ...getTraceHeaders(),
-              Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              from: fromEmail,
-              to: recipient.email,
-              subject,
-              html: htmlWithUnsub,
-              headers: emailHeaders,
-            }),
-            signal: AbortSignal.timeout(30000),
-          });
-          if (res.ok) {
-            sent += 1;
-          } else {
-            failed += 1;
-          }
-        } else if (provider === 'sendgrid') {
-          // Not SSRF: hardcoded SendGrid API endpoint
-          const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
-            method: 'POST',
-            headers: {
-              ...getTraceHeaders(),
-              Authorization: `Bearer ${process.env.SENDGRID_API_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              personalizations: [{ to: [{ email: recipient.email }], headers: emailHeaders }],
-              from: { email: fromEmail },
-              subject,
-              content: [{ type: 'text/html', value: htmlWithUnsub }],
-            }),
-            signal: AbortSignal.timeout(30000),
-          });
-          if (res.ok || res.status === 202) {
-            sent += 1;
-          } else {
-            failed += 1;
-          }
-        } else {
-          this.logger.log(`[DEV] Would send to ${recipient.email}: ${subject}`);
-          sent += 1;
-        }
-        // Rate limit: 100ms between sends
-        await new Promise((r) => setTimeout(r, 100));
-      } catch {
-        failed += 1;
-      }
+    const campaignResult = await emailCampaign.sendCampaign({
+      workspaceId,
+      subject,
+      html: htmlTemplate,
+      recipients,
+      ...(sendBody.campaignName ? { campaignName: sendBody.campaignName } : {}),
     });
+    const sent = campaignResult.sent;
+    const failed = campaignResult.failed;
 
     await this.prisma.approvalRequest.updateMany({
       where: { id: approvalRequestId, workspaceId, state: 'APPROVED' },

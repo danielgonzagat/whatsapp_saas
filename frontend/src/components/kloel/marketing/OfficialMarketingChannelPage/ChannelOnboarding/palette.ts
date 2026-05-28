@@ -212,6 +212,12 @@ export const CHANNEL_COPY: Record<ChannelKey, ChannelCopy> = {
     verb: 'Vincular conta',
     awakeName: 'TikTok',
   },
+  'google-ads': {
+    provider: 'GOOGLE ADS',
+    sub: 'OAUTH OFICIAL · SOMENTE LEITURA',
+    verb: 'Vincular conta',
+    awakeName: 'Google Ads',
+  },
   facebook: {
     provider: 'META BUSINESS',
     sub: 'PÁGINA COMERCIAL · MESSENGER',

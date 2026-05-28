@@ -87,11 +87,29 @@ describe('BrainRuntimeService', () => {
       maybeGenerateThreadTitle: jest.fn().mockResolvedValue('Produto novo'),
     };
     executor = {
-      listProducts: jest.fn().mockResolvedValue({ ok: true, data: [{ id: 'p1', name: 'Produto A', price: 9900, active: true }] }),
+      listProducts: jest.fn().mockResolvedValue({
+        ok: true,
+        data: [{ id: 'p1', name: 'Produto A', price: 9900, active: true }],
+      }),
       listConversations: jest.fn().mockResolvedValue({ ok: true, data: [] }),
-      queryRevenueSummary: jest.fn().mockResolvedValue({ ok: true, data: { totalRevenue: 50000, ticketMedio: 5000, totalCount: 10, paidCount: 8, conversao: 80, periodDays: 30 } }),
-      searchContact: jest.fn().mockResolvedValue({ ok: true, data: [{ name: 'Joao', phone: '1199999' }] }),
-      sendMessageViaChannel: jest.fn().mockResolvedValue({ ok: true, data: { phone: '1199999', messagePreview: 'Ola', channel: 'whatsapp' } }),
+      queryRevenueSummary: jest.fn().mockResolvedValue({
+        ok: true,
+        data: {
+          totalRevenue: 50000,
+          ticketMedio: 5000,
+          totalCount: 10,
+          paidCount: 8,
+          conversao: 80,
+          periodDays: 30,
+        },
+      }),
+      searchContact: jest
+        .fn()
+        .mockResolvedValue({ ok: true, data: [{ name: 'Joao', phone: '1199999' }] }),
+      sendMessageViaChannel: jest.fn().mockResolvedValue({
+        ok: true,
+        data: { phone: '1199999', messagePreview: 'Ola', channel: 'whatsapp' },
+      }),
     };
     service = new BrainRuntimeService(
       unifiedAgent as never,
@@ -298,15 +316,11 @@ describe('BrainRuntimeService', () => {
     expect(events.record).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'capability.executed', status: 'executed' }),
     );
-    expect(events.record).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'brain.decide' }),
-    );
+    expect(events.record).toHaveBeenCalledWith(expect.objectContaining({ action: 'brain.decide' }));
     expect(result.intent).toBe('list_products');
     expect(result.confidence).toBe(1);
     expect(result.actions).toHaveLength(1);
-    expect(result.actions[0]).toEqual(
-      expect.objectContaining({ tool: 'list_products' }),
-    );
+    expect(result.actions[0]).toEqual(expect.objectContaining({ tool: 'list_products' }));
   });
 
   it('dispatches query_revenue_summary operator intent to executor', async () => {

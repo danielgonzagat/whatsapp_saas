@@ -1,0 +1,75 @@
+{
+  "$schema": "https://docs.datadoghq.com/api/latest/monitors/",
+  "description": "Monitor-as-code for kloel production observability. Consumed by scripts/ops/sync-datadog-monitors.mjs which keeps Datadog state in sync with this file via the Datadog REST API.",
+  "monitors": [
+    {
+      "name": "kloel.backend.p99_latency > 2s",
+      "type": "metric alert",
+      "query": "avg(last_5m):avg:trace.express.request.duration.by.service{service:kloel-backend,env:production}.as_count() > 2000",
+      "message": "Backend p99 latency exceeded 2s in last 5min. @oncall-kloel",
+      "tags": ["service:kloel-backend", "env:production", "team:platform", "tier:0"],
+      "priority": 2,
+      "options": {
+        "thresholds": { "critical": 2000, "warning": 1500 },
+        "notify_no_data": false,
+        "no_data_timeframe": 10,
+        "include_tags": true,
+        "renotify_interval": 30
+      }
+    },
+    {
+      "name": "kloel.backend.error_rate > 1%",
+      "type": "metric alert",
+      "query": "sum(last_5m):sum:trace.express.request.errors{service:kloel-backend,env:production}.as_count() / sum:trace.express.request.hits{service:kloel-backend,env:production}.as_count() > 0.01",
+      "message": "Backend error rate over 1% in last 5min. Triage at https://kloel-inteligencia-comercial-a.sentry.io @oncall-kloel",
+      "tags": ["service:kloel-backend", "env:production", "team:platform", "tier:0"],
+      "priority": 2,
+      "options": { "thresholds": { "critical": 0.01, "warning": 0.005 }, "notify_no_data": false, "renotify_interval": 30 }
+    },
+    {
+      "name": "kloel.queue.autopilot_jobs_depth > 1000",
+      "type": "metric alert",
+      "query": "avg(last_5m):avg:bullmq.queue.waiting{queue:autopilot-jobs,env:production} > 1000",
+      "message": "BullMQ autopilot-jobs queue is backing up (> 1000 waiting). Worker may be stuck or rate-limited. @oncall-kloel",
+      "tags": ["service:kloel-worker", "env:production", "team:platform", "tier:1"],
+      "priority": 3,
+      "options": { "thresholds": { "critical": 1000, "warning": 500 }, "notify_no_data": false, "renotify_interval": 60 }
+    },
+    {
+      "name": "kloel.postgres.pool_saturation > 80%",
+      "type": "metric alert",
+      "query": "avg(last_5m):avg:postgres.connections.active{db:kloel,env:production} / avg:postgres.connections.max{db:kloel,env:production} > 0.8",
+      "message": "Postgres connection pool over 80% saturated. Risk: lookups stall. @oncall-kloel",
+      "tags": ["service:kloel-backend", "env:production", "team:platform", "tier:1"],
+      "priority": 3,
+      "options": { "thresholds": { "critical": 0.8, "warning": 0.65 }, "notify_no_data": false, "renotify_interval": 30 }
+    },
+    {
+      "name": "kloel.redis.evictions > 0",
+      "type": "metric alert",
+      "query": "sum(last_5m):sum:redis.keys.evicted{env:production}.as_count() > 0",
+      "message": "Redis is evicting keys — memory pressure. Cache hit rate will degrade. @oncall-kloel",
+      "tags": ["service:kloel-backend", "env:production", "team:platform", "tier:1"],
+      "priority": 3,
+      "options": { "thresholds": { "critical": 0, "warning": 0 }, "notify_no_data": false, "renotify_interval": 60 }
+    },
+    {
+      "name": "kloel.stripe.webhook_error_rate > 5%",
+      "type": "metric alert",
+      "query": "sum(last_15m):sum:trace.express.request.errors{service:kloel-backend,resource_name:post_/webhook/payment,env:production}.as_count() / sum:trace.express.request.hits{service:kloel-backend,resource_name:post_/webhook/payment,env:production}.as_count() > 0.05",
+      "message": "Stripe webhook handler erroring > 5%. Possible signature drift or downstream service down. @oncall-kloel",
+      "tags": ["service:kloel-backend", "env:production", "team:payments", "tier:0"],
+      "priority": 1,
+      "options": { "thresholds": { "critical": 0.05, "warning": 0.02 }, "notify_no_data": true, "no_data_timeframe": 60, "renotify_interval": 15 }
+    },
+    {
+      "name": "kloel.whatsapp.send_error_rate > 10%",
+      "type": "metric alert",
+      "query": "sum(last_15m):sum:kloel.whatsapp.send.failed{env:production}.as_count() / sum:kloel.whatsapp.send.total{env:production}.as_count() > 0.10",
+      "message": "WhatsApp send error rate over 10%. Channel may be banned, rate-limited, or provider degraded. @oncall-kloel",
+      "tags": ["service:kloel-worker", "env:production", "team:messaging", "tier:1"],
+      "priority": 2,
+      "options": { "thresholds": { "critical": 0.10, "warning": 0.05 }, "notify_no_data": false, "renotify_interval": 30 }
+    }
+  ]
+}

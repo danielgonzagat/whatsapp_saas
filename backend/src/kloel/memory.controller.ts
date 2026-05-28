@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { MemoryService } from './memory.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import { clampLimit } from '../common/pagination-clamp.pipe';
 
 /** Memory controller. */
 @ApiTags('KLOEL Memory')
@@ -41,7 +42,7 @@ export class MemoryController {
     @Param('workspaceId') workspaceId: string,
     @Body() body: { query: string; limit?: number; category?: string },
   ) {
-    const clampedSearchLimit = Math.min(Math.max(Number(body.limit) || 5, 1), 100);
+    const clampedSearchLimit = clampLimit(body.limit, { default: 5 });
     return this.memoryService.searchMemory(
       workspaceId,
       body.query,

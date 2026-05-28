@@ -6,6 +6,8 @@ import { messageTemplate, toStableString } from './mind-decision-baselines';
 import { MindPolicyService } from './mind-policy.service';
 import { MindPredictorService } from './mind-predictor.service';
 import { MindSurpriseService } from './mind-surprise.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { randomUUID } from 'crypto';
 import type { MindPerceptEvent } from './mind.types';
 
 interface MindEventProcessResult {
@@ -36,6 +38,7 @@ export class MindEventProcessorService {
     private readonly policy: MindPolicyService,
     private readonly cases: MindCaseMemoryService,
     private readonly concepts: MindConceptService,
+    private readonly prisma: PrismaService,
   ) {
     this.logger.debug?.(`MindEventProcessorService initialized`);
   }
@@ -128,6 +131,14 @@ export class MindEventProcessorService {
         ['audio_vs_text', 'message_format', 'tom', 'channel_choice'],
         1,
       );
+
+      // CIA Gap 4 Phase 2 — delayed outcome confidence from message.received
+      const contactId = event.subject.slice('contact:'.length);
+      const confResult = await this.policy.confirmAutopilotOutcome({
+        workspaceId: event.workspaceId,
+        contactId,
+      });
+      result.resolved += confResult.confirmed + confResult.unanswered;
     }
   }
 
@@ -221,6 +232,22 @@ export class MindEventProcessorService {
     if (event.kind.startsWith('autopilot.')) {
       const intent = toStableString(event.payload.intent) || 'unknown';
       const action = toStableString(event.payload.action);
+      
+      // ── COGNITIVE BRIDGE: feed every tool execution into belief formation ──
+      const toolCategory = this.classifyToolCategory(intent);
+      if (toolCategory) {
+        try {
+          await this.prisma.mindBelief.upsert({
+            where: { workspaceId_subject_predicate_context: { workspaceId: event.workspaceId, subject: 'workspace', predicate: `tool.${toolCategory}.used`, context: {} } },
+            update: { samples: { increment: 1 }, mean: 1, updatedAt: new Date() },
+            create: { id: randomUUID(), workspaceId: event.workspaceId, subject: 'workspace', predicate: `tool.${toolCategory}.used`, context: {}, mean: 0.5, variance: 0.25, samples: 1, alpha: 1, beta: 1 },
+          });
+          result.beliefsUpdated += 1;
+        } catch (err: unknown) {
+          this.logger.warn(`belief upsert failed for ${toolCategory}: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
+      
       if (AUTOPILOT_SUCCESS_INTENTS.has(intent)) {
         const outcome = intent === 'purchase_intent' ? 1 : 0;
         const predicate =
@@ -299,6 +326,24 @@ export class MindEventProcessorService {
     surprisePromise: Promise<number>,
   ): Promise<void> {
     this.applySurprise(result, await surprisePromise);
+  }
+
+  private classifyToolCategory(toolName: string): string | null {
+    if (toolName.startsWith('create_product') || toolName.startsWith('update_product') || toolName.startsWith('delete_product')) return 'product';
+    if (toolName.startsWith('create_plan') || toolName.startsWith('update_plan') || toolName.startsWith('delete_plan')) return 'plan';
+    if (toolName.startsWith('create_checkout') || toolName.startsWith('update_checkout') || toolName.startsWith('delete_checkout')) return 'checkout';
+    if (toolName.startsWith('create_coupon') || toolName.startsWith('update_coupon') || toolName.startsWith('delete_coupon')) return 'coupon';
+    if (toolName.startsWith('create_payment') || toolName.startsWith('generate_pix') || toolName.startsWith('generate_boleto')) return 'payment';
+    if (toolName.startsWith('create_order') || toolName.startsWith('list_orders')) return 'sale';
+    if (toolName.startsWith('get_wallet') || toolName.startsWith('request_withdrawal') || toolName.startsWith('request_anticipation')) return 'wallet';
+    if (toolName.startsWith('search_agent') || toolName.startsWith('list_leads')) return 'crm';
+    if (toolName.startsWith('git_') || toolName.startsWith('code_') || toolName.startsWith('codegraph_') || toolName.startsWith('search_codebase')) return 'code';
+    if (toolName.startsWith('get_settings') || toolName.startsWith('update_fiscal') || toolName.startsWith('toggle_theme')) return 'config';
+    if (toolName.startsWith('configure_') || toolName.startsWith('update_affiliate') || toolName.startsWith('browse_marketplace')) return 'marketing';
+    if (toolName.startsWith('get_sales') || toolName.startsWith('get_analytics') || toolName.startsWith('get_nps') || toolName.startsWith('get_churn') || toolName.startsWith('get_abandon')) return 'analytics';
+    if (toolName.startsWith('add_url') || toolName.startsWith('update_url') || toolName.startsWith('delete_url') || toolName.startsWith('get_product_urls')) return 'url';
+    if (toolName.startsWith('list_subscriptions') || toolName.startsWith('get_product_reviews')) return 'operations';
+    return 'generic';
   }
 
   private applySurprise(result: MindEventProcessAccumulator, surprise: number): void {

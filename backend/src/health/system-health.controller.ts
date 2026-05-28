@@ -1,5 +1,5 @@
 import { Controller, Get, ServiceUnavailableException, UseGuards } from '@nestjs/common';
-import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AdminAuthGuard } from '../admin/auth/guards/admin-auth.guard';
 import { Public } from '../auth/public.decorator';
 import { SystemHealthService } from './system-health.service';
@@ -15,6 +15,7 @@ export class SystemHealthController {
   @Public()
   @Get()
   @ApiOperation({ summary: 'Liveness probe — process is alive' })
+  @ApiResponse({ status: 200, description: 'Process is alive' })
   liveness() {
     return this.health.liveness();
   }
@@ -22,6 +23,7 @@ export class SystemHealthController {
   @Public()
   @Get('live')
   @ApiOperation({ summary: 'Liveness probe — process is alive' })
+  @ApiResponse({ status: 200, description: 'Process is alive' })
   healthLive() {
     return this.health.liveness();
   }
@@ -29,6 +31,7 @@ export class SystemHealthController {
   @Public()
   @Get('liveness')
   @ApiOperation({ summary: 'Liveness probe — process is alive' })
+  @ApiResponse({ status: 200, description: 'Process is alive' })
   healthLiveness() {
     return this.health.liveness();
   }
@@ -39,6 +42,8 @@ export class SystemHealthController {
     summary:
       'Readiness probe — Postgres, Redis (BullMQ), Stripe, Meta Cloud API, OpenAI, Anthropic',
   })
+  @ApiResponse({ status: 200, description: 'All dependencies are healthy' })
+  @ApiResponse({ status: 503, description: 'One or more dependencies are down' })
   async readiness() {
     const result = await this.health.deepReadiness();
     if (result.status === 'DOWN') {
@@ -54,6 +59,8 @@ export class SystemHealthController {
   @Public()
   @Get('ready')
   @ApiOperation({ summary: 'Readiness probe — DB and Redis available' })
+  @ApiResponse({ status: 200, description: 'DB and Redis are available' })
+  @ApiResponse({ status: 503, description: 'DB or Redis unavailable' })
   async ready() {
     return this.health.readiness();
   }
@@ -61,6 +68,7 @@ export class SystemHealthController {
   @Public()
   @Get('system')
   @ApiOperation({ summary: 'System health — production runtime and queue health' })
+  @ApiResponse({ status: 200, description: 'System health status' })
   async system() {
     return this.health.check();
   }
@@ -71,6 +79,7 @@ export class SystemHealthController {
   @ApiOperation({
     summary: 'Deep diagnostic — admin-only with queue depths and performance metrics',
   })
+  @ApiResponse({ status: 200, description: 'Deep diagnostic results' })
   async deep() {
     return this.health.deepDiagnostic();
   }

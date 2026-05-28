@@ -3,6 +3,7 @@
 import { kloelT } from '@/lib/i18n/t';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import React from 'react';
+import { formatBRL } from '@/lib/common/money';
 
 // ── Site item shape returned by the backend ──
 export interface SiteItem {
@@ -39,10 +40,10 @@ export const TEXT_DIM = KLOEL_THEME.textSecondary;
 export const TEXT_MUTED = KLOEL_THEME.textTertiary;
 
 // ── Helpers ──
-export const Fmt = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}K` : n.toString());
+import { fmtCompact } from '@/lib/common/format';
+export const Fmt = fmtCompact;
 
-export const FmtMoney = (n: number) =>
-  'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+export const FmtMoney = formatBRL;
 
 // ── Icons (SVG arrow functions) ──
 export const IC: Record<string, (s: number) => React.ReactElement> = {

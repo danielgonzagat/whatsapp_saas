@@ -175,14 +175,23 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
       {
         model: resolveBackendOpenAIModel('writer', this.config),
         messages: [{ role: 'user', content: prompt }],
+        max_tokens: 800,
       },
       { maxRetries: 3 },
     );
-    await this.planLimits
-      .trackAiUsage(input.workspaceId, completion?.usage?.total_tokens ?? 500)
-      .catch(() => {});
-    const transcript = completion.choices[0]?.message?.content || '';
-    return { transcript };
+    const tokens = completion?.usage?.total_tokens ?? 500;
+    const rawTranscript = completion.choices[0]?.message?.content || '';
+    this.logger.log(
+      `neuro-crm-simulate ws=${input.workspaceId} model=writer baseLen=${prompt.length} outLen=${rawTranscript.length} tokens=${tokens}`,
+    );
+    await this.planLimits.trackAiUsage(input.workspaceId, tokens).catch(() => {});
+    if (!rawTranscript || rawTranscript.trim().length < 10) {
+      this.logger.warn(
+        `neuro-crm-simulate short output ws=${input.workspaceId} len=${rawTranscript.length}`,
+      );
+      return { transcript: rawTranscript, degraded: true };
+    }
+    return { transcript: rawTranscript };
   }
 
   /** Analyze contact. */
@@ -233,8 +242,7 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
     );
 
     if (result.intent === 'COMPLAINT' || result.sentiment === 'NEGATIVE') {
-      const objectionKind =
-        result.intent === 'COMPLAINT' ? 'complaint' : 'negative_sentiment';
+      const objectionKind = result.intent === 'COMPLAINT' ? 'complaint' : 'negative_sentiment';
       void this.crmEmitter
         ?.emitObjectionRaised(workspaceId, contactId, objectionKind)
         .catch(() => {});

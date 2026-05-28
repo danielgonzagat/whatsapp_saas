@@ -1,3 +1,10 @@
+/** Promise-returning setTimeout. Canonical home for backend `sleep(ms)` —
+ *  three call sites previously had identical local re-implementations
+ *  (idempotency.guard, whatsapp/inbound-processor.helpers, inline-autopilot). */
+export function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /** For each sequential. */
 export async function forEachSequential<T>(
   items: Iterable<T>,

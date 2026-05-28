@@ -1,12 +1,9 @@
 import type { WhatsAppProviderRegistry } from './providers/provider-registry';
 import type { WahaLidMapping } from './providers/whatsapp-api.provider';
 import { whatsappDigits } from '../common/phone';
+export { whatsappDigits as normalizePhoneExt };
 
 const LID_RE = /@lid$/i;
-
-export function normalizePhoneExt(phone: string): string {
-  return whatsappDigits(phone);
-}
 
 export function normalizeTimestampExt(value?: Date | string | number | null): Date | null {
   if (!value && value !== 0) {
@@ -100,7 +97,7 @@ export function isNowebStoreMisconfiguredExt(error: unknown): boolean {
 }
 
 function expandComparablePhoneVariantsExt(phone: string): string[] {
-  const digits = normalizePhoneExt(phone);
+  const digits = whatsappDigits(phone);
   if (!digits) {
     return [];
   }
@@ -149,10 +146,10 @@ export async function resolveCanonicalPhoneExt(
     const mappings = await getLidPnMapExt(deps, workspaceId, lidMapCacheMs, lidMapCache);
     const m = mappings.get(n) || mappings.get(n.replace(LID_RE, '')) || '';
     if (m) {
-      return normalizePhoneExt(m);
+      return whatsappDigits(m);
     }
   }
-  return normalizePhoneExt(n);
+  return whatsappDigits(n);
 }
 
 export async function getLidPnMapExt(
@@ -196,5 +193,5 @@ export function isWorkspaceSelfChatIdExt(
     return false;
   }
   const canonical = resolveCanonicalChatIdExt(n, mappings);
-  return areEquivalentPhonesExt(normalizePhoneExt(canonical), selfPhone);
+  return areEquivalentPhonesExt(whatsappDigits(canonical), selfPhone);
 }

@@ -11,6 +11,7 @@ import {
   resolveDashboardHomeRange,
   sumByBuckets,
 } from './home-aggregation.util';
+import { computeProductRanking } from './dashboard.product-rank.helpers';
 type SetupChecklistItem = {
   key: string;
   completed: boolean;
@@ -384,49 +385,7 @@ export class DashboardService {
       const totalPaid = paidOrdersSeries[index] || 0;
       return totalPaid > 0 ? Math.round(value / totalPaid) : 0;
     });
-    const productStats = new Map<
-      string,
-      {
-        id: string;
-        name: string;
-        status: string;
-        category: string | null;
-        imageUrl: string | null;
-        totalRevenueInCents: number;
-        totalSales: number;
-      }
-    >();
-    currentPaidOrders.forEach((order) => {
-      const product = order.plan?.product;
-      if (!product?.id) {
-        return;
-      }
-      const key = product.id;
-      if (!productStats.has(key)) {
-        productStats.set(key, {
-          id: product.id,
-          name: product.name,
-          status: product.status || (product.active ? 'ACTIVE' : 'DRAFT'),
-          category: product.category || null,
-          imageUrl: product.imageUrl || null,
-          totalRevenueInCents: 0,
-          totalSales: 0,
-        });
-      }
-      const current = productStats.get(key);
-      if (!current) {
-        return;
-      }
-      current.totalRevenueInCents += Number(order.totalInCents || 0);
-      current.totalSales += 1;
-    });
-    const topProducts = Array.from(productStats.values())
-      .sort((left, right) => right.totalRevenueInCents - left.totalRevenueInCents)
-      .slice(0, 4)
-      .map((item, index) => ({
-        ...item,
-        isTop: index === 0,
-      }));
+    const topProducts = computeProductRanking(currentPaidOrders);
     const averageResponseTimeSeconds = computeAverageResponseTimeSeconds(responseMessages);
     const revenueDeltaPct =
       previousRevenueInCents > 0

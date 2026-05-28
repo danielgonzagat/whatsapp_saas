@@ -1,4 +1,4 @@
-import { Injectable, Optional  } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import { OpsAlertService } from '../../observability/ops-alert.service';

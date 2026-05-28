@@ -21,6 +21,7 @@ import {
   SettingsNotice,
   kloelSettingsClass,
 } from './contract';
+import { SettingsStatCard as StatCard } from './SettingsStatCard';
 
 function formatPct(value: number) {
   if (typeof value !== 'number' || Number.isNaN(value)) {
@@ -44,17 +45,7 @@ function formatShortDate(dateIso: string) {
   return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 }
 
-function StatCard(props: { title: string; value: string; hint?: string }) {
-  return (
-    <SettingsMetricTile>
-      <p className="text-xs font-medium text-[var(--app-text-secondary)]">{props.title}</p>
-      <p className="mt-2 text-2xl font-semibold text-[var(--app-text-primary)]">{props.value}</p>
-      {props.hint ? (
-        <p className="mt-1 text-xs text-[var(--app-text-secondary)]">{props.hint}</p>
-      ) : null}
-    </SettingsMetricTile>
-  );
-}
+
 
 /** Analytics settings section. */
 export function AnalyticsSettingsSection() {

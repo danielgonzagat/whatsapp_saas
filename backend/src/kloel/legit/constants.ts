@@ -1,3 +1,4 @@
+import { randomIdSegment } from '../../common/random-id';
 type RegulatedCategory =
   | 'health_claims'
   | 'financial_advice'
@@ -102,7 +103,7 @@ export const REGULATED_CONTENT_DISCLAIMERS: Readonly<Record<RegulatedCategory, s
   restricted_product: 'A venda deste produto esta sujeita a restricoes legais.',
 };
 export function generateId(prefix: string): string {
-  const suffix = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  const suffix = Date.now().toString(36) + randomIdSegment(6);
   return `${prefix}_${suffix}`;
 }
 export function daysUntil(iso: string, nowMs: number): number {

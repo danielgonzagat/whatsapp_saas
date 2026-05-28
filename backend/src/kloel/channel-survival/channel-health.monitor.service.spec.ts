@@ -39,7 +39,13 @@ describe('ChannelHealthMonitorService', () => {
 
   describe('recordEvent', () => {
     it('stores event and increases totalSent', () => {
-      service.recordEvent('wks_1', 'whatsapp', 'commerce.whatsapp.message_replied', new Date().toISOString(), true);
+      service.recordEvent(
+        'wks_1',
+        'whatsapp',
+        'commerce.whatsapp.message_replied',
+        new Date().toISOString(),
+        true,
+      );
       const health = service.getChannelHealth('wks_1', 'whatsapp');
       expect(health.totalSent).toBe(1);
     });
@@ -66,7 +72,13 @@ describe('ChannelHealthMonitorService', () => {
     });
 
     it('returns defaults for unknown workspace', () => {
-      service.recordEvent('wks_1', 'whatsapp', 'commerce.whatsapp.message_replied', new Date().toISOString(), true);
+      service.recordEvent(
+        'wks_1',
+        'whatsapp',
+        'commerce.whatsapp.message_replied',
+        new Date().toISOString(),
+        true,
+      );
       const health = service.getChannelHealth('wks_2', 'whatsapp');
       expect(health.totalSent).toBe(0);
     });
@@ -96,9 +108,27 @@ describe('ChannelHealthMonitorService', () => {
     });
 
     it('rounds to 2 decimal places', () => {
-      service.recordEvent('wks_1', 'whatsapp', 'commerce.whatsapp.message_replied', new Date().toISOString(), true);
-      service.recordEvent('wks_1', 'whatsapp', 'commerce.whatsapp.message_replied', new Date().toISOString(), true);
-      service.recordEvent('wks_1', 'whatsapp', 'commerce.whatsapp.message_replied', new Date().toISOString(), false);
+      service.recordEvent(
+        'wks_1',
+        'whatsapp',
+        'commerce.whatsapp.message_replied',
+        new Date().toISOString(),
+        true,
+      );
+      service.recordEvent(
+        'wks_1',
+        'whatsapp',
+        'commerce.whatsapp.message_replied',
+        new Date().toISOString(),
+        true,
+      );
+      service.recordEvent(
+        'wks_1',
+        'whatsapp',
+        'commerce.whatsapp.message_replied',
+        new Date().toISOString(),
+        false,
+      );
       const health = service.getChannelHealth('wks_1', 'whatsapp');
       expect(health.deliveryRate).toBe(0.67);
       expect(health.errorRate).toBe(0.33);
@@ -156,16 +186,46 @@ describe('ChannelHealthMonitorService', () => {
     });
 
     it('false when fewer events than recent window and balanced', () => {
-      service.recordEvent('wks_1', 'whatsapp', 'commerce.whatsapp.message_replied', new Date().toISOString(), true);
-      service.recordEvent('wks_1', 'whatsapp', 'commerce.whatsapp.message_replied', new Date().toISOString(), false);
+      service.recordEvent(
+        'wks_1',
+        'whatsapp',
+        'commerce.whatsapp.message_replied',
+        new Date().toISOString(),
+        true,
+      );
+      service.recordEvent(
+        'wks_1',
+        'whatsapp',
+        'commerce.whatsapp.message_replied',
+        new Date().toISOString(),
+        false,
+      );
       const health = service.getChannelHealth('wks_1', 'whatsapp');
       expect(health.recentFailureBurst).toBe(false);
     });
 
     it('true when fewer than window but majority fail', () => {
-      service.recordEvent('wks_1', 'whatsapp', 'commerce.whatsapp.message_replied', new Date().toISOString(), false);
-      service.recordEvent('wks_1', 'whatsapp', 'commerce.whatsapp.message_replied', new Date().toISOString(), false);
-      service.recordEvent('wks_1', 'whatsapp', 'commerce.whatsapp.message_replied', new Date().toISOString(), true);
+      service.recordEvent(
+        'wks_1',
+        'whatsapp',
+        'commerce.whatsapp.message_replied',
+        new Date().toISOString(),
+        false,
+      );
+      service.recordEvent(
+        'wks_1',
+        'whatsapp',
+        'commerce.whatsapp.message_replied',
+        new Date().toISOString(),
+        false,
+      );
+      service.recordEvent(
+        'wks_1',
+        'whatsapp',
+        'commerce.whatsapp.message_replied',
+        new Date().toISOString(),
+        true,
+      );
       const health = service.getChannelHealth('wks_1', 'whatsapp');
       expect(health.recentFailureBurst).toBe(true);
     });
@@ -243,21 +303,51 @@ describe('ChannelHealthMonitorService', () => {
 
   describe('policyViolationCount', () => {
     it('counts only failed session_lifecycle events', () => {
-      service.recordEvent('wks_1', 'whatsapp', 'commerce.whatsapp.session_lifecycle', new Date().toISOString(), false);
-      service.recordEvent('wks_1', 'whatsapp', 'commerce.whatsapp.session_lifecycle', new Date().toISOString(), false);
-      service.recordEvent('wks_1', 'whatsapp', 'commerce.whatsapp.session_lifecycle', new Date().toISOString(), true);
+      service.recordEvent(
+        'wks_1',
+        'whatsapp',
+        'commerce.whatsapp.session_lifecycle',
+        new Date().toISOString(),
+        false,
+      );
+      service.recordEvent(
+        'wks_1',
+        'whatsapp',
+        'commerce.whatsapp.session_lifecycle',
+        new Date().toISOString(),
+        false,
+      );
+      service.recordEvent(
+        'wks_1',
+        'whatsapp',
+        'commerce.whatsapp.session_lifecycle',
+        new Date().toISOString(),
+        true,
+      );
       const health = service.getChannelHealth('wks_1', 'whatsapp');
       expect(health.policyViolationCount).toBe(2);
     });
 
     it('does not count failed non-policy events as violations', () => {
-      service.recordEvent('wks_1', 'whatsapp', 'commerce.whatsapp.message_replied', new Date().toISOString(), false);
+      service.recordEvent(
+        'wks_1',
+        'whatsapp',
+        'commerce.whatsapp.message_replied',
+        new Date().toISOString(),
+        false,
+      );
       const health = service.getChannelHealth('wks_1', 'whatsapp');
       expect(health.policyViolationCount).toBe(0);
     });
 
     it('does not count successful session_lifecycle as violation', () => {
-      service.recordEvent('wks_1', 'whatsapp', 'commerce.whatsapp.session_lifecycle', new Date().toISOString(), true);
+      service.recordEvent(
+        'wks_1',
+        'whatsapp',
+        'commerce.whatsapp.session_lifecycle',
+        new Date().toISOString(),
+        true,
+      );
       const health = service.getChannelHealth('wks_1', 'whatsapp');
       expect(health.policyViolationCount).toBe(0);
     });
@@ -265,7 +355,13 @@ describe('ChannelHealthMonitorService', () => {
 
   describe('result shape', () => {
     it('returns all required fields with correct types', () => {
-      service.recordEvent('wks_1', 'whatsapp', 'commerce.whatsapp.message_replied', new Date().toISOString(), true);
+      service.recordEvent(
+        'wks_1',
+        'whatsapp',
+        'commerce.whatsapp.message_replied',
+        new Date().toISOString(),
+        true,
+      );
       const health = service.getChannelHealth('wks_1', 'whatsapp');
       expect(health).toMatchObject({
         totalSent: expectValueOf(Number),

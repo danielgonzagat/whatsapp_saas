@@ -24,6 +24,7 @@ import type { AuthenticatedAdmin } from '../auth/admin-token.types';
 import { forEachSequential } from '../../common/async-sequence';
 import { getDlqQueue, queueRegistry } from '../../queue/queue';
 import { RouteClass } from '../../common/throttler/route-class.decorator';
+import { PaginationLimitPipe, clampLimit } from '../../common/pagination-clamp.pipe';
 
 @Public()
 @Controller('admin/operations/dlq')
@@ -45,10 +46,9 @@ export class DlqController {
   @RequireAdminPermission(AdminModule.CONFIGURACOES, AdminAction.VIEW)
   async listDlq(
     @Param('name') name: string,
-    @Query('limit') limit = '20',
+    @Query('limit', new PaginationLimitPipe({ max: 200 })) limit: number,
     @Query('offset') offset = '0',
   ) {
-    const clampedLimit = Math.min(Math.max(Number(limit) || 20, 1), 200);
     const clampedOffset = Math.max(Number(offset) || 0, 0);
     const dlq = this.getDlq(name);
 
@@ -56,7 +56,7 @@ export class DlqController {
       dlq.getJobs(
         ['waiting', 'failed', 'delayed', 'active'],
         clampedOffset,
-        clampedOffset + clampedLimit - 1,
+        clampedOffset + limit - 1,
       ),
       dlq.getJobCounts('waiting', 'failed', 'delayed', 'active'),
     ]);
@@ -76,7 +76,7 @@ export class DlqController {
           (counts.active ?? 0),
       },
       offset: clampedOffset,
-      limit: clampedLimit,
+      limit,
       jobs: jobs.map((job) => this.serializeJob(job)),
     };
   }
@@ -113,7 +113,7 @@ export class DlqController {
       const results = await Promise.all(jobIds.map((id) => dlq.getJob(id)));
       jobsToReprocess = results.filter((j): j is NonNullable<typeof j> => j !== null);
     } else {
-      const clampedLimit = Math.min(Math.max(Number(limit) || 10, 1), 100);
+      const clampedLimit = clampLimit(limit, { default: 10 });
       jobsToReprocess = await dlq.getJobs(['waiting', 'failed'], 0, clampedLimit - 1);
       jobsToReprocess = jobsToReprocess.filter((j) => j !== null);
     }

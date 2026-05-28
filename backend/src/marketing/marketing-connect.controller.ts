@@ -1,14 +1,6 @@
 import { RouteClass } from '../common/throttler/route-class.decorator';
 import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator';
-import {
-  Body,
-  Controller,
-  Get,
-  Post,
-  Query,
-  Request,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Request, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { TikTokMarketingService } from './tiktok-marketing.service';
@@ -166,6 +158,12 @@ export class MarketingConnectController {
     return this.gmailMailbox.syncLatestInbox(req.user.workspaceId, Number(body.limit || 10));
   }
 
+  /**
+   * @canonical-status test-only — Wave 22 canonicalization
+   * @canonical-path backend/src/marketing/mailbox-gmail-oauth/send.service.ts::sendMessageFromMailbox
+   * @notes Diagnostic endpoint that fires a fixed test email from the connected
+   *        Gmail mailbox; not a production dispatch surface — exercise only.
+   */
   @WebhookEndpoint('Gmail mailbox send-test handler')
   @Post('connect/email/gmail/send-test')
   async sendGmailMailboxTest(
@@ -185,11 +183,7 @@ export class MarketingConnectController {
     @Request() req: { user: { workspaceId: string; email?: string } },
     @Body() body: { toEmail?: string } = {},
   ) {
-    return this.emailConnect.sendTest(
-      req.user.workspaceId,
-      req.user.email ?? '',
-      body.toEmail,
-    );
+    return this.emailConnect.sendTest(req.user.workspaceId, req.user.email ?? '', body.toEmail);
   }
 
   @WebhookEndpoint('Email connection status probe')
@@ -207,7 +201,9 @@ export class MarketingConnectController {
   }
 
   @Get('tiktok/mode')
-  async getTikTokMode(@Request() req: { user: { workspaceId: string } }): Promise<TikTokModeResult> {
+  async getTikTokMode(
+    @Request() req: { user: { workspaceId: string } },
+  ): Promise<TikTokModeResult> {
     const status = await this.tiktokMarketing.getStatus(req.user.workspaceId);
     const expired = status.expired === true;
     return this.tiktokMode.resolveMode(req.user.workspaceId, expired);

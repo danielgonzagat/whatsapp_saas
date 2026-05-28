@@ -33,4 +33,8 @@ export const OPERATOR_CAPABILITIES = [
   'get_analytics',
   'search_agent_memory',
   'search_agent_sessions',
+  'search_code',
+  'read_source_file',
+  'safe_query',
+  'list_capabilities_detail',
 ] as const;

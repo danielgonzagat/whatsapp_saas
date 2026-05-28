@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  ServiceUnavailableException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { StructuredLogger } from '../logging/structured-logger';
 import { getTraceHeaders } from '../common/trace-headers';
@@ -41,15 +37,7 @@ type FacebookMeResponse = {
   };
 };
 
-function sanitizeErrorMessage(error: unknown): string {
-  if (error instanceof Error && error.message.trim()) {
-    return error.message.trim();
-  }
-  if (typeof error === 'string' && error.trim()) {
-    return error.trim();
-  }
-  return 'unknown_error';
-}
+import { sanitizeAuthError as sanitizeErrorMessage } from './sanitize-auth-error.helper';
 
 /** Facebook auth service. */
 @Injectable()

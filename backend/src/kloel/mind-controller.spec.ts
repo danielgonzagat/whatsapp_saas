@@ -5,7 +5,7 @@ import { MindService } from './mind.service';
 import { MindVerbalizerService } from './mind-verbalizer.service';
 import type { AggressivenessDto, DecideDto, ResolveDto } from './mind-controller.dto';
 import { MindObservabilityService } from './mind-observability.service';
-import { MindGuardsService } from './mind-guards.service';
+import { MindGuardsService } from './mind/policy/mind-guards.service';
 import { MindSimulatorService } from './mind-simulator.service';
 import { MindSyntheticGeneratorService } from './mind-synthetic-generator.service';
 import { MindGlobalPriorService } from './mind-global-prior.service';
@@ -400,7 +400,12 @@ describe('MindController', () => {
         confidence: 0.72,
         fallback: false,
       });
-      expect(mind.resolveBestVariant).toHaveBeenCalledWith('ws-1', 'followup', ['a', 'b'], undefined);
+      expect(mind.resolveBestVariant.mock.calls).toContainEqual([
+        'ws-1',
+        'followup',
+        ['a', 'b'],
+        undefined,
+      ]);
     });
 
     it('REFUSES caller (503) when INTERNAL_API_KEY is unset and NODE_ENV=production (fail-closed)', async () => {
@@ -421,7 +426,12 @@ describe('MindController', () => {
       await expect(controller.variantDecision('ws-2', body, 'secret-key')).resolves.toMatchObject({
         variant: 'followup:proof',
       });
-      expect(mind.resolveBestVariant).toHaveBeenCalledWith('ws-2', 'payment_recovery', ['x', 'y'], undefined);
+      expect(mind.resolveBestVariant.mock.calls).toContainEqual([
+        'ws-2',
+        'payment_recovery',
+        ['x', 'y'],
+        undefined,
+      ]);
     });
 
     it('rejects caller with wrong internal key', async () => {
@@ -452,12 +462,15 @@ describe('MindController', () => {
         context: { domain: 'fitness', intent: 'reschedule' },
       } as never;
       await controller.variantDecision('ws-5', body, undefined);
-      expect(mind.resolveBestVariant).toHaveBeenCalledWith(
+      expect(mind.resolveBestVariant.mock.calls).toContainEqual([
         'ws-5',
         'followup',
         ['a'],
-        { domain: 'fitness', intent: 'reschedule' },
-      );
+        {
+          domain: 'fitness',
+          intent: 'reschedule',
+        },
+      ]);
     });
   });
 });

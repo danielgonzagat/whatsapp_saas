@@ -1,9 +1,14 @@
 import { Module, forwardRef } from '@nestjs/common';
+import { GoalFieldModule } from '../kloel/goal-field/goal-field.module';
 import { KloelModule } from '../kloel/kloel.module';
+import { MindModule } from '../kloel/mind/mind.module';
+import { SpineModule } from '../kloel/spine/spine.module';
 import { WhatsappModule } from '../whatsapp/whatsapp.module';
+import { CiaAutonomyAdvisorService } from './cia-autonomy-advisor.service';
 import { CiaBacklogRunService } from './cia-backlog-run.service';
 import { CiaBootstrapService } from './cia-bootstrap.service';
 import { CiaChatFilterService } from './cia-chat-filter.service';
+import { CiaCognitiveHealthService } from './cia-cognitive-health.service';
 import { CiaInlineFallbackService } from './cia-inline-fallback.service';
 import { CiaRemoteBacklogService } from './cia-remote-backlog.service';
 import { CiaRuntimeService } from './cia-runtime.service';
@@ -16,13 +21,21 @@ import { CIA_RUNTIME_SERVICE } from './cia-runtime.port';
 
 /** Cia module. */
 @Module({
-  imports: [KloelModule, forwardRef(() => WhatsappModule)],
+  imports: [
+    GoalFieldModule,
+    KloelModule,
+    MindModule,
+    SpineModule,
+    forwardRef(() => WhatsappModule),
+  ],
   controllers: [CiaController],
   providers: [
     CiaService,
+    CiaAutonomyAdvisorService,
     CiaBacklogRunService,
     CiaBootstrapService,
     CiaChatFilterService,
+    CiaCognitiveHealthService,
     CiaInlineFallbackService,
     CiaRemoteBacklogService,
     CiaRuntimeService,
@@ -33,10 +46,12 @@ import { CIA_RUNTIME_SERVICE } from './cia-runtime.port';
   ],
   exports: [
     CiaService,
+    CiaAutonomyAdvisorService,
     CIA_RUNTIME_SERVICE,
     WhatsappCiaRuntimeService,
     CiaRuntimeService,
     CiaChatFilterService,
+    CiaCognitiveHealthService,
     CiaRuntimeStateService,
     CiaBootstrapService,
     CiaBacklogRunService,

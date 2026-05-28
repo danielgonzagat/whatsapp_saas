@@ -1,5 +1,12 @@
 import { createRequire } from 'node:module';
 
+type StripeConstructor = typeof import('stripe');
+type StripeInteropModule = StripeConstructor | { default?: StripeConstructor; Stripe?: StripeConstructor };
+
+function isStripeConstructorCandidate(value: unknown): value is StripeConstructor {
+  return typeof value === 'function';
+}
+
 const stripeRequire = createRequire(__filename);
 
 // Resolve Stripe constructor robustly across Node ESM/CJS interop modes.
@@ -9,24 +16,80 @@ const stripeRequire = createRequire(__filename);
 // properties (.customers, .paymentMethods) are undefined, causing the Sentry
 // NODE-S error spike (1,026 events / 14d on /billing/payment-methods).
 //
-// Strategy: probe both shapes; prefer the one that is a callable constructor.
-function resolveStripeConstructor(): typeof import('stripe') {
-  const mod = stripeRequire('stripe') as never as
-    | typeof import('stripe')
-    | { default: typeof import('stripe'); Stripe?: typeof import('stripe') };
+// Strategy: enumerate callable candidates from every interop shape;
+// validate each by instantiating with a dummy key and probing .customers.
+// The first candidate that produces a valid instance wins.
+function resolveStripeConstructor(): StripeConstructor {
+  const mod = stripeRequire('stripe') as StripeInteropModule;
+  const moduleRecord = mod as { default?: unknown; Stripe?: unknown };
 
-  if (typeof mod === 'function') {
-    return mod;
+  // Gather every plausible constructor candidate across interop shapes.
+  const candidates: Array<{ fn: StripeConstructor; source: string }> = [];
+
+  if (isStripeConstructorCandidate(mod)) {
+    candidates.push({ fn: mod, source: 'direct' });
   }
-  if (mod && typeof (mod as { default?: unknown }).default === 'function') {
-    return (mod as { default: typeof import('stripe') }).default;
+  if (isStripeConstructorCandidate(moduleRecord.default)) {
+    candidates.push({ fn: moduleRecord.default, source: 'default' });
   }
-  if (mod && typeof (mod as { Stripe?: unknown }).Stripe === 'function') {
-    return (mod as { Stripe: typeof import('stripe') }).Stripe;
+  if (isStripeConstructorCandidate(moduleRecord.Stripe)) {
+    candidates.push({ fn: moduleRecord.Stripe, source: 'Stripe' });
   }
+
+
+  if (candidates.length === 0) {
+    throw new Error(
+      'stripe-runtime: no callable candidate — ' +
+        `require('stripe') returned ${typeof mod} (keys: ${mod ? Object.keys(mod).slice(0, 6).join(',') : 'n/a'})`,
+    );
+  }
+
+  // Validate each candidate by instantiating a probe and checking that
+  // the instance exposes the resource methods the service actually calls
+  // (.customers.create/.retrieve, .paymentMethods.list/.attach/.detach/.retrieve,
+  // .checkout.sessions.create). A shape with .customers as an object but
+  // .customers.create undefined is the exact failure mode that produced
+  // Sentry NODE-S — checking only the namespace let it through.
+  const failures: string[] = [];
+  const requiredMethods: Array<[string, string]> = [
+    ['customers', 'create'],
+    ['customers', 'retrieve'],
+    ['paymentMethods', 'list'],
+    ['paymentMethods', 'attach'],
+  ];
+  for (const { fn, source } of candidates) {
+    try {
+      const probe: unknown = new fn('sk_test_stripe_runtime_probe');
+      if (!probe || typeof probe !== 'object') {
+        failures.push(`${source}: probe is ${typeof probe}`);
+        continue;
+      }
+      const probeObj = probe as Record<string, unknown>;
+      const missing: string[] = [];
+      for (const [namespace, method] of requiredMethods) {
+        const ns = probeObj[namespace];
+        if (!ns || typeof ns !== 'object') {
+          missing.push(`.${namespace} (${typeof ns})`);
+          continue;
+        }
+        const fnRef = (ns as Record<string, unknown>)[method];
+        if (typeof fnRef !== 'function') {
+          missing.push(`.${namespace}.${method} (${typeof fnRef})`);
+        }
+      }
+      if (missing.length === 0) {
+        return fn;
+      }
+      failures.push(`${source}: missing ${missing.join(', ')}`);
+    } catch (err: unknown) {
+      failures.push(`${source}: constructor threw — ${String(err)}`);
+    }
+  }
+
   throw new Error(
-    'stripe-runtime: cannot resolve Stripe constructor — ' +
-      `require('stripe') returned ${typeof mod} (keys: ${mod ? Object.keys(mod).slice(0, 6).join(',') : 'n/a'})`,
+    'stripe-runtime: all constructor candidates failed validation —\n' +
+      failures.map((f) => `  • ${f}`).join('\n') +
+      `\n  require('stripe') shape: ${typeof mod} (keys: ${mod ? Object.keys(mod).slice(0, 6).join(',') : 'n/a'})`,
   );
 }
 

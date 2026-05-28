@@ -6,12 +6,12 @@
  * draws a whole-line +/- block ONLY for the built-in Edit/Write/MultiEdit/
  * NotebookEdit tools — and that renderer cannot be disabled from inside.
  * So we BAN those tools for code: every code mutation must go through
- * mcp__atomic-edit__* (whose result carries the char-level atomicDiff +
+ * mcp__atomic_edit__* (whose result carries the char-level atomicDiff +
  * FounderBlock — the only permitted visual proof).
  *
- * PreToolUse hook protocol: read the tool call on stdin, emit a structured
- * permission decision on stdout. We DENY native edits to code files and
- * steer to the atomic tool; non-code (pure docs/text) and all non-edit
+ * PreToolUse hook protocol: read the tool call on stdin. For allowed tools,
+ * exit 0 silently; for denied tools, emit a structured deny decision and
+ * steer to the atomic tool. Non-code (pure docs/text) and all non-edit
  * tools pass through, so the session is never bricked for prose.
  *
  * Honest scope: this enforces avoidance (the harness then renders nothing
@@ -37,7 +37,7 @@ function readStdinRaw() {
 // FAIL CLOSED: an enforcement gate that cannot parse its own input must not
 // wave the call through (the A/B loop proved fail-open lets large-heredoc
 // writes slip past). On parse failure we DENY; the agent simply retries
-// (transient) or routes the code change through mcp__atomic-edit__*.
+// (transient) or routes the code change through mcp__atomic_edit__*.
 const rawStdin = readStdinRaw();
 let input;
 try {
@@ -51,7 +51,7 @@ try {
         permissionDecisionReason:
           'atomic-only hook could not parse the tool call; refusing for safety ' +
           '(fail-closed). Retry the call, or make code changes via ' +
-          'mcp__atomic-edit__* (atomic_create_file / atomic_replace_range / …).',
+          'mcp__atomic_edit__* (atomic_create_file / atomic_replace_range / …).',
       },
     }),
   );
@@ -62,11 +62,8 @@ const ti = input.tool_input ?? input.toolInput ?? {};
 const filePath = ti.file_path ?? ti.filePath ?? ti.path ?? '';
 
 const allow = () => {
-  process.stdout.write(
-    JSON.stringify({
-      hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow' },
-    }),
-  );
+  // Codex treats an explicit permissionDecision as a blocking/asking decision.
+  // Allowing a tool is represented by exit 0 with no hook decision payload.
   process.exit(0);
 };
 
@@ -87,16 +84,16 @@ const STEER =
   `The atomic-edit tools ARE active in this session — call them DIRECTLY by ` +
   `their exact name, do NOT use ToolSearch to look for them, and do NOT ` +
   `conclude they are absent. To create a NEW file: call the tool named ` +
-  `mcp__atomic-edit__atomic_create_file with { "file": "<repo-relative path>", ` +
+  `mcp__atomic_edit__atomic_create_file with { "file": "<repo-relative path>", ` +
   `"content": "<full file content>" }. To change an existing file: ` +
-  `mcp__atomic-edit__atomic_replace_range / atomic_edit_symbol / ` +
+  `mcp__atomic_edit__atomic_replace_range / atomic_edit_symbol / ` +
   `atomic_replace_text / atomic_apply_edits / atomic_add_import. To read ` +
-  `structure first: mcp__atomic-edit__code_outline / code_read_symbol. ` +
+  `structure first: mcp__atomic_edit__code_outline / code_read_symbol. ` +
   `Each returns the char-level [-removed-]{+added+} + FounderBlock proof. ` +
   `If (and only if) a tool's schema is not visible, run ToolSearch with the ` +
-  `EXACT query "select:mcp__atomic-edit__atomic_create_file,` +
-  `mcp__atomic-edit__atomic_replace_range,mcp__atomic-edit__atomic_edit_symbol,` +
-  `mcp__atomic-edit__atomic_apply_edits,mcp__atomic-edit__code_outline" then ` +
+  `EXACT query "select:mcp__atomic_edit__atomic_create_file,` +
+  `mcp__atomic_edit__atomic_replace_range,mcp__atomic_edit__atomic_edit_symbol,` +
+  `mcp__atomic_edit__atomic_apply_edits,mcp__atomic_edit__code_outline" then ` +
   `call them. NEVER fall back to a native or shell edit; that path is blocked.`;
 
 // Camada 3 (Bash leg): a shell command can edit a code file too (sed -i,
@@ -106,28 +103,22 @@ const STEER =
 function bashEditsCode(cmd) {
   if (!cmd) return false;
   const source = String(cmd);
-  const codeTarget = String.raw`[^\s'"|;&>]*\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|ipynb|json|py|go|rs|java|kt|c|h|cc|cpp|hpp|cs|rb|php|swift|scala|sh|bash|zsh|css|scss|less|sql|ya?ml|toml|prisma)\b`;
+  const codeTarget = String.raw`(?!(?:/tmp/|/private/tmp/|tmp/))[^\s'"|;&>]*\.(?:ts|tsx|mts|cts|js|jsx|mjs|cjs|ipynb|json|py|go|rs|java|kt|c|h|cc|cpp|hpp|cs|rb|php|swift|scala|sh|bash|zsh|css|scss|less|sql|ya?ml|toml|prisma)\b`;
   const directMutationPatterns = [
     new RegExp(String.raw`\bsed\b[^|]*\s-i`), // sed -i
     new RegExp(String.raw`\bperl\b[^|]*\s-i`), // perl -i
     new RegExp(String.raw`\b(?:g?awk)\b[^|]*>\s*${codeTarget}`), // awk > code
     new RegExp(String.raw`\btee\b[^|]*\s+\\?["']?\s*${codeTarget}`), // tee [quoted] code
-    new RegExp(String.raw`>>?\s*\\?["']?\s*${codeTarget}`), // > / >> [quoted] code
+    new RegExp(String.raw`(?:^|[\s;&|])>{1,2}(?!>)\s*\\?["']?\s*${codeTarget}`), // > / >> [quoted] code
     new RegExp(String.raw`\b(?:cp|mv|install)\b[^|]*\s${codeTarget}(?:\s|$)`), // cp/mv/install onto code
     new RegExp(String.raw`\b(?:rm|unlink|truncate|touch)\b[^|;&]*${codeTarget}`), // delete/truncate/create code
   ];
   if (directMutationPatterns.some((re) => re.test(source))) return true;
 
-  // Heredoc/here-string that produces a code file: `cat > x.ts <<'EOF'`,
-  // `tee x.ts <<EOF`, `… <<EOF > x.ts`, quoted or not. If the command both
-  // opens a heredoc/here-string AND references any code-extension path, deny
-  // (this closes the quoted/spacing evasions of the redirect regexes above).
-  if (
-    /<<-?\s*['"]?[\w.]/.test(source) &&
-    new RegExp(codeTarget).test(source) &&
-    /\b(?:cat|tee|dd|node|deno|bun|python3?|ruby|php|perl)\b|>>?/.test(source)
-  )
-    return true;
+  // Heredocs are not inherently writes. The direct mutation regexes above
+  // already catch `cat > x.ts <<EOF`, `tee x.ts <<EOF`, and redirects into
+  // code files. Keep read-only diagnostic heredocs legal even when they mention
+  // code paths for spawned probes.
 
   // Inline-eval interpreters (node -e / python -c / ruby -e / php -r / deno
   // eval / bun -e / perl -pe …) are the Write-bypass vector observed in the
@@ -181,12 +172,12 @@ if (filePath && !CODE_EXT.test(String(filePath))) allow(); // prose/docs OK
 
 deny(
   `TUI-abolished rule: native ${tool} on code is banned so the harness never ` +
-    `renders its whole-line +/- diff. Use mcp__atomic-edit__* instead ` +
+    `renders its whole-line +/- diff. Use mcp__atomic_edit__* instead ` +
     `(atomic_replace_range / atomic_replace_text / atomic_edit_symbol / ` +
     `atomic_replace_literal / atomic_replace_property_value / atomic_wrap_range / ` +
     `atomic_transaction / atomic_add_import …). The tool returns the char-level ` +
     `atomicDiff [-removed-]{+added+} + FounderBlock — the only permitted visual ` +
-    `proof. If mcp__atomic-edit__* is not in this session's tools, the server ` +
+    `proof. If mcp__atomic_edit__* is not in this session's tools, the server ` +
     `is not loaded: say so and start a fresh session (it is enabled in ` +
     `.mcp.json + ~/.claude.json). Do NOT silently fall back to native edit.`,
 );

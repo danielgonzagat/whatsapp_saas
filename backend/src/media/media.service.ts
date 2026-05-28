@@ -3,7 +3,7 @@ import { extname } from 'node:path';
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Queue } from 'bullmq';
-import { createRedisClient } from '../common/redis/redis.util';
+import { createBullMqConnectionOptions } from '../common/redis/redis.util';
 import { StorageService } from '../common/storage/storage.service';
 import { getTraceHeaders } from '../common/trace-headers';
 import { safeStorageFetch } from '../common/utils/url-safety';
@@ -24,7 +24,7 @@ export class MediaService {
     private readonly config: ConfigService,
     private readonly storage: StorageService,
   ) {
-    const connection = createRedisClient();
+    const connection = createBullMqConnectionOptions();
     this.mediaQueue = new Queue('media-jobs', { connection });
     this.baseUrl =
       this.config.get('MEDIA_BASE_URL') || this.config.get('APP_URL', 'http://localhost:3001');

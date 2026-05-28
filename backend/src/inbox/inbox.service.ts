@@ -8,23 +8,12 @@ import {
   buildConversationOperationalState,
 } from '../whatsapp/agent-conversation-state.util';
 import { InboxGateway } from './inbox.gateway';
-
-/**
- * Maximum number of times getOrCreateConversation will retry after losing
- * a race to the partial unique index. Three attempts is enough to survive
- * the common case (one concurrent inbound) with margin; anything higher
- * suggests a bug or a pathological inbound burst.
- */
-const GET_OR_CREATE_CONVERSATION_MAX_ATTEMPTS = 3;
-
-function isQueuedSendResult(value: unknown): value is { queued: true } {
-  return (
-    !!value &&
-    typeof value === 'object' &&
-    !Array.isArray(value) &&
-    (value as { queued?: unknown }).queued === true
-  );
-}
+import {
+  isQueuedSendResult,
+  normalizeDate,
+  getOrCreateConversationWithClient,
+  saveMessageInTx,
+} from './inbox.conversation.helpers';
 
 /** Inbox service. */
 @Injectable()
@@ -74,74 +63,13 @@ export class InboxService {
     channel = 'WHATSAPP',
     options?: { initialLastMessageAt?: Date | string | null },
   ) {
-    return this.getOrCreateConversationWithClient(
+    return getOrCreateConversationWithClient(
       this.prisma,
       workspaceId,
       contactId,
       channel,
       options,
-    );
-  }
-
-  /**
-   * Transaction-aware variant of `getOrCreateConversation`. Accepts
-   * either the top-level PrismaService or a `Prisma.TransactionClient`
-   * from inside a `$transaction` callback. `saveMessage` uses this so
-   * the "resolve conversation + insert message + update metadata" flow
-   * runs atomically and a crash cannot leave the inbox half-updated.
-   */
-  private async getOrCreateConversationWithClient(
-    client: PrismaService | Prisma.TransactionClient,
-    workspaceId: string,
-    contactId: string,
-    channel: string,
-    options?: { initialLastMessageAt?: Date | string | null },
-  ) {
-    const initialLastMessageAt = this.normalizeDate(options?.initialLastMessageAt);
-
-    const run = async (attempt: number) => {
-      const existing = await client.conversation.findFirst({
-        where: { workspaceId, contactId, channel, status: { not: 'CLOSED' } },
-      });
-      if (existing) {
-        return existing;
-      }
-
-      try {
-        return await client.conversation.create({
-          data: {
-            workspaceId,
-            contactId,
-            status: 'OPEN',
-            channel,
-            priority: 'MEDIUM',
-            ...(initialLastMessageAt ? { lastMessageAt: initialLastMessageAt } : {}),
-          },
-        });
-      } catch (err: unknown) {
-        // P2002 = unique constraint violation on the partial unique index,
-        // which means another concurrent worker just created the open
-        // conversation. Re-read on the next loop iteration and return it.
-        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-          this.logger.log(
-            `getOrCreateConversation lost race on (ws=${workspaceId}, contact=${contactId}, ch=${channel}); retrying`,
-          );
-          if (attempt + 1 < GET_OR_CREATE_CONVERSATION_MAX_ATTEMPTS) {
-            return run(attempt + 1);
-          }
-          return undefined;
-        }
-        throw err;
-      }
-    };
-
-    const resolved = await run(0);
-    if (resolved) {
-      return resolved;
-    }
-
-    throw new Error(
-      `getOrCreateConversation: failed to resolve conversation after ${GET_OR_CREATE_CONVERSATION_MAX_ATTEMPTS} attempts`,
+      this.logger,
     );
   }
 
@@ -244,10 +172,10 @@ export class InboxService {
     resetUnreadOnOutbound?: boolean;
     silent?: boolean;
   }) {
-    const messageCreatedAt = this.normalizeDate(data.createdAt) || new Date();
+    const messageCreatedAt = normalizeDate(data.createdAt) || new Date();
 
     const { message, updatedConversation } = await this.prisma.$transaction(
-      (tx) => this.saveMessageInTx(tx, data, messageCreatedAt),
+      (tx) => saveMessageInTx(tx, data, messageCreatedAt, this.logger),
       { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
     );
 
@@ -266,107 +194,6 @@ export class InboxService {
     }
 
     return message;
-  }
-
-  private resolveConversationLastMessageAt(
-    conversation: { lastMessageAt: Date | string | null | undefined },
-    messageCreatedAt: Date,
-  ): Date {
-    const currentLastMessageAt =
-      conversation.lastMessageAt instanceof Date
-        ? conversation.lastMessageAt
-        : this.normalizeDate(conversation.lastMessageAt);
-    return currentLastMessageAt && currentLastMessageAt > messageCreatedAt
-      ? currentLastMessageAt
-      : messageCreatedAt;
-  }
-
-  private buildConversationUpdate(
-    data: { countAsUnread?: boolean; resetUnreadOnOutbound?: boolean; direction: string },
-    nextLastMessageAt: Date,
-  ): Prisma.ConversationUpdateInput {
-    const shouldCountAsUnread = data.countAsUnread ?? data.direction === 'INBOUND';
-    const shouldResetUnread = data.resetUnreadOnOutbound ?? data.direction === 'OUTBOUND';
-    const update: Prisma.ConversationUpdateInput = { lastMessageAt: nextLastMessageAt };
-    if (shouldCountAsUnread) {
-      update.unreadCount = { increment: 1 };
-    } else if (shouldResetUnread) {
-      update.unreadCount = { set: 0 };
-    }
-    return update;
-  }
-
-  private async saveMessageInTx(
-    tx: Prisma.TransactionClient,
-    data: {
-      workspaceId: string;
-      contactId: string;
-      content: string;
-      direction: 'INBOUND' | 'OUTBOUND';
-      externalId?: string;
-      type?: string;
-      channel?: string;
-      mediaUrl?: string;
-      status?: string;
-      countAsUnread?: boolean;
-      resetUnreadOnOutbound?: boolean;
-    },
-    messageCreatedAt: Date,
-  ) {
-    const conversation = await this.getOrCreateConversationWithClient(
-      tx,
-      data.workspaceId,
-      data.contactId,
-      data.channel || 'WHATSAPP',
-      { initialLastMessageAt: messageCreatedAt },
-    );
-
-    const msg = await tx.message.create({
-      data: {
-        workspaceId: data.workspaceId,
-        contactId: data.contactId,
-        conversationId: conversation.id,
-        content: data.content,
-        direction: data.direction,
-        ...(data.externalId !== undefined ? { externalId: data.externalId } : {}),
-        type: data.type || 'TEXT',
-        ...(data.mediaUrl !== undefined ? { mediaUrl: data.mediaUrl } : {}),
-        status: data.status || 'DELIVERED',
-        createdAt: messageCreatedAt,
-      },
-    });
-
-    const nextLastMessageAt = this.resolveConversationLastMessageAt(conversation, messageCreatedAt);
-    const conversationUpdate = this.buildConversationUpdate(data, nextLastMessageAt);
-
-    await tx.conversation.updateMany({
-      where: { id: conversation.id, workspaceId: data.workspaceId },
-      data: conversationUpdate,
-    });
-    const updated = await tx.conversation.findFirst({
-      where: { id: conversation.id, workspaceId: data.workspaceId },
-      select: {
-        id: true,
-        status: true,
-        unreadCount: true,
-        lastMessageAt: true,
-        contact: { select: { id: true, name: true, phone: true } },
-      },
-    });
-
-    return { message: msg, updatedConversation: updated };
-  }
-
-  private normalizeDate(value?: Date | string | null): Date | null {
-    if (!value) {
-      return null;
-    }
-    if (value instanceof Date) {
-      return Number.isNaN(value.getTime()) ? null : value;
-    }
-
-    const parsed = new Date(value);
-    return Number.isNaN(parsed.getTime()) ? null : parsed;
   }
 
   /** List conversations. */

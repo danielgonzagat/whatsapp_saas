@@ -53,9 +53,7 @@ const makeUnavailability = (
   };
 };
 
-const baseInput = (
-  over: Partial<IndispensabilityInput> = {},
-): IndispensabilityInput => ({
+const baseInput = (over: Partial<IndispensabilityInput> = {}): IndispensabilityInput => ({
   workspaceId: over.workspaceId ?? 'ws-test',
   sessions: over.sessions ?? [],
   unavailabilityEvents: over.unavailabilityEvents ?? [],

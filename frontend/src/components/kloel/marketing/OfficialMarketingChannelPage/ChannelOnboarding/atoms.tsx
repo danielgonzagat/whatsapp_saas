@@ -227,9 +227,7 @@ export function Dial({
         >
           {label}
         </span>
-        <span style={{ fontFamily: SORA, fontSize: 12.5, color: C.silver }}>
-          {labels[value]}
-        </span>
+        <span style={{ fontFamily: SORA, fontSize: 12.5, color: C.silver }}>{labels[value]}</span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         {labels.map((segLabel, i) => (

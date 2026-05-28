@@ -1,5 +1,5 @@
 import type { SpineEventRef } from '../mind/mind.types';
-import type { DetectorInput, Insight, RankedInsight } from './insight.types';
+import type { DetectorInput, Insight } from './insight.types';
 import { median } from './insight.types';
 
 import { detectFunnelBottleneck } from './detectors/funnel-bottleneck.detector';
@@ -24,11 +24,17 @@ function ev(over?: Partial<SpineEventRef>): SpineEventRef {
     eventName: over?.eventName ?? 'commerce.lead.replied',
     workspaceId: over?.workspaceId ?? WKS,
     occurredAt: over?.occurredAt ?? '2026-05-13T20:00:00.000Z',
-    truthMode: over?.truthMode ?? 'observed' as const,
+    truthMode: over?.truthMode ?? ('observed' as const),
   };
-  if (over?.entityRef !== undefined) defaults['entityRef'] = over.entityRef;
-  if (over?.valence !== undefined) defaults['valence'] = over.valence;
-  if (over?.payload !== undefined) defaults['payload'] = over.payload;
+  if (over?.entityRef !== undefined) {
+    defaults['entityRef'] = over.entityRef;
+  }
+  if (over?.valence !== undefined) {
+    defaults['valence'] = over.valence;
+  }
+  if (over?.payload !== undefined) {
+    defaults['payload'] = over.payload;
+  }
   return defaults as SpineEventRef;
 }
 
@@ -47,18 +53,6 @@ function makeInsight(over?: Partial<Insight>): Insight {
     generatedAt: over?.generatedAt ?? new Date(NOW).toISOString(),
     maturityStage: over?.maturityStage,
     valence: over?.valence,
-  };
-}
-
-function makeRanked(
-  over?: Partial<Insight>,
-  product?: number,
-): RankedInsight {
-  const insight = makeInsight(over);
-  return {
-    ...insight,
-    impactConfidenceProduct:
-      product ?? insight.estimatedFinancialImpactCents * insight.confidence,
   };
 }
 
@@ -198,7 +192,10 @@ describe('UTP-INSIGHT-004 — detectQualificationLeak', () => {
 
   it('returns empty with few qualified leads', () => {
     const events: SpineEventRef[] = [
-      ev({ eventName: 'commerce.lead.qualified', entityRef: { entityType: 'lead', entityId: 'l1' } }),
+      ev({
+        eventName: 'commerce.lead.qualified',
+        entityRef: { entityType: 'lead', entityId: 'l1' },
+      }),
     ];
     const r = detectQualificationLeak(input({ events }));
     expect(r.insights).toHaveLength(0);
@@ -212,12 +209,36 @@ describe('UTP-INSIGHT-005 — detectCoolingWindow', () => {
   it('detects long cooling window when median conversion time > 14 days', () => {
     const lid = 'lead_cool';
     const events: SpineEventRef[] = [
-      ev({ eventName: 'commerce.lead.created', entityRef: { entityType: 'lead', entityId: lid }, occurredAt: '2026-04-01T00:00:00.000Z' }),
-      ev({ eventName: 'commerce.lead.converted', entityRef: { entityType: 'lead', entityId: lid }, occurredAt: '2026-04-20T00:00:00.000Z' }),
-      ev({ eventName: 'commerce.lead.created', entityRef: { entityType: 'lead', entityId: 'l2' }, occurredAt: '2026-04-02T00:00:00.000Z' }),
-      ev({ eventName: 'commerce.lead.converted', entityRef: { entityType: 'lead', entityId: 'l2' }, occurredAt: '2026-04-25T00:00:00.000Z' }),
-      ev({ eventName: 'commerce.lead.created', entityRef: { entityType: 'lead', entityId: 'l3' }, occurredAt: '2026-04-03T00:00:00.000Z' }),
-      ev({ eventName: 'commerce.lead.converted', entityRef: { entityType: 'lead', entityId: 'l3' }, occurredAt: '2026-04-22T00:00:00.000Z' }),
+      ev({
+        eventName: 'commerce.lead.created',
+        entityRef: { entityType: 'lead', entityId: lid },
+        occurredAt: '2026-04-01T00:00:00.000Z',
+      }),
+      ev({
+        eventName: 'commerce.lead.converted',
+        entityRef: { entityType: 'lead', entityId: lid },
+        occurredAt: '2026-04-20T00:00:00.000Z',
+      }),
+      ev({
+        eventName: 'commerce.lead.created',
+        entityRef: { entityType: 'lead', entityId: 'l2' },
+        occurredAt: '2026-04-02T00:00:00.000Z',
+      }),
+      ev({
+        eventName: 'commerce.lead.converted',
+        entityRef: { entityType: 'lead', entityId: 'l2' },
+        occurredAt: '2026-04-25T00:00:00.000Z',
+      }),
+      ev({
+        eventName: 'commerce.lead.created',
+        entityRef: { entityType: 'lead', entityId: 'l3' },
+        occurredAt: '2026-04-03T00:00:00.000Z',
+      }),
+      ev({
+        eventName: 'commerce.lead.converted',
+        entityRef: { entityType: 'lead', entityId: 'l3' },
+        occurredAt: '2026-04-22T00:00:00.000Z',
+      }),
     ];
     const r = detectCoolingWindow(input({ events }));
     expect(r.insights.length).toBeGreaterThanOrEqual(1);
@@ -226,8 +247,16 @@ describe('UTP-INSIGHT-005 — detectCoolingWindow', () => {
 
   it('returns empty with too few conversions', () => {
     const events: SpineEventRef[] = [
-      ev({ eventName: 'commerce.lead.created', entityRef: { entityType: 'lead', entityId: 'l1' }, occurredAt: '2026-04-01T00:00:00.000Z' }),
-      ev({ eventName: 'commerce.lead.converted', entityRef: { entityType: 'lead', entityId: 'l1' }, occurredAt: '2026-04-20T00:00:00.000Z' }),
+      ev({
+        eventName: 'commerce.lead.created',
+        entityRef: { entityType: 'lead', entityId: 'l1' },
+        occurredAt: '2026-04-01T00:00:00.000Z',
+      }),
+      ev({
+        eventName: 'commerce.lead.converted',
+        entityRef: { entityType: 'lead', entityId: 'l1' },
+        occurredAt: '2026-04-20T00:00:00.000Z',
+      }),
     ];
     const r = detectCoolingWindow(input({ events }));
     expect(r.insights).toHaveLength(0);
@@ -273,9 +302,18 @@ describe('UTP-INSIGHT-006 — detectPricingElasticity', () => {
 describe('UTP-INSIGHT-007 — detectChannelRoi', () => {
   it('detects poor channel ROI when cost exceeds attributed revenue', () => {
     const events: SpineEventRef[] = [
-      ev({ eventName: 'commerce.campaign.clicked', payload: { channel: 'facebook', costCents: 500_00, revenueCents: 100_00 } }),
-      ev({ eventName: 'commerce.campaign.clicked', payload: { channel: 'facebook', costCents: 500_00, revenueCents: 50_00 } }),
-      ev({ eventName: 'commerce.campaign.clicked', payload: { channel: 'facebook', costCents: 500_00 } }),
+      ev({
+        eventName: 'commerce.campaign.clicked',
+        payload: { channel: 'facebook', costCents: 500_00, revenueCents: 100_00 },
+      }),
+      ev({
+        eventName: 'commerce.campaign.clicked',
+        payload: { channel: 'facebook', costCents: 500_00, revenueCents: 50_00 },
+      }),
+      ev({
+        eventName: 'commerce.campaign.clicked',
+        payload: { channel: 'facebook', costCents: 500_00 },
+      }),
     ];
     const r = detectChannelRoi(input({ events }));
     expect(r.insights.length).toBeGreaterThanOrEqual(1);
@@ -285,7 +323,10 @@ describe('UTP-INSIGHT-007 — detectChannelRoi', () => {
 
   it('returns empty with too few campaign events', () => {
     const events: SpineEventRef[] = [
-      ev({ eventName: 'commerce.campaign.clicked', payload: { channel: 'facebook', costCents: 100_00 } }),
+      ev({
+        eventName: 'commerce.campaign.clicked',
+        payload: { channel: 'facebook', costCents: 100_00 },
+      }),
     ];
     const r = detectChannelRoi(input({ events }));
     expect(r.insights).toHaveLength(0);
@@ -298,11 +339,26 @@ describe('UTP-INSIGHT-007 — detectChannelRoi', () => {
 describe('UTP-INSIGHT-008 — detectProductPositioning', () => {
   it('detects positioning mismatch when low-tier product has high refund rate', () => {
     const events: SpineEventRef[] = [
-      ev({ eventName: 'commerce.payment.approved', payload: { productId: 'basic', productRole: 'basic' } }),
-      ev({ eventName: 'commerce.payment.approved', payload: { productId: 'basic', productRole: 'basic' } }),
-      ev({ eventName: 'commerce.payment.approved', payload: { productId: 'basic', productRole: 'basic' } }),
-      ev({ eventName: 'commerce.payment.approved', payload: { productId: 'basic', productRole: 'basic' } }),
-      ev({ eventName: 'commerce.payment.approved', payload: { productId: 'basic', productRole: 'basic' } }),
+      ev({
+        eventName: 'commerce.payment.approved',
+        payload: { productId: 'basic', productRole: 'basic' },
+      }),
+      ev({
+        eventName: 'commerce.payment.approved',
+        payload: { productId: 'basic', productRole: 'basic' },
+      }),
+      ev({
+        eventName: 'commerce.payment.approved',
+        payload: { productId: 'basic', productRole: 'basic' },
+      }),
+      ev({
+        eventName: 'commerce.payment.approved',
+        payload: { productId: 'basic', productRole: 'basic' },
+      }),
+      ev({
+        eventName: 'commerce.payment.approved',
+        payload: { productId: 'basic', productRole: 'basic' },
+      }),
       ev({ eventName: 'commerce.payment.refunded', payload: { productId: 'basic' } }),
       ev({ eventName: 'commerce.payment.refunded', payload: { productId: 'basic' } }),
     ];
@@ -314,7 +370,10 @@ describe('UTP-INSIGHT-008 — detectProductPositioning', () => {
 
   it('returns empty with insufficient data', () => {
     const events: SpineEventRef[] = [
-      ev({ eventName: 'commerce.payment.approved', payload: { productId: 'p1', productRole: 'basic' } }),
+      ev({
+        eventName: 'commerce.payment.approved',
+        payload: { productId: 'p1', productRole: 'basic' },
+      }),
     ];
     const r = detectProductPositioning(input({ events }));
     expect(r.insights).toHaveLength(0);
@@ -326,9 +385,21 @@ describe('UTP-INSIGHT-008 — detectProductPositioning', () => {
 // =========================================================================
 describe('UTP-INSIGHT-RANK-001 — rankInsights', () => {
   it('sorts insights by impact * confidence descending', () => {
-    const a = makeInsight({ insightId: 'a', estimatedFinancialImpactCents: 100_00, confidence: 0.9 });
-    const b = makeInsight({ insightId: 'b', estimatedFinancialImpactCents: 500_00, confidence: 0.3 });
-    const c = makeInsight({ insightId: 'c', estimatedFinancialImpactCents: 200_00, confidence: 0.8 });
+    const a = makeInsight({
+      insightId: 'a',
+      estimatedFinancialImpactCents: 100_00,
+      confidence: 0.9,
+    });
+    const b = makeInsight({
+      insightId: 'b',
+      estimatedFinancialImpactCents: 500_00,
+      confidence: 0.3,
+    });
+    const c = makeInsight({
+      insightId: 'c',
+      estimatedFinancialImpactCents: 200_00,
+      confidence: 0.8,
+    });
     const ranked = rankInsights([a, b, c]);
     expect(ranked[0]?.insightId).toBe('c');
     expect(ranked[1]?.insightId).toBe('b');

@@ -23,7 +23,7 @@ export function validateByNWorkspaces(
   params: Partial<NValidationParams> = {},
 ): CandidatePattern[] {
   const n = Math.max(1, params.n ?? DEFAULT_N_VALIDATION);
-  return candidates.filter(c => c.evidenceWorkspacesCount >= n);
+  return candidates.filter((c) => c.evidenceWorkspacesCount >= n);
 }
 
 /**

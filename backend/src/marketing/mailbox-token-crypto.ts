@@ -1,17 +1,11 @@
 import * as crypto from 'node:crypto';
+import { handleMissingTokenCryptoKey } from '../integrations/token-crypto-shared.helper';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 12;
 const AUTH_TAG_LENGTH = 16;
 
 const CURRENT_KEY_VERSION = 1;
-
-function handleMissingTokenCryptoKey(envVar: string): null {
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error(`[TOKEN_CRYPTO] ${envVar} is required in production`);
-  }
-  return null;
-}
 
 function resolveKeyForVersion(version: number): Buffer | null {
   const envMap: Record<number, string> = {

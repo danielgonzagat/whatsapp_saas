@@ -1,11 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { writeAuthAppleState } from '../state';
-
-function readAppleClientId(): string {
-  return (
-    process.env.APPLE_CLIENT_ID?.trim() || process.env.NEXT_PUBLIC_APPLE_CLIENT_ID?.trim() || ''
-  );
-}
+import { readAppleClientId } from '../../../_lib/apple-auth';
 
 function sanitizeNextPath(value: string | null): string {
   if (!value?.trim()) {

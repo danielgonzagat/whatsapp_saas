@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { AccountProtection } from './types';
+import { clamp } from '../../common/math';
 
 interface AccountProtectionInput {
   readonly workspaceId: string;
@@ -16,10 +17,6 @@ const RISK_MODERATE_THRESHOLD = 0.4;
 const NEW_ACCOUNT_DAYS = 30;
 const HIGH_REJECTION_RATE = 0.3;
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
-}
-
 @Injectable()
 export class AccountProtectionService {
   private readonly logger = new Logger(AccountProtectionService.name);
@@ -27,7 +24,8 @@ export class AccountProtectionService {
   evaluate(input: AccountProtectionInput): AccountProtection {
     const violationRisk = Math.min(input.policyViolations.length * 0.25, 1);
     const reputationRisk = Math.min(input.reputationFlags.length * 0.2, 1);
-    const rejectionRisk = input.adRejectionRate >= HIGH_REJECTION_RATE ? 0.4 : input.adRejectionRate;
+    const rejectionRisk =
+      input.adRejectionRate >= HIGH_REJECTION_RATE ? 0.4 : input.adRejectionRate;
     const newAccountRisk = input.accountAgeDays < NEW_ACCOUNT_DAYS ? 0.3 : 0;
     const verifiedBonus = input.isVerifiedBusiness ? -0.15 : 0;
 
@@ -62,9 +60,15 @@ export class AccountProtectionService {
     riskScore: number,
     violations: readonly string[],
   ): 'safe' | 'review' | 'pause' | 'stop' {
-    if (riskScore >= RISK_HIGH_THRESHOLD || violations.length >= 3) return 'stop';
-    if (riskScore >= RISK_MODERATE_THRESHOLD) return 'pause';
-    if (violations.length > 0 || riskScore >= 0.2) return 'review';
+    if (riskScore >= RISK_HIGH_THRESHOLD || violations.length >= 3) {
+      return 'stop';
+    }
+    if (riskScore >= RISK_MODERATE_THRESHOLD) {
+      return 'pause';
+    }
+    if (violations.length > 0 || riskScore >= 0.2) {
+      return 'review';
+    }
     return 'safe';
   }
 

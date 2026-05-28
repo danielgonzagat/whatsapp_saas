@@ -12,14 +12,15 @@ export class MindPerceptionService {
   }
 
   async since(workspaceId: string, watermark: Date): Promise<MindPerceptEvent[]> {
-    const [autopilot, messages, sales, orders] = await Promise.all([
+    const [autopilot, messages, sales, orders, products] = await Promise.all([
       this.readAutopilotEvents(workspaceId, watermark),
       this.readMessages(workspaceId, watermark),
       this.readSales(workspaceId, watermark),
       this.readCheckoutOrders(workspaceId, watermark),
+      this.readProducts(workspaceId, watermark),
     ]);
 
-    return [...autopilot, ...messages, ...sales, ...orders].sort(
+    return [...autopilot, ...messages, ...sales, ...orders, ...products].sort(
       (left, right) => left.occurredAt.getTime() - right.occurredAt.getTime(),
     );
   }
@@ -144,6 +145,45 @@ export class MindPerceptionService {
     }));
   }
 
+  private async readProducts(workspaceId: string, since: Date): Promise<MindPerceptEvent[]> {
+    const rows = await this.prisma.product.findMany({
+      where: { workspaceId, updatedAt: { gt: since } },
+      orderBy: { updatedAt: 'asc' },
+      take: 500,
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        currency: true,
+        category: true,
+        format: true,
+        status: true,
+        active: true,
+        featured: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return rows.map((row) => ({
+      workspaceId,
+      kind: row.createdAt > since ? 'product.created' : 'product.updated',
+      subject: `product:${row.id}`,
+      payload: {
+        productId: row.id,
+        name: row.name,
+        price: row.price,
+        currency: row.currency,
+        category: row.category,
+        format: row.format,
+        status: row.status,
+        active: row.active,
+        featured: row.featured,
+      },
+      occurredAt: row.updatedAt,
+    }));
+  }
+
   private asJsonObject(value: unknown): Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value)
       ? (value as Record<string, unknown>)
@@ -151,9 +191,15 @@ export class MindPerceptionService {
   }
 
   private priceBand(totalInCents: number): string {
-    if (totalInCents < 10_000) return 'under_100';
-    if (totalInCents < 50_000) return '100_499';
-    if (totalInCents < 100_000) return '500_999';
+    if (totalInCents < 10_000) {
+      return 'under_100';
+    }
+    if (totalInCents < 50_000) {
+      return '100_499';
+    }
+    if (totalInCents < 100_000) {
+      return '500_999';
+    }
     return '1000_plus';
   }
 

@@ -5,6 +5,7 @@ import { kloelT } from '@/lib/i18n/t';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import type React from 'react';
 import type { ChannelRealData, ChannelStatRow, FeedMessageLike } from './MarketingTypes';
+import { formatBRL } from '@/lib/common/money';
 
 export const SORA = "'Sora',sans-serif";
 export const MONO = "'JetBrains Mono',monospace";
@@ -41,13 +42,10 @@ export function isTrustedMetaOauthUrl(value: string): boolean {
   }
 }
 
-export function Fmt(n: number) {
-  return n >= 1000 ? `${(n / 1000).toFixed(1)}K` : n.toString();
-}
+import { fmtCompact } from '@/lib/common/format';
+export const Fmt = fmtCompact;
 
-export function FmtMoney(n: number) {
-  return 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-}
+export const FmtMoney = formatBRL;
 
 export function formatFeedTime(value: FeedMessageLike): string {
   if (value.time) {return value.time;}

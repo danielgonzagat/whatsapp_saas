@@ -4,33 +4,15 @@ import { buildAppUrl, buildAuthUrl } from '@/lib/subdomains';
 import { getBackendUrl } from '../../../_lib/backend-url';
 import { setSharedAuthCookies } from '../../_lib/shared-auth-cookies';
 import { clearAuthAppleState, readAuthAppleState } from '../../apple/state';
+import { parseAppleUser, type AppleUserPayload } from '../../../_lib/apple-auth';
 
 type AppleCallbackPayload = {
   identityToken?: string;
   authorizationCode?: string;
   state?: string;
   redirectUri: string;
-  user?: {
-    name?: {
-      firstName?: string;
-      lastName?: string;
-    };
-    email?: string;
-  };
+  user?: AppleUserPayload;
 };
-
-function parseAppleUser(rawUser: FormDataEntryValue | null) {
-  if (typeof rawUser !== 'string' || !rawUser.trim()) {
-    return undefined;
-  }
-
-  try {
-    const parsed = JSON.parse(rawUser) as AppleCallbackPayload['user'];
-    return parsed && typeof parsed === 'object' ? parsed : undefined;
-  } catch {
-    return undefined;
-  }
-}
 
 async function readAppleCallbackPayload(
   request: NextRequest,

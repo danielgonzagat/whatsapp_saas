@@ -39,7 +39,7 @@ const POLL_MAX_ATTEMPTS = 5;
 // Delay between polls in milliseconds. 5 attempts × 200ms = 1s max wait.
 const POLL_INTERVAL_MS = 200;
 
-const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+import { sleep } from './async-sequence';
 
 type IdempotencyRecord = Record<string, unknown>;
 

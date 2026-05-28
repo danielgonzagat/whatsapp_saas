@@ -996,3 +996,22 @@ production replacement, including accumulated Git history debt.
 
 If the auditor itself needs to change, stop. The human owner must perform that
 change outside autonomous AI execution.
+
+## Cognitive Interface Layer (LSP/MCP/DAP/CDP/OpenAPI/AsyncAPI/SARIF/SBOM/OTel/Tree-sitter/Tests)
+
+A unified MCP front-end aggregating 10 protocol families under a single entry
+called `cognitive-hub` (wired in `.mcp.json`). Plus a parallel `lsp-mesh` MCP
+exposing 10 real-LSP operations over 14 language servers across 7 workspaces.
+See [`docs/architecture/COGNITIVE_INTERFACE_LAYER.md`](docs/architecture/COGNITIVE_INTERFACE_LAYER.md)
+for protocol-by-protocol detail, data file paths, refresh commands, and the
+session-from-zero handshake recipe.
+
+Quick recipe from any Claude Code session:
+
+- `protocol_hub_status` — health-check all protocols
+- `protocol_hub_openapi { query: "..." }` — NestJS routes
+- `protocol_hub_asyncapi { domain: "..." }` — event channels (73 indexed)
+- `protocol_hub_sarif`, `protocol_hub_sbom`, `protocol_hub_manifest` — findings, deps, full inventory
+- `lsp_*` tools (definition, references, hover, rename, etc.) — direct LSP through the mesh
+
+Data refresh: `node scripts/cognitive/{openapi-extract,asyncapi-extract,sarif-aggregate,sbom-generate}.mjs`.

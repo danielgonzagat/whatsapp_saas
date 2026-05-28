@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { AgentRuntimeSchedulerService } from './agent-runtime.scheduler';
 
 describe('AgentRuntimeSchedulerService', () => {
@@ -205,5 +206,106 @@ describe('AgentRuntimeSchedulerService', () => {
       reason: 'job_not_found',
     });
     expect(prisma.kloelMemory.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('listDueJobs returns empty array on connection pool timeout (P2024)', async () => {
+    const prisma = {
+      kloelMemory: {
+        findMany: jest.fn().mockRejectedValue(
+          new Prisma.PrismaClientKnownRequestError('timed out fetching connection', {
+            code: 'P2024',
+            clientVersion: '5.0.0',
+          }),
+        ),
+      },
+    };
+    const service = new AgentRuntimeSchedulerService(
+      prisma as never,
+      { buildEnvelope: jest.fn() } as never,
+    );
+
+    const result = await service.listDueJobs(new Date(), 10);
+
+    expect(result).toEqual([]);
+  });
+
+  it('listDueJobs returns empty array on schema drift (P2021)', async () => {
+    const prisma = {
+      kloelMemory: {
+        findMany: jest.fn().mockRejectedValue(
+          new Prisma.PrismaClientKnownRequestError('table does not exist', {
+            code: 'P2021',
+            clientVersion: '5.0.0',
+          }),
+        ),
+      },
+    };
+    const service = new AgentRuntimeSchedulerService(
+      prisma as never,
+      { buildEnvelope: jest.fn() } as never,
+    );
+
+    const result = await service.listDueJobs(new Date(), 10);
+
+    expect(result).toEqual([]);
+  });
+
+  it('listDueJobs returns empty array on unknown Prisma error code', async () => {
+    const prisma = {
+      kloelMemory: {
+        findMany: jest.fn().mockRejectedValue(
+          new Prisma.PrismaClientKnownRequestError('some unknown error', {
+            code: 'P2999',
+            clientVersion: '5.0.0',
+          }),
+        ),
+      },
+    };
+    const service = new AgentRuntimeSchedulerService(
+      prisma as never,
+      { buildEnvelope: jest.fn() } as never,
+    );
+
+    const result = await service.listDueJobs(new Date(), 10);
+
+    expect(result).toEqual([]);
+  });
+
+  it('listDueJobs re-throws non-Prisma errors', async () => {
+    const networkError = new Error('network down');
+    const prisma = {
+      kloelMemory: {
+        findMany: jest.fn().mockRejectedValue(networkError),
+      },
+    };
+    const service = new AgentRuntimeSchedulerService(
+      prisma as never,
+      { buildEnvelope: jest.fn() } as never,
+    );
+
+    await expect(service.listDueJobs(new Date(), 10)).rejects.toThrow('network down');
+  });
+
+  it('auditDueJobs does not alert on transient Prisma errors from listDueJobs', async () => {
+    const prisma = {
+      kloelMemory: {
+        findMany: jest.fn().mockRejectedValue(
+          new Prisma.PrismaClientKnownRequestError('connection timed out', {
+            code: 'P2024',
+            clientVersion: '5.0.0',
+          }),
+        ),
+      },
+    };
+    const opsAlert = { alertOnCriticalError: jest.fn() };
+    const service = new AgentRuntimeSchedulerService(
+      prisma as never,
+      { buildEnvelope: jest.fn() } as never,
+      opsAlert as never,
+    );
+
+    await service.auditDueJobs();
+
+    expect(opsAlert.alertOnCriticalError).not.toHaveBeenCalled();
   });
 });

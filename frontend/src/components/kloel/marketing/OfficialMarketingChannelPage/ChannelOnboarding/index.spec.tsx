@@ -224,9 +224,11 @@ describe('per-step rendering + handlers', () => {
     // pick the third tone trace (Caloroso, index 2) — first dial in document order.
     const dialButtons = screen
       .getAllByRole('button')
-      .filter((b) => ['Sereno', 'Equilibrado', 'Caloroso', 'Paciente', 'Firme', 'Incisivo'].includes(
-        b.getAttribute('aria-label') || '',
-      ));
+      .filter((b) =>
+        ['Sereno', 'Equilibrado', 'Caloroso', 'Paciente', 'Firme', 'Incisivo'].includes(
+          b.getAttribute('aria-label') || '',
+        ),
+      );
     expect(dialButtons.length).toBe(6);
     fireEvent.click(dialButtons[2]); // Caloroso
     expect(data.updateConfig).toHaveBeenCalledWith(expect.objectContaining({ tone: 'caloroso' }));

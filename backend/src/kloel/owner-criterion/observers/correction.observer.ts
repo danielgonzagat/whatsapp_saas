@@ -60,7 +60,7 @@ function extractMessageRewrites(events: readonly SpineEventRef[]): CorrectionSig
     .filter((e) => e.eventName === 'commerce.whatsapp.message_replied')
     .filter((e) => hasExplicitMessageRewriteEvidence(e.payload))
     .map((e) => ({
-      correctionKind: 'message_rewrite' as CorrectionKind,
+      correctionKind: 'message_rewrite',
       correctedTarget: readString(e.payload?.['correctedTarget']) || 'auto_reply',
       eventId: e.eventId,
       occurredAt: e.occurredAt,
@@ -76,7 +76,7 @@ function extractClassificationFixes(events: readonly SpineEventRef[]): Correctio
       return payload?.['causedByEventId'] !== undefined;
     })
     .map((e) => ({
-      correctionKind: 'classification_fix' as CorrectionKind,
+      correctionKind: 'classification_fix',
       correctedTarget: 'lead_classification',
       eventId: e.eventId,
       occurredAt: e.occurredAt,
@@ -92,7 +92,7 @@ function extractActionReversals(events: readonly SpineEventRef[]): CorrectionSig
         (e.payload as Record<string, unknown> | undefined)?.['updateKind'] === 'reversal',
     )
     .map((e) => ({
-      correctionKind: 'action_reversal' as CorrectionKind,
+      correctionKind: 'action_reversal',
       correctedTarget: 'belief',
       eventId: e.eventId,
       occurredAt: e.occurredAt,
@@ -120,7 +120,7 @@ function extractOperatorFeedbackCorrections(events: readonly SpineEventRef[]): C
     .filter((e) => e.entityRef?.entityType === 'operator')
     .filter((e) => hasOperatorLearningFeedback(e.payload))
     .map((e) => ({
-      correctionKind: 'policy_adjustment' as CorrectionKind,
+      correctionKind: 'policy_adjustment',
       correctedTarget: 'operator_feedback',
       eventId: e.eventId,
       occurredAt: e.occurredAt,
@@ -155,9 +155,15 @@ function describeCorrection(
 }
 
 function computeConfidence(signalCount: number): number {
-  if (signalCount >= 10) return 0.9;
-  if (signalCount >= 5) return 0.75;
-  if (signalCount >= 3) return 0.6;
+  if (signalCount >= 10) {
+    return 0.9;
+  }
+  if (signalCount >= 5) {
+    return 0.75;
+  }
+  if (signalCount >= 3) {
+    return 0.6;
+  }
   return 0.4;
 }
 
@@ -242,7 +248,9 @@ function buildFutureBehaviorChange(
 }
 
 function detectNonDefensiveAcceptance(signals: readonly CorrectionSignal[]): boolean {
-  if (signals.length === 0) return false;
+  if (signals.length === 0) {
+    return false;
+  }
 
   const defensiveMarkers = [
     'rejectionReason',
@@ -254,7 +262,9 @@ function detectNonDefensiveAcceptance(signals: readonly CorrectionSignal[]): boo
 
   for (const signal of signals) {
     const payload = signal.payload;
-    if (!payload) continue;
+    if (!payload) {
+      continue;
+    }
     for (const marker of defensiveMarkers) {
       if (payload[marker] !== undefined && payload[marker] !== null && payload[marker] !== false) {
         return false;

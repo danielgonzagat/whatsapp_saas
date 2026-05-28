@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { randomIdSegment } from '../../common/random-id';
 
 /**
  * UTP-MIND-PREDICT — Predictive coding engine.
@@ -156,7 +157,7 @@ export class MindPredictionService {
     for (const [intent, count] of significantIntents.slice(0, 5)) {
       // Predict that this pattern will continue
       const pred: GeneratedPrediction = {
-        id: `pred_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+        id: `pred_${Date.now().toString(36)}_${randomIdSegment(4)}`,
         predicate: `pattern_${intent}_continues`,
         expectedOutcome: intent,
         confidence: Math.min(0.95, count / (count + 2)), // Beta(1,1) posterior
@@ -174,7 +175,7 @@ export class MindPredictionService {
     const sequencePatterns = this.detectSequences(rows);
     for (const seq of sequencePatterns.slice(0, 3)) {
       const pred: GeneratedPrediction = {
-        id: `pred_seq_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`,
+        id: `pred_seq_${Date.now().toString(36)}_${randomIdSegment(4)}`,
         predicate: `sequence_${seq.predecessor}_leads_to_${seq.successor}`,
         expectedOutcome: seq.successor,
         confidence: seq.confidence,

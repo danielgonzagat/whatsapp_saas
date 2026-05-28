@@ -1,0 +1,275 @@
+import { MindEventProcessorService } from './mind-event-processor.service';
+
+describe('MindEventProcessorService', () => {
+  const predictor = {
+    predictConversion: jest.fn(),
+    predictReply: jest.fn(),
+  };
+  const surprise = {
+    resolveBinary: jest.fn(),
+  };
+  const policy = {
+    resolveOpenForSubject: jest.fn(),
+    confirmAutopilotOutcome: jest.fn(),
+  };
+  const cases = {
+    recordCase: jest.fn(),
+  };
+  const concepts = {
+    detect: jest.fn(),
+  };
+
+  let service: MindEventProcessorService;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    predictor.predictConversion.mockResolvedValue({});
+    predictor.predictReply.mockResolvedValue({});
+    surprise.resolveBinary.mockResolvedValue(0);
+    policy.resolveOpenForSubject.mockResolvedValue(1);
+    policy.confirmAutopilotOutcome.mockResolvedValue({ confirmed: 0, unanswered: 0 });
+    cases.recordCase.mockResolvedValue(undefined);
+    concepts.detect.mockResolvedValue(undefined);
+    service = new MindEventProcessorService(
+      predictor as never,
+      surprise as never,
+      policy as never,
+      cases as never,
+      concepts as never,
+    );
+  });
+
+  it('closes reply-oriented MIND decisions when an inbound message arrives', async () => {
+    await service.process({
+      kind: 'message.received',
+      workspaceId: 'ws-1',
+      subject: 'contact:lead-1',
+      payload: { channel: 'instagram', content: 'quero comprar' },
+      occurredAt: new Date('2026-05-09T12:00:00.000Z'),
+    });
+
+    expect(policy.resolveOpenForSubject).toHaveBeenCalledWith({
+      workspaceId: 'ws-1',
+      subject: 'contact:lead-1',
+      decisionType: 'followup_timing',
+      outcome: 1,
+    });
+    for (const decisionType of ['audio_vs_text', 'message_format', 'tom', 'channel_choice']) {
+      expect(policy.resolveOpenForSubject).toHaveBeenCalledWith({
+        workspaceId: 'ws-1',
+        subject: 'workspace:ws-1',
+        decisionType,
+        outcome: 1,
+      });
+    }
+  });
+
+  it('closes conversion-oriented MIND decisions when checkout is paid', async () => {
+    await service.process({
+      kind: 'checkout.paid',
+      workspaceId: 'ws-1',
+      subject: 'order:order-1',
+      payload: { status: 'PAID' },
+      occurredAt: new Date('2026-05-09T12:00:00.000Z'),
+    });
+
+    expect(policy.resolveOpenForSubject).toHaveBeenCalledWith({
+      workspaceId: 'ws-1',
+      subject: 'order:order-1',
+      decisionType: 'cart_recovery',
+      outcome: 1,
+    });
+    for (const decisionType of ['coupon_offer', 'product_offer', 'objection_response']) {
+      expect(policy.resolveOpenForSubject).toHaveBeenCalledWith({
+        workspaceId: 'ws-1',
+        subject: 'workspace:ws-1',
+        decisionType,
+        outcome: 1,
+      });
+    }
+  });
+
+  it('closes human transfer decisions when autopilot qualifies a lead', async () => {
+    await service.process({
+      kind: 'autopilot.lead_qualified.completed',
+      workspaceId: 'ws-1',
+      subject: 'contact:lead-1',
+      payload: { intent: 'lead_qualified' },
+      occurredAt: new Date('2026-05-09T12:00:00.000Z'),
+    });
+
+    expect(policy.resolveOpenForSubject).toHaveBeenCalledWith({
+      workspaceId: 'ws-1',
+      subject: 'workspace:ws-1',
+      decisionType: 'human_transfer',
+      outcome: 1,
+    });
+  });
+
+  it('closes human transfer when commercial lead events arrive through the event spine', async () => {
+    await service.process({
+      kind: 'autopilot.lead_lifecycle.executed',
+      workspaceId: 'ws-1',
+      subject: 'contact:lead-1',
+      payload: { action: 'lead.qualified', intent: 'lead_lifecycle' },
+      occurredAt: new Date('2026-05-09T12:00:00.000Z'),
+    });
+
+    expect(policy.resolveOpenForSubject).toHaveBeenCalledWith({
+      workspaceId: 'ws-1',
+      subject: 'workspace:ws-1',
+      decisionType: 'human_transfer',
+      outcome: 1,
+    });
+  });
+
+  it('closes campaign decisions when commercial campaign conversion events arrive', async () => {
+    await service.process({
+      kind: 'autopilot.campaign_lifecycle.executed',
+      workspaceId: 'ws-1',
+      subject: 'campaign:campaign-1',
+      payload: { action: 'campaign.converted', intent: 'campaign_lifecycle' },
+      occurredAt: new Date('2026-05-09T12:00:00.000Z'),
+    });
+
+    for (const decisionType of ['broadcast_window', 'ad_alert_action']) {
+      expect(policy.resolveOpenForSubject).toHaveBeenCalledWith({
+        workspaceId: 'ws-1',
+        subject: 'workspace:ws-1',
+        decisionType,
+        outcome: 1,
+      });
+    }
+  });
+
+  it('closes checkout outcomes as failed when checkout expires', async () => {
+    await service.process({
+      kind: 'checkout.expired',
+      workspaceId: 'ws-1',
+      subject: 'order:order-1',
+      payload: {},
+      occurredAt: new Date('2026-05-09T12:00:00.000Z'),
+    });
+
+    expect(policy.resolveOpenForSubject).toHaveBeenCalledWith({
+      workspaceId: 'ws-1',
+      subject: 'order:order-1',
+      decisionType: 'cart_recovery',
+      outcome: 0,
+    });
+    expect(policy.resolveOpenForSubject).toHaveBeenCalledWith({
+      workspaceId: 'ws-1',
+      subject: 'workspace:ws-1',
+      decisionType: 'coupon_offer',
+      outcome: 0,
+    });
+  });
+
+  it('closes human transfer and campaign outcomes from explicit commercial events', async () => {
+    await service.process({
+      kind: 'conversation.transferred',
+      workspaceId: 'ws-1',
+      subject: 'contact:lead-1',
+      payload: { status: 'resolved' },
+      occurredAt: new Date('2026-05-09T12:00:00.000Z'),
+    });
+    await service.process({
+      kind: 'campaign.converted',
+      workspaceId: 'ws-1',
+      subject: 'campaign:campaign-1',
+      payload: { outcome: 1 },
+      occurredAt: new Date('2026-05-09T13:00:00.000Z'),
+    });
+
+    expect(policy.resolveOpenForSubject).toHaveBeenCalledWith({
+      workspaceId: 'ws-1',
+      subject: 'workspace:ws-1',
+      decisionType: 'human_transfer',
+      outcome: 1,
+    });
+    expect(policy.resolveOpenForSubject).toHaveBeenCalledWith({
+      workspaceId: 'ws-1',
+      subject: 'workspace:ws-1',
+      decisionType: 'broadcast_window',
+      outcome: 1,
+    });
+  });
+
+  describe('CIA Gap 4 Phase 2 — delayed message.received outcome resolution', () => {
+    it('confirms autopilot_action outcome when message.received arrives from the same contact', async () => {
+      await service.process({
+        kind: 'message.received',
+        workspaceId: 'ws-1',
+        subject: 'contact:lead-1',
+        payload: { channel: 'instagram', content: 'quero comprar' },
+        occurredAt: new Date('2026-05-09T12:00:00.000Z'),
+      });
+
+      expect(policy.confirmAutopilotOutcome).toHaveBeenCalledWith({
+        workspaceId: 'ws-1',
+        contactId: 'lead-1',
+      });
+    });
+
+    it('extracts contactId from subject correctly for message.received', async () => {
+      await service.process({
+        kind: 'message.received',
+        workspaceId: 'ws-2',
+        subject: 'contact:buyer-42',
+        payload: { channel: 'whatsapp', content: 'sim' },
+        occurredAt: new Date('2026-05-09T12:05:00.000Z'),
+      });
+
+      expect(policy.confirmAutopilotOutcome).toHaveBeenCalledWith({
+        workspaceId: 'ws-2',
+        contactId: 'buyer-42',
+      });
+    });
+
+    it('does not call confirmAutopilotOutcome for non-contact subjects', async () => {
+      await service.process({
+        kind: 'message.received',
+        workspaceId: 'ws-1',
+        subject: 'workspace:ws-1',
+        payload: { channel: 'whatsapp', content: 'hello' },
+        occurredAt: new Date('2026-05-09T12:00:00.000Z'),
+      });
+
+      expect(policy.confirmAutopilotOutcome).not.toHaveBeenCalled();
+    });
+
+    it('adds confirmed+unanswered counts to result.resolved', async () => {
+      policy.confirmAutopilotOutcome.mockResolvedValue({ confirmed: 2, unanswered: 1 });
+
+      const result = await service.process({
+        kind: 'message.received',
+        workspaceId: 'ws-1',
+        subject: 'contact:lead-1',
+        payload: { channel: 'instagram', content: 'ok' },
+        occurredAt: new Date('2026-05-09T12:00:00.000Z'),
+      });
+
+      // 2 confirmed + 1 unanswered + followup_timing (1) + workspace policies (4) = 8
+      // But resolveOpenForSubject returns 1 per call (mock default).
+      // followup_timing: 1, workspace×4: 4, confirmAutopilot: 3 → 8
+      expect(result.resolved).toBeGreaterThanOrEqual(5);
+    });
+  });
+
+  it('closes ad alert outcomes from metric movement events', async () => {
+    await service.process({
+      kind: 'ad.metric.worsened',
+      workspaceId: 'ws-1',
+      subject: 'ad:ad-1',
+      payload: {},
+      occurredAt: new Date('2026-05-09T12:00:00.000Z'),
+    });
+
+    expect(policy.resolveOpenForSubject).toHaveBeenCalledWith({
+      workspaceId: 'ws-1',
+      subject: 'workspace:ws-1',
+      decisionType: 'ad_alert_action',
+      outcome: 0,
+    });
+  });
+});

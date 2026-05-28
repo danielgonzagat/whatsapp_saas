@@ -10,7 +10,7 @@
 export type PaymentMethod = 'pix' | 'card' | 'boleto';
 
 /** Canonical provider names (lowercase strings, matching DB `Payment.provider`). */
-export type PaymentProvider = 'mercadopago' | 'stripe';
+type PaymentProvider = 'mercadopago' | 'stripe';
 
 /** Input the router needs to make a decision. */
 export interface ProviderRoutingInput {

@@ -22,9 +22,12 @@ export class CashPositionTracker {
     const balance30d = this.sumWindow(scoped, 30, now);
 
     const currentBalance = this.balanceAt(scoped);
-    const trend7d = currentBalance !== 0n ? Number((currentBalance - balance7d) * 100n / currentBalance) : 0;
-    const trend14d = currentBalance !== 0n ? Number((currentBalance - balance14d) * 100n / currentBalance) : 0;
-    const trend30d = currentBalance !== 0n ? Number((currentBalance - balance30d) * 100n / currentBalance) : 0;
+    const trend7d =
+      currentBalance !== 0n ? Number(((currentBalance - balance7d) * 100n) / currentBalance) : 0;
+    const trend14d =
+      currentBalance !== 0n ? Number(((currentBalance - balance14d) * 100n) / currentBalance) : 0;
+    const trend30d =
+      currentBalance !== 0n ? Number(((currentBalance - balance30d) * 100n) / currentBalance) : 0;
 
     const min7d = this.minBalanceInWindow(allBalances, 7, now);
     const max7d = this.maxBalanceInWindow(allBalances, 7, now);
@@ -49,19 +52,13 @@ export class CashPositionTracker {
     return sumAmounts(entries);
   }
 
-  private sumWindow(
-    entries: readonly CashEntry[],
-    windowDays: number,
-    nowMs: number,
-  ): bigint {
+  private sumWindow(entries: readonly CashEntry[], windowDays: number, nowMs: number): bigint {
     const window = entriesInWindow(entries, windowDays, nowMs);
     return sumAmounts(window);
   }
 
   private computeDailyBalances(entries: readonly CashEntry[]): readonly bigint[] {
-    const sorted = [...entries].sort(
-      (a, b) => Date.parse(a.entryDate) - Date.parse(b.entryDate),
-    );
+    const sorted = [...entries].sort((a, b) => Date.parse(a.entryDate) - Date.parse(b.entryDate));
 
     const dayMap = new Map<string, bigint>();
     for (const e of sorted) {

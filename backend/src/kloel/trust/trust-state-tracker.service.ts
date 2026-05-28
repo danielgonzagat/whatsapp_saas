@@ -57,33 +57,21 @@ export class TrustStateTrackerService {
     const trustEvents = recentEvents.map(toTrustEvent);
 
     const fatigue = detectFatigue(trustEvents);
-    const outbound = trustEvents.filter((e) =>
-      e.eventName === 'commerce.whatsapp.message_replied',
-    );
+    const outbound = trustEvents.filter((e) => e.eventName === 'commerce.whatsapp.message_replied');
     const desperation = detectDesperation(outbound);
 
     const now = new Date();
     const nowIso = now.toISOString();
 
-    const minutesSinceLast = this.minutesSince(
-      current.lastInteractionAt,
-      now,
-    );
+    const minutesSinceLast = this.minutesSince(current.lastInteractionAt, now);
     const fatigueDecay = minutesSinceLast * FATIGUE_DECAY_PER_MINUTE;
 
     const silentCount =
-      current.silentInteractionsCount +
-      (this.hasNewInboundSilence(trustEvents, current) ? 1 : 0);
+      current.silentInteractionsCount + (this.hasNewInboundSilence(trustEvents, current) ? 1 : 0);
 
-    let trustScore = this.adjustTrustScore(
-      current.trustScore,
-      trustEvents,
-    );
+    let trustScore = this.adjustTrustScore(current.trustScore, trustEvents);
 
-    const brandRisk = this.collectBrandRisk(
-      outbound,
-      current.brandRiskFlags,
-    );
+    const brandRisk = this.collectBrandRisk(outbound, current.brandRiskFlags);
 
     if (brandRisk.length > 0) {
       trustScore = Math.max(TRUST_FLOOR, trustScore - 0.08);
@@ -144,10 +132,7 @@ export class TrustStateTrackerService {
     };
   }
 
-  private adjustTrustScore(
-    current: number,
-    events: readonly TrustEvent[],
-  ): number {
+  private adjustTrustScore(current: number, events: readonly TrustEvent[]): number {
     let score = current;
 
     for (const ev of events) {
@@ -171,10 +156,7 @@ export class TrustStateTrackerService {
     return Math.max(TRUST_FLOOR, Math.min(TRUST_CEILING, score));
   }
 
-  private hasNewInboundSilence(
-    events: readonly TrustEvent[],
-    current: TrustState,
-  ): boolean {
+  private hasNewInboundSilence(events: readonly TrustEvent[], current: TrustState): boolean {
     return (
       events.some((e) => e.eventName === 'commerce.lead.went_silent') &&
       current.silentInteractionsCount === 0

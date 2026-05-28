@@ -1,18 +1,13 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { getBackendUrl } from '../../../../_lib/backend-url';
 import { clearCheckoutAppleState, readCheckoutAppleState } from '../state';
+import { parseAppleUser, type AppleUserPayload } from '../../../../_lib/apple-auth';
 
 type AppleCallbackPayload = {
   identityToken?: string;
   authorizationCode?: string;
   state?: string;
-  user?: {
-    name?: {
-      firstName?: string;
-      lastName?: string;
-    };
-    email?: string;
-  };
+  user?: AppleUserPayload;
 };
 
 function appendResult(returnTo: string, origin: string, result: '1' | '0', reason?: string): URL {
@@ -22,19 +17,6 @@ function appendResult(returnTo: string, origin: string, result: '1' | '0', reaso
     destination.searchParams.set('apple_social_error', reason);
   }
   return destination;
-}
-
-function parseAppleUser(rawUser: FormDataEntryValue | null) {
-  if (typeof rawUser !== 'string' || !rawUser.trim()) {
-    return undefined;
-  }
-
-  try {
-    const parsed = JSON.parse(rawUser) as AppleCallbackPayload['user'];
-    return parsed && typeof parsed === 'object' ? parsed : undefined;
-  } catch {
-    return undefined;
-  }
 }
 
 async function readAppleCallbackPayload(request: NextRequest): Promise<AppleCallbackPayload> {

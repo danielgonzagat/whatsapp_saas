@@ -1,38 +1,35 @@
 #!/usr/bin/env bash
-#
-# Launch codecov-mcp-server with credentials sourced from .env.pulse.local.
-# Invoked by the "codecov" entry in .mcp.json.
-#
-# Required in .env.pulse.local:
-#   CODECOV_TOKEN=<token>      (from app.codecov.io → Settings → Access Tokens)
-#   GITHUB_OWNER=<owner>       (GitHub org or user slug)
-#   GITHUB_REPO=<repo>         (repository name)
-#
-# Contract: never print token values. Fail loudly on missing credentials.
-#
+# Codecov MCP launcher for KLOEL.
+# Sources env vars, then delegates to the persistent Node server.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ENV_FILE="${SCRIPT_DIR}/../../.env.pulse.local"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+ENV_FILE="${REPO_ROOT}/.env.pulse.local"
 
-if [[ ! -f "$ENV_FILE" ]]; then
-  echo >&2 "codecov-mcp: .env.pulse.local not found at $ENV_FILE"
-  exit 1
+if [[ -f "$ENV_FILE" ]]; then
+  set -a
+  # shellcheck disable=SC1090
+  source "$ENV_FILE"
+  set +a
 fi
 
-set -a
-# shellcheck disable=SC1090
-source "$ENV_FILE"
-set +a
-
-if [[ -z "${CODECOV_TOKEN:-}" ]]; then
-  echo >&2 "codecov-mcp: CODECOV_TOKEN is not set in .env.pulse.local"
-  echo >&2 "  Get it from: app.codecov.io → Settings → Access Tokens"
-  exit 1
+# Normalize token env var. Codecov uses different tokens for upload vs API.
+# Priority: CODECOV_API_KEY > CODECOV_STATIC_TOKEN > CODECOV_TOKEN
+# Upload tokens (CODECOV_TOKEN) do NOT work for API v2 — you need an API token
+# from https://app.codecov.io/account/gh/<user>/api-tokens
+if [[ -z "${CODECOV_API_KEY:-}" ]]; then
+  if [[ -n "${CODECOV_STATIC_TOKEN:-}" ]]; then
+    export CODECOV_API_KEY="${CODECOV_STATIC_TOKEN}"
+  elif [[ -n "${CODECOV_TOKEN:-}" ]]; then
+    export CODECOV_API_KEY="${CODECOV_TOKEN}"
+  fi
 fi
 
-export CODECOV_TOKEN
-export GITHUB_OWNER="${GITHUB_OWNER:-}"
-export GITHUB_REPO="${GITHUB_REPO:-}"
+# Defaults
+export GIT_URL="${GIT_URL:-https://github.com/danielgonzagat/whatsapp_saas.git}"
+export GITHUB_OWNER="${GITHUB_OWNER:-danielgonzagat}"
+export GITHUB_REPO="${GITHUB_REPO:-whatsapp_saas}"
+export GITHUB_SERVICE="${GITHUB_SERVICE:-github}"
 
-exec npx --yes codecov-mcp-server@latest
+exec node "${SCRIPT_DIR}/codecov-mcp-server.mjs"

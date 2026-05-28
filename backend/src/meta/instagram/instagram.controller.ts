@@ -17,6 +17,7 @@ import { normalizeMetaGraphSegment } from '../meta-input.util';
 import { MetaWhatsAppService } from '../meta-whatsapp.service';
 import { InstagramService } from './instagram.service';
 import { RouteClass } from '../../common/throttler/route-class.decorator';
+import { PaginationLimitPipe } from '../../common/pagination-clamp.pipe';
 
 /** Instagram controller. */
 @Controller('meta/instagram')
@@ -67,17 +68,12 @@ export class InstagramController {
   async getMedia(
     @Req() req: AuthenticatedRequest,
     @Query('igAccountId') igAccountId: string,
-    @Query('limit') limit: string,
+    @Query('limit', new PaginationLimitPipe({ default: 25 })) limit: number,
     @Query('accessToken') accessToken: string,
   ) {
     const workspaceId = resolveWorkspaceId(req);
     const connection = await this.resolveInstagramConnection(workspaceId, igAccountId, accessToken);
-    const clampedLimit = Math.min(Math.max(Number(limit) || 25, 1), 100);
-    return this.instagramService.getMedia(
-      connection.igAccountId,
-      clampedLimit,
-      connection.accessToken,
-    );
+    return this.instagramService.getMedia(connection.igAccountId, limit, connection.accessToken);
   }
 
   /** Get account insights. */

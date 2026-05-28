@@ -103,6 +103,5 @@ export const ROLE_DESCRIPTIONS: Readonly<Record<Role, string>> = {
   creator: 'Cria conteudo e audiencia. Controla narrativa, engajamento e confianca.',
   especialista: 'Domina um dominio especifico. Controla execucao profunda em area restrita.',
 };
-export function clampConfidence(value: number): number {
-  return Math.max(0, Math.min(1, value));
-}
+import { clampScore } from '../../common/math';
+export const clampConfidence = clampScore;

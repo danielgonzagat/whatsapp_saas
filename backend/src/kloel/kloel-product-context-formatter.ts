@@ -1,6 +1,7 @@
 import { KloelContextBaseFormatter } from './kloel-context-base-formatter';
 import type { KloelContextFormatterLimits } from './kloel-context-formatter.types';
 import { KloelProductMetaContextFormatter } from './kloel-product-meta-context-formatter';
+import { safeStr } from '../common/string';
 
 export class KloelProductContextFormatter extends KloelProductMetaContextFormatter {
   constructor(base: KloelContextBaseFormatter, limits: KloelContextFormatterLimits) {
@@ -8,13 +9,6 @@ export class KloelProductContextFormatter extends KloelProductMetaContextFormatt
   }
 
   buildWorkspaceProductContext(product: Record<string, unknown>, index: number): string {
-    const safeStr = (v: unknown, fb = ''): string => {
-      return typeof v === 'string'
-        ? v
-        : typeof v === 'number' || typeof v === 'boolean'
-          ? String(v)
-          : fb;
-    };
     const lines: string[] = [`PRODUTO ${index + 1}: ${safeStr(product.name)}`];
     lines.push(
       [

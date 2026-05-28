@@ -1,4 +1,13 @@
-import type { CashEntry, CashPosition, PayablesProjection, ReceivablesProjection, RiskDetection, RiskInput, RunwayCalculation, VolatilityTracking } from './types';
+import type {
+  CashEntry,
+  CashPosition,
+  PayablesProjection,
+  ReceivablesProjection,
+  RiskDetection,
+  RiskInput,
+  RunwayCalculation,
+  VolatilityTracking,
+} from './types';
 
 import { CashPositionTracker } from './cash-position.tracker';
 import { ReceivablesProjector } from './receivables.projector';
@@ -9,7 +18,13 @@ import { VolatilityTracker } from './volatility.tracker';
 import { ProtectiveActionSuggester } from './protective-action.suggester';
 import { UnsafeOperationBlocker } from './unsafe-operation.blocker';
 
-import { sumAmounts, standardDeviation, entriesByCategory, entriesForWorkspace, entriesInWindow } from './types';
+import {
+  sumAmounts,
+  standardDeviation,
+  entriesByCategory,
+  entriesForWorkspace,
+  entriesInWindow,
+} from './types';
 
 const NOW = Date.parse('2026-05-14T12:00:00.000Z');
 const WKS = 'wks_cash_test';
@@ -140,10 +155,7 @@ describe('CASH-001 — CashPositionTracker', () => {
   });
 
   it('balanceAt helper returns sum', () => {
-    const entries: CashEntry[] = [
-      entry({ amountCents: 1000n }),
-      entry({ amountCents: 2000n }),
-    ];
+    const entries: CashEntry[] = [entry({ amountCents: 1000n }), entry({ amountCents: 2000n })];
     expect(tracker.balanceAt(entries)).toBe(3000n);
   });
 });
@@ -156,8 +168,18 @@ describe('CASH-002 — ReceivablesProjector', () => {
 
   it('projects receivables from projected_receivable entries', () => {
     const entries: CashEntry[] = [
-      entry({ category: 'projected_receivable', amountCents: 50000n, confidence: 0.9, entryDate: iso(3) }),
-      entry({ category: 'projected_receivable', amountCents: 30000n, confidence: 0.8, entryDate: iso(10) }),
+      entry({
+        category: 'projected_receivable',
+        amountCents: 50000n,
+        confidence: 0.9,
+        entryDate: iso(3),
+      }),
+      entry({
+        category: 'projected_receivable',
+        amountCents: 30000n,
+        confidence: 0.8,
+        entryDate: iso(10),
+      }),
     ];
     const p = projector.project(entries, WKS, NOW);
     expect(p.totalExpectedCents).toBe(80000n);
@@ -271,17 +293,13 @@ describe('CASH-005 — RiskDetector', () => {
   });
 
   it('detects critical on runway < 14 days', () => {
-    const r = detector.detect(
-      riskInput({ runway: makeRunway({ runwayDays: 10 }) }),
-    );
+    const r = detector.detect(riskInput({ runway: makeRunway({ runwayDays: 10 }) }));
     expect(r.riskLevel).toBe('critical');
     expect(r.riskDetected).toBe(true);
   });
 
   it('detects high on runway < 30 days', () => {
-    const r = detector.detect(
-      riskInput({ runway: makeRunway({ runwayDays: 25 }) }),
-    );
+    const r = detector.detect(riskInput({ runway: makeRunway({ runwayDays: 25 }) }));
     expect(r.riskLevel).toBe('high');
   });
 

@@ -1,7 +1,7 @@
 import type { PrismaService } from '../prisma/prisma.service';
 import type { Prisma } from '@prisma/client';
 
-export type FollowupMetadata = {
+type FollowupMetadata = {
   phone?: string;
   contactId?: string;
   message?: string;

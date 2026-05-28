@@ -306,13 +306,7 @@ export function StepVoice({
             onChange={onToneChange}
             labels={TONE_LABELS}
           />
-          <Dial
-            C={C}
-            label="Postura"
-            value={edge}
-            onChange={onEdgeChange}
-            labels={EDGE_LABELS}
-          />
+          <Dial C={C} label="Postura" value={edge} onChange={onEdgeChange} labels={EDGE_LABELS} />
         </div>
       }
       action={

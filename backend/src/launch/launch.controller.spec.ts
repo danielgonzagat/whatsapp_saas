@@ -39,9 +39,7 @@ describe('LaunchController', () => {
 
   describe('GET /launch/launchers (listLaunchers)', () => {
     it('calls service.listLaunchers with resolved workspaceId and returns data', async () => {
-      listLaunchersMock.mockResolvedValue([
-        { id: 'l-1', name: 'Launch 1', groups: [] },
-      ]);
+      listLaunchersMock.mockResolvedValue([{ id: 'l-1', name: 'Launch 1', groups: [] }]);
 
       const result = await controller.listLaunchers(mockReq);
 
@@ -159,5 +157,8 @@ describe('LaunchController', () => {
 
 // NestJS exceptions used in joinLaunch validation
 class NotFoundException extends Error {
-  constructor(message: string) { super(message); this.name = 'NotFoundException'; }
+  constructor(message: string) {
+    super(message);
+    this.name = 'NotFoundException';
+  }
 }

@@ -1,0 +1,8 @@
+{
+  "name": "eslint-plugin-canonical",
+  "version": "1.0.0",
+  "description": "ESLint plugin enforcing canonical implementation homes for Kloel shared primitives",
+  "main": "index.cjs",
+  "private": true,
+  "license": "UNLICENSED"
+}

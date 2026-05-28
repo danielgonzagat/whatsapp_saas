@@ -68,6 +68,26 @@ describe('MetaAuthController', () => {
     );
   });
 
+  describe('configuration aliases', () => {
+    it('reads accepted Meta app id and secret aliases', () => {
+      process.env.FACEBOOK_APP_ID = 'facebook-app-id';
+      process.env.FACEBOOK_APP_SECRET = 'facebook-app-secret';
+
+      const aliasedController = new MetaAuthController(
+        mockMetaSdk as never,
+        mockMetaWhatsApp as never,
+        mockPrisma as never as PrismaService,
+        undefined,
+      ) as unknown as { appId: string; appSecret: string };
+
+      expect(aliasedController.appId).toBe('facebook-app-id');
+      expect(aliasedController.appSecret).toBe('facebook-app-secret');
+
+      delete process.env.FACEBOOK_APP_ID;
+      delete process.env.FACEBOOK_APP_SECRET;
+    });
+  });
+
   describe('parseState', () => {
     it('parses JSON state from encoded URI', () => {
       const result = (

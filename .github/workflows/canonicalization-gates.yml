@@ -1,0 +1,30 @@
+name: Canonicalization Gates
+
+# Opt-in anti-regression gate suite for canonicalization enforcement.
+# Runs on PRs to main and on demand. Non-blocking (status check only)
+# until all gates are green and baseline violations are addressed.
+#
+# See: docs/architecture/ANTI_REGRESSION_GATES.md
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  canonicalization-gates:
+    name: Canonicalization Gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run canonicalization gates
+        run: node scripts/ops/canonical/run-all-gates.mjs

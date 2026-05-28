@@ -223,13 +223,13 @@ export class UnifiedAgentContextService {
 
   resolveBusinessDisplayName(workspace: UnknownRecord): string {
     const settings = this.readRecord(workspace?.providerSettings);
-    const waSession = this.readRecord(settings.whatsappApiSession);
+    const channelSession = this.readRecord(settings.whatsappApiSession);
     const candidates = [
       settings.businessName,
       settings.brandName,
       settings.companyName,
       settings.whatsappBusinessName,
-      waSession.pushName,
+      channelSession.pushName,
       workspace?.name,
     ];
 

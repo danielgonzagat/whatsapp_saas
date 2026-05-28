@@ -29,12 +29,16 @@ export class SocialProofHarvester {
 
     for (const event of wsEvents) {
       const kind = PROOF_SIGNAL_MAP[event.eventName];
-      if (!kind) continue;
+      if (!kind) {
+        continue;
+      }
 
       const proofId = `${input.workspaceId}_${kind}_${event.eventId}`;
 
       const existing = this.store.get(input.workspaceId) ?? [];
-      if (existing.some((p) => p.proofId === proofId)) continue;
+      if (existing.some((p) => p.proofId === proofId)) {
+        continue;
+      }
 
       const credibility = this.computeCredibility(kind, event);
       const visibility = this.computeVisibility(kind);
@@ -64,7 +68,11 @@ export class SocialProofHarvester {
     return this.store.get(workspaceId) ?? [];
   }
 
-  aggregate(workspaceId: string): { readonly proofCount: number; readonly avgCredibility: number; readonly avgVisibility: number } {
+  aggregate(workspaceId: string): {
+    readonly proofCount: number;
+    readonly avgCredibility: number;
+    readonly avgVisibility: number;
+  } {
     const proofs = this.list(workspaceId);
     if (proofs.length === 0) {
       return { proofCount: 0, avgCredibility: 0, avgVisibility: 0 };
@@ -80,7 +88,10 @@ export class SocialProofHarvester {
     };
   }
 
-  private computeCredibility(kind: ProofKind, _event: { payload?: Readonly<Record<string, unknown>> }): number {
+  private computeCredibility(
+    kind: ProofKind,
+    _event: { payload?: Readonly<Record<string, unknown>> },
+  ): number {
     const base: Readonly<Record<ProofKind, number>> = {
       testimonial: 0.6,
       review: 0.7,

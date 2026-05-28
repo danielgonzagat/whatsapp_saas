@@ -79,7 +79,7 @@ describe('MemoryManagementService', () => {
           return (arg as (client: typeof prisma) => Promise<unknown>)(prisma);
         }
         return Promise.resolve(undefined);
-      }) as jest.Mock,
+      }),
       $queryRaw: jest.fn().mockResolvedValue([]),
     };
 

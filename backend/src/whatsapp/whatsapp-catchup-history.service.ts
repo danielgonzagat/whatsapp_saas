@@ -29,13 +29,10 @@ import {
   normalizeOptionalText,
   safeStr,
   type WahaMessagePayload,
-} from './whatsapp-catchup-history.shared';
+} from '../marketing/channels/whatsapp/whatsapp-catchup-history.shared';
 
-export type CatchupBackfillCursor = {
-  chatId: string;
-  activityTimestamp: number;
-  updatedAt: string;
-} | null;
+import type { CatchupBackfillCursor } from './whatsapp.interfaces';
+export type { CatchupBackfillCursor };
 
 @Injectable()
 export class WhatsappCatchupHistoryService {

@@ -1,4 +1,5 @@
 import { Body, Controller, Get, HttpException, Post, Put, Query, Req, Res } from '@nestjs/common';
+import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import * as Sentry from '@sentry/node';
 import { AuthenticatedRequest } from '../common/interfaces';
@@ -23,12 +24,16 @@ import { RouteClass } from '../common/throttler/route-class.decorator';
 import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 
 /** Auth controller. */
+@ApiTags('Auth')
 @Controller('auth')
 @RouteClass('auth')
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
   /** Check email. */
+  @ApiOperation({ summary: 'Check if an email is available for registration' })
+  @ApiResponse({ status: 200, description: 'Email availability status' })
+  @ApiBody({ type: CheckEmailDto })
   @Public()
   @Post('check-email')
   async checkEmail(@Body() body: CheckEmailDto) {
@@ -36,6 +41,8 @@ export class AuthController {
   }
 
   /** Check email query. */
+  @ApiOperation({ summary: 'Check if an email is available (GET variant)' })
+  @ApiResponse({ status: 200, description: 'Email availability status' })
   @Public()
   @Get('check-email')
   async checkEmailQuery(@Query('email') email?: string) {
@@ -46,6 +53,10 @@ export class AuthController {
   }
 
   /** Register. */
+  @ApiOperation({ summary: 'Register a new user account' })
+  @ApiResponse({ status: 201, description: 'Account created' })
+  @ApiResponse({ status: 409, description: 'Email already in use' })
+  @ApiBody({ type: RegisterDto })
   @Public()
   @Post('register')
   async register(
@@ -86,6 +97,10 @@ export class AuthController {
   }
 
   /** Login. */
+  @ApiOperation({ summary: 'Authenticate a user and return an access token' })
+  @ApiResponse({ status: 200, description: 'Login successful' })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
+  @ApiBody({ type: LoginDto })
   @Public()
   @Post('login')
   async login(
@@ -115,6 +130,10 @@ export class AuthController {
   }
 
   /** Refresh. */
+  @ApiOperation({ summary: 'Refresh an expired access token' })
+  @ApiResponse({ status: 200, description: 'New token pair' })
+  @ApiResponse({ status: 400, description: 'Refresh token required' })
+  @ApiBody({ type: RefreshDto })
   @Public()
   @Post('refresh')
   async refresh(@Body() body: RefreshDto) {
@@ -129,6 +148,8 @@ export class AuthController {
    * Endpoint legado. Não aceita mais payload OAuth "cru" vindo do frontend.
    * Mantido apenas para retornar erro claro e evitar regressão silenciosa.
    */
+  @ApiOperation({ summary: 'Legacy OAuth login — deprecated, returns an error' })
+  @ApiResponse({ status: 400, description: 'Deprecated endpoint' })
   @Public()
   @Post('oauth')
   async oauthLogin(@Req() req: Request, @Body() body: Record<string, unknown>) {
@@ -142,6 +163,10 @@ export class AuthController {
    * Google Sign-In seguro: recebe o ID token emitido pelo Google Identity Services,
    * valida no backend e só então cria/loga o usuário.
    */
+  @ApiOperation({ summary: 'Authenticate via Google OAuth ID token' })
+  @ApiResponse({ status: 200, description: 'Google authentication successful' })
+  @ApiResponse({ status: 401, description: 'Invalid Google credential' })
+  @ApiBody({ type: GoogleOAuthDto })
   @Public()
   @Post('oauth/google')
   async googleOAuthLogin(@Req() req: Request, @Body() body: GoogleOAuthDto) {
@@ -152,6 +177,10 @@ export class AuthController {
   }
 
   /** Facebook o auth login. */
+  @ApiOperation({ summary: 'Authenticate via Facebook OAuth access token' })
+  @ApiResponse({ status: 200, description: 'Facebook authentication successful' })
+  @ApiResponse({ status: 401, description: 'Invalid Facebook token' })
+  @ApiBody({ type: FacebookOAuthDto })
   @Public()
   @Post('oauth/facebook')
   async facebookOAuthLogin(@Req() req: Request, @Body() body: FacebookOAuthDto) {
@@ -166,6 +195,10 @@ export class AuthController {
    * Apple Sign-In: recebe o identityToken emitido pelo Sign in with Apple,
    * valida e cria/loga o usuario.
    */
+  @ApiOperation({ summary: 'Authenticate via Apple Sign-In identity token' })
+  @ApiResponse({ status: 200, description: 'Apple authentication successful' })
+  @ApiResponse({ status: 400, description: 'Identity token required' })
+  @ApiBody({ type: AppleOAuthDto })
   @Public()
   @Post('oauth/apple')
   async appleOAuthLogin(@Req() req: Request, @Body() body: AppleOAuthDto) {
@@ -184,6 +217,10 @@ export class AuthController {
   }
 
   /** TikTok o auth login. */
+  @ApiOperation({ summary: 'Authenticate via TikTok OAuth' })
+  @ApiResponse({ status: 200, description: 'TikTok authentication successful' })
+  @ApiResponse({ status: 401, description: 'Invalid TikTok credential' })
+  @ApiBody({ type: TikTokOAuthDto })
   @Public()
   @Post('oauth/tiktok')
   async tikTokOAuthLogin(@Req() req: Request, @Body() body: TikTokOAuthDto) {
@@ -205,6 +242,9 @@ export class AuthController {
   }
 
   /** Request magic link. */
+  @ApiOperation({ summary: 'Request a magic link for passwordless login' })
+  @ApiResponse({ status: 200, description: 'Magic link sent' })
+  @ApiBody({ type: RequestMagicLinkDto })
   @Public()
   @Post('magic-link/request')
   requestMagicLink(@Req() req: Request, @Body() body: RequestMagicLinkDto) {
@@ -216,6 +256,10 @@ export class AuthController {
   }
 
   /** Verify magic link. */
+  @ApiOperation({ summary: 'Verify a magic link token and authenticate' })
+  @ApiResponse({ status: 200, description: 'Magic link verified' })
+  @ApiResponse({ status: 401, description: 'Invalid or expired token' })
+  @ApiBody({ type: VerifyMagicLinkDto })
   @Public()
   @Post('magic-link/verify')
   verifyMagicLink(@Req() req: Request, @Body() body: VerifyMagicLinkDto) {
@@ -225,6 +269,9 @@ export class AuthController {
   /**
    * Envia código de verificação via WhatsApp
    */
+  @ApiOperation({ summary: 'Send a verification code via WhatsApp' })
+  @ApiResponse({ status: 200, description: 'Code sent' })
+  @ApiBody({ type: SendWhatsAppCodeDto })
   @Public()
   @Post('whatsapp/send-code')
   async sendWhatsAppCode(@Req() req: Request, @Body() body: SendWhatsAppCodeDto) {
@@ -234,6 +281,10 @@ export class AuthController {
   /**
    * Verifica código WhatsApp e retorna tokens
    */
+  @ApiOperation({ summary: 'Verify a WhatsApp authentication code and return tokens' })
+  @ApiResponse({ status: 200, description: 'WhatsApp code verified' })
+  @ApiResponse({ status: 401, description: 'Invalid code' })
+  @ApiBody({ type: VerifyWhatsAppCodeDto })
   @Public()
   @Post('whatsapp/verify')
   async verifyWhatsAppCode(@Req() req: Request, @Body() body: VerifyWhatsAppCodeDto) {
@@ -243,6 +294,8 @@ export class AuthController {
   // ANONYMOUS ACCOUNT
   // =========================================
 
+  @ApiOperation({ summary: 'Create an anonymous user session' })
+  @ApiResponse({ status: 201, description: 'Anonymous session created' })
   @Public()
   @Post('anonymous')
   async createAnonymous(@Req() req: Request) {
@@ -257,6 +310,9 @@ export class AuthController {
   /**
    * Solicita recuperação de senha
    */
+  @ApiOperation({ summary: 'Request a password reset email' })
+  @ApiResponse({ status: 200, description: 'Password reset email sent' })
+  @ApiBody({ type: ForgotPasswordDto })
   @Public()
   @Post('forgot-password')
   async forgotPassword(@Req() req: Request, @Body() body: ForgotPasswordDto) {
@@ -266,6 +322,10 @@ export class AuthController {
   /**
    * Redefine a senha usando token
    */
+  @ApiOperation({ summary: 'Reset password using a reset token' })
+  @ApiResponse({ status: 200, description: 'Password reset successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid or expired token' })
+  @ApiBody({ type: ResetPasswordDto })
   @Public()
   @Post('reset-password')
   async resetPassword(@Req() req: Request, @Body() body: ResetPasswordDto) {
@@ -279,6 +339,10 @@ export class AuthController {
   /**
    * Verifica email com token
    */
+  @ApiOperation({ summary: 'Verify an email address with a token' })
+  @ApiResponse({ status: 200, description: 'Email verified' })
+  @ApiResponse({ status: 400, description: 'Invalid or expired token' })
+  @ApiBody({ type: VerifyEmailDto })
   @Public()
   @Post('verify-email')
   async verifyEmail(@Req() req: Request, @Body() body: VerifyEmailDto) {
@@ -288,6 +352,9 @@ export class AuthController {
   /**
    * Reenvia email de verificação
    */
+  @ApiOperation({ summary: 'Resend the email verification link' })
+  @ApiResponse({ status: 200, description: 'Verification email resent' })
+  @ApiBody({ type: CheckEmailDto })
   @Public()
   @Post('resend-verification')
   async resendVerificationEmail(@Req() req: Request, @Body() body: CheckEmailDto) {
@@ -298,6 +365,8 @@ export class AuthController {
    * Envia verificação de email para usuário logado
    * (Requer autenticação)
    */
+  @ApiOperation({ summary: 'Send verification email to authenticated user' })
+  @ApiResponse({ status: 200, description: 'Verification email sent' })
   @InternalEndpoint('auth verification email trigger')
   @Post('send-verification')
   async sendVerificationEmail(@Req() req: AuthenticatedRequest) {
@@ -309,6 +378,8 @@ export class AuthController {
   }
 
   /** Logout — revoke all refresh tokens for the authenticated agent. */
+  @ApiOperation({ summary: 'Logout and revoke all refresh tokens' })
+  @ApiResponse({ status: 200, description: 'Logged out' })
   @Post('logout')
   async logout(@Req() req: AuthenticatedRequest) {
     const agentId = req.user?.sub;
@@ -319,6 +390,8 @@ export class AuthController {
   }
 
   /** Get authenticated user profile including onboarding status. */
+  @ApiOperation({ summary: 'Get authenticated user profile and onboarding status' })
+  @ApiResponse({ status: 200, description: 'User profile' })
   @Get('me')
   getMe(@Req() req: AuthenticatedRequest) {
     const agentId = req.user?.sub;
@@ -329,6 +402,8 @@ export class AuthController {
   }
 
   /** Mark onboarding as completed for the authenticated user. */
+  @ApiOperation({ summary: 'Mark onboarding as completed for the authenticated user' })
+  @ApiResponse({ status: 200, description: 'Onboarding marked complete' })
   @Put('me/onboarding-complete')
   async completeOnboarding(@Req() req: AuthenticatedRequest) {
     const agentId = req.user?.sub;

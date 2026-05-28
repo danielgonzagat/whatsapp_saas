@@ -128,8 +128,6 @@ describe('SystemHealthController', () => {
     });
   });
 
-
-
   describe('GET /health/system', () => {
     it('returns production runtime health payload from service', async () => {
       mockCheck.mockResolvedValue({

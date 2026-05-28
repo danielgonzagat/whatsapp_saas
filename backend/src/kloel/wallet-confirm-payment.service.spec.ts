@@ -4,30 +4,10 @@ import { WalletService } from './wallet.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { WalletLedgerService } from './wallet-ledger.service';
+import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 type WalletTxClient = ReturnType<typeof buildTxClient>;
 type WalletTxCallback = (tx: WalletTxClient) => Promise<unknown>;
-type WalletPrismaMock = {
-  kloelWallet: {
-    upsert: jest.Mock;
-    findUnique: jest.Mock;
-    create: jest.Mock;
-    update: jest.Mock;
-    updateMany: jest.Mock;
-  };
-  kloelWalletTransaction: {
-    create: jest.Mock;
-    findUnique: jest.Mock;
-    findMany: jest.Mock;
-    count: jest.Mock;
-    update: jest.Mock;
-    updateMany: jest.Mock;
-  };
-  auditLog: {
-    create: jest.Mock;
-  };
-  $transaction: jest.Mock;
-};
 
 /**
  * Build a fake transactional Prisma client. Tests that exercise confirmPayment
@@ -75,7 +55,7 @@ function buildTxClient(overrides: {
 
 describe('WalletService', () => {
   let service: WalletService;
-  let prismaMock: WalletPrismaMock;
+  let prismaMock: ReturnType<typeof createPartialPrismaMock>;
   let walletLedger: { appendWithinTx: jest.Mock };
 
   const mockWallet = {
@@ -88,27 +68,15 @@ describe('WalletService', () => {
   };
 
   beforeEach(async () => {
-    prismaMock = {
-      kloelWallet: {
-        upsert: jest.fn().mockResolvedValue(mockWallet),
-        findUnique: jest.fn().mockResolvedValue(mockWallet),
-        create: jest.fn(),
-        update: jest.fn(),
-        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
-      },
-      kloelWalletTransaction: {
-        create: jest.fn(),
-        findUnique: jest.fn(),
-        findMany: jest.fn(),
-        count: jest.fn(),
-        update: jest.fn(),
-        updateMany: jest.fn(),
-      },
-      auditLog: {
-        create: jest.fn().mockResolvedValue({}),
-      },
-      $transaction: jest.fn(),
-    };
+    prismaMock = createPartialPrismaMock({
+      kloelWallet: ['upsert', 'findUnique', 'create', 'update', 'updateMany'],
+      kloelWalletTransaction: ['create', 'findUnique', 'findMany', 'count', 'update', 'updateMany'],
+      auditLog: ['create'],
+    });
+    prismaMock.kloelWallet.upsert.mockResolvedValue(mockWallet);
+    prismaMock.kloelWallet.findUnique.mockResolvedValue(mockWallet);
+    prismaMock.kloelWallet.updateMany.mockResolvedValue({ count: 1 });
+    prismaMock.auditLog.create.mockResolvedValue({});
 
     walletLedger = { appendWithinTx: jest.fn().mockResolvedValue(undefined) };
 

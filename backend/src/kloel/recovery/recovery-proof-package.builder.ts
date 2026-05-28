@@ -47,9 +47,7 @@ const NON_REPEAT_TEMPLATES: Readonly<Record<string, NonRepeatTemplate>> = {
       'resposta inadequada.',
   },
   decline: {
-    learnedFrom:
-      'pagamentos foram recusados por condicoes que o checkout nao ' +
-      'antecipava',
+    learnedFrom: 'pagamentos foram recusados por condicoes que o checkout nao ' + 'antecipava',
     preventiveChange:
       'revisar o fluxo de pagamento com alternativas de metodo, orientacao ' +
       'pos-recusa e notificacao ao operador quando a taxa de recusa exceder limite',
@@ -83,19 +81,16 @@ const NON_REPEAT_TEMPLATES: Readonly<Record<string, NonRepeatTemplate>> = {
   },
   wrong_action: {
     learnedFrom:
-      'uma acao automatica foi executada baseada em estado que mudou ' +
-      'entre decisao e execucao',
+      'uma acao automatica foi executada baseada em estado que mudou ' + 'entre decisao e execucao',
     preventiveChange:
-      'confirmar antes da execucao que o estado do lead ainda e compativel ' +
-      'com a acao',
+      'confirmar antes da execucao que o estado do lead ainda e compativel ' + 'com a acao',
     commitmentStatement:
       'Kloel nao executara acoes automaticas sem verificar que o ' +
       'contexto ainda e valido. Se o estado mudou, abortara e notificara.',
   },
   double_send: {
     learnedFrom:
-      'condicao de corrida ou retry sem idempotencia causou envio ' +
-      'duplicado de mensagem',
+      'condicao de corrida ou retry sem idempotencia causou envio ' + 'duplicado de mensagem',
     preventiveChange:
       'verificar idempotencia antes de cada envio e deduplicar por hash de ' +
       'conteudo e destinatario',
@@ -104,8 +99,7 @@ const NON_REPEAT_TEMPLATES: Readonly<Record<string, NonRepeatTemplate>> = {
       'mesmo destinatario. Verificara idempotencia antes de cada envio.',
   },
   delay: {
-    learnedFrom:
-      'latencia acima do esperado afetou tempo de resposta ao lead',
+    learnedFrom: 'latencia acima do esperado afetou tempo de resposta ao lead',
     preventiveChange:
       'monitorar latencia com alerta de timeout e abortar para revisao humana ' +
       'quando a resposta exceder o limite',
@@ -118,16 +112,13 @@ const NON_REPEAT_TEMPLATES: Readonly<Record<string, NonRepeatTemplate>> = {
       'acao foi executada em horario inadequado por falta de ' +
       'configuracao de janela de silencio',
     preventiveChange:
-      'aplicar janela de silencio por fuso horario do lead antes de qualquer ' +
-      'acao de contato',
+      'aplicar janela de silencio por fuso horario do lead antes de qualquer ' + 'acao de contato',
     commitmentStatement:
       'Kloel nao contatara leads fora do horario comercial do fuso ' +
       'horario do lead. Respeitara janela de silencio configurada.',
   },
   unknown: {
-    learnedFrom:
-      'um padrao anomalo foi detectado que nao corresponde a categorias ' +
-      'conhecidas',
+    learnedFrom: 'um padrao anomalo foi detectado que nao corresponde a categorias ' + 'conhecidas',
     preventiveChange:
       'catalogar o padrao anomalo e expandir monitoramento para reconhecimento futuro',
     commitmentStatement:
@@ -154,10 +145,7 @@ function buildNonRepeatCommitment(
   };
 }
 
-function resolveSafeNextStep(
-  ack: Acknowledgment,
-  tactic: RecoveryProofPackage['tactic'],
-): string {
+function resolveSafeNextStep(ack: Acknowledgment, tactic: RecoveryProofPackage['tactic']): string {
   if (tactic.safetyContract.riskClass === 'R3') {
     return tactic.safetyContract.safeNextStep;
   }

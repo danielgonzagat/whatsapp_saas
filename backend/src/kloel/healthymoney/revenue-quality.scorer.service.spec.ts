@@ -220,7 +220,7 @@ describe('RevenueQualityScorerService (UTP-HEALTHYMONEY-001)', () => {
       brandWearScore: 0.95,
       ltvProjectionCents: 35_000,
     });
-    expect(result.qualityScore).toBeLessThan(0.80);
+    expect(result.qualityScore).toBeLessThan(0.8);
     expect(result.dimensions.brandScore).toBeLessThan(0.1);
   });
 

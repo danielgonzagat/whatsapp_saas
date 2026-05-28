@@ -40,6 +40,14 @@ const CONNECT_COPY: Record<ChannelKey, { provider: string; how: string[] }> = {
       'O modo conectado define quais ações o Kloel pode executar.',
     ],
   },
+  'google-ads': {
+    provider: 'Google Ads API via OAuth oficial',
+    how: [
+      'Login oficial Google — autoriza somente leitura da conta de anúncios.',
+      'O Kloel consulta customers e campanhas pela Google Ads API.',
+      'Tokens ficam criptografados no workspace e podem ser revogados no Google.',
+    ],
+  },
   email: {
     provider: 'Email transacional Kloel',
     how: [

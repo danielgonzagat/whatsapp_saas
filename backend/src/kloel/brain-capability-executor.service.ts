@@ -1,3 +1,11 @@
+/**
+ * @deprecated Use {@link ./mind/coordination/mind-capability-executor.service.ts MindCapabilityExecutor}.
+ * ADR-0013 Wave M1 alias window (4 weeks).
+ *
+ * @cluster Mind/Coordination
+ * @canonical backend/src/kloel/mind/coordination/mind-capability-executor.service.ts
+ * @see docs/adr/0013-kloel-mind-unification.md
+ */
 import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
@@ -11,6 +19,9 @@ import { MemoryProjector } from './commem/memory.projector';
 
 import { buildCognitiveSubstrate as buildCognitiveSubstrateImpl } from './brain-capability-executor.substrate';
 
+import { CapabilityRegistryV2Service } from './capability-registry-v2/capability-registry-v2.service';
+import { CodeAccessService } from './self-awareness/code-access.service';
+import { SafeQueryService } from './self-awareness/safe-query.service';
 import type { UnknownRecord } from '../common/types';
 
 export interface CapabilityResult {
@@ -88,6 +99,9 @@ export class BrainCapabilityExecutorService {
     private readonly planLimits: PlanLimitsService,
     private readonly abiBuilder: AbiBuilderService,
     private readonly mindPerception: MindPerceptionService,
+    private readonly capRegistry: CapabilityRegistryV2Service,
+    private readonly codeAccess: CodeAccessService,
+    private readonly safeQuery: SafeQueryService,
   ) {}
 
   private readonly memoryProjector = new MemoryProjector();
@@ -456,6 +470,66 @@ export class BrainCapabilityExecutorService {
     }
   }
 
+  /** Search the codebase (read-only) */
+  async searchCode(_workspaceId: string, args?: UnknownRecord): Promise<CapabilityResult> {
+    const query = String(args?.query ?? '');
+    if (!query.trim()) {
+      return { ok: false, error: 'query_required' };
+    }
+    const glob = typeof args?.glob === 'string' ? args.glob : undefined;
+    const max = typeof args?.max === 'number' ? args.max : undefined;
+    const hits = this.codeAccess.search(query, {
+      ...(glob !== undefined ? { glob } : {}),
+      ...(max !== undefined ? { max } : {}),
+    });
+    const data: UnknownRecord[] = hits.map((hit) => ({ ...hit }));
+    return {
+      ok: true,
+      data,
+    };
+  }
+
+  /** Read a specific source file */
+  async readSourceFile(_workspaceId: string, args?: UnknownRecord): Promise<CapabilityResult> {
+    const filePath = String(args?.path ?? '');
+    if (!filePath.trim()) {
+      return { ok: false, error: 'path_required' };
+    }
+    const startLine = typeof args?.startLine === 'number' ? args.startLine : undefined;
+    const endLine = typeof args?.endLine === 'number' ? args.endLine : undefined;
+    const result = this.codeAccess.read(filePath, startLine, endLine);
+    return result;
+  }
+
+  /** List capabilities with their status */
+  async listCapabilitiesDetail(_workspaceId: string): Promise<CapabilityResult> {
+    const caps = this.capRegistry.list();
+    const grouped = this.capRegistry.groupedByTier();
+    return {
+      ok: true,
+      data: {
+        total: caps.length,
+        byTier: Object.entries(grouped).map(([tier, items]) => ({
+          tier: parseInt(tier),
+          count: items.length,
+          capabilities: items.map((c) => ({
+            id: c.id,
+            title: c.title,
+            category: c.category,
+            requiresConfirmation: c.requiresConfirmation,
+          })),
+        })),
+      },
+    };
+  }
+  /** Run a safe read-only SQL query */
+  async runSafeQuery(_workspaceId: string, args?: UnknownRecord): Promise<CapabilityResult> {
+    const sql = String(args?.sql ?? '');
+    if (!sql.trim()) {
+      return { ok: false, error: 'sql_required' };
+    }
+    return this.safeQuery.query(_workspaceId, sql);
+  }
   private async emitCapabilityInvoked(
     workspaceId: string,
     capability: string,

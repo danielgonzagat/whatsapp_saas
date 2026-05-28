@@ -16,6 +16,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -42,6 +43,7 @@ type UploadedKycFile = {
 };
 
 /** Kyc controller. */
+@ApiTags('KYC')
 @Controller('kyc')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @RouteClass('auth')
@@ -50,18 +52,27 @@ export class KycController {
 
   // ═══ PROFILE ═══
 
+  @ApiOperation({ summary: 'Get KYC profile for the authenticated user' })
+  @ApiResponse({ status: 200, description: 'KYC profile data' })
   @Get('profile')
   async getProfile(@Req() req: AuthenticatedRequest) {
     return this.kycService.getProfile(req.user.sub);
   }
 
   /** Update profile. */
+  @ApiOperation({ summary: 'Update KYC profile information' })
+  @ApiResponse({ status: 200, description: 'Profile updated' })
+  @ApiResponse({ status: 400, description: 'Invalid profile data' })
+  @ApiBody({ type: UpdateProfileDto })
   @Put('profile')
   async updateProfile(@Req() req: AuthenticatedRequest, @Body() dto: UpdateProfileDto) {
     return this.kycService.updateProfile(req.user.sub, dto);
   }
 
   /** Upload avatar. */
+  @ApiOperation({ summary: 'Upload a profile avatar image' })
+  @ApiResponse({ status: 201, description: 'Avatar uploaded' })
+  @ApiResponse({ status: 400, description: 'Invalid file' })
   @Post('profile/avatar')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -90,12 +101,18 @@ export class KycController {
 
   // ═══ FISCAL ═══
 
+  @ApiOperation({ summary: 'Get fiscal/tax information for the workspace' })
+  @ApiResponse({ status: 200, description: 'Fiscal data' })
   @Get('fiscal')
   async getFiscal(@Req() req: AuthenticatedRequest) {
     return this.kycService.getFiscal(req.user.workspaceId);
   }
 
   /** Update fiscal. */
+  @ApiOperation({ summary: 'Update fiscal/tax information' })
+  @ApiResponse({ status: 200, description: 'Fiscal data updated' })
+  @ApiResponse({ status: 400, description: 'Invalid fiscal data' })
+  @ApiBody({ type: UpdateFiscalDto })
   @Put('fiscal')
   async updateFiscal(@Req() req: AuthenticatedRequest, @Body() dto: UpdateFiscalDto) {
     return this.kycService.updateFiscal(req.user.workspaceId, dto);
@@ -103,12 +120,18 @@ export class KycController {
 
   // ═══ DOCUMENTS ═══
 
+  @ApiOperation({ summary: 'List KYC documents for the user and workspace' })
+  @ApiResponse({ status: 200, description: 'List of documents' })
   @Get('documents')
   async getDocuments(@Req() req: AuthenticatedRequest) {
     return this.kycService.getDocuments(req.user.sub, req.user.workspaceId);
   }
 
   /** Upload document. */
+  @ApiOperation({ summary: 'Upload a KYC document' })
+  @ApiResponse({ status: 201, description: 'Document uploaded' })
+  @ApiResponse({ status: 400, description: 'Invalid document' })
+  @ApiBody({ type: KycDocumentTypeDto })
   @Post('documents/upload')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -139,6 +162,9 @@ export class KycController {
   }
 
   /** Delete document. */
+  @ApiOperation({ summary: 'Delete a KYC document' })
+  @ApiResponse({ status: 200, description: 'Document deleted' })
+  @ApiResponse({ status: 404, description: 'Document not found' })
   @Delete('documents/:id')
   async deleteDocument(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.kycService.deleteDocument(req.user.sub, id, req.user.workspaceId);
@@ -146,12 +172,18 @@ export class KycController {
 
   // ═══ BANK ═══
 
+  @ApiOperation({ summary: 'Get bank account information for the workspace' })
+  @ApiResponse({ status: 200, description: 'Bank account data' })
   @Get('bank')
   async getBankAccount(@Req() req: AuthenticatedRequest) {
     return this.kycService.getBankAccount(req.user.workspaceId);
   }
 
   /** Update bank account. */
+  @ApiOperation({ summary: 'Update bank account information' })
+  @ApiResponse({ status: 200, description: 'Bank account updated' })
+  @ApiResponse({ status: 400, description: 'Invalid bank data' })
+  @ApiBody({ type: UpdateBankDto })
   @Put('bank')
   async updateBankAccount(@Req() req: AuthenticatedRequest, @Body() dto: UpdateBankDto) {
     return this.kycService.updateBankAccount(req.user.workspaceId, dto);
@@ -159,6 +191,10 @@ export class KycController {
 
   // ═══ SECURITY ═══
 
+  @ApiOperation({ summary: 'Change the user password' })
+  @ApiResponse({ status: 200, description: 'Password changed' })
+  @ApiResponse({ status: 400, description: 'Invalid password' })
+  @ApiBody({ type: ChangePasswordDto })
   @Post('security/change-password')
   async changePassword(@Req() req: AuthenticatedRequest, @Body() dto: ChangePasswordDto) {
     return this.kycService.changePassword(req.user.sub, dto);
@@ -166,18 +202,25 @@ export class KycController {
 
   // ═══ KYC STATUS ═══
 
+  @ApiOperation({ summary: 'Get KYC verification status' })
+  @ApiResponse({ status: 200, description: 'KYC status' })
   @Get('status')
   async getStatus(@Req() req: AuthenticatedRequest) {
     return this.kycService.getStatus(req.user.sub);
   }
 
   /** Get completion. */
+  @ApiOperation({ summary: 'Get KYC completion percentage' })
+  @ApiResponse({ status: 200, description: 'KYC completion data' })
   @Get('completion')
   async getCompletion(@Req() req: AuthenticatedRequest) {
     return this.kycService.getCompletion(req.user.sub, req.user.workspaceId);
   }
 
   /** Submit kyc. */
+  @ApiOperation({ summary: 'Submit KYC for verification' })
+  @ApiResponse({ status: 200, description: 'KYC submitted' })
+  @ApiResponse({ status: 400, description: 'Incomplete KYC data' })
   @Post('submit')
   async submitKyc(
     @Req() req: AuthenticatedRequest,
@@ -197,6 +240,8 @@ export class KycController {
 
   // ═══ AUTO-APPROVAL & ADMIN ═══
 
+  @ApiOperation({ summary: 'Auto-check KYC completeness' })
+  @ApiResponse({ status: 200, description: 'Auto-check result' })
   @InternalEndpoint('KYC auto-check trigger')
   @Post('auto-check')
   async autoCheck(@Req() req: AuthenticatedRequest) {
@@ -204,6 +249,9 @@ export class KycController {
   }
 
   /** Admin approve. */
+  @ApiOperation({ summary: 'Admin approve a KYC submission' })
+  @ApiResponse({ status: 200, description: 'KYC approved' })
+  @ApiResponse({ status: 403, description: 'Forbidden — admin only' })
   @InternalEndpoint('KYC agent approval')
   @Post(':agentId/approve')
   async adminApprove(@Req() req: AuthenticatedRequest, @Param('agentId') agentId: string) {

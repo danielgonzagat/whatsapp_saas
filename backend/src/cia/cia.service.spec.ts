@@ -69,6 +69,9 @@ describe('CiaService', () => {
       integration: {
         findMany: jest.fn().mockResolvedValue([]),
       },
+      pipelineState: {
+        findUnique: jest.fn().mockResolvedValue(null),
+      },
     };
     runtime = {
       getOperationalIntelligence: jest.fn(),
@@ -375,6 +378,56 @@ describe('CiaService', () => {
       expect(surface.title).toBe('KLOEL');
       expect(surface.state).toBe('RUNNING');
       expect(surface.mindLift).toBeNull();
+    });
+  });
+
+  describe('commercial pipelineMode', () => {
+    const baseIntelligence = {
+      workspaceName: 'Test Workspace',
+      runtime: { state: 'RUNNING' },
+      autonomy: null,
+      businessState: null,
+      marketSignals: [],
+      humanTasks: [],
+      demandStates: [],
+      insights: [],
+    };
+
+    beforeEach(() => {
+      runtime.getOperationalIntelligence.mockResolvedValue(baseIntelligence);
+      accountAgent.getRuntime.mockResolvedValue(null);
+      prisma.kloelMemory.findMany.mockResolvedValue([]);
+      prisma.kloelMemory.findUnique.mockResolvedValue(null);
+      prisma.accountProofSnapshot.findFirst.mockResolvedValue(null);
+      prisma.metaConnection.findMany.mockResolvedValue([]);
+      prisma.integration.findMany.mockResolvedValue([]);
+      accountAgent.getCapabilityRegistry.mockReturnValue([]);
+      accountAgent.getConversationActionRegistry.mockReturnValue([]);
+      mind.lift.mockResolvedValue(null);
+    });
+
+    it('returns pipelineMode from pipelineState when present', async () => {
+      prisma.pipelineState.findUnique.mockResolvedValue({ state: 'active' });
+
+      const surface = await service.getSurface('ws-1');
+
+      expect(surface.commercial).toEqual({ pipelineMode: 'active' });
+    });
+
+    it('defaults to legacy when pipelineState is missing', async () => {
+      prisma.pipelineState.findUnique.mockResolvedValue(null);
+
+      const surface = await service.getSurface('ws-1');
+
+      expect(surface.commercial).toEqual({ pipelineMode: 'legacy' });
+    });
+
+    it('returns shadow pipelineMode when pipeline is in shadow', async () => {
+      prisma.pipelineState.findUnique.mockResolvedValue({ state: 'shadow' });
+
+      const surface = await service.getSurface('ws-1');
+
+      expect(surface.commercial).toEqual({ pipelineMode: 'shadow' });
     });
   });
 });

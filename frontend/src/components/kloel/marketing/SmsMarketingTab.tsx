@@ -4,6 +4,7 @@ import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import { useSmsMarketing } from './useSmsMarketing';
 import { SORA, MONO, BG_CARD, BORDER, Fmt } from './MarketingShared';
+import { ConnectedBadge } from './MarketingConnectedBadge';
 import type { ChannelRealData } from './MarketingTypes';
 
 const SMS_COLOR = colors.semantic.purple;
@@ -122,11 +123,5 @@ export default function SmsMarketingTab({ channelData }: SmsMarketingTabProps) {
   );
 }
 
-function ConnectedBadge() {
-  return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontFamily: MONO, color: colors.semantic.success, background: 'rgba(16,185,129,0.1)', padding: '2px 8px', borderRadius: 16 }}>
-      <span style={{ width: 6, height: 6, borderRadius: '16%', background: colors.semantic.success, animation: 'mktPulse 2s infinite' }} />
-      Conectado
-    </span>
-  );
-}
+// ConnectedBadge lives in MarketingConnectedBadge.tsx (canonical, shared
+// across channel tabs).

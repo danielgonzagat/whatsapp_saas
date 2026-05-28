@@ -50,7 +50,9 @@ function buildNameWordPattern(name: string): RegExp {
     .split(/\s+/)
     .filter((w) => w.length >= 2)
     .map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-  if (words.length === 0) return /(?!)/;
+  if (words.length === 0) {
+    return /(?!)/;
+  }
   const joined = words.join('\\s+');
   return new RegExp(`\\b${joined}\\b`, 'i');
 }

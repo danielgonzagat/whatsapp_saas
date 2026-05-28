@@ -96,10 +96,16 @@ export function synthetic100(): SpineEventRef[] {
 
   // 10 message_replied — with varying valences
   const valences: Array<'positive' | 'negative' | 'neutral'> = [
-    'positive', 'positive', 'positive', 'positive',
-    'negative', 'negative',
-    'neutral', 'neutral',
-    'positive', 'negative',
+    'positive',
+    'positive',
+    'positive',
+    'positive',
+    'negative',
+    'negative',
+    'neutral',
+    'neutral',
+    'positive',
+    'negative',
   ];
   for (let i = 0; i < 10; i++) {
     const t = new Date(base.getTime() + 5_400_000 + i * 1800_000 + (10 + i) * 3600_000);
@@ -111,9 +117,10 @@ export function synthetic100(): SpineEventRef[] {
         entityRef: { entityType: 'conversation', entityId: `conv_${i}` },
         ...(valences[i] !== undefined ? { valence: valences[i] } : {}),
         payload: {
-          body: i % 2 === 0
-            ? 'Olá, o preço do produto está dentro do seu orçamento'
-            : 'Podemos agendar uma demonstração gratuita para você',
+          body:
+            i % 2 === 0
+              ? 'Olá, o preço do produto está dentro do seu orçamento'
+              : 'Podemos agendar uma demonstração gratuita para você',
         },
       }),
     );

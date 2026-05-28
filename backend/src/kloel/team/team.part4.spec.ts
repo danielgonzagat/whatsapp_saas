@@ -32,9 +32,7 @@ import {
 import type { SpineEventRef } from '../mind/mind.types';
 import type { PreCallContext, NextBestAction } from './team.types';
 
-const baseEvent = (
-  over: Partial<SpineEventRef> = {},
-): SpineEventRef => ({
+const baseEvent = (over: Partial<SpineEventRef> = {}): SpineEventRef => ({
   eventId: over.eventId ?? `evt_test_${Math.random().toString(36).slice(2, 8)}`,
   eventName: over.eventName ?? 'commerce.lead.created',
   workspaceId: over.workspaceId ?? 'wks_demo',
@@ -43,9 +41,7 @@ const baseEvent = (
   ...(over.entityRef !== undefined ? { entityRef: over.entityRef } : {}),
   ...(over.valence !== undefined ? { valence: over.valence } : {}),
   ...(over.payload !== undefined ? { payload: over.payload } : {}),
-  ...(over.correlationId !== undefined
-    ? { correlationId: over.correlationId }
-    : {}),
+  ...(over.correlationId !== undefined ? { correlationId: over.correlationId } : {}),
 });
 
 const leadRef = (leadId: string) => ({
@@ -109,9 +105,7 @@ describe('OperatorFeedbackLoop (UTP-TEAM-007)', () => {
     expect(spine.workspaceId).toBe(wks);
     expect(spine.truthMode).toBe('observed');
     expect(spine.provenance.processor).toBeTruthy();
-    expect(spine.payload['learningFraming']).toContain(
-      'not human performance scoring',
-    );
+    expect(spine.payload['learningFraming']).toContain('not human performance scoring');
   });
 
   it('computes operator accuracy from feedback entries', () => {
@@ -166,9 +160,7 @@ describe('OperatorFeedbackLoop (UTP-TEAM-007)', () => {
     expect(summary.totalFeedback).toBe(2);
     expect(summary.acceptedSuggestions).toBe(1);
     expect(summary.correctionSignals).toBe(1);
-    expect(summary.learningSignals).toContain(
-      'customer needs delivery help before retention',
-    );
+    expect(summary.learningSignals).toContain('customer needs delivery help before retention');
     expect(summary.framing).toContain('not human performance scoring');
   });
 

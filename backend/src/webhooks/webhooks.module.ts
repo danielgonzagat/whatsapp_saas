@@ -15,7 +15,7 @@ import { WhatsAppApiWebhookController } from './whatsapp-api-webhook.controller'
 // Webhook ordering: Controllers use WebhookEvent externalId unique constraint
 // and checkIdempotencyOrThrow to prevent out-of-order/duplicate event processing.
 @Module({
-  imports: [InboxModule, CiaModule, forwardRef(() => WhatsappModule)],
+  imports: [forwardRef(() => InboxModule), CiaModule, forwardRef(() => WhatsappModule)],
   controllers: [
     WebhooksController,
     WebhookSettingsController,

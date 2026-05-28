@@ -15,10 +15,7 @@ import type {
   RecommendedChannel,
 } from './insight.types';
 
-const STAGE_CHANNEL_FILTER: Readonly<Record<
-  MaturityStage,
-  readonly RecommendedChannel[]
->> = {
+const STAGE_CHANNEL_FILTER: Readonly<Record<MaturityStage, readonly RecommendedChannel[]>> = {
   validacao: ['whatsapp', 'email'],
   tracao: ['whatsapp', 'email', 'dashboard'],
   crescimento: ['whatsapp', 'email', 'dashboard'],
@@ -26,7 +23,9 @@ const STAGE_CHANNEL_FILTER: Readonly<Record<
   otimizacao: ['dashboard', 'report'],
 };
 
-function channelPriority(channel: RecommendedChannel): number {
+/** Stable delivery-channel priority (whatsapp > email > dashboard > report > silent).
+ *  Exported so peer delivery services (offer/...) consume the same ranking. */
+export function channelPriority(channel: RecommendedChannel): number {
   switch (channel) {
     case 'whatsapp':
       return 5;
@@ -43,9 +42,7 @@ function channelPriority(channel: RecommendedChannel): number {
 
 @Injectable()
 export class InsightDeliveryService {
-  public decide(
-    insight: RankedInsight,
-  ): DeliveryDecision {
+  public decide(insight: RankedInsight): DeliveryDecision {
     const channel = insight.recommendedChannel;
 
     if (channel === 'silent') {
@@ -70,14 +67,14 @@ export class InsightDeliveryService {
     return { insight, deliver: true };
   }
 
-  public deliveryPlan(
-    insights: readonly RankedInsight[],
-  ): readonly ChannelTiming[] {
+  public deliveryPlan(insights: readonly RankedInsight[]): readonly ChannelTiming[] {
     const decisions = insights.map((i) => this.decide(i));
     const plans = new Map<string, ChannelTiming>();
 
     for (const d of decisions) {
-      if (!d.deliver) continue;
+      if (!d.deliver) {
+        continue;
+      }
       const i = d.insight;
       const channel = i.recommendedChannel;
       const timing = i.recommendedTiming;
@@ -90,8 +87,6 @@ export class InsightDeliveryService {
       }
     }
 
-    return Array.from(plans.values()).sort(
-      (a, b) => b.priority - a.priority,
-    );
+    return Array.from(plans.values()).sort((a, b) => b.priority - a.priority);
   }
 }

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { kloelT } from '@/lib/i18n/t';
 import { useTikTokMarketing } from './useTikTokMarketing';
 import { CH_CONFIG, SORA, MONO, BG_CARD, BORDER, Fmt, RegisteredDataList } from './MarketingShared';
+import { ConnectedBadge } from './MarketingConnectedBadge';
 import type { ChannelRealData } from './MarketingTypes';
 import type { TikTokMode, TikTokModeData } from './OfficialMarketingChannelPage.helpers';
 import { apiFetch } from '@/lib/api';
@@ -118,14 +119,8 @@ export default function TikTokMarketingTab({ channelData }: TikTokMarketingTabPr
   );
 }
 
-function ConnectedBadge() {
-  return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontFamily: MONO, color: colors.semantic.success, background: 'rgba(16,185,129,0.1)', padding: '2px 8px', borderRadius: 16 }}>
-      <span style={{ width: 6, height: 6, borderRadius: '16%', background: colors.semantic.success, animation: 'mktPulse 2s infinite' }} />
-      Conectado
-    </span>
-  );
-}
+// ConnectedBadge lives in MarketingConnectedBadge.tsx (canonical, shared
+// across channel tabs).
 
 function ModeBadge({ mode }: { mode: TikTokMode }) {
   const colorMap: Record<TikTokMode, { bg: string; fg: string; label: string }> = {

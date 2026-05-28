@@ -1,12 +1,9 @@
-import {
-  Injectable,
-  ServiceUnavailableException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { StructuredLogger } from '../logging/structured-logger';
 import { LoginTicket, OAuth2Client, TokenPayload } from 'google-auth-library';
 import { getTraceHeaders } from '../common/trace-headers';
+import { sanitizeAuthError as extractErrorMessage } from './sanitize-auth-error.helper';
 
 /**
  * @cluster whatsapp_saas/backend/auth
@@ -16,16 +13,6 @@ const W_RE = /[\W_]+/g;
 
 const AUDIENCE_ISSUER_TOKEN_US_RE =
   /audience|issuer|token used too late|wrong number of segments|invalid token|No pem found|Token used too early|Wrong recipient/i;
-
-function extractErrorMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message || 'unknown_error';
-  }
-  if (typeof error === 'string') {
-    return error;
-  }
-  return 'unknown_error';
-}
 
 function pickPrimary<T extends { metadata?: { primary?: boolean } }>(entries?: T[]) {
   if (!Array.isArray(entries) || entries.length === 0) {

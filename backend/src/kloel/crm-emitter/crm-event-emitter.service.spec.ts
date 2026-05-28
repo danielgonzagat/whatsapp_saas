@@ -27,7 +27,11 @@ describe('CrmEventEmitterService — contract spec (UTP-EVENT-EMIT-CRM)', () => 
       expect(e.entityRef).toEqual({ entityType: 'deal', entityId: 'deal_a' });
       expect(e.truthMode).toBe('observed');
       expect(e.provenance.source).toBe('production');
-      expect(e.payload).toMatchObject({ dealId: 'deal_a', fromStage: 'Lead', toStage: 'Negotiation' });
+      expect(e.payload).toMatchObject({
+        dealId: 'deal_a',
+        fromStage: 'Lead',
+        toStage: 'Negotiation',
+      });
       expect(e.provenance.environment).toMatch(/^(dev|staging|prod)$/);
     });
   });
@@ -58,7 +62,12 @@ describe('CrmEventEmitterService — contract spec (UTP-EVENT-EMIT-CRM)', () => 
 
   describe('commerce.crm.next_step_defined', () => {
     it('emits event with action and optional dueAt', async () => {
-      await emitter.emitNextStepDefined('ws_04', 'deal_d', 'SEND_PROPOSAL', '2026-06-01T00:00:00.000Z');
+      await emitter.emitNextStepDefined(
+        'ws_04',
+        'deal_d',
+        'SEND_PROPOSAL',
+        '2026-06-01T00:00:00.000Z',
+      );
 
       const e = spine.recentEvents()[0];
       expect(e.eventName).toBe('commerce.crm.next_step_defined');
@@ -66,7 +75,11 @@ describe('CrmEventEmitterService — contract spec (UTP-EVENT-EMIT-CRM)', () => 
       expect(e.entityRef).toEqual({ entityType: 'deal', entityId: 'deal_d' });
       expect(e.truthMode).toBe('observed');
       expect(e.provenance.source).toBe('production');
-      expect(e.payload).toMatchObject({ dealId: 'deal_d', action: 'SEND_PROPOSAL', dueAt: '2026-06-01T00:00:00.000Z' });
+      expect(e.payload).toMatchObject({
+        dealId: 'deal_d',
+        action: 'SEND_PROPOSAL',
+        dueAt: '2026-06-01T00:00:00.000Z',
+      });
     });
 
     it('emits without dueAt when not provided', async () => {
@@ -114,7 +127,11 @@ describe('CrmEventEmitterService — contract spec (UTP-EVENT-EMIT-CRM)', () => 
       expect(e.truthMode).toBe('observed');
       expect(e.provenance.source).toBe('production');
       expect(e.valence).toBe('negative');
-      expect(e.payload).toMatchObject({ dealId: 'deal_g', lossReason: 'price_objection', contactId: 'contact_z' });
+      expect(e.payload).toMatchObject({
+        dealId: 'deal_g',
+        lossReason: 'price_objection',
+        contactId: 'contact_z',
+      });
     });
   });
 
@@ -129,7 +146,11 @@ describe('CrmEventEmitterService — contract spec (UTP-EVENT-EMIT-CRM)', () => 
       expect(e.truthMode).toBe('inferred');
       expect(e.provenance.source).toBe('production');
       expect(e.valence).toBe('negative');
-      expect(e.payload).toMatchObject({ leadId: 'lead_h', objectionKind: 'price', confidence: 0.78 });
+      expect(e.payload).toMatchObject({
+        leadId: 'lead_h',
+        objectionKind: 'price',
+        confidence: 0.78,
+      });
     });
   });
 
@@ -155,9 +176,7 @@ describe('CrmEventEmitterService — contract spec (UTP-EVENT-EMIT-CRM)', () => 
       const tiny = makeSpine(10);
       const e2 = new CrmEventEmitterService(tiny);
 
-      await expect(
-        e2.emitStageChanged('ws', 'deal_x', 'A', 'B'),
-      ).resolves.toBeUndefined();
+      await expect(e2.emitStageChanged('ws', 'deal_x', 'A', 'B')).resolves.toBeUndefined();
 
       const events = tiny.recentEvents();
       expect(events).toHaveLength(1);
@@ -176,12 +195,12 @@ describe('CrmEventEmitterService — contract spec (UTP-EVENT-EMIT-CRM)', () => 
       const events = spine.recentEvents();
       expect(events).toHaveLength(6);
 
-      expect(events[0].valence).toBe('positive');  // deal_won
-      expect(events[1].valence).toBe('negative');  // deal_lost
-      expect(events[2].valence).toBeUndefined();   // stage_changed (not terminal)
-      expect(events[3].valence).toBeUndefined();   // owner_assigned (not terminal)
-      expect(events[4].valence).toBeUndefined();   // next_step_defined (not terminal)
-      expect(events[5].valence).toBe('negative');  // objection_raised (terminal negative)
+      expect(events[0].valence).toBe('positive'); // deal_won
+      expect(events[1].valence).toBe('negative'); // deal_lost
+      expect(events[2].valence).toBeUndefined(); // stage_changed (not terminal)
+      expect(events[3].valence).toBeUndefined(); // owner_assigned (not terminal)
+      expect(events[4].valence).toBeUndefined(); // next_step_defined (not terminal)
+      expect(events[5].valence).toBe('negative'); // objection_raised (terminal negative)
     });
   });
 
@@ -200,7 +219,9 @@ describe('CrmEventEmitterService — contract spec (UTP-EVENT-EMIT-CRM)', () => 
 
   describe('error isolation', () => {
     it('spine errors do NOT surface to the emitter call site', async () => {
-      const brokenSpine = new SpineEmitterService(new ValenceTaggerService(), { ringCapacity: 5000 });
+      const brokenSpine = new SpineEmitterService(new ValenceTaggerService(), {
+        ringCapacity: 5000,
+      });
       const originalEmit = brokenSpine.emit.bind(brokenSpine);
       brokenSpine.emit = async () => {
         void originalEmit;
@@ -209,9 +230,7 @@ describe('CrmEventEmitterService — contract spec (UTP-EVENT-EMIT-CRM)', () => 
 
       const e2 = new CrmEventEmitterService(brokenSpine);
 
-      await expect(
-        e2.emitStageChanged('ws', 'deal_e', 'A', 'B'),
-      ).resolves.toBeUndefined();
+      await expect(e2.emitStageChanged('ws', 'deal_e', 'A', 'B')).resolves.toBeUndefined();
     });
   });
 });

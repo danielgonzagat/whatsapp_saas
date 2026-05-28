@@ -50,11 +50,7 @@ export interface Gate<TInput> {
   readonly check: (input: TInput) => GateVerdict;
 }
 
-export function pass(
-  gateName: GateName,
-  mode: GateMode,
-  measuredBy: string,
-): GateVerdict {
+export function pass(gateName: GateName, mode: GateMode, measuredBy: string): GateVerdict {
   return {
     gateName,
     status: 'PASS',

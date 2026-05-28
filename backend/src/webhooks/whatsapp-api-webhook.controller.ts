@@ -10,6 +10,7 @@ import {
   Post,
 } from '@nestjs/common';
 import type Redis from 'ioredis';
+import type { Prisma } from '@prisma/client';
 import { Public } from '../auth/public.decorator';
 import { safeCompareStrings } from '../common/utils/crypto-compare.util';
 import { PrismaService } from '../prisma/prisma.service';
@@ -20,7 +21,7 @@ import { WhatsAppApiProvider } from '../whatsapp/providers/whatsapp-api.provider
 import { WhatsAppCatchupService } from '../whatsapp/whatsapp-catchup.service';
 
 import { RouteClass } from '../common/throttler/route-class.decorator';
-import { Throttle } from "@nestjs/throttler";
+import { Throttle } from '@nestjs/throttler';
 
 interface WahaWebhookPayload {
   event?: string;
@@ -65,7 +66,7 @@ export class WhatsAppApiWebhookController {
   @Public()
   @Post()
   @HttpCode(200)
-  handleWebhook(
+  async handleWebhook(
     @Body() body: WahaWebhookPayload,
     @Headers('x-api-key') apiKey?: string,
     @Headers('x-webhook-secret') webhookSecret?: string,
@@ -84,6 +85,30 @@ export class WhatsAppApiWebhookController {
     if (!event || !sessionId) {
       this.logger.warn('Ignoring malformed WAHA webhook without event/session');
       return Promise.resolve({ received: true, error: 'invalid_payload' });
+    }
+
+    // Idempotency: persist WebhookEvent keyed by WAHA payload id
+    const wahaMessageId =
+      body?.payload && typeof body.payload === 'object' && 'id' in body.payload
+        ? String((body.payload as Record<string, string>).id)
+        : '';
+    const externalId = wahaMessageId || `${sessionId}:${event}`;
+    const payload = JSON.parse(JSON.stringify(body)) as Prisma.InputJsonValue;
+
+    try {
+      await this.prisma.webhookEvent.create({
+        data: {
+          provider: 'whatsapp-api',
+          externalId,
+          eventType: event,
+          payload,
+        },
+      });
+    } catch (err: unknown) {
+      if ((err as { code?: string }).code === 'P2002') {
+        return { received: true, event, duplicate: true };
+      }
+      this.logger.error({ msg: 'Failed to persist WAHA webhook event', err });
     }
 
     const ignoredKey = `${sessionId}:${event}`;

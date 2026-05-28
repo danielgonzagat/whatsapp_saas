@@ -1,6 +1,7 @@
 import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import { SORA, MONO } from './utils';
+import { FieldLabel } from './SmartPaymentFieldLabel';
 
 export interface SmartPaymentFormData {
   amount: string;
@@ -116,23 +117,8 @@ export function SmartPaymentFormView({
   );
 }
 
-function FieldLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <span
-      style={{
-        fontSize: 10,
-        color: 'var(--app-text-secondary)',
-        fontFamily: SORA,
-        textTransform: 'uppercase',
-        letterSpacing: '.06em',
-        display: 'block',
-        marginBottom: 6,
-      }}
-    >
-      {children}
-    </span>
-  );
-}
+// FieldLabel lives in SmartPaymentFieldLabel.tsx (canonical, shared with
+// SmartPaymentResult). Re-imported above.
 
 const selectStyle: React.CSSProperties = {
   width: '100%',

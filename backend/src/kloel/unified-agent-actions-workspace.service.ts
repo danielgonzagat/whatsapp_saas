@@ -365,18 +365,26 @@ export class UnifiedAgentActionsWorkspaceService {
 
   private resolveBroadcastChannels(args: ToolArgs): string[] {
     const requested = this.str(args.source).toLowerCase();
-    if (requested) return [requested];
+    if (requested) {
+      return [requested];
+    }
     return ['whatsapp', 'instagram', 'messenger', 'email'];
   }
 
   private resolveBroadcastScheduleAt(window: string): string | null {
     const now = new Date();
-    if (window === 'pause') return null;
-    if (window === 'now') return now.toISOString();
+    if (window === 'pause') {
+      return null;
+    }
+    if (window === 'now') {
+      return now.toISOString();
+    }
     const scheduled = new Date(now);
     if (window === 'tonight_20h') {
       scheduled.setHours(20, 0, 0, 0);
-      if (scheduled <= now) scheduled.setDate(scheduled.getDate() + 1);
+      if (scheduled <= now) {
+        scheduled.setDate(scheduled.getDate() + 1);
+      }
       return scheduled.toISOString();
     }
     if (window === 'friday_21h') {

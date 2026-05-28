@@ -1,3 +1,12 @@
+/**
+ * @deprecated Use {@link ../kloel/mind/knowledge/mind-hidden-data-extractor.service.ts MindHiddenDataExtractor}
+ * (re-exported from `backend/src/kloel/mind/knowledge/`). This file remains
+ * during the ADR-0013 Wave M2 alias window (4 weeks).
+ *
+ * @cluster Mind/Knowledge
+ * @canonical backend/src/kloel/mind/knowledge/mind-hidden-data-extractor.service.ts
+ * @see docs/adr/0013-kloel-mind-unification.md
+ */
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { StructuredLogger } from '../logging/structured-logger';
@@ -47,11 +56,22 @@ export class HiddenDataExtractorService {
       model: resolveBackendOpenAIModel('brain'),
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' },
+      max_tokens: 256,
     });
+
+    const rawContent = completion.choices[0]?.message?.content || '{}';
+    const tokens = completion?.usage?.total_tokens ?? 256;
+    this.logger.log(
+      `hidden-data-extract model=brain baseLen=${text.length} outLen=${rawContent.length} tokens=${tokens}`,
+    );
 
     let result: Record<string, unknown> = {};
     try {
-      result = JSON.parse(completion.choices[0]?.message?.content || '{}');
+      result = JSON.parse(rawContent);
+      const keys = Object.keys(result);
+      if (keys.length === 0) {
+        this.logger.warn('hidden-data-extract empty result');
+      }
     } catch (error: unknown) {
       this.logger.error(
         'Failed to parse OpenAI JSON response',

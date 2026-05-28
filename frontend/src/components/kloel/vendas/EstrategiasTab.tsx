@@ -3,7 +3,7 @@ import { colors } from '@/lib/design-tokens';
 
 import { kloelT } from '@/lib/i18n/t';
 import { Stat } from './Stat';
-import { SORA, MONO } from './utils';
+import { SORA, MONO, fmtBRL } from './utils';
 import type { SalesStatsData, SubStatsData, OrderStatsData, PipelineStage } from './types';
 
 interface EstrategiasTabProps {
@@ -193,6 +193,3 @@ export function EstrategiasTab({
   );
 }
 
-function fmtBRL(v: number): string {
-  return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-}

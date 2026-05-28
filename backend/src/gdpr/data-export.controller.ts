@@ -1,4 +1,5 @@
 import { BadRequestException, Controller, Post, Req, UseGuards } from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { RouteClass } from '../common/throttler/route-class.decorator';
@@ -11,12 +12,16 @@ import { GdprService } from './gdpr.service';
  * Allows authenticated users to request a full export of their personal data
  * stored in the platform, in compliance with LGPD Art. 18 / GDPR Art. 20.
  */
+@ApiTags('GDPR')
 @Controller('gdpr')
 @RouteClass('mutate')
 export class DataExportController {
   constructor(private readonly gdprService: GdprService) {}
 
   /** Export data. */
+  @ApiOperation({ summary: 'Request export of personal data (LGPD Art. 18 / GDPR Art. 20)' })
+  @ApiResponse({ status: 202, description: 'Export request accepted' })
+  @ApiResponse({ status: 400, description: 'User identity required' })
   @WebhookEndpoint('GDPR external data export request')
   @Post('export')
   @UseGuards(JwtAuthGuard)

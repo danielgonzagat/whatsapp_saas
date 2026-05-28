@@ -36,9 +36,7 @@ export function readJsonObject(value: Prisma.JsonValue | null | undefined) {
   return value;
 }
 
-export function readString(value: Prisma.JsonValue | undefined) {
-  return typeof value === 'string' && value.trim() ? value.trim() : null;
-}
+export { readStringOrNull as readString } from '../../common/parse';
 
 export function readPositiveInteger(value: Prisma.JsonValue | undefined) {
   if (typeof value !== 'number' || !Number.isFinite(value)) {

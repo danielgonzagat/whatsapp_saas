@@ -11,10 +11,8 @@ import { WHITESPACE_G_RE } from '../common/regex';
 const TRAILING_DOTS_RE = /[.]+$/;
 const SEPARATOR_G_RE = /[_-]+/g;
 
-export interface ChatMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-}
+import type { ChatMessage } from './kloel-thinker.types';
+export type { ChatMessage };
 
 export interface ThreadConversationState {
   summary?: string;

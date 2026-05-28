@@ -1,5 +1,10 @@
 import { KLOEL_THEME } from '@/lib/kloel-theme';
-import { sectionTitleStyle, secondaryButtonStyle, inputStyle, textAreaStyle } from './shared-styles';
+import {
+  sectionTitleStyle,
+  secondaryButtonStyle,
+  inputStyle,
+  textAreaStyle,
+} from './shared-styles';
 
 interface ProductOption {
   id: string;
@@ -81,19 +86,19 @@ export function StepArsenal({
   const commit = (next: MediaItem[]) => onArsenalChange(serialize(next));
   const update = (index: number, patch: Partial<MediaItem>) =>
     commit(items.map((item, i) => (i === index ? { ...item, ...patch } : item)));
-  const remove = (index: number) => commit(items.filter((_, i) => i !== index));
+  const remove = (index: number) => onArsenalChange(serialize(items.filter((_, i) => i !== index)));
   const add = () => commit([...items, { type: '', productId: '', description: '' }]);
 
   return (
     <div>
       <h2 style={sectionTitleStyle}>Arsenal de vendas</h2>
       <p style={{ margin: '0 0 4px', fontSize: 13, color: KLOEL_THEME.textSecondary }}>
-        Cadastre fotos, vídeos, áudios, depoimentos e provas. Quanto mais material
-        descrito, melhor a IA vende.
+        Cadastre fotos, vídeos, áudios, depoimentos e provas. Quanto mais material descrito, melhor
+        a IA vende.
       </p>
       <p style={{ margin: '0 0 18px', fontSize: 12, color: KLOEL_THEME.accent, fontWeight: 600 }}>
-        Cada mídia precisa de tipo, produto e descrição — a IA usa isso para decidir
-        quando e como enviar cada prova.
+        Cada mídia precisa de tipo, produto e descrição — a IA usa isso para decidir quando e como
+        enviar cada prova.
       </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -130,12 +135,13 @@ export function StepArsenal({
                   border: 'none',
                   color: KLOEL_THEME.warning,
                   cursor: 'pointer',
-                  fontSize: 16,
-                  lineHeight: 1,
-                  padding: 4,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  lineHeight: 1.2,
+                  padding: '4px 6px',
                 }}
               >
-                ×
+                Remover
               </button>
             </div>
             <select
@@ -195,11 +201,7 @@ export function StepArsenal({
         + Adicionar mídia
       </button>
 
-      <button
-        type="button"
-        onClick={onSave}
-        style={{ ...secondaryButtonStyle, marginTop: 14 }}
-      >
+      <button type="button" onClick={onSave} style={{ ...secondaryButtonStyle, marginTop: 14 }}>
         {busy === 'setup' ? 'Salvando...' : 'Salvar arsenal'}
       </button>
     </div>

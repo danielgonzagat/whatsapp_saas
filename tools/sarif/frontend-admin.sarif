@@ -1,0 +1,407 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "eslint",
+          "informationUri": "https://eslint.org",
+          "rules": [
+            {
+              "id": "@next/next/no-img-element",
+              "helpUri": "https://eslint.org/docs/rules/@next/next/no-img-element"
+            },
+            {
+              "id": "react-hooks/set-state-in-effect",
+              "helpUri": "https://eslint.org/docs/rules/react-hooks/set-state-in-effect"
+            }
+          ]
+        }
+      },
+      "invocations": [
+        {
+          "executionSuccessful": true,
+          "workingDirectory": {
+            "uri": "file:///Users/danielpenin/whatsapp_saas/frontend-admin/"
+          }
+        }
+      ],
+      "results": [
+        {
+          "ruleId": "@next/next/no-img-element",
+          "level": "error",
+          "message": {
+            "text": "Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "frontend-admin/src/app/(admin)/_components/admin-products-section.tsx",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 57,
+                  "startColumn": 23,
+                  "endLine": 57,
+                  "endColumn": 99
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "@next/next/no-img-element",
+          "level": "error",
+          "message": {
+            "text": "Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "frontend-admin/src/app/(admin)/marketing/page.tsx",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 163,
+                  "startColumn": 23,
+                  "endLine": 163,
+                  "endColumn": 99
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "@next/next/no-img-element",
+          "level": "error",
+          "message": {
+            "text": "Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "frontend-admin/src/app/(admin)/produtos/ProductCard.tsx",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 30,
+                  "startColumn": 15,
+                  "endLine": 30,
+                  "endColumn": 91
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "@next/next/no-img-element",
+          "level": "error",
+          "message": {
+            "text": "Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "frontend-admin/src/app/mfa/setup/page.tsx",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 88,
+                  "startColumn": 11,
+                  "endLine": 94,
+                  "endColumn": 13
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "react-hooks/set-state-in-effect",
+          "level": "error",
+          "message": {
+            "text": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\n/Users/danielpenin/whatsapp_saas/frontend-admin/src/components/admin/admin-app-shell.tsx:84:5\n  82 |\n  83 |   useEffect(() => {\n> 84 |     setSidebarExpanded(getInitialAdminSidebarExpanded());\n     |     ^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect\n  85 |   }, []);\n  86 |\n  87 |   useEffect(() => {"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "frontend-admin/src/components/admin/admin-app-shell.tsx",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 84,
+                  "startColumn": 5,
+                  "endLine": 84,
+                  "endColumn": 23
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "@next/next/no-img-element",
+          "level": "error",
+          "message": {
+            "text": "Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "frontend-admin/src/components/admin/admin-chat-view.tsx",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 236,
+                  "startColumn": 15,
+                  "endLine": 241,
+                  "endColumn": 17
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "react-hooks/set-state-in-effect",
+          "level": "error",
+          "message": {
+            "text": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\n/Users/danielpenin/whatsapp_saas/frontend-admin/src/components/admin/admin-search-modal.tsx:58:7\n  56 |   useEffect(() => {\n  57 |     if (!open) {\n> 58 |       setQuery('');\n     |       ^^^^^^^^ Avoid calling setState() directly within an effect\n  59 |       setSelectedIndex(0);\n  60 |     }\n  61 |   }, [open]);"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "frontend-admin/src/components/admin/admin-search-modal.tsx",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 58,
+                  "startColumn": 7,
+                  "endLine": 58,
+                  "endColumn": 15
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "react-hooks/set-state-in-effect",
+          "level": "error",
+          "message": {
+            "text": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\n/Users/danielpenin/whatsapp_saas/frontend-admin/src/components/admin/admin-search-modal.tsx:75:5\n  73 |\n  74 |   useEffect(() => {\n> 75 |     setSelectedIndex((current) => Math.min(current, Math.max(results.length - 1, 0)));\n     |     ^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect\n  76 |   }, [results]);\n  77 |\n  78 |   useEffect(() => {"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "frontend-admin/src/components/admin/admin-search-modal.tsx",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 75,
+                  "startColumn": 5,
+                  "endLine": 75,
+                  "endColumn": 21
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "react-hooks/set-state-in-effect",
+          "level": "error",
+          "message": {
+            "text": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\n/Users/danielpenin/whatsapp_saas/frontend-admin/src/components/admin/admin-sidebar-user-menu.tsx:32:5\n  30 |\n  31 |   useEffect(() => {\n> 32 |     setMounted(true);\n     |     ^^^^^^^^^^ Avoid calling setState() directly within an effect\n  33 |   }, []);\n  34 |\n  35 |   useEffect(() => {"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "frontend-admin/src/components/admin/admin-sidebar-user-menu.tsx",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 32,
+                  "startColumn": 5,
+                  "endLine": 32,
+                  "endColumn": 15
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "react-hooks/set-state-in-effect",
+          "level": "error",
+          "message": {
+            "text": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\n/Users/danielpenin/whatsapp_saas/frontend-admin/src/components/admin/admin-sidebar.tsx:79:9\n  77 |       );\n  78 |       if (activeParent) {\n> 79 |         setExpandedNav(activeParent.key);\n     |         ^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect\n  80 |         return;\n  81 |       }\n  82 |     }"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "frontend-admin/src/components/admin/admin-sidebar.tsx",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 79,
+                  "startColumn": 9,
+                  "endLine": 79,
+                  "endColumn": 23
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "react-hooks/set-state-in-effect",
+          "level": "error",
+          "message": {
+            "text": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\n/Users/danielpenin/whatsapp_saas/frontend-admin/src/components/admin/admin-theme-toggle.tsx:19:5\n  17 |\n  18 |   useEffect(() => {\n> 19 |     setMounted(true);\n     |     ^^^^^^^^^^ Avoid calling setState() directly within an effect\n  20 |   }, []);\n  21 |\n  22 |   const isDark = mounted && resolvedTheme === 'dark';"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "frontend-admin/src/components/admin/admin-theme-toggle.tsx",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 19,
+                  "startColumn": 5,
+                  "endLine": 19,
+                  "endColumn": 15
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "@next/next/no-img-element",
+          "level": "error",
+          "message": {
+            "text": "Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "frontend-admin/src/components/admin/auth-screen-chrome.tsx",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 34,
+                  "startColumn": 11,
+                  "endLine": 34,
+                  "endColumn": 99
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "react-hooks/set-state-in-effect",
+          "level": "error",
+          "message": {
+            "text": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\n/Users/danielpenin/whatsapp_saas/frontend-admin/src/components/admin/god-view/custom-range-popover.tsx:27:5\n  25 |\n  26 |   useEffect(() => {\n> 27 |     setDraft({ from: value.from, to: value.to });\n     |     ^^^^^^^^ Avoid calling setState() directly within an effect\n  28 |   }, [value.from, value.to]);\n  29 |\n  30 |   useEffect(() => {"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "frontend-admin/src/components/admin/god-view/custom-range-popover.tsx",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 27,
+                  "startColumn": 5,
+                  "endLine": 27,
+                  "endColumn": 13
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "react-hooks/set-state-in-effect",
+          "level": "error",
+          "message": {
+            "text": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\n/Users/danielpenin/whatsapp_saas/frontend-admin/src/lib/admin-chat-history.tsx:141:5\n  139 |     const cachedSessions = readCache<AdminChatSessionSummary[]>(SESSION_CACHE_SLOT, []);\n  140 |     sessionsRef.current = cachedSessions;\n> 141 |     setSessions(cachedSessions);\n      |     ^^^^^^^^^^^ Avoid calling setState() directly within an effect\n  142 |   }, []);\n  143 |\n  144 |   useEffect(() => {"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "frontend-admin/src/lib/admin-chat-history.tsx",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 141,
+                  "startColumn": 5,
+                  "endLine": 141,
+                  "endColumn": 16
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "react-hooks/set-state-in-effect",
+          "level": "error",
+          "message": {
+            "text": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\n/Users/danielpenin/whatsapp_saas/frontend-admin/src/lib/admin-chat-history.tsx:145:5\n  143 |\n  144 |   useEffect(() => {\n> 145 |     setActiveSessionIdRaw(readSessionCache<string | null>(ACTIVE_SESSION_CACHE_SLOT, null));\n      |     ^^^^^^^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect\n  146 |   }, []);\n  147 |\n  148 |   const setActiveSessionId = useCallback((sessionId: string | null) => {"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "frontend-admin/src/lib/admin-chat-history.tsx",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 145,
+                  "startColumn": 5,
+                  "endLine": 145,
+                  "endColumn": 26
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ruleId": "react-hooks/set-state-in-effect",
+          "level": "error",
+          "message": {
+            "text": "Error: Calling setState synchronously within an effect can trigger cascading renders\n\nEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:\n* Update external systems with the latest state from React.\n* Subscribe for updates from some external system, calling setState in a callback function when external state changes.\n\nCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).\n\n/Users/danielpenin/whatsapp_saas/frontend-admin/src/lib/admin-chat-history.tsx:184:7\n  182 |   useEffect(() => {\n  183 |     if (!admin) {\n> 184 |       persistSessions([]);\n      |       ^^^^^^^^^^^^^^^ Avoid calling setState() directly within an effect\n  185 |       setActiveSessionIdRaw(null);\n  186 |       return;\n  187 |     }"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "frontend-admin/src/lib/admin-chat-history.tsx",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 184,
+                  "startColumn": 7,
+                  "endLine": 184,
+                  "endColumn": 22
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "properties": {
+        "workspace": "frontend-admin",
+        "totalFindings": 16,
+        "totalFiles": 112
+      }
+    }
+  ]
+}

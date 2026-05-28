@@ -19,9 +19,14 @@ export class BudgetProtectionService {
   private readonly logger = new Logger(BudgetProtectionService.name);
 
   evaluate(input: BudgetProtectionInput): BudgetProtection {
-    const currentLoss = input.totalConversions === 0
-      ? input.totalCost
-      : Math.max(0, input.totalCost - input.totalConversions * (input.totalCost / Math.max(input.totalConversions, 1)));
+    const currentLoss =
+      input.totalConversions === 0
+        ? input.totalCost
+        : Math.max(
+            0,
+            input.totalCost -
+              input.totalConversions * (input.totalCost / Math.max(input.totalConversions, 1)),
+          );
 
     const adjustedLoss = input.totalConversions === 0 ? input.totalCost : currentLoss;
 
@@ -51,9 +56,7 @@ export class BudgetProtectionService {
     const recommendation = this.buildRecommendation(status, input);
     const roundedLoss = Math.round(currentLoss * 100) / 100;
 
-    this.logger.debug(
-      `Budget protection for ${input.campaignId}: ${status} (loss=${roundedLoss})`,
-    );
+    this.logger.debug(`Budget protection for ${input.campaignId}: ${status} (loss=${roundedLoss})`);
 
     return {
       workspaceId: input.workspaceId,

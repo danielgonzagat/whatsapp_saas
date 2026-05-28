@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { AngleFatigue } from './types';
+import { clamp } from '../../common/math';
 
 interface AngleFatigueInput {
   readonly angleId: string;
@@ -16,22 +17,24 @@ const FATIGUE_MODERATE_THRESHOLD = 0.4;
 const CTR_WEIGHT = 0.6;
 const CONV_WEIGHT = 0.4;
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
-}
-
 @Injectable()
 export class AngleFatigueDetectorService {
   private readonly logger = new Logger(AngleFatigueDetectorService.name);
 
   detect(input: AngleFatigueInput): AngleFatigue {
-    const ctrDeclineRate = input.ctrBaseline > 0
-      ? clamp((input.ctrBaseline - input.ctrCurrent) / input.ctrBaseline, 0, 1)
-      : 0;
+    const ctrDeclineRate =
+      input.ctrBaseline > 0
+        ? clamp((input.ctrBaseline - input.ctrCurrent) / input.ctrBaseline, 0, 1)
+        : 0;
 
-    const conversionDeclineRate = input.conversionBaseline > 0
-      ? clamp((input.conversionBaseline - input.conversionCurrent) / input.conversionBaseline, 0, 1)
-      : 0;
+    const conversionDeclineRate =
+      input.conversionBaseline > 0
+        ? clamp(
+            (input.conversionBaseline - input.conversionCurrent) / input.conversionBaseline,
+            0,
+            1,
+          )
+        : 0;
 
     const fatigueScore = clamp(
       ctrDeclineRate * CTR_WEIGHT + conversionDeclineRate * CONV_WEIGHT,
@@ -59,8 +62,12 @@ export class AngleFatigueDetectorService {
   }
 
   private determineRecommendation(fatigueScore: number): 'rotate' | 'rest' | 'still_fresh' {
-    if (fatigueScore >= FATIGUE_HIGH_THRESHOLD) return 'rotate';
-    if (fatigueScore >= FATIGUE_MODERATE_THRESHOLD) return 'rest';
+    if (fatigueScore >= FATIGUE_HIGH_THRESHOLD) {
+      return 'rotate';
+    }
+    if (fatigueScore >= FATIGUE_MODERATE_THRESHOLD) {
+      return 'rest';
+    }
     return 'still_fresh';
   }
 

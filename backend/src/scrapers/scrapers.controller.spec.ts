@@ -6,7 +6,6 @@ jest.mock('./scrapers.service', () => ({
 
 jest.mock('@sentry/node', () => ({}), { virtual: true });
 
-
 describe('ScrapersController', () => {
   const createJob = jest.fn();
   const findAll = jest.fn();
@@ -32,7 +31,7 @@ describe('ScrapersController', () => {
       const expectedJob = { id: 'job-1', workspaceId: 'ws-1', type: 'MAPS', query: 'restaurants' };
       createJob.mockResolvedValueOnce(expectedJob);
 
-      const result = await controller.create(req, body as never);
+      const result = await controller.create(req, body);
 
       expect(createJob).toHaveBeenCalledWith('ws-1', { type: 'MAPS', query: 'restaurants' });
       expect(result).toBe(expectedJob);
@@ -72,7 +71,7 @@ describe('ScrapersController', () => {
       const expected = { message: 'Leads imported successfully', count: 5 };
       importLeads.mockResolvedValueOnce(expected);
 
-      const result = await controller.importLeads(req, 'job-1', body as never);
+      const result = await controller.importLeads(req, 'job-1', body);
 
       expect(importLeads).toHaveBeenCalledWith('ws-1', 'job-1');
       expect(result).toBe(expected);

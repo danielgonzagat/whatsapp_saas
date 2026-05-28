@@ -6,11 +6,7 @@ function clamp(value: number): number {
   return Math.round(value * 10000) / 10000;
 }
 
-function verdict(
-  gateName: GateName,
-  status: GateStatus,
-  mode: GateMode,
-): GateVerdict {
+function verdict(gateName: GateName, status: GateStatus, mode: GateMode): GateVerdict {
   return {
     gateName,
     status,
@@ -52,9 +48,7 @@ describe('PulseTruthSnapshotService', () => {
     });
 
     it('[03] returns INSUFFICIENT_EVIDENCE when only log_only FAIL gates present', () => {
-      const result = service([
-        descriptor('identity-projection', 'FAIL', 'log_only'),
-      ]).snapshot();
+      const result = service([descriptor('identity-projection', 'FAIL', 'log_only')]).snapshot();
       expect(result.certificationVerdict).toBe('INSUFFICIENT_EVIDENCE');
       expect(result.capabilityHealthScore).toBe(0);
       expect(result.overclaimRisk).toBe(1);
@@ -73,9 +67,7 @@ describe('PulseTruthSnapshotService', () => {
 
   describe('snapshot() CERTIFIED verdict', () => {
     it('[05] single hard_fail PASS gate → CERTIFIED', () => {
-      const result = service([
-        descriptor('no-roleplay', 'PASS', 'hard_fail'),
-      ]).snapshot();
+      const result = service([descriptor('no-roleplay', 'PASS', 'hard_fail')]).snapshot();
       expect(result.certificationVerdict).toBe('CERTIFIED');
       expect(result.capabilityHealthScore).toBe(1);
       expect(result.overclaimRisk).toBe(0);
@@ -120,9 +112,7 @@ describe('PulseTruthSnapshotService', () => {
 
   describe('snapshot() AT_RISK verdict', () => {
     it('[09] single hard_fail FAIL gate → AT_RISK', () => {
-      const result = service([
-        descriptor('no-roleplay', 'FAIL', 'hard_fail'),
-      ]).snapshot();
+      const result = service([descriptor('no-roleplay', 'FAIL', 'hard_fail')]).snapshot();
       expect(result.certificationVerdict).toBe('AT_RISK');
       expect(result.capabilityHealthScore).toBe(0);
       expect(result.overclaimRisk).toBe(1);

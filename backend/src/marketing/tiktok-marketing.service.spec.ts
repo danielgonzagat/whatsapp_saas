@@ -1,6 +1,7 @@
 import { TikTokMarketingService } from './tiktok-marketing.service';
 
 jest.mock('../meta/meta-token-crypto', () => ({
+  decryptMetaToken: jest.fn().mockImplementation((token: string | null) => token),
   encryptMetaToken: jest.fn().mockImplementation((token: string) => `encrypted:${token}`),
 }));
 
@@ -65,6 +66,10 @@ describe('TikTokMarketingService', () => {
       'TIKTOK_STATE_SECRET',
       'FRONTEND_URL',
       'NEXT_PUBLIC_TIKTOK_CLIENT_KEY',
+      'NEXT_PUBLIC_TIKTOK_APP_ID',
+      'TIKTOK_APP_ID',
+      'TIKTOK_APP_SECRET',
+      'TIKTOK_CLIENT_ID',
       'JWT_SECRET',
     ]);
   });
@@ -112,6 +117,30 @@ describe('TikTokMarketingService', () => {
       expect(result.clientConfigured).toBe(false);
       expect(result.secretConfigured).toBe(false);
     });
+
+    it('accepts app id and app secret aliases for production TikTok auth', async () => {
+      deleteEnv([
+        'TIKTOK_CLIENT_KEY',
+        'TIKTOK_CLIENT_SECRET',
+        'TIKTOK_STATE_SECRET',
+        'NEXT_PUBLIC_TIKTOK_CLIENT_KEY',
+      ]);
+      setEnv({
+        TIKTOK_APP_ID: '7632164959169806353',
+        TIKTOK_APP_SECRET: 'test-secret',
+        JWT_SECRET: 'jwt-secret',
+      });
+
+      const result = await service.getStatus('ws-1');
+      const auth = service.generateAuthUrl('ws-1', 'creator');
+      const authUrl = new URL(auth.url);
+
+      expect(result.clientConfigured).toBe(true);
+      expect(result.secretConfigured).toBe(true);
+      expect(authUrl.hostname).toBe('www.tiktok.com');
+      expect(authUrl.searchParams.get('client_key')).toBe('7632164959169806353');
+      expect(auth.redirectUri).toBe('https://app.kloel.test/integrations/tiktok/auth/callback');
+    });
   });
 
   describe('generateAuthUrl', () => {
@@ -140,6 +169,75 @@ describe('TikTokMarketingService', () => {
       const result = service.generateAuthUrl('ws-1');
 
       expect(result.kind).toBe('creator');
+    });
+  });
+
+  describe('read APIs', () => {
+    it('reads creator profile through the official TikTok user info endpoint', async () => {
+      workspaceFindUnique.mockResolvedValue({
+        providerSettings: { tiktok: { connected: true, accessToken: 'creator-token' } },
+      });
+      fetchSpy.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: { user: { open_id: 'open-1', display_name: 'Kloel' } },
+            error: { code: 'ok', message: '' },
+          }),
+          { status: 200 },
+        ),
+      );
+
+      const result = await service.getCreatorProfile('ws-1');
+
+      expect(result).toEqual({
+        status: 'ok',
+        profile: { open_id: 'open-1', display_name: 'Kloel' },
+      });
+      const profileFetchCall = fetchSpy.mock.calls[0] as [URL, RequestInit];
+      expect(profileFetchCall[0].href).toContain('https://open.tiktokapis.com/v2/user/info/');
+      expect(profileFetchCall[1]).toEqual(
+        expect.objectContaining({ headers: { Authorization: 'Bearer creator-token' } }),
+      );
+    });
+
+    it('lists advertiser campaigns through TikTok Business API without mutating campaigns', async () => {
+      workspaceFindUnique.mockResolvedValue({
+        providerSettings: {
+          tiktok: {
+            connected: true,
+            accessToken: 'advertiser-token',
+            advertiserIds: ['1234567890'],
+          },
+        },
+      });
+      fetchSpy.mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            code: 0,
+            message: 'OK',
+            data: { list: [{ campaign_id: 'cmp-1', campaign_name: 'Oferta' }] },
+          }),
+          { status: 200 },
+        ),
+      );
+
+      const result = await service.listAdvertiserCampaigns('ws-1');
+
+      expect(result).toEqual({
+        status: 'ok',
+        advertiserId: '1234567890',
+        campaigns: [{ campaign_id: 'cmp-1', campaign_name: 'Oferta' }],
+      });
+      const campaignFetchCall = fetchSpy.mock.calls[0] as [URL, RequestInit];
+      expect(campaignFetchCall[0].href).toContain(
+        'https://business-api.tiktok.com/open_api/v1.3/campaign/get/',
+      );
+      expect(campaignFetchCall[1]).toEqual(
+        expect.objectContaining({
+          headers: { 'Access-Token': 'advertiser-token', 'Content-Type': 'application/json' },
+        }),
+      );
+      expect(workspaceUpdate).not.toHaveBeenCalled();
     });
   });
 

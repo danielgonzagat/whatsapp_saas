@@ -295,6 +295,66 @@ export class CheckoutEventEmitterService {
     }
   }
 
+  async checkoutCreated(params: {
+    workspaceId: string;
+    checkoutId: string;
+    productId: string;
+    correlationId?: string | undefined;
+  }): Promise<void> {
+    try {
+      await this.spine.emit({
+        eventName: 'commerce.checkout.created',
+        workspaceId: params.workspaceId,
+        entityRef: { entityType: 'checkout', entityId: params.checkoutId },
+        truthMode: 'observed',
+        provenance: {
+          source: 'production',
+          processor: PROCESSOR,
+          processorVersion: PROCESSOR_VERSION,
+          schemaVersion: SCHEMA_VERSION,
+        },
+        payload: {
+          checkoutId: params.checkoutId,
+          productId: params.productId,
+        },
+        correlationId: params.correlationId,
+      });
+    } catch (error: unknown) {
+      this.logger.warn(
+        `commerce.checkout.created emission failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  async checkoutUpdated(params: {
+    workspaceId: string;
+    checkoutId: string;
+    correlationId?: string | undefined;
+  }): Promise<void> {
+    try {
+      await this.spine.emit({
+        eventName: 'commerce.checkout.updated',
+        workspaceId: params.workspaceId,
+        entityRef: { entityType: 'checkout', entityId: params.checkoutId },
+        truthMode: 'observed',
+        provenance: {
+          source: 'production',
+          processor: PROCESSOR,
+          processorVersion: PROCESSOR_VERSION,
+          schemaVersion: SCHEMA_VERSION,
+        },
+        payload: {
+          checkoutId: params.checkoutId,
+        },
+        correlationId: params.correlationId,
+      });
+    } catch (error: unknown) {
+      this.logger.warn(
+        `commerce.checkout.updated emission failed: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
   async leadConverted(params: {
     workspaceId: string;
     orderId: string;

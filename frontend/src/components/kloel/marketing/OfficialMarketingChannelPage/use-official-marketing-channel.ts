@@ -6,6 +6,7 @@ import {
   type ChannelKey,
   type ConnectStatus,
   type TikTokStatus,
+  type GoogleAdsStatus,
   type TikTokModeData,
   statusText,
   trustedExternalUrl,
@@ -26,6 +27,7 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
   const { products } = useProducts();
   const [status, setStatus] = useState<ConnectStatus | null>(null);
   const [tiktokStatus, setTikTokStatus] = useState<TikTokStatus | null>(null);
+  const [googleAdsStatus, setGoogleAdsStatus] = useState<GoogleAdsStatus | null>(null);
   const [tiktokMode, setTikTokMode] = useState<TikTokModeData | null>(null);
   const [setup, setSetup] = useState<ChannelSetup>(DEFAULT_SETUP);
   const [setupLoaded, setSetupLoaded] = useState(false);
@@ -54,11 +56,17 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
         status: tiktokStatus?.status,
       };
     }
+    if (channel === 'google-ads') {
+      return {
+        connected: googleAdsStatus?.connected,
+        status: googleAdsStatus?.status,
+      };
+    }
     const channelStatus = status?.channels as
       | Partial<Record<ChannelKey, ChannelConnectionStatus>>
       | undefined;
     return channelStatus?.[channel] || null;
-  }, [channel, status, tiktokStatus]);
+  }, [channel, googleAdsStatus, status, tiktokStatus]);
   const refresh = useCallback(async () => {
     setIsLoading(true);
     setSetupLoaded(false);
@@ -88,6 +96,15 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
         if (!nextMode.error) {
           setTikTokMode(nextMode.data || null);
         }
+      }
+      if (channel === 'google-ads') {
+        const nextGoogleAds = await apiFetch<GoogleAdsStatus>(
+          '/marketing/connect/google-ads/status',
+        );
+        if (nextGoogleAds.error) {
+          throw new Error(nextGoogleAds.error);
+        }
+        setGoogleAdsStatus(nextGoogleAds.data || null);
       }
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : 'Falha ao carregar status.');
@@ -264,6 +281,22 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
       setBusy(null);
     }
   }, []);
+  const openGoogleAds = useCallback(async () => {
+    setBusy('google-ads');
+    setMessage(null);
+    try {
+      const response = await apiFetch<{ url?: string }>('/marketing/connect/google-ads/url');
+      const url = String(response.data?.url || '').trim();
+      if (!url || !trustedExternalUrl(url, ['accounts.google.com'])) {
+        throw new Error('URL oficial do Google Ads indisponivel.');
+      }
+      window.location.assign(url);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Falha ao abrir Google Ads.');
+      setBusy(null);
+    }
+  }, []);
+
   const handleComplete = useCallback(async () => {
     setCompleteBusy(true);
     setCompleteMessage(null);
@@ -327,6 +360,7 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
     toggleEmail,
     sendEmailTest,
     openTikTok,
+    openGoogleAds,
     handleComplete,
     handleAdvanceStep,
     handleArsenalChange,

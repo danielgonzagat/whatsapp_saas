@@ -68,7 +68,7 @@ describe('coverage-fill: CTA visual states', () => {
     expect(btn.style.background).toBe('transparent');
   });
 
-  it('focus paints an ember 2px ring and blur clears it', () => {
+  it('focus applies the canonical CTA ember ring', () => {
     render(
       <CTA C={C} variant="ember">
         Focusable
@@ -76,7 +76,7 @@ describe('coverage-fill: CTA visual states', () => {
     );
     const btn = screen.getByRole('button');
     fireEvent.focus(btn);
-    expect(btn.style.boxShadow).toContain(C.ember);
+    expect(btn.style.boxShadow).toBe(`0 0 0 2px ${C.ember}`);
     fireEvent.blur(btn);
     expect(btn.style.boxShadow).toBe('none');
   });
@@ -108,13 +108,7 @@ describe('coverage-fill: Dial selection + small CTA size', () => {
   it('Dial pre-selected segment paints ember and inactive segments use the trace token', () => {
     const onChange = vi.fn();
     render(
-      <Dial
-        C={D}
-        label="L"
-        value={0}
-        onChange={onChange}
-        labels={['A', 'B', 'C'] as const}
-      />,
+      <Dial C={D} label="L" value={0} onChange={onChange} labels={['A', 'B', 'C'] as const} />,
     );
     const buttons = screen.getAllByRole('button');
     expect(buttons[0].style.background).toBe(D.ember);

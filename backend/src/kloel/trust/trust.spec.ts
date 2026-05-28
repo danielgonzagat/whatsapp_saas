@@ -20,9 +20,7 @@ import { toTrustEvent } from './trust.types';
 import type { TrustEvent } from './trust.types';
 import type { SpineEventRef } from '../mind/mind.types';
 
-const baseSpineEvent = (
-  over: Partial<SpineEventRef> = {},
-): SpineEventRef => ({
+const baseSpineEvent = (over: Partial<SpineEventRef> = {}): SpineEventRef => ({
   eventId: over.eventId ?? `evt_test_${Math.random().toString(36).slice(2, 8)}`,
   eventName: over.eventName ?? 'commerce.lead.replied',
   workspaceId: over.workspaceId ?? 'wks_demo',
@@ -33,9 +31,7 @@ const baseSpineEvent = (
   ...(over.payload !== undefined ? { payload: over.payload } : {}),
 });
 
-const baseTrustEvent = (
-  over: Partial<TrustEvent> = {},
-): TrustEvent => ({
+const baseTrustEvent = (over: Partial<TrustEvent> = {}): TrustEvent => ({
   eventId: over.eventId ?? `evt_test_${Math.random().toString(36).slice(2, 8)}`,
   eventName: over.eventName ?? 'commerce.lead.replied',
   occurredAt: over.occurredAt ?? new Date().toISOString(),
@@ -177,32 +173,24 @@ describe('TimingAppropriateness (UTP-TRUST-004)', () => {
 
 describe('BrandProtectionGuard (UTP-TRUST-005)', () => {
   it('returns no flags for clean text', () => {
-    const flags = evaluateBrandRisk(
-      'Bom dia! Estamos à disposição para ajudar com sua dúvida.',
-    );
+    const flags = evaluateBrandRisk('Bom dia! Estamos à disposição para ajudar com sua dúvida.');
     expect(flags).toHaveLength(0);
   });
 
   it('detects false promise patterns', () => {
-    const flags = evaluateBrandRisk(
-      'Você vai faturar 10 mil por mês sem esforço nenhum!',
-    );
+    const flags = evaluateBrandRisk('Você vai faturar 10 mil por mês sem esforço nenhum!');
     const falsePromises = flags.filter((f) => f.kind === 'false_promise');
     expect(falsePromises.length).toBeGreaterThan(0);
   });
 
   it('detects pressure tactics', () => {
-    const flags = evaluateBrandRisk(
-      'Última chance! Esta oferta é só hoje, não vai perder!',
-    );
+    const flags = evaluateBrandRisk('Última chance! Esta oferta é só hoje, não vai perder!');
     const pressure = flags.filter((f) => f.kind === 'pressure_tactic');
     expect(pressure.length).toBeGreaterThan(0);
   });
 
   it('detects complaint triggers', () => {
-    const flags = evaluateBrandRisk(
-      'Não se preocupe com o Procon, o processo é simples.',
-    );
+    const flags = evaluateBrandRisk('Não se preocupe com o Procon, o processo é simples.');
     const complaints = flags.filter((f) => f.kind === 'complaint_trigger');
     expect(complaints.length).toBeGreaterThan(0);
   });
@@ -312,9 +300,7 @@ describe('SilenceAsAction (UTP-TRUST-006)', () => {
     const decision = decideSilence({
       ...healthyState,
       trustScore: 0.25,
-      brandRiskFlags: [
-        { kind: 'false_promise', confidence: 0.8, matchedPattern: 'test' },
-      ],
+      brandRiskFlags: [{ kind: 'false_promise', confidence: 0.8, matchedPattern: 'test' }],
     });
     expect(decision.remainSilent).toBe(true);
     expect(decision.safeNextStep.toLowerCase()).toContain('escalate');

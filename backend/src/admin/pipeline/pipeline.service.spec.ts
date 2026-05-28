@@ -226,14 +226,15 @@ describe('PipelineService', () => {
       expect(setStateCall.update.transitionedBy).toBe('system');
 
       // event spine recorded the auto-fallback
-      const stateChangedEvent = events.recordCommercial.mock.calls.find(
-        ([arg]) => (arg as { eventType?: string }).eventType === 'pipeline.state.changed',
+      const recordCommercialCalls = events.recordCommercial.mock.calls as Array<
+        [{ eventType?: string; payload: { reason: string; by: string } }]
+      >;
+      const stateChangedEvent = recordCommercialCalls.find(
+        ([arg]) => arg.eventType === 'pipeline.state.changed',
       );
       expect(stateChangedEvent).toBeDefined();
-      const payload = (stateChangedEvent![0] as { payload: { reason: string; by: string } })
-        .payload;
-      expect(payload.reason).toMatch(/auto-fallback/);
-      expect(payload.by).toBe('system');
+      expect(stateChangedEvent?.[0].payload.reason).toMatch(/auto-fallback/);
+      expect(stateChangedEvent?.[0].payload.by).toBe('system');
     });
 
     it('does NOT auto-fallback when current state is shadow (already fallen back)', async () => {
