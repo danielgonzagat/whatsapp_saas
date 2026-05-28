@@ -128,7 +128,7 @@ describe('GuestChatService — Cognitive Parity (PI-K19-A)', () => {
       await service.chatSync('Olá', 'cog-session-1', 'ws-test-001');
 
       expect(mockSpineEmitter.emit).toHaveBeenCalledTimes(1);
-      const matcher = expect.objectContaining({
+      const matcher: unknown = expect.objectContaining({
         eventName: 'cognition.decision_made',
         workspaceId: 'ws-test-001',
         truthMode: 'observed',

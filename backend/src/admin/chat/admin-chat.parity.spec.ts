@@ -16,13 +16,6 @@ import { AdminPermissionsService } from '../permissions/admin-permissions.servic
 import { AdminChatService } from './admin-chat.service';
 import { ChatToolRegistry } from './chat-tool.registry';
 
-// ---- helpers --------------------------------------------------------
-
-function firstCallArg<T>(mock: { mock: { calls: Array<[unknown, ...unknown[]]> } }): T {
-  const [arg] = mock.mock.calls[0] ?? [];
-  return arg as T;
-}
-
 // ---- factory --------------------------------------------------------
 
 interface TestMocks {
@@ -173,7 +166,8 @@ describe('AdminChatService cognitive parity (PI-K19-B)', () => {
       await sendOi(service);
 
       expect(recordDecision).toHaveBeenCalledTimes(1);
-      const arg = recordDecision.mock.calls[0][0] as Record<string, unknown>;
+      const calls = recordDecision.mock.calls as Array<[Record<string, unknown>]>;
+      const arg = calls[0]?.[0] as Record<string, unknown>;
       expect(arg.workspaceId).toBe('ws_1');
       expect(arg.decisionType).toBe('chat_reply');
       expect((arg.contextSnapshot as Record<string, unknown>).surface).toBe('admin');
@@ -190,7 +184,8 @@ describe('AdminChatService cognitive parity (PI-K19-B)', () => {
       await sendOi(service);
 
       expect(closeOutcome).toHaveBeenCalledTimes(1);
-      const arg = closeOutcome.mock.calls[0][0] as Record<string, unknown>;
+      const closeCalls = closeOutcome.mock.calls as Array<[Record<string, unknown>]>;
+      const arg = closeCalls[0]?.[0] as Record<string, unknown>;
       expect(arg.outcomeName).toBe('chat.replied');
       expect(arg.wonVsBaseline).toBe(true);
     });
@@ -208,7 +203,8 @@ describe('AdminChatService cognitive parity (PI-K19-B)', () => {
       await new Promise<void>((r) => setTimeout(r, 60));
 
       expect(spineEmit).toHaveBeenCalledTimes(1);
-      const arg = spineEmit.mock.calls[0][0] as Record<string, unknown>;
+      const emitCalls = spineEmit.mock.calls as Array<[Record<string, unknown>]>;
+      const arg = emitCalls[0]?.[0] as Record<string, unknown>;
       expect(arg.eventName).toBe('cognition.decision_made');
       expect(arg.workspaceId).toBe('ws_1');
       expect(arg.truthMode).toBe('observed');
@@ -317,9 +313,12 @@ describe('AdminChatService cognitive parity (PI-K19-B)', () => {
 
       await new Promise<void>((r) => setTimeout(r, 60));
 
-      expect(recordDecision.mock.calls[0][0].workspaceId).toBe('ws_custom_42');
-      expect(spineEmit.mock.calls[0][0].workspaceId).toBe('ws_custom_42');
-      expect(beliefObserve.mock.calls[0][0]).toBe('ws_custom_42');
+      const recCalls = recordDecision.mock.calls as Array<[{ workspaceId: string }]>;
+      const emitCalls = spineEmit.mock.calls as Array<[{ workspaceId: string }]>;
+      const beliefCalls = beliefObserve.mock.calls as Array<[string]>;
+      expect(recCalls[0]?.[0].workspaceId).toBe('ws_custom_42');
+      expect(emitCalls[0]?.[0].workspaceId).toBe('ws_custom_42');
+      expect(beliefCalls[0]?.[0]).toBe('ws_custom_42');
       expect(closeOutcome).toHaveBeenCalled();
     });
   });
