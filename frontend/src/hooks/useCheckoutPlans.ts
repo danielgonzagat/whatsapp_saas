@@ -5,27 +5,23 @@ import { swrFetcher } from '@/lib/fetcher';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import useSWR from 'swr';
 
-/* ── Shared types ── */
+import {
+  buildCheckoutProductBody,
+  buildDuplicatePlanBody,
+  buildOrdersQueryString,
+  extractCheckoutProductList,
+  matchesProduct,
+  unwrapArrayOrEnvelope,
+  type CheckoutProductItem,
+  type CheckoutProductListResponse,
+  type DashboardProduct,
+} from './useCheckoutPlans.helpers';
 
-interface DashboardProduct {
-  id: string;
-  name: string;
-  slug?: string | undefined;
-  description?: string | undefined;
-  images?: string[] | undefined;
-  category?: string | undefined;
-  price?: number | undefined;
-}
+/* ── Shared types ── */
 
 interface DashboardProductInput extends Partial<DashboardProduct> {
   id?: string;
   name?: string;
-}
-
-interface CheckoutProductItem {
-  id: string;
-  slug?: string;
-  name: string;
 }
 
 interface CheckoutProductDetail {
@@ -50,11 +46,6 @@ interface CheckoutPlan {
 interface CheckoutTemplate {
   id: string;
   [key: string]: unknown;
-}
-
-interface CheckoutProductListResponse {
-  products?: CheckoutProductItem[];
-  data?: CheckoutProductItem[];
 }
 
 interface OrderItem {
@@ -119,30 +110,6 @@ interface PlanCreateBody {
 }
 
 /* ── Ensure a checkout-compatible product exists for the dashboard Product ── */
-function extractCheckoutProductList(
-  raw: CheckoutProductItem[] | CheckoutProductListResponse | undefined,
-): CheckoutProductItem[] {
-  if (Array.isArray(raw)) {
-    return raw;
-  }
-  const envelope = raw as CheckoutProductListResponse | undefined;
-  return envelope?.products || envelope?.data || [];
-}
-
-function matchesProduct(candidate: CheckoutProductItem, product: DashboardProduct): boolean {
-  return candidate.slug === product.slug || candidate.name === product.name;
-}
-
-function buildCheckoutProductBody(product: DashboardProduct) {
-  return {
-    name: product.name,
-    slug: product.slug || product.id,
-    description: product.description,
-    images: product.images || [],
-    category: product.category,
-    price: product.price || 0,
-  };
-}
 
 async function findExistingCheckoutProductId(
   product: DashboardProduct,
@@ -250,14 +217,7 @@ export function useCheckoutPlans(product: DashboardProductInput | null | undefin
       }
       const res = await apiFetch(`/checkout/products/${checkoutProductId}/plans`, {
         method: 'POST',
-        body: {
-          name: `${plan.name} (Copia)`,
-          priceInCents: plan.priceInCents,
-          quantity: plan.quantity,
-          maxInstallments: plan.maxInstallments,
-          freeShipping: plan.freeShipping,
-          shippingPrice: plan.shippingPrice,
-        },
+        body: buildDuplicatePlanBody(plan),
       });
       mutate();
       return res;
@@ -335,7 +295,7 @@ export function useOrderBumps(planId: string | null) {
     swrFetcher,
     { keepPreviousData: true },
   );
-  const bumps: BumpItem[] = Array.isArray(data) ? data : (data as BumpListResponse)?.bumps || [];
+  const bumps = unwrapArrayOrEnvelope<BumpItem>(data, 'bumps');
 
   const createBump = useCallback(
     async (body: Record<string, unknown>) => {
@@ -371,9 +331,7 @@ export function useUpsells(planId: string | null) {
     swrFetcher,
     { keepPreviousData: true },
   );
-  const upsells: UpsellItem[] = Array.isArray(data)
-    ? data
-    : (data as UpsellListResponse)?.upsells || [];
+  const upsells = unwrapArrayOrEnvelope<UpsellItem>(data, 'upsells');
 
   const createUpsell = useCallback(
     async (body: Record<string, unknown>) => {
@@ -411,9 +369,7 @@ export function useCheckoutCoupons() {
       keepPreviousData: true,
     },
   );
-  const coupons: CouponItem[] = Array.isArray(data)
-    ? data
-    : (data as CouponListResponse)?.coupons || [];
+  const coupons = unwrapArrayOrEnvelope<CouponItem>(data, 'coupons');
 
   const createCoupon = useCallback(
     async (body: Record<string, unknown>) => {
@@ -467,25 +423,13 @@ export function useCheckoutProduct(productId: string | null) {
 
 /* ── Checkout Orders ── */
 export function useCheckoutOrders(params?: { status?: string; page?: number; limit?: number }) {
-  const qs = new URLSearchParams();
-  if (params?.status) {
-    qs.set('status', params.status);
-  }
-  if (params?.page) {
-    qs.set('page', String(params.page));
-  }
-  if (params?.limit) {
-    qs.set('limit', String(params.limit));
-  }
-  const q = qs.toString();
+  const q = buildOrdersQueryString(params);
   const { data, isLoading, mutate } = useSWR<OrderItem[] | OrderListResponse>(
-    `/checkout/orders${q ? `?${q}` : ''}`,
+    `/checkout/orders${q}`,
     swrFetcher,
     { keepPreviousData: true },
   );
-  const orders: OrderItem[] = Array.isArray(data)
-    ? data
-    : (data as OrderListResponse)?.orders || [];
+  const orders = unwrapArrayOrEnvelope<OrderItem>(data, 'orders');
   const total = (data as OrderListResponse)?.total ?? orders.length;
 
   const updateOrderStatus = useCallback(
