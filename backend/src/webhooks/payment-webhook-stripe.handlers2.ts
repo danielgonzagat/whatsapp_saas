@@ -53,19 +53,7 @@ export async function handlePaymentIntentEvent(
     await deps.prisma.checkoutPayment
       .updateMany({
         where: { externalId: intent.id },
-        data: {
-          status: checkoutPaymentStatus,
-          ...(intent.next_action?.type === 'pix_display_qr_code'
-            ? {
-                pixQrCode: intent.next_action.pix_display_qr_code?.image_url_png || null,
-                pixCopyPaste: intent.next_action.pix_display_qr_code?.data || null,
-                pixExpiresAt:
-                  typeof intent.next_action.pix_display_qr_code?.expires_at === 'number'
-                    ? new Date(intent.next_action.pix_display_qr_code.expires_at * 1000)
-                    : null,
-              }
-            : {}),
-        },
+        data: { status: checkoutPaymentStatus },
       })
       .catch(() => undefined);
   }

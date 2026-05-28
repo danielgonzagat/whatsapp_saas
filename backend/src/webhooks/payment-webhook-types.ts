@@ -112,14 +112,7 @@ export interface StripePaymentIntentLike {
     orderId?: string;
     [key: string]: string | undefined;
   } | null;
-  next_action?: {
-    type?: string | null;
-    pix_display_qr_code?: {
-      data?: string | null;
-      image_url_png?: string | null;
-      expires_at?: number | null;
-    } | null;
-  } | null;
+  next_action?: null;
   last_payment_error?: {
     message?: string | null;
   } | null;

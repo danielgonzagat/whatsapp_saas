@@ -227,18 +227,7 @@ export class PaymentWebhookStripeController {
                   typeof intent.latest_charge === 'string' ? intent.latest_charge : null,
                 transfer_group: intent.transfer_group ?? null,
                 metadata: intent.metadata ?? null,
-                next_action:
-                  intent.next_action?.type === 'pix_display_qr_code'
-                    ? {
-                        type: intent.next_action.type,
-                        pix_display_qr_code: {
-                          data: intent.next_action.pix_display_qr_code?.data ?? null,
-                          image_url_png:
-                            intent.next_action.pix_display_qr_code?.image_url_png ?? null,
-                          expires_at: intent.next_action.pix_display_qr_code?.expires_at ?? null,
-                        },
-                      }
-                    : null,
+                next_action: null,
                 last_payment_error: intent.last_payment_error
                   ? { message: intent.last_payment_error.message ?? null }
                   : null,
