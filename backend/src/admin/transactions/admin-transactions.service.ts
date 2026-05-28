@@ -5,6 +5,14 @@ import { WalletLedgerService } from '../../kloel/wallet-ledger.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AdminAuditService } from '../audit/admin-audit.service';
 import { AdminTransactionAction } from './dto/operate-transaction.dto';
+import {
+  isRefundAlreadyRequested,
+  mergeWebhookData,
+  normalizeGateway,
+  readRecord,
+  resolveDebitBucket,
+  resolveProducerNetInCents,
+} from './admin-transactions.helpers';
 import type {
   AdminTransactionRow,
   ListTransactionsInput,
@@ -97,7 +105,7 @@ export class AdminTransactionsService {
 
     const linkedSale = await this.findLinkedSaleRefundState(order);
 
-    if (linkedSale && this.isRefundAlreadyRequested(linkedSale.status)) {
+    if (linkedSale && isRefundAlreadyRequested(linkedSale.status)) {
       await this.audit.append({
         adminUserId: actorId,
         action: 'admin.transactions.refund_requested',
@@ -121,7 +129,7 @@ export class AdminTransactionsService {
 
     await this.runGatewayRefund(order, idempotencyKey);
 
-    if (this.normalizeGateway(order.payment.gateway) === 'stripe') {
+    if (normalizeGateway(order.payment.gateway) === 'stripe') {
       const saleRecordsUpdated = await this.markLinkedSaleRefundRequested(order);
       await this.audit.append({
         adminUserId: actorId,
@@ -159,7 +167,7 @@ export class AdminTransactionsService {
       return;
     }
 
-    if (this.normalizeGateway(order.payment.gateway) === 'stripe') {
+    if (normalizeGateway(order.payment.gateway) === 'stripe') {
       throw new BadRequestException(
         'Chargeback manual não é suportado no runtime Stripe-only. Aguarde o webhook do provedor.',
       );
@@ -174,7 +182,7 @@ export class AdminTransactionsService {
       return;
     }
 
-    const gateway = this.normalizeGateway(order.payment?.gateway);
+    const gateway = normalizeGateway(order.payment?.gateway);
     if (gateway === 'stripe') {
       await this.stripeService.stripe.refunds.create(
         { payment_intent: externalId },
@@ -199,8 +207,8 @@ export class AdminTransactionsService {
     const orderStatus = isRefund ? OrderStatus.REFUNDED : OrderStatus.CHARGEBACK;
     const reason = isRefund ? 'refund_debit' : 'chargeback_debit';
     const txType = isRefund ? 'refund' : 'chargeback';
-    const metadata = this.readRecord(order.metadata);
-    const producerNetInCents = this.resolveProducerNetInCents(order.totalInCents, metadata);
+    const metadata = readRecord(order.metadata);
+    const producerNetInCents = resolveProducerNetInCents(order.totalInCents, metadata);
     const externalPaymentId = order.payment?.externalId || null;
 
     await this.prisma.$transaction(
@@ -210,7 +218,7 @@ export class AdminTransactionsService {
             where: { id: order.payment.id },
             data: {
               status: paymentStatus,
-              webhookData: this.mergeWebhookData(metadata, {
+              webhookData: mergeWebhookData(metadata, {
                 source: 'admin',
                 action: targetStatus,
                 note: note ?? null,
@@ -247,8 +255,10 @@ export class AdminTransactionsService {
 
           if (wallet) {
             const amount = producerNetInCents / 100;
-            const balanceBucket =
-              wallet.pendingBalanceInCents >= BigInt(producerNetInCents) ? 'pending' : 'available';
+            const balanceBucket = resolveDebitBucket(
+              wallet.pendingBalanceInCents,
+              producerNetInCents,
+            );
 
             const walletUpdateResult = await tx.kloelWallet.updateMany({
               where: { id: wallet.id, workspaceId: order.workspaceId },
@@ -392,50 +402,6 @@ export class AdminTransactionsService {
     });
 
     return result.count;
-  }
-
-  private isRefundAlreadyRequested(status: string) {
-    return status === 'refund_requested' || status === 'refunded';
-  }
-
-  private resolveProducerNetInCents(totalInCents: number, metadata: Record<string, unknown>) {
-    const candidates = [
-      metadata.producerNetInCents,
-      metadata.sellerReceivableInCents,
-      metadata.baseTotalInCents,
-      totalInCents,
-    ];
-
-    for (const candidate of candidates) {
-      const parsed = Number(candidate);
-      if (Number.isFinite(parsed) && parsed > 0) {
-        return Math.round(parsed);
-      }
-    }
-
-    return 0;
-  }
-
-  private mergeWebhookData(metadata: Record<string, unknown>, extra: Record<string, unknown>) {
-    return JSON.parse(
-      JSON.stringify({
-        ...metadata,
-        adminOperation: extra,
-      }),
-    ) as Prisma.InputJsonValue;
-  }
-
-  private readRecord(value: Prisma.JsonValue | null | undefined): Record<string, unknown> {
-    if (!value || typeof value !== 'object' || Array.isArray(value)) {
-      return {};
-    }
-    return value;
-  }
-
-  private normalizeGateway(value?: string | null) {
-    return String(value || '')
-      .trim()
-      .toLowerCase();
   }
 }
 
