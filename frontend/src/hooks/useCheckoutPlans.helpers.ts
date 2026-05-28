@@ -64,6 +64,35 @@ export interface CheckoutProductBody {
   price: number;
 }
 
+/**
+ * Partial input shape accepted by {@link buildCheckoutSeedProduct} — mirrors
+ * the dashboard-side Product input which carries optional fields. Each
+ * property is `| undefined` to stay compatible with
+ * `exactOptionalPropertyTypes: true` callers that pass through optional
+ * fields straight from another partial.
+ */
+export interface DashboardProductInputShape {
+  id?: string | undefined;
+  name?: string | undefined;
+  slug?: string | undefined;
+  description?: string | undefined;
+  images?: string[] | undefined;
+  category?: string | undefined;
+  price?: number | undefined;
+}
+
+/**
+ * Minimal shape of the response returned by
+ * `GET /checkout/products/:id`, used by the pure detail-unwrap helpers.
+ */
+export interface CheckoutProductDetailShape {
+  id?: string;
+  checkoutPlans?: CheckoutPlanShape[];
+  plans?: CheckoutPlanShape[];
+  checkoutTemplates?: Array<{ id: string; [key: string]: unknown }>;
+  checkouts?: Array<{ id: string; [key: string]: unknown }>;
+}
+
 /* ── Pure helpers ── */
 
 /**
@@ -167,4 +196,82 @@ export function buildOrdersQueryString(params: OrdersQueryParams | undefined): s
   }
   const q = qs.toString();
   return q ? `?${q}` : '';
+}
+
+/**
+ * Project the partial dashboard-side Product input into the seed shape used
+ * by {@link buildCheckoutProductBody}. Returns `null` when the required
+ * `id` or `name` fields are missing — callers should treat that as
+ * "not enough data yet to ensure a checkout product exists".
+ *
+ * Extracting this from the hook lets us unit-test the gating logic
+ * (id+name required) without spinning up React or SWR.
+ */
+export function buildCheckoutSeedProduct(
+  product: DashboardProductInputShape | null | undefined,
+): DashboardProduct | null {
+  if (!product?.id || !product?.name) {
+    return null;
+  }
+  return {
+    id: product.id,
+    name: product.name,
+    slug: product.slug,
+    description: product.description,
+    images: product.images,
+    category: product.category,
+    price: product.price,
+  };
+}
+
+/**
+ * Extract the plans array from a `GET /checkout/products/:id` response,
+ * preferring the canonical `checkoutPlans` key and falling back to `plans`
+ * for legacy envelopes. Returns `[]` when neither is present.
+ *
+ * Centralizing the dual-key fallback here pins the precedence and keeps
+ * the hook body readable.
+ */
+export function extractPlansFromDetail(
+  data: CheckoutProductDetailShape | null | undefined,
+): CheckoutPlanShape[] {
+  return data?.checkoutPlans || data?.plans || [];
+}
+
+/**
+ * Extract the checkout templates array from a `GET /checkout/products/:id`
+ * response, preferring `checkoutTemplates` over the legacy `checkouts`
+ * envelope. Returns `[]` when neither is present.
+ */
+export function extractCheckoutsFromDetail(
+  data: CheckoutProductDetailShape | null | undefined,
+): Array<{ id: string; [key: string]: unknown }> {
+  return data?.checkoutTemplates || data?.checkouts || [];
+}
+
+/**
+ * Read the pixels array off a checkout-config response, returning `[]` when
+ * the field is missing or non-array. Equivalent in behavior to the
+ * original inline guard but reusable from unit tests.
+ */
+export function extractPixels<TPixel extends { id: string }>(
+  data: { pixels?: TPixel[] } | null | undefined,
+): TPixel[] {
+  return Array.isArray(data?.pixels) ? data.pixels : [];
+}
+
+/**
+ * Resolve the total order count: prefer the server-provided `total` (when
+ * the response is an envelope), otherwise fall back to the length of the
+ * unwrapped orders array. Mirrors the original `?? orders.length` guard.
+ */
+export function resolveOrdersTotal(
+  data: { total?: number } | unknown[] | null | undefined,
+  ordersLength: number,
+): number {
+  if (!data || Array.isArray(data)) {
+    return ordersLength;
+  }
+  const envelope = data as { total?: number };
+  return envelope.total ?? ordersLength;
 }

@@ -7,10 +7,15 @@ import useSWR from 'swr';
 
 import {
   buildCheckoutProductBody,
+  buildCheckoutSeedProduct,
   buildDuplicatePlanBody,
   buildOrdersQueryString,
   extractCheckoutProductList,
+  extractCheckoutsFromDetail,
+  extractPixels,
+  extractPlansFromDetail,
   matchesProduct,
+  resolveOrdersTotal,
   unwrapArrayOrEnvelope,
   type CheckoutProductItem,
   type CheckoutProductListResponse,
@@ -145,21 +150,10 @@ async function ensureCheckoutProduct(product: DashboardProduct): Promise<string 
 /* ── Plans for a product ── */
 export function useCheckoutPlans(product: DashboardProductInput | null | undefined) {
   const [checkoutProductId, setCheckoutProductId] = useState<string | null>(null);
-  const checkoutSeedProduct = useMemo<DashboardProduct | null>(() => {
-    if (!product?.id || !product?.name) {
-      return null;
-    }
-
-    return {
-      id: product.id,
-      name: product.name,
-      slug: product.slug,
-      description: product.description,
-      images: product.images,
-      category: product.category,
-      price: product.price,
-    };
-  }, [product]);
+  const checkoutSeedProduct = useMemo<DashboardProduct | null>(
+    () => buildCheckoutSeedProduct(product),
+    [product],
+  );
 
   useEffect(() => {
     if (checkoutSeedProduct) {
@@ -175,8 +169,8 @@ export function useCheckoutPlans(product: DashboardProductInput | null | undefin
     { keepPreviousData: true },
   );
 
-  const plans = data?.checkoutPlans || data?.plans || [];
-  const checkouts = data?.checkoutTemplates || data?.checkouts || [];
+  const plans = extractPlansFromDetail(data);
+  const checkouts = extractCheckoutsFromDetail(data);
 
   const createPlan = useCallback(
     async (body: PlanCreateBody) => {
@@ -430,7 +424,7 @@ export function useCheckoutOrders(params?: { status?: string; page?: number; lim
     { keepPreviousData: true },
   );
   const orders = unwrapArrayOrEnvelope<OrderItem>(data, 'orders');
-  const total = (data as OrderListResponse)?.total ?? orders.length;
+  const total = resolveOrdersTotal(data, orders.length);
 
   const updateOrderStatus = useCallback(
     async (id: string, status: string, extra?: { trackingCode?: string; trackingUrl?: string }) => {
@@ -466,7 +460,7 @@ export function usePixels(planId: string | null) {
     { keepPreviousData: true },
   );
   const configId: string | null = data?.id || null;
-  const pixels: PixelItem[] = Array.isArray(data?.pixels) ? data.pixels : [];
+  const pixels: PixelItem[] = extractPixels<PixelItem>(data);
 
   const createPixel = useCallback(
     async (body: { type: string; pixelId: string; accessToken?: string }) => {

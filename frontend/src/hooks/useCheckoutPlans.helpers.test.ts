@@ -2,10 +2,15 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildCheckoutProductBody,
+  buildCheckoutSeedProduct,
   buildDuplicatePlanBody,
   buildOrdersQueryString,
   extractCheckoutProductList,
+  extractCheckoutsFromDetail,
+  extractPixels,
+  extractPlansFromDetail,
   matchesProduct,
+  resolveOrdersTotal,
   unwrapArrayOrEnvelope,
   type CheckoutProductItem,
   type DashboardProduct,
@@ -210,5 +215,156 @@ describe('buildOrdersQueryString', () => {
   it('omits page when 0 (falsy guard preserves original behavior)', () => {
     // The original used `if (params?.page)` so 0 is intentionally dropped.
     expect(buildOrdersQueryString({ page: 0 })).toBe('');
+  });
+});
+
+describe('buildCheckoutSeedProduct', () => {
+  it('returns null when product is null', () => {
+    expect(buildCheckoutSeedProduct(null)).toBeNull();
+  });
+
+  it('returns null when product is undefined', () => {
+    expect(buildCheckoutSeedProduct(undefined)).toBeNull();
+  });
+
+  it('returns null when id is missing', () => {
+    expect(buildCheckoutSeedProduct({ name: 'P' })).toBeNull();
+  });
+
+  it('returns null when name is missing', () => {
+    expect(buildCheckoutSeedProduct({ id: 'pid' })).toBeNull();
+  });
+
+  it('projects all known fields when id and name are present', () => {
+    expect(
+      buildCheckoutSeedProduct({
+        id: 'pid',
+        name: 'P',
+        slug: 's',
+        description: 'd',
+        images: ['img'],
+        category: 'cat',
+        price: 99,
+      }),
+    ).toEqual({
+      id: 'pid',
+      name: 'P',
+      slug: 's',
+      description: 'd',
+      images: ['img'],
+      category: 'cat',
+      price: 99,
+    });
+  });
+
+  it('passes through undefined optional fields unchanged', () => {
+    const seed = buildCheckoutSeedProduct({ id: 'pid', name: 'P' });
+    expect(seed).toEqual({
+      id: 'pid',
+      name: 'P',
+      slug: undefined,
+      description: undefined,
+      images: undefined,
+      category: undefined,
+      price: undefined,
+    });
+  });
+});
+
+describe('extractPlansFromDetail', () => {
+  it('returns empty array when data is undefined', () => {
+    expect(extractPlansFromDetail(undefined)).toEqual([]);
+  });
+
+  it('returns empty array when data is null', () => {
+    expect(extractPlansFromDetail(null)).toEqual([]);
+  });
+
+  it('prefers checkoutPlans over plans', () => {
+    const canonical = [{ id: 'a', name: 'A' }];
+    const legacy = [{ id: 'b', name: 'B' }];
+    expect(extractPlansFromDetail({ checkoutPlans: canonical, plans: legacy })).toBe(canonical);
+  });
+
+  it('falls back to plans when checkoutPlans is missing', () => {
+    const legacy = [{ id: 'b', name: 'B' }];
+    expect(extractPlansFromDetail({ plans: legacy })).toBe(legacy);
+  });
+
+  it('returns empty array when neither key is present', () => {
+    expect(extractPlansFromDetail({ id: 'pid' })).toEqual([]);
+  });
+});
+
+describe('extractCheckoutsFromDetail', () => {
+  it('returns empty array when data is undefined', () => {
+    expect(extractCheckoutsFromDetail(undefined)).toEqual([]);
+  });
+
+  it('prefers checkoutTemplates over checkouts', () => {
+    const canonical = [{ id: 'a' }];
+    const legacy = [{ id: 'b' }];
+    expect(extractCheckoutsFromDetail({ checkoutTemplates: canonical, checkouts: legacy })).toBe(
+      canonical,
+    );
+  });
+
+  it('falls back to checkouts when checkoutTemplates is missing', () => {
+    const legacy = [{ id: 'b' }];
+    expect(extractCheckoutsFromDetail({ checkouts: legacy })).toBe(legacy);
+  });
+
+  it('returns empty array when neither key is present', () => {
+    expect(extractCheckoutsFromDetail({ id: 'pid' })).toEqual([]);
+  });
+});
+
+describe('extractPixels', () => {
+  it('returns empty array when data is null', () => {
+    expect(extractPixels(null)).toEqual([]);
+  });
+
+  it('returns empty array when data is undefined', () => {
+    expect(extractPixels(undefined)).toEqual([]);
+  });
+
+  it('returns empty array when pixels field is missing', () => {
+    expect(extractPixels({})).toEqual([]);
+  });
+
+  it('returns empty array when pixels field is non-array', () => {
+    expect(extractPixels({ pixels: 'nope' } as unknown as { pixels: never[] })).toEqual([]);
+  });
+
+  it('returns the pixels array when present', () => {
+    const pixels = [{ id: 'p1' }, { id: 'p2' }];
+    expect(extractPixels({ pixels })).toBe(pixels);
+  });
+});
+
+describe('resolveOrdersTotal', () => {
+  it('returns orders length when data is undefined', () => {
+    expect(resolveOrdersTotal(undefined, 7)).toBe(7);
+  });
+
+  it('returns orders length when data is null', () => {
+    expect(resolveOrdersTotal(null, 3)).toBe(3);
+  });
+
+  it('returns orders length when data is a bare array (no envelope)', () => {
+    expect(resolveOrdersTotal([{ id: 'o1' }, { id: 'o2' }], 2)).toBe(2);
+  });
+
+  it('returns the envelope total when present', () => {
+    expect(resolveOrdersTotal({ total: 42 }, 5)).toBe(42);
+  });
+
+  it('falls back to orders length when envelope omits total', () => {
+    expect(resolveOrdersTotal({}, 5)).toBe(5);
+  });
+
+  it('returns the envelope total even when it is 0', () => {
+    // Use ?? so 0 is preserved (vs ||, which would coerce to orders.length).
+    expect(resolveOrdersTotal({ total: 0 }, 99)).toBe(0);
   });
 });
