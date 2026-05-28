@@ -10,21 +10,23 @@ import type { BoletoChargeAddress } from '../payments/mercadopago/mercadopago.ty
 import { PrismaService } from '../prisma/prisma.service';
 import {
   buildBoletoAddressMetadata,
+  buildBoletoOrderResult,
   buildBoletoSaleCreateMetadata,
   buildBoletoSaleUpdateMetadata,
+  buildKloelSaleCreateData,
   buildMercadoPagoNotificationUrl,
   buildPaymentPendingAuditDetails,
+  buildPixOrderResult,
   buildPixSaleUpdateMetadata,
   buildSaleBuyerMetadata,
   pickSaleBuyerMetadataInput,
   buildSaleDescription,
   buildSaleEventPair,
   buildSpineSaleEnvelope,
-  buildStripeCheckoutLineItems,
+  buildStripeCardLinkResult,
+  buildStripeCheckoutSessionInput,
   buildStripeCheckoutUrls,
-  buildStripePaymentIntentMetadata,
   buildStripeSaleUpdateMetadata,
-  buildStripeSessionMetadata,
   computeBoletoExpiresAt,
   computePixExpiresAt,
   pickStripeExternalPaymentId,
@@ -133,15 +135,14 @@ export class SalesService {
         async (tx) => {
           // 1. Create the pending sale record
           const sale = await tx.kloelSale.create({
-            data: {
+            data: buildKloelSaleCreateData({
               workspaceId,
               productName,
               amount: plan.price,
-              status: 'pending',
               paymentMethod: 'PIX',
               leadPhone: buyerData.phone ?? null,
               metadata: buildSaleBuyerMetadata(buyerMeta),
-            },
+            }),
           });
 
           // 2. Audit: sale created
@@ -224,15 +225,7 @@ export class SalesService {
         );
 
         // 7. Return PIX display data
-        return {
-          saleId: sale.id,
-          pixQrCode: pixResult.qrCode || pixResult.qrCodeBase64,
-          pixQrCodeBase64: pixResult.qrCodeBase64,
-          pixCopyPaste: pixResult.qrCode,
-          pixExpiresAt: expiresAt,
-          externalPaymentId: pixResult.externalId,
-          ticketUrl: pixResult.ticketUrl,
-        };
+        return buildPixOrderResult({ saleId: sale.id, expiresAt, pixResult });
       });
   }
 
@@ -264,15 +257,14 @@ export class SalesService {
       .$transaction(
         async (tx) => {
           const sale = await tx.kloelSale.create({
-            data: {
+            data: buildKloelSaleCreateData({
               workspaceId,
               productName,
               amount: plan.price,
-              status: 'pending',
               paymentMethod: 'BOLETO',
               leadPhone: buyerData.phone ?? null,
               metadata: buildBoletoSaleCreateMetadata(buyerMeta, buyerAddressMetadata),
-            },
+            }),
           });
 
           await this.auditSale(tx, sale.id, workspaceId, 'SALE_CREATED',
@@ -352,13 +344,7 @@ export class SalesService {
           buildSaleSuccessLogMessage({ method: 'Boleto sale', saleId: sale.id, externalPaymentId: boletoResult.externalId, workspaceId }),
         );
 
-        return {
-          saleId: sale.id,
-          boletoBarcode: boletoResult.digitableLine || boletoResult.barcodeContent,
-          boletoExpiresAt: boletoResult.expiresAt,
-          boletoUrl: boletoResult.ticketUrl,
-          externalPaymentId: boletoResult.externalId,
-        };
+        return buildBoletoOrderResult({ saleId: sale.id, boletoResult });
       });
   }
 
@@ -384,15 +370,14 @@ export class SalesService {
       .$transaction(
         async (tx) => {
           const sale = await tx.kloelSale.create({
-            data: {
+            data: buildKloelSaleCreateData({
               workspaceId,
               productName,
               amount: plan.price,
-              status: 'pending',
               paymentMethod: 'CREDIT_CARD',
               leadPhone: buyerData.phone ?? null,
               metadata: buildSaleBuyerMetadata(buyerMeta),
-            },
+            }),
           });
 
           await this.auditSale(tx, sale.id, workspaceId, 'SALE_CREATED',
@@ -402,25 +387,18 @@ export class SalesService {
           const frontendOrigin = resolveFrontendOrigin();
           const { successUrl, cancelUrl } = buildStripeCheckoutUrls(frontendOrigin, sale.id);
           const session = await this.stripeService.stripe.checkout.sessions.create(
-            {
-              mode: 'payment',
-              payment_method_types: ['card'],
-              customer_email: buyerData.email,
-              line_items: buildStripeCheckoutLineItems(productName, amountCents),
-              success_url: successUrl,
-              cancel_url: cancelUrl,
-              metadata: buildStripeSessionMetadata({
-                workspaceId,
-                saleId: sale.id,
-                productId,
-                planId,
-                productName,
-                ...(buyerData.phone ? { phone: buyerData.phone } : {}),
-              }),
-              payment_intent_data: {
-                metadata: buildStripePaymentIntentMetadata(workspaceId, sale.id),
-              },
-            },
+            buildStripeCheckoutSessionInput({
+              workspaceId,
+              saleId: sale.id,
+              productId,
+              planId,
+              productName,
+              buyerEmail: buyerData.email,
+              amountCents,
+              successUrl,
+              cancelUrl,
+              ...(buyerData.phone ? { phone: buyerData.phone } : {}),
+            }),
             { idempotencyKey: `sale-card:${workspaceId}:${sale.id}:${randomUUID()}` },
           );
 
@@ -484,12 +462,12 @@ export class SalesService {
           buildSaleSuccessLogMessage({ method: 'Stripe card checkout link', saleId: sale.id, externalPaymentId, workspaceId }),
         );
 
-        return {
+        return buildStripeCardLinkResult({
           saleId: sale.id,
           checkoutSessionId: session.id,
           checkoutUrl,
           externalPaymentId,
-        };
+        });
       });
   }
 

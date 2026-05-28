@@ -1,3 +1,5 @@
+import type { Prisma } from '@prisma/client';
+
 import type { BoletoChargeAddress } from '../payments/mercadopago/mercadopago.types';
 
 /**
@@ -532,4 +534,203 @@ export interface SaleSuccessLogInput {
  */
 export function buildSaleSuccessLogMessage(input: SaleSuccessLogInput): string {
   return `${input.method} created: saleId=${input.saleId} externalPaymentId=${input.externalPaymentId} workspace=${input.workspaceId}`;
+}
+
+// ------- KloelSale.create data builders -------
+
+export interface KloelSaleCreateDataInput {
+  workspaceId: string;
+  productName: string;
+  amount: number;
+  paymentMethod: SalesPaymentMethod;
+  leadPhone: string | null;
+  metadata: Record<string, unknown>;
+}
+
+/**
+ * Build the `data` argument for `prisma.kloelSale.create({ data })`. Used by
+ * PIX, boleto and Stripe card flows — collapses the triple-duplicated literal
+ * scaffold (workspaceId / productName / amount / status / paymentMethod /
+ * leadPhone / metadata) into a single helper call. Returns the Prisma
+ * `Unchecked` variant directly so callers pass the result through
+ * `kloelSale.create({ data })` without further casts. `status` is always
+ * `'pending'` at this stage — confirmation flows flip the row to its final
+ * state via a separate update path.
+ */
+export function buildKloelSaleCreateData(
+  input: KloelSaleCreateDataInput,
+): Prisma.KloelSaleUncheckedCreateInput {
+  return {
+    workspaceId: input.workspaceId,
+    productName: input.productName,
+    amount: input.amount,
+    status: 'pending',
+    paymentMethod: input.paymentMethod,
+    leadPhone: input.leadPhone,
+    metadata: input.metadata as Prisma.InputJsonValue,
+  };
+}
+
+// ------- Stripe Checkout session input builder -------
+
+/**
+ * Structural shape of the `checkout.sessions.create` first positional arg used
+ * by {@link SalesService.createStripeCardLink}. Kept structural to avoid a
+ * direct dependency on the Stripe SDK type from this pure helpers module —
+ * the service still passes the result to a fully-typed Stripe client method,
+ * so TS catches drift at the call site.
+ */
+export interface StripeCheckoutSessionInput {
+  mode: 'payment';
+  payment_method_types: ['card'];
+  customer_email: string;
+  line_items: ReturnType<typeof buildStripeCheckoutLineItems>;
+  success_url: string;
+  cancel_url: string;
+  metadata: Record<string, string>;
+  payment_intent_data: { metadata: Record<string, string> };
+}
+
+export interface BuildStripeCheckoutSessionInputArgs {
+  workspaceId: string;
+  saleId: string;
+  productId: string;
+  planId: string;
+  productName: string;
+  buyerEmail: string;
+  amountCents: number;
+  successUrl: string;
+  cancelUrl: string;
+  phone?: string;
+}
+
+/**
+ * Assemble the full `checkout.sessions.create` first arg from the per-call
+ * primitives. Composes {@link buildStripeCheckoutLineItems},
+ * {@link buildStripeSessionMetadata} and
+ * {@link buildStripePaymentIntentMetadata} so the service body stops carrying
+ * a 22-line literal object.
+ */
+export function buildStripeCheckoutSessionInput(
+  args: BuildStripeCheckoutSessionInputArgs,
+): StripeCheckoutSessionInput {
+  return {
+    mode: 'payment',
+    payment_method_types: ['card'],
+    customer_email: args.buyerEmail,
+    line_items: buildStripeCheckoutLineItems(args.productName, args.amountCents),
+    success_url: args.successUrl,
+    cancel_url: args.cancelUrl,
+    metadata: buildStripeSessionMetadata({
+      workspaceId: args.workspaceId,
+      saleId: args.saleId,
+      productId: args.productId,
+      planId: args.planId,
+      productName: args.productName,
+      ...(args.phone ? { phone: args.phone } : {}),
+    }),
+    payment_intent_data: {
+      metadata: buildStripePaymentIntentMetadata(args.workspaceId, args.saleId),
+    },
+  };
+}
+
+// ------- Result-shape builders (in-chat order responses) -------
+
+export interface PixOrderResultInput {
+  saleId: string;
+  expiresAt: Date;
+  pixResult: {
+    qrCode: string;
+    qrCodeBase64: string;
+    ticketUrl: string;
+    externalId: string;
+  };
+}
+
+/**
+ * Build the {@link CreatePixOrderResult} the chat surface receives. Prefers
+ * the raw `qrCode` (copia-e-cola string) for `pixQrCode` and falls back to the
+ * base64 PNG when the copia-e-cola is empty — matches the historical
+ * {@link SalesService.createPixOrder} return shape exactly.
+ */
+export function buildPixOrderResult(input: PixOrderResultInput): {
+  saleId: string;
+  pixQrCode: string;
+  pixQrCodeBase64: string;
+  pixCopyPaste: string;
+  pixExpiresAt: Date;
+  externalPaymentId: string;
+  ticketUrl: string;
+} {
+  const { pixResult } = input;
+  return {
+    saleId: input.saleId,
+    pixQrCode: pixResult.qrCode || pixResult.qrCodeBase64,
+    pixQrCodeBase64: pixResult.qrCodeBase64,
+    pixCopyPaste: pixResult.qrCode,
+    pixExpiresAt: input.expiresAt,
+    externalPaymentId: pixResult.externalId,
+    ticketUrl: pixResult.ticketUrl,
+  };
+}
+
+export interface BoletoOrderResultInput {
+  saleId: string;
+  boletoResult: {
+    digitableLine: string;
+    barcodeContent: string;
+    expiresAt: Date;
+    ticketUrl: string;
+    externalId: string;
+  };
+}
+
+/**
+ * Build the {@link CreateBoletoOrderResult} the chat surface receives. Prefers
+ * the human-readable digitable line for `boletoBarcode`, falling back to the
+ * raw barcode content when MP returns an empty digitable line.
+ */
+export function buildBoletoOrderResult(input: BoletoOrderResultInput): {
+  saleId: string;
+  boletoBarcode: string;
+  boletoExpiresAt: Date;
+  boletoUrl: string;
+  externalPaymentId: string;
+} {
+  const { boletoResult } = input;
+  return {
+    saleId: input.saleId,
+    boletoBarcode: boletoResult.digitableLine || boletoResult.barcodeContent,
+    boletoExpiresAt: boletoResult.expiresAt,
+    boletoUrl: boletoResult.ticketUrl,
+    externalPaymentId: boletoResult.externalId,
+  };
+}
+
+export interface StripeCardLinkResultInput {
+  saleId: string;
+  checkoutSessionId: string;
+  checkoutUrl: string;
+  externalPaymentId: string;
+}
+
+/**
+ * Build the {@link CreateStripeCardLinkResult} returned to the chat surface.
+ * Pure passthrough — the helper exists to keep the three result-builder
+ * functions symmetric and to give the spec suite a single import surface for
+ * exercising the shape.
+ */
+export function buildStripeCardLinkResult(input: StripeCardLinkResultInput): {
+  saleId: string;
+  checkoutSessionId: string;
+  checkoutUrl: string;
+  externalPaymentId: string;
+} {
+  return {
+    saleId: input.saleId,
+    checkoutSessionId: input.checkoutSessionId,
+    checkoutUrl: input.checkoutUrl,
+    externalPaymentId: input.externalPaymentId,
+  };
 }

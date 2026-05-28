@@ -3,10 +3,15 @@ import {
   PIX_EXPIRATION_MINUTES,
   SALES_PROVENANCE,
   buildBoletoAddressMetadata,
+  buildBoletoOrderResult,
+  buildKloelSaleCreateData,
   buildMercadoPagoNotificationUrl,
   buildPaymentPendingAuditDetails,
+  buildPixOrderResult,
   buildSaleDescription,
   buildSaleEventPair,
+  buildStripeCardLinkResult,
+  buildStripeCheckoutSessionInput,
   buildStripeCheckoutUrls,
   computeBoletoExpiresAt,
   computePixExpiresAt,
@@ -287,6 +292,202 @@ describe('sales.helpers', () => {
         method: 'CREDIT_CARD',
         amount: 1000,
         status: 'pending',
+      });
+    });
+  });
+
+  describe('buildKloelSaleCreateData', () => {
+    it('pins status to pending and forwards every other field', () => {
+      const data = buildKloelSaleCreateData({
+        workspaceId: 'ws-1',
+        productName: 'Curso Pro',
+        amount: 199.9,
+        paymentMethod: 'PIX',
+        leadPhone: '+5511999999999',
+        metadata: { buyerName: 'Ana', buyerEmail: 'ana@example.com' },
+      });
+      expect(data).toEqual({
+        workspaceId: 'ws-1',
+        productName: 'Curso Pro',
+        amount: 199.9,
+        status: 'pending',
+        paymentMethod: 'PIX',
+        leadPhone: '+5511999999999',
+        metadata: { buyerName: 'Ana', buyerEmail: 'ana@example.com' },
+      });
+    });
+
+    it('keeps leadPhone null when no phone is captured', () => {
+      const data = buildKloelSaleCreateData({
+        workspaceId: 'ws-2',
+        productName: 'Plano',
+        amount: 10,
+        paymentMethod: 'BOLETO',
+        leadPhone: null,
+        metadata: {},
+      });
+      expect(data.leadPhone).toBeNull();
+      expect(data.paymentMethod).toBe('BOLETO');
+    });
+
+    it('always carries CREDIT_CARD method intact for Stripe flows', () => {
+      const data = buildKloelSaleCreateData({
+        workspaceId: 'ws-3',
+        productName: 'Curso',
+        amount: 50,
+        paymentMethod: 'CREDIT_CARD',
+        leadPhone: null,
+        metadata: {},
+      });
+      expect(data.paymentMethod).toBe('CREDIT_CARD');
+      expect(data.status).toBe('pending');
+    });
+  });
+
+  describe('buildStripeCheckoutSessionInput', () => {
+    it('builds the full session input with composed metadata + line items', () => {
+      const input = buildStripeCheckoutSessionInput({
+        workspaceId: 'ws-1',
+        saleId: 'sale-1',
+        productId: 'prod-1',
+        planId: 'plan-1',
+        productName: 'Curso Pro',
+        buyerEmail: 'ana@example.com',
+        amountCents: 19990,
+        successUrl: 'https://app.example.com/ok',
+        cancelUrl: 'https://app.example.com/cancel',
+      });
+      expect(input.mode).toBe('payment');
+      expect(input.payment_method_types).toEqual(['card']);
+      expect(input.customer_email).toBe('ana@example.com');
+      expect(input.success_url).toBe('https://app.example.com/ok');
+      expect(input.cancel_url).toBe('https://app.example.com/cancel');
+      expect(input.line_items).toHaveLength(1);
+      expect(input.line_items[0]).toEqual({
+        quantity: 1,
+        price_data: {
+          currency: 'brl',
+          unit_amount: 19990,
+          product_data: { name: 'Curso Pro' },
+        },
+      });
+      expect(input.metadata.workspaceId).toBe('ws-1');
+      expect(input.metadata.saleId).toBe('sale-1');
+      expect(input.metadata.productId).toBe('prod-1');
+      expect(input.metadata.planId).toBe('plan-1');
+      expect(input.metadata.payment_method).toBe('CREDIT_CARD');
+      expect(input.metadata).not.toHaveProperty('phone');
+      expect(input.payment_intent_data.metadata.workspaceId).toBe('ws-1');
+      expect(input.payment_intent_data.metadata.saleId).toBe('sale-1');
+    });
+
+    it('forwards phone into the session metadata when provided', () => {
+      const input = buildStripeCheckoutSessionInput({
+        workspaceId: 'ws-1',
+        saleId: 'sale-1',
+        productId: 'prod-1',
+        planId: 'plan-1',
+        productName: 'Curso',
+        buyerEmail: 'a@b.com',
+        amountCents: 1000,
+        successUrl: 'https://x/ok',
+        cancelUrl: 'https://x/no',
+        phone: '+5511988887777',
+      });
+      expect(input.metadata.phone).toBe('+5511988887777');
+    });
+  });
+
+  describe('buildPixOrderResult', () => {
+    it('prefers the copia-e-cola string for both pixQrCode and pixCopyPaste', () => {
+      const expiresAt = new Date('2026-01-01T12:30:00.000Z');
+      const result = buildPixOrderResult({
+        saleId: 'sale-1',
+        expiresAt,
+        pixResult: {
+          qrCode: 'COPIA-E-COLA-STRING',
+          qrCodeBase64: 'iVBORw0...',
+          ticketUrl: 'https://mp.example/ticket',
+          externalId: 'mp-123',
+        },
+      });
+      expect(result).toEqual({
+        saleId: 'sale-1',
+        pixQrCode: 'COPIA-E-COLA-STRING',
+        pixQrCodeBase64: 'iVBORw0...',
+        pixCopyPaste: 'COPIA-E-COLA-STRING',
+        pixExpiresAt: expiresAt,
+        externalPaymentId: 'mp-123',
+        ticketUrl: 'https://mp.example/ticket',
+      });
+    });
+
+    it('falls back to base64 for pixQrCode when copia-e-cola is empty', () => {
+      const result = buildPixOrderResult({
+        saleId: 'sale-2',
+        expiresAt: new Date(),
+        pixResult: {
+          qrCode: '',
+          qrCodeBase64: 'BASE64',
+          ticketUrl: 'https://t/x',
+          externalId: 'mp-456',
+        },
+      });
+      expect(result.pixQrCode).toBe('BASE64');
+      expect(result.pixCopyPaste).toBe('');
+    });
+  });
+
+  describe('buildBoletoOrderResult', () => {
+    it('prefers the digitable line for boletoBarcode when present', () => {
+      const expiresAt = new Date('2026-01-04T12:00:00.000Z');
+      const result = buildBoletoOrderResult({
+        saleId: 'sale-1',
+        boletoResult: {
+          digitableLine: '23793.38128 60082.011113 95000.063307 8 96580000020000',
+          barcodeContent: '23798960000020000033812600820111910500006330',
+          expiresAt,
+          ticketUrl: 'https://mp.example/boleto',
+          externalId: 'mp-bol-1',
+        },
+      });
+      expect(result).toEqual({
+        saleId: 'sale-1',
+        boletoBarcode: '23793.38128 60082.011113 95000.063307 8 96580000020000',
+        boletoExpiresAt: expiresAt,
+        boletoUrl: 'https://mp.example/boleto',
+        externalPaymentId: 'mp-bol-1',
+      });
+    });
+
+    it('falls back to the raw barcode content when the digitable line is empty', () => {
+      const result = buildBoletoOrderResult({
+        saleId: 'sale-2',
+        boletoResult: {
+          digitableLine: '',
+          barcodeContent: 'RAW-BARCODE',
+          expiresAt: new Date(),
+          ticketUrl: 'https://t/x',
+          externalId: 'mp-bol-2',
+        },
+      });
+      expect(result.boletoBarcode).toBe('RAW-BARCODE');
+    });
+  });
+
+  describe('buildStripeCardLinkResult', () => {
+    it('passes every field through unchanged', () => {
+      const result = buildStripeCardLinkResult({
+        saleId: 'sale-1',
+        checkoutSessionId: 'cs_test_123',
+        checkoutUrl: 'https://checkout.stripe.com/c/cs_test_123',
+        externalPaymentId: 'pi_abc',
+      });
+      expect(result).toEqual({
+        saleId: 'sale-1',
+        checkoutSessionId: 'cs_test_123',
+        checkoutUrl: 'https://checkout.stripe.com/c/cs_test_123',
+        externalPaymentId: 'pi_abc',
       });
     });
   });
