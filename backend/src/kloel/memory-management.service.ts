@@ -24,15 +24,21 @@ import {
   knownMemoryCategories,
   pickStaleSemanticDuplicateIds,
 } from './memory-management.policies';
-
-interface MemoryCleanupResult {
-  expiredRemoved: number;
-  duplicatesRemoved: number;
-  orphansRemoved: number;
-  totalBefore: number;
-  totalAfter: number;
-  duration: number;
-}
+import {
+  buildSemanticDuplicateAuditDetails,
+  buildWorkspaceCleanupAuditDetails,
+  emptyMemoryStats,
+  formatCategoryCleanupFailureMessage,
+  formatCleanupFailureMessage,
+  formatCleanupSummaryMessage,
+  formatDeduplicationFailureMessage,
+  formatGetStatsFailureMessage,
+  formatOrphanCleanupFailureMessage,
+  formatStaleUncategorizedFailureMessage,
+  formatStatsFailureMessage,
+  formatWorkspaceCleanupMessage,
+  type MemoryCleanupResult,
+} from './memory-management.service.helpers';
 
 // Cache.invalidate — memory cleanup runs via cron; no external Redis cache to invalidate
 @Injectable()
@@ -75,15 +81,10 @@ export class MemoryManagementService {
 
     try {
       const result = await this.cleanupAll();
-      this.logger.log(
-        `Cleanup complete: removed ${result.expiredRemoved} expired, ` +
-          `${result.duplicatesRemoved} duplicates, ${result.orphansRemoved} orphans`,
-      );
+      this.logger.log(formatCleanupSummaryMessage(result));
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'MemoryManagementService.runDailyCleanup');
-      this.logger.error(
-        `Cleanup failed: ${error instanceof Error ? error.message : 'unknown_error'}`,
-      );
+      this.logger.error(formatCleanupFailureMessage(error));
     }
   }
 
@@ -100,9 +101,7 @@ export class MemoryManagementService {
       }
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'MemoryManagementService.getStats');
-      this.logger.error(
-        `Failed to update memory metrics: ${error instanceof Error ? error.message : 'unknown_error'}`,
-      );
+      this.logger.error(formatStatsFailureMessage(error));
     }
   }
 
@@ -202,9 +201,7 @@ export class MemoryManagementService {
           error,
           'MemoryManagementService.removeExpiredMemories',
         );
-        this.logger.warn(
-          `Failed to cleanup ${category}: ${error instanceof Error ? error.message : 'unknown_error'}`,
-        );
+        this.logger.warn(formatCategoryCleanupFailureMessage(category, error));
       }
     });
 
@@ -222,11 +219,7 @@ export class MemoryManagementService {
       });
       totalRemoved += result.count;
     } catch (error: unknown) {
-      this.logger.warn(
-        `Failed to remove stale uncategorized memories: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      );
+      this.logger.warn(formatStaleUncategorizedFailureMessage(error));
     }
 
     return totalRemoved;
@@ -278,9 +271,7 @@ export class MemoryManagementService {
       });
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'MemoryManagementService.removeDuplicates');
-      this.logger.warn(
-        `Deduplication failed: ${error instanceof Error ? error.message : 'unknown_error'}`,
-      );
+      this.logger.warn(formatDeduplicationFailureMessage(error));
     }
 
     return totalRemoved;
@@ -329,9 +320,7 @@ export class MemoryManagementService {
       return result.count;
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'MemoryManagementService.removeOrphans');
-      this.logger.warn(
-        `Orphan cleanup failed: ${error instanceof Error ? error.message : 'unknown_error'}`,
-      );
+      this.logger.warn(formatOrphanCleanupFailureMessage(error));
       return 0;
     }
   }
@@ -344,16 +333,8 @@ export class MemoryManagementService {
       return await computeMemoryStats(this.prisma);
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'MemoryManagementService.parseFloat');
-      this.logger.error(
-        `Failed to get stats: ${error instanceof Error ? error.message : 'unknown_error'}`,
-      );
-      return {
-        total: 0,
-        byCategory: {},
-        byWorkspace: {},
-        oldestEntry: null,
-        averageAge: 0,
-      };
+      this.logger.error(formatGetStatsFailureMessage(error));
+      return emptyMemoryStats();
     }
   }
 
@@ -378,18 +359,12 @@ export class MemoryManagementService {
           workspaceId,
           action: 'DELETE_WORKSPACE_MEMORIES',
           resource: 'KloelMemory',
-          details: {
-            deletedCount: result.count,
-            category: options?.category,
-            olderThanDays: options?.olderThanDays,
-          },
+          details: buildWorkspaceCleanupAuditDetails(result.count, options),
         })
         .catch(() => {});
     }
 
-    this.logger.log(
-      `Cleaned ${result.count} memories from workspace ${workspaceId}${options?.category ? ` (category: ${options.category})` : ''}`,
-    );
+    this.logger.log(formatWorkspaceCleanupMessage(workspaceId, result.count, options));
 
     return result.count;
   }
@@ -437,7 +412,7 @@ export class MemoryManagementService {
           workspaceId,
           action: 'DELETE_SEMANTIC_DUPLICATES',
           resource: 'KloelMemory',
-          details: { category, mergedCount: merged },
+          details: buildSemanticDuplicateAuditDetails(category, merged),
         })
         .catch(() => {});
     }

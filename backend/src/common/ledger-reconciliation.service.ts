@@ -5,6 +5,27 @@ import { forEachSequential } from './async-sequence';
 import { FinancialAlertService } from './financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import type {
+  DriftKind,
+  DriftReport,
+  ReconciliationResult,
+  WalletReconciliationResult,
+} from './ledger-reconciliation.types';
+import {
+  buildCheckoutDriftSummary,
+  buildWalletDriftSummary,
+  countDriftsByKind,
+  deriveWalletBucketDrifts,
+  describeErrorForLog,
+  formatCheckoutDriftLogEntry,
+  formatWalletDriftLogEntry,
+  isOrderTerminalStatus,
+  isPaymentTerminalStatus,
+  sampleDriftsForAudit,
+  toLogJson,
+  type WalletLedgerAggregateRow,
+  type WalletStoredBalances,
+} from './ledger-reconciliation.service.helpers';
 
 /**
  * Ledger reconciliation — enforces invariant I8.
@@ -34,57 +55,19 @@ import { OpsAlertService } from '../observability/ops-alert.service';
  * job, adding ops alerts, and extending to KloelWallet/walletLedger
  * reconciliation are all follow-up work tracked in
  * docs/superpowers/plans/2026-04-08-bigtech-hardening/.
- */
-
-export type DriftKind =
-  | 'order_without_payment'
-  | 'payment_status_mismatch'
-  | 'webhook_event_missing'
-  | 'webhook_event_unprocessed'
-  | 'wallet_balance_ledger_mismatch';
-
-/** Drift report shape. */
-export interface DriftReport {
-  /** Order id property. */
-  orderId: string;
-  /** Workspace id property. */
-  workspaceId: string;
-  /** Kind property. */
-  kind: DriftKind;
-  /** Details property. */
-  details: Record<string, unknown>;
-}
-
-/** Reconciliation result shape. */
-export interface ReconciliationResult {
-  /** Scanned orders property. */
-  scannedOrders: number;
-  /** Drifts property. */
-  drifts: DriftReport[];
-  /** Scanned at property. */
-  scannedAt: string;
-}
-
-/**
- * Wave 2 P6-4 / I12 — wallet reconciliation result.
  *
- * For every KloelWallet, sum the KloelWalletLedger entries grouped by
- * bucket and direction, and assert that the materialised
- * `*BalanceInCents` columns match the derived sum. Drift surfaces as
- * a structured `wallet_balance_ledger_mismatch` event.
+ * Pure formatters / validators / summary builders live in
+ * `ledger-reconciliation.service.helpers.ts` (Claude-w103).
  */
-export interface WalletReconciliationResult {
-  /** Scanned wallets property. */
-  scannedWallets: number;
-  /** Drifts property. */
-  drifts: DriftReport[];
-  /** Scanned at property. */
-  scannedAt: string;
-}
 
-function toLogJson(payload: Record<string, unknown>): string {
-  return JSON.stringify(payload);
-}
+// Re-export the types so existing importers of the service module keep
+// compiling without churn after the helpers extraction.
+export type {
+  DriftKind,
+  DriftReport,
+  ReconciliationResult,
+  WalletReconciliationResult,
+} from './ledger-reconciliation.types';
 
 /** Ledger reconciliation service. */
 @Injectable()
@@ -107,12 +90,10 @@ export class LedgerReconciliationService {
         error,
         'LedgerReconciliationService.runReconciliation',
       );
-      this.logger.error(
-        `ledger_reconciliation_cron_failed: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      this.logger.error(`ledger_reconciliation_cron_failed: ${describeErrorForLog(error)}`);
       this.financialAlert?.reconciliationAlert('ledger reconciliation cron failed', {
         details: {
-          error: error instanceof Error ? error.message : String(error),
+          error: describeErrorForLog(error),
         },
       });
     }
@@ -128,14 +109,10 @@ export class LedgerReconciliationService {
         error,
         'LedgerReconciliationService.runWalletReconciliation',
       );
-      this.logger.error(
-        `wallet_ledger_reconciliation_cron_failed: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      );
+      this.logger.error(`wallet_ledger_reconciliation_cron_failed: ${describeErrorForLog(error)}`);
       this.financialAlert?.reconciliationAlert('wallet ledger reconciliation cron failed', {
         details: {
-          error: error instanceof Error ? error.message : String(error),
+          error: describeErrorForLog(error),
         },
       });
     }
@@ -186,11 +163,8 @@ export class LedgerReconciliationService {
       }
 
       // Payment must be in a "confirmed" state matching the order.
-      const paymentStatus = String(order.payment.status || '').toUpperCase();
-      const orderTerminal = ['PAID', 'SHIPPED', 'DELIVERED'].includes(
-        String(order.status || '').toUpperCase(),
-      );
-      const paymentTerminal = ['CONFIRMED', 'RECEIVED', 'APPROVED', 'PAID'].includes(paymentStatus);
+      const orderTerminal = isOrderTerminalStatus(order.status);
+      const paymentTerminal = isPaymentTerminalStatus(order.payment.status);
       if (orderTerminal && !paymentTerminal) {
         drifts.push({
           orderId: order.id,
@@ -261,32 +235,15 @@ export class LedgerReconciliationService {
         details: {
           scannedOrders: result.scannedOrders,
           driftCount: drifts.length,
-          kinds: drifts.reduce<Record<string, number>>((acc, drift) => {
-            acc[drift.kind] = (acc[drift.kind] || 0) + 1;
-            return acc;
-          }, {}),
-          sampleDrifts: drifts.slice(0, 25),
+          kinds: countDriftsByKind(drifts),
+          sampleDrifts: sampleDriftsForAudit(drifts),
         },
       });
-      const driftKindCounts = drifts.reduce<Record<string, number>>((acc, d) => {
-        acc[d.kind] = (acc[d.kind] || 0) + 1;
-        return acc;
-      }, {});
-      const driftSummary = {
-        scannedOrders: result.scannedOrders,
-        driftCount: drifts.length,
-        kinds: driftKindCounts,
-      };
+      const driftSummary = buildCheckoutDriftSummary(result.scannedOrders, drifts);
       this.logger.warn(`ledger_drift_detected: ${toLogJson(driftSummary)}`);
       // Individual drift details are logged for searchability
       for (const drift of drifts) {
-        const driftDetails = {
-          orderId: drift.orderId,
-          workspaceId: drift.workspaceId,
-          kind: drift.kind,
-          details: drift.details,
-        };
-        this.logger.warn(`ledger_drift: ${toLogJson(driftDetails)}`);
+        this.logger.warn(`ledger_drift: ${toLogJson(formatCheckoutDriftLogEntry(drift))}`);
       }
     } else {
       const cleanSummary = {
@@ -345,13 +302,7 @@ export class LedgerReconciliationService {
         blockedBalanceInCents: true,
       },
       take: 5000,
-    })) as Array<{
-      id: string;
-      workspaceId: string;
-      availableBalanceInCents: bigint;
-      pendingBalanceInCents: bigint;
-      blockedBalanceInCents: bigint;
-    }>;
+    })) as WalletStoredBalances[];
 
     await forEachSequential(wallets, async (wallet) => {
       // Aggregate the ledger by (bucket, direction). Using groupBy on a
@@ -366,49 +317,10 @@ export class LedgerReconciliationService {
         by: ['bucket', 'direction'],
         where: { walletId: wallet.id },
         _sum: { amountInCents: true },
-      })) as Array<{
-        bucket?: string;
-        direction?: string;
-        _sum?: { amountInCents?: string | number | bigint | null };
-      }>;
+      })) as WalletLedgerAggregateRow[];
 
-      const sumByKey = new Map<string, bigint>();
-      for (const row of aggregates) {
-        const key = `${row.bucket}:${row.direction}`;
-        const sum = row._sum?.amountInCents != null ? BigInt(row._sum.amountInCents) : 0n;
-        sumByKey.set(key, sum);
-      }
-
-      const buckets: Array<'available' | 'pending' | 'blocked'> = [
-        'available',
-        'pending',
-        'blocked',
-      ];
-
-      for (const bucket of buckets) {
-        const credit = sumByKey.get(`${bucket}:credit`) ?? 0n;
-        const debit = sumByKey.get(`${bucket}:debit`) ?? 0n;
-        const derived = credit - debit;
-        const stored = BigInt(wallet[`${bucket}BalanceInCents`] ?? 0);
-
-        if (derived !== stored) {
-          drifts.push({
-            // The wallet reconciliation reuses the DriftReport shape but
-            // populates `orderId` with the walletId so existing alert
-            // routing keeps working without a schema change.
-            orderId: wallet.id,
-            workspaceId: wallet.workspaceId,
-            kind: 'wallet_balance_ledger_mismatch',
-            details: {
-              walletId: wallet.id,
-              bucket,
-              storedInCents: stored.toString(),
-              ledgerSumInCents: derived.toString(),
-              creditInCents: credit.toString(),
-              debitInCents: debit.toString(),
-            },
-          });
-        }
+      for (const drift of deriveWalletBucketDrifts(wallet, aggregates)) {
+        drifts.push(drift);
       }
     });
 
@@ -431,22 +343,13 @@ export class LedgerReconciliationService {
         details: {
           scannedWallets: result.scannedWallets,
           driftCount: drifts.length,
-          sampleDrifts: drifts.slice(0, 25),
+          sampleDrifts: sampleDriftsForAudit(drifts),
         },
       });
-      const walletDriftSummary = {
-        scannedWallets: result.scannedWallets,
-        driftCount: drifts.length,
-      };
+      const walletDriftSummary = buildWalletDriftSummary(result.scannedWallets, drifts);
       this.logger.warn(`wallet_ledger_drift_detected: ${toLogJson(walletDriftSummary)}`);
       for (const drift of drifts) {
-        const walletDriftDetails = {
-          workspaceId: drift.workspaceId,
-          walletId: drift.orderId,
-          kind: drift.kind,
-          details: drift.details,
-        };
-        this.logger.warn(`wallet_ledger_drift: ${toLogJson(walletDriftDetails)}`);
+        this.logger.warn(`wallet_ledger_drift: ${toLogJson(formatWalletDriftLogEntry(drift))}`);
       }
     } else {
       const walletCleanSummary = {
@@ -474,9 +377,7 @@ export class LedgerReconciliationService {
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'LedgerReconciliationService.create');
       this.logger.warn(
-        `ledger_reconcile_audit_failed action=${input.action}: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        `ledger_reconcile_audit_failed action=${input.action}: ${describeErrorForLog(error)}`,
       );
     }
   }
