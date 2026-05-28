@@ -5,7 +5,7 @@ interface Props {
   channel: ChannelKey;
   accentColor: string;
   busy: string | null;
-  connection: { connected?: boolean | undefined } | null;
+  channelSession: { connected?: boolean | undefined } | null;
   disconnectArmed: boolean;
   setupLoaded: boolean;
   canAdvance: boolean;
@@ -22,7 +22,7 @@ export function ActionButtons({
   channel,
   accentColor,
   busy,
-  connection,
+  channelSession,
   disconnectArmed,
   setupLoaded,
   canAdvance,
@@ -77,7 +77,7 @@ export function ActionButtons({
               ? 'Abrindo...'
               : `Conectar ${channel === 'whatsapp' ? 'WhatsApp' : channel === 'instagram' ? 'Instagram' : 'Facebook'} via Meta oficial`}
           </button>
-          {connection?.connected ? (
+          {channelSession?.connected ? (
             <button
               type="button"
               onClick={() => void onMetaDisconnect()}

@@ -67,7 +67,7 @@ export function ChannelOnboarding({ channel, initialStep }: Props) {
   const viewStep = restarted ? 0 : effectiveStep;
   const busy = data.busy !== null || data.isLoading;
   const isMetaChannel = channel === 'whatsapp' || channel === 'instagram' || channel === 'facebook';
-  const canDisconnectMeta = isMetaChannel && data.connection?.connected === true;
+  const canDisconnectMeta = isMetaChannel && data.channelSession?.connected === true;
 
   const products: ProductRow[] = data.productOptions;
   const picked = data.setup.selectedProductIds;
@@ -100,8 +100,8 @@ export function ChannelOnboarding({ channel, initialStep }: Props) {
           // Only advance to the Products step when the channel actually
           // came up. `useOfficialMarketingChannel` surfaces backend
           // failures via `data.loadError` / `data.message`, so we gate
-          // on `data.connection?.connected` after the round-trip.
-          if (data.connection?.connected) {
+          // on `data.channelSession?.connected` after the round-trip.
+          if (data.channelSession?.connected) {
             data.setCurrentStep(1);
           }
         })

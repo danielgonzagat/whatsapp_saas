@@ -78,7 +78,7 @@ function makeData(overrides: ScenarioOverrides = {}) {
     openTikTok: vi.fn(() => Promise.resolve()),
     toggleEmail: vi.fn(() => Promise.resolve()),
     handleComplete: vi.fn(() => Promise.resolve()),
-    connection: { connected: overrides.connectionConnected ?? false },
+    channelSession: { connected: overrides.connectionConnected ?? false },
     completed: overrides.completed ?? false,
     completeBusy: false,
     isLoading: false,

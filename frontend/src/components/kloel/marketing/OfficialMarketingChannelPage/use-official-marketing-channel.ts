@@ -49,7 +49,7 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
       return normalized ? [normalized] : [];
     });
   }, [products]);
-  const connection = useMemo(() => {
+  const channelSession = useMemo(() => {
     if (channel === 'tiktok') {
       return {
         connected: tiktokStatus?.connected,
@@ -315,12 +315,13 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
     setSetupLoaded(true);
     await refresh();
   }, [channel, setup, refresh]);
-  const details = channel === 'tiktok' ? tiktokStatus : connection;
+  const details = channel === 'tiktok' ? tiktokStatus : channelSession;
   const setupUnavailable =
-    connection?.status === 'server_not_configured' || connection?.status === 'unavailable';
+    channelSession?.status === 'server_not_configured' ||
+    channelSession?.status === 'unavailable';
   const badgeStatus = isLoading
     ? 'Carregando'
-    : statusText(connection?.connected, connection?.status);
+    : statusText(channelSession?.connected, channelSession?.status);
   const handleAdvanceStep = useCallback(() => {
     setCurrentStep(setup.currentStep + 1);
   }, [setCurrentStep, setup.currentStep]);
@@ -335,7 +336,7 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
   }, []);
   return {
     productOptions,
-    connection,
+    channelSession,
     setup,
     setupLoaded,
     busy,

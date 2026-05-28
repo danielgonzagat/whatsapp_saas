@@ -48,7 +48,7 @@ export default function InstagramMarketingTab({
   }
 
   const connecting = connectingKey === 'instagram';
-  const connection = connectionStatus?.channels?.instagram;
+  const channelSession = connectionStatus?.channels?.instagram;
 
   return (
     <div>
@@ -98,10 +98,10 @@ export default function InstagramMarketingTab({
         {[
           {
             label: 'Conta vinculada',
-            value: connection?.username ? `@${connection.username}` : 'Nao resolvida',
+            value: channelSession?.username ? `@${channelSession.username}` : 'Nao resolvida',
           },
-          { label: 'Conta Meta', value: connection?.pageName || 'Nao resolvida' },
-          { label: 'Instagram ID', value: connection?.instagramAccountId || 'Pendente' },
+          { label: 'Conta Meta', value: channelSession?.pageName || 'Nao resolvida' },
+          { label: 'Instagram ID', value: channelSession?.instagramAccountId || 'Pendente' },
         ].map((item) => (
           <ChannelInfoGridCard key={item.label} label={item.label} value={item.value} />
         ))}
