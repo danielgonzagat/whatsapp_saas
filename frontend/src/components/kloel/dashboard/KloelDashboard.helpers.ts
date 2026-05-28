@@ -137,6 +137,72 @@ export function computeDrainStep(bufferLength: number) {
   return 5;
 }
 
+/**
+ * Format an integer-cent value (or a JSON-ish unknown that coerces to one) as
+ * a BRL string with two decimals. Returns the supplied `fallback` when the
+ * value cannot be coerced to a finite number. Pure function — used by the
+ * brain operator result tables to render product prices and revenue summary
+ * metrics consistently.
+ */
+export function formatBrlCents(value: unknown, fallback = '-'): string {
+  const numeric = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(numeric)) {
+    return fallback;
+  }
+  return `R$ ${(numeric / 100).toFixed(2)}`;
+}
+
+/**
+ * Extracts a contact display label from a brain-operator conversation row,
+ * preferring `name`, falling back to `phone`, then to a dash placeholder.
+ * Accepts `null`/unknown so the caller can stream group-by results through
+ * without pre-narrowing. Pure function.
+ */
+export function pickContactDisplayName(contact: unknown, fallback = '-'): string {
+  if (!isRecord(contact)) {
+    return fallback;
+  }
+  if (typeof contact.name === 'string' && contact.name.trim()) {
+    return contact.name;
+  }
+  if (typeof contact.phone === 'string' && contact.phone.trim()) {
+    return contact.phone;
+  }
+  return fallback;
+}
+
+/**
+ * Reads `metadata.feedback.type` and narrows it to the assistant feedback
+ * tri-state. Anything outside `'positive' | 'negative'` collapses to `null`,
+ * matching the legacy MessageBlock contract. Pure function — covers the
+ * `feedbackType` derivation that was previously inlined twice.
+ */
+export function pickAssistantFeedbackType(
+  metadata: JsonRecord | null | undefined,
+): 'positive' | 'negative' | null {
+  const feedback = isRecord(metadata?.feedback) ? metadata.feedback : null;
+  if (!feedback) {
+    return null;
+  }
+  if (feedback.type === 'positive' || feedback.type === 'negative') {
+    return feedback.type;
+  }
+  return null;
+}
+
+/**
+ * Clamps a candidate version index to a valid `[0, total - 1]` slot. When
+ * `total === 0` the call collapses to `0` rather than `-1`, mirroring the
+ * `Math.max(total - 1, 0)` guard used at the call sites. Pure function.
+ */
+export function clampVersionIndex(candidate: number, total: number): number {
+  const highest = Math.max(total - 1, 0);
+  if (!Number.isFinite(candidate) || candidate < 0) {
+    return 0;
+  }
+  return Math.min(candidate, highest);
+}
+
 function resolveOwnedProductStatus(product: OwnedProductSummary): KloelLinkedProduct['status'] {
   const rawStatus = String(product.status || '')
     .trim()

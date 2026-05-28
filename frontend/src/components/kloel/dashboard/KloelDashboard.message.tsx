@@ -7,7 +7,14 @@ import {
 } from '@/components/kloel/AssistantResponseChrome';
 import { KloelMarkdown } from '@/components/kloel/KloelMarkdown';
 import { MessageActionBar } from '@/components/kloel/MessageActionBar';
-import { isRecord, type JsonRecord } from './KloelDashboard.helpers';
+import {
+  clampVersionIndex,
+  formatBrlCents,
+  isRecord,
+  pickAssistantFeedbackType,
+  pickContactDisplayName,
+  type JsonRecord,
+} from './KloelDashboard.helpers';
 import {
   getAssistantProcessingTrace,
   getAssistantResponseVersions,
@@ -54,9 +61,7 @@ function BrainOperatorResult({ metadata }: { metadata: JsonRecord }) {
             {products.map((p: Record<string, unknown>, i: number) => (
               <tr key={i} style={{ borderBottom: `1px solid ${DIVIDER}` }}>
                 <td style={{ padding: '8px 10px', color: TEXT }}>{String(p.name ?? '-')}</td>
-                <td style={{ padding: '8px 10px', color: TEXT }}>
-                  {typeof p.price === 'number' ? `R$ ${(p.price / 100).toFixed(2)}` : '-'}
-                </td>
+                <td style={{ padding: '8px 10px', color: TEXT }}>{formatBrlCents(p.price)}</td>
                 <td style={{ padding: '8px 10px', color: p.active ? EMBER : MUTED }}>
                   {p.active ? 'Sim' : 'Nao'}
                 </td>
@@ -109,7 +114,6 @@ function BrainOperatorResult({ metadata }: { metadata: JsonRecord }) {
     return (
       <div style={{ marginTop: 12 }}>
         {conversations.map((conv: Record<string, unknown>, i: number) => {
-          const contact = isRecord(conv.contact) ? conv.contact : null;
           const agent = isRecord(conv.agent) ? conv.agent : null;
           return (
             <div
@@ -121,7 +125,7 @@ function BrainOperatorResult({ metadata }: { metadata: JsonRecord }) {
                 color: TEXT,
               }}
             >
-              <strong>{contact ? String(contact.name ?? contact.phone ?? '-') : '-'}</strong>
+              <strong>{pickContactDisplayName(conv.contact)}</strong>
               <span style={{ color: MUTED, marginLeft: 8, fontSize: 13 }}>
                 {String(conv.lastMessagePreview ?? '').slice(0, 80)}
               </span>
@@ -164,13 +168,13 @@ function BrainOperatorResult({ metadata }: { metadata: JsonRecord }) {
             <tr style={{ borderBottom: `1px solid ${DIVIDER}` }}>
               <td style={{ padding: '8px 10px', color: TEXT }}>Receita Total</td>
               <td style={{ padding: '8px 10px', color: TEXT }}>
-                R$ {((Number(summary.totalRevenue) || 0) / 100).toFixed(2)}
+                {formatBrlCents(summary.totalRevenue, 'R$ 0.00')}
               </td>
             </tr>
             <tr style={{ borderBottom: `1px solid ${DIVIDER}` }}>
               <td style={{ padding: '8px 10px', color: TEXT }}>Ticket Medio</td>
               <td style={{ padding: '8px 10px', color: TEXT }}>
-                R$ {((Number(summary.ticketMedio) || 0) / 100).toFixed(2)}
+                {formatBrlCents(summary.ticketMedio, 'R$ 0.00')}
               </td>
             </tr>
             <tr style={{ borderBottom: `1px solid ${DIVIDER}` }}>
@@ -278,7 +282,7 @@ export function MessageBlock({
     [message.metadata, processingTrace],
   );
   const [activeVersionIndex, setActiveVersionIndex] = useState(
-    Math.max(assistantVersions.length - 1, 0),
+    clampVersionIndex(assistantVersions.length - 1, assistantVersions.length),
   );
 
   useEffect(() => {
@@ -288,7 +292,9 @@ export function MessageBlock({
   }, [isEditing, message.text]);
 
   useEffect(() => {
-    queueMicrotask(() => setActiveVersionIndex(Math.max(assistantVersions.length - 1, 0)));
+    queueMicrotask(() =>
+      setActiveVersionIndex(clampVersionIndex(assistantVersions.length - 1, assistantVersions.length)),
+    );
   }, [assistantVersions.length]);
 
   if (message.role === 'user') {
@@ -428,14 +434,10 @@ export function MessageBlock({
     );
   }
 
-  const feedbackRecord = isRecord(message.metadata?.feedback) ? message.metadata.feedback : null;
-  const feedbackType =
-    feedbackRecord?.type === 'positive' || feedbackRecord?.type === 'negative'
-      ? (feedbackRecord.type as 'positive' | 'negative')
-      : null;
+  const feedbackType = pickAssistantFeedbackType(message.metadata);
   const visibleAssistantText =
-    assistantVersions[Math.min(activeVersionIndex, Math.max(assistantVersions.length - 1, 0))]
-      ?.content || message.text;
+    assistantVersions[clampVersionIndex(activeVersionIndex, assistantVersions.length)]?.content ||
+    message.text;
   const hasProcessingTrace = processingTrace.length > 0;
   const hasVisibleAssistantText = !!visibleAssistantText.trim();
 
@@ -476,7 +478,7 @@ export function MessageBlock({
 
       <AssistantVersionNavigator
         total={assistantVersions.length}
-        activeIndex={Math.min(activeVersionIndex, Math.max(assistantVersions.length - 1, 0))}
+        activeIndex={clampVersionIndex(activeVersionIndex, assistantVersions.length)}
         onChange={setActiveVersionIndex}
       />
 
