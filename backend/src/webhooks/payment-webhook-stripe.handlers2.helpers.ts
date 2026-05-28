@@ -1,6 +1,50 @@
 import { validatePaymentTransition } from '../common/payment-state-machine';
 import type { StripeHandlerDeps } from './payment-webhook-stripe.handlers';
-import type { StripeCheckoutSessionLike } from './payment-webhook-types';
+import type { StripeCheckoutSessionLike, StripePaymentIntentLike } from './payment-webhook-types';
+
+type KloelSaleStripeMatcher = { externalPaymentId: string } | { id: string };
+
+type KloelSaleStripeWhere =
+  | { workspaceId: string; externalPaymentId: string }
+  | { workspaceId: string; id: string }
+  | { workspaceId: string; OR: KloelSaleStripeMatcher[] };
+
+function nonEmptyString(value: unknown): string | undefined {
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+export function readSaleIdFromStripeMetadata(
+  metadata: StripeCheckoutSessionLike['metadata'] | StripePaymentIntentLike['metadata'],
+): string | undefined {
+  return (
+    nonEmptyString(metadata?.kloel_order_id) ||
+    nonEmptyString(metadata?.orderId) ||
+    nonEmptyString(metadata?.saleId)
+  );
+}
+
+export function buildKloelSaleStripeWhere(
+  workspaceId: string,
+  stripePaymentExternalId?: string | null,
+  saleId?: string | null,
+): KloelSaleStripeWhere | null {
+  const matchers: KloelSaleStripeMatcher[] = [];
+  const externalId = nonEmptyString(stripePaymentExternalId);
+  const id = nonEmptyString(saleId);
+  if (externalId) {
+    matchers.push({ externalPaymentId: externalId });
+  }
+  if (id) {
+    matchers.push({ id });
+  }
+  if (matchers.length === 0) {
+    return null;
+  }
+  if (matchers.length === 1) {
+    return { workspaceId, ...matchers[0] };
+  }
+  return { workspaceId, OR: matchers };
+}
 
 export async function updatePaymentAndSaleForSessionHelper(
   deps: StripeHandlerDeps,
@@ -59,10 +103,18 @@ export async function updatePaymentAndSaleForSessionHelper(
   }
   try {
     if (deps.prisma.kloelSale) {
-      await deps.prisma.kloelSale.updateMany({
-        where: { workspaceId, externalPaymentId: stripePaymentExternalId ?? null },
-        data: { status: 'paid', paidAt: new Date() },
-      });
+      const saleId = readSaleIdFromStripeMetadata(session.metadata);
+      const saleWhere = buildKloelSaleStripeWhere(workspaceId, stripePaymentExternalId, saleId);
+      if (saleWhere) {
+        await deps.prisma.kloelSale.updateMany({
+          where: saleWhere,
+          data: {
+            status: 'paid',
+            paidAt: new Date(),
+            ...(stripePaymentExternalId ? { externalPaymentId: stripePaymentExternalId } : {}),
+          },
+        });
+      }
     }
   } catch (saleErr: unknown) {
     const msg =

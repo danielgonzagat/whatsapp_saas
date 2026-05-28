@@ -17,6 +17,8 @@ import {
 } from './payment-webhook-types';
 import type { StripeHandlerDeps } from './payment-webhook-stripe.handlers';
 import {
+  buildKloelSaleStripeWhere,
+  readSaleIdFromStripeMetadata,
   updatePaymentAndSaleForSessionHelper,
   sendCheckoutConfirmationHelper,
 } from './payment-webhook-stripe.handlers2.helpers';
@@ -33,7 +35,7 @@ export async function handlePaymentIntentEvent(
   const intent: StripePaymentIntentLike =
     rawIntent && typeof rawIntent === 'object' ? rawIntent : {};
   const workspaceId = intent.metadata?.workspace_id || intent.metadata?.workspaceId;
-  const orderId = intent.metadata?.kloel_order_id || intent.metadata?.orderId;
+  const orderId = readSaleIdFromStripeMetadata(intent.metadata);
 
   if (workspaceId) {
     const ws = await deps.prisma.workspace.findUnique({ where: { id: workspaceId } });
@@ -62,10 +64,13 @@ export async function handlePaymentIntentEvent(
     if (checkoutPaymentStatus === 'APPROVED') {
       await deps.prisma
         .$transaction(async (tx) => {
-          await tx.kloelSale.updateMany({
-            where: { workspaceId, externalPaymentId: intent.id ?? null },
-            data: { status: 'paid', paidAt: new Date() },
-          });
+          const saleWhere = buildKloelSaleStripeWhere(workspaceId, intent.id, orderId);
+          if (saleWhere) {
+            await tx.kloelSale.updateMany({
+              where: saleWhere,
+              data: { status: 'paid', paidAt: new Date(), externalPaymentId: intent.id },
+            });
+          }
         }, FINANCIAL_TRANSACTION_OPTIONS)
         .catch(() => undefined);
     }
@@ -92,10 +97,13 @@ export async function handlePaymentIntentEvent(
               data: { status: 'APPROVED' },
             });
             if (workspaceId) {
-              await tx.kloelSale.updateMany({
-                where: { workspaceId, externalPaymentId: intent.id ?? null },
-                data: { status: 'paid', paidAt: new Date() },
-              });
+              const saleWhere = buildKloelSaleStripeWhere(workspaceId, intent.id, orderId);
+              if (saleWhere) {
+                await tx.kloelSale.updateMany({
+                  where: saleWhere,
+                  data: { status: 'paid', paidAt: new Date(), externalPaymentId: intent.id },
+                });
+              }
             }
           }, FINANCIAL_TRANSACTION_OPTIONS)
           .catch(() => undefined);
