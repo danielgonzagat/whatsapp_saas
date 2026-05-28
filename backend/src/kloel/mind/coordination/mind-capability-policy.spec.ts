@@ -2,7 +2,7 @@ import {
   getBrainCapabilityDelegationContract,
   getBrainCapabilityRisk,
   isBrainCapabilityAllowed,
-} from './brain-capability-policy';
+} from './mind-capability-policy';
 
 describe('brain capability policy', () => {
   it('marks billing/payment capabilities as critical', () => {

@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Post, Request, Res, UseFilters, UseGuards } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import type { Response } from 'express';
-import { BrainDecideDegradeFilter } from './brain-decide-degrade.filter';
+import { MindDecideDegradeFilter } from './mind/coordination/mind-decide-degrade.filter';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import type { AuthenticatedRequest } from '../common/interfaces';
@@ -33,7 +33,7 @@ function readOptionalStreamString(body: BrainDecideDto, key: string): string | u
 
 @Controller('brain')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
-@UseFilters(BrainDecideDegradeFilter)
+@UseFilters(MindDecideDegradeFilter)
 export class BrainRuntimeController {
   private readonly logger = StructuredLogger.from(BrainRuntimeController.name);
 

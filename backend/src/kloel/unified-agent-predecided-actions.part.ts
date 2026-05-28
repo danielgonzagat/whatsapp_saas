@@ -1,7 +1,7 @@
 import { forEachSequential } from '../common/async-sequence';
 import type { ActionEntry, PredecidedAction, ToolArgs } from './unified-agent.types';
-import { getBrainCapabilityRisk } from './brain-capability-policy';
-import type { BrainCapabilityRisk } from './brain-capability-policy';
+import { getBrainCapabilityRisk } from './mind/coordination/mind-capability-policy';
+import type { BrainCapabilityRisk } from './mind/coordination/mind-capability-policy';
 
 import type { UnknownRecord } from '../common/types';
 

@@ -22,7 +22,7 @@ import {
   getBrainCapabilityDelegationContract,
   getBrainCapabilityRisk,
   isBrainCapabilityAllowed,
-} from '../../brain-capability-policy';
+} from './mind-capability-policy';
 import type { BrainSource } from './mind-runtime.dto';
 import { UNIFIED_AGENT_TOOLS_CONTROL } from '../../unified-agent-tools-control';
 import { UNIFIED_AGENT_TOOLS_MESSAGING } from '../../unified-agent-tools-messaging';

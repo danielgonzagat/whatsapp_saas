@@ -3,7 +3,7 @@ import type { BrainCapabilityDomain } from './mind-capability-registry.service';
 import type {
   BrainCapabilityDelegationMode,
   BrainCapabilityRiskClass,
-} from '../../brain-capability-policy';
+} from './mind-capability-policy';
 
 describe('MindCapabilityRegistry', () => {
   const svc = new MindCapabilityRegistry();

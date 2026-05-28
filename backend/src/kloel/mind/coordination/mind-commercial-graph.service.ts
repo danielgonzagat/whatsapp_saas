@@ -17,7 +17,7 @@
 import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../../../logging/structured-logger';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { persistWorkspaceCommercialGraph } from '../../brain-commercial-graph.persistence';
+import { persistWorkspaceCommercialGraph } from './mind-commercial-graph.persistence';
 import type {
   CommercialGraphEdge,
   CommercialGraphNode,
