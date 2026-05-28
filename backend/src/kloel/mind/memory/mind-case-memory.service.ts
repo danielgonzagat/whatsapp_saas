@@ -63,6 +63,36 @@ export class MindCaseMemoryService {
     });
   }
 
+  /**
+   * Public API for chat reasoning: find historically similar cases given
+   * a current context. Maps internal similar() rows to a shape the LLM
+   * can reference (situation / outcome / similarity).
+   *
+   * Scope is strictly isolated by workspaceId.
+   */
+  async findSimilarCases(
+    workspaceId: string,
+    context: Record<string, unknown>,
+    limit: number,
+  ): Promise<Array<{ situation: string; outcome: string; similarity: number }>> {
+    const userMessage =
+      typeof context.userMessage === 'string' && context.userMessage.length > 0
+        ? context.userMessage
+        : JSON.stringify(context);
+
+    const results = await this.similar({
+      workspaceId,
+      text: userMessage,
+      limit,
+    });
+
+    return results.map((r) => ({
+      situation: r.text,
+      outcome: r.outcome != null ? String(r.outcome) : 'unknown',
+      similarity: r.similarity,
+    }));
+  }
+
   async similar(input: {
     caseType?: string;
     features?: Record<string, unknown>;

@@ -25,6 +25,7 @@ import { MindSurpriseService } from './mind/inference/mind-surprise.service';
 import { MindVerbalizerService } from './mind/synthetic/mind-verbalizer.service';
 import { MindAutonomyCoordinator } from './mind/coordination/mind-autonomy-coordinator.service';
 import { MindBanditService } from './mind/policy/mind-bandit.service';
+import { MindCaseMemoryService } from './mind/memory/mind-case-memory.service';
 import {
   buildChatOutcomeKey,
   recordChatReplyDecision,
@@ -119,6 +120,7 @@ export class ConversationalOnboardingService {
     @Optional() private readonly mindVerbalizerService?: MindVerbalizerService,
     @Optional() private readonly mindAutonomyCoordinator?: MindAutonomyCoordinator,
     @Optional() private readonly mindBanditService?: MindBanditService,
+    @Optional() private readonly mindCaseMemoryService?: MindCaseMemoryService,
   ) {
     this.prismaExt = prisma as object as PrismaWithDynamicModels;
     this.openai = createTextLlmClient() ?? new OpenAI({ apiKey: 'missing' });
@@ -394,6 +396,9 @@ export class ConversationalOnboardingService {
           : {}),
         ...(this.mindBanditService !== undefined
           ? { mindBanditService: this.mindBanditService }
+          : {}),
+        ...(this.mindCaseMemoryService !== undefined
+          ? { mindCaseMemoryService: this.mindCaseMemoryService }
           : {}),
       });
       const mindSignals = await buildMindSignals(mindDeps, workspaceId, userMessage);

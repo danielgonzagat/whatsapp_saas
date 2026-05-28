@@ -16,6 +16,7 @@ import type { AttentionService } from './mind/attention.service';
 import type { ValenceAggregatorService } from './mind/valence-aggregator.service';
 import type { MindBeliefService } from './mind/inference/mind-belief.service';
 import type { MindConceptService } from './mind/memory/mind-concepts.service';
+import type { MindCaseMemoryService } from './mind/memory/mind-case-memory.service';
 import type { MindPredictionService } from './mind/mind-prediction.service';
 import type { SelfHealthService } from './self-awareness/self-health.service';
 import type { SelfGapsService } from './self-awareness/self-gaps.service';
@@ -41,6 +42,7 @@ interface OnboardingMindServices {
       decisionType: string,
     ) => Promise<{ arm: string; confidence: number; rationale?: string } | null>;
   };
+  mindCaseMemoryService?: MindCaseMemoryService;
 }
 
 /**
@@ -84,6 +86,9 @@ export function buildOnboardingMindSignalsDeps(
       : {}),
     ...(services.mindBanditService !== undefined
       ? { mindBanditService: services.mindBanditService }
+      : {}),
+    ...(services.mindCaseMemoryService !== undefined
+      ? { mindCaseMemoryService: services.mindCaseMemoryService }
       : {}),
   };
 }

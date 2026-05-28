@@ -11,6 +11,7 @@ import { MindEventSpine } from './coordination/mind-event-spine.service';
 import { MultiTimescaleCoordinator } from './multi-timescale.coordinator';
 import { ValenceAggregatorService } from './valence-aggregator.service';
 import { ValenceTaggerService } from './valence-tagger.service';
+import { MindCaseMemoryService } from './memory/mind-case-memory.service';
 import { MindPredictionService } from './mind-prediction.service';
 
 /**
@@ -37,6 +38,7 @@ import { MindPredictionService } from './mind-prediction.service';
     MindEventIngestor,
     MindEventSpine,
     MindPredictionService,
+    MindCaseMemoryService,
   ],
   exports: [
     ValenceTaggerService,
@@ -48,6 +50,7 @@ import { MindPredictionService } from './mind-prediction.service';
     MindBackgroundProcessor,
     MindBackgroundScheduler,
     MindPredictionService,
+    MindCaseMemoryService,
   ],
 })
 export class MindModule {}

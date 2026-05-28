@@ -75,6 +75,13 @@ export interface BuildMindSignalsDeps {
       decisionType: string,
     ) => Promise<{ arm: string; confidence: number; rationale?: string } | null>;
   };
+  mindCaseMemoryService?: {
+    findSimilarCases?: (
+      workspaceId: string,
+      context: Record<string, unknown>,
+      limit: number,
+    ) => Promise<Array<{ situation: string; outcome: string; similarity: number }>>;
+  };
   logger: Pick<StructuredLogger, 'warn'>;
 }
 /**
@@ -195,6 +202,22 @@ export async function buildMindSignals(
     }
   } else {
     mindSignals.concepts = [];
+  }
+
+  // ── Case memory — prior similar cases (PI-K15-B) ──────────────
+  if (deps.mindCaseMemoryService?.findSimilarCases) {
+    try {
+      const priorCases = await deps.mindCaseMemoryService.findSimilarCases(
+        workspaceId,
+        { userMessage },
+        3,
+      );
+      mindSignals.priorCases = priorCases;
+    } catch (error: unknown) {
+      deps.logger.warn('kloel_mind_case_memory_skipped', {
+        reason: error instanceof Error ? error.message : 'unknown error',
+      });
+    }
   }
 
   // ── SelfModel (PI-k7) ────────────────────────────────────────────
