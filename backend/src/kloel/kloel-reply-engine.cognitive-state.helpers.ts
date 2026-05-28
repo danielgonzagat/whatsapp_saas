@@ -26,6 +26,7 @@ import type { MindPredictionService } from './mind/mind-prediction.service';
 import type { SelfHealthService } from './self-awareness/self-health.service';
 import type { SelfGapsService } from './self-awareness/self-gaps.service';
 import type { RiskClassService } from './risk-class/risk-class.service';
+import type { AgentAssistService } from './mind/knowledge/agent-assist.service';
 import type { MindAutonomyCoordinator } from './mind/coordination/mind-autonomy-coordinator.service';
 
 interface CognitiveStateLogger {
@@ -59,6 +60,7 @@ interface KloelMindServices {
       semanticContext: Record<string, unknown>;
     };
   };
+  agentAssistService?: AgentAssistService;
   vectorService?: {
     similaritySearch: (
       workspaceId: string,
@@ -119,6 +121,9 @@ export function buildKloelMindSignalsDeps(
       : {}),
     ...(services.mindPerceptionService !== undefined
       ? { mindPerceptionService: services.mindPerceptionService }
+      : {}),
+    ...(services.agentAssistService !== undefined
+      ? { agentAssistService: services.agentAssistService }
       : {}),
     ...(services.vectorService !== undefined ? { vectorService: services.vectorService } : {}),
   };

@@ -339,6 +339,84 @@ export class AgentAssistService {
   }
 
   /**
+   * Suggest high-probability assistant actions from the user message.
+   *
+   * Lightweight rule-based heuristic — no OpenAI call, no direct Prisma.
+   * Delegates to existing knowledge tier when caller passes a pre-resolved
+   * context (e.g. prior cases, concepts).
+   *
+   * PI-K18-A: wired into buildMindSignals so the LLM receives agent-assist
+   * suggestions alongside other cognitive signals.
+   *
+   * @param workspaceId - Owning workspace (not used in heuristic; kept for API parity).
+   * @param message - The user's incoming message.
+   * @param context - Optional pre-resolved context (concepts, priorCases, etc.).
+   * @returns Array of {action, reason, confidence} tuples, ordered by confidence descending.
+   */
+  async suggestActions(
+    _workspaceId: string,
+    message: string,
+    context?: Record<string, unknown>,
+  ): Promise<Array<{ action: string; reason: string; confidence: number }>> {
+    const normalized = (message ?? '').toLowerCase();
+    const actions: Array<{ action: string; reason: string; confidence: number }> = [];
+
+    // ── Payment / financial signals ──
+    if (/\b(pagamento|pagar|pix|cobrança|boleto|cartão|preço|valor|desconto|cupon|reembolso|orcamento|comprovante)\b/.test(normalized)) {
+      actions.push({ action: 'send_payment_link', reason: 'payment_intent_detected', confidence: 0.82 });
+      if (/\b(cupom|desconto|codigo)\b/.test(normalized)) {
+        actions.push({ action: 'apply_discount_coupon', reason: 'coupon_mention', confidence: 0.76 });
+      }
+    }
+
+    // ── Document / media requests ──
+    if (/\b(envia|manda|pdf|arquivo|documento|foto|imagem|contrato|proposta|catalogo)\b/.test(normalized)) {
+      actions.push({ action: 'send_document', reason: 'document_request', confidence: 0.78 });
+    }
+
+    // ── Scheduling / meeting ──
+    if (/\b(agenda|agendar|horario|disponivel|semana|reuniao|visita|demonstracao|demo|conversar|call)\b/.test(normalized)) {
+      actions.push({ action: 'schedule_meeting', reason: 'scheduling_intent', confidence: 0.74 });
+    }
+
+    // ── Support / complaint escalation ──
+    if (/\b(reclamar|reclamacao|problema|suporte|ajuda|nao funciona|erro|bug|defeito|trocar|devolver|cancelar|reembolso)\b/.test(normalized)) {
+      actions.push({ action: 'escalate_to_human', reason: 'support_escalation_signal', confidence: 0.70 });
+    }
+
+    // ── Purchase intent ──
+    if (/\b(quero|comprar|contratar|pedir|fechar|assinar)\b/.test(normalized) &&
+        /\b(produto|produtos|plano|servico|curso|oferta|promocao)\b/.test(normalized)) {
+      actions.push({ action: 'present_product_catalog', reason: 'purchase_intent', confidence: 0.80 });
+    }
+
+    // ── Greeting / opener ──
+    if (/^\s*(oi|ola|bom dia|boa tarde|boa noite|hey|hi|hello)[\s!.]*$/.test(normalized)) {
+      actions.push({ action: 'send_welcome_message', reason: 'greeting_opener', confidence: 0.90 });
+    }
+
+    // ── Context-driven signals ──
+    const concepts = context?.concepts as Array<{ concept: string; confidence: number }> | undefined;
+    if (concepts?.some((c) => /(price_objection|too_expensive)/i.test(c.concept))) {
+      actions.push({ action: 'offer_discount_or_parcelamento', reason: 'price_objection_concept', confidence: 0.72 });
+    }
+    if (concepts?.some((c) => /(hot_lead|ready_to_buy)/i.test(c.concept))) {
+      actions.push({ action: 'send_purchase_cta', reason: 'purchase_readiness_concept', confidence: 0.85 });
+    }
+
+    // ── Deduplicate by action name (keep highest confidence) ──
+    const seen = new Map<string, { action: string; reason: string; confidence: number }>();
+    for (const a of actions) {
+      const existing = seen.get(a.action);
+      if (!existing || a.confidence > existing.confidence) {
+        seen.set(a.action, a);
+      }
+    }
+
+    return [...seen.values()].sort((a, b) => b.confidence - a.confidence);
+  }
+
+  /**
    * Generate a short, persuasive sales pitch from the recent conversation context.
    *
    * @param conversationId - Conversation context.

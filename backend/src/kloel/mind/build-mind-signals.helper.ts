@@ -1,3 +1,4 @@
+import type { AgentAssistService } from './knowledge/agent-assist.service';
 import { StructuredLogger } from '../../logging/structured-logger';
 import { SpineEventRef } from './mind.types';
 import { AttentionService } from './attention.service';
@@ -102,6 +103,7 @@ export interface BuildMindSignalsDeps {
       k?: number,
     ) => Promise<Array<{ text: string; score: number }>>;
   };
+  agentAssistService?: AgentAssistService;
   logger: Pick<StructuredLogger, 'warn'>;
 }
 /**
@@ -287,6 +289,24 @@ export async function buildMindSignals(
       mindSignals.priorCases = priorCases;
     } catch (error: unknown) {
       deps.logger.warn('kloel_mind_case_memory_skipped', {
+        reason: error instanceof Error ? error.message : 'unknown error',
+      });
+    }
+  }
+
+  // ── Agent Assist — heuristic action suggestions (PI-K18-A) ─────────
+  if (deps.agentAssistService) {
+    try {
+      const suggestions = await deps.agentAssistService.suggestActions(
+        workspaceId,
+        userMessage,
+        { concepts: rawConcepts, priorCases: mindSignals.priorCases },
+      );
+      if (suggestions.length > 0) {
+        mindSignals.agentAssist = suggestions;
+      }
+    } catch (error: unknown) {
+      deps.logger.warn('kloel_agent_assist_skipped', {
         reason: error instanceof Error ? error.message : 'unknown error',
       });
     }

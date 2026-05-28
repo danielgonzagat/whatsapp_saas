@@ -29,6 +29,7 @@ import { MindBanditService } from './mind/policy/mind-bandit.service';
 import { MindCaseMemoryService } from './mind/memory/mind-case-memory.service';
 import { MindGlobalPriorService } from './mind/memory/mind-global-prior.service';
 import { MindPerceptionService } from './mind/perception/mind-perception.service';
+import { AgentAssistService } from './mind/knowledge/agent-assist.service';
 import { KnowledgeBaseService } from './mind/knowledge/knowledge-base.service';
 import { VectorService } from './mind/knowledge/vector.service';
 import {
@@ -127,6 +128,7 @@ export class ConversationalOnboardingService {
     @Optional() private readonly mindBanditService?: MindBanditService,
     @Optional() private readonly mindCaseMemoryService?: MindCaseMemoryService,
     @Optional() private readonly mindGlobalPriorService?: MindGlobalPriorService,
+    @Optional() private readonly agentAssistService?: AgentAssistService,
     @Optional() private readonly mindPerceptionService?: MindPerceptionService,
     @Optional() private readonly knowledgeBaseService?: KnowledgeBaseService,
     @Optional() private readonly vectorService?: VectorService,
@@ -415,6 +417,9 @@ export class ConversationalOnboardingService {
           : {}),
         ...(this.mindPerceptionService !== undefined
           ? { mindPerceptionService: this.mindPerceptionService }
+          : {}),
+        ...(this.agentAssistService !== undefined
+          ? { agentAssistService: this.agentAssistService }
           : {}),
         ...(this.knowledgeBaseService !== undefined
           ? { knowledgeBaseService: this.knowledgeBaseService }

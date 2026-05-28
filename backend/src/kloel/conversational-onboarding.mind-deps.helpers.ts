@@ -22,6 +22,7 @@ import type { MindPredictionService } from './mind/mind-prediction.service';
 import type { SelfHealthService } from './self-awareness/self-health.service';
 import type { SelfGapsService } from './self-awareness/self-gaps.service';
 import type { RiskClassService } from './risk-class/risk-class.service';
+import type { AgentAssistService } from './mind/knowledge/agent-assist.service';
 import type { KnowledgeBaseService } from './mind/knowledge/knowledge-base.service';
 
 interface OnboardingHelperLogger {
@@ -54,6 +55,7 @@ interface OnboardingMindServices {
       semanticContext: Record<string, unknown>;
     };
   };
+  agentAssistService?: AgentAssistService;
   knowledgeBaseService?: KnowledgeBaseService;
   vectorService?: {
     similaritySearch: (
@@ -114,6 +116,9 @@ export function buildOnboardingMindSignalsDeps(
       : {}),
     ...(services.mindPerceptionService !== undefined
       ? { mindPerceptionService: services.mindPerceptionService }
+      : {}),
+    ...(services.agentAssistService !== undefined
+      ? { agentAssistService: services.agentAssistService }
       : {}),
     ...(services.knowledgeBaseService !== undefined
       ? { knowledgeBaseService: services.knowledgeBaseService }

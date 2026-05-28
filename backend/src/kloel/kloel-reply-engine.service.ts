@@ -42,6 +42,7 @@ import { MindBanditService } from './mind/policy/mind-bandit.service';
 import { MindCaseMemoryService } from './mind/memory/mind-case-memory.service';
 import { MindGlobalPriorService } from './mind/memory/mind-global-prior.service';
 import { MindPerceptionService } from './mind/perception/mind-perception.service';
+import { AgentAssistService } from './mind/knowledge/agent-assist.service';
 import { MindWorkspaceStateService } from './mind/memory/mind-workspace-state.service';
 import { VectorService } from './mind/knowledge/vector.service';
 import { randomUUID } from 'crypto';
@@ -94,6 +95,7 @@ export class KloelReplyEngineService {
     @Optional() private readonly mindBanditService?: MindBanditService,
     @Optional() private readonly mindCaseMemoryService?: MindCaseMemoryService,
     @Optional() private readonly mindGlobalPriorService?: MindGlobalPriorService,
+    @Optional() private readonly agentAssistService?: AgentAssistService,
     @Optional() private readonly mindPerceptionService?: MindPerceptionService,
     @Optional() private readonly mindWorkspaceStateService?: MindWorkspaceStateService,
     @Optional() private readonly vectorService?: VectorService,
@@ -304,6 +306,9 @@ export class KloelReplyEngineService {
           : {}),
         ...(this.mindPerceptionService !== undefined
           ? { mindPerceptionService: this.mindPerceptionService }
+          : {}),
+        ...(this.agentAssistService !== undefined
+          ? { agentAssistService: this.agentAssistService }
           : {}),
         ...(this.vectorService !== undefined ? { vectorService: this.vectorService } : {}),
       },
