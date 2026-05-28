@@ -33,6 +33,15 @@ import {
   doAutoApproveIfComplete,
   syncSellerConnectOnboarding,
 } from './kyc.connect-onboarding';
+import {
+  validateKycAvatarFile,
+  validateKycDocumentFile,
+  validateKycDocumentType,
+  generateStorageFilename,
+  extractExtension,
+  deriveDisplayAccount,
+  computeKycCompletion,
+} from './kyc.service.helpers';
 
 /** Kyc service. */
 @Injectable()
@@ -109,18 +118,9 @@ export class KycService {
 
   /** Upload avatar. */
   async uploadAvatar(agentId: string, file: UploadedFile) {
-    if (!file) {
-      throw new BadRequestException('No file provided');
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      throw new BadRequestException('File too large (max 5MB)');
-    }
-    const allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!allowedMimes.includes(file.mimetype)) {
-      throw new BadRequestException('Only JPG, PNG, and WebP images are allowed');
-    }
-    const ext = file.originalname?.split('.').pop() || 'jpg';
-    const filename = `kyc/avatars/avatar_${agentId}_${Date.now()}.${ext}`;
+    validateKycAvatarFile(file);
+    const ext = extractExtension(file.originalname);
+    const filename = generateStorageFilename('avatars', 'avatar', agentId, ext);
     const result = await this.storage.upload(file.buffer, { filename, mimeType: file.mimetype });
     await this.prisma.agent.update({
       where: { id: agentId, workspaceId: { not: '' } },
@@ -165,27 +165,10 @@ export class KycService {
 
   /** Upload document. */
   async uploadDocument(agentId: string, workspaceId: string, type: string, file: UploadedFile) {
-    const allowedTypes = [
-      'DOCUMENT_FRONT',
-      'DOCUMENT_BACK',
-      'PROOF_OF_ADDRESS',
-      'COMPANY_DOCUMENT',
-    ];
-    if (!allowedTypes.includes(type)) {
-      throw new BadRequestException(`Invalid document type. Allowed: ${allowedTypes.join(', ')}`);
-    }
-    if (!file) {
-      throw new BadRequestException('No file provided');
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      throw new BadRequestException('File too large (max 10MB)');
-    }
-    const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
-    if (!allowedMimes.includes(file.mimetype)) {
-      throw new BadRequestException('Only JPG, PNG, WebP, and PDF files are allowed');
-    }
-    const ext = file.originalname?.split('.').pop() || 'pdf';
-    const filename = `kyc/documents/kyc_${type}_${agentId}_${Date.now()}.${ext}`;
+    validateKycDocumentType(type);
+    validateKycDocumentFile(file);
+    const ext = extractExtension(file.originalname, 'pdf');
+    const filename = generateStorageFilename('documents', `kyc_${type}`, agentId, ext);
     const result = await this.storage.upload(file.buffer, { filename, mimeType: file.mimetype });
     return this.prisma.kycDocument.create({
       data: {
@@ -244,8 +227,7 @@ export class KycService {
 
   /** Update bank account. */
   async updateBankAccount(workspaceId: string, dto: UpdateBankDto) {
-    const last4 = dto.account?.slice(-4) || dto.pixKey?.slice(-4) || '';
-    const displayAccount = last4 ? `****${last4}` : null;
+    const { displayAccount } = deriveDisplayAccount(dto);
 
     return this.prisma.$transaction(
       async (tx) => {
@@ -326,45 +308,7 @@ export class KycService {
       this.prisma.bankAccount.findFirst({ where: { workspaceId } }),
     ]);
     const documentTypes = new Set(documents.map((d) => d.type));
-    const sections = [
-      {
-        name: 'profile',
-        complete: !!(agent?.name && agent?.phone && agent?.birthDate),
-        weight: 25,
-      },
-      {
-        name: 'fiscal',
-        complete: !!(
-          fiscal?.type &&
-          ((fiscal.type === 'PF' && fiscal.cpf && fiscal.fullName) ||
-            (fiscal.type === 'PJ' && fiscal.cnpj && fiscal.razaoSocial)) &&
-          fiscal.cep &&
-          fiscal.city &&
-          fiscal.state
-        ),
-        weight: 25,
-      },
-      {
-        name: 'documents',
-        complete:
-          documentTypes.has('DOCUMENT_FRONT') &&
-          (fiscal?.type === 'PJ'
-            ? documentTypes.has('COMPANY_DOCUMENT')
-            : documentTypes.has('PROOF_OF_ADDRESS')),
-        weight: 25,
-      },
-      { name: 'bank', complete: !!bankAccount, weight: 25 },
-    ];
-    const percentage = sections.reduce((sum, s) => sum + (s.complete ? s.weight : 0), 0);
-    return {
-      percentage,
-      sections: sections.map((s) => ({
-        name: s.name,
-        complete: s.complete,
-        percentage: s.complete ? s.weight : 0,
-      })),
-      canSubmit: percentage >= 100,
-    };
+    return computeKycCompletion(agent, fiscal, documentTypes, !!bankAccount);
   }
 
   /** Submit kyc. */
