@@ -200,7 +200,9 @@ export class GuestChatService implements OnModuleDestroy {
     workspaceId: string,
     userMessage: string,
   ): Promise<Record<string, unknown> | null> {
-    if (!this.prisma) return null;
+    if (!this.prisma) {
+      return null;
+    }
 
     const deps = buildKloelMindSignalsDeps(this.prisma, this.logger, {
       attentionService: this.attentionService,
@@ -287,7 +289,7 @@ export class GuestChatService implements OnModuleDestroy {
           eventName: 'cognition.decision_made',
           workspaceId: chatWsId,
           truthMode: 'observed',
-          provenance: { source: 'guest-chat', surface: 'guest' },
+          provenance: { source: 'production', surface: 'guest' },
           payload: { decision: 'engage', messageLength: message.length },
         })
         .catch(() => {});
@@ -300,8 +302,11 @@ export class GuestChatService implements OnModuleDestroy {
       if (mindSignals) {
         const lastMsg = contextMessages[contextMessages.length - 1];
         if (lastMsg && lastMsg.role === 'user') {
-          const parsed = JSON.parse(lastMsg.content);
-          parsed.cognitiveState = { ...parsed.cognitiveState, mindSignals };
+          const parsed = JSON.parse(lastMsg.content) as {
+            cognitiveState?: Record<string, unknown>;
+            [key: string]: unknown;
+          };
+          parsed.cognitiveState = { ...(parsed.cognitiveState ?? {}), mindSignals };
           contextMessages[contextMessages.length - 1] = {
             ...lastMsg,
             content: JSON.stringify(parsed),
@@ -421,7 +426,7 @@ export class GuestChatService implements OnModuleDestroy {
         eventName: 'cognition.decision_made',
         workspaceId: metricWsId,
         truthMode: 'observed',
-        provenance: { source: 'guest-chat', surface: 'guest' },
+        provenance: { source: 'production', surface: 'guest' },
         payload: { decision: 'engage', messageLength: message.length },
       })
       .catch(() => {});
@@ -536,8 +541,11 @@ export class GuestChatService implements OnModuleDestroy {
       if (mindSignals) {
         const lastMsg = contextMessages[contextMessages.length - 1];
         if (lastMsg && lastMsg.role === 'user') {
-          const parsed = JSON.parse(lastMsg.content);
-          parsed.cognitiveState = { ...parsed.cognitiveState, mindSignals };
+          const parsed = JSON.parse(lastMsg.content) as {
+            cognitiveState?: Record<string, unknown>;
+            [key: string]: unknown;
+          };
+          parsed.cognitiveState = { ...(parsed.cognitiveState ?? {}), mindSignals };
           contextMessages[contextMessages.length - 1] = {
             ...lastMsg,
             content: JSON.stringify(parsed),
