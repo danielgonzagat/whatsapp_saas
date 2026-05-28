@@ -15,13 +15,18 @@ import { WhatsappChatMessagesService } from './whatsapp.service.chats.messages';
 import { CiaRuntimeService } from '../../../kloel/mind/cia/cia-runtime.service';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
-import { isPlaceholderContactName as isPlaceholderName } from './whatsapp-normalization.util';
 import { resolveTimestampExt, toIsoTimestamp, normalizeNumber } from './whatsapp-service.helpers';
 import {
   normalizeContactsArray,
   normalizeChatsArray,
   normalizeMessagesArray,
 } from './whatsapp.service.normalizers';
+import {
+  isIndividualChatId as _isIndividualChatId,
+  isPlaceholderContactName as _isPlaceholderContactName,
+  resolveTrustedContactName as _resolveTrustedContactName,
+  normalizeChatId as _normalizeChatId,
+} from './whatsapp.service.helpers';
 import * as catalogOps from './whatsapp.service.catalog';
 import type { CatalogDeps } from './whatsapp.service.catalog';
 import type { NormalizedContact, NormalizedChat } from './whatsapp-service.types';
@@ -49,33 +54,17 @@ export class WhatsappService {
   ) {}
 
   // ═══ UTILITY (thin) ═══
-  private readText(v: unknown): string {
-    if (typeof v === 'string') {
-      return v.trim();
-    }
-    if (typeof v === 'number' || typeof v === 'boolean') {
-      return String(v).trim();
-    }
-    return '';
-  }
   private isPlaceholderContactName(v: unknown, p?: string | null): boolean {
-    return isPlaceholderName(v, p);
+    return _isPlaceholderContactName(v, p);
   }
   private resolveTrustedContactName(phone: string, ...candidates: unknown[]): string {
-    for (const c of candidates) {
-      const n = this.readText(c);
-      if (n && !this.isPlaceholderContactName(n, phone)) {
-        return n;
-      }
-    }
-    return '';
+    return _resolveTrustedContactName(phone, ...candidates);
   }
   private normalizeNumber(num: string): string {
     return normalizeNumber(num);
   }
   private isIndividualChatId(c?: string | null): boolean {
-    const v = String(c || '').trim();
-    return v.endsWith('@c.us') || v.endsWith('@s.whatsapp.net');
+    return _isIndividualChatId(c);
   }
   private resolveTimestamp(v: unknown): number {
     return resolveTimestampExt(v);
@@ -84,7 +73,7 @@ export class WhatsappService {
     return toIsoTimestamp(ts);
   }
   normalizeChatId(chatId: string): string {
-    return String(chatId || '').includes('@') ? chatId : `${this.normalizeNumber(chatId)}@c.us`;
+    return _normalizeChatId(chatId);
   }
   private get providerExtract() {
     return this.providerRegistry.extractPhoneFromChatId.bind(this.providerRegistry);
