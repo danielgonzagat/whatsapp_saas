@@ -214,185 +214,233 @@ export class KloelReplyEngineService {
       arrivalTimestamp: new Date().toISOString(),
     };
     void params.systemPrompt;
+
+    const ABI_SNAPSHOT_KEY = 'abi_snapshot_cache';
     let cognitiveState: Record<string, unknown> = {
       abiStatus: this.abiBuilder ? 'unavailable_or_invalid' : 'builder_not_injected',
       audience: 'public',
       perceptionSnapshot: { channel: 'web' },
     };
+    let cacheHit = false;
 
-    // Mind signals — wire attention + valence into cognitiveState (PI-k4)
-    if (this.attentionService && this.valenceAggregatorService && params.workspaceId) {
+    // PI-k5: check for cached ABI snapshot (60s TTL)
+    if (params.workspaceId) {
       try {
-        const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
-        let recentEvents: SpineEventRef[] = [];
-
-        try {
-          const rows = await Promise.race([
-            this.prisma.autopilotEvent.findMany({
-              where: {
-                workspaceId: params.workspaceId,
-                createdAt: { gte: thirtyMinAgo },
-              },
-              orderBy: { createdAt: 'desc' },
-              take: 50,
-              select: { id: true, intent: true, action: true, createdAt: true },
-            }),
-            new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 50)),
-          ]);
-
-          const wsIdForEvents = params.workspaceId;
-          if (wsIdForEvents) {
-            recentEvents = rows.map((r) => ({
-              eventId: r.id,
-              eventName: r.intent || r.action || 'unknown',
-              workspaceId: wsIdForEvents,
-              occurredAt: r.createdAt.toISOString(),
-              truthMode: 'observed' as const,
-            }));
+        const cached = await this.prisma.kloelMemory.findUnique({
+          where: { workspaceId_key: { workspaceId: params.workspaceId, key: ABI_SNAPSHOT_KEY } },
+        });
+        if (cached?.content && cached.updatedAt) {
+          const ageMs = Date.now() - cached.updatedAt.getTime();
+          if (ageMs < 60_000) {
+            cognitiveState = JSON.parse(cached.content) as Record<string, unknown>;
+            cacheHit = true;
           }
+        }
+      } catch (error: unknown) {
+        this.logger.warn('kloel_abi_snapshot_cache_skipped', {
+          reason: error instanceof Error ? error.message : 'unknown error',
+        });
+      }
+    }
+
+    if (!cacheHit) {
+      // Mind signals — wire attention + valence into cognitiveState (PI-k4)
+      if (this.attentionService && this.valenceAggregatorService && params.workspaceId) {
+        try {
+          const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
+          let recentEvents: SpineEventRef[] = [];
+
+          try {
+            const rows = await Promise.race([
+              this.prisma.autopilotEvent.findMany({
+                where: {
+                  workspaceId: params.workspaceId,
+                  createdAt: { gte: thirtyMinAgo },
+                },
+                orderBy: { createdAt: 'desc' },
+                take: 50,
+                select: { id: true, intent: true, action: true, createdAt: true },
+              }),
+              new Promise<never>((_, reject) => setTimeout(() => reject(new Error('timeout')), 50)),
+            ]);
+
+            const wsIdForEvents = params.workspaceId;
+            if (wsIdForEvents) {
+              recentEvents = rows.map((r) => ({
+                eventId: r.id,
+                eventName: r.intent || r.action || 'unknown',
+                workspaceId: wsIdForEvents,
+                occurredAt: r.createdAt.toISOString(),
+                truthMode: 'observed' as const,
+              }));
+            }
+          } catch (error: unknown) {
+            this.logger.warn('kloel_event_source_timeout', {
+              reason: error instanceof Error ? error.message : 'unknown error',
+            });
+          }
+
+          const attention = this.attentionService.allocate(recentEvents, {
+            nowMs: Date.now(),
+            halfLifeMinutes: 30,
+          });
+
+          cognitiveState.mindSignals = {
+            attention,
+            source: 'autopilot_events',
+            eventCount: recentEvents.length,
+          };
         } catch (error: unknown) {
-          this.logger.warn('kloel_event_source_timeout', {
+          this.logger.warn('kloel_mind_signal_skipped', {
             reason: error instanceof Error ? error.message : 'unknown error',
           });
         }
-
-        const attention = this.attentionService.allocate(recentEvents, {
-          nowMs: Date.now(),
-          halfLifeMinutes: 30,
-        });
-
-        cognitiveState.mindSignals = {
-          attention,
-          source: 'autopilot_events',
-          eventCount: recentEvents.length,
-        };
-      } catch (error: unknown) {
-        this.logger.warn('kloel_mind_signal_skipped', {
-          reason: error instanceof Error ? error.message : 'unknown error',
-        });
-      }
-    } else {
-      cognitiveState.mindSignals = { status: 'no_services' };
-    }
-
-    // Mind beliefs — wire MindBeliefService top active beliefs (PI-k4)
-    if (this.mindBeliefService && params.workspaceId) {
-      try {
-        const beliefs = await Promise.race([
-          this.mindBeliefService.getActiveBeliefs(params.workspaceId),
-          new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('kloel_mind_belief_timeout')), 100),
-          ),
-        ]);
-        const mindSignals = (cognitiveState.mindSignals ?? {}) as Record<string, unknown>;
-        mindSignals.beliefs = beliefs.map((b) => ({
-          subject: b.subject,
-          predicate: b.predicate,
-          mean: b.mean,
-          confidence: 1 / (1 + b.variance),
-        }));
-        cognitiveState.mindSignals = mindSignals;
-      } catch (error: unknown) {
-        this.logger.warn('kloel_mind_belief_skipped', {
-          reason: error instanceof Error ? error.message : 'unknown error',
-        });
-      }
-    }
-
-    // Mind concept detection — wire concept labels into cognitiveState (PI-k4)
-    if (this.mindConceptService && params.workspaceId) {
-      try {
-        const detections = await Promise.race([
-          this.mindConceptService.detect({
-            workspaceId: params.workspaceId,
-            text: params.userMessage,
-            subject: 'kloel_chat',
-          }),
-          new Promise<never>((_, reject) =>
-            setTimeout(
-              () => reject(new Error('MindConceptService.detect timed out after 200ms')),
-              200,
-            ),
-          ),
-        ]);
-        const mindSignals = (cognitiveState.mindSignals ?? {}) as Record<string, unknown>;
-        mindSignals.concepts = detections
-          .slice(0, 5)
-          .map((d: { concept: string; confidence: number }) => ({
-            concept: d.concept,
-            confidence: d.confidence,
-          }));
-        cognitiveState.mindSignals = mindSignals;
-      } catch (error: unknown) {
-        this.logger.warn('kloel_mind_concept_skipped', {
-          reason: error instanceof Error ? error.message : 'unknown error',
-        });
-        const mindSignals = (cognitiveState.mindSignals ?? {}) as Record<string, unknown>;
-        mindSignals.concepts = [];
-        cognitiveState.mindSignals = mindSignals;
-      }
-    }
-
-    if (this.abiBuilder) {
-      if (params.prebuiltCognitiveState) {
-        cognitiveState = params.prebuiltCognitiveState;
       } else {
+        cognitiveState.mindSignals = { status: 'no_services' };
+      }
+
+      // Mind beliefs — wire MindBeliefService top active beliefs (PI-k4)
+      if (this.mindBeliefService && params.workspaceId) {
         try {
-          const abiResult = await this.abiBuilder.build({
-            audience: 'public',
-            currentInput,
-            perceptionSnapshot: {
-              channel: 'web',
-            },
+          const beliefs = await Promise.race([
+            this.mindBeliefService.getActiveBeliefs(params.workspaceId),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error('kloel_mind_belief_timeout')), 100),
+            ),
+          ]);
+          const mindSignals = (cognitiveState.mindSignals ?? {}) as Record<string, unknown>;
+          mindSignals.beliefs = beliefs.map((b) => ({
+            subject: b.subject,
+            predicate: b.predicate,
+            mean: b.mean,
+            confidence: 1 / (1 + b.variance),
+          }));
+          cognitiveState.mindSignals = mindSignals;
+        } catch (error: unknown) {
+          this.logger.warn('kloel_mind_belief_skipped', {
+            reason: error instanceof Error ? error.message : 'unknown error',
           });
+        }
+      }
 
-          if (abiResult.status !== 'ok') {
-            this.logger.warn(
-              `ABI build failed: ${abiResult.reason}, using structured reply fallback`,
-              {
-                tag: 'kloel_abi_degraded',
-                builder_present: true,
-                build_status: abiResult.status,
-                validation_issues: [] as string[],
-                exception_message: null,
-                workspaceId: params.workspaceId ?? null,
+      // Mind concept detection — wire concept labels into cognitiveState (PI-k4)
+      if (this.mindConceptService && params.workspaceId) {
+        try {
+          const detections = await Promise.race([
+            this.mindConceptService.detect({
+              workspaceId: params.workspaceId,
+              text: params.userMessage,
+              subject: 'kloel_chat',
+            }),
+            new Promise<never>((_, reject) =>
+              setTimeout(
+                () => reject(new Error('MindConceptService.detect timed out after 200ms')),
+                200,
+              ),
+            ),
+          ]);
+          const mindSignals = (cognitiveState.mindSignals ?? {}) as Record<string, unknown>;
+          mindSignals.concepts = detections
+            .slice(0, 5)
+            .map((d: { concept: string; confidence: number }) => ({
+              concept: d.concept,
+              confidence: d.confidence,
+            }));
+          cognitiveState.mindSignals = mindSignals;
+        } catch (error: unknown) {
+          this.logger.warn('kloel_mind_concept_skipped', {
+            reason: error instanceof Error ? error.message : 'unknown error',
+          });
+          const mindSignals = (cognitiveState.mindSignals ?? {}) as Record<string, unknown>;
+          mindSignals.concepts = [];
+          cognitiveState.mindSignals = mindSignals;
+        }
+      }
+
+      if (this.abiBuilder) {
+        if (params.prebuiltCognitiveState) {
+          cognitiveState = params.prebuiltCognitiveState;
+        } else {
+          try {
+            const abiResult = await this.abiBuilder.build({
+              audience: 'public',
+              currentInput,
+              perceptionSnapshot: {
+                channel: 'web',
               },
-            );
-          } else {
-            const validation = validateAbiPayload(abiResult.abi);
+            });
 
-            if (validation.status === 'FAIL') {
+            if (abiResult.status !== 'ok') {
               this.logger.warn(
-                `ABI validation failed: ${JSON.stringify(validation.issues)}, using structured reply fallback`,
+                `ABI build failed: ${abiResult.reason}, using structured reply fallback`,
                 {
                   tag: 'kloel_abi_degraded',
                   builder_present: true,
-                  build_status: 'ok',
-                  validation_issues: validation.issues
-                    .slice(0, 3)
-                    .map((i) => `${i.code}: ${i.message}`),
+                  build_status: abiResult.status,
+                  validation_issues: [] as string[],
                   exception_message: null,
                   workspaceId: params.workspaceId ?? null,
                 },
               );
             } else {
-              cognitiveState = { ...abiResult.abi };
+              const validation = validateAbiPayload(abiResult.abi);
+
+              if (validation.status === 'FAIL') {
+                this.logger.warn(
+                  `ABI validation failed: ${JSON.stringify(validation.issues)}, using structured reply fallback`,
+                  {
+                    tag: 'kloel_abi_degraded',
+                    builder_present: true,
+                    build_status: 'ok',
+                    validation_issues: validation.issues
+                      .slice(0, 3)
+                      .map((i) => `${i.code}: ${i.message}`),
+                    exception_message: null,
+                    workspaceId: params.workspaceId ?? null,
+                  },
+                );
+              } else {
+                cognitiveState = { ...abiResult.abi };
+              }
             }
+          } catch (error: unknown) {
+            const msg =
+              error instanceof Error
+                ? error.message
+                : typeof error === 'string'
+                  ? error
+                  : 'unknown error';
+            this.logger.warn(`ABI build exception: ${msg}, using structured reply fallback`, {
+              tag: 'kloel_abi_degraded',
+              builder_present: true,
+              build_status: null,
+              validation_issues: [] as string[],
+              exception_message: msg,
+              workspaceId: params.workspaceId ?? null,
+            });
+          }
+        }
+      }
+
+      // PI-k5: persist cognitiveState as ABI snapshot (60s TTL)
+      if (params.workspaceId) {
+        try {
+          const serialized = JSON.stringify(cognitiveState);
+          if (serialized.length <= 16384) {
+            await this.prisma.kloelMemory.upsert({
+              where: { workspaceId_key: { workspaceId: params.workspaceId, key: ABI_SNAPSHOT_KEY } },
+              update: { content: serialized, category: 'abi_snapshot', value: {}, updatedAt: new Date() },
+              create: { workspaceId: params.workspaceId, key: ABI_SNAPSHOT_KEY, content: serialized, category: 'abi_snapshot', value: {} },
+            });
+          } else {
+            this.logger.warn('kloel_abi_snapshot_oversized', {
+              size: serialized.length,
+              workspaceId: params.workspaceId,
+            });
           }
         } catch (error: unknown) {
-          const msg =
-            error instanceof Error
-              ? error.message
-              : typeof error === 'string'
-                ? error
-                : 'unknown error';
-          this.logger.warn(`ABI build exception: ${msg}, using structured reply fallback`, {
-            tag: 'kloel_abi_degraded',
-            builder_present: true,
-            build_status: null,
-            validation_issues: [] as string[],
-            exception_message: msg,
-            workspaceId: params.workspaceId ?? null,
+          this.logger.warn('kloel_abi_snapshot_cache_skipped', {
+            reason: error instanceof Error ? error.message : 'unknown error',
           });
         }
       }
