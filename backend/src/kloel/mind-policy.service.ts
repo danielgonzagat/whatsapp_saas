@@ -429,8 +429,8 @@ export class MindPolicyService {
       const isWithinWindow = row.resolvedAt != null && row.resolvedAt >= windowCutoff;
       const newConfidence: string = isWithinWindow ? 'confirmed' : 'unanswered';
 
-      await this.prisma.mindPolicy.update({
-        where: { id: row.id },
+      await this.prisma.mindPolicy.updateMany({
+        where: { id: row.id, workspaceId: params.workspaceId },
         data: {
           context: { ...ctx, outcomeConfidence: newConfidence } as Prisma.InputJsonValue,
         },
