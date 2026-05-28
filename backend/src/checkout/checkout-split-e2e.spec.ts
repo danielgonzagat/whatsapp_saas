@@ -4,7 +4,10 @@ import { AuditService } from '../audit/audit.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { ConnectService } from '../payments/connect/connect.service';
 import { FraudEngine } from '../payments/fraud/fraud.engine';
-import { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
+import {
+  MercadoPagoBoletoOrderService,
+  MercadoPagoPixChargeService,
+} from '../payments/mercadopago/mercadopago-pix-charge.service';
 import { StripeChargeService } from '../payments/stripe/stripe-charge.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -40,6 +43,7 @@ describe('Checkout E2E Split Chain', () => {
   let prisma: CheckoutPaymentPrismaMock;
   let stripeCharge: { createSaleCharge: jest.Mock };
   let mercadoPagoPix: { create: jest.Mock };
+  let mercadoPagoBoleto: { create: jest.Mock };
   let connectService: { createCustomAccount: jest.Mock };
   let fraudEngine: { evaluate: jest.Mock };
   let financialAlert: { paymentFailed: jest.Mock };
@@ -80,6 +84,17 @@ describe('Checkout E2E Split Chain', () => {
         raw: { id: 'mp_pix_split' },
       }),
     };
+    mercadoPagoBoleto = {
+      create: jest.fn().mockResolvedValue({
+        externalId: 'mp_order_boleto_split',
+        paymentId: 'mp_boleto_split',
+        status: 'pending',
+        ticketUrl: 'https://www.mercadopago.com.br/boleto/mp_boleto_split.pdf',
+        barcodeContent: '34191090080000000001753980229122525005423000',
+        digitableLine: '34191.09008 00000.000017 53980.229122 5 25005423000',
+        raw: { id: 'mp_order_boleto_split' },
+      }),
+    };
     connectService = {
       createCustomAccount: jest.fn().mockResolvedValue({
         accountBalanceId: 'cab_seller_created',
@@ -110,6 +125,7 @@ describe('Checkout E2E Split Chain', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: StripeChargeService, useValue: stripeCharge },
         { provide: MercadoPagoPixChargeService, useValue: mercadoPagoPix },
+        { provide: MercadoPagoBoletoOrderService, useValue: mercadoPagoBoleto },
         { provide: ConnectService, useValue: connectService },
         { provide: FraudEngine, useValue: fraudEngine },
         { provide: FinancialAlertService, useValue: financialAlert },

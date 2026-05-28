@@ -193,11 +193,6 @@ export class CheckoutOrderService {
       0,
       marketplacePricing.sellerReceivableInCents - affiliateCommissionInCents,
     );
-    if (paymentMethod === 'BOLETO') {
-      throw new BadRequestException(
-        'Boleto ainda não está habilitado no checkout Stripe-only. Use cartão ou Pix.',
-      );
-    }
     const orderNumber = generateCheckoutOrderNumber();
 
     // $transaction to prevent duplicate orders from concurrent createOrder

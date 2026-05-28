@@ -24,13 +24,23 @@ import {
   EnvCheckoutPaymentE2EGuard,
 } from './checkout-payment-e2e-guard';
 import { CheckoutEventEmitterService } from '../kloel/checkout-emitter/checkout-event-emitter.service';
-import { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
+import {
+  MercadoPagoBoletoOrderService,
+  MercadoPagoPixChargeService,
+} from '../payments/mercadopago/mercadopago-pix-charge.service';
+import type {
+  BoletoOrderResult,
+  CreateBoletoOrderInput,
+} from '../payments/mercadopago/mercadopago.types';
 
 describe('CheckoutPaymentService.processPayment — hybrid providers', () => {
   let service: CheckoutPaymentService;
   let prisma: CheckoutPaymentPrismaMock;
   let stripeCharge: { createSaleCharge: jest.Mock };
   let mercadoPagoPix: { create: jest.Mock };
+  let mercadoPagoBoleto: {
+    create: jest.Mock<Promise<BoletoOrderResult>, [CreateBoletoOrderInput]>;
+  };
   let connectService: { createCustomAccount: jest.Mock };
   let fraudEngine: { evaluate: jest.Mock };
   let financialAlert: { paymentFailed: jest.Mock };
@@ -81,6 +91,17 @@ describe('CheckoutPaymentService.processPayment — hybrid providers', () => {
         raw: { id: 'mp_pix_1' },
       }),
     };
+    mercadoPagoBoleto = {
+      create: jest.fn<Promise<BoletoOrderResult>, [CreateBoletoOrderInput]>().mockResolvedValue({
+        externalId: 'mp_order_boleto_1',
+        paymentId: 'mp_boleto_1',
+        status: 'pending',
+        ticketUrl: 'https://www.mercadopago.com.br/boleto/mp_boleto_1.pdf',
+        barcodeContent: '34191090080000000001753980229122525005423000',
+        digitableLine: '34191.09008 00000.000017 53980.229122 5 25005423000',
+        raw: { id: 'mp_order_boleto_1' },
+      }),
+    };
     connectService = {
       createCustomAccount: jest.fn().mockResolvedValue({
         accountBalanceId: 'cab_seller_created',
@@ -112,6 +133,7 @@ describe('CheckoutPaymentService.processPayment — hybrid providers', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: StripeChargeService, useValue: stripeCharge },
         { provide: MercadoPagoPixChargeService, useValue: mercadoPagoPix },
+        { provide: MercadoPagoBoletoOrderService, useValue: mercadoPagoBoleto },
         { provide: ConnectService, useValue: connectService },
         { provide: FraudEngine, useValue: fraudEngine },
         { provide: FinancialAlertService, useValue: financialAlert },
@@ -151,17 +173,71 @@ describe('CheckoutPaymentService.processPayment — hybrid providers', () => {
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
-  it('rejects boleto because boleto is not enabled in the active checkout flow', async () => {
-    await expect(
-      service.processPayment({
-        orderId: 'order-1',
-        workspaceId: 'ws-1',
-        customerName: 'Teste',
-        customerEmail: 'test@example.com',
-        paymentMethod: 'BOLETO',
-        totalInCents: 10_000,
+  it('creates a boleto through Mercado Pago, persists ticket data, and returns boleto evidence', async () => {
+    const tx: CheckoutPaymentTxClient = {
+      checkoutPayment: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        create: jest.fn(async (args: CheckoutPaymentCreateArgs) => ({
+          id: 'pay_boleto_1',
+          ...args.data,
+        })),
+      },
+      checkoutOrder: {
+        findFirst: jest.fn(),
+        updateMany: jest.fn(),
+      },
+    };
+    prisma.$transaction.mockImplementation(async (cb: CheckoutPaymentTxCallback) => cb(tx));
+
+    const result = await service.processPayment({
+      orderId: 'order-1',
+      workspaceId: 'ws-1',
+      customerName: 'Cliente Boleto',
+      customerEmail: 'boleto@example.com',
+      customerCPF: '123.456.789-09',
+      customerPhone: '11999999999',
+      paymentMethod: 'BOLETO',
+      totalInCents: 10_000,
+    });
+
+    expect(stripeCharge.createSaleCharge).not.toHaveBeenCalled();
+    expect(connectService.createCustomAccount).not.toHaveBeenCalled();
+    expect(mercadoPagoPix.create).not.toHaveBeenCalled();
+    expect(mercadoPagoBoleto.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        amountCents: 13_990n,
+        payerEmail: 'boleto@example.com',
+        payerName: 'Cliente Boleto',
+        payerDocument: '12345678909',
+        payerAddress: {
+          zipCode: '01310100',
+          streetName: 'Av Paulista',
+          streetNumber: '1000',
+          neighborhood: 'Bela Vista',
+          city: 'São Paulo',
+          state: 'SP',
+        },
+        description: 'Produto X',
+        externalReference: 'order-1',
+        expirationTime: 'P3D',
+        idempotencyKey: 'checkout-boleto:order-1',
       }),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    );
+    const paymentCreateArgs = tx.checkoutPayment.create.mock.calls[0]?.[0];
+    expect(paymentCreateArgs?.data).toMatchObject({
+      gateway: 'mercadopago',
+      externalId: 'mp_boleto_1',
+      boletoUrl: 'https://www.mercadopago.com.br/boleto/mp_boleto_1.pdf',
+      boletoBarcode: '34191.09008 00000.000017 53980.229122 5 25005423000',
+      status: 'PENDING',
+    });
+    expect(result).toMatchObject({
+      approved: false,
+      paymentIntentId: 'mp_boleto_1',
+      boletoUrl: 'https://www.mercadopago.com.br/boleto/mp_boleto_1.pdf',
+      boletoBarcode: '34191.09008 00000.000017 53980.229122 5 25005423000',
+      type: 'BOLETO',
+    });
   });
 
   it('creates a card PaymentIntent, records a stripe payment row, and returns clientSecret for the checkout UI', async () => {
@@ -212,16 +288,13 @@ describe('CheckoutPaymentService.processPayment — hybrid providers', () => {
         paymentMethodTypes: ['card'],
       }),
     );
-    expect(tx.checkoutPayment.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          gateway: 'stripe',
-          externalId: 'pi_test_123',
-          status: 'PENDING',
-          cardLast4: null,
-        }),
-      }),
-    );
+    const cardPaymentCreateArgs = tx.checkoutPayment.create.mock.calls[0]?.[0];
+    expect(cardPaymentCreateArgs?.data).toMatchObject({
+      gateway: 'stripe',
+      externalId: 'pi_test_123',
+      status: 'PENDING',
+      cardLast4: null,
+    });
     expect(txCalls).toEqual(['payment.create']);
     expect(result).toMatchObject({
       approved: false,

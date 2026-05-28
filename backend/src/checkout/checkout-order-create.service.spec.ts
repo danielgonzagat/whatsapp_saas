@@ -239,7 +239,7 @@ describe('CheckoutOrderService', () => {
       expect(prisma.$transaction).toHaveBeenCalled();
     });
 
-    it('rejects boleto payment method', async () => {
+    it('creates boleto orders and forwards the boleto payment method to the payment processor', async () => {
       const planRecord = {
         id: 'plan_1',
         slug: 'test-plan',
@@ -278,13 +278,51 @@ describe('CheckoutOrderService', () => {
 
       prisma.checkoutProductPlan.findUnique.mockResolvedValue(planRecord);
       prisma.marketplaceFee.findMany.mockResolvedValue([]);
+      prisma.$transaction.mockImplementation(
+        async (fn: (tx: Record<string, unknown>) => Promise<unknown>) => {
+          const tx = {
+            checkoutOrder: {
+              findFirst: jest.fn().mockResolvedValue(null),
+              create: jest.fn(async (args: { data: Record<string, unknown> }) =>
+                makeOrder({
+                  ...args.data,
+                  id: 'order_boleto_1',
+                  paymentMethod: 'BOLETO',
+                }),
+              ),
+            },
+          };
+          return fn(tx);
+        },
+      );
+      paymentService.processPayment.mockResolvedValue({
+        type: 'BOLETO',
+        paymentIntentId: 'mp_boleto_1',
+        boletoUrl: 'https://www.mercadopago.com.br/boleto/mp_boleto_1.pdf',
+      });
 
-      await expect(
-        service.createOrder({
-          ...baseCreateOrderInput,
-          paymentMethod: 'BOLETO' as const,
+      const result = await service.createOrder({
+        ...baseCreateOrderInput,
+        paymentMethod: 'BOLETO' as const,
+      });
+
+      expect(paymentService.processPayment).toHaveBeenCalledWith(
+        expect.objectContaining({
+          orderId: 'order_boleto_1',
+          paymentMethod: 'BOLETO',
+          customerCPF: '12345678901',
+          totalInCents: 9900,
         }),
-      ).rejects.toThrow(BadRequestException);
+      );
+      expect(result).toMatchObject({
+        id: 'order_boleto_1',
+        paymentMethod: 'BOLETO',
+        paymentData: {
+          type: 'BOLETO',
+          paymentIntentId: 'mp_boleto_1',
+          boletoUrl: 'https://www.mercadopago.com.br/boleto/mp_boleto_1.pdf',
+        },
+      });
     });
 
     it('rejects invalid coupon', async () => {
