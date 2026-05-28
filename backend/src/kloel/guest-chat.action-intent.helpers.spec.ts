@@ -66,11 +66,15 @@ describe('guest chat action intent helpers', () => {
   it('routes real payment intents through canonical sales capabilities', () => {
     const pix = detectActionIntent('gera um pix de R$197 para Joao comprar PDRN');
     const boleto = detectActionIntent('emite boleto de R$197 para Joao comprar PDRN');
+    const boletoPayment = detectActionIntent('gera pagamento boleto de R$197 para Joao');
+    const cardPayment = detectActionIntent('gera pagamento no cartao de R$197 para Joao');
 
     expect(pix?.tool).toBe('sales.create_pix');
     expect(pix?.args).toEqual(expect.objectContaining({ amount: 197, customerName: 'joao' }));
     expect(boleto?.tool).toBe('sales.create_boleto');
     expect(boleto?.args).toEqual(expect.objectContaining({ amount: 197, customerName: 'joao' }));
+    expect(boletoPayment?.tool).toBe('sales.create_boleto');
+    expect(cardPayment?.tool).not.toBe('sales.create_pix');
   });
 
   it('routes mutable product sub-resource intents through canonical capability IDs', () => {
