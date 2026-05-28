@@ -15,6 +15,20 @@ import {
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BillingLegacyProvidersSection } from './billing-legacy-providers-section';
 import { PaymentMethodsCard } from './billing-settings-section.payment-methods';
+import {
+  computeCreditPercent,
+  computeEstimatedMessages,
+  extractRawPaymentMethods,
+  formatMoney,
+  mapPaymentMethods,
+  salesPeriodLabel,
+  shouldShowCardsFirst,
+  subscriptionLabel,
+  subscriptionTone,
+  type RawPaymentMethod,
+  type SalesPeriod,
+  type SubscriptionStatus,
+} from './billing-settings-section.helpers';
 
 import {
   SettingsCard,
@@ -26,48 +40,12 @@ import {
 } from './contract';
 
 interface BillingSettingsSectionProps {
-  subscriptionStatus: 'none' | 'trial' | 'active' | 'expired' | 'suspended';
+  subscriptionStatus: SubscriptionStatus;
   trialDaysLeft: number;
   creditsBalance: number;
   hasCard: boolean;
   onActivateTrial: () => void;
   scrollToCreditCard?: boolean;
-}
-
-function formatMoney(value?: number | null) {
-  if (typeof value !== 'number' || Number.isNaN(value)) {
-    return 'R$ 0,00';
-  }
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-}
-
-function subscriptionTone(status: BillingSettingsSectionProps['subscriptionStatus']) {
-  if (status === 'active') {
-    return 'success';
-  }
-  if (status === 'trial') {
-    return 'warning';
-  }
-  if (status === 'expired' || status === 'suspended') {
-    return 'danger';
-  }
-  return 'neutral';
-}
-
-function subscriptionLabel(status: BillingSettingsSectionProps['subscriptionStatus']) {
-  if (status === 'active') {
-    return 'Ativo';
-  }
-  if (status === 'trial') {
-    return 'Teste ativo';
-  }
-  if (status === 'expired') {
-    return 'Expirado';
-  }
-  if (status === 'suspended') {
-    return 'Suspenso';
-  }
-  return 'Inativo';
 }
 
 /** Billing settings section. */
@@ -85,48 +63,26 @@ export function BillingSettingsSection({
   const [_billingLoading, setBillingLoading] = useState(false);
   const [billingError, setBillingError] = useState('');
   const [billingSuccess, setBillingSuccess] = useState('');
-  const [cards, setCards] = useState<
-    Array<{ id: string; last4?: string | undefined; brand?: string | undefined; expiry?: string | undefined; isDefault?: boolean | undefined }>
-  >([]);
-  const [salesPeriod, setSalesPeriod] = useState<'week' | 'month'>('week');
+  const [cards, setCards] = useState<ReturnType<typeof mapPaymentMethods>>([]);
+  const [salesPeriod, setSalesPeriod] = useState<SalesPeriod>('week');
   const [salesReport, setSalesReport] = useState<SalesReportSummary | null>(null);
-  const [showCardsFirst, setShowCardsFirst] = useState(scrollToCreditCard && !hasCard);
+  const [showCardsFirst, setShowCardsFirst] = useState(
+    shouldShowCardsFirst(scrollToCreditCard, hasCard),
+  );
 
   const estimatedMessages = useMemo(
-    () => Math.max(0, Math.floor(creditsBalance * 100)),
+    () => computeEstimatedMessages(creditsBalance),
     [creditsBalance],
   );
-  const creditPercent = useMemo(
-    () => Math.max(0, Math.min(100, (creditsBalance / 5) * 100)),
-    [creditsBalance],
-  );
+  const creditPercent = useMemo(() => computeCreditPercent(creditsBalance), [creditsBalance]);
 
   const loadPaymentMethods = useCallback(async () => {
     try {
       const response = await billingApi.getPaymentMethods();
-      interface RawPaymentMethod {
-        id: string;
-        last4?: string;
-        brand?: string;
-        expMonth?: number | string;
-        expYear?: number | string;
-        isDefault?: boolean;
-      }
-      const paymentMethods: RawPaymentMethod[] =
-        (response.data as { paymentMethods?: RawPaymentMethod[] } | undefined)?.paymentMethods ||
-        [];
-      setCards(
-        paymentMethods.map((pm) => ({
-          id: pm.id,
-          last4: pm.last4,
-          brand: pm.brand ? String(pm.brand).toUpperCase() : 'CARD',
-          expiry:
-            pm.expMonth && pm.expYear
-              ? `${String(pm.expMonth).padStart(2, '0')}/${String(pm.expYear).slice(-2)}`
-              : '',
-          isDefault: !!pm.isDefault,
-        })),
+      const rawMethods = extractRawPaymentMethods(
+        response.data as { paymentMethods?: RawPaymentMethod[] } | undefined,
       );
+      setCards(mapPaymentMethods(rawMethods));
     } catch {
       setCards([]);
     }
@@ -155,7 +111,7 @@ export function BillingSettingsSection({
   }, [loadSalesReport]);
 
   useEffect(() => {
-    setShowCardsFirst(scrollToCreditCard && !hasCard);
+    setShowCardsFirst(shouldShowCardsFirst(scrollToCreditCard, hasCard));
   }, [scrollToCreditCard, hasCard]);
 
   const startAddCardFlow = useCallback(async () => {
@@ -299,8 +255,7 @@ export function BillingSettingsSection({
               {salesReport?.totalSales || 0}
             </p>
             <p className="text-xs text-[var(--app-text-secondary)]">
-              {formatMoney(salesReport?.totalAmount || 0)} em{' '}
-              {salesPeriod === 'week' ? '7 dias' : '30 dias'}.
+              {formatMoney(salesReport?.totalAmount || 0)} em {salesPeriodLabel(salesPeriod)}.
             </p>
             <div className="mt-3 flex gap-2">
               <Button
