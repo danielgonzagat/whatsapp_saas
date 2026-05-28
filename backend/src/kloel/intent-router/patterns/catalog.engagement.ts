@@ -20,6 +20,11 @@ export const ENGAGEMENT_INTENT_PATTERNS: IntentPattern[] = [
     capabilityId: 'list_whatsapp_contacts',
     extract: () => ({}),
   },
+  {
+    regex: /(?:manda|envi[ae]r?|dispara)\s+(?:uma?\s+)?(?:mensagem|msg|zap)(?:\s+(?:no|via|por|pra)\s+(?:whatsapp|whats|zap))?/i,
+    capabilityId: 'whatsapp.send',
+    extract: () => ({}),
+  },
   // === Profile / Bio ===
   {
     regex:
@@ -36,7 +41,7 @@ export const ENGAGEMENT_INTENT_PATTERNS: IntentPattern[] = [
   // === Refund ===
   {
     regex: /(?:estorn[ae]r?|reembols[ae]r?|cancel[ae]r?\s+(?:venda|pedido))/i,
-    capabilityId: 'list_refunds',
+    capabilityId: 'sales.refund',
     extract: () => ({}),
   },
 
@@ -141,6 +146,16 @@ export const ENGAGEMENT_INTENT_PATTERNS: IntentPattern[] = [
   {
     regex: /(?:redes?\s+sociais|canais?\s+(?:sociais|conectados))/i,
     capabilityId: 'get_social_channels',
+    extract: () => ({}),
+  },
+  {
+    regex: /(?:dm|direct|mensagem)\s+(?:no|do|via)\s+(?:insta|instagram)/i,
+    capabilityId: 'instagram.send_dm',
+    extract: () => ({}),
+  },
+  {
+    regex: /(?:manda|envia|dispara)\s+(?:um\s+)?e[\s-]?mail/i,
+    capabilityId: 'email.send',
     extract: () => ({}),
   },
   // === Autopilot ===

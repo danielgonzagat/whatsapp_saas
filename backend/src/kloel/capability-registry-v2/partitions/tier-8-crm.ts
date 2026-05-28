@@ -84,4 +84,23 @@ export const TIER_8_CRM_CAPABILITIES: CapabilityDefinition[] = [
     emits: [],
     surface: ['dashboard-chat'],
   },
+  {
+    id: 'sales.fill_buyer_data',
+    title: 'Preencher dados do comprador',
+    description: 'Coleta e preenche os dados do comprador para uma venda',
+    category: 'MUTATION_SENSITIVE',
+    tier: 8,
+    requiresConfirmation: true,
+    requiredPermissions: ['sale:write'],
+    inputSchema: [
+      { key: 'saleId', type: 'string', label: 'Venda', required: true },
+      { key: 'customerName', type: 'string', label: 'Nome', required: true },
+      { key: 'customerEmail', type: 'string', label: 'Email', required: true },
+      { key: 'customerCpf', type: 'string', label: 'CPF', required: false },
+      { key: 'customerPhone', type: 'string', label: 'Telefone', required: false },
+    ],
+    domainService: 'SalesService.fillBuyerData',
+    emits: ['buyer.data_filled'],
+    surface: ['dashboard-chat'],
+  },
 ];

@@ -144,6 +144,11 @@ export const COMMERCE_INTENT_PATTERNS: IntentPattern[] = [
     capabilityId: 'crm.pipeline',
     extract: () => ({}),
   },
+  {
+    regex: /(?:pega|preenche|coleta)\s+(?:os?\s+)?dados\s+(?:do|de)\s+(?:comprador|cliente)/i,
+    capabilityId: 'sales.fill_buyer_data',
+    extract: () => ({}),
+  },
 
   // === Payment link ===
   {

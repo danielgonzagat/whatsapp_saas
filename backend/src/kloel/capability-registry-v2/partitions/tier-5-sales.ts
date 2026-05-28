@@ -177,4 +177,20 @@ export const TIER_5_SALES_CAPABILITIES: CapabilityDefinition[] = [
     },
     surface: ['dashboard-chat'],
   },
+  {
+    id: 'sales.refund',
+    title: 'Estornar venda',
+    description: 'Estorna/reembolsa uma venda e notifica o comprador',
+    category: 'MUTATION_SENSITIVE',
+    tier: 5,
+    requiresConfirmation: true,
+    requiredPermissions: ['sale:write'],
+    inputSchema: [
+      { key: 'saleId', type: 'string', label: 'Venda', required: true },
+      { key: 'reason', type: 'string', label: 'Motivo', required: false },
+    ],
+    domainService: 'SalesService.refund',
+    emits: ['sale.refunded'],
+    surface: ['dashboard-chat'],
+  },
 ];
