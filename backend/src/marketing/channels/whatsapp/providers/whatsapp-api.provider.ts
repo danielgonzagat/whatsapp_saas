@@ -4,10 +4,15 @@ import { MetaWhatsAppService } from '../../../../meta/meta-whatsapp.service';
 import { PrismaService } from '../../../../prisma/prisma.service';
 import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../whatsapp-normalization.util';
 import {
+  buildEnvBackedSessionOverview,
+  buildRuntimeConfigDiagnostics,
+  buildSessionConfigDiagnosticsPayload,
+  clampChatMessagePagination,
   deriveQrCodeMessage,
   deriveSessionStateFromDetails,
-  hasAnyEnv,
-  hasEnv,
+  mapContactRowToWahaContact,
+  mapConversationRowToWahaChat,
+  mapMessageRowToWahaMessage,
 } from './whatsapp-api.provider.helpers';
 import type {
   QrCodeResponse,
@@ -45,21 +50,7 @@ export class WhatsAppApiProvider {
 
   /** Get runtime config diagnostics. */
   getRuntimeConfigDiagnostics(): WahaRuntimeConfigDiagnostics {
-    const secretConfigured = hasAnyEnv(['META_APP_SECRET', 'FACEBOOK_APP_SECRET']);
-    const verifyTokenConfigured = hasAnyEnv(['META_VERIFY_TOKEN', 'META_WEBHOOK_VERIFY_TOKEN']);
-    return {
-      provider: 'meta-cloud',
-      webhookConfigured: secretConfigured && verifyTokenConfigured,
-      inboundEventsConfigured: true,
-      events: ['messages', 'message_template_status_update', 'comments'],
-      secretConfigured,
-      storeEnabled: true,
-      storeFullSync: true,
-      appIdConfigured: hasAnyEnv(['META_APP_ID', 'FACEBOOK_APP_ID', 'META_CLIENT_ID']),
-      appSecretConfigured: secretConfigured,
-      accessTokenConfigured: hasEnv('META_ACCESS_TOKEN'),
-      phoneNumberIdConfigured: hasEnv('META_PHONE_NUMBER_ID'),
-    };
+    return buildRuntimeConfigDiagnostics();
   }
 
   /** Ping. */
@@ -237,16 +228,7 @@ export class WhatsAppApiProvider {
       },
     });
 
-    return contacts.map((contact) => ({
-      id: `${contact.phone}@s.whatsapp.net`,
-      phone: contact.phone,
-      name: contact.name || null,
-      pushName: contact.name || null,
-      email: contact.email || null,
-      source: 'crm',
-      createdAt: contact.createdAt.toISOString(),
-      updatedAt: contact.updatedAt.toISOString(),
-    }));
+    return contacts.map(mapContactRowToWahaContact);
   }
 
   /** Upsert contact profile. */
@@ -298,20 +280,7 @@ export class WhatsAppApiProvider {
       },
     });
 
-    return conversations.map((conversation) => {
-      const phone = String(conversation.contact?.phone || '').trim();
-      const chatId = phone ? `${phone}@s.whatsapp.net` : conversation.id;
-      const timestamp = conversation.lastMessageAt?.getTime?.() || Date.now();
-      return {
-        id: chatId,
-        phone,
-        name: conversation.contact?.name || phone || null,
-        unreadCount: conversation.unreadCount || 0,
-        timestamp,
-        lastMessageAt: conversation.lastMessageAt?.toISOString?.() || null,
-        source: 'crm',
-      };
-    });
+    return conversations.map(mapConversationRowToWahaChat);
   }
 
   /** Get chat messages. */
@@ -340,9 +309,10 @@ export class WhatsAppApiProvider {
       return [];
     }
 
+    const { take, skip } = clampChatMessagePagination(options);
     const messages = await this.prisma.message.findMany({
-      take: Math.max(1, Math.min(200, Number(options?.limit || 100) || 100)),
-      skip: Math.max(0, Number(options?.offset || 0) || 0),
+      take,
+      skip,
       where: {
         workspaceId,
         contactId: contact.id,
@@ -360,21 +330,7 @@ export class WhatsAppApiProvider {
       },
     });
 
-    return messages.map((message) => ({
-      id: message.externalId || message.id,
-      chatId: `${phone}@s.whatsapp.net`,
-      phone,
-      body: message.content || '',
-      direction: message.direction,
-      fromMe: message.direction === 'OUTBOUND',
-      type: String(message.type || 'TEXT').toLowerCase(),
-      hasMedia: Boolean(message.mediaUrl),
-      mediaUrl: message.mediaUrl || null,
-      timestamp: message.createdAt.getTime(),
-      isoTimestamp: message.createdAt.toISOString(),
-      source: 'crm',
-      status: message.status || null,
-    }));
+    return messages.map((message) => mapMessageRowToWahaMessage(message, phone));
   }
 
   /** Read chat messages. */
@@ -470,34 +426,11 @@ export class WhatsAppApiProvider {
   /** Get session config diagnostics. */
   async getSessionConfigDiagnostics(workspaceId: string): Promise<WahaSessionConfigDiagnostics> {
     const details = await this.metaWhatsApp.getPhoneNumberDetails(workspaceId);
-    const runtimeConfig = this.getRuntimeConfigDiagnostics();
-
-    const degradedReason = details.degradedReason;
-    const authUrl = details.authUrl;
-    const phoneNumberId = details.phoneNumberId;
-
-    return {
+    return buildSessionConfigDiagnosticsPayload({
       sessionName: this.getResolvedSessionId(workspaceId),
-      available: true,
-      rawStatus: details.status || null,
-      state: deriveSessionStateFromDetails(details),
-      phoneNumber: details.phoneNumber || null,
-      pushName: details.pushName || null,
-      webhookConfigured: runtimeConfig.webhookConfigured,
-      inboundEventsConfigured: runtimeConfig.inboundEventsConfigured,
-      events: runtimeConfig.events,
-      secretConfigured: runtimeConfig.secretConfigured,
-      storeEnabled: true,
-      storeFullSync: true,
-      configPresent: Boolean(details.phoneNumberId),
-      configMismatch: false,
-      mismatchReasons: [],
-      sessionRestartRisk: false,
-      whatsappBusinessId: details.whatsappBusinessId ?? null,
-      ...(degradedReason !== undefined && degradedReason !== null ? { error: degradedReason } : {}),
-      ...(authUrl !== undefined && authUrl !== null ? { authUrl } : {}),
-      ...(phoneNumberId !== undefined && phoneNumberId !== null ? { phoneNumberId } : {}),
-    };
+      details,
+      runtimeConfig: this.getRuntimeConfigDiagnostics(),
+    });
   }
 
   /** Sync session config. */
@@ -517,20 +450,7 @@ export class WhatsAppApiProvider {
 
   /** List sessions. */
   listSessions(): Promise<WahaSessionOverview[]> {
-    const envPhoneNumberId = String(
-      this.configService.get<string>('META_PHONE_NUMBER_ID') || '',
-    ).trim();
-    if (!envPhoneNumberId) {
-      return Promise.resolve([]);
-    }
-
-    return Promise.resolve([
-      {
-        name: envPhoneNumberId,
-        success: true,
-        rawStatus: 'CONNECTED',
-        state: 'CONNECTED',
-      },
-    ]);
+    const envPhoneNumberId = this.configService.get<string>('META_PHONE_NUMBER_ID') || '';
+    return Promise.resolve(buildEnvBackedSessionOverview(envPhoneNumberId));
   }
 }
