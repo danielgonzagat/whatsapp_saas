@@ -59,6 +59,19 @@ describe('buildCreateSmartPaymentContext', () => {
       productName: 'PDRN offer',
     });
   });
+
+  it('does not silently create PIX when the request asks for boleto or card', () => {
+    expect(() =>
+      buildCreateSmartPaymentContext('ws-1', {
+        amount: 197,
+        description: 'PDRN offer',
+        customerName: 'Joao Silva',
+        customerPhone: '5511999999999',
+        customerEmail: 'joao@example.com',
+        method: 'boleto',
+      }),
+    ).toThrow('smart_payment_method_not_connected:BOLETO');
+  });
 });
 
 describe('SmartPaymentService — canonical Pix payment kernel', () => {

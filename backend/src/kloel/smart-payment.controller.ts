@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -37,7 +38,31 @@ type CreateSmartPaymentBody = {
   dueDate?: string;
 };
 
+function normalizeSmartPaymentMethod(method?: string): 'PIX' | 'BOLETO' | 'CREDIT_CARD' | undefined {
+  const normalized = String(method || '')
+    .trim()
+    .toUpperCase();
+  if (!normalized) {
+    return undefined;
+  }
+  if (normalized === 'PIX') {
+    return 'PIX';
+  }
+  if (normalized === 'BOLETO') {
+    return 'BOLETO';
+  }
+  if (normalized === 'CREDIT_CARD' || normalized === 'CARD' || normalized === 'CARTAO') {
+    return 'CREDIT_CARD';
+  }
+  throw new BadRequestException(`smart_payment_method_unknown:${normalized}`);
+}
+
 export function buildCreateSmartPaymentContext(workspaceId: string, body: CreateSmartPaymentBody) {
+  const requestedMethod = normalizeSmartPaymentMethod(body.method);
+  if (requestedMethod && requestedMethod !== 'PIX') {
+    throw new BadRequestException(`smart_payment_method_not_connected:${requestedMethod}`);
+  }
+
   const phone = body.phone || body.customerPhone || '';
   const productName = body.productName || body.description;
 
