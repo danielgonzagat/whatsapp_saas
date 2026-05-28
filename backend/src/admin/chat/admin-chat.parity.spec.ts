@@ -118,10 +118,7 @@ async function buildService(
   ];
 
   const moduleRef: TestingModule = await Test.createTestingModule({
-    providers: [
-      AdminChatService,
-      ...providers,
-    ],
+    providers: [AdminChatService, ...providers],
   }).compile();
 
   const service = moduleRef.get(AdminChatService);
@@ -169,7 +166,10 @@ describe('AdminChatService cognitive parity (PI-K19-B)', () => {
       const recordDecision = jest.fn().mockResolvedValue(undefined);
       const closeOutcome = jest.fn().mockResolvedValue(undefined);
 
-      const { service } = await buildService({ decisionRecord: recordDecision, decisionClose: closeOutcome });
+      const { service } = await buildService({
+        decisionRecord: recordDecision,
+        decisionClose: closeOutcome,
+      });
       await sendOi(service);
 
       expect(recordDecision).toHaveBeenCalledTimes(1);
@@ -183,7 +183,10 @@ describe('AdminChatService cognitive parity (PI-K19-B)', () => {
       const recordDecision = jest.fn().mockResolvedValue(undefined);
       const closeOutcome = jest.fn().mockResolvedValue(undefined);
 
-      const { service } = await buildService({ decisionRecord: recordDecision, decisionClose: closeOutcome });
+      const { service } = await buildService({
+        decisionRecord: recordDecision,
+        decisionClose: closeOutcome,
+      });
       await sendOi(service);
 
       expect(closeOutcome).toHaveBeenCalledTimes(1);
@@ -223,7 +226,13 @@ describe('AdminChatService cognitive parity (PI-K19-B)', () => {
       await sendOi(service);
 
       expect(beliefObserve).toHaveBeenCalledTimes(1);
-      const args = beliefObserve.mock.calls[0] as [string, string, string, Record<string, unknown>, number];
+      const args = beliefObserve.mock.calls[0] as [
+        string,
+        string,
+        string,
+        Record<string, unknown>,
+        number,
+      ];
       expect(args[2]).toBe('replied_to_user');
       expect(args[3]).toMatchObject({ surface: 'admin' });
       expect(args[4]).toBe(1);

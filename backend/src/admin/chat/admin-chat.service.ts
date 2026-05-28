@@ -187,17 +187,12 @@ export class AdminChatService {
       surface: 'admin',
       observed: 1,
     });
-    void computeChatSurprise(
-      this.mindSurpriseService,
-      this.mindBeliefService,
-      this.logger,
-      {
-        workspaceId,
-        observed: 1,
-        surface: 'admin',
-        degraded: false,
-      },
-    );
+    void computeChatSurprise(this.mindSurpriseService, this.mindBeliefService, this.logger, {
+      workspaceId,
+      observed: 1,
+      surface: 'admin',
+      degraded: false,
+    });
 
     // PI-K19-B: close decision outcome
     closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {

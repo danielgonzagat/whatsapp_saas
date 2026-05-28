@@ -282,13 +282,15 @@ export class GuestChatService implements OnModuleDestroy {
         });
       }
 
-      void this.spineEmitter?.emit({
-        eventName: 'cognition.decision_made',
-        workspaceId: chatWsId,
-        truthMode: 'observed',
-        provenance: { source: 'guest-chat', surface: 'guest' },
-        payload: { decision: 'engage', messageLength: message.length },
-      }).catch(() => {});
+      void this.spineEmitter
+        ?.emit({
+          eventName: 'cognition.decision_made',
+          workspaceId: chatWsId,
+          truthMode: 'observed',
+          provenance: { source: 'guest-chat', surface: 'guest' },
+          payload: { decision: 'engage', messageLength: message.length },
+        })
+        .catch(() => {});
 
       const mindSignals = await this.buildGuestMindSignals(chatWsId, message);
 
@@ -300,7 +302,10 @@ export class GuestChatService implements OnModuleDestroy {
         if (lastMsg && lastMsg.role === 'user') {
           const parsed = JSON.parse(lastMsg.content);
           parsed.cognitiveState = { ...parsed.cognitiveState, mindSignals };
-          contextMessages[contextMessages.length - 1] = { ...lastMsg, content: JSON.stringify(parsed) };
+          contextMessages[contextMessages.length - 1] = {
+            ...lastMsg,
+            content: JSON.stringify(parsed),
+          };
         }
       }
       this._lastCognitiveState = { mindSignals };
@@ -411,13 +416,15 @@ export class GuestChatService implements OnModuleDestroy {
       });
     }
 
-    void this.spineEmitter?.emit({
-      eventName: 'cognition.decision_made',
-      workspaceId: metricWsId,
-      truthMode: 'observed',
-      provenance: { source: 'guest-chat', surface: 'guest' },
-      payload: { decision: 'engage', messageLength: message.length },
-    }).catch(() => {});
+    void this.spineEmitter
+      ?.emit({
+        eventName: 'cognition.decision_made',
+        workspaceId: metricWsId,
+        truthMode: 'observed',
+        provenance: { source: 'guest-chat', surface: 'guest' },
+        payload: { decision: 'engage', messageLength: message.length },
+      })
+      .catch(() => {});
 
     try {
       if (!message || message.trim().length === 0) {
@@ -531,7 +538,10 @@ export class GuestChatService implements OnModuleDestroy {
         if (lastMsg && lastMsg.role === 'user') {
           const parsed = JSON.parse(lastMsg.content);
           parsed.cognitiveState = { ...parsed.cognitiveState, mindSignals };
-          contextMessages[contextMessages.length - 1] = { ...lastMsg, content: JSON.stringify(parsed) };
+          contextMessages[contextMessages.length - 1] = {
+            ...lastMsg,
+            content: JSON.stringify(parsed),
+          };
         }
       }
       this._lastCognitiveState = { mindSignals };
