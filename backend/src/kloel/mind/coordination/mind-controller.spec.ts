@@ -1,14 +1,14 @@
 import { MindController } from './mind-controller';
-import { MindBeliefService } from './mind/inference/mind-belief.service';
-import { MindPolicyService } from './mind/policy/mind-policy.service';
-import { MindService } from './mind.service';
-import { MindVerbalizerService } from './mind/synthetic/mind-verbalizer.service';
+import { MindBeliefService } from '../inference/mind-belief.service';
+import { MindPolicyService } from '../policy/mind-policy.service';
+import { MindService } from '../../mind.service';
+import { MindVerbalizerService } from '../synthetic/mind-verbalizer.service';
 import type { AggressivenessDto, DecideDto, ResolveDto } from './mind-controller.dto';
-import { MindObservabilityService } from './mind/observability/mind-observability.service';
-import { MindGuardsService } from './mind/policy/mind-guards.service';
-import { MindSimulatorService } from './mind/synthetic/mind-simulator.service';
-import { MindSyntheticGeneratorService } from './mind/synthetic/mind-synthetic-generator.service';
-import { MindGlobalPriorService } from './mind/memory/mind-global-prior.service';
+import { MindObservabilityService } from '../observability/mind-observability.service';
+import { MindGuardsService } from '../policy/mind-guards.service';
+import { MindSimulatorService } from '../synthetic/mind-simulator.service';
+import { MindSyntheticGeneratorService } from '../synthetic/mind-synthetic-generator.service';
+import { MindGlobalPriorService } from '../memory/mind-global-prior.service';
 
 function mockBeliefs(): jest.Mocked<MindBeliefService> {
   const service = Object.create(MindBeliefService.prototype) as jest.Mocked<MindBeliefService>;

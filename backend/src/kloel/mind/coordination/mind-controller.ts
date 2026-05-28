@@ -11,9 +11,9 @@ import {
   ServiceUnavailableException,
   UseGuards,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { Public } from '../auth/public.decorator';
-import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { JwtAuthGuard } from '../../../auth/jwt-auth.guard';
+import { Public } from '../../../auth/public.decorator';
+import { WorkspaceGuard } from '../../../common/guards/workspace.guard';
 import {
   AggressivenessDto,
   AudioVsTextDto,
@@ -26,17 +26,17 @@ import {
   SimulateDto,
   ToneDto,
 } from './mind-controller.dto';
-import { MindBeliefService } from './mind/inference/mind-belief.service';
-import { MindPolicyService } from './mind/policy/mind-policy.service';
-import { MindService } from './mind.service';
-import { MindObservabilityService } from './mind/observability/mind-observability.service';
-import { MindVerbalizerService } from './mind/synthetic/mind-verbalizer.service';
-import { MindGuardsService } from './mind/policy/mind-guards.service';
-import { MindSimulatorService } from './mind/synthetic/mind-simulator.service';
-import { MindSyntheticGeneratorService } from './mind/synthetic/mind-synthetic-generator.service';
-import { MindGlobalPriorService } from './mind/memory/mind-global-prior.service';
-import type { SimulateActionEntry } from './mind/synthetic/mind-simulator.service';
-import type { ReplayInput } from './mind/runtime/mind-replay.service';
+import { MindBeliefService } from '../inference/mind-belief.service';
+import { MindPolicyService } from '../policy/mind-policy.service';
+import { MindService } from '../../mind.service';
+import { MindObservabilityService } from '../observability/mind-observability.service';
+import { MindVerbalizerService } from '../synthetic/mind-verbalizer.service';
+import { MindGuardsService } from '../policy/mind-guards.service';
+import { MindSimulatorService } from '../synthetic/mind-simulator.service';
+import { MindSyntheticGeneratorService } from '../synthetic/mind-synthetic-generator.service';
+import { MindGlobalPriorService } from '../memory/mind-global-prior.service';
+import type { SimulateActionEntry } from '../synthetic/mind-simulator.service';
+import type { ReplayInput } from '../runtime/mind-replay.service';
 
 @Controller('mind')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)

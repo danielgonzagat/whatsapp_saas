@@ -11,9 +11,9 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import type { MindJson, MindPolicyOption } from './mind.types';
-import { SUPPORTED_DECISION_TYPES } from './mind/policy/mind-decision-baselines';
-import type { MindActionContext } from './mind/policy/mind-code-native.types';
+import type { MindJson, MindPolicyOption } from '../../mind.types';
+import { SUPPORTED_DECISION_TYPES } from '../policy/mind-decision-baselines';
+import type { MindActionContext } from '../policy/mind-code-native.types';
 
 class MindPolicyOptionDto implements MindPolicyOption {
   @IsString()
