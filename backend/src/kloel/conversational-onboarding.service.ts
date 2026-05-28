@@ -18,11 +18,21 @@ import { MindConceptService } from './mind/memory/mind-concepts.service';
 import { SelfHealthService } from './self-awareness/self-health.service';
 import { SelfGapsService } from './self-awareness/self-gaps.service';
 import { RiskClassService } from './risk-class/risk-class.service';
-import { buildMindSignals, type BuildMindSignalsDeps } from './mind/build-mind-signals.helper';
+import { buildMindSignals } from './mind/build-mind-signals.helper';
 import { SpineEmitterService } from './spine/spine-emitter.service';
-import { randomIdSegment } from '../common/random-id';
 import { DecisionOutcomeService } from './decision-outcome.service';
 import { MindSurpriseService } from './mind/inference/mind-surprise.service';
+import {
+  buildChatOutcomeKey,
+  recordChatReplyDecision,
+  closeChatReplyOutcome,
+  observeRepliedToUserBelief,
+  computeChatSurprise as computeChatSurpriseHelper,
+} from './kloel-reply-engine.decision-outcome.helpers';
+import {
+  buildOnboardingMindSignalsDeps,
+  emitOnboardingCognitionDecision,
+} from './conversational-onboarding.mind-deps.helpers';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 const ONBOARDING_SAFE_SETUP_TOOL_NAMES = [
@@ -305,72 +315,19 @@ export class ConversationalOnboardingService {
     return FALLBACK_REPLY;
   }
 
-  private async computeChatSurprise(
-    workspaceId: string,
-    observed: 0 | 1,
-    surface: string,
-    degraded: boolean,
-  ): Promise<void> {
-    if (!this.mindSurpriseService || !this.mindBeliefService) {
-      return;
-    }
-
-    try {
-      const belief = await Promise.race([
-        this.mindBeliefService.getOrInit(workspaceId, workspaceId, 'replied_to_user', {
-          surface,
-          degraded,
-        }),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('SURPRISE_TIMEOUT')), 30),
-        ),
-      ]);
-
-      const predicted = belief.mean;
-      const surprise = this.mindSurpriseService.computeSurprise(predicted, observed);
-
-      if (surprise > 0.3) {
-        this.logger.log({
-          event: 'kloel_chat_surprise_detected',
-          workspaceId,
-          predicted,
-          observed,
-          surpriseValue: surprise,
-          surface,
-        });
-      }
-    } catch (err: unknown) {
-      this.logger.warn('kloel_surprise_skipped', {
-        reason: err instanceof Error ? err.message : String(err),
-      });
-    }
-  }
-
   /** Inicia ou continua o onboarding conversacional */
   async chat(workspaceId: string, userMessage: string, res?: Response): Promise<string | void> {
     const history = await this.toolsService.getOnboardingHistory(workspaceId);
     const onboardingStateMessage = await this.buildOnboardingStateMessage(workspaceId, userMessage);
 
     // PI-k8: record decision outcome at start of every onboarding chat reply
-    const outcomeKey = `chat:${workspaceId}:${Date.now()}:${randomIdSegment(6)}`;
-    this.decisionOutcomeService
-      ?.recordDecision({
-        workspaceId,
-        decisionType: 'chat_reply',
-        chosenAction: 'engage',
-        baselineAction: 'silence',
-        outcomeKey,
-        expectedWindow: 1,
-        contextSnapshot: {
-          surface: 'onboarding',
-          messageLength: userMessage.length,
-        },
-      })
-      .catch((err: unknown) =>
-        this.logger.warn('kloel_decision_record_skipped', {
-          reason: err instanceof Error ? err.message : String(err),
-        }),
-      );
+    const outcomeKey = buildChatOutcomeKey(workspaceId) as string;
+    recordChatReplyDecision(this.decisionOutcomeService, this.logger, {
+      workspaceId,
+      outcomeKey,
+      surface: 'onboarding',
+      messageLength: userMessage.length,
+    });
 
     let degradedReason: string | null = null;
     let intentAdvisory: string | null = null;
@@ -408,11 +365,8 @@ export class ConversationalOnboardingService {
     ];
 
     // Mind signals — inject attention, beliefs, concepts into onboarding prompt (PI-k5-A).
-    // Builds deps conditionally so exactOptionalPropertyTypes accepts only defined services.
     try {
-      const mindDeps: BuildMindSignalsDeps = {
-        prisma: this.prismaExt,
-        logger: this.logger,
+      const mindDeps = buildOnboardingMindSignalsDeps(this.prismaExt, this.logger, {
         ...(this.attentionService !== undefined ? { attentionService: this.attentionService } : {}),
         ...(this.valenceAggregatorService !== undefined
           ? { valenceAggregatorService: this.valenceAggregatorService }
@@ -428,7 +382,7 @@ export class ConversationalOnboardingService {
           : {}),
         ...(this.selfGapsService !== undefined ? { selfGapsService: this.selfGapsService } : {}),
         ...(this.riskClassService !== undefined ? { riskClassService: this.riskClassService } : {}),
-      };
+      });
       const mindSignals = await buildMindSignals(mindDeps, workspaceId, userMessage);
       messages.push({
         role: 'user',
@@ -446,53 +400,18 @@ export class ConversationalOnboardingService {
       const assistantChoice = response.choices[0];
 
       // PI-k6: emit cognition.decision_made after the primary brain completion
-      const toolCallsCount = assistantChoice?.message?.tool_calls?.length ?? 0;
-      const primaryModel = response.model;
-      void (async () => {
-        if (this.spine) {
-          try {
-            await this.spine.emit({
-              eventName: 'cognition.decision_made',
-              workspaceId,
-              truthMode: 'observed',
-              provenance: {
-                source: 'production',
-                processor: 'conversational-onboarding',
-                processorVersion: '1.0.0',
-                schemaVersion: '1.0.0',
-              },
-              payload: {
-                surface: 'onboarding',
-                toolCallsCount,
-                fallbackReason: null,
-                durationMs: Date.now() - completionStartMs,
-                modelUsed: primaryModel,
-              },
-            });
-          } catch (err: unknown) {
-            this.logger.warn('kloel_cognition_event_skipped', {
-              reason: err instanceof Error ? err.message : String(err),
-            });
-          }
-        } else {
-          this.logger.warn('kloel_cognition_event_skipped', {
-            reason: 'spine_not_injected',
-          });
-        }
-      })();
+      emitOnboardingCognitionDecision(this.spine, this.logger, {
+        workspaceId,
+        toolCallsCount: assistantChoice?.message?.tool_calls?.length ?? 0,
+        completionStartMs,
+        modelUsed: response.model,
+      });
       if (!assistantChoice) {
-        // PI-k8: close outcome as degraded
-        this.decisionOutcomeService
-          ?.closeOutcome({
-            outcomeKey,
-            outcomeName: 'chat.degraded.empty_choice',
-            wonVsBaseline: false,
-          })
-          .catch((err: unknown) =>
-            this.logger.warn('kloel_decision_close_skipped', {
-              reason: err instanceof Error ? err.message : String(err),
-            }),
-          );
+        closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
+          outcomeKey,
+          outcomeName: 'chat.degraded.empty_choice',
+          wonVsBaseline: false,
+        });
         return '';
       }
       const assistantMessage = assistantChoice.message;
@@ -517,6 +436,28 @@ export class ConversationalOnboardingService {
         throw e;
       }
 
+      const successOutcomeName = degradedReason
+        ? `chat.degraded.${String(degradedReason)}`
+        : 'chat.replied';
+      const onSuccess = (): void => {
+        closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
+          outcomeKey,
+          outcomeName: successOutcomeName,
+          wonVsBaseline: !degradedReason,
+        });
+        observeRepliedToUserBelief(this.mindBeliefService, this.logger, {
+          workspaceId,
+          surface: 'onboarding',
+          observed: 1,
+          degraded: false,
+        });
+        void computeChatSurpriseHelper(this.mindSurpriseService, this.mindBeliefService, this.logger, {
+          workspaceId,
+          observed: 1,
+          surface: 'onboarding',
+          degraded: false,
+        });
+      };
       if (res) {
         try {
           this.writeSseResponse(res, responseText);
@@ -524,81 +465,17 @@ export class ConversationalOnboardingService {
           degradedReason = 'sse_write';
           throw e;
         }
-        // PI-k8: close outcome on success
-        this.decisionOutcomeService
-          ?.closeOutcome({
-            outcomeKey,
-            outcomeName: degradedReason
-              ? `chat.degraded.${String(degradedReason)}`
-              : 'chat.replied',
-            wonVsBaseline: !degradedReason,
-          })
-          .catch((err: unknown) =>
-            this.logger.warn('kloel_decision_close_skipped', {
-              reason: err instanceof Error ? err.message : String(err),
-            }),
-          );
-        if (this.mindBeliefService) {
-          this.mindBeliefService
-            .observeBinary(
-              workspaceId,
-              workspaceId,
-              'replied_to_user',
-              { surface: 'onboarding', degraded: false },
-              1,
-            )
-            .catch((err: unknown) =>
-              this.logger.warn('kloel_belief_observation_skipped', {
-                reason: err instanceof Error ? err.message : String(err),
-              }),
-            );
-        }
-        void this.computeChatSurprise(workspaceId, 1, 'onboarding', false);
+        onSuccess();
         return;
       }
-
-      // PI-k8: close outcome on success
-      this.decisionOutcomeService
-        ?.closeOutcome({
-          outcomeKey,
-          outcomeName: degradedReason ? `chat.degraded.${String(degradedReason)}` : 'chat.replied',
-          wonVsBaseline: !degradedReason,
-        })
-        .catch((err: unknown) =>
-          this.logger.warn('kloel_decision_close_skipped', {
-            reason: err instanceof Error ? err.message : String(err),
-          }),
-        );
-      if (this.mindBeliefService) {
-        this.mindBeliefService
-          .observeBinary(
-            workspaceId,
-            workspaceId,
-            'replied_to_user',
-            { surface: 'onboarding', degraded: false },
-            1,
-          )
-          .catch((err: unknown) =>
-            this.logger.warn('kloel_belief_observation_skipped', {
-              reason: err instanceof Error ? err.message : String(err),
-            }),
-          );
-        void this.computeChatSurprise(workspaceId, 1, 'onboarding', false);
-      }
+      onSuccess();
       return responseText;
     } catch (error: unknown) {
-      // PI-k8: close outcome on error
-      this.decisionOutcomeService
-        ?.closeOutcome({
-          outcomeKey,
-          outcomeName: 'chat.error',
-          wonVsBaseline: false,
-        })
-        .catch((err: unknown) =>
-          this.logger.warn('kloel_decision_close_skipped', {
-            reason: err instanceof Error ? err.message : String(err),
-          }),
-        );
+      closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
+        outcomeKey,
+        outcomeName: 'chat.error',
+        wonVsBaseline: false,
+      });
       this.logger.error(
         'Erro no onboarding conversacional',
         error instanceof Error ? error.message : String(error),
@@ -614,42 +491,26 @@ export class ConversationalOnboardingService {
         hasResponseHeaders: !!res,
         willingWrite: !!res,
       });
+      const onFailure = (): void => {
+        observeRepliedToUserBelief(this.mindBeliefService, this.logger, {
+          workspaceId,
+          surface: 'onboarding',
+          observed: 0,
+          degraded: true,
+        });
+        void computeChatSurpriseHelper(this.mindSurpriseService, this.mindBeliefService, this.logger, {
+          workspaceId,
+          observed: 0,
+          surface: 'onboarding',
+          degraded: true,
+        });
+      };
       if (res) {
         this.writeSseResponse(res, fallback);
-        if (this.mindBeliefService) {
-          this.mindBeliefService
-            .observeBinary(
-              workspaceId,
-              workspaceId,
-              'replied_to_user',
-              { surface: 'onboarding', degraded: true },
-              0,
-            )
-            .catch((err: unknown) =>
-              this.logger.warn('kloel_belief_observation_skipped', {
-                reason: err instanceof Error ? err.message : String(err),
-              }),
-            );
-        }
-        void this.computeChatSurprise(workspaceId, 0, 'onboarding', true);
+        onFailure();
         return;
       }
-      if (this.mindBeliefService) {
-        this.mindBeliefService
-          .observeBinary(
-            workspaceId,
-            workspaceId,
-            'replied_to_user',
-            { surface: 'onboarding', degraded: true },
-            0,
-          )
-          .catch((err: unknown) =>
-            this.logger.warn('kloel_belief_observation_skipped', {
-              reason: err instanceof Error ? err.message : String(err),
-            }),
-          );
-        void this.computeChatSurprise(workspaceId, 0, 'onboarding', true);
-      }
+      onFailure();
       return fallback;
     }
   }
