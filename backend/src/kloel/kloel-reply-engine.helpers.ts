@@ -2,6 +2,10 @@ import OpenAI from 'openai';
 import { PrismaService } from '../prisma/prisma.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { StructuredLogger } from '../logging/structured-logger';
+import { resolveTextLlmProvider } from '../lib/llm-provider';
+
+const helperLogger = StructuredLogger.from('KloelReplyEngineHelpers');
 import { KloelContextFormatter } from './kloel-context-formatter';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
 import { KloelThreadService } from './kloel-thread.service';
@@ -234,6 +238,12 @@ export async function buildAssistantReplyImpl(
   const { openai, prisma, planLimits, threadService, wsContextService, toolRouter } = deps;
 
   if (!deps.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) {
+    helperLogger.error('kloel_motor_unavailable', {
+      reason: 'no_llm_key_and_no_anthropic',
+      resolvedProvider: resolveTextLlmProvider() ?? null,
+      mode,
+      hasWorkspaceId: !!workspaceId,
+    });
     return deps.unavailableMessage;
   }
 
@@ -348,6 +358,16 @@ export async function buildAssistantReplyImpl(
     if (initialMsgWithReasoning.reasoning_content !== undefined) {
       delete initialMsgWithReasoning.reasoning_content;
     }
+  }
+  if (!initialMsg?.content) {
+    helperLogger.warn('kloel_motor_unavailable', {
+      reason: 'empty_llm_response',
+      mode,
+      hasToolCalls: !!initialMsg?.tool_calls?.length,
+      finishReason: response?.choices?.[0]?.finish_reason ?? null,
+      model: resolveBackendOpenAIModel(isChatMode ? 'brain' : 'writer'),
+      hasWorkspaceId: !!workspaceId,
+    });
   }
   let assistantMessage = initialMsg?.content || deps.unavailableMessage;
 

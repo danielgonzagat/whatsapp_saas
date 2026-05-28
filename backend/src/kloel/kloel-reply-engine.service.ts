@@ -1,7 +1,11 @@
 import { Inject, Injectable, Optional, forwardRef } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import OpenAI from 'openai';
-import { createTextLlmClient, hasTextLlmApiKey } from '../lib/llm-provider';
+import {
+  createTextLlmClient,
+  hasTextLlmApiKey,
+  resolveTextLlmProvider,
+} from '../lib/llm-provider';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelContextFormatter } from './kloel-context-formatter';
@@ -173,6 +177,10 @@ export class KloelReplyEngineService {
     if (reason === KLOEL_STREAM_ABORT_REASON_CLIENT_DISCONNECTED) {
       return 'client_disconnected';
     }
+    this.logger.warn('kloel_motor_unavailable', {
+      reason: 'stream_aborted_unknown',
+      abortReason: String(reason).slice(0, 200),
+    });
     return this.unavailableMessage;
   }
 
@@ -402,6 +410,12 @@ export class KloelReplyEngineService {
     prebuiltCognitiveState?: Record<string, unknown>;
   }): Promise<string> {
     if (!this.openai) {
+      this.logger.error('kloel_motor_unavailable', {
+        reason: 'no_llm_client',
+        resolvedProvider: resolveTextLlmProvider() ?? null,
+        hasOpenAiKey: hasTextLlmApiKey(),
+        hasAnthropicFallback: !!process.env.ANTHROPIC_API_KEY,
+      });
       return this.unavailableMessage;
     }
     return buildAssistantReplyImpl(params, {
