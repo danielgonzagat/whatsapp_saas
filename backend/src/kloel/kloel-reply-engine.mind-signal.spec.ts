@@ -96,7 +96,6 @@ describe('KloelReplyEngineService mind-signal wiring (PI-k4)', () => {
   });
   describe('buildChatModelMessages mindSignals', () => {
     it('queries Prisma with correct shape and feeds AttentionService when services are injected', async () => {
-      const now = new Date('2026-05-28T12:00:00Z');
       const rows = [
         makeAutopilotRow({
           id: 'evt-1',
@@ -137,7 +136,12 @@ describe('KloelReplyEngineService mind-signal wiring (PI-k4)', () => {
 
       // Verify Prisma was queried with the right shape
       expect(prisma.autopilotEvent.findMany).toHaveBeenCalledTimes(1);
-      const findManyArg = prisma.autopilotEvent.findMany.mock.calls[0][0];
+      const findManyArg = prisma.autopilotEvent.findMany.mock.calls[0]?.[0] as {
+        where: { workspaceId: string; createdAt: { gte: Date } };
+        orderBy: { createdAt: string };
+        take: number;
+        select: Record<string, boolean>;
+      };
       expect(findManyArg.where.workspaceId).toBe('ws-1');
       expect(findManyArg.where.createdAt.gte).toBeInstanceOf(Date);
       expect(findManyArg.orderBy).toEqual({ createdAt: 'desc' });
