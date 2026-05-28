@@ -28,7 +28,7 @@ describe('AdminSalesController', () => {
       deliveredCount: 0,
     },
     chart: [],
-    gatewayOptions: ['stripe', 'pix'],
+    gatewayOptions: ['mercadopago', 'stripe'],
     items: [],
   };
 
