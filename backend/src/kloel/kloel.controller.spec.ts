@@ -1,7 +1,10 @@
+import { EventEmitter } from 'node:events';
+
 import { KloelController } from './kloel.controller';
 
 describe('KloelController', () => {
   let kloelService: {
+    think: jest.Mock;
     thinkSync: jest.Mock;
   };
   let prisma: {
@@ -23,6 +26,7 @@ describe('KloelController', () => {
 
   beforeEach(() => {
     kloelService = {
+      think: jest.fn().mockResolvedValue(undefined),
       thinkSync: jest.fn().mockResolvedValue({
         response: 'ok',
       }),
@@ -55,6 +59,53 @@ describe('KloelController', () => {
       prisma as never as ConstructorParameters<typeof KloelController>[3],
       {} as never,
       toolDispatcher as never,
+    );
+  });
+
+  it('keeps SSE think alive when the request stream closes after the body is read', async () => {
+    const req = new EventEmitter() as EventEmitter & {
+      workspaceId: string;
+      user: { name: string; sub: string; workspaceId: string };
+    };
+    req.workspaceId = 'ws-1';
+    req.user = { name: 'Daniel', sub: 'user-1', workspaceId: 'ws-1' };
+    const res = new EventEmitter();
+
+    kloelService.think.mockImplementation(
+      async (_request: unknown, _response: unknown, opts?: { signal?: AbortSignal }) => {
+        req.emit('close');
+        expect(opts?.signal?.aborted).toBe(false);
+      },
+    );
+
+    await controller.think(
+      { message: 'oi' },
+      res as never as Parameters<KloelController['think']>[1],
+      req as never as Parameters<KloelController['think']>[2],
+    );
+  });
+
+  it('aborts SSE think when the response stream closes', async () => {
+    const req = new EventEmitter() as EventEmitter & {
+      workspaceId: string;
+      user: { name: string; sub: string; workspaceId: string };
+    };
+    req.workspaceId = 'ws-1';
+    req.user = { name: 'Daniel', sub: 'user-1', workspaceId: 'ws-1' };
+    const res = new EventEmitter();
+
+    kloelService.think.mockImplementation(
+      async (_request: unknown, _response: unknown, opts?: { signal?: AbortSignal }) => {
+        res.emit('close');
+        expect(opts?.signal?.aborted).toBe(true);
+        expect(opts?.signal?.reason).toBe('client_disconnected');
+      },
+    );
+
+    await controller.think(
+      { message: 'oi' },
+      res as never as Parameters<KloelController['think']>[1],
+      req as never as Parameters<KloelController['think']>[2],
     );
   });
 

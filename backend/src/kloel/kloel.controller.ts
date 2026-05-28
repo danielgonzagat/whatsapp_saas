@@ -168,7 +168,7 @@ export class KloelController {
     };
     const timeoutMs = Number(process.env.KLOEL_THINK_TIMEOUT_MS || 240000);
     const timeout = setTimeout(() => abortWithReason('request_timeout'), timeoutMs);
-    req.on('close', () => abortWithReason('client_disconnected'));
+    req.on('aborted', () => abortWithReason('client_disconnected'));
     res.on('close', () => abortWithReason('client_disconnected'));
     try {
       const { metadata: rawMetadata, ...requestDto } = dto;
