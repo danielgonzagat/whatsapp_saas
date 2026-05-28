@@ -6,20 +6,26 @@ import {
   isChannelTool,
   CHANNEL_TOOL_NAMES,
 } from './kloel-tool-dispatcher.channel.handlers';
-import type { ChannelToolDeps } from './kloel-tool-dispatcher.channel.handlers';type StubRiskGate = {
+import type { ChannelToolDeps } from './kloel-tool-dispatcher.channel.handlers';
+type StubRiskGate = {
   gateMessageSend: jest.Mock;
 };
 
 type StubTransports = {
   send: jest.Mock;
-};const mockGateMessageSend = (
-  verdict: 'allow' | 'warn' | 'block' = 'allow',
-): jest.Mock =>
+};
+const mockGateMessageSend = (verdict: 'allow' | 'warn' | 'block' = 'allow'): jest.Mock =>
   jest.fn().mockReturnValue({
-    classification: { class: 'R1', autonomyMode: 'allowed_alone', requiredEvidenceLevel: 'N1', rollback: [] },
+    classification: {
+      class: 'R1',
+      autonomyMode: 'allowed_alone',
+      requiredEvidenceLevel: 'N1',
+      rollback: [],
+    },
     verdict,
     reason: verdict === 'block' ? 'R4: forbidden' : 'R1: allowed',
-  });const makeStubDeps = (
+  });
+const makeStubDeps = (
   gateVerdict: 'allow' | 'warn' | 'block' = 'allow',
   sendResult: ChannelSendResult = { success: true, blocked: false },
 ): { riskGate: StubRiskGate; transports: StubTransports; deps: ChannelToolDeps } => {
@@ -34,7 +40,8 @@ type StubTransports = {
     riskGate: riskGate as unknown as RiskGateService,
   };
   return { riskGate, transports, deps };
-};describe('kloel-tool-dispatcher.channel.handlers', () => {
+};
+describe('kloel-tool-dispatcher.channel.handlers', () => {
   describe('isChannelTool', () => {
     it('recognises every channel-send tool name', () => {
       for (const name of CHANNEL_TOOL_NAMES) {
@@ -56,7 +63,9 @@ type StubTransports = {
       expect(await dispatchChannelTool(deps, 'ws1', 'unrelated', {})).toBeNull();
     });
 
-    // ── send_email ──    describe('send_email', () => {
+    // ── send_email ──
+
+    describe('send_email', () => {
       it('blocks when RiskGate verdict is block', async () => {
         const { deps, riskGate } = makeStubDeps('block');
         const result = await dispatchChannelTool(deps, 'ws1', 'send_email', {
@@ -134,9 +143,12 @@ type StubTransports = {
           to: 'fallback@test.com',
           message: 'Hello',
         });
-        expect(transports.send).toHaveBeenCalledWith('ws1', expect.objectContaining({
-          recipientId: 'fallback@test.com',
-        }));
+        expect(transports.send).toHaveBeenCalledWith(
+          'ws1',
+          expect.objectContaining({
+            recipientId: 'fallback@test.com',
+          }),
+        );
       });
 
       it('prefers "email" over "to" when both present', async () => {
@@ -146,9 +158,12 @@ type StubTransports = {
           to: 'fallback@test.com',
           message: 'Hello',
         });
-        expect(transports.send).toHaveBeenCalledWith('ws1', expect.objectContaining({
-          recipientId: 'primary@test.com',
-        }));
+        expect(transports.send).toHaveBeenCalledWith(
+          'ws1',
+          expect.objectContaining({
+            recipientId: 'primary@test.com',
+          }),
+        );
       });
 
       it('accepts "body" as fallback key for message', async () => {
@@ -157,13 +172,18 @@ type StubTransports = {
           email: 'user@test.com',
           body: 'Email body',
         });
-        expect(transports.send).toHaveBeenCalledWith('ws1', expect.objectContaining({
-          content: 'Email body',
-        }));
+        expect(transports.send).toHaveBeenCalledWith(
+          'ws1',
+          expect.objectContaining({
+            content: 'Email body',
+          }),
+        );
       });
     });
 
-    // ── send_instagram_dm ──    describe('send_instagram_dm', () => {
+    // ── send_instagram_dm ──
+
+    describe('send_instagram_dm', () => {
       it('blocks when RiskGate verdict is block', async () => {
         const { deps } = makeStubDeps('block');
         const result = await dispatchChannelTool(deps, 'ws1', 'send_instagram_dm', {
@@ -195,9 +215,12 @@ type StubTransports = {
           instagramUserId: 'ig_123',
           message: 'Hello',
         });
-        expect(transports.send).toHaveBeenCalledWith('ws1', expect.objectContaining({
-          recipientId: 'ig_123',
-        }));
+        expect(transports.send).toHaveBeenCalledWith(
+          'ws1',
+          expect.objectContaining({
+            recipientId: 'ig_123',
+          }),
+        );
       });
 
       it('returns error when handle is missing', async () => {
@@ -217,7 +240,9 @@ type StubTransports = {
       });
     });
 
-    // ── send_messenger_message ──    describe('send_messenger_message', () => {
+    // ── send_messenger_message ──
+
+    describe('send_messenger_message', () => {
       it('blocks when RiskGate verdict is block', async () => {
         const { deps } = makeStubDeps('block');
         const result = await dispatchChannelTool(deps, 'ws1', 'send_messenger_message', {

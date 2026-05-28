@@ -20,12 +20,13 @@
 import type { RiskGateService } from './risk-class/risk-gate.service';
 import type { ChannelTransportRegistry } from './channel-transport.registry';
 import type { ChannelSendRequest, ChannelSendResult } from './channel-transport.types';
-import type { UnknownRecord } from '../common/types';type ToolResult = {
+import type { UnknownRecord } from '../common/types';
+type ToolResult = {
   success: boolean;
   message?: string;
   error?: string;
   [key: string]: unknown;
-};/**
+}; /**
  * Tool names handled by {@link dispatchChannelTool}. Kept in sync with
  * {@link KLOEL_CHAT_TOOLS_CORE} definitions in kloel-chat-tools.definition.ts.
  */
@@ -33,19 +34,24 @@ export const CHANNEL_TOOL_NAMES = new Set<string>([
   'send_email',
   'send_instagram_dm',
   'send_messenger_message',
-]);export function isChannelTool(toolName: string): boolean {
+]);
+export function isChannelTool(toolName: string): boolean {
   return CHANNEL_TOOL_NAMES.has(toolName);
-}/** Dependencies required by the channel dispatcher. */
+} /** Dependencies required by the channel dispatcher. */
 export interface ChannelToolDeps {
   transports: ChannelTransportRegistry;
   riskGate: RiskGateService;
-}/** Map a ChannelSendResult into a ToolResult-compatible plain object. */
+} /** Map a ChannelSendResult into a ToolResult-compatible plain object. */
 function adaptResult(sendResult: ChannelSendResult): ToolResult {
   const out: ToolResult = { success: sendResult.success };
-  if (sendResult.messageId !== undefined) out.messageId = sendResult.messageId;
-  if (sendResult.error !== undefined) out.error = sendResult.error;
+  if (sendResult.messageId !== undefined) {
+    out.messageId = sendResult.messageId;
+  }
+  if (sendResult.error !== undefined) {
+    out.error = sendResult.error;
+  }
   return out;
-}/**
+} /**
  * Extract a string value from `args` by trying `primaryKey` first,
  * then falling back to `fallbackKey`. Returns `undefined` when neither
  * key yields a non-empty string.
@@ -66,7 +72,8 @@ function extractStringArg(
     }
   }
   return undefined;
-}export async function dispatchChannelTool(
+}
+export async function dispatchChannelTool(
   deps: ChannelToolDeps,
   workspaceId: string,
   toolName: string,
@@ -78,8 +85,12 @@ function extractStringArg(
     case 'send_email': {
       const email = extractStringArg(args, 'email', 'to');
       const message = extractStringArg(args, 'message', 'body');
-      if (!email) return { success: false, error: 'email_required' };
-      if (!message) return { success: false, error: 'message_required' };
+      if (!email) {
+        return { success: false, error: 'email_required' };
+      }
+      if (!message) {
+        return { success: false, error: 'message_required' };
+      }
 
       const gate = riskGate.gateMessageSend({ target: 'lead' });
       if (gate.verdict === 'block') {
@@ -98,8 +109,12 @@ function extractStringArg(
     case 'send_instagram_dm': {
       const handle = extractStringArg(args, 'handle', 'instagramUserId');
       const message = extractStringArg(args, 'message');
-      if (!handle) return { success: false, error: 'instagram_handle_required' };
-      if (!message) return { success: false, error: 'message_required' };
+      if (!handle) {
+        return { success: false, error: 'instagram_handle_required' };
+      }
+      if (!message) {
+        return { success: false, error: 'message_required' };
+      }
 
       const gate = riskGate.gateMessageSend({ target: 'lead' });
       if (gate.verdict === 'block') {
@@ -118,8 +133,12 @@ function extractStringArg(
     case 'send_messenger_message': {
       const recipientId = extractStringArg(args, 'recipientId');
       const message = extractStringArg(args, 'message');
-      if (!recipientId) return { success: false, error: 'recipient_id_required' };
-      if (!message) return { success: false, error: 'message_required' };
+      if (!recipientId) {
+        return { success: false, error: 'recipient_id_required' };
+      }
+      if (!message) {
+        return { success: false, error: 'message_required' };
+      }
 
       const gate = riskGate.gateMessageSend({ target: 'lead' });
       if (gate.verdict === 'block') {

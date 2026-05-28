@@ -64,10 +64,7 @@ import {
   dispatchWorkspaceActionTool,
   isWorkspaceActionTool,
 } from './kloel-tool-dispatcher.workspace-actions.handlers';
-import {
-  dispatchChannelTool,
-  isChannelTool,
-} from './kloel-tool-dispatcher.channel.handlers';
+import { dispatchChannelTool, isChannelTool } from './kloel-tool-dispatcher.channel.handlers';
 import { runCreatePaymentLink } from './kloel-tool-dispatcher.create-payment-link.helpers';
 import { SmartPaymentService } from './smart-payment.service';
 import { ChannelTransportRegistry } from './channel-transport.registry';
