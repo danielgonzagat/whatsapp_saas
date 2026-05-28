@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../../../logging/structured-logger';
 import { MindCaseMemoryService } from '../memory/mind-case-memory.service';
 import { MindConceptService } from '../memory/mind-concepts.service';
-import { messageTemplate, toStableString } from '../../mind-decision-baselines';
+import { messageTemplate, toStableString } from '../policy/mind-decision-baselines';
 import { MindPolicyService } from '../policy/mind-policy.service';
 import { MindPredictorService } from '../inference/mind-predictor.service';
 import { MindSurpriseService } from '../inference/mind-surprise.service';

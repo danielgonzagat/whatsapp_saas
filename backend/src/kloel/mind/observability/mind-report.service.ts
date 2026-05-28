@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../../../logging/structured-logger';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { MIND_DECISION_CATALOG } from '../../mind-decision-catalog';
+import { MIND_DECISION_CATALOG } from '../policy/mind-decision-catalog';
 import { MindBeliefService } from '../inference/mind-belief.service';
 import { MindPolicyService } from '../policy/mind-policy.service';
 import { MindSimulatorService } from '../synthetic/mind-simulator.service';

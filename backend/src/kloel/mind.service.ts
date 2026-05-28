@@ -25,7 +25,7 @@ import {
   resolveHumanTransferDecision,
   resolveProductOfferDecision,
 } from './mind-commercial-decision-resolvers';
-import { KNOWN_DECISION_TYPES } from './mind-decision-baselines';
+import { KNOWN_DECISION_TYPES } from './mind/policy/mind-decision-baselines';
 
 @Injectable()
 export class MindService {

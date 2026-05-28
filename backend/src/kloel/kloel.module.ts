@@ -128,7 +128,7 @@ import { UNIFIED_AGENT_TOKEN } from './tokens';
 import { UploadController } from './upload.controller';
 import { WebinarController } from './webinar.controller';
 import { LacunasController } from './lacunas.controller';
-import { BrainRuntimeController } from './brain-runtime.controller';
+import { BrainRuntimeController } from './mind/coordination/mind-runtime.controller';
 import {
   EmailChannelTransport,
   InstagramChannelTransport,

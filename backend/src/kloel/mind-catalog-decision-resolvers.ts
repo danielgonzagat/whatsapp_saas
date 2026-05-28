@@ -11,7 +11,7 @@ import {
   resolveMessageFormatBaseline,
   resolveObjectionResponseBaseline,
   resolveToneBaseline,
-} from './mind-decision-baselines';
+} from './mind/policy/mind-decision-baselines';
 
 export type MindPolicyChooser = Pick<MindPolicyService, 'choose'>;
 

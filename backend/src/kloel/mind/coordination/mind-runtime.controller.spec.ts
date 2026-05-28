@@ -1,4 +1,4 @@
-import { BrainRuntimeController } from '../../brain-runtime.controller';
+import { BrainRuntimeController } from './mind-runtime.controller';
 
 describe('BrainRuntimeController', () => {
   let autonomy: { propose: jest.Mock };

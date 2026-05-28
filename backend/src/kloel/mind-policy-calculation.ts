@@ -1,5 +1,5 @@
 import { evaluateEconomicObjective } from './economic-objective';
-import { mean, twoProportionZScore } from './mind-policy.helpers';
+import { mean, twoProportionZScore } from './mind/policy/mind-policy.helpers';
 import type {
   MindActionCandidate,
   MindJson,

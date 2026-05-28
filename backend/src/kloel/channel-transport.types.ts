@@ -1,4 +1,4 @@
-import type { MindActionContext } from './mind-code-native.types';
+import type { MindActionContext } from './mind/policy/mind-code-native.types';
 
 export type ChannelName = 'whatsapp' | 'instagram' | 'messenger' | 'tiktok' | 'email';
 

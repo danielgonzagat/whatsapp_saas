@@ -1,5 +1,5 @@
 import { MindSyntheticGeneratorService } from './mind-synthetic-generator.service';
-import { MIND_DECISION_CATALOG } from '../../mind-decision-catalog';
+import { MIND_DECISION_CATALOG } from '../policy/mind-decision-catalog';
 
 describe('MindSyntheticGeneratorService', () => {
   let service: MindSyntheticGeneratorService;

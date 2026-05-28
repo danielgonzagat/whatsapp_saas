@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { Prisma } from '@prisma/client';
-import type { PrismaService } from '../prisma/prisma.service';
-import type { MindPolicyDecision } from './mind.types';
+import type { PrismaService } from '../../../prisma/prisma.service';
+import type { MindPolicyDecision } from '../../mind.types';
 
 export type ResolvedPolicyRow = {
   baseline: string;

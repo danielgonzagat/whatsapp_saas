@@ -9,7 +9,7 @@ import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { MindGuardContextBuilderService } from './mind/policy/mind-guard-context-builder.service';
 import { MindGuardsService } from './mind/policy/mind-guards.service';
-import type { MindActionContext } from './mind-code-native.types';
+import type { MindActionContext } from './mind/policy/mind-code-native.types';
 
 import type { UnknownRecord } from '../common/types';
 type ProductMemoryValue = {

@@ -16,7 +16,7 @@ import type {
 } from './channel-transport.types';
 import { MindGuardsService } from './mind/policy/mind-guards.service';
 import { MindGuardContextBuilderService } from './mind/policy/mind-guard-context-builder.service';
-import type { MindActionContext } from './mind-code-native.types';
+import type { MindActionContext } from './mind/policy/mind-code-native.types';
 
 @Injectable()
 export class ChannelTransportRegistry {

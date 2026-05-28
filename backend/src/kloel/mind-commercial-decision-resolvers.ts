@@ -4,7 +4,7 @@ import {
   resolveChannelChoiceBaseline,
   resolveHumanTransferBaseline,
   resolveProductOfferBaseline,
-} from './mind-decision-baselines';
+} from './mind/policy/mind-decision-baselines';
 import type { MindPolicyChooser, PolicyDecisionResult } from './mind-catalog-decision-resolvers';
 import { decisionConfidence } from './mind-catalog-decision-resolvers';
 

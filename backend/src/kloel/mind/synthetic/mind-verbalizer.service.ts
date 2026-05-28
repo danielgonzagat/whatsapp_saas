@@ -8,7 +8,7 @@ import { LLMBudgetService, estimateChatCostCents } from '../../llm-budget.servic
 import { chatCompletionWithFallback, LLM_MAX_COMPLETION_TOKENS } from '../../openai-wrapper';
 import { MindBeliefService } from '../inference/mind-belief.service';
 import { MindPolicyService } from '../policy/mind-policy.service';
-import { MIND_DECISION_TYPES } from '../../mind-decision-catalog';
+import { MIND_DECISION_TYPES } from '../policy/mind-decision-catalog';
 import type { MindBelief } from '../../mind.types';
 import { safeStr as safeString } from '../../../common/string';
 
