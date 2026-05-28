@@ -165,7 +165,8 @@
     "gate:math-random": "node scripts/ops/canonical/gate-math-random.mjs",
     "gate:prisma-any": "node scripts/ops/canonical/gate-prisma-any.mjs",
     "gate:asaas-ban": "node scripts/ops/canonical/gate-asaas-ban.mjs",
-    "gate:all": "node scripts/ops/canonical/run-all-gates.mjs"
+    "gate:all": "node scripts/ops/canonical/run-all-gates.mjs",
+    "probe:kloel-prod": "node scripts/ops/probe-kloel-prod.mjs"
   },
   "lint-staged": {
     "*.{json,md,yml,yaml}": [
