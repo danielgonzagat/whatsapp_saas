@@ -297,15 +297,12 @@ export async function handleProductTool(
     case 'update_product':
       return deps.chatToolsService.toolUpdateProduct(
         workspaceId,
-        (userId ? { ...args, actorId: userId } : args) as never,
+        userId ? { ...args, actorId: userId } : args,
       );
     case 'products.update': {
       const startedAt = Date.now();
       const productArgs = userId ? { ...args, actorId: userId } : args;
-      const result = await deps.chatToolsService.toolUpdateProduct(
-        workspaceId,
-        productArgs as never,
-      );
+      const result = await deps.chatToolsService.toolUpdateProduct(workspaceId, productArgs);
       return withCanonicalReceipt(
         deps,
         'products.update',
@@ -319,15 +316,12 @@ export async function handleProductTool(
     case 'upload_product_image':
       return deps.chatToolsService.toolUploadProductImage(
         workspaceId,
-        (userId ? { ...args, actorId: userId } : args) as never,
+        userId ? { ...args, actorId: userId } : args,
       );
     case 'products.upload_image': {
       const startedAt = Date.now();
       const productArgs = userId ? { ...args, actorId: userId } : args;
-      const result = await deps.chatToolsService.toolUploadProductImage(
-        workspaceId,
-        productArgs as never,
-      );
+      const result = await deps.chatToolsService.toolUploadProductImage(workspaceId, productArgs);
       return withCanonicalReceipt(
         deps,
         'products.upload_image',
