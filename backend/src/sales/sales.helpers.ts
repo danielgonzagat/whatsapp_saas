@@ -490,3 +490,46 @@ export function buildPaymentPendingAuditDetails(
     status: input.status ?? 'pending',
   };
 }
+
+// ------- Audit detail builders -------
+
+export interface SaleCreatedAuditDetailsInput {
+  productId: string;
+  planId: string;
+  amount: number;
+  paymentMethod: SalesPaymentMethod;
+}
+
+/**
+ * Build the `SALE_CREATED` audit `details` envelope. Every `createXxxOrder`
+ * flow writes an identical-shaped audit row right after the sale record is
+ * created, differing only in `paymentMethod`.
+ */
+export function buildSaleCreatedAuditDetails(
+  input: SaleCreatedAuditDetailsInput,
+): Record<string, unknown> {
+  return {
+    productId: input.productId,
+    planId: input.planId,
+    amount: input.amount,
+    paymentMethod: input.paymentMethod,
+  };
+}
+
+// ------- Log message builders -------
+
+export interface SaleSuccessLogInput {
+  method: string;
+  saleId: string;
+  externalPaymentId: string;
+  workspaceId: string;
+}
+
+/**
+ * Build the success log message emitted after a sale is created and the
+ * external payment provider has returned. Keeps the message shape consistent
+ * across PIX, boleto and Stripe card flows.
+ */
+export function buildSaleSuccessLogMessage(input: SaleSuccessLogInput): string {
+  return `${input.method} created: saleId=${input.saleId} externalPaymentId=${input.externalPaymentId} workspace=${input.workspaceId}`;
+}

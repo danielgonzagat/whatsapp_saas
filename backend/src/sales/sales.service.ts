@@ -32,6 +32,8 @@ import {
   planPriceToCentsNumber,
   resolveFrontendOrigin,
   sanitizeDocumentDigits,
+  buildSaleCreatedAuditDetails,
+  buildSaleSuccessLogMessage,
 } from './sales.helpers';
 // ------- Types -------
 
@@ -143,12 +145,9 @@ export class SalesService {
           });
 
           // 2. Audit: sale created
-          await this.auditSale(tx, sale.id, workspaceId, 'SALE_CREATED', {
-            productId,
-            planId,
-            amount: plan.price,
-            paymentMethod: 'PIX',
-          });
+          await this.auditSale(tx, sale.id, workspaceId, 'SALE_CREATED',
+            buildSaleCreatedAuditDetails({ productId, planId, amount: plan.price, paymentMethod: 'PIX' }),
+          );
 
           // 3. Generate real PIX charge via Mercado Pago
           const pixResult = await this.mpPix.create({
@@ -221,7 +220,7 @@ export class SalesService {
         });
 
         this.logger.log(
-          `PIX sale created: saleId=${sale.id} externalPaymentId=${pixResult.externalId} workspace=${workspaceId}`,
+          buildSaleSuccessLogMessage({ method: 'PIX sale', saleId: sale.id, externalPaymentId: pixResult.externalId, workspaceId }),
         );
 
         // 7. Return PIX display data
@@ -276,12 +275,9 @@ export class SalesService {
             },
           });
 
-          await this.auditSale(tx, sale.id, workspaceId, 'SALE_CREATED', {
-            productId,
-            planId,
-            amount: plan.price,
-            paymentMethod: 'BOLETO',
-          });
+          await this.auditSale(tx, sale.id, workspaceId, 'SALE_CREATED',
+            buildSaleCreatedAuditDetails({ productId, planId, amount: plan.price, paymentMethod: 'BOLETO' }),
+          );
 
           const boletoResult = await this.mpBoleto.create({
             idempotencyKey,
@@ -353,7 +349,7 @@ export class SalesService {
         });
 
         this.logger.log(
-          `Boleto sale created: saleId=${sale.id} externalPaymentId=${boletoResult.externalId} workspace=${workspaceId}`,
+          buildSaleSuccessLogMessage({ method: 'Boleto sale', saleId: sale.id, externalPaymentId: boletoResult.externalId, workspaceId }),
         );
 
         return {
@@ -399,12 +395,9 @@ export class SalesService {
             },
           });
 
-          await this.auditSale(tx, sale.id, workspaceId, 'SALE_CREATED', {
-            productId,
-            planId,
-            amount: plan.price,
-            paymentMethod: 'CREDIT_CARD',
-          });
+          await this.auditSale(tx, sale.id, workspaceId, 'SALE_CREATED',
+            buildSaleCreatedAuditDetails({ productId, planId, amount: plan.price, paymentMethod: 'CREDIT_CARD' }),
+          );
 
           const frontendOrigin = resolveFrontendOrigin();
           const { successUrl, cancelUrl } = buildStripeCheckoutUrls(frontendOrigin, sale.id);
@@ -488,7 +481,7 @@ export class SalesService {
         });
 
         this.logger.log(
-          `Stripe card checkout link created: saleId=${sale.id} externalPaymentId=${externalPaymentId} workspace=${workspaceId}`,
+          buildSaleSuccessLogMessage({ method: 'Stripe card checkout link', saleId: sale.id, externalPaymentId, workspaceId }),
         );
 
         return {
