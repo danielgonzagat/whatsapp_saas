@@ -1,8 +1,8 @@
 # ADR-0013 Wave M5 — Batch 6 Physical Move Report
 
-**Date:** 2026-05-26  
-**Phase:** Wave M5 — Physical move of Mind* services into canonical sub-areas  
-**Batch:** 6 of N (3 policy/quality Mind services)  
+**Date:** 2026-05-26
+**Phase:** Wave M5 — Physical move of Mind* services into canonical sub-areas
+**Batch:** 6 of N (3 policy/quality Mind services)
 
 ---
 

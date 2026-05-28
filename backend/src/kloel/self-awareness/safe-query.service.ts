@@ -98,7 +98,7 @@ export class SafeQueryService {
         return {
           ok: true,
           rows: rows.slice(0, MAX_ROWS),
-          error: `truncated_to_${MAX_ROWS}` as unknown as string,
+          error: `truncated_to_${MAX_ROWS}` as string,
         };
       }
       return { ok: true, rows };

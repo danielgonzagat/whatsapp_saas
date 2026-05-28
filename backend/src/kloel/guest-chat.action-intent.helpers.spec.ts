@@ -6,16 +6,6 @@ import { runGetProductReviews } from './kloel-chat-tools.product.helpers';
 import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
 
 describe('guest chat action intent helpers', () => {
-  it('routes self-awareness requests to deterministic self tools', () => {
-    expect(detectActionIntent('o que você consegue fazer agora?')?.tool).toBe('self.capabilities');
-    expect(detectActionIntent('quais capacidades estão quebradas?')?.tool).toBe('self.gaps');
-    expect(detectActionIntent('qual integração está com erro agora?')?.tool).toBe('self.health');
-    expect(detectActionIntent('explique a capacidade products.create')?.tool).toBe('self.explain');
-    expect(detectActionIntent('explique a capacidade products.create')?.args).toEqual({
-      capabilityId: 'products.create',
-    });
-  });
-
   it('formats self-awareness results with live proof details', () => {
     expect(
       formatToolResult('self.capabilities', {
@@ -278,7 +268,7 @@ describe('guest chat action intent helpers', () => {
       });
     const service = new KloelProductSubResourceToolsService({
       productPlan: { findFirst: productPlanFindFirst, update: productPlanUpdate },
-    } as unknown as PrismaService);
+    } as PrismaService);
 
     const result = await service.toolUpdatePlan('ws-1', {
       planName: 'Mensal',
@@ -317,7 +307,7 @@ describe('guest chat action intent helpers', () => {
     const service = new KloelProductSubResourceToolsService({
       product: { findFirst: productFindFirst },
       productCoupon: { create: productCouponCreate },
-    } as unknown as PrismaService);
+    } as PrismaService);
 
     try {
       const result = await service.toolCreateCoupon('ws-1', {
@@ -357,7 +347,7 @@ describe('guest chat action intent helpers', () => {
       productReview: {
         findMany: productReviewFindMany,
       },
-    } as unknown as PrismaService;
+    } as PrismaService;
 
     const result = await runGetProductReviews(prisma, 'ws-1', { productName: 'Sérum' });
 

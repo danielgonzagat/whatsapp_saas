@@ -421,7 +421,11 @@ export class MindCapabilityExecutor {
       ...(glob !== undefined ? { glob } : {}),
       ...(max !== undefined ? { max } : {}),
     });
-    return { ok: true, data: hits as unknown as UnknownRecord[] };
+    const data: UnknownRecord[] = hits.map((hit) => ({ ...hit }));
+    return {
+      ok: true,
+      data,
+    };
   }
 
   /** Read a specific source file */

@@ -254,7 +254,7 @@ export class PulseRuntimeService {
       const md = await fs.readFile(mdPath, 'utf-8');
       const parsed = this.parseSessionStateErrors(md);
       if (parsed.length > 0) {
-        this.cache.set('runtime_errors_md', { data: { errors: parsed }, ts: Date.now() });
+        this.cache.set('cia:global-runtime-errors:md', { data: { errors: parsed }, ts: Date.now() });
         return this.top10(parsed);
       }
     } catch {

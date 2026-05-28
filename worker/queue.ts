@@ -20,25 +20,35 @@
  * After P2-4 every queue and connection is created on first access
  * via a Proxy. Importing this module opens ZERO Redis connections.
  * The first call to `flowQueue.add(...)` (or any other forwarded
- * method) triggers lazy creation of the shared connection + the
- * named queue + its DLQ + its QueueEvents.
+ * method) triggers lazy creation of the named queue, its DLQ, and
+ * its QueueEvents. BullMQ receives plain connection options so its
+ * own ioredis dependency owns queue sockets even when npm installs a
+ * nested BullMQ dependency tree; the exported `connection` proxy
+ * remains for direct Redis commands.
  *
  * A `shutdownQueueSystem()` export closes everything that was
  * actually created, in reverse order. The worker's `processor.ts`
  * SIGTERM/SIGINT handlers invoke it before exiting so live BullMQ
  * jobs get a chance to finish or fail cleanly.
  *
- * **Connection budget per worker process** (after first lazy init):
- *   - 1 shared queue connection (used by all 9 BullMQ queues + DLQs)
- *   - 9 QueueEvents (each requires its own blocking Redis connection)
+ * **Connection budget per worker process** (after full warm up):
+ *   - BullMQ queue sockets created from plain connection options
+ *   - 1 shared direct Redis command connection for `connection` proxy users
+ *   - QueueEvents sockets (each requires its own blocking Redis connection)
  *   - 3 redis-client.ts clients (redis, redisSub, redisPub)
- *   Total: ~13 Redis sockets when fully warmed up.
  *
  * The regression test at worker/test/queue-lazy-init.spec.ts proves
  * that importing this module opens zero connections.
  */
 
-import { Queue as BullQueue, type Job, QueueEvents, Worker } from 'bullmq';
+import {
+  Queue as BullQueue,
+  type ConnectionOptions,
+  type Job,
+  type QueueOptions,
+  QueueEvents,
+  Worker,
+} from 'bullmq';
 import Redis, { type RedisOptions } from 'ioredis';
 import {
   collectRedisDuplicateOverrides,
@@ -61,7 +71,7 @@ const redisOpts = {
 };
 
 let _connection: Redis | null = null;
-type BullMqRedisOptions = RedisOptions & { url: string };
+type BullMqRedisOptions = ConnectionOptions & { url: string };
 
 const resolveRequiredRedisUrl = (context: string): string => {
   const resolved = resolveRedisUrl();
@@ -106,7 +116,7 @@ const createRedisConnection = (
   return client;
 };
 
-const buildBullMqConnectionOptions = (context: string): BullMqRedisOptions => ({
+export const buildBullMqConnectionOptions = (context: string): BullMqRedisOptions => ({
   url: resolveRequiredRedisUrl(context),
   ...redisOpts,
 });
@@ -142,9 +152,9 @@ export const connection = new Proxy({} as Redis, {
 const defaultAttempts = resolveQueueAttempts(process.env.QUEUE_ATTEMPTS);
 const defaultBackoff = resolveQueueBackoffMs(process.env.QUEUE_BACKOFF_MS);
 
-export function buildQueueOptions() {
+export function buildQueueOptions(): QueueOptions {
   return {
-    connection: getConnection(),
+    connection: buildBullMqConnectionOptions('BullMQ queue'),
     defaultJobOptions: {
       attempts: defaultAttempts,
       backoff: { type: 'exponential', delay: defaultBackoff },

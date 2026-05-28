@@ -33,6 +33,10 @@ function OnboardingChatContent() {
     goToDashboard,
   } = useOnboardingChat();
 
+  const goToLogin = () => {
+    router.push('/login');
+  };
+
   // Show loading while checking auth status
   if (authLoading) {
     return <OnboardingLoading />;
@@ -84,9 +88,7 @@ function OnboardingChatContent() {
 export default function ConversationalOnboardingPage() {
   return (
     <Suspense fallback={<OnboardingLoading />}>
-      <ErrorBoundary>
-        <OnboardingChatContent />
-      </ErrorBoundary>
+      <OnboardingChatContent />
     </Suspense>
   );
 }

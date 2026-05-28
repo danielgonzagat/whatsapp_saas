@@ -21,7 +21,7 @@ import { CANONICAL_FALLBACK_SYSTEM_PROMPT } from './kloel.prompts';
 import { LLM_MAX_COMPLETION_TOKENS } from './openai-wrapper';
 import { OPERATOR_CAPABILITIES } from './mind/coordination/mind-capabilities.const';
 import { AbiBuilderService } from './abi/abi-builder.service';
-import { MindCapabilityExecutor } from './mind/coordination';
+import { BrainCapabilityExecutorService } from './brain-capability-executor.service';
 import { validateAbiPayload } from './abi/abi-validator';
 import { computeHandoffConfidence, HANDOFF_THRESHOLD } from './handoff-confidence.helper';
 import { ChatCompletionMessageParam } from 'openai/resources/chat';
@@ -51,6 +51,7 @@ import {
   runToolPlanningBranch,
   type ThinkBranchContext,
 } from './kloel-thinker-think.helpers';
+import { detectActionIntent, formatToolResult } from './guest-chat.action-intent.helpers';
 
 export type { LocalToolExecutor } from './kloel-reply-engine.service';
 
@@ -78,7 +79,7 @@ export class KloelThinkerService {
     private readonly replyEngine: KloelReplyEngineService,
     @Inject(KLOEL_LLM_E2E_GUARD) private readonly llmE2EGuard: KloelLLME2EGuard,
     @Optional() private readonly abiBuilder?: AbiBuilderService,
-    @Optional() private readonly capabilityExecutor?: MindCapabilityExecutor,
+    @Optional() private readonly capabilityExecutor?: BrainCapabilityExecutorService,
   ) {
     this.conversationStore = new KloelConversationStore(prisma, this.logger);
   }
@@ -120,8 +121,10 @@ export class KloelThinkerService {
     streamWriter.init();
 
     try {
-      if (isAborted()) {
-        if (!isClientDisconnected()) {
+      if (mode === 'chat' && workspaceId) {
+        const deterministicAction = detectActionIntent(message);
+        if (deterministicAction) {
+          const callId = `detected_${deterministicAction.tool}`;
           safeWrite(
             createKloelErrorEvent({
               content: this.replyEngine.buildStreamAbortMessage(abortReason(), opts?.timeoutMs),
@@ -171,6 +174,20 @@ export class KloelThinkerService {
             done: true,
           }),
         );
+        streamWriter.close();
+        return;
+      }
+      if (isAborted()) {
+        if (!isClientDisconnected()) {
+          safeWrite(
+            createKloelErrorEvent({
+              content: this.replyEngine.buildStreamAbortMessage(abortReason(), opts?.timeoutMs),
+              error:
+                typeof abortReason() === 'string' ? abortReason() : 'request_aborted_before_start',
+              done: true,
+            }),
+          );
+        }
         streamWriter.close();
         return;
       }
@@ -297,6 +314,7 @@ export class KloelThinkerService {
                 `ABI validation failed: ${JSON.stringify(validation.issues)}, falling back to legacy thinker prompt`,
               );
             } else {
+              prebuiltCognitiveState = { ...abiResult.abi };
               // BOUNDED ABI: cap arrays + hard size limit so a long
               // user prompt is NEVER inflated/crashed by the state
               // payload. The ABI goes to SYSTEM (structured state, B2 —

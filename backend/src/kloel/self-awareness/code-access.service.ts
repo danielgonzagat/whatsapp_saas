@@ -82,6 +82,9 @@ export class CodeAccessService {
     startLine?: number,
     endLine?: number,
   ): { ok: boolean; content?: string; error?: string; totalLines?: number } {
+    if (path.isAbsolute(filePath)) {
+      return { ok: false, error: 'path_outside_repo' };
+    }
     const target = path.resolve(this.root, filePath);
     if (!target.startsWith(this.root)) {
       return { ok: false, error: 'path_outside_repo' };

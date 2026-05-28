@@ -21,7 +21,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { GdprStatus, GdprType } from '@prisma/client';
 import { Queue, Worker, type Job } from 'bullmq';
-import { createRedisClient } from '../common/redis/redis.util';
+import { createBullMqConnectionOptions } from '../common/redis/redis.util';
 import { attachDlq } from '../queue/queue';
 import { StorageService } from '../common/storage/storage.service';
 import { EmailService } from '../auth/email.service';
@@ -80,7 +80,7 @@ export class GdprService implements OnModuleInit, OnModuleDestroy {
 
   onModuleInit(): void {
     try {
-      const connection = createRedisClient({ maxRetriesPerRequest: null });
+      const connection = createBullMqConnectionOptions();
       this.queue = new Queue<GdprJobData>(GDPR_QUEUE, {
         connection,
         defaultJobOptions: {

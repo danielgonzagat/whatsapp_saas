@@ -24,7 +24,9 @@ export class IntentRouterService {
   // Pattern-based matchers for high-confidence intents — pure data, see helpers.
   private readonly PATTERNS: IntentPattern[] = INTENT_PATTERNS;
 
-  constructor(private readonly registry: CapabilityRegistryV2Service) {}
+  constructor(
+    private readonly registry: CapabilityRegistryV2Service,
+  ) {}
 
   /**
    * Classify a user message into an intent.
@@ -51,9 +53,7 @@ export class IntentRouterService {
       const match = normalized.match(pattern.regex);
       if (match) {
         const cap = this.registry.get(pattern.capabilityId);
-        if (!cap) {
-          continue;
-        }
+        if (!cap) continue;
 
         const entities = pattern.extract(match);
         const missingInputs = cap.inputSchema

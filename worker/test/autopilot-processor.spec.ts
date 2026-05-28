@@ -6,11 +6,11 @@ class MockWorkerLogger {
   public info = vi.fn();
   public warn = vi.fn();
   public error = vi.fn();
-  constructor(_context: string) {
+  constructor() {
     // no-op
   }
 
-  withContext(_correlationId: string, _workspaceId?: string) {
+  withContext() {
     return {
       info: vi.fn(),
       warn: vi.fn(),
@@ -122,18 +122,18 @@ let handler: ((job: Record<string, unknown>) => Promise<unknown>) | undefined;
 
 beforeAll(async () => {
   const bullmq = await import('bullmq');
-  WorkerMock = bullmq.Worker as unknown as ReturnType<typeof vi.fn>;
+  WorkerMock = bullmq.Worker as ReturnType<typeof vi.fn>;
 
   const pb = await import('../processor-base');
-  checkIdempotentMock = pb.checkIdempotent as unknown as ReturnType<typeof vi.fn>;
-  startJobMock = pb.startJob as unknown as ReturnType<typeof vi.fn>;
-  markCompletedMock = pb.markCompleted as unknown as ReturnType<typeof vi.fn>;
+  checkIdempotentMock = pb.checkIdempotent as ReturnType<typeof vi.fn>;
+  startJobMock = pb.startJob as ReturnType<typeof vi.fn>;
+  markCompletedMock = pb.markCompleted as ReturnType<typeof vi.fn>;
 
   const eh = await import('../src/utils/error-handler');
-  isRetryableErrorMock = eh.isRetryableError as unknown as ReturnType<typeof vi.fn>;
+  isRetryableErrorMock = eh.isRetryableError as ReturnType<typeof vi.fn>;
 
   const m = await import('../metrics');
-  decisionCounterMock = m.autopilotDecisionCounter as unknown as { inc: ReturnType<typeof vi.fn> };
+  decisionCounterMock = m.autopilotDecisionCounter as { inc: ReturnType<typeof vi.fn> };
 
   const mod = await import('../processors/autopilot-processor');
   expect(mod.autopilotWorker).toBeDefined();

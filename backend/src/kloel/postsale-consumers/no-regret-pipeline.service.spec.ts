@@ -49,7 +49,7 @@ describe('NoRegretPipelineService', () => {
     service = new NoRegretPipelineService(
       mockAntiRemorse,
       mockActivation,
-      mockFirstValue as unknown as FirstValueDetector,
+      mockFirstValue as FirstValueDetector,
       undefined,
     );
   });

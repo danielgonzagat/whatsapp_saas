@@ -28,8 +28,8 @@ describe('MemberModulesController', () => {
     });
     auditService = { log: jest.fn() };
     controller = new MemberModulesController(
-      prisma as unknown as PrismaService,
-      auditService as unknown as AuditService,
+      prisma as PrismaService,
+      auditService as AuditService,
     );
   });
 

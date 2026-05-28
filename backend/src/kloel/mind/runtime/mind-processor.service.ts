@@ -1,7 +1,7 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { StructuredLogger } from '../../../logging/structured-logger';
 import { Queue, Worker } from 'bullmq';
-import { createRedisClient, isRedisConfigured } from '../../../common/redis/redis.util';
+import { createBullMqConnectionOptions, isRedisConfigured } from '../../../common/redis/redis.util';
 import { attachDlq } from '../../../queue/queue';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { MindReportService } from '../observability/mind-report.service';
@@ -62,8 +62,8 @@ export class MindProcessorService implements OnModuleInit, OnModuleDestroy {
       10,
     );
 
-    const schedulerConnection = createRedisClient({ maxRetriesPerRequest: null });
-    const tickConnection = createRedisClient({ maxRetriesPerRequest: null });
+    const schedulerConnection = createBullMqConnectionOptions();
+    const tickConnection = createBullMqConnectionOptions();
 
     this.schedulerQueue = new Queue(MIND_SCHEDULER_QUEUE, {
       connection: schedulerConnection,
@@ -96,7 +96,7 @@ export class MindProcessorService implements OnModuleInit, OnModuleDestroy {
       MIND_SCHEDULER_QUEUE,
       async () => this.enqueueActiveWorkspaces(),
       {
-        connection: createRedisClient({ maxRetriesPerRequest: null }),
+        connection: createBullMqConnectionOptions(),
         concurrency: 1,
         autorun: true,
       },
@@ -115,7 +115,7 @@ export class MindProcessorService implements OnModuleInit, OnModuleDestroy {
         return tick;
       },
       {
-        connection: createRedisClient({ maxRetriesPerRequest: null }),
+        connection: createBullMqConnectionOptions(),
         concurrency,
         autorun: true,
       },

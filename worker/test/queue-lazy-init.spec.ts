@@ -14,8 +14,9 @@
  * property access via Proxies. This test enforces that contract.
  *
  * Implementation: we mock ioredis at the vitest level and assert the
- * mock constructor is NOT called during the import. Then we touch one
- * queue's property and assert the constructor IS called.
+ * mock constructor is NOT called during import or BullMQ queue option
+ * construction. The direct Redis command proxy still opens its shared
+ * connection lazily when first used.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -128,18 +129,28 @@ describe('worker/queue.ts — lazy initialization (P2-4)', () => {
     expect(mockQueueEventsCtor).not.toHaveBeenCalled();
   });
 
-  it('opens the shared Redis connection on first queue access', async () => {
+  it('constructs BullMQ queues on first queue access without direct Redis side effects', async () => {
     const queueModule = await import('../queue');
 
     expect(mockRedisCtor).not.toHaveBeenCalled();
 
-    // Touch one queue — this should trigger lazy creation
+    // Touch one queue: this should create BullMQ wrappers, but direct
+    // ioredis construction is left to BullMQ internals at runtime.
     void queueModule.flowQueue.name;
 
-    // The shared connection + the BullQueue + the DLQ + the QueueEvents
-    // should all be created on first access.
-    expect(mockRedisCtor).toHaveBeenCalled();
+    expect(mockRedisCtor).not.toHaveBeenCalled();
     expect(mockBullQueueCtor).toHaveBeenCalled();
+    expect(mockQueueEventsCtor).toHaveBeenCalled();
+  });
+
+  it('opens the shared direct Redis connection when the connection proxy is used', async () => {
+    const queueModule = await import('../queue');
+
+    expect(mockRedisCtor).not.toHaveBeenCalled();
+
+    void queueModule.connection.quit;
+
+    expect(mockRedisCtor).toHaveBeenCalledTimes(1);
   });
 
   it('does not re-create the queue on subsequent accesses', async () => {

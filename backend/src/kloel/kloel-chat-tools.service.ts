@@ -273,10 +273,7 @@ export class KloelChatToolsService {
   toolGetProductUrls(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     return runGetProductUrls(this.prisma, workspaceId, args);
   }
-  toolGetProductReviews(
-    workspaceId: string,
-    args: { productId?: string; productName?: string },
-  ): Promise<ToolResult> {
+  toolGetProductReviews(workspaceId: string, args: { productId?: string; productName?: string }): Promise<ToolResult> {
     return runGetProductReviews(this.prisma, workspaceId, args);
   }
   toolGetProductAiConfig(workspaceId: string, args: { productId: string }): Promise<ToolResult> {
@@ -331,7 +328,7 @@ export class KloelChatToolsService {
     return Promise.resolve(buildBlockedConfigurationTool(toolName, error, requiredPath));
   }
 
-  toolConfigurePixel(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+  async toolConfigurePixel(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     void workspaceId;
     void args;
     return this.blockedConfigurationTool(
@@ -341,7 +338,7 @@ export class KloelChatToolsService {
     );
   }
 
-  toolConfigureShipping(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+  async toolConfigureShipping(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     void workspaceId;
     void args;
     return this.blockedConfigurationTool(
@@ -351,10 +348,7 @@ export class KloelChatToolsService {
     );
   }
 
-  toolConfigureSocialProof(
-    workspaceId: string,
-    args: Record<string, unknown>,
-  ): Promise<ToolResult> {
+  async toolConfigureSocialProof(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     void workspaceId;
     void args;
     return this.blockedConfigurationTool(
@@ -364,7 +358,7 @@ export class KloelChatToolsService {
     );
   }
 
-  toolConfigureOrderBump(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+  async toolConfigureOrderBump(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     void workspaceId;
     void args;
     return this.blockedConfigurationTool(
@@ -392,7 +386,7 @@ export class KloelChatToolsService {
     );
   }
 
-  toolConfigureExitIntent(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+  async toolConfigureExitIntent(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     void workspaceId;
     void args;
     return this.blockedConfigurationTool(
@@ -402,7 +396,7 @@ export class KloelChatToolsService {
     );
   }
 
-  toolConfigureAfterPay(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+  async toolConfigureAfterPay(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     void workspaceId;
     void args;
     return this.blockedConfigurationTool(

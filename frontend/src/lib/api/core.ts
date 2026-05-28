@@ -184,32 +184,6 @@ const API_ORIGIN = API_URL ? new URL(API_URL).origin : '';
 // Mutex to prevent concurrent refresh attempts (race condition on polling pages)
 let refreshPromise: Promise<boolean> | null = null;
 
-// Cross-tab auth coordination: winning tab announces successful
-// refreshes via BroadcastChannel so losing tabs can re-read cookies.
-const AUTH_CHANNEL =
-  typeof BroadcastChannel !== 'undefined'
-    ? new BroadcastChannel('kloel-auth')
-    : null;
-
-function announceAuthRefresh(): void {
-  if (AUTH_CHANNEL) {
-    try {
-      AUTH_CHANNEL.postMessage({ type: 'tokens-refreshed' });
-    } catch {
-      /* postMessage may throw in sandboxed environments */
-    }
-  }
-}
-
-if (AUTH_CHANNEL) {
-  AUTH_CHANNEL.addEventListener('message', (event: MessageEvent) => {
-    if (event.data?.type === 'tokens-refreshed') {
-      // Proactive reconciliation — snapshot-compare-clear in
-      // doRefreshAccessToken also handles this defensively.
-    }
-  });
-}
-
 async function refreshAccessToken(): Promise<boolean> {
   // If a refresh is already in-flight, wait for its result instead of starting a new one
   if (refreshPromise) {
@@ -290,20 +264,11 @@ async function doRefreshAccessToken(): Promise<boolean> {
       if (newRefresh) {
         tokenStorage.setRefreshToken(newRefresh);
       }
-
-      // Announce success to other tabs via BroadcastChannel
-      announceAuthRefresh();
-
       return true;
     }
 
     return false;
   } catch {
-    // Snapshot-compare-clear on network error too
-    const currentRefresh = tokenStorage.getRefreshToken();
-    if (currentRefresh && currentRefresh !== refreshToken) {
-      return true;
-    }
     tokenStorage.clear();
     return false;
   }
@@ -417,11 +382,7 @@ export async function apiFetch<T = unknown>(
   };
 
   try {
-    let response = await performApiRequest<T>(url, baseInit);
-
-    if (response.status === 429) {
-      response = await retryAfterBackoff<T>(url, baseInit, response);
-    }
+    const response = await performApiRequest<T>(url, baseInit);
 
     if (response.status === 401 && tokenStorage.getRefreshToken()) {
       const retryResponse = await retryApiRequestWithRefreshedToken<T>(url, baseInit, headers);

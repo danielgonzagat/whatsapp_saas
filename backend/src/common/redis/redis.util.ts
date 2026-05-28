@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module';
 import { Logger } from '@nestjs/common';
-import Redis, { RedisOptions } from 'ioredis';
+import type { ConnectionOptions } from 'bullmq';
+import Redis, { type RedisOptions } from 'ioredis';
 import {
   RedisConfigurationError,
   resolveRedisUrl as canonicalResolveRedisUrl,
@@ -70,6 +71,32 @@ export function getRedisUrl(): string {
   }
 
   return url;
+}
+
+type BullMqConnectionOptionOverrides = {
+  maxRetriesPerRequest?: number | null;
+  enableReadyCheck?: boolean;
+  retryStrategy?: (times: number) => number | false | null | void;
+};
+
+export function createBullMqConnectionOptions(
+  options: BullMqConnectionOptionOverrides = {},
+): ConnectionOptions {
+  const url = getRedisUrl();
+
+  if (!url) {
+    throw new RedisConfigurationError('Redis não configurado. BullMQ não pode ser iniciado.');
+  }
+
+  return {
+    url,
+    maxRetriesPerRequest: null,
+    enableReadyCheck: true,
+    retryStrategy(times: number) {
+      return Math.min(times * 50, 2000);
+    },
+    ...options,
+  };
 }
 
 /**

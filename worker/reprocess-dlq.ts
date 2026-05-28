@@ -1,5 +1,5 @@
 import { type Job, Queue } from 'bullmq';
-import { connection } from './queue';
+import { buildBullMqConnectionOptions } from './queue';
 import { forEachSequential } from './utils/async-sequence';
 
 /**
@@ -13,8 +13,12 @@ async function main() {
   const backoffDelay = Math.max(1000, Number(process.env.DLQ_REPROCESS_BACKOFF_MS || 5000) || 5000);
 
   const dlqName = `${targetQueueName}-dlq`;
-  const dlq = new Queue(dlqName, { connection });
-  const target = new Queue(targetQueueName, { connection });
+  const dlq = new Queue(dlqName, {
+    connection: buildBullMqConnectionOptions(`DLQ reprocess:${dlqName}`),
+  });
+  const target = new Queue(targetQueueName, {
+    connection: buildBullMqConnectionOptions(`DLQ reprocess:${targetQueueName}`),
+  });
 
   const jobs: Job[] = await dlq.getJobs(['waiting', 'delayed', 'failed'], 0, limit - 1);
   console.log(`Found ${jobs.length} jobs in ${dlqName}. Requeueing to ${targetQueueName}...`);

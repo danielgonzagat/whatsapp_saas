@@ -91,7 +91,7 @@ describe('ProductAffiliateController', () => {
       affiliateRequest: ['findFirst', 'update', 'updateMany'],
       affiliateLink: ['findFirst', 'create', 'update', 'updateMany'],
     });
-    controller = new ProductAffiliateController(prisma as unknown as PrismaService);
+    controller = new ProductAffiliateController(prisma as PrismaService);
   });
 
   describe('getSummary', () => {

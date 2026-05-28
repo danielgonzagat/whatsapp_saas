@@ -19,7 +19,7 @@ describe('ProductCouponController', () => {
   const deleteProductCoupon = jest.fn();
 
   const prisma = {} as never;
-  const productCouponDomain = { deleteProductCoupon } as unknown as ProductCouponDomainService;
+  const productCouponDomain = { deleteProductCoupon } as ProductCouponDomainService;
   const req = { user: { sub: 'user-1', workspaceId: 'workspace-1' }, headers: {} } as never;
 
   let controller: ProductCouponController;

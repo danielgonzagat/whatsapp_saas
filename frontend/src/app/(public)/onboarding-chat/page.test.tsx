@@ -88,21 +88,16 @@ describe('ConversationalOnboardingPage', () => {
     vi.restoreAllMocks();
   });
 
-  it('renders OnboardingChatHero when user is unauthenticated', async () => {
+  it('redirects unauthenticated users to login while rendering the chat shell', async () => {
     render(<ConversationalOnboardingPage />);
 
-    // Wait for Suspense to resolve and auth to be checked
     await waitFor(() => {
-      expect(screen.getByText('Sua conta Kloel em uma conversa')).toBeInTheDocument();
+      expect(mockRouterPush).toHaveBeenCalledWith('/login?callbackUrl=%2Fonboarding-chat');
     });
 
-    // CTA link should be present
-    expect(screen.getByText('Entrar para começar')).toBeInTheDocument();
-
-    // Selling points should be visible
-    expect(screen.getByText('IA que conversa de verdade')).toBeInTheDocument();
-    expect(screen.getByText('Pronto em minutos')).toBeInTheDocument();
-    expect(screen.getByText('Venda pelo WhatsApp')).toBeInTheDocument();
+    expect(screen.getByText('Configuração Inteligente')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Entrar/i })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Digite sua mensagem...')).toBeInTheDocument();
   });
 
   it('triggers chat start flow when authenticated with workspace', async () => {

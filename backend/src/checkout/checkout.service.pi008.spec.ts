@@ -66,7 +66,7 @@ describe('CheckoutService — PI-008 checkout page configuration', () => {
       {} as never,
       eventEmitter as never,
     );
-    const internal = service as unknown as CheckoutServiceInternals;
+    const internal = service as CheckoutServiceInternals;
     jest.spyOn(internal.logger, 'log').mockImplementation(() => undefined);
     internal.publicPayloadBuilder.build = jest.fn().mockResolvedValue({ id: 'payload' });
   });

@@ -1,15 +1,23 @@
 'use client';
 
 import useCommandPalette from '@/hooks/useCommandPalette';
-import { useKycCompletion, useKycStatus } from '@/hooks/useKyc';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { KLOEL_CHAT_ROUTE } from '@/lib/kloel-dashboard-context';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { type ReactNode, startTransition, useCallback, useEffect, useRef, useState } from 'react';
+import {
+  type CSSProperties,
+  type ReactNode,
+  startTransition,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { CommandPalette } from './CommandPalette';
 import { ErrorBoundary } from './ErrorBoundary';
 import { KloelSidebar } from './sidebar/KloelSidebar';
+import { SIDEBAR_WIDTH_COLLAPSED, SIDEBAR_WIDTH_EXPANDED } from './sidebar/sidebar-config';
 import { useSidebarState } from './sidebar/useSidebarState';
 import {
   VIEW_ROUTES,
@@ -19,7 +27,7 @@ import {
   resolveActiveView,
   resolveActiveSubView,
 } from './AppShell.routes';
-import { MobileTopBar, KycBanner } from './AppShell.banners';
+import { MobileTopBar } from './AppShell.banners';
 
 interface AppShellProps {
   children: ReactNode;
@@ -34,8 +42,22 @@ export function AppShell({ children }: AppShellProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [paletteMode, setPaletteMode] = useState<'full' | 'conversations'>('full');
   const newChatTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { isDesktop, isMobile } = useResponsiveViewport();
-  const mobileHeaderOffset = isMobile ? 68 : 0;
+  const { isDesktop } = useResponsiveViewport();
+  const appRailWidth = isDesktop
+    ? sidebarExpanded
+      ? SIDEBAR_WIDTH_EXPANDED
+      : SIDEBAR_WIDTH_COLLAPSED
+    : 0;
+  const shellStyle: CSSProperties & { '--kloel-main-rail-width': string } = {
+    '--kloel-main-rail-width': `${appRailWidth}px`,
+    display: 'flex',
+    minHeight: '100vh',
+    height: '100dvh',
+    background: KLOEL_THEME.bgPrimary,
+    fontFamily: "'Sora', sans-serif",
+    color: KLOEL_THEME.textPrimary,
+    overflow: 'visible',
+  };
 
   useEffect(
     () => () => {
@@ -51,9 +73,6 @@ export function AppShell({ children }: AppShellProps) {
       queueMicrotask(() => setMobileMenuOpen(false));
     }
   }, [isDesktop]);
-
-  const { status: kycData, isLoading: kycLoading, error: kycError } = useKycStatus();
-  const { completion } = useKycCompletion();
 
   const activeView = resolveActiveView(pathname);
   const activeSubView = resolveActiveSubView(pathname, searchParams);
@@ -80,19 +99,6 @@ export function AppShell({ children }: AppShellProps) {
       } catch {}
     }
   }, [router]);
-
-  const isExemptPage =
-    pathname.startsWith('/settings') ||
-    pathname.startsWith('/account') ||
-    pathname.startsWith('/canvas');
-  const kycComplete = (completion?.percentage ?? 0) >= 100;
-  const showKycBanner =
-    !kycLoading &&
-    !kycError &&
-    kycData &&
-    kycData.kycStatus !== 'approved' &&
-    !kycComplete &&
-    !isExemptPage;
 
   const handleNavigate = useCallback(
     (view: string, subView?: string) => {
@@ -135,17 +141,7 @@ export function AppShell({ children }: AppShellProps) {
   }, [openPalette]);
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        minHeight: '100vh',
-        height: '100dvh',
-        background: KLOEL_THEME.bgPrimary,
-        fontFamily: "'Sora', sans-serif",
-        color: KLOEL_THEME.textPrimary,
-        overflow: 'visible',
-      }}
-    >
+    <div style={shellStyle}>
       <CommandPalette {...paletteProps} onSelect={executeCommand} mode={paletteMode} />
 
       <div className="hidden lg:block" style={{ display: isDesktop ? 'block' : 'none' }}>
@@ -206,19 +202,6 @@ export function AppShell({ children }: AppShellProps) {
             onSearch={handleSearch}
           />
         )}
-        {showKycBanner && (
-          <KycBanner
-            mobileHeaderOffset={mobileHeaderOffset}
-            isMobile={isMobile}
-            percentage={completion?.percentage ?? 0}
-            onComplete={() =>
-              startTransition(() => {
-                router.push('/settings');
-              })
-            }
-          />
-        )}
-
         <ErrorBoundary>{children}</ErrorBoundary>
       </div>
     </div>

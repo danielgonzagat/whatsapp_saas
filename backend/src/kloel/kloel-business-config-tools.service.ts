@@ -146,7 +146,7 @@ export class KloelBusinessConfigToolsService {
       await this.prisma.workspace.update({ where: { id: workspaceId }, data: updateData });
     }
     return { success: true, message: 'Informações do negócio salvas com sucesso.' };
-  }
+}
 
   async toolSetBusinessHours(
     workspaceId: string,
@@ -247,12 +247,10 @@ export class KloelBusinessConfigToolsService {
     }
   }
 
+
   // ── Novos tools ──
 
-  async toolUploadDocument(
-    workspaceId: string,
-    args: Record<string, unknown>,
-  ): Promise<ToolResult> {
+  async toolUploadDocument(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     const docType = typeof args.docType === 'string' ? args.docType : 'document';
     const label = documentTypeLabel(docType);
     try {
@@ -272,22 +270,14 @@ export class KloelBusinessConfigToolsService {
           data: { providerSettings: { ...settings, documents } as Prisma.InputJsonValue },
         });
       });
-      return {
-        success: true,
-        message: `${label} registrado. Envie o arquivo no chat para vinculá-lo à sua conta.`,
-      };
+      return { success: true, message: `${label} registrado. Envie o arquivo no chat para vinculá-lo à sua conta.` };
     } catch (e: unknown) {
-      return {
-        success: false,
-        error: e instanceof Error ? e.message : 'Erro ao registrar documento.',
-      };
+      return { success: false, error: e instanceof Error ? e.message : 'Erro ao registrar documento.' };
     }
   }
 
-  async toolUpdateAffiliateConfig(
-    workspaceId: string,
-    args: Record<string, unknown>,
-  ): Promise<ToolResult> {
+
+  async toolUpdateAffiliateConfig(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     try {
       const productName = typeof args.productName === 'string' ? args.productName : '';
       let productId = '';
@@ -312,14 +302,9 @@ export class KloelBusinessConfigToolsService {
         if (productId && args.commissionPercent !== undefined) {
           const existing = await tx.productCommission.findFirst({ where: { productId } });
           if (existing) {
-            await tx.productCommission.update({
-              where: { id: existing.id },
-              data: { percentage: Number(args.commissionPercent) },
-            });
+            await tx.productCommission.update({ where: { id: existing.id }, data: { percentage: Number(args.commissionPercent) } });
           } else {
-            await tx.productCommission.create({
-              data: { productId, percentage: Number(args.commissionPercent), role: 'AFFILIATE' },
-            });
+            await tx.productCommission.create({ data: { productId, percentage: Number(args.commissionPercent), role: 'AFFILIATE' } });
           }
         }
       });
@@ -328,10 +313,7 @@ export class KloelBusinessConfigToolsService {
         message: buildAffiliateConfigMessage(args),
       };
     } catch (e: unknown) {
-      return {
-        success: false,
-        error: e instanceof Error ? e.message : 'Erro ao atualizar afiliados.',
-      };
+      return { success: false, error: e instanceof Error ? e.message : 'Erro ao atualizar afiliados.' };
     }
   }
 
@@ -343,14 +325,11 @@ export class KloelBusinessConfigToolsService {
         take: 50,
       });
       if (commissions.length === 0) {
-        return {
-          success: true,
-          message: 'Nenhum afiliado cadastrado. Acesse Produto > Afiliados para configurar.',
-        };
+        return { success: true, message: 'Nenhum afiliado cadastrado. Acesse Produto > Afiliados para configurar.' };
       }
       return {
         success: true,
-        affiliates: commissions.map((c) => ({
+        affiliates: commissions.map(c => ({
           productName: c.product.name,
           role: c.role,
           percentage: c.percentage,
@@ -410,10 +389,7 @@ export class KloelBusinessConfigToolsService {
           data: { providerSettings: { ...settings, channels } as Prisma.InputJsonValue },
         });
       });
-      return {
-        success: true,
-        message: `Conexão com ${channel} iniciada. Complete a autorização em Configurações > Canais > ${channel}.`,
-      };
+      return { success: true, message: `Conexão com ${channel} iniciada. Complete a autorização em Configurações > Canais > ${channel}.` };
     } catch (e: unknown) {
       return { success: false, error: e instanceof Error ? e.message : 'Erro ao conectar canal.' };
     }

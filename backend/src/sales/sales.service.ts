@@ -165,7 +165,7 @@ export class SalesService {
 
           // 4. Update sale with external payment id
           await tx.kloelSale.update({
-            where: { id: sale.id },
+            where: { id: sale.id, workspaceId },
             data: {
               externalPaymentId: pixResult.externalId,
               paymentLink: pixResult.ticketUrl || null,

@@ -60,11 +60,11 @@ describe('MemberAreasController', () => {
 
     const opsAlert = {
       alertOnCriticalError: jest.fn().mockResolvedValue(undefined),
-    } as unknown as OpsAlertService;
+    } as OpsAlertService;
 
     controller = new MemberAreasController(
-      prisma as unknown as PrismaService,
-      audit as unknown as AuditService,
+      prisma as PrismaService,
+      audit as AuditService,
       opsAlert,
     );
 

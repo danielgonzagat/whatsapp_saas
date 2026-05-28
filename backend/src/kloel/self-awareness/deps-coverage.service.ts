@@ -5,28 +5,12 @@ import * as path from 'path';
 const WORKSPACES = ['root', 'backend', 'frontend', 'frontend-admin', 'worker', 'e2e'] as const;
 type Workspace = (typeof WORKSPACES)[number];
 
-function isWorkspace(s: string): s is Workspace {
-  return (WORKSPACES as readonly string[]).includes(s);
-}
+function isWorkspace(s: string): s is Workspace { return (WORKSPACES as readonly string[]).includes(s); }
 
-interface SbomComponent {
-  type: string;
-  name: string;
-  group?: string;
-  version?: string;
-  purl?: string;
-}
+interface SbomComponent { type: string; name: string; group?: string; version?: string; purl?: string; }
+interface SbomFile { components: SbomComponent[]; }
 
-interface SbomFile {
-  components: SbomComponent[];
-}
-
-interface CoverageTotal {
-  lines: { total: number; covered: number; pct: number };
-  branches: { total: number; covered: number; pct: number };
-  functions: { total: number; covered: number; pct: number };
-  statements: { total: number; covered: number; pct: number };
-}
+interface CoverageTotal { lines: { total: number; covered: number; pct: number }; branches: { total: number; covered: number; pct: number }; functions: { total: number; covered: number; pct: number }; statements: { total: number; covered: number; pct: number }; }
 
 interface CoverageSummary {
   total: CoverageTotal;

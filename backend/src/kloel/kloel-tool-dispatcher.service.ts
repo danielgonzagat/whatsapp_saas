@@ -7,6 +7,12 @@ import { KloelBusinessConfigToolsService } from './kloel-business-config-tools.s
 import { KloelChatToolsService } from './kloel-chat-tools.service';
 import { KloelComposerService } from './kloel-composer.service';
 import { runToolSearchWeb } from './kloel-tool-dispatcher.search-web.helpers';
+import {
+  handleCodeAndReportTool,
+  handleProductTool,
+  handleSelfAwarenessTool,
+  handleDottedAliasTool,
+} from './kloel-tool-dispatcher.meta.helpers';
 import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { KloelCodeToolsService } from './kloel-code-tools.service';
@@ -19,7 +25,6 @@ import { SalesService } from '../sales/sales.service';
 import { AccountService } from './account.service';
 import { SelfHealthService } from './self-awareness/self-health.service';
 import { SelfGapsService } from './self-awareness/self-gaps.service';
-import { DepsCoverageService } from './self-awareness/deps-coverage.service';
 import { CapabilityRegistryV2Service } from './capability-registry-v2/capability-registry-v2.service';
 import { ReportService } from './report.service';
 import {
@@ -106,7 +111,6 @@ export class KloelToolDispatcherService {
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() private readonly selfHealth?: SelfHealthService,
     @Optional() private readonly selfGaps?: SelfGapsService,
-    @Optional() private readonly depsCoverage?: DepsCoverageService,
     @Optional() private readonly capRegistryV2?: CapabilityRegistryV2Service,
   ) {}
 

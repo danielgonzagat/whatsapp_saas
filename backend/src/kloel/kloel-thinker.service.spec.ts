@@ -283,7 +283,7 @@ describe('KloelThinkerService', () => {
       expect(executeLocalTool).toHaveBeenCalledWith(wsId, 'list_products', {}, 'agent-1');
       expect(replyEngine.hasOpenAiKey).not.toHaveBeenCalled();
       expect(replyEngine.buildChatModelMessages).not.toHaveBeenCalled();
-      const streamWriter = (KloelStreamWriter as unknown as jest.Mock).mock.results.at(-1)
+      const streamWriter = (KloelStreamWriter as jest.Mock).mock.results.at(-1)
         ?.value as { write: jest.Mock<void, [unknown]> };
       expect(streamWriter.write).toHaveBeenCalledWith(
         expect.objectContaining({ type: 'tool_call', tool: 'list_products' }),
@@ -389,7 +389,7 @@ describe('KloelThinkerService', () => {
 
       expect(executeLocalTool).toHaveBeenCalledWith(wsId, 'list_products', {}, undefined);
       expect(replyEngine.buildChatModelMessages).not.toHaveBeenCalled();
-      const streamWriter = (KloelStreamWriter as unknown as jest.Mock).mock.results.at(-1)
+      const streamWriter = (KloelStreamWriter as jest.Mock).mock.results.at(-1)
         ?.value as { write: jest.Mock<void, [unknown]> };
       expect(streamWriter.write).toHaveBeenCalledWith(
         expect.objectContaining({

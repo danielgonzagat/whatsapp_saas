@@ -119,7 +119,7 @@ describe('entryMarketFromCandidate (pure function)', () => {
   it('strips scoring fields from candidate', () => {
     const candidate = ENTRY_MARKET_CANDIDATES[0]!;
     const market = entryMarketFromCandidate(candidate);
-    const marketRecord = market as unknown as Record<string, unknown>;
+    const marketRecord = market as Record<string, unknown>;
     expect(market.marketId).toBe(candidate.marketId);
     expect(market.label).toBe(candidate.label);
     expect(marketRecord.compositeScore).toBeUndefined();

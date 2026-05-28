@@ -452,10 +452,10 @@ export class WalletService {
       );
     } catch (err: unknown) {
       void this.opsAlert?.alertOnCriticalError(err, 'WalletService.requestAnticipation');
-      this.financialAlert.withdrawalFailed(err instanceof Error ? err : new Error(String(err)), {
-        workspaceId,
-        amount,
-      });
+      this.financialAlert.withdrawalFailed(
+        err instanceof Error ? err : new Error(String(err)),
+        { workspaceId, amount },
+      );
       throw err;
     }
 
@@ -631,4 +631,5 @@ export class WalletService {
     }
     return wallet;
   }
+
 }

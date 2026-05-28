@@ -393,7 +393,7 @@ describe('KloelToolDispatcherService', () => {
   describe('self-awareness meta capabilities', () => {
     describe('self.capabilities', () => {
       it('returns the live CapabilityRegistryV2 manifest instead of a hardcoded list', async () => {
-        (capRegistryV2Service as unknown as { list: jest.Mock }).list = jest.fn().mockReturnValue([
+        (capRegistryV2Service as { list: jest.Mock }).list = jest.fn().mockReturnValue([
           {
             id: 'self.capabilities',
             title: 'Listar capacidades',
@@ -437,7 +437,7 @@ describe('KloelToolDispatcherService', () => {
         const result = await service.executeTool(DEFAULT_WS_ID, 'self.capabilities', {});
 
         expect(result.success).toBe(true);
-        expect((capRegistryV2Service as unknown as { list: jest.Mock }).list).toHaveBeenCalledTimes(
+        expect((capRegistryV2Service as { list: jest.Mock }).list).toHaveBeenCalledTimes(
           1,
         );
         expect(result.capabilities).toEqual([

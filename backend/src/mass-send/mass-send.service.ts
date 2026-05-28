@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { Queue } from 'bullmq';
-import { createRedisClient } from '../common/redis/redis.util';
+import { createBullMqConnectionOptions } from '../common/redis/redis.util';
 import { NON_DIGIT_RE } from '../common/phone';
 
 /** Mass send service. */
@@ -12,7 +12,7 @@ export class MassSendService implements OnModuleDestroy {
   constructor() {
     this.logger.log('MassSendService initialized');
     this.queue = new Queue('mass-send', {
-      connection: createRedisClient(),
+      connection: createBullMqConnectionOptions(),
     });
   }
 

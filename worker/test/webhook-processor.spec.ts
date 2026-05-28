@@ -6,11 +6,11 @@ class MockWorkerLogger {
   public info = vi.fn();
   public warn = vi.fn();
   public error = vi.fn();
-  constructor(_context: string) {
+  constructor() {
     // no-op
   }
 
-  withContext(_correlationId: string, _workspaceId?: string) {
+  withContext() {
     return {
       info: vi.fn(),
       warn: vi.fn(),
@@ -65,20 +65,20 @@ let handler: ((job: Record<string, unknown>) => Promise<unknown>) | undefined;
 
 beforeAll(async () => {
   const bullmq = await import('bullmq');
-  WorkerMock = bullmq.Worker as unknown as ReturnType<typeof vi.fn>;
+  WorkerMock = bullmq.Worker as ReturnType<typeof vi.fn>;
 
   const pb = await import('../processor-base');
-  checkIdempotentMock = pb.checkIdempotent as unknown as ReturnType<typeof vi.fn>;
-  startJobMock = pb.startJob as unknown as ReturnType<typeof vi.fn>;
-  endJobMock = pb.endJob as unknown as ReturnType<typeof vi.fn>;
-  logErrorMock = pb.logError as unknown as ReturnType<typeof vi.fn>;
-  markCompletedMock = pb.markCompleted as unknown as ReturnType<typeof vi.fn>;
+  checkIdempotentMock = pb.checkIdempotent as ReturnType<typeof vi.fn>;
+  startJobMock = pb.startJob as ReturnType<typeof vi.fn>;
+  endJobMock = pb.endJob as ReturnType<typeof vi.fn>;
+  logErrorMock = pb.logError as ReturnType<typeof vi.fn>;
+  markCompletedMock = pb.markCompleted as ReturnType<typeof vi.fn>;
 
   const eh = await import('../src/utils/error-handler');
-  throwIfRetryableMock = eh.throwIfRetryable as unknown as ReturnType<typeof vi.fn>;
+  throwIfRetryableMock = eh.throwIfRetryable as ReturnType<typeof vi.fn>;
 
   const ssrf = await import('../utils/ssrf-protection');
-  validateUrlMock = ssrf.validateUrl as unknown as ReturnType<typeof vi.fn>;
+  validateUrlMock = ssrf.validateUrl as ReturnType<typeof vi.fn>;
 
   const mod = await import('../processors/webhook-processor');
   expect(mod.webhookWorker).toBeDefined();
@@ -181,7 +181,7 @@ describe('webhook-processor', () => {
       start: process.hrtime.bigint(),
     });
     validateUrlMock.mockResolvedValue({ valid: false, error: 'private IP blocked' });
-    throwIfRetryableMock.mockImplementation((err: Error, _ctx: string) => {
+    throwIfRetryableMock.mockImplementation((err: Error) => {
       throw err;
     });
 
@@ -245,7 +245,7 @@ describe('webhook-processor', () => {
     });
     validateUrlMock.mockResolvedValue({ valid: true });
     axiosPostMock.mockRejectedValue(new Error('socket hang up'));
-    throwIfRetryableMock.mockImplementation((err: Error, _ctx: string) => {
+    throwIfRetryableMock.mockImplementation((err: Error) => {
       throw err;
     });
 

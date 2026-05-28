@@ -104,9 +104,6 @@ describe('KloelChatToolsService', () => {
     smartPayment = {
       createSmartPayment: jest.fn().mockResolvedValue({ paymentUrl: 'https://pay.test' }),
     };
-    productService = {
-      create: jest.fn().mockResolvedValue({ success: true, product: { id: 'prod-1' } }),
-    };
     agentScheduler = {
       upsertJob: jest.fn().mockResolvedValue({ ok: true, key: 'agent_job:daily' }),
       listJobs: jest.fn().mockResolvedValue([]),

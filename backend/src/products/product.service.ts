@@ -109,7 +109,7 @@ export class ProductService {
     await this.assertOwnedProduct(workspaceId, productId);
 
     const product = await this.prisma.product.update({
-      where: { id: productId },
+      where: { id: productId, workspaceId },
       data: dto,
     });
 
@@ -163,7 +163,7 @@ export class ProductService {
         take: limit,
         orderBy: { createdAt: 'desc' },
       }),
-      this.prisma.product.count({ where }),
+      this.prisma.product.count({ where: { ...where, workspaceId } }),
     ]);
 
     return { success: true, products, count, page, limit };
@@ -182,7 +182,7 @@ export class ProductService {
     await this.assertOwnedProduct(workspaceId, productId);
 
     const product = await this.prisma.product.update({
-      where: { id: productId },
+      where: { id: productId, workspaceId },
       data: { imageUrl },
     });
 
@@ -225,7 +225,7 @@ export class ProductService {
     await this.assertOwnedProduct(workspaceId, productId);
 
     const product = await this.prisma.product.update({
-      where: { id: productId },
+      where: { id: productId, workspaceId },
       data: { status: 'APPROVED', active: true },
     });
 
@@ -267,7 +267,7 @@ export class ProductService {
     await this.assertOwnedProduct(workspaceId, productId);
 
     const product = await this.prisma.product.update({
-      where: { id: productId },
+      where: { id: productId, workspaceId },
       data: { active: available },
     });
 
@@ -308,7 +308,7 @@ export class ProductService {
     await this.assertOwnedProduct(workspaceId, productId);
 
     const product = await this.prisma.product.update({
-      where: { id: productId },
+      where: { id: productId, workspaceId },
       data: { status: 'DELETED', active: false },
     });
 

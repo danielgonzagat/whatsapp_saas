@@ -66,7 +66,7 @@ function buildScheduler(opts?: {
   const aggregator = new ValenceAggregatorService();
   const hebbian = new HebbianService({ windowMs: 60_000 });
   const consolidation = new ConsolidationService();
-  const prediction = new MindPredictionService(undefined as unknown as never);
+  const prediction = new MindPredictionService(undefined as never);
   // Stub runCycle — the test spine returns no events, so the DB fallback
   // would fail without a real Prisma.  The tick path uses `void` so the
   // promise rejection from a naked undefined-prisma would crash the test
@@ -85,7 +85,7 @@ function buildScheduler(opts?: {
     hebbian,
     consolidation,
     prediction,
-    undefined as unknown as never,
+    undefined as never,
   );
   const spine = {
     recentEventsAsRef: jest.fn().mockReturnValue([]),
@@ -97,7 +97,7 @@ function buildScheduler(opts?: {
     scheduler: new MindBackgroundScheduler(
       processor,
       spine,
-      undefined as unknown as never,
+      undefined as never,
       cognitiveHealth,
     ),
     spine,

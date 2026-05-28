@@ -149,7 +149,7 @@ describe('SpineEmitterService', () => {
     const mockRedis = {
       xadd: mockXadd,
       xrange: mockXrange,
-    } as unknown as import('ioredis').Redis;
+    } as import('ioredis').Redis;
 
     beforeEach(() => {
       mockXadd.mockClear();
