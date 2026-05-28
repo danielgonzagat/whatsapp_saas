@@ -31,6 +31,13 @@ type PrismaMock = {
   checkoutOrder: {
     updateMany: jest.Mock<Promise<{ count: number }>, [UpdateManyArg]>;
   };
+  kloelSale: {
+    findFirst: jest.Mock<
+      Promise<{ id: string; workspaceId: string; status: string } | null>,
+      [Record<string, unknown>]
+    >;
+    updateMany: jest.Mock<Promise<{ count: number }>, [UpdateManyArg]>;
+  };
 };
 
 function createPrismaMock(): PrismaMock {
@@ -63,6 +70,17 @@ function createPrismaMock(): PrismaMock {
         .mockResolvedValue({ count: 1 }),
     },
     checkoutOrder: {
+      updateMany: jest
+        .fn<Promise<{ count: number }>, [UpdateManyArg]>()
+        .mockResolvedValue({ count: 1 }),
+    },
+    kloelSale: {
+      findFirst: jest
+        .fn<
+          Promise<{ id: string; workspaceId: string; status: string } | null>,
+          [Record<string, unknown>]
+        >()
+        .mockResolvedValue(null),
       updateMany: jest
         .fn<Promise<{ count: number }>, [UpdateManyArg]>()
         .mockResolvedValue({ count: 1 }),
@@ -159,6 +177,36 @@ describe('MercadoPagoWebhookController', () => {
     const checkoutPaymentUpdateArg = prisma.checkoutPayment.updateMany.mock.calls[0]?.[0];
     expect(checkoutPaymentUpdateArg?.data.status).toBe('APPROVED');
     expect(prisma.checkoutOrder.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('marks chat-generated Kloel sales paid when Mercado Pago approves by payment id', async () => {
+    prisma.kloelSale.findFirst.mockResolvedValueOnce({
+      id: 'sale-boleto-1',
+      workspaceId: 'ws-1',
+      status: 'pending',
+    });
+    pixCharge.getStatus.mockResolvedValueOnce({
+      status: 'approved',
+      raw: { id: 'mp_boleto_1', status: 'approved' },
+    });
+
+    await controller.receive('ts=1,v1=ok', 'req-4', {
+      action: 'payment.updated',
+      data: { id: 'mp_boleto_1' },
+    });
+
+    const saleLookupArg = prisma.kloelSale.findFirst.mock.calls[0]?.[0];
+    expect(saleLookupArg?.where).toEqual({
+      OR: [
+        { externalPaymentId: 'mp_boleto_1' },
+        { metadata: { path: ['mercadoPagoPaymentId'], equals: 'mp_boleto_1' } },
+      ],
+    });
+
+    const saleUpdateArg = prisma.kloelSale.updateMany.mock.calls[0]?.[0];
+    expect(saleUpdateArg?.where).toEqual({ id: 'sale-boleto-1', workspaceId: 'ws-1' });
+    expect(saleUpdateArg?.data.status).toBe('paid');
+    expect(saleUpdateArg?.data.paidAt).toBeInstanceOf(Date);
   });
 
   it('short-circuits duplicate webhook events before fetching provider status', async () => {

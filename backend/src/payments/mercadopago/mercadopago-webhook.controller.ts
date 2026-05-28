@@ -20,6 +20,8 @@ import { MercadoPagoWebhookSignatureVerifier } from './mercadopago-webhook-signa
 import type { MercadoPagoWebhookPayload } from './mercadopago.types';
 
 const TERMINAL_CHECKOUT_ORDER_STATUSES = new Set(['PAID', 'CANCELED', 'REFUNDED', 'CHARGEBACK']);
+type KloelSalePaymentStatus = 'paid' | 'cancelled' | 'refunded';
+const TERMINAL_KLOEL_SALE_STATUSES = new Set(['paid', 'cancelled', 'refunded']);
 
 /**
  * Mercado Pago webhook receiver.
@@ -145,6 +147,11 @@ export class MercadoPagoWebhookController {
       status,
     });
 
+    await this.updateKloelSaleFromProvider({
+      externalId,
+      status,
+    });
+
     await this.prisma.webhookEvent.update({
       where: { provider_externalId: { provider: 'mercadopago', externalId } },
       data: { status: 'processed', processedAt: new Date() },
@@ -197,6 +204,35 @@ export class MercadoPagoWebhookController {
       workspaceId: checkoutPayment.order.workspaceId,
       currentStatus: checkoutPayment.order.status,
       paymentStatus: checkoutStatus,
+    });
+  }
+
+  private async updateKloelSaleFromProvider(params: {
+    externalId: string;
+    status: string;
+  }): Promise<void> {
+    const saleStatus = mapMercadoPagoStatusToKloelSaleStatus(params.status);
+    if (!saleStatus) {
+      return;
+    }
+
+    const sale = await this.prisma.kloelSale.findFirst({
+      where: {
+        OR: [
+          { externalPaymentId: params.externalId },
+          { metadata: { path: ['mercadoPagoPaymentId'], equals: params.externalId } },
+        ],
+      },
+      select: { id: true, workspaceId: true, status: true },
+    });
+    if (!sale || TERMINAL_KLOEL_SALE_STATUSES.has(sale.status)) {
+      return;
+    }
+
+    await this.prisma.kloelSale.updateMany({
+      where: { id: sale.id, workspaceId: sale.workspaceId },
+      data:
+        saleStatus === 'paid' ? { status: saleStatus, paidAt: new Date() } : { status: saleStatus },
     });
   }
 
@@ -316,5 +352,23 @@ function mapPixStatusToCheckoutPaymentStatus(status: string): PaymentStatus {
     case 'pending':
     default:
       return 'PENDING';
+  }
+}
+
+function mapMercadoPagoStatusToKloelSaleStatus(status: string): KloelSalePaymentStatus | null {
+  switch (status) {
+    case 'approved':
+      return 'paid';
+    case 'rejected':
+    case 'cancelled':
+    case 'expired':
+      return 'cancelled';
+    case 'refunded':
+    case 'charged_back':
+      return 'refunded';
+    case 'in_process':
+    case 'pending':
+    default:
+      return null;
   }
 }
