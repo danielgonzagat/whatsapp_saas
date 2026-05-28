@@ -7,11 +7,23 @@ import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { GMAIL_OAUTH_TOKEN } from '../marketing/tokens';
 import { ChannelTransportRegistry } from './channel-transport.registry';
-import type { ChannelName, ChannelSendResult } from './channel-transport.types';
+import type { ChannelSendResult } from './channel-transport.types';
 import { buildUnsubscribeFooterHtml } from '../common/utils/unsubscribe-footer.util';
 import { assertCustomerSafe } from './commercial-decision-orchestrator.service';
 import { MindEventSpine } from './mind/coordination';
 import { DailyLimitService } from './daily-limit.service';
+import {
+  buildWhatsAppSendOptions,
+  coerceStr,
+  escapeHtml,
+  isRecord,
+  readOptionalText,
+  readText,
+  resolveChannel,
+  resolveComplianceMode,
+  type ComplianceMode,
+  type WhatsAppSendOptions,
+} from './unified-agent-actions-messaging.helpers';
 
 import type { UnknownRecord } from '../common/types';
 
@@ -46,96 +58,24 @@ export class UnifiedAgentActionsMessagingService {
     @Optional() @Inject(GMAIL_OAUTH_TOKEN) private readonly _gmailMailbox?: GmailMailboxPort,
   ) {}
 
-  // ───────── helpers ─────────
+  // ───────── helpers (delegated to ./unified-agent-actions-messaging.helpers) ─────────
 
-  private isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === 'object' && value !== null;
-  }
-
-  private readText(value: unknown, fallback = ''): string {
-    if (typeof value === 'string') {
-      return value;
-    }
-    if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
-      return String(value);
-    }
-    return fallback;
-  }
-
-  private readOptionalText(value: unknown): string | undefined {
-    const normalized = this.readText(value).trim();
-    return normalized || undefined;
-  }
-
+  /** Coerce tool-arg primitives to string. Public so other services can reuse. */
   str(v: unknown, fb = ''): string {
-    return typeof v === 'string'
-      ? v
-      : typeof v === 'number' || typeof v === 'boolean'
-        ? String(v)
-        : fb;
+    return coerceStr(v, fb);
   }
 
-  resolveComplianceMode(context?: UnknownRecord): 'reactive' | 'proactive' {
-    return context?.deliveryMode === 'reactive' ? 'reactive' : 'proactive';
+  /** Resolve compliance mode from context (reactive vs proactive). Public for tests. */
+  resolveComplianceMode(context?: UnknownRecord): ComplianceMode {
+    return resolveComplianceMode(context);
   }
 
-  private resolveChannel(context?: UnknownRecord): ChannelName {
-    const rawChannel =
-      this.readOptionalText(context?.channel) ||
-      this.readOptionalText(context?.sourceChannel) ||
-      this.readOptionalText(context?.provider);
-    const channel = rawChannel?.toLowerCase();
-    if (
-      channel === 'instagram' ||
-      channel === 'messenger' ||
-      channel === 'tiktok' ||
-      channel === 'email' ||
-      channel === 'whatsapp'
-    ) {
-      return channel;
-    }
-    return 'whatsapp';
-  }
-
+  /** Build option bag for WhatsApp / transport send calls. Public for tests. */
   buildWhatsAppSendOptions(
     context?: UnknownRecord,
     extra: UnknownRecord = {},
-  ): {
-    mediaUrl?: string;
-    mediaType?: 'document' | 'image' | 'audio' | 'video';
-    caption?: string;
-    externalId?: string;
-    complianceMode: 'reactive' | 'proactive';
-    forceDirect: boolean;
-    quotedMessageId?: string;
-  } {
-    const extraRecord = this.isRecord(extra) ? extra : {};
-    const mediaType = this.readOptionalText(extraRecord.mediaType);
-    const quotedMessageId =
-      this.readOptionalText(extraRecord.quotedMessageId) ||
-      this.readOptionalText(context?.quotedMessageId) ||
-      this.readOptionalText(context?.providerMessageId);
-
-    const resolvedMediaUrl = this.readOptionalText(extraRecord.mediaUrl);
-    const resolvedMediaType =
-      mediaType === 'document' ||
-      mediaType === 'image' ||
-      mediaType === 'audio' ||
-      mediaType === 'video'
-        ? mediaType
-        : undefined;
-    const resolvedCaption = this.readOptionalText(extraRecord.caption);
-    const resolvedExternalId = this.readOptionalText(extraRecord.externalId);
-
-    return {
-      ...(resolvedMediaUrl !== undefined ? { mediaUrl: resolvedMediaUrl } : {}),
-      ...(resolvedMediaType !== undefined ? { mediaType: resolvedMediaType } : {}),
-      ...(resolvedCaption !== undefined ? { caption: resolvedCaption } : {}),
-      ...(resolvedExternalId !== undefined ? { externalId: resolvedExternalId } : {}),
-      ...(quotedMessageId !== undefined ? { quotedMessageId } : {}),
-      complianceMode: this.resolveComplianceMode(context),
-      forceDirect: context?.forceDirect === true,
-    };
+  ): WhatsAppSendOptions {
+    return buildWhatsAppSendOptions(context, extra);
   }
 
   async sendViaTransport(
@@ -148,7 +88,7 @@ export class UnifiedAgentActionsMessagingService {
     const options = this.buildWhatsAppSendOptions(context, extra);
     const result = await this.transports.send(workspaceId, {
       workspaceId,
-      channel: this.resolveChannel(context),
+      channel: resolveChannel(context),
       recipientId,
       content,
       ...(options.mediaUrl !== undefined ? { mediaUrl: options.mediaUrl } : {}),
@@ -159,7 +99,7 @@ export class UnifiedAgentActionsMessagingService {
     this.logger.log(
       [
         '[AGENT] Transport result',
-        `channel=${this.resolveChannel(context)}`,
+        `channel=${resolveChannel(context)}`,
         `success=${result.success}`,
         `blocked=${result.blocked}`,
         result.messageId ? `messageId=${result.messageId}` : null,
@@ -204,15 +144,13 @@ export class UnifiedAgentActionsMessagingService {
       }
     }
 
-    const metadata = this.isRecord(context?.metadata) ? context.metadata : {};
+    const metadata = isRecord(context?.metadata) ? context.metadata : {};
     const subject =
-      this.readOptionalText(args.subject) ||
-      this.readOptionalText(metadata.subject) ||
-      'Resposta Kloel CIA';
+      readOptionalText(args.subject) || readOptionalText(metadata.subject) || 'Resposta Kloel CIA';
     const result = await gmailMailbox.sendMessageFromMailbox(workspaceId, {
       toEmail: recipientEmail,
       subject: subject.startsWith('Re:') ? subject : `Re: ${subject}`,
-      html: `<p>${this.escapeHtml(message).replace(/\n/g, '<br>')}</p>`,
+      html: `<p>${escapeHtml(message).replace(/\n/g, '<br>')}</p>`,
       proactive: isProactive,
     });
 
@@ -224,15 +162,6 @@ export class UnifiedAgentActionsMessagingService {
       provider: 'gmail',
       messageId: result.messageId,
     };
-  }
-
-  private escapeHtml(value: string): string {
-    return value
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
   }
 
   // messageLimit: enforced via PlanLimitsService.trackMessageSend
@@ -280,7 +209,7 @@ export class UnifiedAgentActionsMessagingService {
         outboundKind === 'inbound-reply' ||
         this.resolveComplianceMode(context) === 'reactive';
       if (!isReactiveReply) {
-        const resolvedCh = this.resolveChannel(context);
+        const resolvedCh = resolveChannel(context);
         const limitCheck = await this.dailyLimit.ensureProactiveDailyLimit(workspaceId, resolvedCh);
         if (!limitCheck.allowed) {
           void this.opsAlert?.alertOnCriticalError(
@@ -303,23 +232,23 @@ export class UnifiedAgentActionsMessagingService {
         }
       }
 
-      if (this.readText(context?.channel).toLowerCase() === 'email') {
+      if (readText(context?.channel).toLowerCase() === 'email') {
         return this.actionSendEmailMessage(workspaceId, phone, args, context);
       }
 
       this.logger.log(`[AGENT] Enviando mensagem para ${phone}: "${msgText.substring(0, 50)}..."`);
       const result = await this.sendViaTransport(workspaceId, phone, msgText, context);
-      const sendResult: Record<string, unknown> = this.isRecord(result) ? result : {};
+      const sendResult: Record<string, unknown> = isRecord(result) ? result : {};
 
       if (sendResult.error) {
-        const message = this.readText(sendResult.message, 'send_message_failed');
+        const message = readText(sendResult.message, 'send_message_failed');
         if (!isTestEnv) {
           this.logger.error(`[AGENT] Erro ao enviar: ${message}`);
         }
         return { success: false, error: message };
       }
 
-      const delivery = this.readText(sendResult.delivery).toLowerCase();
+      const delivery = readText(sendResult.delivery).toLowerCase();
       const queued = delivery === 'queued';
       const sent =
         delivery === 'sent' ||
@@ -372,9 +301,9 @@ export class UnifiedAgentActionsMessagingService {
         mediaType: type,
         caption,
       });
-      const sendResult: Record<string, unknown> = this.isRecord(result) ? result : {};
+      const sendResult: Record<string, unknown> = isRecord(result) ? result : {};
       if (sendResult.error) {
-        const message = this.readText(sendResult.message, 'send_media_failed');
+        const message = readText(sendResult.message, 'send_media_failed');
         this.logger.error(`[AGENT] Erro ao enviar mídia: ${message}`);
         return { success: false, error: message };
       }
@@ -419,9 +348,9 @@ export class UnifiedAgentActionsMessagingService {
         '',
         this.buildWhatsAppSendOptions(context, { mediaUrl: audioDataUrl, mediaType: 'audio' }),
       );
-      const sendResult: Record<string, unknown> = this.isRecord(result) ? result : {};
+      const sendResult: Record<string, unknown> = isRecord(result) ? result : {};
       if (sendResult.error) {
-        const message = this.readText(sendResult.message, 'send_voice_failed');
+        const message = readText(sendResult.message, 'send_voice_failed');
         this.logger.error(`[AGENT] Erro ao enviar áudio: ${message}`);
         return { success: false, error: message };
       }
@@ -465,9 +394,9 @@ export class UnifiedAgentActionsMessagingService {
         '',
         this.buildWhatsAppSendOptions(context, { mediaUrl: audioDataUrl, mediaType: 'audio' }),
       );
-      const sendResult: Record<string, unknown> = this.isRecord(result) ? result : {};
+      const sendResult: Record<string, unknown> = isRecord(result) ? result : {};
       if (sendResult.error) {
-        const message = this.readText(sendResult.message, 'send_audio_failed');
+        const message = readText(sendResult.message, 'send_audio_failed');
         this.logger.error(`[AGENT] Erro ao enviar áudio: ${message}`);
         return { success: false, error: message };
       }
