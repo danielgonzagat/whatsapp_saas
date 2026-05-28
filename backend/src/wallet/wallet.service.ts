@@ -22,53 +22,15 @@ import {
   UsagePriceNotFoundError,
   WalletNotFoundError,
 } from './wallet.types';
-
-const MP_WEBHOOK_PATH = '/webhooks/mercadopago';
-const PIX_EXPIRATION_MINUTES = 30;
-const WALLET_MERCADOPAGO_REFERENCE_TYPE = 'mercadopago_pix_topup';
-
-function resolveBackendOrigin(): string {
-  return (
-    process.env.PUBLIC_BACKEND_URL ||
-    process.env.BACKEND_URL ||
-    process.env.NEXT_PUBLIC_API_BASE_URL ||
-    'http://localhost:3001'
-  ).replace(/\/$/, '');
-}
-
-function formatMercadoPagoQrImage(qrCodeBase64: string): string | undefined {
-  return qrCodeBase64 ? `data:image/png;base64,${qrCodeBase64}` : undefined;
-}
-
-function parseMercadoPagoWalletReference(
-  raw: unknown,
-): { workspaceId: string; walletId: string; nonce: string } | null {
-  if (!raw || typeof raw !== 'object') {
-    return null;
-  }
-  const externalReference = (raw as { external_reference?: unknown }).external_reference;
-  if (typeof externalReference !== 'string' || !externalReference.startsWith('wallet_topup:')) {
-    return null;
-  }
-  const [, workspaceId, walletId, nonce] = externalReference.split(':');
-  if (!workspaceId || !walletId || !nonce) {
-    throw new BadRequestException('mercadopago_wallet_topup_reference_invalid');
-  }
-  return { workspaceId, walletId, nonce };
-}
-
-function readMercadoPagoTransactionAmountCents(raw: unknown): bigint | null {
-  if (!raw || typeof raw !== 'object') {
-    return null;
-  }
-  const amount = (raw as { transaction_amount?: unknown }).transaction_amount;
-  const numericAmount =
-    typeof amount === 'number' || typeof amount === 'string' ? Number(amount) : NaN;
-  if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
-    return null;
-  }
-  return BigInt(Math.round(numericAmount * 100));
-}
+import {
+  MP_WEBHOOK_PATH,
+  PIX_EXPIRATION_MINUTES,
+  WALLET_MERCADOPAGO_REFERENCE_TYPE,
+  formatMercadoPagoQrImage,
+  parseMercadoPagoWalletReference,
+  readMercadoPagoTransactionAmountCents,
+  resolveBackendOrigin,
+} from './wallet.service.helpers';
 
 /**
  * Prepaid wallet for usage-metered services (AI agent, WhatsApp, generic API
