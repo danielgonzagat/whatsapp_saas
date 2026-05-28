@@ -1,8 +1,7 @@
-import { ForbiddenException, Injectable, Optional } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { StructuredLogger } from '../logging/structured-logger';
 import type { Prisma } from '@prisma/client';
-import { forEachSequential } from '../common/async-sequence';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { formatBrlAmount } from './money-format.util';
@@ -10,24 +9,14 @@ import { WalletLedgerService } from './wallet-ledger.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { getWalletBalance, getWalletTransactionHistory } from './wallet.read.helpers';
 import {
-  ConcurrentWalletUpdateError,
   KloelWalletNotFoundError,
-  buildAnticipationDescription,
   buildAnticipationSuccessResponse,
-  buildAnticipationTransactionMetadata,
   buildConfirmPaymentNoopLogMessage,
   buildInsufficientBalanceFailureResponse,
   buildInvalidMonetaryAmountResponse,
   buildProcessSaleResponse,
-  buildReconciliationFailedLogMessage,
-  buildReconciliationSettledLogMessage,
   buildReconciliationStartLogMessage,
-  buildSaleLedgerMetadata,
   buildSaleSplitLogMessage,
-  buildSaleTransactionMetadata,
-  buildWalletAnticipationRowData,
-  buildWalletIndex,
-  buildWithdrawalDescription,
   buildWithdrawalSuccessResponse,
   calculateAnticipationSplit,
   calculateSaleSplit,
@@ -36,14 +25,17 @@ import {
   uniqueWalletIds,
 } from './wallet.helpers';
 import {
-  appendFailureAndCheckFirst,
-  buildAnticipationLedgerCreditMetadata,
-  buildAnticipationLedgerDebitMetadata,
   buildReconciliationFailureSummary,
-  buildWithdrawalLedgerMetadata,
   computeReconciliationCutoff,
   type ReconciliationFailure,
 } from './wallet.reconcile.helpers';
+import { settleStalePendingTxBatch } from './wallet.service.reconcile.helpers';
+import {
+  runAnticipationTx,
+  runConfirmPaymentTx,
+  runProcessSaleTx,
+  runWithdrawalTx,
+} from './wallet.service.tx.helpers';
 
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 // All dates stored as UTC via Prisma DateTime (toISOString)
@@ -80,6 +72,9 @@ export class WalletService {
    * only returns the Real-valued fields for backward compatibility with
    * the existing API contract (Wave 1 P1 freeze); the Reals are derived
    * from the cents at the boundary, never stored as the source of truth.
+   *
+   * The transactional inner body lives in `wallet.service.tx.helpers.ts`
+   * (Gate-fix2-D split) so the service stays below the 600-LOC ratchet.
    */
   async processSale(
     workspaceId: string,
@@ -104,48 +99,18 @@ export class WalletService {
     const wallet = await this.getWalletOrThrow(workspaceId);
 
     const transaction = await this.prisma.$transaction(
-      async (tx: Prisma.TransactionClient) => {
-        const credit = await tx.kloelWallet.updateMany({
-          where: { id: wallet.id, workspaceId, updatedAt: wallet.updatedAt },
-          data: {
-            // DUAL-WRITE during the P6-2 → P6-3 observation window.
-            pendingBalance: { increment: netAmount },
-            pendingBalanceInCents: { increment: BigInt(netAmountInCents) },
-          },
-        });
-        if (credit.count === 0) {
-          throw new ConcurrentWalletUpdateError();
-        }
-
-        const created = await tx.kloelWalletTransaction.create({
-          data: {
-            walletId: wallet.id,
-            type: 'credit',
-            amount: netAmount,
-            amountInCents: BigInt(netAmountInCents),
-            description: `Venda: ${description}`,
-            reference: saleId,
-            status: 'pending',
-            metadata: buildSaleTransactionMetadata(split),
-          },
-        });
-
-        // I12 — append-only ledger entry for the credit, INSIDE the same
-        // $transaction so the wallet update + ledger append commit together
-        // or both roll back together.
-        await this.walletLedger.appendWithinTx(tx, {
+      async (tx: Prisma.TransactionClient) =>
+        runProcessSaleTx({
+          tx,
+          walletLedger: this.walletLedger,
+          wallet,
           workspaceId,
-          walletId: wallet.id,
-          transactionId: created.id,
-          direction: 'credit',
-          bucket: 'pending',
-          amountInCents: BigInt(netAmountInCents),
-          reason: 'sale_credit',
-          metadata: buildSaleLedgerMetadata({ saleId, split }),
-        });
-
-        return created;
-      },
+          saleId,
+          description,
+          netAmount,
+          netAmountInCents,
+          split,
+        }),
       { isolationLevel: 'ReadCommitted' },
     );
 
@@ -169,87 +134,18 @@ export class WalletService {
    *  - DB errors propagate. The caller must tell "already paid" (returns
    *    false) apart from "database unavailable" (throws). Silent swallow is
    *    forbidden.
+   *
+   * The transactional inner body lives in `wallet.service.tx.helpers.ts`.
    */
   async confirmPayment(workspaceId: string, transactionId: string): Promise<boolean> {
-    type ConfirmResult =
-      | { kind: 'ok' }
-      | { kind: 'not_found' }
-      | { kind: 'not_pending' }
-      | { kind: 'race_lost' };
-
     const outcome = await this.prisma.$transaction(
-      async (tx: Prisma.TransactionClient): Promise<ConfirmResult> => {
-        const walletTx = await tx.kloelWalletTransaction.findUnique({
-          where: { id: transactionId },
-          include: { wallet: { select: { id: true, workspaceId: true, updatedAt: true } } },
-        });
-
-        if (!walletTx) {
-          return { kind: 'not_found' };
-        }
-        if (walletTx.status !== 'pending') {
-          return { kind: 'not_pending' };
-        }
-
-        // I10 — ownership assertion inside the transaction snapshot.
-        if (walletTx.wallet.workspaceId !== workspaceId) {
-          throw new ForbiddenException('wallet_ownership_mismatch');
-        }
-
-        // Atomic status transition. If another worker beat us to it, count=0
-        // and we leave the balance untouched.
-        const statusFlip = await tx.kloelWalletTransaction.updateMany({
-          where: { id: transactionId, status: 'pending' },
-          data: { status: 'completed' },
-        });
-        if (statusFlip.count === 0) {
-          return { kind: 'race_lost' };
-        }
-
-        // DUAL-WRITE during the P6-2 → P6-3 observation window (I11).
-        // Optimistic lock by `updatedAt` so a concurrent writer can't move
-        // the same money twice between buckets.
-        const moved = await tx.kloelWallet.updateMany({
-          where: {
-            id: walletTx.wallet.id,
-            workspaceId: walletTx.wallet.workspaceId,
-            updatedAt: walletTx.wallet.updatedAt,
-          },
-          data: {
-            pendingBalance: { decrement: walletTx.amount },
-            availableBalance: { increment: walletTx.amount },
-            pendingBalanceInCents: { decrement: walletTx.amountInCents },
-            availableBalanceInCents: { increment: walletTx.amountInCents },
-          },
-        });
-        if (moved.count === 0) {
-          return { kind: 'race_lost' };
-        }
-
-        // I12 — confirm_payment moves cents from `pending` to `available`
-        // by writing TWO ledger entries (a debit on pending and a credit
-        // on available) inside the same transaction snapshot.
-        await this.walletLedger.appendWithinTx(tx, {
+      async (tx: Prisma.TransactionClient) =>
+        runConfirmPaymentTx({
+          tx,
+          walletLedger: this.walletLedger,
           workspaceId,
-          walletId: walletTx.wallet.id,
-          transactionId: walletTx.id,
-          direction: 'debit',
-          bucket: 'pending',
-          amountInCents: walletTx.amountInCents,
-          reason: 'confirm_payment_debit',
-        });
-        await this.walletLedger.appendWithinTx(tx, {
-          workspaceId,
-          walletId: walletTx.wallet.id,
-          transactionId: walletTx.id,
-          direction: 'credit',
-          bucket: 'available',
-          amountInCents: walletTx.amountInCents,
-          reason: 'confirm_payment_credit',
-        });
-
-        return { kind: 'ok' };
-      },
+          transactionId,
+        }),
       { isolationLevel: 'ReadCommitted' },
     );
 
@@ -285,45 +181,16 @@ export class WalletService {
     let transaction: { id: string };
     try {
       transaction = await this.prisma.$transaction(
-        async (tx: Prisma.TransactionClient) => {
-          const debit = await tx.kloelWallet.updateMany({
-            where: { id: wallet.id, workspaceId, updatedAt: wallet.updatedAt },
-            data: {
-              availableBalance: { decrement: amount },
-              availableBalanceInCents: { decrement: BigInt(amountInCents) },
-            },
-          });
-          if (debit.count === 0) {
-            throw new ConcurrentWalletUpdateError();
-          }
-
-          const created = await tx.kloelWalletTransaction.create({
-            data: {
-              walletId: wallet.id,
-              type: 'withdrawal',
-              amount: -amount,
-              amountInCents: BigInt(-amountInCents),
-              description: buildWithdrawalDescription(bankInfo),
-              status: 'pending',
-              metadata: bankInfo as Prisma.InputJsonValue,
-            },
-          });
-
-          // I12 — withdrawal debits the `available` bucket. Sign is conveyed
-          // by `direction`, so amountInCents is positive in the ledger row.
-          await this.walletLedger.appendWithinTx(tx, {
+        async (tx: Prisma.TransactionClient) =>
+          runWithdrawalTx({
+            tx,
+            walletLedger: this.walletLedger,
+            wallet,
             workspaceId,
-            walletId: wallet.id,
-            transactionId: created.id,
-            direction: 'debit',
-            bucket: 'available',
-            amountInCents: BigInt(amountInCents),
-            reason: 'withdrawal_debit',
-            metadata: buildWithdrawalLedgerMetadata(bankInfo),
-          });
-
-          return created;
-        },
+            amount,
+            amountInCents,
+            bankInfo,
+          }),
         { isolationLevel: 'ReadCommitted' },
       );
     } catch (err: unknown) {
@@ -371,83 +238,21 @@ export class WalletService {
 
     // Integer-cent arithmetic for I11 dual-write — pure math in wallet.helpers.ts.
     const anticipation = calculateAnticipationSplit({ amount, feePercent });
-    const { amountInCents, feeAmount, feeAmountInCents, netAmount, netAmountInCents } = anticipation;
 
     let transaction: { id: string };
     try {
       transaction = await this.prisma.$transaction(
-        async (tx: Prisma.TransactionClient) => {
-          // Move the full amount out of pending, credit net to available.
-          // The fee is effectively retained by Kloel (not credited to available).
-          const moved = await tx.kloelWallet.updateMany({
-            where: { id: wallet.id, workspaceId, updatedAt: wallet.updatedAt },
-            data: {
-              pendingBalance: { decrement: amount },
-              availableBalance: { increment: netAmount },
-              pendingBalanceInCents: { decrement: BigInt(amountInCents) },
-              availableBalanceInCents: { increment: netAmountInCents },
-            },
-          });
-          if (moved.count === 0) {
-            throw new ConcurrentWalletUpdateError();
-          }
-
-          const created = await tx.kloelWalletTransaction.create({
-            data: {
-              walletId: wallet.id,
-              type: 'anticipation',
-              amount: netAmount,
-              amountInCents: netAmountInCents,
-              description: buildAnticipationDescription(feePercent),
-              status: 'completed',
-              metadata: buildAnticipationTransactionMetadata({
-                amount,
-                feePercent,
-                feeAmount,
-                netAmount,
-                ...(installments !== undefined ? { installments } : {}),
-              }),
-            },
-          });
-
-          // Persist the anticipation record for reporting.
-          await tx.walletAnticipation.create({
-            data: buildWalletAnticipationRowData({
-              workspaceId,
-              amount,
-              feePercent,
-              feeAmount,
-              netAmount,
-              transactionId: created.id,
-              ...(installments !== undefined ? { installments } : {}),
-            }),
-          });
-
-          // I12 — ledger entries: debit pending for the full amount,
-          // credit available for the net (fee is not credited).
-          await this.walletLedger.appendWithinTx(tx, {
+        async (tx: Prisma.TransactionClient) =>
+          runAnticipationTx({
+            tx,
+            walletLedger: this.walletLedger,
+            wallet,
             workspaceId,
-            walletId: wallet.id,
-            transactionId: created.id,
-            direction: 'debit',
-            bucket: 'pending',
-            amountInCents: BigInt(amountInCents),
-            reason: 'withdrawal_debit',
-            metadata: buildAnticipationLedgerDebitMetadata({ feePercent, feeAmountInCents }),
-          });
-          await this.walletLedger.appendWithinTx(tx, {
-            workspaceId,
-            walletId: wallet.id,
-            transactionId: created.id,
-            direction: 'credit',
-            bucket: 'available',
-            amountInCents: netAmountInCents,
-            reason: 'confirm_payment_credit',
-            metadata: buildAnticipationLedgerCreditMetadata(),
-          });
-
-          return created;
-        },
+            amount,
+            feePercent,
+            ...(installments !== undefined ? { installments } : {}),
+            anticipation,
+          }),
         { isolationLevel: 'ReadCommitted' },
       );
     } catch (err: unknown) {
@@ -476,7 +281,12 @@ export class WalletService {
 
   /**
    * 🔄 Reconciliation: settle pending → available after 7 days
-   * Runs every 6 hours
+   * Runs every 6 hours.
+   *
+   * The per-tx settlement worker lives in `wallet.service.reconcile.helpers.ts`
+   * (Gate-fix2-D split) so this method only owns the cron-level orchestration
+   * (cutoff computation, batch fetch, per-tx failure aggregation, terminal
+   * `financialAlert.reconciliationAlert` emission).
    */
   @Cron('0 0 */6 * * *')
   async reconcilePendingPayments() {
@@ -521,89 +331,21 @@ export class WalletService {
           blockedBalance: true,
         },
       });
-      const walletsById = buildWalletIndex<{ id: string; [key: string]: unknown }>(
-        walletsList as Array<{ id: string; [key: string]: unknown }>,
-      );
 
       // Per-tx errors are isolated so one failed settlement doesn't abort
       // the rest, BUT we aggregate them into a structured ops alert at the
       // end so drift is never silently lost (Wave 2 I8).
       const perTxFailures: ReconciliationFailure[] = [];
 
-      await forEachSequential(pendingTxs, async (tx) => {
-        try {
-          const wallet = walletsById.get(tx.walletId);
-          if (!wallet) {
-            return;
-          }
-
-          await this.prisma.$transaction(
-            async (txn) => {
-              // Guard the status flip with `updateMany` so a concurrent
-              // confirmPayment can't double-credit the same amount.
-              const flip = await txn.kloelWalletTransaction.updateMany({
-                where: { id: tx.id, status: 'pending' },
-                data: { status: 'completed' },
-              });
-              if (flip.count === 0) {
-                // Another path (likely confirmPayment) already settled it.
-                return;
-              }
-              // DUAL-WRITE during the P6-2 → P6-3 window (I11).
-              await txn.kloelWallet.update({
-                where: { id: wallet.id },
-                data: {
-                  pendingBalance: { decrement: tx.amount },
-                  availableBalance: { increment: tx.amount },
-                  pendingBalanceInCents: { decrement: tx.amountInCents },
-                  availableBalanceInCents: { increment: tx.amountInCents },
-                },
-              });
-
-              // I12 — reconciliation cron also writes the matching pair of
-              // ledger entries inside the same status-guarded transaction.
-              // Distinguished from confirmPayment by the `reconcile_*`
-              // reasons so the audit log shows which path settled the tx.
-              await this.walletLedger.appendWithinTx(txn, {
-                workspaceId: wallet.workspaceId as string,
-                walletId: wallet.id,
-                transactionId: tx.id,
-                direction: 'debit',
-                bucket: 'pending',
-                amountInCents: tx.amountInCents,
-                reason: 'reconcile_settle_debit',
-              });
-              await this.walletLedger.appendWithinTx(txn, {
-                workspaceId: wallet.workspaceId as string,
-                walletId: wallet.id,
-                transactionId: tx.id,
-                direction: 'credit',
-                bucket: 'available',
-                amountInCents: tx.amountInCents,
-                reason: 'reconcile_settle_credit',
-              });
-            },
-            { isolationLevel: 'ReadCommitted' },
-          );
-
-          this.logger.log(
-            buildReconciliationSettledLogMessage(tx.id, tx.amount, formatBrlAmount),
-          );
-        } catch (err: unknown) {
-          void this.opsAlert?.alertOnCriticalError(err, 'WalletService.async');
-          const message = err instanceof Error ? err.message : String(err);
-          const isFirstFailure = appendFailureAndCheckFirst(perTxFailures, {
-            txId: tx.id,
-            error: message,
-          });
-          this.logger.error(buildReconciliationFailedLogMessage(tx.id, message));
-          if (isFirstFailure) {
-            const alert = 'wallet reconciliation encountered settlement failures';
-            this.financialAlert.reconciliationAlert(alert, {
-              details: { txId: tx.id, error: message, mode: 'first_failure' },
-            });
-          }
-        }
+      await settleStalePendingTxBatch({
+        prisma: this.prisma,
+        walletLedger: this.walletLedger,
+        financialAlert: this.financialAlert,
+        ...(this.opsAlert !== undefined ? { opsAlert: this.opsAlert } : {}),
+        logger: this.logger,
+        pendingTxs,
+        walletsList,
+        perTxFailures,
       });
 
       const failureSummary = buildReconciliationFailureSummary(perTxFailures, pendingTxs.length);
@@ -631,5 +373,4 @@ export class WalletService {
     }
     return wallet;
   }
-
 }

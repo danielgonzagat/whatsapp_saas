@@ -1,40 +1,36 @@
-import { Prisma } from '@prisma/client';
-
-import type { MercadoPagoBoletoChargeService } from '../payments/mercadopago/mercadopago-boleto-charge.service';
-import type { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
-import type { StripeChargeService } from '../payments/stripe/stripe-charge.service';
-
 import {
-  buildPaymentDescription,
-  normalizeBoletoAddress,
-  toJsonValue,
-} from './checkout-payment.mappers';
-import {
-  type BoletoDisplayData,
   type CheckoutPaymentMethod,
-  type CheckoutPaymentStatus,
+  type BoletoDisplayData,
   type PixDisplayData,
-  STRIPE_THREE_DS_REQUEST_ANY,
 } from './checkout-payment.types';
 
 /**
  * Pure input/output envelope builders for checkout payment arms. Split out from
- * `checkout-payment.helpers.ts` (Wave 83). Every export below is re-exported by
- * `checkout-payment.helpers.ts`. No money arithmetic — all amount inputs are
- * forwarded verbatim into Stripe / Mercado Pago / Prisma payloads. No I/O.
+ * `checkout-payment.helpers.ts` (Wave 83) and further sub-split (Gate-fix2-D,
+ * 2026-05-28) so the Stripe and Mercado Pago arm builders live in dedicated
+ * files:
+ *
+ *   - ./checkout-payment.stripe.builders        — Stripe input + Prisma envelope
+ *   - ./checkout-payment.mercadopago.builders   — Mercado Pago PIX/boleto envelopes
+ *
+ * This file keeps the cross-provider builders (Sentry breadcrumb, capture
+ * context, financial-alert context, audit payload, payment result) and
+ * re-exports the provider-specific symbols so the historical import surface
+ * via `./checkout-payment.helpers` stays byte-for-byte stable. Every export
+ * remains side-effect-free. No money arithmetic anywhere.
  */
 
-type SaleChargeInput = Parameters<StripeChargeService['createSaleCharge']>[0];
-type StripeSaleCharge = Awaited<ReturnType<StripeChargeService['createSaleCharge']>>;
-type CardPaymentOptions = Extract<
-  NonNullable<NonNullable<SaleChargeInput['paymentMethodOptions']>['card']>,
-  object
->;
+export {
+  buildStripeChargeInput,
+  buildStripePaymentData,
+} from './checkout-payment.stripe.builders';
 
-type MercadoPagoBoletoCharge = Awaited<ReturnType<MercadoPagoBoletoChargeService['create']>>;
-type MercadoPagoPixCharge = Awaited<ReturnType<MercadoPagoPixChargeService['create']>>;
-type MercadoPagoPixCreateInput = Parameters<MercadoPagoPixChargeService['create']>[0];
-type MercadoPagoBoletoCreateInput = Parameters<MercadoPagoBoletoChargeService['create']>[0];
+export {
+  buildMercadoPagoBoletoChargeInput,
+  buildMercadoPagoBoletoPaymentData,
+  buildMercadoPagoPixChargeInput,
+  buildMercadoPagoPixPaymentData,
+} from './checkout-payment.mercadopago.builders';
 
 /** Sentry breadcrumb level used for checkout payment lifecycle events. */
 type PaymentBreadcrumbInput = {
@@ -197,220 +193,6 @@ export function buildCheckoutPaymentResult<TPayment>(input: {
     boletoUrl: input.boletoData.boletoUrl,
     boletoBarcode: input.boletoData.boletoBarcode,
     boletoExpiresAt: input.boletoData.boletoExpiresAt,
-  };
-}
-
-/**
- * Build the `StripeChargeService.createSaleCharge` input envelope for a checkout
- * payment. Pure builder — copies caller-supplied amount fields verbatim into
- * `bigint`, attaches the optional 3DS request flag, and assembles the metadata
- * tag. No money arithmetic and no I/O; the inputs already arrived as exact
- * integer cents.
- */
-export function buildStripeChargeInput(
-  params: {
-    orderId: string;
-    idempotencyKey?: string;
-    workspaceId: string;
-    customerEmail: string;
-  },
-  opts: {
-    sellerStripeAccountId: string;
-    currency: string;
-    baseTotalInCents: number;
-    chargedTotalInCents: number;
-    marketplaceFeeInCents: number;
-    interestInCents: number;
-    forceThreeDS?: boolean;
-  },
-): SaleChargeInput {
-  const threeDsRequest = STRIPE_THREE_DS_REQUEST_ANY as NonNullable<
-    CardPaymentOptions['request_three_d_secure']
-  >;
-  const paymentMethodOptions: SaleChargeInput['paymentMethodOptions'] | undefined =
-    opts.forceThreeDS
-      ? {
-          card: {
-            request_three_d_secure: threeDsRequest,
-          },
-        }
-      : undefined;
-
-  const base: SaleChargeInput = {
-    workspaceId: params.workspaceId,
-    sellerStripeAccountId: opts.sellerStripeAccountId,
-    buyerPaidCents: BigInt(opts.chargedTotalInCents),
-    saleValueCents: BigInt(opts.baseTotalInCents),
-    interestCents: BigInt(opts.interestInCents),
-    marketplaceFeeCents: BigInt(opts.marketplaceFeeInCents),
-    currency: opts.currency,
-    idempotencyKey: params.idempotencyKey || params.orderId,
-    buyerEmail: params.customerEmail,
-    paymentMethodTypes: ['card'],
-    metadata: {
-      kloel_order_id: params.orderId,
-      workspace_id: params.workspaceId,
-    },
-  };
-  if (paymentMethodOptions !== undefined) {
-    base.paymentMethodOptions = paymentMethodOptions;
-  }
-  return base;
-}
-
-/**
- * Build the `Prisma.CheckoutPaymentUncheckedCreateInput` envelope persisted for
- * a Stripe (card) charge. Pure formatter — webhookData is serialized via
- * `toJsonValue`; no money math (provider-supplied amounts already settled).
- */
-export function buildStripePaymentData(input: {
-  orderId: string;
-  cardLast4: string | null;
-  status: CheckoutPaymentStatus;
-  pixData: PixDisplayData;
-  charge: StripeSaleCharge;
-}): Prisma.CheckoutPaymentUncheckedCreateInput {
-  return {
-    orderId: input.orderId,
-    gateway: 'stripe',
-    externalId: input.charge.paymentIntentId,
-    pixQrCode: input.pixData.pixQrCode,
-    pixCopyPaste: input.pixData.pixCopyPaste,
-    pixExpiresAt: input.pixData.pixExpiresAt ? new Date(input.pixData.pixExpiresAt) : null,
-    boletoUrl: null,
-    boletoBarcode: null,
-    boletoExpiresAt: null,
-    cardLast4: input.cardLast4,
-    cardBrand: null,
-    status: input.status,
-    webhookData: toJsonValue({
-      provider: 'stripe',
-      paymentIntent: input.charge.stripePaymentIntent,
-      split: input.charge.split,
-      splitInput: input.charge.splitInput,
-    }),
-  };
-}
-
-/**
- * Build the `Prisma.CheckoutPaymentUncheckedCreateInput` envelope persisted for
- * a Mercado Pago PIX charge. Pure formatter — no money math.
- */
-export function buildMercadoPagoPixPaymentData(input: {
-  orderId: string;
-  status: CheckoutPaymentStatus;
-  pixData: PixDisplayData;
-  charge: MercadoPagoPixCharge;
-}): Prisma.CheckoutPaymentUncheckedCreateInput {
-  return {
-    orderId: input.orderId,
-    gateway: 'mercadopago',
-    externalId: input.charge.externalId,
-    pixQrCode: input.pixData.pixQrCode,
-    pixCopyPaste: input.pixData.pixCopyPaste,
-    pixExpiresAt: input.pixData.pixExpiresAt ? new Date(input.pixData.pixExpiresAt) : null,
-    boletoUrl: null,
-    boletoBarcode: null,
-    boletoExpiresAt: null,
-    cardLast4: null,
-    cardBrand: null,
-    status: input.status,
-    webhookData: toJsonValue({
-      provider: 'mercadopago',
-      paymentMethod: 'pix',
-      payment: input.charge.raw,
-    }),
-  };
-}
-
-/**
- * Build the `Prisma.CheckoutPaymentUncheckedCreateInput` envelope persisted for
- * a Mercado Pago boleto charge. Pure formatter — no money math.
- */
-export function buildMercadoPagoBoletoPaymentData(input: {
-  orderId: string;
-  status: CheckoutPaymentStatus;
-  charge: MercadoPagoBoletoCharge;
-}): Prisma.CheckoutPaymentUncheckedCreateInput {
-  return {
-    orderId: input.orderId,
-    gateway: 'mercadopago',
-    externalId: input.charge.externalId,
-    pixQrCode: null,
-    pixCopyPaste: null,
-    pixExpiresAt: null,
-    boletoUrl: input.charge.ticketUrl,
-    boletoBarcode: input.charge.digitableLine || input.charge.barcodeContent,
-    boletoExpiresAt: input.charge.expiresAt,
-    cardLast4: null,
-    cardBrand: null,
-    status: input.status,
-    webhookData: toJsonValue({
-      provider: 'mercadopago',
-      paymentMethod: 'boleto',
-      payment: input.charge.raw,
-    }),
-  };
-}
-
-/**
- * Build the Mercado Pago PIX charge input envelope. Pure builder — copies caller
- * money values verbatim into `bigint` and assembles the description/notification
- * URL. No money arithmetic and no I/O. The `payerDocument` field is omitted when
- * the caller has no document (mirrors prior conditional spread behavior).
- */
-export function buildMercadoPagoPixChargeInput(input: {
-  idempotencyKey: string;
-  chargedTotalInCents: number;
-  payerEmail: string;
-  payerName: string;
-  payerDocument?: string;
-  productName: string | undefined;
-  orderId: string;
-  expiresAt: Date;
-  notificationUrl: string;
-}): MercadoPagoPixCreateInput {
-  const base: MercadoPagoPixCreateInput = {
-    idempotencyKey: input.idempotencyKey,
-    amountCents: BigInt(input.chargedTotalInCents),
-    payerEmail: input.payerEmail,
-    payerName: input.payerName,
-    description: buildPaymentDescription(input.productName, input.orderId),
-    externalReference: input.orderId,
-    expiresAt: input.expiresAt,
-    notificationUrl: input.notificationUrl,
-  };
-  return input.payerDocument !== undefined ? { ...base, payerDocument: input.payerDocument } : base;
-}
-
-/**
- * Build the Mercado Pago boleto charge input envelope. Pure builder — copies caller
- * money values verbatim into `bigint`, assembles the description, and forwards the
- * payer address verbatim. No money arithmetic and no I/O.
- */
-export function buildMercadoPagoBoletoChargeInput(input: {
-  idempotencyKey: string;
-  chargedTotalInCents: number;
-  payerEmail: string;
-  payerName: string;
-  payerDocument: string;
-  payerAddress: NonNullable<ReturnType<typeof normalizeBoletoAddress>>;
-  productName: string | undefined;
-  orderId: string;
-  expiresAt: Date;
-  notificationUrl: string;
-}): MercadoPagoBoletoCreateInput {
-  return {
-    idempotencyKey: input.idempotencyKey,
-    amountCents: BigInt(input.chargedTotalInCents),
-    payerEmail: input.payerEmail,
-    payerName: input.payerName,
-    payerDocument: input.payerDocument,
-    payerAddress: input.payerAddress,
-    description: buildPaymentDescription(input.productName, input.orderId),
-    externalReference: input.orderId,
-    expiresAt: input.expiresAt,
-    notificationUrl: input.notificationUrl,
   };
 }
 
