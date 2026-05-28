@@ -1,4 +1,5 @@
 import { Injectable, Logger, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { AuditService } from '../audit/audit.service';
 import { StripeService } from '../billing/stripe.service';
@@ -8,11 +9,22 @@ import { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago
 import type { BoletoChargeAddress } from '../payments/mercadopago/mercadopago.types';
 import { PrismaService } from '../prisma/prisma.service';
 import {
-  SALES_PROVENANCE,
   buildBoletoAddressMetadata,
+  buildBoletoSaleCreateMetadata,
+  buildBoletoSaleUpdateMetadata,
   buildMercadoPagoNotificationUrl,
+  buildPaymentPendingPayload,
+  buildPixSaleUpdateMetadata,
+  buildSaleBuyerMetadata,
+  pickSaleBuyerMetadataInput,
+  buildSaleCreatedPayload,
   buildSaleDescription,
+  buildSpineSaleEnvelope,
+  buildStripeCheckoutLineItems,
   buildStripeCheckoutUrls,
+  buildStripePaymentIntentMetadata,
+  buildStripeSaleUpdateMetadata,
+  buildStripeSessionMetadata,
   computeBoletoExpiresAt,
   computePixExpiresAt,
   pickStripeExternalPaymentId,
@@ -98,22 +110,7 @@ export class SalesService {
     planId: string,
     buyerData: BuyerData,
   ): Promise<CreatePixOrderResult> {
-    const plan = await this.prisma.productPlan.findFirst({
-      where: {
-        id: planId,
-        productId,
-        product: { workspaceId },
-        active: true,
-      },
-      include: { product: { select: { name: true } } },
-    });
-
-    if (!plan) {
-      throw new NotFoundException(
-        `Plano ${planId} não encontrado para produto ${productId} neste workspace.`,
-      );
-    }
-
+    const plan = await this.loadActivePlanOrThrow(workspaceId, productId, planId);
     const amountCents = planPriceToCents(plan.price);
     if (amountCents <= 0n) {
       throw new ServiceUnavailableException('O plano possui preço inválido.');
@@ -127,6 +124,7 @@ export class SalesService {
     const expiresAt = computePixExpiresAt();
 
     const payerDocDigits = sanitizeDocumentDigits(buyerData.cpf);
+    const buyerMeta = pickSaleBuyerMetadataInput(productId, planId, buyerData);
 
     return this.prisma
       .$transaction(
@@ -140,27 +138,16 @@ export class SalesService {
               status: 'pending',
               paymentMethod: 'PIX',
               leadPhone: buyerData.phone ?? null,
-              metadata: {
-                productId,
-                planId,
-                buyerName: buyerData.name,
-                buyerEmail: buyerData.email,
-              },
+              metadata: buildSaleBuyerMetadata(buyerMeta),
             },
           });
 
           // 2. Audit: sale created
-          await this.audit.logWithTx(tx, {
-            workspaceId,
-            action: 'SALE_CREATED',
-            resource: 'KloelSale',
-            resourceId: sale.id,
-            details: {
-              productId,
-              planId,
-              amount: plan.price,
-              paymentMethod: 'PIX',
-            },
+          await this.auditSale(tx, sale.id, workspaceId, 'SALE_CREATED', {
+            productId,
+            planId,
+            amount: plan.price,
+            paymentMethod: 'PIX',
           });
 
           // 3. Generate real PIX charge via Mercado Pago
@@ -182,30 +169,21 @@ export class SalesService {
             data: {
               externalPaymentId: pixResult.externalId,
               paymentLink: pixResult.ticketUrl || null,
-              metadata: {
-                productId,
-                planId,
-                buyerName: buyerData.name,
-                buyerEmail: buyerData.email,
-                pixExternalId: pixResult.externalId,
-                pixStatus: pixResult.status,
-              },
+              metadata: buildPixSaleUpdateMetadata(
+                buyerMeta,
+                pixResult.externalId,
+                pixResult.status,
+              ),
             },
           });
 
           // 5. Audit: payment pending
-          await this.audit.logWithTx(tx, {
-            workspaceId,
-            action: 'PAYMENT_PENDING',
-            resource: 'KloelSale',
-            resourceId: sale.id,
-            details: {
-              externalPaymentId: pixResult.externalId,
-              gateway: 'mercadopago',
-              method: 'PIX',
-              amount: plan.price,
-              status: pixResult.status,
-            },
+          await this.auditSale(tx, sale.id, workspaceId, 'PAYMENT_PENDING', {
+            externalPaymentId: pixResult.externalId,
+            gateway: 'mercadopago',
+            method: 'PIX',
+            amount: plan.price,
+            status: pixResult.status,
           });
 
           return { sale, pixResult };
@@ -214,49 +192,31 @@ export class SalesService {
       )
       .then(({ sale, pixResult }) => {
         // 6. Emit spine events (after transaction commits; fire-and-forget)
-        void this.spine
-          .emit({
-            eventName: 'sale.created',
-            workspaceId,
-            entityRef: { entityType: 'sale', entityId: sale.id },
-            truthMode: 'observed',
-            provenance: SALES_PROVENANCE,
-            payload: {
-              saleId: sale.id,
-              productId,
-              planId,
-              amount: plan.price,
-              paymentMethod: 'PIX',
-              externalPaymentId: pixResult.externalId,
-            },
-          })
-          .catch((err: unknown) => {
-            this.logger.warn(
-              `sale.created emission failed: ${err instanceof Error ? err.message : String(err)}`,
-            );
-          });
-
-        void this.spine
-          .emit({
-            eventName: 'payment.pending',
-            workspaceId,
-            entityRef: { entityType: 'sale', entityId: sale.id },
-            truthMode: 'observed',
-            provenance: SALES_PROVENANCE,
-            payload: {
-              saleId: sale.id,
-              externalPaymentId: pixResult.externalId,
-              gateway: 'mercadopago',
-              method: 'PIX',
-              amount: plan.price,
-              status: 'pending',
-            },
-          })
-          .catch((err: unknown) => {
-            this.logger.warn(
-              `payment.pending emission failed: ${err instanceof Error ? err.message : String(err)}`,
-            );
-          });
+        this.emitSaleEvent({
+          eventName: 'sale.created',
+          workspaceId,
+          saleId: sale.id,
+          payload: buildSaleCreatedPayload({
+            saleId: sale.id,
+            productId,
+            planId,
+            amount: plan.price,
+            paymentMethod: 'PIX',
+            externalPaymentId: pixResult.externalId,
+          }),
+        });
+        this.emitSaleEvent({
+          eventName: 'payment.pending',
+          workspaceId,
+          saleId: sale.id,
+          payload: buildPaymentPendingPayload({
+            saleId: sale.id,
+            externalPaymentId: pixResult.externalId,
+            gateway: 'mercadopago',
+            method: 'PIX',
+            amount: plan.price,
+          }),
+        });
 
         this.logger.log(
           `PIX sale created: saleId=${sale.id} externalPaymentId=${pixResult.externalId} workspace=${workspaceId}`,
@@ -284,22 +244,7 @@ export class SalesService {
     planId: string,
     buyerData: BoletoBuyerData,
   ): Promise<CreateBoletoOrderResult> {
-    const plan = await this.prisma.productPlan.findFirst({
-      where: {
-        id: planId,
-        productId,
-        product: { workspaceId },
-        active: true,
-      },
-      include: { product: { select: { name: true } } },
-    });
-
-    if (!plan) {
-      throw new NotFoundException(
-        `Plano ${planId} não encontrado para produto ${productId} neste workspace.`,
-      );
-    }
-
+    const plan = await this.loadActivePlanOrThrow(workspaceId, productId, planId);
     const amountCents = planPriceToCents(plan.price);
     if (amountCents <= 0n) {
       throw new ServiceUnavailableException('O plano possui preço inválido.');
@@ -312,6 +257,7 @@ export class SalesService {
     const expiresAt = computeBoletoExpiresAt();
     const payerDocDigits = sanitizeDocumentDigits(buyerData.cpf);
     const buyerAddressMetadata = buildBoletoAddressMetadata(buyerData.address);
+    const buyerMeta = pickSaleBuyerMetadataInput(productId, planId, buyerData);
 
     return this.prisma
       .$transaction(
@@ -324,27 +270,15 @@ export class SalesService {
               status: 'pending',
               paymentMethod: 'BOLETO',
               leadPhone: buyerData.phone ?? null,
-              metadata: {
-                productId,
-                planId,
-                buyerName: buyerData.name,
-                buyerEmail: buyerData.email,
-                buyerAddress: buyerAddressMetadata,
-              },
+              metadata: buildBoletoSaleCreateMetadata(buyerMeta, buyerAddressMetadata),
             },
           });
 
-          await this.audit.logWithTx(tx, {
-            workspaceId,
-            action: 'SALE_CREATED',
-            resource: 'KloelSale',
-            resourceId: sale.id,
-            details: {
-              productId,
-              planId,
-              amount: plan.price,
-              paymentMethod: 'BOLETO',
-            },
+          await this.auditSale(tx, sale.id, workspaceId, 'SALE_CREATED', {
+            productId,
+            planId,
+            amount: plan.price,
+            paymentMethod: 'BOLETO',
           });
 
           const boletoResult = await this.mpBoleto.create({
@@ -365,31 +299,22 @@ export class SalesService {
             data: {
               externalPaymentId: boletoResult.externalId,
               paymentLink: boletoResult.ticketUrl,
-              metadata: {
-                productId,
-                planId,
-                buyerName: buyerData.name,
-                buyerEmail: buyerData.email,
-                buyerAddress: buyerAddressMetadata,
-                boletoExternalId: boletoResult.externalId,
-                boletoStatus: boletoResult.status,
-                boletoBarcode: boletoResult.digitableLine || boletoResult.barcodeContent,
-              },
+              metadata: buildBoletoSaleUpdateMetadata({
+                buyer: buyerMeta,
+                buyerAddressMetadata,
+                externalId: boletoResult.externalId,
+                status: boletoResult.status,
+                barcode: boletoResult.digitableLine || boletoResult.barcodeContent,
+              }),
             },
           });
 
-          await this.audit.logWithTx(tx, {
-            workspaceId,
-            action: 'PAYMENT_PENDING',
-            resource: 'KloelSale',
-            resourceId: sale.id,
-            details: {
-              externalPaymentId: boletoResult.externalId,
-              gateway: 'mercadopago',
-              method: 'BOLETO',
-              amount: plan.price,
-              status: boletoResult.status,
-            },
+          await this.auditSale(tx, sale.id, workspaceId, 'PAYMENT_PENDING', {
+            externalPaymentId: boletoResult.externalId,
+            gateway: 'mercadopago',
+            method: 'BOLETO',
+            amount: plan.price,
+            status: boletoResult.status,
           });
 
           return { sale, boletoResult };
@@ -397,49 +322,31 @@ export class SalesService {
         { isolationLevel: 'ReadCommitted' },
       )
       .then(({ sale, boletoResult }) => {
-        void this.spine
-          .emit({
-            eventName: 'sale.created',
-            workspaceId,
-            entityRef: { entityType: 'sale', entityId: sale.id },
-            truthMode: 'observed',
-            provenance: SALES_PROVENANCE,
-            payload: {
-              saleId: sale.id,
-              productId,
-              planId,
-              amount: plan.price,
-              paymentMethod: 'BOLETO',
-              externalPaymentId: boletoResult.externalId,
-            },
-          })
-          .catch((err: unknown) => {
-            this.logger.warn(
-              `sale.created emission failed: ${err instanceof Error ? err.message : String(err)}`,
-            );
-          });
-
-        void this.spine
-          .emit({
-            eventName: 'payment.pending',
-            workspaceId,
-            entityRef: { entityType: 'sale', entityId: sale.id },
-            truthMode: 'observed',
-            provenance: SALES_PROVENANCE,
-            payload: {
-              saleId: sale.id,
-              externalPaymentId: boletoResult.externalId,
-              gateway: 'mercadopago',
-              method: 'BOLETO',
-              amount: plan.price,
-              status: 'pending',
-            },
-          })
-          .catch((err: unknown) => {
-            this.logger.warn(
-              `payment.pending emission failed: ${err instanceof Error ? err.message : String(err)}`,
-            );
-          });
+        this.emitSaleEvent({
+          eventName: 'sale.created',
+          workspaceId,
+          saleId: sale.id,
+          payload: buildSaleCreatedPayload({
+            saleId: sale.id,
+            productId,
+            planId,
+            amount: plan.price,
+            paymentMethod: 'BOLETO',
+            externalPaymentId: boletoResult.externalId,
+          }),
+        });
+        this.emitSaleEvent({
+          eventName: 'payment.pending',
+          workspaceId,
+          saleId: sale.id,
+          payload: buildPaymentPendingPayload({
+            saleId: sale.id,
+            externalPaymentId: boletoResult.externalId,
+            gateway: 'mercadopago',
+            method: 'BOLETO',
+            amount: plan.price,
+          }),
+        });
 
         this.logger.log(
           `Boleto sale created: saleId=${sale.id} externalPaymentId=${boletoResult.externalId} workspace=${workspaceId}`,
@@ -464,28 +371,14 @@ export class SalesService {
     planId: string,
     buyerData: BuyerData,
   ): Promise<CreateStripeCardLinkResult> {
-    const plan = await this.prisma.productPlan.findFirst({
-      where: {
-        id: planId,
-        productId,
-        product: { workspaceId },
-        active: true,
-      },
-      include: { product: { select: { name: true } } },
-    });
-
-    if (!plan) {
-      throw new NotFoundException(
-        `Plano ${planId} não encontrado para produto ${productId} neste workspace.`,
-      );
-    }
-
+    const plan = await this.loadActivePlanOrThrow(workspaceId, productId, planId);
     const amountCents = planPriceToCentsNumber(plan.price);
     if (amountCents <= 0) {
       throw new ServiceUnavailableException('O plano possui preço inválido.');
     }
 
     const productName = plan.product.name;
+    const buyerMeta = pickSaleBuyerMetadataInput(productId, planId, buyerData);
 
     return this.prisma
       .$transaction(
@@ -498,26 +391,15 @@ export class SalesService {
               status: 'pending',
               paymentMethod: 'CREDIT_CARD',
               leadPhone: buyerData.phone ?? null,
-              metadata: {
-                productId,
-                planId,
-                buyerName: buyerData.name,
-                buyerEmail: buyerData.email,
-              },
+              metadata: buildSaleBuyerMetadata(buyerMeta),
             },
           });
 
-          await this.audit.logWithTx(tx, {
-            workspaceId,
-            action: 'SALE_CREATED',
-            resource: 'KloelSale',
-            resourceId: sale.id,
-            details: {
-              productId,
-              planId,
-              amount: plan.price,
-              paymentMethod: 'CREDIT_CARD',
-            },
+          await this.auditSale(tx, sale.id, workspaceId, 'SALE_CREATED', {
+            productId,
+            planId,
+            amount: plan.price,
+            paymentMethod: 'CREDIT_CARD',
           });
 
           const frontendOrigin = resolveFrontendOrigin();
@@ -527,41 +409,19 @@ export class SalesService {
               mode: 'payment',
               payment_method_types: ['card'],
               customer_email: buyerData.email,
-              line_items: [
-                {
-                  quantity: 1,
-                  price_data: {
-                    currency: 'brl',
-                    unit_amount: amountCents,
-                    product_data: { name: productName },
-                  },
-                },
-              ],
+              line_items: buildStripeCheckoutLineItems(productName, amountCents),
               success_url: successUrl,
               cancel_url: cancelUrl,
-              metadata: {
-                workspace_id: workspaceId,
+              metadata: buildStripeSessionMetadata({
                 workspaceId,
-                kloel_order_id: sale.id,
-                orderId: sale.id,
                 saleId: sale.id,
                 productId,
                 planId,
                 productName,
-                payment_method: 'CREDIT_CARD',
-                sourceCapability: 'sales.create_card_link',
                 ...(buyerData.phone ? { phone: buyerData.phone } : {}),
-              },
+              }),
               payment_intent_data: {
-                metadata: {
-                  workspace_id: workspaceId,
-                  workspaceId,
-                  kloel_order_id: sale.id,
-                  orderId: sale.id,
-                  saleId: sale.id,
-                  payment_method: 'CREDIT_CARD',
-                  sourceCapability: 'sales.create_card_link',
-                },
+                metadata: buildStripePaymentIntentMetadata(workspaceId, sale.id),
               },
             },
             { idempotencyKey: `sale-card:${workspaceId}:${sale.id}:${randomUUID()}` },
@@ -578,29 +438,16 @@ export class SalesService {
             data: {
               externalPaymentId,
               paymentLink: session.url,
-              metadata: {
-                productId,
-                planId,
-                buyerName: buyerData.name,
-                buyerEmail: buyerData.email,
-                stripeCheckoutSessionId: session.id,
-                stripePaymentIntentId: externalPaymentId,
-              },
+              metadata: buildStripeSaleUpdateMetadata(buyerMeta, session.id, externalPaymentId),
             },
           });
 
-          await this.audit.logWithTx(tx, {
-            workspaceId,
-            action: 'PAYMENT_PENDING',
-            resource: 'KloelSale',
-            resourceId: sale.id,
-            details: {
-              externalPaymentId,
-              gateway: 'stripe',
-              method: 'CREDIT_CARD',
-              amount: plan.price,
-              status: 'pending',
-            },
+          await this.auditSale(tx, sale.id, workspaceId, 'PAYMENT_PENDING', {
+            externalPaymentId,
+            gateway: 'stripe',
+            method: 'CREDIT_CARD',
+            amount: plan.price,
+            status: 'pending',
           });
 
           return { sale, session, externalPaymentId, checkoutUrl: session.url };
@@ -608,51 +455,33 @@ export class SalesService {
         { isolationLevel: 'ReadCommitted' },
       )
       .then(({ sale, session, externalPaymentId, checkoutUrl }) => {
-        void this.spine
-          .emit({
-            eventName: 'sale.created',
-            workspaceId,
-            entityRef: { entityType: 'sale', entityId: sale.id },
-            truthMode: 'observed',
-            provenance: SALES_PROVENANCE,
-            payload: {
-              saleId: sale.id,
-              productId,
-              planId,
-              amount: plan.price,
-              paymentMethod: 'CREDIT_CARD',
-              externalPaymentId,
-              checkoutSessionId: session.id,
-            },
-          })
-          .catch((err: unknown) => {
-            this.logger.warn(
-              `sale.created emission failed: ${err instanceof Error ? err.message : String(err)}`,
-            );
-          });
-
-        void this.spine
-          .emit({
-            eventName: 'payment.pending',
-            workspaceId,
-            entityRef: { entityType: 'sale', entityId: sale.id },
-            truthMode: 'observed',
-            provenance: SALES_PROVENANCE,
-            payload: {
-              saleId: sale.id,
-              externalPaymentId,
-              gateway: 'stripe',
-              method: 'CREDIT_CARD',
-              amount: plan.price,
-              status: 'pending',
-              checkoutSessionId: session.id,
-            },
-          })
-          .catch((err: unknown) => {
-            this.logger.warn(
-              `payment.pending emission failed: ${err instanceof Error ? err.message : String(err)}`,
-            );
-          });
+        this.emitSaleEvent({
+          eventName: 'sale.created',
+          workspaceId,
+          saleId: sale.id,
+          payload: buildSaleCreatedPayload({
+            saleId: sale.id,
+            productId,
+            planId,
+            amount: plan.price,
+            paymentMethod: 'CREDIT_CARD',
+            externalPaymentId,
+            checkoutSessionId: session.id,
+          }),
+        });
+        this.emitSaleEvent({
+          eventName: 'payment.pending',
+          workspaceId,
+          saleId: sale.id,
+          payload: buildPaymentPendingPayload({
+            saleId: sale.id,
+            externalPaymentId,
+            gateway: 'stripe',
+            method: 'CREDIT_CARD',
+            amount: plan.price,
+            checkoutSessionId: session.id,
+          }),
+        });
 
         this.logger.log(
           `Stripe card checkout link created: saleId=${sale.id} externalPaymentId=${externalPaymentId} workspace=${workspaceId}`,
@@ -665,6 +494,65 @@ export class SalesService {
           externalPaymentId,
         };
       });
+  }
+
+  /**
+   * Workspace-scoped plan lookup with eager-loaded product name. Throws a
+   * Nest `NotFoundException` with a PT-BR message when the plan is missing,
+   * inactive, or belongs to another workspace — matching the contract every
+   * `createXxxOrder` flow expects.
+   */
+  private async loadActivePlanOrThrow(workspaceId: string, productId: string, planId: string) {
+    const plan = await this.prisma.productPlan.findFirst({
+      where: { id: planId, productId, product: { workspaceId }, active: true },
+      include: { product: { select: { name: true } } },
+    });
+    if (!plan) {
+      throw new NotFoundException(
+        `Plano ${planId} não encontrado para produto ${productId} neste workspace.`,
+      );
+    }
+    return plan;
+  }
+
+  /**
+   * Write a `KloelSale`-scoped audit row through the supplied transaction
+   * client. Collapses the repeated `{workspaceId, action, resource, resourceId,
+   * details}` envelope into a single call so each money-path method stays
+   * focused on its own logic.
+   */
+  private auditSale(
+    tx: Prisma.TransactionClient,
+    saleId: string,
+    workspaceId: string,
+    action: 'SALE_CREATED' | 'PAYMENT_PENDING',
+    details: Record<string, unknown>,
+  ): Promise<void> {
+    return this.audit.logWithTx(tx, {
+      workspaceId,
+      action,
+      resource: 'KloelSale',
+      resourceId: saleId,
+      details,
+    });
+  }
+
+  /**
+   * Fire-and-forget spine emission with structured warn log on failure. Keeps
+   * the call sites readable instead of repeating the same `.catch` block six
+   * times.
+   */
+  private emitSaleEvent(args: {
+    eventName: string;
+    workspaceId: string;
+    saleId: string;
+    payload: Record<string, unknown>;
+  }): void {
+    void this.spine.emit(buildSpineSaleEnvelope(args)).catch((err: unknown) => {
+      this.logger.warn(
+        `${args.eventName} emission failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    });
   }
 
   /**
