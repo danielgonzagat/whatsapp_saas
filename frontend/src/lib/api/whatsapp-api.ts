@@ -7,12 +7,6 @@ const invalidateWhatsAppApi = () =>
 
 /** Whatsapp api. */
 export const whatsappApi = {
-  startSession: async () => {
-    const res = await apiFetch(`/whatsapp-api/session/start`, { method: 'POST' });
-    invalidateWhatsAppApi();
-    return res;
-  },
-
   bootstrapSession: async () => {
     const res = await apiFetch<{
       connected: boolean;
@@ -51,14 +45,6 @@ export const whatsappApi = {
     }>(`/whatsapp-api/cia/intelligence`);
   },
 
-  getStatus: () => {
-    return apiFetch(`/whatsapp-api/session/status`);
-  },
-
-  getQrCode: () => {
-    return apiFetch<{ available: boolean; qr?: string }>(`/whatsapp-api/session/qr`);
-  },
-
   claimSession: async (sourceWorkspaceId: string) => {
     const res = await apiFetch<{
       success: boolean;
@@ -69,47 +55,6 @@ export const whatsappApi = {
     }>(`/whatsapp-api/session/claim`, {
       method: 'POST',
       body: { sourceWorkspaceId },
-    });
-    invalidateWhatsAppApi();
-    return res;
-  },
-
-  disconnect: async () => {
-    const res = await apiFetch(`/whatsapp-api/session/disconnect`, { method: 'DELETE' });
-    invalidateWhatsAppApi();
-    return res;
-  },
-
-  logout: async () => {
-    const res = await apiFetch(`/whatsapp-api/session/logout`, { method: 'POST' });
-    invalidateWhatsAppApi();
-    return res;
-  },
-
-  getViewer: () => {
-    return apiFetch<unknown>(`/whatsapp-api/session/view`);
-  },
-
-  takeover: async () => {
-    const res = await apiFetch<unknown>(`/whatsapp-api/session/takeover`, {
-      method: 'POST',
-    });
-    invalidateWhatsAppApi();
-    return res;
-  },
-
-  resumeAgent: async () => {
-    const res = await apiFetch<unknown>(`/whatsapp-api/session/resume-agent`, {
-      method: 'POST',
-    });
-    invalidateWhatsAppApi();
-    return res;
-  },
-
-  performViewerAction: async (action: Record<string, unknown>) => {
-    const res = await apiFetch<unknown>(`/whatsapp-api/session/action`, {
-      method: 'POST',
-      body: { action },
     });
     invalidateWhatsAppApi();
     return res;

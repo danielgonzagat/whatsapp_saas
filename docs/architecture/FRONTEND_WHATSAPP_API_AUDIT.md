@@ -54,22 +54,25 @@ Search method: `grep -rEn "\\b<symbol>\\b" frontend/src --include='*.ts' --inclu
 | `simulateWhatsAppConversation` | REMOVED — Wave 29B. Zero in-repo consumers re-verified. POSTed `/kloel/whatsapp/simulate/:ws`. |
 | `getWhatsAppBrainStatus` | REMOVED — Wave 29B. Zero in-repo consumers re-verified. GETed `/kloel/whatsapp/status`. |
 
-**`whatsappApi` object method dead-method list** (9 of 19 methods):
+**`whatsappApi` object method dead-method list** (Wave 40: 9 duplicates of `whatsapp.ts` named exports removed; remaining 4 dead-but-unique methods preserved):
 
 | Method | Status |
 |---|---|
-| `startSession` | DEAD-but-preserved (superseded by `initiateWhatsAppConnection`). |
-| `bootstrapSession` | DEAD-but-preserved. |
-| `getCiaIntelligence` | DEAD-but-preserved. |
-| `getQrCode` | DEAD-but-preserved (superseded by `getWhatsAppQR` / `getWhatsAppQrImageOnly`). |
-| `getViewer` | DEAD-but-preserved. |
-| `takeover` | DEAD-but-preserved. |
-| `resumeAgent` | DEAD-but-preserved. |
-| `performViewerAction` | DEAD-but-preserved. |
-| `createContact` | DEAD-but-preserved. |
-| `setPresence` | DEAD-but-preserved. |
-| `getBacklog` | DEAD-but-preserved. |
-| `syncHistory` | DEAD-but-preserved. |
+| `startSession` | REMOVED — Wave 40. Duplicate of `initiateWhatsAppConnection` (canonical, 11 consumers). |
+| `getStatus` | REMOVED — Wave 40. Duplicate of `getWhatsAppStatus` (canonical, 16 consumers). |
+| `getQrCode` | REMOVED — Wave 40. Duplicate of `getWhatsAppQrImageOnly` / `getWhatsAppQR` (canonical, 4 consumers). |
+| `disconnect` | REMOVED — Wave 40. Duplicate of `disconnectWhatsApp` (canonical, 5 consumers). |
+| `logout` | REMOVED — Wave 40. Duplicate of `logoutWhatsApp` (canonical, 5 consumers). |
+| `getViewer` | REMOVED — Wave 40. Was dead-but-preserved; no `whatsapp.ts` twin but `getWhatsAppViewer` was removed in Wave 29B (zero consumers). |
+| `takeover` | REMOVED — Wave 40. Was dead-but-preserved; sibling `takeoverWhatsAppViewer` removed in Wave 29B. |
+| `resumeAgent` | REMOVED — Wave 40. Was dead-but-preserved; sibling `resumeWhatsAppAgent` removed in Wave 29B. |
+| `performViewerAction` | REMOVED — Wave 40. Was dead-but-preserved; sibling `performWhatsAppViewerAction` removed in Wave 29B. |
+| `bootstrapSession` | DEAD-but-preserved (no `whatsapp.ts` twin). |
+| `getCiaIntelligence` | DEAD-but-preserved (no `whatsapp.ts` twin). |
+| `createContact` | DEAD-but-preserved (no `whatsapp.ts` twin). |
+| `setPresence` | DEAD-but-preserved (no `whatsapp.ts` twin). |
+| `getBacklog` | DEAD-but-preserved (no `whatsapp.ts` twin). |
+| `syncHistory` | DEAD-but-preserved (no `whatsapp.ts` twin). |
 
 ## Duplicate-pair list
 
@@ -77,17 +80,17 @@ Endpoints reachable via **both** `whatsapp.ts` named exports **and** `whatsapp-a
 
 | Endpoint | `whatsapp.ts` export | `whatsappApi.*` method |
 |---|---|---|
-| `GET /whatsapp-api/session/status` | `getWhatsAppStatus` (16 consumers ✓ active) | `whatsappApi.getStatus` (4 consumers ✓ active) |
-| `POST /whatsapp-api/session/start` | `initiateWhatsAppConnection` (11 consumers ✓ active) | `whatsappApi.startSession` (DEAD) |
-| `GET /whatsapp-api/session/qr` | `getWhatsAppQrImageOnly` (4 consumers ✓ active) | `whatsappApi.getQrCode` (DEAD) |
-| `DELETE /whatsapp-api/session/disconnect` | `disconnectWhatsApp` (5 consumers ✓ active) | `whatsappApi.disconnect` (1 consumer ✓ active) |
-| `POST /whatsapp-api/session/logout` | `logoutWhatsApp` (5 consumers ✓ active) | `whatsappApi.logout` (1 consumer ✓ active) |
-| `GET /whatsapp-api/session/view` (viewer) | `getWhatsAppViewer` (DEAD, stub) | `whatsappApi.getViewer` (DEAD) |
-| `POST /whatsapp-api/session/takeover` | `takeoverWhatsAppViewer` (DEAD, stub) | `whatsappApi.takeover` (DEAD) |
-| `POST /whatsapp-api/session/resume-agent` | `resumeWhatsAppAgent` (DEAD, stub) | `whatsappApi.resumeAgent` (DEAD) |
-| `POST /whatsapp-api/session/action` | `performWhatsAppViewerAction` (DEAD, stub) | `whatsappApi.performViewerAction` (DEAD) |
+| `GET /whatsapp-api/session/status` | `getWhatsAppStatus` (16 consumers ✓ active) | RESOLVED — Wave 40: `whatsappApi.getStatus` removed. |
+| `POST /whatsapp-api/session/start` | `initiateWhatsAppConnection` (11 consumers ✓ active) | RESOLVED — Wave 40: `whatsappApi.startSession` removed. |
+| `GET /whatsapp-api/session/qr` | `getWhatsAppQrImageOnly` (4 consumers ✓ active) | RESOLVED — Wave 40: `whatsappApi.getQrCode` removed. |
+| `DELETE /whatsapp-api/session/disconnect` | `disconnectWhatsApp` (5 consumers ✓ active) | RESOLVED — Wave 40: `whatsappApi.disconnect` removed. |
+| `POST /whatsapp-api/session/logout` | `logoutWhatsApp` (5 consumers ✓ active) | RESOLVED — Wave 40: `whatsappApi.logout` removed. |
+| `GET /whatsapp-api/session/view` (viewer) | `getWhatsAppViewer` REMOVED in Wave 29B | RESOLVED — Wave 40: `whatsappApi.getViewer` removed. |
+| `POST /whatsapp-api/session/takeover` | `takeoverWhatsAppViewer` REMOVED in Wave 29B | RESOLVED — Wave 40: `whatsappApi.takeover` removed. |
+| `POST /whatsapp-api/session/resume-agent` | `resumeWhatsAppAgent` REMOVED in Wave 29B | RESOLVED — Wave 40: `whatsappApi.resumeAgent` removed. |
+| `POST /whatsapp-api/session/action` | `performWhatsAppViewerAction` REMOVED in Wave 29B | RESOLVED — Wave 40: `whatsappApi.performViewerAction` removed. |
 
-Five of the nine duplicate endpoints have both halves alive in production. Two halves return static stubs while their twin returns a real HTTP call.
+Wave 40 (2026-05-27): Adopted Option 1 from the recommendations below — `whatsapp.ts` named exports kept as the canonical surface (matches production reality with 41+ active consumers). All 9 duplicate methods on `whatsappApi.*` removed; per-method gate specs in `whatsapp-api.test.ts` collapsed onto `getContacts` (the next live unique method) preserving Authorization + error-handling coverage. Real production consumers of removed methods: 0 (the 4 "active consumers" in the prior table were all the gate-spec file itself).
 
 ## Recommendations (frontend Wave proposal — for future authorization)
 

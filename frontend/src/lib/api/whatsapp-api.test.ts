@@ -29,49 +29,22 @@ function lastFetch(): { url: string; method: string; headers: Record<string, str
 }
 
 describe('whatsappApi', () => {
-  describe('getStatus', () => {
-    it('GETs /whatsapp-api/session/status', async () => {
-      await whatsappApi.getStatus();
-      const { url, method } = lastFetch();
-      expect(method).toBe('GET');
-      expect(url).toContain('/whatsapp-api/session/status');
-    });
-
-    it('sends Authorization header', async () => {
-      await whatsappApi.getStatus();
-      expect(lastFetch().headers.authorization).toBe('Bearer test-token');
-    });
-  });
-
-  describe('disconnect', () => {
-    it('DELETEs /whatsapp-api/session/disconnect', async () => {
-      await whatsappApi.disconnect();
-      const { url, method } = lastFetch();
-      expect(method).toBe('DELETE');
-      expect(url).toContain('/whatsapp-api/session/disconnect');
-    });
-  });
-
-  describe('logout', () => {
-    it('POSTs to /whatsapp-api/session/logout', async () => {
-      await whatsappApi.logout();
-      const { url, method } = lastFetch();
-      expect(method).toBe('POST');
-      expect(url).toContain('/whatsapp-api/session/logout');
-    });
-  });
-
   describe('getContacts', () => {
     it('GETs /whatsapp-api/contacts', async () => {
       await whatsappApi.getContacts();
       expect(lastFetch().url).toContain('/whatsapp-api/contacts');
+    });
+
+    it('sends Authorization header', async () => {
+      await whatsappApi.getContacts();
+      expect(lastFetch().headers.authorization).toBe('Bearer test-token');
     });
   });
 
   describe('error handling', () => {
     it('propagates network errors', async () => {
       vi.mocked(globalThis.fetch).mockRejectedValue(new Error('Offline'));
-      const res = await whatsappApi.getStatus();
+      const res = await whatsappApi.getContacts();
       expect(res.error).toBe('Offline');
     });
 
@@ -81,7 +54,7 @@ describe('whatsappApi', () => {
         status: 503,
         json: async () => ({ message: 'Service unavailable' }),
       } as Response);
-      const res = await whatsappApi.getStatus();
+      const res = await whatsappApi.getContacts();
       expect(res.error).toBeTruthy();
     });
   });
