@@ -278,9 +278,7 @@ export class PaymentWebhookStripeController {
       // here when the event was already marked `processed` on a previous
       // delivery to preserve financial idempotency.
       if (webhookEvent?.status === 'processed') {
-        this.logger.log(
-          `Stripe webhook ${stripeExternalId} already processed; skipping replay`,
-        );
+        this.logger.log(`Stripe webhook ${stripeExternalId} already processed; skipping replay`);
         return { received: true, skipped: true, reason: 'already_processed' };
       }
 

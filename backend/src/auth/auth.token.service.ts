@@ -317,8 +317,7 @@ export class AuthTokenService {
       //       any honest client should have rotated. Sweep all sibling
       //       refresh tokens to invalidate the suspected attacker.
       const GRACE_WINDOW_MS = 15_000;
-      const revokedRecently =
-        Date.now() - stored.updatedAt.getTime() <= GRACE_WINDOW_MS;
+      const revokedRecently = Date.now() - stored.updatedAt.getTime() <= GRACE_WINDOW_MS;
       const shouldSweep = !raceLost && !revokedRecently;
 
       if (shouldSweep) {
