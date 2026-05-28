@@ -70,8 +70,12 @@ describe('unified-agent-integrator.helpers — autopilot setting parsers', () =>
   });
 
   it('honors explicit useUnifiedAgent boolean before agentMode', () => {
-    expect(resolveUnifiedAgentSettingOverride({ useUnifiedAgent: true, agentMode: 'fallback_only' })).toBe(true);
-    expect(resolveUnifiedAgentSettingOverride({ useUnifiedAgent: false, agentMode: 'primary' })).toBe(false);
+    expect(
+      resolveUnifiedAgentSettingOverride({ useUnifiedAgent: true, agentMode: 'fallback_only' }),
+    ).toBe(true);
+    expect(
+      resolveUnifiedAgentSettingOverride({ useUnifiedAgent: false, agentMode: 'primary' }),
+    ).toBe(false);
   });
 
   it('falls back to agentMode when useUnifiedAgent is absent', () => {
@@ -176,9 +180,7 @@ describe('unified-agent-integrator.helpers — mapUnifiedActionsToAutopilot', ()
   });
 
   it('falls back to FOLLOW_UP for unknown tool names', () => {
-    const decision = mapUnifiedActionsToAutopilot([
-      { tool: 'totally_made_up_tool', args: {} },
-    ]);
+    const decision = mapUnifiedActionsToAutopilot([{ tool: 'totally_made_up_tool', args: {} }]);
     expect(decision.intent).toBe('FOLLOW_UP');
     expect(decision.action).toBe('FOLLOW_UP');
   });

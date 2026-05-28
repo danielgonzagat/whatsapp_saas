@@ -145,7 +145,12 @@ describe('prepaid-wallet-settlement.helpers — buildAdjustmentMetadata', () => 
   };
 
   it('serializes all bigint deltas as decimal strings', () => {
-    const metadata = buildAdjustmentMetadata(baseInput, BigInt(100), BigInt(20), 'usage_1') as Record<string, unknown>;
+    const metadata = buildAdjustmentMetadata(
+      baseInput,
+      BigInt(100),
+      BigInt(20),
+      'usage_1',
+    ) as Record<string, unknown>;
 
     expect(metadata).toMatchObject({
       operation: 'kb_ingestion',

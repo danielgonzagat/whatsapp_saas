@@ -78,7 +78,8 @@ export function detectCommerceExtrasIntent(msg: string, message: string): Action
   if (
     /(?:meus |todos |lista |hist[oó]rico |relat[oó]rio )?(?:estornos?|reembolsos?|refunds?|devolu[cç][oõ]es)/.test(
       msg,
-    ) || /cancelar\s+(venda|pedido)/.test(msg)
+    ) ||
+    /cancelar\s+(venda|pedido)/.test(msg)
   ) {
     return { tool: 'list_refunds', args: {} };
   }

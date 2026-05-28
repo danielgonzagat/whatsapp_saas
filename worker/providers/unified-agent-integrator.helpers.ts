@@ -83,16 +83,10 @@ export const PRODUCT_KEYWORDS = [
 export type AutopilotSettings = Record<string, unknown> | null;
 
 /** Agent modes that explicitly disable the Unified Agent path. */
-export const AGENT_MODE_DISABLES: ReadonlySet<string> = new Set([
-  'fallback_only',
-  'local_only',
-]);
+export const AGENT_MODE_DISABLES: ReadonlySet<string> = new Set(['fallback_only', 'local_only']);
 
 /** Agent modes that explicitly require the Unified Agent path. */
-export const AGENT_MODE_ENABLES: ReadonlySet<string> = new Set([
-  'primary',
-  'unified_primary',
-]);
+export const AGENT_MODE_ENABLES: ReadonlySet<string> = new Set(['primary', 'unified_primary']);
 
 /**
  * Pull the `autopilot` sub-object out of an opaque workspace settings record.
