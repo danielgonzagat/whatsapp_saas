@@ -1,5 +1,5 @@
 import { cpus } from 'node:os';
-import { Controller, Get, NotFoundException, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, NotFoundException, Optional, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ObservabilityQueriesService } from '../metrics/observability-queries.service';
@@ -8,6 +8,7 @@ import { asProviderSettings } from '../marketing/channels/whatsapp/provider-sett
 import { RouteClass } from '../common/throttler/route-class.decorator';
 import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 import { resolveTextLlmProvider, hasTextLlmApiKey } from '../lib/llm-provider';
+import { MindObservabilityService } from './mind/observability/mind-observability.service';
 
 interface SystemMetrics {
   cpu: { usage: number; cores: number };
@@ -58,6 +59,7 @@ export class DiagnosticsController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly observabilityQueries: ObservabilityQueriesService,
+    @Optional() private readonly mindObservability?: MindObservabilityService,
   ) {}
 
   /** Basic health. */
@@ -369,6 +371,20 @@ kloel_uptime_seconds ${process.uptime()}
       hasAnthropicFallback: hasAnthropic,
       notes,
     };
+  }
+
+  /** Aggregated Kloel Motor reply metrics for the admin dashboard. */
+  @InternalEndpoint('diagnostics kloel motor metrics')
+  @Get('kloel-motor/metrics')
+  @ApiOperation({ summary: 'Métricas agregadas de replies do Kloel Motor por workspace' })
+  kloelMotorMetrics(@Query('workspaceId') workspaceId: string) {
+    if (!this.mindObservability) {
+      return { status: 'unavailable', reason: 'MindObservabilityService not wired' };
+    }
+    if (!workspaceId) {
+      return { status: 'error', reason: 'workspaceId query parameter is required' };
+    }
+    return this.mindObservability.getSnapshot(workspaceId);
   }
 
   private async getKloelMetrics(): Promise<{

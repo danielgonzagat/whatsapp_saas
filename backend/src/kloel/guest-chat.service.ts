@@ -8,6 +8,7 @@ import OpenAI from 'openai';
 import { createTextLlmClient, resolveTextLlmApiKey } from '../lib/llm-provider';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { MindEventSpine } from './mind/coordination';
+import { MindObservabilityService } from './mind/observability/mind-observability.service';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { UnifiedAgentService } from './unified-agent.service';
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
@@ -45,6 +46,7 @@ export class GuestChatService implements OnModuleDestroy {
     @Optional() @InjectRedis() private readonly redis?: Redis,
     @Optional() private readonly abiBuilder?: AbiBuilderService,
     @Optional() private readonly spine?: MindEventSpine,
+    @Optional() private readonly mindObservability?: MindObservabilityService,
     @Optional() private readonly unifiedAgent?: UnifiedAgentService,
     @Optional() private readonly toolDispatcher?: KloelToolDispatcherService,
     @Optional() private readonly intentRouter?: IntentRouterService,
@@ -183,6 +185,7 @@ export class GuestChatService implements OnModuleDestroy {
     // Enviar cabeçalhos antes de escrever dados
     res.flushHeaders();
 
+    const startedAt = Date.now();
     try {
       if (!message || message.trim().length === 0) {
         res.write(`data: [DONE]\n\n`);
@@ -207,6 +210,8 @@ export class GuestChatService implements OnModuleDestroy {
 
       const fullResponse = await this.generateGuestReply(contextMessages, sessionId);
 
+      void this.observeReplyFireAndForget(sessionId, 'guest', startedAt, true);
+
       this.writeStreamChunk(res, {
         content: fullResponse,
         chunk: fullResponse,
@@ -221,6 +226,7 @@ export class GuestChatService implements OnModuleDestroy {
       res.write(`data: [DONE]\n\n`);
       res.end();
     } catch (error: unknown) {
+      void this.observeReplyFireAndForget(sessionId, 'guest', startedAt, false);
       void this.opsAlert?.alertOnCriticalError(error, 'GuestChatService.end');
       this.logger.error(
         `Guest chat error: ${error instanceof Error ? error.message : 'unknown error'}`,
@@ -248,6 +254,9 @@ export class GuestChatService implements OnModuleDestroy {
   }
 
   async chatSync(message: string, sessionId: string, workspaceId?: string): Promise<string> {
+    const startedAt = Date.now();
+    const effectiveWsId = workspaceId || this.resolveDefaultWorkspaceId();
+    const metricWsId = effectiveWsId || sessionId;
     try {
       if (!message || message.trim().length === 0) {
         return '';
@@ -260,7 +269,6 @@ export class GuestChatService implements OnModuleDestroy {
       }
 
       // DETERMINISTIC ACTION ROUTER — execute tools without LLM decision
-      const effectiveWsId = workspaceId || this.resolveDefaultWorkspaceId();
       if (effectiveWsId && this.toolDispatcher) {
         const actionReply = await runDeterministicAction(
           message,
@@ -292,6 +300,7 @@ export class GuestChatService implements OnModuleDestroy {
             executeTools: true,
           });
           const reply = result.reply || result.response || this.unavailableMessage;
+          void this.observeReplyFireAndForget(metricWsId, 'guest', startedAt, true);
           await this.persistConversationMessage(sessionId, 'user', message);
           await this.persistConversationMessage(sessionId, 'assistant', reply);
           this.logger.log(`UnifiedAgent reply: ${reply.substring(0, 100)}...`);
@@ -312,6 +321,8 @@ export class GuestChatService implements OnModuleDestroy {
 
       const reply = await this.generateGuestReply(contextMessages, sessionId);
 
+      void this.observeReplyFireAndForget(metricWsId, 'guest', startedAt, true);
+
       conversation.messages.push({ role: 'assistant', content: reply });
       await this.persistConversation(sessionId, conversation);
 
@@ -319,6 +330,7 @@ export class GuestChatService implements OnModuleDestroy {
 
       return reply;
     } catch (error: unknown) {
+      void this.observeReplyFireAndForget(metricWsId, 'guest', startedAt, false);
       void this.opsAlert?.alertOnCriticalError(error, 'GuestChatService.chatSync');
       this.logger.error(
         `Guest chat sync error: ${error instanceof Error ? error.message : 'unknown error'}`,
@@ -327,6 +339,26 @@ export class GuestChatService implements OnModuleDestroy {
       return this.unavailableMessage;
     }
   }
+  // ── Observability helper ──
+
+  private observeReplyFireAndForget(
+    workspaceId: string,
+    surface: 'guest' | 'admin' | 'whatsapp',
+    startedAt: number,
+    success: boolean,
+  ): void {
+    if (!this.mindObservability) return;
+    try {
+      this.mindObservability.observeReply(workspaceId, {
+        surface,
+        durationMs: Date.now() - startedAt,
+        success,
+      });
+    } catch {
+      // fire-and-forget: never throw from metrics
+    }
+  }
+
   // ── Conversation persistence delegators ──
 
   private async persistConversation(

@@ -11,6 +11,7 @@ import { AdminPermissionsService } from '../permissions/admin-permissions.servic
 import { adminErrors } from '../common/admin-api-errors';
 import { ChatToolRegistry } from './chat-tool.registry';
 import { OpsAlertService } from '../../observability/ops-alert.service';
+import { MindObservabilityService } from '../../kloel/mind/observability/mind-observability.service';
 import {
   inferToolInvocation,
   parseToolInvocation,
@@ -61,10 +62,12 @@ export class AdminChatService {
     private readonly permissions: AdminPermissionsService,
     private readonly tools: ChatToolRegistry,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly mindObservability?: MindObservabilityService,
   ) {}
 
   /** Send message. */
   async sendMessage(input: SendMessageInput): Promise<ChatSessionView> {
+    const startedAt = Date.now();
     if (input.content.length > MAX_MESSAGE_LENGTH) {
       throw adminErrors.forbidden();
     }
@@ -111,7 +114,23 @@ export class AdminChatService {
       data: { lastUsedAt: new Date() },
     });
 
+    void this.observeReplyFireAndForget(session.workspaceId, startedAt);
+
     return this.loadSessionView(session.id, session.workspaceId);
+  }
+
+  /** Fire-and-forget observability helper. */
+  private observeReplyFireAndForget(workspaceId: string, startedAt: number): void {
+    if (!this.mindObservability) return;
+    try {
+      this.mindObservability.observeReply(workspaceId, {
+        surface: 'admin',
+        durationMs: Date.now() - startedAt,
+        success: true,
+      });
+    } catch {
+      // fire-and-forget: never throw from metrics
+    }
   }
 
   /** List sessions. */

@@ -13,5 +13,5 @@ export {
   type LiftReport,
   type FailureReasonCount,
 } from './mind-lift-report.service';
-export { MindObservabilityService } from './mind-observability.service';
+export { MindObservabilityService, type ReplyObservation } from './mind-observability.service';
 export { MindReportService } from './mind-report.service';
