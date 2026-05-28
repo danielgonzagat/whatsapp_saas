@@ -1,0 +1,87 @@
+import { type CapabilityDefinition } from '../capability-registry-v2.types';
+
+/**
+ * KLOEL CAPABILITY REGISTRY partition — Tier 8 (crm).
+ *
+ * Extracted from capability-registry-v2.const.ts.
+ * Consumers should import CAPABILITY_DEFINITIONS from the barrel
+ * '../capability-registry-v2.const' rather than this partition directly.
+ */
+export const TIER_8_CRM_CAPABILITIES: CapabilityDefinition[] = [
+  {
+    id: 'update_subscription',
+    title: 'Gerenciar assinatura',
+    description: 'Cancela ou pausa uma assinatura',
+    category: 'MUTATION_SENSITIVE',
+    tier: 8,
+    requiresConfirmation: true,
+    requiredPermissions: ['subscription:write'],
+    inputSchema: [
+      { key: 'subscriptionId', type: 'string', label: 'ID da assinatura', required: false },
+    ],
+    domainService: 'SubscriptionService.update',
+    emits: ['subscription.updated'],
+    surface: ['dashboard-chat'],
+  },
+  {
+    id: 'browse_marketplace',
+    title: 'Explorar marketplace',
+    description: 'Lista produtos públicos para afiliação',
+    category: 'QUERY',
+    tier: 8,
+    requiresConfirmation: false,
+    requiredPermissions: [],
+    inputSchema: [],
+    domainService: 'MarketplaceService.list',
+    emits: [],
+    surface: ['dashboard-chat'],
+  },
+  {
+    id: 'get_lead_details',
+    title: 'Detalhes do lead',
+    description: 'Mostra detalhes de um lead',
+    category: 'QUERY',
+    tier: 8,
+    requiresConfirmation: false,
+    requiredPermissions: [],
+    inputSchema: [{ key: 'leadId', type: 'string', label: 'Lead', required: true }],
+    domainService: 'LeadService.get',
+    emits: [],
+    surface: ['dashboard-chat'],
+  },
+  {
+    id: 'crm.pipeline',
+    title: 'Pipeline CRM',
+    description: 'Mostra o pipeline CRM com estágios e leads',
+    category: 'QUERY',
+    tier: 8,
+    requiresConfirmation: false,
+    requiredPermissions: [],
+    inputSchema: [],
+    domainService: 'CrmService.getPipeline',
+    emits: [],
+    surface: ['dashboard-chat'],
+  },
+  {
+    id: 'sales.list',
+    title: 'Listar vendas',
+    description: 'Lista as vendas do workspace',
+    category: 'QUERY',
+    tier: 8,
+    requiresConfirmation: false,
+    requiredPermissions: [],
+    inputSchema: [
+      {
+        key: 'status',
+        type: 'select',
+        label: 'Status',
+        required: false,
+        enum: ['pending', 'paid', 'cancelled', 'refunded'],
+      },
+      { key: 'limit', type: 'number', label: 'Quantidade', required: false },
+    ],
+    domainService: 'OrderService.list',
+    emits: [],
+    surface: ['dashboard-chat'],
+  },
+];
