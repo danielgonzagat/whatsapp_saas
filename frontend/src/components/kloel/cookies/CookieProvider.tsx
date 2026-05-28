@@ -8,33 +8,17 @@ import { CookieBanner } from './CookieBanner';
 import { CookiePreferencesModal } from './CookiePreferencesModal';
 import { CookieScriptManager } from './CookieScriptManager';
 import { COOKIE_TOKENS } from './cookie-data';
+import {
+  COOKIE_TOAST_DURATION_MS,
+  isCookieConsentSurface,
+  normalizeConsent,
+  OPEN_COOKIE_PREFERENCES_EVENT,
+} from './CookieProvider.helpers';
 import type { CookieConsentPreferences } from './cookie-types';
-
-const OPEN_COOKIE_PREFERENCES_EVENT = 'kloel:open-cookie-preferences';
 
 type CookieProviderProps = {
   children: ReactNode;
 };
-
-function normalizeConsent(
-  input?: CookieConsentPreferences | null,
-): CookieConsentPreferences | null {
-  if (!input) {
-    return null;
-  }
-
-  return {
-    necessary: true,
-    analytics: Boolean(input.analytics),
-    marketing: Boolean(input.marketing),
-    ...(input.updatedAt !== undefined ? { updatedAt: input.updatedAt } : {}),
-  };
-}
-
-function isCookieConsentSurface(hostname: string): boolean {
-  const normalized = hostname.toLowerCase();
-  return normalized === 'kloel.com' || normalized === 'www.kloel.com';
-}
 
 /** Open cookie preferences. */
 export function openCookiePreferences() {
@@ -58,7 +42,10 @@ export function CookieProvider({ children }: CookieProviderProps) {
       window.clearTimeout(toastTimerRef.current);
     }
     setIsToastVisible(true);
-    toastTimerRef.current = window.setTimeout(() => setIsToastVisible(false), 2500);
+    toastTimerRef.current = window.setTimeout(
+      () => setIsToastVisible(false),
+      COOKIE_TOAST_DURATION_MS,
+    );
   }, []);
 
   useEffect(() => {
