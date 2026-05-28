@@ -149,7 +149,9 @@ describe('createTextLlmClientPool', () => {
     const pool = createTextLlmClientPool();
     expect(pool).toHaveLength(3);
 
-    const calls = (OpenAI as jest.Mock).mock.calls;
+    const calls = (OpenAI as jest.Mock).mock.calls as Array<
+      [{ apiKey: string; baseURL?: string }]
+    >;
     expect(calls[0][0].apiKey).toBe('sk-ds');
     expect(calls[1][0].apiKey).toBe('sk-gen');
     expect(calls[2][0].apiKey).toBe('sk-oai');
@@ -159,7 +161,9 @@ describe('createTextLlmClientPool', () => {
     process.env.OPENAI_API_KEY = 'sk-oai';
     const pool = createTextLlmClientPool();
     expect(pool).toHaveLength(1);
-    const calls = (OpenAI as jest.Mock).mock.calls;
+    const calls = (OpenAI as jest.Mock).mock.calls as Array<
+      [{ apiKey: string; baseURL?: string }]
+    >;
     expect(calls).toHaveLength(1);
     expect(calls[0][0].apiKey).toBe('sk-oai');
   });
@@ -199,7 +203,7 @@ describe('createTextLlmClientPool', () => {
     process.env.OPENAI_API_KEY = 'sk-oai';
     const pool = createTextLlmClientPool();
     expect(pool).toHaveLength(1);
-    const callArg = (OpenAI as jest.Mock).mock.calls[0][0];
+    const callArg = (OpenAI as jest.Mock).mock.calls[0][0] as { apiKey: string };
     expect(callArg).not.toHaveProperty('baseURL');
   });
 });
