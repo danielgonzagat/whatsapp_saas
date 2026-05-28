@@ -2,6 +2,8 @@ import type { Prisma, PrismaClient } from '@prisma/client';
 
 import type { UnknownRecord } from '../common/types';
 
+// ── Pure helpers ────────────────────────────────────────────────────────────
+
 /**
  * Describe an unknown thrown value as a human-readable string.
  * Pure helper safe to call from any context.
@@ -87,6 +89,66 @@ export function discountPercentFromMind(
   }
   return requestedPercent;
 }
+
+/** Clamp a raw discount-percent input into the [1, 30] range, defaulting to 10. */
+export function clampDiscountPercent(raw: unknown): number {
+  return Math.min(Math.max(Number(raw) || 10, 1), 30);
+}
+
+/** Map a lead-qualification stage label to a purchase-probability bucket. */
+export function getStagePurchaseProbabilityBucket(stage: string): string {
+  const buckets: Record<string, string> = {
+    awareness: 'LOW',
+    interest: 'MEDIUM',
+    decision: 'HIGH',
+    action: 'VERY_HIGH',
+  };
+  return buckets[stage] || 'LOW';
+}
+
+// ── Message lookup maps ────────────────────────────────────────────────────
+
+/** Human-readable labels for each meeting type. */
+export const MEETING_TYPE_LABELS: Record<string, string> = {
+  demo: 'Demonstracao do Produto',
+  consultation: 'Consultoria',
+  followup: 'Conversa de Acompanhamento',
+  support: 'Suporte Tecnico',
+};
+
+/** Resolve an anti-churn strategy label into its outbound message. */
+export function antiChurnMessage(strategy: string, offer: string): string {
+  const messages: Record<string, string> = {
+    discount: `Antes de concluir seu cancelamento, tenho uma condição comercial para você.\n\nQue tal um desconto exclusivo de 30% para continuar conosco? ${offer || 'Você é um cliente valioso e queremos mantê-lo!'}`,
+    upgrade:
+      'Que tal um upgrade gratuito?\n\nPosso liberar recursos premium para você experimentar por 30 dias, sem custo adicional!',
+    downgrade:
+      'Entendo que às vezes precisamos ajustar.\n\nTemos um plano mais acessível que pode atender suas necessidades. Quer conhecer?',
+    pause:
+      'Sem problemas. Que tal pausar sua assinatura por um mês?\n\nAssim você pode voltar quando for mais conveniente, sem perder nada.',
+    feedback:
+      'Sua opinião é muito importante para nós.\n\nO que podemos melhorar? Estou aqui para ouvir e resolver qualquer problema.',
+    vip_support:
+      'Você está em atendimento prioritário.\n\nVou te conectar com nosso time de suporte prioritário para resolver qualquer questão.',
+  };
+  return messages[strategy] || messages.feedback;
+}
+
+/** Reactivation messages keyed by strategy label. */
+export const REACTIVATION_MESSAGES: Record<string, string> = {
+  curiosity:
+    'Oi! Percebi que você se afastou da conversa.\n\nAconteceu algo? Tenho novidades que podem te interessar.',
+  urgency:
+    'Última chance.\n\nAquela oferta que conversamos está acabando. Não quero que você perca essa oportunidade!',
+  value:
+    'Lembrei de você hoje.\n\nVi um caso de sucesso de um cliente parecido com você e pensei: isso pode te ajudar muito!',
+  question:
+    'Posso te fazer uma pergunta rápida?\n\nO que te fez não seguir em frente naquele momento? Sua opinião me ajuda a melhorar!',
+  social_proof:
+    'Mais de 500 pessoas já estão usando.\n\nOs resultados têm sido incríveis. Dá uma olhada no que estão falando!',
+};
+
+// ── actionHandleObjection (complex helper with deps) ────────────────────────
 
 interface SalesActionArgs {
   objectionType?: string;

@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
-jest.mock('./unified-agent-actions-sales.helpers', () => {
-  const actual = jest.requireActual('./unified-agent-actions-sales.helpers');
+jest.mock('./unified-agent-actions-sales.service.helpers', () => {
+  const actual = jest.requireActual('./unified-agent-actions-sales.service.helpers');
   return {
     ...actual,
     actionHandleObjection: jest.fn(),
@@ -143,7 +143,7 @@ describe('UnifiedAgentActionsSalesService', () => {
 
   describe('actionHandleObjection', () => {
     it('delegates to actionHandleObjection helper', async () => {
-      const { actionHandleObjection } = require('./unified-agent-actions-sales.helpers');
+      const { actionHandleObjection } = require('./unified-agent-actions-sales.service.helpers');
       actionHandleObjection.mockResolvedValue({ success: true, technique: 'value_focus' });
 
       const result = await service.actionHandleObjection(wsId, contactId, phone, {
