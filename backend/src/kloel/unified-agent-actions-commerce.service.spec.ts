@@ -204,7 +204,7 @@ describe('UnifiedAgentActionsCommerceService', () => {
       expect(auditService.logWithTx).toHaveBeenCalled();
     });
 
-    it('uses fallback when paymentService throws', async () => {
+    it('returns an honest failure when payment service throws', async () => {
       paymentService.createPayment = jest.fn().mockRejectedValue(new Error('payment failed'));
 
       const result = await service.actionCreatePaymentLink(wsId, phone, {
@@ -212,9 +212,11 @@ describe('UnifiedAgentActionsCommerceService', () => {
         productName: 'Prod',
       });
 
-      expect(result.success).toBe(true);
-      expect(result.fallback).toBe(true);
-      expect(result.paymentLink).toContain('https://kloel.com/pay/');
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('payment failed');
+      expect(result.provider).toBe('mercadopago');
+      expect(result.fallback).toBeUndefined();
+      expect(result.paymentLink).toBeUndefined();
     });
 
     it('uses contact name from db when available', async () => {
@@ -238,23 +240,17 @@ describe('UnifiedAgentActionsCommerceService', () => {
       );
     });
 
-    it('creates fallback kloelSale when payment service fails', async () => {
+    it('does not create fallback kloelSale when payment service fails', async () => {
       paymentService.createPayment = jest.fn().mockRejectedValue(new Error('down'));
 
-      await service.actionCreatePaymentLink(wsId, phone, {
+      const result = await service.actionCreatePaymentLink(wsId, phone, {
         amount: 75,
         productName: 'Fallback Prod',
       });
 
-      expect(prisma.kloelSale.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            workspaceId: wsId,
-            leadPhone: phone,
-            amount: 75,
-          }),
-        }),
-      );
+      expect(result.success).toBe(false);
+      expect(prisma.kloelSale.create).not.toHaveBeenCalled();
+      expect(messaging.actionSendMessage).not.toHaveBeenCalled();
     });
   });
 
@@ -308,7 +304,7 @@ describe('UnifiedAgentActionsCommerceService', () => {
       expect(result.success).toBe(false);
     });
 
-    it('actionCreatePaymentLink handles messaging failure gracefully', async () => {
+    it('actionCreatePaymentLink reports provider failure without fallback', async () => {
       messaging.actionSendMessage = jest.fn().mockResolvedValue({ success: true });
       paymentService.createPayment = jest.fn().mockRejectedValue(new Error('down'));
 
@@ -317,7 +313,9 @@ describe('UnifiedAgentActionsCommerceService', () => {
         productName: 'Prod',
       });
 
-      expect(result.fallback).toBe(true);
+      expect(result.success).toBe(false);
+      expect(result.error).toBe('down');
+      expect(result.fallback).toBeUndefined();
     });
   });
 });

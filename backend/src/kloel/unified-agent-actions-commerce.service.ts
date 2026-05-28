@@ -1,6 +1,4 @@
-import { randomUUID } from 'node:crypto';
 import { Injectable, Optional } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -32,7 +30,6 @@ export class UnifiedAgentActionsCommerceService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly config: ConfigService,
     private readonly paymentService: PaymentService,
     private readonly auditService: AuditService,
     private readonly messaging: UnifiedAgentActionsMessagingService,
@@ -254,49 +251,13 @@ export class UnifiedAgentActionsCommerceService {
       void this.opsAlert?.alertOnCriticalError(error, 'UnifiedAgentActionsCommerceService.async');
       const msg =
         error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown';
-      this.logger.error(`Erro ao criar link de pagamento: ${msg}`);
-      const paymentId = `pay_${randomUUID()}`;
-      const paymentLink = `${this.config.get('FRONTEND_URL') || 'https://kloel.com'}/pay/${paymentId}`;
-      const idempotencyKey = `kloel-fallback:${workspaceId}:${phone}:${this.num(args.amount)}:${this.str(args.productName)}`;
-      try {
-        const existingSale = await this.prisma.kloelSale.findFirst({
-          where: {
-            workspaceId,
-            leadPhone: phone,
-            productName: this.str(args.productName),
-            amount: this.num(args.amount),
-            paymentMethod: 'INTERNAL',
-          },
-          orderBy: { createdAt: 'desc' },
-        });
-        if (!existingSale) {
-          await this.prisma.kloelSale.create({
-            data: {
-              workspaceId,
-              externalPaymentId: paymentId,
-              leadPhone: phone,
-              productName: this.str(args.productName),
-              amount: this.num(args.amount),
-              status: 'pending',
-              paymentMethod: 'INTERNAL',
-              metadata: { idempotencyKey },
-            },
-          });
-        }
-      } catch {
-        this.logger.warn('kloelSale table not available');
-      }
-      const message = `Link de pagamento: ${paymentLink}\n\nValor: ${formatBrlAmount(this.num(args.amount))}`;
-      await this.messaging
-        .actionSendMessage(workspaceId, phone, { message }, context)
-        .catch(() => {});
+      this.logger.error(`Erro ao criar pagamento Mercado Pago: ${msg}`);
       return {
-        success: true,
-        paymentId,
-        paymentLink,
+        success: false,
+        error: msg,
+        provider: 'mercadopago',
+        action: 'create_payment_link',
         amount: this.num(args.amount),
-        method: 'internal',
-        fallback: true,
       };
     }
   }
