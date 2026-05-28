@@ -6,54 +6,33 @@ import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
 import { digitsOnly } from '../common/phone';
-
-/** Generic tool result shape. */
-interface ToolResult {
-  success: boolean;
-  message?: string;
-  error?: string;
-  [key: string]: unknown;
-}
-
-interface ToolListLeadsArgs {
-  limit?: number;
-  status?: string;
-  query?: string;
-}
-
-interface ToolGetLeadDetailsArgs {
-  phone?: string;
-  leadId?: string;
-}
-
-interface ToolSaveBusinessInfoArgs {
-  businessName?: string;
-  description?: string;
-  segment?: string;
-}
-
-interface ToolSetBusinessHoursArgs {
-  weekdayStart?: string;
-  weekdayEnd?: string;
-  saturdayStart?: string;
-  saturdayEnd?: string;
-  workOnSunday?: boolean;
-}
-
-interface ToolCreateCampaignArgs {
-  name: string;
-  message: string;
-  targetAudience?: string;
-}
-
-interface ToolUpdateBillingInfoArgs {
-  returnUrl?: string;
-}
-
-interface ToolChangePlanArgs {
-  newPlan: string;
-  immediate?: boolean;
-}
+import {
+  applyAffiliateConfig,
+  buildAffiliateConfigMessage,
+  buildBillingStatusResponse,
+  buildBusinessHoursPayload,
+  buildBusinessProviderSettings,
+  buildCampaignContactFilter,
+  buildListLeadsWhere,
+  buildSaveBusinessInfoMessage,
+  buildSocialChannelsView,
+  canonicalPlan,
+  documentTypeLabel,
+  extractFiscalFields,
+  mapLeadDetail,
+  mapLeadListRow,
+  normalizeConnectableChannel,
+  validatePlanInput,
+  type FiscalArgs,
+  type ToolChangePlanArgs,
+  type ToolCreateCampaignArgs,
+  type ToolGetLeadDetailsArgs,
+  type ToolListLeadsArgs,
+  type ToolResult,
+  type ToolSaveBusinessInfoArgs,
+  type ToolSetBusinessHoursArgs,
+  type ToolUpdateBillingInfoArgs,
+} from './kloel-business-config-tools.helpers';
 
 /** Handles CRM, business config, campaign, and billing AI chat tools. */
 @Injectable()
@@ -66,25 +45,8 @@ export class KloelBusinessConfigToolsService {
   ) {}
 
   async toolListLeads(workspaceId: string, args: ToolListLeadsArgs): Promise<ToolResult> {
-    const { limit = 10, status, query } = args;
-    const where: Prisma.ContactWhereInput = { workspaceId };
-    if (status === 'qualified' || status === 'hot') {
-      where.leadScore = { gte: 70 };
-    } else if (status === 'cold') {
-      where.leadScore = { lt: 30 };
-    }
-    // Search by name from query param
-    if (query && typeof query === 'string') {
-      const cleanQ = query
-        .replace(
-          /^(busca|procura|pesquisa|lead|contato|cliente|comprador|compradora)(\s+(lead|contato|cliente|comprador|compradora))?\s+/i,
-          '',
-        )
-        .trim();
-      if (cleanQ) {
-        where.name = { contains: cleanQ, mode: 'insensitive' };
-      }
-    }
+    const { limit = 10 } = args;
+    const where = buildListLeadsWhere(workspaceId, args);
     const contacts = await this.prisma.contact.findMany({
       where: { ...where, workspaceId },
       orderBy: { createdAt: 'desc' },
@@ -102,14 +64,7 @@ export class KloelBusinessConfigToolsService {
     return {
       success: true,
       count: contacts.length,
-      leads: contacts.map((c) => ({
-        id: c.id,
-        name: c.name || 'Sem nome',
-        phone: c.phone,
-        score: c.leadScore || 0,
-        sentiment: c.sentiment,
-        lastUpdate: c.updatedAt,
-      })),
+      leads: contacts.map(mapLeadListRow),
       message: `Encontrei ${contacts.length} lead(s).`,
     };
   }
@@ -145,21 +100,7 @@ export class KloelBusinessConfigToolsService {
 
     return {
       success: true,
-      lead: {
-        id: contact.id,
-        name: contact.name,
-        phone: contact.phone,
-        email: contact.email,
-        sentiment: contact.sentiment,
-        score: contact.leadScore,
-        tags: contact.tags.map((t) => t.name),
-        recentMessages:
-          contact.conversations[0]?.messages.map((m) => ({
-            content: m.content?.substring(0, 100),
-            direction: m.direction,
-            date: m.createdAt,
-          })) || [],
-      },
+      lead: mapLeadDetail(contact),
     };
   }
 
@@ -167,39 +108,13 @@ export class KloelBusinessConfigToolsService {
     workspaceId: string,
     args: ToolSaveBusinessInfoArgs,
   ): Promise<ToolResult> {
-    const { businessName, description, segment, cnpj, cpf, cep, bankCode, agency, account } =
-      args as ToolSaveBusinessInfoArgs & {
-        cnpj?: string;
-        cpf?: string;
-        cep?: string;
-        bankCode?: string;
-        agency?: string;
-        account?: string;
-      };
+    const { businessName, description, segment } = args;
+    const extended = args as ToolSaveBusinessInfoArgs & FiscalArgs;
     const updateData: Prisma.WorkspaceUpdateInput = {};
     if (businessName) {
       updateData.name = businessName;
     }
-    // Build fiscal/payment settings from extracted args
-    const fiscalFields: Record<string, unknown> = {};
-    if (cnpj) {
-      fiscalFields.cnpj = cnpj;
-    }
-    if (cpf) {
-      fiscalFields.cpf = cpf;
-    }
-    if (cep) {
-      fiscalFields.cep = cep;
-    }
-    if (bankCode) {
-      fiscalFields.bankCode = bankCode;
-    }
-    if (agency) {
-      fiscalFields.agency = agency;
-    }
-    if (account) {
-      fiscalFields.account = account;
-    }
+    const fiscalFields = extractFiscalFields(extended);
 
     const hasFiscal = Object.keys(fiscalFields).length > 0;
     const hasBiz = !!(description || segment);
@@ -208,31 +123,23 @@ export class KloelBusinessConfigToolsService {
       await this.prisma.$transaction(async (tx) => {
         const workspace = await tx.workspace.findUnique({ where: { id: workspaceId } });
         const currentSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
+        const nextSettings = buildBusinessProviderSettings(
+          currentSettings,
+          description,
+          segment,
+          fiscalFields,
+        );
         await tx.workspace.update({
           where: { id: workspaceId },
           data: {
-            providerSettings: {
-              ...currentSettings,
-              ...(description ? { businessDescription: description } : {}),
-              ...(segment ? { businessSegment: segment } : {}),
-              ...(hasFiscal
-                ? {
-                    fiscal: {
-                      ...((currentSettings?.fiscal as Record<string, unknown>) || {}),
-                      ...fiscalFields,
-                    },
-                  }
-                : {}),
-            } as Prisma.InputJsonValue,
+            providerSettings: nextSettings as Prisma.InputJsonValue,
             ...(businessName ? { name: businessName } : {}),
           },
         });
       });
       return {
         success: true,
-        message: hasFiscal
-          ? `Dados ${Object.keys(fiscalFields).join(', ')} salvos com sucesso.`
-          : 'Informações do negócio salvas com sucesso.',
+        message: buildSaveBusinessInfoMessage(fiscalFields),
       };
     }
     if (businessName) {
@@ -245,11 +152,7 @@ export class KloelBusinessConfigToolsService {
     workspaceId: string,
     args: ToolSetBusinessHoursArgs,
   ): Promise<ToolResult> {
-    const businessHours = {
-      weekday: { start: args.weekdayStart || '09:00', end: args.weekdayEnd || '18:00' },
-      saturday: args.saturdayStart ? { start: args.saturdayStart, end: args.saturdayEnd } : null,
-      sunday: args.workOnSunday ? { start: '09:00', end: '13:00' } : null,
-    };
+    const businessHours = buildBusinessHoursPayload(args);
     await this.prisma.$transaction(async (tx) => {
       const workspace = await tx.workspace.findUnique({ where: { id: workspaceId } });
       const currentSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
@@ -263,12 +166,7 @@ export class KloelBusinessConfigToolsService {
 
   async toolCreateCampaign(workspaceId: string, args: ToolCreateCampaignArgs): Promise<ToolResult> {
     const { name, message, targetAudience } = args;
-    const contactFilter: Prisma.ContactWhereInput = { workspaceId };
-    if (targetAudience === 'leads_quentes') {
-      contactFilter.leadScore = { gte: 70 };
-    } else if (targetAudience === 'novos') {
-      contactFilter.createdAt = { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) };
-    }
+    const contactFilter = buildCampaignContactFilter(workspaceId, targetAudience);
     const contactCount = await this.prisma.contact.count({
       where: { ...contactFilter, workspaceId },
     });
@@ -340,19 +238,7 @@ export class KloelBusinessConfigToolsService {
       if (!workspace) {
         return { success: false, error: 'Workspace não encontrado' };
       }
-      const settings = (workspace.providerSettings as Record<string, unknown>) || {};
-      const plan = String(workspace.subscription?.plan || 'FREE');
-      const subscriptionId = workspace.subscription?.stripeId || null;
-      return {
-        success: true,
-        plan,
-        status: settings.billingSuspended ? 'SUSPENDED' : 'ACTIVE',
-        hasPaymentMethod: !!workspace.stripeCustomerId,
-        subscriptionId,
-        message: settings.billingSuspended
-          ? 'Cobrança suspensa. Regularize para continuar usando.'
-          : `Plano ${plan} ativo`,
-      };
+      return buildBillingStatusResponse(workspace);
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'KloelBusinessConfigToolsService.settings');
       const msg = error instanceof Error ? error.message : 'unknown error';
@@ -368,12 +254,7 @@ export class KloelBusinessConfigToolsService {
     args: Record<string, unknown>,
   ): Promise<ToolResult> {
     const docType = typeof args.docType === 'string' ? args.docType : 'document';
-    const docTypes: Record<string, string> = {
-      identidade: 'Documento de identidade',
-      contrato: 'Contrato social / Cartão CNPJ',
-      cnpj: 'Cartão CNPJ',
-    };
-    const label = docTypes[docType.toLowerCase()] || 'Documento';
+    const label = documentTypeLabel(docType);
     try {
       // Store document upload intent in workspace settings
       await this.prisma.$transaction(async (tx) => {
@@ -422,33 +303,7 @@ export class KloelBusinessConfigToolsService {
         const ws = await tx.workspace.findUnique({ where: { id: workspaceId } });
         const settings = (ws?.providerSettings as Record<string, unknown>) || {};
         const affiliate = (settings.affiliate as Record<string, unknown>) || {};
-        if (args.participate !== undefined) {
-          affiliate.participate = args.participate;
-        }
-        if (args.visibleInStore !== undefined) {
-          affiliate.visibleInStore = args.visibleInStore;
-        }
-        if (args.autoApproval !== undefined) {
-          affiliate.autoApproval = args.autoApproval;
-        }
-        if (args.accessData !== undefined) {
-          affiliate.accessData = args.accessData;
-        }
-        if (args.accessAbandonments !== undefined) {
-          affiliate.accessAbandonments = args.accessAbandonments;
-        }
-        if (args.commissionFirstInstallment !== undefined) {
-          affiliate.commissionFirstInstallment = args.commissionFirstInstallment;
-        }
-        if (args.attributionModel) {
-          affiliate.attributionModel = args.attributionModel;
-        }
-        if (args.cookieDays !== undefined) {
-          affiliate.cookieDays = args.cookieDays;
-        }
-        if (args.commissionPercent !== undefined) {
-          affiliate.commissionPercent = args.commissionPercent;
-        }
+        applyAffiliateConfig(affiliate, args);
         await tx.workspace.update({
           where: { id: workspaceId },
           data: { providerSettings: { ...settings, affiliate } as Prisma.InputJsonValue },
@@ -468,12 +323,9 @@ export class KloelBusinessConfigToolsService {
           }
         }
       });
-      const fields = Object.keys(args)
-        .filter((k) => k !== 'productName' && args[k] !== undefined)
-        .join(', ');
       return {
         success: true,
-        message: `Configuracao de afiliados atualizada${fields ? ': ' + fields : ''}.`,
+        message: buildAffiliateConfigMessage(args),
       };
     } catch (e: unknown) {
       return {
@@ -520,26 +372,15 @@ export class KloelBusinessConfigToolsService {
           metaConnections: { select: { id: true, pageName: true } },
         },
       });
-      const settings = (ws?.providerSettings as Record<string, unknown>) || {};
-      const channels = (settings.channels as Record<string, unknown>) || {};
       return {
         success: true,
-        channels: {
-          whatsapp: { connected: !!settings.whatsappPhoneNumberId, label: 'WhatsApp' },
-          instagram: {
-            connected: !!(ws?.metaConnections && (ws.metaConnections as Array<unknown>).length > 0),
-            label: 'Instagram',
-          },
-          facebook: {
-            connected: !!(ws?.metaConnections && (ws.metaConnections as Array<unknown>).length > 0),
-            label: 'Facebook',
-          },
-          tiktok: { connected: !!channels.tiktok, label: 'TikTok' },
-          email: { connected: !!settings.emailProvider, label: 'Email' },
-        },
+        channels: buildSocialChannelsView({
+          providerSettings: ws?.providerSettings as Record<string, unknown> | null,
+          metaConnections: (ws?.metaConnections as Array<unknown> | undefined) ?? null,
+        }),
         message: 'Canais disponíveis. Conecte cada um em Configurações > Canais.',
       };
-    } catch (e: unknown) {
+    } catch {
       return {
         success: true,
         message: 'Canais sociais disponíveis: WhatsApp, Instagram, Facebook, TikTok, Email.',
@@ -551,9 +392,8 @@ export class KloelBusinessConfigToolsService {
     workspaceId: string,
     args: Record<string, unknown>,
   ): Promise<ToolResult> {
-    const channel = typeof args.channel === 'string' ? args.channel.toLowerCase() : '';
-    const validChannels = ['instagram', 'facebook', 'tiktok', 'email'];
-    if (!validChannels.includes(channel)) {
+    const { channel, isValid } = normalizeConnectableChannel(args.channel);
+    if (!isValid) {
       return {
         success: true,
         message: `Para conectar ${channel || 'um canal'}, acesse Configurações > Canais. Canais disponíveis: WhatsApp, Instagram, Facebook, TikTok, Email.`,
@@ -580,12 +420,9 @@ export class KloelBusinessConfigToolsService {
   }
   async toolChangePlan(workspaceId: string, args: ToolChangePlanArgs): Promise<ToolResult> {
     const { newPlan, immediate: _immediate = true } = args;
-    if (!newPlan) {
-      return { success: false, error: 'Parâmetro obrigatório: newPlan (starter, pro, enterprise)' };
-    }
-    const validPlans = ['starter', 'pro', 'enterprise', 'free'];
-    if (!validPlans.includes(newPlan.toLowerCase())) {
-      return { success: false, error: `Plano inválido. Opções: ${validPlans.join(', ')}` };
+    const validationError = validatePlanInput(newPlan);
+    if (validationError) {
+      return { success: false, error: validationError };
     }
     try {
       const workspace = await this.prisma.workspace.findUnique({
@@ -593,7 +430,7 @@ export class KloelBusinessConfigToolsService {
         select: { subscription: { select: { plan: true, stripeId: true } } },
       });
       const currentPlan = workspace?.subscription?.plan || 'FREE';
-      const targetPlan = newPlan.toUpperCase();
+      const targetPlan = canonicalPlan(newPlan);
       if (workspace?.subscription?.stripeId) {
         return {
           success: true,
