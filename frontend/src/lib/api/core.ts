@@ -6,10 +6,13 @@ import {
   BACKOFF_DELAYS_MS,
   appendQueryParams,
   authHeaders,
+  buildAbsoluteRequestInit,
   buildErrorResponse,
   buildQuery,
   buildRequestHeaders,
   buildSuccessResponse,
+  extractFetchErrorMessage,
+  isAbsoluteHttpEndpoint,
   isTrustedAbsoluteRequestTarget,
   parseRefreshErrorCode,
   pickAccessToken,
@@ -440,16 +443,23 @@ export async function apiFetch<T = unknown>(
 // Generic API client
 // ============================================
 
+async function fetchAbsoluteJson<T>(
+  endpoint: string,
+  init?: RequestInit,
+): Promise<{ data: T }> {
+  const res = await fetch(createTrustedRequest(endpoint, init));
+  if (!res.ok) {
+    const parsed = await res.json().catch(() => null);
+    throw new Error(extractFetchErrorMessage(parsed, res.statusText));
+  }
+  const data = await res.json();
+  return { data };
+}
+
 export const api = {
   async get<T = unknown>(endpoint: string): Promise<{ data: T }> {
-    if (endpoint.startsWith('http')) {
-      const res = await fetch(createTrustedRequest(endpoint));
-      if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: res.statusText }));
-        throw new Error(error.message || 'Request failed');
-      }
-      const data = await res.json();
-      return { data };
+    if (isAbsoluteHttpEndpoint(endpoint)) {
+      return fetchAbsoluteJson<T>(endpoint);
     }
 
     const res = await apiFetch<T>(endpoint, { method: 'GET' });
@@ -460,20 +470,8 @@ export const api = {
   },
 
   async post<T = unknown>(endpoint: string, body?: unknown): Promise<{ data: T }> {
-    if (endpoint.startsWith('http')) {
-      const res = await fetch(
-        createTrustedRequest(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: body ? JSON.stringify(body) : null,
-        }),
-      );
-      if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: res.statusText }));
-        throw new Error(error.message || 'Request failed');
-      }
-      const data = await res.json();
-      return { data };
+    if (isAbsoluteHttpEndpoint(endpoint)) {
+      return fetchAbsoluteJson<T>(endpoint, buildAbsoluteRequestInit('POST', body));
     }
 
     const res = await apiFetch<T>(endpoint, {
@@ -487,20 +485,8 @@ export const api = {
   },
 
   async put<T = unknown>(endpoint: string, body?: unknown): Promise<{ data: T }> {
-    if (endpoint.startsWith('http')) {
-      const res = await fetch(
-        createTrustedRequest(endpoint, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: body ? JSON.stringify(body) : null,
-        }),
-      );
-      if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: res.statusText }));
-        throw new Error(error.message || 'Request failed');
-      }
-      const data = await res.json();
-      return { data };
+    if (isAbsoluteHttpEndpoint(endpoint)) {
+      return fetchAbsoluteJson<T>(endpoint, buildAbsoluteRequestInit('PUT', body));
     }
 
     const res = await apiFetch<T>(endpoint, {
@@ -514,14 +500,8 @@ export const api = {
   },
 
   async delete<T = unknown>(endpoint: string): Promise<{ data: T }> {
-    if (endpoint.startsWith('http')) {
-      const res = await fetch(createTrustedRequest(endpoint, { method: 'DELETE' }));
-      if (!res.ok) {
-        const error = await res.json().catch(() => ({ message: res.statusText }));
-        throw new Error(error.message || 'Request failed');
-      }
-      const data = await res.json();
-      return { data };
+    if (isAbsoluteHttpEndpoint(endpoint)) {
+      return fetchAbsoluteJson<T>(endpoint, { method: 'DELETE' });
     }
 
     const res = await apiFetch<T>(endpoint, { method: 'DELETE' });

@@ -16,7 +16,13 @@ import { authApi, workspaceApi } from '@/lib/api';
 import { Camera, Eye, EyeOff } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { SettingsCard, SettingsSwitchRow, kloelSettingsClass } from './contract';
-import { buildAccountSettingsPayload } from './account-settings-section.helpers';
+import {
+  buildAccountSettingsPayload,
+  buildUpdateAccountBody,
+  buildUpdateChannelsBody,
+  coerceJitterInput,
+  firstApiError,
+} from './account-settings-section.helpers';
 import {
   type PasswordStrength,
   evalPasswordStrength,
@@ -107,19 +113,9 @@ export function AccountSettingsSection() {
     setError(null);
 
     try {
-      const response = await workspaceApi.updateAccount({
-        name: profile.name,
-        phone: profile.phone,
-        webhookUrl: profile.webhookUrl,
-        website: profile.website,
-        timezone: preferences.timezone,
-        language: preferences.language,
-        dateFormat: preferences.dateFormat,
-        notifications: {
-          emailImportant: preferences.emailImportant,
-          emailTips: preferences.emailTips,
-        },
-      });
+      const response = await workspaceApi.updateAccount(
+        buildUpdateAccountBody(profile, preferences),
+      );
 
       if (response.error) {
         throw new Error(response.error);
@@ -143,12 +139,10 @@ export function AccountSettingsSection() {
       const [providerRes, jitterRes, channelsRes] = await Promise.all([
         workspaceApi.setProvider(channels.provider),
         workspaceApi.setJitter(channels.jitterMin, channels.jitterMax),
-        workspaceApi.updateChannels({
-          email: channels.emailEnabled,
-        }),
+        workspaceApi.updateChannels(buildUpdateChannelsBody(channels)),
       ]);
 
-      const firstError = providerRes.error || jitterRes.error || channelsRes.error;
+      const firstError = firstApiError([providerRes, jitterRes, channelsRes]);
 
       if (firstError) {
         throw new Error(firstError);
@@ -455,7 +449,7 @@ export function AccountSettingsSection() {
               type="number"
               min={0}
               value={channels.jitterMin}
-              onChange={(e) => setChannels({ ...channels, jitterMin: Number(e.target.value || 0) })}
+              onChange={(e) => setChannels({ ...channels, jitterMin: coerceJitterInput(e.target.value) })}
               className={kloelSettingsClass.input}
             />
           </div>
@@ -466,7 +460,7 @@ export function AccountSettingsSection() {
               type="number"
               min={channels.jitterMin}
               value={channels.jitterMax}
-              onChange={(e) => setChannels({ ...channels, jitterMax: Number(e.target.value || 0) })}
+              onChange={(e) => setChannels({ ...channels, jitterMax: coerceJitterInput(e.target.value) })}
               className={kloelSettingsClass.input}
             />
           </div>

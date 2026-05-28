@@ -266,3 +266,70 @@ export function buildRequestHeaders(options: {
   }
   return headers;
 }
+
+// ============================================
+// Generic-client URL + error helpers
+// ============================================
+
+/**
+ * Predicate: does an endpoint look like a fully-qualified absolute URL the
+ * generic `api` client should fetch directly (bypassing the API base URL +
+ * auth-token plumbing)?
+ *
+ * Matches the prior inlined `endpoint.startsWith('http')` check exactly so
+ * existing call sites don't change behaviour. Pure — no env reads.
+ */
+export function isAbsoluteHttpEndpoint(endpoint: string): boolean {
+  return endpoint.startsWith('http://') || endpoint.startsWith('https://');
+}
+
+/**
+ * Build a `RequestInit` for the generic `api` client's absolute-URL path.
+ * Mirrors the original inlined init exactly:
+ *   - JSON `Content-Type` always set
+ *   - body `JSON.stringify`'d when truthy, otherwise `null`
+ *
+ * The truthy-only serialization is intentional (legacy parity): falsy
+ * payloads (`0`, `''`, `false`, `null`, `undefined`) become a null body.
+ *
+ * Returned object is the standard fetch `RequestInit` shape; pure — no
+ * side effects, no token reads.
+ */
+export function buildAbsoluteRequestInit(
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+  body?: unknown,
+): RequestInit {
+  return {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: body ? JSON.stringify(body) : null,
+  };
+}
+
+/**
+ * Extract a user-facing error message from a parsed non-OK response body.
+ * Mirrors the four inlined `api`-client copies of:
+ *
+ *   const error = await res.json().catch(() => ({ message: res.statusText }));
+ *   throw new Error(error.message || 'Request failed');
+ *
+ * Behaviour: when `parsed` is `null`/`undefined` the JSON parse is assumed
+ * to have failed, so the `statusText` fallback emulates the original catch
+ * branch. When `parsed` is an object the `message` field wins if truthy,
+ * otherwise falls through to the literal `'Request failed'`. Pure — operates
+ * only on inputs.
+ */
+export function extractFetchErrorMessage(
+  parsed: unknown,
+  statusText?: string,
+): string {
+  const effective =
+    parsed && typeof parsed === 'object'
+      ? parsed
+      : ({ message: statusText } as { message?: unknown });
+  const message = (effective as { message?: unknown }).message;
+  if (typeof message === 'string' && message.length > 0) {
+    return message;
+  }
+  return 'Request failed';
+}

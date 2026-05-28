@@ -17,6 +17,9 @@ import {
   pickAccessToken,
   pickRefreshToken,
   buildRequestHeaders,
+  isAbsoluteHttpEndpoint,
+  buildAbsoluteRequestInit,
+  extractFetchErrorMessage,
 } from './core.helpers';
 
 describe('buildSuccessResponse', () => {
@@ -398,5 +401,117 @@ describe('buildRequestHeaders', () => {
     expect(headers['Content-Type']).toBe('text/plain');
     // CSRF header is set before caller headers; caller could override but no test path needs it
     expect(headers['X-Requested-With']).toBe('XMLHttpRequest');
+  });
+});
+
+describe('isAbsoluteHttpEndpoint', () => {
+  it('detects http:// URLs', () => {
+    expect(isAbsoluteHttpEndpoint('http://api.example.com/x')).toBe(true);
+  });
+
+  it('detects https:// URLs', () => {
+    expect(isAbsoluteHttpEndpoint('https://api.example.com/x')).toBe(true);
+  });
+
+  it('rejects relative paths', () => {
+    expect(isAbsoluteHttpEndpoint('/api/x')).toBe(false);
+    expect(isAbsoluteHttpEndpoint('api/x')).toBe(false);
+  });
+
+  it('rejects non-http schemes that share a prefix character', () => {
+    expect(isAbsoluteHttpEndpoint('httpx://x')).toBe(false);
+    expect(isAbsoluteHttpEndpoint('ftp://x')).toBe(false);
+    expect(isAbsoluteHttpEndpoint('javascript:alert(1)')).toBe(false);
+  });
+
+  it('rejects empty string', () => {
+    expect(isAbsoluteHttpEndpoint('')).toBe(false);
+  });
+});
+
+describe('buildAbsoluteRequestInit', () => {
+  it('sets method and JSON Content-Type', () => {
+    const init = buildAbsoluteRequestInit('POST');
+    expect(init.method).toBe('POST');
+    expect((init.headers as Record<string, string>)['Content-Type']).toBe(
+      'application/json',
+    );
+  });
+
+  it('JSON.stringifies truthy bodies', () => {
+    const init = buildAbsoluteRequestInit('PUT', { a: 1 });
+    expect(init.body).toBe('{"a":1}');
+  });
+
+  it('serializes arrays as JSON', () => {
+    const init = buildAbsoluteRequestInit('POST', [1, 2, 3]);
+    expect(init.body).toBe('[1,2,3]');
+  });
+
+  it('returns null body when body is undefined or null', () => {
+    expect(buildAbsoluteRequestInit('POST').body).toBeNull();
+    expect(buildAbsoluteRequestInit('POST', null).body).toBeNull();
+    expect(buildAbsoluteRequestInit('POST', undefined).body).toBeNull();
+  });
+
+  it('returns null body for falsy primitives (legacy parity)', () => {
+    // Mirrors `body ? JSON.stringify(body) : null` from the original
+    // inlined init — falsy primitives never made it to JSON.stringify.
+    expect(buildAbsoluteRequestInit('POST', 0).body).toBeNull();
+    expect(buildAbsoluteRequestInit('POST', '').body).toBeNull();
+    expect(buildAbsoluteRequestInit('POST', false).body).toBeNull();
+  });
+
+  it('supports the four HTTP verbs the generic client uses', () => {
+    for (const method of ['GET', 'POST', 'PUT', 'DELETE'] as const) {
+      expect(buildAbsoluteRequestInit(method).method).toBe(method);
+    }
+  });
+});
+
+describe('extractFetchErrorMessage', () => {
+  it('returns the message field when present and non-empty', () => {
+    expect(extractFetchErrorMessage({ message: 'boom' })).toBe('boom');
+  });
+
+  it('prefers message over statusText fallback', () => {
+    expect(extractFetchErrorMessage({ message: 'real' }, 'fallback')).toBe('real');
+  });
+
+  it('falls back to statusText when body parse is assumed failed (null)', () => {
+    expect(extractFetchErrorMessage(null, 'Service Unavailable')).toBe(
+      'Service Unavailable',
+    );
+  });
+
+  it('falls back to statusText when body parse is assumed failed (undefined)', () => {
+    expect(extractFetchErrorMessage(undefined, 'Not Found')).toBe('Not Found');
+  });
+
+  it('returns Request failed when message is empty string (legacy parity)', () => {
+    // Original `error.message || 'Request failed'` treated '' as falsy and
+    // jumped straight to the literal — statusText was NOT consulted here.
+    expect(extractFetchErrorMessage({ message: '' }, 'Bad Request')).toBe(
+      'Request failed',
+    );
+  });
+
+  it('returns Request failed when message is missing on a parsed object', () => {
+    expect(extractFetchErrorMessage({}, 'Bad Request')).toBe('Request failed');
+  });
+
+  it('returns Request failed when both parsed and statusText are absent', () => {
+    expect(extractFetchErrorMessage(null)).toBe('Request failed');
+    expect(extractFetchErrorMessage(null, '')).toBe('Request failed');
+    expect(extractFetchErrorMessage(undefined, undefined)).toBe('Request failed');
+  });
+
+  it('ignores non-string message fields', () => {
+    expect(extractFetchErrorMessage({ message: 123 }, 'fallback')).toBe(
+      'Request failed',
+    );
+    expect(extractFetchErrorMessage({ message: { nested: true } }, 'fallback')).toBe(
+      'Request failed',
+    );
   });
 });
