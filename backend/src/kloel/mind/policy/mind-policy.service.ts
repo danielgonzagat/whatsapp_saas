@@ -11,7 +11,6 @@ import type { MindBelief, MindPolicyDecision } from '../../mind.types';
 import {
   buildFallbackDecision,
   buildPolicyArtifacts,
-  buildPolicyDecision,
   type MindPolicyHarnessResult,
   type MindPolicyInput,
   resolveBaselineAction,
@@ -32,8 +31,20 @@ import {
   computeGlobalPriorMix,
   shouldSkipGlobalPriorMix,
 } from './mind-policy.global-prior.helpers';
-
-const FALLBACK_MIN_SAMPLES = 30;
+import {
+  assembleChooseDecision,
+  buildBaselineActionInput,
+  buildConfirmWindowCutoff,
+  buildHarnessSince,
+  buildMixedBeliefDefault,
+  buildMixedBeliefMixed,
+  buildSweepCutoff,
+  extractChooseDefaults,
+  isPrismaUniqueConstraintError,
+  type MixedBeliefEntry,
+  resolveConfirmWindowMinutes,
+  toResolvedPolicyRows,
+} from './mind-policy.service.helpers';
 
 @Injectable()
 export class MindPolicyService {
@@ -50,10 +61,7 @@ export class MindPolicyService {
   }
 
   async choose(input: MindPolicyInput): Promise<{ chosen: string; decision: MindPolicyDecision }> {
-    const utilitySuccess = input.utilitySuccess ?? 1;
-    const utilityFail = input.utilityFail ?? -0.2;
-    const epsilon = input.epsilon ?? 0.5;
-    const minSamples = input.fallbackMinSamples ?? FALLBACK_MIN_SAMPLES;
+    const { utilitySuccess, utilityFail, epsilon, minSamples } = extractChooseDefaults(input);
 
     const harnessResult = await this.harness(input.workspaceId, input.decisionType, 14);
 
@@ -108,8 +116,11 @@ export class MindPolicyService {
       logger: this.logger,
     });
 
-    const { summaries: beliefs, usedGlobalPrior, maxPriorWeight } =
-      buildBeliefMeanSummaries(wisdomNudged);
+    const {
+      summaries: beliefs,
+      usedGlobalPrior,
+      maxPriorWeight,
+    } = buildBeliefMeanSummaries(wisdomNudged);
 
     const artifacts = buildPolicyArtifacts({
       beliefs,
@@ -120,25 +131,17 @@ export class MindPolicyService {
       utilitySuccess,
     });
     const fallbackAction = artifacts.candidates.at(-1)?.action;
-    const baselineAction = resolveBaselineAction({
-      ...(input.baseline !== undefined ? { baseline: input.baseline } : {}),
-      ...(input.baselineActionQuiet !== undefined
-        ? { baselineActionQuiet: input.baselineActionQuiet }
-        : {}),
-      ...(fallbackAction !== undefined ? { fallback: fallbackAction } : {}),
-    });
-    const decision = {
-      ...buildPolicyDecision({
-        artifacts,
-        baselineAction,
-        epsilon,
-        policy: input,
-        utilityFail,
-        utilitySuccess,
-      }),
+    const baselineAction = resolveBaselineAction(buildBaselineActionInput(input, fallbackAction));
+    const decision = assembleChooseDecision({
+      artifacts,
+      baselineAction,
+      epsilon,
+      policy: input,
+      utilityFail,
+      utilitySuccess,
       usedGlobalPrior,
-      priorWeight: maxPriorWeight,
-    };
+      maxPriorWeight,
+    });
 
     await this.persist(decision);
     return { chosen: decision.chosen, decision };
@@ -184,11 +187,7 @@ export class MindPolicyService {
         resolutionRows = rows;
 
         await this.persistResolvedMemories(
-          rows.map((r) => ({
-            ...r,
-            outcomeKey: r.outcomeKey ?? null,
-            outcome,
-          })),
+          toResolvedPolicyRows(rows, outcome),
           baselineOutcome,
           tx,
         );
@@ -235,11 +234,7 @@ export class MindPolicyService {
       );
 
       await this.persistResolvedMemories(
-        rows.map((r) => ({
-          ...r,
-          outcomeKey: r.outcomeKey ?? null,
-          outcome: input.outcome,
-        })),
+        toResolvedPolicyRows(rows, input.outcome),
         input.baselineOutcome,
       );
     }
@@ -265,7 +260,7 @@ export class MindPolicyService {
     outcome: number;
     workspaceId: string;
   }): Promise<number> {
-    const cutoff = new Date(Date.now() - input.maxAgeHours * 3600 * 1000);
+    const cutoff = buildSweepCutoff({ maxAgeHours: input.maxAgeHours });
 
     const rows = await this.prisma.mindPolicy.findMany({
       where: {
@@ -287,13 +282,7 @@ export class MindPolicyService {
         ),
       );
 
-      await this.persistResolvedMemories(
-        rows.map((r) => ({
-          ...r,
-          outcomeKey: r.outcomeKey ?? null,
-          outcome: input.outcome,
-        })),
-      );
+      await this.persistResolvedMemories(toResolvedPolicyRows(rows, input.outcome));
     }
 
     return rows.length;
@@ -311,9 +300,8 @@ export class MindPolicyService {
     contactId: string;
     windowMinutes?: number;
   }): Promise<{ confirmed: number; unanswered: number }> {
-    const windowMinutes = params.windowMinutes ?? 30;
-    const now = new Date();
-    const windowCutoff = new Date(now.getTime() - windowMinutes * 60 * 1000);
+    const windowMinutes = resolveConfirmWindowMinutes(params.windowMinutes);
+    const windowCutoff = buildConfirmWindowCutoff({ windowMinutes });
 
     const rows = await this.prisma.mindPolicy.findMany({
       where: {
@@ -377,7 +365,7 @@ export class MindPolicyService {
     decisionType: string,
     sinceDays = 14,
   ): Promise<MindPolicyHarnessResult> {
-    const since = new Date(Date.now() - sinceDays * 86400 * 1000);
+    const since = buildHarnessSince({ sinceDays });
     const rawRows = await this.prisma.mindPolicy.findMany({
       where: {
         workspaceId,
@@ -399,9 +387,7 @@ export class MindPolicyService {
     decisionType: string;
     inputOptions: Array<{ action: string }>;
     workspaceOptedOut: boolean;
-  }): Promise<
-    Array<{ belief: MindBelief; mixedMean: number; usedPrior: boolean; priorWeight: number }>
-  > {
+  }): Promise<MixedBeliefEntry[]> {
     const globalPrior = this.globalPrior;
     const channel = input.channel;
     return Promise.all(
@@ -416,33 +402,28 @@ export class MindPolicyService {
           !globalPrior ||
           !channel
         ) {
-          return {
-            belief,
-            mixedMean: belief.mean,
-            usedPrior: false,
-            priorWeight: 0,
-          };
+          return buildMixedBeliefDefault(belief);
         }
 
         const action = input.inputOptions[index]?.action;
         if (!action) {
-          return { belief, mixedMean: belief.mean, usedPrior: false, priorWeight: 0 };
+          return buildMixedBeliefDefault(belief);
         }
 
         const prior = await globalPrior.getPrior(channel, input.decisionType, action);
 
         if (!prior) {
-          return { belief, mixedMean: belief.mean, usedPrior: false, priorWeight: 0 };
+          return buildMixedBeliefDefault(belief);
         }
 
-        const { mixedMean, priorWeight } = computeGlobalPriorMix({
+        const mix = computeGlobalPriorMix({
           localN: belief.samples,
           localMean: belief.mean,
           globalN: prior.observations,
           globalMean: prior.mean,
         });
 
-        return { belief, mixedMean, usedPrior: true, priorWeight };
+        return buildMixedBeliefMixed(belief, mix);
       }),
     );
   }
@@ -472,8 +453,7 @@ export class MindPolicyService {
     try {
       await createPolicyRow(this.prisma, decision);
     } catch (error: unknown) {
-      const err = error as { code?: string };
-      if (err && typeof err === 'object' && err.code === 'P2002') {
+      if (isPrismaUniqueConstraintError(error)) {
         return;
       }
       throw error;
