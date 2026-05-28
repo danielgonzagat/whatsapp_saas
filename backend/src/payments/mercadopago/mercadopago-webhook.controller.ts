@@ -8,14 +8,18 @@ import {
   Post,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Prisma, type PaymentStatus } from '@prisma/client';
 
 import { Public } from '../../auth/public.decorator';
+import { validateOrderTransition } from '../../common/checkout-order-state-machine';
 import { PrismaService } from '../../prisma/prisma.service';
 
 import { MercadoPagoConfigService } from './mercadopago.config';
 import { MercadoPagoPixChargeService } from './mercadopago-pix-charge.service';
 import { MercadoPagoWebhookSignatureVerifier } from './mercadopago-webhook-signature.verifier';
 import type { MercadoPagoWebhookPayload } from './mercadopago.types';
+
+const TERMINAL_CHECKOUT_ORDER_STATUSES = new Set(['PAID', 'CANCELED', 'REFUNDED', 'CHARGEBACK']);
 
 /**
  * Mercado Pago webhook receiver.
@@ -102,9 +106,11 @@ export class MercadoPagoWebhookController {
 
     // Fetch authoritative status (defense-in-depth).
     let status: string;
+    let providerRaw: unknown;
     try {
       const result = await this.pixCharge.getStatus(externalId);
       status = result.status;
+      providerRaw = result.raw;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       this.logger.error(`mp_webhook_status_fetch_failed externalId=${externalId} err=${msg}`);
@@ -132,6 +138,13 @@ export class MercadoPagoWebhookController {
       });
     }
 
+    await this.updateCheckoutPaymentFromProvider({
+      externalId,
+      eventType: body?.type ?? body?.action ?? 'payment',
+      providerRaw,
+      status,
+    });
+
     await this.prisma.webhookEvent.update({
       where: { provider_externalId: { provider: 'mercadopago', externalId } },
       data: { status: 'processed', processedAt: new Date() },
@@ -142,6 +155,119 @@ export class MercadoPagoWebhookController {
     );
     return { received: true };
   }
+
+  private async updateCheckoutPaymentFromProvider(params: {
+    externalId: string;
+    eventType: string;
+    providerRaw: unknown;
+    status: string;
+  }): Promise<void> {
+    const checkoutPayment = await this.prisma.checkoutPayment.findFirst({
+      where: { externalId: params.externalId },
+      select: {
+        orderId: true,
+        order: {
+          select: {
+            workspaceId: true,
+            status: true,
+          },
+        },
+      },
+    });
+    if (!checkoutPayment) {
+      return;
+    }
+
+    const checkoutStatus = mapPixStatusToCheckoutPaymentStatus(params.status);
+    await this.prisma.checkoutPayment.updateMany({
+      where: { externalId: params.externalId, orderId: checkoutPayment.orderId },
+      data: {
+        status: checkoutStatus,
+        webhookData: toJsonValue({
+          provider: 'mercadopago',
+          eventType: params.eventType,
+          paymentStatus: params.status,
+          payment: params.providerRaw,
+        }),
+      },
+    });
+
+    await this.syncCheckoutOrderFromPaymentStatus({
+      orderId: checkoutPayment.orderId,
+      workspaceId: checkoutPayment.order.workspaceId,
+      currentStatus: checkoutPayment.order.status,
+      paymentStatus: checkoutStatus,
+    });
+  }
+
+  private async syncCheckoutOrderFromPaymentStatus(params: {
+    orderId: string;
+    workspaceId: string;
+    currentStatus: string;
+    paymentStatus: PaymentStatus;
+  }): Promise<void> {
+    let currentStatus = params.currentStatus;
+    if (TERMINAL_CHECKOUT_ORDER_STATUSES.has(currentStatus)) {
+      return;
+    }
+
+    if (params.paymentStatus === 'APPROVED') {
+      if (currentStatus !== 'PROCESSING') {
+        const canEnterProcessing = validateOrderTransition(currentStatus, 'PROCESSING', {
+          orderId: params.orderId,
+          workspaceId: params.workspaceId,
+        });
+        if (!canEnterProcessing) {
+          return;
+        }
+        await this.prisma.checkoutOrder.updateMany({
+          where: { id: params.orderId, workspaceId: params.workspaceId },
+          data: { status: 'PROCESSING' },
+        });
+        currentStatus = 'PROCESSING';
+      }
+
+      const canBecomePaid = validateOrderTransition(currentStatus, 'PAID', {
+        orderId: params.orderId,
+        workspaceId: params.workspaceId,
+      });
+      if (!canBecomePaid) {
+        return;
+      }
+      await this.prisma.checkoutOrder.updateMany({
+        where: { id: params.orderId, workspaceId: params.workspaceId },
+        data: { status: 'PAID', paidAt: new Date() },
+      });
+      return;
+    }
+
+    if (params.paymentStatus === 'PROCESSING' && currentStatus === 'PENDING') {
+      const canEnterProcessing = validateOrderTransition(currentStatus, 'PROCESSING', {
+        orderId: params.orderId,
+        workspaceId: params.workspaceId,
+      });
+      if (canEnterProcessing) {
+        await this.prisma.checkoutOrder.updateMany({
+          where: { id: params.orderId, workspaceId: params.workspaceId },
+          data: { status: 'PROCESSING' },
+        });
+      }
+      return;
+    }
+
+    if (['DECLINED', 'CANCELED', 'EXPIRED'].includes(params.paymentStatus)) {
+      const canCancel = validateOrderTransition(currentStatus, 'CANCELED', {
+        orderId: params.orderId,
+        workspaceId: params.workspaceId,
+      });
+      if (canCancel) {
+        await this.prisma.checkoutOrder.updateMany({
+          where: { id: params.orderId, workspaceId: params.workspaceId },
+          data: { status: 'CANCELED', canceledAt: new Date() },
+        });
+      }
+    }
+  }
 }
 
 /**
@@ -150,7 +276,11 @@ export class MercadoPagoWebhookController {
  *
  * Kept as a free function so it can be unit-tested without DI overhead.
  */
-function mapPixStatusToPaymentStatus(status: string): string {
+function toJsonValue(value: unknown): Prisma.InputJsonValue {
+  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
+}
+
+function mapPixStatusToPaymentStatus(status: string): PaymentStatus {
   switch (status) {
     case 'approved':
       return 'APPROVED';
@@ -162,6 +292,25 @@ function mapPixStatusToPaymentStatus(status: string): string {
       return 'EXPIRED';
     case 'refunded':
       return 'REFUNDED';
+    case 'in_process':
+      return 'PROCESSING';
+    case 'pending':
+    default:
+      return 'PENDING';
+  }
+}
+
+function mapPixStatusToCheckoutPaymentStatus(status: string): PaymentStatus {
+  switch (status) {
+    case 'approved':
+      return 'APPROVED';
+    case 'rejected':
+      return 'DECLINED';
+    case 'cancelled':
+    case 'refunded':
+      return 'CANCELED';
+    case 'expired':
+      return 'EXPIRED';
     case 'in_process':
       return 'PROCESSING';
     case 'pending':
