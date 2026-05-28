@@ -14,6 +14,7 @@ import { MarketingSkillService } from './marketing-skills/marketing-skill.servic
 import { MindService } from './mind.service';
 import { AttentionService } from './mind/attention.service';
 import { ValenceAggregatorService } from './mind/valence-aggregator.service';
+import { MindBeliefService } from './mind/inference/mind-belief.service';
 import { UnifiedAgentService } from './unified-agent.service';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { validateAbiPayload } from './abi/abi-validator';
@@ -54,6 +55,7 @@ export class KloelReplyEngineService {
     @Optional() private readonly abiBuilder?: AbiBuilderService,
     @Optional() private readonly attentionService?: AttentionService,
     @Optional() private readonly valenceAggregatorService?: ValenceAggregatorService,
+    @Optional() private readonly mindBeliefService?: MindBeliefService,
   ) {
     this.openai = createTextLlmClient(undefined, { timeout: 60_000, maxRetries: 0 });
     this.toolRouter = new KloelToolRouter(
@@ -228,6 +230,30 @@ export class KloelReplyEngineService {
       }
     } else {
       cognitiveState.mindSignals = { status: 'no_services' };
+    }
+
+    // Mind beliefs — wire MindBeliefService top active beliefs (PI-k4)
+    if (this.mindBeliefService && params.workspaceId) {
+      try {
+        const beliefs = await Promise.race([
+          this.mindBeliefService.getActiveBeliefs(params.workspaceId),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('kloel_mind_belief_timeout')), 100),
+          ),
+        ]);
+        const mindSignals = (cognitiveState.mindSignals ?? {}) as Record<string, unknown>;
+        mindSignals.beliefs = beliefs.map((b) => ({
+          subject: b.subject,
+          predicate: b.predicate,
+          mean: b.mean,
+          confidence: 1 / (1 + b.variance),
+        }));
+        cognitiveState.mindSignals = mindSignals;
+      } catch (error: unknown) {
+        this.logger.warn('kloel_mind_belief_skipped', {
+          reason: error instanceof Error ? error.message : 'unknown error',
+        });
+      }
     }
 
     if (this.abiBuilder) {

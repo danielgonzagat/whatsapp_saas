@@ -167,6 +167,22 @@ export class MindBeliefService {
     }
   }
 
+  async getActiveBeliefs(workspaceId: string): Promise<MindBelief[]> {
+    const startedAt = Date.now();
+    try {
+      const rows = await this.prisma.mindBelief.findMany({
+        where: { workspaceId },
+        orderBy: { updatedAt: 'desc' },
+        take: 10,
+      });
+      this.logSuccess('mind.belief.get_active_beliefs', startedAt, workspaceId);
+      return rows as MindBelief[];
+    } catch (error: unknown) {
+      this.logFailure('mind.belief.get_active_beliefs', startedAt, workspaceId, undefined, undefined, error);
+      throw error;
+    }
+  }
+
   private logSuccess(
     operation: string,
     startedAt: number,
