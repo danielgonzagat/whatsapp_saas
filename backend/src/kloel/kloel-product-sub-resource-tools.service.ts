@@ -1,6 +1,7 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { SalesService } from '../sales/sales.service';
 
 import type { UnknownRecord } from '../common/types';
 import { ProductCouponDomainService } from './product-coupon-domain.service';
@@ -17,6 +18,7 @@ export class KloelProductSubResourceToolsService {
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly productCouponDomain?: ProductCouponDomainService,
+    @Optional() private readonly salesService?: SalesService,
   ) {}
 
   async executeTool(
@@ -70,6 +72,30 @@ export class KloelProductSubResourceToolsService {
   private num(v: unknown, fb = 0): number {
     const n = Number(v);
     return Number.isFinite(n) ? n : fb;
+  }
+
+  private missingStringInputs(args: UnknownRecord, keys: string[]): string[] {
+    return keys.filter((key) => !this.str(args[key]).trim());
+  }
+
+  private boletoBuyerDataFromArgs(args: UnknownRecord) {
+    const neighborhood = this.str(args.customerNeighborhood).trim();
+    return {
+      name: this.str(args.customerName).trim(),
+      email: this.str(args.customerEmail).trim(),
+      cpf: this.str(args.customerCpf).trim(),
+      phone: this.str(args.customerPhone).trim(),
+      address: {
+        zipCode: this.str(args.customerZipCode).replace(/\D/g, ''),
+        street: this.str(args.customerStreet).trim(),
+        number: this.str(args.customerNumber).trim(),
+        ...(neighborhood ? { neighborhood } : {}),
+        city: this.str(args.customerCity).trim(),
+        state: this.str(args.customerState)
+          .replace(/[^a-z]/gi, '')
+          .toUpperCase(),
+      },
+    };
   }
 
   async toolCreatePlan(workspaceId: string, args: UnknownRecord) {
@@ -614,17 +640,71 @@ export class KloelProductSubResourceToolsService {
     }
   }
   async toolGenerateBoleto(
-    _workspaceId: string,
-    _args: UnknownRecord,
+    workspaceId: string,
+    args: UnknownRecord,
   ): Promise<ProductSubResourceToolResult> {
+    const missingInputs = this.missingStringInputs(args, [
+      'productId',
+      'planId',
+      'customerName',
+      'customerEmail',
+      'customerCpf',
+      'customerPhone',
+      'customerZipCode',
+      'customerStreet',
+      'customerNumber',
+      'customerCity',
+      'customerState',
+    ]);
+    if (missingInputs.length > 0) {
+      return {
+        success: false,
+        error: 'sales_create_boleto_inputs_required',
+        message: `Dados faltantes para criar boleto real: ${missingInputs.join(', ')}`,
+        capabilityId: 'sales.create_boleto',
+        missingInputs,
+        outputs: {},
+        domainEvents: [],
+      };
+    }
+    if (!this.salesService) {
+      return {
+        success: false,
+        error: 'sales_service_unavailable',
+        capabilityId: 'sales.create_boleto',
+        outputs: {},
+        domainEvents: [],
+      };
+    }
+
+    const boletoResult = await this.salesService.createBoletoOrder(
+      workspaceId,
+      this.str(args.productId).trim(),
+      this.str(args.planId).trim(),
+      this.boletoBuyerDataFromArgs(args),
+    );
+
     return {
-      success: false,
-      error: 'boleto_provider_unavailable',
-      message:
-        'Boleto ainda nao esta conectado ao servico de dominio real. Use sales.create_boleto quando houver provedor real com recibo e auditoria.',
+      success: true,
       capabilityId: 'sales.create_boleto',
-      outputs: {},
-      domainEvents: [],
+      saleId: boletoResult.saleId,
+      orderId: boletoResult.saleId,
+      paymentId: boletoResult.externalPaymentId,
+      externalPaymentId: boletoResult.externalPaymentId,
+      boletoBarcode: boletoResult.boletoBarcode,
+      boletoUrl: boletoResult.boletoUrl,
+      boletoExpiresAt: boletoResult.boletoExpiresAt,
+      outputs: {
+        saleId: boletoResult.saleId,
+        orderId: boletoResult.saleId,
+        paymentId: boletoResult.externalPaymentId,
+        externalPaymentId: boletoResult.externalPaymentId,
+        boletoBarcode: boletoResult.boletoBarcode,
+        boletoUrl: boletoResult.boletoUrl,
+        boletoExpiresAt: boletoResult.boletoExpiresAt,
+      },
+      domainEvents: ['sale.created', 'payment.pending'],
+      message: `Boleto gerado: ${boletoResult.saleId}`,
     };
   }
 }

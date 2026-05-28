@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
+import { SalesService } from '../sales/sales.service';
 import { ProductCouponDomainService } from './product-coupon-domain.service';
 import { generateBoletoTool } from './kloel-product-sub-resource-tools.url-payment.helpers';
 
@@ -44,6 +45,7 @@ describe('KloelProductSubResourceToolsService', () => {
     };
   };
   let productCouponDomain: { deleteProductCoupon: jest.Mock };
+  let salesService: { createBoletoOrder: jest.Mock };
 
   const ws = 'ws-1';
 
@@ -100,11 +102,13 @@ describe('KloelProductSubResourceToolsService', () => {
         code: 'SAVE10',
       }),
     };
+    salesService = { createBoletoOrder: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         KloelProductSubResourceToolsService,
         { provide: PrismaService, useValue: prisma },
+        { provide: SalesService, useValue: salesService },
         { provide: ProductCouponDomainService, useValue: productCouponDomain },
       ],
     }).compile();
@@ -209,15 +213,58 @@ describe('KloelProductSubResourceToolsService', () => {
       expect(result.success).toBe(true);
     });
 
-    it('dispatches generate_boleto as an honest unavailable capability', async () => {
-      const result = await service.executeTool('generate_boleto', ws, {
-        amount: 100,
-        customerPhone: '5511999999999',
-        productName: 'Widget',
+    it('dispatches generate_boleto through SalesService.createBoletoOrder', async () => {
+      salesService.createBoletoOrder.mockResolvedValueOnce({
+        saleId: 'sale-boleto-1',
+        boletoBarcode: '23793.38128 60000.000001 12345.678901 2 99990000019700',
+        boletoExpiresAt: new Date('2026-06-03T12:00:00.000Z'),
+        boletoUrl: 'https://mp.test/boleto/1',
+        externalPaymentId: 'mp-boleto-1',
       });
-      expect(result.success).toBe(false);
-      expect(result.error).toBe('boleto_provider_unavailable');
-      expect(result.boletoCode).toBeUndefined();
+
+      const result = await service.executeTool('generate_boleto', ws, {
+        productId: 'prod-1',
+        planId: 'plan-1',
+        customerName: 'Joao',
+        customerEmail: 'joao@test.com',
+        customerCpf: '123.456.789-00',
+        customerPhone: '5511999999999',
+        customerZipCode: '01310-100',
+        customerStreet: 'Av Paulista',
+        customerNumber: '1000',
+        customerNeighborhood: 'Bela Vista',
+        customerCity: 'Sao Paulo',
+        customerState: 'SP',
+      });
+
+      expect(salesService.createBoletoOrder).toHaveBeenCalledWith(ws, 'prod-1', 'plan-1', {
+        name: 'Joao',
+        email: 'joao@test.com',
+        cpf: '123.456.789-00',
+        phone: '5511999999999',
+        address: {
+          zipCode: '01310100',
+          street: 'Av Paulista',
+          number: '1000',
+          neighborhood: 'Bela Vista',
+          city: 'Sao Paulo',
+          state: 'SP',
+        },
+      });
+      expect(result).toMatchObject({
+        success: true,
+        capabilityId: 'sales.create_boleto',
+        saleId: 'sale-boleto-1',
+        boletoBarcode: '23793.38128 60000.000001 12345.678901 2 99990000019700',
+        boletoUrl: 'https://mp.test/boleto/1',
+        externalPaymentId: 'mp-boleto-1',
+        outputs: {
+          orderId: 'sale-boleto-1',
+          paymentId: 'mp-boleto-1',
+        },
+        domainEvents: ['sale.created', 'payment.pending'],
+      });
+      expect(result.error).toBeUndefined();
       expect(prisma.kloelSale.create).not.toHaveBeenCalled();
     });
   });
@@ -329,19 +376,31 @@ describe('KloelProductSubResourceToolsService', () => {
   });
 
   describe('toolGenerateBoleto', () => {
-    it('returns an honest unavailable receipt instead of creating a fake boleto sale', async () => {
+    it('returns missing inputs before calling SalesService', async () => {
       const result = await service.toolGenerateBoleto(ws, {
-        amount: 150,
-        customerPhone: '5511999999999',
-        productName: 'Widget',
+        productId: 'prod-1',
+        planId: 'plan-1',
+        customerName: 'Joao',
+        customerEmail: 'joao@test.com',
+        customerCpf: '123.456.789-00',
       });
+
+      expect(salesService.createBoletoOrder).not.toHaveBeenCalled();
       expect(result).toMatchObject({
         success: false,
-        error: 'boleto_provider_unavailable',
+        error: 'sales_create_boleto_inputs_required',
+        capabilityId: 'sales.create_boleto',
+        missingInputs: [
+          'customerPhone',
+          'customerZipCode',
+          'customerStreet',
+          'customerNumber',
+          'customerCity',
+          'customerState',
+        ],
+        outputs: {},
+        domainEvents: [],
       });
-      expect(result.saleId).toBeUndefined();
-      expect(result.boletoCode).toBeUndefined();
-      expect(result.boletoHtml).toBeUndefined();
       expect(prisma.kloelSale.create).not.toHaveBeenCalled();
     });
   });
