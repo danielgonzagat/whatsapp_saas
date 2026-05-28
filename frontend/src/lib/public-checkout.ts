@@ -325,6 +325,10 @@ export function normalizePublicCheckoutResponse(input: unknown): PublicCheckoutR
     paymentProvider: providerRecord
       ? {
           provider: 'stripe',
+          cardProvider: providerRecord.cardProvider === 'stripe' ? 'stripe' : undefined,
+          pixProvider: providerRecord.pixProvider === 'mercadopago' ? 'mercadopago' : undefined,
+          boletoProvider:
+            providerRecord.boletoProvider === 'mercadopago' ? 'mercadopago' : undefined,
           connected: asBoolean(providerRecord.connected),
           checkoutEnabled: asBoolean(providerRecord.checkoutEnabled),
           publicKey: asOptionalString(providerRecord.publicKey) || null,

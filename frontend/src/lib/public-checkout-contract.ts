@@ -269,6 +269,12 @@ export interface PublicCheckoutConfig {
 export interface PublicCheckoutPaymentProvider {
   /** Provider property. */
   provider: 'stripe';
+  /** Card rail provider property. */
+  cardProvider?: 'stripe' | undefined;
+  /** Pix rail provider property. */
+  pixProvider?: 'mercadopago' | undefined;
+  /** Boleto rail provider property. */
+  boletoProvider?: 'mercadopago' | undefined;
   /** Connected property. */
   connected: boolean;
   /** Checkout enabled property. */
