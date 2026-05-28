@@ -160,9 +160,7 @@ export function buildMetaExternalId(
  * Meta WhatsApp webhook payload. Empty / missing values fall back to
  * empty strings so callers can rely on `Map.get(...)` returning a string.
  */
-export function buildContactIndex(
-  contacts: MetaContactLike[] | undefined,
-): Map<string, string> {
+export function buildContactIndex(contacts: MetaContactLike[] | undefined): Map<string, string> {
   const safeContacts = Array.isArray(contacts) ? contacts : [];
   return new Map<string, string>(
     safeContacts.map((contact) => [

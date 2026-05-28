@@ -385,5 +385,4 @@ export class MetaWebhookController {
 
     return channelSession?.workspaceId || null;
   }
-
 }

@@ -170,15 +170,15 @@ describe('meta-webhook.controller.helpers', () => {
     });
 
     it('falls back to interactive.button_reply.title', () => {
-      expect(
-        extractWhatsAppMessageText({ interactive: { button_reply: { title: 'Yes' } } }),
-      ).toBe('Yes');
+      expect(extractWhatsAppMessageText({ interactive: { button_reply: { title: 'Yes' } } })).toBe(
+        'Yes',
+      );
     });
 
     it('falls back to interactive.list_reply.title', () => {
-      expect(
-        extractWhatsAppMessageText({ interactive: { list_reply: { title: 'Item 1' } } }),
-      ).toBe('Item 1');
+      expect(extractWhatsAppMessageText({ interactive: { list_reply: { title: 'Item 1' } } })).toBe(
+        'Item 1',
+      );
     });
 
     it('falls back to caption', () => {
