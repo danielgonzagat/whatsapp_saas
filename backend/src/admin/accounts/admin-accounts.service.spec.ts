@@ -21,7 +21,7 @@ jest.mock('./queries/kyc-queue.query', () => ({
   listKycQueue: (...args: unknown[]) => mockListKycQueue(...args),
 }));
 const mockAsProviderSettings = jest.fn<Record<string, unknown>, unknown[]>();
-jest.mock('../../whatsapp/provider-settings.types', () => ({
+jest.mock('../../marketing/channels/whatsapp/provider-settings.types', () => ({
   asProviderSettings: (...args: unknown[]) => mockAsProviderSettings(...args),
 }));
 describe('AdminAccountsService', () => {

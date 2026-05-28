@@ -125,13 +125,12 @@ describe('Evol module (UTP-EVOL-001..010)', () => {
     });
 
     it('returns gaps sorted by estimated revenue risk descending', () => {
-      const signals: GapSignal[] = [
-        makeAuthSignal(),
-        makePaymentSignal(),
-      ];
+      const signals: GapSignal[] = [makeAuthSignal(), makePaymentSignal()];
       const gaps = svc.detect(signals);
       expect(gaps.length).toBeGreaterThanOrEqual(1);
-      expect(gaps[0]!.estimatedRevenueRiskCents).toBeGreaterThanOrEqual(gaps[gaps.length - 1]!.estimatedRevenueRiskCents);
+      expect(gaps[0]!.estimatedRevenueRiskCents).toBeGreaterThanOrEqual(
+        gaps[gaps.length - 1]!.estimatedRevenueRiskCents,
+      );
     });
 
     it('estimates total risk across all gaps', () => {
@@ -330,3 +329,4 @@ describe('Evol module (UTP-EVOL-001..010)', () => {
       expect(failed!.status).toBe('failed');
     });
   });
+});

@@ -53,9 +53,7 @@ const makeUnavailability = (
   };
 };
 
-const baseInput = (
-  over: Partial<IndispensabilityInput> = {},
-): IndispensabilityInput => ({
+const baseInput = (over: Partial<IndispensabilityInput> = {}): IndispensabilityInput => ({
   workspaceId: over.workspaceId ?? 'ws-test',
   sessions: over.sessions ?? [],
   unavailabilityEvents: over.unavailabilityEvents ?? [],
@@ -198,10 +196,7 @@ describe('IndispensabilityTrackerService (UTP-DELEG-INDISP)', () => {
   // ─── 10. churn risk 30d ───────────────────────────────────────────
   describe('assess — churn risk 30d', () => {
     it('emits churn_risk_30d after 30+ days of inactivity', () => {
-      const sessions = [
-        makeSession({}, 45, 0, 's-old1'),
-        makeSession({}, 45, 2, 's-old2'),
-      ];
+      const sessions = [makeSession({}, 45, 0, 's-old1'), makeSession({}, 45, 2, 's-old2')];
       const input = baseInput({ sessions });
       const result = tracker.assess(input);
       expect(result.signals).toContain('churn_risk_30d');
@@ -211,10 +206,7 @@ describe('IndispensabilityTrackerService (UTP-DELEG-INDISP)', () => {
   // ─── 11. churn risk critical ──────────────────────────────────────
   describe('assess — churn risk critical', () => {
     it('emits churn_risk_critical after 60+ days of inactivity', () => {
-      const sessions = [
-        makeSession({}, 70, 0, 's-old1'),
-        makeSession({}, 71, 0, 's-old2'),
-      ];
+      const sessions = [makeSession({}, 70, 0, 's-old1'), makeSession({}, 71, 0, 's-old2')];
       const input = baseInput({ sessions });
       const result = tracker.assess(input);
       expect(result.signals).toContain('churn_risk_critical');
@@ -285,10 +277,7 @@ describe('IndispensabilityTrackerService (UTP-DELEG-INDISP)', () => {
     });
 
     it('clamps score to min 0.0', () => {
-      const sessions = [
-        makeSession({}, 70, 0, 's-old1'),
-        makeSession({}, 70, 1, 's-old2'),
-      ];
+      const sessions = [makeSession({}, 70, 0, 's-old1'), makeSession({}, 70, 1, 's-old2')];
       const input = baseInput({ sessions });
       const result = tracker.assess(input);
       expect(result.score).toBeGreaterThanOrEqual(0);
@@ -298,10 +287,7 @@ describe('IndispensabilityTrackerService (UTP-DELEG-INDISP)', () => {
   // ─── 16. no habit detected ────────────────────────────────────────
   describe('assess — no habit detected', () => {
     it('emits no_habit_detected for sporadic use', () => {
-      const sessions = [
-        makeSession({}, 20, 0, 's1'),
-        makeSession({}, 10, 0, 's2'),
-      ];
+      const sessions = [makeSession({}, 20, 0, 's1'), makeSession({}, 10, 0, 's2')];
       const input = baseInput({ sessions });
       const result = tracker.assess(input);
       expect(result.signals).toContain('no_habit_detected');
@@ -334,3 +320,4 @@ describe('IndispensabilityTrackerService (UTP-DELEG-INDISP)', () => {
   });
 
   // ─── 18. assessChurnRisk edge cases ───────────────────────────────
+});

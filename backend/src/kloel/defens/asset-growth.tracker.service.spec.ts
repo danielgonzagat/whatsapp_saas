@@ -344,3 +344,4 @@ describe('AssetGrowthTrackerService', () => {
     expect(service.listAssets('wks_b')).toHaveLength(1);
     expect(service.listAssets('wks_c')).toHaveLength(0);
   });
+});

@@ -17,14 +17,13 @@ import type {
   AbRCriterionDelta,
 } from './abi-ab.types';
 
-function makePathRunner(
-  overrides: Partial<AbPathRunnerResult> = {},
-): AbPathRunnerFn {
+function makePathRunner(overrides: Partial<AbPathRunnerResult> = {}): AbPathRunnerFn {
   return async () => ({
     success: true,
     latencyMs: 200,
     tokensUsed: 150,
-    responseText: 'Obrigado pelo contato. Conforme sua análise, recomendamos adquirir o plano.' as string,
+    responseText:
+      'Obrigado pelo contato. Conforme sua análise, recomendamos adquirir o plano.' as string,
     ...overrides,
   });
 }
@@ -61,7 +60,8 @@ function makeConversionRichRunner(): AbPathRunnerFn {
     success: true,
     latencyMs: 180,
     tokensUsed: 200,
-    responseText: 'Excelente! Aproveite nossa oferta exclusiva. Clique aqui para comprar com desconto. Muito obrigado pela confiança.' as string,
+    responseText:
+      'Excelente! Aproveite nossa oferta exclusiva. Clique aqui para comprar com desconto. Muito obrigado pela confiança.' as string,
   });
 }
 
@@ -70,7 +70,8 @@ function makeHallucinatedRunner(): AbPathRunnerFn {
     success: true,
     latencyMs: 220,
     tokensUsed: 180,
-    responseText: 'O produto X é o melhor do mercado. A empresa Y recomenda este serviço. A pesquisa Z comprovou eficácia de 99%.' as string,
+    responseText:
+      'O produto X é o melhor do mercado. A empresa Y recomenda este serviço. A pesquisa Z comprovou eficácia de 99%.' as string,
   });
 }
 
@@ -172,7 +173,8 @@ describe('AbiAbHarnessService', () => {
         success: true,
         latencyMs: 150,
         tokensUsed: 100,
-        responseText: 'Segundo o relatório anual, as vendas cresceram 20%. De acordo com a pesquisa do IBGE, o mercado expandiu. Estes dados são verificáveis.' as string,
+        responseText:
+          'Segundo o relatório anual, as vendas cresceram 20%. De acordo com a pesquisa do IBGE, o mercado expandiu. Estes dados são verificáveis.' as string,
       });
 
       const service = new AbiAbHarnessService(runner);
@@ -192,7 +194,8 @@ describe('AbiAbHarnessService', () => {
         success: true,
         latencyMs: 100,
         tokensUsed: 50,
-        responseText: 'Afirmação sem prova. Conforme fonte confiável, este dado é real. Outra afirmação sem evidência.' as string,
+        responseText:
+          'Afirmação sem prova. Conforme fonte confiável, este dado é real. Outra afirmação sem evidência.' as string,
       });
 
       const service = new AbiAbHarnessService(runner);
@@ -234,7 +237,8 @@ describe('AbiAbHarnessService', () => {
         success: true,
         latencyMs: 150,
         tokensUsed: 80,
-        responseText: 'Muito obrigado! Fico feliz em ajudar. Sua satisfação é nossa prioridade.' as string,
+        responseText:
+          'Muito obrigado! Fico feliz em ajudar. Sua satisfação é nossa prioridade.' as string,
       });
 
       const service = new AbiAbHarnessService(runner);
@@ -258,3 +262,4 @@ describe('AbiAbHarnessService', () => {
       expect(baseline.commercialOutcome).toBeNull();
     });
   });
+});

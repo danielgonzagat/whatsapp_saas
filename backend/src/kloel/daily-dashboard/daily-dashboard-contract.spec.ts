@@ -338,3 +338,4 @@ describe('DailyDashboardService contract (UTP-R6)', () => {
     expect(action?.riskClass).toBe('R2');
     expect(action?.delegationMode).toBe('requires_approval');
   });
+});

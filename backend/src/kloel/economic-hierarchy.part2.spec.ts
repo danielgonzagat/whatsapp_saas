@@ -1,4 +1,8 @@
-import { attributeHierarchy, type HierarchyDecision, type HierarchyLevel } from './economic-hierarchy';
+import {
+  attributeHierarchy,
+  type HierarchyDecision,
+  type HierarchyLevel,
+} from './economic-hierarchy';
 
 describe('economic-hierarchy', () => {
   const h = (overrides: Partial<HierarchyDecision> = {}): HierarchyDecision => ({
@@ -177,7 +181,11 @@ describe('economic-hierarchy', () => {
         h({
           type: 'cia_aggressiveness',
           chosen: 'baixa',
-          context: { brainAggressiveness: 'alta', aggressivenessCeiling: 'baixa', concept: 'general' },
+          context: {
+            brainAggressiveness: 'alta',
+            aggressivenessCeiling: 'baixa',
+            concept: 'general',
+          },
         }),
       );
       expect(result.level).toBe('ux');
@@ -228,9 +236,7 @@ describe('economic-hierarchy', () => {
     });
 
     it('known type but no rule matches → conversion', () => {
-      const result = attributeHierarchy(
-        h({ type: 'message_format', chosen: 'text', context: {} }),
-      );
+      const result = attributeHierarchy(h({ type: 'message_format', chosen: 'text', context: {} }));
       expect(result.level).toBe('conversion');
     });
   });
@@ -242,15 +248,19 @@ describe('economic-hierarchy', () => {
     });
 
     it('missing optional fields', () => {
-      const result = attributeHierarchy(
-        h({ type: 'cia_aggressiveness', chosen: 'normal' }),
-      );
+      const result = attributeHierarchy(h({ type: 'cia_aggressiveness', chosen: 'normal' }));
       expect(result.level).toBe('conversion');
     });
 
     it('all valid HierarchyLevel values are usable', () => {
       const levels: HierarchyLevel[] = [
-        'compliance', 'margin', 'conversion', 'retention', 'ux', 'learning', 'exploration',
+        'compliance',
+        'margin',
+        'conversion',
+        'retention',
+        'ux',
+        'learning',
+        'exploration',
       ];
       expect(levels.length).toBe(7);
       for (const level of levels) {
@@ -295,3 +305,4 @@ describe('economic-hierarchy', () => {
       expect(postSale.level).toBe('retention');
     });
   });
+});

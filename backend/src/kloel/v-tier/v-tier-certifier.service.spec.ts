@@ -31,22 +31,21 @@ function ev(over: Partial<SpineEventRef> = {}): SpineEventRef {
     ...(over.entityRef !== undefined ? { entityRef: over.entityRef } : {}),
     ...(over.valence !== undefined ? { valence: over.valence } : {}),
     ...(over.payload !== undefined ? { payload: over.payload } : {}),
-    ...(over.correlationId !== undefined
-      ? { correlationId: over.correlationId }
-      : {}),
+    ...(over.correlationId !== undefined ? { correlationId: over.correlationId } : {}),
   };
 }
 
-function makeCertifier(over: {
-  readonly spine?: SpineEmitterService;
-  readonly workspaceCount?: number;
-} = {}): VtierCertifierService {
+function makeCertifier(
+  over: {
+    readonly spine?: SpineEmitterService;
+    readonly workspaceCount?: number;
+  } = {},
+): VtierCertifierService {
   const repo = new InMemoryLineageLedgerRepository();
   const ledger = new LineageLedgerService(repo);
   const guard = new LineageGuardService(repo);
   const projector = new IdentityProjectorService(guard);
-  const spine =
-    over.spine ?? new SpineEmitterService(new ValenceTaggerService());
+  const spine = over.spine ?? new SpineEmitterService(new ValenceTaggerService());
   const abiBuilder = new AbiBuilderService(projector);
   const valenceTagger = new ValenceTaggerService();
   const hebbian = new HebbianService();
@@ -54,12 +53,7 @@ function makeCertifier(over: {
   const coordinator = new MultiTimescaleCoordinator();
   const valenceAgg = new ValenceAggregatorService();
   const consolidation = new ConsolidationService();
-  const mindBg = new MindBackgroundProcessor(
-    coordinator,
-    valenceAgg,
-    hebbian,
-    consolidation,
-  );
+  const mindBg = new MindBackgroundProcessor(coordinator, valenceAgg, hebbian, consolidation);
   return new VtierCertifierService(
     spine,
     guard,
@@ -72,10 +66,7 @@ function makeCertifier(over: {
   );
 }
 
-function expectStatus(
-  v: VerificationVerdict,
-  expected: VerificationVerdict['status'],
-): void {
+function expectStatus(v: VerificationVerdict, expected: VerificationVerdict['status']): void {
   expect(v.status).toBe(expected);
 }
 
@@ -354,3 +345,4 @@ describe('VtierCertifierService', () => {
       expectStatus(v15, 'PASS');
     });
   });
+});

@@ -8,7 +8,7 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { ChannelTransportRegistry } from './channel-transport.registry';
 
-jest.mock('../whatsapp/providers/provider-registry');
+jest.mock('../marketing/channels/whatsapp/providers/provider-registry');
 jest.mock('./audio.service');
 jest.mock('../billing/plan-limits.service');
 jest.mock('../observability/ops-alert.service');

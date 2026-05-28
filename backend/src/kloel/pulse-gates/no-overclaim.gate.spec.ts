@@ -22,9 +22,7 @@ function abiPayload(overrides?: Record<string, unknown>): Record<string, unknown
     attention: { candidates: [] },
     memory: { workingMemory: [], episodicRefs: [], consolidatedRefs: [] },
     capabilities: {
-      available: [
-        { capabilityId: 'lineage', maturity: 'operational', runtimeEvidencePct: 42 },
-      ],
+      available: [{ capabilityId: 'lineage', maturity: 'operational', runtimeEvidencePct: 42 }],
       restricted: [],
     },
     valence: {
@@ -35,7 +33,11 @@ function abiPayload(overrides?: Record<string, unknown>): Record<string, unknown
       noOverclaimStatus: 'PASS',
       capabilityHealthScore: 1,
       gates: [],
-      certificationVerdict: { verdict: 'INSUFFICIENT_EVIDENCE', score: 0, measuredAt: new Date().toISOString() },
+      certificationVerdict: {
+        verdict: 'INSUFFICIENT_EVIDENCE',
+        score: 0,
+        measuredAt: new Date().toISOString(),
+      },
       overclaimRisk: 0,
     },
     currentInput: { raw: 'test', channel: 'test', arrivalTimestamp: new Date().toISOString() },
@@ -62,10 +64,7 @@ function registrySnapshot(
   };
 }
 
-function gateInput(
-  abi: unknown,
-  registry?: CapabilityRegistrySnapshot,
-): NoOverclaimInput {
+function gateInput(abi: unknown, registry?: CapabilityRegistrySnapshot): NoOverclaimInput {
   return { abiPayload: abi, registrySnapshot: registry };
 }
 
@@ -348,3 +347,4 @@ describe('no-overclaim gate', () => {
     const v = makeNoOverclaimGate().check(gateInput('not-an-object'));
     expect(v.status).toBe('FAIL');
   });
+});

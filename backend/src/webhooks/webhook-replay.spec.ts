@@ -4,7 +4,7 @@ jest.mock('../marketing/channels/whatsapp/inbound-processor.service', () => ({
     process: jest.fn().mockResolvedValue(undefined),
   })),
 }));
-jest.mock('../whatsapp/whatsapp.service', () => ({
+jest.mock('../marketing/channels/whatsapp/whatsapp.service', () => ({
   WhatsappService: jest.fn().mockImplementation(() => ({
     sendMessage: jest.fn().mockResolvedValue(undefined),
   })),

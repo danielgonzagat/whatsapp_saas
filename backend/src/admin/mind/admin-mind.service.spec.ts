@@ -1,11 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { MindBeliefService } from '../../kloel/mind-belief.service';
-import { MindPolicyService } from '../../kloel/mind-policy.service';
-import { MindObservabilityService } from '../../kloel/mind-observability.service';
-import { MindReportService } from '../../kloel/mind-report.service';
-import { MindLiftReportService } from '../../kloel/mind-lift-report.service';
+import { MindBeliefService } from '../../kloel/mind/inference/mind-belief.service';
+import { MindPolicyService } from '../../kloel/mind/policy/mind-policy.service';
+import { MindObservabilityService } from '../../kloel/mind/observability/mind-observability.service';
+import { MindReportService } from '../../kloel/mind/observability/mind-report.service';
+import { MindLiftReportService } from '../../kloel/mind/observability/mind-lift-report.service';
 import { AdminMindService } from './admin-mind.service';
 import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 

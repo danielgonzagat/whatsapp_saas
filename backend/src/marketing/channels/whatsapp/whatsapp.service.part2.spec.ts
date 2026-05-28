@@ -100,7 +100,12 @@ describe('WhatsappService', () => {
         webhookUrl: 'https://api.kloel.test/webhooks/whatsapp-api',
         webhookConfigured: true,
         inboundEventsConfigured: true,
-        events: ['session.status', 'message', ['message', ['a', 'ny'].join('')].join('.'), 'message.ack'],
+        events: [
+          'session.status',
+          'message',
+          ['message', ['a', 'ny'].join('')].join('.'),
+          'message.ack',
+        ],
         secretConfigured: true,
         storeEnabled: true,
         storeFullSync: true,
@@ -357,3 +362,4 @@ describe('WhatsappService', () => {
     await service.handleIncoming('ws-1', '5511999999999', 'Quero saber sobre o serum');
     expect(mockAutopilotAdd).not.toHaveBeenCalled();
   });
+});

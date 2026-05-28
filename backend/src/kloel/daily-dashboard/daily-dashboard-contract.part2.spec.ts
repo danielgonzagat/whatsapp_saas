@@ -346,3 +346,4 @@ describe('DailyDashboardService contract (UTP-R6)', () => {
     const d = await svcOther.generate(WKS);
     expect(d.abandonedCarts).toBe(0);
   });
+});

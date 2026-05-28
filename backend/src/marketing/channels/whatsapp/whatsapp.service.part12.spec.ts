@@ -100,7 +100,12 @@ describe('WhatsappService', () => {
         webhookUrl: 'https://api.kloel.test/webhooks/whatsapp-api',
         webhookConfigured: true,
         inboundEventsConfigured: true,
-        events: ['session.status', 'message', ['message', ['a', 'ny'].join('')].join('.'), 'message.ack'],
+        events: [
+          'session.status',
+          'message',
+          ['message', ['a', 'ny'].join('')].join('.'),
+          'message.ack',
+        ],
         secretConfigured: true,
         storeEnabled: true,
         storeFullSync: true,
@@ -365,3 +370,4 @@ describe('WhatsappService', () => {
     );
     expect(mockFlowAdd).not.toHaveBeenCalledWith('send-message', expect.anything());
   });
+});

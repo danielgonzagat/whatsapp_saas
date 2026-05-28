@@ -213,3 +213,4 @@ describe('CapabilityRegistryService', () => {
       expect(rec.auditTrail).toEqual([]);
     });
   });
+});

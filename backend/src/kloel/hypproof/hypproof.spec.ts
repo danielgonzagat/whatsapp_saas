@@ -337,3 +337,4 @@ describe('Hypproof module (UTP-HYPPROOF-001..009)', () => {
       expect(result[1]!.confidence).toBe(0);
     });
   });
+});

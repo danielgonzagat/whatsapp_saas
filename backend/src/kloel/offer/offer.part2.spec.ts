@@ -1,9 +1,5 @@
 import type { SpineEventRef } from '../mind/mind.types';
-import type {
-  OfferDetectorInput,
-  OfferInsight,
-  RankedOfferInsight,
-} from './offer.types';
+import type { OfferDetectorInput, OfferInsight, RankedOfferInsight } from './offer.types';
 
 import { detectBonusDesirability } from './detectors/bonus-desirability.detector';
 import { detectPromiseStrength } from './detectors/promise-strength.detector';
@@ -62,10 +58,7 @@ function makeInsight(over?: Partial<OfferInsight>): OfferInsight {
   };
 }
 
-function makeRanked(
-  over?: Partial<OfferInsight>,
-  product?: number,
-): RankedOfferInsight {
+function makeRanked(over?: Partial<OfferInsight>, product?: number): RankedOfferInsight {
   const insight = makeInsight(over);
   return {
     ...insight,
@@ -86,7 +79,11 @@ describe('UTP-OFFER-009 — OfferDeliveryService', () => {
   const svc = new OfferDeliveryService();
 
   it('delivers urgent insights via whatsapp now', () => {
-    const insight = makeRanked({ kind: 'promise_strength', recommendedChannel: 'whatsapp', recommendedTiming: 'now' });
+    const insight = makeRanked({
+      kind: 'promise_strength',
+      recommendedChannel: 'whatsapp',
+      recommendedTiming: 'now',
+    });
     const d = svc.decide(insight);
     expect(d.deliver).toBe(true);
   });
@@ -120,8 +117,18 @@ describe('UTP-OFFER-009 — OfferDeliveryService', () => {
   });
 
   it('deliveryPlan returns sorted channel priorities', () => {
-    const i1 = makeRanked({ insightId: 'a', kind: 'promise_strength', recommendedChannel: 'whatsapp', recommendedTiming: 'now' });
-    const i2 = makeRanked({ insightId: 'b', kind: 'product_version_fit', recommendedChannel: 'dashboard', recommendedTiming: 'weekly' });
+    const i1 = makeRanked({
+      insightId: 'a',
+      kind: 'promise_strength',
+      recommendedChannel: 'whatsapp',
+      recommendedTiming: 'now',
+    });
+    const i2 = makeRanked({
+      insightId: 'b',
+      kind: 'product_version_fit',
+      recommendedChannel: 'dashboard',
+      recommendedTiming: 'weekly',
+    });
     const plan = svc.deliveryPlan([i1, i2]);
     expect(plan.length).toBeGreaterThanOrEqual(2);
     expect(plan[0]?.channel).toBe('whatsapp');
@@ -134,8 +141,10 @@ describe('UTP-OFFER-009 — OfferDeliveryService', () => {
 describe('UTP-OFFER-002 — PromiseStrengthDetector', () => {
   const detector = new PromiseStrengthDetector();
 
-  const strongCopy = 'Método comprovado para multiplicar seus resultados em apenas 7 dias. Garantia incondicional de 30 dias. +200 casos de sucesso documentados.';
-  const moderateCopy = 'Aprenda a melhorar seus resultados com nosso sistema. Passo a passo simples.';
+  const strongCopy =
+    'Método comprovado para multiplicar seus resultados em apenas 7 dias. Garantia incondicional de 30 dias. +200 casos de sucesso documentados.';
+  const moderateCopy =
+    'Aprenda a melhorar seus resultados com nosso sistema. Passo a passo simples.';
   const weakCopy = 'curso legal';
   const emptyCopy = '';
 
@@ -220,7 +229,8 @@ describe('UTP-OFFER-004 — PositioningMismatchDetector', () => {
   const detector = new PositioningMismatchDetector();
 
   const promiseTrust = 'Acelere seus resultados com método garantido. +500 clientes satisfeitos.';
-  const promiseMismatched = 'Sistema premium exclusivo para empresas de alto nível. Resultados garantidos em 30 dias.';
+  const promiseMismatched =
+    'Sistema premium exclusivo para empresas de alto nível. Resultados garantidos em 30 dias.';
   const promiseBasic = 'curso online';
 
   const audiencePremium: AudienceProfile = {
@@ -331,6 +341,8 @@ describe('UTP-OFFER-004 — PositioningMismatchDetector', () => {
     expect(rMismatch.confidence).toBeGreaterThan(rClean.confidence);
   });
 });
+
+describe('UTP-OFFER — median utility', () => {
   it('returns median for odd array', () => {
     expect(median([1, 3, 5])).toBe(3);
   });

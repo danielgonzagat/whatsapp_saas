@@ -5,7 +5,7 @@ import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
 const mockAsProviderSettings = jest.fn();
 
-jest.mock('../../whatsapp/provider-settings.types', () => ({
+jest.mock('../../marketing/channels/whatsapp/provider-settings.types', () => ({
   asProviderSettings: (...args: unknown[]) => mockAsProviderSettings(...args),
 }));
 

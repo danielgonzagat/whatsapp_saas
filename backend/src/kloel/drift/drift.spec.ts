@@ -298,3 +298,4 @@ describe('DRIFT — Camada X (Behavioral Drift Observability)', () => {
   });
 
   // ─── DriftDetectorService ────────────────────────────────
+});

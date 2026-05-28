@@ -17,14 +17,13 @@ import type {
   AbRCriterionDelta,
 } from './abi-ab.types';
 
-function makePathRunner(
-  overrides: Partial<AbPathRunnerResult> = {},
-): AbPathRunnerFn {
+function makePathRunner(overrides: Partial<AbPathRunnerResult> = {}): AbPathRunnerFn {
   return async () => ({
     success: true,
     latencyMs: 200,
     tokensUsed: 150,
-    responseText: 'Obrigado pelo contato. Conforme sua análise, recomendamos adquirir o plano.' as string,
+    responseText:
+      'Obrigado pelo contato. Conforme sua análise, recomendamos adquirir o plano.' as string,
     ...overrides,
   });
 }
@@ -61,7 +60,8 @@ function makeConversionRichRunner(): AbPathRunnerFn {
     success: true,
     latencyMs: 180,
     tokensUsed: 200,
-    responseText: 'Excelente! Aproveite nossa oferta exclusiva. Clique aqui para comprar com desconto. Muito obrigado pela confiança.' as string,
+    responseText:
+      'Excelente! Aproveite nossa oferta exclusiva. Clique aqui para comprar com desconto. Muito obrigado pela confiança.' as string,
   });
 }
 
@@ -70,7 +70,8 @@ function makeHallucinatedRunner(): AbPathRunnerFn {
     success: true,
     latencyMs: 220,
     tokensUsed: 180,
-    responseText: 'O produto X é o melhor do mercado. A empresa Y recomenda este serviço. A pesquisa Z comprovou eficácia de 99%.' as string,
+    responseText:
+      'O produto X é o melhor do mercado. A empresa Y recomenda este serviço. A pesquisa Z comprovou eficácia de 99%.' as string,
   });
 }
 
@@ -110,7 +111,8 @@ describe('AbiAbHarnessService', () => {
         success: true,
         latencyMs: 150,
         tokensUsed: 150,
-        responseText: 'Excelente! Aproveite nossa oferta exclusiva. Clique aqui para comprar. Obrigado pela confiança!' as string,
+        responseText:
+          'Excelente! Aproveite nossa oferta exclusiva. Clique aqui para comprar. Obrigado pela confiança!' as string,
       });
 
       let callCount = 0;
@@ -144,14 +146,16 @@ describe('AbiAbHarnessService', () => {
         success: true,
         latencyMs: 200,
         tokensUsed: 150,
-        responseText: 'Conforme o relatório, os dados indicam crescimento. Segundo a pesquisa, o resultado é positivo.' as string,
+        responseText:
+          'Conforme o relatório, os dados indicam crescimento. Segundo a pesquisa, o resultado é positivo.' as string,
       });
 
       const variantRunner: AbPathRunnerFn = async () => ({
         success: true,
         latencyMs: 200,
         tokensUsed: 150,
-        responseText: 'O produto é o melhor. A empresa domina o mercado. Os clientes adoram.' as string,
+        responseText:
+          'O produto é o melhor. A empresa domina o mercado. Os clientes adoram.' as string,
       });
 
       let callCount = 0;
@@ -236,14 +240,16 @@ describe('AbiAbHarnessService', () => {
         success: true,
         latencyMs: 150,
         tokensUsed: 100,
-        responseText: 'Conforme dados oficiais, o resultado é excelente. Obrigado! Aproveite a oferta.' as string,
+        responseText:
+          'Conforme dados oficiais, o resultado é excelente. Obrigado! Aproveite a oferta.' as string,
       });
 
       const variantRunner: AbPathRunnerFn = async () => ({
         success: true,
         latencyMs: 100,
         tokensUsed: 80,
-        responseText: 'Afirmação infundada 1. Afirmação infundada 2. Afirmação infundada 3. Afirmação infundada 4. Mas obrigado e aproveite a oferta.' as string,
+        responseText:
+          'Afirmação infundada 1. Afirmação infundada 2. Afirmação infundada 3. Afirmação infundada 4. Mas obrigado e aproveite a oferta.' as string,
       });
 
       let callCount = 0;
@@ -281,7 +287,8 @@ describe('AbiAbHarnessService', () => {
         success: true,
         latencyMs: 100,
         tokensUsed: 120,
-        responseText: 'Excelente! Conforme sua solicitação, aqui está a recomendação. Aproveite nossa oferta exclusiva com desconto. Clique aqui para comprar. Muito obrigado pela confiança! Segundo o relatório, este é o melhor momento.' as string,
+        responseText:
+          'Excelente! Conforme sua solicitação, aqui está a recomendação. Aproveite nossa oferta exclusiva com desconto. Clique aqui para comprar. Muito obrigado pela confiança! Segundo o relatório, este é o melhor momento.' as string,
       });
 
       let callCount = 0;
@@ -309,3 +316,4 @@ describe('AbiAbHarnessService', () => {
       }
     });
   });
+});
