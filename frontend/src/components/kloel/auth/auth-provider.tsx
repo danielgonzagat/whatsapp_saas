@@ -28,30 +28,17 @@ import {
   useRef,
   useState,
 } from 'react';
-interface User {
-  id: string;
-  email: string;
-  name: string;
-}
-interface Workspace {
-  id: string;
-  name: string;
-}
-interface Subscription {
-  status: 'none' | 'trial' | 'active' | 'expired' | 'suspended';
-  trialDaysLeft: number;
-  creditsBalance: number;
-  plan?: string | undefined;
-}
-interface AuthState {
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  justSignedUp: boolean;
-  hasCompletedOnboarding: boolean;
-  user: User | null;
-  workspace: Workspace | null;
-  subscription: Subscription;
-}
+import {
+  type AuthState,
+  type Subscription,
+  buildEmptyAuthState,
+  buildEmptySubscription,
+  isUnauthorizedStatus,
+  mapAuthErrorStatusToMessage,
+  mapSubscriptionResponse,
+  pickUserDisplayName,
+  projectWorkspace,
+} from './auth-provider.helpers';
 interface AuthContextType extends AuthState {
   userName: string | null;
   userEmail: string | null;
@@ -78,9 +65,6 @@ interface AuthContextType extends AuthState {
   authModalMode: 'signup' | 'login';
 }
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-function isUnauthorizedStatus(status?: number): boolean {
-  return status === 401 || status === 403;
-}
 function logAuthBootstrapIssue(message: string, detail?: unknown) {
   if (process.env.NODE_ENV !== 'development') {
     return;
@@ -89,15 +73,9 @@ function logAuthBootstrapIssue(message: string, detail?: unknown) {
 }
 /** Auth provider. */
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [authState, setAuthState] = useState<AuthState>({
-    isAuthenticated: false,
-    isLoading: true,
-    justSignedUp: false,
-    hasCompletedOnboarding: false,
-    user: null,
-    workspace: null,
-    subscription: { status: 'none', trialDaysLeft: 0, creditsBalance: 0 },
-  });
+  const [authState, setAuthState] = useState<AuthState>(() =>
+    buildEmptyAuthState({ isLoading: true }),
+  );
   // Hydrate from JWT on client mount — avoids SSR/client mismatch (React rgb(68, 17, 136))
   const hydratedRef = useRef(false);
   useEffect(() => {
@@ -116,10 +94,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const payloadWorkspaceId = payload.workspaceId;
         queueMicrotask(() => {
           setAuthState({
+            ...buildEmptyAuthState({ isLoading: true }),
             isAuthenticated: true,
-            isLoading: true,
-            justSignedUp: false,
-            hasCompletedOnboarding: false,
             user: { id: payloadSub, email: payloadEmail, name: payloadName },
             workspace: (() => {
               const storedWorkspaceId = tokenStorage.getWorkspaceId();
@@ -131,7 +107,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               }
               return null;
             })(),
-            subscription: { status: 'none', trialDaysLeft: 0, creditsBalance: 0 },
           });
         });
       }
@@ -164,15 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     if (isAnonymousKloelToken(token)) {
-      setAuthState({
-        isAuthenticated: false,
-        isLoading: false,
-        justSignedUp: false,
-        hasCompletedOnboarding: false,
-        user: null,
-        workspace: null,
-        subscription: { status: 'none', trialDaysLeft: 0, creditsBalance: 0 },
-      });
+      setAuthState(buildEmptyAuthState());
       return;
     }
     tokenStorage.ensureAuthCookie();
@@ -180,15 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const res = await authApi.getMe();
       if (isUnauthorizedStatus(res.status)) {
         tokenStorage.clear();
-        setAuthState({
-          isAuthenticated: false,
-          isLoading: false,
-          justSignedUp: false,
-          hasCompletedOnboarding: false,
-          user: null,
-          workspace: null,
-          subscription: { status: 'none', trialDaysLeft: 0, creditsBalance: 0 },
-        });
+        setAuthState(buildEmptyAuthState());
         return;
       }
       if (res.error || !res.data?.user) {
@@ -210,11 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await claimGuestWhatsAppSession(workspace.id);
       }
       // Load subscription
-      let subscription: Subscription = {
-        status: 'none',
-        trialDaysLeft: 0,
-        creditsBalance: 0,
-      };
+      let subscription: Subscription = buildEmptySubscription();
       let onboardingCompleted = false;
       if (user?.id) {
         try {
@@ -229,13 +184,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (workspace?.id) {
         try {
           const subRes = await billingApi.getSubscription();
-          if (subRes.data) {
-            subscription = {
-              status: subRes.data.status || 'none',
-              trialDaysLeft: subRes.data.trialDaysLeft || 0,
-              creditsBalance: subRes.data.creditsBalance || 0,
-              plan: subRes.data.plan,
-            };
+          const mapped = mapSubscriptionResponse(subRes.data);
+          if (mapped) {
+            subscription = mapped;
           }
         } catch (error) {
           logAuthBootstrapIssue('Failed to load subscription during auth bootstrap:', error);
@@ -249,9 +200,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user: {
           id: user.id,
           email: user.email,
-          name: user.name || user.email.split('@')[0],
+          name: pickUserDisplayName({ userName: user.name, userEmail: user.email }),
         },
-        workspace: workspace ? { id: workspace.id, name: workspace.name || 'Workspace' } : null,
+        workspace: projectWorkspace(workspace),
         subscription,
       });
     } catch (error) {
@@ -273,16 +224,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     const res = await billingApi.getSubscription();
-    const subscriptionData = res.data;
-    if (subscriptionData) {
+    const mapped = mapSubscriptionResponse(res.data);
+    if (mapped) {
       setAuthState((prev) => ({
         ...prev,
-        subscription: {
-          status: subscriptionData.status || 'none',
-          trialDaysLeft: subscriptionData.trialDaysLeft || 0,
-          creditsBalance: subscriptionData.creditsBalance || 0,
-          plan: subscriptionData.plan,
-        },
+        subscription: mapped,
       }));
     }
   }, [authState.workspace?.id]);
@@ -307,11 +253,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await claimGuestWhatsAppSession(workspace.id);
       }
       tokenStorage.ensureAuthCookie();
-      let subscription: Subscription = {
-        status: 'none',
-        trialDaysLeft: 0,
-        creditsBalance: 0,
-      };
+      let subscription: Subscription = buildEmptySubscription();
       let onboardingCompleted = false;
       if (user?.id) {
         const meRes = await apiFetch<{ user?: { onboardingCompletedAt?: string | null } }>(
@@ -324,13 +266,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       if (workspace?.id) {
         const subRes = await billingApi.getSubscription();
-        if (subRes.data) {
-          subscription = {
-            status: subRes.data.status || 'none',
-            trialDaysLeft: subRes.data.trialDaysLeft || 0,
-            creditsBalance: subRes.data.creditsBalance || 0,
-            plan: subRes.data.plan,
-          };
+        const mapped = mapSubscriptionResponse(subRes.data);
+        if (mapped) {
+          subscription = mapped;
         }
       }
       const justSignedUp = options?.justSignedUp === true || envelope?.isNewUser === true;
@@ -342,13 +280,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user: {
           id: user.id,
           email: user.email,
-          name:
-            user.name ||
-            options?.fallbackName ||
-            options?.fallbackEmail?.split('@')[0] ||
-            user.email.split('@')[0],
+          name: pickUserDisplayName({
+            userName: user.name,
+            userEmail: user.email,
+            ...(options?.fallbackName !== undefined ? { fallbackName: options.fallbackName } : {}),
+            ...(options?.fallbackEmail !== undefined
+              ? { fallbackEmail: options.fallbackEmail }
+              : {}),
+          }),
         },
-        workspace: workspace ? { id: workspace.id, name: workspace.name || 'Workspace' } : null,
+        workspace: projectWorkspace(workspace),
         subscription,
       });
       return { success: true as const };
@@ -374,22 +315,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     rememberWorkspaceClaimCandidateForAuthUpgrade();
     const res = await authApi.signUp(email, name, password, options);
     if (res.error) {
-      if (res.status === 409) {
-        return { success: false, error: 'E-mail já cadastrado. Faça login.' };
-      }
-      if (res.status === 429) {
-        return {
-          success: false,
-          error: 'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
-        };
-      }
-      if (res.status === 503) {
-        return {
-          success: false,
-          error: 'Serviço indisponível no momento. Tente novamente em instantes.',
-        };
-      }
-      return { success: false, error: res.error };
+      const mapped = mapAuthErrorStatusToMessage(res.status, 'signup', res.error);
+      return { success: false, error: mapped ?? res.error };
     }
     if (res.data?.user) {
       return hydrateFromAuthResponse(res.data, {
@@ -404,19 +331,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     rememberWorkspaceClaimCandidateForAuthUpgrade();
     const res = await authApi.signIn(email, password);
     if (res.error) {
-      if (res.status === 429) {
-        return {
-          success: false,
-          error: 'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
-        };
-      }
-      if (res.status === 503) {
-        return {
-          success: false,
-          error: 'Serviço indisponível no momento. Tente novamente em instantes.',
-        };
-      }
-      return { success: false, error: res.error };
+      const mapped = mapAuthErrorStatusToMessage(res.status, 'signin', res.error);
+      return { success: false, error: mapped ?? res.error };
     }
     if (res.data?.user) {
       return hydrateFromAuthResponse(res.data, {
@@ -429,20 +345,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     rememberWorkspaceClaimCandidateForAuthUpgrade();
     const res = await authApi.signInWithGoogle(credential);
     if (res.error) {
-      if (res.status === 429) {
-        return {
-          success: false,
-          error: 'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
-        };
-      }
-      if (res.status === 503) {
-        return {
-          success: false,
-          error:
-            res.error || 'Login com Google indisponível no momento. Tente novamente em instantes.',
-        };
-      }
-      return { success: false, error: res.error };
+      const mapped = mapAuthErrorStatusToMessage(res.status, 'google', res.error);
+      return { success: false, error: mapped ?? res.error };
     }
     if (res.data?.user) {
       return hydrateFromAuthResponse(res.data, {
@@ -456,21 +360,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     rememberWorkspaceClaimCandidateForAuthUpgrade();
     const res = await authApi.signInWithFacebook(accessToken, userId);
     if (res.error) {
-      if (res.status === 429) {
-        return {
-          success: false,
-          error: 'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
-        };
-      }
-      if (res.status === 503) {
-        return {
-          success: false,
-          error:
-            res.error ||
-            'Login com Facebook indisponível no momento. Tente novamente em instantes.',
-        };
-      }
-      return { success: false, error: res.error };
+      const mapped = mapAuthErrorStatusToMessage(res.status, 'facebook', res.error);
+      return { success: false, error: mapped ?? res.error };
     }
     if (res.data?.user) {
       return hydrateFromAuthResponse(res.data, {
@@ -484,21 +375,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     rememberWorkspaceClaimCandidateForAuthUpgrade();
     const res = await authApi.requestMagicLink(email, redirectTo);
     if (res.error) {
-      if (res.status === 429) {
-        return {
-          success: false,
-          error: 'Muitas tentativas. Aguarde alguns minutos e tente novamente.',
-          message: res.error,
-        };
-      }
-      if (res.status === 503) {
-        return {
-          success: false,
-          error: 'Serviço indisponível no momento. Tente novamente em instantes.',
-          message: res.error,
-        };
-      }
-      return { success: false, error: res.error, message: res.error };
+      const mapped = mapAuthErrorStatusToMessage(res.status, 'magic-link', res.error);
+      return { success: false, error: mapped ?? res.error, message: res.error };
     }
     return {
       success: true,
@@ -507,19 +385,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
   const signOut = async () => {
     await authApi.signOut();
-    setAuthState({
-      isAuthenticated: false,
-      isLoading: false,
-      justSignedUp: false,
-      hasCompletedOnboarding: false,
-      user: null,
-      workspace: null,
-      subscription: {
-        status: 'none',
-        trialDaysLeft: 0,
-        creditsBalance: 0,
-      },
-    });
+    setAuthState(buildEmptyAuthState());
   };
   const completeOnboarding = async () => {
     setAuthState((prev) => ({
