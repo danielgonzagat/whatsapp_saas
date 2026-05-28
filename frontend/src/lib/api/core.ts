@@ -2,8 +2,20 @@ import { mutate } from 'swr';
 import { API_BASE } from '../http';
 import { tokenStorage, resolveWorkspaceFromAuthPayload } from './core-tokens';
 import { REFRESH_TOKEN_ERROR_CODES } from './auth-errors';
+import {
+  BACKOFF_DELAYS_MS,
+  appendQueryParams,
+  authHeaders,
+  buildErrorResponse,
+  buildQuery,
+  buildSuccessResponse,
+  serializeApiBody,
+  type ApiResponse,
+  type RefreshTokenResponse,
+} from './core.helpers';
 
 export { tokenStorage, resolveWorkspaceFromAuthPayload };
+export { buildQuery, authHeaders };
 
 /** Invalidate SWR cache keys matching a prefix after a write operation */
 export function invalidateCache(prefix: string) {
@@ -152,35 +164,6 @@ export interface WhatsAppProofEntry {
   metadata?: Record<string, unknown> | null | undefined;
   /** Created at property. */
   createdAt: string;
-}
-
-// ============================================
-// Internal types
-// ============================================
-
-interface ApiResponse<T = unknown> {
-  data?: T;
-  error?: string;
-  status: number;
-}
-
-interface RefreshTokenResponse {
-  access_token?: string;
-  accessToken?: string;
-  refresh_token?: string;
-  refreshToken?: string;
-}
-
-function buildSuccessResponse<T>(payload: unknown, status: number): ApiResponse<T> {
-  if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
-    return {
-      ...(payload as Record<string, unknown>),
-      data: payload,
-      status,
-    } as ApiResponse<T>;
-  }
-
-  return { data: payload as T, status };
 }
 
 // ============================================
@@ -381,61 +364,6 @@ function buildApiHeaders(options: {
   return headers;
 }
 
-function buildSearchParams(params: Record<string, string | undefined>): URLSearchParams {
-  const searchParams = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined) {
-      searchParams.set(key, value);
-    }
-  }
-  return searchParams;
-}
-
-function joinQueryString(baseUrl: string, qs: string): string {
-  if (!qs) {
-    return baseUrl;
-  }
-  const separator = baseUrl.includes('?') ? '&' : '?';
-  return `${baseUrl}${separator}${qs}`;
-}
-
-function appendQueryParams(baseUrl: string, params?: Record<string, string | undefined>): string {
-  if (!params) {
-    return baseUrl;
-  }
-  return joinQueryString(baseUrl, buildSearchParams(params).toString());
-}
-
-function isRawBinaryBody(body: unknown): boolean {
-  return body instanceof FormData || body instanceof Blob || body instanceof ArrayBuffer;
-}
-
-function shouldSerializeAsJson(body: unknown): body is object {
-  return Boolean(body) && typeof body === 'object' && !isRawBinaryBody(body);
-}
-
-function serializeApiBody(body: unknown): BodyInit | null {
-  if (shouldSerializeAsJson(body)) {
-    return JSON.stringify(body);
-  }
-  return (body ?? null) as BodyInit | null;
-}
-
-function normalizeErrorMessage(rawMessage: unknown): string | undefined {
-  if (Array.isArray(rawMessage)) {
-    return rawMessage.join(', ');
-  }
-  return rawMessage as string | undefined;
-}
-
-function buildErrorResponse<T>(
-  data: { message?: unknown; error?: string },
-  status: number,
-): ApiResponse<T> {
-  const message = normalizeErrorMessage(data.message);
-  return { error: message || data.error || `HTTP ${status}`, status };
-}
-
 async function performApiRequest<T>(url: string, init: RequestInit): Promise<ApiResponse<T>> {
   const res = await fetch(createTrustedRequest(url, init));
   const data: unknown = await res.json().catch(() => ({} as unknown));
@@ -460,9 +388,6 @@ async function retryApiRequestWithRefreshedToken<T>(
   headers.Authorization = `Bearer ${tokenStorage.getToken()}`;
   return performApiRequest<T>(url, { ...baseInit, headers });
 }
-
-// Exponential backoff delays for 429 (Too Many Requests) responses.
-const BACKOFF_DELAYS_MS = [500, 1500, 4000];
 
 async function retryAfterBackoff<T>(
   url: string,
@@ -535,26 +460,6 @@ export async function apiFetch<T = unknown>(
     };
   }
 }
-
-// ============================================
-// Shared helpers
-// ============================================
-
-export const buildQuery = (params: Record<string, string | number | undefined | null>) => {
-  const search = new URLSearchParams();
-  Object.entries(params).forEach(([key, value]) => {
-    if (value === undefined || value === null) {
-      return;
-    }
-    search.append(key, String(value));
-  });
-  const qs = search.toString();
-  return qs ? `?${qs}` : '';
-};
-
-/** Auth headers. */
-export const authHeaders = (token?: string): Record<string, string> =>
-  token ? { authorization: `Bearer ${token}` } : {};
 
 // ============================================
 // Generic API client
