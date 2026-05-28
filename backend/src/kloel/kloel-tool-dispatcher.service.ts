@@ -64,8 +64,14 @@ import {
   dispatchWorkspaceActionTool,
   isWorkspaceActionTool,
 } from './kloel-tool-dispatcher.workspace-actions.handlers';
+import {
+  dispatchChannelTool,
+  isChannelTool,
+} from './kloel-tool-dispatcher.channel.handlers';
 import { runCreatePaymentLink } from './kloel-tool-dispatcher.create-payment-link.helpers';
 import { SmartPaymentService } from './smart-payment.service';
+import { ChannelTransportRegistry } from './channel-transport.registry';
+import { RiskGateService } from './risk-class/risk-gate.service';
 
 import type { UnknownRecord } from '../common/types';
 
@@ -110,6 +116,8 @@ export class KloelToolDispatcherService {
     @Optional() private readonly depsCoverage?: DepsCoverageService,
     @Optional() private readonly capRegistryV2?: CapabilityRegistryV2Service,
     @Optional() private readonly smartPaymentService?: SmartPaymentService,
+    @Optional() private readonly transports?: ChannelTransportRegistry,
+    @Optional() private readonly riskGate?: RiskGateService,
   ) {}
 
   /** Execute a named tool, delegating to the appropriate sub-service. */
@@ -351,6 +359,20 @@ export class KloelToolDispatcherService {
             this.withCanonicalReceipt(cap, ws, a, r, u, started),
           userId,
         },
+        workspaceId,
+        toolName,
+        args,
+      );
+      if (result !== null) {
+        return result;
+      }
+    }
+    if (isChannelTool(toolName)) {
+      if (!this.transports || !this.riskGate) {
+        return { success: false, error: 'channel_dispatch_unavailable' };
+      }
+      const result = await dispatchChannelTool(
+        { transports: this.transports, riskGate: this.riskGate },
         workspaceId,
         toolName,
         args,

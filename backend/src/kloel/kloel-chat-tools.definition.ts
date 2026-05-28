@@ -362,6 +362,54 @@ const KLOEL_CHAT_TOOLS_CORE: ChatCompletionTool[] = [
       },
     },
   },
+  // === EMAIL ===
+  {
+    type: 'function',
+    function: {
+      name: 'send_email',
+      description: 'Envia um email para um cliente',
+      parameters: {
+        type: 'object',
+        properties: {
+          email: { type: 'string', description: 'Email do destinatário' },
+          message: { type: 'string', description: 'Conteúdo da mensagem' },
+        },
+        required: ['email', 'message'],
+      },
+    },
+  },
+  // === INSTAGRAM ===
+  {
+    type: 'function',
+    function: {
+      name: 'send_instagram_dm',
+      description: 'Envia uma mensagem direta no Instagram',
+      parameters: {
+        type: 'object',
+        properties: {
+          handle: { type: 'string', description: 'Username ou ID do usuário Instagram' },
+          message: { type: 'string', description: 'Conteúdo da mensagem' },
+        },
+        required: ['handle', 'message'],
+      },
+    },
+  },
+  // === MESSENGER ===
+  {
+    type: 'function',
+    function: {
+      name: 'send_messenger_message',
+      description: 'Envia uma mensagem no Facebook Messenger',
+      parameters: {
+        type: 'object',
+        properties: {
+          recipientId: { type: 'string', description: 'ID do destinatário' },
+          message: { type: 'string', description: 'Conteúdo da mensagem' },
+        },
+        required: ['recipientId', 'message'],
+      },
+    },
+  },
 ];
 
 /** Tool definitions available in the KLOEL dashboard chat. */
