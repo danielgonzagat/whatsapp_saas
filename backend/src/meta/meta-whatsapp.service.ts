@@ -1,16 +1,8 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  Optional,
-  type OnModuleInit,
-} from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Injectable, Logger, Optional, type OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { MetaSdkService } from './meta-sdk.service';
 import { decryptMetaToken } from './meta-token-crypto';
-import { asProviderSettings } from '../marketing/channels/whatsapp/provider-settings.types';
 import { readRecord, readStrictText } from './read-model/meta-read-helpers';
 import {
   resolveOAuthRedirect,
@@ -28,6 +20,8 @@ import {
   parseMessageIdFromResponse,
   normalizeWhatsAppPhone,
 } from './meta-whatsapp.message.helpers';
+import { buildEmbeddedSignupUrl } from './oauth/meta-embedded-signup.helpers';
+import { buildWebhookHeartbeatPayload } from './meta-webhook-heartbeat.helpers';
 type ResolvedMetaConnection = {
   workspaceId: string;
   accessToken: string;
@@ -42,64 +36,6 @@ type ResolvedMetaConnection = {
   tokenExpired: boolean;
   persistedConnection: boolean;
 };
-type MetaChannel = 'whatsapp' | 'instagram' | 'facebook';
-const COMMON_META_SCOPES = [
-  'pages_show_list',
-  'pages_read_engagement',
-  'pages_manage_metadata',
-  'business_management',
-];
-const CHANNEL_META_SCOPES: Record<MetaChannel, string[]> = {
-  whatsapp: [...COMMON_META_SCOPES, 'whatsapp_business_management', 'whatsapp_business_messaging'],
-  instagram: [
-    ...COMMON_META_SCOPES,
-    'instagram_basic',
-    'instagram_manage_messages',
-    'instagram_manage_comments',
-  ],
-  facebook: [...COMMON_META_SCOPES, 'pages_messaging'],
-};
-function readFirstEnv(keys: string[]): string {
-  return keys.map((key) => String(process.env[key] || '').trim()).find(Boolean) || '';
-}
-function normalizeMetaChannel(channel?: string | null): MetaChannel {
-  const normalized = String(channel || '')
-    .trim()
-    .toLowerCase();
-  if (normalized === 'instagram' || normalized === 'facebook' || normalized === 'whatsapp') {
-    return normalized;
-  }
-  return 'whatsapp';
-}
-function readChannelConfigId(channel: MetaChannel): string {
-  const lookup = (primary: string, legacy: string): string =>
-    readFirstEnv([primary, legacy, 'META_CONFIG_ID', 'META_EMBEDDED_SIGNUP_CONFIG_ID']);
-  if (channel === 'whatsapp') {
-    const result = lookup('META_WHATSAPP_CONFIG_ID', 'META_CONFIG_ID_WHATSAPP');
-    if (!result) {
-      throw new BadRequestException('meta-config-id-missing-for-channel');
-    }
-    return result;
-  }
-  if (channel === 'instagram') {
-    const result = lookup('META_INSTAGRAM_CONFIG_ID', 'META_CONFIG_ID_INSTAGRAM');
-    if (!result) {
-      throw new BadRequestException('meta-config-id-missing-for-channel');
-    }
-    return result;
-  }
-  const result = readFirstEnv([
-    'META_FACEBOOK_CONFIG_ID',
-    'META_CONFIG_ID_MESSENGER',
-    'META_CONFIG_ID_FACEBOOK',
-    'META_CONFIG_ID',
-    'META_EMBEDDED_SIGNUP_CONFIG_ID',
-  ]);
-  if (!result) {
-    throw new BadRequestException('meta-config-id-missing-for-channel');
-  }
-  return result;
-}
 @Injectable()
 export class MetaWhatsAppService implements OnModuleInit {
   private readonly logger = new Logger(MetaWhatsAppService.name);
@@ -119,33 +55,12 @@ export class MetaWhatsAppService implements OnModuleInit {
     workspaceId: string,
     options?: { channel?: string | null; returnTo?: string | null },
   ): string {
-    const appId = readFirstEnv(['META_APP_ID', 'FACEBOOK_APP_ID', 'META_CLIENT_ID']);
-    const channel = normalizeMetaChannel(options?.channel);
-    const configId = readChannelConfigId(channel);
-    const version = String(process.env.META_GRAPH_API_VERSION || 'v21.0').trim();
-    if (!appId) {
-      return '';
-    }
-    const scopes = CHANNEL_META_SCOPES[channel].join(',');
-    const params = new URLSearchParams({
-      client_id: appId,
-      redirect_uri: this.getOAuthRedirectUri(),
-      scope: scopes,
-      response_type: 'code',
-      override_default_response_type: String(true),
-      state: JSON.stringify({
-        workspaceId,
-        channel,
-        returnTo: options?.returnTo || null,
-      }),
+    return buildEmbeddedSignupUrl({
+      env: process.env,
+      workspaceId,
+      redirectUri: this.getOAuthRedirectUri(),
+      options,
     });
-    if (configId) {
-      params.set('config_id', configId);
-    }
-    if (channel === 'whatsapp') {
-      params.set('extras', JSON.stringify({ sessionInfoVersion: '3', version: 'v3' }));
-    }
-    return `https://www.facebook.com/${version}/dialog/oauth?${params.toString()}`;
   }
   safeBuildEmbeddedSignupUrl(
     workspaceId: string,
@@ -193,7 +108,7 @@ export class MetaWhatsAppService implements OnModuleInit {
     ).trim();
     const tokenExpired = Boolean(
       channelSession?.tokenExpiresAt &&
-        new Date(channelSession.tokenExpiresAt).getTime() < Date.now(),
+      new Date(channelSession.tokenExpiresAt).getTime() < Date.now(),
     );
     return {
       workspaceId,
@@ -521,27 +436,7 @@ export class MetaWhatsAppService implements OnModuleInit {
     if (!workspace) {
       return;
     }
-    const settings = asProviderSettings(workspace.providerSettings);
-    const currentSession = readRecord(settings.whatsappApiSession);
-    const patchRecord = readRecord(patch);
-    const persistedStatus = readStrictText(currentSession.status);
-    const heartbeatStatus = readStrictText(patchRecord.status);
-    const { status: _ignoredStatus, ...patchWithoutStatus } = patchRecord;
-    const nextStatus = heartbeatStatus || persistedStatus || 'connected';
-    const providerSettingsPayload = JSON.parse(
-      JSON.stringify({
-        ...settings,
-        whatsappProvider: 'meta-cloud',
-        connectionStatus: nextStatus,
-        whatsappApiSession: {
-          ...currentSession,
-          ...patchWithoutStatus,
-          status: nextStatus,
-          provider: 'meta-cloud',
-          lastWebhookAt: new Date().toISOString(),
-        },
-      }),
-    ) as Prisma.InputJsonObject;
+    const providerSettingsPayload = buildWebhookHeartbeatPayload(workspace.providerSettings, patch);
     await this.prisma.workspace.update({
       where: { id: workspaceId },
       data: { providerSettings: providerSettingsPayload },
