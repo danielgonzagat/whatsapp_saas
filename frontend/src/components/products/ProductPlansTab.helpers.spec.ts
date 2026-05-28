@@ -2,12 +2,18 @@ import { describe, expect, it } from 'vitest';
 
 import {
   INITIAL_NEW_PLAN,
+  PRODUCT_PLANS_COPY,
   buildDuplicatedPlanBody,
+  buildPlanInputStyle,
   buildPlanLinks,
+  formatSalesCount,
   isProductsCacheKey,
   normalizePlansResponse,
   parseCreatePlanBody,
   parseItemsPerPlan,
+  resolveActiveBadge,
+  resolveAffiliateBadge,
+  resolveSalesCellStyle,
   shortPlanId,
   toPlanErrorMessage,
   type Plan,
@@ -190,5 +196,87 @@ describe('INITIAL_NEW_PLAN', () => {
       billingType: 'ONE_TIME',
       itemsPerPlan: 1,
     });
+  });
+});
+
+describe('buildPlanInputStyle', () => {
+  it('returns the canonical modal input style shape', () => {
+    const style = buildPlanInputStyle();
+    expect(style.width).toBe('100%');
+    expect(style.borderRadius).toBe(6);
+    expect(style.padding).toBe('10px 16px');
+    expect(style.fontSize).toBe(14);
+    expect(style.outline).toBe('none');
+    expect(style.fontFamily).toBe("'Sora', sans-serif");
+  });
+
+  it('returns a fresh object each call (no shared mutation)', () => {
+    expect(buildPlanInputStyle()).not.toBe(buildPlanInputStyle());
+  });
+});
+
+describe('resolveAffiliateBadge', () => {
+  it('uses the VISIBLE label and silver palette when visible', () => {
+    const badge = resolveAffiliateBadge(true);
+    expect(badge.label).toBe(PRODUCT_PLANS_COPY.visible);
+    expect(badge.style.backgroundColor).toBe('rgba(224,221,216,0.12)');
+  });
+
+  it('uses the HIDDEN label and muted palette when hidden', () => {
+    const badge = resolveAffiliateBadge(false);
+    expect(badge.label).toBe(PRODUCT_PLANS_COPY.hidden);
+    // background falls back to the elevated surface token
+    expect(typeof badge.style.backgroundColor).toBe('string');
+  });
+});
+
+describe('resolveActiveBadge', () => {
+  it('uses the ACTIVE label and silver palette when active', () => {
+    const badge = resolveActiveBadge(true);
+    expect(badge.label).toBe(PRODUCT_PLANS_COPY.active);
+    expect(badge.style.backgroundColor).toBe('rgba(224,221,216,0.12)');
+  });
+
+  it('uses the INACTIVE label and ember accent when inactive', () => {
+    const badge = resolveActiveBadge(false);
+    expect(badge.label).toBe(PRODUCT_PLANS_COPY.inactive);
+    expect(badge.style.backgroundColor).toBe('rgba(232,93,48,0.12)');
+  });
+});
+
+describe('resolveSalesCellStyle', () => {
+  it('uses the silver palette when sales > 0', () => {
+    expect(resolveSalesCellStyle(3).backgroundColor).toBe('rgba(224,221,216,0.12)');
+  });
+
+  it('uses the muted palette for zero sales', () => {
+    const style = resolveSalesCellStyle(0);
+    expect(style.backgroundColor).not.toBe('rgba(224,221,216,0.12)');
+  });
+
+  it('uses the muted palette for non-numeric input', () => {
+    expect(resolveSalesCellStyle(null).backgroundColor).not.toBe('rgba(224,221,216,0.12)');
+    expect(resolveSalesCellStyle(undefined).backgroundColor).not.toBe('rgba(224,221,216,0.12)');
+    expect(resolveSalesCellStyle('not-a-number').backgroundColor).not.toBe('rgba(224,221,216,0.12)');
+  });
+
+  it('parses numeric strings as numbers', () => {
+    expect(resolveSalesCellStyle('5').backgroundColor).toBe('rgba(224,221,216,0.12)');
+  });
+});
+
+describe('formatSalesCount', () => {
+  it('renders numbers as strings', () => {
+    expect(formatSalesCount(7)).toBe('7');
+    expect(formatSalesCount(0)).toBe('0');
+  });
+
+  it('collapses null/undefined to empty string', () => {
+    expect(formatSalesCount(null)).toBe('');
+    expect(formatSalesCount(undefined)).toBe('');
+  });
+
+  it('preserves string input', () => {
+    expect(formatSalesCount('12')).toBe('12');
   });
 });

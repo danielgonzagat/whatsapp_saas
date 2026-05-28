@@ -1,3 +1,6 @@
+import type { CSSProperties } from 'react';
+
+import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 
 export interface Plan {
@@ -110,4 +113,88 @@ export function isProductsCacheKey(key: unknown): boolean {
 /** Short display id (8 chars) for tables. */
 export function shortPlanId(id: unknown): string {
   return String(id).slice(0, 8);
+}
+
+/** Pure factory for the "Novo plano" modal text/number/select input style.
+ *
+ * Hoisted out of the component so it is not re-allocated on every render.
+ * The shape is identical to the previous inline literal — visual contract
+ * preserved.
+ */
+export function buildPlanInputStyle(): CSSProperties {
+  return {
+    width: '100%',
+    borderRadius: 6,
+    border: `1px solid ${colors.border.space}`,
+    backgroundColor: colors.background.elevated,
+    padding: '10px 16px',
+    fontSize: 14,
+    color: colors.text.silver,
+    outline: 'none',
+    fontFamily: "'Sora', sans-serif",
+  };
+}
+
+export interface PlanBadgeVisual {
+  label: string;
+  style: CSSProperties;
+}
+
+/** Resolve the pill rendered in the "Afiliados" column. */
+export function resolveAffiliateBadge(visible: boolean): PlanBadgeVisual {
+  if (visible) {
+    return {
+      label: PRODUCT_PLANS_COPY.visible,
+      style: {
+        backgroundColor: 'rgba(224,221,216,0.12)',
+        color: colors.text.silver,
+      },
+    };
+  }
+  return {
+    label: PRODUCT_PLANS_COPY.hidden,
+    style: {
+      backgroundColor: colors.background.elevated,
+      color: colors.text.muted,
+    },
+  };
+}
+
+/** Resolve the pill rendered in the "Status" column. */
+export function resolveActiveBadge(active: boolean): PlanBadgeVisual {
+  if (active) {
+    return {
+      label: PRODUCT_PLANS_COPY.active,
+      style: {
+        backgroundColor: 'rgba(224,221,216,0.12)',
+        color: colors.text.silver,
+      },
+    };
+  }
+  return {
+    label: PRODUCT_PLANS_COPY.inactive,
+    style: {
+      backgroundColor: 'rgba(232,93,48,0.12)',
+      color: colors.ember.primary,
+    },
+  };
+}
+
+/** Resolve the styling of the "Vendas" column pill based on sales count.
+ *
+ * `null`/`undefined`/non-numeric ⇒ neutral muted styling.
+ */
+export function resolveSalesCellStyle(value: unknown): CSSProperties {
+  const n = Number(value);
+  const hasSales = Number.isFinite(n) && n > 0;
+  return {
+    backgroundColor: hasSales ? 'rgba(224,221,216,0.12)' : colors.background.elevated,
+    color: hasSales ? colors.text.silver : colors.text.dim,
+  };
+}
+
+/** Render-safe stringification for sales counts (preserves the original
+ * `String(v ?? '')` semantics — null/undefined collapse to ''). */
+export function formatSalesCount(value: unknown): string {
+  return String(value ?? '');
 }

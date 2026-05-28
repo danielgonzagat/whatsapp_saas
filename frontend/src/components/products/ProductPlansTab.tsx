@@ -14,15 +14,22 @@ import {
   INITIAL_NEW_PLAN,
   PRODUCT_PLANS_COPY,
   buildDuplicatedPlanBody,
+  buildPlanInputStyle,
   buildPlanLinks,
+  formatSalesCount,
   isProductsCacheKey,
   normalizePlansResponse,
   parseCreatePlanBody,
   parseItemsPerPlan,
+  resolveActiveBadge,
+  resolveAffiliateBadge,
+  resolveSalesCellStyle,
   shortPlanId,
   toPlanErrorMessage,
   type Plan,
 } from './ProductPlansTab.helpers';
+
+const PLAN_INPUT_STYLE = buildPlanInputStyle();
 
 /** Product plans tab. */
 export function ProductPlansTab({ productId }: { productId: string }) {
@@ -106,18 +113,6 @@ export function ProductPlansTab({ productId }: { productId: string }) {
     }
   };
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%',
-    borderRadius: 6,
-    border: `1px solid ${colors.border.space}`,
-    backgroundColor: colors.background.elevated,
-    padding: '10px 16px',
-    fontSize: 14,
-    color: colors.text.silver,
-    outline: 'none',
-    fontFamily: "'Sora', sans-serif",
-  };
-
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -198,43 +193,27 @@ export function ProductPlansTab({ productId }: { productId: string }) {
             key: 'visibleToAffiliates',
             label: 'Afiliados',
             width: '12%',
-            render: (v) =>
-              v ? (
-                <span
-                  className="rounded-full px-2 py-0.5 text-xs"
-                  style={{ backgroundColor: 'rgba(224,221,216,0.12)', color: colors.text.silver }}
-                >
-                  {PRODUCT_PLANS_COPY.visible}
+            render: (v) => {
+              const badge = resolveAffiliateBadge(Boolean(v));
+              return (
+                <span className="rounded-full px-2 py-0.5 text-xs" style={badge.style}>
+                  {badge.label}
                 </span>
-              ) : (
-                <span
-                  className="rounded-full px-2 py-0.5 text-xs"
-                  style={{ backgroundColor: colors.background.elevated, color: colors.text.muted }}
-                >
-                  {PRODUCT_PLANS_COPY.hidden}
-                </span>
-              ),
+              );
+            },
           },
           {
             key: 'active',
             label: 'Status',
             width: '10%',
-            render: (v) =>
-              v ? (
-                <span
-                  className="rounded-full px-2 py-0.5 text-xs"
-                  style={{ backgroundColor: 'rgba(224,221,216,0.12)', color: colors.text.silver }}
-                >
-                  {PRODUCT_PLANS_COPY.active}
+            render: (v) => {
+              const badge = resolveActiveBadge(Boolean(v));
+              return (
+                <span className="rounded-full px-2 py-0.5 text-xs" style={badge.style}>
+                  {badge.label}
                 </span>
-              ) : (
-                <span
-                  className="rounded-full px-2 py-0.5 text-xs"
-                  style={{ backgroundColor: 'rgba(232,93,48,0.12)', color: colors.ember.primary }}
-                >
-                  {PRODUCT_PLANS_COPY.inactive}
-                </span>
-              ),
+              );
+            },
           },
           {
             key: 'salesCount',
@@ -243,13 +222,9 @@ export function ProductPlansTab({ productId }: { productId: string }) {
             render: (v) => (
               <span
                 className="rounded-full px-2 py-0.5 text-xs font-medium"
-                style={{
-                  backgroundColor:
-                    Number(v) > 0 ? 'rgba(224,221,216,0.12)' : colors.background.elevated,
-                  color: Number(v) > 0 ? colors.text.silver : colors.text.dim,
-                }}
+                style={resolveSalesCellStyle(v)}
               >
-                {String(v ?? '')}
+                {formatSalesCount(v)}
               </span>
             ),
           },
@@ -433,7 +408,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                   aria-label={PRODUCT_PLANS_COPY.nameInputAria}
                   value={newPlan.name}
                   onChange={(e) => setNewPlan({ ...newPlan, name: e.target.value })}
-                  style={inputStyle}
+                  style={PLAN_INPUT_STYLE}
                   id={`${fid}-nome`}
                 />
               </div>
@@ -451,7 +426,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                   aria-label={PRODUCT_PLANS_COPY.priceInputAria}
                   value={newPlan.price}
                   onChange={(e) => setNewPlan({ ...newPlan, price: e.target.value })}
-                  style={inputStyle}
+                  style={PLAN_INPUT_STYLE}
                   id={`${fid}-valor`}
                 />
               </div>
@@ -466,7 +441,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                 <select
                   value={newPlan.billingType}
                   onChange={(e) => setNewPlan({ ...newPlan, billingType: e.target.value })}
-                  style={inputStyle}
+                  style={PLAN_INPUT_STYLE}
                   id={`${fid}-cobranca`}
                 >
                   <option value="ONE_TIME">{kloelT(`Unica`)}</option>
@@ -493,7 +468,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                       itemsPerPlan: parseItemsPerPlan(e.target.value),
                     })
                   }
-                  style={inputStyle}
+                  style={PLAN_INPUT_STYLE}
                   id={`${fid}-itens`}
                 />
               </div>
