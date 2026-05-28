@@ -269,9 +269,7 @@ export class KloelReplyEngineService {
         ...(this.selfHealthService !== undefined
           ? { selfHealthService: this.selfHealthService }
           : {}),
-        ...(this.selfGapsService !== undefined
-          ? { selfGapsService: this.selfGapsService }
-          : {}),
+        ...(this.selfGapsService !== undefined ? { selfGapsService: this.selfGapsService } : {}),
       };
       cognitiveState.mindSignals = await buildMindSignals(
         mindDeps,
@@ -544,17 +542,19 @@ export class KloelReplyEngineService {
         hasAnthropicFallback: !!process.env.ANTHROPIC_API_KEY,
       });
       if (params.workspaceId) {
-        this.mindBeliefService?.observeBinary(
-          params.workspaceId,
-          params.workspaceId,
-          'replied_to_user',
-          { surface: 'dashboard' },
-          0,
-        ).catch((err: unknown) =>
-          this.logger.warn('kloel_belief_observation_skipped', {
-            reason: err instanceof Error ? err.message : String(err),
-          }),
-        );
+        this.mindBeliefService
+          ?.observeBinary(
+            params.workspaceId,
+            params.workspaceId,
+            'replied_to_user',
+            { surface: 'dashboard' },
+            0,
+          )
+          .catch((err: unknown) =>
+            this.logger.warn('kloel_belief_observation_skipped', {
+              reason: err instanceof Error ? err.message : String(err),
+            }),
+          );
       }
       return this.unavailableMessage;
     }
@@ -579,17 +579,19 @@ export class KloelReplyEngineService {
       ...(params.abiStateJson !== undefined ? { abiStateJson: params.abiStateJson } : {}),
     });
     if (params.workspaceId) {
-      this.mindBeliefService?.observeBinary(
-        params.workspaceId,
-        params.workspaceId,
-        'replied_to_user',
-        { surface: 'dashboard' },
-        assistantMessage.length > 0 ? 1 : 0,
-      ).catch((err: unknown) =>
-        this.logger.warn('kloel_belief_observation_skipped', {
-          reason: err instanceof Error ? err.message : String(err),
-        }),
-      );
+      this.mindBeliefService
+        ?.observeBinary(
+          params.workspaceId,
+          params.workspaceId,
+          'replied_to_user',
+          { surface: 'dashboard' },
+          assistantMessage.length > 0 ? 1 : 0,
+        )
+        .catch((err: unknown) =>
+          this.logger.warn('kloel_belief_observation_skipped', {
+            reason: err instanceof Error ? err.message : String(err),
+          }),
+        );
     }
     return assistantMessage;
   }

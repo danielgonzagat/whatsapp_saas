@@ -316,7 +316,7 @@ export class KloelChatToolsService {
     args: Record<string, unknown>,
   ): Promise<ToolResult> {
     void workspaceId;
-    return buildUploadPlanImageBlocker(args);
+    return Promise.resolve(buildUploadPlanImageBlocker(args));
   }
   async toolUploadProductImage(
     workspaceId: string,
