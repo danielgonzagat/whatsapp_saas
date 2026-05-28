@@ -43,7 +43,7 @@
     "cleanup:legacy-products": "ts-node scripts/remove-legacy-products.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.1054.0",
+    "@aws-sdk/client-s3": "3.1055.0",
     "@nestjs-modules/ioredis": "2.2.1",
     "@nestjs/common": "11.1.24",
     "@nestjs/config": "4.0.4",
@@ -88,7 +88,7 @@
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2",
     "socket.io": "4.8.3",
-    "stripe": "22.1.1",
+    "stripe": "22.2.0",
     "swagger-ui-express": "5.0.1",
     "zod": "4.4.3"
   },
