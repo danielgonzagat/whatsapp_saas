@@ -52,12 +52,12 @@ interface KloelMindServices {
   mindCaseMemoryService?: MindCaseMemoryService;
   mindGlobalPriorService?: MindGlobalPriorService;
   mindPerceptionService?: {
-    perceive?: (ctx: {
-      source: string;
-      channel: string;
-      raw: string;
-      workspaceId: string;
-    }) => { subject: string; intent: string; salience: number; semanticContext: Record<string, unknown> };
+    perceive?: (ctx: { source: string; channel: string; raw: string; workspaceId: string }) => {
+      subject: string;
+      intent: string;
+      salience: number;
+      semanticContext: Record<string, unknown>;
+    };
   };
 }
 

@@ -502,18 +502,91 @@ export class KloelReplyEngineService {
     }
 
     try {
-    if (!this.openai) {
-      this.logger.error('kloel_motor_unavailable', {
-        reason: 'no_llm_client',
-        resolvedProvider: resolveTextLlmProvider() ?? null,
-        hasOpenAiKey: hasTextLlmApiKey(),
-        hasAnthropicFallback: !!process.env.ANTHROPIC_API_KEY,
-      });
+      if (!this.openai) {
+        this.logger.error('kloel_motor_unavailable', {
+          reason: 'no_llm_client',
+          resolvedProvider: resolveTextLlmProvider() ?? null,
+          hasOpenAiKey: hasTextLlmApiKey(),
+          hasAnthropicFallback: !!process.env.ANTHROPIC_API_KEY,
+        });
+        if (params.workspaceId) {
+          observeRepliedToUserBelief(this.mindBeliefService, this.logger, {
+            workspaceId: params.workspaceId,
+            surface: 'dashboard',
+            observed: 0,
+          });
+          void computeChatSurpriseHelper(
+            this.mindSurpriseService,
+            this.mindBeliefService,
+            this.logger,
+            {
+              workspaceId: params.workspaceId,
+              observed: 0,
+              surface: 'dashboard',
+              degraded: true,
+            },
+            this._lastCognitiveState?.mindSignals as Record<string, unknown> | undefined,
+          );
+        }
+        closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
+          outcomeKey,
+          outcomeName: 'chat.degraded.no_llm_client',
+          wonVsBaseline: false,
+        });
+        try {
+          this.valenceTagger?.tag({
+            eventName: 'chat.replied',
+            workspaceId: params.workspaceId,
+            payload: { surface: 'dashboard', success: false, degraded: true },
+          });
+        } catch (err: unknown) {
+          this.logger.warn('kloel_valence_tagger_skipped', {
+            reason: err instanceof Error ? err.message : String(err),
+          });
+        }
+        return this.unavailableMessage;
+      }
+      let assistantMessage: string;
+      try {
+        assistantMessage = await buildAssistantReplyImpl(params, {
+          openai: this.openai,
+          prisma: this.prisma,
+          planLimits: this.planLimits,
+          threadService: this.threadService,
+          wsContextService: this.wsContextService,
+          contextFormatter: this.contextFormatter,
+          toolRouter: this.toolRouter,
+          unavailableMessage: this.unavailableMessage,
+          hasOpenAiKey: () => this.hasOpenAiKey(),
+          buildDashboardPrompt: (p) => this.buildDashboardPrompt(p),
+          detectExpertiseLevel: (m, h) => this.detectExpertiseLevel(m, h),
+          shouldUseLongFormBudget: (m) => this.shouldUseLongFormBudget(m),
+          buildMarketingPromptAddendum: (wid, mode, msg) =>
+            this.buildMarketingPromptAddendum(wid, mode, msg),
+          buildChatModelMessages: async (p) => this.buildChatModelMessages(p),
+          buildDynamicRuntimeContext: (p) => this.buildDynamicRuntimeContext(p),
+          ...(this.spine !== undefined ? { spine: this.spine } : {}),
+          ...(params.abiStateJson !== undefined ? { abiStateJson: params.abiStateJson } : {}),
+        });
+        closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
+          outcomeKey,
+          outcomeName: 'chat.replied',
+          wonVsBaseline: true,
+        });
+      } catch (error: unknown) {
+        closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
+          outcomeKey,
+          outcomeName: 'chat.error',
+          wonVsBaseline: false,
+        });
+        throw error;
+      }
       if (params.workspaceId) {
+        const replyOutcome: 0 | 1 = assistantMessage.length > 0 ? 1 : 0;
         observeRepliedToUserBelief(this.mindBeliefService, this.logger, {
           workspaceId: params.workspaceId,
           surface: 'dashboard',
-          observed: 0,
+          observed: replyOutcome,
         });
         void computeChatSurpriseHelper(
           this.mindSurpriseService,
@@ -521,108 +594,32 @@ export class KloelReplyEngineService {
           this.logger,
           {
             workspaceId: params.workspaceId,
-            observed: 0,
+            observed: replyOutcome,
             surface: 'dashboard',
-            degraded: true,
+            degraded: replyOutcome === 0,
           },
           this._lastCognitiveState?.mindSignals as Record<string, unknown> | undefined,
         );
+        try {
+          this.valenceTagger?.tag({
+            eventName: 'chat.replied',
+            workspaceId: params.workspaceId,
+            payload: {
+              surface: 'dashboard',
+              success: replyOutcome === 1,
+              degraded: replyOutcome === 0,
+            },
+          });
+        } catch (err: unknown) {
+          this.logger.warn('kloel_valence_tagger_skipped', {
+            reason: err instanceof Error ? err.message : String(err),
+          });
+        }
       }
-      closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
-        outcomeKey,
-        outcomeName: 'chat.degraded.no_llm_client',
-        wonVsBaseline: false,
-      });
-      try {
-        this.valenceTagger?.tag({
-          eventName: 'chat.replied',
-          workspaceId: params.workspaceId,
-          payload: { surface: 'dashboard', success: false, degraded: true },
-        });
-      } catch (err: unknown) {
-        this.logger.warn('kloel_valence_tagger_skipped', {
-          reason: err instanceof Error ? err.message : String(err),
-        });
-      }
-      return this.unavailableMessage;
-    }
-    let assistantMessage: string;
-    try {
-      assistantMessage = await buildAssistantReplyImpl(params, {
-        openai: this.openai,
-        prisma: this.prisma,
-        planLimits: this.planLimits,
-        threadService: this.threadService,
-        wsContextService: this.wsContextService,
-        contextFormatter: this.contextFormatter,
-        toolRouter: this.toolRouter,
-        unavailableMessage: this.unavailableMessage,
-        hasOpenAiKey: () => this.hasOpenAiKey(),
-        buildDashboardPrompt: (p) => this.buildDashboardPrompt(p),
-        detectExpertiseLevel: (m, h) => this.detectExpertiseLevel(m, h),
-        shouldUseLongFormBudget: (m) => this.shouldUseLongFormBudget(m),
-        buildMarketingPromptAddendum: (wid, mode, msg) =>
-          this.buildMarketingPromptAddendum(wid, mode, msg),
-        buildChatModelMessages: async (p) => this.buildChatModelMessages(p),
-        buildDynamicRuntimeContext: (p) => this.buildDynamicRuntimeContext(p),
-        ...(this.spine !== undefined ? { spine: this.spine } : {}),
-        ...(params.abiStateJson !== undefined ? { abiStateJson: params.abiStateJson } : {}),
-      });
-      closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
-        outcomeKey,
-        outcomeName: 'chat.replied',
-        wonVsBaseline: true,
-      });
-    } catch (error: unknown) {
-      closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
-        outcomeKey,
-        outcomeName: 'chat.error',
-        wonVsBaseline: false,
-      });
-      throw error;
-    }
-    if (params.workspaceId) {
-      const replyOutcome: 0 | 1 = assistantMessage.length > 0 ? 1 : 0;
-      observeRepliedToUserBelief(this.mindBeliefService, this.logger, {
-        workspaceId: params.workspaceId,
-        surface: 'dashboard',
-        observed: replyOutcome,
-      });
-      void computeChatSurpriseHelper(
-        this.mindSurpriseService,
-        this.mindBeliefService,
-        this.logger,
-        {
-          workspaceId: params.workspaceId,
-          observed: replyOutcome,
-          surface: 'dashboard',
-          degraded: replyOutcome === 0,
-        },
-        this._lastCognitiveState?.mindSignals as Record<string, unknown> | undefined,
-      );
-      try {
-        this.valenceTagger?.tag({
-          eventName: 'chat.replied',
-          workspaceId: params.workspaceId,
-          payload: {
-            surface: 'dashboard',
-            success: replyOutcome === 1,
-            degraded: replyOutcome === 0,
-          },
-        });
-      } catch (err: unknown) {
-        this.logger.warn('kloel_valence_tagger_skipped', {
-          reason: err instanceof Error ? err.message : String(err),
-        });
-      }
-    }
-    return assistantMessage;
+      return assistantMessage;
     } finally {
       if (tickLeaseOwner && params.workspaceId && this.mindWorkspaceStateService) {
-        await this.mindWorkspaceStateService.releaseTickLease(
-          params.workspaceId,
-          tickLeaseOwner,
-        );
+        await this.mindWorkspaceStateService.releaseTickLease(params.workspaceId, tickLeaseOwner);
       }
     }
   }
