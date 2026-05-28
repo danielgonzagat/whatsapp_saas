@@ -41,6 +41,8 @@ import { MindBanditService } from './mind/policy/mind-bandit.service';
 import { MindCaseMemoryService } from './mind/memory/mind-case-memory.service';
 import { MindGlobalPriorService } from './mind/memory/mind-global-prior.service';
 import { MindPerceptionService } from './mind/perception/mind-perception.service';
+import { MindWorkspaceStateService } from './mind/memory/mind-workspace-state.service';
+import { randomUUID } from 'crypto';
 import {
   buildChatOutcomeKey,
   recordChatReplyDecision,
@@ -91,6 +93,7 @@ export class KloelReplyEngineService {
     @Optional() private readonly mindCaseMemoryService?: MindCaseMemoryService,
     @Optional() private readonly mindGlobalPriorService?: MindGlobalPriorService,
     @Optional() private readonly mindPerceptionService?: MindPerceptionService,
+    @Optional() private readonly mindWorkspaceStateService?: MindWorkspaceStateService,
   ) {
     this.openai = createTextLlmClient(undefined, { timeout: 60_000, maxRetries: 0 });
     this.toolRouter = new KloelToolRouter(
@@ -479,6 +482,24 @@ export class KloelReplyEngineService {
       });
     }
 
+    // PI-K16-B: tick lease coordination – prevent concurrent reply storms
+    let tickLeaseOwner: string | undefined;
+    if (params.workspaceId && this.mindWorkspaceStateService) {
+      tickLeaseOwner = `chat-reply-${randomUUID()}`;
+      const acquired = await this.mindWorkspaceStateService.tryAcquireTickLease(
+        params.workspaceId,
+        tickLeaseOwner,
+        5000,
+      );
+      if (!acquired) {
+        tickLeaseOwner = undefined;
+        this.logger.warn('kloel_chat_tick_lease_unavailable', {
+          workspaceId: params.workspaceId,
+        });
+      }
+    }
+
+    try {
     if (!this.openai) {
       this.logger.error('kloel_motor_unavailable', {
         reason: 'no_llm_client',
@@ -568,5 +589,13 @@ export class KloelReplyEngineService {
       );
     }
     return assistantMessage;
+    } finally {
+      if (tickLeaseOwner && params.workspaceId && this.mindWorkspaceStateService) {
+        await this.mindWorkspaceStateService.releaseTickLease(
+          params.workspaceId,
+          tickLeaseOwner,
+        );
+      }
+    }
   }
 }
