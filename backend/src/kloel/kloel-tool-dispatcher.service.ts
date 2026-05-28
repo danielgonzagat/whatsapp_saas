@@ -36,6 +36,11 @@ import { dispatchSelfTool, isSelfTool } from './kloel-tool-dispatcher.self.handl
 import { dispatchConfigureTool, isConfigureTool } from './kloel-tool-dispatcher.configure.handlers';
 import { dispatchSalesTool, isSalesTool } from './kloel-tool-dispatcher.sales.handlers';
 import { dispatchAgentTool, isAgentTool } from './kloel-tool-dispatcher.agent.handlers';
+import { dispatchAccountTool, isAccountTool } from './kloel-tool-dispatcher.account.handlers';
+import {
+  dispatchDottedAliasTool,
+  isDottedAliasTool,
+} from './kloel-tool-dispatcher.dotted-alias.handlers';
 
 import type { UnknownRecord } from '../common/types';
 
@@ -181,24 +186,44 @@ export class KloelToolDispatcherService {
           return agentResult;
         }
       }
+      if (isAccountTool(toolName)) {
+        const accountResult = await dispatchAccountTool(
+          {
+            accountService: this.accountService,
+            walletSalesTools: this.walletSalesTools,
+            executeTool: (ws, name, a, u) => this.executeTool(ws, name, a, u),
+            userId,
+          },
+          workspaceId,
+          toolName,
+          args,
+        );
+        if (accountResult !== null) {
+          return accountResult;
+        }
+      }
+      if (isDottedAliasTool(toolName)) {
+        const aliasResult = await dispatchDottedAliasTool(
+          {
+            capRegistryV2: this.capRegistryV2,
+            executeTool: (ws, name, a, u) => this.executeTool(ws, name, a, u),
+            userId,
+          },
+          workspaceId,
+          toolName,
+          args,
+        );
+        if (aliasResult !== null) {
+          return aliasResult;
+        }
+      }
       switch (toolName) {
         case 'save_product':
         case 'create_product': {
           const productArgs = userId ? { ...args, actorId: userId } : args;
           return await this.chatToolsService.toolSaveProduct(workspaceId, asToolArgs(productArgs));
         }
-        case 'products.create': {
-          const startedAt = Date.now();
-          const result = await this.executeTool(workspaceId, 'create_product', args, userId);
-          return this.withCanonicalReceipt(
-            'products.create',
-            workspaceId,
-            args,
-            result,
-            userId,
-            startedAt,
-          );
-        }
+        // ── products.create handled via isDottedAliasTool fast-path above ──
         case 'list_products':
           return await this.chatToolsService.toolListProducts(workspaceId);
         case 'update_product': {
@@ -208,18 +233,7 @@ export class KloelToolDispatcherService {
             asToolArgs(productArgs),
           );
         }
-        case 'products.update': {
-          const startedAt = Date.now();
-          const result = await this.executeTool(workspaceId, 'update_product', args, userId);
-          return this.withCanonicalReceipt(
-            'products.update',
-            workspaceId,
-            args,
-            result,
-            userId,
-            startedAt,
-          );
-        }
+        // ── products.update handled via isDottedAliasTool fast-path above ──
         case 'publish_product':
         case 'products.review_and_publish':
           return await this.requestHighRiskApproval(workspaceId, toolName, args, userId);
@@ -328,15 +342,7 @@ export class KloelToolDispatcherService {
             return await this.walletSalesTools.executeTool(toolName, workspaceId, asToolArgs(args));
           }
           return { success: false, error: 'wallet_sales_tools_not_available' };
-        case 'sales.list':
-          if (this.walletSalesTools) {
-            return await this.walletSalesTools.executeTool(
-              'list_orders',
-              workspaceId,
-              asToolArgs(args),
-            );
-          }
-          return { success: false, error: 'wallet_sales_tools_not_available' };
+        // ── sales.list handled via isAccountTool fast-path above ──
         case 'toggle_theme':
           return await this.chatToolsService.toolToggleTheme(workspaceId, asToolArgs(args));
         case 'coupon_create':
@@ -357,78 +363,7 @@ export class KloelToolDispatcherService {
             });
           }
           return { success: false, error: 'checkout_service_unavailable' };
-        case 'plans.create': {
-          const startedAt = Date.now();
-          const result = await this.executeTool(workspaceId, 'create_plan', args, userId);
-          return this.withCanonicalReceipt(
-            'plans.create',
-            workspaceId,
-            args,
-            result,
-            userId,
-            startedAt,
-          );
-        }
-        case 'plans.update': {
-          const startedAt = Date.now();
-          const result = await this.executeTool(workspaceId, 'update_plan', args, userId);
-          return this.withCanonicalReceipt(
-            'plans.update',
-            workspaceId,
-            args,
-            result,
-            userId,
-            startedAt,
-          );
-        }
-        case 'checkouts.create': {
-          const startedAt = Date.now();
-          const result = await this.executeTool(workspaceId, 'create_checkout', args, userId);
-          return this.withCanonicalReceipt(
-            'checkouts.create',
-            workspaceId,
-            args,
-            result,
-            userId,
-            startedAt,
-          );
-        }
-        case 'checkouts.update': {
-          const startedAt = Date.now();
-          const result = await this.executeTool(workspaceId, 'update_checkout', args, userId);
-          return this.withCanonicalReceipt(
-            'checkouts.update',
-            workspaceId,
-            args,
-            result,
-            userId,
-            startedAt,
-          );
-        }
-        case 'coupons.create': {
-          const startedAt = Date.now();
-          const result = await this.executeTool(workspaceId, 'create_coupon', args, userId);
-          return this.withCanonicalReceipt(
-            'coupons.create',
-            workspaceId,
-            args,
-            result,
-            userId,
-            startedAt,
-          );
-        }
-        case 'coupons.delete': {
-          const startedAt = Date.now();
-          const result = await this.executeTool(workspaceId, 'delete_coupon', args, userId);
-          return this.withCanonicalReceipt(
-            'coupons.delete',
-            workspaceId,
-            args,
-            result,
-            userId,
-            startedAt,
-          );
-        }
+        // ── plans.*, checkouts.*, coupons.* aliases handled via isDottedAliasTool fast-path above ──
         case 'plan_create':
         case 'create_plan':
         case 'update_plan':
@@ -448,10 +383,7 @@ export class KloelToolDispatcherService {
             return await this.productSubTools.executeTool(toolName, workspaceId, asToolArgs(args));
           }
           return { success: false, error: 'product_sub_resource_tools_not_available' };
-        case 'generate_pix':
-          return await this.executeTool(workspaceId, 'sales.create_pix', args, userId);
-        case 'generate_boleto':
-          return await this.executeTool(workspaceId, 'sales.create_boleto', args, userId);
+        // ── generate_pix / generate_boleto handled via isDottedAliasTool fast-path above ──
         // ── sales.create_pix / sales.create_boleto handled via isSalesTool fast-path above ──
         case 'delete_product': {
           const startedAt = Date.now();
@@ -504,36 +436,15 @@ export class KloelToolDispatcherService {
             asToolArgs(productArgs),
           );
         }
-        case 'products.upload_image': {
-          const startedAt = Date.now();
-          const result = await this.executeTool(workspaceId, 'upload_product_image', args, userId);
-          return this.withCanonicalReceipt(
-            'products.upload_image',
-            workspaceId,
-            args,
-            result,
-            userId,
-            startedAt,
-          );
-        }
-        case 'update_personal_data':
-          if (!this.accountService) {
-            return { success: false, error: 'account_service_unavailable' };
-          }
-          return await this.accountService.updatePersonalData(workspaceId, asToolArgs(args));
-        case 'account.update_personal':
-          return this.executeTool(workspaceId, 'update_personal_data', args, userId);
+        // ── products.upload_image handled via isDottedAliasTool fast-path above ──
+        // ── update_personal_data + account.* aliases handled via isAccountTool fast-path above ──
         case 'update_fiscal_data':
           return await this.bizConfigToolsService.toolSaveBusinessInfo(
             workspaceId,
             asToolArgs(args),
           );
-        case 'account.update_fiscal':
-          return this.executeTool(workspaceId, 'update_fiscal_data', args, userId);
         case 'upload_document':
           return await this.bizConfigToolsService.toolUploadDocument(workspaceId, asToolArgs(args));
-        case 'account.upload_document':
-          return this.executeTool(workspaceId, 'upload_document', args, userId);
         // ── CONFIGURE_* family handled via isConfigureTool fast-path above ──
         case 'get_social_channels':
           return await this.bizConfigToolsService.toolGetSocialChannels(workspaceId);
