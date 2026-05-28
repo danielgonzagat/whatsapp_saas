@@ -23,13 +23,31 @@ import {
   WalletNotFoundError,
 } from './wallet.types';
 import {
-  MP_WEBHOOK_PATH,
-  PIX_EXPIRATION_MINUTES,
   WALLET_MERCADOPAGO_REFERENCE_TYPE,
-  formatMercadoPagoQrImage,
+  absAmountCents,
+  buildExistingTxQuery,
+  assertExclusivePricingBasis,
+  assertNonNegativeActualCost,
+  assertPositiveTopupAmount,
+  assertValidQuotedCost,
+  assertValidUsageUnits,
+  buildFraudReasonsLog,
+  classifyTopupFraudDecision,
+  buildInsufficientBalanceReport,
+  buildMercadoPagoTopupTransactionMetadata,
+  buildPixTopupChargeRequest,
+  buildRefundMetadata,
+  buildSettlementMetadata,
+  buildStripeTopupIntentParams,
+  buildStripeTopupTransactionMetadata,
+  buildUsageMetadata,
+  buildWalletNotFoundOnMercadoPagoWebhookReport,
+  buildWalletNotFoundOnStripeWebhookReport,
+  normalizePayerDocument,
   parseMercadoPagoWalletReference,
   readMercadoPagoTransactionAmountCents,
-  resolveBackendOrigin,
+  shapePixTopupResult,
+  shapeStripeIntentResult,
 } from './wallet.service.helpers';
 
 /**
@@ -59,11 +77,7 @@ export class WalletService {
    * need a separate "create wallet" step.
    */
   async createTopupIntent(input: CreateTopupIntentInput): Promise<CreateTopupIntentResult> {
-    if (input.amountCents <= 0n) {
-      throw new RangeError(
-        `createTopupIntent: amountCents must be > 0 (got ${input.amountCents.toString()})`,
-      );
-    }
+    assertPositiveTopupAmount(input.amountCents);
 
     const fraudDecision = await this.fraudEngine.evaluate({
       workspaceId: input.workspaceId,
@@ -78,21 +92,18 @@ export class WalletService {
       amountCents: input.amountCents,
     });
 
-    if (fraudDecision.action === 'block') {
+    const fraudGate = classifyTopupFraudDecision(fraudDecision, input.method);
+    if (fraudGate !== 'allow') {
+      const reasonsCsv = buildFraudReasonsLog(fraudDecision.reasons);
+      const tag = fraudGate === 'block' ? 'blocked by antifraud' : 'routed to review';
       this.logger.warn(
-        `Wallet top-up blocked by antifraud workspace=${input.workspaceId} method=${input.method} reasons=${fraudDecision.reasons.map((reason) => reason.signal).join(',')}`,
+        `Wallet top-up ${tag} workspace=${input.workspaceId} method=${input.method} reasons=${reasonsCsv}`,
       );
-      throw new BadRequestException('Recarga bloqueada pela política antifraude.');
-    }
-
-    if (
-      fraudDecision.action === 'review' ||
-      (fraudDecision.action === 'require_3ds' && input.method !== 'card')
-    ) {
-      this.logger.warn(
-        `Wallet top-up routed to review workspace=${input.workspaceId} method=${input.method} reasons=${fraudDecision.reasons.map((reason) => reason.signal).join(',')}`,
+      throw new BadRequestException(
+        fraudGate === 'block'
+          ? 'Recarga bloqueada pela política antifraude.'
+          : 'Recarga retida para revisão manual.',
       );
-      throw new BadRequestException('Recarga retida para revisão manual.');
     }
 
     const wallet = await this.prisma.prepaidWallet.upsert({
@@ -107,53 +118,31 @@ export class WalletService {
         throw new BadRequestException('E-mail do comprador e obrigatorio para recarga PIX.');
       }
 
-      const nonce = randomUUID();
-      const payerDocument =
-        (input.buyerCpf ?? input.buyerCnpj ?? '').replace(/\D/g, '') || undefined;
-      const charge = await this.mercadoPagoPixCharge.create({
-        idempotencyKey: `wallet-topup:${input.workspaceId}:${nonce}`,
-        amountCents: input.amountCents,
-        payerEmail,
-        ...(payerDocument ? { payerDocument } : {}),
-        description: `Kloel prepaid wallet top-up - workspace ${input.workspaceId}`,
-        externalReference: `wallet_topup:${input.workspaceId}:${wallet.id}:${nonce}`,
-        expiresAt: new Date(Date.now() + PIX_EXPIRATION_MINUTES * 60_000),
-        notificationUrl: `${resolveBackendOrigin()}${MP_WEBHOOK_PATH}`,
-      });
-
-      const pixQrCodeUrl = formatMercadoPagoQrImage(charge.qrCodeBase64) ?? charge.ticketUrl;
-      return {
-        paymentIntentId: charge.externalId,
-        clientSecret: null,
-        ...(charge.qrCode ? { pixQrCode: charge.qrCode } : {}),
-        ...(pixQrCodeUrl ? { pixQrCodeUrl } : {}),
-      };
+      const charge = await this.mercadoPagoPixCharge.create(
+        buildPixTopupChargeRequest({
+          workspaceId: input.workspaceId,
+          walletId: wallet.id,
+          amountCents: input.amountCents,
+          payerEmail,
+          payerDocument: normalizePayerDocument(input.buyerCpf, input.buyerCnpj),
+          nonce: randomUUID(),
+          now: new Date(),
+        }),
+      );
+      return shapePixTopupResult(charge);
     }
 
-    const forceThreeDS = input.method === 'card' && fraudDecision.action === 'require_3ds';
-    const intent = await this.stripeService.stripe.paymentIntents.create({
-      amount: Number(input.amountCents),
-      currency: wallet.currency.toLowerCase(),
-      payment_method_types: ['card'],
-      ...(forceThreeDS
-        ? {
-            payment_method_options: {
-              card: {
-                request_three_d_secure: 'any' as const,
-              },
-            },
-          }
-        : {}),
-      metadata: {
-        type: 'wallet_topup',
-        wallet_id: wallet.id,
-        workspace_id: input.workspaceId,
-        method: 'card',
-      },
-      description: `Kloel prepaid wallet top-up - workspace ${input.workspaceId}`,
-    });
+    const intent = await this.stripeService.stripe.paymentIntents.create(
+      buildStripeTopupIntentParams({
+        amountCents: input.amountCents,
+        currency: wallet.currency,
+        workspaceId: input.workspaceId,
+        walletId: wallet.id,
+        forceThreeDS: input.method === 'card' && fraudDecision.action === 'require_3ds',
+      }),
+    );
 
-    return this.shapeIntentResult(intent);
+    return shapeStripeIntentResult(intent);
   }
 
   /**
@@ -176,13 +165,9 @@ export class WalletService {
 
     return this.prisma.$transaction(
       async (tx) => {
-        const existing = await tx.prepaidWalletTransaction.findFirst({
-          where: {
-            referenceType: 'stripe_topup',
-            referenceId: paymentIntent.id,
-            type: 'TOPUP',
-          },
-        });
+        const existing = await tx.prepaidWalletTransaction.findFirst(
+          buildExistingTxQuery('stripe_topup', paymentIntent.id, 'TOPUP'),
+        );
         if (existing) {
           this.logger.debug(`creditFromWebhook idempotent skip: pi=${paymentIntent.id}`);
           return existing;
@@ -199,12 +184,11 @@ export class WalletService {
           this.logger.error(
             `creditFromWebhook: wallet ${walletId} referenced by PaymentIntent ${paymentIntent.id} not found`,
           );
-          Sentry.captureException(
-            new Error(`wallet_not_found_on_webhook: wallet=${walletId} pi=${paymentIntent.id}`),
-            {
-              extra: { walletId, paymentIntentId: paymentIntent.id },
-            },
-          );
+          const report = buildWalletNotFoundOnStripeWebhookReport({
+            walletId,
+            paymentIntentId: paymentIntent.id,
+          });
+          Sentry.captureException(report.error, { extra: report.extra });
           throw new WalletNotFoundError(walletId);
         }
 
@@ -222,9 +206,9 @@ export class WalletService {
             balanceAfterCents: newBalance,
             referenceType: 'stripe_topup',
             referenceId: paymentIntent.id,
-            metadata: {
-              method: paymentIntent.metadata?.method ?? null,
-            },
+            metadata: buildStripeTopupTransactionMetadata({
+              paymentMethod: paymentIntent.metadata?.method,
+            }),
           },
         });
       },
@@ -256,13 +240,9 @@ export class WalletService {
 
     return this.prisma.$transaction(
       async (tx) => {
-        const existing = await tx.prepaidWalletTransaction.findFirst({
-          where: {
-            referenceType: WALLET_MERCADOPAGO_REFERENCE_TYPE,
-            referenceId: input.externalId,
-            type: 'TOPUP',
-          },
-        });
+        const existing = await tx.prepaidWalletTransaction.findFirst(
+          buildExistingTxQuery(WALLET_MERCADOPAGO_REFERENCE_TYPE, input.externalId, 'TOPUP'),
+        );
         if (existing) {
           this.logger.debug(`creditMercadoPagoTopup idempotent skip: mp=${input.externalId}`);
           return existing;
@@ -275,18 +255,12 @@ export class WalletService {
           this.logger.error(
             `creditMercadoPagoTopup: wallet ${reference.walletId} workspace=${reference.workspaceId} externalId=${input.externalId} not found`,
           );
-          Sentry.captureException(
-            new Error(
-              `wallet_not_found_on_mercadopago_webhook: wallet=${reference.walletId} mp=${input.externalId}`,
-            ),
-            {
-              extra: {
-                walletId: reference.walletId,
-                workspaceId: reference.workspaceId,
-                externalId: input.externalId,
-              },
-            },
-          );
+          const report = buildWalletNotFoundOnMercadoPagoWebhookReport({
+            walletId: reference.walletId,
+            workspaceId: reference.workspaceId,
+            externalId: input.externalId,
+          });
+          Sentry.captureException(report.error, { extra: report.extra });
           throw new WalletNotFoundError(reference.workspaceId);
         }
 
@@ -304,11 +278,9 @@ export class WalletService {
             balanceAfterCents: newBalance,
             referenceType: WALLET_MERCADOPAGO_REFERENCE_TYPE,
             referenceId: input.externalId,
-            metadata: {
-              provider: 'mercadopago',
-              method: 'pix',
+            metadata: buildMercadoPagoTopupTransactionMetadata({
               status: input.status,
-            } as Prisma.InputJsonValue,
+            }),
           },
         });
       },
@@ -327,33 +299,22 @@ export class WalletService {
   async chargeForUsage(input: ChargeUsageInput): Promise<ChargeUsageResult> {
     const hasQuotedCost = input.quotedCostCents !== undefined;
     const hasUnits = input.units !== undefined;
-    if (hasQuotedCost === hasUnits) {
-      throw new RangeError(
-        'chargeForUsage: provide exactly one pricing basis (units or quotedCostCents)',
-      );
-    }
+    assertExclusivePricingBasis(hasQuotedCost, hasUnits);
 
     let costCents: bigint;
     let usageMetadata: Record<string, unknown>;
 
     if (hasQuotedCost) {
-      if (!input.quotedCostCents || input.quotedCostCents <= 0n) {
-        throw new RangeError(
-          `chargeForUsage: quotedCostCents must be > 0 (got ${input.quotedCostCents?.toString() ?? 'undefined'})`,
-        );
-      }
-
+      assertValidQuotedCost(input.quotedCostCents);
       costCents = input.quotedCostCents;
-      usageMetadata = {
+      usageMetadata = buildUsageMetadata({
         operation: input.operation,
         billingMode: 'provider_quote',
-        quotedCostCents: costCents.toString(),
-        ...(input.metadata ?? {}),
-      };
+        costCents,
+        callerMetadata: input.metadata,
+      });
     } else {
-      if (!input.units || input.units <= 0 || !Number.isFinite(input.units)) {
-        throw new RangeError(`chargeForUsage: units must be > 0 (got ${input.units})`);
-      }
+      assertValidUsageUnits(input.units);
 
       const price = await this.prisma.usagePrice.findUnique({
         where: { operation: input.operation },
@@ -363,22 +324,23 @@ export class WalletService {
       }
 
       costCents = price.pricePerUnitCents * BigInt(input.units);
-      usageMetadata = {
+      usageMetadata = buildUsageMetadata({
         operation: input.operation,
         billingMode: 'catalog',
+        costCents,
         units: input.units,
-        pricePerUnitCents: price.pricePerUnitCents.toString(),
-        ...(input.metadata ?? {}),
-      };
+        pricePerUnitCents: price.pricePerUnitCents,
+        callerMetadata: input.metadata,
+      });
     }
 
     const referenceType = `usage:${input.operation}`;
 
     return this.prisma.$transaction(
       async (tx) => {
-        const existing = await tx.prepaidWalletTransaction.findFirst({
-          where: { referenceType, referenceId: input.requestId, type: 'USAGE' },
-        });
+        const existing = await tx.prepaidWalletTransaction.findFirst(
+          buildExistingTxQuery(referenceType, input.requestId, 'USAGE'),
+        );
         if (existing) {
           const wallet = await tx.prepaidWallet.findFirst({
             where: { id: existing.walletId, workspaceId: input.workspaceId },
@@ -398,20 +360,14 @@ export class WalletService {
         }
 
         if (wallet.balanceCents < costCents) {
-          Sentry.captureException(
-            new Error(
-              `prepaid_wallet_insufficient: id=${wallet.id} need=${costCents.toString()} have=${wallet.balanceCents.toString()}`,
-            ),
-            {
-              extra: {
-                walletId: wallet.id,
-                workspaceId: wallet.workspaceId,
-                operation: input.operation,
-                costCents: costCents.toString(),
-                balanceCents: wallet.balanceCents.toString(),
-              },
-            },
-          );
+          const report = buildInsufficientBalanceReport({
+            walletId: wallet.id,
+            workspaceId: wallet.workspaceId,
+            operation: input.operation,
+            costCents,
+            balanceCents: wallet.balanceCents,
+          });
+          Sentry.captureException(report.error, { extra: report.extra });
           throw new InsufficientWalletBalanceError(wallet.id, costCents, wallet.balanceCents);
         }
 
@@ -444,35 +400,23 @@ export class WalletService {
    * cost once the upstream request succeeds.
    */
   async settleUsageCharge(input: SettleUsageInput): Promise<PrepaidWalletTransaction | null> {
-    if (input.actualCostCents < 0n) {
-      throw new RangeError(
-        `settleUsageCharge: actualCostCents must be >= 0 (got ${input.actualCostCents.toString()})`,
-      );
-    }
+    assertNonNegativeActualCost(input.actualCostCents);
 
     const usageReferenceType = `usage:${input.operation}`;
     const settlementReferenceType = `adjust:${usageReferenceType}`;
 
     return this.prisma.$transaction(
       async (tx) => {
-        const existing = await tx.prepaidWalletTransaction.findFirst({
-          where: {
-            referenceType: settlementReferenceType,
-            referenceId: input.requestId,
-            type: 'ADJUSTMENT',
-          },
-        });
+        const existing = await tx.prepaidWalletTransaction.findFirst(
+          buildExistingTxQuery(settlementReferenceType, input.requestId, 'ADJUSTMENT'),
+        );
         if (existing) {
           return existing;
         }
 
-        const originalUsage = await tx.prepaidWalletTransaction.findFirst({
-          where: {
-            referenceType: usageReferenceType,
-            referenceId: input.requestId,
-            type: 'USAGE',
-          },
-        });
+        const originalUsage = await tx.prepaidWalletTransaction.findFirst(
+          buildExistingTxQuery(usageReferenceType, input.requestId, 'USAGE'),
+        );
         if (!originalUsage) {
           return null;
         }
@@ -484,8 +428,7 @@ export class WalletService {
           throw new WalletNotFoundError(input.workspaceId);
         }
 
-        const chargedCents =
-          originalUsage.amountCents < 0n ? -originalUsage.amountCents : originalUsage.amountCents;
+        const chargedCents = absAmountCents(originalUsage.amountCents);
         const deltaCents = input.actualCostCents - chargedCents;
         if (deltaCents === 0n) {
           return null;
@@ -510,15 +453,15 @@ export class WalletService {
             balanceAfterCents: newBalance,
             referenceType: settlementReferenceType,
             referenceId: input.requestId,
-            metadata: {
+            metadata: buildSettlementMetadata({
               operation: input.operation,
               reason: input.reason,
-              actualCostCents: input.actualCostCents.toString(),
-              chargedCostCents: chargedCents.toString(),
-              deltaCents: deltaCents.toString(),
+              actualCostCents: input.actualCostCents,
+              chargedCostCents: chargedCents,
+              deltaCents,
               originalUsageTransactionId: originalUsage.id,
-              ...(input.metadata ?? {}),
-            },
+              callerMetadata: input.metadata,
+            }) as Prisma.InputJsonValue,
           },
         });
       },
@@ -536,24 +479,16 @@ export class WalletService {
 
     return this.prisma.$transaction(
       async (tx) => {
-        const existingRefund = await tx.prepaidWalletTransaction.findFirst({
-          where: {
-            referenceType: refundReferenceType,
-            referenceId: input.requestId,
-            type: 'REFUND',
-          },
-        });
+        const existingRefund = await tx.prepaidWalletTransaction.findFirst(
+          buildExistingTxQuery(refundReferenceType, input.requestId, 'REFUND'),
+        );
         if (existingRefund) {
           return existingRefund;
         }
 
-        const originalUsage = await tx.prepaidWalletTransaction.findFirst({
-          where: {
-            referenceType: usageReferenceType,
-            referenceId: input.requestId,
-            type: 'USAGE',
-          },
-        });
+        const originalUsage = await tx.prepaidWalletTransaction.findFirst(
+          buildExistingTxQuery(usageReferenceType, input.requestId, 'USAGE'),
+        );
         if (!originalUsage) {
           return null;
         }
@@ -565,8 +500,7 @@ export class WalletService {
           throw new WalletNotFoundError(input.workspaceId);
         }
 
-        const refundedCents =
-          originalUsage.amountCents < 0n ? -originalUsage.amountCents : originalUsage.amountCents;
+        const refundedCents = absAmountCents(originalUsage.amountCents);
         const newBalance = wallet.balanceCents + refundedCents;
         await tx.prepaidWallet.updateMany({
           where: { id: wallet.id, workspaceId: input.workspaceId },
@@ -581,12 +515,12 @@ export class WalletService {
             balanceAfterCents: newBalance,
             referenceType: refundReferenceType,
             referenceId: input.requestId,
-            metadata: {
+            metadata: buildRefundMetadata({
               operation: input.operation,
               reason: input.reason,
               originalUsageTransactionId: originalUsage.id,
-              ...(input.metadata ?? {}),
-            },
+              callerMetadata: input.metadata,
+            }) as Prisma.InputJsonValue,
           },
         });
       },
@@ -601,12 +535,5 @@ export class WalletService {
       throw new WalletNotFoundError(workspaceId);
     }
     return wallet.balanceCents;
-  }
-
-  private shapeIntentResult(intent: StripePaymentIntent): CreateTopupIntentResult {
-    return {
-      paymentIntentId: intent.id,
-      clientSecret: intent.client_secret ?? null,
-    };
   }
 }
