@@ -275,9 +275,7 @@ export class KloelReplyEngineService {
           ? { selfHealthService: this.selfHealthService }
           : {}),
         ...(this.selfGapsService !== undefined ? { selfGapsService: this.selfGapsService } : {}),
-        ...(this.riskClassService !== undefined
-          ? { riskClassService: this.riskClassService }
-          : {}),
+        ...(this.riskClassService !== undefined ? { riskClassService: this.riskClassService } : {}),
       };
       cognitiveState.mindSignals = await buildMindSignals(
         mindDeps,
@@ -608,25 +606,25 @@ export class KloelReplyEngineService {
     let assistantMessage: string;
     try {
       assistantMessage = await buildAssistantReplyImpl(params, {
-      openai: this.openai,
-      prisma: this.prisma,
-      planLimits: this.planLimits,
-      threadService: this.threadService,
-      wsContextService: this.wsContextService,
-      contextFormatter: this.contextFormatter,
-      toolRouter: this.toolRouter,
-      unavailableMessage: this.unavailableMessage,
-      hasOpenAiKey: () => this.hasOpenAiKey(),
-      buildDashboardPrompt: (p) => this.buildDashboardPrompt(p),
-      detectExpertiseLevel: (m, h) => this.detectExpertiseLevel(m, h),
-      shouldUseLongFormBudget: (m) => this.shouldUseLongFormBudget(m),
-      buildMarketingPromptAddendum: (wid, mode, msg) =>
-        this.buildMarketingPromptAddendum(wid, mode, msg),
-      buildChatModelMessages: async (p) => this.buildChatModelMessages(p),
-      buildDynamicRuntimeContext: (p) => this.buildDynamicRuntimeContext(p),
-      ...(this.spine !== undefined ? { spine: this.spine } : {}),
-      ...(params.abiStateJson !== undefined ? { abiStateJson: params.abiStateJson } : {}),
-    });
+        openai: this.openai,
+        prisma: this.prisma,
+        planLimits: this.planLimits,
+        threadService: this.threadService,
+        wsContextService: this.wsContextService,
+        contextFormatter: this.contextFormatter,
+        toolRouter: this.toolRouter,
+        unavailableMessage: this.unavailableMessage,
+        hasOpenAiKey: () => this.hasOpenAiKey(),
+        buildDashboardPrompt: (p) => this.buildDashboardPrompt(p),
+        detectExpertiseLevel: (m, h) => this.detectExpertiseLevel(m, h),
+        shouldUseLongFormBudget: (m) => this.shouldUseLongFormBudget(m),
+        buildMarketingPromptAddendum: (wid, mode, msg) =>
+          this.buildMarketingPromptAddendum(wid, mode, msg),
+        buildChatModelMessages: async (p) => this.buildChatModelMessages(p),
+        buildDynamicRuntimeContext: (p) => this.buildDynamicRuntimeContext(p),
+        ...(this.spine !== undefined ? { spine: this.spine } : {}),
+        ...(params.abiStateJson !== undefined ? { abiStateJson: params.abiStateJson } : {}),
+      });
       // PI-k8: close outcome on success
       if (outcomeKey) {
         this.decisionOutcomeService

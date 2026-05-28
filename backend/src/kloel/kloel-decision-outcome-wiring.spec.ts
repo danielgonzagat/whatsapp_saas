@@ -221,10 +221,12 @@ describe('KloelReplyEngineService decision-outcome wiring (PI-k8)', () => {
   describe('closeOutcome on error', () => {
     it('closes with chat.error and wonVsBaseline=false when buildAssistantReplyImpl throws', async () => {
       const deps = makeBaseDeps();
-      const { buildAssistantReplyImpl } = jest.requireMock<
+      const helpersMock = jest.requireMock<
         typeof import('./kloel-reply-engine.helpers')
       >('./kloel-reply-engine.helpers');
-      buildAssistantReplyImpl.mockRejectedValueOnce(new Error('LLM timeout'));
+      (helpersMock.buildAssistantReplyImpl as jest.Mock).mockRejectedValueOnce(
+        new Error('LLM timeout'),
+      );
 
       const module: TestingModule = await Test.createTestingModule({
         providers: [
@@ -378,9 +380,10 @@ describe('ConversationalOnboardingService decision-outcome wiring (PI-k8)', () =
 
   describe('closeOutcome on error', () => {
     it('closes with chat.error and wonVsBaseline=false when LLM fails', async () => {
-      const { chatCompletionWithRetry } =
-        jest.requireMock<typeof import('./openai-wrapper')>('./openai-wrapper');
-      chatCompletionWithRetry.mockRejectedValueOnce(new Error('Rate limit'));
+      const openaiMock = jest.requireMock<typeof import('./openai-wrapper')>('./openai-wrapper');
+      (openaiMock.chatCompletionWithRetry as jest.Mock).mockRejectedValueOnce(
+        new Error('Rate limit'),
+      );
 
       const service = await buildService(onboardingDecisionOutcome);
 
@@ -399,9 +402,8 @@ describe('ConversationalOnboardingService decision-outcome wiring (PI-k8)', () =
 
   describe('closeOutcome on degraded (empty_choice)', () => {
     it('closes with chat.degraded.empty_choice when LLM returns no choices', async () => {
-      const { chatCompletionWithRetry } =
-        jest.requireMock<typeof import('./openai-wrapper')>('./openai-wrapper');
-      chatCompletionWithRetry.mockResolvedValueOnce({
+      const openaiMock = jest.requireMock<typeof import('./openai-wrapper')>('./openai-wrapper');
+      (openaiMock.chatCompletionWithRetry as jest.Mock).mockResolvedValueOnce({
         choices: [],
         model: 'gpt-4o',
         usage: { total_tokens: 10 },

@@ -16,12 +16,15 @@ function inferActionDescriptor(
 ): ActionDescriptor {
   const normalized = userMessage.toLowerCase();
 
-  const hasPayment = /\b(pagamento|pagar|pix|cobrança|boleto|cartão|preço|valor|desconto|cupom|reembolso|financial|payment)\b/.test(normalized);
+  const hasPayment =
+    /\b(pagamento|pagar|pix|cobrança|boleto|cartão|preço|valor|desconto|cupom|reembolso|financial|payment)\b/.test(
+      normalized,
+    );
   const hasBlock = /\b(bloquear|suspender|banir|remover)\b/.test(normalized);
   const hasPublic = /\b(público|postar|publicar|anunciar|divulgar)\b/.test(normalized);
 
-  const hasFinancialConcept = concepts?.some(
-    (c) => /(price|payment|discount|financial|fee|charge|money)/i.test(c.concept),
+  const hasFinancialConcept = concepts?.some((c) =>
+    /(price|payment|discount|financial|fee|charge|money)/i.test(c.concept),
   );
 
   if (hasBlock) {

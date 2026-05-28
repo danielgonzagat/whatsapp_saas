@@ -669,20 +669,18 @@ describe('buildMindSignals', () => {
         rollback: ['revert_locally', 'notify_operator'],
       });
 
-      const result = await buildMindSignals(
+      void (await buildMindSignals(
         {
           prisma: mockPrisma(),
           mindConceptService: {
-            detect: jest.fn().mockResolvedValue([
-              { concept: 'payment_intent', confidence: 0.9 },
-            ]),
+            detect: jest.fn().mockResolvedValue([{ concept: 'payment_intent', confidence: 0.9 }]),
           },
           riskClassService: { classify: mockClassify },
           logger: mockLogger,
         },
         'ws-1',
         'hello',
-      );
+      ));
 
       expect(mockClassify).toHaveBeenCalledWith({
         kind: 'payment_action',
@@ -700,7 +698,7 @@ describe('buildMindSignals', () => {
         rollback: ['request_approval_reversal', 'audit_log_entry', 'notify_owner'],
       });
 
-      const result = await buildMindSignals(
+      void (await buildMindSignals(
         {
           prisma: mockPrisma(),
           riskClassService: { classify: mockClassify },
@@ -708,7 +706,7 @@ describe('buildMindSignals', () => {
         },
         'ws-1',
         'preciso bloquear esse lead suspeito',
-      );
+      ));
 
       expect(mockClassify).toHaveBeenCalledWith({
         kind: 'lead_block',
@@ -722,7 +720,12 @@ describe('buildMindSignals', () => {
         class: 'R3' as const,
         autonomyMode: 'must_escalate' as const,
         requiredEvidenceLevel: 'N4' as const,
-        rollback: ['escalate_to_human', 'freeze_action', 'audit_trail_full', 'notify_owner_manager'],
+        rollback: [
+          'escalate_to_human',
+          'freeze_action',
+          'audit_trail_full',
+          'notify_owner_manager',
+        ],
       });
 
       const result = await buildMindSignals(

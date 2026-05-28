@@ -1,12 +1,14 @@
 import { MindEventIngestor } from './mind-event-ingestor.service';
 import { MindEventSpine } from './mind-event-spine.service';
 import { HebbianService } from '../hebbian.service';
-function makeClaimedEvent(overrides: Partial<{
-  id: string;
-  eventType: string;
-  subject: string;
-  occurredAt: Date;
-}> = {}) {
+function makeClaimedEvent(
+  overrides: Partial<{
+    id: string;
+    eventType: string;
+    subject: string;
+    occurredAt: Date;
+  }> = {},
+) {
   return {
     id: overrides.id ?? 'evt-1',
     eventType: overrides.eventType ?? 'cognition.decision_made',
@@ -29,11 +31,9 @@ describe('MindEventIngestor', () => {
       claimPendingEvents: jest.fn(),
       markDispatchSucceeded: jest.fn(),
     };
-    ingestor = new MindEventIngestor(
-      spine as unknown as MindEventSpine,
-      hebbian,
-      { mindOutboxEvent: { findMany: jest.fn().mockResolvedValue([]) } } as never,
-    );
+    ingestor = new MindEventIngestor(spine as unknown as MindEventSpine, hebbian, {
+      mindOutboxEvent: { findMany: jest.fn().mockResolvedValue([]) },
+    } as never);
   });
   describe('processDecisions', () => {
     it('claims events, ingests into hebbian, and marks each succeeded', async () => {
@@ -98,13 +98,14 @@ describe('MindEventIngestor', () => {
     it('processes each workspace with pending decisions', async () => {
       const prisma = {
         mindOutboxEvent: {
-          findMany: jest.fn().mockResolvedValue([
-            { workspaceId: 'ws-1' },
-            { workspaceId: 'ws-2' },
-          ]),
+          findMany: jest.fn().mockResolvedValue([{ workspaceId: 'ws-1' }, { workspaceId: 'ws-2' }]),
         },
       };
-      ingestor = new MindEventIngestor(spine as unknown as MindEventSpine, hebbian, prisma as never);
+      ingestor = new MindEventIngestor(
+        spine as unknown as MindEventSpine,
+        hebbian,
+        prisma as never,
+      );
 
       spine.claimPendingEvents.mockResolvedValue({ events: [] });
 
@@ -123,13 +124,14 @@ describe('MindEventIngestor', () => {
     it('continues to next workspace when one fails', async () => {
       const prisma = {
         mindOutboxEvent: {
-          findMany: jest.fn().mockResolvedValue([
-            { workspaceId: 'ws-1' },
-            { workspaceId: 'ws-2' },
-          ]),
+          findMany: jest.fn().mockResolvedValue([{ workspaceId: 'ws-1' }, { workspaceId: 'ws-2' }]),
         },
       };
-      ingestor = new MindEventIngestor(spine as unknown as MindEventSpine, hebbian, prisma as never);
+      ingestor = new MindEventIngestor(
+        spine as unknown as MindEventSpine,
+        hebbian,
+        prisma as never,
+      );
 
       spine.claimPendingEvents
         .mockRejectedValueOnce(new Error('boom'))
