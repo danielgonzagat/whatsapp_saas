@@ -21,42 +21,18 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { mutate } from 'swr';
 import { OnboardingChatHero } from './OnboardingChatHero';
-
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-}
-
-const ROLE_LABELS: Record<string, string> = {
-  subscriber: 'cliente assinante',
-  producer: 'produtor',
-  affiliate: 'afiliado',
-};
-
-function normalizeOnboardingRole(role: string | null): string | null {
-  if (!role) {
-    return null;
-  }
-  return Object.prototype.hasOwnProperty.call(ROLE_LABELS, role) ? role : null;
-}
-
-/** SSR-safe UUID generation. */
-function safeRandomUUID(): string {
-  const cryptoApi = globalThis.crypto;
-  if (typeof cryptoApi?.randomUUID === 'function') {
-    return cryptoApi.randomUUID();
-  }
-  if (typeof cryptoApi?.getRandomValues === 'function') {
-    const bytes = new Uint8Array(8);
-    cryptoApi.getRandomValues(bytes);
-    return `_${Date.now().toString(36)}_${Array.from(bytes, (byte) =>
-      byte.toString(16).padStart(2, '0'),
-    ).join('')}`;
-  }
-  return `_${Date.now().toString(36)}`;
-}
+import {
+  buildOnboardingHeaders,
+  buildOnboardingLoginUrl,
+  buildRoleSeedMessage,
+  createOnboardingMessage,
+  extractSseContent,
+  formatMessageTimestamp,
+  getOnboardingRoleLabel,
+  isOnboardingSwrKey,
+  normalizeOnboardingRole,
+  type OnboardingMessage,
+} from './onboarding-chat.helpers';
 
 function OnboardingChatContent() {
   const router = useRouter();
@@ -84,7 +60,7 @@ function OnboardingChatContent() {
     }
   }, [isAuthenticated, workspace]);
 
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<OnboardingMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [completed, setCompleted] = useState(false);
@@ -113,15 +89,7 @@ function OnboardingChatContent() {
   }, [completed, router]);
 
   const addMessage = useCallback((role: 'user' | 'assistant', content: string) => {
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: safeRandomUUID(),
-        role,
-        content,
-        timestamp: new Date(),
-      },
-    ]);
+    setMessages((prev) => [...prev, createOnboardingMessage(role, content)]);
   }, []);
 
   const startOnboarding = useCallback(async () => {
@@ -131,11 +99,7 @@ function OnboardingChatContent() {
     startedRef.current = true;
     setLoading(true);
     try {
-      const headers: HeadersInit = { 'Content-Type': 'application/json' };
-      const accessToken = tokenStorage.getToken();
-      if (accessToken) {
-        headers.Authorization = `Bearer ${accessToken}`;
-      }
+      const headers = buildOnboardingHeaders(tokenStorage.getToken());
 
       // Usa endpoint correto com workspaceId
       const res = await fetch(apiUrl(`/kloel/onboarding/${workspaceId}/start`), {
@@ -143,7 +107,7 @@ function OnboardingChatContent() {
         headers,
       });
       const data: { message?: string } = await res.json();
-      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/onboarding'));
+      mutate(isOnboardingSwrKey);
 
       if (data.message) {
         addMessage('assistant', data.message);
@@ -151,15 +115,16 @@ function OnboardingChatContent() {
 
       if (selectedRole && !roleSeededRef.current) {
         roleSeededRef.current = true;
-        const roleLabel = ROLE_LABELS[selectedRole] || selectedRole;
-        addMessage('user', `Meu perfil inicial no Kloel é: ${roleLabel}.`);
+        const roleLabel = getOnboardingRoleLabel(selectedRole);
+        const seed = buildRoleSeedMessage(roleLabel);
+        addMessage('user', seed);
         const roleRes = await fetch(apiUrl(`/kloel/onboarding/${workspaceId}/chat`), {
           method: 'POST',
           headers,
-          body: JSON.stringify({ message: `Meu perfil inicial no Kloel é: ${roleLabel}.` }),
+          body: JSON.stringify({ message: seed }),
         });
         const roleData: { message?: string } = await roleRes.json();
-        mutate((key: unknown) => typeof key === 'string' && key.startsWith('/onboarding'));
+        mutate(isOnboardingSwrKey);
         if (roleData.message) {
           addMessage('assistant', roleData.message);
         }
@@ -196,11 +161,7 @@ function OnboardingChatContent() {
     setLoading(true);
 
     try {
-      const headers: HeadersInit = { 'Content-Type': 'application/json' };
-      const accessToken = tokenStorage.getToken();
-      if (accessToken) {
-        headers.Authorization = `Bearer ${accessToken}`;
-      }
+      const headers = buildOnboardingHeaders(tokenStorage.getToken());
 
       // Usa endpoint SSE para streaming
       const res = await fetch(apiUrl(`/kloel/onboarding/${workspaceId}/chat/stream`), {
@@ -226,19 +187,9 @@ function OnboardingChatContent() {
           }
 
           const chunk = decoder.decode(value, { stream: true });
-          const lines = chunk.split('\n');
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              try {
-                const data = JSON.parse(line.slice(6));
-                if (data.content) {
-                  assistantMessage = data.content;
-                }
-              } catch {
-                // Ignorar linhas malformadas
-              }
-            }
+          const latest = extractSseContent(chunk);
+          if (latest !== null) {
+            assistantMessage = latest;
           }
           await readStream();
         };
@@ -289,10 +240,7 @@ function OnboardingChatContent() {
 
   // Unauthenticated landing — render hero instead of redirecting
   if (!isAuthenticated) {
-    const callbackEncoded = encodeURIComponent(
-      queryRole ? `/onboarding-chat?role=${encodeURIComponent(queryRole)}` : '/onboarding-chat',
-    );
-    return <OnboardingChatHero loginUrl={`/login?callbackUrl=${callbackEncoded}`} />;
+    return <OnboardingChatHero loginUrl={buildOnboardingLoginUrl(queryRole)} />;
   }
 
   return (
@@ -459,10 +407,7 @@ function OnboardingChatContent() {
                       color: colors.text.silver,
                     }}
                   >
-                    {message.timestamp.toLocaleTimeString('pt-BR', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
+                    {formatMessageTimestamp(message.timestamp)}
                   </p>
                 </div>
               </motion.div>
