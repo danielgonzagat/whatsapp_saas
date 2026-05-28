@@ -280,6 +280,7 @@ export async function runToolPlanningBranch(
         userMessage: message,
         assistantMessage: assistantMsg,
         toolMessages,
+        workspaceId,
       }),
       finalTemp,
     );

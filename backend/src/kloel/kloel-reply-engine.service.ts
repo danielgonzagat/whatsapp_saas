@@ -201,6 +201,7 @@ export class KloelReplyEngineService {
     };
     toolMessages?: Array<{ role?: 'tool'; tool_call_id: string; name: string; content: string }>;
     prebuiltCognitiveState?: Record<string, unknown>;
+    workspaceId?: string | null;
   }): Promise<ChatCompletionMessageParam[]> {
     const currentInput = {
       raw: params.userMessage,
@@ -230,6 +231,14 @@ export class KloelReplyEngineService {
           if (abiResult.status !== 'ok') {
             this.logger.warn(
               `ABI build failed: ${abiResult.reason}, using structured reply fallback`,
+              {
+                tag: 'kloel_abi_degraded',
+                builder_present: true,
+                build_status: abiResult.status,
+                validation_issues: [] as string[],
+                exception_message: null,
+                workspaceId: params.workspaceId ?? null,
+              },
             );
           } else {
             const validation = validateAbiPayload(abiResult.abi);
@@ -237,6 +246,16 @@ export class KloelReplyEngineService {
             if (validation.status === 'FAIL') {
               this.logger.warn(
                 `ABI validation failed: ${JSON.stringify(validation.issues)}, using structured reply fallback`,
+                {
+                  tag: 'kloel_abi_degraded',
+                  builder_present: true,
+                  build_status: 'ok',
+                  validation_issues: validation.issues
+                    .slice(0, 3)
+                    .map((i) => `${i.code}: ${i.message}`),
+                  exception_message: null,
+                  workspaceId: params.workspaceId ?? null,
+                },
               );
             } else {
               cognitiveState = { ...abiResult.abi };
@@ -249,7 +268,14 @@ export class KloelReplyEngineService {
               : typeof error === 'string'
                 ? error
                 : 'unknown error';
-          this.logger.warn(`ABI build exception: ${msg}, using structured reply fallback`);
+          this.logger.warn(`ABI build exception: ${msg}, using structured reply fallback`, {
+            tag: 'kloel_abi_degraded',
+            builder_present: true,
+            build_status: null,
+            validation_issues: [] as string[],
+            exception_message: msg,
+            workspaceId: params.workspaceId ?? null,
+          });
         }
       }
     }

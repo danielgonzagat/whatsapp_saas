@@ -196,6 +196,7 @@ interface BuildAssistantReplyDeps {
     };
     toolMessages?: Array<{ role?: 'tool'; tool_call_id: string; name: string; content: string }>;
     prebuiltCognitiveState?: Record<string, unknown>;
+    workspaceId?: string | null;
   }) => Promise<ChatCompletionMessageParam[]>;
   buildDynamicRuntimeContext: (params: {
     workspaceId?: string;
@@ -316,6 +317,7 @@ export async function buildAssistantReplyImpl(
       ? { prebuiltCognitiveState: params.prebuiltCognitiveState }
       : {}),
     userMessage: message,
+    workspaceId,
   });
   onTraceEvent?.(createKloelStatusEvent('thinking'));
   if (workspaceId) {

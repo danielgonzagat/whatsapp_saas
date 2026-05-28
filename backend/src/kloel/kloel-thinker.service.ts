@@ -433,6 +433,7 @@ export class KloelThinkerService {
         recentMessages: historyState.recentMessages,
         ...(prebuiltCognitiveState !== undefined ? { prebuiltCognitiveState } : {}),
         userMessage: finalUserMessage,
+        workspaceId,
       });
       const streamWriterResponse = (
         writerMessages: ChatCompletionMessageParam[],
