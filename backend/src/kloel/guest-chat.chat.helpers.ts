@@ -204,11 +204,18 @@ export async function generateGuestReply(
   return unavailableMessage;
 }
 
+function readMissingInputs(result: unknown): string[] {
+  const record = (result as Record<string, unknown> | undefined) ?? {};
+  return Array.isArray(record.missingInputs)
+    ? record.missingInputs.filter(
+        (input): input is string => typeof input === 'string' && input.trim().length > 0,
+      )
+    : [];
+}
+
 function formatOperationalToolReply(tool: string, result: unknown): string {
   const record = (result as Record<string, unknown> | undefined) ?? {};
-  const missingInputs = Array.isArray(record.missingInputs)
-    ? record.missingInputs.filter((input): input is string => typeof input === 'string')
-    : [];
+  const missingInputs = readMissingInputs(result);
 
   if (record.success === false && missingInputs.length > 0) {
     const message =
@@ -219,6 +226,90 @@ function formatOperationalToolReply(tool: string, result: unknown): string {
   }
 
   return formatToolResult(tool, result);
+}
+
+const OPERATIONAL_INPUT_LABELS: Record<string, readonly string[]> = {
+  productId: ['productId', 'produtoId'],
+  planId: ['planId', 'planoId'],
+  customerName: ['customerName', 'nomeCliente', 'nome'],
+  customerEmail: ['customerEmail', 'email', 'e-mail'],
+  customerCpf: ['customerCpf', 'cpf'],
+  customerPhone: ['customerPhone', 'telefone', 'celular'],
+  customerZipCode: ['customerZipCode', 'cep'],
+  customerStreet: ['customerStreet', 'rua'],
+  customerNumber: ['customerNumber', 'numero', 'número'],
+  customerNeighborhood: ['customerNeighborhood', 'bairro'],
+  customerCity: ['customerCity', 'cidade'],
+  customerState: ['customerState', 'uf', 'estado'],
+};
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+const OPERATIONAL_INPUT_LABEL_PATTERN = Object.values(OPERATIONAL_INPUT_LABELS)
+  .flat()
+  .sort((left, right) => right.length - left.length)
+  .map(escapeRegex)
+  .join('|');
+
+function readOperationalInput(message: string, input: string): string | undefined {
+  const labels = OPERATIONAL_INPUT_LABELS[input] ?? [input];
+  const labelPattern = labels.map(escapeRegex).join('|');
+  const matcher = new RegExp(
+    `(?:^|\\s)(?:${labelPattern})\\s*[:=]?\\s*(.+?)(?=\\s+(?:${OPERATIONAL_INPUT_LABEL_PATTERN})\\s*[:=]?\\s*|$)`,
+    'i',
+  );
+  const value = matcher.exec(message)?.[1]?.trim();
+  if (!value) {
+    return undefined;
+  }
+  return value.replace(/[,.]$/, '').trim();
+}
+
+function extractOperationalInputs(
+  message: string,
+  inputs: readonly string[],
+): Record<string, unknown> {
+  const values: Record<string, unknown> = {};
+  for (const input of inputs) {
+    const value = readOperationalInput(message, input);
+    if (value) {
+      values[input] = value;
+    }
+  }
+  return values;
+}
+
+function isMissingOperationalInput(args: Record<string, unknown>, input: string): boolean {
+  const value = args[input];
+  return value === undefined || value === null || (typeof value === 'string' && !value.trim());
+}
+
+function buildMissingInputsReply(tool: string, missingInputs: readonly string[]): string {
+  return `Dados faltantes para executar ${tool}: ${missingInputs.join(', ')}. Nenhuma ação real foi executada ainda.`;
+}
+
+async function persistPendingAction(
+  sessionId: string,
+  prompt: string,
+  action: { tool: string; args: Record<string, unknown> },
+  redis: import('ioredis').default | undefined,
+  conversations: Map<string, GuestConversation>,
+  logger: StructuredLogger,
+  missingInputs: readonly string[] = [],
+): Promise<PendingOperationalAction> {
+  const pendingConversation = await getOrCreateConversation(sessionId, redis, conversations, logger);
+  const pendingAction: PendingOperationalAction = {
+    tool: action.tool,
+    args: action.args,
+    createdAt: new Date().toISOString(),
+    prompt,
+    ...(missingInputs.length > 0 ? { missingInputs: [...missingInputs] } : {}),
+  };
+  pendingConversation.pendingAction = pendingAction;
+  await persistConversation(sessionId, pendingConversation, redis, conversations, logger);
+  return pendingAction;
 }
 
 function isConfirmingPendingAction(message: string): boolean {
@@ -258,6 +349,33 @@ export async function runDeterministicAction(
       delete conversation.pendingAction;
       await persistConversation(sessionId, conversation, redis, conversations, logger);
       const reply = `Ação ${pendingAction.tool} cancelada. Nenhuma ação real foi executada.`;
+      await persistConversationMessage(sessionId, 'assistant', reply, redis, conversations, logger);
+      return reply;
+    }
+
+    const pendingMissingInputs = (pendingAction.missingInputs ?? []).filter((input) =>
+      isMissingOperationalInput(pendingAction.args, input),
+    );
+
+    if (pendingMissingInputs.length > 0) {
+      await persistConversationMessage(sessionId, 'user', message, redis, conversations, logger);
+      pendingAction.args = {
+        ...pendingAction.args,
+        ...extractOperationalInputs(message, pendingMissingInputs),
+      };
+      const remainingInputs = pendingMissingInputs.filter((input) =>
+        isMissingOperationalInput(pendingAction.args, input),
+      );
+      if (remainingInputs.length > 0) {
+        pendingAction.missingInputs = remainingInputs;
+        await persistConversation(sessionId, conversation, redis, conversations, logger);
+        const reply = buildMissingInputsReply(pendingAction.tool, remainingInputs);
+        await persistConversationMessage(sessionId, 'assistant', reply, redis, conversations, logger);
+        return reply;
+      }
+      delete pendingAction.missingInputs;
+      await persistConversation(sessionId, conversation, redis, conversations, logger);
+      const reply = `${buildPendingActionConfirmation(pendingAction)} Responda sim para executar ou não para cancelar.`;
       await persistConversationMessage(sessionId, 'assistant', reply, redis, conversations, logger);
       return reply;
     }
@@ -343,20 +461,15 @@ export async function runDeterministicAction(
         : [];
       if (classification.classification.requiresConfirmation && missingInputs.length === 0) {
         await persistConversationMessage(sessionId, 'user', message, redis, conversations, logger);
-        const pendingConversation = await getOrCreateConversation(
+        const pendingAction = await persistPendingAction(
           sessionId,
+          message,
+          action,
           redis,
           conversations,
           logger,
         );
-        pendingConversation.pendingAction = {
-          tool: action.tool,
-          args: action.args,
-          createdAt: new Date().toISOString(),
-          prompt: message,
-        };
-        await persistConversation(sessionId, pendingConversation, redis, conversations, logger);
-        const reply = buildPendingActionConfirmation(pendingConversation.pendingAction);
+        const reply = buildPendingActionConfirmation(pendingAction);
         await persistConversationMessage(
           sessionId,
           'assistant',
@@ -379,6 +492,18 @@ export async function runDeterministicAction(
             channel: 'web',
           }),
         );
+        const resultMissingInputs = readMissingInputs(result);
+        if (resultMissingInputs.length > 0) {
+          await persistPendingAction(
+            sessionId,
+            message,
+            action,
+            redis,
+            conversations,
+            logger,
+            resultMissingInputs,
+          );
+        }
         if (spine && result.success) {
           const resultMeta = buildResultMeta(action.tool, result);
           void spine
@@ -457,6 +582,18 @@ export async function runDeterministicAction(
           channel: 'web',
         }),
       );
+      const resultMissingInputs = readMissingInputs(result);
+      if (resultMissingInputs.length > 0) {
+        await persistPendingAction(
+          sessionId,
+          message,
+          legacyAction,
+          redis,
+          conversations,
+          logger,
+          resultMissingInputs,
+        );
+      }
       if (spine && result.success) {
         const resultMeta = buildResultMeta(legacyAction.tool, result);
         void spine

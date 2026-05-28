@@ -103,6 +103,101 @@ describe('runDeterministicAction', () => {
     expect(reply).toContain('000201pix');
   });
 
+  it('collects missing payment inputs before asking for final confirmation', async () => {
+    const executeTool = jest
+      .fn()
+      .mockResolvedValueOnce({
+        success: false,
+        error: 'sales_create_pix_inputs_required',
+        missingInputs: ['productId', 'planId', 'customerName', 'customerEmail', 'customerCpf'],
+        message:
+          'Dados faltantes para criar PIX real: productId, planId, customerName, customerEmail, customerCpf',
+      })
+      .mockResolvedValueOnce({
+        success: true,
+        saleId: 'sale-pix-2',
+        pixCopiaECola: '000201pix-final',
+        pixQrCode: 'qr-final',
+      });
+    const intentRouter = {
+      classify: jest
+        .fn()
+        .mockReturnValueOnce({
+          isChat: false,
+          classification: {
+            capabilityId: 'sales.create_pix',
+            entities: { amount: 197 },
+            missingInputs: ['productId', 'planId', 'customerName', 'customerEmail', 'customerCpf'],
+            requiresConfirmation: true,
+          },
+        })
+        .mockReturnValueOnce({ isChat: true })
+        .mockReturnValueOnce({ isChat: true }),
+    };
+    const logger = {
+      log: jest.fn(),
+      warn: jest.fn(),
+      debug: jest.fn(),
+      error: jest.fn(),
+    };
+    const conversations = new Map();
+
+    const missingReply = await runDeterministicAction(
+      'Gera um PIX de R$197 para Joao comprar PDRN',
+      'session-progressive-pix',
+      'ws-1',
+      { executeTool } as never,
+      intentRouter as never,
+      undefined,
+      undefined,
+      conversations,
+      logger as never,
+    );
+
+    expect(executeTool).toHaveBeenCalledTimes(1);
+    expect(missingReply).toContain('Dados faltantes para criar PIX real');
+
+    const confirmationReply = await runDeterministicAction(
+      'productId prod-1 planId plan-1 customerName Joao customerEmail joao@test.com customerCpf 123.456.789-00',
+      'session-progressive-pix',
+      'ws-1',
+      { executeTool } as never,
+      intentRouter as never,
+      undefined,
+      undefined,
+      conversations,
+      logger as never,
+    );
+
+    expect(executeTool).toHaveBeenCalledTimes(1);
+    expect(confirmationReply).toContain('sales.create_pix');
+    expect(confirmationReply).toContain('Confirma');
+
+    const finalReply = await runDeterministicAction(
+      'sim, confirma',
+      'session-progressive-pix',
+      'ws-1',
+      { executeTool } as never,
+      intentRouter as never,
+      undefined,
+      undefined,
+      conversations,
+      logger as never,
+    );
+
+    expect(executeTool).toHaveBeenCalledTimes(2);
+    expect(executeTool).toHaveBeenLastCalledWith('ws-1', 'sales.create_pix', {
+      amount: 197,
+      productId: 'prod-1',
+      planId: 'plan-1',
+      customerName: 'Joao',
+      customerEmail: 'joao@test.com',
+      customerCpf: '123.456.789-00',
+    });
+    expect(finalReply).toContain('PIX gerado');
+    expect(finalReply).toContain('000201pix-final');
+  });
+
   it('keeps boleto as an operational action failure without falling back', async () => {
     const registry = new CapabilityRegistryV2Service();
     const intentRouter = new IntentRouterService(registry);

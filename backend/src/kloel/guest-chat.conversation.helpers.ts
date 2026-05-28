@@ -5,6 +5,7 @@ export interface PendingOperationalAction {
   args: Record<string, unknown>;
   createdAt: string;
   prompt: string;
+  missingInputs?: string[];
 }
 
 export interface GuestConversation {
@@ -29,11 +30,15 @@ function readPendingOperationalAction(value: unknown): PendingOperationalAction 
   if (!record.args || typeof record.args !== 'object' || Array.isArray(record.args)) {
     return undefined;
   }
+  const missingInputs = Array.isArray(record.missingInputs)
+    ? record.missingInputs.filter((input): input is string => typeof input === 'string')
+    : undefined;
   return {
     tool: record.tool,
     args: record.args as Record<string, unknown>,
     createdAt: typeof record.createdAt === 'string' ? record.createdAt : new Date().toISOString(),
     prompt: typeof record.prompt === 'string' ? record.prompt : '',
+    ...(missingInputs && missingInputs.length > 0 ? { missingInputs } : {}),
   };
 }
 
