@@ -22,7 +22,9 @@ jest.mock('../../openai-wrapper', () => ({
 }));
 
 jest.mock('../../../lib/openai-models', () => {
-  const actual = jest.requireActual('../../../lib/openai-models');
+  const actual = jest.requireActual<typeof import('../../../lib/openai-models')>(
+    '../../../lib/openai-models',
+  );
   return {
     ...actual,
     resolveBackendOpenAIModel: jest.fn().mockReturnValue(actual.CANONICAL_MODEL_IDS.openAiTextOmni),
@@ -145,8 +147,10 @@ describe('MindEventProcessorService chat fast-path (PI-K18-B)', () => {
   });
 
   it('calls mindEventProcessorService.process with degraded payload on degraded reply', async () => {
-    const { buildAssistantReplyImpl } = jest.requireMock('../../kloel-reply-engine.helpers');
-    buildAssistantReplyImpl.mockResolvedValueOnce('');
+    const helpersMock = jest.requireMock<{
+      buildAssistantReplyImpl: jest.Mock<Promise<string>, unknown[]>;
+    }>('../../kloel-reply-engine.helpers');
+    helpersMock.buildAssistantReplyImpl.mockResolvedValueOnce('');
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -169,13 +173,13 @@ describe('MindEventProcessorService chat fast-path (PI-K18-B)', () => {
 
     await flushFireAndForget();
 
+    const innerPayload: jest.Expect = expect.objectContaining({
+      success: false,
+      degraded: true,
+    });
+    const outerArg: jest.Expect = expect.objectContaining({ payload: innerPayload });
     expect(mockProcess).toHaveBeenCalledWith(
-      expect.objectContaining({
-        payload: expect.objectContaining({
-          success: false,
-          degraded: true,
-        }),
-      }),
+      outerArg,
     );
   });
 
