@@ -22,13 +22,18 @@ import { SelfGapsService } from './self-awareness/self-gaps.service';
 import { DepsCoverageService } from './self-awareness/deps-coverage.service';
 import { CapabilityRegistryV2Service } from './capability-registry-v2/capability-registry-v2.service';
 import { ReportService } from './report.service';
-import { sanitizeDetails } from './kloel-tool-dispatcher.high-risk.helpers';
 import {
   runRequestHighRiskApproval,
   runExecuteApprovedApprovalRequest,
   type ApprovedToolExecutionResult,
 } from './kloel-tool-dispatcher.approval.helpers';
 import { asString, asNumber } from './kloel-tool-dispatcher.helpers';
+import {
+  buildPaymentLinkArgs,
+  buildPaymentLinkAuditEntry,
+  extractAuditErrorMessage,
+  type PaymentLinkArgs,
+} from './kloel-tool-dispatcher.payment-link.helpers';
 import { buildCanonicalReceipt } from './kloel-tool-dispatcher.receipt.helpers';
 import { dispatchWhatsAppTool, isWhatsAppTool } from './kloel-tool-dispatcher.whatsapp.handlers';
 import { dispatchCodeTool, isCodeTool } from './kloel-tool-dispatcher.code.handlers';
@@ -596,15 +601,7 @@ export class KloelToolDispatcherService {
     userId?: string,
   ): Promise<{ success: boolean; message?: string; error?: string; [key: string]: unknown }> {
     const startedAt = Date.now();
-    const paymentArgs: {
-      amount: number;
-      description: string;
-      customerName?: string;
-    } = {
-      amount: asNumber(args.amount),
-      description: asString(args.description),
-      ...(typeof args.customerName === 'string' ? { customerName: args.customerName } : {}),
-    };
+    const paymentArgs: PaymentLinkArgs = buildPaymentLinkArgs(args);
     const result = await this.chatToolsService.toolCreatePaymentLink(workspaceId, {
       ...paymentArgs,
       executionPath: 'dispatcher',
@@ -612,15 +609,9 @@ export class KloelToolDispatcherService {
     try {
       await this.prisma.$transaction(
         async (tx) => {
-          const paymentIdValue: unknown = result.paymentId;
-          const resourceId = typeof paymentIdValue === 'string' ? paymentIdValue : undefined;
           await this.auditService.logWithTx(tx, {
             workspaceId,
-            action: 'KLOEL_TOOL_PAYMENT_LINK_DISPATCHED',
-            resource: 'KloelToolDispatcher',
-            ...(resourceId !== undefined ? { resourceId } : {}),
-            ...(userId !== undefined ? { agentId: userId } : {}),
-            details: sanitizeDetails(paymentArgs),
+            ...buildPaymentLinkAuditEntry(paymentArgs, result, userId),
           });
         },
         { isolationLevel: 'ReadCommitted' },
@@ -630,18 +621,14 @@ export class KloelToolDispatcherService {
         auditError,
         'KloelToolDispatcherService.sanitizeDetails',
       );
-      const auditMsg =
-        auditError instanceof Error
-          ? auditError.message
-          : typeof auditError === 'string'
-            ? auditError
-            : 'unknown';
-      this.logger.warn(`Audit dispatch (payment link) failed: ${auditMsg}`);
+      this.logger.warn(
+        `Audit dispatch (payment link) failed: ${extractAuditErrorMessage(auditError)}`,
+      );
     }
     return this.withCanonicalReceipt(
       'create_payment_link',
       workspaceId,
-      paymentArgs,
+      paymentArgs as unknown as UnknownRecord,
       result,
       userId,
       startedAt,
