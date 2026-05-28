@@ -292,7 +292,16 @@ describe('KloelReplyEngineService ABI snapshot cache (PI-k5)', () => {
       expect(cs['abiVersion']).toBe('1.1.0');
       // Must persist (upsert) the new snapshot
       expect(kloelMemory.upsert).toHaveBeenCalledTimes(1);
-      const upsertArgs = kloelMemory.upsert.mock.calls[0][0];
+      const upsertCalls = kloelMemory.upsert.mock.calls as Array<
+        [
+          {
+            where: { workspaceId_key: { key: string; workspaceId: string } };
+            update: { category: string };
+            create: { category: string; workspaceId: string };
+          },
+        ]
+      >;
+      const upsertArgs = upsertCalls[0]![0];
       expect(upsertArgs.where.workspaceId_key.key).toBe('abi_snapshot_cache');
       expect(upsertArgs.update.category).toBe('abi_snapshot');
       expect(upsertArgs.create.category).toBe('abi_snapshot');
@@ -365,7 +374,16 @@ describe('KloelReplyEngineService ABI snapshot cache (PI-k5)', () => {
       expect(cs['abiVersion']).toBe('1.1.0');
 
       expect(kloelMemory.upsert).toHaveBeenCalledTimes(1);
-      const upsertArgs = kloelMemory.upsert.mock.calls[0][0];
+      const upsertCalls = kloelMemory.upsert.mock.calls as Array<
+        [
+          {
+            where: { workspaceId_key: { key: string; workspaceId: string } };
+            update: { category: string };
+            create: { category: string; workspaceId: string };
+          },
+        ]
+      >;
+      const upsertArgs = upsertCalls[0]![0];
       expect(upsertArgs.where.workspaceId_key.key).toBe('abi_snapshot_cache');
       expect(upsertArgs.create.workspaceId).toBe('ws-1');
     });
