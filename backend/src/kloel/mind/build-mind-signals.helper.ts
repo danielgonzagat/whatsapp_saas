@@ -297,11 +297,10 @@ export async function buildMindSignals(
   // ── Agent Assist — heuristic action suggestions (PI-K18-A) ─────────
   if (deps.agentAssistService) {
     try {
-      const suggestions = await deps.agentAssistService.suggestActions(
-        workspaceId,
-        userMessage,
-        { concepts: rawConcepts, priorCases: mindSignals.priorCases },
-      );
+      const suggestions = await deps.agentAssistService.suggestActions(workspaceId, userMessage, {
+        concepts: rawConcepts,
+        priorCases: mindSignals.priorCases,
+      });
       if (suggestions.length > 0) {
         mindSignals.agentAssist = suggestions;
       }

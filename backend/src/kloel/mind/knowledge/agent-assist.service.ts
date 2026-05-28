@@ -362,46 +362,90 @@ export class AgentAssistService {
     const actions: Array<{ action: string; reason: string; confidence: number }> = [];
 
     // ── Payment / financial signals ──
-    if (/\b(pagamento|pagar|pix|cobrança|boleto|cartão|preço|valor|desconto|cupon|reembolso|orcamento|comprovante)\b/.test(normalized)) {
-      actions.push({ action: 'send_payment_link', reason: 'payment_intent_detected', confidence: 0.82 });
+    if (
+      /\b(pagamento|pagar|pix|cobrança|boleto|cartão|preço|valor|desconto|cupon|reembolso|orcamento|comprovante)\b/.test(
+        normalized,
+      )
+    ) {
+      actions.push({
+        action: 'send_payment_link',
+        reason: 'payment_intent_detected',
+        confidence: 0.82,
+      });
       if (/\b(cupom|desconto|codigo)\b/.test(normalized)) {
-        actions.push({ action: 'apply_discount_coupon', reason: 'coupon_mention', confidence: 0.76 });
+        actions.push({
+          action: 'apply_discount_coupon',
+          reason: 'coupon_mention',
+          confidence: 0.76,
+        });
       }
     }
 
     // ── Document / media requests ──
-    if (/\b(envia|manda|pdf|arquivo|documento|foto|imagem|contrato|proposta|catalogo)\b/.test(normalized)) {
+    if (
+      /\b(envia|manda|pdf|arquivo|documento|foto|imagem|contrato|proposta|catalogo)\b/.test(
+        normalized,
+      )
+    ) {
       actions.push({ action: 'send_document', reason: 'document_request', confidence: 0.78 });
     }
 
     // ── Scheduling / meeting ──
-    if (/\b(agenda|agendar|horario|disponivel|semana|reuniao|visita|demonstracao|demo|conversar|call)\b/.test(normalized)) {
+    if (
+      /\b(agenda|agendar|horario|disponivel|semana|reuniao|visita|demonstracao|demo|conversar|call)\b/.test(
+        normalized,
+      )
+    ) {
       actions.push({ action: 'schedule_meeting', reason: 'scheduling_intent', confidence: 0.74 });
     }
 
     // ── Support / complaint escalation ──
-    if (/\b(reclamar|reclamacao|problema|suporte|ajuda|nao funciona|erro|bug|defeito|trocar|devolver|cancelar|reembolso)\b/.test(normalized)) {
-      actions.push({ action: 'escalate_to_human', reason: 'support_escalation_signal', confidence: 0.70 });
+    if (
+      /\b(reclamar|reclamacao|problema|suporte|ajuda|nao funciona|erro|bug|defeito|trocar|devolver|cancelar|reembolso)\b/.test(
+        normalized,
+      )
+    ) {
+      actions.push({
+        action: 'escalate_to_human',
+        reason: 'support_escalation_signal',
+        confidence: 0.7,
+      });
     }
 
     // ── Purchase intent ──
-    if (/\b(quero|comprar|contratar|pedir|fechar|assinar)\b/.test(normalized) &&
-        /\b(produto|produtos|plano|servico|curso|oferta|promocao)\b/.test(normalized)) {
-      actions.push({ action: 'present_product_catalog', reason: 'purchase_intent', confidence: 0.80 });
+    if (
+      /\b(quero|comprar|contratar|pedir|fechar|assinar)\b/.test(normalized) &&
+      /\b(produto|produtos|plano|servico|curso|oferta|promocao)\b/.test(normalized)
+    ) {
+      actions.push({
+        action: 'present_product_catalog',
+        reason: 'purchase_intent',
+        confidence: 0.8,
+      });
     }
 
     // ── Greeting / opener ──
     if (/^\s*(oi|ola|bom dia|boa tarde|boa noite|hey|hi|hello)[\s!.]*$/.test(normalized)) {
-      actions.push({ action: 'send_welcome_message', reason: 'greeting_opener', confidence: 0.90 });
+      actions.push({ action: 'send_welcome_message', reason: 'greeting_opener', confidence: 0.9 });
     }
 
     // ── Context-driven signals ──
-    const concepts = context?.concepts as Array<{ concept: string; confidence: number }> | undefined;
+    const concepts = context?.concepts as
+      | Array<{ concept: string; confidence: number }>
+      | undefined;
     if (concepts?.some((c) => /(price_objection|too_expensive)/i.test(c.concept))) {
-      actions.push({ action: 'offer_discount_or_parcelamento', reason: 'price_objection_concept', confidence: 0.72 });
+      actions.push({
+        action: 'offer_discount_or_parcelamento',
+        reason: 'price_objection_concept',
+        confidence: 0.72,
+      });
     }
     if (concepts?.some((c) => /(hot_lead|ready_to_buy)/i.test(c.concept))) {
-      actions.push({ action: 'send_purchase_cta', reason: 'purchase_readiness_concept', confidence: 0.85 });
+      actions.push({
+        action: 'send_purchase_cta',
+        reason: 'purchase_readiness_concept',
+        confidence: 0.85,
+      });
     }
 
     // ── Deduplicate by action name (keep highest confidence) ──

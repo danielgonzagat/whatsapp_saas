@@ -9,7 +9,7 @@ describe('buildMindSignals — agent-assist suggestions (PI-K18-A)', () => {
 
   const stubbedSuggestions = [
     { action: 'send_payment_link', reason: 'payment_intent_detected', confidence: 0.82 },
-    { action: 'send_welcome_message', reason: 'greeting_opener', confidence: 0.90 },
+    { action: 'send_welcome_message', reason: 'greeting_opener', confidence: 0.9 },
   ];
 
   it('attaches agentAssist when agentAssistService is present and returns results', async () => {
@@ -40,9 +40,7 @@ describe('buildMindSignals — agent-assist suggestions (PI-K18-A)', () => {
   });
 
   it('logs warn and omits key when suggestActions throws', async () => {
-    const suggestActions = jest
-      .fn()
-      .mockRejectedValue(new Error('agent-assist unavailable'));
+    const suggestActions = jest.fn().mockRejectedValue(new Error('agent-assist unavailable'));
     const result = await buildMindSignals(
       {
         prisma: mockPrisma(),
