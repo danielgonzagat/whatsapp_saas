@@ -11,6 +11,11 @@
     "backend/src/kloel/mind/knowledge/agent-assist.helpers.spec.ts",
     "backend/src/kloel/mind/knowledge/agent-assist.helpers.charging.spec.ts",
     "backend/src/ai-brain/agent-assist.helpers.spec.ts",
-    "backend/src/ai-brain/agent-assist.helpers.charging.spec.ts"
+    "backend/src/ai-brain/agent-assist.helpers.charging.spec.ts",
+    "backend/src/kloel/kloel-chat-surprise-detection.spec.ts",
+    "backend/src/kloel/kloel-chat-surprise-detection.extended.spec.ts",
+    "backend/src/kloel/kloel-chat-surprise-detection.onboarding.spec.ts",
+    "backend/src/kloel/kloel-decision-outcome-wiring.spec.ts",
+    "backend/src/kloel/kloel-decision-outcome-wiring.onboarding.spec.ts"
   ]
 }
