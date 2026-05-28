@@ -14,6 +14,19 @@ import {
   sendFacebookCapiPurchaseFromPaidUpdate,
   sendPurchaseConfirmationEmailFromPaidCheckoutUpdate,
 } from './checkout-paid-effects';
+import {
+  buildEnrollmentLockKey,
+  computeMemberAreaAvgCompletion,
+  extractCheckoutOrderIdentity,
+  extractErrorStack,
+  formatHookFailureMessage,
+  formatShutdownFailureMessage,
+  formatShutdownStartMessage,
+  hasCheckoutPaymentLookupKey,
+  isApprovedCheckoutPaymentUpdate,
+  isPaidCheckoutOrderUpdate,
+  pickEnrollmentStudentName,
+} from './prisma.service.helpers';
 
 type PrismaTransactionOptions = {
   maxWait?: number;
@@ -74,8 +87,7 @@ export class PrismaService
       value: async (args: Prisma.CheckoutOrderUpdateManyArgs) => {
         const result = await originalUpdateMany(args);
         await this.grantMemberAccessFromPaidCheckoutUpdate(args).catch((error: unknown) => {
-          const message = error instanceof Error ? error.message : 'unknown error';
-          this.logger.warn(`Member access grant hook failed: ${message}`);
+          this.logger.warn(formatHookFailureMessage('Member access grant', error));
         });
         await this.runPostPaymentCheckoutEffectsFromPaidUpdate(args);
         return result;
@@ -88,8 +100,7 @@ export class PrismaService
         const result = await originalPaymentUpdateMany(args);
         await this.markCheckoutOrderPaidFromApprovedCheckoutPaymentUpdate(args).catch(
           (error: unknown) => {
-            const message = error instanceof Error ? error.message : 'unknown error';
-            this.logger.warn(`Checkout payment paid hook failed: ${message}`);
+            this.logger.warn(formatHookFailureMessage('Checkout payment paid', error));
           },
         );
         return result;
@@ -131,11 +142,10 @@ export class PrismaService
         const result = await originalUpdateMany(args);
         await this.grantMemberAccessFromPaidCheckoutUpdateInTransaction(args, tx).catch(
           (error: unknown) => {
-            const message = error instanceof Error ? error.message : 'unknown error';
-            this.logger.warn(`Member access grant transaction hook failed: ${message}`);
+            this.logger.warn(formatHookFailureMessage('Member access grant transaction', error));
           },
         );
-        if (args.data.status === 'PAID') {
+        if (isPaidCheckoutOrderUpdate(args)) {
           paidUpdates.push(args);
         }
         return result;
@@ -150,8 +160,7 @@ export class PrismaService
           args,
           tx,
         ).catch((error: unknown) => {
-          const message = error instanceof Error ? error.message : 'unknown error';
-          this.logger.warn(`Checkout payment paid transaction hook failed: ${message}`);
+          this.logger.warn(formatHookFailureMessage('Checkout payment paid transaction', error));
         });
         return result;
       },
@@ -161,7 +170,7 @@ export class PrismaService
   }
 
   async grantMemberAccessFromPaidCheckoutUpdate(args: Prisma.CheckoutOrderUpdateManyArgs) {
-    if (args.data.status !== 'PAID') {
+    if (!isPaidCheckoutOrderUpdate(args)) {
       return;
     }
 
@@ -173,7 +182,7 @@ export class PrismaService
   async markCheckoutOrderPaidFromApprovedCheckoutPaymentUpdate(
     args: Prisma.CheckoutPaymentUpdateManyArgs,
   ) {
-    if (args.data.status !== 'APPROVED') {
+    if (!isApprovedCheckoutPaymentUpdate(args)) {
       return;
     }
 
@@ -186,12 +195,12 @@ export class PrismaService
     args: Prisma.CheckoutPaymentUpdateManyArgs,
     tx: MemberAccessTransactionClient,
   ) {
-    if (args.data.status !== 'APPROVED') {
+    if (!isApprovedCheckoutPaymentUpdate(args)) {
       return;
     }
 
     const where = args.where || {};
-    if (!where.id && !where.orderId && !where.externalId) {
+    if (!hasCheckoutPaymentLookupKey(where)) {
       return;
     }
 
@@ -225,12 +234,11 @@ export class PrismaService
     args: Prisma.CheckoutOrderUpdateManyArgs,
     tx: MemberAccessTransactionClient,
   ) {
-    if (args.data.status !== 'PAID') {
+    if (!isPaidCheckoutOrderUpdate(args)) {
       return;
     }
 
-    const orderId = typeof args.where?.id === 'string' ? args.where.id : null;
-    const workspaceId = typeof args.where?.workspaceId === 'string' ? args.where.workspaceId : null;
+    const { orderId, workspaceId } = extractCheckoutOrderIdentity(args.where);
 
     if (!orderId || !workspaceId) {
       return;
@@ -275,7 +283,11 @@ export class PrismaService
       return;
     }
 
-    const lockKey = `${workspaceId}:${memberArea.id}:${order.customerEmail.toLowerCase()}`;
+    const lockKey = buildEnrollmentLockKey({
+      workspaceId,
+      memberAreaId: memberArea.id,
+      customerEmail: order.customerEmail,
+    });
     await tx.$executeRaw<number>`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`;
 
     const existingEnrollment = await tx.memberEnrollment.findFirst({
@@ -308,7 +320,10 @@ export class PrismaService
       data: {
         workspaceId,
         memberAreaId: memberArea.id,
-        studentName: order.customerName || order.customerEmail,
+        studentName: pickEnrollmentStudentName({
+          customerName: order.customerName,
+          customerEmail: order.customerEmail,
+        }),
         studentEmail: order.customerEmail,
         ...(order.customerPhone !== undefined ? { studentPhone: order.customerPhone } : {}),
       },
@@ -331,7 +346,7 @@ export class PrismaService
       where: { id: memberArea.id, workspaceId },
       data: {
         totalStudents: enrollmentAgg._count._all,
-        avgCompletion: Number(enrollmentAgg._avg.progress || 0),
+        avgCompletion: computeMemberAreaAvgCompletion(enrollmentAgg._avg.progress),
       },
     });
   }
@@ -382,33 +397,27 @@ export class PrismaService
   private async runPostPaymentCheckoutEffectsFromPaidUpdate(
     args: Prisma.CheckoutOrderUpdateManyArgs,
   ) {
-    if (args.data.status !== 'PAID') {
+    if (!isPaidCheckoutOrderUpdate(args)) {
       return;
     }
 
     await this.sendPurchaseConfirmationEmailFromPaidCheckoutUpdate(args).catch((error: unknown) => {
-      const message = error instanceof Error ? error.message : 'unknown error';
-      this.logger.warn(`Purchase confirmation email hook failed: ${message}`);
+      this.logger.warn(formatHookFailureMessage('Purchase confirmation email', error));
     });
     await this.markCheckoutSocialLeadConvertedFromPaidUpdate(args).catch((error: unknown) => {
-      const message = error instanceof Error ? error.message : 'unknown error';
-      this.logger.warn(`Checkout social lead conversion hook failed: ${message}`);
+      this.logger.warn(formatHookFailureMessage('Checkout social lead conversion', error));
     });
     await this.sendFacebookCapiPurchaseFromPaidUpdate(args).catch((error: unknown) => {
-      const message = error instanceof Error ? error.message : 'unknown error';
-      this.logger.warn(`Facebook CAPI purchase hook failed: ${message}`);
+      this.logger.warn(formatHookFailureMessage('Facebook CAPI purchase', error));
     });
     await this.createAffiliateCommissionFromPaidCheckoutUpdate(args).catch((error: unknown) => {
-      const message = error instanceof Error ? error.message : 'unknown error';
-      this.logger.warn(`Affiliate commission hook failed: ${message}`);
+      this.logger.warn(formatHookFailureMessage('Affiliate commission', error));
     });
     await this.creditWalletFromPaidCheckoutUpdate(args).catch((error: unknown) => {
-      const message = error instanceof Error ? error.message : 'unknown error';
-      this.logger.warn(`Checkout wallet credit hook failed: ${message}`);
+      this.logger.warn(formatHookFailureMessage('Checkout wallet credit', error));
     });
     await this.enqueuePurchaseWhatsappFromPaidCheckoutUpdate(args).catch((error: unknown) => {
-      const message = error instanceof Error ? error.message : 'unknown error';
-      this.logger.warn(`WhatsApp purchase notification hook failed: ${message}`);
+      this.logger.warn(formatHookFailureMessage('WhatsApp purchase notification', error));
     });
   }
 
@@ -448,7 +457,7 @@ export class PrismaService
       // Não derrubar o processo: endpoints lidarão com falhas de DB e retornarão 503.
       this.logger.error(
         'Falha ao conectar no banco durante startup. O serviço continuará iniciando.',
-        error instanceof Error ? error.stack : undefined,
+        extractErrorStack(error),
       );
     }
   }
@@ -461,12 +470,10 @@ export class PrismaService
   /** Before application shutdown. */
   async beforeApplicationShutdown(signal?: string) {
     try {
-      this.logger.log(`Encerrando conexões Prisma antes do shutdown (${signal || 'unknown'}).`);
+      this.logger.log(formatShutdownStartMessage(signal));
       await this.$disconnect();
     } catch (error: unknown) {
-      this.logger.warn(
-        `Falha ao encerrar Prisma no shutdown: ${error instanceof Error ? error.message : 'unknown_error'}`,
-      );
+      this.logger.warn(formatShutdownFailureMessage(error));
     }
   }
 }
