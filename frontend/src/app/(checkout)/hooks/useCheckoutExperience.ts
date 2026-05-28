@@ -15,6 +15,14 @@ import {
 } from './useCheckoutExperience.effects';
 import type { UseCheckoutExperienceOptions } from './useCheckoutExperience.types';
 import {
+  isCouponFlowEnabled,
+  normalizeCouponDiscountInCents,
+  resolveAppliedCouponCode,
+  resolveCouponCodeForSubmission as resolveCouponCodeForSubmissionHelper,
+  resolveCouponErrorMessage,
+  validateCouponPrerequisites as validateCouponPrerequisitesHelper,
+} from './useCheckoutExperience.coupon.helpers';
+import {
   buildOrderPayload as buildOrderPayloadHelper,
   resolveSuccessRedirect as resolveSuccessRedirectHelper,
 } from './useCheckoutExperience.helpers';
@@ -261,15 +269,6 @@ export function useCheckoutExperience({
     [mobileCanOpenStep1, mobileCanOpenStep2, step, validateStep1, validateStep2],
   );
 
-  const resolveCouponCodeForSubmission = useCallback(
-    (explicitCode?: string) => {
-      return String(explicitCode || couponCode || '')
-        .trim()
-        .toUpperCase();
-    },
-    [couponCode],
-  );
-
   const handleCouponFailure = useCallback((message: string) => {
     setCouponApplied(false);
     setDiscount(0);
@@ -278,26 +277,13 @@ export function useCheckoutExperience({
 
   const handleCouponSuccess = useCallback(
     (nextCode: string, result: Awaited<ReturnType<typeof validateCoupon>>) => {
-      setDiscount(Math.max(0, Math.round(Number(result.discountAmount || 0))));
+      setDiscount(normalizeCouponDiscountInCents(result.discountAmount));
       setCouponApplied(true);
-      setCouponCode((result.code || nextCode).toUpperCase());
+      setCouponCode(resolveAppliedCouponCode(result.code, nextCode));
       setCouponPopupHandled(true);
       setShowCouponPopup(false);
     },
     [],
-  );
-
-  const validateCouponPrerequisites = useCallback(
-    (nextCode: string): string | null => {
-      if (!nextCode) {
-        return 'Digite um cupom.';
-      }
-      if (!workspaceId || !plan?.id) {
-        return 'Checkout sem contexto para validar cupom.';
-      }
-      return null;
-    },
-    [plan?.id, workspaceId],
   );
 
   const runCouponValidation = useCallback(
@@ -315,7 +301,7 @@ export function useCheckoutExperience({
         handleCouponSuccess(nextCode, result);
         return true;
       } catch (error) {
-        handleCouponFailure(error instanceof Error ? error.message : 'Cupom inválido ou expirado.');
+        handleCouponFailure(resolveCouponErrorMessage(error));
         return false;
       }
     },
@@ -325,23 +311,22 @@ export function useCheckoutExperience({
   const applyCoupon = useCallback(
     async (explicitCode?: string) => {
       setCouponError('');
-      if (config?.enableCoupon === false) {
+      if (!isCouponFlowEnabled(config?.enableCoupon)) {
         return false;
       }
-      const nextCode = resolveCouponCodeForSubmission(explicitCode);
-      const prerequisiteError = validateCouponPrerequisites(nextCode);
+      const nextCode = resolveCouponCodeForSubmissionHelper(explicitCode, couponCode);
+      const prerequisiteError = validateCouponPrerequisitesHelper(
+        nextCode,
+        workspaceId,
+        plan?.id,
+      );
       if (prerequisiteError) {
         setCouponError(prerequisiteError);
         return false;
       }
       return runCouponValidation(nextCode);
     },
-    [
-      config?.enableCoupon,
-      resolveCouponCodeForSubmission,
-      runCouponValidation,
-      validateCouponPrerequisites,
-    ],
+    [config?.enableCoupon, couponCode, plan?.id, runCouponValidation, workspaceId],
   );
 
   const resolveSuccessRedirect = useCallback(

@@ -1,133 +1,35 @@
 'use client';
 import { kloelT } from '@/lib/i18n/t';
 import { Save } from 'lucide-react';
-import { type CSSProperties, useState, useId } from 'react';
+import { useState, useId } from 'react';
 import { CheckoutCheckbox as Checkbox } from '@/components/products/checkout/CheckoutCheckbox';
 import { CheckoutRadio as Radio } from '@/components/products/checkout/CheckoutRadio';
 import { CheckoutToggleRow as ToggleRow } from '@/components/products/checkout/CheckoutToggleRow';
 import { PixelsSection } from '@/components/products/checkout/CheckoutPixelsSection';
-
-interface CheckoutConfigState {
-  checkoutName: string;
-  enableBoleto: boolean;
-  enableCreditCard: boolean;
-  enablePix: boolean;
-  chatEnabled: boolean;
-  chatWelcomeMessage: string;
-  chatDelay: number;
-  chatPosition: string;
-  chatColor: string;
-  chatOfferDiscount: boolean;
-  chatDiscountCode: string;
-  chatSupportPhone: string;
-  enableCoupon: boolean;
-  enableTimer: boolean;
-  timerMinutes: number;
-  timerMessage: string;
-  socialProofEnabled: boolean;
-  socialProofCustomNames: string;
-  enableSteps: boolean;
-  [key: string]: unknown;
-}
-
-interface CheckoutConfigInput extends Partial<CheckoutConfigState> {
-  id?: string;
-}
+import {
+  BORDER,
+  type CheckoutConfigInput,
+  type CheckoutConfigState,
+  createInitialCheckoutConfigState,
+  dividerStyle,
+  ELEVATED,
+  EMBER,
+  FAINT,
+  inputStyle,
+  labelStyle,
+  SECONDARY,
+  sectionTitleStyle,
+  TEXT,
+  TEXT_ON_ACCENT,
+  textareaStyle,
+  VOID,
+} from './CheckoutConfigPage.helpers';
 
 interface Props {
   planId: string;
   config: CheckoutConfigInput | null | undefined;
   onSave: (data: CheckoutConfigState) => void;
 }
-
-function createInitialCheckoutConfigState(
-  config: CheckoutConfigInput | null | undefined,
-): CheckoutConfigState {
-  const safeConfig = config ?? {};
-  return {
-    checkoutName: '',
-    enableCreditCard: false,
-    enablePix: false,
-    chatEnabled: false,
-    chatWelcomeMessage: '',
-    chatDelay: 5,
-    chatPosition: 'bottom-right',
-    chatColor: 'colors.ember.primary',
-    chatOfferDiscount: false,
-    chatDiscountCode: '',
-    chatSupportPhone: '',
-    enableCoupon: false,
-    enableTimer: false,
-    timerMinutes: 10,
-    timerMessage: '',
-    socialProofEnabled: false,
-    socialProofCustomNames: '',
-    enableSteps: false,
-    ...safeConfig,
-    enableBoleto: false,
-  };
-}
-
-/* ── Design Tokens ── */
-
-const VOID = 'var(--bg-void, colors.background.void)';
-const SURFACE = 'var(--bg-space, colors.background.surface)';
-const ELEVATED = 'var(--bg-nebula, colors.background.elevated)';
-const BORDER = 'var(--border-space, colors.border.space)';
-const TEXT = 'var(--text-starlight, colors.text.silver)';
-const SECONDARY = 'var(--text-moonlight, colors.text.muted)';
-const FAINT = 'var(--text-dust, colors.text.dim)';
-const TEXT_ON_ACCENT = 'var(--app-text-on-accent)';
-const EMBER = 'colors.ember.primary';
-
-/* ── Shared Styles ── */
-
-const sectionTitleStyle: CSSProperties = {
-  fontFamily: "'Sora', sans-serif",
-  fontSize: 14,
-  fontWeight: 600,
-  color: TEXT,
-  marginBottom: 16,
-  marginTop: 0,
-};
-
-const labelStyle: CSSProperties = {
-  fontFamily: "'Sora', sans-serif",
-  fontSize: 10,
-  fontWeight: 600,
-  color: SECONDARY,
-  letterSpacing: '0.06em',
-  textTransform: 'uppercase',
-  marginBottom: 6,
-  display: 'block',
-};
-
-const inputStyle: CSSProperties = {
-  backgroundColor: SURFACE,
-  border: `1px solid ${BORDER}`,
-  borderRadius: 6,
-  padding: '10px 14px',
-  color: TEXT,
-  fontSize: 13,
-  fontFamily: "'Sora', sans-serif",
-  outline: 'none',
-  width: '100%',
-  boxSizing: 'border-box',
-};
-
-const textareaStyle: CSSProperties = {
-  ...inputStyle,
-  minHeight: 80,
-  resize: 'vertical',
-  lineHeight: 1.5,
-};
-
-const dividerStyle: CSSProperties = {
-  height: 1,
-  backgroundColor: BORDER,
-  border: 'none',
-  margin: '28px 0',
-};
 
 /* ── Main Component ── */
 
