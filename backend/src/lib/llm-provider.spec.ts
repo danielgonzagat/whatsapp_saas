@@ -8,7 +8,7 @@ import {
 } from './llm-provider';
 import { CANONICAL_MODEL_IDS, resolveBackendOpenAIModel } from './openai-models';
 jest.mock('openai', () => {
-  const actual = jest.requireActual('openai');
+  const actual = jest.requireActual<typeof import('openai')>('openai');
   const MockOpenAI = jest.fn().mockImplementation((options: Record<string, unknown>) => ({
     options,
     chat: {
@@ -149,9 +149,7 @@ describe('createTextLlmClientPool', () => {
     const pool = createTextLlmClientPool();
     expect(pool).toHaveLength(3);
 
-    const calls = (OpenAI as jest.Mock).mock.calls as Array<
-      [{ apiKey: string; baseURL?: string }]
-    >;
+    const calls = (OpenAI as jest.Mock).mock.calls as Array<[{ apiKey: string; baseURL?: string }]>;
     expect(calls[0][0].apiKey).toBe('sk-ds');
     expect(calls[1][0].apiKey).toBe('sk-gen');
     expect(calls[2][0].apiKey).toBe('sk-oai');
@@ -161,9 +159,7 @@ describe('createTextLlmClientPool', () => {
     process.env.OPENAI_API_KEY = 'sk-oai';
     const pool = createTextLlmClientPool();
     expect(pool).toHaveLength(1);
-    const calls = (OpenAI as jest.Mock).mock.calls as Array<
-      [{ apiKey: string; baseURL?: string }]
-    >;
+    const calls = (OpenAI as jest.Mock).mock.calls as Array<[{ apiKey: string; baseURL?: string }]>;
     expect(calls).toHaveLength(1);
     expect(calls[0][0].apiKey).toBe('sk-oai');
   });
@@ -190,7 +186,7 @@ describe('createTextLlmClientPool', () => {
   it('respects custom DEEPSEEK_BASE_URL', () => {
     process.env.DEEPSEEK_API_KEY = 'sk-ds';
     process.env.DEEPSEEK_BASE_URL = 'https://custom-ds.example.com/v1';
-    const pool = createTextLlmClientPool();
+    void createTextLlmClientPool();
     expect(OpenAI).toHaveBeenCalledWith(
       expect.objectContaining({
         apiKey: 'sk-ds',
@@ -203,7 +199,8 @@ describe('createTextLlmClientPool', () => {
     process.env.OPENAI_API_KEY = 'sk-oai';
     const pool = createTextLlmClientPool();
     expect(pool).toHaveLength(1);
-    const callArg = (OpenAI as jest.Mock).mock.calls[0][0] as { apiKey: string };
+    const openaiCalls = (OpenAI as unknown as jest.Mock).mock.calls as Array<[{ apiKey: string }]>;
+    const callArg = openaiCalls[0]?.[0] as { apiKey: string };
     expect(callArg).not.toHaveProperty('baseURL');
   });
 });
