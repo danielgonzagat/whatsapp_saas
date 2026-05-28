@@ -136,12 +136,14 @@ describe('KloelReplyEngineService mind-signal wiring (PI-k4)', () => {
 
       // Verify Prisma was queried with the right shape
       expect(prisma.autopilotEvent.findMany).toHaveBeenCalledTimes(1);
-      const findManyArg = prisma.autopilotEvent.findMany.mock.calls[0]?.[0] as {
+      type FindManyArg = {
         where: { workspaceId: string; createdAt: { gte: Date } };
         orderBy: { createdAt: string };
         take: number;
         select: Record<string, boolean>;
       };
+      const calls = prisma.autopilotEvent.findMany.mock.calls as Array<[FindManyArg]>;
+      const findManyArg = calls[0]?.[0] as FindManyArg;
       expect(findManyArg.where.workspaceId).toBe('ws-1');
       expect(findManyArg.where.createdAt.gte).toBeInstanceOf(Date);
       expect(findManyArg.orderBy).toEqual({ createdAt: 'desc' });
