@@ -173,11 +173,11 @@ describe('MindEventProcessorService chat fast-path (PI-K18-B)', () => {
 
     await flushFireAndForget();
 
-    const innerPayload: jest.Expect = expect.objectContaining({
+    const innerPayload: unknown = expect.objectContaining({
       success: false,
       degraded: true,
     });
-    const outerArg: jest.Expect = expect.objectContaining({ payload: innerPayload });
+    const outerArg: unknown = expect.objectContaining({ payload: innerPayload });
     expect(mockProcess).toHaveBeenCalledWith(outerArg);
   });
 

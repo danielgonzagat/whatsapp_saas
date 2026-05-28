@@ -353,7 +353,7 @@ export class AgentAssistService {
    * @param context - Optional pre-resolved context (concepts, priorCases, etc.).
    * @returns Array of {action, reason, confidence} tuples, ordered by confidence descending.
    */
-  async suggestActions(
+  suggestActions(
     _workspaceId: string,
     message: string,
     context?: Record<string, unknown>,
@@ -457,7 +457,7 @@ export class AgentAssistService {
       }
     }
 
-    return [...seen.values()].sort((a, b) => b.confidence - a.confidence);
+    return Promise.resolve([...seen.values()].sort((a, b) => b.confidence - a.confidence));
   }
 
   /**
