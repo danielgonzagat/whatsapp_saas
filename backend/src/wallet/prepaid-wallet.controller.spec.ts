@@ -15,6 +15,7 @@ import {
   type StripeStub,
   buildModule,
   makeFraudEngineStub,
+  makeMercadoPagoPixStub,
   makePrismaStub,
   makeStripeStub,
   seedWallet,
@@ -77,25 +78,37 @@ describe('PrepaidWalletController — balance & topup & lifecycle', () => {
   });
 
   describe('createTopup', () => {
-    it('creates a PIX top-up intent and returns client-secret', async () => {
-      stripe.stripe.paymentIntents.create.mockResolvedValue({
-        id: 'pi_pix_1',
-        client_secret: 'secret_pix',
-        amount: 5_000,
-        next_action: {
-          type: 'pix_display_qr_code',
-          pix_display_qr_code: { data: 'pix_qr_data', image_url_png: 'https://img.png' },
-        },
+    it('creates a PIX top-up through Mercado Pago and returns QR data', async () => {
+      const mercadoPagoPix = makeMercadoPagoPixStub();
+      mercadoPagoPix.create.mockResolvedValue({
+        externalId: 'mp_pix_wallet_1',
+        status: 'pending',
+        qrCode: 'pix_qr_data',
+        qrCodeBase64: 'base64-qr',
+        ticketUrl: 'https://www.mercadopago.com.br/payments/123/ticket',
+        expiresAt: new Date('2026-05-28T01:30:00.000Z'),
+        raw: {},
       });
+      deps = await buildModule(stripe, deps.factory, makeFraudEngineStub(), mercadoPagoPix);
 
       const result = await deps.controller.createTopup('ws_1', {
         amountCents: 5_000,
         method: 'pix',
+        buyerEmail: 'buyer@example.com',
       });
 
-      expect(result.paymentIntentId).toBe('pi_pix_1');
-      expect(result.clientSecret).toBe('secret_pix');
+      expect(stripe.stripe.paymentIntents.create).not.toHaveBeenCalled();
+      expect(mercadoPagoPix.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amountCents: 5_000n,
+          payerEmail: 'buyer@example.com',
+          externalReference: expect.stringMatching(/^wallet_topup:ws_1:pwl_1:/),
+        }),
+      );
+      expect(result.paymentIntentId).toBe('mp_pix_wallet_1');
+      expect(result.clientSecret).toBeNull();
       expect(result.pixQrCode).toBe('pix_qr_data');
+      expect(result.pixQrCodeUrl).toBe('data:image/png;base64,base64-qr');
     });
 
     it('creates a card top-up intent', async () => {

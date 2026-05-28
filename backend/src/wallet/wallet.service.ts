@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import type { Prisma, PrepaidWalletTransaction } from '@prisma/client';
@@ -6,6 +8,7 @@ import * as Sentry from '@sentry/node';
 import { StripeService } from '../billing/stripe.service';
 import type { StripePaymentIntent } from '../billing/stripe-types';
 import { FraudEngine } from '../payments/fraud/fraud.engine';
+import { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 import {
@@ -20,13 +23,51 @@ import {
   WalletNotFoundError,
 } from './wallet.types';
 
-interface PixNextAction {
-  type: string;
-  pix_display_qr_code?: {
-    data?: string;
-    image_url_png?: string;
-    hosted_instructions_url?: string;
-  };
+const MP_WEBHOOK_PATH = '/webhooks/mercadopago';
+const PIX_EXPIRATION_MINUTES = 30;
+const WALLET_MERCADOPAGO_REFERENCE_TYPE = 'mercadopago_pix_topup';
+
+function resolveBackendOrigin(): string {
+  return (
+    process.env.PUBLIC_BACKEND_URL ||
+    process.env.BACKEND_URL ||
+    process.env.NEXT_PUBLIC_API_BASE_URL ||
+    'http://localhost:3001'
+  ).replace(/\/$/, '');
+}
+
+function formatMercadoPagoQrImage(qrCodeBase64: string): string | undefined {
+  return qrCodeBase64 ? `data:image/png;base64,${qrCodeBase64}` : undefined;
+}
+
+function parseMercadoPagoWalletReference(
+  raw: unknown,
+): { workspaceId: string; walletId: string; nonce: string } | null {
+  if (!raw || typeof raw !== 'object') {
+    return null;
+  }
+  const externalReference = (raw as { external_reference?: unknown }).external_reference;
+  if (typeof externalReference !== 'string' || !externalReference.startsWith('wallet_topup:')) {
+    return null;
+  }
+  const [, workspaceId, walletId, nonce] = externalReference.split(':');
+  if (!workspaceId || !walletId || !nonce) {
+    throw new BadRequestException('mercadopago_wallet_topup_reference_invalid');
+  }
+  return { workspaceId, walletId, nonce };
+}
+
+function readMercadoPagoTransactionAmountCents(raw: unknown): bigint | null {
+  if (!raw || typeof raw !== 'object') {
+    return null;
+  }
+  const amount = (raw as { transaction_amount?: unknown }).transaction_amount;
+  const numericAmount =
+    typeof amount === 'number' || typeof amount === 'string' ? Number(amount) : NaN;
+  if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+    return null;
+  }
+  return BigInt(Math.round(numericAmount * 100));
 }
 
 /**
@@ -44,12 +85,13 @@ export class WalletService {
     private readonly stripeService: StripeService,
     private readonly prisma: PrismaService,
     private readonly fraudEngine: FraudEngine,
+    private readonly mercadoPagoPixCharge: MercadoPagoPixChargeService,
   ) {}
 
   /**
-   * Create a Stripe PaymentIntent that the frontend confirms. On
-   * `payment_intent.succeeded` the webhook handler calls
-   * `creditFromWebhook` which is idempotent on the PaymentIntent id.
+   * Create a prepaid wallet top-up on the canonical provider for the method:
+   * Mercado Pago for PIX and Stripe for card. Provider webhooks reconcile the
+   * approved payment idempotently against the wallet transaction ledger.
    *
    * Auto-creates the workspace's wallet on first top-up so callers don't
    * need a separate "create wallet" step.
@@ -97,11 +139,43 @@ export class WalletService {
       update: {},
     });
 
+    if (input.method === 'pix') {
+      const payerEmail = input.buyerEmail?.trim();
+      if (!payerEmail) {
+        throw new BadRequestException('E-mail do comprador e obrigatorio para recarga PIX.');
+      }
+
+      const nonce = randomUUID();
+      const payerDocument =
+        (input.buyerCpf ?? input.buyerCnpj ?? '').replace(/\D/g, '') || undefined;
+      const charge = await this.mercadoPagoPixCharge.create({
+        idempotencyKey: `wallet-topup:${input.workspaceId}:${nonce}`,
+        amountCents: input.amountCents,
+        payerEmail,
+        ...(payerDocument ? { payerDocument } : {}),
+        description: `Kloel prepaid wallet top-up - workspace ${input.workspaceId}`,
+        externalReference: `wallet_topup:${input.workspaceId}:${wallet.id}:${nonce}`,
+        expiresAt: new Date(Date.now() + PIX_EXPIRATION_MINUTES * 60_000),
+        notificationUrl: `${resolveBackendOrigin()}${MP_WEBHOOK_PATH}`,
+      });
+
+      return {
+        paymentIntentId: charge.externalId,
+        clientSecret: null,
+        ...(charge.qrCode ? { pixQrCode: charge.qrCode } : {}),
+        ...(formatMercadoPagoQrImage(charge.qrCodeBase64)
+          ? { pixQrCodeUrl: formatMercadoPagoQrImage(charge.qrCodeBase64) }
+          : charge.ticketUrl
+            ? { pixQrCodeUrl: charge.ticketUrl }
+            : {}),
+      };
+    }
+
     const forceThreeDS = input.method === 'card' && fraudDecision.action === 'require_3ds';
     const intent = await this.stripeService.stripe.paymentIntents.create({
       amount: Number(input.amountCents),
       currency: wallet.currency.toLowerCase(),
-      payment_method_types: [input.method === 'pix' ? 'pix' : 'card'],
+      payment_method_types: ['card'],
       ...(forceThreeDS
         ? {
             payment_method_options: {
@@ -115,9 +189,9 @@ export class WalletService {
         type: 'wallet_topup',
         wallet_id: wallet.id,
         workspace_id: input.workspaceId,
-        method: input.method,
+        method: 'card',
       },
-      description: `Kloel prepaid wallet top-up — workspace ${input.workspaceId}`,
+      description: `Kloel prepaid wallet top-up - workspace ${input.workspaceId}`,
     });
 
     return this.shapeIntentResult(intent);
@@ -192,6 +266,90 @@ export class WalletService {
             metadata: {
               method: paymentIntent.metadata?.method ?? null,
             },
+          },
+        });
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
+  }
+
+  async creditMercadoPagoTopup(input: {
+    externalId: string;
+    status: string;
+    raw: unknown;
+  }): Promise<PrepaidWalletTransaction | null> {
+    if (input.status !== 'approved') {
+      return null;
+    }
+
+    const reference = parseMercadoPagoWalletReference(input.raw);
+    if (!reference) {
+      return null;
+    }
+
+    const amountCents = readMercadoPagoTransactionAmountCents(input.raw);
+    if (!amountCents || amountCents <= 0n) {
+      this.logger.error(
+        `creditMercadoPagoTopup: invalid amount for externalId=${input.externalId}`,
+      );
+      return null;
+    }
+
+    return this.prisma.$transaction(
+      async (tx) => {
+        const existing = await tx.prepaidWalletTransaction.findFirst({
+          where: {
+            referenceType: WALLET_MERCADOPAGO_REFERENCE_TYPE,
+            referenceId: input.externalId,
+            type: 'TOPUP',
+          },
+        });
+        if (existing) {
+          this.logger.debug(`creditMercadoPagoTopup idempotent skip: mp=${input.externalId}`);
+          return existing;
+        }
+
+        const wallet = await tx.prepaidWallet.findFirst({
+          where: { id: reference.walletId, workspaceId: reference.workspaceId },
+        });
+        if (!wallet) {
+          this.logger.error(
+            `creditMercadoPagoTopup: wallet ${reference.walletId} workspace=${reference.workspaceId} externalId=${input.externalId} not found`,
+          );
+          Sentry.captureException(
+            new Error(
+              `wallet_not_found_on_mercadopago_webhook: wallet=${reference.walletId} mp=${input.externalId}`,
+            ),
+            {
+              extra: {
+                walletId: reference.walletId,
+                workspaceId: reference.workspaceId,
+                externalId: input.externalId,
+              },
+            },
+          );
+          throw new WalletNotFoundError(reference.workspaceId);
+        }
+
+        const newBalance = wallet.balanceCents + amountCents;
+        await tx.prepaidWallet.updateMany({
+          where: { id: wallet.id, workspaceId: wallet.workspaceId },
+          data: { balanceCents: newBalance },
+        });
+
+        return tx.prepaidWalletTransaction.create({
+          data: {
+            walletId: wallet.id,
+            type: 'TOPUP',
+            amountCents,
+            balanceAfterCents: newBalance,
+            referenceType: WALLET_MERCADOPAGO_REFERENCE_TYPE,
+            referenceId: input.externalId,
+            metadata: {
+              provider: 'mercadopago',
+              method: 'pix',
+              status: input.status,
+            } as Prisma.InputJsonValue,
           },
         });
       },
@@ -487,18 +645,9 @@ export class WalletService {
   }
 
   private shapeIntentResult(intent: StripePaymentIntent): CreateTopupIntentResult {
-    const action = intent.next_action as PixNextAction | null | undefined;
-    const isPix = action?.type === 'pix_display_qr_code';
-    const result: CreateTopupIntentResult = {
+    return {
       paymentIntentId: intent.id,
       clientSecret: intent.client_secret ?? null,
     };
-    if (isPix && action?.pix_display_qr_code?.data) {
-      result.pixQrCode = action.pix_display_qr_code.data;
-    }
-    if (isPix && action?.pix_display_qr_code?.image_url_png) {
-      result.pixQrCodeUrl = action.pix_display_qr_code.image_url_png;
-    }
-    return result;
   }
 }

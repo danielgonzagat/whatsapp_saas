@@ -11,7 +11,7 @@ export function makeMockWalletService(): jest.Mocked<WalletService> {
   const Ctor = WalletService as jest.MockedClass<typeof WalletService>;
   // jest auto-mock fills in all method implementations; the constructor args
   // are erased so we pass `null` casts for the typed constructor positions.
-  const instance = new Ctor(null as never, null as never, null as never);
+  const instance = new Ctor(null as never, null as never, null as never, null as never);
   return instance as jest.Mocked<WalletService>;
 }
 

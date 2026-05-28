@@ -28,13 +28,13 @@ export interface CreateTopupIntentInput {
 
 /** Create topup intent result shape. */
 export interface CreateTopupIntentResult {
-  /** Payment intent id property. */
+  /** Provider payment id (Stripe PaymentIntent or Mercado Pago payment id). */
   paymentIntentId: string;
-  /** Client secret property. */
+  /** Stripe client secret for card top-ups; null for Mercado Pago PIX. */
   clientSecret: string | null;
-  /** Present only for PIX-method intents — base64-encoded QR code from Stripe. */
+  /** Present only for PIX top-ups — Mercado Pago copia-e-cola payload. */
   pixQrCode?: string;
-  /** Pix qr code url property. */
+  /** Present only for PIX top-ups — QR image data URL or provider ticket URL. */
   pixQrCodeUrl?: string;
 }
 

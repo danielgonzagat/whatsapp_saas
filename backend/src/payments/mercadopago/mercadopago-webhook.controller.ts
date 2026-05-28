@@ -11,6 +11,7 @@ import {
 
 import { Public } from '../../auth/public.decorator';
 import { PrismaService } from '../../prisma/prisma.service';
+import { WalletService } from '../../wallet/wallet.service';
 
 import { MercadoPagoConfigService } from './mercadopago.config';
 import { MercadoPagoPixChargeService } from './mercadopago-pix-charge.service';
@@ -43,6 +44,7 @@ export class MercadoPagoWebhookController {
     private readonly verifier: MercadoPagoWebhookSignatureVerifier,
     private readonly pixCharge: MercadoPagoPixChargeService,
     private readonly prisma: PrismaService,
+    private readonly walletService: WalletService,
   ) {}
 
   @Post()
@@ -102,9 +104,11 @@ export class MercadoPagoWebhookController {
 
     // Fetch authoritative status (defense-in-depth).
     let status: string;
+    let rawPayment: unknown;
     try {
       const result = await this.pixCharge.getStatus(externalId);
       status = result.status;
+      rawPayment = result.raw;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       this.logger.error(`mp_webhook_status_fetch_failed externalId=${externalId} err=${msg}`);
@@ -116,6 +120,12 @@ export class MercadoPagoWebhookController {
       });
       return { received: true };
     }
+
+    await this.walletService.creditMercadoPagoTopup({
+      externalId,
+      status,
+      raw: rawPayment,
+    });
 
     // Map MP status to Payment row. Resolve workspaceId first to keep the
     // update workspace-scoped (multi-tenant safety).

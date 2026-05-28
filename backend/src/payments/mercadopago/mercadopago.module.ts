@@ -1,6 +1,7 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 
 import { PrismaModule } from '../../prisma/prisma.module';
+import { WalletModule } from '../../wallet/wallet.module';
 
 import { MercadoPagoConfigService } from './mercadopago.config';
 import { MercadoPagoPixChargeService } from './mercadopago-pix-charge.service';
@@ -24,7 +25,7 @@ import { MercadoPagoBoletoChargeService } from './mercadopago-boleto-charge.serv
  * Exports: PixChargeService + ConfigService for the PaymentProviderRouter.
  */
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, forwardRef(() => WalletModule)],
   controllers: [MercadoPagoWebhookController],
   providers: [
     MercadoPagoConfigService,
