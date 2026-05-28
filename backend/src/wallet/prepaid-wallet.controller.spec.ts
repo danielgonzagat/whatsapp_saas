@@ -15,6 +15,7 @@ import {
   type StripeStub,
   buildModule,
   makeFraudEngineStub,
+  makeMercadoPagoPixDouble,
   makePrismaStub,
   makeStripeStub,
   seedWallet,
@@ -77,25 +78,36 @@ describe('PrepaidWalletController — balance & topup & lifecycle', () => {
   });
 
   describe('createTopup', () => {
-    it('creates a PIX top-up intent and returns client-secret', async () => {
-      stripe.stripe.paymentIntents.create.mockResolvedValue({
-        id: 'pi_pix_1',
-        client_secret: 'secret_pix',
-        amount: 5_000,
-        next_action: {
-          type: 'pix_display_qr_code',
-          pix_display_qr_code: { data: 'pix_qr_data', image_url_png: 'https://img.png' },
-        },
+    it('creates a PIX top-up through Mercado Pago and returns material proof', async () => {
+      const mercadoPagoPix = makeMercadoPagoPixDouble();
+      mercadoPagoPix.create.mockResolvedValue({
+        externalId: 'mp_wallet_pix_controller',
+        status: 'pending',
+        qrCode: 'pix_copy_paste',
+        qrCodeBase64: 'pix_png_base64',
+        ticketUrl: 'https://mercadopago.example/pix/controller',
+        expiresAt: new Date('2026-05-28T12:00:00.000Z'),
+        raw: { id: 'mp_wallet_pix_controller' },
       });
+      const factory = makePrismaStub();
+      deps = await buildModule(stripe, factory, makeFraudEngineStub(), mercadoPagoPix);
 
       const result = await deps.controller.createTopup('ws_1', {
         amountCents: 5_000,
         method: 'pix',
+        buyerEmail: 'buyer@test.com',
+        buyerCpf: '12345678909',
       });
 
-      expect(result.paymentIntentId).toBe('pi_pix_1');
-      expect(result.clientSecret).toBe('secret_pix');
-      expect(result.pixQrCode).toBe('pix_qr_data');
+      expect(stripe.stripe.paymentIntents.create).not.toHaveBeenCalled();
+      expect(mercadoPagoPix.create).toHaveBeenCalled();
+      expect(result.provider).toBe('mercadopago');
+      expect(result.paymentIntentId).toBe('mp_wallet_pix_controller');
+      expect(result.clientSecret).toBeNull();
+      expect(result.pixQrCode).toBe('pix_copy_paste');
+      expect(result.pixQrCodeBase64).toBe('data:image/png;base64,pix_png_base64');
+      expect(result.pixQrCodeUrl).toBe('https://mercadopago.example/pix/controller');
+      expect(result.pixExpiresAt).toBe('2026-05-28T12:00:00.000Z');
     });
 
     it('creates a card top-up intent', async () => {

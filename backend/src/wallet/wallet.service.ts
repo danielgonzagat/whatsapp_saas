@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import type { Prisma, PrepaidWalletTransaction } from '@prisma/client';
@@ -6,6 +7,7 @@ import * as Sentry from '@sentry/node';
 import { StripeService } from '../billing/stripe.service';
 import type { StripePaymentIntent } from '../billing/stripe-types';
 import { FraudEngine } from '../payments/fraud/fraud.engine';
+import { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 import {
@@ -20,13 +22,41 @@ import {
   WalletNotFoundError,
 } from './wallet.types';
 
-interface PixNextAction {
-  type: string;
-  pix_display_qr_code?: {
-    data?: string;
-    image_url_png?: string;
-    hosted_instructions_url?: string;
-  };
+const MP_WEBHOOK_PATH = '/webhooks/mercadopago';
+const PIX_EXPIRATION_MINUTES = 30;
+
+function resolveBackendOrigin(): string {
+  const raw =
+    process.env.PUBLIC_BACKEND_URL ||
+    process.env.BACKEND_URL ||
+    process.env.API_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    'http://localhost:3001';
+  return raw.replace(/\/$/, '');
+}
+
+function onlyDigits(value: string | null | undefined): string | undefined {
+  const digits = typeof value === 'string' ? value.replace(/\D/g, '') : '';
+  return digits || undefined;
+}
+
+function asPixQrImage(qrCodeBase64: string): string | undefined {
+  if (!qrCodeBase64) {
+    return undefined;
+  }
+  return qrCodeBase64.startsWith('data:') ? qrCodeBase64 : `data:image/png;base64,${qrCodeBase64}`;
+}
+
+function buildWalletTopupExternalReference(params: {
+  workspaceId: string;
+  walletId: string;
+}): string {
+  return `wallet_topup:${params.workspaceId}:${params.walletId}`;
+}
+
+function buildWalletTopupIdempotencyKey(input: CreateTopupIntentInput): string {
+  const explicit = input.idempotencyKey?.trim();
+  return explicit ? `wallet-pix-topup:${explicit}` : `wallet-pix-topup:${randomUUID()}`;
 }
 
 /**
@@ -44,6 +74,7 @@ export class WalletService {
     private readonly stripeService: StripeService,
     private readonly prisma: PrismaService,
     private readonly fraudEngine: FraudEngine,
+    private readonly mercadoPagoPixCharge: MercadoPagoPixChargeService,
   ) {}
 
   /**
@@ -97,11 +128,43 @@ export class WalletService {
       update: {},
     });
 
-    const forceThreeDS = input.method === 'card' && fraudDecision.action === 'require_3ds';
+    if (input.method === 'pix') {
+      const payerEmail = input.buyerEmail?.trim();
+      if (!payerEmail) {
+        throw new BadRequestException('wallet_pix_topup_requires_buyer_email');
+      }
+
+      const expiresAt = new Date(Date.now() + PIX_EXPIRATION_MINUTES * 60 * 1000);
+      const pix = await this.mercadoPagoPixCharge.create({
+        idempotencyKey: buildWalletTopupIdempotencyKey(input),
+        amountCents: input.amountCents,
+        payerEmail,
+        payerDocument: onlyDigits(input.buyerCpf ?? input.buyerCnpj),
+        description: `Kloel prepaid wallet top-up — workspace ${input.workspaceId}`,
+        externalReference: buildWalletTopupExternalReference({
+          workspaceId: input.workspaceId,
+          walletId: wallet.id,
+        }),
+        expiresAt,
+        notificationUrl: `${resolveBackendOrigin()}${MP_WEBHOOK_PATH}`,
+      });
+
+      return {
+        provider: 'mercadopago',
+        paymentIntentId: pix.externalId,
+        clientSecret: null,
+        pixQrCode: pix.qrCode,
+        pixQrCodeBase64: asPixQrImage(pix.qrCodeBase64),
+        pixQrCodeUrl: pix.ticketUrl || undefined,
+        pixExpiresAt: pix.expiresAt.toISOString(),
+      };
+    }
+
+    const forceThreeDS = fraudDecision.action === 'require_3ds';
     const intent = await this.stripeService.stripe.paymentIntents.create({
       amount: Number(input.amountCents),
       currency: wallet.currency.toLowerCase(),
-      payment_method_types: [input.method === 'pix' ? 'pix' : 'card'],
+      payment_method_types: ['card'],
       ...(forceThreeDS
         ? {
             payment_method_options: {
@@ -487,18 +550,10 @@ export class WalletService {
   }
 
   private shapeIntentResult(intent: StripePaymentIntent): CreateTopupIntentResult {
-    const action = intent.next_action as PixNextAction | null | undefined;
-    const isPix = action?.type === 'pix_display_qr_code';
-    const result: CreateTopupIntentResult = {
+    return {
+      provider: 'stripe',
       paymentIntentId: intent.id,
       clientSecret: intent.client_secret ?? null,
     };
-    if (isPix && action?.pix_display_qr_code?.data) {
-      result.pixQrCode = action.pix_display_qr_code.data;
-    }
-    if (isPix && action?.pix_display_qr_code?.image_url_png) {
-      result.pixQrCodeUrl = action.pix_display_qr_code.image_url_png;
-    }
-    return result;
   }
 }

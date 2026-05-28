@@ -8,6 +8,11 @@ import type {
 
 import { StripeService } from '../billing/stripe.service';
 import { FraudEngine } from '../payments/fraud/fraud.engine';
+import { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
+import type {
+  CreatePixChargeInput,
+  PixChargeResult,
+} from '../payments/mercadopago/mercadopago.types';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { WalletService } from './wallet.service';
@@ -21,8 +26,16 @@ type FraudEngineStub = {
   evaluate: jest.Mock;
 };
 
+type MercadoPagoPixStub = {
+  create: jest.Mock<Promise<PixChargeResult>, [CreatePixChargeInput]>;
+};
+
 function makeStripeStub(): StripeStub {
   return { stripe: { paymentIntents: { create: jest.fn() } } };
+}
+
+function makeMercadoPagoPixStub(): MercadoPagoPixStub {
+  return { create: jest.fn<Promise<PixChargeResult>, [CreatePixChargeInput]>() };
 }
 
 function makeFraudEngineStub(): FraudEngineStub {
@@ -170,6 +183,7 @@ async function buildService(
   stripe: StripeStub,
   prisma: ReturnType<typeof makePrismaStub>,
   fraudEngine = makeFraudEngineStub(),
+  mercadoPagoPix = makeMercadoPagoPixStub(),
 ) {
   const moduleRef: TestingModule = await Test.createTestingModule({
     providers: [
@@ -177,6 +191,7 @@ async function buildService(
       { provide: StripeService, useValue: stripe },
       { provide: PrismaService, useValue: prisma.prisma },
       { provide: FraudEngine, useValue: fraudEngine },
+      { provide: MercadoPagoPixChargeService, useValue: mercadoPagoPix },
     ],
   }).compile();
   return moduleRef.get(WalletService);
@@ -294,31 +309,45 @@ describe('WalletService.createTopupIntent', () => {
     );
   });
 
-  it('returns PIX QR code data when next_action is pix_display_qr_code', async () => {
+  it('creates PIX wallet top-up through Mercado Pago and never calls Stripe', async () => {
     const stripe = makeStripeStub();
-    stripe.stripe.paymentIntents.create.mockResolvedValue({
-      id: 'pi_pix',
-      client_secret: 'pi_pix_secret',
-      amount: 10000,
-      next_action: {
-        type: 'pix_display_qr_code',
-        pix_display_qr_code: {
-          data: '00020126...',
-          image_url_png: 'https://stripe.com/pix.png',
-        },
-      },
+    const mercadoPagoPix = makeMercadoPagoPixStub();
+    mercadoPagoPix.create.mockResolvedValue({
+      externalId: 'mp_wallet_pix_1',
+      status: 'pending',
+      qrCode: '00020126...',
+      qrCodeBase64: 'base64-png',
+      ticketUrl: 'https://mercadopago.example/pix/mp_wallet_pix_1',
+      expiresAt: new Date('2026-05-28T12:00:00.000Z'),
+      raw: { id: 'mp_wallet_pix_1' },
     });
     const prisma = makePrismaStub();
-    const service = await buildService(stripe, prisma);
+    const service = await buildService(stripe, prisma, makeFraudEngineStub(), mercadoPagoPix);
 
     const result = await service.createTopupIntent({
       workspaceId: 'ws_pix',
       amountCents: 10_000n,
       method: 'pix',
+      buyerEmail: 'buyer@example.com',
+      buyerCpf: '123.456.789-09',
     });
 
+    expect(stripe.stripe.paymentIntents.create).not.toHaveBeenCalled();
+    expect(mercadoPagoPix.create).toHaveBeenCalledTimes(1);
+    const pixCreateInput = mercadoPagoPix.create.mock.calls[0]?.[0];
+    expect(pixCreateInput).toMatchObject({
+      amountCents: 10_000n,
+      payerEmail: 'buyer@example.com',
+      payerDocument: '12345678909',
+      externalReference: 'wallet_topup:ws_pix:pwl_1',
+    });
+    expect(pixCreateInput?.notificationUrl).toContain('/webhooks/mercadopago');
+    expect(result.provider).toBe('mercadopago');
+    expect(result.paymentIntentId).toBe('mp_wallet_pix_1');
+    expect(result.clientSecret).toBeNull();
     expect(result.pixQrCode).toBe('00020126...');
-    expect(result.pixQrCodeUrl).toBe('https://stripe.com/pix.png');
+    expect(result.pixQrCodeBase64).toBe('data:image/png;base64,base64-png');
+    expect(result.pixQrCodeUrl).toBe('https://mercadopago.example/pix/mp_wallet_pix_1');
   });
 
   it('rejects non-positive amount', async () => {

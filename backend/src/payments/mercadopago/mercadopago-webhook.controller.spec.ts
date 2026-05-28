@@ -12,6 +12,8 @@ type UpdateManyArg = {
   data: Record<string, unknown>;
 };
 
+type WalletRow = { id: string; workspaceId: string; balanceCents: bigint };
+
 type PrismaMock = {
   webhookEvent: {
     create: jest.Mock<Promise<Record<string, unknown>>, [Record<string, unknown>]>;
@@ -38,10 +40,19 @@ type PrismaMock = {
     >;
     updateMany: jest.Mock<Promise<{ count: number }>, [UpdateManyArg]>;
   };
+  prepaidWallet: {
+    findFirst: jest.Mock<Promise<WalletRow | null>, [Record<string, unknown>]>;
+    updateMany: jest.Mock<Promise<{ count: number }>, [UpdateManyArg]>;
+  };
+  prepaidWalletTransaction: {
+    findFirst: jest.Mock<Promise<Record<string, unknown> | null>, [Record<string, unknown>]>;
+    create: jest.Mock<Promise<Record<string, unknown>>, [Record<string, unknown>]>;
+  };
+  $transaction: jest.Mock<Promise<unknown>, [(tx: PrismaMock) => Promise<unknown>, unknown?]>;
 };
 
 function createPrismaMock(): PrismaMock {
-  return {
+  const mock: PrismaMock = {
     webhookEvent: {
       create: jest
         .fn<Promise<Record<string, unknown>>, [Record<string, unknown>]>()
@@ -85,7 +96,26 @@ function createPrismaMock(): PrismaMock {
         .fn<Promise<{ count: number }>, [UpdateManyArg]>()
         .mockResolvedValue({ count: 1 }),
     },
+    prepaidWallet: {
+      findFirst: jest
+        .fn<Promise<WalletRow | null>, [Record<string, unknown>]>()
+        .mockResolvedValue(null),
+      updateMany: jest
+        .fn<Promise<{ count: number }>, [UpdateManyArg]>()
+        .mockResolvedValue({ count: 1 }),
+    },
+    prepaidWalletTransaction: {
+      findFirst: jest
+        .fn<Promise<Record<string, unknown> | null>, [Record<string, unknown>]>()
+        .mockResolvedValue(null),
+      create: jest
+        .fn<Promise<Record<string, unknown>>, [Record<string, unknown>]>()
+        .mockResolvedValue({ id: 'wallet-tx-1' }),
+    },
+    $transaction: jest.fn<Promise<unknown>, [(tx: PrismaMock) => Promise<unknown>, unknown?]>(),
   };
+  mock.$transaction.mockImplementation((callback) => callback(mock));
+  return mock;
 }
 
 describe('MercadoPagoWebhookController', () => {
@@ -207,6 +237,53 @@ describe('MercadoPagoWebhookController', () => {
     expect(saleUpdateArg?.where).toEqual({ id: 'sale-boleto-1', workspaceId: 'ws-1' });
     expect(saleUpdateArg?.data.status).toBe('paid');
     expect(saleUpdateArg?.data.paidAt).toBeInstanceOf(Date);
+  });
+
+  it('credits prepaid wallet when Mercado Pago approves a wallet PIX top-up', async () => {
+    prisma.prepaidWallet.findFirst.mockResolvedValueOnce({
+      id: 'pwl-wallet-1',
+      workspaceId: 'ws-wallet-1',
+      balanceCents: 1_000n,
+    });
+    pixCharge.getStatus.mockResolvedValueOnce({
+      status: 'approved',
+      raw: {
+        id: 'mp_wallet_topup_1',
+        status: 'approved',
+        external_reference: 'wallet_topup:ws-wallet-1:pwl-wallet-1',
+        transaction_amount: 50,
+      },
+    });
+
+    await controller.receive('ts=1,v1=ok', 'req-wallet-1', {
+      action: 'payment.updated',
+      data: { id: 'mp_wallet_topup_1' },
+    });
+
+    expect(prisma.prepaidWalletTransaction.findFirst).toHaveBeenCalledWith({
+      where: {
+        referenceType: 'mercadopago_topup',
+        referenceId: 'mp_wallet_topup_1',
+        type: 'TOPUP',
+      },
+    });
+    expect(prisma.prepaidWallet.updateMany).toHaveBeenCalledWith({
+      where: { id: 'pwl-wallet-1', workspaceId: 'ws-wallet-1' },
+      data: { balanceCents: 6_000n },
+    });
+    expect(prisma.prepaidWalletTransaction.create).toHaveBeenCalledTimes(1);
+    const walletTopupCreateArg = prisma.prepaidWalletTransaction.create.mock.calls[0]?.[0] as
+      | { data: Record<string, unknown> }
+      | undefined;
+    expect(walletTopupCreateArg?.data).toMatchObject({
+      walletId: 'pwl-wallet-1',
+      type: 'TOPUP',
+      amountCents: 5_000n,
+      balanceAfterCents: 6_000n,
+      referenceType: 'mercadopago_topup',
+      referenceId: 'mp_wallet_topup_1',
+      metadata: { method: 'pix', provider: 'mercadopago' },
+    });
   });
 
   it('short-circuits duplicate webhook events before fetching provider status', async () => {

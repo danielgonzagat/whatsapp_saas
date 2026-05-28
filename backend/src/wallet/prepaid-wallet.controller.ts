@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import * as Sentry from '@sentry/node';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -67,8 +77,10 @@ export class PrepaidWalletController {
       method?: 'pix' | 'card';
       buyerEmail?: string;
       buyerCpf?: string;
+      buyerCnpj?: string;
       buyerIp?: string;
     },
+    @Headers('x-idempotency-key') idempotencyKey?: string,
   ) {
     const start = Date.now();
     const amountCents = BigInt(body.amountCents ?? 0);
@@ -84,15 +96,20 @@ export class PrepaidWalletController {
         method,
         buyerEmail: body.buyerEmail ?? null,
         buyerCpf: body.buyerCpf ?? null,
+        buyerCnpj: body.buyerCnpj ?? null,
         buyerIp: body.buyerIp ?? null,
+        idempotencyKey: idempotencyKey ?? null,
       });
       Metrics.endpoint.success('wallet.createTopup', { workspaceId });
       Metrics.endpoint.duration('wallet.createTopup', Date.now() - start, { workspaceId });
       return {
+        provider: result.provider,
         paymentIntentId: result.paymentIntentId,
         clientSecret: result.clientSecret,
         pixQrCode: result.pixQrCode ?? null,
         pixQrCodeUrl: result.pixQrCodeUrl ?? null,
+        pixQrCodeBase64: result.pixQrCodeBase64 ?? null,
+        pixExpiresAt: result.pixExpiresAt ?? null,
       };
     } catch (err: unknown) {
       const code = (err as { code?: string })?.code ?? 'unknown';

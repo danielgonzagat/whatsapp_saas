@@ -152,6 +152,12 @@ export class MercadoPagoWebhookController {
       status,
     });
 
+    await this.updateWalletTopupFromProvider({
+      externalId,
+      providerRaw,
+      status,
+    });
+
     await this.prisma.webhookEvent.update({
       where: { provider_externalId: { provider: 'mercadopago', externalId } },
       data: { status: 'processed', processedAt: new Date() },
@@ -236,6 +242,76 @@ export class MercadoPagoWebhookController {
     });
   }
 
+  private async updateWalletTopupFromProvider(params: {
+    externalId: string;
+    providerRaw: unknown;
+    status: string;
+  }): Promise<void> {
+    if (params.status !== 'approved') {
+      return;
+    }
+
+    const raw = readRecord(params.providerRaw);
+    const externalReference = readString(raw?.['external_reference']);
+    const reference = parseWalletTopupExternalReference(externalReference);
+    if (!reference) {
+      return;
+    }
+
+    const amountCents = readMercadoPagoTransactionAmountCents(raw);
+    if (amountCents <= 0n) {
+      return;
+    }
+
+    await this.prisma.$transaction(
+      async (tx) => {
+        const existing = await tx.prepaidWalletTransaction.findFirst({
+          where: {
+            referenceType: 'mercadopago_topup',
+            referenceId: params.externalId,
+            type: 'TOPUP',
+          },
+        });
+        if (existing) {
+          return existing;
+        }
+
+        const wallet = await tx.prepaidWallet.findFirst({
+          where: { id: reference.walletId, workspaceId: reference.workspaceId },
+        });
+        if (!wallet) {
+          this.logger.error(
+            `mp_wallet_topup_wallet_not_found externalId=${params.externalId} walletId=${reference.walletId}`,
+          );
+          throw new BadRequestException('mp_wallet_topup_wallet_not_found');
+        }
+
+        const newBalance = wallet.balanceCents + amountCents;
+        await tx.prepaidWallet.updateMany({
+          where: { id: wallet.id, workspaceId: wallet.workspaceId },
+          data: { balanceCents: newBalance },
+        });
+
+        return tx.prepaidWalletTransaction.create({
+          data: {
+            walletId: wallet.id,
+            type: 'TOPUP',
+            amountCents,
+            balanceAfterCents: newBalance,
+            referenceType: 'mercadopago_topup',
+            referenceId: params.externalId,
+            metadata: {
+              method: 'pix',
+              provider: 'mercadopago',
+              externalReference,
+            },
+          },
+        });
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
+  }
+
   private async syncCheckoutOrderFromPaymentStatus(params: {
     orderId: string;
     workspaceId: string;
@@ -312,6 +388,35 @@ export class MercadoPagoWebhookController {
  *
  * Kept as a free function so it can be unit-tested without DI overhead.
  */
+function readRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function readString(value: unknown): string {
+  return typeof value === 'string' ? value : '';
+}
+
+function parseWalletTopupExternalReference(
+  value: string,
+): { workspaceId: string; walletId: string } | null {
+  const match = /^wallet_topup:([^:]+):([^:]+)$/.exec(value);
+  if (!match) {
+    return null;
+  }
+  return { workspaceId: match[1], walletId: match[2] };
+}
+
+function readMercadoPagoTransactionAmountCents(raw: Record<string, unknown> | null): bigint {
+  const amount = raw?.['transaction_amount'];
+  const numeric = typeof amount === 'number' ? amount : Number.parseFloat(readString(amount));
+  if (!Number.isFinite(numeric) || numeric <= 0) {
+    return 0n;
+  }
+  return BigInt(Math.round(numeric * 100));
+}
+
 function toJsonValue(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 }

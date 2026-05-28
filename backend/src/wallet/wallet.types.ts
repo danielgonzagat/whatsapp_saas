@@ -24,18 +24,26 @@ export interface CreateTopupIntentInput {
   cardCountry?: string | null;
   /** Order country property. */
   orderCountry?: string | null;
+  /** Optional provider idempotency key supplied by the HTTP idempotency layer. */
+  idempotencyKey?: string | null;
 }
 
 /** Create topup intent result shape. */
 export interface CreateTopupIntentResult {
-  /** Payment intent id property. */
+  /** Payment provider that owns the charge. */
+  provider: 'stripe' | 'mercadopago';
+  /** Provider payment id. Legacy name kept for the existing frontend contract. */
   paymentIntentId: string;
-  /** Client secret property. */
+  /** Stripe client secret; null for Mercado Pago PIX. */
   clientSecret: string | null;
-  /** Present only for PIX-method intents — base64-encoded QR code from Stripe. */
+  /** PIX copia-e-cola string for Mercado Pago PIX top-ups. */
   pixQrCode?: string;
-  /** Pix qr code url property. */
+  /** Provider-hosted PIX instruction URL, when available. */
   pixQrCodeUrl?: string;
+  /** Base64 PNG QR image as a data URI, when available. */
+  pixQrCodeBase64?: string;
+  /** PIX expiration timestamp, when available. */
+  pixExpiresAt?: string;
 }
 
 /** Charge usage input shape. */
