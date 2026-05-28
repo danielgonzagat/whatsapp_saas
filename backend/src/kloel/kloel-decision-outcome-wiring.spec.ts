@@ -221,9 +221,9 @@ describe('KloelReplyEngineService decision-outcome wiring (PI-k8)', () => {
   describe('closeOutcome on error', () => {
     it('closes with chat.error and wonVsBaseline=false when buildAssistantReplyImpl throws', async () => {
       const deps = makeBaseDeps();
-      const helpersMock = jest.requireMock<
-        typeof import('./kloel-reply-engine.helpers')
-      >('./kloel-reply-engine.helpers');
+      const helpersMock = jest.requireMock<typeof import('./kloel-reply-engine.helpers')>(
+        './kloel-reply-engine.helpers',
+      );
       (helpersMock.buildAssistantReplyImpl as jest.Mock).mockRejectedValueOnce(
         new Error('LLM timeout'),
       );

@@ -124,27 +124,21 @@ describe('createTextLlmClientPool', () => {
     process.env.DEEPSEEK_API_KEY = 'sk-ds';
     const pool = createTextLlmClientPool();
     expect(pool).toHaveLength(1);
-    expect(OpenAI).toHaveBeenCalledWith(
-      expect.objectContaining({ apiKey: 'sk-ds' }),
-    );
+    expect(OpenAI).toHaveBeenCalledWith(expect.objectContaining({ apiKey: 'sk-ds' }));
   });
 
   it('returns one client when only LLM_API_KEY is set', () => {
     process.env.LLM_API_KEY = 'sk-gen';
     const pool = createTextLlmClientPool();
     expect(pool).toHaveLength(1);
-    expect(OpenAI).toHaveBeenCalledWith(
-      expect.objectContaining({ apiKey: 'sk-gen' }),
-    );
+    expect(OpenAI).toHaveBeenCalledWith(expect.objectContaining({ apiKey: 'sk-gen' }));
   });
 
   it('returns one client when only OPENAI_API_KEY is set', () => {
     process.env.OPENAI_API_KEY = 'sk-oai';
     const pool = createTextLlmClientPool();
     expect(pool).toHaveLength(1);
-    expect(OpenAI).toHaveBeenCalledWith(
-      expect.objectContaining({ apiKey: 'sk-oai' }),
-    );
+    expect(OpenAI).toHaveBeenCalledWith(expect.objectContaining({ apiKey: 'sk-oai' }));
   });
 
   it('returns clients in env precedence order: deepseek > generic > openai', () => {
@@ -174,9 +168,7 @@ describe('createTextLlmClientPool', () => {
     process.env.LLM_API_KEY = 'sk-gen';
     const pool = createTextLlmClientPool(undefined, { timeout: 999, maxRetries: 3 });
     expect(pool).toHaveLength(1);
-    expect(OpenAI).toHaveBeenCalledWith(
-      expect.objectContaining({ timeout: 999, maxRetries: 3 }),
-    );
+    expect(OpenAI).toHaveBeenCalledWith(expect.objectContaining({ timeout: 999, maxRetries: 3 }));
   });
 
   it('includes baseURL for deepseek provider when key is set', () => {
@@ -237,13 +229,13 @@ describe('chatCompletionWithProviderFallback', () => {
   });
 
   it('throws ProviderPoolExhaustedError when pool is empty', async () => {
-    await expect(
-      chatCompletionWithProviderFallback([], params),
-    ).rejects.toThrow(ProviderPoolExhaustedError);
+    await expect(chatCompletionWithProviderFallback([], params)).rejects.toThrow(
+      ProviderPoolExhaustedError,
+    );
 
-    await expect(
-      chatCompletionWithProviderFallback([], params),
-    ).rejects.toThrow('All configured LLM providers exhausted');
+    await expect(chatCompletionWithProviderFallback([], params)).rejects.toThrow(
+      'All configured LLM providers exhausted',
+    );
   });
 
   it('returns immediately when the primary client succeeds', async () => {
@@ -298,10 +290,7 @@ describe('chatCompletionWithProviderFallback', () => {
     mockClients[0].chat.completions.create.mockRejectedValue(rateLimitError);
 
     await expect(
-      chatCompletionWithProviderFallback(
-        mockClients as unknown as OpenAI[],
-        params,
-      ),
+      chatCompletionWithProviderFallback(mockClients as unknown as OpenAI[], params),
     ).rejects.toThrow('429 Too Many Requests');
 
     expect(mockClients[0].chat.completions.create).toHaveBeenCalledTimes(1);

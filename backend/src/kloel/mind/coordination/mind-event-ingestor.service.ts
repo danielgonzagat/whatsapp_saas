@@ -59,9 +59,7 @@ export class MindEventIngestor {
         await this.processDecisions(row.workspaceId);
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : 'unknown';
-        this.logger.error(
-          `processDecisions failed for workspace ${row.workspaceId}: ${message}`,
-        );
+        this.logger.error(`processDecisions failed for workspace ${row.workspaceId}: ${message}`);
       }
     }
   }

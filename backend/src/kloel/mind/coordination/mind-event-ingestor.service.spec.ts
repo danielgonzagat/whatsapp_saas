@@ -82,9 +82,12 @@ describe('MindEventIngestor', () => {
       await ingestor.processDecisions('ws-1');
 
       expect(ingestSpy).toHaveBeenCalledTimes(1);
-      const refs = ingestSpy.mock.calls[0]![0]!;
+      const refs = ingestSpy.mock.calls[0]?.[0] ?? [];
       expect(refs.length).toBe(1);
-      const ref = refs[0]!;
+      const ref = refs[0];
+      if (!ref) {
+        throw new Error('expected ingestSpy call with ref');
+      }
       expect(ref.eventId).toBe('evt-a');
       expect(ref.eventName).toBe('cognition.decision_made');
       expect(ref.workspaceId).toBe('ws-1');
