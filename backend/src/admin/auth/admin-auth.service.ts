@@ -9,15 +9,19 @@ import { sha256Hex } from '../common/admin-crypto';
 import { AdminLoginAttemptsService } from './admin-login-attempts.service';
 import { AdminMfaService } from './admin-mfa.service';
 import {
+  ADMIN_MFA_BYPASS_ENV,
+  BCRYPT_WORK_FACTOR,
+  isAccountLocked,
+  isMfaBypassEnvEnabled,
+  isSessionExpired,
+  normalizeAdminEmail,
+} from './admin-auth.helpers';
+import {
   ADMIN_TOKEN_TTL,
   AdminSessionFactory,
   type AuthenticatedSessionPayload,
 } from './admin-session-factory';
 import type { AuthenticatedAdmin } from './admin-token.types';
-
-const BCRYPT_WORK_FACTOR = 12;
-const ADMIN_MFA_BYPASS_ENV = 'ADMIN_MFA_BYPASS_ENABLED';
-const MFA_BYPASS_ENABLED_VALUES = new Set(['1', 'true', 'yes', 'on']);
 
 /** Login state response shape. */
 export interface LoginStateResponse {
@@ -61,7 +65,7 @@ export class AdminAuthService {
     ip: string,
     userAgent: string,
   ): Promise<LoginStateResponse | AuthenticatedSession> {
-    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedEmail = normalizeAdminEmail(email);
 
     if (await this.attempts.isLocked(normalizedEmail, ip)) {
       this.logger.warn('Login rate limited', {
@@ -102,8 +106,8 @@ export class AdminAuthService {
       throw adminErrors.invalidCredentials();
     }
 
-    if (user.lockedUntil && user.lockedUntil.getTime() > Date.now()) {
-      throw adminErrors.accountLocked(user.lockedUntil);
+    if (isAccountLocked(user.lockedUntil)) {
+      throw adminErrors.accountLocked(user.lockedUntil as Date);
     }
 
     const ok = await bcryptCompare(password, user.passwordHash);
@@ -232,11 +236,7 @@ export class AdminAuthService {
   }
 
   private isMfaBypassEnabled(): boolean {
-    return MFA_BYPASS_ENABLED_VALUES.has(
-      String(process.env[ADMIN_MFA_BYPASS_ENV] || '')
-        .trim()
-        .toLowerCase(),
-    );
+    return isMfaBypassEnvEnabled(process.env[ADMIN_MFA_BYPASS_ENV]);
   }
 
   // ──────────────────────────────────────────────────────────
@@ -423,7 +423,7 @@ export class AdminAuthService {
     if (!session || session.revokedAt) {
       throw adminErrors.invalidToken();
     }
-    if (session.expiresAt.getTime() < Date.now()) {
+    if (isSessionExpired(session.expiresAt)) {
       throw adminErrors.tokenExpired();
     }
     if (session.adminUser.status !== AdminUserStatus.ACTIVE) {
