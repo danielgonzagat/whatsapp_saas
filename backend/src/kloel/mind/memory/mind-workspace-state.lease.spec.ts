@@ -22,8 +22,9 @@ jest.mock('../../openai-wrapper', () => ({
 }));
 
 jest.mock('../../../lib/openai-models', () => {
-  const actual =
-    jest.requireActual<typeof import('../../../lib/openai-models')>('../../../lib/openai-models');
+  const actual = jest.requireActual<typeof import('../../../lib/openai-models')>(
+    '../../../lib/openai-models',
+  );
   return {
     ...actual,
     resolveBackendOpenAIModel: jest.fn().mockReturnValue(actual.CANONICAL_MODEL_IDS.openAiTextOmni),
@@ -179,8 +180,11 @@ describe('MindWorkspaceState tick lease in chat reply (PI-K16-B)', () => {
         userName: 'User',
       });
 
-      const [[wsA, ownerA], [wsB, ownerB]] =
-        leaseService.tryAcquireTickLease.mock.calls as [string, string, number][];
+      const [[wsA, ownerA], [wsB, ownerB]] = leaseService.tryAcquireTickLease.mock.calls as [
+        string,
+        string,
+        number,
+      ][];
 
       expect(wsA).toBe('ws-A');
       expect(wsB).toBe('ws-B');

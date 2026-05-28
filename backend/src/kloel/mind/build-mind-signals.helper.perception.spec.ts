@@ -75,14 +75,12 @@ describe('buildMindSignals — perception (PI-K16-C)', () => {
     const selectArm = jest
       .fn()
       .mockResolvedValue({ arm: 'social_proof', confidence: 0.72, rationale: 'Exploiting' });
-    const classify = jest
-      .fn()
-      .mockReturnValue({
-        class: 'R1',
-        autonomyMode: 'allowed_alone',
-        requiredEvidenceLevel: 'N1',
-        rollback: ['revert_locally'],
-      });
+    const classify = jest.fn().mockReturnValue({
+      class: 'R1',
+      autonomyMode: 'allowed_alone',
+      requiredEvidenceLevel: 'N1',
+      rollback: ['revert_locally'],
+    });
     const result = await buildMindSignals(
       {
         prisma: mockPrisma(),

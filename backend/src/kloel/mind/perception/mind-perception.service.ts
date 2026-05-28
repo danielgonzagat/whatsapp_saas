@@ -258,16 +258,32 @@ export class MindPerceptionService {
     if (/\b(oi|olá|ola|hey|bom dia|boa tarde|boa noite|hi|hello)\b/i.test(normalized)) {
       return 'greeting';
     }
-    if (/\b(comprar|quero|comprar|preço|valor|custa|quanto|pagamento|pagar|carrinho|checkout)\b/i.test(normalized)) {
+    if (
+      /\b(comprar|quero|comprar|preço|valor|custa|quanto|pagamento|pagar|carrinho|checkout)\b/i.test(
+        normalized,
+      )
+    ) {
       return 'purchase_intent';
     }
-    if (/\b(reclamação|reclamar|problema|não funciona|erro|bug|quebrado|defeito|ruim|péssimo|horrível)\b/i.test(normalized)) {
+    if (
+      /\b(reclamação|reclamar|problema|não funciona|erro|bug|quebrado|defeito|ruim|péssimo|horrível)\b/i.test(
+        normalized,
+      )
+    ) {
       return 'complaint';
     }
-    if (/\b(ajuda|help|socorro|como|duvida|dúvida|não sei|não consigo|como faço|explica|tutorial)\b/i.test(normalized)) {
+    if (
+      /\b(ajuda|help|socorro|como|duvida|dúvida|não sei|não consigo|como faço|explica|tutorial)\b/i.test(
+        normalized,
+      )
+    ) {
       return 'support_request';
     }
-    if (/\b(obrigad[oa]|valeu|brigad[oa]|thanks|thank|show|legal|top|ótimo|excelente|perfeito|incrível)\b/i.test(normalized)) {
+    if (
+      /\b(obrigad[oa]|valeu|brigad[oa]|thanks|thank|show|legal|top|ótimo|excelente|perfeito|incrível)\b/i.test(
+        normalized,
+      )
+    ) {
       return 'gratitude';
     }
     if (/\b(cancelar|cancelamento|reembolso|devolver|estorno|desistência)\b/i.test(normalized)) {
@@ -284,7 +300,12 @@ export class MindPerceptionService {
     if (/\b(urgente|rápido|agora|imediato|já|emergência)\b/i.test(normalized)) score += 0.3;
     if (/!{2,}/.test(normalized) || /[A-ZÀ-Ú]{4,}/.test(normalized)) score += 0.15;
     if (/[?¿]/.test(normalized)) score += 0.1;
-    if (/\b(reclamação|problema|erro|ódio|raiva|péssimo|horrível|processo|procon|reclame aqui)\b/i.test(normalized)) score += 0.15;
+    if (
+      /\b(reclamação|problema|erro|ódio|raiva|péssimo|horrível|processo|procon|reclame aqui)\b/i.test(
+        normalized,
+      )
+    )
+      score += 0.15;
     if (/\b(comprar|quero|pagamento|pagar|carrinho)\b/i.test(normalized)) score += 0.1;
     if (normalized.length > 200) score += 0.05;
     return Math.min(score, 1.0);
@@ -296,14 +317,38 @@ export class MindPerceptionService {
     if (intent === 'fragment') return 'unclear';
 
     const topicPatterns: Array<{ re: RegExp; label: string }> = [
-      { re: /\b(preço|valor|custa|quanto|precinho|barato|caro|desconto|cupom)\b/i, label: 'pricing' },
-      { re: /\b(pagamento|pagar|pix|boleto|cartão|cartao|crédito|débito|transferência|picpay)\b/i, label: 'payment' },
-      { re: /\b(entrega|envio|frete|prazo|rastreio|recebi|chegou|chegar|código de rastreio)\b/i, label: 'shipping' },
-      { re: /\b(produto|item|mercadoria|pedido|compra|order|encomenda|cesta)\b/i, label: 'product' },
-      { re: /\b(conta|cadastro|login|senha|acesso|entrar|registrar|email|autenticação)\b/i, label: 'account' },
-      { re: /\b(cancelar|cancelamento|reembolso|devolver|estorno|arrependimento|devolução)\b/i, label: 'cancellation_refund' },
-      { re: /\b(reclamação|problema|defeito|quebrado|erro|bug|não funciona|suporte)\b/i, label: 'complaint' },
-      { re: /\b(horário|funcionamento|atendimento|demora|hora|aberto|fechado|disponível)\b/i, label: 'availability' },
+      {
+        re: /\b(preço|valor|custa|quanto|precinho|barato|caro|desconto|cupom)\b/i,
+        label: 'pricing',
+      },
+      {
+        re: /\b(pagamento|pagar|pix|boleto|cartão|cartao|crédito|débito|transferência|picpay)\b/i,
+        label: 'payment',
+      },
+      {
+        re: /\b(entrega|envio|frete|prazo|rastreio|recebi|chegou|chegar|código de rastreio)\b/i,
+        label: 'shipping',
+      },
+      {
+        re: /\b(produto|item|mercadoria|pedido|compra|order|encomenda|cesta)\b/i,
+        label: 'product',
+      },
+      {
+        re: /\b(conta|cadastro|login|senha|acesso|entrar|registrar|email|autenticação)\b/i,
+        label: 'account',
+      },
+      {
+        re: /\b(cancelar|cancelamento|reembolso|devolver|estorno|arrependimento|devolução)\b/i,
+        label: 'cancellation_refund',
+      },
+      {
+        re: /\b(reclamação|problema|defeito|quebrado|erro|bug|não funciona|suporte)\b/i,
+        label: 'complaint',
+      },
+      {
+        re: /\b(horário|funcionamento|atendimento|demora|hora|aberto|fechado|disponível)\b/i,
+        label: 'availability',
+      },
     ];
 
     for (const { re, label } of topicPatterns) {
