@@ -5,7 +5,6 @@ function str(value: unknown, fallback = ''): string {
   return typeof value === 'string' && value.trim() ? value.trim() : fallback;
 }
 
-
 export async function deleteProductUrlTool(
   prisma: PrismaService,
   workspaceId: string,
@@ -45,20 +44,4 @@ export async function deleteProductUrlTool(
       error: error instanceof Error ? error.message : 'Erro ao deletar URL.',
     };
   }
-}
-
-export async function generateBoletoTool(
-  _prisma: PrismaService,
-  _workspaceId: string,
-  _args: UnknownRecord,
-) {
-  return {
-    success: false,
-    error: 'boleto_provider_unavailable',
-    message:
-      'Boleto ainda nao esta conectado ao servico de dominio real. Use sales.create_boleto quando houver provedor real com recibo e auditoria.',
-    capabilityId: 'sales.create_boleto',
-    outputs: {},
-    domainEvents: [],
-  };
 }

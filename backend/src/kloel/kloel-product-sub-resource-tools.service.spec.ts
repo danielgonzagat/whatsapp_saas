@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
 import { SalesService } from '../sales/sales.service';
 import { ProductCouponDomainService } from './product-coupon-domain.service';
-import { generateBoletoTool } from './kloel-product-sub-resource-tools.url-payment.helpers';
+import * as urlPaymentHelpers from './kloel-product-sub-resource-tools.url-payment.helpers';
 
 describe('KloelProductSubResourceToolsService', () => {
   let service: KloelProductSubResourceToolsService;
@@ -405,25 +405,9 @@ describe('KloelProductSubResourceToolsService', () => {
     });
   });
 
-  describe('legacy generateBoletoTool helper', () => {
-    it('does not fabricate boleto proof or write a sale directly', async () => {
-      const result = await generateBoletoTool(prisma as unknown as PrismaService, ws, {
-        amount: 150,
-        customerPhone: '5511999999999',
-        productName: 'Widget',
-      });
-
-      expect(result).toMatchObject({
-        success: false,
-        error: 'boleto_provider_unavailable',
-        capabilityId: 'sales.create_boleto',
-        outputs: {},
-        domainEvents: [],
-      });
-      expect(result.saleId).toBeUndefined();
-      expect(result.boletoCode).toBeUndefined();
-      expect(result.boletoHtml).toBeUndefined();
-      expect(prisma.kloelSale.create).not.toHaveBeenCalled();
+  describe('legacy boleto helper exports', () => {
+    it('does not expose a standalone boleto stub outside SalesService', () => {
+      expect('generateBoletoTool' in urlPaymentHelpers).toBe(false);
     });
   });
 });
