@@ -129,7 +129,12 @@ describe('cognition.decision_made emission', () => {
       await new Promise((r) => setTimeout(r, 10));
 
       expect(spine.emit).toHaveBeenCalledTimes(1);
-      const payload = (spine.emit as jest.Mock).mock.calls[0][0].payload;
+      type EmittedEvent = {
+        payload: { fallbackReason: unknown; modelUsed: string; toolCallsCount: number };
+      };
+      const calls = spine.emit.mock.calls as Array<[EmittedEvent]>;
+      const payload = calls[0]?.[0].payload;
+      if (!payload) throw new Error('expected spine.emit call');
       // fallbackReason is null on the happy path (primary model succeeded)
       expect(payload.fallbackReason).toBeNull();
       expect(payload.modelUsed).toBe('deepseek-chat');
@@ -161,7 +166,12 @@ describe('cognition.decision_made emission', () => {
       await new Promise((r) => setTimeout(r, 10));
 
       expect(spine.emit).toHaveBeenCalledTimes(1);
-      const payload = (spine.emit as jest.Mock).mock.calls[0][0].payload;
+      type EmittedEvent = {
+        payload: { fallbackReason: unknown; modelUsed: string; toolCallsCount: number };
+      };
+      const calls = spine.emit.mock.calls as Array<[EmittedEvent]>;
+      const payload = calls[0]?.[0].payload;
+      if (!payload) throw new Error('expected spine.emit call');
       expect(payload.toolCallsCount).toBe(2);
     });
     it('tolerates absent spine — does not crash', async () => {
