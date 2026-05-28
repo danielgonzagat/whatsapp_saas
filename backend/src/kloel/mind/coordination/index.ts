@@ -17,6 +17,7 @@
 export {
   MindAutonomyCoordinator,
   type BrainAutonomyProposal,
+  type Proposal,
 } from './mind-autonomy-coordinator.service';
 export { MindCapabilityExecutor, type CapabilityResult } from './mind-capability-executor.service';
 export { MindCapabilityRegistry } from './mind-capability-registry.service';

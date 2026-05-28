@@ -27,6 +27,15 @@ export interface BrainAutonomyProposal {
   requiresHumanApproval: boolean;
 }
 
+/** Lightweight proposal surface for chat cognitive state exposure. */
+export interface Proposal {
+  id: string;
+  title: string;
+  rationale: string;
+  confidence: number;
+  suggestedCapabilityId: string;
+}
+
 @Injectable()
 export class MindAutonomyCoordinator {
   private readonly logger = StructuredLogger.from(MindAutonomyCoordinator.name);
@@ -71,6 +80,24 @@ export class MindAutonomyCoordinator {
       proposals,
       window: recommendationState.window,
     };
+  }
+
+  /** Return up to `limit` pending proposals in a shape suitable for chat cognitive state. */
+  async listPendingProposals(workspaceId: string, limit: number): Promise<Proposal[]> {
+    const result = await this.propose(workspaceId);
+    const proposals = result.proposals.slice(0, limit).map((proposal, index) => {
+      const title = proposal.mode === 'fix'
+        ? `Corrigir: ${proposal.action}`
+        : `Escalar: ${proposal.action}`;
+      return {
+        id: `proposal-${workspaceId}-${index}`,
+        title,
+        rationale: proposal.reason,
+        confidence: proposal.confidence,
+        suggestedCapabilityId: proposal.action,
+      } satisfies Proposal;
+    });
+    return proposals;
   }
 }
 

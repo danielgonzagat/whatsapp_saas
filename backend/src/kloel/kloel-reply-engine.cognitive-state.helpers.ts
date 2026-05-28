@@ -24,6 +24,7 @@ import type { MindPredictionService } from './mind/mind-prediction.service';
 import type { SelfHealthService } from './self-awareness/self-health.service';
 import type { SelfGapsService } from './self-awareness/self-gaps.service';
 import type { RiskClassService } from './risk-class/risk-class.service';
+import type { MindAutonomyCoordinator } from './mind/coordination/mind-autonomy-coordinator.service';
 
 interface CognitiveStateLogger {
   warn: (event: string, ctx?: Record<string, unknown>) => void;
@@ -39,6 +40,7 @@ interface KloelMindServices {
   selfGapsService?: SelfGapsService;
   riskClassService?: RiskClassService;
   mindVerbalizerService?: { narrate?: (workspaceId: string) => Promise<string> };
+  mindAutonomyCoordinator?: MindAutonomyCoordinator;
 }
 
 export const ABI_SNAPSHOT_KEY = 'abi_snapshot_cache';
@@ -196,6 +198,22 @@ export async function buildKloelAbiCognitiveState(
     params.workspaceId ?? '',
     params.userMessage,
   );
+
+  // Autonomy proposals — fire-and-forget; never block reply (PI-K13-D).
+  if (deps.services.mindAutonomyCoordinator && params.workspaceId) {
+    try {
+      const proposals = await deps.services.mindAutonomyCoordinator.listPendingProposals(
+        params.workspaceId,
+        3,
+      );
+      cognitiveState.autonomyProposals = proposals;
+    } catch (error: unknown) {
+      deps.logger.warn('kloel_autonomy_proposals_skipped', {
+        reason: error instanceof Error ? error.message : 'unknown error',
+        workspaceId: params.workspaceId,
+      });
+    }
+  }
 
   if (deps.abiBuilder) {
     if (params.prebuiltCognitiveState) {
