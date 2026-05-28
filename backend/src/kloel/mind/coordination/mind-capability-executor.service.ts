@@ -31,6 +31,11 @@ import { OPERATOR_CAPABILITIES } from './mind-capabilities.const';
 import { MemoryProjector } from '../../commem/memory.projector';
 
 import { buildCognitiveSubstrate as buildCognitiveSubstrateImpl } from './mind-capability-executor.substrate';
+import {
+  computeCognitiveGaps,
+  readOptionalNum,
+  readOptionalStr,
+} from './mind-capability-executor.helpers';
 
 import { CapabilityRegistryV2Service } from '../../capability-registry-v2/capability-registry-v2.service';
 import { CodeAccessService } from '../../self-awareness/code-access.service';
@@ -41,65 +46,6 @@ export interface CapabilityResult {
   ok: boolean;
   data?: UnknownRecord | UnknownRecord[];
   error?: string;
-}
-
-function readOptionalNum(value: unknown, fb: number): number {
-  const n = Number(value);
-  return Number.isFinite(n) && n > 0 ? Math.floor(n) : fb;
-}
-
-function readOptionalStr(value: unknown, fb = ''): string {
-  return typeof value === 'string' && value.trim() ? value.trim() : fb;
-}
-
-/**
- * Derive an HONEST gap list from the REAL cognitive-state ABI object.
- * Nothing here is hardcoded: it walks the actual returned structure and
- * reports which cognitive loops are still empty/unclosed. Missing paths
- * are simply skipped (no invented field names). This is the data the
- * self-introspection organ surfaces so Kloel can tell, through the chat,
- * what is genuinely not working in itself.
- */
-
-function computeCognitiveGaps(abi: unknown): string[] {
-  const gaps: string[] = [];
-  if (!abi || typeof abi !== 'object') {
-    return ['cognitive_state_unavailable'];
-  }
-  const root = abi as Record<string, unknown>;
-  const at = (path: readonly string[]): unknown =>
-    path.reduce<unknown>(
-      (acc, key) =>
-        acc && typeof acc === 'object' ? (acc as Record<string, unknown>)[key] : undefined,
-      root,
-    );
-  const isEmptyArray = (v: unknown): boolean => Array.isArray(v) && v.length === 0;
-
-  const arrayChecks: ReadonlyArray<readonly [readonly string[], string]> = [
-    [['capabilities'], 'no_capabilities_declared'],
-    [['capabilities', 'available'], 'no_capabilities_available'],
-    [['beliefs'], 'no_beliefs_formed'],
-    [['memory', 'workingMemory'], 'working_memory_empty'],
-    [['memory', 'episodicRefs'], 'no_episodic_memory'],
-    [['memory', 'consolidatedRefs'], 'no_consolidated_memory'],
-    [['predictions', 'active'], 'no_active_predictions'],
-    [['perception', 'recentSalientEvents'], 'perception_loop_silent'],
-  ];
-  for (const [path, label] of arrayChecks) {
-    if (isEmptyArray(at(path))) {
-      gaps.push(label);
-    }
-  }
-
-  const lineageStatus = at(['lineage', 'status']);
-  if (typeof lineageStatus === 'string' && lineageStatus !== 'intact') {
-    gaps.push(`lineage_${lineageStatus}`);
-  }
-  const pulseVerdict = at(['pulseTruth', 'certificationVerdict']);
-  if (typeof pulseVerdict === 'string' && pulseVerdict !== 'PASS') {
-    gaps.push(`pulse_${pulseVerdict.toLowerCase()}`);
-  }
-  return gaps;
 }
 
 @Injectable()
