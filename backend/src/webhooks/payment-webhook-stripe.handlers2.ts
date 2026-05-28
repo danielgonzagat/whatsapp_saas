@@ -68,7 +68,11 @@ export async function handlePaymentIntentEvent(
           if (saleWhere) {
             await tx.kloelSale.updateMany({
               where: saleWhere,
-              data: { status: 'paid', paidAt: new Date(), externalPaymentId: intent.id },
+              data: {
+                status: 'paid',
+                paidAt: new Date(),
+                ...(intent.id ? { externalPaymentId: intent.id } : {}),
+              },
             });
           }
         }, FINANCIAL_TRANSACTION_OPTIONS)
@@ -101,7 +105,11 @@ export async function handlePaymentIntentEvent(
               if (saleWhere) {
                 await tx.kloelSale.updateMany({
                   where: saleWhere,
-                  data: { status: 'paid', paidAt: new Date(), externalPaymentId: intent.id },
+                  data: {
+                    status: 'paid',
+                    paidAt: new Date(),
+                    ...(intent.id ? { externalPaymentId: intent.id } : {}),
+                  },
                 });
               }
             }

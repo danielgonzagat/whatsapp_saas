@@ -59,7 +59,7 @@ export class MetaWhatsAppService implements OnModuleInit {
       env: process.env,
       workspaceId,
       redirectUri: this.getOAuthRedirectUri(),
-      options,
+      ...(options !== undefined ? { options } : {}),
     });
   }
   safeBuildEmbeddedSignupUrl(

@@ -40,8 +40,12 @@ export function buildKloelSaleStripeWhere(
   if (matchers.length === 0) {
     return null;
   }
-  if (matchers.length === 1) {
-    return { workspaceId, ...matchers[0] };
+  const first = matchers[0];
+  if (matchers.length === 1 && first) {
+    if ('externalPaymentId' in first) {
+      return { workspaceId, externalPaymentId: first.externalPaymentId };
+    }
+    return { workspaceId, id: first.id };
   }
   return { workspaceId, OR: matchers };
 }
