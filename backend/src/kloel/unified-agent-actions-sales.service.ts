@@ -1,12 +1,19 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
-import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { formatBrlAmount } from './money-format.util';
 import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-messaging.service';
 import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
-import { actionHandleObjection as actionHandleObjectionFn } from './unified-agent-actions-sales.helpers';
+import {
+  actionHandleObjection as actionHandleObjectionFn,
+  describeUnknownError,
+  discountPercentFromMind,
+  isDeterministicPipeline,
+  isRecord,
+  priceBandFor,
+  toJsonValue,
+} from './unified-agent-actions-sales.helpers';
 import { MindGuardContextBuilderService } from './mind/policy/mind-guard-context-builder.service';
 import { MindGuardsService } from './mind/policy/mind-guards.service';
 import type { MindActionContext } from './mind/policy/mind-code-native.types';
@@ -15,79 +22,6 @@ import { MindService } from './mind.service';
 import type { UnknownRecord } from '../common/types';
 
 import { readStringOr as readString } from '../common/parse';
-function describeUnknownError(error: unknown): string {
-  if (error instanceof Error && error.message.trim()) {
-    return error.message.trim();
-  }
-  if (typeof error === 'string' && error.trim()) {
-    return error.trim();
-  }
-  return 'Unknown error';
-}
-
-function isRecord(value: unknown): value is UnknownRecord {
-  return typeof value === 'object' && value !== null;
-}
-
-function isDeterministicPipeline(context?: UnknownRecord): boolean {
-  return context?.deterministicPipeline === true;
-}
-
-function toJsonValue(value: unknown): Prisma.InputJsonValue | null {
-  if (value === null) {
-    return null;
-  }
-  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-    return value;
-  }
-  if (Array.isArray(value)) {
-    const output: Array<Prisma.InputJsonValue | null> = [];
-    for (const item of value) {
-      output.push(toJsonValue(item));
-    }
-    return output;
-  }
-  if (isRecord(value)) {
-    const output: { [key: string]: Prisma.InputJsonValue | null } = {};
-    for (const [key, item] of Object.entries(value)) {
-      output[key] = toJsonValue(item);
-    }
-    return output;
-  }
-  return null;
-}
-
-function priceBandFor(price: number): string {
-  if (price >= 1000) {
-    return 'over_1000';
-  }
-  if (price >= 500) {
-    return 'over_500';
-  }
-  if (price >= 300) {
-    return 'over_300';
-  }
-  if (price >= 100) {
-    return 'over_100';
-  }
-  return 'under_100';
-}
-
-function discountPercentFromMind(action: string | undefined, requestedPercent: number): number {
-  if (action === 'coupon_5') {
-    return 5;
-  }
-  if (action === 'coupon_10') {
-    return 10;
-  }
-  if (action === 'coupon_15') {
-    return 15;
-  }
-  if (action === 'coupon_20') {
-    return 20;
-  }
-  return requestedPercent;
-}
 
 /**
  * Handles sales/negotiation tool actions: discount, objection handling,

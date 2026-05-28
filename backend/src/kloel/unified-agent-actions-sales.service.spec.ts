@@ -1,8 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
-jest.mock('./unified-agent-actions-sales.helpers', () => ({
-  actionHandleObjection: jest.fn(),
-}));
+jest.mock('./unified-agent-actions-sales.helpers', () => {
+  const actual = jest.requireActual('./unified-agent-actions-sales.helpers');
+  return {
+    ...actual,
+    actionHandleObjection: jest.fn(),
+  };
+});
 
 jest.mock('./unified-agent-actions-messaging.service', () => ({
   UnifiedAgentActionsMessagingService: jest.fn().mockImplementation(() => ({

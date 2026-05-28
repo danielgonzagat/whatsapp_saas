@@ -1,6 +1,92 @@
-import type { PrismaClient } from '@prisma/client';
+import type { Prisma, PrismaClient } from '@prisma/client';
 
 import type { UnknownRecord } from '../common/types';
+
+/**
+ * Describe an unknown thrown value as a human-readable string.
+ * Pure helper safe to call from any context.
+ */
+export function describeUnknownError(error: unknown): string {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message.trim();
+  }
+  if (typeof error === 'string' && error.trim()) {
+    return error.trim();
+  }
+  return 'Unknown error';
+}
+
+/** Type guard for plain object records. */
+export function isRecord(value: unknown): value is UnknownRecord {
+  return typeof value === 'object' && value !== null;
+}
+
+/** True when the surrounding pipeline context is deterministic (skip Mind). */
+export function isDeterministicPipeline(context?: UnknownRecord): boolean {
+  return context?.deterministicPipeline === true;
+}
+
+/** Convert an unknown value into a Prisma-compatible JSON value tree. */
+export function toJsonValue(value: unknown): Prisma.InputJsonValue | null {
+  if (value === null) {
+    return null;
+  }
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    const output: Array<Prisma.InputJsonValue | null> = [];
+    for (const item of value) {
+      output.push(toJsonValue(item));
+    }
+    return output;
+  }
+  if (isRecord(value)) {
+    const output: { [key: string]: Prisma.InputJsonValue | null } = {};
+    for (const [key, item] of Object.entries(value)) {
+      output[key] = toJsonValue(item);
+    }
+    return output;
+  }
+  return null;
+}
+
+/** Bucket a numeric price into a labelled band for analytics/policy. */
+export function priceBandFor(price: number): string {
+  if (price >= 1000) {
+    return 'over_1000';
+  }
+  if (price >= 500) {
+    return 'over_500';
+  }
+  if (price >= 300) {
+    return 'over_300';
+  }
+  if (price >= 100) {
+    return 'over_100';
+  }
+  return 'under_100';
+}
+
+/** Map a Mind coupon action label to a numeric discount percent. */
+export function discountPercentFromMind(
+  action: string | undefined,
+  requestedPercent: number,
+): number {
+  if (action === 'coupon_5') {
+    return 5;
+  }
+  if (action === 'coupon_10') {
+    return 10;
+  }
+  if (action === 'coupon_15') {
+    return 15;
+  }
+  if (action === 'coupon_20') {
+    return 20;
+  }
+  return requestedPercent;
+}
 
 interface SalesActionArgs {
   objectionType?: string;
