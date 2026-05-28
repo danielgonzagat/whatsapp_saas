@@ -23,6 +23,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 
 import { NAME_RE } from '../common/regex';
+import {
+  buildCampaignDeliveryGap,
+  buildVariantFallbackCopy,
+  computeCampaignDeliveryReadiness,
+  computeSmartTimeDelayMs,
+  scoreCampaignStats,
+  validateVariantCopy,
+} from './campaigns.helpers';
 
 /** Campaigns service. */
 @Injectable()
@@ -109,17 +117,7 @@ export class CampaignsService {
     let delay = 0;
     if (useSmartTime) {
       const bestTime = await this.smartTime.getBestTime(workspaceId);
-      // Calculate ms until next best hour
-      const now = new Date();
-      const currentHour = now.getHours();
-      const targetHour = bestTime.peakHour;
-
-      let hoursToAdd = targetHour - currentHour;
-      if (hoursToAdd <= 0) {
-        hoursToAdd += 24;
-      }
-
-      delay = hoursToAdd * 60 * 60 * 1000;
+      delay = computeSmartTimeDelayMs(new Date(), bestTime.peakHour);
     }
 
     await this.prisma.campaign.updateMany({
@@ -280,21 +278,9 @@ export class CampaignsService {
 
   private async ensureCampaignDeliveryReady(workspaceId: string): Promise<void> {
     const delivery = await this.resolveCampaignDelivery(workspaceId);
-    const missing: string[] = [];
-
-    if (!delivery.emailReady && !delivery.whatsappReady) {
-      if (!delivery.emailReady) {
-        missing.push('email.enabled=true com provider configurado');
-      }
-      if (!delivery.whatsappReady) {
-        missing.push('Meta Cloud WhatsApp conectado');
-      }
-    }
-
-    if (missing.length) {
-      throw new BadRequestException(
-        `Conecte um canal de entrega antes de lançar campanha. Faltando: ${missing.join(', ')}`,
-      );
+    const gap = buildCampaignDeliveryGap(delivery);
+    if (gap) {
+      throw new BadRequestException(gap.message);
     }
   }
 
@@ -316,30 +302,17 @@ export class CampaignsService {
       }),
     ]);
 
-    const settings =
-      (ws?.providerSettings as {
-        email?: { enabled?: boolean };
-        whatsappApiSession?: { status?: string };
-      } | null) || {};
-
-    const emailProviderReady = Boolean(
-      process.env.RESEND_API_KEY || process.env.SENDGRID_API_KEY || process.env.SMTP_HOST,
-    );
-    const emailReady = Boolean(settings.email?.enabled && emailProviderReady);
-    const tokenExpiresAt = metaConnection?.tokenExpiresAt;
-    const tokenExpired = Boolean(tokenExpiresAt && new Date(tokenExpiresAt).getTime() < Date.now());
-    const legacyWhatsAppReady = Boolean(
-      this.metaWhatsApp && settings?.whatsappApiSession?.status === 'connected',
-    );
-    const officialMetaWhatsAppReady = Boolean(
-      this.metaWhatsApp &&
-      metaConnection?.whatsappPhoneNumberId &&
-      String(metaConnection.status || '').toLowerCase() === 'connected' &&
-      !tokenExpired,
-    );
-    const whatsappReady = legacyWhatsAppReady || officialMetaWhatsAppReady;
-
-    return { emailReady, whatsappReady };
+    return computeCampaignDeliveryReadiness({
+      providerSettings: (ws?.providerSettings ?? null) as Parameters<
+        typeof computeCampaignDeliveryReadiness
+      >[0]['providerSettings'],
+      metaConnection,
+      metaWhatsAppAvailable: Boolean(this.metaWhatsApp),
+      emailProviderAvailable: Boolean(
+        process.env.RESEND_API_KEY || process.env.SENDGRID_API_KEY || process.env.SMTP_HOST,
+      ),
+      now: new Date(),
+    });
   }
 
   /**
@@ -452,14 +425,7 @@ export class CampaignsService {
   }
 
   private scoreCampaign(c: Record<string, unknown>): number {
-    const stats = (c?.stats || {}) as Record<string, number>;
-    const sent = stats.sent || 0;
-    const replied = stats.replied || 0;
-    if (!sent) {
-      return 0;
-    }
-    const conv = replied / sent;
-    return conv;
+    return scoreCampaignStats(c?.stats);
   }
 
   /**
@@ -473,7 +439,7 @@ export class CampaignsService {
   ): Promise<string> {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey || !base) {
-      return `${base || ''} [variante ${idx + 1} com CTA: responda SIM agora]`;
+      return buildVariantFallbackCopy(base, idx);
     }
     const { default: OpenAI } = await import('openai');
     const client = new OpenAI({ apiKey });
@@ -491,10 +457,7 @@ Retorne apenas a nova mensagem.`;
       max_tokens: 400, // single WhatsApp message variant
     });
     const variant = completion.choices[0]?.message?.content?.trim() || base;
-    // Output validation: refuse outputs that grew >3x original or come back empty —
-    // model hallucinated a long block instead of a single message.
-    const validated =
-      variant.length > 0 && variant.length <= Math.max(base.length * 3, 280) ? variant : base;
+    const validated = validateVariantCopy(base, variant);
     // Structured decision log (no PII; just lengths + token usage).
     this.logger.log('Campaign copy variant generated', {
       context: 'CampaignsService.mutateCopy',
