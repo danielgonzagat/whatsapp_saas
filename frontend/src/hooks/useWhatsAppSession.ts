@@ -516,5 +516,3 @@ export function useWhatsAppSession({
     resumeAutonomy,
   };
 }
-
-export default useWhatsAppSession;

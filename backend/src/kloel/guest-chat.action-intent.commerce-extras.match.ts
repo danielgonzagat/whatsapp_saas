@@ -66,8 +66,20 @@ export function detectCommerceExtrasIntent(msg: string, message: string): Action
     return { tool: 'get_social_channels', args: {} };
   }
 
-  // ── ESTORNOS ──
-  if (/estornos?|reembolsos?|devolu[cç][aã]o|cancelar\s+(venda|pedido)/.test(msg)) {
+  // ── ESTORNOS ── (mutation verbs before read-only nouns)
+  if (
+    /(?:estorna|reembolsa|faz\s+(?:o\s+)?refund|processa\s+(?:o\s+)?refund|solicita\s+(?:o\s+)?estorno)\b/i.test(
+      msg,
+    ) ||
+    (/\brefund\b/i.test(msg) && !/lista|hist[oó]rico|relat[oó]rio|meus|todos/i.test(msg))
+  ) {
+    return { tool: 'sales.refund', args: { confirmRequired: true } };
+  }
+  if (
+    /(?:meus |todos |lista |hist[oó]rico |relat[oó]rio )?(?:estornos?|reembolsos?|refunds?|devolu[cç][oõ]es)/.test(
+      msg,
+    ) || /cancelar\s+(venda|pedido)/.test(msg)
+  ) {
     return { tool: 'list_refunds', args: {} };
   }
 
@@ -108,11 +120,26 @@ export function detectCommerceExtrasIntent(msg: string, message: string): Action
   ) {
     return { tool: 'get_whatsapp_status', args: {} };
   }
-  if (/(envia|manda|dispara)\s+(mensagem|whatsapp|zap)\s+para/.test(msg)) {
+  if (
+    /(?:envia|manda|dispara|enviar|mandar|disparar)\s+(?:uma?\s+)?(?:mensagem|msg|zap)\s+(?:no|via|por|pra|para|pelo|pela)\s+(?:whatsapp|whats|zap|wpp)/i.test(
+      msg,
+    )
+  ) {
     return { tool: 'send_whatsapp_message', args: { message: msg } };
   }
   if (/lista\s+(contatos|chats)\s+whatsapp/.test(msg)) {
     return { tool: 'list_whatsapp_chats', args: {} };
+  }
+
+  // ── INSTAGRAM ──
+  if (
+    /(?:dm|direct|mensagem)\s+(?:no|do|via|por|pelo)\s+(?:insta|instagram)/i.test(msg) ||
+    /manda(?:r)?\s+(?:uma?\s+)?direct/i.test(msg) ||
+    /(?:envia|manda|dispara|enviar|mandar|disparar)\s+(?:uma?\s+)?(?:mensagem|msg|dm)\s+(?:no|via|por|pelo)\s+(?:insta|instagram)/i.test(
+      msg,
+    )
+  ) {
+    return { tool: 'send_instagram_dm', args: { message: msg } };
   }
 
   // ── FRETE / ENTREGA ──
@@ -164,6 +191,12 @@ export function detectCommerceExtrasIntent(msg: string, message: string): Action
   }
 
   // ── E-MAIL / MARKETING ──
+  if (
+    /(?:manda|envia|dispara|mandar|enviar|disparar)\s+(?:um\s+)?e[\s-]?mail/i.test(msg) &&
+    !/broadcast|campanha|disparo/i.test(msg)
+  ) {
+    return { tool: 'send_email', args: { message: msg } };
+  }
   if (
     /(envia(?:r|ndo)?|manda(?:r|ndo)?|dispara(?:r|ndo)?)\s+(email|campanha|broadcast)/.test(msg)
   ) {

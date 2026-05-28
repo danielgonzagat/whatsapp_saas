@@ -38,6 +38,15 @@ export function detectCrmSalesIntent(msg: string): ActionIntent {
     return { tool: 'get_abandonments', args: {} };
   }
 
+  // ── PREENCHER DADOS DO COMPRADOR ── (antes de busca genérica)
+  if (
+    /(?:pega|preenche|coleta|preencher|coletar)\s+(?:os?\s+)?dados\s+(?:do|de)\s+(?:comprador|cliente)/i.test(
+      msg,
+    )
+  ) {
+    return { tool: 'sales.fill_buyer_data', args: {} };
+  }
+
   // ── CRM / LEADS ──
   if (
     /(busca(?:r|ndo)?|procura(?:r|ndo)?|pesquisa(?:r|ndo)?).*(lead|cliente|contato|comprador)/.test(

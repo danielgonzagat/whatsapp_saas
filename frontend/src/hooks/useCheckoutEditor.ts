@@ -10,28 +10,10 @@ import {
   type CheckoutConfig,
 } from './useCheckoutEditor.helpers';
 
-/* ── Re-exports (preserve public surface for existing call sites + tests) ── */
+/* ── Re-exports (only the symbols imported externally; rest live in helpers) ── */
 
-export {
-  DEFAULT_CONFIG,
-  normalizeConfigForEditor,
-  normalizeOrderBumpEntry,
-  normalizePixelEntry,
-  normalizePixelTypeForEditor,
-  normalizeTestimonialEntry,
-  normalizeTimerTypeForEditor,
-  normalizeTrustBadgeEntry,
-  normalizeUpsellEntry,
-  resolveBumpPrice,
-} from './useCheckoutEditor.helpers';
-export type {
-  CheckoutConfig,
-  CheckoutOrderBump,
-  CheckoutPixel,
-  CheckoutTestimonial,
-  CheckoutTrustBadge,
-  CheckoutUpsell,
-} from './useCheckoutEditor.helpers';
+export { DEFAULT_CONFIG } from './useCheckoutEditor.helpers';
+export type { CheckoutConfig } from './useCheckoutEditor.helpers';
 
 /* ── Hook ── */
 

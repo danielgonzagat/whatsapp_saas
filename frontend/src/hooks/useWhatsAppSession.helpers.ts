@@ -145,12 +145,6 @@ export function createSessionError(message: string): Error {
 
 /* ── Credentials state classification ── */
 
-/** Pair of credentials resolved from token storage / providers. */
-export interface SessionCredentials {
-  authToken: string;
-  workspaceId: string;
-}
-
 /** True when both an auth token and a workspaceId are present (non-empty). */
 export function hasCompleteCredentials(creds: {
   authToken?: string | null | undefined;
