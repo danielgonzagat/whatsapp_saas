@@ -9,8 +9,13 @@ import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { useMemo, useState } from 'react';
 import HomeKpiTiles from './HomeKpiTiles';
 import HomeRecentActivity from './HomeRecentActivity';
-
-const S_RE = /\s+/;
+import {
+  getFirstName,
+  getGreeting,
+  isCustomRangeReady,
+  parseReferenceDate,
+  resolveActiveRangeLabel,
+} from './HomeView.helpers';
 
 const FONT_SANS = "'Sora', sans-serif";
 const FONT_MONO = "'JetBrains Mono', monospace";
@@ -20,31 +25,6 @@ const PERIOD_OPTIONS: Array<{ key: DashboardHomePeriod; label: string }> = [
   { key: '30d', label: kloelT('30 dias') },
   { key: 'custom', label: kloelT('Personalizado') },
 ];
-
-function getGreeting(referenceDate?: Date | null) {
-  if (!referenceDate) {
-    return 'Olá';
-  }
-  const hour = referenceDate.getHours();
-  if (hour >= 5 && hour < 12) {
-    return 'Bom dia';
-  }
-  if (hour >= 12 && hour < 18) {
-    return 'Boa tarde';
-  }
-  if (hour >= 18) {
-    return 'Boa noite';
-  }
-  return 'Boa madrugada';
-}
-
-function parseReferenceDate(value?: string | null) {
-  if (!value) {
-    return null;
-  }
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
 
 const HOME_REFERENCE_DATE_FORMATTER = new Intl.DateTimeFormat('pt-BR', {
   weekday: 'long',
@@ -132,10 +112,7 @@ export function HomeView() {
       : { period };
   const { home, isLoading } = useDashboardHome(query);
 
-  const firstName =
-    String(userName || 'Daniel')
-      .trim()
-      .split(S_RE)[0] || 'Daniel';
+  const firstName = getFirstName(userName);
   const referenceDate = useMemo(
     () => parseReferenceDate(home?.generatedAt || home?.range.endDate || null),
     [home?.generatedAt, home?.range.endDate],
@@ -147,13 +124,13 @@ export function HomeView() {
   );
   const compact = isMobile || isTablet;
 
-  const activeRangeLabel =
-    period === 'custom' && customStartDate && customEndDate
-      ? `${customStartDate.split('-').reverse().join('/')} até ${customEndDate
-          .split('-')
-          .reverse()
-          .join('/')}`
-      : home?.range.label || kloelT('Últimos 7 dias');
+  const activeRangeLabel = resolveActiveRangeLabel({
+    period,
+    customStartDate,
+    customEndDate,
+    serverLabel: home?.range.label,
+    fallbackLabel: kloelT('Últimos 7 dias'),
+  });
 
   return (
     <div
@@ -371,7 +348,7 @@ export function HomeView() {
                 <button
                   type="button"
                   onClick={() => {
-                    if (customStartDate && customEndDate) {
+                    if (isCustomRangeReady(customStartDate, customEndDate)) {
                       setPeriod('custom');
                       setRangePopoverOpen(false);
                     }
@@ -387,7 +364,7 @@ export function HomeView() {
                     fontFamily: FONT_SANS,
                     fontWeight: 700,
                     cursor: 'pointer',
-                    opacity: customStartDate && customEndDate ? 1 : 0.5,
+                    opacity: isCustomRangeReady(customStartDate, customEndDate) ? 1 : 0.5,
                   }}
                 >
                   {kloelT(`Aplicar`)}
