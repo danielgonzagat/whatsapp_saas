@@ -2,31 +2,26 @@ import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../../../logging/structured-logger';
 import { MindCaseMemoryService } from '../memory/mind-case-memory.service';
 import { MindConceptService } from '../memory/mind-concepts.service';
-import { messageTemplate, toStableString } from '../policy/mind-decision-baselines';
+import { toStableString } from '../policy/mind-decision-baselines';
 import { MindPolicyService } from '../policy/mind-policy.service';
 import { MindPredictorService } from '../inference/mind-predictor.service';
 import { MindSurpriseService } from '../inference/mind-surprise.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { randomUUID } from 'crypto';
 import type { MindPerceptEvent } from '../../mind.types';
-
-interface MindEventProcessResult {
-  beliefsUpdated: number;
-  predicted: number;
-  resolved: number;
-  surpriseTotal: number;
-}
-
-type MindEventProcessAccumulator = MindEventProcessResult;
-
-const CONVERSION_CLOSED_STATUSES = new Set([
-  'CANCELED',
-  'CANCELLED',
-  'EXPIRED',
-  'FAILED',
-  'REFUNDED',
-]);
-const AUTOPILOT_SUCCESS_INTENTS = new Set(['lead_qualified', 'meeting_booked', 'purchase_intent']);
+import {
+  applySurprise,
+  autopilotSuccessOutcome,
+  buildCheckoutStartFeatures,
+  buildMessageSentFeatures,
+  classifyToolCategory,
+  createEmptyResult,
+  extractMessageReceivedText,
+  isCheckoutClosedFailure,
+  outcomeFromPayload,
+  type MindEventProcessAccumulator,
+  type MindEventProcessResult,
+} from './mind-event-processor.service.helpers';
 
 @Injectable()
 export class MindEventProcessorService {
@@ -44,12 +39,7 @@ export class MindEventProcessorService {
   }
 
   async process(event: MindPerceptEvent): Promise<MindEventProcessResult> {
-    const result: MindEventProcessAccumulator = {
-      predicted: 0,
-      resolved: 0,
-      surpriseTotal: 0,
-      beliefsUpdated: 0,
-    };
+    const result: MindEventProcessAccumulator = createEmptyResult();
 
     await this.processMessageSent(event, result);
     await this.processMessageReceived(event, result);
@@ -70,11 +60,7 @@ export class MindEventProcessorService {
         {
           workspaceId: event.workspaceId,
           subject: event.subject,
-          features: {
-            channel: toStableString(event.payload.channel) || 'unknown',
-            hour: event.occurredAt.getHours(),
-            template: messageTemplate(event.payload),
-          },
+          features: buildMessageSentFeatures(event),
         },
         24 * 3600,
       );
@@ -90,7 +76,7 @@ export class MindEventProcessorService {
       (event.kind === 'message.received' || event.kind === 'message.replied') &&
       event.subject.startsWith('contact:')
     ) {
-      const text = toStableString(event.payload.content ?? event.payload.message ?? '');
+      const text = extractMessageReceivedText(event);
       if (text) {
         const features = { channel: event.payload.channel ?? 'unknown' };
         await this.concepts.detect({
@@ -151,12 +137,7 @@ export class MindEventProcessorService {
         {
           workspaceId: event.workspaceId,
           subject: event.subject,
-          features: {
-            channel: 'checkout',
-            hour: event.occurredAt.getHours(),
-            price_band: toStableString(event.payload.priceBand) || 'under_100',
-            segment: toStableString(event.payload.utmSource) || 'direct',
-          },
+          features: buildCheckoutStartFeatures(event),
         },
         48 * 3600,
       );
@@ -180,18 +161,15 @@ export class MindEventProcessorService {
       return;
     }
 
-    if (event.kind.startsWith('checkout.') && event.kind !== 'checkout.paid') {
-      const status = toStableString(event.payload.status).toUpperCase();
-      if (event.kind === 'checkout.expired' || CONVERSION_CLOSED_STATUSES.has(status)) {
-        await this.addResolvedSurprise(result, this.resolveConversion(event, 0));
-        await this.resolveSubjectPolicies(event, result, ['cart_recovery'], 0);
-        await this.resolveWorkspacePolicies(
-          event,
-          result,
-          ['coupon_offer', 'product_offer', 'objection_response'],
-          0,
-        );
-      }
+    if (isCheckoutClosedFailure(event)) {
+      await this.addResolvedSurprise(result, this.resolveConversion(event, 0));
+      await this.resolveSubjectPolicies(event, result, ['cart_recovery'], 0);
+      await this.resolveWorkspacePolicies(
+        event,
+        result,
+        ['coupon_offer', 'product_offer', 'objection_response'],
+        0,
+      );
     }
   }
 
@@ -234,7 +212,7 @@ export class MindEventProcessorService {
       const action = toStableString(event.payload.action);
 
       // ── COGNITIVE BRIDGE: feed every tool execution into belief formation ──
-      const toolCategory = this.classifyToolCategory(intent);
+      const toolCategory = classifyToolCategory(intent);
       if (toolCategory) {
         try {
           await this.prisma.mindBelief.upsert({
@@ -268,19 +246,16 @@ export class MindEventProcessorService {
         }
       }
 
-      if (AUTOPILOT_SUCCESS_INTENTS.has(intent)) {
-        const outcome = intent === 'purchase_intent' ? 1 : 0;
-        const predicate =
-          intent === 'purchase_intent'
-            ? 'P(conversion|segment,price_band,channel,hour)'
-            : 'P(reply|template,hour,channel)';
+      const autopilotSuccess = autopilotSuccessOutcome(intent);
+      if (autopilotSuccess) {
+        const { outcome, predicate } = autopilotSuccess;
         const surprise = await this.surprise.resolveBinary(
           event.workspaceId,
           event.subject,
           predicate,
           outcome,
         );
-        this.applySurprise(result, surprise);
+        applySurprise(result, surprise);
         await this.resolvePolicies(event, result, event.subject, ['autopilot_action'], outcome);
         if (intent === 'lead_qualified') {
           await this.resolveWorkspacePolicies(event, result, ['human_transfer'], 1);
@@ -345,109 +320,7 @@ export class MindEventProcessorService {
     result: MindEventProcessAccumulator,
     surprisePromise: Promise<number>,
   ): Promise<void> {
-    this.applySurprise(result, await surprisePromise);
-  }
-
-  private classifyToolCategory(toolName: string): string | null {
-    if (
-      toolName.startsWith('create_product') ||
-      toolName.startsWith('update_product') ||
-      toolName.startsWith('delete_product')
-    ) {
-      return 'product';
-    }
-    if (
-      toolName.startsWith('create_plan') ||
-      toolName.startsWith('update_plan') ||
-      toolName.startsWith('delete_plan')
-    ) {
-      return 'plan';
-    }
-    if (
-      toolName.startsWith('create_checkout') ||
-      toolName.startsWith('update_checkout') ||
-      toolName.startsWith('delete_checkout')
-    ) {
-      return 'checkout';
-    }
-    if (
-      toolName.startsWith('create_coupon') ||
-      toolName.startsWith('update_coupon') ||
-      toolName.startsWith('delete_coupon')
-    ) {
-      return 'coupon';
-    }
-    if (
-      toolName.startsWith('create_payment') ||
-      toolName.startsWith('generate_pix') ||
-      toolName.startsWith('generate_boleto')
-    ) {
-      return 'payment';
-    }
-    if (toolName.startsWith('create_order') || toolName.startsWith('list_orders')) {
-      return 'sale';
-    }
-    if (
-      toolName.startsWith('get_wallet') ||
-      toolName.startsWith('request_withdrawal') ||
-      toolName.startsWith('request_anticipation')
-    ) {
-      return 'wallet';
-    }
-    if (toolName.startsWith('search_agent') || toolName.startsWith('list_leads')) {
-      return 'crm';
-    }
-    if (
-      toolName.startsWith('git_') ||
-      toolName.startsWith('code_') ||
-      toolName.startsWith('codegraph_') ||
-      toolName.startsWith('search_codebase')
-    ) {
-      return 'code';
-    }
-    if (
-      toolName.startsWith('get_settings') ||
-      toolName.startsWith('update_fiscal') ||
-      toolName.startsWith('toggle_theme')
-    ) {
-      return 'config';
-    }
-    if (
-      toolName.startsWith('configure_') ||
-      toolName.startsWith('update_affiliate') ||
-      toolName.startsWith('browse_marketplace')
-    ) {
-      return 'marketing';
-    }
-    if (
-      toolName.startsWith('get_sales') ||
-      toolName.startsWith('get_analytics') ||
-      toolName.startsWith('get_nps') ||
-      toolName.startsWith('get_churn') ||
-      toolName.startsWith('get_abandon')
-    ) {
-      return 'analytics';
-    }
-    if (
-      toolName.startsWith('add_url') ||
-      toolName.startsWith('update_url') ||
-      toolName.startsWith('delete_url') ||
-      toolName.startsWith('get_product_urls')
-    ) {
-      return 'url';
-    }
-    if (toolName.startsWith('list_subscriptions') || toolName.startsWith('get_product_reviews')) {
-      return 'operations';
-    }
-    return 'generic';
-  }
-
-  private applySurprise(result: MindEventProcessAccumulator, surprise: number): void {
-    if (surprise > 0) {
-      result.resolved += 1;
-      result.beliefsUpdated += 1;
-      result.surpriseTotal += surprise;
-    }
+    applySurprise(result, await surprisePromise);
   }
 
   private resolveConversion(event: MindPerceptEvent, outcome: 0 | 1): Promise<number> {
@@ -458,15 +331,4 @@ export class MindEventProcessorService {
       outcome,
     );
   }
-}
-
-function outcomeFromPayload(event: MindPerceptEvent): 0 | 1 {
-  if (event.payload.outcome === 0 || event.payload.outcome === false) {
-    return 0;
-  }
-  const status = toStableString(event.payload.status).toLowerCase();
-  if (['failed', 'cancelled', 'canceled', 'lost', 'unresolved'].includes(status)) {
-    return 0;
-  }
-  return 1;
 }
