@@ -107,10 +107,9 @@ describe('KloelReplyEngineService mind-signal wiring (PI-k3)', () => {
         workspaceId: 'ws-1',
       });
 
-      const userPayload = JSON.parse(String(messages[messages.length - 1]!.content)) as Record<
-        string,
-        unknown
-      >;
+      const lastContent = messages[messages.length - 1]?.content;
+      const lastContentStr = typeof lastContent === 'string' ? lastContent : '{}';
+      const userPayload = JSON.parse(lastContentStr) as Record<string, unknown>;
       const cs = userPayload['cognitiveState'] as Record<string, unknown>;
       expect(cs['mindSignals']).toEqual({ status: 'no_event_source' });
     });
@@ -136,10 +135,9 @@ describe('KloelReplyEngineService mind-signal wiring (PI-k3)', () => {
         userMessage: 'Hello',
       });
 
-      const userPayload = JSON.parse(String(messages[messages.length - 1]!.content)) as Record<
-        string,
-        unknown
-      >;
+      const lastContent = messages[messages.length - 1]?.content;
+      const lastContentStr = typeof lastContent === 'string' ? lastContent : '{}';
+      const userPayload = JSON.parse(lastContentStr) as Record<string, unknown>;
       const cs = userPayload['cognitiveState'] as Record<string, unknown>;
       expect(cs['mindSignals']).toEqual({ status: 'no_services' });
     });
@@ -167,10 +165,9 @@ describe('KloelReplyEngineService mind-signal wiring (PI-k3)', () => {
         workspaceId: 'ws-1',
       });
 
-      const userPayload = JSON.parse(String(messages[messages.length - 1]!.content)) as Record<
-        string,
-        unknown
-      >;
+      const lastContent = messages[messages.length - 1]?.content;
+      const lastContentStr = typeof lastContent === 'string' ? lastContent : '{}';
+      const userPayload = JSON.parse(lastContentStr) as Record<string, unknown>;
       const cs = userPayload['cognitiveState'] as Record<string, unknown>;
       expect(cs['mindSignals']).toEqual({ status: 'no_services' });
     });
