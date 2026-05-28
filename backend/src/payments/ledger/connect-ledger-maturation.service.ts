@@ -7,6 +7,7 @@ import { forEachSequential } from '../../common/async-sequence';
 import { FinancialAlertService } from '../../common/financial-alert.service';
 import { PrismaService } from '../../prisma/prisma.service';
 
+import { isLedgerIdempotencyRecoveryCode } from './ledger-entry.helper';
 import { LedgerService } from './ledger.service';
 
 /** Connect ledger maturation result shape. */
@@ -63,23 +64,17 @@ export class ConnectLedgerMaturationService {
         await this.ledgerService.moveFromPendingToAvailable(entry.id);
         matured += 1;
       } catch (error: unknown) {
-        if (error instanceof Prisma.PrismaClientKnownRequestError) {
-          if (error.code === 'P2002') {
-            this.logger.info(
-              { entryId: entry.id, code: error.code },
-              `connect_ledger_maturation_already_matured P2002 entry=${entry.id}`,
-            );
-            matured += 1;
-            return;
-          }
-          if (error.code === 'P2025') {
-            this.logger.info(
-              { entryId: entry.id, code: error.code },
-              `connect_ledger_maturation_stale_row P2025 entry=${entry.id}`,
-            );
-            matured += 1;
-            return;
-          }
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          isLedgerIdempotencyRecoveryCode(error.code)
+        ) {
+          const logTag =
+            error.code === 'P2002'
+              ? 'connect_ledger_maturation_already_matured P2002'
+              : 'connect_ledger_maturation_stale_row P2025';
+          this.logger.info({ entryId: entry.id, code: error.code }, `${logTag} entry=${entry.id}`);
+          matured += 1;
+          return;
         }
         failed += 1;
         const message = error instanceof Error ? error.message : String(error);

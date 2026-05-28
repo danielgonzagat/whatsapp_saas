@@ -8,6 +8,7 @@ import { toPrismaJsonValue } from '../../common/prisma/prisma-json.util';
 
 import { FINANCIAL_TRANSACTION_OPTIONS, logLedgerWrite } from './ledger-audit.helper';
 import { creditAvailableByAdjustmentImpl } from './ledger-adjustments.helper';
+import { isLedgerIdempotencyRecoveryCode, mapBalanceToSnapshot } from './ledger-entry.helper';
 import {
   applyAbsorptionDebit,
   assertPositiveAmount,
@@ -214,19 +215,15 @@ export class LedgerService {
         );
       }, FINANCIAL_TRANSACTION_OPTIONS);
     } catch (error: unknown) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2002') {
-          this.logger.info(
-            `moveFromPendingToAvailable idempotent skip (P2002 concurrent): entry=${pendingEntryId}`,
-          );
-          return;
-        }
-        if (error.code === 'P2025') {
-          this.logger.info(
-            `moveFromPendingToAvailable idempotent skip (P2025 stale row): entry=${pendingEntryId}`,
-          );
-          return;
-        }
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        isLedgerIdempotencyRecoveryCode(error.code)
+      ) {
+        const reason = error.code === 'P2002' ? 'P2002 concurrent' : 'P2025 stale row';
+        this.logger.info(
+          `moveFromPendingToAvailable idempotent skip (${reason}): entry=${pendingEntryId}`,
+        );
+        return;
       }
       throw error;
     }
@@ -531,15 +528,6 @@ export class LedgerService {
     if (!balance) {
       throw new AccountBalanceNotFoundError(accountBalanceId);
     }
-    return {
-      accountBalanceId: balance.id,
-      stripeAccountId: balance.stripeAccountId,
-      accountType: balance.accountType,
-      pendingCents: balance.pendingBalanceCents,
-      availableCents: balance.availableBalanceCents,
-      lifetimeReceivedCents: balance.lifetimeReceivedCents,
-      lifetimePaidOutCents: balance.lifetimePaidOutCents,
-      lifetimeChargebacksCents: balance.lifetimeChargebacksCents,
-    };
+    return mapBalanceToSnapshot(balance);
   }
 }
