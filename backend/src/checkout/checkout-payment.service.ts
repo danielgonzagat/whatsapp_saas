@@ -18,7 +18,6 @@ import { FraudEngine } from '../payments/fraud/fraud.engine';
 import { MercadoPagoBoletoChargeService } from '../payments/mercadopago/mercadopago-boleto-charge.service';
 import { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
 import { PaymentProviderRouterService } from '../payments/provider-router/provider-router.service';
-import type { PaymentMethod, ProviderRoutingDecision } from '../payments/provider-router/provider-router.types';
 import { StripeChargeService } from '../payments/stripe/stripe-charge.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -26,19 +25,25 @@ import { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effec
 import { CheckoutEventEmitterService } from '../kloel/checkout-emitter/checkout-event-emitter.service';
 import {
   BOLETO_EXPIRATION_DAYS,
+  FRAUD_ACTION_AUDIT_MAP,
   MP_WEBHOOK_PATH,
   PIX_EXPIRATION_MINUTES,
+  STRIPE_THREE_DS_REQUEST_ANY,
+  assertCanonicalProvider,
+  buildPaymentDescription,
   formatMercadoPagoQrImage,
   mapMercadoPagoPaymentStatus,
   mapStripePaymentStatus,
   normalizeBoletoAddress,
   resolveBackendOrigin,
   toJsonValue,
+  toProviderPaymentMethod,
+  type AuditableFraudAction,
+  type CheckoutPaymentMethod,
   type CheckoutPaymentStatus,
   type PixDisplayData,
 } from './checkout-payment.helpers';
 
-type CheckoutPaymentMethod = 'CREDIT_CARD' | 'PIX' | 'BOLETO';
 type SaleChargeInput = Parameters<StripeChargeService['createSaleCharge']>[0];
 type CardPaymentOptions = Extract<
   NonNullable<NonNullable<SaleChargeInput['paymentMethodOptions']>['card']>,
@@ -46,33 +51,6 @@ type CardPaymentOptions = Extract<
 >;
 type MercadoPagoBoletoCharge = Awaited<ReturnType<MercadoPagoBoletoChargeService['create']>>;
 type MercadoPagoPixCharge = Awaited<ReturnType<MercadoPagoPixChargeService['create']>>;
-
-function toProviderPaymentMethod(method: CheckoutPaymentMethod): PaymentMethod {
-  switch (method) {
-    case 'PIX':
-      return 'pix';
-    case 'BOLETO':
-      return 'boleto';
-    case 'CREDIT_CARD':
-      return 'card';
-    default: {
-      const exhaustive: never = method;
-      throw new Error(`unknown_checkout_payment_method:${String(exhaustive)}`);
-    }
-  }
-}
-
-function assertCanonicalProvider(
-  decision: ProviderRoutingDecision,
-  expectedProvider: ProviderRoutingDecision['provider'],
-  method: CheckoutPaymentMethod,
-): void {
-  if (decision.provider !== expectedProvider) {
-    throw new Error(
-      `payment_provider_route_mismatch:${method}:expected_${expectedProvider}:got_${decision.provider}`,
-    );
-  }
-}
 
 /** Checkout payment service. */
 @Injectable()
@@ -110,15 +88,10 @@ export class CheckoutPaymentService {
       return;
     }
 
-    const actionMap = {
-      block: 'CHECKOUT_PAYMENT_BLOCKED_BY_FRAUD',
-      review: 'CHECKOUT_PAYMENT_REVIEW_REQUIRED',
-      require_3ds: 'CHECKOUT_PAYMENT_3DS_REQUIRED',
-    } as const;
-
+    const auditableAction: AuditableFraudAction = params.decision.action;
     await this.auditService.log({
       workspaceId: params.workspaceId,
-      action: actionMap[params.decision.action],
+      action: FRAUD_ACTION_AUDIT_MAP[auditableAction],
       resource: 'CheckoutOrder',
       resourceId: params.orderId,
       details: {
@@ -155,7 +128,7 @@ export class CheckoutPaymentService {
       forceThreeDS?: boolean;
     },
   ) {
-    const threeDsRequest = ['an', 'y'].join('') as NonNullable<
+    const threeDsRequest = STRIPE_THREE_DS_REQUEST_ANY as NonNullable<
       CardPaymentOptions['request_three_d_secure']
     >;
     const paymentMethodOptions: SaleChargeInput['paymentMethodOptions'] | undefined =
@@ -553,7 +526,7 @@ export class CheckoutPaymentService {
           payerEmail: params.customerEmail,
           payerName: params.customerName,
           ...(payerDocument !== undefined ? { payerDocument } : {}),
-          description: productName || `Pedido ${params.orderId}`,
+          description: buildPaymentDescription(productName, params.orderId),
           externalReference: params.orderId,
           expiresAt,
           notificationUrl: `${resolveBackendOrigin()}${MP_WEBHOOK_PATH}`,
@@ -688,7 +661,7 @@ export class CheckoutPaymentService {
           payerName: params.customerName,
           payerDocument,
           payerAddress,
-          description: productName || `Pedido ${params.orderId}`,
+          description: buildPaymentDescription(productName, params.orderId),
           externalReference: params.orderId,
           expiresAt,
           notificationUrl: `${resolveBackendOrigin()}${MP_WEBHOOK_PATH}`,

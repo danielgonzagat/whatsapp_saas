@@ -2,6 +2,13 @@ import { Prisma } from '@prisma/client';
 
 import type { MercadoPagoBoletoChargeService } from '../payments/mercadopago/mercadopago-boleto-charge.service';
 import type { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
+import type {
+  PaymentMethod,
+  ProviderRoutingDecision,
+} from '../payments/provider-router/provider-router.types';
+
+/** Checkout-facing payment method discriminator (UI vocabulary). */
+export type CheckoutPaymentMethod = 'CREDIT_CARD' | 'PIX' | 'BOLETO';
 
 /** Mercado Pago webhook callback path appended to the backend public origin. */
 export const MP_WEBHOOK_PATH = '/webhooks/mercadopago';
@@ -151,3 +158,66 @@ export function normalizeBoletoAddress(value: unknown): MercadoPagoBoletoAddress
     state,
   };
 }
+
+/**
+ * Map a checkout-facing payment method ('CREDIT_CARD' | 'PIX' | 'BOLETO') to the
+ * provider-router vocabulary ('card' | 'pix' | 'boleto'). Pure mapping — no money
+ * arithmetic and no I/O.
+ */
+export function toProviderPaymentMethod(method: CheckoutPaymentMethod): PaymentMethod {
+  switch (method) {
+    case 'PIX':
+      return 'pix';
+    case 'BOLETO':
+      return 'boleto';
+    case 'CREDIT_CARD':
+      return 'card';
+    default: {
+      const exhaustive: never = method;
+      throw new Error(`unknown_checkout_payment_method:${String(exhaustive)}`);
+    }
+  }
+}
+
+/**
+ * Pure type guard: asserts that the provider router resolved to the expected canonical
+ * provider for the given checkout payment method. Throws a deterministic error whose
+ * shape (`payment_provider_route_mismatch:<METHOD>:expected_<X>:got_<Y>`) is part of
+ * the contract observed by checkout payment specs.
+ */
+export function assertCanonicalProvider(
+  decision: ProviderRoutingDecision,
+  expectedProvider: ProviderRoutingDecision['provider'],
+  method: CheckoutPaymentMethod,
+): void {
+  if (decision.provider !== expectedProvider) {
+    throw new Error(
+      `payment_provider_route_mismatch:${method}:expected_${expectedProvider}:got_${decision.provider}`,
+    );
+  }
+}
+
+/**
+ * Fraud-decision → audit-action mapping. The 'allow' action has no audit log entry,
+ * so it is intentionally absent. Pure constant: no money arithmetic, no I/O.
+ */
+export const FRAUD_ACTION_AUDIT_MAP = {
+  block: 'CHECKOUT_PAYMENT_BLOCKED_BY_FRAUD',
+  review: 'CHECKOUT_PAYMENT_REVIEW_REQUIRED',
+  require_3ds: 'CHECKOUT_PAYMENT_3DS_REQUIRED',
+} as const;
+
+/** Discriminator for a fraud-engine action that warrants an audit-log entry. */
+export type AuditableFraudAction = keyof typeof FRAUD_ACTION_AUDIT_MAP;
+
+/**
+ * Build a human-readable payment description from an optional product name, falling
+ * back to a deterministic `Pedido <orderId>` string. Pure formatter — no money math.
+ */
+export function buildPaymentDescription(productName: string | undefined, orderId: string): string {
+  const trimmed = productName?.trim();
+  return trimmed ? trimmed : `Pedido ${orderId}`;
+}
+
+/** Stripe `request_three_d_secure` enum value extracted as a constant to avoid inline string assembly. */
+export const STRIPE_THREE_DS_REQUEST_ANY = 'any' as const;
