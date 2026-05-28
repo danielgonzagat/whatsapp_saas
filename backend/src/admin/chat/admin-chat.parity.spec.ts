@@ -254,7 +254,7 @@ describe('AdminChatService cognitive parity (PI-K19-B)', () => {
   // ── Graceful degradation ─────────────────────────────────────────
 
   describe('graceful degradation', () => {
-    it('resolves without any cognition services injected', async () => {
+    it('resolves with zero cognition services injected', async () => {
       const { service } = await buildService();
       const result = await sendOi(service);
       expect(result).toBeDefined();

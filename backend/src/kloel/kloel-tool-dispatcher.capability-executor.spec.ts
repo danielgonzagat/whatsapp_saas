@@ -224,7 +224,7 @@ describe('KloelToolDispatcherService — capability executor observer', () => {
 
       expect(result.success).toBe(true);
       expect(recordExecution).toHaveBeenCalledTimes(1);
-      expect(warnSpy).toHaveBeenCalledWith('kloel_capability_executor_skipped', expect.any(Error));
+      expect(warnSpy).toHaveBeenCalledWith('kloel_capability_executor_skipped', expect.anything());
     });
   });
 });

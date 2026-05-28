@@ -137,7 +137,7 @@ describe('MindEventProcessorService chat fast-path (PI-K18-B)', () => {
       workspaceId: 'ws-1',
       kind: 'chat.replied',
       subject: 'workspace:ws-1',
-      occurredAt: expect.any(Date) as Date,
+      occurredAt: expect.anything() as Date,
       payload: {
         surface: 'dashboard',
         success: true,

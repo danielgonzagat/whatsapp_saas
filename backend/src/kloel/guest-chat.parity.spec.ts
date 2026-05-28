@@ -236,7 +236,7 @@ describe('GuestChatService — Cognitive Parity (PI-K19-A)', () => {
   });
 
   describe('4. All cognitive services @Optional', () => {
-    it('instantiates and functions without any cognitive services injected', async () => {
+    it('instantiates and functions without cognitive services injected', async () => {
       await createService(false);
 
       const reply = await service.chatSync('Olá', 'optional-session-1', 'ws-test-001');
