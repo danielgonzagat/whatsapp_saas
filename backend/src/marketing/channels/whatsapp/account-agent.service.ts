@@ -43,6 +43,15 @@ import {
   upsertApprovalRequest,
   upsertInputCollectionSession,
 } from './account-agent.work-items';
+import {
+  buildApprovalKey,
+  buildApprovedCatalogGapWorkItem,
+  buildDetectedCatalogGapWorkItem,
+  buildInitialInputSession,
+  buildInputSessionKey,
+  buildRejectedCatalogGapWorkItem,
+  summarizeRuntime,
+} from './account-agent.service.helpers';
 
 type AccountAgentMetadata = Record<string, unknown>;
 
@@ -71,39 +80,7 @@ export class AccountAgentService {
       await upsertAccountWorkItem(
         { prisma: this.prisma, agentEvents: this.agentEvents },
         input.workspaceId,
-        {
-          kind: 'catalog_gap_detected',
-          entityType: 'product',
-          entityId: result.approval.normalizedProductName,
-          state:
-            result.approval.status === 'REJECTED'
-              ? 'BLOCKED'
-              : result.approval.status === 'COMPLETED'
-                ? 'COMPLETED'
-                : 'WAITING_APPROVAL',
-          title: `Criar produto ${result.approval.requestedProductName}`,
-          summary: result.approval.operatorPrompt,
-          priority: 95,
-          utility: 95,
-          requiresApproval: true,
-          requiresInput: result.approval.status === 'APPROVED' && !!result.approval.inputSessionId,
-          approvalState: result.approval.status,
-          inputState: result.approval.inputSessionId ? 'OPEN' : null,
-          blockedBy:
-            result.approval.status === 'REJECTED'
-              ? { reason: 'operator_rejected_product_creation', approvalId: result.approval.id }
-              : null,
-          evidence: {
-            approvalId: result.approval.id,
-            requestedProductName: result.approval.requestedProductName,
-            contactId: result.approval.contactId,
-            phone: result.approval.phone,
-          },
-          metadata: {
-            source: result.approval.source,
-            conversationId: result.approval.conversationId,
-          },
-        },
+        buildDetectedCatalogGapWorkItem(result.approval),
       );
     }
     return result;
@@ -204,31 +181,7 @@ export class AccountAgentService {
       this.listInputSessions(workspaceId),
       listAccountWorkItems({ prisma: this.prisma }, workspaceId),
     ]);
-    const oa = approvals.filter((a) => a.status === 'OPEN');
-    const pi = inputSessions.filter((a) => a.status !== 'COMPLETED');
-    const aw = workItems.filter((w) =>
-      ['OPEN', 'WAITING_APPROVAL', 'WAITING_INPUT', 'BLOCKED'].includes(String(w.state || '')),
-    );
-    const noLegal = aw.length === 0 && oa.length === 0 && pi.length === 0;
-    return {
-      objective: 'revenue',
-      mode: oa.length > 0 || pi.length > 0 ? 'HUMAN_INPUT_REQUIRED' : 'ACTIVE',
-      openApprovalCount: oa.length,
-      pendingInputCount: pi.length,
-      completedApprovalCount: approvals.filter((a) => a.status === 'COMPLETED').length,
-      openApprovals: oa.slice(0, 10),
-      pendingInputs: pi.slice(0, 10),
-      workItems: workItems.slice(0, 20),
-      openWorkItemCount: workItems.filter((w) => w.state !== 'COMPLETED').length,
-      noLegalActions: noLegal,
-      noLegalActionReasons: noLegal ? ['account_universe_exhausted_for_current_registry'] : [],
-      capabilityRegistryVersion: ACCOUNT_CAPABILITY_REGISTRY_VERSION,
-      capabilityCount: ACCOUNT_CAPABILITY_REGISTRY.length,
-      conversationActionRegistryVersion: CONVERSATION_ACTION_REGISTRY_VERSION,
-      conversationActionCount: CONVERSATION_ACTION_REGISTRY.length,
-      lastMeaningfulActionAt:
-        approvals[0]?.lastDetectedAt || pi[0]?.updatedAt || workItems[0]?.updatedAt || null,
-    };
+    return summarizeRuntime({ approvals, inputSessions, workItems });
   }
 
   getCapabilityRegistry() {
@@ -264,27 +217,13 @@ export class AccountAgentService {
     await upsertAccountWorkItem(
       { prisma: this.prisma, agentEvents: this.agentEvents },
       workspaceId,
-      {
-        kind: 'catalog_gap_detected',
-        entityType: 'product',
-        entityId: approval.normalizedProductName,
-        state: 'WAITING_INPUT',
-        title: `Criar produto ${approval.requestedProductName}`,
-        summary: approval.operatorPrompt,
-        priority: 95,
-        utility: 95,
-        requiresApproval: true,
-        requiresInput: true,
-        approvalState: next.status,
-        inputState: session.status,
-        blockedBy: null,
-        evidence: { approvalId, inputSessionId: session.id },
-        metadata: {
-          conversationId: approval.conversationId,
-          contactId: approval.contactId,
-          phone: approval.phone,
-        },
-      },
+      buildApprovedCatalogGapWorkItem({
+        approval,
+        approvalId,
+        approvalStatus: next.status,
+        inputSessionId: session.id,
+        sessionStatus: session.status,
+      }),
     );
     const prompt = getPromptForStage(session.status, session.productName);
     await this.agentEvents.publish({
@@ -316,27 +255,7 @@ export class AccountAgentService {
     await upsertAccountWorkItem(
       { prisma: this.prisma, agentEvents: this.agentEvents },
       workspaceId,
-      {
-        kind: 'catalog_gap_detected',
-        entityType: 'product',
-        entityId: approval.normalizedProductName,
-        state: 'BLOCKED',
-        title: `Criar produto ${approval.requestedProductName}`,
-        summary: approval.operatorPrompt,
-        priority: 95,
-        utility: 0,
-        requiresApproval: true,
-        requiresInput: false,
-        approvalState: next.status,
-        inputState: null,
-        blockedBy: { reason: 'operator_rejected_product_creation', approvalId: approval.id },
-        evidence: { approvalId: approval.id },
-        metadata: {
-          conversationId: approval.conversationId,
-          contactId: approval.contactId,
-          phone: approval.phone,
-        },
-      },
+      buildRejectedCatalogGapWorkItem(approval),
     );
     await this.agentEvents.publish({
       type: 'status',
@@ -369,20 +288,13 @@ export class AccountAgentService {
     return toPrismaJsonValue(v);
   }
 
-  private buildApprovalKey(np: string) {
-    return `account_approval:product_creation:${np}`;
-  }
-  private buildInputSessionKey(np: string) {
-    return `account_input_session:product_creation:${np}`;
-  }
-
   private async findApproval(workspaceId: string, approvalId: string) {
     const approvals = await this.listApprovals(workspaceId);
     const a = approvals.find((i) => i.id === approvalId);
     if (!a) {
       throw new NotFoundException('Aprovação de conta não encontrada');
     }
-    const key = this.buildApprovalKey(a.normalizedProductName);
+    const key = buildApprovalKey(a.normalizedProductName);
     const record = await this.prisma.kloelMemory.findUnique({
       where: { workspaceId_key: { workspaceId, key } },
     });
@@ -398,7 +310,7 @@ export class AccountAgentService {
     if (!s) {
       throw new NotFoundException('Sessão de input não encontrada');
     }
-    const key = this.buildInputSessionKey(s.normalizedProductName);
+    const key = buildInputSessionKey(s.normalizedProductName);
     const record = await this.prisma.kloelMemory.findUnique({
       where: { workspaceId_key: { workspaceId, key } },
     });
@@ -416,7 +328,7 @@ export class AccountAgentService {
   }
 
   private async ensureInputSession(workspaceId: string, approval: AccountApprovalPayload) {
-    const key = this.buildInputSessionKey(approval.normalizedProductName);
+    const key = buildInputSessionKey(approval.normalizedProductName);
     const existing = await this.prisma.kloelMemory.findUnique({
       where: { workspaceId_key: { workspaceId, key } },
     });
@@ -426,21 +338,11 @@ export class AccountAgentService {
         return p;
       }
     }
-    const session: AccountInputSessionPayload = {
-      id: randomUUID(),
-      approvalId: approval.id,
-      kind: 'product_creation',
-      status: 'WAITING_DESCRIPTION',
-      productName: approval.requestedProductName,
-      normalizedProductName: approval.normalizedProductName,
-      contactId: approval.contactId,
-      contactName: approval.contactName,
-      phone: approval.phone,
-      contactMessage: approval.contactMessage,
-      answers: {},
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
+    const session: AccountInputSessionPayload = buildInitialInputSession({
+      approval,
+      newId: randomUUID(),
+      nowIso: new Date().toISOString(),
+    });
     await this.prisma.kloelMemory.upsert({
       where: { workspaceId_key: { workspaceId, key } },
       create: {
