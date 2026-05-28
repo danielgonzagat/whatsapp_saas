@@ -30,16 +30,19 @@ import {
   FRAUD_ACTION_AUDIT_MAP,
   MP_WEBHOOK_PATH,
   PIX_EXPIRATION_MINUTES,
-  STRIPE_THREE_DS_REQUEST_ANY,
   assertCanonicalProvider,
   buildCheckoutPaymentCreatedAuditPayload,
   buildCheckoutPaymentResult,
   buildFinancialAlertContext,
   buildMercadoPagoBoletoDisplay,
+  buildMercadoPagoBoletoPaymentData,
   buildMercadoPagoPixDisplay,
+  buildMercadoPagoPixPaymentData,
   buildPaymentBreadcrumb,
   buildPaymentCaptureContext,
   buildPaymentDescription,
+  buildStripeChargeInput,
+  buildStripePaymentData,
   describeError,
   emitPaymentDeclined,
   emitPaymentLifecycleEvents,
@@ -49,7 +52,6 @@ import {
   mapStripePaymentStatus,
   normalizeBoletoAddress,
   resolveBackendOrigin,
-  toJsonValue,
   toProviderPaymentMethod,
   type AuditableFraudAction,
   type CheckoutPaymentMethod,
@@ -57,11 +59,6 @@ import {
   type PixDisplayData,
 } from './checkout-payment.helpers';
 
-type SaleChargeInput = Parameters<StripeChargeService['createSaleCharge']>[0];
-type CardPaymentOptions = Extract<
-  NonNullable<NonNullable<SaleChargeInput['paymentMethodOptions']>['card']>,
-  object
->;
 type MercadoPagoBoletoCharge = Awaited<ReturnType<MercadoPagoBoletoChargeService['create']>>;
 type MercadoPagoPixCharge = Awaited<ReturnType<MercadoPagoPixChargeService['create']>>;
 
@@ -119,60 +116,6 @@ export class CheckoutPaymentService {
         },
       },
     });
-  }
-
-  private buildChargeInput(
-    params: {
-      orderId: string;
-      idempotencyKey?: string;
-      workspaceId: string;
-      customerName: string;
-      customerEmail: string;
-      customerPhone?: string;
-      paymentMethod: CheckoutPaymentMethod;
-    },
-    opts: {
-      sellerStripeAccountId: string;
-      currency: string;
-      baseTotalInCents: number;
-      chargedTotalInCents: number;
-      marketplaceFeeInCents: number;
-      interestInCents: number;
-      forceThreeDS?: boolean;
-    },
-  ) {
-    const threeDsRequest = STRIPE_THREE_DS_REQUEST_ANY as NonNullable<
-      CardPaymentOptions['request_three_d_secure']
-    >;
-    const paymentMethodOptions: SaleChargeInput['paymentMethodOptions'] | undefined =
-      opts.forceThreeDS
-        ? {
-            card: {
-              request_three_d_secure: threeDsRequest,
-            },
-          }
-        : undefined;
-
-    const base: Parameters<StripeChargeService['createSaleCharge']>[0] = {
-      workspaceId: params.workspaceId,
-      sellerStripeAccountId: opts.sellerStripeAccountId,
-      buyerPaidCents: BigInt(opts.chargedTotalInCents),
-      saleValueCents: BigInt(opts.baseTotalInCents),
-      interestCents: BigInt(opts.interestInCents),
-      marketplaceFeeCents: BigInt(opts.marketplaceFeeInCents),
-      currency: opts.currency,
-      idempotencyKey: params.idempotencyKey || params.orderId,
-      buyerEmail: params.customerEmail,
-      paymentMethodTypes: ['card'],
-      metadata: {
-        kloel_order_id: params.orderId,
-        workspace_id: params.workspaceId,
-      },
-    };
-    if (paymentMethodOptions !== undefined) {
-      base.paymentMethodOptions = paymentMethodOptions;
-    }
-    return base;
   }
 
   /**
@@ -269,26 +212,13 @@ export class CheckoutPaymentService {
       providerPaymentStatus: charge.stripePaymentIntent.status,
       paymentStatus,
       amount,
-      data: {
+      data: buildStripePaymentData({
         orderId: params.orderId,
-        gateway: 'stripe',
-        externalId: charge.paymentIntentId,
-        pixQrCode: pixData.pixQrCode,
-        pixCopyPaste: pixData.pixCopyPaste,
-        pixExpiresAt: pixData.pixExpiresAt ? new Date(pixData.pixExpiresAt) : null,
-        boletoUrl: null,
-        boletoBarcode: null,
-        boletoExpiresAt: null,
         cardLast4: params.cardLast4 || null,
-        cardBrand: null,
         status: paymentStatus,
-        webhookData: toJsonValue({
-          provider: 'stripe',
-          paymentIntent: charge.stripePaymentIntent,
-          split: charge.split,
-          splitInput: charge.splitInput,
-        }),
-      },
+        pixData,
+        charge,
+      }),
     });
   }
 
@@ -312,25 +242,12 @@ export class CheckoutPaymentService {
       providerPaymentStatus: charge.status,
       paymentStatus,
       amount,
-      data: {
+      data: buildMercadoPagoPixPaymentData({
         orderId: params.orderId,
-        gateway: 'mercadopago',
-        externalId: charge.externalId,
-        pixQrCode: pixData.pixQrCode,
-        pixCopyPaste: pixData.pixCopyPaste,
-        pixExpiresAt: pixData.pixExpiresAt ? new Date(pixData.pixExpiresAt) : null,
-        boletoUrl: null,
-        boletoBarcode: null,
-        boletoExpiresAt: null,
-        cardLast4: null,
-        cardBrand: null,
         status: paymentStatus,
-        webhookData: toJsonValue({
-          provider: 'mercadopago',
-          paymentMethod: 'pix',
-          payment: charge.raw,
-        }),
-      },
+        pixData,
+        charge,
+      }),
     });
   }
 
@@ -353,25 +270,11 @@ export class CheckoutPaymentService {
       providerPaymentStatus: charge.status,
       paymentStatus,
       amount,
-      data: {
+      data: buildMercadoPagoBoletoPaymentData({
         orderId: params.orderId,
-        gateway: 'mercadopago',
-        externalId: charge.externalId,
-        pixQrCode: null,
-        pixCopyPaste: null,
-        pixExpiresAt: null,
-        boletoUrl: charge.ticketUrl,
-        boletoBarcode: charge.digitableLine || charge.barcodeContent,
-        boletoExpiresAt: charge.expiresAt,
-        cardLast4: null,
-        cardBrand: null,
         status: paymentStatus,
-        webhookData: toJsonValue({
-          provider: 'mercadopago',
-          paymentMethod: 'boleto',
-          payment: charge.raw,
-        }),
-      },
+        charge,
+      }),
     });
   }
 
@@ -670,7 +573,7 @@ export class CheckoutPaymentService {
         }),
       );
       const charge = await this.stripeCharge.createSaleCharge(
-        this.buildChargeInput(params, {
+        buildStripeChargeInput(params, {
           sellerStripeAccountId,
           currency: String(order.plan?.currency || 'BRL'),
           baseTotalInCents,
@@ -789,16 +692,16 @@ export class CheckoutPaymentService {
     params: { orderId: string; workspaceId: string },
     amount: number,
   ): Promise<void> {
-    await this.postPaymentEffects.markLeadConverted(order, params.workspaceId).catch((error) => {
+    const warn = (label: string, error: unknown) =>
       this.logger.warn(
-        `Checkout post-payment lead conversion failed for order ${params.orderId}: ${describeError(error)}`,
+        `Checkout post-payment ${label} failed for order ${params.orderId}: ${describeError(error)}`,
       );
-    });
-    await this.postPaymentEffects.sendPurchaseSignals(order, amount).catch((error) => {
-      this.logger.warn(
-        `Checkout post-payment purchase signals failed for order ${params.orderId}: ${describeError(error)}`,
-      );
-    });
+    await this.postPaymentEffects
+      .markLeadConverted(order, params.workspaceId)
+      .catch((error) => warn('lead conversion', error));
+    await this.postPaymentEffects
+      .sendPurchaseSignals(order, amount)
+      .catch((error) => warn('purchase signals', error));
   }
 
   private findOrder(orderId: string, workspaceId: string) {
@@ -867,31 +770,20 @@ export class CheckoutPaymentService {
       select: { status: true },
     });
     let currentStatus = currentOrder?.status || 'PENDING';
-
+    const transitionContext = { orderId, workspaceId };
     if (currentStatus !== 'PROCESSING') {
-      const canEnterProcessing = validateOrderTransition(currentStatus, 'PROCESSING', {
-        orderId,
-        workspaceId,
-      });
-      if (!canEnterProcessing) {
+      if (!validateOrderTransition(currentStatus, 'PROCESSING', transitionContext)) {
         return;
       }
-
       await tx.checkoutOrder.updateMany({
         where: { id: orderId, workspaceId },
         data: { status: 'PROCESSING' },
       });
       currentStatus = 'PROCESSING';
     }
-
-    const canBecomePaid = validateOrderTransition(currentStatus, 'PAID', {
-      orderId,
-      workspaceId,
-    });
-    if (!canBecomePaid) {
+    if (!validateOrderTransition(currentStatus, 'PAID', transitionContext)) {
       return;
     }
-
     await tx.checkoutOrder.updateMany({
       where: { id: orderId, workspaceId },
       data: { status: 'PAID', paidAt: new Date() },
