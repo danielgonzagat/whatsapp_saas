@@ -1,10 +1,10 @@
-import { BrainEventSpineService } from './brain-event-spine.service';
+import { MindEventSpine } from './mind-event-spine.service';
 import type {
   CommercialEventPayload,
   CheckoutEventPayload,
   MessageEventPayload,
   SaleEventPayload,
-} from './brain-event-taxonomy';
+} from '../../brain-event-taxonomy';
 
 function buildSaleCreatedEvent(occurredAt: Date): SaleEventPayload {
   return {
@@ -46,7 +46,7 @@ function assertSaleCreatedCall(createCall: { data: Record<string, unknown> }) {
   });
 }
 
-describe('BrainEventSpineService', () => {
+describe('MindEventSpine', () => {
   let prisma: {
     autopilotEvent: { create: jest.Mock };
     mindOutboxEvent: {
@@ -59,7 +59,7 @@ describe('BrainEventSpineService', () => {
     $executeRaw: jest.Mock;
     $transaction: jest.Mock;
   };
-  let service: BrainEventSpineService;
+  let service: MindEventSpine;
 
   beforeEach(() => {
     prisma = {
@@ -76,7 +76,7 @@ describe('BrainEventSpineService', () => {
       $executeRaw: jest.fn().mockResolvedValue(1),
       $transaction: jest.fn(async (fn: (tx: unknown) => unknown) => fn(prisma)),
     };
-    service = new BrainEventSpineService(prisma as never);
+    service = new MindEventSpine(prisma as never);
   });
 
   describe('recordCommercial', () => {

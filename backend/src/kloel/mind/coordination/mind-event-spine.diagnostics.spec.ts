@@ -1,18 +1,18 @@
-import { BrainEventSpineService } from './brain-event-spine.service';
+import { MindEventSpine } from './mind-event-spine.service';
 import type {
   CampaignEventPayload,
   CommercialEventPayload,
   ConceptEventPayload,
   LeadEventPayload,
   ProductEventPayload,
-} from './brain-event-taxonomy';
+} from '../../brain-event-taxonomy';
 
 function objectContaining<T extends object>(sample: T): T {
   const matcher: unknown = expect.objectContaining(sample);
   return matcher as T;
 }
 
-describe('BrainEventSpineService diagnostics', () => {
+describe('MindEventSpine diagnostics', () => {
   let prisma: {
     autopilotEvent: { create: jest.Mock };
     mindOutboxEvent: {
@@ -25,7 +25,7 @@ describe('BrainEventSpineService diagnostics', () => {
     $executeRaw: jest.Mock;
     $transaction: jest.Mock;
   };
-  let service: BrainEventSpineService;
+  let service: MindEventSpine;
 
   beforeEach(() => {
     prisma = {
@@ -42,7 +42,7 @@ describe('BrainEventSpineService diagnostics', () => {
       $executeRaw: jest.fn().mockResolvedValue(1),
       $transaction: jest.fn(async (fn: (tx: unknown) => unknown) => fn(prisma)),
     };
-    service = new BrainEventSpineService(prisma as never);
+    service = new MindEventSpine(prisma as never);
   });
 
   describe('markDispatchFailed', () => {

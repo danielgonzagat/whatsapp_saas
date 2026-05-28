@@ -1,7 +1,7 @@
-import { BrainEventSpineService } from './brain-event-spine.service';
-import type { SaleEventPayload } from './brain-event-taxonomy';
+import { MindEventSpine } from './mind-event-spine.service';
+import type { SaleEventPayload } from '../../brain-event-taxonomy';
 
-describe('BrainEventSpineService outbox helpers', () => {
+describe('MindEventSpine outbox helpers', () => {
   let prisma: {
     autopilotEvent: { create: jest.Mock };
     mindOutboxEvent: { findMany: jest.Mock; updateMany: jest.Mock; upsert: jest.Mock };
@@ -9,7 +9,7 @@ describe('BrainEventSpineService outbox helpers', () => {
     $executeRaw: jest.Mock;
     $transaction: jest.Mock;
   };
-  let service: BrainEventSpineService;
+  let service: MindEventSpine;
 
   beforeEach(() => {
     prisma = {
@@ -23,7 +23,7 @@ describe('BrainEventSpineService outbox helpers', () => {
       $executeRaw: jest.fn().mockResolvedValue(1),
       $transaction: jest.fn(async (fn: (tx: unknown) => unknown) => fn(prisma)),
     };
-    service = new BrainEventSpineService(prisma as never);
+    service = new MindEventSpine(prisma as never);
   });
 
   it('claims pending outbox events without marking downstream dispatch success', async () => {

@@ -1,7 +1,7 @@
-import { BrainCapabilityExecutorService } from './brain-capability-executor.service';
-import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
+import { MindCapabilityExecutor } from './mind-capability-executor.service';
+import { createPartialPrismaMock } from '../../../../test/helpers/prisma.mock';
 
-describe('BrainCapabilityExecutorService', () => {
+describe('MindCapabilityExecutor', () => {
   const eventsRecord = jest.fn().mockResolvedValue(undefined);
   const ensureTokenBudget = jest.fn().mockResolvedValue(undefined);
 
@@ -17,13 +17,13 @@ describe('BrainCapabilityExecutorService', () => {
   const orderAggregate = prismaMock.checkoutOrder.aggregate;
   const orderCount = prismaMock.checkoutOrder.count;
 
-  let service: BrainCapabilityExecutorService;
+  let service: MindCapabilityExecutor;
 
   beforeEach(() => {
     jest.clearAllMocks();
     eventsRecord.mockResolvedValue(undefined);
     ensureTokenBudget.mockResolvedValue(undefined);
-    service = new BrainCapabilityExecutorService(
+    service = new MindCapabilityExecutor(
       prismaMock as never,
       { record: eventsRecord } as never,
       { ensureTokenBudget } as never,

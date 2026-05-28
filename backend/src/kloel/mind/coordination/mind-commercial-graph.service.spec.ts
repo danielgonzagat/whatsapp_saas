@@ -1,6 +1,6 @@
-import { BrainCommercialGraphService } from './brain-commercial-graph.service';
+import { MindCommercialGraph } from './mind-commercial-graph.service';
 
-describe('BrainCommercialGraphService', () => {
+describe('MindCommercialGraph', () => {
   it('builds a weighted commercial graph from workspace events', async () => {
     const prisma = {
       mindBelief: {
@@ -46,7 +46,7 @@ describe('BrainCommercialGraphService', () => {
       },
       $transaction: jest.fn((queries: Array<Promise<unknown>>) => Promise.all(queries)),
     };
-    const service = new BrainCommercialGraphService(prisma as never);
+    const service = new MindCommercialGraph(prisma as never);
 
     const graph = await service.buildWorkspaceGraph('ws-1');
 
@@ -100,7 +100,7 @@ describe('BrainCommercialGraphService', () => {
       },
       $transaction: jest.fn((queries: Array<Promise<unknown>>) => Promise.all(queries)),
     };
-    const service = new BrainCommercialGraphService(prisma as never);
+    const service = new MindCommercialGraph(prisma as never);
 
     const graph = await service.buildWorkspaceGraph('ws-1');
 
@@ -129,7 +129,7 @@ describe('BrainCommercialGraphService', () => {
       },
       $transaction: jest.fn((queries: Array<Promise<unknown>>) => Promise.all(queries)),
     };
-    const service = new BrainCommercialGraphService(prisma as never);
+    const service = new MindCommercialGraph(prisma as never);
 
     const result = await service.recommendNextActions('ws-1');
 
@@ -169,7 +169,7 @@ describe('BrainCommercialGraphService', () => {
       },
       $transaction: jest.fn((queries: Array<Promise<unknown>>) => Promise.all(queries)),
     };
-    const service = new BrainCommercialGraphService(prisma as never);
+    const service = new MindCommercialGraph(prisma as never);
 
     const result = await service.recommendNextActions('ws-1');
 

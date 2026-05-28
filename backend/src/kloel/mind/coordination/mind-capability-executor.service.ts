@@ -22,7 +22,7 @@
 import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../../../logging/structured-logger';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { BrainEventSpineService } from '../../brain-event-spine.service';
+import { MindEventSpine } from './mind-event-spine.service';
 import { PlanLimitsService } from '../../../billing/plan-limits.service';
 import { AbiBuilderService, type AbiBuildInput } from '../../abi/abi-builder.service';
 import type { IdentityAudience } from '../../lineage/identity-projector.service';
@@ -108,7 +108,7 @@ export class MindCapabilityExecutor {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly events: BrainEventSpineService,
+    private readonly events: MindEventSpine,
     private readonly planLimits: PlanLimitsService,
     private readonly abiBuilder: AbiBuilderService,
     private readonly mindPerception: MindPerceptionService,

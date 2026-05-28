@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
-jest.mock('../marketing/channels/whatsapp/whatsapp-normalization.util', () => ({
+jest.mock('../../../marketing/channels/whatsapp/whatsapp-normalization.util', () => ({
   includesAnyPhrase: jest.fn((text: string, phrases: string[]) => {
     if (!text) {
       return false;
@@ -15,17 +15,17 @@ jest.mock('../marketing/channels/whatsapp/whatsapp-normalization.util', () => ({
   normalizeIntentText: jest.fn((text: string) => (text || '').toLowerCase()),
 }));
 
-import { WhatsAppBrainService } from './whatsapp-brain.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { KloelService } from './kloel.service';
-import { DecisionOutcomeService } from './decision-outcome.service';
+import { WhatsAppMindCoordinator } from './whatsapp-mind-coordinator.service';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { KloelService } from '../../kloel.service';
+import { DecisionOutcomeService } from '../../decision-outcome.service';
 
 type BrainPrismaMock = {
   kloelLead: { findFirst: jest.Mock; create: jest.Mock };
 };
 
-describe('WhatsAppBrainService', () => {
-  let service: WhatsAppBrainService;
+describe('WhatsAppMindCoordinator', () => {
+  let service: WhatsAppMindCoordinator;
   let prisma: BrainPrismaMock;
   let kloelService: Pick<KloelService, 'thinkSync'>;
 
@@ -45,7 +45,7 @@ describe('WhatsAppBrainService', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        WhatsAppBrainService,
+        WhatsAppMindCoordinator,
         { provide: PrismaService, useValue: prisma },
         { provide: KloelService, useValue: kloelService },
         {
@@ -55,7 +55,7 @@ describe('WhatsAppBrainService', () => {
       ],
     }).compile();
 
-    service = module.get<WhatsAppBrainService>(WhatsAppBrainService);
+    service = module.get<WhatsAppMindCoordinator>(WhatsAppMindCoordinator);
   });
 
   afterEach(() => {
@@ -192,7 +192,9 @@ describe('WhatsAppBrainService', () => {
 
     it('detects purchase intent', async () => {
       prisma.kloelLead.findFirst.mockResolvedValue({ id: 'lead-1' });
-      const { includesAnyPhrase } = require('../marketing/channels/whatsapp/whatsapp-normalization.util');
+      const {
+        includesAnyPhrase,
+      } = require('../../../marketing/channels/whatsapp/whatsapp-normalization.util');
 
       const result = await service.handleIncomingMessage({
         from: phone,

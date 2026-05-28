@@ -1,12 +1,12 @@
-import { BrainCapabilityRegistryService } from './brain-capability-registry.service';
-import type { BrainCapabilityDomain } from './brain-capability-registry.service';
+import { MindCapabilityRegistry } from './mind-capability-registry.service';
+import type { BrainCapabilityDomain } from './mind-capability-registry.service';
 import type {
   BrainCapabilityDelegationMode,
   BrainCapabilityRiskClass,
-} from './brain-capability-policy';
+} from '../../brain-capability-policy';
 
-describe('BrainCapabilityRegistryService', () => {
-  const svc = new BrainCapabilityRegistryService();
+describe('MindCapabilityRegistry', () => {
+  const svc = new MindCapabilityRegistry();
   const domains: ReadonlySet<BrainCapabilityDomain> = new Set([
     'control',
     'messaging',

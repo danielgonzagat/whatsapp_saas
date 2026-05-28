@@ -1,6 +1,6 @@
-import { BrainAutonomyService } from './brain-autonomy.service';
+import { MindAutonomyCoordinator } from './mind-autonomy-coordinator.service';
 
-describe('BrainAutonomyService', () => {
+describe('MindAutonomyCoordinator', () => {
   it('turns graph recommendations into auditable proposals', async () => {
     const graph = {
       recommendNextActions: jest.fn().mockResolvedValue({
@@ -20,7 +20,7 @@ describe('BrainAutonomyService', () => {
       }),
     };
     const events = { record: jest.fn().mockResolvedValue(undefined) };
-    const service = new BrainAutonomyService(graph as never, events as never);
+    const service = new MindAutonomyCoordinator(graph as never, events as never);
 
     const result = await service.propose('ws-1');
 

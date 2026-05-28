@@ -1,21 +1,22 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { KloelLeadBrainService } from './kloel-lead-brain.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { PlanLimitsService } from '../billing/plan-limits.service';
-import { LLMBudgetService } from './llm-budget.service';
-import { UnifiedAgentService } from './unified-agent.service';
-import { SmartPaymentService } from './smart-payment.service';
-import { chatCompletionWithFallback } from './openai-wrapper';
+import { LeadMindCoordinator } from './lead-mind-coordinator.service';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { PlanLimitsService } from '../../../billing/plan-limits.service';
+import { LLMBudgetService } from '../../llm-budget.service';
+import { UnifiedAgentService } from '../../unified-agent.service';
+import { SmartPaymentService } from '../../smart-payment.service';
+import { chatCompletionWithFallback } from '../../openai-wrapper';
 
-jest.mock('./openai-wrapper', () => ({
+jest.mock('../../openai-wrapper', () => ({
   chatCompletionWithFallback: jest.fn().mockResolvedValue({
     choices: [{ message: { content: 'Resposta do Kloel Brain' } }],
     usage: { total_tokens: 120 },
   }),
 }));
 
-jest.mock('../lib/openai-models', () => {
-  const actual = jest.requireActual<typeof import('../lib/openai-models')>('../lib/openai-models');
+jest.mock('../../../lib/openai-models', () => {
+  const actual =
+    jest.requireActual<typeof import('../../../lib/openai-models')>('../../../lib/openai-models');
   return {
     ...actual,
     resolveBackendOpenAIModel: jest.fn().mockReturnValue(actual.CANONICAL_MODEL_IDS.openAiTextOmni),
@@ -43,8 +44,8 @@ type LeadBrainPrismaMock = {
   product: { findMany: jest.Mock };
 };
 
-describe('KloelLeadBrainService', () => {
-  let service: KloelLeadBrainService;
+describe('LeadMindCoordinator', () => {
+  let service: LeadMindCoordinator;
   let prisma: LeadBrainPrismaMock;
   let planLimits: Pick<PlanLimitsService, 'ensureTokenBudget' | 'trackAiUsage'>;
   let llmBudget: Pick<LLMBudgetService, 'assertBudget' | 'recordSpend'>;
@@ -108,7 +109,7 @@ describe('KloelLeadBrainService', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        KloelLeadBrainService,
+        LeadMindCoordinator,
         { provide: PrismaService, useValue: prisma },
         { provide: PlanLimitsService, useValue: planLimits },
         { provide: LLMBudgetService, useValue: llmBudget },
@@ -117,7 +118,7 @@ describe('KloelLeadBrainService', () => {
       ],
     }).compile();
 
-    service = module.get<KloelLeadBrainService>(KloelLeadBrainService);
+    service = module.get<LeadMindCoordinator>(LeadMindCoordinator);
   });
 
   afterEach(() => {

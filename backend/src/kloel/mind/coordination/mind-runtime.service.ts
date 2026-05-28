@@ -24,12 +24,12 @@ import {
   mapBrainActionToDomainEvent,
   readBrainActionName,
 } from '../../brain-action-event-mapper';
-import { BrainCapabilityExecutorService } from '../../brain-capability-executor.service';
+import { MindCapabilityExecutor } from './mind-capability-executor.service';
 import { OPERATOR_CAPABILITIES } from '../../brain-capabilities.const';
-import { BrainCapabilityRegistryService } from '../../brain-capability-registry.service';
-import { BrainCommercialGraphService } from '../../brain-commercial-graph.service';
+import { MindCapabilityRegistry } from './mind-capability-registry.service';
+import { MindCommercialGraph } from './mind-commercial-graph.service';
 import type { CommercialGraphRecommendation } from '../../brain-commercial-graph.types';
-import { BrainEventSpineService } from '../../brain-event-spine.service';
+import { MindEventSpine } from './mind-event-spine.service';
 import { BRAIN_EVENT_TAXONOMY } from '../../brain-event-taxonomy';
 import { BrainDecideDto, BrainObserveDto } from '../../brain-runtime.dto';
 import { KloelThreadService } from '../../kloel-thread.service';
@@ -84,11 +84,11 @@ export class MindRuntime {
     @Inject(forwardRef(() => UnifiedAgentService))
     private readonly unifiedAgent: UnifiedAgentService,
     private readonly contextData: UnifiedAgentContextDataService,
-    private readonly capabilities: BrainCapabilityRegistryService,
-    private readonly events: BrainEventSpineService,
+    private readonly capabilities: MindCapabilityRegistry,
+    private readonly events: MindEventSpine,
     private readonly threads: KloelThreadService,
-    private readonly graph: BrainCommercialGraphService,
-    private readonly executor: BrainCapabilityExecutorService,
+    private readonly graph: MindCommercialGraph,
+    private readonly executor: MindCapabilityExecutor,
   ) {
     this.logger.debug?.(`MindRuntime initialized`);
   }

@@ -1,6 +1,6 @@
-import { BrainRuntimeService } from './brain-runtime.service';
+import { MindRuntime } from './mind-runtime.service';
 
-describe('BrainRuntimeService', () => {
+describe('MindRuntime', () => {
   let unifiedAgent: { processMessage: jest.Mock };
   let contextData: { getProducts: jest.Mock; getWorkspaceContext: jest.Mock };
   let capabilities: { allowedFor: jest.Mock; grouped: jest.Mock; list: jest.Mock };
@@ -19,7 +19,7 @@ describe('BrainRuntimeService', () => {
     searchContact: jest.Mock;
     sendMessageViaChannel: jest.Mock;
   };
-  let service: BrainRuntimeService;
+  let service: MindRuntime;
 
   beforeEach(() => {
     unifiedAgent = {
@@ -111,7 +111,7 @@ describe('BrainRuntimeService', () => {
         data: { phone: '1199999', messagePreview: 'Ola', channel: 'whatsapp' },
       }),
     };
-    service = new BrainRuntimeService(
+    service = new MindRuntime(
       unifiedAgent as never,
       contextData as never,
       capabilities,

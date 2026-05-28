@@ -2,8 +2,7 @@
  * MindAutonomyCoordinator — canonical autonomy proposal service for the
  * unified Kloel Mind (ADR-0013 Wave M1).
  *
- * Turns recommendations from {@link MindCommercialGraph} (currently still
- * imported under its legacy `BrainCommercialGraphService` name) into auditable
+ * Turns recommendations from {@link MindCommercialGraph} into auditable
  * autonomy proposals and records each proposal cycle on the cognitive event
  * spine.
  *
@@ -17,8 +16,8 @@
 import { Injectable } from '@nestjs/common';
 
 import { StructuredLogger } from '../../../logging/structured-logger';
-import { BrainCommercialGraphService } from '../../brain-commercial-graph.service';
-import { BrainEventSpineService } from '../../brain-event-spine.service';
+import { MindCommercialGraph } from './mind-commercial-graph.service';
+import { MindEventSpine } from './mind-event-spine.service';
 
 export interface BrainAutonomyProposal {
   action: string;
@@ -33,8 +32,8 @@ export class MindAutonomyCoordinator {
   private readonly logger = StructuredLogger.from(MindAutonomyCoordinator.name);
 
   constructor(
-    private readonly graph: BrainCommercialGraphService,
-    private readonly events: BrainEventSpineService,
+    private readonly graph: MindCommercialGraph,
+    private readonly events: MindEventSpine,
   ) {
     this.logger.debug?.(`MindAutonomyCoordinator initialized`);
   }
