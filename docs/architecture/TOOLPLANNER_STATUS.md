@@ -172,3 +172,11 @@ is a low-risk incremental step.
 - `backend/src/kloel/operation-receipt.helpers.ts` — parallel receipt system
   in active use
 - `docs/architecture/CAPABILITY_MAP.md` — broader capability architecture
+
+## PI-K3 Action Blocked — Needs Rewrite
+
+Wave-K3-C's instructions require "partial wiring with a mechanical diff" to
+apply exactly. This doc classifies as PARTIAL WIRING but supplies three
+strategic options (A/B/C) with no mechanical diff — none is a drop-in patch.
+The author must reclassify to a single actionable path with a concrete diff,
+or classify as "live but unused-by-chat" with a specific wiring proposal.
