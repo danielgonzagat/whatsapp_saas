@@ -1,10 +1,10 @@
-import { MindBanditService } from './mind/policy/mind-bandit.service';
-import { MindCaseMemoryService } from './mind/memory/mind-case-memory.service';
-import { MindConceptService } from './mind/memory/mind-concepts.service';
-import { MindGlobalPriorService } from './mind/memory/mind-global-prior.service';
-import { MindGuardsService } from './mind/policy/mind-guards.service';
-import { MindWorkspaceStateService } from './mind/memory/mind-workspace-state.service';
-import { KloelRuleEngineService } from './rules/kloel-rule-engine.service';
+import { MindBanditService } from './policy/mind-bandit.service';
+import { MindCaseMemoryService } from './memory/mind-case-memory.service';
+import { MindConceptService } from './memory/mind-concepts.service';
+import { MindGlobalPriorService } from './memory/mind-global-prior.service';
+import { MindGuardsService } from './policy/mind-guards.service';
+import { MindWorkspaceStateService } from './memory/mind-workspace-state.service';
+import { KloelRuleEngineService } from '../rules/kloel-rule-engine.service';
 
 describe('code-native MIND services', () => {
   it('detects commercial concepts and emits concept events', async () => {

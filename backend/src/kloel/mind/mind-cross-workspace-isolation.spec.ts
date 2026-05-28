@@ -1,7 +1,7 @@
-import { MindBeliefService } from './mind/inference/mind-belief.service';
-import { MindCaseMemoryService } from './mind/memory/mind-case-memory.service';
-import { MindPolicyService } from './mind/policy/mind-policy.service';
-import { MindWorkspaceStateService } from './mind/memory/mind-workspace-state.service';
+import { MindBeliefService } from './inference/mind-belief.service';
+import { MindCaseMemoryService } from './memory/mind-case-memory.service';
+import { MindPolicyService } from './policy/mind-policy.service';
+import { MindWorkspaceStateService } from './memory/mind-workspace-state.service';
 
 describe('MIND cross-workspace isolation', () => {
   it('mantem crencas escopadas por workspace', async () => {
