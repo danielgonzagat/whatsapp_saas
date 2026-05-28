@@ -6,6 +6,40 @@ import { MindBeliefService } from './inference/mind-belief.service';
 import { MindConceptService } from './memory/mind-concepts.service';
 import type { SelfHealthService } from '../self-awareness/self-health.service';
 import type { SelfGapsService } from '../self-awareness/self-gaps.service';
+import type { RiskClassService } from '../risk-class/risk-class.service';
+import type { ActionDescriptor } from '../risk-class/risk-class.types';
+
+/** Infer an ActionDescriptor from user message and concept detections. */
+function inferActionDescriptor(
+  userMessage: string,
+  concepts: Array<{ concept: string; confidence: number }> | undefined,
+): ActionDescriptor {
+  const normalized = userMessage.toLowerCase();
+
+  const hasPayment = /\b(pagamento|pagar|pix|cobrança|boleto|cartão|preço|valor|desconto|cupom|reembolso|financial|payment)\b/.test(normalized);
+  const hasBlock = /\b(bloquear|suspender|banir|remover)\b/.test(normalized);
+  const hasPublic = /\b(público|postar|publicar|anunciar|divulgar)\b/.test(normalized);
+
+  const hasFinancialConcept = concepts?.some(
+    (c) => /(price|payment|discount|financial|fee|charge|money)/i.test(c.concept),
+  );
+
+  if (hasBlock) {
+    return { kind: 'lead_block', target: 'lead', reversible: true };
+  }
+
+  if (hasPayment || hasFinancialConcept) {
+    return { kind: 'payment_action', target: 'lead', reversible: true, financialImpactCents: 0 };
+  }
+
+  if (hasPublic) {
+    return { kind: 'public_response', target: 'public', reversible: true };
+  }
+
+  // Default: routine chat reply — lowest risk
+  return { kind: 'message_send', target: 'lead', reversible: true };
+}
+
 /** Minimal prisma surface needed by the helper — only autopilotEvent queries. */
 export interface MindSignalsPrisma {
   autopilotEvent: {
@@ -28,6 +62,7 @@ export interface BuildMindSignalsDeps {
   mindConceptService?: MindConceptService;
   selfHealthService?: SelfHealthService;
   selfGapsService?: SelfGapsService;
+  riskClassService?: RiskClassService;
   logger: Pick<StructuredLogger, 'warn'>;
 }
 /**
@@ -41,6 +76,7 @@ export async function buildMindSignals(
   userMessage: string,
 ): Promise<Record<string, unknown>> {
   const mindSignals: Record<string, unknown> = {};
+  let rawConcepts: Array<{ concept: string; confidence: number }> | undefined;
 
   // ── Attention + Valence (PI-k4) ──────────────────────────────────
   if (deps.attentionService && deps.valenceAggregatorService) {
@@ -132,6 +168,7 @@ export async function buildMindSignals(
           ),
         ),
       ]);
+      rawConcepts = detections;
       mindSignals.concepts = detections
         .slice(0, 5)
         .map((d: { concept: string; confidence: number }) => ({
@@ -200,6 +237,28 @@ export async function buildMindSignals(
       mindSignals.selfModel = selfModel;
     } catch (error: unknown) {
       deps.logger.warn('kloel_self_model_skipped', {
+        reason: error instanceof Error ? error.message : 'unknown error',
+      });
+    }
+  }
+
+  // ── RiskClass (PI-k8) ────────────────────────────────────────────
+  if (deps.riskClassService) {
+    try {
+      const actionDesc = inferActionDescriptor(userMessage, rawConcepts);
+      const classification = await Promise.race([
+        Promise.resolve(deps.riskClassService.classify(actionDesc)),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('kloel_risk_class_timeout')), 30),
+        ),
+      ]);
+      mindSignals.riskClass = {
+        tier: classification.class,
+        reasons: [...classification.rollback].slice(0, 3),
+        recommendedAction: classification.autonomyMode,
+      };
+    } catch (error: unknown) {
+      deps.logger.warn('kloel_risk_class_skipped', {
         reason: error instanceof Error ? error.message : 'unknown error',
       });
     }

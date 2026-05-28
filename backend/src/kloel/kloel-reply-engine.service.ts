@@ -18,6 +18,7 @@ import { MindBeliefService } from './mind/inference/mind-belief.service';
 import { MindConceptService } from './mind/memory/mind-concepts.service';
 import { SelfHealthService } from './self-awareness/self-health.service';
 import { SelfGapsService } from './self-awareness/self-gaps.service';
+import { RiskClassService } from './risk-class/risk-class.service';
 import { buildMindSignals, type BuildMindSignalsDeps } from './mind/build-mind-signals.helper';
 import { SpineEmitterService } from './spine/spine-emitter.service';
 import { UnifiedAgentService } from './unified-agent.service';
@@ -68,6 +69,7 @@ export class KloelReplyEngineService {
     @Optional() private readonly selfHealthService?: SelfHealthService,
     @Optional() private readonly selfGapsService?: SelfGapsService,
     @Optional() private readonly decisionOutcomeService?: DecisionOutcomeService,
+    @Optional() private readonly riskClassService?: RiskClassService,
   ) {
     this.openai = createTextLlmClient(undefined, { timeout: 60_000, maxRetries: 0 });
     this.toolRouter = new KloelToolRouter(
@@ -273,6 +275,9 @@ export class KloelReplyEngineService {
           ? { selfHealthService: this.selfHealthService }
           : {}),
         ...(this.selfGapsService !== undefined ? { selfGapsService: this.selfGapsService } : {}),
+        ...(this.riskClassService !== undefined
+          ? { riskClassService: this.riskClassService }
+          : {}),
       };
       cognitiveState.mindSignals = await buildMindSignals(
         mindDeps,

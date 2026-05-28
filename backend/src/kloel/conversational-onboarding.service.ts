@@ -17,6 +17,7 @@ import { MindBeliefService } from './mind/inference/mind-belief.service';
 import { MindConceptService } from './mind/memory/mind-concepts.service';
 import { SelfHealthService } from './self-awareness/self-health.service';
 import { SelfGapsService } from './self-awareness/self-gaps.service';
+import { RiskClassService } from './risk-class/risk-class.service';
 import { buildMindSignals, type BuildMindSignalsDeps } from './mind/build-mind-signals.helper';
 import { SpineEmitterService } from './spine/spine-emitter.service';
 import { randomIdSegment } from '../common/random-id';
@@ -99,6 +100,7 @@ export class ConversationalOnboardingService {
     @Optional() private readonly selfHealthService?: SelfHealthService,
     @Optional() private readonly selfGapsService?: SelfGapsService,
     @Optional() private readonly decisionOutcomeService?: DecisionOutcomeService,
+    @Optional() private readonly riskClassService?: RiskClassService,
   ) {
     this.prismaExt = prisma as object as PrismaWithDynamicModels;
     this.openai = createTextLlmClient() ?? new OpenAI({ apiKey: 'missing' });
@@ -382,6 +384,9 @@ export class ConversationalOnboardingService {
           ? { selfHealthService: this.selfHealthService }
           : {}),
         ...(this.selfGapsService !== undefined ? { selfGapsService: this.selfGapsService } : {}),
+        ...(this.riskClassService !== undefined
+          ? { riskClassService: this.riskClassService }
+          : {}),
       };
       const mindSignals = await buildMindSignals(mindDeps, workspaceId, userMessage);
       messages.push({
