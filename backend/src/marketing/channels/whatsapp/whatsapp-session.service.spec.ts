@@ -195,7 +195,10 @@ describe('WhatsappSessionService', () => {
   });
 
   describe('persistSessionDiagnostics', () => {
-    let _prisma: { workspace: { findUnique: jest.Mock; update: jest.Mock }; $transaction: jest.Mock };
+    let _prisma: {
+      workspace: { findUnique: jest.Mock; update: jest.Mock };
+      $transaction: jest.Mock;
+    };
 
     beforeEach(async () => {
       _prisma = {
@@ -235,7 +238,16 @@ describe('WhatsappSessionService', () => {
         lastHeartbeatAt: heartbeat,
         lastWatchdogDisconnectedAt: null,
       });
-      const update = _prisma.workspace.update.mock.calls[0][0];
+      type ProviderSession = { lastHeartbeatAt?: string };
+      type WorkspaceUpdateArg = {
+        data: {
+          providerSettings: {
+            whatsappApiSession: ProviderSession;
+            whatsappWebSession: ProviderSession;
+          };
+        };
+      };
+      const update = (_prisma.workspace.update.mock.calls[0] as [WorkspaceUpdateArg])[0];
       expect(update.data.providerSettings.whatsappApiSession.lastHeartbeatAt).toBe(heartbeat);
       expect(update.data.providerSettings.whatsappWebSession.lastHeartbeatAt).toBe(heartbeat);
     });

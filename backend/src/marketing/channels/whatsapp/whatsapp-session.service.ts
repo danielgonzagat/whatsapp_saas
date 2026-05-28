@@ -3,10 +3,7 @@ import { StructuredLogger } from '../../../logging/structured-logger';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { OpsAlertService } from '../../../observability/ops-alert.service';
 import { forEachSequential } from '../../../common/async-sequence';
-import {
-  WhatsAppProviderRegistry,
-  type SessionStatus,
-} from './providers/provider-registry';
+import { WhatsAppProviderRegistry, type SessionStatus } from './providers/provider-registry';
 import {
   WhatsAppApiProvider,
   type WahaRuntimeConfigDiagnostics,
@@ -123,7 +120,12 @@ export class WhatsappSessionService {
 
   async getConnectionStatus(ws: string) {
     const s = await this.providerRegistry.getSessionStatus(ws);
-    return { connected: s.connected, status: s.status, phoneNumber: s.phoneNumber, qrCode: s.qrCode };
+    return {
+      connected: s.connected,
+      status: s.status,
+      phoneNumber: s.phoneNumber,
+      qrCode: s.qrCode,
+    };
   }
 
   async getQrCode(ws: string) {
