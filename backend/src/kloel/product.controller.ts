@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -22,6 +21,16 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildProductMetrics } from './product-metrics.helpers';
 import { syncProductToMemory, deleteProductFromMemory } from './product-memory-sync.helpers';
+import {
+  PRODUCT_LIST_TAKE_CAP,
+  buildCreateProductData,
+  buildProductListWhere,
+  buildUpdateProductData,
+  calculateProductStats,
+  countProductImportResults,
+  extractCategoriesFromProducts,
+  validateUpdateProductDto,
+} from './product.controller.helpers';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 
@@ -106,39 +115,6 @@ export class ProductController {
     };
   }
 
-  private validateUpdateProductDto(dto: UpdateProductDto): void {
-    if (
-      dto.commissionPercent !== undefined &&
-      (dto.commissionPercent < 0 || dto.commissionPercent > 100)
-    ) {
-      throw new BadRequestException('commissionPercent precisa ficar entre 0 e 100');
-    }
-
-    if (
-      dto.commissionCookieDays !== undefined &&
-      (dto.commissionCookieDays < 1 || dto.commissionCookieDays > 3650)
-    ) {
-      throw new BadRequestException('commissionCookieDays precisa ficar entre 1 e 3650');
-    }
-
-    if (
-      dto.afterPayChargeValue !== undefined &&
-      dto.afterPayChargeValue !== null &&
-      dto.afterPayChargeValue < 0
-    ) {
-      throw new BadRequestException('afterPayChargeValue não pode ser negativo');
-    }
-
-    if (
-      dto.afterPayShippingProvider !== undefined &&
-      dto.afterPayShippingProvider !== null &&
-      dto.afterPayShippingProvider !== '' &&
-      !['correios', 'jadlog', 'melhor_envio', 'outro'].includes(dto.afterPayShippingProvider)
-    ) {
-      throw new BadRequestException('afterPayShippingProvider é inválido');
-    }
-  }
-
   /**
    * List all products for the authenticated user's workspace
    */
@@ -151,30 +127,15 @@ export class ProductController {
   ) {
     const workspaceId = req.user.workspaceId;
 
-    const where: Record<string, unknown> = { workspaceId };
+    const where = buildProductListWhere({ workspaceId, category, active, search });
 
-    if (category) {
-      where.category = category;
-    }
-
-    if (active !== undefined) {
-      where.active = active === 'true';
-    }
-
-    if (search) {
-      where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-
-    // I17 — bounded read: cap at 500 products per workspace for the list
-    // endpoint. Real workspaces have tens of products; 500 is generous
-    // headroom. Larger catalogues would need cursor pagination (follow-up).
+    // I17 — bounded read: cap at PRODUCT_LIST_TAKE_CAP products per workspace
+    // for the list endpoint. Real workspaces have tens of products; 500 is
+    // generous headroom. Larger catalogues would need cursor pagination.
     const rawProducts = await this.prisma.product.findMany({
       where: { workspaceId, ...where },
       orderBy: { createdAt: 'desc' },
-      take: 500,
+      take: PRODUCT_LIST_TAKE_CAP,
     });
 
     const metricsByProductId = await buildProductMetrics(
@@ -204,7 +165,7 @@ export class ProductController {
     const products = await this.prisma.product.findMany({
       where: { workspaceId },
       select: { id: true, active: true, name: true },
-      take: 500,
+      take: PRODUCT_LIST_TAKE_CAP,
     });
     const metricsByProductId = await buildProductMetrics(
       this.prisma,
@@ -212,23 +173,7 @@ export class ProductController {
       products.map((product) => product.id),
     );
 
-    const totalProducts = products.length;
-    const activeProducts = products.filter((product) => product.active).length;
-    const totalSales = products.reduce(
-      (sum, product) => sum + Number(metricsByProductId.get(product.id)?.totalSales || 0),
-      0,
-    );
-    const totalRevenue = products.reduce(
-      (sum, product) => sum + Number(metricsByProductId.get(product.id)?.totalRevenue || 0),
-      0,
-    );
-
-    return {
-      totalProducts,
-      activeProducts,
-      totalSales,
-      totalRevenue,
-    };
+    return calculateProductStats(products, metricsByProductId);
   }
 
   /**
@@ -276,35 +221,7 @@ export class ProductController {
     }
 
     const product = await this.prisma.product.create({
-      data: {
-        workspaceId,
-        name: dto.name,
-        description: dto.description || null,
-        price: dto.price || 0,
-        currency: dto.currency || 'BRL',
-        category: dto.category || null,
-        imageUrl: dto.imageUrl || null,
-        ...(dto.sku !== undefined ? { sku: dto.sku } : {}),
-        tags: dto.tags || [],
-        format: dto.format || 'DIGITAL',
-        status: dto.status || 'DRAFT',
-        active: dto.status === 'APPROVED',
-        salesPageUrl: dto.salesPageUrl || null,
-        thankyouUrl: dto.thankyouUrl || null,
-        ...(dto.thankyouBoletoUrl !== undefined
-          ? { thankyouBoletoUrl: dto.thankyouBoletoUrl }
-          : {}),
-        ...(dto.thankyouPixUrl !== undefined ? { thankyouPixUrl: dto.thankyouPixUrl } : {}),
-        ...(dto.reclameAquiUrl !== undefined ? { reclameAquiUrl: dto.reclameAquiUrl } : {}),
-        supportEmail: dto.supportEmail || null,
-        warrantyDays: dto.warrantyDays || null,
-        isSample: dto.isSample || false,
-        shippingType: dto.shippingType || null,
-        shippingValue: dto.shippingValue || null,
-        originCep: dto.originCep || null,
-        ...(dto.slug !== undefined ? { slug: dto.slug } : {}),
-        metadata: (dto.metadata || {}) as Prisma.InputJsonValue,
-      },
+      data: buildCreateProductData(workspaceId, dto) as Prisma.ProductUncheckedCreateInput,
     });
 
     this.logger.log(`Product created: ${product.id} - ${product.name}`);
@@ -337,26 +254,11 @@ export class ProductController {
       throw new NotFoundException('Product not found');
     }
 
-    this.validateUpdateProductDto(dto);
+    validateUpdateProductDto(dto);
 
-    const { active, featured, ...rest } = dto;
-    const normalizedRest = {
-      ...rest,
-      ...(rest.afterPayAffiliateCharge === false ? { afterPayChargeValue: null } : {}),
-    };
     await this.prisma.product.updateMany({
       where: { id, workspaceId },
-      data: {
-        ...normalizedRest,
-        ...(active !== undefined && { active }),
-        ...(featured !== undefined && { featured }),
-        ...(normalizedRest.price !== undefined && {
-          price: normalizedRest.price || 0,
-        }),
-        ...(normalizedRest.metadata !== undefined && {
-          metadata: normalizedRest.metadata as Prisma.InputJsonValue,
-        }),
-      } as Prisma.ProductUncheckedUpdateInput,
+      data: buildUpdateProductData(dto) as Prisma.ProductUncheckedUpdateInput,
     });
     const product = await this.prisma.product.findFirst({
       where: { id, workspaceId },
@@ -409,9 +311,7 @@ export class ProductController {
       distinct: ['category'],
     });
 
-    const categories = products.map((p) => p.category).filter(Boolean);
-
-    return { categories };
+    return { categories: extractCategoriesFromProducts(products) };
   }
 
   /**
@@ -444,12 +344,11 @@ export class ProductController {
       }),
     );
 
-    const successCount = results.filter((r) => r.success).length;
-    const failCount = results.filter((r) => !r.success).length;
+    const summary = countProductImportResults(results);
 
     return {
-      imported: successCount,
-      failed: failCount,
+      imported: summary.imported,
+      failed: summary.failed,
       results,
     };
   }
