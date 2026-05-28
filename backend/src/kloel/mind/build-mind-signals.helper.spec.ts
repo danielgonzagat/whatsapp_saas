@@ -237,7 +237,10 @@ describe('buildMindSignals', () => {
         'hello',
       );
 
-      expect(mockLogger.warn).toHaveBeenCalledWith('kloel_mind_belief_skipped', expect.any(Object));
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        'kloel_mind_belief_skipped',
+        expect.objectContaining({}),
+      );
       expect(result.beliefs).toBeUndefined();
     });
   });
@@ -305,7 +308,7 @@ describe('buildMindSignals', () => {
 
       expect(mockLogger.warn).toHaveBeenCalledWith(
         'kloel_mind_concept_skipped',
-        expect.any(Object),
+        expect.objectContaining({}),
       );
       expect(result.concepts).toEqual([]);
     });

@@ -12,12 +12,24 @@ import {
   computeTrendPct,
   resolveReportWindow,
 } from './analytics.helpers';
+import {
+  aggregateMessagesByDay,
+  buildOutboundStatusMap,
+  computeAvgResponseTimeSeconds,
+  flattenDailyActivity,
+  groupSalesByDay,
+  initializeDailyActivityMap,
+  processFlowExecutionStats,
+  processLeadScoreStats,
+  processOutboundDeliveryStats,
+  processSentimentStats,
+  summarizeFlowExecutions,
+} from './analytics.service.helpers';
 
 /**
  * @cluster whatsapp_saas/backend/analytics
  * L11 multi-agent TaskGraph annotation (batched by tools/auto-pr/batch-job.mjs).
  */
-type ExecutionLog = Record<string, unknown>;
 
 /** Analytics service. */
 @Injectable()
@@ -73,59 +85,19 @@ export class AnalyticsService {
             }),
           ]);
 
-        // Process Sentiment
-        const sentimentStats = { positive: 0, negative: 0, neutral: 0 };
-        sentiment.forEach((s) => {
-          if (s.sentiment === 'POSITIVE') {
-            sentimentStats.positive = s._count.sentiment;
-          } else if (s.sentiment === 'NEGATIVE') {
-            sentimentStats.negative = s._count.sentiment;
-          } else {
-            sentimentStats.neutral += s._count.sentiment;
-          }
-        });
-
-        // Process Score
-        const scoreStats = { high: 0, medium: 0, low: 0 };
-        leadScore.forEach((c) => {
-          if (c.leadScore > 70) {
-            scoreStats.high += 1;
-          } else if (c.leadScore > 30) {
-            scoreStats.medium += 1;
-          } else {
-            scoreStats.low += 1;
-          }
-        });
-
-        // Process delivery/read/error based on outbound status
-        const statusMap: Record<string, number> = {};
-        outboundStatus.forEach((s) => {
-          statusMap[(s.status || 'UNKNOWN').toUpperCase()] = s._count.status;
-        });
-        // Considera SENT como entregue para não zerar métricas em ambientes sem callbacks
-        const delivered = (statusMap.DELIVERED || 0) + (statusMap.SENT || 0);
-        const read = statusMap.READ || 0;
-        const failed = statusMap.FAILED || 0;
-        const totalOutbound = Object.values(statusMap).reduce((a, b) => a + b, 0);
-        const pct = (val: number) =>
-          totalOutbound > 0 ? Math.round((val / totalOutbound) * 100) : 0;
-        const deliveryRate = pct(delivered);
-        const readRate = pct(read);
-        const errorRate = pct(failed);
-
-        // Flow execution status (últimos 7d)
-        const flowStatsMap: Record<string, number> = {};
-        flowExecs.forEach((f) => {
-          flowStatsMap[f.status || 'UNKNOWN'] = f._count.status;
-        });
+        const sentimentStats = processSentimentStats(sentiment);
+        const scoreStats = processLeadScoreStats(leadScore);
+        const statusMap = buildOutboundStatusMap(outboundStatus);
+        const { deliveryRate, readRate, errorRate } = processOutboundDeliveryStats(statusMap);
+        const flowStats = processFlowExecutionStats(flowExecs);
 
         return {
           messages,
           contacts,
-          flows: Object.values(flowStatsMap).reduce((a, b) => a + b, 0),
-          flowCompleted: flowStatsMap.COMPLETED || 0,
-          flowFailed: flowStatsMap.FAILED || 0,
-          flowRunning: flowStatsMap.RUNNING || 0,
+          flows: flowStats.flows,
+          flowCompleted: flowStats.flowCompleted,
+          flowFailed: flowStats.flowFailed,
+          flowRunning: flowStats.flowRunning,
           deliveryRate,
           readRate,
           errorRate,
@@ -155,33 +127,9 @@ export class AnalyticsService {
       select: { createdAt: true, direction: true },
     });
 
-    const activity: Record<string, { inbound: number; outbound: number }> = {};
-
-    // Initialize last 7 days
-    for (let i = 0; i < 7; i += 1) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const key = d.toISOString().slice(0, 10);
-      activity[key] = { inbound: 0, outbound: 0 };
-    }
-
-    messages.forEach((m) => {
-      const key = m.createdAt.toISOString().split('T')[0];
-      if (!key) {
-        return;
-      }
-      if (activity[key]) {
-        if (m.direction === 'INBOUND') {
-          activity[key].inbound += 1;
-        } else {
-          activity[key].outbound += 1;
-        }
-      }
-    });
-
-    return Object.entries(activity)
-      .map(([date, counts]) => ({ date, ...counts }))
-      .sort((a, b) => a.date.localeCompare(b.date));
+    const activity = initializeDailyActivityMap();
+    aggregateMessagesByDay(messages, activity);
+    return flattenDailyActivity(activity);
   }
 
   /** Get flow stats. */
@@ -201,39 +149,7 @@ export class AnalyticsService {
       take: 100, // Limit for performance
     });
 
-    const total = executions.length;
-    const completed = executions.filter((e) => e.status === 'COMPLETED').length;
-    const failed = executions.filter((e) => e.status === 'FAILED').length;
-
-    // Drop-off analysis (Node visits)
-    const nodeVisits: Record<string, number> = {};
-    executions.forEach((exec) => {
-      if (Array.isArray(exec.logs)) {
-        const logs = exec.logs as ExecutionLog[];
-        const visitedNodes = new Set<string>();
-        logs.forEach((log) => {
-          if (typeof log.nodeId === 'string') {
-            visitedNodes.add(log.nodeId);
-            return;
-          }
-
-          if (typeof log.nodeId === 'number') {
-            visitedNodes.add(String(log.nodeId));
-          }
-        });
-        visitedNodes.forEach((nodeId) => {
-          nodeVisits[nodeId] = (nodeVisits[nodeId] || 0) + 1;
-        });
-      }
-    });
-
-    return {
-      total,
-      completed,
-      failed,
-      conversionRate: total > 0 ? (completed / total) * 100 : 0,
-      nodeVisits,
-    };
+    return summarizeFlowExecutions(executions);
   }
 
   // ═══════════════════════════════════════
@@ -249,8 +165,8 @@ export class AnalyticsService {
     const { paidSales, prevPaidSales, refunds, totalRevenue, totalPending, avgTicket } =
       salesSummary;
 
-    const revenueByDay = this.groupByDay(paidSales, days);
-    const prevRevenueByDay = this.groupByDay(prevPaidSales, days);
+    const revenueByDay = groupSalesByDay(paidSales, days);
+    const prevRevenueByDay = groupSalesByDay(prevPaidSales, days);
 
     const [leads, prevLeads] = await this.fetchLeadCounts(workspaceId, since, prevSince);
     const leadsTrend = computeTrendPct(leads, prevLeads);
@@ -393,25 +309,7 @@ export class AnalyticsService {
         take: 500,
         orderBy: { createdAt: 'desc' },
       });
-      if (recent.length >= 2) {
-        const sorted = recent.map((m) => m.createdAt.getTime()).sort((a, b) => a - b);
-        const intervals: number[] = [];
-        for (let i = 1; i < sorted.length; i += 1) {
-          const curr = sorted[i];
-          const prev = sorted[i - 1];
-          if (curr === undefined || prev === undefined) {
-            continue;
-          }
-          const delta = (curr - prev) / 1000;
-          if (delta > 0 && delta < 3600) {
-            intervals.push(delta);
-          }
-        }
-        if (intervals.length > 0) {
-          const sum = intervals.reduce((a, b) => a + b, 0);
-          avgResponseTime = Math.round((sum / intervals.length) * 10) / 10;
-        }
-      }
+      avgResponseTime = computeAvgResponseTimeSeconds(recent);
     } catch {
       this.logger.warn(`Failed to compute avg response time for workspace ${workspaceId}`);
     }
@@ -429,19 +327,4 @@ export class AnalyticsService {
     };
   }
 
-  private groupByDay(
-    sales: Array<{ createdAt: Date | string; amount: number }>,
-    days: number,
-  ): number[] {
-    const result = new Array(days).fill(0);
-    const now = Date.now();
-    sales.forEach((s) => {
-      const daysAgo = Math.floor((now - new Date(s.createdAt).getTime()) / (24 * 60 * 60 * 1000));
-      const idx = days - 1 - daysAgo;
-      if (idx >= 0 && idx < days) {
-        result[idx] += s.amount;
-      }
-    });
-    return result;
-  }
 }
