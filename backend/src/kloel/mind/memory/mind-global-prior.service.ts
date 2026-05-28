@@ -213,9 +213,7 @@ export class MindGlobalPriorService {
     return { alpha: mean * k, beta: (1 - mean) * k };
   }
 
-  async getPriorFor(
-    predicate: string,
-  ): Promise<{ mean: number; samples: number } | null> {
+  async getPriorFor(predicate: string): Promise<{ mean: number; samples: number } | null> {
     const prior = await this.prisma.mindGlobalPrior.findFirst({
       where: { workspaceId: null, predicate },
       select: { mean: true, samples: true },

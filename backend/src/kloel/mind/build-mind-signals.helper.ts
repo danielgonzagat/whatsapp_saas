@@ -83,15 +83,17 @@ export interface BuildMindSignalsDeps {
     ) => Promise<Array<{ situation: string; outcome: string; similarity: number }>>;
   };
   mindGlobalPriorService?: {
-    listTopPriors?: (limit: number) => Promise<Array<{ predicate: string; mean: number; samples: number }>>;
+    listTopPriors?: (
+      limit: number,
+    ) => Promise<Array<{ predicate: string; mean: number; samples: number }>>;
   };
   mindPerceptionService?: {
-    perceive?: (ctx: {
-      source: string;
-      channel: string;
-      raw: string;
-      workspaceId: string;
-    }) => { subject: string; intent: string; salience: number; semanticContext: Record<string, unknown> };
+    perceive?: (ctx: { source: string; channel: string; raw: string; workspaceId: string }) => {
+      subject: string;
+      intent: string;
+      salience: number;
+      semanticContext: Record<string, unknown>;
+    };
   };
   logger: Pick<StructuredLogger, 'warn'>;
 }

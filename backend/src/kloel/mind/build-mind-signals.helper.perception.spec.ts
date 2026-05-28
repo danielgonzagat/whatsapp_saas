@@ -28,7 +28,10 @@ describe('buildMindSignals — perception (PI-K16-C)', () => {
       'quanto custa o curso?',
     );
     expect(perceive).toHaveBeenCalledWith({
-      source: 'chat', channel: 'kloel_chat', raw: 'quanto custa o curso?', workspaceId: 'ws-1',
+      source: 'chat',
+      channel: 'kloel_chat',
+      raw: 'quanto custa o curso?',
+      workspaceId: 'ws-1',
     });
     expect(result.perception).toEqual(stubbedPerception);
   });
@@ -52,7 +55,9 @@ describe('buildMindSignals — perception (PI-K16-C)', () => {
   });
 
   it('logs warn and omits key when perceive throws', async () => {
-    const perceive = jest.fn().mockImplementation(() => { throw new Error('perception engine offline'); });
+    const perceive = jest.fn().mockImplementation(() => {
+      throw new Error('perception engine offline');
+    });
     const result = await buildMindSignals(
       { prisma: mockPrisma(), mindPerceptionService: { perceive }, logger: mockLogger },
       'ws-1',
@@ -67,10 +72,25 @@ describe('buildMindSignals — perception (PI-K16-C)', () => {
 
   it('coexists with other mind signals', async () => {
     const perceive = jest.fn().mockReturnValue(stubbedPerception);
-    const selectArm = jest.fn().mockResolvedValue({ arm: 'social_proof', confidence: 0.72, rationale: 'Exploiting' });
-    const classify = jest.fn().mockReturnValue({ class: 'R1', autonomyMode: 'allowed_alone', requiredEvidenceLevel: 'N1', rollback: ['revert_locally'] });
+    const selectArm = jest
+      .fn()
+      .mockResolvedValue({ arm: 'social_proof', confidence: 0.72, rationale: 'Exploiting' });
+    const classify = jest
+      .fn()
+      .mockReturnValue({
+        class: 'R1',
+        autonomyMode: 'allowed_alone',
+        requiredEvidenceLevel: 'N1',
+        rollback: ['revert_locally'],
+      });
     const result = await buildMindSignals(
-      { prisma: mockPrisma(), mindPerceptionService: { perceive }, mindBanditService: { selectArm }, riskClassService: { classify }, logger: mockLogger },
+      {
+        prisma: mockPrisma(),
+        mindPerceptionService: { perceive },
+        mindBanditService: { selectArm },
+        riskClassService: { classify },
+        logger: mockLogger,
+      },
       'ws-1',
       'quero comprar',
     );

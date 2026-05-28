@@ -101,12 +101,12 @@ describe('buildMindSignals — global priors warm-start (PI-K16-A)', () => {
   });
 
   it('coexists with beliefs and other mind signals', async () => {
-    const listTopPriors = jest
+    const listTopPriors = jest.fn().mockResolvedValue([makePrior('user_clicks_cta', 0.28, 150)]);
+    const getActiveBeliefs = jest
       .fn()
-      .mockResolvedValue([makePrior('user_clicks_cta', 0.28, 150)]);
-    const getActiveBeliefs = jest.fn().mockResolvedValue([
-      { subject: 'lead-1', predicate: 'interested_in_produto_x', mean: 0.85, variance: 0.1 },
-    ]);
+      .mockResolvedValue([
+        { subject: 'lead-1', predicate: 'interested_in_produto_x', mean: 0.85, variance: 0.1 },
+      ]);
 
     const result = await buildMindSignals(
       {
