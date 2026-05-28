@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   AUTONOMY_ACTIONS,
@@ -9,15 +9,21 @@ import {
   SESSION_COPY,
   STATUS_RESPONSES,
   TIMEOUTS,
+  buildDisconnectedStatus,
   classifyConnectResponse,
   createSessionError,
   hasCompleteCredentials,
+  hasConnectionStateChanged,
   isCiaAutonomyActive,
   isPendingQrStatus,
+  isQrPollEnabled,
+  isSessionPollEnabled,
   needsWorkspaceRecovery,
   normalizeStatusKey,
+  pickRecoveredWorkspaceId,
   resolveStatusMessage,
   selectQrCodeFromResponse,
+  shouldSkipCiaRuntimeSync,
 } from './useWhatsAppSession.helpers';
 
 describe('normalizeStatusKey', () => {
@@ -227,6 +233,135 @@ describe('classifyConnectResponse', () => {
       kind: 'error',
       message: SESSION_COPY.connectFailed,
     });
+  });
+});
+
+describe('buildDisconnectedStatus', () => {
+  it('returns a fresh disconnected snapshot every call', () => {
+    const a = buildDisconnectedStatus();
+    const b = buildDisconnectedStatus();
+    expect(a).toEqual({ connected: false, status: STATUS_RESPONSES.disconnected });
+    expect(b).toEqual({ connected: false, status: STATUS_RESPONSES.disconnected });
+    expect(a).not.toBe(b);
+  });
+});
+
+describe('isSessionPollEnabled', () => {
+  it('returns true only when enabled and both credentials are present', () => {
+    expect(isSessionPollEnabled({ enabled: true, workspaceId: 'w', authToken: 't' })).toBe(true);
+  });
+
+  it('returns false when any leg is missing', () => {
+    expect(isSessionPollEnabled({ enabled: false, workspaceId: 'w', authToken: 't' })).toBe(false);
+    expect(isSessionPollEnabled({ enabled: true, workspaceId: '', authToken: 't' })).toBe(false);
+    expect(isSessionPollEnabled({ enabled: true, workspaceId: 'w', authToken: '' })).toBe(false);
+    expect(isSessionPollEnabled({ enabled: false, workspaceId: '', authToken: '' })).toBe(false);
+  });
+});
+
+describe('isQrPollEnabled', () => {
+  const base = { enabled: true, workspaceId: 'w', authToken: 't' };
+
+  it('returns true while mid-connect and not yet connected', () => {
+    expect(isQrPollEnabled({ ...base, connecting: true, connected: false })).toBe(true);
+  });
+
+  it('returns false once the session reports connected', () => {
+    expect(isQrPollEnabled({ ...base, connecting: true, connected: true })).toBe(false);
+  });
+
+  it('returns false when no connect attempt is in flight', () => {
+    expect(isQrPollEnabled({ ...base, connecting: false, connected: false })).toBe(false);
+  });
+
+  it('returns false when the base poll gate is closed', () => {
+    expect(
+      isQrPollEnabled({
+        enabled: false,
+        workspaceId: 'w',
+        authToken: 't',
+        connecting: true,
+        connected: false,
+      }),
+    ).toBe(false);
+    expect(
+      isQrPollEnabled({
+        enabled: true,
+        workspaceId: '',
+        authToken: 't',
+        connecting: true,
+        connected: false,
+      }),
+    ).toBe(false);
+  });
+});
+
+describe('shouldSkipCiaRuntimeSync', () => {
+  const base = {
+    enabled: true,
+    workspaceId: 'w',
+    authToken: 't',
+    connected: true,
+    guardedWorkspaceId: null as string | null,
+  };
+
+  it('runs sync (returns false) when fully wired and unclaimed', () => {
+    expect(shouldSkipCiaRuntimeSync(base)).toBe(false);
+  });
+
+  it('skips when the bootstrap guard already owns this workspaceId', () => {
+    expect(shouldSkipCiaRuntimeSync({ ...base, guardedWorkspaceId: 'w' })).toBe(true);
+  });
+
+  it('skips when the session is not connected', () => {
+    expect(shouldSkipCiaRuntimeSync({ ...base, connected: false })).toBe(true);
+  });
+
+  it('skips when the base poll gate is closed', () => {
+    expect(shouldSkipCiaRuntimeSync({ ...base, enabled: false })).toBe(true);
+    expect(shouldSkipCiaRuntimeSync({ ...base, workspaceId: '' })).toBe(true);
+    expect(shouldSkipCiaRuntimeSync({ ...base, authToken: '' })).toBe(true);
+  });
+
+  it('runs sync when guardedWorkspaceId tracks a different workspace', () => {
+    expect(shouldSkipCiaRuntimeSync({ ...base, guardedWorkspaceId: 'other-ws' })).toBe(false);
+  });
+});
+
+describe('pickRecoveredWorkspaceId', () => {
+  it('returns the resolved workspace id when present', () => {
+    const payload = { user: 'u' };
+    expect(pickRecoveredWorkspaceId(payload, () => ({ id: 'ws-1' }))).toBe('ws-1');
+  });
+
+  it('returns the empty string when the resolver yields null/undefined', () => {
+    expect(pickRecoveredWorkspaceId({}, () => null)).toBe('');
+    expect(pickRecoveredWorkspaceId({}, () => undefined)).toBe('');
+  });
+
+  it('returns the empty string when the resolved workspace lacks an id', () => {
+    expect(pickRecoveredWorkspaceId({}, () => ({ id: null }))).toBe('');
+    expect(pickRecoveredWorkspaceId({}, () => ({ id: '' }))).toBe('');
+    expect(pickRecoveredWorkspaceId({}, () => ({}))).toBe('');
+  });
+
+  it('passes the payload through to the resolver verbatim', () => {
+    const payload = { marker: Symbol('m') };
+    const resolver = vi.fn(() => ({ id: 'ws-2' }));
+    pickRecoveredWorkspaceId(payload, resolver);
+    expect(resolver).toHaveBeenCalledWith(payload);
+  });
+});
+
+describe('hasConnectionStateChanged', () => {
+  it('returns true when the boolean flips', () => {
+    expect(hasConnectionStateChanged(false, true)).toBe(true);
+    expect(hasConnectionStateChanged(true, false)).toBe(true);
+  });
+
+  it('returns false when the boolean is unchanged', () => {
+    expect(hasConnectionStateChanged(false, false)).toBe(false);
+    expect(hasConnectionStateChanged(true, true)).toBe(false);
   });
 });
 

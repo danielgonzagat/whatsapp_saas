@@ -230,3 +230,92 @@ export function selectQrCodeFromResponse(response: {
 }): string | null {
   return response.qrCode || response.qrCodeImage || null;
 }
+
+/* ── Status snapshot factories ── */
+
+/**
+ * Minimal connection-status snapshot used by the hook when it must reset to a
+ * disconnected state (after disconnect/reset, or when status load fails).
+ * Returned as a fresh object each call so callers can safely mutate the
+ * surrounding React state without aliasing.
+ */
+export interface DisconnectedSnapshot {
+  connected: false;
+  status: typeof STATUS_RESPONSES.disconnected;
+}
+
+export function buildDisconnectedStatus(): DisconnectedSnapshot {
+  return { connected: false, status: STATUS_RESPONSES.disconnected };
+}
+
+/* ── Effect-gating predicates ── */
+
+/**
+ * Inputs shared by every polling/effect gate. Modelled as a struct so callers
+ * can spread the hook's current state in without re-ordering positional args.
+ */
+export interface SessionGate {
+  enabled: boolean;
+  workspaceId: string;
+  authToken: string;
+}
+
+/**
+ * True iff the hook may issue status/QR polls. Centralises the
+ * `enabled && workspaceId && authToken` triad used by four useEffect bodies.
+ */
+export function isSessionPollEnabled(gate: SessionGate): boolean {
+  return Boolean(gate.enabled && gate.workspaceId && gate.authToken);
+}
+
+/**
+ * True iff the QR-polling effect should be active — extends
+ * {@link isSessionPollEnabled} with the in-flight connect signal and the
+ * "already connected" short-circuit.
+ */
+export function isQrPollEnabled(
+  gate: SessionGate & { connecting: boolean; connected: boolean },
+): boolean {
+  return isSessionPollEnabled(gate) && gate.connecting && !gate.connected;
+}
+
+/**
+ * True when the CIA runtime-sync effect must bail before doing any work:
+ * either the hook isn't fully wired yet, the session isn't connected, or the
+ * bootstrap guard has already claimed this workspaceId.
+ */
+export function shouldSkipCiaRuntimeSync(
+  gate: SessionGate & { connected: boolean; guardedWorkspaceId: string | null },
+): boolean {
+  if (!isSessionPollEnabled(gate) || !gate.connected) {
+    return true;
+  }
+  return gate.guardedWorkspaceId === gate.workspaceId;
+}
+
+/* ── Auth/me payload resolution ── */
+
+/**
+ * Resolve a workspaceId from a `/auth/me`-shaped payload using an injected
+ * resolver (kept as a parameter so the helper stays free of `@/lib/api`
+ * imports and remains trivially unit-testable).
+ *
+ * Returns the empty string when the resolver can't find a workspace, matching
+ * the wire-shape contract the hook expects.
+ */
+export function pickRecoveredWorkspaceId<TPayload, TWorkspace extends { id?: string | null }>(
+  payload: TPayload,
+  resolver: (data: TPayload) => TWorkspace | null | undefined,
+): string {
+  return resolver(payload)?.id || '';
+}
+
+/* ── Connection-change detection ── */
+
+/**
+ * Detect a transition in the boolean "connected" flag. Used by the hook to
+ * fire `onConnectionChange` exactly when the state actually flips.
+ */
+export function hasConnectionStateChanged(previous: boolean, current: boolean): boolean {
+  return previous !== current;
+}

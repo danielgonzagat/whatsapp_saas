@@ -21,16 +21,21 @@ import {
   POLL_INTERVALS,
   SESSION_COPY,
   SESSION_LOG,
-  STATUS_RESPONSES,
   TIMEOUTS,
+  buildDisconnectedStatus,
   classifyConnectResponse,
   createSessionError,
   hasCompleteCredentials,
+  hasConnectionStateChanged,
   isCiaAutonomyActive,
   isPendingQrStatus,
+  isQrPollEnabled,
+  isSessionPollEnabled,
   needsWorkspaceRecovery,
+  pickRecoveredWorkspaceId,
   resolveStatusMessage,
   selectQrCodeFromResponse,
+  shouldSkipCiaRuntimeSync as shouldSkipCiaRuntimeSyncHelper,
 } from './useWhatsAppSession.helpers';
 
 interface UseWhatsAppSessionOptions {
@@ -41,7 +46,7 @@ interface UseWhatsAppSessionOptions {
 
 async function recoverAuthenticatedWorkspaceId(): Promise<string> {
   const me = await authApi.getMe();
-  return resolveWorkspaceFromAuthPayload(me.data)?.id || '';
+  return pickRecoveredWorkspaceId(me.data, resolveWorkspaceFromAuthPayload);
 }
 
 /** Use whats app session. */
@@ -164,7 +169,10 @@ export function useWhatsAppSession({
     const recoverAuthenticatedWorkspace = async () => {
       try {
         const me = await authApi.getMe();
-        const recoveredWorkspaceId = resolveWorkspaceFromAuthPayload(me.data)?.id || '';
+        const recoveredWorkspaceId = pickRecoveredWorkspaceId(
+          me.data,
+          resolveWorkspaceFromAuthPayload,
+        );
 
         if (!cancelled && recoveredWorkspaceId) {
           tokenStorage.setWorkspaceId(recoveredWorkspaceId);
@@ -207,7 +215,7 @@ export function useWhatsAppSession({
       setError(null);
     } catch (err) {
       console.error(SESSION_LOG.loadStatus, err);
-      setStatus({ connected: false, status: STATUS_RESPONSES.disconnected });
+      setStatus(buildDisconnectedStatus());
       setStatusMessage(SESSION_COPY.loadStatusFailed);
     }
   }, [enabled, refreshCredentials]);
@@ -313,7 +321,7 @@ export function useWhatsAppSession({
     try {
       const current = await requireSessionCredentials();
       await disconnectWhatsApp(current.workspaceId);
-      setStatus({ connected: false, status: STATUS_RESPONSES.disconnected });
+      setStatus(buildDisconnectedStatus());
       setQrCode(null);
       setConnecting(false);
       setIsPaused(false);
@@ -332,7 +340,7 @@ export function useWhatsAppSession({
     try {
       const current = await requireSessionCredentials();
       await logoutWhatsApp(current.workspaceId);
-      setStatus({ connected: false, status: STATUS_RESPONSES.disconnected });
+      setStatus(buildDisconnectedStatus());
       setQrCode(null);
       setConnecting(false);
       setIsPaused(false);
@@ -377,15 +385,17 @@ export function useWhatsAppSession({
     }
   }, [requireSessionCredentials]);
 
-  const shouldSkipCiaRuntimeSync = useCallback((): boolean => {
-    if (!enabled || !workspaceId || !authToken || !status?.connected) {
-      return true;
-    }
-    if (bootstrapGuardRef.current === workspaceId) {
-      return true;
-    }
-    return false;
-  }, [authToken, enabled, status?.connected, workspaceId]);
+  const shouldSkipCiaRuntimeSync = useCallback(
+    (): boolean =>
+      shouldSkipCiaRuntimeSyncHelper({
+        enabled,
+        workspaceId,
+        authToken,
+        connected: Boolean(status?.connected),
+        guardedWorkspaceId: bootstrapGuardRef.current,
+      }),
+    [authToken, enabled, status?.connected, workspaceId],
+  );
 
   const resumeCiaAutomation = useCallback(async (activeWorkspaceId: string): Promise<void> => {
     const surface = await ciaApi.getSurface(activeWorkspaceId);
@@ -439,14 +449,14 @@ export function useWhatsAppSession({
   }, [refreshCredentials]);
 
   useEffect(() => {
-    if (!enabled || !workspaceId || !authToken) {
+    if (!isSessionPollEnabled({ enabled, workspaceId, authToken })) {
       return;
     }
     void loadStatus();
   }, [authToken, enabled, loadStatus, workspaceId]);
 
   useEffect(() => {
-    if (!enabled || !workspaceId || !authToken) {
+    if (!isSessionPollEnabled({ enabled, workspaceId, authToken })) {
       return;
     }
     const interval = setInterval(() => {
@@ -456,7 +466,8 @@ export function useWhatsAppSession({
   }, [authToken, enabled, loadStatus, workspaceId]);
 
   useEffect(() => {
-    if (!enabled || !workspaceId || !authToken || !connecting || status?.connected) {
+    const connected = Boolean(status?.connected);
+    if (!isQrPollEnabled({ enabled, workspaceId, authToken, connecting, connected })) {
       return;
     }
     const interval = setInterval(() => {
@@ -480,7 +491,7 @@ export function useWhatsAppSession({
 
   useEffect(() => {
     const connected = !!status?.connected;
-    if (connected === previousConnectedRef.current) {
+    if (!hasConnectionStateChanged(previousConnectedRef.current, connected)) {
       return;
     }
     previousConnectedRef.current = connected;
