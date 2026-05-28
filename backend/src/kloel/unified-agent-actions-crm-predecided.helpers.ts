@@ -2,7 +2,7 @@ import { Logger } from '@nestjs/common';
 
 import type { ToolArgs } from './unified-agent.types';
 import type { MindPolicyService } from './mind-policy.service';
-import { resolveFollowupTimingDecision } from './mind-recovery-decision-resolvers';
+import { resolveFollowupTimingDecision } from './mind/policy/mind-recovery-decision-resolvers';
 
 import type { UnknownRecord } from '../common/types';
 

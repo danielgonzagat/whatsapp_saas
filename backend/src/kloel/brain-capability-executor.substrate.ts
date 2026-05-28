@@ -18,7 +18,7 @@ import type {
 import {
   computeDissolutionGaps,
   type DissolutionGap,
-} from './brain-capability-executor.substrate.helpers';
+} from './mind/coordination/mind-capability-executor.substrate.helpers';
 
 export interface CognitiveSubstrate {
   recentSalientEvents: AbiSalientEvent[];

@@ -22,7 +22,7 @@ import { KloelThreadService, StoredProcessingTraceEntry } from './kloel-thread.s
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
 import { CANONICAL_FALLBACK_SYSTEM_PROMPT } from './kloel.prompts';
 import { LLM_MAX_COMPLETION_TOKENS } from './openai-wrapper';
-import { OPERATOR_CAPABILITIES } from './brain-capabilities.const';
+import { OPERATOR_CAPABILITIES } from './mind/coordination/mind-capabilities.const';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { MindCapabilityExecutor } from './mind/coordination';
 import { validateAbiPayload } from './abi/abi-validator';

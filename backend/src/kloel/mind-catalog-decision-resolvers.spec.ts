@@ -1,4 +1,4 @@
-import type { CaseMemoryLookup } from './mind-case-memory-decision.helper';
+import type { CaseMemoryLookup } from './mind/policy/mind-case-memory-decision.helper';
 import {
   type MindPolicyChooser,
   resolveAudioVsTextDecision,

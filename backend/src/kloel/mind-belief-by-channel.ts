@@ -1,28 +1,12 @@
-import type { MindBeliefService } from './mind-belief.service';
-import type { MindBelief, MindJson } from './mind.types';
-
-export async function getBeliefByChannel(
-  beliefs: MindBeliefService,
-  workspaceId: string,
-  channel: string,
-  subject: string,
-  predicate: string,
-  context: MindJson,
-): Promise<MindBelief> {
-  if (!channel) {
-    throw new Error('channel is required for belief queries — no implicit fallback');
-  }
-  return beliefs.getOrInit(workspaceId, subject, predicate, { ...context, channel });
-}
-
-export function requireChannel(channel: string | undefined): string {
-  if (!channel) {
-    throw new Error('channel is required — no implicit fallback to an unspecified channel');
-  }
-  return channel;
-}
-
-export function extractChannel(context: MindJson): string | undefined {
-  const candidate = context?.channel;
-  return typeof candidate === 'string' ? candidate : undefined;
-}
+/**
+ * @deprecated File moved to `kloel/mind/inference/mind-belief-by-channel.ts`
+ * during ADR-0013 Wave M1. This re-export keeps the legacy path live
+ * during the 4-week alias window.
+ *
+ * @cluster Mind/Inference
+ */
+export {
+  extractChannel,
+  getBeliefByChannel,
+  requireChannel,
+} from './mind/inference/mind-belief-by-channel';

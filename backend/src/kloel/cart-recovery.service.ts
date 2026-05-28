@@ -10,7 +10,7 @@ import { MindBanditService } from './mind-bandit.service';
 import { MindCaseMemoryService } from './mind-case-memory.service';
 import { MindGuardsService } from './mind/policy/mind-guards.service';
 import { MindPolicyService } from './mind-policy.service';
-import { resolveCartRecoveryDecision } from './mind-recovery-decision-resolvers';
+import { resolveCartRecoveryDecision } from './mind/policy/mind-recovery-decision-resolvers';
 import { renderEmailTemplate } from '../common/utils/email-template-renderer.util';
 import { escapeHtml } from '../common/utils/html-escape.util';
 import {

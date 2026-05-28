@@ -1,4 +1,4 @@
-import type { BrainSource } from './brain-runtime.dto';
+import type { BrainSource } from './mind/coordination/mind-runtime.dto';
 
 export type BrainCapabilityRisk = 'critical' | 'high' | 'normal';
 export type BrainCapabilityRiskClass = 'R1' | 'R2' | 'R3';

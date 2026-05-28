@@ -23,7 +23,7 @@ import type {
   CommercialGraphNode,
   CommercialGraphRecommendation,
   CommercialGraphWindow,
-} from '../../brain-commercial-graph.types';
+} from './mind-commercial-graph.types';
 
 function incrementNode(nodes: Map<string, CommercialGraphNode>, node: CommercialGraphNode): void {
   const current = nodes.get(node.id);

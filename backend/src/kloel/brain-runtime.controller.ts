@@ -8,7 +8,7 @@ import type { AuthenticatedRequest } from '../common/interfaces';
 import { Metrics } from '../observability/metrics';
 import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 import { MindAutonomyCoordinator, MindCommercialGraph, MindRuntime } from './mind/coordination';
-import { BrainDecideDto, BrainObserveDto } from './brain-runtime.dto';
+import { BrainDecideDto, BrainObserveDto } from './mind/coordination/mind-runtime.dto';
 
 function escapeHtmlUnsafeJsonChars(json: string): string {
   let escaped = '';

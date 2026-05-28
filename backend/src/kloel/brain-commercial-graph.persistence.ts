@@ -1,7 +1,7 @@
 import type { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
-import type { CommercialGraphEdge, CommercialGraphNode } from './brain-commercial-graph.types';
+import type { CommercialGraphEdge, CommercialGraphNode } from './mind/coordination/mind-commercial-graph.types';
 
 type MindGraphNodeDelegate = {
   upsert(input: {

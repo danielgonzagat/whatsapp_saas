@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelGlobalPriorService } from './kloel-global-prior.service';
-import { extractChannel } from './mind-belief-by-channel';
+import { extractChannel } from './mind/inference/mind-belief-by-channel';
 
 function inputJson(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;

@@ -23,7 +23,7 @@ import {
   getBrainCapabilityRisk,
   isBrainCapabilityAllowed,
 } from '../../brain-capability-policy';
-import type { BrainSource } from '../../brain-runtime.dto';
+import type { BrainSource } from './mind-runtime.dto';
 import { UNIFIED_AGENT_TOOLS_CONTROL } from '../../unified-agent-tools-control';
 import { UNIFIED_AGENT_TOOLS_MESSAGING } from '../../unified-agent-tools-messaging';
 import { UNIFIED_AGENT_TOOLS_PRODUCT } from '../../unified-agent-tools-product';

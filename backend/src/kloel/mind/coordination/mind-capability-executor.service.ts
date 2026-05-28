@@ -27,7 +27,7 @@ import { PlanLimitsService } from '../../../billing/plan-limits.service';
 import { AbiBuilderService, type AbiBuildInput } from '../../abi/abi-builder.service';
 import type { IdentityAudience } from '../../lineage/identity-projector.service';
 import { MindPerceptionService } from '../perception/mind-perception.service';
-import { OPERATOR_CAPABILITIES } from '../../brain-capabilities.const';
+import { OPERATOR_CAPABILITIES } from './mind-capabilities.const';
 import { MemoryProjector } from '../../commem/memory.projector';
 
 import { buildCognitiveSubstrate as buildCognitiveSubstrateImpl } from '../../brain-capability-executor.substrate';

@@ -1,28 +1,13 @@
-export interface CommercialGraphNode {
-  id: string;
-  kind: 'action' | 'belief' | 'contact' | 'event' | 'intent' | 'policy' | 'status' | 'workspace';
-  label: string;
-  weight: number;
-}
-
-export interface CommercialGraphEdge {
-  from: string;
-  label: string;
-  to: string;
-  weight: number;
-}
-
-export interface CommercialGraphRecommendation {
-  action: string;
-  confidence: number;
-  reason: string;
-  toxicityFlag?: 'healthy' | 'regression' | 'toxic';
-  toxicPolicyCount?: number;
-}
-
-export interface CommercialGraphWindow {
-  beliefCount?: number;
-  eventCount: number;
-  policyCount?: number;
-  take: number;
-}
+/**
+ * @deprecated Use canonical path
+ * `./mind/coordination/mind-commercial-graph.types` instead.
+ * ADR-0013 M1 (Wave 44): legacy brain-* path retained as re-export shim
+ * for backward-compat with out-of-tree consumers. Internal callers must
+ * import from `./mind/coordination/mind-commercial-graph.types`.
+ */
+export type {
+  CommercialGraphNode,
+  CommercialGraphEdge,
+  CommercialGraphRecommendation,
+  CommercialGraphWindow,
+} from './mind/coordination/mind-commercial-graph.types';

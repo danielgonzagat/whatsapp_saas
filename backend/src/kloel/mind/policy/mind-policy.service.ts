@@ -6,7 +6,7 @@ import { KloelGlobalPriorService } from '../../kloel-global-prior.service';
 import { WisdomRelevanceFilter } from '../../wisdom/wisdom-relevance-filter.service';
 import { WisdomPatternStore } from '../../wisdom/wisdom-pattern-store.service';
 import { MindBeliefService } from '../../mind-belief.service';
-import { extractChannel } from '../../mind-belief-by-channel';
+import { extractChannel } from '../inference/mind-belief-by-channel';
 import type { MindBelief, MindPolicyDecision } from '../../mind.types';
 import {
   buildFallbackDecision,
