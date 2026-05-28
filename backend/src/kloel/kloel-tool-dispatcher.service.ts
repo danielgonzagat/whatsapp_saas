@@ -277,32 +277,14 @@ export class KloelToolDispatcherService {
             message: pixResult.suggestedMessage || `PIX gerado: ${pixResult.paymentId}`,
           };
         }
-        case 'sales.create_boleto': {
-          if (!this.smartPaymentService) {
-            return { success: false, error: 'smart_payment_service_unavailable' };
-          }
-          const boletoResult = await this.smartPaymentService.createSmartPayment({
-            workspaceId,
-            phone: asString(args.customerPhone),
-            customerName: asString(args.customerName),
-            ...(typeof args.customerEmail === 'string'
-              ? { customerEmail: args.customerEmail }
-              : {}),
-            ...(typeof args.productName === 'string' ? { productName: args.productName } : {}),
-            amount: asNumber(args.amount),
-          });
+        case 'sales.create_boleto':
           return {
-            success: true,
+            success: false,
             capabilityId: 'sales.create_boleto',
-            outputs: {
-              paymentId: boletoResult.paymentId,
-              paymentUrl: boletoResult.paymentUrl,
-              billingType: boletoResult.billingType,
-            },
-            evidenceUrl: `/vendas/${boletoResult.paymentId}`,
-            message: `Boleto gerado: ${boletoResult.paymentId}`,
+            error: 'mercadopago_boleto_not_connected',
+            message:
+              'Boleto Mercado Pago ainda não está conectado ao Orders API real. Não gerei cobrança para evitar PIX ou boleto falso.',
           };
-        }
         case 'delete_product':
           return await this.chatToolsService.toolDeleteProduct(workspaceId, asToolArgs(args));
         case 'get_settings':

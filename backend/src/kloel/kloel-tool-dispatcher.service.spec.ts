@@ -275,6 +275,22 @@ describe('KloelToolDispatcherService', () => {
       });
     });
 
+    describe('sales.create_boleto', () => {
+      it('does not generate PIX while Mercado Pago boleto Orders rail is not connected', async () => {
+        const result = await service.executeTool(DEFAULT_WS_ID, 'sales.create_boleto', {
+          amount: 99.9,
+          productName: 'Produto',
+          customerName: 'Cliente',
+          customerPhone: '5511999999999',
+          customerEmail: 'cliente@example.com',
+        });
+
+        expect(result.success).toBe(false);
+        expect(result.capabilityId).toBe('sales.create_boleto');
+        expect(result.error).toBe('mercadopago_boleto_not_connected');
+      });
+    });
+
     describe('search_web', () => {
       it('routes search_web to composer service', async () => {
         const result = await service.executeTool(DEFAULT_WS_ID, 'search_web', {
@@ -376,9 +392,7 @@ describe('KloelToolDispatcherService', () => {
         const result = await service.executeTool(DEFAULT_WS_ID, 'self.capabilities', {});
 
         expect(result.success).toBe(true);
-        expect((capRegistryV2Service as { list: jest.Mock }).list).toHaveBeenCalledTimes(
-          1,
-        );
+        expect((capRegistryV2Service as { list: jest.Mock }).list).toHaveBeenCalledTimes(1);
         expect(result.capabilities).toEqual(['self.capabilities', 'products.create']);
         expect(result.outputs).toEqual({
           total: 2,
