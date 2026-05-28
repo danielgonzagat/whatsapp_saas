@@ -32,7 +32,11 @@ import {
   assertValidQuotedCost,
   assertValidUsageUnits,
   buildFraudReasonsLog,
+  buildFraudGateWarningMessage,
+  buildFraudGateUserMessage,
   classifyTopupFraudDecision,
+  extractStripeTopupWalletId,
+  isValidStripeTopupPaymentIntent,
   buildInsufficientBalanceReport,
   buildMercadoPagoTopupTransactionMetadata,
   buildPixTopupChargeRequest,
@@ -95,15 +99,11 @@ export class WalletService {
     const fraudGate = classifyTopupFraudDecision(fraudDecision, input.method);
     if (fraudGate !== 'allow') {
       const reasonsCsv = buildFraudReasonsLog(fraudDecision.reasons);
-      const tag = fraudGate === 'block' ? 'blocked by antifraud' : 'routed to review';
+      const tag = buildFraudGateWarningMessage(fraudGate);
       this.logger.warn(
         `Wallet top-up ${tag} workspace=${input.workspaceId} method=${input.method} reasons=${reasonsCsv}`,
       );
-      throw new BadRequestException(
-        fraudGate === 'block'
-          ? 'Recarga bloqueada pela política antifraude.'
-          : 'Recarga retida para revisão manual.',
-      );
+      throw new BadRequestException(buildFraudGateUserMessage(fraudGate));
     }
 
     const wallet = await this.prisma.prepaidWallet.upsert({
@@ -154,14 +154,11 @@ export class WalletService {
   async creditFromWebhook(
     paymentIntent: StripePaymentIntent,
   ): Promise<PrepaidWalletTransaction | null> {
-    const walletId = paymentIntent.metadata?.wallet_id;
-    if (!walletId) {
+    const walletId = extractStripeTopupWalletId(paymentIntent);
+    if (!isValidStripeTopupPaymentIntent(paymentIntent)) {
       return null;
     }
     const amountCents = BigInt(paymentIntent.amount);
-    if (amountCents <= 0n) {
-      return null;
-    }
 
     return this.prisma.$transaction(
       async (tx) => {

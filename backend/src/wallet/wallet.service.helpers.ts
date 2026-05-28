@@ -212,6 +212,41 @@ export function classifyTopupFraudDecision(
 }
 
 /**
+ * Build the warning log tag for a non-allow fraud gate decision.
+ * Maps `block` → `'blocked by antifraud'`, `review` → `'routed to review'`.
+ */
+export function buildFraudGateWarningMessage(gate: 'block' | 'review'): string {
+  return gate === 'block' ? 'blocked by antifraud' : 'routed to review';
+}
+
+/**
+ * Build the PT-BR user-facing error message for a fraud gate decision.
+ * `block` → hard rejection, `review` → manual review notification.
+ */
+export function buildFraudGateUserMessage(gate: 'block' | 'review'): string {
+  return gate === 'block'
+    ? 'Recarga bloqueada pela política antifraude.'
+    : 'Recarga retida para revisão manual.';
+}
+
+/**
+ * Extract the wallet ID from a Stripe PaymentIntent metadata.
+ * Returns `null` when the metadata is missing the `wallet_id` field.
+ */
+export function extractStripeTopupWalletId(intent: StripePaymentIntent): string | null {
+  return intent.metadata?.wallet_id ?? null;
+}
+
+/**
+ * Check whether a Stripe PaymentIntent carries valid wallet top-up metadata.
+ * Returns `false` when wallet_id is absent or amount is non-positive, so
+ * callers can short-circuit without touching the database.
+ */
+export function isValidStripeTopupPaymentIntent(intent: StripePaymentIntent): boolean {
+  return !!intent.metadata?.wallet_id && BigInt(intent.amount) > 0n;
+}
+
+/**
  * Absolute value for a signed-cents amount. USAGE rows store debits as a
  * negative `amountCents`, so several reconciliation paths need the positive
  * twin without recomputing it ad-hoc.
