@@ -396,6 +396,7 @@ import { SalesModule } from '../sales/sales.module';
     MindLiftReportService,
     MindVerbalizerService,
     MindWorkspaceStateService,
+    VectorService,
     PulseArtifactService,
     AgentRuntimeContextService,
     AgentRuntimeContextCompressorService,
