@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { Prisma } from '@prisma/client';
 import type { PrismaService } from '../../../prisma/prisma.service';
 import type { MindPolicyDecision } from '../../mind.types';
+import { extractChannel } from '../inference/mind-belief-by-channel';
 
 export type ResolvedPolicyRow = {
   baseline: string;
@@ -14,6 +15,76 @@ export type ResolvedPolicyRow = {
   subject: string;
   workspaceId: string;
 };
+
+/**
+ * Minimal row shape consumed by {@link buildResolveOutcomeUpdateData} and
+ * {@link extractGlobalPriorRow}. Matches the `select` shape used by
+ * `MindPolicyService.resolveOutcome`, `resolveOpenForSubject`, and
+ * `sweepExpiredOutcomes` — keeping it narrow so pure helpers do not pin
+ * unrelated Prisma columns.
+ */
+export interface MindPolicyResolutionRow {
+  baseline: string;
+  chosen: string;
+  context: unknown;
+  decisionType: string;
+}
+
+/**
+ * Build the `data:` payload for a `mindPolicy.updateMany` that resolves an
+ * open policy row. Centralises the duplicated inline expression used by all
+ * three resolution paths: it stamps a `resolvedAt` timestamp and computes
+ * the counterfactual `baselineOutcome` via
+ * {@link estimateCounterfactualBaselineOutcome} unless the caller supplies an
+ * explicit override.
+ *
+ * Callers may pass a shared `resolvedAt` (e.g. `resolveOutcome` uses one
+ * timestamp for every row inside the same transaction); when omitted the
+ * helper falls back to `new Date()`, matching `resolveOpenForSubject` and
+ * `sweepExpiredOutcomes` which mint a fresh Date per row.
+ *
+ * Pure — no DB writes; the only side effect is the optional `new Date()`
+ * fallback, mirroring the original inline call sites.
+ */
+export function buildResolveOutcomeUpdateData(
+  row: MindPolicyResolutionRow,
+  outcome: number,
+  baselineOutcomeOverride?: number,
+  resolvedAt: Date = new Date(),
+): { outcome: number; resolvedAt: Date; baselineOutcome: number } {
+  const baselineOutcome =
+    baselineOutcomeOverride ??
+    estimateCounterfactualBaselineOutcome({
+      baseline: row.baseline,
+      chosen: row.chosen,
+      context: row.context,
+      outcome,
+    });
+  return {
+    outcome,
+    resolvedAt,
+    baselineOutcome,
+  };
+}
+
+/**
+ * Reduce a resolved policy row to the `{channel, decisionType, action}`
+ * triple that {@link KloelGlobalPriorService.recordObservation} consumes.
+ * Returns `null` when the row's context lacks a string `channel` field,
+ * letting callers `continue` past rows that can never participate in the
+ * global prior.
+ */
+export function extractGlobalPriorRow(row: {
+  context: unknown;
+  decisionType: string;
+  chosen: string;
+}): { channel: string; decisionType: string; action: string } | null {
+  const channel = extractChannel(row.context as Record<string, unknown>);
+  if (!channel) {
+    return null;
+  }
+  return { channel, decisionType: row.decisionType, action: row.chosen };
+}
 
 export function mean(values: number[]): number {
   return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;

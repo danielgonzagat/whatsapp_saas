@@ -19,8 +19,9 @@ import {
   summarizePolicyHarness,
 } from './mind-policy-calculation';
 import {
+  buildResolveOutcomeUpdateData,
   createPolicyRow,
-  estimateCounterfactualBaselineOutcome,
+  extractGlobalPriorRow,
   persistResolvedPolicyMemories,
 } from './mind-policy.helpers';
 import { applyWisdomPriors } from './mind-policy.wisdom-prior.helpers';
@@ -189,27 +190,16 @@ export class MindPolicyService {
       for (const row of rows) {
         const result = await tx.mindPolicy.updateMany({
           where: { id: row.id, workspaceId, resolvedAt: null },
-          data: {
-            outcome,
-            resolvedAt,
-            baselineOutcome:
-              baselineOutcome ??
-              estimateCounterfactualBaselineOutcome({
-                baseline: row.baseline,
-                chosen: row.chosen,
-                context: row.context,
-                outcome,
-              }),
-          },
+          data: buildResolveOutcomeUpdateData(row, outcome, baselineOutcome, resolvedAt),
         });
         resolvedCount += result.count;
       }
 
       if (resolvedCount > 0) {
         for (const row of rows) {
-          const channel = extractChannel(row.context as Record<string, unknown>);
-          if (channel) {
-            priorRows.push({ channel, decisionType: row.decisionType, action: row.chosen });
+          const priorRow = extractGlobalPriorRow(row);
+          if (priorRow) {
+            priorRows.push(priorRow);
           }
         }
 
@@ -277,18 +267,7 @@ export class MindPolicyService {
         rows.map((row) =>
           this.prisma.mindPolicy.updateMany({
             where: { id: row.id, workspaceId: input.workspaceId, resolvedAt: null },
-            data: {
-              outcome: input.outcome,
-              baselineOutcome:
-                input.baselineOutcome ??
-                estimateCounterfactualBaselineOutcome({
-                  baseline: row.baseline,
-                  chosen: row.chosen,
-                  context: row.context,
-                  outcome: input.outcome,
-                }),
-              resolvedAt: new Date(),
-            },
+            data: buildResolveOutcomeUpdateData(row, input.outcome, input.baselineOutcome),
           }),
         ),
       );
@@ -308,12 +287,17 @@ export class MindPolicyService {
     if (this.globalPrior && rows.length > 0) {
       const success = input.outcome >= 0.5;
       for (const row of rows) {
-        const channel = extractChannel(row.context as Record<string, unknown>);
-        if (!channel) {
+        const priorRow = extractGlobalPriorRow(row);
+        if (!priorRow) {
           continue;
         }
         try {
-          await this.globalPrior.recordObservation(channel, row.decisionType, row.chosen, success);
+          await this.globalPrior.recordObservation(
+            priorRow.channel,
+            priorRow.decisionType,
+            priorRow.action,
+            success,
+          );
         } catch (err: unknown) {
           this.logger.error(
             'Failed to record global prior observation from resolveOpenForSubject',
@@ -362,16 +346,7 @@ export class MindPolicyService {
         rows.map((row) =>
           this.prisma.mindPolicy.updateMany({
             where: { id: row.id, workspaceId: input.workspaceId, resolvedAt: null },
-            data: {
-              outcome: input.outcome,
-              baselineOutcome: estimateCounterfactualBaselineOutcome({
-                baseline: row.baseline,
-                chosen: row.chosen,
-                context: row.context,
-                outcome: input.outcome,
-              }),
-              resolvedAt: new Date(),
-            },
+            data: buildResolveOutcomeUpdateData(row, input.outcome),
           }),
         ),
       );
