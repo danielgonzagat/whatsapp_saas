@@ -103,6 +103,14 @@ export const TIER_5_SALES_CAPABILITIES: CapabilityDefinition[] = [
     domainService: 'SalesService.createPixOrder',
     emits: ['sale.created', 'payment.pending'],
     evidenceUrlBuilder: '/vendas/${orderId}',
+    executionRail: {
+      provider: 'mercadopago',
+      paymentMethod: 'PIX',
+      providerMethod: 'pix',
+      providerService: 'MercadoPagoPixChargeService.create',
+      webhookPath: '/webhooks/mercadopago',
+      proofFields: ['saleId', 'externalPaymentId', 'pixCopiaECola', 'pixQrCode'],
+    },
     surface: ['dashboard-chat'],
   },
   {
@@ -130,6 +138,14 @@ export const TIER_5_SALES_CAPABILITIES: CapabilityDefinition[] = [
     domainService: 'SalesService.createBoletoOrder',
     emits: ['sale.created', 'payment.pending'],
     evidenceUrlBuilder: '/vendas/${orderId}',
+    executionRail: {
+      provider: 'mercadopago',
+      paymentMethod: 'BOLETO',
+      providerMethod: 'boleto',
+      providerService: 'MercadoPagoBoletoChargeService.create',
+      webhookPath: '/webhooks/mercadopago',
+      proofFields: ['saleId', 'externalPaymentId', 'boletoBarcode', 'boletoUrl'],
+    },
     surface: ['dashboard-chat'],
   },
   {
@@ -151,6 +167,14 @@ export const TIER_5_SALES_CAPABILITIES: CapabilityDefinition[] = [
     domainService: 'SalesService.createStripeCardLink',
     emits: ['sale.created', 'payment.pending'],
     evidenceUrlBuilder: '/vendas/${orderId}',
+    executionRail: {
+      provider: 'stripe',
+      paymentMethod: 'CREDIT_CARD',
+      providerMethod: 'card',
+      providerService: 'StripeCheckout.sessions.create',
+      webhookPath: '/webhook/payment/stripe',
+      proofFields: ['saleId', 'externalPaymentId', 'checkoutSessionId', 'checkoutUrl'],
+    },
     surface: ['dashboard-chat'],
   },
 ];

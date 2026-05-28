@@ -414,6 +414,24 @@ describe('KloelToolDispatcherService', () => {
             surface: ['dashboard-chat'],
             maturity: 'testable',
           },
+          {
+            id: 'sales.create_pix',
+            title: 'Gerar PIX',
+            category: 'MUTATION_SENSITIVE',
+            tier: 5,
+            requiresConfirmation: true,
+            requiredPermissions: ['sale:write'],
+            surface: ['dashboard-chat'],
+            maturity: 'verified',
+            executionRail: {
+              provider: 'mercadopago',
+              paymentMethod: 'PIX',
+              providerMethod: 'pix',
+              providerService: 'MercadoPagoPixChargeService.create',
+              webhookPath: '/webhooks/mercadopago',
+              proofFields: ['saleId', 'externalPaymentId', 'pixCopiaECola', 'pixQrCode'],
+            },
+          },
         ]);
 
         const result = await service.executeTool(DEFAULT_WS_ID, 'self.capabilities', {});
@@ -422,9 +440,13 @@ describe('KloelToolDispatcherService', () => {
         expect((capRegistryV2Service as unknown as { list: jest.Mock }).list).toHaveBeenCalledTimes(
           1,
         );
-        expect(result.capabilities).toEqual(['self.capabilities', 'products.create']);
+        expect(result.capabilities).toEqual([
+          'self.capabilities',
+          'products.create',
+          'sales.create_pix',
+        ]);
         expect(result.outputs).toEqual({
-          total: 2,
+          total: 3,
           capabilities: [
             {
               id: 'self.capabilities',
@@ -445,6 +467,24 @@ describe('KloelToolDispatcherService', () => {
               requiredPermissions: ['product:write'],
               surface: ['dashboard-chat'],
               maturity: 'testable',
+            },
+            {
+              id: 'sales.create_pix',
+              title: 'Gerar PIX',
+              category: 'MUTATION_SENSITIVE',
+              tier: 5,
+              requiresConfirmation: true,
+              requiredPermissions: ['sale:write'],
+              surface: ['dashboard-chat'],
+              maturity: 'verified',
+              executionRail: {
+                provider: 'mercadopago',
+                paymentMethod: 'PIX',
+                providerMethod: 'pix',
+                providerService: 'MercadoPagoPixChargeService.create',
+                webhookPath: '/webhooks/mercadopago',
+                proofFields: ['saleId', 'externalPaymentId', 'pixCopiaECola', 'pixQrCode'],
+              },
             },
           ],
         });

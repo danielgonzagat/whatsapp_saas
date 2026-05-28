@@ -45,11 +45,35 @@ describe('IntentRouter + CapabilityRegistry Integration', () => {
     });
   });
 
+  it('declares sales.create_pix as a real Mercado Pago PIX capability', () => {
+    expect(registry.get('sales.create_pix')).toMatchObject({
+      domainService: 'SalesService.createPixOrder',
+      emits: ['sale.created', 'payment.pending'],
+      evidenceUrlBuilder: '/vendas/${orderId}',
+      executionRail: {
+        provider: 'mercadopago',
+        paymentMethod: 'PIX',
+        providerMethod: 'pix',
+        providerService: 'MercadoPagoPixChargeService.create',
+        webhookPath: '/webhooks/mercadopago',
+        proofFields: ['saleId', 'externalPaymentId', 'pixCopiaECola', 'pixQrCode'],
+      },
+    });
+  });
+
   it('declares sales.create_boleto as a real Mercado Pago boleto capability', () => {
     expect(registry.get('sales.create_boleto')).toMatchObject({
       domainService: 'SalesService.createBoletoOrder',
       emits: ['sale.created', 'payment.pending'],
       evidenceUrlBuilder: '/vendas/${orderId}',
+      executionRail: {
+        provider: 'mercadopago',
+        paymentMethod: 'BOLETO',
+        providerMethod: 'boleto',
+        providerService: 'MercadoPagoBoletoChargeService.create',
+        webhookPath: '/webhooks/mercadopago',
+        proofFields: ['saleId', 'externalPaymentId', 'boletoBarcode', 'boletoUrl'],
+      },
     });
   });
 
@@ -58,6 +82,14 @@ describe('IntentRouter + CapabilityRegistry Integration', () => {
       domainService: 'SalesService.createStripeCardLink',
       emits: ['sale.created', 'payment.pending'],
       evidenceUrlBuilder: '/vendas/${orderId}',
+      executionRail: {
+        provider: 'stripe',
+        paymentMethod: 'CREDIT_CARD',
+        providerMethod: 'card',
+        providerService: 'StripeCheckout.sessions.create',
+        webhookPath: '/webhook/payment/stripe',
+        proofFields: ['saleId', 'externalPaymentId', 'checkoutSessionId', 'checkoutUrl'],
+      },
     });
   });
 

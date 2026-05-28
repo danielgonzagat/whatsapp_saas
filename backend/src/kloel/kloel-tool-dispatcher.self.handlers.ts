@@ -252,6 +252,7 @@ export async function dispatchSelfTool(
           requiredPermissions: cap.requiredPermissions,
           surface: cap.surface,
           maturity: cap.maturity ?? 'registry',
+          ...(cap.executionRail ? { executionRail: cap.executionRail } : {}),
         }));
 
         return {
