@@ -34,9 +34,15 @@ import {
   buildDynamicRuntimeContextHelper,
   buildAssistantReplyImpl,
 } from './kloel-reply-engine.helpers';
-import { randomIdSegment } from '../common/random-id';
 import { DecisionOutcomeService } from './decision-outcome.service';
 import { MindSurpriseService } from './mind/inference/mind-surprise.service';
+import {
+  buildChatOutcomeKey,
+  recordChatReplyDecision,
+  closeChatReplyOutcome,
+  observeRepliedToUserBelief,
+  computeChatSurprise as computeChatSurpriseHelper,
+} from './kloel-reply-engine.decision-outcome.helpers';
 
 type ChatCompletionMessageParam = OpenAI.Chat.ChatCompletionMessageParam;
 
@@ -543,28 +549,14 @@ export class KloelReplyEngineService {
     prebuiltCognitiveState?: Record<string, unknown>;
   }): Promise<string> {
     // PI-k8: record decision outcome at start of every chat reply
-    const outcomeKey = params.workspaceId
-      ? `chat:${params.workspaceId}:${Date.now()}:${randomIdSegment(6)}`
-      : null;
+    const outcomeKey = buildChatOutcomeKey(params.workspaceId);
     if (outcomeKey && params.workspaceId) {
-      this.decisionOutcomeService
-        ?.recordDecision({
-          workspaceId: params.workspaceId,
-          decisionType: 'chat_reply',
-          chosenAction: 'engage',
-          baselineAction: 'silence',
-          outcomeKey,
-          expectedWindow: 1,
-          contextSnapshot: {
-            surface: 'dashboard',
-            messageLength: params.message.length,
-          },
-        })
-        .catch((err: unknown) =>
-          this.logger.warn('kloel_decision_record_skipped', {
-            reason: err instanceof Error ? err.message : String(err),
-          }),
-        );
+      recordChatReplyDecision(this.decisionOutcomeService, this.logger, {
+        workspaceId: params.workspaceId,
+        outcomeKey,
+        surface: 'dashboard',
+        messageLength: params.message.length,
+      });
     }
 
     if (!this.openai) {
@@ -575,35 +567,23 @@ export class KloelReplyEngineService {
         hasAnthropicFallback: !!process.env.ANTHROPIC_API_KEY,
       });
       if (params.workspaceId) {
-        this.mindBeliefService
-          ?.observeBinary(
-            params.workspaceId,
-            params.workspaceId,
-            'replied_to_user',
-            { surface: 'dashboard' },
-            0,
-          )
-          .catch((err: unknown) =>
-            this.logger.warn('kloel_belief_observation_skipped', {
-              reason: err instanceof Error ? err.message : String(err),
-            }),
-          );
-        void this.computeChatSurprise(params.workspaceId, 0, 'dashboard', true);
+        observeRepliedToUserBelief(this.mindBeliefService, this.logger, {
+          workspaceId: params.workspaceId,
+          surface: 'dashboard',
+          observed: 0,
+        });
+        void computeChatSurpriseHelper(this.mindSurpriseService, this.mindBeliefService, this.logger, {
+          workspaceId: params.workspaceId,
+          observed: 0,
+          surface: 'dashboard',
+          degraded: true,
+        });
       }
-      // PI-k8: close outcome as degraded
-      if (outcomeKey) {
-        this.decisionOutcomeService
-          ?.closeOutcome({
-            outcomeKey,
-            outcomeName: 'chat.degraded.no_llm_client',
-            wonVsBaseline: false,
-          })
-          .catch((err: unknown) =>
-            this.logger.warn('kloel_decision_close_skipped', {
-              reason: err instanceof Error ? err.message : String(err),
-            }),
-          );
-      }
+      closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
+        outcomeKey,
+        outcomeName: 'chat.degraded.no_llm_client',
+        wonVsBaseline: false,
+      });
       return this.unavailableMessage;
     }
     let assistantMessage: string;
@@ -628,100 +608,33 @@ export class KloelReplyEngineService {
         ...(this.spine !== undefined ? { spine: this.spine } : {}),
         ...(params.abiStateJson !== undefined ? { abiStateJson: params.abiStateJson } : {}),
       });
-      // PI-k8: close outcome on success
-      if (outcomeKey) {
-        this.decisionOutcomeService
-          ?.closeOutcome({
-            outcomeKey,
-            outcomeName: 'chat.replied',
-            wonVsBaseline: true,
-          })
-          .catch((err: unknown) =>
-            this.logger.warn('kloel_decision_close_skipped', {
-              reason: err instanceof Error ? err.message : String(err),
-            }),
-          );
-      }
+      closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
+        outcomeKey,
+        outcomeName: 'chat.replied',
+        wonVsBaseline: true,
+      });
     } catch (error: unknown) {
-      // PI-k8: close outcome on error
-      if (outcomeKey) {
-        this.decisionOutcomeService
-          ?.closeOutcome({
-            outcomeKey,
-            outcomeName: 'chat.error',
-            wonVsBaseline: false,
-          })
-          .catch((err: unknown) =>
-            this.logger.warn('kloel_decision_close_skipped', {
-              reason: err instanceof Error ? err.message : String(err),
-            }),
-          );
-      }
+      closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
+        outcomeKey,
+        outcomeName: 'chat.error',
+        wonVsBaseline: false,
+      });
       throw error;
     }
     if (params.workspaceId) {
       const replyOutcome: 0 | 1 = assistantMessage.length > 0 ? 1 : 0;
-      this.mindBeliefService
-        ?.observeBinary(
-          params.workspaceId,
-          params.workspaceId,
-          'replied_to_user',
-          { surface: 'dashboard' },
-          replyOutcome,
-        )
-        .catch((err: unknown) =>
-          this.logger.warn('kloel_belief_observation_skipped', {
-            reason: err instanceof Error ? err.message : String(err),
-          }),
-        );
-      void this.computeChatSurprise(
-        params.workspaceId,
-        replyOutcome,
-        'dashboard',
-        replyOutcome === 0,
-      );
-    }
-    return assistantMessage;
-  }
-
-  private async computeChatSurprise(
-    workspaceId: string,
-    observed: 0 | 1,
-    surface: string,
-    degraded: boolean,
-  ): Promise<void> {
-    if (!this.mindSurpriseService || !this.mindBeliefService) {
-      return;
-    }
-
-    try {
-      const belief = await Promise.race([
-        this.mindBeliefService.getOrInit(workspaceId, workspaceId, 'replied_to_user', {
-          surface,
-          degraded,
-        }),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('SURPRISE_TIMEOUT')), 30),
-        ),
-      ]);
-
-      const predicted = belief.mean;
-      const surprise = this.mindSurpriseService.computeSurprise(predicted, observed);
-
-      if (surprise > 0.3) {
-        this.logger.log({
-          event: 'kloel_chat_surprise_detected',
-          workspaceId,
-          predicted,
-          observed,
-          surpriseValue: surprise,
-          surface,
-        });
-      }
-    } catch (err: unknown) {
-      this.logger.warn('kloel_surprise_skipped', {
-        reason: err instanceof Error ? err.message : String(err),
+      observeRepliedToUserBelief(this.mindBeliefService, this.logger, {
+        workspaceId: params.workspaceId,
+        surface: 'dashboard',
+        observed: replyOutcome,
+      });
+      void computeChatSurpriseHelper(this.mindSurpriseService, this.mindBeliefService, this.logger, {
+        workspaceId: params.workspaceId,
+        observed: replyOutcome,
+        surface: 'dashboard',
+        degraded: replyOutcome === 0,
       });
     }
+    return assistantMessage;
   }
 }

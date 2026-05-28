@@ -188,7 +188,9 @@ export default function KloelMotorPage() {
   }, []);
 
   useEffect(() => {
-    void fetchData();
+    queueMicrotask(() => {
+      void fetchData();
+    });
   }, [fetchData]);
 
   if (loading) {
