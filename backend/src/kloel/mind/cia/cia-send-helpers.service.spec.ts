@@ -4,7 +4,7 @@ import { AgentEventsService } from '../../../marketing/channels/whatsapp/agent-e
 import { ChannelTransportRegistry } from '../../channel-transport.registry';
 import { OpsAlertService } from '../../../observability/ops-alert.service';
 import { SpineEmitterService } from '../../spine/spine-emitter.service';
-import { MindPolicyService } from '../../mind-policy.service';
+import { MindPolicyService } from '../policy/mind-policy.service';
 
 const REDIS_TOKEN = 'default_IORedisModuleConnectionToken';
 
