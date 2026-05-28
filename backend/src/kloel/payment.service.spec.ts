@@ -1,7 +1,7 @@
 import { Test, type TestingModule } from '@nestjs/testing';
 
 import { AuditService } from '../audit/audit.service';
-import { StripeService } from '../billing/stripe.service';
+import { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { FraudEngine } from '../payments/fraud/fraud.engine';
 import { PrismaService } from '../prisma/prisma.service';
@@ -32,10 +32,10 @@ type PaymentPrismaMock = {
   $transaction: jest.Mock<Promise<unknown>, [(tx: PaymentPrismaTransaction) => Promise<unknown>]>;
 };
 
-describe('PaymentService — Stripe-only Pix', () => {
+describe('PaymentService — Mercado Pago Pix', () => {
   let service: PaymentService;
   let prisma: PaymentPrismaMock;
-  let stripeService: { stripe: { paymentIntents: { create: jest.Mock } } };
+  let mercadoPagoPix: { create: jest.Mock };
   let fraudEngine: { evaluate: jest.Mock };
 
   beforeEach(async () => {
@@ -67,12 +67,8 @@ describe('PaymentService — Stripe-only Pix', () => {
       ),
     };
 
-    stripeService = {
-      stripe: {
-        paymentIntents: {
-          create: jest.fn(),
-        },
-      },
+    mercadoPagoPix = {
+      create: jest.fn(),
     };
 
     fraudEngine = {
@@ -87,7 +83,7 @@ describe('PaymentService — Stripe-only Pix', () => {
       providers: [
         PaymentService,
         { provide: PrismaService, useValue: prisma },
-        { provide: StripeService, useValue: stripeService },
+        { provide: MercadoPagoPixChargeService, useValue: mercadoPagoPix },
         { provide: AuditService, useValue: { logWithTx: jest.fn().mockResolvedValue(undefined) } },
         {
           provide: FinancialAlertService,
@@ -100,24 +96,20 @@ describe('PaymentService — Stripe-only Pix', () => {
     service = moduleRef.get(PaymentService);
   });
 
-  it('creates a Stripe Pix PaymentIntent and persists QR metadata on KloelSale', async () => {
-    stripeService.stripe.paymentIntents.create.mockResolvedValue({
-      id: 'pi_pix_1',
-      status: 'requires_action',
-      client_secret: 'pi_pix_1_secret',
-      next_action: {
-        type: 'pix_display_qr_code',
-        pix_display_qr_code: {
-          data: '000201pixcopy',
-          image_url_png: 'data:image/png;base64,qr',
-          hosted_instructions_url: 'https://pay.stripe.com/pix/pi_pix_1',
-        },
-      },
+  it('creates a Mercado Pago Pix charge and persists QR metadata on KloelSale', async () => {
+    mercadoPagoPix.create.mockResolvedValue({
+      externalId: 'mp_pix_1',
+      status: 'pending',
+      qrCode: '000201pixcopy',
+      qrCodeBase64: 'qr-base64',
+      ticketUrl: 'https://www.mercadopago.com.br/payments/mp_pix_1/ticket',
+      expiresAt: new Date('2026-04-17T10:30:00.000Z'),
+      raw: { id: 'mp_pix_1' },
     });
 
     prisma.kloelSale.create.mockResolvedValue({
       id: 'sale-1',
-      externalPaymentId: 'pi_pix_1',
+      externalPaymentId: 'mp_pix_1',
     });
 
     const result = await service.createPayment({
@@ -125,24 +117,20 @@ describe('PaymentService — Stripe-only Pix', () => {
       leadId: 'lead-1',
       customerName: 'Cliente Pix',
       customerPhone: '5511999999999',
+      customerEmail: 'cliente@example.com',
       amount: 139.9,
       description: 'Pagamento Kloel',
     });
 
-    expect(stripeService.stripe.paymentIntents.create).toHaveBeenCalledWith(
+    expect(mercadoPagoPix.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        amount: 13_990,
-        currency: 'brl',
-        confirm: true,
-        payment_method_types: ['pix'],
-        metadata: expect.objectContaining({
-          type: 'kloel_payment',
-          workspaceId: 'ws-1',
-          leadId: 'lead-1',
-        }),
-      }),
-      expect.objectContaining({
+        amountCents: 13_990n,
+        payerEmail: 'cliente@example.com',
+        payerName: 'Cliente Pix',
+        description: 'Pagamento Kloel',
+        externalReference: expect.stringContaining('kloel-payment:'),
         idempotencyKey: expect.stringContaining('kloel-payment:'),
+        notificationUrl: expect.stringContaining('/webhooks/mercadopago'),
       }),
     );
 
@@ -152,28 +140,44 @@ describe('PaymentService — Stripe-only Pix', () => {
         status: 'pending',
         amount: 139.9,
         paymentMethod: 'PIX',
-        paymentLink: 'https://pay.stripe.com/pix/pi_pix_1',
-        externalPaymentId: 'pi_pix_1',
+        paymentLink: 'https://www.mercadopago.com.br/payments/mp_pix_1/ticket',
+        externalPaymentId: 'mp_pix_1',
         workspaceId: 'ws-1',
         metadata: expect.objectContaining({
-          pixQrCodeUrl: 'data:image/png;base64,qr',
+          gateway: 'mercadopago',
+          pixQrCodeUrl: 'data:image/png;base64,qr-base64',
           pixCopyPaste: '000201pixcopy',
-          pixHostedInstructionsUrl: 'https://pay.stripe.com/pix/pi_pix_1',
+          pixHostedInstructionsUrl: 'https://www.mercadopago.com.br/payments/mp_pix_1/ticket',
         }),
       }),
     });
 
     expect(result).toMatchObject({
-      id: 'pi_pix_1',
-      invoiceUrl: 'https://pay.stripe.com/pix/pi_pix_1',
-      pixQrCodeUrl: 'data:image/png;base64,qr',
+      id: 'mp_pix_1',
+      invoiceUrl: 'https://www.mercadopago.com.br/payments/mp_pix_1/ticket',
+      pixQrCodeUrl: 'data:image/png;base64,qr-base64',
       pixCopyPaste: '000201pixcopy',
-      paymentLink: 'https://pay.stripe.com/pix/pi_pix_1',
-      status: 'requires_action',
+      paymentLink: 'https://www.mercadopago.com.br/payments/mp_pix_1/ticket',
+      status: 'pending',
     });
   });
 
-  it('blocks the payment before hitting Stripe when antifraud returns block', async () => {
+  it('requires payer email before creating a Mercado Pago Pix charge', async () => {
+    await expect(
+      service.createPayment({
+        workspaceId: 'ws-1',
+        leadId: 'lead-1',
+        customerName: 'Cliente Pix',
+        customerPhone: '5511999999999',
+        amount: 139.9,
+        description: 'Pagamento Kloel',
+      }),
+    ).rejects.toThrow(/e-mail do comprador/i);
+
+    expect(mercadoPagoPix.create).not.toHaveBeenCalled();
+  });
+
+  it('blocks the payment before hitting Mercado Pago when antifraud returns block', async () => {
     fraudEngine.evaluate.mockResolvedValueOnce({
       action: 'block',
       score: 1,
@@ -192,7 +196,7 @@ describe('PaymentService — Stripe-only Pix', () => {
       }),
     ).rejects.toThrow(/antifraude/i);
 
-    expect(stripeService.stripe.paymentIntents.create).not.toHaveBeenCalled();
+    expect(mercadoPagoPix.create).not.toHaveBeenCalled();
   });
 
   it('routes PIX payments to manual review when antifraud returns require_3ds', async () => {
@@ -214,21 +218,18 @@ describe('PaymentService — Stripe-only Pix', () => {
       }),
     ).rejects.toThrow(/revisão manual/i);
 
-    expect(stripeService.stripe.paymentIntents.create).not.toHaveBeenCalled();
+    expect(mercadoPagoPix.create).not.toHaveBeenCalled();
   });
 
-  it('does not persist a duplicate sale row when Stripe replays the same idempotent PaymentIntent', async () => {
-    stripeService.stripe.paymentIntents.create.mockResolvedValue({
-      id: 'pi_pix_existing',
-      status: 'requires_action',
-      next_action: {
-        type: 'pix_display_qr_code',
-        pix_display_qr_code: {
-          data: '000201pixcopy',
-          image_url_png: 'data:image/png;base64,qr',
-          hosted_instructions_url: 'https://pay.stripe.com/pix/pi_pix_existing',
-        },
-      },
+  it('does not persist a duplicate sale row when Mercado Pago replays the same idempotent Pix charge', async () => {
+    mercadoPagoPix.create.mockResolvedValue({
+      externalId: 'mp_pix_existing',
+      status: 'pending',
+      qrCode: '000201pixcopy',
+      qrCodeBase64: 'qr-base64',
+      ticketUrl: 'https://www.mercadopago.com.br/payments/mp_pix_existing/ticket',
+      expiresAt: new Date('2026-04-17T10:30:00.000Z'),
+      raw: { id: 'mp_pix_existing' },
     });
 
     prisma.kloelSale.findFirst.mockResolvedValue({
@@ -240,6 +241,7 @@ describe('PaymentService — Stripe-only Pix', () => {
       leadId: 'lead-1',
       customerName: 'Cliente Pix',
       customerPhone: '5511999999999',
+      customerEmail: 'cliente@example.com',
       amount: 139.9,
       description: 'Pagamento Kloel',
       idempotencyKey: 'kloel-payment:test-key',
@@ -251,33 +253,33 @@ describe('PaymentService — Stripe-only Pix', () => {
   it('returns persisted Pix details from sale metadata on the public payload', async () => {
     prisma.kloelSale.findFirst.mockResolvedValue({
       id: 'sale-1',
-      externalPaymentId: 'pi_pix_1',
+      externalPaymentId: 'mp_pix_1',
       amount: 139.9,
       productName: 'Produto X',
       status: 'pending',
       paymentMethod: 'PIX',
-      paymentLink: 'https://pay.stripe.com/pix/pi_pix_1',
+      paymentLink: 'https://www.mercadopago.com.br/payments/mp_pix_1/ticket',
       createdAt: new Date('2026-04-17T10:00:00.000Z'),
       paidAt: null,
       metadata: {
         companyName: 'Workspace Teste',
         pixQrCodeUrl: 'data:image/png;base64,qr',
         pixCopyPaste: '000201pixcopy',
-        pixHostedInstructionsUrl: 'https://pay.stripe.com/pix/pi_pix_1',
+        pixHostedInstructionsUrl: 'https://www.mercadopago.com.br/payments/mp_pix_1/ticket',
       },
     });
     prisma.memberArea.findMany.mockResolvedValue([{ slug: 'curso-digital' }]);
 
-    const result = await service.getPublicPayment('pi_pix_1');
+    const result = await service.getPublicPayment('mp_pix_1');
 
     expect(result).toMatchObject({
-      id: 'pi_pix_1',
+      id: 'mp_pix_1',
       amount: 139.9,
       productName: 'Produto X',
       companyName: 'Workspace Teste',
       pixQrCodeUrl: 'data:image/png;base64,qr',
       pixCopyPaste: '000201pixcopy',
-      paymentLink: 'https://pay.stripe.com/pix/pi_pix_1',
+      paymentLink: 'https://www.mercadopago.com.br/payments/mp_pix_1/ticket',
       memberAreaUrl: '/area/curso-digital',
     });
   });

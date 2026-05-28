@@ -75,11 +75,11 @@ describe('UnifiedAgentService', () => {
 
     paymentService = {
       createPayment: jest.fn().mockResolvedValue({
-        id: 'pi_pix_1',
-        paymentLink: 'https://pay.stripe.com/pix/pi_pix_1',
+        id: 'mp_pix_1',
+        paymentLink: 'https://www.mercadopago.com.br/payments/mp_pix_1/ticket',
         pixQrCodeUrl: 'data:image/png;base64,qr',
         pixCopyPaste: '000201pixcopy',
-        status: 'requires_action',
+        status: 'pending',
       }),
     };
 

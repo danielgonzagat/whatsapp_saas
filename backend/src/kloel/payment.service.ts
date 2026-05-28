@@ -7,8 +7,8 @@ import {
 } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { AuditService } from '../audit/audit.service';
-import { StripeService } from '../billing/stripe.service';
-import type { StripePaymentIntent } from '../billing/stripe-types';
+import { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
+import type { PixChargeResult } from '../payments/mercadopago/mercadopago.types';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { FraudEngine } from '../payments/fraud/fraud.engine';
 import { PrismaService } from '../prisma/prisma.service';
@@ -16,15 +16,23 @@ import { MindEventSpine } from './mind/coordination/mind-event-spine.service';
 import type { SaleEventPayload } from './brain-event-taxonomy';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
-interface PixDisplayQrCode {
-  data?: string | null;
-  image_url_png?: string | null;
-  hosted_instructions_url?: string | null;
+const MP_WEBHOOK_PATH = '/webhooks/mercadopago';
+const PIX_EXPIRATION_MINUTES = 30;
+
+function resolveBackendOrigin(): string {
+  const raw =
+    process.env.BACKEND_PUBLIC_URL ||
+    process.env.PUBLIC_BACKEND_URL ||
+    process.env.BACKEND_URL ||
+    process.env.API_PUBLIC_URL ||
+    process.env.APP_URL ||
+    'http://localhost:3001';
+  const trimmed = raw.replace(/\/+$/, '');
+  return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
 }
 
-interface PixNextAction {
-  type?: string | null;
-  pix_display_qr_code?: PixDisplayQrCode | null;
+function toPixQrCodeDataUrl(qrCodeBase64: string): string | undefined {
+  return qrCodeBase64 ? `data:image/png;base64,${qrCodeBase64}` : undefined;
 }
 
 type KloelSaleMetadata = {
@@ -115,7 +123,7 @@ export class PaymentService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly stripeService: StripeService,
+    private readonly mercadoPagoPix: MercadoPagoPixChargeService,
     private readonly auditService: AuditService,
     private readonly financialAlert: FinancialAlertService,
     private readonly fraudEngine: FraudEngine,
@@ -127,60 +135,44 @@ export class PaymentService {
     }
   }
 
-  private async createStripePixPaymentIntent(
+  private async createMercadoPagoPixCharge(
     data: CreatePaymentInput,
     amountInCents: number,
     idempotencyKey: string,
-  ): Promise<StripePaymentIntent> {
-    return this.stripeService.stripe.paymentIntents.create(
-      {
-        amount: amountInCents,
-        currency: 'brl',
-        confirm: true,
-        payment_method_types: ['pix'],
-        payment_method_data: {
-          type: 'pix',
-        },
-        metadata: {
-          type: 'kloel_payment',
-          workspaceId: data.workspaceId,
-          leadId: data.leadId,
-          customerName: data.customerName,
-          customerPhone: data.customerPhone,
-          customerEmail: data.customerEmail || '',
-        },
-        description: data.description,
-      },
-      {
-        idempotencyKey,
-      },
-    );
+  ): Promise<PixChargeResult> {
+    const payerEmail = data.customerEmail?.trim();
+    if (!payerEmail) {
+      throw new BadRequestException(
+        'Informe o e-mail do comprador para gerar PIX no Mercado Pago.',
+      );
+    }
+
+    return this.mercadoPagoPix.create({
+      idempotencyKey,
+      amountCents: BigInt(amountInCents),
+      payerEmail,
+      payerName: data.customerName,
+      description: data.description,
+      externalReference: idempotencyKey,
+      expiresAt: new Date(Date.now() + PIX_EXPIRATION_MINUTES * 60_000),
+      notificationUrl: `${resolveBackendOrigin()}${MP_WEBHOOK_PATH}`,
+    });
   }
 
-  private extractPixDetails(paymentIntent: StripePaymentIntent) {
-    const nextAction = paymentIntent.next_action as PixNextAction | null | undefined;
-    const pixData =
-      nextAction?.type === 'pix_display_qr_code' ? (nextAction.pix_display_qr_code ?? null) : null;
-    const paymentLink =
-      pixData?.hosted_instructions_url || pixData?.image_url_png || pixData?.data || undefined;
-
-    return { pixData, paymentLink };
-  }
-
-  private async persistStripePixSale(params: {
+  private async persistMercadoPagoPixSale(params: {
     data: CreatePaymentInput;
-    paymentIntent: StripePaymentIntent;
+    pixCharge: PixChargeResult;
     companyName?: string;
     idempotencyKey: string;
     paymentLink?: string;
-    pixData: PixDisplayQrCode | null;
+    pixQrCodeUrl?: string;
   }): Promise<void> {
     const isReplay = await this.prisma.$transaction(
       async (tx) => {
         const existingSale = await tx.kloelSale.findFirst({
           where: {
             workspaceId: params.data.workspaceId,
-            externalPaymentId: params.paymentIntent.id,
+            externalPaymentId: params.pixCharge.externalId,
           },
           select: { id: true },
         });
@@ -195,13 +187,15 @@ export class PaymentService {
             amount: params.data.amount,
             paymentMethod: 'PIX',
             ...(params.paymentLink !== undefined ? { paymentLink: params.paymentLink } : {}),
-            externalPaymentId: params.paymentIntent.id,
+            externalPaymentId: params.pixCharge.externalId,
             workspaceId: params.data.workspaceId,
             metadata: {
               ...(params.companyName !== undefined ? { companyName: params.companyName } : {}),
-              pixQrCodeUrl: params.pixData?.image_url_png || null,
-              pixCopyPaste: params.pixData?.data || null,
-              pixHostedInstructionsUrl: params.pixData?.hosted_instructions_url || null,
+              gateway: 'mercadopago',
+              pixQrCodeUrl: params.pixQrCodeUrl ?? null,
+              pixCopyPaste: params.pixCharge.qrCode || null,
+              pixHostedInstructionsUrl: params.pixCharge.ticketUrl || null,
+              pixExpiresAt: params.pixCharge.expiresAt.toISOString(),
               idempotencyKey: params.idempotencyKey,
             },
           },
@@ -211,12 +205,13 @@ export class PaymentService {
           workspaceId: params.data.workspaceId,
           action: 'payment.created',
           resource: 'KloelPayment',
-          resourceId: params.paymentIntent.id,
+          resourceId: params.pixCharge.externalId,
           details: {
             leadId: params.data.leadId,
             amount: params.data.amount,
             paymentMethod: 'PIX',
-            externalPaymentId: params.paymentIntent.id,
+            gateway: 'mercadopago',
+            externalPaymentId: params.pixCharge.externalId,
             idempotencyKey: params.idempotencyKey,
             customerName: params.data.customerName,
             description: params.data.description,
@@ -237,7 +232,7 @@ export class PaymentService {
         idempotencyKey: `sale:${params.idempotencyKey}`,
         payload: {
           amount: params.data.amount,
-          externalPaymentId: params.paymentIntent.id,
+          externalPaymentId: params.pixCharge.externalId,
           leadId: params.data.leadId,
           paymentMethod: 'PIX',
           status: 'pending',
@@ -263,20 +258,17 @@ export class PaymentService {
   }
 
   private buildCreatePaymentResponse(params: {
-    paymentIntent: StripePaymentIntent;
+    pixCharge: PixChargeResult;
     paymentLink?: string;
-    pixData: PixDisplayQrCode | null;
+    pixQrCodeUrl?: string;
   }): CreatePaymentResult {
-    const invoiceUrl = params.pixData?.hosted_instructions_url || undefined;
-    const pixQrCodeUrl = params.pixData?.image_url_png || undefined;
-    const pixCopyPaste = params.pixData?.data || undefined;
     return {
-      id: params.paymentIntent.id,
-      ...(invoiceUrl !== undefined ? { invoiceUrl } : {}),
-      ...(pixQrCodeUrl !== undefined ? { pixQrCodeUrl } : {}),
-      ...(pixCopyPaste !== undefined ? { pixCopyPaste } : {}),
+      id: params.pixCharge.externalId,
+      ...(params.pixCharge.ticketUrl ? { invoiceUrl: params.pixCharge.ticketUrl } : {}),
+      ...(params.pixQrCodeUrl !== undefined ? { pixQrCodeUrl: params.pixQrCodeUrl } : {}),
+      ...(params.pixCharge.qrCode ? { pixCopyPaste: params.pixCharge.qrCode } : {}),
       ...(params.paymentLink !== undefined ? { paymentLink: params.paymentLink } : {}),
-      status: params.paymentIntent.status,
+      status: params.pixCharge.status,
     };
   }
 
@@ -320,30 +312,27 @@ export class PaymentService {
         amountInCents,
         ...(data.idempotencyKey !== undefined ? { idempotencyKey: data.idempotencyKey } : {}),
       });
-      const paymentIntent = await this.createStripePixPaymentIntent(
-        data,
-        amountInCents,
-        idempotencyKey,
-      );
+      const pixCharge = await this.createMercadoPagoPixCharge(data, amountInCents, idempotencyKey);
       const workspace = await this.prisma.workspace.findUnique({
         where: { id: data.workspaceId },
         select: { name: true },
       });
-      const { pixData, paymentLink } = this.extractPixDetails(paymentIntent);
+      const pixQrCodeUrl = toPixQrCodeDataUrl(pixCharge.qrCodeBase64);
+      const paymentLink = pixCharge.ticketUrl || undefined;
 
-      await this.persistStripePixSale({
+      await this.persistMercadoPagoPixSale({
         data,
-        paymentIntent,
+        pixCharge,
         ...(workspace?.name !== undefined ? { companyName: workspace.name } : {}),
         idempotencyKey,
         ...(paymentLink !== undefined ? { paymentLink } : {}),
-        pixData: pixData ?? null,
+        ...(pixQrCodeUrl !== undefined ? { pixQrCodeUrl } : {}),
       });
 
       return this.buildCreatePaymentResponse({
-        paymentIntent,
+        pixCharge,
         ...(paymentLink !== undefined ? { paymentLink } : {}),
-        pixData: pixData ?? null,
+        ...(pixQrCodeUrl !== undefined ? { pixQrCodeUrl } : {}),
       });
     } catch (err: unknown) {
       if (err instanceof BadRequestException) {
@@ -351,7 +340,7 @@ export class PaymentService {
       }
       const errInstance =
         err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown_error');
-      this.logger.error(`Stripe indisponível: ${errInstance.message}`);
+      this.logger.error(`Mercado Pago PIX indisponível: ${errInstance.message}`);
       this.financialAlert.paymentFailed(errInstance, {
         workspaceId: data.workspaceId,
       });

@@ -120,6 +120,7 @@ interface PaymentContext {
   contactId?: string;
   phone: string;
   customerName: string;
+  customerEmail?: string;
   productName?: string;
   amount: number;
   conversation?: string;
@@ -169,7 +170,8 @@ export class SmartPaymentService {
    * A IA sugere o melhor método de pagamento e mensagem personalizada.
    */
   async createSmartPayment(context: PaymentContext): Promise<SmartPaymentResult> {
-    const { workspaceId, phone, customerName, amount, productName, conversation } = context;
+    const { workspaceId, phone, customerName, customerEmail, amount, productName, conversation } =
+      context;
 
     // 1. Se temos a conversa, usar IA para gerar mensagem personalizada
     let suggestedMessage = '';
@@ -214,13 +216,14 @@ export class SmartPaymentService {
       }
     }
 
-    // 2. O stack ativo do Kloel gera links Pix via Stripe.
+    // 2. PaymentService gera Pix pelo provedor canonico configurado para PIX.
     try {
       const payment = await this.paymentService.createPayment({
         workspaceId,
         leadId: context.contactId || phone,
         customerName,
         customerPhone: phone,
+        ...(customerEmail !== undefined ? { customerEmail } : {}),
         amount,
         description: productName || 'Pagamento KLOEL',
         idempotencyKey: buildSmartPaymentIdempotencyKey(context),

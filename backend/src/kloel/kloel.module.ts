@@ -72,6 +72,7 @@ import { CampaignsModule } from '../campaigns/campaigns.module';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { KycModule } from '../kyc/kyc.module';
 import { FraudModule } from '../payments/fraud/fraud.module';
+import { PaymentsModule } from '../payments/payments.module';
 import { MetricsModule } from '../metrics/metrics.module';
 import { PartnershipsModule } from '../partnerships/partnerships.module';
 import { PrismaModule } from '../prisma/prisma.module';
@@ -212,6 +213,7 @@ import { SalesModule } from '../sales/sales.module';
     AuditModule,
     forwardRef(() => WalletModule),
     FraudModule,
+    PaymentsModule,
     PartnershipsModule,
     MetricsModule,
     KloelAudioModule,
