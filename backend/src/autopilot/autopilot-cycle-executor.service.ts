@@ -7,7 +7,7 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { renderTemplate } from '../common/sales-templates';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
-import { MindPolicyService } from '../kloel/mind-policy.service';
+import { MindPolicyService } from '../kloel/mind/policy/mind-policy.service';
 import type { MindJson, MindPolicyOption } from '../kloel/mind.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';

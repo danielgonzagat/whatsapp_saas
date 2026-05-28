@@ -5,7 +5,7 @@ import {
   assertCustomerSafe,
 } from './commercial-decision-orchestrator.service';
 import { DecisionOutcomeService } from './decision-outcome.service';
-import { MindLiftReportService } from './mind-lift-report.service';
+import { MindLiftReportService } from './mind/observability/mind-lift-report.service';
 import {
   buildWhatsappInboundText,
   buildPriceObjectionInbound,

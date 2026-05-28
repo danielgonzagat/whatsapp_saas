@@ -1,10 +1,10 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { MindBeliefService } from '../../kloel/mind-belief.service';
-import { MindLiftReportService } from '../../kloel/mind-lift-report.service';
-import { MindPolicyService } from '../../kloel/mind-policy.service';
-import { MindObservabilityService } from '../../kloel/mind-observability.service';
-import { MindReportService } from '../../kloel/mind-report.service';
+import { MindBeliefService } from '../../kloel/mind/inference/mind-belief.service';
+import { MindLiftReportService } from '../../kloel/mind/observability/mind-lift-report.service';
+import { MindPolicyService } from '../../kloel/mind/policy/mind-policy.service';
+import { MindObservabilityService } from '../../kloel/mind/observability/mind-observability.service';
+import { MindReportService } from '../../kloel/mind/observability/mind-report.service';
 
 type PolicyCountRow = {
   total: bigint;

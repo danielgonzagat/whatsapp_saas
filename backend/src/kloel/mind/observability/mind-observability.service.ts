@@ -6,7 +6,7 @@ import { MindBanditService } from '../policy/mind-bandit.service';
 import { MindBeliefService } from '../inference/mind-belief.service';
 import { MindPolicyService } from '../policy/mind-policy.service';
 import { MindReportService } from './mind-report.service';
-import { MindVerbalizerService } from '../../mind-verbalizer.service';
+import { MindVerbalizerService } from '../synthetic/mind-verbalizer.service';
 
 function isUnknownRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);

@@ -2,7 +2,7 @@ import {
   resolveCaseMemoryAction,
   type CaseMemoryLookup,
 } from './mind/policy/mind-case-memory-decision.helper';
-import type { MindPolicyService } from './mind-policy.service';
+import type { MindPolicyService } from './mind/policy/mind-policy.service';
 import {
   TONE_OPTIONS,
   resolveAggressivenessBaseline,

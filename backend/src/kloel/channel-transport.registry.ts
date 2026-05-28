@@ -15,7 +15,7 @@ import type {
   ChannelTransportProvider,
 } from './channel-transport.types';
 import { MindGuardsService } from './mind/policy/mind-guards.service';
-import { MindGuardContextBuilderService } from './mind-guard-context-builder.service';
+import { MindGuardContextBuilderService } from './mind/policy/mind-guard-context-builder.service';
 import type { MindActionContext } from './mind-code-native.types';
 
 @Injectable()

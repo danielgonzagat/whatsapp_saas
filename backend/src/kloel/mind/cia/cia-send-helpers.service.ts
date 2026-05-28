@@ -7,7 +7,7 @@ import { AgentEventsService } from '../../../marketing/channels/whatsapp/agent-e
 import { NON_DIGIT_RE } from '../../../common/phone';
 import { WHITESPACE_G_RE } from '../../../common/regex';
 import { SpineEmitterService } from '../../spine/spine-emitter.service';
-import { MindPolicyService } from '../../mind-policy.service';
+import { MindPolicyService } from '../policy/mind-policy.service';
 
 const PATTERN_RE = /[?!.;,]+$/g;
 export const WHITESPACE_RE = /\s+/;

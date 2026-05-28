@@ -7,10 +7,10 @@ import { WhatsAppProviderRegistry } from '../marketing/channels/whatsapp/provide
 import type { ToolArgs } from './unified-agent.types';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { TAG_DEFAULT_COLORS } from '../common/kloel-colors';
-import { MindGuardContextBuilderService } from './mind-guard-context-builder.service';
+import { MindGuardContextBuilderService } from './mind/policy/mind-guard-context-builder.service';
 import { MindGuardsService } from './mind/policy/mind-guards.service';
 import type { MindActionContext } from './mind-code-native.types';
-import { MindPolicyService } from './mind-policy.service';
+import { MindPolicyService } from './mind/policy/mind-policy.service';
 import { MindService } from './mind.service';
 import {
   chooseFollowUpTiming,

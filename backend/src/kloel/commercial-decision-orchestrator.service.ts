@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { MindEventSpine } from './mind/coordination';
 import { ChannelSetupService } from './channel-setup.service';
-import { MindConceptService } from './mind-concepts.service';
+import { MindConceptService } from './mind/memory/mind-concepts.service';
 import { MindService } from './mind.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ContactIdentityResolverService } from '../contacts/contact-identity-resolver.service';

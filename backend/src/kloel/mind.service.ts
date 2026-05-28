@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { randomUUID } from 'crypto';
-import { MindBeliefService } from './mind-belief.service';
-import { MindCaseMemoryService } from './mind-case-memory.service';
-import { MindEventProcessorService } from './mind-event-processor.service';
+import { MindBeliefService } from './mind/inference/mind-belief.service';
+import { MindCaseMemoryService } from './mind/memory/mind-case-memory.service';
+import { MindEventProcessorService } from './mind/runtime/mind-event-processor.service';
 import { MindPerceptionService } from './mind/perception/mind-perception.service';
-import { MindPolicyService } from './mind-policy.service';
-import { MindSurpriseService } from './mind-surprise.service';
+import { MindPolicyService } from './mind/policy/mind-policy.service';
+import { MindSurpriseService } from './mind/inference/mind-surprise.service';
 import type { MindTick } from './mind.types';
 import { MindWorkspaceStateService } from './mind/memory/mind-workspace-state.service';
 import {

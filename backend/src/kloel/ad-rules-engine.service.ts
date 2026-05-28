@@ -6,7 +6,7 @@ import tracer from 'dd-trace';
 import { Counter, Histogram, register } from 'prom-client';
 import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
-import { MindBanditService } from './mind-bandit.service';
+import { MindBanditService } from './mind/policy/mind-bandit.service';
 import { MindService } from './mind.service';
 import type {
   CampaignMetrics,
