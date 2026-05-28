@@ -37,6 +37,8 @@ import {
   periodToSince,
 } from './kloel-tool-dispatcher.helpers';
 import { buildCanonicalReceipt } from './kloel-tool-dispatcher.receipt.helpers';
+import { dispatchWhatsAppTool, isWhatsAppTool } from './kloel-tool-dispatcher.whatsapp.handlers';
+import { dispatchCodeTool, isCodeTool } from './kloel-tool-dispatcher.code.handlers';
 
 import type { UnknownRecord } from '../common/types';
 
@@ -105,6 +107,28 @@ export class KloelToolDispatcherService {
     }
     this.logger.log(`Executando ferramenta: ${toolName}`);
     try {
+      if (isWhatsAppTool(toolName)) {
+        const whatsappResult = await dispatchWhatsAppTool(
+          this.whatsappToolsService,
+          workspaceId,
+          toolName,
+          args,
+        );
+        if (whatsappResult !== null) {
+          return whatsappResult;
+        }
+      }
+      if (isCodeTool(toolName)) {
+        const codeResult = await dispatchCodeTool(
+          this.codeToolsService,
+          this.codeAnalysisService,
+          toolName,
+          args,
+        );
+        if (codeResult !== null) {
+          return codeResult;
+        }
+      }
       switch (toolName) {
         case 'save_product':
         case 'create_product': {
@@ -1038,55 +1062,6 @@ export class KloelToolDispatcherService {
           return await this.chatToolsService.toolCreateOrder(workspaceId, asToolArgs(args));
         case 'create_payment_link':
           return await this.dispatchCreatePaymentLink(workspaceId, args, userId);
-        case 'connect_whatsapp':
-          return await this.whatsappToolsService.toolConnectWhatsapp(workspaceId);
-        case 'get_whatsapp_status':
-          return await this.whatsappToolsService.toolGetWhatsAppStatus(workspaceId);
-        case 'send_whatsapp_message':
-          return await this.whatsappToolsService.toolSendWhatsAppMessage(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'list_whatsapp_contacts':
-          return await this.whatsappToolsService.toolListWhatsAppContacts(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'create_whatsapp_contact':
-          return await this.whatsappToolsService.toolCreateWhatsAppContact(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'list_whatsapp_chats':
-          return await this.whatsappToolsService.toolListWhatsAppChats(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'get_whatsapp_messages':
-          return await this.whatsappToolsService.toolGetWhatsAppMessages(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'get_whatsapp_backlog':
-          return await this.whatsappToolsService.toolGetWhatsAppBacklog(workspaceId);
-        case 'set_whatsapp_presence':
-          return await this.whatsappToolsService.toolSetWhatsAppPresence(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'sync_whatsapp_history':
-          return await this.whatsappToolsService.toolSyncWhatsAppHistory(
-            workspaceId,
-            asToolArgs(args),
-          );
-        case 'send_audio':
-          return await this.whatsappToolsService.toolSendAudio(workspaceId, asToolArgs(args));
-        case 'send_document':
-          return await this.whatsappToolsService.toolSendDocument(workspaceId, asToolArgs(args));
-        case 'send_voice_note':
-          return await this.whatsappToolsService.toolSendVoiceNote(workspaceId, asToolArgs(args));
-        case 'transcribe_audio':
-          return await this.whatsappToolsService.toolTranscribeAudio(workspaceId, asToolArgs(args));
         case 'list_leads':
           return await this.bizConfigToolsService.toolListLeads(workspaceId, asToolArgs(args));
         case 'get_lead_details':
@@ -1112,111 +1087,6 @@ export class KloelToolDispatcherService {
           return await this.bizConfigToolsService.toolGetBillingStatus(workspaceId);
         case 'change_plan':
           return await this.requestHighRiskApproval(workspaceId, toolName, args, userId);
-        case 'read_source_file':
-          return await this.codeToolsService.toolReadSourceFile(
-            typeof args.path === 'string' ? args.path : '',
-            typeof args.startLine === 'number' ? args.startLine : undefined,
-            typeof args.endLine === 'number' ? args.endLine : undefined,
-          );
-        case 'list_source_dir':
-          return await this.codeToolsService.toolListSourceDir(
-            typeof args.path === 'string' ? args.path : undefined,
-          );
-        case 'search_codebase':
-          return await this.codeToolsService.toolSearchCodebase(
-            typeof args.pattern === 'string' ? args.pattern : '',
-            typeof args.glob === 'string' ? args.glob : undefined,
-          );
-        case 'code_outline':
-          return await this.codeToolsService.toolCodeOutline(
-            typeof args.path === 'string' ? args.path : '',
-          );
-        case 'read_prisma_schema':
-          return await this.codeToolsService.toolReadPrismaSchema();
-        case 'git_log':
-          return await this.codeToolsService.toolGitLog(
-            typeof args.count === 'number' ? args.count : undefined,
-          );
-        case 'git_diff':
-          return await this.codeToolsService.toolGitDiff(
-            typeof args.target === 'string' ? args.target : undefined,
-          );
-        case 'git_status':
-          return await this.codeToolsService.toolGitStatus();
-        case 'run_backend_tests':
-          return await this.codeToolsService.toolRunBackendTests(
-            typeof args.pattern === 'string' ? args.pattern : undefined,
-          );
-        case 'build_status':
-          return await this.codeToolsService.toolBuildStatus(
-            typeof args.scope === 'string' ? args.scope : undefined,
-          );
-        case 'code_lint':
-          return await this.codeAnalysisService.toolCodeLint(
-            typeof args.path === 'string' ? args.path : '',
-          );
-        case 'code_detect_issues':
-          return await this.codeAnalysisService.toolCodeDetectIssues(
-            typeof args.path === 'string' ? args.path : '',
-          );
-        // ── CODEGRAPH (Meta 1 — knowledge-graph code intelligence) ──
-        case 'codegraph_status':
-          return await this.codeToolsService.toolCodeGraphStatus();
-        case 'codegraph_search':
-          return await this.codeToolsService.toolCodeGraphSearch(
-            typeof args.query === 'string' ? args.query : '',
-          );
-        case 'codegraph_context':
-          return await this.codeToolsService.toolCodeGraphContext(
-            typeof args.task === 'string' ? args.task : 'overview',
-          );
-        case 'codegraph_callers':
-          return await this.codeToolsService.toolCodeGraphCallers(
-            typeof args.symbol === 'string' ? args.symbol : '',
-          );
-        case 'codegraph_callees':
-          return await this.codeToolsService.toolCodeGraphCallees(
-            typeof args.symbol === 'string' ? args.symbol : '',
-          );
-        case 'codegraph_impact':
-          return await this.codeToolsService.toolCodeGraphImpact(
-            typeof args.symbol === 'string' ? args.symbol : '',
-          );
-        case 'codegraph_node':
-          return await this.codeToolsService.toolCodeGraphNode(
-            typeof args.symbol === 'string' ? args.symbol : '',
-          );
-        case 'codegraph_files':
-          return await this.codeToolsService.toolCodeGraphFiles();
-        // ── COGNITIVE BRIDGE (Wave 7 PI-CC) ──
-        case 'lsp_diagnostics':
-          return await this.codeToolsService.toolLspDiagnostics(
-            typeof args.file === 'string' ? args.file : '',
-          );
-        case 'openapi_route':
-          return await this.codeToolsService.toolOpenApiRoute(
-            typeof args.query === 'string' ? args.query : '',
-          );
-        case 'asyncapi_events':
-          return await this.codeToolsService.toolAsyncApiEvents(
-            typeof args.domain === 'string' ? args.domain : '',
-          );
-        case 'static_analysis':
-          return await this.codeToolsService.toolStaticAnalysis(
-            typeof args.file === 'string' ? args.file : '',
-          );
-        // ── PULSE / Runtime awareness (Wave 7 PI-DD) ──
-        case 'pulse_health':
-          return await this.codeToolsService.toolPulseHealth(
-            typeof args.module === 'string' ? args.module : undefined,
-          );
-        case 'behavior_graph_node':
-          return await this.codeToolsService.toolBehaviorGraphNode(
-            typeof args.symbol === 'string' ? args.symbol : '',
-            typeof args.file === 'string' ? args.file : undefined,
-          );
-        case 'runtime_errors':
-          return await this.codeToolsService.toolRuntimeErrors();
         // ── Deps + Coverage + Affected tests (Wave 7 PI-EE) ──
         case 'dependencies': {
           if (!this.depsCoverage) {
