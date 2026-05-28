@@ -2,8 +2,8 @@ import { resolveCaseMemoryAction, type CaseMemoryLookup } from './mind-case-memo
 import type {
   MindPolicyChooser,
   PolicyDecisionResult,
-} from '../../mind-catalog-decision-resolvers';
-import { decisionConfidence } from '../../mind-catalog-decision-resolvers';
+} from './mind-catalog-decision-resolvers';
+import { decisionConfidence } from './mind-catalog-decision-resolvers';
 
 // Canonical MindPolicyChooser + PolicyDecisionResult + decisionConfidence live
 // in mind-catalog-decision-resolvers — re-export the type for recovery-side

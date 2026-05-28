@@ -16,7 +16,7 @@ import {
   resolveMessageFormatDecision,
   resolveObjectionResponseDecision,
   resolveToneDecision,
-} from './mind-catalog-decision-resolvers';
+} from './mind/policy/mind-catalog-decision-resolvers';
 import {
   resolveAdAlertActionDecision,
   resolveBestVariantDecision,
@@ -24,7 +24,7 @@ import {
   resolveChannelChoiceDecision,
   resolveHumanTransferDecision,
   resolveProductOfferDecision,
-} from './mind-commercial-decision-resolvers';
+} from './mind/policy/mind-commercial-decision-resolvers';
 import { KNOWN_DECISION_TYPES } from './mind/policy/mind-decision-baselines';
 
 @Injectable()

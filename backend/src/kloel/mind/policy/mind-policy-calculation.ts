@@ -1,12 +1,12 @@
-import { evaluateEconomicObjective } from './economic-objective';
-import { mean, twoProportionZScore } from './mind/policy/mind-policy.helpers';
+import { evaluateEconomicObjective } from '../../economic-objective';
+import { mean, twoProportionZScore } from './mind-policy.helpers';
 import type {
   MindActionCandidate,
   MindJson,
   MindPolicyCalcStep,
   MindPolicyDecision,
   MindPolicyOption,
-} from './mind.types';
+} from '../../mind.types';
 
 export interface MindPolicyHarnessResult {
   baselineMean: number;

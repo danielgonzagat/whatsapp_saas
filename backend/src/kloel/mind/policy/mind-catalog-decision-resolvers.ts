@@ -1,8 +1,8 @@
 import {
   resolveCaseMemoryAction,
   type CaseMemoryLookup,
-} from './mind/policy/mind-case-memory-decision.helper';
-import type { MindPolicyService } from './mind/policy/mind-policy.service';
+} from './mind-case-memory-decision.helper';
+import type { MindPolicyService } from './mind-policy.service';
 import {
   TONE_OPTIONS,
   resolveAggressivenessBaseline,
@@ -11,7 +11,7 @@ import {
   resolveMessageFormatBaseline,
   resolveObjectionResponseBaseline,
   resolveToneBaseline,
-} from './mind/policy/mind-decision-baselines';
+} from './mind-decision-baselines';
 
 export type MindPolicyChooser = Pick<MindPolicyService, 'choose'>;
 

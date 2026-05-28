@@ -17,7 +17,7 @@ import {
   resolveBaselineAction,
   shouldUseBaselineFallback,
   summarizePolicyHarness,
-} from '../../mind-policy-calculation';
+} from './mind-policy-calculation';
 import {
   createPolicyRow,
   estimateCounterfactualBaselineOutcome,
