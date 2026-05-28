@@ -50,11 +50,17 @@ jest.mock('./kloel-thinker.helpers', () => ({
   regenerateThreadAssistantResponseImpl: jest.fn(),
 }));
 
-jest.mock('./kloel-thinker-think.helpers', () => ({
-  runComposerCapabilityBranch: jest.fn(),
-  runToolPlanningBranch: jest.fn(),
-  finalizeSuccessfulReply: jest.fn(),
-}));
+jest.mock('./kloel-thinker-think.helpers', () => {
+  const actual = jest.requireActual<typeof import('./kloel-thinker-think.helpers')>(
+    './kloel-thinker-think.helpers',
+  );
+  return {
+    ...actual,
+    runComposerCapabilityBranch: jest.fn(),
+    runToolPlanningBranch: jest.fn(),
+    finalizeSuccessfulReply: jest.fn(),
+  };
+});
 
 jest.mock('./kloel-conversation-store', () => ({
   KloelConversationStore: jest.fn().mockImplementation(() => ({

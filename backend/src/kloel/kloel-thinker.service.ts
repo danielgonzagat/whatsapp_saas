@@ -9,12 +9,9 @@ import { KloelComposerService } from './kloel-composer.service';
 import { KloelConversationStore } from './kloel-conversation-store';
 import { KLOEL_LLM_E2E_GUARD, KloelLLME2EGuard } from './kloel-llm-e2e-guard';
 import {
-  createKloelContentEvent,
   createKloelErrorEvent,
   createKloelStatusEvent,
   createKloelThreadEvent,
-  createKloelToolCallEvent,
-  createKloelToolResultEvent,
   type KloelStreamEvent,
 } from './kloel-stream-events';
 import { KloelStreamWriter } from './kloel-stream-writer';
@@ -28,16 +25,14 @@ import { MindCapabilityExecutor } from './mind/coordination';
 import { validateAbiPayload } from './abi/abi-validator';
 import { computeHandoffConfidence, HANDOFF_THRESHOLD } from './handoff-confidence.helper';
 import { ChatCompletionMessageParam } from 'openai/resources/chat';
-import {
-  appendToolResultProof,
-  detectActionIntent,
-  formatToolResult,
-} from './guest-chat.action-intent.helpers';
+import { detectActionIntent } from './guest-chat.action-intent.helpers';
 import { KloelReplyEngineService, LocalToolExecutor } from './kloel-reply-engine.service';
 import { thinkSyncImpl, regenerateThreadAssistantResponseImpl } from './kloel-thinker.helpers';
 import {
   finalizeSuccessfulReply,
+  persistChatTurnToSpine,
   runComposerCapabilityBranch,
+  runDeterministicActionBranch,
   runToolPlanningBranch,
   type ThinkBranchContext,
 } from './kloel-thinker-think.helpers';
@@ -131,101 +126,26 @@ export class KloelThinkerService {
           : undefined;
       const deterministicAction = deterministicWorkspaceId ? detectActionIntent(message) : null;
       if (deterministicAction && deterministicWorkspaceId) {
-        const clientRequestId = this.threadService.resolveClientRequestId(metadata);
-        const thread = await this.threadService.resolveThread(
-          deterministicWorkspaceId,
-          conversationId,
-        );
-        if (thread?.id) {
-          safeWrite(createKloelThreadEvent(thread.id, thread.title));
-        }
-        const persistedUserMessage = thread?.id
-          ? await this.threadService.persistUserThreadMessage(
-              thread.id,
-              deterministicWorkspaceId,
-              message,
-              this.threadService.buildThreadMessageMetadata(metadata, {
-                clientRequestId,
-                mode,
-                transport: 'sse',
-                requestState: 'accepted',
-              }),
-            )
-          : null;
-        const branchCtx: ThinkBranchContext = {
-          workspaceId: deterministicWorkspaceId,
-          userId,
-          message,
-          mode,
-          metadata,
-          clientRequestId,
-          thread,
-          persistedUserMessage,
-          processingTraceEntries,
-          safeWrite,
-          streamWriter,
-          replyEngine: this.replyEngine,
-          threadService: this.threadService,
-          conversationStore: this.conversationStore,
-          planLimits: this.planLimits,
-        };
-        const callId = clientRequestId
-          ? `deterministic_${clientRequestId}`
-          : `deterministic_${Date.now()}`;
-        safeWrite(
-          createKloelStatusEvent('tool_calling', `Executando ${deterministicAction.tool}.`),
-        );
-        safeWrite(
-          createKloelToolCallEvent(callId, deterministicAction.tool, deterministicAction.args),
-        );
-        let toolResult: unknown;
-        try {
-          toolResult = await executeLocalTool(
-            deterministicWorkspaceId,
-            deterministicAction.tool,
-            deterministicAction.args,
+        await runDeterministicActionBranch(
+          deterministicAction,
+          executeLocalTool,
+          {
+            workspaceId: deterministicWorkspaceId,
             userId,
-          );
-        } catch (error: unknown) {
-          toolResult = {
-            success: false,
-            error:
-              error instanceof Error
-                ? error.message
-                : typeof error === 'string'
-                  ? error
-                  : 'tool_execution_failed',
-          };
-        }
-        const toolResultRecord =
-          toolResult !== null && typeof toolResult === 'object' && !Array.isArray(toolResult)
-            ? (toolResult as Record<string, unknown>)
-            : {};
-        const toolSucceeded = toolResultRecord.success !== false;
-        const toolError =
-          typeof toolResultRecord.error === 'string'
-            ? toolResultRecord.error
-            : toolSucceeded
-              ? undefined
-              : 'tool_execution_failed';
-        safeWrite(
-          createKloelStatusEvent('tool_result', `Resultado de ${deterministicAction.tool}.`),
+            message,
+            mode,
+            metadata,
+            conversationId,
+            processingTraceEntries,
+            safeWrite,
+            streamWriter,
+            threadService: this.threadService,
+            replyEngine: this.replyEngine,
+            conversationStore: this.conversationStore,
+            planLimits: this.planLimits,
+          },
+          finalizeSuccessfulReply,
         );
-        safeWrite(
-          createKloelToolResultEvent({
-            callId,
-            tool: deterministicAction.tool,
-            success: toolSucceeded,
-            result: toolResult,
-            ...(toolError !== undefined ? { error: toolError } : {}),
-          }),
-        );
-        const reply = appendToolResultProof(
-          formatToolResult(deterministicAction.tool, toolResult),
-          toolResult,
-        );
-        safeWrite(createKloelContentEvent(reply));
-        await finalizeSuccessfulReply(reply, 0, branchCtx);
         return;
       }
 
@@ -576,26 +496,13 @@ export class KloelThinkerService {
       // B4: memory is a structural effect of the operation, not an LLM
       // decision. Fire-and-forget — never blocks or fails the reply.
       if (workspaceId) {
-        void this.prisma.autopilotEvent
-          .create({
-            data: {
-              workspaceId,
-              intent: 'kloel_chat_turn',
-              action: 'kloel.chat.turn',
-              status: 'executed',
-              meta: {
-                userPreview: message.slice(0, 280),
-                replyPreview: fullResponse.slice(0, 280),
-                mode,
-                conversationId: conversationId ?? null,
-              },
-            },
-          })
-          .catch((e: unknown) => {
-            this.logger.warn(
-              `chat-turn spine persist failed: ${e instanceof Error ? e.message : 'unknown'}`,
-            );
-          });
+        persistChatTurnToSpine(this.prisma, this.logger, {
+          workspaceId,
+          message,
+          fullResponse,
+          mode,
+          conversationId,
+        });
       }
     } catch (error: unknown) {
       this.logger.error('Erro no KLOEL Thinker:', error);

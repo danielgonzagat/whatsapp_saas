@@ -2,6 +2,7 @@ import type { ChatCompletionMessageParam } from 'openai/resources/chat';
 import { Prisma } from '@prisma/client';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { KloelComposerService } from './kloel-composer.service';
 import { KloelConversationStore } from './kloel-conversation-store';
 import { buildTimestampedRuntimeId } from './kloel-id.util';
@@ -11,6 +12,8 @@ import {
   createKloelErrorEvent,
   createKloelStatusEvent,
   createKloelThreadEvent,
+  createKloelToolCallEvent,
+  createKloelToolResultEvent,
   type KloelStreamEvent,
 } from './kloel-stream-events';
 import { KloelStreamWriter } from './kloel-stream-writer';
@@ -23,6 +26,13 @@ import { KloelReplyEngineService } from './kloel-reply-engine.service';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import { KLOEL_SAFE_READ_TOOLS } from './kloel-chat-tools.definition';
 import type { LocalToolExecutor } from './kloel-reply-engine.service';
+import { appendToolResultProof, formatToolResult } from './guest-chat.action-intent.helpers';
+
+/** Shape returned by detectActionIntent — kept local to avoid coupling to the deeper module. */
+export interface DeterministicAction {
+  tool: string;
+  args: Record<string, unknown>;
+}
 
 const KLOEL_TOOL_PLANNING_WORKSPACE_REQUIRED = 'workspaceId is required for Kloel tool planning';
 
@@ -295,4 +305,176 @@ export async function runToolPlanningBranch(
     safeWrite(createKloelErrorEvent({ content: fallbackText, error: 'empty_stream', done: false }));
   }
   await finalizeSuccessfulReply(fallbackText, streamedReply.estimatedTokens, ctx);
+}
+
+/** Context required to drive the deterministic-action SSE branch (no LLM). */
+export interface DeterministicActionBranchContext {
+  workspaceId: string;
+  userId: string | undefined;
+  message: string;
+  mode: string;
+  metadata: Prisma.InputJsonValue | undefined;
+  conversationId: string | undefined;
+  processingTraceEntries: StoredProcessingTraceEntry[];
+  safeWrite: (event: KloelStreamEvent) => void;
+  streamWriter: KloelStreamWriter;
+  threadService: KloelThreadService;
+  replyEngine: KloelReplyEngineService;
+  conversationStore: KloelConversationStore;
+  planLimits: PlanLimitsService;
+}
+
+/** Type alias for finalizeSuccessfulReply — kept narrow so the helper stays unit-testable. */
+export type FinalizeReplyFn = typeof finalizeSuccessfulReply;
+
+/**
+ * Runs the deterministic-action SSE branch: persist thread message, invoke the
+ * local tool, emit tool_call / tool_result / content events, finalize the reply.
+ * Extracted from KloelThinkerService.think to keep the orchestrator slim.
+ *
+ * `finalizeReply` is injected so tests can mock `finalizeSuccessfulReply` at the
+ * service-import boundary (jest.mock of this module overrides the exported binding,
+ * but not the in-module reference, so the service forwards the mocked binding).
+ */
+export async function runDeterministicActionBranch(
+  action: DeterministicAction,
+  executeLocalTool: LocalToolExecutor,
+  ctx: DeterministicActionBranchContext,
+  finalizeReply: FinalizeReplyFn = finalizeSuccessfulReply,
+): Promise<void> {
+  const {
+    workspaceId,
+    userId,
+    message,
+    mode,
+    metadata,
+    conversationId,
+    processingTraceEntries,
+    safeWrite,
+    streamWriter,
+    threadService,
+    replyEngine,
+    conversationStore,
+    planLimits,
+  } = ctx;
+  const clientRequestId = threadService.resolveClientRequestId(metadata);
+  const thread = await threadService.resolveThread(workspaceId, conversationId);
+  if (thread?.id) {
+    safeWrite(createKloelThreadEvent(thread.id, thread.title));
+  }
+  const persistedUserMessage = thread?.id
+    ? await threadService.persistUserThreadMessage(
+        thread.id,
+        workspaceId,
+        message,
+        threadService.buildThreadMessageMetadata(metadata, {
+          clientRequestId,
+          mode,
+          transport: 'sse',
+          requestState: 'accepted',
+        }),
+      )
+    : null;
+  const branchCtx: ThinkBranchContext = {
+    workspaceId,
+    userId,
+    message,
+    mode,
+    metadata,
+    clientRequestId,
+    thread,
+    persistedUserMessage,
+    processingTraceEntries,
+    safeWrite,
+    streamWriter,
+    replyEngine,
+    threadService,
+    conversationStore,
+    planLimits,
+  };
+  const callId = clientRequestId
+    ? `deterministic_${clientRequestId}`
+    : `deterministic_${Date.now()}`;
+  safeWrite(createKloelStatusEvent('tool_calling', `Executando ${action.tool}.`));
+  safeWrite(createKloelToolCallEvent(callId, action.tool, action.args));
+  let toolResult: unknown;
+  try {
+    toolResult = await executeLocalTool(workspaceId, action.tool, action.args, userId);
+  } catch (error: unknown) {
+    toolResult = {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : typeof error === 'string'
+            ? error
+            : 'tool_execution_failed',
+    };
+  }
+  const toolResultRecord =
+    toolResult !== null && typeof toolResult === 'object' && !Array.isArray(toolResult)
+      ? (toolResult as Record<string, unknown>)
+      : {};
+  const toolSucceeded = toolResultRecord.success !== false;
+  const toolError =
+    typeof toolResultRecord.error === 'string'
+      ? toolResultRecord.error
+      : toolSucceeded
+        ? undefined
+        : 'tool_execution_failed';
+  safeWrite(createKloelStatusEvent('tool_result', `Resultado de ${action.tool}.`));
+  safeWrite(
+    createKloelToolResultEvent({
+      callId,
+      tool: action.tool,
+      success: toolSucceeded,
+      result: toolResult,
+      ...(toolError !== undefined ? { error: toolError } : {}),
+    }),
+  );
+  const reply = appendToolResultProof(formatToolResult(action.tool, toolResult), toolResult);
+  safeWrite(createKloelContentEvent(reply));
+  await finalizeReply(reply, 0, branchCtx);
+}
+
+/** Minimal logger surface used by spine persistence (avoids a hard dep on Nest). */
+interface SpineWarnLogger {
+  warn(message: string): void;
+}
+
+/**
+ * Persists a conversational chat turn to the cognitive spine (autopilotEvent)
+ * so cross-session memory is fed. Fire-and-forget — never blocks the reply.
+ * Extracted from KloelThinkerService.think.
+ */
+export function persistChatTurnToSpine(
+  prisma: PrismaService,
+  logger: SpineWarnLogger,
+  params: {
+    workspaceId: string;
+    message: string;
+    fullResponse: string;
+    mode: string;
+    conversationId: string | undefined;
+  },
+): void {
+  const { workspaceId, message, fullResponse, mode, conversationId } = params;
+  void prisma.autopilotEvent
+    .create({
+      data: {
+        workspaceId,
+        intent: 'kloel_chat_turn',
+        action: 'kloel.chat.turn',
+        status: 'executed',
+        meta: {
+          userPreview: message.slice(0, 280),
+          replyPreview: fullResponse.slice(0, 280),
+          mode,
+          conversationId: conversationId ?? null,
+        },
+      },
+    })
+    .catch((e: unknown) => {
+      logger.warn(`chat-turn spine persist failed: ${e instanceof Error ? e.message : 'unknown'}`);
+    });
 }
