@@ -1,4 +1,3 @@
-import { OrderStatus } from '@prisma/client';
 import {
   ConflictException,
   Injectable,
@@ -19,6 +18,17 @@ import {
   buildPartnerInviteUrl,
   getPartnerRoleLabel,
 } from './partnerships.invite.helpers';
+import {
+  ATTRIBUTED_ORDER_STATUSES,
+  DEFAULT_PARTNER_COMMISSION_RATE,
+  aggregateMonthlyPerformance,
+  buildAttributedOrderFilters,
+  buildListAffiliatesWhere,
+  computeAffiliateStats,
+  extractLastSaleAt,
+  getCurrentYearStartUtc,
+  normalizeCreatePartnerInput,
+} from './partnerships.service.helpers';
 import { PrismaService } from '../prisma/prisma.service';
 
 // cache.invalidate — partnerships data fetched live from Prisma; no Redis cache to invalidate
@@ -162,16 +172,7 @@ export class PartnershipsService {
     workspaceId: string,
     params?: { type?: string; status?: string; search?: string },
   ) {
-    const where: Record<string, unknown> = { workspaceId };
-    if (params?.type && params.type !== 'todos') {
-      where.type = params.type.trim().toUpperCase();
-    }
-    if (params?.status) {
-      where.status = params.status.trim().toUpperCase();
-    }
-    if (params?.search) {
-      where.partnerName = { contains: params.search, mode: 'insensitive' };
-    }
+    const where = buildListAffiliatesWhere(workspaceId, params);
 
     const affiliates = await this.prisma.affiliatePartner.findMany({
       where,
@@ -210,22 +211,7 @@ export class PartnershipsService {
       },
       take: 1000,
     });
-    const activeAffiliates = partners.filter(
-      (p) => p.type === 'AFFILIATE' && p.status === 'ACTIVE',
-    ).length;
-    const producers = partners.filter((p) => p.type === 'PRODUCER').length;
-    const totalRevenue = partners
-      .filter((p) => p.type === 'AFFILIATE')
-      .reduce((s, p) => s + p.totalRevenue, 0);
-    const totalCommissions = partners.reduce((s, p) => s + p.totalCommission, 0);
-    const top = [...partners].sort((a, b) => b.totalRevenue - a.totalRevenue)[0];
-    return {
-      activeAffiliates,
-      producers,
-      totalRevenue,
-      totalCommissions,
-      topPartner: top ? { name: top.partnerName, revenue: top.totalRevenue } : null,
-    };
+    return computeAffiliateStats(partners);
   }
 
   /** Get affiliate detail. */
@@ -252,13 +238,7 @@ export class PartnershipsService {
     },
   ) {
     const code = await this.generateAffiliateCode();
-    const partnerName = String(data.partnerName || '').trim();
-    const partnerEmail = String(data.partnerEmail || '')
-      .trim()
-      .toLowerCase();
-    const partnerType = String(data.type || '')
-      .trim()
-      .toUpperCase();
+    const { partnerName, partnerEmail, partnerType } = normalizeCreatePartnerInput(data);
     const existingPartner = await this.prisma.affiliatePartner.findFirst({
       where: { workspaceId, partnerEmail },
     });
@@ -289,7 +269,7 @@ export class PartnershipsService {
         partnerEmail,
         ...(data.partnerPhone !== undefined ? { partnerPhone: data.partnerPhone } : {}),
         type: partnerType,
-        commissionRate: data.commissionRate || 30,
+        commissionRate: data.commissionRate || DEFAULT_PARTNER_COMMISSION_RATE,
         status: requiresInvite ? 'PENDING' : 'ACTIVE',
         affiliateCode: code,
         affiliateLink: buildPayCheckoutUrl(undefined, code),
@@ -381,26 +361,14 @@ export class PartnershipsService {
       throw new NotFoundException('Parceiro não encontrado');
     }
 
-    const attributedOrderFilters: Record<string, unknown>[] = [];
-    if (partner.affiliateCode) {
-      attributedOrderFilters.push({
-        metadata: { path: ['affiliateCode'], equals: partner.affiliateCode },
-      });
-    }
-    if (partner.partnerWorkspaceId) {
-      attributedOrderFilters.push({ affiliateId: partner.partnerWorkspaceId });
-      attributedOrderFilters.push({
-        metadata: { path: ['affiliateWorkspaceId'], equals: partner.partnerWorkspaceId },
-      });
-    }
+    const attributedOrderFilters = buildAttributedOrderFilters(partner);
 
-    const monthlyPerformance = new Array<number>(12).fill(0);
+    let monthlyPerformance = new Array<number>(12).fill(0);
     let lastSaleAt: string | undefined;
 
     if (attributedOrderFilters.length > 0) {
-      const currentYear = new Date().getUTCFullYear();
-      const currentYearStart = new Date(Date.UTC(currentYear, 0, 1));
-      const validStatuses = [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.DELIVERED];
+      const currentYearStart = getCurrentYearStartUtc();
+      const validStatuses = [...ATTRIBUTED_ORDER_STATUSES];
       const [orders, latestOrder] = await Promise.all([
         this.prisma.checkoutOrder.findMany({
           where: {
@@ -429,20 +397,8 @@ export class PartnershipsService {
         }),
       ]);
 
-      for (const order of orders) {
-        const saleDate = order.paidAt ?? order.createdAt;
-        if (saleDate instanceof Date) {
-          const idx = saleDate.getUTCMonth();
-          monthlyPerformance[idx] = (monthlyPerformance[idx] ?? 0) + 1;
-        }
-      }
-
-      if (latestOrder) {
-        const ts = latestOrder.paidAt ?? latestOrder.createdAt;
-        if (ts) {
-          lastSaleAt = ts.toISOString();
-        }
-      }
+      monthlyPerformance = aggregateMonthlyPerformance(orders);
+      lastSaleAt = extractLastSaleAt(latestOrder);
     }
 
     return {
