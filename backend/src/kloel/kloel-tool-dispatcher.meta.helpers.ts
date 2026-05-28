@@ -114,7 +114,7 @@ function receiptKeyPart(value: string): string {
   return value.replace(/[^a-zA-Z0-9._-]/g, '_');
 }
 
-export function withCanonicalReceipt(deps: ProductDeps, capabilityId: string, workspaceId: string, args: UnknownRecord, result: ToolResult, userId: string | undefined, startedAt: number): ToolResult {
+function withCanonicalReceipt(deps: ProductDeps, capabilityId: string, workspaceId: string, args: UnknownRecord, result: ToolResult, userId: string | undefined, startedAt: number): ToolResult {
   const cap = deps.capRegistryV2?.get(capabilityId);
   if (!cap || !deps.capRegistryV2) return result;
   const inputs = sanitizeDetails(args);

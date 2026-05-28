@@ -16,7 +16,7 @@ import type { PrismaService } from '../prisma/prisma.service';
  * the common case (one concurrent inbound) with margin; anything higher
  * suggests a bug or a pathological inbound burst.
  */
-export const GET_OR_CREATE_CONVERSATION_MAX_ATTEMPTS = 3;
+const GET_OR_CREATE_CONVERSATION_MAX_ATTEMPTS = 3;
 
 const defaultLogger = new Logger('InboxConversationHelpers');
 
@@ -45,7 +45,7 @@ export function normalizeDate(value?: Date | string | null): Date | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 } // ── Message persistence helpers ──────────────────────────────────────────────
 
-export function resolveConversationLastMessageAt(
+function resolveConversationLastMessageAt(
   conversation: { lastMessageAt: Date | string | null | undefined },
   messageCreatedAt: Date,
 ): Date {
@@ -58,7 +58,7 @@ export function resolveConversationLastMessageAt(
     : messageCreatedAt;
 }
 
-export function buildConversationUpdate(
+function buildConversationUpdate(
   data: { countAsUnread?: boolean; resetUnreadOnOutbound?: boolean; direction: string },
   nextLastMessageAt: Date,
 ): Prisma.ConversationUpdateInput {

@@ -182,7 +182,7 @@ export class ToolPlannerService {
       return `Falha ao executar "${receipt.title}": ${receipt.error}`;
     }
 
-    const lines: string[] = [`✅ ${receipt.title} executado com sucesso.`];
+    const lines: string[] = [`${receipt.title} executado com sucesso.`];
 
     if (receipt.outputs.productId) {
       lines.push(`Produto: ${receipt.outputs.productId}`);

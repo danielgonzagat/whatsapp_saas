@@ -5,11 +5,11 @@ export interface GuestConversation {
   createdAt: Date;
   lastMessageAt: Date;
 }
-export const GUEST_CONVERSATION_TTL_SECONDS = 24 * 60 * 60;
-export function getRedisKey(sessionId: string): string {
+const GUEST_CONVERSATION_TTL_SECONDS = 24 * 60 * 60;
+function getRedisKey(sessionId: string): string {
   return `kloel:guest-chat:${sessionId}`;
 }
-export function parseConversation(raw: string | null): GuestConversation | null {
+function parseConversation(raw: string | null): GuestConversation | null {
   if (!raw) {
     return null;
   }

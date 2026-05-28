@@ -120,7 +120,7 @@ export async function createDeal(
   });
 }
 /** Notify revenue webhook (internal helper). */
-export async function notifyRevenue(
+async function notifyRevenue(
   workspaceId: string,
   campaignId: string,
   contactId: string | undefined,

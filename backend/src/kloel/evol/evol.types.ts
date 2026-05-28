@@ -8,7 +8,7 @@
 
 type GapSeverity = 'critical' | 'high' | 'medium' | 'low';
 
-export type CommercialImpact =
+type CommercialImpact =
   | 'revenue_blocking'
   | 'trust_eroding'
   | 'quality_degrading'

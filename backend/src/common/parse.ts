@@ -174,18 +174,6 @@ export function readNumberForce(value: unknown): number {
 /**
  * Parse a base-10 integer. Returns `undefined` on non-finite or non-scalar input.
  */
-export function readInt(value: unknown): number | undefined {
-  if (value === '' || value === null || value === undefined) {
-    return undefined;
-  }
-  // Only accept scalar inputs (number/string) — objects stringify to
-  // '[object Object]' and would produce NaN; reject early.
-  if (typeof value !== 'number' && typeof value !== 'string') {
-    return undefined;
-  }
-  const parsed = Number.parseInt(String(value), 10);
-  return Number.isFinite(parsed) ? parsed : undefined;
-}
 
 // ─── readBoolean ────────────────────────────────────────────────────
 
@@ -193,18 +181,6 @@ export function readInt(value: unknown): number | undefined {
  * Parse a boolean from: native boolean, "true"/"false", 0/1, "0"/"1".
  * Returns `undefined` otherwise.
  */
-export function readBoolean(value: unknown): boolean | undefined {
-  if (typeof value === 'boolean') {
-    return value;
-  }
-  if (value === 'true' || value === '1' || value === 1) {
-    return true;
-  }
-  if (value === 'false' || value === '0' || value === 0) {
-    return false;
-  }
-  return undefined;
-}
 
 // ─── readDate ───────────────────────────────────────────────────────
 
@@ -212,7 +188,7 @@ export function readBoolean(value: unknown): boolean | undefined {
  * Parse a Date from: Date instance, epoch ms, epoch s (auto-detected
  * via > 1e11 threshold), or ISO string. Returns `undefined` otherwise.
  */
-export function readDate(value: unknown): Date | undefined {
+function readDate(value: unknown): Date | undefined {
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
     return value;
   }
