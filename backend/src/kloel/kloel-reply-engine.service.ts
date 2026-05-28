@@ -533,9 +533,22 @@ export class KloelReplyEngineService {
         hasOpenAiKey: hasTextLlmApiKey(),
         hasAnthropicFallback: !!process.env.ANTHROPIC_API_KEY,
       });
+      if (params.workspaceId) {
+        this.mindBeliefService?.observeBinary(
+          params.workspaceId,
+          params.workspaceId,
+          'replied_to_user',
+          { surface: 'dashboard' },
+          0,
+        ).catch((err: unknown) =>
+          this.logger.warn('kloel_belief_observation_skipped', {
+            reason: err instanceof Error ? err.message : String(err),
+          }),
+        );
+      }
       return this.unavailableMessage;
     }
-    return buildAssistantReplyImpl(params, {
+    const assistantMessage = await buildAssistantReplyImpl(params, {
       openai: this.openai,
       prisma: this.prisma,
       planLimits: this.planLimits,
@@ -555,5 +568,19 @@ export class KloelReplyEngineService {
       ...(this.spine !== undefined ? { spine: this.spine } : {}),
       ...(params.abiStateJson !== undefined ? { abiStateJson: params.abiStateJson } : {}),
     });
+    if (params.workspaceId) {
+      this.mindBeliefService?.observeBinary(
+        params.workspaceId,
+        params.workspaceId,
+        'replied_to_user',
+        { surface: 'dashboard' },
+        assistantMessage.length > 0 ? 1 : 0,
+      ).catch((err: unknown) =>
+        this.logger.warn('kloel_belief_observation_skipped', {
+          reason: err instanceof Error ? err.message : String(err),
+        }),
+      );
+    }
+    return assistantMessage;
   }
 }

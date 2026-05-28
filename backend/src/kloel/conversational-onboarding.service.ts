@@ -494,9 +494,35 @@ export class ConversationalOnboardingService {
           degradedReason = 'sse_write';
           throw e;
         }
+        if (this.mindBeliefService) {
+          this.mindBeliefService.observeBinary(
+            workspaceId,
+            workspaceId,
+            'replied_to_user',
+            { surface: 'onboarding', degraded: false },
+            1,
+          ).catch((err: unknown) =>
+            this.logger.warn('kloel_belief_observation_skipped', {
+              reason: err instanceof Error ? err.message : String(err),
+            }),
+          );
+        }
         return;
       }
 
+      if (this.mindBeliefService) {
+        this.mindBeliefService.observeBinary(
+          workspaceId,
+          workspaceId,
+          'replied_to_user',
+          { surface: 'onboarding', degraded: false },
+          1,
+        ).catch((err: unknown) =>
+          this.logger.warn('kloel_belief_observation_skipped', {
+            reason: err instanceof Error ? err.message : String(err),
+          }),
+        );
+      }
       return responseText;
     } catch (error: unknown) {
       this.logger.error(
@@ -516,7 +542,33 @@ export class ConversationalOnboardingService {
       });
       if (res) {
         this.writeSseResponse(res, fallback);
+        if (this.mindBeliefService) {
+          this.mindBeliefService.observeBinary(
+            workspaceId,
+            workspaceId,
+            'replied_to_user',
+            { surface: 'onboarding', degraded: true },
+            0,
+          ).catch((err: unknown) =>
+            this.logger.warn('kloel_belief_observation_skipped', {
+              reason: err instanceof Error ? err.message : String(err),
+            }),
+          );
+        }
         return;
+      }
+      if (this.mindBeliefService) {
+        this.mindBeliefService.observeBinary(
+          workspaceId,
+          workspaceId,
+          'replied_to_user',
+          { surface: 'onboarding', degraded: true },
+          0,
+        ).catch((err: unknown) =>
+          this.logger.warn('kloel_belief_observation_skipped', {
+            reason: err instanceof Error ? err.message : String(err),
+          }),
+        );
       }
       return fallback;
     }
