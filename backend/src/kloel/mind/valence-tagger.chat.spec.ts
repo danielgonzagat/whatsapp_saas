@@ -1,3 +1,6 @@
+// PI-K16-D follow-up: dropped unnecessary Readonly cast on payload (Spine type
+// already accepts Record<string, unknown>) — this spec proves the emit still
+// receives the payload unchanged across positive/negative/reject paths.
 import { ValenceTaggerService } from './valence-tagger.service';
 import { SpineEmitterService } from '../spine/spine-emitter.service';
 import { SpineEventRef } from './mind.types';

@@ -112,7 +112,7 @@ export class ValenceTaggerService {
           schemaVersion: '1.0.0',
         },
         valence,
-        payload: event.payload as Readonly<Record<string, unknown>>,
+        payload: event.payload,
       })
       .catch(() => {
         // fire-and-forget — emission failure is silent
