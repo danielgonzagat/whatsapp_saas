@@ -9,23 +9,16 @@ import { formatBrlAmount } from './money-format.util';
 import { WalletLedgerService } from './wallet-ledger.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { getWalletBalance, getWalletTransactionHistory } from './wallet.read.helpers';
+import {
+  ConcurrentWalletUpdateError,
+  KloelWalletNotFoundError,
+  calculateAnticipationSplit,
+  calculateSaleSplit,
+  toSafeCents,
+} from './wallet.helpers';
 
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 // All dates stored as UTC via Prisma DateTime (toISOString)
-
-class ConcurrentWalletUpdateError extends Error {
-  constructor() {
-    super(['KloelWallet', 'modified', 'concurrently'].join(' '));
-    this.name = 'ConcurrentWalletUpdateError';
-  }
-}
-
-class KloelWalletNotFoundError extends Error {
-  constructor(workspaceId: string) {
-    super(`KloelWallet not found for workspace ${workspaceId}`);
-    this.name = 'KloelWalletNotFoundError';
-  }
-}
 
 @Injectable()
 export class WalletService {
@@ -68,27 +61,15 @@ export class WalletService {
     kloelFeePercent = 5,
     gatewayFeePercent = 2.99,
   ) {
-    // Convert gross into integer cents at the boundary. Math.round ensures
-    // the result is always a safe integer even when `saleAmount` carries
-    // floating-point noise from JSON deserialization.
-    const grossAmountInCents = Math.round(saleAmount * 100);
-    if (!Number.isSafeInteger(grossAmountInCents) || grossAmountInCents < 0) {
-      throw new Error(`Invalid saleAmount: ${saleAmount}`);
-    }
-
-    // Fee math in pure integer cents. `percent` values are small floats
-    // from caller config (e.g. 2.99%); we multiply by grossAmountInCents
-    // first then round once, which matches the "compute in cents" rule.
-    const gatewayFeeInCents = Math.round((grossAmountInCents * gatewayFeePercent) / 100);
-    const kloelFeeInCents = Math.round((grossAmountInCents * kloelFeePercent) / 100);
-    const netAmountInCents = grossAmountInCents - gatewayFeeInCents - kloelFeeInCents;
-
-    // Derive the Real-valued fields for the legacy columns + API response.
-    // These are pure projections of the integer-cent truth — no independent
-    // floating-point arithmetic happens on them.
-    const gatewayFee = gatewayFeeInCents / 100;
-    const kloelFee = kloelFeeInCents / 100;
-    const netAmount = netAmountInCents / 100;
+    // Pure split math lives in wallet.helpers.ts (Wave 64). Integer cents
+    // are the source of truth; the Real-valued fields below are projections.
+    const split = calculateSaleSplit({
+      saleAmount,
+      kloelFeePercent,
+      gatewayFeePercent,
+    });
+    const { grossAmountInCents, gatewayFeeInCents, kloelFeeInCents, netAmountInCents } = split;
+    const { gatewayFee, kloelFee, netAmount } = split;
 
     this.logger.log(
       `Split: ${formatBrlAmount(saleAmount)} -> Líquido: ${formatBrlAmount(netAmount)} ` +
@@ -294,10 +275,7 @@ export class WalletService {
     }
 
     // Integer-cent representation for I11 dual-write.
-    const amountInCents = Math.round(amount * 100);
-    if (!Number.isSafeInteger(amountInCents) || amountInCents <= 0) {
-      throw new Error(`Invalid withdrawal amount: ${amount}`);
-    }
+    const amountInCents = toSafeCents(amount, { label: 'withdrawal amount' });
 
     let transaction: { id: string };
     try {
@@ -389,16 +367,9 @@ export class WalletService {
       };
     }
 
-    // Integer-cent arithmetic for I11 dual-write.
-    const amountInCents = Math.round(amount * 100);
-    if (!Number.isSafeInteger(amountInCents) || amountInCents <= 0) {
-      throw new Error(`Invalid anticipation amount: ${amount}`);
-    }
-
-    const feeAmount = Math.round(((amount * feePercent) / 100) * 100) / 100;
-    const feeAmountInCents = Math.round((amountInCents * feePercent) / 100);
-    const netAmount = amount - feeAmount;
-    const netAmountInCents = BigInt(amountInCents) - BigInt(feeAmountInCents);
+    // Integer-cent arithmetic for I11 dual-write — pure math in wallet.helpers.ts.
+    const anticipation = calculateAnticipationSplit({ amount, feePercent });
+    const { amountInCents, feeAmount, feeAmountInCents, netAmount, netAmountInCents } = anticipation;
 
     let transaction: { id: string };
     try {
