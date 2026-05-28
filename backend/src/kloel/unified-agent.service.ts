@@ -24,41 +24,14 @@ import {
 import { MindCapabilityExecutor } from './mind/coordination';
 import { UnifiedAgentToolExecutorService } from './unified-agent-tool-executor';
 import { buildAgentCognitiveState } from './unified-agent.cognitive-state.helpers';
+import {
+  UNIFIED_AGENT_PROVIDER_CONFIG_REQUIRED,
+  actionSucceeded,
+  formatPromptValue,
+  isAllowedTool,
+} from './unified-agent.helpers';
 
 import type { UnknownRecord } from '../common/types';
-
-function isAllowedTool(toolName: string, allowedTools?: string[]): boolean {
-  return !allowedTools || allowedTools.includes(toolName);
-}
-
-const UNIFIED_AGENT_PROVIDER_CONFIG_REQUIRED =
-  'Primary LLM configuration is required for unified agent generation';
-
-function formatPromptValue(value: unknown): string {
-  if (value === null) {
-    return 'null';
-  }
-  if (Array.isArray(value)) {
-    return `[${value.map(formatPromptValue).join(',')}]`;
-  }
-  if (typeof value === 'object') {
-    const record = value as Record<string, unknown>;
-    return `{${Object.keys(record)
-      .sort()
-      .map((key) => `${key}:${formatPromptValue(record[key])}`)
-      .join(',')}}`;
-  }
-  if (typeof value === 'string') {
-    return `"${value.replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"`;
-  }
-  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
-    return String(value);
-  }
-  if (typeof value === 'undefined') {
-    return 'undefined';
-  }
-  return Object.prototype.toString.call(value);
-}
 
 /**
  * KLOEL Unified Agent Service — orchestrator.
@@ -313,7 +286,7 @@ export class UnifiedAgentService {
         confidence: actionsList.length > 0 ? 0.85 : 0.55,
         actions: actionsList.map((action) => ({
           toolName: action.tool,
-          success: this.actionSucceeded(action.result),
+          success: actionSucceeded(action.result),
           result: action.result,
         })),
       });
@@ -427,7 +400,7 @@ export class UnifiedAgentService {
       confidence,
       actions: actionsList.map((action) => ({
         toolName: action.tool,
-        success: this.actionSucceeded(action.result),
+        success: actionSucceeded(action.result),
         result: action.result,
       })),
     });
@@ -493,15 +466,6 @@ export class UnifiedAgentService {
     return this.toolExecutor.execute(workspaceId, contactId, phone, tool, args, context);
   }
 
-  private actionSucceeded(result: unknown): boolean {
-    return (
-      typeof result === 'object' &&
-      result !== null &&
-      ((result as Record<string, unknown>).success === true ||
-        (result as Record<string, unknown>).ok === true ||
-        (result as Record<string, unknown>).executed === true)
-    );
-  }
   private async buildAgentRuntimeContext(params: {
     workspaceId: string;
     channel: string;
