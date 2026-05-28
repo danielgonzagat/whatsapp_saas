@@ -14,7 +14,7 @@
  */
 import { Inject, Injectable, Optional, forwardRef } from '@nestjs/common';
 import { StructuredLogger } from '../../../logging/structured-logger';
-import { KloelLead, Prisma } from '@prisma/client';
+import { KloelLead } from '@prisma/client';
 import { LLMBudgetService, estimateChatCostCents } from '../../llm-budget.service';
 import { PlanLimitsService } from '../../../billing/plan-limits.service';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -28,7 +28,6 @@ import { OpsAlertService } from '../../../observability/ops-alert.service';
 import { AbiBuilderService } from '../../abi/abi-builder.service';
 import { validateAbiPayload } from '../../abi/abi-validator';
 
-import { asProviderSettings } from '../../../marketing/channels/whatsapp/provider-settings.types';
 import {
   NON_DIGIT_RE,
   safeStr,
@@ -36,10 +35,26 @@ import {
   detectBuyIntent,
 } from '../../kloel-lead-brain.helpers';
 import type { ChatMessage } from '../../kloel-lead-brain.helpers';
+import {
+  LEAD_TECH_ERROR_REPLY,
+  buildAbiCognitiveContent,
+  buildContactDisplayName,
+  buildFallbackCognitiveContent,
+  buildLeadUpdateData,
+  buildNewLeadName,
+  findProductMatch,
+  formatPaymentReply,
+  isAutopilotEnabled,
+  isShortLlmOutput,
+  leadErrorMessage,
+  pickKloelReply,
+  pickUnifiedAgentReply,
+  productCandidateFromMemory,
+  type ProductMatchCandidate,
+  type ProductMemoryValue,
+} from './lead-mind-coordinator.helpers';
 export { NON_DIGIT_RE, safeStr, asUnknownRecord, detectBuyIntent };
 export type { ChatMessage };
-
-type ProductMemoryValue = { name?: string; price?: number; [key: string]: unknown };
 
 /**
  * Per-lead cognitive coordinator. Handles WhatsApp autopilot lead processing,
@@ -69,7 +84,13 @@ export class LeadMindCoordinator {
     let lead = await this.prisma.kloelLead.findFirst({ where: { workspaceId, phone } });
     if (!lead) {
       lead = await this.prisma.kloelLead.create({
-        data: { workspaceId, phone, name: `Lead ${phone.slice(-4)}`, stage: 'new', score: 0 },
+        data: {
+          workspaceId,
+          phone,
+          name: buildNewLeadName(phone),
+          stage: 'new',
+          score: 0,
+        },
       });
       this.logger.log(`Novo lead criado: ${lead.id}`);
     }
@@ -125,20 +146,7 @@ export class LeadMindCoordinator {
   ): Promise<void> {
     try {
       const buyIntent = detectBuyIntent(userMessage);
-      const updateData: Prisma.KloelLeadUpdateManyMutationInput = {
-        lastMessage: userMessage,
-        lastIntent: buyIntent,
-        updatedAt: new Date(),
-      };
-      if (buyIntent === 'high') {
-        updateData.score = { increment: 20 };
-        updateData.stage = 'negotiation';
-      } else if (buyIntent === 'medium') {
-        updateData.score = { increment: 10 };
-        updateData.stage = 'interested';
-      } else if (buyIntent === 'objection') {
-        updateData.stage = 'objection';
-      }
+      const updateData = buildLeadUpdateData(userMessage, buyIntent);
       await this.prisma.kloelLead.updateMany({
         where: { id: leadId, workspaceId },
         data: updateData,
@@ -152,20 +160,19 @@ export class LeadMindCoordinator {
   async extractProductFromMessage(
     workspaceId: string,
     message: string,
-  ): Promise<{ name: string; price: number } | null> {
+  ): Promise<ProductMatchCandidate | null> {
     try {
-      const products = await this.prisma.kloelMemory.findMany({
+      const memoryRows = await this.prisma.kloelMemory.findMany({
         where: { workspaceId, type: 'product' },
         select: { id: true, value: true },
         take: 100,
       });
-      const lowerMessage = message.toLowerCase();
-      for (const product of products) {
-        const productData = product.value as ProductMemoryValue;
-        const productName = safeStr(productData.name).toLowerCase();
-        if (productName && lowerMessage.includes(productName)) {
-          return { name: safeStr(productData.name), price: Number(productData.price) || 0 };
-        }
+      const memoryCandidates: ProductMatchCandidate[] = memoryRows
+        .map((row) => productCandidateFromMemory(row.value as ProductMemoryValue))
+        .filter((candidate): candidate is ProductMatchCandidate => candidate !== null);
+      const memoryMatch = findProductMatch(message, memoryCandidates);
+      if (memoryMatch) {
+        return memoryMatch;
       }
       const dbProducts = await this.prisma.product
         ?.findMany?.({
@@ -174,12 +181,11 @@ export class LeadMindCoordinator {
           take: 100,
         })
         .catch(() => []);
-      for (const product of dbProducts || []) {
-        if (lowerMessage.includes(product.name.toLowerCase())) {
-          return { name: product.name, price: product.price };
-        }
-      }
-      return null;
+      const dbCandidates: ProductMatchCandidate[] = (dbProducts ?? []).map((product) => ({
+        name: product.name,
+        price: product.price,
+      }));
+      return findProductMatch(message, dbCandidates);
     } catch (_error: unknown) {
       void this.opsAlert?.alertOnCriticalError(_error, 'LeadMindCoordinator.safeStr');
       return null;
@@ -212,12 +218,8 @@ export class LeadMindCoordinator {
         message: result.suggestedMessage,
       };
     } catch (error: unknown) {
-      void this.opsAlert?.alertOnCriticalError(
-        error,
-        'LeadMindCoordinator.generatePaymentForLead',
-      );
-      const msg = error instanceof Error ? error.message : 'unknown error';
-      this.logger.error(`Erro ao gerar pagamento para lead: ${msg}`);
+      void this.opsAlert?.alertOnCriticalError(error, 'LeadMindCoordinator.generatePaymentForLead');
+      this.logger.error(`Erro ao gerar pagamento para lead: ${leadErrorMessage(error)}`);
       return null;
     }
   }
@@ -235,14 +237,7 @@ export class LeadMindCoordinator {
         where: { id: workspaceId },
         select: { providerSettings: true, name: true },
       });
-      const providerSettings = asProviderSettings(workspace?.providerSettings);
-      const autonomyMode = safeStr(asUnknownRecord(providerSettings.autonomy)?.mode).toUpperCase();
-      const autopilotEnabled =
-        autonomyMode === 'LIVE' ||
-        autonomyMode === 'BACKLOG' ||
-        autonomyMode === 'FULL' ||
-        asUnknownRecord(providerSettings.autopilot)?.enabled === true ||
-        providerSettings.autopilotEnabled === true;
+      const autopilotEnabled = isAutopilotEnabled(workspace?.providerSettings);
 
       const lead = await this.getOrCreateLead(workspaceId, normalizedPhone || senderPhone);
       await this.saveLeadMessage(lead.id, workspaceId, 'user', message);
@@ -256,15 +251,14 @@ export class LeadMindCoordinator {
             create: {
               workspaceId,
               phone: normalizedPhone,
-              name: `Contato ${normalizedPhone.slice(-4)}`,
+              name: buildContactDisplayName(normalizedPhone),
             },
             select: { id: true },
           });
           contactId = contact.id;
         } catch (err: unknown) {
           void this.opsAlert?.alertOnCriticalError(err, 'LeadMindCoordinator.slice');
-          const errMsg = err instanceof Error ? err.message : 'unknown error';
-          this.logger.warn(`Falha ao upsert contact: ${errMsg}`);
+          this.logger.warn(`Falha ao upsert contact: ${leadErrorMessage(err)}`);
         }
       }
 
@@ -277,8 +271,7 @@ export class LeadMindCoordinator {
             message,
             channel: 'whatsapp',
           });
-          const agentResponse =
-            unifiedResult?.reply || unifiedResult?.response || 'Olá! Como posso ajudar?';
+          const agentResponse = pickUnifiedAgentReply(unifiedResult);
           await this.saveLeadMessage(lead.id, workspaceId, 'assistant', agentResponse);
           await this.updateLeadFromConversation(workspaceId, lead.id, message, agentResponse);
           return agentResponse;
@@ -287,27 +280,25 @@ export class LeadMindCoordinator {
             agentErr,
             'LeadMindCoordinator.updateLeadFromConversation',
           );
-          const agentMsg = agentErr instanceof Error ? agentErr.message : 'unknown error';
-          this.logger.warn(`UnifiedAgentService falhou: ${agentMsg}`);
+          this.logger.warn(`UnifiedAgentService falhou: ${leadErrorMessage(agentErr)}`);
         }
       }
 
       const conversationHistory = await this.getLeadConversationHistory(lead.id, workspaceId);
       const context = await getWorkspaceContext(workspaceId);
       void workspace;
+      const arrivalTimestamp = new Date().toISOString();
       const currentInput = {
         raw: message,
         channel: 'whatsapp',
-        arrivalTimestamp: new Date().toISOString(),
+        arrivalTimestamp,
       };
-      let effectiveUserContent = JSON.stringify({
-        cognitiveState: {
-          abiStatus: this.abiBuilder ? 'unavailable_or_invalid' : 'builder_not_injected',
-          audience: 'public',
-          workspaceContext: context,
-          perceptionSnapshot: { channel: 'whatsapp' },
-        },
-        currentInput,
+      let effectiveUserContent = buildFallbackCognitiveContent({
+        abiStatus: this.abiBuilder ? 'unavailable_or_invalid' : 'builder_not_injected',
+        workspaceContext: context,
+        channel: 'whatsapp',
+        message,
+        arrivalTimestamp,
       });
 
       if (this.abiBuilder) {
@@ -332,10 +323,12 @@ export class LeadMindCoordinator {
               `ABI validation failed: ${JSON.stringify(validation.issues)}, using structured lead brain fallback`,
             );
           } else {
-            effectiveUserContent = JSON.stringify({
-              cognitiveState: abi,
+            effectiveUserContent = buildAbiCognitiveContent({
+              abi,
               workspaceContext: context,
-              currentInput,
+              channel: 'whatsapp',
+              message,
+              arrivalTimestamp,
             });
           }
         }
@@ -373,8 +366,8 @@ export class LeadMindCoordinator {
       );
       await this.planLimits.trackAiUsage(workspaceId, tokens).catch(() => {});
 
-      const kloelResponse = rawResponse || 'Olá! Como posso ajudá-lo hoje?';
-      if (!rawResponse || rawResponse.trim().length < 5) {
+      const kloelResponse = pickKloelReply(rawResponse);
+      if (isShortLlmOutput(rawResponse)) {
         this.logger.warn(`lead-brain short output ws=${workspaceId} len=${rawResponse.length}`);
       }
       await this.saveLeadMessage(lead.id, workspaceId, 'assistant', kloelResponse);
@@ -385,9 +378,8 @@ export class LeadMindCoordinator {
         error,
         'LeadMindCoordinator.updateLeadFromConversation',
       );
-      const msg = error instanceof Error ? error.message : 'unknown error';
-      this.logger.error(`Erro processando mensagem WhatsApp: ${msg}`);
-      return 'Olá! Tive um pequeno problema técnico. Pode repetir sua mensagem?';
+      this.logger.error(`Erro processando mensagem WhatsApp: ${leadErrorMessage(error)}`);
+      return LEAD_TECH_ERROR_REPLY;
     }
   }
 
@@ -421,7 +413,7 @@ export class LeadMindCoordinator {
           );
           if (paymentResult) {
             return {
-              response: `${baseResponse}\n\nAqui está o link para finalizar sua compra:\n${paymentResult.paymentUrl}`,
+              response: formatPaymentReply(baseResponse, paymentResult.paymentUrl),
               paymentLink: paymentResult.paymentUrl,
               ...(paymentResult.pixQrCode !== undefined
                 ? { pixQrCode: paymentResult.pixQrCode }
