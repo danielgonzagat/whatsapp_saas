@@ -54,7 +54,7 @@ Search method: `grep -rEn "\\b<symbol>\\b" frontend/src --include='*.ts' --inclu
 | `simulateWhatsAppConversation` | REMOVED — Wave 29B. Zero in-repo consumers re-verified. POSTed `/kloel/whatsapp/simulate/:ws`. |
 | `getWhatsAppBrainStatus` | REMOVED — Wave 29B. Zero in-repo consumers re-verified. GETed `/kloel/whatsapp/status`. |
 
-**`whatsappApi` object method dead-method list** (Wave 40: 9 duplicates of `whatsapp.ts` named exports removed; remaining 4 dead-but-unique methods preserved):
+**`whatsappApi` object method dead-method list** (Wave 40: 9 duplicates of `whatsapp.ts` named exports removed; Wave 43: 7 remaining dead-but-preserved methods dropped after zero-consumer re-verification):
 
 | Method | Status |
 |---|---|
@@ -67,12 +67,15 @@ Search method: `grep -rEn "\\b<symbol>\\b" frontend/src --include='*.ts' --inclu
 | `takeover` | REMOVED — Wave 40. Was dead-but-preserved; sibling `takeoverWhatsAppViewer` removed in Wave 29B. |
 | `resumeAgent` | REMOVED — Wave 40. Was dead-but-preserved; sibling `resumeWhatsAppAgent` removed in Wave 29B. |
 | `performViewerAction` | REMOVED — Wave 40. Was dead-but-preserved; sibling `performWhatsAppViewerAction` removed in Wave 29B. |
-| `bootstrapSession` | DEAD-but-preserved (no `whatsapp.ts` twin). |
-| `getCiaIntelligence` | DEAD-but-preserved (no `whatsapp.ts` twin). |
-| `createContact` | DEAD-but-preserved (no `whatsapp.ts` twin). |
-| `setPresence` | DEAD-but-preserved (no `whatsapp.ts` twin). |
-| `getBacklog` | DEAD-but-preserved (no `whatsapp.ts` twin). |
-| `syncHistory` | DEAD-but-preserved (no `whatsapp.ts` twin). |
+| `bootstrapSession` | REMOVED — Wave 43. Zero production consumers re-verified across `frontend/src` + `frontend-admin/src` + `e2e` + `backend` + `worker`. |
+| `getCiaIntelligence` | REMOVED — Wave 43. Zero production consumers re-verified. |
+| `createContact` | REMOVED — Wave 43. Zero production consumers re-verified (separate from `crmApi.createContact`, which is live). |
+| `setPresence` | REMOVED — Wave 43. Zero production consumers re-verified. |
+| `getBacklog` | REMOVED — Wave 43. Zero production consumers re-verified. |
+| `syncHistory` | REMOVED — Wave 43. Zero production consumers re-verified. |
+| `getContacts` | REMOVED — Wave 43. Zero production consumers re-verified; gate-spec coverage moved onto `getChats` (a kept method with 1 live consumer in `WhatsAppConsole`). |
+
+**Wave 43 (2026-05-27).** 7 dead methods removed; `whatsappApi` surface shrinks to the 4 methods with live consumers: `startBacklog` (2 consumers — `useChatController.actions.ts`, `useWhatsAppSession.ts`), `claimSession` (1 — `auth-provider.tsx`), `getChats` (1 — `WhatsAppConsole.tsx`), `getChatMessages` (1 — `WhatsAppConsole.tsx`). Gate specs in `whatsapp-api.test.ts` retargeted from `getContacts` to `getChats` (preserves Authorization + error-handling coverage on a live method).
 
 ## Duplicate-pair list
 

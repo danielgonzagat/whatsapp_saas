@@ -29,14 +29,14 @@ function lastFetch(): { url: string; method: string; headers: Record<string, str
 }
 
 describe('whatsappApi', () => {
-  describe('getContacts', () => {
-    it('GETs /whatsapp-api/contacts', async () => {
-      await whatsappApi.getContacts();
-      expect(lastFetch().url).toContain('/whatsapp-api/contacts');
+  describe('getChats', () => {
+    it('GETs /whatsapp-api/chats', async () => {
+      await whatsappApi.getChats();
+      expect(lastFetch().url).toContain('/whatsapp-api/chats');
     });
 
     it('sends Authorization header', async () => {
-      await whatsappApi.getContacts();
+      await whatsappApi.getChats();
       expect(lastFetch().headers.authorization).toBe('Bearer test-token');
     });
   });
@@ -44,7 +44,7 @@ describe('whatsappApi', () => {
   describe('error handling', () => {
     it('propagates network errors', async () => {
       vi.mocked(globalThis.fetch).mockRejectedValue(new Error('Offline'));
-      const res = await whatsappApi.getContacts();
+      const res = await whatsappApi.getChats();
       expect(res.error).toBe('Offline');
     });
 
@@ -54,7 +54,7 @@ describe('whatsappApi', () => {
         status: 503,
         json: async () => ({ message: 'Service unavailable' }),
       } as Response);
-      const res = await whatsappApi.getContacts();
+      const res = await whatsappApi.getChats();
       expect(res.error).toBeTruthy();
     });
   });
