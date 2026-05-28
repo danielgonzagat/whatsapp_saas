@@ -1,5 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
+import { WhatsappModule } from '../marketing/channels/whatsapp/whatsapp.module';
 import { ConversationalOnboardingService } from './conversational-onboarding.service';
 import { ConversationalOnboardingToolsService } from './conversational-onboarding-tools.service';
 import { KloelToolExecutorBillingService } from './kloel-tool-executor-billing.service';
@@ -207,7 +208,7 @@ import { SalesModule } from '../sales/sales.module';
 @Module({
   imports: [
     PrismaModule,
-    forwardRef(() => require('../marketing/channels/whatsapp/whatsapp.module').WhatsappModule),
+    forwardRef(() => WhatsappModule),
     ScheduleModule.forRoot(),
     KycModule,
     forwardRef(() => CampaignsModule),
