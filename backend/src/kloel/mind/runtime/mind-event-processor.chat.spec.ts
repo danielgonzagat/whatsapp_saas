@@ -178,9 +178,7 @@ describe('MindEventProcessorService chat fast-path (PI-K18-B)', () => {
       degraded: true,
     });
     const outerArg: jest.Expect = expect.objectContaining({ payload: innerPayload });
-    expect(mockProcess).toHaveBeenCalledWith(
-      outerArg,
-    );
+    expect(mockProcess).toHaveBeenCalledWith(outerArg);
   });
 
   it('does not throw when MindEventProcessorService is absent', async () => {
