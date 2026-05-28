@@ -2,17 +2,26 @@ import { ValenceTaggerService } from './valence-tagger.service';
 import { SpineEmitterService } from '../spine/spine-emitter.service';
 import { SpineEventRef } from './mind.types';
 
-function mockSpine(): SpineEmitterService {
-  return {
-    emit: jest.fn().mockResolvedValue(undefined),
-  } as unknown as SpineEmitterService;
+type ChatEmitArg = {
+  eventName: string;
+  workspaceId: string;
+  valence: string;
+  payload: { surface: string; success: boolean; degraded: boolean };
+};
+
+function makeEmitMock(): jest.Mock {
+  return jest.fn().mockResolvedValue(undefined);
+}
+
+function makeSpine(emit: jest.Mock): SpineEmitterService {
+  return { emit } as unknown as SpineEmitterService;
 }
 
 describe('ValenceTaggerService — chat.replied outcome tagging (PI-K16-D)', () => {
   describe('tag(ChatOutcomeEvent)', () => {
     it('emits with positive valence when success is true and not degraded', async () => {
-      const spine = mockSpine();
-      const service = new ValenceTaggerService(spine);
+      const emit = makeEmitMock();
+      const service = new ValenceTaggerService(makeSpine(emit));
 
       service.tag({
         eventName: 'chat.replied',
@@ -20,21 +29,10 @@ describe('ValenceTaggerService — chat.replied outcome tagging (PI-K16-D)', () 
         payload: { surface: 'dashboard', success: true, degraded: false },
       });
 
-      // fire-and-forget — flush the microtask for the void emit
       await new Promise<void>((resolve) => setTimeout(resolve, 10));
 
-      const emitSpy = spine.emit as jest.Mock;
-      expect(emitSpy).toHaveBeenCalledTimes(1);
-      const emitCalls = emitSpy.mock.calls as Array<
-        [
-          {
-            eventName: string;
-            workspaceId: string;
-            valence: string;
-            payload: { surface: string; success: boolean; degraded: boolean };
-          },
-        ]
-      >;
+      expect(emit).toHaveBeenCalledTimes(1);
+      const emitCalls = emit.mock.calls as Array<[ChatEmitArg]>;
       const call = emitCalls[0]?.[0];
       expect(call?.eventName).toBe('chat.replied');
       expect(call?.workspaceId).toBe('ws-1');
@@ -45,8 +43,8 @@ describe('ValenceTaggerService — chat.replied outcome tagging (PI-K16-D)', () 
     });
 
     it('emits with negative valence when degraded is true', async () => {
-      const spine = mockSpine();
-      const service = new ValenceTaggerService(spine);
+      const emit = makeEmitMock();
+      const service = new ValenceTaggerService(makeSpine(emit));
 
       service.tag({
         eventName: 'chat.replied',
@@ -56,11 +54,12 @@ describe('ValenceTaggerService — chat.replied outcome tagging (PI-K16-D)', () 
 
       await new Promise<void>((resolve) => setTimeout(resolve, 10));
 
-      expect(spine.emit).toHaveBeenCalledTimes(1);
-      const call = (spine.emit as jest.Mock).mock.calls[0][0];
-      expect(call.valence).toBe('negative');
-      expect(call.workspaceId).toBe('ws-2');
-      expect(call.payload.surface).toBe('onboarding');
+      expect(emit).toHaveBeenCalledTimes(1);
+      const emitCalls = emit.mock.calls as Array<[ChatEmitArg]>;
+      const call = emitCalls[0]?.[0];
+      expect(call?.valence).toBe('negative');
+      expect(call?.workspaceId).toBe('ws-2');
+      expect(call?.payload.surface).toBe('onboarding');
     });
 
     it('does not throw when spine is absent (no injection)', () => {
@@ -76,13 +75,9 @@ describe('ValenceTaggerService — chat.replied outcome tagging (PI-K16-D)', () 
     });
 
     it('does not throw when spine.emit rejects (fire-and-forget)', async () => {
-      const spine = {
-        emit: jest.fn().mockRejectedValue(new Error('spine down')),
-      } as unknown as SpineEmitterService;
-      const service = new ValenceTaggerService(spine);
+      const emit = jest.fn().mockRejectedValue(new Error('spine down'));
+      const service = new ValenceTaggerService(makeSpine(emit));
 
-      // The .catch() in handleChatOutcome swallows the rejection — the
-      // call should complete synchronously without throwing.
       expect(() =>
         service.tag({
           eventName: 'chat.replied',
@@ -91,9 +86,8 @@ describe('ValenceTaggerService — chat.replied outcome tagging (PI-K16-D)', () 
         }),
       ).not.toThrow();
 
-      // Flush the microtask queue so Promise.reject settles.
       await new Promise<void>((resolve) => setTimeout(resolve, 10));
-      expect(spine.emit).toHaveBeenCalledTimes(1);
+      expect(emit).toHaveBeenCalledTimes(1);
     });
 
     it('preserves the existing SpineEventRef tag path', () => {
