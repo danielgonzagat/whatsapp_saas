@@ -46,7 +46,7 @@ export class StripeChargeService {
 
     const split = calculateSplit(splitInput);
     const transferGroup = `sale:${input.idempotencyKey}`;
-    const paymentMethodTypes = input.paymentMethodTypes ?? ['card', 'boleto'];
+    const paymentMethodTypes = input.paymentMethodTypes ?? ['card'];
     const amount = Number(input.buyerPaidCents);
     const sellerLine = split.splits.find((line) => line.role === 'seller');
     if (!sellerLine) {

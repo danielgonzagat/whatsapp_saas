@@ -68,7 +68,7 @@ describe('StripeChargeService.createSaleCharge', () => {
       expect.objectContaining({
         amount: 13_990,
         currency: 'brl',
-        payment_method_types: ['card', 'boleto'],
+        payment_method_types: ['card'],
         transfer_group: 'sale:order_123',
         receipt_email: 'buyer@example.com',
         metadata: expect.objectContaining({

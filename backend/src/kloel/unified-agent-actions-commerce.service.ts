@@ -224,7 +224,7 @@ export class UnifiedAgentActionsCommerceService {
               action: 'PAYMENT_LINK_CREATED',
               resource: 'UnifiedAgent',
               resourceId: payment.id,
-              details: { amount, phone, method: 'PIX', provider: 'stripe' },
+              details: { amount, phone, method: 'PIX', provider: 'mercadopago' },
             });
           },
           { isolationLevel: 'ReadCommitted' },

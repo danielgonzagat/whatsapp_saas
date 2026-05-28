@@ -47,8 +47,8 @@ export interface CreateSaleChargeInput {
   /** Optional payment method options forwarded to PaymentIntent create. */
   paymentMethodOptions?: StripePaymentIntentCreateParams['payment_method_options'];
   /**
-   * Optional: payment_method_types override. Defaults to ['card', 'boleto'].
-   * Add 'pix' once Stripe BR enables PIX capability for the marketplace rail.
+   * Optional: payment_method_types override. Defaults to ['card'].
+   * PIX and boleto are Mercado Pago rails; Stripe remains card-only here.
    */
   paymentMethodTypes?: Array<'card' | 'boleto' | 'pix'>;
 }
