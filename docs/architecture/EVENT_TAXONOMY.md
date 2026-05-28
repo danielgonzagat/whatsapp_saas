@@ -28,6 +28,8 @@ None detected. ✅
 - `flow:log` — 1 emit / 0 listen
 - `join` — 1 emit / 0 listen
 - `message` — 0 emit / 3 listen
+- `mind.plan.observed` — 2 emit / 0 listen
+- `mind.product.observed` — 2 emit / 0 listen
 - `mouse:down` — 0 emit / 2 listen
 - `mouse:move` — 0 emit / 1 listen
 - `mouse:up` — 0 emit / 1 listen
@@ -36,11 +38,9 @@ None detected. ✅
 - `object:modified` — 0 emit / 2 listen
 - `object:moving` — 0 emit / 1 listen
 - `object:removed` — 0 emit / 1 listen
-- `plan.created` — 2 emit / 0 listen
 - `plan.deleted` — 2 emit / 0 listen
 - `plan.updated` — 2 emit / 0 listen
 - `pmessage` — 0 emit / 2 listen
-- `product.created` — 2 emit / 0 listen
 - `product.deleted` — 2 emit / 0 listen
 - `product.published` — 2 emit / 0 listen
 - `product.updated` — 4 emit / 0 listen

@@ -73,15 +73,17 @@ No implementation detected. May not be a feature of this codebase.
 
 ## CAPABILITY: `process_payment` (2 implementations ⚠️ duplicated)
 
-- `PaymentService` (class) — `backend/src/kloel/payment.service.ts:113`
-- `StripeChargeService` (class) — `backend/src/payments/stripe/stripe-charge.service.ts:19`
+- `PaymentService` (class) — `backend/src/kloel/payment.service.ts:121`
+- `StripeChargeService` (class) — `backend/src/payments/stripe/stripe-charge.service.ts:27`
 
-## CAPABILITY: `create_checkout` (15 implementations ⚠️ duplicated)
+## CAPABILITY: `create_checkout` (17 implementations ⚠️ duplicated)
 
 - `createCheckoutPixel` (function) — `backend/src/checkout/checkout-catalog.operations.ts:8`
 - `buildCheckoutMarketplacePricing` (function) — `backend/src/checkout/checkout-marketplace-pricing.util.ts:40`
 - `buildCheckoutOrderMetadata` (function) — `backend/src/checkout/checkout-order-metadata.util.ts:48`
-- `CheckoutPaymentService` (class) — `backend/src/checkout/checkout-payment.service.ts:40`
+- `buildCheckoutPaymentCreatedAuditPayload` (function) — `backend/src/checkout/checkout-payment.helpers.ts:426`
+- `buildCheckoutPaymentResult` (function) — `backend/src/checkout/checkout-payment.helpers.ts:493`
+- `CheckoutPaymentService` (class) — `backend/src/checkout/checkout-payment.service.ts:70`
 - `createCheckout` (function) — `backend/src/checkout/checkout-product.create.ts:13`
 - `buildCheckoutShippingQuote` (function) — `backend/src/checkout/checkout-shipping-profile.util.ts:88`
 - `buildCheckoutData` (function) — `backend/src/kloel/product-sub-resources/helpers/plan.serialize-helpers.ts:4`
@@ -104,7 +106,7 @@ No implementation detected. May not be a feature of this codebase.
 
 ## CAPABILITY: `ledger_entry` (1 implementations)
 
-- `LedgerService` (class) — `backend/src/payments/ledger/ledger.service.ts:39`
+- `LedgerService` (class) — `backend/src/payments/ledger/ledger.service.ts:40`
 
 ## CAPABILITY: `fraud_check` (3 implementations ⚠️ duplicated)
 
