@@ -19,6 +19,18 @@ import {
   toSessionView,
 } from './admin-chat.helpers';
 import type { ChatSessionView, SendMessageInput } from './admin-chat.helpers';
+import { SpineEmitterService } from '../../kloel/spine/spine-emitter.service';
+import { DecisionOutcomeService } from '../../kloel/decision-outcome.service';
+import { MindBeliefService } from '../../kloel/mind/inference/mind-belief.service';
+import { MindSurpriseService } from '../../kloel/mind/inference/mind-surprise.service';
+import { buildMindSignals } from '../../kloel/mind/build-mind-signals.helper';
+import {
+  buildChatOutcomeKey,
+  recordChatReplyDecision,
+  closeChatReplyOutcome,
+  observeRepliedToUserBelief,
+  computeChatSurprise,
+} from '../../kloel/kloel-reply-engine.decision-outcome.helpers';
 
 const LIST_RE = /^\/list\b/i;
 
@@ -60,6 +72,10 @@ export class AdminChatService {
     private readonly tools: ChatToolRegistry,
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() private readonly mindObservability?: MindObservabilityService,
+    @Optional() private readonly spine?: SpineEmitterService,
+    @Optional() private readonly decisionOutcomeService?: DecisionOutcomeService,
+    @Optional() private readonly mindBeliefService?: MindBeliefService,
+    @Optional() private readonly mindSurpriseService?: MindSurpriseService,
   ) {}
 
   /** Send message. */
@@ -70,6 +86,31 @@ export class AdminChatService {
     }
 
     const session = await this.ensureSession(input.adminUserId, input.sessionId);
+    const workspaceId = session.workspaceId;
+
+    // PI-K19-B: record decision outcome at start of every admin chat reply
+    const outcomeKey = buildChatOutcomeKey(workspaceId);
+    if (outcomeKey) {
+      recordChatReplyDecision(this.decisionOutcomeService, this.logger, {
+        workspaceId,
+        outcomeKey,
+        surface: 'admin',
+        messageLength: input.content.length,
+      });
+    }
+
+    // PI-K19-B: build mind signals (fire-and-forget)
+    void (async () => {
+      try {
+        await buildMindSignals(
+          { prisma: this.prisma, logger: this.logger },
+          workspaceId,
+          input.content,
+        );
+      } catch {
+        /* fire-and-forget */
+      }
+    })();
 
     // Persist the user's turn first.
     await this.prisma.adminChatMessage.create({
@@ -109,6 +150,60 @@ export class AdminChatService {
     await this.prisma.adminChatSession.updateMany({
       where: { id: session.id, workspaceId: session.workspaceId },
       data: { lastUsedAt: new Date() },
+    });
+
+    // PI-K19-B: cognition.decision_made emission (fire-and-forget)
+    void (async () => {
+      if (this.spine) {
+        try {
+          await this.spine.emit({
+            eventName: 'cognition.decision_made',
+            workspaceId,
+            truthMode: 'observed',
+            provenance: {
+              source: 'production',
+              processor: 'admin-chat-service',
+              processorVersion: '1.0.0',
+              schemaVersion: '1.0.0',
+            },
+            payload: {
+              surface: 'admin',
+              toolCallsCount: 0,
+              fallbackReason: null,
+              durationMs: Date.now() - startedAt,
+            },
+          });
+        } catch (err: unknown) {
+          this.logger.warn('admin_chat_cognition_event_skipped', {
+            reason: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
+    })();
+
+    // PI-K19-B: observe belief + compute surprise
+    observeRepliedToUserBelief(this.mindBeliefService, this.logger, {
+      workspaceId,
+      surface: 'admin',
+      observed: 1,
+    });
+    void computeChatSurprise(
+      this.mindSurpriseService,
+      this.mindBeliefService,
+      this.logger,
+      {
+        workspaceId,
+        observed: 1,
+        surface: 'admin',
+        degraded: false,
+      },
+    );
+
+    // PI-K19-B: close decision outcome
+    closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
+      outcomeKey,
+      outcomeName: 'chat.replied',
+      wonVsBaseline: true,
     });
 
     void this.observeReplyFireAndForget(session.workspaceId, startedAt);
