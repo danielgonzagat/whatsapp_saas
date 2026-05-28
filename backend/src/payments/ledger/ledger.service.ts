@@ -15,6 +15,18 @@ import {
   buildAbsorptionMetadata,
 } from './ledger-math.helper';
 import {
+  buildAbsorptionDebitAuditDetails,
+  buildCreditPendingAuditDetails,
+  buildDebitPayoutAuditDetails,
+  buildLedgerReferenceIdempotencyWhere,
+  buildMatureAuditDetails,
+  buildMatureEntryMetadata,
+  computeCreditPendingBalanceDelta,
+  computeDebitPayoutBalanceDelta,
+  computeMatureBalanceDelta,
+  mapIdempotencyRecoveryReason,
+} from './ledger.service.helpers';
+import {
   AccountBalanceNotFoundError,
   type BalanceSnapshot,
   type CreditAvailableAdjustmentInput,
@@ -56,11 +68,7 @@ export class LedgerService {
 
     return this.prisma.$transaction(async (tx) => {
       const existing = await tx.connectLedgerEntry.findFirst({
-        where: {
-          referenceType: input.reference.type,
-          referenceId: input.reference.id,
-          type: 'CREDIT_PENDING',
-        },
+        where: buildLedgerReferenceIdempotencyWhere(input.reference, 'CREDIT_PENDING'),
       });
       if (existing) {
         this.logger.debug(
@@ -83,14 +91,17 @@ export class LedgerService {
         throw new AccountBalanceNotFoundError(input.accountBalanceId);
       }
 
-      const newPending = balance.pendingBalanceCents + input.amountCents;
-      const newLifetime = balance.lifetimeReceivedCents + input.amountCents;
+      const { newPending, newLifetimeReceived } = computeCreditPendingBalanceDelta(
+        balance.pendingBalanceCents,
+        balance.lifetimeReceivedCents,
+        input.amountCents,
+      );
 
       await tx.connectAccountBalance.update({
         where: { id: balance.id },
         data: {
           pendingBalanceCents: newPending,
-          lifetimeReceivedCents: newLifetime,
+          lifetimeReceivedCents: newLifetimeReceived,
         },
         select: { workspaceId: true },
       });
@@ -119,12 +130,7 @@ export class LedgerService {
           entryId: created.id,
           amountCents: input.amountCents,
         },
-        {
-          referenceType: input.reference.type,
-          referenceId: input.reference.id,
-          newPendingBalanceCents: newPending.toString(),
-          newAvailableBalanceCents: balance.availableBalanceCents.toString(),
-        },
+        buildCreditPendingAuditDetails(input.reference, newPending, balance.availableBalanceCents),
       );
 
       return created;
@@ -168,8 +174,11 @@ export class LedgerService {
           throw new AccountBalanceNotFoundError(entry.accountBalanceId);
         }
 
-        const newPending = balance.pendingBalanceCents - entry.amountCents;
-        const newAvailable = balance.availableBalanceCents + entry.amountCents;
+        const { newPending, newAvailable } = computeMatureBalanceDelta(
+          balance.pendingBalanceCents,
+          balance.availableBalanceCents,
+          entry.amountCents,
+        );
 
         await tx.connectAccountBalance.update({
           where: { id: balance.id },
@@ -194,7 +203,7 @@ export class LedgerService {
             balanceAfterAvailableCents: newAvailable,
             referenceType: entry.referenceType,
             referenceId: entry.referenceId,
-            metadata: { promotedFromEntryId: entry.id },
+            metadata: buildMatureEntryMetadata(entry.id),
           },
         });
 
@@ -207,11 +216,7 @@ export class LedgerService {
             entryId: matureEntry.id,
             amountCents: entry.amountCents,
           },
-          {
-            promotedFromEntryId: entry.id,
-            newPendingBalanceCents: newPending.toString(),
-            newAvailableBalanceCents: newAvailable.toString(),
-          },
+          buildMatureAuditDetails(entry.id, newPending, newAvailable),
         );
       }, FINANCIAL_TRANSACTION_OPTIONS);
     } catch (error: unknown) {
@@ -219,7 +224,7 @@ export class LedgerService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         isLedgerIdempotencyRecoveryCode(error.code)
       ) {
-        const reason = error.code === 'P2002' ? 'P2002 concurrent' : 'P2025 stale row';
+        const reason = mapIdempotencyRecoveryReason(error.code);
         this.logger.info(
           `moveFromPendingToAvailable idempotent skip (${reason}): entry=${pendingEntryId}`,
         );
@@ -239,11 +244,7 @@ export class LedgerService {
 
     return this.prisma.$transaction(async (tx) => {
       const existing = await tx.connectLedgerEntry.findFirst({
-        where: {
-          referenceType: input.reference.type,
-          referenceId: input.reference.id,
-          type: 'DEBIT_PAYOUT',
-        },
+        where: buildLedgerReferenceIdempotencyWhere(input.reference, 'DEBIT_PAYOUT'),
       });
       if (existing) {
         this.logger.debug(
@@ -274,8 +275,11 @@ export class LedgerService {
         );
       }
 
-      const newAvailable = balance.availableBalanceCents - input.amountCents;
-      const newLifetimePaidOut = balance.lifetimePaidOutCents + input.amountCents;
+      const { newAvailable, newLifetimePaidOut } = computeDebitPayoutBalanceDelta(
+        balance.availableBalanceCents,
+        balance.lifetimePaidOutCents,
+        input.amountCents,
+      );
 
       await tx.connectAccountBalance.update({
         where: { id: balance.id },
@@ -308,12 +312,7 @@ export class LedgerService {
           entryId: created.id,
           amountCents: input.amountCents,
         },
-        {
-          referenceType: input.reference.type,
-          referenceId: input.reference.id,
-          newAvailableBalanceCents: newAvailable.toString(),
-          newLifetimePaidOutCents: newLifetimePaidOut.toString(),
-        },
+        buildDebitPayoutAuditDetails(input.reference, newAvailable, newLifetimePaidOut),
       );
 
       return created;
@@ -330,11 +329,7 @@ export class LedgerService {
 
     return this.prisma.$transaction(async (tx) => {
       const existing = await tx.connectLedgerEntry.findFirst({
-        where: {
-          referenceType: input.reference.type,
-          referenceId: input.reference.id,
-          type: 'DEBIT_CHARGEBACK',
-        },
+        where: buildLedgerReferenceIdempotencyWhere(input.reference, 'DEBIT_CHARGEBACK'),
       });
       if (existing) {
         this.logger.debug(
@@ -398,15 +393,14 @@ export class LedgerService {
           entryId: created.id,
           amountCents: input.amountCents,
         },
-        {
-          referenceType: input.reference.type,
-          referenceId: input.reference.id,
-          absorbedFromPendingCents: fromPending.toString(),
-          absorbedFromAvailableCents: fromAvailable.toString(),
-          newPendingBalanceCents: newPending.toString(),
-          newAvailableBalanceCents: newAvailable.toString(),
-          newLifetimeChargebacksCents: newLifetimeChargebacks.toString(),
-        },
+        buildAbsorptionDebitAuditDetails(
+          input.reference,
+          fromPending,
+          fromAvailable,
+          newPending,
+          newAvailable,
+          newLifetimeChargebacks,
+        ),
       );
 
       return created;
@@ -423,11 +417,7 @@ export class LedgerService {
 
     return this.prisma.$transaction(async (tx) => {
       const existing = await tx.connectLedgerEntry.findFirst({
-        where: {
-          referenceType: input.reference.type,
-          referenceId: input.reference.id,
-          type: 'DEBIT_REFUND',
-        },
+        where: buildLedgerReferenceIdempotencyWhere(input.reference, 'DEBIT_REFUND'),
       });
       if (existing) {
         this.logger.debug(
@@ -488,14 +478,13 @@ export class LedgerService {
           entryId: created.id,
           amountCents: input.amountCents,
         },
-        {
-          referenceType: input.reference.type,
-          referenceId: input.reference.id,
-          absorbedFromPendingCents: fromPending.toString(),
-          absorbedFromAvailableCents: fromAvailable.toString(),
-          newPendingBalanceCents: newPending.toString(),
-          newAvailableBalanceCents: newAvailable.toString(),
-        },
+        buildAbsorptionDebitAuditDetails(
+          input.reference,
+          fromPending,
+          fromAvailable,
+          newPending,
+          newAvailable,
+        ),
       );
 
       return created;
