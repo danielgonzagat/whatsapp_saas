@@ -4,6 +4,7 @@ import { AuditService } from '../audit/audit.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { ConnectService } from '../payments/connect/connect.service';
 import { FraudEngine } from '../payments/fraud/fraud.engine';
+import { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
 import { StripeChargeService } from '../payments/stripe/stripe-charge.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -19,7 +20,6 @@ import {
   makeChargeResult,
   makeOrder,
 } from './checkout-payment.service.fixtures';
-import { CHECKOUT_PAYMENT_E2E_GUARD } from './checkout-payment-e2e-guard';
 import { CheckoutEventEmitterService } from '../kloel/checkout-emitter/checkout-event-emitter.service';
 
 const SELLER_ACCOUNT_BALANCE = Object.freeze({
@@ -39,6 +39,7 @@ describe('Checkout E2E Split Chain', () => {
   let service: CheckoutPaymentService;
   let prisma: CheckoutPaymentPrismaMock;
   let stripeCharge: { createSaleCharge: jest.Mock };
+  let mercadoPagoPix: { create: jest.Mock };
   let connectService: { createCustomAccount: jest.Mock };
   let fraudEngine: { evaluate: jest.Mock };
   let financialAlert: { paymentFailed: jest.Mock };
@@ -67,6 +68,17 @@ describe('Checkout E2E Split Chain', () => {
 
     stripeCharge = {
       createSaleCharge: jest.fn().mockResolvedValue(makeChargeResult()),
+    };
+    mercadoPagoPix = {
+      create: jest.fn().mockResolvedValue({
+        externalId: 'mp_pix_split',
+        status: 'pending',
+        qrCode: '000201pixcopiaecola',
+        qrCodeBase64: 'data:image/png;base64,qr',
+        ticketUrl: 'https://www.mercadopago.com.br/pix/mp_pix_split',
+        expiresAt: new Date('2026-05-28T12:30:00.000Z'),
+        raw: { id: 'mp_pix_split' },
+      }),
     };
     connectService = {
       createCustomAccount: jest.fn().mockResolvedValue({
@@ -97,6 +109,7 @@ describe('Checkout E2E Split Chain', () => {
         CheckoutPaymentService,
         { provide: PrismaService, useValue: prisma },
         { provide: StripeChargeService, useValue: stripeCharge },
+        { provide: MercadoPagoPixChargeService, useValue: mercadoPagoPix },
         { provide: ConnectService, useValue: connectService },
         { provide: FraudEngine, useValue: fraudEngine },
         { provide: FinancialAlertService, useValue: financialAlert },
@@ -171,7 +184,7 @@ describe('Checkout E2E Split Chain', () => {
     expect(chargeInput.idempotencyKey).toBe('order-1');
   });
 
-  it('persists the split result inside the checkout payment webhookData for downstream webhook processing', async () => {
+  it('persists the Stripe card split result inside checkout payment webhookData for downstream webhook processing', async () => {
     const tx = setupTx();
 
     const chargeWithSplit = makeChargeResult({
@@ -201,7 +214,7 @@ describe('Checkout E2E Split Chain', () => {
       workspaceId: 'ws-1',
       customerName: 'Cliente MultiSplit',
       customerEmail: 'multisplit@example.com',
-      paymentMethod: 'PIX',
+      paymentMethod: 'CREDIT_CARD',
       totalInCents: 10_000,
     });
 
@@ -247,40 +260,37 @@ describe('Checkout E2E Split Chain', () => {
     expect(stripeCharge.createSaleCharge).toHaveBeenCalledTimes(1);
   });
 
-  it('propagates PIX qr code and copy-paste data from the Stripe response into the payment record', async () => {
-    setupTx();
-
-    stripeCharge.createSaleCharge.mockResolvedValueOnce(
-      makeChargeResult({
-        paymentIntentId: 'pi_pix_split',
-        clientSecret: 'pi_pix_split_secret',
-        stripePaymentIntent: {
-          id: 'pi_pix_split',
-          status: 'requires_action',
-          next_action: {
-            type: 'pix_display_qr_code',
-            pix_display_qr_code: {
-              data: '000201pixcopiaecola',
-              image_url_png: 'data:image/png;base64,qr',
-              hosted_instructions_url: 'https://pay.stripe.com/pix/pi_pix_split',
-              expires_at: 1_810_000_000,
-            },
-          },
-        },
-      }),
-    );
+  it('propagates PIX qr code and copy-paste data from Mercado Pago into the payment record', async () => {
+    const tx = setupTx();
 
     const result = await service.processPayment({
       orderId: 'order-1',
       workspaceId: 'ws-1',
       customerName: 'Cliente PIX Split',
       customerEmail: 'pixsplit@example.com',
+      customerCPF: '123.456.789-09',
       paymentMethod: 'PIX',
       totalInCents: 10_000,
     });
 
+    expect(stripeCharge.createSaleCharge).not.toHaveBeenCalled();
+    expect(mercadoPagoPix.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        amountCents: 13_990n,
+        externalReference: 'order-1',
+        idempotencyKey: 'checkout-pix:order-1',
+        payerDocument: '12345678909',
+      }),
+    );
+    const paymentCreateArgs = tx.checkoutPayment.create.mock.calls[0]?.[0];
+    expect(paymentCreateArgs?.data).toMatchObject({
+      gateway: 'mercadopago',
+      externalId: 'mp_pix_split',
+      pixQrCode: 'data:image/png;base64,qr',
+      pixCopyPaste: '000201pixcopiaecola',
+    });
     expect(result.pixQrCode).toBe('data:image/png;base64,qr');
     expect(result.pixCopyPaste).toBe('000201pixcopiaecola');
-    expect(result.paymentIntentId).toBe('pi_pix_split');
+    expect(result.paymentIntentId).toBe('mp_pix_split');
   });
 });
