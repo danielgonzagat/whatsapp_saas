@@ -12,27 +12,7 @@ import { MfaVerifyDto } from './dto/mfa-verify.dto';
 import { AdminRefreshDto } from './dto/refresh.dto';
 import { AdminAuthGuard } from './guards/admin-auth.guard';
 import { RouteClass } from '../../common/throttler/route-class.decorator';
-
-function readForwardedForIp(header: string | string[] | undefined): string | null {
-  if (typeof header !== 'string' || header.length === 0) {
-    return null;
-  }
-  const first = header.split(',')[0]!.trim();
-  return first.length > 0 ? first : null;
-}
-
-function extractClientIp(req: Request): string {
-  const forwarded = readForwardedForIp(req.headers['x-forwarded-for']);
-  if (forwarded) {
-    return forwarded;
-  }
-  return req.ip ?? req.socket?.remoteAddress ?? '0.0.0.0';
-}
-
-function extractUserAgent(req: Request): string {
-  const ua = req.headers['user-agent'];
-  return typeof ua === 'string' ? ua : 'unknown';
-}
+import { extractClientIp, extractUserAgent } from './admin-auth.service.helpers';
 
 /** Admin auth controller. */
 @Public()

@@ -11,11 +11,12 @@ import { AdminMfaService } from './admin-mfa.service';
 import {
   ADMIN_MFA_BYPASS_ENV,
   BCRYPT_WORK_FACTOR,
+  assertTokenScope,
   isAccountLocked,
   isMfaBypassEnvEnabled,
   isSessionExpired,
   normalizeAdminEmail,
-} from './admin-auth.helpers';
+} from './admin-auth.service.helpers';
 import {
   ADMIN_TOKEN_TTL,
   AdminSessionFactory,
@@ -249,9 +250,7 @@ export class AdminAuthService {
     ip: string,
     userAgent: string,
   ): Promise<LoginStateResponse | AuthenticatedSession> {
-    if (admin.scope !== 'password_change') {
-      throw adminErrors.invalidToken();
-    }
+    assertTokenScope(admin, 'password_change');
 
     const hash = await bcryptHash(newPassword, BCRYPT_WORK_FACTOR);
     this.logger.log('Password change initiated', {
@@ -284,9 +283,7 @@ export class AdminAuthService {
   // ──────────────────────────────────────────────────────────
 
   async setupMfa(admin: AuthenticatedAdmin): Promise<MfaSetupPayload> {
-    if (admin.scope !== 'mfa_setup') {
-      throw adminErrors.invalidToken();
-    }
+    assertTokenScope(admin, 'mfa_setup');
 
     this.logger.log('MFA setup started', {
       context: 'AdminAuthService.setupMfa',
@@ -333,9 +330,7 @@ export class AdminAuthService {
     ip: string,
     userAgent: string,
   ): Promise<AuthenticatedSession> {
-    if (admin.scope !== 'mfa_setup') {
-      throw adminErrors.invalidToken();
-    }
+    assertTokenScope(admin, 'mfa_setup');
     const user = await this.prisma.adminUser.findUnique({ where: { id: admin.id } });
     if (!user) {
       throw adminErrors.invalidToken();
@@ -373,9 +368,7 @@ export class AdminAuthService {
     ip: string,
     userAgent: string,
   ): Promise<AuthenticatedSession> {
-    if (admin.scope !== 'mfa_verify') {
-      throw adminErrors.invalidToken();
-    }
+    assertTokenScope(admin, 'mfa_verify');
     const user = await this.prisma.adminUser.findUnique({ where: { id: admin.id } });
     if (!user) {
       throw adminErrors.invalidToken();
