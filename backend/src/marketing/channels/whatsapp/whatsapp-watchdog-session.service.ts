@@ -12,10 +12,9 @@ import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../../../logging/structured-logger';
 import { Counter, Gauge, register } from 'prom-client';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { asProviderSettings } from './provider-settings.types';
-import { toPrismaJsonValue } from '../../../common/prisma/prisma-json.util';
 import { WhatsAppWatchdogRecoveryService } from './whatsapp-watchdog-recovery.service';
+import { WhatsappSessionService } from './whatsapp-session.service';
 
 export type { SessionHealth } from './whatsapp-watchdog.types';
 import type { SessionHealth } from './whatsapp-watchdog.types';
@@ -56,7 +55,7 @@ export class WhatsAppWatchdogSessionService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly providerRegistry: WhatsAppProviderRegistry,
+    private readonly sessionService: WhatsappSessionService,
     private readonly recovery: WhatsAppWatchdogRecoveryService,
   ) {}
 
@@ -99,6 +98,7 @@ export class WhatsAppWatchdogSessionService {
   // Diagnostics persistence
   // ---------------------------------------------------------------------------
 
+  /** @deprecated Delegates to {@link WhatsappSessionService.persistSessionDiagnostics}. */
   async persistSessionDiagnostics(
     workspaceId: string,
     update: {
@@ -108,47 +108,7 @@ export class WhatsAppWatchdogSessionService {
       watchdogReconnectBlockedReason?: string | null;
     },
   ): Promise<void> {
-    try {
-      await this.prisma.$transaction(async (tx) => {
-        const workspace = await tx.workspace.findUnique({
-          where: { id: workspaceId },
-          select: { providerSettings: true },
-        });
-        if (!workspace) {
-          return;
-        }
-
-        const settings = asProviderSettings(workspace.providerSettings);
-        const sessionMeta = settings.whatsappWebSession || settings.whatsappApiSession || {};
-
-        await tx.workspace.update({
-          where: { id: workspaceId },
-          data: {
-            providerSettings: toPrismaJsonValue({
-              ...settings,
-              whatsappApiSession: {
-                ...sessionMeta,
-                ...update,
-                lastUpdated: new Date().toISOString(),
-              },
-              whatsappWebSession: {
-                ...sessionMeta,
-                ...update,
-                lastUpdated: new Date().toISOString(),
-              },
-            }),
-          },
-        });
-      });
-    } catch (error: unknown) {
-      const msg =
-        error instanceof Error
-          ? error.message
-          : typeof error === 'string'
-            ? error
-            : 'unknown error';
-      this.logger.warn(`Failed to persist watchdog diagnostics for ${workspaceId}: ${msg}`);
-    }
+    return this.sessionService.persistSessionDiagnostics(workspaceId, update);
   }
 
   // ---------------------------------------------------------------------------
@@ -282,7 +242,7 @@ export class WhatsAppWatchdogSessionService {
     };
 
     try {
-      const status = await this.providerRegistry.getSessionStatus(workspaceId);
+      const status = await this.sessionService.getConnectionStatus(workspaceId);
       const wasConnected = health.connected;
       health.connected = status.connected;
       health.lastCheck = now;

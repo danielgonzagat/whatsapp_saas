@@ -1,11 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { WhatsAppProviderRegistry } from './providers/provider-registry';
+import { WhatsappSessionService } from './whatsapp-session.service';
 import { WhatsAppWatchdogRecoveryService } from './whatsapp-watchdog-recovery.service';
 import { WhatsAppWatchdogSessionService } from './whatsapp-watchdog-session.service';
 
 describe('WhatsAppWatchdogSessionService', () => {
   let service: WhatsAppWatchdogSessionService;
+  let sessionService: {
+    getConnectionStatus: jest.Mock;
+    persistSessionDiagnostics: jest.Mock;
+  };
   let prisma: {
     workspace: { findUnique: jest.Mock; update: jest.Mock };
     $transaction: jest.Mock;
@@ -13,6 +17,14 @@ describe('WhatsAppWatchdogSessionService', () => {
   let recovery: object;
 
   beforeEach(async () => {
+    sessionService = {
+      getConnectionStatus: jest.fn().mockResolvedValue({
+        connected: true,
+        status: 'CONNECTED',
+        phoneNumber: '5511999999999',
+      }),
+      persistSessionDiagnostics: jest.fn().mockResolvedValue(undefined),
+    };
     prisma = {
       workspace: {
         findUnique: jest.fn(),
@@ -27,7 +39,7 @@ describe('WhatsAppWatchdogSessionService', () => {
       providers: [
         WhatsAppWatchdogSessionService,
         { provide: PrismaService, useValue: prisma },
-        { provide: WhatsAppProviderRegistry, useValue: {} },
+        { provide: WhatsappSessionService, useValue: sessionService },
         { provide: WhatsAppWatchdogRecoveryService, useValue: recovery },
       ],
     }).compile();
@@ -77,33 +89,10 @@ describe('WhatsAppWatchdogSessionService', () => {
   });
 
   describe('persistSessionDiagnostics', () => {
-    it('no-ops when workspace not found', async () => {
-      prisma.workspace.findUnique.mockResolvedValue(null);
-      await service.persistSessionDiagnostics('missing', {
-        lastHeartbeatAt: new Date().toISOString(),
-      });
-      expect(prisma.workspace.update).not.toHaveBeenCalled();
-    });
-
-    it('updates both whatsappApiSession and whatsappWebSession with diagnostics', async () => {
-      prisma.workspace.findUnique.mockResolvedValue({
-        providerSettings: { whatsappWebSession: { phoneNumber: '+5511' } },
-      });
-      const heartbeat = new Date('2026-05-12T00:00:00Z').toISOString();
-      await service.persistSessionDiagnostics('ws-1', {
-        lastHeartbeatAt: heartbeat,
-        lastWatchdogDisconnectedAt: null,
-      });
-      const update = prisma.workspace.update.mock.calls[0][0];
-      expect(update.data.providerSettings.whatsappApiSession.lastHeartbeatAt).toBe(heartbeat);
-      expect(update.data.providerSettings.whatsappWebSession.lastHeartbeatAt).toBe(heartbeat);
-    });
-
-    it('swallows transaction errors and logs', async () => {
-      prisma.$transaction.mockRejectedValue(new Error('DB error'));
-      await expect(
-        service.persistSessionDiagnostics('ws-1', { lastHeartbeatAt: 'x' }),
-      ).resolves.toBeUndefined();
+    it('delegates to sessionService.persistSessionDiagnostics', async () => {
+      const update = { lastHeartbeatAt: new Date().toISOString() };
+      await service.persistSessionDiagnostics('ws-1', update);
+      expect(sessionService.persistSessionDiagnostics).toHaveBeenCalledWith('ws-1', update);
     });
   });
 

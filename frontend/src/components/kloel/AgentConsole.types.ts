@@ -3,9 +3,7 @@ import { colors } from '@/lib/design-tokens';
 import {
   AlertCircle,
   Brain,
-  CheckCircle,
   Clock,
-  LoaderCircle,
   MessageSquare,
   Send,
   Users,
@@ -132,12 +130,6 @@ export const ACTIVITY_CONFIG: Record<
     color: colors.text.secondary,
     label: 'Status de Conexão',
   },
-};
-
-export const STATUS_ICONS: Record<ActivityStatus, ElementType> = {
-  pending: LoaderCircle,
-  success: CheckCircle,
-  error: AlertCircle,
 };
 
 export function formatTimeAgo(date: Date): string {

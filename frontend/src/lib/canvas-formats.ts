@@ -10,11 +10,10 @@
 import { colors } from './design-tokens';
 import { externalBrands } from './external-brand-tokens';
 import { canvasPalette } from './canvas-palette-tokens';
-import type { CategoryItem, EditorTabItem, PillItem } from './canvas-formats-types';
+import type { CategoryItem, PillItem } from './canvas-formats-types';
 
 export type {
   CategoryItem,
-  EditorTabItem,
   FormatItem,
   PillItem,
 } from './canvas-formats-types';
@@ -65,22 +64,6 @@ export const SOCIAL_PLATFORMS = [
   'YouTube',
 ];
 
-/* ═══ EDITOR SIDEBAR TABS ═══ */
-/** Editor_tabs. */
-export const EDITOR_TABS: EditorTabItem[] = [
-  { id: 'modelos', l: 'Modelos', icon: 'grid' },
-  { id: 'elementos', l: 'Elementos', icon: 'apps' },
-  { id: 'texto', l: 'Texto', icon: 'type' },
-  { id: 'marca', l: 'Marca', icon: 'crown' },
-  { id: 'uploads', l: 'Uploads', icon: 'upload' },
-  { id: 'ferramentas', l: 'Ferramentas', icon: 'tool' },
-  { id: 'projetos', l: 'Projetos', icon: 'folder' },
-  { id: 'apps', l: 'Apps', icon: 'apps' },
-  { id: 'midia', l: 'Midia Magica', icon: 'wand' },
-  { id: 'fundo', l: 'Fundo', icon: 'bg' },
-  { id: 'graficos', l: 'Graficos', icon: 'chart' },
-];
-
 /* ═══ QUICK ACTIONS ═══ */
 export const QUICK_ACTIONS = [
   { l: 'Texto Magico', c: [colors.semantic.success, canvasPalette.emeraldLight] as [string, string] },
@@ -108,16 +91,6 @@ export const TEMPLATE_TAGS = [
   'Produto',
 ];
 
-/* ═══ EDITOR TEMPLATES ═══ */
-export const EDITOR_TEMPLATES = [
-  { l: 'Marketing Plan', c: [colors.semantic.success, canvasPalette.emeraldDeep] as [string, string] },
-  { l: 'Social Media', c: [externalBrands.emailPurple, canvasPalette.violetIntense] as [string, string] },
-  { l: 'Pitch Deck', c: [colors.canvas.cyan, canvasPalette.cyanDeep] as [string, string] },
-  { l: 'Portfolio', c: [colors.canvas.pink, canvasPalette.pinkDeep] as [string, string] },
-  { l: 'Business', c: [colors.semantic.warning, canvasPalette.amberDeep] as [string, string] },
-  { l: 'Creative Brief', c: [colors.semantic.info, canvasPalette.blueDeep] as [string, string] },
-];
-
 /* ═══ PRODUCT TEMPLATES (Fabric.js JSON) ═══ */
 export type { ProductTemplate } from './canvas-product-templates';
 // PRODUCT_TEMPLATES data is now served via useProductTemplates hook
@@ -133,11 +106,3 @@ export const ELEMENT_CATEGORIES = [
   { l: 'Stickers', c: colors.semantic.success },
 ];
 
-/* ═══ EDITOR TOOLS ═══ */
-export const EDITOR_TOOLS = [
-  { l: 'Enfeitar', c: [colors.canvas.cyan, canvasPalette.cyanLight] as [string, string] },
-  { l: 'Redimensionar', c: [colors.ember.primary, colors.canvas.accent] as [string, string] },
-  { l: 'Fundo Magico', c: [externalBrands.emailPurple, colors.semantic.purpleText] as [string, string] },
-  { l: 'Tradutor', c: [colors.semantic.info, canvasPalette.blueLight] as [string, string] },
-  { l: 'Criar em lote', c: [colors.semantic.success, canvasPalette.emeraldLight] as [string, string] },
-];

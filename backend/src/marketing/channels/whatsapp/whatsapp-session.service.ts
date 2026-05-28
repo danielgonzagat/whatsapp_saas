@@ -12,7 +12,8 @@ import {
   type WahaRuntimeConfigDiagnostics,
 } from './providers/whatsapp-api.provider';
 import { normalizeJsonObjExt, normalizeNumber } from './whatsapp-service.helpers';
-import type { ProviderSettings } from './provider-settings.types';
+import { asProviderSettings, type ProviderSettings } from './provider-settings.types';
+import { toPrismaJsonValue } from '../../../common/prisma/prisma-json.util';
 import { WhatsAppEventEmitterService } from '../../../kloel/whatsapp-emitter/whatsapp-event-emitter.service';
 
 import { UUID_DASH_RE } from '../../../common/regex';
@@ -122,7 +123,7 @@ export class WhatsappSessionService {
 
   async getConnectionStatus(ws: string) {
     const s = await this.providerRegistry.getSessionStatus(ws);
-    return { status: s.status, phoneNumber: s.phoneNumber, qrCode: s.qrCode };
+    return { connected: s.connected, status: s.status, phoneNumber: s.phoneNumber, qrCode: s.qrCode };
   }
 
   async getQrCode(ws: string) {
@@ -242,6 +243,63 @@ export class WhatsappSessionService {
         ].filter(Boolean),
       ),
     );
+  }
+
+  /**
+   * Persist watchdog diagnostics timestamps into the session snapshot.
+   * Updates both whatsappApiSession and whatsappWebSession so the
+   * diagnostics are readable regardless of the active provider type.
+   */
+  async persistSessionDiagnostics(
+    workspaceId: string,
+    update: {
+      lastHeartbeatAt?: string | null;
+      lastSeenWorkingAt?: string | null;
+      lastWatchdogDisconnectedAt?: string | null;
+      watchdogReconnectBlockedReason?: string | null;
+    },
+  ): Promise<void> {
+    try {
+      await this.prisma.$transaction(async (tx) => {
+        const workspace = await tx.workspace.findUnique({
+          where: { id: workspaceId },
+          select: { providerSettings: true },
+        });
+        if (!workspace) {
+          return;
+        }
+
+        const settings = asProviderSettings(workspace.providerSettings);
+        const sessionMeta = settings.whatsappWebSession || settings.whatsappApiSession || {};
+
+        await tx.workspace.update({
+          where: { id: workspaceId },
+          data: {
+            providerSettings: toPrismaJsonValue({
+              ...settings,
+              whatsappApiSession: {
+                ...sessionMeta,
+                ...update,
+                lastUpdated: new Date().toISOString(),
+              },
+              whatsappWebSession: {
+                ...sessionMeta,
+                ...update,
+                lastUpdated: new Date().toISOString(),
+              },
+            }),
+          },
+        });
+      });
+    } catch (error: unknown) {
+      const msg =
+        error instanceof Error
+          ? error.message
+          : typeof error === 'string'
+            ? error
+            : 'unknown error';
+      this.logger.warn(`Failed to persist watchdog diagnostics for ${workspaceId}: ${msg}`);
+    }
   }
 
   async markChatAsReadBestEffort(ws: string, chatIdOrPhone: string): Promise<void> {

@@ -4,25 +4,16 @@ import { ConfigService } from '@nestjs/config';
 import { findFirstSequential, forEachSequential } from '../../../../common/async-sequence';
 import { OpsAlertService } from '../../../../observability/ops-alert.service';
 import {
-  extractAsciiDigits,
   isPlaceholderContactName as isPlaceholderContactNameValue,
   extractPhoneFromChatId as normalizePhoneFromChatId,
 } from '../whatsapp-normalization.util';
 import { WahaSessionProvider } from './waha-session.provider';
-
-type WahaChatPayload = {
-  chats?: unknown[];
-  [key: string]: unknown;
-};
-
-type WahaChatEntry = {
-  id?: string;
-  chatId?: string;
-  contactId?: string;
-  phone?: string;
-  contact?: { phone?: string; [key: string]: unknown };
-  [key: string]: unknown;
-};
+import {
+  buildChatIdCandidates as buildChatIdCandidatesHelper,
+  extractChatsPayload as extractChatsPayloadHelper,
+  formatChatId as formatChatIdHelper,
+  getChatDedupKey as getChatDedupKeyHelper,
+} from './waha.provider.helpers';
 
 import { WHITESPACE_G_RE } from '../../../../common/regex';
 
@@ -365,41 +356,15 @@ export class WahaProvider extends WahaSessionProvider {
   // ─── UTILITIES ────────────────────────────────────────────
 
   private buildChatIdCandidates(chatId: string): string[] {
-    const raw = String(chatId || '').trim();
-    const phone = this.extractPhoneFromChatId(raw);
-    return Array.from(
-      new Set(
-        [
-          raw,
-          this.formatChatId(raw),
-          phone ? `${phone}@c.us` : '',
-          phone ? `${phone}@s.whatsapp.net` : '',
-        ].filter(Boolean),
-      ),
-    );
+    return buildChatIdCandidatesHelper(chatId);
   }
 
   private extractChatsPayload(payload: unknown): unknown[] {
-    if (Array.isArray(payload)) {
-      return payload;
-    }
-    const p = payload as WahaChatPayload | undefined;
-    if (Array.isArray(p?.chats)) {
-      return p.chats;
-    }
-    return [];
+    return extractChatsPayloadHelper(payload);
   }
 
   private getChatDedupKey(chat: unknown): string {
-    const c = chat as WahaChatEntry;
-    const cContact = c?.contact;
-    const candidates = [c?.id, c?.chatId, c?.contactId, c?.phone, cContact?.phone];
-    const strMatch = candidates.find((v): v is string => typeof v === 'string' && v.trim() !== '');
-    if (strMatch) {
-      return strMatch.trim();
-    }
-    const numMatch = candidates.find((v) => typeof v === 'number');
-    return numMatch !== undefined ? String(numMatch) : '';
+    return getChatDedupKeyHelper(chat);
   }
 
   private async collectChatsWithPagination(
@@ -453,15 +418,7 @@ export class WahaProvider extends WahaSessionProvider {
   }
 
   private formatChatId(phone: string): string {
-    const normalized = String(phone || '').trim();
-    if (!normalized) {
-      return '';
-    }
-    if (normalized.includes('@')) {
-      return normalized;
-    }
-    const cleaned = extractAsciiDigits(normalized);
-    return `${cleaned}@c.us`;
+    return formatChatIdHelper(phone);
   }
 
   /** Extract phone from chat id. */

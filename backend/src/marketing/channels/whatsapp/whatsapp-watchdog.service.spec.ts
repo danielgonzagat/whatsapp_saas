@@ -1,5 +1,6 @@
 import { expectValueOf } from '../../../../test/expect-value-of';
 import { WhatsAppWatchdogService } from './whatsapp-watchdog.service';
+import { WhatsappSessionService } from './whatsapp-session.service';
 import { WhatsAppWatchdogSessionService } from './whatsapp-watchdog-session.service';
 
 describe('WhatsAppWatchdogService', () => {
@@ -15,6 +16,10 @@ describe('WhatsAppWatchdogService', () => {
   let providerRegistry: {
     getSessionStatus: jest.Mock;
     startSession: jest.Mock;
+  };
+  let mockSessionService: {
+    getConnectionStatus: jest.Mock;
+    persistSessionDiagnostics: jest.Mock;
   };
   let whatsappApi: {
     listSessions: jest.Mock;
@@ -58,6 +63,15 @@ describe('WhatsAppWatchdogService', () => {
       startSession: jest.fn(),
     };
 
+    mockSessionService = {
+      getConnectionStatus: jest.fn().mockResolvedValue({
+        connected: true,
+        status: 'CONNECTED',
+        phoneNumber: '5511999999999',
+      }),
+      persistSessionDiagnostics: jest.fn().mockResolvedValue(undefined),
+    };
+
     whatsappApi = {
       listSessions: jest.fn().mockResolvedValue([]),
       syncSessionConfig: jest.fn().mockResolvedValue(undefined),
@@ -83,7 +97,7 @@ describe('WhatsAppWatchdogService', () => {
 
     const sessionSvc = new WhatsAppWatchdogSessionService(
       prisma as never as ConstructorParameters<typeof WhatsAppWatchdogSessionService>[0],
-      providerRegistry as never,
+      mockSessionService as unknown as WhatsappSessionService,
       recovery as never,
     );
 
@@ -223,10 +237,12 @@ describe('WhatsAppWatchdogService', () => {
       value: () => true,
     });
 
-    providerRegistry.getSessionStatus.mockResolvedValue({
+    mockSessionService.getConnectionStatus.mockResolvedValue({
       connected: true,
       status: 'CONNECTED',
+      phoneNumber: '5511999999999',
     });
+    mockSessionService.persistSessionDiagnostics.mockClear();
     prisma.workspace.findUnique.mockResolvedValue({
       name: 'Workspace Teste',
       providerSettings: 'malformed-settings',
@@ -234,29 +250,13 @@ describe('WhatsAppWatchdogService', () => {
 
     await service.checkWorkspaceSession('ws-1', 'Workspace Teste');
 
-    expect(prisma.workspace.update).toHaveBeenCalledWith(
+    expect(mockSessionService.persistSessionDiagnostics).toHaveBeenCalledWith(
+      'ws-1',
       expect.objectContaining({
-        where: { id: 'ws-1' },
-        data: expect.objectContaining({
-          providerSettings: expect.objectContaining({
-            whatsappApiSession: expect.objectContaining({
-              lastHeartbeatAt: expectValueOf(String),
-              lastSeenWorkingAt: expectValueOf(String),
-              lastUpdated: expectValueOf(String),
-            }),
-            whatsappWebSession: expect.objectContaining({
-              lastHeartbeatAt: expectValueOf(String),
-              lastSeenWorkingAt: expectValueOf(String),
-              lastUpdated: expectValueOf(String),
-            }),
-          }),
-        }),
+        lastHeartbeatAt: expectValueOf(String),
+        lastSeenWorkingAt: expectValueOf(String),
       }),
     );
-
-    const updatePayload = prisma.workspace.update.mock.calls[0]?.[0]?.data?.providerSettings;
-    expect(updatePayload).not.toHaveProperty('0');
-    expect(updatePayload).not.toHaveProperty('1');
   });
 
   it('reboots autonomy when the WhatsApp stays connected even after a previous manual pause', async () => {

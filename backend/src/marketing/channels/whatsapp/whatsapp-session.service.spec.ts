@@ -132,9 +132,10 @@ describe('WhatsappSessionService', () => {
   });
 
   describe('getConnectionStatus', () => {
-    it('returns session status from provider', async () => {
+    it('returns session status with connected flag from provider', async () => {
       const result = await service.getConnectionStatus('ws-1');
       expect(result).toEqual({
+        connected: true,
         status: 'CONNECTED',
         phoneNumber: '5511999991234',
         qrCode: undefined,
@@ -190,6 +191,60 @@ describe('WhatsappSessionService', () => {
       expect(service.validateWorkspaceProvider({ whatsappProvider: 'waha-web' })).toEqual([
         'whatsapp_provider',
       ]);
+    });
+  });
+
+  describe('persistSessionDiagnostics', () => {
+    let _prisma: { workspace: { findUnique: jest.Mock; update: jest.Mock }; $transaction: jest.Mock };
+
+    beforeEach(async () => {
+      _prisma = {
+        workspace: {
+          findUnique: jest.fn().mockResolvedValue(null),
+          update: jest.fn().mockResolvedValue({}),
+        },
+        $transaction: jest
+          .fn()
+          .mockImplementation((cb: (tx: unknown) => Promise<unknown>) => cb(_prisma)),
+      };
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          WhatsappSessionService,
+          { provide: WhatsAppProviderRegistry, useValue: providerRegistry },
+          { provide: WhatsAppApiProvider, useValue: whatsappApi },
+          { provide: PrismaService, useValue: _prisma },
+          { provide: OpsAlertService, useValue: { alertOnCriticalError: jest.fn() } },
+        ],
+      }).compile();
+      service = module.get(WhatsappSessionService);
+    });
+
+    it('no-ops when workspace not found', async () => {
+      await service.persistSessionDiagnostics('missing', {
+        lastHeartbeatAt: new Date().toISOString(),
+      });
+      expect(_prisma.workspace.update).not.toHaveBeenCalled();
+    });
+
+    it('updates both whatsappApiSession and whatsappWebSession with diagnostics', async () => {
+      _prisma.workspace.findUnique.mockResolvedValue({
+        providerSettings: { whatsappWebSession: { phoneNumber: '+5511' } },
+      });
+      const heartbeat = new Date('2026-05-12T00:00:00Z').toISOString();
+      await service.persistSessionDiagnostics('ws-1', {
+        lastHeartbeatAt: heartbeat,
+        lastWatchdogDisconnectedAt: null,
+      });
+      const update = _prisma.workspace.update.mock.calls[0][0];
+      expect(update.data.providerSettings.whatsappApiSession.lastHeartbeatAt).toBe(heartbeat);
+      expect(update.data.providerSettings.whatsappWebSession.lastHeartbeatAt).toBe(heartbeat);
+    });
+
+    it('swallows transaction errors and logs', async () => {
+      _prisma.$transaction.mockRejectedValue(new Error('DB error'));
+      await expect(
+        service.persistSessionDiagnostics('ws-1', { lastHeartbeatAt: 'x' }),
+      ).resolves.toBeUndefined();
     });
   });
 
