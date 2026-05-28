@@ -3,6 +3,12 @@ import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   actionImportContacts as actionImportContactsCompanion,
+  buildFollowUpJobId,
+  coerceArgNumber,
+  coerceArgString,
+  computeFollowUpDedupeFloor,
+  computeFollowUpScheduledFor,
+  computeTicketRiskFromPriority,
   decideChannelFromSettings,
   describeThrown,
   fallbackChannelFromPhone,
@@ -47,17 +53,14 @@ export class UnifiedAgentActionsCrmService {
 
   // ───────── helpers (kept as instance methods for public/legacy contract) ─────────
 
+  /** @deprecated use {@link coerceArgString} from the helpers module. */
   str(v: unknown, fb = ''): string {
-    return typeof v === 'string'
-      ? v
-      : typeof v === 'number' || typeof v === 'boolean'
-        ? String(v)
-        : fb;
+    return coerceArgString(v, fb);
   }
 
+  /** @deprecated use {@link coerceArgNumber} from the helpers module. */
   num(v: unknown, fb = 0): number {
-    const n = Number(v);
-    return Number.isFinite(n) ? n : fb;
+    return coerceArgNumber(v, fb);
   }
 
   // ───────── CRM actions ─────────
@@ -136,7 +139,7 @@ export class UnifiedAgentActionsCrmService {
             requestedDelayHours,
           });
       const delayHours = mindDecision.delayHours;
-      const scheduledFor = new Date(Date.now() + delayHours * 60 * 60 * 1000);
+      const scheduledFor = computeFollowUpScheduledFor(Date.now(), delayHours);
       const followMessage = this.str(args.message);
       const followReason = this.str(args.reason, 'scheduled_by_unified_agent');
       const followFlowId = this.str(args.flowId) || null;
@@ -147,7 +150,7 @@ export class UnifiedAgentActionsCrmService {
           contactId,
           reason: followReason,
           status: 'pending',
-          scheduledFor: { gte: new Date(Date.now() - 5 * 60 * 1000) },
+          scheduledFor: { gte: computeFollowUpDedupeFloor() },
         },
         select: { id: true, scheduledFor: true },
       });
@@ -156,7 +159,7 @@ export class UnifiedAgentActionsCrmService {
           success: true,
           scheduledFor: existing.scheduledFor.toISOString(),
           message: followMessage,
-          jobId: `followup_${workspaceId}_${contactId}_${existing.scheduledFor.getTime()}`,
+          jobId: buildFollowUpJobId(workspaceId, contactId, existing.scheduledFor.getTime()),
           deduplicated: true,
         };
       }
@@ -202,7 +205,7 @@ export class UnifiedAgentActionsCrmService {
         success: true,
         scheduledFor: scheduledFor.toISOString(),
         message: followMessage,
-        jobId: `followup_${workspaceId}_${contactId}_${scheduledFor.getTime()}`,
+        jobId: buildFollowUpJobId(workspaceId, contactId, scheduledFor.getTime()),
         mind: mindDecision.meta,
       };
     } catch (error: unknown) {
@@ -362,7 +365,7 @@ export class UnifiedAgentActionsCrmService {
       return { action: 'transfer_now' };
     }
     try {
-      const ticketRisk = priority === 'urgent' || priority === 'high' ? 0.8 : 0.35;
+      const ticketRisk = computeTicketRiskFromPriority(priority);
       return await this.mind.resolveHumanTransfer(workspaceId, 'agent', reason, ticketRisk);
     } catch (error: unknown) {
       const msg = error instanceof Error ? error.message : this.str(error, 'unknown');

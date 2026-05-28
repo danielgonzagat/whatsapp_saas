@@ -88,6 +88,80 @@ export function fallbackChannelFromPhone(phone: string | null | undefined): 'wha
   return value && value.startsWith('+') ? 'whatsapp' : 'email';
 }
 
+/**
+ * Coerce an unknown `ToolArg` value to a string, falling back when the value
+ * cannot be reasonably represented. Accepts `string`, `number`, and `boolean`
+ * inputs (the CRM action surface receives JSON-decoded arg blobs where
+ * primitive numerics/booleans are common). Anything else returns the fallback.
+ *
+ * Differs from `asString` in `kloel-tool-dispatcher.helpers`: that one keeps
+ * the fallback strict and never coerces non-strings. CRM action callers
+ * depended on the legacy `String(v)` behavior for ints/bools.
+ */
+export function coerceArgString(value: unknown, fallback = ''): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  return fallback;
+}
+
+/**
+ * Coerce an unknown `ToolArg` value to a finite number. Mirrors the legacy
+ * `num()` helper inside `UnifiedAgentActionsCrmService`: forwards to `Number()`
+ * (so numeric strings like `"24"` parse) and rejects `NaN`/`Infinity` via
+ * `Number.isFinite`.
+ */
+export function coerceArgNumber(value: unknown, fallback = 0): number {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+/** Five-minute dedupe lookback window (ms) used by follow-up scheduling. */
+export const FOLLOW_UP_DEDUPE_WINDOW_MS = 5 * 60 * 1000;
+
+/**
+ * Floor `Date` for the existing-pending-follow-up dedupe scan. Any follow-up
+ * scheduled at or after this floor is treated as a duplicate of the current
+ * request.
+ */
+export function computeFollowUpDedupeFloor(now: number = Date.now()): Date {
+  return new Date(now - FOLLOW_UP_DEDUPE_WINDOW_MS);
+}
+
+/**
+ * Compute the absolute Date the follow-up should fire, given the Mind-decided
+ * delay (hours).
+ */
+export function computeFollowUpScheduledFor(now: number, delayHours: number): Date {
+  return new Date(now + delayHours * 60 * 60 * 1000);
+}
+
+/**
+ * Build the deterministic job id used to dedupe follow-up emission downstream.
+ * Shape: `followup_${workspaceId}_${contactId}_${scheduledForMs}`.
+ */
+export function buildFollowUpJobId(
+  workspaceId: string,
+  contactId: string,
+  scheduledForMs: number,
+): string {
+  return `followup_${workspaceId}_${contactId}_${scheduledForMs}`;
+}
+
+/**
+ * Map a free-form priority label onto the ticketRisk score consumed by
+ * `MindService.resolveHumanTransfer`. Mirrors the inline logic that previously
+ * lived in `chooseHumanTransfer` so the threshold is unit-testable.
+ *
+ * `'urgent' | 'high'` → 0.8, anything else → 0.35.
+ */
+export function computeTicketRiskFromPriority(priority: string): number {
+  return priority === 'urgent' || priority === 'high' ? 0.8 : 0.35;
+}
+
 export async function actionImportContacts(
   prisma: PrismaService,
   workspaceId: string,

@@ -1,7 +1,14 @@
 import {
+  buildFollowUpJobId,
+  coerceArgNumber,
+  coerceArgString,
+  computeFollowUpDedupeFloor,
+  computeFollowUpScheduledFor,
+  computeTicketRiskFromPriority,
   decideChannelFromSettings,
   describeThrown,
   fallbackChannelFromPhone,
+  FOLLOW_UP_DEDUPE_WINDOW_MS,
   hasAutonomyExecutionClient,
   isDeterministicPipeline,
   isRecord,
@@ -129,6 +136,89 @@ describe('unified-agent-actions-crm.helpers (pure)', () => {
       expect(fallbackChannelFromPhone('')).toBe('email');
       expect(fallbackChannelFromPhone(null)).toBe('email');
       expect(fallbackChannelFromPhone(undefined)).toBe('email');
+    });
+  });
+
+  describe('coerceArgString', () => {
+    it('returns the input verbatim for string values (including empty)', () => {
+      expect(coerceArgString('hello')).toBe('hello');
+      expect(coerceArgString('')).toBe('');
+    });
+    it('stringifies numbers and booleans', () => {
+      expect(coerceArgString(42)).toBe('42');
+      expect(coerceArgString(0)).toBe('0');
+      expect(coerceArgString(true)).toBe('true');
+      expect(coerceArgString(false)).toBe('false');
+    });
+    it('returns the fallback for non-primitive / nullish values', () => {
+      expect(coerceArgString(null)).toBe('');
+      expect(coerceArgString(undefined)).toBe('');
+      expect(coerceArgString({ a: 1 })).toBe('');
+      expect(coerceArgString([1, 2])).toBe('');
+      expect(coerceArgString(undefined, 'fb')).toBe('fb');
+    });
+  });
+
+  describe('coerceArgNumber', () => {
+    it('returns finite numbers verbatim', () => {
+      expect(coerceArgNumber(0)).toBe(0);
+      expect(coerceArgNumber(42)).toBe(42);
+      expect(coerceArgNumber(-3.14)).toBe(-3.14);
+    });
+    it('parses numeric strings via Number()', () => {
+      expect(coerceArgNumber('24')).toBe(24);
+      expect(coerceArgNumber('3.5')).toBe(3.5);
+    });
+    it('returns the fallback for non-finite / non-numeric values', () => {
+      expect(coerceArgNumber('not a number')).toBe(0);
+      expect(coerceArgNumber(null)).toBe(0);
+      expect(coerceArgNumber({})).toBe(0);
+      expect(coerceArgNumber(NaN)).toBe(0);
+      expect(coerceArgNumber(Infinity)).toBe(0);
+      expect(coerceArgNumber(undefined, 99)).toBe(99);
+    });
+  });
+
+  describe('computeFollowUpDedupeFloor', () => {
+    it('returns a date five minutes earlier than the supplied now', () => {
+      const now = Date.UTC(2026, 0, 1, 12, 0, 0);
+      expect(computeFollowUpDedupeFloor(now).getTime()).toBe(now - 5 * 60 * 1000);
+    });
+    it('exports the window constant in milliseconds', () => {
+      expect(FOLLOW_UP_DEDUPE_WINDOW_MS).toBe(5 * 60 * 1000);
+    });
+  });
+
+  describe('computeFollowUpScheduledFor', () => {
+    it('adds delayHours hours to now and returns a Date', () => {
+      const now = Date.UTC(2026, 0, 1, 12, 0, 0);
+      const scheduled = computeFollowUpScheduledFor(now, 24);
+      expect(scheduled.getTime()).toBe(now + 24 * 60 * 60 * 1000);
+    });
+    it('supports fractional delay hours', () => {
+      const now = 0;
+      expect(computeFollowUpScheduledFor(now, 0.5).getTime()).toBe(30 * 60 * 1000);
+    });
+  });
+
+  describe('buildFollowUpJobId', () => {
+    it('concatenates the canonical followup_<ws>_<contact>_<ts> shape', () => {
+      expect(buildFollowUpJobId('ws-1', 'c-2', 1700000000000)).toBe(
+        'followup_ws-1_c-2_1700000000000',
+      );
+    });
+  });
+
+  describe('computeTicketRiskFromPriority', () => {
+    it('returns the high-risk score for urgent/high', () => {
+      expect(computeTicketRiskFromPriority('urgent')).toBe(0.8);
+      expect(computeTicketRiskFromPriority('high')).toBe(0.8);
+    });
+    it('returns the default score for any other label', () => {
+      expect(computeTicketRiskFromPriority('normal')).toBe(0.35);
+      expect(computeTicketRiskFromPriority('low')).toBe(0.35);
+      expect(computeTicketRiskFromPriority('')).toBe(0.35);
+      expect(computeTicketRiskFromPriority('HIGH')).toBe(0.35);
     });
   });
 });
