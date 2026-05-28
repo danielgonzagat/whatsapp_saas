@@ -934,3 +934,220 @@ export async function runApprovedCheckoutPostPaymentEffects(
     .sendPurchaseSignals(order, amount)
     .catch((error) => warn('purchase signals', error));
 }
+
+type MercadoPagoPixCreateInput = Parameters<MercadoPagoPixChargeService['create']>[0];
+type MercadoPagoBoletoCreateInput = Parameters<MercadoPagoBoletoChargeService['create']>[0];
+
+/**
+ * Build the Mercado Pago PIX charge input envelope. Pure builder — copies caller
+ * money values verbatim into `bigint` and assembles the description/notification
+ * URL. No money arithmetic and no I/O. The `payerDocument` field is omitted when
+ * the caller has no document (mirrors prior conditional spread behavior).
+ */
+export function buildMercadoPagoPixChargeInput(input: {
+  idempotencyKey: string;
+  chargedTotalInCents: number;
+  payerEmail: string;
+  payerName: string;
+  payerDocument?: string;
+  productName: string | undefined;
+  orderId: string;
+  expiresAt: Date;
+  notificationUrl: string;
+}): MercadoPagoPixCreateInput {
+  const base: MercadoPagoPixCreateInput = {
+    idempotencyKey: input.idempotencyKey,
+    amountCents: BigInt(input.chargedTotalInCents),
+    payerEmail: input.payerEmail,
+    payerName: input.payerName,
+    description: buildPaymentDescription(input.productName, input.orderId),
+    externalReference: input.orderId,
+    expiresAt: input.expiresAt,
+    notificationUrl: input.notificationUrl,
+  };
+  return input.payerDocument !== undefined ? { ...base, payerDocument: input.payerDocument } : base;
+}
+
+/**
+ * Build the Mercado Pago boleto charge input envelope. Pure builder — copies caller
+ * money values verbatim into `bigint`, assembles the description, and forwards the
+ * payer address verbatim. No money arithmetic and no I/O.
+ */
+export function buildMercadoPagoBoletoChargeInput(input: {
+  idempotencyKey: string;
+  chargedTotalInCents: number;
+  payerEmail: string;
+  payerName: string;
+  payerDocument: string;
+  payerAddress: NonNullable<ReturnType<typeof normalizeBoletoAddress>>;
+  productName: string | undefined;
+  orderId: string;
+  expiresAt: Date;
+  notificationUrl: string;
+}): MercadoPagoBoletoCreateInput {
+  return {
+    idempotencyKey: input.idempotencyKey,
+    amountCents: BigInt(input.chargedTotalInCents),
+    payerEmail: input.payerEmail,
+    payerName: input.payerName,
+    payerDocument: input.payerDocument,
+    payerAddress: input.payerAddress,
+    description: buildPaymentDescription(input.productName, input.orderId),
+    externalReference: input.orderId,
+    expiresAt: input.expiresAt,
+    notificationUrl: input.notificationUrl,
+  };
+}
+
+/**
+ * Minimal Sentry-like surface used by the failure-reporting helper. Pure structural
+ * type so the helper has zero coupling to `@sentry/node` — callers pass the real
+ * `Sentry.captureException` from the module they already imported.
+ */
+export type CheckoutPaymentSentryCapture = (
+  error: unknown,
+  context: ReturnType<typeof buildPaymentCaptureContext>,
+) => void;
+
+/**
+ * Minimal FinancialAlertService surface used by the failure-reporting helper. Pure
+ * structural type — keeps the helper file decoupled from the Nest provider class.
+ */
+export type CheckoutPaymentFinancialAlert = {
+  paymentFailed: (error: Error, context: ReturnType<typeof buildFinancialAlertContext>) => void;
+};
+
+/**
+ * Extended logger surface required by `reportCheckoutPaymentFailure` — adds the
+ * `error` channel beyond the `log`/`warn` surface already used by other helpers.
+ */
+export type CheckoutPaymentFailureLogger = CheckoutPaymentHelperLogger & {
+  error: (message: string) => void;
+};
+
+/**
+ * Enforce the fraud-engine gate before any provider call. Routes `block` and
+ * `review` actions to identical per-arm behavior: structured warn-log + throw
+ * `BadRequestException` with the canonical PT-BR copy. Pure orchestration — no
+ * money math, no side effects beyond logging. The throw factory is injected so
+ * the helper file stays decoupled from `@nestjs/common`.
+ *
+ * Returns `void` when the decision is `allow` or `require_3ds` (caller proceeds).
+ * Throws when the decision is `block` or `review` (caller never reaches provider).
+ */
+export function enforceCheckoutFraudGate(input: {
+  logger: CheckoutPaymentHelperLogger;
+  decision: {
+    action: 'allow' | 'review' | 'require_3ds' | 'block';
+    reasons: Array<{ signal: string }>;
+  };
+  orderId: string;
+  workspaceId: string;
+  throwBadRequest: (message: string) => never;
+}): void {
+  const { logger, decision, orderId, workspaceId, throwBadRequest } = input;
+  if (decision.action !== 'block' && decision.action !== 'review') {
+    return;
+  }
+  const reasonSignals = decision.reasons.map((reason) => reason.signal).join(',');
+  if (decision.action === 'block') {
+    logger.warn(
+      `Checkout antifraud blocked order=${orderId} workspace=${workspaceId} reasons=${reasonSignals}`,
+    );
+    throwBadRequest('Pagamento bloqueado pela política antifraude.');
+  }
+  logger.warn(
+    `Checkout antifraud routed order=${orderId} workspace=${workspaceId} to manual review reasons=${reasonSignals}`,
+  );
+  throwBadRequest('Pagamento retido para revisão manual.');
+}
+
+/**
+ * Unified failure-reporting trifecta executed by every payment-method arm when a
+ * provider charge throws. Fires the four required side effects in a fixed order
+ * preserving prior behavior: (1) `paymentDeclined` lifecycle event, (2) structured
+ * error log, (3) Sentry exception capture with the operation tag, (4) financial
+ * alert dispatch. Pure orchestration — never re-throws (caller owns the rethrow)
+ * and never touches money fields beyond echoing the already-resolved `amount`.
+ */
+export function reportCheckoutPaymentFailure(input: {
+  emitter: CheckoutLifecycleEmitter | undefined;
+  logger: CheckoutPaymentFailureLogger;
+  sentryCapture: CheckoutPaymentSentryCapture;
+  financialAlert: CheckoutPaymentFinancialAlert;
+  workspaceId: string;
+  orderId: string;
+  correlationId?: string | undefined;
+  amount: number;
+  gateway: 'stripe' | 'mercadopago';
+  operation: string;
+  logPrefix: string;
+  error: unknown;
+}): void {
+  const {
+    emitter,
+    logger,
+    sentryCapture,
+    financialAlert,
+    workspaceId,
+    orderId,
+    correlationId,
+    amount,
+    gateway,
+    operation,
+    logPrefix,
+    error,
+  } = input;
+  emitPaymentDeclined(emitter, { workspaceId, orderId, correlationId, error });
+  logger.error(`${logPrefix} for order ${orderId}: ${describeError(error)}`);
+  sentryCapture(
+    error,
+    buildPaymentCaptureContext({ operation, workspaceId, orderId, amount, gateway }),
+  );
+  financialAlert.paymentFailed(
+    error as Error,
+    buildFinancialAlertContext({ workspaceId, orderId, amount, gateway }),
+  );
+}
+
+/**
+ * Fire the lifecycle events and — when the charge is approved — run the post-
+ * payment effects. Combines the two side-effect blocks every arm executes after a
+ * successful persistence. Pure orchestration: no money math, no DB writes.
+ */
+export async function finalizeApprovedCheckoutPayment(input: {
+  emitter: CheckoutLifecycleEmitter | undefined;
+  postPaymentEffects: Pick<
+    CheckoutPostPaymentEffectsService,
+    'markLeadConverted' | 'sendPurchaseSignals'
+  >;
+  logger: CheckoutPaymentHelperLogger;
+  order: CheckoutOrderForPostEffects;
+  workspaceId: string;
+  orderId: string;
+  paymentIntentId: string;
+  paymentMethod: CheckoutPaymentMethod;
+  amountInCents: number;
+  amount: number;
+  correlationId?: string | undefined;
+  approved: boolean;
+}): Promise<void> {
+  emitPaymentLifecycleEvents(input.emitter, {
+    workspaceId: input.workspaceId,
+    orderId: input.orderId,
+    paymentIntentId: input.paymentIntentId,
+    paymentMethod: input.paymentMethod,
+    amountInCents: input.amountInCents,
+    correlationId: input.correlationId,
+    approved: input.approved,
+  });
+  if (input.approved) {
+    await runApprovedCheckoutPostPaymentEffects(
+      input.postPaymentEffects,
+      input.logger,
+      input.order,
+      { orderId: input.orderId, workspaceId: input.workspaceId },
+      input.amount,
+    );
+  }
+}
