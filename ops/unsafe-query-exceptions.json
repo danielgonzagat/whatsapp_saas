@@ -1,0 +1,65 @@
+[
+  {
+    "file": "backend/src/checkout/checkout-social-lead.service.ts",
+    "rule": "unsafeQuery",
+    "model": "contact",
+    "method": "upsert",
+    "reason": "args built by buildContactUpsertArgs() which injects workspaceId before reaching prisma.contact.upsert. Static analyzer can't see inside the helper; workspace scoping is enforced upstream.",
+    "issue": "PR #462",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/kloel/mind/policy/mind-policy.service.ts",
+    "rule": "unsafeQuery",
+    "model": "mindPolicy",
+    "method": "update",
+    "reason": "Update by primary key id (`row.id`) where the row was previously read inside the same loop iteration filtered by workspaceId. id is a workspace-scoped UUID; tenant isolation enforced upstream.",
+    "issue": "PR #462",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/products/product.service.ts",
+    "rule": "unsafeQuery",
+    "model": "product",
+    "method": "findMany",
+    "reason": "where built by buildListWhere(workspaceId, filters) which always includes workspaceId. Static analyzer can't peer into helper.",
+    "issue": "PR #462",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/products/product.service.ts",
+    "rule": "unsafeQuery",
+    "model": "product",
+    "method": "findUnique",
+    "reason": "assertOwnedProduct() reads by id then enforces workspaceId match in the next conditional. Tenant isolation guaranteed by the next throw branch, not by the prisma call itself.",
+    "issue": "PR #462",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/sales/sales.service.ts",
+    "rule": "unsafeQuery",
+    "model": "kloelSale",
+    "method": "update",
+    "reason": "Update by primary key id (`sale.id`) inside a tx where the sale was just created with workspaceId set. Workspace scoping enforced by the create that precedes it.",
+    "issue": "PR #462",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/webhooks/payment-webhook-stripe.handlers2.helpers.ts",
+    "rule": "unsafeQuery",
+    "model": "kloelSale",
+    "method": "updateMany",
+    "reason": "where built by buildKloelSaleStripeWhere(workspaceId, ...) which always injects workspaceId. Static analyzer can't see inside the helper.",
+    "issue": "PR #462",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/webhooks/payment-webhook-stripe.handlers2.ts",
+    "rule": "unsafeQuery",
+    "model": "kloelSale",
+    "method": "updateMany",
+    "reason": "where built by buildKloelSaleStripeWhere(workspaceId, ...) which always injects workspaceId. Two call sites at lines 69 and 106, both gated by `if (saleWhere)` after the helper returns a workspaceId-scoped clause.",
+    "issue": "PR #462",
+    "expires": "2026-12-31"
+  }
+]
