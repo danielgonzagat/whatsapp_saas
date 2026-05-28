@@ -8,43 +8,10 @@ import type React from 'react';
 import { useEffect, useId, useRef, useState } from 'react';
 
 import { cs, formatBrlCents, is, ls, M, S, V } from './product-nerve-center.constants';
+import { buildStaticWavePoints, jn, jv, unwrapApiPayload, type JsonRecord, type JsonValue } from './product-nerve-center.shared.helpers';
 export { cs, formatBrlCents, is, ls, M, S, V };
-
-/** Recursive JSON-safe record type — allows property access without `any` */
-
-export type JsonValue =
-  | string
-  | number
-  | boolean
-  | null
-  | undefined
-  | JsonValue[]
-  | { [key: string]: JsonValue };
-/** Json record type. */
-export type JsonRecord = { [key: string]: JsonValue };
-
-/** Safe string extractor for JSX value props on JSON records */
-export function jv(value: unknown): string {
-  if (value == null) {
-    return '';
-  }
-  return String(value);
-}
-
-/** Safe number extractor for JSON records */
-export function jn(value: unknown): number {
-  return Number(value) || 0;
-}
-
-/** Unwrap api payload. */
-export function unwrapApiPayload<T = unknown>(response: unknown): T {
-  const envelope = response as { error?: string; data?: unknown } | null | undefined;
-  if (envelope?.error) {
-    throw new Error(envelope.error);
-  }
-
-  return (envelope?.data ?? response) as T;
-}
+export { buildStaticWavePoints, jn, jv, unwrapApiPayload };
+export type { JsonRecord, JsonValue };
 
 /** Np. */
 export function NP({
@@ -59,12 +26,7 @@ export function NP({
   const [isMounted, setIsMounted] = useState(false);
   const prefersReducedMotion = usePrefersReducedMotion({ defaultValue: true });
   const cv = useRef<HTMLCanvasElement>(null);
-  const staticWave = Array.from({ length: Math.max(2, Math.floor(w / 2)) }, (_, index) => {
-    const x = (index / (Math.max(2, Math.floor(w / 2)) - 1)) * w;
-    const amplitude = h * 0.2 * intensity;
-    const y = h / 2 + Math.sin(index * 0.55) * amplitude;
-    return `${x.toFixed(2)},${y.toFixed(2)}`;
-  }).join(' ');
+  const staticWave = buildStaticWavePoints(w, h, intensity);
 
   useEffect(() => {
     queueMicrotask(() => setIsMounted(true));
