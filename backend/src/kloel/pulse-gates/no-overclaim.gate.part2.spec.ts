@@ -1,4 +1,10 @@
-import type { CapabilityRegistrySnapshot } from '../capability-registry/capability-registry.types';
+/** Minimal subset of the former CapabilityRegistrySnapshot — only fields consumed by this spec. */
+interface CapabilityRegistrySnapshot {
+  readonly records: ReadonlyArray<{
+    readonly id: string;
+    readonly consecutiveFailures: number;
+  }>;
+}
 import { makeNoOverclaimGate, NoOverclaimInput } from './no-overclaim.gate';
 
 function abiPayload(overrides?: Record<string, unknown>): Record<string, unknown> {

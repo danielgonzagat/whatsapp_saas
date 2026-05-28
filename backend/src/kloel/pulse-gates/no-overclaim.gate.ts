@@ -1,4 +1,10 @@
-import type { CapabilityRegistrySnapshot } from '../capability-registry/capability-registry.types';
+/** Minimal subset of the former CapabilityRegistrySnapshot — only fields consumed by this gate. */
+interface CapabilityRegistrySnapshot {
+  readonly records: ReadonlyArray<{
+    readonly id: string;
+    readonly consecutiveFailures: number;
+  }>;
+}
 import { fail, Gate, GateMode, GateVerdict, pass } from './pulse-gates.types';
 import { isObject } from '../../common/types';
 

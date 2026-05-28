@@ -115,7 +115,6 @@ import { TrustModule } from './kloel/trust/trust.module';
 import { WisdomModule } from './kloel/wisdom/wisdom.module';
 import { AgencyModule } from './kloel/agency/agency.module';
 import { HealthyMoneyModule } from './kloel/healthy-money/healthy-money.module';
-import { CapabilityRegistryModule } from './kloel/capability-registry/capability-registry.module';
 import { ClarityModule } from './kloel/clarity/clarity.module';
 import { CommemModule } from './kloel/commem/commem.module';
 import { CreatorModule } from './kloel/creator/creator.module';
@@ -298,7 +297,6 @@ function setRedisClientListenerBudget(client: Redis): void {
     ComplianceModule, // OAuth/Meta/LGPD compliance callbacks and user rights endpoints
     FinancialAlertModule, // Financial alerting (global)
     OpsAlertModule, // OPS critical error alerting (global)
-    CapabilityRegistryModule, // 📋 Capability Registry — real runtime evidence for no-overclaim gate (PCI.4 §3.4)
     AbiAbModule, // 🔬 UTP-ABI-005 — A/B telemetry for ABI substitution decisions
     LineageModule, // 🧬 Camada I — Genesis + Lineage Ledger + Identity Projector (cognitive organism)
     MindModule, // 🧠 MIND substrate — valence/attention/hebbian/consolidation/multi-timescale/BG (UTP-MIND-*)
