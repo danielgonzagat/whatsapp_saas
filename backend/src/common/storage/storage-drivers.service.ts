@@ -12,41 +12,19 @@ import { safeJoin } from '../../common/safe-path';
 import { OpsAlertService } from '../../observability/ops-alert.service';
 import { buildAwsCallContext, classifyAwsError } from './s3-error-classifier';
 import type { AwsCallContext } from './s3-error-classifier';
-
-const TRAILING_SLASHES_RE = /\/+$/;
+import {
+  STORAGE_DRIVER_DEFAULTS,
+  buildPutObjectInput,
+  buildR2DefaultEndpoint,
+  buildR2PublicUrl,
+  buildS3PublicUrl,
+  describeUnknownError,
+  objectBodyToBuffer,
+  validateR2Credentials,
+} from './storage-drivers.service.helpers';
 
 type UploadResult = { url: string; path: string; size: number };
 type LocalUploadFallback = (buf: Buffer, path: string) => Promise<UploadResult>;
-type ByteArrayTransformable = {
-  transformToByteArray: () => Promise<Uint8Array>;
-};
-type SupportedObjectBody = AsyncIterable<Buffer | Uint8Array | string | ArrayBuffer>;
-
-function describeUnknownError(error: unknown): string {
-  if (error instanceof Error && error.message.trim()) {
-    return error.message.trim();
-  }
-  if (typeof error === 'string' && error.trim()) {
-    return error.trim();
-  }
-  return 'Unknown error';
-}
-
-function hasTransformToByteArray(body: unknown): body is ByteArrayTransformable {
-  if (typeof body !== 'object' || body === null || !('transformToByteArray' in body)) {
-    return false;
-  }
-  const maybeTransform = (body as { transformToByteArray?: unknown }).transformToByteArray;
-  return typeof maybeTransform === 'function';
-}
-
-function isAsyncIterableObject(body: unknown): body is SupportedObjectBody {
-  if (typeof body !== 'object' || body === null) {
-    return false;
-  }
-  const maybeIterator = (body as { [Symbol.asyncIterator]?: unknown })[Symbol.asyncIterator];
-  return typeof maybeIterator === 'function';
-}
 
 /**
  * StorageDriversService
@@ -73,7 +51,7 @@ export class StorageDriversService {
     uploadToLocal?: LocalUploadFallback,
   ): Promise<UploadResult> {
     const bucket = this.getConfigString('S3_BUCKET');
-    const region = this.getConfigString('S3_REGION') ?? 'us-east-1';
+    const region = this.getConfigString('S3_REGION') ?? STORAGE_DRIVER_DEFAULTS.s3Region;
     const ctx: AwsCallContext = buildAwsCallContext({
       operation: 'uploadToS3',
       region,
@@ -90,18 +68,22 @@ export class StorageDriversService {
     try {
       const client = this.getS3Client(region);
       await client.send(
-        new PutObjectCommand({
-          Bucket: bucket,
-          Key: relativePath,
-          Body: buffer,
-          ContentType: mimeType || 'application/octet-stream',
-          ACL: 'public-read',
-        }),
+        new PutObjectCommand(
+          buildPutObjectInput({
+            bucket,
+            key: relativePath,
+            body: buffer,
+            mimeType,
+            acl: 'public-read',
+          }),
+        ),
       );
-      const cdnBase = this.getConfigString('CDN_BASE_URL');
-      const url = cdnBase
-        ? `${cdnBase}/${relativePath}`
-        : `https://${bucket}.s3.${region}.amazonaws.com/${relativePath}`;
+      const url = buildS3PublicUrl({
+        bucket,
+        region,
+        relativePath,
+        cdnBase: this.getConfigString('CDN_BASE_URL'),
+      });
       this.logger.debug(`Uploaded to S3: ${relativePath} (${buffer.length} bytes)`);
       return { url, path: relativePath, size: buffer.length };
     } catch (error: unknown) {
@@ -138,12 +120,14 @@ export class StorageDriversService {
     }
     try {
       await client.send(
-        new PutObjectCommand({
-          Bucket: bucket,
-          Key: relativePath,
-          Body: buffer,
-          ContentType: mimeType || 'application/octet-stream',
-        }),
+        new PutObjectCommand(
+          buildPutObjectInput({
+            bucket,
+            key: relativePath,
+            body: buffer,
+            mimeType,
+          }),
+        ),
       );
       const url = this.buildR2PublicUrl(relativePath);
       this.logger.debug(`Uploaded to R2: ${relativePath} (${buffer.length} bytes)`);
@@ -172,12 +156,12 @@ export class StorageDriversService {
       return false;
     }
     try {
-      const region = this.getConfigString('S3_REGION') ?? 'us-east-1';
+      const region = this.getConfigString('S3_REGION') ?? STORAGE_DRIVER_DEFAULTS.s3Region;
       const client = this.getS3Client(region);
       await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: relativePath }));
       return true;
     } catch (error: unknown) {
-      const region = this.getConfigString('S3_REGION') ?? 'us-east-1';
+      const region = this.getConfigString('S3_REGION') ?? STORAGE_DRIVER_DEFAULTS.s3Region;
       classifyAwsError(
         error,
         buildAwsCallContext({
@@ -225,17 +209,17 @@ export class StorageDriversService {
       return null;
     }
     try {
-      const region = this.getConfigString('S3_REGION') ?? 'us-east-1';
+      const region = this.getConfigString('S3_REGION') ?? STORAGE_DRIVER_DEFAULTS.s3Region;
       const client = this.getS3Client(region);
       const response = await client.send(
         new GetObjectCommand({ Bucket: bucket, Key: relativePath }),
       );
       return {
-        buffer: await this.objectBodyToBuffer(response.Body),
+        buffer: await objectBodyToBuffer(response.Body),
         mimeType: response.ContentType || getMimeTypeForPath(relativePath),
       };
     } catch (error: unknown) {
-      const region = this.getConfigString('S3_REGION') ?? 'us-east-1';
+      const region = this.getConfigString('S3_REGION') ?? STORAGE_DRIVER_DEFAULTS.s3Region;
       classifyAwsError(
         error,
         buildAwsCallContext({
@@ -266,7 +250,7 @@ export class StorageDriversService {
         new GetObjectCommand({ Bucket: bucket, Key: relativePath }),
       );
       return {
-        buffer: await this.objectBodyToBuffer(response.Body),
+        buffer: await objectBodyToBuffer(response.Body),
         mimeType: response.ContentType || getMimeTypeForPath(relativePath),
       };
     } catch (error: unknown) {
@@ -330,12 +314,12 @@ export class StorageDriversService {
       if (!bucket) {
         return { status: 'DEGRADED', driver: 's3', details: { error: 'S3_BUCKET not configured' } };
       }
-      const region = this.getConfigString('S3_REGION') ?? 'us-east-1';
+      const region = this.getConfigString('S3_REGION') ?? STORAGE_DRIVER_DEFAULTS.s3Region;
       const client = this.getS3Client(region);
       await client.send(new HeadBucketCommand({ Bucket: bucket }));
       return { status: 'UP', driver: 's3', details: { bucket } };
     } catch (error: unknown) {
-      const region = this.getConfigString('S3_REGION') ?? 'us-east-1';
+      const region = this.getConfigString('S3_REGION') ?? STORAGE_DRIVER_DEFAULTS.s3Region;
       const bucket = this.getConfigString('S3_BUCKET') ?? '';
       classifyAwsError(
         error,
@@ -367,15 +351,11 @@ export class StorageDriversService {
 
   /** Build R2 public URL for a relative path. */
   buildR2PublicUrl(relativePath: string): string {
-    const r2PublicUrl = this.getConfigString('R2_PUBLIC_URL');
-    if (r2PublicUrl) {
-      return `${r2PublicUrl.replace(TRAILING_SLASHES_RE, '')}/${relativePath}`;
-    }
-    const cdnBase = this.getConfigString('CDN_BASE_URL');
-    if (cdnBase) {
-      return `${cdnBase}/${relativePath}`;
-    }
-    return '';
+    return buildR2PublicUrl({
+      relativePath,
+      r2PublicUrl: this.getConfigString('R2_PUBLIC_URL'),
+      cdnBase: this.getConfigString('CDN_BASE_URL'),
+    });
   }
 
   /** Lazily-initialised S3 client, cached. */
@@ -391,21 +371,26 @@ export class StorageDriversService {
     if (this.r2Client) {
       return this.r2Client;
     }
-    const bucket = this.getConfigString('R2_BUCKET');
-    const accountId = this.getConfigString('R2_ACCOUNT_ID');
-    const accessKeyId = this.getConfigString('R2_ACCESS_KEY_ID');
-    const secretAccessKey = this.getConfigString('R2_SECRET_ACCESS_KEY');
-    if (!bucket || !accountId || !accessKeyId || !secretAccessKey) {
+    const credentials = validateR2Credentials({
+      bucket: this.getConfigString('R2_BUCKET'),
+      accountId: this.getConfigString('R2_ACCOUNT_ID'),
+      accessKeyId: this.getConfigString('R2_ACCESS_KEY_ID'),
+      secretAccessKey: this.getConfigString('R2_SECRET_ACCESS_KEY'),
+    });
+    if (!credentials) {
       return null;
     }
     try {
       const endpoint =
-        this.getConfigString('R2_ENDPOINT') ?? `https://${accountId}.r2.cloudflarestorage.com`;
+        this.getConfigString('R2_ENDPOINT') ?? buildR2DefaultEndpoint(credentials.accountId);
       this.r2Client = new S3Client({
         region: 'auto',
         endpoint,
         forcePathStyle: true,
-        credentials: { accessKeyId, secretAccessKey },
+        credentials: {
+          accessKeyId: credentials.accessKeyId,
+          secretAccessKey: credentials.secretAccessKey,
+        },
       });
       return this.r2Client;
     } catch (error: unknown) {
@@ -430,36 +415,5 @@ export class StorageDriversService {
   private getConfigString(key: string): string | undefined {
     const value = this.config.get<string>(key);
     return typeof value === 'string' && value.trim() ? value : undefined;
-  }
-
-  private async objectBodyToBuffer(body: unknown): Promise<Buffer> {
-    if (!body) {
-      return Buffer.alloc(0);
-    }
-    if (Buffer.isBuffer(body)) {
-      return body;
-    }
-    if (body instanceof Uint8Array) {
-      return Buffer.from(body);
-    }
-    if (hasTransformToByteArray(body)) {
-      return Buffer.from(await body.transformToByteArray());
-    }
-    if (!isAsyncIterableObject(body)) {
-      throw new Error('Unsupported storage object body');
-    }
-    const chunks: Buffer[] = [];
-    for await (const chunk of body) {
-      if (Buffer.isBuffer(chunk)) {
-        chunks.push(chunk);
-        continue;
-      }
-      if (chunk instanceof ArrayBuffer) {
-        chunks.push(Buffer.from(new Uint8Array(chunk)));
-        continue;
-      }
-      chunks.push(Buffer.from(chunk));
-    }
-    return Buffer.concat(chunks);
   }
 }
