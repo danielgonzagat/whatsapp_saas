@@ -19,11 +19,9 @@ import { MindConceptService } from './mind/memory/mind-concepts.service';
 import { SelfHealthService } from './self-awareness/self-health.service';
 import { SelfGapsService } from './self-awareness/self-gaps.service';
 import { RiskClassService } from './risk-class/risk-class.service';
-import { buildMindSignals, type BuildMindSignalsDeps } from './mind/build-mind-signals.helper';
 import { SpineEmitterService } from './spine/spine-emitter.service';
 import { UnifiedAgentService } from './unified-agent.service';
 import { AbiBuilderService } from './abi/abi-builder.service';
-import { validateAbiPayload } from './abi/abi-validator';
 import {
   WHITESPACE_RE,
   RELAT_O__RIO_DOCUMENTO_RE,
@@ -43,6 +41,7 @@ import {
   observeRepliedToUserBelief,
   computeChatSurprise as computeChatSurpriseHelper,
 } from './kloel-reply-engine.decision-outcome.helpers';
+import { buildKloelAbiCognitiveState } from './kloel-reply-engine.cognitive-state.helpers';
 
 type ChatCompletionMessageParam = OpenAI.Chat.ChatCompletionMessageParam;
 
@@ -234,41 +233,21 @@ export class KloelReplyEngineService {
     };
     void params.systemPrompt;
 
-    const ABI_SNAPSHOT_KEY = 'abi_snapshot_cache';
-    let cognitiveState: Record<string, unknown> = {
-      abiStatus: this.abiBuilder ? 'unavailable_or_invalid' : 'builder_not_injected',
-      audience: 'public',
-      perceptionSnapshot: { channel: 'web' },
+    const cognitiveStateParams: {
+      workspaceId?: string | null;
+      userMessage: string;
+      prebuiltCognitiveState?: Record<string, unknown>;
+    } = {
+      workspaceId: params.workspaceId ?? null,
+      userMessage: params.userMessage,
     };
-    let cacheHit = false;
-
-    // PI-k5: check for cached ABI snapshot (60s TTL)
-    if (params.workspaceId) {
-      try {
-        const cached = await this.prisma.kloelMemory.findUnique({
-          where: { workspaceId_key: { workspaceId: params.workspaceId, key: ABI_SNAPSHOT_KEY } },
-        });
-        if (cached?.content && cached.updatedAt) {
-          const ageMs = Date.now() - cached.updatedAt.getTime();
-          if (ageMs < 60_000) {
-            cognitiveState = JSON.parse(cached.content) as Record<string, unknown>;
-            cacheHit = true;
-          }
-        }
-      } catch (error: unknown) {
-        this.logger.warn('kloel_abi_snapshot_cache_skipped', {
-          reason: error instanceof Error ? error.message : 'unknown error',
-        });
-      }
+    if (params.prebuiltCognitiveState !== undefined) {
+      cognitiveStateParams.prebuiltCognitiveState = params.prebuiltCognitiveState;
     }
-
-    if (!cacheHit) {
-      // Mind signals — wire attention, valence, beliefs, concepts via shared helper (PI-k4/K5-A).
-      // The helper centralizes the same Mind block now used by conversational-onboarding.service.
-      // Build deps conditionally so exactOptionalPropertyTypes accepts only defined services.
-      const mindDeps: BuildMindSignalsDeps = {
-        prisma: this.prisma,
-        logger: this.logger,
+    const cognitiveStateDeps: Parameters<typeof buildKloelAbiCognitiveState>[0] = {
+      prisma: this.prisma,
+      logger: this.logger,
+      services: {
         ...(this.attentionService !== undefined ? { attentionService: this.attentionService } : {}),
         ...(this.valenceAggregatorService !== undefined
           ? { valenceAggregatorService: this.valenceAggregatorService }
@@ -284,114 +263,16 @@ export class KloelReplyEngineService {
           : {}),
         ...(this.selfGapsService !== undefined ? { selfGapsService: this.selfGapsService } : {}),
         ...(this.riskClassService !== undefined ? { riskClassService: this.riskClassService } : {}),
-      };
-      cognitiveState.mindSignals = await buildMindSignals(
-        mindDeps,
-        params.workspaceId ?? '',
-        params.userMessage,
-      );
-
-      if (this.abiBuilder) {
-        if (params.prebuiltCognitiveState) {
-          cognitiveState = params.prebuiltCognitiveState;
-        } else {
-          try {
-            const abiResult = await this.abiBuilder.build({
-              audience: 'public',
-              currentInput,
-              perceptionSnapshot: {
-                channel: 'web',
-              },
-            });
-
-            if (abiResult.status !== 'ok') {
-              this.logger.warn(
-                `ABI build failed: ${abiResult.reason}, using structured reply fallback`,
-                {
-                  tag: 'kloel_abi_degraded',
-                  builder_present: true,
-                  build_status: abiResult.status,
-                  validation_issues: [] as string[],
-                  exception_message: null,
-                  workspaceId: params.workspaceId ?? null,
-                },
-              );
-            } else {
-              const validation = validateAbiPayload(abiResult.abi);
-
-              if (validation.status === 'FAIL') {
-                this.logger.warn(
-                  `ABI validation failed: ${JSON.stringify(validation.issues)}, using structured reply fallback`,
-                  {
-                    tag: 'kloel_abi_degraded',
-                    builder_present: true,
-                    build_status: 'ok',
-                    validation_issues: validation.issues
-                      .slice(0, 3)
-                      .map((i) => `${i.code}: ${i.message}`),
-                    exception_message: null,
-                    workspaceId: params.workspaceId ?? null,
-                  },
-                );
-              } else {
-                cognitiveState = { ...abiResult.abi };
-              }
-            }
-          } catch (error: unknown) {
-            const msg =
-              error instanceof Error
-                ? error.message
-                : typeof error === 'string'
-                  ? error
-                  : 'unknown error';
-            this.logger.warn(`ABI build exception: ${msg}, using structured reply fallback`, {
-              tag: 'kloel_abi_degraded',
-              builder_present: true,
-              build_status: null,
-              validation_issues: [] as string[],
-              exception_message: msg,
-              workspaceId: params.workspaceId ?? null,
-            });
-          }
-        }
-      }
-
-      // PI-k5: persist cognitiveState as ABI snapshot (60s TTL)
-      if (params.workspaceId) {
-        try {
-          const serialized = JSON.stringify(cognitiveState);
-          if (serialized.length <= 16384) {
-            await this.prisma.kloelMemory.upsert({
-              where: {
-                workspaceId_key: { workspaceId: params.workspaceId, key: ABI_SNAPSHOT_KEY },
-              },
-              update: {
-                content: serialized,
-                category: 'abi_snapshot',
-                value: {},
-                updatedAt: new Date(),
-              },
-              create: {
-                workspaceId: params.workspaceId,
-                key: ABI_SNAPSHOT_KEY,
-                content: serialized,
-                category: 'abi_snapshot',
-                value: {},
-              },
-            });
-          } else {
-            this.logger.warn('kloel_abi_snapshot_oversized', {
-              size: serialized.length,
-              workspaceId: params.workspaceId,
-            });
-          }
-        } catch (error: unknown) {
-          this.logger.warn('kloel_abi_snapshot_cache_skipped', {
-            reason: error instanceof Error ? error.message : 'unknown error',
-          });
-        }
-      }
+      },
+    };
+    if (this.abiBuilder !== undefined) {
+      cognitiveStateDeps.abiBuilder = this.abiBuilder;
     }
+    const cognitiveState = await buildKloelAbiCognitiveState(
+      cognitiveStateDeps,
+      cognitiveStateParams,
+      currentInput,
+    );
 
     const msgs: ChatCompletionMessageParam[] = [
       {
