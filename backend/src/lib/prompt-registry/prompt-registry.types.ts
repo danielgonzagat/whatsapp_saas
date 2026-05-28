@@ -5,7 +5,7 @@ export type PromptId = string;
 export type PromptVersion = string;
 
 /** A single entry in the version changelog. */
-export interface PromptChangelogEntry {
+interface PromptChangelogEntry {
   /** Version this changelog entry corresponds to. */
   version: PromptVersion;
   /** ISO-8601 date of the change. */

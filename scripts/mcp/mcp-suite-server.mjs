@@ -2,19 +2,15 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, unlinkSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-
 const ROOT = process.env.MCP_SUITE_ROOT || process.cwd();
 const KIND = process.argv[2] || process.env.MCP_SUITE_KIND;
 const PROTO_VERSION = '2024-11-05';
 const MAX_OUTPUT = 200_000;
-
 if (!KIND) {
   process.stderr.write('missing MCP suite kind\n');
   process.exit(1);
 }
-
 const SERVER_INFO = { name: KIND, version: '0.1.0' };
-
 const TOOLSETS = {
   pulse: [
     tool('pulse_status', 'Report PULSE launcher health and known artifact locations.'),
@@ -155,7 +151,6 @@ async function callTool(name, args = {}) {
   if (KIND === 'kloel-os') return kloelOsTool(name, args);
   throw new Error(`unknown server kind: ${KIND}`);
 }
-
 async function pulseTool(name, args) {
   if (name === 'pulse_status') {
     return {
@@ -795,7 +790,6 @@ async function handleMessage(text) {
     send({ jsonrpc: '2.0', id: request.id, error: { code: -32603, message: error.message || String(error) } });
   }
 }
-
 function send(message) {
   const json = JSON.stringify(message);
   process.stdout.write(json + '\n');

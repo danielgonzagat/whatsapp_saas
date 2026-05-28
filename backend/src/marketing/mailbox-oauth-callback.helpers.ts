@@ -27,7 +27,7 @@ export function readConfiguredValue(config: ConfigService, keys: string[]): stri
  * fallbacks → 'http://localhost:3000', then strips trailing slashes so a
  * `new URL(target, ...)` call always sees a clean origin.
  */
-export function normalizeFrontendUrl(config: ConfigService): string {
+function normalizeFrontendUrl(config: ConfigService): string {
   const raw =
     config.get<string>('FRONTEND_URL') ||
     config.get<string>('NEXT_PUBLIC_APP_URL') ||

@@ -1,4 +1,5 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger, Optional } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { Queue, Worker } from 'bullmq';
 import { MindBackgroundProcessor } from './mind-bg.processor';
 import { SpineEmitterService } from '../spine/spine-emitter.service';
@@ -24,11 +25,14 @@ export class MindBackgroundScheduler implements OnModuleInit, OnModuleDestroy {
 
   private readonly enabled: boolean;
 
+  private cognitiveHealthResolved = false;
+  private cognitiveHealth?: CiaCognitiveHealthService;
+
   public constructor(
     private readonly processor: MindBackgroundProcessor,
     private readonly spine: SpineEmitterService,
     private readonly prisma: PrismaService,
-    @Optional() private readonly cognitiveHealth?: CiaCognitiveHealthService,
+    private readonly moduleRef: ModuleRef,
   ) {
     const explicit = process.env['KLOEL_MIND_BG_ENABLED'];
     if (explicit !== undefined) {
@@ -116,6 +120,18 @@ export class MindBackgroundScheduler implements OnModuleInit, OnModuleDestroy {
     // No-op: scheduling policy will be wired in a future wave.
   }
 
+  private resolveCognitiveHealth(): CiaCognitiveHealthService | undefined {
+    if (!this.cognitiveHealthResolved) {
+      this.cognitiveHealthResolved = true;
+      try {
+        this.cognitiveHealth = this.moduleRef.get(CiaCognitiveHealthService, { strict: false });
+      } catch {
+        this.cognitiveHealth = undefined;
+      }
+    }
+    return this.cognitiveHealth;
+  }
+
   async executeTick(): Promise<void> {
     // Primary: spine ring (in-memory, real-time)
     const spineEvents = this.spine.recentEventsAsRef(500);
@@ -164,7 +180,7 @@ export class MindBackgroundScheduler implements OnModuleInit, OnModuleDestroy {
     // Wave 15: cognitive health on-tick scan (flag-gated, shipped off by default)
     if (process.env['CIA_COGNITIVE_HEALTH_TICK_ENABLED'] === 'true') {
       try {
-        await this.cognitiveHealth?.scanAndEscalate('ws-test-001');
+        await this.resolveCognitiveHealth()?.scanAndEscalate('ws-test-001');
       } catch (err: unknown) {
         this.logger.warn(
           `Cognitive health scan failed for ws-test-001: ${err instanceof Error ? err.message : String(err)}`,

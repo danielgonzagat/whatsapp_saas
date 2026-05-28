@@ -4,7 +4,7 @@ import * as QRCode from 'qrcode';
 import type { PrismaService } from '../prisma/prisma.service';
 import type { SmartPaymentService } from './smart-payment.service';
 import type { ToolResult } from './kloel-chat-tools.agent-runtime.helpers';
-import { centsFromUnknown } from './kloel-chat-tools.service';
+import { centsFromUnknown } from './kloel-chat-tools.types';
 export interface ToolDashboardSummaryArgs {
   period?: 'today' | 'week' | 'month';
 }

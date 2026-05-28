@@ -14,7 +14,7 @@ import type {
 } from './kloel-tool-executor.types';
 
 import { digitsOnly } from '../common/phone';
-import { centsFromUnknown } from './kloel-chat-tools.service';
+import { centsFromUnknown } from './kloel-chat-tools.types';
 
 /** CRM, campaign, and business-config tool implementations for KloelToolExecutorService. */
 @Injectable()

@@ -82,15 +82,6 @@ interface ToolCreateFlowArgs {
 /** Coerces unknown wallet balance values (bigint | number) into integer cents.
  *  Returns 0 for non-numeric/missing values. Exported so peer kloel services
  *  (crm/executor/...) consume the same coercion without local copies. */
-export function centsFromUnknown(value: unknown): number {
-  if (typeof value === 'bigint') {
-    return Number(value);
-  }
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return Math.trunc(value);
-  }
-  return 0;
-}
 /** Handles product, flow, dashboard, payment, and misc AI chat tools. */
 @Injectable()
 export class KloelChatToolsService {

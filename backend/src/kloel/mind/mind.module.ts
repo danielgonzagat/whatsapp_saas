@@ -1,5 +1,4 @@
 import { forwardRef, Module } from '@nestjs/common';
-import { CiaModule } from '../../cia/cia.module';
 import { SpineModule } from '../spine/spine.module';
 import { AttentionService } from './attention.service';
 import { ConsolidationService } from './consolidation.service';
@@ -21,7 +20,7 @@ import { MindPredictionService } from './mind-prediction.service';
  * to read recent spine events for each background tick.
  */
 @Module({
-  imports: [forwardRef(() => CiaModule), forwardRef(() => SpineModule)],
+  imports: [forwardRef(() => SpineModule)],
   providers: [
     ValenceTaggerService,
     ValenceAggregatorService,

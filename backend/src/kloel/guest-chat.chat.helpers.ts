@@ -18,8 +18,14 @@ import {
   persistConversation,
   persistConversationMessage,
 } from './guest-chat.conversation.helpers';
-
-export function trackGuestUsage(
+/**
+ * Anti-invention guardrail for the PUBLIC-facing guest chat. Mirrors the
+ * pattern enforced in autopilot-cycle-executor for authenticated WhatsApp
+ * autopilot. Added 2026-05-26 in response to WAVE3_LLM_PROMPT_AUDIT critical
+ * gap #4: guest-chat was the highest-risk LLM surface (unauthenticated,
+ * public) with zero anti-invention guardrail.
+ */
+function trackGuestUsage(
   sessionId: string,
   tokens: number | undefined,
   model: string | undefined,

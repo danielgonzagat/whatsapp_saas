@@ -2,11 +2,9 @@ import { InjectRedis } from '@nestjs-modules/ioredis';
 import {
   BadRequestException,
   ForbiddenException,
-  Inject,
   Injectable,
   Logger,
-  Optional,
-  forwardRef,
+  Optional
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { Redis } from 'ioredis';
@@ -23,6 +21,8 @@ type WebhookJsonPayload = Record<string, unknown>;
 
 import type { UnknownRecord } from '../common/types';
 import { NON_DIGIT_RE } from '../common/phone';
+import { ModuleRef } from '@nestjs/core';
+
 type WebhookLogDetails = { status?: string; phone?: string; [key: string]: unknown };
 type WebhookFinanceSettings = Record<string, unknown>;
 
@@ -73,13 +73,13 @@ function toPrismaJsonValue(value: unknown): Prisma.InputJsonValue {
 @Injectable()
 export class WebhooksService {
   private readonly logger = new Logger(WebhooksService.name);
+  private inboxGateway?: InboxGateway;
+  private omnichannelService?: OmnichannelService;
 
   constructor(
     private prisma: PrismaService,
-    private inboxGateway: InboxGateway,
+    private readonly moduleRef: ModuleRef,
     @InjectRedis() private readonly redis: Redis,
-    @Inject(forwardRef(() => OmnichannelService))
-    private readonly omnichannelService: OmnichannelService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
@@ -333,13 +333,25 @@ export class WebhooksService {
     });
   }
 
+  private getInboxGateway(): InboxGateway {
+    this.inboxGateway ??= this.moduleRef.get(InboxGateway, { strict: false });
+    return this.inboxGateway;
+  }
+
+  private getOmnichannelService(): OmnichannelService {
+    this.omnichannelService ??= this.moduleRef.get(OmnichannelService, { strict: false });
+    return this.omnichannelService;
+  }
+
   private async publishMessageStatus(
     workspaceId: string,
     m: MessageStatusTarget,
     status: string,
     errorCode: string | null,
   ): Promise<void> {
-    this.inboxGateway.emitToWorkspace(workspaceId, 'message:status', {
+    const inboxGateway = this.getInboxGateway();
+
+    inboxGateway.emitToWorkspace(workspaceId, 'message:status', {
       id: m.id,
       conversationId: m.conversationId,
       contactId: m.contactId,
@@ -348,7 +360,7 @@ export class WebhooksService {
       errorCode,
     });
     if (m.conversationId) {
-      this.inboxGateway.emitToWorkspace(workspaceId, 'conversation:update', {
+      inboxGateway.emitToWorkspace(workspaceId, 'conversation:update', {
         id: m.conversationId,
         lastMessageStatus: status,
         lastMessageErrorCode: errorCode,
@@ -473,7 +485,7 @@ export class WebhooksService {
     this.logger.log(`[INSTAGRAM] Processing message for workspace ${workspaceId}`);
 
     try {
-      const result = await this.omnichannelService.processInstagramWebhook(workspaceId, payload);
+      const result = await this.getOmnichannelService().processInstagramWebhook(workspaceId, payload);
       return result;
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'WebhooksService.processInstagramWebhook');

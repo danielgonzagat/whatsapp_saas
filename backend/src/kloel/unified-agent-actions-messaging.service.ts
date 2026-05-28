@@ -10,7 +10,7 @@ import { ChannelTransportRegistry } from './channel-transport.registry';
 import type { ChannelName, ChannelSendResult } from './channel-transport.types';
 import { buildUnsubscribeFooterHtml } from '../common/utils/unsubscribe-footer.util';
 import { assertCustomerSafe } from './commercial-decision-orchestrator.service';
-import { MindEventSpine } from './mind/coordination';
+import { MindEventSpine } from './mind/coordination/mind-event-spine.service';
 import { DailyLimitService } from './daily-limit.service';
 
 import type { UnknownRecord } from '../common/types';

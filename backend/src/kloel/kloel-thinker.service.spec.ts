@@ -5,7 +5,7 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { LLMBudgetService, estimateChatCostCents } from './llm-budget.service';
 import { Response } from 'express';
 import { AbiBuilderService } from './abi/abi-builder.service';
-import { MindCapabilityExecutor } from './mind/coordination';
+import { MindCapabilityExecutor } from './mind/coordination/mind-capability-executor.service';
 
 jest.mock('./kloel-thread.service', () => ({
   KloelThreadService: class MockKloelThreadService {},

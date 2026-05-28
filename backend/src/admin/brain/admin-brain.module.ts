@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { AdminPermissionsModule } from '../permissions/admin-permissions.module';
-import { MindSpineAudit } from '../../kloel/mind/observability';
+import { MindSpineAudit } from '../../kloel/mind/observability/mind-spine-audit.service';
 import { BrainAuditController } from './brain-audit.controller';
 
 @Module({

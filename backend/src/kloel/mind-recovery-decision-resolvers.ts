@@ -1,11 +1,11 @@
 import { resolveCaseMemoryAction, type CaseMemoryLookup } from './mind-case-memory-decision.helper';
-import type { MindPolicyChooser, PolicyDecisionResult } from './mind-catalog-decision-resolvers';
+import type { MindPolicyChooser } from './mind-catalog-decision-resolvers';
 import { decisionConfidence } from './mind-catalog-decision-resolvers';
 
 // Canonical MindPolicyChooser + PolicyDecisionResult + decisionConfidence live
 // in mind-catalog-decision-resolvers — re-export the type for recovery-side
 // consumers; decisionConfidence is imported above.
-export type { MindPolicyChooser, PolicyDecisionResult };
+export type { MindPolicyChooser };
 
 export interface MindBanditChooser {
   choose(workspaceId: string, decisionType: string): Promise<{ arm: string } | null>;

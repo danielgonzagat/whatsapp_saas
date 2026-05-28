@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { MindEventSpine } from '../../kloel/mind/coordination';
+import { MindEventSpine } from '../../kloel/mind/coordination/mind-event-spine.service';
 
 type PipelineStateValue = 'legacy' | 'shadow' | 'active';
 
