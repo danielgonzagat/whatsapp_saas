@@ -50,7 +50,7 @@ export interface CreateSaleChargeInput {
    * Optional: payment_method_types override. Defaults to ['card'].
    * PIX and boleto are Mercado Pago rails; Stripe remains card-only here.
    */
-  paymentMethodTypes?: Array<'card' | 'boleto' | 'pix'>;
+  paymentMethodTypes?: Array<'card'>;
 }
 
 /** Create sale charge result shape. */

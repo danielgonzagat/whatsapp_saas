@@ -46,7 +46,11 @@ export class StripeChargeService {
 
     const split = calculateSplit(splitInput);
     const transferGroup = `sale:${input.idempotencyKey}`;
-    const paymentMethodTypes = input.paymentMethodTypes ?? ['card'];
+    const paymentMethodTypes: string[] = [...(input.paymentMethodTypes ?? ['card'])];
+    const nonCardPaymentMethod = paymentMethodTypes.find((method) => method !== 'card');
+    if (nonCardPaymentMethod) {
+      throw new Error(`stripe_sale_charge_card_only:${nonCardPaymentMethod}`);
+    }
     const amount = Number(input.buyerPaidCents);
     const sellerLine = split.splits.find((line) => line.role === 'seller');
     if (!sellerLine) {
