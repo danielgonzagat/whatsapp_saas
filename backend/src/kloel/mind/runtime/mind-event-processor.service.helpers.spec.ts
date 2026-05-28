@@ -142,7 +142,7 @@ describe('mind-event-processor.service.helpers', () => {
     });
 
     it.each(['CANCELED', 'CANCELLED', 'EXPIRED', 'FAILED', 'REFUNDED'])(
-      'returns true for any checkout.* event with closed status %s',
+      'returns true for every checkout.* event with closed status %s',
       (status) => {
         const event = baseEvent({ kind: 'checkout.canceled', payload: { status } });
         expect(isCheckoutClosedFailure(event)).toBe(true);

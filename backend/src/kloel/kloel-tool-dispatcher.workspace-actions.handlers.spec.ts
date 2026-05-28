@@ -1,3 +1,5 @@
+import { matchInstance } from '../../test/helpers/match-instance';
+import type { KloelChatToolsService } from './kloel-chat-tools.service';
 import {
   dispatchWorkspaceActionTool,
   isWorkspaceActionTool,
@@ -45,8 +47,7 @@ const makeStubDeps = (
     })),
   };
   const deps: WorkspaceActionToolDeps = {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    chatToolsService: stub.chatToolsService as any,
+    chatToolsService: stub.chatToolsService as unknown as KloelChatToolsService,
     applyReceipt: stub.applyReceipt,
     userId: explicitUndefined ? undefined : userId,
   };
@@ -87,7 +88,7 @@ describe('kloel-tool-dispatcher.workspace-actions.handlers', () => {
         { enabled: true },
         { success: true, enabled: true },
         'u1',
-        expect.any(Number),
+        matchInstance(Number),
       );
       expect(result?.wrapped).toBe(true);
       expect(result?.capabilityId).toBe('toggle_autopilot');
@@ -138,7 +139,7 @@ describe('kloel-tool-dispatcher.workspace-actions.handlers', () => {
         { policy: 'strict' },
         { success: true },
         'admin',
-        expect.any(Number),
+        matchInstance(Number),
       );
     });
 
@@ -222,9 +223,9 @@ describe('kloel-tool-dispatcher.workspace-actions.handlers', () => {
         'toggle_autopilot',
         'ws1',
         {},
-        expect.any(Object),
+        matchInstance(Object),
         undefined,
-        expect.any(Number),
+        matchInstance(Number),
       );
     });
   });

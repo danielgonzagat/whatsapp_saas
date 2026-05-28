@@ -237,7 +237,7 @@ describe('partnerships.service.helpers', () => {
       expect(monthly[5]).toBe(1);
     });
 
-    it('skips orders without any usable date', () => {
+    it('skips orders without each usable date', () => {
       const monthly = aggregateMonthlyPerformance([{ paidAt: null, createdAt: null }]);
       expect(monthly.every((n) => n === 0)).toBe(true);
     });

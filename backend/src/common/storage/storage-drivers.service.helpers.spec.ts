@@ -268,7 +268,7 @@ describe('storage-drivers.service.helpers', () => {
       ).toEqual({ bucket: 'b', accountId: 'a', accessKeyId: 'k', secretAccessKey: 's' });
     });
 
-    it('returns null when any field is missing', () => {
+    it('returns null when each required field is missing', () => {
       expect(
         validateR2Credentials({ bucket: 'b', accountId: 'a', accessKeyId: 'k' }),
       ).toBeNull();

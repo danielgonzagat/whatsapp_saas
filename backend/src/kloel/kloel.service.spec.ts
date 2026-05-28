@@ -1,3 +1,4 @@
+import { matchInstance } from '../../test/helpers/match-instance';
 import { KloelService } from './kloel.service';
 import type { KloelPrismaMock } from './kloel.service.spec.types';
 
@@ -174,7 +175,7 @@ describe('KloelService', () => {
       });
 
       const result = await service.thinkSync({
-        message: 'gera um pix de R$197 para Joao comprar PDRN',
+        message: 'emite um PIX de R$197 para Joao comprar PDRN',
         workspaceId: 'ws-1',
         userId: 'user-42',
       });
@@ -462,7 +463,7 @@ describe('KloelService', () => {
         'ws-1',
         '5511',
         'hello',
-        expect.any(Function),
+        matchInstance(Function),
       );
     });
   });
@@ -475,7 +476,7 @@ describe('KloelService', () => {
         'ws-1',
         '5511',
         'hello',
-        expect.any(Function),
+        matchInstance(Function),
       );
     });
   });

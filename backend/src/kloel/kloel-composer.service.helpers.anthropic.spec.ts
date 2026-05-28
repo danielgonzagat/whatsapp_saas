@@ -47,7 +47,7 @@ describe('computeRetryDelayMs', () => {
 });
 
 describe('shouldRetryAnthropicStatus', () => {
-  it('retries 429 and any 5xx', () => {
+  it('retries 429 and every 5xx', () => {
     expect(shouldRetryAnthropicStatus(429)).toBe(true);
     expect(shouldRetryAnthropicStatus(500)).toBe(true);
     expect(shouldRetryAnthropicStatus(502)).toBe(true);

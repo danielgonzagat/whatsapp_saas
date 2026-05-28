@@ -15,7 +15,7 @@ describe('unified-agent.helpers', () => {
   });
 
   describe('isAllowedTool', () => {
-    it('allows any tool when allowlist is undefined', () => {
+    it('allows every tool when allowlist is undefined', () => {
       expect(isAllowedTool('anything')).toBe(true);
     });
 

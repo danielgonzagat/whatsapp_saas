@@ -1,5 +1,7 @@
 import { DealStatus, Prisma } from '@prisma/client';
 
+import type { SegmentationContact, SegmentCriteria } from './segmentation.types';
+
 /**
  * @cluster whatsapp_saas/backend/autopilot
  * Pure helpers extracted from SegmentationService.
@@ -7,200 +9,33 @@ import { DealStatus, Prisma } from '@prisma/client';
  * These helpers are deliberately Prisma-client-free (they only use Prisma TS
  * types) so they can be unit-tested in isolation and reused across services
  * without dragging in DI.
+ *
+ * The public type surface (`SegmentCriteria`, `SegmentResult`,
+ * `SegmentationContact`, `SegmentationDeal`) lives in `./segmentation.types`
+ * and the preset catalog lives in `./segmentation.presets`. Both are
+ * re-exported here so callers can keep importing from this module
+ * (Gate-fix2-D, 2026-05-28).
  */
+
+export type {
+  PurchaseHistoryAll,
+  PurchaseHistoryFilter,
+  SegmentationContact,
+  SegmentationDeal,
+  SegmentCriteria,
+  SegmentResult,
+} from './segmentation.types';
+export { PURCHASE_HISTORY_ALL } from './segmentation.types';
+export { AVAILABLE_PRESETS, PRESET_SEGMENTS } from './segmentation.presets';
+
+import { PURCHASE_HISTORY_ALL as PURCHASE_HISTORY_ALL_TOKEN } from './segmentation.types';
+import type { PurchaseHistoryFilter } from './segmentation.types';
 
 const DEAL_STATUS_VALUES = new Set<string>(Object.values(DealStatus));
 
 /** Type guard: does `value` match a Prisma `DealStatus` enum member? */
 export const isDealStatus = (value: string): value is DealStatus =>
   DEAL_STATUS_VALUES.has(value);
-
-/**
- * Deal row shape used by the in-memory segmentation filters.
- *
- * Mirrors the `select` clause used in `SegmentationService.getAudienceBySegment`
- * so the filter helpers can be called with the exact subset of fields we fetch.
- */
-export type SegmentationDeal = {
-  id: string;
-  value: number;
-  status: Prisma.DealGetPayload<{ select: { status: true } }>['status'];
-  createdAt: Date;
-};
-
-/** Contact row shape used by the in-memory segmentation filters. */
-export type SegmentationContact = {
-  id: string;
-  phone: string;
-  name: string | null;
-  updatedAt: Date;
-  deals: SegmentationDeal[];
-};
-
-/**
- * Tipos de segmentação suportados
- */
-export interface SegmentCriteria {
-  // Critérios demográficos
-  tags?: string[]; // Tags do contato
-  /** Exclude tags property. */
-  excludeTags?: string[]; // Tags para excluir
-
-  // Critérios comportamentais
-  lastMessageDays?: number; // Mensagens nos últimos X dias
-  /** No message days property. */
-  noMessageDays?: number; // Sem mensagens há X dias
-  /** Purchase history property. */
-  purchaseHistory?: 'any' | 'none' | 'recent'; // Histórico de compras
-  /** Purchase min value property. */
-  purchaseMinValue?: number; // Valor mínimo de compras
-  /** Purchase max value property. */
-  purchaseMaxValue?: number; // Valor máximo de compras
-
-  // Critérios de engajamento
-  openRateMin?: number; // Taxa de abertura mínima (0-1)
-  /** Response rate min property. */
-  responseRateMin?: number; // Taxa de resposta mínima (0-1)
-  /** Engagement property. */
-  engagement?: 'hot' | 'warm' | 'cold' | 'ghost';
-
-  // Critérios de pipeline
-  stageIds?: string[]; // Estágios específicos do pipeline
-  /** Pipeline ids property. */
-  pipelineIds?: string[]; // Pipelines específicos
-  /** Deal status property. */
-  dealStatus?: 'open' | 'won' | 'lost';
-
-  // Critérios temporais
-  createdAfter?: Date; // Criado após data
-  /** Created before property. */
-  createdBefore?: Date; // Criado antes de data
-
-  // Limites
-  limit?: number;
-}
-
-/** Segment result shape. */
-export interface SegmentResult {
-  /** Contacts property. */
-  contacts: { id: string; phone: string; name?: string }[];
-  /** Total property. */
-  total: number;
-  /** Criteria property. */
-  criteria: SegmentCriteria;
-}
-
-/**
- * Segmentos pré-definidos para uso rápido
- */
-export const PRESET_SEGMENTS = {
-  // Leads quentes: interagiram recentemente
-  HOT_LEADS: {
-    lastMessageDays: 3,
-    engagement: 'hot',
-  } as SegmentCriteria,
-
-  // Leads mornos: interagiram mas esfriando
-  WARM_LEADS: {
-    lastMessageDays: 14,
-    noMessageDays: 3,
-    engagement: 'warm',
-  } as SegmentCriteria,
-
-  // Leads frios: não interagem há tempo
-  COLD_LEADS: {
-    noMessageDays: 30,
-    engagement: 'cold',
-  } as SegmentCriteria,
-
-  // Fantasmas: sumiram completamente
-  GHOST_LEADS: {
-    noMessageDays: 60,
-    engagement: 'ghost',
-  } as SegmentCriteria,
-
-  // Compradores recentes
-  RECENT_BUYERS: {
-    purchaseHistory: 'recent',
-    lastMessageDays: 30,
-  } as SegmentCriteria,
-
-  // Alto valor: gastaram muito
-  HIGH_VALUE: {
-    purchaseMinValue: 1000,
-  } as SegmentCriteria,
-
-  // Nunca compraram
-  NEVER_BOUGHT: {
-    purchaseHistory: 'none',
-    lastMessageDays: 90,
-  } as SegmentCriteria,
-
-  // Prontos para upsell: compraram e estão engajados
-  UPSELL_READY: {
-    purchaseHistory: 'any',
-    engagement: 'hot',
-  } as SegmentCriteria,
-
-  // Recuperação: compraram mas sumiram
-  WINBACK: {
-    purchaseHistory: 'any',
-    noMessageDays: 45,
-  } as SegmentCriteria,
-};
-
-/** Static catalog of preset segments with descriptions for UI listing. */
-export const AVAILABLE_PRESETS: {
-  name: string;
-  description: string;
-  criteria: SegmentCriteria;
-}[] = [
-  {
-    name: 'HOT_LEADS',
-    description: 'Leads que interagiram nos últimos 3 dias',
-    criteria: PRESET_SEGMENTS.HOT_LEADS,
-  },
-  {
-    name: 'WARM_LEADS',
-    description: 'Leads que interagiram há 3-14 dias',
-    criteria: PRESET_SEGMENTS.WARM_LEADS,
-  },
-  {
-    name: 'COLD_LEADS',
-    description: 'Leads sem interação há 30+ dias',
-    criteria: PRESET_SEGMENTS.COLD_LEADS,
-  },
-  {
-    name: 'GHOST_LEADS',
-    description: 'Leads sem interação há 60+ dias',
-    criteria: PRESET_SEGMENTS.GHOST_LEADS,
-  },
-  {
-    name: 'RECENT_BUYERS',
-    description: 'Compradores dos últimos 30 dias',
-    criteria: PRESET_SEGMENTS.RECENT_BUYERS,
-  },
-  {
-    name: 'HIGH_VALUE',
-    description: 'Clientes que gastaram R$1000+',
-    criteria: PRESET_SEGMENTS.HIGH_VALUE,
-  },
-  {
-    name: 'NEVER_BOUGHT',
-    description: 'Leads que nunca compraram',
-    criteria: PRESET_SEGMENTS.NEVER_BOUGHT,
-  },
-  {
-    name: 'UPSELL_READY',
-    description: 'Compradores engajados para upsell',
-    criteria: PRESET_SEGMENTS.UPSELL_READY,
-  },
-  {
-    name: 'WINBACK',
-    description: 'Compradores antigos para reativação',
-    criteria: PRESET_SEGMENTS.WINBACK,
-  },
-];
 
 /**
  * Mutate the `where` clause in-place with tag/exclude-tag filters.
@@ -334,10 +169,10 @@ export function getEngagementLevel(score: number): 'hot' | 'warm' | 'cold' | 'gh
   return 'ghost';
 }
 
-/** Filter contacts by purchase-history class (any/none/recent). */
+/** Filter contacts by purchase-history class (all/none/recent). */
 export function filterByPurchaseHistory(
   contacts: SegmentationContact[],
-  history: 'any' | 'none' | 'recent',
+  history: PurchaseHistoryFilter,
 ): SegmentationContact[] {
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -346,7 +181,7 @@ export function filterByPurchaseHistory(
     const wonDeals = (c.deals ?? []).filter((d) => d.status === DealStatus.WON);
 
     switch (history) {
-      case 'any':
+      case PURCHASE_HISTORY_ALL_TOKEN:
         return wonDeals.length > 0;
       case 'none':
         return wonDeals.length === 0;

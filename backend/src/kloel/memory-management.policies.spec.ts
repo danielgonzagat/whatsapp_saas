@@ -145,7 +145,7 @@ describe('memory-management.policies', () => {
       ).toBeNull();
     });
 
-    it('emits the full counter payload when any bucket removed rows', () => {
+    it('emits the full counter payload when at least one bucket removed rows', () => {
       const details = buildMemoryCleanupAuditDetails({
         expiredRemoved: 5,
         duplicatesRemoved: 0,

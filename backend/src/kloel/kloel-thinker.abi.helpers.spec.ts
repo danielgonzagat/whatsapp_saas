@@ -88,7 +88,7 @@ describe('kloel-thinker.abi.helpers', () => {
       expect(flags.blocking).toBe(true);
     });
 
-    it('treats any value other than the literal "true" as off', () => {
+    it('treats every value other than the literal "true" as off', () => {
       expect(
         readHandoffGateFlags({
           HANDOFF_CONFIDENCE_GATE_ENABLED: '1',

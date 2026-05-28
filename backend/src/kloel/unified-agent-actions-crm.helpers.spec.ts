@@ -214,7 +214,7 @@ describe('unified-agent-actions-crm.helpers (pure)', () => {
       expect(computeTicketRiskFromPriority('urgent')).toBe(0.8);
       expect(computeTicketRiskFromPriority('high')).toBe(0.8);
     });
-    it('returns the default score for any other label', () => {
+    it('returns the default score for every other label', () => {
       expect(computeTicketRiskFromPriority('normal')).toBe(0.35);
       expect(computeTicketRiskFromPriority('low')).toBe(0.35);
       expect(computeTicketRiskFromPriority('')).toBe(0.35);

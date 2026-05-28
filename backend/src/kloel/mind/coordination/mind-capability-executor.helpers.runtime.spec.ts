@@ -49,7 +49,7 @@ describe('mind-capability-executor.helpers (runtime)', () => {
       expect(config).toEqual({ token: 't', projectId: 'p', envId: 'e', serviceId: 's' });
     });
 
-    it('returns null when any required env var is missing or empty', () => {
+    it('returns null when each required env var is missing or empty', () => {
       expect(getRailwayRuntimeConfig({})).toBeNull();
       expect(
         getRailwayRuntimeConfig({

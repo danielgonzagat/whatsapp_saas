@@ -1,3 +1,8 @@
+import type { AuditService } from '../audit/audit.service';
+import type { OpsAlertService } from '../observability/ops-alert.service';
+import type { PrismaService } from '../prisma/prisma.service';
+import { matchInstance } from '../../test/helpers/match-instance';
+import type { KloelChatToolsService } from './kloel-chat-tools.service';
 import { runCreatePaymentLink } from './kloel-tool-dispatcher.create-payment-link.helpers';
 import type { CreatePaymentLinkDeps } from './kloel-tool-dispatcher.create-payment-link.helpers';
 
@@ -29,14 +34,10 @@ const makeStubDeps = (): { stub: Stub; deps: CreatePaymentLinkDeps } => {
       .mockImplementation((cap, _ws, _a, result) => ({ ...result, capabilityId: cap })),
   };
   const deps: CreatePaymentLinkDeps = {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    prisma: stub.prisma as any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    auditService: stub.auditService as any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    chatToolsService: stub.chatToolsService as any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    opsAlert: stub.opsAlert as any,
+    prisma: stub.prisma as unknown as PrismaService,
+    auditService: stub.auditService as unknown as AuditService,
+    chatToolsService: stub.chatToolsService as unknown as KloelChatToolsService,
+    opsAlert: stub.opsAlert as unknown as OpsAlertService,
     logger: stub.logger,
     applyReceipt: stub.applyReceipt,
   };
@@ -80,7 +81,7 @@ describe('kloel-tool-dispatcher.create-payment-link.helpers', () => {
       expect.objectContaining({ amount: 10, description: 'x' }),
       expect.objectContaining({ success: true }),
       'u1',
-      expect.any(Number),
+      matchInstance(Number),
     );
     expect(result.capabilityId).toBe('create_payment_link');
   });
@@ -94,7 +95,7 @@ describe('kloel-tool-dispatcher.create-payment-link.helpers', () => {
       expect.stringContaining('Audit dispatch (payment link) failed'),
     );
     expect(stub.opsAlert.alertOnCriticalError).toHaveBeenCalledWith(
-      expect.any(Error),
+      matchInstance(Error),
       'KloelToolDispatcherService.sanitizeDetails',
     );
   });

@@ -141,8 +141,10 @@ import {
     });
 
     it('tolerates non-record extra arg', () => {
-      // @ts-expect-error — intentionally exercise the defensive branch.
-      const opts = buildWhatsAppSendOptions(undefined, 'not-an-object');
+      const opts = buildWhatsAppSendOptions(
+        undefined,
+        'not-an-object' as unknown as Record<string, unknown>,
+      );
       expect(opts.complianceMode).toBe('proactive');
       expect(opts.mediaUrl).toBeUndefined();
     });

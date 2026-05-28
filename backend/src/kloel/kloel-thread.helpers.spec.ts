@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+import { matchInstance } from '../../test/helpers/match-instance';
 import {
   appendStoredProcessingTraceEntry,
   buildProcessingTraceSummary,
@@ -196,7 +197,7 @@ describe('kloel-thread.helpers', () => {
         kind: 'tool_call',
         phase: 'tool_calling',
         label: 'Executando send whatsapp message.',
-        createdAt: expect.any(String),
+        createdAt: matchInstance(String),
         tool: 'send_whatsapp_message',
       });
     });

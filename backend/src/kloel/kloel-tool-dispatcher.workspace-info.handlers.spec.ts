@@ -1,3 +1,4 @@
+import type { KloelChatToolsService } from './kloel-chat-tools.service';
 import {
   dispatchWorkspaceInfoTool,
   isWorkspaceInfoTool,
@@ -40,8 +41,7 @@ const makeStubDeps = (): { stub: Stub; deps: WorkspaceInfoToolDeps } => {
     toolBrowseMarketplace: jest.fn().mockResolvedValue({ success: true, items: [] }),
   };
   const deps: WorkspaceInfoToolDeps = {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    chatToolsService: stub as any,
+    chatToolsService: stub as unknown as KloelChatToolsService,
   };
   return { stub, deps };
 };
@@ -112,7 +112,7 @@ describe('kloel-tool-dispatcher.workspace-info.handlers', () => {
       expect(result).toEqual({ success: true, message: 'Assinatura cancelada.' });
     });
 
-    it('update_subscription returns "pausada" message for any other action', async () => {
+    it('update_subscription returns "pausada" message for every other action', async () => {
       const { deps } = makeStubDeps();
       const result = await dispatchWorkspaceInfoTool(deps, 'ws1', 'update_subscription', {
         action: 'pause',

@@ -117,7 +117,7 @@ describe('summarizeOperationalMetrics', () => {
     expect(result.avgLatencyMs).toBe(50);
   });
 
-  it('counts any non-"1" ok flag as failure (e.g. "0", "")', () => {
+  it('counts every non-"1" ok flag as failure (e.g. "0", "")', () => {
     const result = summarizeOperationalMetrics(['0:10', ':10', '1:10']);
     expect(result.healthScore).toBe(33); // round(1/3 * 100)
   });

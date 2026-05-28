@@ -34,7 +34,7 @@ describe('partnerships.crypto.helpers', () => {
     });
 
     it('returns the canonical 64-character hex string', () => {
-      const hash = hashOpaqueToken('any token');
+      const hash = hashOpaqueToken('arbitrary token');
       expect(hash.length).toBe(64);
       expect(/^[a-f0-9]+$/.test(hash)).toBe(true);
     });

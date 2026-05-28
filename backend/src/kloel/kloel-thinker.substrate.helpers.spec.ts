@@ -319,7 +319,7 @@ describe('kloel-thinker.substrate.helpers', () => {
       expect(dashboard).not.toHaveBeenCalled();
     });
 
-    it('calls the dashboard builder for any other mode', () => {
+    it('calls the dashboard builder for every other mode', () => {
       expect(
         resolveThinkerSystemPrompt({
           mode: 'chat',

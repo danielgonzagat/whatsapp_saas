@@ -1,3 +1,7 @@
+import type { CouponService } from './coupon.service';
+import type { KloelChatCheckoutTool } from './kloel-chat-checkout.tool';
+import type { KloelChatToolsService } from './kloel-chat-tools.service';
+import type { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
 import {
   dispatchProductCatalogTool,
   isProductCatalogTool,
@@ -39,14 +43,10 @@ const makeStubDeps = (): { stub: Stub; deps: ProductCatalogToolDeps } => {
     },
   };
   const deps: ProductCatalogToolDeps = {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    chatToolsService: stub.chatToolsService as any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    couponService: stub.couponService as any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    checkoutService: stub.checkoutService as any,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    productSubTools: stub.productSubTools as any,
+    chatToolsService: stub.chatToolsService as unknown as KloelChatToolsService,
+    couponService: stub.couponService as unknown as CouponService,
+    checkoutService: stub.checkoutService as unknown as KloelChatCheckoutTool,
+    productSubTools: stub.productSubTools as unknown as KloelProductSubResourceToolsService,
   };
   return { stub, deps };
 };
