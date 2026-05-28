@@ -92,7 +92,7 @@ const SESSION_LOG = {
   recoverWorkspaceOnMount: 'Failed to recover workspace on session hook mount:',
   loadStatus: 'Failed to load WhatsApp status:',
   loadQr: 'Failed to load QR:',
-  connect: 'Failed to initiate connection:',
+  connect: 'Failed to initiate channel session:',
   disconnect: 'Failed to disconnect:',
   reset: 'Failed to reset WhatsApp session:',
   syncRuntime: 'Failed to sync CIA runtime for connected session:',

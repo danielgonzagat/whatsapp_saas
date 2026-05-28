@@ -10,7 +10,7 @@ export function invalidateCache(prefix: string) {
   mutate((key: unknown) => typeof key === 'string' && key.startsWith(prefix));
 }
 
-/** Whats app connection status shape. */
+/** Whats app channel session status shape. */
 export interface WhatsAppConnectionStatus {
   /** Connected property. */
   connected: boolean;

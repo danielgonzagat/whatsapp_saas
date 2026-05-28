@@ -138,7 +138,7 @@ export class WhatsAppApiProvider {
   terminateSession(workspaceId: string): Promise<{ success: boolean; message?: string }> {
     return Promise.resolve({
       success: true,
-      message: `Meta connection for ${workspaceId} remains managed via Meta auth`,
+      message: `Meta channel session for ${workspaceId} remains managed via Meta auth`,
     });
   }
 
@@ -146,7 +146,7 @@ export class WhatsAppApiProvider {
   logoutSession(workspaceId: string): Promise<{ success: boolean; message?: string }> {
     return Promise.resolve({
       success: true,
-      message: `Meta connection for ${workspaceId} remains managed via Meta auth`,
+      message: `Meta channel session for ${workspaceId} remains managed via Meta auth`,
     });
   }
 
