@@ -13,10 +13,12 @@ describe('buildMindSignals — case memory priorCases (PI-K15-B)', () => {
   });
 
   it('attaches priorCases when service returns matches', async () => {
-    const findSimilarCases = jest.fn().mockResolvedValue([
-      makeCase('Cliente pediu desconto após 30 dias', '10% concedido, lead converteu', 0.82),
-      makeCase('Cliente reclamou de preço', 'ofereceu parcelamento, lead sumiu', 0.61),
-    ]);
+    const findSimilarCases = jest
+      .fn()
+      .mockResolvedValue([
+        makeCase('Cliente pediu desconto após 30 dias', '10% concedido, lead converteu', 0.82),
+        makeCase('Cliente reclamou de preço', 'ofereceu parcelamento, lead sumiu', 0.61),
+      ]);
 
     const result = await buildMindSignals(
       {
@@ -28,10 +30,22 @@ describe('buildMindSignals — case memory priorCases (PI-K15-B)', () => {
       'esse preço tá muito alto',
     );
 
-    expect(findSimilarCases).toHaveBeenCalledWith('ws-1', { userMessage: 'esse preço tá muito alto' }, 3);
+    expect(findSimilarCases).toHaveBeenCalledWith(
+      'ws-1',
+      { userMessage: 'esse preço tá muito alto' },
+      3,
+    );
     expect(result.priorCases).toEqual([
-      { situation: 'Cliente pediu desconto após 30 dias', outcome: '10% concedido, lead converteu', similarity: 0.82 },
-      { situation: 'Cliente reclamou de preço', outcome: 'ofereceu parcelamento, lead sumiu', similarity: 0.61 },
+      {
+        situation: 'Cliente pediu desconto após 30 dias',
+        outcome: '10% concedido, lead converteu',
+        similarity: 0.82,
+      },
+      {
+        situation: 'Cliente reclamou de preço',
+        outcome: 'ofereceu parcelamento, lead sumiu',
+        similarity: 0.61,
+      },
     ]);
   });
 
@@ -99,9 +113,9 @@ describe('buildMindSignals — case memory priorCases (PI-K15-B)', () => {
   });
 
   it('coexists with other mind signals (riskClass still populates)', async () => {
-    const findSimilarCases = jest.fn().mockResolvedValue([
-      makeCase('Cliente feliz', 'comprou de novo', 0.95),
-    ]);
+    const findSimilarCases = jest
+      .fn()
+      .mockResolvedValue([makeCase('Cliente feliz', 'comprou de novo', 0.95)]);
     const classify = jest.fn().mockReturnValue({
       class: 'R1' as const,
       autonomyMode: 'allowed_alone' as const,
