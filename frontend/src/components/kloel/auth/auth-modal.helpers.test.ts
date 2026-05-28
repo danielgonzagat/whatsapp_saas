@@ -2,9 +2,19 @@ import { describe, expect, it } from 'vitest';
 
 import {
   DIGIT_PATTERN,
+  EMAIL_INVALID_ERROR,
   EMAIL_PATTERN,
+  FORGOT_MISSING_EMAIL_ERROR,
+  FORGOT_NETWORK_ERROR,
+  FORGOT_REQUEST_ERROR,
+  GOOGLE_FALLBACK_ERROR,
+  SIGNIN_EMPTY_PASSWORD_ERROR,
+  SIGNIN_FALLBACK_ERROR,
+  SIGNUP_FALLBACK_ERROR,
   UPPERCASE_PATTERN,
+  buildFormResetPatch,
   getPasswordStrength,
+  mapAuthError,
   validateEmail,
   validateSignUpForm,
 } from './auth-modal.helpers';
@@ -148,5 +158,67 @@ describe('validateSignUpForm', () => {
       confirmPassword: 'As senhas nao coincidem',
       terms: 'Voce deve aceitar os termos',
     });
+  });
+});
+
+describe('user-facing error constants', () => {
+  it('keeps the canonical Portuguese copy frozen', () => {
+    expect(SIGNUP_FALLBACK_ERROR).toBe('Erro ao criar conta. Tente novamente.');
+    expect(SIGNIN_FALLBACK_ERROR).toBe('Email ou senha incorretos');
+    expect(GOOGLE_FALLBACK_ERROR).toBe('Falha ao autenticar com Google.');
+    expect(FORGOT_MISSING_EMAIL_ERROR).toBe('Preencha o e-mail primeiro.');
+    expect(FORGOT_REQUEST_ERROR).toBe('Erro ao enviar e-mail de recuperacao.');
+    expect(FORGOT_NETWORK_ERROR).toBe('Erro ao enviar e-mail de recuperacao. Tente novamente.');
+    expect(SIGNIN_EMPTY_PASSWORD_ERROR).toBe('Digite sua senha');
+    expect(EMAIL_INVALID_ERROR).toBe('Digite um e-mail valido');
+  });
+});
+
+describe('mapAuthError', () => {
+  it('returns an empty record for successful results', () => {
+    expect(mapAuthError({ success: true }, 'general', SIGNUP_FALLBACK_ERROR)).toEqual({});
+  });
+
+  it('uses the provider-supplied error when present', () => {
+    expect(
+      mapAuthError({ success: false, error: 'Email ja cadastrado' }, 'general', SIGNUP_FALLBACK_ERROR),
+    ).toEqual({ general: 'Email ja cadastrado' });
+  });
+
+  it('falls back to the supplied default when the provider omits a message', () => {
+    expect(mapAuthError({ success: false }, 'password', SIGNIN_FALLBACK_ERROR)).toEqual({
+      password: SIGNIN_FALLBACK_ERROR,
+    });
+  });
+
+  it('treats an empty-string provider error as missing and uses the fallback', () => {
+    expect(mapAuthError({ success: false, error: '' }, 'general', GOOGLE_FALLBACK_ERROR)).toEqual({
+      general: GOOGLE_FALLBACK_ERROR,
+    });
+  });
+
+  it('places the message under the caller-chosen field key', () => {
+    expect(mapAuthError({ success: false, error: 'boom' }, 'name', SIGNUP_FALLBACK_ERROR)).toEqual({
+      name: 'boom',
+    });
+  });
+});
+
+describe('buildFormResetPatch', () => {
+  it('returns the canonical empty-form shape', () => {
+    expect(buildFormResetPatch()).toEqual({
+      password: '',
+      confirmPassword: '',
+      name: '',
+      acceptedTerms: false,
+      errors: {},
+    });
+  });
+
+  it('produces a fresh object each call so callers can mutate safely', () => {
+    const a = buildFormResetPatch();
+    const b = buildFormResetPatch();
+    expect(a).not.toBe(b);
+    expect(a.errors).not.toBe(b.errors);
   });
 });

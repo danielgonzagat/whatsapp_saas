@@ -95,3 +95,77 @@ export function validateSignUpForm(input: {
   }
   return errors;
 }
+
+/**
+ * Default copy used when a signup/Google auth call resolves with `success:false`
+ * but no provider-supplied message. Centralized so the modal and any future
+ * caller stay in lockstep on the user-facing fallback.
+ */
+export const SIGNUP_FALLBACK_ERROR = 'Erro ao criar conta. Tente novamente.';
+
+/** Sign-in fallback used when no provider message is returned. */
+export const SIGNIN_FALLBACK_ERROR = 'Email ou senha incorretos';
+
+/** Google credential fallback used when no provider message is returned. */
+export const GOOGLE_FALLBACK_ERROR = 'Falha ao autenticar com Google.';
+
+/** Forgot-password missing-email guard message. */
+export const FORGOT_MISSING_EMAIL_ERROR = 'Preencha o e-mail primeiro.';
+
+/** Forgot-password provider failure fallback (when `res.error` is empty). */
+export const FORGOT_REQUEST_ERROR = 'Erro ao enviar e-mail de recuperacao.';
+
+/** Forgot-password network/thrown-exception fallback. */
+export const FORGOT_NETWORK_ERROR = 'Erro ao enviar e-mail de recuperacao. Tente novamente.';
+
+/** Signin guard when the user submits an empty password. */
+export const SIGNIN_EMPTY_PASSWORD_ERROR = 'Digite sua senha';
+
+/** Email-step guard when the input fails the {@link validateEmail} check. */
+export const EMAIL_INVALID_ERROR = 'Digite um e-mail valido';
+
+/**
+ * Map an auth-provider result (signUp / signIn / signInWithGoogle) onto the
+ * inline `errors` record used by the modal. The caller picks the field key
+ * (`general` for signup/Google, `password` for sign-in) so the message lands
+ * next to the appropriate input. Returns an empty record for `success:true`
+ * results so the caller can `setErrors(mapAuthError(...))` without branching.
+ */
+export function mapAuthError(
+  result: { success: boolean; error?: string | undefined },
+  field: string,
+  fallback: string,
+): Record<string, string> {
+  if (result.success) {
+    return {};
+  }
+  return { [field]: result.error || fallback };
+}
+
+/**
+ * State patch produced by {@link handleBack} and {@link switchMode}. Extracted
+ * so the modal's reset logic stays declarative and unit-testable; the modal
+ * keeps the React `setX` calls but the *shape* of the reset lives here.
+ */
+export interface FormResetPatch {
+  password: string;
+  confirmPassword: string;
+  name: string;
+  acceptedTerms: boolean;
+  errors: Record<string, string>;
+}
+
+/**
+ * Canonical empty-form patch shared by the modal's back-button and
+ * switch-mode handlers. Behavior is preserved byte-for-byte vs. the original
+ * inline reset block.
+ */
+export function buildFormResetPatch(): FormResetPatch {
+  return {
+    password: '',
+    confirmPassword: '',
+    name: '',
+    acceptedTerms: false,
+    errors: {},
+  };
+}

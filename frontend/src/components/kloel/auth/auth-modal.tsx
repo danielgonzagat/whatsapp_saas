@@ -15,7 +15,17 @@ import { useAuth } from './auth-provider';
 import {
   type AuthMode,
   type AuthStep,
+  EMAIL_INVALID_ERROR,
+  FORGOT_MISSING_EMAIL_ERROR,
+  FORGOT_NETWORK_ERROR,
+  FORGOT_REQUEST_ERROR,
+  GOOGLE_FALLBACK_ERROR,
+  SIGNIN_EMPTY_PASSWORD_ERROR,
+  SIGNIN_FALLBACK_ERROR,
+  SIGNUP_FALLBACK_ERROR,
+  buildFormResetPatch,
   getPasswordStrength,
+  mapAuthError,
   validateEmail,
   validateSignUpForm,
 } from './auth-modal.helpers';
@@ -72,7 +82,7 @@ export function AuthModal({
   const handleEmailContinue = () => {
     setErrors({});
     if (!validateEmail(email)) {
-      setErrors({ email: 'Digite um e-mail valido' });
+      setErrors({ email: EMAIL_INVALID_ERROR });
       return;
     }
 
@@ -93,7 +103,7 @@ export function AuthModal({
     const result = await signUp(email, name, password);
 
     if (!result.success) {
-      setErrors({ general: result.error || 'Erro ao criar conta. Tente novamente.' });
+      setErrors(mapAuthError(result, 'general', SIGNUP_FALLBACK_ERROR));
       setIsLoading(false);
       return;
     }
@@ -105,7 +115,7 @@ export function AuthModal({
   const handleSignIn = async () => {
     setErrors({});
     if (password.length < 1) {
-      setErrors({ password: 'Digite sua senha' });
+      setErrors({ password: SIGNIN_EMPTY_PASSWORD_ERROR });
       return;
     }
 
@@ -114,7 +124,7 @@ export function AuthModal({
     const result = await signIn(email, password);
 
     if (!result.success) {
-      setErrors({ password: result.error || 'Email ou senha incorretos' });
+      setErrors(mapAuthError(result, 'password', SIGNIN_FALLBACK_ERROR));
       setIsLoading(false);
       return;
     }
@@ -131,7 +141,7 @@ export function AuthModal({
       const result = await signInWithGoogle(credential);
 
       if (!result.success) {
-        setErrors({ general: result.error || 'Falha ao autenticar com Google.' });
+        setErrors(mapAuthError(result, 'general', GOOGLE_FALLBACK_ERROR));
         setIsLoading(false);
         return result;
       }
@@ -147,18 +157,23 @@ export function AuthModal({
     setErrors({ general: message });
   }, []);
 
+  const applyFormReset = () => {
+    const patch = buildFormResetPatch();
+    setPassword(patch.password);
+    setConfirmPassword(patch.confirmPassword);
+    setName(patch.name);
+    setAcceptedTerms(patch.acceptedTerms);
+    setErrors(patch.errors);
+  };
+
   const handleBack = () => {
     setStep('email');
-    setPassword('');
-    setConfirmPassword('');
-    setName('');
-    setAcceptedTerms(false);
-    setErrors({});
+    applyFormReset();
   };
 
   const handleForgotPassword = async () => {
     if (!email.trim()) {
-      setErrors({ password: 'Preencha o e-mail primeiro.' });
+      setErrors({ password: FORGOT_MISSING_EMAIL_ERROR });
       return;
     }
     setErrors({});
@@ -166,12 +181,12 @@ export function AuthModal({
     try {
       const res = await authApi.forgotPassword(email.trim());
       if (res.error) {
-        setErrors({ password: res.error || 'Erro ao enviar e-mail de recuperacao.' });
+        setErrors({ password: res.error || FORGOT_REQUEST_ERROR });
       } else {
         setForgotSent(true);
       }
     } catch {
-      setErrors({ password: 'Erro ao enviar e-mail de recuperacao. Tente novamente.' });
+      setErrors({ password: FORGOT_NETWORK_ERROR });
     } finally {
       setIsLoading(false);
     }
@@ -180,11 +195,7 @@ export function AuthModal({
   const switchMode = (newMode: AuthMode) => {
     setMode(newMode);
     setStep('email');
-    setPassword('');
-    setConfirmPassword('');
-    setName('');
-    setAcceptedTerms(false);
-    setErrors({});
+    applyFormReset();
     setForgotSent(false);
   };
 
