@@ -16,7 +16,6 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Prisma } from '@prisma/client';
 import { Response } from 'express';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -56,21 +55,19 @@ import {
   readWorkspaceId,
   transitionApprovalRequest,
 } from './kloel-approval.controller-helpers';
+import {
+  KLOEL_PENDING_APPROVALS_SELECT,
+  buildKloelMemoryArgs,
+  buildKloelThinkPayload,
+  buildRegenerateMessageArgs,
+  parseListThreadsQuery,
+  type KloelMemoryDto,
+  type KloelThinkDto,
+} from './kloel.controller.helpers';
 import { RouteClass } from '../common/throttler/route-class.decorator';
 import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
-interface ThinkDto {
-  message: string;
-  workspaceId?: string;
-  conversationId?: string;
-  mode?: 'chat' | 'onboarding' | 'sales';
-  metadata?: Record<string, unknown>;
-}
-interface MemoryDto {
-  workspaceId: string;
-  type: string;
-  content: string;
-  metadata?: Record<string, unknown>;
-}
+type ThinkDto = KloelThinkDto;
+type MemoryDto = KloelMemoryDto;
 interface OnboardingChatDto {
   message: string;
 }
@@ -92,9 +89,6 @@ export class KloelController {
     @Res() res: Response,
     @Request() req: AuthenticatedRequest,
   ): Promise<void> {
-    const workspaceId = req.workspaceId || req.user?.workspaceId;
-    const userId = readUserId(req.user);
-    const userName = typeof req.user?.name === 'string' ? req.user.name : undefined;
     const abortController = new AbortController();
     const abortWithReason = (reason: string) => {
       if (!abortController.signal.aborted) {
@@ -106,16 +100,8 @@ export class KloelController {
     req.on('close', () => abortWithReason('client_disconnected'));
     res.on('close', () => abortWithReason('client_disconnected'));
     try {
-      const { metadata: rawMetadata, ...requestDto } = dto;
-      const metadata = rawMetadata as Prisma.InputJsonValue | undefined;
       return await this.kloelService.think(
-        {
-          ...requestDto,
-          workspaceId,
-          ...(userId !== undefined ? { userId } : {}),
-          ...(userName !== undefined ? { userName } : {}),
-          ...(metadata !== undefined ? { metadata } : {}),
-        },
+        buildKloelThinkPayload(dto, req, readUserId),
         res,
         { signal: abortController.signal, timeoutMs },
       );
@@ -139,19 +125,7 @@ export class KloelController {
       where: { workspaceId, state: 'OPEN' },
       orderBy: { createdAt: 'desc' },
       take: 50,
-      select: {
-        id: true,
-        kind: true,
-        scope: true,
-        entityType: true,
-        entityId: true,
-        state: true,
-        title: true,
-        prompt: true,
-        payload: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: { ...KLOEL_PENDING_APPROVALS_SELECT },
     });
     return { approvals };
   }
@@ -211,28 +185,13 @@ export class KloelController {
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('think/sync')
   async thinkSync(@Body() dto: ThinkDto, @Request() req: AuthenticatedRequest) {
-    const workspaceId = req.workspaceId || req.user?.workspaceId;
-    const userId = readUserId(req.user);
-    const userName = typeof req.user?.name === 'string' ? req.user.name : undefined;
-    const { metadata: rawMetadata, ...requestDto } = dto;
-    const metadata = rawMetadata as Prisma.InputJsonValue | undefined;
-    return this.kloelService.thinkSync({
-      ...requestDto,
-      workspaceId,
-      ...(userId !== undefined ? { userId } : {}),
-      ...(userName !== undefined ? { userName } : {}),
-      ...(metadata !== undefined ? { metadata } : {}),
-    });
+    return this.kloelService.thinkSync(buildKloelThinkPayload(dto, req, readUserId));
   }
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('memory/save')
   async saveMemory(@Body() dto: MemoryDto, @Request() req: AuthenticatedRequest) {
-    await this.kloelService.saveMemory(
-      req.workspaceId || req.user?.workspaceId,
-      dto.type,
-      dto.content,
-      dto.metadata as Prisma.InputJsonValue | undefined,
-    );
+    const args = buildKloelMemoryArgs(dto, req);
+    await this.kloelService.saveMemory(args.workspaceId, args.type, args.content, args.metadata);
     return { success: true };
   }
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
@@ -379,15 +338,11 @@ export class KloelController {
     @Query('limit') limit?: string,
     @Query('cursor') cursor?: string,
   ) {
-    const parsedLimit = limit ? Number.parseInt(limit, 10) : undefined;
-    const parsedCursor = cursor ? Number.parseInt(cursor, 10) : undefined;
-    const numericLimit = Number.isFinite(parsedLimit) ? parsedLimit : undefined;
-    const numericCursor = Number.isFinite(parsedCursor) ? parsedCursor : undefined;
-    return listThreads({ prisma: this.prisma }, resolveWorkspaceId(req), {
-      ...(numericLimit !== undefined ? { limit: numericLimit } : {}),
-      ...(numericCursor !== undefined ? { cursor: numericCursor } : {}),
-      paginated: Boolean(limit || cursor),
-    });
+    return listThreads(
+      { prisma: this.prisma },
+      resolveWorkspaceId(req),
+      parseListThreadsQuery(limit, cursor),
+    );
   }
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('threads')
@@ -468,18 +423,8 @@ export class KloelController {
     @Body() dto: { messageId?: string },
     @Req() req: AuthenticatedRequest,
   ) {
-    const messageId = String(dto?.messageId || '').trim();
-    if (!messageId) {
-      throw new BadRequestException('messageId é obrigatório.');
-    }
-    const userId = typeof req.user?.sub === 'string' ? req.user.sub : undefined;
-    const userName = typeof req.user?.name === 'string' ? req.user.name : undefined;
-    return this.kloelService.regenerateThreadAssistantResponse({
-      workspaceId: resolveWorkspaceId(req),
-      conversationId: id,
-      assistantMessageId: messageId,
-      ...(userId !== undefined ? { userId } : {}),
-      ...(userName !== undefined ? { userName } : {}),
-    });
+    return this.kloelService.regenerateThreadAssistantResponse(
+      buildRegenerateMessageArgs(id, dto, req, resolveWorkspaceId(req)),
+    );
   }
 }
