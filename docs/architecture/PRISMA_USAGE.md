@@ -8,7 +8,7 @@ Total models referenced: 173.
 |---|---:|---|
 | `workspace` | 132 | `backend/src/admin/accounts/admin-accounts.service.ts`<br>`backend/src/admin/accounts/queries/detail-account.query.ts`<br>`backend/src/admin/accounts/queries/list-accounts.query.ts`<br>… +129 |
 | `contact` | 100 | `backend/src/admin/contacts/admin-contact-verify.controller.ts`<br>`backend/src/analytics/advanced-analytics.service.ts`<br>`backend/src/analytics/analytics.service.ts`<br>… +97 |
-| `product` | 54 | `backend/src/admin/accounts/queries/detail-account.query.ts`<br>`backend/src/admin/accounts/queries/list-accounts.query.ts`<br>`backend/src/admin/clients/admin-clients.service.ts`<br>… +51 |
+| `product` | 55 | `backend/src/admin/accounts/queries/detail-account.query.ts`<br>`backend/src/admin/accounts/queries/list-accounts.query.ts`<br>`backend/src/admin/clients/admin-clients.service.ts`<br>… +52 |
 | `kloelMemory` | 51 | `backend/src/dashboard/dashboard.service.ts`<br>`backend/src/kloel/agent-runtime/agent-runtime.context-compressor.ts`<br>`backend/src/kloel/agent-runtime/agent-runtime.delegation.ts`<br>… +48 |
 | `message` | 48 | `backend/src/analytics/agent-performance.service.ts`<br>`backend/src/analytics/analytics.service.ts`<br>`backend/src/analytics/smart-time/smart-time.service.ts`<br>… +45 |
 | `checkoutOrder` | 38 | `backend/src/admin/accounts/queries/detail-account.query.ts`<br>`backend/src/admin/accounts/queries/list-accounts.query.ts`<br>`backend/src/admin/clients/admin-clients.service.ts`<br>… +35 |
@@ -20,7 +20,7 @@ Total models referenced: 173.
 | `kloelSale` | 18 | `backend/src/admin/transactions/admin-transactions.service.ts`<br>`backend/src/analytics/advanced-analytics.service.ts`<br>`backend/src/analytics/analytics.service.ts`<br>… +15 |
 | `checkoutProductPlan` | 17 | `backend/src/admin/products/queries/detail-product.query.ts`<br>`backend/src/admin/products/queries/list-products.query.ts`<br>`backend/src/affiliate/affiliate.controller.ts`<br>… +14 |
 | `subscription` | 17 | `backend/src/autopilot/autopilot-cycle.service.ts`<br>`backend/src/autopilot/autopilot-ops-conversion.service.ts`<br>`backend/src/autopilot/autopilot-ops.service.ts`<br>… +14 |
-| `approvalRequest` | 14 | `backend/src/kloel/kloel-tool-dispatcher.approval-execution.helpers.ts`<br>`backend/src/kloel/kloel-tool-dispatcher.approval.helpers.ts`<br>`backend/src/kloel/kloel.controller.ts`<br>… +11 |
+| `approvalRequest` | 15 | `backend/src/kloel/kloel-approval.controller-helpers.ts`<br>`backend/src/kloel/kloel-tool-dispatcher.approval-execution.helpers.ts`<br>`backend/src/kloel/kloel-tool-dispatcher.approval.helpers.ts`<br>… +12 |
 | `metaConnection` | 13 | `backend/src/campaigns/campaigns.service.ts`<br>`backend/src/integrations/ads-sync-persistence.helpers.ts`<br>`backend/src/integrations/meta-conversions-api.service.ts`<br>… +10 |
 | `campaign` | 12 | `backend/src/autopilot/autopilot-analytics-report.service.ts`<br>`backend/src/autopilot/autopilot-cycle-money.service.ts`<br>`backend/src/billing/plan-limits.service.ts`<br>… +9 |
 | `affiliateLink` | 11 | `backend/src/affiliate/affiliate-helpers.ts`<br>`backend/src/affiliate/affiliate.controller.ts`<br>`backend/src/checkout/checkout-code-lookup.helper.ts`<br>… +8 |
@@ -28,8 +28,8 @@ Total models referenced: 173.
 | `adminAuditLog` | 10 | `backend/src/admin/audit/admin-audit.service.ts`<br>`backend/src/admin/compliance/admin-compliance.service.ts`<br>`backend/src/admin/notifications/admin-notifications.service.ts`<br>… +7 |
 | `connectAccountBalance` | 10 | `backend/src/checkout/checkout-payment.service.ts`<br>`backend/src/kyc/kyc.connect-onboarding.ts`<br>`backend/src/payments/connect/connect-payout-approval.service.ts`<br>… +7 |
 | `checkoutSocialLead` | 9 | `backend/src/admin/marketing/admin-marketing.service.ts`<br>`backend/src/checkout/checkout-social-lead.candidate.ts`<br>`backend/src/checkout/checkout-social-lead.service.ts`<br>… +6 |
+| `productPlan` | 9 | `backend/src/kloel/kloel-chat-tools.additional.helpers.ts`<br>`backend/src/kloel/kloel-chat-tools.product.helpers.ts`<br>`backend/src/kloel/kloel-product-sub-resource-tools.helpers.ts`<br>… +6 |
 | `kloelWallet` | 8 | `backend/src/analytics/analytics.service.ts`<br>`backend/src/dashboard/dashboard.service.ts`<br>`backend/src/kloel/kloel-chat-tools.dashboard-payments.helpers.ts`<br>… +5 |
-| `productPlan` | 8 | `backend/src/kloel/kloel-chat-tools.additional.helpers.ts`<br>`backend/src/kloel/kloel-chat-tools.product.helpers.ts`<br>`backend/src/kloel/kloel-product-sub-resource-tools.service.ts`<br>… +5 |
 | `mailboxConnection` | 8 | `backend/src/marketing/mailbox-gmail-oauth/gmail-client.service.ts`<br>`backend/src/marketing/mailbox-gmail-oauth/oauth-handshake.service.ts`<br>`backend/src/marketing/mailbox-gmail-oauth/send.service.ts`<br>… +5 |
 | `checkoutPayment` | 7 | `backend/src/admin/dashboard/queries/transactions.query.ts`<br>`backend/src/dashboard/dashboard.controller.ts`<br>`backend/src/kloel/order-alerts.service.ts`<br>… +4 |
 | `checkoutPlanLink` | 7 | `backend/src/affiliate/affiliate.controller.ts`<br>`backend/src/checkout/checkout-code-lookup.helper.ts`<br>`backend/src/checkout/checkout-plan-link.manager.ts`<br>… +4 |
@@ -60,6 +60,7 @@ Total models referenced: 173.
 | `pipeline` | 4 | `backend/src/crm/crm.deals.helpers.ts`<br>`backend/src/pipeline/pipeline.service.ts`<br>`worker/providers/tools-registry.ts`<br>… +1 |
 | `stage` | 4 | `backend/src/crm/crm.deals.helpers.ts`<br>`backend/src/pipeline/pipeline.service.ts`<br>`worker/providers/tools-registry.ts`<br>… +1 |
 | `mindOutboxEvent` | 4 | `backend/src/kloel/agent-runtime/agent-runtime.job-runner.ts`<br>`backend/src/kloel/agent-runtime/agent-runtime.scheduler.ts`<br>`backend/src/kloel/mind/coordination/mind-event-spine.service.ts`<br>… +1 |
+| `productCheckout` | 4 | `backend/src/kloel/kloel-chat-checkout.tool.ts`<br>`backend/src/kloel/kloel-product-sub-resource-tools.helpers.ts`<br>`backend/src/kloel/kloel-product-sub-resource-tools.service.ts`<br>… +1 |
 | `integration` | 4 | `backend/src/kloel/kloel-workspace-context-data.service.ts`<br>`backend/src/kloel/kloel-workspace-context.helpers.ts`<br>`backend/src/kloel/kloel.service.lists.helpers.ts`<br>… +1 |
 | `payment` | 4 | `backend/src/kloel/kloel-workspace-context-data.service.ts`<br>`backend/src/payments/mercadopago/mercadopago-webhook.controller.ts`<br>`backend/src/webhooks/payment-webhook-generic.helpers.ts`<br>… +1 |
 | `mindBelief` | 4 | `backend/src/kloel/mind/coordination/mind-commercial-graph.service.ts`<br>`backend/src/kloel/mind/inference/mind-belief.service.ts`<br>`backend/src/kloel/mind/observability/mind-observability.service.ts`<br>… +1 |
@@ -73,7 +74,6 @@ Total models referenced: 173.
 | `fiscalData` | 3 | `backend/src/kloel/account.service.ts`<br>`backend/src/kyc/kyc.connect-onboarding.ts`<br>`backend/src/kyc/kyc.service.ts` |
 | `decisionOutcome` | 3 | `backend/src/kloel/commercial-decision-orchestrator/gating.ts`<br>`backend/src/kloel/decision-outcome.service.ts`<br>`worker/processors/silent-24h-resolver-processor.ts` |
 | `productCommission` | 3 | `backend/src/kloel/kloel-business-config-tools.service.ts`<br>`backend/src/kloel/product-sub-resources/helpers/affiliate.helpers.ts`<br>`backend/src/kloel/product-sub-resources/product-commission.controller.ts` |
-| `productCheckout` | 3 | `backend/src/kloel/kloel-chat-checkout.tool.ts`<br>`backend/src/kloel/kloel-product-sub-resource-tools.service.ts`<br>`backend/src/kloel/product-sub-resources/product-checkout.controller.ts` |
 | `agentWorkItem` | 3 | `backend/src/kloel/kloel-reflexivity.service.ts`<br>`backend/src/marketing/channels/whatsapp/account-agent.work-item-upsert.ts`<br>`backend/src/marketing/channels/whatsapp/account-agent.work-items.ts` |
 | `customerSubscription` | 3 | `backend/src/kloel/kloel-workspace-context-data.service.ts`<br>`backend/src/kloel/sales-subscriptions.controller.ts`<br>`backend/src/reports/reports.service.ts` |
 | `physicalOrder` | 3 | `backend/src/kloel/kloel-workspace-context-data.service.ts`<br>`backend/src/kloel/order-alerts.service.ts`<br>`backend/src/kloel/sales-orders.controller.ts` |

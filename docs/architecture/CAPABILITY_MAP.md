@@ -76,16 +76,18 @@ No implementation detected. May not be a feature of this codebase.
 - `PaymentService` (class) — `backend/src/kloel/payment.service.ts:121`
 - `StripeChargeService` (class) — `backend/src/payments/stripe/stripe-charge.service.ts:27`
 
-## CAPABILITY: `create_checkout` (17 implementations ⚠️ duplicated)
+## CAPABILITY: `create_checkout` (19 implementations ⚠️ duplicated)
 
 - `createCheckoutPixel` (function) — `backend/src/checkout/checkout-catalog.operations.ts:8`
 - `buildCheckoutMarketplacePricing` (function) — `backend/src/checkout/checkout-marketplace-pricing.util.ts:40`
 - `buildCheckoutOrderMetadata` (function) — `backend/src/checkout/checkout-order-metadata.util.ts:48`
-- `buildCheckoutPaymentCreatedAuditPayload` (function) — `backend/src/checkout/checkout-payment.helpers.ts:426`
-- `buildCheckoutPaymentResult` (function) — `backend/src/checkout/checkout-payment.helpers.ts:493`
-- `CheckoutPaymentService` (class) — `backend/src/checkout/checkout-payment.service.ts:70`
+- `buildCheckoutPaymentCreatedAuditPayload` (function) — `backend/src/checkout/checkout-payment.helpers.ts:443`
+- `buildCheckoutPaymentResult` (function) — `backend/src/checkout/checkout-payment.helpers.ts:510`
+- `CheckoutPaymentService` (class) — `backend/src/checkout/checkout-payment.service.ts:52`
 - `createCheckout` (function) — `backend/src/checkout/checkout-product.create.ts:13`
 - `buildCheckoutShippingQuote` (function) — `backend/src/checkout/checkout-shipping-profile.util.ts:88`
+- `buildCheckoutSlug` (function) — `backend/src/checkout/checkout.controller.helpers.ts:43`
+- `buildCheckoutConfigUpdateInput` (function) — `backend/src/checkout/checkout.controller.helpers.ts:94`
 - `buildCheckoutData` (function) — `backend/src/kloel/product-sub-resources/helpers/plan.serialize-helpers.ts:4`
 - `CheckoutPaymentSection` (function) — `frontend/src/app/(checkout)/components/CheckoutPaymentSection.tsx:47`
 - `buildCheckoutFormDraftKey` (function) — `frontend/src/app/(checkout)/hooks/useCheckoutExperience.utils.ts:37`
@@ -112,7 +114,7 @@ No implementation detected. May not be a feature of this codebase.
 
 - `RiskClassModule` (class) — `backend/src/kloel/risk-class/risk-class.module.ts:17`
 - `RiskClassService` (class) — `backend/src/kloel/risk-class/risk-class.service.ts:31`
-- `FraudEngine` (class) — `backend/src/payments/fraud/fraud.engine.ts:175`
+- `FraudEngine` (class) — `backend/src/payments/fraud/fraud.engine.ts:44`
 
 ## CAPABILITY: `kyc_verify` (1 implementations)
 
