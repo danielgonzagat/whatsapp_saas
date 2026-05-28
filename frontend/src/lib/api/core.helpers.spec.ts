@@ -12,6 +12,11 @@ import {
   shouldSerializeAsJson,
   serializeApiBody,
   BACKOFF_DELAYS_MS,
+  isTrustedAbsoluteRequestTarget,
+  parseRefreshErrorCode,
+  pickAccessToken,
+  pickRefreshToken,
+  buildRequestHeaders,
 } from './core.helpers';
 
 describe('buildSuccessResponse', () => {
@@ -240,5 +245,158 @@ describe('BACKOFF_DELAYS_MS', () => {
     for (let i = 1; i < BACKOFF_DELAYS_MS.length; i++) {
       expect(BACKOFF_DELAYS_MS[i]).toBeGreaterThan(BACKOFF_DELAYS_MS[i - 1] as number);
     }
+  });
+});
+
+describe('isTrustedAbsoluteRequestTarget', () => {
+  it('accepts the configured API origin', () => {
+    expect(
+      isTrustedAbsoluteRequestTarget('https://api.example.com/v1/x', 'https://api.example.com'),
+    ).toBe(true);
+  });
+
+  it('accepts the provided window origin', () => {
+    expect(
+      isTrustedAbsoluteRequestTarget(
+        'https://app.example.com/page',
+        'https://api.example.com',
+        'https://app.example.com',
+      ),
+    ).toBe(true);
+  });
+
+  it('rejects unrelated origins', () => {
+    expect(
+      isTrustedAbsoluteRequestTarget(
+        'https://evil.example.com/x',
+        'https://api.example.com',
+        'https://app.example.com',
+      ),
+    ).toBe(false);
+  });
+
+  it('rejects non-http(s) schemes even when the origin matches', () => {
+    expect(
+      isTrustedAbsoluteRequestTarget('javascript:alert(1)', 'https://api.example.com'),
+    ).toBe(false);
+    expect(isTrustedAbsoluteRequestTarget('file:///etc/passwd', 'https://api.example.com')).toBe(
+      false,
+    );
+  });
+
+  it('returns false for malformed URLs', () => {
+    expect(isTrustedAbsoluteRequestTarget('not a url', 'https://api.example.com')).toBe(false);
+  });
+
+  it('returns false when both origins are empty', () => {
+    expect(isTrustedAbsoluteRequestTarget('https://api.example.com/x', '')).toBe(false);
+  });
+});
+
+describe('parseRefreshErrorCode', () => {
+  it('returns the code field when present and string-typed', () => {
+    expect(parseRefreshErrorCode({ code: 'refresh_token_expired' })).toBe(
+      'refresh_token_expired',
+    );
+  });
+
+  it('returns undefined when code is missing', () => {
+    expect(parseRefreshErrorCode({ message: 'no code here' })).toBeUndefined();
+  });
+
+  it('returns undefined when code is not a string', () => {
+    expect(parseRefreshErrorCode({ code: 42 })).toBeUndefined();
+    expect(parseRefreshErrorCode({ code: null })).toBeUndefined();
+    expect(parseRefreshErrorCode({ code: { nested: true } })).toBeUndefined();
+  });
+
+  it('returns undefined for non-object bodies', () => {
+    expect(parseRefreshErrorCode(null)).toBeUndefined();
+    expect(parseRefreshErrorCode(undefined)).toBeUndefined();
+    expect(parseRefreshErrorCode('a string')).toBeUndefined();
+    expect(parseRefreshErrorCode(123)).toBeUndefined();
+  });
+});
+
+describe('pickAccessToken / pickRefreshToken', () => {
+  it('prefers snake_case fields when both shapes are present', () => {
+    expect(pickAccessToken({ access_token: 'snake', accessToken: 'camel' })).toBe('snake');
+    expect(pickRefreshToken({ refresh_token: 'snake', refreshToken: 'camel' })).toBe('snake');
+  });
+
+  it('falls back to camelCase when snake_case is missing', () => {
+    expect(pickAccessToken({ accessToken: 'camel' })).toBe('camel');
+    expect(pickRefreshToken({ refreshToken: 'camel' })).toBe('camel');
+  });
+
+  it('returns undefined when neither shape is present', () => {
+    expect(pickAccessToken({})).toBeUndefined();
+    expect(pickRefreshToken({})).toBeUndefined();
+  });
+});
+
+describe('buildRequestHeaders', () => {
+  it('includes Content-Type application/json by default', () => {
+    const headers = buildRequestHeaders({ isFormData: false });
+    expect(headers['Content-Type']).toBe('application/json');
+  });
+
+  it('omits Content-Type for FormData bodies', () => {
+    const headers = buildRequestHeaders({ isFormData: true });
+    expect(headers['Content-Type']).toBeUndefined();
+  });
+
+  it('always sets the CSRF-mitigation header', () => {
+    expect(buildRequestHeaders({ isFormData: false })['X-Requested-With']).toBe(
+      'XMLHttpRequest',
+    );
+    expect(buildRequestHeaders({ isFormData: true })['X-Requested-With']).toBe(
+      'XMLHttpRequest',
+    );
+  });
+
+  it('attaches the Authorization header when token is provided', () => {
+    const headers = buildRequestHeaders({ isFormData: false, token: 'abc' });
+    expect(headers.Authorization).toBe('Bearer abc');
+  });
+
+  it('omits Authorization when token is missing/empty/null', () => {
+    expect(buildRequestHeaders({ isFormData: false }).Authorization).toBeUndefined();
+    expect(buildRequestHeaders({ isFormData: false, token: null }).Authorization).toBeUndefined();
+    expect(buildRequestHeaders({ isFormData: false, token: '' }).Authorization).toBeUndefined();
+  });
+
+  it('attaches x-workspace-id when workspaceId is provided', () => {
+    const headers = buildRequestHeaders({ isFormData: false, workspaceId: 'ws-1' });
+    expect(headers['x-workspace-id']).toBe('ws-1');
+  });
+
+  it('omits x-workspace-id when workspaceId is missing/empty/null', () => {
+    expect(
+      buildRequestHeaders({ isFormData: false })['x-workspace-id'],
+    ).toBeUndefined();
+    expect(
+      buildRequestHeaders({ isFormData: false, workspaceId: null })['x-workspace-id'],
+    ).toBeUndefined();
+    expect(
+      buildRequestHeaders({ isFormData: false, workspaceId: '' })['x-workspace-id'],
+    ).toBeUndefined();
+  });
+
+  it('lets caller-provided headers override defaults except CSRF/auth/workspace', () => {
+    const headers = buildRequestHeaders({
+      isFormData: false,
+      headers: { 'X-Custom': 'yes', 'Content-Type': 'text/plain' },
+      token: 'tk',
+      workspaceId: 'ws-1',
+    });
+    expect(headers['X-Custom']).toBe('yes');
+    // Caller headers spread BEFORE auth/workspace, so Authorization wins
+    expect(headers.Authorization).toBe('Bearer tk');
+    expect(headers['x-workspace-id']).toBe('ws-1');
+    // Caller can override Content-Type since it spreads after the default
+    expect(headers['Content-Type']).toBe('text/plain');
+    // CSRF header is set before caller headers; caller could override but no test path needs it
+    expect(headers['X-Requested-With']).toBe('XMLHttpRequest');
   });
 });

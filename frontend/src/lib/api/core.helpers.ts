@@ -158,3 +158,111 @@ export function serializeApiBody(body: unknown): BodyInit | null {
 
 /** Exponential backoff delays (ms) for retrying on 429 Too Many Requests. */
 export const BACKOFF_DELAYS_MS: readonly number[] = [500, 1500, 4000];
+
+// ============================================
+// Trusted-origin helpers
+// ============================================
+
+/**
+ * Decide whether an absolute URL string targets a trusted origin.
+ * Trusted origins are the configured API origin and (optionally) the
+ * caller-provided window origin. Non-http(s) schemes are always rejected.
+ *
+ * Pure function — `apiOrigin` and `windowOrigin` are passed in so callers
+ * can drive this from any environment (browser, jsdom, node test runner).
+ */
+export function isTrustedAbsoluteRequestTarget(
+  value: string,
+  apiOrigin: string,
+  windowOrigin?: string,
+): boolean {
+  let candidate: URL;
+  try {
+    candidate = new URL(value);
+  } catch {
+    return false;
+  }
+
+  if (candidate.protocol !== 'http:' && candidate.protocol !== 'https:') {
+    return false;
+  }
+
+  if (apiOrigin && candidate.origin === apiOrigin) {
+    return true;
+  }
+
+  if (windowOrigin && candidate.origin === windowOrigin) {
+    return true;
+  }
+
+  return false;
+}
+
+// ============================================
+// Refresh-error-code parsing
+// ============================================
+
+/**
+ * Extract a refresh-token error code from a parsed JSON body, returning
+ * `undefined` when the body is missing/malformed or has no `code` field.
+ * Pure — does not touch the network or storage.
+ */
+export function parseRefreshErrorCode(body: unknown): string | undefined {
+  if (!body || typeof body !== 'object') {
+    return undefined;
+  }
+  const code = (body as Record<string, unknown>).code;
+  return typeof code === 'string' ? code : undefined;
+}
+
+// ============================================
+// Refresh-token response shape helpers
+// ============================================
+
+/**
+ * Pick the access token from a refresh response, tolerating both
+ * `access_token` (snake) and `accessToken` (camel) wire shapes.
+ */
+export function pickAccessToken(data: RefreshTokenResponse): string | undefined {
+  return data.access_token || data.accessToken;
+}
+
+/**
+ * Pick the refresh token from a refresh response, tolerating both
+ * `refresh_token` (snake) and `refreshToken` (camel) wire shapes.
+ */
+export function pickRefreshToken(data: RefreshTokenResponse): string | undefined {
+  return data.refresh_token || data.refreshToken;
+}
+
+// ============================================
+// Header merging
+// ============================================
+
+/**
+ * Build the final request headers map merging caller-provided headers,
+ * content-type (skipped for FormData bodies), the CSRF-mitigation
+ * `X-Requested-With` marker, and optional auth + workspace headers.
+ *
+ * Pure — accepts token/workspaceId as inputs rather than reading storage.
+ */
+export function buildRequestHeaders(options: {
+  headers?: HeadersInit | undefined;
+  isFormData: boolean;
+  token?: string | null | undefined;
+  workspaceId?: string | null | undefined;
+}): Record<string, string> {
+  const headers: Record<string, string> = {
+    ...(options.isFormData ? {} : { 'Content-Type': 'application/json' }),
+    'X-Requested-With': 'XMLHttpRequest',
+    ...(options.headers as Record<string, string> | undefined),
+  };
+
+  if (options.token) {
+    headers.Authorization = `Bearer ${options.token}`;
+  }
+  if (options.workspaceId) {
+    headers['x-workspace-id'] = options.workspaceId;
+  }
+  return headers;
+}

@@ -193,3 +193,98 @@ function writeToStorage(key: string, value: string) {
     // Ignore storage failures in public checkout mode.
   }
 }
+
+/**
+ * Build a stable cache key used to dedupe the prefill GET request so it only
+ * fires once per (slug, checkoutCode, deviceFingerprint) tuple.
+ */
+export function buildPrefillRequestKey(
+  slug: string,
+  checkoutCode: string | undefined,
+  deviceFingerprint: string,
+): string {
+  return `${slug}:${checkoutCode || ''}:${deviceFingerprint}`;
+}
+
+/**
+ * Build the query string for the social-capture prefill endpoint. Trims an
+ * optional `checkoutCode` and omits it when empty so URLs stay clean.
+ */
+export function buildSocialCapturePrefillQuery(input: {
+  slug: string;
+  deviceFingerprint: string;
+  checkoutCode?: string | null | undefined;
+}): URLSearchParams {
+  const params = new URLSearchParams({
+    slug: input.slug,
+    deviceFingerprint: input.deviceFingerprint,
+  });
+  const trimmed = (input.checkoutCode ?? '').trim();
+  if (trimmed) {
+    params.set('checkoutCode', trimmed);
+  }
+  return params;
+}
+
+/**
+ * Build the absolute URL the browser is redirected to when starting the
+ * Apple Sign-In handshake. Keeps the redirect logic pure so the hook only
+ * has to call `window.location.assign(...)` once it has the URL.
+ */
+export function buildAppleSignInDestination(input: {
+  origin: string;
+  slug: string;
+  deviceFingerprint: string;
+  returnPath: string;
+  returnSearch: string;
+  checkoutCode?: string | null | undefined;
+}): string {
+  const destination = new URL('/api/checkout/social/apple/start', input.origin);
+  destination.searchParams.set('slug', input.slug);
+  destination.searchParams.set('deviceFingerprint', input.deviceFingerprint);
+  destination.searchParams.set('returnTo', `${input.returnPath}${input.returnSearch}`);
+  const trimmed = (input.checkoutCode ?? '').trim();
+  if (trimmed) {
+    destination.searchParams.set('checkoutCode', trimmed);
+  }
+  return destination.toString();
+}
+
+/**
+ * Pure predicate that decides whether a snapshot returned by the prefill
+ * endpoint is usable. The hook ignores partial payloads (those missing
+ * provider/name/email) so the empty checkout state stays honest.
+ */
+export function hasUsablePrefillIdentity(
+  data: PrefillResponse | null | undefined,
+): data is PrefillResponse & { provider: CheckoutSocialProvider; name: string; email: string } {
+  return Boolean(data?.provider && data?.name && data?.email);
+}
+
+/**
+ * Pure predicate guarding the Apple Sign-In trigger. The DOM-touching parts
+ * (`window.location.assign`) stay in the hook; this function decides whether
+ * the attempt is even allowed.
+ */
+export function canTriggerAppleSignIn(input: {
+  enabled: boolean;
+  appleClientId: string;
+  slug: string | undefined;
+}): boolean {
+  return Boolean(input.enabled && input.appleClientId && input.slug);
+}
+
+/**
+ * Pure predicate guarding the Facebook Sign-In trigger. Mirrors
+ * {@link canTriggerAppleSignIn} but checks the Meta SDK readiness flag.
+ */
+export function canTriggerFacebookSignIn(input: {
+  enabled: boolean;
+  metaAppId: string;
+  facebookSdkReady: boolean;
+  hasFacebookSdk: boolean;
+}): boolean {
+  return Boolean(
+    input.enabled && input.metaAppId && input.facebookSdkReady && input.hasFacebookSdk,
+  );
+}

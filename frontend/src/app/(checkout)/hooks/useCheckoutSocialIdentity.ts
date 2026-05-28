@@ -4,7 +4,13 @@ import { requestMetaAccessTokenWithEmailScope } from '@/lib/facebook-sdk';
 import { API_BASE } from '@/lib/http';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  buildAppleSignInDestination,
+  buildPrefillRequestKey,
+  buildSocialCapturePrefillQuery,
+  canTriggerAppleSignIn,
+  canTriggerFacebookSignIn,
   ensureDeviceFingerprint,
+  hasUsablePrefillIdentity,
   mergeSnapshot,
   persistIdentity,
   readAttribution,
@@ -201,20 +207,14 @@ export function useCheckoutSocialIdentity({
       return;
     }
 
-    const requestKey = `${slug}:${checkoutCode || ''}:${deviceFingerprint}`;
+    const requestKey = buildPrefillRequestKey(slug, checkoutCode, deviceFingerprint);
     if (prefillRequestKeyRef.current === requestKey) {
       return;
     }
     prefillRequestKeyRef.current = requestKey;
 
     let cancelled = false;
-    const params = new URLSearchParams({
-      slug,
-      deviceFingerprint,
-    });
-    if (checkoutCode?.trim()) {
-      params.set('checkoutCode', checkoutCode.trim());
-    }
+    const params = buildSocialCapturePrefillQuery({ slug, deviceFingerprint, checkoutCode });
 
     fetch(`${API_BASE}/checkout/public/social-capture/prefill?${params.toString()}`)
       .then(async (response) => {
@@ -225,7 +225,7 @@ export function useCheckoutSocialIdentity({
         return (await response.json()) as PrefillResponse | null;
       })
       .then((data) => {
-        if (cancelled || !data?.provider || !data?.name || !data?.email) {
+        if (cancelled || !hasUsablePrefillIdentity(data)) {
           return;
         }
 
@@ -469,7 +469,7 @@ export function useCheckoutSocialIdentity({
     appleAvailable: enabled && Boolean(appleClientId),
     googleButtonRef,
     triggerAppleSignIn: () => {
-      if (!enabled || !appleClientId || !slug) {
+      if (!canTriggerAppleSignIn({ enabled, appleClientId, slug })) {
         setError('Apple indisponível no momento.');
         return;
       }
@@ -477,20 +477,25 @@ export function useCheckoutSocialIdentity({
       setError('');
       setLoadingProvider('apple');
       const currentFingerprint = deviceFingerprint || ensureDeviceFingerprint();
-      const destination = new URL('/api/checkout/social/apple/start', window.location.origin);
-      destination.searchParams.set('slug', slug);
-      destination.searchParams.set('deviceFingerprint', currentFingerprint);
-      destination.searchParams.set(
-        'returnTo',
-        `${window.location.pathname}${window.location.search}`,
-      );
-      if (checkoutCode?.trim()) {
-        destination.searchParams.set('checkoutCode', checkoutCode.trim());
-      }
-      window.location.assign(destination.toString());
+      const destination = buildAppleSignInDestination({
+        origin: window.location.origin,
+        slug: slug as string,
+        deviceFingerprint: currentFingerprint,
+        returnPath: window.location.pathname,
+        returnSearch: window.location.search,
+        checkoutCode,
+      });
+      window.location.assign(destination);
     },
     triggerFacebookSignIn: async () => {
-      if (!enabled || !metaAppId || !facebookSdkReady || !window.FB) {
+      if (
+        !canTriggerFacebookSignIn({
+          enabled,
+          metaAppId,
+          facebookSdkReady,
+          hasFacebookSdk: Boolean(window.FB),
+        })
+      ) {
         setError('Facebook indisponível no momento.');
         return;
       }

@@ -8,7 +8,12 @@ import {
   authHeaders,
   buildErrorResponse,
   buildQuery,
+  buildRequestHeaders,
   buildSuccessResponse,
+  isTrustedAbsoluteRequestTarget,
+  parseRefreshErrorCode,
+  pickAccessToken,
+  pickRefreshToken,
   serializeApiBody,
   type ApiResponse,
   type RefreshTokenResponse,
@@ -241,7 +246,7 @@ async function doRefreshAccessToken(): Promise<boolean> {
       let errorCode: string | undefined;
       try {
         const errorBody = await res.json();
-        errorCode = (errorBody as Record<string, unknown>)?.code as string | undefined;
+        errorCode = parseRefreshErrorCode(errorBody);
       } catch {
         /* ignore parse errors */
       }
@@ -275,8 +280,8 @@ async function doRefreshAccessToken(): Promise<boolean> {
     }
 
     const data: RefreshTokenResponse = await res.json();
-    const newToken = data.access_token || data.accessToken;
-    const newRefresh = data.refresh_token || data.refreshToken;
+    const newToken = pickAccessToken(data);
+    const newRefresh = pickRefreshToken(data);
     if (newToken) {
       tokenStorage.setToken(newToken);
       if (newRefresh) {
@@ -305,35 +310,17 @@ function resolveApiEndpoint(endpoint: string): string {
   return endpoint;
 }
 
-function isTrustedAbsoluteRequestTarget(value: string): boolean {
-  try {
-    const candidate = new URL(value);
-    if (candidate.protocol !== 'http:' && candidate.protocol !== 'https:') {
-      return false;
-    }
-
-    if (API_ORIGIN && candidate.origin === API_ORIGIN) {
-      return true;
-    }
-
-    if (typeof window !== 'undefined' && candidate.origin === window.location.origin) {
-      return true;
-    }
-
-    return false;
-  } catch {
-    return false;
-  }
+function currentWindowOrigin(): string | undefined {
+  return typeof window !== 'undefined' ? window.location.origin : undefined;
 }
 
 function createTrustedRequest(input: string, init?: RequestInit): Request {
   if (input.startsWith('/')) {
-    const sameOriginBase =
-      (typeof window !== 'undefined' && window.location.origin) || API_ORIGIN || 'http://localhost';
+    const sameOriginBase = currentWindowOrigin() || API_ORIGIN || 'http://localhost';
     return new Request(new URL(input, `${sameOriginBase}/`), init);
   }
 
-  if (!isTrustedAbsoluteRequestTarget(input)) {
+  if (!isTrustedAbsoluteRequestTarget(input, API_ORIGIN, currentWindowOrigin())) {
     throw new Error(`Blocked external request target: ${input}`);
   }
 
@@ -344,24 +331,12 @@ function buildApiHeaders(options: {
   headers?: HeadersInit;
   body?: unknown;
 }): Record<string, string> {
-  const isFormData = options.body instanceof FormData;
-  const token = tokenStorage.getToken();
-  const workspaceId = tokenStorage.getWorkspaceId();
-
-  const headers: Record<string, string> = {
-    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
-    // CSRF mitigation: custom header prevents cross-origin form submissions
-    'X-Requested-With': 'XMLHttpRequest',
-    ...(options.headers as Record<string, string>),
-  };
-
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-  if (workspaceId) {
-    headers['x-workspace-id'] = workspaceId;
-  }
-  return headers;
+  return buildRequestHeaders({
+    headers: options.headers,
+    isFormData: options.body instanceof FormData,
+    token: tokenStorage.getToken(),
+    workspaceId: tokenStorage.getWorkspaceId(),
+  });
 }
 
 async function performApiRequest<T>(url: string, init: RequestInit): Promise<ApiResponse<T>> {
