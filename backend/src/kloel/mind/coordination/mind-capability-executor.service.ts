@@ -20,6 +20,7 @@
  * @see docs/adr/0013-kloel-mind-unification.md
  */
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { StructuredLogger } from '../../../logging/structured-logger';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { MindEventSpine } from './mind-event-spine.service';
@@ -469,6 +470,45 @@ export class MindCapabilityExecutor {
     }
     return this.safeQuery.query(_workspaceId, sql);
   }
+  /**
+   * Record a tool execution as a mind-tracked capability event.
+   * Called by the tool dispatcher as a fire-and-forget observer
+   * so beliefs/predictions update from real tool outcomes.
+   *
+   * @param workspaceId — tenant
+   * @param capabilityId — tool name (e.g. 'save_product')
+   * @param inputs — tool args
+   * @param outputs — dispatcher result
+   * @param success — whether the tool succeeded
+   */
+  recordExecution(
+    workspaceId: string,
+    capabilityId: string,
+    inputs: UnknownRecord,
+    outputs: UnknownRecord,
+    success: boolean,
+  ): void {
+    void this.events
+      .record({
+        workspaceId,
+        action: 'brain.capability.invoked',
+        intent: capabilityId,
+        status: success ? 'executed' : 'error',
+        meta: {
+          capabilityId,
+          inputs,
+          outputs,
+          success,
+        } as Prisma.InputJsonObject,
+      })
+      .catch((err: unknown) => {
+        this.logger.warn(
+          `recordExecution event emit failed for ${capabilityId}`,
+          err,
+        );
+      });
+  }
+
   private async emitCapabilityInvoked(
     workspaceId: string,
     capability: string,

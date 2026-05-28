@@ -22,6 +22,7 @@ import { SelfGapsService } from './self-awareness/self-gaps.service';
 import { DepsCoverageService } from './self-awareness/deps-coverage.service';
 import { CapabilityRegistryV2Service } from './capability-registry-v2/capability-registry-v2.service';
 import { MindCapabilityRegistry } from './mind/coordination/mind-capability-registry.service';
+import { MindCapabilityExecutor } from './mind/coordination/mind-capability-executor.service';
 import { ReportService } from './report.service';
 import {
   runRequestHighRiskApproval,
@@ -117,6 +118,7 @@ export class KloelToolDispatcherService {
     @Optional() private readonly smartPaymentService?: SmartPaymentService,
     @Optional() private readonly transports?: ChannelTransportRegistry,
     @Optional() private readonly riskGate?: RiskGateService,
+    @Optional() private readonly mindCapabilityExecutor?: MindCapabilityExecutor,
   ) {}
 
   /** Execute a named tool, delegating to the appropriate sub-service. */
@@ -146,12 +148,14 @@ export class KloelToolDispatcherService {
       return { success: false, error: 'billing_suspended' };
     }
     this.logger.log(`Executando ferramenta: ${toolName}`);
+    let result: ToolResult;
     try {
       const fastPathResult = await this.runFastPathDispatch(workspaceId, toolName, args, userId);
       if (fastPathResult !== null) {
-        return fastPathResult;
+        result = fastPathResult;
+      } else {
+        result = await this.runDirectDispatch(workspaceId, toolName, args, userId);
       }
-      return await this.runDirectDispatch(workspaceId, toolName, args, userId);
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'KloelToolDispatcherService.toolChangePlan');
       const msg =
@@ -161,8 +165,23 @@ export class KloelToolDispatcherService {
             ? error
             : 'unknown error';
       this.logger.error(`Erro ao executar ferramenta ${toolName}:`, error);
-      return { success: false, error: msg };
+      result = { success: false, error: msg };
     }
+
+    // fire-and-forget: record execution as mind-tracked capability event
+    try {
+      this.mindCapabilityExecutor?.recordExecution(
+        workspaceId,
+        toolName,
+        args,
+        result,
+        result.success,
+      );
+    } catch (err: unknown) {
+      this.logger.warn('kloel_capability_executor_skipped', err);
+    }
+
+    return result;
   }
 
   /**
