@@ -120,6 +120,7 @@ interface PaymentContext {
   contactId?: string;
   phone: string;
   customerName: string;
+  customerEmail?: string;
   productName?: string;
   amount: number;
   conversation?: string;
@@ -214,13 +215,14 @@ export class SmartPaymentService {
       }
     }
 
-    // 2. O stack ativo do Kloel gera links Pix via Stripe.
+    // 2. O stack ativo do Kloel gera PIX via Mercado Pago.
     try {
       const payment = await this.paymentService.createPayment({
         workspaceId,
         leadId: context.contactId || phone,
         customerName,
         customerPhone: phone,
+        ...(context.customerEmail !== undefined ? { customerEmail: context.customerEmail } : {}),
         amount,
         description: productName || 'Pagamento KLOEL',
         idempotencyKey: buildSmartPaymentIdempotencyKey(context),
@@ -237,7 +239,7 @@ export class SmartPaymentService {
     } catch (err: unknown) {
       const message =
         err instanceof Error ? (err instanceof Error ? err.message : String(err)) : String(err);
-      this.logger.error(`Stripe payment failed: ${message}`);
+      this.logger.error(`Mercado Pago PIX payment failed: ${message}`);
       Sentry.captureException(err, {
         tags: { type: 'financial_alert', operation: 'smart_payment_create' },
         extra: { workspaceId, contactId: context.contactId, amount },

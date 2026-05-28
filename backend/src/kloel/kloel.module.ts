@@ -196,6 +196,7 @@ import { IntentRouterModule } from './intent-router/intent-router.module';
 import { SelfAwarenessModule } from './self-awareness/self-awareness.module';
 import { ProductsModule } from '../products/products.module';
 import { PlansModule } from '../plans/plans.module';
+import { MercadoPagoModule } from '../payments/mercadopago/mercadopago.module';
 
 /** Kloel module. */
 @Module({
@@ -209,6 +210,7 @@ import { PlansModule } from '../plans/plans.module';
     AuditModule,
     forwardRef(() => WalletModule),
     FraudModule,
+    MercadoPagoModule,
     PartnershipsModule,
     MetricsModule,
     KloelAudioModule,

@@ -18,18 +18,17 @@ type SmartPaymentPrismaMock = {
   };
 };
 
+type SmartPaymentGatewayResult = {
+  id: string;
+  invoiceUrl: string;
+  pixQrCodeUrl: string;
+  pixCopyPaste: string;
+  paymentLink: string;
+  status: string;
+};
+
 type SmartPaymentGatewayMock = {
-  createPayment: jest.Mock<
-    Promise<{
-      id: string;
-      invoiceUrl: string;
-      pixQrCodeUrl: string;
-      pixCopyPaste: string;
-      paymentLink: string;
-      status: string;
-    }>,
-    [unknown]
-  >;
+  createPayment: jest.Mock<Promise<SmartPaymentGatewayResult>, [unknown]>;
 };
 
 type SmartPaymentPlanLimitsMock = {
@@ -37,7 +36,7 @@ type SmartPaymentPlanLimitsMock = {
   trackAiUsage: jest.Mock<Promise<void>, [string, number]>;
 };
 
-describe('SmartPaymentService — Stripe-only payment kernel', () => {
+describe('SmartPaymentService — canonical Mercado Pago PIX kernel', () => {
   let prisma: SmartPaymentPrismaMock;
   let paymentService: SmartPaymentGatewayMock;
   let service: SmartPaymentService;
@@ -62,16 +61,16 @@ describe('SmartPaymentService — Stripe-only payment kernel', () => {
       },
     };
 
-    paymentService = {
-      createPayment: jest.fn().mockResolvedValue({
-        id: 'pi_pix_1',
-        invoiceUrl: 'https://pay.stripe.com/pix/pi_pix_1',
-        pixQrCodeUrl: 'data:image/png;base64,qr',
-        pixCopyPaste: '000201pixcopy',
-        paymentLink: 'https://pay.stripe.com/pix/pi_pix_1',
-        status: 'requires_action',
-      }),
-    };
+    const createPayment = jest.fn<Promise<SmartPaymentGatewayResult>, [unknown]>();
+    createPayment.mockResolvedValue({
+      id: 'mp_pix_1',
+      invoiceUrl: 'https://www.mercadopago.com.br/payments/mp_pix_1/ticket',
+      pixQrCodeUrl: 'data:image/png;base64,qr',
+      pixCopyPaste: '000201pixcopy',
+      paymentLink: 'https://www.mercadopago.com.br/payments/mp_pix_1/ticket',
+      status: 'pending',
+    });
+    paymentService = { createPayment };
     planLimits = {
       ensureTokenBudget: jest.fn(),
       trackAiUsage: jest.fn().mockResolvedValue(undefined),
@@ -96,12 +95,13 @@ describe('SmartPaymentService — Stripe-only payment kernel', () => {
     );
   });
 
-  it('creates PIX payments through PaymentService instead of calling a gateway-specific service', async () => {
+  it('creates PIX payments through PaymentService and forwards Mercado Pago payer data', async () => {
     const result = await service.createSmartPayment({
       workspaceId: 'ws-1',
       contactId: 'contact-1',
       phone: '5511999999999',
       customerName: 'Cliente Pix',
+      customerEmail: 'cliente@example.com',
       amount: 139.9,
       productName: 'Produto X',
     });
@@ -111,14 +111,15 @@ describe('SmartPaymentService — Stripe-only payment kernel', () => {
       leadId: 'contact-1',
       customerName: 'Cliente Pix',
       customerPhone: '5511999999999',
+      customerEmail: 'cliente@example.com',
       amount: 139.9,
       description: 'Produto X',
       idempotencyKey: 'smart-payment:ws-1:contact-1:139.9:Produto X',
     });
 
     expect(result).toMatchObject({
-      paymentId: 'pi_pix_1',
-      paymentUrl: 'https://pay.stripe.com/pix/pi_pix_1',
+      paymentId: 'mp_pix_1',
+      paymentUrl: 'https://www.mercadopago.com.br/payments/mp_pix_1/ticket',
       pixQrCode: 'data:image/png;base64,qr',
       pixCopyPaste: '000201pixcopy',
       billingType: 'PIX',

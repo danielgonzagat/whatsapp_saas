@@ -110,7 +110,13 @@ export class KloelToolDispatcherService {
     }
     this.logger.log(`Executando ferramenta: ${toolName}`);
     try {
-      const productResult = await handleProductTool(receiptDeps, workspaceId, toolName, args, userId);
+      const productResult = await handleProductTool(
+        receiptDeps,
+        workspaceId,
+        toolName,
+        args,
+        userId,
+      );
       if (productResult) return productResult;
 
       const selfAwarenessResult = await handleSelfAwarenessTool(
@@ -139,7 +145,11 @@ export class KloelToolDispatcherService {
       if (codeOrReportResult) return codeOrReportResult;
 
       const dottedAliasResult = await handleDottedAliasTool(
-        receiptDeps, workspaceId, toolName, args, userId,
+        receiptDeps,
+        workspaceId,
+        toolName,
+        args,
+        userId,
         (baseTool) => this.executeTool(workspaceId, baseTool, args, userId),
       );
       if (dottedAliasResult) return dottedAliasResult;
@@ -247,6 +257,9 @@ export class KloelToolDispatcherService {
             workspaceId,
             phone: asString(args.customerPhone),
             customerName: asString(args.customerName),
+            ...(typeof args.customerEmail === 'string'
+              ? { customerEmail: args.customerEmail }
+              : {}),
             ...(typeof args.productName === 'string' ? { productName: args.productName } : {}),
             amount: asNumber(args.amount),
           });
@@ -272,6 +285,9 @@ export class KloelToolDispatcherService {
             workspaceId,
             phone: asString(args.customerPhone),
             customerName: asString(args.customerName),
+            ...(typeof args.customerEmail === 'string'
+              ? { customerEmail: args.customerEmail }
+              : {}),
             ...(typeof args.productName === 'string' ? { productName: args.productName } : {}),
             amount: asNumber(args.amount),
           });

@@ -78,7 +78,7 @@ export async function runCreatePaymentLink(
   prisma: PrismaService,
   smartPaymentService: SmartPaymentService,
   workspaceId: string,
-  args: { amount: number; description: string; customerName?: string },
+  args: { amount: number; description: string; customerName?: string; customerEmail?: string },
 ): Promise<ToolResult> {
   logger.log('Payment operation', {
     context: 'KloelChatTools.toolCreatePaymentLink',
@@ -150,6 +150,7 @@ export async function runCreatePaymentLink(
     amount: Number(args.amount) || 0,
     productName: args.description,
     customerName: args.customerName || 'Cliente',
+    ...(typeof args.customerEmail === 'string' ? { customerEmail: args.customerEmail } : {}),
     phone: '',
   });
   return { success: true, ...paymentResult };

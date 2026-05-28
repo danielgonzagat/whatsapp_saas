@@ -195,6 +195,7 @@ export class KloelLeadBrainService {
         contactId: leadId,
         phone,
         customerName: lead?.name || 'Cliente',
+        ...(lead?.email ? { customerEmail: lead.email } : {}),
         productName,
         amount,
         conversation,

@@ -104,6 +104,7 @@ export class SmartPaymentController {
     body: {
       phone: string;
       customerName: string;
+      customerEmail?: string;
       amount: number;
       productName?: string;
       contactId?: string;
@@ -115,6 +116,7 @@ export class SmartPaymentController {
       workspaceId: effectiveWorkspaceId,
       phone: body.phone,
       customerName: body.customerName,
+      ...(body.customerEmail !== undefined ? { customerEmail: body.customerEmail } : {}),
       amount: body.amount,
       ...(body.productName !== undefined ? { productName: body.productName } : {}),
       ...(body.contactId !== undefined ? { contactId: body.contactId } : {}),
