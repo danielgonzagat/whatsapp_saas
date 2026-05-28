@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { StripeService } from '../billing/stripe.service';
 import { SpineEmitterService } from '../kloel/spine/spine-emitter.service';
 import { MercadoPagoBoletoChargeService } from '../payments/mercadopago/mercadopago-boleto-charge.service';
 import { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
@@ -16,6 +17,7 @@ describe('SalesService', () => {
   };
   let mpBoleto: { create: jest.Mock };
   let mpPix: { create: jest.Mock };
+  let stripe: { stripe: { checkout: { sessions: { create: jest.Mock } } } };
   let audit: { logWithTx: jest.Mock; log: jest.Mock };
   let spine: { emit: jest.Mock };
 
@@ -32,6 +34,14 @@ describe('SalesService', () => {
     return call?.[0] as T;
   }
 
+  function objectContaining<T extends object>(sample: T): T {
+    return expect.objectContaining(sample) as T;
+  }
+
+  function stringContaining(sample: string): string {
+    return expect.stringContaining(sample) as string;
+  }
+
   beforeEach(async () => {
     prisma = {
       productPlan: { findFirst: jest.fn().mockResolvedValue(null) },
@@ -45,6 +55,7 @@ describe('SalesService', () => {
     };
     mpBoleto = { create: jest.fn() };
     mpPix = { create: jest.fn() };
+    stripe = { stripe: { checkout: { sessions: { create: jest.fn() } } } };
     audit = { logWithTx: jest.fn().mockResolvedValue(undefined), log: jest.fn() };
     spine = { emit: jest.fn().mockResolvedValue(undefined) };
     const m: TestingModule = await Test.createTestingModule({
@@ -53,6 +64,7 @@ describe('SalesService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: MercadoPagoBoletoChargeService, useValue: mpBoleto },
         { provide: MercadoPagoPixChargeService, useValue: mpPix },
+        { provide: StripeService, useValue: stripe },
         { provide: AuditService, useValue: audit },
         { provide: SpineEmitterService, useValue: spine },
       ],
@@ -298,11 +310,11 @@ describe('SalesService', () => {
         externalPaymentId: 'mp-boleto-1',
       });
       expect(mpBoleto.create).toHaveBeenCalledWith(
-        expect.objectContaining({
+        objectContaining({
           amountCents: 9990n,
           description: 'Produto X',
           externalReference: 's-boleto-1',
-          notificationUrl: expect.stringContaining('/webhooks/mercadopago'),
+          notificationUrl: stringContaining('/webhooks/mercadopago'),
           payerAddress: boletoBuyer.address,
           payerDocument: '12345678900',
           payerEmail: 'joao@test.com',
@@ -310,10 +322,10 @@ describe('SalesService', () => {
         }),
       );
       expect(t.kloelSale.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
+        objectContaining({
+          data: objectContaining({
             paymentMethod: 'BOLETO',
-            metadata: expect.objectContaining({
+            metadata: objectContaining({
               buyerAddress: boletoBuyer.address,
               buyerEmail: 'joao@test.com',
             }),
@@ -321,11 +333,11 @@ describe('SalesService', () => {
         }),
       );
       expect(t.kloelSale.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
+        objectContaining({
+          data: objectContaining({
             externalPaymentId: 'mp-boleto-1',
             paymentLink: 'https://mp.test/boleto/1',
-            metadata: expect.objectContaining({
+            metadata: objectContaining({
               boletoBarcode: '23793.38128 60000.000001 12345.678901 2 99990000009990',
               boletoExternalId: 'mp-boleto-1',
               boletoStatus: 'pending',
@@ -335,15 +347,143 @@ describe('SalesService', () => {
       );
       expect(audit.logWithTx).toHaveBeenCalledTimes(2);
       expect(spine.emit).toHaveBeenCalledWith(
-        expect.objectContaining({
+        objectContaining({
           eventName: 'sale.created',
-          payload: expect.objectContaining({ paymentMethod: 'BOLETO' }),
+          payload: objectContaining({ paymentMethod: 'BOLETO' }),
         }),
       );
       expect(spine.emit).toHaveBeenCalledWith(
-        expect.objectContaining({
+        objectContaining({
           eventName: 'payment.pending',
-          payload: expect.objectContaining({ gateway: 'mercadopago', method: 'BOLETO' }),
+          payload: objectContaining({ gateway: 'mercadopago', method: 'BOLETO' }),
+        }),
+      );
+    });
+  });
+
+  describe('createStripeCardLink', () => {
+    const pid = 'prod-1';
+    const plid = 'plan-1';
+    const plan = {
+      id: plid,
+      productId: pid,
+      name: 'Plano Pro',
+      price: 99.9,
+      active: true,
+      product: { name: 'Produto X' },
+    };
+    const tx = () => ({
+      kloelSale: {
+        create: jest.fn().mockResolvedValue({
+          id: 's-card-1',
+          workspaceId: ws,
+          productName: 'Produto X',
+          amount: 99.9,
+          status: 'pending',
+          paymentMethod: 'CREDIT_CARD',
+          leadPhone: buyer.phone,
+          metadata: {},
+        }),
+        update: jest.fn().mockResolvedValue({}),
+      },
+    });
+
+    const runTransaction =
+      (transaction: ReturnType<typeof tx>) =>
+      async (cb: (tx: ReturnType<typeof tx>) => unknown): Promise<unknown> =>
+        cb(transaction);
+
+    it('creates card checkout link using Stripe card-only Checkout Session', async () => {
+      prisma.productPlan.findFirst.mockResolvedValue(plan);
+      const t = tx();
+      prisma.$transaction.mockImplementation(runTransaction(t));
+      stripe.stripe.checkout.sessions.create.mockResolvedValue({
+        id: 'cs_card_1',
+        url: 'https://checkout.stripe.com/c/pay/cs_card_1',
+        payment_intent: 'pi_card_1',
+      });
+
+      const result = await service.createStripeCardLink(ws, pid, plid, buyer);
+
+      expect(result).toEqual({
+        saleId: 's-card-1',
+        checkoutSessionId: 'cs_card_1',
+        checkoutUrl: 'https://checkout.stripe.com/c/pay/cs_card_1',
+        externalPaymentId: 'pi_card_1',
+      });
+      expect(mpPix.create).not.toHaveBeenCalled();
+      expect(mpBoleto.create).not.toHaveBeenCalled();
+      expect(stripe.stripe.checkout.sessions.create).toHaveBeenCalledWith(
+        objectContaining({
+          customer_email: 'joao@test.com',
+          line_items: [
+            objectContaining({
+              price_data: objectContaining({ currency: 'brl', unit_amount: 9990 }),
+              quantity: 1,
+            }),
+          ],
+          metadata: objectContaining({
+            planId: plid,
+            productId: pid,
+            productName: 'Produto X',
+            saleId: 's-card-1',
+            workspaceId: ws,
+          }),
+          mode: 'payment',
+          payment_intent_data: objectContaining({
+            metadata: objectContaining({
+              kloel_order_id: 's-card-1',
+              orderId: 's-card-1',
+              payment_method: 'CREDIT_CARD',
+              workspace_id: ws,
+              workspaceId: ws,
+            }),
+          }),
+          payment_method_types: ['card'],
+        }),
+        objectContaining({
+          idempotencyKey: stringContaining('sale-card:ws-1:s-card-1:'),
+        }),
+      );
+      expect(t.kloelSale.create).toHaveBeenCalledWith(
+        objectContaining({
+          data: objectContaining({
+            paymentMethod: 'CREDIT_CARD',
+            status: 'pending',
+            metadata: objectContaining({
+              buyerEmail: 'joao@test.com',
+              productId: pid,
+            }),
+          }),
+        }),
+      );
+      expect(t.kloelSale.update).toHaveBeenCalledWith(
+        objectContaining({
+          data: objectContaining({
+            externalPaymentId: 'pi_card_1',
+            paymentLink: 'https://checkout.stripe.com/c/pay/cs_card_1',
+            metadata: objectContaining({
+              stripeCheckoutSessionId: 'cs_card_1',
+              stripePaymentIntentId: 'pi_card_1',
+            }),
+          }),
+        }),
+      );
+      expect(audit.logWithTx).toHaveBeenCalledTimes(2);
+      expect(spine.emit).toHaveBeenCalledWith(
+        objectContaining({
+          eventName: 'sale.created',
+          payload: objectContaining({ paymentMethod: 'CREDIT_CARD' }),
+        }),
+      );
+      expect(spine.emit).toHaveBeenCalledWith(
+        objectContaining({
+          eventName: 'payment.pending',
+          payload: objectContaining({
+            gateway: 'stripe',
+            method: 'CREDIT_CARD',
+            checkoutSessionId: 'cs_card_1',
+          }),
         }),
       );
     });

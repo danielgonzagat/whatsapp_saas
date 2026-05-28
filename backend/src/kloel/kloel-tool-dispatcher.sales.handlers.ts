@@ -40,7 +40,11 @@ type ToolResult = {
  * Tool names handled by {@link dispatchSalesTool}. Mirrors the case labels
  * that previously lived in the dispatcher switch.
  */
-export const SALES_TOOL_NAMES = new Set<string>(['sales.create_pix', 'sales.create_boleto']);
+export const SALES_TOOL_NAMES = new Set<string>([
+  'sales.create_pix',
+  'sales.create_boleto',
+  'sales.create_card_link',
+]);
 
 export function isSalesTool(toolName: string): boolean {
   return SALES_TOOL_NAMES.has(toolName);
@@ -54,6 +58,8 @@ export interface SalesToolDeps {
 }
 
 const PIX_REQUIRED_INPUTS = ['productId', 'planId', 'customerName', 'customerEmail', 'customerCpf'];
+
+const CARD_REQUIRED_INPUTS = ['productId', 'planId', 'customerName', 'customerEmail'];
 
 const BOLETO_REQUIRED_INPUTS = [
   'productId',
@@ -148,6 +154,60 @@ export async function dispatchSalesTool(
         return wrap(
           'sales.create_pix',
           { success: false, error: errorMessage(pixError) },
+          startedAt,
+        );
+      }
+    }
+
+    case 'sales.create_card_link': {
+      const startedAt = Date.now();
+      const missingInputs = missingStringInputs(args, CARD_REQUIRED_INPUTS);
+      if (missingInputs.length > 0) {
+        return wrap(
+          'sales.create_card_link',
+          {
+            success: false,
+            error: 'sales_create_card_link_inputs_required',
+            missingInputs,
+            message: `Dados faltantes para gerar link de cartão real: ${missingInputs.join(', ')}`,
+          },
+          startedAt,
+        );
+      }
+      if (!salesService) {
+        return wrap(
+          'sales.create_card_link',
+          { success: false, error: 'sales_service_unavailable' },
+          startedAt,
+        );
+      }
+      try {
+        const cardResult = await salesService.createStripeCardLink(
+          workspaceId,
+          asString(args.productId).trim(),
+          asString(args.planId).trim(),
+          buyerDataFromArgs(args),
+        );
+        return wrap(
+          'sales.create_card_link',
+          {
+            success: true,
+            capabilityId: 'sales.create_card_link',
+            saleId: cardResult.saleId,
+            orderId: cardResult.saleId,
+            paymentId: cardResult.externalPaymentId,
+            externalPaymentId: cardResult.externalPaymentId,
+            checkoutSessionId: cardResult.checkoutSessionId,
+            checkoutUrl: cardResult.checkoutUrl,
+            paymentUrl: cardResult.checkoutUrl,
+            message: `Link de cartão gerado: ${cardResult.saleId}`,
+          },
+          startedAt,
+        );
+      } catch (cardError: unknown) {
+        return wrap(
+          'sales.create_card_link',
+          { success: false, error: errorMessage(cardError) },
           startedAt,
         );
       }

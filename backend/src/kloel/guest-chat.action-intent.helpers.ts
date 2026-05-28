@@ -172,8 +172,11 @@ export function detectActionIntent(
   if (/(gera|emite|emiti)(?:r|ndo)?.*boleto/.test(msg)) {
     return { tool: 'sales.create_boleto', args: extractPaymentArgs(msg) };
   }
-  if (/\b(cart[aã]o|card|cr[eé]dito)\b/.test(msg) && /(gera|emite|emiti|cobran[cç]a|pagamento)/.test(msg)) {
-    return null;
+  if (
+    /\b(cart[aã]o|card|cr[eé]dito)\b/.test(msg) &&
+    /(gera|emite|emiti|cobran[cç]a|pagamento)/.test(msg)
+  ) {
+    return { tool: 'sales.create_card_link', args: extractPaymentArgs(msg) };
   }
   if (
     /(gera|emiti)(?:r|ndo)?\s+(?:um[a]?\s+)?(?:o\s+|a\s+)?(pix|cobran[cç]a|pagamento)/.test(msg)

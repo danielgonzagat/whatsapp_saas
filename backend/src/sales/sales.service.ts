@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { AuditService } from '../audit/audit.service';
+import { StripeService } from '../billing/stripe.service';
 import { SpineEmitterService } from '../kloel/spine/spine-emitter.service';
 import { MercadoPagoBoletoChargeService } from '../payments/mercadopago/mercadopago-boleto-charge.service';
 import { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
@@ -47,6 +48,13 @@ export interface CreateBoletoOrderResult {
   boletoUrl: string;
   externalPaymentId: string;
 }
+
+export interface CreateStripeCardLinkResult {
+  saleId: string;
+  checkoutSessionId: string;
+  checkoutUrl: string;
+  externalPaymentId: string;
+}
 // ------- Helpers -------
 
 function resolveBackendOrigin(): string {
@@ -62,7 +70,23 @@ function resolveBackendOrigin(): string {
     return `https://${trimmed}`;
   }
   return trimmed;
-} /**
+}
+
+function resolveFrontendOrigin(): string {
+  const raw =
+    process.env.FRONTEND_PUBLIC_URL ||
+    process.env.PUBLIC_FRONTEND_URL ||
+    process.env.FRONTEND_URL ||
+    process.env.APP_URL ||
+    'http://localhost:3000';
+  const trimmed = raw.replace(/\/+$/, '');
+  if (!/^https?:\/\//i.test(trimmed)) {
+    return `https://${trimmed}`;
+  }
+  return trimmed;
+}
+
+/**
  * Sales service — creates sales (PIX, card, boleto) directly from chat flows.
  *
  * Unlike the checkout pipeline, this service targets in-chat conversion:
@@ -79,9 +103,12 @@ export class SalesService {
     private readonly prisma: PrismaService,
     private readonly mpBoleto: MercadoPagoBoletoChargeService,
     private readonly mpPix: MercadoPagoPixChargeService,
+    private readonly stripeService: StripeService,
     private readonly audit: AuditService,
     private readonly spine: SpineEmitterService,
-  ) {} /**
+  ) {}
+
+  /**
    * Create a PIX payment order directly from chat.
    *
    * Flow:
@@ -479,6 +506,228 @@ export class SalesService {
           boletoExpiresAt: boletoResult.expiresAt,
           boletoUrl: boletoResult.ticketUrl,
           externalPaymentId: boletoResult.externalId,
+        };
+      });
+  }
+
+  /**
+   * Create a card checkout link directly from chat using Stripe Checkout.
+   */
+  async createStripeCardLink(
+    workspaceId: string,
+    productId: string,
+    planId: string,
+    buyerData: BuyerData,
+  ): Promise<CreateStripeCardLinkResult> {
+    const plan = await this.prisma.productPlan.findFirst({
+      where: {
+        id: planId,
+        productId,
+        product: { workspaceId },
+        active: true,
+      },
+      include: { product: { select: { name: true } } },
+    });
+
+    if (!plan) {
+      throw new NotFoundException(
+        `Plano ${planId} não encontrado para produto ${productId} neste workspace.`,
+      );
+    }
+
+    const amountCents = Math.round(plan.price * 100);
+    if (amountCents <= 0) {
+      throw new ServiceUnavailableException('O plano possui preço inválido.');
+    }
+
+    const productName = plan.product.name;
+
+    return this.prisma
+      .$transaction(
+        async (tx) => {
+          const sale = await tx.kloelSale.create({
+            data: {
+              workspaceId,
+              productName,
+              amount: plan.price,
+              status: 'pending',
+              paymentMethod: 'CREDIT_CARD',
+              leadPhone: buyerData.phone ?? null,
+              metadata: {
+                productId,
+                planId,
+                buyerName: buyerData.name,
+                buyerEmail: buyerData.email,
+              },
+            },
+          });
+
+          await this.audit.logWithTx(tx, {
+            workspaceId,
+            action: 'SALE_CREATED',
+            resource: 'KloelSale',
+            resourceId: sale.id,
+            details: {
+              productId,
+              planId,
+              amount: plan.price,
+              paymentMethod: 'CREDIT_CARD',
+            },
+          });
+
+          const frontendOrigin = resolveFrontendOrigin();
+          const successUrl =
+            `${frontendOrigin}/vendas/gestao-vendas` +
+            `?stripe_checkout=success&saleId=${encodeURIComponent(sale.id)}`;
+          const cancelUrl =
+            `${frontendOrigin}/vendas/gestao-vendas` +
+            `?stripe_checkout=canceled&saleId=${encodeURIComponent(sale.id)}`;
+          const session = await this.stripeService.stripe.checkout.sessions.create(
+            {
+              mode: 'payment',
+              payment_method_types: ['card'],
+              customer_email: buyerData.email,
+              line_items: [
+                {
+                  quantity: 1,
+                  price_data: {
+                    currency: 'brl',
+                    unit_amount: amountCents,
+                    product_data: { name: productName },
+                  },
+                },
+              ],
+              success_url: successUrl,
+              cancel_url: cancelUrl,
+              metadata: {
+                workspaceId,
+                saleId: sale.id,
+                productId,
+                planId,
+                productName,
+                ...(buyerData.phone ? { phone: buyerData.phone } : {}),
+              },
+              payment_intent_data: {
+                metadata: {
+                  workspace_id: workspaceId,
+                  workspaceId,
+                  kloel_order_id: sale.id,
+                  orderId: sale.id,
+                  payment_method: 'CREDIT_CARD',
+                },
+              },
+            },
+            { idempotencyKey: `sale-card:${workspaceId}:${sale.id}:${randomUUID()}` },
+          );
+
+          if (!session.url) {
+            throw new ServiceUnavailableException('Stripe não retornou URL de checkout.');
+          }
+
+          const paymentIntent = session.payment_intent;
+          const externalPaymentId =
+            typeof paymentIntent === 'string' ? paymentIntent : paymentIntent?.id || session.id;
+
+          await tx.kloelSale.update({
+            where: { id: sale.id },
+            data: {
+              externalPaymentId,
+              paymentLink: session.url,
+              metadata: {
+                productId,
+                planId,
+                buyerName: buyerData.name,
+                buyerEmail: buyerData.email,
+                stripeCheckoutSessionId: session.id,
+                stripePaymentIntentId: externalPaymentId,
+              },
+            },
+          });
+
+          await this.audit.logWithTx(tx, {
+            workspaceId,
+            action: 'PAYMENT_PENDING',
+            resource: 'KloelSale',
+            resourceId: sale.id,
+            details: {
+              externalPaymentId,
+              gateway: 'stripe',
+              method: 'CREDIT_CARD',
+              amount: plan.price,
+              status: 'pending',
+            },
+          });
+
+          return { sale, session, externalPaymentId, checkoutUrl: session.url };
+        },
+        { isolationLevel: 'ReadCommitted' },
+      )
+      .then(({ sale, session, externalPaymentId, checkoutUrl }) => {
+        void this.spine
+          .emit({
+            eventName: 'sale.created',
+            workspaceId,
+            entityRef: { entityType: 'sale', entityId: sale.id },
+            truthMode: 'observed',
+            provenance: {
+              source: 'production',
+              processor: PROCESSOR,
+              processorVersion: PROCESSOR_VERSION,
+              schemaVersion: SCHEMA_VERSION,
+            },
+            payload: {
+              saleId: sale.id,
+              productId,
+              planId,
+              amount: plan.price,
+              paymentMethod: 'CREDIT_CARD',
+              externalPaymentId,
+              checkoutSessionId: session.id,
+            },
+          })
+          .catch((err: unknown) => {
+            this.logger.warn(
+              `sale.created emission failed: ${err instanceof Error ? err.message : String(err)}`,
+            );
+          });
+
+        void this.spine
+          .emit({
+            eventName: 'payment.pending',
+            workspaceId,
+            entityRef: { entityType: 'sale', entityId: sale.id },
+            truthMode: 'observed',
+            provenance: {
+              source: 'production',
+              processor: PROCESSOR,
+              processorVersion: PROCESSOR_VERSION,
+              schemaVersion: SCHEMA_VERSION,
+            },
+            payload: {
+              saleId: sale.id,
+              externalPaymentId,
+              gateway: 'stripe',
+              method: 'CREDIT_CARD',
+              amount: plan.price,
+              status: 'pending',
+              checkoutSessionId: session.id,
+            },
+          })
+          .catch((err: unknown) => {
+            this.logger.warn(
+              `payment.pending emission failed: ${err instanceof Error ? err.message : String(err)}`,
+            );
+          });
+
+        this.logger.log(
+          `Stripe card checkout link created: saleId=${sale.id} externalPaymentId=${externalPaymentId} workspace=${workspaceId}`,
+        );
+
+        return {
+          saleId: sale.id,
+          checkoutSessionId: session.id,
+          checkoutUrl,
+          externalPaymentId,
         };
       });
   }

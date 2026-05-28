@@ -19,8 +19,10 @@ export function formatToolResult(tool: string, result: unknown): string {
     case 'create_product':
     case 'products.create': {
       const p = (r.product as Record<string, unknown> | undefined) ?? {};
-      const fmt = p.format ? ` (${p.format})` : '';
-      const cat = p.category ? ` [${p.category}]` : '';
+      const format = s(p.format);
+      const category = s(p.category);
+      const fmt = format ? ` (${format})` : '';
+      const cat = category ? ` [${category}]` : '';
       return `Produto ${s(p.name)}${cat}${fmt} criado! R$ ${s(p.price)}`;
     }
     case 'update_product':
@@ -119,7 +121,9 @@ export function formatToolResult(tool: string, result: unknown): string {
       if (revs.length === 0) {
         return 'Nenhuma avaliação encontrada.';
       }
-      return `Avaliações (${revs.length}): ${revs.map((rv) => `★${rv.rating || '?'} ${s(rv.comment)}`.substring(0, 60)).join(' | ')}`;
+      return `Avaliações (${revs.length}): ${revs
+        .map((rv) => `★${s(rv.rating, '?')} ${s(rv.comment)}`.substring(0, 60))
+        .join(' | ')}`;
     }
     case 'get_product_ai_config':
       return s(r.message, 'Configuracao de IA consultada.');
@@ -131,8 +135,12 @@ export function formatToolResult(tool: string, result: unknown): string {
         r.pixCopiaECola || r.pixCopyPaste || outputs.pixCopiaECola || outputs.pixCopyPaste,
       );
       const qr = s(r.pixQrCode || r.qrCodeBase64 || outputs.pixQrCode || outputs.qrCodeBase64);
-      const link = s(r.paymentLink || r.paymentUrl || r.url || outputs.paymentLink || outputs.paymentUrl);
-      const id = s(r.saleId || r.orderId || r.paymentId || r.id || outputs.saleId || outputs.orderId);
+      const link = s(
+        r.paymentLink || r.paymentUrl || r.url || outputs.paymentLink || outputs.paymentUrl,
+      );
+      const id = s(
+        r.saleId || r.orderId || r.paymentId || r.id || outputs.saleId || outputs.orderId,
+      );
       if (pix) {
         const proofId = id ? ` ID: ${id}.` : '';
         const qrProof = qr ? ' QR code disponivel.' : '';
@@ -142,6 +150,19 @@ export function formatToolResult(tool: string, result: unknown): string {
         return `Link de pagamento: ${link}`;
       }
       return 'Erro: pix_receipt_missing';
+    }
+    case 'sales.create_card_link': {
+      const outputs = readRecord(r.outputs);
+      const link = s(
+        r.checkoutUrl || r.paymentUrl || r.paymentLink || outputs.checkoutUrl || outputs.paymentUrl,
+      );
+      if (!link) {
+        return 'Erro: card_link_receipt_missing';
+      }
+      const id = s(
+        r.saleId || r.orderId || r.paymentId || r.id || outputs.saleId || outputs.orderId,
+      );
+      return `Link de cartão gerado${id ? ` para venda ${id}` : ''}: ${link}`;
     }
     case 'sales.create_boleto':
     case 'generate_boleto': {
@@ -159,7 +180,9 @@ export function formatToolResult(tool: string, result: unknown): string {
       if (!boleto) {
         return 'Erro: boleto_receipt_missing';
       }
-      const id = s(r.saleId || r.orderId || r.paymentId || r.id || outputs.saleId || outputs.orderId);
+      const id = s(
+        r.saleId || r.orderId || r.paymentId || r.id || outputs.saleId || outputs.orderId,
+      );
       return `Boleto gerado${id ? ` para venda ${id}` : ''}: ${boleto}`;
     }
     case 'get_wallet_balance': {
@@ -233,11 +256,6 @@ export function formatToolResult(tool: string, result: unknown): string {
     }
     case 'request_withdrawal':
       return s(r.message, 'Saque processado.');
-    case 'upload_product_image':
-    case 'upload_document':
-    case 'configure_pixel':
-    case 'configure_shipping':
-      return s(r.message, 'Acao concluida.');
     case 'update_fiscal_data':
       return 'Dados atualizados com sucesso.';
     case 'search_agent_memory': {
@@ -333,6 +351,7 @@ export function formatToolResult(tool: string, result: unknown): string {
       return `Testes: ${passed} pass, ${failed} fail.`;
     }
     case 'code_lint':
+      return typeof r.message === 'string' ? r.message : 'Lint executado.';
     // ── NOVAS TOOLS ──
     case 'delete_plan':
       return typeof r.message === 'string' ? r.message : 'Plano removido.';

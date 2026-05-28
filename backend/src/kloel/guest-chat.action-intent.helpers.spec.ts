@@ -74,7 +74,10 @@ describe('guest chat action intent helpers', () => {
     expect(boleto?.tool).toBe('sales.create_boleto');
     expect(boleto?.args).toEqual(expect.objectContaining({ amount: 197, customerName: 'joao' }));
     expect(boletoPayment?.tool).toBe('sales.create_boleto');
-    expect(cardPayment?.tool).not.toBe('sales.create_pix');
+    expect(cardPayment?.tool).toBe('sales.create_card_link');
+    expect(cardPayment?.args).toEqual(
+      expect.objectContaining({ amount: 197, customerName: 'joao' }),
+    );
   });
 
   it('routes mutable product sub-resource intents through canonical capability IDs', () => {
@@ -125,6 +128,13 @@ describe('guest chat action intent helpers', () => {
         pixQrCode: 'qr-base64',
       }),
     ).toContain('PIX copia e cola: 000201pix');
+    expect(
+      formatToolResult('sales.create_card_link', {
+        success: true,
+        saleId: 'sale-card-1',
+        checkoutUrl: 'https://checkout.stripe.com/c/pay/cs_card_1',
+      }),
+    ).toContain('Link de cartão gerado para venda sale-card-1');
     expect(
       formatToolResult('sales.create_boleto', {
         success: true,

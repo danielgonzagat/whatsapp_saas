@@ -102,7 +102,11 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
   let codeToolsService: DispatcherCodeToolsMock;
   let codeAnalysisService: DispatcherCodeAnalysisMock;
   let productSubTools: ProductSubToolsMock;
-  let salesService: { createBoletoOrder: jest.Mock; createPixOrder: jest.Mock };
+  let salesService: {
+    createBoletoOrder: jest.Mock;
+    createPixOrder: jest.Mock;
+    createStripeCardLink: jest.Mock;
+  };
 
   beforeEach(async () => {
     prisma = createPrismaMock();
@@ -116,7 +120,11 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
     codeToolsService = createCodeToolsMock();
     codeAnalysisService = createCodeAnalysisMock();
     productSubTools = { executeTool: jest.fn().mockResolvedValue({ success: true }) };
-    salesService = { createBoletoOrder: jest.fn(), createPixOrder: jest.fn() };
+    salesService = {
+      createBoletoOrder: jest.fn(),
+      createPixOrder: jest.fn(),
+      createStripeCardLink: jest.fn(),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -452,7 +460,8 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
   });
   describe('legacy payment link', () => {
     it('create_payment_link returns a canonical material receipt with payment proof', async () => {
-      chatToolsService.toolCreatePaymentLink.mockResolvedValueOnce({
+      const toolCreatePaymentLink = chatToolsService.toolCreatePaymentLink as jest.Mock;
+      toolCreatePaymentLink.mockResolvedValueOnce({
         success: true,
         paymentId: 'pay-link-1',
         paymentUrl: 'https://pay.test/pay-link-1',
@@ -473,7 +482,7 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
         'user-42',
       );
 
-      expect(chatToolsService.toolCreatePaymentLink).toHaveBeenCalledWith(DEFAULT_WS_ID, {
+      expect(toolCreatePaymentLink).toHaveBeenCalledWith(DEFAULT_WS_ID, {
         ...paymentArgs,
         executionPath: 'dispatcher',
       });
@@ -570,6 +579,76 @@ describe('KloelToolDispatcherService — dotted aliases', () => {
           auditLogId: stringMatching(/^audit_/),
           evidenceUrl: '/vendas/sale-pix-1',
           idempotencyKey: stringContaining('sales.create_pix'),
+          success: true,
+        }),
+      );
+    });
+
+    it('sales.create_card_link executes SalesService.createStripeCardLink and returns Stripe checkout proof', async () => {
+      salesService.createStripeCardLink.mockResolvedValueOnce({
+        saleId: 'sale-card-1',
+        checkoutSessionId: 'cs_card_1',
+        checkoutUrl: 'https://checkout.stripe.com/c/pay/cs_card_1',
+        externalPaymentId: 'pi_card_1',
+      });
+      const paymentArgs = {
+        productId: 'prod-1',
+        planId: 'plan-1',
+        customerName: 'Joao',
+        customerEmail: 'joao@test.com',
+        customerPhone: '11999999999',
+      };
+
+      const dotted = await service.executeTool(
+        DEFAULT_WS_ID,
+        'sales.create_card_link',
+        paymentArgs,
+        'user-42',
+      );
+
+      expect(salesService.createPixOrder).not.toHaveBeenCalled();
+      expect(salesService.createBoletoOrder).not.toHaveBeenCalled();
+      expect(salesService.createStripeCardLink).toHaveBeenCalledWith(
+        DEFAULT_WS_ID,
+        'prod-1',
+        'plan-1',
+        {
+          name: 'Joao',
+          email: 'joao@test.com',
+          cpf: '',
+          phone: '11999999999',
+        },
+      );
+      expect(dotted.success).toBe(true);
+      expect(dotted.capabilityId).toBe('sales.create_card_link');
+      expect(dotted.outputs).toEqual(
+        objectContaining({
+          checkoutSessionId: 'cs_card_1',
+          checkoutUrl: 'https://checkout.stripe.com/c/pay/cs_card_1',
+          externalPaymentId: 'pi_card_1',
+          orderId: 'sale-card-1',
+          paymentId: 'pi_card_1',
+          paymentUrl: 'https://checkout.stripe.com/c/pay/cs_card_1',
+          saleId: 'sale-card-1',
+        }),
+      );
+      expect(dotted.receipt).toEqual(
+        objectContaining({
+          capabilityId: 'sales.create_card_link',
+          workspaceId: DEFAULT_WS_ID,
+          actorId: 'user-42',
+          inputs: objectContaining({
+            productId: 'prod-1',
+            planId: 'plan-1',
+            customerName: 'Joao',
+            customerEmail: 'joao@test.com',
+            customerPhone: '11999999999',
+          }),
+          outputs: objectContaining({ orderId: 'sale-card-1', paymentId: 'pi_card_1' }),
+          domainEvents: ['sale.created', 'payment.pending'],
+          auditLogId: stringMatching(/^audit_/),
+          evidenceUrl: '/vendas/sale-card-1',
+          idempotencyKey: stringContaining('sales.create_card_link'),
           success: true,
         }),
       );

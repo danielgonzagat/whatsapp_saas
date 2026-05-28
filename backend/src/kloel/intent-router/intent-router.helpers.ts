@@ -250,7 +250,12 @@ export const INTENT_PATTERNS: IntentPattern[] = [
     }),
   },
 
-  // === Sales / PIX / Boleto ===
+  // === Sales / PIX / Boleto / Card ===
+  {
+    regex: /(?:emit[ei]r?|ger[ae]r?|cri[ae]r?)\s.*(?:cart[aã]o|card|cr[eé]dito).*$/i,
+    capabilityId: 'sales.create_card_link',
+    extract: (match) => ({ amount: parseAmount(match[0]) }),
+  },
   {
     regex: /(?:emit[ei]r?|ger[ae]r?|cri[ae]r?)\s.*pix.*$/i,
     capabilityId: 'sales.create_pix',
@@ -290,8 +295,7 @@ export const INTENT_PATTERNS: IntentPattern[] = [
 
   // === Social proof ===
   {
-    regex:
-      /(?:social\s+proof|prova\s+social|depoimentos?|ativ[ae]r?\s+(?:prova\s+social|social))/i,
+    regex: /(?:social\s+proof|prova\s+social|depoimentos?|ativ[ae]r?\s+(?:prova\s+social|social))/i,
     capabilityId: 'configure_social_proof',
     extract: (match) => ({
       enabled: !/desativ[ae]|remov[ae]/i.test(match[0]),
@@ -348,8 +352,7 @@ export const INTENT_PATTERNS: IntentPattern[] = [
 
   // === Affiliates ===
   {
-    regex:
-      /(?:ativ[ae]r?\s.*afil|desativ[ae]r?\s.*afil|configur[ae]r?\s.*afil|programa\s.*afil)/i,
+    regex: /(?:ativ[ae]r?\s.*afil|desativ[ae]r?\s.*afil|configur[ae]r?\s.*afil|programa\s.*afil)/i,
     capabilityId: 'affiliates.configure',
     extract: () => ({}),
   },

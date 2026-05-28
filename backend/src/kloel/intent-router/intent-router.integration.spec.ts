@@ -20,6 +20,7 @@ describe('IntentRouter + CapabilityRegistry Integration', () => {
     const capIds = caps.map((c) => c.id);
     expect(capIds).toContain('products.create');
     expect(capIds).toContain('sales.create_pix');
+    expect(capIds).toContain('sales.create_card_link');
     expect(capIds).toContain('self.capabilities');
     expect(capIds).toContain('plans.create');
     expect(capIds).toContain('checkouts.create');
@@ -51,6 +52,15 @@ describe('IntentRouter + CapabilityRegistry Integration', () => {
       evidenceUrlBuilder: '/vendas/${orderId}',
     });
   });
+
+  it('declares sales.create_card_link as the real Stripe card capability', () => {
+    expect(registry.get('sales.create_card_link')).toMatchObject({
+      domainService: 'SalesService.createStripeCardLink',
+      emits: ['sale.created', 'payment.pending'],
+      evidenceUrlBuilder: '/vendas/${orderId}',
+    });
+  });
+
   it('classifies product creation', () => {
     const result = router.classify('Cria um produto chamado PDRN por R$197', 'dashboard-chat', [
       '*',
@@ -109,12 +119,16 @@ describe('IntentRouter + CapabilityRegistry Integration', () => {
     expect(result.isChat).toBe(false);
     expect(result.classification?.capabilityId).toBe('self.capabilities');
   });
-  it('does not classify card payment links as the legacy PIX payment-link capability', () => {
-    const result = router.classify('Gerar link de pagamento no cartao para Joao', 'dashboard-chat', [
-      '*',
-    ]);
+  it('classifies card payment links as the canonical Stripe capability', () => {
+    const result = router.classify(
+      'Gerar link de pagamento no cartao para Joao',
+      'dashboard-chat',
+      ['*'],
+    );
 
-    expect(result.classification?.capabilityId).not.toBe('create_payment_link');
+    expect(result.isChat).toBe(false);
+    expect(result.classification?.capabilityId).toBe('sales.create_card_link');
+    expect(result.classification?.requiresConfirmation).toBe(true);
   });
   it('classifies health check', () => {
     const result = router.classify('Qual a saude do sistema?', 'dashboard-chat', ['*']);
