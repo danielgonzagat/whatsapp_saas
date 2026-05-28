@@ -145,9 +145,7 @@ describe('MindEventProcessorService chat fast-path (PI-K18-B)', () => {
   });
 
   it('calls mindEventProcessorService.process with degraded payload on degraded reply', async () => {
-    const {
-      buildAssistantReplyImpl,
-    } = jest.requireMock('../../kloel-reply-engine.helpers');
+    const { buildAssistantReplyImpl } = jest.requireMock('../../kloel-reply-engine.helpers');
     buildAssistantReplyImpl.mockResolvedValueOnce('');
 
     const module: TestingModule = await Test.createTestingModule({
