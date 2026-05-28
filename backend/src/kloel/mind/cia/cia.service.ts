@@ -21,14 +21,17 @@ import { AgentEventsService } from '../../../marketing/channels/whatsapp/agent-e
 import { CiaRuntimeService } from './cia-runtime.service';
 import { MindService } from '../../mind.service';
 import { readNumberForce } from '../../../common/parse';
-
-type JsonRecord = Record<string, unknown>;
-
-const CHANNEL_LABEL: Record<string, string> = {
-  whatsapp: 'WhatsApp',
-  instagram: 'Instagram',
-  facebook: 'Facebook',
-};
+import {
+  buildChannelSubtitle,
+  collectActiveChannels,
+  mapAccountProofRecord,
+  mapConversationProofRecord,
+  mapCycleProofRecord,
+  mapMindLift,
+  readRecord,
+  readText,
+  serializeCognitiveHighlight,
+} from './cia.service.helpers';
 
 /** Cia service. */
 @Injectable()
@@ -86,40 +89,10 @@ export class CiaService {
     ]);
     const recent = this.agentEvents.getRecent(workspaceId).slice(-12);
     const latest = recent[recent.length - 1] || null;
-    const businessState = this.readRecord(intelligence.businessState);
+    const businessState = readRecord(intelligence.businessState);
 
-    const activeChannels = new Set<string>();
-    if (metaConnections && metaConnections.length > 0) {
-      for (const mc of metaConnections) {
-        if (mc.whatsappPhoneNumberId) {
-          activeChannels.add('whatsapp');
-        }
-        if (mc.instagramAccountId) {
-          activeChannels.add('instagram');
-        }
-        if (mc.pageId) {
-          activeChannels.add('facebook');
-        }
-      }
-    }
-    for (const integration of integrations) {
-      const lower = integration.type.toLowerCase();
-      if (lower === 'instagram') {
-        activeChannels.add('instagram');
-      }
-    }
-
-    const channels = [...activeChannels];
-    let subtitle: string;
-    if (channels.length === 0) {
-      subtitle = 'Cuidando do seu negócio';
-    } else if (channels.length === 1) {
-      const [channel] = channels;
-      const label = channel ? CHANNEL_LABEL[channel] || channel : 'canal conectado';
-      subtitle = `Cuidando do seu negócio no ${label}`;
-    } else {
-      subtitle = 'Orquestrando seus canais de venda';
-    }
+    const channels = collectActiveChannels(metaConnections, integrations);
+    const subtitle = buildChannelSubtitle(channels);
 
     return {
       title: 'KLOEL',
@@ -152,16 +125,7 @@ export class CiaService {
       accountProof,
       capabilityRegistry,
       conversationActionRegistry,
-      mindLift: mindLift
-        ? {
-            decisionType: 'followup_timing',
-            n: mindLift.n,
-            mindMean: mindLift.mindMean,
-            baselineMean: mindLift.baselineMean,
-            lift: mindLift.lift,
-            pZScore: mindLift.pZScore,
-          }
-        : null,
+      mindLift: mapMindLift(mindLift),
       commercial: {
         pipelineMode: (pipelineState?.state ?? 'legacy') as 'shadow' | 'active' | 'legacy',
       },
@@ -194,12 +158,12 @@ export class CiaService {
 
     return items
       .map((item) => {
-        const task = this.readRecord(item.value);
+        const task = readRecord(item.value);
         return {
           memoryId: item.id,
           key: item.key,
           ...task,
-          status: this.readText(task.status) || 'OPEN',
+          status: readText(task.status) || 'OPEN',
         };
       })
       .filter((task) => task.status !== 'REJECTED' && task.status !== 'RESOLVED');
@@ -215,10 +179,10 @@ export class CiaService {
     },
   ) {
     const { record, task } = await this.findHumanTask(workspaceId, taskId);
-    const approvedReply = (input?.message || this.readText(task.suggestedReply)).trim();
-    const taskPhone = this.readText(task.phone);
-    const taskConversationId = this.readText(task.conversationId);
-    const resolvedTaskId = this.readText(task.id) || taskId;
+    const approvedReply = (input?.message || readText(task.suggestedReply)).trim();
+    const taskPhone = readText(task.phone);
+    const taskConversationId = readText(task.conversationId);
+    const resolvedTaskId = readText(task.id) || taskId;
 
     if (approvedReply && taskPhone) {
       // messageLimit: enforced via PlanLimitsService.trackMessageSend
@@ -259,7 +223,7 @@ export class CiaService {
       data: {
         value: nextValue,
         metadata: {
-          ...this.readRecord(record.metadata),
+          ...readRecord(record.metadata),
           status: 'RESOLVED',
           resolvedAt: nextValue.resolvedAt,
         },
@@ -308,7 +272,7 @@ export class CiaService {
       data: {
         value: nextValue,
         metadata: {
-          ...this.readRecord(record.metadata),
+          ...readRecord(record.metadata),
           status: 'REJECTED',
           resolvedAt: nextValue.resolvedAt,
         },
@@ -320,11 +284,11 @@ export class CiaService {
       workspaceId,
       phase: 'human_task_rejected',
       persistent: true,
-      message: `Exceção humana dispensada para ${this.readText(task.phone) || 'o contato'}.`,
+      message: `Exceção humana dispensada para ${readText(task.phone) || 'o contato'}.`,
       meta: {
         taskId,
-        conversationId: this.readText(task.conversationId) || null,
-        phone: this.readText(task.phone) || null,
+        conversationId: readText(task.conversationId) || null,
+        phone: readText(task.phone) || null,
       },
     });
 
@@ -387,31 +351,7 @@ export class CiaService {
     });
 
     if (record) {
-      const metadata = this.readRecord(record.metadata);
-      return {
-        id: record.id,
-        canonical: true,
-        proofType: record.proofType,
-        status: record.status,
-        cycleProofId: record.cycleProofId || null,
-        noLegalActions: Boolean(record.noLegalActions),
-        candidateCount: Number(record.candidateCount || 0),
-        eligibleActionCount: Number(record.eligibleActionCount || 0),
-        blockedActionCount: Number(record.blockedActionCount || 0),
-        deferredActionCount: Number(record.deferredActionCount || 0),
-        waitingApprovalCount: Number(record.waitingApprovalCount || 0),
-        waitingInputCount: Number(record.waitingInputCount || 0),
-        silentRemainderCount: Number(record.silentRemainderCount || 0),
-        workItemUniverse: record.workItemUniverse || [],
-        actionUniverse: record.actionUniverse || [],
-        executedActions: record.executedActions || [],
-        blockedActions: record.blockedActions || [],
-        deferredActions: record.deferredActions || [],
-        summary: metadata.summary || null,
-        guaranteeReport: metadata.guaranteeReport || null,
-        exhaustionReport: metadata.exhaustionReport || null,
-        generatedAt: record.createdAt,
-      };
+      return mapAccountProofRecord(record);
     }
 
     return this.getCycleProof(workspaceId);
@@ -431,27 +371,7 @@ export class CiaService {
       return null;
     }
 
-    return {
-      id: record.id,
-      canonical: true,
-      conversationId: record.conversationId,
-      contactId: record.contactId || null,
-      phone: record.phone || null,
-      status: record.status,
-      cycleProofId: record.cycleProofId || null,
-      accountProofId: record.accountProofId || null,
-      selectedActionType: record.selectedActionType,
-      selectedTactic: record.selectedTactic || null,
-      governor: record.governor || null,
-      renderedMessage: record.renderedMessage || null,
-      outcome: record.outcome || null,
-      actionUniverse: record.actionUniverse || [],
-      tacticUniverse: record.tacticUniverse || [],
-      selectedAction: record.selectedAction || null,
-      selectedTacticData: record.selectedTacticData || null,
-      metadata: record.metadata || null,
-      generatedAt: record.createdAt,
-    };
+    return mapConversationProofRecord(record);
   }
 
   /** Get cycle proof. */
@@ -469,18 +389,7 @@ export class CiaService {
       return null;
     }
 
-    const value = this.readRecord(record.value);
-    const metadata = this.readRecord(record.metadata);
-    return {
-      id: record.id,
-      key: record.key,
-      type: record.type,
-      summary: value.summary || record.content || null,
-      cycleProofId: value.cycleProofId || metadata.cycleProofId || null,
-      generatedAt: value.generatedAt || record.createdAt,
-      guaranteeReport: value.guaranteeReport || null,
-      exhaustionReport: value.exhaustionReport || null,
-    };
+    return mapCycleProofRecord(record);
   }
 
   /** Respond to account input session. */
@@ -511,36 +420,7 @@ export class CiaService {
       take: 12,
     });
 
-    return items.map((item) => this.serializeCognitiveHighlight(item));
-  }
-
-  private serializeCognitiveHighlight(item: {
-    id: string;
-    key: string;
-    value: unknown;
-    category: string;
-    type: string | null;
-    content: string | null;
-    metadata: unknown;
-    createdAt: Date;
-  }) {
-    const value = this.readRecord(item.value);
-    const metadata = this.readRecord(item.metadata);
-    return {
-      id: item.id,
-      category: item.category,
-      type: item.type,
-      contactId: value.contactId || metadata.contactId || null,
-      conversationId: value.conversationId || metadata.conversationId || null,
-      phone: value.phone || metadata.phone || null,
-      summary: value.summary || value.message || item.content || 'Sinal cognitivo disponível.',
-      nextBestAction: value.nextBestAction || value.action || null,
-      intent: value.intent || null,
-      stage: value.stage || null,
-      outcome: value.outcome || null,
-      confidence: value.classificationConfidence || null,
-      updatedAt: value.updatedAt || item.createdAt,
-    };
+    return items.map((item) => serializeCognitiveHighlight(item));
   }
 
   private async findHumanTask(workspaceId: string, taskId: string) {
@@ -564,8 +444,8 @@ export class CiaService {
     });
 
     const record = candidates.find((item) => {
-      const value = this.readRecord(item.value);
-      return this.readText(value.id) === taskId;
+      const value = readRecord(item.value);
+      return readText(value.id) === taskId;
     });
 
     if (!record) {
@@ -574,17 +454,7 @@ export class CiaService {
 
     return {
       record,
-      task: this.readRecord(record.value),
+      task: readRecord(record.value),
     };
-  }
-
-  private readRecord(value: unknown): JsonRecord {
-    return typeof value === 'object' && value !== null && !Array.isArray(value)
-      ? (value as JsonRecord)
-      : {};
-  }
-
-  private readText(value: unknown): string {
-    return typeof value === 'string' ? value : '';
   }
 }
