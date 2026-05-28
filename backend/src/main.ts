@@ -12,10 +12,10 @@ import { AppModule } from './app.module';
 import { PrismaService } from './prisma/prisma.service';
 import { OpsAlertService } from './observability/ops-alert.service';
 import { assertProductionStartupSecrets } from './config/production-startup-guard';
+import { compileCorsOriginMatcher } from './main.helpers';
 
 const HTTPS_____KLOEL_FRONTEN_RE = /^https:\/\/kloel-frontend-.*\.vercel\.app$/;
 const HTTPS_____KLOEL_ADMIN_RE = /^https:\/\/kloel-admin-.*\.vercel\.app$/;
-const MAX_ORIGIN_PATTERN_LENGTH = 200;
 const DATADOG_TRACING_HEADERS = [
   'traceparent',
   'tracestate',
@@ -34,77 +34,6 @@ class ProductionBootstrapLogger extends ConsoleLogger implements LoggerService {
     }
     super.log(message, context);
   }
-}
-
-function matchesWildcardPattern(value: string, pattern: string): boolean {
-  if (!pattern.includes('*')) {
-    return value === pattern;
-  }
-
-  const parts = pattern.split('*');
-  let cursor = 0;
-
-  if (!pattern.startsWith('*')) {
-    const prefix = parts.shift() ?? '';
-    if (!value.startsWith(prefix)) {
-      return false;
-    }
-    cursor = prefix.length;
-  }
-
-  const suffix = pattern.endsWith('*') ? '' : (parts.pop() ?? '');
-
-  for (const part of parts) {
-    if (!part) {
-      continue;
-    }
-
-    const nextIndex = value.indexOf(part, cursor);
-    if (nextIndex === -1) {
-      return false;
-    }
-    cursor = nextIndex + part.length;
-  }
-
-  if (!suffix) {
-    return true;
-  }
-
-  const suffixIndex = value.indexOf(suffix, cursor);
-  return suffixIndex !== -1 && value.endsWith(suffix);
-}
-
-function normalizeCorsOriginPattern(raw: string): string | null {
-  const trimmed = raw.trim();
-  if (!trimmed) {
-    return null;
-  }
-  if (trimmed.length > MAX_ORIGIN_PATTERN_LENGTH) {
-    console.warn('[CORS] Origin pattern too long, ignored (%d chars)', trimmed.length);
-    return null;
-  }
-
-  const normalized = trimmed
-    .replace(/^\^/, '')
-    .replace(/\$$/, '')
-    .replace(/\\\./g, '.')
-    .replace(/\.\*/g, '*');
-
-  const isAllowedPattern = /^https?:\/\/[A-Za-z0-9.*:/_-]+$/.test(normalized);
-  if (!isAllowedPattern) {
-    console.warn('[CORS] Unsupported origin pattern ignored: %s', trimmed);
-    return null;
-  }
-
-  return normalized;
-}
-
-function compileCorsOriginMatcher(raw: string): ((origin: string) => boolean) | null {
-  const normalized = normalizeCorsOriginPattern(raw);
-  if (!normalized) {
-    return null;
-  }
-  return (origin: string) => matchesWildcardPattern(origin, normalized);
 }
 
 function handleSchemaError(schemaErr: unknown): void {
