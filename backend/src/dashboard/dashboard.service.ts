@@ -12,53 +12,8 @@ import {
   sumByBuckets,
 } from './home-aggregation.util';
 import { computeProductRanking } from './dashboard.product-rank.helpers';
-type SetupChecklistItem = {
-  key: string;
-  completed: boolean;
-};
-const SETUP_CHECKPOINT_COPY: Record<string, { label: string; description: string }> = {
-  profile: {
-    label: 'Perfil comercial configurado',
-    description:
-      'O onboarding precisa salvar o tipo de usuário, canal principal e uso inicial da IA.',
-  },
-  product: {
-    label: 'Produto informado',
-    description:
-      'O workspace precisa ter produto próprio ou intenção clara de cadastrar um produto.',
-  },
-  checkout: {
-    label: 'Checkout informado',
-    description: 'O produtor precisa confirmar se já possui checkout ou criar um checkout Kloel.',
-  },
-  payment: {
-    label: 'Pagamentos conectados',
-    description: 'O workspace precisa ter provider de pagamento pronto para receber vendas reais.',
-  },
-  channel: {
-    label: 'Canal principal definido',
-    description: 'WhatsApp, Instagram, Messenger ou e-mail precisa estar definido no setup.',
-  },
-  ai: {
-    label: 'Uso da IA definido',
-    description: 'A IA precisa saber se começa em atendimento, venda ou recuperação.',
-  },
-};
-function readSetupChecklist(value: unknown): SetupChecklistItem[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-  return value.flatMap((item) => {
-    if (!item || typeof item !== 'object' || Array.isArray(item)) {
-      return [];
-    }
-    const record = item as Record<string, unknown>;
-    if (typeof record.key !== 'string' || typeof record.completed !== 'boolean') {
-      return [];
-    }
-    return [{ key: record.key, completed: record.completed }];
-  });
-}
+import { mapRecentConversation } from './dashboard.recent-conversations.helpers';
+import { buildSetupCheckpoints, readSetupChecklist } from './dashboard.setup-checklist.helpers';
 /** Dashboard service. */
 @Injectable()
 export class DashboardService {
@@ -404,18 +359,7 @@ export class DashboardService {
       recentConversations.length > 0,
     ]);
     const setupChecklist = readSetupChecklist(setupChecklistMemory?.value);
-    const setupCheckpoints = setupChecklist.map((item) => {
-      const copy = SETUP_CHECKPOINT_COPY[item.key] ?? {
-        label: `Setup: ${item.key}`,
-        description: 'Item de setup persistido pelo onboarding inicial.',
-      };
-      return {
-        id: `setup-${item.key}`,
-        label: copy.label,
-        description: copy.description,
-        active: item.completed,
-      };
-    });
+    const setupCheckpoints = buildSetupCheckpoints(setupChecklist);
     const setupActiveCheckpoints = setupCheckpoints.filter(
       (checkpoint) => checkpoint.active,
     ).length;
@@ -459,29 +403,7 @@ export class DashboardService {
         averageTicketInCents: averageTicketSeries,
       },
       products: topProducts,
-      recentConversations: recentConversations.map((conversation) => {
-        const lastMessage = conversation.messages?.[0];
-        const status =
-          conversation.status === 'CLOSED'
-            ? 'done'
-            : conversation.mode === 'AI' && conversation.unreadCount === 0
-              ? 'ai'
-              : 'waiting';
-        return {
-          id: conversation.id,
-          contactName:
-            conversation.contact?.name ||
-            conversation.contact?.phone ||
-            'Contato sem identificação',
-          contactPhone: conversation.contact?.phone || null,
-          avatarUrl: conversation.contact?.avatarUrl || null,
-          preview: String(lastMessage?.content || '').trim(),
-          lastMessageAt:
-            (lastMessage?.createdAt || conversation.lastMessageAt)?.toISOString?.() || null,
-          status,
-          unreadCount: conversation.unreadCount,
-        };
-      }),
+      recentConversations: recentConversations.map(mapRecentConversation),
       health: {
         operationalScorePct: operationalHealth.operationalScorePct,
         checkoutCompletionRatePct,
