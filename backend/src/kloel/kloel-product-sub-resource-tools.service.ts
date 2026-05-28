@@ -1,5 +1,4 @@
 import { Injectable, Optional } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { SalesService } from '../sales/sales.service';
 
@@ -20,6 +19,25 @@ import {
   resolveProductIdByName,
   resolveProductIdWithAccentFallback,
 } from './kloel-product-sub-resource-tools.helpers';
+import {
+  buildCheckoutProjection,
+  buildCouponCreateProjection,
+  buildCreateUrlData,
+  buildListCheckoutsArgs,
+  buildPlanCreateProjection,
+  buildPlanUpdateProjection,
+  buildUpdateCheckoutData,
+  buildUpdateUrlData,
+  buildUpdateUrlWhereClause,
+  findProductIdByPartialName,
+  findUrlByLabelOrUrl,
+  readCouponCode,
+  readDeleteCouponCode,
+  readUrlUpdateLabel,
+  resolveCheckoutIdFromArgs,
+  resolveFallbackProductIdForCoupon,
+  resolvePlanIdFromArgs,
+} from './kloel-product-sub-resource-tools.service.helpers';
 
 export interface ProductSubResourceToolResult {
   [key: string]: unknown;
@@ -88,27 +106,14 @@ export class KloelProductSubResourceToolsService {
         return { success: false, error: 'Produto nao encontrado' };
       }
       const plan = await this.prisma.productPlan.create({ data: buildCreatePlanData(pid, args) });
-      return { success: true, plan: { id: plan.id, name: plan.name, price: plan.price } };
+      return { success: true, plan: buildPlanCreateProjection(plan) };
     } catch (err: unknown) {
       return { success: false, error: err instanceof Error ? err.message : 'Erro' };
     }
   }
 
   async toolUpdatePlan(_workspaceId: string, args: UnknownRecord) {
-    let planId = this.str(args.planId);
-    if (!planId) {
-      const name = this.str(args.planName || args.name);
-      if (name) {
-        const p = await this.prisma.productPlan.findFirst({
-          where: {
-            name: { contains: name, mode: 'insensitive' },
-            product: { workspaceId: _workspaceId },
-          },
-          select: { id: true },
-        });
-        planId = p?.id ?? '';
-      }
-    }
+    const planId = await resolvePlanIdFromArgs(this.prisma, _workspaceId, args);
     if (!planId) {
       return { success: false, error: 'planId required' };
     }
@@ -119,14 +124,7 @@ export class KloelProductSubResourceToolsService {
       });
       return {
         success: true,
-        plan: {
-          id: plan.id,
-          name: plan.name,
-          price: plan.price,
-          itemsPerPlan: plan.itemsPerPlan,
-          maxInstallments: plan.maxInstallments,
-          active: plan.active,
-        },
+        plan: buildPlanUpdateProjection(plan),
       };
     } catch (err: unknown) {
       return { success: false, error: err instanceof Error ? err.message : 'Erro' };
@@ -146,43 +144,23 @@ export class KloelProductSubResourceToolsService {
           config: buildCreateCheckoutConfig(args),
         },
       });
-      return { success: true, checkout: { id: co.id, name: co.name } };
+      return { success: true, checkout: buildCheckoutProjection(co) };
     } catch (err: unknown) {
       return { success: false, error: err instanceof Error ? err.message : 'Erro' };
     }
   }
 
   async toolUpdateCheckout(_workspaceId: string, args: UnknownRecord) {
-    let checkoutId = this.str(args.checkoutId);
-    if (!checkoutId) {
-      const name = this.str(args.checkoutName || args.name || args.planName);
-      if (name) {
-        const c = await this.prisma.productCheckout.findFirst({
-          where: {
-            name: { contains: name, mode: 'insensitive' },
-            product: { workspaceId: _workspaceId },
-          },
-          select: { id: true },
-        });
-        checkoutId = c?.id ?? '';
-      }
-    }
+    const checkoutId = await resolveCheckoutIdFromArgs(this.prisma, _workspaceId, args);
     if (!checkoutId) {
       return { success: false, error: 'checkoutId required' };
     }
     try {
-      const data: UnknownRecord = {};
-      if (args.checkoutName !== undefined) {
-        data.name = this.str(args.checkoutName);
-      }
-      if (args.active !== undefined) {
-        data.active = Boolean(args.active);
-      }
       const co = await this.prisma.productCheckout.update({
         where: { id: checkoutId },
-        data,
+        data: buildUpdateCheckoutData(args),
       });
-      return { success: true, checkout: { id: co.id, name: co.name } };
+      return { success: true, checkout: buildCheckoutProjection(co) };
     } catch (err: unknown) {
       return { success: false, error: err instanceof Error ? err.message : 'Erro' };
     }
@@ -192,11 +170,7 @@ export class KloelProductSubResourceToolsService {
     try {
       let pid = await resolveProductIdByName(this.prisma, workspaceId, args);
       if (!pid) {
-        const firstProduct = await this.prisma.product.findFirst({
-          where: { workspaceId },
-          select: { id: true },
-        });
-        pid = firstProduct?.id ?? '';
+        pid = await resolveFallbackProductIdForCoupon(this.prisma, workspaceId);
       }
       if (!pid) {
         return { success: false, error: 'Nenhum produto no workspace. Crie um produto primeiro.' };
@@ -204,7 +178,7 @@ export class KloelProductSubResourceToolsService {
       const c = await this.prisma.productCoupon.create({
         data: buildCreateCouponData(pid, args),
       });
-      return { success: true, coupon: { id: c.id, code: c.code } };
+      return { success: true, coupon: buildCouponCreateProjection(c) };
     } catch (err: unknown) {
       return { success: false, error: err instanceof Error ? err.message : 'Erro' };
     }
@@ -224,12 +198,9 @@ export class KloelProductSubResourceToolsService {
 
   async toolListCheckouts(workspaceId: string, _args: UnknownRecord) {
     try {
-      const checkouts = await this.prisma.productCheckout.findMany({
-        where: { product: { workspaceId } },
-        select: { id: true, name: true, createdAt: true },
-        orderBy: { createdAt: 'desc' },
-        take: 20,
-      });
+      const checkouts = await this.prisma.productCheckout.findMany(
+        buildListCheckoutsArgs(workspaceId),
+      );
       return { success: true, checkouts };
     } catch (err: unknown) {
       return { success: false, error: err instanceof Error ? err.message : 'Erro' };
@@ -242,13 +213,10 @@ export class KloelProductSubResourceToolsService {
         return { success: false, error: 'Servico de cupom indisponivel.' };
       }
 
-      const couponId = this.str(args.couponId);
-      const couponCode = this.str(args.couponCode || args.code);
-
       const deleted = await this.productCouponDomain.deleteProductCoupon({
         workspaceId,
-        couponId,
-        couponCode,
+        couponId: this.str(args.couponId),
+        couponCode: readDeleteCouponCode(args),
         deletedBy: 'kloel-chat',
         notFoundMessage: 'Cupom nao encontrado. Informe o codigo ou ID do cupom.',
       });
@@ -260,7 +228,7 @@ export class KloelProductSubResourceToolsService {
   }
 
   async toolUpdateCoupon(workspaceId: string, args: UnknownRecord) {
-    const code = this.str(args.code || args.couponCode);
+    const code = readCouponCode(args);
     if (!code) {
       return { success: false, error: 'Codigo do cupom necessario.' };
     }
@@ -343,14 +311,7 @@ export class KloelProductSubResourceToolsService {
       if (!pid) {
         return { success: false, error: 'Produto nao encontrado.' };
       }
-      await this.prisma.productUrl.create({
-        data: {
-          productId: pid,
-          url,
-          description: label || url,
-          isPrivate: args.isPrivate === true,
-        },
-      });
+      await this.prisma.productUrl.create({ data: buildCreateUrlData(pid, args) });
       return { success: true, message: `URL "${label || url}" adicionada ao produto.` };
     } catch (e: unknown) {
       return { success: false, error: e instanceof Error ? e.message : 'Erro ao adicionar URL.' };
@@ -359,44 +320,26 @@ export class KloelProductSubResourceToolsService {
 
   async toolUpdateUrl(workspaceId: string, args: UnknownRecord) {
     const productName = this.str(args.productName);
-    const label = this.str(args.label || args.urlLabel);
-    const newUrl = this.str(args.url);
+    const label = readUrlUpdateLabel(args);
     if (!label) {
       return { success: false, error: 'Informe a descricao ou label da URL.' };
     }
     try {
-      let pid = this.str(args.productId);
-      if (!pid && productName) {
-        const p = await this.prisma.product.findFirst({
-          where: { workspaceId, name: { contains: productName, mode: 'insensitive' } },
-          select: { id: true },
-        });
-        pid = p?.id ?? '';
-      }
-      const whereClause: Prisma.ProductUrlWhereInput = {
-        description: { contains: label, mode: 'insensitive' },
-      };
-      if (pid) {
-        whereClause.productId = pid;
-      }
+      const explicitProductId = this.str(args.productId);
+      const pid =
+        explicitProductId ||
+        (await findProductIdByPartialName(this.prisma, workspaceId, productName));
       const existing = await this.prisma.productUrl.findFirst({
-        where: whereClause,
+        where: buildUpdateUrlWhereClause(label, pid),
         select: { id: true },
       });
       if (!existing) {
         return { success: false, error: 'URL nao encontrada.' };
       }
-      const data: Prisma.ProductUrlUpdateInput = {};
-      if (newUrl) {
-        data.url = newUrl;
-      }
-      if (args.label !== undefined) {
-        data.description = this.str(args.label);
-      }
-      if (args.isPrivate !== undefined) {
-        data.isPrivate = args.isPrivate === true;
-      }
-      await this.prisma.productUrl.update({ where: { id: existing.id }, data });
+      await this.prisma.productUrl.update({
+        where: { id: existing.id },
+        data: buildUpdateUrlData(args),
+      });
       return { success: true, message: 'URL atualizada.' };
     } catch (e: unknown) {
       return { success: false, error: e instanceof Error ? e.message : 'Erro ao atualizar URL.' };
@@ -410,24 +353,7 @@ export class KloelProductSubResourceToolsService {
       return { success: false, error: 'Informe a descricao ou URL para remover.' };
     }
     try {
-      let target = null;
-      // Try by label first
-      if (label) {
-        target = await this.prisma.productUrl.findFirst({
-          where: {
-            description: { contains: label, mode: 'insensitive' },
-            product: { workspaceId },
-          },
-          select: { id: true, url: true },
-        });
-      }
-      // If not found by label, try by URL
-      if (!target && url) {
-        target = await this.prisma.productUrl.findFirst({
-          where: { url: { contains: url }, product: { workspaceId } },
-          select: { id: true, url: true },
-        });
-      }
+      const target = await findUrlByLabelOrUrl(this.prisma, workspaceId, label, url);
       if (!target) {
         return { success: false, error: 'URL nao encontrada.' };
       }
