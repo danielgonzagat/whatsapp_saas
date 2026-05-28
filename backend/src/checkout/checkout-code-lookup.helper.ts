@@ -8,6 +8,12 @@ import {
   isValidPublicCheckoutCode,
   normalizePublicCheckoutCode,
 } from './checkout-code.util';
+import {
+  CHECKOUT_PLAN_LINK_INCLUDE,
+  isActivePlanKind,
+  isLegacyPlanEligibleForMigration,
+  PLAN_INCLUDE,
+} from './checkout.service.helpers';
 
 interface LookupDeps {
   prisma: PrismaService;
@@ -54,17 +60,7 @@ export async function getCheckoutByCode(
       plan: { isActive: true, kind: 'PLAN' },
       OR: codeOrConditions,
     },
-    include: {
-      checkout: { include: { checkoutConfig: { include: { pixels: true } } } },
-      plan: {
-        include: {
-          product: true,
-          checkoutConfig: { include: { pixels: true } },
-          orderBumps: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
-          upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
-        },
-      },
-    },
+    include: CHECKOUT_PLAN_LINK_INCLUDE,
   });
 
   if (checkoutLink) {
@@ -87,15 +83,10 @@ export async function getCheckoutByCode(
     where: {
       OR: [...codeOrConditions, { id: { startsWith: legacyCode } }],
     },
-    include: {
-      product: true,
-      checkoutConfig: { include: { pixels: true } },
-      orderBumps: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
-      upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
-    },
+    include: PLAN_INCLUDE,
   });
 
-  if (planRecord?.isActive && planRecord.kind === 'PLAN' && planRecord.legacyCheckoutEnabled) {
+  if (isLegacyPlanEligibleForMigration(planRecord)) {
     await deps.productService.ensureLegacyCheckoutForPlan(planRecord.id);
     const migratedLink = await deps.prisma.checkoutPlanLink.findFirst({
       where: {
@@ -104,17 +95,7 @@ export async function getCheckoutByCode(
         plan: { isActive: true, kind: 'PLAN' },
         OR: codeOrConditions,
       },
-      include: {
-        checkout: { include: { checkoutConfig: { include: { pixels: true } } } },
-        plan: {
-          include: {
-            product: true,
-            checkoutConfig: { include: { pixels: true } },
-            orderBumps: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
-            upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
-          },
-        },
-      },
+      include: CHECKOUT_PLAN_LINK_INCLUDE,
     });
 
     if (migratedLink) {
@@ -134,7 +115,7 @@ export async function getCheckoutByCode(
     }
   }
 
-  if (planRecord?.isActive && planRecord.kind === 'PLAN') {
+  if (isActivePlanKind(planRecord)) {
     const plan = await planLinkManager.ensurePlanReferenceCode(planRecord);
     deps.logCheckoutEvent('checkout_public_lookup_resolved', {
       correlationId,
@@ -172,12 +153,7 @@ export async function getCheckoutByCode(
 
   const affiliatePlanRecord = await deps.prisma.checkoutProductPlan.findFirst({
     where: { productId: affiliateLink.affiliateProduct.productId, isActive: true, kind: 'PLAN' },
-    include: {
-      product: true,
-      checkoutConfig: { include: { pixels: true } },
-      orderBumps: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
-      upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
-    },
+    include: PLAN_INCLUDE,
     orderBy: { createdAt: 'asc' },
   });
 

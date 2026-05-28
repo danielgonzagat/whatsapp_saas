@@ -11,7 +11,11 @@ import { CheckoutEventEmitterService } from '../kloel/checkout-emitter/checkout-
 import { getCheckoutByCode as companionGetCheckoutByCode } from './checkout-code-lookup.helper';
 import {
   buildDuplicateCheckoutInput,
+  CHECKOUT_PLAN_LINK_INCLUDE,
+  isActivePlanKind,
+  isLegacyPlanEligibleForMigration,
   mapPixelsForDuplicate,
+  PLAN_INCLUDE,
   stripConfigMetadata,
 } from './checkout.service.helpers';
 import type { CreateCheckoutInput } from './checkout-product.types';
@@ -192,17 +196,7 @@ export class CheckoutService {
         checkout: { isActive: true, kind: 'CHECKOUT' },
         plan: { isActive: true, kind: 'PLAN' },
       },
-      include: {
-        checkout: { include: { checkoutConfig: { include: { pixels: true } } } },
-        plan: {
-          include: {
-            product: true,
-            checkoutConfig: { include: { pixels: true } },
-            orderBumps: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
-            upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
-          },
-        },
-      },
+      include: CHECKOUT_PLAN_LINK_INCLUDE,
     });
 
     if (checkoutLink) {
@@ -223,15 +217,10 @@ export class CheckoutService {
 
     const planRecord = await this.prisma.checkoutProductPlan.findUnique({
       where: { slug },
-      include: {
-        product: true,
-        checkoutConfig: { include: { pixels: true } },
-        orderBumps: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
-        upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
-      },
+      include: PLAN_INCLUDE,
     });
 
-    if (planRecord?.isActive && planRecord.kind === 'PLAN' && planRecord.legacyCheckoutEnabled) {
+    if (isLegacyPlanEligibleForMigration(planRecord)) {
       await this.productService.ensureLegacyCheckoutForPlan(planRecord.id);
       const migratedLink = await this.prisma.checkoutPlanLink.findFirst({
         where: {
@@ -240,17 +229,7 @@ export class CheckoutService {
           checkout: { isActive: true, kind: 'CHECKOUT' },
           plan: { isActive: true, kind: 'PLAN' },
         },
-        include: {
-          checkout: { include: { checkoutConfig: { include: { pixels: true } } } },
-          plan: {
-            include: {
-              product: true,
-              checkoutConfig: { include: { pixels: true } },
-              orderBumps: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
-              upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
-            },
-          },
-        },
+        include: CHECKOUT_PLAN_LINK_INCLUDE,
       });
 
       if (migratedLink) {
@@ -270,7 +249,7 @@ export class CheckoutService {
       }
     }
 
-    if (planRecord?.isActive && planRecord.kind === 'PLAN') {
+    if (isActivePlanKind(planRecord)) {
       const plan = await planLinkManager.ensurePlanReferenceCode(planRecord);
       this.logCheckoutEvent('checkout_public_lookup_resolved', {
         correlationId,

@@ -88,3 +88,56 @@ export function stripConfigMetadata(config: Record<string, unknown>): Record<str
   const { id, planId, pixels, createdAt, updatedAt, ...rest } = config;
   return rest;
 }
+
+// ─── Shared Prisma include objects ──────────────────────────────────────────
+
+/**
+ * Prisma include for checkoutPlanLink with full plan / product / pixels
+ * cascade. Used by both slug-based and code-based public lookup flows.
+ */
+export const CHECKOUT_PLAN_LINK_INCLUDE = {
+  checkout: { include: { checkoutConfig: { include: { pixels: true } } } },
+  plan: {
+    include: {
+      product: true,
+      checkoutConfig: { include: { pixels: true } },
+      orderBumps: { where: { isActive: true }, orderBy: { sortOrder: 'asc' as const } },
+      upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' as const } },
+    },
+  },
+};
+
+/**
+ * Prisma include for a solo plan lookup with product / config / bumps /
+ * upsells cascade.
+ */
+export const PLAN_INCLUDE = {
+  product: true,
+  checkoutConfig: { include: { pixels: true } },
+  orderBumps: { where: { isActive: true }, orderBy: { sortOrder: 'asc' as const } },
+  upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' as const } },
+};
+
+// ─── Plan-kind predicates ───────────────────────────────────────────────────
+
+/** Minimal duck-type for plan-record predicates. */
+export interface PlanLike {
+  isActive?: boolean | null;
+  kind?: string | null;
+  legacyCheckoutEnabled?: boolean | null;
+}
+
+/**
+ * True when the plan record is active, of PLAN kind, and eligible for
+ * legacy checkout migration.
+ */
+export function isLegacyPlanEligibleForMigration(
+  plan: PlanLike | null | undefined,
+): boolean {
+  return !!(plan?.isActive && plan.kind === 'PLAN' && plan.legacyCheckoutEnabled);
+}
+
+/** True when the plan record is active and of PLAN kind. */
+export function isActivePlanKind(plan: PlanLike | null | undefined): boolean {
+  return !!(plan?.isActive && plan.kind === 'PLAN');
+}
