@@ -1,6 +1,92 @@
 import { forEachSequential } from '../common/async-sequence';
 import { PrismaService } from '../prisma/prisma.service';
 import { NON_DIGIT_RE } from '../common/phone';
+import type { UnknownRecord } from '../common/types';
+
+// ─── pure helpers extracted from unified-agent-actions-crm.service.ts ───
+
+/**
+ * True when the surrounding pipeline context flags itself as deterministic.
+ * When deterministic, the legacy Mind decision path is skipped in favor of
+ * orchestrator-predecided values.
+ */
+export function isDeterministicPipeline(context?: UnknownRecord): boolean {
+  return context?.deterministicPipeline === true;
+}
+
+/** Narrow `unknown` to a Record (object, non-null). */
+export function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+/** Type guard for a Prisma client variant that carries the `autonomyExecution` model. */
+export function hasAutonomyExecutionClient(
+  value: unknown,
+): value is { autonomyExecution: PrismaService['autonomyExecution'] } {
+  return (
+    isRecord(value) &&
+    'autonomyExecution' in value &&
+    value.autonomyExecution !== null &&
+    value.autonomyExecution !== undefined
+  );
+}
+
+/**
+ * Convert an unknown thrown value into a readable message string.
+ * Centralizes the `error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown'`
+ * pattern that was repeated across the CRM action service.
+ */
+export function describeThrown(error: unknown, fallback = 'unknown'): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  return fallback;
+}
+
+/**
+ * Pure channel decision: given the workspace provider settings, the count of
+ * configured WhatsApp channel identifiers, and the contact phone, returns
+ * `'whatsapp'` or `'email'`.
+ *
+ * Extracted from `UnifiedAgentActionsCrmService.resolveChannel` so the
+ * IO-bound lookup can stay in the service while the rule lives in a unit-
+ * testable pure function.
+ */
+export function decideChannelFromSettings(input: {
+  providerSettings: UnknownRecord | null | undefined;
+  whatsappChannelIdentifierCount: number;
+  phone: string | null | undefined;
+}): 'whatsapp' | 'email' {
+  const settings: UnknownRecord = input.providerSettings ?? {};
+  const whatsappProvider = settings.whatsappProvider;
+  const connectionStatus = settings.connectionStatus;
+
+  if (typeof whatsappProvider === 'string' && connectionStatus === 'connected') {
+    return 'whatsapp';
+  }
+
+  const hasWhatsappChannel = input.whatsappChannelIdentifierCount > 0;
+  const phone = input.phone ?? '';
+
+  if (phone && phone.startsWith('+') && hasWhatsappChannel) {
+    return 'whatsapp';
+  }
+
+  return 'email';
+}
+
+/**
+ * Fallback used when the workspace lookup throws — decides channel using only
+ * the contact phone shape. Mirrors the catch-arm fallback in the original
+ * `resolveChannel` implementation.
+ */
+export function fallbackChannelFromPhone(phone: string | null | undefined): 'whatsapp' | 'email' {
+  const value = phone ?? '';
+  return value && value.startsWith('+') ? 'whatsapp' : 'email';
+}
 
 export async function actionImportContacts(
   prisma: PrismaService,

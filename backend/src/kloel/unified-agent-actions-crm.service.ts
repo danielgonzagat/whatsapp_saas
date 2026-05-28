@@ -1,7 +1,14 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
-import { actionImportContacts as actionImportContactsCompanion } from './unified-agent-actions-crm.helpers';
+import {
+  actionImportContacts as actionImportContactsCompanion,
+  decideChannelFromSettings,
+  describeThrown,
+  fallbackChannelFromPhone,
+  hasAutonomyExecutionClient,
+  isDeterministicPipeline,
+} from './unified-agent-actions-crm.helpers';
 import { flowQueue } from '../queue/queue';
 import { WhatsAppProviderRegistry } from '../marketing/channels/whatsapp/providers/provider-registry';
 import type { ToolArgs } from './unified-agent.types';
@@ -19,10 +26,6 @@ import {
 } from './unified-agent-actions-crm-predecided.helpers';
 
 import type { UnknownRecord } from '../common/types';
-
-function isDeterministicPipeline(context?: UnknownRecord): boolean {
-  return context?.deterministicPipeline === true;
-}
 
 /**
  * Handles CRM tool actions: lead status updates, tags, follow-ups, human transfer,
@@ -42,11 +45,7 @@ export class UnifiedAgentActionsCrmService {
     @Optional() private readonly guards?: MindGuardsService,
   ) {}
 
-  // ───────── helpers ─────────
-
-  private isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === 'object' && value !== null;
-  }
+  // ───────── helpers (kept as instance methods for public/legacy contract) ─────────
 
   str(v: unknown, fb = ''): string {
     return typeof v === 'string'
@@ -59,17 +58,6 @@ export class UnifiedAgentActionsCrmService {
   num(v: unknown, fb = 0): number {
     const n = Number(v);
     return Number.isFinite(n) ? n : fb;
-  }
-
-  private hasAutonomyExecutionClient(
-    value: unknown,
-  ): value is { autonomyExecution: PrismaService['autonomyExecution'] } {
-    return (
-      this.isRecord(value) &&
-      'autonomyExecution' in value &&
-      value.autonomyExecution !== null &&
-      value.autonomyExecution !== undefined
-    );
   }
 
   // ───────── CRM actions ─────────
@@ -219,8 +207,7 @@ export class UnifiedAgentActionsCrmService {
       };
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'UnifiedAgentActionsCrmService.getTime');
-      const msg =
-        error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown';
+      const msg = describeThrown(error);
       this.logger.error(`Erro ao agendar follow-up: ${msg}`);
       return { success: false, error: msg };
     }
@@ -239,23 +226,13 @@ export class UnifiedAgentActionsCrmService {
           },
         },
       });
-      const settings = (workspace?.providerSettings ?? {}) as UnknownRecord;
-      const whatsappProvider = settings.whatsappProvider;
-      const connectionStatus = settings.connectionStatus;
-
-      if (typeof whatsappProvider === 'string' && connectionStatus === 'connected') {
-        return 'whatsapp';
-      }
-
-      const hasWhatsappChannel = (workspace?.channelIdentifiers?.length ?? 0) > 0;
-
-      if (phone && phone.startsWith('+') && hasWhatsappChannel) {
-        return 'whatsapp';
-      }
-
-      return 'email';
+      return decideChannelFromSettings({
+        providerSettings: (workspace?.providerSettings ?? null) as UnknownRecord | null,
+        whatsappChannelIdentifierCount: workspace?.channelIdentifiers?.length ?? 0,
+        phone,
+      });
     } catch {
-      return phone && phone.startsWith('+') ? 'whatsapp' : 'email';
+      return fallbackChannelFromPhone(phone);
     }
   }
 
@@ -338,7 +315,7 @@ export class UnifiedAgentActionsCrmService {
             },
           });
           const txUnknown: unknown = tx;
-          if (this.hasAutonomyExecutionClient(txUnknown)) {
+          if (hasAutonomyExecutionClient(txUnknown)) {
             await txUnknown.autonomyExecution
               .create({
                 data: {
@@ -443,8 +420,7 @@ export class UnifiedAgentActionsCrmService {
         error,
         'UnifiedAgentActionsCrmService.actionTriggerFlow',
       );
-      const msg =
-        error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown';
+      const msg = describeThrown(error);
       this.logger.error(`Erro ao disparar fluxo: ${msg}`);
       return { success: false, error: msg };
     }
@@ -466,7 +442,7 @@ export class UnifiedAgentActionsCrmService {
       });
     } catch (err: unknown) {
       void this.opsAlert?.alertOnCriticalError(err, 'UnifiedAgentActionsCrmService.create');
-      const msg = err instanceof Error ? err.message : typeof err === 'string' ? err : 'unknown';
+      const msg = describeThrown(err);
       const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
       if (!isTestEnv) {
         const code = (err as { code?: string } | null)?.code;
@@ -531,8 +507,7 @@ export class UnifiedAgentActionsCrmService {
       };
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'UnifiedAgentActionsCrmService.async');
-      const msg =
-        error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown';
+      const msg = describeThrown(error);
       this.logger.error(`Erro ao conectar WhatsApp: ${msg}`);
       return {
         success: false,

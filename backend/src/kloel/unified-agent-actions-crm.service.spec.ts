@@ -8,14 +8,21 @@ jest.mock('../queue/queue', () => ({
     add: jest.fn().mockResolvedValue({ id: 'job-1' }),
   },
 }));
-jest.mock('./unified-agent-actions-crm.helpers', () => ({
-  actionImportContacts: jest.fn().mockResolvedValue({
-    success: true,
-    message: '5 contatos importados com sucesso',
-    total: 5,
-    created: 5,
-  }),
-}));
+jest.mock('./unified-agent-actions-crm.helpers', () => {
+  // Keep the real pure helpers available; only mock the IO action.
+  const actual = jest.requireActual<typeof import('./unified-agent-actions-crm.helpers')>(
+    './unified-agent-actions-crm.helpers',
+  );
+  return {
+    ...actual,
+    actionImportContacts: jest.fn().mockResolvedValue({
+      success: true,
+      message: '5 contatos importados com sucesso',
+      total: 5,
+      created: 5,
+    }),
+  };
+});
 jest.mock('../common/kloel-colors', () => ({
   TAG_DEFAULT_COLORS: {
     CRM_AUTO_BLUE: '#0000FF',
