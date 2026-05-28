@@ -84,6 +84,16 @@ import {
   runListFlows,
   runSearchAgentMemoryWithContacts,
 } from './kloel-chat-tools.flows-marketplace.helpers';
+import {
+  buildBlockedConfigurationTool,
+  buildCreateFlowBlocker,
+  buildSendChannelMessageBlocker,
+  buildUploadPlanImageBlocker,
+  centsFromUnknown as centsFromUnknownImpl,
+  coerceAnalyticsArgs,
+  coerceCouponArgs,
+  coerceWarrantyArgs,
+} from './kloel-chat-tools.service.helpers';
 import { MemoryService } from './memory.service';
 
 interface ToolCreateFlowArgs {
@@ -93,16 +103,10 @@ interface ToolCreateFlowArgs {
 }
 /** Coerces unknown wallet balance values (bigint | number) into integer cents.
  *  Returns 0 for non-numeric/missing values. Exported so peer kloel services
- *  (crm/executor/...) consume the same coercion without local copies. */
-export function centsFromUnknown(value: unknown): number {
-  if (typeof value === 'bigint') {
-    return Number(value);
-  }
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return Math.trunc(value);
-  }
-  return 0;
-}
+ *  (crm/executor/...) consume the same coercion without local copies.
+ *  Implementation lives in `kloel-chat-tools.service.helpers.ts`; re-exported
+ *  here to preserve the historic import path. */
+export const centsFromUnknown = centsFromUnknownImpl;
 /** Handles product, flow, dashboard, payment, and misc AI chat tools. */
 @Injectable()
 export class KloelChatToolsService {
@@ -152,12 +156,7 @@ export class KloelChatToolsService {
   toolCreateFlow(workspaceId: string, args: ToolCreateFlowArgs): Promise<ToolResult> {
     void workspaceId;
     void args;
-    return Promise.resolve({
-      success: false,
-      error: 'flow_service_required',
-      message:
-        'create_flow exige FlowsService.create ou service equivalente antes de declarar fluxo criado.',
-    });
+    return Promise.resolve(buildCreateFlowBlocker());
   }
   async toolListFlows(workspaceId: string): Promise<ToolResult> {
     return runListFlows(this.prisma, workspaceId);
@@ -284,19 +283,10 @@ export class KloelChatToolsService {
     return runGetProductAiConfig(this.prisma, workspaceId, args);
   }
   toolValidateCoupon(_workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
-    const productId = typeof args.productId === 'string' ? args.productId.trim() : '';
-    const code = typeof args.code === 'string' ? args.code.trim() : '';
-
-    return runValidateCoupon(this.prisma, _workspaceId, { productId, code });
+    return runValidateCoupon(this.prisma, _workspaceId, coerceCouponArgs(args));
   }
   toolGetAnalytics(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
-    const metric = typeof args.metric === 'string' && args.metric.trim() ? args.metric.trim() : 'overview';
-    const period = typeof args.period === 'string' && args.period.trim() ? args.period.trim() : undefined;
-
-    return runGetAnalytics(this.prisma, workspaceId, {
-      metric,
-      ...(period !== undefined ? { period } : {}),
-    });
+    return runGetAnalytics(this.prisma, workspaceId, coerceAnalyticsArgs(args));
   }
   toolCreateBroadcast(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     return runCreateBroadcast(workspaceId, args);
@@ -324,26 +314,7 @@ export class KloelChatToolsService {
     args: Record<string, unknown>,
   ): Promise<ToolResult> {
     void workspaceId;
-    const planName = typeof args.planName === 'string' ? args.planName : '';
-    const productName = typeof args.productName === 'string' ? args.productName : '';
-    const imageUrl = typeof args.imageUrl === 'string' ? args.imageUrl : '';
-    if (!imageUrl) {
-      return {
-        success: false,
-        error: 'image_url_required',
-        message:
-          'Envie a URL da foto do plano ou faça upload pelo chat. Ex: "foto do plano X url: https://..."',
-      };
-    }
-    if (!planName && !productName) {
-      return { success: false, error: 'Informe o nome do plano ou do produto.' };
-    }
-    return {
-      success: false,
-      error: 'plan_image_service_required',
-      message:
-        'upload_plan_image exige PlanImageService ou MediaService.attachPlanImage antes de declarar foto do plano atualizada.',
-    };
+    return buildUploadPlanImageBlocker(args);
   }
   async toolUploadProductImage(
     workspaceId: string,
@@ -357,11 +328,7 @@ export class KloelChatToolsService {
     error: string,
     requiredPath: string,
   ): Promise<ToolResult> {
-    return Promise.resolve({
-      success: false,
-      error,
-      message: `${toolName} exige ${requiredPath} antes de poder declarar configuracao feita.`,
-    });
+    return Promise.resolve(buildBlockedConfigurationTool(toolName, error, requiredPath));
   }
 
   toolConfigurePixel(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
@@ -411,12 +378,11 @@ export class KloelChatToolsService {
     workspaceId: string,
     args: Record<string, unknown>,
   ): Promise<ToolResult> {
-    const productName = typeof args.productName === 'string' ? args.productName : '';
-    if (productName) {
-      const days = typeof args.warrantyDays === 'number' ? args.warrantyDays : 7;
+    const coerced = coerceWarrantyArgs(args);
+    if (coerced) {
       return runUpdateProduct(this.prisma, this.productService, workspaceId, {
-        productName,
-        warrantyDays: days,
+        productName: coerced.productName,
+        warrantyDays: coerced.warrantyDays,
       });
     }
     return this.blockedConfigurationTool(
@@ -457,12 +423,7 @@ export class KloelChatToolsService {
     _workspaceId: string,
     _args: Record<string, unknown>,
   ): Promise<ToolResult> {
-    return Promise.resolve({
-      success: false,
-      error: 'channel_service_required',
-      message:
-        'send_channel_message must execute through a real channel service before it can report delivery.',
-    });
+    return Promise.resolve(buildSendChannelMessageBlocker());
   }
 
   /** Create a manual sale order with full buyer data */
