@@ -98,8 +98,10 @@ describe('MindWorkspaceState tick lease in chat reply (PI-K16-B)', () => {
 
     service = module.get(KloelReplyEngineService);
 
-    // @ts-ignore — access private logger for spying
-    loggerWarnSpy = jest.spyOn(service['logger'], 'warn');
+    loggerWarnSpy = jest.spyOn(
+      (service as unknown as { logger: { warn: (...args: unknown[]) => void } }).logger,
+      'warn',
+    );
   });
 
   afterEach(() => {

@@ -23,14 +23,21 @@ describe('ValenceTaggerService — chat.replied outcome tagging (PI-K16-D)', () 
       // fire-and-forget — flush the microtask for the void emit
       await new Promise<void>((resolve) => setTimeout(resolve, 10));
 
-      expect(spine.emit).toHaveBeenCalledTimes(1);
-      const call = (spine.emit as jest.Mock).mock.calls[0][0];
-      expect(call.eventName).toBe('chat.replied');
-      expect(call.workspaceId).toBe('ws-1');
-      expect(call.valence).toBe('positive');
-      expect(call.payload.surface).toBe('dashboard');
-      expect(call.payload.success).toBe(true);
-      expect(call.payload.degraded).toBe(false);
+      const emitSpy = spine.emit as jest.Mock;
+      expect(emitSpy).toHaveBeenCalledTimes(1);
+      const emitCalls = emitSpy.mock.calls as Array<[{
+        eventName: string;
+        workspaceId: string;
+        valence: string;
+        payload: { surface: string; success: boolean; degraded: boolean };
+      }]>;
+      const call = emitCalls[0]?.[0];
+      expect(call?.eventName).toBe('chat.replied');
+      expect(call?.workspaceId).toBe('ws-1');
+      expect(call?.valence).toBe('positive');
+      expect(call?.payload.surface).toBe('dashboard');
+      expect(call?.payload.success).toBe(true);
+      expect(call?.payload.degraded).toBe(false);
     });
 
     it('emits with negative valence when degraded is true', async () => {
