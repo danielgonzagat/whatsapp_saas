@@ -1,10 +1,14 @@
 import {
   MEMORY_EXPIRATION_DAYS,
+  buildMemoryCleanupAuditDetails,
+  buildWorkspaceCleanupFilter,
+  composeMemoryPriorityValue,
   cutoffDateForCategory,
   findDuplicateMemoryIds,
   findOrphanWorkspaceIds,
   groupMemoriesByKeyPrefix,
   knownMemoryCategories,
+  normalizeMemoryValue,
   pickStaleSemanticDuplicateIds,
 } from './memory-management.policies';
 
@@ -124,6 +128,174 @@ describe('memory-management.policies', () => {
 
     it('returns the full input when nothing is alive', () => {
       expect(findOrphanWorkspaceIds(['ws-a', 'ws-b'], [])).toEqual(['ws-a', 'ws-b']);
+    });
+  });
+
+  describe('buildMemoryCleanupAuditDetails', () => {
+    it('returns null when nothing was removed', () => {
+      expect(
+        buildMemoryCleanupAuditDetails({
+          expiredRemoved: 0,
+          duplicatesRemoved: 0,
+          orphansRemoved: 0,
+          totalBefore: 100,
+          totalAfter: 100,
+          durationMs: 12,
+        }),
+      ).toBeNull();
+    });
+
+    it('emits the full counter payload when any bucket removed rows', () => {
+      const details = buildMemoryCleanupAuditDetails({
+        expiredRemoved: 5,
+        duplicatesRemoved: 0,
+        orphansRemoved: 2,
+        totalBefore: 100,
+        totalAfter: 93,
+        durationMs: 250,
+      });
+      expect(details).toEqual({
+        expiredRemoved: 5,
+        duplicatesRemoved: 0,
+        orphansRemoved: 2,
+        totalBefore: 100,
+        totalAfter: 93,
+        durationMs: 250,
+      });
+    });
+
+    it('treats a single non-zero bucket as sufficient to audit', () => {
+      const details = buildMemoryCleanupAuditDetails({
+        expiredRemoved: 0,
+        duplicatesRemoved: 1,
+        orphansRemoved: 0,
+        totalBefore: 10,
+        totalAfter: 9,
+        durationMs: 1,
+      });
+      expect(details?.duplicatesRemoved).toBe(1);
+    });
+
+    it('returns null when buckets sum to zero even with negative parity', () => {
+      // Defensive: shouldn't happen in production but the helper must not
+      // surface a misleading audit row.
+      const details = buildMemoryCleanupAuditDetails({
+        expiredRemoved: 1,
+        duplicatesRemoved: -1,
+        orphansRemoved: 0,
+        totalBefore: 5,
+        totalAfter: 5,
+        durationMs: 0,
+      });
+      expect(details).toBeNull();
+    });
+  });
+
+  describe('buildWorkspaceCleanupFilter', () => {
+    it('returns just the workspaceId when no options supplied', () => {
+      expect(buildWorkspaceCleanupFilter('ws-a')).toEqual({ workspaceId: 'ws-a' });
+    });
+
+    it('appends category when present', () => {
+      expect(buildWorkspaceCleanupFilter('ws-a', { category: 'leads' })).toEqual({
+        workspaceId: 'ws-a',
+        category: 'leads',
+      });
+    });
+
+    it('appends an updatedAt cutoff based on olderThanDays', () => {
+      const now = new Date('2026-01-31T00:00:00Z');
+      const filter = buildWorkspaceCleanupFilter('ws-a', { olderThanDays: 7 }, now);
+      expect(filter.workspaceId).toBe('ws-a');
+      const diffDays = Math.round(
+        (now.getTime() - (filter.updatedAt?.lt.getTime() ?? 0)) / (1000 * 60 * 60 * 24),
+      );
+      expect(diffDays).toBe(7);
+    });
+
+    it('combines category and olderThanDays together', () => {
+      const now = new Date('2026-01-31T00:00:00Z');
+      const filter = buildWorkspaceCleanupFilter(
+        'ws-a',
+        { category: 'temporary', olderThanDays: 1 },
+        now,
+      );
+      expect(filter.workspaceId).toBe('ws-a');
+      expect(filter.category).toBe('temporary');
+      expect(filter.updatedAt).toBeDefined();
+    });
+
+    it('does not append updatedAt when olderThanDays is not provided', () => {
+      const filter = buildWorkspaceCleanupFilter('ws-a', { category: 'leads' });
+      expect(filter.updatedAt).toBeUndefined();
+    });
+
+    it('always preserves the workspaceId argument exactly', () => {
+      const filter = buildWorkspaceCleanupFilter('ws-protected', { category: 'leads' });
+      expect(filter.workspaceId).toBe('ws-protected');
+    });
+  });
+
+  describe('normalizeMemoryValue', () => {
+    it('clones an object value defensively', () => {
+      const source = { a: 1, b: 'two' };
+      const normalized = normalizeMemoryValue(source);
+      expect(normalized).toEqual(source);
+      expect(normalized).not.toBe(source);
+    });
+
+    it('wraps primitives under `content`', () => {
+      expect(normalizeMemoryValue('hello')).toEqual({ content: 'hello' });
+      expect(normalizeMemoryValue(42)).toEqual({ content: 42 });
+      expect(normalizeMemoryValue(true)).toEqual({ content: true });
+    });
+
+    it('wraps arrays under `content` (treated as primitive)', () => {
+      expect(normalizeMemoryValue([1, 2, 3])).toEqual({ content: [1, 2, 3] });
+    });
+
+    it('wraps null/undefined under `content`', () => {
+      expect(normalizeMemoryValue(null)).toEqual({ content: null });
+      expect(normalizeMemoryValue(undefined)).toEqual({ content: undefined });
+    });
+  });
+
+  describe('composeMemoryPriorityValue', () => {
+    it('merges priority fields into an existing object value', () => {
+      const now = new Date('2026-01-31T12:00:00Z');
+      const result = composeMemoryPriorityValue({ a: 1 }, 'high', now);
+      expect(result).toEqual({
+        a: 1,
+        _priority: 'high',
+        _prioritySetAt: '2026-01-31T12:00:00.000Z',
+      });
+    });
+
+    it('wraps a primitive value under `content` before stamping priority', () => {
+      const now = new Date('2026-01-31T12:00:00Z');
+      const result = composeMemoryPriorityValue('legacy', 'critical', now);
+      expect(result).toEqual({
+        content: 'legacy',
+        _priority: 'critical',
+        _prioritySetAt: '2026-01-31T12:00:00.000Z',
+      });
+    });
+
+    it('overwrites a prior priority stamp on the same key', () => {
+      const now = new Date('2026-01-31T12:00:00Z');
+      const result = composeMemoryPriorityValue(
+        { content: 'x', _priority: 'low', _prioritySetAt: '2025-01-01T00:00:00.000Z' },
+        'normal',
+        now,
+      );
+      expect(result._priority).toBe('normal');
+      expect(result._prioritySetAt).toBe('2026-01-31T12:00:00.000Z');
+    });
+
+    it('does not mutate the original value object', () => {
+      const original = { a: 1 };
+      composeMemoryPriorityValue(original, 'low', new Date('2026-01-31T00:00:00Z'));
+      expect(original).toEqual({ a: 1 });
     });
   });
 });

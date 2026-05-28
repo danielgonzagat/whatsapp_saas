@@ -4,6 +4,7 @@
  */
 import { Injectable, Optional } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import type { Prisma } from '@prisma/client';
 import { StructuredLogger } from '../logging/structured-logger';
 import { Counter, Gauge, register } from 'prom-client';
 import { AuditService } from '../audit/audit.service';
@@ -13,6 +14,9 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 import { computeMemoryStats, type MemoryStats } from './memory-stats';
 import {
   MEMORY_EXPIRATION_DAYS,
+  buildMemoryCleanupAuditDetails,
+  buildWorkspaceCleanupFilter,
+  composeMemoryPriorityValue,
   cutoffDateForCategory,
   findDuplicateMemoryIds,
   findOrphanWorkspaceIds,
@@ -135,21 +139,21 @@ export class MemoryManagementService {
     };
 
     // Audit trail for bulk cleanup
-    const totalRemoved = expiredRemoved + duplicatesRemoved + orphansRemoved;
-    if (totalRemoved > 0) {
+    const auditDetails = buildMemoryCleanupAuditDetails({
+      expiredRemoved,
+      duplicatesRemoved,
+      orphansRemoved,
+      totalBefore,
+      totalAfter,
+      durationMs: result.duration,
+    });
+    if (auditDetails) {
       await this.auditService
         .log({
           workspaceId: 'SYSTEM',
           action: 'DELETE_MEMORY_CLEANUP',
           resource: 'KloelMemory',
-          details: {
-            expiredRemoved,
-            duplicatesRemoved,
-            orphansRemoved,
-            totalBefore,
-            totalAfter,
-            durationMs: result.duration,
-          },
+          details: auditDetails,
         })
         .catch(() => {});
     }
@@ -364,17 +368,7 @@ export class MemoryManagementService {
       return 0;
     }
 
-    const where: Record<string, unknown> = { workspaceId };
-
-    if (options?.category) {
-      where.category = options.category;
-    }
-
-    if (options?.olderThanDays) {
-      const cutoff = new Date();
-      cutoff.setDate(cutoff.getDate() - options.olderThanDays);
-      where.updatedAt = { lt: cutoff };
-    }
+    const where = buildWorkspaceCleanupFilter(workspaceId, options);
 
     const result = await this.prisma.kloelMemory.deleteMany({ where: { ...where, workspaceId } });
 
@@ -476,16 +470,10 @@ export class MemoryManagementService {
             return false;
           }
 
-          const value = typeof memory.value === 'object' ? memory.value : { content: memory.value };
-
           await tx.kloelMemory.updateMany({
             where: { id: memory.id, workspaceId },
             data: {
-              value: {
-                ...value,
-                _priority: priority,
-                _prioritySetAt: new Date().toISOString(),
-              },
+              value: composeMemoryPriorityValue(memory.value, priority) as Prisma.InputJsonValue,
             },
           });
 

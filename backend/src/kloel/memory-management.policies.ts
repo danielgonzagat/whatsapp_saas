@@ -118,3 +118,107 @@ export function findOrphanWorkspaceIds(
   const alive = new Set(aliveWorkspaceIds);
   return memoryWorkspaceIds.filter((id) => !alive.has(id));
 }
+
+/** Outcome counters returned by the daily cleanup pass. */
+export interface MemoryCleanupCounters {
+  expiredRemoved: number;
+  duplicatesRemoved: number;
+  orphansRemoved: number;
+  totalBefore: number;
+  totalAfter: number;
+  durationMs: number;
+}
+
+/**
+ * Build the structured `details` payload written to the audit log when a
+ * cleanup pass removes at least one row. Returns `null` when there is nothing
+ * to record — callers MUST skip the audit write in that case to avoid emitting
+ * empty rows that pollute the trail. Pure function.
+ */
+export function buildMemoryCleanupAuditDetails(
+  counters: MemoryCleanupCounters,
+): Record<string, unknown> | null {
+  const totalRemoved =
+    counters.expiredRemoved + counters.duplicatesRemoved + counters.orphansRemoved;
+  if (totalRemoved <= 0) {
+    return null;
+  }
+  return {
+    expiredRemoved: counters.expiredRemoved,
+    duplicatesRemoved: counters.duplicatesRemoved,
+    orphansRemoved: counters.orphansRemoved,
+    totalBefore: counters.totalBefore,
+    totalAfter: counters.totalAfter,
+    durationMs: counters.durationMs,
+  };
+}
+
+/** Optional narrowing knobs accepted by `cleanupWorkspace`. */
+export interface WorkspaceCleanupOptions {
+  category?: string;
+  olderThanDays?: number;
+}
+
+/** Shape of the `where` clause passed to `prisma.kloelMemory.deleteMany`. */
+export interface WorkspaceCleanupFilter {
+  workspaceId: string;
+  category?: string;
+  updatedAt?: { lt: Date };
+}
+
+/**
+ * Build the Prisma `where` filter that scopes a workspace memory cleanup. The
+ * workspaceId is always emitted so the caller never accidentally widens the
+ * blast radius; `category` and `updatedAt` are appended only when the
+ * corresponding option is supplied. Pure function — `now` is injectable for
+ * deterministic testing.
+ */
+export function buildWorkspaceCleanupFilter(
+  workspaceId: string,
+  options?: WorkspaceCleanupOptions,
+  now: Date = new Date(),
+): WorkspaceCleanupFilter {
+  const filter: WorkspaceCleanupFilter = { workspaceId };
+  if (options?.category) {
+    filter.category = options.category;
+  }
+  if (options?.olderThanDays !== undefined && options.olderThanDays !== null) {
+    const cutoff = new Date(now);
+    cutoff.setDate(cutoff.getDate() - options.olderThanDays);
+    filter.updatedAt = { lt: cutoff };
+  }
+  return filter;
+}
+
+/** Priority levels that can be stamped onto a memory row. */
+export type MemoryPriorityLevel = 'low' | 'normal' | 'high' | 'critical';
+
+/**
+ * Normalize a Prisma `Json` value into a plain record so the priority fields
+ * can be merged in. Primitive values are wrapped as `{ content: value }` to
+ * preserve the original payload, mirroring the legacy service contract.
+ */
+export function normalizeMemoryValue(value: unknown): Record<string, unknown> {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return { ...(value as Record<string, unknown>) };
+  }
+  return { content: value };
+}
+
+/**
+ * Compose the JSON payload written when an operator stamps a priority on a
+ * memory row. Preserves the existing value object (or wraps a primitive) and
+ * appends the `_priority` + `_prioritySetAt` markers. Pure function — `now`
+ * is injectable for deterministic testing.
+ */
+export function composeMemoryPriorityValue(
+  existingValue: unknown,
+  priority: MemoryPriorityLevel,
+  now: Date = new Date(),
+): Record<string, unknown> {
+  return {
+    ...normalizeMemoryValue(existingValue),
+    _priority: priority,
+    _prioritySetAt: now.toISOString(),
+  };
+}
