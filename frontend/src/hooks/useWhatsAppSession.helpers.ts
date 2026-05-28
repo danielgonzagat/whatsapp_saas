@@ -142,3 +142,91 @@ export function isCiaAutonomyActive(autonomy: Record<string, unknown> | null | u
 export function createSessionError(message: string): Error {
   return new Error(message);
 }
+
+/* ── Credentials state classification ── */
+
+/** Pair of credentials resolved from token storage / providers. */
+export interface SessionCredentials {
+  authToken: string;
+  workspaceId: string;
+}
+
+/** True when both an auth token and a workspaceId are present (non-empty). */
+export function hasCompleteCredentials(creds: {
+  authToken?: string | null | undefined;
+  workspaceId?: string | null | undefined;
+}): boolean {
+  return Boolean(creds.authToken) && Boolean(creds.workspaceId);
+}
+
+/**
+ * True when a token exists but no workspaceId — the signal that we must call
+ * /auth/me to recover the workspaceId before proceeding.
+ */
+export function needsWorkspaceRecovery(creds: {
+  authToken?: string | null | undefined;
+  workspaceId?: string | null | undefined;
+}): boolean {
+  return Boolean(creds.authToken) && !creds.workspaceId;
+}
+
+/* ── Connect response classification ── */
+
+/** Shape of the subset of WhatsAppConnectResponse we branch on. */
+export interface ConnectResponseLike {
+  status?: string | null | undefined;
+  error?: unknown;
+  message?: string | null | undefined;
+  qrCode?: string | null | undefined;
+  qrCodeImage?: string | null | undefined;
+}
+
+/**
+ * Discriminated outcome of {@link classifyConnectResponse}. Lets the hook
+ * branch on a single tag instead of repeating string comparisons.
+ */
+export type ConnectOutcome =
+  | { kind: 'error'; message: string }
+  | { kind: 'already_connected' }
+  | { kind: 'qr_ready'; qrCode: string | null; message: string }
+  | { kind: 'pending' };
+
+/**
+ * Classify a /whatsapp/connect response into a discriminated outcome the
+ * hook can pattern-match on. Errors win first (any truthy error field or
+ * `status === 'error'`); then the two canonical wire values; otherwise
+ * the call is treated as still pending and the hook should poll for QR.
+ */
+export function classifyConnectResponse(response: ConnectResponseLike): ConnectOutcome {
+  if (response.error || response.status === 'error') {
+    return {
+      kind: 'error',
+      message: response.message || SESSION_COPY.connectFailed,
+    };
+  }
+
+  if (response.status === STATUS_RESPONSES.alreadyConnected) {
+    return { kind: 'already_connected' };
+  }
+
+  if (response.status === STATUS_RESPONSES.qrReady) {
+    return {
+      kind: 'qr_ready',
+      qrCode: selectQrCodeFromResponse(response),
+      message: response.message || SESSION_COPY.scanQr,
+    };
+  }
+
+  return { kind: 'pending' };
+}
+
+/**
+ * Prefer `qrCode`, fall back to `qrCodeImage`, fall back to null. Centralises
+ * the wire-shape compatibility shim so callers don't repeat the `||` chain.
+ */
+export function selectQrCodeFromResponse(response: {
+  qrCode?: string | null | undefined;
+  qrCodeImage?: string | null | undefined;
+}): string | null {
+  return response.qrCode || response.qrCodeImage || null;
+}

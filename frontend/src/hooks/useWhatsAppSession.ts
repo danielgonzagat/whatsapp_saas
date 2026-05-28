@@ -23,10 +23,14 @@ import {
   SESSION_LOG,
   STATUS_RESPONSES,
   TIMEOUTS,
+  classifyConnectResponse,
   createSessionError,
+  hasCompleteCredentials,
   isCiaAutonomyActive,
   isPendingQrStatus,
+  needsWorkspaceRecovery,
   resolveStatusMessage,
+  selectQrCodeFromResponse,
 } from './useWhatsAppSession.helpers';
 
 interface UseWhatsAppSessionOptions {
@@ -124,11 +128,11 @@ export function useWhatsAppSession({
 
   const ensureSessionCredentials = useCallback(async () => {
     const current = refreshCredentials();
-    if (current.authToken && current.workspaceId) {
+    if (hasCompleteCredentials(current)) {
       return current;
     }
 
-    if (current.authToken && !current.workspaceId) {
+    if (needsWorkspaceRecovery(current)) {
       const recovered = await tryRecoverAuthenticatedWorkspaceCredentials(current.authToken);
       if (recovered) {
         return recovered;
@@ -144,7 +148,7 @@ export function useWhatsAppSession({
 
   const requireSessionCredentials = useCallback(async () => {
     const current = await ensureSessionCredentials();
-    if (!current.workspaceId || !current.authToken) {
+    if (!hasCompleteCredentials(current)) {
       throw createSessionError(SESSION_COPY.workspaceRetry);
     }
     return current;
@@ -255,7 +259,7 @@ export function useWhatsAppSession({
 
       if (isPendingQrStatus(currentStatus.status)) {
         setStatus(currentStatus);
-        setQrCode(currentStatus.qrCode || null);
+        setQrCode(selectQrCodeFromResponse(currentStatus));
         setStatusMessage(currentStatus.message || SESSION_COPY.scanQr);
         if (connectTimerRef.current) {
           clearTimeout(connectTimerRef.current);
@@ -270,22 +274,24 @@ export function useWhatsAppSession({
         current.workspaceId,
       );
 
-      if (response.error || response.status === 'error') {
-        setError(response.message || SESSION_COPY.connectFailed);
+      const outcome = classifyConnectResponse(response);
+
+      if (outcome.kind === 'error') {
+        setError(outcome.message);
         setConnecting(false);
         return;
       }
 
-      if (response.status === STATUS_RESPONSES.alreadyConnected) {
+      if (outcome.kind === 'already_connected') {
         setConnecting(false);
         setStatusMessage(SESSION_COPY.alreadyConnected);
         await loadStatus();
         return;
       }
 
-      if (response.status === STATUS_RESPONSES.qrReady) {
-        setQrCode(response.qrCode || response.qrCodeImage || null);
-        setStatusMessage(response.message || SESSION_COPY.scanQr);
+      if (outcome.kind === 'qr_ready') {
+        setQrCode(outcome.qrCode);
+        setStatusMessage(outcome.message);
         return;
       }
 

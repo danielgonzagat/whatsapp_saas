@@ -9,11 +9,15 @@ import {
   SESSION_COPY,
   STATUS_RESPONSES,
   TIMEOUTS,
+  classifyConnectResponse,
   createSessionError,
+  hasCompleteCredentials,
   isCiaAutonomyActive,
   isPendingQrStatus,
+  needsWorkspaceRecovery,
   normalizeStatusKey,
   resolveStatusMessage,
+  selectQrCodeFromResponse,
 } from './useWhatsAppSession.helpers';
 
 describe('normalizeStatusKey', () => {
@@ -106,6 +110,123 @@ describe('createSessionError', () => {
     const err = createSessionError('boom');
     expect(err).toBeInstanceOf(Error);
     expect(err.message).toBe('boom');
+  });
+});
+
+describe('hasCompleteCredentials', () => {
+  it('returns true only when both token and workspaceId are present', () => {
+    expect(hasCompleteCredentials({ authToken: 't', workspaceId: 'w' })).toBe(true);
+  });
+
+  it('returns false when either side is missing or falsy', () => {
+    expect(hasCompleteCredentials({ authToken: '', workspaceId: 'w' })).toBe(false);
+    expect(hasCompleteCredentials({ authToken: 't', workspaceId: '' })).toBe(false);
+    expect(hasCompleteCredentials({ authToken: '', workspaceId: '' })).toBe(false);
+    expect(hasCompleteCredentials({ authToken: null, workspaceId: 'w' })).toBe(false);
+    expect(hasCompleteCredentials({ authToken: 't', workspaceId: null })).toBe(false);
+    expect(hasCompleteCredentials({ authToken: undefined, workspaceId: undefined })).toBe(false);
+  });
+});
+
+describe('needsWorkspaceRecovery', () => {
+  it('returns true when token is present but workspaceId is missing', () => {
+    expect(needsWorkspaceRecovery({ authToken: 't', workspaceId: '' })).toBe(true);
+    expect(needsWorkspaceRecovery({ authToken: 't', workspaceId: null })).toBe(true);
+    expect(needsWorkspaceRecovery({ authToken: 't', workspaceId: undefined })).toBe(true);
+  });
+
+  it('returns false when both credentials are present', () => {
+    expect(needsWorkspaceRecovery({ authToken: 't', workspaceId: 'w' })).toBe(false);
+  });
+
+  it('returns false when token is missing (anonymous-fallback territory)', () => {
+    expect(needsWorkspaceRecovery({ authToken: '', workspaceId: 'w' })).toBe(false);
+    expect(needsWorkspaceRecovery({ authToken: '', workspaceId: '' })).toBe(false);
+    expect(needsWorkspaceRecovery({ authToken: null, workspaceId: 'w' })).toBe(false);
+  });
+});
+
+describe('selectQrCodeFromResponse', () => {
+  it('prefers qrCode over qrCodeImage', () => {
+    expect(selectQrCodeFromResponse({ qrCode: 'A', qrCodeImage: 'B' })).toBe('A');
+  });
+
+  it('falls back to qrCodeImage when qrCode is missing', () => {
+    expect(selectQrCodeFromResponse({ qrCodeImage: 'B' })).toBe('B');
+    expect(selectQrCodeFromResponse({ qrCode: '', qrCodeImage: 'B' })).toBe('B');
+    expect(selectQrCodeFromResponse({ qrCode: null, qrCodeImage: 'B' })).toBe('B');
+  });
+
+  it('returns null when neither field has content', () => {
+    expect(selectQrCodeFromResponse({})).toBeNull();
+    expect(selectQrCodeFromResponse({ qrCode: '', qrCodeImage: '' })).toBeNull();
+    expect(selectQrCodeFromResponse({ qrCode: null, qrCodeImage: null })).toBeNull();
+  });
+});
+
+describe('classifyConnectResponse', () => {
+  it('classifies a truthy error field as error and uses its message when provided', () => {
+    expect(classifyConnectResponse({ error: 'boom', message: 'kaboom' })).toEqual({
+      kind: 'error',
+      message: 'kaboom',
+    });
+  });
+
+  it('classifies status === "error" as error and falls back to default copy', () => {
+    expect(classifyConnectResponse({ status: 'error' })).toEqual({
+      kind: 'error',
+      message: SESSION_COPY.connectFailed,
+    });
+  });
+
+  it('classifies STATUS_RESPONSES.alreadyConnected', () => {
+    expect(classifyConnectResponse({ status: STATUS_RESPONSES.alreadyConnected })).toEqual({
+      kind: 'already_connected',
+    });
+  });
+
+  it('classifies STATUS_RESPONSES.qrReady and lifts qrCode + message', () => {
+    const outcome = classifyConnectResponse({
+      status: STATUS_RESPONSES.qrReady,
+      qrCode: 'data:image/png;base64,AAA',
+      message: 'scan it',
+    });
+    expect(outcome).toEqual({
+      kind: 'qr_ready',
+      qrCode: 'data:image/png;base64,AAA',
+      message: 'scan it',
+    });
+  });
+
+  it('falls back to qrCodeImage and default copy when qr_ready omits qrCode/message', () => {
+    expect(
+      classifyConnectResponse({
+        status: STATUS_RESPONSES.qrReady,
+        qrCodeImage: 'data:image/png;base64,BBB',
+      }),
+    ).toEqual({
+      kind: 'qr_ready',
+      qrCode: 'data:image/png;base64,BBB',
+      message: SESSION_COPY.scanQr,
+    });
+  });
+
+  it('returns pending for unknown/missing statuses (driving the QR poll fallback)', () => {
+    expect(classifyConnectResponse({})).toEqual({ kind: 'pending' });
+    expect(classifyConnectResponse({ status: 'starting' })).toEqual({ kind: 'pending' });
+    expect(classifyConnectResponse({ status: null })).toEqual({ kind: 'pending' });
+  });
+
+  it('error wins over a successful status code', () => {
+    expect(
+      classifyConnectResponse({
+        status: STATUS_RESPONSES.alreadyConnected,
+        error: 'something',
+      }),
+    ).toEqual({
+      kind: 'error',
+      message: SESSION_COPY.connectFailed,
+    });
   });
 });
 
