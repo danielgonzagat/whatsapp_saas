@@ -14,6 +14,11 @@ import {
 import { computeProductRanking } from './dashboard.product-rank.helpers';
 import { mapRecentConversation } from './dashboard.recent-conversations.helpers';
 import { buildSetupCheckpoints, readSetupChecklist } from './dashboard.setup-checklist.helpers';
+import {
+  aggregateStatusCounts,
+  computeOutboundMessageRates,
+  summarizeOperationalMetrics,
+} from './dashboard.stats.helpers';
 /** Dashboard service. */
 @Injectable()
 export class DashboardService {
@@ -43,21 +48,9 @@ export class DashboardService {
       },
       _count: { status: true },
     });
-    const statsMap = messageStats.reduce(
-      (acc, curr) => {
-        acc[curr.status] = curr._count.status;
-        return acc;
-      },
-      {} as Record<string, number>,
-    );
-    const sent = statsMap.SENT || 0;
-    const delivered = statsMap.DELIVERED || 0;
-    const read = statsMap.READ || 0;
-    const failed = statsMap.FAILED || 0;
-    const totalOutbound = sent + delivered + read + failed;
-    const deliveryRate = totalOutbound > 0 ? ((delivered + read) / totalOutbound) * 100 : 0;
-    const deliveredOrRead = delivered + read;
-    const readRate = deliveredOrRead > 0 ? (read / deliveredOrRead) * 100 : 0;
+    const statsMap = aggregateStatusCounts(messageStats);
+    const { totalOutbound, deliveryRatePct, readRatePct, errorRatePct } =
+      computeOutboundMessageRates(statsMap);
     const activeConversations = await this.prisma.conversation.count({
       where: { workspaceId, status: 'OPEN' },
     });
@@ -71,47 +64,27 @@ export class DashboardService {
       },
       _count: { status: true },
     });
-    const flowStats = flowExecutions.reduce(
-      (acc, curr) => {
-        acc[curr.status] = curr._count.status;
-        return acc;
-      },
-      {} as Record<string, number>,
-    );
+    const flowStats = aggregateStatusCounts(flowExecutions);
     const key = `metrics:${workspaceId}`;
     this.logger.log('Fetching Redis operational metrics', {
       context: 'DashboardService.getStats',
       workspaceId,
     });
     const events = await this.redis.lrange(key, 0, -1);
-    let healthScore = 100;
-    let avgLatency = 0;
-    if (events.length > 0) {
-      let success = 0;
-      let totalLatency = 0;
-      events.forEach((e) => {
-        const [ok, lat] = e.split(':');
-        if (ok === '1') {
-          success += 1;
-        }
-        totalLatency += Number(lat || 0);
-      });
-      healthScore = Math.round((success / events.length) * 100);
-      avgLatency = Math.round(totalLatency / events.length);
-    }
+    const { healthScore, avgLatencyMs } = summarizeOperationalMetrics(events);
     return {
       contacts: totalContacts,
       campaigns: totalCampaigns,
       flows: totalFlows,
       messages: totalOutbound,
       // Calculated Rates
-      deliveryRate: Number(deliveryRate.toFixed(1)),
-      readRate: Number(readRate.toFixed(1)),
-      errorRate: totalOutbound > 0 ? Number(((failed / totalOutbound) * 100).toFixed(1)) : 0,
+      deliveryRate: deliveryRatePct,
+      readRate: readRatePct,
+      errorRate: errorRatePct,
       // Operational
       activeConversations,
       healthScore,
-      avgLatency,
+      avgLatency: avgLatencyMs,
       // Flow Funnel (Today)
       flowCompleted: flowStats.COMPLETED || 0,
       flowRunning: flowStats.RUNNING || 0,
