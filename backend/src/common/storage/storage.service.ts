@@ -1,4 +1,4 @@
-import { safeJoin, safeResolve } from '../../common/safe-path';
+import { safeJoin } from '../../common/safe-path';
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -9,19 +9,16 @@ import { getTraceHeaders } from '../trace-headers';
 import { validateNoInternalAccess } from '../utils/url-validator';
 import { StorageDriversService } from './storage-drivers.service';
 import { OpsAlertService } from '../../observability/ops-alert.service';
-
-const BACKSLASH_RE = /\\/g;
-const LEADING_SLASHES_RE = /^\/+/;
-
-function readConfigString(
-  config: ConfigService,
-  key: string,
-  defaultValue?: string,
-): string | undefined {
-  const value =
-    defaultValue === undefined ? config.get<string>(key) : config.get<string>(key, defaultValue);
-  return typeof value === 'string' && value.trim() ? value : undefined;
-}
+import {
+  buildAccessTokenPayload,
+  decodeTokenPayload,
+  encodeTokenPayload,
+  getExtensionFromMime,
+  getMimeTypeForPath,
+  normalizeRelativePath,
+  readConfigString,
+  resolveAbsolutePath,
+} from './storage.service.helpers';
 
 /** Storage service. */
 @Injectable()
@@ -84,7 +81,7 @@ export class StorageService implements OnModuleInit {
       workspaceId?: string;
     } = {},
   ): Promise<{ url: string; path: string; size: number }> {
-    const ext = this.getExtensionFromMime(options.mimeType || 'application/octet-stream');
+    const ext = getExtensionFromMime(options.mimeType || 'application/octet-stream');
     const filename = options.filename || `${randomUUID()}${ext}`;
     const folder = options.folder || 'media';
     const relativePath = safeJoin(folder, filename);
@@ -120,7 +117,7 @@ export class StorageService implements OnModuleInit {
     entityId: string,
     mimeType = 'image/jpeg',
   ): Promise<{ url: string; path: string; size: number }> {
-    const ext = this.getExtensionFromMime(mimeType) || '.jpg';
+    const ext = getExtensionFromMime(mimeType) || '.jpg';
     const filename = `avatar_${entityId}_${Date.now()}${ext}`;
     return this.upload(buffer, {
       filename,
@@ -135,7 +132,7 @@ export class StorageService implements OnModuleInit {
     productId: string,
     mimeType = 'image/jpeg',
   ): Promise<{ url: string; path: string; size: number }> {
-    const ext = this.getExtensionFromMime(mimeType) || '.jpg';
+    const ext = getExtensionFromMime(mimeType) || '.jpg';
     const filename = `product_${productId}_${Date.now()}${ext}`;
     return this.upload(buffer, {
       filename,
@@ -151,7 +148,7 @@ export class StorageService implements OnModuleInit {
     mimeType: string,
     originalName?: string,
   ): Promise<{ url: string; path: string; size: number }> {
-    const ext = this.getExtensionFromMime(mimeType) || '';
+    const ext = getExtensionFromMime(mimeType) || '';
     const filename = originalName || `wa_${workspaceId}_${Date.now()}${ext}`;
     return this.upload(buffer, {
       filename,
@@ -226,7 +223,7 @@ export class StorageService implements OnModuleInit {
 
   /** Get public url. */
   getPublicUrl(relativePath: string): string {
-    const normalized = this.normalizeRelativePath(relativePath);
+    const normalized = normalizeRelativePath(relativePath);
     if (this.isLocalDriver()) {
       return this.buildLocalAccessUrl(normalized);
     }
@@ -241,7 +238,7 @@ export class StorageService implements OnModuleInit {
       downloadName?: string;
     } = {},
   ): string {
-    const normalized = this.normalizeRelativePath(relativePath);
+    const normalized = normalizeRelativePath(relativePath);
     if (!this.isLocalDriver()) {
       return this.getPublicUrl(normalized);
     }
@@ -267,21 +264,15 @@ export class StorageService implements OnModuleInit {
     ) {
       throw new Error('invalid_storage_signature');
     }
-    const raw = Buffer.from(encodedPayload, 'base64url').toString('utf8');
-    let payload: { p?: string; exp?: number; d?: string };
-    try {
-      payload = JSON.parse(raw) as { p?: string; exp?: number; d?: string };
-    } catch {
-      throw new Error('invalid_storage_token_payload');
-    }
-    const relativePath = this.normalizeRelativePath(payload.p || '');
+    const payload = decodeTokenPayload(encodedPayload);
+    const relativePath = normalizeRelativePath(payload.p || '');
     if (!relativePath) {
       throw new Error('invalid_storage_path');
     }
     if (payload.exp && Date.now() > payload.exp) {
       throw new Error('expired_storage_token');
     }
-    const absolutePath = this.resolveAbsolutePath(relativePath);
+    const absolutePath = resolveAbsolutePath(this.uploadsDir, relativePath);
     return {
       relativePath,
       absolutePath,
@@ -291,50 +282,30 @@ export class StorageService implements OnModuleInit {
 
   /** Get mime type for path. */
   getMimeTypeForPath(relativePath: string): string {
-    const ext = path.extname(relativePath).toLowerCase();
-    const mapping: Record<string, string> = {
-      '.mp3': 'audio/mpeg',
-      '.ogg': 'audio/ogg',
-      '.wav': 'audio/wav',
-      '.webm': 'audio/webm',
-      '.jpg': 'image/jpeg',
-      '.jpeg': 'image/jpeg',
-      '.png': 'image/png',
-      '.gif': 'image/gif',
-      '.webp': 'image/webp',
-      '.mp4': 'video/mp4',
-      '.pdf': 'application/pdf',
-      '.json': 'application/json',
-      '.txt': 'text/plain',
-      '.doc': 'application/msword',
-      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      '.xls': 'application/vnd.ms-excel',
-      '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    };
-    return mapping[ext] || 'application/octet-stream';
+    return getMimeTypeForPath(relativePath);
   }
 
   /** Read local file. */
   readLocalFile(relativePath: string): Buffer {
-    const fullPath = this.resolveAbsolutePath(relativePath);
+    const fullPath = resolveAbsolutePath(this.uploadsDir, relativePath);
     return fs.readFileSync(fullPath);
   }
 
   /** Read access file. */
   async readAccessFile(relativePath: string): Promise<{ buffer: Buffer; mimeType: string } | null> {
-    const normalized = this.normalizeRelativePath(relativePath);
-    const localPath = this.resolveAbsolutePath(normalized);
+    const normalized = normalizeRelativePath(relativePath);
+    const localPath = resolveAbsolutePath(this.uploadsDir, normalized);
     if (fs.existsSync(localPath)) {
       return {
         buffer: fs.readFileSync(localPath),
-        mimeType: this.getMimeTypeForPath(normalized),
+        mimeType: getMimeTypeForPath(normalized),
       };
     }
     switch (this.driver) {
       case 'r2':
-        return this.drivers.readFromR2(normalized, (p) => this.getMimeTypeForPath(p));
+        return this.drivers.readFromR2(normalized, (p) => getMimeTypeForPath(p));
       case 's3':
-        return this.drivers.readFromS3(normalized, (p) => this.getMimeTypeForPath(p));
+        return this.drivers.readFromS3(normalized, (p) => getMimeTypeForPath(p));
       default:
         return null;
     }
@@ -344,8 +315,8 @@ export class StorageService implements OnModuleInit {
     buffer: Buffer,
     relativePath: string,
   ): Promise<{ url: string; path: string; size: number }> {
-    const normalizedPath = this.normalizeRelativePath(relativePath);
-    const fullPath = this.resolveAbsolutePath(normalizedPath);
+    const normalizedPath = normalizeRelativePath(relativePath);
+    const fullPath = resolveAbsolutePath(this.uploadsDir, normalizedPath);
     const dir = path.dirname(fullPath);
     // Criar diretório se não existir
     if (!fs.existsSync(dir)) {
@@ -387,7 +358,7 @@ export class StorageService implements OnModuleInit {
   }
 
   private async deleteFromLocal(relativePath: string): Promise<boolean> {
-    const fullPath = this.resolveAbsolutePath(relativePath);
+    const fullPath = resolveAbsolutePath(this.uploadsDir, relativePath);
     if (fs.existsSync(fullPath)) {
       await fs.promises.unlink(fullPath);
       return true;
@@ -395,24 +366,18 @@ export class StorageService implements OnModuleInit {
     return false;
   }
 
-  private getExtensionFromMime(mimeType: string): string {
-    const mimeToExt: Record<string, string> = {
-      'audio/mpeg': '.mp3',
-      'audio/mp3': '.mp3',
-      'audio/ogg': '.ogg',
-      'audio/wav': '.wav',
-      'audio/webm': '.webm',
-      'image/jpeg': '.jpg',
-      'image/png': '.png',
-      'image/gif': '.gif',
-      'image/webp': '.webp',
-      'video/mp4': '.mp4',
-      'video/webm': '.webm',
-      'application/pdf': '.pdf',
-      'application/json': '.json',
-      'text/plain': '.txt',
-    };
-    return mimeToExt[mimeType] || '';
+  private buildAccessUrl(
+    prefix: 'local' | 'access',
+    relativePath: string,
+    options: {
+      expiresInSeconds?: number;
+      downloadName?: string;
+    } = {},
+  ): string {
+    const payload = buildAccessTokenPayload(relativePath, options);
+    const encodedPayload = encodeTokenPayload(payload);
+    const token = `${encodedPayload}.${this.sign(encodedPayload)}`;
+    return `${this.baseUrl}/storage/${prefix}/${token}`;
   }
 
   private buildLocalAccessUrl(
@@ -422,22 +387,7 @@ export class StorageService implements OnModuleInit {
       downloadName?: string;
     } = {},
   ): string {
-    const payload: { p: string; exp?: number; d?: string } = {
-      p: this.normalizeRelativePath(relativePath),
-    };
-    if (
-      typeof options.expiresInSeconds === 'number' &&
-      Number.isFinite(options.expiresInSeconds) &&
-      options.expiresInSeconds > 0
-    ) {
-      payload.exp = Date.now() + options.expiresInSeconds * 1000;
-    }
-    if (options.downloadName) {
-      payload.d = options.downloadName;
-    }
-    const encodedPayload = Buffer.from(JSON.stringify(payload)).toString('base64url');
-    const token = `${encodedPayload}.${this.sign(encodedPayload)}`;
-    return `${this.baseUrl}/storage/local/${token}`;
+    return this.buildAccessUrl('local', relativePath, options);
   }
 
   private buildProxyAccessUrl(
@@ -447,22 +397,7 @@ export class StorageService implements OnModuleInit {
       downloadName?: string;
     } = {},
   ): string {
-    const payload: { p: string; exp?: number; d?: string } = {
-      p: this.normalizeRelativePath(relativePath),
-    };
-    if (
-      typeof options.expiresInSeconds === 'number' &&
-      Number.isFinite(options.expiresInSeconds) &&
-      options.expiresInSeconds > 0
-    ) {
-      payload.exp = Date.now() + options.expiresInSeconds * 1000;
-    }
-    if (options.downloadName) {
-      payload.d = options.downloadName;
-    }
-    const encodedPayload = Buffer.from(JSON.stringify(payload)).toString('base64url');
-    const token = `${encodedPayload}.${this.sign(encodedPayload)}`;
-    return `${this.baseUrl}/storage/access/${token}`;
+    return this.buildAccessUrl('access', relativePath, options);
   }
 
   private buildRemotePublicUrl(relativePath: string): string {
@@ -491,31 +426,6 @@ export class StorageService implements OnModuleInit {
 
   private sign(value: string): string {
     return createHmac('sha256', this.signingSecret).update(value).digest('base64url');
-  }
-
-  private normalizeRelativePath(relativePath: string): string {
-    const normalized = path.posix
-      .normalize(String(relativePath || '').replace(BACKSLASH_RE, '/'))
-      .replace(LEADING_SLASHES_RE, '');
-    if (
-      !normalized ||
-      normalized === '.' ||
-      normalized.startsWith('..') ||
-      normalized.includes('/../')
-    ) {
-      throw new Error('invalid_storage_path');
-    }
-    return normalized;
-  }
-
-  private resolveAbsolutePath(relativePath: string): string {
-    const normalized = this.normalizeRelativePath(relativePath);
-    const fullPath = safeResolve(this.uploadsDir, normalized);
-    const uploadsRoot = safeResolve(this.uploadsDir);
-    if (fullPath !== uploadsRoot && !fullPath.startsWith(`${uploadsRoot}${path.sep}`)) {
-      throw new Error('invalid_storage_path');
-    }
-    return fullPath;
   }
 
   /** Build proxy access URL (exposed for controller use). */
