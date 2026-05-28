@@ -4,30 +4,24 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { ConversationalOnboardingToolsService } from './conversational-onboarding-tools.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AbiBuilderService } from './abi/abi-builder.service';
-import { IntentRouterService } from './intent-router/intent-router.service';// ----------------------------------------------------------------
+import { IntentRouterService } from './intent-router/intent-router.service'; // ----------------------------------------------------------------
 // StructuredLogger spy — intercepts log() calls without suppressing
 // the real logger so the service continues to work normally.
 // ----------------------------------------------------------------
 const logCalls: Array<[string, Record<string, unknown>]> = [];
 
 jest.mock('../logging/structured-logger', () => {
-  const actual =
-    jest.requireActual<typeof import('../logging/structured-logger')>(
-      '../logging/structured-logger',
-    );
+  const actual = jest.requireActual<typeof import('../logging/structured-logger')>(
+    '../logging/structured-logger',
+  );
   return {
     ...actual,
     StructuredLogger: class extends actual.StructuredLogger {
       static override from(context: string | { name?: string }) {
-        const inst = new this(
-          typeof context === 'string' ? context : context.name ?? 'unknown',
-        );
+        const inst = new this(typeof context === 'string' ? context : (context.name ?? 'unknown'));
         return inst;
       }
-      override log(
-        a: string | Record<string, unknown>,
-        b?: unknown,
-      ): void {
+      override log(a: string | Record<string, unknown>, b?: unknown): void {
         if (typeof a === 'string' && b && typeof b === 'object') {
           logCalls.push([a, b as Record<string, unknown>]);
         }
@@ -48,7 +42,7 @@ jest.mock('openai', () => ({
 
 jest.mock('./openai-wrapper', () => ({
   chatCompletionWithRetry: jest.fn(),
-}));// ----------------------------------------------------------------
+})); // ----------------------------------------------------------------
 // Helpers
 // ----------------------------------------------------------------
 function expectIntentLog(expected: {
@@ -62,9 +56,7 @@ function expectIntentLog(expected: {
 }
 
 function expectIntentSkippedLog(expectedReason: string): void {
-  const skipped = logCalls.filter(
-    ([msg]) => msg === 'kloel_onboarding_intent_skipped',
-  );
+  const skipped = logCalls.filter(([msg]) => msg === 'kloel_onboarding_intent_skipped');
   expect(skipped).toHaveLength(1);
   expect(skipped[0]![1]).toMatchObject({
     reason: expect.stringContaining(expectedReason) as unknown,
@@ -73,15 +65,13 @@ function expectIntentSkippedLog(expectedReason: string): void {
 
 function expectNoIntentLogs(): void {
   const intents = logCalls.filter(
-    ([msg]) =>
-      msg === 'kloel_onboarding_intent' ||
-      msg === 'kloel_onboarding_intent_skipped',
+    ([msg]) => msg === 'kloel_onboarding_intent' || msg === 'kloel_onboarding_intent_skipped',
   );
   expect(intents).toHaveLength(0);
 }
 
 const FALLBACK_REPLY =
-  'Tive uma instabilidade momentânea pra processar agora. Pode repetir a mensagem em alguns segundos? Estou aqui pra continuar o onboarding.';// ----------------------------------------------------------------
+  'Tive uma instabilidade momentânea pra processar agora. Pode repetir a mensagem em alguns segundos? Estou aqui pra continuar o onboarding.'; // ----------------------------------------------------------------
 describe('ConversationalOnboardingService intent-router log telemetry', () => {
   let service: ConversationalOnboardingService;
   let toolsService: {
@@ -102,9 +92,7 @@ describe('ConversationalOnboardingService intent-router log telemetry', () => {
     classify: jest.Mock;
   };
 
-  async function buildModule(
-    routerOverride?: { classify: jest.Mock },
-  ): Promise<void> {
+  async function buildModule(routerOverride?: { classify: jest.Mock }): Promise<void> {
     logCalls.length = 0;
 
     toolsService = {
@@ -238,16 +226,14 @@ describe('ConversationalOnboardingService intent-router log telemetry', () => {
       providers: providers as Parameters<typeof Test.createTestingModule>[0]['providers'],
     }).compile();
 
-    service = module.get<ConversationalOnboardingService>(
-      ConversationalOnboardingService,
-    );
+    service = module.get<ConversationalOnboardingService>(ConversationalOnboardingService);
   }
 
   afterEach(() => {
     jest.clearAllMocks();
     delete process.env.OPENAI_API_KEY;
     delete process.env.KLOEL_ONBOARDING_USE_ABI;
-  });  // --------------------------------------------------------------
+  }); // --------------------------------------------------------------
   describe('when IntentRouter is provided and classifies as chat', () => {
     beforeEach(async () => {
       await buildModule({
@@ -272,9 +258,7 @@ describe('ConversationalOnboardingService intent-router log telemetry', () => {
       const longMessage = 'A'.repeat(200);
       await service.chat('ws-1', longMessage);
 
-      const intents = logCalls.filter(
-        ([msg]) => msg === 'kloel_onboarding_intent',
-      );
+      const intents = logCalls.filter(([msg]) => msg === 'kloel_onboarding_intent');
       expect(intents[0]![1]!.message_preview).toHaveLength(80);
     });
 
@@ -282,7 +266,7 @@ describe('ConversationalOnboardingService intent-router log telemetry', () => {
       const result = await service.chat('ws-1', 'Olá');
       expect(result).toBe('Bem-vindo ao KLOEL! Vamos configurar sua conta.');
     });
-  });  // --------------------------------------------------------------
+  }); // --------------------------------------------------------------
   describe('when IntentRouter is provided and classifies an intent', () => {
     beforeEach(async () => {
       await buildModule({
@@ -319,7 +303,7 @@ describe('ConversationalOnboardingService intent-router log telemetry', () => {
       const result = await service.chat('ws-1', 'Buscar Maria');
       expect(result).toBe('Bem-vindo ao KLOEL! Vamos configurar sua conta.');
     });
-  });  // --------------------------------------------------------------
+  }); // --------------------------------------------------------------
   describe('when IntentRouter is absent (@Optional not provided)', () => {
     beforeEach(async () => {
       // Do NOT pass IntentRouterService at all — simulate @Optional
@@ -337,13 +321,11 @@ describe('ConversationalOnboardingService intent-router log telemetry', () => {
     });
 
     it('still handles degraded flow (token_budget) normally', async () => {
-      planLimits.ensureTokenBudget.mockRejectedValue(
-        new Error('Token budget exceeded'),
-      );
+      planLimits.ensureTokenBudget.mockRejectedValue(new Error('Token budget exceeded'));
       const result = await service.chat('ws-1', 'Olá');
       expect(result).toBe(FALLBACK_REPLY);
     });
-  });  // --------------------------------------------------------------
+  }); // --------------------------------------------------------------
   describe('when IntentRouter.classify throws', () => {
     beforeEach(async () => {
       await buildModule({

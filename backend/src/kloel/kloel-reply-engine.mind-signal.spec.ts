@@ -39,7 +39,8 @@ jest.mock('./kloel-reply-engine.helpers', () => ({
   KLOEL_STREAM_ABORT_REASON_CLIENT_DISCONNECTED: 'client_disconnected',
   buildDynamicRuntimeContextHelper: jest.fn().mockResolvedValue('Dynamic context'),
   buildAssistantReplyImpl: jest.fn().mockResolvedValue('Assistant reply'),
-}));describe('KloelReplyEngineService mind-signal wiring (PI-k3)', () => {
+}));
+describe('KloelReplyEngineService mind-signal wiring (PI-k3)', () => {
   let prisma: { workspace: { findUnique: jest.Mock } };
   let planLimits: Pick<PlanLimitsService, 'ensureTokenBudget' | 'trackAiUsage'>;
   let threadService: Pick<KloelThreadService, 'resolveThread' | 'getThreadConversationState'>;
@@ -80,7 +81,8 @@ jest.mock('./kloel-reply-engine.helpers', () => ({
 
   afterEach(() => {
     jest.clearAllMocks();
-  });  describe('buildChatModelMessages mindSignals', () => {
+  });
+  describe('buildChatModelMessages mindSignals', () => {
     it('populates mindSignals with {status: "no_event_source"} when services are injected', async () => {
       const module: TestingModule = await Test.createTestingModule({
         providers: [
