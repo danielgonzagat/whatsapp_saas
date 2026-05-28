@@ -7,13 +7,18 @@ import { Brain, CheckCircle, Save } from 'lucide-react';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { mutate } from 'swr';
 
-import { OBJECTIONS, TIERS, TONES } from './PlanAIConfig.data';
+import { OBJECTIONS } from './PlanAIConfig.data';
 import {
   assignBoolean,
   assignNumber,
   assignRecordString,
   assignString,
   assignStringArray,
+  buildAIConfigPayload,
+  buildAIConfigSummary,
+  computeAIConfigCompleteness,
+  isProductsSwrKey,
+  toggleListValue,
 } from './PlanAIConfig.helpers';
 import { AISummaryBox } from './PlanAIConfig.summary';
 import { BehaviorSection } from './PlanAIConfig.behavior';
@@ -98,7 +103,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
   const [expectedResults, setExpectedResults] = useState('');
 
   const toggleList = (list: string[], item: string, setter: (v: string[]) => void) => {
-    setter(list.includes(item) ? list.filter((x) => x !== item) : [...list, item]);
+    setter(toggleListValue(list, item));
   };
 
   // Load config
@@ -181,7 +186,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
     try {
       await apiFetch(`/products/${productId}/ai-config`, {
         method: 'PUT',
-        body: {
+        body: buildAIConfigPayload({
           planId,
           genders,
           ages,
@@ -220,9 +225,9 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
           duration,
           contraindications,
           expectedResults,
-        },
+        }),
       });
-      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
+      mutate(isProductsSwrKey);
       setShowSaved(true);
       if (savedTimer.current) {clearTimeout(savedTimer.current);}
       savedTimer.current = setTimeout(() => setShowSaved(false), 3000);
@@ -284,31 +289,58 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
     </h3>
   );
 
-  // Completeness indicators
-  const s1Complete = genders.length > 0 && ages.length > 0 && problem !== '';
-  const s1Partial = genders.length > 0 || ages.length > 0;
-  const s2Complete = tier !== '' && whenOffer.length > 0 && differentiators.length > 0;
-  const s2Partial = tier !== '' || whenOffer.length > 0;
-  const s3Complete = Object.values(objectionStates).filter((o) => o.enabled).length >= 5;
-  const s3Partial = Object.values(objectionStates).filter((o) => o.enabled).length > 0;
-  const s4Complete = socialProof.length > 0 && guarantee.length > 0 && benefits.length > 0;
-  const s4Partial = socialProof.length > 0 || guarantee.length > 0 || benefits.length > 0;
-  const s5Complete =
-    (upsellEnabled && upsellTargetPlan !== '') ||
-    (downsellEnabled && downsellTargetPlan !== '') ||
-    (!upsellEnabled && !downsellEnabled);
-  const s5Partial = upsellEnabled || downsellEnabled;
-  const s6Complete = tone !== '' && persistence > 0;
-  const s7Complete = hasTechInfo && usageMode !== '' && contraindications.length > 0;
-  const s7Partial = hasTechInfo;
+  // Completeness indicators — derived purely from form state
+  const {
+    s1Complete,
+    s1Partial,
+    s2Complete,
+    s2Partial,
+    s3Complete,
+    s3Partial,
+    s4Complete,
+    s4Partial,
+    s5Complete,
+    s5Partial,
+    s6Complete,
+    s7Complete,
+    s7Partial,
+    activeObjections,
+    totalArgs,
+  } = computeAIConfigCompleteness({
+    genders,
+    ages,
+    problem,
+    tier,
+    whenOffer,
+    differentiators,
+    objectionStates,
+    socialProof,
+    guarantee,
+    benefits,
+    urgencyArgs,
+    upsellEnabled,
+    upsellTargetPlan,
+    downsellEnabled,
+    downsellTargetPlan,
+    tone,
+    persistence,
+    hasTechInfo,
+    usageMode,
+    contraindications,
+  });
 
-  const activeObjections = Object.values(objectionStates).filter((o) => o.enabled).length;
-  const totalArgs = socialProof.length + guarantee.length + benefits.length + urgencyArgs.length;
   const summary = useMemo(
     () =>
-      `Tom: ${TONES.find((t) => t.v === tone)?.l}. Insistência: ${persistence}/5. Limite: ${messageLimit || '∞'} msgs. ` +
-      `Objeções ativas: ${activeObjections}/10. Argumentos: ${totalArgs}. ` +
-      `Público: ${genders.join('/')} ${ages.join(', ')}. ${tier ? `Plano ${TIERS.find((t) => t.v === tier)?.l}.` : ''}`,
+      buildAIConfigSummary({
+        tone,
+        persistence,
+        messageLimit,
+        activeObjections,
+        totalArgs,
+        genders,
+        ages,
+        tier,
+      }),
     [tone, persistence, messageLimit, activeObjections, totalArgs, genders, ages, tier],
   );
 
