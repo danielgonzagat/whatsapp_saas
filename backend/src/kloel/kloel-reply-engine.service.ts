@@ -54,6 +54,7 @@ import {
   computeChatSurprise as computeChatSurpriseHelper,
 } from './kloel-reply-engine.decision-outcome.helpers';
 import { buildKloelAbiCognitiveState } from './kloel-reply-engine.cognitive-state.helpers';
+import { MindEventProcessorService } from './mind/runtime/mind-event-processor.service';
 
 type ChatCompletionMessageParam = OpenAI.Chat.ChatCompletionMessageParam;
 
@@ -100,6 +101,7 @@ export class KloelReplyEngineService {
     @Optional() private readonly mindWorkspaceStateService?: MindWorkspaceStateService,
     @Optional() private readonly vectorService?: VectorService,
     @Optional() private readonly valenceTagger?: ValenceTaggerService,
+    @Optional() private readonly mindEventProcessorService?: MindEventProcessorService,
   ) {
     this.openai = createTextLlmClient(undefined, { timeout: 60_000, maxRetries: 0 });
     this.toolRouter = new KloelToolRouter(
@@ -552,6 +554,21 @@ export class KloelReplyEngineService {
             reason: err instanceof Error ? err.message : String(err),
           });
         }
+        void (async () => {
+          try {
+            await this.mindEventProcessorService?.process({
+              workspaceId: params.workspaceId!,
+              kind: 'chat.replied',
+              subject: `workspace:${params.workspaceId}`,
+              occurredAt: new Date(),
+              payload: { surface: 'dashboard', success: false, degraded: true },
+            });
+          } catch (err: unknown) {
+            this.logger.warn('kloel_mind_event_processor_skipped', {
+              reason: err instanceof Error ? err.message : String(err),
+            });
+          }
+        })();
         return this.unavailableMessage;
       }
       let assistantMessage: string;
@@ -623,6 +640,25 @@ export class KloelReplyEngineService {
             reason: err instanceof Error ? err.message : String(err),
           });
         }
+        void (async () => {
+          try {
+            await this.mindEventProcessorService?.process({
+              workspaceId: params.workspaceId,
+              kind: 'chat.replied',
+              subject: `workspace:${params.workspaceId}`,
+              occurredAt: new Date(),
+              payload: {
+                surface: 'dashboard',
+                success: replyOutcome === 1,
+                degraded: replyOutcome === 0,
+              },
+            });
+          } catch (err: unknown) {
+            this.logger.warn('kloel_mind_event_processor_skipped', {
+              reason: err instanceof Error ? err.message : String(err),
+            });
+          }
+        })();
       }
       return assistantMessage;
     } finally {
