@@ -25,3 +25,4 @@ export { MindEventSpine } from './mind-event-spine.service';
 export { MindRuntime } from './mind-runtime.service';
 export { WhatsAppMindCoordinator } from './whatsapp-mind-coordinator.service';
 export { LeadMindCoordinator } from './lead-mind-coordinator.service';
+export { MindEventIngestor } from './mind-event-ingestor.service';

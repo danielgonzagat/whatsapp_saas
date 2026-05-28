@@ -6,6 +6,7 @@ import { ConsolidationService } from './consolidation.service';
 import { HebbianService } from './hebbian.service';
 import { MindBackgroundProcessor } from './mind-bg.processor';
 import { MindBackgroundScheduler } from './mind-bg.scheduler';
+import { MindEventIngestor } from './coordination/mind-event-ingestor.service';
 import { MultiTimescaleCoordinator } from './multi-timescale.coordinator';
 import { ValenceAggregatorService } from './valence-aggregator.service';
 import { ValenceTaggerService } from './valence-tagger.service';
@@ -32,6 +33,7 @@ import { MindPredictionService } from './mind-prediction.service';
     { provide: 'MULTI_TIMESCALE_CONFIG', useValue: { long: { intervalMs: 120_000 } } },
     MindBackgroundProcessor,
     MindBackgroundScheduler,
+    MindEventIngestor,
     MindPredictionService,
   ],
   exports: [
