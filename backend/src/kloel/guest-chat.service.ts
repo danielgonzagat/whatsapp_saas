@@ -345,7 +345,13 @@ export class GuestChatService implements OnModuleDestroy {
     } catch (error: unknown) {
       applyChatTerminalHooks(
         this.terminalDeps(),
-        { outcomeKey: chatOutcomeKey, success: false, workspaceId: chatWsId, surface: 'guest', startedAt },
+        {
+          outcomeKey: chatOutcomeKey,
+          success: false,
+          workspaceId: chatWsId,
+          surface: 'guest',
+          startedAt,
+        },
         error,
       );
       this.logger.error(
@@ -517,7 +523,13 @@ export class GuestChatService implements OnModuleDestroy {
     } catch (error: unknown) {
       applyChatTerminalHooks(
         this.terminalDeps(),
-        { outcomeKey: chatOutcomeKey, success: false, workspaceId: metricWsId, surface: 'guest', startedAt },
+        {
+          outcomeKey: chatOutcomeKey,
+          success: false,
+          workspaceId: metricWsId,
+          surface: 'guest',
+          startedAt,
+        },
         error,
       );
       this.logger.error(

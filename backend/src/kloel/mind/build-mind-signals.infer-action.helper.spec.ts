@@ -33,9 +33,7 @@ describe('inferActionDescriptor', () => {
   });
 
   it('treats financial concepts as payment_action even without trigger word', () => {
-    const result = inferActionDescriptor('quanto custa?', [
-      { concept: 'price', confidence: 0.9 },
-    ]);
+    const result = inferActionDescriptor('quanto custa?', [{ concept: 'price', confidence: 0.9 }]);
     expect(result.kind).toBe('payment_action');
   });
 });

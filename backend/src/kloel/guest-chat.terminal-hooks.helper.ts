@@ -52,7 +52,12 @@ export function applyChatTerminalHooks(
     deps.mindSurpriseService,
     deps.mindBeliefService,
     deps.logger,
-    { workspaceId: params.workspaceId, observed, surface: params.surface, degraded: !params.success },
+    {
+      workspaceId: params.workspaceId,
+      observed,
+      surface: params.surface,
+      degraded: !params.success,
+    },
     deps._lastCognitiveState?.mindSignals as Record<string, unknown> | undefined,
   );
   if (deps.mindObservability) {
