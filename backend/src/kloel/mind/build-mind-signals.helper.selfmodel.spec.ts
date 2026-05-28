@@ -269,4 +269,5 @@ describe('buildMindSignals — selfModel + combined services', () => {
       expect(result.beliefs).toHaveLength(1);
       expect(result.concepts).toEqual([{ concept: 'hot_lead', confidence: 0.9 }]);
     });
+  });
 });

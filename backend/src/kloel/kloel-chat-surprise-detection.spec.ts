@@ -13,25 +13,24 @@ const logCalls: Array<[string, Record<string, unknown>]> = [];
 const warnCalls: Array<[string, Record<string, unknown>]> = [];
 
 jest.mock('../logging/structured-logger', () => {
-  const actual =
-    jest.requireActual<typeof import('../logging/structured-logger')>(
-      '../logging/structured-logger',
-    );
+  const actual = jest.requireActual<typeof import('../logging/structured-logger')>(
+    '../logging/structured-logger',
+  );
   return {
     ...actual,
     StructuredLogger: {
       from: () => ({
         log: (a: string | Record<string, unknown>, b?: Record<string, unknown>) => {
           if (typeof a === 'object' && a !== null) {
-            logCalls.push(['structured', a as Record<string, unknown>]);
+            logCalls.push(['structured', a]);
           } else if (typeof a === 'string') {
-            logCalls.push([a, (b ?? {}) as Record<string, unknown>]);
+            logCalls.push([a, b ?? {}]);
           }
         },
         warn: (a: string | Record<string, unknown>, b?: Record<string, unknown>) => {
-          const msg = typeof a === 'string' ? a : (a as Record<string, unknown>).event as string ?? 'warn';
-          const meta = typeof a === 'string' ? (b ?? {}) : (a as Record<string, unknown>);
-          warnCalls.push([msg, meta as Record<string, unknown>]);
+          const msg = typeof a === 'string' ? a : ((a.event as string | undefined) ?? 'warn');
+          const meta = typeof a === 'string' ? (b ?? {}) : a;
+          warnCalls.push([msg, meta]);
         },
         error: jest.fn(),
         debug: jest.fn(),
@@ -60,8 +59,7 @@ jest.mock('./openai-wrapper', () => ({
 }));
 
 jest.mock('../lib/openai-models', () => {
-  const actual =
-    jest.requireActual<typeof import('../lib/openai-models')>('../lib/openai-models');
+  const actual = jest.requireActual<typeof import('../lib/openai-models')>('../lib/openai-models');
   return {
     ...actual,
     resolveBackendOpenAIModel: jest.fn().mockReturnValue(actual.CANONICAL_MODEL_IDS.openAiTextOmni),
@@ -134,11 +132,14 @@ function makeBelief(mean: number) {
 }
 
 function makeBeliefService(mean: number, delayMs = 0) {
-  const getOrInit = delayMs > 0
-    ? jest.fn().mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve(makeBelief(mean)), delayMs)),
-      )
-    : jest.fn().mockResolvedValue(makeBelief(mean));
+  const getOrInit =
+    delayMs > 0
+      ? jest
+          .fn()
+          .mockImplementation(
+            () => new Promise((resolve) => setTimeout(() => resolve(makeBelief(mean)), delayMs)),
+          )
+      : jest.fn().mockResolvedValue(makeBelief(mean));
   return {
     getOrInit,
     observeBinary: jest.fn().mockResolvedValue(makeBelief(mean)),
@@ -175,9 +176,7 @@ describe('kloel_chat_surprise_detection (PI-k9)', () => {
     );
     // Find structured log with event=kloel_chat_surprise_detected
     const detected = surpriseLogs.find(([, meta]) => {
-      return (
-        (meta as Record<string, unknown>).event === 'kloel_chat_surprise_detected'
-      );
+      return (meta as Record<string, unknown>).event === 'kloel_chat_surprise_detected';
     });
     if (!detected) {
       // Also check direct string logs
@@ -203,19 +202,18 @@ describe('kloel_chat_surprise_detection (PI-k9)', () => {
 
   function expectNoSurpriseDetected() {
     const detected = logCalls.filter(
-      ([, meta]) =>
-        (meta as Record<string, unknown>).event === 'kloel_chat_surprise_detected',
+      ([, meta]) => (meta as Record<string, unknown>).event === 'kloel_chat_surprise_detected',
     );
     const direct = logCalls.filter(([msg]) => msg === 'kloel_chat_surprise_detected');
     expect(detected.length + direct.length).toBe(0);
   }
 
   /** Wait for fire-and-forget async calls (computeChatSurprise) to settle. */
-async function flushAsync(): Promise<void> {
-  await new Promise<void>((resolve) => setTimeout(resolve, 50));
-}
+  async function flushAsync(): Promise<void> {
+    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+  }
 
-function expectNoSurpriseSkipped() {
+  function expectNoSurpriseSkipped() {
     const skipped = warnCalls.filter(([msg]) => msg === 'kloel_surprise_skipped');
     expect(skipped.length).toBe(0);
   }
@@ -248,12 +246,10 @@ function expectNoSurpriseSkipped() {
 
       expect(result).toBe('Resposta do assistente');
       expect(beliefService.observeBinary).toHaveBeenCalled();
-      expect(beliefService.getOrInit).toHaveBeenCalledWith(
-        'ws-1',
-        'ws-1',
-        'replied_to_user',
-        { surface: 'dashboard', degraded: false },
-      );
+      expect(beliefService.getOrInit).toHaveBeenCalledWith('ws-1', 'ws-1', 'replied_to_user', {
+        surface: 'dashboard',
+        degraded: false,
+      });
       expectSurpriseDetected(0.1);
     });
 
@@ -409,11 +405,9 @@ function expectNoSurpriseSkipped() {
     it('does not fire surprise for empty reply (outcome=0)', async () => {
       const deps = makeBaseDeps();
 
-      const {
-        buildAssistantReplyImpl,
-      } = jest.requireMock<typeof import('./kloel-reply-engine.helpers')>(
-        './kloel-reply-engine.helpers',
-      );
+      const { buildAssistantReplyImpl } = jest.requireMock<
+        typeof import('./kloel-reply-engine.helpers')
+      >('./kloel-reply-engine.helpers');
       buildAssistantReplyImpl.mockResolvedValueOnce('');
 
       const beliefService = makeBeliefService(0.5);
@@ -444,8 +438,7 @@ function expectNoSurpriseSkipped() {
       // -ln(1-0.5) = -ln(0.5) ≈ 0.69 > 0.3 → should fire
       // Check surprise log directly — observed is 0 (degraded)
       const detected = logCalls.find(
-        ([, meta]) =>
-          (meta as Record<string, unknown>).event === 'kloel_chat_surprise_detected',
+        ([, meta]) => (meta as Record<string, unknown>).event === 'kloel_chat_surprise_detected',
       );
       expect(detected).toBeDefined();
       const meta = detected![1] as Record<string, unknown>;
@@ -508,16 +501,14 @@ function expectNoSurpriseSkipped() {
           findUnique: jest.fn().mockResolvedValue(null),
           findMany: jest.fn().mockResolvedValue([]),
         },
-        $transaction: jest
-          .fn()
-          .mockImplementation((fn: (tx: unknown) => Promise<unknown>) =>
-            fn({
-              kloelMemory: {
-                findUnique: jest.fn().mockResolvedValue(null),
-                findMany: jest.fn().mockResolvedValue([]),
-              },
-            }),
-          ),
+        $transaction: jest.fn().mockImplementation((fn: (tx: unknown) => Promise<unknown>) =>
+          fn({
+            kloelMemory: {
+              findUnique: jest.fn().mockResolvedValue(null),
+              findMany: jest.fn().mockResolvedValue([]),
+            },
+          }),
+        ),
       };
 
       process.env.OPENAI_API_KEY = 'sk-test-key';
@@ -533,8 +524,7 @@ function expectNoSurpriseSkipped() {
         ],
       }).compile();
 
-      const service =
-        module.get<ConversationalOnboardingService>(ConversationalOnboardingService);
+      const service = module.get<ConversationalOnboardingService>(ConversationalOnboardingService);
 
       const result = await service.chat('ws-1', 'Olá');
 
