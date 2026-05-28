@@ -233,7 +233,7 @@ export class IntentRouterService {
 
     // === Sales / PIX / Boleto ===
     {
-      regex: /(?:emit[ei]r?\s.*pix|ger[ae]r?\s.*pix|cri[ae]r?\s.*pix)/i,
+      regex: /(?:emit[ei]r?|ger[ae]r?|cri[ae]r?)\s.*pix.*$/i,
       capabilityId: 'sales.create_pix',
       extract: (match) => {
         const amount =
@@ -243,9 +243,14 @@ export class IntentRouterService {
       },
     },
     {
-      regex: /(?:emit[ei]r?\s.*bolet|ger[ae]r?\s.*bolet|cri[ae]r?\s.*bolet)/i,
+      regex: /(?:emit[ei]r?|ger[ae]r?|cri[ae]r?)\s.*bolet.*$/i,
       capabilityId: 'sales.create_boleto',
-      extract: () => ({}),
+      extract: (match) => {
+        const amount =
+          parseFloat(match[0].match(/r?\$?\s*(\d+(?:[.,]\d+)?)/i)?.[1]?.replace(',', '.') ?? '') ||
+          undefined;
+        return { amount: amount || undefined };
+      },
     },
     {
       regex:

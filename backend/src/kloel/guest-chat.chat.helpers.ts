@@ -263,9 +263,31 @@ export async function runDeterministicAction(
         );
         return reply;
       } catch (err: unknown) {
-        logger.warn(
-          `IntentRouter execution failed: ${err instanceof Error ? err.message : 'unknown'}, falling back to detectActionIntent`,
+        const reason = err instanceof Error ? err.message : 'unknown';
+        logger.warn(`IntentRouter execution failed: ${reason}; returning operational failure`);
+        const failureResult = {
+          success: false,
+          error: `${action.tool}: ${reason}`,
+        };
+        void writeOperationReceipt(
+          buildReceipt({
+            workspaceId,
+            toolName: action.tool,
+            args: action.args,
+            result: failureResult,
+            channel: 'web',
+          }),
         );
+        const reply = `A ação ${action.tool} não foi concluída. Eu classifiquei seu pedido como ação operacional e tentei executar a ferramenta real, mas ela falhou: ${reason}. Nenhum sucesso foi registrado.`;
+        await persistConversationMessage(
+          sessionId,
+          'assistant',
+          reply,
+          redis,
+          conversations,
+          logger,
+        );
+        return reply;
       }
     }
   }
