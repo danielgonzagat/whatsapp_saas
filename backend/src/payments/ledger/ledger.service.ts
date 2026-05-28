@@ -8,6 +8,7 @@ import { toPrismaJsonValue } from '../../common/prisma/prisma-json.util';
 
 import { FINANCIAL_TRANSACTION_OPTIONS, logLedgerWrite } from './ledger-audit.helper';
 import { creditAvailableByAdjustmentImpl } from './ledger-adjustments.helper';
+import { assertPositiveAmount, computeAbsorptionSplit } from './ledger-math.helper';
 import {
   AccountBalanceNotFoundError,
   type BalanceSnapshot,
@@ -46,11 +47,7 @@ export class LedgerService {
    * `(reference.type, reference.id, CREDIT_PENDING)`.
    */
   async creditPending(input: CreditPendingInput): Promise<ConnectLedgerEntry> {
-    if (input.amountCents <= 0n) {
-      throw new RangeError(
-        `creditPending: amountCents must be > 0 (got ${input.amountCents.toString()})`,
-      );
-    }
+    assertPositiveAmount(input.amountCents, 'creditPending');
 
     return this.prisma.$transaction(async (tx) => {
       const existing = await tx.connectLedgerEntry.findFirst({
@@ -237,11 +234,7 @@ export class LedgerService {
    * `(reference.type, reference.id, DEBIT_PAYOUT)`.
    */
   async debitAvailableForPayout(input: DebitPayoutInput): Promise<ConnectLedgerEntry> {
-    if (input.amountCents <= 0n) {
-      throw new RangeError(
-        `debitAvailableForPayout: amountCents must be > 0 (got ${input.amountCents.toString()})`,
-      );
-    }
+    assertPositiveAmount(input.amountCents, 'debitAvailableForPayout');
 
     return this.prisma.$transaction(async (tx) => {
       const existing = await tx.connectLedgerEntry.findFirst({
@@ -332,11 +325,7 @@ export class LedgerService {
    * `(reference.type, reference.id, DEBIT_CHARGEBACK)`.
    */
   async debitForChargeback(input: DebitChargebackInput): Promise<ConnectLedgerEntry> {
-    if (input.amountCents <= 0n) {
-      throw new RangeError(
-        `debitForChargeback: amountCents must be > 0 (got ${input.amountCents.toString()})`,
-      );
-    }
+    assertPositiveAmount(input.amountCents, 'debitForChargeback');
 
     return this.prisma.$transaction(async (tx) => {
       const existing = await tx.connectLedgerEntry.findFirst({
@@ -367,11 +356,10 @@ export class LedgerService {
         throw new AccountBalanceNotFoundError(input.accountBalanceId);
       }
 
-      const fromPending =
-        balance.pendingBalanceCents >= input.amountCents
-          ? input.amountCents
-          : balance.pendingBalanceCents;
-      const fromAvailable = input.amountCents - fromPending;
+      const { fromPending, fromAvailable } = computeAbsorptionSplit(
+        input.amountCents,
+        balance.pendingBalanceCents,
+      );
       const newPending = balance.pendingBalanceCents - fromPending;
       const newAvailable = balance.availableBalanceCents - fromAvailable;
       const newLifetimeChargebacks = balance.lifetimeChargebacksCents + input.amountCents;
@@ -433,11 +421,7 @@ export class LedgerService {
    * `(reference.type, reference.id, DEBIT_REFUND)`.
    */
   async debitForRefund(input: DebitRefundInput): Promise<ConnectLedgerEntry> {
-    if (input.amountCents <= 0n) {
-      throw new RangeError(
-        `debitForRefund: amountCents must be > 0 (got ${input.amountCents.toString()})`,
-      );
-    }
+    assertPositiveAmount(input.amountCents, 'debitForRefund');
 
     return this.prisma.$transaction(async (tx) => {
       const existing = await tx.connectLedgerEntry.findFirst({
@@ -467,11 +451,10 @@ export class LedgerService {
         throw new AccountBalanceNotFoundError(input.accountBalanceId);
       }
 
-      const fromPending =
-        balance.pendingBalanceCents >= input.amountCents
-          ? input.amountCents
-          : balance.pendingBalanceCents;
-      const fromAvailable = input.amountCents - fromPending;
+      const { fromPending, fromAvailable } = computeAbsorptionSplit(
+        input.amountCents,
+        balance.pendingBalanceCents,
+      );
       const newPending = balance.pendingBalanceCents - fromPending;
       const newAvailable = balance.availableBalanceCents - fromAvailable;
 

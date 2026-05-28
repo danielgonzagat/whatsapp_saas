@@ -6,6 +6,7 @@ import type { PrismaService } from '../../prisma/prisma.service';
 import { toPrismaJsonValue } from '../../common/prisma/prisma-json.util';
 
 import { FINANCIAL_TRANSACTION_OPTIONS, logLedgerWrite } from './ledger-audit.helper';
+import { assertPositiveAmount } from './ledger-math.helper';
 import { AccountBalanceNotFoundError, type CreditAvailableAdjustmentInput } from './ledger.types';
 
 /**
@@ -18,11 +19,7 @@ export async function creditAvailableByAdjustmentImpl(
   logger: Logger,
   input: CreditAvailableAdjustmentInput,
 ): Promise<ConnectLedgerEntry> {
-  if (input.amountCents <= 0n) {
-    throw new RangeError(
-      `creditAvailableByAdjustment: amountCents must be > 0 (got ${input.amountCents.toString()})`,
-    );
-  }
+  assertPositiveAmount(input.amountCents, 'creditAvailableByAdjustment');
 
   return prisma.$transaction(async (tx) => {
     const existing = await tx.connectLedgerEntry.findFirst({
