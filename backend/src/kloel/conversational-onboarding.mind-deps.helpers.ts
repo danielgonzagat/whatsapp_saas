@@ -55,6 +55,13 @@ interface OnboardingMindServices {
     };
   };
   knowledgeBaseService?: KnowledgeBaseService;
+  vectorService?: {
+    similaritySearch: (
+      workspaceId: string,
+      query: string,
+      k?: number,
+    ) => Promise<Array<{ text: string; score: number }>>;
+  };
 }
 
 /**
@@ -110,6 +117,9 @@ export function buildOnboardingMindSignalsDeps(
       : {}),
     ...(services.knowledgeBaseService !== undefined
       ? { knowledgeBaseService: services.knowledgeBaseService }
+      : {}),
+    ...(services.vectorService !== undefined
+      ? { vectorService: services.vectorService }
       : {}),
   };
 }

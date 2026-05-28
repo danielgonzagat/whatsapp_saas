@@ -8,7 +8,6 @@ import type { MindPredictionService } from './mind-prediction.service';
 import type { SelfHealthService } from '../self-awareness/self-health.service';
 import type { SelfGapsService } from '../self-awareness/self-gaps.service';
 import type { RiskClassService } from '../risk-class/risk-class.service';
-import type { KnowledgeBaseService } from './knowledge/knowledge-base.service';
 import type { ActionDescriptor } from '../risk-class/risk-class.types';
 
 /** Infer an ActionDescriptor from user message and concept detections. */
@@ -88,7 +87,6 @@ export interface BuildMindSignalsDeps {
       limit: number,
     ) => Promise<Array<{ predicate: string; mean: number; samples: number }>>;
   };
-  knowledgeBaseService?: KnowledgeBaseService;
   mindPerceptionService?: {
     perceive?: (ctx: { source: string; channel: string; raw: string; workspaceId: string }) => {
       subject: string;
@@ -96,6 +94,13 @@ export interface BuildMindSignalsDeps {
       salience: number;
       semanticContext: Record<string, unknown>;
     };
+  };
+  vectorService?: {
+    similaritySearch: (
+      workspaceId: string,
+      query: string,
+      k?: number,
+    ) => Promise<Array<{ text: string; score: number }>>;
   };
   logger: Pick<StructuredLogger, 'warn'>;
 }
@@ -255,19 +260,17 @@ export async function buildMindSignals(
     mindSignals.concepts = [];
   }
 
-  // ── Knowledge base search (PI-K17-A) ─────────────────────────────
-  if (deps.knowledgeBaseService) {
+  // ── Semantic vector similarity (PI-K17-B) ──────────────────────
+  if (deps.vectorService) {
     try {
-      const kbResults = await deps.knowledgeBaseService.search(
+      const semanticMatches = await deps.vectorService.similaritySearch(
         workspaceId,
         userMessage,
-        3,
+        5,
       );
-      if (kbResults.length > 0) {
-        mindSignals.knowledge = kbResults;
-      }
+      mindSignals.semanticMatches = semanticMatches;
     } catch (error: unknown) {
-      deps.logger.warn('kloel_knowledge_base_skipped', {
+      deps.logger.warn('kloel_vector_search_skipped', {
         reason: error instanceof Error ? error.message : 'unknown error',
       });
     }

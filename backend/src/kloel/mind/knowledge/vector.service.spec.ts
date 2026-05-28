@@ -28,7 +28,8 @@ describe('VectorService', () => {
       return undefined;
     });
     const configStub = { get: configGet } as ConfigService;
-    service = new VectorService(configStub);
+    const prismaStub = { $queryRaw: jest.fn().mockResolvedValue([]) } as unknown as Parameters<typeof VectorService.prototype.constructor>[1];
+    service = new VectorService(configStub, prismaStub);
   }
 
   beforeEach(() => {

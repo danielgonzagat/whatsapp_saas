@@ -15,6 +15,7 @@
  */
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { PrismaService } from '../../../prisma/prisma.service';
 import { StructuredLogger } from '../../../logging/structured-logger';
 import OpenAI from 'openai';
 
@@ -32,7 +33,10 @@ export class VectorService {
   private readonly logger = StructuredLogger.from(VectorService.name);
   private openai: OpenAI | null = null;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private prisma: PrismaService,
+  ) {
     const apiKey = this.configService.get<string>('OPENAI_API_KEY');
     if (apiKey) {
       this.openai = new OpenAI({ apiKey });
@@ -88,5 +92,46 @@ export class VectorService {
     }
 
     return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+  }
+
+  /**
+   * Semantic similarity search across knowledge base vectors for a workspace.
+   * Returns top-k matching chunks with cosine distance scores (lower = more similar).
+   *
+   * PI-K17-B: wired into mindSignals as cognitiveState.mindSignals.semanticMatches.
+   */
+  async similaritySearch(
+    workspaceId: string,
+    query: string,
+    k = 5,
+  ): Promise<Array<{ text: string; score: number }>> {
+    if (!this.openai) {
+      return [];
+    }
+
+    const { embedding } = await this.getEmbedding(query);
+    if (!embedding.length) {
+      return [];
+    }
+
+    const vectorString = `[${embedding.join(',')}]`;
+
+    const results = await this.prisma.$queryRaw<
+      Array<{ content: string; distance: number }>
+    >`
+      SELECT v.content, (v.embedding <=> ${vectorString}::vector) as distance
+      FROM "RAC_Vector" v
+      JOIN "RAC_KnowledgeSource" s ON v."sourceId" = s.id
+      JOIN "RAC_KnowledgeBase" kb ON s."knowledgeBaseId" = kb.id
+      WHERE kb."workspaceId" = ${workspaceId}
+      ORDER BY distance ASC
+      LIMIT ${k}
+    `;
+
+    if (!results || results.length === 0) {
+      return [];
+    }
+
+    return results.map((r) => ({ text: r.content, score: Number(r.distance) }));
   }
 }

@@ -18,6 +18,7 @@ import { MindGlobalPriorService } from './memory/mind-global-prior.service';
 import { MindWorkspaceStateService } from './memory/mind-workspace-state.service';
 import { MindPerceptionService } from './perception/mind-perception.service';
 import { MindPredictionService } from './mind-prediction.service';
+import { VectorService } from './knowledge/vector.service';
 
 /**
  * MIND module — wires the cognitive substrate services into Nest DI.
@@ -48,6 +49,7 @@ import { MindPredictionService } from './mind-prediction.service';
     MindGlobalPriorService,
     MindWorkspaceStateService,
     KnowledgeBaseService,
+    VectorService,
   ],
   exports: [
     ValenceTaggerService,
@@ -64,6 +66,7 @@ import { MindPredictionService } from './mind-prediction.service';
     MindGlobalPriorService,
     MindWorkspaceStateService,
     KnowledgeBaseService,
+    VectorService,
   ],
 })
 export class MindModule {}
