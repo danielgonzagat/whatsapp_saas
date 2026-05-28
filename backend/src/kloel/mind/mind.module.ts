@@ -7,6 +7,7 @@ import { HebbianService } from './hebbian.service';
 import { MindBackgroundProcessor } from './mind-bg.processor';
 import { MindBackgroundScheduler } from './mind-bg.scheduler';
 import { MindEventIngestor } from './coordination/mind-event-ingestor.service';
+import { MindEventSpine } from './coordination/mind-event-spine.service';
 import { MultiTimescaleCoordinator } from './multi-timescale.coordinator';
 import { ValenceAggregatorService } from './valence-aggregator.service';
 import { ValenceTaggerService } from './valence-tagger.service';
@@ -34,6 +35,7 @@ import { MindPredictionService } from './mind-prediction.service';
     MindBackgroundProcessor,
     MindBackgroundScheduler,
     MindEventIngestor,
+    MindEventSpine,
     MindPredictionService,
   ],
   exports: [

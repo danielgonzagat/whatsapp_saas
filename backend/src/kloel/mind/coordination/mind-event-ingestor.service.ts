@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { StructuredLogger } from '../../../logging/structured-logger';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -10,11 +10,14 @@ export class MindEventIngestor {
   private readonly logger = StructuredLogger.from(MindEventIngestor.name);
 
   constructor(
-    private readonly spine: MindEventSpine,
+    @Optional() private readonly spine: MindEventSpine | undefined,
     private readonly hebbian: HebbianService,
     private readonly prisma: PrismaService,
   ) {}
   async processDecisions(workspaceId: string): Promise<void> {
+    if (!this.spine) {
+      return;
+    }
     const claimed = await this.spine.claimPendingEvents({
       workspaceId,
       eventType: 'cognition.decision_made',
