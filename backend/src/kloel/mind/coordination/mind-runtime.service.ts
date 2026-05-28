@@ -35,43 +35,15 @@ import { BrainDecideDto, BrainObserveDto } from './mind-runtime.dto';
 import { KloelThreadService } from '../../kloel-thread.service';
 import { UnifiedAgentContextDataService } from '../../unified-agent-context-data.service';
 import { UnifiedAgentService } from '../../unified-agent.service';
-import type { PredecidedAction } from '../../unified-agent.types';
-
-function latestUserText(messages: BrainDecideDto['messages']): string | undefined {
-  if (!messages?.length) {
-    return undefined;
-  }
-  return [...messages]
-    .reverse()
-    .find((message) => message.role === 'user' && message.content.trim())?.content;
-}
-
-function readOptionalString(value: unknown): string | undefined {
-  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
-}
-
-function cloneJson(value: unknown): Prisma.InputJsonValue {
-  return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
-}
-
-function readRecord(value: unknown): Record<string, unknown> {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
-}
-
-function buildPredecidedActions(input: {
-  allowedTools: string[];
-  context?: Record<string, unknown>;
-  intent: string;
-}): PredecidedAction[] {
-  if (!input.allowedTools.includes(input.intent)) {
-    return [];
-  }
-
-  const args = readRecord(input.context?.actionArgs ?? input.context?.toolArgs);
-  return [{ tool: input.intent, args: args }];
-}
+import {
+  buildObserveInsights,
+  buildOperatorResponseText,
+  buildPredecidedActions,
+  buildStreamEvents,
+  cloneJson,
+  readOptionalString,
+  resolveDecideMessage,
+} from './mind-runtime.helpers';
 
 // OPERATOR_CAPABILITIES moved to ../../brain-capabilities.const (single
 // source of truth shared with the executor's self-model registry).
@@ -121,12 +93,7 @@ export class MindRuntime {
     const source = params.body.source ?? 'chat';
     const intent = params.body.intent ?? 'user_message';
     const requestId = readOptionalString(params.body.context?.clientRequestId) ?? randomUUID();
-    const message =
-      latestUserText(params.body.messages) ??
-      (typeof params.body.context?.message === 'string'
-        ? params.body.context.message
-        : undefined) ??
-      intent;
+    const message = resolveDecideMessage({ ...params.body, intent });
 
     if (!message.trim()) {
       throw new BadRequestException('brain_message_required');
@@ -340,9 +307,11 @@ export class MindRuntime {
     };
     const actions = [action];
 
-    const responseText = capabilityResult.ok
-      ? `Acao "${intent}" executada com sucesso.`
-      : `Falha ao executar "${intent}": ${capabilityResult.error ?? 'erro desconhecido'}.`;
+    const responseText = buildOperatorResponseText({
+      intent,
+      ok: capabilityResult.ok,
+      error: capabilityResult.error,
+    });
 
     if (thread) {
       await this.threads.persistAssistantThreadMessage(thread.id, workspaceId, responseText, {
@@ -404,39 +373,8 @@ export class MindRuntime {
     userId?: string;
     workspaceId: string;
   }): Promise<Array<Record<string, unknown>>> {
-    const events: Array<Record<string, unknown>> = [
-      {
-        type: 'status',
-        phase: 'thinking',
-        message: 'Kloel Brain construindo contexto do workspace',
-      },
-    ];
     const decision = await this.decide(params);
-    if (decision.conversationId) {
-      events.push({
-        type: 'thread',
-        conversationId: decision.conversationId,
-        title: decision.title,
-      });
-    }
-    for (const action of decision.actions) {
-      if (!action || typeof action !== 'object') {
-        continue;
-      }
-      const record = action as Record<string, unknown>;
-      events.push({
-        type: 'tool_result',
-        tool: typeof record.tool === 'string' ? record.tool : 'brain_action',
-        result: record.result,
-        success: true,
-      });
-    }
-    events.push({
-      type: 'content',
-      content: decision.response || 'Ação processada pelo Kloel Brain.',
-    });
-    events.push({ type: 'done', done: true });
-    return events;
+    return buildStreamEvents(decision);
   }
 
   async observe(params: { body: BrainObserveDto; userId?: string; workspaceId: string }): Promise<{
@@ -460,14 +398,7 @@ export class MindRuntime {
     ]);
     const dataKeys = Object.keys(params.body.data ?? {}).sort();
     const recommendations = recommendationState.recommendations;
-    const insights = recommendations
-      .slice(0, 3)
-      .map(
-        (recommendation) =>
-          `${recommendation.action}: ${Math.round(
-            recommendation.confidence * 100,
-          )}% confidence. ${recommendation.reason}`,
-      );
+    const insights = buildObserveInsights(recommendations);
 
     await this.events.record({
       workspaceId: params.workspaceId,
