@@ -69,12 +69,12 @@ describe('CookieProvider.helpers', () => {
     });
 
     it('forces necessary to true even when input claims otherwise', () => {
-      const loose: Partial<CookieConsentPreferences> = {
+      const loose = {
         necessary: false,
         analytics: true,
         marketing: true,
-      };
-      const result = normalizeConsent(loose as CookieConsentPreferences);
+      } as unknown as CookieConsentPreferences;
+      const result = normalizeConsent(loose);
       expect(result).not.toBeNull();
       expect(result?.necessary).toBe(true);
     });

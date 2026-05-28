@@ -6,7 +6,6 @@ import { FinancialAlertService } from './financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import type {
-  DriftKind,
   DriftReport,
   ReconciliationResult,
   WalletReconciliationResult,

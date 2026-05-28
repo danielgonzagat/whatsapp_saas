@@ -1,11 +1,15 @@
+import Stripe from 'stripe';
+
 /**
  * Pinned Stripe API version for the entire monorepo.
  *
- * Locked deliberately so silent upstream behavior changes (parameter shapes,
- * default values, deprecations) cannot affect us between SDK upgrades.
- * Bump only after reviewing the Stripe changelog and running the smoke suite.
+ * Bound to the installed SDK's `Stripe.API_VERSION` static so the literal type
+ * accepted by `paymentIntents.create` / `webhooks.constructEvent` always
+ * matches the SDK shipped in `node_modules`. Bump by upgrading the `stripe`
+ * dependency in `backend/package.json` after reviewing the Stripe changelog
+ * and running the smoke suite — the typecheck enforces consistency.
  *
  * Source: https://docs.stripe.com/upgrades — version naming uses the
  * `<release-date>.<codename>` convention.
  */
-export const STRIPE_API_VERSION = '2026-04-22.dahlia';
+export const STRIPE_API_VERSION = Stripe.API_VERSION;

@@ -32,10 +32,6 @@ function OnboardingChatContent() {
     goToDashboard,
   } = useOnboardingChat();
 
-  const goToLogin = () => {
-    router.push('/login');
-  };
-
   // Show loading while checking auth status
   if (authLoading) {
     return <OnboardingLoading />;

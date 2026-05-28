@@ -391,6 +391,10 @@ export async function apiFetch<T = unknown>(
       }
     }
 
+    if (response.status === 429) {
+      return retryAfterBackoff<T>(url, baseInit, response);
+    }
+
     return response;
   } catch (err: unknown) {
     return {
