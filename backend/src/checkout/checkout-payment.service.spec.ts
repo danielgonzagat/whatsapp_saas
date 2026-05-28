@@ -6,6 +6,7 @@ import { FinancialAlertService } from '../common/financial-alert.service';
 import { ConnectService } from '../payments/connect/connect.service';
 import { FraudEngine } from '../payments/fraud/fraud.engine';
 import { StripeChargeService } from '../payments/stripe/stripe-charge.service';
+import { MercadoPagoBoletoChargeService } from '../payments/mercadopago/mercadopago-boleto-charge.service';
 import { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -30,6 +31,7 @@ describe('CheckoutPaymentService.processPayment — provider routing', () => {
   let service: CheckoutPaymentService;
   let prisma: CheckoutPaymentPrismaMock;
   let stripeCharge: { createSaleCharge: jest.Mock };
+  let mercadoPagoBoleto: { create: jest.Mock };
   let mercadoPagoPix: { create: jest.Mock };
   let connectService: { createCustomAccount: jest.Mock };
   let fraudEngine: { evaluate: jest.Mock };
@@ -69,6 +71,17 @@ describe('CheckoutPaymentService.processPayment — provider routing', () => {
 
     stripeCharge = {
       createSaleCharge: jest.fn().mockResolvedValue(makeChargeResult()),
+    };
+    mercadoPagoBoleto = {
+      create: jest.fn().mockResolvedValue({
+        externalId: 'mp_boleto_1',
+        status: 'pending',
+        ticketUrl: 'https://www.mercadopago.com.br/payments/mp_boleto_1/ticket',
+        barcodeContent: '23793381286000000000123456789012345678901234',
+        digitableLine: '23793.38128 60000.000001 12345.678901 2 99990000013990',
+        expiresAt: new Date('2026-06-03T12:00:00.000Z'),
+        raw: { id: 'mp_boleto_1', status: 'pending' },
+      }),
     };
     mercadoPagoPix = {
       create: jest.fn().mockResolvedValue({
@@ -111,6 +124,7 @@ describe('CheckoutPaymentService.processPayment — provider routing', () => {
         CheckoutPaymentService,
         { provide: PrismaService, useValue: prisma },
         { provide: StripeChargeService, useValue: stripeCharge },
+        { provide: MercadoPagoBoletoChargeService, useValue: mercadoPagoBoleto },
         { provide: MercadoPagoPixChargeService, useValue: mercadoPagoPix },
         { provide: ConnectService, useValue: connectService },
         { provide: FraudEngine, useValue: fraudEngine },
@@ -151,17 +165,73 @@ describe('CheckoutPaymentService.processPayment — provider routing', () => {
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
-  it('rejects boleto because Stripe-only checkout does not support boleto in the active flow', async () => {
-    await expect(
-      service.processPayment({
-        orderId: 'order-1',
-        workspaceId: 'ws-1',
-        customerName: 'Teste',
-        customerEmail: 'test@example.com',
-        paymentMethod: 'BOLETO',
-        totalInCents: 10_000,
+  it('creates a boleto payment through Mercado Pago, persists barcode data, and never calls Stripe', async () => {
+    const tx: CheckoutPaymentTxClient = {
+      checkoutPayment: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        create: jest.fn(async (args: CheckoutPaymentCreateArgs) => ({
+          id: 'pay_boleto_1',
+          ...args.data,
+        })),
+      },
+      checkoutOrder: {
+        findFirst: jest.fn(),
+        updateMany: jest.fn(),
+      },
+    };
+    prisma.$transaction.mockImplementation(async (cb: CheckoutPaymentTxCallback) => cb(tx));
+
+    const result = await service.processPayment({
+      orderId: 'order-1',
+      idempotencyKey: 'idem-boleto-1',
+      workspaceId: 'ws-1',
+      customerName: 'Cliente Boleto',
+      customerEmail: 'boleto@example.com',
+      customerCPF: '12345678909',
+      customerPhone: '11999999999',
+      paymentMethod: 'BOLETO',
+      totalInCents: 10_000,
+    });
+
+    expect(stripeCharge.createSaleCharge).not.toHaveBeenCalled();
+    expect(mercadoPagoBoleto.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        amountCents: 13_990n,
+        description: 'Produto X',
+        externalReference: 'order-1',
+        idempotencyKey: 'idem-boleto-1',
+        notificationUrl: expect.stringContaining('/webhooks/mercadopago'),
+        payerAddress: expect.objectContaining({
+          city: 'São Paulo',
+          number: '1000',
+          state: 'SP',
+          street: 'Av Paulista',
+          zipCode: '01310100',
+        }),
+        payerDocument: '12345678909',
+        payerEmail: 'boleto@example.com',
+        payerName: 'Cliente Boleto',
       }),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    );
+    expect(tx.checkoutPayment.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          gateway: 'mercadopago',
+          externalId: 'mp_boleto_1',
+          boletoUrl: 'https://www.mercadopago.com.br/payments/mp_boleto_1/ticket',
+          boletoBarcode: '23793.38128 60000.000001 12345.678901 2 99990000013990',
+          status: 'PENDING',
+        }),
+      }),
+    );
+    expect(result).toMatchObject({
+      approved: false,
+      boletoBarcode: '23793.38128 60000.000001 12345.678901 2 99990000013990',
+      boletoUrl: 'https://www.mercadopago.com.br/payments/mp_boleto_1/ticket',
+      clientSecret: null,
+      paymentIntentId: 'mp_boleto_1',
+      type: 'BOLETO',
+    });
   });
 
   it('creates a card PaymentIntent, records a stripe payment row, and returns clientSecret for the checkout UI', async () => {

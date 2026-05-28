@@ -239,7 +239,7 @@ describe('CheckoutOrderService', () => {
       expect(prisma.$transaction).toHaveBeenCalled();
     });
 
-    it('rejects boleto payment method', async () => {
+    it('creates boleto orders and hands payment execution to Mercado Pago checkout payment flow', async () => {
       const planRecord = {
         id: 'plan_1',
         slug: 'test-plan',
@@ -277,14 +277,42 @@ describe('CheckoutOrderService', () => {
       };
 
       prisma.checkoutProductPlan.findUnique.mockResolvedValue(planRecord);
+      prisma.checkoutProductPlan.findFirst.mockResolvedValue(null);
       prisma.marketplaceFee.findMany.mockResolvedValue([]);
+      prisma.$transaction.mockImplementation(
+        async (fn: (tx: Record<string, unknown>) => Promise<unknown>) => {
+          const tx = {
+            checkoutOrder: {
+              findFirst: jest.fn().mockResolvedValue(null),
+              create: jest.fn().mockResolvedValue(makeOrder({ paymentMethod: 'BOLETO' })),
+            },
+          };
+          return fn(tx);
+        },
+      );
+      paymentService.processPayment.mockResolvedValue({
+        boletoBarcode: '23793.38128 60000.000001 12345.678901 2 99990000009900',
+        boletoUrl: 'https://www.mercadopago.com.br/payments/mp_boleto_1/ticket',
+        status: 'PENDING',
+      });
 
-      await expect(
-        service.createOrder({
-          ...baseCreateOrderInput,
-          paymentMethod: 'BOLETO' as const,
+      const result = await service.createOrder({
+        ...baseCreateOrderInput,
+        paymentMethod: 'BOLETO' as const,
+      });
+
+      expect(result).toMatchObject({
+        id: 'order_1',
+        paymentData: expect.objectContaining({
+          boletoUrl: 'https://www.mercadopago.com.br/payments/mp_boleto_1/ticket',
         }),
-      ).rejects.toThrow(BadRequestException);
+      });
+      expect(paymentService.processPayment).toHaveBeenCalledWith(
+        expect.objectContaining({
+          paymentMethod: 'BOLETO',
+          totalInCents: 9900,
+        }),
+      );
     });
 
     it('rejects invalid coupon', async () => {

@@ -1,9 +1,8 @@
 /**
- * Type definitions for the Mercado Pago PIX adapter.
+ * Type definitions for the Mercado Pago checkout adapters.
  *
  * Per ADR-0009 (docs/adr/0009-mercadopago-pix-stripe-card-split.md):
- * Mercado Pago is the canonical PIX provider. This module exposes only
- * the PIX surface — cartão stays in Stripe.
+ * Mercado Pago is the canonical PIX and boleto provider; cartão stays in Stripe.
  *
  * Money is always handled in cents (`bigint`). MP API uses
  * `transaction_amount` in floating-point BRL — we convert at the
@@ -45,6 +44,38 @@ export interface PixChargeResult {
   readonly ticketUrl: string; // MP-hosted fallback page
   readonly expiresAt: Date;
   readonly raw: unknown; // full MP response for audit
+}
+
+export interface BoletoChargeAddress {
+  readonly zipCode: string;
+  readonly street: string;
+  readonly number: string;
+  readonly neighborhood?: string;
+  readonly city: string;
+  readonly state: string;
+}
+
+export interface CreateBoletoChargeInput {
+  readonly idempotencyKey: string;
+  readonly amountCents: bigint;
+  readonly payerEmail: string;
+  readonly payerName?: string;
+  readonly payerDocument: string;
+  readonly payerAddress: BoletoChargeAddress;
+  readonly description: string;
+  readonly externalReference: string;
+  readonly expiresAt: Date;
+  readonly notificationUrl: string;
+}
+
+export interface BoletoChargeResult {
+  readonly externalId: string;
+  readonly status: PixChargeStatus;
+  readonly ticketUrl: string;
+  readonly barcodeContent: string;
+  readonly digitableLine: string;
+  readonly expiresAt: Date;
+  readonly raw: unknown;
 }
 
 /** Canonical PIX charge status (mapped from MP's status strings). */

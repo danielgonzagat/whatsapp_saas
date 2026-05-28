@@ -6,6 +6,7 @@ import { MercadoPagoConfigService } from './mercadopago.config';
 import { MercadoPagoPixChargeService } from './mercadopago-pix-charge.service';
 import { MercadoPagoWebhookController } from './mercadopago-webhook.controller';
 import { MercadoPagoWebhookSignatureVerifier } from './mercadopago-webhook-signature.verifier';
+import { MercadoPagoBoletoChargeService } from './mercadopago-boleto-charge.service';
 
 /**
  * Mercado Pago PIX provider module.
@@ -28,8 +29,9 @@ import { MercadoPagoWebhookSignatureVerifier } from './mercadopago-webhook-signa
   providers: [
     MercadoPagoConfigService,
     MercadoPagoWebhookSignatureVerifier,
+    MercadoPagoBoletoChargeService,
     MercadoPagoPixChargeService,
   ],
-  exports: [MercadoPagoConfigService, MercadoPagoPixChargeService],
+  exports: [MercadoPagoConfigService, MercadoPagoBoletoChargeService, MercadoPagoPixChargeService],
 })
 export class MercadoPagoModule {}
