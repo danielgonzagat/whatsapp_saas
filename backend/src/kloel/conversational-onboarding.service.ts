@@ -417,9 +417,7 @@ export class ConversationalOnboardingService {
         ...(this.selfHealthService !== undefined
           ? { selfHealthService: this.selfHealthService }
           : {}),
-        ...(this.selfGapsService !== undefined
-          ? { selfGapsService: this.selfGapsService }
-          : {}),
+        ...(this.selfGapsService !== undefined ? { selfGapsService: this.selfGapsService } : {}),
       };
       const mindSignals = await buildMindSignals(mindDeps, workspaceId, userMessage);
       messages.push({
@@ -505,33 +503,37 @@ export class ConversationalOnboardingService {
           throw e;
         }
         if (this.mindBeliefService) {
-          this.mindBeliefService.observeBinary(
-            workspaceId,
-            workspaceId,
-            'replied_to_user',
-            { surface: 'onboarding', degraded: false },
-            1,
-          ).catch((err: unknown) =>
-            this.logger.warn('kloel_belief_observation_skipped', {
-              reason: err instanceof Error ? err.message : String(err),
-            }),
-          );
+          this.mindBeliefService
+            .observeBinary(
+              workspaceId,
+              workspaceId,
+              'replied_to_user',
+              { surface: 'onboarding', degraded: false },
+              1,
+            )
+            .catch((err: unknown) =>
+              this.logger.warn('kloel_belief_observation_skipped', {
+                reason: err instanceof Error ? err.message : String(err),
+              }),
+            );
         }
         return;
       }
 
       if (this.mindBeliefService) {
-        this.mindBeliefService.observeBinary(
-          workspaceId,
-          workspaceId,
-          'replied_to_user',
-          { surface: 'onboarding', degraded: false },
-          1,
-        ).catch((err: unknown) =>
-          this.logger.warn('kloel_belief_observation_skipped', {
-            reason: err instanceof Error ? err.message : String(err),
-          }),
-        );
+        this.mindBeliefService
+          .observeBinary(
+            workspaceId,
+            workspaceId,
+            'replied_to_user',
+            { surface: 'onboarding', degraded: false },
+            1,
+          )
+          .catch((err: unknown) =>
+            this.logger.warn('kloel_belief_observation_skipped', {
+              reason: err instanceof Error ? err.message : String(err),
+            }),
+          );
       }
       return responseText;
     } catch (error: unknown) {
@@ -553,32 +555,36 @@ export class ConversationalOnboardingService {
       if (res) {
         this.writeSseResponse(res, fallback);
         if (this.mindBeliefService) {
-          this.mindBeliefService.observeBinary(
+          this.mindBeliefService
+            .observeBinary(
+              workspaceId,
+              workspaceId,
+              'replied_to_user',
+              { surface: 'onboarding', degraded: true },
+              0,
+            )
+            .catch((err: unknown) =>
+              this.logger.warn('kloel_belief_observation_skipped', {
+                reason: err instanceof Error ? err.message : String(err),
+              }),
+            );
+        }
+        return;
+      }
+      if (this.mindBeliefService) {
+        this.mindBeliefService
+          .observeBinary(
             workspaceId,
             workspaceId,
             'replied_to_user',
             { surface: 'onboarding', degraded: true },
             0,
-          ).catch((err: unknown) =>
+          )
+          .catch((err: unknown) =>
             this.logger.warn('kloel_belief_observation_skipped', {
               reason: err instanceof Error ? err.message : String(err),
             }),
           );
-        }
-        return;
-      }
-      if (this.mindBeliefService) {
-        this.mindBeliefService.observeBinary(
-          workspaceId,
-          workspaceId,
-          'replied_to_user',
-          { surface: 'onboarding', degraded: true },
-          0,
-        ).catch((err: unknown) =>
-          this.logger.warn('kloel_belief_observation_skipped', {
-            reason: err instanceof Error ? err.message : String(err),
-          }),
-        );
       }
       return fallback;
     }
