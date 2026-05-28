@@ -1,9 +1,5 @@
 import { buildMindSignals } from './build-mind-signals.helper';
-import {
-  mockLogger,
-  mockPrisma,
-  makeAutopilotRow,
-} from './build-mind-signals.helper.fixtures';
+import { mockLogger, mockPrisma, makeAutopilotRow } from './build-mind-signals.helper.fixtures';
 import { AttentionService } from './attention.service';
 import { ValenceAggregatorService } from './valence-aggregator.service';
 

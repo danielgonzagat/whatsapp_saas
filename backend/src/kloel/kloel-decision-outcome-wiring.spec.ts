@@ -1,13 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { KloelReplyEngineService } from './kloel-reply-engine.service';
-import { ConversationalOnboardingService } from './conversational-onboarding.service';
 import { DecisionOutcomeService } from './decision-outcome.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { KloelThreadService } from './kloel-thread.service';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
 import { UnifiedAgentService } from './unified-agent.service';
-import { ConversationalOnboardingToolsService } from './conversational-onboarding-tools.service';
 
 jest.mock('openai', () => ({
   default: jest.fn().mockImplementation(() => ({
@@ -45,10 +43,6 @@ jest.mock('./kloel-reply-engine.helpers', () => ({
   KLOEL_STREAM_ABORT_REASON_CLIENT_DISCONNECTED: 'client_disconnected',
   buildDynamicRuntimeContextHelper: jest.fn().mockResolvedValue('Dynamic context'),
   buildAssistantReplyImpl: jest.fn().mockResolvedValue('Resposta do assistente'),
-}));
-
-jest.mock('./conversational-onboarding.prompt', () => ({
-  CONVERSATIONAL_ONBOARDING_PROMPT: 'mock onboarding prompt',
 }));
 
 function makeDecisionOutcomeMock() {
