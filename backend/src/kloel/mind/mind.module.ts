@@ -12,6 +12,7 @@ import { MultiTimescaleCoordinator } from './multi-timescale.coordinator';
 import { ValenceAggregatorService } from './valence-aggregator.service';
 import { ValenceTaggerService } from './valence-tagger.service';
 import { MindCaseMemoryService } from './memory/mind-case-memory.service';
+import { MindGlobalPriorService } from './memory/mind-global-prior.service';
 import { MindPredictionService } from './mind-prediction.service';
 
 /**
@@ -37,8 +38,10 @@ import { MindPredictionService } from './mind-prediction.service';
     MindBackgroundScheduler,
     MindEventIngestor,
     MindEventSpine,
+    MindPerceptionService,
     MindPredictionService,
     MindCaseMemoryService,
+    MindGlobalPriorService,
   ],
   exports: [
     ValenceTaggerService,
@@ -49,8 +52,10 @@ import { MindPredictionService } from './mind-prediction.service';
     MultiTimescaleCoordinator,
     MindBackgroundProcessor,
     MindBackgroundScheduler,
+    MindPerceptionService,
     MindPredictionService,
     MindCaseMemoryService,
+    MindGlobalPriorService,
   ],
 })
 export class MindModule {}

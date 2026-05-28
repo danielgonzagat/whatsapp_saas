@@ -213,6 +213,31 @@ export class MindGlobalPriorService {
     return { alpha: mean * k, beta: (1 - mean) * k };
   }
 
+  async getPriorFor(
+    predicate: string,
+  ): Promise<{ mean: number; samples: number } | null> {
+    const prior = await this.prisma.mindGlobalPrior.findFirst({
+      where: { workspaceId: null, predicate },
+      select: { mean: true, samples: true },
+      orderBy: { samples: 'desc' },
+    });
+    if (!prior || prior.samples === 0) {
+      return null;
+    }
+    return { mean: prior.mean, samples: prior.samples };
+  }
+
+  async listTopPriors(
+    limit: number,
+  ): Promise<Array<{ predicate: string; mean: number; samples: number }>> {
+    return this.prisma.mindGlobalPrior.findMany({
+      where: { workspaceId: null },
+      select: { predicate: true, mean: true, samples: true },
+      orderBy: { samples: 'desc' },
+      take: limit,
+    });
+  }
+
   async listDecisionTypes(): Promise<string[]> {
     const decisionTypes = new Set<string>();
     const workspaceIds = await this.listWorkspaceIds();

@@ -82,6 +82,17 @@ export interface BuildMindSignalsDeps {
       limit: number,
     ) => Promise<Array<{ situation: string; outcome: string; similarity: number }>>;
   };
+  mindGlobalPriorService?: {
+    listTopPriors?: (limit: number) => Promise<Array<{ predicate: string; mean: number; samples: number }>>;
+  };
+  mindPerceptionService?: {
+    perceive?: (ctx: {
+      source: string;
+      channel: string;
+      raw: string;
+      workspaceId: string;
+    }) => { subject: string; intent: string; salience: number; semanticContext: Record<string, unknown> };
+  };
   logger: Pick<StructuredLogger, 'warn'>;
 }
 /**
@@ -96,6 +107,28 @@ export async function buildMindSignals(
 ): Promise<Record<string, unknown>> {
   const mindSignals: Record<string, unknown> = {};
   let rawConcepts: Array<{ concept: string; confidence: number }> | undefined;
+
+  // ── Perception (PI-K16-C) — BEFORE attention/valence so other signals can reference it ──
+  if (deps.mindPerceptionService?.perceive) {
+    try {
+      const perception = deps.mindPerceptionService.perceive({
+        source: 'chat',
+        channel: 'kloel_chat',
+        raw: userMessage,
+        workspaceId,
+      });
+      mindSignals.perception = {
+        subject: perception.subject,
+        intent: perception.intent,
+        salience: perception.salience,
+        semanticContext: perception.semanticContext,
+      };
+    } catch (error: unknown) {
+      deps.logger.warn('kloel_mind_perception_skipped', {
+        reason: error instanceof Error ? error.message : 'unknown error',
+      });
+    }
+  }
 
   // ── Attention + Valence (PI-k4) ──────────────────────────────────
   if (deps.attentionService && deps.valenceAggregatorService) {
@@ -166,6 +199,20 @@ export async function buildMindSignals(
       }));
     } catch (error: unknown) {
       deps.logger.warn('kloel_mind_belief_skipped', {
+        reason: error instanceof Error ? error.message : 'unknown error',
+      });
+    }
+  }
+
+  // ── Global Priors — warm-start beliefs (PI-K16-A) ──────────────
+  if (deps.mindGlobalPriorService?.listTopPriors) {
+    try {
+      const globalPriors = await deps.mindGlobalPriorService.listTopPriors(5);
+      if (globalPriors.length > 0) {
+        mindSignals.globalPriors = globalPriors;
+      }
+    } catch (error: unknown) {
+      deps.logger.warn('kloel_global_prior_skipped', {
         reason: error instanceof Error ? error.message : 'unknown error',
       });
     }

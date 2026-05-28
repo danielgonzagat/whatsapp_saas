@@ -17,6 +17,7 @@ import type { ValenceAggregatorService } from './mind/valence-aggregator.service
 import type { MindBeliefService } from './mind/inference/mind-belief.service';
 import type { MindConceptService } from './mind/memory/mind-concepts.service';
 import type { MindCaseMemoryService } from './mind/memory/mind-case-memory.service';
+import type { MindGlobalPriorService } from './mind/memory/mind-global-prior.service';
 import type { MindPredictionService } from './mind/mind-prediction.service';
 import type { SelfHealthService } from './self-awareness/self-health.service';
 import type { SelfGapsService } from './self-awareness/self-gaps.service';
@@ -43,6 +44,15 @@ interface OnboardingMindServices {
     ) => Promise<{ arm: string; confidence: number; rationale?: string } | null>;
   };
   mindCaseMemoryService?: MindCaseMemoryService;
+  mindGlobalPriorService?: MindGlobalPriorService;
+  mindPerceptionService?: {
+    perceive?: (ctx: {
+      source: string;
+      channel: string;
+      raw: string;
+      workspaceId: string;
+    }) => { subject: string; intent: string; salience: number; semanticContext: Record<string, unknown> };
+  };
 }
 
 /**
@@ -89,6 +99,12 @@ export function buildOnboardingMindSignalsDeps(
       : {}),
     ...(services.mindCaseMemoryService !== undefined
       ? { mindCaseMemoryService: services.mindCaseMemoryService }
+      : {}),
+    ...(services.mindGlobalPriorService !== undefined
+      ? { mindGlobalPriorService: services.mindGlobalPriorService }
+      : {}),
+    ...(services.mindPerceptionService !== undefined
+      ? { mindPerceptionService: services.mindPerceptionService }
       : {}),
   };
 }
