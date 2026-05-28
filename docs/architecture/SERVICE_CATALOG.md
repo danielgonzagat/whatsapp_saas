@@ -1,5 +1,79 @@
 # Kloel Service Catalog
 
+> **PI Task K24** — Curated inventory of key services + full 590-service raw listing.
+
+---
+
+## Curated Inventory — Key Services
+
+| Service | Domain | Responsibility | Key dependencies | Status |
+|---|---|---|---|---|
+| `AuthService` | Identity | Login, register, JWT issuance, OAuth callbacks | `PrismaService`, `AuthTokenService` | ✅ Active |
+| `AuthTokenService` | Identity | Token refresh, rotation, invalidation | `PrismaService`, `JwtService` | ✅ Active |
+| `WorkspaceService` | Tenant | Workspace CRUD, provider status | `PrismaService` | ✅ Active |
+| `ChannelTransportRegistry` | Channel | Map channel keys → transport adapters | `ChannelSendResult`, transport providers | ✅ Active |
+| `ChannelHealthMonitorService` | Channel | Success/failure tracking, ban risk scoring | `ChannelPolicyRegistry` | ✅ Active |
+| `InboxService` | Conversation | Unified inbox, message threading | `PrismaService`, `SmartRoutingService` | ✅ Active |
+| `KloelReplyEngineService` | Conversation | AI reply generation with guardrails | `MindPolicyService`, `KloelComposerService`, LLM | ✅ Active |
+| `GuestChatService` | Conversation | Anonymous/public chat handler, action intents | `SpineEmitterService`, `KloelToolDispatcherService` | ✅ Active |
+| `MetaWhatsAppService` | Message | WhatsApp Cloud API send/receive | `MetaWhatsAppService.helpers` | ✅ Active |
+| `CampaignsService` | Campaign | Campaign CRUD, scheduling, analytics | `PrismaService` | ✅ Active |
+| `CampaignEventEmitterService` | Campaign | Campaign lifecycle events → spine | `SpineEmitterService` | ✅ Active |
+| `ProductService` | Product | Product CRUD, publish, spine emission | `PrismaService`, `SpineEmitterService` | ✅ Active |
+| `PlanService` | Product | Plan CRUD, lifecycle | `PrismaService` | ✅ Active |
+| `CheckoutService` | Checkout | Checkout flow orchestration | `PrismaService`, `CheckoutPaymentService` | ✅ Active |
+| `CheckoutPaymentService` | Checkout | Payment method selection, processing | `ProviderRouter`, `FraudEngine` | ✅ Active |
+| `CheckoutEventEmitterService` | Checkout | Cart + payment events → spine | `SpineEmitterService` | ✅ Active |
+| `CartRecoveryService` | Checkout | Abandoned cart detection + recovery | `MindPolicyService`, `ChannelTransportRegistry` | ✅ Active |
+| `PaymentService` | Payment | Payment orchestration (legacy) | `StripeChargeService`, `FraudEngine` | ⚠️ Split into provider-specific |
+| `LedgerService` | Payment | Double-entry ledger | `PrismaService` | ✅ Active |
+| `FraudEngine` | Payment | Fraud scoring, risk classification | `PrismaService` | ✅ Active |
+| `WalletService` | Payment | Prepaid wallet, balance, settlement | `PrismaService`, provider helpers | ✅ Active |
+| `CrmService` | CRM | Deal pipeline, stage management | `PrismaService` | ✅ Active |
+| `NeuroCrmService` | CRM | AI-powered CRM recommendations | `MindService`, `PrismaService` | ✅ Active |
+| `AutopilotCycleExecutorService` | Autopilot | Agent execution loop, decision cycles | `MindPolicyService`, `MindBanditService` | ✅ Active |
+| `MindService` | Commercial Intelligence | Central cognitive orchestrator (perception→prediction→surprise→decision) | `MindBeliefService`, `MindPolicyService`, `MindSurpriseService`, `MindPerceptionService` | ✅ Active (M5 pending) |
+| `MindBeliefService` | Commercial Intelligence | Bayesian belief tracking (raw SQL on `RAC_MindBelief`) | `PrismaService` | ✅ Active (M5 pending) |
+| `MindPolicyService` | Commercial Intelligence | Policy chooser, outcome resolution | `MindBeliefService`, `MindBanditService` | ✅ Active (M5 pending) |
+| `MindBanditService` | Commercial Intelligence | Multi-armed bandit optimization | `PrismaService` | ✅ Active (M5 pending) |
+| `MindEventSpine` | Commercial Intelligence | Event spine — durable outbox with `recordCommercial()` | `PrismaService` | ✅ Active |
+| `MindCapabilityExecutor` | Commercial Intelligence | Executes capability decisions (formerly `BrainCapabilityExecutorService`) | `MindCapabilityRegistry`, `MindPolicyService` | ✅ Active |
+| `SpineEmitterService` | Infrastructure | Event emission to outbox + audit | `EventEmitAuditEventEmitterService` | ✅ Active |
+| `PrismaService` | Infrastructure | Database access layer | `PrismaClient` | ✅ Active |
+| `WebhooksService` | Infrastructure | Inbound webhook fan-out to workspace subscribers | `PrismaService` | ✅ Active |
+| `IdempotencyService` | Infrastructure | Idempotency key dedup | `PrismaService` | ✅ Active |
+| `LedgerReconciliationService` | Infrastructure | Cross-provider ledger reconciliation | `PrismaService` | ✅ Active |
+| `SystemHealthService` | Infrastructure | Health probes (Redis, DB, external APIs) | `PrismaService`, `Redis` | ✅ Active |
+| `BillingSubscriptionService` | Billing | Subscription lifecycle, plan features | `PrismaService`, Stripe SDK | ✅ Active |
+| `GdprService` | Compliance | Data export, deletion, Facebook callback | `PrismaService` | ✅ Active |
+| `SalesService` | Sales | Invoice generation, payment link creation | provider helpers (Stripe, Boleto, PIX) | ✅ Active |
+
+---
+
+## Domain Summary
+
+| Domain | Service count | Key services |
+|---|---|---|
+| kloel (monolith core) | 318 | `GuestChatService`, `KloelReplyEngineService`, `KloelToolDispatcherService`, `MindService`, `ChannelTransportRegistry`, 300+ more |
+| admin | 35 | `AdminAuthService`, `AdminAccountsService`, `AdminDashboardService` |
+| marketing | 49 | `TikTokMarketingService`, `FacebookMessengerService`, `MetaWhatsAppService` |
+| common | 21 | `IdempotencyService`, `LedgerReconciliationService`, `PrismaService` |
+| checkout | 14 | `CheckoutService`, `CheckoutPaymentService` |
+| payments | 15 | `FraudEngine`, `LedgerService`, `StripeChargeService` |
+| auth | 15 | `AuthService`, `AuthTokenService`, `JwtAuthGuard` |
+| autopilot | 10 | `AutopilotCycleExecutorService`, `AutopilotCycleMoneyService` |
+| health | 11 | `SystemHealthService`, probes |
+| analytics | 5 | `AnalyticsService`, `DashboardService` |
+| wallet | 1 | `WalletService` |
+| crm | 2 | `CrmService`, `NeuroCrmService` |
+| billing | 5 | `BillingSubscriptionService`, `BillingCheckoutWebhookService` |
+| webhooks | 3 | `WebhooksService`, `PaymentWebhookStripeController` |
+| Other (31 domains) | ~100 | `ScrapersService`, `MediaService`, `ComplianceService`, `GdprService`, etc. |
+
+---
+
+## Full Raw Inventory
+
 > Every `@Injectable()` class with its domain assignment. Generated by `tools/canonicalize/scan.mjs`.
 
 Total services: 590. Sorted by domain.
