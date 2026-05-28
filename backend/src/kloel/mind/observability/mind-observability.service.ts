@@ -393,8 +393,7 @@ export class MindObservabilityService {
       failureReplies: metrics.failureReplies,
       avgDurationMs:
         metrics.totalReplies > 0 ? Math.round(metrics.totalDurationMs / metrics.totalReplies) : 0,
-      avgSurprise:
-        metrics.surpriseCount > 0 ? metrics.surpriseSum / metrics.surpriseCount : null,
+      avgSurprise: metrics.surpriseCount > 0 ? metrics.surpriseSum / metrics.surpriseCount : null,
       lastReplyAt: metrics.lastReplyAt > 0 ? new Date(metrics.lastReplyAt).toISOString() : null,
       bySurface: { ...metrics.bySurface },
     };

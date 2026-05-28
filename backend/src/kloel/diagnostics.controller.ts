@@ -1,5 +1,13 @@
 import { cpus } from 'node:os';
-import { Controller, Get, NotFoundException, Optional, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  NotFoundException,
+  Optional,
+  Param,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ObservabilityQueriesService } from '../metrics/observability-queries.service';

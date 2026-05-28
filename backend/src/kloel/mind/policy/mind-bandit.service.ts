@@ -155,9 +155,7 @@ export class MindBanditService {
       );
 
       const chosenMean =
-        best.arm.pulls > 0
-          ? best.arm.alpha / (best.arm.alpha + best.arm.beta)
-          : 0.5;
+        best.arm.pulls > 0 ? best.arm.alpha / (best.arm.alpha + best.arm.beta) : 0.5;
       const rationale =
         totalPulls === 0
           ? `Exploring arm "${best.arm.arm}" (no prior data)`

@@ -347,7 +347,9 @@ export class GuestChatService implements OnModuleDestroy {
     startedAt: number,
     success: boolean,
   ): void {
-    if (!this.mindObservability) return;
+    if (!this.mindObservability) {
+      return;
+    }
     try {
       this.mindObservability.observeReply(workspaceId, {
         surface,

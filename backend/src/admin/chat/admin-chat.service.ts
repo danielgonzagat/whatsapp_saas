@@ -18,10 +18,7 @@ import {
   summarizeToolResult,
   toSessionView,
 } from './admin-chat.helpers';
-import type {
-  ChatSessionView,
-  SendMessageInput,
-} from './admin-chat.helpers';
+import type { ChatSessionView, SendMessageInput } from './admin-chat.helpers';
 
 const LIST_RE = /^\/list\b/i;
 
@@ -121,7 +118,9 @@ export class AdminChatService {
 
   /** Fire-and-forget observability helper. */
   private observeReplyFireAndForget(workspaceId: string, startedAt: number): void {
-    if (!this.mindObservability) return;
+    if (!this.mindObservability) {
+      return;
+    }
     try {
       this.mindObservability.observeReply(workspaceId, {
         surface: 'admin',

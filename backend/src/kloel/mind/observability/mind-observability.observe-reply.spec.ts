@@ -127,8 +127,18 @@ describe('MindObservabilityService — observeReply / getSnapshot', () => {
     });
 
     it('handles mixed success/failure and multiple surfaces correctly', () => {
-      service.observeReply('ws-1', { surface: 'guest', durationMs: 100, success: true, surpriseValue: 0.2 });
-      service.observeReply('ws-1', { surface: 'guest', durationMs: 200, success: false, surpriseValue: 0.9 });
+      service.observeReply('ws-1', {
+        surface: 'guest',
+        durationMs: 100,
+        success: true,
+        surpriseValue: 0.2,
+      });
+      service.observeReply('ws-1', {
+        surface: 'guest',
+        durationMs: 200,
+        success: false,
+        surpriseValue: 0.9,
+      });
       service.observeReply('ws-1', { surface: 'whatsapp', durationMs: 300, success: true });
 
       const snapshot = service.getSnapshot('ws-1');

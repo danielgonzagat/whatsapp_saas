@@ -279,10 +279,7 @@ export async function buildMindSignals(
   // ── Bandit strategy selection (PI-K14-B) ─────────────────────────
   if (deps.mindBanditService?.selectArm) {
     try {
-      const banditResult = await deps.mindBanditService.selectArm(
-        workspaceId,
-        'chat_strategy',
-      );
+      const banditResult = await deps.mindBanditService.selectArm(workspaceId, 'chat_strategy');
       if (banditResult) {
         mindSignals.strategy = {
           arm: banditResult.arm,
