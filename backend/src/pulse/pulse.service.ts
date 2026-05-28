@@ -20,7 +20,6 @@ import {
   CRITICAL_REGISTRY_REDIS_SLOT,
   DEFAULT_BACKEND_TTL_MS,
   DEFAULT_FRONTEND_TTL_MS,
-  DEFAULT_WORKER_TTL_MS,
   FRONTEND_REGISTRY_REDIS_SLOT,
   FRONTEND_RETENTION_MS,
   INCIDENTS_REDIS_SLOT,
@@ -43,6 +42,21 @@ import {
   getNodeSuffix,
   pickNextWork,
 } from './pulse.helpers';
+import {
+  buildBackendHeartbeatSignals,
+  buildBackendHeartbeatSummary,
+  buildFrontendHeartbeatSignals,
+  buildFrontendHeartbeatSummary,
+  buildFrontendNodeId,
+  buildIncidentId,
+  buildOrganismStateResponse,
+  buildRecoveryIncidentInput,
+  buildStaleIncidentSummary,
+  deriveFrontendHeartbeatStatus,
+  pickBackendHeartbeatVersion,
+  projectProductionSnapshot,
+  resolveInternalHeartbeatTtlMs,
+} from './pulse.service.helpers';
 /** Pulse service. */
 @Injectable()
 export class PulseService implements OnModuleInit, OnModuleDestroy {
@@ -94,14 +108,9 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
   /** Record frontend heartbeat. */
   async recordFrontendHeartbeat(user: JwtPayload, payload: PulseFrontendHeartbeatDto) {
     const workspaceId = String(user?.workspaceId || '').trim();
-    const nodeId = `frontend:${workspaceId || 'unknown'}:${payload.sessionId}`;
-    const status = !payload.online ? 'DOWN' : payload.visible ? 'UP' : 'DEGRADED';
-    const summary =
-      status === 'UP'
-        ? `Frontend surface active on ${payload.route}.`
-        : status === 'DEGRADED'
-          ? `Frontend session open but hidden on ${payload.route}.`
-          : `Frontend session offline on ${payload.route}.`;
+    const nodeId = buildFrontendNodeId(workspaceId, payload.sessionId);
+    const status = deriveFrontendHeartbeatStatus(payload);
+    const summary = buildFrontendHeartbeatSummary(status, payload.route);
     return this.persistHeartbeat({
       nodeId,
       role: 'frontend',
@@ -115,24 +124,12 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       env: process.env.NODE_ENV || 'development',
       workspaceId,
       surface: payload.route,
-      signals: {
-        visible: payload.visible,
-        online: payload.online,
-        viewportWidth: payload.viewport?.width ?? null,
-        viewportHeight: payload.viewport?.height ?? null,
-        connectionType: payload.connectionType ?? null,
-      },
+      signals: buildFrontendHeartbeatSignals(payload),
     });
   }
   /** Record internal heartbeat. */
   async recordInternalHeartbeat(payload: PulseInternalHeartbeatDto, source = 'internal_runtime') {
-    const ttlMs =
-      payload.ttlMs ??
-      (payload.role === 'frontend'
-        ? DEFAULT_FRONTEND_TTL_MS
-        : payload.role === 'worker'
-          ? DEFAULT_WORKER_TTL_MS
-          : DEFAULT_BACKEND_TTL_MS);
+    const ttlMs = resolveInternalHeartbeatTtlMs(payload);
     return this.persistHeartbeat({
       nodeId: payload.nodeId,
       role: payload.role,
@@ -158,14 +155,8 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       const status = toOrganismStatus(String(health?.status || 'DEGRADED'));
       const nodeId = `backend:${getNodeSuffix()}`;
       const memory = process.memoryUsage();
-      const versionValue =
-        String(process.env.RAILWAY_GIT_COMMIT_SHA || '').slice(0, 12) || undefined;
-      const summary =
-        status === 'UP'
-          ? 'Backend heartbeat healthy.'
-          : status === 'DOWN'
-            ? 'Backend heartbeat detected a hard dependency down.'
-            : 'Backend heartbeat detected degraded integrations.';
+      const versionValue = pickBackendHeartbeatVersion(process.env.RAILWAY_GIT_COMMIT_SHA);
+      const summary = buildBackendHeartbeatSummary(status);
       await this.persistHeartbeat({
         nodeId,
         role: 'backend',
@@ -178,17 +169,12 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
         critical: true,
         env: process.env.NODE_ENV || 'development',
         ...(versionValue !== undefined ? { version: versionValue } : {}),
-        signals: {
+        signals: buildBackendHeartbeatSignals({
           trigger,
-          uptimeSec: Math.round(process.uptime()),
-          memoryRssMb: Math.round(memory.rss / 1024 / 1024),
-          memoryHeapUsedMb: Math.round(memory.heapUsed / 1024 / 1024),
-          databaseStatus: String(detail.database?.status || 'unknown'),
-          redisStatus: String(detail.redis?.status || 'unknown'),
-          whatsappStatus: String(detail.whatsapp?.status || 'unknown'),
-          workerStatus: String(detail.worker?.status || 'unknown'),
-          storageStatus: String(detail.storage?.status || 'unknown'),
-        },
+          uptimeSec: process.uptime(),
+          memory,
+          detail,
+        }),
       });
     } catch (error: unknown) {
       this.logger.error(
@@ -212,34 +198,16 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     });
     const productionSnapshot = this.getProductionSnapshot();
     const nextWork = pickNextWork(productionSnapshot);
-    return {
-      status: circuit.status,
-      summary: circuit.summary,
-      generatedAt: new Date().toISOString(),
+    return buildOrganismStateResponse({
+      circuit,
+      registeredNodes: nodeIds.length,
+      incidentCount: incidents.length,
       authorityMode: productionSnapshot.authorityMode,
-      circulation: {
-        registeredNodes: nodeIds.length,
-        freshNodes: circuit.freshNodes,
-        staleNodes: circuit.staleNodes,
-        incidentCount: incidents.length,
-        roleCounts: circuit.roleCounts,
-      },
-      freshness: circuit.freshness,
       advice,
-      productionSnapshot: {
-        status: productionSnapshot.status,
-        machineReadiness: productionSnapshot.machineReadiness,
-        canonicalDir: productionSnapshot.canonicalDir,
-        missingArtifacts: productionSnapshot.missingArtifacts,
-        staleArtifacts: productionSnapshot.staleArtifacts,
-        directiveGeneratedAt: productionSnapshot.directive.generatedAt,
-        certificateGeneratedAt: productionSnapshot.certificate.generatedAt,
-        convergenceGeneratedAt: productionSnapshot.convergencePlan.generatedAt,
-        topActions: nextWork,
-      },
+      productionSnapshot: projectProductionSnapshot(productionSnapshot, nextWork),
       nodes,
       incidents,
-    };
+    });
   }
   /** Get latest PULSE directive artifact. */
   getLatestDirective() {
@@ -333,16 +301,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       });
     }
     if (record.critical && previous?.status && previous.status !== 'UP' && record.status === 'UP') {
-      await this.emitIncident({
-        nodeId: record.nodeId,
-        role: record.role,
-        status: 'UP',
-        summary: `${record.role} recovered and is healthy again.`,
-        observedAt: record.observedAt,
-        source: 'pulse_recovery',
-        critical: record.critical,
-        ...buildIncidentExtras(record),
-      });
+      await this.emitIncident(buildRecoveryIncidentInput(record));
     }
     return {
       ok: true,
@@ -403,7 +362,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
           nodeId: node.nodeId,
           role: node.role,
           status: 'STALE',
-          summary: `${node.role} heartbeat went stale after ${(node.staleMs || 0) / 1000}s without refresh.`,
+          summary: buildStaleIncidentSummary(node.role, node.staleMs || 0),
           observedAt: new Date().toISOString(),
           source: 'stale_detector',
           critical: node.critical,
@@ -445,7 +404,7 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
   }
   private async emitIncident(input: Omit<PulseIncident, 'incidentId'>) {
     const incident: PulseIncident = {
-      incidentId: `${input.nodeId}:${Date.now().toString(36)}`,
+      incidentId: buildIncidentId(input.nodeId),
       ...input,
     };
     const payload = JSON.stringify(incident);
