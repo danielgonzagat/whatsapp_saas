@@ -37,6 +37,11 @@ import type {
   RawFlowEdge,
   RawFlowNode,
 } from './flow-engine.types';
+import {
+  flowContextKey,
+  flowTimeoutMember,
+  normalizeUser as normalizeUserKey,
+} from './flow-engine.user-key.helpers';
 import { buildQueueJobId } from './job-id';
 import { WorkerLogger } from './logger';
 import { CRM } from './providers/crm';
@@ -44,8 +49,6 @@ import { Queue } from './queue';
 // Segurança
 import { forEachSequential } from './utils/async-sequence';
 import { safeEvaluateBoolean } from './utils/safe-eval';
-
-const D_RE = /\D/g;
 
 /** Maximum number of node transitions before the flow is forcefully aborted. */
 const MAX_ITERATIONS = 1000;
@@ -530,17 +533,15 @@ export class FlowEngineGlobal {
   }
 
   private key(user: string, workspaceId?: string) {
-    const normalized = this.normalizeUser(user);
-    return workspaceId ? `flow:${workspaceId}:${normalized}` : `flow:${normalized}`; // fallback compat
+    return flowContextKey(user, workspaceId);
   }
 
   private normalizeUser(user: string) {
-    return (user || '').replace(D_RE, '');
+    return normalizeUserKey(user);
   }
 
   private timeoutMember(user: string, workspaceId?: string) {
-    const normalized = this.normalizeUser(user);
-    return workspaceId ? `${workspaceId}:${normalized}` : normalized;
+    return flowTimeoutMember(user, workspaceId);
   }
 
   private sleep(ms: number): Promise<void> {
