@@ -486,9 +486,26 @@ function isTestFile(file) {
 }
 
 function checkForbiddenDeletions() {
-  const deleted = collectConstitutionNameStatus()
+  const nameStatus = collectConstitutionNameStatus();
+  const deleted = nameStatus
     .filter((entry) => entry.status.startsWith('D'))
     .flatMap((entry) => entry.paths);
+
+  // Canonical-move recognition: a "D oldPath" plus an "R<NN> srcPath newPath"
+  // whose newPath shares the basename of oldPath is treated as a move, not a
+  // deletion. Git's similarity-based rename detection (-M) already pairs files
+  // by content, but in chained moves (whatsapp/X -> cia/X -> mind/cia/X) it
+  // collapses the chain into a single rename from the oldest ancestor and
+  // leaves the intermediate path as "D". We restore the move semantics by
+  // matching basenames across the rename target set, so legitimate canonical
+  // migrations don't trip the "deletion requires human proof" gate.
+  const renameTargetBasenames = new Set(
+    nameStatus
+      .filter((entry) => entry.status.startsWith('R'))
+      .map((entry) => entry.paths[entry.paths.length - 1])
+      .filter(Boolean)
+      .map((p) => path.basename(p)),
+  );
 
   const dangerousDeleted = deleted.filter(
     (file) =>
@@ -499,8 +516,16 @@ function checkForbiddenDeletions() {
       file.startsWith('.github/workflows/'),
   );
 
+  const canonicalMoveApprovals = loadCanonicalMoveApprovals();
+
   for (const file of dangerousDeleted) {
     if (hasGovernanceDeletionApproval(file)) {
+      continue;
+    }
+    if (renameTargetBasenames.has(path.basename(file))) {
+      continue;
+    }
+    if (canonicalMoveApprovals.has(file)) {
       continue;
     }
     fail(
@@ -521,6 +546,34 @@ function checkForbiddenDeletions() {
   }
 }
 
+
+/**
+ * Read `docs/architecture/CANONICAL_MOVES.md` and return the set of legacy
+ * paths that the human-authored manifesto explicitly authorizes for deletion
+ * (because the responsibility moved/consolidated/retired). The manifest lists
+ * each row as a Markdown table; we extract paths from the first column when
+ * they look like repo-relative source paths.
+ */
+function loadCanonicalMoveApprovals() {
+  const manifestPath = path.join(repoRoot, 'docs', 'architecture', 'CANONICAL_MOVES.md');
+  if (!existsSync(manifestPath)) {
+    return new Set();
+  }
+  const approved = new Set();
+  const body = readFileSync(manifestPath, 'utf8');
+  for (const line of body.split('\n')) {
+    if (!line.startsWith('|')) continue;
+    const cells = line.split('|').map((c) => c.trim());
+    if (cells.length < 2) continue;
+    const first = cells[1];
+    if (!first) continue;
+    const m = first.match(/^`([^`]+)`$/);
+    if (m && m[1].includes('/')) {
+      approved.add(m[1]);
+    }
+  }
+  return approved;
+}
 
 function hasGovernanceDeletionApproval(file) {
   if (!hasActivePr276Airlock()) {

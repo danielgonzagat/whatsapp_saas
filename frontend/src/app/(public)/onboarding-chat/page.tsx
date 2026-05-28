@@ -3,7 +3,6 @@
 import { Suspense } from 'react';
 
 import { colors } from '@/lib/design-tokens';
-import { ErrorBoundary } from '@/components/kloel/ErrorBoundary';
 
 import { OnboardingChatHeader } from './OnboardingChatHeader';
 import { OnboardingChatHero } from './OnboardingChatHero';

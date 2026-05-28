@@ -2,6 +2,7 @@ import { Injectable, Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SalesService } from '../sales/sales.service';
 
+import type { UnknownRecord } from '../common/types';
 import { ProductCouponDomainService } from './product-coupon-domain.service';
 import {
   boletoBuyerDataFromArgs,
@@ -31,7 +32,6 @@ import {
   findProductIdByPartialName,
   findUrlByLabelOrUrl,
   readCouponCode,
-  readDeleteCouponCode,
   readUrlUpdateLabel,
   resolveCheckoutIdFromArgs,
   resolveFallbackProductIdForCoupon,
@@ -230,12 +230,14 @@ export class KloelProductSubResourceToolsService {
       }
     }
 
-      const deleted = await this.productCouponDomain.deleteProductCoupon({
-        workspaceId,
-        couponId: this.str(args.couponId),
-        couponCode: readDeleteCouponCode(args),
-        deletedBy: 'kloel-chat',
-        notFoundMessage: 'Cupom nao encontrado. Informe o codigo ou ID do cupom.',
+    // Fallback for legacy callers that bootstrap the service without
+    // injecting `productCouponDomain` (older module wiring). Resolve the
+    // coupon by code when the explicit id is absent, then delete.
+    let resolvedCouponId = couponId;
+    if (!resolvedCouponId && couponCode) {
+      const c = await this.prisma.productCoupon.findFirst({
+        where: { code: couponCode, product: { workspaceId } },
+        select: { id: true },
       });
       resolvedCouponId = c?.id ?? '';
     }
