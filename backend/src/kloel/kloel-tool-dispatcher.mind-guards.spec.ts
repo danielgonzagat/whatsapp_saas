@@ -17,9 +17,7 @@ import { SmartPaymentService } from './smart-payment.service';
 const WS_ID = 'ws-mind-guard-test';
 const TOOL_NAME = 'change_plan'; // MUTATION_SENSITIVE in tier-0c-mutations
 
-function buildModule(
-  mindGuardsOverride: Partial<MindGuardsService> | null,
-) {
+function buildModule(mindGuardsOverride: Partial<MindGuardsService> | null) {
   const prisma = {
     workspace: {
       findUnique: jest.fn().mockResolvedValue({
@@ -73,9 +71,7 @@ function buildModule(
   return { prisma, providers };
 }
 
-async function buildService(
-  mindGuardsOverride: Partial<MindGuardsService> | null,
-) {
+async function buildService(mindGuardsOverride: Partial<MindGuardsService> | null) {
   const { providers } = buildModule(mindGuardsOverride);
   const module: TestingModule = await Test.createTestingModule({
     providers,
@@ -213,7 +209,8 @@ describe('KloelToolDispatcherService — MindGuards gating', () => {
     const service = await buildService(mockGuards);
     await service.executeTool(WS_ID, TOOL_NAME, { plan: 'pro' });
 
-    const call = mockGuards.evaluate.mock.calls[0][0];
-    expect(call.workspaceId).toBe(WS_ID);
+    const evalCalls = mockGuards.evaluate.mock.calls as Array<[{ workspaceId: string }]>;
+    const callArg = evalCalls[0]?.[0];
+    expect(callArg?.workspaceId).toBe(WS_ID);
   });
 });

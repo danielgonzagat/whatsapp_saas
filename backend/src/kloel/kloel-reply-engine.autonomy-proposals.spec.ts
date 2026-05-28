@@ -1,12 +1,17 @@
 import { buildKloelAbiCognitiveState } from './kloel-reply-engine.cognitive-state.helpers';
 import type { PrismaService } from '../prisma/prisma.service';
-import type { MindAutonomyCoordinator, Proposal } from './mind/coordination/mind-autonomy-coordinator.service';
+import type {
+  MindAutonomyCoordinator,
+  Proposal,
+} from './mind/coordination/mind-autonomy-coordinator.service';
 
 const mockWarnCalls: Array<[string, Record<string, unknown>]> = [];
 
 describe('buildKloelAbiCognitiveState — autonomy proposals (PI-K13-D)', () => {
   const baseDeps = {
-    prisma: { kloelMemory: { findUnique: jest.fn().mockResolvedValue(null) } } as unknown as PrismaService,
+    prisma: {
+      kloelMemory: { findUnique: jest.fn().mockResolvedValue(null) },
+    } as unknown as PrismaService,
     logger: {
       warn: (event: string, ctx?: Record<string, unknown>) => {
         mockWarnCalls.push([event, ctx ?? {}]);
@@ -40,9 +45,8 @@ describe('buildKloelAbiCognitiveState — autonomy proposals (PI-K13-D)', () => 
 
   it('attaches proposals when coordinator is present and returns proposals', async () => {
     const proposals = [makeProposal('p1'), makeProposal('p2')];
-    const coordinator = {
-      listPendingProposals: jest.fn().mockResolvedValue(proposals),
-    } as unknown as MindAutonomyCoordinator;
+    const listPendingProposals = jest.fn().mockResolvedValue(proposals);
+    const coordinator = { listPendingProposals } as unknown as MindAutonomyCoordinator;
 
     const state = await buildKloelAbiCognitiveState(
       { ...baseDeps, services: { mindAutonomyCoordinator: coordinator } },
@@ -50,14 +54,13 @@ describe('buildKloelAbiCognitiveState — autonomy proposals (PI-K13-D)', () => 
       currentInput,
     );
 
-    expect(coordinator.listPendingProposals).toHaveBeenCalledWith('ws-1', 3);
+    expect(listPendingProposals).toHaveBeenCalledWith('ws-1', 3);
     expect(state.autonomyProposals).toEqual(proposals);
   });
 
   it('attaches empty array when coordinator returns empty proposals', async () => {
-    const coordinator = {
-      listPendingProposals: jest.fn().mockResolvedValue([]),
-    } as unknown as MindAutonomyCoordinator;
+    const listPendingProposals = jest.fn().mockResolvedValue([]);
+    const coordinator = { listPendingProposals } as unknown as MindAutonomyCoordinator;
 
     const state = await buildKloelAbiCognitiveState(
       { ...baseDeps, services: { mindAutonomyCoordinator: coordinator } },
@@ -65,7 +68,7 @@ describe('buildKloelAbiCognitiveState — autonomy proposals (PI-K13-D)', () => 
       currentInput,
     );
 
-    expect(coordinator.listPendingProposals).toHaveBeenCalledWith('ws-1', 3);
+    expect(listPendingProposals).toHaveBeenCalledWith('ws-1', 3);
     expect(state.autonomyProposals).toEqual([]);
   });
 
@@ -93,24 +96,24 @@ describe('buildKloelAbiCognitiveState — autonomy proposals (PI-K13-D)', () => 
     expect(state).not.toHaveProperty('autonomyProposals');
     const warning = mockWarnCalls.find(([event]) => event === 'kloel_autonomy_proposals_skipped');
     expect(warning).toBeDefined();
-    expect(warning![1]).toMatchObject({
+    const warningArg = warning?.[1];
+    expect(warningArg).toMatchObject({
       reason: 'graph unavailable',
       workspaceId: 'ws-1',
     });
   });
 
   it('skips lookup when workspaceId is null', async () => {
-    const coordinator = {
-      listPendingProposals: jest.fn(),
-    } as unknown as MindAutonomyCoordinator;
+    const listPendingProposals = jest.fn();
+    const coordinator = { listPendingProposals } as unknown as MindAutonomyCoordinator;
 
     const state = await buildKloelAbiCognitiveState(
       { ...baseDeps, services: { mindAutonomyCoordinator: coordinator } },
-      { ...baseParams, workspaceId: null as unknown as string },
+      { ...baseParams, workspaceId: null },
       currentInput,
     );
 
-    expect(coordinator.listPendingProposals).not.toHaveBeenCalled();
+    expect(listPendingProposals).not.toHaveBeenCalled();
     expect(state).not.toHaveProperty('autonomyProposals');
   });
 });

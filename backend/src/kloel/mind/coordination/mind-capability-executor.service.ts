@@ -411,10 +411,10 @@ export class MindCapabilityExecutor {
   }
 
   /** Search the codebase (read-only) */
-  async searchCode(_workspaceId: string, args?: UnknownRecord): Promise<CapabilityResult> {
-    const query = String(args?.query ?? '');
+  searchCode(_workspaceId: string, args?: UnknownRecord): Promise<CapabilityResult> {
+    const query = typeof args?.query === 'string' ? args.query : '';
     if (!query.trim()) {
-      return { ok: false, error: 'query_required' };
+      return Promise.resolve({ ok: false, error: 'query_required' });
     }
     const glob = typeof args?.glob === 'string' ? args.glob : undefined;
     const max = typeof args?.max === 'number' ? args.max : undefined;
@@ -423,29 +423,29 @@ export class MindCapabilityExecutor {
       ...(max !== undefined ? { max } : {}),
     });
     const data: UnknownRecord[] = hits.map((hit) => ({ ...hit }));
-    return {
+    return Promise.resolve({
       ok: true,
       data,
-    };
+    });
   }
 
   /** Read a specific source file */
-  async readSourceFile(_workspaceId: string, args?: UnknownRecord): Promise<CapabilityResult> {
-    const filePath = String(args?.path ?? '');
+  readSourceFile(_workspaceId: string, args?: UnknownRecord): Promise<CapabilityResult> {
+    const filePath = typeof args?.path === 'string' ? args.path : '';
     if (!filePath.trim()) {
-      return { ok: false, error: 'path_required' };
+      return Promise.resolve({ ok: false, error: 'path_required' });
     }
     const startLine = typeof args?.startLine === 'number' ? args.startLine : undefined;
     const endLine = typeof args?.endLine === 'number' ? args.endLine : undefined;
     const result = this.codeAccess.read(filePath, startLine, endLine);
-    return result;
+    return Promise.resolve(result);
   }
 
   /** List capabilities with their status */
-  async listCapabilitiesDetail(_workspaceId: string): Promise<CapabilityResult> {
+  listCapabilitiesDetail(_workspaceId: string): Promise<CapabilityResult> {
     const caps = this.capRegistry.list();
     const grouped = this.capRegistry.groupedByTier();
-    return {
+    return Promise.resolve({
       ok: true,
       data: {
         total: caps.length,
@@ -460,13 +460,13 @@ export class MindCapabilityExecutor {
           })),
         })),
       },
-    };
+    });
   }
   /** Run a safe read-only SQL query */
-  async runSafeQuery(_workspaceId: string, args?: UnknownRecord): Promise<CapabilityResult> {
-    const sql = String(args?.sql ?? '');
+  runSafeQuery(_workspaceId: string, args?: UnknownRecord): Promise<CapabilityResult> {
+    const sql = typeof args?.sql === 'string' ? args.sql : '';
     if (!sql.trim()) {
-      return { ok: false, error: 'sql_required' };
+      return Promise.resolve({ ok: false, error: 'sql_required' });
     }
     return this.safeQuery.query(_workspaceId, sql);
   }
@@ -502,10 +502,7 @@ export class MindCapabilityExecutor {
         } as Prisma.InputJsonObject,
       })
       .catch((err: unknown) => {
-        this.logger.warn(
-          `recordExecution event emit failed for ${capabilityId}`,
-          err,
-        );
+        this.logger.warn(`recordExecution event emit failed for ${capabilityId}`, err);
       });
   }
 

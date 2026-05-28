@@ -57,11 +57,7 @@ describe('IntentRouter — send-channel patterns (K13-A)', () => {
 
   // ── email.send ───────────────────────────────────────────────
   describe('email.send', () => {
-    const cases = [
-      'manda email pra João',
-      'envia um e-mail agora',
-      'dispara e mail',
-    ];
+    const cases = ['manda email pra João', 'envia um e-mail agora', 'dispara e mail'];
 
     for (const msg of cases) {
       it(`routes "${msg}" → email.send`, () => {
@@ -92,12 +88,7 @@ describe('IntentRouter — send-channel patterns (K13-A)', () => {
 
   // ── sales.refund (verb-based mutation) ───────────────────────
   describe('sales.refund — verb-based mutation intent', () => {
-    const cases = [
-      'estornar venda',
-      'reembolsar pedido',
-      'cancelar venda',
-      'estorna essa venda',
-    ];
+    const cases = ['estornar venda', 'reembolsar pedido', 'cancelar venda', 'estorna essa venda'];
 
     for (const msg of cases) {
       it(`routes "${msg}" → sales.refund (NOT list_refunds)`, () => {

@@ -1,4 +1,4 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -176,9 +176,7 @@ describe('KloelToolDispatcherService — capability executor observer', () => {
       const module = await createModule({ recordExecution });
       service = module.get(KloelToolDispatcherService);
 
-      chatToolsService.toolSaveProduct = jest
-        .fn()
-        .mockRejectedValue(new Error('Save failed'));
+      chatToolsService.toolSaveProduct = jest.fn().mockRejectedValue(new Error('Save failed'));
 
       const result = await service.executeTool(DEFAULT_WS_ID, 'save_product', {
         name: 'X',
@@ -226,10 +224,7 @@ describe('KloelToolDispatcherService — capability executor observer', () => {
 
       expect(result.success).toBe(true);
       expect(recordExecution).toHaveBeenCalledTimes(1);
-      expect(warnSpy).toHaveBeenCalledWith(
-        'kloel_capability_executor_skipped',
-        expect.any(Error),
-      );
+      expect(warnSpy).toHaveBeenCalledWith('kloel_capability_executor_skipped', expect.any(Error));
     });
   });
 });
