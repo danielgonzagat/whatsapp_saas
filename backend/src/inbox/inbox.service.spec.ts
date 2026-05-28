@@ -21,15 +21,24 @@ import { type FlexMock } from '../../test/helpers/prisma.mock';
  * conversation.update) happen against the SAME client.
  */
 type MockPrisma = {
+  agent: {
+    findMany: FlexMock;
+    findFirst: FlexMock;
+  };
+  contact: {
+    findUnique: FlexMock;
+    create: FlexMock;
+  };
   conversation: {
     findFirst: FlexMock;
     findFirstOrThrow: FlexMock;
+    findMany: FlexMock;
     findUnique: FlexMock;
     create: FlexMock;
     update: FlexMock;
     updateMany: FlexMock;
   };
-  message: { create: FlexMock };
+  message: { create: FlexMock; findMany: FlexMock };
   $transaction: FlexMock;
 };
 
@@ -159,15 +168,24 @@ describe('InboxService', () => {
 
   beforeEach(async () => {
     prisma = {
+      agent: {
+        findMany: jest.fn() as FlexMock,
+        findFirst: jest.fn() as FlexMock,
+      },
+      contact: {
+        findUnique: jest.fn() as FlexMock,
+        create: jest.fn() as FlexMock,
+      },
       conversation: {
         findFirst: jest.fn() as FlexMock,
         findFirstOrThrow: jest.fn() as FlexMock,
+        findMany: jest.fn() as FlexMock,
         findUnique: jest.fn() as FlexMock,
         create: jest.fn() as FlexMock,
         update: jest.fn() as FlexMock,
         updateMany: jest.fn().mockResolvedValue({ count: 1 }) as FlexMock,
       },
-      message: { create: jest.fn() as FlexMock },
+      message: { create: jest.fn() as FlexMock, findMany: jest.fn() as FlexMock },
       $transaction: jest.fn() as FlexMock,
     };
     gateway = { emitToWorkspace: jest.fn() };
@@ -271,6 +289,70 @@ describe('InboxService', () => {
       await expect(
         service.getOrCreateConversation('ws-1', 'contact-1', 'WHATSAPP'),
       ).rejects.toThrow(/failed to resolve conversation/);
+    });
+  });
+
+  describe('saveMessageByPhone', () => {
+    it('uses an existing contact and forwards optional message fields', async () => {
+      const createdAt = new Date('2026-04-08T12:00:00Z');
+      prisma.contact.findUnique.mockResolvedValue({ id: 'contact-existing' });
+      const saveMessageSpy = jest.spyOn(service, 'saveMessage').mockResolvedValue(messageStub);
+
+      await service.saveMessageByPhone({
+        workspaceId: 'ws-1',
+        phone: '5511999999999',
+        content: 'hi',
+        direction: 'INBOUND',
+        externalId: 'wamid-1',
+        type: 'IMAGE',
+        channel: 'WHATSAPP',
+        mediaUrl: 'https://cdn.example/image.png',
+        status: 'DELIVERED',
+        createdAt,
+        countAsUnread: false,
+        resetUnreadOnOutbound: true,
+        silent: true,
+      });
+
+      expect(prisma.contact.create).not.toHaveBeenCalled();
+      expect(saveMessageSpy).toHaveBeenCalledWith({
+        workspaceId: 'ws-1',
+        contactId: 'contact-existing',
+        content: 'hi',
+        direction: 'INBOUND',
+        externalId: 'wamid-1',
+        type: 'IMAGE',
+        channel: 'WHATSAPP',
+        mediaUrl: 'https://cdn.example/image.png',
+        status: 'DELIVERED',
+        createdAt,
+        countAsUnread: false,
+        resetUnreadOnOutbound: true,
+        silent: true,
+      });
+    });
+
+    it('creates a contact for a new phone and omits undefined options', async () => {
+      prisma.contact.findUnique.mockResolvedValue(null);
+      prisma.contact.create.mockResolvedValue({ id: 'contact-new' });
+      const saveMessageSpy = jest.spyOn(service, 'saveMessage').mockResolvedValue(messageStub);
+
+      await service.saveMessageByPhone({
+        workspaceId: 'ws-1',
+        phone: '5511888888888',
+        content: 'new lead',
+        direction: 'OUTBOUND',
+      });
+
+      expect(prisma.contact.create).toHaveBeenCalledWith({
+        data: { workspaceId: 'ws-1', phone: '5511888888888', name: null },
+      });
+      expect(saveMessageSpy).toHaveBeenCalledWith({
+        workspaceId: 'ws-1',
+        contactId: 'contact-new',
+        content: 'new lead',
+        direction: 'OUTBOUND',
+      });
     });
   });
 
