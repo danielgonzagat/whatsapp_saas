@@ -8,7 +8,6 @@ import {
   Optional,
   forwardRef,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import type { Redis } from 'ioredis';
 import { getCorrelationId } from '../common/observability/correlation-store';
 import { InboxGateway } from '../inbox/inbox.gateway';
@@ -17,14 +16,21 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { asProviderSettings } from '../marketing/channels/whatsapp/provider-settings.types';
 import { flowQueue } from '../queue/queue';
+import {
+  extractPhone as extractPhoneHelper,
+  normalizeMessageStatus,
+  normalizePhoneDigits,
+  resolveFinanceFlowId,
+  toPrismaJsonValue,
+  type PhoneBearingPayload,
+  type WebhookFinanceSettings,
+} from './webhooks.service.helpers';
 
 /** Arbitrary JSON payload received on the generic catch-hook endpoint. */
 type WebhookJsonPayload = Record<string, unknown>;
 
 import type { UnknownRecord } from '../common/types';
-import { NON_DIGIT_RE } from '../common/phone';
 type WebhookLogDetails = { status?: string; phone?: string; [key: string]: unknown };
-type WebhookFinanceSettings = Record<string, unknown>;
 
 /** Finance trigger body: status + phone + any extra provider-specific fields. */
 interface FinanceWebhookBody {
@@ -39,34 +45,12 @@ interface FinanceWebhookBody {
 /** Instagram / Meta Graph webhook envelope — opaque beyond workspace routing. */
 type InstagramWebhookBody = Record<string, unknown>;
 
-/**
- * Loose shape consumed by {@link WebhooksService.extractPhone} — arbitrary
- * JSON bag from an upstream provider (Stripe, Hotmart, Shopify, etc.).
- */
-type PhoneBearingPayload = Record<string, unknown>;
-
 /** Minimal message row shape emitted over gateway/pubsub after a status update. */
 interface MessageStatusTarget {
   id: string;
   conversationId: string | null;
   contactId: string | null;
   externalId: string | null;
-}
-
-/** Runtime-narrow helper: returns an object when `value` is a non-null record. */
-function asRecord(value: unknown): UnknownRecord | null {
-  return typeof value === 'object' && value !== null ? (value as UnknownRecord) : null;
-}
-
-function toPrismaJsonValue(value: unknown): Prisma.InputJsonValue {
-  try {
-    return JSON.parse(JSON.stringify(value ?? null)) as Prisma.InputJsonValue;
-  } catch {
-    return {
-      serializationError: true,
-      valueType: typeof value,
-    };
-  }
 }
 
 /** Webhooks service. */
@@ -150,13 +134,7 @@ export class WebhooksService {
     const finance = ((settings as UnknownRecord).finance as WebhookFinanceSettings) || {};
 
     const status = String(payload?.status || '').toLowerCase();
-    const map: Record<string, string | undefined> = {
-      paid: finance.flowPaidId as string | undefined,
-      pending: finance.flowPendingId as string | undefined,
-      canceled: finance.flowCanceledId as string | undefined,
-      overdue: finance.flowOverdueId as string | undefined,
-    };
-    const flowId = map[status] || (finance.flowDefaultId as string | undefined);
+    const flowId = resolveFinanceFlowId(finance, status);
     if (!flowId) {
       this.logger.warn(
         `No finance flow configured for status ${status} in workspace ${workspaceId}`,
@@ -240,38 +218,7 @@ export class WebhooksService {
   }
 
   private extractPhone(payload: PhoneBearingPayload): string | null {
-    // Recursive search or specific field check?
-    // Let's check common flat fields first.
-    const data = asRecord(payload.data);
-    const dataObject = data ? asRecord(data.object) : null;
-    const customerDetails = dataObject ? asRecord(dataObject.customer_details) : null;
-    const buyer = asRecord(payload.buyer);
-    const candidates: unknown[] = [
-      payload.phone,
-      payload.mobile,
-      payload.whatsapp,
-      payload.telephone,
-      payload.celular,
-      payload.contact_phone,
-      // Stripe specific
-      customerDetails?.phone,
-      dataObject?.phone,
-      // Hotmart specific
-      buyer?.phone,
-      payload.checkout_phone,
-    ];
-
-    for (const c of candidates) {
-      if (c && typeof c === 'string') {
-        // Clean string
-        const cleaned = c.replace(NON_DIGIT_RE, '');
-        if (cleaned.length >= 10) {
-          return cleaned;
-        } // Basic validation
-      }
-    }
-
-    return null;
+    return extractPhoneHelper(payload);
   }
 
   private async updateMessagesByExternalId(
@@ -403,10 +350,10 @@ export class WebhooksService {
     phone?: string | undefined;
     channel?: string | undefined;
   }) {
-    const status = (input.status || '').toUpperCase();
+    const status = normalizeMessageStatus(input.status);
     const workspaceId = input.workspaceId;
     const externalId = input.externalId;
-    const phone = input.phone?.replace(NON_DIGIT_RE, '') || undefined;
+    const phone = normalizePhoneDigits(input.phone);
     const errorCode = input.errorCode || null;
 
     if (!workspaceId) {
