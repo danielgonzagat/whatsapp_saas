@@ -50,9 +50,11 @@ import {
   buildChatOutcomeKey,
   recordChatReplyDecision,
   closeChatReplyOutcome,
-  observeRepliedToUserBelief,
-  computeChatSurprise as computeChatSurpriseHelper,
 } from './kloel-reply-engine.decision-outcome.helpers';
+import {
+  applyReplyEngineDegradedPath,
+  applyReplyEnginePostReply,
+} from './kloel-reply-engine.degraded-path.helper';
 import { buildKloelAbiCognitiveState } from './kloel-reply-engine.cognitive-state.helpers';
 import { MindEventProcessorService } from './mind/runtime/mind-event-processor.service';
 
@@ -519,56 +521,20 @@ export class KloelReplyEngineService {
           hasOpenAiKey: hasTextLlmApiKey(),
           hasAnthropicFallback: !!process.env.ANTHROPIC_API_KEY,
         });
-        if (params.workspaceId) {
-          observeRepliedToUserBelief(this.mindBeliefService, this.logger, {
-            workspaceId: params.workspaceId,
-            surface: 'dashboard',
-            observed: 0,
-          });
-          void computeChatSurpriseHelper(
-            this.mindSurpriseService,
-            this.mindBeliefService,
-            this.logger,
-            {
-              workspaceId: params.workspaceId,
-              observed: 0,
-              surface: 'dashboard',
-              degraded: true,
-            },
-            this._lastCognitiveState?.mindSignals as Record<string, unknown> | undefined,
-          );
-        }
-        closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
+        applyReplyEngineDegradedPath(
+          {
+            decisionOutcomeService: this.decisionOutcomeService,
+            mindBeliefService: this.mindBeliefService,
+            mindSurpriseService: this.mindSurpriseService,
+            mindEventProcessorService: this.mindEventProcessorService,
+            valenceTagger: this.valenceTagger,
+            logger: this.logger,
+            _lastCognitiveState: this._lastCognitiveState,
+          },
+          params.workspaceId,
           outcomeKey,
-          outcomeName: 'chat.degraded.no_llm_client',
-          wonVsBaseline: false,
-        });
-        try {
-          this.valenceTagger?.tag({
-            eventName: 'chat.replied',
-            workspaceId: params.workspaceId,
-            payload: { surface: 'dashboard', success: false, degraded: true },
-          });
-        } catch (err: unknown) {
-          this.logger.warn('kloel_valence_tagger_skipped', {
-            reason: err instanceof Error ? err.message : String(err),
-          });
-        }
-        void (async () => {
-          try {
-            await this.mindEventProcessorService?.process({
-              workspaceId: params.workspaceId!,
-              kind: 'chat.replied',
-              subject: `workspace:${params.workspaceId}`,
-              occurredAt: new Date(),
-              payload: { surface: 'dashboard', success: false, degraded: true },
-            });
-          } catch (err: unknown) {
-            this.logger.warn('kloel_mind_event_processor_skipped', {
-              reason: err instanceof Error ? err.message : String(err),
-            });
-          }
-        })();
+          'chat.degraded.no_llm_client',
+        );
         return this.unavailableMessage;
       }
       let assistantMessage: string;
@@ -608,57 +574,19 @@ export class KloelReplyEngineService {
       }
       if (params.workspaceId) {
         const replyOutcome: 0 | 1 = assistantMessage.length > 0 ? 1 : 0;
-        observeRepliedToUserBelief(this.mindBeliefService, this.logger, {
-          workspaceId: params.workspaceId,
-          surface: 'dashboard',
-          observed: replyOutcome,
-        });
-        void computeChatSurpriseHelper(
-          this.mindSurpriseService,
-          this.mindBeliefService,
-          this.logger,
+        applyReplyEnginePostReply(
           {
-            workspaceId: params.workspaceId,
-            observed: replyOutcome,
-            surface: 'dashboard',
-            degraded: replyOutcome === 0,
+            decisionOutcomeService: this.decisionOutcomeService,
+            mindBeliefService: this.mindBeliefService,
+            mindSurpriseService: this.mindSurpriseService,
+            mindEventProcessorService: this.mindEventProcessorService,
+            valenceTagger: this.valenceTagger,
+            logger: this.logger,
+            _lastCognitiveState: this._lastCognitiveState,
           },
-          this._lastCognitiveState?.mindSignals as Record<string, unknown> | undefined,
+          params.workspaceId,
+          replyOutcome,
         );
-        try {
-          this.valenceTagger?.tag({
-            eventName: 'chat.replied',
-            workspaceId: params.workspaceId,
-            payload: {
-              surface: 'dashboard',
-              success: replyOutcome === 1,
-              degraded: replyOutcome === 0,
-            },
-          });
-        } catch (err: unknown) {
-          this.logger.warn('kloel_valence_tagger_skipped', {
-            reason: err instanceof Error ? err.message : String(err),
-          });
-        }
-        void (async () => {
-          try {
-            await this.mindEventProcessorService?.process({
-              workspaceId: params.workspaceId,
-              kind: 'chat.replied',
-              subject: `workspace:${params.workspaceId}`,
-              occurredAt: new Date(),
-              payload: {
-                surface: 'dashboard',
-                success: replyOutcome === 1,
-                degraded: replyOutcome === 0,
-              },
-            });
-          } catch (err: unknown) {
-            this.logger.warn('kloel_mind_event_processor_skipped', {
-              reason: err instanceof Error ? err.message : String(err),
-            });
-          }
-        })();
       }
       return assistantMessage;
     } finally {

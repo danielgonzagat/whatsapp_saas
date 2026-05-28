@@ -36,13 +36,16 @@ import {
   buildChatOutcomeKey,
   recordChatReplyDecision,
   closeChatReplyOutcome,
-  observeRepliedToUserBelief,
-  computeChatSurprise as computeChatSurpriseHelper,
 } from './kloel-reply-engine.decision-outcome.helpers';
+import {
+  applyOnboardingSuccessHooks,
+  applyOnboardingFailureHooks,
+} from './conversational-onboarding.cognitive-hooks.helper';
 import {
   buildOnboardingMindSignalsDeps,
   emitOnboardingCognitionDecision,
 } from './conversational-onboarding.mind-deps.helpers';
+import { MindEventProcessorService } from './mind/runtime/mind-event-processor.service';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 const ONBOARDING_SAFE_SETUP_TOOL_NAMES = [
@@ -133,6 +136,7 @@ export class ConversationalOnboardingService {
     @Optional() private readonly knowledgeBaseService?: KnowledgeBaseService,
     @Optional() private readonly vectorService?: VectorService,
     @Optional() private readonly valenceTagger?: ValenceTaggerService,
+    @Optional() private readonly mindEventProcessorService?: MindEventProcessorService,
   ) {
     this.prismaExt = prisma as object as PrismaWithDynamicModels;
     this.openai = createTextLlmClient() ?? new OpenAI({ apiKey: 'missing' });
@@ -483,43 +487,12 @@ export class ConversationalOnboardingService {
         ? `chat.degraded.${String(degradedReason)}`
         : 'chat.replied';
       const onSuccess = (): void => {
-        closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
-          outcomeKey,
-          outcomeName: successOutcomeName,
-          wonVsBaseline: !degradedReason,
-        });
-        observeRepliedToUserBelief(this.mindBeliefService, this.logger, {
+        applyOnboardingSuccessHooks(this.onboardingDeps(), {
           workspaceId,
-          surface: 'onboarding',
-          observed: 1,
-          degraded: false,
+          outcomeKey,
+          successOutcomeName,
+          degradedReason,
         });
-        void computeChatSurpriseHelper(
-          this.mindSurpriseService,
-          this.mindBeliefService,
-          this.logger,
-          {
-            workspaceId,
-            observed: 1,
-            surface: 'onboarding',
-            degraded: false,
-          },
-        );
-        try {
-          this.valenceTagger?.tag({
-            eventName: 'chat.replied',
-            workspaceId,
-            payload: {
-              surface: 'onboarding',
-              success: true,
-              degraded: !!degradedReason,
-            },
-          });
-        } catch (err: unknown) {
-          this.logger.warn('kloel_valence_tagger_skipped', {
-            reason: err instanceof Error ? err.message : String(err),
-          });
-        }
       };
       if (res) {
         try {
@@ -555,38 +528,7 @@ export class ConversationalOnboardingService {
         willingWrite: !!res,
       });
       const onFailure = (): void => {
-        observeRepliedToUserBelief(this.mindBeliefService, this.logger, {
-          workspaceId,
-          surface: 'onboarding',
-          observed: 0,
-          degraded: true,
-        });
-        void computeChatSurpriseHelper(
-          this.mindSurpriseService,
-          this.mindBeliefService,
-          this.logger,
-          {
-            workspaceId,
-            observed: 0,
-            surface: 'onboarding',
-            degraded: true,
-          },
-        );
-        try {
-          this.valenceTagger?.tag({
-            eventName: 'chat.replied',
-            workspaceId,
-            payload: {
-              surface: 'onboarding',
-              success: false,
-              degraded: true,
-            },
-          });
-        } catch (err: unknown) {
-          this.logger.warn('kloel_valence_tagger_skipped', {
-            reason: err instanceof Error ? err.message : String(err),
-          });
-        }
+        applyOnboardingFailureHooks(this.onboardingDeps(), { workspaceId, outcomeKey });
       };
       if (res) {
         this.writeSseResponse(res, fallback);
@@ -596,6 +538,17 @@ export class ConversationalOnboardingService {
       onFailure();
       return fallback;
     }
+  }
+
+  private onboardingDeps() {
+    return {
+      decisionOutcomeService: this.decisionOutcomeService,
+      mindBeliefService: this.mindBeliefService,
+      mindSurpriseService: this.mindSurpriseService,
+      mindEventProcessorService: this.mindEventProcessorService,
+      valenceTagger: this.valenceTagger,
+      logger: this.logger,
+    };
   }
 
   /** Inicia o onboarding com uma mensagem de boas-vindas */

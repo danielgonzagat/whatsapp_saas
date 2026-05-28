@@ -43,9 +43,8 @@ import {
   buildChatOutcomeKey,
   recordChatReplyDecision,
   closeChatReplyOutcome,
-  observeRepliedToUserBelief,
-  computeChatSurprise,
 } from './kloel-reply-engine.decision-outcome.helpers';
+import { applyChatTerminalHooks } from './guest-chat.terminal-hooks.helper';
 // cache.invalidate — Redis is the primary guest conversation store; local Map is fallback.
 @Injectable()
 export class GuestChatService implements OnModuleDestroy {
@@ -322,31 +321,13 @@ export class GuestChatService implements OnModuleDestroy {
 
       fullResponse = await this.generateGuestReply(contextMessages, sessionId);
 
-      void this.observeReplyFireAndForget(sessionId, 'guest', startedAt, true);
-
-      // Post-reply cognitive hooks (PI-K19-A)
-      closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
+      applyChatTerminalHooks(this.terminalDeps(), {
         outcomeKey: chatOutcomeKey,
-        outcomeName: 'chat.replied',
-        wonVsBaseline: fullResponse.length > 0,
-      });
-      observeRepliedToUserBelief(this.mindBeliefService, this.logger, {
+        success: fullResponse.length > 0,
         workspaceId: chatWsId,
         surface: 'guest',
-        observed: fullResponse.length > 0 ? 1 : 0,
+        startedAt,
       });
-      void computeChatSurprise(
-        this.mindSurpriseService,
-        this.mindBeliefService,
-        this.logger,
-        {
-          workspaceId: chatWsId,
-          observed: fullResponse.length > 0 ? 1 : 0,
-          surface: 'guest',
-          degraded: fullResponse.length === 0,
-        },
-        this._lastCognitiveState?.mindSignals as Record<string, unknown> | undefined,
-      );
 
       this.writeStreamChunk(res, {
         content: fullResponse,
@@ -362,30 +343,11 @@ export class GuestChatService implements OnModuleDestroy {
       res.write(`data: [DONE]\n\n`);
       res.end();
     } catch (error: unknown) {
-      void this.observeReplyFireAndForget(sessionId, 'guest', startedAt, false);
-      closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
-        outcomeKey: chatOutcomeKey,
-        outcomeName: 'chat.error',
-        wonVsBaseline: false,
-      });
-      observeRepliedToUserBelief(this.mindBeliefService, this.logger, {
-        workspaceId: chatWsId,
-        surface: 'guest',
-        observed: 0,
-      });
-      void computeChatSurprise(
-        this.mindSurpriseService,
-        this.mindBeliefService,
-        this.logger,
-        {
-          workspaceId: chatWsId,
-          observed: 0,
-          surface: 'guest',
-          degraded: true,
-        },
-        this._lastCognitiveState?.mindSignals as Record<string, unknown> | undefined,
+      applyChatTerminalHooks(
+        this.terminalDeps(),
+        { outcomeKey: chatOutcomeKey, success: false, workspaceId: chatWsId, surface: 'guest', startedAt },
+        error,
       );
-      void this.opsAlert?.alertOnCriticalError(error, 'GuestChatService.end');
       this.logger.error(
         `Guest chat error: ${error instanceof Error ? error.message : 'unknown error'}`,
         error instanceof Error ? error.stack : undefined,
@@ -466,28 +428,13 @@ export class GuestChatService implements OnModuleDestroy {
           this.logger,
         );
         if (actionReply !== null) {
-          closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
+          applyChatTerminalHooks(this.terminalDeps(), {
             outcomeKey: chatOutcomeKey,
-            outcomeName: 'chat.replied.deterministic',
-            wonVsBaseline: true,
-          });
-          observeRepliedToUserBelief(this.mindBeliefService, this.logger, {
+            success: true,
             workspaceId: metricWsId,
             surface: 'guest',
-            observed: 1,
+            startedAt,
           });
-          void computeChatSurprise(
-            this.mindSurpriseService,
-            this.mindBeliefService,
-            this.logger,
-            {
-              workspaceId: metricWsId,
-              observed: 1,
-              surface: 'guest',
-              degraded: false,
-            },
-            this._lastCognitiveState?.mindSignals as Record<string, unknown> | undefined,
-          );
           return actionReply;
         }
       }
@@ -507,30 +454,13 @@ export class GuestChatService implements OnModuleDestroy {
           });
           const reply = result.reply || result.response || this.unavailableMessage;
 
-          closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
+          applyChatTerminalHooks(this.terminalDeps(), {
             outcomeKey: chatOutcomeKey,
-            outcomeName: 'chat.replied.unified_agent',
-            wonVsBaseline: reply.length > 0,
-          });
-          observeRepliedToUserBelief(this.mindBeliefService, this.logger, {
+            success: reply.length > 0,
             workspaceId: metricWsId,
             surface: 'guest',
-            observed: reply.length > 0 ? 1 : 0,
+            startedAt,
           });
-          void computeChatSurprise(
-            this.mindSurpriseService,
-            this.mindBeliefService,
-            this.logger,
-            {
-              workspaceId: metricWsId,
-              observed: reply.length > 0 ? 1 : 0,
-              surface: 'guest',
-              degraded: reply.length === 0,
-            },
-            this._lastCognitiveState?.mindSignals as Record<string, unknown> | undefined,
-          );
-
-          void this.observeReplyFireAndForget(metricWsId, 'guest', startedAt, true);
           await this.persistConversationMessage(sessionId, 'user', message);
           await this.persistConversationMessage(sessionId, 'assistant', reply);
           this.logger.log(`UnifiedAgent reply: ${reply.substring(0, 100)}...`);
@@ -570,31 +500,13 @@ export class GuestChatService implements OnModuleDestroy {
 
       const reply = await this.generateGuestReply(contextMessages, sessionId);
 
-      // Post-reply cognitive hooks (PI-K19-A)
-      closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
+      applyChatTerminalHooks(this.terminalDeps(), {
         outcomeKey: chatOutcomeKey,
-        outcomeName: 'chat.replied',
-        wonVsBaseline: reply.length > 0,
-      });
-      observeRepliedToUserBelief(this.mindBeliefService, this.logger, {
+        success: reply.length > 0,
         workspaceId: metricWsId,
         surface: 'guest',
-        observed: reply.length > 0 ? 1 : 0,
+        startedAt,
       });
-      void computeChatSurprise(
-        this.mindSurpriseService,
-        this.mindBeliefService,
-        this.logger,
-        {
-          workspaceId: metricWsId,
-          observed: reply.length > 0 ? 1 : 0,
-          surface: 'guest',
-          degraded: reply.length === 0,
-        },
-        this._lastCognitiveState?.mindSignals as Record<string, unknown> | undefined,
-      );
-
-      void this.observeReplyFireAndForget(metricWsId, 'guest', startedAt, true);
 
       conversation.messages.push({ role: 'assistant', content: reply });
       await this.persistConversation(sessionId, conversation);
@@ -603,30 +515,11 @@ export class GuestChatService implements OnModuleDestroy {
 
       return reply;
     } catch (error: unknown) {
-      void this.observeReplyFireAndForget(metricWsId, 'guest', startedAt, false);
-      closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {
-        outcomeKey: chatOutcomeKey,
-        outcomeName: 'chat.error',
-        wonVsBaseline: false,
-      });
-      observeRepliedToUserBelief(this.mindBeliefService, this.logger, {
-        workspaceId: metricWsId,
-        surface: 'guest',
-        observed: 0,
-      });
-      void computeChatSurprise(
-        this.mindSurpriseService,
-        this.mindBeliefService,
-        this.logger,
-        {
-          workspaceId: metricWsId,
-          observed: 0,
-          surface: 'guest',
-          degraded: true,
-        },
-        this._lastCognitiveState?.mindSignals as Record<string, unknown> | undefined,
+      applyChatTerminalHooks(
+        this.terminalDeps(),
+        { outcomeKey: chatOutcomeKey, success: false, workspaceId: metricWsId, surface: 'guest', startedAt },
+        error,
       );
-      void this.opsAlert?.alertOnCriticalError(error, 'GuestChatService.chatSync');
       this.logger.error(
         `Guest chat sync error: ${error instanceof Error ? error.message : 'unknown error'}`,
         error instanceof Error ? error.stack : undefined,
@@ -636,24 +529,16 @@ export class GuestChatService implements OnModuleDestroy {
   }
   // ── Observability helper ──
 
-  private observeReplyFireAndForget(
-    workspaceId: string,
-    surface: 'guest' | 'admin' | 'whatsapp',
-    startedAt: number,
-    success: boolean,
-  ): void {
-    if (!this.mindObservability) {
-      return;
-    }
-    try {
-      this.mindObservability.observeReply(workspaceId, {
-        surface,
-        durationMs: Date.now() - startedAt,
-        success,
-      });
-    } catch {
-      // fire-and-forget: never throw from metrics
-    }
+  private terminalDeps() {
+    return {
+      decisionOutcomeService: this.decisionOutcomeService,
+      mindBeliefService: this.mindBeliefService,
+      mindSurpriseService: this.mindSurpriseService,
+      mindObservability: this.mindObservability,
+      logger: this.logger,
+      opsAlert: this.opsAlert,
+      _lastCognitiveState: this._lastCognitiveState,
+    };
   }
 
   // ── Conversation persistence delegators ──
