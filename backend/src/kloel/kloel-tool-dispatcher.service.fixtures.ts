@@ -54,6 +54,7 @@ type DispatcherChatToolsMock = Pick<
   | 'toolConfigureAfterPay'
   | 'toolCreateBroadcast'
   | 'toolConfigureAiPersona'
+  | 'hasAgentScheduler'
 >;
 
 type DispatcherAccountMock = Pick<AccountService, 'updatePersonalData'>;
@@ -68,6 +69,7 @@ type DispatcherBizConfigMock = Pick<
   | 'toolUpdateBillingInfo'
   | 'toolGetBillingStatus'
   | 'toolChangePlan'
+  | 'toolUploadDocument'
 >;
 
 type DispatcherWhatsappMock = Pick<
@@ -241,6 +243,7 @@ export function createChatToolsMock(): DispatcherChatToolsMock {
       message:
         'configure_ai_persona exige AIConfigService.update antes de declarar persona configurada.',
     }),
+    hasAgentScheduler: true,
   };
 }
 
@@ -254,6 +257,7 @@ export function createBizConfigToolsMock(): DispatcherBizConfigMock {
     toolUpdateBillingInfo: jest.fn().mockResolvedValue({ success: true }),
     toolGetBillingStatus: jest.fn().mockResolvedValue({ success: true }),
     toolChangePlan: jest.fn().mockResolvedValue({ success: true }),
+    toolUploadDocument: jest.fn().mockResolvedValue({ success: true, message: 'ok' }),
   };
 }
 
@@ -360,4 +364,8 @@ export function createAccountMock(): DispatcherAccountMock {
       .fn()
       .mockResolvedValue({ success: true, message: 'Personal data updated' }),
   };
+}
+
+export function createSmartPaymentMock() {
+  return { createSmartPayment: jest.fn().mockResolvedValue({ paymentUrl: 'https://pay.test' }) };
 }

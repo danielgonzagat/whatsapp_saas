@@ -173,6 +173,22 @@ describe('KloelToolDispatcherService — chat tools routing (agent & memory)', (
     });
   });
 
+  it('returns agent_runtime_unavailable when agent scheduler is absent', async () => {
+    const originalScheduler = chatToolsService.hasAgentScheduler;
+    (chatToolsService as Record<string, unknown>).hasAgentScheduler = false;
+
+    const result = await service.executeTool(DEFAULT_WS_ID, 'create_agent_job', {
+      title: 'Daily audit',
+      prompt: 'Review memory',
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('agent_runtime_unavailable');
+    expect(chatToolsService.toolCreateAgentJob).not.toHaveBeenCalled();
+
+    (chatToolsService as Record<string, unknown>).hasAgentScheduler = originalScheduler;
+  });
+
   it('routes list_agent_jobs to chatToolsService', async () => {
     await service.executeTool(DEFAULT_WS_ID, 'list_agent_jobs', {});
     expect(chatToolsService.toolListAgentJobs).toHaveBeenCalledWith(DEFAULT_WS_ID);

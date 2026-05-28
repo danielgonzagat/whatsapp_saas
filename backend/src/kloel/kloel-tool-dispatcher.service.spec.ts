@@ -31,6 +31,10 @@ jest.mock('./kloel-code-tools.service', () => ({
   KloelCodeToolsService: class MockKloelCodeToolsService {},
 }));
 
+jest.mock('./smart-payment.service', () => ({
+  SmartPaymentService: class MockSmartPaymentService {},
+}));
+
 import { KloelChatToolsService } from './kloel-chat-tools.service';
 import { KloelBusinessConfigToolsService } from './kloel-business-config-tools.service';
 import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
@@ -58,8 +62,10 @@ import {
   createSelfHealthMock,
   createSelfGapsMock,
   createCapRegistryV2Mock,
+  createSmartPaymentMock,
   DEFAULT_WS_ID,
 } from './kloel-tool-dispatcher.service.fixtures';
+import { SmartPaymentService } from './smart-payment.service';
 import type {
   DispatcherPrismaMock,
   DispatcherChatToolsMock,
@@ -127,6 +133,7 @@ describe('KloelToolDispatcherService', () => {
         { provide: SelfHealthService, useValue: selfHealthService },
         { provide: SelfGapsService, useValue: selfGapsService },
         { provide: CapabilityRegistryV2Service, useValue: capRegistryV2Service },
+        { provide: SmartPaymentService, useValue: createSmartPaymentMock() },
       ],
     }).compile();
 
@@ -247,6 +254,44 @@ describe('KloelToolDispatcherService', () => {
         });
       });
 
+      it('routes save_business_info with businessHours and socialChannels coerced', async () => {
+        const result = await service.executeTool(DEFAULT_WS_ID, 'save_business_info', {
+          businessName: 'Biz',
+          businessHours: { weekday: { start: '08:00', end: '18:00' } },
+          socialChannels: { instagram: '@biz' },
+        });
+        expect(result.success).toBe(true);
+        expect(bizConfigToolsService.toolSaveBusinessInfo).toHaveBeenCalledWith(DEFAULT_WS_ID, {
+          businessName: 'Biz',
+          businessHours: { weekday: { start: '08:00', end: '18:00' } },
+          socialChannels: { instagram: '@biz' },
+        });
+      });
+
+      it('routes upload_document to bizConfigToolsService', async () => {
+        const result = await service.executeTool(DEFAULT_WS_ID, 'upload_document', {
+          docType: 'identidade',
+        });
+        expect(result.success).toBe(true);
+        expect(bizConfigToolsService.toolUploadDocument).toHaveBeenCalledWith(DEFAULT_WS_ID, {
+          docType: 'identidade',
+        });
+      });
+
+      it('returns document_service_unavailable when toolUploadDocument is absent', async () => {
+        const originalUpload = bizConfigToolsService.toolUploadDocument;
+        (bizConfigToolsService as Record<string, unknown>).toolUploadDocument = undefined;
+
+        const result = await service.executeTool(DEFAULT_WS_ID, 'upload_document', {
+          docType: 'identidade',
+        });
+
+        expect(result.success).toBe(false);
+        expect(result.error).toBe('document_service_unavailable');
+
+        (bizConfigToolsService as Record<string, unknown>).toolUploadDocument = originalUpload;
+      });
+
       it('routes change_plan to bizConfigToolsService', async () => {
         const result = await service.executeTool(DEFAULT_WS_ID, 'change_plan', { plan: 'pro' });
         expect(result.success).toBe(true);
@@ -254,6 +299,41 @@ describe('KloelToolDispatcherService', () => {
     });
 
     describe('create_payment_link', () => {
+      it('returns smart_payment_unavailable when SmartPaymentService is absent', async () => {
+        const moduleWithoutPayment: TestingModule = await Test.createTestingModule({
+          providers: [
+            KloelToolDispatcherService,
+            { provide: PrismaService, useValue: prisma },
+            { provide: PlanLimitsService, useValue: planLimits },
+            { provide: KloelChatToolsService, useValue: chatToolsService },
+            { provide: KloelBusinessConfigToolsService, useValue: bizConfigToolsService },
+            { provide: KloelWhatsAppToolsService, useValue: whatsappToolsService },
+            { provide: KloelComposerService, useValue: composerService },
+            { provide: AuditService, useValue: auditService },
+            { provide: KloelCodeToolsService, useValue: codeToolsService },
+            { provide: KloelCodeAnalysisService, useValue: codeAnalysisService },
+            { provide: OpsAlertService, useValue: opsAlert },
+            { provide: AccountService, useValue: accountService },
+            { provide: SelfHealthService, useValue: selfHealthService },
+            { provide: SelfGapsService, useValue: selfGapsService },
+            { provide: CapabilityRegistryV2Service, useValue: capRegistryV2Service },
+          ],
+        }).compile();
+
+        const serviceNoPayment = moduleWithoutPayment.get<KloelToolDispatcherService>(
+          KloelToolDispatcherService,
+        );
+
+        const result = await serviceNoPayment.executeTool(
+          DEFAULT_WS_ID,
+          'create_payment_link',
+          { amount: 99.9, description: 'Produto' },
+        );
+
+        expect(result.success).toBe(false);
+        expect(result.error).toBe('smart_payment_unavailable');
+      });
+
       it('routes create_payment_link and writes audit log', async () => {
         capRegistryV2Service.get.mockReturnValueOnce({
           id: 'create_payment_link',
@@ -333,6 +413,20 @@ describe('KloelToolDispatcherService', () => {
         const result = await service.executeTool(DEFAULT_WS_ID, 'search_web', {});
         expect(result.success).toBe(false);
         expect(result.error).toBe('missing_query');
+      });
+
+      it('returns search_unavailable when composerService.searchWeb is absent', async () => {
+        const originalSearchWeb = composerService.searchWeb;
+        (composerService as Record<string, unknown>).searchWeb = undefined;
+
+        const result = await service.executeTool(DEFAULT_WS_ID, 'search_web', {
+          query: 'test query',
+        });
+
+        expect(result.success).toBe(false);
+        expect(result.error).toBe('search_unavailable');
+
+        (composerService as Record<string, unknown>).searchWeb = originalSearchWeb;
       });
     });
   });

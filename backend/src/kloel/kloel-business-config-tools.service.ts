@@ -108,7 +108,7 @@ export class KloelBusinessConfigToolsService {
     workspaceId: string,
     args: ToolSaveBusinessInfoArgs,
   ): Promise<ToolResult> {
-    const { businessName, description, segment } = args;
+    const { businessName, description, segment, businessHours, socialChannels } = args;
     const extended = args as ToolSaveBusinessInfoArgs & FiscalArgs;
     const updateData: Prisma.WorkspaceUpdateInput = {};
     if (businessName) {
@@ -117,7 +117,7 @@ export class KloelBusinessConfigToolsService {
     const fiscalFields = extractFiscalFields(extended);
 
     const hasFiscal = Object.keys(fiscalFields).length > 0;
-    const hasBiz = !!(description || segment);
+    const hasBiz = !!(description || segment || businessHours || socialChannels);
 
     if (hasFiscal || hasBiz) {
       await this.prisma.$transaction(async (tx) => {
@@ -129,6 +129,8 @@ export class KloelBusinessConfigToolsService {
           segment,
           fiscalFields,
         );
+        if (businessHours) { nextSettings.businessHours = businessHours; }
+        if (socialChannels) { nextSettings.socialChannels = socialChannels; }
         await tx.workspace.update({
           where: { id: workspaceId },
           data: {

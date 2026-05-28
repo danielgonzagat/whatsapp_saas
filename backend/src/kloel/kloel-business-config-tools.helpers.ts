@@ -28,6 +28,8 @@ export interface ToolSaveBusinessInfoArgs {
   businessName?: string;
   description?: string;
   segment?: string;
+  businessHours?: Record<string, unknown>;
+  socialChannels?: Record<string, unknown>;
 }
 
 export interface ToolSetBusinessHoursArgs {

@@ -29,7 +29,9 @@ import {
   createCodeToolsMock,
   createCodeAnalysisMock,
   createAccountMock,
+  createSmartPaymentMock,
 } from './kloel-tool-dispatcher.service.fixtures';
+import { SmartPaymentService } from './smart-payment.service';
 import type {
   DispatcherPrismaMock,
   DispatcherChatToolsMock,
@@ -86,6 +88,7 @@ export async function buildChatToolsHarness(): Promise<ChatToolsHarness> {
       { provide: KloelCodeAnalysisService, useValue: codeAnalysisService },
       { provide: OpsAlertService, useValue: opsAlert },
       { provide: AccountService, useValue: accountService },
+      { provide: SmartPaymentService, useValue: createSmartPaymentMock() },
       CapabilityRegistryV2Service,
     ],
   }).compile();

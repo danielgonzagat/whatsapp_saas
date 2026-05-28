@@ -25,7 +25,9 @@ import {
   createPlanLimitsMock,
   createPrismaMock,
   createWhatsappToolsMock,
+  createSmartPaymentMock,
 } from './kloel-tool-dispatcher.service.fixtures';
+import { SmartPaymentService } from './smart-payment.service';
 import type {
   DispatcherAuditMock,
   DispatcherBizConfigMock,
@@ -98,6 +100,7 @@ export async function buildDispatcherTestBed(): Promise<DispatcherTestBed> {
       { provide: OpsAlertService, useValue: opsAlert },
       { provide: KloelProductSubResourceToolsService, useValue: productSubTools },
       { provide: SalesService, useValue: salesService },
+      { provide: SmartPaymentService, useValue: createSmartPaymentMock() },
       CapabilityRegistryV2Service,
     ],
   }).compile();

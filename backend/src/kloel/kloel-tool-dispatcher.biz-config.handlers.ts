@@ -79,6 +79,9 @@ export async function dispatchBizConfigTool(
         asToolArgs(args),
       );
     case 'upload_document':
+      if (!bizConfigToolsService?.toolUploadDocument) {
+        return { success: false, error: 'document_service_unavailable' };
+      }
       return await bizConfigToolsService.toolUploadDocument(workspaceId, asToolArgs(args));
     case 'get_social_channels':
       return await bizConfigToolsService.toolGetSocialChannels(workspaceId);

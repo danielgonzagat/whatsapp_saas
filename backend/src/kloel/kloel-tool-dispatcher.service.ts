@@ -65,6 +65,7 @@ import {
   isWorkspaceActionTool,
 } from './kloel-tool-dispatcher.workspace-actions.handlers';
 import { runCreatePaymentLink } from './kloel-tool-dispatcher.create-payment-link.helpers';
+import { SmartPaymentService } from './smart-payment.service';
 
 import type { UnknownRecord } from '../common/types';
 
@@ -108,6 +109,7 @@ export class KloelToolDispatcherService {
     @Optional() private readonly selfGaps?: SelfGapsService,
     @Optional() private readonly depsCoverage?: DepsCoverageService,
     @Optional() private readonly capRegistryV2?: CapabilityRegistryV2Service,
+    @Optional() private readonly smartPaymentService?: SmartPaymentService,
   ) {}
 
   /** Execute a named tool, delegating to the appropriate sub-service. */
@@ -378,6 +380,9 @@ export class KloelToolDispatcherService {
       case 'products.review_and_publish':
         return await this.requestHighRiskApproval(workspaceId, toolName, args, userId);
       case 'search_web':
+        if (!this.composerService?.searchWeb) {
+          return { success: false, error: 'search_unavailable' };
+        }
         return await runToolSearchWeb(this.planLimits, this.composerService, workspaceId, args);
       case 'delete_product': {
         const startedAt = Date.now();
@@ -434,6 +439,9 @@ export class KloelToolDispatcherService {
     args: UnknownRecord,
     userId?: string,
   ): Promise<ToolResult> {
+    if (!this.smartPaymentService) {
+      return { success: false, error: 'smart_payment_unavailable' };
+    }
     return runCreatePaymentLink(
       {
         prisma: this.prisma,

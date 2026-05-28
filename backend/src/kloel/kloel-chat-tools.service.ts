@@ -120,6 +120,11 @@ export class KloelChatToolsService {
     @Optional() private readonly agentSkills?: AgentRuntimeSkillRegistry,
     @Optional() private readonly agentEvidence?: AgentRuntimeEvidenceStoreService,
   ) {}
+
+  get hasAgentScheduler(): boolean {
+    return !!this.agentScheduler;
+  }
+
   toolSaveProduct(workspaceId: string, args: ToolSaveProductArgs): Promise<ToolResult> {
     return runSaveProductViaService(this.productService, workspaceId, args);
   }

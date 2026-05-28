@@ -71,6 +71,9 @@ export async function dispatchAgentTool(
 
   switch (toolName) {
     case 'create_agent_job':
+      if (!chatToolsService.hasAgentScheduler) {
+        return { success: false, error: 'agent_runtime_unavailable' };
+      }
       return await chatToolsService.toolCreateAgentJob(workspaceId, asToolArgs(args));
     case 'list_agent_jobs':
       return await chatToolsService.toolListAgentJobs(workspaceId);
