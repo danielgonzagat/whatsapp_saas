@@ -1,9 +1,16 @@
 import {
   asRecord,
+  buildConversationPubSubEnvelope,
+  buildConversationUpdatePayload,
+  buildFinanceAuditDetails,
+  buildStatusEventPayload,
+  buildStatusPubSubEnvelope,
   extractPhone,
+  mapFinanceLogToEvent,
   normalizeMessageStatus,
   resolveFinanceFlowId,
   toPrismaJsonValue,
+  type MessageStatusTarget,
 } from './webhooks.service.helpers';
 import { extractAsciiDigits } from '../common/phone/phone-normalization.util';
 
@@ -161,6 +168,186 @@ describe('webhooks.service.helpers', () => {
 
     it('returns undefined when stripping yields an empty string', () => {
       expect(normalizeForWebhook('---')).toBeUndefined();
+    });
+  });
+
+  describe('mapFinanceLogToEvent', () => {
+    it('extracts status / phone / amount / provider from the details bag', () => {
+      const createdAt = new Date('2026-01-02T03:04:05Z');
+      const row = {
+        createdAt,
+        resourceId: 'flow-paid',
+        details: {
+          status: 'paid',
+          phone: '5511999990000',
+          amount: 1000,
+          provider: 'stripe',
+        },
+      };
+      expect(mapFinanceLogToEvent(row)).toEqual({
+        at: createdAt,
+        flowId: 'flow-paid',
+        status: 'paid',
+        phone: '5511999990000',
+        amount: 1000,
+        provider: 'stripe',
+      });
+    });
+
+    it('falls back to undefined fields when details is null', () => {
+      const createdAt = new Date('2026-01-02T03:04:05Z');
+      const row = { createdAt, resourceId: null, details: null };
+      expect(mapFinanceLogToEvent(row)).toEqual({
+        at: createdAt,
+        flowId: null,
+        status: undefined,
+        phone: undefined,
+        amount: undefined,
+        provider: undefined,
+      });
+    });
+
+    it('preserves typing when details is a non-record JSON value', () => {
+      const createdAt = new Date('2026-01-02T03:04:05Z');
+      const row = { createdAt, resourceId: 'flow-x', details: 'not-an-object' };
+      expect(mapFinanceLogToEvent(row)).toEqual({
+        at: createdAt,
+        flowId: 'flow-x',
+        status: undefined,
+        phone: undefined,
+        amount: undefined,
+        provider: undefined,
+      });
+    });
+  });
+
+  describe('buildFinanceAuditDetails', () => {
+    it('returns the canonical audit-detail shape', () => {
+      expect(
+        buildFinanceAuditDetails({
+          status: 'paid',
+          phone: '5511999990000',
+          amount: 1000,
+          provider: 'stripe',
+        }),
+      ).toEqual({
+        status: 'paid',
+        phone: '5511999990000',
+        amount: 1000,
+        provider: 'stripe',
+      });
+    });
+
+    it('keeps amount / provider as undefined when not supplied', () => {
+      expect(
+        buildFinanceAuditDetails({
+          status: 'paid',
+          phone: '5511999990000',
+        }),
+      ).toEqual({
+        status: 'paid',
+        phone: '5511999990000',
+        amount: undefined,
+        provider: undefined,
+      });
+    });
+  });
+
+  describe('buildStatusEventPayload', () => {
+    it('returns the message-status event shape', () => {
+      const target: MessageStatusTarget = {
+        id: 'msg-1',
+        conversationId: 'conv-1',
+        contactId: 'contact-1',
+        externalId: 'ext-1',
+      };
+      expect(buildStatusEventPayload(target, 'DELIVERED', null)).toEqual({
+        id: 'msg-1',
+        conversationId: 'conv-1',
+        contactId: 'contact-1',
+        externalId: 'ext-1',
+        status: 'DELIVERED',
+        errorCode: null,
+      });
+    });
+
+    it('propagates errorCode when provided', () => {
+      const target: MessageStatusTarget = {
+        id: 'msg-2',
+        conversationId: null,
+        contactId: null,
+        externalId: null,
+      };
+      expect(buildStatusEventPayload(target, 'FAILED', 'E_BLOCKED')).toEqual({
+        id: 'msg-2',
+        conversationId: null,
+        contactId: null,
+        externalId: null,
+        status: 'FAILED',
+        errorCode: 'E_BLOCKED',
+      });
+    });
+  });
+
+  describe('buildConversationUpdatePayload', () => {
+    it('returns null when the target lacks a conversationId', () => {
+      const target: MessageStatusTarget = {
+        id: 'msg-1',
+        conversationId: null,
+        contactId: 'contact-1',
+        externalId: 'ext-1',
+      };
+      expect(buildConversationUpdatePayload(target, 'DELIVERED', null)).toBeNull();
+    });
+
+    it('returns the conversation-update shape when conversationId is set', () => {
+      const target: MessageStatusTarget = {
+        id: 'msg-1',
+        conversationId: 'conv-1',
+        contactId: 'contact-1',
+        externalId: 'ext-1',
+      };
+      expect(buildConversationUpdatePayload(target, 'DELIVERED', 'E1')).toEqual({
+        id: 'conv-1',
+        lastMessageStatus: 'DELIVERED',
+        lastMessageErrorCode: 'E1',
+        lastMessageId: 'msg-1',
+      });
+    });
+  });
+
+  describe('pub/sub envelope builders', () => {
+    it('wraps a status payload in the canonical envelope', () => {
+      const target: MessageStatusTarget = {
+        id: 'msg-1',
+        conversationId: 'conv-1',
+        contactId: 'contact-1',
+        externalId: 'ext-1',
+      };
+      const payload = buildStatusEventPayload(target, 'DELIVERED', null);
+      const envelope = buildStatusPubSubEnvelope('ws-1', payload);
+      expect(JSON.parse(envelope)).toEqual({
+        type: 'message:status',
+        workspaceId: 'ws-1',
+        payload,
+      });
+    });
+
+    it('wraps a conversation-update payload in the canonical envelope', () => {
+      const target: MessageStatusTarget = {
+        id: 'msg-1',
+        conversationId: 'conv-1',
+        contactId: 'contact-1',
+        externalId: 'ext-1',
+      };
+      const payload = buildConversationUpdatePayload(target, 'DELIVERED', null);
+      if (!payload) throw new Error('expected payload');
+      const envelope = buildConversationPubSubEnvelope('ws-1', payload);
+      expect(JSON.parse(envelope)).toEqual({
+        type: 'conversation:update',
+        workspaceId: 'ws-1',
+        conversation: payload,
+      });
     });
   });
 });

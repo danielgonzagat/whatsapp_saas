@@ -17,10 +17,17 @@ import { PrismaService } from '../prisma/prisma.service';
 import { asProviderSettings } from '../marketing/channels/whatsapp/provider-settings.types';
 import { flowQueue } from '../queue/queue';
 import {
+  buildConversationPubSubEnvelope,
+  buildConversationUpdatePayload,
+  buildFinanceAuditDetails,
+  buildStatusEventPayload,
+  buildStatusPubSubEnvelope,
   extractPhone as extractPhoneHelper,
+  mapFinanceLogToEvent,
   normalizeMessageStatus,
   resolveFinanceFlowId,
   toPrismaJsonValue,
+  type MessageStatusTarget,
   type PhoneBearingPayload,
   type WebhookFinanceSettings,
 } from './webhooks.service.helpers';
@@ -30,7 +37,6 @@ import { extractAsciiDigits } from '../common/phone/phone-normalization.util';
 type WebhookJsonPayload = Record<string, unknown>;
 
 import type { UnknownRecord } from '../common/types';
-type WebhookLogDetails = { status?: string; phone?: string; [key: string]: unknown };
 
 /** Finance trigger body: status + phone + any extra provider-specific fields. */
 interface FinanceWebhookBody {
@@ -44,14 +50,6 @@ interface FinanceWebhookBody {
 
 /** Instagram / Meta Graph webhook envelope — opaque beyond workspace routing. */
 type InstagramWebhookBody = Record<string, unknown>;
-
-/** Minimal message row shape emitted over gateway/pubsub after a status update. */
-interface MessageStatusTarget {
-  id: string;
-  conversationId: string | null;
-  contactId: string | null;
-  externalId: string | null;
-}
 
 /** Webhooks service. */
 @Injectable()
@@ -166,12 +164,12 @@ export class WebhooksService {
           action: 'FINANCE_EVENT',
           resource: 'finance',
           resourceId: flowId,
-          details: {
+          details: buildFinanceAuditDetails({
             status,
             phone,
             amount: payload?.amount,
             provider: payload?.provider,
-          },
+          }),
         },
       });
     } catch (err: unknown) {
@@ -204,17 +202,7 @@ export class WebhooksService {
         resourceId: true,
       },
     });
-    return logs.map((l) => {
-      const details = (l.details as WebhookLogDetails) || {};
-      return {
-        at: l.createdAt,
-        flowId: l.resourceId,
-        status: details.status,
-        phone: details.phone,
-        amount: details.amount as number | undefined,
-        provider: details.provider as string | undefined,
-      };
-    });
+    return logs.map((l) => mapFinanceLogToEvent(l));
   }
 
   private extractPhone(payload: PhoneBearingPayload): string | null {
@@ -286,51 +274,22 @@ export class WebhooksService {
     status: string,
     errorCode: string | null,
   ): Promise<void> {
-    this.inboxGateway.emitToWorkspace(workspaceId, 'message:status', {
-      id: m.id,
-      conversationId: m.conversationId,
-      contactId: m.contactId,
-      externalId: m.externalId,
-      status,
-      errorCode,
-    });
-    if (m.conversationId) {
-      this.inboxGateway.emitToWorkspace(workspaceId, 'conversation:update', {
-        id: m.conversationId,
-        lastMessageStatus: status,
-        lastMessageErrorCode: errorCode,
-        lastMessageId: m.id,
-      });
+    const statusPayload = buildStatusEventPayload(m, status, errorCode);
+    const conversationPayload = buildConversationUpdatePayload(m, status, errorCode);
+
+    this.inboxGateway.emitToWorkspace(workspaceId, 'message:status', statusPayload);
+    if (conversationPayload) {
+      this.inboxGateway.emitToWorkspace(workspaceId, 'conversation:update', conversationPayload);
     }
     try {
       await this.redis.publish(
         'ws:inbox',
-        JSON.stringify({
-          type: 'message:status',
-          workspaceId,
-          payload: {
-            id: m.id,
-            conversationId: m.conversationId,
-            contactId: m.contactId,
-            externalId: m.externalId,
-            status,
-            errorCode,
-          },
-        }),
+        buildStatusPubSubEnvelope(workspaceId, statusPayload),
       );
-      if (m.conversationId) {
+      if (conversationPayload) {
         await this.redis.publish(
           'ws:inbox',
-          JSON.stringify({
-            type: 'conversation:update',
-            workspaceId,
-            conversation: {
-              id: m.conversationId,
-              lastMessageStatus: status,
-              lastMessageErrorCode: errorCode,
-              lastMessageId: m.id,
-            },
-          }),
+          buildConversationPubSubEnvelope(workspaceId, conversationPayload),
         );
       }
     } catch (err: unknown) {
