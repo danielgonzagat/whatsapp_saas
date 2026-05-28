@@ -15,6 +15,7 @@ import { MindService } from './mind.service';
 import { AttentionService } from './mind/attention.service';
 import { ValenceAggregatorService } from './mind/valence-aggregator.service';
 import { MindBeliefService } from './mind/inference/mind-belief.service';
+import { MindConceptService } from './mind/memory/mind-concepts.service';
 import { SpineEventRef } from './mind/mind.types';
 import { UnifiedAgentService } from './unified-agent.service';
 import { AbiBuilderService } from './abi/abi-builder.service';
@@ -57,6 +58,7 @@ export class KloelReplyEngineService {
     @Optional() private readonly attentionService?: AttentionService,
     @Optional() private readonly valenceAggregatorService?: ValenceAggregatorService,
     @Optional() private readonly mindBeliefService?: MindBeliefService,
+    @Optional() private readonly mindConceptService?: MindConceptService,
   ) {
     this.openai = createTextLlmClient(undefined, { timeout: 60_000, maxRetries: 0 });
     this.toolRouter = new KloelToolRouter(
@@ -296,6 +298,40 @@ export class KloelReplyEngineService {
         this.logger.warn('kloel_mind_belief_skipped', {
           reason: error instanceof Error ? error.message : 'unknown error',
         });
+      }
+    }
+
+    // Mind concept detection — wire concept labels into cognitiveState (PI-k4)
+    if (this.mindConceptService && params.workspaceId) {
+      try {
+        const detections = await Promise.race([
+          this.mindConceptService.detect({
+            workspaceId: params.workspaceId,
+            text: params.userMessage,
+            subject: 'kloel_chat',
+          }),
+          new Promise<never>((_, reject) =>
+            setTimeout(
+              () => reject(new Error('MindConceptService.detect timed out after 200ms')),
+              200,
+            ),
+          ),
+        ]);
+        const mindSignals = (cognitiveState.mindSignals ?? {}) as Record<string, unknown>;
+        mindSignals.concepts = detections
+          .slice(0, 5)
+          .map((d: { concept: string; confidence: number }) => ({
+            concept: d.concept,
+            confidence: d.confidence,
+          }));
+        cognitiveState.mindSignals = mindSignals;
+      } catch (error: unknown) {
+        this.logger.warn('kloel_mind_concept_skipped', {
+          reason: error instanceof Error ? error.message : 'unknown error',
+        });
+        const mindSignals = (cognitiveState.mindSignals ?? {}) as Record<string, unknown>;
+        mindSignals.concepts = [];
+        cognitiveState.mindSignals = mindSignals;
       }
     }
 

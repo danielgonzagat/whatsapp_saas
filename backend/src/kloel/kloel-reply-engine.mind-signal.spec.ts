@@ -7,7 +7,11 @@ import { KloelWorkspaceContextService } from './kloel-workspace-context.service'
 import { UnifiedAgentService } from './unified-agent.service';
 import { AttentionService } from './mind/attention.service';
 import { ValenceAggregatorService } from './mind/valence-aggregator.service';
+<<<<<<< HEAD
 import { MindBeliefService } from './mind/inference/mind-belief.service';
+=======
+import { MindConceptService } from './mind/memory/mind-concepts.service';
+>>>>>>> 0cdc86ea5 (feat(kloel): wire MindConceptService.detect into cognitiveState (PI-k4))
 
 jest.mock('openai', () => ({
   default: jest.fn().mockImplementation(() => ({
@@ -178,6 +182,7 @@ describe('KloelReplyEngineService mind-signal wiring (PI-k4)', () => {
       const lastContentStr = typeof lastContent === 'string' ? lastContent : '{}';
       const userPayload = JSON.parse(lastContentStr) as Record<string, unknown>;
       const cs = userPayload['cognitiveState'] as Record<string, unknown>;
+<<<<<<< HEAD
       const ms = cs['mindSignals'] as Record<string, unknown>;
 
       expect(ms['source']).toBe('autopilot_events');
@@ -185,6 +190,9 @@ describe('KloelReplyEngineService mind-signal wiring (PI-k4)', () => {
       expect(ms['attention']).toBeDefined();
       const att = ms['attention'] as Record<string, unknown>;
       expect(att['candidates']).toEqual([]);
+=======
+      expect(cs['mindSignals']).toEqual({ status: 'no_event_source', concepts: [] });
+>>>>>>> 0cdc86ea5 (feat(kloel): wire MindConceptService.detect into cognitiveState (PI-k4))
     });
 
     it('sets mindSignals to {status: "no_services"} when attention service is absent', async () => {
@@ -212,7 +220,7 @@ describe('KloelReplyEngineService mind-signal wiring (PI-k4)', () => {
       const lastContentStr = typeof lastContent === 'string' ? lastContent : '{}';
       const userPayload = JSON.parse(lastContentStr) as Record<string, unknown>;
       const cs = userPayload['cognitiveState'] as Record<string, unknown>;
-      expect(cs['mindSignals']).toEqual({ status: 'no_services' });
+      expect(cs['mindSignals']).toEqual({ status: 'no_services', concepts: [] });
     });
 
     it('sets mindSignals to {status: "no_services"} when only attentionService is present (valenceAggregatorService missing)', async () => {
@@ -242,7 +250,210 @@ describe('KloelReplyEngineService mind-signal wiring (PI-k4)', () => {
       const lastContentStr = typeof lastContent === 'string' ? lastContent : '{}';
       const userPayload = JSON.parse(lastContentStr) as Record<string, unknown>;
       const cs = userPayload['cognitiveState'] as Record<string, unknown>;
-      expect(cs['mindSignals']).toEqual({ status: 'no_services' });
+      expect(cs['mindSignals']).toEqual({ status: 'no_services', concepts: [] });
+    });
+  });
+
+  describe('buildChatModelMessages concept detection (PI-k4)', () => {
+    let mindConceptMock: { detect: jest.Mock };
+
+    beforeEach(() => {
+      mindConceptMock = { detect: jest.fn() };
+    });
+
+    it('populates mindSignals.concepts when MindConceptService detects concepts', async () => {
+      mindConceptMock.detect.mockResolvedValue([
+        { concept: 'price_objection', confidence: 0.8 },
+        { concept: 'hot_lead', confidence: 0.7 },
+      ]);
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          KloelReplyEngineService,
+          { provide: PrismaService, useValue: prisma },
+          { provide: PlanLimitsService, useValue: planLimits },
+          { provide: KloelThreadService, useValue: threadService },
+          { provide: KloelWorkspaceContextService, useValue: wsContextService },
+          { provide: UnifiedAgentService, useValue: unifiedAgent },
+          AttentionService,
+          ValenceAggregatorService,
+          { provide: MindConceptService, useValue: mindConceptMock },
+        ],
+      }).compile();
+
+      const service = module.get<KloelReplyEngineService>(KloelReplyEngineService);
+
+      const messages = await service.buildChatModelMessages({
+        systemPrompt: 'S',
+        dynamicContext: 'D',
+        recentMessages: [],
+        userMessage: 'caro demais',
+        workspaceId: 'ws-1',
+      });
+
+      expect(mindConceptMock.detect).toHaveBeenCalledWith({
+        workspaceId: 'ws-1',
+        text: 'caro demais',
+        subject: 'kloel_chat',
+      });
+
+      const lastContent = messages[messages.length - 1]?.content;
+      const lastContentStr = typeof lastContent === 'string' ? lastContent : '{}';
+      const userPayload = JSON.parse(lastContentStr) as Record<string, unknown>;
+      const cs = userPayload['cognitiveState'] as Record<string, unknown>;
+      const ms = cs['mindSignals'] as Record<string, unknown>;
+      expect(ms['status']).toBe('no_event_source');
+      expect(ms['concepts']).toEqual([
+        { concept: 'price_objection', confidence: 0.8 },
+        { concept: 'hot_lead', confidence: 0.7 },
+      ]);
+    });
+
+    it('sets concepts to [] when MindConceptService returns empty array', async () => {
+      mindConceptMock.detect.mockResolvedValue([]);
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          KloelReplyEngineService,
+          { provide: PrismaService, useValue: prisma },
+          { provide: PlanLimitsService, useValue: planLimits },
+          { provide: KloelThreadService, useValue: threadService },
+          { provide: KloelWorkspaceContextService, useValue: wsContextService },
+          { provide: UnifiedAgentService, useValue: unifiedAgent },
+          AttentionService,
+          ValenceAggregatorService,
+          { provide: MindConceptService, useValue: mindConceptMock },
+        ],
+      }).compile();
+
+      const service = module.get<KloelReplyEngineService>(KloelReplyEngineService);
+
+      const messages = await service.buildChatModelMessages({
+        systemPrompt: 'S',
+        dynamicContext: 'D',
+        recentMessages: [],
+        userMessage: 'hello world',
+        workspaceId: 'ws-1',
+      });
+
+      const lastContent = messages[messages.length - 1]?.content;
+      const lastContentStr = typeof lastContent === 'string' ? lastContent : '{}';
+      const userPayload = JSON.parse(lastContentStr) as Record<string, unknown>;
+      const cs = userPayload['cognitiveState'] as Record<string, unknown>;
+      const ms = cs['mindSignals'] as Record<string, unknown>;
+      expect(ms['concepts']).toEqual([]);
+    });
+
+    it('sets concepts to [] when MindConceptService is not injected', async () => {
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          KloelReplyEngineService,
+          { provide: PrismaService, useValue: prisma },
+          { provide: PlanLimitsService, useValue: planLimits },
+          { provide: KloelThreadService, useValue: threadService },
+          { provide: KloelWorkspaceContextService, useValue: wsContextService },
+          { provide: UnifiedAgentService, useValue: unifiedAgent },
+          AttentionService,
+          ValenceAggregatorService,
+        ],
+      }).compile();
+
+      const service = module.get<KloelReplyEngineService>(KloelReplyEngineService);
+
+      const messages = await service.buildChatModelMessages({
+        systemPrompt: 'S',
+        dynamicContext: 'D',
+        recentMessages: [],
+        userMessage: 'caro demais',
+        workspaceId: 'ws-1',
+      });
+
+      const lastContent = messages[messages.length - 1]?.content;
+      const lastContentStr = typeof lastContent === 'string' ? lastContent : '{}';
+      const userPayload = JSON.parse(lastContentStr) as Record<string, unknown>;
+      const cs = userPayload['cognitiveState'] as Record<string, unknown>;
+      const ms = cs['mindSignals'] as Record<string, unknown>;
+      expect(ms['concepts']).toEqual([]);
+    });
+
+    it('sets concepts to [] when detect throws', async () => {
+      mindConceptMock.detect.mockRejectedValue(new Error('db down'));
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          KloelReplyEngineService,
+          { provide: PrismaService, useValue: prisma },
+          { provide: PlanLimitsService, useValue: planLimits },
+          { provide: KloelThreadService, useValue: threadService },
+          { provide: KloelWorkspaceContextService, useValue: wsContextService },
+          { provide: UnifiedAgentService, useValue: unifiedAgent },
+          AttentionService,
+          ValenceAggregatorService,
+          { provide: MindConceptService, useValue: mindConceptMock },
+        ],
+      }).compile();
+
+      const service = module.get<KloelReplyEngineService>(KloelReplyEngineService);
+
+      const messages = await service.buildChatModelMessages({
+        systemPrompt: 'S',
+        dynamicContext: 'D',
+        recentMessages: [],
+        userMessage: 'caro demais',
+        workspaceId: 'ws-1',
+      });
+
+      const lastContent = messages[messages.length - 1]?.content;
+      const lastContentStr = typeof lastContent === 'string' ? lastContent : '{}';
+      const userPayload = JSON.parse(lastContentStr) as Record<string, unknown>;
+      const cs = userPayload['cognitiveState'] as Record<string, unknown>;
+      const ms = cs['mindSignals'] as Record<string, unknown>;
+      expect(ms['concepts']).toEqual([]);
+    });
+
+    it('slices detections to at most 5 concepts', async () => {
+      mindConceptMock.detect.mockResolvedValue([
+        { concept: 'a', confidence: 0.9 },
+        { concept: 'b', confidence: 0.8 },
+        { concept: 'c', confidence: 0.7 },
+        { concept: 'd', confidence: 0.6 },
+        { concept: 'e', confidence: 0.5 },
+        { concept: 'f', confidence: 0.4 },
+        { concept: 'g', confidence: 0.3 },
+      ]);
+
+      const module: TestingModule = await Test.createTestingModule({
+        providers: [
+          KloelReplyEngineService,
+          { provide: PrismaService, useValue: prisma },
+          { provide: PlanLimitsService, useValue: planLimits },
+          { provide: KloelThreadService, useValue: threadService },
+          { provide: KloelWorkspaceContextService, useValue: wsContextService },
+          { provide: UnifiedAgentService, useValue: unifiedAgent },
+          AttentionService,
+          ValenceAggregatorService,
+          { provide: MindConceptService, useValue: mindConceptMock },
+        ],
+      }).compile();
+
+      const service = module.get<KloelReplyEngineService>(KloelReplyEngineService);
+
+      const messages = await service.buildChatModelMessages({
+        systemPrompt: 'S',
+        dynamicContext: 'D',
+        recentMessages: [],
+        userMessage: 'test',
+        workspaceId: 'ws-1',
+      });
+
+      const lastContent = messages[messages.length - 1]?.content;
+      const lastContentStr = typeof lastContent === 'string' ? lastContent : '{}';
+      const userPayload = JSON.parse(lastContentStr) as Record<string, unknown>;
+      const cs = userPayload['cognitiveState'] as Record<string, unknown>;
+      const ms = cs['mindSignals'] as Record<string, unknown>;
+      const concepts = ms['concepts'] as Array<{ concept: string; confidence: number }>;
+      expect(concepts).toHaveLength(5);
+      expect(concepts.map((c) => c.concept)).toEqual(['a', 'b', 'c', 'd', 'e']);
     });
 
     it('populates mindSignals.beliefs when MindBeliefService returns active beliefs', async () => {
