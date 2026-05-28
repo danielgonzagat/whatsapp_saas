@@ -297,24 +297,41 @@ export class MindPerceptionService {
 
   private estimateSalience(normalized: string): number {
     let score = 0.3;
-    if (/\b(urgente|rápido|agora|imediato|já|emergência)\b/i.test(normalized)) score += 0.3;
-    if (/!{2,}/.test(normalized) || /[A-ZÀ-Ú]{4,}/.test(normalized)) score += 0.15;
-    if (/[?¿]/.test(normalized)) score += 0.1;
+    if (/\b(urgente|rápido|agora|imediato|já|emergência)\b/i.test(normalized)) {
+      score += 0.3;
+    }
+    if (/!{2,}/.test(normalized) || /[A-ZÀ-Ú]{4,}/.test(normalized)) {
+      score += 0.15;
+    }
+    if (/[?¿]/.test(normalized)) {
+      score += 0.1;
+    }
     if (
       /\b(reclamação|problema|erro|ódio|raiva|péssimo|horrível|processo|procon|reclame aqui)\b/i.test(
         normalized,
       )
-    )
+    ) {
       score += 0.15;
-    if (/\b(comprar|quero|pagamento|pagar|carrinho)\b/i.test(normalized)) score += 0.1;
-    if (normalized.length > 200) score += 0.05;
+    }
+    if (/\b(comprar|quero|pagamento|pagar|carrinho)\b/i.test(normalized)) {
+      score += 0.1;
+    }
+    if (normalized.length > 200) {
+      score += 0.05;
+    }
     return Math.min(score, 1.0);
   }
 
   private extractSubject(normalized: string, intent: string): string {
-    if (intent === 'greeting') return 'social_greeting';
-    if (intent === 'gratitude') return 'social_gratitude';
-    if (intent === 'fragment') return 'unclear';
+    if (intent === 'greeting') {
+      return 'social_greeting';
+    }
+    if (intent === 'gratitude') {
+      return 'social_gratitude';
+    }
+    if (intent === 'fragment') {
+      return 'unclear';
+    }
 
     const topicPatterns: Array<{ re: RegExp; label: string }> = [
       {
@@ -352,7 +369,9 @@ export class MindPerceptionService {
     ];
 
     for (const { re, label } of topicPatterns) {
-      if (re.test(normalized)) return label;
+      if (re.test(normalized)) {
+        return label;
+      }
     }
 
     return 'general_inquiry';
