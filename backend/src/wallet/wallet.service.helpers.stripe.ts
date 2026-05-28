@@ -21,11 +21,22 @@ type StripePaymentIntentCreateParams = Parameters<StripeClient['paymentIntents']
 /**
  * Stripe `payment_method_options.card.request_three_d_secure` literal type
  * resolved from the SDK so we never spell the bare word as a literal here.
+ *
+ * Stripe v22 wraps `card` in `Emptyable<Card>` (= `null | '' | Card`); after
+ * stripping `null` with `NonNullable<>` we are left with `'' | Card`, and only
+ * the `Card` branch carries the `request_three_d_secure` property. We narrow
+ * through `Extract<..., { request_three_d_secure?: unknown }>` to pick the
+ * object branch, then pull the property type from it. This keeps the alias
+ * derived from the SDK — no hard-coded literals here.
  */
-type StripeThreeDsRequest = NonNullable<
+type StripeCardPaymentMethodOptions = Extract<
   NonNullable<
     NonNullable<StripePaymentIntentCreateParams['payment_method_options']>['card']
-  >['request_three_d_secure']
+  >,
+  { request_three_d_secure?: unknown }
+>;
+type StripeThreeDsRequest = NonNullable<
+  StripeCardPaymentMethodOptions['request_three_d_secure']
 >;
 
 /**

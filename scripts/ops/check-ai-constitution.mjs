@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import {
   collectChangedFiles,
@@ -15,6 +15,11 @@ import {
   countGeneratedOverlayNotes,
   hasFunctionalProofSignal,
   isProductionSourceFile,
+  isTestFile,
+  isTextFile as isTextFileForRepo,
+  loadCanonicalMoveApprovals as loadCanonicalMoveApprovalsForRepo,
+  mergeAddedTextByFile,
+  parseAddedTextByFile,
 } from './ai-constitution-helpers.mjs';
 
 const constitution = readJsonFile('ops/kloel-ai-constitution.json', null);
@@ -418,43 +423,12 @@ function addedTextMapFromDiff(args) {
   }
 }
 
-function mergeAddedTextByFile(target, source) {
-  for (const [file, added] of source) {
-    target.set(file, [target.get(file), added].filter(Boolean).join('\n'));
-  }
-}
-
 function execGit(args) {
   return execFileSync('git', args, {
     cwd: repoRoot,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'ignore'],
   });
-}
-
-function parseAddedTextByFile(diff) {
-  const byFile = new Map();
-  let currentFile = null;
-
-  for (const line of diff.split('\n')) {
-    if (line.startsWith('+++ b/')) {
-      currentFile = line.slice('+++ b/'.length);
-      if (!byFile.has(currentFile)) {
-        byFile.set(currentFile, '');
-      }
-      continue;
-    }
-    if (line.startsWith('+++ /dev/null')) {
-      currentFile = null;
-      continue;
-    }
-    if (!currentFile || !line.startsWith('+') || line.startsWith('+++')) {
-      continue;
-    }
-    byFile.set(currentFile, [byFile.get(currentFile), line.slice(1)].filter(Boolean).join('\n'));
-  }
-
-  return byFile;
 }
 
 function isTracked(file) {
@@ -470,19 +444,7 @@ function isTracked(file) {
 }
 
 function isTextFile(file) {
-  if (statSync(path.join(repoRoot, file)).size > 2 * 1024 * 1024) {
-    return false;
-  }
-  return /\.(?:js|mjs|cjs|ts|tsx|jsx|json|md|yml|yaml|sh|css|scss|html|txt|prisma|sql|toml|conf|template)$/.test(
-    file,
-  );
-}
-
-function isTestFile(file) {
-  return (
-    /(?:^|\/)(?:__tests__|test|tests|specs)\//.test(file) ||
-    /\.(?:spec|test)\.[cm]?[jt]sx?$/.test(file)
-  );
+  return isTextFileForRepo(repoRoot, file);
 }
 
 function checkForbiddenDeletions() {
@@ -516,7 +478,7 @@ function checkForbiddenDeletions() {
       file.startsWith('.github/workflows/'),
   );
 
-  const canonicalMoveApprovals = loadCanonicalMoveApprovals();
+  const canonicalMoveApprovals = loadCanonicalMoveApprovalsForRepo(repoRoot);
 
   for (const file of dangerousDeleted) {
     if (hasGovernanceDeletionApproval(file)) {
@@ -546,34 +508,6 @@ function checkForbiddenDeletions() {
   }
 }
 
-
-/**
- * Read `docs/architecture/CANONICAL_MOVES.md` and return the set of legacy
- * paths that the human-authored manifesto explicitly authorizes for deletion
- * (because the responsibility moved/consolidated/retired). The manifest lists
- * each row as a Markdown table; we extract paths from the first column when
- * they look like repo-relative source paths.
- */
-function loadCanonicalMoveApprovals() {
-  const manifestPath = path.join(repoRoot, 'docs', 'architecture', 'CANONICAL_MOVES.md');
-  if (!existsSync(manifestPath)) {
-    return new Set();
-  }
-  const approved = new Set();
-  const body = readFileSync(manifestPath, 'utf8');
-  for (const line of body.split('\n')) {
-    if (!line.startsWith('|')) continue;
-    const cells = line.split('|').map((c) => c.trim());
-    if (cells.length < 2) continue;
-    const first = cells[1];
-    if (!first) continue;
-    const m = first.match(/^`([^`]+)`$/);
-    if (m && m[1].includes('/')) {
-      approved.add(m[1]);
-    }
-  }
-  return approved;
-}
 
 function hasGovernanceDeletionApproval(file) {
   if (!hasActivePr276Airlock()) {
