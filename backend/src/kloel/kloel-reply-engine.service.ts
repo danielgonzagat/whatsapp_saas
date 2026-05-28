@@ -16,6 +16,8 @@ import { KloelWorkspaceContextService } from './kloel-workspace-context.service'
 import { CANONICAL_FALLBACK_SYSTEM_PROMPT } from './kloel.prompts';
 import { MarketingSkillService } from './marketing-skills/marketing-skill.service';
 import { MindService } from './mind.service';
+import { AttentionService } from './mind/attention.service';
+import { ValenceAggregatorService } from './mind/valence-aggregator.service';
 import { UnifiedAgentService } from './unified-agent.service';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { validateAbiPayload } from './abi/abi-validator';
@@ -54,6 +56,8 @@ export class KloelReplyEngineService {
     @Optional() private readonly marketingSkillService?: MarketingSkillService,
     @Optional() private readonly mindService?: MindService,
     @Optional() private readonly abiBuilder?: AbiBuilderService,
+    @Optional() private readonly attentionService?: AttentionService,
+    @Optional() private readonly valenceAggregatorService?: ValenceAggregatorService,
   ) {
     this.openai = createTextLlmClient(undefined, { timeout: 60_000, maxRetries: 0 });
     this.toolRouter = new KloelToolRouter(
@@ -214,6 +218,21 @@ export class KloelReplyEngineService {
       audience: 'public',
       perceptionSnapshot: { channel: 'web' },
     };
+
+    // Mind signals — wire attention + valence into cognitiveState (PI-k3)
+    if (this.attentionService && this.valenceAggregatorService && params.workspaceId) {
+      try {
+        // No in-process event cache reachable from this injection scope.
+        // MindEventSpine has no synchronous recent-events getter.
+        cognitiveState.mindSignals = { status: 'no_event_source' };
+      } catch (error: unknown) {
+        this.logger.warn('kloel_mind_signal_skipped', {
+          reason: error instanceof Error ? error.message : 'unknown error',
+        });
+      }
+    } else {
+      cognitiveState.mindSignals = { status: 'no_services' };
+    }
 
     if (this.abiBuilder) {
       if (params.prebuiltCognitiveState) {

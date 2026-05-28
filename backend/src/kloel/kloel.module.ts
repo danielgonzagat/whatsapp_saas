@@ -163,6 +163,8 @@ import { MindReplayService } from './mind/runtime/mind-replay.service';
 import { MindSimulatorService } from './mind/synthetic/mind-simulator.service';
 import { MindSyntheticGeneratorService } from './mind/synthetic/mind-synthetic-generator.service';
 import { MindService } from './mind.service';
+import { AttentionService } from './mind/attention.service';
+import { ValenceAggregatorService } from './mind/valence-aggregator.service';
 import { DecisionOutcomeService } from './decision-outcome.service';
 import { DriftModule } from './drift/drift.module';
 import { MindLiftReportService } from './mind/observability/mind-lift-report.service';
@@ -307,6 +309,8 @@ import { SalesModule } from '../sales/sales.module';
     ConversationalOnboardingService,
     ConversationalOnboardingToolsService,
     AbiBuilderService,
+    AttentionService,
+    ValenceAggregatorService,
     KloelToolExecutorBillingService,
     KloelToolExecutorCrmService,
     KloelToolExecutorWhatsAppService,
