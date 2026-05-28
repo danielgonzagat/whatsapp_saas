@@ -23,6 +23,7 @@ import { DepsCoverageService } from './self-awareness/deps-coverage.service';
 import { CapabilityRegistryV2Service } from './capability-registry-v2/capability-registry-v2.service';
 import { MindCapabilityRegistry } from './mind/coordination/mind-capability-registry.service';
 import { MindCapabilityExecutor } from './mind/coordination/mind-capability-executor.service';
+import { MindGuardsService } from './mind/policy/mind-guards.service';
 import { ReportService } from './report.service';
 import {
   runRequestHighRiskApproval,
@@ -119,6 +120,7 @@ export class KloelToolDispatcherService {
     @Optional() private readonly transports?: ChannelTransportRegistry,
     @Optional() private readonly riskGate?: RiskGateService,
     @Optional() private readonly mindCapabilityExecutor?: MindCapabilityExecutor,
+    @Optional() private readonly mindGuards?: MindGuardsService,
   ) {}
 
   /** Execute a named tool, delegating to the appropriate sub-service. */
@@ -148,6 +150,12 @@ export class KloelToolDispatcherService {
       return { success: false, error: 'billing_suspended' };
     }
     this.logger.log(`Executando ferramenta: ${toolName}`);
+
+    const guardBlock = await this.checkMindGuard(workspaceId, toolName);
+    if (guardBlock) {
+      return guardBlock;
+    }
+
     let result: ToolResult;
     try {
       const fastPathResult = await this.runFastPathDispatch(workspaceId, toolName, args, userId);
@@ -182,6 +190,49 @@ export class KloelToolDispatcherService {
     }
 
     return result;
+  }
+
+  /**
+   * Check MindGuardsService for MUTATION_SENSITIVE tools before dispatch.
+   * Returns a block result if the guard vetoes execution; null otherwise.
+   */
+  private async checkMindGuard(
+    workspaceId: string,
+    toolName: string,
+  ): Promise<ToolResult | null> {
+    if (!this.mindGuards || !this.capRegistryV2) {
+      return null;
+    }
+    const cap = this.capRegistryV2.get(toolName);
+    if (!cap || cap.category !== 'MUTATION_SENSITIVE') {
+      return null;
+    }
+
+    const verdict = await this.mindGuards.evaluate({
+      action: toolName,
+      context: {},
+      decisionType: 'tool_execution',
+      workspaceId,
+    });
+
+    if (verdict.decision === 'block') {
+      this.logger.warn(
+        `MindGuard bloqueou ferramenta ${toolName} no workspace ${workspaceId}: ${verdict.reason}`,
+      );
+      return {
+        success: false,
+        error: 'mind_guard_blocked',
+        reasons: [verdict.reason],
+      };
+    }
+
+    if (verdict.decision === 'warn') {
+      this.logger.warn(
+        `MindGuard aviso para ferramenta ${toolName} no workspace ${workspaceId}: ${verdict.reason}`,
+      );
+    }
+
+    return null;
   }
 
   /**

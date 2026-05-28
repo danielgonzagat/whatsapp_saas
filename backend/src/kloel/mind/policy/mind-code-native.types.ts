@@ -13,7 +13,7 @@ type MindDecisionKind =
   | 'ad_alert_action'
   | 'autopilot_action';
 
-type MindGuardDecision = 'allow' | 'block' | 'modify' | 'needs_human';
+type MindGuardDecision = 'allow' | 'block' | 'modify' | 'needs_human' | 'warn';
 
 export const MIND_GUARD_REASON_TAGS = [
   'opt_out',
