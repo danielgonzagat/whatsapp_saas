@@ -15,13 +15,11 @@
  * @canonical backend/src/payments/mercadopago/mercadopago-webhook.controller.ts
  * @see docs/architecture/DEPRECATION_MAP.md#cross-cutting-duplications row 35
  */
-import { Body, Controller, ForbiddenException, Headers, Post, Query } from '@nestjs/common';
+import { Body, ForbiddenException, Headers, Query } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { Public } from '../auth/public.decorator';
 import { PrismaService } from '../prisma/prisma.service';
 import { WebhooksService } from '../webhooks/webhooks.service';
 import { MercadoPagoPaymentSnapshot, MercadoPagoPixService } from './mercado-pago-pix.service';
-import { RouteClass } from '../common/throttler/route-class.decorator';
 
 type MercadoPagoWebhookBody = {
   id?: string | number;
@@ -67,9 +65,6 @@ function toJsonValue(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 }
 
-@Controller('checkout/webhooks/mercado-pago')
-@Public()
-@RouteClass('webhook')
 export class MercadoPagoWebhookController {
   constructor(
     private readonly prisma: PrismaService,
@@ -77,7 +72,6 @@ export class MercadoPagoWebhookController {
     private readonly mercadoPagoPixService: MercadoPagoPixService,
   ) {}
 
-  @Post()
   async handlePayment(
     @Body() body: MercadoPagoWebhookBody,
     @Headers('x-signature') signatureHeader?: string,

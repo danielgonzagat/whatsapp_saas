@@ -9,6 +9,10 @@ describe('checkout migration guard — quality surface', () => {
 
   it('keeps the checkout runtime mounted without the legacy checkout webhook controller', () => {
     const serviceSource = readFileSync(resolve(__dirname, './checkout.service.ts'), 'utf8');
+    const legacyWebhookSource = readFileSync(
+      resolve(__dirname, './mercado-pago-webhook.controller.ts'),
+      'utf8',
+    );
     const controllers: unknown[] =
       Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, CheckoutModule) || [];
     const controllerNames = controllers
@@ -16,6 +20,7 @@ describe('checkout migration guard — quality surface', () => {
       .map((controller) => controller.name);
 
     expect(controllerNames).not.toContain('CheckoutWebhookController');
+    expect(legacyWebhookSource).not.toContain("@Controller('checkout/webhooks/mercado-pago')");
     expect(serviceSource.toLowerCase()).not.toContain(retiredProvider);
   });
 
