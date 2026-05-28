@@ -2,8 +2,6 @@ import { Injectable, Logger, Optional, type OnModuleInit } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { MetaSdkService } from './meta-sdk.service';
-import { decryptMetaToken } from './meta-token-crypto';
-import { readRecord, readStrictText } from './read-model/meta-read-helpers';
 import {
   resolveOAuthRedirect,
   resolvePublicBackendBaseUrl,
@@ -14,28 +12,20 @@ import {
   getRequestedScopesForChannel,
   type MetaMarketingChannel,
 } from './oauth/meta-scopes.helpers';
-import {
-  buildTextMessageContent,
-  buildMediaMessageContent,
-  parseMessageIdFromResponse,
-  normalizeWhatsAppPhone,
-} from './meta-whatsapp.message.helpers';
+import { parseMessageIdFromResponse } from './meta-whatsapp.message.helpers';
 import { buildEmbeddedSignupUrl } from './oauth/meta-embedded-signup.helpers';
 import { buildWebhookHeartbeatPayload } from './meta-webhook-heartbeat.helpers';
-type ResolvedMetaConnection = {
-  workspaceId: string;
-  accessToken: string;
-  phoneNumberId: string;
-  whatsappBusinessId: string | null;
-  pageId: string | null;
-  pageName: string | null;
-  pageAccessToken: string | null;
-  instagramAccountId: string | null;
-  instagramUsername: string | null;
-  adAccountId: string | null;
-  tokenExpired: boolean;
-  persistedConnection: boolean;
-};
+import {
+  buildDiscoveryFallback,
+  buildMarkAsReadPayload,
+  buildPhoneNumberDetailsFromGraphResponse,
+  buildResolvedMetaConnection,
+  buildSendMediaMessagePayload,
+  buildSendTextMessagePayload,
+  extractDiscoveredWhatsAppAssets,
+  isMatchingEnvPhoneNumberId,
+  type ResolvedMetaConnection,
+} from './meta-whatsapp.service.helpers';
 @Injectable()
 export class MetaWhatsAppService implements OnModuleInit {
   private readonly logger = new Logger(MetaWhatsAppService.name);
@@ -97,33 +87,11 @@ export class MetaWhatsAppService implements OnModuleInit {
         adAccountId: true,
       },
     });
-    const accessToken = String(
-      decryptMetaToken(channelSession?.accessToken) || process.env.META_ACCESS_TOKEN || '',
-    ).trim();
-    const phoneNumberId = String(
-      channelSession?.whatsappPhoneNumberId || process.env.META_PHONE_NUMBER_ID || '',
-    ).trim();
-    const whatsappBusinessId = String(
-      channelSession?.whatsappBusinessId || process.env.META_WABA_ID || '',
-    ).trim();
-    const tokenExpired = Boolean(
-      channelSession?.tokenExpiresAt &&
-      new Date(channelSession.tokenExpiresAt).getTime() < Date.now(),
-    );
-    return {
+    return buildResolvedMetaConnection({
       workspaceId,
-      accessToken,
-      phoneNumberId,
-      whatsappBusinessId: whatsappBusinessId || null,
-      pageId: channelSession?.pageId || null,
-      pageName: channelSession?.pageName || null,
-      pageAccessToken: decryptMetaToken(channelSession?.pageAccessToken),
-      instagramAccountId: channelSession?.instagramAccountId || null,
-      instagramUsername: channelSession?.instagramUsername || null,
-      adAccountId: channelSession?.adAccountId || null,
-      tokenExpired,
-      persistedConnection: Boolean(channelSession),
-    };
+      channelSession,
+      env: process.env,
+    });
   }
   async discoverWhatsAppAssets(accessToken: string): Promise<{
     whatsappBusinessId?: string | null;
@@ -131,14 +99,7 @@ export class MetaWhatsAppService implements OnModuleInit {
     displayPhoneNumber?: string | null;
     verifiedName?: string | null;
   }> {
-    const envWabaId = String(process.env.META_WABA_ID || '').trim();
-    const envPhoneNumberId = String(process.env.META_PHONE_NUMBER_ID || '').trim();
-    const discovered = {
-      whatsappBusinessId: envWabaId || null,
-      whatsappPhoneNumberId: envPhoneNumberId || null,
-      displayPhoneNumber: null as string | null,
-      verifiedName: null as string | null,
-    };
+    const discovered = buildDiscoveryFallback(process.env);
     if (!accessToken) {
       return discovered;
     }
@@ -151,20 +112,7 @@ export class MetaWhatsAppService implements OnModuleInit {
         },
         accessToken,
       );
-      const businessRows = Array.isArray(businesses.data) ? businesses.data : [];
-      const firstBusiness = readRecord(businessRows[0]);
-      const ownedWhatsappAccounts = firstBusiness.owned_whatsapp_business_accounts;
-      const wabaRows = Array.isArray(ownedWhatsappAccounts) ? ownedWhatsappAccounts : [];
-      const firstWaba = readRecord(wabaRows[0]);
-      const phoneRows = Array.isArray(firstWaba.phone_numbers) ? firstWaba.phone_numbers : [];
-      const firstPhone = readRecord(phoneRows[0]);
-      return {
-        whatsappBusinessId: readStrictText(firstWaba.id) || discovered.whatsappBusinessId || null,
-        whatsappPhoneNumberId:
-          readStrictText(firstPhone.id) || discovered.whatsappPhoneNumberId || null,
-        displayPhoneNumber: readStrictText(firstPhone.display_phone_number) || null,
-        verifiedName: readStrictText(firstPhone.verified_name) || null,
-      };
+      return extractDiscoveredWhatsAppAssets(businesses, discovered);
     } catch (error: unknown) {
       void this.opsAlert?.alertOnDegradation(
         error instanceof Error ? error.message : 'unknown_error',
@@ -245,18 +193,16 @@ export class MetaWhatsAppService implements OnModuleInit {
       if (phoneInfo?.error) {
         throw new Error(phoneInfo.error.message);
       }
-      const displayPhoneNumber = readStrictText(phoneInfo?.display_phone_number) ?? null;
-      const verifiedName = readStrictText(phoneInfo?.verified_name) || resolved.pageName || null;
-      const phoneDigits = normalizeWhatsAppPhone(displayPhoneNumber || '');
+      const parsed = buildPhoneNumberDetailsFromGraphResponse(phoneInfo, resolved.pageName);
       return {
         connected: true,
         status: 'CONNECTED',
         authUrl,
         phoneNumberId: resolved.phoneNumberId,
         whatsappBusinessId: resolved.whatsappBusinessId,
-        phoneNumber: displayPhoneNumber,
-        pushName: verifiedName,
-        selfIds: phoneDigits ? [`${phoneDigits}@c.us`, `${phoneDigits}@s.whatsapp.net`] : [],
+        phoneNumber: parsed.displayPhoneNumber,
+        pushName: parsed.verifiedName,
+        selfIds: parsed.selfIds,
         tokenExpired: resolved.tokenExpired,
         metaConnected: true,
         pageId: resolved.pageId,
@@ -302,18 +248,11 @@ export class MetaWhatsAppService implements OnModuleInit {
         error: 'meta_connection_required',
       };
     }
-    const payload: Record<string, unknown> = {
-      messaging_product: 'whatsapp',
-      recipient_type: 'individual',
-      to: normalizeWhatsAppPhone(to),
-      type: 'text',
-      text: buildTextMessageContent(message),
-    };
-    if (options?.quotedMessageId) {
-      payload.context = {
-        message_id: String(options.quotedMessageId).trim(),
-      };
-    }
+    const payload = buildSendTextMessagePayload({
+      to,
+      message,
+      quotedMessageId: options?.quotedMessageId,
+    });
     const response = await this.metaSdk.graphApiPost(
       `${phoneNumberId}/messages`,
       payload,
@@ -349,19 +288,13 @@ export class MetaWhatsAppService implements OnModuleInit {
         error: 'meta_connection_required',
       };
     }
-    const mediaPayload = buildMediaMessageContent(mediaUrl, type, caption);
-    const payload: Record<string, unknown> = {
-      messaging_product: 'whatsapp',
-      recipient_type: 'individual',
-      to: normalizeWhatsAppPhone(to),
+    const payload = buildSendMediaMessagePayload({
+      to,
       type,
-      [type]: mediaPayload,
-    };
-    if (options?.quotedMessageId) {
-      payload.context = {
-        message_id: String(options.quotedMessageId).trim(),
-      };
-    }
+      mediaUrl,
+      ...(caption !== undefined ? { caption } : {}),
+      quotedMessageId: options?.quotedMessageId,
+    });
     const response = await this.metaSdk.graphApiPost(
       `${phoneNumberId}/messages`,
       payload,
@@ -389,11 +322,7 @@ export class MetaWhatsAppService implements OnModuleInit {
     }
     const response = await this.metaSdk.graphApiPost(
       `${phoneNumberId}/messages`,
-      {
-        messaging_product: 'whatsapp',
-        status: 'read',
-        message_id: messageId,
-      },
+      buildMarkAsReadPayload(messageId),
       accessToken,
     );
     return !response?.error;
@@ -410,8 +339,7 @@ export class MetaWhatsAppService implements OnModuleInit {
     if (byConnection?.workspaceId) {
       return byConnection.workspaceId;
     }
-    const envPhoneNumberId = String(process.env.META_PHONE_NUMBER_ID || '').trim();
-    if (envPhoneNumberId && envPhoneNumberId === normalized) {
+    if (isMatchingEnvPhoneNumberId(normalized, process.env.META_PHONE_NUMBER_ID)) {
       const candidates = await this.prisma.workspace.findMany({
         take: 2,
         where: {
