@@ -8,11 +8,7 @@
  * inputs.
  */
 
-import type {
-  CognitiveActionType,
-  CustomerCognitiveState,
-  CustomerStage,
-} from './cognitive-state';
+import type { CognitiveActionType, CustomerCognitiveState, CustomerStage } from './cognitive-state';
 
 const DIACRITICS_RE = /[̀-ͯ]/g;
 const WHITESPACE_RE = /\s+/;
@@ -83,11 +79,7 @@ export function inferEmotionalTone(text: string): ActiveListeningSignals['emotio
 }
 
 /** Stage-specific PT-BR directive injected into the system prompt. */
-export function buildStageDirective(
-  stage: CustomerStage,
-  trust: number,
-  urgency: number,
-): string {
+export function buildStageDirective(stage: CustomerStage, trust: number, urgency: number): string {
   switch (stage) {
     case 'COLD':
       return `ESTAGIO: FRIO
@@ -199,7 +191,8 @@ export function buildActionDirective(
   action?: CognitiveActionType | string | null,
   tactic?: string | null,
 ): string {
-  const base = ACTION_BASE_BY_TYPE[String(action || '').trim()] ||
+  const base =
+    ACTION_BASE_BY_TYPE[String(action || '').trim()] ||
     'Responda de forma humana, util e progressiva.';
 
   if (!tactic) {
@@ -216,9 +209,7 @@ const VALIDATION_TONES: ReadonlyArray<ActiveListeningSignals['emotionalTone']> =
 ];
 
 /** Returns true when the tone label belongs to the validation-need set. */
-export function isValidationTone(
-  emotionalTone: ActiveListeningSignals['emotionalTone'],
-): boolean {
+export function isValidationTone(emotionalTone: ActiveListeningSignals['emotionalTone']): boolean {
   return VALIDATION_TONES.includes(emotionalTone);
 }
 
@@ -260,9 +251,7 @@ export function inferNeed(normalized: string, personalDetailShared: boolean): st
   return null;
 }
 
-const DEEPENING_TONE_QUESTIONS: Partial<
-  Record<ActiveListeningSignals['emotionalTone'], string>
-> = {
+const DEEPENING_TONE_QUESTIONS: Partial<Record<ActiveListeningSignals['emotionalTone'], string>> = {
   frustrated: 'O que mais te trava nisso hoje?',
   anxious: 'Qual parte te deixa mais inseguro agora?',
 };
@@ -316,10 +305,7 @@ export function countWords(normalized: string): number {
  * Detects whether `normalized` carries the personal-detail markers AND
  * is long enough (>=8 words) to register as a genuine self-disclosure.
  */
-export function detectPersonalDetailShared(
-  normalized: string,
-  wordCount: number,
-): boolean {
+export function detectPersonalDetailShared(normalized: string, wordCount: number): boolean {
   return B_MEU_MINHA_MEUS_MINHAS_RE.test(normalized) && wordCount >= 8;
 }
 

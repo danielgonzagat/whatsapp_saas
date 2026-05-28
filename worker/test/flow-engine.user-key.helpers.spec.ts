@@ -80,9 +80,7 @@ describe('flow-engine.user-key.helpers', () => {
 
   describe('flowTimeoutMember', () => {
     it('returns workspace:user when a workspaceId is provided', () => {
-      expect(flowTimeoutMember('+55 11 99999-1234', 'ws_alpha')).toBe(
-        'ws_alpha:5511999991234',
-      );
+      expect(flowTimeoutMember('+55 11 99999-1234', 'ws_alpha')).toBe('ws_alpha:5511999991234');
     });
 
     it('returns the bare normalised user when no workspaceId is provided', () => {

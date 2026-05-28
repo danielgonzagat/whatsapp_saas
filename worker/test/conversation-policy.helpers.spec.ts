@@ -159,15 +159,11 @@ describe('buildActionDirective', () => {
   });
 
   it('falls back to the generic line for unknown actions', () => {
-    expect(buildActionDirective('NOPE')).toBe(
-      'Responda de forma humana, util e progressiva.',
-    );
+    expect(buildActionDirective('NOPE')).toBe('Responda de forma humana, util e progressiva.');
   });
 
   it('falls back to the generic line for missing action', () => {
-    expect(buildActionDirective(null)).toBe(
-      'Responda de forma humana, util e progressiva.',
-    );
+    expect(buildActionDirective(null)).toBe('Responda de forma humana, util e progressiva.');
   });
 
   it('appends a known tactic hint when both action and tactic are provided', () => {

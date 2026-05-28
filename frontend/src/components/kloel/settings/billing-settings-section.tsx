@@ -3,15 +3,7 @@
 import { kloelT } from '@/lib/i18n/t';
 import { Button } from '@/components/ui/button';
 import { type SalesReportSummary, billingApi, tokenStorage } from '@/lib/api';
-import {
-  Activity,
-  AlertTriangle,
-  Check,
-  Lock,
-  Plus,
-  Sparkles,
-  Wallet,
-} from 'lucide-react';
+import { Activity, AlertTriangle, Check, Lock, Plus, Sparkles, Wallet } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BillingLegacyProvidersSection } from './billing-legacy-providers-section';
 import { PaymentMethodsCard } from './billing-settings-section.payment-methods';
@@ -66,9 +58,7 @@ export function BillingSettingsSection({
   const [cards, setCards] = useState<ReturnType<typeof mapPaymentMethods>>([]);
   const [salesPeriod, setSalesPeriod] = useState<SalesPeriod>('week');
   const [salesReport, setSalesReport] = useState<SalesReportSummary | null>(null);
-  const [showCardsFirst, setShowCardsFirst] = useState(
-    shouldShowCardsFirst(scrollToCreditCard, hasCard),
-  );
+  const showCardsFirst = shouldShowCardsFirst(scrollToCreditCard, hasCard);
 
   const estimatedMessages = useMemo(
     () => computeEstimatedMessages(creditsBalance),
@@ -109,10 +99,6 @@ export function BillingSettingsSection({
   useEffect(() => {
     void loadSalesReport();
   }, [loadSalesReport]);
-
-  useEffect(() => {
-    setShowCardsFirst(shouldShowCardsFirst(scrollToCreditCard, hasCard));
-  }, [scrollToCreditCard, hasCard]);
 
   const startAddCardFlow = useCallback(async () => {
     setBillingLoading(true);
