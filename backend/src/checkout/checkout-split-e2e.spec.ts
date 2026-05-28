@@ -6,6 +6,7 @@ import { ConnectService } from '../payments/connect/connect.service';
 import { FraudEngine } from '../payments/fraud/fraud.engine';
 import { MercadoPagoBoletoChargeService } from '../payments/mercadopago/mercadopago-boleto-charge.service';
 import { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
+import { PaymentProviderRouterService } from '../payments/provider-router/provider-router.service';
 import { StripeChargeService } from '../payments/stripe/stripe-charge.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -124,6 +125,7 @@ describe('Checkout E2E Split Chain', () => {
         { provide: StripeChargeService, useValue: stripeCharge },
         { provide: MercadoPagoBoletoChargeService, useValue: mercadoPagoBoleto },
         { provide: MercadoPagoPixChargeService, useValue: mercadoPagoPix },
+        PaymentProviderRouterService,
         { provide: ConnectService, useValue: connectService },
         { provide: FraudEngine, useValue: fraudEngine },
         { provide: FinancialAlertService, useValue: financialAlert },

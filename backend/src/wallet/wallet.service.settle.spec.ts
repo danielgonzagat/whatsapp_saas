@@ -8,6 +8,7 @@ import type {
 
 import { StripeService } from '../billing/stripe.service';
 import { FraudEngine } from '../payments/fraud/fraud.engine';
+import { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { WalletService } from './wallet.service';
@@ -177,6 +178,13 @@ async function buildService(
       { provide: StripeService, useValue: stripe },
       { provide: PrismaService, useValue: prisma.prisma },
       { provide: FraudEngine, useValue: fraudEngine },
+      {
+        provide: MercadoPagoPixChargeService,
+        useValue: {
+          create: jest.fn(),
+          getStatus: jest.fn(),
+        },
+      },
     ],
   }).compile();
   return moduleRef.get(WalletService);
