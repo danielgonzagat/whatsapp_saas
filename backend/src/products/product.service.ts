@@ -51,8 +51,9 @@ export class ProductService {
   async create(
     workspaceId: string,
     dto: CreateProductDto,
-    actor: { id: string; email?: string },
+    actor?: { id: string; email?: string },
   ): Promise<ProductResult> {
+    const resolvedActor = actor ?? { id: 'kloel-resolver' };
     assertWorkspaceId(workspaceId);
 
     const product = await this.prisma.product.create({
@@ -68,7 +69,7 @@ export class ProductService {
     await this.eventEmitter.emit('mind.product.observed', {
       productId: product.id,
       workspaceId,
-      agentId: actor.id,
+      agentId: resolvedActor.id,
       name: product.name,
       price: product.price,
       format: product.format,
@@ -76,7 +77,7 @@ export class ProductService {
 
     await this.audit.log({
       workspaceId,
-      agentId: actor.id,
+      agentId: resolvedActor.id,
       action: 'product.create',
       resource: 'Product',
       resourceId: product.id,
@@ -92,7 +93,7 @@ export class ProductService {
       payload: buildCommercialPayload(product),
     });
 
-    this.logger.log(`Product created: ${product.id} by ${actor.id}`);
+    this.logger.log(`Product created: ${product.id} by ${resolvedActor.id}`);
     return { success: true, product };
   }
 
@@ -101,10 +102,31 @@ export class ProductService {
    */
   async update(
     workspaceId: string,
-    productId: string,
-    dto: UpdateProductDto,
-    actor: { id: string; email?: string },
+    productIdOrArgs: string | Record<string, unknown>,
+    dtoOrActor?: UpdateProductDto | { id: string; email?: string },
+    actorOpt?: { id: string; email?: string },
   ): Promise<ProductResult> {
+    // Resolve calling convention:
+    //  - Old (direct): update(ws, productId, dto, actor)
+    //  - New (resolver): update(ws, { productId, ...dtoFields })
+    let productId: string;
+    let dto: UpdateProductDto;
+    let actor: { id: string; email?: string };
+
+    if (typeof productIdOrArgs === 'object') {
+      // Resolver path: extract productId from args, remaining fields = dto
+      const args = productIdOrArgs as Record<string, unknown>;
+      productId = String(args.productId ?? '');
+      const { productId: _, ...rest } = args;
+      dto = rest as UpdateProductDto;
+      actor = { id: 'kloel-resolver' };
+    } else {
+      // Direct path: traditional 4-arg call
+      productId = productIdOrArgs;
+      dto = (dtoOrActor as UpdateProductDto) ?? {};
+      actor = (actorOpt as { id: string; email?: string }) ?? { id: 'kloel-resolver' };
+    }
+
     assertWorkspaceId(workspaceId);
     await this.assertOwnedProduct(workspaceId, productId);
 
@@ -147,6 +169,22 @@ export class ProductService {
     return this.prisma.product.findFirst({
       where: { id: productId, workspaceId },
     });
+  }
+
+  /**
+   * Get a product by ID (resolver-compatible 2-arg thin wrapper).
+   * Extracts `productId` from args, workspace-scoped lookup, throws on missing.
+   */
+  async get(
+    workspaceId: string,
+    args: { productId: string },
+  ): Promise<ProductResult> {
+    assertWorkspaceId(workspaceId);
+    const product = await this.findById(workspaceId, args.productId);
+    if (!product) {
+      throw new NotFoundException(`Product ${args.productId} not found`);
+    }
+    return { success: true, product };
   }
 
   /**
