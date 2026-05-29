@@ -38,6 +38,57 @@ export class MarketplaceService {
     });
   }
 
+  /** List marketplace products. */
+  async list(
+    workspaceId: string,
+    filter?: { category?: string; search?: string; limit?: number },
+  ): Promise<{
+    items: Array<{
+      id: string;
+      name: string;
+      description: string;
+      price: bigint;
+      vendor: string;
+    }>;
+    total: number;
+  }> {
+    const where: Prisma.ProductWhereInput = {
+      workspaceId,
+      active: true,
+      ...(filter?.category ? { category: filter.category } : {}),
+      ...(filter?.search
+        ? {
+            OR: [
+              { name: { contains: filter.search, mode: 'insensitive' } },
+              { description: { contains: filter.search, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    };
+
+    const limit = filter?.limit ?? 20;
+
+    const [total, products] = await Promise.all([
+      this.prisma.product.count({ where }),
+      this.prisma.product.findMany({
+        where,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+      }),
+    ]);
+
+    return {
+      items: products.map((p) => ({
+        id: p.id,
+        name: p.name,
+        description: p.description ?? '',
+        price: BigInt(Math.round(p.price * 100)),
+        vendor: p.workspaceId,
+      })),
+      total,
+    };
+  }
+
   /** Install template. */
   async installTemplate(workspaceId: string, templateId: string) {
     const template = await this.prisma.flowTemplate.findUnique({

@@ -32,17 +32,20 @@ describe('ProductService.update (resolver-compatible 2-arg)', () => {
     prisma = {
       product: {
         findUnique: jest.fn(),
-        update: jest.fn().mockImplementation(({ where, data }: { where: { id: string }; data: Record<string, unknown> }) =>
-          Promise.resolve({
-            id: where.id,
-            workspaceId: ws,
-            name: 'Old',
-            price: 99.9,
-            ...data,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          }),
-        ),
+        update: jest
+          .fn()
+          .mockImplementation(
+            ({ where, data }: { where: { id: string }; data: Record<string, unknown> }) =>
+              Promise.resolve({
+                id: where.id,
+                workspaceId: ws,
+                name: 'Old',
+                price: 99.9,
+                ...data,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              }),
+          ),
       },
     };
 
@@ -52,7 +55,10 @@ describe('ProductService.update (resolver-compatible 2-arg)', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: EventEmitter2, useValue: { emit: jest.fn() } },
         { provide: AuditService, useValue: { log: jest.fn() } },
-        { provide: MindEventSpine, useValue: { recordCommercial: jest.fn().mockResolvedValue('ok') } },
+        {
+          provide: MindEventSpine,
+          useValue: { recordCommercial: jest.fn().mockResolvedValue('ok') },
+        },
       ],
     }).compile();
     service = module.get(ProductService);
@@ -63,23 +69,24 @@ describe('ProductService.update (resolver-compatible 2-arg)', () => {
     // Resolver calls: update(workspaceId, { productId, name, ... })
     const result = await service.update(ws, { productId: 'prod-1', name: 'UpdatedViaResolver' });
     expect(result.success).toBe(true);
-    expect(prisma.product.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: 'prod-1', workspaceId: ws },
-        data: expect.objectContaining({ name: 'UpdatedViaResolver' }),
-      }),
-    );
+    const updateCalls1 = prisma.product.update.mock.calls as Array<
+      [{ where: { id: string; workspaceId: string }; data: { name?: string } }]
+    >;
+    expect(updateCalls1[0]?.[0]?.where).toEqual({ id: 'prod-1', workspaceId: ws });
+    expect(updateCalls1[0]?.[0]?.data?.name).toBe('UpdatedViaResolver');
   });
 
   it('still works with 4-arg direct calling convention', async () => {
     prisma.product.findUnique.mockResolvedValue(makeProduct());
-    const result = await service.update(ws, 'prod-1', { name: 'UpdatedOldStyle' }, { id: 'agent-3' });
-    expect(result.success).toBe(true);
-    expect(prisma.product.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ name: 'UpdatedOldStyle' }),
-      }),
+    const result = await service.update(
+      ws,
+      'prod-1',
+      { name: 'UpdatedOldStyle' },
+      { id: 'agent-3' },
     );
+    expect(result.success).toBe(true);
+    const updateCalls2 = prisma.product.update.mock.calls as Array<[{ data: { name?: string } }]>;
+    expect(updateCalls2[0]?.[0]?.data?.name).toBe('UpdatedOldStyle');
   });
 
   it('handles resolver args with no additional fields gracefully', async () => {

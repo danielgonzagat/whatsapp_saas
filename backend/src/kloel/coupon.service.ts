@@ -105,12 +105,24 @@ export class CouponService {
     }
 
     const data: Record<string, unknown> = {};
-    if (args.active !== undefined) data.active = args.active;
-    if (args.discountValue !== undefined) data.discountValue = Number(args.discountValue);
-    if (args.discountType !== undefined) data.discountType = String(args.discountType);
-    if (args.maxUses !== undefined) data.maxUses = Number(args.maxUses);
-    if (args.code !== undefined) data.code = String(args.code).trim();
-    if (args.expiresAt !== undefined) data.expiresAt = new Date(String(args.expiresAt));
+    if (args.active !== undefined) {
+      data.active = args.active;
+    }
+    if (args.discountValue !== undefined) {
+      data.discountValue = Number(args.discountValue);
+    }
+    if (args.discountType !== undefined) {
+      data.discountType = String(args.discountType);
+    }
+    if (args.maxUses !== undefined) {
+      data.maxUses = Number(args.maxUses);
+    }
+    if (args.code !== undefined) {
+      data.code = String(args.code).trim();
+    }
+    if (args.expiresAt !== undefined) {
+      data.expiresAt = new Date(String(args.expiresAt));
+    }
 
     if (Object.keys(data).length === 0) {
       return { success: false, error: 'no_fields_to_update' };

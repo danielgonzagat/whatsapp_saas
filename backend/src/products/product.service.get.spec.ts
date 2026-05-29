@@ -51,9 +51,7 @@ describe('ProductService.get (resolver-compatible)', () => {
 
   it('throws NotFoundException when product not in workspace', async () => {
     prisma.product.findFirst.mockResolvedValue(null);
-    await expect(service.get(ws, { productId: 'prod-missing' })).rejects.toThrow(
-      NotFoundException,
-    );
+    await expect(service.get(ws, { productId: 'prod-missing' })).rejects.toThrow(NotFoundException);
   });
 
   it('workspace-scopes the lookup', async () => {

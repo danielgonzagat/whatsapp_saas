@@ -349,7 +349,7 @@ export class WorkspaceService {
     await this.invalidateWorkspaceCache(workspaceId);
     const ws = await this.getWorkspace(workspaceId);
     const current = asProviderSettings(ws.providerSettings);
-    const merged = deepMergePlainObjects(current as Record<string, unknown>, dto || {});
+    const merged = deepMergePlainObjects(current, dto || {});
 
     return this.prisma.workspace.update({
       where: { id: workspaceId },
@@ -367,11 +367,7 @@ export class WorkspaceService {
   ): Promise<{ updated: true }> {
     const hours = Array.isArray(dto?.hours) ? dto.hours : [];
     for (const entry of hours) {
-      if (
-        !Number.isInteger(entry?.dayOfWeek) ||
-        entry.dayOfWeek < 0 ||
-        entry.dayOfWeek > 6
-      ) {
+      if (!Number.isInteger(entry?.dayOfWeek) || entry.dayOfWeek < 0 || entry.dayOfWeek > 6) {
         throw new Error(`Invalid dayOfWeek: ${entry?.dayOfWeek}`);
       }
       if (!isValidTimeHHmm(entry?.open) || !isValidTimeHHmm(entry?.close)) {
@@ -411,8 +407,7 @@ export class WorkspaceService {
     await this.invalidateWorkspaceCache(workspaceId);
     const ws = await this.getWorkspace(workspaceId);
     const settings = asProviderSettings(ws.providerSettings);
-    const currentPolicy =
-      (settings.salesPolicy as Record<string, unknown> | undefined) || {};
+    const currentPolicy = (settings.salesPolicy as Record<string, unknown> | undefined) || {};
 
     const nextPolicy: Record<string, unknown> = { ...currentPolicy };
     if (dto?.refundPolicy !== undefined) {

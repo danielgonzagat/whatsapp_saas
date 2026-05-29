@@ -21,14 +21,20 @@ function makeMindCase(overrides: Record<string, unknown> = {}) {
 function makePrisma(mindCases: Array<ReturnType<typeof makeMindCase>> = []) {
   return {
     mindCase: {
-      findMany: jest.fn().mockImplementation((args: { where: { workspaceId: string; action?: string } }) => {
-        const cases = mindCases.filter((c) => {
-          if (c.workspaceId !== args.where.workspaceId) return false;
-          if (args.where.action !== undefined && c.action !== args.where.action) return false;
-          return true;
-        });
-        return Promise.resolve(cases);
-      }),
+      findMany: jest
+        .fn()
+        .mockImplementation((args: { where: { workspaceId: string; action?: string } }) => {
+          const cases = mindCases.filter((c) => {
+            if (c.workspaceId !== args.where.workspaceId) {
+              return false;
+            }
+            if (args.where.action !== undefined && c.action !== args.where.action) {
+              return false;
+            }
+            return true;
+          });
+          return Promise.resolve(cases);
+        }),
     },
   };
 }
@@ -63,11 +69,36 @@ describe('MindCausalModelService', () => {
     it('infers likely effects from historical cases', async () => {
       const now = Date.now();
       const cases = [
-        makeMindCase({ id: 'c1', caseType: 'sale_closed', outcome: 0.9, occurredAt: new Date(now - 3600_000) }),
-        makeMindCase({ id: 'c2', caseType: 'sale_closed', outcome: 0.8, occurredAt: new Date(now - 7200_000) }),
-        makeMindCase({ id: 'c3', caseType: 'sale_closed', outcome: 0.85, occurredAt: new Date(now - 10800_000) }),
-        makeMindCase({ id: 'c4', caseType: 'sale_closed', outcome: 0.7, occurredAt: new Date(now - 14400_000) }),
-        makeMindCase({ id: 'c5', caseType: 'no_reply', outcome: 0.1, occurredAt: new Date(now - 3600_000) }),
+        makeMindCase({
+          id: 'c1',
+          caseType: 'sale_closed',
+          outcome: 0.9,
+          occurredAt: new Date(now - 3600_000),
+        }),
+        makeMindCase({
+          id: 'c2',
+          caseType: 'sale_closed',
+          outcome: 0.8,
+          occurredAt: new Date(now - 7200_000),
+        }),
+        makeMindCase({
+          id: 'c3',
+          caseType: 'sale_closed',
+          outcome: 0.85,
+          occurredAt: new Date(now - 10800_000),
+        }),
+        makeMindCase({
+          id: 'c4',
+          caseType: 'sale_closed',
+          outcome: 0.7,
+          occurredAt: new Date(now - 14400_000),
+        }),
+        makeMindCase({
+          id: 'c5',
+          caseType: 'no_reply',
+          outcome: 0.1,
+          occurredAt: new Date(now - 3600_000),
+        }),
       ];
       const prisma = makePrisma(cases);
       const spine = makeSpine();
@@ -85,7 +116,12 @@ describe('MindCausalModelService', () => {
     it('returns weak signal basis for few cases', async () => {
       const now = Date.now();
       const cases = [
-        makeMindCase({ id: 'c1', caseType: 'sale_closed', outcome: 0.9, occurredAt: new Date(now - 3600_000) }),
+        makeMindCase({
+          id: 'c1',
+          caseType: 'sale_closed',
+          outcome: 0.9,
+          occurredAt: new Date(now - 3600_000),
+        }),
       ];
       const prisma = makePrisma(cases);
       const spine = makeSpine();
@@ -260,7 +296,14 @@ describe('MindCausalModelService', () => {
 
     it('works without spine (optional)', async () => {
       const now = Date.now();
-      const cases = [makeMindCase({ id: 'c1', action: 'offer_discount', outcome: 0.8, occurredAt: new Date(now - 3600_000) })];
+      const cases = [
+        makeMindCase({
+          id: 'c1',
+          action: 'offer_discount',
+          outcome: 0.8,
+          occurredAt: new Date(now - 3600_000),
+        }),
+      ];
       const prisma = makePrisma(cases);
       const svc = new MindCausalModelService(prisma as never);
 

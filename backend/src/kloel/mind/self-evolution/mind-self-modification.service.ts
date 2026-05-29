@@ -181,9 +181,7 @@ export class MindSelfModificationService {
       });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.warn(
-        `emitSelfModificationProposal failed workspace=${workspaceId}: ${message}`,
-      );
+      this.logger.warn(`emitSelfModificationProposal failed workspace=${workspaceId}: ${message}`);
     }
   }
 
@@ -249,7 +247,11 @@ export class MindSelfModificationService {
         }
         const full = path.join(dir, entry.name);
         if (entry.isDirectory()) {
-          if (entry.name === 'node_modules' || entry.name === 'dist' || entry.name.startsWith('.')) {
+          if (
+            entry.name === 'node_modules' ||
+            entry.name === 'dist' ||
+            entry.name.startsWith('.')
+          ) {
             continue;
           }
           stack.push(full);

@@ -36,7 +36,10 @@ describe('ProductService.create (resolver-compatible 2-arg)', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: EventEmitter2, useValue: { emit: jest.fn() } },
         { provide: AuditService, useValue: audit },
-        { provide: MindEventSpine, useValue: { recordCommercial: jest.fn().mockResolvedValue('ok') } },
+        {
+          provide: MindEventSpine,
+          useValue: { recordCommercial: jest.fn().mockResolvedValue('ok') },
+        },
       ],
     }).compile();
     service = module.get(ProductService);

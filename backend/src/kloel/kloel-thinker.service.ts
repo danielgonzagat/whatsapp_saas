@@ -343,10 +343,7 @@ export class KloelThinkerService {
                   // canonical `cognition.handoff.confidence.blocking`.
                   emitCognitionAlias(
                     (_eventName, payload) => {
-                      this.logger.warn(
-                        'Handoff confidence gate: escalation to human',
-                        payload,
-                      );
+                      this.logger.warn('Handoff confidence gate: escalation to human', payload);
                     },
                     'kloel.handoff.confidence.blocking',
                     escalationLog,

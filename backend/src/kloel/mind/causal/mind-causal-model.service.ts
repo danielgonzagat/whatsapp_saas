@@ -72,10 +72,12 @@ export class MindCausalModelService {
 
       for (const c of cases) {
         const rw = recencyWeight(c.occurredAt, now);
-        const surpriseWeight = this.surprise ? this.surprise.computeSurprise(
-          c.outcome != null ? Math.min(1, Math.max(0, c.outcome)) : 0.5,
-          c.outcome != null && c.outcome > 0.5 ? 1 : 0,
-        ) : 1;
+        const surpriseWeight = this.surprise
+          ? this.surprise.computeSurprise(
+              c.outcome != null ? Math.min(1, Math.max(0, c.outcome)) : 0.5,
+              c.outcome != null && c.outcome > 0.5 ? 1 : 0,
+            )
+          : 1;
         const weight = rw * (1 + surpriseWeight * 0.5);
 
         const effect = c.caseType;
@@ -97,20 +99,20 @@ export class MindCausalModelService {
       const likelyEffects = [...effectMap.values()]
         .map((entry) => ({
           effect: entry.effect,
-          confidence: totalWeight > 0
-            ? Math.min(0.95,
-                DEFAULT_CONFIDENCE + (entry.totalWeight / totalWeight) * 0.45,
-              )
-            : DEFAULT_CONFIDENCE,
+          confidence:
+            totalWeight > 0
+              ? Math.min(0.95, DEFAULT_CONFIDENCE + (entry.totalWeight / totalWeight) * 0.45)
+              : DEFAULT_CONFIDENCE,
         }))
         .sort((a, b) => b.confidence - a.confidence)
         .slice(0, 10);
 
-      const basis = cases.length >= 10
-        ? 'strong_historical_pattern'
-        : cases.length >= 3
-          ? 'moderate_historical_pattern'
-          : 'weak_historical_signal';
+      const basis =
+        cases.length >= 10
+          ? 'strong_historical_pattern'
+          : cases.length >= 3
+            ? 'moderate_historical_pattern'
+            : 'weak_historical_signal';
 
       await this.emitInferred(workspaceId, action, likelyEffects, basis);
 
@@ -121,9 +123,7 @@ export class MindCausalModelService {
       return { likelyEffects, basis };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.warn(
-        `Causal inference failed workspace=${workspaceId}: ${message}`,
-      );
+      this.logger.warn(`Causal inference failed workspace=${workspaceId}: ${message}`);
       return { likelyEffects: [], basis: 'error' };
     }
   }
@@ -179,19 +179,20 @@ export class MindCausalModelService {
       const uncertainty = scored.length < 3 ? 0.7 : scored.length < 10 ? 0.4 : 0.2;
 
       const outcomeLabel =
-        avgOutcome > 0.7 ? 'highly_positive' :
-        avgOutcome > 0.5 ? 'positive' :
-        avgOutcome > 0.3 ? 'neutral' :
-        'negative';
+        avgOutcome > 0.7
+          ? 'highly_positive'
+          : avgOutcome > 0.5
+            ? 'positive'
+            : avgOutcome > 0.3
+              ? 'neutral'
+              : 'negative';
 
       await this.emitSimulated(workspaceId, hypotheticalAction, outcomeLabel, uncertainty);
 
       return { expectedOutcome: outcomeLabel, uncertainty };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.warn(
-        `Scenario simulation failed workspace=${workspaceId}: ${message}`,
-      );
+      this.logger.warn(`Scenario simulation failed workspace=${workspaceId}: ${message}`);
       return { expectedOutcome: 'unknown', uncertainty: 1.0 };
     }
   }

@@ -36,8 +36,7 @@ export const KLOEL_TO_COGNITION_ALIAS = {
 } as const;
 
 export type KloelLegacyEventName = keyof typeof KLOEL_TO_COGNITION_ALIAS;
-export type CognitionCanonicalEventName =
-  (typeof KLOEL_TO_COGNITION_ALIAS)[KloelLegacyEventName];
+export type CognitionCanonicalEventName = (typeof KLOEL_TO_COGNITION_ALIAS)[KloelLegacyEventName];
 
 /**
  * Resolve the canonical `cognition.*` equivalent for a legacy `kloel.*` name.
@@ -45,9 +44,7 @@ export type CognitionCanonicalEventName =
  * lets call sites no-op the alias emission when given an arbitrary string,
  * without throwing.
  */
-export function resolveCanonicalAlias(
-  legacy: string,
-): CognitionCanonicalEventName | undefined {
+export function resolveCanonicalAlias(legacy: string): CognitionCanonicalEventName | undefined {
   if (legacy in KLOEL_TO_COGNITION_ALIAS) {
     return KLOEL_TO_COGNITION_ALIAS[legacy as KloelLegacyEventName];
   }
@@ -59,9 +56,10 @@ export function resolveCanonicalAlias(
  * `kloel.*` event. Throws when the input is unknown so the alias table stays
  * the single source of truth (vs. silent drift from typos at call sites).
  */
-export function dualEventNames(
-  legacy: KloelLegacyEventName,
-): { legacy: KloelLegacyEventName; canonical: CognitionCanonicalEventName } {
+export function dualEventNames(legacy: KloelLegacyEventName): {
+  legacy: KloelLegacyEventName;
+  canonical: CognitionCanonicalEventName;
+} {
   const canonical = KLOEL_TO_COGNITION_ALIAS[legacy];
   return { legacy, canonical };
 }
@@ -104,10 +102,7 @@ export function emitCognitionAlias<T extends Record<string, unknown>>(
  * logs carry the same name in both the bus-level event name and the payload
  * context field (a common DataDog/Grafana convention).
  */
-function rewriteContext<T extends Record<string, unknown>>(
-  payload: T,
-  contextName: string,
-): T {
+function rewriteContext<T extends Record<string, unknown>>(payload: T, contextName: string): T {
   if (!('context' in payload)) {
     return payload;
   }

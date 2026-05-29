@@ -44,9 +44,7 @@ describe('event-taxonomy.canonical-aliases', () => {
     it('returns the canonical name for every registered legacy entry', () => {
       for (const legacy of Object.keys(KLOEL_TO_COGNITION_ALIAS)) {
         const canonical = resolveCanonicalAlias(legacy);
-        expect(canonical).toBe(
-          KLOEL_TO_COGNITION_ALIAS[legacy as KloelLegacyEventName],
-        );
+        expect(canonical).toBe(KLOEL_TO_COGNITION_ALIAS[legacy as KloelLegacyEventName]);
       }
     });
 
@@ -150,7 +148,7 @@ describe('event-taxonomy.canonical-aliases', () => {
       const observed: Array<string | undefined> = [];
       emitCognitionAlias(
         (_name, payload) => {
-          observed.push(payload['workspaceId'] as string | undefined);
+          observed.push(payload['workspaceId']);
         },
         'kloel.chat.turn',
         { workspaceId: 'ws_iso_check' },

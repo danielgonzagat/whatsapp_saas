@@ -189,10 +189,19 @@ describe('WorkspaceService', () => {
         name: 'old',
         providerSettings: { businessInfo: { existing: 'kept' } },
       });
-      await service.updateInfo('ws-1', { name: 'New Co', businessType: 'agency', cnpj: '00.000.000/0001-00' });
+      await service.updateInfo('ws-1', {
+        name: 'New Co',
+        businessType: 'agency',
+        cnpj: '00.000.000/0001-00',
+      });
       expect(cache.del).toHaveBeenCalledWith('cache:workspace:ws-1');
       const calls = prisma.workspace.update.mock.calls as Array<
-        [{ where: { id: string }; data: { name?: string; providerSettings: Record<string, unknown> } }]
+        [
+          {
+            where: { id: string };
+            data: { name?: string; providerSettings: Record<string, unknown> };
+          },
+        ]
       >;
       const args = calls[0]?.[0];
       expect(args?.where.id).toBe('ws-1');

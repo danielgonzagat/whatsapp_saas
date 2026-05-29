@@ -66,7 +66,7 @@ export class ProductService {
       },
     });
 
-    await this.eventEmitter.emit('mind.product.observed', {
+    this.eventEmitter.emit('mind.product.observed', {
       productId: product.id,
       workspaceId,
       agentId: resolvedActor.id,
@@ -115,10 +115,10 @@ export class ProductService {
 
     if (typeof productIdOrArgs === 'object') {
       // Resolver path: extract productId from args, remaining fields = dto
-      const args = productIdOrArgs as Record<string, unknown>;
-      productId = String(args.productId ?? '');
+      const args = productIdOrArgs;
+      productId = typeof args.productId === 'string' ? args.productId : '';
       const { productId: _, ...rest } = args;
-      dto = rest as UpdateProductDto;
+      dto = rest;
       actor = { id: 'kloel-resolver' };
     } else {
       // Direct path: traditional 4-arg call
@@ -135,7 +135,7 @@ export class ProductService {
       data: dto,
     });
 
-    await this.eventEmitter.emit('product.updated', {
+    this.eventEmitter.emit('product.updated', {
       productId: product.id,
       workspaceId,
       agentId: actor.id,
@@ -175,10 +175,7 @@ export class ProductService {
    * Get a product by ID (resolver-compatible 2-arg thin wrapper).
    * Extracts `productId` from args, workspace-scoped lookup, throws on missing.
    */
-  async get(
-    workspaceId: string,
-    args: { productId: string },
-  ): Promise<ProductResult> {
+  async get(workspaceId: string, args: { productId: string }): Promise<ProductResult> {
     assertWorkspaceId(workspaceId);
     const product = await this.findById(workspaceId, args.productId);
     if (!product) {
@@ -267,7 +264,7 @@ export class ProductService {
       data: { status: 'APPROVED', active: true },
     });
 
-    await this.eventEmitter.emit('product.published', {
+    this.eventEmitter.emit('product.published', {
       productId: product.id,
       workspaceId,
       agentId: actor.id,
@@ -309,7 +306,7 @@ export class ProductService {
       data: { active: available },
     });
 
-    await this.eventEmitter.emit(available ? 'product.activated' : 'product.deactivated', {
+    this.eventEmitter.emit(available ? 'product.activated' : 'product.deactivated', {
       productId: product.id,
       workspaceId,
       agentId: actor.id,
@@ -350,7 +347,7 @@ export class ProductService {
       data: { status: 'DELETED', active: false },
     });
 
-    await this.eventEmitter.emit('product.deleted', {
+    this.eventEmitter.emit('product.deleted', {
       productId: product.id,
       workspaceId,
       agentId: actor.id,
@@ -379,10 +376,7 @@ export class ProductService {
    * Ensure the product exists and belongs to the workspace.
    * Throws NotFound / Forbidden — callers don't need to repeat the pattern.
    */
-  private async assertOwnedProduct(
-    workspaceId: string,
-    productId: string,
-  ): Promise<Product> {
+  private async assertOwnedProduct(workspaceId: string, productId: string): Promise<Product> {
     const existing = await this.prisma.product.findUnique({
       where: { id: productId },
     });

@@ -35,22 +35,32 @@ function makePrisma(overrides?: {
   groupByResult?: Array<{ concept: string; _count: { id: number } }>;
 }) {
   const mindCases = overrides?.mindCases ?? [];
-  const detections = overrides?.mindConceptDetections ?? [];
+  const _detections = overrides?.mindConceptDetections ?? [];
   const wsState = overrides?.workspaceState;
   const deleteCount = overrides?.deleteCount ?? 0;
   const groupByResult = overrides?.groupByResult ?? [];
 
   return {
     mindCase: {
-      findMany: jest.fn().mockImplementation((args: { where: { workspaceId: string; occurredAt?: { lt?: Date; gte?: Date } } }) => {
-        const cases = mindCases.filter((c) => {
-          if (c.workspaceId !== args.where.workspaceId) return false;
-          if (args.where.occurredAt?.lt && c.occurredAt >= args.where.occurredAt.lt) return false;
-          if (args.where.occurredAt?.gte && c.occurredAt < args.where.occurredAt.gte) return false;
-          return true;
-        });
-        return Promise.resolve(cases);
-      }),
+      findMany: jest
+        .fn()
+        .mockImplementation(
+          (args: { where: { workspaceId: string; occurredAt?: { lt?: Date; gte?: Date } } }) => {
+            const cases = mindCases.filter((c) => {
+              if (c.workspaceId !== args.where.workspaceId) {
+                return false;
+              }
+              if (args.where.occurredAt?.lt && c.occurredAt >= args.where.occurredAt.lt) {
+                return false;
+              }
+              if (args.where.occurredAt?.gte && c.occurredAt < args.where.occurredAt.gte) {
+                return false;
+              }
+              return true;
+            });
+            return Promise.resolve(cases);
+          },
+        ),
     },
     mindConceptDetection: {
       create: jest.fn().mockResolvedValue({ id: 'det-1' }),
@@ -116,7 +126,7 @@ describe('MindLongTermMemoryService', () => {
         expect.objectContaining({
           eventName: 'cognition.memory.consolidated',
           workspaceId: 'ws-1',
-        }),
+        }) as never,
       );
     });
 
@@ -149,14 +159,11 @@ describe('MindLongTermMemoryService', () => {
       const result = await svc.consolidate('ws-1');
 
       expect(result.pruned).toBe(3);
-      expect(prisma.mindConceptDetection.deleteMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            workspaceId: 'ws-1',
-            confidence: { lt: 0.3 },
-          }),
-        }),
-      );
+      const deleteCalls = prisma.mindConceptDetection.deleteMany.mock.calls as Array<
+        [{ where: { workspaceId: string; confidence: { lt: number } } }]
+      >;
+      expect(deleteCalls[0]?.[0]?.where.workspaceId).toBe('ws-1');
+      expect(deleteCalls[0]?.[0]?.where.confidence.lt).toBe(0.3);
     });
 
     it('respects workspace isolation', async () => {
@@ -206,12 +213,17 @@ describe('MindLongTermMemoryService', () => {
       const result = await svc.consolidate('ws-1');
 
       expect(result.consolidated).toBeGreaterThanOrEqual(1);
-      expect(prisma.mindConceptDetection.updateMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: 'ws-1', concept: 'hot_lead' }),
-          data: { confidence: { multiply: 1.1 } },
-        }),
-      );
+      const updateCalls = prisma.mindConceptDetection.updateMany.mock.calls as Array<
+        [
+          {
+            where: { workspaceId: string; concept: string };
+            data: { confidence: { multiply: number } };
+          },
+        ]
+      >;
+      expect(updateCalls[0]?.[0]?.where.workspaceId).toBe('ws-1');
+      expect(updateCalls[0]?.[0]?.where.concept).toBe('hot_lead');
+      expect(updateCalls[0]?.[0]?.data.confidence.multiply).toBe(1.1);
     });
 
     it('works without spine (optional)', async () => {
@@ -253,8 +265,10 @@ describe('MindLongTermMemoryService', () => {
 
       // Watermark should have been recorded
       expect(prisma.mindWorkspaceState.create).toHaveBeenCalled();
-      const createCall = prisma.mindWorkspaceState.create.mock.calls[0]?.[0];
-      expect(createCall?.data?.health?.lastConsolidationAt).toBeDefined();
+      const createCalls = prisma.mindWorkspaceState.create.mock.calls as Array<
+        [{ data: { health?: { lastConsolidationAt?: unknown } } }]
+      >;
+      expect(createCalls[0]?.[0]?.data?.health?.lastConsolidationAt).toBeDefined();
     });
   });
 });

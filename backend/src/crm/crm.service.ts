@@ -1,4 +1,4 @@
-import { Injectable, Optional } from '@nestjs/common';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { DealStatus, Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -227,5 +227,59 @@ export class CrmService {
     },
   ) {
     return listDealsHelper(this.prisma, workspaceId, params);
+  }
+
+  /** Get pipeline with stages, deals and total value. */
+  async getPipeline(workspaceId: string): Promise<{
+    stages: Array<{
+      id: string;
+      name: string;
+      leads: Array<{
+        id: string;
+        name: string;
+        value: bigint;
+        lastActivity: Date;
+      }>;
+    }>;
+    totalValue: bigint;
+  }> {
+    const pipeline = await this.prisma.pipeline.findFirst({
+      where: { workspaceId },
+      include: {
+        stages: {
+          orderBy: { order: 'asc' },
+          include: {
+            deals: {
+              orderBy: { updatedAt: 'desc' },
+            },
+          },
+        },
+      },
+    });
+
+    if (!pipeline) {
+      throw new NotFoundException('Pipeline não encontrado');
+    }
+
+    let totalValue = 0n;
+    const stages = pipeline.stages.map((stage) => {
+      const leads = stage.deals.map((deal) => {
+        const value = BigInt(Math.round(deal.value * 100));
+        totalValue += value;
+        return {
+          id: deal.id,
+          name: deal.title,
+          value,
+          lastActivity: deal.updatedAt,
+        };
+      });
+      return {
+        id: stage.id,
+        name: stage.name,
+        leads,
+      };
+    });
+
+    return { stages, totalValue };
   }
 }

@@ -19,27 +19,25 @@ describe('MindSelfModificationService', () => {
     const proposal = await service.proposeOptimization('ws-1');
 
     expect(proposal.opportunities.length).toBeGreaterThan(0);
-    const recurrent = proposal.opportunities.find(
-      (o) => o.kind === 'predicate-recurrent-miss',
-    );
+    const recurrent = proposal.opportunities.find((o) => o.kind === 'predicate-recurrent-miss');
     expect(recurrent).toBeDefined();
     expect(recurrent?.estimatedImpact).toBe('high');
     expect(recurrent?.rationale).toContain('P(reply|template,hour)');
 
-    const args = prisma.mindPrediction.findMany.mock.calls[0]?.[0] as {
-      where?: { workspaceId?: string; surprise?: { gt?: number } };
-    };
+    const argsCalls = prisma.mindPrediction.findMany.mock.calls as Array<
+      [{ where?: { workspaceId?: string; surprise?: { gt?: number } } }]
+    >;
+    const args = argsCalls[0]?.[0];
     expect(args?.where?.workspaceId).toBe('ws-1');
     expect(args?.where?.surprise?.gt).toBe(0.7);
 
     // emit goes through spine when called
     await service.emitSelfModificationProposal('ws-1', proposal);
     expect(spine.emit).toHaveBeenCalledTimes(1);
-    const emitArg = spine.emit.mock.calls[0]?.[0] as {
-      eventName?: string;
-      workspaceId?: string;
-      truthMode?: string;
-    };
+    const emitCalls = spine.emit.mock.calls as Array<
+      [{ eventName?: string; workspaceId?: string; truthMode?: string }]
+    >;
+    const emitArg = emitCalls[0]?.[0];
     expect(emitArg?.eventName).toBe('cognition.self.modification_proposed');
     expect(emitArg?.workspaceId).toBe('ws-1');
     expect(emitArg?.truthMode).toBe('inferred');

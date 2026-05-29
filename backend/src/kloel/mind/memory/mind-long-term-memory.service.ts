@@ -40,9 +40,7 @@ export class MindLongTermMemoryService {
     this.logger.debug?.('MindLongTermMemoryService initialized');
   }
 
-  async consolidate(
-    workspaceId: string,
-  ): Promise<{ consolidated: number; pruned: number }> {
+  async consolidate(workspaceId: string): Promise<{ consolidated: number; pruned: number }> {
     try {
       const shouldRun = await this.shouldConsolidate(workspaceId);
       if (!shouldRun) {
@@ -159,9 +157,7 @@ export class MindLongTermMemoryService {
       return { consolidated, pruned };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.warn(
-        `Memory consolidation failed workspace=${workspaceId}: ${message}`,
-      );
+      this.logger.warn(`Memory consolidation failed workspace=${workspaceId}: ${message}`);
       return { consolidated: 0, pruned: 0 };
     }
   }
@@ -190,10 +186,7 @@ export class MindLongTermMemoryService {
     return Date.now() - lastMs >= CONSOLIDATION_INTERVAL_MS;
   }
 
-  private async recordConsolidationWatermark(
-    workspaceId: string,
-    at: Date,
-  ): Promise<void> {
+  private async recordConsolidationWatermark(workspaceId: string, at: Date): Promise<void> {
     const existing = await this.prisma.mindWorkspaceState.findUnique({
       where: { workspaceId },
       select: { id: true, health: true },
