@@ -1,4 +1,4 @@
-import { Injectable, Optional } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { StructuredLogger } from '../logging/structured-logger';
 import type { Prisma } from '@prisma/client';
@@ -372,5 +372,153 @@ export class WalletService {
       throw new KloelWalletNotFoundError(workspaceId);
     }
     return wallet;
+  }
+
+  /**
+   * 💰 K30 resolver entry-point: returns balances in bigint cents (the
+   * source-of-truth representation post Wave 2 P6-2 / I11). The legacy
+   * {@link getBalance} method returns Float Reals for backward compatibility
+   * with the existing wallet.controller; this method is the authoritative
+   * cents-shaped variant consumed by the generic domain-service resolver
+   * for the `wallet.balance` capability.
+   *
+   * Workspace isolation: filters by workspaceId. Throws NotFoundException
+   * if the wallet row does not exist (matches resolver contract — never
+   * lazily creates wallets on a query path).
+   */
+  async getBalanceCents(
+    workspaceId: string,
+  ): Promise<{ available: bigint; pending: bigint; blocked: bigint }> {
+    const wallet = await this.prisma.kloelWallet.findUnique({
+      where: { workspaceId },
+      select: {
+        availableBalanceInCents: true,
+        pendingBalanceInCents: true,
+        blockedBalanceInCents: true,
+      },
+    });
+    if (!wallet) {
+      throw new NotFoundException(`KloelWallet not found for workspace ${workspaceId}`);
+    }
+    return {
+      available: wallet.availableBalanceInCents,
+      pending: wallet.pendingBalanceInCents,
+      blocked: wallet.blockedBalanceInCents,
+    };
+  }
+
+  /**
+   * 💸 K30 resolver entry-point: request a withdrawal using integer-cent
+   * bigint amounts and the `{ method, pixKey? }` shape expected by the
+   * generic domain-service resolver for the `wallet.withdraw` capability.
+   *
+   * Idempotency: if an identical request (same workspace, amount, method,
+   * pixKey) was filed within the last 60s and is still pending, return
+   * that existing row instead of creating a duplicate.
+   *
+   * Atomicity: balance check + withdrawal row insert run inside one
+   * `$transaction` so the available-balance read and the pending-debit
+   * write share the same snapshot.
+   *
+   * Workspace isolation: every read and the dedup lookup filter by
+   * workspaceId; the wallet is resolved via its unique `workspaceId`
+   * index. The withdrawal row carries the workspaceId in metadata for
+   * downstream audit.
+   */
+  async requestWithdrawalCents(
+    workspaceId: string,
+    args: { amountCents: bigint; method: 'pix' | 'transfer'; pixKey?: string },
+  ): Promise<{ id: string; status: 'pending' | 'approved' | 'rejected' }> {
+    const { amountCents, method, pixKey } = args;
+
+    if (typeof amountCents !== 'bigint' || amountCents <= 0n) {
+      throw new BadRequestException('amountCents must be a positive bigint');
+    }
+    if (method !== 'pix' && method !== 'transfer') {
+      throw new BadRequestException("method must be 'pix' or 'transfer'");
+    }
+    if (method === 'pix' && (typeof pixKey !== 'string' || pixKey.length === 0)) {
+      throw new BadRequestException('pixKey required when method=pix');
+    }
+
+    return this.prisma.$transaction(
+      async (tx: Prisma.TransactionClient) => {
+        const wallet = await tx.kloelWallet.findUnique({
+          where: { workspaceId },
+          select: {
+            id: true,
+            workspaceId: true,
+            availableBalanceInCents: true,
+          },
+        });
+        if (!wallet) {
+          throw new NotFoundException(`KloelWallet not found for workspace ${workspaceId}`);
+        }
+
+        if (amountCents > wallet.availableBalanceInCents) {
+          throw new BadRequestException('Insufficient available balance');
+        }
+
+        // Idempotency window: 60 seconds. Look for an in-flight withdrawal
+        // with identical (workspaceId, amount, method, pixKey) that has not
+        // yet been approved/rejected.
+        const sixtySecondsAgo = new Date(Date.now() - 60_000);
+        const recent = await tx.kloelWalletTransaction.findMany({
+          where: {
+            walletId: wallet.id,
+            type: 'withdrawal',
+            status: 'pending',
+            amountInCents: amountCents,
+            createdAt: { gte: sixtySecondsAgo },
+          },
+          select: { id: true, status: true, metadata: true },
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+        });
+        const dupe = recent.find((row) => {
+          const meta = row.metadata as Record<string, unknown> | null;
+          const sameMethod = meta?.method === method;
+          const samePix = method === 'pix' ? meta?.pixKey === pixKey : true;
+          return sameMethod && samePix;
+        });
+        if (dupe) {
+          return {
+            id: dupe.id,
+            status: this.normalizeWithdrawalStatus(dupe.status),
+          };
+        }
+
+        const created = await tx.kloelWalletTransaction.create({
+          data: {
+            walletId: wallet.id,
+            type: 'withdrawal',
+            amount: Number(amountCents) / 100,
+            amountInCents: amountCents,
+            description: `Saque ${method.toUpperCase()}`,
+            status: 'pending',
+            metadata: {
+              workspaceId,
+              method,
+              ...(method === 'pix' && pixKey !== undefined ? { pixKey } : {}),
+              source: 'k30_resolver',
+            },
+          },
+          select: { id: true, status: true },
+        });
+
+        return {
+          id: created.id,
+          status: this.normalizeWithdrawalStatus(created.status),
+        };
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
+  }
+
+  private normalizeWithdrawalStatus(raw: string): 'pending' | 'approved' | 'rejected' {
+    if (raw === 'approved' || raw === 'rejected') {
+      return raw;
+    }
+    return 'pending';
   }
 }

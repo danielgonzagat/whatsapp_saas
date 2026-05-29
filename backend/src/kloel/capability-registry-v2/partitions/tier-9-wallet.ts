@@ -43,7 +43,8 @@ export const TIER_9_WALLET_CAPABILITIES: CapabilityDefinition[] = [
     requiresConfirmation: false,
     requiredPermissions: [],
     inputSchema: [],
-    domainService: 'WalletService.getBalance',
+    // K30 resolver target: bigint-cents shape (source of truth post Wave 2 P6-2).
+    domainService: 'WalletService.getBalanceCents',
     emits: [],
     surface: ['dashboard-chat'],
   },
@@ -64,7 +65,8 @@ export const TIER_9_WALLET_CAPABILITIES: CapabilityDefinition[] = [
         prompt: 'Qual valor do saque?',
       },
     ],
-    domainService: 'WalletService.requestWithdrawal',
+    // K30 resolver target: bigint amountCents + method/pixKey shape (Claude-K35-A).
+    domainService: 'WalletService.requestWithdrawalCents',
     emits: ['wallet.withdrawal_requested'],
     surface: ['dashboard-chat'],
   },

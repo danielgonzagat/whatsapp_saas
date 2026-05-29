@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ForbiddenException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { WalletService } from './wallet.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
@@ -452,6 +452,140 @@ describe('WalletService', () => {
           where: expect.objectContaining({ workspaceId: 'ws-1' }),
         }),
       );
+    });
+  });
+
+  // K35-A: K30 resolver entry-points return bigint cents and accept the
+  // generic { args } shape expected by KloelDomainServiceResolver.tryExecute.
+  describe('getBalanceCents (K30 resolver entry-point)', () => {
+    it('returns available/pending/blocked as bigint cents, scoped to workspaceId', async () => {
+      prismaMock.kloelWallet.findUnique.mockResolvedValue({
+        availableBalanceInCents: BigInt(150_000),
+        pendingBalanceInCents: BigInt(25_000),
+        blockedBalanceInCents: BigInt(5_000),
+      });
+
+      const result = await service.getBalanceCents('ws-1');
+
+      expect(result).toEqual({
+        available: BigInt(150_000),
+        pending: BigInt(25_000),
+        blocked: BigInt(5_000),
+      });
+      expect(prismaMock.kloelWallet.findUnique).toHaveBeenCalledWith({
+        where: { workspaceId: 'ws-1' },
+        select: {
+          availableBalanceInCents: true,
+          pendingBalanceInCents: true,
+          blockedBalanceInCents: true,
+        },
+      });
+    });
+
+    it('throws NotFoundException when wallet row does not exist', async () => {
+      prismaMock.kloelWallet.findUnique.mockResolvedValue(null);
+
+      await expect(service.getBalanceCents('ws-missing')).rejects.toBeInstanceOf(NotFoundException);
+    });
+  });
+
+  describe('requestWithdrawalCents (K30 resolver entry-point)', () => {
+    it('creates a pending withdrawal row inside $transaction with bigint amountCents', async () => {
+      const txWalletFindUnique = jest.fn().mockResolvedValue({
+        id: 'wallet-1',
+        workspaceId: 'ws-1',
+        availableBalanceInCents: BigInt(200_000),
+      });
+      const txRecentFindMany = jest.fn().mockResolvedValue([]);
+      const txCreate = jest.fn().mockResolvedValue({ id: 'wd-1', status: 'pending' });
+      prismaMock.$transaction.mockImplementation(async (cb: Function) => {
+        return cb({
+          kloelWallet: { findUnique: txWalletFindUnique },
+          kloelWalletTransaction: { findMany: txRecentFindMany, create: txCreate },
+        });
+      });
+
+      const result = await service.requestWithdrawalCents('ws-1', {
+        amountCents: BigInt(50_000),
+        method: 'pix',
+        pixKey: 'user@example.com',
+      });
+
+      expect(result).toEqual({ id: 'wd-1', status: 'pending' });
+      expect(txWalletFindUnique).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { workspaceId: 'ws-1' } }),
+      );
+      expect(txCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            walletId: 'wallet-1',
+            type: 'withdrawal',
+            amountInCents: BigInt(50_000),
+            status: 'pending',
+          }),
+        }),
+      );
+      const createCallData = txCreate.mock.calls[0][0].data;
+      expect(createCallData.metadata).toEqual(
+        expect.objectContaining({
+          workspaceId: 'ws-1',
+          method: 'pix',
+          pixKey: 'user@example.com',
+          source: 'k30_resolver',
+        }),
+      );
+    });
+
+    it('returns the existing pending row when an identical request was filed within 60s (idempotency)', async () => {
+      const txWalletFindUnique = jest.fn().mockResolvedValue({
+        id: 'wallet-1',
+        workspaceId: 'ws-1',
+        availableBalanceInCents: BigInt(200_000),
+      });
+      const txRecentFindMany = jest.fn().mockResolvedValue([
+        {
+          id: 'wd-existing',
+          status: 'pending',
+          metadata: { method: 'pix', pixKey: 'user@example.com' },
+        },
+      ]);
+      const txCreate = jest.fn();
+      prismaMock.$transaction.mockImplementation(async (cb: Function) => {
+        return cb({
+          kloelWallet: { findUnique: txWalletFindUnique },
+          kloelWalletTransaction: { findMany: txRecentFindMany, create: txCreate },
+        });
+      });
+
+      const result = await service.requestWithdrawalCents('ws-1', {
+        amountCents: BigInt(50_000),
+        method: 'pix',
+        pixKey: 'user@example.com',
+      });
+
+      expect(result).toEqual({ id: 'wd-existing', status: 'pending' });
+      expect(txCreate).not.toHaveBeenCalled();
+    });
+
+    it('throws BadRequestException when amountCents > available balance', async () => {
+      const txWalletFindUnique = jest.fn().mockResolvedValue({
+        id: 'wallet-1',
+        workspaceId: 'ws-1',
+        availableBalanceInCents: BigInt(10_000),
+      });
+      prismaMock.$transaction.mockImplementation(async (cb: Function) => {
+        return cb({
+          kloelWallet: { findUnique: txWalletFindUnique },
+          kloelWalletTransaction: { findMany: jest.fn(), create: jest.fn() },
+        });
+      });
+
+      await expect(
+        service.requestWithdrawalCents('ws-1', {
+          amountCents: BigInt(50_000),
+          method: 'transfer',
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
   });
 });
