@@ -449,6 +449,72 @@ describe('AuthTokenService', () => {
       await expect(service.refresh('rt-stub-1')).rejects.toThrow(ServiceUnavailableException);
     });
 
+    it('retries rotateRefreshToken once on P2034 after a successful claim (no spurious 503)', async () => {
+      // Regression: the atomic claim already retried P2034, but the SECOND
+      // Serializable transaction — rotateRefreshToken inside issueTokens —
+      // had no retry. Two tabs refreshing the same agent collide on the wide
+      // `updateMany WHERE agentId` rotation write; the legitimate winner used
+      // to get a 503 instead of a fresh token pair. The rotation must now
+      // retry the conflict once and succeed.
+      const stored = {
+        ...mockRefreshToken,
+        agent: mockAgent,
+      };
+      const p2034 = new Prisma.PrismaClientKnownRequestError('write conflict', {
+        code: 'P2034',
+        clientVersion: 'test',
+      });
+
+      const defaultTx = prismaMock.$transaction.getMockImplementation()!;
+      // 1st $transaction = claim (passes through, wins the claim).
+      // 2nd $transaction = rotateRefreshToken first attempt → P2034 reject.
+      // 3rd $transaction = rotateRefreshToken retry → passes through, succeeds.
+      prismaMock.$transaction
+        .mockImplementationOnce(defaultTx)
+        .mockImplementationOnce(() => Promise.reject(p2034))
+        .mockImplementation(defaultTx);
+
+      prismaMock.refreshToken.findUnique.mockResolvedValueOnce(stored);
+      prismaMock.refreshToken.updateMany
+        .mockResolvedValueOnce({ count: 1 }) // claim wins
+        .mockResolvedValueOnce({ count: 0 }); // rotation sibling sweep on retry
+      prismaMock.workspace.findUnique.mockResolvedValueOnce(mockWorkspace);
+      prismaMock.refreshToken.create.mockResolvedValueOnce(mockRefreshToken);
+      jwtMock.signAsync.mockResolvedValueOnce('access-token-after-rotation-retry');
+
+      const result = await service.refresh('rt-stub-1');
+
+      expect(result.access_token).toBe('access-token-after-rotation-retry');
+      expect(result.refresh_token).toBeDefined();
+      // claim (1) + rotation first attempt (2) + rotation retry (3).
+      expect(prismaMock.$transaction.mock.calls.length).toBeGreaterThanOrEqual(3);
+    });
+
+    it('returns 503 when rotateRefreshToken fails with P2034 on both attempts', async () => {
+      // Sustained contention during rotation: ONE retry, then downgrade to a
+      // 503 so the client backs off instead of hammering the DB.
+      const stored = {
+        ...mockRefreshToken,
+        agent: mockAgent,
+      };
+      const p2034 = new Prisma.PrismaClientKnownRequestError('write conflict', {
+        code: 'P2034',
+        clientVersion: 'test',
+      });
+
+      const defaultTx = prismaMock.$transaction.getMockImplementation()!;
+      prismaMock.$transaction
+        .mockImplementationOnce(defaultTx) // claim succeeds
+        .mockImplementationOnce(() => Promise.reject(p2034)) // rotation attempt 1
+        .mockImplementationOnce(() => Promise.reject(p2034)); // rotation retry
+
+      prismaMock.refreshToken.findUnique.mockResolvedValueOnce(stored);
+      prismaMock.refreshToken.updateMany.mockResolvedValueOnce({ count: 1 });
+      prismaMock.workspace.findUnique.mockResolvedValueOnce(mockWorkspace);
+
+      await expect(service.refresh('rt-stub-1')).rejects.toThrow(ServiceUnavailableException);
+    });
+
     it('should return 503 when token issuance fails after successful claim', async () => {
       const stored = {
         ...mockRefreshToken,

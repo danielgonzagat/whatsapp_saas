@@ -36,6 +36,42 @@ export class AuthTokenService {
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
+  /**
+   * Run a Serializable transaction with a single retry on Prisma P2034
+   * (write conflict / deadlock under Serializable isolation). Concurrent
+   * cross-tab refreshes by the same agent collide on the same rows; the
+   * first attempt is the optimistic happy path and one retry resolves the
+   * legitimate serialization conflict before downgrading to a 503. Used by
+   * both the refresh-token atomic claim and rotateRefreshToken so a transient
+   * conflict during rotation does not boot a legitimate user to /login.
+   */
+  private async runSerializableWithRetry<T>(
+    fn: (tx: Prisma.TransactionClient) => Promise<T>,
+    context: string,
+  ): Promise<T> {
+    try {
+      return await this.prisma.$transaction(fn, {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+      });
+    } catch (firstAttemptError: unknown) {
+      if (
+        firstAttemptError instanceof Prisma.PrismaClientKnownRequestError &&
+        firstAttemptError.code === 'P2034'
+      ) {
+        this.logger.warn(
+          buildAuthLogMessage('refresh_token_serialization_retry', {
+            context,
+            attempt: 1,
+          }),
+        );
+        return this.prisma.$transaction(fn, {
+          isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+        });
+      }
+      throw firstAttemptError;
+    }
+  }
+
   private async signToken(
     agentId: string,
     email: string,
@@ -104,27 +140,30 @@ export class AuthTokenService {
   }
 
   private async rotateRefreshToken(agentId: string): Promise<string> {
+{
     const refreshToken = randomUUID() + randomUUID();
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
     // Atomic: revoke any active refresh tokens AND insert the new one in
     // a single Serializable transaction so concurrent issueTokens calls
-    // cannot leave multiple active rows for the same agent.
-    await this.prisma.$transaction(
-      async (tx) => {
-        await tx.refreshToken.updateMany({
-          where: { agentId, revoked: false },
-          data: { revoked: true },
-        });
-        await tx.refreshToken.create({
-          data: { token: refreshToken, agentId, expiresAt },
-        });
-      },
-      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
-    );
+    // cannot leave multiple active rows for the same agent. The wide
+    // updateMany WHERE agentId collides with a sibling concurrent refresh
+    // for the same agent under Serializable isolation, so wrap it in the
+    // same one-shot P2034 retry used by the atomic claim — without it a
+    // legitimate cross-tab refresh winner gets a spurious 503.
+    await this.runSerializableWithRetry(async (tx) => {
+      await tx.refreshToken.updateMany({
+        where: { agentId, revoked: false },
+        data: { revoked: true },
+      });
+      await tx.refreshToken.create({
+        data: { token: refreshToken, agentId, expiresAt },
+      });
+    }, 'rotateRefreshToken');
 
     return refreshToken;
   }
+}
 
   /** Issue access + refresh tokens, rotating any prior active refresh tokens. */
   async issueTokens(agent: TokenAgent, extra?: { isNewUser?: boolean }) {
