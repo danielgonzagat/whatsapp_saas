@@ -71,8 +71,10 @@ export default function CanvasLayout({ children }: { children: ReactNode }) {
               background: 'none',
               border: 'none',
               borderBottom:
-                activeTab === t.id ? '2px solid colors.ember.primary' : '2px solid transparent',
-              color: activeTab === t.id ? 'colors.text.silver' : 'colors.text.muted',
+                activeTab === t.id
+                  ? `2px solid ${colors.ember.primary}`
+                  : '2px solid transparent',
+              color: activeTab === t.id ? colors.text.silver : colors.text.muted,
               fontSize: 13,
               fontWeight: activeTab === t.id ? 600 : 400,
               fontFamily: S,
@@ -91,7 +93,7 @@ export default function CanvasLayout({ children }: { children: ReactNode }) {
             alignItems: 'center',
             gap: 6,
             padding: '7px 16px',
-            background: 'colors.ember.primary',
+            background: colors.ember.primary,
             border: 'none',
             borderRadius: 4,
             color: 'var(--app-text-on-accent)',
