@@ -1,465 +1,278 @@
 # Kloel Canonical Domains
 
-> **PI Task K24** — Canonical domain map with boundaries, sub-services, and status.
-> Raw inventory also available: 179 source modules, 3377 files, 590 injectable services (see [SERVICE_CATALOG.md](./SERVICE_CATALOG.md)).
+> Evidence-based domain map of the KLOEL backend, scanned 2026-05-29.
+> Companion docs: [CAPABILITY_MAP.md](./CAPABILITY_MAP.md),
+> [EVENT_TAXONOMY.md](./EVENT_TAXONOMY.md),
+> [SERVICE_CATALOG.md](./SERVICE_CATALOG.md),
+> [MIND_SERVICES_CANONICAL.md](./MIND_SERVICES_CANONICAL.md),
+> [OMNICORE_MISSION_COMPLETE.md](./OMNICORE_MISSION_COMPLETE.md).
 
-This document defines the **16 canonical business domains** (bold) and 4 **infrastructure cross-cuts** (italic). Each domain owns one or more backend source modules; each lists key sub-services found in the codebase.
+A canonical domain is a unit of business semantics with one source of truth
+for its data, its events, and its capability surface. Each canonical domain
+maps to one or more backend source modules under `backend/src/`. Modules that
+exist as deprecated aliases or as cross-cutting infrastructure are called out
+explicitly in the migration notes section.
+
+This file is the answer to: "where does this responsibility live, and who
+owns it." It is not a feature list and it is not a tour of the codebase.
 
 ---
 
-## 1. Identity / Auth
+## Canonical Domains
 
-**Boundary**: Authentication, authorization, session management, OAuth flows. Does NOT own user profiles or contact records.
+Scale numbers below are non-spec TypeScript file counts (`.ts` excluding
+`.spec.ts`/`.test.ts`) at depth two, measured directly with `find` on
+2026-05-29. The kloel domain folder hosts the cognitive substrate plus many
+domain-aligned emitter sub-folders, so its raw count is split per canonical
+domain in the table.
 
-| Sub-service | Source path | Status |
+| Domain | Responsibility | Backend module path | Scale (files) |
+|---|---|---|---|
+| identity-auth | Authentication, OAuth (Apple, Facebook, Google, TikTok), JWT, rate-limit on login, admin MFA, public API keys | `backend/src/auth/`, `backend/src/admin/auth/`, `backend/src/api-keys/`, `backend/src/public-api/` | 57 + 4 + 4 + 3 |
+| tenant-workspace | Multi-tenant isolation, workspace CRUD, team membership, workspace context resolution | `backend/src/workspaces/`, `backend/src/team/`, `backend/src/kloel/agency/` | 7 + 4 + 13 |
+| channel | Channel provisioning, session lifecycle, transport registry, ban-risk, health probes; WhatsApp/Meta/Instagram/TikTok | `backend/src/meta/`, `backend/src/marketing/channels/`, `backend/src/omnichannel/`, `backend/src/kloel/channel/`, `backend/src/kloel/channel-policy/`, `backend/src/kloel/channel-survival/`, `backend/src/kloel/whatsapp-emitter/` | 21 + (~49 marketing total) + 3 + 10 + 3 + 3 + 2 |
+| conversation | Inbound message reception, routing, inbox threads, guest chat, reply engine | `backend/src/inbox/`, `backend/src/chat/`, `backend/src/kloel/` (guest-chat.*, kloel-thread.*, kloel-reply-engine.*, intent-router/) | 11 + 5 + 9 (intent-router) |
+| message | Channel-agnostic dispatch pipeline, outbound queue, worker-side delivery | `backend/src/common/channel-dispatch/`, `backend/src/mass-send/`, `worker/outbound-dispatcher.ts`, `worker/whatsapp-engine.ts` | (cross-cut) + 3 + worker |
+| campaign | Marketing campaigns, mass sends, audience segmentation, Meta/Google/TikTok ads, marketing skills | `backend/src/campaigns/`, `backend/src/mass-send/`, `backend/src/marketing/`, `backend/src/anuncios/`, `backend/src/google-ads/`, `backend/src/tiktok-ads/`, `backend/src/kloel/campaign-emitter/`, `backend/src/kloel/marketing-skills/` | 6 + 3 + 49 + 3 + 1 + 2 + 1 + 6 |
+| product | Product/plan catalog, categories, pricing | `backend/src/products/`, `backend/src/plans/`, `backend/src/product-categories/`, `backend/src/kloel/product-sub-resources/`, `backend/src/kloel/offer/` | 4 + 3 + 3 + 16 + 13 |
+| checkout | Checkout sessions, order creation, social-lead enrichment, cart recovery | `backend/src/checkout/`, `backend/src/kloel/checkout-emitter/` | 72 + 1 |
+| payment | Payment processing, provider routing (Stripe/MercadoPago), fraud, ledger, split, prepaid wallet, marketplace treasury | `backend/src/payments/`, `backend/src/wallet/`, `backend/src/marketplace-treasury/`, `backend/src/kloel/cash/`, `backend/src/kloel/healthy-money/` | 48 + 13 + 6 + 12 + 10 |
+| billing | Platform subscriptions, payment methods, Stripe billing webhooks | `backend/src/billing/` | 23 |
+| kyc-compliance | KYC verification, regulatory compliance, GDPR, cookie consent, unsubscribe, audit log | `backend/src/kyc/`, `backend/src/compliance/`, `backend/src/gdpr/`, `backend/src/cookie-consent/`, `backend/src/unsubscribe/`, `backend/src/audit/`, `backend/src/kloel/kyc-emitter/`, `backend/src/kloel/legit/` | 14 + 6 + 12 + 3 + 3 + 4 + 1 + 16 |
+| affiliate-partnership | Affiliate discovery, commission, partnership program, marketplace listings | `backend/src/affiliate/`, `backend/src/partnerships/`, `backend/src/marketplace/`, `backend/src/kloel/affil/` | 6 + 10 + 3 + 15 |
+| crm | Sales pipeline, deal tracking, neuro-CRM, contacts, sales | `backend/src/crm/`, `backend/src/pipeline/`, `backend/src/contacts/`, `backend/src/sales/`, `backend/src/kloel/crm-emitter/` | 12 + 4 + 5 + 13 + 1 |
+| post-sale | Post-purchase flows, member area, follow-ups, launch sequences | `backend/src/post-sale/`, `backend/src/member-area/`, `backend/src/followup/`, `backend/src/launch/`, `backend/src/kloel/post-sale-emitter/`, `backend/src/kloel/postsale-consumers/`, `backend/src/kloel/member-area-emitter/`, `backend/src/kloel/commem/` | 1 + 8 + 3 + 4 + 1 + 15 + 1 + 11 |
+| autopilot | Autonomous agent cycle loops, segmentation, budget-aware automation | `backend/src/autopilot/`, `backend/src/kloel/agent-runtime/` | 19 + 20 |
+| commercial-intelligence | Mind substrate: perception, prediction, surprise, belief, policy, bandit, simulation, clarity, drift, lineage, hypotheses | `backend/src/kloel/mind/`, `backend/src/kloel/hypproof/`, `backend/src/kloel/capability-registry-v2/`, `backend/src/kloel/insight/`, `backend/src/kloel/wisdom/`, `backend/src/kloel/clarity/`, `backend/src/kloel/drift/`, `backend/src/kloel/lineage/`, `backend/src/kloel/goal-field/`, `backend/src/kloel/self-awareness/`, `backend/src/kloel/maturity/`, `backend/src/kloel/spine/`, `backend/src/kloel/evol/`, `backend/src/kloel/proof-level/`, `backend/src/kloel/role/`, `backend/src/kloel/trust/`, `backend/src/kloel/rules/`, `backend/src/kloel/owner-criterion/`, `backend/src/kloel/risk-class/`, `backend/src/kloel/recovery/`, `backend/src/kloel/wow/`, `backend/src/kloel/indispensability/` | 134 + 11 + 24 + 14 + 16 + 9 + 4 + 8 + 10 + 12 + 7 + 4 + 15 + 3 + 10 + 10 + 19 + 10 + 5 + 10 + 8 + 3 |
+| flows-automation | Flow builder, low-code automation, prompt routing, tool planner | `backend/src/flows/`, `backend/src/kloel/toolplanner/`, `backend/src/kloel/intent-router/`, `backend/src/kloel/move/`, `backend/src/kloel/commercial-decision-orchestrator/`, `backend/src/kloel/delegation/`, `backend/src/kloel/incent/` | 16 + 2 + 9 + 4 + 6 + 8 + 10 |
+| analytics-reports | Aggregate metrics, dashboards, observability of cognitive output, reports, lift attribution | `backend/src/analytics/`, `backend/src/dashboard/`, `backend/src/reports/`, `backend/src/kloel/daily-dashboard/`, `backend/src/kloel/observability/`, `backend/src/kloel/event-emit-audit-emitter/`, `backend/src/kloel/abi/`, `backend/src/kloel/abi-ab/` | 10 + 9 + 7 + 4 + 4 + 2 + 6 + 5 |
+| platform-admin | Owner/admin console: support, sessions, brain, audit reading, destructive operations | `backend/src/admin/` (minus admin/auth, which lives under identity-auth) | 106 |
+| media-content | Audio, video, voice, image media pipeline, calendar, sites, scrapers | `backend/src/audio/`, `backend/src/video/`, `backend/src/voice/`, `backend/src/media/`, `backend/src/calendar/`, `backend/src/sites/`, `backend/src/scrapers/`, `backend/src/kloel/creator/`, `backend/src/kloel/generators/`, `backend/src/kloel/team/` | 3 + 3 + 5 + 7 + 6 + 7 + 5 + 8 + 6 + 9 |
+| growth-onboarding | Growth experiments, coldstart, mercado-entrada, tipo-negocio, ecosys, defens | `backend/src/growth/`, `backend/src/kloel/coldstart/`, `backend/src/kloel/mercado-entrada/`, `backend/src/kloel/tipo-negocio/`, `backend/src/kloel/ecosys/`, `backend/src/kloel/defens/`, `backend/src/kloel/local-identity/`, `backend/src/kloel/v-tier/` | 4 + 10 + 1 + 3 + 8 + 12 + 7 + 4 |
+| notifications-copilot | User-facing notifications, copilot UX assistant, email transactional, alerts | `backend/src/notifications/`, `backend/src/copilot/`, `backend/src/email/`, `backend/src/alerts/` | 4 + 4 + 2 + 1 |
+
+The single number after the slash in the Scale column is the file count for
+that path; when multiple paths are listed the counts are listed in the same
+order, separated by `+`. Cross-cuts are flagged below and excluded from
+domain totals.
+
+---
+
+## Infrastructure Cross-cuts (not domains)
+
+These exist to serve all domains and have no business meaning of their own.
+A capability that lives here cannot be the source of truth for any business
+event.
+
+| Cross-cut | Path | Scale | Notes |
+|---|---|---:|---|
+| common | `backend/src/common/` | 82 | DI helpers, prisma client wrapper, redis util, channel-dispatch, idempotency, throttler, observability primitives |
+| prisma | `backend/src/prisma/` | 11 | Prisma client provider plus checkout-paid-effects fanout (a cross-cut listener, not an owner) |
+| config | `backend/src/config/` | 3 | AppConfigModule wrapping `@nestjs/config` |
+| webhooks | `backend/src/webhooks/` | 22 | Inbound webhook fan-out (Stripe, Meta, MercadoPago). Owner of webhook idempotency table only |
+| queue | `backend/src/queue/` | 4 | BullMQ wiring; worker counterpart in `worker/` |
+| health | `backend/src/health/` | 17 | Probes for DB, Redis, external providers |
+| metrics | `backend/src/metrics/` | 6 | Prom-style counters and HTTP interceptor |
+| observability | `backend/src/observability/` | 4 | Tracing and SLO helpers |
+| logging | `backend/src/logging/` | 1 | Structured logger wrapper |
+| i18n | `backend/src/i18n/` | 2 | Translation registry |
+| ops | `backend/src/ops/` | 2 | Operations-only endpoints (protected scripts live in `scripts/ops/`, not here) |
+| pulse | `backend/src/pulse/` | 14 | Self-diagnosis surface; not a business owner — read-only on every domain |
+| certification | `backend/src/certification/` | 0 | Empty placeholder (see migration notes) |
+| cia (top-level) | `backend/src/cia/` | 0 | Empty placeholder; canonical CIA lives at `backend/src/kloel/mind/cia/` |
+| test-results | `backend/src/test-results/` | 0 | Empty placeholder |
+| lib | `backend/src/lib/` | 7 | Prompt registry and AI-models contract; owned globally |
+| integrations | `backend/src/integrations/` | 19 | External-provider adapters shared across domains |
+
+---
+
+## Domain Adjacency
+
+Adjacency here means "domain A emits an event domain B consumes, or domain A
+calls a service domain B owns." It does not mean "they share data shapes."
+Edges are derived from the kloel emitter sub-folders, from `app.module.ts`
+imports, and from the canonical `commerce.*` and `cognition.*` event
+families documented in `EVENT_TAXONOMY.md`.
+
+```
+identity-auth ─────┬──── tenant-workspace
+                   └──── public-api
+tenant-workspace ──┬──── channel
+                   ├──── billing
+                   └──── platform-admin
+channel ───────────┬──── conversation     (inbound message reception)
+                   └──── message          (outbound dispatch)
+conversation ──────┬──── crm              (lead replied, deal stage)
+                   ├──── autopilot       (handoff, reply engine)
+                   └──── commercial-intelligence (perception input)
+campaign ──────────┬──── channel          (creative dispatch)
+                   ├──── crm              (lead source attribution)
+                   └──── analytics-reports
+product ───────────┬──── checkout        (catalog → cart)
+                   └──── post-sale       (entitlement after purchase)
+checkout ──────────┬──── payment         (capture)
+                   ├──── crm             (lead converted)
+                   └──── post-sale       (paid → onboarding)
+payment ───────────┬──── billing         (platform subscription bills)
+                   ├──── kyc-compliance  (fraud / chargeback evidence)
+                   ├──── affiliate-partnership (commission split)
+                   └──── analytics-reports
+crm ───────────────┬──── autopilot       (segments / triggers)
+                   └──── commercial-intelligence
+post-sale ─────────┬──── notifications-copilot
+                   └──── analytics-reports
+autopilot ─────────┬──── commercial-intelligence (mind decides next move)
+                   ├──── message         (outbound execution)
+                   └──── flows-automation (tool dispatch)
+commercial-intelligence ──┬── analytics-reports (lift, drift, abi)
+                          └── flows-automation  (policy → action)
+flows-automation ──┬──── message
+                   └──── channel
+notifications-copilot ──── conversation (in-app prompts)
+media-content ─────┬──── campaign
+                   └──── product         (product gallery, video)
+growth-onboarding ──┬── identity-auth    (signup funnel)
+                    └── tenant-workspace (workspace creation)
+analytics-reports ── platform-admin     (owner views)
+```
+
+Highest-fan-in domains (consumers of many domains): `analytics-reports`,
+`commercial-intelligence`, `platform-admin`.
+
+Highest-fan-out domains (emitters into many): `checkout`, `payment`,
+`conversation`, `autopilot`.
+
+---
+
+## Migration Notes
+
+Items below are observable mis-groupings or stale shells found during the
+2026-05-29 scan. They are candidates for consolidation, not action items
+that have already shipped.
+
+1. **`backend/src/kloel/` is overloaded.** With 774 files at the top level
+   and 134 more under `kloel/mind/`, it is the de-facto monorepo-within-the-
+   monorepo. The canonical breakdown of which sub-folder belongs to which
+   domain is listed above. Anything new added directly under `backend/src/
+   kloel/` (rather than a sub-folder) is an instance of this drift.
+2. **Two `healthy-money` folders.** `backend/src/kloel/healthy-money/` (10
+   files) and `backend/src/kloel/healthymoney/` (3 files) coexist. One must
+   absorb the other; the kebab-case form is the canonical winner.
+3. **Two `capability-registry` folders.** `backend/src/kloel/capability-
+   registry/` is empty (0 files), `backend/src/kloel/capability-registry-v2/`
+   has 24 files. The empty folder is a leftover and should be removed; the
+   v2 suffix should be dropped after deletion.
+4. **`backend/src/cia/` and `backend/src/certification/` and
+   `backend/src/test-results/` are empty top-level folders.** Per
+   `OMNICORE_MISSION_COMPLETE.md` the canonical CIA is at `backend/src/
+   kloel/mind/cia/`; the top-level shell is residual.
+5. **`backend/src/kloel/middleware/` (2 files) duplicates `backend/src/
+   common/middleware/`.** Domain-level middleware should live under `common/
+   middleware/` unless it is genuinely kloel-internal cognitive plumbing.
+6. **Two emitter conventions in kloel.** Most kloel emitters live in their
+   own sub-folder (e.g. `checkout-emitter/`, `crm-emitter/`,
+   `campaign-emitter/`), but some events fire from inline services. The
+   canonical convention is "one emitter sub-folder per emitting domain";
+   inline emitters violate it.
+7. **`backend/src/mass-send/` overlaps with `backend/src/campaigns/`.** Both
+   handle outbound campaign batches. Mass-send is currently a thin shell (3
+   files); merging it into `campaigns/` would remove an artificial seam.
+8. **`backend/src/email/` (2 files) is too thin to be its own domain.** It
+   is in practice a transactional-email adapter and belongs under
+   `notifications-copilot` or under `integrations/`.
+9. **`backend/src/kloel/team/` (9 files) shadows `backend/src/team/` (4
+   files).** They are not the same concept (kloel team is about cognitive
+   role assignment, top-level team is workspace membership), but the name
+   collision is risky and one should be renamed.
+10. **`backend/src/admin/` (106 files) mixes identity (`admin/auth/`) with
+    operations (`admin/destructive/`, `admin/operations/`).** `admin/auth/`
+    is already attributed to `identity-auth`; the rest is the only path
+    where `platform-admin` lives. Future moves should respect this split.
+11. **`backend/src/contracts/` (2 files) is an orphan.** It contains DTOs
+    used across domains; if it survives, it should move under `common/` as
+    a cross-cut, not exist as a sibling of business domains.
+
+---
+
+## Source of Truth Pointers
+
+For each canonical domain, the single service whose contract decides what
+the domain means. If two services seem to do the same thing, the one listed
+here wins and the other is by definition a deprecation candidate.
+
+| Domain | Canonical service | Path |
 |---|---|---|
-| `AuthService` | `backend/src/auth/auth.service.ts` | ✅ Active |
-| `AuthTokenService` | `backend/src/auth/auth.token.service.ts` | ✅ Active |
-| `JwtAuthGuard` | `backend/src/auth/jwt-auth.guard.ts` | ✅ Active |
-| `AdminAuthService` | `backend/src/admin/auth/admin-auth.service.ts` | ✅ Active |
-| `AdminMfaService` | `backend/src/admin/auth/admin-mfa.service.ts` | ✅ Active |
-| `ApiKeyGuard` | `backend/src/public-api/api-key.guard.ts` | ✅ Active |
+| identity-auth | `AuthService` | `backend/src/auth/auth.service.ts` |
+| tenant-workspace | `WorkspaceService` | `backend/src/workspaces/workspace.service.ts` |
+| channel | `ChannelTransportRegistry` | `backend/src/kloel/channel-transport.registry.ts` |
+| conversation | `KloelReplyEngineService` | `backend/src/kloel/kloel-reply-engine.service.ts` |
+| message | `MessageDispatchService` | `backend/src/common/channel-dispatch/` |
+| campaign | `CampaignsService` | `backend/src/campaigns/campaigns.service.ts` |
+| product | `ProductService` | `backend/src/products/product.service.ts` |
+| checkout | `CheckoutService` | `backend/src/checkout/checkout.service.ts` |
+| payment | `PaymentService` (kloel facade) over `StripeChargeService` + `LedgerService` | `backend/src/kloel/payment.service.ts`, `backend/src/payments/stripe/`, `backend/src/payments/ledger/ledger.service.ts` |
+| billing | `BillingSubscriptionService` | `backend/src/billing/billing-subscription.service.ts` |
+| kyc-compliance | `KycService` + `ComplianceService` (peers, neither subsumes the other) | `backend/src/kyc/`, `backend/src/compliance/` |
+| affiliate-partnership | `AffilDiscoveryLoopService` for affiliate, `PartnershipsService` for B2B | `backend/src/kloel/affil/affil-discovery.loop.ts`, `backend/src/partnerships/` |
+| crm | `CrmService` (transactional) + `NeuroCrmService` (cognitive layer) | `backend/src/crm/crm.service.ts`, `backend/src/crm/neuro-crm.service.ts` |
+| post-sale | `PostSaleEventEmitterService` over `MemberAreaService` and `FollowUpService` | `backend/src/kloel/post-sale-emitter/`, `backend/src/member-area/`, `backend/src/followup/` |
+| autopilot | `AutopilotCycleExecutorService` | `backend/src/autopilot/autopilot-cycle-executor.service.ts` |
+| commercial-intelligence | `MindService` (entry point) over the substrate listed below | `backend/src/kloel/mind.service.ts`, `backend/src/kloel/mind/` |
+| flows-automation | `FlowsService` | `backend/src/flows/flows.service.ts` |
+| analytics-reports | `AnalyticsService` + `DashboardService` (peers; analytics for raw metrics, dashboard for aggregation) | `backend/src/analytics/`, `backend/src/dashboard/` |
+| platform-admin | `AdminCommonModule` exports; no single service — admin sub-domains own their data | `backend/src/admin/` |
+| media-content | `MediaService` + `CalendarService` (peers per medium) | `backend/src/media/`, `backend/src/calendar/`, `backend/src/voice/`, `backend/src/video/`, `backend/src/audio/` |
+| growth-onboarding | `GrowthService` | `backend/src/growth/` |
+| notifications-copilot | `NotificationsService` + `CopilotService` (peers; notifications for inbound, copilot for outbound advice) | `backend/src/notifications/`, `backend/src/copilot/` |
 
-**Event surface**: `auth.*` family (AsyncAPI). Workspace-scoped guards (`@UseGuards(JwtAuthGuard, WorkspaceGuard)`).
-
----
-
-## 2. Tenant / Workspace
-
-**Boundary**: Multi-tenant isolation unit. Workspace CRUD, provider status, membership. Maps to `Workspace` model.
-
-| Sub-service | Source path | Status |
-|---|---|---|
-| `WorkspaceService` | `backend/src/workspaces/workspace.service.ts` | ✅ Active |
-| `KloelWorkspaceContextService` | `backend/src/kloel/kloel-workspace-context.service.ts` | ✅ Active |
-| `TeamService` | `backend/src/team/team.service.ts` | ✅ Active |
-
-**Event surface**: `workspace.*` family.
-
----
-
-## 3. Channel
-
-**Boundary**: Channel provisioning, session lifecycle, transport abstraction, health monitoring, ban-risk detection. Multi-channel (WhatsApp, Instagram, Messenger, Email, TikTok).
-
-| Sub-service | Source path | Status |
-|---|---|---|
-| `ChannelTransportRegistry` | `backend/src/kloel/channel-transport.registry.ts` | ✅ Active |
-| `WhatsAppSessionService` | `backend/src/marketing/channels/whatsapp/whatsapp-session.service.ts` | ✅ Active |
-| `MetaConnectionStateService` | `backend/src/meta/meta-connection-state.service.ts` | ✅ Active |
-| `ChannelHealthMonitorService` | `backend/src/kloel/channel-survival/channel-health.monitor.service.ts` | ✅ Active |
-| `BanRiskDetector` | `backend/src/kloel/channel/ban-risk.detector.ts` | ✅ Active |
-| `ChannelPolicyRegistry` | `backend/src/kloel/channel-policy/channel-policy.registry.ts` | ✅ Active |
-| `ChannelSetupService` | `backend/src/kloel/channel-setup.service.ts` | ✅ Active |
-
-**Module locations**: `backend/src/meta/`, `backend/src/marketing/channels/`, `backend/src/omnichannel/`, `backend/src/kloel/channel*/`.
+A few domains intentionally list more than one service. This is honest: the
+domain has multiple legitimate entry points and forcing them to nest would
+hide the real shape.
 
 ---
 
-## 4. Conversation
+## Uncertainty Surface
 
-**Boundary**: Inbound message reception, routing, inbox, thread management, reply engine.
+The following kloel sub-folders were not confidently classified into a
+single domain by this scan and need a human reading to lock down:
 
-| Sub-service | Source path | Status |
-|---|---|---|
-| `ChannelInboundHookService` | `backend/src/omnichannel/channel-inbound-hook.service.ts` | ✅ Active |
-| `InboxService` | `backend/src/inbox/inbox.service.ts` | ✅ Active |
-| `SmartRoutingService` | `backend/src/inbox/smart-routing.service.ts` | ✅ Active |
-| `KloelReplyEngineService` | `backend/src/kloel/kloel-reply-engine.service.ts` | ✅ Active |
-| `KloelThreadService` | `backend/src/kloel/kloel-thread.service.ts` | ✅ Active |
-| `GuestChatService` | `backend/src/kloel/guest-chat.service.ts` | ✅ Active |
+- `backend/src/kloel/v-tier/` (4 files) — name suggests "verification tier"
+  but the contents straddle growth-onboarding and kyc-compliance.
+- `backend/src/kloel/spine/` (4 files) — emitter spine: cross-cut or
+  commercial-intelligence? Tentatively classified under
+  commercial-intelligence because all listeners are mind services.
+- `backend/src/kloel/pulse-gates/` (19 files) — gate logic that intercepts
+  emissions before they reach the spine. Currently attributed to
+  commercial-intelligence; could equally be a cross-cut.
+- `backend/src/kloel/dto/` (4 files) — shared DTOs without a clear owner.
+- `backend/src/kloel/guards/` (1 file) — NestJS guard; cross-cut candidate.
+- `backend/src/kloel/observability/` (4 files) — duplicates
+  `backend/src/observability/`; one should win.
+- `backend/src/kloel/middleware/` (2 files) — see migration note 5.
 
-**Event surface**: `commerce.whatsapp.message_received`, `commerce.whatsapp.message_replied`, `commerce.lead.replied`.
-
----
-
-## 5. Message
-
-**Boundary**: Message dispatch, delivery tracking, channel-agnostic send pipeline. Distinct from Conversation (which handles routing/threading).
-
-| Sub-service | Source path | Status |
-|---|---|---|
-| `MessageDispatchService` | `backend/src/common/channel-dispatch/` | ✅ Active |
-| `MetaWhatsAppService` | `backend/src/meta/meta-whatsapp.service.ts` | ✅ Active |
-| `OutboundDispatcher` | `worker/outbound-dispatcher.ts` | ✅ Active |
-| `WhatsAppEngine` | `worker/whatsapp-engine.ts` | ✅ Active |
-
-**Event surface**: `commerce.whatsapp.sent`, `commerce.whatsapp.failed`.
+These are flagged here so a future canonicalization wave does not silently
+move them and call the migration finished.
 
 ---
 
-## 6. Campaign
+## Scanning Reproducibility
 
-**Boundary**: Marketing campaigns, mass messaging, audience segmentation, campaign analytics, TikTok/Facebook marketing.
+To regenerate the file counts in this document:
 
-| Sub-service | Source path | Status |
-|---|---|---|
-| `CampaignsService` | `backend/src/campaigns/campaigns.service.ts` | ✅ Active |
-| `CampaignEventEmitterService` | `backend/src/kloel/campaign-emitter/campaign-event-emitter.service.ts` | ✅ Active |
-| `MassSendService` | `backend/src/mass-send/mass-send.service.ts` | ✅ Active |
-| `TikTokMarketingService` | `backend/src/marketing/tiktok-marketing.service.ts` | ✅ Active |
-| `FacebookMessengerService` | `backend/src/marketing/facebook-messenger.service.ts` | ✅ Active |
+```sh
+cd /Users/danielpenin/whatsapp_saas/backend/src
+for d in $(find . -type d -mindepth 1 -maxdepth 1 | sort); do
+  count=$(find "$d" -maxdepth 2 -name "*.ts" \
+    -not -name "*.spec.ts" -not -name "*.test.ts" 2>/dev/null | wc -l | tr -d ' ')
+  printf "%4d %s\n" "$count" "$d"
+done
 
-**Event surface**: `commerce.campaign.clicked`, `commerce.campaign.conversion_associated`, `commerce.campaign.audience_reached`, `commerce.campaign.creative_swapped`, `commerce.campaign.performance_drop_detected`.
+cd /Users/danielpenin/whatsapp_saas/backend/src/kloel
+for d in $(find . -type d -mindepth 1 -maxdepth 1 | sort); do
+  count=$(find "$d" -maxdepth 2 -name "*.ts" \
+    -not -name "*.spec.ts" -not -name "*.test.ts" 2>/dev/null | wc -l | tr -d ' ')
+  printf "%4d %s\n" "$count" "$d"
+done
+```
 
----
-
-## 7. Product
-
-**Boundary**: Product/plan catalog, pricing, product lifecycle.
-
-| Sub-service | Source path | Status |
-|---|---|---|
-| `ProductService` | `backend/src/products/product.service.ts` | ✅ Active |
-| `PlanService` | `backend/src/plans/plan.service.ts` | ✅ Active |
-
-**Event surface**: `product.created`, `product.updated`, `product.deleted`, `product.published`, `plan.created`, `plan.updated`, `plan.deleted`.
-
----
-
-## 8. Checkout
-
-**Boundary**: Checkout experience, order creation, payment method selection, cart lifecycle, social-lead enrichment.
-
-| Sub-service | Source path | Status |
-|---|---|---|
-| `CheckoutService` | `backend/src/checkout/checkout.service.ts` | ✅ Active |
-| `CheckoutPaymentService` | `backend/src/checkout/checkout-payment.service.ts` | ✅ Active |
-| `CheckoutEventEmitterService` | `backend/src/kloel/checkout-emitter/checkout-event-emitter.service.ts` | ✅ Active |
-| `CartRecoveryService` | `backend/src/kloel/cart-recovery.service.ts` | ✅ Active |
-
-**Event surface**: `commerce.cart.created`, `commerce.cart.abandoned`, `commerce.cart.checkout_initiated`, `commerce.checkout.created`, `commerce.checkout.updated`, `commerce.lead.converted`.
-
----
-
-## 9. Payment
-
-**Boundary**: Payment processing, provider routing (Stripe/MercadoPago), fraud, chargebacks, refunds, prepaid wallet.
-
-| Sub-service | Source path | Status |
-|---|---|---|
-| `PaymentService` | `backend/src/kloel/payment.service.ts` | ✅ Active |
-| `StripeChargeService` | `backend/src/payments/stripe/stripe-charge.service.ts` | ✅ Active |
-| `FraudEngine` | `backend/src/payments/fraud/fraud.engine.ts` | ✅ Active |
-| `LedgerService` | `backend/src/payments/ledger/ledger.service.ts` | ✅ Active |
-| `WalletService` | `backend/src/wallet/wallet.service.ts` | ✅ Active |
-| `SmartPaymentService` | `backend/src/kloel/smart-payment.service.ts` | ✅ Active |
-| `MarketplaceTreasuryService` | `backend/src/marketplace-treasury/marketplace-treasury.service.ts` | ✅ Active |
-
-**Event surface**: `commerce.payment.initiated`, `commerce.payment.approved`, `commerce.payment.declined`, `commerce.payment.refunded`, `commerce.payment.charged_back`.
-
----
-
-## 10. Affiliate
-
-**Boundary**: Affiliate discovery, commission, angle suggestion, offer quality, budget protection.
-
-| Sub-service | Source path | Status |
-|---|---|---|
-| `AffilDiscoveryLoopService` | `backend/src/kloel/affil/affil-discovery.loop.ts` | ✅ Active |
-| `CommissionComparatorService` | `backend/src/kloel/affil/commission.comparator.ts` | ✅ Active |
-
----
-
-## 11. CRM
-
-**Boundary**: Sales pipeline, deal tracking, lead scoring, CRM automation.
-
-| Sub-service | Source path | Status |
-|---|---|---|
-| `CrmService` | `backend/src/crm/crm.service.ts` | ✅ Active |
-| `NeuroCrmService` | `backend/src/crm/neuro-crm.service.ts` | ✅ Active |
-| `CrmEventEmitterService` | `backend/src/kloel/crm-emitter/crm-event-emitter.service.ts` | ✅ Active |
-| `PipelineService` | `backend/src/pipeline/pipeline.service.ts` | ✅ Active |
-
-**Event surface**: `commerce.crm.deal_won`, `commerce.crm.deal_lost`, `commerce.crm.stage_changed`.
-
----
-
-## 12. Autopilot
-
-**Boundary**: Autonomous agent execution loops, segmentation, decision cycles, budget-aware automation.
-
-| Sub-service | Source path | Status |
-|---|---|---|
-| `AutopilotCycleExecutorService` | `backend/src/autopilot/autopilot-cycle-executor.service.ts` | ✅ Active |
-| `AutopilotCycleMoneyService` | `backend/src/autopilot/autopilot-cycle-money.service.ts` | ✅ Active |
-| `SegmentationService` | `backend/src/autopilot/segmentation.helpers.ts` | ✅ Active |
-
-**Worker counterpart**: `worker/autopilot-processor.ts`, `worker/autopilot-scanner.helpers.ts`.
-
----
-
-## 13. Commercial Intelligence (Mind/Cognition)
-
-**Boundary**: Cognitive loop (perception → prediction → surprise → decision), belief tracking, bandit optimization, policy evaluation, simulation.
-
-| Sub-service | Source path | Status |
-|---|---|---|
-| `MindService` | `backend/src/kloel/mind.service.ts` | ✅ Active (M5 migration pending) |
-| `MindBeliefService` | `backend/src/kloel/mind-belief.service.ts` | ✅ Active |
-| `MindPolicyService` | `backend/src/kloel/mind-policy.service.ts` | ✅ Active |
-| `MindBanditService` | `backend/src/kloel/mind-bandit.service.ts` | ✅ Active |
-| `MindPredictionService` | `backend/src/kloel/mind/mind-prediction.service.ts` | ✅ Active |
-| `MindSurpriseService` | `backend/src/kloel/mind-surprise.service.ts` | ✅ Active |
-| `MindPerceptionService` | `backend/src/kloel/mind-perception.service.ts` | ✅ Active |
-| `MindSimulatorService` | `backend/src/kloel/mind-simulator.service.ts` | ✅ Active |
-| `MindEventProcessorService` | `backend/src/kloel/mind-event-processor.service.ts` | ✅ Active |
-
-**Canonical path**: 47 Mind services — 23 already under `kloel/mind/`, 23 pending M5 move from `kloel/` top-level (see [MIND_SERVICES_CANONICAL.md](./MIND_SERVICES_CANONICAL.md)).
-
-**Event surface**: `cognition.decision_made`, `cognition.belief_updated`, `mind.decision.*`, `mind.prediction.*`, `mind.surprise.recorded`.
-
----
-
-## 14. Analytics
-
-**Boundary**: Dashboard aggregation, queue stats, agent performance, ABI validation, observability metrics.
-
-| Sub-service | Source path | Status |
-|---|---|---|
-| `AnalyticsService` | `backend/src/analytics/analytics.service.ts` | ✅ Active |
-| `DashboardService` | `backend/src/dashboard/dashboard.service.ts` | ✅ Active |
-| `AdvancedAnalyticsService` | `backend/src/analytics/advanced-analytics.service.ts` | ✅ Active |
-| `MindObservabilityService` | `backend/src/kloel/mind-observability.service.ts` | ✅ Active |
-| `MindLiftReportService` | `backend/src/kloel/mind-lift-report.service.ts` | ✅ Active |
-
----
-
-## 15. Billing
-
-**Boundary**: Subscription plans, Stripe billing, payment methods, checkout webhooks.
-
-| Sub-service | Source path | Status |
-|---|---|---|
-| `BillingSubscriptionService` | `backend/src/billing/billing-subscription.service.ts` | ✅ Active |
-| `BillingCheckoutHelperService` | `backend/src/billing/billing-checkout-helper.service.ts` | ✅ Active |
-| `BillingCheckoutWebhookService` | `backend/src/billing/billing-checkout-webhook.service.ts` | ✅ Active |
-| `PaymentMethodService` | `backend/src/billing/payment-method.service.ts` | ✅ Active |
-
----
-
-## 16. Infrastructure (cross-cut)
-
-*Italicized — not domains, but cross-cutting infrastructure.*
-
-| Cross-cut | Modules | Key services |
-|---|---|---|
-| *Webhooks* | `backend/src/webhooks/` | `WebhooksService` (inbound webhook fan-out), `PaymentWebhookStripeController` |
-| *GDPR/Compliance* | `backend/src/gdpr/`, `backend/src/compliance/` | `GdprService`, `ComplianceService` |
-| *Queue* | `backend/src/queue/`, `worker/queue.ts` | BullMQ-based job dispatch; `QueueHealthService` |
-| *Health* | `backend/src/health/` | `SystemHealthService`, infra probes (Redis, DB, external) |
-
----
-
-## Domain Coverage Summary
-
-| Domain | Backend src modules | Status |
-|---|---|---|
-| Identity / Auth | `auth/`, `admin/auth/`, `public-api/` | ✅ |
-| Tenant / Workspace | `workspaces/`, `team/` | ✅ |
-| Channel | `meta/`, `marketing/channels/`, `omnichannel/`, `kloel/channel*/` | ✅ |
-| Conversation | `inbox/`, `kloel/guest-chat*`, `kloel/kloel-reply-engine*`, `kloel/kloel-thread*` | ✅ |
-| Message | `common/channel-dispatch/`, `meta/meta-whatsapp*`, `worker/` | ✅ |
-| Campaign | `campaigns/`, `mass-send/`, `marketing/` | ✅ |
-| Product | `products/`, `plans/`, `product-categories/` | ✅ |
-| Checkout | `checkout/` | ✅ |
-| Payment | `payments/`, `wallet/`, `marketplace-treasury/` | ✅ |
-| Affiliate | `affiliate/`, `kloel/affil/` | ✅ |
-| CRM | `crm/`, `pipeline/` | ✅ |
-| Autopilot | `autopilot/`, `worker/autopilot*` | ✅ |
-| Commercial Intelligence | `kloel/mind*/`, `kloel/mind-*`, `kloel/hypproof/`, `kloel/capability-registry*/` | ✅ |
-| Analytics | `analytics/`, `dashboard/`, `kloel/mind/observability/` | ✅ |
-| Billing | `billing/` | ✅ |
-| Infrastructure | `webhooks/`, `gdpr/`, `compliance/`, `queue/`, `health/`, `config/` | ✅ |
-
----
-
-## Raw Inventory (Appendices)
-
-<details>
-<summary>Full scan table (179 raw modules from `tools/canonicalize/scan.mjs`)</summary>
-
-| Domain | Files | Services | Controllers | Modules | Events |
-|---|---:|---:|---:|---:|---:|
-| `kloel` | 859 | 318 | 38 | 42 | 4 |
-| `frontend/components/kloel` | 551 | 0 | 0 | 0 | 0 |
-| `frontend/page/(main)` | 202 | 0 | 0 | 0 | 0 |
-| `admin` | 160 | 35 | 25 | 24 | 0 |
-| `marketing` | 154 | 49 | 18 | 0 | 5 |
-| `frontend/lib` | 128 | 0 | 0 | 0 | 11 |
-| `common` | 78 | 21 | 2 | 4 | 2 |
-| `frontend/page/api` | 78 | 0 | 0 | 0 | 0 |
-| `frontend/page/(checkout)` | 74 | 0 | 0 | 0 | 0 |
-| `checkout` | 61 | 14 | 2 | 0 | 0 |
-| `worker/autopilot` | 54 | 0 | 0 | 0 | 0 |
-| `auth` | 53 | 15 | 2 | 0 | 1 |
-| `admin/app` | 47 | 0 | 0 | 0 | 0 |
-| `worker/root` | 47 | 0 | 0 | 0 | 9 |
-| `payments` | 42 | 15 | 3 | 1 | 0 |
-| `frontend/hooks` | 40 | 0 | 0 | 0 | 4 |
-| `frontend/page/(public)` | 34 | 0 | 0 | 0 | 0 |
-| `frontend/components/products` | 32 | 0 | 0 | 0 | 0 |
-| `admin/components` | 32 | 0 | 0 | 0 | 0 |
-| `admin/lib` | 29 | 0 | 0 | 0 | 0 |
-| `frontend/components/canvas` | 25 | 0 | 0 | 0 | 1 |
-| `frontend/components/plans` | 25 | 0 | 0 | 0 | 0 |
-| `billing` | 23 | 5 | 2 | 0 | 0 |
-| `frontend/components/flow` | 21 | 0 | 0 | 0 | 0 |
-| `meta` | 20 | 4 | 4 | 0 | 0 |
-| `webhooks` | 20 | 3 | 6 | 0 | 0 |
-| `worker/cia` | 20 | 0 | 0 | 0 | 0 |
-| `integrations` | 19 | 7 | 0 | 0 | 2 |
-| `health` | 17 | 11 | 2 | 0 | 0 |
-| `autopilot` | 15 | 10 | 2 | 0 | 0 |
-| `flows` | 15 | 3 | 3 | 0 | 3 |
-| `gdpr` | 12 | 2 | 3 | 1 | 3 |
-| `kyc` | 12 | 2 | 1 | 1 | 0 |
-| `pulse` | 12 | 2 | 1 | 1 | 0 |
-| `crm` | 11 | 2 | 2 | 0 | 0 |
-| `inbox` | 11 | 4 | 1 | 0 | 1 |
-| `prisma` | 10 | 1 | 0 | 1 | 0 |
-| `analytics` | 9 | 5 | 1 | 0 | 0 |
-| `wallet` | 9 | 1 | 1 | 1 | 0 |
-| `dashboard` | 8 | 1 | 1 | 0 | 0 |
-| `member-area` | 8 | 1 | 5 | 1 | 0 |
-| `partnerships` | 8 | 1 | 1 | 1 | 0 |
-| `lib` | 7 | 0 | 0 | 0 | 0 |
-| `media` | 7 | 2 | 2 | 1 | 0 |
-| `reports` | 7 | 3 | 1 | 1 | 0 |
-| `sites` | 7 | 1 | 1 | 1 | 0 |
-| `workspaces` | 7 | 1 | 1 | 1 | 0 |
-| `frontend/components/ui` | 7 | 0 | 0 | 0 | 0 |
-| `calendar` | 6 | 1 | 1 | 1 | 0 |
-| `marketplace-treasury` | 6 | 4 | 0 | 0 | 0 |
-| `metrics` | 6 | 4 | 1 | 1 | 0 |
-| `frontend/components/webinarios` | 6 | 0 | 0 | 0 | 0 |
-| `campaigns` | 5 | 1 | 1 | 0 | 0 |
-| `chat` | 5 | 1 | 1 | 1 | 0 |
-| `compliance` | 5 | 2 | 1 | 0 | 0 |
-| `contacts` | 5 | 3 | 0 | 0 | 0 |
-| `scrapers` | 5 | 5 | 1 | 1 | 0 |
-| `voice` | 5 | 1 | 1 | 1 | 0 |
-| `affiliate` | 4 | 0 | 2 | 1 | 0 |
-| `api-keys` | 4 | 1 | 1 | 1 | 0 |
-| `audit` | 4 | 2 | 1 | 0 | 0 |
-| `copilot` | 4 | 1 | 1 | 1 | 2 |
-| `growth` | 4 | 1 | 2 | 1 | 0 |
-| `launch` | 4 | 1 | 1 | 1 | 0 |
-| `notifications` | 4 | 2 | 1 | 1 | 2 |
-| `observability` | 4 | 1 | 0 | 1 | 0 |
-| `pipeline` | 4 | 1 | 1 | 1 | 0 |
-| `products` | 4 | 1 | 0 | 1 | 4 |
-| `queue` | 4 | 0 | 0 | 0 | 1 |
-| `team` | 4 | 1 | 1 | 1 | 0 |
-| `frontend/page/auth` | 4 | 0 | 0 | 0 | 0 |
-| `anuncios` | 3 | 1 | 1 | 0 | 0 |
-| `audio` | 3 | 1 | 1 | 1 | 0 |
-| `config` | 3 | 0 | 0 | 0 | 0 |
-| `cookie-consent` | 3 | 1 | 1 | 1 | 0 |
-| `followup` | 3 | 1 | 1 | 1 | 0 |
-| `marketplace` | 3 | 1 | 1 | 1 | 0 |
-| `mass-send` | 3 | 1 | 1 | 1 | 0 |
-| `omnichannel` | 3 | 2 | 0 | 1 | 0 |
-| `product-categories` | 3 | 1 | 1 | 1 | 0 |
-| `public-api` | 3 | 1 | 1 | 1 | 0 |
-| `sales` | 3 | 1 | 0 | 1 | 0 |
-| `unsubscribe` | 3 | 1 | 1 | 1 | 0 |
-| `video` | 3 | 1 | 1 | 1 | 0 |
-| `frontend/page/e2e` | 3 | 0 | 0 | 0 | 0 |
-| `frontend/page/integrations` | 3 | 0 | 0 | 0 | 0 |
-| `contracts` | 2 | 0 | 0 | 0 | 0 |
-| `email` | 2 | 1 | 0 | 1 | 0 |
-| `i18n` | 2 | 1 | 0 | 1 | 0 |
-| `ops` | 2 | 0 | 1 | 1 | 0 |
-| `plans` | 2 | 1 | 0 | 1 | 3 |
-| `tiktok-ads` | 2 | 0 | 1 | 1 | 0 |
-| `alerts` | 1 | 0 | 0 | 0 | 2 |
-| `app.controller.ts` | 1 | 0 | 1 | 0 | 0 |
-| `app.module.ts` | 1 | 0 | 0 | 0 | 0 |
-| `app.service.ts` | 1 | 1 | 0 | 0 | 0 |
-| `bootstrap.ts` | 1 | 0 | 0 | 0 | 0 |
-| `google-ads` | 1 | 0 | 1 | 0 | 0 |
-| `instrument.ts` | 1 | 0 | 0 | 0 | 1 |
-| `logging` | 1 | 0 | 0 | 0 | 0 |
-| `main.ts` | 1 | 0 | 0 | 0 | 0 |
-| `post-sale` | 1 | 0 | 0 | 1 | 0 |
-| `frontend/page/fonts.ts` | 1 | 0 | 0 | 0 | 0 |
-| `frontend/page/global-error.tsx` | 1 | 0 | 0 | 0 | 0 |
-| `frontend/page/layout.tsx` | 1 | 0 | 0 | 0 | 0 |
-| `frontend/page/loading.tsx` | 1 | 0 | 0 | 0 | 0 |
-| `frontend/page/not-found.tsx` | 1 | 0 | 0 | 0 | 0 |
-| `frontend/page/robots.ts` | 1 | 0 | 0 | 0 | 0 |
-| `frontend/page/sitemap.ts` | 1 | 0 | 0 | 0 | 0 |
-| `frontend/components/icons` | 1 | 0 | 0 | 0 | 0 |
-| `frontend/components/login` | 1 | 0 | 0 | 0 | 0 |
-| `frontend/data` | 1 | 0 | 0 | 0 | 0 |
-| `frontend/i18n` | 1 | 0 | 0 | 0 | 0 |
-| `frontend/middleware.ts` | 1 | 0 | 0 | 0 | 0 |
-| `frontend/test-setup.ts` | 1 | 0 | 0 | 0 | 0 |
-| `frontend/types` | 1 | 0 | 0 | 0 | 0 |
-| `admin/proxy.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/sales-templates.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/autopilot-jobs.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/colors.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/autopilot-processor.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/crm-processor.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/mass-send-processor.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/memory-processor.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/silent-24h-resolver-processor.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/webhook-processor.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/agent-events.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/ai-provider.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/anti-ban.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/auto-provider.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/campaigns.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/channel-dispatcher.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/checkout-social-lead-enrichment.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/commercial-intelligence.core.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/commercial-intelligence.persistence.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/commercial-intelligence.signals.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/commercial-intelligence.tasks.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/commercial-intelligence.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/commercial-intelligence.types.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/crm.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/email-config.helper.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/email-provider.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/fact-extractor.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/health-monitor.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/lead-scorer.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/mind-client.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/openai-models.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/outbound-dispatcher.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/plan-limits.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/prepaid-wallet-errors.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/prepaid-wallet-settlement.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/rag-provider.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/rate-limiter.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/registry.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/semantic-memory.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/stripe-runtime.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/timezone.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/tools-registry.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/unified-agent-integrator.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/unified-whatsapp-provider.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/watchdog.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/whatsapp-api-provider.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/whatsapp-engine.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/whatsapp-provider-resolver.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/auto-trigger.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/google-maps.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/instagram.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/utils` | 1 | 0 | 0 | 0 | 0 |
-| `worker/scan-contact.cases.sweep.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/scan-contact.setup.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/async-sequence.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/error-message.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/memory-text-splitter.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/phone-normalization.util.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/prisma-json.util.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/prompt-sanitizer.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/safe-eval.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/signed-storage-url.ts` | 1 | 0 | 0 | 0 | 0 |
-| `worker/ssrf-protection.ts` | 1 | 0 | 0 | 0 | 0 |
-
-</details>
+Last scan: 2026-05-29.

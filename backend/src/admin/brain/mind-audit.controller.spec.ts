@@ -1,11 +1,8 @@
 import { BadRequestException } from '@nestjs/common';
-import { BrainAuditController } from './brain-audit.controller';
-import {
-  MindSpineAudit,
-  type SpineAuditResult,
-} from '../../kloel/mind/observability';
+import { MindAuditController } from './mind-audit.controller';
+import { MindSpineAudit, type SpineAuditResult } from '../../kloel/mind/observability';
 
-describe('BrainAuditController', () => {
+describe('MindAuditController', () => {
   function buildController() {
     const audit: Pick<MindSpineAudit, 'audit'> = {
       audit: jest.fn(),
@@ -13,7 +10,7 @@ describe('BrainAuditController', () => {
 
     return {
       audit,
-      controller: new BrainAuditController(audit as MindSpineAudit),
+      controller: new MindAuditController(audit as MindSpineAudit),
     };
   }
 
@@ -54,7 +51,9 @@ describe('BrainAuditController', () => {
 
       await controller.spineAudit();
 
-      const [since] = audit.audit.mock.calls[0];
+      const auditMock = audit.audit as jest.Mock;
+      const firstCall = auditMock.mock.calls[0] as [string];
+      const since = firstCall[0];
       expect(typeof since).toBe('string');
       expect(Number.isNaN(Date.parse(since))).toBe(false);
     });

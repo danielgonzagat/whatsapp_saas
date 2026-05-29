@@ -432,7 +432,7 @@ Total routes: 921.
 - `sessions/:id` — `backend/src/admin/chat/admin-chat.controller.ts`
 - `smart-time` — `backend/src/analytics/analytics.controller.ts`
 - `social-capture/prefill` — `backend/src/checkout/checkout-public.controller.ts`
-- `spine-audit` — `backend/src/admin/brain/brain-audit.controller.ts`
+- `spine-audit` — `backend/src/admin/brain/mind-audit.controller.ts`
 - `state` — `backend/src/admin/pipeline/admin-pipeline.controller.ts`
 - `stats` — `backend/src/analytics/analytics.controller.ts`
 - `stats` — `backend/src/autopilot/autopilot.controller.ts`

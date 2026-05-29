@@ -13,7 +13,7 @@ const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 @Controller('admin/brain')
 @UseGuards(AdminAuthGuard, AdminPermissionGuard)
 @RouteClass('read')
-export class BrainAuditController {
+export class MindAuditController {
   constructor(private readonly audit: MindSpineAudit) {}
 
   @Get('spine-audit')
