@@ -19,6 +19,7 @@ import {
   stripConfigMetadata,
 } from './checkout.service.helpers';
 import type { CreateCheckoutInput } from './checkout-product.types';
+import type { UnknownRecord } from '../common/types';
 import type { SetCheckoutThemeDto } from './dto/set-checkout-theme.dto';
 import type { SetCheckoutCouponsDto } from './dto/set-checkout-coupons.dto';
 import type { SetCheckoutTimerDto } from './dto/set-checkout-timer.dto';
@@ -146,8 +147,56 @@ export class CheckoutService {
   }
 
   // ─── Order delegation ─────────────────────────────────────────────────────
-  async createOrder(...args: Parameters<CheckoutOrderService['createOrder']>) {
-    return this.orderService.createOrder(...args);
+  async createOrder(
+    workspaceIdOrData: string | Parameters<CheckoutOrderService['createOrder']>[0],
+    resolverArgs?: UnknownRecord,
+  ) {
+    if (resolverArgs !== undefined) {
+      const workspaceId = workspaceIdOrData as string;
+      const productId =
+        typeof resolverArgs.productId === 'string' ? resolverArgs.productId : '';
+      if (!productId) throw new BadRequestException('productId required');
+
+      const product = await this.prisma.product.findFirst({
+        where: { id: productId, workspaceId },
+        select: { id: true },
+      });
+      if (!product) throw new NotFoundException('Produto nao encontrado');
+
+      const plan = await this.prisma.checkoutProductPlan.findFirst({
+        where: { productId, kind: 'PLAN', isActive: true },
+        select: { id: true, priceInCents: true },
+      });
+      if (!plan) throw new NotFoundException('Nenhum plano ativo encontrado para o produto');
+
+      const amountInCents =
+        typeof resolverArgs.amount === 'number' && Number.isFinite(resolverArgs.amount)
+          ? Math.round(resolverArgs.amount)
+          : plan.priceInCents;
+
+      return this.orderService.createOrder({
+        planId: plan.id,
+        workspaceId,
+        customerName:
+          typeof resolverArgs.customerName === 'string'
+            ? resolverArgs.customerName
+            : 'Venda Manual',
+        customerEmail:
+          typeof resolverArgs.customerEmail === 'string'
+            ? resolverArgs.customerEmail
+            : `venda-${Date.now()}@kloel.app`,
+        subtotalInCents: amountInCents,
+        totalInCents: amountInCents,
+        paymentMethod:
+          typeof resolverArgs.paymentMethod === 'string'
+            ? (resolverArgs.paymentMethod as 'PIX' | 'CREDIT_CARD' | 'BOLETO')
+            : 'PIX',
+        shippingAddress: {},
+      });
+    }
+    return this.orderService.createOrder(
+      workspaceIdOrData as Parameters<CheckoutOrderService['createOrder']>[0],
+    );
   }
   async getOrder(...args: Parameters<CheckoutOrderService['getOrder']>) {
     return this.orderService.getOrder(...args);
@@ -295,7 +344,43 @@ export class CheckoutService {
   }
 
   /** Create checkout page — emits checkout.created event. */
-  async create(workspaceId: string, productId: string, dto: CreateCheckoutInput) {
+  async create(workspaceId: string, args: UnknownRecord) {
+    const productId =
+      typeof args.productId === 'string' ? args.productId : '';
+    if (!productId) throw new BadRequestException('productId required');
+
+    const dto: CreateCheckoutInput = {
+      name: typeof args.name === 'string' ? args.name : 'Checkout',
+      priceInCents:
+        typeof args.priceInCents === 'number' && Number.isFinite(args.priceInCents)
+          ? args.priceInCents
+          : typeof args.amount === 'number' && Number.isFinite(args.amount)
+            ? Math.round(args.amount)
+            : 0,
+      compareAtPrice:
+        typeof args.compareAtPrice === 'number' && Number.isFinite(args.compareAtPrice)
+          ? args.compareAtPrice
+          : undefined,
+      currency: typeof args.currency === 'string' ? args.currency : undefined,
+      maxInstallments:
+        typeof args.maxInstallments === 'number' && Number.isFinite(args.maxInstallments)
+          ? args.maxInstallments
+          : undefined,
+      installmentsFee:
+        typeof args.installmentsFee === 'boolean' ? args.installmentsFee : undefined,
+      quantity:
+        typeof args.quantity === 'number' && Number.isFinite(args.quantity)
+          ? args.quantity
+          : undefined,
+      freeShipping:
+        typeof args.freeShipping === 'boolean' ? args.freeShipping : undefined,
+      shippingPrice:
+        typeof args.shippingPrice === 'number' && Number.isFinite(args.shippingPrice)
+          ? args.shippingPrice
+          : undefined,
+      brandName: typeof args.brandName === 'string' ? args.brandName : undefined,
+    };
+
     const result = await this.productService.createCheckout(productId, dto, workspaceId);
     if (result?.id) {
       await this.eventEmitter.checkoutCreated({
@@ -308,15 +393,47 @@ export class CheckoutService {
   }
 
   /** Update checkout page — emits checkout.updated event. */
-  async update(
-    workspaceId: string,
-    checkoutId: string,
-    dto: Prisma.CheckoutProductPlanUpdateInput,
-  ) {
+  async update(workspaceId: string, args: UnknownRecord) {
+    const checkoutId =
+      typeof args.checkoutId === 'string' ? args.checkoutId : '';
+    if (!checkoutId) throw new BadRequestException('checkoutId required');
+
     await this.verifyCheckoutOwnership(checkoutId, workspaceId);
-    const result = await this.productService.updatePlan(checkoutId, dto);
+
+    const { checkoutId: _, ...updateData } = args;
+    const result = await this.productService.updatePlan(
+      checkoutId,
+      updateData as Prisma.CheckoutProductPlanUpdateInput,
+    );
     await this.eventEmitter.checkoutUpdated({ workspaceId, checkoutId });
     return result;
+  }
+
+  /** Delete checkout page — workspace-scoped. */
+  async delete(workspaceId: string, args: UnknownRecord) {
+    const checkoutId =
+      typeof args.checkoutId === 'string' ? args.checkoutId : '';
+    if (!checkoutId) throw new BadRequestException('checkoutId required');
+
+    await this.verifyCheckoutOwnership(checkoutId, workspaceId);
+    return this.deletePlan(checkoutId, workspaceId);
+  }
+
+  /** List all checkouts for a workspace. */
+  async list(workspaceId: string, _args?: UnknownRecord) {
+    return this.prisma.checkoutProductPlan.findMany({
+      where: { kind: 'CHECKOUT', product: { workspaceId } },
+      include: {
+        checkoutConfig: true,
+        checkoutLinks: {
+          include: {
+            plan: { select: { id: true, name: true, priceInCents: true, isActive: true } },
+          },
+          orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   /** Find checkouts by product. */
