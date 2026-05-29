@@ -13,6 +13,7 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelConversationStore } from './kloel-conversation-store';
 import { LeadMindCoordinator } from './mind/coordination/lead-mind-coordinator.service';
+import { MindMessageService } from './mind/aliases/mind-message.service';
 import { KloelReplyEngineService } from './kloel-reply-engine.service';
 import { KloelThreadService } from './kloel-thread.service';
 import { KloelThinkerService, ThinkRequest, ThinkSyncResult } from './kloel-thinker.service';
@@ -52,6 +53,7 @@ export class KloelService {
     private readonly replyEngineService: KloelReplyEngineService,
     private readonly toolDispatcher: KloelToolDispatcherService,
     @Optional() private readonly agentRuntime?: AgentRuntimeContextService,
+    @Optional() private readonly mindMessage?: MindMessageService,
   ) {
     this.conversationStore = new KloelConversationStore(prisma, this.logger);
   }
@@ -271,9 +273,17 @@ export class KloelService {
   }
 
   /** Get message history. */
+  /** Get message history. */
   async getHistory(
     workspaceId: string,
   ): Promise<{ id: string; role: string; content: string; timestamp: Date }[]> {
+    if (this.mindMessage) {
+      try {
+        return await this.mindMessage.getHistory(workspaceId, 50);
+      } catch {
+        return [];
+      }
+    }
     if (!workspaceId) {
       return [];
     }

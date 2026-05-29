@@ -234,6 +234,34 @@ describe('KloelService', () => {
       const result = await service.getHistory('ws-1');
       expect(result).toEqual([]);
     });
+
+    it('delegates to MindMessageService.getHistory when injected (Brain→Mind canonical surface)', async () => {
+      const mindRow = {
+        id: 'mind-m1',
+        role: 'assistant',
+        content: 'olá da mind',
+        timestamp: new Date('2026-05-29T11:00:00.000Z'),
+      };
+      const mindMessage = { getHistory: jest.fn().mockResolvedValue([mindRow]) };
+      const serviceWithMind = new (service.constructor as new (
+        ...args: unknown[]
+      ) => typeof service)(
+        prisma,
+        mocks.planLimits,
+        mocks.threadService,
+        mocks.wsContextService,
+        mocks.leadBrainService,
+        mocks.thinkerService,
+        mocks.replyEngineService,
+        mocks.toolDispatcher,
+        undefined,
+        mindMessage,
+      );
+      const result = await serviceWithMind.getHistory('ws-mind');
+      expect(mindMessage.getHistory).toHaveBeenCalledWith('ws-mind', 50);
+      expect(prisma.kloelMessage.findMany).not.toHaveBeenCalled();
+      expect(result).toEqual([mindRow]);
+    });
   });
 
   // ── saveMemory ──

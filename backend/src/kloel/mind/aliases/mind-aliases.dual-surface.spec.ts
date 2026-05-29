@@ -21,7 +21,7 @@ describe('MindMessageService / MindMemoryItemService — dual surface', () => {
   let mindMessage: MindMessageService;
   let mindMemory: MindMemoryItemService;
   let prisma: {
-    kloelMessage: { findUnique: jest.Mock };
+    kloelMessage: { findUnique: jest.Mock; findMany: jest.Mock; create: jest.Mock };
     kloelMemory: { findUnique: jest.Mock };
   };
 
@@ -51,7 +51,11 @@ describe('MindMessageService / MindMemoryItemService — dual surface', () => {
 
   beforeEach(async () => {
     prisma = {
-      kloelMessage: { findUnique: jest.fn().mockResolvedValue(seededMessage) },
+      kloelMessage: {
+        findUnique: jest.fn().mockResolvedValue(seededMessage),
+        findMany: jest.fn().mockResolvedValue([seededMessage]),
+        create: jest.fn().mockResolvedValue(seededMessage),
+      },
       kloelMemory: { findUnique: jest.fn().mockResolvedValue(seededMemory) },
     };
 
@@ -80,6 +84,42 @@ describe('MindMessageService / MindMemoryItemService — dual surface', () => {
     expect(viaWrapper).toEqual(seededMessage);
     expect(prisma.kloelMessage.findUnique).toHaveBeenCalledWith({
       where: { id: seededMessage.id },
+    });
+  });
+
+  it('MindMessageService.getHistory projects the canonical {id,role,content,timestamp} shape', async () => {
+    const history = await mindMessage.getHistory(seededMessage.workspaceId, 50);
+
+    expect(history).toEqual([
+      {
+        id: seededMessage.id,
+        role: seededMessage.role,
+        content: seededMessage.content,
+        timestamp: seededMessage.createdAt,
+      },
+    ]);
+    expect(prisma.kloelMessage.findMany).toHaveBeenCalledWith({
+      where: { workspaceId: seededMessage.workspaceId },
+      orderBy: { createdAt: 'asc' },
+      take: 50,
+      select: { id: true, role: true, content: true, createdAt: true },
+    });
+  });
+
+  it('MindMessageService.getHistory returns [] when workspaceId is empty (no DB hit)', async () => {
+    const history = await mindMessage.getHistory('', 50);
+    expect(history).toEqual([]);
+    expect(prisma.kloelMessage.findMany).not.toHaveBeenCalled();
+  });
+
+  it('MindMessageService.appendToConversation persists role+content under workspace scope', async () => {
+    await mindMessage.appendToConversation(seededMessage.workspaceId, 'user', 'mensagem de teste');
+    expect(prisma.kloelMessage.create).toHaveBeenCalledWith({
+      data: {
+        workspaceId: seededMessage.workspaceId,
+        role: 'user',
+        content: 'mensagem de teste',
+      },
     });
   });
 
