@@ -14,58 +14,48 @@ class LspPool {
   constructor() { this.servers = new Map(); this.openedDocs = new Map(); }
   key(l,w) { return `${l}@${w}`; }
 
-  async getOrStart(language, workspace) {
-    const k = this.key(language, workspace);
-    let s = this.servers.get(k);
-    if (s) { s.lastUsed = Date.now(); return s; }
-
-    const ws = mesh.workspaces[workspace];
-    if (!ws) throw new Error(`Unknown workspace: ${workspace}`);
-    const serverDef = mesh.servers[language];
-    if (!serverDef) throw new Error(`Unknown language/LSP: ${language}`);
-
-    const proc = spawn(serverDef.command, serverDef.args || [], {
-      cwd: ws.cwd, stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env },
-    });
-
-    // ID-keyed resolver map — fixes concurrent-request response routing.
-    let buffer = '';
-    const resolvers = new Map();      // id -> (msg) => void
-    const notifications = [];         // server-initiated notifications (no id)
-    proc.stdout.on('data', (chunk) => {
-      buffer += chunk.toString();
-      while (true) {
-        const headerEnd = buffer.indexOf('\r\n\r\n');
-        if (headerEnd === -1) break;
-        const header = buffer.slice(0, headerEnd);
-        const match = header.match(/Content-Length: (\d+)/i);
-        if (!match) { buffer = ''; break; }
-        const len = parseInt(match[1], 10);
-        const bodyStart = headerEnd + 4;
-        if (buffer.length < bodyStart + len) break;
-        const body = buffer.slice(bodyStart, bodyStart + len);
-        buffer = buffer.slice(bodyStart + len);
-        try {
-          const msg = JSON.parse(body);
-          if (msg.id !== undefined && resolvers.has(msg.id)) {
-            const r = resolvers.get(msg.id);
-            resolvers.delete(msg.id);
-            r(msg);
-          } else if (msg.method) {
-            // server notification (publishDiagnostics, etc.) — buffer for diagnostics call
-            notifications.push(msg);
-            if (notifications.length > 50) notifications.shift();
-          }
-        } catch {}
+  _makeStdoutHandler(state) {
+    return (chunk) => {
+      state.buffer += chunk.toString();
+      let frame;
+      while ((frame = this._takeFrame(state)) !== null) {
+        this._dispatchFrame(frame, state.resolvers, state.notifications);
       }
-    });
-    proc.stderr.on('data', () => {});
-    proc.on('exit', () => { this.servers.delete(k); for (const r of resolvers.values()) r({error: 'lsp process exited'}); });
+    };
+  }
 
-    s = { proc, resolvers, notifications, seq: 0, workspace, lastUsed: Date.now() };
-    this.servers.set(k, s);     // ← bug fix: previously `set(k)` lost the value, spawning new procs on every call
+  // Extract one complete LSP frame from the buffer, or null if incomplete.
+  // Returns '' (and clears buffer) on a malformed header to match prior behavior.
+  _takeFrame(state) {
+    const headerEnd = state.buffer.indexOf('\r\n\r\n');
+    if (headerEnd === -1) return null;
+    const header = state.buffer.slice(0, headerEnd);
+    const match = header.match(/Content-Length: (\d+)/i);
+    if (!match) { state.buffer = ''; return ''; }
+    const len = parseInt(match[1], 10);
+    const bodyStart = headerEnd + 4;
+    if (state.buffer.length < bodyStart + len) return null;
+    const body = state.buffer.slice(bodyStart, bodyStart + len);
+    state.buffer = state.buffer.slice(bodyStart + len);
+    return body;
+  }
 
-    await this._request(s, 'initialize', {
+  _dispatchFrame(body, resolvers, notifications) {
+    if (body === '') return;
+    let msg;
+    try { msg = JSON.parse(body); } catch { return; }
+    if (msg.id !== undefined && resolvers.has(msg.id)) {
+      const r = resolvers.get(msg.id);
+      resolvers.delete(msg.id);
+      r(msg);
+    } else if (msg.method) {
+      notifications.push(msg);
+      if (notifications.length > 50) notifications.shift();
+    }
+  }
+
+  _initParams(ws, workspace) {
+    return {
       processId: process.pid,
       rootUri: `file://${ws.cwd}`,
       capabilities: {
@@ -83,7 +73,37 @@ class LspPool {
         workspace: { workspaceFolders: true, configuration: true },
       },
       workspaceFolders: [{ uri: `file://${ws.cwd}`, name: workspace }],
+    };
+  }
+
+  async getOrStart(language, workspace) {
+    const k = this.key(language, workspace);
+    let s = this.servers.get(k);
+    if (s) { s.lastUsed = Date.now(); return s; }
+
+    const ws = mesh.workspaces[workspace];
+    if (!ws) throw new Error(`Unknown workspace: ${workspace}`);
+    const serverDef = mesh.servers[language];
+    if (!serverDef) throw new Error(`Unknown language/LSP: ${language}`);
+
+    const proc = spawn(serverDef.command, serverDef.args || [], {
+      cwd: ws.cwd, stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env },
     });
+
+    // ID-keyed resolver map — fixes concurrent-request response routing.
+    const state = {
+      buffer: '',
+      resolvers: new Map(),      // id -> (msg) => void
+      notifications: [],         // server-initiated notifications (no id)
+    };
+    proc.stdout.on('data', this._makeStdoutHandler(state));
+    proc.stderr.on('data', () => {});
+    proc.on('exit', () => { this.servers.delete(k); for (const r of state.resolvers.values()) r({error: 'lsp process exited'}); });
+
+    s = { proc, resolvers: state.resolvers, notifications: state.notifications, seq: 0, workspace, lastUsed: Date.now() };
+    this.servers.set(k, s);     // ← bug fix: previously `set(k)` lost the value, spawning new procs on every call
+
+    await this._request(s, 'initialize', this._initParams(ws, workspace));
     this._notify(s, 'initialized', {});
     await new Promise(r => setTimeout(r, 100));
     return s;

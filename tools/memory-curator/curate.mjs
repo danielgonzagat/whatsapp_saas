@@ -68,49 +68,47 @@ async function loadIndexLinks() {
   }
 }
 
+function classifyFile(f, ctx, buckets) {
+  const { now, indexed, validNames, hashByDesc } = ctx;
+  const days = (ms) => Math.floor((now - ms) / 86_400_000);
+
+  if (f.size > OVERSIZE_BYTES) buckets.oversized.push({ file: f.name, sizeKB: Math.round(f.size / 102.4) / 10 });
+
+  const pinned = (f.fm.pinned || '').toLowerCase() === 'true';
+  if (!pinned && days(f.mtime) > STALE_DAYS && !indexed.has(f.name)) {
+    buckets.stale.push({ file: f.name, daysOld: days(f.mtime) });
+  }
+
+  if (!indexed.has(f.name)) buckets.orphaned.push(f.name);
+
+  const dh = createHash('sha1').update(f.fm.description || '').digest('hex');
+  if (f.fm.description && hashByDesc.has(dh)) {
+    buckets.dupes.push({ file: f.name, sameAs: hashByDesc.get(dh) });
+  } else if (f.fm.description) {
+    hashByDesc.set(dh, f.name);
+  }
+
+  for (const m of f.body.matchAll(LINK_RE)) {
+    const target = m[1];
+    if (!validNames.has(`${target}.md`)) buckets.brokenLinks.push({ file: f.name, broken: target });
+  }
+}
+
 async function scan() {
   const files = await loadFiles();
   const indexed = await loadIndexLinks();
-  const now = Date.now();
-  const days = (ms) => Math.floor((now - ms) / 86_400_000);
 
-  const oversized = [];
-  const stale = [];
-  const orphaned = []; // file exists but not referenced from MEMORY.md
-  const brokenLinks = [];
-  const dupes = [];
+  const buckets = { oversized: [], stale: [], orphaned: [], brokenLinks: [], dupes: [] };
+  const ctx = {
+    now: Date.now(),
+    indexed,
+    validNames: new Set(files.map((f) => f.name)),
+    hashByDesc: new Map(),
+  };
 
-  const hashByDesc = new Map();
-  const validNames = new Set(files.map((f) => f.name));
+  for (const f of files) classifyFile(f, ctx, buckets);
 
-  for (const f of files) {
-    if (f.size > OVERSIZE_BYTES) oversized.push({ file: f.name, sizeKB: Math.round(f.size / 102.4) / 10 });
-
-    const pinned = (f.fm.pinned || '').toLowerCase() === 'true';
-    if (!pinned && days(f.mtime) > STALE_DAYS && !indexed.has(f.name)) {
-      stale.push({ file: f.name, daysOld: days(f.mtime) });
-    }
-
-    if (!indexed.has(f.name)) {
-      orphaned.push(f.name);
-    }
-
-    const dh = createHash('sha1').update(f.fm.description || '').digest('hex');
-    if (f.fm.description && hashByDesc.has(dh)) {
-      dupes.push({ file: f.name, sameAs: hashByDesc.get(dh) });
-    } else if (f.fm.description) {
-      hashByDesc.set(dh, f.name);
-    }
-
-    for (const m of f.body.matchAll(LINK_RE)) {
-      const target = m[1];
-      if (!validNames.has(`${target}.md`)) {
-        brokenLinks.push({ file: f.name, broken: target });
-      }
-    }
-  }
-
-  return { totalFiles: files.length, totalBytes: files.reduce((a, f) => a + f.size, 0), indexed: indexed.size, oversized, stale, orphaned, brokenLinks, dupes };
+  return { totalFiles: files.length, totalBytes: files.reduce((a, f) => a + f.size, 0), indexed: indexed.size, oversized: buckets.oversized, stale: buckets.stale, orphaned: buckets.orphaned, brokenLinks: buckets.brokenLinks, dupes: buckets.dupes };
 }
 
 async function prune(report) {
