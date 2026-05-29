@@ -133,12 +133,13 @@ describe('GuestChatService — Cognitive Parity (PI-K19-A)', () => {
         workspaceId: 'ws-test-001',
         truthMode: 'observed',
         provenance: expect.objectContaining({
-          source: 'guest-chat',
-          surface: 'guest',
+          source: 'production',
+          processor: 'guest-chat',
         }) as unknown,
         payload: expect.objectContaining({
           decision: 'engage',
           messageLength: 3,
+          surface: 'guest',
         }) as unknown,
       });
       expect(mockSpineEmitter.emit).toHaveBeenCalledWith(matcher);

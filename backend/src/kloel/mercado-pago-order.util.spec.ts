@@ -6,13 +6,17 @@ describe('kloel migration guard — payment order rail', () => {
 
   it('keeps Kloel Pix on Mercado Pago and retired payment rails out', () => {
     const paymentServiceSource = readFileSync(resolve(__dirname, './payment.service.ts'), 'utf8');
+    const paymentHelpersSource = readFileSync(resolve(__dirname, './payment.helpers.ts'), 'utf8');
     const smartPaymentServiceSource = readFileSync(
       resolve(__dirname, './smart-payment.service.ts'),
       'utf8',
     );
 
     expect(paymentServiceSource).toContain('MercadoPagoPixChargeService');
-    expect(paymentServiceSource).toContain("MP_WEBHOOK_PATH = '/webhooks/mercadopago'");
+    // MP_WEBHOOK_PATH was canonicalized into payment.helpers.ts; the service
+    // imports + uses it for the notification URL.
+    expect(paymentHelpersSource).toContain("MP_WEBHOOK_PATH = '/webhooks/mercadopago'");
+    expect(paymentServiceSource).toContain('MP_WEBHOOK_PATH');
     expect(paymentServiceSource).not.toContain("payment_method_types: ['pix']");
     expect(paymentServiceSource.toLowerCase()).not.toContain(retiredProvider);
 

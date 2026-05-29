@@ -29,20 +29,20 @@ import {
 import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
 import { KloelCodeToolsService } from './kloel-code-tools.service';
 import { KloelCodeAnalysisService } from './kloel-code-analysis.service';
-import type { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
-import type { CouponService } from './coupon.service';
-import type { KloelChatCheckoutTool } from './kloel-chat-checkout.tool';
-import type { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service';
-import type { SalesService } from '../sales/sales.service';
-import type { AccountService } from './account.service';
-import type { SelfHealthService } from './self-awareness/self-health.service';
-import type { SelfGapsService } from './self-awareness/self-gaps.service';
-import type { DepsCoverageService } from './self-awareness/deps-coverage.service';
-import type { MindCapabilityRegistry } from './mind/coordination/mind-capability-registry.service';
-import type { MindGuardsService } from './mind/policy/mind-guards.service';
-import type { ReportService } from './report.service';
-import type { ChannelTransportRegistry } from './channel-transport.registry';
-import type { RiskGateService } from './risk-class/risk-gate.service';
+import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
+import { CouponService } from './coupon.service';
+import { KloelChatCheckoutTool } from './kloel-chat-checkout.tool';
+import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service';
+import { SalesService } from '../sales/sales.service';
+import { AccountService } from './account.service';
+import { SelfHealthService } from './self-awareness/self-health.service';
+import { SelfGapsService } from './self-awareness/self-gaps.service';
+import { DepsCoverageService } from './self-awareness/deps-coverage.service';
+import { MindCapabilityRegistry } from './mind/coordination/mind-capability-registry.service';
+import { MindGuardsService } from './mind/policy/mind-guards.service';
+import { ReportService } from './report.service';
+import { ChannelTransportRegistry } from './channel-transport.registry';
+import { RiskGateService } from './risk-class/risk-gate.service';
 
 import type { UnknownRecord } from '../common/types';
 
