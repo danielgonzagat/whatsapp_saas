@@ -458,3 +458,70 @@ export class MindMemoryAdapter {
 ---
 
 **Fim do plano. Implementação autorizada apenas via PRs sequenciais com gates verificados.**
+
+---
+
+## 10. Phase 1 Adopter Path (Claude-K50, 2026-05-28)
+
+> **Status**: In-flight, non-destructive. Schema unchanged, zero migrations.
+> Lands the canonical `Mind*` naming **as a TypeScript wrapper surface** so the
+> 89+ existing `prisma.kloel*` callers keep working while new code reads/writes
+> through the canonical name.
+
+### 10.1 Why a wrapper, not a Prisma view alias
+
+Prisma 5.22 (this repo) **cannot** have two `model` blocks `@@map` to the same
+physical table — the generator rejects it. Prisma `view` blocks require the
+`views` preview feature plus an introspected SQL view, which would itself be a
+schema change. Both options would force a real migration on the very first
+step of the unification, contradicting the "non-destructive PR-1" constraint.
+
+A thin NestJS-injectable wrapper service keeps PR-1 truly schema-free:
+
+- No `prisma migrate dev`. No `prisma db push`.
+- No new table. No backfill. No data movement.
+- Both surfaces (legacy `prisma.kloelMessage` + new `MindMessageService`) hit
+  the same row in the same table.
+- The canonical name `Mind*` is available to new code today; old code is
+  untouched.
+
+### 10.2 What this PR ships
+
+| Artifact | Path | Role |
+|---|---|---|
+| Wrapper service | `backend/src/kloel/mind/aliases/mind-message.service.ts` | Typed `MindMessageService` → `prisma.kloelMessage.*` |
+| Wrapper service | `backend/src/kloel/mind/aliases/mind-memory-item.service.ts` | Typed `MindMemoryItemService` → `prisma.kloelMemory.*` |
+| Dual-surface spec | `backend/src/kloel/mind/aliases/mind-aliases.dual-surface.spec.ts` | Asserts wrapper + legacy return the same row |
+| Module wiring | `backend/src/kloel/kloel.module.ts` | Provides + exports both services |
+| Schema annotations | `backend/prisma/schema.prisma` | `/// @deprecated` JSDoc on `KloelMessage` + `KloelMemory` |
+
+### 10.3 What this PR does **not** ship (deferred)
+
+- Canonical `MindMessage` / `MindMemoryItem` Prisma models with their own
+  `RAC_MindMessage` / `RAC_MindMemory` tables → PR-1 of §5.
+- Backfill job → PR-5 of §5.
+- Adapter with `USE_CANONICAL_MIND` feature flag → PR-4 of §5.
+- Any rename of existing `Kloel*` services → PR-2 / PR-3 of §5.
+
+### 10.4 Adopter contract for new code
+
+```ts
+// ✅ DO — use the canonical wrapper for any new code path
+constructor(private readonly mindMessages: MindMessageService) {}
+const row = await this.mindMessages.findById(id);
+
+// ❌ DON'T — direct prisma.kloelMessage in new files (legacy only)
+const row = await this.prisma.kloelMessage.findUnique({ where: { id } });
+```
+
+Existing call sites stay as-is until their owning service is migrated under
+PR-2 / PR-3. No big-bang refactor.
+
+### 10.5 Gate proof for this PR
+
+- `tsc --noEmit` passes on `backend/tsconfig.build.json`.
+- Dual-surface spec verifies both accessors return the same row for the same
+  id, and that the wrapper hits the expected Prisma delegate.
+- Workspace isolation is preserved (the wrapper does not bypass it — callers
+  pass `workspaceId` exactly as before).
+- Zero schema migrations. Zero `prisma db push`. Zero bypass markers.

@@ -57,6 +57,8 @@ import { MemoryController } from './memory.controller';
 import { MemoryCrudService } from './memory-crud.service';
 import { MemorySearchService } from './memory-search.service';
 import { MemoryService } from './memory.service';
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
+import { MindMessageService } from './mind/aliases/mind-message.service';
 import { MarketingSkillContextBuilder } from './marketing-skills/marketing-skill.context';
 import { MarketingSkillLoader } from './marketing-skills/marketing-skill.loader';
 import { MarketingSkillRouter } from './marketing-skills/marketing-skill.router';
@@ -450,6 +452,8 @@ import { WorkspaceModule } from '../workspaces/workspace.module';
     AgentRuntimeSchedulerService,
     AgentRuntimeSessionStore,
     AgentRuntimeSkillRegistry,
+    MindMessageService,
+    MindMemoryItemService,
   ],
   exports: [
     KloelService,
@@ -525,6 +529,8 @@ import { WorkspaceModule } from '../workspaces/workspace.module';
     AgentRuntimeSchedulerService,
     AgentRuntimeSessionStore,
     AgentRuntimeSkillRegistry,
+    MindMessageService,
+    MindMemoryItemService,
   ],
 })
 export class KloelModule {}

@@ -414,8 +414,8 @@ model Contact {
   insights           ContactInsight[]
   channelIdentifiers ChannelIdentifier[]
 
-  identityLinksAsSource  ContactIdentityLink[] @relation("IdentityLinksAsSource")
-  identityLinksAsLinked  ContactIdentityLink[] @relation("IdentityLinksAsLinked")
+  identityLinksAsSource ContactIdentityLink[] @relation("IdentityLinksAsSource")
+  identityLinksAsLinked ContactIdentityLink[] @relation("IdentityLinksAsLinked")
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -451,20 +451,20 @@ model ContactInsight {
 }
 
 model ContactIdentityLink {
-  id              String   @id @default(uuid())
+  id              String    @id @default(uuid())
   workspaceId     String
   contactId       String
   linkedContactId String
   workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   contact         Contact   @relation("IdentityLinksAsSource", fields: [contactId, workspaceId], references: [id, workspaceId], onDelete: Cascade)
   linkedContact   Contact   @relation("IdentityLinksAsLinked", fields: [linkedContactId, workspaceId], references: [id, workspaceId], onDelete: Cascade)
-  confidence      Float    @default(1.0)
-  matchReason     String?   // phone_match, email_match, operator_merge
+  confidence      Float     @default(1.0)
+  matchReason     String? // phone_match, email_match, operator_merge
   merged          Boolean   @default(false)
   mergedAt        DateTime?
   mergedBy        String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   @@unique([workspaceId, contactId, linkedContactId])
   @@index([workspaceId, contactId])
@@ -1648,6 +1648,11 @@ model Persona {
 // 🧠 KLOEL - IA Comercial Autônoma
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+/// @deprecated Brain → Mind unification (PI-K23 / Claude-K50): new code MUST
+/// read/write via `MindMessageService` (backend/src/kloel/mind/aliases/mind-message.service.ts).
+/// Both surfaces operate on this same `RAC_KloelMessage` table during Phase 1.
+/// Canonical model `MindMessage` (table `RAC_MindMessage`) lands in PR-1 of
+/// docs/architecture/BRAIN_MIND_UNIFICATION_PLAN.md.
 model KloelMessage {
   id          String    @id @default(uuid())
   workspaceId String
@@ -1663,6 +1668,11 @@ model KloelMessage {
   @@map("RAC_KloelMessage")
 }
 
+/// @deprecated Brain → Mind unification (PI-K23 / Claude-K50): new code MUST
+/// read/write via `MindMemoryItemService` (backend/src/kloel/mind/aliases/mind-memory-item.service.ts).
+/// Both surfaces operate on this same `RAC_KloelMemory` table during Phase 1.
+/// Canonical model `MindMemory` (table `RAC_MindMemory`) lands in PR-1 of
+/// docs/architecture/BRAIN_MIND_UNIFICATION_PLAN.md.
 model KloelMemory {
   id          String                       @id @default(uuid())
   workspaceId String
@@ -4515,51 +4525,51 @@ model PipelineState {
 }
 
 model DecisionShadow {
-  id                    String   @id @default(cuid())
-  workspaceId           String
-  channel               String
-  inboundCorrelationId  String
-  orchestratorDecision  Json
-  legacyBaseline        Json
-  outcomeKey            String
-  outcomeAt             DateTime?
-  outcomeValue          Json?
-  createdAt             DateTime @default(now())
+  id                   String    @id @default(cuid())
+  workspaceId          String
+  channel              String
+  inboundCorrelationId String
+  orchestratorDecision Json
+  legacyBaseline       Json
+  outcomeKey           String
+  outcomeAt            DateTime?
+  outcomeValue         Json?
+  createdAt            DateTime  @default(now())
 
-  @@index([workspaceId, channel, createdAt])
   @@unique([workspaceId, inboundCorrelationId])
+  @@index([workspaceId, channel, createdAt])
   @@map("RAC_DecisionShadow")
 }
 
 model DecisionOutcome {
-  id               String    @id @default(cuid())
-  workspaceId      String
-  decisionType     String
-  chosenAction     String
-  baselineAction   String?
-  outcomeKey       String    @unique
-  expectedWindow   Int
-  contextSnapshot  Json
-  outcomeAt        DateTime?
-  outcomeName      String?
-  outcomeValue     Json?
-  economicValue    Float?
-  wonVsBaseline    Boolean?
-  createdAt        DateTime  @default(now())
+  id              String    @id @default(cuid())
+  workspaceId     String
+  decisionType    String
+  chosenAction    String
+  baselineAction  String?
+  outcomeKey      String    @unique
+  expectedWindow  Int
+  contextSnapshot Json
+  outcomeAt       DateTime?
+  outcomeName     String?
+  outcomeValue    Json?
+  economicValue   Float?
+  wonVsBaseline   Boolean?
+  createdAt       DateTime  @default(now())
 
   @@index([workspaceId, decisionType, createdAt])
   @@map("RAC_DecisionOutcome")
 }
 
 model DecisionOutcomeEvent {
-  id           String   @id @default(cuid())
-  workspaceId  String
-  eventType    String
-  eventKey     String
-  correlation  Json?
-  processed    Boolean  @default(false)
-  processedAt  DateTime?
-  createdAt    DateTime @default(now())
+  id          String    @id @default(cuid())
+  workspaceId String
+  eventType   String
+  eventKey    String
+  correlation Json?
+  processed   Boolean   @default(false)
+  processedAt DateTime?
+  createdAt   DateTime  @default(now())
 
   @@index([workspaceId, eventType, createdAt])
   @@index([workspaceId, processed, createdAt])
@@ -4570,16 +4580,16 @@ model DecisionOutcomeEvent {
 /// Implementa PCI.3 §5.1 (docs/contracts/pci/03-genesis-lineage.md).
 /// Append-only: NUNCA editar entradas existentes. Sem updatedAt por design.
 model LineageEntry {
-  id              String   @id @default(uuid()) @db.Uuid
-  ledgerEntryId   String   @unique
-  sequenceNumber  Int      @unique
-  prevEntryHash   String
-  eventId         String
-  eventName       String
-  timestampUtc    DateTime
-  payloadJson     Json
-  hash            String   @unique
-  createdAt       DateTime @default(now())
+  id             String   @id @default(uuid()) @db.Uuid
+  ledgerEntryId  String   @unique
+  sequenceNumber Int      @unique
+  prevEntryHash  String
+  eventId        String
+  eventName      String
+  timestampUtc   DateTime
+  payloadJson    Json
+  hash           String   @unique
+  createdAt      DateTime @default(now())
 
   @@index([sequenceNumber])
   @@index([eventName])
@@ -4626,14 +4636,14 @@ model Site {
 }
 
 model SiteDomain {
-  id         String    @id @default(uuid())
-  siteId     String
-  site       Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  hostname   String    @unique
-  isCustom   Boolean   @default(false)
-  dnsStatus  DnsStatus @default(PENDING)
-  sslStatus  String    @default("PENDING")
-  createdAt  DateTime  @default(now())
+  id        String    @id @default(uuid())
+  siteId    String
+  site      Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  hostname  String    @unique
+  isCustom  Boolean   @default(false)
+  dnsStatus DnsStatus @default(PENDING)
+  sslStatus String    @default("PENDING")
+  createdAt DateTime  @default(now())
 
   @@index([siteId])
   @@map("RAC_SiteDomain")
