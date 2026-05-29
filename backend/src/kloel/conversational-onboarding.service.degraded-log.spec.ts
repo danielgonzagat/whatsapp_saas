@@ -7,23 +7,17 @@ import { AbiBuilderService } from './abi/abi-builder.service';
 const mockWarnCalls: Array<[string, Record<string, unknown>]> = [];
 
 jest.mock('../logging/structured-logger', () => {
-  const actual =
-    jest.requireActual<typeof import('../logging/structured-logger')>(
-      '../logging/structured-logger',
-    );
+  const actual = jest.requireActual<typeof import('../logging/structured-logger')>(
+    '../logging/structured-logger',
+  );
   return {
     ...actual,
     StructuredLogger: class extends actual.StructuredLogger {
       static override from(context: string | { name?: string }) {
-        const inst = new this(
-          typeof context === 'string' ? context : context.name ?? 'unknown',
-        );
+        const inst = new this(typeof context === 'string' ? context : (context.name ?? 'unknown'));
         return inst;
       }
-      override warn(
-        a: string | Record<string, unknown>,
-        b?: unknown,
-      ): void {
+      override warn(a: string | Record<string, unknown>, b?: unknown): void {
         if (typeof a === 'string' && b && typeof b === 'object') {
           mockWarnCalls.push([a, b as Record<string, unknown>]);
         }
@@ -219,9 +213,7 @@ describe('ConversationalOnboardingService degraded logging', () => {
       ],
     }).compile();
 
-    service = module.get<ConversationalOnboardingService>(
-      ConversationalOnboardingService,
-    );
+    service = module.get<ConversationalOnboardingService>(ConversationalOnboardingService);
   });
 
   afterEach(() => {
@@ -231,9 +223,7 @@ describe('ConversationalOnboardingService degraded logging', () => {
   });
   describe('token_budget', () => {
     beforeEach(() => {
-      planLimits.ensureTokenBudget.mockRejectedValue(
-        new Error('Token budget exceeded'),
-      );
+      planLimits.ensureTokenBudget.mockRejectedValue(new Error('Token budget exceeded'));
     });
 
     it('returns FALLBACK_REPLY unchanged', async () => {
@@ -248,9 +238,7 @@ describe('ConversationalOnboardingService degraded logging', () => {
   });
   describe('llm_call', () => {
     beforeEach(() => {
-      chatCompletionWithRetryMock.mockRejectedValue(
-        new Error('OpenAI rate limit'),
-      );
+      chatCompletionWithRetryMock.mockRejectedValue(new Error('OpenAI rate limit'));
     });
 
     it('returns FALLBACK_REPLY unchanged', async () => {
@@ -284,9 +272,7 @@ describe('ConversationalOnboardingService degraded logging', () => {
         ],
         usage: { total_tokens: 300 },
       });
-      toolsService.executeToolCall.mockRejectedValue(
-        new Error('Tool execution failed'),
-      );
+      toolsService.executeToolCall.mockRejectedValue(new Error('Tool execution failed'));
     });
 
     it('returns FALLBACK_REPLY unchanged', async () => {
@@ -301,9 +287,7 @@ describe('ConversationalOnboardingService degraded logging', () => {
   });
   describe('persist', () => {
     beforeEach(() => {
-      toolsService.saveOnboardingMessage.mockRejectedValue(
-        new Error('DB write failed'),
-      );
+      toolsService.saveOnboardingMessage.mockRejectedValue(new Error('DB write failed'));
     });
 
     it('returns FALLBACK_REPLY unchanged', async () => {
@@ -319,9 +303,7 @@ describe('ConversationalOnboardingService degraded logging', () => {
   describe('sse_write', () => {
     beforeEach(() => {
       chatCompletionWithRetryMock.mockResolvedValue({
-        choices: [
-          { message: { content: 'Bem-vindo!', tool_calls: null } },
-        ],
+        choices: [{ message: { content: 'Bem-vindo!', tool_calls: null } }],
         usage: { total_tokens: 100 },
       });
     });
@@ -355,9 +337,7 @@ describe('ConversationalOnboardingService degraded logging', () => {
   });
   describe('log shape', () => {
     beforeEach(() => {
-      chatCompletionWithRetryMock.mockRejectedValue(
-        new TypeError('Network timeout'),
-      );
+      chatCompletionWithRetryMock.mockRejectedValue(new TypeError('Network timeout'));
     });
 
     it('includes errorName from constructor', async () => {

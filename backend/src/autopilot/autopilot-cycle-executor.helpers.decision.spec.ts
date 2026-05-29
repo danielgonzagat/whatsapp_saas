@@ -153,32 +153,26 @@ describe('autopilot-cycle-executor.helpers — decision', () => {
 
     it('uses night precedence over buying when applicable', () => {
       const fakeNight = { getHours: () => 3 } as unknown as Date;
-      expect(
-        decideActionBaseline({ buyingSignal: true }, true, fakeNight),
-      ).toBe('soft_close_night');
+      expect(decideActionBaseline({ buyingSignal: true }, true, fakeNight)).toBe(
+        'soft_close_night',
+      );
     });
 
     it('uses buying precedence over intent during the day', () => {
       const fakeNoon = { getHours: () => 12 } as unknown as Date;
       expect(
-        decideActionBaseline(
-          { buyingSignal: true, intent: 'question_price' },
-          true,
-          fakeNoon,
-        ),
+        decideActionBaseline({ buyingSignal: true, intent: 'question_price' }, true, fakeNoon),
       ).toBe('send_offer');
     });
 
     it('falls through to intent mapping when no night/buying', () => {
-      expect(
-        decideActionBaseline({ intent: 'scheduling' }, false, fixedDaytime),
-      ).toBe('send_calendar');
+      expect(decideActionBaseline({ intent: 'scheduling' }, false, fixedDaytime)).toBe(
+        'send_calendar',
+      );
     });
 
     it('falls through to stage when night/buying/intent are absent', () => {
-      expect(
-        decideActionBaseline({ stage: 'new' }, false, fixedDaytime),
-      ).toBe('qualify');
+      expect(decideActionBaseline({ stage: 'new' }, false, fixedDaytime)).toBe('qualify');
     });
 
     it('uses real Date() when now is omitted', () => {

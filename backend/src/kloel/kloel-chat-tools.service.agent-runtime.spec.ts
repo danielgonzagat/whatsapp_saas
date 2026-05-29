@@ -330,7 +330,7 @@ describe('KloelChatToolsService', () => {
         expect.objectContaining({
           workspaceId: wsId,
           sessionId: 'thread_1',
-          eventType: 'delegation',
+          eventType: 'runtime.delegation.recorded',
           content: expect.stringContaining('Inspect Hermes delegation'),
           metadata: expect.objectContaining({
             worker: 'D',

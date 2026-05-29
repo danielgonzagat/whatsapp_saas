@@ -296,7 +296,9 @@ describe('VtierCertifierService', () => {
 
     it('evaluates dominance after 20 cycles', async () => {
       const c = makeCertifier();
-      for (let i = 0; i < 19; i++) await c.certify();
+      for (let i = 0; i < 19; i++) {
+        await c.certify();
+      }
       const result = await c.certify();
       const v14 = result.verdicts.find((v) => v.criterionId === 'V14')!;
       expect(['PASS', 'FAIL', 'INSUFFICIENT_EVIDENCE']).toContain(v14.status);

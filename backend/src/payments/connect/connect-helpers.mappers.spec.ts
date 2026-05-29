@@ -1,10 +1,6 @@
 import { ConnectAccountType, ConnectLedgerEntryType } from '@prisma/client';
 
-import {
-  buildBalanceById,
-  mapConnectLedgerEntry,
-  mapPayoutAuditItem,
-} from './connect-helpers';
+import { buildBalanceById, mapConnectLedgerEntry, mapPayoutAuditItem } from './connect-helpers';
 
 describe('connect-helpers (balance + audit + ledger mappers)', () => {
   describe('buildBalanceById', () => {

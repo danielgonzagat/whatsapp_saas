@@ -29,6 +29,8 @@ export const PRODUTO_CAT_A__LOGO_AUT_RE =
   /(produto|cat[aá]logo|autopilot|marca|voz|brand voice|fluxo|flow|dashboard|painel|whatsapp|contato|contatos|chat|chats|mensagem|mensagens|backlog|hist[oó]rico|presen[cç]a|presence|link de pagamento|pagamento|payment|web|internet|google|site|landing|homepage|copy|email|campanha|campanhas|checkout|carrinho|afiliad|seo|not[ií]cia|noticias|hoje|status)/i;
 
 import type { UnknownRecord } from '../common/types';
+import { type MindPredictorService } from './mind/inference/mind-predictor.service';
+import { predictChatReply } from './kloel-reply-engine.decision-outcome.helpers';
 
 /** Builds the dynamic runtime context string for the reply engine. */
 export async function buildDynamicRuntimeContextHelper(params: {
@@ -207,6 +209,7 @@ interface BuildAssistantReplyDeps {
     companyContext?: string;
   }) => Promise<string>;
   spine?: SpineEmitterService;
+  mindPredictorService?: MindPredictorService;
 }
 
 /** buildAssistantReply extracted to keep KloelReplyEngineService ≤ 400 lines. */
@@ -239,6 +242,16 @@ export async function buildAssistantReplyImpl(
     executeLocalTool,
   } = params;
   const { openai, prisma, planLimits, threadService, wsContextService, toolRouter, spine } = deps;
+
+  // w2-loop-replypath: activate the cognitive prediction loop on the real chat
+  // reply path. Fail-open and fire-and-forget — mirrors the decision recorded
+  // upstream in KloelReplyEngineService.buildAssistantReply.
+  if (workspaceId) {
+    predictChatReply(deps.mindPredictorService, helperLogger, {
+      workspaceId,
+      surface: 'dashboard',
+    });
+  }
 
   if (!deps.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) {
     helperLogger.error('kloel_motor_unavailable', {

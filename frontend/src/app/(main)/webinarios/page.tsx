@@ -55,7 +55,7 @@ export default function WebinariosPage() {
 
   useEffect(() => {
     if (isAuthenticated && workspaceId) {
-      void refresh();
+      queueMicrotask(refresh);
     }
   }, [refresh, isAuthenticated, workspaceId]);
 

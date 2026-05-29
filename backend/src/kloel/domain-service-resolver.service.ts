@@ -25,11 +25,30 @@ import { MarketplaceService } from '../marketplace/marketplace.service';
 import { MediaService } from '../media/media.service';
 import { PlanService } from '../plans/plan.service';
 import { ProductService } from '../products/product.service';
+import { ProductUrlService } from './product-sub-resources/product-url.service';
 import { SalesService } from '../sales/sales.service';
 import { WorkspaceService } from '../workspaces/workspace.service';
 import { FlowsService } from '../flows/flows.service';
 import { CampaignsService } from '../campaigns/campaigns.service';
 import { WhatsappService } from '../marketing/channels/whatsapp/whatsapp.service';
+import { ChannelMessageDispatchService } from '../marketing/channel-message-dispatch.service';
+import { AffiliateService } from '../affiliate/affiliate.service';
+// ── services-v2 (Wave 1) — boot-safe capability domain services ──
+import { ThemeService } from './services-v2/theme.service';
+import { AIConfigService } from './services-v2/ai-config.service';
+import { ProductAIConfigService } from './services-v2/product-ai-config.service';
+import { NpsService } from './services-v2/nps.service';
+import { ChurnService } from './services-v2/churn.service';
+import { AbandonmentService } from './services-v2/abandonment.service';
+import { RefundService } from './services-v2/refund.service';
+import { ReviewService } from './services-v2/review.service';
+import { SubscriptionService } from './services-v2/subscription.service';
+import { ShippingService } from './services-v2/shipping.service';
+import { BrandService } from './services-v2/brand.service';
+import { LeadService } from './services-v2/lead.service';
+import { DocumentService } from './services-v2/document.service';
+import { SessionService } from './services-v2/session.service';
+import { AudioService } from './audio.service';
 
 import type { UnknownRecord } from '../common/types';
 
@@ -65,6 +84,7 @@ export class KloelDomainServiceResolver {
     ['CapabilityRegistry', CapabilityRegistryV2Service],
 
     // ── Cross-module domain services ──
+    ['AffiliateService', AffiliateService],
     ['AnalyticsService', AnalyticsService],
     ['AuditService', AuditService],
     ['AutopilotService', AutopilotService],
@@ -77,6 +97,7 @@ export class KloelDomainServiceResolver {
     ['MediaService', MediaService],
     ['PlanService', PlanService],
     ['ProductService', ProductService],
+    ['ProductUrlService', ProductUrlService],
     ['SalesService', SalesService],
     ['WorkspaceService', WorkspaceService],
 
@@ -85,6 +106,25 @@ export class KloelDomainServiceResolver {
     ['CampaignService', CampaignsService],
     ['WhatsAppService', WhatsappService],
     ['OrderService', CheckoutOrderService],
+    // Canonical cross-channel outbound send façade (Wave7 L5).
+    ['ChannelMessageDispatch', ChannelMessageDispatchService],
+
+    // ── services-v2 capability wiring (Wave 1 integration; deps boot-safe) ──
+    ['ThemeService', ThemeService],
+    ['AIConfigService', AIConfigService],
+    ['ProductAIConfigService', ProductAIConfigService],
+    ['NpsService', NpsService],
+    ['ChurnService', ChurnService],
+    ['AbandonmentService', AbandonmentService],
+    ['RefundService', RefundService],
+    ['ReviewService', ReviewService],
+    ['SubscriptionService', SubscriptionService],
+    ['ShippingService', ShippingService],
+    ['BrandService', BrandService],
+    ['LeadService', LeadService],
+    ['DocumentService', DocumentService],
+    ['SessionService', SessionService],
+    ['AudioService', AudioService],
   ]);
 
   constructor(

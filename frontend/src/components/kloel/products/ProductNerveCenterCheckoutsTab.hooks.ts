@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { JsonRecord, JsonValue } from './product-nerve-center.shared';
 
 export function useCheckoutConfigForm(
@@ -14,31 +14,48 @@ export function useCheckoutConfigForm(
   showToast: (message: string, variant: 'success' | 'error') => void,
   setCkEdit: (value: string | null) => void,
 ) {
-  const [ckLocal, setCkLocal] = useState<JsonRecord>({});
+  const [ckLocal, setCkLocal] = useState<JsonRecord>(() => (ckCfg ? (ckCfg as JsonRecord) : {}));
   const [ckSaving, setCkSaving] = useState(false);
   const [ckSaved, setCkSaved] = useState(false);
-  const [linkedPlanIds, setLinkedPlanIds] = useState<string[]>([]);
-  const [originalLinkedPlanIds, setOriginalLinkedPlanIds] = useState<string[]>([]);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   const checkoutForCk = rawCheckouts.find((checkout) => checkout.id === ckEdit);
 
-  useEffect(() => {
+  // Re-hydrate the editable config whenever the incoming `ckCfg` changes.
+  // Adjusting state during render (with a tracked previous value) avoids the
+  // extra render pass and cascading-render lint a mount effect would cause.
+  const [lastCkCfg, setLastCkCfg] = useState(ckCfg);
+  if (ckCfg !== lastCkCfg) {
+    setLastCkCfg(ckCfg);
     if (ckCfg) {
       setCkLocal(ckCfg as JsonRecord);
     }
-  }, [ckCfg]);
+  }
 
-  useEffect(() => {
-    const nextPlanIds = Array.isArray(checkoutForCk?.checkoutLinks)
-      ? (checkoutForCk.checkoutLinks as JsonRecord[])
+  const computeLinkedPlanIds = (checkout: JsonRecord | undefined): string[] => {
+    const nextPlanIds = Array.isArray(checkout?.checkoutLinks)
+      ? (checkout.checkoutLinks as JsonRecord[])
           .map((link) => String(link?.planId || (link?.plan as JsonRecord)?.id || '').trim())
           .filter((value: string): value is string => Boolean(value))
       : [];
-    const uniquePlanIds = Array.from(new Set(nextPlanIds)) as string[];
+    return Array.from(new Set(nextPlanIds)) as string[];
+  };
+
+  const [linkedPlanIds, setLinkedPlanIds] = useState<string[]>(() =>
+    computeLinkedPlanIds(checkoutForCk),
+  );
+  const [originalLinkedPlanIds, setOriginalLinkedPlanIds] = useState<string[]>(() =>
+    computeLinkedPlanIds(checkoutForCk),
+  );
+
+  // Re-derive linked plans whenever the resolved checkout changes.
+  const [lastCheckoutForCk, setLastCheckoutForCk] = useState(checkoutForCk);
+  if (checkoutForCk !== lastCheckoutForCk) {
+    setLastCheckoutForCk(checkoutForCk);
+    const uniquePlanIds = computeLinkedPlanIds(checkoutForCk);
     setLinkedPlanIds(uniquePlanIds);
     setOriginalLinkedPlanIds(uniquePlanIds);
-  }, [checkoutForCk]);
+  }
 
   const patch = (key: string, value: JsonValue) =>
     setCkLocal((current) => ({ ...current, [key]: value }));

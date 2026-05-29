@@ -58,9 +58,7 @@ describe('fiscalDataPatch', () => {
   });
 
   it('throws on null data (defensive — caller must guard)', () => {
-    expect(() =>
-      fiscalDataPatch(null as unknown as Record<string, unknown>),
-    ).toThrow(TypeError);
+    expect(() => fiscalDataPatch(null as unknown as Record<string, unknown>)).toThrow(TypeError);
   });
 });
 describe('requireDefinedFiscalType', () => {
@@ -85,12 +83,9 @@ describe('requireDefinedFiscalType', () => {
   });
 
   it('throws BadRequestException when type is not a string', () => {
-    expect(() =>
-      requireDefinedFiscalType(
-        { type: 123 as unknown as string },
-        undefined,
-      ),
-    ).toThrow(BadRequestException);
+    expect(() => requireDefinedFiscalType({ type: 123 as unknown as string }, undefined)).toThrow(
+      BadRequestException,
+    );
   });
 
   it('treats empty string as valid (string type)', () => {

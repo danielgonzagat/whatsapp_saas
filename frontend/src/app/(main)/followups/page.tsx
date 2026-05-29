@@ -28,9 +28,9 @@ export default function FollowupsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | Followup['status']>('all');
-  const [search, setSearch] = useState('');
   const source = searchParams.get('source') || '';
   const requestedPhone = searchParams.get('phone') || '';
+  const [search, setSearch] = useState(() => requestedPhone);
   const requestedLeadId = searchParams.get('leadId') || '';
 
   const sourceLabel = useMemo(() => {
@@ -79,17 +79,10 @@ export default function FollowupsPage() {
   }, [workspaceId]);
 
   useEffect(() => {
-    loadFollowups();
+    queueMicrotask(loadFollowups);
     const interval = setInterval(loadFollowups, 30000);
     return () => clearInterval(interval);
   }, [loadFollowups]);
-
-  useEffect(() => {
-    if (!requestedPhone || search) {
-      return;
-    }
-    setSearch(requestedPhone);
-  }, [requestedPhone, search]);
 
   const filteredFollowups = useMemo(() => {
     const query = search.trim().toLowerCase();

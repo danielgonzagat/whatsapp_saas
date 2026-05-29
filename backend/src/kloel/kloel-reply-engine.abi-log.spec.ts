@@ -10,12 +10,14 @@ import { UnifiedAgentService } from './unified-agent.service';
 const mockWarnCalls: Array<[string, Record<string, unknown>]> = [];
 
 jest.mock('../logging/structured-logger', () => {
-  const actual = jest.requireActual<typeof import('../logging/structured-logger')>('../logging/structured-logger');
+  const actual = jest.requireActual<typeof import('../logging/structured-logger')>(
+    '../logging/structured-logger',
+  );
   return {
     ...actual,
     StructuredLogger: class extends actual.StructuredLogger {
       static override from(context: string | { name?: string }) {
-        const inst = new this(typeof context === 'string' ? context : context.name ?? 'unknown');
+        const inst = new this(typeof context === 'string' ? context : (context.name ?? 'unknown'));
         return inst;
       }
       override warn(a: string | Record<string, unknown>, b?: unknown): void {
@@ -84,11 +86,17 @@ describe('KloelReplyEngineService ABI degraded logging', () => {
   };
   const baseThreadService = {
     resolveThread: jest.fn().mockResolvedValue({ id: 't1', title: 'T' }),
-    getThreadConversationState: jest.fn().mockResolvedValue({ recentMessages: [], totalMessages: 0 }),
+    getThreadConversationState: jest
+      .fn()
+      .mockResolvedValue({ recentMessages: [], totalMessages: 0 }),
   };
   const baseWsContext = {
     getWorkspaceContext: jest.fn().mockResolvedValue('ctx'),
-    contextFormatter: { sanitizeUserNameForAssistant: jest.fn((n: string | null) => String(n || '').split(' ')[0] || 'U') },
+    contextFormatter: {
+      sanitizeUserNameForAssistant: jest.fn(
+        (n: string | null) => String(n || '').split(' ')[0] || 'U',
+      ),
+    },
   };
   const baseUnifiedAgent = {
     processIncomingMessage: jest.fn().mockResolvedValue({ reply: 'ok' }),
@@ -123,7 +131,9 @@ describe('KloelReplyEngineService ABI degraded logging', () => {
   describe('build failure (lineage_compromised)', () => {
     beforeEach(async () => {
       abiBuilder = {
-        build: jest.fn().mockResolvedValue({ status: 'lineage_compromised', reason: 'origin identity mismatch' }),
+        build: jest
+          .fn()
+          .mockResolvedValue({ status: 'lineage_compromised', reason: 'origin identity mismatch' }),
       };
       await buildService();
     });
@@ -208,16 +218,39 @@ describe('KloelReplyEngineService ABI degraded logging', () => {
       status: 'ok' as const,
       abi: {
         abiVersion: '1.1.0',
-        lineage: { canonicalName: 'Kloel' as const, genesisEventId: 'g1', lineageStatus: 'intact' as const, operationalAge: { sinceGenesisDays: 1, sinceFirstWorkspaceDays: 0 }, capabilities: [] },
-        identityProjection: { audience: 'public' as const, currentMaturity: 'developing' as const, truthMode: 'observed' as const },
+        lineage: {
+          canonicalName: 'Kloel' as const,
+          genesisEventId: 'g1',
+          lineageStatus: 'intact' as const,
+          operationalAge: { sinceGenesisDays: 1, sinceFirstWorkspaceDays: 0 },
+          capabilities: [],
+        },
+        identityProjection: {
+          audience: 'public' as const,
+          currentMaturity: 'developing' as const,
+          truthMode: 'observed' as const,
+        },
         perception: { currentSnapshot: { channel: 'web' }, recentSalientEvents: [] },
         beliefs: [],
         predictions: { active: [], recentSurprises: [] },
         attention: { candidates: [] },
         memory: { workingMemory: [], episodicRefs: [], consolidatedRefs: [] },
         capabilities: { available: [], restricted: [] },
-        valence: { recentTrace: [], aggregatedMood: { positive: 0, negative: 0, neutral: 1, ambiguous: 0, windowHours: 24 } },
-        pulseTruth: { noOverclaimStatus: 'PASS' as const, capabilityHealthScore: 0, gates: [], certificationVerdict: { verdict: 'INSUFFICIENT_EVIDENCE' as const, score: 0, measuredAt: new Date().toISOString() }, overclaimRisk: 0 },
+        valence: {
+          recentTrace: [],
+          aggregatedMood: { positive: 0, negative: 0, neutral: 1, ambiguous: 0, windowHours: 24 },
+        },
+        pulseTruth: {
+          noOverclaimStatus: 'PASS' as const,
+          capabilityHealthScore: 0,
+          gates: [],
+          certificationVerdict: {
+            verdict: 'INSUFFICIENT_EVIDENCE' as const,
+            score: 0,
+            measuredAt: new Date().toISOString(),
+          },
+          overclaimRisk: 0,
+        },
         currentInput: { raw: 'h', channel: 'web', arrivalTimestamp: new Date().toISOString() },
       },
     };

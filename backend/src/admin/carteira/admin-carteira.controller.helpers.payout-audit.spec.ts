@@ -1,7 +1,4 @@
-import {
-  mapPayoutAuditItem,
-  type PayoutAuditItemLike,
-} from './admin-carteira.controller.helpers';
+import { mapPayoutAuditItem, type PayoutAuditItemLike } from './admin-carteira.controller.helpers';
 
 describe('admin-carteira.controller.helpers — payout audit', () => {
   describe('mapPayoutAuditItem', () => {

@@ -435,4 +435,99 @@ export class SalesService {
 
     return { refundId, status: 'pending' };
   }
+
+  /**
+   * Canonical-name management method for the Kloel capability resolver
+   * (`SalesService.cancelSubscription`). Accepts the (workspaceId, args)
+   * signature used by `KloelDomainServiceResolver`.
+   *
+   * Cancels a workspace-scoped CustomerSubscription. Idempotent — cancelling
+   * an already-cancelled subscription is a no-op that returns success. The
+   * mutation is wrapped in a transaction together with the audit entry so the
+   * cancellation and its trail commit atomically.
+   */
+  async cancelSubscription(
+    workspaceId: string,
+    args?: { subscriptionId?: string },
+  ): Promise<{ success: true; status: string; subscriptionId: string }> {
+    const subscriptionId =
+      typeof args?.subscriptionId === 'string' ? args.subscriptionId.trim() : '';
+    if (!subscriptionId) {
+      throw new NotFoundException('SalesService.cancelSubscription: subscriptionId é obrigatório.');
+    }
+
+    const sub = await this.prisma.customerSubscription.findFirst({
+      where: { id: subscriptionId, workspaceId },
+      select: { id: true, status: true, amount: true },
+    });
+    if (!sub) {
+      throw new NotFoundException(`Assinatura ${subscriptionId} não encontrada neste workspace.`);
+    }
+
+    if (sub.status === 'CANCELLED') {
+      return { success: true, status: 'CANCELLED', subscriptionId };
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.customerSubscription.updateMany({
+        where: { id: subscriptionId, workspaceId },
+        data: { status: 'CANCELLED', cancelledAt: new Date() },
+      });
+    });
+
+    await this.audit
+      .log({
+        workspaceId,
+        action: 'subscription_cancel',
+        resource: 'subscription',
+        resourceId: subscriptionId,
+        details: { amount: sub.amount, previousStatus: sub.status },
+      })
+      .catch(() => undefined);
+
+    return { success: true, status: 'CANCELLED', subscriptionId };
+  }
+
+  /**
+   * Canonical-name management method for the Kloel capability resolver
+   * (`SalesService.refundSubscription`). Accepts the (workspaceId, args)
+   * signature used by `KloelDomainServiceResolver`.
+   *
+   * Refunds the order backing a subscription's most recent paid sale. The
+   * subscription's `externalId` is treated as the order/sale reference, or
+   * `args.orderId` may be supplied directly. Delegates the money mutation to
+   * {@link refund} (idempotent, bigint cents) — no new ledger logic here.
+   */
+  async refundSubscription(
+    workspaceId: string,
+    args?: { subscriptionId?: string; orderId?: string; reason?: string; amountCents?: bigint },
+  ): Promise<{ refundId: string; status: 'pending' | 'processed' | 'rejected' }> {
+    const reason = typeof args?.reason === 'string' && args.reason ? args.reason : 'subscription refund';
+    let orderId = typeof args?.orderId === 'string' ? args.orderId.trim() : '';
+
+    if (!orderId) {
+      const subscriptionId =
+        typeof args?.subscriptionId === 'string' ? args.subscriptionId.trim() : '';
+      if (!subscriptionId) {
+        throw new NotFoundException(
+          'SalesService.refundSubscription: informe orderId ou subscriptionId.',
+        );
+      }
+      const sub = await this.prisma.customerSubscription.findFirst({
+        where: { id: subscriptionId, workspaceId },
+        select: { externalId: true },
+      });
+      if (!sub?.externalId) {
+        throw new NotFoundException(
+          `Assinatura ${subscriptionId} não possui pedido (externalId) para estorno.`,
+        );
+      }
+      orderId = sub.externalId;
+    }
+
+    return this.refund(workspaceId, orderId, {
+      reason,
+      ...(typeof args?.amountCents === 'bigint' ? { amountCents: args.amountCents } : {}),
+    });
+  }
 }

@@ -25,6 +25,8 @@ import { KloelReplyEngineService, LocalToolExecutor } from './kloel-reply-engine
 import { thinkSyncImpl, regenerateThreadAssistantResponseImpl } from './kloel-thinker.helpers';
 import { runAbiEnrichmentBranch } from './kloel-thinker.abi.helpers';
 import { resolveThinkContext } from './kloel-thinker.think-context.helpers';
+import { StateBuilderService } from './state/state-builder.service';
+import { summarizeConversationState } from './state/conversation-state.helpers';
 import {
   AI_KEY_MISSING_MESSAGE,
   isAiProviderConfigured,
@@ -62,6 +64,7 @@ export class KloelThinkerService {
     private readonly composerService: KloelComposerService,
     private readonly replyEngine: KloelReplyEngineService,
     @Inject(KLOEL_LLM_E2E_GUARD) private readonly llmE2EGuard: KloelLLME2EGuard,
+    private readonly stateBuilder: StateBuilderService,
     @Optional() private readonly abiBuilder?: AbiBuilderService,
     @Optional() private readonly capabilityExecutor?: MindCapabilityExecutor,
   ) {
@@ -189,6 +192,31 @@ export class KloelThinkerService {
         metadata,
         enrichedCompanyContext,
       });
+
+      // Y-4 / X §2.6/3.4: assemble the REAL per-turn ConversationState
+      // from production sources. The LLM verbalizes this State; it does
+      // not invent it. Logged structured for diagnosis (no UX surface,
+      // no other-lane mutation).
+      const conversationState = await this.stateBuilder.build({
+        workspaceId,
+        userId,
+        conversationId,
+        workspaceContext: enrichedCompanyContext,
+        surface: mode,
+        ...(allowedTools !== undefined ? { permissions: allowedTools } : {}),
+      });
+      const conversationStateSummary = summarizeConversationState(conversationState);
+      if (conversationStateSummary) {
+        this.logger.debug('ConversationState assembled', {
+          workspaceId,
+          hasActor: !!conversationState.actor,
+          hasContact: !!conversationState.contact,
+          recentEvents: conversationState.recentEvents.length,
+          shortTermTurns: conversationState.memory.shortTerm.length,
+          capabilities: conversationState.capabilities.length,
+          missingSources: conversationState.missingSources,
+        });
+      }
 
       const systemPrompt = resolveThinkerSystemPrompt({
         mode,

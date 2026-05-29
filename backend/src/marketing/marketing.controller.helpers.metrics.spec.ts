@@ -11,13 +11,7 @@ import {
 describe('marketing.controller.helpers (channel metrics + response stats)', () => {
   describe('MARKETING_CHANNELS', () => {
     it('exposes the five marketing channels in canonical order', () => {
-      expect(MARKETING_CHANNELS).toEqual([
-        'WHATSAPP',
-        'INSTAGRAM',
-        'MESSENGER',
-        'EMAIL',
-        'TIKTOK',
-      ]);
+      expect(MARKETING_CHANNELS).toEqual(['WHATSAPP', 'INSTAGRAM', 'MESSENGER', 'EMAIL', 'TIKTOK']);
     });
   });
 
@@ -159,9 +153,7 @@ describe('marketing.controller.helpers (channel metrics + response stats)', () =
       expect(
         computeAverageFirstReplyMs({
           inbound: [],
-          outbound: [
-            { conversationId: 'c-1', createdAt: new Date('2026-05-28T10:01:00Z') },
-          ],
+          outbound: [{ conversationId: 'c-1', createdAt: new Date('2026-05-28T10:01:00Z') }],
         }),
       ).toBeNull();
     });

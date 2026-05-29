@@ -139,26 +139,20 @@ describe('prisma.service.helpers', () => {
 
   describe('hasCheckoutPaymentLookupKey', () => {
     it('is true when id is provided', () => {
-      expect(hasCheckoutPaymentLookupKey({ id: 'pay_123' } as Prisma.CheckoutPaymentWhereInput)).toBe(
-        true,
-      );
+      expect(hasCheckoutPaymentLookupKey({ id: 'pay_123' })).toBe(true);
     });
 
     it('is true when orderId is provided', () => {
-      expect(
-        hasCheckoutPaymentLookupKey({ orderId: 'ord_1' } as Prisma.CheckoutPaymentWhereInput),
-      ).toBe(true);
+      expect(hasCheckoutPaymentLookupKey({ orderId: 'ord_1' })).toBe(true);
     });
 
     it('is true when externalId is provided', () => {
-      expect(
-        hasCheckoutPaymentLookupKey({ externalId: 'evt_1' } as Prisma.CheckoutPaymentWhereInput),
-      ).toBe(true);
+      expect(hasCheckoutPaymentLookupKey({ externalId: 'evt_1' })).toBe(true);
     });
 
     it('is false for empty or undefined where', () => {
       expect(hasCheckoutPaymentLookupKey(undefined)).toBe(false);
-      expect(hasCheckoutPaymentLookupKey({} as Prisma.CheckoutPaymentWhereInput)).toBe(false);
+      expect(hasCheckoutPaymentLookupKey({})).toBe(false);
     });
 
     it('is false when only unrelated keys are present', () => {
@@ -175,7 +169,7 @@ describe('prisma.service.helpers', () => {
       const result = extractCheckoutOrderIdentity({
         id: 'ord_1',
         workspaceId: 'ws_1',
-      } as Prisma.CheckoutOrderWhereInput);
+      });
       expect(result).toEqual({ orderId: 'ord_1', workspaceId: 'ws_1' });
     });
 
@@ -183,7 +177,7 @@ describe('prisma.service.helpers', () => {
       const result = extractCheckoutOrderIdentity({
         id: { in: ['a', 'b'] },
         workspaceId: 'ws_1',
-      } as unknown as Prisma.CheckoutOrderWhereInput);
+      });
       expect(result.orderId).toBeNull();
       expect(result.workspaceId).toBe('ws_1');
     });
@@ -192,7 +186,7 @@ describe('prisma.service.helpers', () => {
       const result = extractCheckoutOrderIdentity({
         id: 'ord_1',
         workspaceId: { contains: 'ws' },
-      } as unknown as Prisma.CheckoutOrderWhereInput);
+      });
       expect(result.orderId).toBe('ord_1');
       expect(result.workspaceId).toBeNull();
     });
@@ -261,19 +255,19 @@ describe('prisma.service.helpers', () => {
 
   describe('pickEnrollmentStudentName', () => {
     it('prefers the customer name when provided', () => {
-      expect(
-        pickEnrollmentStudentName({ customerName: 'Alice', customerEmail: 'alice@x' }),
-      ).toBe('Alice');
+      expect(pickEnrollmentStudentName({ customerName: 'Alice', customerEmail: 'alice@x' })).toBe(
+        'Alice',
+      );
     });
 
     it('falls back to the email when name is missing', () => {
       expect(pickEnrollmentStudentName({ customerEmail: 'alice@x' })).toBe('alice@x');
-      expect(
-        pickEnrollmentStudentName({ customerName: null, customerEmail: 'alice@x' }),
-      ).toBe('alice@x');
-      expect(
-        pickEnrollmentStudentName({ customerName: '', customerEmail: 'alice@x' }),
-      ).toBe('alice@x');
+      expect(pickEnrollmentStudentName({ customerName: null, customerEmail: 'alice@x' })).toBe(
+        'alice@x',
+      );
+      expect(pickEnrollmentStudentName({ customerName: '', customerEmail: 'alice@x' })).toBe(
+        'alice@x',
+      );
     });
   });
 });

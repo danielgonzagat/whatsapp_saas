@@ -104,6 +104,18 @@ export class GuestChatService implements OnModuleDestroy {
       if (!apiKey) {
         this.logger.error('Primary LLM API key not found! Check your .env file.');
       }
+      // Deterministic-router invariant: the streaming chat path MUST classify
+      // intent BEFORE the LLM. IntentRouterService is provided via
+      // IntentRouterModule (kloel.module.ts). It stays an @Optional DI param so
+      // unit tests can construct this service in isolation, but in a real boot
+      // its absence means deterministic routing is silently disabled — which is
+      // the exact anti-pattern this slice forbids. Fail fast at boot instead.
+      if (!this.intentRouter) {
+        throw new Error(
+          'IntentRouterService is required for deterministic routing on the streaming chat path. ' +
+            'Ensure IntentRouterModule is imported in KloelModule.',
+        );
+      }
     }
 
     this.openai = createTextLlmClient(this.configService) ?? new OpenAI({ apiKey: 'missing' });
@@ -280,6 +292,43 @@ export class GuestChatService implements OnModuleDestroy {
           payload: { decision: 'engage', messageLength: message.length, surface: 'guest' },
         })
         .catch(() => {});
+
+      // DETERMINISTIC ACTION ROUTER — classify intent and execute tools
+      // BEFORE the LLM. The streaming path must not let the LLM decide whether
+      // to act; IntentRouter classifies and the deterministic planner/executor
+      // runs the real tool. The LLM is only used to converse when no action is
+      // matched. Mirrors chatSync() so SSE and sync share one action contract.
+      const deterministicWsId = this.resolveDefaultWorkspaceId();
+      if (deterministicWsId && this.toolDispatcher) {
+        const actionReply = await runDeterministicAction(
+          message,
+          sessionId,
+          deterministicWsId,
+          this.toolDispatcher,
+          this.intentRouter,
+          this.spine,
+          this.redis,
+          this.conversations,
+          this.logger,
+        );
+        if (actionReply !== null) {
+          applyChatTerminalHooks(this.terminalDeps(), {
+            outcomeKey: chatOutcomeKey,
+            success: true,
+            workspaceId: chatWsId,
+            surface: 'guest',
+            startedAt,
+          });
+          this.writeStreamChunk(res, {
+            content: actionReply,
+            chunk: actionReply,
+            done: false,
+          });
+          res.write(`data: [DONE]\n\n`);
+          res.end();
+          return;
+        }
+      }
 
       const mindSignals = await this.buildGuestMindSignals(chatWsId, message);
 

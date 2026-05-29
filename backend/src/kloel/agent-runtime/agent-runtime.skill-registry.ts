@@ -28,6 +28,7 @@ import type {
   AgentSkillUsageOutcome,
   AgentSkillUsageStats,
 } from './agent-runtime.types';
+import { MindMemoryItemService } from '../mind/aliases/mind-memory-item.service';
 
 const DEFAULT_SKILLS: AgentSkillDefinition[] = [
   {
@@ -123,12 +124,13 @@ export class AgentRuntimeSkillRegistry {
   private readonly logger = StructuredLogger.from(AgentRuntimeSkillRegistry.name);
 
   constructor(
-    private readonly prisma: PrismaService,
+    _prisma: PrismaService,
+    private readonly mindMemory: MindMemoryItemService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
   async listSkills(workspaceId: string): Promise<AgentSkillDefinition[]> {
-    const rows = await this.prisma.kloelMemory.findMany({
+    const rows = await this.mindMemory.items.findMany({
       where: { workspaceId, category: 'agent_skill' },
       orderBy: { updatedAt: 'desc' },
       take: 100,
@@ -221,7 +223,7 @@ export class AgentRuntimeSkillRegistry {
     }
 
     try {
-      const existingRow = await this.prisma.kloelMemory.findUnique({
+      const existingRow = await this.mindMemory.items.findUnique({
         where: { workspaceId_key: { workspaceId, key: `agent_skill:${skill.id}` } },
         select: { value: true },
       });
@@ -245,7 +247,7 @@ export class AgentRuntimeSkillRegistry {
         updatedAt: now,
       } satisfies Prisma.InputJsonObject;
 
-      await this.prisma.kloelMemory.upsert({
+      await this.mindMemory.items.upsert({
         where: { workspaceId_key: { workspaceId, key: `agent_skill:${skill.id}` } },
         update: {
           value: toInputJsonValue(persistedSkill),
@@ -292,7 +294,7 @@ export class AgentRuntimeSkillRegistry {
 
     try {
       const key = `agent_skill_usage:${skillId}`;
-      const existingRow = await this.prisma.kloelMemory.findUnique({
+      const existingRow = await this.mindMemory.items.findUnique({
         where: { workspaceId_key: { workspaceId, key } },
         select: { value: true },
       });
@@ -336,7 +338,7 @@ export class AgentRuntimeSkillRegistry {
         updatedAt: now,
       } satisfies Prisma.InputJsonObject;
 
-      await this.prisma.kloelMemory.upsert({
+      await this.mindMemory.items.upsert({
         where: { workspaceId_key: { workspaceId, key } },
         update: {
           value: toInputJsonValue(next),
@@ -363,7 +365,7 @@ export class AgentRuntimeSkillRegistry {
   }
 
   private async loadUsageStats(workspaceId: string): Promise<Map<string, AgentSkillUsageStats>> {
-    const rows = await this.prisma.kloelMemory.findMany({
+    const rows = await this.mindMemory.items.findMany({
       where: { workspaceId, category: 'agent_skill_usage' },
       orderBy: { updatedAt: 'desc' },
       take: 200,

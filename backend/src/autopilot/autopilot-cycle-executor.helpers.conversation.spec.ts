@@ -53,9 +53,7 @@ describe('autopilot-cycle-executor.helpers — conversation', () => {
           { direction: 'INBOUND', createdAt: inboundAt },
         ],
       });
-      expect(key).toBe(
-        `autopilot_action:ws-1:conv-1:${inboundAt.toISOString()}`,
-      );
+      expect(key).toBe(`autopilot_action:ws-1:conv-1:${inboundAt.toISOString()}`);
     });
 
     it('falls back to "no-inbound" suffix when there are no inbound messages', () => {
@@ -64,9 +62,7 @@ describe('autopilot-cycle-executor.helpers — conversation', () => {
           id: 'conv-2',
           workspaceId: 'ws-2',
           contact: { id: 'c' },
-          messages: [
-            { direction: 'OUTBOUND', createdAt: new Date('2026-05-27T00:00:00Z') },
-          ],
+          messages: [{ direction: 'OUTBOUND', createdAt: new Date('2026-05-27T00:00:00Z') }],
         }),
       ).toBe('autopilot_action:ws-2:conv-2:no-inbound');
     });

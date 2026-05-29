@@ -11,6 +11,14 @@ import { SpineEmitterService } from '../../spine/spine-emitter.service';
 export class MindPredictorService {
   private readonly logger = StructuredLogger.from(MindPredictorService.name);
 
+  /**
+   * Canonical predicate for the chat-reply predictive-coding loop. Shared with
+   * MindSurpriseService.resolveReply so the prediction persisted before the
+   * reply is the exact row resolved + observed at close (same predicate +
+   * normalized context => same MindBelief key => alpha/beta actually move).
+   */
+  static readonly REPLY_PREDICATE = 'P(reply|template,hour,channel)';
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly beliefs: MindBeliefService,
@@ -22,7 +30,7 @@ export class MindPredictorService {
   async predictReply(ctx: MindContext, horizonSec: number): Promise<MindPrediction> {
     return this.predict(
       ctx,
-      'P(reply|template,hour,channel)',
+      MindPredictorService.REPLY_PREDICATE,
       this.normalizeContext(ctx.features, ['template', 'hour', 'channel']),
       horizonSec,
     );

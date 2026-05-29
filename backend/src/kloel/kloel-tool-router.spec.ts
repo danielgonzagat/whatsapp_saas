@@ -13,6 +13,11 @@ interface ToolResultSSEEvent {
   artifactId: string;
 }
 
+interface ToolCallSSEEvent {
+  type: 'tool_call';
+  tool: string;
+}
+
 describe('KloelToolRouter', () => {
   it('blocks assistant tool calls outside an explicit allowedTools scope', async () => {
     const logger = { warn: jest.fn() };
@@ -180,6 +185,50 @@ describe('KloelToolRouter', () => {
     expect(parsed.truncated).toBeUndefined();
     expect(storeToolArtifact).not.toHaveBeenCalled();
     expect(result.receipts[0]?.artifactId).toBeUndefined();
+  });
+
+  it('routes a newly-exposed read-only QUERY tool through dispatch and emits tool_call + tool_result SSE', async () => {
+    // L14: get_wallet_balance is a canonical registry capability now exposed to
+    // the LLM. The router has no per-tool branch — it forwards to the unified
+    // agent then the local dispatcher, and emits tool_call/tool_result for any
+    // allowed tool. This proves the verbalization loop reaches the chat.
+    const logger = { warn: jest.fn() };
+    const unifiedAgentService = {
+      executeTool: jest.fn().mockResolvedValue({ error: 'Unknown tool' }),
+    };
+    const executeLocalTool = jest
+      .fn()
+      .mockResolvedValue({ success: true, available: 1234, pending: 0, blocked: 0 });
+    const router = new KloelToolRouter(logger, unifiedAgentService, jest.fn());
+    const safeWrite = jest.fn();
+
+    const result = await router.executeAssistantToolCalls({
+      assistantMessage: {
+        tool_calls: [{ id: 'call_w', function: { name: 'get_wallet_balance', arguments: '{}' } }],
+      },
+      workspaceId: 'ws_1',
+      allowedTools: ['get_wallet_balance'],
+      executeLocalTool,
+      safeWrite,
+    });
+
+    // Unknown-tool from unified agent → falls back to local dispatcher (resolver path).
+    expect(executeLocalTool).toHaveBeenCalledWith('ws_1', 'get_wallet_balance', {}, undefined);
+    expect(result.receipts[0]).toEqual(
+      expect.objectContaining({ name: 'get_wallet_balance', success: true }),
+    );
+
+    const events = safeWrite.mock.calls.map((c: unknown[]) => c[0]);
+    const toolCall = events.find(
+      (e): e is ToolCallSSEEvent =>
+        typeof e === 'object' && e !== null && (e as ToolCallSSEEvent).type === 'tool_call',
+    );
+    const toolResult = events.find(
+      (e): e is ToolResultSSEEvent =>
+        typeof e === 'object' && e !== null && (e as ToolResultSSEEvent).type === 'tool_result',
+    );
+    expect(toolCall?.tool).toBe('get_wallet_balance');
+    expect(toolResult).toBeDefined();
   });
 
   it('emits artifactId in tool_result SSE event when truncated', async () => {

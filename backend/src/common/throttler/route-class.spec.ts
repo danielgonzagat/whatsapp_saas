@@ -21,7 +21,7 @@ function mockContext(controllerName: string, handlerName: string): ExecutionCont
       getResponse: () => ({}),
     }),
     getType: () => 'http',
-  } as ExecutionContext;
+  } as unknown as ExecutionContext;
 }
 
 function mockStorage(): ThrottlerStorage {
@@ -90,14 +90,14 @@ describe('RouteClassGuard', () => {
     it('does not skip in production', async () => {
       const prev = process.env.NODE_ENV;
       process.env.NODE_ENV = 'production';
-      const result = await (guard as Record<string, () => Promise<boolean>>).shouldSkip();
+      const result = await (guard as unknown as Record<string, () => Promise<boolean>>).shouldSkip();
       process.env.NODE_ENV = prev;
       expect(result).toBe(false);
     });
 
     it('skips when JEST_WORKER_ID is set', async () => {
       process.env.JEST_WORKER_ID = '1';
-      const result = await (guard as Record<string, () => Promise<boolean>>).shouldSkip();
+      const result = await (guard as unknown as Record<string, () => Promise<boolean>>).shouldSkip();
       delete process.env.JEST_WORKER_ID;
       expect(result).toBe(true);
     });
@@ -119,10 +119,10 @@ describe('RouteClassGuard', () => {
           getResponse: () => ({}),
         }),
         getType: () => 'http',
-      } as ExecutionContext;
+      } as unknown as ExecutionContext;
 
       const key = (
-        guard as Record<string, (c: ExecutionContext, s: string, n: string) => string>
+        guard as unknown as Record<string, (c: ExecutionContext, s: string, n: string) => string>
       ).generateKey(ctx, '1.2.3.4', 'auth');
 
       expect(key).toBeTruthy();
@@ -142,10 +142,10 @@ describe('RouteClassGuard', () => {
           getResponse: () => ({}),
         }),
         getType: () => 'http',
-      } as ExecutionContext;
+      } as unknown as ExecutionContext;
 
       const key = (
-        guard as Record<string, (c: ExecutionContext, s: string, n: string) => string>
+        guard as unknown as Record<string, (c: ExecutionContext, s: string, n: string) => string>
       ).generateKey(ctx, '5.6.7.8', 'read');
 
       expect(key).toBeTruthy();
@@ -159,7 +159,7 @@ describe('RouteClassGuard', () => {
       const ctxB = mockContext('DashboardController', 'getStats');
 
       const keyA = (
-        guard as Record<string, (c: ExecutionContext, s: string, n: string) => string>
+        guard as unknown as Record<string, (c: ExecutionContext, s: string, n: string) => string>
       ).generateKey(
         {
           ...ctxA,
@@ -167,13 +167,13 @@ describe('RouteClassGuard', () => {
             getRequest: () => ({ ip: '1.1.1.1', workspaceId: 'ws-a', headers: {}, params: {} }),
             getResponse: () => ({}),
           }),
-        } as ExecutionContext,
+        } as unknown as ExecutionContext,
         '1.1.1.1',
         'read',
       );
 
       const keyB = (
-        guard as Record<string, (c: ExecutionContext, s: string, n: string) => string>
+        guard as unknown as Record<string, (c: ExecutionContext, s: string, n: string) => string>
       ).generateKey(
         {
           ...ctxB,
@@ -181,7 +181,7 @@ describe('RouteClassGuard', () => {
             getRequest: () => ({ ip: '1.1.1.1', workspaceId: 'ws-b', headers: {}, params: {} }),
             getResponse: () => ({}),
           }),
-        } as ExecutionContext,
+        } as unknown as ExecutionContext,
         '1.1.1.1',
         'read',
       );

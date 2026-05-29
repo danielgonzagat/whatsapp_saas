@@ -72,6 +72,7 @@ type ChatCompletionMessageParam = OpenAI.Chat.ChatCompletionMessageParam;
 
 export type { ExpertiseLevel, ReplyMessage, LocalToolExecutor } from './kloel-reply-engine.types';
 import type { ExpertiseLevel, ReplyMessage, LocalToolExecutor } from './kloel-reply-engine.types';
+import { MindPredictorService } from './mind/inference/mind-predictor.service';
 
 /** Provides reply-building helpers: prompt assembly, expertise detection, context enrichment. */
 @Injectable()
@@ -117,6 +118,7 @@ export class KloelReplyEngineService {
     @Optional()
     private readonly emotionalIntelligenceService?: MindEmotionalIntelligenceService,
     @Optional() private readonly longTermMemoryService?: LongTermMemoryService,
+    @Optional() private readonly mindPredictor?: MindPredictorService,
   ) {
     this.openai = createTextLlmClient(undefined, { timeout: 60_000, maxRetries: 0 });
     this.toolRouter = new KloelToolRouter(
@@ -437,6 +439,9 @@ export class KloelReplyEngineService {
               : withTone;
           },
           ...(this.spine !== undefined ? { spine: this.spine } : {}),
+          ...(this.mindPredictor !== undefined
+            ? { mindPredictorService: this.mindPredictor }
+            : {}),
           ...(params.abiStateJson !== undefined ? { abiStateJson: params.abiStateJson } : {}),
         });
         closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {

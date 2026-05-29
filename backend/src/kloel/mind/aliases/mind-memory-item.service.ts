@@ -23,6 +23,27 @@ export type MindMemoryItem = KloelMemory;
 export class MindMemoryItemService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /**
+   * Canonical typed delegate for the underlying mind-memory table.
+   *
+   * This is the migration target for the ~141 legacy `prisma.kloelMemory.*`
+   * call sites. Accessing `mindMemory.items` returns Prisma's fully-typed
+   * `KloelMemory` delegate, so every operation (`findMany`, `findUnique`,
+   * `create`, `update`, `updateMany`, `upsert`, `delete`, `deleteMany`,
+   * `count`, `aggregate`, `groupBy`) keeps its exact overloaded signature —
+   * `select`/`include` projections narrow identically. Callers migrate by
+   * swapping `this.prisma.kloelMemory.X(args)` → `this.mindMemory.items.X(args)`
+   * with byte-identical args and zero behaviour drift.
+   *
+   * The high-level helpers below remain the preferred surface for new code;
+   * `items` exists so legacy access patterns canonicalize without contortion
+   * while the underlying `RAC_KloelMemory` → `RAC_MindMemory` table rename
+   * stays owner-gated.
+   */
+  get items(): PrismaService['kloelMemory'] {
+    return this.prisma.kloelMemory;
+  }
+
   /** Find a single mind memory item by id. */
   async findById(id: string): Promise<MindMemoryItem | null> {
     return this.prisma.kloelMemory.findUnique({ where: { id } });

@@ -199,22 +199,22 @@ describe('AgentRuntimeMemoryManagerService', () => {
 
     expect(compressionInsight).toContain('provider-insight');
     expect(sessions.recordRuntimeEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ eventType: 'turn_start' }),
+      expect.objectContaining({ eventType: 'runtime.turn.started' }),
     );
     expect(sessions.recordRuntimeEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ eventType: 'pre_compress' }),
+      expect.objectContaining({ eventType: 'runtime.context.pre_compressed' }),
     );
     expect(sessions.recordRuntimeEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ eventType: 'memory_write' }),
+      expect.objectContaining({ eventType: 'runtime.memory.written' }),
     );
     expect(sessions.recordRuntimeEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ eventType: 'delegation' }),
+      expect.objectContaining({ eventType: 'runtime.delegation.recorded' }),
     );
     expect(sessions.recordRuntimeEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ eventType: 'session_switch' }),
+      expect.objectContaining({ eventType: 'runtime.session.switched' }),
     );
     expect(sessions.recordRuntimeEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ eventType: 'session_end' }),
+      expect.objectContaining({ eventType: 'runtime.session.ended' }),
     );
   });
 

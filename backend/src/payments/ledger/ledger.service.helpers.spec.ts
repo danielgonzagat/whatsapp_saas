@@ -34,12 +34,7 @@ describe('buildLedgerReferenceIdempotencyWhere', () => {
   });
 
   it('supports every monetary entry type the service produces', () => {
-    const types = [
-      'CREDIT_PENDING',
-      'DEBIT_PAYOUT',
-      'DEBIT_CHARGEBACK',
-      'DEBIT_REFUND',
-    ] as const;
+    const types = ['CREDIT_PENDING', 'DEBIT_PAYOUT', 'DEBIT_CHARGEBACK', 'DEBIT_REFUND'] as const;
     types.forEach((type) => {
       const where = buildLedgerReferenceIdempotencyWhere(REFERENCE, type);
       expect(where.type).toBe(type);
@@ -197,7 +192,14 @@ describe('buildAbsorptionDebitAuditDetails', () => {
   });
 
   it('handles negative AVAILABLE post-debit (chargeback may drive negative)', () => {
-    const details = buildAbsorptionDebitAuditDetails(REFERENCE, 1_000n, 4_000n, 0n, -2_000n, 5_000n);
+    const details = buildAbsorptionDebitAuditDetails(
+      REFERENCE,
+      1_000n,
+      4_000n,
+      0n,
+      -2_000n,
+      5_000n,
+    );
     expect(details.newAvailableBalanceCents).toBe('-2000');
     expect(details.newLifetimeChargebacksCents).toBe('5000');
   });

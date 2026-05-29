@@ -10,6 +10,12 @@ jest.mock('../auth/admin-auth.service', () => ({
   AdminAuthService: { hashPassword: jest.fn(() => Promise.resolve('hashed')) },
 }));
 
+/** Shape of the `adminSession.updateMany` argument captured from mock calls. */
+interface AdminSessionUpdateArg {
+  where: { adminUserId: string; revokedAt: null; expiresAt: { gt: Date } };
+  data: { revokedAt: Date };
+}
+
 describe('AdminUsersService', () => {
   let service: AdminUsersService;
 
@@ -271,7 +277,8 @@ describe('AdminUsersService', () => {
 
       await service.update('user_1', { ...patch, role: AdminRole.STAFF });
 
-      const roleChangeSessionUpdate = mockAdminSessionUpdateMany.mock.calls[0][0];
+      const roleChangeSessionUpdate = mockAdminSessionUpdateMany.mock
+        .calls[0][0] as AdminSessionUpdateArg;
       expect(roleChangeSessionUpdate).toEqual({
         where: {
           adminUserId: 'user_1',
@@ -296,7 +303,8 @@ describe('AdminUsersService', () => {
 
       await service.update('user_1', { ...patch, status: AdminUserStatus.SUSPENDED });
 
-      const statusChangeSessionUpdate = mockAdminSessionUpdateMany.mock.calls[0][0];
+      const statusChangeSessionUpdate = mockAdminSessionUpdateMany.mock
+        .calls[0][0] as AdminSessionUpdateArg;
       expect(statusChangeSessionUpdate).toEqual({
         where: {
           adminUserId: 'user_1',

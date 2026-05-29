@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import type { AuthenticatedRequest } from '../../common/interfaces/authenticated-request.interface';
 import { InstagramMarketingController } from './instagram-marketing.controller';
 
 describe('InstagramMarketingController', () => {
@@ -7,13 +8,16 @@ describe('InstagramMarketingController', () => {
   const listPosts = jest.fn();
   const getInsights = jest.fn();
   const listInsights = jest.fn();
+  const sendDirectMessage = jest.fn();
+  const listConversations = jest.fn();
+  const listMessages = jest.fn();
 
   let controller: InstagramMarketingController;
 
   const req = {
     user: { sub: 'u-1', workspaceId: 'ws-1', email: 'owner@test.com', role: 'admin' },
     headers: {},
-  };
+  } as unknown as AuthenticatedRequest;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -24,6 +28,9 @@ describe('InstagramMarketingController', () => {
       listPosts,
       getInsights,
       listInsights,
+      sendDirectMessage,
+      listConversations,
+      listMessages,
     } as never);
   });
 
@@ -143,6 +150,63 @@ describe('InstagramMarketingController', () => {
       await controller.listInsights(req, undefined, undefined, undefined);
 
       expect(listInsights).toHaveBeenCalledWith('ws-1', undefined, undefined, undefined);
+    });
+  });
+
+  describe('sendDirectMessage', () => {
+    it('delegates to service with workspaceId, recipientId and trimmed text', async () => {
+      const body = { recipientId: 'igsid-42', text: 'Olá!' };
+      const mockResult = { messageId: 'mid-1', metaResponse: { message_id: 'mid-1' } };
+      sendDirectMessage.mockResolvedValueOnce(mockResult);
+
+      const result = await controller.sendDirectMessage(req, body);
+
+      expect(sendDirectMessage).toHaveBeenCalledWith('ws-1', 'igsid-42', 'Olá!');
+      expect(result).toBe(mockResult);
+    });
+
+    it('propagates BadRequestException from service when recipient is empty', async () => {
+      sendDirectMessage.mockRejectedValueOnce(new BadRequestException('recipient_id_required'));
+
+      await expect(
+        controller.sendDirectMessage(req, { recipientId: '', text: 'hi' }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+  });
+
+  describe('listConversations', () => {
+    it('delegates to service with workspaceId resolved from req', async () => {
+      const mockResult = {
+        conversations: { data: [{ id: 'thread-1' }] },
+        igAccountId: 'ig-acc-1',
+      };
+      listConversations.mockResolvedValueOnce(mockResult);
+
+      const result = await controller.listConversations(req);
+
+      expect(listConversations).toHaveBeenCalledWith('ws-1');
+      expect(result).toBe(mockResult);
+    });
+  });
+
+  describe('listMessages', () => {
+    it('passes workspaceId and optional conversationId to service', async () => {
+      const mockResult = { messages: [], total: 0, reason: 'instagram_messaging_pending' };
+      listMessages.mockResolvedValueOnce(mockResult);
+
+      const result = await controller.listMessages(req, { conversationId: 'thread-9' });
+
+      expect(listMessages).toHaveBeenCalledWith('ws-1', 'thread-9');
+      expect(result).toBe(mockResult);
+    });
+
+    it('passes undefined conversationId when query is empty', async () => {
+      const mockResult = { messages: [], total: 0, reason: 'instagram_account_not_connected' };
+      listMessages.mockResolvedValueOnce(mockResult);
+
+      await controller.listMessages(req, {});
+
+      expect(listMessages).toHaveBeenCalledWith('ws-1', undefined);
     });
   });
 });

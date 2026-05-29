@@ -63,6 +63,27 @@ type ToolResult = {
 export class KloelToolDispatcherService {
   private readonly logger = StructuredLogger.from(KloelToolDispatcherService.name);
 
+  
+    /**
+     * Tools whose dispatch carries curated business logic that the generic
+     * DomainServiceResolver must NOT shadow: high-risk human-approval gates
+     * (publish_product / change_plan / create_campaign), the smart-payment
+     * link flow, the canonical-receipt delete path, and the composer web
+     * search + theme toggle. These keep precedence over the resolver so the
+     * approval gate, audit receipt and provider-specific logic are preserved.
+     */
+    private static readonly CURATED_DIRECT_TOOLS = new Set<string>([
+      'toggle_theme',
+      'ui.theme',
+      'publish_product',
+      'products.review_and_publish',
+      'search_web',
+      'delete_product',
+      'create_payment_link',
+      'create_campaign',
+      'change_plan',
+    ]);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly planLimits: PlanLimitsService,
@@ -135,21 +156,25 @@ export class KloelToolDispatcherService {
       if (fastPathResult !== null) {
         result = fastPathResult;
       } else {
-        result = await this.runDirectDispatch(workspaceId, toolName, args, userId);
-        // PI-K30: fallback to generic domain-service resolver for ungated capabilities
-        if (
-          !result.success &&
-          typeof result.error === 'string' &&
-          result.error.startsWith('Ferramenta desconhecida')
-        ) {
+        // PI domain-purity: the generic DomainServiceResolver is the PRIMARY
+        // engine. Only the curated tools that carry irreplaceable business
+        // logic (human-approval gates, smart-payment link, canonical-receipt
+        // delete, composer web search, theme toggle) keep precedence over it.
+        if (KloelToolDispatcherService.CURATED_DIRECT_TOOLS.has(toolName)) {
+          result = await this.runDirectDispatch(workspaceId, toolName, args, userId);
+        } else {
           const resolverResult = await this.domainServiceResolver?.tryExecute(
             toolName,
             workspaceId,
             args,
           );
-          if (resolverResult !== null && resolverResult !== undefined) {
-            result = resolverResult;
-          }
+          // Resolver returns null when the capability has no domainService
+          // binding it can drive — fall back to the prisma-direct dispatcher
+          // (which yields 'Ferramenta desconhecida' for truly unknown tools).
+          result =
+            resolverResult !== null && resolverResult !== undefined
+              ? resolverResult
+              : await this.runDirectDispatch(workspaceId, toolName, args, userId);
         }
       }
     } catch (error: unknown) {

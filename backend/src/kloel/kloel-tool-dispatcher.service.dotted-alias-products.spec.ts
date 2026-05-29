@@ -90,12 +90,7 @@ describe('KloelToolDispatcherService — products.* aliases', () => {
       product: { id: 'prod-1', name: 'Test' },
     });
 
-    const dotted = await bed.service.executeTool(
-      DEFAULT_WS_ID,
-      'products.update',
-      args,
-      'user-42',
-    );
+    const dotted = await bed.service.executeTool(DEFAULT_WS_ID, 'products.update', args, 'user-42');
 
     expect(bed.chatToolsService.toolUpdateProduct).toHaveBeenCalledWith(DEFAULT_WS_ID, {
       ...args,

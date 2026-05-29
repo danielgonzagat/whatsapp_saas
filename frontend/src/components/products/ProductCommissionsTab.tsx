@@ -50,7 +50,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
     }
   }, [productId]);
   useEffect(() => {
-    fetch_();
+    queueMicrotask(fetch_);
   }, [fetch_]);
   const closeModal = () => {
     setShowModal(false);

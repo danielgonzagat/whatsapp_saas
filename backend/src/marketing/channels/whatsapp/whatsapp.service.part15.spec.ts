@@ -70,7 +70,10 @@ describe('WhatsappService', () => {
     jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
     jest.setSystemTime(new Date('2026-04-20T00:00:00.000Z'));
 
-    const queueModule = jest.requireMock('../../../queue/queue');
+    const queueModule = jest.requireMock<{
+      autopilotQueue: { add: jest.Mock };
+      flowQueue: { add: jest.Mock };
+    }>('../../../queue/queue');
     mockAutopilotAdd = queueModule.autopilotQueue.add;
     mockFlowAdd = queueModule.flowQueue.add;
 

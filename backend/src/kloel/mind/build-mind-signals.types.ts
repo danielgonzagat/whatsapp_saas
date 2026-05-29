@@ -8,6 +8,7 @@ import type { MindPredictionService } from './mind-prediction.service';
 import type { SelfHealthService } from '../self-awareness/self-health.service';
 import type { SelfGapsService } from '../self-awareness/self-gaps.service';
 import type { RiskClassService } from '../risk-class/risk-class.service';
+import type { KnowledgeBaseService } from './knowledge/knowledge-base.service';
 
 /** Minimal prisma surface needed by the helper — only autopilotEvent queries. */
 export interface MindSignalsPrisma {
@@ -27,12 +28,12 @@ export interface BuildMindSignalsDeps {
   prisma: MindSignalsPrisma;
   attentionService?: AttentionService;
   valenceAggregatorService?: ValenceAggregatorService;
-  mindBeliefService?: MindBeliefService;
-  mindConceptService?: MindConceptService;
+  mindBeliefService?: Pick<MindBeliefService, 'getActiveBeliefs'>;
+  mindConceptService?: Pick<MindConceptService, 'detect'>;
   mindPredictionService?: MindPredictionService;
-  selfHealthService?: SelfHealthService;
-  selfGapsService?: SelfGapsService;
-  riskClassService?: RiskClassService;
+  selfHealthService?: Pick<SelfHealthService, 'snapshot'>;
+  selfGapsService?: Pick<SelfGapsService, 'diffRegistryVsDispatcher'>;
+  riskClassService?: Pick<RiskClassService, 'classify'>;
   mindVerbalizerService?: { narrate?: (workspaceId: string) => Promise<string> };
   mindBanditService?: {
     selectArm?: (
@@ -67,6 +68,7 @@ export interface BuildMindSignalsDeps {
       k?: number,
     ) => Promise<Array<{ text: string; score: number }>>;
   };
-  agentAssistService?: AgentAssistService;
+  knowledgeBaseService?: Pick<KnowledgeBaseService, 'search'>;
+  agentAssistService?: Pick<AgentAssistService, 'suggestActions'>;
   logger: Pick<StructuredLogger, 'warn'>;
 }

@@ -1,4 +1,5 @@
 import { AgentRuntimeMemoryCuratorService } from './agent-runtime.memory-curator';
+import { mindMemoryStub } from './agent-runtime.mind-memory-stub.helpers';
 
 function makePrisma(overrides: Record<string, unknown> = {}) {
   return {
@@ -15,7 +16,7 @@ function makePrisma(overrides: Record<string, unknown> = {}) {
 describe('AgentRuntimeMemoryCuratorService', () => {
   it('persists failed tool outcomes as curated operational memory', async () => {
     const prisma = makePrisma();
-    const curator = new AgentRuntimeMemoryCuratorService(prisma as never);
+    const curator = new AgentRuntimeMemoryCuratorService(prisma as never, mindMemoryStub(prisma) as never);
 
     const key = await curator.curateTurnOutcome({
       workspaceId: 'ws_1',
@@ -48,7 +49,7 @@ describe('AgentRuntimeMemoryCuratorService', () => {
 
   it('persists unresolved operational context without saving ordinary turns', async () => {
     const prisma = makePrisma();
-    const curator = new AgentRuntimeMemoryCuratorService(prisma as never);
+    const curator = new AgentRuntimeMemoryCuratorService(prisma as never, mindMemoryStub(prisma) as never);
 
     const unresolvedKey = await curator.curateTurnOutcome({
       workspaceId: 'ws_1',
@@ -72,7 +73,7 @@ describe('AgentRuntimeMemoryCuratorService', () => {
   it('returns null instead of throwing when persistence fails', async () => {
     const prisma = makePrisma();
     prisma.kloelMemory.upsert.mockRejectedValue(new Error('db down'));
-    const curator = new AgentRuntimeMemoryCuratorService(prisma as never);
+    const curator = new AgentRuntimeMemoryCuratorService(prisma as never, mindMemoryStub(prisma) as never);
 
     const key = await curator.curateTurnOutcome({
       workspaceId: 'ws_1',
@@ -86,7 +87,7 @@ describe('AgentRuntimeMemoryCuratorService', () => {
 
   it('includes confidence and retentionScore in curated memory value', async () => {
     const prisma = makePrisma();
-    const curator = new AgentRuntimeMemoryCuratorService(prisma as never);
+    const curator = new AgentRuntimeMemoryCuratorService(prisma as never, mindMemoryStub(prisma) as never);
 
     await curator.curateTurnOutcome({
       workspaceId: 'ws_1',
@@ -106,7 +107,7 @@ describe('AgentRuntimeMemoryCuratorService', () => {
 
   it('assigns higher confidence to action_failure than unresolved context', async () => {
     const prisma = makePrisma();
-    const curator = new AgentRuntimeMemoryCuratorService(prisma as never);
+    const curator = new AgentRuntimeMemoryCuratorService(prisma as never, mindMemoryStub(prisma) as never);
 
     await curator.curateTurnOutcome({
       workspaceId: 'ws_1',
@@ -134,7 +135,7 @@ describe('AgentRuntimeMemoryCuratorService', () => {
   describe('cleanupStaleMemories', () => {
     it('returns empty hygiene result when no curated memories exist', async () => {
       const prisma = makePrisma();
-      const curator = new AgentRuntimeMemoryCuratorService(prisma as never);
+      const curator = new AgentRuntimeMemoryCuratorService(prisma as never, mindMemoryStub(prisma) as never);
 
       const result = await curator.cleanupStaleMemories('ws_1');
 
@@ -157,7 +158,7 @@ describe('AgentRuntimeMemoryCuratorService', () => {
           },
         ]),
       });
-      const curator = new AgentRuntimeMemoryCuratorService(prisma as never);
+      const curator = new AgentRuntimeMemoryCuratorService(prisma as never, mindMemoryStub(prisma) as never);
 
       const result = await curator.cleanupStaleMemories('ws_1', { minRetentionScore: 0.3 });
 
@@ -189,7 +190,7 @@ describe('AgentRuntimeMemoryCuratorService', () => {
           },
         ]),
       });
-      const curator = new AgentRuntimeMemoryCuratorService(prisma as never);
+      const curator = new AgentRuntimeMemoryCuratorService(prisma as never, mindMemoryStub(prisma) as never);
 
       const result = await curator.cleanupStaleMemories('ws_1');
 
@@ -202,7 +203,7 @@ describe('AgentRuntimeMemoryCuratorService', () => {
       const prisma = makePrisma({
         findMany: jest.fn().mockRejectedValue(new Error('db down')),
       });
-      const curator = new AgentRuntimeMemoryCuratorService(prisma as never);
+      const curator = new AgentRuntimeMemoryCuratorService(prisma as never, mindMemoryStub(prisma) as never);
 
       const result = await curator.cleanupStaleMemories('ws_1');
 
@@ -212,7 +213,7 @@ describe('AgentRuntimeMemoryCuratorService', () => {
 
     it('respects maxItems option', async () => {
       const prisma = makePrisma();
-      const curator = new AgentRuntimeMemoryCuratorService(prisma as never);
+      const curator = new AgentRuntimeMemoryCuratorService(prisma as never, mindMemoryStub(prisma) as never);
 
       await curator.cleanupStaleMemories('ws_1', { maxItems: 10 });
 

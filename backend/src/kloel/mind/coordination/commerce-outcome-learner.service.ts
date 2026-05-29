@@ -159,8 +159,8 @@ export class CommerceOutcomeLearnerService {
     if (!this.decisionOutcome) {
       return;
     }
-    const outcomeKey = event.correlationId;
-    if (outcomeKey === undefined || outcomeKey === '') {
+    const outcomeKey = this.resolveOutcomeKey(event);
+    if (outcomeKey === undefined) {
       return;
     }
     try {
@@ -179,5 +179,30 @@ export class CommerceOutcomeLearnerService {
         errorCode: error instanceof Error ? error.message : 'unknown',
       });
     }
+  }
+
+  /**
+   * Resolve the decision outcomeKey carried by a commerce envelope. The chat
+   * decision path stores the key as the envelope's top-level `correlationId`
+   * (see kloel-reply-engine.decision-outcome.helpers.buildChatOutcomeKey), but
+   * some commerce emitters thread it through the payload instead. We honor the
+   * canonical `correlationId` first, then fall back to `payload.outcomeKey` /
+   * `payload.correlationId`, so the feedback reaches the bandit regardless of
+   * which surface emitted it. Returns undefined when no non-empty string key is
+   * present — closeOutcome is then never called (its updateMany would no-op
+   * anyway, but skipping avoids a pointless query).
+   */
+  private resolveOutcomeKey(event: SpineEventEnvelope): string | undefined {
+    const candidates: ReadonlyArray<unknown> = [
+      event.correlationId,
+      event.payload?.['outcomeKey'],
+      event.payload?.['correlationId'],
+    ];
+    for (const candidate of candidates) {
+      if (typeof candidate === 'string' && candidate.length > 0) {
+        return candidate;
+      }
+    }
+    return undefined;
   }
 }

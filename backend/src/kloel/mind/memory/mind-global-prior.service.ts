@@ -225,6 +225,130 @@ export class MindGlobalPriorService {
     return { mean: prior.mean, samples: prior.samples };
   }
 
+  
+    /**
+     * Bridge method replacing {@link KloelGlobalPriorService#getPrior}.
+     *
+     * Queries `mindBanditArm` rows for the given `decisionType` + `action` (arm)
+     * across ALL workspaces, aggregates alpha/beta totals, and returns the
+     * Beta-posterior mean together with total pull count as `observations`.
+     *
+     * Returns `null` when no arm data exists (triggers default belief in
+     * `mixWithGlobalPrior`, identical to the legacy behaviour).
+     *
+     * The `channel` parameter is accepted for API symmetry with
+     * `KloelGlobalPriorService.getPrior` but is currently not stored on
+     * `mindBanditArm` rows; a future migration can add a `channel` column and
+     * narrow the query without breaking callers.
+     */
+    async getPriorTuple(
+      _channel: string,
+      decisionType: string,
+      action: string,
+    ): Promise<{ mean: number; observations: number } | null> {
+      const BETA_PRIOR_ALPHA = 1;
+      const BETA_PRIOR_BETA = 1;
+
+      const rows = await this.prisma.mindBanditArm.findMany({
+        where: { decisionType, arm: action, pulls: { gt: 0 } },
+        select: { alpha: true, beta: true, pulls: true },
+      });
+
+      if (rows.length === 0) {
+        return null;
+      }
+
+      let totalAlpha = BETA_PRIOR_ALPHA;
+      let totalBeta = BETA_PRIOR_BETA;
+      let totalPulls = 0;
+
+      for (const row of rows) {
+        totalAlpha += row.alpha;
+        totalBeta += row.beta;
+        totalPulls += row.pulls;
+      }
+
+      const mean = totalAlpha / (totalAlpha + totalBeta);
+
+      return { mean, observations: totalPulls };
+    }
+
+  /**
+   * Bridge method replacing {@link KloelGlobalPriorService#recordObservation}.
+   *
+   * Feeds a resolved decision outcome back into the cross-workspace
+   * (`workspaceId = null`) global prior, persisted to the canonical
+   * `mindGlobalPrior` table — NOT the deprecated `kloelGlobalPrior`.
+   *
+   * Exact success counts are kept in `context.successes` so the running
+   * Bernoulli `mean`/`variance` stay precise across upserts (no lossy
+   * `round(mean * samples)` drift). Runs in a transaction so the
+   * read-modify-write of `samples`/`successes` is atomic under concurrency.
+   */
+  async recordObservation(
+    channel: string,
+    decisionType: string,
+    action: string,
+    success: boolean,
+  ): Promise<void> {
+    const startedAt = Date.now();
+    const predicate = `bandit-obs:${decisionType}:${action}`;
+    const id = predicate.slice(0, 191);
+
+    await this.prisma.$transaction(async (tx) => {
+      const existing = await tx.mindGlobalPrior.findFirst({
+        where: { workspaceId: null, domain: 'global_anonymous', predicate },
+        select: { id: true, samples: true, mean: true, context: true },
+      });
+
+      if (existing) {
+        const prevCtx = (existing.context ?? {}) as { successes?: number };
+        const prevSuccesses =
+          typeof prevCtx.successes === 'number'
+            ? prevCtx.successes
+            : Math.round(existing.mean * existing.samples);
+        const samples = existing.samples + 1;
+        const successes = prevSuccesses + (success ? 1 : 0);
+        const mean = successes / samples;
+        await tx.mindGlobalPrior.update({
+          where: { id: existing.id },
+          data: {
+            samples,
+            mean,
+            variance: mean * (1 - mean),
+            context: { channel, action, successes },
+          },
+        });
+      } else {
+        const successes = success ? 1 : 0;
+        const mean = successes;
+        await tx.mindGlobalPrior.create({
+          data: {
+            id,
+            workspaceId: null,
+            domain: 'global_anonymous',
+            predicate,
+            context: { channel, action, successes },
+            mean,
+            variance: mean * (1 - mean),
+            samples: 1,
+            anonymizedBy: 'policy_outcome_observation',
+          },
+        });
+      }
+    });
+
+    this.logger.debug({
+      operation: 'mind.global_prior.record_observation',
+      status: 'ok',
+      durationMs: Date.now() - startedAt,
+      channel,
+      decisionType,
+      action,
+      success,
+    });
+  }
+
   async listTopPriors(
     limit: number,
   ): Promise<Array<{ predicate: string; mean: number; samples: number }>> {

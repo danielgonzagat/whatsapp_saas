@@ -18,7 +18,7 @@ type CheckoutPixelConfig = {
   pixelId?: string | null;
 };
 
-type CheckoutOrderForEffects = {
+export type CheckoutOrderForEffects = {
   id?: string;
   workspaceId?: string | null;
   orderNumber?: string | null;

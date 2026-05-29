@@ -164,7 +164,7 @@ export function useOfficialMarketingChannel({ channel, initialStep }: UseOfficia
     setSetup((current) => ({ ...current, config: { ...current.config, ...patch } }));
   }, []);
   useEffect(() => {
-    void refresh();
+    queueMicrotask(refresh);
   }, [refresh]);
   useEffect(() => {
     if (

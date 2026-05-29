@@ -23,11 +23,9 @@ describe('kloel-thread.helpers', () => {
     });
 
     it('returns empty object for arrays and primitives', () => {
-      expect(normalizeThreadMessageMetadataRecord([] as unknown as Prisma.JsonValue)).toEqual({});
-      expect(
-        normalizeThreadMessageMetadataRecord('not-an-object' as unknown as Prisma.JsonValue),
-      ).toEqual({});
-      expect(normalizeThreadMessageMetadataRecord(42 as unknown as Prisma.JsonValue)).toEqual({});
+      expect(normalizeThreadMessageMetadataRecord([])).toEqual({});
+      expect(normalizeThreadMessageMetadataRecord('not-an-object')).toEqual({});
+      expect(normalizeThreadMessageMetadataRecord(42)).toEqual({});
     });
 
     it('returns a shallow copy of a plain object', () => {
@@ -59,7 +57,7 @@ describe('kloel-thread.helpers', () => {
     });
 
     it('treats non-object base as empty', () => {
-      const out = buildThreadMessageMetadata('garbage' as unknown as Prisma.InputJsonValue, {
+      const out = buildThreadMessageMetadata('garbage', {
         ok: true,
       });
       expect(out).toEqual({ ok: true });
@@ -115,9 +113,7 @@ describe('kloel-thread.helpers', () => {
 
     it('synthesizes id from createdAt when entry id missing', () => {
       const metadata = {
-        responseVersions: [
-          { content: 'hi', createdAt: '2025-06-01T00:00:00Z' },
-        ],
+        responseVersions: [{ content: 'hi', createdAt: '2025-06-01T00:00:00Z' }],
       } as unknown as Prisma.JsonValue;
       const out = buildStoredResponseVersions(metadata);
       expect(out[0]!.id).toBe('resp_2025-06-01T00:00:00Z');
@@ -325,31 +321,25 @@ describe('kloel-thread.helpers', () => {
   describe('resolveClientRequestId', () => {
     it('returns undefined when metadata is missing or not a plain object', () => {
       expect(resolveClientRequestId(undefined)).toBeUndefined();
-      expect(resolveClientRequestId([] as unknown as Prisma.InputJsonValue)).toBeUndefined();
-      expect(
-        resolveClientRequestId('string' as unknown as Prisma.InputJsonValue),
-      ).toBeUndefined();
+      expect(resolveClientRequestId([])).toBeUndefined();
+      expect(resolveClientRequestId('string')).toBeUndefined();
     });
 
     it('returns undefined when clientRequestId is blank or non-string', () => {
-      expect(
-        resolveClientRequestId({ clientRequestId: '' } as unknown as Prisma.InputJsonValue),
-      ).toBeUndefined();
+      expect(resolveClientRequestId({ clientRequestId: '' })).toBeUndefined();
       expect(
         resolveClientRequestId({
           clientRequestId: '   ',
-        } as unknown as Prisma.InputJsonValue),
+        }),
       ).toBeUndefined();
-      expect(
-        resolveClientRequestId({ clientRequestId: 42 } as unknown as Prisma.InputJsonValue),
-      ).toBeUndefined();
+      expect(resolveClientRequestId({ clientRequestId: 42 })).toBeUndefined();
     });
 
     it('returns the trimmed clientRequestId when present', () => {
       expect(
         resolveClientRequestId({
           clientRequestId: '  req-7  ',
-        } as unknown as Prisma.InputJsonValue),
+        }),
       ).toBe('req-7');
     });
   });

@@ -31,13 +31,11 @@ describe('compliance.helpers', () => {
     });
 
     it('returns "" when an intermediate value is not an object', () => {
-      expect(readNestedString({ subject: 'flat' } as unknown as Record<string, unknown>, ['subject', 'sub'])).toBe(
-        '',
-      );
+      expect(readNestedString({ subject: 'flat' }, ['subject', 'sub'])).toBe('');
     });
 
     it('returns "" when the path leads to a non-string leaf', () => {
-      expect(readNestedString({ sub: 123 } as unknown as Record<string, unknown>, ['sub'])).toBe('');
+      expect(readNestedString({ sub: 123 }, ['sub'])).toBe('');
     });
 
     it('refuses to traverse prototype-pollution keys', () => {
@@ -46,14 +44,12 @@ describe('compliance.helpers', () => {
     });
 
     it('refuses to traverse "constructor" and "prototype"', () => {
-      expect(readNestedString({} as Record<string, unknown>, ['constructor', 'name'])).toBe('');
-      expect(readNestedString({} as Record<string, unknown>, ['prototype', 'name'])).toBe('');
+      expect(readNestedString({}, ['constructor', 'name'])).toBe('');
+      expect(readNestedString({}, ['prototype', 'name'])).toBe('');
     });
 
     it('returns "" when an intermediate value is an array', () => {
-      expect(readNestedString({ subject: ['a', 'b'] } as unknown as Record<string, unknown>, ['subject', 'sub'])).toBe(
-        '',
-      );
+      expect(readNestedString({ subject: ['a', 'b'] }, ['subject', 'sub'])).toBe('');
     });
 
     it('returns "" for inherited (non-own) properties', () => {
@@ -65,16 +61,22 @@ describe('compliance.helpers', () => {
 
   describe('extractSubjectIdentifier', () => {
     it('prefers eventPayload.subject.sub', () => {
-      const out = extractSubjectIdentifier({ sub: 'fallback' }, {
-        subject: { sub: 'eventSub' },
-      });
+      const out = extractSubjectIdentifier(
+        { sub: 'fallback' },
+        {
+          subject: { sub: 'eventSub' },
+        },
+      );
       expect(out).toBe('eventSub');
     });
 
     it('falls back to eventPayload.subject.subject', () => {
-      const out = extractSubjectIdentifier({ sub: 'fallback' }, {
-        subject: { subject: 'nestedSubject' },
-      });
+      const out = extractSubjectIdentifier(
+        { sub: 'fallback' },
+        {
+          subject: { subject: 'nestedSubject' },
+        },
+      );
       expect(out).toBe('nestedSubject');
     });
 
@@ -129,13 +131,15 @@ describe('compliance.helpers', () => {
 
   describe('resolveSiteUrl', () => {
     it('uses NEXT_PUBLIC_SITE_URL when present', () => {
-      expect(resolveSiteUrl({ NEXT_PUBLIC_SITE_URL: 'https://a.example' })).toBe('https://a.example');
+      expect(resolveSiteUrl({ NEXT_PUBLIC_SITE_URL: 'https://a.example' })).toBe(
+        'https://a.example',
+      );
     });
 
     it('falls back to FRONTEND_URL when NEXT_PUBLIC_SITE_URL is empty', () => {
-      expect(
-        resolveSiteUrl({ NEXT_PUBLIC_SITE_URL: '', FRONTEND_URL: 'https://b.example' }),
-      ).toBe('https://b.example');
+      expect(resolveSiteUrl({ NEXT_PUBLIC_SITE_URL: '', FRONTEND_URL: 'https://b.example' })).toBe(
+        'https://b.example',
+      );
     });
 
     it('defaults to https://kloel.com when nothing is set', () => {
@@ -143,7 +147,9 @@ describe('compliance.helpers', () => {
     });
 
     it('strips a single trailing slash', () => {
-      expect(resolveSiteUrl({ NEXT_PUBLIC_SITE_URL: 'https://a.example/' })).toBe('https://a.example');
+      expect(resolveSiteUrl({ NEXT_PUBLIC_SITE_URL: 'https://a.example/' })).toBe(
+        'https://a.example',
+      );
     });
   });
 
@@ -161,9 +167,9 @@ describe('compliance.helpers', () => {
 
   describe('classifyRiscEvent', () => {
     it('matches sessions-revoked suffix', () => {
-      expect(classifyRiscEvent('https://schemas.openid.net/secevent/risc/event-type/sessions-revoked')).toBe(
-        'sessions-revoked',
-      );
+      expect(
+        classifyRiscEvent('https://schemas.openid.net/secevent/risc/event-type/sessions-revoked'),
+      ).toBe('sessions-revoked');
     });
 
     it('matches tokens-revoked suffix', () => {

@@ -14,7 +14,7 @@ import {
   type HttpRequestLike,
 } from './admin-auth.service.helpers';
 
-import type { AdminTokenScope } from './admin-token.types';// ---------------------------------------------------------------------------
+import type { AdminTokenScope } from './admin-token.types'; // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
@@ -28,11 +28,9 @@ describe('admin-auth.service.helpers — constants', () => {
   });
 
   it('enumerates the truthy MFA bypass values', () => {
-    expect([...MFA_BYPASS_ENABLED_VALUES].sort()).toEqual(
-      ['1', 'on', 'true', 'yes'].sort(),
-    );
+    expect([...MFA_BYPASS_ENABLED_VALUES].sort()).toEqual(['1', 'on', 'true', 'yes'].sort());
   });
-});// ---------------------------------------------------------------------------
+}); // ---------------------------------------------------------------------------
 // normalizeAdminEmail
 // ---------------------------------------------------------------------------
 
@@ -49,7 +47,7 @@ describe('normalizeAdminEmail', () => {
   it('handles empty string without throwing', () => {
     expect(normalizeAdminEmail('')).toBe('');
   });
-});// ---------------------------------------------------------------------------
+}); // ---------------------------------------------------------------------------
 // isMfaBypassEnvEnabled
 // ---------------------------------------------------------------------------
 
@@ -75,7 +73,7 @@ describe('isMfaBypassEnvEnabled', () => {
   it('trims surrounding whitespace before deciding', () => {
     expect(isMfaBypassEnvEnabled('  true  ')).toBe(true);
   });
-});// ---------------------------------------------------------------------------
+}); // ---------------------------------------------------------------------------
 // isAccountLocked
 // ---------------------------------------------------------------------------
 
@@ -109,7 +107,7 @@ describe('isAccountLocked', () => {
     const future = new Date(Date.now() + 30_000);
     expect(isAccountLocked(future)).toBe(true);
   });
-});// ---------------------------------------------------------------------------
+}); // ---------------------------------------------------------------------------
 // isSessionExpired
 // ---------------------------------------------------------------------------
 
@@ -135,7 +133,7 @@ describe('isSessionExpired', () => {
     const past = new Date(Date.now() - 60_000);
     expect(isSessionExpired(past)).toBe(true);
   });
-});// ---------------------------------------------------------------------------
+}); // ---------------------------------------------------------------------------
 // extractBearerToken
 // ---------------------------------------------------------------------------
 
@@ -176,17 +174,12 @@ describe('extractBearerToken', () => {
   it('returns null for a header with only whitespace', () => {
     expect(extractBearerToken('   ')).toBeNull();
   });
-});// ---------------------------------------------------------------------------
+}); // ---------------------------------------------------------------------------
 // assertTokenScope
 // ---------------------------------------------------------------------------
 
 describe('assertTokenScope', () => {
-  const scopes: AdminTokenScope[] = [
-    'password_change',
-    'mfa_setup',
-    'mfa_verify',
-    'full',
-  ];
+  const scopes: AdminTokenScope[] = ['password_change', 'mfa_setup', 'mfa_verify', 'full'];
 
   it('does not throw when the scope matches', () => {
     for (const scope of scopes) {
@@ -195,15 +188,9 @@ describe('assertTokenScope', () => {
   });
 
   it('throws invalidToken when the scope mismatches', () => {
-    expect(() =>
-      assertTokenScope({ scope: 'mfa_setup' as const }, 'password_change'),
-    ).toThrow();
-    expect(() =>
-      assertTokenScope({ scope: 'password_change' as const }, 'mfa_verify'),
-    ).toThrow();
-    expect(() =>
-      assertTokenScope({ scope: 'full' as const }, 'mfa_setup'),
-    ).toThrow();
+    expect(() => assertTokenScope({ scope: 'mfa_setup' as const }, 'password_change')).toThrow();
+    expect(() => assertTokenScope({ scope: 'password_change' as const }, 'mfa_verify')).toThrow();
+    expect(() => assertTokenScope({ scope: 'full' as const }, 'mfa_setup')).toThrow();
   });
 
   it('throws an error with the expected invalid_token code shape', () => {
@@ -212,12 +199,10 @@ describe('assertTokenScope', () => {
       fail('expected assertTokenScope to throw');
     } catch (err: unknown) {
       const response = (err as { getResponse?: () => unknown }).getResponse?.();
-      expect((response as { code?: string } | undefined)?.code).toBe(
-        'admin.auth.invalid_token',
-      );
+      expect((response as { code?: string } | undefined)?.code).toBe('admin.auth.invalid_token');
     }
   });
-});// ---------------------------------------------------------------------------
+}); // ---------------------------------------------------------------------------
 // readForwardedForIp
 // ---------------------------------------------------------------------------
 
@@ -249,21 +234,21 @@ describe('readForwardedForIp', () => {
   it('returns null when the first entry is empty after trim', () => {
     expect(readForwardedForIp(' , 10.0.1.2')).toBeNull();
   });
-});// ---------------------------------------------------------------------------
+}); // ---------------------------------------------------------------------------
 // extractClientIp
 // ---------------------------------------------------------------------------
 
 describe('extractClientIp', () => {
-  function req(overrides: {
-    ip?: string;
-    xForwardedFor?: string;
-    remoteAddress?: string;
-  } = {}): HttpRequestLike {
+  function req(
+    overrides: {
+      ip?: string;
+      xForwardedFor?: string;
+      remoteAddress?: string;
+    } = {},
+  ): HttpRequestLike {
     return {
       ip: overrides.ip,
-      socket: overrides.remoteAddress
-        ? { remoteAddress: overrides.remoteAddress }
-        : undefined,
+      socket: overrides.remoteAddress ? { remoteAddress: overrides.remoteAddress } : undefined,
       headers: {
         'x-forwarded-for': overrides.xForwardedFor,
       },
@@ -271,9 +256,7 @@ describe('extractClientIp', () => {
   }
 
   it('prefers x-forwarded-for when present', () => {
-    expect(
-      extractClientIp(req({ xForwardedFor: '1.2.3.4', ip: '9.9.9.9' })),
-    ).toBe('1.2.3.4');
+    expect(extractClientIp(req({ xForwardedFor: '1.2.3.4', ip: '9.9.9.9' }))).toBe('1.2.3.4');
   });
 
   it('falls back to req.ip when x-forwarded-for is absent', () => {
@@ -287,7 +270,7 @@ describe('extractClientIp', () => {
   it('returns 0.0.0.0 when nothing is available', () => {
     expect(extractClientIp(req())).toBe('0.0.0.0');
   });
-});// ---------------------------------------------------------------------------
+}); // ---------------------------------------------------------------------------
 // extractUserAgent
 // ---------------------------------------------------------------------------
 

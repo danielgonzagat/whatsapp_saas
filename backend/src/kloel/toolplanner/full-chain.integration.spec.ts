@@ -61,8 +61,8 @@ import { ToolPlannerService } from '../toolplanner/toolplanner.service';
   it('classifies all capabilities from definitions', () => {
     const testMessages: Record<string, string[]> = {
       'products.create': ['cria um produto', 'criar novo produto agora'],
-      'generate_pix': ['emite um pix', 'gera um pix de R$100'],
-      'generate_boleto': ['gera um boleto', 'emitir boleto agora'],
+      generate_pix: ['emite um pix', 'gera um pix de R$100'],
+      generate_boleto: ['gera um boleto', 'emitir boleto agora'],
       'plans.create': ['cria um plano', 'criar novo plano mensal'],
       'checkouts.create': ['cria um checkout', 'criar novo checkout'],
       'coupons.create': ['cria cupom DESCONTO10', 'criar novo cupom'],

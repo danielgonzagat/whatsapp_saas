@@ -31,6 +31,7 @@ import { InternalPartnershipDispatchAdapter } from './internal-partnership/inter
 import { MessengerDispatchAdapter } from './messenger/messenger-dispatch.adapter';
 import { WhatsAppDispatchAdapter } from './whatsapp/whatsapp-dispatch.adapter';
 import { ChannelMessageDispatchService } from '../channel-message-dispatch.service';
+import { TikTokDispatchAdapter } from './tiktok/tiktok-dispatch.adapter';
 
 const ADAPTERS = [
   WhatsAppDispatchAdapter,
@@ -38,6 +39,7 @@ const ADAPTERS = [
   MessengerDispatchAdapter,
   FacebookDispatchAdapter,
   EmailDispatchAdapter,
+  TikTokDispatchAdapter,
   InternalPartnershipDispatchAdapter,
 ];
 
@@ -58,14 +60,16 @@ const ADAPTERS = [
         messenger: MessengerDispatchAdapter,
         facebook: FacebookDispatchAdapter,
         email: EmailDispatchAdapter,
+        tiktok: TikTokDispatchAdapter,
         partnership: InternalPartnershipDispatchAdapter,
-      ) => [whatsapp, instagram, messenger, facebook, email, partnership],
+      ) => [whatsapp, instagram, messenger, facebook, email, tiktok, partnership],
       inject: [
         WhatsAppDispatchAdapter,
         InstagramDispatchAdapter,
         MessengerDispatchAdapter,
         FacebookDispatchAdapter,
         EmailDispatchAdapter,
+        TikTokDispatchAdapter,
         InternalPartnershipDispatchAdapter,
       ],
     },

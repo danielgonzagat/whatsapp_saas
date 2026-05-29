@@ -41,6 +41,7 @@ import { KloelThreadSearchService } from './kloel-thread-search.service';
 import { KloelThreadService } from './kloel-thread.service';
 import { KloelThreadSummaryService } from './kloel-thread-summary.service';
 import { KloelThinkerService } from './kloel-thinker.service';
+import { StateBuilderService } from './state/state-builder.service';
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
 import { KloelToolExecutorService } from './kloel-tool-executor.service';
 import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
@@ -59,6 +60,21 @@ import { MemorySearchService } from './memory-search.service';
 import { MemoryService } from './memory.service';
 import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 import { MindMessageService } from './mind/aliases/mind-message.service';
+// ── services-v2 (Wave 1) — boot-safe capability domain services ──
+import { ThemeService } from './services-v2/theme.service';
+import { AIConfigService } from './services-v2/ai-config.service';
+import { ProductAIConfigService } from './services-v2/product-ai-config.service';
+import { NpsService } from './services-v2/nps.service';
+import { ChurnService } from './services-v2/churn.service';
+import { AbandonmentService } from './services-v2/abandonment.service';
+import { RefundService } from './services-v2/refund.service';
+import { ReviewService } from './services-v2/review.service';
+import { SubscriptionService } from './services-v2/subscription.service';
+import { ShippingService } from './services-v2/shipping.service';
+import { BrandService } from './services-v2/brand.service';
+import { LeadService } from './services-v2/lead.service';
+import { DocumentService } from './services-v2/document.service';
+import { SessionService } from './services-v2/session.service';
 import { MarketingSkillContextBuilder } from './marketing-skills/marketing-skill.context';
 import { MarketingSkillLoader } from './marketing-skills/marketing-skill.loader';
 import { MarketingSkillRouter } from './marketing-skills/marketing-skill.router';
@@ -108,6 +124,7 @@ import {
   ProductUrlController,
 } from './product-sub-resources.controller';
 import { ProductController } from './product.controller';
+import { ProductUrlService } from './product-sub-resources/product-url.service';
 import { SalesController } from './sales.controller';
 import { SalesOrdersController } from './sales-orders.controller';
 import { SalesSubscriptionsController } from './sales-subscriptions.controller';
@@ -220,6 +237,8 @@ import { PlansModule } from '../plans/plans.module';
 import { SalesModule } from '../sales/sales.module';
 import { WorkspaceModule } from '../workspaces/workspace.module';
 import { LongTermMemoryService } from './mind/memory/long-term-memory.service';
+import { ConversationArchiveService } from './mind/memory/conversation-archive.service';
+import { EpisodeService } from './mind/memory/episode.service';
 import { MindSelfModelService } from './mind/self-model/mind-self-model.service';
 
 /** Kloel module. */
@@ -298,6 +317,7 @@ import { MindSelfModelService } from './mind/self-model/mind-self-model.service'
     { provide: KLOEL_LLM_E2E_GUARD, useClass: NoopKloelLLME2EGuard },
     KloelService,
     KloelThinkerService,
+    StateBuilderService,
     KloelReplyEngineService,
     KloelThreadSearchService,
     KloelThreadService,
@@ -309,6 +329,7 @@ import { MindSelfModelService } from './mind/self-model/mind-self-model.service'
     CouponService,
     ProductCouponDomainService,
     KloelProductSubResourceToolsService,
+    ProductUrlService,
     KloelWalletSalesToolsService,
     KloelBusinessConfigToolsService,
     KloelCodeAnalysisService,
@@ -399,6 +420,8 @@ import { MindSelfModelService } from './mind/self-model/mind-self-model.service'
     MindConceptService,
     MindLongTermMemoryService,
     LongTermMemoryService,
+    ConversationArchiveService,
+    EpisodeService,
     MindSelfModelService,
     MindSelfModificationService,
     KloelGlobalPriorService,
@@ -442,6 +465,21 @@ import { MindSelfModelService } from './mind/self-model/mind-self-model.service'
     AgentRuntimeSkillRegistry,
     MindMessageService,
     MindMemoryItemService,
+    // ── services-v2 (Wave 1) capability domain services ──
+    ThemeService,
+    AIConfigService,
+    ProductAIConfigService,
+    NpsService,
+    ChurnService,
+    AbandonmentService,
+    RefundService,
+    ReviewService,
+    SubscriptionService,
+    ShippingService,
+    BrandService,
+    LeadService,
+    DocumentService,
+    SessionService,
   ],
   exports: [
     KloelService,
@@ -469,6 +507,8 @@ import { MindSelfModelService } from './mind/self-model/mind-self-model.service'
     ConversationalOnboardingService,
     MemoryCrudService,
     MemorySearchService,
+    ConversationArchiveService,
+    EpisodeService,
     MemoryService,
     MemoryManagementService,
     PdfProcessorService,

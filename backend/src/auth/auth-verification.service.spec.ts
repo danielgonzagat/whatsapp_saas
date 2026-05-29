@@ -5,27 +5,37 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuthVerificationService } from './auth-verification.service';
 import { AuthWhatsappPasswordService } from './auth-whatsapp-password.service';
 import { EmailService } from './email.service';
+import { partialMatch } from '../../test/helpers/match-instance';
+const mockAgentModel = {
+  findFirst: jest.fn(),
+  findUnique: jest.fn(),
+  create: jest.fn(),
+  update: jest.fn(),
+};
+const mockWorkspaceModel = {
+  create: jest.fn(),
+};
+const mockMagicLinkTokenModel = {
+  create: jest.fn(),
+  findUnique: jest.fn(),
+  update: jest.fn(),
+};
 const mockPrismaService = {
-  agent: {
-    findFirst: jest.fn(),
-    findUnique: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-  },
-  workspace: {
-    create: jest.fn(),
-  },
-  magicLinkToken: {
-    create: jest.fn(),
-    findUnique: jest.fn(),
-    update: jest.fn(),
-  },
+  agent: mockAgentModel,
+  workspace: mockWorkspaceModel,
+  magicLinkToken: mockMagicLinkTokenModel,
   $transaction: jest.fn((arg: unknown) => {
     if (typeof arg === 'function') {
-      return arg({
-        agent: mockPrismaService.agent,
-        workspace: mockPrismaService.workspace,
-        magicLinkToken: mockPrismaService.magicLinkToken,
+      return (
+        arg as (tx: {
+          agent: typeof mockAgentModel;
+          workspace: typeof mockWorkspaceModel;
+          magicLinkToken: typeof mockMagicLinkTokenModel;
+        }) => unknown
+      )({
+        agent: mockAgentModel,
+        workspace: mockWorkspaceModel,
+        magicLinkToken: mockMagicLinkTokenModel,
       });
     }
     return Promise.all(arg as Array<Promise<unknown>>);
@@ -85,13 +95,13 @@ describe('AuthVerificationService', () => {
       expect(result.message).toContain('Se o email for válido');
       expect(prisma.magicLinkToken.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: partialMatch({
             email,
             agentId: 'agent-1',
           }),
         }),
       );
-      const magicLinkUrl = emailService.sendMagicLinkEmail.mock.calls[0]?.[1];
+      const magicLinkUrl = (emailService.sendMagicLinkEmail.mock.calls[0] as string[])?.[1];
       expect(magicLinkUrl).toContain('/magic-link');
       expect(new URL(magicLinkUrl).searchParams.has('token')).toBe(true);
     });
@@ -123,7 +133,7 @@ describe('AuthVerificationService', () => {
       await service.requestMagicLink({ email, redirectTo: '/settings' });
       expect(prisma.magicLinkToken.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: partialMatch({
             redirectTo: '/settings',
           }),
         }),
@@ -194,7 +204,7 @@ describe('AuthVerificationService', () => {
       expect(prisma.workspace.create).toHaveBeenCalled();
       expect(prisma.agent.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: partialMatch({
             role: 'ADMIN',
             emailVerified: true,
           }),
@@ -242,7 +252,7 @@ describe('AuthVerificationService', () => {
       const result = await service.sendVerificationEmail('agent-1');
 
       expect(result.success).toBe(true);
-      const verificationUrl = emailService.sendVerificationEmail.mock.calls[0]?.[1];
+      const verificationUrl = (emailService.sendVerificationEmail.mock.calls[0] as string[])?.[1];
       expect(verificationUrl).toContain('verify-email');
       expect(new URL(verificationUrl).searchParams.has('token')).toBe(true);
     });
@@ -286,7 +296,7 @@ describe('AuthVerificationService', () => {
       expect(prisma.agent.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'agent-1' },
-          data: expect.objectContaining({
+          data: partialMatch({
             emailVerified: true,
             emailVerificationToken: null,
           }),

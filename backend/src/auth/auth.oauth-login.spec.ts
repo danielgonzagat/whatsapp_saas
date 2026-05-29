@@ -13,37 +13,41 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ConnectService } from '../payments/connect/connect.service';
 import { AuthTokenService } from './auth.token.service';
 
+const mockAgentModel = {
+  findFirst: jest.fn(),
+  findMany: jest.fn(),
+  create: jest.fn(),
+  update: jest.fn(),
+};
+const mockWorkspaceModel = {
+  create: jest.fn(),
+  findUnique: jest.fn(),
+};
+const mockRefreshTokenModel = {
+  create: jest.fn(),
+  updateMany: jest.fn(),
+};
+const mockSocialAccountModel = {
+  findUnique: jest.fn(),
+  upsert: jest.fn(),
+};
 const mockPrismaService = {
-  agent: {
-    findFirst: jest.fn(),
-    findMany: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-  },
-  workspace: {
-    create: jest.fn(),
-    findUnique: jest.fn(),
-  },
-  refreshToken: {
-    create: jest.fn(),
-    updateMany: jest.fn(),
-  },
-  socialAccount: {
-    findUnique: jest.fn(),
-    upsert: jest.fn(),
-  },
+  agent: mockAgentModel,
+  workspace: mockWorkspaceModel,
+  refreshToken: mockRefreshTokenModel,
+  socialAccount: mockSocialAccountModel,
   $transaction: jest.fn((arg: unknown) => {
     if (typeof arg === 'function') {
       return (
         arg as (tx: {
-          agent: typeof mockPrismaService.agent;
-          workspace: typeof mockPrismaService.workspace;
-          refreshToken: typeof mockPrismaService.refreshToken;
+          agent: typeof mockAgentModel;
+          workspace: typeof mockWorkspaceModel;
+          refreshToken: typeof mockRefreshTokenModel;
         }) => unknown
       )({
-        agent: mockPrismaService.agent,
-        workspace: mockPrismaService.workspace,
-        refreshToken: mockPrismaService.refreshToken,
+        agent: mockAgentModel,
+        workspace: mockWorkspaceModel,
+        refreshToken: mockRefreshTokenModel,
       });
     }
 
@@ -312,9 +316,7 @@ describe('AuthService OAuth login', () => {
         ip: '127.0.0.1',
       }),
     ).rejects.toMatchObject({
-      response: expect.objectContaining({
-        error: 'oauth_reauthentication_required',
-      }),
+      response: { error: 'oauth_reauthentication_required' },
     });
 
     expect(mockFacebookAuthService.verifyAccessToken).toHaveBeenCalledWith('fb-token', 'fb-user-1');
@@ -337,9 +339,7 @@ describe('AuthService OAuth login', () => {
         ip: '127.0.0.1',
       }),
     ).rejects.toMatchObject({
-      response: expect.objectContaining({
-        error: 'oauth_reauthentication_required',
-      }),
+      response: { error: 'oauth_reauthentication_required' },
     });
 
     expect(prisma.agent.update).not.toHaveBeenCalled();
@@ -433,11 +433,12 @@ describe('AuthService OAuth login', () => {
       ip: '127.0.0.1',
     });
 
+    const emailDataMatcher: unknown = expect.objectContaining({
+      email: 'tiktok-tt-user-2@oauth.kloel.local',
+    });
     expect(prisma.agent.update).not.toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
-          email: 'tiktok-tt-user-2@oauth.kloel.local',
-        }),
+        data: emailDataMatcher,
       }),
     );
     expect(result.user?.email).toBe('real-user@kloel.com');

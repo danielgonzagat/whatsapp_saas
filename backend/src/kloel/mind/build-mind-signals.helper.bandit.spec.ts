@@ -129,7 +129,7 @@ describe('buildMindSignals — bandit strategy (PI-K14-B)', () => {
 
     expect(result.strategy).toBeDefined();
     expect(result.riskClass).toBeDefined();
-    expect(result.strategy!.arm).toBe('ancoragem');
-    expect(result.riskClass!.tier).toBe('R1');
+    expect((result.strategy as { arm: string }).arm).toBe('ancoragem');
+    expect((result.riskClass as { tier: string }).tier).toBe('R1');
   });
 });

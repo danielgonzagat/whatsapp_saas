@@ -466,4 +466,50 @@ export class CheckoutOrderService {
     }
     return this.getOrder(orderId, workspaceId);
   }
+
+  /**
+   * Canonical-name management method for the Kloel capability resolver
+   * (`OrderService.updateTracking`). Accepts the (workspaceId, args)
+   * signature used by `KloelDomainServiceResolver`.
+   *
+   * Persists shipping tracking data (`trackingCode`, optional `trackingUrl`)
+   * on a workspace-scoped physical order. Workspace ownership is verified
+   * before the write — cross-tenant updates are impossible. No money fields
+   * are touched.
+   */
+  async updateTracking(
+    workspaceId: string,
+    args?: { orderId?: string; trackingCode?: string; trackingUrl?: string },
+  ): Promise<{ success: true; orderId: string; trackingCode: string }> {
+    const orderId = typeof args?.orderId === 'string' ? args.orderId.trim() : '';
+    const trackingCode = typeof args?.trackingCode === 'string' ? args.trackingCode.trim() : '';
+    if (!orderId) {
+      throw new BadRequestException('CheckoutOrderService.updateTracking: orderId é obrigatório.');
+    }
+    if (!trackingCode) {
+      throw new BadRequestException(
+        'CheckoutOrderService.updateTracking: trackingCode é obrigatório.',
+      );
+    }
+
+    const order = await this.prisma.checkoutOrder.findFirst({
+      where: { id: orderId, workspaceId },
+      select: { id: true },
+    });
+    if (!order) {
+      throw new BadRequestException(`Pedido ${orderId} não encontrado neste workspace.`);
+    }
+
+    const trackingUrl = typeof args?.trackingUrl === 'string' ? args.trackingUrl.trim() : undefined;
+    await this.prisma.checkoutOrder.update({
+      where: { id: orderId },
+      data: {
+        trackingCode,
+        ...(trackingUrl ? { trackingUrl } : {}),
+      },
+    });
+
+    this.logOrderEvent('order.tracking_updated', { orderId, workspaceId });
+    return { success: true, orderId, trackingCode };
+  }
 }

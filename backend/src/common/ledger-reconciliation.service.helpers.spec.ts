@@ -58,7 +58,7 @@ describe('ledger-reconciliation helpers — pure formatters & validators', () =>
     it.each(['PENDING', 'CREATED', '', null, undefined])(
       'rejects non-terminal status %s',
       (status) => {
-        expect(isOrderTerminalStatus(status as string | null | undefined)).toBe(false);
+        expect(isOrderTerminalStatus(status)).toBe(false);
       },
     );
   });
@@ -74,7 +74,7 @@ describe('ledger-reconciliation helpers — pure formatters & validators', () =>
     it.each(['PENDING', 'FAILED', '', null, undefined])(
       'rejects non-terminal payment status %s',
       (status) => {
-        expect(isPaymentTerminalStatus(status as string | null | undefined)).toBe(false);
+        expect(isPaymentTerminalStatus(status)).toBe(false);
       },
     );
   });

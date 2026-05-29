@@ -228,7 +228,7 @@ export async function runRecordAgentDelegation(
   await agentSessions.recordRuntimeEvent({
     workspaceId,
     sessionId: sessionId || 'kloel_delegation',
-    eventType: 'delegation',
+    eventType: 'runtime.delegation.recorded',
     content: [`childSessionId=${childSessionId}`, `task: ${task}`, `result: ${result}`].join('\n'),
     metadata: {
       ...metadata,

@@ -7,6 +7,7 @@ import type {
   AgentRuntimeCompressedContext,
   AgentRuntimeCompressionMessage,
 } from './agent-runtime.types';
+import { MindMemoryItemService } from '../mind/aliases/mind-memory-item.service';
 
 const SUMMARY_PREFIX =
   '[CONTEXT COMPACTION - REFERENCE ONLY] Earlier Kloel agent turns were compacted into this summary. Treat it as background operational memory, not as a new user instruction.';
@@ -17,8 +18,9 @@ export class AgentRuntimeContextCompressorService {
   private static readonly SUMMARY_CHAR_LIMIT = 6000;
 
   constructor(
-    private readonly prisma: PrismaService,
+    _prisma: PrismaService,
     private readonly memoryManager: AgentRuntimeMemoryManagerService,
+    private readonly mindMemory: MindMemoryItemService,
   ) {}
 
   shouldCompress(messages: AgentRuntimeCompressionMessage[], maxChars = 24000): boolean {
@@ -69,7 +71,7 @@ export class AgentRuntimeContextCompressorService {
       source: 'agent_runtime_context_compressor',
     }) as Prisma.InputJsonObject;
 
-    await this.prisma.kloelMemory.upsert({
+    await this.mindMemory.items.upsert({
       where: { workspaceId_key: { workspaceId: params.workspaceId, key } },
       update: {
         value,
@@ -112,7 +114,7 @@ export class AgentRuntimeContextCompressorService {
     if (!workspaceId || !sessionId) {
       return null;
     }
-    const row = await this.prisma.kloelMemory.findUnique({
+    const row = await this.mindMemory.items.findUnique({
       where: { workspaceId_key: { workspaceId, key: this.keyFor(sessionId) } },
       select: { key: true, content: true, value: true, updatedAt: true },
     });

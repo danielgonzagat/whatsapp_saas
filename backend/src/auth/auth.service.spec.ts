@@ -19,19 +19,21 @@ import {
 } from '@nestjs/common';
 
 // Mock implementations
+const mockAgentModel = {
+  findFirst: jest.fn(),
+  findMany: jest.fn(),
+  findUnique: jest.fn(),
+  create: jest.fn(),
+  update: jest.fn(),
+};
+const mockWorkspaceModel = {
+  create: jest.fn(),
+  findUnique: jest.fn(),
+  delete: jest.fn(),
+};
 const mockPrismaService = {
-  agent: {
-    findFirst: jest.fn(),
-    findMany: jest.fn(),
-    findUnique: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-  },
-  workspace: {
-    create: jest.fn(),
-    findUnique: jest.fn(),
-    delete: jest.fn(),
-  },
+  agent: mockAgentModel,
+  workspace: mockWorkspaceModel,
   affiliatePartner: {
     findFirst: jest.fn(),
     update: jest.fn(),
@@ -57,9 +59,14 @@ const mockPrismaService = {
   $transaction: jest.fn((arg: unknown) => {
     if (typeof arg === 'function') {
       // Transação interativa
-      return arg({
-        agent: mockPrismaService.agent,
-        workspace: mockPrismaService.workspace,
+      return (
+        arg as (tx: {
+          agent: typeof mockAgentModel;
+          workspace: typeof mockWorkspaceModel;
+        }) => unknown
+      )({
+        agent: mockAgentModel,
+        workspace: mockWorkspaceModel,
       });
     }
     // Transação em batch (array de operações)
@@ -275,14 +282,16 @@ describe('AuthService', () => {
       });
 
       expect(result).toHaveProperty('access_token');
+      const metadataMatcher: unknown = expect.objectContaining({
+        path: ['inviteTokenHash'],
+      });
+      const whereMatcher: unknown = expect.objectContaining({
+        partnerEmail: 'affiliate@test.com',
+        metadata: metadataMatcher,
+      });
       expect(prisma.affiliatePartner.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({
-            partnerEmail: 'affiliate@test.com',
-            metadata: expect.objectContaining({
-              path: ['inviteTokenHash'],
-            }),
-          }),
+          where: whereMatcher,
         }),
       );
       expect(connectService.createCustomAccount).toHaveBeenCalledWith({
@@ -291,13 +300,14 @@ describe('AuthService', () => {
         email: 'affiliate@test.com',
         displayName: 'Ana Workspace',
       });
+      const updateDataMatcher: unknown = expect.objectContaining({
+        partnerWorkspaceId: 'ws-aff',
+        status: 'ACTIVE',
+      });
       expect(prisma.affiliatePartner.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'partner-1', workspaceId: 'seller-ws' },
-          data: expect.objectContaining({
-            partnerWorkspaceId: 'ws-aff',
-            status: 'ACTIVE',
-          }),
+          data: updateDataMatcher,
         }),
       );
     });
@@ -426,7 +436,7 @@ describe('AuthService', () => {
           expire: jest.fn().mockResolvedValue(1),
         };
         const serviceWithRedis = new AuthService(
-          mockPrismaService,
+          mockPrismaService as never,
           mockJwtService as never,
           mockEmailService as never,
           mockConfigService as never,
@@ -471,7 +481,7 @@ describe('AuthService', () => {
       delete process.env.RATE_LIMIT_DISABLED;
       try {
         const serviceWithRedisFailure = new AuthService(
-          mockPrismaService,
+          mockPrismaService as never,
           mockJwtService as never,
           mockEmailService as never,
           mockConfigService as never,

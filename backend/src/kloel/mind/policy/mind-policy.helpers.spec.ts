@@ -147,9 +147,7 @@ describe('mind-policy.helpers — resolution builders', () => {
 
     it('returns an empty array when no rows have a valid channel', () => {
       expect(
-        collectGlobalPriorRows([
-          { context: { channel: 99 }, decisionType: 'x', chosen: 'y' },
-        ]),
+        collectGlobalPriorRows([{ context: { channel: 99 }, decisionType: 'x', chosen: 'y' }]),
       ).toEqual([]);
     });
 

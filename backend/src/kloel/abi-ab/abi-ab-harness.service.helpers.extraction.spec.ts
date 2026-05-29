@@ -6,10 +6,7 @@
  *  - estimateCommercialOutcome
  */
 
-import {
-  estimateCommercialOutcome,
-  extractClaimsFromText,
-} from './abi-ab-harness.service.helpers';
+import { estimateCommercialOutcome, extractClaimsFromText } from './abi-ab-harness.service.helpers';
 
 describe('abi-ab-harness.service.helpers — extraction', () => {
   describe('extractClaimsFromText', () => {
@@ -52,7 +49,9 @@ describe('abi-ab-harness.service.helpers — extraction', () => {
     });
 
     it('detects de acordo com as a proof keyword', () => {
-      const claims = extractClaimsFromText('De acordo com as normas vigentes, o prazo é de 30 dias.');
+      const claims = extractClaimsFromText(
+        'De acordo com as normas vigentes, o prazo é de 30 dias.',
+      );
       expect(claims).toHaveLength(1);
       expect(claims[0].hasProof).toBe(true);
     });

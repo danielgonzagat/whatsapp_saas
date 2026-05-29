@@ -4,6 +4,7 @@ import { kloelT } from '@/lib/i18n/t';
 import { cookieConsentApi } from '@/lib/api/cookie-consent';
 import { buildMarketingUrl } from '@/lib/subdomains';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { useClientMounted } from '@/hooks/useClientMounted';
 import { CookieBanner } from './CookieBanner';
 import { CookiePreferencesModal } from './CookiePreferencesModal';
 import { CookieScriptManager } from './CookieScriptManager';
@@ -31,7 +32,8 @@ export function openCookiePreferences() {
 /** Cookie provider. */
 export function CookieProvider({ children }: CookieProviderProps) {
   const [isLoaded, setIsLoaded] = useState(false);
-  const [isConsentSurface, setIsConsentSurface] = useState(false);
+  const isMounted = useClientMounted();
+  const isConsentSurface = isMounted && isCookieConsentSurface(window.location.hostname);
   const [consent, setConsent] = useState<CookieConsentPreferences | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isToastVisible, setIsToastVisible] = useState(false);
@@ -49,17 +51,10 @@ export function CookieProvider({ children }: CookieProviderProps) {
   }, []);
 
   useEffect(() => {
-    let mounted = true;
-    const consentSurface =
-      typeof window !== 'undefined' && isCookieConsentSurface(window.location.hostname);
-    setIsConsentSurface(consentSurface);
-
-    if (!consentSurface) {
-      setIsLoaded(true);
-      return () => {
-        mounted = false;
-      };
+    if (!isMounted || !isConsentSurface) {
+      return;
     }
+    let mounted = true;
 
     const loadConsent = async () => {
       try {
@@ -88,7 +83,7 @@ export function CookieProvider({ children }: CookieProviderProps) {
         window.clearTimeout(toastTimerRef.current);
       }
     };
-  }, []);
+  }, [isMounted, isConsentSurface]);
 
   useEffect(() => {
     const openModal = () => setIsModalOpen(true);

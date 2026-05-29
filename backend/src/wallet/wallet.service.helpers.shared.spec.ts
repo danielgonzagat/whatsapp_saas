@@ -342,5 +342,4 @@ describe('wallet.service.helpers (shared)', () => {
       });
     });
   });
-
 });

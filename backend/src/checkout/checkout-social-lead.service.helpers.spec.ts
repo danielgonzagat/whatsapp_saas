@@ -130,7 +130,7 @@ describe('computeUpdatedLeadFields', () => {
   };
 
   it('keeps existing values when dto fields are blank or omitted', () => {
-    const result = computeUpdatedLeadFields(existing, {} as never);
+    const result = computeUpdatedLeadFields(existing, {});
     expect(result.normalizedName).toBe('Old Name');
     expect(result.normalizedEmail).toBe('old@test.com');
     expect(result.normalizedPhone).toBe('11999999999');
@@ -146,7 +146,7 @@ describe('computeUpdatedLeadFields', () => {
       phone: '11 88888-7777',
       cpf: ' 98765432100 ',
       stepReached: 2,
-    } as never);
+    });
     expect(result.normalizedName).toBe('New Name');
     expect(result.normalizedEmail).toBe('new@test.com');
     expect(result.normalizedPhone).toBe('11888887777');
@@ -155,9 +155,12 @@ describe('computeUpdatedLeadFields', () => {
   });
 
   it('never regresses stepReached below the existing value', () => {
-    const result = computeUpdatedLeadFields({ ...existing, stepReached: 3 }, {
-      stepReached: 1,
-    } as never);
+    const result = computeUpdatedLeadFields(
+      { ...existing, stepReached: 3 },
+      {
+        stepReached: 1,
+      },
+    );
     expect(result.nextStep).toBe(3);
   });
 
@@ -165,7 +168,7 @@ describe('computeUpdatedLeadFields', () => {
     const result = computeUpdatedLeadFields(existing, {
       cep: '01000-000',
       city: 'São Paulo',
-    } as never);
+    });
     expect(result.mergedEnrichmentData).toBeDefined();
     const merged = result.mergedEnrichmentData as { address?: Record<string, unknown> };
     expect(merged.address).toMatchObject({ cep: '01000-000', city: 'São Paulo' });

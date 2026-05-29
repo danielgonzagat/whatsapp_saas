@@ -161,6 +161,20 @@ export async function buildMindSignals(
     mindSignals.concepts = [];
   }
 
+  // ── Knowledge base search (PI-K17-A) ───────────────────────────
+  if (deps.knowledgeBaseService) {
+    try {
+      const knowledge = await deps.knowledgeBaseService.search(workspaceId, userMessage, 3);
+      if (knowledge.length > 0) {
+        mindSignals.knowledge = knowledge;
+      }
+    } catch (error: unknown) {
+      deps.logger.warn('kloel_knowledge_base_skipped', {
+        reason: error instanceof Error ? error.message : 'unknown error',
+      });
+    }
+  }
+
   // ── Semantic vector similarity (PI-K17-B) ──────────────────────
   if (deps.vectorService) {
     try {

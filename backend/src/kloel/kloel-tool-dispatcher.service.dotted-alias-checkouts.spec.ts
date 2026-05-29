@@ -63,14 +63,10 @@ describe('KloelToolDispatcherService — checkouts.* aliases', () => {
       'user-42',
     );
 
-    expect(bed.productSubTools.executeTool).toHaveBeenCalledWith(
-      'create_checkout',
-      DEFAULT_WS_ID,
-      {
-        productId: 'prod-1',
-        name: 'Checkout Principal',
-      },
-    );
+    expect(bed.productSubTools.executeTool).toHaveBeenCalledWith('create_checkout', DEFAULT_WS_ID, {
+      productId: 'prod-1',
+      name: 'Checkout Principal',
+    });
     expect(dotted.success).toBe(true);
     expect(dotted.capabilityId).toBe('checkouts.create');
     expect(dotted.outputs).toEqual(objectContaining({ checkoutId: 'chk-1' }));

@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { AgentRuntimeSchedulerService } from './agent-runtime.scheduler';
+import { mindMemoryStub } from './agent-runtime.mind-memory-stub.helpers';
 
 describe('AgentRuntimeSchedulerService', () => {
   it('audits due interval jobs and advances next run time', async () => {
@@ -44,7 +45,7 @@ describe('AgentRuntimeSchedulerService', () => {
         riskLevel: 'normal',
       }),
     };
-    const service = new AgentRuntimeSchedulerService(prisma as never, policy as never);
+    const service = new AgentRuntimeSchedulerService(prisma as never, policy as never, mindMemoryStub(prisma) as never);
 
     await service.auditDueJobs();
 
@@ -112,6 +113,7 @@ describe('AgentRuntimeSchedulerService', () => {
     const service = new AgentRuntimeSchedulerService(
       prisma as never,
       { buildEnvelope: jest.fn() } as never,
+      mindMemoryStub(prisma) as never,
     );
 
     const result = await service.setJobEnabled({
@@ -166,6 +168,7 @@ describe('AgentRuntimeSchedulerService', () => {
     const service = new AgentRuntimeSchedulerService(
       prisma as never,
       { buildEnvelope: jest.fn() } as never,
+      mindMemoryStub(prisma) as never,
     );
 
     const jobs = await service.listJobs('ws_1');
@@ -191,6 +194,7 @@ describe('AgentRuntimeSchedulerService', () => {
     const service = new AgentRuntimeSchedulerService(
       prisma as never,
       { buildEnvelope: jest.fn() } as never,
+      mindMemoryStub(prisma) as never,
     );
 
     const result = await service.setJobEnabled({
@@ -222,6 +226,7 @@ describe('AgentRuntimeSchedulerService', () => {
     const service = new AgentRuntimeSchedulerService(
       prisma as never,
       { buildEnvelope: jest.fn() } as never,
+      mindMemoryStub(prisma) as never,
     );
 
     const result = await service.listDueJobs(new Date(), 10);
@@ -243,6 +248,7 @@ describe('AgentRuntimeSchedulerService', () => {
     const service = new AgentRuntimeSchedulerService(
       prisma as never,
       { buildEnvelope: jest.fn() } as never,
+      mindMemoryStub(prisma) as never,
     );
 
     const result = await service.listDueJobs(new Date(), 10);
@@ -264,6 +270,7 @@ describe('AgentRuntimeSchedulerService', () => {
     const service = new AgentRuntimeSchedulerService(
       prisma as never,
       { buildEnvelope: jest.fn() } as never,
+      mindMemoryStub(prisma) as never,
     );
 
     const result = await service.listDueJobs(new Date(), 10);
@@ -281,6 +288,7 @@ describe('AgentRuntimeSchedulerService', () => {
     const service = new AgentRuntimeSchedulerService(
       prisma as never,
       { buildEnvelope: jest.fn() } as never,
+      mindMemoryStub(prisma) as never,
     );
 
     await expect(service.listDueJobs(new Date(), 10)).rejects.toThrow('network down');
@@ -301,6 +309,7 @@ describe('AgentRuntimeSchedulerService', () => {
     const service = new AgentRuntimeSchedulerService(
       prisma as never,
       { buildEnvelope: jest.fn() } as never,
+      mindMemoryStub(prisma) as never,
       opsAlert as never,
     );
 

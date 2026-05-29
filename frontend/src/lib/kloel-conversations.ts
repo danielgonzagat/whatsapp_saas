@@ -156,7 +156,12 @@ export function streamAuthenticatedKloelMessage(
 ) {
   const controller = new AbortController();
   const token = tokenStorage.getToken();
+  // Time allowed between consecutive SSE chunks once the stream is flowing.
   const SSE_IDLE_TIMEOUT_MS = 45_000;
+  // Extra grace period for the *first* byte after headers are accepted.
+  // LLM cold-starts can take longer than 45s; starting the strict inter-chunk
+  // timer before any data arrives would abort valid but slow responses.
+  const SSE_FIRST_BYTE_TIMEOUT_MS = 90_000;
 
   if (options.signal) {
     if (options.signal.aborted) {
@@ -197,9 +202,14 @@ export function streamAuthenticatedKloelMessage(
       const decoder = new TextDecoder();
       let buffer = '';
       let hasTerminalEvent = false;
+      // The initial timeout is the longer first-byte budget (90s). Every call
+      // to resetIdleTimeout() — which fires on each received chunk — arms the
+      // shorter inter-chunk budget (45s). This way slow LLM cold-starts don't
+      // time out before the first token, while a stalled mid-stream is caught
+      // quickly once data has started flowing.
       let idleTimeoutId: ReturnType<typeof setTimeout> | null = setTimeout(
         () => controller.abort('stream_idle_timeout'),
-        SSE_IDLE_TIMEOUT_MS,
+        SSE_FIRST_BYTE_TIMEOUT_MS,
       );
 
       const resetIdleTimeout = () => {

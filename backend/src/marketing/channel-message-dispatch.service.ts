@@ -124,6 +124,18 @@ export class ChannelMessageDispatchService {
     return this.registry.send(input);
   }
 
+  
+    /**
+     * Canonical low-level send: dispatch a pre-built discriminated
+     * {@link ChannelSendInput} straight to the registry's `sendMessage` (Wave 21
+     * unification — task d). Use this when the caller already holds the channel
+     * credentials / built the input; use {@link dispatch} for the ergonomic
+     * `(workspaceId, channel, to, message, options)` tuple form.
+     */
+    sendMessage(input: ChannelSendInput): Promise<ChannelSendResult> {
+      return this.registry.sendMessage(input);
+    }
+
   /** Whether a channel has a registered, configured adapter for this workspace. */
   isConfigured(channel: DispatchChannel): boolean {
     const kind = this.normalizeChannel(channel);
@@ -315,6 +327,102 @@ export class ChannelMessageDispatchService {
       text: message,
       pageAccessToken,
     };
+  }
+
+  /**
+   * Resolver-shaped canonical alias for the capability registry.
+   *
+   * `KloelDomainServiceResolver` invokes every capability's `domainService`
+   * with the `(workspaceId, args)` signature. This thin shim adapts that
+   * convention onto {@link dispatch} without reimplementing any send — it just
+   * unpacks the universal `(channel, to, message, options)` tuple from the
+   * tool args and delegates. Honest blocked results bubble straight through
+   * from {@link dispatch} (no fake success).
+   *
+   * @param workspaceId owning workspace (isolation boundary)
+   * @param args        tool arguments: `{ channel?, to|recipient|phone|email, message, ...options }`
+   */
+  async dispatchTool(
+    workspaceId: string,
+    args: Record<string, unknown>,
+  ): Promise<ChannelSendResult> {
+    const channel = String(args.channel ?? '').trim();
+    const to = String(
+      args.to ?? args.recipient ?? args.phone ?? args.email ?? '',
+    ).trim();
+    const message = String(args.message ?? args.body ?? '').trim();
+    if (!channel) {
+      return {
+        success: false,
+        error: 'channel_required',
+        blocked: true,
+        blockedReason: 'channel_required',
+      };
+    }
+    if (!to) {
+      return {
+        success: false,
+        provider: channel,
+        error: 'recipient_required',
+        blocked: true,
+        blockedReason: 'recipient_required',
+      };
+    }
+    const options = this.extractOptions(args);
+    return this.dispatch(workspaceId, channel, to, message, options);
+  }
+
+  /**
+   * Honest setup-required result for ad-draft capabilities (Facebook/TikTok).
+   *
+   * There is NO real outbound ad-creation integration wired yet, so this
+   * surface returns an explicit blocked/setup-required result instead of
+   * faking a created draft. When the real Ads API adapter lands, this shim is
+   * the single place to route it through.
+   *
+   * @param _workspaceId owning workspace (unused until a real adapter exists)
+   * @param args         tool arguments carrying the requested ad platform
+   */
+  createAdDraftTool(
+    _workspaceId: string,
+    args: Record<string, unknown>,
+  ): ChannelSendResult {
+    const platform = String(args.platform ?? args.channel ?? 'ads').trim();
+    return {
+      success: false,
+      provider: platform,
+      error: 'ads_integration_setup_required',
+      blocked: true,
+      blockedReason: 'ads_integration_setup_required',
+    };
+  }
+
+  /** Build {@link DispatchOptions} from loose tool args, dropping unset keys. */
+  private extractOptions(args: Record<string, unknown>): DispatchOptions {
+    const opts: DispatchOptions = {};
+    const str = (v: unknown): string | undefined =>
+      typeof v === 'string' && v !== '' ? v : undefined;
+    const subject = str(args.subject);
+    if (subject !== undefined) {
+      opts.subject = subject;
+    }
+    const html = str(args.html);
+    if (html !== undefined) {
+      opts.html = html;
+    }
+    const mediaUrl = str(args.mediaUrl);
+    if (mediaUrl !== undefined) {
+      opts.mediaUrl = mediaUrl;
+    }
+    const caption = str(args.caption);
+    if (caption !== undefined) {
+      opts.caption = caption;
+    }
+    const externalId = str(args.externalId);
+    if (externalId !== undefined) {
+      opts.externalId = externalId;
+    }
+    return opts;
   }
 
   private buildEmail(

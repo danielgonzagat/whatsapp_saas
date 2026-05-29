@@ -1,6 +1,17 @@
 import { buildMindSignals } from './build-mind-signals.helper';
 import { mockLogger, mockPrisma } from './build-mind-signals.helper.fixtures';
 
+interface RiskClassSignal {
+  tier: string;
+  reasons: string[];
+  recommendedAction: string;
+}
+
+/** Narrows the untyped `riskClass` signal for assertions without weakening it. */
+function asRiskClass(value: unknown): RiskClassSignal {
+  return value as RiskClassSignal;
+}
+
 describe('buildMindSignals — riskClass (PI-k8)', () => {
   afterEach(() => {
     jest.clearAllMocks();
@@ -144,7 +155,7 @@ describe('buildMindSignals — riskClass (PI-k8)', () => {
       target: 'public',
       reversible: true,
     });
-    expect(result.riskClass!.reasons).toHaveLength(3);
+    expect(asRiskClass(result.riskClass).reasons).toHaveLength(3);
   });
 
   it('does NOT attach riskClass when riskClassService is absent', async () => {
@@ -201,9 +212,10 @@ describe('buildMindSignals — riskClass (PI-k8)', () => {
       'hello',
     );
 
-    expect(result.riskClass!.reasons).toHaveLength(3);
-    expect(result.riskClass!.reasons).toEqual(['a', 'b', 'c']);
-    expect(result.riskClass!.tier).toBe('R4');
-    expect(result.riskClass!.recommendedAction).toBe('forbidden');
+    const riskClass = asRiskClass(result.riskClass);
+    expect(riskClass.reasons).toHaveLength(3);
+    expect(riskClass.reasons).toEqual(['a', 'b', 'c']);
+    expect(riskClass.tier).toBe('R4');
+    expect(riskClass.recommendedAction).toBe('forbidden');
   });
 });

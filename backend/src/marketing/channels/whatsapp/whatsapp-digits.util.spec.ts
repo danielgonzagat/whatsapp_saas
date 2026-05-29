@@ -1,8 +1,4 @@
-import {
-  isDigit,
-  collapseWhitespace,
-  extractAsciiDigits,
-} from './whatsapp-digits.util';
+import { isDigit, collapseWhitespace, extractDigitsLoose } from './whatsapp-digits.util';
 
 describe('isDigit', () => {
   it('returns true for digit characters 0-9', () => {
@@ -43,24 +39,24 @@ describe('collapseWhitespace', () => {
 
 describe('extractAsciiDigits', () => {
   it('extracts digits from a string', () => {
-    expect(extractAsciiDigits('abc123def456')).toBe('123456');
+    expect(extractDigitsLoose('abc123def456')).toBe('123456');
   });
 
   it('returns only digits, ignoring all other characters', () => {
-    expect(extractAsciiDigits('+1 (234) 567-890')).toBe('1234567890');
+    expect(extractDigitsLoose('+1 (234) 567-890')).toBe('1234567890');
   });
 
   it('returns empty string when no digits present', () => {
-    expect(extractAsciiDigits('abcdef')).toBe('');
+    expect(extractDigitsLoose('abcdef')).toBe('');
   });
 
   it('handles numbers by coercing to string', () => {
-    expect(extractAsciiDigits(12345)).toBe('12345');
+    expect(extractDigitsLoose(12345)).toBe('12345');
   });
 
   it('returns empty string for null, undefined, objects', () => {
-    expect(extractAsciiDigits(null)).toBe('');
-    expect(extractAsciiDigits(undefined)).toBe('');
-    expect(extractAsciiDigits({})).toBe('');
+    expect(extractDigitsLoose(null)).toBe('');
+    expect(extractDigitsLoose(undefined)).toBe('');
+    expect(extractDigitsLoose({})).toBe('');
   });
 });

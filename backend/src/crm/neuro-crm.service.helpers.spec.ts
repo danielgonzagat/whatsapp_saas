@@ -286,7 +286,9 @@ describe('neuro-crm.service.helpers', () => {
   });
 
   describe('deriveSentimentChangeInsight', () => {
-    const baseResult = (sentiment: AnalysisResult['sentiment']): Pick<AnalysisResult, 'sentiment'> => ({
+    const baseResult = (
+      sentiment: AnalysisResult['sentiment'],
+    ): Pick<AnalysisResult, 'sentiment'> => ({
       sentiment,
     });
 

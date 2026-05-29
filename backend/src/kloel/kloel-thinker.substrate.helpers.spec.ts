@@ -123,9 +123,8 @@ describe('kloel-thinker.substrate.helpers', () => {
     }
 
     it('drops predicates below SUBSTRATE_BELIEF_MIN_OBSERVATIONS', () => {
-      const events = Array.from(
-        { length: SUBSTRATE_BELIEF_MIN_OBSERVATIONS - 1 },
-        () => makeEvent('autopilot.rare.executed'),
+      const events = Array.from({ length: SUBSTRATE_BELIEF_MIN_OBSERVATIONS - 1 }, () =>
+        makeEvent('autopilot.rare.executed'),
       );
       const { beliefs } = computeSubstrateBeliefs(events);
       expect(beliefs).toEqual([]);
@@ -200,7 +199,9 @@ describe('kloel-thinker.substrate.helpers', () => {
       const fixedClock = () => new Date(FIXED_ISO);
       const substrate = buildCognitiveSubstrateFromAutopilotRows(rows, 'ws-1', fixedClock);
       expect(substrate).toBeDefined();
-      if (!substrate) throw new Error('substrate is required for this test');
+      if (!substrate) {
+        throw new Error('substrate is required for this test');
+      }
       expect(substrate.recentSalientEvents).toHaveLength(6);
       expect(substrate.beliefs).toHaveLength(1);
       // 6 events ≥ SUBSTRATE_PREDICTION_MIN_EVENTS (5) → prediction emitted.

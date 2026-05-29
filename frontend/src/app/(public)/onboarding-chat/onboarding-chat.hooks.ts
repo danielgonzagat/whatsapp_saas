@@ -60,6 +60,12 @@ export function useOnboardingChat(): UseOnboardingChat {
   const searchParams = useSearchParams();
   const { isAuthenticated, isLoading: authLoading, workspace, userName, userEmail } = useAuth();
   const queryRole = normalizeOnboardingRole(searchParams.get('role'));
+  // `kloel_onboarding_role` is an intentional ephemeral onboarding preference —
+  // it is not business data, contains no PII, and is safe to store locally.
+  // It is read once on mount to pre-seed the role if the user arrived without a
+  // `?role=` query-param (e.g., after an internal redirect that stripped params).
+  // If localStorage is cleared or unavailable the UI falls back gracefully to
+  // `queryRole` or null (no role pre-selection).
   const [storedRole] = useState<string | null>(() => {
     if (typeof window === 'undefined') {
       return null;
@@ -72,6 +78,13 @@ export function useOnboardingChat(): UseOnboardingChat {
   const startedRef = useRef(false);
   const roleSeededRef = useRef(false);
 
+  // Messages live in component state only — they are intentionally ephemeral
+  // for the onboarding flow. Onboarding is a single-session, one-way journey:
+  // the backend persists the conversation via /kloel/onboarding/:id/start and
+  // /chat, and the UI re-fetches the onboarding status via SWR (mutate calls
+  // above). A full page-reload will re-play the server-side greeting via
+  // `startOnboarding`, so the user never loses their progress — only the local
+  // rendering state (typing history) is cleared. No silent data loss occurs.
   const [messages, setMessages] = useState<OnboardingMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);

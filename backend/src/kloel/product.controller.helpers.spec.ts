@@ -85,11 +85,15 @@ describe('product.controller.helpers', () => {
     });
 
     it('rejects commissionPercent above 100', () => {
-      expect(() => validateUpdateProductDto({ commissionPercent: 101 })).toThrow(BadRequestException);
+      expect(() => validateUpdateProductDto({ commissionPercent: 101 })).toThrow(
+        BadRequestException,
+      );
     });
 
     it('rejects negative commissionPercent', () => {
-      expect(() => validateUpdateProductDto({ commissionPercent: -1 })).toThrow(BadRequestException);
+      expect(() => validateUpdateProductDto({ commissionPercent: -1 })).toThrow(
+        BadRequestException,
+      );
     });
 
     it('accepts in-range commissionCookieDays boundaries', () => {
@@ -98,32 +102,31 @@ describe('product.controller.helpers', () => {
     });
 
     it('rejects commissionCookieDays out of range', () => {
-      expect(() => validateUpdateProductDto({ commissionCookieDays: 0 })).toThrow(BadRequestException);
+      expect(() => validateUpdateProductDto({ commissionCookieDays: 0 })).toThrow(
+        BadRequestException,
+      );
       expect(() => validateUpdateProductDto({ commissionCookieDays: 3651 })).toThrow(
         BadRequestException,
       );
     });
 
     it('rejects negative afterPayChargeValue but tolerates null/undefined', () => {
-      expect(() => validateUpdateProductDto({ afterPayChargeValue: -1 })).toThrow(BadRequestException);
+      expect(() => validateUpdateProductDto({ afterPayChargeValue: -1 })).toThrow(
+        BadRequestException,
+      );
       expect(() => validateUpdateProductDto({ afterPayChargeValue: null })).not.toThrow();
       expect(() => validateUpdateProductDto({ afterPayChargeValue: undefined })).not.toThrow();
       expect(() => validateUpdateProductDto({ afterPayChargeValue: 0 })).not.toThrow();
     });
 
-    it.each(AFTER_PAY_SHIPPING_PROVIDERS)(
-      'accepts %s as afterPayShippingProvider',
-      (provider) => {
-        expect(() =>
-          validateUpdateProductDto({ afterPayShippingProvider: provider }),
-        ).not.toThrow();
-      },
-    );
+    it.each(AFTER_PAY_SHIPPING_PROVIDERS)('accepts %s as afterPayShippingProvider', (provider) => {
+      expect(() => validateUpdateProductDto({ afterPayShippingProvider: provider })).not.toThrow();
+    });
 
     it('rejects unknown afterPayShippingProvider values', () => {
-      expect(() =>
-        validateUpdateProductDto({ afterPayShippingProvider: 'fedex' }),
-      ).toThrow(BadRequestException);
+      expect(() => validateUpdateProductDto({ afterPayShippingProvider: 'fedex' })).toThrow(
+        BadRequestException,
+      );
     });
 
     it('treats empty / null afterPayShippingProvider as "no value"', () => {

@@ -4,6 +4,7 @@ import {
   buildMockProviderRegistry,
   buildMockPrisma,
 } from './whatsapp.service.spec.fixtures';
+import { stringMatch } from '../../../../test/helpers/match-instance';
 
 jest.mock('../../../queue/queue', () => ({
   autopilotQueue: { add: jest.fn() },
@@ -37,7 +38,7 @@ describe('WhatsappService', () => {
   let mockFlowAdd: jest.Mock;
   let workspaceService: { getWorkspace: jest.Mock; toEngineWorkspace: jest.Mock };
   let inboxService: { saveMessageByPhone: jest.Mock };
-  let redis: {
+  let _redis: {
     get: jest.Mock;
     setex: jest.Mock;
     set: jest.Mock;
@@ -50,7 +51,7 @@ describe('WhatsappService', () => {
   let catchupService: { triggerCatchup: jest.Mock };
   let ciaRuntime: { startBacklogRun: jest.Mock };
   let workerRuntime: { isAvailable: jest.Mock };
-  let whatsappApi: { getRuntimeConfigDiagnostics: jest.Mock };
+  let _whatsappApi: { getRuntimeConfigDiagnostics: jest.Mock };
   let sessionService: Record<string, jest.Mock>;
   let messageDispatcher: Record<string, jest.Mock>;
   let reconciler: Record<string, jest.Mock>;
@@ -61,7 +62,10 @@ describe('WhatsappService', () => {
     jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
     jest.setSystemTime(new Date('2026-04-20T00:00:00.000Z'));
 
-    const queueModule = jest.requireMock('../../../queue/queue');
+    const queueModule = jest.requireMock<{
+      autopilotQueue: { add: jest.Mock };
+      flowQueue: { add: jest.Mock };
+    }>('../../../queue/queue');
     mockAutopilotAdd = queueModule.autopilotQueue.add;
     mockFlowAdd = queueModule.flowQueue.add;
 
@@ -78,7 +82,7 @@ describe('WhatsappService', () => {
     inboxService = {
       saveMessageByPhone: jest.fn().mockResolvedValue({ id: 'msg-1', contactId: 'contact-1' }),
     };
-    redis = {
+    _redis = {
       get: jest.fn().mockResolvedValue(null),
       setex: jest.fn().mockResolvedValue('OK'),
       set: jest.fn().mockResolvedValue('OK'),
@@ -95,7 +99,7 @@ describe('WhatsappService', () => {
     };
     ciaRuntime = { startBacklogRun: jest.fn().mockResolvedValue({ queued: true, runId: 'run-1' }) };
     workerRuntime = { isAvailable: jest.fn().mockResolvedValue(true) };
-    whatsappApi = {
+    _whatsappApi = {
       getRuntimeConfigDiagnostics: jest.fn().mockReturnValue({
         webhookUrl: 'https://api.kloel.test/webhooks/whatsapp-api',
         webhookConfigured: true,
@@ -146,15 +150,17 @@ describe('WhatsappService', () => {
                 if (nPhone) {
                   cs.add(`${nPhone}@c.us`);
                   cs.add(`${nPhone}@s.whatsapp.net`);
-                  const contact = await prisma.contact
-                    .findUnique({
+                  const contact = await (
+                    prisma.contact.findUnique({
                       where: { workspaceId_phone: { workspaceId: ws, phone: nPhone } },
                       select: { customFields: true },
-                    })
-                    .catch(() => null);
-                  const cf = contact?.customFields || {};
+                    }) as Promise<{ customFields?: Record<string, unknown> } | null>
+                  ).catch(() => null);
+                  const cf: Record<string, unknown> = contact?.customFields || {};
                   const readText = (v: unknown): string => {
-                    if (typeof v === 'string') return v.trim();
+                    if (typeof v === 'string') {
+                      return v.trim();
+                    }
                     return '';
                   };
                   const extraIds = [
@@ -162,10 +168,14 @@ describe('WhatsappService', () => {
                     readText(cf.lastCatalogChatId),
                     readText(cf.lastResolvedChatId),
                   ].filter((s): s is string => Boolean(s));
-                  for (const id of extraIds) cs.add(id);
+                  for (const id of extraIds) {
+                    cs.add(id);
+                  }
                 }
                 for (const c of cs) {
-                  await providerRegistry.readChatMessages(ws, c).catch(() => {});
+                  await (providerRegistry.readChatMessages(ws, c) as Promise<unknown>).catch(
+                    () => {},
+                  );
                 }
                 break;
               }
@@ -193,7 +203,7 @@ describe('WhatsappService', () => {
             message: string,
             opts?: { mediaUrl?: string; forceDirect?: boolean },
           ) => {
-            const available = await workerRuntime.isAvailable();
+            const available = (await workerRuntime.isAvailable()) as boolean;
             if (!available || opts?.forceDirect) {
               await providerRegistry.sendMessage(ws, to, message, {
                 mediaUrl: opts?.mediaUrl,
@@ -218,18 +228,20 @@ describe('WhatsappService', () => {
       handleIncoming: jest
         .fn()
         .mockImplementation(async (workspaceId: string, from: string, message: string) => {
-          const saved = await inboxService.saveMessageByPhone({
+          const saved = (await inboxService.saveMessageByPhone({
             workspaceId,
             phone: from,
             content: message,
             direction: 'INBOUND',
-          });
-          if (!saved.contactId) return saved;
-          const ws = await workspaceService.getWorkspace(workspaceId);
+          })) as { contactId?: string; id?: string };
+          if (!saved.contactId) {
+            return saved;
+          }
+          const ws = (await workspaceService.getWorkspace(workspaceId)) as {
+            providerSettings?: Record<string, unknown>;
+          } | null;
           const settings = ws?.providerSettings || {};
-          const auto = (settings as Record<string, unknown>).autopilot as
-            | { enabled?: boolean }
-            | undefined;
+          const auto = settings.autopilot as { enabled?: boolean } | undefined;
           if (auto?.enabled) {
             await mockAutopilotAdd(
               'scan-contact',
@@ -252,9 +264,14 @@ describe('WhatsappService', () => {
         .fn()
         .mockImplementation(async (ws: string, phone: string, name?: string | null) => {
           const nPhone = (phone || '').replace(/\D/g, '');
-          if (!nPhone || !name) return false;
+          if (!nPhone || !name) {
+            return false;
+          }
           try {
-            return await providerRegistry.upsertContactProfile(ws, { phone: nPhone, name });
+            return (await providerRegistry.upsertContactProfile(ws, {
+              phone: nPhone,
+              name,
+            })) as boolean;
           } catch {
             return false;
           }
@@ -377,7 +394,7 @@ describe('WhatsappService', () => {
         messageId: 'msg-1',
       }),
       expect.objectContaining({
-        jobId: expect.stringMatching(/^scan-contact__ws-1__contact-1__/),
+        jobId: stringMatch(/^scan-contact__ws-1__contact-1__/),
         removeOnComplete: true,
       }),
     );

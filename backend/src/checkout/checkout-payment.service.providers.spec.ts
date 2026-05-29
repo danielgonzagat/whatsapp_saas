@@ -259,7 +259,10 @@ describe('CheckoutPaymentService.processPayment — provider routing', () => {
   });
 
   it('fails closed before provider calls when the router sends card away from Stripe', async () => {
-    env.providerRouter.resolve.mockReturnValueOnce({ provider: 'mercadopago', reason: 'drift-test' });
+    env.providerRouter.resolve.mockReturnValueOnce({
+      provider: 'mercadopago',
+      reason: 'drift-test',
+    });
 
     await expect(
       env.service.processPayment({

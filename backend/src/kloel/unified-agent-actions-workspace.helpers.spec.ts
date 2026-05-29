@@ -172,10 +172,10 @@ describe('resolveBroadcastScheduleAt', () => {
 describe('resolvePredecidedChannelChoice', () => {
   it('honors predecided channel and confidence', () => {
     expect(
-      resolvePredecidedChannelChoice(
-        { channel: 'email', confidence: 0.9, fallback: false },
-        ['whatsapp', 'email'],
-      ),
+      resolvePredecidedChannelChoice({ channel: 'email', confidence: 0.9, fallback: false }, [
+        'whatsapp',
+        'email',
+      ]),
     ).toEqual({ channel: 'email', confidence: 0.9, fallback: false });
   });
 
@@ -261,16 +261,16 @@ describe('AI persona and autopilot builders', () => {
   });
 
   it('buildAIPersonaData passes through operator overrides', () => {
-    expect(buildAIPersonaData({ name: 'Atendente', tone: 'casual', useEmojis: false }, now)).toEqual(
-      {
-        name: 'Atendente',
-        personality: 'Profissional, amigável e focada em resultados',
-        tone: 'casual',
-        language: 'pt-BR',
-        useEmojis: false,
-        updatedAt: now.toISOString(),
-      },
-    );
+    expect(
+      buildAIPersonaData({ name: 'Atendente', tone: 'casual', useEmojis: false }, now),
+    ).toEqual({
+      name: 'Atendente',
+      personality: 'Profissional, amigável e focada em resultados',
+      tone: 'casual',
+      language: 'pt-BR',
+      useEmojis: false,
+      updatedAt: now.toISOString(),
+    });
   });
 
   it('buildAutopilotConfig defaults mode to full and workingHoursOnly to false', () => {

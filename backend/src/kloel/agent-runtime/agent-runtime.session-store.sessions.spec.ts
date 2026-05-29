@@ -1,4 +1,6 @@
 import { AgentRuntimeSessionStore } from './agent-runtime.session-store';
+import { mindMemoryStub } from './agent-runtime.mind-memory-stub.helpers';
+
 function makeStore(prismaOverrides: Record<string, unknown> = {}) {
   const prisma = {
     kloelMemory: {
@@ -7,7 +9,7 @@ function makeStore(prismaOverrides: Record<string, unknown> = {}) {
       ...prismaOverrides,
     },
   };
-  const store = new AgentRuntimeSessionStore(prisma as never);
+  const store = new AgentRuntimeSessionStore(prisma as never, mindMemoryStub(prisma) as never);
   return { store, prisma };
 }
 function makeMemoryRow(

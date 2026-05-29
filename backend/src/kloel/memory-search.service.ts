@@ -3,6 +3,7 @@ import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import type { SearchResult } from './memory.types';
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 
 /** Memory search service. */
 @Injectable()
@@ -12,6 +13,7 @@ export class MemorySearchService {
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly mindMemory?: MindMemoryItemService,
   ) {}
 
   /**
@@ -37,7 +39,7 @@ export class MemorySearchService {
         { key: { contains: query, mode: 'insensitive' } },
       ];
 
-      const memories = await this.prisma.kloelMemory.findMany({
+      const memories = await (this.mindMemory?.items ?? this.prisma.kloelMemory).findMany({
         where,
         take: limit,
         orderBy: { updatedAt: 'desc' },

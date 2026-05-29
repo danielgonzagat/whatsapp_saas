@@ -118,10 +118,7 @@ describe('marketing.controller.helpers (live feed + email approval)', () => {
           { email: 'b@ex.com', name: 'B' },
         ],
       });
-      expect(result).toEqual([
-        { email: 'ok@ex.com' },
-        { email: 'b@ex.com', name: 'B' },
-      ]);
+      expect(result).toEqual([{ email: 'ok@ex.com' }, { email: 'b@ex.com', name: 'B' }]);
     });
 
     it('only attaches name when it is a string', () => {

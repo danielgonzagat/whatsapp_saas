@@ -157,9 +157,7 @@ describe('memory-management.service.helpers', () => {
     });
 
     it('formats the getStats failure', () => {
-      expect(formatGetStatsFailureMessage(new Error('stats'))).toBe(
-        'Failed to get stats: stats',
-      );
+      expect(formatGetStatsFailureMessage(new Error('stats'))).toBe('Failed to get stats: stats');
     });
   });
 

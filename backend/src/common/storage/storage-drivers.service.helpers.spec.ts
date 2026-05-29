@@ -173,9 +173,9 @@ describe('storage-drivers.service.helpers', () => {
     });
 
     it('falls back to the canonical S3 URL when no CDN base is provided', () => {
-      expect(
-        buildS3PublicUrl({ bucket: 'b', region: 'us-east-1', relativePath: 'a/b.txt' }),
-      ).toBe('https://b.s3.us-east-1.amazonaws.com/a/b.txt');
+      expect(buildS3PublicUrl({ bucket: 'b', region: 'us-east-1', relativePath: 'a/b.txt' })).toBe(
+        'https://b.s3.us-east-1.amazonaws.com/a/b.txt',
+      );
     });
 
     it('strips trailing slashes from the CDN base', () => {
@@ -202,9 +202,9 @@ describe('storage-drivers.service.helpers', () => {
     });
 
     it('falls back to the CDN base when R2 public is missing', () => {
-      expect(
-        buildR2PublicUrl({ relativePath: 'k.txt', cdnBase: 'https://cdn.example.com' }),
-      ).toBe('https://cdn.example.com/k.txt');
+      expect(buildR2PublicUrl({ relativePath: 'k.txt', cdnBase: 'https://cdn.example.com' })).toBe(
+        'https://cdn.example.com/k.txt',
+      );
     });
 
     it('returns empty string when neither URL is configured', () => {
@@ -269,9 +269,7 @@ describe('storage-drivers.service.helpers', () => {
     });
 
     it('returns null when each required field is missing', () => {
-      expect(
-        validateR2Credentials({ bucket: 'b', accountId: 'a', accessKeyId: 'k' }),
-      ).toBeNull();
+      expect(validateR2Credentials({ bucket: 'b', accountId: 'a', accessKeyId: 'k' })).toBeNull();
       expect(
         validateR2Credentials({ accountId: 'a', accessKeyId: 'k', secretAccessKey: 's' }),
       ).toBeNull();

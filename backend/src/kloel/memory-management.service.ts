@@ -39,6 +39,7 @@ import {
   formatWorkspaceCleanupMessage,
   type MemoryCleanupResult,
 } from './memory-management.service.helpers';
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 
 // Cache.invalidate — memory cleanup runs via cron; no external Redis cache to invalidate
 @Injectable()
@@ -69,6 +70,7 @@ export class MemoryManagementService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly mindMemory: MindMemoryItemService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
@@ -113,7 +115,7 @@ export class MemoryManagementService {
 
     // @CrossWorkspaceMaintenance: cleanup audit metric, global by design
     const totalBefore =
-      (await this.prisma.kloelMemory.count({ where: { workspaceId: { not: '' } } })) || 0;
+      (await this.mindMemory.items.count({ where: { workspaceId: { not: '' } } })) || 0;
 
     // 1. Remover memórias expiradas
     const expiredRemoved = await this.removeExpiredMemories();
@@ -126,7 +128,7 @@ export class MemoryManagementService {
 
     // @CrossWorkspaceMaintenance: cleanup audit metric, global by design
     const totalAfter =
-      (await this.prisma.kloelMemory.count({ where: { workspaceId: { not: '' } } })) || 0;
+      (await this.mindMemory.items.count({ where: { workspaceId: { not: '' } } })) || 0;
 
     const result: MemoryCleanupResult = {
       expiredRemoved,
@@ -169,7 +171,7 @@ export class MemoryManagementService {
    * Remove memórias expiradas por categoria
    */
   private async removeExpiredMemories(): Promise<number> {
-    if (!this.prisma.kloelMemory) {
+    if (!this.mindMemory.items) {
       return 0;
     }
 
@@ -184,7 +186,7 @@ export class MemoryManagementService {
 
       try {
         // @CrossWorkspaceMaintenance: cron purge of expired memories across all workspaces
-        const result = await this.prisma.kloelMemory.deleteMany({
+        const result = await this.mindMemory.items.deleteMany({
           where: {
             workspaceId: { not: '' },
             category,
@@ -210,7 +212,7 @@ export class MemoryManagementService {
 
     try {
       // @CrossWorkspaceMaintenance: cron purge of uncategorized stale memories
-      const result = await this.prisma.kloelMemory.deleteMany({
+      const result = await this.mindMemory.items.deleteMany({
         where: {
           workspaceId: { not: '' },
           category: { notIn: knownCategories },
@@ -229,7 +231,7 @@ export class MemoryManagementService {
    * Remove duplicatas (mesmo workspace + categoria + valor similar)
    */
   private async removeDuplicates(): Promise<number> {
-    if (!this.prisma.kloelMemory) {
+    if (!this.mindMemory.items) {
       return 0;
     }
 
@@ -237,7 +239,7 @@ export class MemoryManagementService {
 
     try {
       // Buscar memórias agrupadas por workspace + categoria
-      const groups = await this.prisma.kloelMemory.groupBy({
+      const groups = await this.mindMemory.items.groupBy({
         by: ['workspaceId', 'category'],
         _count: { id: true },
         having: {
@@ -246,7 +248,7 @@ export class MemoryManagementService {
       });
 
       await forEachSequential(groups, async (group) => {
-        const memories = await this.prisma.kloelMemory.findMany({
+        const memories = await this.mindMemory.items.findMany({
           where: {
             workspaceId: group.workspaceId,
             category: group.category,
@@ -260,7 +262,7 @@ export class MemoryManagementService {
         const toDelete = findDuplicateMemoryIds(memories);
 
         if (toDelete.length > 0) {
-          await this.prisma.kloelMemory.deleteMany({
+          await this.mindMemory.items.deleteMany({
             where: { id: { in: toDelete }, workspaceId: group.workspaceId },
           });
           totalRemoved += toDelete.length;
@@ -281,13 +283,13 @@ export class MemoryManagementService {
    * Remove memórias de workspaces deletados
    */
   private async removeOrphans(): Promise<number> {
-    if (!this.prisma.kloelMemory) {
+    if (!this.mindMemory.items) {
       return 0;
     }
 
     try {
       // Buscar workspaceIds únicos nas memórias
-      const memoryWorkspaces = await this.prisma.kloelMemory.groupBy({
+      const memoryWorkspaces = await this.mindMemory.items.groupBy({
         by: ['workspaceId'],
       });
 
@@ -310,7 +312,7 @@ export class MemoryManagementService {
       }
 
       // Remover memórias órfãs
-      const result = await this.prisma.kloelMemory.deleteMany({
+      const result = await this.mindMemory.items.deleteMany({
         where: { workspaceId: { in: orphanIds } },
       });
 
@@ -345,13 +347,13 @@ export class MemoryManagementService {
     workspaceId: string,
     options?: { category?: string; olderThanDays?: number },
   ): Promise<number> {
-    if (!this.prisma.kloelMemory) {
+    if (!this.mindMemory.items) {
       return 0;
     }
 
     const where = buildWorkspaceCleanupFilter(workspaceId, options);
 
-    const result = await this.prisma.kloelMemory.deleteMany({ where: { ...where, workspaceId } });
+    const result = await this.mindMemory.items.deleteMany({ where: { ...where, workspaceId } });
 
     if (result.count > 0) {
       await this.auditService
@@ -375,11 +377,11 @@ export class MemoryManagementService {
    */
   async normalizeSemanticDuplicates(workspaceId: string, category: string): Promise<number> {
     // Implementação básica - em produção usaria embeddings
-    if (!this.prisma.kloelMemory) {
+    if (!this.mindMemory.items) {
       return 0;
     }
 
-    const memories = await this.prisma.kloelMemory.findMany({
+    const memories = await this.mindMemory.items.findMany({
       where: { workspaceId, category },
       select: { id: true, key: true, value: true, updatedAt: true },
       take: 500,
@@ -399,7 +401,7 @@ export class MemoryManagementService {
       const toDelete = pickStaleSemanticDuplicateIds(mems);
 
       if (toDelete.length > 0) {
-        await this.prisma.kloelMemory.deleteMany({
+        await this.mindMemory.items.deleteMany({
           where: { id: { in: toDelete }, workspaceId },
         });
         merged += toDelete.length;
@@ -428,7 +430,7 @@ export class MemoryManagementService {
     memoryKey: string,
     priority: 'low' | 'normal' | 'high' | 'critical',
   ): Promise<boolean> {
-    if (!this.prisma.kloelMemory) {
+    if (!this.mindMemory.items) {
       return false;
     }
 

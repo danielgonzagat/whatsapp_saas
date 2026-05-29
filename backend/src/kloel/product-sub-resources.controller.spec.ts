@@ -363,32 +363,38 @@ describe('Product Sub-Resources — Cross-Workspace Isolation', () => {
     let controller: ProductCouponController;
 
     beforeEach(async () => {
-      const mod = await moduleWith(ProductCouponController, {
-        productCoupon: {
-          findMany: jest.fn().mockResolvedValue([]),
-          create: jest
-            .fn()
-            .mockImplementation((args: { data: Record<string, unknown> }) =>
-              Promise.resolve({ id: 'cp1', ...args.data }),
-            ),
-          findFirst: jest
-            .fn()
-            .mockResolvedValue({ id: 'cp1', productId: PROD_A, code: 'ABC', active: true }),
-          findUnique: jest
-            .fn()
-            .mockResolvedValue({ id: 'cp1', productId: PROD_A, code: 'ABC', active: true }),
-          update: jest.fn().mockResolvedValue({ id: 'cp1', code: 'ABC' }),
-          delete: jest.fn().mockResolvedValue({ id: 'cp1', code: 'ABC' }),
+      const mod = await moduleWith(
+        ProductCouponController,
+        {
+          productCoupon: {
+            findMany: jest.fn().mockResolvedValue([]),
+            create: jest
+              .fn()
+              .mockImplementation((args: { data: Record<string, unknown> }) =>
+                Promise.resolve({ id: 'cp1', ...args.data }),
+              ),
+            findFirst: jest
+              .fn()
+              .mockResolvedValue({ id: 'cp1', productId: PROD_A, code: 'ABC', active: true }),
+            findUnique: jest
+              .fn()
+              .mockResolvedValue({ id: 'cp1', productId: PROD_A, code: 'ABC', active: true }),
+            update: jest.fn().mockResolvedValue({ id: 'cp1', code: 'ABC' }),
+            delete: jest.fn().mockResolvedValue({ id: 'cp1', code: 'ABC' }),
+          },
+          $transaction: jest.fn().mockImplementation((fn: (tx: PrismaTransactionMock) => unknown) =>
+            fn({
+              productCoupon: {
+                findFirst: jest
+                  .fn()
+                  .mockResolvedValue({ id: 'cp1', productId: PROD_A, code: 'ABC' }),
+                update: jest.fn().mockResolvedValue({ id: 'cp1', code: 'ABC' }),
+              },
+            }),
+          ),
         },
-        $transaction: jest.fn().mockImplementation((fn: (tx: PrismaTransactionMock) => unknown) =>
-          fn({
-            productCoupon: {
-              findFirst: jest.fn().mockResolvedValue({ id: 'cp1', productId: PROD_A, code: 'ABC' }),
-              update: jest.fn().mockResolvedValue({ id: 'cp1', code: 'ABC' }),
-            },
-          }),
-        ),
-      }, [ProductCouponDomainService]);
+        [ProductCouponDomainService],
+      );
       controller = mod.get(ProductCouponController);
     });
 

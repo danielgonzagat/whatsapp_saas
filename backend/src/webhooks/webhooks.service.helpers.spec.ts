@@ -88,7 +88,7 @@ describe('webhooks.service.helpers', () => {
     });
 
     it('ignores non-string candidates', () => {
-      expect(extractPhone({ phone: 12345678901 } as Record<string, unknown>)).toBeNull();
+      expect(extractPhone({ phone: 12345678901 })).toBeNull();
     });
   });
 
@@ -341,7 +341,9 @@ describe('webhooks.service.helpers', () => {
         externalId: 'ext-1',
       };
       const payload = buildConversationUpdatePayload(target, 'DELIVERED', null);
-      if (!payload) throw new Error('expected payload');
+      if (!payload) {
+        throw new Error('expected payload');
+      }
       const envelope = buildConversationPubSubEnvelope('ws-1', payload);
       expect(JSON.parse(envelope)).toEqual({
         type: 'conversation:update',

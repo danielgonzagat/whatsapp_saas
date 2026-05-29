@@ -3,7 +3,7 @@ import {
   isPlaceholderContactName,
   resolveTrustedContactName,
   normalizeChatId,
-} from './whatsapp.service.helpers';// ── isIndividualChatId ──────────────────────────────────────────────────────
+} from './whatsapp.service.helpers'; // ── isIndividualChatId ──────────────────────────────────────────────────────
 
 describe('isIndividualChatId', () => {
   it.each([
@@ -31,7 +31,7 @@ describe('isIndividualChatId', () => {
   it('returns false for a chat id that ends with unrelated suffix', () => {
     expect(isIndividualChatId('5511999991111@lid')).toBe(false);
   });
-});// ── isPlaceholderContactName ────────────────────────────────────────────────
+}); // ── isPlaceholderContactName ────────────────────────────────────────────────
 
 describe('isPlaceholderContactName', () => {
   it('returns true for empty/whitespace-only input', () => {
@@ -69,7 +69,7 @@ describe('isPlaceholderContactName', () => {
   it('returns false for names that only end in doe-like words but are real', () => {
     expect(isPlaceholderContactName('John Doe')).toBe(false);
   });
-});// ── resolveTrustedContactName ───────────────────────────────────────────────
+}); // ── resolveTrustedContactName ───────────────────────────────────────────────
 
 describe('resolveTrustedContactName', () => {
   const phone = '5511999991111';
@@ -83,9 +83,7 @@ describe('resolveTrustedContactName', () => {
   });
 
   it('skips phone-derived placeholder and returns a later real name', () => {
-    expect(
-      resolveTrustedContactName(phone, '5511999991111 doe', 'Alice'),
-    ).toBe('Alice');
+    expect(resolveTrustedContactName(phone, '5511999991111 doe', 'Alice')).toBe('Alice');
   });
 
   it('returns empty string when all candidates are placeholders', () => {
@@ -109,22 +107,18 @@ describe('resolveTrustedContactName', () => {
   });
 
   it('skips the name that looks like the phone number itself', () => {
-    expect(
-      resolveTrustedContactName(phone, phone, 'Real Name'),
-    ).toBe('Real Name');
+    expect(resolveTrustedContactName(phone, phone, 'Real Name')).toBe('Real Name');
   });
 
   it('returns the first candidate when phone is empty', () => {
     expect(resolveTrustedContactName('', 'Alice', 'Bob')).toBe('Alice');
   });
-});// ── normalizeChatId ─────────────────────────────────────────────────────────
+}); // ── normalizeChatId ─────────────────────────────────────────────────────────
 
 describe('normalizeChatId', () => {
   it('returns chat id as-is when it already contains @', () => {
     expect(normalizeChatId('5511999991111@c.us')).toBe('5511999991111@c.us');
-    expect(normalizeChatId('5511999992222@s.whatsapp.net')).toBe(
-      '5511999992222@s.whatsapp.net',
-    );
+    expect(normalizeChatId('5511999992222@s.whatsapp.net')).toBe('5511999992222@s.whatsapp.net');
     expect(normalizeChatId('123456789@g.us')).toBe('123456789@g.us');
   });
 

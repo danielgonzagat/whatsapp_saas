@@ -8,7 +8,8 @@ import {
   normalizeAmountKey,
   truncateConversationHistory,
   type PaymentContext,
-} from './smart-payment.service.helpers';describe('smart-payment.service.helpers', () => {
+} from './smart-payment.service.helpers';
+describe('smart-payment.service.helpers', () => {
   describe('formatBrlAmount', () => {
     it('formats an integer BRL amount with Brazilian locale', () => {
       const result = formatBrlAmount(100);
@@ -43,7 +44,8 @@ import {
       const result = formatBrlAmount(Number.POSITIVE_INFINITY);
       expect(result).toContain('0,00');
     });
-  });  describe('normalizeAmountKey', () => {
+  });
+  describe('normalizeAmountKey', () => {
     it('normalizes an integer to its decimal string', () => {
       expect(normalizeAmountKey(100)).toBe('100');
     });
@@ -68,7 +70,8 @@ import {
     it('returns "0" for Infinity', () => {
       expect(normalizeAmountKey(Number.POSITIVE_INFINITY)).toBe('0');
     });
-  });  describe('truncateConversationHistory', () => {
+  });
+  describe('truncateConversationHistory', () => {
     it('returns an empty string for undefined input', () => {
       expect(truncateConversationHistory(undefined)).toBe('');
     });
@@ -95,7 +98,8 @@ import {
     it('coerces null to empty string', () => {
       expect(truncateConversationHistory(null as unknown as string)).toBe('');
     });
-  });  describe('buildSmartPaymentAiPrompt', () => {
+  });
+  describe('buildSmartPaymentAiPrompt', () => {
     it('includes customer name and formatted amount', () => {
       const prompt = buildSmartPaymentAiPrompt({
         customerName: 'João',
@@ -132,7 +136,8 @@ import {
       expect(prompt).toContain('Responda em JSON');
       expect(prompt).toContain('"message"');
     });
-  });  describe('buildNegotiationAiPrompt', () => {
+  });
+  describe('buildNegotiationAiPrompt', () => {
     it('includes all required fields in the prompt', () => {
       const prompt = buildNegotiationAiPrompt({
         customerName: 'Carlos',
@@ -173,7 +178,8 @@ import {
       expect(prompt).toContain('"discountPercent"');
       expect(prompt).toContain('"counterOffer"');
     });
-  });  describe('buildPixReadyMessage', () => {
+  });
+  describe('buildPixReadyMessage', () => {
     it('includes customer name and formatted amount', () => {
       const msg = buildPixReadyMessage('Ana', 99.9);
       expect(msg).toContain('Ana');
@@ -185,7 +191,8 @@ import {
       expect(msg).toContain('QR Code');
       expect(msg).toContain('PIX');
     });
-  });  describe('buildConfirmedPaymentMessage', () => {
+  });
+  describe('buildConfirmedPaymentMessage', () => {
     it('includes formatted amount', () => {
       const msg = buildConfirmedPaymentMessage(250);
       expect(msg).toContain('250');
@@ -195,7 +202,8 @@ import {
       const msg = buildConfirmedPaymentMessage(100);
       expect(msg).toContain('canal cadastrado');
     });
-  });  describe('buildSmartPaymentIdempotencyKey', () => {
+  });
+  describe('buildSmartPaymentIdempotencyKey', () => {
     const baseCtx: PaymentContext = {
       workspaceId: 'ws-abc',
       phone: '5511999999999',

@@ -107,7 +107,7 @@ describe('kloel.controller.helpers', () => {
           role: 'OWNER',
           name: 'Daniel',
         },
-      } as never as Partial<AuthenticatedRequest>);
+      });
       const result = buildKloelThinkPayload(
         { message: 'oi', metadata: { source: 'inbox' } },
         req,
@@ -198,7 +198,7 @@ describe('kloel.controller.helpers', () => {
           role: 'OWNER',
           name: 'Daniel',
         },
-      } as never as Partial<AuthenticatedRequest>);
+      });
       const args = buildRegenerateMessageArgs('conv-1', { messageId: 'm1' }, req, 'ws-1');
       expect(args.userName).toBe('Daniel');
     });

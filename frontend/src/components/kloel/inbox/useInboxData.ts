@@ -51,13 +51,14 @@ export function useInboxData({
   const [channelFilter, setChannelFilter] = useState<ChannelFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('open');
 
-  const [replyText, setReplyText] = useState('');
-  const [sending, setSending] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const requestedConversationId = searchParams?.get('conversationId');
   const requestedPhone = searchParams?.get('phone');
   const source = searchParams?.get('source') || '';
   const requestedDraft = searchParams?.get('draft');
+
+  const [replyText, setReplyText] = useState(() => requestedDraft || '');
+  const [sending, setSending] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const sourceLabel = useMemo(() => INBOX_SOURCE_LABELS[source] || '', [source]);
 
@@ -278,12 +279,6 @@ export function useInboxData({
     }
     loadMessagesRef.current(selectedConversationId);
   }, [selectedConversationId]);
-
-  useEffect(() => {
-    if (requestedDraft && !replyText) {
-      setReplyText(requestedDraft);
-    }
-  }, [requestedDraft, replyText]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

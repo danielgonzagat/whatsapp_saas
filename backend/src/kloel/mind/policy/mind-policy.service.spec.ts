@@ -1,4 +1,5 @@
 import { MindPolicyService } from './mind-policy.service';
+import type { MindGlobalPriorService } from '../memory/mind-global-prior.service';
 import { buildBeliefs, buildPrisma } from './mind-policy.service.spec-helpers';
 
 describe('MindPolicyService', () => {

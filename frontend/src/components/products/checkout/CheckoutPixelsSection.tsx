@@ -42,7 +42,7 @@ export function PixelsSection({ configId, planId }: { configId: string | null; p
   }, [planId]);
 
   useEffect(() => {
-    loadPixels();
+    queueMicrotask(loadPixels);
   }, [loadPixels]);
 
   const handleCreate = async () => {

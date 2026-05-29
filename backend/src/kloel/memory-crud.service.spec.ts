@@ -3,6 +3,8 @@ import { MemoryCrudService } from './memory-crud.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
+
 type MemoryCrudPrismaMock = {
   kloelMemory: {
     upsert: jest.Mock;
@@ -40,6 +42,10 @@ describe('MemoryCrudService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: auditService },
         { provide: OpsAlertService, useValue: opsAlert },
+        {
+          provide: MindMemoryItemService,
+          useValue: { get items() { return prisma.kloelMemory; } },
+        },
       ],
     }).compile();
     service = module.get<MemoryCrudService>(MemoryCrudService);

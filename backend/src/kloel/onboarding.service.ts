@@ -4,6 +4,7 @@ import type { Prisma } from '@prisma/client';
 import { forEachSequential } from '../common/async-sequence';
 import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 
 /**
  * Shape persistido em `kloelMemory.value` para a chave `onboarding_state`.
@@ -98,7 +99,10 @@ export class OnboardingService {
     },
   ];
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mindMemory: MindMemoryItemService,
+  ) {}
 
   async saveProfile(workspaceId: string, input: OnboardingProfileInput) {
     const profile = {
@@ -221,13 +225,13 @@ export class OnboardingService {
   async getStatus(workspaceId: string) {
     const [state, profileMemory, checklistMemory, completedMemory] = await Promise.all([
       this.getState(workspaceId),
-      this.prisma.kloelMemory.findUnique({
+      this.mindMemory.items.findUnique({
         where: { workspaceId_key: { workspaceId, key: 'onboarding_profile' } },
       }),
-      this.prisma.kloelMemory.findUnique({
+      this.mindMemory.items.findUnique({
         where: { workspaceId_key: { workspaceId, key: 'onboarding_setup_checklist' } },
       }),
-      this.prisma.kloelMemory.findUnique({
+      this.mindMemory.items.findUnique({
         where: { workspaceId_key: { workspaceId, key: 'onboarding_completed' } },
       }),
     ]);

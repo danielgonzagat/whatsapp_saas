@@ -282,4 +282,182 @@ export class CrmService {
 
     return { stages, totalValue };
   }
+
+  /**
+   * Canonical-name management method for the Kloel capability resolver
+   * (`CrmService.moveLead`). Accepts the (workspaceId, args) signature used
+   * by `KloelDomainServiceResolver`.
+   *
+   * Moves a lead/deal to another pipeline stage. The target stage may be
+   * given directly via `args.stageId`, or resolved by `args.stage` (stage
+   * name, case-insensitive) within the workspace's pipeline. Mutation is
+   * delegated to {@link moveDeal} — no new persistence logic introduced and
+   * cross-workspace access is rejected there.
+   */
+  async moveLead(
+    workspaceId: string,
+    args?: { leadId?: string; dealId?: string; stageId?: string; stage?: string },
+  ): Promise<{ success: true; dealId: string; stageId: string }> {
+    const dealId =
+      typeof args?.dealId === 'string' && args.dealId
+        ? args.dealId
+        : typeof args?.leadId === 'string'
+          ? args.leadId
+          : '';
+    if (!dealId) {
+      throw new NotFoundException('CrmService.moveLead: informe leadId ou dealId.');
+    }
+
+    let stageId = typeof args?.stageId === 'string' ? args.stageId : '';
+    if (!stageId) {
+      const stageName = typeof args?.stage === 'string' ? args.stage.trim() : '';
+      if (!stageName) {
+        throw new NotFoundException('CrmService.moveLead: informe stageId ou stage (nome).');
+      }
+      const stage = await this.prisma.stage.findFirst({
+        where: {
+          name: { equals: stageName, mode: 'insensitive' },
+          pipeline: { workspaceId },
+        },
+        select: { id: true },
+      });
+      if (!stage) {
+        throw new NotFoundException(`Etapa "${stageName}" não encontrada neste workspace.`);
+      }
+      stageId = stage.id;
+    }
+
+    const updated = await this.moveDeal(workspaceId, dealId, stageId);
+    return { success: true, dealId: updated.id, stageId };
+  }
+
+  /**
+   * Canonical-name management method for the Kloel capability resolver
+   * (`CrmService.openSupportTicket`). Accepts the (workspaceId, args)
+   * signature used by `KloelDomainServiceResolver`.
+   *
+   * Opens a support ticket as a workspace-scoped Conversation (the canonical
+   * ticket entity in this codebase — see AdminSupportService). The contact is
+   * resolved/upserted from `args.contactPhone`; no contact is fabricated. The
+   * opening note is persisted as an OUTBOUND NOTE message and audited.
+   */
+  async openSupportTicket(
+    workspaceId: string,
+    args?: {
+      contactPhone?: string;
+      subject?: string;
+      message?: string;
+      priority?: string;
+    },
+  ): Promise<{ success: true; ticketId: string }> {
+    const phone = typeof args?.contactPhone === 'string' ? args.contactPhone.trim() : '';
+    const subject = typeof args?.subject === 'string' ? args.subject.trim() : '';
+    if (!phone) {
+      throw new NotFoundException('CrmService.openSupportTicket: contactPhone é obrigatório.');
+    }
+    if (!subject) {
+      throw new NotFoundException('CrmService.openSupportTicket: subject é obrigatório.');
+    }
+    const priority = ['LOW', 'MEDIUM', 'HIGH'].includes(String(args?.priority).toUpperCase())
+      ? String(args?.priority).toUpperCase()
+      : 'MEDIUM';
+    const body = typeof args?.message === 'string' ? args.message.trim() : '';
+
+    const ticketId = await this.prisma.$transaction(async (tx) => {
+      const contact = await tx.contact.upsert({
+        where: { workspaceId_phone: { workspaceId, phone } },
+        update: {},
+        create: { phone, workspace: { connect: { id: workspaceId } } },
+        select: { id: true },
+      });
+
+      const conversation = await tx.conversation.create({
+        data: {
+          workspaceId,
+          contactId: contact.id,
+          status: 'OPEN',
+          priority,
+          channel: 'WEB',
+          mode: 'HUMAN',
+        },
+        select: { id: true },
+      });
+
+      await tx.message.create({
+        data: {
+          conversationId: conversation.id,
+          workspaceId,
+          contactId: contact.id,
+          direction: 'OUTBOUND',
+          type: 'NOTE',
+          status: 'SENT',
+          content: body ? `${subject}\n\n${body}` : subject,
+        },
+      });
+
+      return conversation.id;
+    });
+
+    await this.auditService
+      .log({
+        workspaceId,
+        action: 'crm.support_ticket_opened',
+        resource: 'Conversation',
+        resourceId: ticketId,
+        details: { subject, priority },
+      })
+      .catch(() => undefined);
+
+    return { success: true, ticketId };
+  }
+
+  /**
+   * Canonical-name management method for the Kloel capability resolver
+   * (`CrmService.listSupportTickets`). Accepts the (workspaceId, args)
+   * signature used by `KloelDomainServiceResolver`. Read-only, workspace-scoped
+   * list of support Conversations (most-recent first, capped at 50).
+   */
+  async listSupportTickets(
+    workspaceId: string,
+    args?: { status?: string; limit?: number },
+  ): Promise<{
+    items: Array<{
+      ticketId: string;
+      status: string;
+      priority: string;
+      channel: string;
+      lastMessageAt: string;
+      createdAt: string;
+    }>;
+    total: number;
+  }> {
+    const status = typeof args?.status === 'string' ? args.status.toUpperCase() : undefined;
+    const limit = Math.min(Math.max(Math.trunc(args?.limit ?? 50), 1), 50);
+
+    const rows = await this.prisma.conversation.findMany({
+      where: { workspaceId, ...(status ? { status } : {}) },
+      orderBy: { lastMessageAt: 'desc' },
+      take: limit,
+      select: {
+        id: true,
+        status: true,
+        priority: true,
+        channel: true,
+        lastMessageAt: true,
+        createdAt: true,
+      },
+    });
+
+    return {
+      items: rows.map((r) => ({
+        ticketId: r.id,
+        status: r.status,
+        priority: r.priority,
+        channel: r.channel,
+        lastMessageAt: r.lastMessageAt.toISOString(),
+        createdAt: r.createdAt.toISOString(),
+      })),
+      total: rows.length,
+    };
+  }
 }

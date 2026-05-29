@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { AgentRuntimeEvidenceStoreService } from './agent-runtime.evidence-store';
+import { mindMemoryStub } from './agent-runtime.mind-memory-stub.helpers';
 
 function sha256(content: string): string {
   return createHash('sha256').update(content, 'utf8').digest('hex');
@@ -71,7 +72,7 @@ describe('AgentRuntimeEvidenceStoreService', () => {
         create: createEvidence,
       },
     };
-    const service = new AgentRuntimeEvidenceStoreService(prisma as never);
+    const service = new AgentRuntimeEvidenceStoreService(prisma as never, mindMemoryStub(prisma) as never);
 
     const record = await service.add({
       workspaceId: 'ws_1',
@@ -109,7 +110,7 @@ describe('AgentRuntimeEvidenceStoreService', () => {
           ]),
       },
     };
-    const service = new AgentRuntimeEvidenceStoreService(prisma as never);
+    const service = new AgentRuntimeEvidenceStoreService(prisma as never, mindMemoryStub(prisma) as never);
 
     const evidence = await service.list({
       workspaceId: 'ws_1',
@@ -136,7 +137,7 @@ describe('AgentRuntimeEvidenceStoreService', () => {
           ]),
       },
     };
-    const service = new AgentRuntimeEvidenceStoreService(prisma as never);
+    const service = new AgentRuntimeEvidenceStoreService(prisma as never, mindMemoryStub(prisma) as never);
 
     const evidence = await service.query({ workspaceId: 'ws_1', keyword: 'checkout' });
 
@@ -154,7 +155,7 @@ describe('AgentRuntimeEvidenceStoreService', () => {
           ]),
       },
     };
-    const service = new AgentRuntimeEvidenceStoreService(prisma as never);
+    const service = new AgentRuntimeEvidenceStoreService(prisma as never, mindMemoryStub(prisma) as never);
 
     const issues = await service.verify('ws_1');
 
@@ -178,7 +179,7 @@ describe('AgentRuntimeEvidenceStoreService', () => {
           ]),
       },
     };
-    const service = new AgentRuntimeEvidenceStoreService(prisma as never);
+    const service = new AgentRuntimeEvidenceStoreService(prisma as never, mindMemoryStub(prisma) as never);
 
     const summary = await service.summary('ws_1');
 
@@ -212,7 +213,7 @@ describe('AgentRuntimeEvidenceStoreService', () => {
     const prisma = {
       kloelMemory: { create: createEvidence },
     };
-    const service = new AgentRuntimeEvidenceStoreService(prisma as never);
+    const service = new AgentRuntimeEvidenceStoreService(prisma as never, mindMemoryStub(prisma) as never);
 
     const record = await service.add({
       workspaceId: 'ws_1',
@@ -251,7 +252,7 @@ describe('AgentRuntimeEvidenceStoreService', () => {
         ]),
       },
     };
-    const service = new AgentRuntimeEvidenceStoreService(prisma as never);
+    const service = new AgentRuntimeEvidenceStoreService(prisma as never, mindMemoryStub(prisma) as never);
 
     const markdown = await service.exportMarkdown('ws_1', 10);
 
@@ -271,7 +272,7 @@ describe('AgentRuntimeEvidenceStoreService', () => {
     const prisma = {
       kloelMemory: { findMany: jest.fn().mockResolvedValue([]) },
     };
-    const service = new AgentRuntimeEvidenceStoreService(prisma as never);
+    const service = new AgentRuntimeEvidenceStoreService(prisma as never, mindMemoryStub(prisma) as never);
 
     const markdown = await service.exportMarkdown('ws_empty', 10);
 
@@ -300,7 +301,7 @@ describe('AgentRuntimeEvidenceStoreService', () => {
     const prisma = {
       kloelMemory: { findMany },
     };
-    const service = new AgentRuntimeEvidenceStoreService(prisma as never);
+    const service = new AgentRuntimeEvidenceStoreService(prisma as never, mindMemoryStub(prisma) as never);
 
     const chain = await service.custody('ws_1', 'ev_3');
 
@@ -315,7 +316,7 @@ describe('AgentRuntimeEvidenceStoreService', () => {
     const prisma = {
       kloelMemory: { findMany: jest.fn().mockResolvedValue([]) },
     };
-    const service = new AgentRuntimeEvidenceStoreService(prisma as never);
+    const service = new AgentRuntimeEvidenceStoreService(prisma as never, mindMemoryStub(prisma) as never);
 
     const chain = await service.custody('ws_1', 'nonexistent');
 

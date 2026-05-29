@@ -78,7 +78,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
   }, [productId]);
 
   useEffect(() => {
-    fetchPlans();
+    queueMicrotask(fetchPlans);
   }, [fetchPlans]);
 
   const handleCreate = async () => {

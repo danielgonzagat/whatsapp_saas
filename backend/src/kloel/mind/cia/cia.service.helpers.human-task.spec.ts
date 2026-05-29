@@ -90,11 +90,7 @@ describe('cia.service.helpers (human-task)', () => {
     });
 
     it('writes approvedReply=null when empty', () => {
-      const out = buildResolvedHumanTaskValue(
-        { id: 't-1' },
-        '',
-        '2026-04-17T00:00:00.000Z',
-      );
+      const out = buildResolvedHumanTaskValue({ id: 't-1' }, '', '2026-04-17T00:00:00.000Z');
       expect(out.approvedReply).toBeNull();
     });
   });
@@ -139,15 +135,11 @@ describe('cia.service.helpers (human-task)', () => {
     });
 
     it('normalizes null / array metadata to empty record', () => {
-      expect(
-        buildHumanTaskMetadataUpdate(null, 'RESOLVED', '2026-04-17T00:00:00.000Z'),
-      ).toEqual({
+      expect(buildHumanTaskMetadataUpdate(null, 'RESOLVED', '2026-04-17T00:00:00.000Z')).toEqual({
         status: 'RESOLVED',
         resolvedAt: '2026-04-17T00:00:00.000Z',
       });
-      expect(
-        buildHumanTaskMetadataUpdate([1, 2], 'RESOLVED', '2026-04-17T00:00:00.000Z'),
-      ).toEqual({
+      expect(buildHumanTaskMetadataUpdate([1, 2], 'RESOLVED', '2026-04-17T00:00:00.000Z')).toEqual({
         status: 'RESOLVED',
         resolvedAt: '2026-04-17T00:00:00.000Z',
       });
@@ -176,15 +168,11 @@ describe('cia.service.helpers (human-task)', () => {
 
   describe('buildHumanTaskRejectionMessage', () => {
     it('formats with phone when present', () => {
-      expect(buildHumanTaskRejectionMessage('5511')).toBe(
-        'Exceção humana dispensada para 5511.',
-      );
+      expect(buildHumanTaskRejectionMessage('5511')).toBe('Exceção humana dispensada para 5511.');
     });
 
     it('falls back to "o contato" when phone is empty', () => {
-      expect(buildHumanTaskRejectionMessage('')).toBe(
-        'Exceção humana dispensada para o contato.',
-      );
+      expect(buildHumanTaskRejectionMessage('')).toBe('Exceção humana dispensada para o contato.');
     });
   });
 
@@ -205,15 +193,8 @@ describe('cia.service.helpers (human-task)', () => {
     });
 
     it('returns false when value is malformed (no string id)', () => {
-      expect(
-        matchHumanTaskCandidate(
-          { ...candidate, value: 'broken' },
-          'task-abc',
-        ),
-      ).toBe(false);
-      expect(
-        matchHumanTaskCandidate({ ...candidate, value: null }, 'task-abc'),
-      ).toBe(false);
+      expect(matchHumanTaskCandidate({ ...candidate, value: 'broken' }, 'task-abc')).toBe(false);
+      expect(matchHumanTaskCandidate({ ...candidate, value: null }, 'task-abc')).toBe(false);
     });
   });
 });

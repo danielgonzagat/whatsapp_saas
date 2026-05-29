@@ -4,7 +4,8 @@ import {
   parseToolInvocation,
   summarizeToolResult,
   toSessionView,
-} from './admin-chat.helpers';describe('parseToolInvocation', () => {
+} from './admin-chat.helpers';
+describe('parseToolInvocation', () => {
   it('parses a /tool invocation with JSON args', () => {
     const result = parseToolInvocation('/tool searchWorkspaces {"query":"acme"}');
     expect(result).toEqual({ name: 'searchWorkspaces', args: { query: 'acme' } });

@@ -96,10 +96,12 @@ export function useCheckoutExperienceSocial({
     if (!savedDraft) {
       return;
     }
-    setForm((prev) => ({ ...prev, ...savedDraft.form }));
-    setPayMethod(savedDraft.payMethod);
-    setQty(savedDraft.qty);
-    setCouponCode(savedDraft.couponCode);
+    queueMicrotask(() => {
+      setForm((prev) => ({ ...prev, ...savedDraft.form }));
+      setPayMethod(savedDraft.payMethod);
+      setQty(savedDraft.qty);
+      setCouponCode(savedDraft.couponCode);
+    });
   }, [checkoutFormDraftKey]);
 
   useEffect(() => {

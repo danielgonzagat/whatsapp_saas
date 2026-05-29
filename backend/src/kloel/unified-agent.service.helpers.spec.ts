@@ -307,9 +307,7 @@ describe('unified-agent.service.helpers', () => {
     });
 
     it('treats `executed: true` as success', () => {
-      const out = mapActionsForTurnOutcome([
-        { tool: 't', args: {}, result: { executed: true } },
-      ]);
+      const out = mapActionsForTurnOutcome([{ tool: 't', args: {}, result: { executed: true } }]);
       expect(out[0]?.success).toBe(true);
     });
 
@@ -353,7 +351,10 @@ describe('unified-agent.service.helpers', () => {
 
     it('prefers the inner `value.id` over the outer `product.id`', () => {
       const ids = extractProductIds(
-        [{ id: 'outer', value: { id: 'inner' } }, { id: 'only-outer', value: {} }],
+        [
+          { id: 'outer', value: { id: 'inner' } },
+          { id: 'only-outer', value: {} },
+        ],
         readers,
       );
       expect(ids).toEqual(['inner', 'only-outer']);
@@ -361,11 +362,7 @@ describe('unified-agent.service.helpers', () => {
 
     it('drops entries with no resolvable id', () => {
       const ids = extractProductIds(
-        [
-          { id: undefined, value: undefined },
-          { value: { id: '' } },
-          { id: 'kept', value: {} },
-        ],
+        [{ id: undefined, value: undefined }, { value: { id: '' } }, { id: 'kept', value: {} }],
         readers,
       );
       expect(ids).toEqual(['kept']);

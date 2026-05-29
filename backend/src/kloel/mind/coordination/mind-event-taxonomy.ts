@@ -36,16 +36,18 @@ export const BRAIN_EVENT_TAXONOMY = [
   'coupon.deleted',
   'plan.created',
   'plan.updated',
+  'plan.deleted',
   'campaign.scheduled',
   'campaign.sent',
   'campaign.clicked',
   'campaign.converted',
+  'inbound.received',
+  'concept.detected',
   'mind.decision.created',
   'mind.decision.resolved',
   'mind.prediction.created',
   'mind.prediction.resolved',
   'mind.surprise.recorded',
-  'concept.detected',
   'case_memory.consulted',
   'predecided_actions.built',
   'channel.connected',
@@ -68,6 +70,34 @@ export const BRAIN_EVENT_TAXONOMY = [
   'mind.action.executed',
   'mind.product.observed',
   'mind.plan.observed',
+  // --- commerce.* canonical names (ADR-0013 / Wave K58–K85) ---------------
+  // Canonical domain-prefixed event names following the commerce.* taxonomy
+  // defined in protocol_hub_asyncapi. Added ahead of emit-site migration so
+  // listeners can be widened to accept either legacy or canonical spelling
+  // during the dual-emit cutover window.
+  'commerce.product.created',
+  'commerce.product.updated',
+  'commerce.product.published',
+  'commerce.product.deleted',
+  'commerce.coupon.created',
+  'commerce.coupon.updated',
+  'commerce.coupon.deleted',
+  'commerce.plan.updated',
+  'commerce.plan.deleted',
+  'commerce.lead.created',
+  'commerce.whatsapp.message_received',
+  'commerce.campaign.scheduled',
+  'commerce.sale.created',
+  'commerce.concept.detected',
+  'commerce.inbound.received',
+  // --- cognition.* canonical names for pipeline/identity routing events ----
+  // Wrong-domain 3-segment events corrected to cognition.* prefix
+  // (ADR-0013 / Wave K58–K85). Legacy names kept in taxonomy during the
+  // dual-emit window; see MIND_EVENT_ALIASES below.
+  'cognition.pipeline.state_changed',
+  'cognition.pipeline.shadow_recorded',
+  'cognition.pipeline.auto_fallback',
+  'cognition.identity.contact_resolved',
 ] as const;
 
 export type MindEventName = (typeof BRAIN_EVENT_TAXONOMY)[number];
@@ -108,10 +138,40 @@ export type BrainEventName = MindEventName;
  * @see docs/architecture/EVENT_TAXONOMY_KLOEL_TO_MIND_MIGRATION.md
  */
 export const MIND_EVENT_ALIASES = {
+  // --- mind.* aliases (ADR-0013 §4 / Wave M6) — original 4 entries ---------
   'message.received': 'mind.message.received',
   'capability.executed': 'mind.action.executed',
   'product.created': 'mind.product.observed',
   'plan.created': 'mind.plan.observed',
+  // --- commerce.* aliases (ADR-0013 / Wave K58–K85) — 15 legacy → canonical -
+  // Bare event names (no domain prefix) emitted by product.service.ts,
+  // plan.service.ts, and various emitters are aliased to their canonical
+  // commerce.* counterparts. During the dual-emit window BOTH names fire so
+  // downstream readers (SQL aggregators, @OnEvent listeners, decision-catalog
+  // branches) can migrate at their own pace. Once all emit sites have been
+  // flipped to the canonical name these entries are removed.
+  'product.updated': 'commerce.product.updated',
+  'product.published': 'commerce.product.published',
+  'product.deleted': 'commerce.product.deleted',
+  'plan.updated': 'commerce.plan.updated',
+  'plan.deleted': 'commerce.plan.deleted',
+  'sale.created': 'commerce.sale.created',
+  'coupon.created': 'commerce.coupon.created',
+  'lead.created': 'commerce.lead.created',
+  'campaign.scheduled': 'commerce.campaign.scheduled',
+  'inbound.received': 'commerce.inbound.received',
+  'concept.detected': 'commerce.concept.detected',
+  // --- cognition.* aliases — wrong-domain 3-segment events -----------------
+  // These events were emitted under a bare `pipeline.*` or `identity.*`
+  // prefix without a true domain qualifier. The correct domain is
+  // `cognition.*` (they are orchestrator/routing internal events, not
+  // commerce events). Dual-emit window: old string fires first, canonical
+  // fires alongside. MindEventSpine.recordCommercial call sites in
+  // admin-pipeline.service.ts are updated to emit the canonical name.
+  'pipeline.state.changed': 'cognition.pipeline.state_changed',
+  'pipeline.shadow_recorded': 'cognition.pipeline.shadow_recorded',
+  'pipeline.auto_fallback': 'cognition.pipeline.auto_fallback',
+  'identity.contact.resolved': 'cognition.identity.contact_resolved',
 } as const satisfies Record<string, MindEventName>;
 
 export type MindEventLegacyName = keyof typeof MIND_EVENT_ALIASES;

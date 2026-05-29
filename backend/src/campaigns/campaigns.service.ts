@@ -201,6 +201,28 @@ export class CampaignsService {
     };
   }
 
+  /**
+   * Resolver-shaped canonical alias for the capability registry.
+   *
+   * `KloelDomainServiceResolver` invokes capabilities with the
+   * `(workspaceId, args)` signature; this thin shim unpacks the campaign id
+   * from the tool args and delegates to {@link launch} without duplicating any
+   * launch logic. Used by the `whatsapp.send_campaign` / `email.send_campaign`
+   * capabilities.
+   *
+   * @param workspaceId owning workspace (isolation boundary)
+   * @param args        tool arguments: `{ campaignId | id, useSmartTime? }`
+   */
+  async launchTool(workspaceId: string, args: Record<string, unknown>) {
+    const campaignId = String(args.campaignId ?? args.id ?? '').trim();
+    if (!campaignId) {
+      return { success: false, error: 'campaign_id_required' };
+    }
+    const useSmartTime = args.useSmartTime === true;
+    const result = await this.launch(workspaceId, campaignId, useSmartTime);
+    return { success: true, ...result };
+  }
+
   /** Process a campaign job from the BullMQ queue */
   async processCampaignJob(job: { data: { campaignId: string; workspaceId: string } }) {
     const { campaignId, workspaceId } = job.data;

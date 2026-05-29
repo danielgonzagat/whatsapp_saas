@@ -17,9 +17,30 @@ export enum ChannelKind {
   MESSENGER = 'messenger',
   FACEBOOK = 'facebook',
   EMAIL = 'email',
+  TIKTOK = 'tiktok',
   INTERNAL_PARTNERSHIP = 'internal-partnership',
   INTERNAL_ADMIN = 'internal-admin',
 }
+
+/**
+ * Canonical lowercase channel-name union, derived from {@link ChannelKind}.
+ *
+ * This is the ONE source of truth for the string form of a channel. Other
+ * historical aliases (`kloel/channel-transport.types#ChannelName`,
+ * `kloel/channel/types#ChannelKind`, `inbox/omnichannel.helpers#OmniChannel`)
+ * are being collapsed onto this type — see ADR-0012 OmniCore Wave W1 §
+ * Canonicalization. Use `ChannelKind` (the enum) inside dispatch code and this
+ * `CanonicalChannelName` only where a raw string discriminator is required
+ * (HTTP/JSON boundaries, persisted `channel` columns).
+ */
+export type CanonicalChannelName = `${ChannelKind}`;
+
+/**
+ * The outbound-capable subset of {@link ChannelKind} — the channels a caller
+ * can actually `dispatch` a message to. Internal-admin is a copilot surface,
+ * not a channel-send (R5 of SEND_MESSAGE_CANONICAL.md).
+ */
+export type OutboundChannelKind = Exclude<ChannelKind, ChannelKind.INTERNAL_ADMIN>;
 
 // ─── Channel-specific input shapes (discriminated union) ────
 
@@ -75,6 +96,20 @@ export interface EmailSendInput {
   proactive?: boolean;
 }
 
+
+/**
+ * TikTok outbound input. TikTok Business Messaging has NO programmatic
+ * outbound-send API today (inbound webhook only), so the adapter resolves
+ * this to an honest blocked result. The shape is defined now so the canonical
+ * union is complete and a future Ads/DM API adapter is a drop-in swap.
+ */
+export interface TikTokSendInput {
+  channelKind: ChannelKind.TIKTOK;
+  workspaceId: string;
+  to: string;
+  message: string;
+}
+
 export interface InternalPartnershipSendInput {
   channelKind: ChannelKind.INTERNAL_PARTNERSHIP;
   partnerId: string;
@@ -97,6 +132,7 @@ export type ChannelSendInput =
   | MessengerSendInput
   | FacebookSendInput
   | EmailSendInput
+  | TikTokSendInput
   | InternalPartnershipSendInput
   | InternalAdminSendInput;
 
@@ -129,6 +165,15 @@ export interface ChannelDispatchPort {
 
   /** Send a message through the channel. */
   send(input: ChannelSendInput): Promise<ChannelSendResult>;
+
+  /**
+   * Canonical alias of {@link send} (Wave 21 unification — task d). Optional so
+   * existing adapters that only define `send` keep compiling; the registry
+   * exposes a `sendMessage` that falls back to `send` when an adapter has not
+   * yet defined this alias. New adapters SHOULD implement it as a thin
+   * delegation to `send`.
+   */
+  sendMessage?(input: ChannelSendInput): Promise<ChannelSendResult>;
 
   /** Check whether the channel adapter is configured and ready. */
   isConfigured?(): boolean;

@@ -10,8 +10,8 @@ import { type CapabilityDefinition } from '../capability-registry-v2.types';
 export const TIER_5_SALES_CAPABILITIES: CapabilityDefinition[] = [
   {
     id: 'create_order',
-    title: 'Criar pedido',
-    description: 'Cria pedido/venda manual',
+    title: 'Criar pedido (legado)',
+    description: 'DEPRECATED — use sales.create_pix / sales.create_boleto / sales.create_card_link',
     category: 'MUTATION_SENSITIVE',
     tier: 5,
     requiresConfirmation: true,
@@ -23,6 +23,8 @@ export const TIER_5_SALES_CAPABILITIES: CapabilityDefinition[] = [
     domainService: 'CheckoutService.createOrder',
     emits: ['sale.created'],
     surface: ['dashboard-chat'],
+    maturity: 'deprecated',
+    dependsOn: ['sales.create_pix'],
   },
   {
     id: 'generate_pix',
@@ -64,8 +66,8 @@ export const TIER_5_SALES_CAPABILITIES: CapabilityDefinition[] = [
   },
   {
     id: 'create_payment_link',
-    title: 'Link de pagamento',
-    description: 'Gera link de pagamento para um lead',
+    title: 'Link de pagamento (legado)',
+    description: 'DEPRECATED — use sales.create_card_link',
     category: 'MUTATION_SENSITIVE',
     tier: 5,
     requiresConfirmation: true,
@@ -77,6 +79,8 @@ export const TIER_5_SALES_CAPABILITIES: CapabilityDefinition[] = [
     domainService: 'PaymentService.createPayment',
     emits: ['payment.link_created'],
     surface: ['dashboard-chat'],
+    maturity: 'deprecated',
+    dependsOn: ['sales.create_card_link'],
   },
   {
     id: 'sales.create_pix',

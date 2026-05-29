@@ -7,6 +7,7 @@ import { OpsAlertService } from '../../observability/ops-alert.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { sanitizeAgentRuntimeText, toInputJsonValue } from './agent-runtime.sanitizer';
 import { AgentRuntimePolicyService } from './agent-runtime.policy';
+import { MindMemoryItemService } from '../mind/aliases/mind-memory-item.service';
 
 export interface AgentScheduledJobInput {
   workspaceId: string;
@@ -57,6 +58,7 @@ export class AgentRuntimeSchedulerService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly policy: AgentRuntimePolicyService,
+    private readonly mindMemory: MindMemoryItemService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
@@ -77,7 +79,7 @@ export class AgentRuntimeSchedulerService {
       lastRunAt: null,
     };
 
-    await this.prisma.kloelMemory.upsert({
+    await this.mindMemory.items.upsert({
       where: { workspaceId_key: { workspaceId: input.workspaceId, key } },
       update: {
         value: toInputJsonValue(value),
@@ -106,7 +108,7 @@ export class AgentRuntimeSchedulerService {
 
   async listDueJobs(now = new Date(), limit = 25): Promise<DueAgentJob[]> {
     try {
-      const rows = await this.prisma.kloelMemory.findMany({
+      const rows = await this.mindMemory.items.findMany({
         where: { category: 'agent_job', type: 'scheduled' },
         orderBy: { updatedAt: 'asc' },
         take: Math.max(1, Math.min(limit, 100)),
@@ -156,7 +158,7 @@ export class AgentRuntimeSchedulerService {
       toolScope: string[];
     }>
   > {
-    const rows = await this.prisma.kloelMemory.findMany({
+    const rows = await this.mindMemory.items.findMany({
       where: { workspaceId, category: 'agent_job', type: 'scheduled' },
       orderBy: { updatedAt: 'desc' },
       take: Math.max(1, Math.min(limit, 100)),
@@ -197,7 +199,7 @@ export class AgentRuntimeSchedulerService {
     enabled: boolean;
   }): Promise<{ ok: boolean; key: string; enabled: boolean; reason?: string }> {
     const key = this.normalizeJobKey(params.jobId);
-    const row = await this.prisma.kloelMemory.findUnique({
+    const row = await this.mindMemory.items.findUnique({
       where: { workspaceId_key: { workspaceId: params.workspaceId, key } },
       select: { value: true },
     });
@@ -209,7 +211,7 @@ export class AgentRuntimeSchedulerService {
       ...value,
       enabled: params.enabled,
     };
-    await this.prisma.kloelMemory.updateMany({
+    await this.mindMemory.items.updateMany({
       where: { workspaceId: params.workspaceId, key, category: 'agent_job', type: 'scheduled' },
       data: {
         value: toInputJsonValue(nextValue),
@@ -329,7 +331,7 @@ export class AgentRuntimeSchedulerService {
             },
             lastRunAt: now.toISOString(),
           };
-    await this.prisma.kloelMemory.updateMany({
+    await this.mindMemory.items.updateMany({
       where: { id: job.id, workspaceId: job.workspaceId, key: job.key },
       data: {
         value: toInputJsonValue(nextValue),

@@ -8,6 +8,7 @@ import { TIER_5_SALES_CAPABILITIES } from './partitions/tier-5-sales';
 import { TIER_6_URLS_CAPABILITIES } from './partitions/tier-6-urls';
 import { TIER_7_AFFILIATES_CAPABILITIES } from './partitions/tier-7-affiliates';
 import { TIER_8_CRM_CAPABILITIES } from './partitions/tier-8-crm';
+import { TIER_8_MARKETPLACE_CAPABILITIES } from './partitions/tier-8-marketplace';
 import { TIER_9_WALLET_CAPABILITIES } from './partitions/tier-9-wallet';
 import { TIER_10_REPORTS_CAPABILITIES } from './partitions/tier-10-reports';
 import { TIER_11_CONFIGURATION_CAPABILITIES } from './partitions/tier-11-configuration';
@@ -31,6 +32,7 @@ export const CAPABILITY_DEFINITIONS: CapabilityDefinition[] = [
   ...TIER_6_URLS_CAPABILITIES,
   ...TIER_7_AFFILIATES_CAPABILITIES,
   ...TIER_8_CRM_CAPABILITIES,
+  ...TIER_8_MARKETPLACE_CAPABILITIES,
   ...TIER_9_WALLET_CAPABILITIES,
   ...TIER_10_REPORTS_CAPABILITIES,
   ...TIER_11_CONFIGURATION_CAPABILITIES,
@@ -61,6 +63,7 @@ export {
   TIER_6_URLS_CAPABILITIES,
   TIER_7_AFFILIATES_CAPABILITIES,
   TIER_8_CRM_CAPABILITIES,
+  TIER_8_MARKETPLACE_CAPABILITIES,
   TIER_9_WALLET_CAPABILITIES,
   TIER_10_REPORTS_CAPABILITIES,
   TIER_11_CONFIGURATION_CAPABILITIES,

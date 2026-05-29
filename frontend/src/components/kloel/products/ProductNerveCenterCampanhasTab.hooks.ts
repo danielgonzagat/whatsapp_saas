@@ -27,7 +27,7 @@ export function useCampanhasTab(productId: string) {
   }, [productId]);
 
   useEffect(() => {
-    void loadCampaigns();
+    queueMicrotask(loadCampaigns);
   }, [loadCampaigns]);
 
   const handleCreateCamp = async () => {

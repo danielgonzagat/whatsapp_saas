@@ -65,7 +65,10 @@ export function AuthModal({
 
   // Reset form when modal opens/closes or mode changes from props
   useEffect(() => {
-    if (isOpen) {
+    if (!isOpen) {
+      return;
+    }
+    queueMicrotask(() => {
       setMode(initialMode);
       setStep('email');
       setEmail(initialEmail || '');
@@ -76,7 +79,7 @@ export function AuthModal({
       setErrors({});
       setIsLoading(false);
       setForgotSent(false);
-    }
+    });
   }, [isOpen, initialMode, initialEmail]);
 
   const handleEmailContinue = () => {

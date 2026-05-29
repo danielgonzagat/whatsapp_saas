@@ -32,16 +32,16 @@ describe('unified-agent-actions-crm.connect-whatsapp.helpers (pure)', () => {
 
   describe('isJestTestEnv', () => {
     it('returns true when JEST_WORKER_ID is set', () => {
-      expect(isJestTestEnv({ JEST_WORKER_ID: '1' } as NodeJS.ProcessEnv)).toBe(true);
+      expect(isJestTestEnv({ JEST_WORKER_ID: '1' })).toBe(true);
     });
 
     it('returns true when NODE_ENV === "test" even without JEST_WORKER_ID', () => {
-      expect(isJestTestEnv({ NODE_ENV: 'test' } as NodeJS.ProcessEnv)).toBe(true);
+      expect(isJestTestEnv({ NODE_ENV: 'test' })).toBe(true);
     });
 
     it('returns false in other envs', () => {
-      expect(isJestTestEnv({ NODE_ENV: 'production' } as NodeJS.ProcessEnv)).toBe(false);
-      expect(isJestTestEnv({} as NodeJS.ProcessEnv)).toBe(false);
+      expect(isJestTestEnv({ NODE_ENV: 'production' })).toBe(false);
+      expect(isJestTestEnv({})).toBe(false);
     });
   });
 

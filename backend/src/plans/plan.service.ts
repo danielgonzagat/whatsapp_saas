@@ -9,18 +9,22 @@ import {
   buildPlanUpdatedPayload,
   buildPlanUpdatePatch,
   checkoutImagesWith,
+  orderBumpConfigJson,
   paymentMethodsJson,
   shippingConfigJson,
   type AffiliateConfig,
   type CreatePlanDto,
+  type OrderBumpConfig,
   type PaymentMethodsConfig,
   type ShippingConfig,
   type UpdatePlanDto,
 } from './plan.service.helpers';
+import { emitCommerceAlias } from '../kloel/event-taxonomy.canonical-aliases';
 
 export type {
   AffiliateConfig,
   CreatePlanDto,
+  OrderBumpConfig,
   PaymentMethodsConfig,
   ShippingConfig,
   UpdatePlanDto,
@@ -140,12 +144,16 @@ export class PlanService {
     const { updates, changes } = patch;
     const plan = await this.prisma.productPlan.update({ where: { id: planId }, data: updates });
 
-    this.eventEmitter.emit('plan.updated', {
-      planId: plan.id,
-      workspaceId,
-      actorId: actor?.id,
-      changes,
-    });
+    emitCommerceAlias(
+      (name, payload) => this.eventEmitter.emit(name, payload),
+      'plan.updated',
+      {
+        planId: plan.id,
+        workspaceId,
+        actorId: actor?.id,
+        changes,
+      },
+    );
 
     if (actor) {
       await this.audit.log({
@@ -200,12 +208,16 @@ export class PlanService {
 
     await this.prisma.productPlan.delete({ where: { id: planId } });
 
-    this.eventEmitter.emit('plan.deleted', {
-      planId,
-      workspaceId,
-      actorId: actor?.id,
-      planName: plan.name,
-    });
+    emitCommerceAlias(
+      (name, payload) => this.eventEmitter.emit(name, payload),
+      'plan.deleted',
+      {
+        planId,
+        workspaceId,
+        actorId: actor?.id,
+        planName: plan.name,
+      },
+    );
 
     if (actor) {
       await this.audit.log({
@@ -406,5 +418,165 @@ export class PlanService {
       success: true,
       plan: updated,
     };
+  }
+
+  async setOrderBump(
+    workspaceId: string,
+    planId: string,
+    config: OrderBumpConfig,
+    actor?: { id: string },
+  ) {
+    const plan = await this.prisma.productPlan.findFirst({
+      where: { id: planId, product: { workspaceId } },
+    });
+    if (!plan) {
+      throw new NotFoundException('Plan not found');
+    }
+
+    const orderBump = orderBumpConfigJson(config);
+    const updated = await this.prisma.productPlan.update({
+      where: { id: planId },
+      data: {
+        checkoutImages: checkoutImagesWith(plan.checkoutImages, { orderBump }),
+      },
+    });
+
+    if (actor) {
+      await this.audit.log({
+        workspaceId,
+        agentId: actor.id,
+        action: 'plan.setOrderBump',
+        resource: 'ProductPlan',
+        resourceId: planId,
+        details: orderBump,
+      });
+    }
+    return {
+      success: true,
+      plan: updated,
+    };
+  }
+
+  async setImage(workspaceId: string, planId: string, imageUrl: string, actor?: { id: string }) {
+    const plan = await this.prisma.productPlan.findFirst({
+      where: { id: planId, product: { workspaceId } },
+    });
+    if (!plan) {
+      throw new NotFoundException('Plan not found');
+    }
+
+    const updated = await this.prisma.productPlan.update({
+      where: { id: planId },
+      data: {
+        checkoutImages: checkoutImagesWith(plan.checkoutImages, { imageUrl }),
+      },
+    });
+
+    if (actor) {
+      await this.audit.log({
+        workspaceId,
+        agentId: actor.id,
+        action: 'plan.setImage',
+        resource: 'ProductPlan',
+        resourceId: planId,
+        details: { imageUrl },
+      });
+    }
+    return {
+      success: true,
+      plan: updated,
+    };
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Kloel capability resolver adapters.
+  //
+  // `KloelDomainServiceResolver.tryExecute` calls every domainService method
+  // with exactly `(workspaceId, args)`. The fine-grained setters above use
+  // positional `(workspaceId, planId, config, actor)` signatures, so each
+  // capability points at one of the thin `*FromArgs` adapters below which
+  // unpack the resolver `args` object and delegate. Delegate-only — no new
+  // mutation logic, no Prisma access.
+  // ──────────────────────────────────────────────────────────────────────────
+
+  private requirePlanId(args?: { planId?: string }, op = 'PlanService'): string {
+    const planId = typeof args?.planId === 'string' ? args.planId : '';
+    if (!planId) {
+      throw new NotFoundException(`${op}: args.planId is required`);
+    }
+    return planId;
+  }
+
+  async setPaymentMethodsFromArgs(
+    workspaceId: string,
+    args?: { planId?: string } & PaymentMethodsConfig,
+  ) {
+    const planId = this.requirePlanId(args, 'PlanService.setPaymentMethodsFromArgs');
+    const { planId: _omit, ...methods } = args ?? {};
+    return this.setPaymentMethods(workspaceId, planId, methods);
+  }
+
+  async setInstallmentsFromArgs(
+    workspaceId: string,
+    args?: { planId?: string; maxInstallments?: number },
+  ) {
+    const planId = this.requirePlanId(args, 'PlanService.setInstallmentsFromArgs');
+    const maxInstallments = Number(args?.maxInstallments);
+    if (!Number.isFinite(maxInstallments) || maxInstallments < 1) {
+      throw new NotFoundException(
+        'PlanService.setInstallmentsFromArgs: args.maxInstallments must be >= 1',
+      );
+    }
+    return this.setInstallments(workspaceId, planId, maxInstallments);
+  }
+
+  async setCouponsFromArgs(workspaceId: string, args?: { planId?: string; acceptCoupons?: boolean }) {
+    const planId = this.requirePlanId(args, 'PlanService.setCouponsFromArgs');
+    return this.setCoupons(workspaceId, planId, Boolean(args?.acceptCoupons));
+  }
+
+  async setShippingFromArgs(workspaceId: string, args?: { planId?: string } & ShippingConfig) {
+    const planId = this.requirePlanId(args, 'PlanService.setShippingFromArgs');
+    const { planId: _omit, ...config } = args ?? {};
+    return this.setShipping(workspaceId, planId, config);
+  }
+
+  async setVisibilityForAffiliatesFromArgs(
+    workspaceId: string,
+    args?: { planId?: string; visibleToAffiliates?: boolean },
+  ) {
+    const planId = this.requirePlanId(args, 'PlanService.setVisibilityForAffiliatesFromArgs');
+    return this.setAffiliateConfig(workspaceId, planId, {
+      visibleToAffiliates: Boolean(args?.visibleToAffiliates),
+    });
+  }
+
+  async setCustomCommissionFromArgs(
+    workspaceId: string,
+    args?: { planId?: string; customCommission?: number },
+  ) {
+    const planId = this.requirePlanId(args, 'PlanService.setCustomCommissionFromArgs');
+    const customCommission = Number(args?.customCommission);
+    if (!Number.isFinite(customCommission) || customCommission < 0) {
+      throw new NotFoundException(
+        'PlanService.setCustomCommissionFromArgs: args.customCommission must be >= 0',
+      );
+    }
+    return this.setAffiliateConfig(workspaceId, planId, { customCommission });
+  }
+
+  async setOrderBumpFromArgs(workspaceId: string, args?: { planId?: string } & OrderBumpConfig) {
+    const planId = this.requirePlanId(args, 'PlanService.setOrderBumpFromArgs');
+    const { planId: _omit, ...config } = args ?? {};
+    return this.setOrderBump(workspaceId, planId, config);
+  }
+
+  async setImageFromArgs(workspaceId: string, args?: { planId?: string; imageUrl?: string }) {
+    const planId = this.requirePlanId(args, 'PlanService.setImageFromArgs');
+    const imageUrl = typeof args?.imageUrl === 'string' ? args.imageUrl : '';
+    if (!imageUrl) {
+      throw new NotFoundException('PlanService.setImageFromArgs: args.imageUrl is required');
+    }
+    return this.setImage(workspaceId, planId, imageUrl);
   }
 }

@@ -80,9 +80,7 @@ describe('kloel-tool-dispatcher.product-catalog.handlers', () => {
   describe('dispatchProductCatalogTool', () => {
     it('returns null for unrelated tool names', async () => {
       const { deps } = makeStubDeps();
-      expect(
-        await dispatchProductCatalogTool(deps, 'ws1', 'totally_unrelated', {}),
-      ).toBeNull();
+      expect(await dispatchProductCatalogTool(deps, 'ws1', 'totally_unrelated', {})).toBeNull();
     });
 
     it('routes save_product and create_product through chatToolsService.toolSaveProduct', async () => {

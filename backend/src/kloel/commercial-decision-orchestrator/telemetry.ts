@@ -233,7 +233,7 @@ export async function recordIdentityResolved(
   await events.recordCommercial({
     workspaceId,
     subject: effectiveSubject,
-    eventType: 'identity.contact.resolved',
+    eventType: 'cognition.identity.contact_resolved',
     occurredAt: new Date(),
     idempotencyKey: `identity-resolved:${inboundKey}`,
     payload: {
@@ -331,7 +331,7 @@ export async function recordShadow(
     await events.recordCommercial({
       workspaceId,
       subject: `channel:${channel}`,
-      eventType: 'pipeline.shadow_recorded',
+      eventType: 'cognition.pipeline.shadow_recorded',
       occurredAt: new Date(),
       idempotencyKey: `pipeline-shadow:${workspaceId}:${inboundKey}`,
       payload: {
@@ -381,7 +381,7 @@ export async function handleOrchestrationFallback(
       await events.recordCommercial({
         workspaceId,
         subject: `workspace:${workspaceId}`,
-        eventType: 'pipeline.auto_fallback',
+        eventType: 'cognition.pipeline.auto_fallback',
         occurredAt: new Date(),
         idempotencyKey: `pipeline-auto-fallback:${workspaceId}:${Date.now()}`,
         payload: {

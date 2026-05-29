@@ -133,11 +133,7 @@ describe('inbound-processor.service.helpers', () => {
     });
 
     it('preserves existing fields when existing is a plain object', () => {
-      const out = buildContactCustomFieldsPatch(
-        { city: 'SP', cluster: 'A' },
-        'Maria',
-        iso,
-      );
+      const out = buildContactCustomFieldsPatch({ city: 'SP', cluster: 'A' }, 'Maria', iso);
       expect(out.city).toBe('SP');
       expect(out.cluster).toBe('A');
       expect(out.remotePushName).toBe('Maria');
@@ -214,9 +210,7 @@ describe('inbound-processor.service.helpers', () => {
     });
 
     it('returns true when ingestMode is undefined and other gates pass', () => {
-      expect(
-        shouldDispatchVoiceTranscription({ type: 'audio', mediaUrl: 'https://x' }),
-      ).toBe(true);
+      expect(shouldDispatchVoiceTranscription({ type: 'audio', mediaUrl: 'https://x' })).toBe(true);
     });
 
     it('returns false for catchup', () => {
@@ -247,9 +241,7 @@ describe('inbound-processor.service.helpers', () => {
     });
 
     it('returns false when mediaUrl is empty / undefined', () => {
-      expect(
-        shouldDispatchVoiceTranscription({ type: 'audio', ingestMode: 'live' }),
-      ).toBe(false);
+      expect(shouldDispatchVoiceTranscription({ type: 'audio', ingestMode: 'live' })).toBe(false);
       expect(
         shouldDispatchVoiceTranscription({
           type: 'audio',

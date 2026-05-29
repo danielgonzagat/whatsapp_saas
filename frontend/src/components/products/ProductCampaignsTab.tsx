@@ -58,8 +58,10 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
   }, [productId]);
 
   useEffect(() => {
-    setLoading(true);
-    fetchCampaigns();
+    queueMicrotask(() => {
+      setLoading(true);
+      void fetchCampaigns();
+    });
   }, [fetchCampaigns]);
 
   const resetNewCampaignForm = () => {

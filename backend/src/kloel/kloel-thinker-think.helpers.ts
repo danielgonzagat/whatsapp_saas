@@ -30,11 +30,67 @@ import {
   buildResponseVersionId,
 } from './kloel-thinker.substrate.helpers';
 import { emitCognitionAlias } from './event-taxonomy.canonical-aliases';
+import type { IntentRouterService } from './intent-router/intent-router.service';
+import {
+  buildReceipt,
+  writeOperationReceiptWithAudit,
+  type AuditLogSink,
+} from './operation-receipt.helpers';
 
 /** Shape returned by detectActionIntent — kept local to avoid coupling to the deeper module. */
 export interface DeterministicAction {
   tool: string;
   args: Record<string, unknown>;
+  /** True when the matched capability is MUTATION_SENSITIVE and needs confirmation. */
+  requiresConfirmation?: boolean;
+  /** Required operational inputs the user still has to supply. */
+  missingInputs?: string[];
+}
+
+/**
+ * Classify a message through the deterministic IntentRouter BEFORE the LLM.
+ *
+ * Returns a {@link DeterministicAction} when the router matched a capability
+ * (the organism should ACT, not chat), or `null` when the message is purely
+ * conversational and should be verbalized by the LLM. This is the streaming
+ * counterpart of the legacy `detectActionIntent` regex detector — wire it into
+ * `KloelThinkerService.think` so the authenticated `think()` path no longer
+ * sends every message straight to the model.
+ */
+export function classifyDeterministicIntent(
+  intentRouter: IntentRouterService | undefined,
+  message: string,
+  surface: string,
+  permissions: string[] = ['*'],
+): DeterministicAction | null {
+  if (!intentRouter) {
+    return null;
+  }
+  const { classification, isChat } = intentRouter.classify(message, surface, permissions);
+  if (isChat || !classification || !classification.capabilityId) {
+    return null;
+  }
+  return {
+    tool: classification.capabilityId,
+    args: { ...classification.entities },
+    requiresConfirmation: classification.requiresConfirmation === true,
+    ...(Array.isArray(classification.missingInputs) && classification.missingInputs.length > 0
+      ? { missingInputs: classification.missingInputs }
+      : {}),
+  };
+}
+
+/**
+ * Reads the `confirmMutations` opt-in from the per-turn metadata. The frontend
+ * confirmation UX sets this to `true` only after the user explicitly confirms a
+ * mutation-sensitive action. Anything else (missing / false / non-boolean) keeps
+ * the safe block-and-ask default on the LLM tool_call path.
+ */
+function readConfirmMutations(metadata: Prisma.InputJsonValue | undefined): boolean {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+    return false;
+  }
+  return (metadata as Record<string, unknown>).confirmMutations === true;
 }
 
 const KLOEL_TOOL_PLANNING_WORKSPACE_REQUIRED = 'workspaceId is required for Kloel tool planning';
@@ -56,6 +112,12 @@ export interface ThinkBranchContext {
   threadService: KloelThreadService;
   conversationStore: KloelConversationStore;
   planLimits: PlanLimitsService;
+  /**
+   * Durable AuditLog sink (DB / `RAC_AuditLog`). When present, every executed
+   * tool on the LLM tool_call path persists an OperationReceipt to the database,
+   * not only to the local `WORLD_LEDGER.jsonl` trace. Injected from the service.
+   */
+  audit?: AuditLogSink;
 }
 
 /** Finalizes a successful streaming reply: persist, refresh summary, emit done. */
@@ -259,14 +321,41 @@ export async function runToolPlanningBranch(
   const assistantMsg = initialResponse.choices[0]?.message;
   const assistantText = assistantMsg?.content || '';
   if (assistantMsg?.tool_calls?.length) {
-    const { toolMessages, usedSearchWeb } = await replyEngine.toolRouter.executeAssistantToolCalls({
-      assistantMessage: assistantMsg,
-      workspaceId: workspaceId ?? '',
-      ...(userId !== undefined ? { userId } : {}),
-      ...(requestedAllowedTools !== undefined ? { allowedTools: requestedAllowedTools } : {}),
-      safeWrite,
-      executeLocalTool,
-    });
+    // MUTATION_SENSITIVE gate: the LLM tool_call is the only action trigger on
+    // the authenticated path. A mutation-sensitive tool is blocked unless the
+    // turn carries an explicit `confirmMutations` flag (set by the frontend
+    // confirmation UX). Default = block-and-ask, never silently mutate.
+    const confirmMutations = readConfirmMutations(ctx.metadata);
+    const { toolMessages, receipts, usedSearchWeb } =
+      await replyEngine.toolRouter.executeAssistantToolCalls({
+        assistantMessage: assistantMsg,
+        workspaceId: workspaceId ?? '',
+        ...(userId !== undefined ? { userId } : {}),
+        ...(requestedAllowedTools !== undefined ? { allowedTools: requestedAllowedTools } : {}),
+        confirmMutations,
+        safeWrite,
+        executeLocalTool,
+      });
+    // Persist a durable receipt to the AuditLog (DB) for every executed tool —
+    // not only to WORLD_LEDGER.jsonl. The DB row is the queryable, workspace
+    // scoped record of "what action the organism actually performed".
+    if (workspaceId) {
+      await Promise.all(
+        receipts.map((receipt) =>
+          writeOperationReceiptWithAudit(
+            buildReceipt({
+              workspaceId,
+              toolName: receipt.name,
+              args: receipt.args,
+              result: { ...(receipt.result ?? {}), success: receipt.success },
+              ...(userId !== undefined ? { userId } : {}),
+              channel: 'web',
+            }),
+            ctx.audit,
+          ),
+        ),
+      );
+    }
     const finalTemp = usedSearchWeb ? 0.1 : responseTemperature;
     await planLimits.ensureTokenBudget(workspaceId ?? '');
     const streamedFinal = await streamWriterResponse(

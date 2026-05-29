@@ -66,6 +66,19 @@ export class MindSurpriseService {
     return surprise;
   }
 
+  
+    /**
+     * Close the chat-reply predictive-coding loop. Resolves the open
+     * `P(reply|...)` prediction persisted before the reply was sent (via
+     * MindPredictorService.predictReply) and observes the binary outcome —
+     * which updates the underlying MindBelief alpha/beta. Returns the surprise
+     * (0 when no open prediction exists). Shares MindPredictorService.REPLY_PREDICATE
+     * so prediction + resolution target the exact same belief row.
+     */
+    async resolveReply(workspaceId: string, subject: string, outcome: 0 | 1): Promise<number> {
+      return this.resolveBinary(workspaceId, subject, MindPredictorService.REPLY_PREDICATE, outcome);
+    }
+
   async sweepExpired(workspaceId: string, asOf = new Date()): Promise<number> {
     return this.prisma.$transaction(async (tx) => {
       // Raw justified: SELECT … FOR UPDATE SKIP LOCKED provides concurrent-

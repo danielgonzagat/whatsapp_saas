@@ -1,4 +1,5 @@
 import { AgentRuntimeJobRunnerService } from './agent-runtime.job-runner';
+import { mindMemoryStub } from './agent-runtime.mind-memory-stub.helpers';
 
 type KloelMemoryUpsertArgs = {
   update: { value: { history: unknown[] } };
@@ -107,6 +108,7 @@ describe('AgentRuntimeJobRunnerService', () => {
     };
     const service = new AgentRuntimeJobRunnerService(
       prisma as never,
+      mindMemoryStub(prisma) as never,
       brainEvents as never,
       sessions as never,
       kloel as never,
@@ -186,6 +188,7 @@ describe('AgentRuntimeJobRunnerService', () => {
     };
     const service = new AgentRuntimeJobRunnerService(
       prisma as never,
+      mindMemoryStub(prisma) as never,
       brainEvents as never,
       sessions as never,
       kloel as never,
@@ -239,6 +242,7 @@ describe('AgentRuntimeJobRunnerService', () => {
     const kloel = { thinkSync: jest.fn() };
     const service = new AgentRuntimeJobRunnerService(
       prisma as never,
+      mindMemoryStub(prisma) as never,
       brainEvents as never,
       sessions as never,
       kloel as never,
@@ -303,6 +307,7 @@ describe('AgentRuntimeJobRunnerService', () => {
     const kloel = { thinkSync: jest.fn().mockRejectedValue(new Error('fail')) };
     const service = new AgentRuntimeJobRunnerService(
       prisma as never,
+      mindMemoryStub(prisma) as never,
       brainEvents as never,
       sessions as never,
       kloel as never,

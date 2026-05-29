@@ -46,9 +46,7 @@ describe('computeOutboundMessageRates', () => {
   });
 
   it('returns all zeros when every count is zero', () => {
-    expect(
-      computeOutboundMessageRates({ SENT: 0, DELIVERED: 0, READ: 0, FAILED: 0 }),
-    ).toEqual({
+    expect(computeOutboundMessageRates({ SENT: 0, DELIVERED: 0, READ: 0, FAILED: 0 })).toEqual({
       totalOutbound: 0,
       deliveryRatePct: 0,
       readRatePct: 0,
@@ -88,7 +86,7 @@ describe('computeOutboundMessageRates', () => {
       READ: 0,
       FAILED: 0,
       SUSPENDED: 999,
-    } as unknown as Record<string, number>);
+    });
     expect(result.totalOutbound).toBe(10);
   });
 });

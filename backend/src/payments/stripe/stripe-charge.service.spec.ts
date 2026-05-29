@@ -5,6 +5,7 @@ import { StripeService } from '../../billing/stripe.service';
 import { StripeChargeService } from './stripe-charge.service';
 import type { CreateSaleChargeInput } from './stripe-charge.types';
 import type { SplitRole } from '../split/split.types';
+import { partialMatch } from '../../../test/helpers/match-instance';
 
 /**
  * Test-local mirror of the runtime shape that ends up in
@@ -28,6 +29,37 @@ const FIVE_THOUSAND_CENTS = 5_000;
 type StripeStub = {
   stripe: { paymentIntents: { create: jest.Mock } };
 };
+
+/**
+ * Test-local mirror of the Stripe `paymentIntents.create` params shape that
+ * the service builds. Only the fields asserted in this suite are declared;
+ * the index signature keeps it forward-compatible without `any`.
+ */
+interface PaymentIntentCreateArgs {
+  amount?: number;
+  currency?: string;
+  payment_method_types?: string[];
+  transfer_group?: string;
+  transfer_data?: unknown;
+  on_behalf_of?: unknown;
+  application_fee_amount?: unknown;
+  confirm?: boolean;
+  receipt_email?: string;
+  metadata: {
+    type?: string;
+    workspace_id?: string;
+    kloel_order_id?: string;
+    split_lines?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+/** Returns the first positional argument passed to the mocked `create`, typed. */
+function firstCreateArg(stub: StripeStub): PaymentIntentCreateArgs {
+  const calls = stub.stripe.paymentIntents.create.mock.calls as PaymentIntentCreateArgs[][];
+  return calls[0][0];
+}
 
 function makeStripeStub(): StripeStub {
   return { stripe: { paymentIntents: { create: jest.fn() } } };
@@ -71,7 +103,7 @@ describe('StripeChargeService.createSaleCharge', () => {
         payment_method_types: ['card'],
         transfer_group: 'sale:order_123',
         receipt_email: 'buyer@example.com',
-        metadata: expect.objectContaining({
+        metadata: partialMatch({
           type: 'sale',
           workspace_id: 'ws_1',
           kloel_order_id: 'order_123',
@@ -80,7 +112,7 @@ describe('StripeChargeService.createSaleCharge', () => {
       }),
       { idempotencyKey: 'sale:order_123' },
     );
-    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[FIRST_CALL][FIRST_CALL];
+    const callArgs = firstCreateArg(stripe);
     expect(callArgs.transfer_data).toBeUndefined();
     expect(callArgs.on_behalf_of).toBeUndefined();
 
@@ -112,8 +144,10 @@ describe('StripeChargeService.createSaleCharge', () => {
       }),
     );
 
-    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[FIRST_CALL][FIRST_CALL];
-    const splitLines = JSON.parse(callArgs.metadata.split_lines);
+    const callArgs = firstCreateArg(stripe);
+    const splitLines = JSON.parse(
+      callArgs.metadata.split_lines ?? '',
+    ) as PersistedSplitLineSnapshot[];
     expect(callArgs.transfer_data).toBeUndefined();
     expect(callArgs.application_fee_amount).toBeUndefined();
     expect(splitLines).toEqual([
@@ -142,7 +176,7 @@ describe('StripeChargeService.createSaleCharge', () => {
       }),
     );
 
-    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[FIRST_CALL][FIRST_CALL];
+    const callArgs = firstCreateArg(stripe);
     expect(callArgs.metadata).toEqual(
       expect.objectContaining({
         campaign_id: 'camp_42',
@@ -162,7 +196,7 @@ describe('StripeChargeService.createSaleCharge', () => {
 
     await service.createSaleCharge(baseInput({ paymentMethodTypes: ['card'] }));
 
-    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[FIRST_CALL][FIRST_CALL];
+    const callArgs = firstCreateArg(stripe);
     expect(callArgs.payment_method_types).toEqual(['card']);
   });
 
@@ -176,7 +210,7 @@ describe('StripeChargeService.createSaleCharge', () => {
 
     const result = await service.createSaleCharge(baseInput());
 
-    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[FIRST_CALL][FIRST_CALL];
+    const callArgs = firstCreateArg(stripe);
     expect(callArgs.payment_method_types).toEqual(['card']);
     expect(callArgs.payment_method_types).not.toContain('pix');
     expect(callArgs.payment_method_types).not.toContain('boleto');
@@ -208,7 +242,7 @@ describe('StripeChargeService.createSaleCharge', () => {
 
     await service.createSaleCharge(baseInput({ currency: 'BRL' }));
 
-    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[FIRST_CALL][FIRST_CALL];
+    const callArgs = firstCreateArg(stripe);
     expect(callArgs.currency).toBe('brl');
   });
 
@@ -289,7 +323,7 @@ describe('StripeChargeService.createSaleCharge', () => {
     const result = await service.createSaleCharge(baseInput({ idempotencyKey: 'xfer_test_001' }));
 
     expect(result.transferGroup).toBe('sale:xfer_test_001');
-    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[FIRST_CALL][FIRST_CALL];
+    const callArgs = firstCreateArg(stripe);
     expect(callArgs.transfer_group).toBe('sale:xfer_test_001');
   });
 
@@ -313,8 +347,10 @@ describe('StripeChargeService.createSaleCharge', () => {
       }),
     );
 
-    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[FIRST_CALL][FIRST_CALL];
-    const splitLines = JSON.parse(callArgs.metadata.split_lines) as PersistedSplitLineSnapshot[];
+    const callArgs = firstCreateArg(stripe);
+    const splitLines = JSON.parse(
+      callArgs.metadata.split_lines ?? '',
+    ) as PersistedSplitLineSnapshot[];
 
     expect(splitLines.length).toBeGreaterThan(NONE);
     expect(splitLines.map((l) => l.role)).toContain('supplier');
@@ -344,7 +380,7 @@ describe('StripeChargeService.createSaleCharge', () => {
 
     await service.createSaleCharge(baseInput({ metadata: callerMetadata }));
 
-    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[FIRST_CALL][FIRST_CALL];
+    const callArgs = firstCreateArg(stripe);
     expect(callArgs.metadata).toMatchObject(callerMetadata);
     expect(callArgs.metadata.type).toBe('sale');
     expect(callArgs.metadata.workspace_id).toBe('ws_1');
@@ -364,7 +400,7 @@ describe('StripeChargeService.createSaleCharge', () => {
     );
 
     expect(result.amountCents).toBe(5_000n);
-    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[FIRST_CALL][FIRST_CALL];
+    const callArgs = firstCreateArg(stripe);
     expect(callArgs.currency).toBe('usd');
     expect(callArgs.amount).toBe(FIVE_THOUSAND_CENTS);
   });
@@ -429,7 +465,7 @@ describe('StripeChargeService.createSaleCharge', () => {
       }),
     );
 
-    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[FIRST_CALL][FIRST_CALL];
+    const callArgs = firstCreateArg(stripe);
     expect(callArgs.confirm).toBe(true);
   });
 
@@ -444,7 +480,7 @@ describe('StripeChargeService.createSaleCharge', () => {
 
     await service.createSaleCharge(baseInput({ confirm: undefined }));
 
-    const callArgs = stripe.stripe.paymentIntents.create.mock.calls[FIRST_CALL][FIRST_CALL];
+    const callArgs = firstCreateArg(stripe);
     expect(callArgs.confirm).toBeUndefined();
   });
 

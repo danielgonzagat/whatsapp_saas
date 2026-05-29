@@ -11,10 +11,15 @@ import {
   type AgentDelegationStatus,
   type InnerDelegationValue,
 } from './agent-runtime.delegation.types';
+import { MindMemoryItemService } from '../mind/aliases/mind-memory-item.service';
+
 @Injectable()
 export class AgentRuntimeDelegationService {
   private readonly logger = new Logger(AgentRuntimeDelegationService.name);
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    _prisma: PrismaService,
+    private readonly mindMemory: MindMemoryItemService,
+  ) {}
   async create(input: AgentDelegationInput): Promise<AgentDelegationRecord> {
     const id = randomUUID();
     const key = this.delegationKey(id);
@@ -33,7 +38,7 @@ export class AgentRuntimeDelegationService {
       updatedAt: now,
       completedAt: null,
     };
-    const created = await this.prisma.kloelMemory.create({
+    const created = await this.mindMemory.items.create({
       data: {
         workspaceId: input.workspaceId,
         key,
@@ -157,7 +162,7 @@ export class AgentRuntimeDelegationService {
     delegationId: string;
   }): Promise<AgentDelegationRecord | null> {
     const key = this.delegationKey(params.delegationId);
-    const row = await this.prisma.kloelMemory.findUnique({
+    const row = await this.mindMemory.items.findUnique({
       where: { workspaceId_key: { workspaceId: params.workspaceId, key } },
     });
     if (!row) {
@@ -172,7 +177,7 @@ export class AgentRuntimeDelegationService {
     limit?: number;
   }): Promise<AgentDelegationListResult> {
     const limit = Math.max(1, Math.min(params.limit ?? 50, 100));
-    const rows = await this.prisma.kloelMemory.findMany({
+    const rows = await this.mindMemory.items.findMany({
       where: { workspaceId: params.workspaceId, category: 'agent_delegation', type: 'delegation' },
       orderBy: { updatedAt: 'desc' },
       take: limit,
@@ -188,7 +193,7 @@ export class AgentRuntimeDelegationService {
     workspaceId: string;
     childSessionId: string;
   }): Promise<AgentDelegationListResult> {
-    const rows = await this.prisma.kloelMemory.findMany({
+    const rows = await this.mindMemory.items.findMany({
       where: { workspaceId: params.workspaceId, category: 'agent_delegation', type: 'delegation' },
       orderBy: { updatedAt: 'desc' },
     });
@@ -205,7 +210,7 @@ export class AgentRuntimeDelegationService {
     key: string;
     value: unknown;
   } | null> {
-    const rows = await this.prisma.kloelMemory.findMany({
+    const rows = await this.mindMemory.items.findMany({
       where: { workspaceId, category: 'agent_delegation', type: 'delegation' },
       orderBy: { createdAt: 'desc' },
       take: 20,
@@ -230,7 +235,7 @@ export class AgentRuntimeDelegationService {
     key: string;
     value: unknown;
   } | null> {
-    const rows = await this.prisma.kloelMemory.findMany({
+    const rows = await this.mindMemory.items.findMany({
       where: { workspaceId, category: 'agent_delegation', type: 'delegation' },
       orderBy: { createdAt: 'desc' },
       take: 20,
@@ -282,7 +287,7 @@ export class AgentRuntimeDelegationService {
     value: InnerDelegationValue,
   ): Promise<{ workspaceId: string; key: string; value: unknown } | null> {
     try {
-      await this.prisma.kloelMemory.updateMany({
+      await this.mindMemory.items.updateMany({
         where: {
           workspaceId,
           key,

@@ -43,9 +43,7 @@ describe('autopilot-cycle-executor.helpers — response', () => {
       expect(resolveHardcodedNightResponse('soft_close_night')).toContain(
         'Já deixei tudo preparado',
       );
-      expect(resolveHardcodedNightResponse('auto_reply_night')).toContain(
-        'Amanhã 8h te respondo',
-      );
+      expect(resolveHardcodedNightResponse('auto_reply_night')).toContain('Amanhã 8h te respondo');
     });
     it('returns null for other actions', () => {
       expect(resolveHardcodedNightResponse('send_offer')).toBeNull();
@@ -56,14 +54,10 @@ describe('autopilot-cycle-executor.helpers — response', () => {
   describe('resolveResponseTemplate', () => {
     it('returns the matching template', () => {
       expect(resolveResponseTemplate('offer')).toBe(RESPONSE_TEMPLATES.offer);
-      expect(resolveResponseTemplate('qualify')).toBe(
-        RESPONSE_TEMPLATES.qualify,
-      );
+      expect(resolveResponseTemplate('qualify')).toBe(RESPONSE_TEMPLATES.qualify);
     });
     it('falls back to the chat template for unknown types', () => {
-      expect(resolveResponseTemplate('not_a_real_type')).toBe(
-        RESPONSE_TEMPLATES.chat,
-      );
+      expect(resolveResponseTemplate('not_a_real_type')).toBe(RESPONSE_TEMPLATES.chat);
     });
   });
 

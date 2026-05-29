@@ -15,6 +15,7 @@ import {
   type AgentJobPayload,
   type ClaimedAgentJobEvent,
 } from './agent-runtime.job-runner.persistence';
+import { MindMemoryItemService } from '../mind/aliases/mind-memory-item.service';
 
 const MAX_RETRIES = 3;
 const BACKOFF_BASE_MS = 60_000;
@@ -26,6 +27,7 @@ export class AgentRuntimeJobRunnerService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly mindMemory: MindMemoryItemService,
     private readonly brainEvents: MindEventSpine,
     private readonly sessions: AgentRuntimeSessionStore,
     private readonly kloel: KloelService,
@@ -343,7 +345,7 @@ export class AgentRuntimeJobRunnerService {
     entry: AgentJobExecutionHistory,
   ): Promise<void> {
     return recordJobHistory(
-      this.prisma,
+      this.mindMemory,
       this.opsAlert,
       this.logWarn,
       workspaceId,
@@ -359,7 +361,7 @@ export class AgentRuntimeJobRunnerService {
     result: { status: 'succeeded' | 'failed'; eventId: string; message: string },
   ): Promise<void> {
     return recordJobExecutionSnapshot(
-      this.prisma,
+      this.mindMemory,
       this.opsAlert,
       this.logWarn,
       workspaceId,

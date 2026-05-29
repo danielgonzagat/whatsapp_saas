@@ -1,4 +1,5 @@
 import { AgentRuntimeContextCompressorService } from './agent-runtime.context-compressor';
+import { mindMemoryStub } from './agent-runtime.mind-memory-stub.helpers';
 
 function makePrisma() {
   return {
@@ -19,9 +20,11 @@ function makeMemoryManager() {
 
 describe('AgentRuntimeContextCompressorService', () => {
   it('detects when a message set exceeds the compression budget', () => {
+    const ccPrisma = makePrisma();
     const service = new AgentRuntimeContextCompressorService(
-      makePrisma() as never,
+      ccPrisma as never,
       makeMemoryManager() as never,
+      mindMemoryStub(ccPrisma) as never,
     );
 
     expect(
@@ -41,6 +44,7 @@ describe('AgentRuntimeContextCompressorService', () => {
     const service = new AgentRuntimeContextCompressorService(
       prisma as never,
       memoryManager as never,
+      mindMemoryStub(prisma) as never,
     );
 
     const result = await service.compressAndPersist({
@@ -95,6 +99,7 @@ describe('AgentRuntimeContextCompressorService', () => {
     const service = new AgentRuntimeContextCompressorService(
       prisma as never,
       makeMemoryManager() as never,
+      mindMemoryStub(prisma) as never,
     );
 
     const result = await service.loadCompressedContext('ws_1', 'thread_1');

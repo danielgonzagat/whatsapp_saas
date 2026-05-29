@@ -13,18 +13,20 @@ import { RateLimitService } from './rate-limit.service';
 import { AuthTokenService } from './auth.token.service';
 import { ConflictException } from '@nestjs/common';
 
+const mockAgentModel = {
+  findFirst: jest.fn(),
+  findMany: jest.fn(),
+  findUnique: jest.fn(),
+  create: jest.fn(),
+  update: jest.fn(),
+};
+const mockWorkspaceModel = {
+  create: jest.fn(),
+  findUnique: jest.fn(),
+};
 const mockPrisma = {
-  agent: {
-    findFirst: jest.fn(),
-    findMany: jest.fn(),
-    findUnique: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-  },
-  workspace: {
-    create: jest.fn(),
-    findUnique: jest.fn(),
-  },
+  agent: mockAgentModel,
+  workspace: mockWorkspaceModel,
   affiliatePartner: {
     findFirst: jest.fn(),
     update: jest.fn(),
@@ -46,10 +48,15 @@ const mockPrisma = {
   },
   $transaction: jest.fn((arg: unknown) => {
     if (typeof arg === 'function') {
-      return arg({
-        agent: mockPrisma.agent,
-        workspace: mockPrisma.workspace,
-      } as Partial<typeof mockPrisma>);
+      return (
+        arg as (tx: {
+          agent: typeof mockAgentModel;
+          workspace: typeof mockWorkspaceModel;
+        }) => unknown
+      )({
+        agent: mockAgentModel,
+        workspace: mockWorkspaceModel,
+      });
     }
     return Promise.all(arg as Array<Promise<unknown>>);
   }),

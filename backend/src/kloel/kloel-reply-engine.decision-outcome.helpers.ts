@@ -9,6 +9,7 @@ import { randomIdSegment } from '../common/random-id';
 import type { DecisionOutcomeService } from './decision-outcome.service';
 import type { MindBeliefService } from './mind/inference/mind-belief.service';
 import type { MindSurpriseService } from './mind/inference/mind-surprise.service';
+import { type MindPredictorService } from './mind/inference/mind-predictor.service';
 
 interface DecisionOutcomeLogger {
   warn: (event: string, ctx?: Record<string, unknown>) => void;
@@ -105,6 +106,91 @@ export function observeRepliedToUserBelief(
     )
     .catch((err: unknown) =>
       logger.warn('kloel_belief_observation_skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      }),
+    );
+}
+
+
+/**
+ * Persist a MindPrediction for the chat-reply predictive-coding loop BEFORE the
+ * reply is acted on. This is the missing producer that fed the previously-empty
+ * RAC_MindPrediction table: predictReply writes a row with the canonical
+ * `P(reply|template,hour,channel)` predicate, which resolveChatReplySurprise
+ * later resolves + observes (moving the underlying belief's alpha/beta).
+ *
+ * Fire-and-forget: catches its own errors and warn-logs; never throws upstream.
+ */
+export function predictChatReply(
+  mindPredictorService: MindPredictorService | undefined,
+  logger: DecisionOutcomeLogger,
+  params: {
+    workspaceId: string;
+    surface: string;
+    channel?: string;
+    horizonSec?: number;
+  },
+): void {
+  if (!mindPredictorService) {
+    return;
+  }
+  void mindPredictorService
+    .predictReply(
+      {
+        workspaceId: params.workspaceId,
+        subject: params.workspaceId,
+        features: {
+          template: params.surface,
+          channel: params.channel ?? params.surface,
+          hour: new Date().getHours(),
+        },
+      },
+      params.horizonSec ?? 60,
+    )
+    .catch((err: unknown) =>
+      logger.warn('kloel_reply_prediction_skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      }),
+    );
+}
+
+/**
+ * Close the chat-reply predictive-coding loop. Replaces the pure-math
+ * computeChatSurprise side-effect: resolveReply runs findOpen + resolve +
+ * observeBinary, so the open MindPrediction is resolved AND the underlying
+ * MindBelief alpha/beta is updated from the real outcome. Logs surprise when it
+ * exceeds the 0.3 threshold.
+ *
+ * Fire-and-forget: catches its own errors and warn-logs; never throws upstream.
+ */
+export function resolveChatReplySurprise(
+  mindSurpriseService: MindSurpriseService | undefined,
+  logger: DecisionOutcomeLogger,
+  params: {
+    workspaceId: string;
+    observed: 0 | 1;
+    surface: string;
+  },
+): void {
+  if (!mindSurpriseService) {
+    return;
+  }
+  void mindSurpriseService
+    .resolveReply(params.workspaceId, params.workspaceId, params.observed)
+    .then((surprise) => {
+      if (surprise > 0.3) {
+        logger.log?.({
+          event: 'kloel_chat_surprise_detected',
+          workspaceId: params.workspaceId,
+          observed: params.observed,
+          surpriseValue: surprise,
+          surface: params.surface,
+          source: 'prediction',
+        });
+      }
+    })
+    .catch((err: unknown) =>
+      logger.warn('kloel_surprise_skipped', {
         reason: err instanceof Error ? err.message : String(err),
       }),
     );

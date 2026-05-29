@@ -42,6 +42,12 @@ export class WhatsAppDispatchAdapter implements ChannelDispatchPort {
     return this.mapResult(result, input);
   }
 
+  
+    /** Canonical alias of {@link send} (Wave 21 unification — task d). */
+    sendMessage(input: ChannelSendInput): Promise<ChannelSendResult> {
+      return this.send(input);
+    }
+
   isConfigured(): boolean {
     return Boolean(this.whatsapp);
   }

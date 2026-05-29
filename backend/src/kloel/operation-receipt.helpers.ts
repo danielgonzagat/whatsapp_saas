@@ -279,3 +279,90 @@ export async function writeOperationReceipt(receipt: OperationReceipt): Promise<
     // Non-blocking: receipt write failure should never break tool execution
   }
 }
+
+/**
+ * Structural sink for persisting a receipt into the durable AuditLog (DB).
+ *
+ * Intentionally typed structurally (not as `AuditService`) so the receipt
+ * helpers stay free of NestJS/Prisma coupling and remain unit-testable, and
+ * so callers can inject the real `AuditService` (which maps to the
+ * `RAC_AuditLog` table) without a circular import.
+ */
+export interface AuditLogSink {
+  log(data: {
+    workspaceId: string;
+    action: string;
+    resource: string;
+    resourceId?: string;
+    agentId?: string;
+    details?: Record<string, unknown>;
+  }): Promise<void>;
+}
+
+/**
+ * Persist an operation receipt to the durable AuditLog (DB / `RAC_AuditLog`).
+ *
+ * This is the production source of truth for "what action did the organism
+ * actually execute". The JSONL ledger (`writeOperationReceipt`) remains a
+ * local-debug append-only trace; the DB row is the queryable, workspace-scoped
+ * audit record. Never throws — receipt persistence must not break a reply.
+ */
+export async function persistReceiptToAuditLog(
+  audit: AuditLogSink | undefined,
+  receipt: OperationReceipt,
+): Promise<void> {
+  if (!audit) {
+    return;
+  }
+  try {
+    await audit.log({
+      workspaceId: receipt.workspaceId,
+      action: receipt.actionName,
+      resource: receipt.entityType,
+      ...(receipt.entityId !== undefined ? { resourceId: receipt.entityId } : {}),
+      ...(receipt.userId !== undefined ? { agentId: receipt.userId } : {}),
+      details: { ...(receipt as unknown as Record<string, unknown>), channel: receipt.channel },
+    });
+  } catch {
+    // Non-blocking: audit persistence failure must never break tool execution.
+  }
+}
+
+/**
+ * Write an operation receipt to BOTH durable sinks: the queryable AuditLog (DB)
+ * when an `audit` sink is provided, and the local JSONL ledger. Prefer this over
+ * the bare `writeOperationReceipt` on every real action path so the receipt is
+ * persisted in the database, not only in `WORLD_LEDGER.jsonl`.
+ */
+export async function writeOperationReceiptWithAudit(
+  receipt: OperationReceipt,
+  audit?: AuditLogSink,
+): Promise<void> {
+  await Promise.all([writeOperationReceipt(receipt), persistReceiptToAuditLog(audit, receipt)]);
+}
+
+/**
+ * Verbs that indicate a mutation a user must explicitly confirm before the
+ * organism executes it on the authenticated tool-call (LLM) path. Aligns with
+ * the canonical `MUTATION_SENSITIVE` capability category: money, documents,
+ * external sends, destructive edits.
+ */
+const MUTATION_SENSITIVE_VERB_RE =
+  /(?:^|[._-])(?:create|update|delete|remove|send|charge|pay|payout|refund|transfer|issue|cancel|publish|deploy|execute|generate_payment|gerar_pagamento|criar|enviar|cobrar|estornar|excluir|deletar|cancelar|emitir)(?:$|[._-])/i;
+
+/**
+ * Best-effort name-based classifier for whether a tool is mutation-sensitive.
+ * Used as a SAFE-BY-DEFAULT fallback on the LLM tool_call path when the caller
+ * does not supply an explicit registry-derived sensitive set. Read/query tools
+ * (get/list/search/read/count/fetch/lookup) are treated as safe.
+ */
+export function isMutationSensitiveTool(toolName: string): boolean {
+  const name = String(toolName || '').toLowerCase();
+  if (!name) {
+    return false;
+  }
+  if (/(?:^|[._-])(?:get|list|search|read|count|fetch|lookup|view|describe|status|consultar|listar|buscar)(?:$|[._-])/.test(name)) {
+    return false;
+  }
+  return MUTATION_SENSITIVE_VERB_RE.test(name);
+}

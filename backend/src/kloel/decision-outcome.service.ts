@@ -3,8 +3,6 @@ import { StructuredLogger } from '../logging/structured-logger';
 import { randomUUID } from 'node:crypto';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { KloelGlobalPriorService } from './kloel-global-prior.service';
-import { extractChannel } from './mind/inference/mind-belief-by-channel';
 import { MindBanditService } from './mind/policy/mind-bandit.service';
 
 function inputJson(value: unknown): Prisma.InputJsonValue {
@@ -35,24 +33,51 @@ export class DecisionOutcomeService {
 
   constructor(
     private readonly prisma: PrismaService,
-    @Optional() private readonly globalPrior?: KloelGlobalPriorService,
     @Optional() private readonly mindBandit?: MindBanditService,
   ) {}
 
   async recordDecision(input: RecordDecisionInput) {
-    await this.prisma.decisionOutcome.create({
-      data: {
-        id: randomUUID(),
-        workspaceId: input.workspaceId,
-        decisionType: input.decisionType,
-        chosenAction: input.chosenAction,
-        baselineAction: input.baselineAction ?? null,
-        outcomeKey: input.outcomeKey,
-        expectedWindow: input.expectedWindow,
-        contextSnapshot: inputJson(input.contextSnapshot),
-      },
-    });
-  }
+      await this.prisma.decisionOutcome.create({
+        data: {
+          id: randomUUID(),
+          workspaceId: input.workspaceId,
+          decisionType: input.decisionType,
+          chosenAction: input.chosenAction,
+          baselineAction: input.baselineAction ?? null,
+          outcomeKey: input.outcomeKey,
+          expectedWindow: input.expectedWindow,
+          contextSnapshot: inputJson(input.contextSnapshot),
+        },
+      });
+
+      // Close the bandit loop: idempotently register the arms of this decision
+      // (the chosen action + its baseline, e.g. 'engage'/'silence' for
+      // 'chat_reply') so the matching mindBanditArm rows exist before
+      // closeOutcome later calls recordOutcome. register() upserts, so this is
+      // safe to call on every decision. Fire-and-forget — a learning-side
+      // failure must never break the decision-recording path.
+      if (this.mindBandit) {
+        const arms = Array.from(
+          new Set([input.chosenAction, input.baselineAction].filter((a): a is string => !!a)),
+        );
+        if (arms.length > 0) {
+          this.mindBandit
+            .register({
+              workspaceId: input.workspaceId,
+              decisionType: input.decisionType,
+              arms,
+              context: input.contextSnapshot,
+            })
+            .catch((err: unknown) => {
+              this.logger.warn('Failed to register bandit arms from recordDecision', {
+                outcomeKey: input.outcomeKey,
+                decisionType: input.decisionType,
+                error: err instanceof Error ? err.message : String(err),
+              });
+            });
+        }
+      }
+    }
 
   async closeOutcome(input: CloseOutcomeInput) {
     const result = await this.prisma.decisionOutcome.updateMany({
@@ -77,25 +102,6 @@ export class DecisionOutcomeService {
           workspaceId: true,
         },
       });
-
-      if (closed && this.globalPrior) {
-        const channel = extractChannel(closed.contextSnapshot as Record<string, unknown>);
-        if (channel) {
-          try {
-            await this.globalPrior.recordObservation(
-              channel,
-              closed.decisionType,
-              closed.chosenAction,
-              input.wonVsBaseline ?? false,
-            );
-          } catch (err: unknown) {
-            this.logger.error('Failed to record global prior observation from closeOutcome', {
-              outcomeKey: input.outcomeKey,
-              error: err instanceof Error ? err.message : String(err),
-            });
-          }
-        }
-      }
 
       if (closed && this.mindBandit) {
         // Append-only learning signal: feed the closed outcome's win/loss back

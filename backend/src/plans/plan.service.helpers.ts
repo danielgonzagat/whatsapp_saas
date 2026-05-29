@@ -23,6 +23,14 @@ export interface AffiliateConfig {
   customCommission?: number;
 }
 
+export interface OrderBumpConfig {
+  enabled?: boolean;
+  bumpProductId?: string;
+  bumpPlanId?: string;
+  title?: string;
+  discountPercent?: number;
+}
+
 export interface UpdatePlanDto {
   name?: string;
   price?: number;
@@ -153,6 +161,25 @@ export function buildPlanUpdatePatch(
   }
 
   return { updates, changes };
+}
+
+/**
+ * Build the JSON payload for the `checkoutImages.orderBump` slot from an
+ * `OrderBumpConfig`. Omit-undefined semantics so a partial update merges
+ * non-destructively on top of an existing order-bump config.
+ */
+export function orderBumpConfigJson(
+  config: OrderBumpConfig,
+): Prisma.InputJsonObject & Record<string, unknown> {
+  return {
+    ...(config.enabled !== undefined ? { enabled: Boolean(config.enabled) } : {}),
+    ...(config.bumpProductId !== undefined ? { bumpProductId: config.bumpProductId } : {}),
+    ...(config.bumpPlanId !== undefined ? { bumpPlanId: config.bumpPlanId } : {}),
+    ...(config.title !== undefined ? { title: config.title } : {}),
+    ...(config.discountPercent !== undefined
+      ? { discountPercent: Number(config.discountPercent) }
+      : {}),
+  };
 }
 
 /**

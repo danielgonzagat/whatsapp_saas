@@ -30,6 +30,7 @@ jest.mock('./memory-stats', () => ({
 
 import { computeMemoryStats } from './memory-stats';
 import type { MemoryStats } from './memory-stats';
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 
 type MemoryManagementPrismaMock = {
   kloelMemory: {
@@ -99,6 +100,10 @@ describe('MemoryManagementService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: AuditService, useValue: auditService },
         { provide: OpsAlertService, useValue: opsAlert },
+        {
+          provide: MindMemoryItemService,
+          useValue: { get items() { return prisma.kloelMemory; } },
+        },
       ],
     }).compile();
 

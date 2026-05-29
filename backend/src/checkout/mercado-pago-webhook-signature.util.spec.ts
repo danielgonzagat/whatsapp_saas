@@ -29,10 +29,7 @@ describe('checkout migration guard — webhook signature verification', () => {
     // backend/src/checkout/mercado-pago-webhook.controller.ts was removed
     // per DEPRECATION_MAP row #35 (2026-05-27).
     const webhookSource = readFileSync(
-      resolve(
-        __dirname,
-        '../payments/mercadopago/mercadopago-webhook.controller.ts',
-      ),
+      resolve(__dirname, '../payments/mercadopago/mercadopago-webhook.controller.ts'),
       'utf8',
     );
     expect(webhookSource).toContain("@Controller('webhooks/mercadopago')");

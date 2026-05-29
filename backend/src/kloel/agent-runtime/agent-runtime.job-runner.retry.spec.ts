@@ -1,4 +1,5 @@
 import { AgentRuntimeJobRunnerService } from './agent-runtime.job-runner';
+import { mindMemoryStub } from './agent-runtime.mind-memory-stub.helpers';
 
 function makePendingRows(rows: Array<{ id: string; payload: Record<string, unknown> }>) {
   return jest.fn().mockResolvedValue(rows);
@@ -76,6 +77,7 @@ describe('AgentRuntimeJobRunnerService', () => {
     };
     const service = new AgentRuntimeJobRunnerService(
       prisma as never,
+      mindMemoryStub(prisma) as never,
       brainEvents as never,
       sessions as never,
       kloel as never,
@@ -203,6 +205,7 @@ describe('AgentRuntimeJobRunnerService', () => {
     };
     const service = new AgentRuntimeJobRunnerService(
       prisma as never,
+      mindMemoryStub(prisma) as never,
       brainEvents as never,
       sessions as never,
       kloel as never,
@@ -255,6 +258,7 @@ describe('AgentRuntimeJobRunnerService', () => {
     const kloel = { thinkSync: jest.fn() };
     const service = new AgentRuntimeJobRunnerService(
       prisma as never,
+      mindMemoryStub(prisma) as never,
       brainEvents as never,
       sessions as never,
       kloel as never,
@@ -324,6 +328,7 @@ describe('AgentRuntimeJobRunnerService', () => {
     };
     const service = new AgentRuntimeJobRunnerService(
       prisma as never,
+      mindMemoryStub(prisma) as never,
       brainEvents as never,
       sessions as never,
       kloel as never,

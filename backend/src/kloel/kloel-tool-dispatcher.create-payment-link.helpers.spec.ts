@@ -65,7 +65,10 @@ describe('kloel-tool-dispatcher.create-payment-link.helpers', () => {
     const { stub, deps } = makeStubDeps();
     await runCreatePaymentLink(deps, 'ws1', { amount: 10, description: 'x' });
     expect(stub.prisma.$transaction).toHaveBeenCalledTimes(1);
-    const [, options] = stub.prisma.$transaction.mock.calls[0] as [unknown, { isolationLevel?: string }];
+    const [, options] = stub.prisma.$transaction.mock.calls[0] as [
+      unknown,
+      { isolationLevel?: string },
+    ];
     expect(options).toEqual({ isolationLevel: 'ReadCommitted' });
     expect(stub.auditService.logWithTx).toHaveBeenCalledTimes(1);
     const auditCall = stub.auditService.logWithTx.mock.calls[0]?.[1] as { workspaceId: string };

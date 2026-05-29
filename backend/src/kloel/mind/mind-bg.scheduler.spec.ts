@@ -94,12 +94,7 @@ function buildScheduler(opts?: {
     | import('./cia/cia-cognitive-health.service').CiaCognitiveHealthService
     | undefined;
   return {
-    scheduler: new MindBackgroundScheduler(
-      processor,
-      spine,
-      undefined as never,
-      cognitiveHealth,
-    ),
+    scheduler: new MindBackgroundScheduler(processor, spine, undefined as never, cognitiveHealth),
     spine,
     cognitiveHealth,
   };

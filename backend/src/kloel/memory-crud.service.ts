@@ -5,6 +5,7 @@ import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import type { MemoryItem } from './memory.types';
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 
 /** Memory CRUD service. */
 @Injectable()
@@ -12,8 +13,9 @@ export class MemoryCrudService {
   private readonly logger = StructuredLogger.from(MemoryCrudService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
+    _prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly mindMemory: MindMemoryItemService,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
@@ -49,7 +51,7 @@ export class MemoryCrudService {
 
     try {
       // Upsert na memória (sem embedding por simplicidade inicial)
-      const memory = await this.prisma.kloelMemory.upsert({
+      const memory = await this.mindMemory.items.upsert({
         where: {
           workspaceId_key: { workspaceId, key },
         },
@@ -93,13 +95,13 @@ export class MemoryCrudService {
     }
 
     const [memories, total] = await Promise.all([
-      this.prisma.kloelMemory.findMany({
+      this.mindMemory.items.findMany({
         where: { ...where, workspaceId },
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { updatedAt: 'desc' },
       }),
-      this.prisma.kloelMemory.count({ where: { ...where, workspaceId } }),
+      this.mindMemory.items.count({ where: { ...where, workspaceId } }),
     ]);
 
     return { memories: memories.map((m) => this.toMemoryItem(m)), total };
@@ -109,7 +111,7 @@ export class MemoryCrudService {
    * 📊 Estatísticas
    */
   async getMemoryStats(workspaceId: string): Promise<unknown> {
-    const memories = await this.prisma.kloelMemory.findMany({
+    const memories = await this.mindMemory.items.findMany({
       where: { workspaceId },
       select: { category: true, updatedAt: true },
       take: 5000,
@@ -142,7 +144,7 @@ export class MemoryCrudService {
         })
         .catch(() => {});
 
-      await this.prisma.kloelMemory.delete({
+      await this.mindMemory.items.delete({
         where: { workspaceId_key: { workspaceId, key } },
       });
       return true;

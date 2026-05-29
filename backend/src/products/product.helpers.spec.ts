@@ -14,7 +14,7 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
     workspaceId: 'ws-1',
     name: 'Widget',
     description: 'A widget',
-    price: 19.9 as unknown as Product['price'],
+    price: 19.9,
     category: 'cat',
     sku: 'SKU-1',
     format: 'PHYSICAL',

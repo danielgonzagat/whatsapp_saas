@@ -14,7 +14,7 @@ import {
   useWalletWithdrawals,
 } from '@/hooks/useWallet';
 import { usePathname, useRouter } from 'next/navigation';
-import { startTransition, useEffect, useState } from 'react';
+import { startTransition, useState } from 'react';
 import {
   renderWalletPulseKeyframes,
   WALLET_SELECTION_STYLE,
@@ -85,14 +85,19 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
       : [];
 
   const [tab, setTab] = useState(resolvedDefaultTab);
+  const [lastDefaultTab, setLastDefaultTab] = useState(resolvedDefaultTab);
+  // Follow the `defaultTab` prop when it changes, while still allowing the user
+  // to switch tabs locally. Adjusting state during render (instead of in an
+  // effect) avoids an extra render pass and cascading-render lint violations.
+  if (resolvedDefaultTab !== lastDefaultTab) {
+    setLastDefaultTab(resolvedDefaultTab);
+    setTab(resolvedDefaultTab);
+  }
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('todos');
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [showAntecipateModal, setShowAntecipateModal] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('');
-  useEffect(() => {
-    setTab(resolvedDefaultTab);
-  }, [resolvedDefaultTab]);
 
   function handleTabChange(newTab: string) {
     setTab(newTab);

@@ -38,7 +38,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
     }
   }, [productId]);
   useEffect(() => {
-    fetch_();
+    queueMicrotask(fetch_);
   }, [fetch_]);
 
   const handleCreate = async (data: ProductUrlFormData) => {

@@ -120,8 +120,12 @@ describe('storage.service.helpers', () => {
   describe('buildAccessTokenPayload / encode / decode', () => {
     it('omits expiry when expiresInSeconds is missing or invalid', () => {
       expect(buildAccessTokenPayload('folder/file.png').exp).toBeUndefined();
-      expect(buildAccessTokenPayload('folder/file.png', { expiresInSeconds: 0 }).exp).toBeUndefined();
-      expect(buildAccessTokenPayload('folder/file.png', { expiresInSeconds: -1 }).exp).toBeUndefined();
+      expect(
+        buildAccessTokenPayload('folder/file.png', { expiresInSeconds: 0 }).exp,
+      ).toBeUndefined();
+      expect(
+        buildAccessTokenPayload('folder/file.png', { expiresInSeconds: -1 }).exp,
+      ).toBeUndefined();
       expect(
         buildAccessTokenPayload('folder/file.png', { expiresInSeconds: Number.NaN }).exp,
       ).toBeUndefined();
@@ -136,9 +140,9 @@ describe('storage.service.helpers', () => {
 
     it('records downloadName only when provided', () => {
       expect(buildAccessTokenPayload('folder/file.png').d).toBeUndefined();
-      expect(
-        buildAccessTokenPayload('folder/file.png', { downloadName: 'report.pdf' }).d,
-      ).toBe('report.pdf');
+      expect(buildAccessTokenPayload('folder/file.png', { downloadName: 'report.pdf' }).d).toBe(
+        'report.pdf',
+      );
     });
 
     it('round-trips through encode/decode', () => {

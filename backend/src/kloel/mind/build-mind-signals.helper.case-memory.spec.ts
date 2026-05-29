@@ -137,6 +137,6 @@ describe('buildMindSignals — case memory priorCases (PI-K15-B)', () => {
     expect(result.priorCases).toBeDefined();
     expect(result.riskClass).toBeDefined();
     expect(result.priorCases).toHaveLength(1);
-    expect(result.riskClass!.tier).toBe('R1');
+    expect((result.riskClass as { tier: string }).tier).toBe('R1');
   });
 });

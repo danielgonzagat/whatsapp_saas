@@ -117,7 +117,7 @@ describe('IdempotencyMiddleware', () => {
 
       idempotencyService.get.mockResolvedValueOnce(null);
 
-      await middleware.use(req, res as Response, next);
+      await middleware.use(req, res as unknown as Response, next);
 
       expect(idempotencyService.get).toHaveBeenCalledWith('key-1', 'POST', '/api/wallet/withdraw');
       expect(next).toHaveBeenCalled();
@@ -135,7 +135,7 @@ describe('IdempotencyMiddleware', () => {
 
       idempotencyService.get.mockResolvedValueOnce({ status: 201, body: { id: 42, ok: true } });
 
-      await middleware.use(req, res as Response, next);
+      await middleware.use(req, res as unknown as Response, next);
 
       expect(res.status).toHaveBeenCalledWith(201);
       expect(res.json).toHaveBeenCalledWith({ id: 42, ok: true });
@@ -152,7 +152,7 @@ describe('IdempotencyMiddleware', () => {
 
       idempotencyService.get.mockResolvedValueOnce({ status: 400, body: { error: 'bad input' } });
 
-      await middleware.use(req, res as Response, next);
+      await middleware.use(req, res as unknown as Response, next);
 
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({ error: 'bad input' });
@@ -169,12 +169,12 @@ describe('IdempotencyMiddleware', () => {
       const res = makeFakeRes();
       let capturedJson: ((body: unknown) => Response) | null = null;
       const next = jest.fn(() => {
-        capturedJson = (res as Response).json;
+        capturedJson = (res as unknown as Response).json;
       }) as NextFunction;
 
       idempotencyService.get.mockResolvedValueOnce(null);
 
-      await middleware.use(req, res as Response, next);
+      await middleware.use(req, res as unknown as Response, next);
 
       if (capturedJson) {
         capturedJson({ id: 99 });
@@ -198,13 +198,13 @@ describe('IdempotencyMiddleware', () => {
       const res = makeFakeRes();
       let capturedJson: ((body: unknown) => Response) | null = null;
       const next = jest.fn(() => {
-        capturedJson = (res as Response).json;
+        capturedJson = (res as unknown as Response).json;
       }) as NextFunction;
 
       idempotencyService.get.mockResolvedValueOnce(null);
       idempotencyService.set.mockRejectedValueOnce(new Error('redis is down'));
 
-      await middleware.use(req, res as Response, next);
+      await middleware.use(req, res as unknown as Response, next);
 
       expect(() => capturedJson?.({ id: 99 })).not.toThrow();
     });
@@ -222,7 +222,7 @@ describe('IdempotencyMiddleware', () => {
 
       idempotencyService.get.mockResolvedValueOnce(null);
 
-      await middleware.use(req, res as Response, next);
+      await middleware.use(req, res as unknown as Response, next);
 
       expect(idempotencyService.get).toHaveBeenCalledWith('key-1', 'PUT', '/api/wallet/withdraw');
     });
@@ -238,7 +238,7 @@ describe('IdempotencyMiddleware', () => {
 
       idempotencyService.get.mockResolvedValueOnce(null);
 
-      await middleware.use(req, res as Response, next);
+      await middleware.use(req, res as unknown as Response, next);
 
       expect(idempotencyService.get).toHaveBeenCalledWith('key-1', 'POST', '/api/wallet/deposit');
     });

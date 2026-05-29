@@ -2,7 +2,6 @@ import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../../../logging/structured-logger';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { KloelGlobalPriorService } from '../../kloel-global-prior.service';
 import { WisdomRelevanceFilter } from '../../wisdom/wisdom-relevance-filter.service';
 import { WisdomPatternStore } from '../../wisdom/wisdom-pattern-store.service';
 import { MindBeliefService } from '../inference/mind-belief.service';
@@ -45,6 +44,7 @@ import {
   resolveConfirmWindowMinutes,
   toResolvedPolicyRows,
 } from './mind-policy.service.helpers';
+import { MindGlobalPriorService } from '../memory/mind-global-prior.service';
 
 @Injectable()
 export class MindPolicyService {
@@ -53,7 +53,7 @@ export class MindPolicyService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly beliefs: MindBeliefService,
-    @Optional() private readonly globalPrior?: KloelGlobalPriorService,
+    @Optional() private readonly globalPrior?: MindGlobalPriorService,
     @Optional() private readonly wisdomFilter?: WisdomRelevanceFilter,
     @Optional() private readonly wisdomStore?: WisdomPatternStore,
   ) {
@@ -410,7 +410,7 @@ export class MindPolicyService {
           return buildMixedBeliefDefault(belief);
         }
 
-        const prior = await globalPrior.getPrior(channel, input.decisionType, action);
+        const prior = await globalPrior.getPriorTuple(channel, input.decisionType, action);
 
         if (!prior) {
           return buildMixedBeliefDefault(belief);

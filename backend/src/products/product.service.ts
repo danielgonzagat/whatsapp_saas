@@ -23,6 +23,7 @@ import type {
   ProductResult,
   ProductListResult,
 } from './product.types';
+import { emitCommerceAlias } from '../kloel/event-taxonomy.canonical-aliases';
 
 // Re-export DTOs / result shapes to preserve the historical import surface.
 export type {
@@ -135,12 +136,16 @@ export class ProductService {
       data: dto,
     });
 
-    this.eventEmitter.emit('product.updated', {
-      productId: product.id,
-      workspaceId,
-      agentId: actor.id,
-      changes: Object.keys(dto),
-    });
+    emitCommerceAlias(
+      (name, payload) => this.eventEmitter.emit(name, payload),
+      'product.updated',
+      {
+        productId: product.id,
+        workspaceId,
+        agentId: actor.id,
+        changes: Object.keys(dto),
+      },
+    );
 
     await this.audit.log({
       workspaceId,
@@ -221,12 +226,16 @@ export class ProductService {
       data: { imageUrl },
     });
 
-    this.eventEmitter.emit('product.updated', {
-      productId: product.id,
-      workspaceId,
-      agentId: actor.id,
-      changes: ['imageUrl'],
-    });
+    emitCommerceAlias(
+      (name, payload) => this.eventEmitter.emit(name, payload),
+      'product.updated',
+      {
+        productId: product.id,
+        workspaceId,
+        agentId: actor.id,
+        changes: ['imageUrl'],
+      },
+    );
 
     await this.audit.log({
       workspaceId,
@@ -264,11 +273,15 @@ export class ProductService {
       data: { status: 'APPROVED', active: true },
     });
 
-    this.eventEmitter.emit('product.published', {
-      productId: product.id,
-      workspaceId,
-      agentId: actor.id,
-    });
+    emitCommerceAlias(
+      (name, payload) => this.eventEmitter.emit(name, payload),
+      'product.published',
+      {
+        productId: product.id,
+        workspaceId,
+        agentId: actor.id,
+      },
+    );
 
     await this.audit.log({
       workspaceId,
@@ -347,11 +360,15 @@ export class ProductService {
       data: { status: 'DELETED', active: false },
     });
 
-    this.eventEmitter.emit('product.deleted', {
-      productId: product.id,
-      workspaceId,
-      agentId: actor.id,
-    });
+    emitCommerceAlias(
+      (name, payload) => this.eventEmitter.emit(name, payload),
+      'product.deleted',
+      {
+        productId: product.id,
+        workspaceId,
+        agentId: actor.id,
+      },
+    );
 
     await this.audit.log({
       workspaceId,
@@ -370,6 +387,165 @@ export class ProductService {
     });
 
     return { success: true, message: 'Product deleted' };
+  }
+
+  /**
+   * Set marketing pixels on a product (resolver-compatible 2-arg).
+   *
+   * Fine-grained capability `products.set_pixels`. Reuses {@link update}; the
+   * pixel array is persisted under the typed `metadata.pixels` slot so we never
+   * fork a parallel write path. `args.pixels` may be an array of pixel configs.
+   */
+  async setPixels(
+    workspaceId: string,
+    args: { productId?: string; pixels?: unknown },
+  ): Promise<ProductResult> {
+    const productId = typeof args.productId === 'string' ? args.productId : '';
+    const current = await this.findById(workspaceId, productId);
+    const baseMetadata =
+      current && current.metadata && typeof current.metadata === 'object'
+        ? (current.metadata as Record<string, unknown>)
+        : {};
+    const metadata = { ...baseMetadata, pixels: args.pixels ?? [] };
+    return this.update(workspaceId, { productId, metadata });
+  }
+
+  /**
+   * Set shipping configuration on a product (resolver-compatible 2-arg).
+   *
+   * Fine-grained capability `products.set_shipping`. Reuses {@link update};
+   * writes the real Product shipping columns (shippingType / shippingValue /
+   * originCep / warrantyDays).
+   */
+  async setShipping(
+    workspaceId: string,
+    args: {
+      productId?: string;
+      shippingType?: string;
+      shippingValue?: number;
+      originCep?: string;
+      warrantyDays?: number;
+    },
+  ): Promise<ProductResult> {
+    const { productId: _id, ...rest } = args;
+    const fields: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(rest)) {
+      if (v !== undefined) {
+        fields[k] = v;
+      }
+    }
+    return this.update(workspaceId, {
+      productId: typeof args.productId === 'string' ? args.productId : '',
+      ...fields,
+    });
+  }
+
+  /**
+   * Set fulfillment configuration on a product (resolver-compatible 2-arg).
+   *
+   * Fine-grained capability `products.set_fulfillment`. Reuses {@link update};
+   * writes the real `afterPayShippingProvider` column and persists the
+   * remaining fulfillment options under typed `metadata.fulfillment`.
+   */
+  async setFulfillment(
+    workspaceId: string,
+    args: { productId?: string; provider?: string; [key: string]: unknown },
+  ): Promise<ProductResult> {
+    const productId = typeof args.productId === 'string' ? args.productId : '';
+    const { productId: _id, provider, ...rest } = args;
+    const current = await this.findById(workspaceId, productId);
+    const baseMetadata =
+      current && current.metadata && typeof current.metadata === 'object'
+        ? (current.metadata as Record<string, unknown>)
+        : {};
+    const fulfillment = { ...rest };
+    const dto: Record<string, unknown> = {
+      productId,
+      metadata: { ...baseMetadata, fulfillment },
+    };
+    if (typeof provider === 'string') {
+      dto.afterPayShippingProvider = provider;
+    }
+    return this.update(workspaceId, dto);
+  }
+
+  /**
+   * Set the sales-page URL of a product (resolver-compatible 2-arg).
+   *
+   * Fine-grained capability `products.set_sales_page`. Reuses {@link update};
+   * writes the real `salesPageUrl` column.
+   */
+  async setSalesPage(
+    workspaceId: string,
+    args: { productId?: string; salesPageUrl?: string },
+  ): Promise<ProductResult> {
+    return this.update(workspaceId, {
+      productId: typeof args.productId === 'string' ? args.productId : '',
+      salesPageUrl: typeof args.salesPageUrl === 'string' ? args.salesPageUrl : undefined,
+    });
+  }
+
+  /**
+   * Update the post-purchase / display URLs of a product (resolver-compatible).
+   *
+   * Fine-grained capability `products.update_urls`. Reuses {@link update};
+   * writes the real Product URL columns (thankyou / boleto / pix / reclameAqui /
+   * supportEmail).
+   */
+  async updateUrls(
+    workspaceId: string,
+    args: {
+      productId?: string;
+      thankyouUrl?: string;
+      thankyouBoletoUrl?: string;
+      thankyouPixUrl?: string;
+      reclameAquiUrl?: string;
+      supportEmail?: string;
+    },
+  ): Promise<ProductResult> {
+    const { productId: _id, ...rest } = args;
+    const fields: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(rest)) {
+      if (v !== undefined) {
+        fields[k] = v;
+      }
+    }
+    return this.update(workspaceId, {
+      productId: typeof args.productId === 'string' ? args.productId : '',
+      ...fields,
+    });
+  }
+
+  /**
+   * Toggle product availability for sale (resolver-compatible 2-arg).
+   *
+   * Fine-grained capability `products.toggle_availability`. Thin wrapper over
+   * {@link toggleAvailability} so the resolver can call it as `(ws, args)`.
+   */
+  async toggleAvailabilityFor(
+    workspaceId: string,
+    args: { productId?: string; available?: boolean },
+  ): Promise<ProductResult> {
+    const productId = typeof args.productId === 'string' ? args.productId : '';
+    const available = args.available !== false;
+    return this.toggleAvailability(workspaceId, productId, available, {
+      id: 'kloel-resolver',
+    });
+  }
+
+  /**
+   * Review & publish a product (resolver-compatible 2-arg).
+   *
+   * Fine-grained capability `products.review_and_publish`. Thin wrapper over
+   * {@link publish} so the resolver can call it as `(ws, args)`; marks the
+   * product APPROVED + active in one sensitive, confirmed step.
+   */
+  async reviewAndPublish(
+    workspaceId: string,
+    args: { productId?: string },
+  ): Promise<ProductResult> {
+    const productId = typeof args.productId === 'string' ? args.productId : '';
+    return this.publish(workspaceId, productId, { id: 'kloel-resolver' });
   }
 
   /**

@@ -6,49 +6,12 @@ import { type CapabilityDefinition } from '../capability-registry-v2.types';
  * Extracted from capability-registry-v2.const.ts.
  * Consumers should import CAPABILITY_DEFINITIONS from the barrel
  * '../capability-registry-v2.const' rather than this partition directly.
+ *
+ * Note: Marketplace capabilities (browse_marketplace / marketplace.*) have been
+ * moved to tier-8-marketplace.ts to keep CRM and Marketplace concerns separate.
  */
 export const TIER_8_CRM_CAPABILITIES: CapabilityDefinition[] = [
-  {
-    id: 'update_subscription',
-    title: 'Gerenciar assinatura',
-    description: 'Cancela ou pausa uma assinatura',
-    category: 'MUTATION_SENSITIVE',
-    tier: 8,
-    requiresConfirmation: true,
-    requiredPermissions: ['subscription:write'],
-    inputSchema: [
-      { key: 'subscriptionId', type: 'string', label: 'ID da assinatura', required: false },
-    ],
-    domainService: 'SubscriptionService.update',
-    emits: ['subscription.updated'],
-    surface: ['dashboard-chat'],
-  },
-  {
-    id: 'browse_marketplace',
-    title: 'Explorar marketplace',
-    description: 'Lista produtos públicos para afiliação',
-    category: 'QUERY',
-    tier: 8,
-    requiresConfirmation: false,
-    requiredPermissions: [],
-    inputSchema: [],
-    domainService: 'MarketplaceService.list',
-    emits: [],
-    surface: ['dashboard-chat'],
-  },
-  {
-    id: 'get_lead_details',
-    title: 'Detalhes do lead',
-    description: 'Mostra detalhes de um lead',
-    category: 'QUERY',
-    tier: 8,
-    requiresConfirmation: false,
-    requiredPermissions: [],
-    inputSchema: [{ key: 'leadId', type: 'string', label: 'Lead', required: true }],
-    domainService: 'LeadService.get',
-    emits: [],
-    surface: ['dashboard-chat'],
-  },
+  // ── Canonical (dotted) IDs ──
   {
     id: 'crm.pipeline',
     title: 'Pipeline CRM',
@@ -59,6 +22,19 @@ export const TIER_8_CRM_CAPABILITIES: CapabilityDefinition[] = [
     requiredPermissions: [],
     inputSchema: [],
     domainService: 'CrmService.getPipeline',
+    emits: [],
+    surface: ['dashboard-chat'],
+  },
+  {
+    id: 'crm.get_lead',
+    title: 'Detalhes do lead',
+    description: 'Mostra detalhes de um lead',
+    category: 'QUERY',
+    tier: 8,
+    requiresConfirmation: false,
+    requiredPermissions: [],
+    inputSchema: [{ key: 'leadId', type: 'string', label: 'Lead', required: true }],
+    domainService: 'LeadService.get',
     emits: [],
     surface: ['dashboard-chat'],
   },
@@ -102,5 +78,53 @@ export const TIER_8_CRM_CAPABILITIES: CapabilityDefinition[] = [
     domainService: 'SalesService.fillBuyerData',
     emits: ['buyer.data_filled'],
     surface: ['dashboard-chat'],
+  },
+  {
+    id: 'subscriptions.update',
+    title: 'Gerenciar assinatura',
+    description: 'Cancela ou pausa uma assinatura',
+    category: 'MUTATION_SENSITIVE',
+    tier: 8,
+    requiresConfirmation: true,
+    requiredPermissions: ['subscription:write'],
+    inputSchema: [
+      { key: 'subscriptionId', type: 'string', label: 'ID da assinatura', required: false },
+    ],
+    domainService: 'SubscriptionService.update',
+    emits: ['subscription.updated'],
+    surface: ['dashboard-chat'],
+  },
+  // ── Legacy IDs (deprecated) — superseded by canonical dotted equivalents ──
+  {
+    id: 'update_subscription',
+    title: 'Gerenciar assinatura (legado)',
+    description: 'DEPRECATED — use subscriptions.update',
+    category: 'MUTATION_SENSITIVE',
+    tier: 8,
+    requiresConfirmation: true,
+    requiredPermissions: ['subscription:write'],
+    inputSchema: [
+      { key: 'subscriptionId', type: 'string', label: 'ID da assinatura', required: false },
+    ],
+    domainService: 'SubscriptionService.update',
+    emits: ['subscription.updated'],
+    surface: ['dashboard-chat'],
+    maturity: 'deprecated',
+    dependsOn: ['subscriptions.update'],
+  },
+  {
+    id: 'get_lead_details',
+    title: 'Detalhes do lead (legado)',
+    description: 'DEPRECATED — use crm.get_lead',
+    category: 'QUERY',
+    tier: 8,
+    requiresConfirmation: false,
+    requiredPermissions: [],
+    inputSchema: [{ key: 'leadId', type: 'string', label: 'Lead', required: true }],
+    domainService: 'LeadService.get',
+    emits: [],
+    surface: ['dashboard-chat'],
+    maturity: 'deprecated',
+    dependsOn: ['crm.get_lead'],
   },
 ];

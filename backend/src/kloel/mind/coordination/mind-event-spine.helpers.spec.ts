@@ -103,19 +103,19 @@ describe('mind-event-spine.helpers', () => {
 
   describe('resolveEventIntent', () => {
     const cases: Array<[MindEventName, string]> = [
-      ['sale.confirmed', 'sale_lifecycle'],
+      ['sale.created', 'sale_lifecycle'],
       ['checkout.created', 'checkout_lifecycle'],
       ['message.received', 'message_lifecycle'],
-      ['lead.captured', 'lead_lifecycle'],
-      ['campaign.launched', 'campaign_lifecycle'],
+      ['lead.created', 'lead_lifecycle'],
+      ['campaign.scheduled', 'campaign_lifecycle'],
       ['product.created', 'product_lifecycle'],
-      ['brain.observed', 'brain_lifecycle'],
-      ['mind.product.observed', 'mind_lifecycle'],
-      ['capability.invoked', 'capability_lifecycle'],
-      ['contact.created', 'contact_lifecycle'],
-      ['channel.message.received', 'channel_lifecycle'],
-      ['identity.linked', 'identity_lifecycle'],
-      ['concept.tagged', 'concept_lifecycle'],
+      ['brain.observe', 'brain_lifecycle'],
+      ['mind.decision.created', 'mind_lifecycle'],
+      ['capability.executed', 'capability_lifecycle'],
+      ['contact.segmented', 'contact_lifecycle'],
+      ['channel.connected', 'channel_lifecycle'],
+      ['identity.contact.merged', 'identity_lifecycle'],
+      ['concept.detected', 'concept_lifecycle'],
     ];
 
     it.each(cases)('maps %s → %s', (eventType, expected) => {
@@ -123,8 +123,9 @@ describe('mind-event-spine.helpers', () => {
     });
 
     it('falls back to commercial_lifecycle for unknown prefixes', () => {
-      expect(resolveEventIntent('agent.job.due')).toBe('commercial_lifecycle');
-      expect(resolveEventIntent('mystery.event')).toBe('commercial_lifecycle');
+      // Intentionally outside the taxonomy: exercises the unknown-prefix path.
+      expect(resolveEventIntent('agent.job.due' as MindEventName)).toBe('commercial_lifecycle');
+      expect(resolveEventIntent('mystery.event' as MindEventName)).toBe('commercial_lifecycle');
     });
   });
 
@@ -138,11 +139,11 @@ describe('mind-event-spine.helpers', () => {
 
     it('returns "error" for failed / externally_blocked suffixes', () => {
       expect(resolveEventStatus('message.failed')).toBe('error');
-      expect(resolveEventStatus('message.externally_blocked')).toBe('error');
+      expect(resolveEventStatus('message.externally_blocked' as MindEventName)).toBe('error');
     });
 
     it('returns "executed" for the default lifecycle outcomes', () => {
-      expect(resolveEventStatus('sale.confirmed')).toBe('executed');
+      expect(resolveEventStatus('sale.confirmed' as MindEventName)).toBe('executed');
       expect(resolveEventStatus('product.created')).toBe('executed');
       expect(resolveEventStatus('mind.product.observed')).toBe('executed');
     });

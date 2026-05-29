@@ -1,5 +1,6 @@
 import { AgentRuntimeSkillRegistry } from './agent-runtime.skill-registry';
 import type { AgentSkillDefinition } from './agent-runtime.types';
+import { mindMemoryStub } from './agent-runtime.mind-memory-stub.helpers';
 
 function makePrisma(overrides: Record<string, unknown> = {}) {
   return {
@@ -42,7 +43,7 @@ function makeSkill(overrides: Partial<AgentSkillDefinition> = {}): AgentSkillDef
 describe('AgentRuntimeSkillRegistry', () => {
   it('creates a governed procedural skill with version metadata', async () => {
     const prisma = makePrisma();
-    const registry = new AgentRuntimeSkillRegistry(prisma as never);
+    const registry = new AgentRuntimeSkillRegistry(prisma as never, mindMemoryStub(prisma) as never);
 
     const result = await registry.upsertSkill('ws_1', makeSkill());
 
@@ -75,7 +76,7 @@ describe('AgentRuntimeSkillRegistry', () => {
     const prisma = makePrisma({
       findUnique: jest.fn().mockResolvedValue({ value: existing }),
     });
-    const registry = new AgentRuntimeSkillRegistry(prisma as never);
+    const registry = new AgentRuntimeSkillRegistry(prisma as never, mindMemoryStub(prisma) as never);
 
     const result = await registry.upsertSkill('ws_1', makeSkill({ summary: 'Updated procedure' }));
 
@@ -98,7 +99,7 @@ describe('AgentRuntimeSkillRegistry', () => {
 
   it('rejects unsafe or malformed procedural skills before persistence', async () => {
     const prisma = makePrisma();
-    const registry = new AgentRuntimeSkillRegistry(prisma as never);
+    const registry = new AgentRuntimeSkillRegistry(prisma as never, mindMemoryStub(prisma) as never);
 
     const result = await registry.upsertSkill(
       'ws_1',
@@ -118,7 +119,7 @@ describe('AgentRuntimeSkillRegistry', () => {
 
   it('rejects delegation rules that reference tools outside the skill allowlist', async () => {
     const prisma = makePrisma();
-    const registry = new AgentRuntimeSkillRegistry(prisma as never);
+    const registry = new AgentRuntimeSkillRegistry(prisma as never, mindMemoryStub(prisma) as never);
 
     const result = await registry.upsertSkill(
       'ws_1',
@@ -148,7 +149,7 @@ describe('AgentRuntimeSkillRegistry', () => {
     const prisma = makePrisma({
       findMany: jest.fn().mockResolvedValue([{ value: stored }]),
     });
-    const registry = new AgentRuntimeSkillRegistry(prisma as never);
+    const registry = new AgentRuntimeSkillRegistry(prisma as never, mindMemoryStub(prisma) as never);
 
     const result = await registry.selectSkills('ws_1', 'pricing objection discount', 3);
 
@@ -158,7 +159,7 @@ describe('AgentRuntimeSkillRegistry', () => {
 
   it('records procedural skill usage counters as durable memory', async () => {
     const prisma = makePrisma();
-    const registry = new AgentRuntimeSkillRegistry(prisma as never);
+    const registry = new AgentRuntimeSkillRegistry(prisma as never, mindMemoryStub(prisma) as never);
 
     const result = await registry.recordSkillUsage('ws_1', {
       skillId: 'checkout-recovery',
@@ -247,7 +248,7 @@ describe('AgentRuntimeSkillRegistry', () => {
         ]);
       }),
     });
-    const registry = new AgentRuntimeSkillRegistry(prisma as never);
+    const registry = new AgentRuntimeSkillRegistry(prisma as never, mindMemoryStub(prisma) as never);
 
     const result = await registry.selectSkills('ws_1', 'checkout recovery', 2);
 

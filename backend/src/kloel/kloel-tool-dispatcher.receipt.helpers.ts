@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { sanitizeDetails } from './kloel-tool-dispatcher.high-risk.helpers';
 import {
   asString,
@@ -7,6 +8,45 @@ import {
 } from './kloel-tool-dispatcher.helpers';
 import type { CapabilityRegistryV2Service } from './capability-registry-v2/capability-registry-v2.service';
 import type { UnknownRecord } from '../common/types';
+
+/** Idempotency time-bucket window in milliseconds (60s per Y-2 DoD). */
+export const IDEMPOTENCY_WINDOW_MS = 60_000;
+
+/**
+ * Deterministically hash the redacted payload of a capability invocation.
+ *
+ * Uses a stable key ordering so that semantically-identical inputs (regardless
+ * of property declaration order) collapse to the same hash. Returns a short
+ * hex digest suitable for inclusion in an idempotency key.
+ */
+export function hashReceiptPayload(inputs: UnknownRecord): string {
+  const stable = JSON.stringify(inputs, Object.keys(inputs).sort());
+  return createHash('sha256').update(stable).digest('hex').slice(0, 16);
+}
+
+/**
+ * Canonical idempotency-key derivation for a capability receipt (Y-2 DoD).
+ *
+ * Key = actorId + intent(capabilityId) + payloadHash + 60s time bucket.
+ *
+ * The 60s bucket means two identical invocations by the same actor for the same
+ * intent and payload within the same minute collapse to the same key (safe
+ * replay), while invocations in different minutes are treated as distinct.
+ */
+export function deriveIdempotencyKey(
+  capabilityId: string,
+  actorId: string,
+  inputs: UnknownRecord,
+  nowMs: number = Date.now(),
+): string {
+  const bucket = Math.floor(nowMs / IDEMPOTENCY_WINDOW_MS);
+  return [
+    receiptKeyPart(actorId),
+    receiptKeyPart(capabilityId),
+    hashReceiptPayload(inputs),
+    String(bucket),
+  ].join(':');
+}
 
 export type ToolResult = {
   success: boolean;
@@ -37,13 +77,14 @@ export function buildCanonicalReceipt(
   const inputs = sanitizeDetails(args);
   const outputs = result.success ? deriveReceiptOutputs(result, inputs) : {};
   const actorId = userId ?? 'kloel-chat';
-  const idempotencyKey = [
+  const idempotencyKey = deriveIdempotencyKey(capabilityId, actorId, inputs, startedAt);
+  const requestId = [
     receiptKeyPart(capabilityId),
     receiptKeyPart(workspaceId),
     receiptKeyPart(actorId),
-    receiptKeyPart(JSON.stringify(inputs)),
-  ].join(':');
-  const requestId = idempotencyKey.slice(0, 120);
+  ]
+    .join(':')
+    .slice(0, 120);
   const auditLogId = asString(result.auditLogId, `audit_${requestId}`);
   const evidenceUrl = result.success
     ? buildReceiptEvidenceUrl(cap.evidenceUrlBuilder, outputs)

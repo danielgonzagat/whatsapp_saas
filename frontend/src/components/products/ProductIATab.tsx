@@ -129,18 +129,20 @@ export function ProductIATab({ productId }: { productId: string }) {
   const [config, setConfig] = useState<AIConfig>(createDefaultAIConfig());
 
   useEffect(() => {
-    setLoadError(null);
-    apiFetch<AIConfigPayload>(`/products/${productId}/ai-config`)
-      .then((res) => {
-        const d = res?.data;
-        if (d) {
-          setConfig((prev) => mergeAIConfigPayload(prev, d));
-        }
-      })
-      .catch(() => {
-        setLoadError(PRODUCT_IA_COPY.loadError);
-      })
-      .finally(() => setLoading(false));
+    queueMicrotask(() => {
+      setLoadError(null);
+      apiFetch<AIConfigPayload>(`/products/${productId}/ai-config`)
+        .then((res) => {
+          const d = res?.data;
+          if (d) {
+            setConfig((prev) => mergeAIConfigPayload(prev, d));
+          }
+        })
+        .catch(() => {
+          setLoadError(PRODUCT_IA_COPY.loadError);
+        })
+        .finally(() => setLoading(false));
+    });
   }, [productId]);
 
   const update = (field: keyof AIConfig, value: AIConfig[keyof AIConfig]) => {

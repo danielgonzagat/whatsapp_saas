@@ -2,7 +2,7 @@
 
 import { requestMetaAccessTokenWithEmailScope } from '@/lib/facebook-sdk';
 import { API_BASE } from '@/lib/http';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   buildAppleSignInDestination,
   buildPrefillRequestKey,
@@ -99,24 +99,20 @@ export function useCheckoutSocialIdentity({
   const [facebookSdkReady, setFacebookSdkReady] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<CheckoutSocialProvider | null>(null);
   const [error, setError] = useState('');
-  const [snapshot, setSnapshot] = useState<CheckoutSocialIdentitySnapshot | null>(null);
-  const [deviceFingerprint, setDeviceFingerprint] = useState('');
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    const nextFingerprint = ensureDeviceFingerprint();
-    setDeviceFingerprint(nextFingerprint);
-    setSnapshot(readStoredIdentity());
-  }, []);
+  const [snapshot, setSnapshot] = useState<CheckoutSocialIdentitySnapshot | null>(() =>
+    typeof window === 'undefined' ? null : readStoredIdentity(),
+  );
+  const deviceFingerprint = useMemo(
+    () => (typeof window === 'undefined' ? '' : ensureDeviceFingerprint()),
+    [],
+  );
 
   useEffect(() => {
     if (!enabled || !clientId) {
       return;
     }
     if (window.google?.accounts?.id) {
-      setSdkReady(true);
+      queueMicrotask(() => setSdkReady(true));
       return;
     }
 

@@ -6,11 +6,7 @@
  *  - projectRScore
  */
 
-import {
-  R_CRITERIA,
-  aggregateMetrics,
-  projectRScore,
-} from './abi-ab-harness.service.helpers';
+import { R_CRITERIA, aggregateMetrics, projectRScore } from './abi-ab-harness.service.helpers';
 import type { AbHarnessRecord, AbRCriterionName } from './abi-ab.types';
 
 function makeRecord(overrides: Partial<AbHarnessRecord> = {}): AbHarnessRecord {
@@ -63,10 +59,7 @@ describe('abi-ab-harness.service.helpers — metrics', () => {
     });
 
     it('computes average tokens', () => {
-      const records = [
-        makeRecord({ tokensUsed: 100 }),
-        makeRecord({ tokensUsed: 300 }),
-      ];
+      const records = [makeRecord({ tokensUsed: 100 }), makeRecord({ tokensUsed: 300 })];
       const metrics = aggregateMetrics(records);
       expect(metrics.avgTokens).toBe(200);
     });
@@ -80,9 +73,7 @@ describe('abi-ab-harness.service.helpers — metrics', () => {
           ],
         }),
         makeRecord({
-          claims: [
-            { claim: 'another unproven', hasProof: false, proofSource: null },
-          ],
+          claims: [{ claim: 'another unproven', hasProof: false, proofSource: null }],
         }),
       ];
       const metrics = aggregateMetrics(records);

@@ -86,6 +86,49 @@ export function navigateCurrentWindow(url: string): void {
   link.remove();
 }
 
+export interface AuthScreenUrlState {
+  mode: 'login' | 'register';
+  name: string;
+  email: string;
+  affiliateInviteToken: string;
+  affiliateInviteWorkspaceName: string;
+  error: string;
+}
+
+/**
+ * Reads the initial auth-screen state directly from the current URL query
+ * string. Runs synchronously during render (SSR-safe via the `window` guard)
+ * so the values can seed `useState` lazily instead of being pushed in via a
+ * mount effect — which would trigger cascading renders.
+ */
+export function readAuthScreenUrlState(initialMode: 'login' | 'register'): AuthScreenUrlState {
+  const base: AuthScreenUrlState = {
+    mode: initialMode,
+    name: '',
+    email: '',
+    affiliateInviteToken: '',
+    affiliateInviteWorkspaceName: '',
+    error: '',
+  };
+  if (typeof window === 'undefined') {
+    return base;
+  }
+  const params = new URLSearchParams(window.location.search);
+  const inviteToken = params.get('affiliateInviteToken')?.trim() || '';
+  if (inviteToken) {
+    base.mode = 'register';
+    base.affiliateInviteToken = inviteToken;
+    base.affiliateInviteWorkspaceName = params.get('inviterWorkspaceName')?.trim() || '';
+    base.email = params.get('email')?.trim() || '';
+    base.name = params.get('partnerName')?.trim() || '';
+  }
+  const oauthError = params.get('error')?.trim() || '';
+  if (oauthError) {
+    base.error = resolveOAuthErrorMessage(oauthError, params.get('reason')?.trim() || '');
+  }
+  return base;
+}
+
 /**
  * Shared CSS for every text input on the auth screen. Extracted so the
  * component does not allocate the same object on every render and so any UI

@@ -82,7 +82,7 @@ export class AdminPipelineService {
     await this.events.recordCommercial({
       workspaceId,
       subject: `workspace:${workspaceId}`,
-      eventType: 'pipeline.state.changed',
+      eventType: 'cognition.pipeline.state_changed',
       occurredAt: new Date(),
       idempotencyKey: `pipeline-state:${workspaceId}:${Date.now()}`,
       payload: {
@@ -123,7 +123,7 @@ export class AdminPipelineService {
     await this.events.recordCommercial({
       workspaceId: input.workspaceId,
       subject: `channel:${input.channel}`,
-      eventType: 'pipeline.shadow_recorded',
+      eventType: 'cognition.pipeline.shadow_recorded',
       occurredAt: new Date(),
       idempotencyKey: `pipeline-shadow:${input.workspaceId}:${input.inboundCorrelationId}`,
       payload: {
@@ -153,7 +153,7 @@ export class AdminPipelineService {
       await this.events.recordCommercial({
         workspaceId,
         subject: `workspace:${workspaceId}`,
-        eventType: 'pipeline.auto_fallback',
+        eventType: 'cognition.pipeline.auto_fallback',
         occurredAt: new Date(),
         idempotencyKey: `pipeline-auto-fallback:${workspaceId}:${Date.now()}`,
         payload: {

@@ -8,7 +8,7 @@ import {
   stripConfigMetadata,
   type DuplicateCheckoutSource,
   type PlanLike,
-} from './checkout.service.helpers';// ─── buildDuplicateCheckoutInput ────────────────────────────────────────
+} from './checkout.service.helpers'; // ─── buildDuplicateCheckoutInput ────────────────────────────────────────
 
 describe('buildDuplicateCheckoutInput', () => {
   const base: DuplicateCheckoutSource = {
@@ -87,7 +87,7 @@ describe('buildDuplicateCheckoutInput', () => {
     const result = buildDuplicateCheckoutInput({ ...base, shippingPrice: 0 });
     expect(result.shippingPrice).toBe(0);
   });
-});// ─── mapPixelsForDuplicate ──────────────────────────────────────────────
+}); // ─── mapPixelsForDuplicate ──────────────────────────────────────────────
 
 describe('mapPixelsForDuplicate', () => {
   const configId = 'config-abc';
@@ -155,7 +155,7 @@ describe('mapPixelsForDuplicate', () => {
     expect(result[0].type).toBe(42);
     expect(result[0].pixelId).toBe(pixels[0].pixelId);
   });
-});// ─── stripConfigMetadata ─────────────────────────────────────────────────
+}); // ─── stripConfigMetadata ─────────────────────────────────────────────────
 
 describe('stripConfigMetadata', () => {
   it('removes id, planId, pixels, createdAt, updatedAt', () => {
@@ -168,7 +168,7 @@ describe('stripConfigMetadata', () => {
       headerColor: '#000',
       ctaLabel: 'Comprar',
     };
-    const result = stripConfigMetadata(input as Record<string, unknown>);
+    const result = stripConfigMetadata(input);
     expect(result).toEqual({ headerColor: '#000', ctaLabel: 'Comprar' });
     expect(result).not.toHaveProperty('id');
     expect(result).not.toHaveProperty('planId');
@@ -185,7 +185,7 @@ describe('stripConfigMetadata', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    const result = stripConfigMetadata(input as Record<string, unknown>);
+    const result = stripConfigMetadata(input);
     expect(result).toEqual({});
   });
 
@@ -199,10 +199,10 @@ describe('stripConfigMetadata', () => {
       extraField: 42,
       nested: { deep: true },
     };
-    const result = stripConfigMetadata(input as Record<string, unknown>);
+    const result = stripConfigMetadata(input);
     expect(result).toEqual({ extraField: 42, nested: { deep: true } });
   });
-});// ─── CHECKOUT_PLAN_LINK_INCLUDE ─────────────────────────────────────────
+}); // ─── CHECKOUT_PLAN_LINK_INCLUDE ─────────────────────────────────────────
 
 describe('CHECKOUT_PLAN_LINK_INCLUDE', () => {
   it('includes checkout with checkoutConfig.pixels', () => {
@@ -227,7 +227,7 @@ describe('CHECKOUT_PLAN_LINK_INCLUDE', () => {
       orderBy: { sortOrder: 'asc' },
     });
   });
-});// ─── PLAN_INCLUDE ───────────────────────────────────────────────────────
+}); // ─── PLAN_INCLUDE ───────────────────────────────────────────────────────
 
 describe('PLAN_INCLUDE', () => {
   it('includes product, checkoutConfig.pixels, bumps, upsells', () => {
@@ -243,7 +243,7 @@ describe('PLAN_INCLUDE', () => {
       orderBy: { sortOrder: 'asc' },
     });
   });
-});// ─── isLegacyPlanEligibleForMigration ───────────────────────────────────
+}); // ─── isLegacyPlanEligibleForMigration ───────────────────────────────────
 
 describe('isLegacyPlanEligibleForMigration', () => {
   it('returns true for active PLAN with legacyCheckoutEnabled', () => {
@@ -267,9 +267,7 @@ describe('isLegacyPlanEligibleForMigration', () => {
   });
 
   it('returns false when legacyCheckoutEnabled is missing', () => {
-    expect(
-      isLegacyPlanEligibleForMigration({ isActive: true, kind: 'PLAN' }),
-    ).toBe(false);
+    expect(isLegacyPlanEligibleForMigration({ isActive: true, kind: 'PLAN' })).toBe(false);
   });
 
   it('returns false when isActive is false', () => {
@@ -303,7 +301,7 @@ describe('isLegacyPlanEligibleForMigration', () => {
   it('returns false for empty object', () => {
     expect(isLegacyPlanEligibleForMigration({})).toBe(false);
   });
-});// ─── isActivePlanKind ────────────────────────────────────────────────────
+}); // ─── isActivePlanKind ────────────────────────────────────────────────────
 
 describe('isActivePlanKind', () => {
   it('returns true for active PLAN', () => {

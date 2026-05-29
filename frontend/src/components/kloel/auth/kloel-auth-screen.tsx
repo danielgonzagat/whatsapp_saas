@@ -5,7 +5,7 @@ import { authApi } from '@/lib/api';
 import { colors } from '@/lib/design-tokens';
 import { buildAppUrl, sanitizeNextPath } from '@/lib/subdomains';
 import Link from 'next/link';
-import { type FormEvent, useCallback, useEffect, useId, useRef, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useAuth } from './auth-provider';
 import { TheMachine } from './kloel-auth-screen.machine';
 import { useFacebookSignIn, useGoogleSignIn } from './kloel-auth-screen.hooks';
@@ -16,7 +16,7 @@ import {
   KLOEL_AUTH_SCREEN_FONT,
   KLOEL_AUTH_SCREEN_INPUT_BASE,
   navigateCurrentWindow,
-  resolveOAuthErrorMessage,
+  readAuthScreenUrlState,
 } from './kloel-auth-screen.helpers';
 
 /* ─── types ─── */
@@ -44,16 +44,17 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
   } = useAuth();
   const redirectingRef = useRef(false);
 
-  const [mode, setMode] = useState<Mode>(initialMode);
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const initialUrlState = useMemo(() => readAuthScreenUrlState(initialMode), [initialMode]);
+
+  const [mode, setMode] = useState<Mode>(initialUrlState.mode);
+  const [name, setName] = useState(initialUrlState.name);
+  const [email, setEmail] = useState(initialUrlState.email);
   const [password, setPassword] = useState('');
-  const [affiliateInviteToken, setAffiliateInviteToken] = useState('');
-  const [affiliateInviteWorkspaceName, setAffiliateInviteWorkspaceName] = useState('');
+  const { affiliateInviteToken, affiliateInviteWorkspaceName } = initialUrlState;
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isAppleLoading, setIsAppleLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(initialUrlState.error);
   const [forgotSent, setForgotSent] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState('');
   const shouldBypassExistingSessionRedirect = useCallback(() => {
@@ -92,42 +93,6 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
       redirectToApp();
     }
   }, [isAuthenticated, redirectToApp, shouldBypassExistingSessionRedirect]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    const params = new URLSearchParams(window.location.search);
-    const inviteToken = params.get('affiliateInviteToken')?.trim() || '';
-    if (!inviteToken) {
-      return;
-    }
-    const inviteEmail = params.get('email')?.trim() || '';
-    const inviteName = params.get('partnerName')?.trim() || '';
-    const inviterWorkspaceName = params.get('inviterWorkspaceName')?.trim() || '';
-    setMode('register');
-    setAffiliateInviteToken(inviteToken);
-    setAffiliateInviteWorkspaceName(inviterWorkspaceName);
-    if (inviteEmail) {
-      setEmail(inviteEmail);
-    }
-    if (inviteName) {
-      setName(inviteName);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
-    const params = new URLSearchParams(window.location.search);
-    const oauthError = params.get('error')?.trim() || '';
-    if (!oauthError) {
-      return;
-    }
-    const reason = params.get('reason')?.trim() || '';
-    setError(resolveOAuthErrorMessage(oauthError, reason));
-  }, []);
 
   const switchMode = (m: Mode) => {
     setMode(m);

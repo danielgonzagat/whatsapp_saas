@@ -295,9 +295,7 @@ describe('kloel-code-tools.service.helpers', () => {
   describe('buildJestCommand', () => {
     it('returns full-run command when no pattern is supplied', () => {
       const cmd = buildJestCommand('/r', undefined);
-      expect(cmd).toBe(
-        "cd '/r/backend' && npx jest --no-coverage --forceExit --json 2>&1",
-      );
+      expect(cmd).toBe("cd '/r/backend' && npx jest --no-coverage --forceExit --json 2>&1");
     });
     it('quotes the -t pattern when supplied', () => {
       const cmd = buildJestCommand('/r', "auth's");

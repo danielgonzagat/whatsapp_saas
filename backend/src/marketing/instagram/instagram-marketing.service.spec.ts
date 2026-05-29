@@ -10,6 +10,8 @@ describe('InstagramMarketingService', () => {
   const metaConnectionFindFirst = jest.fn();
   const publishPhoto = jest.fn();
   const getAccountInsights = jest.fn();
+  const sendMessage = jest.fn();
+  const getConversations = jest.fn();
   const igPostCreate = jest.fn();
   const igPostFindMany = jest.fn();
   const igPostCount = jest.fn();
@@ -33,7 +35,7 @@ describe('InstagramMarketingService', () => {
           upsert: igInsightUpsert,
         },
       } as never,
-      { publishPhoto, getAccountInsights } as never,
+      { publishPhoto, getAccountInsights, sendMessage, getConversations } as never,
     );
   });
 
@@ -303,6 +305,142 @@ describe('InstagramMarketingService', () => {
           where: { workspaceId: 'ws-1' },
         }),
       );
+    });
+  });
+
+  describe('sendDirectMessage', () => {
+    it('throws when text is empty after trim', async () => {
+      await expect(service.sendDirectMessage('ws-1', 'igsid-1', '   ')).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+      expect(metaConnectionFindFirst).not.toHaveBeenCalled();
+    });
+
+    it('throws when recipientId is empty', async () => {
+      await expect(service.sendDirectMessage('ws-1', '', 'hi')).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+    });
+
+    it('throws when instagram account is not connected', async () => {
+      metaConnectionFindFirst.mockResolvedValue(null);
+
+      await expect(service.sendDirectMessage('ws-1', 'igsid-1', 'hi')).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+    });
+
+    it('throws when page access token is missing', async () => {
+      metaConnectionFindFirst.mockResolvedValue({
+        instagramAccountId: 'ig-123',
+        accessToken: '',
+        pageAccessToken: '',
+      });
+      const prevEnv = process.env.META_ACCESS_TOKEN;
+      delete process.env.META_ACCESS_TOKEN;
+
+      try {
+        await expect(service.sendDirectMessage('ws-1', 'igsid-1', 'hi')).rejects.toBeInstanceOf(
+          BadRequestException,
+        );
+      } finally {
+        if (prevEnv !== undefined) {
+          process.env.META_ACCESS_TOKEN = prevEnv;
+        }
+      }
+    });
+
+    it('delegates to InstagramService.sendMessage with resolved page token and returns messageId', async () => {
+      metaConnectionFindFirst.mockResolvedValue({
+        instagramAccountId: 'ig-123',
+        accessToken: 'user-token',
+        pageAccessToken: 'page-token',
+      });
+      sendMessage.mockResolvedValue({ message_id: 'mid-9' });
+
+      const result = await service.sendDirectMessage('ws-1', 'igsid-1', '  hello  ');
+
+      expect(sendMessage).toHaveBeenCalledWith('ig-123', 'igsid-1', 'hello', 'page-token');
+      expect(result.messageId).toBe('mid-9');
+    });
+
+    it('falls back to id field when message_id is absent', async () => {
+      metaConnectionFindFirst.mockResolvedValue({
+        instagramAccountId: 'ig-123',
+        accessToken: 'user-token',
+        pageAccessToken: 'page-token',
+      });
+      sendMessage.mockResolvedValue({ id: 'mid-fallback' });
+
+      const result = await service.sendDirectMessage('ws-1', 'igsid-1', 'hi');
+
+      expect(result.messageId).toBe('mid-fallback');
+    });
+  });
+
+  describe('listConversations', () => {
+    it('throws when instagram account is not connected', async () => {
+      metaConnectionFindFirst.mockResolvedValue(null);
+
+      await expect(service.listConversations('ws-1')).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('throws when pageId is missing', async () => {
+      metaConnectionFindFirst.mockResolvedValue({
+        instagramAccountId: 'ig-123',
+        accessToken: 'user-token',
+        pageAccessToken: 'page-token',
+        pageId: null,
+      });
+
+      await expect(service.listConversations('ws-1')).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('delegates to InstagramService.getConversations and returns payload with igAccountId', async () => {
+      metaConnectionFindFirst.mockResolvedValue({
+        instagramAccountId: 'ig-123',
+        accessToken: 'user-token',
+        pageAccessToken: 'page-token',
+        pageId: 'page-77',
+      });
+      getConversations.mockResolvedValue({ data: [{ id: 'thread-1' }] });
+
+      const result = await service.listConversations('ws-1');
+
+      expect(getConversations).toHaveBeenCalledWith('page-77', 'page-token');
+      expect(result).toEqual({
+        conversations: { data: [{ id: 'thread-1' }] },
+        igAccountId: 'ig-123',
+      });
+    });
+  });
+
+  describe('listMessages', () => {
+    it('returns instagram_account_not_connected when no connection row exists', async () => {
+      metaConnectionFindFirst.mockResolvedValue(null);
+
+      const result = await service.listMessages('ws-1');
+
+      expect(result).toEqual({
+        messages: [],
+        total: 0,
+        reason: 'instagram_account_not_connected',
+      });
+    });
+
+    it('returns instagram_messaging_pending when account is connected', async () => {
+      metaConnectionFindFirst.mockResolvedValue({
+        instagramAccountId: 'ig-123',
+        status: 'connected',
+      });
+
+      const result = await service.listMessages('ws-1', 'thread-9');
+
+      expect(result).toEqual({
+        messages: [],
+        total: 0,
+        reason: 'instagram_messaging_pending',
+      });
     });
   });
 });

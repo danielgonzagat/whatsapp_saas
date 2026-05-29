@@ -22,8 +22,7 @@ function makePathRunner(overrides: Partial<AbPathRunnerResult> = {}): AbPathRunn
     success: true,
     latencyMs: 200,
     tokensUsed: 150,
-    responseText:
-      'Obrigado pelo contato. Conforme sua análise, recomendamos adquirir o plano.' as string,
+    responseText: 'Obrigado pelo contato. Conforme sua análise, recomendamos adquirir o plano.',
     ...overrides,
   });
 }
@@ -33,7 +32,7 @@ function makeSlowPathRunner(): AbPathRunnerFn {
     success: true,
     latencyMs: 800,
     tokensUsed: 300,
-    responseText: 'Resposta lenta.' as string,
+    responseText: 'Resposta lenta.',
   });
 }
 
@@ -42,7 +41,7 @@ function makeHighTokenPathRunner(): AbPathRunnerFn {
     success: true,
     latencyMs: 200,
     tokensUsed: 5000,
-    responseText: 'Resposta verbosa com muitas palavras.' as string,
+    responseText: 'Resposta verbosa com muitas palavras.',
   });
 }
 
@@ -51,7 +50,7 @@ function makeFailingPathRunner(): AbPathRunnerFn {
     success: false,
     latencyMs: 100,
     tokensUsed: 10,
-    responseText: '' as string,
+    responseText: '',
   });
 }
 
@@ -61,7 +60,7 @@ function makeConversionRichRunner(): AbPathRunnerFn {
     latencyMs: 180,
     tokensUsed: 200,
     responseText:
-      'Excelente! Aproveite nossa oferta exclusiva. Clique aqui para comprar com desconto. Muito obrigado pela confiança.' as string,
+      'Excelente! Aproveite nossa oferta exclusiva. Clique aqui para comprar com desconto. Muito obrigado pela confiança.',
   });
 }
 
@@ -71,7 +70,7 @@ function makeHallucinatedRunner(): AbPathRunnerFn {
     latencyMs: 220,
     tokensUsed: 180,
     responseText:
-      'O produto X é o melhor do mercado. A empresa Y recomenda este serviço. A pesquisa Z comprovou eficácia de 99%.' as string,
+      'O produto X é o melhor do mercado. A empresa Y recomenda este serviço. A pesquisa Z comprovou eficácia de 99%.',
   });
 }
 
@@ -80,7 +79,7 @@ function makeBalancedRunner(): AbPathRunnerFn {
     success: true,
     latencyMs: 200,
     tokensUsed: 200,
-    responseText: 'Bom dia! Conforme sua solicitação, aqui está o resumo.' as string,
+    responseText: 'Bom dia! Conforme sua solicitação, aqui está o resumo.',
   });
 }
 
@@ -104,7 +103,7 @@ describe('AbiAbHarnessService', () => {
         success: true,
         latencyMs: 300,
         tokensUsed: 200,
-        responseText: 'Informação básica.' as string,
+        responseText: 'Informação básica.',
       });
 
       const variantRunner: AbPathRunnerFn = async () => ({
@@ -112,13 +111,15 @@ describe('AbiAbHarnessService', () => {
         latencyMs: 150,
         tokensUsed: 150,
         responseText:
-          'Excelente! Aproveite nossa oferta exclusiva. Clique aqui para comprar. Obrigado pela confiança!' as string,
+          'Excelente! Aproveite nossa oferta exclusiva. Clique aqui para comprar. Obrigado pela confiança!',
       });
 
       let callCount = 0;
       const switchingRunner: AbPathRunnerFn = async (params) => {
         callCount++;
-        if (params.useAbi) return variantRunner(params);
+        if (params.useAbi) {
+          return variantRunner(params);
+        }
         return baselineRunner(params);
       };
 
@@ -147,21 +148,22 @@ describe('AbiAbHarnessService', () => {
         latencyMs: 200,
         tokensUsed: 150,
         responseText:
-          'Conforme o relatório, os dados indicam crescimento. Segundo a pesquisa, o resultado é positivo.' as string,
+          'Conforme o relatório, os dados indicam crescimento. Segundo a pesquisa, o resultado é positivo.',
       });
 
       const variantRunner: AbPathRunnerFn = async () => ({
         success: true,
         latencyMs: 200,
         tokensUsed: 150,
-        responseText:
-          'O produto é o melhor. A empresa domina o mercado. Os clientes adoram.' as string,
+        responseText: 'O produto é o melhor. A empresa domina o mercado. Os clientes adoram.',
       });
 
       let callCount = 0;
       const switchingRunner: AbPathRunnerFn = async (params) => {
         callCount++;
-        if (params.useAbi) return variantRunner(params);
+        if (params.useAbi) {
+          return variantRunner(params);
+        }
         return baselineRunner(params);
       };
 
@@ -241,7 +243,7 @@ describe('AbiAbHarnessService', () => {
         latencyMs: 150,
         tokensUsed: 100,
         responseText:
-          'Conforme dados oficiais, o resultado é excelente. Obrigado! Aproveite a oferta.' as string,
+          'Conforme dados oficiais, o resultado é excelente. Obrigado! Aproveite a oferta.',
       });
 
       const variantRunner: AbPathRunnerFn = async () => ({
@@ -249,13 +251,15 @@ describe('AbiAbHarnessService', () => {
         latencyMs: 100,
         tokensUsed: 80,
         responseText:
-          'Afirmação infundada 1. Afirmação infundada 2. Afirmação infundada 3. Afirmação infundada 4. Mas obrigado e aproveite a oferta.' as string,
+          'Afirmação infundada 1. Afirmação infundada 2. Afirmação infundada 3. Afirmação infundada 4. Mas obrigado e aproveite a oferta.',
       });
 
       let callCount = 0;
       const switchingRunner: AbPathRunnerFn = async (params) => {
         callCount++;
-        if (params.useAbi) return variantRunner(params);
+        if (params.useAbi) {
+          return variantRunner(params);
+        }
         return baselineRunner(params);
       };
 
@@ -280,7 +284,7 @@ describe('AbiAbHarnessService', () => {
         success: true,
         latencyMs: 400,
         tokensUsed: 300,
-        responseText: 'Informação sem prova.' as string,
+        responseText: 'Informação sem prova.',
       });
 
       const variantRunner: AbPathRunnerFn = async () => ({
@@ -288,13 +292,15 @@ describe('AbiAbHarnessService', () => {
         latencyMs: 100,
         tokensUsed: 120,
         responseText:
-          'Excelente! Conforme sua solicitação, aqui está a recomendação. Aproveite nossa oferta exclusiva com desconto. Clique aqui para comprar. Muito obrigado pela confiança! Segundo o relatório, este é o melhor momento.' as string,
+          'Excelente! Conforme sua solicitação, aqui está a recomendação. Aproveite nossa oferta exclusiva com desconto. Clique aqui para comprar. Muito obrigado pela confiança! Segundo o relatório, este é o melhor momento.',
       });
 
       let callCount = 0;
       const switchingRunner: AbPathRunnerFn = async (params) => {
         callCount++;
-        if (params.useAbi) return variantRunner(params);
+        if (params.useAbi) {
+          return variantRunner(params);
+        }
         return baselineRunner(params);
       };
 

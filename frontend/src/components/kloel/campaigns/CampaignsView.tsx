@@ -54,7 +54,7 @@ export function CampaignsView() {
 
   useEffect(() => {
     if (workspaceId) {
-      void load();
+      queueMicrotask(load);
     }
   }, [workspaceId, load]);
 

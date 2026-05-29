@@ -59,6 +59,12 @@ export class InstagramDispatchAdapter implements ChannelDispatchPort {
     }
   }
 
+  
+    /** Canonical alias of {@link send} (Wave 21 unification — task d). */
+    sendMessage(input: ChannelSendInput): Promise<ChannelSendResult> {
+      return this.send(input);
+    }
+
   isConfigured(): boolean {
     return Boolean(this.instagram);
   }
