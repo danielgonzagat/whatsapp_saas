@@ -315,6 +315,16 @@ export class WhatsappService {
   async getConnectionStatus(ws: string) {
     return this.sessionService.getConnectionStatus(ws);
   }
+  /**
+   * Canonical-name alias of {@link getConnectionStatus} for the Kloel
+   * capability resolver (`WhatsAppService.status`). Accepts the
+   * (workspaceId, args) signature used by `KloelDomainServiceResolver` and
+   * delegates to the underlying session service. Args are ignored — status
+   * has no parameters beyond the workspace scope.
+   */
+  async status(ws: string) {
+    return this.getConnectionStatus(ws);
+  }
   async getQrCode(ws: string) {
     return this.sessionService.getQrCode(ws);
   }
@@ -360,6 +370,20 @@ export class WhatsappService {
   }
   async triggerSync(ws: string, reason = 'manual_sync') {
     return this.catchupService.triggerCatchup(ws, reason);
+  }
+  /**
+   * Canonical-name alias of {@link triggerSync} for the Kloel capability
+   * resolver (`WhatsAppService.syncHistory`). Accepts the
+   * (workspaceId, args) signature; if `args.reason` is a string it is
+   * forwarded to the underlying catch-up service, otherwise the default
+   * `manual_sync` reason is used.
+   */
+  async syncHistory(ws: string, args?: { reason?: string }) {
+    const reason =
+      args && typeof args === 'object' && typeof args.reason === 'string'
+        ? args.reason
+        : 'manual_sync';
+    return this.triggerSync(ws, reason);
   }
 
   // ═══ DELEGATION: Message Dispatcher ═══
