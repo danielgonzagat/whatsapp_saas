@@ -94,7 +94,39 @@ export class LeadMindCoordinator {
       });
       this.logger.log(`Novo lead criado: ${lead.id}`);
     }
+    // Canonical bridge (Wave5 L7): keep Contact as the single source of truth
+    // for the person behind a KloelLead. Reuses the canonical workspaceId_phone
+    // upsert shape (same as CrmService.upsertContact). Idempotent + fail-open.
+    await this.syncCanonicalContact(workspaceId, phone);
     return lead;
+  }
+
+  /**
+   * Upsert the canonical Contact for a lead's phone so Contact stays the single
+   * source of truth for the person. Idempotent (upsert on workspaceId_phone),
+   * workspace-isolated, and fail-open — a Contact sync failure must never break
+   * lead processing.
+   */
+  private async syncCanonicalContact(workspaceId: string, phone: string): Promise<void> {
+    const normalizedPhone = String(phone || '').replace(NON_DIGIT_RE, '');
+    if (!normalizedPhone) {
+      return;
+    }
+    try {
+      await this.prisma.contact.upsert({
+        where: { workspaceId_phone: { workspaceId, phone: normalizedPhone } },
+        update: {},
+        create: {
+          workspaceId,
+          phone: normalizedPhone,
+          name: buildContactDisplayName(normalizedPhone),
+        },
+        select: { id: true },
+      });
+    } catch (err: unknown) {
+      void this.opsAlert?.alertOnCriticalError(err, 'LeadMindCoordinator.syncCanonicalContact');
+      this.logger.warn(`Falha ao sincronizar contato canônico: ${leadErrorMessage(err)}`);
+    }
   }
 
   private async getLeadConversationHistory(

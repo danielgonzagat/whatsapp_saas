@@ -15,8 +15,9 @@ jest.mock('../../openai-wrapper', () => ({
 }));
 
 jest.mock('../../../lib/openai-models', () => {
-  const actual =
-    jest.requireActual<typeof import('../../../lib/openai-models')>('../../../lib/openai-models');
+  const actual = jest.requireActual<typeof import('../../../lib/openai-models')>(
+    '../../../lib/openai-models',
+  );
   return {
     ...actual,
     resolveBackendOpenAIModel: jest.fn().mockReturnValue(actual.CANONICAL_MODEL_IDS.openAiTextOmni),
@@ -153,6 +154,23 @@ describe('LeadMindCoordinator', () => {
       const lead = await service.getOrCreateLead(wsId, '5511999999999');
       expect(lead.id).toBe('existing-lead');
       expect(prisma.kloelLead.create).not.toHaveBeenCalled();
+    });
+
+    it('syncs canonical Contact via workspaceId_phone upsert (Wave5 L7 bridge)', async () => {
+      await service.getOrCreateLead(wsId, '5511999999999');
+      expect(prisma.contact.upsert).toHaveBeenCalledTimes(1);
+      const [[upsertArg]] = prisma.contact.upsert.mock.calls as Array<
+        [{ where: { workspaceId_phone: { workspaceId: string; phone: string } } }]
+      >;
+      expect(upsertArg).toMatchObject({
+        where: { workspaceId_phone: { workspaceId: wsId, phone: '5511999999999' } },
+      });
+    });
+
+    it('is fail-open when Contact sync throws', async () => {
+      prisma.contact.upsert.mockRejectedValueOnce(new Error('DB error'));
+      const lead = await service.getOrCreateLead(wsId, '5511999999999');
+      expect(lead.id).toBe('lead-1');
     });
   });
 
