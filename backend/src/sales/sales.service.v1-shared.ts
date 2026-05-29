@@ -15,7 +15,11 @@ import { SpineEmitterService } from '../kloel/spine/spine-emitter.service';
 import { MercadoPagoBoletoChargeService } from '../payments/mercadopago/mercadopago-boleto-charge.service';
 import { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { buildSaleEventPair, buildSaleSuccessLogMessage, buildSpineSaleEnvelope } from './sales.helpers';
+import {
+  buildSaleEventPair,
+  buildSaleSuccessLogMessage,
+  buildSpineSaleEnvelope,
+} from './sales.helpers';
 
 /** Dependency bundle the service passes into every V1 orchestrator. */
 export interface SalesV1Deps {

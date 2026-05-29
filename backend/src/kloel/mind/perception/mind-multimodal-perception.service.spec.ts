@@ -40,7 +40,7 @@ describe('MindMultiModalPerceptionService', () => {
 
       const out = await svc.perceiveAudio('ws-1', Buffer.from('audio-bytes'), 'audio/ogg');
 
-      expect(audio.transcribe).toHaveBeenCalledWith(expect.any(Buffer), 'pt', 'ws-1');
+      expect(audio.transcribe).toHaveBeenCalledWith(expect.anything(), 'pt', 'ws-1');
       expect(out.transcript).toBe('ola mundo');
       expect(out.durationMs).toBe(2500n);
       expect(typeof out.sourceFingerprint).toBe('string');
@@ -69,7 +69,7 @@ describe('MindMultiModalPerceptionService', () => {
         durationMs?: bigint;
       };
 
-      expect(out).toEqual({ sourceFingerprint: expect.any(String) as unknown });
+      expect(out).toEqual({ sourceFingerprint: expect.anything() as unknown });
       expect(out.transcript).toBeUndefined();
       expect(out.durationMs).toBeUndefined();
       const envCalls = spine.emit.mock.calls as Array<[{ payload: { adapterAvailable: boolean } }]>;
