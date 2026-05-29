@@ -1,4 +1,4 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleDestroy, OnModuleInit, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../../../logging/structured-logger';
 import { Queue, Worker } from 'bullmq';
 import { createBullMqConnectionOptions, isRedisConfigured } from '../../../common/redis/redis.util';
@@ -6,6 +6,8 @@ import { attachDlq } from '../../../queue/queue';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { MindReportService } from '../observability/mind-report.service';
 import { MindService } from '../../mind.service';
+import { MindAutonomyService } from '../autonomy/mind-autonomy.service';
+import { MindCuriosityService } from '../curiosity/mind-curiosity.service';
 
 const DEFAULT_SCHEDULER_INTERVAL_MS = 30_000;
 const DEFAULT_TICK_CONCURRENCY = 4;
@@ -37,6 +39,8 @@ export class MindProcessorService implements OnModuleInit, OnModuleDestroy {
     private readonly prisma: PrismaService,
     private readonly mind: MindService,
     private readonly reports: MindReportService,
+    @Optional() private readonly autonomy?: MindAutonomyService,
+    @Optional() private readonly curiosity?: MindCuriosityService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -112,6 +116,9 @@ export class MindProcessorService implements OnModuleInit, OnModuleDestroy {
         const workspaceId = getMindTickWorkspaceId(job.data);
         const tick = await this.mind.tick(workspaceId);
         await this.maybeGenerateDailyReport(workspaceId);
+        // Fire-and-forget emergent cognition behaviors — never block the tick
+        void this.autonomy?.proposeGoal(workspaceId);
+        void this.curiosity?.identifyKnowledgeGap(workspaceId);
         return tick;
       },
       {

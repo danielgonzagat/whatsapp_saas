@@ -49,7 +49,6 @@ export class KloelDomainServiceResolver {
    * Maps the service-name segment from domainService strings to the actual
    * NestJS-injectable class reference used for ModuleRef lookup.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static readonly SERVICE_TOKEN_MAP = new Map<string, new (...args: never[]) => unknown>([
     // ── Kloel-local services ──
     ['AccountService', AccountService],

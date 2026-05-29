@@ -168,7 +168,11 @@ export class KloelToolDispatcherService {
       } else {
         result = await this.runDirectDispatch(workspaceId, toolName, args, userId);
         // PI-K30: fallback to generic domain-service resolver for ungated capabilities
-        if (!result.success && typeof result.error === 'string' && result.error.startsWith('Ferramenta desconhecida')) {
+        if (
+          !result.success &&
+          typeof result.error === 'string' &&
+          result.error.startsWith('Ferramenta desconhecida')
+        ) {
           const resolverResult = await this.domainServiceResolver?.tryExecute(
             toolName,
             workspaceId,

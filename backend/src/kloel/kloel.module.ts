@@ -161,6 +161,8 @@ import { MindProcessorService } from './mind/runtime/mind-processor.service';
 import { MindQualityService } from './mind/policy/mind-quality.service';
 import { MindReportService } from './mind/observability/mind-report.service';
 import { MindReplayService } from './mind/runtime/mind-replay.service';
+import { MindAutonomyService } from './mind/autonomy/mind-autonomy.service';
+import { MindCuriosityService } from './mind/curiosity/mind-curiosity.service';
 import { MindSimulatorService } from './mind/synthetic/mind-simulator.service';
 import { MindSyntheticGeneratorService } from './mind/synthetic/mind-synthetic-generator.service';
 import { MindService } from './mind.service';
@@ -389,6 +391,8 @@ import { WorkspaceModule } from '../workspaces/workspace.module';
     MindPolicyService,
     MindPredictorService,
     MindProcessorService,
+    MindAutonomyService,
+    MindCuriosityService,
     MindQualityService,
     MindReportService,
     MindReplayService,
