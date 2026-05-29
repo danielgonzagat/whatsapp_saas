@@ -66,30 +66,35 @@ export function BillingSettingsSection({
   );
   const creditPercent = useMemo(() => computeCreditPercent(creditsBalance), [creditsBalance]);
 
-  const loadPaymentMethods = useCallback(async () => {
-    try {
-      const response = await billingApi.getPaymentMethods();
-      const rawMethods = extractRawPaymentMethods(
-        response.data as { paymentMethods?: RawPaymentMethod[] } | undefined,
-      );
-      setCards(mapPaymentMethods(rawMethods));
-    } catch {
-      setCards([]);
-    }
+  // Promise-chain (non-async) loaders so no setState runs synchronously in the
+  // effect tick (react-hooks/set-state-in-effect).
+  const loadPaymentMethods = useCallback(() => {
+    return billingApi
+      .getPaymentMethods()
+      .then((response) => {
+        const rawMethods = extractRawPaymentMethods(
+          response.data as { paymentMethods?: RawPaymentMethod[] } | undefined,
+        );
+        setCards(mapPaymentMethods(rawMethods));
+      })
+      .catch(() => {
+        setCards([]);
+      });
   }, []);
 
-  const loadSalesReport = useCallback(async () => {
+  const loadSalesReport = useCallback(() => {
     if (!workspaceId) {
-      setSalesReport(null);
-      return;
+      return Promise.resolve().then(() => setSalesReport(null));
     }
 
-    try {
-      const response = await billingApi.getSalesReport(salesPeriod);
-      setSalesReport((response.data as SalesReportSummary) || null);
-    } catch {
-      setSalesReport(null);
-    }
+    return billingApi
+      .getSalesReport(salesPeriod)
+      .then((response) => {
+        setSalesReport((response.data as SalesReportSummary) || null);
+      })
+      .catch(() => {
+        setSalesReport(null);
+      });
   }, [salesPeriod, workspaceId]);
 
   useEffect(() => {

@@ -55,27 +55,33 @@ export function AnalyticsSettingsSection() {
   const [activity, setActivity] = useState<AnalyticsDailyActivityItem[]>([]);
   const [advanced, setAdvanced] = useState<AnalyticsAdvancedResponse | null>(null);
 
-  const loadAnalytics = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const [dashboard, daily, advancedResponse] = await Promise.all([
-        getAnalyticsDashboard(),
-        getAnalyticsDailyActivity(),
-        getAnalyticsAdvanced(),
-      ]);
-
-      setStats(dashboard);
-      setActivity(Array.isArray(daily) ? daily : []);
-      setAdvanced(advancedResponse || null);
-    } catch (loadError) {
-      setError(
-        loadError instanceof Error ? loadError.message : 'Nao foi possivel carregar analytics.',
-      );
-    } finally {
-      setLoading(false);
-    }
+  // Promise-chain (non-async) so no setState runs synchronously in the effect
+  // tick (react-hooks/set-state-in-effect). The loading flag is set inside the
+  // first .then; consumers gate on `stats`/`error` for the initial paint.
+  const loadAnalytics = useCallback(() => {
+    return Promise.resolve()
+      .then(() => {
+        setLoading(true);
+        setError(null);
+        return Promise.all([
+          getAnalyticsDashboard(),
+          getAnalyticsDailyActivity(),
+          getAnalyticsAdvanced(),
+        ]);
+      })
+      .then(([dashboard, daily, advancedResponse]) => {
+        setStats(dashboard);
+        setActivity(Array.isArray(daily) ? daily : []);
+        setAdvanced(advancedResponse || null);
+      })
+      .catch((loadError: unknown) => {
+        setError(
+          loadError instanceof Error ? loadError.message : 'Nao foi possivel carregar analytics.',
+        );
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, []);
 
   useEffect(() => {

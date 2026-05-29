@@ -431,7 +431,17 @@ export function useWhatsAppSession({
   }, [resumeCiaAutomation, shouldSkipCiaRuntimeSync, workspaceId]);
 
   useEffect(() => {
-    refreshCredentials();
+    // Deferred so the credential sync does not run synchronously in the effect
+    // tick (react-hooks/set-state-in-effect).
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) {
+        refreshCredentials();
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [refreshCredentials]);
 
   useEffect(() => {
@@ -452,7 +462,17 @@ export function useWhatsAppSession({
     if (!isSessionPollEnabled({ enabled, workspaceId, authToken })) {
       return;
     }
-    void loadStatus();
+    // Deferred so loadStatus does not setState synchronously in the effect tick
+    // (react-hooks/set-state-in-effect). The polling effect below keeps it fresh.
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) {
+        void loadStatus();
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [authToken, enabled, loadStatus, workspaceId]);
 
   useEffect(() => {
@@ -482,7 +502,17 @@ export function useWhatsAppSession({
       return;
     }
 
-    void syncConnectedSessionRuntime();
+    // Deferred so the runtime sync does not setState synchronously in the effect
+    // tick (react-hooks/set-state-in-effect).
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) {
+        void syncConnectedSessionRuntime();
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [status?.connected, syncConnectedSessionRuntime]);
 
   useEffect(() => {
