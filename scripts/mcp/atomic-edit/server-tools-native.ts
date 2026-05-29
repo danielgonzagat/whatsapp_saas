@@ -36,6 +36,7 @@ import {
   astEditDry,
   type AstReplaceChange,
 } from './native-bridge.js';
+import { applyMultiFilePlan, type MultiFileEntry } from './server-helpers-multifile.js';
 
 const STRICTNESS = ['cst', 'smart', 'ast', 'relaxed', 'signature', 'template'] as const;
 
@@ -220,6 +221,161 @@ export function registerToolsNative(server: McpServer): void {
           languageCount: nativeLanguages().length,
           languages: nativeLanguages(),
         });
+      } catch (e) {
+        return fail(e instanceof Error ? e.message : String(e));
+      }
+    },
+  );
+
+  server.registerTool(
+    'atomic_ast_rewrite',
+    {
+      title: 'Universal structural rewrite across MANY files (ast-grep, atomic transaction)',
+      description:
+        'Rewrite code structurally with an ast-grep pattern -> template across every matching file under ' +
+        '`path` (file or directory), in any supported language. The native engine computes all change spans ' +
+        '(dry-run, never writes); this tool applies them as ONE all-or-nothing firewall transaction: every ' +
+        'file resolved through the protected-file guard, validated in memory, and only written if ALL pass ' +
+        '(mid-write failure rolls back). Use atomic_ast_search first to preview the match set.',
+      inputSchema: {
+        path: z.string(),
+        pattern: z.string(),
+        rewrite: z.string(),
+        lang: z.string().optional(),
+        glob: z.string().optional(),
+        strictness: z.enum(STRICTNESS).optional(),
+        maxFiles: z.number().int().min(1).max(500).optional(),
+        preview: z.boolean().optional(),
+      },
+    },
+    async (a) => {
+      try {
+        const gate = await nativeReadyOrFail();
+        if (gate) return gate;
+        const searchAbs = path.resolve(REPO_ROOT, a.path);
+        if (searchAbs !== REPO_ROOT && !searchAbs.startsWith(REPO_ROOT + path.sep)) {
+          return fail(`path escapes repository root: ${a.path}`);
+        }
+        const res = await astEditDry({
+          path: searchAbs,
+          rewrites: { [a.pattern]: a.rewrite },
+          lang: a.lang,
+          glob: a.glob,
+          strictness: a.strictness ?? 'smart',
+          maxFiles: a.maxFiles ?? 200,
+          failOnParseError: true,
+        });
+        if (res.parseErrors && res.parseErrors.length > 0) {
+          return fail(`parse errors, refusing to edit: ${res.parseErrors.join('; ')}`);
+        }
+        if (!res.changes || res.changes.length === 0) {
+          return ok({ changed: false, totalReplacements: 0, message: 'pattern matched nothing' });
+        }
+        const byFile = new Map<string, AstReplaceChange[]>();
+        for (const c of res.changes) {
+          const abs = path.isAbsolute(c.path) ? c.path : path.resolve(searchAbs, c.path);
+          const list = byFile.get(abs) ?? [];
+          list.push(c);
+          byFile.set(abs, list);
+        }
+        const plan: MultiFileEntry[] = [];
+        for (const [abs, changes] of byFile) {
+          const before = readUtf8(abs);
+          const buf = Buffer.from(before, 'utf8');
+          const edits = [];
+          for (const c of changes) {
+            const cs = buf.subarray(0, c.byteStart).toString('utf8').length;
+            const ce = buf.subarray(0, c.byteEnd).toString('utf8').length;
+            const span = before.slice(cs, ce);
+            if (span !== c.before) {
+              return fail(
+                `span guard failed in ${abs} at byte ${c.byteStart}: ` +
+                  `expected ${JSON.stringify(c.before)} got ${JSON.stringify(span)}`,
+              );
+            }
+            edits.push({ start: offsetToPos(before, cs), end: offsetToPos(before, ce), newText: c.after });
+          }
+          plan.push({ file: abs, edits });
+        }
+        return applyMultiFilePlan(plan, 'atomic_ast_edit', a.preview ?? false);
+      } catch (e) {
+        return fail(e instanceof Error ? e.message : String(e));
+      }
+    },
+  );
+
+  server.registerTool(
+    'atomic_apply_workspace_edit',
+    {
+      title: 'Apply an LSP WorkspaceEdit through the firewall (semantic edits, any language)',
+      description:
+        'Apply a Language-Server-Protocol WorkspaceEdit (e.g. the result of lsp_rename or a code action from ' +
+        'the lsp-mesh MCP) atomically through the Mutation Firewall. This makes atomic-edit the single ' +
+        'firewall-safe WRITER for type-aware semantic refactors computed by any of the 14 language servers: ' +
+        'multi-file, validated, traced, rollback-safe. Division of labor: lsp-mesh COMPUTES the edit ' +
+        '(scope/type-aware), atomic APPLIES it (sha256 + validate + protected-guard + rollback). Accepts ' +
+        'either the `changes` map or `documentChanges` form. LSP positions are 0-based UTF-16.',
+      inputSchema: {
+        changes: z
+          .record(
+            z.string(),
+            z.array(
+              z.object({
+                range: z.object({
+                  start: z.object({ line: z.number().int().min(0), character: z.number().int().min(0) }),
+                  end: z.object({ line: z.number().int().min(0), character: z.number().int().min(0) }),
+                }),
+                newText: z.string(),
+              }),
+            ),
+          )
+          .optional(),
+        documentChanges: z
+          .array(
+            z.object({
+              textDocument: z.object({ uri: z.string() }),
+              edits: z.array(
+                z.object({
+                  range: z.object({
+                    start: z.object({ line: z.number().int().min(0), character: z.number().int().min(0) }),
+                    end: z.object({ line: z.number().int().min(0), character: z.number().int().min(0) }),
+                  }),
+                  newText: z.string(),
+                }),
+              ),
+            }),
+          )
+          .optional(),
+        preview: z.boolean().optional(),
+      },
+    },
+    async (a) => {
+      try {
+        const uriToFile = (uri: string): string =>
+          uri.startsWith('file://') ? decodeURIComponent(uri.slice('file://'.length)) : uri;
+        type LspEdit = {
+          range: { start: { line: number; character: number }; end: { line: number; character: number } };
+          newText: string;
+        };
+        const toSpecs = (edits: LspEdit[]) =>
+          edits.map((e) => ({
+            start: { line: e.range.start.line + 1, column: e.range.start.character + 1 },
+            end: { line: e.range.end.line + 1, column: e.range.end.character + 1 },
+            newText: e.newText,
+          }));
+        const plan: MultiFileEntry[] = [];
+        if (a.changes) {
+          for (const [uri, edits] of Object.entries(a.changes)) {
+            plan.push({ file: uriToFile(uri), edits: toSpecs(edits as LspEdit[]) });
+          }
+        }
+        if (a.documentChanges) {
+          for (const dc of a.documentChanges) {
+            plan.push({ file: uriToFile(dc.textDocument.uri), edits: toSpecs(dc.edits as LspEdit[]) });
+          }
+        }
+        if (plan.length === 0) return fail('workspace edit has no changes/documentChanges');
+        return applyMultiFilePlan(plan, 'atomic_apply_workspace_edit', a.preview ?? false);
       } catch (e) {
         return fail(e instanceof Error ? e.message : String(e));
       }
