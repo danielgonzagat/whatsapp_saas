@@ -182,6 +182,7 @@ import { MindGuardContextBuilderService } from './mind-guard-context-builder.ser
 import { MindGuardsService } from './mind-guards.service';
 import { MindObservabilityService } from './mind-observability.service';
 import { MindPerceptionService } from './mind-perception.service';
+import { MindMultiModalPerceptionService } from './mind/perception/mind-multimodal-perception.service';
 import { MindPolicyService } from './mind-policy.service';
 import { MindPredictorService } from './mind-predictor.service';
 import { MindProcessorService } from './mind-processor.service';
@@ -417,6 +418,7 @@ import { WorkspaceModule } from '../workspaces/workspace.module';
     MindGuardsService,
     MindObservabilityService,
     MindPerceptionService,
+    MindMultiModalPerceptionService,
     MindPolicyService,
     MindPredictorService,
     MindProcessorService,
