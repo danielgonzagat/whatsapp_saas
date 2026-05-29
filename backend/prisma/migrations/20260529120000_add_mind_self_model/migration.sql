@@ -28,10 +28,10 @@ CREATE INDEX IF NOT EXISTS "RAC_MindSelfModel_workspaceId_snapshotAt_idx"
 -- FK to Workspace (CASCADE on delete) — mirrors every other RAC_Mind* table.
 DO $$
 BEGIN
-    IF to_regclass('"Workspace"') IS NOT NULL THEN
+    IF to_regclass('"RAC_Workspace"') IS NOT NULL THEN
         ALTER TABLE "RAC_MindSelfModel"
         ADD CONSTRAINT "RAC_MindSelfModel_workspaceId_fkey"
-        FOREIGN KEY ("workspaceId") REFERENCES "Workspace"("id")
+        FOREIGN KEY ("workspaceId") REFERENCES "RAC_Workspace"("id")
         ON DELETE CASCADE ON UPDATE CASCADE;
     END IF;
 END $$;

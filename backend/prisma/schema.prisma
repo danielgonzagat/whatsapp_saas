@@ -212,6 +212,8 @@ model Workspace {
   mailboxConnections      MailboxConnection[]
   kloelMessages           KloelMessage[]
   kloelMemories           KloelMemory[]
+  mindMessages            MindMessage[]
+  mindMemories            MindMemory[]
   kloelLeads              KloelLead[]
   kloelSales              KloelSale[]
   kloelWallets            KloelWallet[]
@@ -418,6 +420,17 @@ model Contact {
   identityLinksAsSource ContactIdentityLink[] @relation("IdentityLinksAsSource")
   identityLinksAsLinked ContactIdentityLink[] @relation("IdentityLinksAsLinked")
 
+  // --- LEAD → CONTACT PROVENANCE BRIDGE (additive, nullable) ---
+  // Tracks where a Contact was promoted from so lead lineage is preserved.
+  // All four are optional pointers; a Contact may have none (created directly).
+  scrapingJobId         String? // ScrapingJob that surfaced this contact (OmniScraper import)
+  scrapingJob           ScrapingJob?        @relation("ScrapingJobContacts", fields: [scrapingJobId], references: [id], onDelete: SetNull)
+  scrapedFrom           String? // free-form provenance label, e.g. "GOOGLE_MAPS", "INSTAGRAM"
+  kloelLeadId           String? // KloelLead this contact was promoted from
+  kloelLead             KloelLead?          @relation("KloelLeadContacts", fields: [kloelLeadId], references: [id], onDelete: SetNull)
+  checkoutSocialLeadId  String? // CheckoutSocialLead that originated this contact (provenance)
+  originatingSocialLead CheckoutSocialLead? @relation("CheckoutSocialLeadOrigin", fields: [checkoutSocialLeadId], references: [id], onDelete: SetNull)
+
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
@@ -434,6 +447,9 @@ model Contact {
 
   @@unique([workspaceId, phone])
   @@unique([id, workspaceId])
+  @@index([scrapingJobId])
+  @@index([kloelLeadId])
+  @@index([checkoutSocialLeadId])
   @@map("RAC_Contact")
 }
 
@@ -735,6 +751,9 @@ model ScrapingJob {
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   leads ScrapedLead[]
+
+  // Contacts promoted from this scraping job (Lead → Contact bridge).
+  contacts Contact[] @relation("ScrapingJobContacts")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1814,6 +1833,9 @@ model KloelLead {
 
   // Relações
   conversations KloelConversation[]
+
+  // Contacts promoted from this lead (Lead → Contact bridge).
+  contacts Contact[] @relation("KloelLeadContacts")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -3268,6 +3290,8 @@ model CheckoutSocialLead {
   convertedOrder         CheckoutOrder?                     @relation(fields: [convertedOrderId], references: [id], onDelete: SetNull)
   contactId              String?
   contact                Contact?                           @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  // Contacts whose provenance points back to this social lead (Lead → Contact bridge).
+  originatedContacts     Contact[]                          @relation("CheckoutSocialLeadOrigin")
   createdAt              DateTime                           @default(now())
   updatedAt              DateTime                           @updatedAt
 
@@ -3791,6 +3815,57 @@ model MindSelfModel {
   @@unique([workspaceId, version])
   @@index([workspaceId, snapshotAt(sort: Desc)])
   @@map("RAC_MindSelfModel")
+}
+
+/// Canonical message store (Brain → Mind unification PR-1, see
+/// docs/architecture/BRAIN_MIND_UNIFICATION_PLAN.md §5). Mirrors the column
+/// shape of `KloelMessage` (`RAC_KloelMessage`) so `MindCanonicalService` can
+/// dual-write here later. The extra `source` discriminator lets the three
+/// legacy message tables (`KloelMessage`=`brain`, `ChatMessage`=`dashboard`,
+/// `KloelConversation`=`lead_conversation`) converge into this one table.
+/// ADDITIVE — no legacy table is renamed or dropped in PR-1.
+model MindMessage {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  source      String    @default("brain") // "brain" | "dashboard" | "lead_conversation"
+  role        String // "user" | "assistant" | "system"
+  content     String
+  metadata    Json? // Dados extras (intenção, sentimento, etc)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, source, createdAt])
+  @@map("RAC_MindMessage")
+}
+
+/// Canonical memory store (Brain → Mind unification PR-1, see
+/// docs/architecture/BRAIN_MIND_UNIFICATION_PLAN.md §2.5 / §5). Mirrors the
+/// column shape of `KloelMemory` (`RAC_KloelMemory`) so `MindCanonicalService`
+/// can dual-write here later. Adds the `namespace` column called for in §2.5 so
+/// the agent-runtime KV usages can be partitioned during the migration.
+/// ADDITIVE — no legacy table is renamed or dropped in PR-1.
+model MindMemory {
+  id          String                       @id @default(uuid())
+  workspaceId String
+  workspace   Workspace                    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  namespace   String                       @default("default") // partition for agent-runtime KV usages
+  key         String // Chave única para busca
+  value       Json // Valor armazenado (pode ser qualquer estrutura)
+  category    String                       @default("general") // "business", "system", "preferences", "catalog"
+  type        String? // "product", "company_info", "persona", "objection", "script", "pdf_analysis"
+  content     String?
+  metadata    Json? // Dados estruturados extras
+  embedding   Unsupported("vector(1536)")? // Para busca semântica
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, namespace, key])
+  @@index([workspaceId, category])
+  @@map("RAC_MindMemory")
 }
 
 model KloelGlobalPrior {
