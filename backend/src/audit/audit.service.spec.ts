@@ -226,7 +226,9 @@ describe('AuditService', () => {
     });
 
     it('respects explicit limit with type filter', async () => {
-      const entries = [{ id: 'a3', action: 'EXPORT_CONTACTS', resource: 'Contact', workspaceId: 'ws-2' }];
+      const entries = [
+        { id: 'a3', action: 'EXPORT_CONTACTS', resource: 'Contact', workspaceId: 'ws-2' },
+      ];
       mockPrisma.auditLog.findMany.mockResolvedValue(entries);
 
       const result = await service.recent('ws-2', { limit: 10, type: 'EXPORT_CONTACTS' });

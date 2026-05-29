@@ -12,75 +12,43 @@ import { StripeService } from '../billing/stripe.service';
 import { SpineEmitterService } from '../kloel/spine/spine-emitter.service';
 import { MercadoPagoBoletoChargeService } from '../payments/mercadopago/mercadopago-boleto-charge.service';
 import { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
-import type { BoletoChargeAddress } from '../payments/mercadopago/mercadopago.types';
 import { PrismaService } from '../prisma/prisma.service';
 import { SmartPaymentService } from '../kloel/smart-payment.service';
+import { computePixExpiresAt } from './sales.helpers';
 import {
-  buildBoletoAddressMetadata,
-  buildBoletoOrderResult,
-  buildBoletoSaleCreateMetadata,
-  buildBoletoSaleUpdateMetadata,
-  buildKloelSaleCreateData,
-  buildMercadoPagoNotificationUrl,
-  buildPaymentPendingAuditDetails,
-  buildPixOrderResult,
-  buildPixSaleUpdateMetadata,
-  buildSaleBuyerMetadata,
-  pickSaleBuyerMetadataInput,
-  buildSaleDescription,
-  buildSaleEventPair,
-  buildSpineSaleEnvelope,
-  buildStripeCardLinkResult,
-  buildStripeCheckoutSessionInput,
-  buildStripeCheckoutUrls,
-  buildStripeSaleUpdateMetadata,
-  computeBoletoExpiresAt,
-  computePixExpiresAt,
-  pickStripeExternalPaymentId,
-  planPriceToCents,
-  planPriceToCentsNumber,
-  resolveFrontendOrigin,
-  sanitizeDocumentDigits,
-  buildSaleCreatedAuditDetails,
-  buildSaleSuccessLogMessage,
-} from './sales.helpers';
-// ------- Types -------
+  buildFillBuyerDataPatch,
+  buildPixOrderV2SaleData,
+  buildPixOrderV2FallbackResult,
+  buildRefundId,
+  buildRefundUpdateMetadata,
+  computePixOrderV2AmountCents,
+  pickPixOrderV2Result,
+  resolveRefundAmountCents,
+  type CreatePixOrderV2Dto,
+  type CreatePixOrderV2Result,
+} from './sales.service.pix-refund.helpers';
+import type {
+  BoletoBuyerData,
+  BuyerData,
+  CreateBoletoOrderResult,
+  CreatePixOrderResult,
+  CreateStripeCardLinkResult,
+} from './sales.service.types';
+import {
+  createBoletoOrder as createBoletoOrderV1,
+  createPixOrderLegacy as createPixOrderLegacyV1,
+  createStripeCardLink as createStripeCardLinkV1,
+  type SalesV1Deps,
+} from './sales.service.v1-orders';
 
-export interface BuyerData {
-  name: string;
-  email: string;
-  cpf: string;
-  phone?: string;
-}
+export type {
+  BoletoBuyerData,
+  BuyerData,
+  CreateBoletoOrderResult,
+  CreatePixOrderResult,
+  CreateStripeCardLinkResult,
+} from './sales.service.types';
 
-export interface BoletoBuyerData extends BuyerData {
-  address: BoletoChargeAddress;
-}
-
-export interface CreatePixOrderResult {
-  saleId: string;
-  pixQrCode: string;
-  pixQrCodeBase64: string;
-  pixCopyPaste: string;
-  pixExpiresAt: Date;
-  externalPaymentId: string;
-  ticketUrl: string;
-}
-
-export interface CreateBoletoOrderResult {
-  saleId: string;
-  boletoBarcode: string;
-  boletoExpiresAt: Date;
-  boletoUrl: string;
-  externalPaymentId: string;
-}
-
-export interface CreateStripeCardLinkResult {
-  saleId: string;
-  checkoutSessionId: string;
-  checkoutUrl: string;
-  externalPaymentId: string;
-}
 /**
  * Sales service — creates sales (PIX, card, boleto) directly from chat flows.
  *
@@ -88,7 +56,10 @@ export interface CreateStripeCardLinkResult {
  * WhatsApp → KLOEL brain → createPixOrder → real PIX QR code returned
  * to the buyer in the chat thread.
  *
- * All mutations are workspace-scoped and audit-logged.
+ * All mutations are workspace-scoped and audit-logged. V1 create-order flows
+ * are orchestrated by per-provider standalone functions in
+ * {@link ./sales.service.v1-orders}; the service composes them with the
+ * shared dep bundle.
  */
 @Injectable()
 export class SalesService {
@@ -120,451 +91,63 @@ export class SalesService {
 
   /**
    * Tier-5 capability signature (PI-K37) — routes through SmartPaymentService
-   * and falls back to a stub when the service is unavailable.
+   * and falls back to a deterministic fallback when the service is unavailable.
    */
   async createPixOrder(
     workspaceId: string,
-    dto: {
-      productId: string;
-      planId?: string;
-      buyer: { name: string; email: string; phone?: string; cpf?: string };
-    },
-  ): Promise<{
-    orderId: string;
-    pixCopyPaste: string;
-    pixQrCode: string;
-    amountCents: bigint;
-    expiresAt: Date;
-  }>;
+    dto: CreatePixOrderV2Dto,
+  ): Promise<CreatePixOrderV2Result>;
 
   /** Implementation — discriminates on typeof the second argument. */
   async createPixOrder(
     workspaceId: string,
-    arg2:
-      | string
-      | {
-          productId: string;
-          planId?: string;
-          buyer: { name: string; email: string; phone?: string; cpf?: string };
-        },
+    arg2: string | CreatePixOrderV2Dto,
     arg3?: string,
     arg4?: BuyerData,
-  ): Promise<
-    | CreatePixOrderResult
-    | {
-        orderId: string;
-        pixCopyPaste: string;
-        pixQrCode: string;
-        amountCents: bigint;
-        expiresAt: Date;
-      }
-  > {
+  ): Promise<CreatePixOrderResult | CreatePixOrderV2Result> {
     if (typeof arg2 === 'string') {
-      return this.createPixOrderLegacy(workspaceId, arg2, arg3!, arg4!);
+      return createPixOrderLegacyV1(this.v1Deps(), workspaceId, arg2, arg3!, arg4!);
     }
     return this.createPixOrderV2(workspaceId, arg2);
   }
 
-  /**
-   * Legacy PIX order — resolves plan via Mercado Pago direct charge.
-   * Kept for backward compatibility with existing callers.
-   */
-  private async createPixOrderLegacy(
-    workspaceId: string,
-    productId: string,
-    planId: string,
-    buyerData: BuyerData,
-  ): Promise<CreatePixOrderResult> {
-    const plan = await this.loadActivePlanOrThrow(workspaceId, productId, planId);
-    const amountCents = planPriceToCents(plan.price);
-    if (amountCents <= 0n) {
-      throw new ServiceUnavailableException('O plano possui preço inválido.');
-    }
-
-    const productName = plan.product.name;
-    const description = buildSaleDescription(productName, plan.name);
-
-    const idempotencyKey = `sale_${randomUUID()}`;
-    const notificationUrl = buildMercadoPagoNotificationUrl();
-    const expiresAt = computePixExpiresAt();
-
-    const payerDocDigits = sanitizeDocumentDigits(buyerData.cpf);
-    const buyerMeta = pickSaleBuyerMetadataInput(productId, planId, buyerData);
-
-    return this.prisma
-      .$transaction(
-        async (tx) => {
-          const sale = await tx.kloelSale.create({
-            data: buildKloelSaleCreateData({
-              workspaceId,
-              productName,
-              amount: plan.price,
-              paymentMethod: 'PIX',
-              leadPhone: buyerData.phone ?? null,
-              metadata: buildSaleBuyerMetadata(buyerMeta),
-            }),
-          });
-
-          await this.auditSale(
-            tx,
-            sale.id,
-            workspaceId,
-            'SALE_CREATED',
-            buildSaleCreatedAuditDetails({
-              productId,
-              planId,
-              amount: plan.price,
-              paymentMethod: 'PIX',
-            }),
-          );
-
-          const pixResult = await this.mpPix.create({
-            idempotencyKey,
-            amountCents,
-            payerEmail: buyerData.email,
-            payerName: buyerData.name,
-            ...(payerDocDigits ? { payerDocument: payerDocDigits } : {}),
-            description,
-            externalReference: sale.id,
-            expiresAt,
-            notificationUrl,
-          });
-
-          await tx.kloelSale.update({
-            where: { id: sale.id, workspaceId },
-            data: {
-              externalPaymentId: pixResult.externalId,
-              paymentLink: pixResult.ticketUrl || null,
-              metadata: buildPixSaleUpdateMetadata(
-                buyerMeta,
-                pixResult.externalId,
-                pixResult.status,
-              ),
-            },
-          });
-
-          await this.auditSale(
-            tx,
-            sale.id,
-            workspaceId,
-            'PAYMENT_PENDING',
-            buildPaymentPendingAuditDetails({
-              externalPaymentId: pixResult.externalId,
-              gateway: 'mercadopago',
-              method: 'PIX',
-              amount: plan.price,
-              status: pixResult.status,
-            }),
-          );
-
-          return { sale, pixResult };
-        },
-        { isolationLevel: 'ReadCommitted' },
-      )
-      .then(({ sale, pixResult }) => {
-        const { saleCreated, paymentPending } = buildSaleEventPair({
-          saleId: sale.id,
-          productId,
-          planId,
-          amount: plan.price,
-          paymentMethod: 'PIX',
-          externalPaymentId: pixResult.externalId,
-          gateway: 'mercadopago',
-        });
-        this.emitSaleEvent({
-          eventName: 'sale.created',
-          workspaceId,
-          saleId: sale.id,
-          payload: saleCreated,
-        });
-        this.emitSaleEvent({
-          eventName: 'payment.pending',
-          workspaceId,
-          saleId: sale.id,
-          payload: paymentPending,
-        });
-
-        this.logger.log(
-          buildSaleSuccessLogMessage({
-            method: 'PIX sale',
-            saleId: sale.id,
-            externalPaymentId: pixResult.externalId,
-            workspaceId,
-          }),
-        );
-
-        return buildPixOrderResult({ saleId: sale.id, expiresAt, pixResult });
-      });
-  }
-
-  /**
-   * Create a boleto payment order directly from chat using Mercado Pago.
-   */
+  /** Create a boleto payment order directly from chat using Mercado Pago. */
   async createBoletoOrder(
     workspaceId: string,
     productId: string,
     planId: string,
     buyerData: BoletoBuyerData,
   ): Promise<CreateBoletoOrderResult> {
-    const plan = await this.loadActivePlanOrThrow(workspaceId, productId, planId);
-    const amountCents = planPriceToCents(plan.price);
-    if (amountCents <= 0n) {
-      throw new ServiceUnavailableException('O plano possui preço inválido.');
-    }
-
-    const productName = plan.product.name;
-    const description = buildSaleDescription(productName, plan.name);
-    const idempotencyKey = `sale_${randomUUID()}`;
-    const notificationUrl = buildMercadoPagoNotificationUrl();
-    const expiresAt = computeBoletoExpiresAt();
-    const payerDocDigits = sanitizeDocumentDigits(buyerData.cpf);
-    const buyerAddressMetadata = buildBoletoAddressMetadata(buyerData.address);
-    const buyerMeta = pickSaleBuyerMetadataInput(productId, planId, buyerData);
-
-    return this.prisma
-      .$transaction(
-        async (tx) => {
-          const sale = await tx.kloelSale.create({
-            data: buildKloelSaleCreateData({
-              workspaceId,
-              productName,
-              amount: plan.price,
-              paymentMethod: 'BOLETO',
-              leadPhone: buyerData.phone ?? null,
-              metadata: buildBoletoSaleCreateMetadata(buyerMeta, buyerAddressMetadata),
-            }),
-          });
-
-          await this.auditSale(
-            tx,
-            sale.id,
-            workspaceId,
-            'SALE_CREATED',
-            buildSaleCreatedAuditDetails({
-              productId,
-              planId,
-              amount: plan.price,
-              paymentMethod: 'BOLETO',
-            }),
-          );
-
-          const boletoResult = await this.mpBoleto.create({
-            idempotencyKey,
-            amountCents,
-            payerEmail: buyerData.email,
-            payerName: buyerData.name,
-            payerDocument: payerDocDigits,
-            payerAddress: buyerData.address,
-            description,
-            externalReference: sale.id,
-            expiresAt,
-            notificationUrl,
-          });
-
-          await tx.kloelSale.update({
-            where: { id: sale.id },
-            data: {
-              externalPaymentId: boletoResult.externalId,
-              paymentLink: boletoResult.ticketUrl,
-              metadata: buildBoletoSaleUpdateMetadata({
-                buyer: buyerMeta,
-                buyerAddressMetadata,
-                externalId: boletoResult.externalId,
-                status: boletoResult.status,
-                barcode: boletoResult.digitableLine || boletoResult.barcodeContent,
-              }),
-            },
-          });
-
-          await this.auditSale(
-            tx,
-            sale.id,
-            workspaceId,
-            'PAYMENT_PENDING',
-            buildPaymentPendingAuditDetails({
-              externalPaymentId: boletoResult.externalId,
-              gateway: 'mercadopago',
-              method: 'BOLETO',
-              amount: plan.price,
-              status: boletoResult.status,
-            }),
-          );
-
-          return { sale, boletoResult };
-        },
-        { isolationLevel: 'ReadCommitted' },
-      )
-      .then(({ sale, boletoResult }) => {
-        const { saleCreated, paymentPending } = buildSaleEventPair({
-          saleId: sale.id,
-          productId,
-          planId,
-          amount: plan.price,
-          paymentMethod: 'BOLETO',
-          externalPaymentId: boletoResult.externalId,
-          gateway: 'mercadopago',
-        });
-        this.emitSaleEvent({
-          eventName: 'sale.created',
-          workspaceId,
-          saleId: sale.id,
-          payload: saleCreated,
-        });
-        this.emitSaleEvent({
-          eventName: 'payment.pending',
-          workspaceId,
-          saleId: sale.id,
-          payload: paymentPending,
-        });
-
-        this.logger.log(
-          buildSaleSuccessLogMessage({
-            method: 'Boleto sale',
-            saleId: sale.id,
-            externalPaymentId: boletoResult.externalId,
-            workspaceId,
-          }),
-        );
-
-        return buildBoletoOrderResult({ saleId: sale.id, boletoResult });
-      });
+    return createBoletoOrderV1(this.v1Deps(), workspaceId, productId, planId, buyerData);
   }
 
-  /**
-   * Create a card checkout link directly from chat using Stripe Checkout.
-   */
+  /** Create a card checkout link directly from chat using Stripe Checkout. */
   async createStripeCardLink(
     workspaceId: string,
     productId: string,
     planId: string,
     buyerData: BuyerData,
   ): Promise<CreateStripeCardLinkResult> {
-    const plan = await this.loadActivePlanOrThrow(workspaceId, productId, planId);
-    const amountCents = planPriceToCentsNumber(plan.price);
-    if (amountCents <= 0) {
-      throw new ServiceUnavailableException('O plano possui preço inválido.');
-    }
+    return createStripeCardLinkV1(this.v1Deps(), workspaceId, productId, planId, buyerData);
+  }
 
-    const productName = plan.product.name;
-    const buyerMeta = pickSaleBuyerMetadataInput(productId, planId, buyerData);
-
-    return this.prisma
-      .$transaction(
-        async (tx) => {
-          const sale = await tx.kloelSale.create({
-            data: buildKloelSaleCreateData({
-              workspaceId,
-              productName,
-              amount: plan.price,
-              paymentMethod: 'CREDIT_CARD',
-              leadPhone: buyerData.phone ?? null,
-              metadata: buildSaleBuyerMetadata(buyerMeta),
-            }),
-          });
-
-          await this.auditSale(
-            tx,
-            sale.id,
-            workspaceId,
-            'SALE_CREATED',
-            buildSaleCreatedAuditDetails({
-              productId,
-              planId,
-              amount: plan.price,
-              paymentMethod: 'CREDIT_CARD',
-            }),
-          );
-
-          const frontendOrigin = resolveFrontendOrigin();
-          const { successUrl, cancelUrl } = buildStripeCheckoutUrls(frontendOrigin, sale.id);
-          const session = await this.stripeService.stripe.checkout.sessions.create(
-            buildStripeCheckoutSessionInput({
-              workspaceId,
-              saleId: sale.id,
-              productId,
-              planId,
-              productName,
-              buyerEmail: buyerData.email,
-              amountCents,
-              successUrl,
-              cancelUrl,
-              ...(buyerData.phone ? { phone: buyerData.phone } : {}),
-            }),
-            { idempotencyKey: `sale-card:${workspaceId}:${sale.id}:${randomUUID()}` },
-          );
-
-          if (!session.url) {
-            throw new ServiceUnavailableException('Stripe não retornou URL de checkout.');
-          }
-
-          const externalPaymentId = pickStripeExternalPaymentId(session.payment_intent, session.id);
-
-          await tx.kloelSale.update({
-            where: { id: sale.id },
-            data: {
-              externalPaymentId,
-              paymentLink: session.url,
-              metadata: buildStripeSaleUpdateMetadata(buyerMeta, session.id, externalPaymentId),
-            },
-          });
-
-          await this.auditSale(
-            tx,
-            sale.id,
-            workspaceId,
-            'PAYMENT_PENDING',
-            buildPaymentPendingAuditDetails({
-              externalPaymentId,
-              gateway: 'stripe',
-              method: 'CREDIT_CARD',
-              amount: plan.price,
-            }),
-          );
-
-          return { sale, session, externalPaymentId, checkoutUrl: session.url };
-        },
-        { isolationLevel: 'ReadCommitted' },
-      )
-      .then(({ sale, session, externalPaymentId, checkoutUrl }) => {
-        const { saleCreated, paymentPending } = buildSaleEventPair({
-          saleId: sale.id,
-          productId,
-          planId,
-          amount: plan.price,
-          paymentMethod: 'CREDIT_CARD',
-          externalPaymentId,
-          gateway: 'stripe',
-          checkoutSessionId: session.id,
-        });
-        this.emitSaleEvent({
-          eventName: 'sale.created',
-          workspaceId,
-          saleId: sale.id,
-          payload: saleCreated,
-        });
-        this.emitSaleEvent({
-          eventName: 'payment.pending',
-          workspaceId,
-          saleId: sale.id,
-          payload: paymentPending,
-        });
-
-        this.logger.log(
-          buildSaleSuccessLogMessage({
-            method: 'Stripe card checkout link',
-            saleId: sale.id,
-            externalPaymentId,
-            workspaceId,
-          }),
-        );
-
-        return buildStripeCardLinkResult({
-          saleId: sale.id,
-          checkoutSessionId: session.id,
-          checkoutUrl,
-          externalPaymentId,
-        });
-      });
+  /**
+   * Build the dep bundle every V1 orchestrator needs. Centralizing the bind
+   * keeps the three call sites above one-liners and the orchestrators
+   * stateless / DI-free.
+   */
+  private v1Deps(): SalesV1Deps {
+    return {
+      prisma: this.prisma,
+      mpPix: this.mpPix,
+      mpBoleto: this.mpBoleto,
+      stripeService: this.stripeService,
+      audit: this.audit,
+      spine: this.spine,
+      logger: this.logger,
+      loadActivePlanOrThrow: (workspaceId, productId, planId) =>
+        this.loadActivePlanOrThrow(workspaceId, productId, planId),
+    };
   }
 
   /**
@@ -586,58 +169,14 @@ export class SalesService {
     return plan;
   }
 
-  /**
-   * Write a `KloelSale`-scoped audit row through the supplied transaction
-   * client. Collapses the repeated `{workspaceId, action, resource, resourceId,
-   * details}` envelope into a single call so each money-path method stays
-   * focused on its own logic.
-   */
-  private auditSale(
-    tx: Prisma.TransactionClient,
-    saleId: string,
-    workspaceId: string,
-    action: 'SALE_CREATED' | 'PAYMENT_PENDING',
-    details: Record<string, unknown>,
-  ): Promise<void> {
-    return this.audit.logWithTx(tx, {
-      workspaceId,
-      action,
-      resource: 'KloelSale',
-      resourceId: saleId,
-      details,
-    });
-  }
-
-  /**
-   * Fire-and-forget spine emission with structured warn log on failure. Keeps
-   * the call sites readable instead of repeating the same `.catch` block six
-   * times.
-   */
-  private emitSaleEvent(args: {
-    eventName: string;
-    workspaceId: string;
-    saleId: string;
-    payload: Record<string, unknown>;
-  }): void {
-    void this.spine.emit(buildSpineSaleEnvelope(args)).catch((err: unknown) => {
-      this.logger.warn(
-        `${args.eventName} emission failed: ${err instanceof Error ? err.message : String(err)}`,
-      );
-    });
-  }
-
-  /**
-   * Look up a sale by id, scoped to workspace.
-   */
+  /** Look up a sale by id, scoped to workspace. */
   async findById(workspaceId: string, saleId: string) {
     return this.prisma.kloelSale.findFirst({
       where: { id: saleId, workspaceId },
     });
   }
 
-  /**
-   * List recent sales for a workspace.
-   */
+  /** List recent sales for a workspace. */
   async listByWorkspace(workspaceId: string, limit = 50) {
     return this.prisma.kloelSale.findMany({
       where: { workspaceId },
@@ -651,21 +190,11 @@ export class SalesService {
   // plus fillBuyerData and refund.
   // ---------------------------------------------------------------------------
 
-  /** Tier-5 PIX order via SmartPaymentService (or stub when unavailable). */
+  /** Tier-5 PIX order via SmartPaymentService (or fallback when unavailable). */
   private async createPixOrderV2(
     workspaceId: string,
-    dto: {
-      productId: string;
-      planId?: string;
-      buyer: { name: string; email: string; phone?: string; cpf?: string };
-    },
-  ): Promise<{
-    orderId: string;
-    pixCopyPaste: string;
-    pixQrCode: string;
-    amountCents: bigint;
-    expiresAt: Date;
-  }> {
+    dto: CreatePixOrderV2Dto,
+  ): Promise<CreatePixOrderV2Result> {
     const product = await this.prisma.product.findFirst({
       where: { id: dto.productId, workspaceId, active: true },
     });
@@ -673,32 +202,8 @@ export class SalesService {
       throw new NotFoundException(`Produto ${dto.productId} não encontrado neste workspace.`);
     }
 
-    let plan: { id: string; name: string; price: number } | null = null;
-
-    if (dto.planId) {
-      plan = await this.prisma.productPlan.findFirst({
-        where: { id: dto.planId, productId: dto.productId, product: { workspaceId }, active: true },
-        select: { id: true, name: true, price: true },
-      });
-      if (!plan) {
-        throw new NotFoundException(
-          `Plano ${dto.planId} não encontrado para produto ${dto.productId}.`,
-        );
-      }
-    } else {
-      plan = await this.prisma.productPlan.findFirst({
-        where: { productId: dto.productId, product: { workspaceId }, active: true },
-        orderBy: { price: 'asc' },
-        select: { id: true, name: true, price: true },
-      });
-      if (!plan) {
-        throw new NotFoundException(
-          `Nenhum plano ativo encontrado para o produto ${dto.productId}.`,
-        );
-      }
-    }
-
-    const amountCents = BigInt(Math.round(plan.price * 100));
+    const plan = await this.loadV2Plan(workspaceId, dto.productId, dto.planId);
+    const amountCents = computePixOrderV2AmountCents(plan.price);
     if (amountCents <= 0n) {
       throw new ServiceUnavailableException('O plano possui preço inválido.');
     }
@@ -707,54 +212,97 @@ export class SalesService {
     const expiresAt = computePixExpiresAt();
 
     await this.prisma.kloelSale.create({
-      data: {
-        id: orderId,
+      data: buildPixOrderV2SaleData({
+        orderId,
         workspaceId,
+        productId: dto.productId,
+        planId: plan.id,
         productName: product.name,
         amount: plan.price,
-        status: 'pending',
-        paymentMethod: 'PIX',
-        leadPhone: dto.buyer.phone ?? null,
-        metadata: {
-          productId: dto.productId,
-          planId: plan.id,
-          buyerName: dto.buyer.name,
-          buyerEmail: dto.buyer.email,
-          ...(dto.buyer.cpf ? { buyerCpf: sanitizeDocumentDigits(dto.buyer.cpf) } : {}),
-          capability: 'sales.create_pix',
-        },
-      },
+        buyer: dto.buyer,
+      }),
     });
 
-    let pixCopyPaste: string;
-    let pixQrCode: string;
+    const fallback = buildPixOrderV2FallbackResult({
+      orderId,
+      amountCents,
+      buyerName: dto.buyer.name,
+    });
+    const smartResult = await this.tryCreateSmartPayment(
+      workspaceId,
+      dto,
+      plan.price,
+      product.name,
+    );
+    const picked = pickPixOrderV2Result(orderId, smartResult, fallback);
 
-    if (this.smartPayment) {
-      try {
-        const smartResult = await this.smartPayment.createSmartPayment({
-          workspaceId,
-          phone: dto.buyer.phone ?? '',
-          contactId: undefined,
-          customerName: dto.buyer.name,
-          customerEmail: dto.buyer.email,
-          amount: plan.price,
-          productName: product.name,
-        });
-        pixCopyPaste = smartResult.pixCopyPaste ?? `PIX_COPIA_E_COLA_${orderId}`;
-        pixQrCode = smartResult.pixQrCode ?? `PIX_QR_${orderId}`;
-      } catch (err: unknown) {
-        this.logger.warn(
-          `SmartPaymentService failed, falling back to stub: ${err instanceof Error ? err.message : String(err)}`,
-        );
-        pixCopyPaste = `00020126580014BR.GOV.BCB.PIX0136${orderId.replace(/-/g, '')}5204000053039865405${String(amountCents).padStart(2, '0')}5802BR5925${dto.buyer.name.slice(0, 25)}6009SAO PAULO62070503***6304AB12`;
-        pixQrCode = `data:image/png;base64,stub_qr_${orderId}`;
-      }
-    } else {
-      pixCopyPaste = `00020126580014BR.GOV.BCB.PIX0136${orderId.replace(/-/g, '')}5204000053039865405${String(amountCents).padStart(2, '0')}5802BR5925${dto.buyer.name.slice(0, 25)}6009SAO PAULO62070503***6304AB12`;
-      pixQrCode = `data:image/png;base64,stub_qr_${orderId}`;
+    return {
+      orderId,
+      pixCopyPaste: picked.pixCopyPaste,
+      pixQrCode: picked.pixQrCode,
+      amountCents,
+      expiresAt,
+    };
+  }
+
+  /**
+   * Workspace-scoped plan lookup for the V2 PIX flow. When `planId` is
+   * omitted, picks the cheapest active plan for the product. Throws
+   * `NotFoundException` with PT-BR messaging when nothing matches.
+   */
+  private async loadV2Plan(
+    workspaceId: string,
+    productId: string,
+    planId: string | undefined,
+  ): Promise<{ id: string; name: string; price: number }> {
+    const where = planId
+      ? { id: planId, productId, product: { workspaceId }, active: true }
+      : { productId, product: { workspaceId }, active: true };
+    const plan = await this.prisma.productPlan.findFirst({
+      where,
+      ...(planId ? {} : { orderBy: { price: 'asc' as const } }),
+      select: { id: true, name: true, price: true },
+    });
+    if (!plan) {
+      throw new NotFoundException(
+        planId
+          ? `Plano ${planId} não encontrado para produto ${productId}.`
+          : `Nenhum plano ativo encontrado para o produto ${productId}.`,
+      );
     }
+    return plan;
+  }
 
-    return { orderId, pixCopyPaste, pixQrCode, amountCents, expiresAt };
+  /**
+   * Best-effort call to {@link SmartPaymentService}. Returns `null` when the
+   * service is unavailable or fails — the caller then falls back to the
+   * deterministic fallback.
+   */
+  private async tryCreateSmartPayment(
+    workspaceId: string,
+    dto: CreatePixOrderV2Dto,
+    amount: number,
+    productName: string,
+  ): Promise<{ pixCopyPaste?: string | null; pixQrCode?: string | null } | null> {
+    if (!this.smartPayment) {
+      return null;
+    }
+    try {
+      return await this.smartPayment.createSmartPayment({
+        workspaceId,
+        phone: dto.buyer.phone ?? '',
+        contactId: undefined,
+        customerName: dto.buyer.name,
+        customerEmail: dto.buyer.email,
+        amount,
+        productName,
+      });
+    } catch (err: unknown) {
+      this.logger.warn(
+        `SmartPaymentService failed, falling back to fallback: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      return null;
+    }
   }
 
   /**
@@ -777,20 +325,7 @@ export class SalesService {
     }
 
     const existingMeta = (sale.metadata as Record<string, unknown> | null) ?? {};
-    const patch: Record<string, unknown> = {};
-
-    if (dto.name !== undefined) {
-      patch.buyerName = dto.name;
-    }
-    if (dto.email !== undefined) {
-      patch.buyerEmail = dto.email;
-    }
-    if (dto.phone !== undefined) {
-      patch.buyerPhone = dto.phone;
-    }
-    if (dto.cpf !== undefined) {
-      patch.buyerCpf = sanitizeDocumentDigits(dto.cpf);
-    }
+    const patch = buildFillBuyerDataPatch(dto);
 
     if (Object.keys(patch).length === 0) {
       return { updated: true };
@@ -835,25 +370,24 @@ export class SalesService {
       const meta = (existingMeta?.metadata as Record<string, unknown> | null) ?? {};
       const previousRefundId = meta.refundId as string | undefined;
       return {
-        refundId: previousRefundId ?? `refund_${orderId}`,
+        refundId: previousRefundId ?? buildRefundId(orderId),
         status: 'processed',
       };
     }
 
-    const refundId = `refund_${orderId}`;
-    const refundAmountCents = dto.amountCents ?? BigInt(Math.round(sale.amount * 100));
+    const refundId = buildRefundId(orderId);
+    const refundAmountCents = resolveRefundAmountCents(sale.amount, dto.amountCents);
 
     await this.prisma.kloelSale.update({
       where: { id: orderId },
       data: {
         status: 'refunded',
-        metadata: {
+        metadata: buildRefundUpdateMetadata({
           refundId,
-          refundReason: dto.reason,
-          refundAmountCents: refundAmountCents.toString(),
-          refundedAt: new Date().toISOString(),
+          reason: dto.reason,
+          amountCents: refundAmountCents,
           originalStatus: sale.status,
-        },
+        }) as Prisma.InputJsonValue,
       },
     });
 
