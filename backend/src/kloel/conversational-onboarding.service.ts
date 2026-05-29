@@ -8,7 +8,6 @@ import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
 import { chatCompletionWithRetry } from './openai-wrapper';
 import { ConversationalOnboardingToolsService } from './conversational-onboarding-tools.service';
-import { ONBOARDING_TOOLS } from './conversational-onboarding-tools-schema';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { IntentRouterService } from './intent-router/intent-router.service';
 import { AttentionService } from './mind/attention.service';
@@ -47,61 +46,15 @@ import {
 } from './conversational-onboarding.mind-deps.helpers';
 import { MindEventProcessorService } from './mind/runtime/mind-event-processor.service';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
-
-const ONBOARDING_SAFE_SETUP_TOOL_NAMES = [
-  'save_business_info',
-  'save_contact_info',
-  'add_product',
-  'set_brand_voice',
-  'set_business_hours',
-  'set_main_goal',
-] as const;
-
-function isFunctionOnboardingTool(
-  tool: OpenAI.ChatCompletionTool,
-): tool is OpenAI.ChatCompletionTool & { type: 'function' } {
-  return tool.type === 'function';
-}
-
-const ONBOARDING_SAFE_SETUP_TOOLS = ONBOARDING_TOOLS.filter(
-  (tool) =>
-    isFunctionOnboardingTool(tool) &&
-    ONBOARDING_SAFE_SETUP_TOOL_NAMES.some((name) => name === tool.function.name),
-);
-
+import {
+  ONBOARDING_SAFE_SETUP_TOOL_NAMES,
+  ONBOARDING_SAFE_SETUP_TOOLS,
+  type OnboardingMessage,
+  type PrismaWithDynamicModels,
+} from './conversational-onboarding.types';
 import { CONVERSATIONAL_ONBOARDING_PROMPT } from './conversational-onboarding.prompt';
+import { writeSseResponse, buildOnboardingFallback } from './conversational-onboarding.helpers';
 // tokenBudget: enforced via PlanLimitsService.ensureTokenBudget before each LLM call
-
-interface OnboardingMessage {
-  role: 'system' | 'user' | 'assistant' | 'tool';
-  content: string | null;
-  tool_calls?: Array<{
-    id: string;
-    type: 'function';
-    function: { name: string; arguments: string };
-  }>;
-  tool_call_id?: string;
-  name?: string;
-}
-
-/** Prisma extension with dynamic models not yet in generated types */
-interface PrismaWithDynamicModels {
-  kloelMemory: {
-    findUnique(args: Record<string, unknown>): Promise<Record<string, unknown> | null>;
-    findMany(args: Record<string, unknown>): Promise<Array<Record<string, unknown>>>;
-  };
-  autopilotEvent: {
-    findMany(args: {
-      where: { workspaceId: string; createdAt: { gte: Date } };
-      orderBy: { createdAt: 'desc' };
-      take: number;
-      select: { id: true; intent: true; action: true; createdAt: true };
-    }): Promise<
-      Array<{ id: string; intent: string | null; action: string | null; createdAt: Date }>
-    >;
-  };
-  $transaction: <T>(fn: (tx: PrismaWithDynamicModels) => Promise<T>) => Promise<T>;
-}
 
 /** Conversational onboarding service. */
 @Injectable()
@@ -302,44 +255,6 @@ export class ConversationalOnboardingService {
     return responseText;
   }
 
-  private writeSseResponse(res: Response, responseText: string): void {
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    const responsePayload = { content: responseText, done: true };
-    res.write('data: ' + JSON.stringify(responsePayload) + '\n\n');
-    res.end();
-  }
-
-  private buildOnboardingFallback(
-    reason: string,
-    ctx: {
-      error: unknown;
-      workspaceId: string;
-      hasResponseHeaders: boolean;
-      willingWrite: boolean;
-    },
-  ): string {
-    const FALLBACK_REPLY =
-      'Tive uma instabilidade momentânea pra processar agora. Pode repetir a mensagem em alguns segundos? Estou aqui pra continuar o onboarding.';
-    this.logger.warn('Onboarding degraded', {
-      tag: 'kloel_onboarding_degraded',
-      reason,
-      errorMessage:
-        ctx.error instanceof Error
-          ? ctx.error.message
-          : typeof ctx.error === 'string'
-            ? ctx.error
-            : ctx.error == null
-              ? ''
-              : JSON.stringify(ctx.error),
-      errorName: ctx.error instanceof Error ? ctx.error.constructor.name : typeof ctx.error,
-      hasResponseHeaders: ctx.hasResponseHeaders,
-      willingWrite: ctx.willingWrite,
-    });
-    return FALLBACK_REPLY;
-  }
-
   /** Inicia ou continua o onboarding conversacional */
   async chat(workspaceId: string, userMessage: string, res?: Response): Promise<string | void> {
     const history = await this.toolsService.getOnboardingHistory(workspaceId);
@@ -496,7 +411,7 @@ export class ConversationalOnboardingService {
       };
       if (res) {
         try {
-          this.writeSseResponse(res, responseText);
+          writeSseResponse(res, responseText);
         } catch (e: unknown) {
           degradedReason = 'sse_write';
           throw e;
@@ -521,17 +436,17 @@ export class ConversationalOnboardingService {
         degradedReason ??
         ((error as Record<string, unknown>)?.__onboarding_reason as string) ??
         'unknown';
-      const fallback = this.buildOnboardingFallback(reason, {
+      const fallback = buildOnboardingFallback(reason, {
         error,
         workspaceId,
         hasResponseHeaders: !!res,
         willingWrite: !!res,
-      });
+      }, this.logger);
       const onFailure = (): void => {
         applyOnboardingFailureHooks(this.onboardingDeps(), { workspaceId, outcomeKey });
       };
       if (res) {
-        this.writeSseResponse(res, fallback);
+        writeSseResponse(res, fallback);
         onFailure();
         return;
       }
