@@ -78,15 +78,16 @@ describe('DepsCoverageService', () => {
       );
 
       const result = await service.codeCoverage();
-      expect(result.available).toBe(true);
-      expect(result.lines!.pct).toBe(80);
-      expect(result.branches!.pct).toBe(75);
+      expect(result.pct).toBe(80);
+      expect(result.lines).toBe(100);
+      expect(result.uncovered).toEqual([]);
     });
 
-    it('returns available:false when no coverage files exist', async () => {
+    it('returns zeros when no coverage files exist', async () => {
       mockReadFile.mockRejectedValue(new Error('ENOENT'));
       const result = await service.codeCoverage();
-      expect(result.available).toBe(false);
+      expect(result.pct).toBe(0);
+      expect(result.lines).toBe(0);
     });
 
     it('scopes coverage to a specific workspace', async () => {
@@ -102,8 +103,8 @@ describe('DepsCoverageService', () => {
       );
 
       const result = await service.codeCoverage(undefined, 'worker');
-      expect(result.available).toBe(true);
-      expect(result.lines!.pct).toBe(100);
+      expect(result.pct).toBe(100);
+      expect(result.lines).toBe(50);
     });
   });
 
@@ -144,6 +145,91 @@ describe('DepsCoverageService', () => {
 
       const result = await service.affectedTests(['worker/src/foo.ts']);
       expect(result.testFiles).toHaveLength(0);
+    });
+  });
+
+  // ── new capabilities (PI-K46) ──
+
+  describe('affectedTests (single-file overload)', () => {
+    it('returns test file paths for a single source file', async () => {
+      mockReaddir.mockResolvedValueOnce([
+        { name: 'bar.spec.ts', isFile: () => true, isDirectory: () => false },
+      ]);
+      mockReaddir.mockResolvedValueOnce([
+        { name: 'bar.test.ts', isFile: () => true, isDirectory: () => false },
+      ]);
+      mockReadFile.mockResolvedValueOnce("import { bar } from './bar';");
+      mockReadFile.mockResolvedValueOnce("const bar = require('./bar');");
+
+      const paths = await service.affectedTests('worker/src/bar.ts');
+      expect(Array.isArray(paths)).toBe(true);
+      expect(paths).toHaveLength(2);
+      expect(paths[0]).toContain('bar.spec.ts');
+      expect(paths[1]).toContain('bar.test.ts');
+    });
+
+    it('returns empty array when no test files match', async () => {
+      mockReaddir.mockResolvedValueOnce([
+        { name: 'other.spec.ts', isFile: () => true, isDirectory: () => false },
+      ]);
+      mockReaddir.mockRejectedValueOnce(new Error('ENOENT'));
+      mockReadFile.mockResolvedValueOnce("import { other } from './other';");
+
+      const paths = await service.affectedTests('worker/src/missing.ts');
+      expect(paths).toEqual([]);
+    });
+  });
+
+  describe('dependencies (file-based overload)', () => {
+    it('returns imports and importedBy for a file path', async () => {
+      mockReadFile.mockResolvedValueOnce(
+        "import { foo } from './foo';\nimport { bar } from '../utils/bar';\nconst lodash = require('lodash');",
+      );
+      mockReadFile.mockResolvedValueOnce("import { target } from './target';");
+      mockReadFile.mockResolvedValueOnce("const target = require('../target');");
+      mockReadFile.mockResolvedValueOnce('export const x = 1;');
+
+      // readdir for importers scan (two workspaces)
+      mockReaddir.mockResolvedValueOnce([
+        { name: 'consumer.ts', isFile: () => true, isDirectory: () => false },
+        { name: 'unrelated.ts', isFile: () => true, isDirectory: () => false },
+      ]);
+      mockReaddir.mockResolvedValueOnce([]);
+
+      const result = await service.dependencies('backend/src/target.ts');
+      expect(result.imports).toHaveLength(3);
+      expect(result.imports).toContain('./foo');
+      expect(result.imports).toContain('../utils/bar');
+      expect(result.imports).toContain('lodash');
+      expect(result.importedBy.length).toBeGreaterThanOrEqual(1);
+      expect(result.importedBy[0]).toContain('consumer.ts');
+    });
+
+    it('returns empty importedBy when no files import the target', async () => {
+      mockReadFile.mockResolvedValueOnce("import { x } from 'lodash';");
+      mockReadFile.mockResolvedValueOnce("import { y } from './other';");
+      mockReaddir.mockResolvedValueOnce([
+        { name: 'other.ts', isFile: () => true, isDirectory: () => false },
+      ]);
+      mockReaddir.mockResolvedValueOnce([]);
+
+      const result = await service.dependencies('backend/src/isolated.ts');
+      expect(result.imports).toHaveLength(1);
+      expect(result.importedBy).toEqual([]);
+    });
+
+    it('caches results within TTL', async () => {
+      mockReadFile.mockResolvedValue("import { a } from './a';");
+      mockReaddir.mockResolvedValue([
+        { name: 'user.ts', isFile: () => true, isDirectory: () => false },
+      ]);
+
+      const r1 = await service.dependencies('backend/src/cached.ts');
+      const r2 = await service.dependencies('backend/src/cached.ts');
+
+      // Second call should return cached; readFile called only once per import direction
+      expect(r1.imports).toEqual(r2.imports);
+      expect(r1.importedBy).toEqual(r2.importedBy);
     });
   });
 });

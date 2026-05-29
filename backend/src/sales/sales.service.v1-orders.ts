@@ -225,11 +225,7 @@ export async function createPixOrderLegacy(
           data: {
             externalPaymentId: pixResult.externalId,
             paymentLink: pixResult.ticketUrl || null,
-            metadata: buildPixSaleUpdateMetadata(
-              buyerMeta,
-              pixResult.externalId,
-              pixResult.status,
-            ),
+            metadata: buildPixSaleUpdateMetadata(buyerMeta, pixResult.externalId, pixResult.status),
           },
         });
         await auditSale(

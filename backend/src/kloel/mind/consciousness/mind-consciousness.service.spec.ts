@@ -1,4 +1,3 @@
-import { Test, type TestingModule } from '@nestjs/testing';
 import { MindConsciousnessService } from './mind-consciousness.service';
 
 interface AutonomyMock {
@@ -35,23 +34,25 @@ const TOKENS = {
  * deps in the order the constructor expects so positional injection matches
  * even though only @Optional() is used.
  */
-async function buildService(deps: {
-  autonomy?: AutonomyMock;
-  caseMemory?: CaseMemoryMock;
-  guardAudit?: GuardAuditMock;
-  health?: HealthMock;
-  belief?: BeliefMock;
-  eventBus?: EventBusMock;
-} = {}): Promise<MindConsciousnessService> {
+async function buildService(
+  deps: {
+    autonomy?: AutonomyMock;
+    caseMemory?: CaseMemoryMock;
+    guardAudit?: GuardAuditMock;
+    health?: HealthMock;
+    belief?: BeliefMock;
+    eventBus?: EventBusMock;
+  } = {},
+): Promise<MindConsciousnessService> {
   // Direct instantiation respects positional optional arguments without
   // requiring DI tokens that the production wiring does not have yet.
   return new MindConsciousnessService(
-    deps.autonomy as never,
-    deps.caseMemory as never,
-    deps.guardAudit as never,
-    deps.health as never,
-    deps.belief as never,
-    deps.eventBus as never,
+    deps.autonomy,
+    deps.caseMemory,
+    deps.guardAudit,
+    deps.health,
+    deps.belief,
+    deps.eventBus,
   );
 }
 
@@ -84,13 +85,11 @@ describe('MindConsciousnessService', () => {
         recordCase: jest.fn(),
       };
       const guardAudit: GuardAuditMock = {
-        findRecent: jest
-          .fn()
-          .mockResolvedValue([
-            { guardName: 'wallet', reason: 'saldo insuficiente' },
-            { guardName: 'wallet', reason: 'saldo insuficiente' },
-            { guardName: 'kyc', reason: 'pendência documental' },
-          ]),
+        findRecent: jest.fn().mockResolvedValue([
+          { guardName: 'wallet', reason: 'saldo insuficiente' },
+          { guardName: 'wallet', reason: 'saldo insuficiente' },
+          { guardName: 'kyc', reason: 'pendência documental' },
+        ]),
       };
       const service = await buildService({ autonomy, caseMemory, guardAudit });
 
@@ -98,7 +97,10 @@ describe('MindConsciousnessService', () => {
 
       expect(autonomy.propose).toHaveBeenCalledWith('ws-1');
       expect(caseMemory.similar).toHaveBeenCalledWith(
-        expect.objectContaining({ workspaceId: 'ws-1', caseType: 'consciousness.experience' }),
+        expect.objectContaining({
+          workspaceId: 'ws-1',
+          caseType: 'consciousness.experience',
+        }) as never,
       );
       expect(guardAudit.findRecent).toHaveBeenCalledWith('ws-1');
       expect(narrative.identity).toMatch(/Kloel/);
@@ -165,19 +167,25 @@ describe('MindConsciousnessService', () => {
         learnings: ['cliente preferiu PIX'],
       });
 
-      expect(caseMemory.recordCase).toHaveBeenCalledWith(
-        expect.objectContaining({
-          workspaceId: 'ws-1',
-          caseType: 'consciousness.experience',
-          text: 'fechei venda do plano gold',
-          action: 'record',
-          outcome: 1,
-          features: expect.objectContaining({
-            valence: 'good',
-            learnings: ['cliente preferiu PIX'],
-          }),
-        }),
-      );
+      const recordCalls = caseMemory.recordCase.mock.calls as Array<
+        [
+          {
+            workspaceId: string;
+            caseType: string;
+            text: string;
+            action: string;
+            outcome: number;
+            features: Record<string, unknown>;
+          },
+        ]
+      >;
+      const r = recordCalls[0]?.[0];
+      expect(r?.workspaceId).toBe('ws-1');
+      expect(r?.caseType).toBe('consciousness.experience');
+      expect(r?.text).toBe('fechei venda do plano gold');
+      expect(r?.action).toBe('record');
+      expect(r?.outcome).toBe(1);
+      expect(r?.features).toMatchObject({ valence: 'good', learnings: ['cliente preferiu PIX'] });
       expect(eventBus.emit).toHaveBeenCalledWith(
         'cognition.consciousness.experience_recorded',
         expect.objectContaining({
@@ -235,12 +243,10 @@ describe('MindConsciousnessService', () => {
         list: jest.fn().mockResolvedValue([{}, {}, {}]),
       };
       const guardAudit: GuardAuditMock = {
-        findRecent: jest
-          .fn()
-          .mockResolvedValue([
-            { guardName: 'a', reason: 'x' },
-            { guardName: 'b', reason: 'y' },
-          ]),
+        findRecent: jest.fn().mockResolvedValue([
+          { guardName: 'a', reason: 'x' },
+          { guardName: 'b', reason: 'y' },
+        ]),
       };
       const service = await buildService({ health, belief, guardAudit });
 

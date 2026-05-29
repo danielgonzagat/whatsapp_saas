@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ModuleRef, ModulesContainer } from '@nestjs/core';
+import { ModulesContainer } from '@nestjs/core';
 import {
   type CapabilityDefinition,
   type CapabilityInputField,
@@ -39,7 +39,7 @@ export class CapabilityRegistryV2Service {
   private readonly maturities = new Map<string, CapabilityMaturity>();
 
   constructor(
-    private readonly moduleRef: ModuleRef,
+    //moduleRef: ModuleRef,
     private readonly modulesContainer: ModulesContainer,
   ) {
     for (const cap of CAPABILITY_DEFINITIONS) {
@@ -118,7 +118,9 @@ export class CapabilityRegistryV2Service {
     tier: number;
   } | null {
     const cap = CAPABILITY_MAP.get(capabilityId);
-    if (!cap) return null;
+    if (!cap) {
+      return null;
+    }
     return {
       id: cap.id,
       description: cap.description,
@@ -144,15 +146,13 @@ export class CapabilityRegistryV2Service {
    *
    * The 'CapabilityRegistry' service name is handled as a self-reference.
    */
-  async listGaps(): Promise<
-    Array<{ id: string; declaredService: string; missingMethod: string }>
-  > {
+  listGaps(): Array<{ id: string; declaredService: string; missingMethod: string }> {
     // Build dynamic instance map from all DI modules
     const instanceByName = new Map<string, object>();
     for (const [, module] of this.modulesContainer) {
       for (const [, wrapper] of module.providers) {
-        if (wrapper.instance && wrapper.name) {
-          instanceByName.set(wrapper.name, wrapper.instance);
+        if (wrapper.instance && wrapper.name && typeof wrapper.instance === 'object') {
+          instanceByName.set(String(wrapper.name), wrapper.instance);
         }
       }
     }
@@ -162,15 +162,21 @@ export class CapabilityRegistryV2Service {
     for (const cap of CAPABILITY_DEFINITIONS) {
       const ds = cap.domainService;
 
-      if (!ds || ds.startsWith('Alias for')) continue;
+      if (!ds || ds.startsWith('Alias for')) {
+        continue;
+      }
 
       const dotIdx = ds.indexOf('.');
-      if (dotIdx === -1) continue;
+      if (dotIdx === -1) {
+        continue;
+      }
 
       const serviceName = ds.slice(0, dotIdx);
       const methodName = ds.slice(dotIdx + 1);
 
-      if (methodName.includes('+')) continue;
+      if (methodName.includes('+')) {
+        continue;
+      }
 
       // Self-reference: CapabilityRegistry
       if (serviceName === 'CapabilityRegistry') {

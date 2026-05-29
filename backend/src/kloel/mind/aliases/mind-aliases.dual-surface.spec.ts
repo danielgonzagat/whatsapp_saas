@@ -68,17 +68,29 @@ describe('MindMessageService / MindMemoryItemService — dual surface', () => {
   });
 
   it('MindMessageService.findById returns the same row as prisma.kloelMessage.findUnique', async () => {
-    const viaWrapper = await mindMessage.findById(seededMessage.id);
-    const viaLegacy = await prisma.kloelMessage.findUnique({ where: { id: seededMessage.id } });
+    const viaWrapper = (await mindMessage.findById(seededMessage.id)) as Record<
+      string,
+      unknown
+    > | null;
+    const viaLegacy = (await prisma.kloelMessage.findUnique({
+      where: { id: seededMessage.id },
+    })) as Record<string, unknown> | null;
 
     expect(viaWrapper).toEqual(viaLegacy);
     expect(viaWrapper).toEqual(seededMessage);
-    expect(prisma.kloelMessage.findUnique).toHaveBeenCalledWith({ where: { id: seededMessage.id } });
+    expect(prisma.kloelMessage.findUnique).toHaveBeenCalledWith({
+      where: { id: seededMessage.id },
+    });
   });
 
   it('MindMemoryItemService.findById returns the same row as prisma.kloelMemory.findUnique', async () => {
-    const viaWrapper = await mindMemory.findById(seededMemory.id);
-    const viaLegacy = await prisma.kloelMemory.findUnique({ where: { id: seededMemory.id } });
+    const viaWrapper = (await mindMemory.findById(seededMemory.id)) as Record<
+      string,
+      unknown
+    > | null;
+    const viaLegacy = (await prisma.kloelMemory.findUnique({
+      where: { id: seededMemory.id },
+    })) as Record<string, unknown> | null;
 
     expect(viaWrapper).toEqual(viaLegacy);
     expect(viaWrapper).toEqual(seededMemory);

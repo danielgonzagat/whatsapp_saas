@@ -241,7 +241,11 @@ export class MindMultiModalPerceptionService {
   }
 
   private fingerprintBuffer(buffer: Buffer, mimeType: string): string {
-    return createHash('sha256').update(mimeType).update(buffer).digest('hex').slice(0, FINGERPRINT_HEX);
+    return createHash('sha256')
+      .update(mimeType)
+      .update(buffer)
+      .digest('hex')
+      .slice(0, FINGERPRINT_HEX);
   }
 
   private requireWorkspace(workspaceId: string): void {

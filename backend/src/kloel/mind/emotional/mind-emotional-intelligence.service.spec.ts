@@ -10,9 +10,7 @@ function makeSpineMock(): { service: SpineEmitterService; calls: EmitCall[] } {
   const service = {
     emit: jest.fn(async (input: EmitCall) => {
       calls.push(input);
-      return { eventId: 'evt_test' } as unknown as Awaited<
-        ReturnType<SpineEmitterService['emit']>
-      >;
+      return { eventId: 'evt_test' } as unknown as Awaited<ReturnType<SpineEmitterService['emit']>>;
     }),
   } as unknown as SpineEmitterService;
   return { service, calls };

@@ -5,12 +5,27 @@ import * as path from 'path';
 const WORKSPACES = ['root', 'backend', 'frontend', 'frontend-admin', 'worker', 'e2e'] as const;
 type Workspace = (typeof WORKSPACES)[number];
 
-function isWorkspace(s: string): s is Workspace { return (WORKSPACES as readonly string[]).includes(s); }
+function isWorkspace(s: string): s is Workspace {
+  return (WORKSPACES as readonly string[]).includes(s);
+}
 
-interface SbomComponent { type: string; name: string; group?: string; version?: string; purl?: string; }
-interface SbomFile { components: SbomComponent[]; }
+interface SbomComponent {
+  type: string;
+  name: string;
+  group?: string;
+  version?: string;
+  purl?: string;
+}
+interface SbomFile {
+  components: SbomComponent[];
+}
 
-interface CoverageTotal { lines: { total: number; covered: number; pct: number }; branches: { total: number; covered: number; pct: number }; functions: { total: number; covered: number; pct: number }; statements: { total: number; covered: number; pct: number }; }
+interface CoverageTotal {
+  lines: { total: number; covered: number; pct: number };
+  branches: { total: number; covered: number; pct: number };
+  functions: { total: number; covered: number; pct: number };
+  statements: { total: number; covered: number; pct: number };
+}
 
 interface CoverageSummary {
   total: CoverageTotal;
@@ -57,6 +72,17 @@ interface AffectedResult {
   testFiles: Array<{ file: string; imports: string[] }>;
 }
 
+interface SimpleCoverage {
+  pct: number;
+  lines: number;
+  uncovered: string[];
+}
+
+interface FileDeps {
+  imports: string[];
+  importedBy: string[];
+}
+
 const REPO_ROOT = path.resolve(process.cwd(), '..');
 const SBOM_DIR = path.join(REPO_ROOT, 'tools', 'sbom');
 
@@ -74,23 +100,42 @@ export class DepsCoverageService {
   private readonly logger = new Logger(DepsCoverageService.name);
   private cache = new Map<string, CacheEntry<unknown>>();
   private readonly CACHE_MS = 60_000;
+  private readonly SHORT_CACHE_MS = 5_000;
 
+  // ── dependencies (overloaded) ──
+
+  /** Static analysis: imports of a single file + reverse-lookup of files importing it. */
+  async dependencies(filePath: string): Promise<FileDeps>;
+  /** SBOM-based package listing for a workspace. */
   async dependencies(
     workspace: string,
     pattern?: string,
-  ): Promise<{ success: boolean; deps?: DepResult[]; error?: string; count?: number }> {
-    if (!isWorkspace(workspace)) {
-      return { success: false, error: `invalid_workspace: ${workspace}` };
+  ): Promise<{ success: boolean; deps?: DepResult[]; error?: string; count?: number }>;
+  async dependencies(
+    workspaceOrFile: string,
+    pattern?: string,
+  ): Promise<{ success: boolean; deps?: DepResult[]; error?: string; count?: number } | FileDeps> {
+    // Branch: file-based dependency analysis when the arg looks like a file path
+    if (
+      !isWorkspace(workspaceOrFile) &&
+      pattern === undefined &&
+      this.looksLikeFilePath(workspaceOrFile)
+    ) {
+      return this.fileDependencies(workspaceOrFile);
     }
 
-    const cacheKey = `deps:${workspace}`;
+    if (!isWorkspace(workspaceOrFile)) {
+      return { success: false, error: `invalid_workspace: ${workspaceOrFile}` };
+    }
+
+    const cacheKey = `deps:${workspaceOrFile}`;
     const cached = this.cacheGet<DepResult[]>(cacheKey);
     if (cached) {
       return this.filterDeps(cached, pattern);
     }
 
     try {
-      const sbomPath = path.join(SBOM_DIR, `sbom-${workspace}.json`);
+      const sbomPath = path.join(SBOM_DIR, `sbom-${workspaceOrFile}.json`);
       const raw = await fs.readFile(sbomPath, 'utf-8');
       const sbom = JSON.parse(raw) as SbomFile;
 
@@ -106,19 +151,44 @@ export class DepsCoverageService {
       return this.filterDeps(deps, pattern);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      this.logger.warn(`Failed to read SBOM for ${workspace}: ${msg}`);
+      this.logger.warn(`Failed to read SBOM for ${workspaceOrFile}: ${msg}`);
       return { success: false, error: msg };
     }
   }
 
-  async codeCoverage(filePath?: string, workspace?: string): Promise<CoverageResult> {
-    if (filePath) {
-      return this.fileCoverage(filePath, workspace);
+  // ── codeCoverage (unified SimpleCoverage) ──
+
+  /**
+   * Returns simplified coverage: pct, total lines, uncovered line refs.
+   * Pass a file path for per-file uncovered detail.
+   * Pass a workspace name (e.g. "backend") or omit for summary.
+   */
+  async codeCoverage(filePath?: string, workspace?: string): Promise<SimpleCoverage> {
+    if (filePath && isWorkspace(filePath) && workspace === undefined) {
+      return this.simpleModuleCoverage(filePath);
     }
-    return this.summaryCoverage(workspace);
+    if (!filePath) {
+      return this.simpleModuleCoverage(workspace);
+    }
+    return this.fileSimpleCoverage(filePath, workspace);
   }
 
-  async affectedTests(sourceFiles: string[]): Promise<AffectedResult> {
+  // ── affectedTests (overloaded) ──
+
+  /** Single source file → test file paths. */
+  async affectedTests(filePath: string): Promise<string[]>;
+  /** Multiple source files → full affected-result with import details. */
+  async affectedTests(sourceFiles: string[]): Promise<AffectedResult>;
+  async affectedTests(input: string | string[]): Promise<string[] | AffectedResult> {
+    const sourceFiles = Array.isArray(input) ? input : [input];
+    const result = await this.affectedTestsImpl(sourceFiles);
+    if (!Array.isArray(input)) {
+      return result.testFiles.map((t) => t.file);
+    }
+    return result;
+  }
+
+  private async affectedTestsImpl(sourceFiles: string[]): Promise<AffectedResult> {
     const result: AffectedResult = { sourceFiles, testFiles: [] };
     const seen = new Set<string>();
 
@@ -139,8 +209,10 @@ export class DepsCoverageService {
             candidates.push(path.join(dir, e.name));
           }
         }
-      } catch {
-        // dir read failed — skip
+      } catch (err: unknown) {
+        this.logger.debug(
+          `deps-coverage minor: ${err instanceof Error ? err.message : String(err)}`,
+        ); // dir read failed — skip
       }
 
       const testsDir = path.join(dir, '__tests__');
@@ -157,8 +229,10 @@ export class DepsCoverageService {
             candidates.push(path.join(testsDir, e.name));
           }
         }
-      } catch {
-        // __tests__ doesn't exist — skip
+      } catch (err: unknown) {
+        this.logger.debug(
+          `deps-coverage minor: ${err instanceof Error ? err.message : String(err)}`,
+        ); // __tests__ doesn't exist — skip
       }
 
       const srcBase = path.basename(src).replace(/\.(ts|tsx|js|jsx)$/, '');
@@ -190,8 +264,10 @@ export class DepsCoverageService {
               imports,
             });
           }
-        } catch {
-          // can't read candidate — skip
+        } catch (err: unknown) {
+          this.logger.debug(
+            `deps-coverage minor: ${err instanceof Error ? err.message : String(err)}`,
+          ); // can't read candidate — skip
         }
       }
     }
@@ -214,29 +290,6 @@ export class DepsCoverageService {
         (d.purl?.toLowerCase().includes(lower) ?? false),
     );
     return { success: true, deps: filtered, count: filtered.length };
-  }
-
-  private async summaryCoverage(workspace?: string): Promise<CoverageResult> {
-    const wss = workspace && isWorkspace(workspace) ? [workspace] : WORKSPACES;
-
-    for (const ws of wss) {
-      const covPath = path.join(workspaceCoverageDir(ws), 'coverage-summary.json');
-      try {
-        const raw = await fs.readFile(covPath, 'utf-8');
-        const summary = JSON.parse(raw) as CoverageSummary;
-        return {
-          available: true,
-          lines: summary.total.lines,
-          branches: summary.total.branches,
-          functions: summary.total.functions,
-          statements: summary.total.statements,
-        };
-      } catch {
-        continue;
-      }
-    }
-
-    return { available: false };
   }
 
   private async fileCoverage(filePath: string, workspace?: string): Promise<CoverageResult> {
@@ -369,7 +422,10 @@ export class DepsCoverageService {
           statements: totalStatements,
           ...(uncoveredLines.length > 0 ? { uncoveredLines } : {}),
         };
-      } catch {
+      } catch (err: unknown) {
+        this.logger.debug(
+          `deps-coverage minor: ${err instanceof Error ? err.message : String(err)}`,
+        );
         continue;
       }
     }
@@ -391,5 +447,184 @@ export class DepsCoverageService {
 
   private cacheSet<T>(key: string, value: T): void {
     this.cache.set(key, { value, expiresAt: Date.now() + this.CACHE_MS });
+  }
+
+  private cacheShortGet<T>(key: string): T | undefined {
+    const entry = this.cache.get(key) as CacheEntry<T> | undefined;
+    if (!entry) {
+      return undefined;
+    }
+    if (Date.now() > entry.expiresAt) {
+      this.cache.delete(key);
+      return undefined;
+    }
+    return entry.value;
+  }
+
+  private cacheShortSet<T>(key: string, value: T): void {
+    this.cache.set(key, { value, expiresAt: Date.now() + this.SHORT_CACHE_MS });
+  }
+
+  private looksLikeFilePath(s: string): boolean {
+    return /[/\\]/.test(s) || /\.(ts|tsx|js|jsx)\$/.test(s);
+  }
+
+  // ── file-based dependency analysis ──
+
+  private async fileDependencies(filePath: string): Promise<FileDeps> {
+    const cacheKey = `filedeps:${filePath}`;
+    const cached = this.cacheShortGet<FileDeps>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const absPath = path.resolve(REPO_ROOT, filePath);
+    const [imports, importedBy] = await Promise.all([
+      this.parseImports(absPath),
+      this.findImporters(filePath),
+    ]);
+
+    const result: FileDeps = { imports, importedBy };
+    this.cacheShortSet(cacheKey, result);
+    return result;
+  }
+
+  private async parseImports(absPath: string): Promise<string[]> {
+    try {
+      const content = await fs.readFile(absPath, 'utf-8');
+      const imports: string[] = [];
+      const re =
+        /(?:import\\s+(?:[\\s\\S]*?\\s+from\\s+)?['"]([^'"]+)['"]|import\\(['"]([^'"]+)['"]\\)|require\\(['"]([^'"]+)['"]\\))/g;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(content)) !== null) {
+        const imp = m[1] ?? m[2] ?? m[3];
+        if (imp) {
+          imports.push(imp);
+        }
+      }
+      return imports;
+    } catch (err: unknown) {
+      this.logger.debug(`deps-coverage minor: ${err instanceof Error ? err.message : String(err)}`);
+      return [];
+    }
+  }
+
+  private async findImporters(filePath: string): Promise<string[]> {
+    const cacheKey = `importers:${filePath}`;
+    const cached = this.cacheShortGet<string[]>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    const importers: string[] = [];
+    const base = path.basename(filePath).replace(/\.(ts|tsx|js|jsx)\$/, '');
+    const escaped = base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const relPath = filePath.replace(/\\.[^.]+\$/, '');
+    const escapedRel = relPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    const searchDirs = WORKSPACES.filter((w) => w !== 'root' && w !== 'e2e').map((w) =>
+      path.join(REPO_ROOT, w, 'src'),
+    );
+
+    for (const dir of searchDirs) {
+      await this.scanDirForImporters(dir, escaped, escapedRel, importers, REPO_ROOT);
+    }
+
+    this.cacheShortSet(cacheKey, importers);
+    return importers;
+  }
+
+  private async scanDirForImporters(
+    dir: string,
+    escapedBase: string,
+    escapedRel: string,
+    out: string[],
+    root: string,
+  ): Promise<void> {
+    let entries: unknown[];
+    try {
+      entries = await fs.readdir(dir, { withFileTypes: true });
+    } catch (err: unknown) {
+      this.logger.debug(`deps-coverage minor: ${err instanceof Error ? err.message : String(err)}`);
+      return;
+    }
+
+    const dirs: string[] = [];
+    for (const e of entries as Array<{ name: string; isFile(): boolean; isDirectory(): boolean }>) {
+      const full = path.join(dir, e.name);
+      if (e.isDirectory()) {
+        if (!e.name.startsWith('.') && e.name !== 'node_modules' && e.name !== '__tests__') {
+          dirs.push(full);
+        }
+      } else if (e.isFile() && /\.(ts|tsx|js|jsx)\$/.test(e.name)) {
+        try {
+          const content = await fs.readFile(full, 'utf-8');
+          const re = new RegExp(
+            `(?:from\\s+['"]((?:\\.\\.?/)*${escapedBase}(?:/index)?)['"]|from\\s+['"]((?:\\.\\.?/)*${escapedRel})['"]|require\\(['"]((?:\\.\\.?/)*${escapedBase}(?:/index)?)['"]\\)|require\\(['"]((?:\\.\\.?/)*${escapedRel})['"]\\))`,
+          );
+          if (re.test(content)) {
+            out.push(path.relative(root, full));
+          }
+        } catch (err: unknown) {
+          this.logger.debug(
+            `deps-coverage minor: ${err instanceof Error ? err.message : String(err)}`,
+          ); // unreadable file — skip
+        }
+      }
+    }
+
+    for (const d of dirs) {
+      await this.scanDirForImporters(d, escapedBase, escapedRel, out, root);
+    }
+  }
+
+  // ── simplified coverage helpers ──
+
+  private async fileSimpleCoverage(filePath: string, workspace?: string): Promise<SimpleCoverage> {
+    const covResult = await this.fileCoverage(filePath, workspace);
+    if (!covResult.available) {
+      return { pct: 0, lines: 0, uncovered: [] };
+    }
+
+    const uncovered: string[] = [];
+    if (covResult.uncoveredLines) {
+      for (const uf of covResult.uncoveredLines) {
+        for (const r of uf.ranges) {
+          for (let l = r.start; l <= r.end; l++) {
+            uncovered.push(`${uf.file}:${l}`);
+          }
+        }
+      }
+    }
+
+    return {
+      pct: covResult.lines?.pct ?? 0,
+      lines: covResult.lines?.total ?? 0,
+      uncovered,
+    };
+  }
+
+  private async simpleModuleCoverage(modulePath?: string): Promise<SimpleCoverage> {
+    const wss = modulePath && isWorkspace(modulePath) ? [modulePath] : WORKSPACES;
+
+    for (const ws of wss) {
+      const covPath = path.join(workspaceCoverageDir(ws), 'coverage-summary.json');
+      try {
+        const raw = await fs.readFile(covPath, 'utf-8');
+        const summary = JSON.parse(raw) as CoverageSummary;
+        return {
+          pct: summary.total.lines.pct,
+          lines: summary.total.lines.total,
+          uncovered: [],
+        };
+      } catch (err: unknown) {
+        this.logger.debug(
+          `deps-coverage minor: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        continue;
+      }
+    }
+
+    return { pct: 0, lines: 0, uncovered: [] };
   }
 }

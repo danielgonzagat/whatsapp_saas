@@ -213,7 +213,7 @@ describe('CapabilityRegistryV2Service — listGaps', () => {
       ProductService: { create: jest.fn() },
     });
 
-    const gaps = await service.listGaps();
+    const gaps = service.listGaps();
 
     // self.health → HealthService.snapshot, HealthService not in container
     const healthGap = gaps.find((g) => g.id === 'self.health');
@@ -242,7 +242,7 @@ describe('CapabilityRegistryV2Service — listGaps', () => {
       HealthService: { ping: jest.fn() },
     });
 
-    const gaps = await service.listGaps();
+    const gaps = service.listGaps();
 
     // self.health → HealthService.snapshot, but snapshot doesn't exist
     const healthGap = gaps.find((g) => g.id === 'self.health');
@@ -254,7 +254,7 @@ describe('CapabilityRegistryV2Service — listGaps', () => {
   it('reports CapabilityRegistry self-reference gaps for non-existent methods', async () => {
     const service = await setupService({});
 
-    const gaps = await service.listGaps();
+    const gaps = service.listGaps();
 
     // self.bogus_method → CapabilityRegistry.nonExistentMethod
     const bogusGap = gaps.find((g) => g.id === 'self.bogus_method');
@@ -272,7 +272,7 @@ describe('CapabilityRegistryV2Service — listGaps', () => {
       ProductService: { create: jest.fn() },
     });
 
-    const gaps = await service.listGaps();
+    const gaps = service.listGaps();
 
     // Resolvable services with matching methods → not gaps
     expect(gaps.find((g) => g.id === 'self.health')).toBeUndefined();
@@ -286,7 +286,7 @@ describe('CapabilityRegistryV2Service — listGaps', () => {
   it('handles empty container — all DI-dependent caps are gaps', async () => {
     const service = await setupService({});
 
-    const gaps = await service.listGaps();
+    const gaps = service.listGaps();
 
     // self.health → HealthService not found → gap
     expect(gaps.find((g) => g.id === 'self.health')).toBeDefined();

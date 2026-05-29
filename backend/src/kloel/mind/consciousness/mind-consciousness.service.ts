@@ -202,15 +202,17 @@ export class MindConsciousnessService {
   }
 
   private async scoreHealth(workspaceId: string): Promise<number> {
-    if (!this.health) return 0;
+    if (!this.health) {
+      return 0;
+    }
     try {
       const snapshot = await this.health.snapshot(workspaceId);
       let score = HEALTH_MAX;
       for (const value of Object.values(snapshot)) {
-        if (HEALTH_TOKENS_OK.has(value)) continue;
-        score -= HEALTH_TOKENS_DEGRADED.has(value)
-          ? HEALTH_DEGRADED_PENALTY
-          : HEALTH_DOWN_PENALTY;
+        if (HEALTH_TOKENS_OK.has(value)) {
+          continue;
+        }
+        score -= HEALTH_TOKENS_DEGRADED.has(value) ? HEALTH_DEGRADED_PENALTY : HEALTH_DOWN_PENALTY;
       }
       return Math.max(0, score);
     } catch {
@@ -219,7 +221,9 @@ export class MindConsciousnessService {
   }
 
   private async countCapabilities(workspaceId: string): Promise<number> {
-    if (!this.belief) return 0;
+    if (!this.belief) {
+      return 0;
+    }
     try {
       const rows = await this.belief.list(workspaceId, 'capability.active');
       return rows.length;
@@ -229,7 +233,9 @@ export class MindConsciousnessService {
   }
 
   private async countRecentSurprises(workspaceId: string): Promise<number> {
-    if (!this.guardAudit) return 0;
+    if (!this.guardAudit) {
+      return 0;
+    }
     try {
       const rows = await this.guardAudit.findRecent(workspaceId);
       return rows.length;
@@ -239,9 +245,15 @@ export class MindConsciousnessService {
   }
 
   private suggestFocus(healthScore: number, surprises: number): string {
-    if (healthScore === 0) return 'configurar telemetria mínima';
-    if (healthScore < FOCUS_HEALTH_THRESHOLD) return 'restaurar saúde de infraestrutura';
-    if (surprises > FOCUS_SURPRISE_THRESHOLD) return 'investigar guard-audit recente';
+    if (healthScore === 0) {
+      return 'configurar telemetria mínima';
+    }
+    if (healthScore < FOCUS_HEALTH_THRESHOLD) {
+      return 'restaurar saúde de infraestrutura';
+    }
+    if (surprises > FOCUS_SURPRISE_THRESHOLD) {
+      return 'investigar guard-audit recente';
+    }
     return 'continuar evoluindo capacidades';
   }
 
@@ -252,15 +264,25 @@ export class MindConsciousnessService {
   }
 
   private static outcomeToScore(outcome: ExperienceInput['outcome']): number {
-    if (outcome === 'good') return 1;
-    if (outcome === 'bad') return -1;
+    if (outcome === 'good') {
+      return 1;
+    }
+    if (outcome === 'bad') {
+      return -1;
+    }
     return 0;
   }
 
   private static scoreToOutcome(score: number | null): RecentExperience['emotionalValence'] {
-    if (score === null || score === undefined) return 'neutral';
-    if (score > 0) return 'good';
-    if (score < 0) return 'bad';
+    if (score === null || score === undefined) {
+      return 'neutral';
+    }
+    if (score > 0) {
+      return 'good';
+    }
+    if (score < 0) {
+      return 'bad';
+    }
     return 'neutral';
   }
 }
