@@ -2,12 +2,7 @@ import { Logger } from '@nestjs/common';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
-import {
-  WORKSPACES,
-  Workspace,
-  isWorkspace,
-  workspaceCoverageDir,
-} from './deps-coverage.helpers';
+import { WORKSPACES, Workspace, isWorkspace, workspaceCoverageDir } from './deps-coverage.helpers';
 
 export interface CoverageTotal {
   lines: { total: number; covered: number; pct: number };
@@ -174,8 +169,7 @@ export async function fileCoverage(
   workspace: string | undefined,
   logger: Logger,
 ): Promise<CoverageResult> {
-  const wss: readonly Workspace[] =
-    workspace && isWorkspace(workspace) ? [workspace] : WORKSPACES;
+  const wss: readonly Workspace[] = workspace && isWorkspace(workspace) ? [workspace] : WORKSPACES;
 
   for (const ws of wss) {
     const finalPath = path.join(workspaceCoverageDir(ws), 'coverage-final.json');
