@@ -204,7 +204,7 @@ Certificates auto-renew via Vercel/Railway.
 
 After first production deploy, configure webhook URLs in provider dashboards:
 
-- Stripe: `https://api.kloel.com/webhooks/stripe`
+- Stripe: `https://api.kloel.com/webhook/payment/stripe`
 - Meta (WhatsApp Cloud): `https://api.kloel.com/webhooks/meta/whatsapp`
 - Meta (Ads/Conversions): `https://api.kloel.com/webhooks/meta/ads`
 - WAHA: `https://api.kloel.com/webhooks/waha`

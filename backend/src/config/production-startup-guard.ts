@@ -9,8 +9,15 @@ const REQUIRED_PRODUCTION_SECRETS = [
   'EMAIL_TOKEN_ENCRYPTION_KEY',
   'PAYMENT_WEBHOOK_SECRET',
   'MERCADOPAGO_WEBHOOK_SECRET',
+  'STRIPE_SECRET_KEY',
+  'STRIPE_PUBLISHABLE_KEY',
   'STRIPE_WEBHOOK_SECRET',
 ] as const;
+
+const PRODUCTION_LIVE_PREFIXES = {
+  STRIPE_SECRET_KEY: 'sk_live_',
+  STRIPE_PUBLISHABLE_KEY: 'pk_live_',
+} as const;
 
 /** Assert production-only startup invariants that cannot be left conditional. */
 export function assertProductionStartupSecrets(env: StartupEnv = process.env): void {
@@ -19,15 +26,25 @@ export function assertProductionStartupSecrets(env: StartupEnv = process.env): v
   }
 
   const missing = REQUIRED_PRODUCTION_SECRETS.filter((name) => !String(env[name] || '').trim());
-  if (missing.length === 0) {
-    return;
+  if (missing.length > 0) {
+    throw new Error(
+      `[STARTUP] FATAL: missing production secrets required for signed webhooks/token crypto: ${missing.join(
+        ', ',
+      )}`,
+    );
   }
 
-  throw new Error(
-    `[STARTUP] FATAL: missing production secrets required for signed webhooks/token crypto: ${missing.join(
-      ', ',
-    )}`,
-  );
+  const testModeStripeSecrets = Object.entries(PRODUCTION_LIVE_PREFIXES)
+    .filter(([name, prefix]) => !String(env[name] || '').trim().startsWith(prefix))
+    .map(([name, prefix]) => `${name} (expected prefix ${prefix})`);
+
+  if (testModeStripeSecrets.length > 0) {
+    throw new Error(
+      `[STARTUP] FATAL: production Stripe secrets must use live-mode prefixes: ${testModeStripeSecrets.join(
+        ', ',
+      )}`,
+    );
+  }
 }
 
 export const productionStartupRequiredSecrets = [...REQUIRED_PRODUCTION_SECRETS];

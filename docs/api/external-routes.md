@@ -42,8 +42,8 @@ auth guard). Estao listadas aqui para referencia.
 
 | Metodo | Path | Controller | Caller | Justificativa |
 |--------|------|-----------|--------|---------------|
-| POST | `/webhooks/stripe` | payment-webhook-stripe.controller.ts | Stripe | Webhook receiver |
-| POST | `/webhooks/payment` | payment-webhook.controller.ts | MercadoPago | Webhook receiver |
+| POST | `/webhook/payment/stripe` | payment-webhook-stripe.controller.ts | Stripe | Webhook receiver |
+| POST | `/webhook/payment` | payment-webhook.controller.ts | MercadoPago | Webhook receiver |
 | POST | `/webhooks/meta` | meta-webhook.controller.ts | Meta | Webhook receiver |
 | POST | `/webhooks/whatsapp` | whatsapp-api-webhook.controller.ts | WAHA | Webhook receiver |
 | POST | `/webhooks/tiktok` | tiktok-webhook.controller.ts | TikTok | Webhook receiver |

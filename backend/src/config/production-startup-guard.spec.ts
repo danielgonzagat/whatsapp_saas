@@ -4,6 +4,16 @@ import {
 } from './production-startup-guard';
 
 describe('assertProductionStartupSecrets', () => {
+  function completeProductionEnv(): Record<string, string> {
+    return {
+      ...Object.fromEntries(
+        productionStartupRequiredSecrets.map((name) => [name, `${name.toLowerCase()}-secret`]),
+      ),
+      STRIPE_SECRET_KEY: 'sk_live_unit_test',
+      STRIPE_PUBLISHABLE_KEY: 'pk_live_unit_test',
+    };
+  }
+
   it('does nothing outside production', () => {
     expect(() => assertProductionStartupSecrets({ NODE_ENV: 'test' })).not.toThrow();
     expect(() => assertProductionStartupSecrets({ NODE_ENV: 'development' })).not.toThrow();
@@ -17,34 +27,49 @@ describe('assertProductionStartupSecrets', () => {
 
   it('requires ads token encryption keys in production', () => {
     expect(productionStartupRequiredSecrets).toEqual(
-      expect.arrayContaining(['GOOGLE_ADS_TOKEN_ENCRYPTION_KEY', 'TIKTOK_TOKEN_ENCRYPTION_KEY']),
+      expect.arrayContaining([
+        'GOOGLE_ADS_TOKEN_ENCRYPTION_KEY',
+        'TIKTOK_TOKEN_ENCRYPTION_KEY',
+        'STRIPE_SECRET_KEY',
+        'STRIPE_PUBLISHABLE_KEY',
+      ]),
     );
   });
 
   it('accepts production when all required secrets are configured', () => {
-    const env = Object.fromEntries(
-      productionStartupRequiredSecrets.map((name) => [name, `${name.toLowerCase()}-secret`]),
-    );
-
     expect(() =>
       assertProductionStartupSecrets({
         NODE_ENV: 'production',
-        ...env,
+        ...completeProductionEnv(),
       }),
     ).not.toThrow();
   });
 
   it('trims empty configured values', () => {
-    const env = Object.fromEntries(
-      productionStartupRequiredSecrets.map((name) => [name, `${name.toLowerCase()}-secret`]),
-    );
+    expect(() =>
+      assertProductionStartupSecrets({
+        NODE_ENV: 'production',
+        ...completeProductionEnv(),
+        TIKTOK_CLIENT_SECRET: '   ',
+      }),
+    ).toThrow(/TIKTOK_CLIENT_SECRET/);
+  });
+
+  it('rejects Stripe test keys in production', () => {
+    expect(() =>
+      assertProductionStartupSecrets({
+        NODE_ENV: 'production',
+        ...completeProductionEnv(),
+        STRIPE_SECRET_KEY: 'sk_test_wrong_mode',
+      }),
+    ).toThrow(/STRIPE_SECRET_KEY \(expected prefix sk_live_\)/);
 
     expect(() =>
       assertProductionStartupSecrets({
         NODE_ENV: 'production',
-        ...env,
-        TIKTOK_CLIENT_SECRET: '   ',
+        ...completeProductionEnv(),
+        STRIPE_PUBLISHABLE_KEY: 'pk_test_wrong_mode',
       }),
-    ).toThrow(/TIKTOK_CLIENT_SECRET/);
+    ).toThrow(/STRIPE_PUBLISHABLE_KEY \(expected prefix pk_live_\)/);
   });
 });
