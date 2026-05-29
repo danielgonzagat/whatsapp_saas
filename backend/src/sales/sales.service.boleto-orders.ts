@@ -1,48 +1,40 @@
 /**
- * V1 `createPixOrderLegacy` orchestrator — Mercado Pago direct PIX. Companion
- * provider flows live alongside this file (boleto in
- * {@link ./sales.service.boleto-orders}, Stripe card link in
- * {@link ./sales.service.stripe-orders}) so each stays under the 400-LOC
- * governance cap. Shared dependency bundle + audit/spine plumbing lives in
- * {@link ./sales.service.v1-shared}. Preserves the original ordering:
- * `KloelSale.create` → audit `SALE_CREATED` → provider call →
- * `KloelSale.update` with external id + metadata → audit `PAYMENT_PENDING` →
- * emit spine events + success log → return shaped result.
+ * V1 `createBoletoOrder` orchestrator — Mercado Pago boleto. Extracted from
+ * {@link ./sales.service.v1-orders} so the file stays under the 400-LOC
+ * governance cap. Preserves the original ordering: `KloelSale.create` → audit
+ * `SALE_CREATED` → MP boleto charge → `KloelSale.update` with external id +
+ * metadata → audit `PAYMENT_PENDING` → emit spine events + success log →
+ * return shaped result.
  */
 
 import { ServiceUnavailableException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 
 import {
+  buildBoletoAddressMetadata,
+  buildBoletoOrderResult,
+  buildBoletoSaleCreateMetadata,
+  buildBoletoSaleUpdateMetadata,
   buildKloelSaleCreateData,
   buildMercadoPagoNotificationUrl,
   buildPaymentPendingAuditDetails,
-  buildPixOrderResult,
-  buildPixSaleUpdateMetadata,
-  buildSaleBuyerMetadata,
   buildSaleCreatedAuditDetails,
   buildSaleDescription,
-  computePixExpiresAt,
+  computeBoletoExpiresAt,
   pickSaleBuyerMetadataInput,
   planPriceToCents,
   sanitizeDocumentDigits,
 } from './sales.helpers';
-import type { BuyerData, CreatePixOrderResult } from './sales.service.types';
+import type { BoletoBuyerData, CreateBoletoOrderResult } from './sales.service.types';
 import { auditSale, emitSaleAndLog, type SalesV1Deps } from './sales.service.v1-shared';
 
-// Re-export sibling orchestrators + the shared deps bundle so existing
-// `./sales.service.v1-orders` imports keep resolving without churn.
-export { createBoletoOrder } from './sales.service.boleto-orders';
-export { createStripeCardLink } from './sales.service.stripe-orders';
-export type { SalesV1Deps } from './sales.service.v1-shared';
-
-export async function createPixOrderLegacy(
+export async function createBoletoOrder(
   deps: SalesV1Deps,
   workspaceId: string,
   productId: string,
   planId: string,
-  buyerData: BuyerData,
-): Promise<CreatePixOrderResult> {
+  buyerData: BoletoBuyerData,
+): Promise<CreateBoletoOrderResult> {
   const plan = await deps.loadActivePlanOrThrow(workspaceId, productId, planId);
   const amountCents = planPriceToCents(plan.price);
   if (amountCents <= 0n) {
@@ -52,8 +44,9 @@ export async function createPixOrderLegacy(
   const description = buildSaleDescription(productName, plan.name);
   const idempotencyKey = `sale_${randomUUID()}`;
   const notificationUrl = buildMercadoPagoNotificationUrl();
-  const expiresAt = computePixExpiresAt();
+  const expiresAt = computeBoletoExpiresAt();
   const payerDocDigits = sanitizeDocumentDigits(buyerData.cpf);
+  const buyerAddressMetadata = buildBoletoAddressMetadata(buyerData.address);
   const buyerMeta = pickSaleBuyerMetadataInput(productId, planId, buyerData);
 
   return deps.prisma
@@ -64,9 +57,9 @@ export async function createPixOrderLegacy(
             workspaceId,
             productName,
             amount: plan.price,
-            paymentMethod: 'PIX',
+            paymentMethod: 'BOLETO',
             leadPhone: buyerData.phone ?? null,
-            metadata: buildSaleBuyerMetadata(buyerMeta),
+            metadata: buildBoletoSaleCreateMetadata(buyerMeta, buyerAddressMetadata),
           }),
         });
         await auditSale(
@@ -79,26 +72,33 @@ export async function createPixOrderLegacy(
             productId,
             planId,
             amount: plan.price,
-            paymentMethod: 'PIX',
+            paymentMethod: 'BOLETO',
           }),
         );
-        const pixResult = await deps.mpPix.create({
+        const boletoResult = await deps.mpBoleto.create({
           idempotencyKey,
           amountCents,
           payerEmail: buyerData.email,
           payerName: buyerData.name,
-          ...(payerDocDigits ? { payerDocument: payerDocDigits } : {}),
+          payerDocument: payerDocDigits,
+          payerAddress: buyerData.address,
           description,
           externalReference: sale.id,
           expiresAt,
           notificationUrl,
         });
         await tx.kloelSale.update({
-          where: { id: sale.id, workspaceId },
+          where: { id: sale.id },
           data: {
-            externalPaymentId: pixResult.externalId,
-            paymentLink: pixResult.ticketUrl || null,
-            metadata: buildPixSaleUpdateMetadata(buyerMeta, pixResult.externalId, pixResult.status),
+            externalPaymentId: boletoResult.externalId,
+            paymentLink: boletoResult.ticketUrl,
+            metadata: buildBoletoSaleUpdateMetadata({
+              buyer: buyerMeta,
+              buyerAddressMetadata,
+              externalId: boletoResult.externalId,
+              status: boletoResult.status,
+              barcode: boletoResult.digitableLine || boletoResult.barcodeContent,
+            }),
           },
         });
         await auditSale(
@@ -108,29 +108,29 @@ export async function createPixOrderLegacy(
           workspaceId,
           'PAYMENT_PENDING',
           buildPaymentPendingAuditDetails({
-            externalPaymentId: pixResult.externalId,
+            externalPaymentId: boletoResult.externalId,
             gateway: 'mercadopago',
-            method: 'PIX',
+            method: 'BOLETO',
             amount: plan.price,
-            status: pixResult.status,
+            status: boletoResult.status,
           }),
         );
-        return { sale, pixResult };
+        return { sale, boletoResult };
       },
       { isolationLevel: 'ReadCommitted' },
     )
-    .then(({ sale, pixResult }) => {
+    .then(({ sale, boletoResult }) => {
       emitSaleAndLog(deps, {
         saleId: sale.id,
         workspaceId,
         productId,
         planId,
         amount: plan.price,
-        paymentMethod: 'PIX',
-        externalPaymentId: pixResult.externalId,
+        paymentMethod: 'BOLETO',
+        externalPaymentId: boletoResult.externalId,
         gateway: 'mercadopago',
-        method: 'PIX sale',
+        method: 'Boleto sale',
       });
-      return buildPixOrderResult({ saleId: sale.id, expiresAt, pixResult });
+      return buildBoletoOrderResult({ saleId: sale.id, boletoResult });
     });
 }
