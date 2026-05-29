@@ -16,6 +16,7 @@ import { CouponService } from './coupon.service';
 import { KloelChatCheckoutTool } from './kloel-chat-checkout.tool';
 import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service';
 import { SalesService } from '../sales/sales.service';
+import { WorkspaceService } from '../workspaces/workspace.service';
 import { AccountService } from './account.service';
 import { SelfHealthService } from './self-awareness/self-health.service';
 import { SelfGapsService } from './self-awareness/self-gaps.service';
@@ -108,6 +109,7 @@ export class KloelToolDispatcherService {
     @Optional() private readonly productSubTools?: KloelProductSubResourceToolsService,
     @Optional() private readonly walletSalesTools?: KloelWalletSalesToolsService,
     @Optional() private readonly salesService?: SalesService,
+    @Optional() private readonly workspaceService?: WorkspaceService,
     @Optional() private readonly reportService?: ReportService,
 
     @Optional() private readonly opsAlert?: OpsAlertService,
@@ -461,6 +463,18 @@ export class KloelToolDispatcherService {
   ): Promise<ToolResult> {
     const asToolArgs = <T>(value: UnknownRecord): T => value as T;
     switch (toolName) {
+      case 'toggle_theme':
+      case 'ui.theme': {
+        const theme = args?.theme as string;
+        if (theme !== 'light' && theme !== 'dark') {
+          return { success: false, error: 'invalid_theme' };
+        }
+        if (!this.workspaceService) {
+          return { success: false, error: 'workspace_service_unavailable' };
+        }
+        const res = await this.workspaceService.updateThemePreference(workspaceId, theme);
+        return { success: true, theme: res.theme };
+      }
       case 'publish_product':
       case 'products.review_and_publish':
         return await this.requestHighRiskApproval(workspaceId, toolName, args, userId);

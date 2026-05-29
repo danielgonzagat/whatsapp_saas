@@ -14,7 +14,6 @@ type Stub = {
   toolGetProductReviews: jest.Mock;
   toolGetProductUrls: jest.Mock;
   toolValidateCoupon: jest.Mock;
-  toolToggleTheme: jest.Mock;
   toolGetSettings: jest.Mock;
   toolGetAnalytics: jest.Mock;
   toolGetProductDetails: jest.Mock;
@@ -32,7 +31,6 @@ const makeStubDeps = (): { stub: Stub; deps: WorkspaceInfoToolDeps } => {
     toolGetProductReviews: jest.fn().mockResolvedValue({ success: true, reviews: [] }),
     toolGetProductUrls: jest.fn().mockResolvedValue({ success: true, urls: [] }),
     toolValidateCoupon: jest.fn().mockResolvedValue({ success: true, valid: true }),
-    toolToggleTheme: jest.fn().mockResolvedValue({ success: true, theme: 'dark' }),
     toolGetSettings: jest.fn().mockResolvedValue({ success: true, settings: {} }),
     toolGetAnalytics: jest.fn().mockResolvedValue({ success: true, analytics: {} }),
     toolGetProductDetails: jest.fn().mockResolvedValue({ success: true, product: {} }),
@@ -85,7 +83,6 @@ describe('kloel-tool-dispatcher.workspace-info.handlers', () => {
       await dispatchWorkspaceInfoTool(deps, 'ws1', 'get_product_reviews', { productId: 'p1' });
       await dispatchWorkspaceInfoTool(deps, 'ws1', 'get_product_urls', { productId: 'p1' });
       await dispatchWorkspaceInfoTool(deps, 'ws1', 'validate_coupon', { code: 'X10' });
-      await dispatchWorkspaceInfoTool(deps, 'ws1', 'toggle_theme', { theme: 'dark' });
       await dispatchWorkspaceInfoTool(deps, 'ws1', 'get_analytics', { range: '30d' });
       await dispatchWorkspaceInfoTool(deps, 'ws1', 'get_product_details', { productId: 'p1' });
       await dispatchWorkspaceInfoTool(deps, 'ws1', 'list_subscriptions', { status: 'active' });
@@ -97,7 +94,6 @@ describe('kloel-tool-dispatcher.workspace-info.handlers', () => {
       expect(stub.toolGetProductReviews).toHaveBeenCalledWith('ws1', { productId: 'p1' });
       expect(stub.toolGetProductUrls).toHaveBeenCalledWith('ws1', { productId: 'p1' });
       expect(stub.toolValidateCoupon).toHaveBeenCalledWith('ws1', { code: 'X10' });
-      expect(stub.toolToggleTheme).toHaveBeenCalledWith('ws1', { theme: 'dark' });
       expect(stub.toolGetAnalytics).toHaveBeenCalledWith('ws1', { range: '30d' });
       expect(stub.toolGetProductDetails).toHaveBeenCalledWith('ws1', { productId: 'p1' });
       expect(stub.toolListSubscriptions).toHaveBeenCalledWith('ws1', { status: 'active' });

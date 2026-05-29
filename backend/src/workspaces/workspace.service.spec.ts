@@ -137,6 +137,51 @@ describe('WorkspaceService', () => {
     });
   });
 
+  describe('updateThemePreference', () => {
+    it('stores light theme in providerSettings.ui', async () => {
+      prisma.workspace.findUnique.mockResolvedValue({
+        id: 'ws-1',
+        providerSettings: {},
+      });
+      const result = await service.updateThemePreference('ws-1', 'light');
+      expect(result.theme).toBe('light');
+      expect(cache.del).toHaveBeenCalledWith('cache:workspace:ws-1');
+      const updateCalls = prisma.workspace.update.mock.calls as Array<
+        [{ data: { providerSettings: Record<string, unknown> } }]
+      >;
+      const updateCall = updateCalls[0]?.[0];
+      expect(updateCall?.data.providerSettings).toMatchObject({ ui: { theme: 'light' } });
+    });
+
+    it('stores dark theme in providerSettings.ui', async () => {
+      prisma.workspace.findUnique.mockResolvedValue({
+        id: 'ws-1',
+        providerSettings: {},
+      });
+      const result = await service.updateThemePreference('ws-1', 'dark');
+      expect(result.theme).toBe('dark');
+    });
+
+    it('preserves existing ui settings when updating theme', async () => {
+      prisma.workspace.findUnique.mockResolvedValue({
+        id: 'ws-1',
+        providerSettings: { ui: { fontSize: 'large', theme: 'light' } },
+      });
+      await service.updateThemePreference('ws-1', 'dark');
+      const calls = prisma.workspace.update.mock.calls as Array<
+        [{ data: { providerSettings: Record<string, unknown> } }]
+      >;
+      expect(calls[0]?.[0]?.data.providerSettings).toMatchObject({
+        ui: { fontSize: 'large', theme: 'dark' },
+      });
+    });
+
+    it('throws NotFoundException when workspace missing', async () => {
+      prisma.workspace.findUnique.mockResolvedValue(null);
+      await expect(service.updateThemePreference('ws-missing', 'dark')).rejects.toThrow();
+    });
+  });
+
   describe('patchSettings', () => {
     it('sets autopilot.enabled when autonomy.mode = LIVE', async () => {
       prisma.workspace.findUnique.mockResolvedValue({

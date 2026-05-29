@@ -26,6 +26,7 @@ type ToolResult = {
 export const REPORTS_TOOL_NAMES = new Set<string>([
   'reports.operations',
   'reports.abandonments',
+  'get_abandonments',
   'crm.pipeline',
 ]);
 
@@ -67,6 +68,13 @@ export async function dispatchReportsTool(
       const period = typeof args?.period === 'string' ? args.period : undefined;
       const since = periodToSince(period);
       const res = await reportService.abandonments(workspaceId, { since });
+      return { success: true, ...res };
+    }
+    case 'get_abandonments': {
+      if (!reportService) {
+        return { success: false, error: 'report_service_unavailable' };
+      }
+      const res = await reportService.abandonments(workspaceId);
       return { success: true, ...res };
     }
     case 'crm.pipeline': {

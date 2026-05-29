@@ -262,4 +262,27 @@ export class WorkspaceService {
     const ws = await this.getWorkspace(id);
     return ws.globalPriorOptOut;
   }
+
+  /**
+   * Armazena preferência de tema (light|dark) no providerSettings.ui.
+   * Tema inválido retorna erro sem alterar workspace.
+   */
+  async updateThemePreference(
+    workspaceId: string,
+    theme: 'light' | 'dark',
+  ): Promise<{ theme: string }> {
+    await this.invalidateWorkspaceCache(workspaceId);
+    const ws = await this.getWorkspace(workspaceId);
+    const settings = asProviderSettings(ws.providerSettings);
+    await this.prisma.workspace.update({
+      where: { id: workspaceId },
+      data: {
+        providerSettings: toPrismaJsonValue({
+          ...settings,
+          ui: { ...((settings.ui as Record<string, unknown>) || {}), theme },
+        }),
+      },
+    });
+    return { theme };
+  }
 }

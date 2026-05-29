@@ -205,6 +205,7 @@ import { SpineModule } from './spine/spine.module';
 import { ProductsModule } from '../products/products.module';
 import { PlansModule } from '../plans/plans.module';
 import { SalesModule } from '../sales/sales.module';
+import { WorkspaceModule } from '../workspaces/workspace.module';
 
 /** Kloel module. */
 @Module({
@@ -236,6 +237,7 @@ import { SalesModule } from '../sales/sales.module';
     ProductsModule,
     PlansModule,
     SalesModule,
+    WorkspaceModule,
   ],
   controllers: [
     KloelController,

@@ -46,7 +46,6 @@ export const WORKSPACE_INFO_TOOL_NAMES = new Set<string>([
   'get_product_reviews',
   'get_product_urls',
   'validate_coupon',
-  'toggle_theme',
   'get_settings',
   'get_analytics',
   'get_product_details',
@@ -93,8 +92,6 @@ export async function dispatchWorkspaceInfoTool(
       return await chatToolsService.toolGetProductUrls(workspaceId, asToolArgs(args));
     case 'validate_coupon':
       return await chatToolsService.toolValidateCoupon(workspaceId, asToolArgs(args));
-    case 'toggle_theme':
-      return await chatToolsService.toolToggleTheme(workspaceId, asToolArgs(args));
     case 'get_settings':
       return await chatToolsService.toolGetSettings(workspaceId);
     case 'get_analytics':
