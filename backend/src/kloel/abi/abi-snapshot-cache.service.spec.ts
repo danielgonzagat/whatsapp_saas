@@ -100,7 +100,7 @@ describe('AbiSnapshotCacheService', () => {
 
       expect(mockRedis.set).toHaveBeenCalledWith(
         `abi:snap:${workspaceId}`,
-        expect.anything(),
+        expect.any(String),
         'EX',
         300,
       );
