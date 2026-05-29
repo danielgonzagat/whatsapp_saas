@@ -356,7 +356,7 @@ describe('CheckoutService — createOrder (resolver path)', () => {
       checkoutPixel: { createMany: jest.fn() },
       affiliateLink: { findFirst: jest.fn().mockResolvedValue(null), update: jest.fn() },
       product: { findFirst: jest.fn() },
-    } as never;
+    };
 
     const productSvc = {
       createCheckout: jest.fn(),

@@ -146,7 +146,6 @@ import { CommercialDecisionOrchestratorService } from './commercial-decision-orc
 import { RuntimeConversationTracerService } from './runtime-conversation-tracer.service';
 import { DailyLimitService } from './daily-limit.service';
 import { KloelGlobalPriorService } from './kloel-global-prior.service';
-<<<<<<< HEAD
 import { MindBeliefService } from './mind/inference/mind-belief.service';
 import { MindBanditService } from './mind/policy/mind-bandit.service';
 import { MindCaseMemoryService } from './mind/memory/mind-case-memory.service';
@@ -171,29 +170,9 @@ import { MindCausalModelService } from './mind/causal/mind-causal-model.service'
 import { MindCuriosityService } from './mind/curiosity/mind-curiosity.service';
 import { MindSimulatorService } from './mind/synthetic/mind-simulator.service';
 import { MindSyntheticGeneratorService } from './mind/synthetic/mind-synthetic-generator.service';
-=======
-import { MindBeliefService } from './mind-belief.service';
 import { MindEmotionalIntelligenceService } from './mind/emotional/mind-emotional-intelligence.service';
-import { MindBanditService } from './mind-bandit.service';
-import { MindCaseMemoryService } from './mind-case-memory.service';
-import { MindConceptService } from './mind-concepts.service';
-import { MindGlobalPriorService } from './mind-global-prior.service';
-import { MindController } from './mind-controller';
-import { MindEventProcessorService } from './mind-event-processor.service';
-import { MindGuardContextBuilderService } from './mind-guard-context-builder.service';
-import { MindGuardsService } from './mind-guards.service';
-import { MindObservabilityService } from './mind-observability.service';
-import { MindPerceptionService } from './mind-perception.service';
+import { MindConsciousnessService } from './mind/consciousness/mind-consciousness.service';
 import { MindMultiModalPerceptionService } from './mind/perception/mind-multimodal-perception.service';
-import { MindPolicyService } from './mind-policy.service';
-import { MindPredictorService } from './mind-predictor.service';
-import { MindProcessorService } from './mind-processor.service';
-import { MindQualityService } from './mind-quality.service';
-import { MindReportService } from './mind-report.service';
-import { MindReplayService } from './mind-replay.service';
-import { MindSimulatorService } from './mind-simulator.service';
-import { MindSyntheticGeneratorService } from './mind-synthetic-generator.service';
->>>>>>> 97c3f39ff (feat(kloel/mind): bootstrap MindEmotionalIntelligenceService (Claude-K47))
 import { MindService } from './mind.service';
 import { AttentionService } from './mind/attention.service';
 import { ValenceAggregatorService } from './mind/valence-aggregator.service';
@@ -408,6 +387,7 @@ import { WorkspaceModule } from '../workspaces/workspace.module';
     DailyLimitService,
     MindBeliefService,
     MindEmotionalIntelligenceService,
+    MindConsciousnessService,
     MindBanditService,
     MindCaseMemoryService,
     MindConceptService,

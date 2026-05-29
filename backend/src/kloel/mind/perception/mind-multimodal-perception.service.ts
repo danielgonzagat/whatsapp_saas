@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../../../logging/structured-logger';
 import { AudioService } from '../../audio.service';
-import { MindPerceptionService } from '../../mind-perception.service';
+import { MindPerceptionService } from './mind-perception.service';
 import { SpineEmitterService } from '../../spine/spine-emitter.service';
 
 /**
