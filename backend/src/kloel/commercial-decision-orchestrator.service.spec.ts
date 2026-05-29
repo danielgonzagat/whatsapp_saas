@@ -143,7 +143,7 @@ describe('CommercialDecisionOrchestratorService', () => {
     expect(decision.trace.shadow).toBe(true);
     expect(prisma.decisionShadow.upsert).toHaveBeenCalled();
     expect(events.recordCommercial).toHaveBeenCalledWith(
-      expect.objectContaining({ eventType: 'pipeline.shadow_recorded' }),
+      expect.objectContaining({ eventType: 'cognition.pipeline.shadow_recorded' }),
     );
   });
 
@@ -351,7 +351,7 @@ describe('CommercialDecisionOrchestratorService', () => {
       data: expect.objectContaining({ state: 'shadow' }),
     });
     expect(events.recordCommercial).toHaveBeenCalledWith(
-      expect.objectContaining({ eventType: 'pipeline.auto_fallback' }),
+      expect.objectContaining({ eventType: 'cognition.pipeline.auto_fallback' }),
     );
   });
 

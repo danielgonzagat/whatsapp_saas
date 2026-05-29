@@ -42,6 +42,7 @@ import {
 } from './unified-agent-actions-crm-predecided.helpers';
 
 import type { UnknownRecord } from '../common/types';
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 
 /**
  * Handles CRM tool actions: lead status updates, tags, follow-ups, human transfer,
@@ -59,7 +60,13 @@ export class UnifiedAgentActionsCrmService {
     @Optional() private readonly mind?: MindService,
     @Optional() private readonly guardContextBuilder?: MindGuardContextBuilderService,
     @Optional() private readonly guards?: MindGuardsService,
+    @Optional() private readonly mindMemory?: MindMemoryItemService,
   ) {}
+
+  /** Canonical Brain → Mind memory delegate (raw-Prisma fallback). */
+  private get mindMemoryItems(): PrismaService['kloelMemory'] {
+    return this.mindMemory?.items ?? this.prisma.kloelMemory;
+  }
 
   // ───────── helpers (kept as instance methods for public/legacy contract) ─────────
 
@@ -386,7 +393,7 @@ export class UnifiedAgentActionsCrmService {
 
   async actionSearchKnowledgeBase(workspaceId: string, args: ToolArgs) {
     const query = this.str(args.query);
-    const results = await this.prisma.kloelMemory.findMany({
+    const results = await this.mindMemoryItems.findMany({
       where: {
         workspaceId,
         OR: [

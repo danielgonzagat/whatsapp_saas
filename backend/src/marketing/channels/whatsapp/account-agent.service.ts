@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../../../logging/structured-logger';
 import { Prisma } from '@prisma/client';
 import * as Sentry from '@sentry/node';
@@ -52,6 +52,7 @@ import {
   buildRejectedCatalogGapWorkItem,
   summarizeRuntime,
 } from './account-agent.service.helpers';
+import { MindMemoryItemService } from '../../../kloel/mind/aliases/mind-memory-item.service';
 
 type AccountAgentMetadata = Record<string, unknown>;
 
@@ -61,7 +62,13 @@ export class AccountAgentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly agentEvents: AgentEventsService,
+    @Optional() private readonly mindMemory?: MindMemoryItemService,
   ) {}
+
+  /** Canonical Brain → Mind memory delegate (raw-Prisma fallback). */
+  private get mindMemoryItems(): PrismaService['kloelMemory'] {
+    return this.mindMemory?.items ?? this.prisma.kloelMemory;
+  }
 
   // ═══ PUBLIC ═══
 
@@ -201,7 +208,7 @@ export class AccountAgentService {
       inputSessionId: session.id,
       lastDetectedAt: now,
     };
-    await this.prisma.kloelMemory.update({
+    await this.mindMemoryItems.update({
       where: { workspaceId_key: { workspaceId, key: record.key } },
       data: {
         value: this.toJson(next),
@@ -244,7 +251,7 @@ export class AccountAgentService {
       status: 'REJECTED',
       lastDetectedAt: new Date().toISOString(),
     };
-    await this.prisma.kloelMemory.update({
+    await this.mindMemoryItems.update({
       where: { workspaceId_key: { workspaceId, key: record.key } },
       data: {
         value: this.toJson(next),
@@ -295,7 +302,7 @@ export class AccountAgentService {
       throw new NotFoundException('Aprovação de conta não encontrada');
     }
     const key = buildApprovalKey(a.normalizedProductName);
-    const record = await this.prisma.kloelMemory.findUnique({
+    const record = await this.mindMemoryItems.findUnique({
       where: { workspaceId_key: { workspaceId, key } },
     });
     if (!record) {
@@ -311,7 +318,7 @@ export class AccountAgentService {
       throw new NotFoundException('Sessão de input não encontrada');
     }
     const key = buildInputSessionKey(s.normalizedProductName);
-    const record = await this.prisma.kloelMemory.findUnique({
+    const record = await this.mindMemoryItems.findUnique({
       where: { workspaceId_key: { workspaceId, key } },
     });
     if (!record) {
@@ -329,7 +336,7 @@ export class AccountAgentService {
 
   private async ensureInputSession(workspaceId: string, approval: AccountApprovalPayload) {
     const key = buildInputSessionKey(approval.normalizedProductName);
-    const existing = await this.prisma.kloelMemory.findUnique({
+    const existing = await this.mindMemoryItems.findUnique({
       where: { workspaceId_key: { workspaceId, key } },
     });
     if (existing?.value) {
@@ -343,7 +350,7 @@ export class AccountAgentService {
       newId: randomUUID(),
       nowIso: new Date().toISOString(),
     });
-    await this.prisma.kloelMemory.upsert({
+    await this.mindMemoryItems.upsert({
       where: { workspaceId_key: { workspaceId, key } },
       create: {
         workspaceId,
@@ -386,7 +393,7 @@ export class AccountAgentService {
       materializedProductId: productId,
       lastDetectedAt: new Date().toISOString(),
     };
-    await this.prisma.kloelMemory.update({
+    await this.mindMemoryItems.update({
       where: { workspaceId_key: { workspaceId, key: record.key } },
       data: {
         value: this.toJson(next),

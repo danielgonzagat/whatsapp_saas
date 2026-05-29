@@ -48,6 +48,11 @@ import { BrandService } from './services-v2/brand.service';
 import { LeadService } from './services-v2/lead.service';
 import { DocumentService } from './services-v2/document.service';
 import { SessionService } from './services-v2/session.service';
+// ── services-v2 (Wave 3) — dep-gated capability domain services ──
+import { ChannelService } from './services-v2/channel.service';
+import { MessagingService } from './services-v2/messaging.service';
+import { AgentJobService } from './services-v2/agent-job.service';
+import { SearchService } from './services-v2/search.service';
 import { AudioService } from './audio.service';
 
 import type { UnknownRecord } from '../common/types';
@@ -125,6 +130,12 @@ export class KloelDomainServiceResolver {
     ['DocumentService', DocumentService],
     ['SessionService', SessionService],
     ['AudioService', AudioService],
+
+    // ── services-v2 capability wiring (Wave 3 integration; deps now resolvable) ──
+    ['ChannelService', ChannelService],
+    ['MessagingService', MessagingService],
+    ['AgentJobService', AgentJobService],
+    ['SearchService', SearchService],
   ]);
 
   constructor(

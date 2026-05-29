@@ -12,7 +12,7 @@
  * @see docs/adr/0006-papeis-cognitivos-canonicos.md
  * @see docs/adr/0013-kloel-mind-unification.md
  */
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, Optional } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { buildQueueJobId } from '../../../queue/job-id.util';
@@ -42,6 +42,7 @@ import {
   readText,
   serializeCognitiveHighlight,
 } from './cia.service.helpers';
+import { MindMemoryItemService } from '../aliases/mind-memory-item.service';
 
 /** Cia service. */
 @Injectable()
@@ -54,7 +55,17 @@ export class CiaService {
     private readonly agentEvents: AgentEventsService,
     private readonly accountAgent: AccountAgentService,
     private readonly mind: MindService,
+    @Optional() private readonly mindMemory?: MindMemoryItemService,
   ) {}
+
+  /**
+   * Canonical Brain → Mind memory delegate. Routes reads/writes through the
+   * `MindMemoryItemService` alias when injected, with a raw-Prisma fallback so
+   * DI gaps never break behaviour. Byte-identical surface to `prisma.kloelMemory`.
+   */
+  private get mindMemoryItems(): PrismaService['kloelMemory'] {
+    return this.mindMemory?.items ?? this.prisma.kloelMemory;
+  }
 
   /** Get surface. */
   async getSurface(workspaceId: string) {
@@ -142,7 +153,7 @@ export class CiaService {
 
   /** Get human tasks. */
   async getHumanTasks(workspaceId: string) {
-    const items = await this.prisma.kloelMemory.findMany({
+    const items = await this.mindMemoryItems.findMany({
       take: 50,
       where: {
         workspaceId,
@@ -202,7 +213,7 @@ export class CiaService {
     const resolvedAt = new Date().toISOString();
     const nextValue = buildResolvedHumanTaskValue(task, approvedReply, resolvedAt);
 
-    await this.prisma.kloelMemory.update({
+    await this.mindMemoryItems.update({
       where: {
         workspaceId_key: {
           workspaceId,
@@ -247,7 +258,7 @@ export class CiaService {
     const nextValue = buildRejectedHumanTaskValue(task, resolvedAt);
     const taskPhone = readText(task.phone);
 
-    await this.prisma.kloelMemory.update({
+    await this.mindMemoryItems.update({
       where: {
         workspaceId_key: {
           workspaceId,
@@ -361,7 +372,7 @@ export class CiaService {
 
   /** Get cycle proof. */
   async getCycleProof(workspaceId: string) {
-    const record = await this.prisma.kloelMemory.findUnique({
+    const record = await this.mindMemoryItems.findUnique({
       where: {
         workspaceId_key: {
           workspaceId,
@@ -384,7 +395,7 @@ export class CiaService {
 
   /** Get cognitive highlights. */
   async getCognitiveHighlights(workspaceId: string) {
-    const items = await this.prisma.kloelMemory.findMany({
+    const items = await this.mindMemoryItems.findMany({
       where: {
         workspaceId,
         category: {
@@ -409,7 +420,7 @@ export class CiaService {
   }
 
   private async findHumanTask(workspaceId: string, taskId: string) {
-    const candidates = await this.prisma.kloelMemory.findMany({
+    const candidates = await this.mindMemoryItems.findMany({
       where: {
         workspaceId,
         category: 'human_task',

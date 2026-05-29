@@ -4,10 +4,14 @@ import type { MindBeliefService } from './mind/inference/mind-belief.service';
 import type { MindSurpriseService } from './mind/inference/mind-surprise.service';
 import type { MindEventProcessorService } from './mind/runtime/mind-event-processor.service';
 import type { ValenceTaggerService } from './mind/valence-tagger.service';
+import type { MindPredictorService } from './mind/inference/mind-predictor.service';
+import type { MindGlobalPriorService } from './mind/memory/mind-global-prior.service';
 import {
   closeChatReplyOutcome,
   observeRepliedToUserBelief,
   computeChatSurprise,
+  resolveChatReplySurprise,
+  recordChatReplyGlobalPrior,
 } from './kloel-reply-engine.decision-outcome.helpers';
 
 export interface ReplyEngineDegradedDeps {
@@ -15,6 +19,8 @@ export interface ReplyEngineDegradedDeps {
   readonly mindBeliefService: MindBeliefService | undefined;
   readonly mindSurpriseService: MindSurpriseService | undefined;
   readonly mindEventProcessorService: MindEventProcessorService | undefined;
+  readonly mindPredictorService: MindPredictorService | undefined;
+  readonly mindGlobalPriorService: MindGlobalPriorService | undefined;
   readonly valenceTagger: ValenceTaggerService | undefined;
   readonly logger: StructuredLogger;
   readonly _lastCognitiveState: { mindSignals?: unknown } | null | undefined;
@@ -41,6 +47,22 @@ export function applyReplyEnginePostReply(
     { workspaceId, observed: replyOutcome, surface: 'dashboard', degraded: replyOutcome === 0 },
     deps._lastCognitiveState?.mindSignals as Record<string, unknown> | undefined,
   );
+  // w3-loop: close the predictive-coding loop on the LIVE chat-reply path.
+  // resolveChatReplySurprise resolves the open `P(reply|...)` MindPrediction
+  // persisted by predictChatReply at the start of buildAssistantReplyImpl, and
+  // observes the binary outcome — which moves the underlying MindBelief
+  // alpha/beta off 1/1. computeChatSurprise above is kept as the additive
+  // diagnostic read; this is the real DB-resolution that closes the loop.
+  resolveChatReplySurprise(deps.mindSurpriseService, deps.logger, {
+    workspaceId,
+    observed: replyOutcome,
+    surface: 'dashboard',
+  });
+  // w3-loop: feed the cross-workspace global prior (samples +1 per reply).
+  recordChatReplyGlobalPrior(deps.mindGlobalPriorService, deps.logger, {
+    surface: 'dashboard',
+    observed: replyOutcome,
+  });
   const success = replyOutcome === 1;
   const degraded = replyOutcome === 0;
   try {

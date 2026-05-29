@@ -7,6 +7,7 @@ import { CiaRuntimeStateService } from './cia-runtime-state.service';
 import { asProviderSettings } from '../../../marketing/channels/whatsapp/provider-settings.types';
 import { MindBackgroundScheduler } from '../mind-bg.scheduler';
 import { WhatsAppProviderRegistry } from '../../../marketing/channels/whatsapp/providers/provider-registry';
+import { MindMemoryItemService } from '../aliases/mind-memory-item.service';
 
 /** Cia runtime service — orchestrates bootstrap, backlog, and live autonomy. */
 @Injectable()
@@ -26,7 +27,17 @@ export class CiaRuntimeService implements OnModuleDestroy {
     private readonly bootstrapService: CiaBootstrapService,
     private readonly backlogRunService: CiaBacklogRunService,
     @Optional() private readonly mindScheduler?: MindBackgroundScheduler,
+    @Optional() private readonly mindMemory?: MindMemoryItemService,
   ) {}
+
+  /**
+   * Canonical Brain → Mind memory delegate. Routes through `MindMemoryItemService`
+   * when injected, with a raw-Prisma fallback so DI gaps never break behaviour.
+   * Byte-identical surface to `prisma.kloelMemory`.
+   */
+  private get mindMemoryItems(): PrismaService['kloelMemory'] {
+    return this.mindMemory?.items ?? this.prisma.kloelMemory;
+  }
 
   /** On module destroy. */
   onModuleDestroy() {
@@ -120,22 +131,22 @@ export class CiaRuntimeService implements OnModuleDestroy {
           where: { id: workspaceId },
           select: { name: true, providerSettings: true },
         }),
-        this.prisma.kloelMemory.findUnique({
+        this.mindMemoryItems.findUnique({
           where: { workspaceId_key: { workspaceId, key: 'business_state:current' } },
         }),
-        this.prisma.kloelMemory.findMany({
+        this.mindMemoryItems.findMany({
           where: { workspaceId, category: 'market_signal' },
           select: { id: true, key: true, value: true, updatedAt: true },
           orderBy: { updatedAt: 'desc' },
           take: 10,
         }),
-        this.prisma.kloelMemory.findMany({
+        this.mindMemoryItems.findMany({
           where: { workspaceId, category: 'human_task' },
           select: { id: true, key: true, value: true, createdAt: true },
           orderBy: { createdAt: 'desc' },
           take: 10,
         }),
-        this.prisma.kloelMemory.findMany({
+        this.mindMemoryItems.findMany({
           where: { workspaceId, category: 'demand_control' },
           select: { id: true, key: true, value: true, updatedAt: true },
           orderBy: { updatedAt: 'desc' },

@@ -1,9 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { GoalFieldService } from '../../goal-field/goal-field.service';
 import { SpineEmitterService } from '../../spine/spine-emitter.service';
 import type { Tension } from '../../goal-field/goal-field.types';
+import { MindMemoryItemService } from '../aliases/mind-memory-item.service';
 
 const ESCALATION_THRESHOLD = 0.7;
 
@@ -25,7 +26,13 @@ export class CiaCognitiveHealthService {
     private readonly prisma: PrismaService,
     private readonly goalField: GoalFieldService,
     private readonly spine: SpineEmitterService,
+    @Optional() private readonly mindMemory?: MindMemoryItemService,
   ) {}
+
+  /** Canonical Brain → Mind memory delegate (raw-Prisma fallback). */
+  private get mindMemoryItems(): PrismaService['kloelMemory'] {
+    return this.mindMemory?.items ?? this.prisma.kloelMemory;
+  }
 
   /**
    * Runs a goal-field cycle over the workspace spine events, filters
@@ -44,7 +51,7 @@ export class CiaCognitiveHealthService {
     let escalated = 0;
     for (const tension of cognitiveTensions) {
       try {
-        await this.prisma.kloelMemory.create({
+        await this.mindMemoryItems.create({
           data: {
             workspaceId,
             key: `cog_health:${tension.tensionId}`,

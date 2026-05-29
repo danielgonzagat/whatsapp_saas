@@ -1,5 +1,5 @@
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import { OrderStatus } from '@prisma/client';
 import Redis from 'ioredis';
 import { PrismaService } from '../prisma/prisma.service';
@@ -19,6 +19,8 @@ import {
   computeOutboundMessageRates,
   summarizeOperationalMetrics,
 } from './dashboard.stats.helpers';
+import { MindMemoryItemService } from '../kloel/mind/aliases/mind-memory-item.service';
+
 /** Dashboard service. */
 @Injectable()
 export class DashboardService {
@@ -26,7 +28,17 @@ export class DashboardService {
   constructor(
     private prisma: PrismaService,
     @InjectRedis() private readonly redis: Redis,
+    @Optional() private readonly mindMemory?: MindMemoryItemService,
   ) {}
+
+  /**
+   * Canonical Brain → Mind memory delegate. Routes through the
+   * `MindMemoryItemService` alias when DashboardModule wires it; otherwise
+   * falls back to the raw Prisma delegate (byte-identical surface, boot-safe).
+   */
+  private get mindMemoryItems(): PrismaService['kloelMemory'] {
+    return this.mindMemory?.items ?? this.prisma.kloelMemory;
+  }
   /**
    * Canonical-name alias of {@link getStats} for the Kloel capability
    * resolver (`DashboardService.summary`). Accepts the (workspaceId, args)
@@ -278,7 +290,7 @@ export class DashboardService {
         orderBy: { createdAt: 'asc' },
         take: 3000,
       }),
-      this.prisma.kloelMemory.findUnique({
+      this.mindMemoryItems.findUnique({
         where: { workspaceId_key: { workspaceId, key: 'onboarding_setup_checklist' } },
         select: { value: true },
       }),

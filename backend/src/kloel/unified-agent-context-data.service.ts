@@ -1,9 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat';
 import { PrismaService } from '../prisma/prisma.service';
 
 import type { UnknownRecord } from '../common/types';
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
+
 type BrandVoiceValue = { style?: string; [key: string]: unknown };
 type ProductMemoryEntry = { name?: string; [key: string]: unknown };
 
@@ -16,8 +18,16 @@ type ProductMemoryEntry = { name?: string; [key: string]: unknown };
 export class UnifiedAgentContextDataService {
   private readonly logger = StructuredLogger.from(UnifiedAgentContextDataService.name);
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly mindMemory?: MindMemoryItemService,
+  ) {
     this.logger.log('UnifiedAgentContextDataService initialized');
+  }
+
+  /** Canonical Brain → Mind memory delegate (raw-Prisma fallback). */
+  private get mindMemoryItems(): PrismaService['kloelMemory'] {
+    return this.mindMemory?.items ?? this.prisma.kloelMemory;
   }
 
   // ───────── helpers ─────────
@@ -55,7 +65,7 @@ export class UnifiedAgentContextDataService {
       ? workspace.providerSettings
       : {};
     const autopilot = this.isRecord(providerSettings.autopilot) ? providerSettings.autopilot : {};
-    const brandVoice = await this.prisma.kloelMemory.findFirst({
+    const brandVoice = await this.mindMemoryItems.findFirst({
       where: { workspaceId, key: 'brandVoice' },
     });
     return {
@@ -190,7 +200,7 @@ export class UnifiedAgentContextDataService {
 
     const key = `compressed_context:${contactId || phone}`;
 
-    await this.prisma.kloelMemory.upsert({
+    await this.mindMemoryItems.upsert({
       where: { workspaceId_key: { workspaceId, key } },
       update: {
         value: {
@@ -224,7 +234,7 @@ export class UnifiedAgentContextDataService {
   }
 
   async getProducts(workspaceId: string) {
-    const memoryProducts = await this.prisma.kloelMemory.findMany({
+    const memoryProducts = await this.mindMemoryItems.findMany({
       where: {
         workspaceId,
         OR: [{ type: 'product' }, { category: 'products' }],

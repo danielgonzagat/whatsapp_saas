@@ -12,6 +12,8 @@ import { MindGuardsService } from './mind/policy/mind-guards.service';
 import type { MindActionContext } from './mind/policy/mind-code-native.types';
 
 import type { UnknownRecord } from '../common/types';
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
+
 type ProductMemoryValue = {
   name?: string;
   price?: number;
@@ -36,7 +38,13 @@ export class UnifiedAgentActionsCommerceService {
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() private readonly guardContextBuilder?: MindGuardContextBuilderService,
     @Optional() private readonly guards?: MindGuardsService,
+    @Optional() private readonly mindMemory?: MindMemoryItemService,
   ) {}
+
+  /** Canonical Brain → Mind memory delegate (raw-Prisma fallback). */
+  private get mindMemoryItems(): PrismaService['kloelMemory'] {
+    return this.mindMemory?.items ?? this.prisma.kloelMemory;
+  }
 
   // ───────── helpers ─────────
 
@@ -93,7 +101,7 @@ export class UnifiedAgentActionsCommerceService {
     const includePrice = args.includePrice !== false;
     const includeLink = !!args.includeLink;
 
-    const product = await this.prisma.kloelMemory.findFirst({
+    const product = await this.mindMemoryItems.findFirst({
       where: {
         workspaceId,
         category: 'products',

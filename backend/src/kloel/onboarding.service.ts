@@ -104,6 +104,16 @@ export class OnboardingService {
     private readonly mindMemory: MindMemoryItemService,
   ) {}
 
+  /**
+   * Canonical Brain → Mind memory delegate. Routes through the injected
+   * `MindMemoryItemService` alias, falling back to the raw Prisma delegate so
+   * the surface stays byte-identical even where the alias is not wired (e.g.
+   * `Object.create`-based unit tests that mock `prisma.kloelMemory`).
+   */
+  private get mindMemoryItems(): PrismaService['kloelMemory'] {
+    return this.mindMemory?.items ?? this.prisma.kloelMemory;
+  }
+
   async saveProfile(workspaceId: string, input: OnboardingProfileInput) {
     const profile = {
       userType: input.userType,
@@ -225,13 +235,13 @@ export class OnboardingService {
   async getStatus(workspaceId: string) {
     const [state, profileMemory, checklistMemory, completedMemory] = await Promise.all([
       this.getState(workspaceId),
-      this.mindMemory.items.findUnique({
+      this.mindMemoryItems.findUnique({
         where: { workspaceId_key: { workspaceId, key: 'onboarding_profile' } },
       }),
-      this.mindMemory.items.findUnique({
+      this.mindMemoryItems.findUnique({
         where: { workspaceId_key: { workspaceId, key: 'onboarding_setup_checklist' } },
       }),
-      this.mindMemory.items.findUnique({
+      this.mindMemoryItems.findUnique({
         where: { workspaceId_key: { workspaceId, key: 'onboarding_completed' } },
       }),
     ]);
@@ -314,7 +324,7 @@ export class OnboardingService {
   }
 
   private async saveState(workspaceId: string, state: OnboardingState): Promise<void> {
-    await this.prisma.kloelMemory.upsert({
+    await this.mindMemoryItems.upsert({
       where: { workspaceId_key: { workspaceId, key: 'onboarding_state' } },
       create: {
         workspaceId,
@@ -327,7 +337,7 @@ export class OnboardingService {
   }
 
   private async getState(workspaceId: string): Promise<OnboardingState | null> {
-    const memory = await this.prisma.kloelMemory.findUnique({
+    const memory = await this.mindMemoryItems.findUnique({
       where: { workspaceId_key: { workspaceId, key: 'onboarding_state' } },
     });
     if (!memory?.value) {
@@ -344,7 +354,7 @@ export class OnboardingService {
 
   private async finalize(workspaceId: string, data: Record<string, string>): Promise<void> {
     await forEachSequential(Object.entries(data), async ([key, value]) => {
-      await this.prisma.kloelMemory
+      await this.mindMemoryItems
         .create({
           data: {
             workspaceId,

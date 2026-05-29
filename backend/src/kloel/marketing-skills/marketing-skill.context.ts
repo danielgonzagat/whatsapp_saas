@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { MarketingWorkspaceSnapshot } from './marketing-skill.types';
+import { MindMemoryItemService } from '../mind/aliases/mind-memory-item.service';
 
 type TopProductEntry = MarketingWorkspaceSnapshot['topProducts'][number];
 type RecentCampaignEntry = MarketingWorkspaceSnapshot['recentCampaigns'][number];
@@ -42,7 +43,15 @@ function toRecentCampaign(campaign: CampaignRow): RecentCampaignEntry {
 /** Marketing skill context builder. */
 @Injectable()
 export class MarketingSkillContextBuilder {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly mindMemory?: MindMemoryItemService,
+  ) {}
+
+  /** Canonical Brain → Mind memory delegate (raw-Prisma fallback). */
+  private get mindMemoryItems(): PrismaService['kloelMemory'] {
+    return this.mindMemory?.items ?? this.prisma.kloelMemory;
+  }
 
   /** Build snapshot. */
   async buildSnapshot(workspaceId: string): Promise<MarketingWorkspaceSnapshot> {
@@ -51,7 +60,7 @@ export class MarketingSkillContextBuilder {
         where: { id: workspaceId },
         select: { name: true },
       }),
-      this.prisma.kloelMemory.findFirst({
+      this.mindMemoryItems.findFirst({
         where: { workspaceId, key: 'brandVoice' },
         select: { value: true },
       }),

@@ -53,6 +53,8 @@ import {
   type ProductMatchCandidate,
   type ProductMemoryValue,
 } from './lead-mind-coordinator.helpers';
+import { MindMemoryItemService } from '../aliases/mind-memory-item.service';
+
 export { NON_DIGIT_RE, safeStr, asUnknownRecord, detectBuyIntent };
 export type { ChatMessage };
 
@@ -74,10 +76,16 @@ export class LeadMindCoordinator {
     private readonly smartPaymentService: SmartPaymentService,
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() private readonly abiBuilder?: AbiBuilderService,
+    @Optional() private readonly mindMemory?: MindMemoryItemService,
   ) {
     this.openai =
       createTextLlmClient(undefined, { timeout: 60_000, maxRetries: 0 }) ??
       new OpenAI({ apiKey: 'missing' });
+  }
+
+  /** Canonical Brain → Mind memory delegate (raw-Prisma fallback). */
+  private get mindMemoryItems(): PrismaService['kloelMemory'] {
+    return this.mindMemory?.items ?? this.prisma.kloelMemory;
   }
 
   async getOrCreateLead(workspaceId: string, phone: string): Promise<KloelLead> {
@@ -194,7 +202,7 @@ export class LeadMindCoordinator {
     message: string,
   ): Promise<ProductMatchCandidate | null> {
     try {
-      const memoryRows = await this.prisma.kloelMemory.findMany({
+      const memoryRows = await this.mindMemoryItems.findMany({
         where: { workspaceId, type: 'product' },
         select: { id: true, value: true },
         take: 100,

@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { buildTimestampedRuntimeKey } from './kloel-id.util';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { MindMessageService } from './mind/aliases/mind-message.service';
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 
 const A_Z0_9_RE = /[^a-z0-9_:-]+/g;
 
@@ -25,7 +26,13 @@ export class KloelConversationStore {
     },
     private readonly opsAlert?: OpsAlertService,
     private readonly mindMessage?: MindMessageService,
+    private readonly mindMemory?: MindMemoryItemService,
   ) {}
+
+  /** Canonical Brain → Mind memory delegate (raw-Prisma fallback). */
+  private get mindMemoryItems(): PrismaService['kloelMemory'] {
+    return this.mindMemory?.items ?? this.prisma.kloelMemory;
+  }
 
   /** Get conversation history. */
   /** Get conversation history. */
@@ -111,7 +118,7 @@ export class KloelConversationStore {
           : 'general';
       const safeMetadata = metadata ? toInputJsonValue(metadata) : {};
 
-      await this.prisma.kloelMemory.upsert({
+      await this.mindMemoryItems.upsert({
         where: {
           workspaceId_key: {
             workspaceId,

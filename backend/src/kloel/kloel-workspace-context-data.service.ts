@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../logging/structured-logger';
 import { PrismaService } from '../prisma/prisma.service';
 import type { KloelContextFormatterLimits } from './kloel-context-formatter.types';
 import { buildWorkspaceProductSelect } from './kloel-workspace-context-product-select';
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 
 const PRODUCT_CONTEXT_LIMIT = 20;
 
@@ -63,8 +64,21 @@ export interface WorkspaceContextRawData {
 export class KloelWorkspaceContextDataService {
   private readonly logger = StructuredLogger.from(KloelWorkspaceContextDataService.name);
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly mindMemory?: MindMemoryItemService,
+  ) {
     this.logger.log('KloelWorkspaceContextDataService initialized');
+  }
+
+  /**
+   * Canonical Brain → Mind memory delegate (raw-Prisma fallback). Returns the
+   * same delegate object, so the defensive `?.findMany`/`?.findUnique` guards
+   * below keep their exact graceful-degradation semantics when the delegate is
+   * absent (e.g. unit tests that construct the service without it).
+   */
+  private get mindMemoryItems(): PrismaService['kloelMemory'] {
+    return this.mindMemory?.items ?? this.prisma.kloelMemory;
   }
 
   async fetchAll(
@@ -237,8 +251,8 @@ export class KloelWorkspaceContextDataService {
           createdAt: true,
         },
       }),
-      typeof this.prisma.kloelMemory?.findMany === 'function'
-        ? this.prisma.kloelMemory.findMany({
+      typeof this.mindMemoryItems?.findMany === 'function'
+        ? this.mindMemoryItems.findMany({
             where: { workspaceId },
             select: {
               id: true,
@@ -254,7 +268,7 @@ export class KloelWorkspaceContextDataService {
           })
         : Promise.resolve([]),
       userId
-        ? this.prisma.kloelMemory?.findUnique?.({
+        ? this.mindMemoryItems?.findUnique?.({
             where: { workspaceId_key: { workspaceId, key: `user_profile:${userId}` } },
           })
         : Promise.resolve(null),

@@ -33,6 +33,8 @@ import {
   resolvePredecidedBroadcastWindow,
   resolvePredecidedChannelChoice,
 } from './unified-agent-actions-workspace.helpers';
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
+
 type MemoryValue = Record<string, unknown>;
 
 /**
@@ -51,7 +53,17 @@ export class UnifiedAgentActionsWorkspaceService {
     @Optional() private readonly mind?: MindService,
     @Optional() private readonly guardContextBuilder?: MindGuardContextBuilderService,
     @Optional() private readonly guards?: MindGuardsService,
+    @Optional() private readonly mindMemory?: MindMemoryItemService,
   ) {}
+
+  /**
+   * Canonical Brain → Mind memory delegate. Routes through the
+   * `MindMemoryItemService` alias when injected, falling back to the raw
+   * Prisma delegate so DI gaps never break behaviour. Byte-identical surface.
+   */
+  private get mindMemoryItems(): PrismaService['kloelMemory'] {
+    return this.mindMemory?.items ?? this.prisma.kloelMemory;
+  }
 
   private async updateWorkspaceProviderSettings(
     workspaceId: string,
@@ -95,7 +107,7 @@ export class UnifiedAgentActionsWorkspaceService {
       };
     }
 
-    const existingMem = await this.prisma.kloelMemory.findFirst({
+    const existingMem = await this.mindMemoryItems.findFirst({
       where: { workspaceId, type: 'product' },
       orderBy: { createdAt: 'desc' },
       select: { key: true, value: true },
@@ -114,7 +126,7 @@ export class UnifiedAgentActionsWorkspaceService {
     }
 
     const productKey = buildProductMemoryKey(args);
-    await this.prisma.kloelMemory.create({
+    await this.mindMemoryItems.create({
       data: {
         workspaceId,
         key: productKey,
@@ -183,7 +195,7 @@ export class UnifiedAgentActionsWorkspaceService {
       return { success: false, error: 'Flow name is required' };
     }
     const flowKey = buildFlowMemoryKey(args);
-    await this.prisma.kloelMemory.create({
+    await this.mindMemoryItems.create({
       data: {
         workspaceId,
         key: flowKey,
@@ -208,14 +220,14 @@ export class UnifiedAgentActionsWorkspaceService {
       await this.prisma.workspace.update({ where: { id: workspaceId }, data: updates });
     }
     if (args.businessHours) {
-      await this.prisma.kloelMemory.upsert({
+      await this.mindMemoryItems.upsert({
         where: { workspaceId_key: { workspaceId, key: 'businessHours' } },
         create: { workspaceId, key: 'businessHours', type: 'settings', value: args.businessHours },
         update: { value: args.businessHours },
       });
     }
     if (args.autoReplyEnabled !== undefined) {
-      await this.prisma.kloelMemory.upsert({
+      await this.mindMemoryItems.upsert({
         where: { workspaceId_key: { workspaceId, key: 'autoReply' } },
         create: {
           workspaceId,
@@ -286,7 +298,7 @@ export class UnifiedAgentActionsWorkspaceService {
     } else {
       contactCount = await this.prisma.contact.count({ where: { workspaceId } });
     }
-    await this.prisma.kloelMemory.create({
+    await this.mindMemoryItems.create({
       data: {
         workspaceId,
         key: broadcastKey,
@@ -329,7 +341,7 @@ export class UnifiedAgentActionsWorkspaceService {
 
   async actionConfigureAIPersona(workspaceId: string, args: ToolArgs) {
     const personaData = buildAIPersonaData(args);
-    await this.prisma.kloelMemory.upsert({
+    await this.mindMemoryItems.upsert({
       where: { workspaceId_key: { workspaceId, key: 'aiPersona' } },
       create: {
         workspaceId,

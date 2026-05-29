@@ -10,6 +10,7 @@ import type { DecisionOutcomeService } from './decision-outcome.service';
 import type { MindBeliefService } from './mind/inference/mind-belief.service';
 import type { MindSurpriseService } from './mind/inference/mind-surprise.service';
 import { type MindPredictorService } from './mind/inference/mind-predictor.service';
+import { type MindGlobalPriorService } from './mind/memory/mind-global-prior.service';
 
 interface DecisionOutcomeLogger {
   warn: (event: string, ctx?: Record<string, unknown>) => void;
@@ -271,4 +272,38 @@ export async function computeChatSurprise(
       reason: err instanceof Error ? err.message : String(err),
     });
   }
+}
+
+/**
+ * Feed the chat-reply outcome back into the cross-workspace global prior. This
+ * is the missing producer for the previously-empty RAC_MindGlobalPrior table on
+ * the live chat-reply path: `MindPolicy.resolveOutcome` only fires on the
+ * controller/event-processor paths, so the dashboard reply path needs to call
+ * `recordObservation` directly to keep the `bandit-obs:chat_reply:engage`
+ * cross-workspace row growing (samples +1 per reply).
+ *
+ * Mirrors the bandit arm that `DecisionOutcomeService.closeOutcome` records for
+ * the same chat_reply decision (chosenAction `engage`), so the local bandit and
+ * the cross-workspace prior learn from the same signal.
+ *
+ * Fire-and-forget: catches its own errors and warn-logs; never throws upstream.
+ */
+export function recordChatReplyGlobalPrior(
+  mindGlobalPriorService: MindGlobalPriorService | undefined,
+  logger: DecisionOutcomeLogger,
+  params: {
+    surface: string;
+    observed: 0 | 1;
+  },
+): void {
+  if (!mindGlobalPriorService) {
+    return;
+  }
+  void mindGlobalPriorService
+    .recordObservation(params.surface, 'chat_reply', 'engage', params.observed === 1)
+    .catch((err: unknown) =>
+      logger.warn('kloel_global_prior_observation_skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      }),
+    );
 }

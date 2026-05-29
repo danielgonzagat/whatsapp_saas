@@ -8,6 +8,7 @@ import {
   Post,
   Request,
   UseGuards,
+  Optional,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
@@ -30,6 +31,7 @@ import {
   type DirectEmailRecipient,
   type DirectEmailSendBody,
 } from './marketing.controller.helpers';
+import { MindMemoryItemService } from '../kloel/mind/aliases/mind-memory-item.service';
 
 /**
  * Marketing Command Center Controller
@@ -45,7 +47,15 @@ import {
 export class MarketingController {
   private readonly logger = new Logger(MarketingController.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly mindMemory?: MindMemoryItemService,
+  ) {}
+
+  /** Canonical Brain → Mind memory delegate (raw-Prisma fallback). */
+  private get mindMemoryItems(): PrismaService['kloelMemory'] {
+    return this.mindMemory?.items ?? this.prisma.kloelMemory;
+  }
 
   /**
    * Aggregate stats: totalMessages, totalLeads, totalSales, totalRevenue
@@ -225,7 +235,7 @@ export class MarketingController {
       this.prisma.conversation.count({
         where: { workspaceId, status: 'OPEN' },
       }),
-      this.prisma.kloelMemory.count({
+      this.mindMemoryItems.count({
         where: { workspaceId, category: 'objections' },
       }),
     ]);

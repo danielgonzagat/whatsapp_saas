@@ -75,6 +75,12 @@ import { BrandService } from './services-v2/brand.service';
 import { LeadService } from './services-v2/lead.service';
 import { DocumentService } from './services-v2/document.service';
 import { SessionService } from './services-v2/session.service';
+// ── services-v2 (Wave 3) — dep-gated capability domain services ──
+import { ChannelService } from './services-v2/channel.service';
+import { MessagingService } from './services-v2/messaging.service';
+import { AgentJobService } from './services-v2/agent-job.service';
+import { SearchService } from './services-v2/search.service';
+import { MarketingChannelsModule } from '../marketing/channels/marketing-channels.module';
 import { MarketingSkillContextBuilder } from './marketing-skills/marketing-skill.context';
 import { MarketingSkillLoader } from './marketing-skills/marketing-skill.loader';
 import { MarketingSkillRouter } from './marketing-skills/marketing-skill.router';
@@ -272,6 +278,7 @@ import { MindSelfModelService } from './mind/self-model/mind-self-model.service'
     PlansModule,
     SalesModule,
     WorkspaceModule,
+    forwardRef(() => MarketingChannelsModule),
   ],
   controllers: [
     KloelController,
@@ -480,6 +487,11 @@ import { MindSelfModelService } from './mind/self-model/mind-self-model.service'
     LeadService,
     DocumentService,
     SessionService,
+    // ── services-v2 (Wave 3) dep-gated capability domain services ──
+    ChannelService,
+    MessagingService,
+    AgentJobService,
+    SearchService,
   ],
   exports: [
     KloelService,

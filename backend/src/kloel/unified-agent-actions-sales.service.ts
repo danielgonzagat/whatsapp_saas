@@ -27,6 +27,7 @@ import { MindService } from './mind.service';
 import type { UnknownRecord } from '../common/types';
 
 import { readStringOr as readString } from '../common/parse';
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 
 /**
  * Handles sales/negotiation tool actions: discount, objection handling,
@@ -43,7 +44,13 @@ export class UnifiedAgentActionsSalesService {
     @Optional() private readonly mind?: MindService,
     @Optional() private readonly guardContextBuilder?: MindGuardContextBuilderService,
     @Optional() private readonly guards?: MindGuardsService,
+    @Optional() private readonly mindMemory?: MindMemoryItemService,
   ) {}
+
+  /** Canonical Brain → Mind memory delegate (raw-Prisma fallback). */
+  private get mindMemoryItems(): PrismaService['kloelMemory'] {
+    return this.mindMemory?.items ?? this.prisma.kloelMemory;
+  }
 
   async actionApplyDiscount(
     workspaceId: string,
@@ -56,7 +63,7 @@ export class UnifiedAgentActionsSalesService {
       const requestedDiscountPercent = clampDiscountPercent(args?.discountPercent);
       const reason = args?.reason || 'Oferta especial';
       const expiresIn = args?.expiresIn || '24h';
-      const recentMemory = await this.prisma.kloelMemory.findFirst({
+      const recentMemory = await this.mindMemoryItems.findFirst({
         where: { workspaceId, category: 'products' },
         orderBy: { createdAt: 'desc' },
       });
