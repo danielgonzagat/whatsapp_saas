@@ -182,6 +182,112 @@ describe('WorkspaceService', () => {
     });
   });
 
+  describe('updateInfo (K30 save_business_info)', () => {
+    it('updates name and stores businessType/cnpj in providerSettings.businessInfo', async () => {
+      prisma.workspace.findUnique.mockResolvedValue({
+        id: 'ws-1',
+        name: 'old',
+        providerSettings: { businessInfo: { existing: 'kept' } },
+      });
+      await service.updateInfo('ws-1', { name: 'New Co', businessType: 'agency', cnpj: '00.000.000/0001-00' });
+      expect(cache.del).toHaveBeenCalledWith('cache:workspace:ws-1');
+      const calls = prisma.workspace.update.mock.calls as Array<
+        [{ where: { id: string }; data: { name?: string; providerSettings: Record<string, unknown> } }]
+      >;
+      const args = calls[0]?.[0];
+      expect(args?.where.id).toBe('ws-1');
+      expect(args?.data.name).toBe('New Co');
+      expect(args?.data.providerSettings).toMatchObject({
+        businessInfo: { existing: 'kept', businessType: 'agency', cnpj: '00.000.000/0001-00' },
+      });
+    });
+
+    it('throws NotFoundException when workspace missing', async () => {
+      prisma.workspace.findUnique.mockResolvedValue(null);
+      await expect(service.updateInfo('missing', { name: 'x' })).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('updateSettings (K30 update_workspace_settings)', () => {
+    it('deep-merges nested objects into providerSettings', async () => {
+      prisma.workspace.findUnique.mockResolvedValue({
+        id: 'ws-1',
+        providerSettings: { ui: { theme: 'dark', fontSize: 'large' }, other: 'kept' },
+      });
+      await service.updateSettings('ws-1', { ui: { theme: 'light' }, fresh: 'new' });
+      expect(cache.del).toHaveBeenCalledWith('cache:workspace:ws-1');
+      const calls = prisma.workspace.update.mock.calls as Array<
+        [{ data: { providerSettings: Record<string, unknown> } }]
+      >;
+      const merged = calls[0]?.[0]?.data.providerSettings;
+      expect(merged).toMatchObject({
+        ui: { theme: 'light', fontSize: 'large' },
+        other: 'kept',
+        fresh: 'new',
+      });
+    });
+  });
+
+  describe('setHours (K30 set_business_hours)', () => {
+    it('persists validated hours in providerSettings.businessHours', async () => {
+      prisma.workspace.findUnique.mockResolvedValue({
+        id: 'ws-1',
+        providerSettings: { other: 'kept' },
+      });
+      const result = await service.setHours('ws-1', {
+        hours: [
+          { dayOfWeek: 1, open: '09:00', close: '18:00' },
+          { dayOfWeek: 2, open: '09:30', close: '12:00' },
+        ],
+      });
+      expect(result).toEqual({ updated: true });
+      const calls = prisma.workspace.update.mock.calls as Array<
+        [{ data: { providerSettings: { businessHours: Array<unknown>; other: string } } }]
+      >;
+      const args = calls[0]?.[0];
+      expect(args?.data.providerSettings.other).toBe('kept');
+      expect(args?.data.providerSettings.businessHours).toHaveLength(2);
+    });
+
+    it('rejects when open >= close', async () => {
+      prisma.workspace.findUnique.mockResolvedValue({ id: 'ws-1', providerSettings: {} });
+      await expect(
+        service.setHours('ws-1', { hours: [{ dayOfWeek: 1, open: '18:00', close: '09:00' }] }),
+      ).rejects.toThrow(/open must be before close/);
+    });
+
+    it('rejects malformed HH:mm', async () => {
+      prisma.workspace.findUnique.mockResolvedValue({ id: 'ws-1', providerSettings: {} });
+      await expect(
+        service.setHours('ws-1', { hours: [{ dayOfWeek: 1, open: '9:0', close: '18:00' }] }),
+      ).rejects.toThrow(/Invalid time format/);
+    });
+  });
+
+  describe('setPolicy (K30 set_sales_policy)', () => {
+    it('stores policy keys in providerSettings.salesPolicy preserving existing values', async () => {
+      prisma.workspace.findUnique.mockResolvedValue({
+        id: 'ws-1',
+        providerSettings: { salesPolicy: { refundPolicy: 'old' }, other: 'kept' },
+      });
+      const result = await service.setPolicy('ws-1', {
+        salesPolicy: 'no returns after 7 days',
+        termsUrl: 'https://example.com/terms',
+      });
+      expect(result).toEqual({ updated: true });
+      const calls = prisma.workspace.update.mock.calls as Array<
+        [{ data: { providerSettings: { salesPolicy: Record<string, unknown>; other: string } } }]
+      >;
+      const policy = calls[0]?.[0]?.data.providerSettings.salesPolicy;
+      expect(policy).toEqual({
+        refundPolicy: 'old',
+        salesPolicy: 'no returns after 7 days',
+        termsUrl: 'https://example.com/terms',
+      });
+      expect(calls[0]?.[0]?.data.providerSettings.other).toBe('kept');
+    });
+  });
+
   describe('patchSettings', () => {
     it('sets autopilot.enabled when autonomy.mode = LIVE', async () => {
       prisma.workspace.findUnique.mockResolvedValue({
