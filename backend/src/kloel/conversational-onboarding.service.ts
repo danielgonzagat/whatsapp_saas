@@ -436,12 +436,16 @@ export class ConversationalOnboardingService {
         degradedReason ??
         ((error as Record<string, unknown>)?.__onboarding_reason as string) ??
         'unknown';
-      const fallback = buildOnboardingFallback(reason, {
-        error,
-        workspaceId,
-        hasResponseHeaders: !!res,
-        willingWrite: !!res,
-      }, this.logger);
+      const fallback = buildOnboardingFallback(
+        reason,
+        {
+          error,
+          workspaceId,
+          hasResponseHeaders: !!res,
+          willingWrite: !!res,
+        },
+        this.logger,
+      );
       const onFailure = (): void => {
         applyOnboardingFailureHooks(this.onboardingDeps(), { workspaceId, outcomeKey });
       };
