@@ -6,6 +6,7 @@ import {
   Get,
   HttpException,
   HttpStatus,
+  BadRequestException,
   NotFoundException,
   Param,
   Post,
@@ -363,6 +364,9 @@ export class SiteController {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId) {
       throw new NotFoundException('Workspace not found');
+    }
+    if (typeof dto?.htmlContent !== 'string' || dto.htmlContent.trim() === '') {
+      throw new BadRequestException('htmlContent is required');
     }
     const site = await this.prisma.kloelSite.create({
       data: {
