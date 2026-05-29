@@ -2,7 +2,7 @@
 import { kloelT } from '@/lib/i18n/t';
 
 export const dynamic = 'force-dynamic';
-import { type Lead, getLeads } from '@/lib/api';
+import { type Contact, getContacts } from '@/lib/api';
 import { buildDashboardHref } from '@/lib/kloel-dashboard-context';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { XCircle } from 'lucide-react';
@@ -23,7 +23,7 @@ export default function LeadsPage() {
 
   const [loadingLeads, setLoadingLeads] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [leads, setLeads] = useState<Lead[]>([]);
+  const [leads, setLeads] = useState<Contact[]>([]);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [status, setStatus] = useState<string>('');
@@ -61,7 +61,7 @@ export default function LeadsPage() {
       try {
         const lStatus = status || undefined;
         const lSearch = searchTerm || undefined;
-        const data = await getLeads(workspaceId, {
+        const data = await getContacts(workspaceId, {
           ...(lStatus !== undefined ? { status: lStatus } : {}),
           ...(lSearch !== undefined ? { search: lSearch } : {}),
           limit: 200,
@@ -135,7 +135,7 @@ export default function LeadsPage() {
     });
   }, [leads, searchTerm, status]);
 
-  const buildLeadDashboardHref = (lead: Lead, draft?: string) =>
+  const buildLeadDashboardHref = (lead: Contact, draft?: string) =>
     buildDashboardHref({
       source: 'leads',
       leadId: lead.id,
@@ -148,7 +148,7 @@ export default function LeadsPage() {
         `Analise este lead (${leadTitle(lead)}) e me diga a próxima melhor ação para avançar a venda.`,
     });
 
-  const handleCopyPhone = async (lead: Lead) => {
+  const handleCopyPhone = async (lead: Contact) => {
     if (!lead.phone) {
       return;
     }

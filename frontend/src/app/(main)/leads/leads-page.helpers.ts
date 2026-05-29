@@ -1,4 +1,4 @@
-import type { Lead } from '@/lib/api';
+import type { Contact } from '@/lib/api';
 
 export const LEADS_DIGIT_RE = /\D/g;
 
@@ -41,6 +41,6 @@ export function formatLeadTimeAgo(date: Date | null): string {
   return `${days}d`;
 }
 
-export function leadTitle(lead: Lead): string {
+export function leadTitle(lead: Contact): string {
   return lead.name || lead.phone || 'Lead';
 }

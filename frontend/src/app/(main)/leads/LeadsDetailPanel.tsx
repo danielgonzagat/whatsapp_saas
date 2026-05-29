@@ -1,7 +1,7 @@
 'use client';
 
 import { kloelT } from '@/lib/i18n/t';
-import { type Lead } from '@/lib/api';
+import { type Contact } from '@/lib/api';
 import { buildDashboardHref } from '@/lib/kloel-dashboard-context';
 import {
   LEAD_STATUS_LABEL as STATUS_LABEL,
@@ -13,10 +13,10 @@ import { Check, Copy } from 'lucide-react';
 import Link from 'next/link';
 
 interface LeadsDetailPanelProps {
-  selectedLead: Lead | null;
+  selectedLead: Contact | null;
   copiedLeadId: string | null;
-  onCopyPhone: (lead: Lead) => void;
-  buildLeadDashboardHref: (lead: Lead, draft?: string) => string;
+  onCopyPhone: (lead: Contact) => void;
+  buildLeadDashboardHref: (lead: Contact, draft?: string) => string;
 }
 
 export function LeadsDetailPanel({

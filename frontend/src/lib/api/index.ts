@@ -38,8 +38,12 @@ export {
   searchMemory,
 } from './memory';
 
-// Leads
-export { type Lead, getLeads } from './leads';
+// Contacts (canonical entity; "Lead" is the legacy commercial-stage alias)
+export { type Contact, getContacts } from './leads';
+/** @deprecated Use `Contact` — kept for backward compatibility. */
+export type { Contact as Lead } from './leads';
+/** @deprecated Use `getContacts` — kept for backward compatibility. */
+export { getContacts as getLeads } from './leads';
 
 // WhatsApp channel session + messaging
 export {
@@ -274,7 +278,6 @@ export { importProducts } from './product-import';
 export { campaignMassSendApi } from './campaign-mass-send';
 export { onboardingApi } from './onboarding';
 export { adRulesApi } from './ad-rules';
-export { kloelLeadsApi } from './kloel-leads';
 
 // Copilot suggestions
 export { type CopilotSuggestionsResponse, getCopilotSuggestions } from './copilot';
