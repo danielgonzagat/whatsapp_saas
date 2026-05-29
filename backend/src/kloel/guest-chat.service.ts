@@ -5,19 +5,16 @@ import { StructuredLogger } from '../logging/structured-logger';
 import { Request, Response } from 'express';
 import type Redis from 'ioredis';
 import OpenAI from 'openai';
-import { createTextLlmClient, resolveTextLlmApiKey } from '../lib/llm-provider';
+import { createTextLlmClient } from '../lib/llm-provider';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { MindEventSpine } from './mind/coordination';
 import { MindObservabilityService } from './mind/observability/mind-observability.service';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { UnifiedAgentService } from './unified-agent.service';
 import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
-import { randomIdSegment } from '../common/random-id';
 import { IntentRouterService } from './intent-router/intent-router.service';
 import {
   GuestConversation,
-  persistConversation,
-  persistConversationMessage,
   cleanupOldConversations as cleanupOldConversationsFn,
   getConversationStats,
 } from './guest-chat.conversation.helpers';
@@ -37,14 +34,26 @@ import { RiskClassService } from './risk-class/risk-class.service';
 import { SpineEmitterService } from './spine/spine-emitter.service';
 import { DecisionOutcomeService } from './decision-outcome.service';
 import { MindSurpriseService } from './mind/inference/mind-surprise.service';
-import { buildMindSignals } from './mind/build-mind-signals.helper';
-import { buildKloelMindSignalsDeps } from './kloel-reply-engine.cognitive-state.helpers';
 import {
   buildChatOutcomeKey,
   recordChatReplyDecision,
   closeChatReplyOutcome,
 } from './kloel-reply-engine.decision-outcome.helpers';
 import { applyChatTerminalHooks } from './guest-chat.terminal-hooks.helper';
+import { handleGuestFileUpload } from './guest-chat.file-upload.helpers';
+import { buildGuestMindSignals as buildGuestMindSignalsFn } from './guest-chat.mind-signals.helpers';
+import {
+  buildTerminalDeps,
+  persistGuestConversation,
+  persistGuestConversationMessage,
+} from './guest-chat.persistence.helpers';
+import {
+  onModuleDestroyLifecycle,
+  getOpenAiKey as getOpenAiKeyFn,
+  writeStreamChunk as writeStreamChunkFn,
+} from './guest-chat.lifecycle.helpers';
+import { resolveDefaultWorkspaceId as resolveDefaultWorkspaceIdFn } from './guest-chat.default-workspace.helpers';
+
 // cache.invalidate — Redis is the primary guest conversation store; local Map is fallback.
 @Injectable()
 export class GuestChatService implements OnModuleDestroy {
@@ -101,7 +110,10 @@ export class GuestChatService implements OnModuleDestroy {
 
     // Limpar conversas inativas (mais de 24h)
     if (!isTestEnv) {
-      this.cleanupInterval = setInterval(() => this.cleanupOldConversations(), 60 * 60 * 1000);
+      this.cleanupInterval = setInterval(
+        () => cleanupOldConversationsFn(this.conversations, this.logger),
+        60 * 60 * 1000,
+      );
       this.cleanupInterval.unref?.();
     }
   }
@@ -114,55 +126,30 @@ export class GuestChatService implements OnModuleDestroy {
     workspaceId: string,
     productName: string,
   ): Promise<{ url?: string; message: string }> {
-    void mimetype;
-    try {
-      const fs = await import('fs/promises');
-      const path = await import('path');
-      const uploadDir = path.join(process.cwd(), '..', 'uploads', workspaceId || 'guest');
-      await fs.mkdir(uploadDir, { recursive: true });
-      const ext = path.extname(originalname) || '.bin';
-      const filename = `${Date.now().toString(36)}_${randomIdSegment(6)}${ext}`;
-      const filepath = path.join(uploadDir, filename);
-      await fs.writeFile(filepath, buffer);
-      const url = `/uploads/${workspaceId || 'guest'}/${filename}`;
-
-      // If productName provided, link image to product
-      if (productName && this.toolDispatcher) {
-        try {
-          await this.toolDispatcher.executeTool(workspaceId, 'update_product', {
-            productName,
-            imageUrl: url,
-          });
-        } catch {
-          /* non-blocking */
-        }
-      }
-      return {
-        url,
-        message: `Arquivo ${originalname} enviado${productName ? ` e vinculado ao produto ${productName}` : ''}.`,
-      };
-    } catch (e: unknown) {
-      return { message: `Erro: ${e instanceof Error ? e.message : 'desconhecido'}` };
-    }
+    return handleGuestFileUpload(
+      buffer,
+      originalname,
+      mimetype,
+      workspaceId,
+      productName,
+      this.toolDispatcher,
+    );
   }
   /** On module destroy. */
   onModuleDestroy(): void {
-    if (this.cleanupInterval) {
-      clearInterval(this.cleanupInterval);
-      this.cleanupInterval = undefined;
-    }
+    onModuleDestroyLifecycle(this.cleanupInterval);
   }
 
   /** Leitura unificada da chave OpenAI (process.env → ConfigService) */
   private getOpenAiKey(): string | undefined {
-    return resolveTextLlmApiKey(this.configService);
+    return getOpenAiKeyFn(this.configService);
   }
 
   private writeStreamChunk(
     res: Response,
     data: { content?: string; chunk?: string; done?: boolean; error?: string },
-  ) {
-    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  ): void {
+    writeStreamChunkFn(res, data);
   }
 
   private async buildGuestMessages(message: string, sessionId: string) {
@@ -199,25 +186,21 @@ export class GuestChatService implements OnModuleDestroy {
     workspaceId: string,
     userMessage: string,
   ): Promise<Record<string, unknown> | null> {
-    if (!this.prisma) {
-      return null;
-    }
-
-    const deps = buildKloelMindSignalsDeps(this.prisma, this.logger, {
-      attentionService: this.attentionService,
-      valenceAggregatorService: this.valenceAggregatorService,
-      mindBeliefService: this.mindBeliefService,
-      mindConceptService: this.mindConceptService,
-      selfHealthService: this.selfHealthService,
-      selfGapsService: this.selfGapsService,
-      riskClassService: this.riskClassService,
-    });
-
-    try {
-      return await buildMindSignals(deps, workspaceId, userMessage);
-    } catch {
-      return null;
-    }
+    return buildGuestMindSignalsFn(
+      this.prisma,
+      {
+        attentionService: this.attentionService,
+        valenceAggregatorService: this.valenceAggregatorService,
+        mindBeliefService: this.mindBeliefService,
+        mindConceptService: this.mindConceptService,
+        selfHealthService: this.selfHealthService,
+        selfGapsService: this.selfGapsService,
+        riskClassService: this.riskClassService,
+      },
+      this.logger,
+      workspaceId,
+      userMessage,
+    );
   }
 
   /**
@@ -373,10 +356,7 @@ export class GuestChatService implements OnModuleDestroy {
    */
 
   private resolveDefaultWorkspaceId(): string | undefined {
-    if (process.env.NODE_ENV !== 'production') {
-      return 'ws-test-001';
-    }
-    return undefined;
+    return resolveDefaultWorkspaceIdFn();
   }
 
   async chatSync(message: string, sessionId: string, workspaceId?: string): Promise<string> {
@@ -542,15 +522,15 @@ export class GuestChatService implements OnModuleDestroy {
   // ── Observability helper ──
 
   private terminalDeps() {
-    return {
-      decisionOutcomeService: this.decisionOutcomeService,
-      mindBeliefService: this.mindBeliefService,
-      mindSurpriseService: this.mindSurpriseService,
-      mindObservability: this.mindObservability,
-      logger: this.logger,
-      opsAlert: this.opsAlert,
-      _lastCognitiveState: this._lastCognitiveState,
-    };
+    return buildTerminalDeps(
+      this.decisionOutcomeService,
+      this.mindBeliefService,
+      this.mindSurpriseService,
+      this.mindObservability,
+      this.logger,
+      this.opsAlert,
+      this._lastCognitiveState,
+    );
   }
 
   // ── Conversation persistence delegators ──
@@ -559,7 +539,7 @@ export class GuestChatService implements OnModuleDestroy {
     sessionId: string,
     conversation: GuestConversation,
   ): Promise<void> {
-    return persistConversation(
+    return persistGuestConversation(
       sessionId,
       conversation,
       this.redis,
@@ -573,7 +553,7 @@ export class GuestChatService implements OnModuleDestroy {
     role: 'user' | 'assistant',
     content: string,
   ): Promise<void> {
-    return persistConversationMessage(
+    return persistGuestConversationMessage(
       sessionId,
       role,
       content,
@@ -581,13 +561,6 @@ export class GuestChatService implements OnModuleDestroy {
       this.conversations,
       this.logger,
     );
-  }
-
-  /**
-   * 🧹 Limpar conversas antigas
-   */
-  private cleanupOldConversations(): void {
-    cleanupOldConversationsFn(this.conversations, this.logger);
   }
 
   /**

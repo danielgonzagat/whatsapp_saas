@@ -24,15 +24,18 @@ import { SpineEmitterService } from './spine/spine-emitter.service';
 import { UnifiedAgentService } from './unified-agent.service';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import {
-  WHITESPACE_RE,
-  RELAT_O__RIO_DOCUMENTO_RE,
-  CRIE_CADASTRAR_CADASTRE_RE,
-  PRODUTO_CAT_A__LOGO_AUT_RE,
   KLOEL_STREAM_ABORT_REASON_TIMEOUT,
   KLOEL_STREAM_ABORT_REASON_CLIENT_DISCONNECTED,
   buildDynamicRuntimeContextHelper,
   buildAssistantReplyImpl,
 } from './kloel-reply-engine.helpers';
+import {
+  detectExpertiseLevel,
+  shouldUseLongFormBudget,
+  shouldAttemptToolPlanningPass,
+} from './kloel-reply-engine.expertise.helpers';
+import { buildInternalKloelRuntimeContext } from './kloel-reply-engine.runtime-context.helpers';
+import { buildChatModelMessagesPayload } from './kloel-reply-engine.build-messages.helpers';
 import { DecisionOutcomeService } from './decision-outcome.service';
 import { MindSurpriseService } from './mind/inference/mind-surprise.service';
 import { MindPredictionService } from './mind/mind-prediction.service';
@@ -137,81 +140,15 @@ export class KloelReplyEngineService {
   }
 
   detectExpertiseLevel(message: string, history: ReplyMessage[] = []): ExpertiseLevel {
-    const combined = [message, ...history.slice(-6).map((e) => e.content || '')]
-      .join(' ')
-      .toLowerCase();
-    const expertSignals = [
-      'latência',
-      'backpressure',
-      'idempot',
-      'throughput',
-      'benchmark',
-      'trade-off',
-      'event-driven',
-      'sse',
-      'webhook',
-      'prisma',
-      'postgres',
-      'fallback',
-      'observabilidade',
-    ];
-    const advancedSignals = [
-      'api',
-      'integra',
-      'crm',
-      'automa',
-      'segmenta',
-      'conversão',
-      'cta',
-      'pipeline',
-      'copilot',
-      'autopilot',
-      'checkout',
-      'upsell',
-    ];
-    const expertScore = expertSignals.filter((s) => combined.includes(s)).length;
-    const advancedScore = advancedSignals.filter((s) => combined.includes(s)).length;
-    if (expertScore >= 3) {
-      return 'EXPERT';
-    }
-    if (expertScore >= 1 || advancedScore >= 5) {
-      return 'AVANÇADO';
-    }
-    if (
-      advancedScore >= 2 ||
-      String(message || '')
-        .trim()
-        .split(WHITESPACE_RE).length >= 14
-    ) {
-      return 'INTERMEDIÁRIO';
-    }
-    return 'INICIANTE';
+    return detectExpertiseLevel(message, history);
   }
 
   shouldUseLongFormBudget(message: string): boolean {
-    return RELAT_O__RIO_DOCUMENTO_RE.test(
-      String(message || '')
-        .trim()
-        .toLowerCase(),
-    );
+    return shouldUseLongFormBudget(message);
   }
 
   shouldAttemptToolPlanningPass(message: string): boolean {
-    const normalized = String(message || '')
-      .trim()
-      .toLowerCase();
-    if (!normalized || /ideias?/.test(normalized)) {
-      return false;
-    }
-    if (
-      CRIE_CADASTRAR_CADASTRE_RE.test(normalized) &&
-      PRODUTO_CAT_A__LOGO_AUT_RE.test(normalized)
-    ) {
-      return true;
-    }
-    return /\b(liste|listar|mostre|mostrar|busque|buscar|pesquise|pesquisar|procure|procurar|consulte|consultar|verifique|verificar|analise|analisar|resuma|resumo|status|dashboard|produtos?|leads?|contatos?|conversas?|whatsapp|mensagens?|evid[eê]ncias?|mem[oó]ria|sess(ões|oes)|jobs?|billing|cobran[çc]a|faturamento|receita|vendas?|pagamentos?)\b/i.test(
-      normalized,
-    );
+    return shouldAttemptToolPlanningPass(message);
   }
 
   buildStreamAbortMessage(reason: unknown, timeoutMs?: number): string {
@@ -271,113 +208,45 @@ export class KloelReplyEngineService {
     if (params.prebuiltCognitiveState !== undefined) {
       cognitiveStateParams.prebuiltCognitiveState = params.prebuiltCognitiveState;
     }
-    const cognitiveStateDeps: Parameters<typeof buildKloelAbiCognitiveState>[0] = {
+    const cognitiveStateDeps = {
       prisma: this.prisma,
       logger: this.logger,
       services: {
-        ...(this.attentionService !== undefined ? { attentionService: this.attentionService } : {}),
-        ...(this.valenceAggregatorService !== undefined
-          ? { valenceAggregatorService: this.valenceAggregatorService }
-          : {}),
-        ...(this.mindBeliefService !== undefined
-          ? { mindBeliefService: this.mindBeliefService }
-          : {}),
-        ...(this.mindConceptService !== undefined
-          ? { mindConceptService: this.mindConceptService }
-          : {}),
-        ...(this.selfHealthService !== undefined
-          ? { selfHealthService: this.selfHealthService }
-          : {}),
-        ...(this.selfGapsService !== undefined ? { selfGapsService: this.selfGapsService } : {}),
-        ...(this.riskClassService !== undefined ? { riskClassService: this.riskClassService } : {}),
-        ...(this.mindPredictionService !== undefined
-          ? { mindPredictionService: this.mindPredictionService }
-          : {}),
-        ...(this.mindVerbalizerService !== undefined
-          ? { mindVerbalizerService: this.mindVerbalizerService }
-          : {}),
-        ...(this.mindAutonomyCoordinator !== undefined
-          ? { mindAutonomyCoordinator: this.mindAutonomyCoordinator }
-          : {}),
-        ...(this.mindBanditService !== undefined
-          ? { mindBanditService: this.mindBanditService }
-          : {}),
-        ...(this.mindCaseMemoryService !== undefined
-          ? { mindCaseMemoryService: this.mindCaseMemoryService }
-          : {}),
-        ...(this.mindGlobalPriorService !== undefined
-          ? { mindGlobalPriorService: this.mindGlobalPriorService }
-          : {}),
-        ...(this.mindPerceptionService !== undefined
-          ? { mindPerceptionService: this.mindPerceptionService }
-          : {}),
-        ...(this.agentAssistService !== undefined
-          ? { agentAssistService: this.agentAssistService }
-          : {}),
-        ...(this.vectorService !== undefined ? { vectorService: this.vectorService } : {}),
+        attentionService: this.attentionService,
+        valenceAggregatorService: this.valenceAggregatorService,
+        mindBeliefService: this.mindBeliefService,
+        mindConceptService: this.mindConceptService,
+        mindPredictionService: this.mindPredictionService,
+        selfHealthService: this.selfHealthService,
+        selfGapsService: this.selfGapsService,
+        riskClassService: this.riskClassService,
+        mindVerbalizerService: this.mindVerbalizerService,
+        mindAutonomyCoordinator: this.mindAutonomyCoordinator,
+        mindBanditService: this.mindBanditService,
+        mindCaseMemoryService: this.mindCaseMemoryService,
+        mindGlobalPriorService: this.mindGlobalPriorService,
+        mindPerceptionService: this.mindPerceptionService,
+        agentAssistService: this.agentAssistService,
+        vectorService: this.vectorService,
       },
+      ...(this.abiBuilder !== undefined ? { abiBuilder: this.abiBuilder } : {}),
     };
-    if (this.abiBuilder !== undefined) {
-      cognitiveStateDeps.abiBuilder = this.abiBuilder;
-    }
     const cognitiveState = await buildKloelAbiCognitiveState(
       cognitiveStateDeps,
       cognitiveStateParams,
       currentInput,
     );
 
-    const msgs: ChatCompletionMessageParam[] = [
-      {
-        role: 'user',
-        content: JSON.stringify({
-          runtimeContext: {
-            dynamicContext: params.dynamicContext,
-            marketingContext: params.marketingPromptAddendum ?? null,
-          },
-        }),
-      },
-    ];
-    if (params.summaryMessage) {
-      msgs.push({
-        role: 'user',
-        content: JSON.stringify({
-          conversationSummary:
-            typeof params.summaryMessage.content === 'string' ? params.summaryMessage.content : '',
-        }),
-      });
-    }
-    for (const entry of params.recentMessages) {
-      msgs.push({ role: entry.role as 'user' | 'assistant', content: entry.content });
-    }
-    msgs.push({
-      role: 'user',
-      content: JSON.stringify({
-        cognitiveState,
-        currentInput,
-      }),
+    const msgs = buildChatModelMessagesPayload({
+      dynamicContext: params.dynamicContext,
+      marketingPromptAddendum: params.marketingPromptAddendum,
+      summaryMessage: params.summaryMessage,
+      recentMessages: params.recentMessages,
+      cognitiveState,
+      currentInput,
+      assistantMessage: params.assistantMessage,
+      toolMessages: params.toolMessages,
     });
-    if (params.assistantMessage) {
-      const toolCalls = Array.isArray(params.assistantMessage.tool_calls)
-        ? params.assistantMessage.tool_calls
-        : undefined;
-      msgs.push({
-        role: 'assistant',
-        content:
-          typeof params.assistantMessage.content === 'string'
-            ? params.assistantMessage.content
-            : '',
-        ...(toolCalls !== undefined ? { tool_calls: toolCalls } : {}),
-      });
-    }
-    if (params.toolMessages?.length) {
-      msgs.push(
-        ...params.toolMessages.map((m) => ({
-          role: 'tool' as const,
-          tool_call_id: m.tool_call_id,
-          content: m.content,
-        })),
-      );
-    }
     this._lastCognitiveState = cognitiveState;
     return msgs;
   }
@@ -422,53 +291,13 @@ export class KloelReplyEngineService {
       wsContextService: this.wsContextService,
       contextFormatter: this.contextFormatter,
     });
-    const kloelRuntimeContext = await this.buildInternalKloelRuntimeContext(params);
+    const kloelRuntimeContext = await buildInternalKloelRuntimeContext({
+      workspaceId: params.workspaceId,
+      expertiseLevel: params.expertiseLevel,
+      mindService: this.mindService,
+      logger: this.logger,
+    });
     return kloelRuntimeContext ? `${baseContext}\n\n${kloelRuntimeContext}` : baseContext;
-  }
-
-  private async buildInternalKloelRuntimeContext(params: {
-    workspaceId?: string;
-    expertiseLevel: ExpertiseLevel;
-  }): Promise<string | null> {
-    if (!params.workspaceId || !this.mindService) {
-      return null;
-    }
-
-    try {
-      const channel = 'kloel_chat';
-      const segment = params.expertiseLevel.toLowerCase();
-      const [tone, aggressiveness, format, objection] = await Promise.all([
-        this.mindService.resolveTone(params.workspaceId, channel, 0.5, 0.5, segment),
-        this.mindService.resolveAggressiveness(
-          params.workspaceId,
-          'official_kloel_chat',
-          0.5,
-          0.5,
-          1,
-        ),
-        this.mindService.resolveMessageFormat(params.workspaceId, channel, segment, ['text']),
-        this.mindService.resolveObjectionResponse(params.workspaceId, channel, segment, 'unknown'),
-      ]);
-
-      return [
-        'Contexto operacional interno do Kloel:',
-        `- Tom recomendado: ${tone.tone}.`,
-        `- Intensidade comercial recomendada: ${aggressiveness.aggressiveness}.`,
-        `- Formato recomendado nesta superfície: ${format.format === 'text' ? 'texto claro' : format.format}.`,
-        `- Estratégia comercial recomendada: ${objection.strategy}.`,
-        '- Use essas diretrizes apenas como ajuste interno da resposta oficial do Kloel.',
-        '- Nunca apresente outro agente, outro chat, outro motor ou outra voz ao usuário.',
-      ].join('\n');
-    } catch (error: unknown) {
-      const msg =
-        error instanceof Error
-          ? error.message
-          : typeof error === 'string'
-            ? error
-            : 'unknown error';
-      this.logger.warn(`Falha ao montar contexto operacional interno do Kloel: ${msg}`);
-      return null;
-    }
   }
 
   async buildAssistantReply(params: {

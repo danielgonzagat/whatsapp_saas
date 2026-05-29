@@ -7,73 +7,42 @@ import { KloelBusinessConfigToolsService } from './kloel-business-config-tools.s
 import { KloelChatToolsService } from './kloel-chat-tools.service';
 import { KloelComposerService } from './kloel-composer.service';
 import { runToolSearchWeb } from './kloel-tool-dispatcher.search-web.helpers';
-import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
-import { KloelCodeToolsService } from './kloel-code-tools.service';
-import { KloelCodeAnalysisService } from './kloel-code-analysis.service';
-import { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
-import { CouponService } from './coupon.service';
-import { KloelChatCheckoutTool } from './kloel-chat-checkout.tool';
-import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service';
-import { SalesService } from '../sales/sales.service';
 import { WorkspaceService } from '../workspaces/workspace.service';
-import { AccountService } from './account.service';
-import { SelfHealthService } from './self-awareness/self-health.service';
-import { SelfGapsService } from './self-awareness/self-gaps.service';
-import { DepsCoverageService } from './self-awareness/deps-coverage.service';
 import { CapabilityRegistryV2Service } from './capability-registry-v2/capability-registry-v2.service';
 import { KloelDomainServiceResolver } from './domain-service-resolver.service';
-import { MindCapabilityRegistry } from './mind/coordination/mind-capability-registry.service';
 import { MindCapabilityExecutor } from './mind/coordination/mind-capability-executor.service';
-import { MindGuardsService } from './mind/policy/mind-guards.service';
-import { ReportService } from './report.service';
 import {
   runRequestHighRiskApproval,
   runExecuteApprovedApprovalRequest,
   type ApprovedToolExecutionResult,
 } from './kloel-tool-dispatcher.approval.helpers';
 import { buildCanonicalReceipt } from './kloel-tool-dispatcher.receipt.helpers';
-import { dispatchWhatsAppTool, isWhatsAppTool } from './kloel-tool-dispatcher.whatsapp.handlers';
-import { dispatchCodeTool, isCodeTool } from './kloel-tool-dispatcher.code.handlers';
-import { dispatchSelfTool, isSelfTool } from './kloel-tool-dispatcher.self.handlers';
-import { dispatchConfigureTool, isConfigureTool } from './kloel-tool-dispatcher.configure.handlers';
-import { dispatchSalesTool, isSalesTool } from './kloel-tool-dispatcher.sales.handlers';
-import { dispatchAgentTool, isAgentTool } from './kloel-tool-dispatcher.agent.handlers';
-import { dispatchAccountTool, isAccountTool } from './kloel-tool-dispatcher.account.handlers';
-import {
-  dispatchDottedAliasTool,
-  isDottedAliasTool,
-} from './kloel-tool-dispatcher.dotted-alias.handlers';
-import { dispatchReportsTool, isReportsTool } from './kloel-tool-dispatcher.reports.handlers';
-import {
-  dispatchDepsCoverageTool,
-  isDepsCoverageTool,
-} from './kloel-tool-dispatcher.deps-coverage.handlers';
-import {
-  dispatchWalletSalesTool,
-  isWalletSalesTool,
-} from './kloel-tool-dispatcher.wallet-sales.handlers';
-import {
-  dispatchBizConfigTool,
-  isBizConfigTool,
-} from './kloel-tool-dispatcher.biz-config.handlers';
-import {
-  dispatchProductCatalogTool,
-  isProductCatalogTool,
-} from './kloel-tool-dispatcher.product-catalog.handlers';
-import {
-  dispatchWorkspaceInfoTool,
-  isWorkspaceInfoTool,
-} from './kloel-tool-dispatcher.workspace-info.handlers';
-import {
-  dispatchWorkspaceActionTool,
-  isWorkspaceActionTool,
-} from './kloel-tool-dispatcher.workspace-actions.handlers';
-import { dispatchChannelTool, isChannelTool } from './kloel-tool-dispatcher.channel.handlers';
 import { runCreatePaymentLink } from './kloel-tool-dispatcher.create-payment-link.helpers';
 import { SmartPaymentService } from './smart-payment.service';
-import { ChannelTransportRegistry } from './channel-transport.registry';
-import { RiskGateService } from './risk-class/risk-gate.service';
+import {
+  runFastPathDispatch,
+  checkMindGuard,
+  type FastPathServices,
+} from './kloel-tool-dispatcher.fast-path.helpers';
+
+import { KloelWhatsAppToolsService } from './kloel-whatsapp-tools.service';
+import { KloelCodeToolsService } from './kloel-code-tools.service';
+import { KloelCodeAnalysisService } from './kloel-code-analysis.service';
+import type { KloelProductSubResourceToolsService } from './kloel-product-sub-resource-tools.service';
+import type { CouponService } from './coupon.service';
+import type { KloelChatCheckoutTool } from './kloel-chat-checkout.tool';
+import type { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service';
+import type { SalesService } from '../sales/sales.service';
+import type { AccountService } from './account.service';
+import type { SelfHealthService } from './self-awareness/self-health.service';
+import type { SelfGapsService } from './self-awareness/self-gaps.service';
+import type { DepsCoverageService } from './self-awareness/deps-coverage.service';
+import type { MindCapabilityRegistry } from './mind/coordination/mind-capability-registry.service';
+import type { MindGuardsService } from './mind/policy/mind-guards.service';
+import type { ReportService } from './report.service';
+import type { ChannelTransportRegistry } from './channel-transport.registry';
+import type { RiskGateService } from './risk-class/risk-gate.service';
 
 import type { UnknownRecord } from '../common/types';
 
@@ -216,39 +185,11 @@ export class KloelToolDispatcherService {
    * Returns a block result if the guard vetoes execution; null otherwise.
    */
   private async checkMindGuard(workspaceId: string, toolName: string): Promise<ToolResult | null> {
-    if (!this.mindGuards || !this.capRegistryV2) {
-      return null;
-    }
-    const cap = this.capRegistryV2.get(toolName);
-    if (!cap || cap.category !== 'MUTATION_SENSITIVE') {
-      return null;
-    }
-
-    const verdict = await this.mindGuards.evaluate({
-      action: toolName,
-      context: {},
-      decisionType: 'tool_execution',
+    return checkMindGuard(
+      { mindGuards: this.mindGuards, capRegistryV2: this.capRegistryV2, logger: this.logger },
       workspaceId,
-    });
-
-    if (verdict.decision === 'block') {
-      this.logger.warn(
-        `MindGuard bloqueou ferramenta ${toolName} no workspace ${workspaceId}: ${verdict.reason}`,
-      );
-      return {
-        success: false,
-        error: 'mind_guard_blocked',
-        reasons: [verdict.reason],
-      };
-    }
-
-    if (verdict.decision === 'warn') {
-      this.logger.warn(
-        `MindGuard aviso para ferramenta ${toolName} no workspace ${workspaceId}: ${verdict.reason}`,
-      );
-    }
-
-    return null;
+      toolName,
+    );
   }
 
   /**
@@ -256,219 +197,41 @@ export class KloelToolDispatcherService {
    * returns `null` when the tool name is not part of its domain; the first
    * non-null result wins.
    */
-  private async runFastPathDispatch(
+  private runFastPathDispatch(
     workspaceId: string,
     toolName: string,
     args: UnknownRecord,
     userId: string | undefined,
   ): Promise<ToolResult | null> {
-    if (isWhatsAppTool(toolName)) {
-      const result = await dispatchWhatsAppTool(
-        this.whatsappToolsService,
-        workspaceId,
-        toolName,
-        args,
-      );
-      if (result !== null) {
-        return result;
-      }
-    }
-    if (isCodeTool(toolName)) {
-      const result = await dispatchCodeTool(
-        this.codeToolsService,
-        this.codeAnalysisService,
-        toolName,
-        args,
-      );
-      if (result !== null) {
-        return result;
-      }
-    }
-    if (isSelfTool(toolName)) {
-      const result = await dispatchSelfTool(
-        {
-          auditService: this.auditService,
-          selfGaps: this.selfGaps,
-          selfHealth: this.selfHealth,
-          capRegistryV2: this.capRegistryV2,
-          mindCapabilityRegistry: this.mindCapabilityRegistry,
-          prisma: this.prisma,
-        },
-        workspaceId,
-        toolName,
-        args,
-      );
-      if (result !== null) {
-        return result;
-      }
-    }
-    if (isConfigureTool(toolName)) {
-      const result = await dispatchConfigureTool(
-        this.chatToolsService,
-        this.capRegistryV2,
-        workspaceId,
-        toolName,
-        args,
-        userId,
-      );
-      if (result !== null) {
-        return result;
-      }
-    }
-    if (isSalesTool(toolName)) {
-      const result = await dispatchSalesTool(
-        {
-          salesService: this.salesService,
-          capRegistryV2: this.capRegistryV2,
-          userId,
-        },
-        workspaceId,
-        toolName,
-        args,
-      );
-      if (result !== null) {
-        return result;
-      }
-    }
-    if (isAgentTool(toolName)) {
-      const result = await dispatchAgentTool(this.chatToolsService, workspaceId, toolName, args);
-      if (result !== null) {
-        return result;
-      }
-    }
-    if (isAccountTool(toolName)) {
-      const result = await dispatchAccountTool(
-        {
-          accountService: this.accountService,
-          walletSalesTools: this.walletSalesTools,
-          executeTool: (ws, name, a, u) => this.executeTool(ws, name, a, u),
-          userId,
-        },
-        workspaceId,
-        toolName,
-        args,
-      );
-      if (result !== null) {
-        return result;
-      }
-    }
-    if (isDottedAliasTool(toolName)) {
-      const result = await dispatchDottedAliasTool(
-        {
-          capRegistryV2: this.capRegistryV2,
-          executeTool: (ws, name, a, u) => this.executeTool(ws, name, a, u),
-          userId,
-        },
-        workspaceId,
-        toolName,
-        args,
-      );
-      if (result !== null) {
-        return result;
-      }
-    }
-    if (isReportsTool(toolName)) {
-      const result = await dispatchReportsTool(
-        { reportService: this.reportService },
-        workspaceId,
-        toolName,
-        args,
-      );
-      if (result !== null) {
-        return result;
-      }
-    }
-    if (isDepsCoverageTool(toolName)) {
-      const result = await dispatchDepsCoverageTool(
-        { depsCoverage: this.depsCoverage },
-        toolName,
-        args,
-      );
-      if (result !== null) {
-        return result;
-      }
-    }
-    if (isWalletSalesTool(toolName)) {
-      const result = await dispatchWalletSalesTool(
-        { walletSalesTools: this.walletSalesTools },
-        workspaceId,
-        toolName,
-        args,
-      );
-      if (result !== null) {
-        return result;
-      }
-    }
-    if (isBizConfigTool(toolName)) {
-      const result = await dispatchBizConfigTool(
-        { bizConfigToolsService: this.bizConfigToolsService },
-        workspaceId,
-        toolName,
-        args,
-      );
-      if (result !== null) {
-        return result;
-      }
-    }
-    if (isProductCatalogTool(toolName)) {
-      const result = await dispatchProductCatalogTool(
-        {
-          chatToolsService: this.chatToolsService,
-          couponService: this.couponService,
-          checkoutService: this.checkoutService,
-          productSubTools: this.productSubTools,
-        },
-        workspaceId,
-        toolName,
-        args,
-        userId,
-      );
-      if (result !== null) {
-        return result;
-      }
-    }
-    if (isWorkspaceInfoTool(toolName)) {
-      const result = await dispatchWorkspaceInfoTool(
-        { chatToolsService: this.chatToolsService },
-        workspaceId,
-        toolName,
-        args,
-      );
-      if (result !== null) {
-        return result;
-      }
-    }
-    if (isWorkspaceActionTool(toolName)) {
-      const result = await dispatchWorkspaceActionTool(
-        {
-          chatToolsService: this.chatToolsService,
-          applyReceipt: (cap, ws, a, r, u, started) =>
-            this.withCanonicalReceipt(cap, ws, a, r, u, started),
-          userId,
-        },
-        workspaceId,
-        toolName,
-        args,
-      );
-      if (result !== null) {
-        return result;
-      }
-    }
-    if (isChannelTool(toolName)) {
-      if (!this.transports || !this.riskGate) {
-        return { success: false, error: 'channel_dispatch_unavailable' };
-      }
-      const result = await dispatchChannelTool(
-        { transports: this.transports, riskGate: this.riskGate },
-        workspaceId,
-        toolName,
-        args,
-      );
-      if (result !== null) {
-        return result;
-      }
-    }
-    return null;
+    return runFastPathDispatch(this.fastPathServices(), workspaceId, toolName, args, userId);
+  }
+
+  private fastPathServices(): FastPathServices {
+    return {
+      whatsappToolsService: this.whatsappToolsService,
+      codeToolsService: this.codeToolsService,
+      codeAnalysisService: this.codeAnalysisService,
+      auditService: this.auditService,
+      chatToolsService: this.chatToolsService,
+      bizConfigToolsService: this.bizConfigToolsService,
+      prisma: this.prisma,
+      selfGaps: this.selfGaps,
+      selfHealth: this.selfHealth,
+      capRegistryV2: this.capRegistryV2,
+      mindCapabilityRegistry: this.mindCapabilityRegistry,
+      salesService: this.salesService,
+      accountService: this.accountService,
+      walletSalesTools: this.walletSalesTools,
+      reportService: this.reportService,
+      depsCoverage: this.depsCoverage,
+      couponService: this.couponService,
+      checkoutService: this.checkoutService,
+      productSubTools: this.productSubTools,
+      transports: this.transports,
+      riskGate: this.riskGate,
+      executeTool: (ws, name, a, u) => this.executeTool(ws, name, a, u),
+      applyReceipt: (cap, ws, a, r, u, s) => this.withCanonicalReceipt(cap, ws, a, r, u, s),
+    };
   }
 
   /** Handle the small set of tools that remain on the dispatcher directly. */
