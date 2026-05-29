@@ -205,4 +205,39 @@ describe('AuditService', () => {
       );
     });
   });
+
+  describe('recent', () => {
+    it('returns recent entries with default limit 50 and workspace isolation', async () => {
+      const entries = [
+        { id: 'a1', action: 'CREATE_FLOW', resource: 'Flow', workspaceId: 'ws-1' },
+        { id: 'a2', action: 'LOGIN', resource: 'Auth', workspaceId: 'ws-1' },
+      ];
+      mockPrisma.auditLog.findMany.mockResolvedValue(entries);
+
+      const result = await service.recent('ws-1');
+
+      expect(mockPrisma.auditLog.findMany).toHaveBeenCalledWith({
+        where: { workspaceId: 'ws-1' },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+        include: { agent: { select: { name: true, email: true } } },
+      });
+      expect(result).toBe(entries);
+    });
+
+    it('respects explicit limit with type filter', async () => {
+      const entries = [{ id: 'a3', action: 'EXPORT_CONTACTS', resource: 'Contact', workspaceId: 'ws-2' }];
+      mockPrisma.auditLog.findMany.mockResolvedValue(entries);
+
+      const result = await service.recent('ws-2', { limit: 10, type: 'EXPORT_CONTACTS' });
+
+      expect(mockPrisma.auditLog.findMany).toHaveBeenCalledWith({
+        where: { workspaceId: 'ws-2', action: 'EXPORT_CONTACTS' },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+        include: { agent: { select: { name: true, email: true } } },
+      });
+      expect(result).toBe(entries);
+    });
+  });
 });
