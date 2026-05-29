@@ -220,6 +220,11 @@ export class AutopilotService {
     return { workspaceId, enabled };
   }
 
+  /** Toggle autopilot via DTO (capability `toggle_autopilot`). */
+  async toggle(workspaceId: string, dto: { enabled: boolean }) {
+    return this.toggleAutopilot(workspaceId, dto.enabled);
+  }
+
   /** Update config. */
   async updateConfig(
     workspaceId: string,
