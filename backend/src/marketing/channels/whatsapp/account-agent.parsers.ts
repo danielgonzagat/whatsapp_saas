@@ -66,8 +66,7 @@ export function parseApprovalPayload(value: unknown): AccountApprovalPayload | n
   const normalizedProductName = readString(payload.normalizedProductName);
   // Backward-compat read: canonical field is contactMessage but legacy persisted
   // payloads (pre-rename) still carry customerMessage. Accept either.
-  const contactMessage =
-    readString(payload.contactMessage) ?? readString(payload.customerMessage);
+  const contactMessage = readString(payload.contactMessage) ?? readString(payload.customerMessage);
   const operatorPrompt = readString(payload.operatorPrompt);
   const firstDetectedAt = readString(payload.firstDetectedAt);
   const lastDetectedAt = readString(payload.lastDetectedAt);
@@ -116,8 +115,7 @@ export function parseInputSessionPayload(value: unknown): AccountInputSessionPay
   const normalizedProductName = readString(payload.normalizedProductName);
   // Backward-compat read: canonical field is contactMessage but legacy persisted
   // payloads (pre-rename) still carry customerMessage. Accept either.
-  const contactMessage =
-    readString(payload.contactMessage) ?? readString(payload.customerMessage);
+  const contactMessage = readString(payload.contactMessage) ?? readString(payload.customerMessage);
   const createdAt = readString(payload.createdAt);
   const updatedAt = readString(payload.updatedAt);
 

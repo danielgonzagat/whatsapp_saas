@@ -1,48 +1,13 @@
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../prisma/prisma.service';
-import {
-  asProviderSettings,
-  type ProviderSessionSnapshot,
-} from '../provider-settings.types';
-import { WahaProvider } from './waha.provider';
+import { asProviderSettings, type ProviderSessionSnapshot } from '../provider-settings.types';
 import { WhatsAppApiProvider } from './whatsapp-api.provider';
-import type {
-  WhatsAppProviderType,
-  SessionStatus,
-  UnknownRecord,
-} from './provider-registry.types';
-import { MissingWahaProviderError } from './provider-registry.types';
+import type { WhatsAppProviderType, SessionStatus, UnknownRecord } from './provider-registry.types';
 
 import { readString, readStringArrayOr } from '../../../../common/parse';
+
 export function readRecord(value: unknown): UnknownRecord {
   return typeof value === 'object' && value !== null ? (value as UnknownRecord) : {};
-}
-
-function normalizeWahaSnapshotStatus(
-  rawStatus: string | null | undefined,
-): 'connected' | 'connecting' | 'failed' | 'disconnected' {
-  const normalized = String(rawStatus || '')
-    .trim()
-    .toUpperCase();
-
-  if (normalized === 'CONNECTED' || normalized === 'WORKING') {
-    return 'connected';
-  }
-
-  if (
-    normalized === 'SCAN_QR_CODE' ||
-    normalized === 'QR_PENDING' ||
-    normalized === 'STARTING' ||
-    normalized === 'OPENING'
-  ) {
-    return 'connecting';
-  }
-
-  if (normalized === 'FAILED') {
-    return 'failed';
-  }
-
-  return 'disconnected';
 }
 
 function readSessionSnapshot(value: unknown): ProviderSessionSnapshot {
@@ -110,9 +75,7 @@ export async function persistSessionSnapshot(
 export interface SessionDeps {
   prisma: PrismaService;
   metaCloudProvider: WhatsAppApiProvider;
-  wahaProvider: WahaProvider | undefined;
   defaultProvider: WhatsAppProviderType;
-  isWahaMode: () => boolean;
   getProviderType: (workspaceId: string) => Promise<WhatsAppProviderType>;
 }
 
@@ -126,21 +89,6 @@ export async function startSession(
   authUrl?: string;
 }> {
   await deps.getProviderType(workspaceId);
-
-  if (deps.isWahaMode()) {
-    if (!deps.wahaProvider) {
-      throw new MissingWahaProviderError();
-    }
-    const result = await deps.wahaProvider.startSession(workspaceId);
-    await persistSessionSnapshot(deps.prisma, deps.defaultProvider, workspaceId, {
-      status: result.message === 'already_connected' ? 'connected' : 'connecting',
-      rawStatus: result.message === 'already_connected' ? 'CONNECTED' : 'STARTING',
-      disconnectReason: null,
-      ...(result.message === 'already_connected' ? { qrCode: null } : {}),
-      sessionName: workspaceId,
-    });
-    return { success: result.success, message: result.message };
-  }
 
   const result = await deps.metaCloudProvider.startSession(workspaceId);
   await persistSessionSnapshot(deps.prisma, deps.defaultProvider, workspaceId, {
@@ -157,30 +105,6 @@ export async function getSessionStatus(
   workspaceId: string,
 ): Promise<SessionStatus> {
   await deps.getProviderType(workspaceId);
-
-  if (deps.isWahaMode() && deps.wahaProvider) {
-    const wahaStatus = await deps.wahaProvider.getSessionStatus(workspaceId);
-    const connected = wahaStatus.state === 'CONNECTED';
-    const snapshotStatus = normalizeWahaSnapshotStatus(wahaStatus.state);
-    const status: SessionStatus = {
-      connected,
-      status: wahaStatus.state || 'DISCONNECTED',
-      selfIds: wahaStatus.selfIds || [],
-      ...(wahaStatus.phoneNumber != null ? { phoneNumber: wahaStatus.phoneNumber } : {}),
-      ...(wahaStatus.pushName != null ? { pushName: wahaStatus.pushName } : {}),
-    };
-    await persistSessionSnapshot(deps.prisma, deps.defaultProvider, workspaceId, {
-      status: snapshotStatus,
-      rawStatus: status.status,
-      phoneNumber: status.phoneNumber || null,
-      pushName: status.pushName || null,
-      selfIds: status.selfIds || [],
-      disconnectReason: connected ? null : wahaStatus.message || null,
-      ...(connected ? { qrCode: null } : {}),
-      sessionName: workspaceId,
-    });
-    return status;
-  }
 
   const [workspace, details] = await Promise.all([
     deps.prisma.workspace.findUnique({
@@ -238,8 +162,5 @@ export async function getQrCode(
 ): Promise<{ success: boolean; qr?: string; message?: string }> {
   await deps.getProviderType(workspaceId);
 
-  if (deps.isWahaMode() && deps.wahaProvider) {
-    return deps.wahaProvider.getQrCode(workspaceId);
-  }
   return deps.metaCloudProvider.getQrCode(workspaceId);
 }

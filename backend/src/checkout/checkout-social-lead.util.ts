@@ -1,7 +1,6 @@
 import { Prisma } from '@prisma/client';
 import type { GoogleAuthService } from '../auth/google-auth.service';
 import type { UpdateSocialLeadDto } from './dto/update-social-lead.dto';
-import { extractAsciiDigits } from '../common/phone/phone-normalization.util';
 
 type GooglePeopleProfile = Awaited<ReturnType<GoogleAuthService['fetchPeopleProfile']>>;
 
@@ -17,23 +16,6 @@ export function normalizeEmail(value?: string | null) {
     .trim()
     .toLowerCase();
   return normalized || null;
-}
-
-/**
- * Lead-flow phone normalizer: digits-only, nullable.
- *
- * Returns the canonical digits-only string, or `null` when the input has no
- * digits. This is the byte-identical semantics the legacy `digitsOrNull`
- * facet provided; delegating to {@link extractAsciiDigits} keeps every
- * caller on the canonical util while preserving the public `string | null`
- * contract that `checkout-social-lead.service` / `.candidate` consume.
- *
- * @see backend/src/common/phone/phone-normalization.util.ts
- * @see docs/architecture/DEPRECATION_MAP.md (phone normalization row)
- */
-export function normalizePhone(value: string | null | undefined): string | null {
-  const digits = extractAsciiDigits(value);
-  return digits || null;
 }
 
 /** Extract address from enrichment. */

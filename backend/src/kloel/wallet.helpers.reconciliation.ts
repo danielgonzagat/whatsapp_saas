@@ -8,9 +8,7 @@
  * `walletId` is null, empty, or a non-string — matching the inline filter
  * the cron previously inlined twice.
  */
-export function uniqueWalletIds(
-  pendingTxs: ReadonlyArray<{ walletId?: string | null }>,
-): string[] {
+export function uniqueWalletIds(pendingTxs: ReadonlyArray<{ walletId?: string | null }>): string[] {
   return [
     ...new Set(
       pendingTxs

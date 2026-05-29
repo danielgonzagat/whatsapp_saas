@@ -17,6 +17,7 @@ import { AnalyticsService } from '../analytics/analytics.service';
 import { AutopilotService } from '../autopilot/autopilot.service';
 import { BillingService } from '../billing/billing.service';
 import { CheckoutService } from '../checkout/checkout.service';
+import { CheckoutOrderService } from '../checkout/checkout-order.service';
 import { CrmService } from '../crm/crm.service';
 import { DashboardService } from '../dashboard/dashboard.service';
 import { HealthService } from '../health/health.service';
@@ -83,6 +84,7 @@ export class KloelDomainServiceResolver {
     ['FlowService', FlowsService],
     ['CampaignService', CampaignsService],
     ['WhatsAppService', WhatsappService],
+    ['OrderService', CheckoutOrderService],
   ]);
 
   constructor(

@@ -104,8 +104,9 @@ function safeMetadataSummary(body: Record<string, unknown>): Record<string, unkn
 }
 
 function bodyString(req: Request, ...keys: string[]): string {
+  const body = (req.body ?? {}) as Record<string, unknown>;
   for (const key of keys) {
-    const value = req.body?.[key];
+    const value = body[key];
     if (typeof value === 'string' && value.trim()) {
       return value.trim();
     }

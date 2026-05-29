@@ -5,9 +5,9 @@ import {
   mergeLeadAddressSnapshot,
   normalizeEmail,
   normalizeOptional,
-  normalizePhone,
   toJsonValue,
 } from './checkout-social-lead.util';
+import { digitsOrNull as normalizePhone } from '../common/phone';
 
 /** Plan context resolved from a checkout slug. */
 export type CheckoutPlanContext = {

@@ -203,7 +203,7 @@ export class UnifiedAgentActionsMessagingService {
 
       // P1.4 — per-channel proactive daily limit. Inbound replies skip
       // this check; only proactive outbound decrements the counter.
-      const outboundKind = String(context?.outboundKind ?? '').toLowerCase();
+      const outboundKind = readText(context?.outboundKind).toLowerCase();
       const isReactiveReply =
         outboundKind === 'reply' ||
         outboundKind === 'inbound-reply' ||

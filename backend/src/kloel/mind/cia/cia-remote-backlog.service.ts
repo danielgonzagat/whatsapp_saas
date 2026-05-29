@@ -8,7 +8,7 @@ import { CiaRuntimeStateService } from './cia-runtime-state.service';
 import { CIA_SHARED_REPLY_LOCK_MS, CiaSendHelpersService } from './cia-send-helpers.service';
 import { WhatsAppProviderRegistry } from '../../../marketing/channels/whatsapp/providers/provider-registry';
 import { WahaChatSummary } from '../../../marketing/channels/whatsapp/providers/whatsapp-api.provider';
-import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../../../marketing/channels/whatsapp/whatsapp-normalization.util';
+import { extractWhatsAppChatDigits as normalizePhoneFromChatId } from '../../../marketing/channels/whatsapp/whatsapp-normalization.util';
 import { WHATSAPP_MESSAGING } from '../../../marketing/channels/whatsapp/whatsapp.tokens';
 import type { IWhatsappMessaging } from '../../../marketing/channels/whatsapp/whatsapp.interfaces';
 import type { BacklogMode } from '../../../marketing/channels/whatsapp/cia-remote-backlog.helpers';

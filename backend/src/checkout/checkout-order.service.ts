@@ -435,4 +435,35 @@ export class CheckoutOrderService {
   async declineUpsell(orderId: string, upsellId: string) {
     return this.queryService.declineUpsell(orderId, upsellId);
   }
+
+  /**
+   * Canonical-name alias of {@link listOrders} for the Kloel capability
+   * resolver (`OrderService.list`). Accepts the (workspaceId, args)
+   * signature used by `KloelDomainServiceResolver`; `status`, `page`,
+   * `limit` are forwarded when present. Read-only — no order writes.
+   */
+  async list(
+    workspaceId: string,
+    args?: { status?: string; page?: number; limit?: number },
+  ) {
+    const filters: { status?: string; page?: number; limit?: number } = {};
+    if (typeof args?.status === 'string') filters.status = args.status;
+    if (typeof args?.page === 'number') filters.page = args.page;
+    if (typeof args?.limit === 'number') filters.limit = args.limit;
+    return this.listOrders(workspaceId, filters);
+  }
+
+  /**
+   * Canonical-name alias of {@link getOrder} for the Kloel capability
+   * resolver (`OrderService.get`). Accepts the (workspaceId, args)
+   * signature used by `KloelDomainServiceResolver`; `args.orderId` is
+   * required. Read-only — no order writes.
+   */
+  async get(workspaceId: string, args?: { orderId?: string }) {
+    const orderId = typeof args?.orderId === 'string' ? args.orderId : '';
+    if (!orderId) {
+      throw new Error('CheckoutOrderService.get: args.orderId is required');
+    }
+    return this.getOrder(orderId, workspaceId);
+  }
 }

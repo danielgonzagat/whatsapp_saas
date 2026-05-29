@@ -219,6 +219,7 @@ import { ProductsModule } from '../products/products.module';
 import { PlansModule } from '../plans/plans.module';
 import { SalesModule } from '../sales/sales.module';
 import { WorkspaceModule } from '../workspaces/workspace.module';
+import { LongTermMemoryService } from './mind/memory/long-term-memory.service';
 
 /** Kloel module. */
 @Module({
@@ -396,6 +397,7 @@ import { WorkspaceModule } from '../workspaces/workspace.module';
     MindCaseMemoryService,
     MindConceptService,
     MindLongTermMemoryService,
+    LongTermMemoryService,
     MindSelfModificationService,
     KloelGlobalPriorService,
     MindGlobalPriorService,

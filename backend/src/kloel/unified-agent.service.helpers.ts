@@ -11,7 +11,7 @@
  * unit-test time instead of mid-conversation.
  */
 
-import type { ActionEntry, ToolArgs } from './unified-agent.types';
+import type { ActionEntry } from './unified-agent.types';
 import type { UnknownRecord } from '../common/types';
 import { actionSucceeded } from './unified-agent.helpers';
 
@@ -47,8 +47,7 @@ export const COGNITIVE_STATE_CONTEXT_INSTRUCTION =
  * Default tactical hint emitted when no lead-specific tactical hint can be
  * derived from history.
  */
-export const DEFAULT_TACTICAL_HINT =
-  'responder com clareza, valor concreto e próximo passo.';
+export const DEFAULT_TACTICAL_HINT = 'responder com clareza, valor concreto e próximo passo.';
 
 /**
  * Confidence score returned when at least one predecided action was executed.
@@ -162,11 +161,9 @@ export function buildLayeredSystemPrompt(parts: {
   workspaceProductBlock: string;
   agentRuntimeBlock: string;
 }): string {
-  return [
-    COGNITIVE_STATE_PREAMBLE,
-    parts.workspaceProductBlock,
-    parts.agentRuntimeBlock,
-  ].join('\n\n');
+  return [COGNITIVE_STATE_PREAMBLE, parts.workspaceProductBlock, parts.agentRuntimeBlock].join(
+    '\n\n',
+  );
 }
 
 interface AgentUserPayloadInput {
@@ -188,9 +185,7 @@ interface AgentUserPayloadInput {
  * Falls the tactical hint back to {@link DEFAULT_TACTICAL_HINT} when the
  * caller passes an empty string.
  */
-export function buildAgentUserPayload(
-  input: AgentUserPayloadInput,
-): Record<string, unknown> {
+export function buildAgentUserPayload(input: AgentUserPayloadInput): Record<string, unknown> {
   return {
     contextInstruction: COGNITIVE_STATE_CONTEXT_INSTRUCTION,
     cognitiveState: input.cognitiveState,
@@ -253,9 +248,7 @@ interface TurnOutcomeAction {
  * recorder. `result` is preserved so downstream consumers (analytics, replay)
  * can introspect tool outputs.
  */
-export function mapActionsForTurnOutcome(
-  actions: ReadonlyArray<ActionEntry>,
-): TurnOutcomeAction[] {
+export function mapActionsForTurnOutcome(actions: ReadonlyArray<ActionEntry>): TurnOutcomeAction[] {
   return actions.map((action) => ({
     toolName: action.tool,
     success: actionSucceeded(action.result),
@@ -278,7 +271,7 @@ export function buildBlockedToolResult(): { blocked: true; reason: 'capability_n
 export function buildBlockedActionEntry(toolName: string): ActionEntry {
   return {
     tool: toolName,
-    args: {} as ToolArgs,
+    args: {},
     result: buildBlockedToolResult(),
   };
 }

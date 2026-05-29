@@ -107,9 +107,10 @@ export function hasCheckoutPaymentLookupKey(
  *
  * Member-access grants require BOTH ids so we never grant cross-workspace.
  */
-export function extractCheckoutOrderIdentity(
-  where: Prisma.CheckoutOrderWhereInput | undefined,
-): { orderId: string | null; workspaceId: string | null } {
+export function extractCheckoutOrderIdentity(where: Prisma.CheckoutOrderWhereInput | undefined): {
+  orderId: string | null;
+  workspaceId: string | null;
+} {
   const raw = (where || {}) as Record<string, unknown>;
   return {
     orderId: typeof raw.id === 'string' ? raw.id : null,

@@ -305,9 +305,9 @@ export class UploadController {
 
     // PDF - extrair texto e processar
     if (mimetype === 'application/pdf') {
-      const extractedText = await extractPdfText(file.buffer, originalname, this.logger, (err) =>
-        this.opsAlert?.alertOnCriticalError(err, 'UploadController.pdfParse'),
-      );
+      const extractedText = await extractPdfText(file.buffer, originalname, this.logger, (err) => {
+        void this.opsAlert?.alertOnCriticalError(err, 'UploadController.pdfParse');
+      });
 
       const requestId = `${workspaceId}:${originalname}:${file.size}`;
       const estimatedCostCents = this.estimatePdfAnalysisQuote(extractedText, originalname);

@@ -29,7 +29,8 @@ export function normalizeAmountKey(amount: number): string {
  */
 export function truncateConversationHistory(conversation?: string): string {
   return String(conversation || '').slice(-500);
-}export function buildSmartPaymentAiPrompt(params: {
+}
+export function buildSmartPaymentAiPrompt(params: {
   customerName: string;
   productName?: string;
   amount: number;
@@ -51,7 +52,8 @@ export function truncateConversationHistory(conversation?: string): string {
     '  "urgencyLevel": "low|medium|high"',
     '}',
   ].join('\n');
-}export function buildNegotiationAiPrompt(params: {
+}
+export function buildNegotiationAiPrompt(params: {
   customerName?: string | null;
   leadScore?: number | null;
   purchaseProbability?: string | null;
@@ -84,19 +86,22 @@ export function truncateConversationHistory(conversation?: string): string {
     '  "counterOffer": "mensagem de contra-oferta se não aprovado"',
     '}',
   ].join('\n');
-}export function buildPixReadyMessage(customerName: string, amount: number): string {
+}
+export function buildPixReadyMessage(customerName: string, amount: number): string {
   return [
     `${customerName}, seu pagamento PIX de ${formatBrlAmount(amount)} está pronto.`,
     '',
     'Use o QR Code ou copie o código PIX abaixo.',
   ].join('\n');
-}export function buildConfirmedPaymentMessage(amount: number): string {
+}
+export function buildConfirmedPaymentMessage(amount: number): string {
   return [
     `Pagamento de ${formatBrlAmount(amount)} confirmado. Obrigado pela compra.`,
     '',
     'Seu acesso e os próximos passos seguem pelo canal cadastrado.',
   ].join('\n');
-}export interface PaymentContext {
+}
+export interface PaymentContext {
   workspaceId: string;
   contactId?: string;
   phone: string;
@@ -105,7 +110,8 @@ export function truncateConversationHistory(conversation?: string): string {
   productName?: string;
   amount: number;
   conversation?: string;
-}export function buildSmartPaymentIdempotencyKey(context: PaymentContext): string {
+}
+export function buildSmartPaymentIdempotencyKey(context: PaymentContext): string {
   return [
     'smart-payment',
     context.workspaceId,

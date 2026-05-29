@@ -11,11 +11,7 @@ import { AgentEventsService } from './agent-events.service';
 import { asProviderSettings } from './provider-settings.types';
 import { WorkerRuntimeService } from './worker-runtime.service';
 import { isNowebStoreMisconfiguredExt } from './whatsapp-catchup.helpers';
-import {
-  safeStr,
-  type GuestCheckSettings,
-  CATCHUP_SWEEP_LIMIT,
-} from './whatsapp-catchup-config';
+import { safeStr, type GuestCheckSettings, CATCHUP_SWEEP_LIMIT } from './whatsapp-catchup-config';
 import type { ICiaRuntime } from './whatsapp.interfaces';
 
 export type CatchupRunSummary = {

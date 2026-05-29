@@ -5,9 +5,8 @@ import { OpsAlertService } from '../../../../observability/ops-alert.service';
 import { PrismaService } from '../../../../prisma/prisma.service';
 import { asProviderSettings } from '../provider-settings.types';
 import type { ProviderSessionSnapshot } from '../provider-settings.types';
-import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../whatsapp-normalization.util';
+import { extractWhatsAppChatDigits as normalizePhoneFromChatId } from '../whatsapp-normalization.util';
 import { resolveDefaultWhatsAppProvider } from './provider-env';
-import { WahaProvider } from './waha.provider';
 import { WhatsAppApiProvider } from './whatsapp-api.provider';
 import type {
   WhatsAppProviderType,
@@ -60,15 +59,10 @@ export class WhatsAppProviderRegistry {
   constructor(
     private readonly prisma: PrismaService,
     private readonly metaCloudProvider: WhatsAppApiProvider,
-    @Optional() private readonly wahaProvider?: WahaProvider,
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {
     this.defaultProvider = resolveDefaultWhatsAppProvider();
     this.logger.log(`WhatsApp provider default: ${this.defaultProvider}`);
-  }
-
-  private isWahaMode(): boolean {
-    return this.defaultProvider === 'whatsapp-api' && !!this.wahaProvider;
   }
 
   extractPhoneFromChatId(chatId: string): string {
@@ -109,17 +103,13 @@ export class WhatsAppProviderRegistry {
     return {
       prisma: this.prisma,
       metaCloudProvider: this.metaCloudProvider,
-      wahaProvider: this.wahaProvider,
       defaultProvider: this.defaultProvider,
-      isWahaMode: () => this.isWahaMode(),
       getProviderType: (wsId: string) => this.getProviderType(wsId),
     };
   }
 
   private buildOpDeps() {
     return {
-      isWahaMode: () => this.isWahaMode(),
-      wahaProvider: this.wahaProvider,
       metaCloudProvider: this.metaCloudProvider,
       persistSessionSnapshot: (wsId: string, update: Partial<ProviderSessionSnapshot>) =>
         persistSessionSnapshot(this.prisma, this.defaultProvider, wsId, update),
@@ -128,8 +118,6 @@ export class WhatsAppProviderRegistry {
 
   private buildContactsDeps() {
     return {
-      isWahaMode: () => this.isWahaMode(),
-      wahaProvider: this.wahaProvider,
       metaCloudProvider: this.metaCloudProvider,
       getSessionStatus: (wsId: string) => this.getSessionStatus(wsId),
     };
@@ -137,8 +125,6 @@ export class WhatsAppProviderRegistry {
 
   private buildMessagingDeps() {
     return {
-      isWahaMode: () => this.isWahaMode(),
-      wahaProvider: this.wahaProvider,
       metaCloudProvider: this.metaCloudProvider,
       opsAlert: this.opsAlert,
       logger: this.logger,

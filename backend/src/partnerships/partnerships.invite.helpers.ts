@@ -5,12 +5,7 @@
  * directly without spinning up the NestJS module or stubbing Prisma.
  */
 
-export const INVITABLE_PARTNER_TYPES = new Set([
-  'AFFILIATE',
-  'SUPPLIER',
-  'COPRODUCER',
-  'MANAGER',
-]);
+export const INVITABLE_PARTNER_TYPES = new Set(['AFFILIATE', 'SUPPLIER', 'COPRODUCER', 'MANAGER']);
 
 export const PARTNER_ROLE_LABELS: Record<string, string> = {
   AFFILIATE: 'afiliado',

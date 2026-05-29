@@ -60,6 +60,11 @@ import {
 } from './kloel-reply-engine.degraded-path.helper';
 import { buildKloelAbiCognitiveState } from './kloel-reply-engine.cognitive-state.helpers';
 import { MindEventProcessorService } from './mind/runtime/mind-event-processor.service';
+import { MindEmotionalIntelligenceService } from './mind/emotional/mind-emotional-intelligence.service';
+import {
+  buildToneDirective,
+  logPostReplySentiment,
+} from './kloel-reply-engine.emotional-tone.helpers';
 
 type ChatCompletionMessageParam = OpenAI.Chat.ChatCompletionMessageParam;
 
@@ -107,6 +112,8 @@ export class KloelReplyEngineService {
     @Optional() private readonly vectorService?: VectorService,
     @Optional() private readonly valenceTagger?: ValenceTaggerService,
     @Optional() private readonly mindEventProcessorService?: MindEventProcessorService,
+    @Optional()
+    private readonly emotionalIntelligenceService?: MindEmotionalIntelligenceService,
   ) {
     this.openai = createTextLlmClient(undefined, { timeout: 60_000, maxRetries: 0 });
     this.toolRouter = new KloelToolRouter(
@@ -366,6 +373,25 @@ export class KloelReplyEngineService {
         );
         return this.unavailableMessage;
       }
+      // Y-8 #4: situational emotional-intelligence tone directive (additive,
+      // fail-open). Computed once and injected into the dynamic runtime
+      // context so it reaches the generation prompt. Includes a guardrail that
+      // blocks an aggressive tone for a negative-history contact.
+      const toneDirective = await buildToneDirective(this.emotionalIntelligenceService, {
+        workspaceId: params.workspaceId,
+        conversationId: params.workspaceId,
+        message: params.message,
+        recentMessages: params.conversationState?.recentMessages,
+        logger: this.logger,
+      });
+      if (toneDirective) {
+        this.logger.log('kloel_emotional_tone_applied', {
+          workspaceId: params.workspaceId,
+          state: toneDirective.state,
+          tone: toneDirective.tone,
+          guardrailApplied: toneDirective.guardrailApplied,
+        });
+      }
       let assistantMessage: string;
       try {
         assistantMessage = await buildAssistantReplyImpl(params, {
@@ -384,7 +410,10 @@ export class KloelReplyEngineService {
           buildMarketingPromptAddendum: (wid, mode, msg) =>
             this.buildMarketingPromptAddendum(wid, mode, msg),
           buildChatModelMessages: async (p) => this.buildChatModelMessages(p),
-          buildDynamicRuntimeContext: (p) => this.buildDynamicRuntimeContext(p),
+          buildDynamicRuntimeContext: async (p) => {
+            const base = await this.buildDynamicRuntimeContext(p);
+            return toneDirective ? `${base}\n\n${toneDirective.directive}` : base;
+          },
           ...(this.spine !== undefined ? { spine: this.spine } : {}),
           ...(params.abiStateJson !== undefined ? { abiStateJson: params.abiStateJson } : {}),
         });
@@ -416,6 +445,14 @@ export class KloelReplyEngineService {
           params.workspaceId,
           replyOutcome,
         );
+        // Y-8 #4: feed the post-reply sentiment signal back so the next turn's
+        // tone read incorporates this exchange. Fail-open, non-blocking.
+        await logPostReplySentiment(this.emotionalIntelligenceService, {
+          workspaceId: params.workspaceId,
+          conversationId: params.workspaceId,
+          assistantMessage,
+          logger: this.logger,
+        });
       }
       return assistantMessage;
     } finally {

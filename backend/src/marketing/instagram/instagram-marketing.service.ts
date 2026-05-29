@@ -6,18 +6,26 @@ import { decryptMetaToken } from '../../meta/meta-token-crypto';
 
 type InstagramConnection = {
   accessToken: string;
+  pageAccessToken: string;
+  pageId: string | null;
   instagramAccountId: string | null;
   instagramUsername: string | null;
 };
 
 function resolveInstagramConnection(channelSession: unknown): InstagramConnection {
   const row = channelSession as Record<string, unknown> | null;
+  const userAccessToken = String(
+    decryptMetaToken(typeof row?.accessToken === 'string' ? row.accessToken : null) ||
+      process.env.META_ACCESS_TOKEN ||
+      '',
+  ).trim();
+  const decryptedPageToken = String(
+    decryptMetaToken(typeof row?.pageAccessToken === 'string' ? row.pageAccessToken : null) || '',
+  ).trim();
   return {
-    accessToken: String(
-      decryptMetaToken(typeof row?.accessToken === 'string' ? row.accessToken : null) ||
-        process.env.META_ACCESS_TOKEN ||
-        '',
-    ).trim(),
+    accessToken: userAccessToken,
+    pageAccessToken: decryptedPageToken || userAccessToken,
+    pageId: (row?.pageId as string) || null,
     instagramAccountId: (row?.instagramAccountId as string) || null,
     instagramUsername: (row?.instagramUsername as string) || null,
   };
@@ -121,16 +129,20 @@ export class InstagramMarketingService {
     );
 
     const insightData = result?.data ?? [];
-    const normalized = Array.isArray(insightData) ? insightData : [];
+    const normalized: unknown[] = Array.isArray(insightData) ? insightData : [];
 
     const metricMap: Record<string, number> = {};
-    for (const item of normalized) {
-      if (item && typeof item === 'object') {
+    for (const rawItem of normalized) {
+      if (rawItem && typeof rawItem === 'object') {
+        const item = rawItem as {
+          name?: unknown;
+          values?: unknown;
+          total_value?: unknown;
+        };
         const itemName = typeof item.name === 'string' ? item.name : '';
         const totalValue = Array.isArray(item.values)
-          ? item.values.reduce(
-              (sum: number, v: Record<string, unknown>) =>
-                sum + (typeof v?.value === 'number' ? v.value : 0),
+          ? (item.values as Array<{ value?: unknown }>).reduce(
+              (sum: number, v) => sum + (typeof v?.value === 'number' ? v.value : 0),
               0,
             )
           : typeof item.total_value === 'number'
@@ -227,5 +239,119 @@ export class InstagramMarketingService {
     });
 
     return { insights };
+  }
+
+  /**
+   * Send a direct message via the Instagram Messaging API.
+   *
+   * Uses the IG-scoped Graph endpoint `${igAccountId}/messages`. Requires the
+   * workspace to have a connected Instagram business account and a valid
+   * page access token (linked Facebook page) per Meta's Messaging policy.
+   */
+  async sendDirectMessage(workspaceId: string, recipientId: string, text: string) {
+    const trimmed = (text ?? '').trim();
+    if (!trimmed) {
+      throw new BadRequestException('message_text_required');
+    }
+    const trimmedRecipient = (recipientId ?? '').trim();
+    if (!trimmedRecipient) {
+      throw new BadRequestException('recipient_id_required');
+    }
+
+    const row = await this.prisma.metaConnection.findFirst({
+      where: { workspaceId, channel: 'instagram' },
+    });
+    const channelSession = resolveInstagramConnection(row);
+
+    if (!channelSession.instagramAccountId) {
+      throw new BadRequestException('instagram_account_not_connected');
+    }
+    if (!channelSession.pageAccessToken) {
+      throw new BadRequestException('instagram_messaging_token_missing');
+    }
+
+    const igAccountId = channelSession.instagramAccountId;
+    const accessToken = channelSession.pageAccessToken;
+
+    const result = await this.instagramService.sendMessage(
+      igAccountId,
+      trimmedRecipient,
+      trimmed,
+      accessToken,
+    );
+
+    const resultObj = (result ?? {}) as Record<string, unknown>;
+    const messageId =
+      typeof resultObj['message_id'] === 'string'
+        ? resultObj['message_id']
+        : typeof resultObj['id'] === 'string'
+          ? resultObj['id']
+          : null;
+
+    this.logger.log(
+      `Instagram DM sent for workspace ${workspaceId} to ${trimmedRecipient}: ${messageId ?? 'no_id'}`,
+    );
+
+    return { messageId, metaResponse: result };
+  }
+
+  /**
+   * Fetch Instagram conversations from the Meta Graph API.
+   *
+   * Delegates to the page-scoped `${pageId}/conversations?platform=instagram`
+   * endpoint, which is the canonical way to list IG DM threads for a connected
+   * IG business account.
+   */
+  async listConversations(workspaceId: string) {
+    const row = await this.prisma.metaConnection.findFirst({
+      where: { workspaceId, channel: 'instagram' },
+    });
+    const channelSession = resolveInstagramConnection(row);
+
+    if (!channelSession.instagramAccountId) {
+      throw new BadRequestException('instagram_account_not_connected');
+    }
+    if (!channelSession.pageId) {
+      throw new BadRequestException('instagram_messaging_page_missing');
+    }
+    if (!channelSession.pageAccessToken) {
+      throw new BadRequestException('instagram_messaging_token_missing');
+    }
+
+    const result = await this.instagramService.getConversations(
+      channelSession.pageId,
+      channelSession.pageAccessToken,
+    );
+
+    return { conversations: result, igAccountId: channelSession.instagramAccountId };
+  }
+
+  /**
+   * List persisted Instagram DM messages.
+   *
+   * Honest empty state: there is no `IgMessage` model yet — webhook-driven
+   * persistence will land in a follow-up migration. Returns a typed reason so
+   * the frontend can render a `setup-required`/`coming-soon` state instead of
+   * showing fake messages.
+   */
+  async listMessages(workspaceId: string, _conversationId?: string) {
+    const channelSession = await this.prisma.metaConnection.findFirst({
+      where: { workspaceId, channel: 'instagram' },
+      select: { instagramAccountId: true, status: true },
+    });
+
+    if (!channelSession?.instagramAccountId) {
+      return {
+        messages: [],
+        total: 0,
+        reason: 'instagram_account_not_connected' as const,
+      };
+    }
+
+    return {
+      messages: [],
+      total: 0,
+      reason: 'instagram_messaging_pending' as const,
+    };
   }
 }

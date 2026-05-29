@@ -178,9 +178,7 @@ export interface AttributedOrderSlice {
  * Orders without a valid date are silently skipped, matching the previous
  * service behaviour. Returns a fresh array each call.
  */
-export function aggregateMonthlyPerformance(
-  orders: ReadonlyArray<AttributedOrderSlice>,
-): number[] {
+export function aggregateMonthlyPerformance(orders: ReadonlyArray<AttributedOrderSlice>): number[] {
   const monthlyPerformance = new Array<number>(12).fill(0);
   for (const order of orders) {
     const saleDate = order.paidAt ?? order.createdAt;

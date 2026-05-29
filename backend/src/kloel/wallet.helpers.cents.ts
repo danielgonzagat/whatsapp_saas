@@ -20,7 +20,10 @@
  * a safe integer or violates the zero policy. NestJS layer translates as
  * needed.
  */
-export function toSafeCents(amount: number, opts: { allowZero?: boolean; label?: string } = {}): number {
+export function toSafeCents(
+  amount: number,
+  opts: { allowZero?: boolean; label?: string } = {},
+): number {
   const { allowZero = false, label = 'amount' } = opts;
   const cents = Math.round(amount * 100);
   const minValid = allowZero ? 0 : 1;
@@ -59,7 +62,10 @@ export function calculateSaleSplit(input: {
   kloelFeePercent: number;
   gatewayFeePercent: number;
 }): SaleSplit {
-  const grossAmountInCents = toSafeCents(input.saleAmount, { allowZero: true, label: 'saleAmount' });
+  const grossAmountInCents = toSafeCents(input.saleAmount, {
+    allowZero: true,
+    label: 'saleAmount',
+  });
   const gatewayFeeInCents = Math.round((grossAmountInCents * input.gatewayFeePercent) / 100);
   const kloelFeeInCents = Math.round((grossAmountInCents * input.kloelFeePercent) / 100);
   const netAmountInCents = grossAmountInCents - gatewayFeeInCents - kloelFeeInCents;
@@ -101,7 +107,10 @@ export function calculateAnticipationSplit(input: {
   amount: number;
   feePercent: number;
 }): AnticipationSplit {
-  const amountInCents = toSafeCents(input.amount, { allowZero: false, label: 'anticipation amount' });
+  const amountInCents = toSafeCents(input.amount, {
+    allowZero: false,
+    label: 'anticipation amount',
+  });
   const feeAmount = Math.round(((input.amount * input.feePercent) / 100) * 100) / 100;
   const feeAmountInCents = Math.round((amountInCents * input.feePercent) / 100);
   const netAmount = input.amount - feeAmount;

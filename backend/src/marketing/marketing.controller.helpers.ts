@@ -76,9 +76,7 @@ export function buildChannelMetrics(input: {
     input.conversationGroups.map((g) => [g.channel, g._count.id] as const),
   );
 
-  const channelByConvId = new Map(
-    input.conversationRows.map((c) => [c.id, c.channel] as const),
-  );
+  const channelByConvId = new Map(input.conversationRows.map((c) => [c.id, c.channel] as const));
 
   const messagesByChannel = new Map<string, number>();
   for (const group of input.messageGroups) {
@@ -299,9 +297,7 @@ export function validateDirectEmailSendBody(body: DirectEmailSendBody): string[]
  * `Record<string, unknown>` returned by Prisma JSON columns) into a strictly
  * typed array. Rejects entries that don't have a string `email`.
  */
-export function parseApprovalRecipients(
-  payload: Record<string, unknown>,
-): DirectEmailRecipient[] {
+export function parseApprovalRecipients(payload: Record<string, unknown>): DirectEmailRecipient[] {
   if (!Array.isArray(payload.recipients)) {
     return [];
   }
@@ -331,9 +327,7 @@ export function parseApprovalRecipients(
  * after a human marketing approval is granted so the controller can re-issue
  * the send without trusting the caller's body.
  */
-export function buildSendBodyFromApproval(
-  payload: Record<string, unknown>,
-): DirectEmailSendBody {
+export function buildSendBodyFromApproval(payload: Record<string, unknown>): DirectEmailSendBody {
   const sendBody: DirectEmailSendBody = {
     recipients: parseApprovalRecipients(payload),
   };

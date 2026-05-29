@@ -11,10 +11,7 @@ import {
   buildReconciliationSettledLogMessage,
   buildWalletIndex,
 } from './wallet.helpers';
-import {
-  appendFailureAndCheckFirst,
-  type ReconciliationFailure,
-} from './wallet.reconcile.helpers';
+import { appendFailureAndCheckFirst, type ReconciliationFailure } from './wallet.reconcile.helpers';
 import type { WalletLedgerService } from './wallet-ledger.service';
 
 /**
@@ -59,16 +56,8 @@ export interface SettleStalePendingTxInput {
  * failures roll into the aggregate alert emitted at the end of the sweep.
  */
 export async function settleStalePendingTx(input: SettleStalePendingTxInput): Promise<void> {
-  const {
-    prisma,
-    walletLedger,
-    financialAlert,
-    opsAlert,
-    logger,
-    tx,
-    walletsById,
-    perTxFailures,
-  } = input;
+  const { prisma, walletLedger, financialAlert, opsAlert, logger, tx, walletsById, perTxFailures } =
+    input;
 
   try {
     const wallet = walletsById.get(tx.walletId);

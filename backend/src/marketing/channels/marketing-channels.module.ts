@@ -30,6 +30,7 @@ import { InstagramDispatchAdapter } from './instagram/instagram-dispatch.adapter
 import { InternalPartnershipDispatchAdapter } from './internal-partnership/internal-partnership-dispatch.adapter';
 import { MessengerDispatchAdapter } from './messenger/messenger-dispatch.adapter';
 import { WhatsAppDispatchAdapter } from './whatsapp/whatsapp-dispatch.adapter';
+import { ChannelMessageDispatchService } from '../channel-message-dispatch.service';
 
 const ADAPTERS = [
   WhatsAppDispatchAdapter,
@@ -69,7 +70,8 @@ const ADAPTERS = [
       ],
     },
     ChannelDispatchRegistry,
+    ChannelMessageDispatchService,
   ],
-  exports: [...ADAPTERS, ChannelDispatchRegistry],
+  exports: [...ADAPTERS, ChannelDispatchRegistry, ChannelMessageDispatchService],
 })
 export class MarketingChannelsModule {}

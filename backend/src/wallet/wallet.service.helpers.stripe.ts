@@ -30,14 +30,10 @@ type StripePaymentIntentCreateParams = Parameters<StripeClient['paymentIntents']
  * derived from the SDK — no hard-coded literals here.
  */
 type StripeCardPaymentMethodOptions = Extract<
-  NonNullable<
-    NonNullable<StripePaymentIntentCreateParams['payment_method_options']>['card']
-  >,
+  NonNullable<NonNullable<StripePaymentIntentCreateParams['payment_method_options']>['card']>,
   { request_three_d_secure?: unknown }
 >;
-type StripeThreeDsRequest = NonNullable<
-  StripeCardPaymentMethodOptions['request_three_d_secure']
->;
+type StripeThreeDsRequest = NonNullable<StripeCardPaymentMethodOptions['request_three_d_secure']>;
 
 /**
  * Stripe `request_three_d_secure` escalation value: the SDK's permissive

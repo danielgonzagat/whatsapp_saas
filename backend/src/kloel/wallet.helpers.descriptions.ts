@@ -114,7 +114,14 @@ export function buildSaleSplitLogMessage(
   split: SaleSplit,
   formatBalance: (value: number) => string,
 ): string {
-  const { grossAmount, grossAmountInCents, gatewayFeeInCents, kloelFeeInCents, netAmount, netAmountInCents } = split;
+  const {
+    grossAmount,
+    grossAmountInCents,
+    gatewayFeeInCents,
+    kloelFeeInCents,
+    netAmount,
+    netAmountInCents,
+  } = split;
   return (
     `Split: ${formatBalance(grossAmount)} -> Líquido: ${formatBalance(netAmount)} ` +
     `(cents: gross=${grossAmountInCents}, gateway=${gatewayFeeInCents}, ` +

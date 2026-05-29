@@ -214,7 +214,9 @@ export function buildOrganismStateResponse(input: {
 }
 
 /** Pick the short git SHA used as the backend heartbeat version, when available. */
-export function pickBackendHeartbeatVersion(railwayCommitSha: string | undefined): string | undefined {
+export function pickBackendHeartbeatVersion(
+  railwayCommitSha: string | undefined,
+): string | undefined {
   const value = String(railwayCommitSha || '').slice(0, 12);
   return value || undefined;
 }

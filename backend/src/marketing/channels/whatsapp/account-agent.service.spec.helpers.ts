@@ -79,7 +79,7 @@ function normalizeWorkspaceId(record: Record<string, unknown>): Record<string, u
     'connect' in record.workspace
   ) {
     const connect = (record.workspace as { connect: { id: string } }).connect;
-    const { workspace, ...rest } = record;
+    const { workspace: _workspace, ...rest } = record;
     return { ...rest, workspaceId: connect.id };
   }
   return record;

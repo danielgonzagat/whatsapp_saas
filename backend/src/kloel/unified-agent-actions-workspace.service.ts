@@ -387,7 +387,11 @@ Tipos de nós disponíveis: message, wait, condition, aiNode, mediaNode, endNode
       await this.planLimits
         .trackAiUsage(workspaceId, completion?.usage?.total_tokens ?? 500)
         .catch(() => {});
-      const flowData = JSON.parse(completion.choices[0]?.message?.content || '{}');
+      const flowData = JSON.parse(completion.choices[0]?.message?.content || '{}') as {
+        name?: string;
+        nodes?: Prisma.InputJsonValue[];
+        edges?: Prisma.InputJsonValue[];
+      };
       const flow = await this.prisma.flow.create({
         data: {
           name: flowData.name || `Fluxo: ${objective}`,

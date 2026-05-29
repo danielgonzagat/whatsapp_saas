@@ -6,7 +6,7 @@ import type { ProductListFilters } from './product.types';
  * Convert a numeric or Prisma.Decimal-ish product price to integer cents.
  * Pure: no side effects, no I/O.
  */
-export function priceInCentsOf(price: Product['price'] | number): number {
+export function priceInCentsOf(price: Product['price']): number {
   return Math.round(Number(price) * 100);
 }
 
@@ -67,9 +67,11 @@ export function buildListWhere(
  * Normalize page/limit defaults for the product list endpoint.
  * Pure: returns the effective pagination values.
  */
-export function resolvePagination(
-  filters: ProductListFilters = {},
-): { page: number; limit: number; skip: number } {
+export function resolvePagination(filters: ProductListFilters = {}): {
+  page: number;
+  limit: number;
+  skip: number;
+} {
   const page = filters.page ?? 1;
   const limit = filters.limit ?? 20;
   return { page, limit, skip: (page - 1) * limit };

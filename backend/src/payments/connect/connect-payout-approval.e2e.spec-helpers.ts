@@ -88,11 +88,7 @@ export function buildService(overrides?: {
     $transaction: jest
       .fn()
       .mockImplementation(
-        (
-          operations:
-            | Array<Promise<unknown>>
-            | ((tx: Record<string, unknown>) => Promise<unknown> | unknown),
-        ) => {
+        (operations: Array<Promise<unknown>> | ((tx: Record<string, unknown>) => unknown)) => {
           if (typeof operations === 'function') {
             return operations(prisma);
           }

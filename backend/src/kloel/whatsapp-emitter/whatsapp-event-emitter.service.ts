@@ -57,7 +57,7 @@ export interface SessionLifecycleInput extends WhatsAppEmitInput {
 const PROCESSOR = 'whatsapp-event-emitter';
 const PROCESSOR_VERSION = '0.1.0';
 const SCHEMA_VERSION = '1.0.0';
-const SOURCE_PRODUCTION: 'production' = 'production';
+const SOURCE_PRODUCTION = 'production' as const;
 
 @Injectable()
 export class WhatsAppEventEmitterService {
@@ -221,7 +221,7 @@ export class WhatsAppEventEmitterService {
     occurredAt?: string,
   ): void {
     try {
-      this.spine.emit({
+      void this.spine.emit({
         eventName,
         workspaceId,
         entityRef,

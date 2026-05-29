@@ -319,4 +319,21 @@ export const TIER_10_REPORTS_CAPABILITIES: CapabilityDefinition[] = [
     emits: ['agent.job_updated'],
     surface: ['dashboard-chat'],
   },
+  {
+    id: 'money_machine',
+    title: 'Máquina de Dinheiro',
+    description: 'Escaneia conversas inativas e gera campanhas de reativação automaticamente',
+    category: 'MUTATION_SAFE',
+    tier: 10,
+    requiresConfirmation: true,
+    requiredPermissions: ['campaign:write'],
+    inputSchema: [
+      { key: 'topN', type: 'number', label: 'Tamanho do lote', required: false },
+      { key: 'autoSend', type: 'boolean', label: 'Enviar automaticamente?', required: false },
+      { key: 'smartTime', type: 'boolean', label: 'Usar smart time?', required: false },
+    ],
+    domainService: 'AutopilotService.runMoneyMachine',
+    emits: ['autopilot.money_machine_run'],
+    surface: ['dashboard-chat'],
+  },
 ];

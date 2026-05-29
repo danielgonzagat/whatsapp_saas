@@ -8,8 +8,9 @@ import { OmnichannelModule } from '../../../omnichannel/omnichannel.module';
 import { PrismaModule } from '../../../prisma/prisma.module';
 import { WorkspaceModule } from '../../../workspaces/workspace.module';
 import { WhatsAppEventEmitterModule } from '../../../kloel/whatsapp-emitter/whatsapp-event-emitter.module';
-
-const { KloelModule } = require('../../../kloel/kloel.module');
+import { KloelModule } from '../../../kloel/kloel.module';
+import { CiaModule } from '../../../kloel/mind/cia/cia.module';
+import { CiaRuntimeService } from '../../../kloel/mind/cia/cia-runtime.service';
 import { AccountAgentService } from './account-agent.service';
 import { AgentEventsService } from './agent-events.service';
 import { WhatsAppApiController } from './controllers/whatsapp-api.controller';
@@ -18,7 +19,6 @@ import { WhatsAppMetaCompatController } from './controllers/whatsapp-meta-compat
 import { InboundProcessorService } from './inbound-processor.service';
 import { InternalWhatsAppRuntimeController } from './controllers/internal-whatsapp-runtime.controller';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
-import { WahaProvider } from './providers/waha.provider';
 import { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import { WhatsappCatchupOrchestratorService } from './whatsapp-catchup-orchestrator.service';
@@ -54,7 +54,7 @@ import {
     forwardRef(() => CrmModule),
     PrismaModule,
     forwardRef(() => KloelModule),
-    forwardRef(() => require('../../../kloel/mind/cia/cia.module').CiaModule),
+    forwardRef(() => CiaModule),
     forwardRef(() => OmnichannelModule),
     WhatsAppEventEmitterModule,
   ],
@@ -74,7 +74,6 @@ import {
     WhatsappSendRateGuardService,
     InboundProcessorService,
     WhatsAppApiProvider,
-    WahaProvider,
     WhatsAppProviderRegistry,
     WhatsAppWatchdogService,
     WhatsAppWatchdogRecoveryService,
@@ -91,7 +90,7 @@ import {
     { provide: INBOUND_PROCESSOR, useExisting: InboundProcessorService },
     {
       provide: CIA_RUNTIME,
-      useExisting: require('../../../kloel/mind/cia/cia-runtime.service').CiaRuntimeService,
+      useExisting: CiaRuntimeService,
     },
     { provide: CATCHUP_HISTORY, useExisting: WhatsappCatchupHistoryService },
   ],

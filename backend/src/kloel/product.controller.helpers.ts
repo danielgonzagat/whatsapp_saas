@@ -1,5 +1,4 @@
 import { BadRequestException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 
 /**
  * Pure helpers extracted from {@link ProductController} so that the
@@ -26,7 +25,12 @@ export const PRODUCT_DEFAULT_STATUS = 'DRAFT';
 export const PRODUCT_ACTIVE_STATUS = 'APPROVED';
 
 /** Allowed shipping providers for the after-pay funnel. */
-export const AFTER_PAY_SHIPPING_PROVIDERS = ['correios', 'jadlog', 'melhor_envio', 'outro'] as const;
+export const AFTER_PAY_SHIPPING_PROVIDERS = [
+  'correios',
+  'jadlog',
+  'melhor_envio',
+  'outro',
+] as const;
 
 /** Bounds for commission percent and cookie-window validations. */
 export const COMMISSION_PERCENT_MIN = 0;
@@ -93,7 +97,8 @@ export interface UpdateProductValidationInput {
 export function validateUpdateProductDto(dto: UpdateProductValidationInput): void {
   if (
     dto.commissionPercent !== undefined &&
-    (dto.commissionPercent < COMMISSION_PERCENT_MIN || dto.commissionPercent > COMMISSION_PERCENT_MAX)
+    (dto.commissionPercent < COMMISSION_PERCENT_MIN ||
+      dto.commissionPercent > COMMISSION_PERCENT_MAX)
   ) {
     throw new BadRequestException('commissionPercent precisa ficar entre 0 e 100');
   }
@@ -187,7 +192,7 @@ export function buildCreateProductData(
     shippingValue: dto.shippingValue || null,
     originCep: dto.originCep || null,
     ...(dto.slug !== undefined ? { slug: dto.slug } : {}),
-    metadata: (dto.metadata || {}) as Prisma.InputJsonValue,
+    metadata: dto.metadata || {},
   };
 }
 
@@ -234,10 +239,8 @@ export function buildUpdateProductData(dto: UpdateProductDtoLike): Record<string
     ...normalizedRest,
     ...(active !== undefined ? { active } : {}),
     ...(featured !== undefined ? { featured } : {}),
-    ...(normalizedRest.price !== undefined ? { price: (normalizedRest.price as number) || 0 } : {}),
-    ...(normalizedRest.metadata !== undefined
-      ? { metadata: normalizedRest.metadata as Prisma.InputJsonValue }
-      : {}),
+    ...(normalizedRest.price !== undefined ? { price: normalizedRest.price || 0 } : {}),
+    ...(normalizedRest.metadata !== undefined ? { metadata: normalizedRest.metadata } : {}),
   };
 }
 
@@ -311,9 +314,7 @@ export interface ProductImportSummary {
  * Counts the success vs. failure rows in a bulk-import results array.
  * Pure, terminates in O(n).
  */
-export function countProductImportResults(
-  results: ProductImportResult[],
-): ProductImportSummary {
+export function countProductImportResults(results: ProductImportResult[]): ProductImportSummary {
   let imported = 0;
   let failed = 0;
   for (const row of results) {

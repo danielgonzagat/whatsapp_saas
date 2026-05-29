@@ -63,7 +63,9 @@ export async function syncProductToMemory(
       },
       update: { value: value as Prisma.InputJsonValue, content },
     });
-  } catch {}
+  } catch {
+    // Non-critical memory sync: swallow so the caller can proceed.
+  }
 }
 
 /**
@@ -82,5 +84,7 @@ export async function deleteProductFromMemory(
         key: { startsWith: `product:${product.sku || product.id}` },
       },
     });
-  } catch {}
+  } catch {
+    // Non-critical memory cleanup: swallow so the caller can proceed.
+  }
 }

@@ -126,10 +126,7 @@ function resolveProviderBaseUrl(
 }
 
 /** API key for a specific provider (deepseek/generic/openai). */
-function resolveProviderApiKey(
-  provider: TextLlmProvider,
-  config?: ConfigLike,
-): string | undefined {
+function resolveProviderApiKey(provider: TextLlmProvider, config?: ConfigLike): string | undefined {
   if (provider === 'deepseek') {
     return readConfig('DEEPSEEK_API_KEY', config);
   }
@@ -174,9 +171,7 @@ export function createTextLlmClientPool(
 
 /** Error class for when every provider in the pool has been exhausted. */
 export class ProviderPoolExhaustedError extends Error {
-  constructor(
-    public readonly errors: unknown[],
-  ) {
+  constructor(public readonly errors: unknown[]) {
     super('All configured LLM providers exhausted');
     this.name = 'ProviderPoolExhaustedError';
   }
@@ -210,10 +205,7 @@ export async function chatCompletionWithProviderFallback(
     try {
       return await client.chat.completions.create(params);
     } catch (err: unknown) {
-      if (
-        err instanceof AuthenticationError ||
-        err instanceof APIConnectionError
-      ) {
+      if (err instanceof AuthenticationError || err instanceof APIConnectionError) {
         errors.push(err);
         const isLast = i === pool.length - 1;
         if (isLast && fallbackModel) {

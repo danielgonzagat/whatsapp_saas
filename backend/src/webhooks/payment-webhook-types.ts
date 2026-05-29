@@ -1,4 +1,4 @@
-import { MarketplaceTreasuryLedgerKind, type ConnectAccountType } from '@prisma/client';
+import type { ConnectAccountType } from '@prisma/client';
 import type { SplitRole } from '../payments/split/split.types';
 import { asString } from '../common/types';
 
@@ -185,9 +185,4 @@ export function parseBigIntNumberish(value: unknown): bigint {
     return BigInt(value);
   }
   return 0n;
-}
-
-/** Marketplace treasury ledger kind for reversals. */
-{
-  MarketplaceTreasuryLedgerKind;
 }

@@ -10,6 +10,50 @@ interface TestResult {
   details: string;
   duration: number;
 }
+interface ApiEntity {
+  id?: string;
+  name?: string;
+  workspaceId?: string;
+  externalId?: string;
+  paymentId?: string;
+  paymentIntentId?: string;
+  payments?: ApiEntity[];
+  [key: string]: unknown;
+}
+interface ApiResponseBody {
+  status?: string | number;
+  uptime?: number;
+  access_token?: string;
+  user?: ApiEntity;
+  agent?: ApiEntity;
+  workspace?: ApiEntity;
+  kycStatus?: string;
+  error?: string;
+  message?: string;
+  product?: ApiEntity;
+  plan?: ApiEntity;
+  order?: ApiEntity;
+  response?: string;
+  data?: ApiEntity[] | ApiResponseBody;
+  products?: ApiEntity[];
+  sales?: ApiEntity[];
+  transactions?: ApiEntity[];
+  threads?: ApiEntity[];
+  payments?: ApiEntity[];
+  paymentId?: string;
+  paymentIntentId?: string;
+  totalRevenue?: number;
+  pending?: number;
+  id?: string;
+  name?: string;
+  workspaceId?: string;
+  [key: string]: unknown;
+}
+interface ApiResult {
+  status: number;
+  data: ApiResponseBody;
+  ok: boolean;
+}
 const results: TestResult[] = [];
 let token = '';
 let userId = '';
@@ -21,22 +65,31 @@ let planSlug = '';
 let orderId = '';
 let paymentId = '';
 let paymentExternalId = '';
-async function api(method: string, path: string, body?: any, authToken?: string) {
+async function api(
+  method: string,
+  path: string,
+  body?: unknown,
+  authToken?: string,
+): Promise<ApiResult> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   };
-  if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
   const res = await fetch(`${API}${path}`, {
-    method: method as 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
+    method: method,
     headers,
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
   const text = await res.text();
-  let data: any;
+  let data: ApiResponseBody;
   try {
-    data = JSON.parse(text);
+    data = JSON.parse(text) as ApiResponseBody;
   } catch {
-    data = text;
+    // Non-JSON body: preserve raw text while keeping the typed object contract
+    // that every caller relies on (mirrors prior `any` runtime behavior).
+    data = text as unknown as ApiResponseBody;
   }
   return { status: res.status, data, ok: res.ok };
 }
@@ -46,18 +99,21 @@ async function runTest(name: string, fn: () => Promise<string>) {
     const details = await fn();
     results.push({ name, passed: true, details, duration: Date.now() - start });
     console.log(`  ✅ ${name} (${Date.now() - start}ms)`);
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const errMessage = err instanceof Error ? err.message : String(err);
     results.push({
       name,
       passed: false,
-      details: err.message || String(err),
+      details: errMessage,
       duration: Date.now() - start,
     });
-    console.log(`  ❌ ${name}: ${err.message || err} (${Date.now() - start}ms)`);
+    console.log(`  ❌ ${name}: ${errMessage} (${Date.now() - start}ms)`);
   }
 }
-function assert(condition: any, msg: string) {
-  if (!condition) throw new Error(msg);
+function assert(condition: unknown, msg: string): asserts condition {
+  if (!condition) {
+    throw new Error(msg);
+  }
 }
 async function main() {
   console.log('\n═══════════════════════════════════════════');
@@ -162,7 +218,9 @@ async function main() {
     await api('POST', '/kyc/submit', {}, token);
     await api('POST', '/kyc/auto-check', {}, token);
     let { data } = await api('GET', '/kyc/status', undefined, token);
-    if (data.kycStatus === 'approved') return 'KYC auto-approved!';
+    if (data.kycStatus === 'approved') {
+      return 'KYC auto-approved!';
+    }
     await api('POST', `/kyc/${userId}/approve`, {}, token);
     ({ data } = await api('GET', '/kyc/status', undefined, token));
     return `KYC status: ${data.kycStatus}`;
@@ -195,8 +253,8 @@ async function main() {
   await runTest('7. List products', async () => {
     const { status, data } = await api('GET', '/products', undefined, token);
     assert(status === 200, `List products failed: ${status}`);
-    const products = Array.isArray(data) ? data : data.data || data.products || [];
-    const found = products.find((p: any) => p.id === productId);
+    const products: ApiEntity[] = Array.isArray(data.data) ? data.data : data.products || [];
+    const found = products.find((p) => p.id === productId);
     assert(found, `Product ${productId} not in list`);
     return `Found ${products.length} product(s), our product present`;
   });
@@ -247,7 +305,9 @@ async function main() {
     return `Checkout product creation returned ${status}: ${JSON.stringify(data).slice(0, 200)}`;
   });
   await runTest('11. Create checkout plan', async () => {
-    if (!checkoutProductId) return 'SKIPPED - no checkout product';
+    if (!checkoutProductId) {
+      return 'SKIPPED - no checkout product';
+    }
     planSlug = `test-plan-${TS}`;
     const { status, data } = await api(
       'POST',
@@ -268,7 +328,9 @@ async function main() {
     return `Plan creation returned ${status}: ${JSON.stringify(data).slice(0, 200)}`;
   });
   await runTest('12. Create order (public checkout)', async () => {
-    if (!planId) return 'SKIPPED - no plan';
+    if (!planId) {
+      return 'SKIPPED - no plan';
+    }
     const { status, data } = await api('POST', '/checkout/public/order', {
       planId,
       workspaceId,
@@ -290,7 +352,7 @@ async function main() {
     });
     if (status === 200 || status === 201) {
       const order = data.order || data;
-      orderId = order.id;
+      orderId = order.id ?? '';
       paymentId = order.payments?.[0]?.id || order.paymentId || '';
       paymentExternalId =
         order.payments?.[0]?.externalId || order.paymentIntentId || order.paymentId || '';
@@ -299,7 +361,9 @@ async function main() {
     return `Order creation returned ${status}: ${JSON.stringify(data).slice(0, 300)}`;
   });
   await runTest('13. Stripe webhook (payment confirmed)', async () => {
-    if (!orderId && !paymentId && !paymentExternalId) return 'SKIPPED - no order';
+    if (!orderId && !paymentId && !paymentExternalId) {
+      return 'SKIPPED - no order';
+    }
     const externalId = paymentExternalId || `pi_sim_${TS}`;
     const { status, data } = await api('POST', '/webhook/payment/stripe', {
       id: `evt_sim_${TS}`,
@@ -321,7 +385,7 @@ async function main() {
   await runTest('14. List sales', async () => {
     const { status, data } = await api('GET', '/sales', undefined, token);
     assert(status === 200, `Sales failed: ${status}`);
-    const sales = Array.isArray(data) ? data : data.data || data.sales || [];
+    const sales: ApiEntity[] = Array.isArray(data.data) ? data.data : data.sales || [];
     return `Found ${sales.length} sale(s)`;
   });
   await runTest('15. Sales stats', async () => {
@@ -349,7 +413,7 @@ async function main() {
       token,
     );
     assert(status === 200, `Transactions failed: ${status}`);
-    const txs = Array.isArray(data) ? data : data.data || data.transactions || [];
+    const txs: ApiEntity[] = Array.isArray(data.data) ? data.data : data.transactions || [];
     return `Found ${txs.length} transaction(s)`;
   });
   await runTest('18. Reports: vendas summary', async () => {
@@ -399,7 +463,7 @@ async function main() {
   await runTest('25. List ad rules', async () => {
     const { status, data } = await api('GET', '/ad-rules', undefined, token);
     assert(status === 200, `List rules failed: ${status}`);
-    const rules = Array.isArray(data) ? data : data.data || [];
+    const rules: ApiEntity[] = Array.isArray(data.data) ? data.data : [];
     return `Found ${rules.length} rule(s)`;
   });
   await runTest('26. Create member area', async () => {
@@ -444,7 +508,7 @@ async function main() {
   await runTest('31. List chat threads', async () => {
     const { status, data } = await api('GET', '/kloel/threads', undefined, token);
     assert(status === 200, `Threads failed: ${status}`);
-    const threads = Array.isArray(data) ? data : data.data || [];
+    const threads: ApiEntity[] = Array.isArray(data.data) ? data.data : [];
     return `Found ${threads.length} thread(s)`;
   });
   await runTest('32. Search threads by content', async () => {
@@ -471,7 +535,9 @@ async function main() {
     return `Ad spend: ${status} ${JSON.stringify(data).slice(0, 200)}`;
   });
   await runTest('35. Delete product', async () => {
-    if (!productId) return 'SKIPPED - no product';
+    if (!productId) {
+      return 'SKIPPED - no product';
+    }
     const { status, data } = await api('DELETE', `/products/${productId}`, undefined, token);
     return `Delete: ${status} ${JSON.stringify(data).slice(0, 200)}`;
   });

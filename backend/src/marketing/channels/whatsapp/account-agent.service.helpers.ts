@@ -209,7 +209,10 @@ export function summarizeRuntime<W extends RuntimeWorkItemShape>(input: {
     conversationActionRegistryVersion: CONVERSATION_ACTION_REGISTRY_VERSION,
     conversationActionCount: CONVERSATION_ACTION_REGISTRY.length,
     lastMeaningfulActionAt:
-      approvals[0]?.lastDetectedAt || pendingInputs[0]?.updatedAt || workItems[0]?.updatedAt || null,
+      approvals[0]?.lastDetectedAt ||
+      pendingInputs[0]?.updatedAt ||
+      workItems[0]?.updatedAt ||
+      null,
   };
 }
 

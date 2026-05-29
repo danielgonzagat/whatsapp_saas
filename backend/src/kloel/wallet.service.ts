@@ -299,6 +299,41 @@ export class WalletService {
   }
 
   /**
+   * Canonical-name alias of {@link requestWithdrawal} for the Kloel
+   * capability resolver (`WalletService.withdraw`). Accepts the
+   * (workspaceId, args) signature used by `KloelDomainServiceResolver`.
+   * `args.amount` (number) is required; `args.bankInfo` is forwarded as
+   * an empty object when omitted, matching the underlying signature.
+   * Mutation is delegated — no new ledger logic introduced.
+   */
+  async withdraw(
+    workspaceId: string,
+    args?: { amount?: number; bankInfo?: Record<string, unknown> },
+  ) {
+    const amount = typeof args?.amount === 'number' ? args.amount : NaN;
+    const bankInfo = args?.bankInfo && typeof args.bankInfo === 'object' ? args.bankInfo : {};
+    return this.requestWithdrawal(workspaceId, amount, bankInfo);
+  }
+
+  /**
+   * Canonical-name alias of {@link requestAnticipation} for the Kloel
+   * capability resolver (`WalletService.anticipate`). Accepts the
+   * (workspaceId, args) signature used by `KloelDomainServiceResolver`.
+   * `args.amount` (number) is required; `args.installments` and
+   * `args.feePercent` are forwarded when present. Mutation is delegated —
+   * no new ledger logic introduced.
+   */
+  async anticipate(
+    workspaceId: string,
+    args?: { amount?: number; installments?: number; feePercent?: number },
+  ) {
+    const amount = typeof args?.amount === 'number' ? args.amount : NaN;
+    const installments = typeof args?.installments === 'number' ? args.installments : undefined;
+    const feePercent = typeof args?.feePercent === 'number' ? args.feePercent : 3.0;
+    return this.requestAnticipation(workspaceId, amount, installments, feePercent);
+  }
+
+  /**
    * 🔄 Reconciliation: settle pending → available after 7 days
    * Runs every 6 hours.
    *

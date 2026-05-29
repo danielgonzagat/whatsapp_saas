@@ -1,14 +1,20 @@
 import { Module, forwardRef } from '@nestjs/common';
+import { AuthModule } from '../auth/auth.module';
 import { InboxModule } from '../inbox/inbox.module';
 import { KloelModule } from '../kloel/kloel.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { WhatsappModule } from './channels/whatsapp/whatsapp.module';
+import { EmailMarketingController } from './email-marketing.controller';
+import { EmailMarketingService } from './email-marketing.service';
+import { EmailMarketingWebhookController } from './email-marketing-webhook.controller';
 import { MarketingConnectController } from './marketing-connect.controller';
 import { MarketingController } from './marketing.controller';
 import { TikTokMarketingController } from './tiktok-marketing.controller';
 import { TikTokMarketingService } from './tiktok-marketing.service';
 import { TikTokMarketingModeService } from './tiktok-marketing-mode.service';
 import { TikTokAdsService } from './tiktok-ads.service';
+import { TikTokInboxController } from './tiktok-inbox.controller';
+import { TikTokInboxService } from './tiktok-inbox.service';
 import { FacebookMessengerController } from './facebook-messenger.controller';
 import { FacebookMessengerService } from './facebook-messenger.service';
 import { MailboxGmailOAuthCallbackController } from './mailbox-gmail-oauth-callback.controller';
@@ -32,24 +38,29 @@ import { EmailInboundService } from '../email/email-inbound.service';
 
 /** Marketing module. */
 @Module({
-  imports: [PrismaModule, WhatsappModule, InboxModule, forwardRef(() => KloelModule)],
+  imports: [PrismaModule, AuthModule, WhatsappModule, InboxModule, forwardRef(() => KloelModule)],
   controllers: [
     MarketingController,
     MarketingConnectController,
     MailboxGmailOAuthCallbackController,
     MailboxMicrosoftOAuthCallbackController,
     TikTokMarketingController,
+    TikTokInboxController,
     GoogleAdsMarketingController,
     FacebookMessengerController,
     EmailInboundController,
+    EmailMarketingController,
+    EmailMarketingWebhookController,
   ],
   providers: [
     TikTokMarketingService,
     TikTokMarketingModeService,
     TikTokAdsService,
+    TikTokInboxService,
     GoogleAdsMarketingService,
     FacebookMessengerService,
     EmailInboundService,
+    EmailMarketingService,
     GmailClientService,
     GmailOAuthHandshakeService,
     GmailSyncService,
@@ -67,9 +78,11 @@ import { EmailInboundService } from '../email/email-inbound.service';
     TikTokMarketingService,
     TikTokMarketingModeService,
     TikTokAdsService,
+    TikTokInboxService,
     GoogleAdsMarketingService,
     FacebookMessengerService,
     EmailInboundService,
+    EmailMarketingService,
     MailboxGmailOAuthService,
     MailboxMicrosoftOAuthService,
     MailboxImapSmtpService,

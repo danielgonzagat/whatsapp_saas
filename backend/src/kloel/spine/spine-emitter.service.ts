@@ -51,7 +51,7 @@ export class SpineEmitterService {
     this.ringCapacity = Math.max(1, opts?.ringCapacity ?? DEFAULT_RING_CAPACITY);
   }
 
-  public async emit(input: SpineEventInput): Promise<SpineEventEnvelope> {
+  public emit(input: SpineEventInput): Promise<SpineEventEnvelope> {
     const now = new Date();
     const eventId = `evt_${randomUUID()}`;
     const timestamp = now.toISOString();
@@ -107,7 +107,7 @@ export class SpineEmitterService {
         this.logger.warn(`subscriber threw on ${envelope.eventName}: ${(subErr as Error).message}`);
       }
     }
-    return envelope;
+    return Promise.resolve(envelope);
   }
 
   public async replayFromStream(

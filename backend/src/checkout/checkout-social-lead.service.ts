@@ -19,8 +19,8 @@ import {
   mergeGooglePeopleProfile,
   normalizeEmail,
   normalizeOptional,
-  normalizePhone,
 } from './checkout-social-lead.util';
+import { digitsOrNull as normalizePhone } from '../common/phone';
 import { buildLeadPrefill, parseProvider } from './checkout-social-lead.helpers';
 import type { CheckoutSocialLeadPrefill } from './checkout-social-lead.helpers';
 import {

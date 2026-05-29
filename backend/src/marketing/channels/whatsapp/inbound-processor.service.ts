@@ -23,10 +23,7 @@ import { whatsappDigits as normalizePhone } from '../../../common/phone';
 import { WHATSAPP_MESSAGING } from './whatsapp.tokens';
 import type { IWhatsappMessaging } from './whatsapp.interfaces';
 import { WorkerRuntimeService } from './worker-runtime.service';
-import {
-  asProviderSettings,
-  type ProviderSettings,
-} from './provider-settings.types';
+import { asProviderSettings, type ProviderSettings } from './provider-settings.types';
 import { executeInlineAutopilot } from './inbound-processor.inline-autopilot';
 import { triggerWhatsappMindPercept } from './inbound-mind-percept';
 import { WhatsAppEventEmitterService } from '../../../kloel/whatsapp-emitter/whatsapp-event-emitter.service';

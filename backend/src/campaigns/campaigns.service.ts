@@ -107,6 +107,34 @@ export class CampaignsService {
     return this.findAll(workspaceId);
   }
 
+  /**
+   * Canonical-name alias of {@link create} for the Kloel capability
+   * resolver (`CampaignService.createBroadcast`). A broadcast is a
+   * one-shot mass campaign — modeled as the same DRAFT campaign row;
+   * the dispatch worker fans it out at scheduled time. `args.name` is
+   * required; other optional fields pass through unchanged. Delegate-only
+   * — no new persistence logic introduced.
+   */
+  async createBroadcast(
+    workspaceId: string,
+    args?: {
+      name?: string;
+      messageTemplate?: string;
+      scheduledAt?: string;
+      aiStrategy?: string;
+      parentId?: string;
+      filters?: Prisma.InputJsonValue;
+      idempotencyKey?: string;
+    },
+  ) {
+    const name = typeof args?.name === 'string' ? args.name : '';
+    if (!name) {
+      throw new Error('CampaignsService.createBroadcast: args.name is required');
+    }
+    const { name: _omit, ...rest } = args ?? {};
+    return this.create(workspaceId, { name, ...rest });
+  }
+
   /** Find one. */
   async findOne(workspaceId: string, id: string) {
     const campaign = await this.prisma.campaign.findFirst({

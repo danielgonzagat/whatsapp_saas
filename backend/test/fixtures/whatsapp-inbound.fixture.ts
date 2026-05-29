@@ -11,12 +11,9 @@ export interface SyntheticInboundParams {
   provider?: 'meta-cloud' | 'whatsapp-api';
 }
 
-export function buildWhatsappInboundText(
-  params: SyntheticInboundParams,
-): InboundMessage {
+export function buildWhatsappInboundText(params: SyntheticInboundParams): InboundMessage {
   const phone = params.phone ?? '5511998887777';
-  const providerMessageId =
-    params.providerMessageId ?? `wamid.${randomUUID()}`;
+  const providerMessageId = params.providerMessageId ?? `wamid.${randomUUID()}`;
 
   return {
     workspaceId: params.workspaceId,
@@ -44,30 +41,23 @@ export function buildWhatsappInboundText(
   };
 }
 
-export function buildPriceObjectionInbound(
-  params: SyntheticInboundParams,
-): InboundMessage {
+export function buildPriceObjectionInbound(params: SyntheticInboundParams): InboundMessage {
   return buildWhatsappInboundText({
     ...params,
     text: params.text ?? 'Achei caro, tem desconto? Quero comprar!',
   });
 }
 
-export function buildHotLeadInbound(
-  params: SyntheticInboundParams,
-): InboundMessage {
+export function buildHotLeadInbound(params: SyntheticInboundParams): InboundMessage {
   return buildWhatsappInboundText({
     ...params,
     text: params.text ?? 'Manda o link que eu fecho agora no pix!',
   });
 }
 
-export function buildInboundReply(
-  params: SyntheticInboundParams,
-): InboundMessage {
+export function buildInboundReply(params: SyntheticInboundParams): InboundMessage {
   const phone = params.phone ?? '5511998887777';
-  const providerMessageId =
-    params.providerMessageId ?? `wamid.reply.${randomUUID()}`;
+  const providerMessageId = params.providerMessageId ?? `wamid.reply.${randomUUID()}`;
 
   return {
     workspaceId: params.workspaceId,

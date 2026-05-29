@@ -52,7 +52,9 @@ export class FakeRedis {
 
   hdel(key: string, field: string) {
     const hash = this.hashes.get(key);
-    if (!hash) return Promise.resolve(0);
+    if (!hash) {
+      return Promise.resolve(0);
+    }
     const existed = hash.delete(field);
     if (hash.size === 0) {
       this.hashes.delete(key);

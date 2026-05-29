@@ -386,6 +386,45 @@ export class WhatsappService {
     return this.triggerSync(ws, reason);
   }
 
+  /**
+   * Canonical-name alias of {@link createSession} for the Kloel capability
+   * resolver (`WhatsAppService.connect`). Accepts the (workspaceId, args)
+   * signature used by `KloelDomainServiceResolver`; args are ignored —
+   * connection is workspace-scoped and triggers a session bootstrap.
+   * Delegate-only — no new session-lifecycle logic introduced.
+   */
+  async connect(ws: string, _args?: Record<string, unknown>) {
+    return this.createSession(ws);
+  }
+
+  /**
+   * Canonical-name alias of {@link getChatMessages} for the Kloel capability
+   * resolver (`WhatsAppService.getMessages`). Accepts the (workspaceId, args)
+   * signature used by `KloelDomainServiceResolver`. `args.chatId` is
+   * required; `limit`, `offset`, `downloadMedia` are forwarded when present.
+   * Read-only — no provider writes.
+   */
+  async getMessages(
+    ws: string,
+    args?: { chatId?: string; limit?: number; offset?: number; downloadMedia?: boolean },
+  ) {
+    const chatId = typeof args?.chatId === 'string' ? args.chatId : '';
+    if (!chatId) {
+      throw new Error('WhatsappService.getMessages: args.chatId is required');
+    }
+    const opts: { limit?: number; offset?: number; downloadMedia?: boolean } = {};
+    if (typeof args?.limit === 'number') {
+      opts.limit = args.limit;
+    }
+    if (typeof args?.offset === 'number') {
+      opts.offset = args.offset;
+    }
+    if (typeof args?.downloadMedia === 'boolean') {
+      opts.downloadMedia = args.downloadMedia;
+    }
+    return this.getChatMessages(ws, chatId, opts);
+  }
+
   // ═══ DELEGATION: Message Dispatcher ═══
   /**
    * @canonical-status delegate — Wave 22 canonicalization

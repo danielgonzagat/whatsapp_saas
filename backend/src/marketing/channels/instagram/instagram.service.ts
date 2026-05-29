@@ -123,4 +123,27 @@ export class InstagramService {
     });
     return this.metaSdk.graphApiPost(`${commentId}/replies`, { message: text }, accessToken);
   }
+
+  /**
+   * Get Instagram DM conversations for a connected page.
+   *
+   * Hits the page-scoped Graph endpoint `${pageId}/conversations` with
+   * `platform=instagram`, which is the Meta-canonical way to list IG threads
+   * for a connected Instagram business account. Requires a page access token.
+   */
+  async getConversations(pageId: string, pageAccessToken: string) {
+    this.logger.log('Calling Instagram API', {
+      context: 'InstagramService.getConversations',
+      pageId,
+      endpoint: 'conversations',
+    });
+    return this.metaSdk.graphApiGet(
+      `${pageId}/conversations`,
+      {
+        platform: 'instagram',
+        fields: 'id,senders,message_count,updated_time,messages{id,message,from,created_time}',
+      },
+      pageAccessToken,
+    );
+  }
 }

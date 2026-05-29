@@ -206,8 +206,7 @@ export function extractDiscoveredWhatsAppAssets(
   const firstPhone = readRecord(phoneRows[0]);
   return {
     whatsappBusinessId: readStrictText(firstWaba.id) || fallback.whatsappBusinessId || null,
-    whatsappPhoneNumberId:
-      readStrictText(firstPhone.id) || fallback.whatsappPhoneNumberId || null,
+    whatsappPhoneNumberId: readStrictText(firstPhone.id) || fallback.whatsappPhoneNumberId || null,
     displayPhoneNumber: readStrictText(firstPhone.display_phone_number) || null,
     verifiedName: readStrictText(firstPhone.verified_name) || null,
   };
@@ -259,9 +258,7 @@ export function buildPhoneNumberDetailsFromGraphResponse(
   const displayPhoneNumber = readStrictText(root.display_phone_number) ?? null;
   const verifiedName = readStrictText(root.verified_name) || pageNameFallback || null;
   const phoneDigits = normalizeWhatsAppPhone(displayPhoneNumber || '');
-  const selfIds = phoneDigits
-    ? [`${phoneDigits}@c.us`, `${phoneDigits}@s.whatsapp.net`]
-    : [];
+  const selfIds = phoneDigits ? [`${phoneDigits}@c.us`, `${phoneDigits}@s.whatsapp.net`] : [];
   return {
     displayPhoneNumber,
     verifiedName,

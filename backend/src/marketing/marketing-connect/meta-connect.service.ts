@@ -3,7 +3,10 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { MetaWhatsAppService } from '../../meta/meta-whatsapp.service';
 import { MetaConnectionStateService } from '../../meta/meta-connection-state.service';
 import { WhatsAppProviderRegistry } from '../channels/whatsapp/providers/provider-registry';
-import { asProviderSettings, type ProviderSettings } from '../channels/whatsapp/provider-settings.types';
+import {
+  asProviderSettings,
+  type ProviderSettings,
+} from '../channels/whatsapp/provider-settings.types';
 import { readOptionalText, type WhatsAppStatusValue } from './shared/channel-helpers';
 
 @Injectable()

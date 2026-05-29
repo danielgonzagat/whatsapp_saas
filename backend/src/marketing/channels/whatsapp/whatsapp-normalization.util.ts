@@ -1,10 +1,6 @@
-import {
-  collapseWhitespace,
-  extractAsciiDigits,
-  isDigit,
-} from './whatsapp-digits.util';
+import { collapseWhitespace, extractDigitsLoose, isDigit } from './whatsapp-digits.util';
 
-export { extractAsciiDigits };
+export { extractDigitsLoose };
 
 /**
  * Extract a phone digit string from any WhatsApp chat-id-shaped input.
@@ -25,7 +21,7 @@ export { extractAsciiDigits };
  * WhatsApp-channel-scoped; non-WhatsApp normalization paths MUST use the
  * canonical common helper.
  *
- * Routes the actual digit extraction through {@link extractAsciiDigits}
+ * Routes the actual digit extraction through {@link extractDigitsLoose}
  * (which itself wraps the canonical util), so there is no independent
  * digit-strip implementation. Always returns a string (possibly `''`).
  *
@@ -33,7 +29,7 @@ export { extractAsciiDigits };
  * @see docs/adr/0012-kloel-omnicore-channel-unification.md
  * @see docs/architecture/DEPRECATION_MAP.md (phone normalization row)
  */
-export function extractPhoneFromChatId(value: unknown): string {
+export function extractWhatsAppChatDigits(value: unknown): string {
   const input =
     typeof value === 'string'
       ? value.trim()
@@ -42,7 +38,7 @@ export function extractPhoneFromChatId(value: unknown): string {
         : '';
   const atIndex = input.indexOf('@');
   const core = atIndex >= 0 ? input.slice(0, atIndex) : input;
-  return extractAsciiDigits(core);
+  return extractDigitsLoose(core);
 }
 
 function looksLikePhoneDoePlaceholder(value: string): boolean {
@@ -74,7 +70,7 @@ function looksLikePhoneDoePlaceholder(value: string): boolean {
     }
   }
 
-  return extractAsciiDigits(prefix).length > 0;
+  return extractDigitsLoose(prefix).length > 0;
 }
 
 function trimTrailingPunctuation(value: string): string {
@@ -110,7 +106,7 @@ function matchesPhoneDerivedPlaceholder(
   if (lowered === `${phoneDigits} doe`) {
     return true;
   }
-  if (extractAsciiDigits(normalized) === phoneDigits) {
+  if (extractDigitsLoose(normalized) === phoneDigits) {
     return true;
   }
   return false;
@@ -132,7 +128,7 @@ export function isPlaceholderContactName(value: unknown, phone?: string | null):
     return true;
   }
 
-  const phoneDigits = extractAsciiDigits(phone);
+  const phoneDigits = extractDigitsLoose(phone);
   return matchesPhoneDerivedPlaceholder(lowered, normalized, phoneDigits);
 }
 

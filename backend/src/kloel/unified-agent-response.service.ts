@@ -231,8 +231,10 @@ export class UnifiedAgentResponseService {
         .replace(JSON_RE, '')
         .replace(PATTERN_RE_3, '')
         .trim();
-      const parsed = JSON.parse(raw);
-      const replies = Array.isArray(parsed?.replies) ? parsed.replies : [];
+      const parsed = JSON.parse(raw) as { replies?: unknown };
+      const replies: Array<{ text?: string }> = Array.isArray(parsed.replies)
+        ? (parsed.replies as Array<{ text?: string }>)
+        : [];
 
       if (replies.length !== normalizedMessages.length) {
         return this.buildMirroredReplyPlanFallback(normalizedMessages, params.draftReply);

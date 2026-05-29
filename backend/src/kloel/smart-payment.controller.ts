@@ -23,7 +23,6 @@ import { RouteClass } from '../common/throttler/route-class.decorator';
 import { WebhookEndpoint } from '../common/decorators/webhook-endpoint.decorator';
 import { InternalEndpoint } from '../common/decorators/internal-endpoint.decorator';
 
-
 type CreateSmartPaymentBody = {
   phone?: string;
   customerPhone?: string;
@@ -38,7 +37,9 @@ type CreateSmartPaymentBody = {
   dueDate?: string;
 };
 
-function normalizeSmartPaymentMethod(method?: string): 'PIX' | 'BOLETO' | 'CREDIT_CARD' | undefined {
+function normalizeSmartPaymentMethod(
+  method?: string,
+): 'PIX' | 'BOLETO' | 'CREDIT_CARD' | undefined {
   const normalized = String(method || '')
     .trim()
     .toUpperCase();

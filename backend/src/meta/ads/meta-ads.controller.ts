@@ -157,11 +157,15 @@ export class MetaAdsController {
   ) {
     const workspaceId = resolveWorkspaceId(req);
     const channelSession = await this.resolveAdAccountAccess(workspaceId, query.adAccountId);
-    return this.metaAdsService.getAccountInsights(channelSession.adAccountId, channelSession.accessToken, {
-      since: query.since,
-      until: query.until,
-      ...(query.level !== undefined ? { level: query.level } : {}),
-    });
+    return this.metaAdsService.getAccountInsights(
+      channelSession.adAccountId,
+      channelSession.accessToken,
+      {
+        since: query.since,
+        until: query.until,
+        ...(query.level !== undefined ? { level: query.level } : {}),
+      },
+    );
   }
 
   /** Get daily insights. */

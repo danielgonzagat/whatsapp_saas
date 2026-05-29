@@ -3,25 +3,18 @@ import { Logger } from '@nestjs/common';
  * Messaging operations for WhatsApp provider registry.
  *
  * Cohesion: sendMessage delegates to the companion sendMessage helper
- * (provider-send-message.helpers.ts), which handles WAHA vs Meta Cloud
- * routing, media dispatch, error capture, and ops alerting.
+ * (provider-send-message.helpers.ts), which handles Meta Cloud routing,
+ * media dispatch, error capture, and ops alerting.
  * sendMedia is a convenience wrapper that re-encodes media params
  * as SendMessageOptions before delegating.
  */
 
 import { OpsAlertService } from '../../../../observability/ops-alert.service';
-import { WahaProvider } from './waha.provider';
 import { WhatsAppApiProvider } from './whatsapp-api.provider';
 import { sendMessage as companionSendMessage } from './provider-send-message.helpers';
-import type {
-  UnknownRecord,
-  SendMessageOptions,
-  SendResult,
-} from './provider-registry.types';
+import type { UnknownRecord, SendMessageOptions, SendResult } from './provider-registry.types';
 
 export interface MessagingDeps {
-  isWahaMode: () => boolean;
-  wahaProvider: WahaProvider | undefined;
   metaCloudProvider: WhatsAppApiProvider;
   opsAlert: OpsAlertService | undefined;
   logger: Logger;
@@ -32,7 +25,7 @@ export interface MessagingDeps {
  * @canonical-status delegate — Wave 22 canonicalization
  * @canonical-path backend/src/whatsapp/providers/provider-send-message.helpers.ts::sendMessage
  * @notes Thin wrapper that remaps MessagingDeps -> SendMessageDeps; the leaf
- *        that actually hits WAHA/Meta Cloud API lives in the canonical path.
+ *        that actually hits Meta Cloud API lives in the canonical path.
  *        Long-term: route through backend/src/kloel/channel-transport.registry.ts.
  */
 export async function sendMessage(
@@ -44,8 +37,6 @@ export async function sendMessage(
 ): Promise<SendResult> {
   return companionSendMessage(
     {
-      isWahaMode: deps.isWahaMode,
-      wahaProvider: deps.wahaProvider,
       metaCloudProvider: deps.metaCloudProvider,
       opsAlert: deps.opsAlert,
       logger: deps.logger,

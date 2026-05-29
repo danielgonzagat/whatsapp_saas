@@ -173,6 +173,23 @@ export class PlanService {
     };
   }
 
+  /**
+   * Canonical-name alias of {@link update} for the Kloel capability resolver
+   * (`PlanService.configure`). Accepts the (workspaceId, args) signature
+   * used by `KloelDomainServiceResolver`. `args.planId` is required and is
+   * split out so the rest of `args` is forwarded as the {@link UpdatePlanDto}
+   * patch — order-bump fields, payment methods, shipping config, etc. all
+   * pass through unchanged. Delegate-only — no new mutation logic.
+   */
+  async configure(workspaceId: string, args?: { planId?: string } & Partial<UpdatePlanDto>) {
+    const planId = typeof args?.planId === 'string' ? args.planId : '';
+    if (!planId) {
+      throw new NotFoundException('PlanService.configure: args.planId is required');
+    }
+    const { planId: _omit, ...dto } = args ?? {};
+    return this.update(workspaceId, planId, dto);
+  }
+
   async delete(workspaceId: string, planId: string, actor?: { id: string }) {
     const plan = await this.prisma.productPlan.findFirst({
       where: { id: planId, product: { workspaceId } },

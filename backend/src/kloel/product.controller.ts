@@ -258,7 +258,7 @@ export class ProductController {
 
     await this.prisma.product.updateMany({
       where: { id, workspaceId },
-      data: buildUpdateProductData(dto) as Prisma.ProductUncheckedUpdateInput,
+      data: buildUpdateProductData(dto),
     });
     const product = await this.prisma.product.findFirst({
       where: { id, workspaceId },

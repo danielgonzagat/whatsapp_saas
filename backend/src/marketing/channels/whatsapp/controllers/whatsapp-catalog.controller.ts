@@ -66,8 +66,9 @@ export class WhatsAppCatalogController {
   /** Get chat messages. */
   @Get('chats/:chatId/messages')
   async getChatMessages(@Req() req: AuthenticatedRequest, @Param('chatId') chatId: string) {
-    const limit = Number(req.query?.limit || req.body?.limit || 100) || 100;
-    const offset = Number(req.query?.offset || req.body?.offset || 0) || 0;
+    const body = (req.body ?? {}) as { limit?: unknown; offset?: unknown };
+    const limit = Number(req.query?.limit || body.limit || 100) || 100;
+    const offset = Number(req.query?.offset || body.offset || 0) || 0;
     const downloadMedia = this.readBooleanQuery(req.query?.downloadMedia, false);
     return this.whatsappService.getChatMessages(req.workspaceId!, decodeURIComponent(chatId), {
       limit,

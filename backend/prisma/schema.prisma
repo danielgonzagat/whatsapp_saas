@@ -267,6 +267,7 @@ model Workspace {
   mindGuardAudits       MindGuardAudit[]
   mindDailyReports      MindDailyReport[]
   mindGlobalPriors      MindGlobalPrior[]
+  mindSelfModels        MindSelfModel[]
 
   // Facebook Messenger Messages
   fbMessages FbMessage[]
@@ -3767,6 +3768,29 @@ model MindGlobalPrior {
   @@unique([domain, predicate, context])
   @@index([domain, predicate])
   @@map("RAC_MindGlobalPrior")
+}
+
+// Versioned, append-only self-model timeline. One row per workspace per
+// snapshot cycle. Rows are NEVER updated or deleted — a new version is
+// appended each cycle so the Mind keeps a durable history of how it
+// described itself over time. Contradictions vs the prior version are
+// recorded inline so drift in self-belief is queryable.
+model MindSelfModel {
+  id                String    @id
+  workspaceId       String
+  workspace         Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  version           Int
+  beliefsAboutSelf  Json      @db.JsonB
+  decisionPatterns  Json      @db.JsonB
+  knownLimits       Json      @db.JsonB
+  contradictions    Json      @default("[]") @db.JsonB
+  derivedFrom       Json      @default("{}") @db.JsonB
+  snapshotAt        DateTime  @default(now())
+  createdAt         DateTime  @default(now())
+
+  @@unique([workspaceId, version])
+  @@index([workspaceId, snapshotAt(sort: Desc)])
+  @@map("RAC_MindSelfModel")
 }
 
 model KloelGlobalPrior {

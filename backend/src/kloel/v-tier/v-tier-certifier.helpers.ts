@@ -144,9 +144,7 @@ export function certifyGoalFieldCommercialDominance(params: {
     measuredAt: now,
   };
 }
-export async function certifyDissolucaoVerificavel(
-  spine: SpineEmitterService,
-): Promise<VerificationVerdict> {
+export function certifyDissolucaoVerificavel(spine: SpineEmitterService): VerificationVerdict {
   const now = new Date().toISOString();
   const events = spine.recentEvents();
   const foundPrefixes = new Set<string>();

@@ -50,6 +50,6 @@ export function collapseWhitespace(value: unknown): string {
  * (preserving the legacy "number/boolean → its string form" semantic) and
  * collapses objects/null/undefined to `''`.
  */
-export function extractAsciiDigits(value: unknown): string {
+export function extractDigitsLoose(value: unknown): string {
   return canonicalExtractAsciiDigits(coerceToString(value));
 }

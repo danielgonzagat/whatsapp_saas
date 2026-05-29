@@ -282,10 +282,7 @@ export class WebhooksService {
       this.inboxGateway.emitToWorkspace(workspaceId, 'conversation:update', conversationPayload);
     }
     try {
-      await this.redis.publish(
-        'ws:inbox',
-        buildStatusPubSubEnvelope(workspaceId, statusPayload),
-      );
+      await this.redis.publish('ws:inbox', buildStatusPubSubEnvelope(workspaceId, statusPayload));
       if (conversationPayload) {
         await this.redis.publish(
           'ws:inbox',

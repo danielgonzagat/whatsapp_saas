@@ -22,7 +22,7 @@ export class KycApprovedGuard implements CanActivate {
       return true;
     }
 
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<{ user?: { sub?: string } }>();
     const user = request.user;
     if (!user?.sub) {
       return true;

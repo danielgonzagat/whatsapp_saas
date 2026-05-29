@@ -76,7 +76,7 @@ export class WorkerRuntimeService {
     if (!response.ok) {
       return false;
     }
-    const payload = await response.json().catch(() => null);
+    const payload: unknown = await response.json().catch(() => null);
     return this.interpretWorkerHealthPayload(payload);
   }
 

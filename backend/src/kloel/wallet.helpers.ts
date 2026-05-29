@@ -3,10 +3,7 @@
 // The public surface is unchanged; callers keep importing from
 // `./wallet.helpers`.
 
-export {
-  ConcurrentWalletUpdateError,
-  KloelWalletNotFoundError,
-} from './wallet.helpers.errors';
+export { ConcurrentWalletUpdateError, KloelWalletNotFoundError } from './wallet.helpers.errors';
 
 export {
   toSafeCents,

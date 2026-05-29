@@ -79,6 +79,30 @@ export class AutopilotService {
     return this.cycle.moneyMachine(...args);
   }
 
+  /**
+   * Capability-registry alias for `moneyMachine`.
+   *
+   * The `KloelDomainServiceResolver` invokes domain methods with the fixed
+   * `(workspaceId, args)` shape. The canonical `moneyMachine` uses positional
+   * args (`topN`, `autoSend`, `useSmartTime`), so this thin wrapper destructures
+   * the args object — keeping the dispatched payload composable from chat tools.
+   *
+   * Follows the K87 pattern: alias method that delegates to the canonical
+   * implementation, declared so the capability registry can resolve it without
+   * a compound dispatch.
+   */
+  async runMoneyMachine(
+    workspaceId: string,
+    args?: { topN?: number; autoSend?: boolean; smartTime?: boolean },
+  ) {
+    return this.moneyMachine(
+      workspaceId,
+      args?.topN ?? 200,
+      args?.autoSend ?? false,
+      args?.smartTime ?? false,
+    );
+  }
+
   getRuntimeConfig(...args: Parameters<AutopilotCycleService['getRuntimeConfig']>) {
     return this.cycle.getRuntimeConfig(...args);
   }

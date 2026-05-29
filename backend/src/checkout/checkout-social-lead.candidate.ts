@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { normalizeEmail, normalizeOptional, normalizePhone } from './checkout-social-lead.util';
+import { normalizeEmail, normalizeOptional } from './checkout-social-lead.util';
+import { digitsOrNull as normalizePhone } from '../common/phone';
 
 interface ConversionInput {
   workspaceId: string;

@@ -63,7 +63,7 @@ export class UnifiedAgentActionsSalesService {
       let originalPrice = 0;
       let productName = 'produto';
       if (recentMemory?.value) {
-        const productData =
+        const productData: unknown =
           typeof recentMemory.value === 'string'
             ? JSON.parse(recentMemory.value)
             : recentMemory.value;

@@ -15,6 +15,7 @@ import { ValenceTaggerService } from './valence-tagger.service';
 import { MindCaseMemoryService } from './memory/mind-case-memory.service';
 import { MindGlobalPriorService } from './memory/mind-global-prior.service';
 import { MindWorkspaceStateService } from './memory/mind-workspace-state.service';
+import { MindSelfModelService } from './self-model/mind-self-model.service';
 import { MindPerceptionService } from './perception/mind-perception.service';
 import { MindPredictionService } from './mind-prediction.service';
 
@@ -46,6 +47,7 @@ import { MindPredictionService } from './mind-prediction.service';
     MindCaseMemoryService,
     MindGlobalPriorService,
     MindWorkspaceStateService,
+    MindSelfModelService,
   ],
   exports: [
     MindKnowledgeModule,
@@ -62,6 +64,7 @@ import { MindPredictionService } from './mind-prediction.service';
     MindCaseMemoryService,
     MindGlobalPriorService,
     MindWorkspaceStateService,
+    MindSelfModelService,
   ],
 })
 export class MindModule {}
