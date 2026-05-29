@@ -149,6 +149,7 @@ import { MindBanditService } from './mind/policy/mind-bandit.service';
 import { MindCaseMemoryService } from './mind/memory/mind-case-memory.service';
 import { MindConceptService } from './mind/memory/mind-concepts.service';
 import { MindLongTermMemoryService } from './mind/memory/mind-long-term-memory.service';
+import { MindSelfModificationService } from './mind/self-evolution/mind-self-modification.service';
 import { MindGlobalPriorService } from './mind/memory/mind-global-prior.service';
 import { MindController } from './mind/coordination/mind-controller';
 import { MindEventProcessorService } from './mind/runtime/mind-event-processor.service';
@@ -384,6 +385,7 @@ import { WorkspaceModule } from '../workspaces/workspace.module';
     MindCaseMemoryService,
     MindConceptService,
     MindLongTermMemoryService,
+    MindSelfModificationService,
     KloelGlobalPriorService,
     MindGlobalPriorService,
     MindEventProcessorService,
