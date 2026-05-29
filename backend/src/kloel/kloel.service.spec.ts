@@ -235,33 +235,8 @@ describe('KloelService', () => {
       expect(result).toEqual([]);
     });
 
-    it('delegates to MindMessageService.getHistory when injected (Brain→Mind canonical surface)', async () => {
-      const mindRow = {
-        id: 'mind-m1',
-        role: 'assistant',
-        content: 'olá da mind',
-        timestamp: new Date('2026-05-29T11:00:00.000Z'),
-      };
-      const mindMessage = { getHistory: jest.fn().mockResolvedValue([mindRow]) };
-      const serviceWithMind = new (service.constructor as new (
-        ...args: unknown[]
-      ) => typeof service)(
-        prisma,
-        mocks.planLimits,
-        mocks.threadService,
-        mocks.wsContextService,
-        mocks.leadBrainService,
-        mocks.thinkerService,
-        mocks.replyEngineService,
-        mocks.toolDispatcher,
-        undefined,
-        mindMessage,
-      );
-      const result = await serviceWithMind.getHistory('ws-mind');
-      expect(mindMessage.getHistory).toHaveBeenCalledWith('ws-mind', 50);
-      expect(prisma.kloelMessage.findMany).not.toHaveBeenCalled();
-      expect(result).toEqual([mindRow]);
-    });
+    // Brain→Mind delegation test moved to kloel.service.mind-delegation.spec.ts
+    // to keep this file under the architecture max_touched_file_lines cap.
   });
 
   // ── saveMemory ──

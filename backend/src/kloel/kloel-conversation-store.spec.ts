@@ -100,7 +100,10 @@ describe('KloelConversationStore — Brain→Mind delegation (Claude-K66)', () =
       const store = new KloelConversationStore(prisma, logger, undefined, mindMessage);
 
       await expect(store.saveMessage('ws-5', 'user', 'oops')).resolves.toBeUndefined();
-      expect(logger.warn).toHaveBeenCalledWith('Erro ao salvar mensagem:', expect.any(Error));
+      expect(logger.warn).toHaveBeenCalledWith(
+        'Erro ao salvar mensagem:',
+        expect.objectContaining({ message: 'db down' }),
+      );
     });
   });
 });
