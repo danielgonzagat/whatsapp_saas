@@ -91,10 +91,34 @@ export class ProductUrlService {
         active: toBool(args.active, true),
         aiLearning: toBool(args.aiLearning, false),
         chatEnabled: toBool(args.chatEnabled, false),
-      } as Prisma.ProductUrlUncheckedCreateInput,
+      },
     });
 
     return { success: true, data: created };
+  }
+
+  /**
+   * List the URLs registered for a product (sales/landing pages).
+   *
+   * domainService alias: `ProductUrlService.list` — backs the deprecated query
+   * capability `get_product_urls`. Workspace-isolated: asserts the product
+   * belongs to the actor's workspace before reading, so URLs from other
+   * workspaces can never leak into a chat receipt. args: { productId }.
+   */
+  async list(workspaceId: string, args: Args) {
+    const productId = coerceString(args.productId).trim();
+    if (!productId) {
+      throw new BadRequestException('productId é obrigatório');
+    }
+
+    await this.assertProductAccess(workspaceId, productId);
+
+    const urls = await this.prisma.productUrl.findMany({
+      where: { productId, product: { workspaceId } },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return { success: true, data: urls };
   }
 
   /** Edit an existing URL. args: { urlId, url?, description?, active?, ... }. */
@@ -157,7 +181,7 @@ export class ProductUrlService {
 
     const updated = await this.prisma.productUrl.update({
       where: { id: urlId },
-      data: { [field]: toBool(args.enabled, true) } as Prisma.ProductUrlUncheckedUpdateInput,
+      data: { [field]: toBool(args.enabled, true) },
     });
 
     return { success: true, data: updated };

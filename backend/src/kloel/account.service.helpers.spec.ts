@@ -6,6 +6,72 @@ import {
   isFiscalDataStringField,
   requireDefinedFiscalType,
 } from './account.service.helpers';
+import {
+  bankAccountPatch,
+  deriveBankDisplay,
+  normalizePixKeyType,
+} from './account.service.helpers';
+
+describe('normalizePixKeyType', () => {
+  it('maps canonical types', () => {
+    expect(normalizePixKeyType('CPF')).toBe('CPF');
+    expect(normalizePixKeyType('cnpj')).toBe('CNPJ');
+    expect(normalizePixKeyType('email')).toBe('EMAIL');
+  });
+
+  it('maps PT-BR / human aliases', () => {
+    expect(normalizePixKeyType('celular')).toBe('PHONE');
+    expect(normalizePixKeyType('telefone')).toBe('PHONE');
+    expect(normalizePixKeyType('aleatória')).toBe('RANDOM');
+    expect(normalizePixKeyType('aleatoria')).toBe('RANDOM');
+    expect(normalizePixKeyType('e-mail')).toBe('EMAIL');
+  });
+
+  it('returns undefined for unknown or non-string input', () => {
+    expect(normalizePixKeyType('bogus')).toBeUndefined();
+    expect(normalizePixKeyType('')).toBeUndefined();
+    expect(normalizePixKeyType(123)).toBeUndefined();
+    expect(normalizePixKeyType(undefined)).toBeUndefined();
+  });
+});
+
+describe('bankAccountPatch', () => {
+  it('keeps only known DATA fields, trimming strings', () => {
+    expect(
+      bankAccountPatch({ bankCode: ' 341 ', agency: '0001', account: '12', extra: 'drop' }),
+    ).toEqual({ bankCode: '341', agency: '0001', account: '12' });
+  });
+
+  it('normalizes pixKeyType and ignores empty / non-string values', () => {
+    expect(bankAccountPatch({ pixKey: 'a@b.com', pixKeyType: 'email', agency: '' })).toEqual({
+      pixKey: 'a@b.com',
+      pixKeyType: 'EMAIL',
+    });
+  });
+
+  it('drops an invalid pixKeyType silently (caller validates separately)', () => {
+    expect(bankAccountPatch({ pixKey: 'k', pixKeyType: 'nope' })).toEqual({ pixKey: 'k' });
+  });
+
+  it('returns an empty patch for empty input', () => {
+    expect(bankAccountPatch({})).toEqual({});
+  });
+});
+
+describe('deriveBankDisplay', () => {
+  it('masks the last 4 of the account number', () => {
+    expect(deriveBankDisplay({ account: '123456' })).toBe('****3456');
+  });
+
+  it('falls back to the PIX key last 4 when no account', () => {
+    expect(deriveBankDisplay({ pixKey: 'user@kloel.com' })).toBe('****.com');
+  });
+
+  it('returns null when neither is present', () => {
+    expect(deriveBankDisplay({})).toBeNull();
+  });
+});
+
 describe('isFiscalDataStringField', () => {
   it('returns true for known fiscal data string fields', () => {
     expect(isFiscalDataStringField('type')).toBe(true);

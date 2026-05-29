@@ -5,19 +5,6 @@ import { StorageService } from '../common/storage/storage.service';
 import { MediaService } from './media.service';
 import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
-type MediaJobRecord = {
-  id: string;
-  status: string;
-  workspaceId?: string;
-};
-
-type DocumentRecord = {
-  id: string;
-  name: string;
-  filePath: string;
-  [key: string]: unknown;
-};
-
 type MediaJobCreateArgs = {
   data: {
     workspaceId: string;
@@ -28,9 +15,7 @@ type MediaJobCreateArgs = {
   };
 };
 
-type FindFirstArgs = { where: Record<string, unknown> };
-type DocumentCreateArgs = { data: Record<string, unknown> };
-type StorageUploadResult = { path: string; url: string };
+type StorageUploadResult = { path: string; url: string; size: number };
 
 const queueAddMock = jest.fn<Promise<void>, [string, unknown]>().mockResolvedValue(undefined);
 
@@ -62,6 +47,7 @@ describe('MediaService', () => {
   let config: { get: jest.Mock<string | undefined, [string, string?]> };
   let storage: {
     upload: jest.Mock<Promise<StorageUploadResult>, [Buffer, Record<string, unknown>]>;
+    uploadFromUrl: jest.Mock<Promise<StorageUploadResult>, [string, Record<string, unknown>]>;
     isLocalDriver: jest.Mock<boolean, []>;
     readLocalFile: jest.Mock<Buffer, [string]>;
     getSignedUrl: jest.Mock<string, [string]>;
@@ -91,7 +77,18 @@ describe('MediaService', () => {
     storage = {
       upload: jest
         .fn<Promise<StorageUploadResult>, [Buffer, Record<string, unknown>]>()
-        .mockResolvedValue({ path: '/uploads/doc.pdf', url: 'https://s3.example.com/doc.pdf' }),
+        .mockResolvedValue({
+          path: '/uploads/doc.pdf',
+          url: 'https://s3.example.com/doc.pdf',
+          size: 4,
+        }),
+      uploadFromUrl: jest
+        .fn<Promise<StorageUploadResult>, [string, Record<string, unknown>]>()
+        .mockResolvedValue({
+          path: '/uploads/remote.jpg',
+          url: 'https://s3.example.com/remote.jpg',
+          size: 9,
+        }),
       isLocalDriver: jest.fn<boolean, []>().mockReturnValue(true),
       readLocalFile: jest.fn<Buffer, [string]>().mockReturnValue(Buffer.from('data')),
       getSignedUrl: jest.fn<string, [string]>().mockReturnValue('https://signed.url/doc.pdf'),
@@ -118,7 +115,7 @@ describe('MediaService', () => {
       });
 
       expect(result).toMatchObject({ id: 'job-1', status: 'PENDING' });
-      const [createArgs] = prisma.mediaJob.create.mock.calls[0]!;
+      const [createArgs] = prisma.mediaJob.create.mock.calls[0]! as [MediaJobCreateArgs];
       expect(createArgs.data.workspaceId).toBe('ws-1');
       expect(createArgs.data.type).toBe('VIDEO_GENERATION');
       expect(createArgs.data.inputUrl).toBe('https://cdn.example.com/image.png');
@@ -162,6 +159,44 @@ describe('MediaService', () => {
       });
       expect(storage.upload).toHaveBeenCalled();
       expect(prisma.document.create).toHaveBeenCalled();
+    });
+  });
+
+  describe('attach', () => {
+    it('stores a base64 data-URL upload and returns the stored URL (happy path)', async () => {
+      const dataUrl = `data:image/png;base64,${Buffer.from('png-bytes').toString('base64')}`;
+
+      const result = await service.attach('ws-1', { imageBase64: dataUrl });
+
+      expect(result).toMatchObject({ success: true });
+      expect(result.data?.url).toBe('https://s3.example.com/doc.pdf');
+      const [buffer, opts] = storage.upload.mock.calls[0]!;
+      expect(Buffer.isBuffer(buffer)).toBe(true);
+      expect(buffer.toString()).toBe('png-bytes');
+      expect(opts.folder).toBe('media/ws-1');
+      expect(opts.mimeType).toBe('image/png');
+      expect(opts.workspaceId).toBe('ws-1');
+    });
+
+    it('re-hosts an external image URL via uploadFromUrl', async () => {
+      const result = await service.attach('ws-1', {
+        imageUrl: 'https://cdn.example.com/cover.jpg',
+      });
+
+      expect(result).toMatchObject({ success: true });
+      expect(result.data?.url).toBe('https://s3.example.com/remote.jpg');
+      const [sourceUrl, opts] = storage.uploadFromUrl.mock.calls[0]!;
+      expect(sourceUrl).toBe('https://cdn.example.com/cover.jpg');
+      expect(opts.folder).toBe('media/ws-1');
+      expect(opts.workspaceId).toBe('ws-1');
+    });
+
+    it('returns an honest error when no image input is provided', async () => {
+      const result = await service.attach('ws-1', {});
+
+      expect(result).toEqual({ success: false, data: null, error: 'image_input_required' });
+      expect(storage.upload).not.toHaveBeenCalled();
+      expect(storage.uploadFromUrl).not.toHaveBeenCalled();
     });
   });
 });
