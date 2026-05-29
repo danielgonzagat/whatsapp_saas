@@ -199,6 +199,15 @@ Prefix family: `domain.subdomain.action_past_tense`. All events MUST be past-ten
 |---|---|---|
 | `cognition.decision_made` | ✅ Already canonical | — |
 | `cognition.belief_updated` | ✅ Already canonical | — |
+| `kloel.handoff.confidence` | 🔄 `cognition.handoff.confidence` | Dual-emit active (PI-K35-E) |
+| `kloel.handoff.confidence.blocking` | 🔄 `cognition.handoff.confidence.blocking` | Dual-emit active (PI-K35-E) |
+| `kloel.chat.turn` | 🔄 `cognition.chat.turn` | Dual-emit active (PI-K35-E) |
+
+> The `kloel.* → cognition.*` migration is non-destructive: both legacy and
+> canonical names fire on every trigger via
+> `backend/src/kloel/event-taxonomy.canonical-aliases.ts`. See
+> [`EVENT_TAXONOMY_MIGRATION.md`](EVENT_TAXONOMY_MIGRATION.md) for the
+> grace-window plan and removal criteria.
 
 ### 2.10 `post_sale.*`
 

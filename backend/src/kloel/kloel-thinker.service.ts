@@ -24,6 +24,7 @@ import { AbiBuilderService } from './abi/abi-builder.service';
 import { MindCapabilityExecutor } from './mind/coordination';
 import { validateAbiPayload } from './abi/abi-validator';
 import { computeHandoffConfidence, HANDOFF_THRESHOLD } from './handoff-confidence.helper';
+import { emitCognitionAlias } from './event-taxonomy.canonical-aliases';
 import { ChatCompletionMessageParam } from 'openai/resources/chat';
 import { detectActionIntent } from './guest-chat.action-intent.helpers';
 import { KloelReplyEngineService, LocalToolExecutor } from './kloel-reply-engine.service';
@@ -320,19 +321,35 @@ export class KloelThinkerService {
                   abiResult.abi.beliefs,
                   abiResult.abi.pulseTruth,
                 );
-                this.logger.log('Handoff confidence snapshot', {
-                  context: 'kloel.handoff.confidence',
-                  ...snapshot,
-                });
+                // Dual-emit: `kloel.handoff.confidence` is the legacy event
+                // name; `cognition.handoff.confidence` is the canonical name
+                // per docs/architecture/EVENT_TAXONOMY_MIGRATION.md. Both fire
+                // until the 4-week grace window closes.
+                emitCognitionAlias(
+                  (_eventName, payload) => {
+                    this.logger.log('Handoff confidence snapshot', payload);
+                  },
+                  'kloel.handoff.confidence',
+                  { context: 'kloel.handoff.confidence', ...snapshot },
+                );
 
                 if (shouldEscalateForHandoff(snapshot, handoffFlags)) {
-                  this.logger.warn(
-                    'Handoff confidence gate: escalation to human',
-                    buildHandoffEscalationLog({
-                      snapshot,
-                      workspaceId,
-                      threshold: HANDOFF_THRESHOLD,
-                    }),
+                  const escalationLog = buildHandoffEscalationLog({
+                    snapshot,
+                    workspaceId,
+                    threshold: HANDOFF_THRESHOLD,
+                  });
+                  // Dual-emit: legacy `kloel.handoff.confidence.blocking` +
+                  // canonical `cognition.handoff.confidence.blocking`.
+                  emitCognitionAlias(
+                    (_eventName, payload) => {
+                      this.logger.warn(
+                        'Handoff confidence gate: escalation to human',
+                        payload,
+                      );
+                    },
+                    'kloel.handoff.confidence.blocking',
+                    escalationLog,
                   );
                   safeWrite(
                     createKloelErrorEvent({

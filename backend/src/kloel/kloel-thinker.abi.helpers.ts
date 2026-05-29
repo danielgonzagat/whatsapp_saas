@@ -95,6 +95,14 @@ export function shouldEscalateForHandoff(
  * resulting object is what the service ships into `logger.warn` — having it
  * pure means the test can assert the exact keys/values that downstream
  * dashboards rely on.
+ *
+ * @deprecated The `context` field returned by this helper is the legacy
+ *   `kloel.handoff.confidence.blocking` event name. The canonical name is
+ *   `cognition.handoff.confidence.blocking`. During the migration window
+ *   both names are dual-emitted via `emitCognitionAlias` — see
+ *   `event-taxonomy.canonical-aliases.ts`. Once the grace window closes,
+ *   the `context` field here will be flipped to the canonical name and this
+ *   deprecation tag will be removed.
  */
 export function buildHandoffEscalationLog(params: {
   snapshot: HandoffConfidenceSnapshot;

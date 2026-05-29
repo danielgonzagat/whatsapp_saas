@@ -23,6 +23,7 @@ import {
   computeSubstrateLookbackSince,
   isAiProviderConfigured,
 } from './kloel-thinker.substrate.helpers';
+import { emitCognitionAlias } from './event-taxonomy.canonical-aliases';
 
 const ERR_THREAD_NOT_FOUND = 'Conversa não encontrada.';
 const ERR_ASSISTANT_MSG_NOT_FOUND = 'Mensagem do assistente não encontrada.';
@@ -178,24 +179,35 @@ export async function thinkSyncImpl(
     // Persist this conversational turn to the cognitive spine so it
     // becomes CROSS-SESSION memory (MindPerceptionService reads
     // autopilotEvent → working/episodic/consolidated/beliefs → ABI).
-    void prisma.autopilotEvent
-      .create({
-        data: {
-          workspaceId,
-          intent: 'kloel_chat_turn',
-          action: 'kloel.chat.turn',
-          status: 'executed',
-          meta: {
-            userPreview: message.slice(0, 280),
-            replyPreview: assistantMessage.slice(0, 280),
-            mode,
-            conversationId: conversationId ?? null,
-          },
-        },
-      })
-      .catch(() => {
-        // fire-and-forget — never blocks the reply
-      });
+    //
+    // Dual-emit: legacy `kloel.chat.turn` + canonical `cognition.chat.turn`
+    // per docs/architecture/EVENT_TAXONOMY_MIGRATION.md. Both rows are
+    // persisted so SQL aggregators can be migrated independently.
+    const chatTurnMeta: Prisma.InputJsonValue = {
+      userPreview: message.slice(0, 280),
+      replyPreview: assistantMessage.slice(0, 280),
+      mode,
+      conversationId: conversationId ?? null,
+    };
+    emitCognitionAlias(
+      (eventName) => {
+        void prisma.autopilotEvent
+          .create({
+            data: {
+              workspaceId,
+              intent: 'kloel_chat_turn',
+              action: eventName,
+              status: 'executed',
+              meta: chatTurnMeta,
+            },
+          })
+          .catch(() => {
+            // fire-and-forget — never blocks the reply
+          });
+      },
+      'kloel.chat.turn',
+      { workspaceId },
+    );
   }
   const convId = thread?.id;
   const title = resolvedTitle;
