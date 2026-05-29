@@ -12,8 +12,7 @@ import {
   createKloelErrorEvent,
   createKloelStatusEvent,
   createKloelThreadEvent,
-  type KloelStreamEvent,
-} from './kloel-stream-events';
+  type KloelStreamEvent, createKloelContentEvent } from './kloel-stream-events';
 import { KloelStreamWriter } from './kloel-stream-writer';
 import { KloelThreadService, StoredProcessingTraceEntry } from './kloel-thread.service';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
@@ -324,14 +323,14 @@ export class KloelThinkerService {
       }
       let fullResponse = streamedReply.fullResponse;
       if (!fullResponse.trim()) {
-        safeWrite(
-          createKloelErrorEvent({
-            content: this.replyEngine.unavailableMessage,
-            error: 'empty_stream',
-            done: false,
-          }),
-        );
+        // Recoverable (non-terminal) empty-stream: stream the fallback text as
+        // a content event so the UI renders it, then let
+        // finalizeSuccessfulReply emit the terminal `done`. `type:'error'` is
+        // reserved for terminal failures (done:true) — the frontend treats any
+        // error event as terminal and stops reading the stream.
         fullResponse = this.replyEngine.unavailableMessage;
+        safeWrite(createKloelStatusEvent('streaming_token'));
+        safeWrite(createKloelContentEvent(fullResponse));
       }
       await finalizeSuccessfulReply(fullResponse, streamedReply.estimatedTokens, branchCtx);
       // Persist this conversational turn to the cognitive spine so it

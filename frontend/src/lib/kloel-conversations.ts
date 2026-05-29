@@ -245,6 +245,18 @@ export function streamAuthenticatedKloelMessage(
           }
 
           if (event.type === 'error') {
+            // Only a terminal error (done:true) stops the stream. A
+            // non-terminal error (done:false) is recoverable: surface any
+            // carried content as a chunk and keep reading so the trailing
+            // content + the real terminal `done` still render. Backends should
+            // emit content/status events for recoverable cases, but we stay
+            // defensive here so a stray done:false error never wedges the chat.
+            if (event.done !== true) {
+              if (typeof event.content === 'string' && event.content.length > 0) {
+                options.onChunk(event.content);
+              }
+              continue;
+            }
             hasTerminalEvent = true;
             throw createKloelStreamError(event);
           }

@@ -8,7 +8,6 @@ import { KloelConversationStore } from './kloel-conversation-store';
 import {
   createKloelContentEvent,
   createKloelDoneEvent,
-  createKloelErrorEvent,
   createKloelStatusEvent,
   createKloelThreadEvent,
   createKloelToolCallEvent,
@@ -292,7 +291,12 @@ export async function runToolPlanningBranch(
     if (!finalResp) {
       finalResp =
         'Fechei a ação, mas a resposta veio vazia. Me chama de novo que eu continuo do ponto certo.';
-      safeWrite(createKloelErrorEvent({ content: finalResp, error: 'empty_stream', done: false }));
+      // Recoverable (non-terminal) empty-stream: stream the fallback text as a
+      // content event so the UI renders it, then let finalizeSuccessfulReply
+      // emit the terminal `done`. A `type:'error'` event is reserved for
+      // terminal failures (done:true) — the frontend treats it as terminal.
+      safeWrite(createKloelStatusEvent('streaming_token'));
+      safeWrite(createKloelContentEvent(finalResp));
     }
     await finalizeSuccessfulReply(finalResp, streamedFinal.estimatedTokens, ctx);
     return;
@@ -307,7 +311,12 @@ export async function runToolPlanningBranch(
     fallbackText =
       assistantText ||
       'Eu li o que você mandou, mas a resposta saiu vazia aqui. Manda de novo que eu sigo.';
-    safeWrite(createKloelErrorEvent({ content: fallbackText, error: 'empty_stream', done: false }));
+    // Recoverable (non-terminal) empty-stream: stream the fallback text as a
+    // content event so the UI renders it; finalizeSuccessfulReply emits the
+    // terminal `done` afterwards. `type:'error'` stays reserved for terminal
+    // failures (done:true) since the frontend treats it as terminal.
+    safeWrite(createKloelStatusEvent('streaming_token'));
+    safeWrite(createKloelContentEvent(fallbackText));
   }
   await finalizeSuccessfulReply(fallbackText, streamedReply.estimatedTokens, ctx);
 }
