@@ -140,9 +140,9 @@ describe('CheckoutService — PI-008 checkout page configuration', () => {
 
     it('rejects when checkout not found in workspace', async () => {
       prisma.checkoutProductPlan.findFirst.mockResolvedValueOnce(null);
-      await expect(
-        service.update('ws_1', { checkoutId: 'chk_missing' }),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.update('ws_1', { checkoutId: 'chk_missing' })).rejects.toThrow(
+        NotFoundException,
+      );
       expect(productSvc.updatePlan).not.toHaveBeenCalled();
     });
   });

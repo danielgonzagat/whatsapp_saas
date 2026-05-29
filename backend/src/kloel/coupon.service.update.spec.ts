@@ -30,17 +30,17 @@ describe('CouponService.update', () => {
     prisma = {
       productCoupon: {
         findFirst: jest.fn(),
-        update: jest.fn().mockImplementation(({ where, data }: { where: { id: string }; data: Record<string, unknown> }) =>
-          Promise.resolve({ id: where.id, productId: 'prod-1', ...data }),
-        ),
+        update: jest
+          .fn()
+          .mockImplementation(
+            ({ where, data }: { where: { id: string }; data: Record<string, unknown> }) =>
+              Promise.resolve({ id: where.id, productId: 'prod-1', ...data }),
+          ),
       },
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        CouponService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [CouponService, { provide: PrismaService, useValue: prisma }],
     }).compile();
     service = module.get(CouponService);
   });
@@ -60,9 +60,9 @@ describe('CouponService.update', () => {
 
   it('throws NotFoundException when coupon not in workspace', async () => {
     prisma.productCoupon.findFirst.mockResolvedValue(null);
-    await expect(
-      service.update(ws, { couponId: 'coupon-other' }),
-    ).rejects.toThrow(NotFoundException);
+    await expect(service.update(ws, { couponId: 'coupon-other' })).rejects.toThrow(
+      NotFoundException,
+    );
   });
 
   it('cross-workspace isolation prevents update from wrong workspace', async () => {

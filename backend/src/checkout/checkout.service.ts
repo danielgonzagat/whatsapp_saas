@@ -153,21 +153,26 @@ export class CheckoutService {
   ) {
     if (resolverArgs !== undefined) {
       const workspaceId = workspaceIdOrData as string;
-      const productId =
-        typeof resolverArgs.productId === 'string' ? resolverArgs.productId : '';
-      if (!productId) throw new BadRequestException('productId required');
+      const productId = typeof resolverArgs.productId === 'string' ? resolverArgs.productId : '';
+      if (!productId) {
+        throw new BadRequestException('productId required');
+      }
 
       const product = await this.prisma.product.findFirst({
         where: { id: productId, workspaceId },
         select: { id: true },
       });
-      if (!product) throw new NotFoundException('Produto nao encontrado');
+      if (!product) {
+        throw new NotFoundException('Produto nao encontrado');
+      }
 
       const plan = await this.prisma.checkoutProductPlan.findFirst({
         where: { productId, kind: 'PLAN', isActive: true },
         select: { id: true, priceInCents: true },
       });
-      if (!plan) throw new NotFoundException('Nenhum plano ativo encontrado para o produto');
+      if (!plan) {
+        throw new NotFoundException('Nenhum plano ativo encontrado para o produto');
+      }
 
       const amountInCents =
         typeof resolverArgs.amount === 'number' && Number.isFinite(resolverArgs.amount)
@@ -345,9 +350,10 @@ export class CheckoutService {
 
   /** Create checkout page — emits checkout.created event. */
   async create(workspaceId: string, args: UnknownRecord) {
-    const productId =
-      typeof args.productId === 'string' ? args.productId : '';
-    if (!productId) throw new BadRequestException('productId required');
+    const productId = typeof args.productId === 'string' ? args.productId : '';
+    if (!productId) {
+      throw new BadRequestException('productId required');
+    }
 
     const dto: CreateCheckoutInput = {
       name: typeof args.name === 'string' ? args.name : 'Checkout',
@@ -366,14 +372,12 @@ export class CheckoutService {
         typeof args.maxInstallments === 'number' && Number.isFinite(args.maxInstallments)
           ? args.maxInstallments
           : undefined,
-      installmentsFee:
-        typeof args.installmentsFee === 'boolean' ? args.installmentsFee : undefined,
+      installmentsFee: typeof args.installmentsFee === 'boolean' ? args.installmentsFee : undefined,
       quantity:
         typeof args.quantity === 'number' && Number.isFinite(args.quantity)
           ? args.quantity
           : undefined,
-      freeShipping:
-        typeof args.freeShipping === 'boolean' ? args.freeShipping : undefined,
+      freeShipping: typeof args.freeShipping === 'boolean' ? args.freeShipping : undefined,
       shippingPrice:
         typeof args.shippingPrice === 'number' && Number.isFinite(args.shippingPrice)
           ? args.shippingPrice
@@ -394,26 +398,25 @@ export class CheckoutService {
 
   /** Update checkout page — emits checkout.updated event. */
   async update(workspaceId: string, args: UnknownRecord) {
-    const checkoutId =
-      typeof args.checkoutId === 'string' ? args.checkoutId : '';
-    if (!checkoutId) throw new BadRequestException('checkoutId required');
+    const checkoutId = typeof args.checkoutId === 'string' ? args.checkoutId : '';
+    if (!checkoutId) {
+      throw new BadRequestException('checkoutId required');
+    }
 
     await this.verifyCheckoutOwnership(checkoutId, workspaceId);
 
     const { checkoutId: _, ...updateData } = args;
-    const result = await this.productService.updatePlan(
-      checkoutId,
-      updateData as Prisma.CheckoutProductPlanUpdateInput,
-    );
+    const result = await this.productService.updatePlan(checkoutId, updateData);
     await this.eventEmitter.checkoutUpdated({ workspaceId, checkoutId });
     return result;
   }
 
   /** Delete checkout page — workspace-scoped. */
   async delete(workspaceId: string, args: UnknownRecord) {
-    const checkoutId =
-      typeof args.checkoutId === 'string' ? args.checkoutId : '';
-    if (!checkoutId) throw new BadRequestException('checkoutId required');
+    const checkoutId = typeof args.checkoutId === 'string' ? args.checkoutId : '';
+    if (!checkoutId) {
+      throw new BadRequestException('checkoutId required');
+    }
 
     await this.verifyCheckoutOwnership(checkoutId, workspaceId);
     return this.deletePlan(checkoutId, workspaceId);
@@ -523,7 +526,7 @@ export class CheckoutService {
     }
 
     if (checkout.checkoutConfig) {
-      const configRest = stripConfigMetadata(checkout.checkoutConfig as Record<string, unknown>);
+      const configRest = stripConfigMetadata(checkout.checkoutConfig);
       await this.productService.updateConfig(duplicatedId, configRest);
 
       if (checkout.checkoutConfig.pixels?.length) {
@@ -533,10 +536,7 @@ export class CheckoutService {
         });
         if (createdConfig?.id) {
           await this.prisma.checkoutPixel.createMany({
-            data: mapPixelsForDuplicate(
-              checkout.checkoutConfig.pixels,
-              createdConfig.id,
-            ),
+            data: mapPixelsForDuplicate(checkout.checkoutConfig.pixels, createdConfig.id),
           });
         }
       }

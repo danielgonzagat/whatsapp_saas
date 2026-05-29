@@ -138,10 +138,7 @@ export class CouponService {
    * Delete a coupon, workspace-scoped through product ownership.
    * Resolver-compatible 2-arg signature: (workspaceId, args).
    */
-  async delete(
-    workspaceId: string,
-    args: { couponId: string },
-  ): Promise<ToolResult> {
+  async delete(workspaceId: string, args: { couponId: string }): Promise<ToolResult> {
     const couponId = String(args.couponId ?? '').trim();
     if (!couponId) {
       return { success: false, error: 'couponId is required' };

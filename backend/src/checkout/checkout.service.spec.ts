@@ -8,6 +8,9 @@ type CheckoutServicePrismaMock = {
   checkoutProductPlan: {
     findUnique: jest.Mock;
     findFirst: jest.Mock;
+    findMany: jest.Mock;
+    update: jest.Mock;
+    delete: jest.Mock;
   };
   checkoutConfig: {
     findUnique: jest.Mock;
@@ -91,6 +94,9 @@ describe('CheckoutService — duplicateCheckout', () => {
       checkoutProductPlan: {
         findUnique: jest.fn(),
         findFirst: jest.fn().mockResolvedValue(null),
+        findMany: jest.fn().mockResolvedValue([]),
+        update: jest.fn().mockResolvedValue({}),
+        delete: jest.fn().mockResolvedValue({}),
       },
       checkoutConfig: {
         findUnique: jest.fn(),
@@ -267,6 +273,9 @@ describe('CheckoutService — getCheckoutBySlug', () => {
       checkoutProductPlan: {
         findUnique: jest.fn().mockResolvedValue(null),
         findFirst: jest.fn().mockResolvedValue(null),
+        findMany: jest.fn().mockResolvedValue([]),
+        update: jest.fn().mockResolvedValue({}),
+        delete: jest.fn().mockResolvedValue({}),
       },
       checkoutConfig: {
         findUnique: jest.fn(),
@@ -398,7 +407,7 @@ describe('CheckoutService — create (resolver path)', () => {
       updateConfig: jest.fn(),
       syncCheckoutLinks: jest.fn(),
       getPlanLinkManager: jest.fn().mockReturnValue({
-        ensurePlanReferenceCode: jest.fn().mockImplementation(async (p) => p),
+        ensurePlanReferenceCode: jest.fn().mockImplementation(async (p: unknown) => p),
       }),
     };
 
@@ -510,7 +519,7 @@ describe('CheckoutService — update (resolver path)', () => {
       updateConfig: jest.fn(),
       syncCheckoutLinks: jest.fn(),
       getPlanLinkManager: jest.fn().mockReturnValue({
-        ensurePlanReferenceCode: jest.fn().mockImplementation(async (p) => p),
+        ensurePlanReferenceCode: jest.fn().mockImplementation(async (p: unknown) => p),
       }),
     };
 
@@ -538,7 +547,9 @@ describe('CheckoutService — update (resolver path)', () => {
       id: 'chk_1',
       productId: 'prod_1',
     });
-    (productSvc as any).updatePlan = jest.fn().mockResolvedValue({ id: 'chk_1', name: 'Atualizado' });
+    (productSvc as Record<string, unknown>).updatePlan = jest
+      .fn()
+      .mockResolvedValue({ id: 'chk_1', name: 'Atualizado' });
 
     const result = await service.update('ws_1', {
       checkoutId: 'chk_1',
@@ -550,10 +561,9 @@ describe('CheckoutService — update (resolver path)', () => {
         where: { id: 'chk_1', kind: 'CHECKOUT', product: { workspaceId: 'ws_1' } },
       }),
     );
-    expect((productSvc as any).updatePlan).toHaveBeenCalledWith(
-      'chk_1',
-      expect.objectContaining({ name: 'Atualizado' }),
-    );
+    expect(
+      (productSvc as ProductServiceMock & { updatePlan: jest.Mock }).updatePlan,
+    ).toHaveBeenCalledWith('chk_1', expect.objectContaining({ name: 'Atualizado' }));
     expect(eventEmitter.checkoutUpdated).toHaveBeenCalledWith({
       workspaceId: 'ws_1',
       checkoutId: 'chk_1',
@@ -562,9 +572,7 @@ describe('CheckoutService — update (resolver path)', () => {
   });
 
   it('update — throws when checkoutId is missing', async () => {
-    await expect(service.update('ws_1', { name: 'Sem ID' })).rejects.toThrow(
-      BadRequestException,
-    );
+    await expect(service.update('ws_1', { name: 'Sem ID' })).rejects.toThrow(BadRequestException);
   });
 
   it('update — throws NotFoundException when workspace does not own checkout', async () => {
@@ -580,7 +588,9 @@ describe('CheckoutService — update (resolver path)', () => {
       id: 'chk_1',
       productId: 'prod_1',
     });
-    (productSvc as any).updatePlan = jest.fn().mockResolvedValue({ id: 'chk_1' });
+    (productSvc as ProductServiceMock & { updatePlan: jest.Mock }).updatePlan = jest
+      .fn()
+      .mockResolvedValue({ id: 'chk_1' });
 
     await service.update('ws_1', {
       checkoutId: 'chk_1',
@@ -588,7 +598,10 @@ describe('CheckoutService — update (resolver path)', () => {
       isActive: false,
     });
 
-    const updateCall = (productSvc as any).updatePlan.mock.calls[0][1];
+    const updatePlanMock = (productSvc as ProductServiceMock & { updatePlan: jest.Mock })
+      .updatePlan;
+    const updateCalls = updatePlanMock.mock.calls as Array<[string, Record<string, unknown>]>;
+    const updateCall = updateCalls[0]?.[1] ?? {};
     expect(updateCall).not.toHaveProperty('checkoutId');
     expect(updateCall).toHaveProperty('name', 'Novo Nome');
     expect(updateCall).toHaveProperty('isActive', false);
@@ -642,7 +655,9 @@ describe('CheckoutService — delete (resolver path)', () => {
       id: 'chk_1',
       productId: 'prod_1',
     });
-    const deletePlanSpy = jest.spyOn(service, 'deletePlan').mockResolvedValue({ id: 'chk_1' } as any);
+    const deletePlanSpy = jest
+      .spyOn(service, 'deletePlan')
+      .mockResolvedValue({ id: 'chk_1' } as never);
 
     const result = await service.delete('ws_1', { checkoutId: 'chk_1' });
 
@@ -724,8 +739,20 @@ describe('CheckoutService — list (resolver path)', () => {
 
   it('list — returns checkouts scoped to workspace', async () => {
     const checkouts = [
-      { id: 'chk_1', name: 'Checkout A', kind: 'CHECKOUT', checkoutConfig: null, checkoutLinks: [] },
-      { id: 'chk_2', name: 'Checkout B', kind: 'CHECKOUT', checkoutConfig: null, checkoutLinks: [] },
+      {
+        id: 'chk_1',
+        name: 'Checkout A',
+        kind: 'CHECKOUT',
+        checkoutConfig: null,
+        checkoutLinks: [],
+      },
+      {
+        id: 'chk_2',
+        name: 'Checkout B',
+        kind: 'CHECKOUT',
+        checkoutConfig: null,
+        checkoutLinks: [],
+      },
     ];
     prisma.checkoutProductPlan.findMany.mockResolvedValue(checkouts);
 
@@ -754,8 +781,11 @@ describe('CheckoutService — list (resolver path)', () => {
 
     await service.list('ws_1');
 
-    const findManyCall = prisma.checkoutProductPlan.findMany.mock.calls[0][0];
-    expect(findManyCall.where).toHaveProperty('kind', 'CHECKOUT');
+    const findManyCalls = prisma.checkoutProductPlan.findMany.mock.calls as Array<
+      [{ where: Record<string, unknown> }]
+    >;
+    const findManyCall = findManyCalls[0]?.[0];
+    expect(findManyCall?.where).toHaveProperty('kind', 'CHECKOUT');
   });
 });
 
@@ -778,7 +808,7 @@ describe('CheckoutService — createOrder (resolver path)', () => {
       checkoutPixel: { createMany: jest.fn() },
       affiliateLink: { findFirst: jest.fn().mockResolvedValue(null), update: jest.fn() },
       product: { findFirst: jest.fn() },
-    } as any;
+    } as never;
 
     const productSvc = {
       createCheckout: jest.fn(),
@@ -837,7 +867,7 @@ describe('CheckoutService — createOrder (resolver path)', () => {
   });
 
   it('createOrder — resolver path: throws when productId is missing', async () => {
-    await expect(service.createOrder('ws_1', {} as any)).rejects.toThrow(BadRequestException);
+    await expect(service.createOrder('ws_1', {})).rejects.toThrow(BadRequestException);
   });
 
   it('createOrder — resolver path: throws when product not found', async () => {

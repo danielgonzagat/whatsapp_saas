@@ -23,10 +23,7 @@ describe('CouponService.delete', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        CouponService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [CouponService, { provide: PrismaService, useValue: prisma }],
     }).compile();
     service = module.get(CouponService);
   });
@@ -45,16 +42,16 @@ describe('CouponService.delete', () => {
 
   it('throws NotFoundException when coupon not in workspace', async () => {
     prisma.productCoupon.findFirst.mockResolvedValue(null);
-    await expect(
-      service.delete(ws, { couponId: 'coupon-other' }),
-    ).rejects.toThrow(NotFoundException);
+    await expect(service.delete(ws, { couponId: 'coupon-other' })).rejects.toThrow(
+      NotFoundException,
+    );
   });
 
   it('cross-workspace isolation prevents delete from wrong workspace', async () => {
     prisma.productCoupon.findFirst.mockResolvedValue(null);
-    await expect(
-      service.delete('ws-other', { couponId: 'coupon-1' }),
-    ).rejects.toThrow(NotFoundException);
+    await expect(service.delete('ws-other', { couponId: 'coupon-1' })).rejects.toThrow(
+      NotFoundException,
+    );
     expect(prisma.productCoupon.delete).not.toHaveBeenCalled();
   });
 

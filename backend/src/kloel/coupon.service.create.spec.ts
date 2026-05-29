@@ -16,17 +16,16 @@ describe('CouponService.create', () => {
     prisma = {
       product: { findFirst: jest.fn() },
       productCoupon: {
-        create: jest.fn().mockImplementation(({ data }: { data: Record<string, unknown> }) =>
-          Promise.resolve({ id: 'coupon-1', ...data }),
-        ),
+        create: jest
+          .fn()
+          .mockImplementation(({ data }: { data: Record<string, unknown> }) =>
+            Promise.resolve({ id: 'coupon-1', ...data }),
+          ),
       },
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        CouponService,
-        { provide: PrismaService, useValue: prisma },
-      ],
+      providers: [CouponService, { provide: PrismaService, useValue: prisma }],
     }).compile();
     service = module.get(CouponService);
   });
@@ -41,11 +40,10 @@ describe('CouponService.create', () => {
     });
     expect(result.success).toBe(true);
     expect(result.coupon).toBeDefined();
-    expect(prisma.productCoupon.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ code: 'SAVE10', productId: 'prod-1' }),
-      }),
-    );
+    const createCalls = prisma.productCoupon.create.mock.calls as Array<
+      [{ data: Record<string, unknown> }]
+    >;
+    expect(createCalls[0]?.[0]?.data).toMatchObject({ code: 'SAVE10', productId: 'prod-1' });
   });
 
   it('throws NotFoundException when product not in workspace', async () => {
@@ -80,10 +78,9 @@ describe('CouponService.create', () => {
       discountValue: 20,
       usageLimit: 50,
     });
-    expect(prisma.productCoupon.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ maxUses: 50 }),
-      }),
-    );
+    const createCalls = prisma.productCoupon.create.mock.calls as Array<
+      [{ data: Record<string, unknown> }]
+    >;
+    expect(createCalls[0]?.[0]?.data).toMatchObject({ maxUses: 50 });
   });
 });
