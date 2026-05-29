@@ -29,45 +29,79 @@ Resolution status used in this document:
 
 ## Capability Map Overview
 
-> **Post-Wave-4 count drift (tool-measured 2026-05-29):** the registry now
-> declares **202 capabilities** (verified three independent ways:
-> `category:`, `tier:`, and `domainService:` each return 202 across
-> `backend/src/kloel/capability-registry-v2/partitions/*.ts`, excluding specs).
-> The 142 figure and the WIRED/UNGATED breakdown below were measured at the
-> Mission-5 / K87 scan and reflect the first 142 capabilities only. The +60
-> new capabilities have NOT yet had their per-method resolution status
-> verified — the breakdown percentages below are stale against the 202 base
-> and MUST be recomputed by re-running the resolver verification
-> (`capability-registry-v2.service.ts#listGaps` + the `export class <Service>`
-> + method-definition regex described in the header) before they are quoted
-> as current. Do not infer new WIRED/UNGATED numbers from this section.
+> **w6 full re-scan (tool-measured 2026-05-29, all 202 capabilities):** every
+> capability's `id` + `domainService` was extracted from
+> `backend/src/kloel/capability-registry-v2/partitions/*.ts` (202 pairs,
+> cross-checked three ways). Each distinct `domainService` token was matched
+> against the live `SERVICE_TOKEN_MAP` in
+> `backend/src/kloel/domain-service-resolver.service.ts` (51 mapped tokens),
+> and each declared method was verified to exist on the real provider class via
+> AST outline (`code_outline` / `code_read_symbol`). This supersedes the stale
+> "first-142" breakdown that previously lived here. The per-row tables below
+> were last refreshed at the Mission-5 / K87 scan and are NOT yet re-synced to
+> these numbers — trust THIS overview for current WIRED/UNWIRED counts.
 
-- **Total declared capabilities**: 202 (was 142 at the Mission-5 / K87 scan;
-  +60 post-Wave-4)
-- **WIRED (executable)** *(of the first 142, stale)*: 67 (47.2% of 142) — +2 since K87 wave (get_whatsapp_status, sync_whatsapp_history)
-- **UNGATED (method missing)** *(of the first 142, stale)*: 20 (14.1% of 142)
-- **UNGATED (service missing)** *(of the first 142, stale)*: 50 (35.2% of 142) — pending K90 batch wiring
-- **UNVERIFIED (compound resolver)** *(of the first 142, stale)*: 3
-- **ALIAS (registry pointer)** *(of the first 142, stale)*: 2
-- **The +60 capabilities added post-Wave-4**: resolution status UNMEASURED — pending re-scan
+**Resolution status taxonomy (w6):**
 
-### Per-tier rollup
+| Status | Meaning | Resolver runtime behavior |
+|---|---|---|
+| `WIRED` | Token in `SERVICE_TOKEN_MAP` AND method exists on the real provider | Executes |
+| `METHOD_MISSING` | Token mapped, but the declared method is absent on the provider | `method_not_found` |
+| `UNKNOWN_SERVICE` | Token absent from `SERVICE_TOKEN_MAP` | `unknown_service` |
+| `COMPOUND` | `X.foo + Y.bar` — multi-service; resolver skips by design (manual dispatch) | Not routed by resolver |
+| `ALIAS` | `domainService: "Alias for <id>"` — registry pointer at another capability | Skipped by design |
 
-| Tier | Domain | Total | WIRED | UNGATED (method) | UNGATED (service) | Other |
-|---|---|---:|---:|---:|---:|---:|
-| 0 | Self-awareness, Query, Mutation (tier-0) | 53 | 22 | 12 | 19 | 0 |
-| 1 | Products | 12 | 8 | 0 | 2 | 2 |
-| 2 | Plans | 7 | 5 | 1 | 0 | 1 |
-| 3 | Checkouts | 7 | 7 | 0 | 0 | 0 |
-| 4 | Coupons | 5 | 5 | 0 | 0 | 0 |
-| 5 | Sales | 8 | 6 | 0 | 0 | 2 |
-| 6 | URLs | 4 | 0 | 0 | 4 | 0 |
-| 7 | Affiliates | 4 | 4 | 0 | 0 | 0 |
-| 8 | CRM | 6 | 3 | 0 | 3 | 0 |
-| 9 | Wallet | 4 | 2 | 2 | 0 | 0 |
-| 10 | Reports | 20 | 0 | 2 | 18 | 0 |
-| 11 | Configuration | 9 | 3 | 3 | 3 | 0 |
-| 12 | Marketing | 3 | 0 | 0 | 3 | 0 |
+### Headline numbers (all 202)
+
+- **Total declared capabilities:** 202
+- **WIRED (executable now):** 188 (93.1%)
+- **METHOD_MISSING:** 7 (3.5%)
+- **UNKNOWN_SERVICE:** 2 (1.0%) — 1 fixable via HUB, 1 needs implementation
+- **COMPOUND (by-design deferred):** 3 (1.5%)
+- **ALIAS (by-design pointer):** 2 (1.0%)
+
+Resolver-executable coverage = WIRED / (202 − COMPOUND − ALIAS) = 188 / 197 =
+**95.4%** of all non-deferred capabilities; **93.1%** of the full 202 surface.
+
+### The complete UNWIRED list (14 capabilities)
+
+#### METHOD_MISSING — service is mapped, but the method does not exist (7)
+
+| Capability ID | `domainService` | Real provider methods | Resolution |
+|---|---|---|---|
+| `get_product_urls` *(deprecated)* | `ProductUrlService.list` | add, update, delete, togglePrivate, toggleKloelLearning, toggleKloelChatEmbed | No `list`. Canonical successor `products.update_urls` → `ProductService.updateUrls` is WIRED. Needs a `list` read method on `ProductUrlService` (a real URL-read companion exists at `unified-agent-actions-billing.service.ts:378`). |
+| `change_plan` *(deprecated)* | `BillingService.changePlan` | getSubscription, status, activateTrial, getUsage, createCheckoutSession, handleWebhook, cancelSubscription | No `changePlan`. Claimed successor `billing.change_plan` does NOT exist as a capability id either. Needs `BillingService.changePlan` implementation. |
+| `update_billing_info` *(deprecated)* | `BillingService.update` | (same as above) | No `update`. Claimed successor `billing.update` does NOT exist. Needs `BillingService.update` implementation. |
+| `products.set_ai_config` | `ProductAIConfigService.update` | get | Product-scoped AI config service is read-only (`get`). Sibling `AIConfigService.update` is the *workspace*-scoped one — not interchangeable. Needs an `update` method on `ProductAIConfigService`. |
+| `account.update_bank` | `AccountService.updateBankAccount` | updatePersonalData, getFiscalData, updateFiscalData, getSettings | No bank-account write method exists anywhere. Needs `AccountService.updateBankAccount` implementation. |
+| `account.set_pix_key` | `AccountService.setPixKey` | (same as above) | No PIX-key write method exists anywhere. Needs `AccountService.setPixKey` implementation. |
+| `set_pix_key` *(deprecated)* | `AccountService.setPixKey` | (same as above) | Same gap as `account.set_pix_key`; resolved when that method lands. |
+
+#### UNKNOWN_SERVICE — token absent from `SERVICE_TOKEN_MAP` (2)
+
+| Capability ID | `domainService` | Status | Resolution |
+|---|---|---|---|
+| `configure_pixel` *(deprecated)* | `PixelService.configure` | **FIXABLE — provider exists** | `PixelService` is a real, complete provider at `backend/src/kloel/services-v2/pixel.service.ts:24` with a purpose-built `configure(workspaceId, { productId, pixelType, pixelId, accessToken })` that normalizes the single-pixel shape and delegates to `ProductService.setPixels`. It is simply not yet in `SERVICE_TOKEN_MAP` nor registered as a `kloel.module` provider. Two HUB patches (below) wire it. The capability's `domainService` ref is already correct. |
+| `products.link_campaign` | `CampaignsService.linkToProduct` | **NEEDS IMPLEMENTATION** | Double defect: (1) token `CampaignsService` (plural) is not a map key — the alias key is `CampaignService` (singular, → `CampaignsService` class); (2) more importantly, `linkToProduct` does not exist on `CampaignsService` (methods: create, findAll, list, createBroadcast, findOne, launch, launchTool, …). No product↔campaign link method exists anywhere. Fixing the token alone would only convert `unknown_service` → `method_not_found`, so the honest state is "needs implementation". Left unchanged to avoid a misleading half-fix. |
+
+#### COMPOUND — multi-service, resolver skips by design (3)
+
+`products.upload_image`, `upload_product_image` → `MediaService.attach + ProductService.setImage`;
+`upload_plan_image` → `MediaService.attach + PlanService.setImage`.
+The resolver intentionally returns `null` for `+`-joined refs (the dispatcher handles these via manual logic). Note: `ProductService.setImage` and `PlanService.setImage` exist, but `MediaService.attach` does **not** (MediaService exposes createVideoJob/uploadDocument/listDocuments/getDocument/deleteDocument). These need either a real `attach` method or a dedicated compound handler. Not counted against resolver coverage because the resolver never routes them.
+
+#### ALIAS — registry pointer, executable via the target (2)
+
+`generate_pix` → "Alias for sales.create_pix"; `generate_boleto` → "Alias for sales.create_boleto".
+Both targets exist and are WIRED (`sales.create_pix` → `SalesService.createPixOrder`, `sales.create_boleto` → `SalesService.createBoletoOrder`).
+
+### HUB patches required (returned to leader — NOT applied in this slice)
+
+Only `configure_pixel` is fixable without new business logic. It requires two
+edits to HUB-owned files (`domain-service-resolver.service.ts` and
+`kloel.module.ts`) — both supplied as `hub_patches_for_leader`. `PixelService`'s
+constructor deps (`ProductService`, `PrismaService`) are already resolvable in
+the kloel module graph, so the registration is boot-safe.
 
 ## Per-domain Capability Tables
 

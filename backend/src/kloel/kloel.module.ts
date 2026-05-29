@@ -75,6 +75,7 @@ import { BrandService } from './services-v2/brand.service';
 import { LeadService } from './services-v2/lead.service';
 import { DocumentService } from './services-v2/document.service';
 import { SessionService } from './services-v2/session.service';
+import { PixelService } from './services-v2/pixel.service';
 // ── services-v2 (Wave 3) — dep-gated capability domain services ──
 import { ChannelService } from './services-v2/channel.service';
 import { MessagingService } from './services-v2/messaging.service';
@@ -489,6 +490,7 @@ import { CrmModule } from '../crm/crm.module';
     LeadService,
     DocumentService,
     SessionService,
+    PixelService,
     // ── services-v2 (Wave 3) dep-gated capability domain services ──
     ChannelService,
     MessagingService,

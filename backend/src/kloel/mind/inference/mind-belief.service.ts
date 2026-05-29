@@ -49,10 +49,10 @@ export class MindBeliefService {
       const rows = await this.prisma
         .$queryRaw/* raw justified: atomic insert-or-read for JSONB composite key */ <MindBelief[]>`
         INSERT INTO "RAC_MindBelief"
-          ("id","workspaceId","subject","predicate","context","mean","variance","samples","alpha","beta")
+          ("id","workspaceId","subject","predicate","context","mean","variance","samples","alpha","beta","updatedAt")
         VALUES
           (${randomUUID()}, ${workspaceId}, ${subject}, ${predicate}, ${contextJson}::jsonb,
-           ${alpha / (alpha + beta)}, ${betaVariance(alpha, beta)}, 0, ${alpha}, ${beta})
+           ${alpha / (alpha + beta)}, ${betaVariance(alpha, beta)}, 0, ${alpha}, ${beta}, NOW())
         ON CONFLICT ("workspaceId", "subject", "predicate", "context") DO NOTHING
         RETURNING *
       `;

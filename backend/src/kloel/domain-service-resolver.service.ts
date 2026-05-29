@@ -54,6 +54,7 @@ import { MessagingService } from './services-v2/messaging.service';
 import { AgentJobService } from './services-v2/agent-job.service';
 import { SearchService } from './services-v2/search.service';
 import { AudioService } from './audio.service';
+import { PixelService } from './services-v2/pixel.service';
 
 import type { UnknownRecord } from '../common/types';
 
@@ -130,6 +131,7 @@ export class KloelDomainServiceResolver {
     ['DocumentService', DocumentService],
     ['SessionService', SessionService],
     ['AudioService', AudioService],
+    ['PixelService', PixelService],
 
     // ── services-v2 capability wiring (Wave 3 integration; deps now resolvable) ──
     ['ChannelService', ChannelService],

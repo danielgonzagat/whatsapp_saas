@@ -14,6 +14,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { KloelConversationStore } from './kloel-conversation-store';
 import { LeadMindCoordinator } from './mind/coordination/lead-mind-coordinator.service';
 import { MindMessageService } from './mind/aliases/mind-message.service';
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 import { KloelReplyEngineService } from './kloel-reply-engine.service';
 import { KloelThreadService } from './kloel-thread.service';
 import { KloelThinkerService, ThinkRequest, ThinkSyncResult } from './kloel-thinker.service';
@@ -54,13 +55,20 @@ export class KloelService {
     private readonly toolDispatcher: KloelToolDispatcherService,
     @Optional() private readonly agentRuntime?: AgentRuntimeContextService,
     @Optional() private readonly mindMessage?: MindMessageService,
+    @Optional() private readonly mindMemory?: MindMemoryItemService,
   ) {
     this.conversationStore = new KloelConversationStore(
       prisma,
       this.logger,
       undefined,
       this.mindMessage,
+      this.mindMemory,
     );
+  }
+
+  /** Canonical Brain → Mind memory delegate (raw-Prisma fallback). */
+  private get mindMemoryItems(): PrismaService['kloelMemory'] {
+    return this.mindMemory?.items ?? this.prisma.kloelMemory;
   }
 
   // ── Context helpers ──
@@ -388,7 +396,7 @@ export class KloelService {
   /** List follow-ups. */
 
   async listFollowups(workspaceId: string, contactId?: string) {
-    return runListFollowups(this.prisma, workspaceId, contactId);
+    return runListFollowups(this.prisma, workspaceId, contactId, this.mindMemoryItems);
   }
 
   async listPersonas(workspaceId: string) {

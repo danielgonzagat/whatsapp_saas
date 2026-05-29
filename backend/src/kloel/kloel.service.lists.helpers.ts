@@ -30,13 +30,15 @@ export async function runListFollowups(
   prisma: PrismaService,
   workspaceId: string,
   contactId?: string,
+  /** Canonical Brain → Mind memory delegate; falls back to prisma.kloelMemory when absent. */
+  mindMemory?: PrismaService['kloelMemory'],
 ) {
   try {
     const whereClause: Prisma.KloelMemoryWhereInput = { workspaceId, category: 'followups' };
     if (contactId) {
       whereClause.metadata = { path: ['contactId'], equals: contactId };
     }
-    const followups = await prisma.kloelMemory.findMany({
+    const followups = await (mindMemory ?? prisma.kloelMemory).findMany({
       where: { ...whereClause, workspaceId },
       orderBy: { createdAt: 'desc' },
       take: 100,

@@ -95,6 +95,7 @@ import {
   coerceWarrantyArgs,
 } from './kloel-chat-tools.service.helpers';
 import { MemoryService } from './memory.service';
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 
 interface ToolCreateFlowArgs {
   name: string;
@@ -119,7 +120,13 @@ export class KloelChatToolsService {
     @Optional() private readonly agentSessions?: AgentRuntimeSessionStore,
     @Optional() private readonly agentSkills?: AgentRuntimeSkillRegistry,
     @Optional() private readonly agentEvidence?: AgentRuntimeEvidenceStoreService,
+    @Optional() private readonly mindMemory?: MindMemoryItemService,
   ) {}
+
+  /** Canonical Brain → Mind memory delegate (raw-Prisma fallback). */
+  private get mindMemoryItems(): PrismaService['kloelMemory'] {
+    return this.mindMemory?.items ?? this.prisma.kloelMemory;
+  }
 
   get hasAgentScheduler(): boolean {
     return !!this.agentScheduler;
@@ -219,7 +226,7 @@ export class KloelChatToolsService {
     workspaceId: string,
     args: ToolGetAgentArtifactArgs,
   ): Promise<ToolResult> {
-    return runGetAgentArtifact(this.prisma, workspaceId, args);
+    return runGetAgentArtifact(this.prisma, workspaceId, args, this.mindMemoryItems);
   }
   async toolUpsertAgentSkill(
     workspaceId: string,
@@ -278,7 +285,10 @@ export class KloelChatToolsService {
   toolGetProductUrls(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
     return runGetProductUrls(this.prisma, workspaceId, args);
   }
-  toolGetProductReviews(workspaceId: string, args: { productId?: string; productName?: string }): Promise<ToolResult> {
+  toolGetProductReviews(
+    workspaceId: string,
+    args: { productId?: string; productName?: string },
+  ): Promise<ToolResult> {
     return runGetProductReviews(this.prisma, workspaceId, args);
   }
   toolGetProductAiConfig(workspaceId: string, args: { productId: string }): Promise<ToolResult> {
@@ -333,7 +343,10 @@ export class KloelChatToolsService {
     return Promise.resolve(buildBlockedConfigurationTool(toolName, error, requiredPath));
   }
 
-  async toolConfigurePixel(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+  async toolConfigurePixel(
+    workspaceId: string,
+    args: Record<string, unknown>,
+  ): Promise<ToolResult> {
     void workspaceId;
     void args;
     return this.blockedConfigurationTool(
@@ -343,7 +356,10 @@ export class KloelChatToolsService {
     );
   }
 
-  async toolConfigureShipping(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+  async toolConfigureShipping(
+    workspaceId: string,
+    args: Record<string, unknown>,
+  ): Promise<ToolResult> {
     void workspaceId;
     void args;
     return this.blockedConfigurationTool(
@@ -353,7 +369,10 @@ export class KloelChatToolsService {
     );
   }
 
-  async toolConfigureSocialProof(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+  async toolConfigureSocialProof(
+    workspaceId: string,
+    args: Record<string, unknown>,
+  ): Promise<ToolResult> {
     void workspaceId;
     void args;
     return this.blockedConfigurationTool(
@@ -363,7 +382,10 @@ export class KloelChatToolsService {
     );
   }
 
-  async toolConfigureOrderBump(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+  async toolConfigureOrderBump(
+    workspaceId: string,
+    args: Record<string, unknown>,
+  ): Promise<ToolResult> {
     void workspaceId;
     void args;
     return this.blockedConfigurationTool(
@@ -391,7 +413,10 @@ export class KloelChatToolsService {
     );
   }
 
-  async toolConfigureExitIntent(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+  async toolConfigureExitIntent(
+    workspaceId: string,
+    args: Record<string, unknown>,
+  ): Promise<ToolResult> {
     void workspaceId;
     void args;
     return this.blockedConfigurationTool(
@@ -401,7 +426,10 @@ export class KloelChatToolsService {
     );
   }
 
-  async toolConfigureAfterPay(workspaceId: string, args: Record<string, unknown>): Promise<ToolResult> {
+  async toolConfigureAfterPay(
+    workspaceId: string,
+    args: Record<string, unknown>,
+  ): Promise<ToolResult> {
     void workspaceId;
     void args;
     return this.blockedConfigurationTool(

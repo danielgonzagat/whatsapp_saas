@@ -46,12 +46,14 @@ export async function syncProductToMemory(
   prisma: PrismaService,
   workspaceId: string,
   product: ProductForMemorySync,
+  /** Canonical Brain → Mind memory delegate; falls back to prisma.kloelMemory when absent. */
+  mindMemory?: PrismaService['kloelMemory'],
 ): Promise<void> {
   try {
     const key = `product:${product.sku || product.id}`;
     const value = buildMemoryValue(product);
     const content = buildMemoryContent(product);
-    await prisma.kloelMemory.upsert({
+    await (mindMemory ?? prisma.kloelMemory).upsert({
       where: { workspaceId_key: { workspaceId, key } },
       create: {
         workspaceId,
@@ -76,9 +78,11 @@ export async function deleteProductFromMemory(
   prisma: PrismaService,
   workspaceId: string,
   product: { id: string; sku: string | null },
+  /** Canonical Brain → Mind memory delegate; falls back to prisma.kloelMemory when absent. */
+  mindMemory?: PrismaService['kloelMemory'],
 ): Promise<void> {
   try {
-    await prisma.kloelMemory.deleteMany({
+    await (mindMemory ?? prisma.kloelMemory).deleteMany({
       where: {
         workspaceId,
         key: { startsWith: `product:${product.sku || product.id}` },

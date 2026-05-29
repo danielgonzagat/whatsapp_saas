@@ -21,6 +21,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildProductMetrics } from './product-metrics.helpers';
 import { syncProductToMemory, deleteProductFromMemory } from './product-memory-sync.helpers';
+import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
 import {
   PRODUCT_LIST_TAKE_CAP,
   buildCreateProductData,
@@ -98,7 +99,13 @@ export class ProductController {
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly opsAlert?: OpsAlertService,
+    @Optional() private readonly mindMemory?: MindMemoryItemService,
   ) {}
+
+  /** Canonical Brain → Mind memory delegate (raw-Prisma fallback). */
+  private get mindMemoryItems(): PrismaService['kloelMemory'] {
+    return this.mindMemory?.items ?? this.prisma.kloelMemory;
+  }
 
   private serializeProductForResponse(
     req: AuthenticatedRequest,
@@ -226,7 +233,7 @@ export class ProductController {
 
     this.logger.log(`Product created: ${product.id} - ${product.name}`);
 
-    await syncProductToMemory(this.prisma, workspaceId, product);
+    await syncProductToMemory(this.prisma, workspaceId, product, this.mindMemoryItems);
 
     return {
       product: this.serializeProductForResponse(req, product),
@@ -267,7 +274,7 @@ export class ProductController {
       throw new NotFoundException('Product not found after update');
     }
 
-    await syncProductToMemory(this.prisma, workspaceId, product);
+    await syncProductToMemory(this.prisma, workspaceId, product, this.mindMemoryItems);
 
     return {
       product: this.serializeProductForResponse(req, product),
@@ -293,7 +300,7 @@ export class ProductController {
 
     await this.prisma.product.deleteMany({ where: { id, workspaceId } });
 
-    await deleteProductFromMemory(this.prisma, workspaceId, existing);
+    await deleteProductFromMemory(this.prisma, workspaceId, existing, this.mindMemoryItems);
 
     return { success: true, deleted: id };
   }
