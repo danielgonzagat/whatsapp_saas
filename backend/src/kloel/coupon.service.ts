@@ -187,22 +187,35 @@ export class CouponService {
   }
 
   /**
-   * Validate a coupon code for a product.
+   * Validate a coupon code for a product. Workspace-isolated through product
+   * ownership. Resolver-compatible 2-arg signature: (workspaceId, args).
    */
-  async validate(productId: string, code: string): Promise<ToolResult> {
+  async validate(
+    workspaceId: string,
+    args: { productId: string; code: string },
+  ): Promise<ToolResult> {
+    const productId = String(args.productId ?? '').trim();
+    const code = String(args.code ?? '').trim();
+    if (!productId || !code) {
+      return { success: false, error: 'productId and code are required' };
+    }
+
+    // Workspace isolation: only validate coupons whose product belongs to ws.
     const coupon = await this.prisma.productCoupon.findFirst({
       where: {
         productId,
         code,
         active: true,
+        product: { workspaceId },
         OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
       },
     });
     if (!coupon) {
-      return { success: false, error: 'coupon_invalid_or_expired' };
+      return { success: false, error: 'coupon_invalid_or_expired', valid: false };
     }
     return {
       success: true,
+      valid: true,
       coupon: {
         id: coupon.id,
         code: coupon.code,

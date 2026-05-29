@@ -2,6 +2,7 @@ import { ChatCompletionTool } from 'openai/resources/chat';
 import { KLOEL_CHAT_TOOLS_MEDIA_BILLING } from './kloel-chat-tools-b.definition';
 import { KLOEL_CHAT_TOOLS_SETTINGS_CAMPAIGNS } from './kloel-chat-tools.definition-extras';
 import { KLOEL_CHAT_TOOLS_CODE } from './kloel-code-tools.definition';
+import { KLOEL_CHAT_TOOLS_QUERY } from './kloel-chat-tools.definition-query';
 
 /** Core tool definitions (products, automation, metrics, payments, whatsapp, leads). */
 const KLOEL_CHAT_TOOLS_CORE: ChatCompletionTool[] = [
@@ -400,6 +401,7 @@ export const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
   ...KLOEL_CHAT_TOOLS_MEDIA_BILLING,
   ...KLOEL_CHAT_TOOLS_SETTINGS_CAMPAIGNS,
   ...KLOEL_CHAT_TOOLS_CODE,
+  ...KLOEL_CHAT_TOOLS_QUERY,
 ];
 
 const KLOEL_SAFE_READ_TOOL_NAMES = [
@@ -423,6 +425,21 @@ const KLOEL_SAFE_READ_TOOL_NAMES = [
   'get_billing_status',
   'self_list_capabilities',
   'self_recent_events',
+  // L14 — canonical read-only QUERY capabilities now exposed to the chat LLM.
+  // Executable via KloelDomainServiceResolver; all category QUERY, no mutation.
+  'get_wallet_balance',
+  'get_wallet_statement',
+  'get_analytics',
+  'get_settings',
+  'list_orders',
+  'get_order_details',
+  'list_checkouts',
+  'get_product_details',
+  // Wave3 — read-only sales/subscriptions/abandonments/coupon QUERY caps.
+  'get_sales_summary',
+  'list_subscriptions',
+  'get_abandonments',
+  'validate_coupon',
 ] as const;
 
 function isFunctionChatTool(

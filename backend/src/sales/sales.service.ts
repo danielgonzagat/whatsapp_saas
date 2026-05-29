@@ -185,6 +185,48 @@ export class SalesService {
     });
   }
 
+  /**
+   * Read-only sales summary for a workspace over a recent window
+   * (resolver-compatible `(workspaceId, args)` shape). Aggregates the
+   * `kloelSale` ledger for the last `args.days` days (default 7): total
+   * orders, paid/pending counts, gross revenue and average ticket — all
+   * workspace-scoped. No mutation.
+   */
+  async summary(
+    workspaceId: string,
+    args?: { days?: number },
+  ): Promise<{
+    success: true;
+    summary: {
+      period: string;
+      totalSales: number;
+      paidCount: number;
+      pendingCount: number;
+      totalRevenue: number;
+      averageTicket: number;
+    };
+  }> {
+    const days = typeof args?.days === 'number' && args.days > 0 ? args.days : 7;
+    const cutoff = new Date(Date.now() - days * 86_400_000);
+    const sales = await this.prisma.kloelSale.findMany({
+      where: { workspaceId, createdAt: { gte: cutoff } },
+      select: { amount: true, status: true },
+    });
+    const paid = sales.filter((s) => s.status === 'paid');
+    const totalRevenue = paid.reduce((sum, s) => sum + (s.amount ?? 0), 0);
+    return {
+      success: true,
+      summary: {
+        period: `${days} dias`,
+        totalSales: sales.length,
+        paidCount: paid.length,
+        pendingCount: sales.filter((s) => s.status === 'pending').length,
+        totalRevenue,
+        averageTicket: paid.length > 0 ? Math.round(totalRevenue / paid.length) : 0,
+      },
+    };
+  }
+
   // ---------------------------------------------------------------------------
   // Tier-5 capability methods (PI-K37) — overload set for createPixOrder,
   // plus fillBuyerData and refund.
