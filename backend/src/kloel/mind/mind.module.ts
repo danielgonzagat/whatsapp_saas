@@ -18,6 +18,9 @@ import { MindWorkspaceStateService } from './memory/mind-workspace-state.service
 import { MindSelfModelService } from './self-model/mind-self-model.service';
 import { MindPerceptionService } from './perception/mind-perception.service';
 import { MindPredictionService } from './mind-prediction.service';
+import { MindMessageService } from './aliases/mind-message.service';
+import { MindMemoryItemService } from './aliases/mind-memory-item.service';
+import { MindCanonicalService } from './mind-canonical.service';
 
 /**
  * MIND module — wires the cognitive substrate services into Nest DI.
@@ -48,6 +51,9 @@ import { MindPredictionService } from './mind-prediction.service';
     MindGlobalPriorService,
     MindWorkspaceStateService,
     MindSelfModelService,
+    MindMessageService,
+    MindMemoryItemService,
+    MindCanonicalService,
   ],
   exports: [
     MindKnowledgeModule,
@@ -65,6 +71,9 @@ import { MindPredictionService } from './mind-prediction.service';
     MindGlobalPriorService,
     MindWorkspaceStateService,
     MindSelfModelService,
+    MindMessageService,
+    MindMemoryItemService,
+    MindCanonicalService,
   ],
 })
 export class MindModule {}
