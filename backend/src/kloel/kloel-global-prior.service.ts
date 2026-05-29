@@ -10,6 +10,19 @@ export interface KloelGlobalPriorResult {
   observations: number;
 }
 
+/**
+ * @deprecated Use {@link MindGlobalPriorService} from `./mind/memory/mind-global-prior.service`.
+ *
+ * Migration path (PI-K29):
+ * 1. MindGlobalPriorService must gain per-tuple `getPrior(channel, decisionType, action)`
+ *    and `recordObservation(channel, decisionType, action, success)` methods that delegate
+ *    to the existing `mindGlobalPrior` table (or to a new bridge method).
+ * 2. Update {@link DecisionOutcomeService} and {@link MindPolicyService#mixWithGlobalPrior}
+ *    to depend on `MindGlobalPriorService` instead.
+ * 3. Once all callers are migrated, delete this file and the `kloelGlobalPrior` table.
+ *
+ * See `docs/architecture/MIND_SERVICE_CONSOLIDATION.md` §1 for full plan.
+ */
 @Injectable()
 export class KloelGlobalPriorService {
   private readonly logger = StructuredLogger.from(KloelGlobalPriorService.name);
