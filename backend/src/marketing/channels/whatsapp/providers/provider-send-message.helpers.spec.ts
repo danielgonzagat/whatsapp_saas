@@ -1,13 +1,7 @@
 import { sendMessage } from './provider-send-message.helpers';
 
-const makeWahaModeMock = (value: boolean): jest.MockedFunction<() => boolean> =>
-  jest.fn(() => value);
-
 function makeDeps(
   overrides: Partial<{
-    isWahaMode: jest.MockedFunction<() => boolean>;
-    wahaSendMessage: jest.Mock;
-    wahaSendMediaFromUrl: jest.Mock;
     metaSendMessage: jest.Mock;
     metaSendMediaFromUrl: jest.Mock;
     opsAlert: jest.Mock;
@@ -15,14 +9,6 @@ function makeDeps(
     readRecord: jest.Mock;
   }> = {},
 ) {
-  const isWahaMode = overrides.isWahaMode ?? makeWahaModeMock(false);
-  const wahaProvider =
-    overrides.wahaSendMessage || overrides.wahaSendMediaFromUrl
-      ? {
-          sendMessage: overrides.wahaSendMessage ?? jest.fn(),
-          sendMediaFromUrl: overrides.wahaSendMediaFromUrl ?? jest.fn(),
-        }
-      : undefined;
   const metaCloudProvider = {
     sendMessage: overrides.metaSendMessage ?? jest.fn(),
     sendMediaFromUrl: overrides.metaSendMediaFromUrl ?? jest.fn(),
@@ -32,11 +18,11 @@ function makeDeps(
   const readRecord = overrides.readRecord ?? jest.fn((v: unknown) => v as Record<string, unknown>);
 
   return {
-    isWahaMode,
-    wahaProvider: wahaProvider as Parameters<typeof sendMessage>[0]['wahaProvider'],
-    metaCloudProvider: metaCloudProvider as Parameters<typeof sendMessage>[0]['metaCloudProvider'],
-    opsAlert: opsAlert as Parameters<typeof sendMessage>[0]['opsAlert'],
-    logger: logger as Parameters<typeof sendMessage>[0]['logger'],
+    metaCloudProvider: metaCloudProvider as unknown as Parameters<
+      typeof sendMessage
+    >[0]['metaCloudProvider'],
+    opsAlert: opsAlert as unknown as Parameters<typeof sendMessage>[0]['opsAlert'],
+    logger: logger as unknown as Parameters<typeof sendMessage>[0]['logger'],
     readRecord: readRecord as Parameters<typeof sendMessage>[0]['readRecord'],
   };
 }
@@ -167,60 +153,6 @@ describe('provider-send-message.helpers', () => {
     });
   });
 
-  describe('sendMessage — WAHA path', () => {
-    it('sends a text message via WAHA and returns success with messageId', async () => {
-      const wahaSendMessage = jest.fn().mockResolvedValue({
-        success: true,
-        message: { id: 'waha-msg-1' },
-      });
-      const isWahaMode = makeWahaModeMock(true);
-      const readRecord = jest.fn((v: unknown) => v as Record<string, unknown>);
-      const deps = makeDeps({ isWahaMode, wahaSendMessage, readRecord });
-
-      const result = await sendMessage(deps, 'ws-1', '5511999991111', 'WAHA message');
-
-      expect(wahaSendMessage).toHaveBeenCalledWith('ws-1', '5511999991111', 'WAHA message');
-      expect(result).toEqual({ success: true, messageId: 'waha-msg-1' });
-    });
-
-    it('sends media via WAHA sendMediaFromUrl', async () => {
-      const wahaSendMediaFromUrl = jest.fn().mockResolvedValue({
-        success: true,
-        message: { id: 'waha-media-1' },
-      });
-      const isWahaMode = makeWahaModeMock(true);
-      const readRecord = jest.fn((v: unknown) => v as Record<string, unknown>);
-      const deps = makeDeps({ isWahaMode, wahaSendMediaFromUrl, readRecord });
-
-      const result = await sendMessage(deps, 'ws-1', '5511999991111', 'Caption', {
-        mediaUrl: 'https://example.com/img.png',
-        mediaType: 'image',
-      });
-
-      expect(wahaSendMediaFromUrl).toHaveBeenCalledWith(
-        'ws-1',
-        '5511999991111',
-        'https://example.com/img.png',
-        'Caption',
-        'image',
-      );
-      expect(result).toEqual({ success: true, messageId: 'waha-media-1' });
-    });
-
-    it('returns a controlled failure when WAHA mode has no provider', async () => {
-      const isWahaMode = makeWahaModeMock(true);
-      const opsAlert = jest.fn();
-      const loggerError = jest.fn();
-      const deps = makeDeps({ isWahaMode, opsAlert, loggerError });
-
-      const result = await sendMessage(deps, 'ws-1', '5511999991111', 'WAHA message');
-
-      expect(result).toEqual({ success: false, error: 'waha_provider_unavailable' });
-      expect(opsAlert).toHaveBeenCalledTimes(1);
-      expect(loggerError).toHaveBeenCalledWith('Send failed: waha_provider_unavailable');
-    });
-  });
-
   describe('sendMessage — error handling', () => {
     it('returns success:false and logs when meta-cloud send throws', async () => {
       const metaSendMessage = jest.fn().mockRejectedValue(new Error('Network failure'));
@@ -233,20 +165,6 @@ describe('provider-send-message.helpers', () => {
       expect(result).toEqual({ success: false, error: 'Network failure' });
       expect(opsAlert).toHaveBeenCalled();
       expect(loggerError).toHaveBeenCalledWith('Send failed: Network failure');
-    });
-
-    it('returns success:false and logs when waha send throws', async () => {
-      const wahaSendMessage = jest.fn().mockRejectedValue(new Error('WAHA down'));
-      const isWahaMode = makeWahaModeMock(true);
-      const opsAlert = jest.fn();
-      const loggerError = jest.fn();
-      const deps = makeDeps({ isWahaMode, wahaSendMessage, opsAlert, loggerError });
-
-      const result = await sendMessage(deps, 'ws-1', '5511999991111', 'Msg');
-
-      expect(result).toEqual({ success: false, error: 'WAHA down' });
-      expect(opsAlert).toHaveBeenCalled();
-      expect(loggerError).toHaveBeenCalledWith('Send failed: WAHA down');
     });
 
     it('handles non-Error throws gracefully', async () => {

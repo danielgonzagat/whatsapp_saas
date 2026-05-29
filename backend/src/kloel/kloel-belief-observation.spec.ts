@@ -139,12 +139,10 @@ describe('KloelReplyEngineService belief observation (PI-k6)', () => {
     });
 
     it('calls observeBinary with outcome=0 when reply is empty string', async () => {
-      const {
-        buildAssistantReplyImpl,
-      } = jest.requireMock<typeof import('./kloel-reply-engine.helpers')>(
-        './kloel-reply-engine.helpers',
-      );
-      buildAssistantReplyImpl.mockResolvedValueOnce('');
+      const { buildAssistantReplyImpl } = jest.requireMock<
+        typeof import('./kloel-reply-engine.helpers')
+      >('./kloel-reply-engine.helpers');
+      (buildAssistantReplyImpl as unknown as jest.Mock).mockResolvedValueOnce('');
 
       const module: TestingModule = await Test.createTestingModule({
         providers: [
