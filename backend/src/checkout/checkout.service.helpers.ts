@@ -19,9 +19,7 @@ export interface DuplicateCheckoutSource {
 }
 
 /** Build the CreateCheckoutInput for duplicating a checkout record. */
-export function buildDuplicateCheckoutInput(
-  source: DuplicateCheckoutSource,
-): CreateCheckoutInput {
+export function buildDuplicateCheckoutInput(source: DuplicateCheckoutSource): CreateCheckoutInput {
   const input: CreateCheckoutInput = {
     name: `${source.name} (Copia)`,
     priceInCents: source.priceInCents,
@@ -85,7 +83,14 @@ export function mapPixelsForDuplicate<
 
 /** Strip Prisma metadata fields from a config record, leaving only business payload. */
 export function stripConfigMetadata(config: Record<string, unknown>): Record<string, unknown> {
-  const { id, planId, pixels, createdAt, updatedAt, ...rest } = config;
+  const {
+    id: _id,
+    planId: _planId,
+    pixels: _pixels,
+    createdAt: _createdAt,
+    updatedAt: _updatedAt,
+    ...rest
+  } = config;
   return rest;
 }
 
@@ -131,9 +136,7 @@ export interface PlanLike {
  * True when the plan record is active, of PLAN kind, and eligible for
  * legacy checkout migration.
  */
-export function isLegacyPlanEligibleForMigration(
-  plan: PlanLike | null | undefined,
-): boolean {
+export function isLegacyPlanEligibleForMigration(plan: PlanLike | null | undefined): boolean {
   return !!(plan?.isActive && plan.kind === 'PLAN' && plan.legacyCheckoutEnabled);
 }
 

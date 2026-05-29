@@ -6,7 +6,9 @@ import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import {
   type KloelStreamEvent,
   createKloelContentEvent,
-  createKloelStatusEvent, createKloelDoneEvent } from './kloel-stream-events';
+  createKloelStatusEvent,
+  createKloelDoneEvent,
+} from './kloel-stream-events';
 import { chatCompletionStreamWithRetry } from './openai-wrapper';
 import { KloelLLME2EGuard } from './kloel-llm-e2e-guard';
 

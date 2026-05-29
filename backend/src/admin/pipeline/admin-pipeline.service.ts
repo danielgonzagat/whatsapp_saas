@@ -10,7 +10,7 @@ export type PipelineStateRow = {
   state: PipelineStateValue;
   transitionedAt: Date;
   transitionedBy: string | null;
-  snapshot: unknown | null;
+  snapshot: unknown;
   fallbackRate1h: number;
 };
 

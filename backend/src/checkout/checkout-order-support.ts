@@ -85,7 +85,8 @@ export class CheckoutOrderSupport {
       return product.imageUrl;
     }
     if (Array.isArray(product.images)) {
-      const firstImage = product.images.find((entry) => typeof entry === 'string' && entry.trim());
+      const images = product.images as unknown[];
+      const firstImage = images.find((entry) => typeof entry === 'string' && entry.trim());
       if (typeof firstImage === 'string') {
         return firstImage;
       }

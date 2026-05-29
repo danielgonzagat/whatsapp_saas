@@ -45,8 +45,10 @@ describe('buildCheckoutOrderMetadata', () => {
     producerNetInCents: 8742,
   };
 
-  function m(result: ReturnType<typeof buildCheckoutOrderMetadata>) {
-    return Object(result);
+  function m(
+    result: ReturnType<typeof buildCheckoutOrderMetadata>,
+  ): ReturnType<typeof buildCheckoutOrderMetadata> {
+    return result;
   }
 
   it('builds metadata with all fields populated', () => {

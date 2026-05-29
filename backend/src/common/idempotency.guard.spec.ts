@@ -27,7 +27,7 @@ type GuardResponse = {
   _status: number;
   _body: unknown;
   status: jest.Mock;
-  json: jest.Mock;
+  json: jest.Mock<unknown, [unknown]>;
 };
 type GuardRedis = Redis & ReturnType<typeof makeFakeRedis>;
 
@@ -95,7 +95,7 @@ function makeContext(options: {
     _status: 200,
     _body: undefined,
     status: jest.fn(),
-    json: jest.fn(),
+    json: jest.fn<unknown, [unknown]>(),
   };
   response.status = jest.fn((code: number) => {
     response._status = code;

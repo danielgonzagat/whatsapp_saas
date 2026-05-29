@@ -10,7 +10,8 @@ describe('checkout migration guard — quality surface', () => {
   it('keeps the checkout runtime mounted without the legacy checkout webhook controller', () => {
     const serviceSource = readFileSync(resolve(__dirname, './checkout.service.ts'), 'utf8');
     const controllers: unknown[] =
-      Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, CheckoutModule) || [];
+      (Reflect.getMetadata(MODULE_METADATA.CONTROLLERS, CheckoutModule) as unknown[] | undefined) ??
+      [];
     const controllerNames = controllers
       .filter((controller): controller is { name: string } => typeof controller === 'function')
       .map((controller) => controller.name);

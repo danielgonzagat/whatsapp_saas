@@ -68,7 +68,7 @@ export class HealthService {
     if (statusData) {
       let parsed: Record<string, unknown> = {};
       try {
-        parsed = JSON.parse(statusData);
+        parsed = JSON.parse(statusData) as Record<string, unknown>;
       } catch {
         /* invalid JSON in Redis */
       }

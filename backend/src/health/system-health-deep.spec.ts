@@ -10,7 +10,9 @@ jest.mock('@sentry/node', () => ({
   setContext: jest.fn(),
   setTag: jest.fn(),
   setExtra: jest.fn(),
-  withScope: jest.fn((callback) => callback({ setTag: jest.fn(), setExtra: jest.fn() })),
+  withScope: jest.fn((callback: (scope: { setTag: jest.Mock; setExtra: jest.Mock }) => void) =>
+    callback({ setTag: jest.fn(), setExtra: jest.fn() }),
+  ),
 }));
 
 jest.mock('ioredis', () => {

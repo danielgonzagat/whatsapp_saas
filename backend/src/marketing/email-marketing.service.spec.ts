@@ -2,7 +2,7 @@ import { EmailMarketingService } from './email-marketing.service';
 
 type WorkerCb = (job: { data: { campaignId: string; workspaceId: string } }) => Promise<void>;
 
-let workerCallback: WorkerCb | null = null;
+let _workerCallback: WorkerCb | null = null;
 
 jest.mock('bullmq', () => {
   const queueAdd = jest.fn();
@@ -15,7 +15,7 @@ jest.mock('bullmq', () => {
       close: queueClose,
     })),
     Worker: jest.fn().mockImplementation((_name: string, cb: WorkerCb) => {
-      workerCallback = cb;
+      _workerCallback = cb;
       return {
         close: workerClose,
         on: jest.fn(),
@@ -51,7 +51,7 @@ describe('EmailMarketingService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    workerCallback = null;
+    _workerCallback = null;
     sendEmail.mockResolvedValue(true);
     approvalFindFirst.mockResolvedValue({ id: 'approval-email-1' });
 
@@ -112,7 +112,11 @@ describe('EmailMarketingService', () => {
       });
 
       expect(campaignCreate).toHaveBeenCalledTimes(1);
-      const call = campaignCreate.mock.calls[0][0];
+      const call = (
+        campaignCreate.mock.calls as Array<
+          [{ data: { name: string; fromEmail: string; recipients: { create: unknown[] } } }]
+        >
+      )[0][0];
       expect(call.data.name).toBe('Test Campaign');
       expect(call.data.fromEmail).toBe('custom@test.com');
       expect(call.data.recipients.create).toHaveLength(2);
@@ -141,7 +145,9 @@ describe('EmailMarketingService', () => {
         recipients: [{ email: 'x@test.com' }],
       });
 
-      const call = campaignCreate.mock.calls[0][0];
+      const call = (
+        campaignCreate.mock.calls as Array<[{ data: { fromEmail: string; status: string } }]>
+      )[0][0];
       expect(call.data.fromEmail).toBe('noreply@kloel.com');
       expect(call.data.status).toBe('DRAFT');
       expect(result.totalRecipients).toBe(1);

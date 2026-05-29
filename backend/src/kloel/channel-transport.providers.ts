@@ -104,7 +104,7 @@ export class InstagramChannelTransport implements ChannelTransportProvider {
         `Instagram send dispatched workspace=${workspaceId} recipient=${request.recipientId}`,
       );
 
-      const rawResponse = response as Record<string, unknown> | undefined;
+      const rawResponse = response;
       const messageId =
         typeof rawResponse?.message_id === 'string' ? rawResponse.message_id : undefined;
 
@@ -144,11 +144,7 @@ export class MessengerChannelTransport implements ChannelTransportProvider {
       );
     }
     const channelSession = await this.metaConnection?.resolveConnection(workspaceId);
-    if (
-      !channelSession?.pageId ||
-      !channelSession.pageAccessToken ||
-      channelSession.tokenExpired
-    ) {
+    if (!channelSession?.pageId || !channelSession.pageAccessToken || channelSession.tokenExpired) {
       return blockedCapability(
         'messenger',
         'Messenger outbound bloqueado ate existir pagina conectada com page token valido.',
@@ -186,7 +182,7 @@ export class MessengerChannelTransport implements ChannelTransportProvider {
         `Messenger send dispatched workspace=${workspaceId} recipient=${request.recipientId}`,
       );
 
-      const rawResponse = response as Record<string, unknown> | undefined;
+      const rawResponse = response;
       const messageId =
         typeof rawResponse?.message_id === 'string' ? rawResponse.message_id : undefined;
 

@@ -111,12 +111,12 @@ describe('AdminDashboardService', () => {
     (computeApprovalRate as jest.Mock).mockReturnValue(0.833);
     (computeAverageTicket as jest.Mock).mockReturnValue(10000);
     (deltaPct as jest.Mock).mockReturnValue(15);
-    (makeMoneyKpi as jest.Mock).mockImplementation((v, p) => ({
+    (makeMoneyKpi as jest.Mock).mockImplementation((v: unknown, p: unknown) => ({
       value: v,
       previous: p,
       deltaPct: p !== null ? 15 : null,
     }));
-    (makeNumberKpi as jest.Mock).mockImplementation((v, p) => ({
+    (makeNumberKpi as jest.Mock).mockImplementation((v: unknown, p: unknown) => ({
       value: v,
       previous: p,
       deltaPct: p !== null ? 15 : null,
@@ -176,12 +176,12 @@ describe('AdminDashboardService', () => {
       });
       (queryGmvDailySeries as jest.Mock).mockResolvedValue([]);
       (queryRevenueKloelDailySeries as jest.Mock).mockResolvedValue([]);
-      (makeMoneyKpi as jest.Mock).mockImplementation((v) => ({
+      (makeMoneyKpi as jest.Mock).mockImplementation((v: unknown) => ({
         value: v,
         previous: null,
         deltaPct: null,
       }));
-      (makeNumberKpi as jest.Mock).mockImplementation((v) => ({
+      (makeNumberKpi as jest.Mock).mockImplementation((v: unknown) => ({
         value: v,
         previous: null,
         deltaPct: null,
@@ -226,12 +226,12 @@ describe('AdminDashboardService', () => {
         label: 'Últimos 30 dias',
         previous: null,
       });
-      (makeMoneyKpi as jest.Mock).mockImplementation((v) => ({
+      (makeMoneyKpi as jest.Mock).mockImplementation((v: unknown) => ({
         value: v,
         previous: null,
         deltaPct: null,
       }));
-      (makeNumberKpi as jest.Mock).mockImplementation((v) => ({
+      (makeNumberKpi as jest.Mock).mockImplementation((v: unknown) => ({
         value: v,
         previous: null,
         deltaPct: null,
@@ -248,7 +248,7 @@ describe('AdminDashboardService', () => {
       await service.getHome('30D', 'PREVIOUS');
 
       expect(mockQueryRaw).toHaveBeenCalledTimes(4);
-      const firstCall = mockQueryRaw.mock.calls[0][0] as { strings: string[] };
+      const firstCall = (mockQueryRaw.mock.calls[0] as unknown[])[0] as { strings: string[] };
       expect(firstCall.strings.join(' ')).toContain('RAC_CustomerSubscription');
     });
   });

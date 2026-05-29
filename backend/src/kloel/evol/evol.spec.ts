@@ -4,12 +4,7 @@ import { ProposalBuilder } from './proposal.builder';
 import { HumanAuthorizationGateway } from './human-authorization.gateway';
 import { AgentOrchestrationBridgeService } from './agent-orchestration.bridge';
 import { ExperimentRunner } from './experiment.runner';
-import { RTierDeltaMonitor } from './r-tier-delta.monitor';
-import { AutomaticRollbackService } from './automatic-rollback.service';
-import { ProtectedFilesFirewallService } from './protected-files.firewall';
-import { CodacyRigorEnforcer } from './codacy-rigor.enforcer';
-import { EvolutionAuditLog } from './evolution-audit.log';
-import type { SelfGap, ImprovementProposal, HumanAuthorization, RTier } from './types';
+import type { SelfGap, ImprovementProposal, HumanAuthorization } from './types';
 import { commercialImpactWeight, tierToNumber } from './types';
 
 function makePaymentSignal(workspaceId = 'ws-1'): GapSignal {

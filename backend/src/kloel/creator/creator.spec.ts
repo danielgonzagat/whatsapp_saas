@@ -12,11 +12,7 @@ import { adviseMentionTiming, type MentionHistoryEntry } from './mention-timing.
 import { detectAudienceSaturation } from './audience-saturation.detector';
 import { protectAuthenticity } from './authenticity.protector';
 import { trackEngagementVsConversion } from './engagement-vs-conversion.tracker';
-import { CreatorTrustCapitalTrackerService } from './creator-trust-capital.tracker';
-
 import type { CreatorEvent } from './types';
-import type { TrustState } from '../trust/trust.types';
-
 const NOW = Date.parse('2026-05-14T00:00:00.000Z');
 
 function baseCreatorEvent(over: Partial<CreatorEvent> = {}): CreatorEvent {
@@ -26,17 +22,6 @@ function baseCreatorEvent(over: Partial<CreatorEvent> = {}): CreatorEvent {
     occurredAt: over.occurredAt ?? new Date(NOW).toISOString(),
     ...(over.valence !== undefined ? { valence: over.valence } : {}),
     ...(over.payload !== undefined ? { payload: over.payload } : {}),
-  };
-}
-
-function trustState(over?: Partial<TrustState>): TrustState {
-  return {
-    trustScore: over?.trustScore ?? 0.75,
-    fatigueLevel: over?.fatigueLevel ?? 0,
-    desperationLevel: over?.desperationLevel ?? 0,
-    lastInteractionAt: over?.lastInteractionAt ?? new Date(NOW).toISOString(),
-    silentInteractionsCount: over?.silentInteractionsCount ?? 0,
-    brandRiskFlags: over?.brandRiskFlags ?? [],
   };
 }
 

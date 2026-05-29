@@ -18,13 +18,15 @@ describe('InboxEventsService', () => {
 
   beforeEach(async () => {
     subscriber = {
-      subscribe: jest.fn().mockResolvedValue(undefined),
-      on: jest.fn(),
-      quit: jest.fn().mockResolvedValue(undefined),
+      subscribe: jest.fn<Promise<void>, [string]>().mockResolvedValue(undefined),
+      on: jest.fn<void, [string, (channel: string, message: string) => void]>(),
+      quit: jest.fn<Promise<void>, []>().mockResolvedValue(undefined),
     };
-    redis = { duplicate: jest.fn().mockReturnValue(subscriber) };
-    gateway = { emitToWorkspace: jest.fn() };
-    opsAlert = { alertOnCriticalError: jest.fn().mockResolvedValue(undefined) };
+    redis = { duplicate: jest.fn<typeof subscriber, []>().mockReturnValue(subscriber) };
+    gateway = { emitToWorkspace: jest.fn<void, [string, string, unknown]>() };
+    opsAlert = {
+      alertOnCriticalError: jest.fn<Promise<void>, [Error, string]>().mockResolvedValue(undefined),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [

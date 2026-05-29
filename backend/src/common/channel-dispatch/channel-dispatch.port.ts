@@ -96,7 +96,6 @@ export interface EmailSendInput {
   proactive?: boolean;
 }
 
-
 /**
  * TikTok outbound input. TikTok Business Messaging has NO programmatic
  * outbound-send API today (inbound webhook only), so the adapter resolves

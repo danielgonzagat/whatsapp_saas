@@ -1,4 +1,5 @@
 import { expectValueOf } from '../../../../test/expect-value-of';
+import { partialMatch, stringContains } from '../../../../test/helpers/match-instance';
 import { AccountAgentService } from './account-agent.service';
 import { ACCOUNT_CAPABILITY_REGISTRY } from './account-agent.registry';
 import {
@@ -13,7 +14,9 @@ jest.mock('../../../queue/queue', () => ({
   autopilotQueue: { add: jest.fn().mockResolvedValue(undefined) },
 }));
 
-const { autopilotQueue } = jest.requireMock('../../../queue/queue');
+const { autopilotQueue } = jest.requireMock<{ autopilotQueue: { add: jest.Mock } }>(
+  '../../../queue/queue',
+);
 
 describe('AccountAgentService', () => {
   let service: AccountAgentService;
@@ -44,7 +47,7 @@ describe('AccountAgentService', () => {
     expect(result).toEqual(
       expect.objectContaining({
         created: true,
-        approval: expect.objectContaining({
+        approval: partialMatch({
           kind: 'product_creation',
           requestedProductName: 'serum',
           status: 'OPEN',
@@ -65,7 +68,7 @@ describe('AccountAgentService', () => {
     );
     expect(prisma.agentWorkItem.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        create: expect.objectContaining({
+        create: partialMatch({
           workspaceId: 'ws-1',
           kind: 'catalog_gap_detected',
           state: 'WAITING_APPROVAL',
@@ -114,7 +117,7 @@ describe('AccountAgentService', () => {
     expect(approval).toEqual(
       expect.objectContaining({
         approved: true,
-        nextPrompt: expect.stringContaining('Descreva'),
+        nextPrompt: stringContains('Descreva'),
       }),
     );
 
@@ -126,7 +129,7 @@ describe('AccountAgentService', () => {
     expect(descriptionStep).toEqual(
       expect.objectContaining({
         completed: false,
-        nextPrompt: expect.stringContaining('Descreva todos os planos'),
+        nextPrompt: stringContains('Descreva todos os planos'),
       }),
     );
 
@@ -141,7 +144,7 @@ describe('AccountAgentService', () => {
     expect(offersStep).toEqual(
       expect.objectContaining({
         completed: false,
-        nextPrompt: expect.stringContaining('informe o nome da empresa'),
+        nextPrompt: stringContains('informe o nome da empresa'),
       }),
     );
 
@@ -159,11 +162,11 @@ describe('AccountAgentService', () => {
     );
     expect(prisma.product.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
+        data: partialMatch({
           workspaceId: 'ws-1',
           name: 'serum',
           paymentLink: 'https://pay.test/serum-start',
-          metadata: expect.objectContaining({
+          metadata: partialMatch({
             faq: expectValueOf(Array),
             offers: expectValueOf(Array),
           }),
@@ -193,7 +196,7 @@ describe('AccountAgentService', () => {
     );
     expect(prisma.agentWorkItem.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        create: expect.objectContaining({
+        create: partialMatch({
           kind: 'catalog_gap_detected',
           state: 'WAITING_APPROVAL',
         }),
@@ -218,8 +221,11 @@ describe('AccountAgentService', () => {
 
     await service.approveCatalogApproval('ws-1', approvalId);
 
-    const updateArgs = prisma.kloelMemory.update.mock.calls.at(-1)?.[0];
-    expect(updateArgs.data.metadata).toEqual({
+    const updateCalls = prisma.kloelMemory.update.mock.calls as Array<
+      [{ data: { metadata: Record<string, unknown> } }]
+    >;
+    const updateArgs = updateCalls.at(-1)?.[0];
+    expect(updateArgs?.data.metadata).toEqual({
       status: 'APPROVED',
       inputSessionId: expectValueOf(String),
     });
@@ -256,14 +262,17 @@ describe('AccountAgentService', () => {
       'Empresa: Clinica Exemplo LTDA. CNPJ 12.345.678/0001-90.',
     );
 
-    const updateArgs = prisma.kloelMemory.update.mock.calls.at(-1)?.[0];
-    expect(updateArgs.data.metadata).toEqual(
-      expect.objectContaining({
+    const updateCalls = prisma.kloelMemory.update.mock.calls as Array<
+      [{ data: { metadata: Record<string, unknown> } }]
+    >;
+    const updateArgs = updateCalls.at(-1)?.[0];
+    expect(updateArgs?.data.metadata).toEqual(
+      partialMatch({
         status: 'COMPLETED',
         productId: 'product-1',
       }),
     );
-    expect(Object.keys(updateArgs.data.metadata)).toEqual(
+    expect(Object.keys(updateArgs?.data.metadata ?? {})).toEqual(
       expect.not.arrayContaining(['0', '1', '2']),
     );
   });
@@ -283,7 +292,7 @@ describe('AccountAgentService', () => {
     expect(runtime.noLegalActions).toBe(false);
     expect(prisma.agentWorkItem.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
+        data: partialMatch({
           kind: 'api_key_gap',
           state: 'OPEN',
         }),
@@ -291,7 +300,7 @@ describe('AccountAgentService', () => {
     );
     expect(prisma.agentWorkItem.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
+        data: partialMatch({
           kind: 'webhook_gap',
           state: 'OPEN',
         }),
@@ -299,7 +308,7 @@ describe('AccountAgentService', () => {
     );
     expect(prisma.agentWorkItem.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
+        data: partialMatch({
           kind: 'team_configuration_gap',
           state: 'OPEN',
         }),

@@ -54,6 +54,7 @@ export class NoopKloelLLME2EGuard implements KloelLLME2EGuard {
     if (!this.isEnabled()) {
       throw new Error('NoopKloelLLME2EGuard.buildStream called outside e2e harness');
     }
+    await Promise.resolve();
 
     const now = Math.floor(Date.now() / 1000);
     yield {

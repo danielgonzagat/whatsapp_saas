@@ -1,14 +1,23 @@
 import { ExecutionContext } from '@nestjs/common';
 import { ROUTE_ARGS_METADATA } from '@nestjs/common/constants';
+import { JwtPayload } from '../interfaces/jwt-payload.interface';
 import { CurrentUser } from './current-user.decorator';
 
-function getParamDecoratorFactory() {
+type CurrentUserFactory = (
+  data: keyof JwtPayload | undefined,
+  ctx: ExecutionContext,
+) => JwtPayload | JwtPayload[keyof JwtPayload] | undefined;
+
+function getParamDecoratorFactory(): CurrentUserFactory {
   class TestController {
     handler(@CurrentUser() _user: unknown) {}
   }
-  const metadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, TestController, 'handler');
-  const key = Object.keys(metadata)[0];
-  return metadata[key].factory;
+  const metadata = Reflect.getMetadata(ROUTE_ARGS_METADATA, TestController, 'handler') as Record<
+    string,
+    { factory: CurrentUserFactory }
+  >;
+  const entry = Object.values(metadata)[0];
+  return entry.factory;
 }
 
 function buildMockContext(user: unknown): ExecutionContext {

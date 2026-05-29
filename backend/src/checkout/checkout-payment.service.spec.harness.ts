@@ -13,10 +13,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutPaymentService } from './checkout-payment.service';
 import { CheckoutPostPaymentEffectsService } from './checkout-post-payment-effects.service';
 import { CheckoutSocialLeadService } from './checkout-social-lead.service';
-import { makeOrder, makeChargeResult, type CheckoutPaymentPrismaMock } from './checkout-payment.service.fixtures';
 import {
-  CHECKOUT_PAYMENT_E2E_GUARD,
-} from './checkout-payment-e2e-guard';
+  makeOrder,
+  makeChargeResult,
+  type CheckoutPaymentPrismaMock,
+} from './checkout-payment.service.fixtures';
+import { CHECKOUT_PAYMENT_E2E_GUARD } from './checkout-payment-e2e-guard';
 import { CheckoutEventEmitterService } from '../kloel/checkout-emitter/checkout-event-emitter.service';
 
 /**

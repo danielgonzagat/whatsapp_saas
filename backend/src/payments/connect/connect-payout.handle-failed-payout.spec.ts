@@ -7,6 +7,7 @@ import {
   createHarness,
   makeBalance,
 } from './connect-payout.service.spec.helpers';
+import { partialMatch } from '../../../test/helpers/match-instance';
 
 describe('ConnectPayoutService.handleFailedPayout', () => {
   it('recredits the local available balance via an idempotent ledger adjustment', async () => {
@@ -90,7 +91,7 @@ describe('ConnectPayoutService.handleFailedPayout', () => {
 
     expect(ledger.creditAvailableByAdjustment).toHaveBeenCalledWith(
       expect.objectContaining({
-        metadata: expect.objectContaining({
+        metadata: partialMatch({
           stripePayoutId: 'po_webhook_correlate_123',
         }),
       }),

@@ -31,12 +31,6 @@ type PrismaMock = {
   $transaction: jest.Mock;
 };
 
-const makePlan = (overrides: Record<string, unknown> = {}) => ({
-  id: 'plan_1',
-  name: 'Test Plan',
-  ...overrides,
-});
-
 describe('CheckoutCatalogService', () => {
   let service: CheckoutCatalogService;
   let prisma: PrismaMock;

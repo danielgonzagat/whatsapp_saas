@@ -1,4 +1,5 @@
 import { NotFoundException } from '@nestjs/common';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { SmartTimeService } from '../analytics/smart-time/smart-time.service';

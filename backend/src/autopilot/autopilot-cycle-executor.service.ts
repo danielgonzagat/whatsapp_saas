@@ -122,7 +122,16 @@ export class AutopilotCycleExecutorService {
       buyingSignal: false,
     };
     try {
-      analysisResult = JSON.parse(completion.choices[0]?.message?.content || '{}');
+      const parsed: unknown = JSON.parse(completion.choices[0]?.message?.content || '{}');
+      if (parsed && typeof parsed === 'object') {
+        const record = parsed as Record<string, unknown>;
+        analysisResult = {
+          intent: typeof record.intent === 'string' ? record.intent : 'unknown',
+          sentiment: typeof record.sentiment === 'string' ? record.sentiment : 'neutral',
+          buyingSignal: typeof record.buyingSignal === 'boolean' ? record.buyingSignal : false,
+          stage: typeof record.stage === 'string' ? record.stage : undefined,
+        };
+      }
     } catch {
       /* invalid JSON from model */
     }

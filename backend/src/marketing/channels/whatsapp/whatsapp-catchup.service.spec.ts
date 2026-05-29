@@ -2,9 +2,12 @@ jest.mock('../../../queue/queue', () => ({
   autopilotQueue: { add: jest.fn().mockResolvedValue(undefined) },
 }));
 
-const { autopilotQueue } = jest.requireMock('../../../queue/queue');
+const { autopilotQueue } = jest.requireMock<{ autopilotQueue: { add: jest.Mock } }>(
+  '../../../queue/queue',
+);
 
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
+import { partialMatch, stringContains, stringMatch } from '../../../../test/helpers/match-instance';
 import {
   applyCatchupEnvDefaults,
   buildCatchupMocks,
@@ -167,9 +170,9 @@ describe('WhatsAppCatchupService', () => {
     expect(prisma.workspace.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'ws-1' },
-        data: expect.objectContaining({
-          providerSettings: expect.objectContaining({
-            whatsappApiSession: expect.objectContaining({
+        data: partialMatch({
+          providerSettings: partialMatch({
+            whatsappApiSession: partialMatch({
               lastCatchupImportedMessages: 3,
               lastCatchupTouchedChats: 2,
               lastCatchupOverflow: true,
@@ -197,7 +200,7 @@ describe('WhatsAppCatchupService', () => {
         mode: 'reply_all_recent_first',
       }),
       expect.objectContaining({
-        jobId: expect.stringContaining('catchup-sweep-unread'),
+        jobId: stringContains('catchup-sweep-unread'),
       }),
     );
   });
@@ -249,11 +252,11 @@ describe('WhatsAppCatchupService', () => {
     expect(prisma.workspace.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'ws-1' },
-        data: expect.objectContaining({
-          providerSettings: expect.objectContaining({
-            whatsappApiSession: expect.objectContaining({
+        data: partialMatch({
+          providerSettings: partialMatch({
+            whatsappApiSession: partialMatch({
               recoveryBlockedReason: 'noweb_store_misconfigured',
-              lastCatchupError: expect.stringContaining('Enable NOWEB store'),
+              lastCatchupError: stringContains('Enable NOWEB store'),
             }),
           }),
         }),
@@ -263,7 +266,7 @@ describe('WhatsAppCatchupService', () => {
       expect.objectContaining({
         workspaceId: 'ws-1',
         phase: 'sync_error',
-        meta: expect.objectContaining({
+        meta: partialMatch({
           recoveryBlockedReason: 'noweb_store_misconfigured',
         }),
       }),
@@ -405,10 +408,10 @@ describe('WhatsAppCatchupService', () => {
     expect(prisma.workspace.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'ws-1' },
-        data: expect.objectContaining({
-          providerSettings: expect.objectContaining({
+        data: partialMatch({
+          providerSettings: partialMatch({
             connectionStatus: 'disconnected',
-            whatsappApiSession: expect.objectContaining({
+            whatsappApiSession: partialMatch({
               status: 'disconnected',
               rawStatus: 'SESSION_MISSING',
               disconnectReason: 'Session "ws-1" does not exist',
@@ -424,7 +427,7 @@ describe('WhatsAppCatchupService', () => {
       expect.objectContaining({
         workspaceId: 'ws-1',
         phase: 'sync_error',
-        meta: expect.objectContaining({
+        meta: partialMatch({
           sessionMissing: true,
         }),
       }),
@@ -504,11 +507,11 @@ describe('WhatsAppCatchupService', () => {
     expect(prisma.workspace.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'ws-1' },
-        data: expect.objectContaining({
-          providerSettings: expect.objectContaining({
-            whatsappApiSession: expect.objectContaining({
-              backfillCursor: expect.objectContaining({
-                chatId: expect.stringMatching(/c\.us$/),
+        data: partialMatch({
+          providerSettings: partialMatch({
+            whatsappApiSession: partialMatch({
+              backfillCursor: partialMatch({
+                chatId: stringMatch(/c\.us$/),
               }),
             }),
           }),

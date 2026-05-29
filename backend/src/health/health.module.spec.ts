@@ -4,7 +4,8 @@ import { SystemHealthService } from './system-health.service';
 
 describe('HealthModule', () => {
   it('exports SystemHealthService for dependent modules', () => {
-    const exportedProviders = Reflect.getMetadata(MODULE_METADATA.EXPORTS, HealthModule) || [];
+    const exportedProviders =
+      (Reflect.getMetadata(MODULE_METADATA.EXPORTS, HealthModule) as unknown[]) || [];
 
     expect(exportedProviders).toContain(SystemHealthService);
   });

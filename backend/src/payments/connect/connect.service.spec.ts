@@ -6,6 +6,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 
 import { ConnectService } from './connect.service';
 import { ConnectAccountAlreadyExistsError } from './connect.types';
+import { partialMatch } from '../../../test/helpers/match-instance';
 
 type StripeStub = {
   stripe: {
@@ -165,7 +166,7 @@ describe('ConnectService.createCustomAccount', () => {
           transfers: { requested: true },
         },
         settings: { payouts: { schedule: { interval: 'manual' } } },
-        metadata: expect.objectContaining({
+        metadata: partialMatch({
           workspaceId: 'ws_1',
           accountType: 'SELLER',
           displayName: 'Acme Co',

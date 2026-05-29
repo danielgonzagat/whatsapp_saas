@@ -356,7 +356,13 @@ export async function runToggleTheme(
   }
 
   try {
-    await memoryService.saveMemory(workspaceId, 'uiTheme', { theme }, 'preferences', `Tema: ${theme}`);
+    await memoryService.saveMemory(
+      workspaceId,
+      'uiTheme',
+      { theme },
+      'preferences',
+      `Tema: ${theme}`,
+    );
     return { success: true, theme, message: `Tema alterado para ${theme}.` };
   } catch (err: unknown) {
     return {

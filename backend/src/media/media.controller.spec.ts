@@ -71,7 +71,7 @@ describe('MediaController', () => {
       const result = await controller.generateVideo(mockReq, dto);
 
       expect(resolveWorkspaceIdMock).toHaveBeenCalledWith(mockReq, 'ws-explicit');
-      const { workspaceId, ...expectedData } = dto;
+      const { workspaceId: _workspaceId, ...expectedData } = dto;
       expect(createVideoJob).toHaveBeenCalledWith('ws-1', expectedData);
       expect(result).toEqual({ id: 'job-1', status: 'PENDING' });
     });
@@ -241,7 +241,7 @@ describe('MediaController', () => {
       await controller.getStatus(mockReq, 'j-1');
       await controller.listDocuments(mockReq);
 
-      for (const call of resolveWorkspaceIdMock.mock.calls) {
+      for (const call of resolveWorkspaceIdMock.mock.calls as unknown[][]) {
         expect(call[0]).toBe(mockReq);
       }
       expect(createVideoJob).toHaveBeenCalledWith('ws-isolated', expect.anything());

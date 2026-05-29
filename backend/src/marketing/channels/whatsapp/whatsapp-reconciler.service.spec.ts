@@ -1,8 +1,7 @@
 import { expectValueOf } from '../../../../test/expect-value-of';
+import { partialMatch } from '../../../../test/helpers/match-instance';
 import { Test, TestingModule } from '@nestjs/testing';
-import Redis from 'ioredis';
 import { INBOX_SERVICE } from '../../../inbox/inbox.token';
-import type { IInboxService } from '../../../inbox/inbox.interface';
 import { DecisionOutcomeService } from '../../../kloel/decision-outcome.service';
 import { NeuroCrmService } from '../../../crm/neuro-crm.service';
 import { OpsAlertService } from '../../../observability/ops-alert.service';
@@ -123,7 +122,9 @@ describe('WhatsappReconcilerService', () => {
     });
 
     it('enqueues resume-flow job', async () => {
-      const { flowQueue } = require('../../../queue/queue');
+      const { flowQueue } = jest.requireMock<{
+        flowQueue: { add: jest.Mock };
+      }>('../../../queue/queue');
       await service.handleIncoming('ws-1', '5511999991234', 'hello');
       expect(flowQueue.add).toHaveBeenCalledWith(
         'resume-flow',
@@ -137,7 +138,9 @@ describe('WhatsappReconcilerService', () => {
       workspaces.getWorkspace.mockResolvedValue(ws);
       inbox.saveMessageByPhone.mockResolvedValue({ id: 'msg-2', contactId: 'c-2' });
       redis.set.mockResolvedValue('OK');
-      const { autopilotQueue } = require('../../../queue/queue');
+      const { autopilotQueue } = jest.requireMock<{
+        autopilotQueue: { add: jest.Mock };
+      }>('../../../queue/queue');
       await service.handleIncoming('ws-1', '5511999991234', 'hello');
       expect(autopilotQueue.add).toHaveBeenCalledWith(
         'scan-contact',
@@ -149,14 +152,16 @@ describe('WhatsappReconcilerService', () => {
     it('enqueues hot-flow when keyword matches and hotFlowId is set', async () => {
       const ws = makeWorkspace({ autopilot: { enabled: false, hotFlowId: 'flow-99' } });
       workspaces.getWorkspace.mockResolvedValue(ws);
-      const { flowQueue } = require('../../../queue/queue');
+      const { flowQueue } = jest.requireMock<{
+        flowQueue: { add: jest.Mock };
+      }>('../../../queue/queue');
       flowQueue.add.mockClear();
       await service.handleIncoming('ws-1', '5511999991234', 'quanto custa?');
-      const runFlowCall = flowQueue.add.mock.calls.find(
-        (call: unknown[]) => call[0] === 'run-flow',
+      const runFlowCall = (flowQueue.add.mock.calls as Array<[string, { flowId?: string }]>).find(
+        (call) => call[0] === 'run-flow',
       );
       expect(runFlowCall).toBeDefined();
-      expect(runFlowCall[1]).toMatchObject({ flowId: 'flow-99' });
+      expect(runFlowCall?.[1]).toMatchObject({ flowId: 'flow-99' });
     });
 
     it('records BUYING intent for payment keywords when recent event exists', async () => {
@@ -168,7 +173,7 @@ describe('WhatsappReconcilerService', () => {
       });
       await service.handleIncoming('ws-1', '5511999991234', 'paguei o boleto');
       expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ intent: 'BUYING' }) }),
+        expect.objectContaining({ data: partialMatch({ intent: 'BUYING' }) }),
       );
     });
 
@@ -217,7 +222,7 @@ describe('WhatsappReconcilerService', () => {
       expect(result).toEqual({ ok: true });
       expect(prisma.contact.upsert).toHaveBeenCalled();
       expect(prisma.tag.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({ create: expect.objectContaining({ name: 'optin_whatsapp' }) }),
+        expect.objectContaining({ create: partialMatch({ name: 'optin_whatsapp' }) }),
       );
     });
   });
@@ -235,7 +240,7 @@ describe('WhatsappReconcilerService', () => {
       const result = await service.optOutContact('ws-1', '5511999991234');
       expect(result).toEqual({ ok: true });
       expect(prisma.contact.updateMany).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ optIn: false }) }),
+        expect.objectContaining({ data: partialMatch({ optIn: false }) }),
       );
     });
   });

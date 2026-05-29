@@ -1,15 +1,16 @@
 import { BadRequestException } from '@nestjs/common';
+import { partialMatch } from '../../../test/helpers/match-instance';
 import { EmailConnectService } from './email-connect.service';
 
-const readWorkspaceEmailDeliveryMock = jest.fn();
-const isWorkspaceDeliveryReadyMock = jest.fn();
+const readWorkspaceEmailDeliveryMock = jest.fn<unknown, [unknown]>();
+const isWorkspaceDeliveryReadyMock = jest.fn<unknown, [unknown]>();
 
 jest.mock('../../kloel/email-workspace-delivery', () => ({
   readWorkspaceEmailDelivery: (config: unknown) => readWorkspaceEmailDeliveryMock(config),
   isWorkspaceDeliveryReady: (delivery: unknown) => isWorkspaceDeliveryReadyMock(delivery),
 }));
 
-const buildUnsubscribeFooterHtmlMock = jest.fn();
+const buildUnsubscribeFooterHtmlMock = jest.fn<unknown, [unknown]>();
 
 jest.mock('../../common/utils/unsubscribe-footer.util', () => ({
   buildUnsubscribeFooterHtml: (opts: unknown) => buildUnsubscribeFooterHtmlMock(opts),
@@ -217,7 +218,7 @@ describe('EmailConnectService', () => {
       expect(workspaceUpdate).toHaveBeenCalledWith({
         where: { id: 'ws-5' },
         data: {
-          providerSettings: expect.objectContaining({
+          providerSettings: partialMatch({
             email: { enabled: true },
           }),
         },
@@ -240,7 +241,7 @@ describe('EmailConnectService', () => {
       expect(workspaceUpdate).toHaveBeenCalledWith({
         where: { id: 'ws-6' },
         data: {
-          providerSettings: expect.objectContaining({
+          providerSettings: partialMatch({
             email: { enabled: false },
           }),
         },

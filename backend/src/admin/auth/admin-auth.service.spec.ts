@@ -8,18 +8,21 @@ import { AdminSessionFactory } from './admin-session-factory';
 import { AdminAuthService } from './admin-auth.service';
 import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
-const mockBcryptCompare = jest.fn();
-const mockBcryptHash = jest.fn();
+const mockBcryptCompare = jest.fn<unknown, unknown[]>();
+const mockBcryptHash = jest.fn<unknown, unknown[]>();
 
 jest.mock('bcrypt', () => ({
   compare: (...args: unknown[]) => mockBcryptCompare(...args),
   hash: (...args: unknown[]) => mockBcryptHash(...args),
 }));
 
-const mockSha256Hex = jest.fn();
+const mockSha256Hex = jest.fn<unknown, unknown[]>();
 jest.mock('../common/admin-crypto', () => ({
   sha256Hex: (...args: unknown[]) => mockSha256Hex(...args),
 }));
+
+// Typed wrapper around expect.objectContaining so the resulting matcher is typed
+const oc = (o: Record<string, unknown>): unknown => expect.objectContaining(o);
 
 describe('AdminAuthService', () => {
   let service: AdminAuthService;
@@ -51,7 +54,11 @@ describe('AdminAuthService', () => {
     adminLoginAttempt: { create: jest.fn() },
     adminUser: { update: jest.fn() },
     adminAuditLog: { create: jest.fn() },
-    adminSession: { update: jest.fn(), updateMany: jest.fn(), findUnique: jest.fn() },
+    adminSession: {
+      update: jest.fn(),
+      updateMany: jest.fn<unknown, [unknown]>(),
+      findUnique: jest.fn(),
+    },
   };
 
   const prismaMock = createPartialPrismaMock({
@@ -124,7 +131,7 @@ describe('AdminAuthService', () => {
 
     prismaMock.$transaction.mockImplementation(async (cbOrArray: unknown) => {
       if (typeof cbOrArray === 'function') {
-        return cbOrArray(mockTx);
+        return (cbOrArray as (tx: typeof mockTx) => unknown)(mockTx);
       }
       return [];
     });
@@ -196,7 +203,7 @@ describe('AdminAuthService', () => {
 
       expect(mockTx.adminLoginAttempt.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ email: 'unknown@test.com', success: false }),
+          data: oc({ email: 'unknown@test.com', success: false }),
         }),
       );
     });
@@ -293,7 +300,7 @@ describe('AdminAuthService', () => {
     });
 
     it('returns mfa_required when MFA is enabled', async () => {
-      const result = await service.login(email, 'correct-pass', ip, userAgent);
+      await service.login(email, 'correct-pass', ip, userAgent);
 
       expect(mockSessionFactory.signScoped).toHaveBeenLastCalledWith(
         expect.objectContaining({ scope: 'mfa_verify' }),
@@ -318,7 +325,7 @@ describe('AdminAuthService', () => {
       expect(mockTx.adminUser.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'admin_1' },
-          data: expect.objectContaining({
+          data: oc({
             passwordHash: '$2b$12$newhash',
             passwordChangeRequired: false,
           }),
@@ -419,7 +426,7 @@ describe('AdminAuthService', () => {
       expect(mockTx.adminUser.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'admin_1' },
-          data: expect.objectContaining({
+          data: oc({
             mfaEnabled: true,
             mfaPendingSetup: false,
           }),
@@ -542,7 +549,7 @@ describe('AdminAuthService', () => {
       expect(mockTx.adminSession.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'sess_1', revokedAt: null },
-          data: expect.objectContaining({}),
+          data: oc({}),
         }),
       );
       const logoutArg = mockTx.adminSession.updateMany.mock.calls[0][0] as {
@@ -556,7 +563,7 @@ describe('AdminAuthService', () => {
 
       expect(mockTx.adminAuditLog.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: oc({
             adminUserId: 'admin_1',
             action: 'admin.auth.logout',
           }),

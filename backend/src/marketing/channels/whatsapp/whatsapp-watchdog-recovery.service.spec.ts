@@ -31,8 +31,8 @@ describe('WhatsAppWatchdogRecoveryService.releaseLock (constant-time)', () => {
 
   beforeEach(() => {
     redis = {
-      get: jest.fn(),
-      del: jest.fn().mockResolvedValue(1),
+      get: jest.fn<Promise<string | null>, [string]>(),
+      del: jest.fn<Promise<number>, [string]>().mockResolvedValue(1),
     };
     service = buildService(redis);
   });

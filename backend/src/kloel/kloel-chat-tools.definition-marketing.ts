@@ -75,8 +75,7 @@ export const KLOEL_CHAT_TOOLS_MARKETING: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'whatsapp.get_chat_status',
-      description:
-        'Consulta o status de conexão/sessão do WhatsApp do workspace (read-only).',
+      description: 'Consulta o status de conexão/sessão do WhatsApp do workspace (read-only).',
       parameters: { type: 'object', properties: {} },
     },
   },

@@ -1,19 +1,8 @@
 import { RuntimeConversationTracerService } from './runtime-conversation-tracer.service';
-import {
-  CommercialDecisionOrchestratorService,
-  composeCustomerMessage,
-  assertCustomerSafe,
-} from './commercial-decision-orchestrator.service';
+import { CommercialDecisionOrchestratorService } from './commercial-decision-orchestrator.service';
 import { DecisionOutcomeService } from './decision-outcome.service';
 import { MindLiftReportService } from './mind/observability/mind-lift-report.service';
-import {
-  buildWhatsappInboundText,
-  buildPriceObjectionInbound,
-  buildInboundReply,
-  buildPipelineActiveState,
-  buildChannelConfig,
-  buildDecisionOutcomeKey,
-} from '../../test/fixtures/whatsapp-inbound.fixture';
+import { buildDecisionOutcomeKey } from '../../test/fixtures/whatsapp-inbound.fixture';
 const WS = 'ws-golden-path';
 const CHANNEL = 'whatsapp';
 const CONTACT_ID = 'contact-gp-1';

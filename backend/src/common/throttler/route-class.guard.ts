@@ -52,23 +52,23 @@ function resolveWorkspaceId(req: RequestLike): string | undefined {
  */
 @Injectable()
 export class RouteClassGuard extends ThrottlerGuard {
-  protected override async shouldSkip(_context: ExecutionContext): Promise<boolean> {
+  protected override shouldSkip(_context: ExecutionContext): Promise<boolean> {
     if (process.env.NODE_ENV === 'production') {
-      return false;
+      return Promise.resolve(false);
     }
     if (process.env.JEST_WORKER_ID) {
-      return true;
+      return Promise.resolve(true);
     }
     if (process.env.NODE_ENV === 'test') {
-      return true;
+      return Promise.resolve(true);
     }
     if (process.env.E2E_TEST_MODE === 'true') {
-      return true;
+      return Promise.resolve(true);
     }
     if (process.env.OPENAI_API_KEY === 'e2e-dummy-key') {
-      return true;
+      return Promise.resolve(true);
     }
-    return false;
+    return Promise.resolve(false);
   }
 
   protected override generateKey(context: ExecutionContext, suffix: string, name: string): string {

@@ -141,8 +141,7 @@ export class MetaConversionsApiService {
       return { success: false, error: 'no_meta_connection' };
     }
 
-    const accessToken =
-      decryptMetaToken(channelSession.accessToken) || channelSession.accessToken;
+    const accessToken = decryptMetaToken(channelSession.accessToken) || channelSession.accessToken;
 
     const eventId = event.eventId || crypto.randomUUID();
     const eventTime = event.eventTime || Math.floor(Date.now() / 1000);

@@ -16,7 +16,9 @@ describe('EmailMarketingWebhookController', () => {
     delete process.env.EMAIL_INBOUND_SECRET;
     process.env.NODE_ENV = 'test';
     service = {
-      reconcileDeliveryFromWebhook: jest.fn().mockResolvedValue(undefined),
+      reconcileDeliveryFromWebhook: jest
+        .fn<Promise<void>, unknown[]>()
+        .mockResolvedValue(undefined),
     };
     const webhookEventCreate = jest.fn<Promise<unknown>, unknown[]>();
     webhookEventCreate.mockResolvedValue({ id: 'webhook-event-1' });

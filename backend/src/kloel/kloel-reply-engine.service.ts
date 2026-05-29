@@ -433,17 +433,11 @@ export class KloelReplyEngineService {
           buildChatModelMessages: async (p) => this.buildChatModelMessages(p),
           buildDynamicRuntimeContext: async (p) => {
             const base = await this.buildDynamicRuntimeContext(p);
-            const withTone = toneDirective
-              ? `${base}\n\n${toneDirective.directive}`
-              : base;
-            return recallDirective
-              ? `${withTone}\n\n${recallDirective.directive}`
-              : withTone;
+            const withTone = toneDirective ? `${base}\n\n${toneDirective.directive}` : base;
+            return recallDirective ? `${withTone}\n\n${recallDirective.directive}` : withTone;
           },
           ...(this.spine !== undefined ? { spine: this.spine } : {}),
-          ...(this.mindPredictor !== undefined
-            ? { mindPredictorService: this.mindPredictor }
-            : {}),
+          ...(this.mindPredictor !== undefined ? { mindPredictorService: this.mindPredictor } : {}),
           ...(params.abiStateJson !== undefined ? { abiStateJson: params.abiStateJson } : {}),
         });
         closeChatReplyOutcome(this.decisionOutcomeService, this.logger, {

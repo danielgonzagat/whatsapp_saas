@@ -59,14 +59,14 @@ describe('CheckoutPaymentService.processPayment — provider routing', () => {
         description: 'Produto X',
         externalReference: 'order-1',
         idempotencyKey: 'idem-boleto-1',
-        notificationUrl: expect.stringContaining('/webhooks/mercadopago'),
+        notificationUrl: expect.stringContaining('/webhooks/mercadopago') as unknown,
         payerAddress: expect.objectContaining({
           city: 'São Paulo',
           number: '1000',
           state: 'SP',
           street: 'Av Paulista',
           zipCode: '01310100',
-        }),
+        }) as unknown,
         payerDocument: '12345678909',
         payerEmail: 'boleto@example.com',
         payerName: 'Cliente Boleto',
@@ -80,7 +80,7 @@ describe('CheckoutPaymentService.processPayment — provider routing', () => {
           boletoUrl: 'https://www.mercadopago.com.br/payments/mp_boleto_1/ticket',
           boletoBarcode: '23793.38128 60000.000001 12345.678901 2 99990000013990',
           status: 'PENDING',
-        }),
+        }) as unknown,
       }),
     );
     expect(result).toMatchObject({
@@ -149,7 +149,7 @@ describe('CheckoutPaymentService.processPayment — provider routing', () => {
           externalId: 'pi_test_123',
           status: 'PENDING',
           cardLast4: null,
-        }),
+        }) as unknown,
       }),
     );
     expect(txCalls).toEqual(['payment.create']);
@@ -211,7 +211,7 @@ describe('CheckoutPaymentService.processPayment — provider routing', () => {
         description: 'Produto X',
         externalReference: 'order-1',
         idempotencyKey: 'idem-pix-1',
-        notificationUrl: expect.stringContaining('/webhooks/mercadopago'),
+        notificationUrl: expect.stringContaining('/webhooks/mercadopago') as unknown,
         payerDocument: '12345678909',
         payerEmail: 'pix@example.com',
         payerName: 'Cliente Pix',
@@ -225,7 +225,7 @@ describe('CheckoutPaymentService.processPayment — provider routing', () => {
           pixQrCode: 'data:image/png;base64,base64-mp-qr',
           pixCopyPaste: '000201mp-pix-copia-e-cola',
           status: 'PENDING',
-        }),
+        }) as unknown,
       }),
     );
     expect(result).toMatchObject({

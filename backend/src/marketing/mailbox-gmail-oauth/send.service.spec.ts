@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { partialMatch } from '../../../test/helpers/match-instance';
 import { MailboxProvider, MailboxStatus } from '@prisma/client';
 import { GmailSendService } from './send.service';
 import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
@@ -96,7 +97,11 @@ describe('GmailSendService', () => {
       proactive: false,
     });
 
-    const call = connectionFindFirst.mock.calls[0][0];
+    const call = (
+      connectionFindFirst.mock.calls as Array<
+        [{ where: { workspaceId: string; provider: MailboxProvider; status: MailboxStatus } }]
+      >
+    )[0][0];
     expect(call.where.workspaceId).toBe('ws-isolated');
     expect(call.where.provider).toBe(MailboxProvider.GMAIL);
     expect(call.where.status).toBe(MailboxStatus.ACTIVE);
@@ -159,7 +164,7 @@ describe('GmailSendService', () => {
     expect(connectionUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'mb-1', workspaceId: 'ws-1' },
-        data: expect.objectContaining({
+        data: partialMatch({
           lastError: 'gmail_send_failed',
         }),
       }),

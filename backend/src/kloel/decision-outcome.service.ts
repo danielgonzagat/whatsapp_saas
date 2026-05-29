@@ -37,47 +37,47 @@ export class DecisionOutcomeService {
   ) {}
 
   async recordDecision(input: RecordDecisionInput) {
-      await this.prisma.decisionOutcome.create({
-        data: {
-          id: randomUUID(),
-          workspaceId: input.workspaceId,
-          decisionType: input.decisionType,
-          chosenAction: input.chosenAction,
-          baselineAction: input.baselineAction ?? null,
-          outcomeKey: input.outcomeKey,
-          expectedWindow: input.expectedWindow,
-          contextSnapshot: inputJson(input.contextSnapshot),
-        },
-      });
+    await this.prisma.decisionOutcome.create({
+      data: {
+        id: randomUUID(),
+        workspaceId: input.workspaceId,
+        decisionType: input.decisionType,
+        chosenAction: input.chosenAction,
+        baselineAction: input.baselineAction ?? null,
+        outcomeKey: input.outcomeKey,
+        expectedWindow: input.expectedWindow,
+        contextSnapshot: inputJson(input.contextSnapshot),
+      },
+    });
 
-      // Close the bandit loop: idempotently register the arms of this decision
-      // (the chosen action + its baseline, e.g. 'engage'/'silence' for
-      // 'chat_reply') so the matching mindBanditArm rows exist before
-      // closeOutcome later calls recordOutcome. register() upserts, so this is
-      // safe to call on every decision. Fire-and-forget — a learning-side
-      // failure must never break the decision-recording path.
-      if (this.mindBandit) {
-        const arms = Array.from(
-          new Set([input.chosenAction, input.baselineAction].filter((a): a is string => !!a)),
-        );
-        if (arms.length > 0) {
-          this.mindBandit
-            .register({
-              workspaceId: input.workspaceId,
+    // Close the bandit loop: idempotently register the arms of this decision
+    // (the chosen action + its baseline, e.g. 'engage'/'silence' for
+    // 'chat_reply') so the matching mindBanditArm rows exist before
+    // closeOutcome later calls recordOutcome. register() upserts, so this is
+    // safe to call on every decision. Fire-and-forget — a learning-side
+    // failure must never break the decision-recording path.
+    if (this.mindBandit) {
+      const arms = Array.from(
+        new Set([input.chosenAction, input.baselineAction].filter((a): a is string => !!a)),
+      );
+      if (arms.length > 0) {
+        this.mindBandit
+          .register({
+            workspaceId: input.workspaceId,
+            decisionType: input.decisionType,
+            arms,
+            context: input.contextSnapshot,
+          })
+          .catch((err: unknown) => {
+            this.logger.warn('Failed to register bandit arms from recordDecision', {
+              outcomeKey: input.outcomeKey,
               decisionType: input.decisionType,
-              arms,
-              context: input.contextSnapshot,
-            })
-            .catch((err: unknown) => {
-              this.logger.warn('Failed to register bandit arms from recordDecision', {
-                outcomeKey: input.outcomeKey,
-                decisionType: input.decisionType,
-                error: err instanceof Error ? err.message : String(err),
-              });
+              error: err instanceof Error ? err.message : String(err),
             });
-        }
+          });
       }
     }
+  }
 
   async closeOutcome(input: CloseOutcomeInput) {
     const result = await this.prisma.decisionOutcome.updateMany({

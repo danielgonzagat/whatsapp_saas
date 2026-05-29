@@ -20,7 +20,7 @@ describe('queryRevenueKloelDailySeries', () => {
       { date: '2026-04-11', revenueInCents: -4_980, count: 1 },
     ]);
     expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
-    const sql = prisma.$queryRaw.mock.calls[0][0] as { strings: string[] };
+    const sql = (prisma.$queryRaw.mock.calls[0] as unknown[])[0] as { strings: string[] };
     const text = sql.strings.join(' ');
     expect(text).toContain('MARKETPLACE_FEE_CREDIT');
     expect(text).toContain('REFUND_DEBIT');

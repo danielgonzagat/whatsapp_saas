@@ -46,7 +46,7 @@ describe('WhatsappService', () => {
   let mockFlowAdd: jest.Mock;
   let workspaceService: { getWorkspace: jest.Mock; toEngineWorkspace: jest.Mock };
   let inboxService: { saveMessageByPhone: jest.Mock };
-  let redis: {
+  let _redis: {
     get: jest.Mock;
     setex: jest.Mock;
     set: jest.Mock;
@@ -90,7 +90,7 @@ describe('WhatsappService', () => {
     inboxService = {
       saveMessageByPhone: jest.fn().mockResolvedValue({ id: 'msg-1', contactId: 'contact-1' }),
     };
-    redis = {
+    _redis = {
       get: jest.fn().mockResolvedValue(null),
       setex: jest.fn().mockResolvedValue('OK'),
       set: jest.fn().mockResolvedValue('OK'),
@@ -181,7 +181,9 @@ describe('WhatsappService', () => {
                   }
                 }
                 for (const c of cs) {
-                  await providerRegistry.readChatMessages(ws, c).catch(() => {});
+                  await (providerRegistry.readChatMessages(ws, c) as Promise<unknown>).catch(
+                    () => {},
+                  );
                 }
                 break;
               }
@@ -209,7 +211,7 @@ describe('WhatsappService', () => {
             message: string,
             opts?: { mediaUrl?: string; forceDirect?: boolean },
           ) => {
-            const available = await workerRuntime.isAvailable();
+            const available = (await workerRuntime.isAvailable()) as boolean;
             if (!available || opts?.forceDirect) {
               await providerRegistry.sendMessage(ws, to, message, {
                 mediaUrl: opts?.mediaUrl,
@@ -243,11 +245,11 @@ describe('WhatsappService', () => {
           if (!saved.contactId) {
             return saved;
           }
-          const ws = await workspaceService.getWorkspace(workspaceId);
+          const ws = (await workspaceService.getWorkspace(workspaceId)) as {
+            providerSettings?: Record<string, unknown>;
+          } | null;
           const settings = ws?.providerSettings || {};
-          const auto = (settings as Record<string, unknown>).autopilot as
-            | { enabled?: boolean }
-            | undefined;
+          const auto = settings.autopilot as { enabled?: boolean } | undefined;
           if (auto?.enabled) {
             await mockAutopilotAdd(
               'scan-contact',
@@ -274,7 +276,10 @@ describe('WhatsappService', () => {
             return false;
           }
           try {
-            return await providerRegistry.upsertContactProfile(ws, { phone: nPhone, name });
+            return (await providerRegistry.upsertContactProfile(ws, {
+              phone: nPhone,
+              name,
+            })) as boolean;
           } catch {
             return false;
           }

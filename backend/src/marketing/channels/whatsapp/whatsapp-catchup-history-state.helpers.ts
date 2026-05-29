@@ -187,7 +187,9 @@ async function upsertReconciledConversation(
     return;
   }
   const clm =
-    exC.lastMessageAt instanceof Date ? exC.lastMessageAt : ctx.normalizeTimestamp(exC.lastMessageAt);
+    exC.lastMessageAt instanceof Date
+      ? exC.lastMessageAt
+      : ctx.normalizeTimestamp(exC.lastMessageAt);
   await ctx.prisma.conversation.updateMany({
     where: { id: exC.id, workspaceId: ws },
     data: {

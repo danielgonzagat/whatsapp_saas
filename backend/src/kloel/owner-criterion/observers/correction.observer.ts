@@ -187,7 +187,7 @@ function inferLearnedCriterion(
         originalOutput,
       )}; operator corrected to ${describeTrim(correctedOutput)}. Criterion: team feedback must update future suggestions without becoming human performance scoring.`;
     default:
-      return `Owner applied ${kind} correction across ${signalCount} instances. Criterion: system must learn from owner corrections to avoid repeating the same deviation.`;
+      return `Owner applied ${String(kind)} correction across ${signalCount} instances. Criterion: system must learn from owner corrections to avoid repeating the same deviation.`;
   }
 }
 
@@ -238,7 +238,7 @@ function buildFutureBehaviorChange(
       };
     default:
       return {
-        declarativeRule: `System must adapt future behavior based on owner ${kind} corrections.`,
+        declarativeRule: `System must adapt future behavior based on owner ${String(kind)} corrections.`,
         targetDomain: target,
         behaviorConstraint:
           'Future outputs in this domain must be validated against owner correction evidence before execution.',

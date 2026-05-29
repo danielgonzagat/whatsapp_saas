@@ -99,7 +99,10 @@ describe('DashboardController', () => {
       await controller.getStats(req as never, undefined);
 
       expect(resolveWorkspaceIdMock).toHaveBeenCalledWith(req, undefined);
-      expect(resolveWorkspaceIdMock.mock.calls[0][0].user.id).toBe('admin-99');
+      const firstCallReq = (resolveWorkspaceIdMock.mock.calls as unknown[][])[0][0] as {
+        user: { id: string };
+      };
+      expect(firstCallReq.user.id).toBe('admin-99');
       expect(getStatsMock).toHaveBeenCalledWith('ws-identity');
     });
   });

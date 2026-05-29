@@ -222,11 +222,11 @@ export async function findProductIdByPartialName(
  * Projection for the create-plan success branch. Mirrors the previous
  * inline shape one-for-one so callers (chat tools) keep their contract.
  */
-export function buildPlanCreateProjection(plan: {
+export function buildPlanCreateProjection(plan: { id: string; name: string; price: unknown }): {
   id: string;
   name: string;
   price: unknown;
-}): { id: string; name: string; price: unknown } {
+} {
   return { id: plan.id, name: plan.name, price: plan.price };
 }
 
@@ -263,10 +263,10 @@ export function buildPlanUpdateProjection(plan: {
  * Projection for the create/update-checkout success branch. Mirrors the
  * previous inline `{ id, name }` shape one-for-one.
  */
-export function buildCheckoutProjection(checkout: {
+export function buildCheckoutProjection(checkout: { id: string; name: string }): {
   id: string;
   name: string;
-}): { id: string; name: string } {
+} {
   return { id: checkout.id, name: checkout.name };
 }
 
@@ -274,10 +274,10 @@ export function buildCheckoutProjection(checkout: {
  * Projection for the create-coupon success branch. Mirrors the previous
  * inline `{ id, code }` shape one-for-one.
  */
-export function buildCouponCreateProjection(coupon: {
+export function buildCouponCreateProjection(coupon: { id: string; code: string }): {
   id: string;
   code: string;
-}): { id: string; code: string } {
+} {
   return { id: coupon.id, code: coupon.code };
 }
 

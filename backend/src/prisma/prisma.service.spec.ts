@@ -9,7 +9,7 @@ import {
 import { PrismaService } from './prisma.service';
 
 jest.mock('@prisma/client', () => {
-  const actual = jest.requireActual('@prisma/client');
+  const actual = jest.requireActual<typeof import('@prisma/client')>('@prisma/client');
   const makeTransactionClient = () => ({
     $executeRaw: jest.fn(),
     auditLog: { findFirst: jest.fn().mockResolvedValue(null), create: jest.fn() },
@@ -39,7 +39,7 @@ jest.mock('@prisma/client', () => {
       $disconnect = jest.fn();
       $transaction = jest.fn().mockImplementation(async (arg: unknown) => {
         if (typeof arg === 'function') {
-          return arg(makeTransactionClient());
+          return (arg as (client: unknown) => unknown)(makeTransactionClient());
         }
         return [];
       });
@@ -65,6 +65,8 @@ jest.mock('./checkout-paid-effects', () => ({
 
 describe('PrismaService', () => {
   let service: PrismaService;
+  let connectMock: jest.Mock;
+  let disconnectMock: jest.Mock;
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -74,13 +76,19 @@ describe('PrismaService', () => {
     }).compile();
 
     service = module.get<PrismaService>(PrismaService);
+    const mocked = service as unknown as {
+      $connect: jest.Mock;
+      $disconnect: jest.Mock;
+    };
+    connectMock = mocked.$connect;
+    disconnectMock = mocked.$disconnect;
   });
 
   describe('onModuleInit', () => {
     it('calls $connect when initializing the module', async () => {
       await service.onModuleInit();
 
-      expect(service.$connect).toHaveBeenCalled();
+      expect(connectMock).toHaveBeenCalled();
     });
 
     it('survives $connect failure without throwing', async () => {
@@ -97,7 +105,7 @@ describe('PrismaService', () => {
       await service.onModuleInit();
       await service.onModuleInit();
 
-      expect(service.$connect).toHaveBeenCalledTimes(2);
+      expect(connectMock).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -105,7 +113,7 @@ describe('PrismaService', () => {
     it('calls $disconnect when destroying the module', async () => {
       await service.onModuleDestroy();
 
-      expect(service.$disconnect).toHaveBeenCalled();
+      expect(disconnectMock).toHaveBeenCalled();
     });
   });
 
@@ -113,7 +121,7 @@ describe('PrismaService', () => {
     it('calls $disconnect and handles shutdown signal', async () => {
       await service.beforeApplicationShutdown('SIGTERM');
 
-      expect(service.$disconnect).toHaveBeenCalled();
+      expect(disconnectMock).toHaveBeenCalled();
     });
 
     it('survives $disconnect failure during shutdown', async () => {
@@ -125,7 +133,7 @@ describe('PrismaService', () => {
     it('handles shutdown with undefined signal as unknown', async () => {
       await service.beforeApplicationShutdown();
 
-      expect(service.$disconnect).toHaveBeenCalled();
+      expect(disconnectMock).toHaveBeenCalled();
     });
   });
 

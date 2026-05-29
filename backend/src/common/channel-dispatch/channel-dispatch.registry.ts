@@ -71,25 +71,24 @@ export class ChannelDispatchRegistry {
     return adapter.send(input);
   }
 
-  
-    /**
-     * Canonical alias of {@link send} (Wave 21 unification — task d). Resolves
-     * the adapter by `input.channelKind` and prefers the adapter's own
-     * `sendMessage` alias when it defines one, falling back to `send`. This is
-     * the single front door higher-order callers should target.
-     */
-    async sendMessage(input: ChannelSendInput): Promise<ChannelSendResult> {
-      const adapter = this.adapters.get(input.channelKind);
-      if (!adapter) {
-        return {
-          success: false,
-          error: `No adapter registered for channel ${input.channelKind}`,
-          blocked: true,
-          blockedReason: `channel_${input.channelKind}_not_configured`,
-        };
-      }
-      return adapter.sendMessage ? adapter.sendMessage(input) : adapter.send(input);
+  /**
+   * Canonical alias of {@link send} (Wave 21 unification — task d). Resolves
+   * the adapter by `input.channelKind` and prefers the adapter's own
+   * `sendMessage` alias when it defines one, falling back to `send`. This is
+   * the single front door higher-order callers should target.
+   */
+  async sendMessage(input: ChannelSendInput): Promise<ChannelSendResult> {
+    const adapter = this.adapters.get(input.channelKind);
+    if (!adapter) {
+      return {
+        success: false,
+        error: `No adapter registered for channel ${input.channelKind}`,
+        blocked: true,
+        blockedReason: `channel_${input.channelKind}_not_configured`,
+      };
     }
+    return adapter.sendMessage ? adapter.sendMessage(input) : adapter.send(input);
+  }
 
   /** Check if a channel is configured. */
   isConfigured(kind: ChannelKind): boolean {

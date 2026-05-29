@@ -444,7 +444,10 @@ describe('CheckoutPostPaymentEffectsService', () => {
 
       await service.markLeadConverted(order, 'ws_1');
 
-      const createCall = prisma.memberEnrollment.create.mock.calls[0][0] as Record<string, unknown>;
+      const createCall = (prisma.memberEnrollment.create.mock.calls[0] as unknown[])[0] as Record<
+        string,
+        unknown
+      >;
       expect(createCall.data).toEqual(
         expect.objectContaining({
           workspaceId: 'ws_1',
@@ -459,7 +462,7 @@ describe('CheckoutPostPaymentEffectsService', () => {
           data: expect.objectContaining({
             totalStudents: 1,
             avgCompletion: 50,
-          }),
+          }) as unknown,
         }),
       );
     });
@@ -498,7 +501,10 @@ describe('CheckoutPostPaymentEffectsService', () => {
 
       await service.markLeadConverted(order, 'ws_1');
 
-      const createCall = prisma.memberEnrollment.create.mock.calls[0][0] as Record<string, unknown>;
+      const createCall = (prisma.memberEnrollment.create.mock.calls[0] as unknown[])[0] as Record<
+        string,
+        unknown
+      >;
       expect(createCall.data).toEqual(
         expect.objectContaining({
           studentName: 'Aluno',

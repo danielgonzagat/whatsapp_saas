@@ -256,7 +256,14 @@ export async function runDeterministicAction(
         pendingAction.missingInputs = remainingInputs;
         await persistConversation(sessionId, conversation, redis, conversations, logger);
         const reply = buildMissingInputsReply(pendingAction.tool, remainingInputs);
-        await persistConversationMessage(sessionId, 'assistant', reply, redis, conversations, logger);
+        await persistConversationMessage(
+          sessionId,
+          'assistant',
+          reply,
+          redis,
+          conversations,
+          logger,
+        );
         return reply;
       }
       delete pendingAction.missingInputs;
@@ -276,7 +283,9 @@ export async function runDeterministicAction(
     await persistConversationMessage(sessionId, 'user', message, redis, conversations, logger);
     delete conversation.pendingAction;
     await persistConversation(sessionId, conversation, redis, conversations, logger);
-    logger.log(`Confirmed action: tool=${pendingAction.tool} ws=${workspaceId} session=${sessionId}`);
+    logger.log(
+      `Confirmed action: tool=${pendingAction.tool} ws=${workspaceId} session=${sessionId}`,
+    );
     try {
       const result = await toolDispatcher.executeTool(
         workspaceId,

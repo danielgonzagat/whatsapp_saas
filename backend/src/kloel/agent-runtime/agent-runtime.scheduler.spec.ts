@@ -45,12 +45,16 @@ describe('AgentRuntimeSchedulerService', () => {
         riskLevel: 'normal',
       }),
     };
-    const service = new AgentRuntimeSchedulerService(prisma as never, policy as never, mindMemoryStub(prisma) as never);
+    const service = new AgentRuntimeSchedulerService(
+      prisma as never,
+      policy as never,
+      mindMemoryStub(prisma),
+    );
 
     await service.auditDueJobs();
 
     expect(prisma.auditLog.create).toHaveBeenCalledWith(
-      expect.objectContaining({
+      expect.objectContaining<Record<string, unknown>>({
         data: expect.objectContaining({
           workspaceId: 'ws_1',
           action: 'KLOEL_AGENT_JOB_DUE',
@@ -59,7 +63,7 @@ describe('AgentRuntimeSchedulerService', () => {
       }),
     );
     expect(prisma.mindOutboxEvent.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
+      expect.objectContaining<Record<string, unknown>>({
         where: {
           workspaceId_idempotencyKey: {
             workspaceId: 'ws_1',
@@ -76,9 +80,9 @@ describe('AgentRuntimeSchedulerService', () => {
       }),
     );
     expect(prisma.kloelMemory.updateMany).toHaveBeenCalledWith(
-      expect.objectContaining({
+      expect.objectContaining<Record<string, unknown>>({
         where: { id: 'mem_1', workspaceId: 'ws_1', key: 'agent_job:daily' },
-        data: expect.objectContaining({
+        data: expect.objectContaining<Record<string, unknown>>({
           metadata: expect.objectContaining({
             nextRunAt: '2026-05-13T11:00:00.000Z',
             enabled: true,
@@ -113,7 +117,7 @@ describe('AgentRuntimeSchedulerService', () => {
     const service = new AgentRuntimeSchedulerService(
       prisma as never,
       { buildEnvelope: jest.fn() } as never,
-      mindMemoryStub(prisma) as never,
+      mindMemoryStub(prisma),
     );
 
     const result = await service.setJobEnabled({
@@ -124,14 +128,14 @@ describe('AgentRuntimeSchedulerService', () => {
 
     expect(result).toEqual({ ok: true, key: 'agent_job:daily', enabled: false });
     expect(prisma.kloelMemory.updateMany).toHaveBeenCalledWith(
-      expect.objectContaining({
+      expect.objectContaining<Record<string, unknown>>({
         where: {
           workspaceId: 'ws_1',
           key: 'agent_job:daily',
           category: 'agent_job',
           type: 'scheduled',
         },
-        data: expect.objectContaining({
+        data: expect.objectContaining<Record<string, unknown>>({
           value: expect.objectContaining({ enabled: false }),
           metadata: expect.objectContaining({ enabled: false }),
         }),
@@ -168,7 +172,7 @@ describe('AgentRuntimeSchedulerService', () => {
     const service = new AgentRuntimeSchedulerService(
       prisma as never,
       { buildEnvelope: jest.fn() } as never,
-      mindMemoryStub(prisma) as never,
+      mindMemoryStub(prisma),
     );
 
     const jobs = await service.listJobs('ws_1');
@@ -194,7 +198,7 @@ describe('AgentRuntimeSchedulerService', () => {
     const service = new AgentRuntimeSchedulerService(
       prisma as never,
       { buildEnvelope: jest.fn() } as never,
-      mindMemoryStub(prisma) as never,
+      mindMemoryStub(prisma),
     );
 
     const result = await service.setJobEnabled({
@@ -226,7 +230,7 @@ describe('AgentRuntimeSchedulerService', () => {
     const service = new AgentRuntimeSchedulerService(
       prisma as never,
       { buildEnvelope: jest.fn() } as never,
-      mindMemoryStub(prisma) as never,
+      mindMemoryStub(prisma),
     );
 
     const result = await service.listDueJobs(new Date(), 10);
@@ -248,7 +252,7 @@ describe('AgentRuntimeSchedulerService', () => {
     const service = new AgentRuntimeSchedulerService(
       prisma as never,
       { buildEnvelope: jest.fn() } as never,
-      mindMemoryStub(prisma) as never,
+      mindMemoryStub(prisma),
     );
 
     const result = await service.listDueJobs(new Date(), 10);
@@ -270,7 +274,7 @@ describe('AgentRuntimeSchedulerService', () => {
     const service = new AgentRuntimeSchedulerService(
       prisma as never,
       { buildEnvelope: jest.fn() } as never,
-      mindMemoryStub(prisma) as never,
+      mindMemoryStub(prisma),
     );
 
     const result = await service.listDueJobs(new Date(), 10);
@@ -288,7 +292,7 @@ describe('AgentRuntimeSchedulerService', () => {
     const service = new AgentRuntimeSchedulerService(
       prisma as never,
       { buildEnvelope: jest.fn() } as never,
-      mindMemoryStub(prisma) as never,
+      mindMemoryStub(prisma),
     );
 
     await expect(service.listDueJobs(new Date(), 10)).rejects.toThrow('network down');
@@ -309,7 +313,7 @@ describe('AgentRuntimeSchedulerService', () => {
     const service = new AgentRuntimeSchedulerService(
       prisma as never,
       { buildEnvelope: jest.fn() } as never,
-      mindMemoryStub(prisma) as never,
+      mindMemoryStub(prisma),
       opsAlert as never,
     );
 

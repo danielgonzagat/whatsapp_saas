@@ -12,7 +12,9 @@ import {
   createKloelErrorEvent,
   createKloelStatusEvent,
   createKloelThreadEvent,
-  type KloelStreamEvent, createKloelContentEvent } from './kloel-stream-events';
+  type KloelStreamEvent,
+  createKloelContentEvent,
+} from './kloel-stream-events';
 import { KloelStreamWriter } from './kloel-stream-writer';
 import { KloelThreadService, StoredProcessingTraceEntry } from './kloel-thread.service';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';

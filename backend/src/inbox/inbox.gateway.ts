@@ -37,7 +37,7 @@ export class InboxGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     try {
-      const payload = this.jwt.verify(token);
+      const payload = this.jwt.verify<{ workspaceId?: string }>(token);
       const workspaceId = (client.handshake.query.workspaceId as string) || payload.workspaceId;
 
       if (!workspaceId || (payload.workspaceId && payload.workspaceId !== workspaceId)) {
@@ -81,7 +81,7 @@ export class InboxGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   private extractToken(client: Socket): string | null {
-    const auth = client.handshake.auth?.token || client.handshake.query?.token;
+    const auth: unknown = client.handshake.auth?.token || client.handshake.query?.token;
     if (typeof auth === 'string') {
       return auth.startsWith('Bearer ') ? auth.slice(7) : auth;
     }

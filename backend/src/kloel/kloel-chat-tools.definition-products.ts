@@ -122,7 +122,10 @@ export const KLOEL_CHAT_TOOLS_PRODUCTS: ChatCompletionTool[] = [
         type: 'object',
         properties: {
           productId: { type: 'string', description: 'ID do produto' },
-          available: { type: 'boolean', description: 'true para disponibilizar, false para pausar' },
+          available: {
+            type: 'boolean',
+            description: 'true para disponibilizar, false para pausar',
+          },
         },
         required: ['productId', 'available'],
       },

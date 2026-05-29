@@ -58,11 +58,11 @@ function buildMimeFilter(allowed: string[]): MulterFileFilter {
   };
 }
 
-export const kloelGenericUploadFileFilter: MulterFileFilter =
-  buildMimeFilter(KLOEL_UPLOAD_GENERIC_MIMES);
+export const kloelGenericUploadFileFilter: MulterFileFilter = buildMimeFilter(
+  KLOEL_UPLOAD_GENERIC_MIMES,
+);
 
-export const kloelChatUploadFileFilter: MulterFileFilter =
-  buildMimeFilter(KLOEL_UPLOAD_CHAT_MIMES);
+export const kloelChatUploadFileFilter: MulterFileFilter = buildMimeFilter(KLOEL_UPLOAD_CHAT_MIMES);
 
 export async function handleUploadFile(
   deps: { storage: StorageService },

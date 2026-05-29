@@ -124,14 +124,9 @@ describe('AuthTokenService', () => {
         where: { agentId: 'agent-123', revoked: false },
         data: { revoked: true },
       });
-      expect(prismaMock.refreshToken.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          agentId: 'agent-123',
-          token: expect.anything(),
-          expiresAt: expect.anything(),
-        }),
-      });
+      expect(prismaMock.refreshToken.create).toHaveBeenCalled();
       const createCall = prismaMock.refreshToken.create.mock.calls[0][0];
+      expect(createCall.data.agentId).toBe('agent-123');
       expect(typeof createCall.data.token).toBe('string');
       expect(createCall.data.expiresAt).toBeInstanceOf(Date);
     });

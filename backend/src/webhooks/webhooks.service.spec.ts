@@ -1,4 +1,6 @@
-const mockFlowQueueAdd = jest.fn();
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
+
+const mockFlowQueueAdd = jest.fn<(...args: unknown[]) => Promise<{ id: string }>>();
 
 jest.mock('../queue/queue', () => ({
   flowQueue: { add: (...args: unknown[]) => mockFlowQueueAdd(...args) },

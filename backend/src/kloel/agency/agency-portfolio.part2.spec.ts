@@ -1,34 +1,8 @@
-import { PortfolioStateService } from './portfolio-state.service';
 import { PerClientContextBundler } from './per-client-context.bundler';
-import type {
-  BundleBuildInput,
-  ClientData,
-  ConsolidationInput,
-  TeamMemberData,
-} from './portfolio-state.service';
-import type { ClientContextBundle } from './agency.types';
-import { clamp, clampScore } from './agency.types';
+import type { BundleBuildInput, ClientContextBundle } from './agency.types';
 
 const NOW = Date.parse('2026-05-14T12:00:00.000Z');
 const AGENCY = 'agency_001';
-
-function makeData(workspaceId: string, overrides: Partial<ClientData> = {}): ClientData {
-  return {
-    workspaceId,
-    revenueCents: overrides.revenueCents ?? 100_000n,
-    costCents: overrides.costCents ?? 30_000n,
-    previousMarginPercent: overrides.previousMarginPercent,
-    satisfactionScore: overrides.satisfactionScore ?? 0.8,
-    openIssues: overrides.openIssues ?? 1,
-    activeProjects: overrides.activeProjects ?? 3,
-    relationshipDays: overrides.relationshipDays ?? 180,
-    lastContactDaysAgo: overrides.lastContactDaysAgo ?? 3,
-    delayedPayment: overrides.delayedPayment ?? false,
-    complaintCount: overrides.complaintCount ?? 0,
-    scopeReduction: overrides.scopeReduction ?? false,
-    contractRenewalAt: overrides.contractRenewalAt ?? null,
-  };
-}
 
 function makeBundleInput(
   clientId: string,

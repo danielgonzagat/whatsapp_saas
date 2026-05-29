@@ -192,15 +192,13 @@ class RecordingPrisma {
         return { count: 1 };
       },
     ),
-    findFirstOrThrow: jest.fn(
-      async (args: { where: { id: string } }): Promise<BeliefRow> => {
-        const row = this.beliefs.find((b) => b.id === args.where.id);
-        if (!row) {
-          throw new Error('belief_not_found');
-        }
-        return row;
-      },
-    ),
+    findFirstOrThrow: jest.fn(async (args: { where: { id: string } }): Promise<BeliefRow> => {
+      const row = this.beliefs.find((b) => b.id === args.where.id);
+      if (!row) {
+        throw new Error('belief_not_found');
+      }
+      return row;
+    }),
     findFirst: jest.fn(
       async (args: {
         where: { workspaceId: string; subject: string; predicate: string };
@@ -219,10 +217,12 @@ class RecordingPrisma {
 
   mindPrediction = {
     create: jest.fn(
-      async (args: { data: Omit<PredictionRow, 'actual' | 'surprise' | 'resolvedAt' | 'createdAt'> }): Promise<PredictionRow> => {
+      async (args: {
+        data: Omit<PredictionRow, 'actual' | 'surprise' | 'resolvedAt' | 'createdAt'>;
+      }): Promise<PredictionRow> => {
         const row: PredictionRow = {
           ...args.data,
-          context: args.data.context as Record<string, unknown>,
+          context: args.data.context,
           actual: null,
           surprise: null,
           resolvedAt: null,
@@ -268,7 +268,9 @@ class RecordingPrisma {
   mindBanditArm = {
     upsert: jest.fn(
       async (args: {
-        where: { workspaceId_decisionType_arm: { workspaceId: string; decisionType: string; arm: string } };
+        where: {
+          workspaceId_decisionType_arm: { workspaceId: string; decisionType: string; arm: string };
+        };
         update: Record<string, unknown>;
         create: Partial<BanditArmRow> & { workspaceId: string; decisionType: string; arm: string };
       }): Promise<BanditArmRow> => {
@@ -281,7 +283,7 @@ class RecordingPrisma {
         );
         if (existing) {
           for (const [field, value] of Object.entries(args.update)) {
-            if (value && typeof value === 'object' && 'increment' in (value as object)) {
+            if (value && typeof value === 'object' && 'increment' in value) {
               const inc = (value as { increment: number }).increment;
               (existing as unknown as Record<string, number>)[field] += inc;
             } else {
@@ -324,13 +326,18 @@ class RecordingPrisma {
       async (args: {
         data: Omit<
           DecisionOutcomeRow,
-          'outcomeAt' | 'outcomeName' | 'outcomeValue' | 'economicValue' | 'wonVsBaseline' | 'createdAt'
+          | 'outcomeAt'
+          | 'outcomeName'
+          | 'outcomeValue'
+          | 'economicValue'
+          | 'wonVsBaseline'
+          | 'createdAt'
         > & { baselineAction?: string | null };
       }): Promise<DecisionOutcomeRow> => {
         const row: DecisionOutcomeRow = {
           ...args.data,
           baselineAction: args.data.baselineAction ?? null,
-          contextSnapshot: args.data.contextSnapshot as Record<string, unknown>,
+          contextSnapshot: args.data.contextSnapshot,
           outcomeAt: null,
           outcomeName: null,
           outcomeValue: null,
@@ -360,9 +367,7 @@ class RecordingPrisma {
       async (args: { where: { outcomeKey: string } }): Promise<DecisionOutcomeRow | null> => {
         const matches = this.outcomes
           .filter((o) => o.outcomeKey === args.where.outcomeKey)
-          .sort(
-            (a, b) => (b.outcomeAt?.getTime() ?? 0) - (a.outcomeAt?.getTime() ?? 0),
-          );
+          .sort((a, b) => (b.outcomeAt?.getTime() ?? 0) - (a.outcomeAt?.getTime() ?? 0));
         return matches[0] ?? null;
       },
     ),
@@ -383,18 +388,19 @@ class RecordingPrisma {
         );
       },
     ),
-    create: jest.fn(
-      async (args: { data: GlobalPriorRow }): Promise<GlobalPriorRow> => {
-        const row: GlobalPriorRow = {
-          ...args.data,
-          context: args.data.context as Record<string, unknown>,
-        };
-        this.globalPriors.push(row);
-        return row;
-      },
-    ),
+    create: jest.fn(async (args: { data: GlobalPriorRow }): Promise<GlobalPriorRow> => {
+      const row: GlobalPriorRow = {
+        ...args.data,
+        context: args.data.context,
+      };
+      this.globalPriors.push(row);
+      return row;
+    }),
     update: jest.fn(
-      async (args: { where: { id: string }; data: Partial<GlobalPriorRow> }): Promise<GlobalPriorRow> => {
+      async (args: {
+        where: { id: string };
+        data: Partial<GlobalPriorRow>;
+      }): Promise<GlobalPriorRow> => {
         const row = this.globalPriors.find((g) => g.id === args.where.id);
         if (!row) {
           throw new Error('global_prior_not_found');
@@ -417,13 +423,13 @@ describe('Cognitive loop LIVENESS PROOF — one reply persists the four loop tab
 
   beforeEach(() => {
     prisma = new RecordingPrisma();
-    bandit = new MindBanditService(prisma as never);
+    bandit = new MindBanditService(prisma);
     // globalPrior wired into belief so getOrInit seeds Beta(1,1) when no prior.
-    globalPrior = new MindGlobalPriorService(prisma as never);
-    belief = new MindBeliefService(prisma as never, globalPrior);
-    predictor = new MindPredictorService(prisma as never, belief);
-    surprise = new MindSurpriseService(prisma as never, belief, predictor);
-    decisionOutcome = new DecisionOutcomeService(prisma as never, bandit);
+    globalPrior = new MindGlobalPriorService(prisma);
+    belief = new MindBeliefService(prisma, globalPrior);
+    predictor = new MindPredictorService(prisma, belief);
+    surprise = new MindSurpriseService(prisma, belief, predictor);
+    decisionOutcome = new DecisionOutcomeService(prisma, bandit);
   });
 
   it('drives a reply through router → predict → resolve → reward and PERSISTS all four loop tables', async () => {

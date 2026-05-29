@@ -269,8 +269,9 @@ export class AnalyticsService {
   }
 
   private async fetchWalletSafe(workspaceId: string) {
-    return this.prisma.kloelWallet.findFirst({ where: { workspaceId } }).catch((err) => {
-      this.logger.warn(`Failed to fetch wallet for workspace ${workspaceId}: ${err?.message}`);
+    return this.prisma.kloelWallet.findFirst({ where: { workspaceId } }).catch((err: unknown) => {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Failed to fetch wallet for workspace ${workspaceId}: ${message}`);
       return null;
     });
   }
@@ -279,8 +280,9 @@ export class AnalyticsService {
     return Promise.all([
       this.prisma.message
         .count({ where: { workspaceId, createdAt: { gte: since } } })
-        .catch((err) => {
-          this.logger.warn(`Failed to count messages: ${err?.message}`);
+        .catch((err: unknown) => {
+          const message = err instanceof Error ? err.message : String(err);
+          this.logger.warn(`Failed to count messages: ${message}`);
           return 0;
         }),
       this.prisma.message
@@ -291,8 +293,9 @@ export class AnalyticsService {
             createdAt: { gte: since },
           },
         })
-        .catch((err) => {
-          this.logger.warn(`Failed to count outbound messages: ${err?.message}`);
+        .catch((err: unknown) => {
+          const message = err instanceof Error ? err.message : String(err);
+          this.logger.warn(`Failed to count outbound messages: ${message}`);
           return 0;
         }),
     ]);

@@ -98,8 +98,11 @@ export class SystemHealthService {
           if (typeof s !== 'object' || !s || !('status' in s)) {
             return true;
           }
-          const status = String((s as Record<string, unknown>).status ?? '');
-          return ['UP', 'CONFIGURED', 'NOT_CONFIGURED'].includes(status);
+          const statusValue = (s as Record<string, unknown>).status;
+          return (
+            typeof statusValue === 'string' &&
+            ['UP', 'CONFIGURED', 'NOT_CONFIGURED'].includes(statusValue)
+          );
         });
     return {
       status: hasDownDependency ? 'DOWN' : isHealthy ? 'UP' : 'DEGRADED',

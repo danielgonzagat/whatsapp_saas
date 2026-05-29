@@ -9,26 +9,37 @@ import { ConnectService } from '../payments/connect/connect.service';
 import { AuditService } from '../audit/audit.service';
 import { AuthPartnerService } from './auth-partner.service';
 
+const mockAffiliatePartner = {
+  findFirst: jest.fn(),
+  update: jest.fn(),
+};
+const mockAgent = {
+  delete: jest.fn(),
+};
+const mockWorkspace = {
+  delete: jest.fn(),
+};
+const mockConnectAccountBalance = {
+  deleteMany: jest.fn(),
+};
+
 const mockPrismaService = {
-  affiliatePartner: {
-    findFirst: jest.fn(),
-    update: jest.fn(),
-  },
-  agent: {
-    delete: jest.fn(),
-  },
-  workspace: {
-    delete: jest.fn(),
-  },
-  connectAccountBalance: {
-    deleteMany: jest.fn(),
-  },
+  affiliatePartner: mockAffiliatePartner,
+  agent: mockAgent,
+  workspace: mockWorkspace,
+  connectAccountBalance: mockConnectAccountBalance,
   $transaction: jest.fn((arg: unknown) => {
     if (typeof arg === 'function') {
-      return arg({
-        agent: mockPrismaService.agent,
-        workspace: mockPrismaService.workspace,
-        connectAccountBalance: mockPrismaService.connectAccountBalance,
+      const runInTx = arg as (tx: {
+        agent: typeof mockAgent;
+        workspace: typeof mockWorkspace;
+        connectAccountBalance: typeof mockConnectAccountBalance;
+        auditService: typeof mockAuditService;
+      }) => unknown;
+      return runInTx({
+        agent: mockAgent,
+        workspace: mockWorkspace,
+        connectAccountBalance: mockConnectAccountBalance,
         auditService: mockAuditService,
       });
     }
@@ -134,7 +145,7 @@ describe('AuthPartnerService', () => {
         expect.objectContaining({
           where: expect.objectContaining({
             partnerEmail: 'partner@example.com',
-          }),
+          }) as unknown,
         }),
       );
     });
@@ -231,7 +242,7 @@ describe('AuthPartnerService', () => {
           data: expect.objectContaining({
             partnerWorkspaceId: 'ws-1',
             status: 'ACTIVE',
-          }),
+          }) as unknown,
         }),
       );
     });

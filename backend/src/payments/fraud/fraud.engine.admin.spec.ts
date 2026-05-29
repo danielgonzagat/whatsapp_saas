@@ -1,3 +1,5 @@
+import { partialMatch } from '../../../test/helpers/match-instance';
+
 import { buildEngine, makePrismaStub, ORIGINAL_ENV, seedRow } from './fraud.engine.spec-helpers';
 
 /**
@@ -101,9 +103,9 @@ describe('FraudEngine.listBlacklist', () => {
 
     await engine.listBlacklist({ type: 'CPF' });
 
-    expect(prisma.prisma.fraudBlacklist.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({ type: 'CPF' }),
+    expect(prisma.findManyMock).toHaveBeenCalledWith(
+      partialMatch({
+        where: partialMatch({ type: 'CPF' }),
       }),
     );
   });
@@ -117,11 +119,11 @@ describe('FraudEngine.listBlacklist', () => {
 
     const result = await engine.listBlacklist({ type: 'CPF', value: '111.222.333-44' });
 
-    expect(prisma.prisma.fraudBlacklist.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
+    expect(prisma.findManyMock).toHaveBeenCalledWith(
+      partialMatch({
+        where: partialMatch({
           type: 'CPF',
-          value: expect.objectContaining({ contains: '11122233344', mode: 'insensitive' }),
+          value: partialMatch({ contains: '11122233344', mode: 'insensitive' }),
         }),
       }),
     );
@@ -135,10 +137,10 @@ describe('FraudEngine.listBlacklist', () => {
 
     await engine.listBlacklist({ value: 'Found@X.com' });
 
-    expect(prisma.prisma.fraudBlacklist.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({
-          value: expect.objectContaining({ contains: 'found@x.com', mode: 'insensitive' }),
+    expect(prisma.findManyMock).toHaveBeenCalledWith(
+      partialMatch({
+        where: partialMatch({
+          value: partialMatch({ contains: 'found@x.com', mode: 'insensitive' }),
         }),
       }),
     );

@@ -1,14 +1,4 @@
-import type {
-  AreaDelegationState,
-  DelegationSnapshotInput,
-  GraduationVerdict,
-} from './delegation.types';
-import { ALL_DELEGATION_AREAS } from './delegation.types';
-import { DelegationStateTracker } from './delegation-state.tracker';
-import { detectGraduation, type GraduationContext } from './graduation.detector';
-import { buildAutonomySuggestion } from './autonomy-suggestion.builder';
-import { AutonomyRollbackPolicy } from './autonomy-rollback.policy';
-import { AreaByAreaGraduationService } from './area-by-area-graduation.service';
+import type { AreaDelegationState } from './delegation.types';
 import { buildDelegationEvidence, type EvidenceInput } from './delegation-evidence.builder';
 
 const NOW = Date.parse('2026-05-14T00:00:00.000Z');
@@ -29,24 +19,6 @@ function dummyState(over?: Partial<AreaDelegationState>): AreaDelegationState {
     errorRate: over?.errorRate ?? 0,
     updatedAt: over?.updatedAt ?? new Date(NOW).toISOString(),
   };
-}
-
-function snapshotInput(over?: Partial<DelegationSnapshotInput>): DelegationSnapshotInput {
-  return {
-    area: over?.area ?? 'whatsapp',
-    workspaceId: over?.workspaceId ?? WKS,
-    gatePassCount: over?.gatePassCount ?? 0,
-    gateFailCount: over?.gateFailCount ?? 0,
-    errorCount: over?.errorCount ?? 0,
-    totalEvents: over?.totalEvents ?? 0,
-    consecutiveCyclesOk: over?.consecutiveCyclesOk ?? 0,
-    trustScore: over?.trustScore ?? 0.5,
-    nowMs: over?.nowMs ?? NOW,
-  };
-}
-
-function gradCtx(state: AreaDelegationState, cooldown = false): GraduationContext {
-  return { state, cooldownActive: cooldown, nowMs: NOW };
 }
 
 // =========================================================================

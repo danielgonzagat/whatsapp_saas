@@ -16,7 +16,7 @@ export async function forEachSequential<T>(
   items: Iterable<T>,
   callback: (item: T, index: number) => Promise<void>,
 ): Promise<void> {
-  const list = Array.isArray(items) ? [...items] : Array.from(items);
+  const list: T[] = Array.from(items);
 
   const run = async (index: number): Promise<void> => {
     if (index >= list.length) {
@@ -40,7 +40,7 @@ export async function findFirstSequential<T, R>(
   items: Iterable<T>,
   callback: (item: T, index: number) => Promise<R | null | undefined | false>,
 ): Promise<R | undefined> {
-  const list = Array.isArray(items) ? [...items] : Array.from(items);
+  const list: T[] = Array.from(items);
 
   const run = async (index: number): Promise<R | undefined> => {
     if (index >= list.length) {

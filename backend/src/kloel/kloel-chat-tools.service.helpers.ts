@@ -96,7 +96,10 @@ export function buildSendChannelMessageBlocker(): ToolResult {
  * Coerces validate_coupon args from the LLM into a strict shape. Strings are
  * trimmed; non-strings become empty.
  */
-export function coerceCouponArgs(args: Record<string, unknown>): { productId: string; code: string } {
+export function coerceCouponArgs(args: Record<string, unknown>): {
+  productId: string;
+  code: string;
+} {
   const productId = typeof args.productId === 'string' ? args.productId.trim() : '';
   const code = typeof args.code === 'string' ? args.code.trim() : '';
   return { productId, code };
@@ -107,9 +110,10 @@ export function coerceCouponArgs(args: Record<string, unknown>): { productId: st
  * `metric: 'overview'` when no usable metric was provided. Returns `period`
  * only when it is a non-empty string.
  */
-export function coerceAnalyticsArgs(
-  args: Record<string, unknown>,
-): { metric: string; period?: string } {
+export function coerceAnalyticsArgs(args: Record<string, unknown>): {
+  metric: string;
+  period?: string;
+} {
   const metric =
     typeof args.metric === 'string' && args.metric.trim() ? args.metric.trim() : 'overview';
   const period =

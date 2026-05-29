@@ -41,7 +41,7 @@ export class EventEmitAuditEventEmitterService {
     const eventName = gatePassed ? 'pulse.gate_passed' : 'pulse.gate_failed';
 
     try {
-      this.spineEmitter.emit({
+      void this.spineEmitter.emit({
         eventName,
         truthMode: 'observed',
         provenance: {

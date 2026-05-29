@@ -100,11 +100,10 @@ export class KloelController {
     req.on('close', () => abortWithReason('client_disconnected'));
     res.on('close', () => abortWithReason('client_disconnected'));
     try {
-      return await this.kloelService.think(
-        buildKloelThinkPayload(dto, req, readUserId),
-        res,
-        { signal: abortController.signal, timeoutMs },
-      );
+      return await this.kloelService.think(buildKloelThinkPayload(dto, req, readUserId), res, {
+        signal: abortController.signal,
+        timeoutMs,
+      });
     } finally {
       clearTimeout(timeout);
     }

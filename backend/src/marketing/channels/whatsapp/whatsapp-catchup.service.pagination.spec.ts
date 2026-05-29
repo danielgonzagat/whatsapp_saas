@@ -20,9 +20,12 @@ jest.mock('./whatsapp-catchup-config', () => {
   };
 });
 
-const { autopilotQueue: _autopilotQueue } = jest.requireMock('../../../queue/queue');
+const { autopilotQueue: _autopilotQueue } = jest.requireMock<{
+  autopilotQueue: { add: jest.Mock };
+}>('../../../queue/queue');
 
 import type { InboundMessage } from './inbound-processor.service';
+import { partialMatch, stringContains, stringMatch } from '../../../../test/helpers/match-instance';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import { CATCHUP_MAX_MESSAGES_PER_CHAT } from './whatsapp-catchup-config';
 import {
@@ -225,11 +228,11 @@ describe('WhatsAppCatchupService — pagination & error paths', () => {
     expect(prisma.workspace.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'ws-1' },
-        data: expect.objectContaining({
-          providerSettings: expect.objectContaining({
-            whatsappApiSession: expect.objectContaining({
-              lastCatchupError: expect.stringContaining('Provider rate limit exceeded'),
-              lastCatchupFailedAt: expect.stringMatching(/.+/),
+        data: partialMatch({
+          providerSettings: partialMatch({
+            whatsappApiSession: partialMatch({
+              lastCatchupError: stringContains('Provider rate limit exceeded'),
+              lastCatchupFailedAt: stringMatch(/.+/),
             }),
           }),
         }),

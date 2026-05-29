@@ -19,11 +19,15 @@ describe('TikTokAdsService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    const cryptoMock = jest.requireMock('../meta/meta-token-crypto');
+    const cryptoMock = jest.requireMock<{ decryptMetaToken: jest.Mock }>(
+      '../meta/meta-token-crypto',
+    );
     decryptMetaToken = cryptoMock.decryptMetaToken;
     decryptMetaToken.mockImplementation((token: unknown) => token);
 
-    const settingsMock = jest.requireMock('./channels/whatsapp/provider-settings.types');
+    const settingsMock = jest.requireMock<{ asProviderSettings: jest.Mock }>(
+      './channels/whatsapp/provider-settings.types',
+    );
     asProviderSettings = settingsMock.asProviderSettings;
     asProviderSettings.mockImplementation((val: unknown) => val ?? {});
 

@@ -112,7 +112,6 @@ export function observeRepliedToUserBelief(
     );
 }
 
-
 /**
  * Persist a MindPrediction for the chat-reply predictive-coding loop BEFORE the
  * reply is acted on. This is the missing producer that fed the previously-empty

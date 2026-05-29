@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { EmailMarketingController } from './email-marketing.controller';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 type EmailMarketingServiceMock = {
   createCampaign: jest.Mock;
@@ -57,13 +58,13 @@ describe('EmailMarketingController', () => {
     expect(emailMarketingService.enqueueSend).not.toHaveBeenCalled();
     expect(prisma.approvalRequest.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
+        data: partialMatch({
           workspaceId: 'ws-1',
           kind: 'email_campaign:send',
           entityType: 'EmailCampaign',
           entityId: 'camp-1',
           state: 'OPEN',
-          payload: expect.objectContaining({
+          payload: partialMatch({
             campaignId: 'camp-1',
             recipientCount: 2,
             requestedByEmail: 'owner@example.com',
@@ -93,7 +94,7 @@ describe('EmailMarketingController', () => {
     expect(prisma.approvalRequest.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'ap-email-1', workspaceId: 'ws-1', state: 'APPROVED' },
-        data: expect.objectContaining({ state: 'COMPLETED' }),
+        data: partialMatch({ state: 'COMPLETED' }),
       }),
     );
     expect(result).toEqual(

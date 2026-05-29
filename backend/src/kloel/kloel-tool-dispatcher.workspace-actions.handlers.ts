@@ -91,14 +91,7 @@ export async function dispatchWorkspaceActionTool(
       const startedAt = Date.now();
       const result = await chatToolsService.toolSetBrandVoice(workspaceId, asToolArgs(args));
       const resultWithTone = result.success ? { ...result, tone: asString(args.tone) } : result;
-      return applyReceipt(
-        'set_brand_voice',
-        workspaceId,
-        args,
-        resultWithTone,
-        userId,
-        startedAt,
-      );
+      return applyReceipt('set_brand_voice', workspaceId, args, resultWithTone, userId, startedAt);
     }
     case 'set_sales_policy': {
       const startedAt = Date.now();
@@ -143,14 +136,7 @@ export async function dispatchWorkspaceActionTool(
     case 'configure_ai_persona': {
       const startedAt = Date.now();
       const result = await chatToolsService.toolConfigureAiPersona(workspaceId, asToolArgs(args));
-      return applyReceipt(
-        'configure_ai_persona',
-        workspaceId,
-        args,
-        result,
-        userId,
-        startedAt,
-      );
+      return applyReceipt('configure_ai_persona', workspaceId, args, result, userId, startedAt);
     }
     case 'create_order':
       return await chatToolsService.toolCreateOrder(workspaceId, asToolArgs(args));

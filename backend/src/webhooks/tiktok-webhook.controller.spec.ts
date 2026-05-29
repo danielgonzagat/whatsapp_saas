@@ -33,12 +33,17 @@ describe('TikTokWebhookController', () => {
   });
 
   it('keeps the callback endpoints public and the POST endpoint elevated for webhook traffic', () => {
-    expect(
-      Reflect.getMetadata(IS_PUBLIC_METADATA, TikTokWebhookController.prototype.getStatus),
-    ).toBe(true);
-    expect(
-      Reflect.getMetadata(IS_PUBLIC_METADATA, TikTokWebhookController.prototype.handleWebhook),
-    ).toBe(true);
+    const getStatusHandler = Object.getOwnPropertyDescriptor(
+      TikTokWebhookController.prototype,
+      'getStatus',
+    )?.value as ((...args: unknown[]) => unknown) | undefined;
+    const handleWebhookHandler = Object.getOwnPropertyDescriptor(
+      TikTokWebhookController.prototype,
+      'handleWebhook',
+    )?.value as ((...args: unknown[]) => unknown) | undefined;
+
+    expect(Reflect.getMetadata(IS_PUBLIC_METADATA, getStatusHandler)).toBe(true);
+    expect(Reflect.getMetadata(IS_PUBLIC_METADATA, handleWebhookHandler)).toBe(true);
     expect(Reflect.getMetadata(ROUTE_CLASS_METADATA_KEY, TikTokWebhookController)).toBe('webhook');
   });
 

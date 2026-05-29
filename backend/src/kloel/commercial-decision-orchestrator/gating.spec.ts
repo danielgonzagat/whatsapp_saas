@@ -1,9 +1,15 @@
 import { checkPipelineGate } from './gating';
+import type { PrismaService } from '../../prisma/prisma.service';
+
+interface MockPrisma {
+  pipelineState: { findUnique: jest.Mock; update: jest.Mock };
+  decisionOutcome: { count: jest.Mock };
+}
 
 function makePrisma(overrides: {
   pipelineState?: { state: string; fallbackRate1h: number } | null;
   decisionOutcomeCount?: number;
-}) {
+}): MockPrisma {
   return {
     pipelineState: {
       findUnique: jest.fn().mockResolvedValue(overrides.pipelineState),
@@ -12,8 +18,10 @@ function makePrisma(overrides: {
     decisionOutcome: {
       count: jest.fn().mockResolvedValue(overrides.decisionOutcomeCount ?? 0),
     },
-  } as never;
+  };
 }
+
+const asPrisma = (m: MockPrisma): PrismaService => m as unknown as PrismaService;
 describe('checkPipelineGate', () => {
   const envKey = 'COMMERCIAL_ORCHESTRATOR_AUTO_GRADUATE';
   const originalEnv = process.env[envKey];
@@ -34,7 +42,7 @@ describe('checkPipelineGate', () => {
       pipelineState: { state: 'legacy', fallbackRate1h: 0 },
     });
 
-    const result = await checkPipelineGate(prisma, 'ws-1', 'whatsapp');
+    const result = await checkPipelineGate(asPrisma(prisma), 'ws-1', 'whatsapp');
 
     expect(result.mode).toBe('legacy');
     if (result.mode === 'legacy') {
@@ -47,7 +55,7 @@ describe('checkPipelineGate', () => {
       pipelineState: { state: 'active', fallbackRate1h: 0 },
     });
 
-    const result = await checkPipelineGate(prisma, 'ws-1', 'whatsapp');
+    const result = await checkPipelineGate(asPrisma(prisma), 'ws-1', 'whatsapp');
 
     expect(result.mode).toBe('active');
   });
@@ -59,7 +67,7 @@ describe('checkPipelineGate', () => {
       decisionOutcomeCount: 30,
     });
 
-    const result = await checkPipelineGate(prisma, 'ws-1', 'whatsapp');
+    const result = await checkPipelineGate(asPrisma(prisma), 'ws-1', 'whatsapp');
 
     expect(result.mode).toBe('shadow');
     expect(prisma.pipelineState.update).not.toHaveBeenCalled();
@@ -72,7 +80,7 @@ describe('checkPipelineGate', () => {
       decisionOutcomeCount: 29,
     });
 
-    const result = await checkPipelineGate(prisma, 'ws-1', 'whatsapp');
+    const result = await checkPipelineGate(asPrisma(prisma), 'ws-1', 'whatsapp');
 
     expect(result.mode).toBe('shadow');
     expect(prisma.pipelineState.update).not.toHaveBeenCalled();
@@ -85,12 +93,12 @@ describe('checkPipelineGate', () => {
       decisionOutcomeCount: 30,
     });
 
-    const result = await checkPipelineGate(prisma, 'ws-1', 'whatsapp');
+    const result = await checkPipelineGate(asPrisma(prisma), 'ws-1', 'whatsapp');
 
     expect(result.mode).toBe('active');
     expect(prisma.pipelineState.update).toHaveBeenCalledWith({
       where: { workspaceId: 'ws-1' },
-      data: expect.objectContaining({ state: 'active' }),
+      data: expect.objectContaining({ state: 'active' }) as object,
     });
   });
   it('stays shadow with 30+ outcomes when flag is absent (default false)', async () => {
@@ -101,7 +109,7 @@ describe('checkPipelineGate', () => {
       decisionOutcomeCount: 40,
     });
 
-    const result = await checkPipelineGate(prisma, 'ws-1', 'whatsapp');
+    const result = await checkPipelineGate(asPrisma(prisma), 'ws-1', 'whatsapp');
 
     expect(result.mode).toBe('shadow');
     expect(prisma.pipelineState.update).not.toHaveBeenCalled();
@@ -113,7 +121,7 @@ describe('checkPipelineGate', () => {
       pipelineState: { state: 'active', fallbackRate1h: 0 },
     });
 
-    const result = await checkPipelineGate(prisma, 'ws-1', 'whatsapp');
+    const result = await checkPipelineGate(asPrisma(prisma), 'ws-1', 'whatsapp');
 
     expect(result.mode).toBe('active');
     expect(prisma.decisionOutcome.count).not.toHaveBeenCalled();
@@ -126,7 +134,7 @@ describe('checkPipelineGate', () => {
       decisionOutcomeCount: 30,
     });
 
-    await checkPipelineGate(prisma, 'ws-1', 'whatsapp');
+    await checkPipelineGate(asPrisma(prisma), 'ws-1', 'whatsapp');
 
     expect(prisma.decisionOutcome.count).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -134,7 +142,7 @@ describe('checkPipelineGate', () => {
           workspaceId: 'ws-1',
           decisionType: { in: ['tom', 'message_format', 'objection_response'] },
           wonVsBaseline: true,
-        }),
+        }) as object,
       }),
     );
   });

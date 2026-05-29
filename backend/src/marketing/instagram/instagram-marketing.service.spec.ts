@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
+import { partialMatch } from '../../../test/helpers/match-instance';
 import { InstagramMarketingService } from './instagram-marketing.service';
-import * as tokenCrypto from '../../meta/meta-token-crypto';
 
 jest.mock('../../meta/meta-token-crypto', () => ({
   decryptMetaToken: jest.fn((token: string | null | undefined) => token || null),
@@ -117,7 +117,7 @@ describe('InstagramMarketingService', () => {
       );
       expect(igPostCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: partialMatch({
             workspaceId: 'ws-1',
             igAccountId: 'ig-123',
             status: 'published',
@@ -155,7 +155,7 @@ describe('InstagramMarketingService', () => {
 
       expect(igPostCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ status: 'failed' }),
+          data: partialMatch({ status: 'failed' }),
         }),
       );
       expect(result.post.status).toBe('failed');
@@ -194,7 +194,7 @@ describe('InstagramMarketingService', () => {
       );
       expect(igInsightUpsert).toHaveBeenCalledWith(
         expect.objectContaining({
-          create: expect.objectContaining({
+          create: partialMatch({
             impressions: 1500,
             reach: 800,
             followerCount: 55,
@@ -231,7 +231,7 @@ describe('InstagramMarketingService', () => {
 
       expect(igInsightUpsert).toHaveBeenCalledWith(
         expect.objectContaining({
-          create: expect.objectContaining({
+          create: partialMatch({
             impressions: 0,
             reach: 0,
           }),
@@ -275,7 +275,7 @@ describe('InstagramMarketingService', () => {
 
       expect(igInsightFindMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({
+          where: partialMatch({
             workspaceId: 'ws-1',
             igAccountId: 'ig-123',
           }),
@@ -289,7 +289,11 @@ describe('InstagramMarketingService', () => {
 
       await service.listInsights('ws-1', undefined, '2026-01-01', '2026-01-31');
 
-      const findManyArgs = igInsightFindMany.mock.calls[0][0];
+      const findManyArgs = (
+        igInsightFindMany.mock.calls as Array<
+          [{ where: { workspaceId: string; date: { gte: Date; lte: Date } } }]
+        >
+      )[0][0];
       expect(findManyArgs.where.workspaceId).toBe('ws-1');
       expect(findManyArgs.where.date.gte).toBeInstanceOf(Date);
       expect(findManyArgs.where.date.lte).toBeInstanceOf(Date);

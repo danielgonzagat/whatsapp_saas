@@ -74,8 +74,6 @@ function gateInput(abi: unknown, registry?: CapabilityRegistrySnapshot): NoOverc
   return { abiPayload: abi, registrySnapshot: registry };
 }
 
-const HARD_FAIL = 'hard_fail' as const;
-
 describe('no-overclaim gate', () => {
   // ──────────────────────────────
   // Group 1 — Basic overclaim PASS

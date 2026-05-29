@@ -106,7 +106,7 @@ export const discountWithoutJustificationDetector: Detector = {
       out.push(
         finTension(
           'financial.discount_without_justification',
-          `desconto de ${d.payload?.['discountCents']} centavos aplicado sem reason`,
+          `desconto de ${Number(d.payload?.['discountCents'])} centavos aplicado sem reason`,
           0.6,
           d,
           [d.eventId],

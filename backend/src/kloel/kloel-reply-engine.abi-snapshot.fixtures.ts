@@ -78,7 +78,7 @@ export function extractCognitiveState(
   const last = messages[messages.length - 1];
   const str = typeof last?.content === 'string' ? last.content : '{}';
   const payload = JSON.parse(str) as Record<string, unknown>;
-  return payload['cognitiveState'] as Record<string, unknown>;
+  return payload['cognitiveState'];
 }
 
 export interface BuildModuleOpts {
@@ -86,9 +86,7 @@ export interface BuildModuleOpts {
   abiBuilder: { build: jest.Mock };
 }
 
-export async function buildAbiTestModule(
-  opts: BuildModuleOpts,
-): Promise<KloelReplyEngineService> {
+export async function buildAbiTestModule(opts: BuildModuleOpts): Promise<KloelReplyEngineService> {
   const module: TestingModule = await Test.createTestingModule({
     providers: [
       KloelReplyEngineService,

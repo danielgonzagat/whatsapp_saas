@@ -1,5 +1,6 @@
 import { MercadoPagoBoletoChargeService } from './mercadopago-boleto-charge.service';
 import type { MercadoPagoConfigService } from './mercadopago.config';
+import { partialMatch } from '../../../test/helpers/match-instance';
 
 type FetchMock = jest.Mock<Promise<Response>, [RequestInfo | URL, RequestInit?]>;
 
@@ -8,7 +9,7 @@ describe('MercadoPagoBoletoChargeService', () => {
   let config: Pick<MercadoPagoConfigService, 'baseUrl' | 'get' | 'isAvailable'>;
 
   beforeEach(() => {
-    fetchMock = jest.fn();
+    fetchMock = jest.fn<Promise<Response>, [RequestInfo | URL, RequestInit?]>();
     global.fetch = fetchMock;
     config = {
       baseUrl: 'https://api.mercadopago.com',
@@ -64,14 +65,14 @@ describe('MercadoPagoBoletoChargeService', () => {
       'https://api.mercadopago.com/v1/payments',
       expect.objectContaining({
         method: 'POST',
-        headers: expect.objectContaining({
+        headers: partialMatch({
           Authorization: 'Bearer TEST-123',
           'X-Idempotency-Key': 'idem-boleto-1',
         }),
       }),
     );
     const request = fetchMock.mock.calls[0][1];
-    expect(JSON.parse(String(request?.body))).toMatchObject({
+    expect(JSON.parse(request?.body as string)).toMatchObject({
       date_of_expiration: expiresAt.toISOString(),
       external_reference: 'order-1',
       notification_url: 'https://api.kloel.com/webhooks/mercadopago',

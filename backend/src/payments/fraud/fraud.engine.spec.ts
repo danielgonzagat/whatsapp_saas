@@ -1,3 +1,5 @@
+import { stringContains } from '../../../test/helpers/match-instance';
+
 import { FraudEngine } from './fraud.engine';
 import {
   baseContext,
@@ -38,7 +40,7 @@ describe('FraudEngine.evaluate — blacklist short-circuit', () => {
     expect(decision.action).toBe('review');
     expect(decision.score).toBe(FraudEngine.THRESHOLDS.REVIEW);
     expect(decision.reasons).toEqual([
-      expect.objectContaining({ signal: 'blacklist', detail: expect.stringContaining('CPF') }),
+      expect.objectContaining({ signal: 'blacklist', detail: stringContains('CPF') }),
     ]);
   });
 

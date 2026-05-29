@@ -40,7 +40,7 @@ export interface ApplicableEvent {
  * valence and/or truthMode may be filled from the matching policy when
  * the upstream value was absent.
  */
-export interface AppliedEvent extends ApplicableEvent {}
+export type AppliedEvent = ApplicableEvent;
 
 /**
  * Snapshot of every registered policy, keyed by channelName.

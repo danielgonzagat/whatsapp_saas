@@ -6,6 +6,7 @@ import { ConnectService } from '../connect/connect.service';
 import { LedgerService } from '../ledger/ledger.service';
 
 import { ConnectReversalService } from './connect-reversal.service';
+import { partialMatch } from '../../../test/helpers/match-instance';
 import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
 function makeWebhookData() {
@@ -121,7 +122,7 @@ describe('ConnectReversalService.processRefund', () => {
       'tr_seller_1',
       expect.objectContaining({
         amount: 1196,
-        metadata: expect.objectContaining({
+        metadata: partialMatch({
           paymentIntentId: 'pi_sale_1',
           triggerType: 'refund',
           triggerId: 're_1',
@@ -135,7 +136,7 @@ describe('ConnectReversalService.processRefund', () => {
       'tr_supplier_1',
       expect.objectContaining({
         amount: 4210,
-        metadata: expect.objectContaining({
+        metadata: partialMatch({
           paymentIntentId: 'pi_sale_1',
           triggerType: 'refund',
           triggerId: 're_1',
@@ -149,7 +150,7 @@ describe('ConnectReversalService.processRefund', () => {
       'tr_affiliate_1',
       expect.objectContaining({
         amount: 3604,
-        metadata: expect.objectContaining({
+        metadata: partialMatch({
           role: 'affiliate',
         }),
       }),
@@ -160,7 +161,7 @@ describe('ConnectReversalService.processRefund', () => {
       accountBalanceId: 'cab_seller',
       amountCents: 1196n,
       reference: { type: 'refund', id: 're_1:seller' },
-      metadata: expect.objectContaining({
+      metadata: partialMatch({
         paymentIntentId: 'pi_sale_1',
         stripeTransferId: 'tr_seller_1',
       }),
@@ -169,7 +170,7 @@ describe('ConnectReversalService.processRefund', () => {
       accountBalanceId: 'cab_supplier',
       amountCents: 4210n,
       reference: { type: 'refund', id: 're_1:supplier' },
-      metadata: expect.objectContaining({
+      metadata: partialMatch({
         paymentIntentId: 'pi_sale_1',
         stripeTransferId: 'tr_supplier_1',
       }),
@@ -224,7 +225,7 @@ describe('ConnectReversalService.processRefund', () => {
       'tr_supplier_1',
       expect.objectContaining({
         amount: 1,
-        metadata: expect.objectContaining({
+        metadata: partialMatch({
           triggerType: 'refund',
           triggerId: 're_tiny',
           role: 'supplier',
@@ -237,7 +238,7 @@ describe('ConnectReversalService.processRefund', () => {
       accountBalanceId: 'cab_supplier',
       amountCents: 1n,
       reference: { type: 'refund', id: 're_tiny:supplier' },
-      metadata: expect.objectContaining({
+      metadata: partialMatch({
         paymentIntentId: 'pi_sale_1',
         stripeTransferId: 'tr_supplier_1',
       }),
@@ -343,7 +344,7 @@ describe('ConnectReversalService.processDispute', () => {
       accountBalanceId: 'cab_seller',
       amountCents: 1196n,
       reference: { type: 'dispute', id: 'dp_1:seller' },
-      metadata: expect.objectContaining({
+      metadata: partialMatch({
         paymentIntentId: 'pi_sale_1',
         stripeTransferId: 'tr_seller_1',
       }),
@@ -398,7 +399,7 @@ describe('ConnectReversalService.processDispute', () => {
       'tr_supplier_1',
       expect.objectContaining({
         amount: 1,
-        metadata: expect.objectContaining({
+        metadata: partialMatch({
           triggerType: 'dispute',
           triggerId: 'dp_tiny',
           role: 'supplier',
@@ -411,7 +412,7 @@ describe('ConnectReversalService.processDispute', () => {
       accountBalanceId: 'cab_supplier',
       amountCents: 1n,
       reference: { type: 'dispute', id: 'dp_tiny:supplier' },
-      metadata: expect.objectContaining({
+      metadata: partialMatch({
         paymentIntentId: 'pi_sale_1',
         stripeTransferId: 'tr_supplier_1',
       }),

@@ -97,7 +97,17 @@ export function buildReceipt(params: {
           : undefined;
 
   const proof = params.result.success ? `tool_${params.toolName}_executed` : undefined;
-  const warnings = params.result.error ? [String(params.result.error)] : undefined;
+  const errorValue = params.result.error;
+  const warnings =
+    errorValue !== undefined && errorValue !== null && errorValue !== false
+      ? [
+          errorValue instanceof Error
+            ? errorValue.message
+            : typeof errorValue === 'string'
+              ? errorValue
+              : JSON.stringify(errorValue),
+        ]
+      : undefined;
   const nextPossibleActions = suggestNextActions(params.toolName, params.result.success);
 
   return {
@@ -361,7 +371,11 @@ export function isMutationSensitiveTool(toolName: string): boolean {
   if (!name) {
     return false;
   }
-  if (/(?:^|[._-])(?:get|list|search|read|count|fetch|lookup|view|describe|status|consultar|listar|buscar)(?:$|[._-])/.test(name)) {
+  if (
+    /(?:^|[._-])(?:get|list|search|read|count|fetch|lookup|view|describe|status|consultar|listar|buscar)(?:$|[._-])/.test(
+      name,
+    )
+  ) {
     return false;
   }
   return MUTATION_SENSITIVE_VERB_RE.test(name);

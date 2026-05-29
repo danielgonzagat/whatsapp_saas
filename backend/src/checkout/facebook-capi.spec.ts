@@ -8,6 +8,35 @@ jest.mock('../common/trace-headers', () => ({
   getTraceHeaders: jest.fn().mockReturnValue({ 'X-Request-ID': 'test-id' }),
 }));
 
+interface CapiUserData {
+  em?: string[];
+  ph?: string[];
+  client_ip_address?: string;
+  client_user_agent?: string;
+}
+
+interface CapiCustomData {
+  value?: number;
+  content_ids?: string[];
+}
+
+interface CapiEvent {
+  event_name?: string;
+  user_data?: CapiUserData;
+  custom_data?: CapiCustomData;
+}
+
+interface CapiRequestBody {
+  data: CapiEvent[];
+}
+
+/** Captured arguments of a single mocked fetch call: [url, init]. */
+type FetchCall = [string, { body?: string }];
+
+/** Parse the request body captured from the mocked fetch call into a typed view. */
+const parseCapiBody = (init: { body?: string } | undefined): CapiRequestBody =>
+  JSON.parse(init?.body ?? '{}') as CapiRequestBody;
+
 const makeEventData = (
   overrides: Partial<{
     pixelId: string;
@@ -55,9 +84,9 @@ describe('FacebookCAPIService', () => {
 
       expect(result).toBe(true);
       expect(fetchSpy).toHaveBeenCalledTimes(1);
-      const [url, init] = fetchSpy.mock.calls[0];
+      const [url, init] = fetchSpy.mock.calls[0] as FetchCall;
       expect(url).toContain('graph.facebook.com/v18.0/1234567890/events');
-      const body = JSON.parse(init.body);
+      const body = parseCapiBody(init);
       expect(body.data[0].event_name).toBe('Purchase');
     });
 
@@ -88,8 +117,8 @@ describe('FacebookCAPIService', () => {
 
       await service.sendEvent(makeEventData({ email: 'Test@Example.com', phone: '5511999999999' }));
 
-      const [, init] = fetchSpy.mock.calls[0];
-      const body = JSON.parse(init.body);
+      const [, init] = fetchSpy.mock.calls[0] as FetchCall;
+      const body = parseCapiBody(init);
       const userData = body.data[0].user_data;
       expect(userData.em).toHaveLength(1);
       expect(userData.em[0]).toHaveLength(64); // SHA-256 hex
@@ -106,8 +135,8 @@ describe('FacebookCAPIService', () => {
 
       await service.sendEvent(makeEventData({ amount: 15000 }));
 
-      const [, init] = fetchSpy.mock.calls[0];
-      const body = JSON.parse(init.body);
+      const [, init] = fetchSpy.mock.calls[0] as FetchCall;
+      const body = parseCapiBody(init);
       expect(body.data[0].custom_data.value).toBe(150);
     });
 
@@ -118,8 +147,8 @@ describe('FacebookCAPIService', () => {
 
       await service.sendEvent(makeEventData({ ip: '1.2.3.4', userAgent: 'Chrome/120' }));
 
-      const [, init] = fetchSpy.mock.calls[0];
-      const body = JSON.parse(init.body);
+      const [, init] = fetchSpy.mock.calls[0] as FetchCall;
+      const body = parseCapiBody(init);
       const userData = body.data[0].user_data;
       expect(userData.client_ip_address).toBe('1.2.3.4');
       expect(userData.client_user_agent).toBe('Chrome/120');
@@ -132,8 +161,8 @@ describe('FacebookCAPIService', () => {
 
       await service.sendEvent(makeEventData({ productId: 'prod-123' }));
 
-      const [, init] = fetchSpy.mock.calls[0];
-      const body = JSON.parse(init.body);
+      const [, init] = fetchSpy.mock.calls[0] as FetchCall;
+      const body = parseCapiBody(init);
       expect(body.data[0].custom_data.content_ids).toEqual(['prod-123']);
     });
 
@@ -144,8 +173,8 @@ describe('FacebookCAPIService', () => {
 
       await service.sendEvent(makeEventData({ productId: undefined }));
 
-      const [, init] = fetchSpy.mock.calls[0];
-      const body = JSON.parse(init.body);
+      const [, init] = fetchSpy.mock.calls[0] as FetchCall;
+      const body = parseCapiBody(init);
       expect(body.data[0].custom_data.content_ids).toEqual([]);
     });
   });

@@ -8,6 +8,7 @@ import { FollowUpService } from '../followup/followup.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutSocialLeadService } from './checkout-social-lead.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { renderEmailTemplate } from '../common/utils/email-template-renderer.util';
 import {
   buildListUnsubscribeHeader,
   buildUnsubscribeFooterHtml,
@@ -359,7 +360,6 @@ export class CheckoutSocialRecoveryService {
     const safeName = String(name || '').trim();
     const productLine = checkoutSlug ? `checkout ${checkoutSlug}` : 'checkout';
     const greeting = safeName ? `Oi, ${safeName}.` : 'Oi.';
-    const { renderEmailTemplate } = require('../common/utils/email-template-renderer.util');
     return renderEmailTemplate('social-recovery', { greeting, productLine });
   }
 }

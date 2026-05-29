@@ -73,9 +73,7 @@ export function processSentimentStats(
  * Bucket lead scores into high/medium/low. Thresholds match the
  * legacy inline logic exactly so dashboards keep historical comparability.
  */
-export function processLeadScoreStats(
-  rows: ReadonlyArray<{ leadScore: number }>,
-): LeadScoreStats {
+export function processLeadScoreStats(rows: ReadonlyArray<{ leadScore: number }>): LeadScoreStats {
   const stats: LeadScoreStats = { high: 0, medium: 0, low: 0 };
   rows.forEach((row) => {
     if (row.leadScore > SCORE_HIGH_THRESHOLD) {
@@ -253,9 +251,7 @@ export function aggregateNodeVisits(
  * visit counts. Conversion rate is `completed / total * 100` (matches the
  * legacy contract — caller decides if it wants to round).
  */
-export function summarizeFlowExecutions(
-  executions: ReadonlyArray<FlowExecutionRecord>,
-): {
+export function summarizeFlowExecutions(executions: ReadonlyArray<FlowExecutionRecord>): {
   total: number;
   completed: number;
   failed: number;
@@ -287,9 +283,7 @@ export function computeAvgResponseTimeSeconds(
   if (messages.length < 2) {
     return null;
   }
-  const sortedTimestamps = messages
-    .map((m) => m.createdAt.getTime())
-    .sort((a, b) => a - b);
+  const sortedTimestamps = messages.map((m) => m.createdAt.getTime()).sort((a, b) => a - b);
   const intervals: number[] = [];
   for (let i = 1; i < sortedTimestamps.length; i += 1) {
     const curr = sortedTimestamps[i];

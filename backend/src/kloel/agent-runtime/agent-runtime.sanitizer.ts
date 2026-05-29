@@ -54,5 +54,13 @@ export function toInputJsonValue(value: unknown): Prisma.InputJsonValue {
         .map(([key, entry]) => [key, toInputJsonValue(entry)]),
     );
   }
-  return String(value);
+  if (typeof value === 'symbol') {
+    return value.toString();
+  }
+  if (typeof value === 'function') {
+    // Mirror String(fn) semantics: a function stringifies to its own source.
+    return (value as () => unknown).toString();
+  }
+  // Unreachable: every typeof has been handled above; coerce defensively.
+  return JSON.stringify(value) ?? 'null';
 }

@@ -134,10 +134,7 @@ export function buildClusterPoints(
   }));
 }
 
-function nearestCentroid(
-  point: { x: number; y: number },
-  centroids: Centroid[],
-): number {
+function nearestCentroid(point: { x: number; y: number }, centroids: Centroid[]): number {
   let best = 0;
   let bestDist = Number.POSITIVE_INFINITY;
   centroids.forEach((c, idx) => {
@@ -155,11 +152,7 @@ function nearestCentroid(
  * the same inputs it always returns the same centroids. `k` is clamped
  * to `[1, points.length]` (or 0 when no points are provided).
  */
-export function runKMeans(
-  points: ClusterPoint[],
-  desiredK = 3,
-  iterations = 5,
-): Centroid[] {
+export function runKMeans(points: ClusterPoint[], desiredK = 3, iterations = 5): Centroid[] {
   if (points.length === 0) {
     return [];
   }
@@ -193,10 +186,7 @@ export function runKMeans(
  * Assign each cluster point to its nearest centroid, returning the
  * shape consumed by the controller.
  */
-export function assignClusters(
-  points: ClusterPoint[],
-  centroids: Centroid[],
-): ClusterAssignment[] {
+export function assignClusters(points: ClusterPoint[], centroids: Centroid[]): ClusterAssignment[] {
   return points.map((p) => ({
     cluster: nearestCentroid(p, centroids),
     contact: p.contact,
@@ -241,7 +231,7 @@ export function sanitizeCustomFieldsBase(
   current: Prisma.JsonValue | null | undefined,
 ): Prisma.JsonObject {
   if (current && typeof current === 'object' && !Array.isArray(current)) {
-    return current as Prisma.JsonObject;
+    return current;
   }
   return {};
 }

@@ -210,10 +210,7 @@ export class ReportService {
    * CHARGEBACK (joined to their order for the workspace filter, amount and
    * customer name). Money stays in integer cents (bigint) — no float math.
    */
-  async getChargebacks(
-    workspaceId: string,
-    args?: { limit?: number },
-  ): Promise<ChargebackReport> {
+  async getChargebacks(workspaceId: string, args?: { limit?: number }): Promise<ChargebackReport> {
     const limit = Math.min(Math.max(Math.trunc(args?.limit ?? DEFAULT_LIMIT), 1), DEFAULT_LIMIT);
 
     const rows = await this.prisma.checkoutPayment.findMany({

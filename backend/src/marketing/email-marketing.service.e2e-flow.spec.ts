@@ -69,7 +69,7 @@ describe('EmailMarketingService.enqueueSend → processCampaignSend (E2E flow)',
     campaignId: string;
     recipientId: string;
     workspaceId: string;
-    event: 'SENT' | 'FAILED' | string;
+    event: string;
   }>;
   let recipientUpdates: Array<{
     where: { id: string; workspaceId: string };

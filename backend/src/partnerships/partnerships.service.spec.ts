@@ -102,7 +102,9 @@ describe('PartnershipsService', () => {
       const result = await service.inviteCollaborator('ws-1', 'new@test.com', 'SUPPORT', 'admin-1');
 
       expect(result.email).toBe('new@test.com');
-      const createCall = prisma.collaboratorInvite.create.mock.calls[0][0];
+      const createCall = (prisma.collaboratorInvite.create.mock.calls as unknown[][])[0][0] as {
+        data: { expiresAt: string | Date };
+      };
       const expiry = new Date(createCall.data.expiresAt);
       const now = Date.now();
       // Expiry should be roughly 7 days from now
@@ -255,10 +257,12 @@ describe('PartnershipsService', () => {
 
   describe('createAffiliate', () => {
     it('creates affiliate invites in pending state and sends the signup email', async () => {
-      prisma.affiliatePartner.create.mockImplementation(async ({ data }) => ({
-        id: 'new-1',
-        ...data,
-      }));
+      prisma.affiliatePartner.create.mockImplementation(
+        async ({ data }: { data: Record<string, unknown> }) => ({
+          id: 'new-1',
+          ...data,
+        }),
+      );
 
       const result = await service.createAffiliate('ws-1', {
         partnerName: 'John Doe',
@@ -289,10 +293,12 @@ describe('PartnershipsService', () => {
     });
 
     it('creates coproducer invites in pending state and labels the partner role correctly', async () => {
-      prisma.affiliatePartner.create.mockImplementation(async ({ data }) => ({
-        id: 'coprod-1',
-        ...data,
-      }));
+      prisma.affiliatePartner.create.mockImplementation(
+        async ({ data }: { data: Record<string, unknown> }) => ({
+          id: 'coprod-1',
+          ...data,
+        }),
+      );
 
       const result = await service.createPartner('ws-1', {
         partnerName: 'Copro',
@@ -313,10 +319,12 @@ describe('PartnershipsService', () => {
     });
 
     it('defaults commissionRate to 30 when not provided', async () => {
-      prisma.affiliatePartner.create.mockImplementation(async ({ data }) => ({
-        id: 'new-1',
-        ...data,
-      }));
+      prisma.affiliatePartner.create.mockImplementation(
+        async ({ data }: { data: Record<string, unknown> }) => ({
+          id: 'new-1',
+          ...data,
+        }),
+      );
 
       const result = await service.createAffiliate('ws-1', {
         partnerName: 'Jane',
@@ -369,10 +377,12 @@ describe('PartnershipsService', () => {
     });
 
     it('keeps producer records active without sending affiliate invite email', async () => {
-      prisma.affiliatePartner.create.mockImplementation(async ({ data }) => ({
-        id: 'producer-1',
-        ...data,
-      }));
+      prisma.affiliatePartner.create.mockImplementation(
+        async ({ data }: { data: Record<string, unknown> }) => ({
+          id: 'producer-1',
+          ...data,
+        }),
+      );
 
       const result = await service.createAffiliate('ws-1', {
         partnerName: 'Produtor',
@@ -387,10 +397,12 @@ describe('PartnershipsService', () => {
     });
 
     it('rolls back the partner record when the invite email fails', async () => {
-      prisma.affiliatePartner.create.mockImplementation(async ({ data }) => ({
-        id: 'new-1',
-        ...data,
-      }));
+      prisma.affiliatePartner.create.mockImplementation(
+        async ({ data }: { data: Record<string, unknown> }) => ({
+          id: 'new-1',
+          ...data,
+        }),
+      );
 
       emailService.sendPartnerInviteEmail.mockResolvedValueOnce(false);
 

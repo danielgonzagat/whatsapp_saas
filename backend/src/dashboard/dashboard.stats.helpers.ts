@@ -66,8 +66,7 @@ export function computeOutboundMessageRates(
   }
   const deliveredOrRead = delivered + read;
   const deliveryRatePct = Number((((delivered + read) / totalOutbound) * 100).toFixed(1));
-  const readRatePct =
-    deliveredOrRead > 0 ? Number(((read / deliveredOrRead) * 100).toFixed(1)) : 0;
+  const readRatePct = deliveredOrRead > 0 ? Number(((read / deliveredOrRead) * 100).toFixed(1)) : 0;
   const errorRatePct = Number(((failed / totalOutbound) * 100).toFixed(1));
   return { totalOutbound, deliveryRatePct, readRatePct, errorRatePct };
 }

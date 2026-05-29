@@ -90,14 +90,18 @@ describe('RouteClassGuard', () => {
     it('does not skip in production', async () => {
       const prev = process.env.NODE_ENV;
       process.env.NODE_ENV = 'production';
-      const result = await (guard as unknown as Record<string, () => Promise<boolean>>).shouldSkip();
+      const result = await (
+        guard as unknown as Record<string, () => Promise<boolean>>
+      ).shouldSkip();
       process.env.NODE_ENV = prev;
       expect(result).toBe(false);
     });
 
     it('skips when JEST_WORKER_ID is set', async () => {
       process.env.JEST_WORKER_ID = '1';
-      const result = await (guard as unknown as Record<string, () => Promise<boolean>>).shouldSkip();
+      const result = await (
+        guard as unknown as Record<string, () => Promise<boolean>>
+      ).shouldSkip();
       delete process.env.JEST_WORKER_ID;
       expect(result).toBe(true);
     });

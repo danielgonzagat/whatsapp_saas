@@ -10,12 +10,7 @@
  */
 
 import { AbiAbHarnessService } from './abi-ab-harness.service';
-import type {
-  AbHarnessRecord,
-  AbPathRunnerFn,
-  AbPathRunnerResult,
-  AbRCriterionDelta,
-} from './abi-ab.types';
+import type { AbHarnessRecord, AbPathRunnerFn, AbPathRunnerResult } from './abi-ab.types';
 
 function makePathRunner(overrides: Partial<AbPathRunnerResult> = {}): AbPathRunnerFn {
   return async () => ({
@@ -27,33 +22,6 @@ function makePathRunner(overrides: Partial<AbPathRunnerResult> = {}): AbPathRunn
   });
 }
 
-function makeSlowPathRunner(): AbPathRunnerFn {
-  return async () => ({
-    success: true,
-    latencyMs: 800,
-    tokensUsed: 300,
-    responseText: 'Resposta lenta.',
-  });
-}
-
-function makeHighTokenPathRunner(): AbPathRunnerFn {
-  return async () => ({
-    success: true,
-    latencyMs: 200,
-    tokensUsed: 5000,
-    responseText: 'Resposta verbosa com muitas palavras.',
-  });
-}
-
-function makeFailingPathRunner(): AbPathRunnerFn {
-  return async () => ({
-    success: false,
-    latencyMs: 100,
-    tokensUsed: 10,
-    responseText: '',
-  });
-}
-
 function makeConversionRichRunner(): AbPathRunnerFn {
   return async () => ({
     success: true,
@@ -61,25 +29,6 @@ function makeConversionRichRunner(): AbPathRunnerFn {
     tokensUsed: 200,
     responseText:
       'Excelente! Aproveite nossa oferta exclusiva. Clique aqui para comprar com desconto. Muito obrigado pela confiança.',
-  });
-}
-
-function makeHallucinatedRunner(): AbPathRunnerFn {
-  return async () => ({
-    success: true,
-    latencyMs: 220,
-    tokensUsed: 180,
-    responseText:
-      'O produto X é o melhor do mercado. A empresa Y recomenda este serviço. A pesquisa Z comprovou eficácia de 99%.',
-  });
-}
-
-function makeBalancedRunner(): AbPathRunnerFn {
-  return async () => ({
-    success: true,
-    latencyMs: 200,
-    tokensUsed: 200,
-    responseText: 'Bom dia! Conforme sua solicitação, aqui está o resumo.',
   });
 }
 
@@ -114,9 +63,7 @@ describe('AbiAbHarnessService', () => {
           'Excelente! Aproveite nossa oferta exclusiva. Clique aqui para comprar. Obrigado pela confiança!',
       });
 
-      let callCount = 0;
       const switchingRunner: AbPathRunnerFn = async (params) => {
-        callCount++;
         if (params.useAbi) {
           return variantRunner(params);
         }
@@ -158,9 +105,7 @@ describe('AbiAbHarnessService', () => {
         responseText: 'O produto é o melhor. A empresa domina o mercado. Os clientes adoram.',
       });
 
-      let callCount = 0;
       const switchingRunner: AbPathRunnerFn = async (params) => {
-        callCount++;
         if (params.useAbi) {
           return variantRunner(params);
         }
@@ -254,9 +199,7 @@ describe('AbiAbHarnessService', () => {
           'Afirmação infundada 1. Afirmação infundada 2. Afirmação infundada 3. Afirmação infundada 4. Mas obrigado e aproveite a oferta.',
       });
 
-      let callCount = 0;
       const switchingRunner: AbPathRunnerFn = async (params) => {
-        callCount++;
         if (params.useAbi) {
           return variantRunner(params);
         }
@@ -272,7 +215,7 @@ describe('AbiAbHarnessService', () => {
       const decision = service.decidePromotion('ws_17');
       expect(decision.sampleSize).toBe(200);
 
-      const { criteriaRegressed, criteriaImproved } = decision;
+      const { criteriaRegressed } = decision;
       if (criteriaRegressed > 0) {
         expect(decision.promoteVariantToDefault).toBe(false);
         expect(decision.reason).toContain('regression');
@@ -295,9 +238,7 @@ describe('AbiAbHarnessService', () => {
           'Excelente! Conforme sua solicitação, aqui está a recomendação. Aproveite nossa oferta exclusiva com desconto. Clique aqui para comprar. Muito obrigado pela confiança! Segundo o relatório, este é o melhor momento.',
       });
 
-      let callCount = 0;
       const switchingRunner: AbPathRunnerFn = async (params) => {
-        callCount++;
         if (params.useAbi) {
           return variantRunner(params);
         }

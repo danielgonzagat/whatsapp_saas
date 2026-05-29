@@ -29,9 +29,7 @@ import type { ReplyMessage } from './kloel-reply-engine.types';
 
 /** Tones that mirror or amplify the contact's energy. Unsafe for a contact
  * whose situational read is already negative — they read as aggressive. */
-const AGGRESSIVE_TONES: ReadonlySet<RecommendedTone> = new Set<RecommendedTone>([
-  'enthusiastic',
-]);
+const AGGRESSIVE_TONES: ReadonlySet<RecommendedTone> = new Set<RecommendedTone>(['enthusiastic']);
 
 /** Situational states that mark the contact as having a negative read right
  * now — the guardrail trigger. */

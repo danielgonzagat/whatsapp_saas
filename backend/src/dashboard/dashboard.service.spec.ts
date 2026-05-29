@@ -40,9 +40,11 @@ describe('DashboardService.getStats', () => {
 
   it('enforces workspace isolation on contact/campaign/flow counts', async () => {
     await service.getStats('ws-tenant-A');
-    expect(prisma.contact.count.mock.calls[0][0].where.workspaceId).toBe('ws-tenant-A');
-    expect(prisma.campaign.count.mock.calls[0][0].where.workspaceId).toBe('ws-tenant-A');
-    expect(prisma.flow.count.mock.calls[0][0].where.workspaceId).toBe('ws-tenant-A');
+    const whereArg = (m: jest.Mock): { where: { workspaceId: string } } =>
+      (m.mock.calls as unknown[][])[0][0] as { where: { workspaceId: string } };
+    expect(whereArg(prisma.contact.count).where.workspaceId).toBe('ws-tenant-A');
+    expect(whereArg(prisma.campaign.count).where.workspaceId).toBe('ws-tenant-A');
+    expect(whereArg(prisma.flow.count).where.workspaceId).toBe('ws-tenant-A');
   });
 
   it('exposes billingSuspended from providerSettings', async () => {

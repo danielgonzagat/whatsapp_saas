@@ -49,7 +49,7 @@ describe('FacebookAuthService', () => {
     const service = new FacebookAuthService(config);
     const profile = await service.verifyAccessToken('token-123', 'facebook-user-1');
 
-    const debugTokenUrl = String(fetchMock.mock.calls[0]?.[0] || '');
+    const debugTokenUrl = String((fetchMock.mock.calls[0] as [string] | undefined)?.[0] ?? '');
     expect(debugTokenUrl).toContain('/debug_token');
     expect(debugTokenUrl).toContain('input_token=token-123');
     expect(debugTokenUrl).toContain('access_token=auth-app-id%7Cauth-app-secret');
@@ -95,7 +95,7 @@ describe('FacebookAuthService', () => {
     const service = new FacebookAuthService(config);
     const profile = await service.verifyAccessToken('token-456', 'facebook-user-2');
 
-    const debugTokenUrl = String(fetchMock.mock.calls[0]?.[0] || '');
+    const debugTokenUrl = String((fetchMock.mock.calls[0] as [string] | undefined)?.[0] ?? '');
     expect(debugTokenUrl).toContain('access_token=shared-app-id%7Cshared-app-secret');
     expect(profile.providerId).toBe('facebook-user-2');
     expect(profile.email).toBe('fb-shared@kloel.com');

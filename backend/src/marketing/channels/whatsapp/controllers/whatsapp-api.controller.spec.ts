@@ -1,4 +1,5 @@
 import { AuthenticatedRequest } from '../../../../common/interfaces';
+import { partialMatch } from '../../../../../test/helpers/match-instance';
 import { WhatsAppApiController } from './whatsapp-api.controller';
 import { WhatsAppCatalogController } from './whatsapp-catalog.controller';
 import { WhatsAppMetaCompatController } from './whatsapp-meta-compat.controller';
@@ -73,7 +74,9 @@ describe('WhatsAppApiController', () => {
       syncSessionConfig: jest.fn().mockResolvedValue(undefined),
     };
     whatsappApi = {
-      getResolvedSessionId: jest.fn().mockImplementation((value) => value),
+      getResolvedSessionId: jest
+        .fn<string, [string]>()
+        .mockImplementation((value: string) => value),
       getSessionConfigDiagnostics: jest.fn().mockResolvedValue({
         sessionName: 'ws-1',
         available: true,
@@ -243,7 +246,7 @@ describe('WhatsAppApiController', () => {
     expect(result).toEqual(
       expect.objectContaining({
         success: true,
-        diagnostics: expect.objectContaining({
+        diagnostics: partialMatch({
           workspaceId: 'ws-1',
           providerType: 'meta-cloud',
         }),

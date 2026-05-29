@@ -112,7 +112,10 @@ describe('AdminMindService', () => {
 
     it('getRecentSurprise queries mindPrediction with resolved+surprise filter and limit', async () => {
       await service.getRecentSurprise('ws-1', 5);
-      const arg = prisma.mindPrediction.findMany.mock.calls[0][0];
+      const arg = (prisma.mindPrediction.findMany.mock.calls[0] as unknown[])[0] as {
+        where: Record<string, unknown>;
+        take: number;
+      };
       expect(arg.where.workspaceId).toBe('ws-1');
       expect(arg.where.resolvedAt).toEqual({ not: null });
       expect(arg.take).toBe(5);

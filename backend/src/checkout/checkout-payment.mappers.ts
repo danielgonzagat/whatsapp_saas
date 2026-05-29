@@ -1,7 +1,6 @@
 import { Prisma } from '@prisma/client';
 
 import type { MercadoPagoBoletoChargeService } from '../payments/mercadopago/mercadopago-boleto-charge.service';
-import type { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
 import type {
   PaymentMethod,
   ProviderRoutingDecision,
@@ -24,7 +23,6 @@ import type {
  */
 
 type MercadoPagoBoletoCharge = Awaited<ReturnType<MercadoPagoBoletoChargeService['create']>>;
-type MercadoPagoPixCharge = Awaited<ReturnType<MercadoPagoPixChargeService['create']>>;
 type MercadoPagoBoletoAddress = Parameters<
   MercadoPagoBoletoChargeService['create']
 >[0]['payerAddress'];
@@ -46,7 +44,7 @@ export function mapStripePaymentStatus(status?: string | null): CheckoutPaymentS
 /** Serialize a value to Prisma InputJsonValue, converting BigInt to string. */
 export function toJsonValue(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(
-    JSON.stringify(value, (_key, currentValue) =>
+    JSON.stringify(value, (_key, currentValue: unknown) =>
       typeof currentValue === 'bigint' ? currentValue.toString() : currentValue,
     ),
   ) as Prisma.InputJsonValue;
@@ -70,7 +68,7 @@ export function resolveBackendOrigin(): string {
 
 /** Map a Mercado Pago charge status to the canonical checkout payment status. */
 export function mapMercadoPagoPaymentStatus(
-  status: MercadoPagoBoletoCharge['status'] | MercadoPagoPixCharge['status'],
+  status: MercadoPagoBoletoCharge['status'],
 ): CheckoutPaymentStatus {
   switch (status) {
     case 'approved':

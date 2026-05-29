@@ -1,7 +1,9 @@
 import { createRequire } from 'node:module';
 
 type StripeConstructor = typeof import('stripe');
-type StripeInteropModule = StripeConstructor | { default?: StripeConstructor; Stripe?: StripeConstructor };
+type StripeInteropModule =
+  | StripeConstructor
+  | { default?: StripeConstructor; Stripe?: StripeConstructor };
 
 function isStripeConstructorCandidate(value: unknown): value is StripeConstructor {
   return typeof value === 'function';
@@ -35,7 +37,6 @@ function resolveStripeConstructor(): StripeConstructor {
   if (isStripeConstructorCandidate(moduleRecord.Stripe)) {
     candidates.push({ fn: moduleRecord.Stripe, source: 'Stripe' });
   }
-
 
   if (candidates.length === 0) {
     throw new Error(

@@ -23,7 +23,7 @@ describe('AdminLoginAttemptsService', () => {
 
     prismaMock.$transaction.mockImplementation(async (ops: unknown) => {
       if (typeof ops === 'function') {
-        return ops(prismaMock);
+        return (ops as (tx: typeof prismaMock) => unknown)(prismaMock);
       }
       return [0, 0];
     });
@@ -74,8 +74,8 @@ describe('AdminLoginAttemptsService', () => {
       await service.isLocked(email, ip);
 
       expect(mockAttemptCount).toHaveBeenCalledTimes(2);
-      const emailCall = mockAttemptCount.mock.calls[0][0] as Record<string, unknown>;
-      const ipCall = mockAttemptCount.mock.calls[1][0] as Record<string, unknown>;
+      const emailCall = (mockAttemptCount.mock.calls[0] as unknown[])[0] as Record<string, unknown>;
+      const ipCall = (mockAttemptCount.mock.calls[1] as unknown[])[0] as Record<string, unknown>;
       expect(emailCall.where).toEqual(expect.objectContaining({ email, success: false }));
       expect(ipCall.where).toEqual(expect.objectContaining({ ip, success: false }));
       const emailWhere = emailCall.where as { createdAt: { gte: Date } };
@@ -88,8 +88,8 @@ describe('AdminLoginAttemptsService', () => {
       await service.isLocked(email, ip);
 
       expect(mockAttemptCount).toHaveBeenCalledTimes(2);
-      const emailCall = mockAttemptCount.mock.calls[0][0] as Record<string, unknown>;
-      const ipCall = mockAttemptCount.mock.calls[1][0] as Record<string, unknown>;
+      const emailCall = (mockAttemptCount.mock.calls[0] as unknown[])[0] as Record<string, unknown>;
+      const ipCall = (mockAttemptCount.mock.calls[1] as unknown[])[0] as Record<string, unknown>;
       expect(emailCall.where).toEqual(expect.objectContaining({ email }));
       expect(ipCall.where).toEqual(expect.objectContaining({ ip }));
     });
@@ -99,7 +99,7 @@ describe('AdminLoginAttemptsService', () => {
 
       await service.isLocked(email, ip);
 
-      const [queries, options] = prismaMock.$transaction.mock.calls[0];
+      const [queries, options] = prismaMock.$transaction.mock.calls[0] as [unknown, unknown];
       expect(Array.isArray(queries)).toBe(true);
       expect(options).toEqual(expect.objectContaining({ isolationLevel: 'ReadCommitted' }));
     });

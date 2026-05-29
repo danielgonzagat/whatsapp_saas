@@ -1,42 +1,10 @@
-import type { SpineEventRef } from '../mind/mind.types';
-import type { DetectorInput, Insight, RankedInsight } from './insight.types';
+import type { Insight, RankedInsight } from './insight.types';
 import { median } from './insight.types';
-
-import { detectFunnelBottleneck } from './detectors/funnel-bottleneck.detector';
-import { detectOfferFit } from './detectors/offer-fit.detector';
-import { detectObjectionPattern } from './detectors/objection-pattern.detector';
-import { detectQualificationLeak } from './detectors/qualification-leak.detector';
-import { detectCoolingWindow } from './detectors/cooling-window.detector';
-import { detectPricingElasticity } from './detectors/pricing-elasticity.detector';
-import { detectChannelRoi } from './detectors/channel-roi.detector';
-import { detectProductPositioning } from './detectors/product-positioning.detector';
-
-import { rankInsights } from './insight-ranker';
 import { confidenceFloor, filterAboveFloor } from './insight-confidence.guard';
 import { InsightDeliveryService } from './insight-delivery.service';
 
 const NOW = Date.parse('2026-05-13T22:00:00.000Z');
 const WKS = 'wks_insight_test';
-
-function ev(over?: Partial<SpineEventRef>): SpineEventRef {
-  const defaults: Record<string, unknown> = {
-    eventId: over?.eventId ?? `e_${Math.random().toString(36).slice(2, 8)}`,
-    eventName: over?.eventName ?? 'commerce.lead.replied',
-    workspaceId: over?.workspaceId ?? WKS,
-    occurredAt: over?.occurredAt ?? '2026-05-13T20:00:00.000Z',
-    truthMode: over?.truthMode ?? ('observed' as const),
-  };
-  if (over?.entityRef !== undefined) {
-    defaults['entityRef'] = over.entityRef;
-  }
-  if (over?.valence !== undefined) {
-    defaults['valence'] = over.valence;
-  }
-  if (over?.payload !== undefined) {
-    defaults['payload'] = over.payload;
-  }
-  return defaults as SpineEventRef;
-}
 
 function makeInsight(over?: Partial<Insight>): Insight {
   return {
@@ -63,12 +31,6 @@ function makeRanked(over?: Partial<Insight>, product?: number): RankedInsight {
     impactConfidenceProduct: product ?? insight.estimatedFinancialImpactCents * insight.confidence,
   };
 }
-
-const input = (over?: Partial<DetectorInput>): DetectorInput => ({
-  events: over?.events ?? ([] as readonly SpineEventRef[]),
-  workspaceId: over?.workspaceId ?? WKS,
-  nowMs: over?.nowMs ?? NOW,
-});
 
 // =========================================================================
 // UTP-INSIGHT-001 — Funnel Bottleneck Detector

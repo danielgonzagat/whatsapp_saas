@@ -5,6 +5,7 @@ import {
   makeWorkspaceEvents,
   synthetic100,
 } from './local-identity.service.spec.helpers';
+import { type SpineEventRef } from '../mind/mind.types';
 
 describe('LocalIdentityService', () => {
   let service: LocalIdentityService;

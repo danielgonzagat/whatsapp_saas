@@ -1,4 +1,5 @@
 import { TikTokMarketingModeService } from './tiktok-marketing-mode.service';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 const OLD_ENV = { ...process.env };
 
@@ -166,18 +167,23 @@ describe('TikTokMarketingModeService', () => {
       expect(result.details.tokenValid).toBe(true);
       expect(messageCount).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({
+          where: partialMatch({
             workspaceId: 'ws_1',
             direction: 'OUTBOUND',
             status: { in: ['SENT', 'DELIVERED', 'READ'] },
-            createdAt: expect.objectContaining({
-              gte: messageCount.mock.calls[0][0].where.createdAt.gte,
+            createdAt: partialMatch({
+              gte: (
+                messageCount.mock.calls as Array<[{ where: { createdAt: { gte: Date } } }]>
+              )[0][0].where.createdAt.gte,
             }),
             conversation: { channel: 'TIKTOK' },
           }),
         }),
       );
-      expect(messageCount.mock.calls[0][0].where.createdAt.gte).toBeInstanceOf(Date);
+      expect(
+        (messageCount.mock.calls as Array<[{ where: { createdAt: { gte: Date } } }]>)[0][0].where
+          .createdAt.gte,
+      ).toBeInstanceOf(Date);
     });
 
     it('stays in listen when only paid sales exist but no TikTok outbound message — sales alone are not TikTok-scoped', async () => {

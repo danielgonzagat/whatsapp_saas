@@ -95,9 +95,9 @@ export function groupMemoriesByKeyPrefix<T extends { key: string }>(
  * first (most recent) — i.e. the entries safe to delete during semantic merge.
  * Pure function — caller owns the DB I/O.
  */
-export function pickStaleSemanticDuplicateIds<
-  T extends { id: string; updatedAt: Date | string },
->(memories: ReadonlyArray<T>): string[] {
+export function pickStaleSemanticDuplicateIds<T extends { id: string; updatedAt: Date | string }>(
+  memories: ReadonlyArray<T>,
+): string[] {
   if (memories.length <= 1) {
     return [];
   }

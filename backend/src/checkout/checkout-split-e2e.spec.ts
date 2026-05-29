@@ -8,6 +8,7 @@ import { MercadoPagoBoletoChargeService } from '../payments/mercadopago/mercadop
 import { MercadoPagoPixChargeService } from '../payments/mercadopago/mercadopago-pix-charge.service';
 import { PaymentProviderRouterService } from '../payments/provider-router/provider-router.service';
 import { StripeChargeService } from '../payments/stripe/stripe-charge.service';
+import type { CreateSaleChargeInput } from '../payments/stripe/stripe-charge.types';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { CheckoutPaymentService } from './checkout-payment.service';
@@ -23,6 +24,13 @@ import {
   makeOrder,
 } from './checkout-payment.service.fixtures';
 import { CheckoutEventEmitterService } from '../kloel/checkout-emitter/checkout-event-emitter.service';
+
+/**
+ * Identity wrapper that narrows jest's `any`-typed asymmetric matchers
+ * (`expect.objectContaining`, etc.) to `unknown` at nested-property boundaries,
+ * so they satisfy `no-unsafe-assignment` without altering the matcher value.
+ */
+const match = (matcher: unknown): unknown => matcher;
 
 const SELLER_ACCOUNT_BALANCE = Object.freeze({
   id: 'cab_seller_1',
@@ -183,7 +191,7 @@ describe('Checkout E2E Split Chain', () => {
     });
 
     expect(stripeCharge.createSaleCharge).toHaveBeenCalledTimes(1);
-    const chargeInput = stripeCharge.createSaleCharge.mock.calls[0][0];
+    const chargeInput = (stripeCharge.createSaleCharge.mock.calls[0] as [CreateSaleChargeInput])[0];
     expect(chargeInput.buyerPaidCents).toBe(13_990n);
     expect(chargeInput.saleValueCents).toBe(10_000n);
     expect(chargeInput.marketplaceFeeCents).toBe(990n);
@@ -231,26 +239,36 @@ describe('Checkout E2E Split Chain', () => {
     expect(mercadoPagoBoleto.create).not.toHaveBeenCalled();
     expect(tx.checkoutPayment.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
-          webhookData: expect.objectContaining({
-            provider: 'stripe',
-            split: expect.objectContaining({
-              kloelTotalCents: '4980',
-              residueCents: '0',
-              splits: expect.arrayContaining([
-                expect.objectContaining({ role: 'seller', amountCents: '5020' }),
-                expect.objectContaining({ role: 'supplier', amountCents: '2500' }),
-                expect.objectContaining({ role: 'affiliate', amountCents: '1287' }),
-              ]),
-            }),
-            splitInput: expect.objectContaining({
-              buyerPaidCents: '13990',
-              saleValueCents: '10000',
-              marketplaceFeeCents: '990',
-              interestCents: '3990',
-            }),
+        data: match(
+          expect.objectContaining({
+            webhookData: match(
+              expect.objectContaining({
+                provider: 'stripe',
+                split: match(
+                  expect.objectContaining({
+                    kloelTotalCents: '4980',
+                    residueCents: '0',
+                    splits: match(
+                      expect.arrayContaining([
+                        expect.objectContaining({ role: 'seller', amountCents: '5020' }),
+                        expect.objectContaining({ role: 'supplier', amountCents: '2500' }),
+                        expect.objectContaining({ role: 'affiliate', amountCents: '1287' }),
+                      ]),
+                    ),
+                  }),
+                ),
+                splitInput: match(
+                  expect.objectContaining({
+                    buyerPaidCents: '13990',
+                    saleValueCents: '10000',
+                    marketplaceFeeCents: '990',
+                    interestCents: '3990',
+                  }),
+                ),
+              }),
+            ),
           }),
-        }),
+        ),
       }),
     );
   });
@@ -291,7 +309,7 @@ describe('Checkout E2E Split Chain', () => {
         amountCents: 13_990n,
         externalReference: 'order-1',
         idempotencyKey: 'order-1',
-        notificationUrl: expect.stringContaining('/webhooks/mercadopago'),
+        notificationUrl: match(expect.stringContaining('/webhooks/mercadopago')),
         payerDocument: '12345678909',
         payerEmail: 'pixsplit@example.com',
         payerName: 'Cliente PIX Split',
@@ -299,17 +317,21 @@ describe('Checkout E2E Split Chain', () => {
     );
     expect(tx.checkoutPayment.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
-          gateway: 'mercadopago',
-          externalId: 'mp_pix_split_1',
-          pixQrCode: 'data:image/png;base64,base64-mp-split-qr',
-          pixCopyPaste: '000201mp-split-copia-e-cola',
-          status: 'PENDING',
-          webhookData: expect.objectContaining({
-            provider: 'mercadopago',
-            paymentMethod: 'pix',
+        data: match(
+          expect.objectContaining({
+            gateway: 'mercadopago',
+            externalId: 'mp_pix_split_1',
+            pixQrCode: 'data:image/png;base64,base64-mp-split-qr',
+            pixCopyPaste: '000201mp-split-copia-e-cola',
+            status: 'PENDING',
+            webhookData: match(
+              expect.objectContaining({
+                provider: 'mercadopago',
+                paymentMethod: 'pix',
+              }),
+            ),
           }),
-        }),
+        ),
       }),
     );
     expect(result).toMatchObject({

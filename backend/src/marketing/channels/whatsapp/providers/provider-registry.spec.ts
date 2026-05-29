@@ -1,4 +1,5 @@
 import { WhatsAppProviderRegistry } from './provider-registry';
+import { partialMatch } from '../../../../../test/helpers/match-instance';
 
 describe('WhatsAppProviderRegistry', () => {
   let prisma: {
@@ -116,8 +117,8 @@ describe('WhatsAppProviderRegistry', () => {
     expect(prisma.workspace.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'ws-1' },
-        data: expect.objectContaining({
-          providerSettings: expect.objectContaining({
+        data: partialMatch({
+          providerSettings: partialMatch({
             whatsappProvider: 'meta-cloud',
           }),
         }),
@@ -152,10 +153,10 @@ describe('WhatsAppProviderRegistry', () => {
     expect(prisma.workspace.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'ws-1' },
-        data: expect.objectContaining({
-          providerSettings: expect.objectContaining({
+        data: partialMatch({
+          providerSettings: partialMatch({
             connectionStatus: 'connected',
-            whatsappApiSession: expect.objectContaining({
+            whatsappApiSession: partialMatch({
               status: 'connected',
               phoneNumber: '5511999999999',
               pushName: 'Loja Teste',
@@ -223,9 +224,9 @@ describe('WhatsAppProviderRegistry', () => {
     });
     expect(prisma.workspace.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
-          providerSettings: expect.objectContaining({
-            whatsappApiSession: expect.objectContaining({
+        data: partialMatch({
+          providerSettings: partialMatch({
+            whatsappApiSession: partialMatch({
               status: 'connection_required',
               authUrl: 'https://meta.test/signup',
               sessionName: 'ws-1',
@@ -270,9 +271,9 @@ describe('WhatsAppProviderRegistry', () => {
     });
     expect(prisma.workspace.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
-          providerSettings: expect.objectContaining({
-            whatsappApiSession: expect.objectContaining({
+        data: partialMatch({
+          providerSettings: partialMatch({
+            whatsappApiSession: partialMatch({
               status: 'disconnected',
               qrCode: null,
             }),

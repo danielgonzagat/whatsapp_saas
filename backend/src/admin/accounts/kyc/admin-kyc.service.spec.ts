@@ -3,6 +3,9 @@ import { AdminKycService } from './admin-kyc.service';
 import { AdminAuditService } from '../../audit/admin-audit.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 
+// Typed wrapper around expect.objectContaining so nested matcher values are typed
+const oc = (o: Record<string, unknown>): unknown => expect.objectContaining(o);
+
 describe('AdminKycService', () => {
   let service: AdminKycService;
 
@@ -46,7 +49,7 @@ describe('AdminKycService', () => {
 
     mockTransaction.mockImplementation(async (ops: unknown) => {
       if (typeof ops === 'function') {
-        return ops(prismaMock);
+        return (ops as (tx: typeof prismaMock) => unknown)(prismaMock);
       }
       return { count: 1 };
     });
@@ -69,7 +72,7 @@ describe('AdminKycService', () => {
       expect(mockAgentUpdateMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: agentId, workspaceId },
-          data: expect.objectContaining({
+          data: oc({
             kycStatus: 'approved',
             kycRejectedReason: null,
           }),
@@ -78,7 +81,7 @@ describe('AdminKycService', () => {
       expect(mockDocUpdateMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { agentId, workspaceId, status: 'pending' },
-          data: expect.objectContaining({ status: 'approved' }),
+          data: oc({ status: 'approved' }),
         }),
       );
     });
@@ -92,7 +95,7 @@ describe('AdminKycService', () => {
           action: 'admin.kyc.approved',
           entityType: 'Agent',
           entityId: agentId,
-          details: expect.objectContaining({
+          details: oc({
             workspaceId,
             previousStatus: 'submitted',
             note: 'good docs',
@@ -106,7 +109,7 @@ describe('AdminKycService', () => {
 
       expect(mockAudit.append).toHaveBeenCalledWith(
         expect.objectContaining({
-          details: expect.objectContaining({ note: null }),
+          details: oc({ note: null }),
         }),
       );
     });
@@ -156,7 +159,7 @@ describe('AdminKycService', () => {
 
       expect(mockAgentUpdateMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: oc({
             kycStatus: 'rejected',
             kycRejectedReason: 'invalid docs',
             kycApprovedAt: null,
@@ -165,7 +168,7 @@ describe('AdminKycService', () => {
       );
       expect(mockDocUpdateMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: oc({
             status: 'rejected',
             rejectedReason: 'invalid docs',
           }),
@@ -179,7 +182,7 @@ describe('AdminKycService', () => {
       expect(mockAudit.append).toHaveBeenCalledWith(
         expect.objectContaining({
           action: 'admin.kyc.rejected',
-          details: expect.objectContaining({ reason: 'fraud' }),
+          details: oc({ reason: 'fraud' }),
         }),
       );
     });
@@ -205,7 +208,7 @@ describe('AdminKycService', () => {
       expect(mockAgentUpdateMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: agentId, workspaceId },
-          data: expect.objectContaining({
+          data: oc({
             kycStatus: 'pending',
             kycSubmittedAt: null,
             kycApprovedAt: null,
@@ -226,7 +229,7 @@ describe('AdminKycService', () => {
       expect(mockAudit.append).toHaveBeenCalledWith(
         expect.objectContaining({
           action: 'admin.kyc.reverification_requested',
-          details: expect.objectContaining({
+          details: oc({
             previousStatus: 'rejected',
             reason: 'new docs needed',
           }),

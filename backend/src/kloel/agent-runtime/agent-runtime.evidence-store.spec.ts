@@ -72,7 +72,7 @@ describe('AgentRuntimeEvidenceStoreService', () => {
         create: createEvidence,
       },
     };
-    const service = new AgentRuntimeEvidenceStoreService(prisma as never, mindMemoryStub(prisma) as never);
+    const service = new AgentRuntimeEvidenceStoreService(prisma as never, mindMemoryStub(prisma));
 
     const record = await service.add({
       workspaceId: 'ws_1',
@@ -110,7 +110,7 @@ describe('AgentRuntimeEvidenceStoreService', () => {
           ]),
       },
     };
-    const service = new AgentRuntimeEvidenceStoreService(prisma as never, mindMemoryStub(prisma) as never);
+    const service = new AgentRuntimeEvidenceStoreService(prisma as never, mindMemoryStub(prisma));
 
     const evidence = await service.list({
       workspaceId: 'ws_1',
@@ -137,7 +137,7 @@ describe('AgentRuntimeEvidenceStoreService', () => {
           ]),
       },
     };
-    const service = new AgentRuntimeEvidenceStoreService(prisma as never, mindMemoryStub(prisma) as never);
+    const service = new AgentRuntimeEvidenceStoreService(prisma as never, mindMemoryStub(prisma));
 
     const evidence = await service.query({ workspaceId: 'ws_1', keyword: 'checkout' });
 
@@ -155,7 +155,7 @@ describe('AgentRuntimeEvidenceStoreService', () => {
           ]),
       },
     };
-    const service = new AgentRuntimeEvidenceStoreService(prisma as never, mindMemoryStub(prisma) as never);
+    const service = new AgentRuntimeEvidenceStoreService(prisma as never, mindMemoryStub(prisma));
 
     const issues = await service.verify('ws_1');
 
@@ -179,7 +179,7 @@ describe('AgentRuntimeEvidenceStoreService', () => {
           ]),
       },
     };
-    const service = new AgentRuntimeEvidenceStoreService(prisma as never, mindMemoryStub(prisma) as never);
+    const service = new AgentRuntimeEvidenceStoreService(prisma as never, mindMemoryStub(prisma));
 
     const summary = await service.summary('ws_1');
 
@@ -213,7 +213,7 @@ describe('AgentRuntimeEvidenceStoreService', () => {
     const prisma = {
       kloelMemory: { create: createEvidence },
     };
-    const service = new AgentRuntimeEvidenceStoreService(prisma as never, mindMemoryStub(prisma) as never);
+    const service = new AgentRuntimeEvidenceStoreService(prisma as never, mindMemoryStub(prisma));
 
     const record = await service.add({
       workspaceId: 'ws_1',
@@ -252,7 +252,7 @@ describe('AgentRuntimeEvidenceStoreService', () => {
         ]),
       },
     };
-    const service = new AgentRuntimeEvidenceStoreService(prisma as never, mindMemoryStub(prisma) as never);
+    const service = new AgentRuntimeEvidenceStoreService(prisma as never, mindMemoryStub(prisma));
 
     const markdown = await service.exportMarkdown('ws_1', 10);
 
@@ -272,7 +272,7 @@ describe('AgentRuntimeEvidenceStoreService', () => {
     const prisma = {
       kloelMemory: { findMany: jest.fn().mockResolvedValue([]) },
     };
-    const service = new AgentRuntimeEvidenceStoreService(prisma as never, mindMemoryStub(prisma) as never);
+    const service = new AgentRuntimeEvidenceStoreService(prisma as never, mindMemoryStub(prisma));
 
     const markdown = await service.exportMarkdown('ws_empty', 10);
 
@@ -301,7 +301,7 @@ describe('AgentRuntimeEvidenceStoreService', () => {
     const prisma = {
       kloelMemory: { findMany },
     };
-    const service = new AgentRuntimeEvidenceStoreService(prisma as never, mindMemoryStub(prisma) as never);
+    const service = new AgentRuntimeEvidenceStoreService(prisma as never, mindMemoryStub(prisma));
 
     const chain = await service.custody('ws_1', 'ev_3');
 
@@ -316,7 +316,7 @@ describe('AgentRuntimeEvidenceStoreService', () => {
     const prisma = {
       kloelMemory: { findMany: jest.fn().mockResolvedValue([]) },
     };
-    const service = new AgentRuntimeEvidenceStoreService(prisma as never, mindMemoryStub(prisma) as never);
+    const service = new AgentRuntimeEvidenceStoreService(prisma as never, mindMemoryStub(prisma));
 
     const chain = await service.custody('ws_1', 'nonexistent');
 

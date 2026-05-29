@@ -3,8 +3,6 @@ import { projectHierarchy } from './hierarchy.projector';
 import { applyNoiseFilter } from './noise.filter';
 import { detectAnxietyMode } from './anxiety-mode.detector';
 import { applyFeedback } from './feedback.loop';
-import { buildShortNarrative } from './short-narrative.builder';
-import { clampScore } from './clarity.types';
 import type {
   RankingInput,
   AttentionRanking,
@@ -15,17 +13,6 @@ import type {
 
 const NOW = Date.parse('2026-05-14T12:00:00.000Z');
 const WKS = 'wks_clarity_test';
-
-function makeItem(over?: Partial<RankingInput>): RankingInput {
-  return {
-    itemId: over?.itemId ?? 'it_test',
-    workspaceId: over?.workspaceId ?? WKS,
-    label: over?.label ?? 'Test item',
-    urgency: over?.urgency ?? 0.5,
-    impact: over?.impact ?? 0.5,
-    reversibility: over?.reversibility ?? 0.5,
-  };
-}
 
 function makeItemFull(
   itemId: string,

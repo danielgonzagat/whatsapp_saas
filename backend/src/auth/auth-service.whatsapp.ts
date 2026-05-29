@@ -10,6 +10,10 @@ export interface WhatsAppCodeResult {
   code?: string;
 }
 
+interface MetaSendMessageResponse {
+  error?: { message?: string };
+}
+
 export async function sendWhatsAppCode(
   deps: AuthPartsDeps,
   phone: string,
@@ -47,7 +51,7 @@ export async function sendWhatsAppCode(
         signal: AbortSignal.timeout(30000),
       });
 
-      const result = await response.json();
+      const result = (await response.json()) as MetaSendMessageResponse;
 
       if (result.error) {
         deps.logger.error(`WhatsApp API: erro ao enviar código: ${result.error.message}`);

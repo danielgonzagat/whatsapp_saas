@@ -100,34 +100,33 @@ export class BillingCheckoutHelperService {
     }
   }
 
-    /**
-     * Resolve the canonical cross-channel dispatch service (OmniCore Wave 21).
-     *
-     * Previously this lazily imported `WhatsappService` directly. It now resolves
-     * the canonical {@link ChannelMessageDispatchService} via `ModuleRef` and
-     * adapts it to the minimal {@link WhatsappNotifier} contract — so the billing
-     * confirmation goes through the ONE canonical channel front door
-     * (`dispatch(workspaceId, 'whatsapp', to, message)`) instead of a bespoke
-     * WhatsApp-only path. Returns null when the dispatch service is not available
-     * in the running module graph (honest no-op, never a fake send).
-     */
-    async resolveWhatsappService(): Promise<WhatsappNotifier | null> {
-      try {
-        const { ChannelMessageDispatchService } = await import(
-          '../marketing/channel-message-dispatch.service'
-        );
-        const dispatch = this.moduleRef.get(ChannelMessageDispatchService, { strict: false });
-        if (!dispatch) {
-          return null;
-        }
-        return {
-          sendMessage: (workspaceId: string, phone: string, message: string) =>
-            dispatch.dispatch(workspaceId, 'whatsapp', phone, message),
-        };
-      } catch {
+  /**
+   * Resolve the canonical cross-channel dispatch service (OmniCore Wave 21).
+   *
+   * Previously this lazily imported `WhatsappService` directly. It now resolves
+   * the canonical {@link ChannelMessageDispatchService} via `ModuleRef` and
+   * adapts it to the minimal {@link WhatsappNotifier} contract — so the billing
+   * confirmation goes through the ONE canonical channel front door
+   * (`dispatch(workspaceId, 'whatsapp', to, message)`) instead of a bespoke
+   * WhatsApp-only path. Returns null when the dispatch service is not available
+   * in the running module graph (honest no-op, never a fake send).
+   */
+  async resolveWhatsappService(): Promise<WhatsappNotifier | null> {
+    try {
+      const { ChannelMessageDispatchService } =
+        await import('../marketing/channel-message-dispatch.service');
+      const dispatch = this.moduleRef.get(ChannelMessageDispatchService, { strict: false });
+      if (!dispatch) {
         return null;
       }
+      return {
+        sendMessage: (workspaceId: string, phone: string, message: string) =>
+          dispatch.dispatch(workspaceId, 'whatsapp', phone, message),
+      };
+    } catch {
+      return null;
     }
+  }
 
   async markSubscriptionStatus(stripeSubscriptionId: string, status: string) {
     let workspaceId: string | null = null;

@@ -1,4 +1,6 @@
-const mockWebhookQueueAdd = jest.fn();
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+
+const mockWebhookQueueAdd = jest.fn<(...args: unknown[]) => Promise<{ id: string }>>();
 
 jest.mock('../queue/queue', () => ({
   webhookQueue: { add: (...args: unknown[]) => mockWebhookQueueAdd(...args) },

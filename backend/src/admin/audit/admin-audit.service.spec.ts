@@ -3,6 +3,9 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { OpsAlertService } from '../../observability/ops-alert.service';
 import { AdminAuditService } from './admin-audit.service';
 
+// Typed wrapper around expect.objectContaining so nested matcher values are typed
+const oc = (o: Record<string, unknown>): unknown => expect.objectContaining(o);
+
 describe('AdminAuditService', () => {
   let service: AdminAuditService;
 
@@ -34,7 +37,7 @@ describe('AdminAuditService', () => {
 
     mockTransaction.mockImplementation(async (ops: unknown) => {
       if (typeof ops === 'function') {
-        return ops(prismaMock);
+        return (ops as (tx: typeof prismaMock) => unknown)(prismaMock);
       }
       return [[], 0];
     });
@@ -64,7 +67,7 @@ describe('AdminAuditService', () => {
 
       expect(mockAuditLogCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: oc({
             action: 'admin.auth.login',
             entityType: 'AdminUser',
             entityId: 'admin_1',
@@ -114,7 +117,7 @@ describe('AdminAuditService', () => {
 
       expect(mockAuditLogCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: oc({
             ip: null,
             userAgent: null,
           }),
@@ -171,7 +174,7 @@ describe('AdminAuditService', () => {
     beforeEach(() => {
       mockTransaction.mockImplementation(async (ops: unknown) => {
         if (typeof ops === 'function') {
-          return ops(prismaMock);
+          return (ops as (tx: typeof prismaMock) => unknown)(prismaMock);
         }
         return [[logEntry], 1];
       });
@@ -189,7 +192,7 @@ describe('AdminAuditService', () => {
 
       expect(mockAuditLogFindMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ adminUserId: 'admin_1' }),
+          where: oc({ adminUserId: 'admin_1' }),
         }),
       );
     });
@@ -199,7 +202,7 @@ describe('AdminAuditService', () => {
 
       expect(mockAuditLogFindMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ action: { contains: 'login' } }),
+          where: oc({ action: { contains: 'login' } }),
         }),
       );
     });
@@ -209,7 +212,7 @@ describe('AdminAuditService', () => {
 
       expect(mockAuditLogFindMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ entityType: 'Workspace' }),
+          where: oc({ entityType: 'Workspace' }),
         }),
       );
     });
@@ -222,7 +225,7 @@ describe('AdminAuditService', () => {
 
       expect(mockAuditLogFindMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({
+          where: oc({
             createdAt: { gte: from, lte: to },
           }),
         }),

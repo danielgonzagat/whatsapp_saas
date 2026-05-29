@@ -7,7 +7,6 @@ import {
   PLAN_INCLUDE,
   stripConfigMetadata,
   type DuplicateCheckoutSource,
-  type PlanLike,
 } from './checkout.service.helpers'; // ─── buildDuplicateCheckoutInput ────────────────────────────────────────
 
 describe('buildDuplicateCheckoutInput', () => {

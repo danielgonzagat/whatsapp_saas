@@ -61,9 +61,11 @@ describe('WhatsappSendRateGuardService', () => {
     it('calls ensureDailyMessageQuota and ensureMessageRate before original sendMessage', async () => {
       service.onModuleInit();
 
-      const patchedSend = WhatsappService.prototype.sendMessage as (
-        ...args: unknown[]
-      ) => Promise<unknown>;
+      const proto = WhatsappService.prototype as Record<
+        string,
+        (...args: unknown[]) => Promise<unknown>
+      >;
+      const patchedSend = proto.sendMessage;
       await patchedSend.call({} as WhatsappService, 'ws-1', '5511', 'hello');
 
       expect(planLimits.ensureDailyMessageQuota).toHaveBeenCalledWith('ws-1');
@@ -73,9 +75,11 @@ describe('WhatsappSendRateGuardService', () => {
     it('calls ensureDailyMessageQuota and ensureMessageRate before original sendTemplate', async () => {
       service.onModuleInit();
 
-      const patched = WhatsappService.prototype.sendTemplate as (
-        ...args: unknown[]
-      ) => Promise<unknown>;
+      const proto = WhatsappService.prototype as Record<
+        string,
+        (...args: unknown[]) => Promise<unknown>
+      >;
+      const patched = proto.sendTemplate;
       await patched.call({} as WhatsappService, 'ws-1', '5511', {});
 
       expect(planLimits.ensureDailyMessageQuota).toHaveBeenCalledWith('ws-1');
@@ -85,9 +89,11 @@ describe('WhatsappSendRateGuardService', () => {
     it('calls ensureDailyMessageQuota and ensureMessageRate before original sendDirectMessage', async () => {
       service.onModuleInit();
 
-      const patched = WhatsappService.prototype.sendDirectMessage as (
-        ...args: unknown[]
-      ) => Promise<unknown>;
+      const proto = WhatsappService.prototype as Record<
+        string,
+        (...args: unknown[]) => Promise<unknown>
+      >;
+      const patched = proto.sendDirectMessage;
       await patched.call({} as WhatsappService, 'ws-1', '5511', 'hello');
 
       expect(planLimits.ensureDailyMessageQuota).toHaveBeenCalledWith('ws-1');
@@ -97,9 +103,11 @@ describe('WhatsappSendRateGuardService', () => {
     it('does not call rate-limit when workspaceId is not a string', async () => {
       service.onModuleInit();
 
-      const patchedSend = WhatsappService.prototype.sendMessage as (
-        ...args: unknown[]
-      ) => Promise<unknown>;
+      const proto = WhatsappService.prototype as Record<
+        string,
+        (...args: unknown[]) => Promise<unknown>
+      >;
+      const patchedSend = proto.sendMessage;
       await patchedSend.call({} as WhatsappService, null, '5511', 'hello');
 
       expect(planLimits.ensureDailyMessageQuota).not.toHaveBeenCalled();
@@ -107,10 +115,14 @@ describe('WhatsappSendRateGuardService', () => {
     });
 
     it('is idempotent — does not double-patch', () => {
+      const proto = WhatsappService.prototype as Record<
+        string,
+        (...args: unknown[]) => Promise<unknown>
+      >;
       service.onModuleInit();
-      const firstHook = WhatsappService.prototype.sendMessage;
+      const firstHook = proto.sendMessage;
       service.onModuleInit();
-      const secondHook = WhatsappService.prototype.sendMessage;
+      const secondHook = proto.sendMessage;
       expect(secondHook).toBe(firstHook);
     });
   });

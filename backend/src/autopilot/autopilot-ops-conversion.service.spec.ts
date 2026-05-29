@@ -57,7 +57,12 @@ describe('AutopilotOpsConversionService', () => {
 
     it('schedules delayed retry when more than 3 errors in last hour', async () => {
       prisma.autopilotEvent.count.mockResolvedValue(4);
-      const result = await service.retryContact('ws-1', 'ct-1');
+      const result = (await service.retryContact('ws-1', 'ct-1')) as {
+        queued: boolean;
+        scheduled?: boolean;
+        reason?: string;
+        delayMs?: number;
+      };
       expect(result).toMatchObject({
         queued: true,
         scheduled: true,
@@ -85,7 +90,11 @@ describe('AutopilotOpsConversionService', () => {
         id: 'ct-1',
         customFields: { autopilotNextRetryAt: futureRetry },
       });
-      const result = await service.retryContact('ws-1', 'ct-1');
+      const result = (await service.retryContact('ws-1', 'ct-1')) as {
+        queued: boolean;
+        reason?: string;
+        nextRetryAt?: string;
+      };
       expect(result).toEqual({
         queued: false,
         reason: 'retry_already_scheduled',

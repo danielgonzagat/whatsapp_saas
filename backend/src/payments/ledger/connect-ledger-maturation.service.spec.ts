@@ -126,7 +126,7 @@ describe('ConnectLedgerMaturationService.matureDueEntries', () => {
       moveFromPendingToAvailable: jest.fn().mockRejectedValue('raw string failure'),
     };
     const financialAlert = {
-      reconciliationAlert: jest.fn(),
+      reconciliationAlert: jest.fn<void, [string, { workspaceId?: string; details?: unknown }]>(),
     };
     const service = await buildService({ prisma, ledger, financialAlert });
 

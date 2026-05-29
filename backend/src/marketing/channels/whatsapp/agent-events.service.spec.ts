@@ -13,14 +13,16 @@ function makeRedisMock() {
   };
   const redis = {
     duplicate: jest.fn().mockReturnValue(duplicate),
-    publish: jest.fn().mockImplementation((channel: string, message: string) => {
-      void Promise.resolve().then(() => {
-        for (const handler of messageHandlers) {
-          handler(channel, message);
-        }
-      });
-      return 1;
-    }),
+    publish: jest
+      .fn<number, [string, string]>()
+      .mockImplementation((channel: string, message: string) => {
+        void Promise.resolve().then(() => {
+          for (const handler of messageHandlers) {
+            handler(channel, message);
+          }
+        });
+        return 1;
+      }),
     subscribe: jest.fn().mockResolvedValue(undefined),
     on: jest.fn(),
     quit: jest.fn().mockResolvedValue(undefined),
@@ -184,8 +186,8 @@ describe('AgentEventsService', () => {
         message: 'Prova registrada: contato engajou',
       });
 
-      const callArg = mocks.redis.publish.mock.calls[0][1] as string;
-      const parsed = JSON.parse(callArg);
+      const callArg = mocks.redis.publish.mock.calls[0][1];
+      const parsed = JSON.parse(callArg) as { message: string };
       expect(parsed.message).toBe('contato engajou');
     });
 
@@ -197,8 +199,8 @@ describe('AgentEventsService', () => {
         message: 'Pensando na melhor resposta para Joao',
       });
 
-      const callArg = mocks.redis.publish.mock.calls[0][1] as string;
-      const parsed = JSON.parse(callArg);
+      const callArg = mocks.redis.publish.mock.calls[0][1];
+      const parsed = JSON.parse(callArg) as { message: string };
       expect(parsed.message).toBe('Preparando resposta para Joao');
     });
 

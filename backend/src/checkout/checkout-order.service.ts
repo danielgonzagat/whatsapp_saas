@@ -442,14 +442,17 @@ export class CheckoutOrderService {
    * signature used by `KloelDomainServiceResolver`; `status`, `page`,
    * `limit` are forwarded when present. Read-only — no order writes.
    */
-  async list(
-    workspaceId: string,
-    args?: { status?: string; page?: number; limit?: number },
-  ) {
+  async list(workspaceId: string, args?: { status?: string; page?: number; limit?: number }) {
     const filters: { status?: string; page?: number; limit?: number } = {};
-    if (typeof args?.status === 'string') filters.status = args.status;
-    if (typeof args?.page === 'number') filters.page = args.page;
-    if (typeof args?.limit === 'number') filters.limit = args.limit;
+    if (typeof args?.status === 'string') {
+      filters.status = args.status;
+    }
+    if (typeof args?.page === 'number') {
+      filters.page = args.page;
+    }
+    if (typeof args?.limit === 'number') {
+      filters.limit = args.limit;
+    }
     return this.listOrders(workspaceId, filters);
   }
 

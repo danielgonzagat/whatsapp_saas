@@ -129,7 +129,7 @@ export function extractUserPreview(meta: unknown): string {
     return '';
   }
   const record = meta as Record<string, unknown>;
-  return typeof record['userPreview'] === 'string' ? (record['userPreview'] as string) : '';
+  return typeof record['userPreview'] === 'string' ? record['userPreview'] : '';
 }
 
 /**
@@ -191,7 +191,7 @@ export function computeSubstrateBeliefs(events: NormalizedSpineEvent[]): {
   }
 
   const beliefs: SubstrateBelief[] = [];
-  const lastOccurredAt = events.length > 0 ? events[events.length - 1]?.occurredAt ?? '' : '';
+  const lastOccurredAt = events.length > 0 ? (events[events.length - 1]?.occurredAt ?? '') : '';
   for (const [predicate, entry] of byKind) {
     if (entry.n >= SUBSTRATE_BELIEF_MIN_OBSERVATIONS) {
       // Laplace-smoothed confidence — handles low-`n` predicates gracefully.
@@ -250,7 +250,8 @@ export function buildSubstratePulseTruth(
       { name: 'evidence-provenance', status: 'PASS' },
     ],
     certificationVerdict: {
-      verdict: eventCount >= SUBSTRATE_DEVELOPING_THRESHOLD ? 'DEVELOPING' : 'INSUFFICIENT_EVIDENCE',
+      verdict:
+        eventCount >= SUBSTRATE_DEVELOPING_THRESHOLD ? 'DEVELOPING' : 'INSUFFICIENT_EVIDENCE',
       score: health,
       measuredAt,
     },
@@ -291,13 +292,11 @@ export function buildCognitiveSubstrateFromAutopilotRows(
       },
     },
     workingMemory: events.slice(-SUBSTRATE_WORKING_MEMORY_TAIL).map((e) => e.summary),
-    episodicRefs: events
-      .slice(-SUBSTRATE_EPISODIC_TAIL)
-      .map((event, index) => ({
-        ref: `ep_${index}`,
-        summary: event.summary,
-        occurredAt: event.occurredAt,
-      })),
+    episodicRefs: events.slice(-SUBSTRATE_EPISODIC_TAIL).map((event, index) => ({
+      ref: `ep_${index}`,
+      summary: event.summary,
+      occurredAt: event.occurredAt,
+    })),
     consolidatedRefs: [],
     pulseTruth: buildSubstratePulseTruth(events.length, health, clock().toISOString()),
     attention: {
@@ -365,7 +364,7 @@ export function resolveThinkErrorCode(abortReason: unknown, fallback: string): s
  * branch. Mirrors the inline ternary so the call sites stay one-liners.
  */
 export function resolveAbortBeforeStartCode(abortReason: unknown): string {
-  return typeof abortReason === 'string' ? (abortReason as string) : 'request_aborted_before_start';
+  return typeof abortReason === 'string' ? abortReason : 'request_aborted_before_start';
 }
 
 /**

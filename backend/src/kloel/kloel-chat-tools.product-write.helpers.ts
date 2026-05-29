@@ -18,7 +18,7 @@ function resolveFormat(raw: unknown): ProductFormat | undefined {
   }
   const normalized = raw.toUpperCase();
   return normalized === 'PHYSICAL' || normalized === 'DIGITAL' || normalized === 'HYBRID'
-    ? (normalized as ProductFormat)
+    ? normalized
     : undefined;
 }
 
@@ -66,16 +66,15 @@ export async function runDeleteProductViaService(
 ): Promise<ToolResult> {
   const actorId = resolveActorId(args.actorId);
   const directProductId =
-    typeof args.productId === 'string' && args.productId.trim()
-      ? args.productId.trim()
-      : undefined;
+    typeof args.productId === 'string' && args.productId.trim() ? args.productId.trim() : undefined;
   const productName =
     typeof args.productName === 'string' && args.productName.trim()
       ? args.productName.trim()
       : undefined;
 
   const resolvedProductId =
-    directProductId ?? (productName ? await findProductIdByName(prisma, workspaceId, productName) : undefined);
+    directProductId ??
+    (productName ? await findProductIdByName(prisma, workspaceId, productName) : undefined);
   if (!resolvedProductId) {
     return { success: false, error: 'Produto não encontrado.' };
   }

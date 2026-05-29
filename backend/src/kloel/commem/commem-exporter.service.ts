@@ -28,7 +28,7 @@ const EXPORT_FORMAT_VERSION = 1;
 const LEDGER_WINDOW_MS = 7 * 24 * 3600_000;
 const LEDGER_SLICE_MS = 24 * 3600_000;
 
-function escapeCsvField(value: unknown): string {
+function escapeCsvField(value: string | number | boolean | null | undefined): string {
   const raw = value === null || value === undefined ? '' : String(value);
   if (raw.includes(',') || raw.includes('"') || raw.includes('\n')) {
     return `"${raw.replace(/"/g, '""')}"`;

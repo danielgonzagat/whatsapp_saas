@@ -31,24 +31,24 @@ describe('TikTokMarketingController', () => {
   });
 
   describe('GET url', () => {
-    it('calls generateAuthUrl with workspaceId and kind', async () => {
+    it('calls generateAuthUrl with workspaceId and kind', () => {
       const req = { user: { workspaceId: 'ws-1' }, headers: {} } as never;
-      generateAuthUrl.mockResolvedValueOnce({
+      generateAuthUrl.mockReturnValueOnce({
         url: 'https://tiktok.com/auth?x=1',
         kind: 'creator',
       });
 
-      const result = await controller.url(req, 'creator');
+      const result = controller.url(req, 'creator');
 
       expect(generateAuthUrl).toHaveBeenCalledWith('ws-1', 'creator');
       expect(result.url).toBe('https://tiktok.com/auth?x=1');
     });
 
-    it('calls generateAuthUrl without kind (undefined)', async () => {
+    it('calls generateAuthUrl without kind (undefined)', () => {
       const req = { user: { workspaceId: 'ws-2' }, headers: {} } as never;
-      generateAuthUrl.mockResolvedValueOnce({ url: 'https://tiktok.com/auth', kind: 'creator' });
+      generateAuthUrl.mockReturnValueOnce({ url: 'https://tiktok.com/auth', kind: 'creator' });
 
-      await controller.url(req);
+      controller.url(req);
 
       expect(generateAuthUrl).toHaveBeenCalledWith('ws-2', undefined);
     });

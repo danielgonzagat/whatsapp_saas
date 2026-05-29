@@ -196,7 +196,8 @@ export class KloelToolRouter {
         input.mutationSensitiveTools !== undefined
           ? input.mutationSensitiveTools.has(toolName)
           : isMutationSensitiveTool(toolName);
-      const confirmationBlocked = isAllowed && isMutationSensitive && input.confirmMutations !== true;
+      const confirmationBlocked =
+        isAllowed && isMutationSensitive && input.confirmMutations !== true;
       if (confirmationBlocked) {
         result = {
           success: false,

@@ -272,16 +272,19 @@ export class KloelProductSubResourceToolsService {
       await this.prisma.productCoupon.update({ where: { id: c.id }, data });
       return { success: true, coupon: { code, ...data } };
     } catch (err: unknown) {
-      return { success: false, error: err instanceof Error ? err.message : 'Erro ao atualizar cupom' };
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : 'Erro ao atualizar cupom',
+      };
     }
   }
-
-
 
   async toolDeletePlan(_workspaceId: string, args: UnknownRecord) {
     const planName = this.str(args.planName);
     const productName = this.str(args.productName);
-    if (!planName && !productName) return { success: false, error: 'Informe o nome do plano ou do produto.' };
+    if (!planName && !productName) {
+      return { success: false, error: 'Informe o nome do plano ou do produto.' };
+    }
     try {
       const plan = await findPlanByNames(this.prisma, _workspaceId, planName, productName);
       if (!plan) {
@@ -300,7 +303,9 @@ export class KloelProductSubResourceToolsService {
   async toolDeleteCheckout(_workspaceId: string, args: UnknownRecord) {
     const checkoutName = this.str(args.checkoutName);
     const productName = this.str(args.productName);
-    if (!checkoutName && !productName) return { success: false, error: 'Informe o nome do checkout ou do produto.' };
+    if (!checkoutName && !productName) {
+      return { success: false, error: 'Informe o nome do checkout ou do produto.' };
+    }
     try {
       const co = await findCheckoutByNames(this.prisma, _workspaceId, checkoutName, productName);
       if (!co) {
@@ -312,7 +317,10 @@ export class KloelProductSubResourceToolsService {
       await this.prisma.productCheckout.delete({ where: { id: co.id } });
       return { success: true, message: `Checkout "${co.name}" removido.` };
     } catch (e: unknown) {
-      return { success: false, error: e instanceof Error ? e.message : 'Erro ao deletar checkout.' };
+      return {
+        success: false,
+        error: e instanceof Error ? e.message : 'Erro ao deletar checkout.',
+      };
     }
   }
 
@@ -320,8 +328,12 @@ export class KloelProductSubResourceToolsService {
     const productName = this.str(args.productName);
     const url = this.str(args.url);
     const label = this.str(args.label);
-    if (!productName) return { success: false, error: 'Informe o nome do produto.' };
-    if (!url) return { success: false, error: 'Informe a URL (ex: https://...).' };
+    if (!productName) {
+      return { success: false, error: 'Informe o nome do produto.' };
+    }
+    if (!url) {
+      return { success: false, error: 'Informe a URL (ex: https://...).' };
+    }
     try {
       const pid = await resolveProductIdWithAccentFallback(this.prisma, workspaceId, args);
       if (!pid) {
@@ -365,7 +377,9 @@ export class KloelProductSubResourceToolsService {
   async toolDeleteUrl(workspaceId: string, args: UnknownRecord) {
     const label = this.str(args.urlLabel);
     const url = this.str(args.url);
-    if (!label && !url) return { success: false, error: 'Informe a descricao ou URL para remover.' };
+    if (!label && !url) {
+      return { success: false, error: 'Informe a descricao ou URL para remover.' };
+    }
     try {
       const target = await findUrlByLabelOrUrl(this.prisma, workspaceId, label, url);
       if (!target) {

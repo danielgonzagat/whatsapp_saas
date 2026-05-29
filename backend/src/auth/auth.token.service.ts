@@ -140,30 +140,30 @@ export class AuthTokenService {
   }
 
   private async rotateRefreshToken(agentId: string): Promise<string> {
-{
-    const refreshToken = randomUUID() + randomUUID();
-    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    {
+      const refreshToken = randomUUID() + randomUUID();
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
-    // Atomic: revoke any active refresh tokens AND insert the new one in
-    // a single Serializable transaction so concurrent issueTokens calls
-    // cannot leave multiple active rows for the same agent. The wide
-    // updateMany WHERE agentId collides with a sibling concurrent refresh
-    // for the same agent under Serializable isolation, so wrap it in the
-    // same one-shot P2034 retry used by the atomic claim — without it a
-    // legitimate cross-tab refresh winner gets a spurious 503.
-    await this.runSerializableWithRetry(async (tx) => {
-      await tx.refreshToken.updateMany({
-        where: { agentId, revoked: false },
-        data: { revoked: true },
-      });
-      await tx.refreshToken.create({
-        data: { token: refreshToken, agentId, expiresAt },
-      });
-    }, 'rotateRefreshToken');
+      // Atomic: revoke any active refresh tokens AND insert the new one in
+      // a single Serializable transaction so concurrent issueTokens calls
+      // cannot leave multiple active rows for the same agent. The wide
+      // updateMany WHERE agentId collides with a sibling concurrent refresh
+      // for the same agent under Serializable isolation, so wrap it in the
+      // same one-shot P2034 retry used by the atomic claim — without it a
+      // legitimate cross-tab refresh winner gets a spurious 503.
+      await this.runSerializableWithRetry(async (tx) => {
+        await tx.refreshToken.updateMany({
+          where: { agentId, revoked: false },
+          data: { revoked: true },
+        });
+        await tx.refreshToken.create({
+          data: { token: refreshToken, agentId, expiresAt },
+        });
+      }, 'rotateRefreshToken');
 
-    return refreshToken;
+      return refreshToken;
+    }
   }
-}
 
   /** Issue access + refresh tokens, rotating any prior active refresh tokens. */
   async issueTokens(agent: TokenAgent, extra?: { isNewUser?: boolean }) {

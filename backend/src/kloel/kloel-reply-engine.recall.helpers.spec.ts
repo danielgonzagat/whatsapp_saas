@@ -3,9 +3,10 @@ import type { LongTermMemoryService } from './mind/memory/long-term-memory.servi
 
 type RecalledFact = Awaited<ReturnType<LongTermMemoryService['recallRelevant']>>[number];
 
-function makeLtm(
-  result: RecalledFact[] | Error,
-): { service: LongTermMemoryService; calls: unknown[][] } {
+function makeLtm(result: RecalledFact[] | Error): {
+  service: LongTermMemoryService;
+  calls: unknown[][];
+} {
   const calls: unknown[][] = [];
   const service = {
     recallRelevant: jest.fn(async (...args: unknown[]) => {

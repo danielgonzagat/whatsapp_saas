@@ -1,5 +1,6 @@
 // Webhook specs exercise sendMessage-adjacent flows through the shared
 // messageLimit/dailyLimit enforcement in WhatsappService.sendMessage().
+import { describe, expect, it } from '@jest/globals';
 import { buildPaymentWebhookController as buildController } from '../../test/payment-webhook-controller-harness';
 
 describe('PaymentWebhookController.handleStripe — sale reversals and payouts', () => {
@@ -60,7 +61,10 @@ describe('PaymentWebhookController.handleStripe — sale reversals and payouts',
       where: { externalId: 'pi_refund_1' },
       data: { status: 'REFUNDED' },
     });
-    const refundOrderUpdate = prisma.checkoutOrder.updateMany.mock.calls[0]?.[0];
+    const refundOrderUpdateCalls = prisma.checkoutOrder.updateMany.mock.calls as Array<
+      [{ where: Record<string, unknown>; data: { status: string; refundedAt?: Date } }]
+    >;
+    const refundOrderUpdate = refundOrderUpdateCalls[0]?.[0];
     expect(refundOrderUpdate).toEqual(
       expect.objectContaining({
         where: { id: 'order-1', workspaceId: 'ws-1' },

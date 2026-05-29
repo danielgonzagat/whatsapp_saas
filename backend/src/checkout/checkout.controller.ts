@@ -309,7 +309,7 @@ export class CheckoutController {
       timerType,
       testimonials,
       trustBadges,
-      rest: configDto as Record<string, unknown>,
+      rest: configDto,
     });
     return this.checkoutService.updateConfig(planId, configInput);
   }

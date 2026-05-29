@@ -134,8 +134,8 @@ export async function buildDynamicRuntimeContextHelper(params: {
       : {};
   const whatsappConnected =
     providerSettings.whatsappConnected === true ||
-    (providerSettings.whatsapp as UnknownRecord | null)?.connected === true ||
-    (providerSettings.connection as UnknownRecord | null)?.status === 'connected' ||
+    (providerSettings.whatsapp as UnknownRecord | undefined)?.connected === true ||
+    (providerSettings.connection as UnknownRecord | undefined)?.status === 'connected' ||
     providerSettings.status === 'connected';
   const resolvedUserName = contextFormatter.sanitizeUserNameForAssistant(
     userName || agent?.name || 'Usuário',
@@ -150,7 +150,7 @@ export async function buildDynamicRuntimeContextHelper(params: {
     `WhatsApp conectado: ${whatsappConnected ? 'Sim' : 'Não'}`,
     `Autopilot ativo: ${autopilotSettings.enabled === true ? 'Sim' : 'Não'}`,
     `Conversas registradas: ${threadCount}`,
-    contextFormatter.buildAgentProfileContext(agent as UnknownRecord | null | undefined),
+    contextFormatter.buildAgentProfileContext(agent),
     `Quando fizer sentido, trate o usuário pelo primeiro nome "${resolvedUserName}" de forma natural ao longo da conversa.`,
     companyContext ? `Contexto adicional enviado pelo frontend:\n${companyContext}` : null,
     baseContext ? `Base de contexto do workspace:\n${baseContext}` : null,
@@ -364,7 +364,9 @@ export async function buildAssistantReplyImpl(
   );
 
   // PI-k6: emit cognition.decision_made after the primary LLM completion
-  const fallbackModel = resolveBackendOpenAIModel(isChatMode ? 'brain_fallback' : 'writer_fallback');
+  const fallbackModel = resolveBackendOpenAIModel(
+    isChatMode ? 'brain_fallback' : 'writer_fallback',
+  );
   const toolCallsCount = response.choices[0]?.message?.tool_calls?.length ?? 0;
   void (async () => {
     if (spine && workspaceId) {
@@ -382,7 +384,8 @@ export async function buildAssistantReplyImpl(
           payload: {
             surface: 'dashboard',
             toolCallsCount,
-            fallbackReason: response.model === fallbackModel ? 'primary_failed_fallback_used' : null,
+            fallbackReason:
+              response.model === fallbackModel ? 'primary_failed_fallback_used' : null,
             durationMs: Date.now() - completionStartMs,
             modelUsed: response.model,
           },

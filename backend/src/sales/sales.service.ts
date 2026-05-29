@@ -502,7 +502,8 @@ export class SalesService {
     workspaceId: string,
     args?: { subscriptionId?: string; orderId?: string; reason?: string; amountCents?: bigint },
   ): Promise<{ refundId: string; status: 'pending' | 'processed' | 'rejected' }> {
-    const reason = typeof args?.reason === 'string' && args.reason ? args.reason : 'subscription refund';
+    const reason =
+      typeof args?.reason === 'string' && args.reason ? args.reason : 'subscription refund';
     let orderId = typeof args?.orderId === 'string' ? args.orderId.trim() : '';
 
     if (!orderId) {

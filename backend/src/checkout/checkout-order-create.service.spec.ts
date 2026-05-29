@@ -305,7 +305,7 @@ describe('CheckoutOrderService', () => {
         id: 'order_1',
         paymentData: expect.objectContaining({
           boletoUrl: 'https://www.mercadopago.com.br/payments/mp_boleto_1/ticket',
-        }),
+        }) as unknown,
       });
       expect(paymentService.processPayment).toHaveBeenCalledWith(
         expect.objectContaining({

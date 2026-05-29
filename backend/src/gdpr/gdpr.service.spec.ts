@@ -124,11 +124,11 @@ describe('GdprService', () => {
     message: ['findMany', 'updateMany'],
     chatMessage: ['findMany', 'updateMany'],
   });
-  (prismaMock as any).$transaction = jest.fn((arg: unknown, _opts?: unknown) => {
+  prismaMock.$transaction = jest.fn((arg: unknown, _opts?: unknown) => {
     if (typeof arg === 'function') {
-      return (arg as any)(prismaMock);
+      return (arg as (tx: unknown) => unknown)(prismaMock);
     }
-    return Promise.all(arg as any);
+    return Promise.all(arg as Promise<unknown>[]);
   });
 
   const jwtMock = {

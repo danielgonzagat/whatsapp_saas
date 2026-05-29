@@ -23,9 +23,10 @@ export class DailyLimitService {
     @Optional() private readonly opsAlert?: OpsAlertService,
   ) {}
 
-  async isReply(context?: UnknownRecord): Promise<boolean> {
-    const kind = String((context as UnknownRecord)?.['outboundKind'] ?? '').toLowerCase();
-    return kind === 'reply' || kind === 'inbound-reply';
+  isReply(context?: UnknownRecord): Promise<boolean> {
+    const raw = context?.['outboundKind'];
+    const kind = (typeof raw === 'string' ? raw : '').toLowerCase();
+    return Promise.resolve(kind === 'reply' || kind === 'inbound-reply');
   }
 
   async ensureProactiveDailyLimit(

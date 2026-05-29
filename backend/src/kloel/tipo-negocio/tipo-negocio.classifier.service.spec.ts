@@ -1,7 +1,5 @@
 import type { SpineEventRef } from '../mind/mind.types';
 import type { ApprovedPayment } from './tipo-negocio.classifier.service';
-import { TipoNegocioClassifierService } from './tipo-negocio.classifier.service';
-import type { ClassifyInput, ProfileNegocio } from './tipo-negocio.types';
 import {
   classifyAudiencia,
   classifyModelo,
@@ -11,8 +9,6 @@ import {
 } from './tipo-negocio.classifier.service';
 
 const WKS = 'wks_demo';
-const NOW = Date.parse('2026-05-14T22:00:00.000Z');
-const svc = new TipoNegocioClassifierService();
 
 function ev(over?: Partial<SpineEventRef>): SpineEventRef {
   return {
@@ -37,30 +33,6 @@ function mkPayment(over: Partial<ApprovedPayment> & { amount: number }): Approve
     hasWhatsappInteraction: over.hasWhatsappInteraction ?? false,
     hasManualInteraction: over.hasManualInteraction ?? false,
   };
-}
-
-function payment(
-  amount: number,
-  extras?: Record<string, unknown>,
-  over?: Partial<SpineEventRef>,
-): SpineEventRef {
-  return ev({
-    eventName: 'commerce.payment.approved',
-    payload: { amount, ...(extras ?? {}) },
-    occurredAt: over?.occurredAt,
-    workspaceId: over?.workspaceId,
-  });
-}
-
-function waMsg(over?: Partial<SpineEventRef>): SpineEventRef {
-  return ev({
-    eventName: 'commerce.whatsapp.message_received',
-    ...over,
-  });
-}
-
-function ap(amount: number, overrides?: Partial<SpineEventRef>): SpineEventRef {
-  return payment(amount, {}, overrides);
 }
 
 // =========================================================================
@@ -162,7 +134,11 @@ describe('classifyOferta', () => {
 
   it('classifies as saas from productType hint', () => {
     const approved = [
-      mkPayment({ amount: 100, occurredAt: '2026-05-14T00:00:00Z', productType: 'saas-plataforma' }),
+      mkPayment({
+        amount: 100,
+        occurredAt: '2026-05-14T00:00:00Z',
+        productType: 'saas-plataforma',
+      }),
       mkPayment({ amount: 100, occurredAt: '2026-05-14T00:00:00Z', productType: 'software' }),
     ];
     const r = classifyOferta(approved, []);
@@ -181,7 +157,9 @@ describe('classifyOferta', () => {
   });
 
   it('classifies as physical_product from cart shipping events', () => {
-    const approved = [mkPayment({ amount: 150, occurredAt: '2026-05-14T00:00:00Z', productType: 'produto' })];
+    const approved = [
+      mkPayment({ amount: 150, occurredAt: '2026-05-14T00:00:00Z', productType: 'produto' }),
+    ];
     const cartEv = ev({
       eventName: 'commerce.cart.created',
       payload: { needsShipping: true },
@@ -193,7 +171,11 @@ describe('classifyOferta', () => {
 
   it('classifies as agency_service from productType hint', () => {
     const approved = [
-      mkPayment({ amount: 3000, occurredAt: '2026-05-14T00:00:00Z', productType: 'agencia-gestao' }),
+      mkPayment({
+        amount: 3000,
+        occurredAt: '2026-05-14T00:00:00Z',
+        productType: 'agencia-gestao',
+      }),
     ];
     const r = classifyOferta(approved, []);
     expect(r.label).toBe('agency_service');

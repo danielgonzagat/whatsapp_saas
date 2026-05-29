@@ -32,7 +32,7 @@ describe('AdminAccountsController', () => {
     id: 'a-2',
     name: 'Super Admin',
     email: 'super@kloel.com',
-    role: AdminRole.SUPER_ADMIN,
+    role: AdminRole.MANAGER,
     sessionId: 's-2',
     scope: 'full',
   };

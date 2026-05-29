@@ -142,7 +142,9 @@ function buildReceiptEvidenceUrl(
   outputs: UnknownRecord,
 ): string | undefined {
   const resolvedTemplate = template ?? FALLBACK_EVIDENCE_URLS[capabilityId];
-  if (!resolvedTemplate) return undefined;
+  if (!resolvedTemplate) {
+    return undefined;
+  }
   return resolvedTemplate
     .replace('$' + '{productId}', asString(outputs.productId))
     .replace('$' + '{orderId}', asString(outputs.orderId))
@@ -199,7 +201,9 @@ export function withCanonicalReceipt(
   startedAt: number,
 ): ToolResult {
   const cap = deps.capRegistryV2?.get(capabilityId);
-  if (!cap || !deps.capRegistryV2) return result;
+  if (!cap || !deps.capRegistryV2) {
+    return result;
+  }
   const inputs = sanitizeDetails(args);
   const outputs = result.success ? deriveReceiptOutputs(result, inputs) : {};
   const actorId = userId ?? 'kloel-chat';
@@ -226,8 +230,12 @@ export function withCanonicalReceipt(
     durationMs: Date.now() - startedAt,
     success: result.success,
   };
-  if (evidenceUrl) receiptParams.evidenceUrl = evidenceUrl;
-  if (typeof result.error === 'string') receiptParams.error = result.error;
+  if (evidenceUrl) {
+    receiptParams.evidenceUrl = evidenceUrl;
+  }
+  if (typeof result.error === 'string') {
+    receiptParams.error = result.error;
+  }
   const receipt = deps.capRegistryV2.createReceipt(receiptParams);
   return {
     ...result,
@@ -258,7 +266,9 @@ export async function handleDottedAliasTool(
   executeBase: (baseTool: string) => Promise<ToolResult>,
 ): Promise<ToolResult | null> {
   const baseTool = DOTTED_ALIASES[toolName];
-  if (!baseTool) return null;
+  if (!baseTool) {
+    return null;
+  }
   const startedAt = Date.now();
   const result = await executeBase(baseTool);
   return withCanonicalReceipt(deps, toolName, workspaceId, args, result, userId, startedAt);
@@ -372,7 +382,9 @@ export async function handleSelfAwarenessTool(
       const receiptId = typeof args.lastReceiptId === 'string' ? args.lastReceiptId : undefined;
       if (receiptId) {
         const entry = await deps.auditService.findById(workspaceId, receiptId);
-        if (!entry) return { success: false, error: 'receipt_not_found' };
+        if (!entry) {
+          return { success: false, error: 'receipt_not_found' };
+        }
         return {
           success: true,
           capabilityId: 'self.explain',
@@ -387,9 +399,13 @@ export async function handleSelfAwarenessTool(
           message: 'Detalhes da ação ' + entry.action,
         };
       }
-      if (!capabilityId) return { success: false, error: 'capabilityId_or_lastReceiptId_required' };
+      if (!capabilityId) {
+        return { success: false, error: 'capabilityId_or_lastReceiptId_required' };
+      }
       const cap = deps.capRegistryV2?.get(capabilityId);
-      if (!cap) return { success: false, error: 'capability_not_found' };
+      if (!cap) {
+        return { success: false, error: 'capability_not_found' };
+      }
       return {
         success: true,
         capabilityId: 'self.explain',
@@ -407,7 +423,9 @@ export async function handleSelfAwarenessTool(
       };
     }
     case 'self.gaps': {
-      if (!deps.selfGaps) return { success: false, error: 'self_gaps_service_unavailable' };
+      if (!deps.selfGaps) {
+        return { success: false, error: 'self_gaps_service_unavailable' };
+      }
       const result = deps.selfGaps.diffRegistryVsDispatcher();
       return {
         success: true,
@@ -420,7 +438,9 @@ export async function handleSelfAwarenessTool(
       };
     }
     case 'self.health': {
-      if (!deps.selfHealth) return { success: false, error: 'self_health_service_unavailable' };
+      if (!deps.selfHealth) {
+        return { success: false, error: 'self_health_service_unavailable' };
+      }
       return {
         success: true,
         capabilityId: 'self.health',
@@ -542,7 +562,9 @@ export async function handleCodeAndReportTool(
       return deps.codeToolsService.toolCodeGraphFiles();
     case 'reports.operations':
     case 'reports.abandonments': {
-      if (!deps.reportService) return { success: false, error: 'report_service_unavailable' };
+      if (!deps.reportService) {
+        return { success: false, error: 'report_service_unavailable' };
+      }
       const period = typeof args.period === 'string' ? args.period : undefined;
       const since = periodToSince(period);
       const res =
@@ -552,7 +574,9 @@ export async function handleCodeAndReportTool(
       return { success: true, ...res };
     }
     case 'crm.pipeline': {
-      if (!deps.reportService) return { success: false, error: 'report_service_unavailable' };
+      if (!deps.reportService) {
+        return { success: false, error: 'report_service_unavailable' };
+      }
       return { success: true, ...(await deps.reportService.pipeline(workspaceId)) };
     }
     default:

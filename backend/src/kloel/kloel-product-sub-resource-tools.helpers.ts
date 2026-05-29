@@ -211,7 +211,7 @@ export function buildCreateCheckoutConfig(args: UnknownRecord): Prisma.InputJson
     linkedPlanNames: (Array.isArray(args.linkedPlanNames)
       ? args.linkedPlanNames
       : []) as Prisma.InputJsonArray,
-  } as unknown as Prisma.InputJsonValue;
+  };
 }
 
 /**

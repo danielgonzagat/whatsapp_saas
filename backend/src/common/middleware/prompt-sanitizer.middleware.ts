@@ -86,8 +86,9 @@ export class PromptSanitizerMiddleware implements NestMiddleware {
 
   /** Use. */
   use(req: Request, _res: Response, next: NextFunction) {
-    if (req.body) {
-      this.sanitizeObject(req.body, req.path);
+    const body: unknown = req.body;
+    if (body && typeof body === 'object') {
+      this.sanitizeObject(body as Record<string, unknown>, req.path);
     }
     next();
   }

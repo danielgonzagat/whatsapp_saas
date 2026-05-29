@@ -344,6 +344,9 @@ describe('WalletService.chargeForUsage', () => {
 
     expect(result.costCents).toBe(45n);
     expect(result.newBalanceCents).toBe(955n);
-    expect(prisma.prisma.usagePrice.findUnique).not.toHaveBeenCalled();
+    const usagePriceFindUnique = (
+      prisma.prisma as unknown as { usagePrice: { findUnique: jest.Mock } }
+    ).usagePrice.findUnique;
+    expect(usagePriceFindUnique).not.toHaveBeenCalled();
   });
 });

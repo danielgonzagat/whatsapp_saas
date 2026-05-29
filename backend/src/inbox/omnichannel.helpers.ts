@@ -32,7 +32,11 @@ export interface ProcessedAttachment {
  * there is ONE source of truth for the channel vocabulary (Wave 21 task c).
  */
 export type OmniChannel = Uppercase<
-  ChannelKind.WHATSAPP | ChannelKind.INSTAGRAM | ChannelKind.MESSENGER | ChannelKind.TIKTOK | ChannelKind.EMAIL
+  | ChannelKind.WHATSAPP
+  | ChannelKind.INSTAGRAM
+  | ChannelKind.MESSENGER
+  | ChannelKind.TIKTOK
+  | ChannelKind.EMAIL
 >;
 
 /** A normalized inbound message — the canonical input across adapters. */

@@ -58,7 +58,7 @@ describe('AdminDashboardController', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     dashboard.getHome.mockResolvedValue(mockHomeResponse);
-    controller = new AdminDashboardController(dashboard as never);
+    controller = new AdminDashboardController(dashboard);
   });
 
   describe('GET admin/dashboard/home', () => {
@@ -109,10 +109,9 @@ describe('AdminDashboardController', () => {
     });
 
     it('enforces admin identity via AdminAuthGuard at controller level', () => {
-      const guards: Array<{ new (...args: unknown[]): unknown }> = Reflect.getMetadata(
-        GUARDS_METADATA,
-        AdminDashboardController,
-      );
+      const guards = Reflect.getMetadata(GUARDS_METADATA, AdminDashboardController) as Array<{
+        new (...args: unknown[]): unknown;
+      }>;
 
       expect(guards).toBeDefined();
       expect(guards.length).toBeGreaterThanOrEqual(1);

@@ -531,7 +531,7 @@ export class CheckoutService {
   async customizeTheme(workspaceId: string, args: UnknownRecord) {
     const checkoutId = this.requireCheckoutId(args);
     const theme = CheckoutService.stripCheckoutId(args);
-    const result = await this.setTheme(workspaceId, checkoutId, theme as SetCheckoutThemeDto);
+    const result = await this.setTheme(workspaceId, checkoutId, theme);
     await this.emitUpdated(workspaceId, checkoutId);
     return result;
   }
@@ -540,7 +540,7 @@ export class CheckoutService {
   async configureTimer(workspaceId: string, args: UnknownRecord) {
     const checkoutId = this.requireCheckoutId(args);
     const timer = CheckoutService.stripCheckoutId(args);
-    const result = await this.setTimer(workspaceId, checkoutId, timer as SetCheckoutTimerDto);
+    const result = await this.setTimer(workspaceId, checkoutId, timer);
     await this.emitUpdated(workspaceId, checkoutId);
     return result;
   }
@@ -549,11 +549,7 @@ export class CheckoutService {
   async configureSocialProof(workspaceId: string, args: UnknownRecord) {
     const checkoutId = this.requireCheckoutId(args);
     const config = CheckoutService.stripCheckoutId(args);
-    const result = await this.setSocialProof(
-      workspaceId,
-      checkoutId,
-      config as SetCheckoutSocialProofDto,
-    );
+    const result = await this.setSocialProof(workspaceId, checkoutId, config);
     await this.emitUpdated(workspaceId, checkoutId);
     return result;
   }
@@ -638,11 +634,7 @@ export class CheckoutService {
   async configureCoupon(workspaceId: string, args: UnknownRecord) {
     const checkoutId = this.requireCheckoutId(args);
     const config = CheckoutService.stripCheckoutId(args);
-    const result = await this.setCoupons(
-      workspaceId,
-      checkoutId,
-      config as SetCheckoutCouponsDto,
-    );
+    const result = await this.setCoupons(workspaceId, checkoutId, config);
     await this.emitUpdated(workspaceId, checkoutId);
     return result;
   }

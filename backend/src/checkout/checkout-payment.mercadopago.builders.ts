@@ -8,10 +8,7 @@ import {
   normalizeBoletoAddress,
   toJsonValue,
 } from './checkout-payment.mappers';
-import {
-  type CheckoutPaymentStatus,
-  type PixDisplayData,
-} from './checkout-payment.types';
+import { type CheckoutPaymentStatus, type PixDisplayData } from './checkout-payment.types';
 
 /**
  * Mercado Pago-specific input/output envelope builders for the checkout payment

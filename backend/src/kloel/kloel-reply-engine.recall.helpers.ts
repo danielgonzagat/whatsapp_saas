@@ -45,8 +45,7 @@ const DEFAULT_RECALL_LIMIT = 5;
  * model reads the durable signal as guidance, not raw event names.
  */
 function renderFactLine(fact: RecalledFact): string {
-  const tendency =
-    fact.valence === 'positive' ? 'tende a dar certo' : 'tende a não dar certo';
+  const tendency = fact.valence === 'positive' ? 'tende a dar certo' : 'tende a não dar certo';
   return `- ${fact.fact}: ${tendency} (reforçado ${fact.occurrences}x).`;
 }
 

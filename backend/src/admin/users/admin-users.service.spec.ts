@@ -16,6 +16,9 @@ interface AdminSessionUpdateArg {
   data: { revokedAt: Date };
 }
 
+// Typed wrapper around expect.objectContaining so nested matcher values are typed
+const oc = (o: Record<string, unknown>): unknown => expect.objectContaining(o);
+
 describe('AdminUsersService', () => {
   let service: AdminUsersService;
 
@@ -136,7 +139,7 @@ describe('AdminUsersService', () => {
 
       expect(mockAdminUserCreate).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: oc({
             name: 'New Admin',
             email: 'new@test.com',
             passwordHash: 'hashed',
@@ -232,7 +235,7 @@ describe('AdminUsersService', () => {
       expect(mockAdminSessionUpdateMany).not.toHaveBeenCalled();
       expect(mockTx.adminAuditLog.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: oc({
             adminUserId: actorId,
             action: 'admin.users.updated',
             entityType: 'AdminUser',
@@ -291,8 +294,8 @@ describe('AdminUsersService', () => {
       expect(roleChangeSessionUpdate.data.revokedAt).toBeInstanceOf(Date);
       expect(mockTx.adminAuditLog.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
-            details: expect.objectContaining({ revokedSessions: 2 }),
+          data: oc({
+            details: oc({ revokedSessions: 2 }),
           }),
         }),
       );

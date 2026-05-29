@@ -143,7 +143,8 @@ const META_ERROR_MESSAGE_RULES: ReadonlyArray<readonly [(msg: string) => boolean
     'O usuario Meta nao possui uma pagina do Facebook associada. Crie a pagina e tente conectar de novo.',
   ],
   [
-    (msg) => msg.includes('instagram') && (msg.includes('not connected') || msg.includes('no instagram')),
+    (msg) =>
+      msg.includes('instagram') && (msg.includes('not connected') || msg.includes('no instagram')),
     'Sua pagina do Facebook nao possui uma conta Instagram Business vinculada. Vincule pela pagina e reconecte.',
   ],
   [

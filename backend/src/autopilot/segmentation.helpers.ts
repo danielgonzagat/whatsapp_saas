@@ -34,16 +34,12 @@ import type { PurchaseHistoryFilter } from './segmentation.types';
 const DEAL_STATUS_VALUES = new Set<string>(Object.values(DealStatus));
 
 /** Type guard: does `value` match a Prisma `DealStatus` enum member? */
-export const isDealStatus = (value: string): value is DealStatus =>
-  DEAL_STATUS_VALUES.has(value);
+export const isDealStatus = (value: string): value is DealStatus => DEAL_STATUS_VALUES.has(value);
 
 /**
  * Mutate the `where` clause in-place with tag/exclude-tag filters.
  */
-export function applyTagFilters(
-  where: Prisma.ContactWhereInput,
-  criteria: SegmentCriteria,
-): void {
+export function applyTagFilters(where: Prisma.ContactWhereInput, criteria: SegmentCriteria): void {
   if (criteria.tags && criteria.tags.length > 0) {
     where.tags = { some: { name: { in: criteria.tags } } };
   }
@@ -109,9 +105,7 @@ export function applyPipelineFilters(
       won: ['WON'],
       lost: ['LOST'],
     };
-    const validStatuses: DealStatus[] = (statusMap[criteria.dealStatus] || []).filter(
-      isDealStatus,
-    );
+    const validStatuses: DealStatus[] = (statusMap[criteria.dealStatus] || []).filter(isDealStatus);
     where.deals = { some: { status: { in: validStatuses } } };
   }
 }

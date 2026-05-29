@@ -118,7 +118,9 @@ describe('WorkerRuntimeService', () => {
     });
     global.fetch = fetchMock as typeof fetch;
     await service.isAvailable();
-    const init = fetchMock.mock.calls[0][1] as { headers?: Record<string, string> };
+    const init = (
+      fetchMock.mock.calls as Array<[string, { headers?: Record<string, string> }]>
+    )[0][1];
     expect(init.headers?.Authorization).toBe('Bearer sk-test-token');
   });
 });

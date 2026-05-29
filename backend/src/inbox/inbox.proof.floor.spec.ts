@@ -157,9 +157,7 @@ describe('InboxService — coverage floor (read + mutation surface)', () => {
     it('throws NotFound when the conversation does not belong to the workspace', async () => {
       prisma.conversation.findFirst.mockResolvedValue(null);
 
-      await expect(service.getMessages('conv-x', 'ws-1')).rejects.toBeInstanceOf(
-        NotFoundException,
-      );
+      await expect(service.getMessages('conv-x', 'ws-1')).rejects.toBeInstanceOf(NotFoundException);
       expect(prisma.message.findMany).not.toHaveBeenCalled();
     });
   });

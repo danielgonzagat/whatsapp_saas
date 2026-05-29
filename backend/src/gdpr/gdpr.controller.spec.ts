@@ -2,6 +2,7 @@ import { INestApplication } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Test } from '@nestjs/testing';
 import { GdprStatus, GdprType } from '@prisma/client';
+import type { Server } from 'node:http';
 import * as request from 'supertest';
 import { EmailService } from '../auth/email.service';
 import { StorageService } from '../common/storage/storage.service';
@@ -11,15 +12,21 @@ import { GdprService } from './gdpr.service';
 import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 jest.mock('../common/redis/redis.util', () => {
-  const actual = jest.requireActual('../common/redis/redis.util');
+  const actual = jest.requireActual<typeof import('../common/redis/redis.util')>(
+    '../common/redis/redis.util',
+  );
   return {
     ...actual,
     createBullMqConnectionOptions: jest.fn(() => {
-      const { RedisConfigurationError } = jest.requireActual('../common/redis/resolve-redis-url');
+      const { RedisConfigurationError } = jest.requireActual<
+        typeof import('../common/redis/resolve-redis-url')
+      >('../common/redis/resolve-redis-url');
       throw new RedisConfigurationError('Redis not available in test');
     }),
     createRedisClient: jest.fn(() => {
-      const { RedisConfigurationError } = jest.requireActual('../common/redis/resolve-redis-url');
+      const { RedisConfigurationError } = jest.requireActual<
+        typeof import('../common/redis/resolve-redis-url')
+      >('../common/redis/resolve-redis-url');
       throw new RedisConfigurationError('Redis not available in test');
     }),
   };
@@ -57,7 +64,7 @@ describe('GdprController', () => {
     message: ['findMany', 'updateMany'],
     chatMessage: ['findMany', 'updateMany'],
   });
-  (prismaMock as any).$transaction = jest.fn((arg: unknown, _opts?: unknown) => {
+  prismaMock.$transaction = jest.fn((arg: unknown, _opts?: unknown) => {
     if (typeof arg === 'function') {
       return (arg as (tx: unknown) => unknown)(prismaMock);
     }
@@ -131,7 +138,9 @@ describe('GdprController', () => {
 
   describe('getStatus', () => {
     it('returns status for a valid code', async () => {
-      const response = await request(app.getHttpServer()).get('/gdpr/status/abc123').expect(200);
+      const response = await request(app.getHttpServer() as Server)
+        .get('/gdpr/status/abc123')
+        .expect(200);
 
       expect(response.body).toEqual(
         expect.objectContaining({
@@ -145,13 +154,15 @@ describe('GdprController', () => {
     it('returns 404 for unknown code', async () => {
       prismaMock.gdprRequest.findFirst.mockResolvedValueOnce(null);
 
-      await request(app.getHttpServer()).get('/gdpr/status/unknown').expect(404);
+      await request(app.getHttpServer() as Server)
+        .get('/gdpr/status/unknown')
+        .expect(404);
     });
   });
 
   describe('facebook-callback', () => {
     it('returns 400 when signed_request is empty', async () => {
-      const response = await request(app.getHttpServer())
+      const response = await request(app.getHttpServer() as Server)
         .post('/gdpr/facebook-callback')
         .type('form')
         .send({ signed_request: '' })
@@ -174,7 +185,7 @@ describe('GdprController', () => {
         JSON.stringify({ user_id: 'fb_user_1', algorithm: 'HMAC-SHA256', issued_at: 1713000000 }),
       ).toString('base64');
 
-      const response = await request(app.getHttpServer())
+      const response = await request(app.getHttpServer() as Server)
         .post('/gdpr/facebook-callback')
         .type('form')
         .send({ signed_request: `sig.${encodedPayload}` })
@@ -185,7 +196,9 @@ describe('GdprController', () => {
           url: expect.stringContaining('/data-deletion/status/'),
         }),
       );
-      expect(typeof response.body.confirmation_code).toBe('string');
+      expect(typeof (response.body as { confirmation_code?: unknown }).confirmation_code).toBe(
+        'string',
+      );
     });
 
     it('returns not_found when facebook user is not in the system', async () => {
@@ -195,7 +208,7 @@ describe('GdprController', () => {
         JSON.stringify({ user_id: 'unknown_fb_user', algorithm: 'HMAC-SHA256' }),
       ).toString('base64');
 
-      const response = await request(app.getHttpServer())
+      const response = await request(app.getHttpServer() as Server)
         .post('/gdpr/facebook-callback')
         .type('form')
         .send({ signed_request: `sig.${encodedPayload}` })

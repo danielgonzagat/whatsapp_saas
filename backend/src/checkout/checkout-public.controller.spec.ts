@@ -80,7 +80,9 @@ describe('CheckoutPublicController', () => {
       }),
     );
 
-    const correlationId = checkoutService.getCheckoutByCode.mock.calls[0][1]?.correlationId;
+    const correlationId = (
+      checkoutService.getCheckoutByCode.mock.calls[0] as [unknown, { correlationId?: unknown }]
+    )[1]?.correlationId;
     expect(correlationId).toBeTruthy();
   });
 
@@ -110,10 +112,11 @@ describe('CheckoutPublicController', () => {
   });
 
   it('marks createOrder as idempotent for safe retry on duplicate payment requests', () => {
-    const isIdempotent = Reflect.getMetadata(
-      IDEMPOTENCY_METADATA,
-      CheckoutPublicController.prototype.createOrder,
-    );
+    const handler = Object.getOwnPropertyDescriptor(
+      CheckoutPublicController.prototype,
+      'createOrder',
+    )?.value as object;
+    const isIdempotent = Reflect.getMetadata(IDEMPOTENCY_METADATA, handler) as boolean | undefined;
 
     expect(isIdempotent).toBe(true);
   });

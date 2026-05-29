@@ -63,26 +63,25 @@ type ToolResult = {
 export class KloelToolDispatcherService {
   private readonly logger = StructuredLogger.from(KloelToolDispatcherService.name);
 
-  
-    /**
-     * Tools whose dispatch carries curated business logic that the generic
-     * DomainServiceResolver must NOT shadow: high-risk human-approval gates
-     * (publish_product / change_plan / create_campaign), the smart-payment
-     * link flow, the canonical-receipt delete path, and the composer web
-     * search + theme toggle. These keep precedence over the resolver so the
-     * approval gate, audit receipt and provider-specific logic are preserved.
-     */
-    private static readonly CURATED_DIRECT_TOOLS = new Set<string>([
-      'toggle_theme',
-      'ui.theme',
-      'publish_product',
-      'products.review_and_publish',
-      'search_web',
-      'delete_product',
-      'create_payment_link',
-      'create_campaign',
-      'change_plan',
-    ]);
+  /**
+   * Tools whose dispatch carries curated business logic that the generic
+   * DomainServiceResolver must NOT shadow: high-risk human-approval gates
+   * (publish_product / change_plan / create_campaign), the smart-payment
+   * link flow, the canonical-receipt delete path, and the composer web
+   * search + theme toggle. These keep precedence over the resolver so the
+   * approval gate, audit receipt and provider-specific logic are preserved.
+   */
+  private static readonly CURATED_DIRECT_TOOLS = new Set<string>([
+    'toggle_theme',
+    'ui.theme',
+    'publish_product',
+    'products.review_and_publish',
+    'search_web',
+    'delete_product',
+    'create_payment_link',
+    'create_campaign',
+    'change_plan',
+  ]);
 
   constructor(
     private readonly prisma: PrismaService,

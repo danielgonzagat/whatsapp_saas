@@ -169,7 +169,9 @@ describe('CheckoutService public resolution', () => {
       }),
     );
 
-    const loggedEvents = loggerSpy.mock.calls.map(([message]) => JSON.parse(String(message)));
+    const loggedEvents = loggerSpy.mock.calls.map(
+      ([message]) => JSON.parse(String(message)) as Record<string, unknown>,
+    );
     expect(loggedEvents).toEqual(
       expect.arrayContaining([
         expect.objectContaining({

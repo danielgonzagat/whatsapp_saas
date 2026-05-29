@@ -18,6 +18,7 @@ jest.mock('./config-resolver', () => ({
 }));
 
 import { BadRequestException } from '@nestjs/common';
+import { partialMatch } from '../../../test/helpers/match-instance';
 import { decryptMailboxToken, encryptMailboxToken } from '../mailbox-token-crypto';
 import { GmailClientService } from './gmail-client.service';
 import type { GmailMailboxRecord } from './types';
@@ -188,7 +189,7 @@ describe('GmailClientService', () => {
       expect(fakeMailboxUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'conn-test-1', workspaceId: 'ws-test-1' },
-          data: expect.objectContaining({
+          data: partialMatch({
             lastError: 'gmail_refresh_failed',
             status: 'ERROR',
           }),

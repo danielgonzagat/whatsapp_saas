@@ -137,13 +137,9 @@ export function codeNativeSearchWeb(query: string): WebSearchDigest {
  * Normalize, dedupe and cap web-search sources extracted from the OpenAI
  * responses API output.
  */
-export function normalizeWebSearchSources(
-  output: unknown,
-): Array<{ title: string; url: string }> {
+export function normalizeWebSearchSources(output: unknown): Array<{ title: string; url: string }> {
   const rawSources = Array.isArray(output)
-    ? (output as WebSearchOutputItem[]).flatMap((item) =>
-        Array.isArray(item?.action?.sources) ? item.action.sources : [],
-      )
+    ? output.flatMap((item) => (Array.isArray(item?.action?.sources) ? item.action.sources : []))
     : [];
 
   const seen = new Set<string>();
@@ -187,9 +183,7 @@ export function extractImageUrlFromResponse(
 ): string {
   return String(
     response?.data?.[0]?.url ||
-      (response?.data?.[0]?.b64_json
-        ? `data:image/png;base64,${response.data[0].b64_json}`
-        : ''),
+      (response?.data?.[0]?.b64_json ? `data:image/png;base64,${response.data[0].b64_json}` : ''),
   ).trim();
 }
 
@@ -280,10 +274,7 @@ export function extractAnthropicUsageTokens(result: AnthropicSiteResult | undefi
  * Format the human-readable error message for a final site-gen failure after
  * all retries have been exhausted.
  */
-export function formatSiteRetryExhaustedMessage(
-  maxRetries: number,
-  lastError: unknown,
-): string {
+export function formatSiteRetryExhaustedMessage(maxRetries: number, lastError: unknown): string {
   const reason = lastError instanceof Error ? lastError.message : 'unknown';
   return `Anthropic site generation failed after ${maxRetries} attempts: ${reason}`;
 }

@@ -124,17 +124,16 @@ export class ChannelMessageDispatchService {
     return this.registry.send(input);
   }
 
-  
-    /**
-     * Canonical low-level send: dispatch a pre-built discriminated
-     * {@link ChannelSendInput} straight to the registry's `sendMessage` (Wave 21
-     * unification — task d). Use this when the caller already holds the channel
-     * credentials / built the input; use {@link dispatch} for the ergonomic
-     * `(workspaceId, channel, to, message, options)` tuple form.
-     */
-    sendMessage(input: ChannelSendInput): Promise<ChannelSendResult> {
-      return this.registry.sendMessage(input);
-    }
+  /**
+   * Canonical low-level send: dispatch a pre-built discriminated
+   * {@link ChannelSendInput} straight to the registry's `sendMessage` (Wave 21
+   * unification — task d). Use this when the caller already holds the channel
+   * credentials / built the input; use {@link dispatch} for the ergonomic
+   * `(workspaceId, channel, to, message, options)` tuple form.
+   */
+  sendMessage(input: ChannelSendInput): Promise<ChannelSendResult> {
+    return this.registry.sendMessage(input);
+  }
 
   /** Whether a channel has a registered, configured adapter for this workspace. */
   isConfigured(channel: DispatchChannel): boolean {
@@ -346,11 +345,9 @@ export class ChannelMessageDispatchService {
     workspaceId: string,
     args: Record<string, unknown>,
   ): Promise<ChannelSendResult> {
-    const channel = String(args.channel ?? '').trim();
-    const to = String(
-      args.to ?? args.recipient ?? args.phone ?? args.email ?? '',
-    ).trim();
-    const message = String(args.message ?? args.body ?? '').trim();
+    const channel = this.coerceArgString(args.channel);
+    const to = this.coerceArgString(args.to ?? args.recipient ?? args.phone ?? args.email);
+    const message = this.coerceArgString(args.message ?? args.body);
     if (!channel) {
       return {
         success: false,
@@ -383,11 +380,8 @@ export class ChannelMessageDispatchService {
    * @param _workspaceId owning workspace (unused until a real adapter exists)
    * @param args         tool arguments carrying the requested ad platform
    */
-  createAdDraftTool(
-    _workspaceId: string,
-    args: Record<string, unknown>,
-  ): ChannelSendResult {
-    const platform = String(args.platform ?? args.channel ?? 'ads').trim();
+  createAdDraftTool(_workspaceId: string, args: Record<string, unknown>): ChannelSendResult {
+    const platform = this.coerceArgString(args.platform ?? args.channel, 'ads');
     return {
       success: false,
       provider: platform,
@@ -395,6 +389,25 @@ export class ChannelMessageDispatchService {
       blocked: true,
       blockedReason: 'ads_integration_setup_required',
     };
+  }
+
+  /**
+   * Coerce a loose tool-arg value to a trimmed string.
+   *
+   * Only primitive scalars (string/number/boolean) are stringified; objects,
+   * arrays and null-ish values collapse to the empty string. This matches the
+   * honest blocked-path semantics — a non-scalar `channel`/`to`/`message` is
+   * never a valid value, so it must surface as a `*_required` block rather than
+   * a `[object Object]` stringification.
+   */
+  private coerceArgString(value: unknown, fallback = ''): string {
+    if (typeof value === 'string') {
+      return value.trim();
+    }
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return String(value).trim();
+    }
+    return fallback;
   }
 
   /** Build {@link DispatchOptions} from loose tool args, dropping unset keys. */

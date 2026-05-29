@@ -56,8 +56,9 @@ export class AudioService {
       );
       return;
     }
-    await this.planLimits.trackAiUsage(workspaceId, tokens).catch((error) => {
-      this.logger.warn(`[${feature}] failed to track AI usage: ${error?.message || error}`);
+    await this.planLimits.trackAiUsage(workspaceId, tokens).catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`[${feature}] failed to track AI usage: ${message}`);
     });
   }
 

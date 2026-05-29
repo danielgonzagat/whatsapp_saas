@@ -59,7 +59,7 @@ describe('TeamService', () => {
       invitation: {
         findMany: jest.fn(),
         findUnique: jest.fn(),
-        create: jest.fn(),
+        create: jest.fn<Promise<unknown>, [InvitationCreateArgs]>(),
         delete: jest.fn(),
       },
       workspace: { findUnique: jest.fn() },

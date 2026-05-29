@@ -50,7 +50,7 @@ export function countDriftsByKind(drifts: DriftReport[]): Record<DriftKind, numb
   return drifts.reduce<Record<string, number>>((acc, drift) => {
     acc[drift.kind] = (acc[drift.kind] || 0) + 1;
     return acc;
-  }, {}) as Record<DriftKind, number>;
+  }, {});
 }
 
 /** Compact summary the service emits via `logger.warn` for checkout drift. */
@@ -201,11 +201,14 @@ export function readStoredBucketBalance(
   wallet: WalletStoredBalances,
   bucket: WalletBucket,
 ): bigint {
-  const key = `${bucket}BalanceInCents` as
-    | 'availableBalanceInCents'
-    | 'pendingBalanceInCents'
-    | 'blockedBalanceInCents';
-  return BigInt(wallet[key] ?? 0);
+  switch (bucket) {
+    case 'available':
+      return wallet.availableBalanceInCents;
+    case 'pending':
+      return wallet.pendingBalanceInCents;
+    case 'blocked':
+      return wallet.blockedBalanceInCents;
+  }
 }
 
 /**

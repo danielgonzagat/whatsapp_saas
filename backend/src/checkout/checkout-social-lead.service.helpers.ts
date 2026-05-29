@@ -19,7 +19,7 @@ export type CheckoutPlanContext = {
 
 /** Verified social profile payload returned by an auth provider. */
 export type VerifiedSocialProfile = {
-  provider: CheckoutSocialProvider | string;
+  provider: string;
   providerId: string;
   emailVerified: boolean;
   email?: string | null;
@@ -108,9 +108,7 @@ export function buildPrefillOrFilter(
   slug: string,
   checkoutCode: string | null,
 ): Array<{ checkoutSlug: string } | { checkoutCode: string }> {
-  const base: Array<{ checkoutSlug: string } | { checkoutCode: string }> = [
-    { checkoutSlug: slug },
-  ];
+  const base: Array<{ checkoutSlug: string } | { checkoutCode: string }> = [{ checkoutSlug: slug }];
   if (checkoutCode) {
     base.push({ checkoutCode });
   }

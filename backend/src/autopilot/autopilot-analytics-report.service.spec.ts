@@ -126,7 +126,10 @@ describe('AutopilotAnalyticsReportService', () => {
       mockPrisma.invoice.findMany.mockResolvedValue([]);
       mockPrisma.autopilotEvent.count.mockResolvedValue(0);
       await service.getMoneyReport(ws);
-      const campaignArgs = mockPrisma.campaign.findMany.mock.calls[0][0];
+      const campaignFindManyCalls = mockPrisma.campaign.findMany.mock.calls as Array<
+        [{ where: { workspaceId: string; createdAt?: unknown } }]
+      >;
+      const campaignArgs = campaignFindManyCalls[0][0];
       expect(campaignArgs.where).toEqual({
         workspaceId: ws,
         createdAt: campaignArgs.where.createdAt,

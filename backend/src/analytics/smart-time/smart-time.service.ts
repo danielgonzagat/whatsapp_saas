@@ -51,8 +51,8 @@ export class SmartTimeService {
     }
 
     // 2. Bucketize
-    const hourBuckets = new Array(24).fill(0);
-    const dayBuckets = new Array(7).fill(0);
+    const hourBuckets: number[] = new Array<number>(24).fill(0);
+    const dayBuckets: number[] = new Array<number>(7).fill(0);
 
     messages.forEach((msg) => {
       const date = new Date(msg.createdAt);

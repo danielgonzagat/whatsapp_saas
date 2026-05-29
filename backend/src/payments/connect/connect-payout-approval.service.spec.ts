@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 
 import { ConnectPayoutApprovalService } from './connect-payout-approval.service';
+import { partialMatch } from '../../../test/helpers/match-instance';
 
 describe('ConnectPayoutApprovalService', () => {
   function buildService() {
@@ -71,9 +72,7 @@ describe('ConnectPayoutApprovalService', () => {
         .fn()
         .mockImplementation(
           async (
-            operations:
-              | Array<Promise<unknown>>
-              | ((tx: Record<string, unknown>) => Promise<unknown> | unknown),
+            operations: Array<Promise<unknown>> | ((tx: Record<string, unknown>) => unknown),
           ) => {
             if (typeof operations === 'function') {
               return operations(prisma);
@@ -116,7 +115,7 @@ describe('ConnectPayoutApprovalService', () => {
       },
     });
     expect(prisma.approvalRequest.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
+      data: partialMatch({
         workspaceId: 'ws-1',
         kind: 'connect_payout',
         scope: 'connect_account_balance',
@@ -144,7 +143,7 @@ describe('ConnectPayoutApprovalService', () => {
         action: 'system.connect.withdrawal_approval_requested',
         entityType: 'connect_account_balance',
         entityId: 'cab_seller',
-        details: expect.objectContaining({
+        details: partialMatch({
           approvalRequestId: 'apr_1',
           workspaceId: 'ws-1',
           accountType: 'SELLER',
@@ -234,7 +233,7 @@ describe('ConnectPayoutApprovalService', () => {
       where: { id: 'apr_1', workspaceId: 'ws-1' },
       data: {
         state: 'APPROVED',
-        respondedAt: expect.anything(),
+        respondedAt: expect.anything() as jest.AsymmetricMatcher,
         response: {
           approvedByAdminId: 'admin-1',
           payoutId: 'po_123',
@@ -313,7 +312,7 @@ describe('ConnectPayoutApprovalService', () => {
       where: { id: 'apr_1', workspaceId: 'ws-1' },
       data: {
         state: 'FAILED',
-        respondedAt: expect.anything(),
+        respondedAt: expect.anything() as jest.AsymmetricMatcher,
         response: {
           error: 'stripe down',
           amountCents: '500',
@@ -360,7 +359,7 @@ describe('ConnectPayoutApprovalService', () => {
       where: { id: 'apr_1', workspaceId: 'ws-1' },
       data: {
         state: 'REJECTED',
-        respondedAt: expect.anything(),
+        respondedAt: expect.anything() as jest.AsymmetricMatcher,
         response: {
           rejectedByAdminId: 'admin-1',
           reason: 'manual review failed',

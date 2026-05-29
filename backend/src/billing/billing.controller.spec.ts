@@ -24,7 +24,7 @@ type BillingServiceStub = {
 
 function buildBillingServiceStub(): BillingServiceStub {
   return {
-    handleWebhook: jest.fn(),
+    handleWebhook: jest.fn<Promise<BillingWebhookResult>, [string, Buffer]>(),
   };
 }
 

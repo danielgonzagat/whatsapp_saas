@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { partialMatch } from '../../test/helpers/match-instance';
 import { EmailCampaignService } from '../kloel/email-campaign.service';
 import { MarketingController } from './marketing.controller';
 
@@ -60,12 +61,12 @@ describe('MarketingController direct email send approval gate', () => {
 
     expect(prisma.approvalRequest.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
+        data: partialMatch({
           workspaceId: 'ws-1',
           kind: 'marketing_email:direct_send',
           entityType: 'MarketingEmailDirectSend',
           state: 'OPEN',
-          payload: expect.objectContaining({
+          payload: partialMatch({
             subject: 'Oferta',
             html: '<p>Oi {{name}}</p>',
             requestedByEmail: 'owner@example.com',
@@ -110,7 +111,7 @@ describe('MarketingController direct email send approval gate', () => {
     expect(prisma.approvalRequest.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'ap-direct-1', workspaceId: 'ws-1', state: 'APPROVED' },
-        data: expect.objectContaining({ state: 'COMPLETED' }),
+        data: partialMatch({ state: 'COMPLETED' }),
       }),
     );
   });

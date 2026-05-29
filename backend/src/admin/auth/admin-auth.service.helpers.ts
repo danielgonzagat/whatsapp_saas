@@ -18,21 +18,26 @@ export interface HttpRequestLike {
   readonly ip?: string;
   readonly socket?: { readonly remoteAddress?: string };
   readonly headers: Record<string, string | string[] | undefined>;
-}/** Bcrypt work factor used for hashing admin passwords. */
+} /** Bcrypt work factor used for hashing admin passwords. */
 export const BCRYPT_WORK_FACTOR = 12;
 
 /** Env var that toggles the MFA-bypass code path. */
 export const ADMIN_MFA_BYPASS_ENV = 'ADMIN_MFA_BYPASS_ENABLED';
 
 /** Values that count as "enabled" for the MFA-bypass env var. */
-export const MFA_BYPASS_ENABLED_VALUES: ReadonlySet<string> = new Set(['1', 'true', 'yes', 'on']);/**
+export const MFA_BYPASS_ENABLED_VALUES: ReadonlySet<string> = new Set([
+  '1',
+  'true',
+  'yes',
+  'on',
+]); /**
  * Normalize an admin email for lookup.
  *
  * Trims surrounding whitespace and lowercases. Pure function — no I/O.
  */
 export function normalizeAdminEmail(email: string): string {
   return email.trim().toLowerCase();
-}/**
+} /**
  * Decide whether the MFA-bypass env value enables the bypass path.
  *
  * Accepts the raw env string (or `undefined` when unset). The comparison
@@ -44,7 +49,7 @@ export function isMfaBypassEnvEnabled(rawValue: string | undefined): boolean {
       .trim()
       .toLowerCase(),
   );
-}/**
+} /**
  * Determine whether an admin account is currently locked.
  *
  * Returns `true` when `lockedUntil` is set and strictly greater than
@@ -68,7 +73,7 @@ export function isAccountLocked(
  */
 export function isSessionExpired(expiresAt: Date, now: number = Date.now()): boolean {
   return expiresAt.getTime() < now;
-}// ──────────────────────────────────────────────────────────
+} // ──────────────────────────────────────────────────────────
 // Token validation
 // ──────────────────────────────────────────────────────────
 
@@ -107,7 +112,7 @@ export function assertTokenScope(
   if (admin.scope !== expected) {
     throw adminErrors.invalidToken();
   }
-}// ──────────────────────────────────────────────────────────
+} // ──────────────────────────────────────────────────────────
 // Header parsing
 // ──────────────────────────────────────────────────────────
 

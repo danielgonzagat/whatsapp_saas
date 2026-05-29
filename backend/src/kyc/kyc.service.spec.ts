@@ -239,7 +239,9 @@ describe('KycService.submitKyc', () => {
         kycApprovedAt: expect.anything(),
       }),
     });
-    const adminUpdateCall = prisma.agent.update.mock.calls.at(-1)?.[0];
+    const adminUpdateCall = (prisma.agent.update.mock.calls as unknown[][]).at(-1)?.[0] as
+      | { data: { kycApprovedAt: unknown } }
+      | undefined;
     expect(adminUpdateCall?.data.kycApprovedAt).toBeInstanceOf(Date);
     expect(result).toEqual({
       success: true,
@@ -374,7 +376,9 @@ describe('KycService.submitKyc', () => {
         kycApprovedAt: expect.anything(),
       }),
     });
-    const autoApproveCall = prisma.agent.update.mock.calls.at(-1)?.[0];
+    const autoApproveCall = (prisma.agent.update.mock.calls as unknown[][]).at(-1)?.[0] as
+      | { data: { kycApprovedAt: unknown } }
+      | undefined;
     expect(autoApproveCall?.data.kycApprovedAt).toBeInstanceOf(Date);
   });
 

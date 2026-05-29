@@ -80,7 +80,7 @@ export class BanRiskDetector {
               : 'none';
 
     if (riskLevel === 'high' || riskLevel === 'imminent') {
-      this.emitBanRisk(input.workspaceId, channel, riskProbability, contributingFactors);
+      void this.emitBanRisk(input.workspaceId, channel, riskProbability, contributingFactors);
     }
 
     return {

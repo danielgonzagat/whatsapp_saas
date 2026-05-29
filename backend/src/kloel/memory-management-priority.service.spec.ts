@@ -102,7 +102,11 @@ describe('MemoryManagementService', () => {
         { provide: OpsAlertService, useValue: opsAlert },
         {
           provide: MindMemoryItemService,
-          useValue: { get items() { return prisma.kloelMemory; } },
+          useValue: {
+            get items() {
+              return prisma.kloelMemory;
+            },
+          },
         },
       ],
     }).compile();

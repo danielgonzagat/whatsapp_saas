@@ -76,7 +76,6 @@ export interface CreatePaymentResult {
   status: string;
 }
 
-
 /** Payment service. */
 @Injectable()
 export class PaymentService {
@@ -442,10 +441,7 @@ export class PaymentService {
     const paid = sales.filter((s: KloelSaleRow) => s.status === 'paid');
     return {
       totalSales: paid.length,
-      totalAmount: paid.reduce(
-        (sum: number, s: KloelSaleRow) => sum + ((s.amount as number) || 0),
-        0,
-      ),
+      totalAmount: paid.reduce((sum: number, s: KloelSaleRow) => sum + (s.amount || 0), 0),
     };
   }
 }

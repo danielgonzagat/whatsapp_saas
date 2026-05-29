@@ -23,7 +23,6 @@ interface PersistedSplitLineSnapshot {
 
 /** Magic-number aliases used inside expectations to satisfy lint and explain intent. */
 const NONE = 0;
-const FIRST_CALL = 0;
 const FIVE_THOUSAND_CENTS = 5_000;
 
 type StripeStub = {

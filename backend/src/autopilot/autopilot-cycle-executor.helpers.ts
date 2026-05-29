@@ -56,16 +56,11 @@ export interface ConversationShape {
  * `readRecord` in the service so the helpers stay drop-in identical.
  */
 export function readRecord(value: unknown): Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-    ? (value as Record<string, unknown>)
-    : {};
+  return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
 }
 
 /** Returns the night-only action if it applies, else null. */
-export function decideNightAction(
-  isNight: boolean,
-  buyingSignal?: boolean,
-): string | null {
+export function decideNightAction(isNight: boolean, buyingSignal?: boolean): string | null {
   if (!isNight) {
     return null;
   }
@@ -73,10 +68,7 @@ export function decideNightAction(
 }
 
 /** Returns the offer action if the user shows a buying signal, else null. */
-export function decideBuyingAction(
-  buyingSignal?: boolean,
-  isOptimalTime?: boolean,
-): string | null {
+export function decideBuyingAction(buyingSignal?: boolean, isOptimalTime?: boolean): string | null {
   if (!buyingSignal) {
     return null;
   }
@@ -146,8 +138,7 @@ export function autopilotSubject(conv: ConversationShape): string {
 /** Mind outcome dedupe key — workspace + conv + last inbound timestamp. */
 export function autopilotOutcomeKey(conv: ConversationShape): string {
   const lastInbound = conv.messages.find((m) => m.direction === 'INBOUND');
-  const lastInboundAt =
-    lastInbound?.createdAt?.toISOString?.() ?? 'no-inbound';
+  const lastInboundAt = lastInbound?.createdAt?.toISOString?.() ?? 'no-inbound';
   return `autopilot_action:${conv.workspaceId}:${conv.id}:${lastInboundAt}`;
 }
 
@@ -197,18 +188,17 @@ export function isCommercialAction(type: string): boolean {
 }
 
 /** Maps an action verb to the response generator type. */
-export const ACTION_TO_RESPONSE_TYPE: Readonly<Record<string, string>> =
-  Object.freeze({
-    send_offer: 'offer',
-    send_offer_soft: 'offer_soft',
-    send_price: 'price',
-    follow_up: 'follow_up',
-    lead_unlocker: 'lead_unlocker',
-    handle_objection: 'objection',
-    qualify: 'qualify',
-    try_upsell: 'upsell',
-    ai_chat: 'chat',
-  });
+export const ACTION_TO_RESPONSE_TYPE: Readonly<Record<string, string>> = Object.freeze({
+  send_offer: 'offer',
+  send_offer_soft: 'offer_soft',
+  send_price: 'price',
+  follow_up: 'follow_up',
+  lead_unlocker: 'lead_unlocker',
+  handle_objection: 'objection',
+  qualify: 'qualify',
+  try_upsell: 'upsell',
+  ai_chat: 'chat',
+});
 
 /** Returns the matching response generator type, or null if none. */
 export function resolveResponseType(action: string): string | null {
@@ -216,13 +206,12 @@ export function resolveResponseType(action: string): string | null {
 }
 
 /** Hardcoded night-window responses keyed by action. */
-export const HARDCODED_NIGHT_RESPONSES: Readonly<Record<string, string>> =
-  Object.freeze({
-    soft_close_night:
-      'Oi! Vi seu interesse. Já deixei tudo preparado para você. Amanhã cedo eu retomo para concluirmos, tudo bem?',
-    auto_reply_night:
-      'Opa! Agora estou offline, mas já anotei sua dúvida. Amanhã 8h te respondo sem falta!',
-  });
+export const HARDCODED_NIGHT_RESPONSES: Readonly<Record<string, string>> = Object.freeze({
+  soft_close_night:
+    'Oi! Vi seu interesse. Já deixei tudo preparado para você. Amanhã cedo eu retomo para concluirmos, tudo bem?',
+  auto_reply_night:
+    'Opa! Agora estou offline, mas já anotei sua dúvida. Amanhã 8h te respondo sem falta!',
+});
 
 /** Returns the hardcoded response for a night action, or null. */
 export function resolveHardcodedNightResponse(action: string): string | null {
@@ -255,21 +244,18 @@ export function formatProductContext(
 }
 
 /** Pure-prompt templates for each response type. */
-export const RESPONSE_TEMPLATES: Readonly<Record<string, string>> = Object.freeze(
-  {
-    offer:
-      'Generate an irresistible offer closing for this context. Create Urgency. Keep it short.',
-    offer_soft: 'Generate a gentle offer closing. Focus on value, no pressure.',
-    price: 'Explain the price/value proposition. Be direct but persuasive.',
-    follow_up: 'Re-engage this lead who went silent. Be polite but intriguing.',
-    lead_unlocker:
-      "The lead disappeared. Send a 'mental trigger' question to unlock them (e.g., 'Did you give up on X?'). Short and punchy.",
-    objection: "Overcome the user's objection with empathy and authority.",
-    qualify: 'Ask a qualifying question to understand their needs better.',
-    upsell: 'Suggest a complementary product or upgrade (Upsell) naturally.',
-    chat: "Reply naturally to the user's last message. Be helpful and concise.",
-  },
-);
+export const RESPONSE_TEMPLATES: Readonly<Record<string, string>> = Object.freeze({
+  offer: 'Generate an irresistible offer closing for this context. Create Urgency. Keep it short.',
+  offer_soft: 'Generate a gentle offer closing. Focus on value, no pressure.',
+  price: 'Explain the price/value proposition. Be direct but persuasive.',
+  follow_up: 'Re-engage this lead who went silent. Be polite but intriguing.',
+  lead_unlocker:
+    "The lead disappeared. Send a 'mental trigger' question to unlock them (e.g., 'Did you give up on X?'). Short and punchy.",
+  objection: "Overcome the user's objection with empathy and authority.",
+  qualify: 'Ask a qualifying question to understand their needs better.',
+  upsell: 'Suggest a complementary product or upgrade (Upsell) naturally.',
+  chat: "Reply naturally to the user's last message. Be helpful and concise.",
+});
 
 /** Returns the template for a response type, defaulting to `chat`. */
 export function resolveResponseTemplate(type: string): string {

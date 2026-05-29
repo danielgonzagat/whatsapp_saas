@@ -145,7 +145,7 @@ export async function checkWorker(config: ConfigService) {
       };
     }
 
-    const payload = await response.json().catch(() => ({}));
+    const payload = (await response.json().catch(() => ({}))) as Record<string, unknown>;
     return {
       status: payload?.status === 'ok' ? 'UP' : 'DEGRADED',
       url: maskUrl(workerHealthUrl),

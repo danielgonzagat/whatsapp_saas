@@ -105,10 +105,7 @@ export function inferToolInvocation(
 // ---- result formatting --------------------------------------------------
 
 /** Summarize a tool execution result into a human-readable message. */
-export function summarizeToolResult(
-  toolName: string,
-  result: Record<string, unknown>,
-): string {
+export function summarizeToolResult(toolName: string, result: Record<string, unknown>): string {
   if (toolName === 'searchWorkspaces') {
     const items = Array.isArray(result.items) ? result.items : [];
     if (items.length === 0) {

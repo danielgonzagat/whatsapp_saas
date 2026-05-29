@@ -309,7 +309,9 @@ describe('PaymentMethodService (P6-10)', () => {
       await service.createSetupIntent('ws-1');
 
       expect(stripe.checkout.sessions.create).toHaveBeenCalledTimes(1);
-      const optionsArg = stripe.checkout.sessions.create.mock.calls[0][1];
+      const optionsArg = (
+        stripe.checkout.sessions.create.mock.calls as Array<[unknown, { idempotencyKey: string }]>
+      )[0][1];
       // Wave 1 P0-4 — idempotencyKey must NOT contain a time bucket like
       // Math.floor(Date.now() / 60000). It must be a UUID-suffixed string.
       expect(optionsArg.idempotencyKey).toMatch(
@@ -321,8 +323,11 @@ describe('PaymentMethodService (P6-10)', () => {
       await service.createSetupIntent('ws-1');
       await service.createSetupIntent('ws-1');
 
-      const firstKey = stripe.checkout.sessions.create.mock.calls[0][1].idempotencyKey;
-      const secondKey = stripe.checkout.sessions.create.mock.calls[1][1].idempotencyKey;
+      const createCalls = stripe.checkout.sessions.create.mock.calls as Array<
+        [unknown, { idempotencyKey: string }]
+      >;
+      const firstKey = createCalls[0][1].idempotencyKey;
+      const secondKey = createCalls[1][1].idempotencyKey;
       expect(firstKey).not.toBe(secondKey);
     });
 
@@ -336,7 +341,11 @@ describe('PaymentMethodService (P6-10)', () => {
 
       await service.createSetupIntent('ws-1');
 
-      const sessionArgs = stripe.checkout.sessions.create.mock.calls[0][0];
+      const sessionArgs = (
+        stripe.checkout.sessions.create.mock.calls as Array<
+          [{ success_url: string; cancel_url: string }]
+        >
+      )[0][0];
       expect(sessionArgs.success_url).toContain('https://app.example.com/billing');
       expect(sessionArgs.cancel_url).toContain('https://app.example.com/billing');
       expect(sessionArgs.success_url).toContain('setup=success');

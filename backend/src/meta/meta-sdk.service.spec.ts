@@ -117,7 +117,10 @@ describe('MetaSdkService', () => {
       const [, options] = mockFetch.mock.calls[0] as [string, RequestInit];
       expect(options.method).toBe('POST');
       expect(options.headers).toHaveProperty('Content-Type', 'application/json');
-      const body = JSON.parse(options.body as string);
+      const body = JSON.parse(options.body as string) as {
+        access_token?: string;
+        message?: string;
+      };
       expect(body.access_token).toBe('token');
       expect(body.message).toBe('hello');
     });

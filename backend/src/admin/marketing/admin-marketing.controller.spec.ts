@@ -37,7 +37,7 @@ describe('AdminMarketingController', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     marketing.overview.mockResolvedValue(mockOverviewResponse);
-    controller = new AdminMarketingController(marketing as never);
+    controller = new AdminMarketingController(marketing);
   });
 
   describe('GET admin/marketing/overview', () => {
@@ -78,10 +78,9 @@ describe('AdminMarketingController', () => {
     });
 
     it('enforces admin identity via AdminAuthGuard at controller level', () => {
-      const guards: Array<{ new (...args: unknown[]): unknown }> = Reflect.getMetadata(
-        GUARDS_METADATA,
-        AdminMarketingController,
-      );
+      const guards = Reflect.getMetadata(GUARDS_METADATA, AdminMarketingController) as Array<{
+        new (...args: unknown[]): unknown;
+      }>;
 
       expect(guards).toBeDefined();
       expect(guards.length).toBeGreaterThanOrEqual(1);

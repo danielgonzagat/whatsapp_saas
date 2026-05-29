@@ -33,9 +33,7 @@ export const KLOEL_TO_COGNITION_ALIAS = {
   'kloel.handoff.confidence': 'cognition.handoff.confidence',
   'kloel.handoff.confidence.blocking': 'cognition.handoff.confidence.blocking',
   'kloel.chat.turn': 'cognition.chat.turn',
-} as const
-
-
+} as const;
 
 /**
  * Authoritative map of legacy bare event names (no domain prefix) to their
@@ -73,16 +71,13 @@ export const LEGACY_TO_COMMERCE_ALIAS = {
 } as const;
 
 export type LegacyBareEventName = keyof typeof LEGACY_TO_COMMERCE_ALIAS;
-export type CommerceCanonicalEventName =
-  (typeof LEGACY_TO_COMMERCE_ALIAS)[LegacyBareEventName];
+export type CommerceCanonicalEventName = (typeof LEGACY_TO_COMMERCE_ALIAS)[LegacyBareEventName];
 
 /**
  * Resolve the canonical `commerce.*` equivalent for a legacy bare event name.
  * Returns `undefined` when the input is not a registered legacy name.
  */
-export function resolveCommerceAlias(
-  legacy: string,
-): CommerceCanonicalEventName | undefined {
+export function resolveCommerceAlias(legacy: string): CommerceCanonicalEventName | undefined {
   if (legacy in LEGACY_TO_COMMERCE_ALIAS) {
     return LEGACY_TO_COMMERCE_ALIAS[legacy as LegacyBareEventName];
   }
@@ -111,7 +106,7 @@ export function emitCommerceAlias<T extends Record<string, unknown>>(
   const canonical = LEGACY_TO_COMMERCE_ALIAS[legacy];
   emit(legacy, payload);
   emit(canonical, payload);
-};
+}
 
 export type KloelLegacyEventName = keyof typeof KLOEL_TO_COGNITION_ALIAS;
 export type CognitionCanonicalEventName = (typeof KLOEL_TO_COGNITION_ALIAS)[KloelLegacyEventName];

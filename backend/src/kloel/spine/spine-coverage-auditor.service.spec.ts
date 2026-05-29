@@ -42,7 +42,7 @@ describe('SpineCoverageAuditorService', () => {
 
   it('increments coverage for the correct surface when a canonical event is emitted', () => {
     const { emitter, auditor } = build();
-    emitter.emit(input({ eventName: 'commerce.cart.created' }));
+    void emitter.emit(input({ eventName: 'commerce.cart.created' }));
     const report = auditor.audit();
     const checkout = report.surfaces.find((s) => s.surfaceId === 'checkout_wallet_billing');
     expect(checkout).toBeDefined();
@@ -52,7 +52,7 @@ describe('SpineCoverageAuditorService', () => {
 
   it('leaves other surface ratios at zero when only one surface has events', () => {
     const { emitter, auditor } = build();
-    emitter.emit(input({ eventName: 'commerce.cart.created' }));
+    void emitter.emit(input({ eventName: 'commerce.cart.created' }));
     const report = auditor.audit();
     const crm = report.surfaces.find((s) => s.surfaceId === 'crm');
     expect(crm!.coverageRatio).toBe(0);
@@ -66,7 +66,7 @@ describe('SpineCoverageAuditorService', () => {
       'commerce.kyc.rejected',
     ];
     for (const name of allKycEvents) {
-      emitter.emit(input({ eventName: name }));
+      void emitter.emit(input({ eventName: name }));
     }
     const report = auditor.audit();
     const kyc = report.surfaces.find((s) => s.surfaceId === 'kyc_auth');
@@ -76,7 +76,7 @@ describe('SpineCoverageAuditorService', () => {
 
   it('computes partial coverage ratio correctly', () => {
     const { emitter, auditor } = build();
-    emitter.emit(input({ eventName: 'commerce.crm.stage_changed' }));
+    void emitter.emit(input({ eventName: 'commerce.crm.stage_changed' }));
     const report = auditor.audit();
     const crm = report.surfaces.find((s) => s.surfaceId === 'crm');
     const expectedRatio = 1 / 6;
@@ -85,8 +85,8 @@ describe('SpineCoverageAuditorService', () => {
 
   it('does not count non-PCI.6 events toward a surface coverage', () => {
     const { emitter, auditor } = build();
-    emitter.emit(input({ eventName: 'cognition.belief_updated' }));
-    emitter.emit(input({ eventName: 'pulse.gate_passed' }));
+    void emitter.emit(input({ eventName: 'cognition.belief_updated' }));
+    void emitter.emit(input({ eventName: 'pulse.gate_passed' }));
     const report = auditor.audit();
     for (const s of report.surfaces) {
       expect(s.coverageRatio).toBe(0);
@@ -95,7 +95,7 @@ describe('SpineCoverageAuditorService', () => {
 
   it('reports observedTransitions in the surface coverage', () => {
     const { emitter, auditor } = build();
-    emitter.emit(input({ eventName: 'commerce.payment.approved' }));
+    void emitter.emit(input({ eventName: 'commerce.payment.approved' }));
     const report = auditor.audit();
     const checkout = report.surfaces.find((s) => s.surfaceId === 'checkout_wallet_billing');
     expect(checkout!.transitionsObserved).toContain('payment_approved');
@@ -103,8 +103,8 @@ describe('SpineCoverageAuditorService', () => {
 
   it('respects windowN parameter', () => {
     const { emitter, auditor } = build();
-    emitter.emit(input({ eventName: 'commerce.cart.created' }));
-    emitter.emit(input({ eventName: 'commerce.campaign.clicked' }));
+    void emitter.emit(input({ eventName: 'commerce.cart.created' }));
+    void emitter.emit(input({ eventName: 'commerce.campaign.clicked' }));
     const report = auditor.audit(0);
     expect(report.scannedEventCount).toBe(0);
     for (const s of report.surfaces) {
@@ -114,9 +114,9 @@ describe('SpineCoverageAuditorService', () => {
 
   it('handles duplicate events correctly', () => {
     const { emitter, auditor } = build();
-    emitter.emit(input({ eventName: 'commerce.cart.created' }));
-    emitter.emit(input({ eventName: 'commerce.cart.created' }));
-    emitter.emit(input({ eventName: 'commerce.cart.created' }));
+    void emitter.emit(input({ eventName: 'commerce.cart.created' }));
+    void emitter.emit(input({ eventName: 'commerce.cart.created' }));
+    void emitter.emit(input({ eventName: 'commerce.cart.created' }));
     const report = auditor.audit();
     const checkout = report.surfaces.find((s) => s.surfaceId === 'checkout_wallet_billing');
     expect(checkout!.observedCanonicalEventNames).toEqual(['commerce.cart.created']);

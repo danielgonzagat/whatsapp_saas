@@ -49,7 +49,8 @@ export const R_CRITERIA: AbRCriterionDescriptor[] = [
   { name: 'R36', family: 'Evolution', description: 'Self-evolution' },
   { name: 'R37', family: 'Legitimacy', description: 'Operational legitimacy' },
   { name: 'R38', family: 'Incentive', description: 'Incentive integrity' },
-];export function generateId(): string {
+];
+export function generateId(): string {
   return `rec_${Date.now()}_${randomIdSegment(8)}`;
 }
 

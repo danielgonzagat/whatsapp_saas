@@ -20,10 +20,7 @@ import {
  * remains side-effect-free. No money arithmetic anywhere.
  */
 
-export {
-  buildStripeChargeInput,
-  buildStripePaymentData,
-} from './checkout-payment.stripe.builders';
+export { buildStripeChargeInput, buildStripePaymentData } from './checkout-payment.stripe.builders';
 
 export {
   buildMercadoPagoBoletoChargeInput,

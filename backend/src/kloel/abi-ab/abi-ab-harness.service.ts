@@ -35,12 +35,13 @@ export class AbiAbHarnessService {
     this.pathRunner = pathRunner ?? this.noopPathRunner;
     this.commercialOutcomeDetector = commercialOutcomeDetector ?? estimateCommercialOutcome;
   }
-  private readonly noopPathRunner: AbPathRunnerFn = async () => ({
-    success: false,
-    latencyMs: 0,
-    tokensUsed: 0,
-    responseText: 'ABI_PATH_RUNNER not configured',
-  });
+  private readonly noopPathRunner: AbPathRunnerFn = () =>
+    Promise.resolve({
+      success: false,
+      latencyMs: 0,
+      tokensUsed: 0,
+      responseText: 'ABI_PATH_RUNNER not configured',
+    });
   public async runParallel(
     workspaceId: string,
     userMessage: string,
@@ -237,5 +238,4 @@ export class AbiAbHarnessService {
       collectedAt: new Date().toISOString(),
     };
   }
-
 }

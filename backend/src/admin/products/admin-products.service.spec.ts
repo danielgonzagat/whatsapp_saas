@@ -15,6 +15,9 @@ jest.mock('./queries/detail-product.query', () => ({
   getAdminProductDetail: (...args: unknown[]) => mockGetAdminProductDetail(...args),
 }));
 
+// Typed wrapper around expect.objectContaining so nested matcher values are typed
+const oc = (o: Record<string, unknown>): unknown => expect.objectContaining(o);
+
 describe('AdminProductsService', () => {
   let service: AdminProductsService;
 
@@ -101,7 +104,7 @@ describe('AdminProductsService', () => {
           action: 'admin.products.approved',
           entityType: 'Product',
           entityId: productId,
-          details: expect.objectContaining({ note: 'ok' }),
+          details: oc({ note: 'ok' }),
         }),
       );
     });
@@ -133,7 +136,7 @@ describe('AdminProductsService', () => {
           action: 'admin.products.rejected',
           entityType: 'Product',
           entityId: productId,
-          details: expect.objectContaining({ reason: 'bad' }),
+          details: oc({ reason: 'bad' }),
         }),
       );
     });
@@ -173,7 +176,7 @@ describe('AdminProductsService', () => {
           action: 'admin.products.paused',
           entityType: 'Product',
           entityId: productId,
-          details: expect.objectContaining({ note: 'pause note' }),
+          details: oc({ note: 'pause note' }),
         }),
       );
     });

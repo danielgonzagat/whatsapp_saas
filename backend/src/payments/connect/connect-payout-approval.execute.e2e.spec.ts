@@ -1,6 +1,7 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 
 import { buildService } from './connect-payout-approval.e2e.spec-helpers';
+import { partialMatch } from '../../../test/helpers/match-instance';
 
 /**
  * ConnectPayoutApprovalService — execute & reject lifecycle.
@@ -56,7 +57,7 @@ describe('ConnectPayoutApprovalService — full payout lifecycle', () => {
         where: { id: 'apr_1', workspaceId: 'ws-1' },
         data: {
           state: 'APPROVED',
-          respondedAt: expect.anything(),
+          respondedAt: expect.anything() as jest.AsymmetricMatcher,
           response: {
             approvedByAdminId: 'admin-1',
             payoutId: 'po_123',
@@ -72,7 +73,7 @@ describe('ConnectPayoutApprovalService — full payout lifecycle', () => {
           action: 'admin.carteira.connect_withdrawal_approved',
           entityType: 'connect_account_balance',
           entityId: 'cab_seller',
-          details: expect.objectContaining({
+          details: partialMatch({
             workspaceId: 'ws-1',
             accountType: 'SELLER',
             payoutId: 'po_123',
@@ -131,7 +132,7 @@ describe('ConnectPayoutApprovalService — full payout lifecycle', () => {
         where: { id: 'apr_1', workspaceId: 'ws-1' },
         data: {
           state: 'FAILED',
-          respondedAt: expect.anything(),
+          respondedAt: expect.anything() as jest.AsymmetricMatcher,
           response: {
             error: 'stripe down',
             amountCents: '500',
@@ -232,7 +233,7 @@ describe('ConnectPayoutApprovalService — full payout lifecycle', () => {
         where: { id: 'apr_1', workspaceId: 'ws-1' },
         data: {
           state: 'REJECTED',
-          respondedAt: expect.anything(),
+          respondedAt: expect.anything() as jest.AsymmetricMatcher,
           response: {
             rejectedByAdminId: 'admin-1',
             reason: 'insufficient documentation',
@@ -247,7 +248,7 @@ describe('ConnectPayoutApprovalService — full payout lifecycle', () => {
           action: 'admin.carteira.connect_withdrawal_rejected',
           entityType: 'connect_account_balance',
           entityId: 'cab_seller',
-          details: expect.objectContaining({
+          details: partialMatch({
             workspaceId: 'ws-1',
             accountType: 'SELLER',
             amountCents: '500',

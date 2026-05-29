@@ -107,15 +107,15 @@ export async function runCreatePaymentLink(
   });
   return { success: true, ...paymentResult };
 }
-export async function runCreateOrder(
+export function runCreateOrder(
   _prisma: PrismaService,
   _workspaceId: string,
   _args: Record<string, unknown>,
 ): Promise<ToolResult> {
-  return {
+  return Promise.resolve({
     success: false,
     error: 'canonical_order_service_required',
     message:
       'create_order must be executed through the canonical CheckoutService/domain capability path before it can create a real sale.',
-  };
+  });
 }

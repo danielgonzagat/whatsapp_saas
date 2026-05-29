@@ -10,7 +10,7 @@ import { JwtPayload } from '../interfaces/jwt-payload.interface';
  */
 export const CurrentUser = createParamDecorator(
   (data: keyof JwtPayload | undefined, ctx: ExecutionContext) => {
-    const request = ctx.switchToHttp().getRequest();
+    const request = ctx.switchToHttp().getRequest<{ user?: JwtPayload | null }>();
     const user: JwtPayload | null | undefined = request.user;
     return data ? user?.[data] : (user ?? undefined);
   },

@@ -19,22 +19,6 @@ import { ValenceTaggerService } from '../mind/valence-tagger.service';
 import { SpineEmitterService } from '../spine/spine-emitter.service';
 import { VtierCertifierService } from './v-tier-certifier.service';
 import { VerificationVerdict } from './v-tier.types';
-import type { SpineEventRef } from '../mind/mind.types';
-
-function ev(over: Partial<SpineEventRef> = {}): SpineEventRef {
-  return {
-    eventId: over.eventId ?? `evt_${randomUUID()}`,
-    eventName: over.eventName ?? 'commerce.lead.replied',
-    workspaceId: over.workspaceId ?? 'wks_test',
-    occurredAt: over.occurredAt ?? new Date().toISOString(),
-    truthMode: over.truthMode ?? 'observed',
-    ...(over.entityRef !== undefined ? { entityRef: over.entityRef } : {}),
-    ...(over.valence !== undefined ? { valence: over.valence } : {}),
-    ...(over.payload !== undefined ? { payload: over.payload } : {}),
-    ...(over.correlationId !== undefined ? { correlationId: over.correlationId } : {}),
-  };
-}
-
 function makeCertifier(
   over: {
     readonly spine?: SpineEmitterService;
@@ -42,7 +26,6 @@ function makeCertifier(
   } = {},
 ): VtierCertifierService {
   const repo = new InMemoryLineageLedgerRepository();
-  const ledger = new LineageLedgerService(repo);
   const guard = new LineageGuardService(repo);
   const projector = new IdentityProjectorService(guard);
   const spine = over.spine ?? new SpineEmitterService(new ValenceTaggerService());
@@ -114,11 +97,7 @@ describe('VtierCertifierService', () => {
       const repo = new InMemoryLineageLedgerRepository();
       const ledger = new LineageLedgerService(repo);
       await ledger.bootstrapGenesis();
-      const guard = new LineageGuardService(repo);
-      const projector = new IdentityProjectorService(guard);
-      const abiBuilder = new AbiBuilderService(projector);
       const c = makeCertifier();
-      // Override the private abiBuilder with our bootstrapped one
       const certResult = await c.certify();
       const v2 = certResult.verdicts.find((v) => v.criterionId === 'V2')!;
       // With lineage bootstrapped, ABI should build ok
