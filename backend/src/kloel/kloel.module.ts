@@ -148,6 +148,7 @@ import { MindBeliefService } from './mind/inference/mind-belief.service';
 import { MindBanditService } from './mind/policy/mind-bandit.service';
 import { MindCaseMemoryService } from './mind/memory/mind-case-memory.service';
 import { MindConceptService } from './mind/memory/mind-concepts.service';
+import { MindLongTermMemoryService } from './mind/memory/mind-long-term-memory.service';
 import { MindGlobalPriorService } from './mind/memory/mind-global-prior.service';
 import { MindController } from './mind/coordination/mind-controller';
 import { MindEventProcessorService } from './mind/runtime/mind-event-processor.service';
@@ -162,6 +163,7 @@ import { MindQualityService } from './mind/policy/mind-quality.service';
 import { MindReportService } from './mind/observability/mind-report.service';
 import { MindReplayService } from './mind/runtime/mind-replay.service';
 import { MindAutonomyService } from './mind/autonomy/mind-autonomy.service';
+import { MindCausalModelService } from './mind/causal/mind-causal-model.service';
 import { MindCuriosityService } from './mind/curiosity/mind-curiosity.service';
 import { MindSimulatorService } from './mind/synthetic/mind-simulator.service';
 import { MindSyntheticGeneratorService } from './mind/synthetic/mind-synthetic-generator.service';
@@ -381,6 +383,7 @@ import { WorkspaceModule } from '../workspaces/workspace.module';
     MindBanditService,
     MindCaseMemoryService,
     MindConceptService,
+    MindLongTermMemoryService,
     KloelGlobalPriorService,
     MindGlobalPriorService,
     MindEventProcessorService,
@@ -392,6 +395,7 @@ import { WorkspaceModule } from '../workspaces/workspace.module';
     MindPredictorService,
     MindProcessorService,
     MindAutonomyService,
+    MindCausalModelService,
     MindCuriosityService,
     MindQualityService,
     MindReportService,

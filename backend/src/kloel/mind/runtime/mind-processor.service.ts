@@ -8,6 +8,7 @@ import { MindReportService } from '../observability/mind-report.service';
 import { MindService } from '../../mind.service';
 import { MindAutonomyService } from '../autonomy/mind-autonomy.service';
 import { MindCuriosityService } from '../curiosity/mind-curiosity.service';
+import { MindLongTermMemoryService } from '../memory/mind-long-term-memory.service';
 
 const DEFAULT_SCHEDULER_INTERVAL_MS = 30_000;
 const DEFAULT_TICK_CONCURRENCY = 4;
@@ -41,6 +42,7 @@ export class MindProcessorService implements OnModuleInit, OnModuleDestroy {
     private readonly reports: MindReportService,
     @Optional() private readonly autonomy?: MindAutonomyService,
     @Optional() private readonly curiosity?: MindCuriosityService,
+    @Optional() private readonly longTermMemory?: MindLongTermMemoryService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -119,6 +121,7 @@ export class MindProcessorService implements OnModuleInit, OnModuleDestroy {
         // Fire-and-forget emergent cognition behaviors — never block the tick
         void this.autonomy?.proposeGoal(workspaceId);
         void this.curiosity?.identifyKnowledgeGap(workspaceId);
+        void this.longTermMemory?.consolidate(workspaceId);
         return tick;
       },
       {
