@@ -58,6 +58,51 @@ def find_class_name(lines: list[str]) -> str:
     return ""
 
 
+class _CtorMatch:
+    """Lightweight match shim exposing .group(0)/.group(2) like the old regex.
+
+    group(0) = full 'constructor(...)' text; group(2) = the parameter body
+    between the outer parens.
+    """
+    __slots__ = ("_full", "_params")
+
+    def __init__(self, full: str, params: str):
+        self._full = full
+        self._params = params
+
+    def group(self, idx: int) -> str:
+        return self._full if idx == 0 else self._params
+
+
+# Linear, non-backtracking constructor finder. Replaces the prior nested-quantifier
+# regex r'(constructor\s*\()((?:[^()]|\([^)]*\))*)\)' which was vulnerable to
+# catastrophic backtracking (ReDoS) on long/unbalanced inputs. This scans once
+# (O(n)) and tracks paren depth to find the true matching close-paren at any depth.
+_CTOR_OPEN_RE = re.compile(r'constructor\s*\(')
+
+
+def _find_constructor(text: str):
+    open_match = _CTOR_OPEN_RE.search(text)  # linear: no nested quantifiers
+    if not open_match:
+        return None
+    params_start = open_match.end()  # index just after the opening '('
+    depth = 1
+    i = params_start
+    n = len(text)
+    while i < n:
+        ch = text[i]
+        if ch == '(':
+            depth += 1
+        elif ch == ')':
+            depth -= 1
+            if depth == 0:
+                params = text[params_start:i]
+                full = text[open_match.start():i + 1]
+                return _CtorMatch(full, params)
+        i += 1
+    return None  # unbalanced — no matching close-paren
+
+
 def process_file(filepath: str):
     with open(filepath, 'r') as f:
         lines = f.readlines()
@@ -101,9 +146,7 @@ def process_file(filepath: str):
 
     # ---- Step 3: Add @Optional() opsAlert to constructor ----
     new_text = ''.join(lines)
-    ctor_re = re.compile(r'(constructor\s*\()((?:[^()]|\([^)]*\))*)\)')
-    # This regex captures everything between constructor( and the matching close-paren
-    m = ctor_re.search(new_text)
+    m = _find_constructor(new_text)
     if m and 'opsAlert' not in m.group(0):
         params = m.group(2).rstrip()
         # Ensure we append properly
