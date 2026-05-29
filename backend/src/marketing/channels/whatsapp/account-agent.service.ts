@@ -80,7 +80,7 @@ export class AccountAgentService {
     messageContent: string;
   }) {
     const result = await detectCatalogGapExt(
-      { prisma: this.prisma, agentEvents: this.agentEvents },
+      { prisma: this.prisma, agentEvents: this.agentEvents, mindMemory: this.mindMemoryItems },
       input,
     );
     if (result.approval) {
@@ -277,7 +277,7 @@ export class AccountAgentService {
 
   async respondToInputSession(workspaceId: string, sessionId: string, answer: string) {
     return respondToInputSessionExt(
-      { prisma: this.prisma, agentEvents: this.agentEvents },
+      { prisma: this.prisma, agentEvents: this.agentEvents, mindMemory: this.mindMemoryItems },
       {
         workspaceId,
         sessionId,

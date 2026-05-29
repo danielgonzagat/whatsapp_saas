@@ -8,7 +8,10 @@
 
 ## Service Catalog Summary
 
-**Total `@Injectable()` units in `backend/src/`: 606**
+**Total `@Injectable()` units in `backend/src/`: 632** (post-Wave-4 refresh,
+tool-measured 2026-05-29 — up from 606 at the original Mission-3 scan; the
++26 delta is concentrated in `kloel/`, which grew 337 → 363 as Mind/OmniCore
+work landed).
 (scope includes services, guards, interceptors, processors, providers, registries
 and explicit `@Injectable()` helper engines; raw source: `rg -l '@Injectable\(\)' backend/src --type ts | wc -l`).
 
@@ -16,7 +19,7 @@ Counts per top-level `backend/src/<dir>/` slice (verified):
 
 | Top-level slice | `@Injectable()` units | Notes |
 |---|---:|---|
-| `kloel/` | 337 | Largest slice — Mind/Kloel agent runtime, CIA, autopilot tools, channel guards |
+| `kloel/` | 363 | Largest slice — Mind/Kloel agent runtime, CIA, autopilot tools, channel guards (was 337 at Mission-3 scan; +26 post-Wave-4) |
 | `marketing/` | 49 | Channel adapters (WhatsApp/Email/Instagram/Facebook/TikTok), mailbox OAuth, campaigns helpers |
 | `admin/` | 34 | Admin console subdomains (auth, audit, compliance, products, sales, support, KYC) |
 | `common/` | 20 | Guards, interceptors, cache, throttler, idempotency, channel-dispatch registry |
@@ -102,7 +105,7 @@ Mapping to the 14 canonical domains is in the next section.
 | Billing & Subscription | ~5 | `billing/` |
 | Infrastructure / Cross-cutting | ~30 | `common/`, `health/`, `pulse/`, `observability/`, `audit/`, `notifications/`, `webhooks/`, `integrations/` |
 
-Total above sums to roughly the verified 606. Differences are caused by minor overlap (e.g. `marketing/` rolls into both Channel and Campaign domains).
+Total above sums to roughly the verified 632 (post-Wave-4; 606 at Mission-3). Differences are caused by minor overlap (e.g. `marketing/` rolls into both Channel and Campaign domains).
 
 ---
 
@@ -518,7 +521,7 @@ Notes on these counts: `@Optional()` injections (heavy in `kloel/` "mind" servic
 
 ## Sources & methodology
 
-- Total count: `rg -l '@Injectable\(\)' backend/src --type ts | wc -l` → **606**.
+- Total count: `rg -l '@Injectable\(\)' backend/src --type ts | wc -l` → **632** (post-Wave-4, 2026-05-29; was 606 at the Mission-3 scan).
 - Per-folder counts: same command grouped by `awk -F/` of the path's `src/<dir>/` segment.
 - LOC: `wc -l <file>` on each service file individually (no estimation).
 - Constructor dep count: `awk '/constructor\s*\(/,/\)\s*\{/' <file> | grep -c 'private\|@Inject\|@Optional'`.

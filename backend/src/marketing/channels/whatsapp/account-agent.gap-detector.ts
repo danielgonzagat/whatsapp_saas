@@ -10,6 +10,8 @@ import { asRecord, parseApprovalPayload, readString } from './account-agent.pars
 export type AccountDeps = {
   prisma: PrismaService;
   agentEvents: AgentEventsService;
+  /** Canonical Brain → Mind memory delegate; falls back to raw prisma.kloelMemory when absent. */
+  mindMemory?: PrismaService['kloelMemory'];
 };
 
 function toJson(value: unknown): Prisma.InputJsonValue {
@@ -40,7 +42,7 @@ export async function detectCatalogGapExt(
       select: { name: true },
       take: 100,
     }),
-    deps.prisma.kloelMemory.findMany({
+    (deps.mindMemory ?? deps.prisma.kloelMemory).findMany({
       where: {
         workspaceId: input.workspaceId,
         OR: [{ type: 'product' }, { category: 'products' }],
@@ -77,7 +79,7 @@ export async function detectCatalogGapExt(
     return { created: false, approval: null, reason: 'candidate_not_normalized' as const };
   }
   const key = buildApprovalKey(normalizedProductName);
-  const existing = await deps.prisma.kloelMemory.findUnique({
+  const existing = await (deps.mindMemory ?? deps.prisma.kloelMemory).findUnique({
     where: { workspaceId_key: { workspaceId: input.workspaceId, key } },
   });
   const contact = input.contactId
@@ -113,7 +115,7 @@ export async function detectCatalogGapExt(
     inputSessionId: previous?.inputSessionId || null,
     materializedProductId: previous?.materializedProductId || null,
   };
-  await deps.prisma.kloelMemory.upsert({
+  await (deps.mindMemory ?? deps.prisma.kloelMemory).upsert({
     where: { workspaceId_key: { workspaceId: input.workspaceId, key } },
     create: {
       workspaceId: input.workspaceId,

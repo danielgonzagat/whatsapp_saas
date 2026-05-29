@@ -268,4 +268,134 @@ Method-signature overlap across three top-level orchestrator services. Each owns
 
 - `UnifiedAgentService.processIncomingMessage` / `UnifiedAgentService.processMessage` against the two `processWhatsAppMessage` variants above — three services with four entry-points for "message arrived, run the agent loop".
 
+---
+
+## `sendMessage` family — full classification audit (Wave W5, 2026-05-29)
+
+> **Supersedes the P0 row at line 23** (`sendMessage | 4 | … | MessageDispatchService.send()`)
+> and extends `SEND_MESSAGE_CANONICAL.md` (Wave 21, 9-impl scan). A direct
+> source-level audit of EVERY `sendMessage` declaration in `backend/src` (33
+> declaration sites; `worker/src` has zero) was performed via grep +
+> `code_read_symbol`. Each is classified **A** (canonical dispatch), **B**
+> (legitimate per-channel adapter / transport leaf / controller / DI interface /
+> DB-only / copilot — SUPPOSED to be distinct), or **C** (true duplicate that
+> should route through the canonical dispatch).
+>
+> **Result: ZERO remaining class-C duplicates.** Waves 21/22 already migrated
+> every cross-channel send onto the canonical `ChannelDispatchRegistry`. No new
+> merge was performed in W5 — the conservative correct action is audit +
+> document. The legacy fan-in layers that remain (`provider-registry*`,
+> `provider-send-message.helpers`) are intentional facade/leaf layers behind the
+> canonical port, carry `@canonical-status delegate` JSDoc, and are NOT
+> duplicates of the dispatch surface.
+
+### Canonical send path (the front door higher-order callers SHOULD target)
+
+```
+caller
+  -> ChannelMessageDispatchService.dispatch(ws, channel, to, msg, opts)   [marketing/channel-message-dispatch.service.ts]   (A: ergonomic facade)
+      | (or .sendMessage(prebuiltInput) / .dispatchTool(args))
+  -> ChannelDispatchRegistry.send(ChannelSendInput) / .sendMessage(...)    [common/channel-dispatch/channel-dispatch.registry.ts]   (A: registry, resolves by ChannelKind)
+  -> <ChannelKind>DispatchAdapter.send(input) / .sendMessage(input)        [marketing/channels/<ch>/*-dispatch.adapter.ts]   (B: per-channel adapter, sendMessage = thin alias to send)
+  -> per-channel transport leaf                                           (B: WhatsappService / FacebookMessengerService / InstagramService / Email providers ...)
+```
+
+A second, OLDER parallel dispatch system exists at `kloel/channel-transport.*`
+(`ChannelTransportProvider.send(workspaceId, request)` + `*ChannelTransport`
+classes + `channel-transport.registry.ts`). It is also class A "canonical
+dispatch" infrastructure but uses `send(...)`, **not** `sendMessage`, so it
+contributes no rows to this `sendMessage` family. The `whatsapp.service.ts` /
+`provider-*` JSDoc names it the "long-term" target — the two registries are a
+documented in-flight convergence (see `CHANNEL_DISPATCH_CANONICAL.md`), out of
+scope for this `sendMessage`-name audit.
+
+### A — Canonical dispatch (2)
+
+| # | Symbol | File:line | Why canonical |
+|---|---|---|---|
+| A1 | `ChannelDispatchRegistry.sendMessage` | `common/channel-dispatch/channel-dispatch.registry.ts:81` | Registry alias of `send`; resolves adapter by `input.channelKind`, prefers adapter's own `sendMessage` else `send`. The single front door. |
+| A2 | `ChannelMessageDispatchService.sendMessage` | `marketing/channel-message-dispatch.service.ts:135` | Low-level pass-through to `registry.sendMessage(input)`; companion to the ergonomic `dispatch(ws,channel,to,msg,opts)`. |
+| — | `ChannelDispatchPort.sendMessage?` | `common/channel-dispatch/channel-dispatch.port.ts:176` | The *contract* declaration (optional alias) — not an impl. Definitional, kept here for completeness. |
+
+### B — Legitimate, distinct (DO NOT MERGE) (28)
+
+**B.1 — Per-channel `ChannelDispatchPort` adapters (sendMessage = thin alias to `send`).** Each is a distinct `ChannelKind`; merging them would collapse the discriminated union.
+
+| Symbol | File:line | ChannelKind | Delegates to |
+|---|---|---|---|
+| `WhatsAppDispatchAdapter.sendMessage` | `marketing/channels/whatsapp/whatsapp-dispatch.adapter.ts:47` | WHATSAPP | `WhatsappService.sendMessage` |
+| `InstagramDispatchAdapter.sendMessage` | `marketing/channels/instagram/instagram-dispatch.adapter.ts:64` | INSTAGRAM | `InstagramService.sendMessage` |
+| `MessengerDispatchAdapter.sendMessage` | `marketing/channels/messenger/messenger-dispatch.adapter.ts:72` | MESSENGER | `MessengerService.sendTextMessage` |
+| `FacebookDispatchAdapter.sendMessage` | `marketing/channels/facebook/facebook-dispatch.adapter.ts:55` | FACEBOOK | `FacebookMessengerService.sendMessage` |
+| `EmailDispatchAdapter.sendMessage` | `marketing/channels/email/email-dispatch.adapter.ts:79` | EMAIL | gmail / microsoft / imapSmtp providers |
+| `TikTokDispatchAdapter.sendMessage` | `marketing/channels/tiktok/tiktok-dispatch.adapter.ts:43` | TIKTOK | honest blocked (no outbound API) |
+| `InternalPartnershipDispatchAdapter.sendMessage` | `marketing/channels/internal-partnership/internal-partnership-dispatch.adapter.ts:61` | INTERNAL_PARTNERSHIP | `partnerships.chat.helpers#sendMessage` (DB insert) |
+
+**B.2 — Per-channel transport leaves (the real API/DB calls the adapters wrap).** Distinct provider surfaces with channel-specific arg shapes.
+
+| Symbol | File:line | Surface |
+|---|---|---|
+| `WhatsappService.sendMessage` | `marketing/channels/whatsapp/whatsapp.service.ts:436` | Rate-guarded WA facade -> `messageDispatcher.sendMessage` |
+| `WhatsappMessageDispatcherService.sendMessage` | `marketing/channels/whatsapp/whatsapp-message-dispatcher.service.ts:49` | WA queue/direct routing, opt-in, plan limits, presence sim, persistence |
+| `WhatsAppProviderRegistry.sendMessage` | `marketing/channels/whatsapp/providers/provider-registry.ts:154` | `@canonical-status delegate` -> `provider-registry-messaging#sendMessage` |
+| `provider-registry-messaging#sendMessage` (fn) | `.../providers/provider-registry-messaging.ts:31` | `@canonical-status delegate` thin wrapper -> companion leaf |
+| `provider-send-message.helpers#sendMessage` (fn) | `.../providers/provider-send-message.helpers.ts:25` | Leaf: WAHA-vs-MetaCloud routing + ops alerting |
+| `WhatsAppApiProvider.sendMessage` | `.../providers/whatsapp-api.provider.ts:145` | Meta Cloud leaf -> `metaWhatsApp.sendTextMessage` |
+| `FacebookMessengerService.sendMessage` | `marketing/facebook-messenger.service.ts:41` | Graph `${pageId}/messages` (RESPONSE) + `fbMessage` persistence |
+| `InstagramService.sendMessage` | `marketing/channels/instagram/instagram.service.ts:12` | Graph `${igAccountId}/messages` |
+| `TikTokInboxService.sendMessage` | `marketing/tiktok-inbox.service.ts:98` | Honest `channel_pending` (no fake enqueue) |
+| `partnerships.chat.helpers#sendMessage` (fn) | `partnerships/partnerships.chat.helpers.ts:98` | DB-only `partnerMessage.create` (senderType OWNER) |
+| `PartnershipsService.sendMessage` | `partnerships/partnerships.service.ts:431` | `@canonical-status delegate` -> the helper above |
+
+**B.3 — HTTP controllers (`@Post ... sendMessage`).** Thin route handlers; each delegates to its channel service. Same method name is expected REST boilerplate, not behavioral duplication.
+
+| Symbol | File:line | Route -> service |
+|---|---|---|
+| `PublicApiController.sendMessage` | `public-api/public-api.controller.ts:40` | `POST` -> `inbox.saveMessageByPhone` (OUTBOUND) |
+| `AdminChatController.sendMessage` | `admin/chat/admin-chat.controller.ts:44` | -> `AdminChatService.sendMessage` |
+| `TikTokInboxController.sendMessage` | `marketing/tiktok-inbox.controller.ts:52` | -> `TikTokInboxService.sendMessage` |
+| `PartnershipsController.sendMessage` | `partnerships/partnerships.controller.ts:168` | -> `PartnershipsService.sendMessage` |
+| `FacebookMessengerController.sendMessage` | `marketing/facebook-messenger.controller.ts:33` | -> `FacebookMessengerService.sendMessage` |
+| `MessengerController.sendMessage` | `marketing/channels/messenger/messenger.controller.ts:32` | -> `MessengerService.sendText/Media` |
+| `InstagramController.sendMessage` | `marketing/channels/instagram/instagram.controller.ts:170` | -> `InstagramService.sendMessage` |
+
+**B.4 — Copilot / not a channel send.**
+
+| Symbol | File:line | Why distinct |
+|---|---|---|
+| `AdminChatService.sendMessage` | `admin/chat/admin-chat.service.ts:82` | Admin copilot: tool invocation + NLU intent + `ChatToolRegistry`; returns `ChatSessionView`, not `ChannelSendResult`. Wrapping in a `ChannelDispatchPort` adapter would be lossy (R5 of `SEND_MESSAGE_CANONICAL.md`). KEEP-LOCAL. |
+
+**B.5 — DI structural interfaces (declarations, not impls).** Minimal `sendMessage(...)` shapes a consumer requires of its injected WhatsApp service. They constrain types only; collapsing them would couple unrelated modules.
+
+| Symbol | File:line |
+|---|---|
+| `IWhatsappMessaging.sendMessage` | `marketing/channels/whatsapp/whatsapp.interfaces.ts:2` |
+| `MinimalWhatsappService.sendMessage` | `marketing/channels/whatsapp/inbound-processor.inline-autopilot.ts:11` |
+| `...deps.sendMessage` (stripe webhook) | `webhooks/payment-webhook-stripe.deps.ts:16` |
+| `...deps.sendMessage` (billing webhook) | `billing/billing-webhook.types.ts:26` |
+
+### C — True duplicates to migrate
+
+**None.** Every cross-channel send already routes through the canonical
+`ChannelDispatchRegistry`; the WhatsApp fan-in (`provider-registry` ->
+`provider-registry-messaging` -> `provider-send-message.helpers` ->
+`whatsapp-api.provider`) is an intentional, JSDoc-tagged delegate chain that
+the canonical adapter wraps, not a parallel reimplementation. Worker-side send
+(`worker/.../flow-message-sender.helpers.ts#sendMessage`, the Wave-21 impl #9)
+bundles persistence + Redis realtime pub/sub and is correctly KEEP-LOCAL — a
+port migration would silently drop those concerns (R1 of
+`SEND_MESSAGE_CANONICAL.md`). No W5 source edit was made.
+
+### Migrations done (W5)
+
+None — audit-and-document only, per the conservative rule. Migration of the
+class-C set was completed in Waves 21/22 (adapters created + callers rewired).
+This entry records the post-migration steady state and supersedes the stale P0
+row.
+
+### Follow-ups (tracked elsewhere, NOT W5 scope)
+
+- Converge the two canonical registries (`common/channel-dispatch` <-> `kloel/channel-transport`) — see `CHANNEL_DISPATCH_CANONICAL.md`. Until then, `send()` (transport) and `sendMessage()` (dispatch-port alias) coexist by design.
+- Delete the deprecated WhatsApp delegate wrappers (`provider-registry-messaging#sendMessage`, `provider-registry.sendMessage`) once all callers target the port — deletion deadline policy in `SEND_MESSAGE_CANONICAL.md` §4. Owner-gated; do not delete while callers remain.
+
 **Decision question:** which orchestrator is canonical for "message → agent → action → payment"? Today the dispatch path goes through `kloel-tool-dispatcher.service.ts` → `unified-agent.service.ts`; the legacy `KloelService` and the M5 `LeadMindCoordinator` both still expose the same surface area. Track resolution via `MIND_SERVICE_CONSOLIDATION.md`.

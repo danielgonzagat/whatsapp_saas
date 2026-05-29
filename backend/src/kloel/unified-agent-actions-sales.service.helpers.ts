@@ -199,6 +199,8 @@ export async function actionHandleObjection(deps: {
   args: SalesActionArgs;
   context: UnknownRecord | undefined;
   prisma: SalesPrismaDelegate;
+  /** Canonical Brain → Mind memory delegate; falls back to prisma.kloelMemory when absent. */
+  mindMemory?: PrismaClient['kloelMemory'];
   messaging: SalesMessagingService;
   logger: { error(msg: string): void };
   opsAlert?: SalesOpsAlert;
@@ -207,7 +209,7 @@ export async function actionHandleObjection(deps: {
   try {
     const objectionType = args.objectionType || 'other';
     const technique = args.technique || 'value_focus';
-    const objections = await deps.prisma.kloelMemory.findMany({
+    const objections = await (deps.mindMemory ?? deps.prisma.kloelMemory).findMany({
       where: { workspaceId, category: 'objections' },
       select: { id: true, key: true, value: true },
       take: 50,

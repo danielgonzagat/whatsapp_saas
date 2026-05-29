@@ -87,7 +87,7 @@ export async function materializeProductExt(
           metadata: meta,
         },
       });
-  await deps.prisma.kloelMemory.upsert({
+  await (deps.mindMemory ?? deps.prisma.kloelMemory).upsert({
     where: { workspaceId_key: { workspaceId, key: 'company_info:primary' } },
     create: {
       workspaceId,
@@ -116,7 +116,7 @@ export async function materializeProductExt(
       metadata: toJson({ productId: product.id }),
     },
   });
-  await deps.prisma.kloelMemory.upsert({
+  await (deps.mindMemory ?? deps.prisma.kloelMemory).upsert({
     where: {
       workspaceId_key: { workspaceId, key: `faq:product:${session.normalizedProductName}` },
     },

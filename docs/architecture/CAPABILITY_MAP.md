@@ -29,12 +29,27 @@ Resolution status used in this document:
 
 ## Capability Map Overview
 
-- **Total declared capabilities**: 142
-- **WIRED (executable)**: 67 (47.2%) — +2 since K87 wave (get_whatsapp_status, sync_whatsapp_history)
-- **UNGATED (method missing)**: 20 (14.1%)
-- **UNGATED (service missing)**: 50 (35.2%) — pending K90 batch wiring
-- **UNVERIFIED (compound resolver)**: 3
-- **ALIAS (registry pointer)**: 2
+> **Post-Wave-4 count drift (tool-measured 2026-05-29):** the registry now
+> declares **202 capabilities** (verified three independent ways:
+> `category:`, `tier:`, and `domainService:` each return 202 across
+> `backend/src/kloel/capability-registry-v2/partitions/*.ts`, excluding specs).
+> The 142 figure and the WIRED/UNGATED breakdown below were measured at the
+> Mission-5 / K87 scan and reflect the first 142 capabilities only. The +60
+> new capabilities have NOT yet had their per-method resolution status
+> verified — the breakdown percentages below are stale against the 202 base
+> and MUST be recomputed by re-running the resolver verification
+> (`capability-registry-v2.service.ts#listGaps` + the `export class <Service>`
+> + method-definition regex described in the header) before they are quoted
+> as current. Do not infer new WIRED/UNGATED numbers from this section.
+
+- **Total declared capabilities**: 202 (was 142 at the Mission-5 / K87 scan;
+  +60 post-Wave-4)
+- **WIRED (executable)** *(of the first 142, stale)*: 67 (47.2% of 142) — +2 since K87 wave (get_whatsapp_status, sync_whatsapp_history)
+- **UNGATED (method missing)** *(of the first 142, stale)*: 20 (14.1% of 142)
+- **UNGATED (service missing)** *(of the first 142, stale)*: 50 (35.2% of 142) — pending K90 batch wiring
+- **UNVERIFIED (compound resolver)** *(of the first 142, stale)*: 3
+- **ALIAS (registry pointer)** *(of the first 142, stale)*: 2
+- **The +60 capabilities added post-Wave-4**: resolution status UNMEASURED — pending re-scan
 
 ### Per-tier rollup
 
@@ -403,7 +418,7 @@ Capabilities whose `domainService` is the string `Alias for <other-id>`. These a
 
 ## Coverage Summary
 
-**65 of 142 declared capabilities are WIRED to a concrete service method = 45.8% coverage.**
+**65 of 142 declared capabilities are WIRED to a concrete service method = 45.8% coverage** *(measured against the original 142-capability set at the Mission-5 / K87 scan; the registry now declares 202 — the +60 post-Wave-4 capabilities are not yet included in this coverage figure and the percentage must be recomputed against 202 before it is quoted as current).*
 
 Breakdown of the remaining gap:
 

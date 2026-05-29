@@ -78,7 +78,7 @@ export async function respondToInputSessionExt(
     default:
       return { completed: true, session: next, nextPrompt: null };
   }
-  await deps.prisma.kloelMemory.update({
+  await (deps.mindMemory ?? deps.prisma.kloelMemory).update({
     where: { workspaceId_key: { workspaceId, key: record.key } },
     data: {
       value: toJson(next),

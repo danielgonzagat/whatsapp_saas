@@ -243,6 +243,7 @@ export class UnifiedAgentActionsSalesService {
       args,
       context,
       prisma: this.prisma,
+      mindMemory: this.mindMemoryItems,
       messaging: this.messaging,
       logger: this.logger,
       ...(this.opsAlert !== undefined ? { opsAlert: this.opsAlert } : {}),
