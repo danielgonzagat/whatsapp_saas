@@ -27,7 +27,7 @@ function clampScore(value: number): number {
 }
 
 @Injectable()
-export class PulseTruthSnapshotService {
+export class PulseGatesTruthAggregatorService {
   private readonly descriptors: readonly GateDescriptor[];
 
   constructor(

@@ -70,7 +70,13 @@ export const BRAIN_EVENT_TAXONOMY = [
   'mind.plan.observed',
 ] as const;
 
-export type BrainEventName = (typeof BRAIN_EVENT_TAXONOMY)[number];
+export type MindEventName = (typeof BRAIN_EVENT_TAXONOMY)[number];
+
+/**
+ * @deprecated Use {@link MindEventName} instead. Retained as a backwards-compat
+ * alias during the ADR-0013 Brain → Mind naming sweep.
+ */
+export type BrainEventName = MindEventName;
 
 /**
  * Legacy → canonical event-name map for the ADR-0013 §4 mind.* taxonomy
@@ -106,7 +112,7 @@ export const MIND_EVENT_ALIASES = {
   'capability.executed': 'mind.action.executed',
   'product.created': 'mind.product.observed',
   'plan.created': 'mind.plan.observed',
-} as const satisfies Record<string, BrainEventName>;
+} as const satisfies Record<string, MindEventName>;
 
 export type MindEventLegacyName = keyof typeof MIND_EVENT_ALIASES;
 export type MindEventCanonicalName = (typeof MIND_EVENT_ALIASES)[MindEventLegacyName];
@@ -150,7 +156,7 @@ const MIND_EVENT_LEGACY_BY_CANONICAL: Readonly<
  * resolveCanonicalEventName('sale.created') // 'sale.created' (untouched)
  * ```
  */
-export function resolveCanonicalEventName(name: BrainEventName): BrainEventName {
+export function resolveCanonicalEventName(name: MindEventName): MindEventName {
   if (Object.prototype.hasOwnProperty.call(MIND_EVENT_ALIASES, name)) {
     return MIND_EVENT_ALIASES[name as MindEventLegacyName];
   }
@@ -178,7 +184,7 @@ export function resolveCanonicalEventName(name: BrainEventName): BrainEventName 
  * expandEventNameAliases('sale.created')           // ['sale.created']
  * ```
  */
-export function expandEventNameAliases(name: BrainEventName): BrainEventName[] {
+export function expandEventNameAliases(name: MindEventName): MindEventName[] {
   if (Object.prototype.hasOwnProperty.call(MIND_EVENT_ALIASES, name)) {
     return [name, MIND_EVENT_ALIASES[name as MindEventLegacyName]];
   }
@@ -201,9 +207,9 @@ export function expandEventNameAliases(name: BrainEventName): BrainEventName[] {
  * // → ['product.created', 'mind.product.observed', 'plan.created', 'mind.plan.observed']
  * ```
  */
-export function expandEventNameAliasesAll(names: readonly BrainEventName[]): BrainEventName[] {
-  const seen = new Set<BrainEventName>();
-  const out: BrainEventName[] = [];
+export function expandEventNameAliasesAll(names: readonly MindEventName[]): MindEventName[] {
+  const seen = new Set<MindEventName>();
+  const out: MindEventName[] = [];
   for (const name of names) {
     for (const expanded of expandEventNameAliases(name)) {
       if (!seen.has(expanded)) {
@@ -219,7 +225,7 @@ export interface CommercialEventPayload {
   occurredAt: Date;
   workspaceId: string;
   subject: string;
-  eventType: BrainEventName;
+  eventType: MindEventName;
   contactId?: string;
   payload: Record<string, unknown>;
   idempotencyKey?: string;

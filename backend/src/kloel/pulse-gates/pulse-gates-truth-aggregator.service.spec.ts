@@ -1,6 +1,6 @@
-import { PulseTruthSnapshotService } from './pulse-truth-snapshot.service';
+import { PulseGatesTruthAggregatorService } from './pulse-gates-truth-aggregator.service';
 import type { GateName, GateMode, GateStatus, GateVerdict } from './pulse-gates.types';
-import type { GateDescriptor } from './pulse-truth-snapshot.service';
+import type { GateDescriptor } from './pulse-gates-truth-aggregator.service';
 
 function clamp(value: number): number {
   return Math.round(value * 10000) / 10000;
@@ -20,11 +20,11 @@ function descriptor(gateName: GateName, status: GateStatus, mode: GateMode): Gat
   return { name: gateName, lastVerdict: verdict(gateName, status, mode) };
 }
 
-function service(descriptors: readonly GateDescriptor[]): PulseTruthSnapshotService {
-  return new PulseTruthSnapshotService(descriptors);
+function service(descriptors: readonly GateDescriptor[]): PulseGatesTruthAggregatorService {
+  return new PulseGatesTruthAggregatorService(descriptors);
 }
 
-describe('PulseTruthSnapshotService', () => {
+describe('PulseGatesTruthAggregatorService', () => {
   // ── Empty / no-data ──────────────────────────────────────────
 
   describe('snapshot() with empty or insufficient evidence', () => {
@@ -55,7 +55,7 @@ describe('PulseTruthSnapshotService', () => {
     });
 
     it('[04] default constructor (no injection) behaves like empty descriptors', () => {
-      const svc = new PulseTruthSnapshotService();
+      const svc = new PulseGatesTruthAggregatorService();
       const result = svc.snapshot();
       expect(result.certificationVerdict).toBe('INSUFFICIENT_EVIDENCE');
       expect(result.gates).toHaveLength(0);

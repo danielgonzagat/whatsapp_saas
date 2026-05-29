@@ -1,3 +1,4 @@
+import type { BrainEventName, MindEventName } from './mind-event-taxonomy';
 import {
   BRAIN_EVENT_TAXONOMY,
   MIND_EVENT_ALIASES,
@@ -112,6 +113,27 @@ describe('mind-event-taxonomy — MIND_EVENT_ALIASES helpers', () => {
 
     it('is stable for an empty input array', () => {
       expect(expandEventNameAliasesAll([])).toEqual([]);
+    });
+  });
+
+  describe('MindEventName ↔ BrainEventName equivalence (ADR-0013 brain → mind sweep)', () => {
+    it('MindEventName and BrainEventName are the same union type', () => {
+      // Compile-time proof: assign both ways without type errors.
+      // If this file compiles, BrainEventName = MindEventName is a true alias.
+      const a: MindEventName = 'sale.created';
+      const b: BrainEventName = a;
+      const c: MindEventName = b;
+      expect(c).toBe('sale.created');
+    });
+
+    it('both accept any member of BRAIN_EVENT_TAXONOMY', () => {
+      const member = BRAIN_EVENT_TAXONOMY[0];
+      const a: MindEventName = member;
+      const b: BrainEventName = member;
+      const c: BrainEventName = a;
+      const d: MindEventName = b;
+      expect(c).toBe(member);
+      expect(d).toBe(member);
     });
   });
 });

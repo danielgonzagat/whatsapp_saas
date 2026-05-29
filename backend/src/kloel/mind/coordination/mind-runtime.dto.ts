@@ -24,13 +24,16 @@ interface BrainMessage {
   role: 'assistant' | 'system' | 'user';
 }
 
-export class BrainMessageDto implements BrainMessage {
+export class MindMessageDto implements BrainMessage {
   @IsIn(['assistant', 'system', 'user'])
   role!: 'assistant' | 'system' | 'user';
 
   @IsString()
   content!: string;
 }
+
+/** @deprecated use MindMessageDto */
+export class BrainMessageDto extends MindMessageDto {}
 
 export class BrainDecideDto {
   @IsOptional()
@@ -45,8 +48,8 @@ export class BrainDecideDto {
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => BrainMessageDto)
-  messages?: BrainMessageDto[];
+  @Type(() => MindMessageDto)
+  messages?: MindMessageDto[];
 
   @IsOptional()
   @IsObject()

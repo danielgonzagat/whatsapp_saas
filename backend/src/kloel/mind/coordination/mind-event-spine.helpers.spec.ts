@@ -6,7 +6,7 @@ import {
   toInputJsonValue,
   toUnsupportedJsonValue,
 } from './mind-event-spine.helpers';
-import type { BrainEventName } from './mind-event-taxonomy';
+import type { MindEventName } from './mind-event-taxonomy';
 
 describe('mind-event-spine.helpers', () => {
   describe('isJsonRecord', () => {
@@ -37,7 +37,7 @@ describe('mind-event-spine.helpers', () => {
 
     it('returns "unsupported" for anything else', () => {
       // Cast through unknown to bypass TS narrowing of `never` branch.
-      expect(toUnsupportedJsonValue({} as unknown)).toBe('unsupported');
+      expect(toUnsupportedJsonValue({})).toBe('unsupported');
     });
   });
 
@@ -102,20 +102,20 @@ describe('mind-event-spine.helpers', () => {
   });
 
   describe('resolveEventIntent', () => {
-    const cases: Array<[BrainEventName, string]> = [
-      ['sale.confirmed' as BrainEventName, 'sale_lifecycle'],
-      ['checkout.created' as BrainEventName, 'checkout_lifecycle'],
-      ['message.received' as BrainEventName, 'message_lifecycle'],
-      ['lead.captured' as BrainEventName, 'lead_lifecycle'],
-      ['campaign.launched' as BrainEventName, 'campaign_lifecycle'],
-      ['product.created' as BrainEventName, 'product_lifecycle'],
-      ['brain.observed' as BrainEventName, 'brain_lifecycle'],
-      ['mind.product.observed' as BrainEventName, 'mind_lifecycle'],
-      ['capability.invoked' as BrainEventName, 'capability_lifecycle'],
-      ['contact.created' as BrainEventName, 'contact_lifecycle'],
-      ['channel.message.received' as BrainEventName, 'channel_lifecycle'],
-      ['identity.linked' as BrainEventName, 'identity_lifecycle'],
-      ['concept.tagged' as BrainEventName, 'concept_lifecycle'],
+    const cases: Array<[MindEventName, string]> = [
+      ['sale.confirmed', 'sale_lifecycle'],
+      ['checkout.created', 'checkout_lifecycle'],
+      ['message.received', 'message_lifecycle'],
+      ['lead.captured', 'lead_lifecycle'],
+      ['campaign.launched', 'campaign_lifecycle'],
+      ['product.created', 'product_lifecycle'],
+      ['brain.observed', 'brain_lifecycle'],
+      ['mind.product.observed', 'mind_lifecycle'],
+      ['capability.invoked', 'capability_lifecycle'],
+      ['contact.created', 'contact_lifecycle'],
+      ['channel.message.received', 'channel_lifecycle'],
+      ['identity.linked', 'identity_lifecycle'],
+      ['concept.tagged', 'concept_lifecycle'],
     ];
 
     it.each(cases)('maps %s → %s', (eventType, expected) => {
@@ -123,28 +123,28 @@ describe('mind-event-spine.helpers', () => {
     });
 
     it('falls back to commercial_lifecycle for unknown prefixes', () => {
-      expect(resolveEventIntent('agent.job.due' as BrainEventName)).toBe('commercial_lifecycle');
-      expect(resolveEventIntent('mystery.event' as BrainEventName)).toBe('commercial_lifecycle');
+      expect(resolveEventIntent('agent.job.due')).toBe('commercial_lifecycle');
+      expect(resolveEventIntent('mystery.event')).toBe('commercial_lifecycle');
     });
   });
 
   describe('resolveEventStatus', () => {
     it('returns "skipped" for cancelled / refunded / abandoned / disconnected suffixes', () => {
-      expect(resolveEventStatus('sale.cancelled' as BrainEventName)).toBe('skipped');
-      expect(resolveEventStatus('sale.refunded' as BrainEventName)).toBe('skipped');
-      expect(resolveEventStatus('checkout.abandoned' as BrainEventName)).toBe('skipped');
-      expect(resolveEventStatus('channel.disconnected' as BrainEventName)).toBe('skipped');
+      expect(resolveEventStatus('sale.cancelled')).toBe('skipped');
+      expect(resolveEventStatus('sale.refunded')).toBe('skipped');
+      expect(resolveEventStatus('checkout.abandoned')).toBe('skipped');
+      expect(resolveEventStatus('channel.disconnected')).toBe('skipped');
     });
 
     it('returns "error" for failed / externally_blocked suffixes', () => {
-      expect(resolveEventStatus('message.failed' as BrainEventName)).toBe('error');
-      expect(resolveEventStatus('message.externally_blocked' as BrainEventName)).toBe('error');
+      expect(resolveEventStatus('message.failed')).toBe('error');
+      expect(resolveEventStatus('message.externally_blocked')).toBe('error');
     });
 
     it('returns "executed" for the default lifecycle outcomes', () => {
-      expect(resolveEventStatus('sale.confirmed' as BrainEventName)).toBe('executed');
-      expect(resolveEventStatus('product.created' as BrainEventName)).toBe('executed');
-      expect(resolveEventStatus('mind.product.observed' as BrainEventName)).toBe('executed');
+      expect(resolveEventStatus('sale.confirmed')).toBe('executed');
+      expect(resolveEventStatus('product.created')).toBe('executed');
+      expect(resolveEventStatus('mind.product.observed')).toBe('executed');
     });
   });
 });

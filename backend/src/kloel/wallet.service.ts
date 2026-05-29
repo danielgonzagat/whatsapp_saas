@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException, Optional } from '@nestjs/common';
+import { BadRequestException, Injectable, Optional } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { StructuredLogger } from '../logging/structured-logger';
 import type { Prisma } from '@prisma/client';
@@ -7,7 +7,11 @@ import { PrismaService } from '../prisma/prisma.service';
 import { formatBrlAmount } from './money-format.util';
 import { WalletLedgerService } from './wallet-ledger.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
-import { getWalletBalance, getWalletTransactionHistory } from './wallet.read.helpers';
+import {
+  getWalletBalance,
+  getWalletBalanceCents,
+  getWalletTransactionHistory,
+} from './wallet.read.helpers';
 import {
   KloelWalletNotFoundError,
   buildAnticipationSuccessResponse,
@@ -34,6 +38,7 @@ import {
   runAnticipationTx,
   runConfirmPaymentTx,
   runProcessSaleTx,
+  runWithdrawalCentsTx,
   runWithdrawalTx,
 } from './wallet.service.tx.helpers';
 
@@ -257,10 +262,10 @@ export class WalletService {
       );
     } catch (err: unknown) {
       void this.opsAlert?.alertOnCriticalError(err, 'WalletService.requestAnticipation');
-      this.financialAlert.withdrawalFailed(
-        err instanceof Error ? err : new Error(String(err)),
-        { workspaceId, amount },
-      );
+      this.financialAlert.withdrawalFailed(err instanceof Error ? err : new Error(String(err)), {
+        workspaceId,
+        amount,
+      });
       throw err;
     }
 
@@ -389,22 +394,7 @@ export class WalletService {
   async getBalanceCents(
     workspaceId: string,
   ): Promise<{ available: bigint; pending: bigint; blocked: bigint }> {
-    const wallet = await this.prisma.kloelWallet.findUnique({
-      where: { workspaceId },
-      select: {
-        availableBalanceInCents: true,
-        pendingBalanceInCents: true,
-        blockedBalanceInCents: true,
-      },
-    });
-    if (!wallet) {
-      throw new NotFoundException(`KloelWallet not found for workspace ${workspaceId}`);
-    }
-    return {
-      available: wallet.availableBalanceInCents,
-      pending: wallet.pendingBalanceInCents,
-      blocked: wallet.blockedBalanceInCents,
-    };
+    return getWalletBalanceCents(this.prisma, workspaceId);
   }
 
   /**
@@ -442,83 +432,9 @@ export class WalletService {
     }
 
     return this.prisma.$transaction(
-      async (tx: Prisma.TransactionClient) => {
-        const wallet = await tx.kloelWallet.findUnique({
-          where: { workspaceId },
-          select: {
-            id: true,
-            workspaceId: true,
-            availableBalanceInCents: true,
-          },
-        });
-        if (!wallet) {
-          throw new NotFoundException(`KloelWallet not found for workspace ${workspaceId}`);
-        }
-
-        if (amountCents > wallet.availableBalanceInCents) {
-          throw new BadRequestException('Insufficient available balance');
-        }
-
-        // Idempotency window: 60 seconds. Look for an in-flight withdrawal
-        // with identical (workspaceId, amount, method, pixKey) that has not
-        // yet been approved/rejected.
-        const sixtySecondsAgo = new Date(Date.now() - 60_000);
-        const recent = await tx.kloelWalletTransaction.findMany({
-          where: {
-            walletId: wallet.id,
-            type: 'withdrawal',
-            status: 'pending',
-            amountInCents: amountCents,
-            createdAt: { gte: sixtySecondsAgo },
-          },
-          select: { id: true, status: true, metadata: true },
-          orderBy: { createdAt: 'desc' },
-          take: 5,
-        });
-        const dupe = recent.find((row) => {
-          const meta = row.metadata as Record<string, unknown> | null;
-          const sameMethod = meta?.method === method;
-          const samePix = method === 'pix' ? meta?.pixKey === pixKey : true;
-          return sameMethod && samePix;
-        });
-        if (dupe) {
-          return {
-            id: dupe.id,
-            status: this.normalizeWithdrawalStatus(dupe.status),
-          };
-        }
-
-        const created = await tx.kloelWalletTransaction.create({
-          data: {
-            walletId: wallet.id,
-            type: 'withdrawal',
-            amount: Number(amountCents) / 100,
-            amountInCents: amountCents,
-            description: `Saque ${method.toUpperCase()}`,
-            status: 'pending',
-            metadata: {
-              workspaceId,
-              method,
-              ...(method === 'pix' && pixKey !== undefined ? { pixKey } : {}),
-              source: 'k30_resolver',
-            },
-          },
-          select: { id: true, status: true },
-        });
-
-        return {
-          id: created.id,
-          status: this.normalizeWithdrawalStatus(created.status),
-        };
-      },
+      (tx: Prisma.TransactionClient) =>
+        runWithdrawalCentsTx({ tx, workspaceId, amountCents, method, pixKey }),
       { isolationLevel: 'ReadCommitted' },
     );
-  }
-
-  private normalizeWithdrawalStatus(raw: string): 'pending' | 'approved' | 'rejected' {
-    if (raw === 'approved' || raw === 'rejected') {
-      return raw;
-    }
-    return 'pending';
   }
 }
