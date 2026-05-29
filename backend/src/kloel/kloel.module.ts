@@ -199,6 +199,7 @@ import { KloelProductSubResourceToolsService } from './kloel-product-sub-resourc
 import { KloelWalletSalesToolsService } from './kloel-wallet-sales-tools.service';
 import { ToolPlannerModule } from './toolplanner/toolplanner.module';
 import { CapabilityRegistryV2Module } from './capability-registry-v2/capability-registry-v2.module';
+import { KloelDomainServiceResolver } from './domain-service-resolver.service';
 import { IntentRouterModule } from './intent-router/intent-router.module';
 import { SelfAwarenessModule } from './self-awareness/self-awareness.module';
 import { SpineModule } from './spine/spine.module';
@@ -302,6 +303,7 @@ import { WorkspaceModule } from '../workspaces/workspace.module';
     KloelWhatsAppToolsService,
     UnifiedAgentToolExecutorService,
 
+    KloelDomainServiceResolver,
     LeadMindCoordinator,
     KloelToolDispatcherService,
     KloelToolExecutorService,

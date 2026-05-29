@@ -22,6 +22,7 @@ import { SelfHealthService } from './self-awareness/self-health.service';
 import { SelfGapsService } from './self-awareness/self-gaps.service';
 import { DepsCoverageService } from './self-awareness/deps-coverage.service';
 import { CapabilityRegistryV2Service } from './capability-registry-v2/capability-registry-v2.service';
+import { KloelDomainServiceResolver } from './domain-service-resolver.service';
 import { MindCapabilityRegistry } from './mind/coordination/mind-capability-registry.service';
 import { MindCapabilityExecutor } from './mind/coordination/mind-capability-executor.service';
 import { MindGuardsService } from './mind/policy/mind-guards.service';
@@ -123,6 +124,7 @@ export class KloelToolDispatcherService {
     @Optional() private readonly riskGate?: RiskGateService,
     @Optional() private readonly mindCapabilityExecutor?: MindCapabilityExecutor,
     @Optional() private readonly mindGuards?: MindGuardsService,
+    @Optional() private readonly domainServiceResolver?: KloelDomainServiceResolver,
   ) {}
 
   /** Execute a named tool, delegating to the appropriate sub-service. */
@@ -165,6 +167,17 @@ export class KloelToolDispatcherService {
         result = fastPathResult;
       } else {
         result = await this.runDirectDispatch(workspaceId, toolName, args, userId);
+        // PI-K30: fallback to generic domain-service resolver for ungated capabilities
+        if (!result.success && typeof result.error === 'string' && result.error.startsWith('Ferramenta desconhecida')) {
+          const resolverResult = await this.domainServiceResolver?.tryExecute(
+            toolName,
+            workspaceId,
+            args,
+          );
+          if (resolverResult !== null && resolverResult !== undefined) {
+            result = resolverResult;
+          }
+        }
       }
     } catch (error: unknown) {
       void this.opsAlert?.alertOnCriticalError(error, 'KloelToolDispatcherService.toolChangePlan');
