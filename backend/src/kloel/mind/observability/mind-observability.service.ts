@@ -7,6 +7,7 @@ import { MindBeliefService } from '../inference/mind-belief.service';
 import { MindPolicyService } from '../policy/mind-policy.service';
 import { MindReportService } from './mind-report.service';
 import { MindVerbalizerService } from '../synthetic/mind-verbalizer.service';
+import { expandEventNameAliases } from '../coordination/mind-event-taxonomy';
 
 function isUnknownRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -138,7 +139,7 @@ export class MindObservabilityService {
         this.prisma.autopilotEvent.findMany({
           where: {
             workspaceId,
-            action: 'case_memory.consulted',
+            action: { in: expandEventNameAliases('case_memory.consulted') },
             createdAt: { gte: since },
           },
           orderBy: { createdAt: 'desc' },
@@ -187,7 +188,11 @@ export class MindObservabilityService {
         where: { workspaceId, action: 'message.received', createdAt: { gte: since } },
       }),
       this.prisma.autopilotEvent.count({
-        where: { workspaceId, action: 'predecided_actions.built', createdAt: { gte: since } },
+        where: {
+          workspaceId,
+          action: { in: expandEventNameAliases('predecided_actions.built') },
+          createdAt: { gte: since },
+        },
       }),
     ]);
     const percentDeterministic =

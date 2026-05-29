@@ -38,6 +38,7 @@ import {
   buildChatOutcomeKey,
   recordChatReplyDecision,
   closeChatReplyOutcome,
+  predictChatReply,
 } from './kloel-reply-engine.decision-outcome.helpers';
 import { applyChatTerminalHooks } from './guest-chat.terminal-hooks.helper';
 import { handleGuestFileUpload } from './guest-chat.file-upload.helpers';
@@ -53,6 +54,7 @@ import {
   writeStreamChunk as writeStreamChunkFn,
 } from './guest-chat.lifecycle.helpers';
 import { resolveDefaultWorkspaceId as resolveDefaultWorkspaceIdFn } from './guest-chat.default-workspace.helpers';
+import { MindPredictorService } from './mind/inference/mind-predictor.service';
 
 // cache.invalidate — Redis is the primary guest conversation store; local Map is fallback.
 @Injectable()
@@ -92,6 +94,7 @@ export class GuestChatService implements OnModuleDestroy {
     @Optional() private readonly spineEmitter?: SpineEmitterService,
     @Optional() private readonly decisionOutcomeService?: DecisionOutcomeService,
     @Optional() private readonly mindSurpriseService?: MindSurpriseService,
+    @Optional() private readonly mindPredictorService?: MindPredictorService,
   ) {
     const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 
@@ -278,6 +281,18 @@ export class GuestChatService implements OnModuleDestroy {
         });
       }
 
+      // w4-guestchat-loop: open the predictive-coding loop on the LIVE guest SSE
+      // surface. predictChatReply persists the canonical `P(reply|...)`
+      // RAC_MindPrediction row that applyChatTerminalHooks → resolveChatReplySurprise
+      // later resolves (findOpen + resolve + observeBinary). Without this producer
+      // the guest surface created 0 prediction rows and the predict→surprise link
+      // never fired here. Fire-and-forget; @Optional MindPredictorService no-ops
+      // when absent (unit tests). Mirrors KloelReplyEngineService.buildAssistantReply.
+      predictChatReply(this.mindPredictorService, this.logger, {
+        workspaceId: chatWsId,
+        surface: 'guest',
+      });
+
       void this.spineEmitter
         ?.emit({
           eventName: 'cognition.decision_made',
@@ -422,6 +437,14 @@ export class GuestChatService implements OnModuleDestroy {
         messageLength: message.length,
       });
     }
+
+    // w4-guestchat-loop: open the predictive-coding loop on the guest sync path
+    // too (chatSync mirrors chat()). Same producer → resolved by the terminal
+    // hook's resolveChatReplySurprise. Fire-and-forget; @Optional no-ops when absent.
+    predictChatReply(this.mindPredictorService, this.logger, {
+      workspaceId: metricWsId,
+      surface: 'guest',
+    });
 
     void this.spineEmitter
       ?.emit({

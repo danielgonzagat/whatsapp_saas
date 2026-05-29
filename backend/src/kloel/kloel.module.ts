@@ -246,6 +246,7 @@ import { LongTermMemoryService } from './mind/memory/long-term-memory.service';
 import { ConversationArchiveService } from './mind/memory/conversation-archive.service';
 import { EpisodeService } from './mind/memory/episode.service';
 import { MindSelfModelService } from './mind/self-model/mind-self-model.service';
+import { CrmModule } from '../crm/crm.module';
 
 /** Kloel module. */
 @Module({
@@ -255,6 +256,7 @@ import { MindSelfModelService } from './mind/self-model/mind-self-model.service'
     ScheduleModule.forRoot(),
     KycModule,
     forwardRef(() => CampaignsModule),
+    forwardRef(() => CrmModule),
     forwardRef(() => BillingModule),
     AuditModule,
     forwardRef(() => WalletModule),

@@ -256,6 +256,10 @@ export async function recordCaseMemoryConsulted(
   await events.recordCommercial({
     workspaceId,
     subject,
+    // NOTE: canonical 'cognition.case_memory.consulted' is registered in
+    // mind-event-taxonomy + accepted by mind-observability (dual-read), but the
+    // emit stays legacy until the coordinated event-taxonomy wave flips this +
+    // the 9 consumer specs atomically. Deferred to avoid breaking non-owned specs.
     eventType: 'case_memory.consulted',
     occurredAt: new Date(),
     idempotencyKey: `case-memory:${inboundKey}`,
@@ -281,6 +285,8 @@ export async function recordPredecidedActionsBuilt(
   await events.recordCommercial({
     workspaceId,
     subject,
+    // NOTE: canonical 'cognition.predecided.actions_built' registered in taxonomy;
+    // emit stays legacy until the coordinated event-taxonomy wave (see above).
     eventType: 'predecided_actions.built',
     occurredAt: new Date(),
     idempotencyKey: `predecided:${inboundKey}`,

@@ -1,14 +1,27 @@
 import { StateBuilderService } from './state-builder.service';
 import type { PrismaService } from '../../prisma/prisma.service';
 import type { CapabilityRegistryV2Service } from '../capability-registry-v2/capability-registry-v2.service';
+import type { MindMessageService } from '../mind/aliases/mind-message.service';
 
 /**
  * Proves the StateBuilder assembles ConversationState from REAL sources
  * (each field maps to a concrete Prisma model / registry call), and that
  * absent sources are reported honestly in missingSources rather than faked.
  */
+// Types the mock delegate methods we assert on as plain jest.Mock functions
+// (not bound Prisma class methods), so expect(prisma.x.findUnique) reads a
+// standalone mock — satisfying @typescript-eslint/unbound-method without
+// changing any assertion semantics.
+type MockedPrisma = PrismaService & {
+  workspace: { findUnique: jest.Mock };
+  agent: { findFirst: jest.Mock };
+  auditLog: { findMany: jest.Mock };
+  kloelMessage: { findMany: jest.Mock };
+};
+type MockedCaps = CapabilityRegistryV2Service & { filterFor: jest.Mock };
+
 describe('StateBuilderService', () => {
-  const buildPrisma = (overrides: Record<string, unknown> = {}) =>
+  const buildPrisma = (overrides: Record<string, unknown> = {}): MockedPrisma =>
     ({
       workspace: {
         findUnique: jest.fn().mockResolvedValue({ id: 'ws1', name: 'Acme' }),
@@ -27,28 +40,38 @@ describe('StateBuilderService', () => {
         }),
       },
       auditLog: {
-        findMany: jest.fn().mockResolvedValue([
-          { action: 'create', resource: 'product', resourceId: 'p1', createdAt: new Date() },
-        ]),
+        findMany: jest
+          .fn()
+          .mockResolvedValue([
+            { action: 'create', resource: 'product', resourceId: 'p1', createdAt: new Date() },
+          ]),
       },
       kloelMessage: {
+        // Builder queries orderBy createdAt desc (newest-first) then reverses to
+        // oldest-first for prompt assembly, so the mock must echo desc order.
         findMany: jest.fn().mockResolvedValue([
-          { role: 'user', content: 'oi', createdAt: new Date(1) },
           { role: 'assistant', content: 'ola', createdAt: new Date(2) },
+          { role: 'user', content: 'oi', createdAt: new Date(1) },
         ]),
       },
       ...overrides,
-    }) as unknown as PrismaService;
+    }) as unknown as MockedPrisma;
 
-  const buildCaps = () =>
+  const buildCaps = (): MockedCaps =>
     ({
       filterFor: jest.fn().mockReturnValue([{ id: 'cap.a' }, { id: 'cap.b' }]),
-    }) as unknown as CapabilityRegistryV2Service;
+    }) as unknown as MockedCaps;
+
+  // MindMessageService.items returns the SAME prisma.kloelMessage delegate the
+  // builder reads short-term memory from, so the prisma.kloelMessage.findMany
+  // assertions below remain exactly valid after the Brain → Mind migration.
+  const buildMind = (prisma: PrismaService) =>
+    ({ items: prisma.kloelMessage }) as unknown as MindMessageService;
 
   it('assembles every field from its real source', async () => {
     const prisma = buildPrisma();
     const caps = buildCaps();
-    const builder = new StateBuilderService(prisma, caps);
+    const builder = new StateBuilderService(prisma, caps, buildMind(prisma));
 
     const state = await builder.build({
       workspaceId: 'ws1',
@@ -83,7 +106,10 @@ describe('StateBuilderService', () => {
     expect(state.memory.shortTerm.map((m) => m.content)).toEqual(['oi', 'ola']);
 
     // capabilities ← CapabilityRegistryV2Service.filterFor
-    expect(caps.filterFor).toHaveBeenCalledWith({ surface: 'chat', permissions: ['perm.x'] });
+    expect(caps.filterFor).toHaveBeenCalledWith({
+      surface: 'chat',
+      permissions: ['perm.x'],
+    });
     expect(state.capabilities).toHaveLength(2);
 
     // risk ← honestly flagged unavailable (no per-workspace RiskService)
@@ -95,7 +121,7 @@ describe('StateBuilderService', () => {
     const prisma = buildPrisma({
       workspace: { findUnique: jest.fn().mockResolvedValue(null) },
     });
-    const builder = new StateBuilderService(prisma, buildCaps());
+    const builder = new StateBuilderService(prisma, buildCaps(), buildMind(prisma));
 
     const state = await builder.build({});
 
@@ -117,7 +143,7 @@ describe('StateBuilderService', () => {
         ]),
       },
     });
-    const builder = new StateBuilderService(prisma, buildCaps());
+    const builder = new StateBuilderService(prisma, buildCaps(), buildMind(prisma));
 
     const state = await builder.build({ workspaceId: 'ws1' });
 

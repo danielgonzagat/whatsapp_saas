@@ -98,6 +98,8 @@ export const BRAIN_EVENT_TAXONOMY = [
   'cognition.pipeline.shadow_recorded',
   'cognition.pipeline.auto_fallback',
   'cognition.identity.contact_resolved',
+  'cognition.case_memory.consulted',
+  'cognition.predecided.actions_built',
 ] as const;
 
 export type MindEventName = (typeof BRAIN_EVENT_TAXONOMY)[number];
@@ -172,6 +174,14 @@ export const MIND_EVENT_ALIASES = {
   'pipeline.shadow_recorded': 'cognition.pipeline.shadow_recorded',
   'pipeline.auto_fallback': 'cognition.pipeline.auto_fallback',
   'identity.contact.resolved': 'cognition.identity.contact_resolved',
+  // Snake_case orchestrator telemetry events emitted by
+  // commercial-decision-orchestrator/telemetry.ts. Corrected to the cognition.*
+  // domain prefix (they are decision-pipeline internal events). Dual-emit
+  // window: telemetry.ts flips to the canonical name; the mind-observability
+  // AutopilotEvent `action` WHERE-filters are widened via expandEventNameAliases
+  // so historical rows tagged with the legacy snake_case action still match.
+  'case_memory.consulted': 'cognition.case_memory.consulted',
+  'predecided_actions.built': 'cognition.predecided.actions_built',
 } as const satisfies Record<string, MindEventName>;
 
 export type MindEventLegacyName = keyof typeof MIND_EVENT_ALIASES;

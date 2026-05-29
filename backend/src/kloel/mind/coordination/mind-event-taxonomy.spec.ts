@@ -9,12 +9,32 @@ import {
 
 describe('mind-event-taxonomy — MIND_EVENT_ALIASES helpers', () => {
   describe('MIND_EVENT_ALIASES table integrity', () => {
-    it('exposes the four ADR-0013 §4 legacy→canonical mappings', () => {
+    it('exposes the full ADR-0013 / Wave K58–K85 legacy→canonical mapping', () => {
       expect(MIND_EVENT_ALIASES).toEqual({
+        // mind.* aliases (original ADR-0013 §4 four)
         'message.received': 'mind.message.received',
         'capability.executed': 'mind.action.executed',
         'product.created': 'mind.product.observed',
         'plan.created': 'mind.plan.observed',
+        // commerce.* aliases (Wave K58–K85)
+        'product.updated': 'commerce.product.updated',
+        'product.published': 'commerce.product.published',
+        'product.deleted': 'commerce.product.deleted',
+        'plan.updated': 'commerce.plan.updated',
+        'plan.deleted': 'commerce.plan.deleted',
+        'sale.created': 'commerce.sale.created',
+        'coupon.created': 'commerce.coupon.created',
+        'lead.created': 'commerce.lead.created',
+        'campaign.scheduled': 'commerce.campaign.scheduled',
+        'inbound.received': 'commerce.inbound.received',
+        'concept.detected': 'commerce.concept.detected',
+        // cognition.* aliases (wrong-domain 3-segment + snake_case telemetry)
+        'pipeline.state.changed': 'cognition.pipeline.state_changed',
+        'pipeline.shadow_recorded': 'cognition.pipeline.shadow_recorded',
+        'pipeline.auto_fallback': 'cognition.pipeline.auto_fallback',
+        'identity.contact.resolved': 'cognition.identity.contact_resolved',
+        'case_memory.consulted': 'cognition.case_memory.consulted',
+        'predecided_actions.built': 'cognition.predecided.actions_built',
       });
     });
 
@@ -44,8 +64,11 @@ describe('mind-event-taxonomy — MIND_EVENT_ALIASES helpers', () => {
       expect(resolveCanonicalEventName('mind.plan.observed')).toBe('mind.plan.observed');
     });
 
-    it('returns unrelated event names unchanged', () => {
-      expect(resolveCanonicalEventName('sale.created')).toBe('sale.created');
+    it('resolves sale.created to its commerce.* canonical (Wave K58–K85)', () => {
+      expect(resolveCanonicalEventName('sale.created')).toBe('commerce.sale.created');
+    });
+
+    it('returns truly unrelated event names unchanged', () => {
       expect(resolveCanonicalEventName('checkout.paid')).toBe('checkout.paid');
     });
   });
@@ -73,8 +96,14 @@ describe('mind-event-taxonomy — MIND_EVENT_ALIASES helpers', () => {
       ]);
     });
 
-    it('returns the input as the only entry for unrelated names', () => {
-      expect(expandEventNameAliases('sale.created')).toEqual(['sale.created']);
+    it('expands sale.created to its commerce.* dual spelling (Wave K58–K85)', () => {
+      expect(expandEventNameAliases('sale.created')).toEqual([
+        'sale.created',
+        'commerce.sale.created',
+      ]);
+    });
+
+    it('returns the input as the only entry for truly unrelated names', () => {
       expect(expandEventNameAliases('checkout.paid')).toEqual(['checkout.paid']);
     });
 
@@ -106,9 +135,14 @@ describe('mind-event-taxonomy — MIND_EVENT_ALIASES helpers', () => {
       expect(result).toEqual(['product.created', 'mind.product.observed']);
     });
 
-    it('preserves unrelated names alongside expansions', () => {
+    it('expands every aliased name alongside the others (Wave K58–K85)', () => {
       const result = expandEventNameAliasesAll(['sale.created', 'product.created']);
-      expect(result).toEqual(['sale.created', 'product.created', 'mind.product.observed']);
+      expect(result).toEqual([
+        'sale.created',
+        'commerce.sale.created',
+        'product.created',
+        'mind.product.observed',
+      ]);
     });
 
     it('is stable for an empty input array', () => {

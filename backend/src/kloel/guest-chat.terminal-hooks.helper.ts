@@ -7,6 +7,7 @@ import {
   closeChatReplyOutcome,
   observeRepliedToUserBelief,
   computeChatSurprise,
+  resolveChatReplySurprise,
 } from './kloel-reply-engine.decision-outcome.helpers';
 
 export interface GuestChatTerminalDeps {
@@ -60,6 +61,18 @@ export function applyChatTerminalHooks(
     },
     deps._lastCognitiveState?.mindSignals as Record<string, unknown> | undefined,
   );
+  // w4-guestchat-loop: close the predictive-coding loop on the LIVE guest surface.
+  // resolveChatReplySurprise resolves the open `P(reply|...)` MindPrediction that
+  // GuestChatService.predictChatReply persists at decision time (findOpen +
+  // resolve + observeBinary), moving the underlying MindBelief alpha/beta off the
+  // 1/1 prior. computeChatSurprise above stays the additive diagnostic read; this
+  // is the real DB resolution that closes predict→surprise→belief on guest.
+  // Mirrors KloelReplyEngineService.applyReplyEnginePostReply.
+  resolveChatReplySurprise(deps.mindSurpriseService, deps.logger, {
+    workspaceId: params.workspaceId,
+    observed,
+    surface: params.surface,
+  });
   if (deps.mindObservability) {
     try {
       deps.mindObservability.observeReply(params.workspaceId, {

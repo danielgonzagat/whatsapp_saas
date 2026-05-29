@@ -22,6 +22,19 @@ export type MindMessage = KloelMessage;
 export class MindMessageService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /**
+   * Raw delegate escape hatch for callers that need the full
+   * `prisma.kloelMessage` surface (e.g. arbitrary `findMany` projections)
+   * which the typed methods above do not cover. Returns the SAME delegate the
+   * typed methods use, so a migrated caller's `.items.findMany(...)` is
+   * byte-identical to the legacy `prisma.kloelMessage.findMany(...)`.
+   *
+   * Mirrors {@link MindMemoryItemService.items}.
+   */
+  get items(): PrismaService['kloelMessage'] {
+    return this.prisma.kloelMessage;
+  }
+
   /** Find a single mind message by id. */
   async findById(id: string): Promise<MindMessage | null> {
     return this.prisma.kloelMessage.findUnique({ where: { id } });

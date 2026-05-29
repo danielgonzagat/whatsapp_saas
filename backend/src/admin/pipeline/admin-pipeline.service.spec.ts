@@ -1,6 +1,11 @@
 import { AdminPipelineService, type DecisionShadowInput } from './admin-pipeline.service';
 import { createPartialPrismaMock } from '../../../test/helpers/prisma.mock';
 
+// Typed wrapper around expect.objectContaining so the resulting matcher is typed
+// `unknown` (not `any`) when nested as a property value — satisfies
+// @typescript-eslint/no-unsafe-assignment while keeping matcher semantics intact.
+const oc = (o: Record<string, unknown>): unknown => expect.objectContaining(o);
+
 describe('AdminPipelineService', () => {
   const prisma = createPartialPrismaMock({
     pipelineState: ['findUnique', 'create', 'upsert', 'update', 'updateMany'],
@@ -54,7 +59,7 @@ describe('AdminPipelineService', () => {
   });
 
   describe('setState', () => {
-    it('upserts state and emits brain.event.spine pipeline.state.changed event', async () => {
+    it('upserts state and emits the canonical cognition.pipeline.state_changed event', async () => {
       prisma.pipelineState.findUnique.mockResolvedValueOnce({
         state: 'legacy',
       });
@@ -73,13 +78,13 @@ describe('AdminPipelineService', () => {
       expect(prisma.pipelineState.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { workspaceId: 'ws-1' },
-          create: expect.objectContaining({
+          create: oc({
             workspaceId: 'ws-1',
             state: 'shadow',
             transitionedBy: 'admin',
             fallbackRate1h: 0,
           }),
-          update: expect.objectContaining({
+          update: oc({
             state: 'shadow',
             transitionedBy: 'admin',
             fallbackRate1h: 0,
@@ -89,8 +94,8 @@ describe('AdminPipelineService', () => {
       expect(events.recordCommercial).toHaveBeenCalledWith(
         expect.objectContaining({
           workspaceId: 'ws-1',
-          eventType: 'pipeline.state.changed',
-          payload: expect.objectContaining({
+          eventType: 'cognition.pipeline.state_changed',
+          payload: oc({
             previousState: 'legacy',
             newState: 'shadow',
             reason: 'manual',
@@ -106,7 +111,7 @@ describe('AdminPipelineService', () => {
       await service.setState('ws-9', 'active');
       expect(events.recordCommercial).toHaveBeenCalledWith(
         expect.objectContaining({
-          payload: expect.objectContaining({ reason: 'manual transition' }),
+          payload: oc({ reason: 'manual transition' }),
         }),
       );
     });
@@ -117,7 +122,7 @@ describe('AdminPipelineService', () => {
       await service.setState('ws-1', 'shadow', 'system', 'auto-fallback');
       expect(prisma.pipelineState.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
-          update: expect.objectContaining({ fallbackRate1h: 0 }),
+          update: oc({ fallbackRate1h: 0 }),
         }),
       );
     });
@@ -150,8 +155,8 @@ describe('AdminPipelineService', () => {
         expect.objectContaining({
           workspaceId: 'ws-1',
           subject: 'channel:instagram',
-          eventType: 'pipeline.shadow_recorded',
-          payload: expect.objectContaining({
+          eventType: 'cognition.pipeline.shadow_recorded',
+          payload: oc({
             channel: 'instagram',
             inboundCorrelationId: 'abc123',
             outcomeKey: 'shadow:ws-1:abc123',
@@ -164,8 +169,9 @@ describe('AdminPipelineService', () => {
       prisma.decisionShadow.upsert.mockResolvedValue(undefined);
       await service.recordShadow(input);
       await service.recordShadow(input);
-      const calls = events.recordCommercial.mock.calls.filter(
-        ([arg]) => (arg as { eventType?: string }).eventType === 'pipeline.shadow_recorded',
+      const calls = (events.recordCommercial.mock.calls as Array<[Record<string, unknown>]>).filter(
+        ([arg]) =>
+          (arg as { eventType?: string }).eventType === 'cognition.pipeline.shadow_recorded',
       );
       // Both calls happen, but each uses the same idempotencyKey shape so
       // upstream BrainEventSpine de-dupes. The test verifies the contract.
@@ -219,7 +225,10 @@ describe('AdminPipelineService', () => {
       await service.incrementFallback('ws-1');
 
       // setState was called transitioning active -> shadow with reason
-      const setStateCall = prisma.pipelineState.upsert.mock.calls[0]?.[0] as {
+      const upsertCalls = prisma.pipelineState.upsert.mock.calls as Array<
+        [{ update: { state: string; transitionedBy: string } }]
+      >;
+      const setStateCall = upsertCalls[0]?.[0] as {
         update: { state: string; transitionedBy: string };
       };
       expect(setStateCall.update.state).toBe('shadow');
@@ -230,7 +239,7 @@ describe('AdminPipelineService', () => {
         [{ eventType?: string; payload: { reason: string; by: string } }]
       >;
       const stateChangedEvent = recordCommercialCalls.find(
-        ([arg]) => arg.eventType === 'pipeline.state.changed',
+        ([arg]) => arg.eventType === 'cognition.pipeline.state_changed',
       );
       expect(stateChangedEvent).toBeDefined();
       expect(stateChangedEvent?.[0].payload.reason).toMatch(/auto-fallback/);

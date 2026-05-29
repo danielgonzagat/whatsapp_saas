@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { StructuredLogger } from '../../logging/structured-logger';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CapabilityRegistryV2Service } from '../capability-registry-v2/capability-registry-v2.service';
+import { MindMessageService } from '../mind/aliases/mind-message.service';
 import type {
   BuildConversationStateInput,
   ConversationActorState,
@@ -33,6 +34,7 @@ export class StateBuilderService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly capabilities: CapabilityRegistryV2Service,
+    private readonly mindMessage: MindMessageService,
   ) {}
 
   /** Assemble the per-turn ConversationState from real data sources. */
@@ -201,7 +203,7 @@ export class StateBuilderService {
       return [];
     }
     try {
-      const rows = await this.prisma.kloelMessage.findMany({
+      const rows = await this.mindMessage.items.findMany({
         where: { workspaceId },
         orderBy: { createdAt: 'desc' },
         take: limit,

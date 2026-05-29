@@ -56,7 +56,7 @@ describe('GuestChatService — Cognitive Parity (PI-K19-A)', () => {
   let mockSpineEmitter: { emit: jest.Mock };
   let mockDecisionOutcome: { recordDecision: jest.Mock; closeOutcome: jest.Mock };
   let mockMindBelief: { observeBinary: jest.Mock; getOrInit: jest.Mock };
-  let mockMindSurprise: { computeSurprise: jest.Mock };
+  let mockMindSurprise: { computeSurprise: jest.Mock; resolveReply: jest.Mock };
 
   async function createService(withCognitive: boolean) {
     const { chatCompletionWithFallback, chatCompletionWithRetry } =
@@ -78,7 +78,10 @@ describe('GuestChatService — Cognitive Parity (PI-K19-A)', () => {
       observeBinary: jest.fn().mockResolvedValue(undefined),
       getOrInit: jest.fn().mockResolvedValue({ mean: 0.5, variance: 0.1, samples: 10 }),
     };
-    mockMindSurprise = { computeSurprise: jest.fn().mockReturnValue(0.1) };
+    mockMindSurprise = {
+      computeSurprise: jest.fn().mockReturnValue(0.1),
+      resolveReply: jest.fn().mockResolvedValue(0.1),
+    };
 
     const mockConfig = { get: mockConfigGet };
 
