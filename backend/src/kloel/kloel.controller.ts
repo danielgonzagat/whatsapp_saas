@@ -304,11 +304,40 @@ export class KloelController {
     @Body() dto: OnboardingChatDto,
     @Res() res: Response,
   ) {
-    await this.conversationalOnboarding.chat(
-      resolveWorkspaceId(req, workspaceId),
-      dto.message,
-      res,
-    );
+    try {
+      await this.conversationalOnboarding.chat(
+        resolveWorkspaceId(req, workspaceId),
+        dto.message,
+        res,
+      );
+    } catch {
+      // Terminal-event guarantee: chat() handles its own happy/error SSE paths,
+      // but a throw BEFORE its internal try (history/state/decision setup) would
+      // otherwise leave the SSE socket open with no terminal event — wedging the
+      // frontend's isReplyInFlight flag. Emit a terminal `done` payload (only if
+      // the response is still writable) and end the socket. Best-effort: this
+      // must never throw.
+      try {
+        const response = res as Response & { writableEnded?: boolean; headersSent?: boolean };
+        if (response.writableEnded !== true) {
+          if (response.headersSent !== true) {
+            res.setHeader('Content-Type', 'text/event-stream');
+            res.setHeader('Cache-Control', 'no-cache');
+            res.setHeader('Connection', 'keep-alive');
+          }
+          const payload = {
+            content:
+              'Tive uma instabilidade momentânea pra processar agora. Pode repetir a mensagem em alguns segundos?',
+            error: 'onboarding_chat_failed',
+            done: true,
+          };
+          res.write('data: ' + JSON.stringify(payload) + '\n\n');
+          res.end();
+        }
+      } catch {
+        // ignore — the socket is already broken; nothing more to do
+      }
+    }
   }
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('onboarding/:workspaceId/status')

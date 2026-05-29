@@ -6,8 +6,7 @@ import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import {
   type KloelStreamEvent,
   createKloelContentEvent,
-  createKloelStatusEvent,
-} from './kloel-stream-events';
+  createKloelStatusEvent, createKloelDoneEvent } from './kloel-stream-events';
 import { chatCompletionStreamWithRetry } from './openai-wrapper';
 import { KloelLLME2EGuard } from './kloel-llm-e2e-guard';
 
@@ -61,6 +60,12 @@ function serializeSsePayload(payload: KloelStreamEvent): string {
 export class KloelStreamWriter {
   private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
   private closed = false;
+  // Tracks whether a terminal SSE event (`done` or `error`) has been written.
+  // The frontend stream reader releases its in-flight lock ONLY on a terminal
+  // event; a bare socket close (res.end) without one leaves the chat wedged
+  // ("Perdi acesso ao motor de conversa"). close() uses this to guarantee a
+  // terminal `done` is always emitted before the socket is ended.
+  private terminalSent = false;
 
   constructor(
     private readonly res: Response,
@@ -152,6 +157,10 @@ export class KloelStreamWriter {
       return;
     }
 
+    if (data.type === 'done' || data.type === 'error') {
+      this.terminalSent = true;
+    }
+
     try {
       this.res.write(`data: ${serializeSsePayload(data)}\n\n`);
       if (typeof (this.res as Response & { flush?: () => void }).flush === 'function') {
@@ -166,6 +175,25 @@ export class KloelStreamWriter {
   /** Close. */
   close() {
     this.stopHeartbeat();
+
+    // Terminal-event guarantee: if the caller is ending the stream without
+    // having emitted a `done` or `error` event, synthesize a terminal `done`
+    // here BEFORE res.end(). Without this, a bare socket close leaves the
+    // frontend's isReplyInFlight flag stuck true (silent no-op on every next
+    // send) until its 300s watchdog fires. Best-effort: a write failure here
+    // must never prevent the socket from being ended.
+    if (!this.terminalSent && !this.isResponseClosed() && !this.isClientDisconnected()) {
+      this.terminalSent = true;
+      try {
+        this.res.write(`data: ${serializeSsePayload(createKloelDoneEvent())}\n\n`);
+        if (typeof (this.res as Response & { flush?: () => void }).flush === 'function') {
+          (this.res as Response & { flush?: () => void }).flush?.();
+        }
+      } catch {
+        // ignore — proceed to end the socket regardless
+      }
+    }
+
     this.closed = true;
 
     try {

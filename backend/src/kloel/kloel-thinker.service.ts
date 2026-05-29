@@ -104,6 +104,8 @@ export class KloelThinkerService {
       streamWriter.write(event);
     };
     streamWriter.init();
+    const thinkStartedAt = Date.now();
+    let thinkErrorCode: string | null = null;
 
     try {
       const deterministicWorkspaceId =
@@ -348,14 +350,41 @@ export class KloelThinkerService {
       }
     } catch (error: unknown) {
       this.logger.error('Erro no KLOEL Thinker:', error);
-      if (!isClientDisconnected()) {
-        const code = resolveThinkErrorCode(abortReason(), 'Erro ao processar mensagem');
-        const content = isAborted()
-          ? this.replyEngine.buildStreamAbortMessage(abortReason(), opts?.timeoutMs)
-          : this.replyEngine.unavailableMessage;
-        safeWrite(createKloelErrorEvent({ content, error: code, done: true }));
+      thinkErrorCode = resolveThinkErrorCode(abortReason(), 'think_unhandled_error');
+      try {
+        if (!isClientDisconnected()) {
+          const code = resolveThinkErrorCode(abortReason(), 'Erro ao processar mensagem');
+          const content = isAborted()
+            ? this.replyEngine.buildStreamAbortMessage(abortReason(), opts?.timeoutMs)
+            : this.replyEngine.unavailableMessage;
+          safeWrite(createKloelErrorEvent({ content, error: code, done: true }));
+        }
+      } catch (writeError: unknown) {
+        // Never let terminal-error reporting itself wedge the stream; the
+        // finally block below still guarantees a terminal `done` + res.end().
+        this.logger.error('Falha ao emitir evento de erro terminal do Thinker:', writeError);
       }
+    } finally {
+      // Terminal-event guarantee for EVERY exit path of think() — success,
+      // early return, tool-error, LLM-error, timeout, or a throw inside the
+      // catch above. close() is idempotent and synthesizes a terminal `done`
+      // if none was emitted, so the frontend's isReplyInFlight flag is always
+      // released and the chat never silently dies ("Perdi acesso ao motor de
+      // conversa"). Branches that already emitted done+close are unaffected.
       streamWriter.close();
+      // Structured observability for the SSE chat lifecycle. errorCode is null on
+      // success; durationMs and the abort/disconnect flags let us diagnose
+      // stream-wedge incidents in Railway without leaking message content/secrets.
+      this.logger.log('kloel_think_stream_closed', {
+        tag: 'kloel_think_stream_closed',
+        ...(workspaceId !== undefined ? { workspaceId } : {}),
+        ...(conversationId !== undefined ? { conversationId } : {}),
+        mode,
+        durationMs: Date.now() - thinkStartedAt,
+        aborted: isAborted(),
+        clientDisconnected: isClientDisconnected(),
+        errorCode: thinkErrorCode,
+      });
     }
   }
 
