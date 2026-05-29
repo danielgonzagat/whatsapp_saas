@@ -175,3 +175,97 @@ All ~80 are backend ↔ frontend-admin type mirrors. Canonical solution: extract
 | `RedisConfigurationError` | 2 | `backend/src/common/redis/resolve-redis-url.ts`<br>`worker/resolve-redis-url.ts` |
 | `maskRedisUrl` | 2 | `backend/src/common/redis/resolve-redis-url.ts`<br>`worker/resolve-redis-url.ts` |
 | `resolveRedisUrl` | 2 | `backend/src/common/redis/resolve-redis-url.ts`<br>`worker/resolve-redis-url.ts` |
+
+---
+
+## Divergent forks (same filename, different implementation)
+
+Forks with identical filenames whose source diverges meaningfully. These are not exporter-duplicates — they are independent reimplementations of the same concept and must be reconciled or one must be retired.
+
+### `pulse-truth-snapshot.service.ts` — confirmed divergent fork
+
+| Location | LOC | `PulseTruthSnapshot` shape | Constructor DI token | Snapshot logic |
+|---|---:|---|---|---|
+| `backend/src/kloel/abi/pulse-truth-snapshot.service.ts` | 31 | Imports `AbiPulseTruth` from `./abi-schema` (single `snapshot: () => AbiPulseTruth` member) | `ABI_PULSE_TRUTH_STATE` | Returns a shallow clone of an injected `AbiPulseTruth` state. No computation. |
+| `backend/src/kloel/pulse-gates/pulse-truth-snapshot.service.ts` | 95 | Declares inline `PulseTruthSnapshot`, `GateSnapshotEntry`, `CertificationVerdict`, `GateDescriptor` (5 members, including `noOverclaimStatus`, `capabilityHealthScore`, `gates`, `certificationVerdict`, `overclaimRisk`) | `PULSE_TRUTH_SNAPSHOT_DESCRIPTORS` | Computes verdict, score, overclaim risk from an injected `GateDescriptor[]`. |
+
+`diff` summary: only 2 of 31 lines from the abi/ variant align with the pulse-gates/ variant (the `Injectable` decorator and `@Optional() @Inject(...)` line). The pulse-gates/ variant is a 3× larger, fully different service — it derives the snapshot from a descriptor list rather than reading injected pre-computed state.
+
+| Decision question | Status |
+|---|---|
+| Are they true duplicates? | No — divergent forks. |
+| Canonical owner | Undecided. `abi/` matches the ABI schema contract (`AbiPulseTruth`); `pulse-gates/` matches PULSE gate semantics directly. |
+| Risk if both stay | Two services with the same class name `PulseTruthSnapshotService` registered in different modules → DI ambiguity if both modules ever imported into the same context. |
+| Recommended next step | Rename one (e.g., `AbiPulseTruthSnapshotService` for the schema-driven variant) and decide which produces the authoritative truth surface. Track via `CANONICAL_MOVES.md`. |
+
+---
+
+## Helper function clusters by name family
+
+Grouped helpers that share a verb stem and a domain concern. The scan exporter is exact-name-only; this section captures the family overlap that exact-name dedup misses.
+
+### Phone normalization family
+
+`rg -l 'function (normalize|format|clean)Phone'` produces 6 hits. The signatures diverge — same name, different return type.
+
+| File | Symbol | Signature (return) | Notes |
+|---|---|---|---|
+| `backend/src/common/phone/phone-normalization.util.ts:150` | `normalizePhone` | `NormalizedPhone \| null` | Canonical, exported, used by guards. |
+| `worker/utils/phone-normalization.util.ts:171` | `normalizePhone` | `NormalizedPhone \| null` | Worker mirror — already flagged P0. |
+| `backend/src/checkout/checkout-social-lead.util.ts:34` | `normalizePhone` | `string \| null` | Different return type — drops country code metadata. |
+| `worker/providers/checkout-social-lead-enrichment.ts:212` | `normalizePhone` (private) | unannotated | File-local; identical body to checkout-social-lead util. |
+| `backend/src/prisma/checkout-paid-effects/whatsapp.ts:21` | `normalizePhone` (private) | unannotated | File-local; trims and strips non-digits only. |
+| `frontend/src/app/(main)/followups/followups.helpers.ts:31` | `formatPhone` | `string` | Display-only; not a normalizer despite related domain. |
+
+Canonical move: collapse the three string-returning private `normalizePhone` implementations onto `backend/src/common/phone/phone-normalization.util.ts` (or a `digits-only` thin sibling). `formatPhone` belongs in `frontend/src/lib/format/phone.ts` and is not part of this cluster.
+
+### Workspace resolver family
+
+`rg -l 'function (resolveWorkspace|getWorkspace|findWorkspace)'` produces 15 hits. Five name variants on the same concept (resolve the workspace for a request/lead/payload).
+
+| File | Symbol | Concern |
+|---|---|---|
+| `backend/src/auth/workspace-access.ts:119` | `resolveWorkspaceId` | Auth/JWT-driven resolution from session. Canonical. |
+| `backend/src/email/email-inbound.service.ts:87` | `resolveWorkspaceAlias` | Map inbound email alias → workspace+username. |
+| `backend/src/kloel/guards/kloel-security.guard.ts:45` | `getWorkspaceId` | Reads workspaceId off the request shape used by the Kloel guard. |
+| `worker/processors/autopilot/autopilot-utils.ts:28` | `findWorkspaceProductMatches` | Different concern (product matching). Not a true variant. |
+| `worker/processors/autopilot/identity-resolve.ts:41` | `resolveWorkspaceSelfIdentity` | Worker-side resolution of the workspace's own identity. |
+
+Canonical move: name-only normalisation (`resolveWorkspaceId` for request → id; `resolveWorkspaceAlias` for alias → workspace; `resolveWorkspaceSelfIdentity` for worker self-identity). No code dedup necessary — they are distinct concerns sharing only a verb stem. Flagged here to prevent a future agent from inventing a fourth synonym.
+
+### Webhook parser family
+
+`rg -l 'function (parseWebhook|extractWebhook)'` returns zero hits — no symbol-level cluster. Webhook parsing is owned per-provider (`backend/src/webhooks/webhooks.service.helpers.ts`, `backend/src/marketing/channels/whatsapp/providers/waha-webhook-handler.helpers.ts`, etc.) and does not need consolidation. Recorded as a negative result so a future scan does not re-investigate.
+
+---
+
+## Services with overlapping responsibilities
+
+Method-signature overlap across three top-level orchestrator services. Each owns parts of the lead-conversation-payment loop; methods named identically across the three risk silent divergence.
+
+| Method | `KloelService` (442 LOC) | `UnifiedAgentService` (475 LOC) | `LeadMindCoordinator` (434 LOC) |
+|---|---|---|---|
+| `processWhatsAppMessage(...)` | line 342 | — | line 227 |
+| `processWhatsAppMessageWithPayment(...)` | line 356 | — | line 386 |
+| `generatePaymentForLead(...)` | line 370 | — | line 195 |
+| `processIncomingMessage(...)` | — | line 88 | — |
+| `processMessage(...)` | — | line 125 | — |
+| `think(...)` | line 121 | — | — |
+| `thinkSync(...)` | line 174 | — | — |
+| `executeTool(...)` | — | line 404 | — |
+| `getOrCreateLead(...)` | — | — | line 83 |
+| `saveLeadMessage(...)` | — | — | line 119 |
+| `updateLeadFromConversation(...)` | — | — | line 141 |
+| `extractProductFromMessage(...)` | — | — | line 160 |
+
+**Verified overlap (semantic):**
+
+- `KloelService.processWhatsAppMessage` and `LeadMindCoordinator.processWhatsAppMessage` — same name, same arg shape (`{ workspaceId, contactPhone, content, ... }`). Two different message-ingestion entry points.
+- `KloelService.processWhatsAppMessageWithPayment` and `LeadMindCoordinator.processWhatsAppMessageWithPayment` — same.
+- `KloelService.generatePaymentForLead` and `LeadMindCoordinator.generatePaymentForLead` — same.
+
+**Probable overlap (semantic, different names):**
+
+- `UnifiedAgentService.processIncomingMessage` / `UnifiedAgentService.processMessage` against the two `processWhatsAppMessage` variants above — three services with four entry-points for "message arrived, run the agent loop".
+
+**Decision question:** which orchestrator is canonical for "message → agent → action → payment"? Today the dispatch path goes through `kloel-tool-dispatcher.service.ts` → `unified-agent.service.ts`; the legacy `KloelService` and the M5 `LeadMindCoordinator` both still expose the same surface area. Track resolution via `MIND_SERVICE_CONSOLIDATION.md`.
