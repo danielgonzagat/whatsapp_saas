@@ -36,7 +36,7 @@ const PROPOSED_FIXES: Readonly<Record<string, DomainFix>> = {
   },
   whatsapp: {
     description: 'Add rate-limit backoff to WhatsApp message sender',
-    targetPattern: ['backend/src/whatsapp/**', 'worker/**'],
+    targetPattern: ['backend/src/marketing/channels/whatsapp/**', 'worker/**'],
     riskClass: 'high',
   },
   auth: {
