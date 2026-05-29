@@ -126,7 +126,7 @@ describe('mind-event-taxonomy — MIND_EVENT_ALIASES helpers', () => {
       expect(c).toBe('sale.created');
     });
 
-    it('both accept any member of BRAIN_EVENT_TAXONOMY', () => {
+    it('both accept every member of BRAIN_EVENT_TAXONOMY', () => {
       const member = BRAIN_EVENT_TAXONOMY[0];
       const a: MindEventName = member;
       const b: BrainEventName = member;

@@ -30,9 +30,9 @@ Resolution status used in this document:
 ## Capability Map Overview
 
 - **Total declared capabilities**: 142
-- **WIRED (executable)**: 65 (45.8%)
+- **WIRED (executable)**: 67 (47.2%) — +2 since K87 wave (get_whatsapp_status, sync_whatsapp_history)
 - **UNGATED (method missing)**: 20 (14.1%)
-- **UNGATED (service missing)**: 52 (36.6%)
+- **UNGATED (service missing)**: 50 (35.2%) — pending K90 batch wiring
 - **UNVERIFIED (compound resolver)**: 3
 - **ALIAS (registry pointer)**: 2
 
@@ -91,7 +91,7 @@ Tier 0 is split into sub-partitions:
 | `validate_coupon` | Validar cupom | QUERY | `CouponService.validate` | `backend/src/kloel/coupon.service.ts:192` | WIRED |
 | `search_agent_memory` | Buscar na memória | QUERY | `MemoryService.search` | `backend/src/kloel/memory.service.ts` | UNGATED (method missing) |
 | `search_agent_sessions` | Buscar sessões | QUERY | `SessionService.search` | _(unresolved)_ | UNGATED (service missing) |
-| `get_whatsapp_status` | Status WhatsApp | QUERY | `WhatsAppService.status` | _(unresolved)_ | UNGATED (service missing) |
+| `get_whatsapp_status` | Status WhatsApp | QUERY | `WhatsAppService.status` | `backend/src/marketing/channels/whatsapp/whatsapp.service.ts` (alias K87) | WIRED |
 | `transcribe_audio` | Transcrever áudio | QUERY | `AudioService.transcribe` | `backend/src/kloel/audio.service.ts:67` | WIRED |
 | `list_whatsapp_chats` | Conversas WhatsApp | QUERY | `WhatsAppService.listChats` | _(unresolved)_ | UNGATED (service missing) |
 | `list_whatsapp_contacts` | Contatos WhatsApp | QUERY | `WhatsAppService.listContacts` | _(unresolved)_ | UNGATED (service missing) |
@@ -265,7 +265,7 @@ Source: `backend/src/kloel/capability-registry-v2/partitions/tier-10-reports.ts`
 | `get_whatsapp_messages` | Mensagens WhatsApp | QUERY | `WhatsAppService.getMessages` | _(unresolved)_ | UNGATED (service missing) |
 | `get_whatsapp_backlog` | Backlog WhatsApp | QUERY | `WhatsAppService.getBacklog` | _(unresolved)_ | UNGATED (service missing) |
 | `set_whatsapp_presence` | Presença WhatsApp | MUTATION_SAFE | `WhatsAppService.setPresence` | _(unresolved)_ | UNGATED (service missing) |
-| `sync_whatsapp_history` | Sincronizar WhatsApp | MUTATION_SAFE | `WhatsAppService.syncHistory` | _(unresolved)_ | UNGATED (service missing) |
+| `sync_whatsapp_history` | Sincronizar WhatsApp | MUTATION_SAFE | `WhatsAppService.syncHistory` | `backend/src/marketing/channels/whatsapp/whatsapp.service.ts` (alias K87) | WIRED |
 | `create_agent_job` | Criar job agente | MUTATION_SAFE | `AgentJobService.create` | _(unresolved)_ | UNGATED (service missing) |
 | `list_agent_jobs` | Listar jobs agente | QUERY | `AgentJobService.list` | _(unresolved)_ | UNGATED (service missing) |
 | `set_agent_job_enabled` | Ativar/desativar job | MUTATION_SAFE | `AgentJobService.setEnabled` | _(unresolved)_ | UNGATED (service missing) |
