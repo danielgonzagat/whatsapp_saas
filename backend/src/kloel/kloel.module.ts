@@ -147,6 +147,7 @@ import { RuntimeConversationTracerService } from './runtime-conversation-tracer.
 import { DailyLimitService } from './daily-limit.service';
 import { KloelGlobalPriorService } from './kloel-global-prior.service';
 import { MindBeliefService } from './mind/inference/mind-belief.service';
+import { CommerceOutcomeLearnerService } from './mind/coordination/commerce-outcome-learner.service';
 import { MindBanditService } from './mind/policy/mind-bandit.service';
 import { MindCaseMemoryService } from './mind/memory/mind-case-memory.service';
 import { MindConceptService } from './mind/memory/mind-concepts.service';
@@ -154,6 +155,7 @@ import { MindLongTermMemoryService } from './mind/memory/mind-long-term-memory.s
 import { MindSelfModificationService } from './mind/self-evolution/mind-self-modification.service';
 import { MindGlobalPriorService } from './mind/memory/mind-global-prior.service';
 import { MindController } from './mind/coordination/mind-controller';
+import { InternalMindSelfEvolutionController } from './mind/self-evolution/internal-mind-self-evolution.controller';
 import { MindEventProcessorService } from './mind/runtime/mind-event-processor.service';
 import { MindGuardContextBuilderService } from './mind/policy/mind-guard-context-builder.service';
 import { MindGuardsService } from './mind/policy/mind-guards.service';
@@ -287,6 +289,7 @@ import { WorkspaceModule } from '../workspaces/workspace.module';
     BrainRuntimeController,
     LacunasController,
     MindController,
+    InternalMindSelfEvolutionController,
   ],
   providers: [
     { provide: KLOEL_COMPOSER_E2E_GUARD, useClass: NoopKloelComposerE2EGuard },
@@ -387,6 +390,7 @@ import { WorkspaceModule } from '../workspaces/workspace.module';
     DailyLimitService,
     MindBeliefService,
     MindEmotionalIntelligenceService,
+    CommerceOutcomeLearnerService,
     MindConsciousnessService,
     MindBanditService,
     MindCaseMemoryService,
