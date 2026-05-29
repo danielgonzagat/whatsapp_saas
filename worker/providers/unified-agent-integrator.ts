@@ -1,4 +1,8 @@
 /**
+ * @capability UnifiedAgentIntegrator
+ * @domain commercial-intelligence
+ */
+/**
  * Unified Agent Integrator para o Worker
  *
  * Permite que o worker use o UnifiedAgentService do backend

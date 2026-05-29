@@ -1,3 +1,7 @@
+/**
+ * @capability MediaProcessor
+ * @domain media-content
+ */
 import { type Job, Worker } from 'bullmq';
 import { prisma } from './db';
 import { buildQueueOptions } from './queue';

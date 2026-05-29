@@ -1,3 +1,7 @@
+/**
+ * @capability AutoWhatsAppProvider
+ * @domain channel
+ */
 import { providerStatus } from './health-monitor';
 import { type WorkspaceOrId, unifiedWhatsAppProvider } from './unified-whatsapp-provider';
 import { getWhatsAppProviderFromEnv } from './whatsapp-provider-resolver';

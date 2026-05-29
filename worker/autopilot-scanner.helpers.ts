@@ -1,3 +1,7 @@
+/**
+ * @capability AutopilotScannerHelpers
+ * @domain autopilot
+ */
 import { Prisma } from '@prisma/client';
 import { prisma } from './db';
 

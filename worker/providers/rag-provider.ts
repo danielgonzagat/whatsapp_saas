@@ -1,3 +1,7 @@
+/**
+ * @capability RagRetrievalProvider
+ * @domain commercial-intelligence
+ */
 import OpenAI from 'openai';
 import { prisma } from '../db';
 

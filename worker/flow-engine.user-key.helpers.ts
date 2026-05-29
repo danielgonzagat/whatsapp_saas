@@ -1,4 +1,8 @@
 /**
+ * @capability FlowUserKeyHelpers
+ * @domain flows-automation
+ */
+/**
  * Pure helpers extracted from `FlowEngineGlobal` (worker/flow-engine-global.ts).
  *
  * These three functions encode the engine's user/workspace key conventions:

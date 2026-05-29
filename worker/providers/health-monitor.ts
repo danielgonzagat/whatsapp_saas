@@ -1,3 +1,7 @@
+/**
+ * @capability ProviderHealthMonitor
+ * @domain health
+ */
 import { redis } from '../redis-client';
 
 /**

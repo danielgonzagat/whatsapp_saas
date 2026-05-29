@@ -1,3 +1,7 @@
+/**
+ * @capability WorkspaceTimezoneResolver
+ * @domain tenant-workspace
+ */
 const DEFAULT_TIMEZONE = 'America/Sao_Paulo';
 
 interface TimezoneHolder {

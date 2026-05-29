@@ -1,3 +1,7 @@
+/**
+ * @capability CampaignProvider
+ * @domain campaign
+ */
 import { WorkerLogger } from '../logger';
 
 const log = new WorkerLogger('campaigns-provider');

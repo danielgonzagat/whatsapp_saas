@@ -1,3 +1,7 @@
+/**
+ * @capability RedisContextStore
+ * @domain queue
+ */
 import { redis } from './redis-client';
 
 /**

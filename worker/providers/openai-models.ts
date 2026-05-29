@@ -1,3 +1,7 @@
+/**
+ * @capability WorkerOpenAiModelResolver
+ * @domain commercial-intelligence
+ */
 /** Worker open ai model role type. */
 export type WorkerOpenAIModelRole =
   | 'brain'

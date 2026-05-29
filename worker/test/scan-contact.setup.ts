@@ -1,3 +1,7 @@
+/**
+ * @capability ScanContactTestSetup
+ * @domain test-results
+ */
 import type { Mock } from 'vitest';
 
 type MockPrisma = Record<string, Record<string, Mock>>;

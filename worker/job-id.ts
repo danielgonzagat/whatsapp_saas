@@ -1,3 +1,7 @@
+/**
+ * @capability QueueJobIdBuilder
+ * @domain queue
+ */
 const A_Z_A_Z0_9_RE = /[^a-zA-Z0-9_-]+/g;
 const PATTERN_RE = /^_+|_+$/g;
 function sanitizeQueueIdPart(value: unknown): string {

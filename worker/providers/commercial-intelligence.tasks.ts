@@ -1,3 +1,7 @@
+/**
+ * @capability CommercialIntelligenceTasks
+ * @domain commercial-intelligence
+ */
 import { randomUUID } from 'node:crypto';
 import type {
   BusinessStateSnapshot,

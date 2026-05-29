@@ -1,4 +1,8 @@
 /**
+ * @capability PrepaidWalletSettlementHelpers
+ * @domain payment
+ */
+/**
  * Pure helpers extracted from `worker/providers/prepaid-wallet-settlement.ts`
  * so the BigInt arithmetic, validation predicates, and metadata builders can
  * be unit-tested without spinning up a Prisma client or transaction.

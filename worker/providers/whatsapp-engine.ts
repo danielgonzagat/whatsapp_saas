@@ -1,4 +1,8 @@
 /**
+ * @capability WhatsAppEngine
+ * @domain channel
+ */
+/**
  * ARCHITECTURAL COHESION: WhatsApp Engine — the single provider-agnostic facade over multiple
  * WhatsApp providers. Covers message sending with anti-ban protection, session management,
  * message queueing, and media/video/voice/document/audio/sticker dispatch. All channel types

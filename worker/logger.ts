@@ -1,4 +1,8 @@
 /**
+ * @capability WorkerStructuredLogger
+ * @domain logging
+ */
+/**
  * Logger estruturado (JSON) para worker, com contexto e correlação.
  */
 export class WorkerLogger {

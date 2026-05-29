@@ -1,3 +1,7 @@
+/**
+ * @capability ScraperProcessor
+ * @domain campaign
+ */
 import { type Job, Worker } from 'bullmq';
 import type { Prisma } from '@prisma/client';
 import { PIPELINE_COLORS } from './lib/colors';

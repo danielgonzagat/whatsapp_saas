@@ -1,4 +1,8 @@
 /**
+ * @capability FlowNodeExecutorHelpers
+ * @domain flows-automation
+ */
+/**
  * Pure helpers extracted from worker/flow-node-executor.ts.
  *
  * Every function in this file is side-effect-free: zero Prisma, zero Redis,

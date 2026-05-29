@@ -1,3 +1,7 @@
+/**
+ * @capability CommercialIntelligenceSignals
+ * @domain commercial-intelligence
+ */
 import type { MarketSignal } from './commercial-intelligence.types';
 import { normalized, includesAny } from './commercial-intelligence.core';
 

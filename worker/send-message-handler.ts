@@ -24,6 +24,14 @@ type ProviderSendResponse = {
 const extractExternalId = (res: ProviderSendResponse): string | null =>
   res?.messages?.[0]?.id || res?.message?.id || res?.id || res?.messageId || res?.sid || null;
 
+/**
+ * @canonical BullMQ `send-message` job-processor entry point — invoked from
+ *   processor.ts. Distinct capability from the flow-engine worker-side
+ *   `sendMessage` (flow-message-sender.helpers.ts): Job-payload contract,
+ *   WhatsAppEngine provider, PlanLimits gate, BullMQ-managed retry
+ *   (job.opts.attempts), and template/media support. See
+ *   docs/architecture/SEND_MESSAGE_CANONICAL.md R1 — do not consolidate.
+ */
 export async function handleSendMessage(job: Job) {
   const { to, message, user, workspaceId, workspace: initialWorkspace } = job.data ?? {};
   let workspace = initialWorkspace;

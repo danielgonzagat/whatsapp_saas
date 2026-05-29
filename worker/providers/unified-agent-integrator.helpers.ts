@@ -1,4 +1,8 @@
 /**
+ * @capability UnifiedAgentIntegratorHelpers
+ * @domain commercial-intelligence
+ */
+/**
  * Pure helpers extracted from `worker/providers/unified-agent-integrator.ts`
  * so the routing predicates, autopilot setting parsers, and Unified→legacy
  * action mappers can be unit-tested without spinning up the HTTP transport.

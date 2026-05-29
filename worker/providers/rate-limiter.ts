@@ -1,3 +1,7 @@
+/**
+ * @capability RateLimiter
+ * @domain channel
+ */
 import { prisma } from '../db';
 import { rateLimitCounter } from '../metrics';
 import { redis } from '../redis-client';

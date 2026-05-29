@@ -1,4 +1,8 @@
 /**
+ * @capability WhatsAppEngineHelpers
+ * @domain channel
+ */
+/**
  * Pure helpers extracted from `worker/providers/whatsapp-engine.ts`.
  * Kept free of Redis / BullMQ / provider side effects so they can be
  * unit-tested in isolation.

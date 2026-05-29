@@ -1,3 +1,7 @@
+/**
+ * @capability SemanticMemoryProvider
+ * @domain commercial-intelligence
+ */
 import { PrismaClient } from '@prisma/client';
 import OpenAI from 'openai';
 import { resolveWorkerOpenAIModel } from './openai-models';

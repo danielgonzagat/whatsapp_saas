@@ -1,4 +1,8 @@
 /**
+ * @capability FlowEngineRuntime
+ * @domain flows-automation
+ */
+/**
  * ARCHITECTURAL COHESION: This file is a single organism — the Flow Engine
  * global singleton. It orchestrates the full lifecycle of a WhatsApp flow
  * execution: initialization (startFlow), user interaction (onUserResponse),

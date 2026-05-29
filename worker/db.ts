@@ -1,3 +1,7 @@
+/**
+ * @capability PrismaClientSingleton
+ * @domain prisma
+ */
 import { Prisma, PrismaClient } from '@prisma/client';
 
 const enableQueryLogs = process.env.PRISMA_QUERY_LOGS === 'true';

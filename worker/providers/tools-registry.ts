@@ -1,4 +1,8 @@
 /**
+ * @capability AgentToolsRegistry
+ * @domain commercial-intelligence
+ */
+/**
  * ARCHITECTURAL COHESION: Tool Registry — the single tool-to-handler binding table for all
  * AI-agent-callable tools. Defines OpenAI-compatible function definitions with metadata,
  * parameter schemas, and execution handlers (getClientInfo, getAgentProfile, createDeal, etc.).

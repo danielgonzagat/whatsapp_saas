@@ -1,3 +1,7 @@
+/**
+ * @capability LeadScorer
+ * @domain crm
+ */
 import { prisma } from '../db';
 
 /**

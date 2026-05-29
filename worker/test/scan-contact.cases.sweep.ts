@@ -1,3 +1,7 @@
+/**
+ * @capability ScanContactTestCases
+ * @domain test-results
+ */
 import { it, expect, vi } from 'vitest';
 import type { Mock } from 'vitest';
 import type * as QueueModule from '../queue';

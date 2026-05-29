@@ -1,3 +1,7 @@
+/**
+ * @capability ProviderRegistry
+ * @domain integrations
+ */
 import { prisma } from '../db';
 import { autoProvider } from './auto-provider';
 import { emailProvider } from './email-provider';

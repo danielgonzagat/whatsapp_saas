@@ -1,3 +1,7 @@
+/**
+ * @capability ConversationAgentState
+ * @domain conversation
+ */
 type ConversationMessageLike = {
   direction?: string | null;
   createdAt?: Date | string | null;

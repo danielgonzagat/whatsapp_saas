@@ -1,4 +1,8 @@
 /**
+ * @capability QueueConfigHelpers
+ * @domain queue
+ */
+/**
  * Pure helpers extracted from `worker/queue.ts` so they can be unit-tested
  * without spinning up Redis/BullMQ. Behaviour is byte-identical to the
  * original inline implementations.

@@ -1,3 +1,7 @@
+/**
+ * @capability PlanLimitGuard
+ * @domain billing
+ */
 import { prisma } from '../db';
 import { planLimitCounter } from '../metrics';
 import { redis } from '../redis-client';

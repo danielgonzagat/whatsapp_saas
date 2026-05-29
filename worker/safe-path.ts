@@ -1,3 +1,7 @@
+/**
+ * @capability SafePathResolver
+ * @domain common
+ */
 import path from 'node:path';
 
 /** Path.resolve wrapper — validates segments. */

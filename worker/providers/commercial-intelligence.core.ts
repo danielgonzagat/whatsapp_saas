@@ -1,3 +1,7 @@
+/**
+ * @capability CommercialIntelligenceCore
+ * @domain commercial-intelligence
+ */
 import type {
   DemandState,
   DemandLane,

@@ -1,3 +1,7 @@
+/**
+ * @capability FlowDefinitionParser
+ * @domain flows-automation
+ */
 import type { FlowDefinition, FlowNode, RawFlowEdge, RawFlowNode } from './flow-engine.types';
 
 /** Parse flow definition from raw node/edge arrays into a FlowDefinition. */

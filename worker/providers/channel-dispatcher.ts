@@ -1,3 +1,7 @@
+/**
+ * @capability ChannelDispatcher
+ * @domain channel
+ */
 import nodemailer from 'nodemailer';
 import { WorkerLogger } from '../logger';
 import { resolveEmailConfig } from './email-config.helper';

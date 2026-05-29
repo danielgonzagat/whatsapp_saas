@@ -1,4 +1,8 @@
 /**
+ * @capability PrepaidWalletSettlement
+ * @domain payment
+ */
+/**
  * ARCHITECTURAL COHESION: Prepaid Wallet Settlement Engine — a closed financial transaction
  * loop handling usage quoting, charge settlement with idempotency, cost calculation from token
  * descriptors, and ledger audit entries. Every settlement step depends on the prior step's

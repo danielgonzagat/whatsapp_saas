@@ -1,4 +1,8 @@
 /**
+ * @capability LazyQueueSystem
+ * @domain queue
+ */
+/**
  * ARCHITECTURAL COHESION: This file is a single organism — the Lazy Queue
  * System. It manages the complete lifecycle of BullMQ queues: lazy Redis
  * connection, lazy queue/DLQ/QueueEvents creation via Proxy, DLQ-to-ops
@@ -319,6 +323,8 @@ export const webhookQueue = lazyQueue('webhook-jobs');
 export const silent24hResolverQueue = lazyQueue('silent-24h-resolver');
 /** Mass send queue. */
 export const massSendQueue = lazyQueue('mass-send');
+/** Mind self-evolution cron queue (fires every 6h, hits backend /internal/mind-self-evolution/trigger). */
+export const mindSelfEvolutionQueue = lazyQueue('mind-self-evolution');
 
 // queueOptions is built lazily so reading it does not trigger
 // connection creation unless someone actually consumes it.
@@ -344,6 +350,7 @@ export const queueRegistry: BullQueue[] = [
   webhookQueue,
   silent24hResolverQueue,
   massSendQueue,
+  mindSelfEvolutionQueue,
 ];
 
 // ─── DLQ webhook notifier ─────────────────────────────────────────────────
