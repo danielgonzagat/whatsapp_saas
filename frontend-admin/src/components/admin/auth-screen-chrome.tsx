@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -31,7 +32,15 @@ export function AuthScreenChrome({
         )}
       >
         <header className="mb-8 flex flex-col items-center gap-3 text-center">
-          <img src="/kloel-mushroom-animated.svg" alt="Kloel" className="h-12 w-12" aria-hidden />
+          <Image
+            src="/kloel-mushroom-animated.svg"
+            alt="Kloel"
+            width={48}
+            height={48}
+            unoptimized
+            className="h-12 w-12"
+            aria-hidden
+          />
           <div className="flex flex-col items-center gap-1">
             <h1 className="text-xl font-semibold tracking-tight text-foreground">Kloel</h1>
             <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">

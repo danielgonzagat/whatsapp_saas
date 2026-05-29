@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import type { AdminProductRow } from '@/lib/api/admin-products-api';
@@ -25,9 +26,15 @@ export function ProductCard({ product, busyId, onApprove, onReject }: ProductCar
     >
       <div className="grid gap-4 lg:grid-cols-[64px_minmax(0,1fr)_auto]">
         <div className="flex flex-col items-start gap-3">
-          <div className="flex size-16 items-center justify-center overflow-hidden rounded-[12px] border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)]">
+          <div className="relative flex size-16 items-center justify-center overflow-hidden rounded-[12px] border border-[var(--app-border-primary)] bg-[var(--app-bg-secondary)]">
             {product.imageUrl ? (
-              <img src={product.imageUrl} alt="" className="h-full w-full object-cover" />
+              <Image
+                src={product.imageUrl}
+                alt=""
+                fill
+                sizes="64px"
+                className="object-cover"
+              />
             ) : (
               <span className="text-[11px] text-[var(--app-text-tertiary)]">Sem imagem</span>
             )}

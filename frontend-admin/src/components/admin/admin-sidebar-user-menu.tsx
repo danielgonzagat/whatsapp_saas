@@ -4,6 +4,7 @@ import { ChevronUp, LogOut, Moon, Settings, Sun, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTheme } from 'next-themes';
+import { useClientMounted } from '@/lib/use-client-mounted';
 import { useAdminSession } from '@/lib/auth/admin-session-context';
 import { AdminNotificationsPanel } from './admin-notifications-panel';
 
@@ -24,13 +25,9 @@ export function AdminSidebarUserMenu({ expanded }: { expanded: boolean }) {
   const router = useRouter();
   const { admin, logout } = useAdminSession();
   const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useClientMounted();
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (!open) {

@@ -16,6 +16,7 @@ import {
   type AdminChatSessionView,
 } from '@/lib/api/admin-chat-api';
 import { useAdminSession } from '@/lib/auth/admin-session-context';
+import { useClientMounted } from '@/lib/use-client-mounted';
 
 const SESSION_CACHE_SLOT = 'kloel-admin:chat-sessions';
 const ACTIVE_SESSION_CACHE_SLOT = 'kloel-admin:chat-active';
@@ -131,19 +132,42 @@ function sortSessions(items: AdminChatSessionSummary[]) {
 /** Admin chat history provider. */
 export function AdminChatHistoryProvider({ children }: { children: ReactNode }) {
   const { admin } = useAdminSession();
+  const mounted = useClientMounted();
   const [sessions, setSessions] = useState<AdminChatSessionSummary[]>([]);
   const [activeSessionId, setActiveSessionIdRaw] = useState<string | null>(null);
   const sessionsRef = useRef<AdminChatSessionSummary[]>([]);
 
-  useEffect(() => {
-    const cachedSessions = readCache<AdminChatSessionSummary[]>(SESSION_CACHE_SLOT, []);
-    sessionsRef.current = cachedSessions;
-    setSessions(cachedSessions);
-  }, []);
+  const hasAdmin = Boolean(admin);
 
-  useEffect(() => {
+  // Hydrate from the persisted cache exactly once, after the client has
+  // mounted (so SSR and the first client render both start from the empty
+  // server snapshot and never mismatch). Done via the "adjust state while
+  // rendering" idiom instead of a setState-in-effect, which the React Compiler
+  // flags as a cascading render.
+  const [cacheHydrated, setCacheHydrated] = useState(false);
+  if (mounted && !cacheHydrated) {
+    setSessions(readCache<AdminChatSessionSummary[]>(SESSION_CACHE_SLOT, []));
     setActiveSessionIdRaw(readSessionCache<string | null>(ACTIVE_SESSION_CACHE_SLOT, null));
-  }, []);
+    setCacheHydrated(true);
+  }
+
+  // Drop session state the moment the admin signs out — handled while
+  // rendering (not in an effect) by tracking the previous auth presence.
+  const [sawAdmin, setSawAdmin] = useState(hasAdmin);
+  if (sawAdmin !== hasAdmin) {
+    setSawAdmin(hasAdmin);
+    if (!hasAdmin) {
+      setSessions([]);
+      setActiveSessionIdRaw(null);
+      writeSessionCache(SESSION_CACHE_SLOT, []);
+    }
+  }
+
+  // Mirror the latest sessions into a ref so `getSessionById` can stay a
+  // stable callback that reads current data without a render-time ref write.
+  useEffect(() => {
+    sessionsRef.current = sessions;
+  }, [sessions]);
 
   const setActiveSessionId = useCallback((sessionId: string | null) => {
     setActiveSessionIdRaw(sessionId);
@@ -181,12 +205,22 @@ export function AdminChatHistoryProvider({ children }: { children: ReactNode }) 
 
   useEffect(() => {
     if (!admin) {
-      persistSessions([]);
-      setActiveSessionIdRaw(null);
       return;
     }
-    void refreshSessions();
-  }, [admin, persistSessions, refreshSessions]);
+    // Defer the initial fetch past the synchronous effect tick: setState only
+    // ever runs from the resolved API promise (an external system), never
+    // synchronously inside the effect body.
+    let cancelled = false;
+    void (async () => {
+      await Promise.resolve();
+      if (!cancelled) {
+        await refreshSessions();
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [admin, refreshSessions]);
 
   useEffect(() => {
     if (!admin) {
