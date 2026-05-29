@@ -44,7 +44,7 @@ describe('kloel-thinker.abi.helpers', () => {
       const { boundedAbi, truncated } = buildBoundedAbiPayload(abi);
       expect((boundedAbi['beliefs'] as unknown[]).length).toBe(ABI_ARRAY_CAP);
       expect((boundedAbi['memories'] as unknown[]).length).toBe(ABI_ARRAY_CAP);
-      expect(((boundedAbi['nested'] as { items: unknown[] }).items).length).toBe(ABI_ARRAY_CAP);
+      expect((boundedAbi['nested'] as { items: unknown[] }).items.length).toBe(ABI_ARRAY_CAP);
       expect(truncated).toBe(false);
     });
 
