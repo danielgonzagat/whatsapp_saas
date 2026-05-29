@@ -43,7 +43,7 @@
     "cleanup:legacy-products": "ts-node scripts/remove-legacy-products.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.1055.0",
+    "@aws-sdk/client-s3": "3.1056.0",
     "@nestjs-modules/ioredis": "2.2.1",
     "@nestjs/common": "11.1.24",
     "@nestjs/config": "4.0.4",
@@ -57,8 +57,8 @@
     "@nestjs/throttler": "6.5.0",
     "@nestjs/websockets": "11.1.24",
     "@prisma/client": "5.22.0",
-    "@sentry/nestjs": "10.54.0",
-    "@sentry/node": "10.54.0",
+    "@sentry/nestjs": "10.55.0",
+    "@sentry/node": "10.55.0",
     "@types/bcrypt": "6.0.0",
     "@types/cookie-parser": "1.4.10",
     "archiver": "^8.0.0",
@@ -80,7 +80,7 @@
     "jsonwebtoken": "9.0.3",
     "multer": "^2.1.1",
     "nodemailer": "^8.0.9",
-    "openai": "6.39.0",
+    "openai": "6.39.1",
     "pdf-parse": "2.4.5",
     "prisma": "5.22.0",
     "prom-client": "15.1.3",
