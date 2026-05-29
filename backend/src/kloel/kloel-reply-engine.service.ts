@@ -65,6 +65,8 @@ import {
   buildToneDirective,
   logPostReplySentiment,
 } from './kloel-reply-engine.emotional-tone.helpers';
+import { buildRecallDirective } from './kloel-reply-engine.recall.helpers';
+import { LongTermMemoryService } from './mind/memory/long-term-memory.service';
 
 type ChatCompletionMessageParam = OpenAI.Chat.ChatCompletionMessageParam;
 
@@ -114,6 +116,7 @@ export class KloelReplyEngineService {
     @Optional() private readonly mindEventProcessorService?: MindEventProcessorService,
     @Optional()
     private readonly emotionalIntelligenceService?: MindEmotionalIntelligenceService,
+    @Optional() private readonly longTermMemoryService?: LongTermMemoryService,
   ) {
     this.openai = createTextLlmClient(undefined, { timeout: 60_000, maxRetries: 0 });
     this.toolRouter = new KloelToolRouter(
@@ -392,6 +395,20 @@ export class KloelReplyEngineService {
           guardrailApplied: toneDirective.guardrailApplied,
         });
       }
+      // Wave5 L6 #2: durable long-term-memory recall (additive, fail-open).
+      // Recalls the strongest reinforced outcome facts for this workspace and
+      // injects them into the dynamic runtime context so the model answers with
+      // what tends to work here instead of from a blank slate.
+      const recallDirective = await buildRecallDirective(this.longTermMemoryService, {
+        workspaceId: params.workspaceId,
+        logger: this.logger,
+      });
+      if (recallDirective) {
+        this.logger.log('kloel_ltm_recall_applied', {
+          workspaceId: params.workspaceId,
+          factCount: recallDirective.factCount,
+        });
+      }
       let assistantMessage: string;
       try {
         assistantMessage = await buildAssistantReplyImpl(params, {
@@ -412,7 +429,12 @@ export class KloelReplyEngineService {
           buildChatModelMessages: async (p) => this.buildChatModelMessages(p),
           buildDynamicRuntimeContext: async (p) => {
             const base = await this.buildDynamicRuntimeContext(p);
-            return toneDirective ? `${base}\n\n${toneDirective.directive}` : base;
+            const withTone = toneDirective
+              ? `${base}\n\n${toneDirective.directive}`
+              : base;
+            return recallDirective
+              ? `${withTone}\n\n${recallDirective.directive}`
+              : withTone;
           },
           ...(this.spine !== undefined ? { spine: this.spine } : {}),
           ...(params.abiStateJson !== undefined ? { abiStateJson: params.abiStateJson } : {}),

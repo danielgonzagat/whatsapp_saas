@@ -9,6 +9,7 @@ import { MindService } from '../../mind.service';
 import { MindAutonomyService } from '../autonomy/mind-autonomy.service';
 import { MindCuriosityService } from '../curiosity/mind-curiosity.service';
 import { MindLongTermMemoryService } from '../memory/mind-long-term-memory.service';
+import { MindSelfModelService } from '../self-model/mind-self-model.service';
 
 const DEFAULT_SCHEDULER_INTERVAL_MS = 30_000;
 const DEFAULT_TICK_CONCURRENCY = 4;
@@ -43,6 +44,7 @@ export class MindProcessorService implements OnModuleInit, OnModuleDestroy {
     @Optional() private readonly autonomy?: MindAutonomyService,
     @Optional() private readonly curiosity?: MindCuriosityService,
     @Optional() private readonly longTermMemory?: MindLongTermMemoryService,
+    @Optional() private readonly selfModel?: MindSelfModelService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -122,6 +124,16 @@ export class MindProcessorService implements OnModuleInit, OnModuleDestroy {
         void this.autonomy?.proposeGoal(workspaceId);
         void this.curiosity?.identifyKnowledgeGap(workspaceId);
         void this.longTermMemory?.consolidate(workspaceId);
+        // Wave5 L6: persist a versioned self-model snapshot each cycle.
+        // snapshot() is not internally guarded, so catch here to stay
+        // fail-open — a self-model write must never break the tick.
+        void this.selfModel?.snapshot(workspaceId).catch((error: unknown) => {
+          this.logger.warn(
+            `MIND self-model snapshot failed workspace=${workspaceId}: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+        });
         return tick;
       },
       {
