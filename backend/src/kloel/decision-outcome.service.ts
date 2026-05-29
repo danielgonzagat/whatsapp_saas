@@ -5,6 +5,7 @@ import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelGlobalPriorService } from './kloel-global-prior.service';
 import { extractChannel } from './mind/inference/mind-belief-by-channel';
+import { MindBanditService } from './mind/policy/mind-bandit.service';
 
 function inputJson(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
@@ -35,6 +36,7 @@ export class DecisionOutcomeService {
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly globalPrior?: KloelGlobalPriorService,
+    @Optional() private readonly mindBandit?: MindBanditService,
   ) {}
 
   async recordDecision(input: RecordDecisionInput) {
@@ -68,7 +70,12 @@ export class DecisionOutcomeService {
       const closed = await this.prisma.decisionOutcome.findFirst({
         where: { outcomeKey: input.outcomeKey, workspaceId: { not: '' } },
         orderBy: { outcomeAt: 'desc' },
-        select: { contextSnapshot: true, decisionType: true, chosenAction: true },
+        select: {
+          contextSnapshot: true,
+          decisionType: true,
+          chosenAction: true,
+          workspaceId: true,
+        },
       });
 
       if (closed && this.globalPrior) {
@@ -87,6 +94,25 @@ export class DecisionOutcomeService {
               error: err instanceof Error ? err.message : String(err),
             });
           }
+        }
+      }
+
+      if (closed && this.mindBandit) {
+        // Append-only learning signal: feed the closed outcome's win/loss back
+        // into the contextual bandit arm so Kloel learns from chat outcomes.
+        // Fire-and-forget — a learning failure must never break the decision path.
+        try {
+          await this.mindBandit.recordOutcome({
+            workspaceId: closed.workspaceId,
+            decisionType: closed.decisionType,
+            arm: closed.chosenAction,
+            outcome: input.wonVsBaseline ? 1 : 0,
+          });
+        } catch (err: unknown) {
+          this.logger.warn('Failed to record bandit outcome from closeOutcome', {
+            outcomeKey: input.outcomeKey,
+            error: err instanceof Error ? err.message : String(err),
+          });
         }
       }
     }

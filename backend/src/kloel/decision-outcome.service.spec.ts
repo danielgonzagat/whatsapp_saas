@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DecisionOutcomeService } from './decision-outcome.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { MindBanditService } from './mind/policy/mind-bandit.service';
 
 describe('DecisionOutcomeService', () => {
   let service: DecisionOutcomeService;
@@ -79,6 +80,101 @@ describe('DecisionOutcomeService', () => {
           wonVsBaseline: true,
         }),
       });
+    });
+  });
+
+  describe('closeOutcome → MindBandit learning feedback (L11 cognitive loop)', () => {
+    function buildModule(opts: {
+      wonVsBaseline: boolean;
+      closedRow: Record<string, unknown> | null;
+    }) {
+      const recordOutcome = jest.fn().mockResolvedValue(undefined);
+      const prismaMock = {
+        decisionOutcome: {
+          create: jest.fn().mockResolvedValue({ id: 'do-1' }),
+          findFirst: jest.fn().mockResolvedValue(opts.closedRow),
+          findMany: jest.fn().mockResolvedValue([]),
+          updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+        },
+        decisionOutcomeEvent: { create: jest.fn().mockResolvedValue({ id: 'ev-1' }) },
+      };
+      return Test.createTestingModule({
+        providers: [
+          DecisionOutcomeService,
+          { provide: PrismaService, useValue: prismaMock },
+          { provide: MindBanditService, useValue: { recordOutcome } },
+        ],
+      })
+        .compile()
+        .then((m) => ({ svc: m.get(DecisionOutcomeService), recordOutcome }));
+    }
+
+    it('feeds a binary win (outcome=1) into the bandit arm', async () => {
+      const { svc, recordOutcome } = await buildModule({
+        wonVsBaseline: true,
+        closedRow: {
+          contextSnapshot: { channel: 'whatsapp' },
+          decisionType: 'chat_reply',
+          chosenAction: 'engage',
+          workspaceId: 'ws-1',
+        },
+      });
+
+      await svc.closeOutcome({
+        outcomeKey: 'chat:ws-1:1:abc',
+        outcomeName: 'inbound.received',
+        wonVsBaseline: true,
+      });
+
+      expect(recordOutcome).toHaveBeenCalledWith({
+        workspaceId: 'ws-1',
+        decisionType: 'chat_reply',
+        arm: 'engage',
+        outcome: 1,
+      });
+    });
+
+    it('feeds a binary loss (outcome=0) when wonVsBaseline is false', async () => {
+      const { svc, recordOutcome } = await buildModule({
+        wonVsBaseline: false,
+        closedRow: {
+          contextSnapshot: { channel: 'whatsapp' },
+          decisionType: 'chat_reply',
+          chosenAction: 'engage',
+          workspaceId: 'ws-2',
+        },
+      });
+
+      await svc.closeOutcome({
+        outcomeKey: 'chat:ws-2:1:def',
+        outcomeName: 'inbound.silent_24h',
+        wonVsBaseline: false,
+      });
+
+      expect(recordOutcome).toHaveBeenCalledWith(
+        expect.objectContaining({ workspaceId: 'ws-2', arm: 'engage', outcome: 0 }),
+      );
+    });
+
+    it('never throws when the bandit arm update fails (fire-and-forget)', async () => {
+      const { svc, recordOutcome } = await buildModule({
+        wonVsBaseline: true,
+        closedRow: {
+          contextSnapshot: {},
+          decisionType: 'chat_reply',
+          chosenAction: 'engage',
+          workspaceId: 'ws-3',
+        },
+      });
+      recordOutcome.mockRejectedValueOnce(new Error('arm row not found'));
+
+      await expect(
+        svc.closeOutcome({
+          outcomeKey: 'chat:ws-3:1:ghi',
+          outcomeName: 'inbound.received',
+          wonVsBaseline: true,
+        }),
+      ).resolves.toBeUndefined();
     });
   });
 
