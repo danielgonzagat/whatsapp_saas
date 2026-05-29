@@ -89,6 +89,52 @@ export class ReportService {
   }
 
   /**
+   * Canonical-name alias of {@link operations} for the Kloel capability
+   * resolver (`ReportService.getOperations`). Accepts the
+   * (workspaceId, args) signature used by `KloelDomainServiceResolver`.
+   * Args `since` (Date|string) and `limit` (number) are forwarded.
+   */
+  async getOperations(
+    workspaceId: string,
+    args?: { since?: Date | string; limit?: number },
+  ): Promise<OperationReport> {
+    const since =
+      args?.since instanceof Date
+        ? args.since
+        : typeof args?.since === 'string'
+          ? new Date(args.since)
+          : undefined;
+    const limit = typeof args?.limit === 'number' ? args.limit : undefined;
+    return this.operations(workspaceId, {
+      ...(since ? { since } : {}),
+      ...(limit !== undefined ? { limit } : {}),
+    });
+  }
+
+  /**
+   * Canonical-name alias of {@link abandonments} for the Kloel capability
+   * resolver (`ReportService.getAbandonments`). Accepts the
+   * (workspaceId, args) signature used by `KloelDomainServiceResolver`.
+   * Args `since` (Date|string) and `limit` (number) are forwarded.
+   */
+  async getAbandonments(
+    workspaceId: string,
+    args?: { since?: Date | string; limit?: number },
+  ): Promise<AbandonmentReport> {
+    const since =
+      args?.since instanceof Date
+        ? args.since
+        : typeof args?.since === 'string'
+          ? new Date(args.since)
+          : undefined;
+    const limit = typeof args?.limit === 'number' ? args.limit : undefined;
+    return this.abandonments(workspaceId, {
+      ...(since ? { since } : {}),
+      ...(limit !== undefined ? { limit } : {}),
+    });
+  }
+
+  /**
    * CRM pipeline snapshot: count of KloelLead rows grouped by `stage`,
    * scoped to one workspace.
    */

@@ -27,6 +27,16 @@ export class DashboardService {
     private prisma: PrismaService,
     @InjectRedis() private readonly redis: Redis,
   ) {}
+  /**
+   * Canonical-name alias of {@link getStats} for the Kloel capability
+   * resolver (`DashboardService.summary`). Accepts the (workspaceId, args)
+   * signature used by `KloelDomainServiceResolver`; args are ignored —
+   * the summary is workspace-scoped only.
+   */
+  async summary(workspaceId: string) {
+    return this.getStats(workspaceId);
+  }
+
   async getStats(workspaceId: string) {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },

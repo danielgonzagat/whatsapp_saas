@@ -285,6 +285,20 @@ export class WalletService {
   }
 
   /**
+   * Canonical-name alias of {@link getTransactionHistory} for the Kloel
+   * capability resolver (`WalletService.getStatement`). Accepts the
+   * (workspaceId, args) signature used by `KloelDomainServiceResolver`.
+   * Args `page`, `limit`, `type` are forwarded with safe defaults. This
+   * is a read-only alias — no ledger writes.
+   */
+  async getStatement(workspaceId: string, args?: { page?: number; limit?: number; type?: string }) {
+    const page = typeof args?.page === 'number' ? args.page : 1;
+    const limit = typeof args?.limit === 'number' ? args.limit : 20;
+    const type = typeof args?.type === 'string' ? args.type : undefined;
+    return this.getTransactionHistory(workspaceId, page, limit, type);
+  }
+
+  /**
    * 🔄 Reconciliation: settle pending → available after 7 days
    * Runs every 6 hours.
    *

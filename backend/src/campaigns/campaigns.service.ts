@@ -97,6 +97,16 @@ export class CampaignsService {
     });
   }
 
+  /**
+   * Canonical-name alias of {@link findAll} for the Kloel capability
+   * resolver (`CampaignService.list`). Accepts the (workspaceId, args)
+   * signature used by `KloelDomainServiceResolver`; args are ignored
+   * — listing is workspace-scoped only.
+   */
+  async list(workspaceId: string) {
+    return this.findAll(workspaceId);
+  }
+
   /** Find one. */
   async findOne(workspaceId: string, id: string) {
     const campaign = await this.prisma.campaign.findFirst({

@@ -342,6 +342,16 @@ export class WorkspaceService {
   }
 
   /**
+   * Canonical-name alias of {@link getAccountSettings} for the Kloel
+   * capability resolver (`WorkspaceService.getSettings`). Accepts the
+   * (workspaceId, args) signature used by `KloelDomainServiceResolver`;
+   * args are ignored — settings are scoped to the workspace alone.
+   */
+  async getSettings(workspaceId: string) {
+    return this.getAccountSettings(workspaceId);
+  }
+
+  /**
    * Atualiza providerSettings com deep merge (mantém chaves aninhadas existentes).
    * K30 capability: update_workspace_settings.
    */

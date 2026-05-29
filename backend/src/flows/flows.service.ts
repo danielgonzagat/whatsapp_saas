@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
@@ -21,6 +22,27 @@ export class FlowsService {
     private prisma: PrismaService,
     private audit: AuditService,
   ) {}
+
+  /**
+   * Canonical-name alias for the Kloel capability resolver
+   * (`FlowService.create`). Accepts the (workspaceId, args) signature
+   * used by `KloelDomainServiceResolver`. Generates a fresh UUID for
+   * the new flow then delegates to {@link save}, which performs the
+   * upsert. Args `name`, `nodes`, `edges` are forwarded; `nodes`/`edges`
+   * default to empty arrays so the resolver can create an empty flow
+   * even if the caller passes nothing.
+   */
+  async create(workspaceId: string, args?: { name?: string; nodes?: unknown; edges?: unknown }) {
+    const flowId = randomUUID();
+    const nodes = Array.isArray(args?.nodes) ? args.nodes : [];
+    const edges = Array.isArray(args?.edges) ? args.edges : [];
+    const name = typeof args?.name === 'string' ? args.name : undefined;
+    return this.save(workspaceId, flowId, {
+      nodes,
+      edges,
+      ...(name !== undefined ? { name } : {}),
+    });
+  }
 
   /** Save. */
   async save(

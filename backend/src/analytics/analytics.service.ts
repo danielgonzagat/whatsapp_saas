@@ -41,6 +41,16 @@ export class AnalyticsService {
     private readonly cache: CacheService,
   ) {}
 
+  /**
+   * Canonical-name alias of {@link getDashboardStats} for the Kloel
+   * capability resolver (`AnalyticsService.get`). Accepts the
+   * (workspaceId, args) signature used by `KloelDomainServiceResolver`;
+   * args are ignored — analytics are workspace-scoped only.
+   */
+  async get(workspaceId: string) {
+    return this.getDashboardStats(workspaceId);
+  }
+
   /** Get dashboard stats. */
   async getDashboardStats(workspaceId: string) {
     return this.cache.wrap(
@@ -326,5 +336,4 @@ export class AnalyticsService {
       productsLoaded,
     };
   }
-
 }

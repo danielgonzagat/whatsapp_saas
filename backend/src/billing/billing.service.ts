@@ -67,6 +67,16 @@ export class BillingService {
     return this.subsService.getSubscription(workspaceId);
   }
 
+  /**
+   * Canonical-name alias of {@link getSubscription} for the Kloel
+   * capability resolver (`BillingService.status`). Accepts the
+   * (workspaceId, args) signature used by `KloelDomainServiceResolver`;
+   * args are ignored. Read-only — no Stripe writes.
+   */
+  async status(workspaceId: string) {
+    return this.getSubscription(workspaceId);
+  }
+
   async activateTrial(workspaceId: string) {
     return this.subsService.activateTrial(workspaceId);
   }

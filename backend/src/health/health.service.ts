@@ -113,6 +113,14 @@ export class HealthService {
     };
   }
 
+  /**
+   * Canonical-name alias of {@link getHealth} for the Kloel capability
+   * resolver (`HealthService.snapshot`). Args ignored — workspace-only.
+   */
+  async snapshot(workspaceId: string) {
+    return this.getHealth(workspaceId);
+  }
+
   /** Run readiness checks for critical deps. Each returns up/down with latency. */
   async runReadinessChecks(): Promise<
     Array<{ name: string; status: 'up' | 'down'; latencyMs?: number; error?: string }>
