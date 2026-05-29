@@ -22,7 +22,30 @@ function stubCapability(overrides: Partial<CapabilityDefinition>): CapabilityDef
   };
 }
 
-// ── Mock CAPABILITY_DEFINITIONS so describe / listGaps have predictable data ──
+/** Build a mock ModulesContainer from a record of constructor-name → instance. */
+function mockModulesContainer(instances: Record<string, object>): ModulesContainer {
+  const wrapper = (name: string, instance: object) => ({
+    instance,
+    name,
+    isNotMetatype: false,
+    isLazy: false,
+    isExported: false,
+    isAlias: false,
+    isDependencyTreeStatic: () => true,
+    isTransient: false,
+    metatype: instance.constructor,
+    scope: undefined,
+  });
+
+  const providers = new Map(
+    Object.entries(instances).map(([name, inst]) => [name, wrapper(name, inst)]),
+  );
+
+  const mod = { providers, controllers: new Map(), exports: new Set(), imports: new Set() };
+  return new Map([['TestModule', mod]]) as unknown as ModulesContainer;
+}
+
+// ── Mock CAPABILITY_DEFINITIONS ──
 
 jest.mock('./capability-registry-v2.const', () => ({
   CAPABILITY_DEFINITIONS: [
@@ -106,26 +129,24 @@ jest.mock('./capability-registry-v2.const', () => ({
   CAPABILITIES_BY_TIER: {},
 }));
 
-// The mocked CAPABILITY_MAP must be populated for describe() lookups.
-// We import the mocked module and populate it in beforeEach.
-const mockedConst = jest.requireMock('./capability-registry-v2.const');
+const mockedConst: {
+  CAPABILITY_MAP: Map<string, CapabilityDefinition>;
+  CAPABILITY_DEFINITIONS: CapabilityDefinition[];
+} = jest.requireMock('./capability-registry-v2.const');
 
 describe('CapabilityRegistryV2Service — describe', () => {
   let service: CapabilityRegistryV2Service;
-  let moduleRef: Pick<ModuleRef, 'get'>;
 
   beforeEach(async () => {
-    // Rebuild the map from the mocked definitions
     mockedConst.CAPABILITY_MAP = new Map(
-      mockedConst.CAPABILITY_DEFINITIONS.map((c: CapabilityDefinition) => [c.id, c]),
+      mockedConst.CAPABILITY_DEFINITIONS.map((cap: CapabilityDefinition) => [cap.id, cap] as const),
     );
-
-    moduleRef = { get: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CapabilityRegistryV2Service,
-        { provide: ModuleRef, useValue: moduleRef },
+        { provide: ModuleRef, useValue: { get: jest.fn() } },
+        { provide: ModulesContainer, useValue: new Map() },
       ],
     }).compile();
 
@@ -156,7 +177,7 @@ describe('CapabilityRegistryV2Service — describe', () => {
     expect(result).toBeNull();
   });
 
-  it('returns correct fields for a capability with no emits and no args', () => {
+  it('returns correct fields for a capability with no args', () => {
     const result = service.describe('self.health');
 
     expect(result).not.toBeNull();
@@ -167,66 +188,58 @@ describe('CapabilityRegistryV2Service — describe', () => {
 });
 
 describe('CapabilityRegistryV2Service — listGaps', () => {
-  let service: CapabilityRegistryV2Service;
-  let moduleRef: { get: jest.Mock };
-
-  beforeEach(async () => {
+  async function setupService(instances: Record<string, object> = {}) {
     mockedConst.CAPABILITY_MAP = new Map(
-      mockedConst.CAPABILITY_DEFINITIONS.map((c: CapabilityDefinition) => [c.id, c]),
+      mockedConst.CAPABILITY_DEFINITIONS.map((cap: CapabilityDefinition) => [cap.id, cap] as const),
     );
-
-    moduleRef = { get: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CapabilityRegistryV2Service,
-        { provide: ModuleRef, useValue: moduleRef },
+        { provide: ModuleRef, useValue: { get: jest.fn() } },
+        { provide: ModulesContainer, useValue: mockModulesContainer(instances) },
       ],
     }).compile();
 
-    service = module.get(CapabilityRegistryV2Service);
-  });
+    return module.get(CapabilityRegistryV2Service);
+  }
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
   it('identifies capabilities whose domainService references an unknown service', async () => {
-    // BogusService is not in DOMAIN_SERVICE_TOKEN_MAP
-    // ProductService IS in the map — mock it as resolvable with method
-    const mockProductService = { create: jest.fn() };
-    moduleRef.get.mockImplementation((token: unknown) => {
-      if (token === DOMAIN_SERVICE_TOKEN_MAP.get('ProductService')) {
-        return mockProductService;
-      }
-      return undefined;
+    const service = await setupService({
+      ProductService: { create: jest.fn() },
     });
 
     const gaps = await service.listGaps();
 
-    // orphan_cap → BogusService (unknown)
+    // self.health → HealthService.snapshot, HealthService not in container
+    const healthGap = gaps.find((g) => g.id === 'self.health');
+    expect(healthGap).toBeDefined();
+    expect(healthGap!.declaredService).toBe('HealthService.snapshot');
+    expect(healthGap!.missingMethod).toBe('HealthService (not found in DI container)');
+
+    // orphan_cap → BogusService.doThing, not in container
     const orphanGap = gaps.find((g) => g.id === 'orphan_cap');
     expect(orphanGap).toBeDefined();
     expect(orphanGap!.declaredService).toBe('BogusService.doThing');
-    expect(orphanGap!.missingMethod).toBe('BogusService (unknown service)');
-
-    // empty_domain_cap, alias_cap, compound_cap → skipped (not gaps)
-    expect(gaps.find((g) => g.id === 'empty_domain_cap')).toBeUndefined();
-    expect(gaps.find((g) => g.id === 'alias_cap')).toBeUndefined();
-    expect(gaps.find((g) => g.id === 'compound_cap')).toBeUndefined();
+    expect(orphanGap!.missingMethod).toBe('BogusService (not found in DI container)');
 
     // create_product → ProductService.create, method exists → not a gap
     expect(gaps.find((g) => g.id === 'create_product')).toBeUndefined();
+
+    // empty_domain_cap, alias_cap, compound_cap → skipped
+    expect(gaps.find((g) => g.id === 'empty_domain_cap')).toBeUndefined();
+    expect(gaps.find((g) => g.id === 'alias_cap')).toBeUndefined();
+    expect(gaps.find((g) => g.id === 'compound_cap')).toBeUndefined();
   });
 
-  it('identifies capabilities whose service resolves but method is missing', async () => {
-    // HealthService with no 'snapshot' method
-    const mockHealthService = { ping: jest.fn() }; // no snapshot
-    moduleRef.get.mockImplementation((token: unknown) => {
-      if (token === DOMAIN_SERVICE_TOKEN_MAP.get('HealthService')) {
-        return mockHealthService;
-      }
-      return undefined;
+  it('identifies capabilities whose service exists but method is missing', async () => {
+    // HealthService present but without snapshot method
+    const service = await setupService({
+      HealthService: { ping: jest.fn() },
     });
 
     const gaps = await service.listGaps();
@@ -239,6 +252,8 @@ describe('CapabilityRegistryV2Service — listGaps', () => {
   });
 
   it('reports CapabilityRegistry self-reference gaps for non-existent methods', async () => {
+    const service = await setupService({});
+
     const gaps = await service.listGaps();
 
     // self.bogus_method → CapabilityRegistry.nonExistentMethod
@@ -247,54 +262,39 @@ describe('CapabilityRegistryV2Service — listGaps', () => {
     expect(bogusGap!.declaredService).toBe('CapabilityRegistry.nonExistentMethod');
     expect(bogusGap!.missingMethod).toBe('CapabilityRegistry.nonExistentMethod');
 
-    // self.capabilities → CapabilityRegistry.filterFor — method exists on service
+    // self.capabilities → CapabilityRegistry.filterFor — method exists
     expect(gaps.find((g) => g.id === 'self.capabilities')).toBeUndefined();
   });
 
-  it('handles ModuleRef throwing during resolution', async () => {
-    moduleRef.get.mockImplementation(() => {
-      throw new Error('DI container error');
+  it('only reports true gaps when services are properly registered', async () => {
+    const service = await setupService({
+      HealthService: { snapshot: jest.fn() },
+      ProductService: { create: jest.fn() },
     });
 
     const gaps = await service.listGaps();
 
-    // self.health → HealthService.snapshot, but DI throws
-    const healthGap = gaps.find((g) => g.id === 'self.health');
-    expect(healthGap).toBeDefined();
-    expect(healthGap!.missingMethod).toBe('HealthService (DI unavailable)');
-  });
-
-  it('handles ModuleRef returning undefined', async () => {
-    moduleRef.get.mockReturnValue(undefined);
-
-    const gaps = await service.listGaps();
-
-    // self.health → HealthService.snapshot, DI returns undefined
-    const healthGap = gaps.find((g) => g.id === 'self.health');
-    expect(healthGap).toBeDefined();
-    expect(healthGap!.missingMethod).toBe('HealthService (undefined instance)');
-  });
-
-  it('returns empty array when all capabilities have valid domainServices', async () => {
-    const mockHealthService = { snapshot: jest.fn() };
-    const mockProductService = { create: jest.fn() };
-
-    moduleRef.get.mockImplementation((token: unknown) => {
-      if (token === DOMAIN_SERVICE_TOKEN_MAP.get('HealthService')) return mockHealthService;
-      if (token === DOMAIN_SERVICE_TOKEN_MAP.get('ProductService')) return mockProductService;
-      return undefined;
-    });
-
-    const gaps = await service.listGaps();
-
-    // orphan_cap → BogusService is unknown → still a gap
-    // self.bogus_method → CapabilityRegistry.nonExistentMethod → still a gap
-    // But self.health and create_product should be resolved
+    // Resolvable services with matching methods → not gaps
     expect(gaps.find((g) => g.id === 'self.health')).toBeUndefined();
     expect(gaps.find((g) => g.id === 'create_product')).toBeUndefined();
 
-    // The orphan and bogus self-ref are still gaps
+    // orphan_cap (BogusService unknown) and self.bogus_method are still gaps
     expect(gaps.find((g) => g.id === 'orphan_cap')).toBeDefined();
     expect(gaps.find((g) => g.id === 'self.bogus_method')).toBeDefined();
+  });
+
+  it('handles empty container — all DI-dependent caps are gaps', async () => {
+    const service = await setupService({});
+
+    const gaps = await service.listGaps();
+
+    // self.health → HealthService not found → gap
+    expect(gaps.find((g) => g.id === 'self.health')).toBeDefined();
+    // create_product → ProductService not found → gap
+    expect(gaps.find((g) => g.id === 'create_product')).toBeDefined();
+    // self.capabilities → CapabilityRegistry.filterFor exists → not a gap
+    expect(gaps.find((g) => g.id === 'self.capabilities')).toBeUndefined();
+    // Skipped caps still skipped
+    expect(gaps.find((g) => g.id === 'empty_domain_cap')).toBeUndefined();
   });
 });
