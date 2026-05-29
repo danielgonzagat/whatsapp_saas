@@ -18,7 +18,7 @@ import { normalizePhone as canonicalNormalizePhone } from '../../common/phone/ph
  * promoted to "551133334444" (12 digits), so the floor here is effectively
  * comparing the *normalized* length — what the rest of the file expects.
  */
-function normalizePhone(phone: string | null) {
+function normalizePhoneWithFloor(phone: string | null) {
   const normalized = canonicalNormalizePhone(phone);
   if (!normalized) {
     return null;
@@ -111,7 +111,7 @@ export async function enqueuePurchaseWhatsappFromPaidCheckoutUpdate(
       },
     },
   });
-  const phone = normalizePhone(order?.customerPhone || null);
+  const phone = normalizePhoneWithFloor(order?.customerPhone || null);
   if (!order || order.workspaceId !== scope.workspaceId || !phone) {
     return;
   }
