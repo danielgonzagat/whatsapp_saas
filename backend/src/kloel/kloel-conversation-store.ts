@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildTimestampedRuntimeKey } from './kloel-id.util';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { MindMessageService } from './mind/aliases/mind-message.service';
 
 const A_Z0_9_RE = /[^a-z0-9_:-]+/g;
 
@@ -23,12 +24,26 @@ export class KloelConversationStore {
       error(message: string, error?: unknown): void;
     },
     private readonly opsAlert?: OpsAlertService,
+    private readonly mindMessage?: MindMessageService,
   ) {}
 
+  /** Get conversation history. */
   /** Get conversation history. */
   async getConversationHistory(workspaceId?: string): Promise<ChatMessage[]> {
     if (!workspaceId) {
       return [];
+    }
+
+    if (this.mindMessage) {
+      try {
+        const rows = await this.mindMessage.getHistory(workspaceId, 20);
+        return rows.map((row) => ({
+          role: row.role as 'user' | 'assistant',
+          content: row.content,
+        }));
+      } catch {
+        return [];
+      }
     }
 
     try {
@@ -49,8 +64,13 @@ export class KloelConversationStore {
   }
 
   /** Save message. */
+  /** Save message. */
   async saveMessage(workspaceId: string, role: string, content: string): Promise<void> {
     try {
+      if (this.mindMessage) {
+        await this.mindMessage.appendToConversation(workspaceId, role, content);
+        return;
+      }
       await this.prisma.kloelMessage.create({
         data: {
           workspaceId,

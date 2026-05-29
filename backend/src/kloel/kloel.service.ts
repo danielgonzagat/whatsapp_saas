@@ -55,7 +55,12 @@ export class KloelService {
     @Optional() private readonly agentRuntime?: AgentRuntimeContextService,
     @Optional() private readonly mindMessage?: MindMessageService,
   ) {
-    this.conversationStore = new KloelConversationStore(prisma, this.logger);
+    this.conversationStore = new KloelConversationStore(
+      prisma,
+      this.logger,
+      undefined,
+      this.mindMessage,
+    );
   }
 
   // ── Context helpers ──
