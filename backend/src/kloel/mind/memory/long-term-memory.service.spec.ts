@@ -19,32 +19,51 @@ interface GraphNodeRow {
 function makePrisma(seed: GraphNodeRow[] = []) {
   const rows: GraphNodeRow[] = seed.map((r) => ({ ...r, metadata: { ...r.metadata } }));
 
-  const findKey = (where: { workspaceId_kind_label: { workspaceId: string; kind: string; label: string } }) => {
+  const findKey = (where: {
+    workspaceId_kind_label: { workspaceId: string; kind: string; label: string };
+  }) => {
     const k = where.workspaceId_kind_label;
-    return rows.find((r) => r.workspaceId === k.workspaceId && r.kind === k.kind && r.label === k.label) ?? null;
+    return (
+      rows.find(
+        (r) => r.workspaceId === k.workspaceId && r.kind === k.kind && r.label === k.label,
+      ) ?? null
+    );
   };
 
   const mindGraphNode = {
-    findUnique: jest.fn(async ({ where }: { where: { workspaceId_kind_label: { workspaceId: string; kind: string; label: string } } }) =>
-      findKey(where),
+    findUnique: jest.fn(
+      async ({
+        where,
+      }: {
+        where: { workspaceId_kind_label: { workspaceId: string; kind: string; label: string } };
+      }) => findKey(where),
     ),
     create: jest.fn(async ({ data }: { data: GraphNodeRow }) => {
       const row: GraphNodeRow = { ...data, metadata: { ...data.metadata } };
       rows.push(row);
       return row;
     }),
-    update: jest.fn(async ({ where, data }: { where: { id: string }; data: Partial<GraphNodeRow> }) => {
-      const row = rows.find((r) => r.id === where.id);
-      if (!row) throw new Error('not found');
-      if (data.weight !== undefined) row.weight = data.weight;
-      if (data.metadata !== undefined) row.metadata = { ...(data.metadata as Record<string, unknown>) };
-      return row;
-    }),
-    findMany: jest.fn(async ({ where, take }: { where: { workspaceId: string; kind: string }; take: number }) =>
-      rows
-        .filter((r) => r.workspaceId === where.workspaceId && r.kind === where.kind)
-        .sort((a, b) => b.weight - a.weight)
-        .slice(0, take),
+    update: jest.fn(
+      async ({ where, data }: { where: { id: string }; data: Partial<GraphNodeRow> }) => {
+        const row = rows.find((r) => r.id === where.id);
+        if (!row) {
+          throw new Error('not found');
+        }
+        if (data.weight !== undefined) {
+          row.weight = data.weight;
+        }
+        if (data.metadata !== undefined) {
+          row.metadata = { ...data.metadata };
+        }
+        return row;
+      },
+    ),
+    findMany: jest.fn(
+      async ({ where, take }: { where: { workspaceId: string; kind: string }; take: number }) =>
+        rows
+          .filter((r) => r.workspaceId === where.workspaceId && r.kind === where.kind)
+          .sort((a, b) => b.weight - a.weight)
+          .slice(0, take),
     ),
   };
 
@@ -90,9 +109,13 @@ describe('LongTermMemoryService', () => {
       const { prisma, rows } = makePrisma();
       const svc = new LongTermMemoryService(prisma);
 
-      await svc.handle(makeEvent({ eventId: 'e1', eventName: 'commerce.crm.deal_won', valence: 'positive' }));
+      await svc.handle(
+        makeEvent({ eventId: 'e1', eventName: 'commerce.crm.deal_won', valence: 'positive' }),
+      );
       const w1 = rows[0]!.weight;
-      await svc.handle(makeEvent({ eventId: 'e2', eventName: 'commerce.crm.deal_won', valence: 'positive' }));
+      await svc.handle(
+        makeEvent({ eventId: 'e2', eventName: 'commerce.crm.deal_won', valence: 'positive' }),
+      );
 
       expect(rows).toHaveLength(1); // collides on unique key, not duplicated
       expect(rows[0]!.weight).toBeGreaterThan(w1); // reinforced
@@ -103,9 +126,13 @@ describe('LongTermMemoryService', () => {
       const { prisma, rows } = makePrisma();
       const svc = new LongTermMemoryService(prisma);
 
-      await svc.handle(makeEvent({ eventId: 'dup', eventName: 'commerce.lead.converted', valence: 'positive' }));
+      await svc.handle(
+        makeEvent({ eventId: 'dup', eventName: 'commerce.lead.converted', valence: 'positive' }),
+      );
       const w1 = rows[0]!.weight;
-      await svc.handle(makeEvent({ eventId: 'dup', eventName: 'commerce.lead.converted', valence: 'positive' }));
+      await svc.handle(
+        makeEvent({ eventId: 'dup', eventName: 'commerce.lead.converted', valence: 'positive' }),
+      );
 
       expect(rows[0]!.weight).toBe(w1);
       expect(rows[0]!.metadata['occurrences']).toBe(1);
@@ -149,7 +176,10 @@ describe('LongTermMemoryService', () => {
       const svc = new LongTermMemoryService(prisma);
 
       await svc.handle(
-        makeEvent({ eventName: 'commerce.post_sale.satisfaction_signal_observed', valence: 'neutral' }),
+        makeEvent({
+          eventName: 'commerce.post_sale.satisfaction_signal_observed',
+          valence: 'neutral',
+        }),
       );
 
       expect(rows).toHaveLength(0);
@@ -159,7 +189,9 @@ describe('LongTermMemoryService', () => {
       const { prisma, rows } = makePrisma();
       const svc = new LongTermMemoryService(prisma);
 
-      await svc.handle(makeEvent({ workspaceId: undefined, eventName: 'commerce.payment.approved' }));
+      await svc.handle(
+        makeEvent({ workspaceId: undefined, eventName: 'commerce.payment.approved' }),
+      );
 
       expect(rows).toHaveLength(0);
     });

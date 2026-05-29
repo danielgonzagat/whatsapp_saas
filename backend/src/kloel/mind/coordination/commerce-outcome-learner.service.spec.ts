@@ -140,9 +140,7 @@ describe('CommerceOutcomeLearnerService', () => {
     };
     const service = new CommerceOutcomeLearnerService(belief as never, decision as never);
 
-    await expect(
-      service.handle(envelope({ correlationId: 'k' })),
-    ).resolves.toBeUndefined();
+    await expect(service.handle(envelope({ correlationId: 'k' }))).resolves.toBeUndefined();
   });
 
   it('uses the explicit envelope valence when present (overrides default map)', async () => {

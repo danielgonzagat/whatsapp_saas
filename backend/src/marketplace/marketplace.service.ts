@@ -117,7 +117,12 @@ export class MarketplaceService {
       listed: true,
       ...(args?.category ? { category: args.category } : {}),
       ...(args?.search
-        ? { OR: [{ category: { contains: args.search, mode: 'insensitive' } }, { tags: { has: args.search } }] }
+        ? {
+            OR: [
+              { category: { contains: args.search, mode: 'insensitive' } },
+              { tags: { has: args.search } },
+            ],
+          }
         : {}),
     };
     const take = Math.min(Math.max(args?.limit ?? 20, 1), 100);

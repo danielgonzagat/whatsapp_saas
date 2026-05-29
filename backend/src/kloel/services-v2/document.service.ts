@@ -34,7 +34,9 @@ export class DocumentService {
     args: DocumentUploadArgs,
   ): Promise<{ success: boolean; data: unknown }> {
     const url = String(args.url ?? '').trim();
-    if (!url) return { success: false, data: null };
+    if (!url) {
+      return { success: false, data: null };
+    }
 
     const ws = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },

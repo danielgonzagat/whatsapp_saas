@@ -335,8 +335,9 @@ describe('MindCausalModelService', () => {
       expect(out.recorded).toBe(true);
       expect(out.weight).toBe(0.9);
       expect(prisma.mindGraphEdge.create).toHaveBeenCalledTimes(1);
-      const created = (prisma.mindGraphEdge.create.mock.calls[0]![0] as { data: Record<string, unknown> })
-        .data;
+      const created = (
+        prisma.mindGraphEdge.create.mock.calls[0]![0] as { data: Record<string, unknown> }
+      ).data;
       expect(created.fromNode).toBe('action:offered_discount');
       expect(created.toNode).toBe('effect:sale_closed');
       expect(created.relation).toBe('causes');
@@ -356,8 +357,9 @@ describe('MindCausalModelService', () => {
       expect(out.recorded).toBe(true);
       expect(out.weight).toBeCloseTo(0.65, 5);
       expect(prisma.mindGraphEdge.update).toHaveBeenCalledTimes(1);
-      const updated = (prisma.mindGraphEdge.update.mock.calls[0]![0] as { data: { samples: number } })
-        .data;
+      const updated = (
+        prisma.mindGraphEdge.update.mock.calls[0]![0] as { data: { samples: number } }
+      ).data;
       expect(updated.samples).toBe(3);
     });
 

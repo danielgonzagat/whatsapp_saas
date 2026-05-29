@@ -71,9 +71,7 @@ export class AgentJobService {
       },
     });
 
-    this.logger.log(
-      `AgentJobService.create ws=${workspaceId} id=${item.id} kind=${kind}`,
-    );
+    this.logger.log(`AgentJobService.create ws=${workspaceId} id=${item.id} kind=${kind}`);
     return { success: true, data: item };
   }
 
@@ -109,9 +107,7 @@ export class AgentJobService {
       },
     });
 
-    this.logger.log(
-      `AgentJobService.list ws=${workspaceId} count=${items.length}`,
-    );
+    this.logger.log(`AgentJobService.list ws=${workspaceId} count=${items.length}`);
     return { success: true, data: items };
   }
 
@@ -144,9 +140,7 @@ export class AgentJobService {
       data: { state: newState },
     });
 
-    this.logger.log(
-      `AgentJobService.setEnabled ws=${workspaceId} id=${jobId} enabled=${enabled}`,
-    );
+    this.logger.log(`AgentJobService.setEnabled ws=${workspaceId} id=${jobId} enabled=${enabled}`);
     return { success: true, data: updated };
   }
 }

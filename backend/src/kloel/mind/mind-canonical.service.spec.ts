@@ -89,7 +89,14 @@ describe('MindCanonicalService — Phase-1 facade delegation', () => {
     await facade.upsertMemory(ws, 'k', { value: { a: 1 }, category: 'agent' });
     expect(prisma.kloelMemory.upsert).toHaveBeenCalledWith({
       where: { workspaceId_key: { workspaceId: ws, key: 'k' } },
-      create: { workspaceId: ws, key: 'k', value: { a: 1 }, category: 'agent', type: undefined, content: undefined },
+      create: {
+        workspaceId: ws,
+        key: 'k',
+        value: { a: 1 },
+        category: 'agent',
+        type: undefined,
+        content: undefined,
+      },
       update: { value: { a: 1 }, category: 'agent', type: undefined, content: undefined },
     });
   });

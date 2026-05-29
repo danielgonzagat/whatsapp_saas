@@ -1,8 +1,5 @@
 import { resolveCaseMemoryAction, type CaseMemoryLookup } from './mind-case-memory-decision.helper';
-import type {
-  MindPolicyChooser,
-  PolicyDecisionResult,
-} from './mind-catalog-decision-resolvers';
+import type { MindPolicyChooser, PolicyDecisionResult } from './mind-catalog-decision-resolvers';
 import { decisionConfidence } from './mind-catalog-decision-resolvers';
 
 // Canonical MindPolicyChooser + PolicyDecisionResult + decisionConfidence live

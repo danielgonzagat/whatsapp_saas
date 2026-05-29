@@ -17,7 +17,7 @@ describe('buildMindSignals — agent-assist suggestions (PI-K18-A)', () => {
     const result = await buildMindSignals(
       {
         prisma: mockPrisma(),
-        agentAssistService: { suggestActions } as unknown as AgentAssistService,
+        agentAssistService: { suggestActions },
         logger: mockLogger,
       },
       'ws-1',
@@ -44,7 +44,7 @@ describe('buildMindSignals — agent-assist suggestions (PI-K18-A)', () => {
     const result = await buildMindSignals(
       {
         prisma: mockPrisma(),
-        agentAssistService: { suggestActions } as unknown as AgentAssistService,
+        agentAssistService: { suggestActions },
         logger: mockLogger,
       },
       'ws-1',
@@ -62,7 +62,7 @@ describe('buildMindSignals — agent-assist suggestions (PI-K18-A)', () => {
     const result = await buildMindSignals(
       {
         prisma: mockPrisma(),
-        agentAssistService: { suggestActions } as unknown as AgentAssistService,
+        agentAssistService: { suggestActions },
         logger: mockLogger,
       },
       'ws-1',

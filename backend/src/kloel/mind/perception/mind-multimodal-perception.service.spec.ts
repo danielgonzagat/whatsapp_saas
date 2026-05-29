@@ -280,7 +280,8 @@ describe('MindMultiModalPerceptionService', () => {
 
       expect(out.caseId).toBeTruthy();
       expect(prisma.mindCase.create).toHaveBeenCalledTimes(1);
-      const data = (prisma.mindCase.create.mock.calls[0]![0] as { data: Record<string, unknown> }).data;
+      const data = (prisma.mindCase.create.mock.calls[0]![0] as { data: Record<string, unknown> })
+        .data;
       expect(data.caseType).toBe('perception_captured');
       expect(data.outcome).toBeNull();
       expect(data.action).toBe('perceive_image');
@@ -307,7 +308,8 @@ describe('MindMultiModalPerceptionService', () => {
         descriptor: 'ola mundo',
       });
 
-      const data = (prisma.mindCase.create.mock.calls[0]![0] as { data: Record<string, unknown> }).data;
+      const data = (prisma.mindCase.create.mock.calls[0]![0] as { data: Record<string, unknown> })
+        .data;
       expect(String(data.text)).toContain('ola mundo');
       expect((data.features as { analyzed: boolean }).analyzed).toBe(true);
     });
@@ -328,7 +330,9 @@ describe('MindMultiModalPerceptionService', () => {
         undefined,
         undefined,
         undefined,
-        { mindCase: { create: jest.fn().mockRejectedValue(new Error('db down')) } } as unknown as never,
+        {
+          mindCase: { create: jest.fn().mockRejectedValue(new Error('db down')) },
+        } as unknown as never,
       );
       const out2 = await failing.captureToCaseMemory({
         workspaceId: 'ws-1',

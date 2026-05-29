@@ -80,7 +80,7 @@ export class MindSelfModelService {
 
     // decision_patterns — how the Mind has been behaving.
     const positiveLifts = lifts.filter(
-      (lift) => typeof lift.lift === 'number' && (lift.lift as number) > 0,
+      (lift) => typeof lift.lift === 'number' && lift.lift > 0,
     ).length;
     const decisionPatterns: Record<string, unknown> = {
       openDecisions,
@@ -89,8 +89,7 @@ export class MindSelfModelService {
       measuredDecisionTypes: lifts.length,
       decisionTypesWithPositiveLift: positiveLifts,
       bestLift: lifts.reduce<number>(
-        (best, lift) =>
-          typeof lift.lift === 'number' ? Math.max(best, lift.lift as number) : best,
+        (best, lift) => (typeof lift.lift === 'number' ? Math.max(best, lift.lift) : best),
         0,
       ),
     };
@@ -144,8 +143,8 @@ export class MindSelfModelService {
       const nextGroup = next[group] ?? {};
       const keys = new Set([...Object.keys(prevGroup), ...Object.keys(nextGroup)]);
       for (const key of keys) {
-        const was = (prevGroup as Record<string, unknown>)[key];
-        const now = (nextGroup as Record<string, unknown>)[key];
+        const was = prevGroup[key];
+        const now = nextGroup[key];
         if (this.isContradiction(was, now)) {
           contradictions.push({
             field: `${group}.${key}`,

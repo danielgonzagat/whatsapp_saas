@@ -125,4 +125,3 @@ export class MindSpineAudit {
     return { capabilities, totalMismatch, windowFrom, windowTo };
   }
 }
-

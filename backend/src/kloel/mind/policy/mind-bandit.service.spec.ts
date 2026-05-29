@@ -4,7 +4,11 @@ import { MindBanditService } from './mind-bandit.service';
 
 type BanditUpsertArgs = {
   where: { workspaceId_decisionType_arm: { workspaceId: string } };
-  update: { alpha: { increment: number }; beta: { increment: number }; wins: { increment: number } };
+  update: {
+    alpha: { increment: number };
+    beta: { increment: number };
+    wins: { increment: number };
+  };
   create: { isActive: boolean; alpha: number; beta: number; wins: number };
 };
 

@@ -71,9 +71,22 @@ describe('EpisodeService.consolidate', () => {
 
   it('writes an episode per thread, reusing the stored summary when present', async () => {
     const { prisma, caseMemory, cases } = makeHarness(
-      [{ id: 'th-1', title: 'Pedido', summary: 'Cliente pediu o produto premium.', workspaceId: 'ws-1' }],
       [
-        { threadId: 'th-1', role: 'user', content: 'quero o premium', createdAt: t0, deletedAt: null },
+        {
+          id: 'th-1',
+          title: 'Pedido',
+          summary: 'Cliente pediu o produto premium.',
+          workspaceId: 'ws-1',
+        },
+      ],
+      [
+        {
+          threadId: 'th-1',
+          role: 'user',
+          content: 'quero o premium',
+          createdAt: t0,
+          deletedAt: null,
+        },
         {
           threadId: 'th-1',
           role: 'assistant',

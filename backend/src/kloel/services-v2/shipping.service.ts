@@ -31,7 +31,9 @@ export class ShippingService {
     args: ShippingConfigureArgs,
   ): Promise<{ success: boolean; data: unknown }> {
     const productId = String(args.productId ?? '');
-    if (!productId) return { success: false, data: null };
+    if (!productId) {
+      return { success: false, data: null };
+    }
 
     const product = await this.prisma.product.findFirst({
       where: { id: productId, workspaceId },

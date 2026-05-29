@@ -13,9 +13,5 @@
  */
 
 export type { IntentPattern } from './intent-router.parsers';
-export {
-  parseAmount,
-  isDeactivation,
-  isCardPaymentMention,
-} from './intent-router.parsers';
+export { parseAmount, isDeactivation, isCardPaymentMention } from './intent-router.parsers';
 export { INTENT_PATTERNS } from './patterns';

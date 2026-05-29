@@ -24,7 +24,12 @@ describe('MindSelfModelService', () => {
   const baseReport = {
     workspaceId: 'ws-1',
     reportDate: new Date('2026-05-28T00:00:00.000Z'),
-    metrics: { lifts: [{ decisionType: 'reply', lift: 0.2 }, { decisionType: 'wait', lift: -0.1 }] },
+    metrics: {
+      lifts: [
+        { decisionType: 'reply', lift: 0.2 },
+        { decisionType: 'wait', lift: -0.1 },
+      ],
+    },
   };
 
   beforeEach(async () => {
@@ -74,7 +79,10 @@ describe('MindSelfModelService', () => {
       prisma.mindDailyReport.findFirst.mockResolvedValue(null);
 
       const derived = await service.derive('ws-1');
-      expect(derived.beliefsAboutSelf).toMatchObject({ hasOperated: false, maturity: 'cold-start' });
+      expect(derived.beliefsAboutSelf).toMatchObject({
+        hasOperated: false,
+        maturity: 'cold-start',
+      });
       expect(derived.knownLimits).toMatchObject({ coldStart: true, noLiftEvidence: true });
     });
   });

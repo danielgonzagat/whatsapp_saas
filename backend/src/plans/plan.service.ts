@@ -144,16 +144,12 @@ export class PlanService {
     const { updates, changes } = patch;
     const plan = await this.prisma.productPlan.update({ where: { id: planId }, data: updates });
 
-    emitCommerceAlias(
-      (name, payload) => this.eventEmitter.emit(name, payload),
-      'plan.updated',
-      {
-        planId: plan.id,
-        workspaceId,
-        actorId: actor?.id,
-        changes,
-      },
-    );
+    emitCommerceAlias((name, payload) => this.eventEmitter.emit(name, payload), 'plan.updated', {
+      planId: plan.id,
+      workspaceId,
+      actorId: actor?.id,
+      changes,
+    });
 
     if (actor) {
       await this.audit.log({
@@ -208,16 +204,12 @@ export class PlanService {
 
     await this.prisma.productPlan.delete({ where: { id: planId } });
 
-    emitCommerceAlias(
-      (name, payload) => this.eventEmitter.emit(name, payload),
-      'plan.deleted',
-      {
-        planId,
-        workspaceId,
-        actorId: actor?.id,
-        planName: plan.name,
-      },
-    );
+    emitCommerceAlias((name, payload) => this.eventEmitter.emit(name, payload), 'plan.deleted', {
+      planId,
+      workspaceId,
+      actorId: actor?.id,
+      planName: plan.name,
+    });
 
     if (actor) {
       await this.audit.log({
@@ -530,7 +522,10 @@ export class PlanService {
     return this.setInstallments(workspaceId, planId, maxInstallments);
   }
 
-  async setCouponsFromArgs(workspaceId: string, args?: { planId?: string; acceptCoupons?: boolean }) {
+  async setCouponsFromArgs(
+    workspaceId: string,
+    args?: { planId?: string; acceptCoupons?: boolean },
+  ) {
     const planId = this.requirePlanId(args, 'PlanService.setCouponsFromArgs');
     return this.setCoupons(workspaceId, planId, Boolean(args?.acceptCoupons));
   }

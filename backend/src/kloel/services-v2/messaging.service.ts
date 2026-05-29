@@ -50,7 +50,9 @@ export class MessagingService {
   ): Promise<{ success: boolean; data: unknown }> {
     const to = String(args.to ?? '');
     const message = String(args.message ?? '');
-    if (!to || !message) return { success: false, data: null };
+    if (!to || !message) {
+      return { success: false, data: null };
+    }
 
     const result = await this.dispatch.dispatch(workspaceId, 'whatsapp', to, message);
     this.logger.log(`MessagingService.sendWhatsApp ws=${workspaceId} to=${to}`);
@@ -64,15 +66,14 @@ export class MessagingService {
   ): Promise<{ success: boolean; data: unknown }> {
     const to = String(args.to ?? '');
     const audioUrl = String(args.audioUrl ?? '');
-    if (!to || !audioUrl) return { success: false, data: null };
+    if (!to || !audioUrl) {
+      return { success: false, data: null };
+    }
 
-    const result = await this.dispatch.dispatch(
-      workspaceId,
-      'whatsapp',
-      to,
-      args.caption ?? '',
-      { mediaUrl: audioUrl, mediaType: 'audio' },
-    );
+    const result = await this.dispatch.dispatch(workspaceId, 'whatsapp', to, args.caption ?? '', {
+      mediaUrl: audioUrl,
+      mediaType: 'audio',
+    });
     this.logger.log(`MessagingService.sendAudio ws=${workspaceId} to=${to}`);
     return { success: result.success, data: result };
   }
@@ -84,16 +85,16 @@ export class MessagingService {
   ): Promise<{ success: boolean; data: unknown }> {
     const to = String(args.to ?? '');
     const documentUrl = String(args.documentUrl ?? '');
-    if (!to || !documentUrl) return { success: false, data: null };
+    if (!to || !documentUrl) {
+      return { success: false, data: null };
+    }
 
     const caption = args.caption ?? args.filename ?? '';
-    const result = await this.dispatch.dispatch(
-      workspaceId,
-      'whatsapp',
-      to,
+    const result = await this.dispatch.dispatch(workspaceId, 'whatsapp', to, caption, {
+      mediaUrl: documentUrl,
+      mediaType: 'document',
       caption,
-      { mediaUrl: documentUrl, mediaType: 'document', caption },
-    );
+    });
     this.logger.log(`MessagingService.sendDocument ws=${workspaceId} to=${to}`);
     return { success: result.success, data: result };
   }
@@ -105,7 +106,9 @@ export class MessagingService {
   ): Promise<{ success: boolean; data: unknown }> {
     const to = String(args.to ?? '');
     const audioUrl = String(args.audioUrl ?? '');
-    if (!to || !audioUrl) return { success: false, data: null };
+    if (!to || !audioUrl) {
+      return { success: false, data: null };
+    }
 
     const result = await this.dispatch.dispatch(workspaceId, 'whatsapp', to, '', {
       mediaUrl: audioUrl,

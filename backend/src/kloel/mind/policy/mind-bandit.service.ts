@@ -185,65 +185,65 @@ export class MindBanditService {
   }
 
   async recordOutcome(input: {
-      arm: string;
-      decisionType: string;
-      outcome: 0 | 1;
-      workspaceId: string;
-    }) {
-      const startedAt = Date.now();
-      try {
-        // Upsert so the learning signal is self-healing: if the arm was never
-        // registered (e.g. closeOutcome fires before register on a fresh
-        // workspace), create it with the first observation folded in instead of
-        // throwing P2025 and dropping the signal on the floor.
-        await this.prisma.mindBanditArm.upsert({
-          where: {
-            workspaceId_decisionType_arm: {
-              workspaceId: input.workspaceId,
-              decisionType: input.decisionType,
-              arm: input.arm,
-            },
-          },
-          update: {
-            alpha: { increment: input.outcome },
-            beta: { increment: 1 - input.outcome },
-            wins: { increment: input.outcome },
-          },
-          create: {
-            id: randomUUID(),
+    arm: string;
+    decisionType: string;
+    outcome: 0 | 1;
+    workspaceId: string;
+  }) {
+    const startedAt = Date.now();
+    try {
+      // Upsert so the learning signal is self-healing: if the arm was never
+      // registered (e.g. closeOutcome fires before register on a fresh
+      // workspace), create it with the first observation folded in instead of
+      // throwing P2025 and dropping the signal on the floor.
+      await this.prisma.mindBanditArm.upsert({
+        where: {
+          workspaceId_decisionType_arm: {
             workspaceId: input.workspaceId,
             decisionType: input.decisionType,
             arm: input.arm,
-            isActive: true,
-            context: {} as Prisma.InputJsonValue,
-            // Beta(1,1) uniform prior + the first observation.
-            alpha: 1 + input.outcome,
-            beta: 1 + (1 - input.outcome),
-            wins: input.outcome,
           },
-        });
-        this.logger.debug({
-          operation: 'mind.bandit.record_outcome',
-          status: 'ok',
-          durationMs: Date.now() - startedAt,
+        },
+        update: {
+          alpha: { increment: input.outcome },
+          beta: { increment: 1 - input.outcome },
+          wins: { increment: input.outcome },
+        },
+        create: {
+          id: randomUUID(),
           workspaceId: input.workspaceId,
           decisionType: input.decisionType,
           arm: input.arm,
-        });
-        return this.status(input.workspaceId, input.decisionType);
-      } catch (error: unknown) {
-        this.logger.warn({
-          operation: 'mind.bandit.record_outcome',
-          status: 'error',
-          durationMs: Date.now() - startedAt,
-          workspaceId: input.workspaceId,
-          decisionType: input.decisionType,
-          arm: input.arm,
-          errorCode: error instanceof Error ? error.message : 'unknown',
-        });
-        throw error;
-      }
+          isActive: true,
+          context: {},
+          // Beta(1,1) uniform prior + the first observation.
+          alpha: 1 + input.outcome,
+          beta: 1 + (1 - input.outcome),
+          wins: input.outcome,
+        },
+      });
+      this.logger.debug({
+        operation: 'mind.bandit.record_outcome',
+        status: 'ok',
+        durationMs: Date.now() - startedAt,
+        workspaceId: input.workspaceId,
+        decisionType: input.decisionType,
+        arm: input.arm,
+      });
+      return this.status(input.workspaceId, input.decisionType);
+    } catch (error: unknown) {
+      this.logger.warn({
+        operation: 'mind.bandit.record_outcome',
+        status: 'error',
+        durationMs: Date.now() - startedAt,
+        workspaceId: input.workspaceId,
+        decisionType: input.decisionType,
+        arm: input.arm,
+        errorCode: error instanceof Error ? error.message : 'unknown',
+      });
+      throw error;
     }
+  }
 
   async status(workspaceId: string, decisionType: string): Promise<MindBanditStatus> {
     const arms = await this.prisma.mindBanditArm.findMany({

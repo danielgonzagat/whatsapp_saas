@@ -136,16 +136,12 @@ export class ProductService {
       data: dto,
     });
 
-    emitCommerceAlias(
-      (name, payload) => this.eventEmitter.emit(name, payload),
-      'product.updated',
-      {
-        productId: product.id,
-        workspaceId,
-        agentId: actor.id,
-        changes: Object.keys(dto),
-      },
-    );
+    emitCommerceAlias((name, payload) => this.eventEmitter.emit(name, payload), 'product.updated', {
+      productId: product.id,
+      workspaceId,
+      agentId: actor.id,
+      changes: Object.keys(dto),
+    });
 
     await this.audit.log({
       workspaceId,
@@ -226,16 +222,12 @@ export class ProductService {
       data: { imageUrl },
     });
 
-    emitCommerceAlias(
-      (name, payload) => this.eventEmitter.emit(name, payload),
-      'product.updated',
-      {
-        productId: product.id,
-        workspaceId,
-        agentId: actor.id,
-        changes: ['imageUrl'],
-      },
-    );
+    emitCommerceAlias((name, payload) => this.eventEmitter.emit(name, payload), 'product.updated', {
+      productId: product.id,
+      workspaceId,
+      agentId: actor.id,
+      changes: ['imageUrl'],
+    });
 
     await this.audit.log({
       workspaceId,
@@ -360,15 +352,11 @@ export class ProductService {
       data: { status: 'DELETED', active: false },
     });
 
-    emitCommerceAlias(
-      (name, payload) => this.eventEmitter.emit(name, payload),
-      'product.deleted',
-      {
-        productId: product.id,
-        workspaceId,
-        agentId: actor.id,
-      },
-    );
+    emitCommerceAlias((name, payload) => this.eventEmitter.emit(name, payload), 'product.deleted', {
+      productId: product.id,
+      workspaceId,
+      agentId: actor.id,
+    });
 
     await this.audit.log({
       workspaceId,

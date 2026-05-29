@@ -46,10 +46,18 @@ export class AIConfigService {
         : {};
 
     const patch: Record<string, unknown> = {};
-    if (args.model !== undefined) patch.model = String(args.model);
-    if (args.temperature !== undefined) patch.temperature = Number(args.temperature);
-    if (args.systemPrompt !== undefined) patch.systemPrompt = String(args.systemPrompt);
-    if (args.maxTokens !== undefined) patch.maxTokens = Number(args.maxTokens);
+    if (args.model !== undefined) {
+      patch.model = String(args.model);
+    }
+    if (args.temperature !== undefined) {
+      patch.temperature = Number(args.temperature);
+    }
+    if (args.systemPrompt !== undefined) {
+      patch.systemPrompt = String(args.systemPrompt);
+    }
+    if (args.maxTokens !== undefined) {
+      patch.maxTokens = Number(args.maxTokens);
+    }
 
     const merged = { ...currentAi, ...patch };
     const updatedSettings = { ...current, aiConfig: merged };

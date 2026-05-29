@@ -66,42 +66,40 @@ export class ReviewService {
     }
   }
 
-  
-    /** Create a new review for a product (domainService: ReviewService.create). */
-    async create(
-      workspaceId: string,
-      args: ReviewCreateArgs,
-    ): Promise<{ success: boolean; data: unknown }> {
-      const productId = String(args.productId ?? '').trim();
-      if (!productId) return { success: false, data: { error: 'productId_required' } };
-
-      await this.assertProductOwnership(productId, workspaceId);
-
-      const rating = Number(args.rating ?? 5);
-      if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-        return { success: false, data: { error: 'rating_must_be_1_to_5' } };
-      }
-
-      const authorName = String(args.authorName ?? args.name ?? '').trim() || null;
-      const comment = String(args.comment ?? args.text ?? '').trim() || null;
-      const verified = args.verified === true;
-
-      const review = await this.prisma.productReview.create({
-        data: {
-          productId,
-          rating,
-          authorName,
-          comment,
-          verified,
-        },
-      });
-
-      this.logger.log(
-        `ReviewService.create ws=${workspaceId} product=${productId} id=${review.id}`,
-      );
-      return { success: true, data: review };
+  /** Create a new review for a product (domainService: ReviewService.create). */
+  async create(
+    workspaceId: string,
+    args: ReviewCreateArgs,
+  ): Promise<{ success: boolean; data: unknown }> {
+    const productId = String(args.productId ?? '').trim();
+    if (!productId) {
+      return { success: false, data: { error: 'productId_required' } };
     }
 
+    await this.assertProductOwnership(productId, workspaceId);
+
+    const rating = Number(args.rating ?? 5);
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+      return { success: false, data: { error: 'rating_must_be_1_to_5' } };
+    }
+
+    const authorName = String(args.authorName ?? args.name ?? '').trim() || null;
+    const comment = String(args.comment ?? args.text ?? '').trim() || null;
+    const verified = args.verified === true;
+
+    const review = await this.prisma.productReview.create({
+      data: {
+        productId,
+        rating,
+        authorName,
+        comment,
+        verified,
+      },
+    });
+
+    this.logger.log(`ReviewService.create ws=${workspaceId} product=${productId} id=${review.id}`);
+    return { success: true, data: review };
+  }
 
   /** List all reviews for a product. */
   async listForProduct(
@@ -109,7 +107,9 @@ export class ReviewService {
     args: ReviewListArgs,
   ): Promise<{ success: boolean; data: unknown }> {
     const productId = String(args.productId ?? '');
-    if (!productId) return { success: false, data: [] };
+    if (!productId) {
+      return { success: false, data: [] };
+    }
 
     await this.assertProductOwnership(productId, workspaceId);
 
@@ -128,7 +128,9 @@ export class ReviewService {
       },
     });
 
-    this.logger.log(`ReviewService.listForProduct ws=${workspaceId} product=${productId} count=${reviews.length}`);
+    this.logger.log(
+      `ReviewService.listForProduct ws=${workspaceId} product=${productId} count=${reviews.length}`,
+    );
     return { success: true, data: reviews };
   }
 
@@ -138,13 +140,17 @@ export class ReviewService {
     args: ReviewApproveArgs,
   ): Promise<{ success: boolean; data: unknown }> {
     const reviewId = String(args.reviewId ?? '');
-    if (!reviewId) return { success: false, data: null };
+    if (!reviewId) {
+      return { success: false, data: null };
+    }
 
     const review = await this.prisma.productReview.findFirst({
       where: { id: reviewId },
       select: { id: true, productId: true },
     });
-    if (!review) throw new NotFoundException(`Avaliação ${reviewId} não encontrada`);
+    if (!review) {
+      throw new NotFoundException(`Avaliação ${reviewId} não encontrada`);
+    }
 
     await this.assertProductOwnership(review.productId, workspaceId);
 
@@ -164,13 +170,17 @@ export class ReviewService {
   ): Promise<{ success: boolean; data: unknown }> {
     const reviewId = String(args.reviewId ?? '');
     const replyText = String(args.reply ?? '').trim();
-    if (!reviewId || !replyText) return { success: false, data: null };
+    if (!reviewId || !replyText) {
+      return { success: false, data: null };
+    }
 
     const review = await this.prisma.productReview.findFirst({
       where: { id: reviewId },
       select: { id: true, productId: true, comment: true },
     });
-    if (!review) throw new NotFoundException(`Avaliação ${reviewId} não encontrada`);
+    if (!review) {
+      throw new NotFoundException(`Avaliação ${reviewId} não encontrada`);
+    }
 
     await this.assertProductOwnership(review.productId, workspaceId);
 
@@ -194,13 +204,17 @@ export class ReviewService {
     args: ReviewDeleteArgs,
   ): Promise<{ success: boolean; data: unknown }> {
     const reviewId = String(args.reviewId ?? '');
-    if (!reviewId) return { success: false, data: null };
+    if (!reviewId) {
+      return { success: false, data: null };
+    }
 
     const review = await this.prisma.productReview.findFirst({
       where: { id: reviewId },
       select: { id: true, productId: true },
     });
-    if (!review) throw new NotFoundException(`Avaliação ${reviewId} não encontrada`);
+    if (!review) {
+      throw new NotFoundException(`Avaliação ${reviewId} não encontrada`);
+    }
 
     await this.assertProductOwnership(review.productId, workspaceId);
 

@@ -325,10 +325,7 @@ export function buildResolvedHumanTaskValue(
 }
 
 /** Build the next `value` JSON for a rejected human task (status=REJECTED). */
-export function buildRejectedHumanTaskValue(
-  task: JsonRecord,
-  resolvedAt: string,
-): JsonRecord {
+export function buildRejectedHumanTaskValue(task: JsonRecord, resolvedAt: string): JsonRecord {
   return {
     ...task,
     status: 'REJECTED',
@@ -385,10 +382,7 @@ type HumanTaskCandidate = {
  * Predicate: match a `kloelMemory` row whose decoded `value.id` equals the
  * caller-supplied taskId. Used by {@link CiaService.findHumanTask}.
  */
-export function matchHumanTaskCandidate(
-  item: HumanTaskCandidate,
-  taskId: string,
-): boolean {
+export function matchHumanTaskCandidate(item: HumanTaskCandidate, taskId: string): boolean {
   const value = readRecord(item.value);
   return readText(value.id) === taskId;
 }

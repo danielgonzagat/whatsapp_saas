@@ -47,12 +47,9 @@ export class NpsService {
     const detractors = reviews.filter((r) => r.rating <= 2).length;
     const total = reviews.length;
 
-    const score =
-      total > 0 ? Math.round(((promoters - detractors) / total) * 100) : null;
+    const score = total > 0 ? Math.round(((promoters - detractors) / total) * 100) : null;
 
-    this.logger.log(
-      `NpsService.get ws=${workspaceId} total=${total} score=${score ?? 'n/a'}`,
-    );
+    this.logger.log(`NpsService.get ws=${workspaceId} total=${total} score=${score ?? 'n/a'}`);
 
     return {
       success: true,

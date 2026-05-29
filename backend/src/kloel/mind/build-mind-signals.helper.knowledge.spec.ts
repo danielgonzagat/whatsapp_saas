@@ -24,7 +24,7 @@ describe('buildMindSignals — knowledge base search (PI-K17-A)', () => {
     const result = await buildMindSignals(
       {
         prisma: mockPrisma(),
-        knowledgeBaseService: { search } as unknown as KnowledgeBaseService,
+        knowledgeBaseService: { search },
         logger: mockLogger,
       },
       'ws-1',
@@ -52,7 +52,7 @@ describe('buildMindSignals — knowledge base search (PI-K17-A)', () => {
     const result = await buildMindSignals(
       {
         prisma: mockPrisma(),
-        knowledgeBaseService: { search } as unknown as KnowledgeBaseService,
+        knowledgeBaseService: { search },
         logger: mockLogger,
       },
       'ws-1',
@@ -85,7 +85,7 @@ describe('buildMindSignals — knowledge base search (PI-K17-A)', () => {
     const result = await buildMindSignals(
       {
         prisma: mockPrisma(),
-        knowledgeBaseService: { search } as unknown as KnowledgeBaseService,
+        knowledgeBaseService: { search },
         logger: mockLogger,
       },
       'ws-1',
@@ -106,7 +106,7 @@ describe('buildMindSignals — knowledge base search (PI-K17-A)', () => {
     const result = await buildMindSignals(
       {
         prisma: mockPrisma(),
-        knowledgeBaseService: { search } as unknown as KnowledgeBaseService,
+        knowledgeBaseService: { search },
         mindConceptService: { detect },
         logger: mockLogger,
       },

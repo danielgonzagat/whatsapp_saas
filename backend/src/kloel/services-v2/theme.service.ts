@@ -27,10 +27,18 @@ export class ThemeService {
   async set(workspaceId: string, args: ThemeSetArgs): Promise<{ success: boolean; data: unknown }> {
     const patch: Record<string, unknown> = {};
 
-    if (args.primaryColor !== undefined) patch.primaryColor = String(args.primaryColor);
-    if (args.logoUrl !== undefined) patch.logoUrl = String(args.logoUrl);
-    if (args.coverUrl !== undefined) patch.coverUrl = String(args.coverUrl);
-    if (args.theme !== undefined) patch.theme = String(args.theme);
+    if (args.primaryColor !== undefined) {
+      patch.primaryColor = String(args.primaryColor);
+    }
+    if (args.logoUrl !== undefined) {
+      patch.logoUrl = String(args.logoUrl);
+    }
+    if (args.coverUrl !== undefined) {
+      patch.coverUrl = String(args.coverUrl);
+    }
+    if (args.theme !== undefined) {
+      patch.theme = String(args.theme);
+    }
 
     // Merge into branding JSON stored on workspace
     const existing = await this.prisma.workspace.findUnique({

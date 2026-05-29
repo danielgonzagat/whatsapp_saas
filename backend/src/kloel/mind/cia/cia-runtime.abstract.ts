@@ -1,8 +1,4 @@
-import type {
-  CiaBacklogMode,
-  CiaBacklogOptions,
-  CiaRuntimePort,
-} from './cia-runtime.port';
+import type { CiaBacklogMode, CiaBacklogOptions, CiaRuntimePort } from './cia-runtime.port';
 
 export abstract class CiaRuntimeService implements CiaRuntimePort {
   abstract bootstrap(workspaceId: string): Promise<unknown>;

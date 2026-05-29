@@ -66,9 +66,7 @@ export function toInputJsonValue(value: unknown): Prisma.InputJsonValue | null {
  * Object-only variant of {@link toInputJsonValue}. Drops `undefined` entries
  * before recursing so Prisma never sees explicit `undefined` keys.
  */
-export function toInputJsonObject(
-  payload: Record<string, unknown>,
-): Prisma.InputJsonObject {
+export function toInputJsonObject(payload: Record<string, unknown>): Prisma.InputJsonObject {
   return Object.fromEntries(
     Object.entries(payload)
       .filter(([, value]) => typeof value !== 'undefined')

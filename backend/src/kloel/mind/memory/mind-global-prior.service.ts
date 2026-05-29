@@ -225,53 +225,52 @@ export class MindGlobalPriorService {
     return { mean: prior.mean, samples: prior.samples };
   }
 
-  
-    /**
-     * Bridge method replacing {@link KloelGlobalPriorService#getPrior}.
-     *
-     * Queries `mindBanditArm` rows for the given `decisionType` + `action` (arm)
-     * across ALL workspaces, aggregates alpha/beta totals, and returns the
-     * Beta-posterior mean together with total pull count as `observations`.
-     *
-     * Returns `null` when no arm data exists (triggers default belief in
-     * `mixWithGlobalPrior`, identical to the legacy behaviour).
-     *
-     * The `channel` parameter is accepted for API symmetry with
-     * `KloelGlobalPriorService.getPrior` but is currently not stored on
-     * `mindBanditArm` rows; a future migration can add a `channel` column and
-     * narrow the query without breaking callers.
-     */
-    async getPriorTuple(
-      _channel: string,
-      decisionType: string,
-      action: string,
-    ): Promise<{ mean: number; observations: number } | null> {
-      const BETA_PRIOR_ALPHA = 1;
-      const BETA_PRIOR_BETA = 1;
+  /**
+   * Bridge method replacing {@link KloelGlobalPriorService#getPrior}.
+   *
+   * Queries `mindBanditArm` rows for the given `decisionType` + `action` (arm)
+   * across ALL workspaces, aggregates alpha/beta totals, and returns the
+   * Beta-posterior mean together with total pull count as `observations`.
+   *
+   * Returns `null` when no arm data exists (triggers default belief in
+   * `mixWithGlobalPrior`, identical to the legacy behaviour).
+   *
+   * The `channel` parameter is accepted for API symmetry with
+   * `KloelGlobalPriorService.getPrior` but is currently not stored on
+   * `mindBanditArm` rows; a future migration can add a `channel` column and
+   * narrow the query without breaking callers.
+   */
+  async getPriorTuple(
+    _channel: string,
+    decisionType: string,
+    action: string,
+  ): Promise<{ mean: number; observations: number } | null> {
+    const BETA_PRIOR_ALPHA = 1;
+    const BETA_PRIOR_BETA = 1;
 
-      const rows = await this.prisma.mindBanditArm.findMany({
-        where: { decisionType, arm: action, pulls: { gt: 0 } },
-        select: { alpha: true, beta: true, pulls: true },
-      });
+    const rows = await this.prisma.mindBanditArm.findMany({
+      where: { decisionType, arm: action, pulls: { gt: 0 } },
+      select: { alpha: true, beta: true, pulls: true },
+    });
 
-      if (rows.length === 0) {
-        return null;
-      }
-
-      let totalAlpha = BETA_PRIOR_ALPHA;
-      let totalBeta = BETA_PRIOR_BETA;
-      let totalPulls = 0;
-
-      for (const row of rows) {
-        totalAlpha += row.alpha;
-        totalBeta += row.beta;
-        totalPulls += row.pulls;
-      }
-
-      const mean = totalAlpha / (totalAlpha + totalBeta);
-
-      return { mean, observations: totalPulls };
+    if (rows.length === 0) {
+      return null;
     }
+
+    let totalAlpha = BETA_PRIOR_ALPHA;
+    let totalBeta = BETA_PRIOR_BETA;
+    let totalPulls = 0;
+
+    for (const row of rows) {
+      totalAlpha += row.alpha;
+      totalBeta += row.beta;
+      totalPulls += row.pulls;
+    }
+
+    const mean = totalAlpha / (totalAlpha + totalBeta);
+
+    return { mean, observations: totalPulls };
+  }
 
   /**
    * Bridge method replacing {@link KloelGlobalPriorService#recordObservation}.

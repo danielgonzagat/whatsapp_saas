@@ -48,10 +48,18 @@ export class BrandService {
         : {};
 
     const patch: Record<string, unknown> = { ...currentVoice };
-    if (args.voiceId !== undefined) patch.voiceId = String(args.voiceId);
-    if (args.voiceName !== undefined) patch.voiceName = String(args.voiceName);
-    if (args.provider !== undefined) patch.provider = String(args.provider);
-    if (args.tone !== undefined) patch.tone = String(args.tone);
+    if (args.voiceId !== undefined) {
+      patch.voiceId = String(args.voiceId);
+    }
+    if (args.voiceName !== undefined) {
+      patch.voiceName = String(args.voiceName);
+    }
+    if (args.provider !== undefined) {
+      patch.provider = String(args.provider);
+    }
+    if (args.tone !== undefined) {
+      patch.tone = String(args.tone);
+    }
 
     const updatedSettings = { ...current, brandVoice: patch };
 

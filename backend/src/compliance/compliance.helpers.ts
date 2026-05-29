@@ -92,7 +92,9 @@ export function normalizeUnsubscribeEmail(email: string): string {
  * Pure given an explicit env-like record (defaults to process.env). Tests
  * pass a fixture to avoid mutating real process state.
  */
-export function resolveSiteUrl(env: NodeJS.ProcessEnv | Record<string, string | undefined> = process.env): string {
+export function resolveSiteUrl(
+  env: NodeJS.ProcessEnv | Record<string, string | undefined> = process.env,
+): string {
   const raw = env.NEXT_PUBLIC_SITE_URL || env.FRONTEND_URL || 'https://kloel.com';
   return String(raw).replace(/\/$/, '');
 }
@@ -130,10 +132,18 @@ export type RiscEventAction =
 
 export function classifyRiscEvent(eventType: string): RiscEventAction {
   const type = String(eventType ?? '');
-  if (type.endsWith('/sessions-revoked')) return 'sessions-revoked';
-  if (type.endsWith('/tokens-revoked')) return 'tokens-revoked';
-  if (type.endsWith('/account-disabled')) return 'account-disabled';
-  if (type.endsWith('/account-purged')) return 'account-purged';
+  if (type.endsWith('/sessions-revoked')) {
+    return 'sessions-revoked';
+  }
+  if (type.endsWith('/tokens-revoked')) {
+    return 'tokens-revoked';
+  }
+  if (type.endsWith('/account-disabled')) {
+    return 'account-disabled';
+  }
+  if (type.endsWith('/account-purged')) {
+    return 'account-purged';
+  }
   return 'unknown';
 }
 
@@ -153,7 +163,10 @@ export interface RedactedAgentFields {
   deletedAt: Date;
 }
 
-export function buildRedactedAgentFields(agentId: string, now: Date = new Date()): RedactedAgentFields {
+export function buildRedactedAgentFields(
+  agentId: string,
+  now: Date = new Date(),
+): RedactedAgentFields {
   return {
     name: 'Deleted User',
     email: `deleted-${agentId}@removed.local`,

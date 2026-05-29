@@ -39,9 +39,7 @@ export const TIER_8_MARKETPLACE_CAPABILITIES: CapabilityDefinition[] = [
     tier: 8,
     requiresConfirmation: true,
     requiredPermissions: ['workspace:write'],
-    inputSchema: [
-      { key: 'templateId', type: 'string', label: 'ID do template', required: true },
-    ],
+    inputSchema: [{ key: 'templateId', type: 'string', label: 'ID do template', required: true }],
     domainService: 'MarketplaceService.installTemplate',
     emits: ['marketplace.template_installed'],
     surface: ['dashboard-chat'],

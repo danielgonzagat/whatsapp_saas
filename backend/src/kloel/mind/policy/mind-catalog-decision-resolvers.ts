@@ -1,7 +1,4 @@
-import {
-  resolveCaseMemoryAction,
-  type CaseMemoryLookup,
-} from './mind-case-memory-decision.helper';
+import { resolveCaseMemoryAction, type CaseMemoryLookup } from './mind-case-memory-decision.helper';
 import type { MindPolicyService } from './mind-policy.service';
 import {
   TONE_OPTIONS,

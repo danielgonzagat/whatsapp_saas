@@ -3,10 +3,7 @@ import type { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MindMessageService, type MindMessage } from './aliases/mind-message.service';
-import {
-  MindMemoryItemService,
-  type MindMemoryItem,
-} from './aliases/mind-memory-item.service';
+import { MindMemoryItemService, type MindMemoryItem } from './aliases/mind-memory-item.service';
 
 /**
  * Brain → Mind unification — Phase 1 canonical facade (Wave5 L8, Y-6).
@@ -57,11 +54,7 @@ export class MindCanonicalService {
    * under the workspace scope. Delegates to
    * {@link MindMessageService.appendToConversation}.
    */
-  async appendMessage(
-    workspaceId: string,
-    role: string,
-    content: string,
-  ): Promise<MindMessage> {
+  async appendMessage(workspaceId: string, role: string, content: string): Promise<MindMessage> {
     return this.messages.appendToConversation(workspaceId, role, content);
   }
 

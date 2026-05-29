@@ -201,86 +201,82 @@ export class MindSelfModificationService {
     }
   }
 
-  
-    /**
-     * Full self-evolution cycle entry point.
-     *
-     * One round = (1) build proposal from recent surprise, (2) persist as a
-     * RAC_MindOutboxEvent row tagged `cognition.self_modification.proposed`
-     * (idempotent on workspace + cycle bucket so the same 6h window cannot
-     * double-write), (3) emit the proposal envelope on the spine for in-process
-     * subscribers. Returns the persisted event id (or null when nothing was
-     * persisted) plus the proposal for the caller to log.
-     *
-     * Never throws — every step is wrapped in try/catch so a single broken
-     * workspace cannot abort the platform-wide cron sweep.
-     */
-    async runEvolutionCycle(workspaceId: string): Promise<{
-      eventId: string | null;
-      persisted: boolean;
-      proposal: SelfModificationProposal;
-    }> {
-      if (!workspaceId) {
-        return { eventId: null, persisted: false, proposal: { opportunities: [] } };
-      }
-
-      const proposal = await this.proposeOptimization(workspaceId);
-
-      let eventId: string | null = null;
-      let persisted = false;
-      if (this.prisma) {
-        try {
-          const occurredAt = new Date();
-          const bucketMs = SELF_EVOLUTION_CYCLE_BUCKET_HOURS * 3600 * 1000;
-          const bucket = Math.floor(occurredAt.getTime() / bucketMs);
-          const idempotencyKey = `${SELF_EVOLUTION_EVENT_TYPE}:${bucket}`;
-          const id = randomUUID();
-          const subject = `workspace:${workspaceId}`;
-          const payloadJson = toPrismaJsonValue({
-            opportunityCount: proposal.opportunities.length,
-            opportunities: proposal.opportunities.slice(0, 25),
-            cycleBucket: bucket,
-            source: 'mind-self-evolution-cron',
-          });
-          const created = await this.prisma.mindOutboxEvent.upsert({
-            where: {
-              workspaceId_idempotencyKey: { workspaceId, idempotencyKey },
-            },
-            update: {
-              payload: payloadJson,
-              occurredAt,
-            },
-            create: {
-              id,
-              workspaceId,
-              eventType: SELF_EVOLUTION_EVENT_TYPE,
-              subject,
-              payload: payloadJson,
-              idempotencyKey,
-              occurredAt,
-            },
-            select: { id: true },
-          });
-          eventId = created.id;
-          persisted = true;
-        } catch (error: unknown) {
-          const message = error instanceof Error ? error.message : String(error);
-          this.logger.warn(
-            `runEvolutionCycle persist failed workspace=${workspaceId}: ${message}`,
-          );
-        }
-      }
-
-      // Spine emit is best-effort and already swallows failures internally.
-      await this.emitSelfModificationProposal(workspaceId, proposal);
-
-      this.logger.log(
-        `self_evolution_cycle workspace=${workspaceId} opportunities=${proposal.opportunities.length} persisted=${persisted} eventId=${eventId ?? 'none'}`,
-      );
-
-      return { eventId, persisted, proposal };
+  /**
+   * Full self-evolution cycle entry point.
+   *
+   * One round = (1) build proposal from recent surprise, (2) persist as a
+   * RAC_MindOutboxEvent row tagged `cognition.self_modification.proposed`
+   * (idempotent on workspace + cycle bucket so the same 6h window cannot
+   * double-write), (3) emit the proposal envelope on the spine for in-process
+   * subscribers. Returns the persisted event id (or null when nothing was
+   * persisted) plus the proposal for the caller to log.
+   *
+   * Never throws — every step is wrapped in try/catch so a single broken
+   * workspace cannot abort the platform-wide cron sweep.
+   */
+  async runEvolutionCycle(workspaceId: string): Promise<{
+    eventId: string | null;
+    persisted: boolean;
+    proposal: SelfModificationProposal;
+  }> {
+    if (!workspaceId) {
+      return { eventId: null, persisted: false, proposal: { opportunities: [] } };
     }
 
+    const proposal = await this.proposeOptimization(workspaceId);
+
+    let eventId: string | null = null;
+    let persisted = false;
+    if (this.prisma) {
+      try {
+        const occurredAt = new Date();
+        const bucketMs = SELF_EVOLUTION_CYCLE_BUCKET_HOURS * 3600 * 1000;
+        const bucket = Math.floor(occurredAt.getTime() / bucketMs);
+        const idempotencyKey = `${SELF_EVOLUTION_EVENT_TYPE}:${bucket}`;
+        const id = randomUUID();
+        const subject = `workspace:${workspaceId}`;
+        const payloadJson = toPrismaJsonValue({
+          opportunityCount: proposal.opportunities.length,
+          opportunities: proposal.opportunities.slice(0, 25),
+          cycleBucket: bucket,
+          source: 'mind-self-evolution-cron',
+        });
+        const created = await this.prisma.mindOutboxEvent.upsert({
+          where: {
+            workspaceId_idempotencyKey: { workspaceId, idempotencyKey },
+          },
+          update: {
+            payload: payloadJson,
+            occurredAt,
+          },
+          create: {
+            id,
+            workspaceId,
+            eventType: SELF_EVOLUTION_EVENT_TYPE,
+            subject,
+            payload: payloadJson,
+            idempotencyKey,
+            occurredAt,
+          },
+          select: { id: true },
+        });
+        eventId = created.id;
+        persisted = true;
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.warn(`runEvolutionCycle persist failed workspace=${workspaceId}: ${message}`);
+      }
+    }
+
+    // Spine emit is best-effort and already swallows failures internally.
+    await this.emitSelfModificationProposal(workspaceId, proposal);
+
+    this.logger.log(
+      `self_evolution_cycle workspace=${workspaceId} opportunities=${proposal.opportunities.length} persisted=${persisted} eventId=${eventId ?? 'none'}`,
+    );
+
+    return { eventId, persisted, proposal };
+  }
 
   private buildOpportunities(
     rows: ReadonlyArray<{ predicate: string; surprise: number | null }>,

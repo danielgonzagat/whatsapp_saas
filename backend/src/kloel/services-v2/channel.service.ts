@@ -72,7 +72,9 @@ export class ChannelService {
     args: ChannelConnectArgs,
   ): Promise<{ success: boolean; data: unknown }> {
     const channel = String(args.channel ?? '').toUpperCase();
-    if (!channel) return { success: false, data: null };
+    if (!channel) {
+      return { success: false, data: null };
+    }
 
     const credentials = args.credentials ?? {};
     const name = String(args.name ?? channel);

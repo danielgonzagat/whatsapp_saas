@@ -127,7 +127,9 @@ describe('tier-1 fine-grained product capabilities (Wave7 L1)', () => {
       });
       expect(result).not.toBeNull();
       expect(result!.success).toBe(true);
-      const data = prisma.product.update.mock.calls[0]![0].data as { metadata: { pixels: unknown } };
+      const data = prisma.product.update.mock.calls[0]![0].data as {
+        metadata: { pixels: unknown };
+      };
       expect(data.metadata.pixels).toEqual([{ type: 'FACEBOOK', pixelId: 'fb-1' }]);
     });
 

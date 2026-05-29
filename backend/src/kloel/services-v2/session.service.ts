@@ -37,7 +37,9 @@ export class SessionService {
     }
 
     const results = await this.threadSearch.search(workspaceId, query, limit);
-    this.logger.log(`SessionService.search ws=${workspaceId} query="${query}" found=${results.length}`);
+    this.logger.log(
+      `SessionService.search ws=${workspaceId} query="${query}" found=${results.length}`,
+    );
     return { success: true, data: results };
   }
 }

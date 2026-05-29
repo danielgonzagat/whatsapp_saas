@@ -73,7 +73,8 @@ export const TIER_0B_QUERY_COMMERCE_CAPABILITIES: CapabilityDefinition[] = [
   {
     id: 'get_product_ai_config',
     title: 'Configuração IA do produto (legado)',
-    description: 'DEPRECATED — use products.set_ai_config (or read from ProductAIConfigService.get)',
+    description:
+      'DEPRECATED — use products.set_ai_config (or read from ProductAIConfigService.get)',
     category: 'QUERY',
     tier: 0,
     requiresConfirmation: false,

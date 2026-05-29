@@ -141,8 +141,7 @@ export const TIER_12_MARKETING_CAPABILITIES: CapabilityDefinition[] = [
   {
     id: 'email.send',
     title: 'Enviar email',
-    description:
-      'Envia um email para um destinatário, roteando pelo dispatcher canônico de canais',
+    description: 'Envia um email para um destinatário, roteando pelo dispatcher canônico de canais',
     category: 'MUTATION_SENSITIVE',
     tier: 12,
     requiresConfirmation: true,

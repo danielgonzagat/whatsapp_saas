@@ -1,7 +1,11 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../../../logging/structured-logger';
 import type { MindActionContext } from '../policy/mind-code-native.types';
-import type { ReplayInput, ReplayCandidate, ReplayScenarioInput } from '../runtime/mind-replay.service';
+import type {
+  ReplayInput,
+  ReplayCandidate,
+  ReplayScenarioInput,
+} from '../runtime/mind-replay.service';
 import { clamp } from '../../../common/math';
 
 export interface SyntheticCandidateRecipe {

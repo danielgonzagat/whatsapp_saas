@@ -1,5 +1,4 @@
 import { Injectable, Optional } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { StructuredLogger } from '../../../logging/structured-logger';
 import { PrismaService } from '../../../prisma/prisma.service';
@@ -133,12 +132,17 @@ export class LongTermMemoryService {
       const recalled = rows
         .map((row) => {
           const meta = (row.metadata as Record<string, unknown> | null) ?? {};
-          const valence = meta['valence'] === 'negative' ? 'negative' : 'positive';
-          const occurrences =
-            typeof meta['occurrences'] === 'number' ? (meta['occurrences'] as number) : 1;
+          const valence: 'positive' | 'negative' =
+            meta['valence'] === 'negative' ? 'negative' : 'positive';
+          const occurrences = typeof meta['occurrences'] === 'number' ? meta['occurrences'] : 1;
           const lastAt = typeof meta['lastAt'] === 'string' ? Date.parse(meta['lastAt']) : now;
           const strength = this.decayWeight(row.weight, lastAt, now);
-          return { fact: row.label, valence: valence as 'positive' | 'negative', strength, occurrences };
+          return {
+            fact: row.label,
+            valence: valence,
+            strength,
+            occurrences,
+          };
         })
         .filter((r) => (context?.valence ? r.valence === context.valence : true))
         .sort((a, b) => b.strength - a.strength)
@@ -234,7 +238,7 @@ export class LongTermMemoryService {
               occurrences: 1,
               firstAt: occurredAtIso,
               lastAt: occurredAtIso,
-            } as Prisma.InputJsonValue,
+            },
           },
         });
         return;
@@ -242,8 +246,7 @@ export class LongTermMemoryService {
 
       const meta = (existing.metadata as Record<string, unknown> | null) ?? {};
       const lastAt = typeof meta['lastAt'] === 'string' ? Date.parse(meta['lastAt']) : now;
-      const occurrences =
-        typeof meta['occurrences'] === 'number' ? (meta['occurrences'] as number) : 1;
+      const occurrences = typeof meta['occurrences'] === 'number' ? meta['occurrences'] : 1;
 
       const decayed = this.decayWeight(existing.weight, lastAt, now);
       const reinforced = Math.min(
@@ -260,7 +263,7 @@ export class LongTermMemoryService {
             valence,
             occurrences: occurrences + 1,
             lastAt: occurredAtIso,
-          } as Prisma.InputJsonValue,
+          },
         },
       });
     } catch (error: unknown) {

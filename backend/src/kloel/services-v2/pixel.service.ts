@@ -74,9 +74,7 @@ export class PixelService {
 
     const result = await this.productService.setPixels(workspaceId, { productId, pixels });
 
-    this.logger.log(
-      `PixelService.configure ws=${workspaceId} product=${productId}`,
-    );
+    this.logger.log(`PixelService.configure ws=${workspaceId} product=${productId}`);
     return { success: true, data: result };
   }
 }

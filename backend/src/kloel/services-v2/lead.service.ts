@@ -27,10 +27,7 @@ export class LeadService {
   constructor(private readonly prisma: PrismaService) {}
 
   /** Get lead(s) by ID, email, or phone. Returns list if no specific ID. */
-  async get(
-    workspaceId: string,
-    args: LeadGetArgs,
-  ): Promise<{ success: boolean; data: unknown }> {
+  async get(workspaceId: string, args: LeadGetArgs): Promise<{ success: boolean; data: unknown }> {
     const limit = Math.min(Number(args.limit ?? 20), 100);
 
     if (args.leadId) {
@@ -59,8 +56,12 @@ export class LeadService {
     }
 
     const where: Prisma.CheckoutSocialLeadWhereInput = { workspaceId };
-    if (args.email) where.email = { contains: String(args.email), mode: 'insensitive' };
-    if (args.phone) where.phone = { contains: String(args.phone) };
+    if (args.email) {
+      where.email = { contains: String(args.email), mode: 'insensitive' };
+    }
+    if (args.phone) {
+      where.phone = { contains: String(args.phone) };
+    }
 
     const leads = await this.prisma.checkoutSocialLead.findMany({
       where,
