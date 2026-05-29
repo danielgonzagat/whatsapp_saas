@@ -1,0 +1,228 @@
+/**
+ * server-tools-native.ts — universal (75-language) structural tools backed by
+ * the isolated pi-natives engine (native-bridge / native-worker fork).
+ *
+ *   atomic_ast_search  — ast-grep structural search across any supported
+ *                        language. Read-only.
+ *   atomic_ast_edit    — ast-grep structural rewrite of ONE file. The native
+ *                        engine COMPUTES the spans (dry-run only); this handler
+ *                        applies them through the Mutation Firewall
+ *                        (resolveSafeTarget -> guardSha -> applyEdits/validate
+ *                        -> commit). The native engine never writes.
+ *
+ * Correctness: pi-natives reports byte (UTF-8) offsets and 1-based CODEPOINT
+ * columns; our engine uses UTF-16 string offsets. We therefore convert byte
+ * offsets -> UTF-16 char offsets via Buffer (never trust the codepoint
+ * columns), and span-guard every change (sliced source must equal the reported
+ * `before`) before applying. Multibyte/astral-plane files are handled correctly.
+ *
+ * Degradation: when the native engine is unavailable (wrong-platform binary,
+ * repeated crashes) both tools fail cleanly with an honest message — callers
+ * use the explicit TS/range tools instead. pi-natives is a dev accelerator,
+ * never on the critical path.
+ */
+import * as path from 'node:path';
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { z } from 'zod';
+import { applyEdits, type TextEditSpec } from './engine.js';
+import { resolveSafeTarget, REPO_ROOT } from './guard.js';
+import { readUtf8, guardSha } from './server-helpers-io.js';
+import { ok, fail, commit, type ToolOk } from './server-helpers-result.js';
+import {
+  ensureReady,
+  nativeAvailable,
+  nativeLanguages,
+  astGrep,
+  astEditDry,
+  type AstReplaceChange,
+} from './native-bridge.js';
+
+const STRICTNESS = ['cst', 'smart', 'ast', 'relaxed', 'signature', 'template'] as const;
+
+/** UTF-16 string offset -> 1-based {line,column} (inverse of engine.posToOffset). */
+function offsetToPos(text: string, offset: number): { line: number; column: number } {
+  let line = 1;
+  let lineStart = 0;
+  for (let i = 0; i < offset; i++) {
+    if (text.charCodeAt(i) === 10 /* \n */) {
+      line += 1;
+      lineStart = i + 1;
+    }
+  }
+  return { line, column: offset - lineStart + 1 };
+}
+
+async function nativeReadyOrFail(): Promise<ToolOk | null> {
+  const ready = await ensureReady();
+  if (!ready || !nativeAvailable()) {
+    return fail(
+      'native universal engine (pi-natives) unavailable on this platform — ' +
+        'use the explicit atomic_edit range/literal/symbol tools, or run on a supported platform (darwin-arm64 today).',
+    );
+  }
+  return null;
+}
+
+export function registerToolsNative(server: McpServer): void {
+  server.registerTool(
+    'atomic_ast_search',
+    {
+      title: 'Universal structural search (ast-grep, 75 languages)',
+      description:
+        'Search code structurally with an ast-grep pattern (e.g. "greet($A)", "function $F($$$) { $$$ }") ' +
+        'across any tree-sitter-supported language. Read-only. Returns matches with file, line/column span, ' +
+        'and (optionally) meta-variable bindings. `path` may be a file or directory inside the repo.',
+      inputSchema: {
+        path: z.string(),
+        pattern: z.string(),
+        lang: z.string().optional(),
+        glob: z.string().optional(),
+        strictness: z.enum(STRICTNESS).optional(),
+        limit: z.number().int().min(1).max(1000).optional(),
+        includeMeta: z.boolean().optional(),
+      },
+    },
+    async (a) => {
+      try {
+        const gate = await nativeReadyOrFail();
+        if (gate) return gate;
+        const abs = path.resolve(REPO_ROOT, a.path);
+        if (abs !== REPO_ROOT && !abs.startsWith(REPO_ROOT + path.sep)) {
+          return fail(`path escapes repository root: ${a.path}`);
+        }
+        const limit = a.limit ?? 100;
+        const res = await astGrep({
+          path: abs,
+          patterns: [a.pattern],
+          lang: a.lang,
+          glob: a.glob,
+          strictness: a.strictness ?? 'smart',
+          limit,
+          includeMeta: a.includeMeta,
+        });
+        return ok({
+          totalMatches: res.totalMatches,
+          filesWithMatches: res.filesWithMatches,
+          filesSearched: res.filesSearched,
+          limitReached: res.limitReached,
+          parseErrors: res.parseErrors ?? [],
+          matches: res.matches.slice(0, limit),
+        });
+      } catch (e) {
+        return fail(e instanceof Error ? e.message : String(e));
+      }
+    },
+  );
+
+  server.registerTool(
+    'atomic_ast_edit',
+    {
+      title: 'Universal structural edit (ast-grep rewrite) through the firewall',
+      description:
+        'Rewrite ONE file structurally with an ast-grep pattern -> template (e.g. pattern "greet($A)", ' +
+        'rewrite "salute($A)"), across any supported language. The native engine computes the change spans ' +
+        '(dry-run, never writes); this tool applies them through the atomic Mutation Firewall: span-guarded, ' +
+        'syntax-validated (no-regression), atomic write, char-level trace, rollback-safe. Use the explicit ' +
+        'TS symbol tools (atomic_rename_symbol, atomic_change_signature) for type-aware refactors — ast-grep ' +
+        'is syntactic and cannot resolve scopes/types.',
+      inputSchema: {
+        file: z.string(),
+        pattern: z.string(),
+        rewrite: z.string(),
+        lang: z.string().optional(),
+        strictness: z.enum(STRICTNESS).optional(),
+        expectedSha256: z.string().optional(),
+        preview: z.boolean().optional(),
+        verify: z.enum(['typecheck', 'lint']).optional(),
+        lock: z.boolean().optional(),
+      },
+    },
+    async (a) => {
+      try {
+        const gate = await nativeReadyOrFail();
+        if (gate) return gate;
+        const { absPath, relPath } = resolveSafeTarget(a.file);
+        const before = readUtf8(absPath);
+        guardSha(before, a.expectedSha256);
+
+        const res = await astEditDry({
+          path: absPath,
+          rewrites: { [a.pattern]: a.rewrite },
+          lang: a.lang,
+          strictness: a.strictness ?? 'smart',
+          failOnParseError: true,
+        });
+        if (res.parseErrors && res.parseErrors.length > 0) {
+          return fail(`source has parse errors, refusing to edit: ${res.parseErrors.join('; ')}`);
+        }
+        const changes: AstReplaceChange[] = (res.changes ?? []).filter((c) => path.resolve(REPO_ROOT, c.path) === absPath || c.path === absPath || c.path === relPath);
+        if (changes.length === 0) {
+          return ok({ changed: false, totalReplacements: 0, message: 'pattern matched nothing in this file' });
+        }
+
+        // byte (UTF-8) offsets -> UTF-16 char offsets; span-guard each change.
+        const buf = Buffer.from(before, 'utf8');
+        const specs: TextEditSpec[] = [];
+        for (const c of changes) {
+          const charStart = buf.subarray(0, c.byteStart).toString('utf8').length;
+          const charEnd = buf.subarray(0, c.byteEnd).toString('utf8').length;
+          const span = before.slice(charStart, charEnd);
+          if (span !== c.before) {
+            return fail(
+              `span guard failed (stale/inconsistent native offsets) at byte ${c.byteStart}: ` +
+                `expected ${JSON.stringify(c.before)} but source span is ${JSON.stringify(span)}`,
+            );
+          }
+          specs.push({ start: offsetToPos(before, charStart), end: offsetToPos(before, charEnd), newText: c.after });
+        }
+
+        const result = applyEdits(absPath, before, specs);
+        return commit(
+          relPath,
+          absPath,
+          before,
+          result,
+          {
+            operator: 'atomic_ast_edit',
+            engine: 'pi-natives ast-grep',
+            pattern: a.pattern,
+            rewrite: a.rewrite,
+            lang: a.lang ?? '(inferred)',
+            replacements: specs.length,
+            validationLanguage: result.validation.language,
+          },
+          a.preview ?? false,
+          a.verify,
+          a.lock,
+        );
+      } catch (e) {
+        return fail(e instanceof Error ? e.message : String(e));
+      }
+    },
+  );
+
+  // Surface the universal-engine capability for discovery.
+  server.registerTool(
+    'atomic_native_status',
+    {
+      title: 'Universal engine status — availability + supported languages',
+      description:
+        'Reports whether the native pi-natives universal engine is loaded on this platform and the list of ' +
+        'languages it can parse/edit structurally. Use to decide between atomic_ast_* (universal) and the ' +
+        'TS-specific symbol tools.',
+      inputSchema: {},
+    },
+    async () => {
+      try {
+        const ready = await ensureReady();
+        return ok({
+          available: ready && nativeAvailable(),
+          languageCount: nativeLanguages().length,
+          languages: nativeLanguages(),
+        });
+      } catch (e) {
+        return fail(e instanceof Error ? e.message : String(e));
+      }
+    },
+  );
+}

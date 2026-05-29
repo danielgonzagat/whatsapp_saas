@@ -1,0 +1,5 @@
+pi_natives.darwin-arm64.node vendored from:
+  /Users/danielpenin/pi-inspect/packages/natives/native/pi_natives.darwin-arm64.node
+Provider: @oh-my-pi/pi-natives (napi). Relocatable, ABI-stable.
+Restore: cp from the path above (or rebuild pi-inspect natives).
+linux-x64 build still required for CI/prod.

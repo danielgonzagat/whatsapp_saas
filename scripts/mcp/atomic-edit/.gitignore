@@ -1,0 +1,3 @@
+
+# vendored native addon (heavy, auto-restored by launcher)
+vendor/pi-natives/*.node
