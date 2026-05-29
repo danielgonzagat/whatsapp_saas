@@ -1,6 +1,6 @@
 import * as fc from 'fast-check';
 
-import { calculateSplit } from './split.engine';
+import { calculateSplit, clamp } from './split.engine';
 import type { SplitInput, SplitOutput } from './split.types';
 
 const sumSplits = (output: SplitOutput): bigint =>
@@ -173,6 +173,21 @@ describe('calculateSplit — priority and clamping edge cases', () => {
     expect(conserves(input, out)).toBe(true);
   });
 
+  it('Kloel + interest >= buyerPaid with workspaceId logs the workspace and returns Kloel=full', () => {
+    const input: SplitInput = {
+      buyerPaidCents: 1_000n,
+      saleValueCents: 10_000n,
+      interestCents: 500n,
+      marketplaceFeeCents: 600n,
+      seller: { accountId: 'acct_seller' },
+    };
+    const out = calculateSplit(input, 'ws_pathological');
+
+    expect(out.kloelTotalCents).toBe(1_000n);
+    expect(out.splits).toHaveLength(0);
+    expect(conserves(input, out)).toBe(true);
+  });
+
   it('zero supplier amount produces no supplier line', () => {
     const input: SplitInput = {
       ...baseInput(),
@@ -247,6 +262,72 @@ describe('calculateSplit — input validation', () => {
         seller,
       }),
     ).toThrow(/percentBp/);
+  });
+
+  it('rejects negative supplier amount', () => {
+    expect(() =>
+      calculateSplit({
+        buyerPaidCents: 10_000n,
+        saleValueCents: 10_000n,
+        interestCents: 0n,
+        marketplaceFeeCents: 0n,
+        supplier: { accountId: 'acct_supplier', amountCents: -1n },
+        seller,
+      }),
+    ).toThrow(/supplier\.amountCents must be >= 0/);
+  });
+
+  it('rejects negative interestCents', () => {
+    expect(() =>
+      calculateSplit({
+        buyerPaidCents: 10_000n,
+        saleValueCents: 10_000n,
+        interestCents: -1n,
+        marketplaceFeeCents: 0n,
+        seller,
+      }),
+    ).toThrow(/interestCents/);
+  });
+
+  it('rejects negative marketplaceFeeCents', () => {
+    expect(() =>
+      calculateSplit({
+        buyerPaidCents: 10_000n,
+        saleValueCents: 10_000n,
+        interestCents: 0n,
+        marketplaceFeeCents: -5n,
+        seller,
+      }),
+    ).toThrow(/marketplaceFeeCents/);
+  });
+
+  it('rejects negative saleValueCents', () => {
+    expect(() =>
+      calculateSplit({
+        buyerPaidCents: 10_000n,
+        saleValueCents: -1n,
+        interestCents: 0n,
+        marketplaceFeeCents: 0n,
+        seller,
+      }),
+    ).toThrow(/saleValueCents/);
+  });
+});
+
+describe('clamp — defensive guard', () => {
+  it('floors a negative value to 0n', () => {
+    expect(clamp(-1n, 1_000n)).toBe(0n);
+    expect(clamp(-9_999n, 1_000n)).toBe(0n);
+  });
+
+  it('caps a value above ceiling at ceiling', () => {
+    expect(clamp(2_000n, 1_000n)).toBe(1_000n);
+  });
+
+  it('passes through a value inside the range', () => {
+    expect(clamp(500n, 1_000n)).toBe(500n);
+    expect(clamp(0n, 1_000n)).toBe(0n);
+    expect(clamp(1_000n, 1_000n)).toBe(1_000n);
   });
 });
 

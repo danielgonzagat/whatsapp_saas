@@ -143,6 +143,21 @@ describe('FraudEngine.evaluate — velocity', () => {
     );
   });
 
+  it('routes to review when the velocity backend rejects with a non-Error value', async () => {
+    const prisma = makePrismaStub();
+    const redis = makeRedisStub();
+    // Reject with a bare string to exercise the String(error) fallback branch.
+    redis.incr.mockRejectedValueOnce('redis exploded');
+    const engine = await buildEngine(prisma, redis);
+
+    const decision = await engine.evaluate(baseContext());
+
+    expect(decision.action).toBe('review');
+    expect(decision.reasons).toContainEqual(
+      expect.objectContaining({ signal: 'velocity_unavailable' }),
+    );
+  });
+
   it('accumulates multiple velocity violations in the same evaluation', async () => {
     process.env.FRAUD_VELOCITY_MAX_ATTEMPTS_PER_IP = '1';
     process.env.FRAUD_VELOCITY_MAX_ATTEMPTS_PER_EMAIL = '1';

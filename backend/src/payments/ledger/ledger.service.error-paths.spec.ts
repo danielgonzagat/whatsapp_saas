@@ -1,5 +1,13 @@
+import { Prisma } from '@prisma/client';
+
 import { AccountBalanceNotFoundError } from './ledger.types';
 import { buildService, makeBalance, makePrismaStub } from './ledger.service.spec-helpers';
+
+const makePrismaKnownError = (code: string): Prisma.PrismaClientKnownRequestError =>
+  new Prisma.PrismaClientKnownRequestError(`stub prisma error ${code}`, {
+    code,
+    clientVersion: 'test',
+  });
 
 /**
  * LedgerService spec — defensive error paths.
@@ -173,6 +181,88 @@ describe('LedgerService — error paths', () => {
 
     const balance = stub.balances.get('cab_seller');
     expect(balance?.availableBalanceCents).toBe(-1_000n);
+  });
+
+  it('moveFromPendingToAvailable silently skips on P2002 (concurrent maturation)', async () => {
+    const stub = makePrismaStub([makeBalance({ pendingBalanceCents: 1_000n })]);
+    const service = await buildService(stub);
+
+    const credit = await service.creditPending({
+      accountBalanceId: 'cab_seller',
+      amountCents: 1_000n,
+      matureAt: new Date(),
+      reference: { type: 'sale', id: 'pi_race_p2002' },
+    });
+
+    // Simulate a racing maturation that already wrote the MATURE row: the
+    // create call hits a unique-constraint violation (P2002).
+    const createSpy = jest.spyOn(stub.prisma.connectLedgerEntry, 'create');
+    createSpy.mockImplementationOnce(() => {
+      throw makePrismaKnownError('P2002');
+    });
+
+    await expect(service.moveFromPendingToAvailable(credit.id)).resolves.toBeUndefined();
+    createSpy.mockRestore();
+  });
+
+  it('moveFromPendingToAvailable silently skips on P2025 (stale row)', async () => {
+    const stub = makePrismaStub([makeBalance({ pendingBalanceCents: 1_000n })]);
+    const service = await buildService(stub);
+
+    const credit = await service.creditPending({
+      accountBalanceId: 'cab_seller',
+      amountCents: 1_000n,
+      matureAt: new Date(),
+      reference: { type: 'sale', id: 'pi_race_p2025' },
+    });
+
+    const updateSpy = jest.spyOn(stub.prisma.connectLedgerEntry, 'update');
+    updateSpy.mockImplementationOnce(() => {
+      throw makePrismaKnownError('P2025');
+    });
+
+    await expect(service.moveFromPendingToAvailable(credit.id)).resolves.toBeUndefined();
+    updateSpy.mockRestore();
+  });
+
+  it('moveFromPendingToAvailable rethrows non-recovery Prisma errors', async () => {
+    const stub = makePrismaStub([makeBalance({ pendingBalanceCents: 1_000n })]);
+    const service = await buildService(stub);
+
+    const credit = await service.creditPending({
+      accountBalanceId: 'cab_seller',
+      amountCents: 1_000n,
+      matureAt: new Date(),
+      reference: { type: 'sale', id: 'pi_race_p2003' },
+    });
+
+    const createSpy = jest.spyOn(stub.prisma.connectLedgerEntry, 'create');
+    createSpy.mockImplementationOnce(() => {
+      throw makePrismaKnownError('P2003');
+    });
+
+    await expect(service.moveFromPendingToAvailable(credit.id)).rejects.toThrow(/P2003/);
+    createSpy.mockRestore();
+  });
+
+  it('moveFromPendingToAvailable rethrows generic errors', async () => {
+    const stub = makePrismaStub([makeBalance({ pendingBalanceCents: 1_000n })]);
+    const service = await buildService(stub);
+
+    const credit = await service.creditPending({
+      accountBalanceId: 'cab_seller',
+      amountCents: 1_000n,
+      matureAt: new Date(),
+      reference: { type: 'sale', id: 'pi_race_generic' },
+    });
+
+    const createSpy = jest.spyOn(stub.prisma.connectLedgerEntry, 'create');
+    createSpy.mockImplementationOnce(() => {
+      throw new Error('boom non-prisma');
+    });
+
+    await expect(service.moveFromPendingToAvailable(credit.id)).rejects.toThrow(/boom non-prisma/);
+    createSpy.mockRestore();
   });
 
   it('creditAvailableByAdjustment floors lifetimePaidOut at 0 when adjustment exceeds it', async () => {

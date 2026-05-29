@@ -165,3 +165,36 @@ describe('LedgerService.creditAvailableByAdjustment', () => {
     expect(stub.balances.get('cab_seller')?.availableBalanceCents).toBe(300n);
   });
 });
+
+describe('LedgerService — metadata persistence', () => {
+  it('creditPending persists optional metadata on the CREDIT_PENDING row', async () => {
+    const stub = makePrismaStub([makeBalance()]);
+    const service = await buildService(stub);
+
+    await service.creditPending({
+      accountBalanceId: 'cab_seller',
+      amountCents: 1_000n,
+      matureAt: new Date('2026-05-01T00:00:00Z'),
+      reference: { type: 'sale', id: 'pi_meta' },
+      metadata: { orderId: 'ord_42', channel: 'whatsapp' },
+    });
+
+    const entry = stub.entries.find((e) => e.type === 'CREDIT_PENDING');
+    expect(entry?.metadata).toEqual({ orderId: 'ord_42', channel: 'whatsapp' });
+  });
+
+  it('debitAvailableForPayout persists optional metadata on the DEBIT_PAYOUT row', async () => {
+    const stub = makePrismaStub([makeBalance({ availableBalanceCents: 5_000n })]);
+    const service = await buildService(stub);
+
+    await service.debitAvailableForPayout({
+      accountBalanceId: 'cab_seller',
+      amountCents: 2_000n,
+      reference: { type: 'payout', id: 'po_meta' },
+      metadata: { batchId: 'batch_7' },
+    });
+
+    const entry = stub.entries.find((e) => e.type === 'DEBIT_PAYOUT');
+    expect(entry?.metadata).toEqual({ batchId: 'batch_7' });
+  });
+});

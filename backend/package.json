@@ -261,6 +261,24 @@
         "functions": 50,
         "lines": 50,
         "statements": 50
+      },
+      "./src/payments/split/split.engine.ts": {
+        "branches": 90,
+        "functions": 95,
+        "lines": 95,
+        "statements": 95
+      },
+      "./src/payments/ledger/ledger.service.ts": {
+        "branches": 90,
+        "functions": 95,
+        "lines": 95,
+        "statements": 95
+      },
+      "./src/payments/fraud/fraud.engine.ts": {
+        "branches": 90,
+        "functions": 95,
+        "lines": 95,
+        "statements": 95
       }
     }
   }
