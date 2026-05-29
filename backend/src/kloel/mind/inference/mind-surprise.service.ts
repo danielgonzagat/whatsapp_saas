@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../../../logging/structured-logger';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { MindBeliefService } from './mind-belief.service';
 import { MindPredictorService } from './mind-predictor.service';
 import type { MindPrediction } from '../../mind.types';
+import { SpineEmitterService } from '../../spine/spine-emitter.service';
 
 @Injectable()
 export class MindSurpriseService {
@@ -13,6 +14,7 @@ export class MindSurpriseService {
     private readonly prisma: PrismaService,
     private readonly beliefs: MindBeliefService,
     private readonly predictor: MindPredictorService,
+    @Optional() private readonly spine?: SpineEmitterService,
   ) {}
 
   async resolveBinary(
@@ -31,6 +33,29 @@ export class MindSurpriseService {
 
     await this.predictor.resolve(workspaceId, open.id, outcome, surprise);
     await this.beliefs.observeBinary(workspaceId, subject, predicate, open.context, outcome);
+
+    // Wave3: emit canonical cognition.surprise_observed at the real prediction
+    // resolution site (fire-and-forget; metadata only, no message content).
+    void this.spine
+      ?.emit({
+        eventName: 'cognition.surprise_observed',
+        workspaceId,
+        truthMode: 'observed',
+        provenance: {
+          source: 'production',
+          processor: 'mind-surprise',
+          processorVersion: '1.0.0',
+          schemaVersion: '1.0.0',
+        },
+        payload: {
+          subject,
+          predicate,
+          outcome,
+          predictedMean: open.predictedMean,
+          surprise,
+        },
+      })
+      .catch(() => {});
 
     if (surprise > 1.5) {
       this.logger.warn(

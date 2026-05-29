@@ -5,6 +5,7 @@ import { randomUUID } from 'crypto';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { MindGlobalPriorService } from '../memory/mind-global-prior.service';
 import type { MindBelief, MindJson } from '../../mind.types';
+import { SpineEmitterService } from '../../spine/spine-emitter.service';
 
 function betaVariance(alpha: number, beta: number): number {
   const sum = alpha + beta;
@@ -26,6 +27,7 @@ export class MindBeliefService {
   constructor(
     private readonly prisma: PrismaService,
     @Optional() private readonly globalPrior?: MindGlobalPriorService,
+    @Optional() private readonly spine?: SpineEmitterService,
   ) {}
 
   async getOrInit(
@@ -133,6 +135,30 @@ export class MindBeliefService {
         });
       });
       this.logSuccess('mind.belief.observe_binary', startedAt, workspaceId, subject, predicate);
+      const belief = updated as MindBelief;
+      // Wave3: emit canonical cognition.belief_updated at the real belief
+      // state-change site (fire-and-forget; metadata only, no message content).
+      void this.spine
+        ?.emit({
+          eventName: 'cognition.belief_updated',
+          workspaceId,
+          truthMode: 'observed',
+          provenance: {
+            source: 'production',
+            processor: 'mind-belief',
+            processorVersion: '1.0.0',
+            schemaVersion: '1.0.0',
+          },
+          payload: {
+            subject,
+            predicate,
+            mean: belief.mean,
+            variance: belief.variance,
+            samples: belief.samples,
+            outcome,
+          },
+        })
+        .catch(() => {});
       return updated as MindBelief;
     } catch (error: unknown) {
       this.logFailure(

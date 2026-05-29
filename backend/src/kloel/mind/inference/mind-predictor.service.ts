@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../../../logging/structured-logger';
 import { randomUUID } from 'crypto';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { MindBeliefService } from './mind-belief.service';
 import type { MindContext, MindJson, MindPrediction } from '../../mind.types';
+import { SpineEmitterService } from '../../spine/spine-emitter.service';
 
 @Injectable()
 export class MindPredictorService {
@@ -13,6 +14,7 @@ export class MindPredictorService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly beliefs: MindBeliefService,
+    @Optional() private readonly spine?: SpineEmitterService,
   ) {
     this.logger.debug?.(`MindPredictorService initialized`);
   }
@@ -56,6 +58,29 @@ export class MindPredictorService {
         deadline: new Date(Date.now() + horizonSec * 1000),
       },
     });
+
+    // Wave3: emit canonical cognition.prediction_made at the real prediction
+    // creation site (fire-and-forget; metadata only, no message content).
+    void this.spine
+      ?.emit({
+        eventName: 'cognition.prediction_made',
+        workspaceId: ctx.workspaceId,
+        truthMode: 'observed',
+        provenance: {
+          source: 'production',
+          processor: 'mind-predictor',
+          processorVersion: '1.0.0',
+          schemaVersion: '1.0.0',
+        },
+        payload: {
+          subject: ctx.subject,
+          predicate,
+          predictedMean: prediction.predictedMean,
+          predictedVariance: prediction.predictedVariance,
+          horizonSec,
+        },
+      })
+      .catch(() => {});
 
     return prediction as MindPrediction;
   }
