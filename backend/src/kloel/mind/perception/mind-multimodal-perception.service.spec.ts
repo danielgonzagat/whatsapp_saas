@@ -254,4 +254,90 @@ describe('MindMultiModalPerceptionService', () => {
       );
     });
   });
+
+  describe('captureToCaseMemory (perception-router honest capture)', () => {
+    function makeCasePrisma() {
+      return { mindCase: { create: jest.fn().mockResolvedValue({}) } };
+    }
+
+    it('persists an honest captured MindCase with null outcome and no fake analysis', async () => {
+      const prisma = makeCasePrisma();
+      const svc = new MindMultiModalPerceptionService(
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        prisma as unknown as never,
+      );
+
+      const out = await svc.captureToCaseMemory({
+        workspaceId: 'ws-1',
+        subject: 'contact:42',
+        modality: 'image',
+        sourceFingerprint: 'abc123',
+        mimeType: 'image/png',
+      });
+
+      expect(out.caseId).toBeTruthy();
+      expect(prisma.mindCase.create).toHaveBeenCalledTimes(1);
+      const data = (prisma.mindCase.create.mock.calls[0]![0] as { data: Record<string, unknown> }).data;
+      expect(data.caseType).toBe('perception_captured');
+      expect(data.outcome).toBeNull();
+      expect(data.action).toBe('perceive_image');
+      expect(String(data.text)).toContain('no analysis available');
+      expect((data.features as { analyzed: boolean }).analyzed).toBe(false);
+    });
+
+    it('records adapter descriptor honestly when one is available', async () => {
+      const prisma = makeCasePrisma();
+      const svc = new MindMultiModalPerceptionService(
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        prisma as unknown as never,
+      );
+
+      await svc.captureToCaseMemory({
+        workspaceId: 'ws-1',
+        subject: 'contact:42',
+        modality: 'audio',
+        sourceFingerprint: 'def456',
+        mimeType: 'audio/ogg',
+        descriptor: 'ola mundo',
+      });
+
+      const data = (prisma.mindCase.create.mock.calls[0]![0] as { data: Record<string, unknown> }).data;
+      expect(String(data.text)).toContain('ola mundo');
+      expect((data.features as { analyzed: boolean }).analyzed).toBe(true);
+    });
+
+    it('returns null caseId and never throws when prisma is absent or write fails', async () => {
+      const noPrisma = new MindMultiModalPerceptionService();
+      const out1 = await noPrisma.captureToCaseMemory({
+        workspaceId: 'ws-1',
+        subject: 's',
+        modality: 'structured',
+        sourceFingerprint: 'x',
+        mimeType: 'application/json',
+      });
+      expect(out1.caseId).toBeNull();
+
+      const failing = new MindMultiModalPerceptionService(
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        { mindCase: { create: jest.fn().mockRejectedValue(new Error('db down')) } } as unknown as never,
+      );
+      const out2 = await failing.captureToCaseMemory({
+        workspaceId: 'ws-1',
+        subject: 's',
+        modality: 'image',
+        sourceFingerprint: 'x',
+        mimeType: 'image/png',
+      });
+      expect(out2.caseId).toBeNull();
+    });
+  });
 });

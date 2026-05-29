@@ -1,4 +1,5 @@
 import { Injectable, Optional } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { StructuredLogger } from '../../../logging/structured-logger';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { MindSurpriseService } from '../inference/mind-surprise.service';
@@ -8,6 +9,7 @@ const MAX_CASES = 500;
 const RECENCY_HALF_LIFE_MS = 7 * 24 * 3600 * 1000;
 const DEFAULT_CONFIDENCE = 0.5;
 const SIMILARITY_THRESHOLD = 0.3;
+const EDGE_LEARNING_RATE = 0.3;
 
 const TOKEN_RE = /[\p{L}\p{N}]+/gu;
 
@@ -194,6 +196,112 @@ export class MindCausalModelService {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.warn(`Scenario simulation failed workspace=${workspaceId}: ${message}`);
       return { expectedOutcome: 'unknown', uncertainty: 1.0 };
+    }
+  }
+
+  /**
+   * BeliefGraph edge-weight updater (Y-7 world-model / causal pillar).
+   *
+   * Records an OBSERVED effect — action X led to outcome Y — as a directed,
+   * reinforced edge in MindGraphEdge. The edge is keyed on the schema's unique
+   * tuple ([workspaceId, fromNode, relation, toNode]) so repeated observations
+   * upsert idempotently and accumulate strength rather than duplicating rows.
+   *
+   * Strength model (append-only, never destructive):
+   *   - `samples` increments by 1 each observation.
+   *   - `weight` (the edge "strength") is reinforced toward the observed
+   *     outcome via a bounded exponential moving average so a single noisy
+   *     observation cannot dominate, yet sustained signal raises confidence.
+   *
+   * Fail-open: any persistence error is logged and swallowed — a broken graph
+   * write must never abort the mind tick.
+   */
+  async recordObservedEffect(
+    workspaceId: string,
+    action: string,
+    effect: string,
+    outcome: number,
+  ): Promise<{ recorded: boolean; weight: number | null }> {
+    if (!workspaceId || !action || !effect) {
+      return { recorded: false, weight: null };
+    }
+    const observed = Math.min(1, Math.max(0, Number.isFinite(outcome) ? outcome : 0.5));
+    const fromNode = `action:${action}`;
+    const toNode = `effect:${effect}`;
+    const relation = 'causes';
+
+    try {
+      const existing = await this.prisma.mindGraphEdge.findUnique({
+        where: {
+          workspaceId_fromNode_relation_toNode: {
+            workspaceId,
+            fromNode,
+            relation,
+            toNode,
+          },
+        },
+        select: { weight: true, samples: true },
+      });
+
+      let nextWeight: number;
+      let nextSamples: number;
+      if (existing) {
+        // Bounded EMA reinforcement toward the observed outcome.
+        nextWeight = Math.min(
+          1,
+          Math.max(0, existing.weight * (1 - EDGE_LEARNING_RATE) + observed * EDGE_LEARNING_RATE),
+        );
+        nextSamples = existing.samples + 1;
+        await this.prisma.mindGraphEdge.update({
+          where: {
+            workspaceId_fromNode_relation_toNode: {
+              workspaceId,
+              fromNode,
+              relation,
+              toNode,
+            },
+          },
+          data: { weight: nextWeight, samples: nextSamples },
+        });
+      } else {
+        nextWeight = observed;
+        nextSamples = 1;
+        await this.prisma.mindGraphEdge.create({
+          data: {
+            id: randomUUID(),
+            workspaceId,
+            fromNode,
+            relation,
+            toNode,
+            weight: nextWeight,
+            samples: nextSamples,
+          },
+        });
+      }
+
+      await this.spine?.emit({
+        eventName: 'cognition.causal.edge_reinforced',
+        workspaceId,
+        truthMode: 'observed',
+        provenance: {
+          source: 'production',
+          processor: 'MindCausalModelService',
+          processorVersion: '1.0.0',
+          schemaVersion: '1.0',
+        },
+        payload: { action, effect, outcome: observed, weight: nextWeight, samples: nextSamples },
+      });
+
+      this.logger.log(
+        `Causal edge reinforced workspace=${workspaceId} ${fromNode}->${toNode} weight=${nextWeight.toFixed(
+          3,
+        )} samples=${nextSamples}`,
+      );
+      return { recorded: true, weight: nextWeight };
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`recordObservedEffect failed workspace=${workspaceId}: ${message}`);
+      return { recorded: false, weight: null };
     }
   }
 

@@ -312,4 +312,81 @@ describe('MindCausalModelService', () => {
       expect(result.expectedOutcome).not.toBe('unknown');
     });
   });
+
+  describe('recordObservedEffect (BeliefGraph edge-weight updater)', () => {
+    function makeEdgePrisma(existing: { weight: number; samples: number } | null = null) {
+      return {
+        mindCase: { findMany: jest.fn().mockResolvedValue([]) },
+        mindGraphEdge: {
+          findUnique: jest.fn().mockResolvedValue(existing),
+          create: jest.fn().mockResolvedValue({}),
+          update: jest.fn().mockResolvedValue({}),
+        },
+      };
+    }
+
+    it('creates a new directed edge with the observed outcome as initial strength', async () => {
+      const prisma = makeEdgePrisma(null);
+      const spine = makeSpine();
+      const svc = new MindCausalModelService(prisma as never, undefined, spine as never);
+
+      const out = await svc.recordObservedEffect('ws-1', 'offered_discount', 'sale_closed', 0.9);
+
+      expect(out.recorded).toBe(true);
+      expect(out.weight).toBe(0.9);
+      expect(prisma.mindGraphEdge.create).toHaveBeenCalledTimes(1);
+      const created = (prisma.mindGraphEdge.create.mock.calls[0]![0] as { data: Record<string, unknown> })
+        .data;
+      expect(created.fromNode).toBe('action:offered_discount');
+      expect(created.toNode).toBe('effect:sale_closed');
+      expect(created.relation).toBe('causes');
+      expect(created.samples).toBe(1);
+      expect(spine.emit).toHaveBeenCalledWith(
+        expect.objectContaining({ eventName: 'cognition.causal.edge_reinforced' }),
+      );
+    });
+
+    it('reinforces an existing edge via bounded EMA and increments samples', async () => {
+      const prisma = makeEdgePrisma({ weight: 0.5, samples: 2 });
+      const svc = new MindCausalModelService(prisma as never);
+
+      const out = await svc.recordObservedEffect('ws-1', 'offered_discount', 'sale_closed', 1.0);
+
+      // EMA: 0.5*(1-0.3) + 1.0*0.3 = 0.65
+      expect(out.recorded).toBe(true);
+      expect(out.weight).toBeCloseTo(0.65, 5);
+      expect(prisma.mindGraphEdge.update).toHaveBeenCalledTimes(1);
+      const updated = (prisma.mindGraphEdge.update.mock.calls[0]![0] as { data: { samples: number } })
+        .data;
+      expect(updated.samples).toBe(3);
+    });
+
+    it('clamps outcome into [0,1] and is fail-open on missing args', async () => {
+      const prisma = makeEdgePrisma(null);
+      const svc = new MindCausalModelService(prisma as never);
+
+      const bad = await svc.recordObservedEffect('', 'a', 'b', 0.5);
+      expect(bad.recorded).toBe(false);
+      expect(prisma.mindGraphEdge.create).not.toHaveBeenCalled();
+
+      const clamped = await svc.recordObservedEffect('ws-1', 'a', 'b', 5);
+      expect(clamped.weight).toBe(1);
+    });
+
+    it('never throws when the graph write fails', async () => {
+      const prisma = {
+        mindCase: { findMany: jest.fn().mockResolvedValue([]) },
+        mindGraphEdge: {
+          findUnique: jest.fn().mockRejectedValue(new Error('db down')),
+          create: jest.fn(),
+          update: jest.fn(),
+        },
+      };
+      const svc = new MindCausalModelService(prisma as never);
+
+      const out = await svc.recordObservedEffect('ws-1', 'a', 'b', 0.5);
+      expect(out.recorded).toBe(false);
+      expect(out.weight).toBeNull();
+    });
+  });
 });

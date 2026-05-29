@@ -1,6 +1,7 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../../../logging/structured-logger';
+import { PrismaService } from '../../../prisma/prisma.service';
 import { AudioService } from '../../audio.service';
 import { MindPerceptionService } from './mind-perception.service';
 import { SpineEmitterService } from '../../spine/spine-emitter.service';
@@ -66,7 +67,67 @@ export class MindMultiModalPerceptionService {
     @Optional() private readonly vision?: MultiModalVisionAdapter,
     @Optional() private readonly perception?: MindPerceptionService,
     @Optional() private readonly spine?: SpineEmitterService,
+    @Optional() private readonly prisma?: PrismaService,
   ) {}
+
+  /**
+   * Perception-router capture (Y-7 multimodal pillar, HONEST mode).
+   *
+   * Ingests a non-text reference (image/audio/structured) into MindCase as a
+   * "captured" record — NO fabricated analysis. The row marks that the channel
+   * was perceived (modality + source fingerprint + any honest descriptor the
+   * adapter actually produced) with `outcome: null`, so downstream reasoning
+   * can see WHAT was captured without trusting an invented interpretation.
+   *
+   * Append-only and fail-open: persistence errors are logged and swallowed.
+   * Returns the created case id, or null when prisma is unavailable / write
+   * failed.
+   */
+  public async captureToCaseMemory(input: {
+    workspaceId: string;
+    subject: string;
+    modality: Modality;
+    sourceFingerprint: string;
+    mimeType: string;
+    descriptor?: string;
+  }): Promise<{ caseId: string | null }> {
+    this.requireWorkspace(input.workspaceId);
+    if (!this.prisma) {
+      return { caseId: null };
+    }
+    try {
+      const caseId = randomUUID();
+      const text = input.descriptor
+        ? `[${input.modality} captured] ${input.descriptor}`
+        : `[${input.modality} captured: no analysis available]`;
+      await this.prisma.mindCase.create({
+        data: {
+          id: caseId,
+          workspaceId: input.workspaceId,
+          subject: input.subject,
+          caseType: 'perception_captured',
+          text,
+          tokens: [],
+          features: {
+            modality: input.modality,
+            mimeType: input.mimeType,
+            sourceFingerprint: input.sourceFingerprint,
+            analyzed: Boolean(input.descriptor),
+          },
+          action: `perceive_${input.modality}`,
+          outcome: null,
+          occurredAt: new Date(),
+        },
+      });
+      this.logger.log(
+        `Perception captured workspace=${input.workspaceId} modality=${input.modality} caseId=${caseId}`,
+      );
+      return { caseId };
+    } catch (err) {
+      this.logger.warn(`captureToCaseMemory failed: ${(err as Error).message}`);
+      return { caseId: null };
+    }
+  }
 
   public async perceiveAudio(
     workspaceId: string,
