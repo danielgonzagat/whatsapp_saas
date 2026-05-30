@@ -208,6 +208,10 @@ describe('tier-1 fine-grained product capabilities (Wave7 L1)', () => {
     });
 
     it('enforces workspace isolation: cross-workspace product is rejected', async () => {
+      // Cross-workspace product: the workspace-scoped findFirst misses it (null),
+      // and the id-only existence probe finds it elsewhere → assertOwnedProduct
+      // throws ForbiddenException, which the resolver wraps as service_call_failed.
+      prisma.product.findFirst.mockResolvedValue(null);
       prisma.product.findUnique.mockResolvedValue(makeProduct({ workspaceId: 'other-ws' }));
       const result = await resolver.tryExecute('products.set_sales_page', ws, {
         productId,
