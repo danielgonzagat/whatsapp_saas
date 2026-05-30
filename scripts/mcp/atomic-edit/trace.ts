@@ -228,8 +228,8 @@ export function buildTrace(args: {
       {
         kind: 'unchanged_context',
         byteStart: 0,
-        byteEnd: args.before.length,
-        byteLength: args.before.length,
+        byteEnd: Buffer.byteLength(args.before, 'utf8'),
+        byteLength: Buffer.byteLength(args.before, 'utf8'),
         description:
           'Everything outside the modified zone is preserved byte-for-byte by the atomic operation.',
       },
@@ -238,8 +238,8 @@ export function buildTrace(args: {
       {
         kind: 'changed_span',
         byteStart: 0,
-        byteEnd: args.before.length,
-        newByteLength: args.newText.length,
+        byteEnd: Buffer.byteLength(args.before, 'utf8'),
+        newByteLength: Buffer.byteLength(args.newText, 'utf8'),
         oldTextHash: sha256(args.before),
         newTextHash: sha256(args.newText),
         description: preview
