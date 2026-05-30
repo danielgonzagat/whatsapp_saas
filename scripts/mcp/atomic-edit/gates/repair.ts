@@ -130,6 +130,58 @@ export async function repairFile(repoRoot: string, rel: string): Promise<RepairR
   return { rel, applied, importsAdded, unrepaired, redsBefore, redsAfter };
 }
 
+const SKIP = new Set(['node_modules', '.git', 'dist', '.next', 'build', 'coverage', 'vendor', '.atomic']);
+const SRC = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
+
+/** Source files under a scope (dir recursed, or a single file), repo-relative. */
+function enumerateSource(repoRoot: string, scopeAbs: string, cap = 6000): string[] {
+  const out: string[] = [];
+  const walk = (d: string): void => {
+    if (out.length >= cap) return;
+    let entries: fs.Dirent[];
+    try {
+      entries = fs.readdirSync(d, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const e of entries) {
+      if (out.length >= cap || SKIP.has(e.name)) continue;
+      const abs = path.join(d, e.name);
+      if (e.isDirectory()) walk(abs);
+      else if (SRC.test(e.name) && !e.name.endsWith('.proof.ts')) out.push(path.relative(repoRoot, abs).replaceAll('\\', '/'));
+    }
+  };
+  let st: fs.Stats | null = null;
+  try {
+    st = fs.statSync(scopeAbs);
+  } catch {
+    return out;
+  }
+  if (st.isDirectory()) walk(scopeAbs);
+  else if (SRC.test(scopeAbs)) out.push(path.relative(repoRoot, scopeAbs).replaceAll('\\', '/'));
+  return out;
+}
+
+export interface ScopeRepairResult {
+  scanned: number;
+  applied: number;
+  files: RepairResult[];
+  needsIntent: { file: string; name: string; reason: string }[];
+}
+
+/** THE LOOP — heal an entire scope: repair every file with a green-convergent fix; the rest is needs-intent. */
+export async function repairScope(repoRoot: string, scopeRel: string): Promise<ScopeRepairResult> {
+  const files = enumerateSource(repoRoot, path.resolve(repoRoot, scopeRel));
+  const results: RepairResult[] = [];
+  for (const rel of files) {
+    const r = await repairFile(repoRoot, rel);
+    if (r.applied || r.unrepaired.length > 0) results.push(r);
+  }
+  const applied = results.filter((r) => r.applied).length;
+  const needsIntent = results.flatMap((r) => r.unrepaired.map((u) => ({ file: r.rel, name: u.name, reason: u.reason })));
+  return { scanned: files.length, applied, files: results, needsIntent };
+}
+
 const self = fileURLToPath(import.meta.url);
 const invoked = process.argv[1] ? path.resolve(process.argv[1]) : '';
 function repoRootOf(start: string): string {
@@ -146,16 +198,37 @@ if (invoked === self || invoked === self.replace(/\.ts$/, '.js')) {
   const repoRoot = repoRootOf(path.dirname(self));
   const target = process.argv[2];
   if (!target) {
-    process.stderr.write('usage: repair.js <repo-relative-file>\n');
+    process.stderr.write('usage: repair.js <repo-relative-file-or-dir>\n');
     process.exit(2);
   }
-  repairFile(repoRoot, target)
-    .then((r) => {
-      process.stdout.write(`\nATOMIC REPAIR — ${r.rel}\n  reds ${r.redsBefore} → ${r.redsAfter}  ${r.applied ? '(APPLIED via firewall)' : '(no green-convergent fix applied)'}\n`);
-      if (r.importsAdded.length) process.stdout.write(`  imports added:\n${r.importsAdded.map((l) => `    ${l}`).join('\n')}\n`);
-      if (r.unrepaired.length) process.stdout.write(`  needs-intent (not guessed):\n${r.unrepaired.map((u) => `    ${u.name} — ${u.reason}`).join('\n')}\n`);
-      process.exit(0);
-    })
+  const isDir = (() => {
+    try {
+      return fs.statSync(path.resolve(repoRoot, target)).isDirectory();
+    } catch {
+      return false;
+    }
+  })();
+  const run = isDir
+    ? repairScope(repoRoot, target).then((s) => {
+        process.stdout.write(
+          `\nATOMIC REPAIR — scope ${target}\n  scanned ${s.scanned} file(s); HEALED ${s.applied} file(s) green via the firewall\n`,
+        );
+        for (const r of s.files.filter((f) => f.applied)) {
+          process.stdout.write(`  ✓ ${r.rel}  (reds ${r.redsBefore}→${r.redsAfter})\n${r.importsAdded.map((l) => `      ${l}`).join('\n')}\n`);
+        }
+        if (s.needsIntent.length) {
+          process.stdout.write(`  needs-intent (not guessed): ${s.needsIntent.length}\n`);
+          for (const n of s.needsIntent.slice(0, 40)) process.stdout.write(`      ${n.file}: ${n.name} — ${n.reason}\n`);
+        }
+        if (s.applied === 0 && s.needsIntent.length === 0) process.stdout.write('  GREEN — nothing to heal; every wire already converges.\n');
+      })
+    : repairFile(repoRoot, target).then((r) => {
+        process.stdout.write(`\nATOMIC REPAIR — ${r.rel}\n  reds ${r.redsBefore} → ${r.redsAfter}  ${r.applied ? '(APPLIED via firewall)' : '(no green-convergent fix applied)'}\n`);
+        if (r.importsAdded.length) process.stdout.write(`  imports added:\n${r.importsAdded.map((l) => `    ${l}`).join('\n')}\n`);
+        if (r.unrepaired.length) process.stdout.write(`  needs-intent (not guessed):\n${r.unrepaired.map((u) => `    ${u.name} — ${u.reason}`).join('\n')}\n`);
+      });
+  run
+    .then(() => process.exit(0))
     .catch((e: unknown) => {
       process.stderr.write(`repair error: ${e instanceof Error ? e.stack : String(e)}\n`);
       process.exit(1);
