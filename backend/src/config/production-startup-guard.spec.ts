@@ -9,8 +9,8 @@ describe('assertProductionStartupSecrets', () => {
       ...Object.fromEntries(
         productionStartupRequiredSecrets.map((name) => [name, `${name.toLowerCase()}-secret`]),
       ),
-      STRIPE_SECRET_KEY: 'sk_live_example',
-      STRIPE_PUBLISHABLE_KEY: 'pk_live_example',
+      STRIPE_SECRET_KEY: 'sk_live_x',
+      STRIPE_PUBLISHABLE_KEY: 'pk_live_x',
     };
   }
 
@@ -60,7 +60,7 @@ describe('assertProductionStartupSecrets', () => {
       assertProductionStartupSecrets({
         NODE_ENV: 'production',
         ...completeProductionEnv(),
-        STRIPE_SECRET_KEY: 'sk_test_example',
+        STRIPE_SECRET_KEY: 'sk_test_x',
       }),
     ).toThrow(/STRIPE_SECRET_KEY \(expected prefix sk_live_\)/);
 
@@ -68,7 +68,7 @@ describe('assertProductionStartupSecrets', () => {
       assertProductionStartupSecrets({
         NODE_ENV: 'production',
         ...completeProductionEnv(),
-        STRIPE_PUBLISHABLE_KEY: 'pk_test_example',
+        STRIPE_PUBLISHABLE_KEY: 'pk_test_x',
       }),
     ).toThrow(/STRIPE_PUBLISHABLE_KEY \(expected prefix pk_live_\)/);
   });
