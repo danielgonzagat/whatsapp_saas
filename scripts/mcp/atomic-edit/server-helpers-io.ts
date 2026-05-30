@@ -34,15 +34,28 @@ export function atomicWrite(absPath: string, content: string): void {
   } catch {
     /* new file → leave the default mode */
   }
-  const fd = fs.openSync(tmp, 'w');
   try {
-    fs.writeSync(fd, content);
-    fs.fsyncSync(fd);
-  } finally {
-    fs.closeSync(fd);
+    const fd = fs.openSync(tmp, 'w');
+    try {
+      fs.writeSync(fd, content);
+      fs.fsyncSync(fd);
+    } finally {
+      fs.closeSync(fd);
+    }
+    if (mode !== undefined) fs.chmodSync(tmp, mode);
+    fs.renameSync(tmp, absPath);
+  } catch (e) {
+    // On ANY failure (ENOSPC on write, EPERM on chmod, EXDEV/ENOENT on rename)
+    // never leave the temp beside the source: a leaked .atomic-edit.*.tmp is an
+    // untracked file that pollutes git status (the clean-tree hazard CLAUDE.md
+    // warns about). The original file is already preserved (rename never ran).
+    try {
+      fs.unlinkSync(tmp);
+    } catch {
+      /* best-effort cleanup */
+    }
+    throw e;
   }
-  if (mode !== undefined) fs.chmodSync(tmp, mode);
-  fs.renameSync(tmp, absPath);
 }
 
 export function readUtf8(absPath: string): string {
