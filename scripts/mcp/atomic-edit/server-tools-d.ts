@@ -5,8 +5,9 @@ import { z } from 'zod';
 import { validate } from './engine.js';
 import { resolveSafeTarget } from './guard.js';
 import { renameSymbolCrossFile, renameMemberCrossFile } from './advanced.js';
-import { log, atomicWrite } from './server-helpers-io.js';
+import { log } from './server-helpers-io.js';
 import { ok, fail } from './server-helpers-result.js';
+import { writeWholeFilePlan } from './server-helpers-multifile.js';
 
 export function registerToolsD(server: McpServer): void {
 server.registerTool(
@@ -115,9 +116,7 @@ server.registerTool(
           stringReplacedByKind[ext] = (stringReplacedByKind[ext] || 0) + 1;
         }
       }
-      for (const [rel, content] of r.changes) {
-        atomicWrite(path.join(repoRoot, rel), content);
-      }
+      writeWholeFilePlan(repoRoot, r.changes, 'atomic_rename_symbol_cross_file');
       log(
         `cross-file rename ${r.symbol}: ${r.changes.size} file(s), ${r.totalReferences} refs` +
           (stringReplacedCount > 0 ? `, ${stringReplacedCount} string-replaced` : ''),
@@ -180,9 +179,7 @@ server.registerTool(
           files: [...r.changes.keys()],
         });
       }
-      for (const [rel, content] of r.changes) {
-        atomicWrite(path.join(repoRoot, rel), content);
-      }
+      writeWholeFilePlan(repoRoot, r.changes, 'atomic_rename_member');
       log(
         `rename_member ${a.className}.${a.memberName} -> ${a.newName}: ${r.changes.size} file(s), ${r.totalReferences} refs`,
       );

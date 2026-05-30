@@ -3,8 +3,8 @@ import { z } from 'zod';
 import { applyEdits, replaceText, renameSymbol, replaceLiteral } from './engine.js';
 import { resolveSafeTarget } from './guard.js';
 import { editSymbol, addNamedImport, removeNamedImport, replacePropertyValue, type SymbolOp, renamePropertyKey } from './advanced.js';
-import { guardSha, atomicWrite, readUtf8 } from './server-helpers-io.js';
-import { ok, fail, commit } from './server-helpers-result.js';
+import { guardSha, readUtf8 } from './server-helpers-io.js';
+import { ok, fail, commit, writeWithTrace } from './server-helpers-result.js';
 import { commitSemantic } from './server-helpers-commit-semantic.js';
 import { registerToolsA2 } from './server-tools-a-2.js';
 import { registerToolsA3 } from './server-tools-a-3.js';
@@ -93,7 +93,7 @@ server.registerTool(
           const r = await replaceLiteral(relPath, before, a.oldText, a.newText, a.startLine);
           if (!r.validation.ok) return fail('rejected: replace_literal would break syntax. ' + (r.validation.introduced ?? ''));
           if (r.newText === before) return ok({ ok: true, changed: false, note: 'no change', file: relPath });
-          if (!a.preview) atomicWrite(absPath, r.newText);
+          if (!a.preview) writeWithTrace(relPath, absPath, before, r.newText, 'atomic_edit:replace_literal', r.validation);
           return ok({ ok: true, changed: !a.preview, file: relPath, matched: r.matched });
         }
         case 'insert_at': {
@@ -112,7 +112,7 @@ server.registerTool(
           const r = await editSymbol(relPath, before, a.selector, a.symbolOp as SymbolOp, a.code);
           if (!r.validation.ok) return fail('rejected: ' + a.symbolOp + ' on ' + r.selector + ' would introduce a syntax error. ' + (r.validation.introduced ?? ''));
           if (r.newText === before) return ok({ ok: true, changed: false, note: 'no change', file: relPath });
-          if (!a.preview) atomicWrite(absPath, r.newText);
+          if (!a.preview) writeWithTrace(relPath, absPath, before, r.newText, 'atomic_edit:edit_symbol', r.validation);
           return ok({ ok: true, changed: !a.preview, preview: a.preview ?? false, file: relPath, selector: r.selector, op: r.op });
         }
         case 'add_import': {
@@ -139,7 +139,7 @@ server.registerTool(
           if (!a.startLine || !a.startColumn || !a.newText) throw new Error('rename_symbol requires position+newText');
           const r = await renameSymbol(relPath, before, { line: a.startLine, column: a.startColumn }, a.newText);
           if (!r.validation.ok) return fail('Rename rejected: ' + (r.validation.introduced ?? ''));
-          if (!a.preview) atomicWrite(absPath, r.newText);
+          if (!a.preview) writeWithTrace(relPath, absPath, before, r.newText, 'atomic_edit:rename_symbol', r.validation);
           return ok({ ok: true, changed: !a.preview, file: relPath, symbol: r.symbol, occurrences: r.occurrences });
         }
         default:

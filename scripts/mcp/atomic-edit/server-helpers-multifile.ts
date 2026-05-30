@@ -22,6 +22,7 @@ import { readUtf8, atomicWrite, log } from './server-helpers-io.js';
 import { buildTrace, writeTrace } from './trace.js';
 import { characterDiff } from './advanced.js';
 import { ok, fail, type ToolOk } from './server-helpers-result.js';
+import * as path from 'node:path';
 
 export interface MultiFileEntry {
   /** repo-relative path */
@@ -174,4 +175,72 @@ export function applyMultiFilePlan(
     filesWritten: written.length,
     files,
   });
+}
+
+/**
+ * Write a set of WHOLE-FILE replacements (rel -> newContent) with rollback +
+ * one trace per file. For callers (cross-file rename) that already computed full
+ * file contents rather than ranged edits, and that already validated the plan
+ * all-or-nothing. On a mid-loop write failure it restores every already-written
+ * file (best-effort) and throws. Returns the persisted trace paths.
+ */
+export function writeWholeFilePlan(
+  repoRoot: string,
+  changes: Iterable<[string, string]>,
+  operator: string,
+): string[] {
+  const entries = [...changes].map(([rel, after]) => {
+    const absPath = path.join(repoRoot, rel);
+    return { rel, absPath, before: readUtf8(absPath), after };
+  });
+  const written: { absPath: string; before: string }[] = [];
+  try {
+    for (const e of entries) {
+      if (e.after === e.before) continue;
+      atomicWrite(e.absPath, e.after);
+      written.push({ absPath: e.absPath, before: e.before });
+    }
+  } catch (writeErr) {
+    for (const w of written.reverse()) {
+      try {
+        atomicWrite(w.absPath, w.before);
+      } catch {
+        /* best-effort rollback */
+      }
+    }
+    throw new Error(
+      `cross-file write failed; rolled back ${written.length} file(s): ` +
+        (writeErr instanceof Error ? writeErr.message : String(writeErr)),
+    );
+  }
+  const traceRefs: string[] = [];
+  for (const e of entries) {
+    if (e.after === e.before) continue;
+    try {
+      const zones = computeZones(e.before, e.after);
+      const trace = buildTrace({
+        file: e.rel,
+        repoRoot,
+        operator,
+        before: e.before,
+        newText: e.after,
+        inlinePreview: characterDiff(e.before, e.after, e.rel),
+        validation: { language: 'ts', before: 0, after: 0 },
+        metrics: {
+          changedChars: 0,
+          lineRewriteSurfaceChars: 0,
+          expansionFactorAvoided: 1,
+          bytesNet: e.after.length - e.before.length,
+        },
+        preservedZones: zones.preservedZones,
+        modifiedZones: zones.modifiedZones,
+        movementZones: [],
+      });
+      const persisted = writeTrace(trace);
+      if (persisted.tracePath) traceRefs.push(persisted.tracePath);
+    } catch {
+      /* trace is best-effort */
+    }
+  }
+  return traceRefs;
 }
