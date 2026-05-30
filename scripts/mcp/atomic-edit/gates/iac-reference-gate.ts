@@ -9,10 +9,22 @@
  * import resolves"; this gate asserts "an intra-config infra reference resolves".
  *
  * Mutation-Firewall law (mirrored): this gate is PERCEPTION only. It LOCATES the
- * dangling reference (file + locus + fact); it never writes. No HCL/YAML
- * tree-sitter grammar ships in this repo (verified: zero tree-sitter-hcl /
- * tree-sitter-yaml under node_modules), so — exactly as the contract allows —
- * perception is a robust, reserved-prefix regex parser, not a guess.
+ * dangling reference (file + locus + fact); it never writes.
+ *
+ * PERCEPTION CEILING (real, documented): the ONE perception organ (gates/perception.ts)
+ * is token-correct only for languages with a tree-sitter grammar. This repo ships NO
+ * HCL/YAML grammar — verified: `perception.langOf('x.tf') === undefined` and zero
+ * tree-sitter-hcl / tree-sitter-yaml under node_modules — so every perception accessor
+ * returns null for `.tf`/`.yaml` (it would degrade us to `unjudged`). To still assert
+ * the closed, byte-decidable intra-config edge, this gate uses a reserved-prefix regex,
+ * but FIRST blanks every comment form the dialect carries (`//` + `/* … *​/` via the
+ * shared byte-floor `blankComments`, then `#` via `blankHashComments`) so a `var.x` /
+ * selector that lives in a COMMENT is whitespace and is never extracted — the
+ * comment-embedded false-positive class the lens exposed. RESIDUAL CEILING: a ref
+ * embedded in a real STRING literal still matches, because strings are deliberately
+ * preserved (a Terraform interpolation / an import specifier legitimately lives in a
+ * string) and only a real HCL/YAML tree-sitter grammar — distinguishing a `string`
+ * node from a `reference` node — removes that last FP. Closing it = adding the grammar.
  *
  * Semantics (universal, NEW-reference-only, exoneration-free):
  *  - CLOSURE = the changed IaC files of the SAME kind. A symbol DEFINED in any
@@ -39,12 +51,85 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { blankComments } from '../connection-gate.js';
 import {
   type GateContext,
   type GateModule,
   type GateRed,
   type GateResult,
 } from './contract.js';
+
+// ─────────────────────────── comment stripping (honest degrade) ───────────────────────────
+
+/**
+ * Length-preserving blanking of `#`-to-end-of-line comments, the dominant comment
+ * form in YAML and a valid one in HCL. `blankComments` (imported from the byte-floor
+ * connection-gate) deliberately leaves `#` alone — in JS/TS `#` is a private-field /
+ * hashbang, not a comment — so this composes WITH it to cover the IaC dialects.
+ *
+ * A `#` opens a comment only at line-start or when preceded by whitespace (so a
+ * `url: "http://x#frag"` value, a `color: "#fff"`, or an HCL `tags = { "#k" = v }`
+ * is NOT mistaken for a comment); and never inside a quoted string (so `"#fff"` is
+ * preserved). Quoted strings are skipped over, mirroring `blankComments`.
+ *
+ * This is a robust dialect-aware blanker, NOT a parser. A `#` that is genuinely
+ * comment-opening but sits after an unbalanced/odd quote, or YAML block scalars
+ * (`|`/`>`) where `#` is literal text, are edge cases only a real HCL/YAML
+ * tree-sitter grammar would resolve token-correctly — see CEILING in the header.
+ */
+function blankHashComments(text: string): string {
+  const out = text.split('');
+  const n = text.length;
+  let i = 0;
+  let atLineStart = true; // true when no non-space char has appeared yet on this line
+  while (i < n) {
+    const c = text[i];
+    if (c === '\n') {
+      atLineStart = true;
+      i += 1;
+      continue;
+    }
+    if (c === '"' || c === "'") {
+      // skip OVER the quoted string (a `#` inside it is data, not a comment)
+      let j = i + 1;
+      while (j < n && text[j] !== c) {
+        if (text[j] === '\\') j += 1;
+        j += 1;
+      }
+      i = Math.min(j + 1, n);
+      atLineStart = false;
+      continue;
+    }
+    const prev = i > 0 ? text[i - 1] : '\n';
+    if (c === '#' && (atLineStart || prev === ' ' || prev === '\t')) {
+      let j = i;
+      while (j < n && text[j] !== '\n') {
+        if (out[j] !== '\n') out[j] = ' ';
+        j += 1;
+      }
+      i = j;
+      continue;
+    }
+    if (c !== ' ' && c !== '\t') atLineStart = false;
+    i += 1;
+  }
+  return out.join('');
+}
+
+/**
+ * The IaC perception substitute for token-correct AST: blank every comment form a
+ * `.tf`/`.yaml` body may carry (`//` + `/* … *​/` via the shared byte-floor
+ * `blankComments`, which also skips OVER strings; then `#` via `blankHashComments`)
+ * BEFORE the reserved-prefix regex runs. After this, a `var.x` / selector key that
+ * lives in a comment is whitespace and cannot be extracted — killing the
+ * comment-embedded false-positive class the lens exposed. The residual ceiling is a
+ * ref embedded in a real STRING literal: strings are preserved (an import specifier
+ * or a Terraform interpolation can live there), so only a true HCL/YAML grammar that
+ * distinguishes a `string` node from a `reference` node removes that last FP.
+ */
+function stripIacComments(body: string): string {
+  return blankHashComments(blankComments(body));
+}
 
 // ─────────────────────────── applicability ───────────────────────────
 
@@ -62,7 +147,10 @@ interface TfDefs {
 }
 
 /** Collect Terraform definitions from one file body (block headers + locals keys). */
-function collectTfDefs(body: string, into: TfDefs): void {
+function collectTfDefs(rawBody: string, into: TfDefs): void {
+  // Strip #/// /* */ comments first so a commented-out `variable "x" {` or
+  // `locals { y = ... }` is NOT registered as a real definition (false GREEN).
+  const body = stripIacComments(rawBody);
   // variable "NAME" {   /   module "NAME" {
   const blockRe = /\b(variable|module)\s+"([^"]+)"\s*\{/g;
   let m: RegExpExecArray | null;
@@ -95,8 +183,12 @@ function sliceBalancedBlock(body: string, openIdx: number): string {
 }
 
 /** Every var.* / local.* / module.* reference token in the body, with its 1-based line. */
-function collectTfRefs(body: string): { kind: 'var' | 'local' | 'module'; name: string; token: string; line: number }[] {
+function collectTfRefs(rawBody: string): { kind: 'var' | 'local' | 'module'; name: string; token: string; line: number }[] {
   const out: { kind: 'var' | 'local' | 'module'; name: string; token: string; line: number }[] = [];
+  // Blank #/// /* */ comments first (length-preserving, so 1-based lines stay exact)
+  // so a `var.x` / `local.y` / `module.z` written in a COMMENT is no longer extracted
+  // as a reference — the comment-embedded false-positive class the lens exposed.
+  const body = stripIacComments(rawBody);
   // These three prefixes are RESERVED in HCL, so any occurrence is a reference,
   // not a coincidental identifier. `local` (singular) is the reference prefix.
   const refRe = /\b(var|local|module)\.([A-Za-z_][A-Za-z0-9_-]*)/g;
@@ -272,8 +364,12 @@ const iacReferenceGate: GateModule = {
       const workloads: K8sWorkload[] = [];
       const docsByFile = new Map<string, { services: K8sService[]; body: string }>();
       for (const rel of k8sFiles) {
-        const body = ctx.readFile(rel);
-        if (body === null) continue;
+        const raw = ctx.readFile(rel);
+        if (raw === null) continue;
+        // Blank `#` (and any //, /* */) comments first — length-preserving, so the
+        // 1-based selector loci stay byte-exact — so a `selector:` / `labels:` line
+        // sitting in a YAML comment is whitespace and never extracted as real config.
+        const body = stripIacComments(raw);
         const services: K8sService[] = [];
         let cursor = 0;
         for (const doc of splitYamlDocs(body)) {
@@ -287,7 +383,7 @@ const iacReferenceGate: GateModule = {
       // target is plausibly defined outside the changed set → honestly out of scope.
       if (workloads.length > 0) {
         for (const [rel, { services, body }] of docsByFile) {
-          const before = ctx.priorOf(rel);
+          const before = stripIacComments(ctx.priorOf(rel));
           const beforeSelectors = new Set<string>();
           for (const doc of splitYamlDocs(before)) {
             const tmpWorkloads: K8sWorkload[] = [];

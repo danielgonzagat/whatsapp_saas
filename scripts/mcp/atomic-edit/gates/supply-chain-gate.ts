@@ -24,12 +24,14 @@
  *   in a legacy file never blocks an unrelated edit — but no write may INTRODUCE
  *   an import of a package not present in the installed tree.
  *
- * Mutation Firewall: perception LOCATES (the import-specifier spans, byte-existence
- * of package.json); this gate only ASSERTS a fact. It never writes. Pure
- * node:fs/node:path + node:module.isBuiltin, zero heavy deps — same shape as the
- * connection-gate seed so it composes into convergeStatic and the byte floor.
+ * Mutation Firewall: perception LOCATES (the import-specifier spans via real
+ * import/require AST nodes, the byte-existence of package.json); this gate only
+ * ASSERTS a fact. It never writes. The import specifiers come from the ONE
+ * perception organ (importSpecs → token-correct tree-sitter selection), and the
+ * supply-chain resolution stays pure node:path + node:module.isBuiltin over the
+ * shared GateContext — same shape as the connection-gate seed so it composes into
+ * convergeStatic and the byte floor.
  */
-import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { isBuiltin } from 'node:module';
 import {
@@ -38,12 +40,18 @@ import {
   type GateResult,
   type GateRed,
 } from './contract.js';
-import { extractImportSpecifiers } from '../connection-gate.js';
+import { importSpecs } from './perception.js';
 
 const SOURCE_RE = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
 
-// extractImportSpecifiers is imported from ../connection-gate (comment-blanked,
-// the single source of truth) so both halves of the import edge read identically.
+// Import specifiers are read through the ONE perception organ (importSpecs), which
+// SELECTS real import_statement / call_expression AST nodes by tree-sitter type —
+// so a `require("m")` / `from 'm'` written inside a string, template literal, or
+// comment is a string/template/comment node, never an import edge, and is never
+// extracted. This replaces the old comment-blanking regex extractor, whose
+// documented residual (a specifier embedded in a TEMPLATE/STRING literal) produced
+// false bare-import reds. importSpecs returns null when no grammar is available, so
+// this gate degrades to unjudged rather than guessing.
 
 /**
  * The package root a bare specifier resolves against:
@@ -124,22 +132,13 @@ function resolvesBare(ctx: GateContext, fromRel: string, pkg: string): boolean {
   return false;
 }
 
-/** The prior on-disk content of a changed file ('' if brand new) — overlay is the NEW text, disk is the BEFORE. */
-function priorDiskContent(repoRoot: string, rel: string): string {
-  try {
-    return fs.readFileSync(path.join(repoRoot, rel.replaceAll('\\', '/')), 'utf8');
-  } catch {
-    return '';
-  }
-}
-
 const supplyChainGate: GateModule = {
   name: 'supply-chain',
   kind: 'static',
   appliesTo(rel: string): boolean {
     return SOURCE_RE.test(rel);
   },
-  run(ctx: GateContext): GateResult {
+  async run(ctx: GateContext): Promise<GateResult> {
     const reds: GateRed[] = [];
     const note =
       'every NEW bare import resolves to a Node builtin or an installed node_modules/<pkg>/package.json';
@@ -147,8 +146,18 @@ const supplyChainGate: GateModule = {
       if (!SOURCE_RE.test(rel)) continue;
       const newText = ctx.overlay.get(rel.replaceAll('\\', '/')) ?? ctx.readFile(rel);
       if (newText === null) continue;
-      const before = new Set(extractImportSpecifiers(ctx.priorOf(rel)));
-      for (const spec of extractImportSpecifiers(newText)) {
+      // Token-correct extraction: importSpecs SELECTS real import_statement /
+      // call_expression nodes, so a specifier living in a string/template/comment
+      // is never returned. A null here = no grammar for this source language → the
+      // bare-import fact is undecidable from the bytes we can reach, so we degrade
+      // to unjudged (neither red-by-guess nor green-by-assumption).
+      const newSpecs = await importSpecs(newText, rel);
+      const priorSpecs = await importSpecs(ctx.priorOf(rel), rel);
+      if (newSpecs === null || priorSpecs === null) {
+        return { gate: this.name, green: true, reds: [], note, unjudged: true };
+      }
+      const before = new Set(priorSpecs);
+      for (const spec of newSpecs) {
         if (before.has(spec)) continue; // unchanged wire — not this write's claim
         if (spec.startsWith('.')) continue; // relative half — connection-gate's fact
         if (isBuiltin(spec)) continue; // builtin terminates

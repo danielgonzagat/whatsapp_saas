@@ -20,6 +20,17 @@
  *       stripped) does NOT resolve to a real Next.js App-Router page. Template /
  *       variable args are not literals → not judged.
  *
+ * TOKEN-CORRECT PERCEPTION (the lens fix): affordances are read through the real
+ * tree-sitter parse tree via native-bridge `astNodes`, NEVER by raw-regex over the
+ * whole file. The previous regex extractor matched any text that *looked* like an
+ * `onClick={x}` / `href="/y"` / `router.push("/z")` — including occurrences sitting
+ * inside a STRING literal, a COMMENT, or a TEMPLATE literal (e.g. a doc-comment
+ * example, a `title="onClick={...}"` attribute value, or a code-building template
+ * string). Those are false dead-wires: the runtime never sees them as affordances.
+ * In the parse tree such a token is a `string` / `comment` / `template_string`
+ * node, NOT a `jsx_attribute` / `call_expression` node, so this gate never extracts
+ * it. Token-correctness by construction; no blanking heuristic needed.
+ *
  * Mutation-Firewall law: this module only LOCATES the violated span (line:col) and
  * states the fact; it never writes. Mirrors connection-gate.ts:
  *  - SOURCE/React files only; everything else has no affordance fact → green.
@@ -34,6 +45,8 @@
  * single dynamic segment `[id]` matches ANY value, so a route landing on one is
  * conservatively GREEN (its concrete value is a runtime fact). When the App-Router
  * tree is not observable at all, route wires return `unjudged` rather than red.
+ * When no tree-sitter grammar is available for a file, its affordances are
+ * unobservable → that file contributes `unjudged`, never a guessed red/green.
  */
 import {
   type GateContext,
@@ -41,13 +54,13 @@ import {
   type GateRed,
   type GateResult,
 } from './contract.js';
+import { langOf } from './perception.js';
+import { astNodes } from '../native-bridge.js';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 /** React/JSX source we are willing to judge. */
 const REACT_SOURCE_RE = /\.(tsx|jsx|ts|js|mjs|cjs)$/;
-/** Signals that a file is actually a React/JSX surface (else: no affordance fact). */
-const JSX_SIGNAL_RE = /\bon[A-Z][A-Za-z]*\s*=\s*\{|<[A-Z][A-Za-z]/;
 /** App-Router page basenames. */
 const PAGE_BASENAMES = new Set([
   'page.tsx', 'page.ts', 'page.jsx', 'page.js',
@@ -79,64 +92,142 @@ function newNode(): RouteNode {
   return { children: new Map(), hasPage: false };
 }
 
-function lineColOf(text: string, index: number): { line: number; col: number } {
-  let line = 1;
-  let last = -1;
-  for (let i = 0; i < index; i++) {
-    if (text.charCodeAt(i) === 10) {
-      line++;
-      last = i;
-    }
+/** Unquote a string/template literal whose own braces have already been stripped. */
+function literalValue(raw: string): string | null {
+  const t = raw.trim();
+  if (
+    t.length >= 2 &&
+    (t[0] === "'" || t[0] === '"' || t[0] === '`') &&
+    t[t.length - 1] === t[0]
+  ) {
+    const inner = t.slice(1, -1);
+    // A template with an interpolation (`...${x}...`) is NOT a literal path.
+    if (t[0] === '`' && inner.includes('${')) return null;
+    return inner;
   }
-  return { line, col: index - last };
+  return null;
 }
 
 /**
- * Extract the affordances this content DECLARES.
- *  - handler: `onX={bareIdent}` only (arrow / member / param shapes excluded by
- *    the `}` boundary and the identifier-only capture).
- *  - route: literal absolute path in href= / <Link href> / router.push|replace().
+ * Split a `jsx_attribute` node's own text (e.g. `onClick={signOut}`,
+ * `href="/r"`, `href={"/r"}`, `title="onClick={x}"`) into name + raw value.
+ * The node text is the REAL attribute (code), so this is not parsing prose — the
+ * inner `onClick={...}` of a `title="onClick={x}"` value is never seen as a second
+ * attribute, because the parse tree already nested it inside this one node.
  */
-export function extractAffordances(content: string): Affordance[] {
+function splitAttribute(attrText: string): { name: string; value: string } | null {
+  const eq = attrText.indexOf('=');
+  if (eq < 0) return null; // bare attribute (e.g. `disabled`) — no wire
+  const name = attrText.slice(0, eq).trim();
+  if (!/^[A-Za-z_][\w-]*$/.test(name)) return null;
+  return { name, value: attrText.slice(eq + 1).trim() };
+}
+
+/** From a jsx_attribute value, the bare-identifier handler, if the value is `{ident}`. */
+function bareHandlerIdent(value: string): string | null {
+  const m = /^\{\s*([A-Za-z_$][\w$]*)\s*\}$/.exec(value);
+  return m ? m[1] : null;
+}
+
+/** From a jsx_attribute value, the literal absolute path, if `"/p"` or `{"/p"}`. */
+function literalRoutePath(value: string): string | null {
+  let v = value;
+  const braced = /^\{\s*([\s\S]*?)\s*\}$/.exec(v);
+  if (braced) v = braced[1].trim(); // href={'/x'} → '/x'
+  const lit = literalValue(v);
+  return lit && lit.startsWith('/') ? lit : null;
+}
+
+/** First string-literal argument of a call's own text, if `("/p")`-shaped. */
+function firstStringArg(callText: string): string | null {
+  const open = callText.indexOf('(');
+  if (open < 0) return null;
+  const m = /\(\s*(['"`][^'"`]*['"`])/.exec(callText.slice(open));
+  return m ? literalValue(m[1]) : null;
+}
+
+/**
+ * Extract the affordances this content DECLARES, token-correctly via the real
+ * parse tree. Returns null when no tree-sitter grammar is available for the file
+ * (caller degrades that file to unjudged rather than guessing).
+ *
+ *  - handler: a `jsx_attribute` whose name is `on[A-Z]…` and whose value is a bare
+ *    `{identifier}` (arrow / member / param shapes excluded by the brace-ident match).
+ *  - route: a `jsx_attribute` named `href` with a literal absolute value, OR a
+ *    `call_expression` whose callee is exactly `router.push` / `router.replace`
+ *    with a literal absolute first arg. A `router.push("/x")` written inside a
+ *    string/comment/template is a string/comment/template_string node, never a
+ *    call_expression, so it is never extracted.
+ */
+export async function extractAffordancesAst(
+  content: string,
+  rel: string,
+): Promise<Affordance[] | null> {
+  const lang = langOf(rel);
+  const nodes = await astNodes(
+    content,
+    lang,
+    new Set(['jsx_attribute', 'call_expression']),
+  );
+  if (nodes === null) return null;
   const out: Affordance[] = [];
-  // (A) bare-identifier event handler. The trailing \s*\} guarantees the capture
-  // is the WHOLE expression — `onClick={a.b}` / `onClick={()=>x}` will not match.
-  const handlerRe = /\bon[A-Z][A-Za-z]*\s*=\s*\{\s*([A-Za-z_$][\w$]*)\s*\}/g;
-  let m: RegExpExecArray | null;
-  while ((m = handlerRe.exec(content)) !== null) {
-    const lc = lineColOf(content, m.index);
-    out.push({ target: m[1], kind: 'handler', line: lc.line, col: lc.col });
-  }
-  // (B) literal absolute route paths. href="/x" | href={'/x'} | router.push('/x')
-  // | router.replace("/x"). Only paths that start with '/' (absolute, app-internal).
-  const routeRe =
-    /\b(?:href\s*=\s*\{?\s*|router\s*\.\s*(?:push|replace)\s*\(\s*)['"](\/[^'"`]*)['"]/g;
-  while ((m = routeRe.exec(content)) !== null) {
-    const lc = lineColOf(content, m.index);
-    out.push({ target: m[1], kind: 'route', line: lc.line, col: lc.col });
+  for (const n of nodes) {
+    if (n.type === 'jsx_attribute') {
+      const a = splitAttribute(n.text);
+      if (!a) continue;
+      if (/^on[A-Z][A-Za-z]*$/.test(a.name)) {
+        const ident = bareHandlerIdent(a.value);
+        if (ident) out.push({ target: ident, kind: 'handler', line: n.line, col: n.column });
+      } else if (a.name === 'href') {
+        const route = literalRoutePath(a.value);
+        if (route) out.push({ target: route, kind: 'route', line: n.line, col: n.column });
+      }
+      continue;
+    }
+    // call_expression: router.push("/x") / router.replace("/x") only.
+    const open = n.text.indexOf('(');
+    if (open <= 0) continue;
+    const callee = n.text.slice(0, open).trim();
+    if (callee !== 'router.push' && callee !== 'router.replace') continue;
+    const route = firstStringArg(n.text);
+    if (route && route.startsWith('/')) {
+      out.push({ target: route, kind: 'route', line: n.line, col: n.column });
+    }
   }
   return out;
 }
 
 /**
- * An identifier is BOUND if it appears ANYWHERE in the file other than purely as
- * the handler reference itself — i.e. it is imported, declared, or arrives as a
- * (destructured) prop / param. Exoneration-free & conservative: we red ONLY when
- * the identifier occurs nowhere else, which is the genuine dangling wire (deleted
- * or mistyped handler). This agrees with an LSP "no definition found".
+ * An identifier is BOUND if it occurs MORE THAN ONCE across the file's real
+ * binding-bearing nodes — `identifier` (imports, declarations, value-position
+ * references) and `shorthand_property_identifier_pattern` (destructured props /
+ * params). The single occurrence of the JSX handler reference itself is the value
+ * being judged; any SECOND occurrence is binding evidence (import, declaration, or
+ * destructured prop). Token-correct: a same-named token inside a string/comment is
+ * a string/comment node, never counted. We red ONLY when the identifier occurs
+ * exactly once (the genuine dangling wire). Returns null when the grammar is
+ * unavailable so the caller can decline to judge rather than guess.
  */
-export function identifierIsBound(content: string, ident: string): boolean {
-  const re = new RegExp(`(?<![\\w$])${escapeRe(ident)}(?![\\w$])`, 'g');
+export async function identifierBoundAst(
+  content: string,
+  rel: string,
+  ident: string,
+): Promise<boolean | null> {
+  const lang = langOf(rel);
+  const nodes = await astNodes(
+    content,
+    lang,
+    new Set(['identifier', 'shorthand_property_identifier_pattern']),
+  );
+  if (nodes === null) return null;
   let count = 0;
-  while (re.exec(content) !== null) {
-    count++;
-    if (count > 1) return true; // referenced somewhere beyond the handler use
+  for (const n of nodes) {
+    if (n.text === ident) {
+      count++;
+      if (count > 1) return true; // referenced somewhere beyond the handler use
+    }
   }
   return false; // the ONLY occurrence is the handler attribute → dangling
-}
-
-function escapeRe(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 /** Is this an App-Router route-group dir `(x)` (transparent to the URL)? */
@@ -265,34 +356,51 @@ const renderConformanceGate: GateModule = {
     // React surfaces live in frontend/ (app pages, components, hooks).
     return n.includes('frontend/') || n.includes('/app/') || n.includes('/components/');
   },
-  run(ctx: GateContext): GateResult {
+  async run(ctx: GateContext): Promise<GateResult> {
     const reds: GateRed[] = [];
     let routeWiresSeen = 0;
+    let anyUnobservableGrammar = false;
+    let anyDecided = false;
     let routeTrie: { root: RouteNode; observable: boolean } | null = null;
 
     for (const rel of ctx.changedFiles) {
       if (!this.appliesTo(rel)) continue;
       const newText = ctx.readFile(rel);
-      if (newText == null || !JSX_SIGNAL_RE.test(newText)) continue;
+      if (newText == null) continue;
 
-      // NEW-affordance-only: prior content = direct disk read (overlay holds the
-      // new text). A brand-new file has no prior → every affordance is new.
+      // Token-correct extraction. No grammar → this file is unobservable; never
+      // guess a red/green from raw bytes.
+      const newAff = await extractAffordancesAst(newText, rel);
+      if (newAff === null) {
+        anyUnobservableGrammar = true;
+        continue;
+      }
+      if (newAff.length === 0) {
+        anyDecided = true; // a real, parsed verdict: this file declares no wire
+        continue;
+      }
+
+      // NEW-affordance-only: prior content via ctx.priorOf (disk in write-direction,
+      // '' in the lens so every wire is judged absolutely). A brand-new file has no
+      // prior → every affordance is new.
       const priorText = ctx.priorOf(rel);
-      const priorKeys = new Set(
-        extractAffordances(priorText).map((a) => `${a.kind}:${a.target}`),
-      );
+      const priorAff = priorText ? await extractAffordancesAst(priorText, rel) : [];
+      const priorKeys = new Set((priorAff ?? []).map((a) => `${a.kind}:${a.target}`));
 
-      for (const aff of extractAffordances(newText)) {
+      anyDecided = true;
+      for (const aff of newAff) {
         if (priorKeys.has(`${aff.kind}:${aff.target}`)) continue; // unchanged wire
 
         if (aff.kind === 'handler') {
-          if (!identifierIsBound(newText, aff.target)) {
+          const bound = await identifierBoundAst(newText, rel, aff.target);
+          if (bound === false) {
             reds.push({
               file: rel,
               locus: `L${aff.line}:${aff.col}`,
               fact: `event handler {${aff.target}} resolves to no binding (dead UI wire)`,
             });
           }
+          // bound === null: grammar vanished mid-run — decline to judge this wire.
           continue;
         }
 
@@ -319,6 +427,11 @@ const renderConformanceGate: GateModule = {
     // Brutally honest: if the only thing we had to judge were route wires and the
     // route tree was not observable, we decided nothing → unjudged, not green.
     if (reds.length === 0 && routeWiresSeen > 0 && (!routeTrie || !routeTrie.observable)) {
+      return { gate: NAME, green: true, reds, note, unjudged: true };
+    }
+    // If no applicable file could be parsed at all (no grammar anywhere) and we
+    // reached no real verdict, be honest: unjudged, not green-by-assumption.
+    if (reds.length === 0 && !anyDecided && anyUnobservableGrammar) {
       return { gate: NAME, green: true, reds, note, unjudged: true };
     }
     return { gate: NAME, green: reds.length === 0, reds, note };

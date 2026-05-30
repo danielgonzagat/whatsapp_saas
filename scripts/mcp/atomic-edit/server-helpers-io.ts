@@ -2,9 +2,7 @@ import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { resolveAllowedRootForAbsolutePath, REPO_ROOT } from './guard.js';
-import { checkConnectionByteFloor } from './connection-gate.js';
-import supplyChainGate from './gates/supply-chain-gate.js';
-import { makeContext } from './gates/contract.js';
+import { checkConnectionByteFloor, checkSupplyChainByteFloor } from './connection-gate.js';
 
 export const sha256 = (s: string): string => crypto.createHash('sha256').update(s).digest('hex');
 
@@ -43,16 +41,12 @@ export function atomicWrite(absPath: string, content: string): void {
   // import to a package absent from the installed tree is a dangling wire too.
   // supply-chain is sync (fs walk); if it ever returns async, skip here (atomic_converge
   // still covers it) rather than block on a half-resolved promise.
-  const ddRepoRoot = resolveAllowedRootForAbsolutePath(absPath) ?? REPO_ROOT;
-  const ddRel = path.relative(ddRepoRoot, absPath).replaceAll('\\', '/');
-  if (supplyChainGate.appliesTo(ddRel)) {
-    const res = supplyChainGate.run(makeContext(ddRepoRoot, new Map([[ddRel, content]]), [ddRel]));
-    if (!(res instanceof Promise) && !res.green && !res.unjudged) {
-      throw new Error(
-        `refused (convergence): this write would introduce a dangling dependency — ` +
-          `${res.reds.slice(0, 5).map((r) => r.fact).join('; ')}. Install the package or fix the import. NOT written.`,
-      );
-    }
+  const sc = checkSupplyChainByteFloor(absPath, content);
+  if (!sc.green) {
+    throw new Error(
+      `refused (convergence): this write would introduce a dangling dependency — ` +
+        `${sc.reds.slice(0, 5).join(', ')}. Install the package or fix the import. NOT written.`,
+    );
   }
   const dir = path.dirname(absPath);
   const tmp = path.join(dir, `.atomic-edit.${process.pid}.${Date.now()}.tmp`);

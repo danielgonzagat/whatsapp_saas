@@ -45,6 +45,7 @@ import {
   type GateResult,
   type GateRed,
 } from './contract.js';
+import { importSpecs } from './perception.js';
 
 const SOURCE_RE = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
 const ROOT_BASENAME_RE = /^(index|main|server|app|cli|bootstrap|setup)\.(ts|tsx|js|jsx|mjs|cjs)$/;
@@ -69,13 +70,21 @@ function isSource(rel: string): boolean {
   return SOURCE_RE.test(rel);
 }
 
-/** Pull every relative import/require specifier out of source text (mirror connection-gate's regex). */
-function importSpecifiers(content: string): string[] {
-  const specs: string[] = [];
-  const re = /\bfrom\s+['"]([^'"]+)['"]|\brequire\s*\(\s*['"]([^'"]+)['"]|^\s*import\s+['"]([^'"]+)['"]/gm;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(content)) !== null) specs.push(m[1] ?? m[2] ?? m[3]);
-  return specs;
+/**
+ * Pull every import/require specifier out of source text through the FROZEN
+ * perception organ. perception.importSpecs reads ONLY real `import_statement` /
+ * `call_expression` AST nodes, so a `from './x'` that lives inside a comment, a
+ * string literal, or a template literal is a `comment`/`string`/`template_string`
+ * node — never an import node — and is never returned. That is the string/comment
+ * false-positive (which the old whole-file regex extracted as a phantom inbound
+ * edge, hiding a real orphan) removed by construction.
+ *
+ * Returns `null` when no grammar is available for the file's language — the caller
+ * then degrades honestly to `unjudged` instead of treating the file as
+ * import-less (which would falsely orphan everything it actually imports).
+ */
+async function importSpecifiers(content: string, rel: string): Promise<string[] | null> {
+  return importSpecs(content, rel);
 }
 
 /**
@@ -119,22 +128,47 @@ function enumerateSourceFiles(
 
 /**
  * Build the forward import edge set (from → resolved-to) over a file universe,
- * using ONLY the shared resolveRelImport so "reaches" is byte-identical to the
- * rest of the crivo. Returns adjacency (caller → set of resolved targets) AND the
- * reverse adjacency (target → set of files that import it) — the inbound view is
- * what the orphan fact needs.
+ * using the FROZEN perception organ for extraction and ONLY the shared
+ * resolveRelImport for resolution, so "reaches" is byte-identical to the rest of
+ * the crivo. Returns adjacency (caller → set of resolved targets) AND the reverse
+ * adjacency (target → set of files that import it) — the inbound view is what the
+ * orphan fact needs.
+ *
+ * Every specifier comes from a real `import_statement` / `call_expression` AST
+ * node (perception.importSpecs), so a `from './x'` sitting in a comment, a string,
+ * or a template literal is NOT an edge — closing the string/comment phantom-edge
+ * false-positive of the old whole-file regex.
+ *
+ * `unperceivable` is set true if ANY source file in the visible universe has no
+ * grammar (perception returned null). When that happens the inbound surface is
+ * incomplete (we cannot list a file's real imports), so we cannot prove the
+ * absence of an inbound edge → the caller degrades the whole run to unjudged
+ * rather than falsely orphaning files those unperceivable importers reference.
  */
-function buildEdges(
+async function buildEdges(
   ctx: GateContext,
   universe: string[],
-): { forward: Map<string, Set<string>>; reverse: Map<string, Set<string>> } {
+): Promise<{
+  forward: Map<string, Set<string>>;
+  reverse: Map<string, Set<string>>;
+  unperceivable: boolean;
+}> {
   const forward = new Map<string, Set<string>>();
   const reverse = new Map<string, Set<string>>();
+  let unperceivable = false;
   for (const from of universe) {
     const content = ctx.readFile(from);
     if (content === null) continue;
+    const specs = await importSpecifiers(content, from);
+    if (specs === null) {
+      // No grammar for this language → we cannot read its real import edges. Mark
+      // the surface incomplete; the run degrades to unjudged (never a false orphan).
+      unperceivable = true;
+      forward.set(from, forward.get(from) ?? new Set<string>());
+      continue;
+    }
     const outs = forward.get(from) ?? new Set<string>();
-    for (const spec of importSpecifiers(content)) {
+    for (const spec of specs) {
       const to = ctx.resolveRelImport(from, spec);
       if (to === null) continue; // bare specifier or dangling — not a reach edge here
       outs.add(to);
@@ -144,7 +178,7 @@ function buildEdges(
     }
     forward.set(from, outs);
   }
-  return { forward, reverse };
+  return { forward, reverse, unperceivable };
 }
 
 /** BFS the forward-import closure of the ROOT set → the set of reachable source files. */
@@ -176,7 +210,7 @@ const reachabilityGate: GateModule = {
   kind: 'static',
   appliesTo: (rel) => isSource(rel),
 
-  run(ctx: GateContext): GateResult {
+  async run(ctx: GateContext): Promise<GateResult> {
     const note =
       'every changed non-root source file is reachable from a root (entrypoint/route/test) over the import-edge closure';
 
@@ -188,8 +222,16 @@ const reachabilityGate: GateModule = {
       return { gate: this.name, green: true, reds: [], note, unjudged: true };
     }
 
-    // 2. Edge set + root-closure reachability over the WHOLE visible tree.
-    const { forward, reverse } = buildEdges(ctx, universe);
+    // 2. Edge set + root-closure reachability over the WHOLE visible tree, built
+    //    through the perception organ (token-correct: comment/string/template
+    //    `from './x'` is never a phantom inbound edge).
+    const { forward, reverse, unperceivable } = await buildEdges(ctx, universe);
+    if (unperceivable) {
+      // At least one visible source file has no grammar ⇒ its real import edges are
+      // unreadable ⇒ we cannot prove the absence of an inbound edge for any target.
+      // Honest unjudged, never a guessed orphan.
+      return { gate: this.name, green: true, reds: [], note, unjudged: true };
+    }
     const reachable = reachableFromRoots(universe, forward);
 
     // 3. WRITE-direction claim: judge ONLY the changed files, and only the ones

@@ -83,7 +83,9 @@ export function registerToolsConverge(server: McpServer): void {
         }
 
         // ── apply through the firewall (snapshot first for the effect + probe gates) ──
-        const hasProbes = mutations.some((m) => /@probe-convergence/.test(m.newText));
+        const hasProbes = mutations.some((m) =>
+          /@(probe-convergence|deterministic-harness|property|model)/.test(m.newText),
+        );
         const effectSnap = a.effectCommand || hasProbes ? captureEffectSnapshot(repoRoot) : null;
         const written: string[] = [];
         const targets = mutations.map((m) => ({ ...resolveSafeTarget(m.file), newText: m.newText }));

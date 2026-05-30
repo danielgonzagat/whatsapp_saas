@@ -17,6 +17,10 @@ import telemetryEmissionGate from './telemetry-emission-gate.js';
 import iacReferenceGate from './iac-reference-gate.js';
 import findingsDeltaGate from './findings-delta-gate.js';
 import probeConvergenceGate from './probe-convergence-gate.js';
+import deterministicHarnessGate from './deterministic-harness.js';
+import propertyGate from './property-gate.js';
+import formalGate from './formal-gate.js';
+import livenessGate from './liveness-gate.js';
 
 /**
  * Static gates safe in the WRITE direction — each asserts "this write did not
@@ -48,7 +52,13 @@ export const PENDING_GATES: GateModule[] = [];
 export const LENS_GATES: GateModule[] = [reachabilityGate, ...WRITE_GATES];
 
 /** Dynamic gates — execution-based (apply→run→revert), the effect slot, never the static path. */
-export const DYNAMIC_GATES: GateModule[] = [probeConvergenceGate];
+export const DYNAMIC_GATES: GateModule[] = [
+  probeConvergenceGate,
+  deterministicHarnessGate,
+  propertyGate,
+  formalGate,
+  livenessGate,
+];
 
 export interface UnifiedRed {
   gate: string;

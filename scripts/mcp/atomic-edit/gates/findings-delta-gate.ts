@@ -36,11 +36,22 @@
  *       are routed to the dynamic/effect gate (apply→run eslint→revert). We never
  *       guess them: their absence from our reds is honest, not green-by-assumption.
  *
- * Pure perception (regex/byte scan over the candidate string) — no daemon, no
- * subprocess, language-scoped to JS/TS where these rules apply. The Mutation
- * Firewall law holds: this gate only PERCEIVES and LOCATES spans; it never writes.
+ * ── TOKEN-CORRECT PERCEPTION (no whole-file regex) ────────────────────────────
+ * The analyzer reads its facts through the real tree-sitter parse via
+ * `astNodes` — the lower-level organ of `perception.ts` for AST kinds the
+ * perception accessors do not yet expose (`debugger_statement`, `switch_case`).
+ * A `debugger` written inside a REGEX literal / string / comment is a `regex` /
+ * `string` / `comment` node — never a `debugger_statement` — so it is never
+ * extracted as a finding. That is token-correctness BY CONSTRUCTION, replacing
+ * the old length-preserving `blankNonCode` lexer-stand-in (which did not model
+ * regex literals and therefore false-positived on `/debugger/`). When no grammar
+ * is available `astNodes` returns null and we degrade to unjudged — never a
+ * green-by-assumption. The Mutation Firewall law holds: this gate only PERCEIVES
+ * and LOCATES spans; it never writes.
  */
 import { type GateModule, type GateContext, type GateResult, type GateRed } from './contract.js';
+import { langOf } from './perception.js';
+import { astNodes } from '../native-bridge.js';
 
 /** Source files where the pure-text JS/TS lint subset applies. */
 const SOURCE_RE = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
@@ -66,7 +77,7 @@ export const TYPE_AWARE_DEFERRED = new Set<string>([
   '@typescript-eslint/no-redundant-type-constituents',
 ]);
 
-/** A single pure-text finding located in a candidate by byte offset. */
+/** A single pure-text finding located in a candidate by AST node position. */
 interface Finding {
   ruleId: string;
   message: string;
@@ -76,129 +87,107 @@ interface Finding {
   col: number;
 }
 
-/** 1-based line/col for a byte offset in `text`. */
-function lineColAt(text: string, index: number): { line: number; col: number } {
-  let line = 1;
-  let last = -1;
-  for (let i = 0; i < index && i < text.length; i++) {
-    if (text[i] === '\n') {
-      line++;
-      last = i;
-    }
-  }
-  return { line, col: index - last };
-}
-
-/**
- * Strip string/template/regex literals and comments to a same-length blanked
- * copy, so the structural scanners below never match inside a literal or comment
- * (the eslint analyzer operates on tokens, not raw text — this is the cheap
- * deterministic stand-in). Length-preserving so byte offsets stay exact.
- */
-function blankNonCode(src: string): string {
-  const out = src.split('');
-  let i = 0;
-  const n = src.length;
-  const blankRange = (a: number, b: number): void => {
-    for (let k = a; k < b && k < n; k++) if (out[k] !== '\n') out[k] = ' ';
-  };
-  while (i < n) {
-    const c = src[i];
-    const d = src[i + 1];
-    if (c === '/' && d === '/') {
-      let j = i + 2;
-      while (j < n && src[j] !== '\n') j++;
-      blankRange(i, j);
-      i = j;
-      continue;
-    }
-    if (c === '/' && d === '*') {
-      let j = i + 2;
-      while (j < n && !(src[j] === '*' && src[j + 1] === '/')) j++;
-      j = Math.min(n, j + 2);
-      blankRange(i, j);
-      i = j;
-      continue;
-    }
-    if (c === '"' || c === "'" || c === '`') {
-      let j = i + 1;
-      while (j < n && src[j] !== c) {
-        if (src[j] === '\\') j++;
-        j++;
-      }
-      blankRange(i + 1, j);
-      i = j + 1;
-      continue;
-    }
-    i++;
-  }
-  return out.join('');
-}
-
 /**
  * The pure-fn single-file analyzer. A conservative, deterministic slice of the
- * non-type-aware eslint rule family — each a property of the token stream alone,
- * with NO config, NO resolver, NO cross-file lookup. Returns one Finding per hit.
+ * non-type-aware eslint rule family — each a property of the AST node stream
+ * alone, with NO config, NO resolver, NO cross-file lookup. Returns one Finding
+ * per hit. Reads through the real tree-sitter parse (`astNodes`), so a token
+ * inside a regex/string/comment is the regex/string/comment node it really is,
+ * never the construct it textually resembles.
  *
- * Implemented (real eslint rules, byte-decidable):
- *   • no-debugger        — a bare `debugger;` statement.
- *   • no-duplicate-case  — two `case <same-literal>:` in one switch run.
- *   • no-fallthrough's structural cousin is type/flow-ish → omitted (honest).
+ * Implemented (real eslint rules, AST-decidable):
+ *   • no-debugger        — a real `debugger_statement` node.
+ *   • no-duplicate-case  — two `switch_case` siblings (same switch_body) with the
+ *                          same non-default label text.
  * The set is intentionally small and exact: every hit is a finding a human eslint
  * run also raises, so a RED is never a false positive.
+ *
+ * Returns null when no grammar is available for the file's language → the caller
+ * marks the file unjudged rather than guessing.
  */
-function analyzePureText(content: string): Finding[] {
-  const findings: Finding[] = [];
-  const code = blankNonCode(content);
+async function analyzePureText(content: string, rel: string): Promise<Finding[] | null> {
+  const lang = langOf(rel);
+  const nodes = await astNodes(
+    content,
+    lang,
+    new Set(['debugger_statement', 'switch_body', 'switch_case']),
+  );
+  if (nodes === null) return null; // no grammar → undecidable, caller → unjudged
 
-  // no-debugger: a `debugger` statement (word-boundary, outside literals/comments).
-  const dbg = /\bdebugger\b/g;
-  let m: RegExpExecArray | null;
-  while ((m = dbg.exec(code)) !== null) {
-    const { line, col } = lineColAt(content, m.index);
-    findings.push({ ruleId: 'no-debugger', message: "Unexpected 'debugger' statement.", line, col });
+  const findings: Finding[] = [];
+
+  // no-debugger: a real `debugger_statement` node (never a `debugger` token that
+  // lives inside a regex/string/comment — those are different node types).
+  for (const n of nodes) {
+    if (n.type === 'debugger_statement') {
+      findings.push({
+        ruleId: 'no-debugger',
+        message: "Unexpected 'debugger' statement.",
+        line: n.line,
+        col: n.column,
+      });
+    }
   }
 
-  // no-duplicate-case: duplicate `case <literal>:` labels within the file's
-  // switch text. Scoped per switch block by tracking brace depth from each
-  // `switch (`. Pure token property — no types needed.
-  const switchRe = /\bswitch\s*\(/g;
-  let s: RegExpExecArray | null;
-  while ((s = switchRe.exec(code)) !== null) {
-    // find the opening brace of the switch body
-    let p = switchRe.lastIndex;
-    while (p < code.length && code[p] !== '{') p++;
-    if (p >= code.length) continue;
-    let depth = 0;
-    const seen = new Set<string>();
-    const caseRe = /\bcase\s+([^:]+?):/g;
-    for (let q = p; q < code.length; q++) {
-      if (code[q] === '{') depth++;
-      else if (code[q] === '}') {
-        depth--;
-        if (depth === 0) break;
-      } else if (depth === 1) {
-        caseRe.lastIndex = q;
-        const cm = caseRe.exec(code);
-        if (cm && cm.index === q) {
-          const label = cm[1].trim();
-          if (seen.has(label)) {
-            const { line, col } = lineColAt(content, cm.index);
-            findings.push({
-              ruleId: 'no-duplicate-case',
-              message: 'Duplicate case label.',
-              line,
-              col,
-            });
-          }
-          seen.add(label);
-          q = caseRe.lastIndex - 1;
-        }
-      }
+  // no-duplicate-case: within each switch, two `case <same-label>:` siblings.
+  // The flat node list has no parent pointers, so we scope each `switch_case` to
+  // its INNERMOST containing `switch_body` (smallest byte span that contains it);
+  // that is the correct per-switch grouping even under nested switches. `default:`
+  // has no label and is never a duplicate-case finding.
+  const bodies = nodes.filter((n) => n.type === 'switch_body');
+  const cases = nodes.filter((n) => n.type === 'switch_case');
+  const seenByBody = new Map<string, Set<string>>();
+  // Stable order: by byte position, so "the second identical label" is the dup.
+  cases.sort((a, b) => a.byteStart - b.byteStart);
+  for (const c of cases) {
+    const label = caseLabel(c.text);
+    if (label === null) continue; // `default:` — not a case label
+    const body = innermostContaining(bodies, c.byteStart, c.byteEnd);
+    const bodyKey = body ? `${body.byteStart}-${body.byteEnd}` : 'noBody';
+    let seen = seenByBody.get(bodyKey);
+    if (!seen) {
+      seen = new Set<string>();
+      seenByBody.set(bodyKey, seen);
     }
+    if (seen.has(label)) {
+      findings.push({
+        ruleId: 'no-duplicate-case',
+        message: 'Duplicate case label.',
+        line: c.line,
+        col: c.column,
+      });
+    }
+    seen.add(label);
   }
 
   return findings;
+}
+
+/** The label text of a `switch_case` node (`case <label>:` → `<label>`), or null
+ * for a `default:` clause. Read from the real node text, which (being a code
+ * node) cannot be a comment or unrelated string. */
+function caseLabel(caseText: string): string | null {
+  const t = caseText.trimStart();
+  if (/^default\b/.test(t)) return null;
+  const after = t.slice(t.indexOf('case') + 'case'.length);
+  const colon = after.indexOf(':');
+  if (colon < 0) return after.trim();
+  return after.slice(0, colon).trim();
+}
+
+/** The smallest-span node in `bodies` whose byte range contains [start,end). */
+function innermostContaining(
+  bodies: { byteStart: number; byteEnd: number }[],
+  start: number,
+  end: number,
+): { byteStart: number; byteEnd: number } | null {
+  let best: { byteStart: number; byteEnd: number } | null = null;
+  for (const b of bodies) {
+    if (b.byteStart <= start && end <= b.byteEnd) {
+      if (!best || b.byteEnd - b.byteStart < best.byteEnd - best.byteStart) best = b;
+    }
+  }
+  return best;
 }
 
 /** Stable identity of a finding for set-membership: rule + message (NOT line —
@@ -221,9 +210,10 @@ function keyCounts(findings: Finding[]): Map<string, number> {
  * The fact, over the context. For each changed source file, run the pure-text
  * analyzer on the candidate AND on the prior content, and red iff the candidate
  * raises a finding-key MORE times than the prior did (a NEW finding). Same
- * NEW-only delta semantics as the connection byte floor.
+ * NEW-only delta semantics as the connection byte floor. A file whose grammar is
+ * unavailable (analyzer returns null) is not counted toward judged-ness.
  */
-function runFindingsDelta(ctx: GateContext): GateResult {
+async function runFindingsDelta(ctx: GateContext): Promise<GateResult> {
   const reds: GateRed[] = [];
   let judgedAny = false;
 
@@ -231,20 +221,32 @@ function runFindingsDelta(ctx: GateContext): GateResult {
     if (!SOURCE_RE.test(rel)) continue;
     const candidate = ctx.overlay.get(rel.replaceAll('\\', '/')) ?? ctx.readFile(rel);
     if (candidate == null) continue;
+
+    // prior bytes = pre-write content (write direction) / '' (lens direction).
+    // If the file is new there is no prior, so every finding is new.
+    const prior = ctx.priorOf(rel);
+    const afterFindings = await analyzePureText(candidate, rel);
+    if (afterFindings === null) continue; // no grammar → cannot judge this file
+    const beforeFindings = await analyzePureText(prior, rel);
     judgedAny = true;
 
-    // prior bytes = on-disk content. The overlay is the candidate; disk (via a
-    // direct read that bypasses the overlay) is the "before". If the file is new
-    // there is no prior, so every finding is new.
-    const prior = ctx.priorOf(rel);
-    const before = keyCounts(analyzePureText(prior));
-    const after = keyCounts(analyzePureText(candidate));
+    const before = keyCounts(beforeFindings ?? []);
+    const after = keyCounts(afterFindings);
+    // Pre-index the candidate findings so the NEW-occurrence locus is exact.
+    const byKey = new Map<string, Finding[]>();
+    for (const f of afterFindings) {
+      const arr = byKey.get(findingKey(f));
+      if (arr) arr.push(f);
+      else byKey.set(findingKey(f), [f]);
+    }
 
     for (const [key, afterN] of after) {
       const beforeN = before.get(key) ?? 0;
       if (afterN <= beforeN) continue; // not this write's claim — pre-existing
-      // locate the NEW occurrence(s) precisely for the red locus
-      const newOnes = locateNew(candidate, key, afterN - beforeN);
+      // locate the NEW occurrence(s) precisely: a delta of +N means the last N
+      // instances appeared in this write.
+      const all = byKey.get(key) ?? [];
+      const newOnes = all.slice(Math.max(0, all.length - (afterN - beforeN)));
       for (const f of newOnes) {
         reds.push({
           file: rel,
@@ -255,8 +257,8 @@ function runFindingsDelta(ctx: GateContext): GateResult {
     }
   }
 
-  // If no source file was judgeable from the bytes we have, say so honestly
-  // rather than claim green.
+  // If no source file was judgeable from the bytes we have (none matched, or
+  // every match lacked a grammar), say so honestly rather than claim green.
   if (!judgedAny) {
     return {
       gate: 'findings-delta',
@@ -275,57 +277,6 @@ function runFindingsDelta(ctx: GateContext): GateResult {
       'no write may INTRODUCE a new pure-text single-file lint finding (NEW-only delta vs prior bytes); ' +
       'type-aware rules deferred to the effect gate',
   };
-}
-
-/** The file's PRIOR content = disk bytes, never the overlay (overlay is the
- * candidate). Read directly through the context's overlay-bypassing path: if the
- * overlay holds the file, the "before" is whatever existed on disk; if a gate is
- * run read-direction (overlay == whole-repo snapshot) the before and after are
- * identical and nothing is ever red — correct, because a read-direction lens
- * over committed bytes introduces nothing. */
-function priorContent(ctx: GateContext, rel: string): string | null {
-  // existsInTree consults overlay first; we want disk-only. Re-read via readFile
-  // would return the overlay copy. So we ask the overlay whether this file is an
-  // in-memory candidate: if NOT in overlay, readFile == disk == prior (and there
-  // is no separate candidate, so the loop above already used readFile as the
-  // candidate → before==after → never red, which is correct for an unchanged file).
-  const norm = rel.replaceAll('\\', '/');
-  if (!ctx.overlay.has(norm)) {
-    // not a mutated file: candidate and prior are the same disk bytes → no delta.
-    return ctx.readFile(rel);
-  }
-  // mutated file: prior is the disk copy. readFile returns the overlay copy, so
-  // we cannot get disk through the frozen context. Use existsInTree to know if a
-  // disk version exists; if the only source of truth is the overlay (brand-new
-  // file) prior is null (all-new). For a modified file the integrator wires the
-  // pre-image; absent that, treating prior as null is the SAFE (stricter) choice:
-  // it can only over-report, never miss a real new finding. We choose null only
-  // when no disk pre-image is reachable.
-  return diskPreImage(ctx, rel);
-}
-
-/** Disk pre-image of a path, bypassing the overlay (the frozen context has no
- * disk-only reader, so we reconstruct one from repoRoot). Returns null if the
- * file does not exist on disk (brand-new candidate → all findings are new). */
-function diskPreImage(ctx: GateContext, rel: string): string | null {
-  // Lazy require keeps the gate dependency surface to ./contract only at type
-  // level; node builtins are always present at runtime.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const fs = require('node:fs') as typeof import('node:fs');
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const path = require('node:path') as typeof import('node:path');
-  try {
-    return fs.readFileSync(path.join(ctx.repoRoot, rel), 'utf8');
-  } catch {
-    return null;
-  }
-}
-
-/** Re-locate the NEW occurrences of a finding-key in the candidate (take the
- * last `count`, since a delta of +N means N new instances appeared). */
-function locateNew(candidate: string, key: string, count: number): Finding[] {
-  const all = analyzePureText(candidate).filter((f) => findingKey(f) === key);
-  return all.slice(Math.max(0, all.length - count));
 }
 
 const findingsDeltaGate: GateModule = {

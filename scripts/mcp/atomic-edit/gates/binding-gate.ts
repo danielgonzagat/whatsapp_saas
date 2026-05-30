@@ -70,6 +70,9 @@ const KNOWN_GLOBALS = new Set<string>([
   'Intl', 'WeakRef', 'FinalizationRegistry', 'performance', 'crypto', 'eval',
   'BigInt64Array', 'BigUint64Array', 'SharedArrayBuffer', 'Atomics', 'EvalError',
   'ReferenceError', 'URIError', 'AggregateError', 'Iterator', 'navigator',
+  // test-runner ambient globals (jest / vitest / mocha — injected, not imported)
+  'describe', 'it', 'test', 'expect', 'beforeEach', 'afterEach', 'beforeAll', 'afterAll',
+  'jest', 'vi', 'vitest', 'xit', 'xdescribe', 'fit', 'fdescribe', 'suite', 'mock',
   // Python builtins (floor only)
   'print', 'len', 'range', 'dict', 'list', 'set', 'tuple', 'int', 'float',
   'str', 'bool', 'bytes', 'type', 'isinstance', 'enumerate', 'zip', 'map',

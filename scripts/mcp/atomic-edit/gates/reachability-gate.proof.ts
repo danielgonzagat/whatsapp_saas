@@ -129,6 +129,40 @@ async function main(): Promise<void> {
     fs.rmSync(root, { recursive: true, force: true });
   }
 
+  // ── CASE 6: the REWRITE's reason for being — a `from './orphan'` that exists
+  //    ONLY inside a comment, a string literal, and a template literal is NOT a
+  //    real import edge. The OLD whole-file regex extracted all three as phantom
+  //    inbound edges → it would have falsely GREENed the orphan (an exoneration by
+  //    prose). The perception organ reads only real `import_statement` nodes, so
+  //    none of these textual look-alikes count → the orphan stays RED. This is the
+  //    string/comment/template false-positive removed by construction.
+  {
+    const root = mkrepo({
+      'index.ts': "import { u } from './util';\nexport const main = () => u();\n",
+      'util.ts': 'export const u = (): number => 1;\n',
+      // decoy.ts is a REACHED file (index→util→nothing, but decoy itself is reached
+      // by NOTHING — wait: make decoy a root so it is visible+parsed but its mentions
+      // of './orphan' are all non-code). decoy is a spec (root) → parsed, visible.
+      'decoy.spec.ts':
+        "// import { dead } from './orphan';  <- comment look-alike, NOT an import\n" +
+        "export const a = \"import { dead } from './orphan'\"; // string look-alike\n" +
+        'export const b = `from \'./orphan\'`; // template look-alike\n' +
+        'export const run = () => a.length + b.length;\n',
+      // orphan.ts: the ONLY textual references to it are the three look-alikes in
+      // decoy.spec.ts. No real import anywhere → it must be an orphan island.
+      'orphan.ts': 'export const dead = (): number => 42;\n',
+    });
+    const ctx = makeContext(root, new Map(), ['orphan.ts']);
+    const r = (await gate.run(ctx)) as GateResult;
+    show('CASE 6 (comment/string/template look-alikes are NOT edges)', r);
+    expect(!r.green, 'orphan stays RED despite three textual `from \'./orphan\'` look-alikes');
+    expect(
+      r.reds.some((x) => x.file === 'orphan.ts' && /0 inbound import edges/.test(x.fact)),
+      'perception counts 0 inbound edges — the comment/string/template mentions are NOT phantom edges (old regex FP removed)',
+    );
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+
   console.log('');
   if (failures === 0) {
     console.log('PROOF PASS');

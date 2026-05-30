@@ -20,6 +20,7 @@
  */
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { isBuiltin } from 'node:module';
 
 const SOURCE_RE = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
 
@@ -133,6 +134,44 @@ export function checkConnectionByteFloor(absPath: string, content: string): Conn
   for (const spec of extractImportSpecifiers(content)) {
     if (beforeSpecs.has(spec)) continue; // unchanged wire — not this write's claim
     if (!relativeImportResolvesAbs(absPath, spec)) reds.push(spec);
+  }
+  return { green: reds.length === 0, reds };
+}
+
+/** Walk up node_modules from a file, true iff the package's package.json byte-exists. */
+function bareResolves(fromAbs: string, spec: string): boolean {
+  const pkg = spec.startsWith('@') ? spec.split('/').slice(0, 2).join('/') : (spec.split('/')[0] ?? spec);
+  let dir = path.dirname(fromAbs);
+  for (let i = 0; i < 40; i += 1) {
+    if (fs.existsSync(path.join(dir, 'node_modules', pkg, 'package.json'))) return true;
+    const up = path.dirname(dir);
+    if (up === dir) break;
+    dir = up;
+  }
+  return false;
+}
+
+/**
+ * Byte-floor SYNC supply-chain check — the dependency twin of the connection gate,
+ * kept synchronous so it survives at the byte floor even though the full
+ * perception-based supply-chain gate is async. A NEW bare import to a package that
+ * is neither a Node builtin nor present in the installed tree (nor an @/-alias) is
+ * a dangling dependency wire. Relative imports are the connection gate's concern.
+ */
+export function checkSupplyChainByteFloor(absPath: string, content: string): ConnectionVerdict {
+  if (!SOURCE_RE.test(absPath)) return { green: true, reds: [] };
+  let beforeSpecs: Set<string>;
+  try {
+    beforeSpecs = new Set(extractImportSpecifiers(fs.readFileSync(absPath, 'utf8')));
+  } catch {
+    beforeSpecs = new Set();
+  }
+  const reds: string[] = [];
+  for (const spec of extractImportSpecifiers(content)) {
+    if (beforeSpecs.has(spec)) continue; // not this write's claim
+    if (spec.startsWith('.')) continue; // relative → connection gate's fact
+    if (spec.startsWith('@/') || isBuiltin(spec)) continue; // path alias / Node builtin
+    if (!bareResolves(absPath, spec)) reds.push(spec);
   }
   return { green: reds.length === 0, reds };
 }

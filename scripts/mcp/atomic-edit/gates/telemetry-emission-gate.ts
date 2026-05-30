@@ -18,24 +18,37 @@
  * declaration; an undeclared handle returns []. This gate replicates that
  * resolution from bytes alone — no daemon, no language server.)
  *
+ * MUTATION FIREWALL / PERCEPTION ORGAN: the emission set is read through the ONE
+ * perception organ (gates/perception.ts → calls(content, rel)), which SELECTS real
+ * tree-sitter `call_expression` nodes and keeps the member callee whole
+ * (`this.logger.warn`). A `this.logger.warn(` written inside a STRING, a COMMENT, or
+ * a TEMPLATE literal is a `string`/`comment`/`template_string` node — NOT a
+ * `call_expression` — so it is never extracted as an emission. The previous regex
+ * (`\bthis\.<h>\.<verb>\s*\(`) matched those textual look-alikes and could RED a
+ * `tracer`/`counter` named only inside a string/comment as a "dead wire". This
+ * rewrite removes that whole class of string/comment/template false-positive.
+ *
  * Semantics (universal, no exoneration, no guess):
  *  - Only SOURCE files are judged (.ts/.tsx/.js/.jsx/.mjs/.cjs). Other files carry
  *    no telemetry-emission fact → green.
- *  - A telemetry emission is `this.<handle>.<emit>(` where <emit> is a known
- *    telemetry verb (log/error/warn/debug/verbose/fatal | inc/add/record/observe/
- *    increment/gauge/timing/count | startSpan/startActiveSpan | emit/emitAsync).
- *    `this.` anchors it to a class member, which is the only handle a static byte
- *    scan can prove declared-or-not within one file.
+ *  - A telemetry emission is a `call_expression` whose callee is exactly
+ *    `this.<handle>.<emit>` where <emit> is a known telemetry verb
+ *    (log/error/warn/debug/verbose/fatal | inc/add/record/observe/increment/gauge/
+ *    timing/count | startSpan/startActiveSpan | emit/emitAsync). `this.` anchors it
+ *    to a class member, the only handle a static byte scan can prove
+ *    declared-or-not within one file.
  *  - GREEN: every emission's <handle> has a declaration in the same file (a field
  *    `<handle> =` / `<handle>:` / `this.<handle> =`, OR a constructor parameter
  *    `private/readonly ... <handle>:`). RED: a handle named at an emission site
  *    with NO declaration in the file = dead telemetry wire.
  *  - Only NEW emissions are this write's claim (write direction): an emission whose
- *    exact call text already existed in the prior content never reddens an
- *    unrelated edit — but no write may INTRODUCE a dangling telemetry handle. Read
- *    direction (whole repo) judges every emission.
+ *    exact callee already existed in the prior content never reddens an unrelated
+ *    edit — but no write may INTRODUCE a dangling telemetry handle. Read direction
+ *    (the lens, priorOf === '') judges every emission absolutely.
  *  - UNJUDGED: a changed file with zero telemetry emissions has no fact to assert;
- *    we do not green-by-assumption an empty claim.
+ *    we do not green-by-assumption an empty claim. A file whose grammar is
+ *    unavailable (perception returns null) is likewise carried unjudged — never
+ *    red-by-guess, never green-by-assumption.
  *
  * CEILING (carried as unjudged — TRUTH_INFERRED, never TRUTH_OBSERVED): this gate
  * proves the emitter EXISTS and (with the reachability gate's spirit) COULD emit.
@@ -48,19 +61,18 @@
  * observed-span / "did it boot" is the world, not the bytes → deferred to the live
  * probe gate.
  */
-import * as fs from 'node:fs';
-import * as path from 'node:path';
 import { type GateModule, type GateContext, type GateResult, type GateRed } from './contract.js';
+import { calls, type CallFact } from './perception.js';
 
 const SOURCE_RE = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
 
 /**
- * Known telemetry-emission verbs. Grouped only for documentation; matched as one
- * alternation. These are the contracted edges: a structured log, a span open, a
- * metric mutation, an event emission. (Grounded against backend/src: logger.warn/
- * error/log/debug dominate; metrics.service uses Counter.inc / Histogram.observe.)
+ * Known telemetry-emission verbs. Grouped only for documentation; the set is the
+ * contracted edges: a structured log, a span open, a metric mutation, an event
+ * emission. (Grounded against backend/src: logger.warn/error/log/debug dominate;
+ * metrics.service uses Counter.inc / Histogram.observe.)
  */
-const EMIT_VERBS = [
+const EMIT_VERBS = new Set<string>([
   // structured logging (NestJS Logger / StructuredLogger / pino / winston)
   'log', 'error', 'warn', 'debug', 'verbose', 'fatal', 'info', 'trace',
   // metrics (prom-client Counter/Histogram/Gauge, statsd, otel meter)
@@ -69,26 +81,15 @@ const EMIT_VERBS = [
   'startSpan', 'startActiveSpan',
   // event spine (EventEmitter2 / Nest event bus)
   'emit', 'emitAsync',
-];
-const EMIT_ALT = EMIT_VERBS.join('|');
+]);
 
-/**
- * A telemetry emission anchored to a class member: `this.<handle>.<verb>(`.
- * <handle> is captured so we can ask "is this handle declared in the file?".
- * Anchoring on `this.` is deliberate: only a member handle is statically
- * declared-or-not within one file. A bare `logger.warn(` (imported/global handle)
- * is out of scope — not a single-file dangling fact we can assert.
- */
-const EMISSION_RE = new RegExp(
-  String.raw`\bthis\.([A-Za-z_$][\w$]*)\.(?:${EMIT_ALT})\s*\(`,
-  'g',
-);
-
-/** The full call text up to the opening paren — used to diff new-vs-prior emissions. */
-const EMISSION_TEXT_RE = new RegExp(
-  String.raw`\bthis\.[A-Za-z_$][\w$]*\.(?:${EMIT_ALT})\s*\(`,
-  'g',
-);
+interface Emission {
+  /** the class-member handle named at the call site, e.g. `logger` */
+  handle: string;
+  /** the full whole-callee text, e.g. `this.logger.warn` — the new-vs-prior delta key */
+  callee: string;
+  line: number;
+}
 
 /**
  * Is `<handle>` declared somewhere in this file? Byte-floor resolution of the same
@@ -121,35 +122,37 @@ function handleDeclaredInFile(handle: string, content: string): boolean {
   return false;
 }
 
-/** All emission call-texts present in `content` (for new-vs-prior diffing). */
-function emissionTexts(content: string): Set<string> {
-  const out = new Set<string>();
-  let m: RegExpExecArray | null;
-  EMISSION_TEXT_RE.lastIndex = 0;
-  while ((m = EMISSION_TEXT_RE.exec(content)) !== null) out.add(m[0]);
-  return out;
+/**
+ * Parse a whole member callee into a telemetry emission iff it is exactly
+ * `this.<handle>.<verb>` with <verb> a known telemetry verb. Anchoring on a single
+ * member segment between `this.` and the verb mirrors the prior gate's shape
+ * (`\bthis\.<h>\.<verb>`): a bare `logger.warn` (imported/global handle) or a nested
+ * `this.a.b.record` is out of scope — not a single-member handle we can prove
+ * declared-or-not in one file. Returns null when the callee is not such an emission.
+ */
+function asEmission(c: CallFact): Emission | null {
+  const parts = c.callee.split('.');
+  if (parts.length !== 3) return null; // exactly this.<handle>.<verb>
+  if (parts[0] !== 'this') return null; // member anchored on `this.`
+  const handle = parts[1];
+  const verb = parts[2];
+  if (!/^[A-Za-z_$][\w$]*$/.test(handle)) return null;
+  if (!EMIT_VERBS.has(verb)) return null;
+  return { handle, callee: c.callee, line: c.line };
 }
 
-/** 1-based line of byte offset `idx` in `content`. */
-function lineAt(content: string, idx: number): number {
-  let line = 1;
-  for (let i = 0; i < idx && i < content.length; i += 1) if (content[i] === '\n') line += 1;
-  return line;
-}
-
-interface Emission {
-  handle: string;
-  index: number;
-  callText: string;
-}
-
-/** Extract every `this.<handle>.<verb>(` emission with its handle, offset, text. */
-function extractEmissions(content: string): Emission[] {
+/**
+ * Extract every `this.<handle>.<verb>` telemetry emission from `content`, via the
+ * perception organ (real `call_expression` nodes — token-correct). Returns null when
+ * the grammar is unavailable so the caller degrades to unjudged.
+ */
+async function emissionsOf(content: string, rel: string): Promise<Emission[] | null> {
+  const found = await calls(content, rel);
+  if (found === null) return null;
   const out: Emission[] = [];
-  let m: RegExpExecArray | null;
-  EMISSION_RE.lastIndex = 0;
-  while ((m = EMISSION_RE.exec(content)) !== null) {
-    out.push({ handle: m[1], index: m.index, callText: m[0] });
+  for (const c of found) {
+    const e = asEmission(c);
+    if (e) out.push(e);
   }
   return out;
 }
@@ -160,7 +163,7 @@ const telemetryEmissionGate: GateModule = {
   appliesTo(rel: string): boolean {
     return SOURCE_RE.test(rel);
   },
-  run(ctx: GateContext): GateResult {
+  async run(ctx: GateContext): Promise<GateResult> {
     const reds: GateRed[] = [];
     let sawAnyEmission = false;
     const note =
@@ -171,27 +174,30 @@ const telemetryEmissionGate: GateModule = {
       const content = ctx.readFile(rel);
       if (content === null) continue;
 
-      const emissions = extractEmissions(content);
+      const emissions = await emissionsOf(content, rel);
+      if (emissions === null) continue; // no grammar → cannot decide this file (unjudged)
       if (emissions.length === 0) continue;
 
-      // Write-direction claim narrowing: when this file is an overlay candidate AND
-      // a prior on-disk version exists, only NEW emission call-texts are this
-      // write's claim. A pre-existing dangling emitter in a legacy file never
-      // blocks an unrelated edit (mirrors connection-gate NEW-wire-only law). In
-      // read direction (no prior, or whole-repo lens) every emission is judged.
-      let priorTexts: Set<string> | null = null;
-      if (ctx.overlay.has(rel.replaceAll('\\', '/'))) {
-        const disk = ctx.existsInTree(rel) ? readDiskOnly(ctx, rel) : null;
-        if (disk !== null && disk !== content) priorTexts = emissionTexts(disk);
+      // Write-direction claim narrowing: only emission callees absent from the
+      // prior content are this write's claim. A pre-existing dangling emitter in a
+      // legacy file never blocks an unrelated edit (mirrors connection-gate
+      // NEW-wire-only law). priorOf is '' in the lens (read) direction, so every
+      // emission is judged absolutely there. The prior is parsed through the SAME
+      // perception organ, so the delta key is token-correct on both sides.
+      const prior = ctx.priorOf(rel);
+      let priorCallees: Set<string> | null = null;
+      if (prior !== '' && prior !== content) {
+        const priorEmissions = await emissionsOf(prior, rel);
+        if (priorEmissions !== null) priorCallees = new Set(priorEmissions.map((e) => e.callee));
       }
 
       for (const e of emissions) {
-        if (priorTexts && priorTexts.has(e.callText)) continue; // unchanged emitter — not this write's claim
+        if (priorCallees && priorCallees.has(e.callee)) continue; // unchanged emitter — not this write's claim
         sawAnyEmission = true;
         if (!handleDeclaredInFile(e.handle, content)) {
           reds.push({
             file: rel,
-            locus: `L${lineAt(content, e.index)}`,
+            locus: `L${e.line}`,
             fact: `telemetry emission \`this.${e.handle}.…()\` names handle \`${e.handle}\`, which has no declaration in this file — dead telemetry wire (no emitter can flow)`,
           });
         }
@@ -199,32 +205,13 @@ const telemetryEmissionGate: GateModule = {
     }
 
     // No NEW telemetry emission anywhere in the judged set → no fact to assert.
-    // Honest: do not green-by-assumption an empty claim.
+    // Honest: do not green-by-assumption an empty claim. A file whose grammar was
+    // unavailable contributes no emission and is likewise carried unjudged here.
     if (!sawAnyEmission && reds.length === 0) {
       return { gate: this.name, green: true, reds: [], note, unjudged: true };
     }
     return { gate: this.name, green: reds.length === 0, reds, note };
   },
 };
-
-/**
- * Read ONLY the on-disk version (bypassing the overlay) so we can diff new-vs-prior
- * emissions. The context's readFile returns the overlay when present; for the
- * write-direction prior we need the file as it exists on disk. We reconstruct it
- * via existsInTree + a disk read through the same resolver shape the context uses.
- */
-function readDiskOnly(ctx: GateContext, rel: string): string | null {
-  // The GateContext API does not expose a disk-only read, but a file that exists in
-  // the tree and is NOT only-in-overlay must have a disk copy; re-read it bypassing
-  // overlay by constructing a one-off context-free read. We use the fact that the
-  // overlay is the ONLY in-memory source: temporarily, the on-disk content is the
-  // file at repoRoot/rel. Reading it directly keeps the prior-diff honest without
-  // widening the frozen interface.
-  try {
-    return fs.readFileSync(path.join(ctx.repoRoot, rel), 'utf8');
-  } catch {
-    return null;
-  }
-}
 
 export default telemetryEmissionGate;
