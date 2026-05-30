@@ -19,7 +19,7 @@ import { universalReplaceLiteral, universalReplacePropertyValue, universalRename
 import { replaceOperator, reorderListItem, changeSignature, replaceBodyKeepSignature, addDecorator, replaceDecorator, moveIntoScope } from './engine-complete.js';
 import { registerToolsA2 } from './server-tools-a-2.js';
 import { registerToolsA3 } from './server-tools-a-3.js';
-
+import { doReplaceAt } from './server-tools-locate.js';
 
 export function registerToolsA(server: McpServer): void {
 server.registerTool(
@@ -38,7 +38,7 @@ server.registerTool(
         'replace_text', 'replace_range', 'replace_literal',
         'insert_at', 'delete_range', 'edit_symbol',
         'add_import', 'remove_import', 'rename_symbol',
-        'replace_property_value', 'rename_property_key',
+        'replace_property_value', 'rename_property_key', 'replace_at',
       ]),
       file: z.string(),
       oldText: z.string().optional(),
@@ -58,6 +58,8 @@ server.registerTool(
       property: z.string().optional(),
       value: z.string().optional(),
       newKey: z.string().optional(),
+      mode: z.enum(['content', 'after_anchor', 'before_anchor']).optional(),
+      anchor: z.string().optional(),
       expectedSha256: z.string().optional(),
       preview: z.boolean().optional(),
       verify: z.enum(['typecheck', 'lint']).optional(),
@@ -66,6 +68,22 @@ server.registerTool(
   },
   async (a) => {
     try {
+      if (a.op === 'replace_at') {
+        if (!a.mode || a.anchor === undefined || a.newText === undefined) {
+          return fail('replace_at requires mode, anchor, newText');
+        }
+        return doReplaceAt({
+          file: a.file,
+          mode: a.mode,
+          anchor: a.anchor,
+          newText: a.newText,
+          occurrence: a.occurrence,
+          expectedSha256: a.expectedSha256,
+          preview: a.preview,
+          verify: a.verify,
+          lock: a.lock,
+        });
+      }
       const { absPath, relPath, repoRoot } = resolveSafeTarget(a.file);
       const before = readUtf8(absPath);
       guardSha(before, a.expectedSha256);
