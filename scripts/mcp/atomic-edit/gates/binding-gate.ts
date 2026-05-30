@@ -67,6 +67,9 @@ const KNOWN_GLOBALS = new Set<string>([
   'Int8Array', 'Uint8Array', 'Uint8ClampedArray', 'Int16Array', 'Uint16Array',
   'Int32Array', 'Uint32Array', 'Float32Array', 'Float64Array', 'ArrayBuffer',
   'DataView', 'AbortController', 'AbortSignal', 'Event', 'EventTarget',
+  'Intl', 'WeakRef', 'FinalizationRegistry', 'performance', 'crypto', 'eval',
+  'BigInt64Array', 'BigUint64Array', 'SharedArrayBuffer', 'Atomics', 'EvalError',
+  'ReferenceError', 'URIError', 'AggregateError', 'Iterator', 'navigator',
   // Python builtins (floor only)
   'print', 'len', 'range', 'dict', 'list', 'set', 'tuple', 'int', 'float',
   'str', 'bool', 'bytes', 'type', 'isinstance', 'enumerate', 'zip', 'map',
@@ -93,6 +96,16 @@ async function tsMorphUnbound(rel: string, text: string): Promise<Unbound[] | nu
     return null; // ts-morph not installed → undecidable for this file
   }
   const { Project, SyntaxKind, Node } = tsMorph;
+  // Type positions never name a VALUE binding (RegExpExecArray, Record, Promise, a
+  // type-alias rhs, an import-type qualifier). Type resolution is the type-checker's
+  // job — the documented ceiling — so binding skips them rather than red-by-guess
+  // under noLib (where lib type names have no declaration and would all look unbound).
+  const TYPE_CTX = new Set<number>([
+    SyntaxKind.TypeReference, SyntaxKind.ImportType, SyntaxKind.QualifiedName,
+    SyntaxKind.TypeQuery, SyntaxKind.TypeParameter, SyntaxKind.IndexedAccessType,
+    SyntaxKind.TypeOperator, SyntaxKind.ExpressionWithTypeArguments, SyntaxKind.TypePredicate,
+    SyntaxKind.MappedType, SyntaxKind.FunctionType, SyntaxKind.ConstructorType,
+  ]);
   let sf: import('ts-morph').SourceFile;
   try {
     const proj = new Project({
@@ -128,6 +141,26 @@ async function tsMorphUnbound(rel: string, text: string): Promise<Unbound[] | nu
       continue;
     }
     if (Node.isShorthandPropertyAssignment(parent)) continue; // { foo } — its own binding rule
+    if (parent.getKind() === SyntaxKind.MetaProperty) continue; // import.meta / new.target
+    // Skip identifiers that are not VALUE references: JSDoc/comment identifiers
+    // (e.g. "@Controller(" written in a docstring) and any type-context name.
+    const ancestors = id.getAncestors();
+    if (
+      ancestors.some((a) => {
+        const k = a.getKind();
+        // type positions, JSDoc, and the names inside an import/export statement
+        // (the `validate` in `{ validate as treeValidate }` is a propertyName, not a
+        // reference; the bound local is resolved by getSymbol where it's USED).
+        return (
+          TYPE_CTX.has(k) ||
+          k === SyntaxKind.ImportDeclaration ||
+          k === SyntaxKind.ExportDeclaration ||
+          a.getKindName().startsWith('JSDoc')
+        );
+      })
+    ) {
+      continue;
+    }
     const sym = id.getSymbol();
     const decls = sym ? sym.getDeclarations() : [];
     if (!sym || decls.length === 0) {
@@ -150,7 +183,53 @@ async function tsMorphUnbound(rel: string, text: string): Promise<Unbound[] | nu
  * property access or a string. If it cannot find any call site to judge it returns
  * an empty list (the caller then folds it into unjudged when nothing was decided).
  */
-function regexFloorUnbound(text: string): Unbound[] | null {
+/** Length-preserving blanking of comments + string/template literals so the floor's
+ *  `name(` match never fires INSIDE a string or comment — the floor's only FP source.
+ *  Covers //, #, block comments, and ' " ` literals (the langs the floor targets). */
+function blankNonCode(text: string): string {
+  const out = text.split('');
+  const n = text.length;
+  let i = 0;
+  const blankTo = (end: number): void => {
+    for (let k = i; k < end && k < n; k += 1) if (out[k] !== '\n') out[k] = ' ';
+  };
+  while (i < n) {
+    const c = text[i];
+    const c2 = text[i + 1];
+    if (c === '/' && c2 === '/') {
+      let j = i + 2;
+      while (j < n && text[j] !== '\n') j += 1;
+      blankTo(j);
+      i = j;
+    } else if (c === '#') {
+      let j = i + 1;
+      while (j < n && text[j] !== '\n') j += 1;
+      blankTo(j);
+      i = j;
+    } else if (c === '/' && c2 === '*') {
+      let j = i + 2;
+      while (j < n && !(text[j] === '*' && text[j + 1] === '/')) j += 1;
+      j = Math.min(j + 2, n);
+      blankTo(j);
+      i = j;
+    } else if (c === '"' || c === "'" || c === '`') {
+      let j = i + 1;
+      while (j < n && text[j] !== c) {
+        if (text[j] === '\\') j += 1;
+        j += 1;
+      }
+      j = Math.min(j + 1, n);
+      blankTo(j);
+      i = j;
+    } else {
+      i += 1;
+    }
+  }
+  return out.join('');
+}
+
+function regexFloorUnbound(rawText: string): Unbound[] | null {
+  const text = blankNonCode(rawText);
   const declared = new Set<string>();
   const add = (re: RegExp): void => {
     for (const m of text.matchAll(re)) {

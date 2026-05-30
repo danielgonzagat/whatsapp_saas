@@ -27,6 +27,7 @@ import probeConvergenceGate from './probe-convergence-gate.js';
 export const WRITE_GATES: GateModule[] = [
   supplyChainGate,
   contractEdgeGate,
+  bindingGate,
   renderConformanceGate,
   telemetryEmissionGate,
   iacReferenceGate,
@@ -34,14 +35,14 @@ export const WRITE_GATES: GateModule[] = [
 ];
 
 /**
- * PARKED — held out of the live registry. The binding gate is token-correct only
- * with ts-morph; when that parser is absent it falls to a regex floor that flags
- * TYPE references (RegExpExecArray, Record), string-literal identifiers, and
- * import.meta as "unbound" — red-by-guess, which the whole system forbids. The
- * lens caught exactly this on its first real run. Re-admit only after the floor
- * returns `unjudged` (never a red) when no token-correct parser loads.
+ * Re-admitted after the lens caught it guessing: the binding gate now skips JSDoc
+ * and type-context identifiers in the ts-morph tier (so lib TYPE names under noLib
+ * are never "unbound") and length-preservingly blanks strings/comments in the
+ * regex floor (so a name inside a literal is never judged). Token-correct or
+ * unjudged — never red-by-guess. PENDING is empty; this is the slot for any future
+ * gate held out pending its own honesty fix.
  */
-export const PENDING_GATES: GateModule[] = [bindingGate];
+export const PENDING_GATES: GateModule[] = [];
 
 /** Whole-repo READ-direction gates (the lens) — write gates + the orphan census. */
 export const LENS_GATES: GateModule[] = [reachabilityGate, ...WRITE_GATES];
