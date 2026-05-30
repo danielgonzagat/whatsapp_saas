@@ -235,4 +235,19 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
       convGreen.content[0]?.text ?? '',
     );
 
+    // ── Byte-floor supply-chain: a NEW bare import to an absent package is refused at
+    // the floor (the dependency twin of the connection gate — inescapable per-write).
+    const bfRel = path.join('scripts', 'mcp', 'atomic-edit', 'gates', `.smoke-bf-${process.pid}.ts`);
+    const bf = (await client.callTool({
+      name: 'atomic_create_file',
+      arguments: { file: bfRel, content: 'import { x } from "totally-absent-pkg-zzz";\nexport const y = x;\n' },
+    })) as { content: { text: string }[]; isError?: boolean };
+    const bfText = bf.content.map((p) => p.text).join('\n');
+    check(
+      'byte-floor refuses a NEW bare import to an absent package (supply-chain at the floor)',
+      bf.isError === true || /dangling dependency/.test(bfText),
+      bfText,
+    );
+    if (fs.existsSync(path.join(repoRoot, bfRel))) fs.unlinkSync(path.join(repoRoot, bfRel));
+
 }
