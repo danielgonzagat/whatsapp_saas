@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -23,6 +26,24 @@ describe('KloelGraph route contract', () => {
       'Conversar',
       'Consultar',
     ]);
+  });
+
+  it('keeps split graph modules under the architecture guard line budget', () => {
+    const graphModules = [
+      'KloelGraph.routes.ts',
+      'KloelGraph.static-nodes.ts',
+      'KloelGraph.product-nodes.ts',
+      'KloelGraphShell.tsx',
+      'KloelGraphShell.helpers.ts',
+      'KloelGraphNodeButton.tsx',
+      'KloelGraphFloatingNav.tsx',
+      'KloelGraphOverlay.tsx',
+    ];
+
+    for (const moduleName of graphModules) {
+      const source = readFileSync(fileURLToPath(new URL(moduleName, import.meta.url)), 'utf8');
+      expect(source.split('\n').length, moduleName).toBeLessThanOrEqual(400);
+    }
   });
 
   it('normalizes the graph feature flag with explicit truthy values only', () => {
@@ -64,9 +85,9 @@ describe('KloelGraph route contract', () => {
     expect(resolveKloelGraphNodeForPath('/carteira/saques', new URLSearchParams())?.id).toBe(
       'consultar-wallet-saques',
     );
-    expect(resolveKloelGraphNodeForPath('/analytics', new URLSearchParams('tab=abandonos'))?.id).toBe(
-      'consultar-report-abandonos',
-    );
+    expect(
+      resolveKloelGraphNodeForPath('/analytics', new URLSearchParams('tab=abandonos'))?.id,
+    ).toBe('consultar-report-abandonos');
   });
 
   it('exposes stable nodes for graph rendering and deep-link focus', () => {
@@ -103,16 +124,16 @@ describe('KloelGraph route contract', () => {
     expect(productNodes.find((node) => node.id === 'criar-product-prod_123-cupons')?.route).toBe(
       '/products/prod_123?tab=cupons',
     );
-    expect(productNodes.find((node) => node.id === 'criar-product-prod_123-plan-plan_1')?.route).toBe(
-      '/products/prod_123/plans/plan_1',
-    );
     expect(
-      productNodes.find((node) => node.id === 'criar-product-prod_123-plan-plan_1-checkout')
-        ?.route,
+      productNodes.find((node) => node.id === 'criar-product-prod_123-plan-plan_1')?.route,
+    ).toBe('/products/prod_123/plans/plan_1');
+    expect(
+      productNodes.find((node) => node.id === 'criar-product-prod_123-plan-plan_1-checkout')?.route,
     ).toContain('/checkout/plan_1?');
     expect(
-      productNodes.find((node) => node.id === 'criar-product-prod_123-checkout-checkout_1-order-bump')
-        ?.route,
+      productNodes.find(
+        (node) => node.id === 'criar-product-prod_123-checkout-checkout_1-order-bump',
+      )?.route,
     ).toContain('focus=order-bump');
     expect(
       resolveKloelGraphNodeForPathFromNodes(
