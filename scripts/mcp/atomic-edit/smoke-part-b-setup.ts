@@ -205,4 +205,34 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
       if (fs.existsSync(convAbs)) fs.unlinkSync(convAbs);
     }
 
+    // ── The one-tool collapse: atomic_converge runs the full WRITE gate registry ──
+    // (preview/commit:false → nothing written; convergeStatic runs all gates first).
+    const convPreviewRel = path.join('scripts', 'mcp', 'atomic-edit', 'gates', `.smoke-converge-${process.pid}.ts`);
+    const convRed = (await client.callTool({
+      name: 'atomic_converge',
+      arguments: {
+        mutations: [{ file: convPreviewRel, newText: 'import { z } from "totally-absent-pkg-xyz";\nexport const y = z;\n' }],
+        commit: false,
+      },
+    })) as { content: { text: string }[] };
+    const convRedBody = JSON.parse(convRed.content.at(-1)?.text ?? '{}');
+    check(
+      'atomic_converge refuses a mutation that introduces a dangling dependency (supply-chain gate fires through the one tool)',
+      convRedBody.converged === false && convRedBody.refusedGate === 'supply-chain',
+      convRed.content[0]?.text ?? '',
+    );
+    const convGreen = (await client.callTool({
+      name: 'atomic_converge',
+      arguments: {
+        mutations: [{ file: convPreviewRel, newText: 'import * as fs from "node:fs";\nexport const reachable = fs.existsSync("/");\n' }],
+        commit: false,
+      },
+    })) as { content: { text: string }[] };
+    const convGreenBody = JSON.parse(convGreen.content.at(-1)?.text ?? '{}');
+    check(
+      'atomic_converge passes a clean mutation — no false red from the 7 folded write gates',
+      convGreenBody.converged === true,
+      convGreen.content[0]?.text ?? '',
+    );
+
 }

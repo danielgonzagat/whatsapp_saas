@@ -17,6 +17,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { validate as treeValidate } from './native-bridge.js';
 import { extractImportSpecifiers } from './connection-gate.js';
+import { runGates, WRITE_GATES } from './gates/registry.js';
 
 export interface Mutation {
   /** repo-relative path */
@@ -94,6 +95,20 @@ function gateConnection(repoRoot: string, overlay: Overlay): GateResult {
 export async function convergeStatic(repoRoot: string, mutations: Mutation[]): Promise<ConvergeResult> {
   const overlay: Overlay = new Map(mutations.map((m) => [m.file.replaceAll('\\', '/'), m.newText]));
   const gates: GateResult[] = [await gateSyntax(overlay), gateConnection(repoRoot, overlay)];
+  // The dissolved-protocol gates (registry) run in the WRITE direction: each refuses a
+  // mutation that INTRODUCES a dangling wire — a dependency, contract call/event, name
+  // binding, UI handler/route, telemetry handle, IaC reference, or lint finding. A gate
+  // that throws or cannot decide is recorded unjudged (non-blocking), never a false red.
+  const registry = await runGates(WRITE_GATES, repoRoot, overlay, [...overlay.keys()]);
+  for (const name of [...new Set(registry.reds.map((r) => r.gate))]) {
+    gates.push({
+      gate: name,
+      green: false,
+      reds: registry.reds
+        .filter((r) => r.gate === name)
+        .map((r) => `${r.file}${r.locus ? `:${r.locus}` : ''} — ${r.fact}`),
+    });
+  }
   const firstRed = gates.find((g) => !g.green) ?? null;
   return { converged: !firstRed, gates, firstRed };
 }
