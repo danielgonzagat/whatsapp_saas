@@ -69,12 +69,21 @@ export function classifyToolCall({ tool, toolInput }) {
   if (tool === 'Bash') {
     const cmd = String(ti.command || '');
     const verb = (cmd.trim().split(/\s+/)[0] || '').split('/').pop();
+    const inlineEvalWrite =
+      /\b(?:node|deno|bun|ts-node|tsx|python3?|ruby|php|perl)\b[^\n]*?(?:\s-(?:e|pe?|c|r)\b|--eval\b|\beval\b)/.test(cmd) &&
+      /(?:writeFileSync|appendFileSync|createWriteStream|renameSync|copyFileSync|rmSync|unlinkSync|mkdirSync|write_text|os\.replace|shutil\.(?:move|copy))/.test(cmd);
     const mutatesCode =
       /\bsed\b[^|]*\s-i/.test(cmd) ||
       /\bperl\b[^|]*\s-i/.test(cmd) ||
-      /\btee\b[^|]*\s+["']?[\w./-]+/.test(cmd) && CODE_EXT.test(cmd) ||
+      (/\btee\b[^|]*\s+["']?[\w./-]+/.test(cmd) && CODE_EXT.test(cmd)) ||
       (/\b(?:rm|unlink|truncate|touch)\b/.test(cmd) && CODE_EXT.test(cmd)) ||
-      /\bdd\b[^|]*\bof=/.test(cmd);
+      /\bdd\b[^|]*\bof=/.test(cmd) ||
+      // parity with atomic-only-hook.mjs bashEditsCode (else the ledger under-counts
+      // what the deny-hook actually blocks): redirect / cat> / cp / mv / awk> into code.
+      (/(?:^|[\s;&|])>{1,2}(?!>)/.test(cmd) && CODE_EXT.test(cmd)) ||
+      (/\b(?:cp|mv|install)\b/.test(cmd) && CODE_EXT.test(cmd)) ||
+      (/\b(?:g?awk)\b[^|]*>/.test(cmd) && CODE_EXT.test(cmd)) ||
+      inlineEvalWrite;
     if (mutatesCode) {
       return {
         category: 'bash-edit',
