@@ -322,13 +322,55 @@ export class AutopilotCycleExecutorService {
     return helpersIsCommercialAction(type);
   }
 
+  /**
+   * Honestly record that an autopilot reply was skipped (e.g. the LLM client is
+   * unavailable) instead of emitting a canned reply. Mirrors the compliance-skip
+   * audit-trail pattern in {@link executeAction} — best-effort, never throws.
+   */
+  private async recordSkippedEvent(
+    action: string,
+    conv: AutopilotConversation,
+    reason: string,
+    analysis?: ConversationAnalysis,
+  ): Promise<void> {
+    this.logger.warn({
+      operation: 'autopilot.reply_skipped',
+      workspaceId: conv.workspaceId,
+      conversationId: conv.id,
+      action,
+      reason,
+    });
+    try {
+      await this.prisma.autopilotEvent.create({
+        data: {
+          workspaceId: conv.workspaceId,
+          ...(conv.contact?.id !== undefined ? { contactId: conv.contact.id } : {}),
+          intent: analysis?.intent || 'UNKNOWN',
+          action,
+          status: 'skipped',
+          reason,
+        },
+      });
+    } catch {
+      void this.opsAlert?.alertOnCriticalError(
+        new Error('autopilotEvent.create failed silently'),
+        'AutopilotCycleExecutorService.recordSkippedEvent',
+        { workspaceId: conv.workspaceId },
+      );
+    }
+  }
+
   private async generateResponse(
     type: string,
     conv: AutopilotConversation,
     analysis?: ConversationAnalysis,
   ) {
     if (!this.openai) {
-      return 'Olá, como posso ajudar?';
+      // No LLM configured in a production-reachable path. Do NOT emit a canned
+      // greeting masquerading as AI — honestly record a skipped event so the
+      // conversation waits / hands off to a human instead.
+      await this.recordSkippedEvent(type, conv, 'ai_unavailable', analysis);
+      return null;
     }
 
     let productContext = '';

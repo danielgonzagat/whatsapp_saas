@@ -129,6 +129,34 @@ describe('MarketplaceService', () => {
       });
     });
 
+    it('routes float prices through the canonical cents helper without binary-float drift', async () => {
+      // 19.99 * 100 is 1998.9999999999998 in IEEE-754; the canonical helper
+      // rounds it to exactly 1999 cents. An integer price round-trips cleanly.
+      prisma.product.findMany.mockResolvedValue([
+        {
+          id: 'p-drift',
+          name: 'Drift Guard',
+          description: 'edge',
+          price: 19.99,
+          workspaceId: 'ws-v',
+        },
+        {
+          id: 'p-int',
+          name: 'Round Number',
+          description: 'clean',
+          price: 100,
+          workspaceId: 'ws-v',
+        },
+      ]);
+      prisma.product.count.mockResolvedValue(2);
+
+      const result = await service.list('ws-1');
+
+      expect(result.items[0].price).toBe(1999n);
+      expect(result.items[1].price).toBe(10000n);
+      expect(typeof result.items[0].price).toBe('bigint');
+    });
+
     it('filters by category when provided', async () => {
       prisma.product.findMany.mockResolvedValue([]);
       prisma.product.count.mockResolvedValue(0);

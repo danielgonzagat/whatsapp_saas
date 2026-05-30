@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { priceInCentsOf } from '../products/product.helpers';
 
 function requireTemplateJson(value: Prisma.JsonValue, field: string): Prisma.InputJsonValue {
   if (value === null) {
@@ -82,7 +83,13 @@ export class MarketplaceService {
         id: p.id,
         name: p.name,
         description: p.description ?? '',
-        price: BigInt(Math.round(p.price * 100)),
+        // Money source: Product.price is a Float column (no integer-cents
+        // column exists on Product), so convert through the single canonical
+        // float->cents helper instead of an ad-hoc inline round. Returned as
+        // bigint cents to keep the money-safe response contract. See
+        // sharedFileNeeds: Product needs a priceInCents bigint column for true
+        // money-safety (eliminating the float round-trip entirely).
+        price: BigInt(priceInCentsOf(p.price)),
         vendor: p.workspaceId,
       })),
       total,

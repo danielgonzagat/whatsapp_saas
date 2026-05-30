@@ -471,19 +471,31 @@ describe('AutopilotCycleExecutorService', () => {
   });
 
   describe('executeAction with LLM response', () => {
-    it('generates AI chat response when openai is not configured', async () => {
+    it('does NOT send a canned reply when LLM is unavailable — records a skipped event instead', async () => {
+      mockPrisma.autopilotEvent.create.mockResolvedValue({});
       mockPlanLimits.ensureDailyMessageQuota.mockResolvedValue(undefined);
       mockPlanLimits.ensureMessageRate.mockResolvedValue(undefined);
       mockFlowQueueAdd.mockResolvedValue(undefined);
+      // Default service is built with no OPENAI_API_KEY → this.openai is null.
       const conv = makeConv();
       const compliance = { allowed: true };
 
-      await service.executeAction('ai_chat', conv, compliance);
+      await service.executeAction('ai_chat', conv, compliance, { intent: 'greeting' });
 
-      expect(mockFlowQueueAdd).toHaveBeenCalledWith(
-        'send-message',
+      // No canned greeting is emitted to the conversation.
+      expect(mockFlowQueueAdd).not.toHaveBeenCalled();
+      // The conversation honestly records that it waited / will hand off.
+      expect(mockPrisma.autopilotEvent.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          message: 'Olá, como posso ajudar?',
+          data: expect.objectContaining({
+            workspaceId: 'ws-1',
+            contactId: conv.contact.id,
+            intent: 'greeting',
+            // generateResponse receives the resolved response *type* (ai_chat -> chat).
+            action: 'chat',
+            status: 'skipped',
+            reason: 'ai_unavailable',
+          }),
         }),
       );
     });
