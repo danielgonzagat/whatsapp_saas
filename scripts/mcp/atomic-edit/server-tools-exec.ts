@@ -25,7 +25,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { REPO_ROOT, resolveAllowedRootForAbsolutePath } from './guard.js';
+import { REPO_ROOT, resolveAllowedRootForAbsolutePath, isProtectedRelative } from './guard.js';
 import { ok, fail } from './server-helpers-result.js';
 
 interface GuardVerdict {
@@ -55,13 +55,65 @@ const FORBIDDEN: { re: RegExp; reason: string }[] = [
     re: /(?:chmod|chflags|mv|rm|cp|tee|>>?)\s*[^\n]*no-hardcoded-reality-audit/,
     reason: 'the locked PULSE auditor (no-hardcoded-reality-audit.ts) must not be moved/chmod/overwritten.',
   },
+  // Catchable evasions surfaced by the closeout audit. A flat regex over a
+  // `/bin/bash -c` string is best-effort DEFENSE-IN-DEPTH, NOT a boundary —
+  // env-var/eval/alias indirection can still hide a banned verb. Run risky
+  // mutations inside an isolated git worktree for real reversibility.
+  {
+    re: /\bgit\s+push\b[^\n]*\s\+[^\s:]+(?::|\s|$)/,
+    reason: 'plus-refspec force-push (git push ... +ref) is forbidden; use --force-with-lease, never to a protected branch.',
+  },
+  { re: /\bfind\b[^|]*\s-delete\b/, reason: 'find ... -delete is a mass-delete; refused (use the atomic delete tool).' },
+  { re: /\|\s*(?:sh|bash|zsh|dash)\b/, reason: 'piping into a shell (| sh/bash) hides the real command from the denylist; refused.' },
+  { re: /\bgit\s+config\b[^\n]*\balias\./, reason: 'defining a git alias can smuggle a banned verb (restore / push --force); refused.' },
+  { re: /\brm\b[^|;&]*\s--recursive\b/, reason: 'rm --recursive (long-form) is refused; use the atomic delete tool.' },
 ];
+
+/**
+ * Heuristic scan for a shell command that WRITES to a governance-protected file
+ * (CLAUDE.md, eslint configs, .husky/pre-push, ai-models.ts, …). The byte-edit
+ * tools enforce the protected set via resolveSafeTarget; the shell operator must
+ * not be a hole around it. Extracts likely write targets from redirections, tee,
+ * dd of=, and the dest arg of sed -i / cp / mv / install / truncate, then checks
+ * each against isProtectedRelative. Best-effort (a shell can obfuscate), so it is
+ * defense-in-depth, not a guarantee.
+ */
+function protectedWriteTarget(cmd: string): string | null {
+  const candidates: string[] = [];
+  for (const m of cmd.matchAll(/>>?\s*["']?([^\s"'|;&<>]+)/g)) candidates.push(m[1]);
+  for (const m of cmd.matchAll(/\btee\b\s+(?:-\S+\s+)*["']?([^\s"'|;&]+)/g)) candidates.push(m[1]);
+  for (const m of cmd.matchAll(/\bof=["']?([^\s"';|&]+)/g)) candidates.push(m[1]);
+  for (const verb of ['sed', 'cp', 'mv', 'install', 'truncate', 'ex', 'ed']) {
+    const m = cmd.match(new RegExp(`\\b${verb}\\b([^|;&]*)`));
+    if (!m) continue;
+    const args = m[1].split(/\s+/).filter((a) => a && !a.startsWith('-') && !a.includes('='));
+    if (args.length) candidates.push(args[args.length - 1]); // dest = last positional
+  }
+  for (const cand of candidates) {
+    const abs = path.isAbsolute(cand) ? cand : path.resolve(REPO_ROOT, cand);
+    const rel = path.relative(REPO_ROOT, abs).split(path.sep).join('/');
+    if (rel.startsWith('..')) continue; // outside the repo — not a repo-protected file
+    const hit = isProtectedRelative(rel);
+    if (hit) return `${rel} (matches "${hit}")`;
+  }
+  return null;
+}
 
 function guardCommand(cmd: string): GuardVerdict {
   const c = cmd.trim();
   if (!c) return { allowed: false, reason: 'empty command' };
   for (const f of FORBIDDEN) {
     if (f.re.test(c)) return { allowed: false, reason: f.reason };
+  }
+  const prot = protectedWriteTarget(c);
+  if (prot) {
+    return {
+      allowed: false,
+      reason:
+        `refuses to write a governance-protected file via the shell: ${prot}. ` +
+        `Protected files are owner-only — the byte-edit tools refuse them and the ` +
+        `shell operator now does too. Ask the owner; do not bypass.`,
+    };
   }
   return { allowed: true };
 }
@@ -109,16 +161,21 @@ interface GitSnapshot {
   headSha: string | null;
   stashSha: string | null;
   dirtyFiles: number;
+  untrackedFiles: number;
 }
 
 function gitSnapshot(cwd: string): GitSnapshot {
   const headSha = tryGit(cwd, ['rev-parse', 'HEAD']);
   const status = tryGit(cwd, ['status', '--porcelain']);
-  const dirtyFiles = status ? status.split('\n').filter((l) => l.trim().length > 0).length : 0;
-  // `git stash create` builds a commit object capturing the dirty tree WITHOUT
-  // touching the working tree or the stash list — a pure, non-destructive snapshot.
+  const lines = status ? status.split('\n').filter((l) => l.trim().length > 0) : [];
+  const dirtyFiles = lines.length;
+  // `git stash create` captures TRACKED + staged content WITHOUT touching the
+  // working tree or stash list — a pure, non-destructive snapshot. It does NOT
+  // capture untracked files, so rollback is tracked-content-only (reported in
+  // the receipt as rollbackScope).
+  const untrackedFiles = lines.filter((l) => l.startsWith('??')).length;
   const stashSha = dirtyFiles > 0 ? tryGit(cwd, ['stash', 'create', 'atomic_exec snapshot']) : null;
-  return { headSha, stashSha, dirtyFiles: dirtyFiles };
+  return { headSha, stashSha, dirtyFiles, untrackedFiles };
 }
 
 function appendTrace(record: Record<string, unknown>): void {
@@ -138,13 +195,18 @@ export function registerToolsExec(server: McpServer): void {
       title: 'Run a shell/git/gh/npm command inside the atomic envelope',
       description:
         'The universal computational-action operator: runs an arbitrary command line via /bin/bash -c, ' +
-        'wrapped in the atomic envelope — cwd containment guard (repo root + registered git worktrees), an ' +
-        'invariant denylist (refuses git restore, --no-verify, skip-ci/codacy tags, prisma db push, ' +
-        'force-push, disk/auditor destroyers), a trace receipt to .atomic/exec-ledger.jsonl, secret ' +
+        'wrapped in the atomic envelope — a starting-directory guard (cwd must resolve inside the repo ' +
+        'root / a registered git worktree; the command body itself is NOT sandboxed), plus a best-effort ' +
+        'denylist (DEFENSE-IN-DEPTH, not an OS sandbox — refuses git restore, --no-verify, skip-ci/codacy ' +
+        'tags, prisma db push, force-push, pipe-to-shell, disk/auditor destroyers, and shell writes to ' +
+        'governance-protected files; env-var/eval/alias indirection can still evade it), a trace receipt ' +
+        'to .atomic/exec-ledger.jsonl, secret ' +
         'redaction on every returned/traced surface, and a hard timeout. Returns the REAL exit code (never ' +
         'fakes success): a non-zero exit comes back as {ok:false, exitCode, stdout, stderr}. Optional opt-in ' +
         'snapshot:true takes a non-destructive `git stash create` restore point; rollbackOnNonZero:true ' +
-        'restores it if the command fails. Use this instead of the banned built-in Bash for git/gh/npm/test ' +
+        'restores TRACKED-file content if the command fails (untracked/new files are NOT removed — the ' +
+        'snapshot is tracked-content-only; the receipt reports rollbackScope). Use this instead of the ' +
+        'banned built-in Bash for git/gh/npm/test ' +
         'orchestration; run mutations inside an isolated worktree for true git-backed reversibility.',
       inputSchema: {
         command: z.string().min(1).describe('shell command line, executed via /bin/bash -c'),
@@ -157,7 +219,7 @@ export function registerToolsExec(server: McpServer): void {
         env: z
           .record(z.string(), z.string())
           .optional()
-          .describe('extra env vars merged over process.env (values are redacted from the trace)'),
+          .describe('extra env vars merged over process.env (NOT written to the trace; their values are masked from returned stdout/stderr)'),
         intent: z.string().optional().describe('one-line product intent, recorded in the trace'),
         snapshot: z
           .boolean()
@@ -208,14 +270,26 @@ export function registerToolsExec(server: McpServer): void {
         }
 
         const exitCode = res.status;
-        const stdout = capText(redactSecrets(res.stdout ?? ''));
-        const stderr = capText(redactSecrets(res.stderr ?? ''));
+        // Redact BOTH known token shapes AND any caller-supplied env value (a
+        // secret passed via env and echoed by the command would otherwise leak).
+        const envVals = Object.values(a.env ?? {}).filter((v) => v && v.length >= 6);
+        const redactAll = (s: string): string => {
+          let out = redactSecrets(s);
+          for (const v of envVals) out = out.split(v).join('[REDACTED_ENV_VALUE]');
+          return out;
+        };
+        const stdout = capText(redactAll(res.stdout ?? ''));
+        const stderr = capText(redactAll(res.stderr ?? ''));
 
         let rolledBack = false;
+        // tracked-content-only: `git checkout <stash> -- .` restores tracked file
+        // content but does NOT delete files the failed command newly created.
+        let rollbackScope: 'none' | 'tracked-content-only' = 'none';
         if (snap && snap.stashSha && exitCode !== 0 && a.rollbackOnNonZero) {
           try {
             childProcess.execFileSync('git', ['-C', cwd, 'checkout', snap.stashSha, '--', '.'], { stdio: 'ignore' });
             rolledBack = true;
+            rollbackScope = 'tracked-content-only';
           } catch {
             rolledBack = false;
           }
@@ -248,6 +322,7 @@ export function registerToolsExec(server: McpServer): void {
           stderrTruncated: stderr.truncated,
           snapshot: snap,
           rolledBack,
+          rollbackScope,
           atomicEnvelope: {
             guarded: true,
             traced: true,

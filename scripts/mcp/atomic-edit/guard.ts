@@ -135,7 +135,7 @@ const PROTECTED_FILES = new Set<string>([
 ]);
 
 /** Repo-relative prefixes/globs that are protected directory-wide. */
-function isProtectedRelative(rel: string): string | null {
+export function isProtectedRelative(rel: string): string | null {
   if (PROTECTED_FILES.has(rel)) return rel;
   if (rel.startsWith("ops/") && rel.endsWith(".json")) return "ops/*.json";
   if (/^scripts\/ops\/check-[^/]+\.mjs$/.test(rel)) return "scripts/ops/check-*.mjs";
