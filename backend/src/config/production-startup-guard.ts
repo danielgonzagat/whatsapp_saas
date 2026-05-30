@@ -35,7 +35,12 @@ export function assertProductionStartupSecrets(env: StartupEnv = process.env): v
   }
 
   const testModeStripeSecrets = Object.entries(PRODUCTION_LIVE_PREFIXES)
-    .filter(([name, prefix]) => !String(env[name] || '').trim().startsWith(prefix))
+    .filter(
+      ([name, prefix]) =>
+        !String(env[name] || '')
+          .trim()
+          .startsWith(prefix),
+    )
     .map(([name, prefix]) => `${name} (expected prefix ${prefix})`);
 
   if (testModeStripeSecrets.length > 0) {

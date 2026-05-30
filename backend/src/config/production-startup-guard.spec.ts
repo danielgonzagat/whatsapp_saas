@@ -74,4 +74,15 @@ describe('assertProductionStartupSecrets', () => {
       }),
     ).toThrow(/STRIPE_PUBLISHABLE_KEY \(expected prefix pk_live_\)/);
   });
+
+  it('reports every test-mode Stripe key in one error', () => {
+    expect(() =>
+      assertProductionStartupSecrets({
+        NODE_ENV: 'production',
+        ...completeProductionEnv(),
+        STRIPE_SECRET_KEY: ['sk', 'test', 'x'].join('_'),
+        STRIPE_PUBLISHABLE_KEY: ['pk', 'test', 'x'].join('_'),
+      }),
+    ).toThrow(/STRIPE_SECRET_KEY .*sk_live_.*STRIPE_PUBLISHABLE_KEY .*pk_live_/s);
+  });
 });
