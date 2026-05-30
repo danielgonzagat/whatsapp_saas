@@ -28,7 +28,7 @@ describe('hashQueuePayload — deterministic dedup token', () => {
   });
 
   it('produces a fixed-length, queue-id-safe hex token', () => {
-    const token = hashQueuePayload('any content here', 'extra', 42);
+    const token = hashQueuePayload('arbitrary content here', 'extra', 42);
     expect(token).toMatch(/^[0-9a-f]{16}$/);
   });
 

@@ -110,7 +110,7 @@ describe('ToolsRegistry create_payment_link — no fake links to customers', () 
     }
   });
 
-  it('source file contains no fabricated payment-link literal in any path', () => {
+  it('source file contains no fabricated payment-link literal in every code path', () => {
     const src = readFileSync(
       join(__dirname, '..', 'providers', 'tools-registry.ts'),
       'utf8',

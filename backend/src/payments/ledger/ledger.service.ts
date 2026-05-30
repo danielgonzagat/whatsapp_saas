@@ -11,6 +11,10 @@ import { FINANCIAL_TRANSACTION_OPTIONS, logLedgerWrite } from './ledger-audit.he
 import { creditAvailableByAdjustmentImpl } from './ledger-adjustments.helper';
 import { isLedgerIdempotencyRecoveryCode, mapBalanceToSnapshot } from './ledger-entry.helper';
 import {
+  emitPaymentSpineEvent,
+  type LedgerSpineEventName,
+} from './ledger.spine-events.helpers';
+import {
   applyAbsorptionDebit,
   assertPositiveAmount,
   buildAbsorptionMetadata,
@@ -63,51 +67,14 @@ export class LedgerService {
     @Optional() private readonly spine?: SpineEmitterService,
   ) {}
 
-  /**
-   * Emit a canonical commerce.payment.* spine event AFTER the ledger
-   * transaction has already committed successfully. Emission is
-   * fire-and-forget and never throws — the money path is sacred, exactly
-   * as documented on {@link SpineEmitterService}. A missing spine (DI
-   * @Optional) is a silent no-op so this stays decoupled from MIND wiring.
-   *
-   * This does NOT mutate any balance, amount, or ledger row — it only
-   * publishes a read-only signal so downstream cognitive consumers
-   * (analytics, autopilot, brain/mind) observe payment state changes.
-   */
+  /** Delegates to the pure {@link emitPaymentSpineEvent} helper. */
   private emitPaymentSpineEvent(
-    eventName:
-      | 'commerce.payment.approved'
-      | 'commerce.payment.refunded'
-      | 'commerce.payment.charged_back',
+    eventName: LedgerSpineEventName,
     entry: ConnectLedgerEntry,
     workspaceId: string,
     payload: Readonly<Record<string, unknown>>,
   ): void {
-    if (!this.spine) {
-      return;
-    }
-    void this.spine
-      .emit({
-        eventName,
-        workspaceId,
-        entityRef: { entityType: 'ledger_entry', entityId: entry.id },
-        truthMode: 'observed',
-        provenance: {
-          source: 'production',
-          processor: 'ledger-service',
-          processorVersion: '1.0.0',
-          schemaVersion: '1.0.0',
-        },
-        payload: {
-          ledgerEntryId: entry.id,
-          accountBalanceId: entry.accountBalanceId,
-          amountCents: entry.amountCents.toString(),
-          referenceType: entry.referenceType,
-          referenceId: entry.referenceId,
-          ...payload,
-        },
-      })
-      .catch(() => undefined);
+    emitPaymentSpineEvent(this.spine, eventName, entry, workspaceId, payload);
   }
 
   /**
