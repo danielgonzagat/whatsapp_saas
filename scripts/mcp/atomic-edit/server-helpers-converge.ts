@@ -16,6 +16,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { validate as treeValidate } from './native-bridge.js';
+import { extractImportSpecifiers } from './connection-gate.js';
 
 export interface Mutation {
   /** repo-relative path */
@@ -63,14 +64,6 @@ async function gateSyntax(overlay: Overlay): Promise<GateResult> {
 function existsInTree(repoRoot: string, overlay: Overlay, rel: string): boolean {
   if (overlay.has(rel)) return true;
   return fs.existsSync(path.join(repoRoot, rel));
-}
-
-function extractImportSpecifiers(content: string): string[] {
-  const specs: string[] = [];
-  const re = /\bfrom\s+['"]([^'"]+)['"]|\brequire\s*\(\s*['"]([^'"]+)['"]|^\s*import\s+['"]([^'"]+)['"]/gm;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(content)) !== null) specs.push(m[1] ?? m[2] ?? m[3]);
-  return specs;
 }
 
 /** Resolve a RELATIVE import against the overlay+disk. Packages/builtins are out of scope (not a dangling-wire fact we can assert). */

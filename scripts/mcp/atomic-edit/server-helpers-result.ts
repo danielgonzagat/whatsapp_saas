@@ -73,6 +73,9 @@ export function commit(
       ...targetDetails(absPath, relPath),
     });
   }
+  // NOTE: the connection gate is NOT applied here — it lives at the byte floor
+  // (atomicWrite in server-helpers-io), so EVERY write path is covered, not just
+  // commit(). This keeps a single immutable chokepoint instead of a per-tool guard.
   const level = levelFor(preview);
   const operator = String(
     (extra as Record<string, unknown>).op ??

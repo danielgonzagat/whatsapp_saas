@@ -10,6 +10,27 @@ a build.
 | **atomic-only** (enforce) | `scripts/mcp/atomic-edit/atomic-only-hook.mjs` | Denies native `Edit`/`Write`/`MultiEdit`/`NotebookEdit`/`apply_patch` on **code** files, and `Bash` commands that mutate code in place (`sed -i`, `> file.ts`, `cat > file.ts`, `cp/mv onto code`, inline `node -e writeFileSync`, …). Pure prose (`.md`/`.txt`) passes. **Fail-closed**: unparseable/empty stdin → deny. |
 | **bypass-observer** (measure) | `scripts/mcp/atomic-edit/bypass-observer-hook.mjs` | Read-only ledger of every tool call to `.atomic/bypass-ledger.jsonl`, classified by `bypass-classify.mjs`. Powers `node bypass-report.mjs` → the bypass-rate metric. **Fail-open** (never blocks). |
 
+## Convergence is built in — no wiring, no flag, no toggle
+
+The two hooks above are the **outer ring** (route mutations through the MCP). The
+**inner ring** needs no wiring: every atomic write funnels through one byte-write
+floor (`atomicWrite` in `server-helpers-io.ts`), which refuses any write that
+would **introduce a dangling relative import**. It is unconditional — there is no
+env var, no flag, and no code path that writes around it (`atomic_converge` and
+every other tool call the same floor). A mutation that would leave a wire
+resolving to nothing is not committed: the agent can only persist a *connected*
+tree.
+
+- Multi-file atomic sets (`atomic_converge`, transactions, cross-file rename)
+  register their whole target set as **pending** before writing, so a set that
+  legitimately wires `A → a-brand-new-B` is judged as a whole, not false-reddened
+  by the order the firewall happens to write the files.
+- Only **NEW** wires are a write's claim: a pre-existing dangling import in a
+  legacy file never blocks an unrelated edit (essential for ungated repos), but no
+  write may *introduce* one.
+- Proven permanently by the smoke suite (`byte-floor REFUSES…` / `byte-floor
+  COMMITS…`), so it cannot silently regress.
+
 ## Wire both — paste into `.claude/settings.json`
 
 ```jsonc

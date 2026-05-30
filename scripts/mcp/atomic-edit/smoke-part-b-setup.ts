@@ -1,4 +1,5 @@
 import * as fs from "node:fs";
+import * as path from "node:path";
 import { check, sha, type PartBCtx } from "./smoke-state.js";
 
 
@@ -171,5 +172,37 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
       badSha.isError === true && /sha256 mismatch/.test(badSha.content[0].text),
       badSha.content[0].text,
     );
+
+    // ── Inescapable convergence at the byte floor (immutable; no env, no flag) ──
+    // EVERY write funnels through atomicWrite, which refuses any write that would
+    // INTRODUCE a dangling relative import — and commits one whose import resolves.
+    // Uses its own throwaway file so the shared fixture is untouched.
+    const convRel = path.join('scripts', 'mcp', 'atomic-edit', `.smoke-converge.${process.pid}.ts`);
+    const convAbs = path.join(repoRoot, convRel);
+    fs.writeFileSync(convAbs, 'export const y = 1;\n');
+    try {
+      const dangle = (await client.callTool({
+        name: 'atomic_add_import',
+        arguments: { file: convRel, module: './does_not_exist_zzz', name: 'Nope' },
+      })) as { content: { text: string }[]; isError?: boolean };
+      const dangleText = dangle.content.map((p) => p.text).join('\n');
+      check(
+        'byte-floor REFUSES a write that introduces a dangling relative import',
+        (dangle.isError === true || /refused \(convergence\)/.test(dangleText)) &&
+          fs.readFileSync(convAbs, 'utf8') === 'export const y = 1;\n',
+        dangleText,
+      );
+      const resolved = (await client.callTool({
+        name: 'atomic_add_import',
+        arguments: { file: convRel, module: './engine', name: 'applyEdits' },
+      })) as { content: { text: string }[]; isError?: boolean };
+      check(
+        'byte-floor COMMITS a write whose relative import resolves',
+        resolved.isError !== true && /from ['"]\.\/engine['"]/.test(fs.readFileSync(convAbs, 'utf8')),
+        resolved.content.map((p) => p.text).join('\n'),
+      );
+    } finally {
+      if (fs.existsSync(convAbs)) fs.unlinkSync(convAbs);
+    }
 
 }

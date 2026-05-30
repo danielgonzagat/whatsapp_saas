@@ -2,6 +2,7 @@ import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { resolveAllowedRootForAbsolutePath, REPO_ROOT } from './guard.js';
+import { checkConnectionByteFloor } from './connection-gate.js';
 
 export const sha256 = (s: string): string => crypto.createHash('sha256').update(s).digest('hex');
 
@@ -23,6 +24,19 @@ export const log = (...a: unknown[]): void => {
 
 /** Atomic durable write: temp file in same dir, fsync, rename. */
 export function atomicWrite(absPath: string, content: string): void {
+  // ── Inescapable convergence, at the byte floor — immutable by architecture ──
+  // EVERY write, through EVERY tool, funnels through here. A source file that
+  // would INTRODUCE a dangling relative import never reaches disk. There is no
+  // env, no flag, no toggle, and no code path that writes around this — that is
+  // the point: the agent can only persist a connected tree.
+  const conn = checkConnectionByteFloor(absPath, content);
+  if (!conn.green) {
+    throw new Error(
+      `refused (convergence): this write would introduce dangling relative import(s) — ` +
+        `${conn.reds.slice(0, 5).join(', ')}. A wire that resolves to nothing is not a change. ` +
+        `Create the target first, or commit the set together (atomic_converge / a transaction). NOT written.`,
+    );
+  }
   const dir = path.dirname(absPath);
   const tmp = path.join(dir, `.atomic-edit.${process.pid}.${Date.now()}.tmp`);
   // Preserve the original file's mode: a temp-file + rename replaces the inode,

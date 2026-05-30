@@ -22,6 +22,7 @@ import { readUtf8, atomicWrite, log } from './server-helpers-io.js';
 import { buildTrace, writeTrace } from './trace.js';
 import { characterDiff } from './advanced.js';
 import { ok, fail, type ToolOk } from './server-helpers-result.js';
+import { registerPendingWrites, clearPendingWrites } from './connection-gate.js';
 import * as path from 'node:path';
 
 export interface MultiFileEntry {
@@ -134,6 +135,9 @@ export function applyMultiFilePlan(
 
   // Phase 2 — write all; roll back written files if any write throws.
   const written: { absPath: string; before: string }[] = [];
+  // The transaction is one atomic set: register every target as pending so the
+  // byte-floor connection gate judges the set as a whole, not file-by-file.
+  registerPendingWrites(staged.map((s) => s.absPath));
   try {
     for (const s of staged) {
       if (s.result.newText === s.before) continue;
@@ -152,6 +156,8 @@ export function applyMultiFilePlan(
       `transaction write failed; rolled back ${written.length} file(s): ` +
         (writeErr instanceof Error ? writeErr.message : String(writeErr)),
     );
+  } finally {
+    clearPendingWrites();
   }
 
   const traceRefs: string[] = [];
@@ -194,6 +200,9 @@ export function writeWholeFilePlan(
     return { rel, absPath, before: readUtf8(absPath), after };
   });
   const written: { absPath: string; before: string }[] = [];
+  // Cross-file plan is one atomic set: register every target as pending so the
+  // byte-floor connection gate sees the whole set (rewired paths resolve together).
+  registerPendingWrites(entries.map((e) => e.absPath));
   try {
     for (const e of entries) {
       if (e.after === e.before) continue;
@@ -212,6 +221,8 @@ export function writeWholeFilePlan(
       `cross-file write failed; rolled back ${written.length} file(s): ` +
         (writeErr instanceof Error ? writeErr.message : String(writeErr)),
     );
+  } finally {
+    clearPendingWrites();
   }
   const traceRefs: string[] = [];
   for (const e of entries) {

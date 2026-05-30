@@ -18,6 +18,7 @@ import { atomicWrite, readUtf8 } from './server-helpers-io.js';
 import { ok, fail } from './server-helpers-result.js';
 import { convergeStatic, type Mutation } from './server-helpers-converge.js';
 import { captureEffectSnapshot, diffEffect, rollbackEffect } from './server-helpers-effect.js';
+import { registerPendingWrites, clearPendingWrites } from './connection-gate.js';
 
 export function registerToolsConverge(server: McpServer): void {
   server.registerTool(
@@ -83,10 +84,18 @@ export function registerToolsConverge(server: McpServer): void {
         // ── apply through the firewall (snapshot first for the effect gate) ──
         const effectSnap = a.effectCommand ? captureEffectSnapshot(repoRoot) : null;
         const written: string[] = [];
-        for (const m of mutations) {
-          const { absPath, relPath } = resolveSafeTarget(m.file);
-          atomicWrite(absPath, m.newText);
-          written.push(relPath);
+        const targets = mutations.map((m) => ({ ...resolveSafeTarget(m.file), newText: m.newText }));
+        // Register the whole set as pending so the byte-floor connection gate sees
+        // the files this atomic set is about to create (A may legitimately import a
+        // brand-new B written later in the same loop). Cleared unconditionally.
+        registerPendingWrites(targets.map((t) => t.absPath));
+        try {
+          for (const t of targets) {
+            atomicWrite(t.absPath, t.newText);
+            written.push(t.relPath);
+          }
+        } finally {
+          clearPendingWrites();
         }
 
         // ── dynamic effect gate: run it; revert byte-exact on red ──
