@@ -17,6 +17,7 @@ import { shaArg } from './server-helpers-schema.js';
 import { matchesGlob, matchesGlobPart, globFindFiles } from './server-helpers-glob.js';
 import { commitSemantic } from './server-helpers-commit-semantic.js';
 import { applyMultiFilePlan, type MultiFileEntry } from './server-helpers-multifile.js';
+import { fileURLToPath } from 'node:url';
 
 export function registerToolsF(server: McpServer): void {
 server.registerTool(
@@ -109,4 +110,33 @@ server.registerTool(
   },
 );
 
+  server.registerTool(
+    'atomic_bypass_report',
+    {
+      title: 'Bypass-rate report — how often the agent left atomic for Bash/Edit',
+      description:
+        'Reads .atomic/bypass-ledger.jsonl and returns the bypass-rate: detectable opportunities where a ' +
+        'factory/Bash tool was used though an atomic tool existed, split into silentlyAllowedBypasses (the ' +
+        'signal to drive to zero) and preventedByDenyHook. The ledger is populated by bypass-observer-hook.mjs, ' +
+        'wired into .claude/settings.json PreToolUse (owner-gated). Empty ledger -> 0 opportunities.',
+      inputSchema: {
+        since: z.number().int().optional().describe('only count records at/after this epoch-ms'),
+      },
+    },
+    async (a) => {
+      try {
+        const script = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'bypass-report.mjs');
+        const flags = a.since ? `--json --since=${a.since}` : '--json';
+        const out = childProcess.execSync(`node "${script}" ${flags}`, {
+          cwd: REPO_ROOT,
+          encoding: 'utf8',
+          timeout: 10000,
+          stdio: 'pipe',
+        });
+        return ok(JSON.parse(out));
+      } catch (e) {
+        return fail(e instanceof Error ? e.message : String(e));
+      }
+    },
+  );
 }

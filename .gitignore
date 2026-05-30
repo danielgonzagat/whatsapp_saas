@@ -92,6 +92,7 @@ scripts/mcp/atomic-edit/.smoke-fixture.*
 # atomic-edit operation traces (per-call audit logs; aggregate via
 .atomic/traces/
 .atomic/macro-traces/
+.atomic/bypass-ledger.jsonl
 # claude code session locks
 .claude/scheduled_tasks.lock
 graphify-out/
