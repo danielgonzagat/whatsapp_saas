@@ -46,9 +46,27 @@ export default function LeadsPage() {
     return labels[source] || '';
   }, [source]);
 
+  const deepLinkMatchId = useMemo(() => {
+    if (!leads.length) {
+      return null;
+    }
+    const normalize = (value?: string | null) => (value || '').replace(D_RE, '');
+    const matched =
+      (requestedLeadId ? leads.find((lead) => lead.id === requestedLeadId) : null) ||
+      (requestedPhone
+        ? leads.find((lead) => normalize(lead.phone).includes(normalize(requestedPhone)))
+        : null) ||
+      (requestedEmail
+        ? leads.find((lead) => (lead.email || '').toLowerCase() === requestedEmail.toLowerCase())
+        : null);
+    return matched?.id ?? null;
+  }, [leads, requestedEmail, requestedLeadId, requestedPhone]);
+
+  const effectiveSelectedLeadId = deepLinkMatchId ?? selectedLeadId;
+
   const selectedLead = useMemo(
-    () => leads.find((l) => l.id === selectedLeadId) || null,
-    [leads, selectedLeadId],
+    () => leads.find((l) => l.id === effectiveSelectedLeadId) || null,
+    [leads, effectiveSelectedLeadId],
   );
 
   const refreshLeads = useCallback(
@@ -89,9 +107,13 @@ export default function LeadsPage() {
   );
 
   useEffect(() => {
-    if (!isLoading && isAuthenticated && workspaceId) {
-      void refreshLeads();
+    if (isLoading || !isAuthenticated || !workspaceId) {
+      return;
     }
+    const handle = setTimeout(() => {
+      void refreshLeads();
+    }, 0);
+    return () => clearTimeout(handle);
   }, [isAuthenticated, isLoading, refreshLeads, workspaceId]);
 
   useEffect(() => {
@@ -103,25 +125,6 @@ export default function LeadsPage() {
     }, 350);
     return () => clearTimeout(handle);
   }, [isAuthenticated, refreshLeads, searchTerm, status, workspaceId]);
-
-  useEffect(() => {
-    if (!leads.length) {
-      return;
-    }
-    const normalize = (value?: string | null) => (value || '').replace(D_RE, '');
-    const matchedLead =
-      (requestedLeadId ? leads.find((lead) => lead.id === requestedLeadId) : null) ||
-      (requestedPhone
-        ? leads.find((lead) => normalize(lead.phone).includes(normalize(requestedPhone)))
-        : null) ||
-      (requestedEmail
-        ? leads.find((lead) => (lead.email || '').toLowerCase() === requestedEmail.toLowerCase())
-        : null);
-
-    if (matchedLead?.id && matchedLead.id !== selectedLeadId) {
-      setSelectedLeadId(matchedLead.id);
-    }
-  }, [leads, requestedEmail, requestedLeadId, requestedPhone, selectedLeadId]);
 
   const filteredLeads = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
@@ -242,7 +245,7 @@ export default function LeadsPage() {
           onSearchChange={setSearchTerm}
           status={status}
           onStatusChange={setStatus}
-          selectedLeadId={selectedLeadId}
+          selectedLeadId={effectiveSelectedLeadId}
           onSelectLead={setSelectedLeadId}
           source={source}
         />
