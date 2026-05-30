@@ -75,6 +75,7 @@ export async function runGates(
   repoRoot: string,
   overlay: Map<string, string>,
   changedFiles: string[],
+  lensMode = false,
 ): Promise<RegistryRun> {
   const reds: UnifiedRed[] = [];
   const unjudged: string[] = [];
@@ -83,7 +84,7 @@ export async function runGates(
     if (!changedFiles.some((f) => g.appliesTo(f))) continue;
     ran.push(g.name);
     try {
-      const res = await Promise.resolve(g.run(makeContext(repoRoot, overlay, changedFiles)));
+      const res = await Promise.resolve(g.run(makeContext(repoRoot, overlay, changedFiles, lensMode)));
       if (res.unjudged) {
         unjudged.push(g.name);
         continue;

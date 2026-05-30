@@ -51,6 +51,14 @@ export interface GateContext {
   readFile(rel: string): string | null;
   /** shared relative-module resolver: returns the resolved repo-relative path, or null if it dangles / is bare */
   resolveRelImport(fromRel: string, spec: string): string | null;
+  /**
+   * Pre-write content for NEW-only delta semantics. WRITE direction: the file's
+   * prior disk bytes (so a gate judges only wires THIS write introduces). LENS
+   * (read) direction: always '' — committed bytes have no "prior", so every wire
+   * is judged absolutely. Gates MUST read their before-content through this, not
+   * via their own disk read, so the lens can make them absolute.
+   */
+  priorOf(rel: string): string;
 }
 
 export interface GateModule {
@@ -72,8 +80,17 @@ export function makeContext(
   repoRoot: string,
   overlay: Map<string, string>,
   changedFiles: string[],
+  lensMode = false,
 ): GateContext {
   const norm = (p: string): string => p.replaceAll('\\', '/');
+  const priorOf = (rel: string): string => {
+    if (lensMode) return ''; // lens judges committed bytes absolutely — no prior
+    try {
+      return fs.readFileSync(path.join(repoRoot, rel), 'utf8');
+    } catch {
+      return ''; // brand-new file → no prior → every wire is this write's claim
+    }
+  };
   const existsInTree = (rel: string): boolean =>
     overlay.has(norm(rel)) || fs.existsSync(path.join(repoRoot, rel));
   const readFile = (rel: string): string | null => {
@@ -95,5 +112,5 @@ export function makeContext(
     if (base.endsWith('.js')) cands.push(`${base.slice(0, -3)}.ts`, `${base.slice(0, -3)}.tsx`);
     return cands.find((c) => existsInTree(c)) ?? null;
   };
-  return { repoRoot, overlay, changedFiles, existsInTree, readFile, resolveRelImport };
+  return { repoRoot, overlay, changedFiles, existsInTree, readFile, resolveRelImport, priorOf };
 }

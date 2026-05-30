@@ -38,22 +38,12 @@ import {
   type GateResult,
   type GateRed,
 } from './contract.js';
+import { extractImportSpecifiers } from '../connection-gate.js';
 
 const SOURCE_RE = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
 
-/**
- * Extract every import specifier (the `from '...'`, `require('...')`,
- * bare `import '...'` string). Identical shape to connection-gate's extractor so
- * the two halves of the import edge are read the same way.
- */
-function extractImportSpecifiers(content: string): string[] {
-  const specs: string[] = [];
-  const re =
-    /\bfrom\s+['"]([^'"]+)['"]|\brequire\s*\(\s*['"]([^'"]+)['"]|^\s*import\s+['"]([^'"]+)['"]/gm;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(content)) !== null) specs.push(m[1] ?? m[2] ?? m[3]);
-  return specs;
-}
+// extractImportSpecifiers is imported from ../connection-gate (comment-blanked,
+// the single source of truth) so both halves of the import edge read identically.
 
 /**
  * The package root a bare specifier resolves against:
@@ -157,7 +147,7 @@ const supplyChainGate: GateModule = {
       if (!SOURCE_RE.test(rel)) continue;
       const newText = ctx.overlay.get(rel.replaceAll('\\', '/')) ?? ctx.readFile(rel);
       if (newText === null) continue;
-      const before = new Set(extractImportSpecifiers(priorDiskContent(ctx.repoRoot, rel)));
+      const before = new Set(extractImportSpecifiers(ctx.priorOf(rel)));
       for (const spec of extractImportSpecifiers(newText)) {
         if (before.has(spec)) continue; // unchanged wire — not this write's claim
         if (spec.startsWith('.')) continue; // relative half — connection-gate's fact

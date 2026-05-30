@@ -43,6 +43,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { type GateContext, type GateModule, type GateRed, type GateResult } from './contract.js';
+import { blankComments } from '../connection-gate.js';
 
 const SOURCE_RE = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
 const CONTROLLER_RE = /\.controller\.(ts|js)$/;
@@ -259,12 +260,13 @@ function run(ctx: GateContext): GateResult {
     if (!SOURCE_RE.test(rel)) continue;
     const now = ctx.readFile(rel);
     if (now === null) continue;
-    const before = priorContent(ctx, rel);
-    const beforeHttp = new Set(before === null ? [] : extractHttpConsumerPaths(before));
-    const beforeEvt = new Set(before === null ? [] : extractOnEventListeners(before));
+    const nowCode = blankComments(now);
+    const before = blankComments(ctx.priorOf(rel));
+    const beforeHttp = new Set(extractHttpConsumerPaths(before));
+    const beforeEvt = new Set(extractOnEventListeners(before));
 
     // ── HTTP consumer edges ──
-    for (const raw of extractHttpConsumerPaths(now)) {
+    for (const raw of extractHttpConsumerPaths(nowCode)) {
       if (beforeHttp.has(raw)) continue; // not this write's claim
       if (!raw.startsWith('/')) continue; // relative/external/proxy-composed → not a backend path we own
       const segs = normSegs(raw);
@@ -284,7 +286,7 @@ function run(ctx: GateContext): GateResult {
     }
 
     // ── EVENT consumer edges (@OnEvent listeners) ──
-    for (const name of extractOnEventListeners(now)) {
+    for (const name of extractOnEventListeners(nowCode)) {
       if (beforeEvt.has(name)) continue;
       if (eventProducers === null) eventProducers = buildEventProducers(ctx);
       judgedAny = true;

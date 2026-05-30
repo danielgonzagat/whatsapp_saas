@@ -277,12 +277,7 @@ const renderConformanceGate: GateModule = {
 
       // NEW-affordance-only: prior content = direct disk read (overlay holds the
       // new text). A brand-new file has no prior → every affordance is new.
-      let priorText = '';
-      try {
-        priorText = fs.readFileSync(path.join(ctx.repoRoot, rel), 'utf8');
-      } catch {
-        priorText = '';
-      }
+      const priorText = ctx.priorOf(rel);
       const priorKeys = new Set(
         extractAffordances(priorText).map((a) => `${a.kind}:${a.target}`),
       );

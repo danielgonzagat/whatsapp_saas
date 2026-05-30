@@ -37,11 +37,57 @@ export function clearPendingWrites(): void {
   pending.clear();
 }
 
+/**
+ * Length-preserving blanking of // and block comments ONLY (never string literals —
+ * import specifiers live in strings, so blanking those would erase real imports;
+ * never `#` — it is a private-field / hashbang in JS/TS, not a comment). String
+ * literals are SKIPPED OVER (preserved) so a `//` inside a URL string is not mistaken
+ * for a comment. This removes comment-embedded false matches like a `from './x'`
+ * written in a doc comment, the dominant cross-gate false-positive source the lens
+ * exposed. Residual: a code-pattern embedded in a TEMPLATE/STRING literal (meta-code
+ * that builds such strings) still matches — that needs token-correct parsing.
+ */
+export function blankComments(text: string): string {
+  const out = text.split('');
+  const n = text.length;
+  let i = 0;
+  const blankTo = (end: number): void => {
+    for (let k = i; k < end && k < n; k += 1) if (out[k] !== '\n') out[k] = ' ';
+  };
+  while (i < n) {
+    const c = text[i];
+    const c2 = text[i + 1];
+    if (c === '/' && c2 === '/') {
+      let j = i + 2;
+      while (j < n && text[j] !== '\n') j += 1;
+      blankTo(j);
+      i = j;
+    } else if (c === '/' && c2 === '*') {
+      let j = i + 2;
+      while (j < n && !(text[j] === '*' && text[j + 1] === '/')) j += 1;
+      j = Math.min(j + 2, n);
+      blankTo(j);
+      i = j;
+    } else if (c === '"' || c === "'" || c === '`') {
+      let j = i + 1; // skip OVER the string (preserve it — specifiers live here)
+      while (j < n && text[j] !== c) {
+        if (text[j] === '\\') j += 1;
+        j += 1;
+      }
+      i = Math.min(j + 1, n);
+    } else {
+      i += 1;
+    }
+  }
+  return out.join('');
+}
+
 export function extractImportSpecifiers(content: string): string[] {
+  const code = blankComments(content);
   const specs: string[] = [];
   const re = /\bfrom\s+['"]([^'"]+)['"]|\brequire\s*\(\s*['"]([^'"]+)['"]|^\s*import\s+['"]([^'"]+)['"]/gm;
   let m: RegExpExecArray | null;
-  while ((m = re.exec(content)) !== null) specs.push(m[1] ?? m[2] ?? m[3]);
+  while ((m = re.exec(code)) !== null) specs.push(m[1] ?? m[2] ?? m[3]);
   return specs;
 }
 

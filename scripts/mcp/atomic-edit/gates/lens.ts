@@ -58,7 +58,7 @@ export interface LensReport {
 export async function runLens(repoRoot: string, scopeRel: string): Promise<LensReport> {
   const scopeAbs = path.resolve(repoRoot, scopeRel);
   const files = enumerateSource(repoRoot, scopeAbs);
-  const run = await runGates(LENS_GATES, repoRoot, new Map<string, string>(), files);
+  const run = await runGates(LENS_GATES, repoRoot, new Map<string, string>(), files, true);
   return { scanned: files.length, reds: run.reds, unjudged: run.unjudged, ran: run.ran };
 }
 

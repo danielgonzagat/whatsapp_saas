@@ -236,8 +236,8 @@ function runFindingsDelta(ctx: GateContext): GateResult {
     // prior bytes = on-disk content. The overlay is the candidate; disk (via a
     // direct read that bypasses the overlay) is the "before". If the file is new
     // there is no prior, so every finding is new.
-    const prior = priorContent(ctx, rel);
-    const before = prior == null ? new Map<string, number>() : keyCounts(analyzePureText(prior));
+    const prior = ctx.priorOf(rel);
+    const before = keyCounts(analyzePureText(prior));
     const after = keyCounts(analyzePureText(candidate));
 
     for (const [key, afterN] of after) {

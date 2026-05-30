@@ -250,7 +250,7 @@ const iacReferenceGate: GateModule = {
       for (const rel of tfFiles) {
         const body = ctx.readFile(rel);
         if (body === null) continue;
-        const before = new Set(collectTfRefs(priorContent(ctx, rel)).map((r) => r.token));
+        const before = new Set(collectTfRefs(ctx.priorOf(rel)).map((r) => r.token));
         for (const ref of collectTfRefs(body)) {
           if (before.has(ref.token)) continue; // not this write's claim
           const universe =
@@ -287,7 +287,7 @@ const iacReferenceGate: GateModule = {
       // target is plausibly defined outside the changed set → honestly out of scope.
       if (workloads.length > 0) {
         for (const [rel, { services, body }] of docsByFile) {
-          const before = priorContent(ctx, rel);
+          const before = ctx.priorOf(rel);
           const beforeSelectors = new Set<string>();
           for (const doc of splitYamlDocs(before)) {
             const tmpWorkloads: K8sWorkload[] = [];
