@@ -27,6 +27,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { REPO_ROOT, resolveAllowedRootForAbsolutePath, isProtectedRelative } from './guard.js';
 import { ok, fail } from './server-helpers-result.js';
+import { captureEffectSnapshot, diffEffect, rollbackEffect, type EffectSnapshot, type FileEffect } from './server-helpers-effect.js';
 
 interface GuardVerdict {
   allowed: boolean;
@@ -229,6 +230,15 @@ export function registerToolsExec(server: McpServer): void {
           .boolean()
           .optional()
           .describe('if a snapshot was taken and exit≠0, restore the working tree from it'),
+        proveEffect: z
+          .boolean()
+          .optional()
+          .describe(
+            'govern the byte-EFFECT (the filesystem-effect substrate): snapshot the file-bytes under cwd before ' +
+              'the command, then report the EXACT per-file changes it made (modified/created/deleted, with char-level ' +
+              'diffs) and enable byte-exact, untracked-inclusive rollback — turns a shell command into a proven, ' +
+              'reversible transaction. Bounded (caps + skips node_modules/.git/dist); sets effect.limitReached on a cap.',
+          ),
       },
     },
     async (a) => {
@@ -242,6 +252,7 @@ export function registerToolsExec(server: McpServer): void {
         }
 
         const snap = a.snapshot ? gitSnapshot(cwd) : null;
+        const effectSnap: EffectSnapshot | null = a.proveEffect ? captureEffectSnapshot(cwd) : null;
         const timeout = a.timeoutMs ?? 120000;
         const res = childProcess.spawnSync('/bin/bash', ['-c', a.command], {
           cwd,
@@ -295,6 +306,16 @@ export function registerToolsExec(server: McpServer): void {
           }
         }
 
+        // Byte-effect substrate: diff the file-bytes the command actually changed,
+        // and (on failure, if asked) reverse them byte-exactly. The filesystem
+        // effect governed as a transaction — independent of the git snapshot, and
+        // untracked-inclusive (it captures created/deleted files git-stash misses).
+        const effects: FileEffect[] | null = effectSnap ? diffEffect(effectSnap) : null;
+        let effectRestored = 0;
+        if (effectSnap && effects && exitCode !== 0 && a.rollbackOnNonZero) {
+          effectRestored = rollbackEffect(effectSnap, effects);
+        }
+
         appendTrace({
           ts: startedAt,
           kind: 'exec',
@@ -323,8 +344,23 @@ export function registerToolsExec(server: McpServer): void {
           snapshot: snap,
           rolledBack,
           rollbackScope,
+          effect: effects
+            ? {
+                changedFiles: effects.length,
+                limitReached: effectSnap?.limitReached ?? false,
+                reversed: effectRestored,
+                files: effects.map((e) => ({
+                  file: e.file,
+                  change: e.change,
+                  bytesBefore: e.bytesBefore,
+                  bytesAfter: e.bytesAfter,
+                  ...(e.atomicDiff ? { atomicDiff: redactAll(e.atomicDiff) } : {}),
+                })),
+              }
+            : null,
           atomicEnvelope: {
             guarded: true,
+            effectProven: Boolean(effectSnap),
             traced: true,
             redacted: true,
             snapshot: Boolean(snap),
