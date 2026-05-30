@@ -327,4 +327,52 @@ export async function validate(code: string, lang?: string): Promise<{ realParse
   return { realParser: true, errorCount: e, parsed: e === 0 };
 }
 
+export interface AstNode {
+  type: string;
+  text: string;
+  byteStart: number;
+  byteEnd: number;
+  line: number;
+  column: number;
+  /** the node's named-child field-name path is omitted for simplicity; callers filter by type */
+}
+
+/**
+ * In-memory AST walk — the perception primitive. Parses `content` with the real
+ * tree-sitter grammar and returns every node (optionally filtered to `types`) with
+ * its exact source span. Because it is the PARSE tree, a token that lives inside a
+ * string literal or a comment has node.type 'string' / 'comment' — never the type
+ * of the thing it textually resembles. That is what makes extraction token-correct
+ * by construction: a `@OnEvent('x')` written inside a template literal is a child of
+ * a `template_string` node, not a `decorator` node, so a decorator query never sees
+ * it. Returns null when no grammar is available (caller degrades / marks unjudged).
+ */
+export async function astNodes(
+  content: string,
+  lang?: string,
+  types?: Set<string>,
+): Promise<AstNode[] | null> {
+  await ensureReady();
+  const parser = await parserFor(lang);
+  if (!parser) return null;
+  const t = parser.parse(content);
+  const out: AstNode[] = [];
+  const stack: TsNode[] = [t.rootNode as TsNode];
+  while (stack.length) {
+    const n = stack.pop() as TsNode;
+    if (!types || types.has(n.type)) {
+      out.push({
+        type: n.type,
+        text: content.slice(n.startIndex, n.endIndex),
+        byteStart: u16ToByte(content, n.startIndex),
+        byteEnd: u16ToByte(content, n.endIndex),
+        line: n.startPosition.row + 1,
+        column: n.startPosition.column + 1,
+      });
+    }
+    for (let i = 0; i < n.childCount; i += 1) stack.push(n.child(i) as TsNode);
+  }
+  return out;
+}
+
 export function disposeNative(): void { /* in-process WASM -- nothing to dispose */ }
