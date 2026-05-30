@@ -2462,6 +2462,7 @@ model MemberEnrollment {
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
+  @@unique([workspaceId, memberAreaId, studentEmail])
   @@index([workspaceId])
   @@index([memberAreaId])
   @@index([studentEmail])

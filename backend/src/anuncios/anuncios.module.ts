@@ -8,10 +8,11 @@ import { AdsSyncProcessor } from '../integrations/ads-sync.processor';
 import { MetaConversionsApiService } from '../integrations/meta-conversions-api.service';
 import { AnunciosController } from './anuncios.controller';
 import { AnunciosService } from './anuncios.service';
+import { GoogleAdsAuthController } from '../google-ads/google-ads-auth.controller';
 
 @Module({
   imports: [PrismaModule, MarketingModule, TikTokAdsModule],
-  controllers: [AnunciosController],
+  controllers: [AnunciosController, GoogleAdsAuthController],
   providers: [
     MetaMarketingProvider,
     GoogleAdsProvider,

@@ -6,6 +6,7 @@ describe('AnunciosController', () => {
     getCampaigns: jest.Mock;
     syncCampaigns: jest.Mock;
     syncAccounts: jest.Mock;
+    completeOAuth: jest.Mock;
   };
   let adsSyncProcessor: {
     getSyncStatus: jest.Mock;
@@ -20,6 +21,7 @@ describe('AnunciosController', () => {
       getCampaigns: jest.fn(),
       syncCampaigns: jest.fn(),
       syncAccounts: jest.fn(),
+      completeOAuth: jest.fn(),
     };
 
     adsSyncProcessor = {
@@ -132,6 +134,49 @@ describe('AnunciosController', () => {
 
       expect(result).toEqual({ data: accounts });
       expect(anunciosService.syncAccounts).toHaveBeenCalledWith('ws-1');
+    });
+  });
+
+  describe('GET /anuncios/callback/:platform', () => {
+    it('exchanges the OAuth code via service.completeOAuth scoped to workspaceId', async () => {
+      anunciosService.completeOAuth.mockResolvedValue({ connected: true, status: 'CONNECTED' });
+
+      const result = await controller.oauthCallback(
+        { workspaceId: 'ws-1' } as never,
+        'google',
+        'auth-code-123',
+      );
+
+      expect(result).toEqual({ data: { connected: true, status: 'CONNECTED' } });
+      expect(anunciosService.completeOAuth).toHaveBeenCalledWith('ws-1', 'google', 'auth-code-123');
+      expect(anunciosService.completeOAuth).toHaveBeenCalledTimes(1);
+    });
+
+    it('returns an honest error state when the provider sends an oauth error', async () => {
+      const result = await controller.oauthCallback(
+        { workspaceId: 'ws-1' } as never,
+        'meta',
+        undefined,
+        'access_denied',
+      );
+
+      expect(result).toEqual({ data: { connected: false, status: 'oauth_error:access_denied' } });
+      expect(anunciosService.completeOAuth).not.toHaveBeenCalled();
+    });
+
+    it('returns missing_code when no code and no error are present', async () => {
+      const result = await controller.oauthCallback({ workspaceId: 'ws-1' } as never, 'tiktok');
+
+      expect(result).toEqual({ data: { connected: false, status: 'missing_code' } });
+      expect(anunciosService.completeOAuth).not.toHaveBeenCalled();
+    });
+
+    it('scopes the code exchange to the authenticated workspace', async () => {
+      anunciosService.completeOAuth.mockResolvedValue({ connected: true, status: 'CONNECTED' });
+
+      await controller.oauthCallback({ workspaceId: 'ws-tenant-x' } as never, 'google', 'code-x');
+
+      expect(anunciosService.completeOAuth).toHaveBeenCalledWith('ws-tenant-x', 'google', 'code-x');
     });
   });
 

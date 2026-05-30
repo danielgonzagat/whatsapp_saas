@@ -8,6 +8,7 @@ import type { PrismaService } from '../prisma/prisma.service';
 import { MemberAreaStatsService } from './member-area-stats.service';
 import { MemberEnrollmentsController } from './member-enrollments.controller';
 import { partialMatch } from '../../test/helpers/match-instance';
+import { Prisma } from '@prisma/client';
 
 type MemberAreaPrismaMock = {
   memberArea: {
@@ -140,5 +141,50 @@ describe('MemberEnrollmentsController', () => {
         where: partialMatch({ memberAreaId: 'area-1', workspaceId: 'ws-1' }),
       }),
     );
+  });
+
+  it('treats a concurrent P2002 unique-violation as already-enrolled instead of duplicating', async () => {
+    prisma.memberArea.findFirst.mockResolvedValue({ id: 'area-1', workspaceId: 'ws-1' });
+    // findFirst sees no existing enrollment (lost the race), but the create
+    // hits the unique constraint because a concurrent request won.
+    prisma.memberEnrollment.findFirst.mockResolvedValue(null);
+    prisma.memberEnrollment.create.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+        code: 'P2002',
+        clientVersion: 'test',
+      }),
+    );
+
+    const request: EnrollmentRequest = {
+      user: { workspaceId: 'ws-1' },
+    } as EnrollmentRequest;
+    const payload: EnrollmentPayload = {
+      studentName: 'Aluno Concorrente',
+      studentEmail: 'race@kloel.test',
+    };
+
+    await expect(controller.enrollStudent(request, 'area-1', payload)).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+
+    // The recompute must not run after a duplicate was rejected.
+    expect(prisma.memberEnrollment.aggregate).not.toHaveBeenCalled();
+  });
+
+  it('rethrows non-P2002 create errors instead of masking them as already-enrolled', async () => {
+    prisma.memberArea.findFirst.mockResolvedValue({ id: 'area-1', workspaceId: 'ws-1' });
+    prisma.memberEnrollment.findFirst.mockResolvedValue(null);
+    const failure = new Error('database unavailable');
+    prisma.memberEnrollment.create.mockRejectedValue(failure);
+
+    const request: EnrollmentRequest = {
+      user: { workspaceId: 'ws-1' },
+    } as EnrollmentRequest;
+    const payload: EnrollmentPayload = {
+      studentName: 'Aluno Falha',
+      studentEmail: 'fail@kloel.test',
+    };
+
+    await expect(controller.enrollStudent(request, 'area-1', payload)).rejects.toBe(failure);
   });
 });

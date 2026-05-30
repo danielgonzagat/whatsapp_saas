@@ -125,6 +125,21 @@ describe('ReportsService', () => {
       const result = await service.getChurn('ws-1', {});
       expect(result.monthly).toEqual([]);
     });
+
+    it('monthly raw query targets the @@map-ed table "RAC_CustomerSubscription"', async () => {
+      prisma.$queryRaw.mockResolvedValue([{ month: 'Jan', total: 3 }]);
+      const result = await service.getChurn('ws-1', { startDate: '2026-01-01' });
+
+      expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+      // $queryRaw is a tagged template: the first arg is the static SQL fragments.
+      const templateParts = (prisma.$queryRaw.mock.calls as unknown[][])[0][0] as string[];
+      const sql = templateParts.join(' ');
+      // The Prisma model `CustomerSubscription` is @@map-ed to "RAC_CustomerSubscription";
+      // the raw SQL MUST reference the physical table, not the model name.
+      expect(sql).toContain('FROM "RAC_CustomerSubscription"');
+      expect(sql).not.toContain('FROM "CustomerSubscription"');
+      expect(result.monthly).toEqual([{ month: 'Jan', total: 3 }]);
+    });
   });
 
   describe('getAssinaturas', () => {

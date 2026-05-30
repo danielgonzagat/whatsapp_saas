@@ -22,6 +22,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { buildProductMetrics } from './product-metrics.helpers';
 import { syncProductToMemory, deleteProductFromMemory } from './product-memory-sync.helpers';
 import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
+import { ProductService } from '../products/product.service';
 import {
   PRODUCT_LIST_TAKE_CAP,
   buildCreateProductData,
@@ -100,6 +101,7 @@ export class ProductController {
     private readonly prisma: PrismaService,
     @Optional() private readonly opsAlert?: OpsAlertService,
     @Optional() private readonly mindMemory?: MindMemoryItemService,
+    @Optional() private readonly productService?: ProductService,
   ) {}
 
   /** Canonical Brain → Mind memory delegate (raw-Prisma fallback). */
@@ -227,16 +229,36 @@ export class ProductController {
       }
     }
 
-    const product = await this.prisma.product.create({
-      data: buildCreateProductData(workspaceId, dto) as Prisma.ProductUncheckedCreateInput,
-    });
+    const createData = buildCreateProductData(workspaceId, dto);
 
-    this.logger.log(`Product created: ${product.id} - ${product.name}`);
+    // Canonical path: delegate persistence to ProductService so the human REST
+    // create fires `commerce.product.*` events + writes the audit entry +
+    // records to the Brain/Mind cognitive spine. The controller still owns the
+    // rich field mapping (buildCreateProductData) and post-write memory sync /
+    // serialization, preserving the existing API contract.
+    const actor = { id: req.user.sub, email: req.user.email };
+    const created = this.productService
+      ? (
+          await this.productService.create(
+            workspaceId,
+            dto as Parameters<ProductService['create']>[1],
+            actor,
+          )
+        ).product
+      : await this.prisma.product.create({
+          data: createData as Prisma.ProductUncheckedCreateInput,
+        });
 
-    await syncProductToMemory(this.prisma, workspaceId, product, this.mindMemoryItems);
+    if (!created) {
+      throw new NotFoundException('Product not found after create');
+    }
+
+    this.logger.log(`Product created: ${created.id} - ${created.name}`);
+
+    await syncProductToMemory(this.prisma, workspaceId, created, this.mindMemoryItems);
 
     return {
-      product: this.serializeProductForResponse(req, product),
+      product: this.serializeProductForResponse(req, created),
       success: true,
     };
   }
@@ -263,13 +285,26 @@ export class ProductController {
 
     validateUpdateProductDto(dto);
 
-    await this.prisma.product.updateMany({
-      where: { id, workspaceId },
-      data: buildUpdateProductData(dto),
-    });
-    const product = await this.prisma.product.findFirst({
-      where: { id, workspaceId },
-    });
+    const updateData = buildUpdateProductData(dto);
+
+    // Canonical path: delegate the write to ProductService so a human REST
+    // update fires `commerce.product.updated` + audit entry + Brain/Mind spine
+    // recording. The controller still owns DTO validation (buildUpdateProductData)
+    // and the post-write memory sync / serialization, preserving the contract.
+    const actor = { id: req.user.sub, email: req.user.email };
+    let product;
+    if (this.productService) {
+      product = (await this.productService.update(workspaceId, id, updateData, actor)).product;
+    } else {
+      await this.prisma.product.updateMany({
+        where: { id, workspaceId },
+        data: updateData,
+      });
+      product =
+        (await this.prisma.product.findFirst({
+          where: { id, workspaceId },
+        })) ?? undefined;
+    }
     if (!product) {
       throw new NotFoundException('Product not found after update');
     }
@@ -296,6 +331,15 @@ export class ProductController {
 
     if (!existing) {
       throw new NotFoundException('Product not found');
+    }
+
+    // Canonical path: delegate to ProductService first so a human REST delete
+    // fires `commerce.product.deleted` + audit entry + Brain/Mind spine
+    // recording. ProductService performs a soft delete (status=DELETED); the
+    // controller then issues its hard delete to preserve the existing
+    // list-visibility + response contract.
+    if (this.productService) {
+      await this.productService.delete(workspaceId, id, { id: req.user.sub });
     }
 
     await this.prisma.product.deleteMany({ where: { id, workspaceId } });

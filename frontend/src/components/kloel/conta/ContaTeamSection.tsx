@@ -4,28 +4,42 @@ import { colors } from '@/lib/design-tokens';
 import { kloelT } from '@/lib/i18n/t';
 import { useState, useId } from 'react';
 import useSWR from 'swr';
-import { swrFetcher } from '@/lib/fetcher';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
-import { inviteTeamMember, removeTeamMember, revokeTeamInvite } from '@/lib/api/team';
+import type { TeamListResponse } from '@/lib/api/team';
+import { inviteTeamMember, listTeam, removeTeamMember, revokeTeamInvite } from '@/lib/api/team';
 import Icons from './ContaIcons';
 import { SORA, EMBER } from './ContaConstants';
 import { getErrorMessage } from './ContaHelpers';
 import { SectionCard } from './ContaShared';
-import { TeamMember, TeamInvite, TeamApiResponse } from './ContaTypes';
+import { TeamMember, TeamInvite } from './ContaTypes';
 
 export function TeamSection() {
   const fid = useId();
   const wsId = useWorkspaceId();
-  const { data, isLoading, mutate } = useSWR<TeamApiResponse>(
+  const { data, isLoading, mutate } = useSWR<TeamListResponse>(
     wsId ? `${wsId}:/team` : null,
-    () => swrFetcher<TeamApiResponse>('/team'),
+    () => listTeam(),
     {
       keepPreviousData: true,
       revalidateOnFocus: false,
     },
   );
-  const members: TeamMember[] = data?.members ?? [];
-  const invites: TeamInvite[] = data?.invites ?? [];
+  // Backend returns { agents, invitations }. Map agents->members (deriving an
+  // honest status from isOnline) and treat every returned invitation as pending
+  // (the backend does not send a status field).
+  const members: TeamMember[] = (data?.agents ?? []).map((agent) => ({
+    id: agent.id,
+    name: agent.name,
+    email: agent.email,
+    role: agent.role,
+    status: agent.isOnline ? 'active' : 'pending',
+  }));
+  const invites: TeamInvite[] = (data?.invitations ?? []).map((inv) => ({
+    id: inv.id,
+    email: inv.email,
+    role: inv.role,
+    status: 'pending',
+  }));
 
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('member');

@@ -4,7 +4,25 @@ import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import type { ReportFilters, SetFilters, SetPage } from './analytics.types';
 
-const VISIBLE_REPORT_TABS = new Set(['vendas', 'abandonos', 'assinaturas', 'estornos']);
+const VISIBLE_REPORT_TABS = new Set([
+  'vendas',
+  'afterpay',
+  'churn',
+  'abandonos',
+  'satisfacao',
+  'afiliados',
+  'indicadores',
+  'assinaturas',
+  'ind_prod',
+  'recusa',
+  'origem',
+  'metricas',
+  'estornos',
+  'chargeback',
+  'engajamento',
+  'envio',
+  'exportacoes',
+]);
 
 export function normalizeVisibleReportTab(tab: string | null | undefined): string {
   return tab && VISIBLE_REPORT_TABS.has(tab) ? tab : 'vendas';

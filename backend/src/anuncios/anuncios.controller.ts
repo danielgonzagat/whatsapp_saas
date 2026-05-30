@@ -76,6 +76,25 @@ export class AnunciosController {
     return { data: result };
   }
 
+  @WebhookEndpoint('ads oauth callback completion')
+  @Get('callback/:platform')
+  async oauthCallback(
+    @Req() req: Request,
+    @Param('platform') platform: string,
+    @Query('code') code?: string,
+    @Query('error') error?: string,
+  ) {
+    const wsId = this.workspaceId(req);
+    if (error) {
+      return { data: { connected: false, status: `oauth_error:${error}` } };
+    }
+    if (!code) {
+      return { data: { connected: false, status: 'missing_code' } };
+    }
+    const result = await this.anunciosService.completeOAuth(wsId, platform, code);
+    return { data: result };
+  }
+
   @WebhookEndpoint('ads platform disconnect')
   @Post('disconnect/:platform')
   async disconnect(@Req() req: Request, @Param('platform') platform: string) {

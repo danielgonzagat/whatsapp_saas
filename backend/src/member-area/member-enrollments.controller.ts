@@ -21,6 +21,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EnrollStudentDto, readText } from './member-area.helpers';
 import { MemberAreaStatsService } from './member-area-stats.service';
 import { RouteClass } from '../common/throttler/route-class.decorator';
+import { Prisma } from '@prisma/client';
 
 /**
  * MEMBER ENROLLMENTS CONTROLLER — Student listing + lifecycle
@@ -106,15 +107,27 @@ export class MemberEnrollmentsController {
       throw new BadRequestException('Este aluno já está matriculado nesta área');
     }
 
-    const enrollment = await this.prisma.memberEnrollment.create({
-      data: {
-        workspaceId,
-        memberAreaId: areaId,
-        studentName,
-        studentEmail,
-        ...(studentPhone !== undefined ? { studentPhone } : {}),
-      },
-    });
+    let enrollment: Awaited<ReturnType<typeof this.prisma.memberEnrollment.create>>;
+    try {
+      enrollment = await this.prisma.memberEnrollment.create({
+        data: {
+          workspaceId,
+          memberAreaId: areaId,
+          studentName,
+          studentEmail,
+          ...(studentPhone !== undefined ? { studentPhone } : {}),
+        },
+      });
+    } catch (err: unknown) {
+      // P2002 = unique constraint violation on (workspaceId, memberAreaId,
+      // studentEmail). A concurrent request won the enrollment race between
+      // the findFirst check above and this create, so treat it as
+      // already-enrolled rather than persisting a duplicate.
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        throw new BadRequestException('Este aluno já está matriculado nesta área');
+      }
+      throw err;
+    }
 
     await this.stats.recalculate(areaId, workspaceId);
 
