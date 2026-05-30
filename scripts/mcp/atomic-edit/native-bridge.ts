@@ -69,17 +69,57 @@ function findWasm(pkg: string, file: string): string | null {
 function extLang(p?: string): string | undefined { if (!p) return undefined; return EXT[path.extname(p).toLowerCase()]; }
 
 // web-tree-sitter handles (loaded lazily)
-let TS: { Parser: any; Language: any } | null = null;
+interface TsPoint {
+  row: number;
+  column: number;
+}
+interface TsNode {
+  type: string;
+  text: string;
+  isMissing: boolean;
+  namedChildren: TsNode[];
+  namedChildCount: number;
+  childCount: number;
+  startIndex: number;
+  endIndex: number;
+  startPosition: TsPoint;
+  endPosition: TsPoint;
+  child(i: number): TsNode;
+  childForFieldName?(name: string): TsNode | null;
+}
+interface TsTree {
+  rootNode: TsNode;
+}
+interface TsParser {
+  setLanguage(lang: unknown): void;
+  parse(code: string): TsTree;
+}
+interface TsParserCtor {
+  new (): TsParser;
+  init(): Promise<void>;
+}
+interface TsLanguageStatic {
+  load(wasm: string): Promise<unknown>;
+}
+interface TsModule {
+  Parser: TsParserCtor;
+  Language: TsLanguageStatic;
+}
+let TS: TsModule | null = null;
 let inited = false;
-const loadedLangs = new Map<string, any>();
+const loadedLangs = new Map<string, unknown>();
 
 export async function ensureReady(_timeoutMs = 8000): Promise<boolean> {
   if (inited) return TS !== null;
   inited = true;
   try {
-    const mod: any = await import('web-tree-sitter');
-    const Parser = mod.Parser ?? mod.default?.Parser ?? mod.default;
-    const Language = mod.Language ?? mod.default?.Language;
+    const mod = (await import('web-tree-sitter')) as {
+      Parser?: TsParserCtor;
+      Language?: TsLanguageStatic;
+      default?: { Parser?: TsParserCtor; Language?: TsLanguageStatic } & Partial<TsParserCtor>;
+    };
+    const Parser = (mod.Parser ?? mod.default?.Parser ?? mod.default) as TsParserCtor;
+    const Language = (mod.Language ?? mod.default?.Language) as TsLanguageStatic;
     await Parser.init();
     TS = { Parser, Language };
     return true;
@@ -91,7 +131,7 @@ export async function ensureReady(_timeoutMs = 8000): Promise<boolean> {
 export function nativeAvailable(): boolean { return TS !== null; }
 export function nativeLanguages(): string[] { return Object.keys(GRAMMARS); }
 
-async function parserFor(alias?: string): Promise<any | null> {
+async function parserFor(alias?: string): Promise<TsParser | null> {
   if (!TS || !alias || !(alias in GRAMMARS)) return null;
   if (!loadedLangs.has(alias)) {
     const [pkg, file] = GRAMMARS[alias];
@@ -112,17 +152,17 @@ const metaName = (t: string): string | null => (typeof t === 'string' && t.start
 const UNWRAP = new Set(['module', 'program', 'source_file', 'expression_statement', 'simple_statements']);
 const u16ToByte = (s: string, i: number): number => Buffer.byteLength(s.slice(0, i), 'utf8');
 
-function compilePattern(parser: any, src: string): any {
+function compilePattern(parser: TsParser, src: string): TsNode {
   const t = parser.parse(toIdent(src));
   let n = t.rootNode;
   while (UNWRAP.has(n.type)) {
-    const k = n.namedChildren.find((c: any) => c.type !== 'ERROR' && !c.isMissing);
+    const k = n.namedChildren.find((c: TsNode) => c.type !== 'ERROR' && !c.isMissing);
     if (!k) break;
     n = k;
   }
   return n;
 }
-function match(P: any, S: any, b: Record<string, { text: string }>): boolean {
+function match(P: TsNode, S: TsNode, b: Record<string, { text: string }>): boolean {
   const mn = metaName(P.text);
   if (mn !== null && P.namedChildCount === 0) { b[mn] = { text: S.text }; return true; }
   if (P.type !== S.type) return false;
@@ -174,21 +214,21 @@ export async function astGrep(opts: AstFindOptions): Promise<AstFindResult> {
     let code: string;
     try { code = fs.readFileSync(f, 'utf8'); } catch { continue; }
     const t = parser.parse(code);
-    let any = false;
+    let anyMatch = false;
     for (const pat of opts.patterns ?? []) {
       const P = compilePattern(parser, pat);
       const stack = [t.rootNode];
       while (stack.length) {
-        const n = stack.pop();
+        const n = stack.pop() as TsNode;
         const b: Record<string, { text: string }> = {};
         if (match(P, n, b)) {
-          any = true;
+          anyMatch = true;
           matches.push({ path: f, text: code.slice(n.startIndex, n.endIndex), byteStart: u16ToByte(code, n.startIndex), byteEnd: u16ToByte(code, n.endIndex), startLine: n.startPosition.row + 1, startColumn: n.startPosition.column + 1, endLine: n.endPosition.row + 1, endColumn: n.endPosition.column + 1, metaVariables: opts.includeMeta ? b : undefined });
         }
         for (let i = 0; i < n.childCount; i += 1) stack.push(n.child(i));
       }
     }
-    if (any) filesWith += 1;
+    if (anyMatch) filesWith += 1;
   }
   const limit = opts.limit ?? matches.length;
   return { matches: matches.slice(0, limit), totalMatches: matches.length, filesWithMatches: filesWith, filesSearched: files.length, limitReached: matches.length > limit, parseErrors: parseErrors.length ? parseErrors : undefined };
@@ -211,7 +251,7 @@ export async function astEditDry(opts: AstReplaceOptions): Promise<AstReplaceRes
       const P = compilePattern(parser, pat);
       const stack = [t.rootNode];
       while (stack.length) {
-        const n = stack.pop();
+        const n = stack.pop() as TsNode;
         const b: Record<string, { text: string }> = {};
         if (match(P, n, b)) {
           let after = tmpl;
@@ -238,7 +278,7 @@ export async function summarize(opts: Record<string, unknown>): Promise<Record<s
   const DEF = new Set(['function_definition', 'class_definition', 'method', 'function_declaration', 'method_declaration', 'type_declaration', 'class']);
   const segments: unknown[] = [];
   let errs = 0;
-  const walk = (n: any) => {
+  const walk = (n: TsNode) => {
     if (n.type === 'ERROR' || n.isMissing) errs += 1;
     if (DEF.has(n.type)) segments.push({ kind: 'kept', startLine: n.startPosition.row + 1, endLine: n.endPosition.row + 1, name: n.childForFieldName?.('name')?.text });
     for (let i = 0; i < n.childCount; i += 1) walk(n.child(i));

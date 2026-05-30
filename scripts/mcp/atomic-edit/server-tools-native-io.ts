@@ -131,7 +131,7 @@ export function registerToolsNativeIo(server: McpServer): void {
   server.registerTool(
     'atomic_outline',
     {
-      title: 'Tree-sitter code outline (any supported language)',
+      title: 'Tree-sitter code outline (all supported languages)',
       description:
         'Structural outline of a source file via tree-sitter — for ANY supported language, not just TS. ' +
         'Returns {parsed, totalLines, language, segments:[{kind,startLine,endLine,text?}]}. Note: elided ' +

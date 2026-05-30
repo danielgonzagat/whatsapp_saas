@@ -69,7 +69,7 @@ export function registerToolsNative(server: McpServer): void {
   server.registerTool(
     'atomic_ast_search',
     {
-      title: 'Universal structural search (ast-grep, any supported language)',
+      title: 'Universal structural search (ast-grep, all supported languages)',
       description:
         'Search code structurally with an ast-grep pattern (e.g. "greet($A)", "function $F($$$) { $$$ }") ' +
         'across every tree-sitter-supported language. Read-only. Returns matches with file, line/column span, ' +
