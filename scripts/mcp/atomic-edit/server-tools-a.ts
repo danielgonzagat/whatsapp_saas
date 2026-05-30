@@ -149,6 +149,8 @@ server.registerTool(
   {
     title: 'Replace an exact character range',
     description:
+      'PREFER atomic_replace_at (content/anchor-addressed — you never type line/column, which is the #1 ' +
+      'edit-error source). This coordinate tool remains the internal compilation target and back-compat path. ' +
       'Replace text between (startLine,startColumn) and (endLine,endColumn) — 1-based, end-exclusive — ' +
       'with newText. Structurally validated before write. Use this instead of rewriting a whole line ' +
       'when the real intention is sub-line (a literal, an argument, a token).',

@@ -36,6 +36,7 @@ import { registerToolsG } from './server-tools-g.js';
 import { registerToolsH } from './server-tools-h.js';
 import { registerToolsNative } from './server-tools-native.js';
 import { registerToolsNativeIo } from './server-tools-native-io.js';
+import { registerToolsLocate } from './server-tools-locate.js';
 
 const server = new McpServer({ name: 'kloel-atomic-edit', version: '4.0.0' });
 
@@ -50,6 +51,7 @@ registerToolsG(server);
 registerToolsH(server);
 registerToolsNative(server);
 registerToolsNativeIo(server);
+registerToolsLocate(server);
 
 async function main(): Promise<void> {
   const transport = new StdioServerTransport();

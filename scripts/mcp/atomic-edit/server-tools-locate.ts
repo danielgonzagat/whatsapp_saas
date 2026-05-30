@@ -1,0 +1,163 @@
+/**
+ * server-tools-locate.ts — MOVE A (additive core): content/anchor-addressed
+ * editing so the agent NEVER types line/column. The #1 and #2 frictions vs the
+ * factory editor (coordinate math errors + line-drift after prior edits) come
+ * from coordinate-addressed tools (atomic_replace_range / atomic_insert_at).
+ * This adds ONE unified editor that locates the span by CONTENT or ANCHOR and
+ * compiles down to the same validated applyEdits + commit firewall path.
+ *
+ * Purely additive: no existing tool changes behavior (the coordinate tools stay
+ * as the internal compilation target; only their descriptions get a DEPRECATED
+ * stamp elsewhere). Zero regression surface.
+ */
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { z } from 'zod';
+import { applyEdits, type TextEditSpec } from './engine.js';
+import { resolveSafeTarget } from './guard.js';
+import { readUtf8, guardSha } from './server-helpers-io.js';
+import { ok, fail, commit } from './server-helpers-result.js';
+
+/** UTF-16 string offset -> 1-based {line,column} (inverse of engine.posToOffset). */
+function offsetToPos(text: string, offset: number): { line: number; column: number } {
+  let line = 1;
+  let lineStart = 0;
+  for (let i = 0; i < offset; i++) {
+    if (text.charCodeAt(i) === 10 /* \n */) {
+      line += 1;
+      lineStart = i + 1;
+    }
+  }
+  return { line, column: offset - lineStart + 1 };
+}
+
+/** All 0-based offsets where `needle` occurs in `text`. */
+function findAll(text: string, needle: string): number[] {
+  const out: number[] = [];
+  if (needle === '') return out;
+  let i = text.indexOf(needle);
+  while (i !== -1) {
+    out.push(i);
+    i = text.indexOf(needle, i + 1);
+  }
+  return out;
+}
+
+/** Pick the Nth (1-based) occurrence; refuse ambiguity when occurrence is omitted. */
+function pickOne(offsets: number[], occurrence: number | undefined, label: string, text: string): number {
+  if (offsets.length === 0) throw new Error(`${label} not found in file`);
+  if (occurrence !== undefined) {
+    if (occurrence < 1 || occurrence > offsets.length) {
+      throw new Error(`${label}: occurrence ${occurrence} out of range (found ${offsets.length})`);
+    }
+    return offsets[occurrence - 1];
+  }
+  if (offsets.length > 1) {
+    const lines = offsets.map((o) => offsetToPos(text, o).line).join(', ');
+    throw new Error(`${label} appears ${offsets.length} times (lines ${lines}); pass occurrence to disambiguate`);
+  }
+  return offsets[0];
+}
+
+export function registerToolsLocate(server: McpServer): void {
+  server.registerTool(
+    'atomic_replace_at',
+    {
+      title: 'Content/anchor-addressed edit — you never type line/column',
+      description:
+        'The default general editor: say WHAT to find (verbatim content, or text before/after an anchor) and ' +
+        'WHAT to write — never WHERE (no coordinates). Compiles to the same validated applyEdits + commit ' +
+        'firewall (sha256, syntax-validate, trace, protected-guard, rollback). Modes: ' +
+        '`content` (replace a verbatim block), `after_anchor` (insert after an anchor), `before_anchor` ' +
+        '(insert before an anchor). Refuses ambiguous matches unless `occurrence` is given. For structural/' +
+        'symbol edits use atomic_edit_symbol / atomic_ast_edit; for raw coordinates the (deprecated) ' +
+        'atomic_replace_range still exists as the internal target.',
+      inputSchema: {
+        file: z.string(),
+        mode: z.enum(['content', 'after_anchor', 'before_anchor']),
+        anchor: z.string().describe('the verbatim content to replace, or the anchor text to insert around'),
+        newText: z.string(),
+        occurrence: z.number().int().min(1).optional(),
+        expectedSha256: z.string().optional(),
+        preview: z.boolean().optional(),
+        verify: z.enum(['typecheck', 'lint']).optional(),
+        lock: z.boolean().optional(),
+      },
+    },
+    async (a) => {
+      try {
+        const { absPath, relPath } = resolveSafeTarget(a.file);
+        const before = readUtf8(absPath);
+        guardSha(before, a.expectedSha256);
+
+        const offsets = findAll(before, a.anchor);
+        const at = pickOne(offsets, a.occurrence, JSON.stringify(a.anchor), before);
+
+        let spec: TextEditSpec;
+        if (a.mode === 'content') {
+          spec = {
+            start: offsetToPos(before, at),
+            end: offsetToPos(before, at + a.anchor.length),
+            newText: a.newText,
+          };
+        } else if (a.mode === 'after_anchor') {
+          const pos = offsetToPos(before, at + a.anchor.length);
+          spec = { start: pos, end: pos, newText: a.newText };
+        } else {
+          const pos = offsetToPos(before, at);
+          spec = { start: pos, end: pos, newText: a.newText };
+        }
+
+        const result = applyEdits(absPath, before, [spec]);
+        return commit(
+          relPath,
+          absPath,
+          before,
+          result,
+          { operator: 'atomic_replace_at', mode: a.mode },
+          a.preview ?? false,
+          a.verify,
+          a.lock,
+        );
+      } catch (e) {
+        return fail(e instanceof Error ? e.message : String(e));
+      }
+    },
+  );
+
+  server.registerTool(
+    'atomic_locate',
+    {
+      title: 'Resolve a content/anchor query to a span (read-only)',
+      description:
+        'Read-only: resolve a verbatim content or anchor query to its {startLine,startColumn,endLine,endColumn} ' +
+        'span + the matched text, so you can see exactly what an edit would target before writing. Refuses ' +
+        'ambiguity unless occurrence is given.',
+      inputSchema: {
+        file: z.string(),
+        anchor: z.string(),
+        occurrence: z.number().int().min(1).optional(),
+      },
+    },
+    async (a) => {
+      try {
+        const { absPath, relPath } = resolveSafeTarget(a.file);
+        const before = readUtf8(absPath);
+        const offsets = findAll(before, a.anchor);
+        const at = pickOne(offsets, a.occurrence, JSON.stringify(a.anchor), before);
+        const start = offsetToPos(before, at);
+        const end = offsetToPos(before, at + a.anchor.length);
+        return ok({
+          file: relPath,
+          occurrences: offsets.length,
+          startLine: start.line,
+          startColumn: start.column,
+          endLine: end.line,
+          endColumn: end.column,
+          matched: a.anchor,
+        });
+      } catch (e) {
+        return fail(e instanceof Error ? e.message : String(e));
+      }
+    },
+  );
+}
