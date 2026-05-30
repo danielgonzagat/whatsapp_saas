@@ -41,7 +41,7 @@ export async function checkRateLimits(
     return { allowed: true as const };
   }
   const day = new Date().toISOString().slice(0, 10);
-  const contactKey = `autopilot:contact:${phone}:day:${day}`;
+  const contactKey = `autopilot:contact:${workspaceId}:${phone}:day:${day}`;
   const wsKey = `autopilot:ws:${workspaceId}:day:${day}`;
 
   const contactCount = await connection.incr(contactKey);
