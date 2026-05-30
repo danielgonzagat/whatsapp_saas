@@ -1,48 +1,15 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { requireWorkspaceProduct, resolveAttributionModel } from './affiliate-helpers';
+import type { AffiliateChatResult } from './affiliate-helpers';
 import { PrismaService } from '../prisma/prisma.service';
-
-/** Standard result shape returned to the Kloel domain-service resolver. */
-type AffiliateChatResult = {
-  success: true;
-  productId?: string;
-  [key: string]: unknown;
-};
-
-/** Canonical attribution models the affiliate program supports. */
-const ATTRIBUTION_MODELS: Record<string, string> = {
-  primeiro: 'first_click',
-  first: 'first_click',
-  first_click: 'first_click',
-  ultimo: 'last_click',
-  último: 'last_click',
-  last: 'last_click',
-  last_click: 'last_click',
-  proporcional: 'proportional',
-  proportional: 'proportional',
-};
 
 @Injectable()
 export class AffiliateService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Resolve a workspace-owned product or throw.
-   *
-   * All chat-surfaced affiliate mutations funnel through here so workspace
-   * isolation is enforced in exactly one place.
-   */
-  private async requireProduct(workspaceId: string, productId: unknown): Promise<{ id: string }> {
-    if (typeof productId !== 'string' || productId.length === 0) {
-      throw new BadRequestException('productId é obrigatório');
-    }
-    const product = await this.prisma.product.findFirst({
-      where: { id: productId, workspaceId },
-      select: { id: true },
-    });
-    if (!product) {
-      throw new NotFoundException('Produto não encontrado neste workspace');
-    }
-    return product;
+  /** @see requireWorkspaceProduct — workspace-isolated product resolver. */
+  private requireProduct(workspaceId: string, productId: unknown): Promise<{ id: string }> {
+    return requireWorkspaceProduct(this.prisma, workspaceId, productId);
   }
 
   /** Liga/desliga o programa de afiliados de um produto. */
@@ -147,8 +114,7 @@ export class AffiliateService {
     args: { productId: string; model: string },
   ): Promise<AffiliateChatResult> {
     const { id } = await this.requireProduct(workspaceId, args.productId);
-    const normalized = typeof args.model === 'string' ? args.model.trim().toLowerCase() : '';
-    const canonical = ATTRIBUTION_MODELS[normalized];
+    const canonical = resolveAttributionModel(args.model);
     if (!canonical) {
       throw new BadRequestException(
         'model deve ser primeiro clique, último clique ou proporcional',

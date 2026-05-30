@@ -1,4 +1,5 @@
 import { type CapabilityDefinition } from '../capability-registry-v2.types';
+import { TIER_1_PRODUCTS_CAPABILITIES_PART2 } from './tier-1-products.part2';
 
 /**
  * KLOEL CAPABILITY REGISTRY partition — Tier 1 (products).
@@ -6,6 +7,9 @@ import { type CapabilityDefinition } from '../capability-registry-v2.types';
  * Extracted from capability-registry-v2.const.ts.
  * Consumers should import CAPABILITY_DEFINITIONS from the barrel
  * '../capability-registry-v2.const' rather than this partition directly.
+ *
+ * Legacy (deprecated) IDs live in the sibling tier-1-products.part2.ts and
+ * are spread at the end to preserve the original ordering.
  */
 export const TIER_1_PRODUCTS_CAPABILITIES: CapabilityDefinition[] = [
   // ── Canonical (dotted) IDs — legacy (deprecated) at end ──
@@ -297,173 +301,6 @@ export const TIER_1_PRODUCTS_CAPABILITIES: CapabilityDefinition[] = [
     evidenceUrlBuilder: '/produtos/${productId}',
     surface: ['dashboard-chat'],
   },
-  // ── Legacy IDs (deprecated) — superseded by canonical dotted equivalents ──
-  {
-    id: 'configure_pixel',
-    title: 'Configurar pixel (legado)',
-    description: 'DEPRECATED — use products.set_pixels',
-    category: 'MUTATION_SAFE',
-    tier: 1,
-    requiresConfirmation: false,
-    requiredPermissions: ['product:write'],
-    inputSchema: [
-      { key: 'productId', type: 'string', label: 'Produto', required: true },
-      {
-        key: 'pixelType',
-        type: 'select',
-        label: 'Tipo',
-        required: true,
-        enum: ['facebook', 'google'],
-      },
-      { key: 'pixelId', type: 'string', label: 'ID do pixel', required: true },
-    ],
-    domainService: 'PixelService.configure',
-    emits: ['product.pixel_configured'],
-    surface: ['dashboard-chat'],
-    maturity: 'deprecated',
-    dependsOn: ['products.set_pixels'],
-  },
-  {
-    id: 'upload_product_image',
-    title: 'Upload foto do produto (legado)',
-    description: 'DEPRECATED — use products.upload_image',
-    category: 'MUTATION_SAFE',
-    tier: 1,
-    requiresConfirmation: false,
-    requiredPermissions: ['product:write'],
-    inputSchema: [{ key: 'productId', type: 'string', label: 'Produto', required: true }],
-    domainService: 'MediaService.attach + ProductService.setImage',
-    emits: ['product.updated'],
-    surface: ['dashboard-chat'],
-    maturity: 'deprecated',
-    dependsOn: ['products.upload_image'],
-  },
-  {
-    id: 'create_product',
-    title: 'Criar produto (legado)',
-    description: 'DEPRECATED — use products.create',
-    category: 'MUTATION_SAFE',
-    tier: 1,
-    requiresConfirmation: true,
-    requiredPermissions: ['product:write'],
-    inputSchema: [
-      { key: 'name', type: 'string', label: 'Nome', required: true },
-      { key: 'price', type: 'number', label: 'Preço (R$)', required: true },
-    ],
-    domainService: 'ProductService.create',
-    emits: ['product.created'],
-    surface: ['dashboard-chat'],
-    maturity: 'deprecated',
-    dependsOn: ['products.create'],
-  },
-  {
-    id: 'save_product',
-    title: 'Salvar produto (legado)',
-    description: 'DEPRECATED — use products.create',
-    category: 'MUTATION_SAFE',
-    tier: 1,
-    requiresConfirmation: true,
-    requiredPermissions: ['product:write'],
-    inputSchema: [
-      { key: 'name', type: 'string', label: 'Nome', required: true },
-      { key: 'price', type: 'number', label: 'Preço (R$)', required: true },
-    ],
-    domainService: 'ProductService.create',
-    emits: ['product.created'],
-    surface: ['dashboard-chat'],
-    maturity: 'deprecated',
-    dependsOn: ['products.create'],
-  },
-  {
-    id: 'update_product',
-    title: 'Atualizar produto (legado)',
-    description: 'DEPRECATED — use products.update',
-    category: 'MUTATION_SAFE',
-    tier: 1,
-    requiresConfirmation: false,
-    requiredPermissions: ['product:write'],
-    inputSchema: [
-      { key: 'productId', type: 'string', label: 'Produto', required: true },
-      { key: 'name', type: 'string', label: 'Nome', required: false },
-    ],
-    domainService: 'ProductService.update',
-    emits: ['product.updated'],
-    surface: ['dashboard-chat'],
-    maturity: 'deprecated',
-    dependsOn: ['products.update'],
-  },
-  {
-    id: 'delete_product',
-    title: 'Excluir produto (legado)',
-    description: 'DEPRECATED — no canonical dotted equivalent yet; kept for backward compat',
-    category: 'MUTATION_SENSITIVE',
-    tier: 1,
-    requiresConfirmation: true,
-    requiredPermissions: ['product:write'],
-    inputSchema: [{ key: 'productId', type: 'string', label: 'Produto', required: true }],
-    domainService: 'ProductService.delete',
-    emits: ['product.deleted'],
-    surface: ['dashboard-chat'],
-    maturity: 'deprecated',
-  },
-  {
-    id: 'configure_shipping',
-    title: 'Configurar frete (legado)',
-    description: 'DEPRECATED — use products.set_shipping',
-    category: 'MUTATION_SAFE',
-    tier: 1,
-    requiresConfirmation: false,
-    requiredPermissions: ['product:write'],
-    inputSchema: [
-      { key: 'productId', type: 'string', label: 'Produto', required: true },
-      {
-        key: 'shippingType',
-        type: 'select',
-        label: 'Tipo',
-        required: false,
-        enum: ['free', 'fixed', 'variable'],
-      },
-    ],
-    domainService: 'ShippingService.configure',
-    emits: ['product.shipping_updated'],
-    surface: ['dashboard-chat'],
-    maturity: 'deprecated',
-    dependsOn: ['products.set_shipping'],
-  },
-  {
-    id: 'configure_warranty',
-    title: 'Configurar garantia (legado)',
-    description: 'DEPRECATED — use products.set_shipping (warrantyDays field)',
-    category: 'MUTATION_SAFE',
-    tier: 1,
-    requiresConfirmation: false,
-    requiredPermissions: ['product:write'],
-    inputSchema: [
-      { key: 'productId', type: 'string', label: 'Produto', required: true },
-      { key: 'warrantyDays', type: 'number', label: 'Dias de garantia', required: true },
-    ],
-    domainService: 'ProductService.update',
-    emits: ['product.updated'],
-    surface: ['dashboard-chat'],
-    maturity: 'deprecated',
-    dependsOn: ['products.set_shipping'],
-  },
-  {
-    id: 'configure_exit_intent',
-    title: 'Popup de saída (legado)',
-    description: 'DEPRECATED — use checkouts.set_exit_intent',
-    category: 'MUTATION_SAFE',
-    tier: 1,
-    requiresConfirmation: false,
-    requiredPermissions: ['product:write'],
-    inputSchema: [
-      { key: 'productId', type: 'string', label: 'Produto', required: true },
-      { key: 'enabled', type: 'boolean', label: 'Ativar?', required: true },
-    ],
-    domainService: 'CheckoutService.update',
-    emits: ['checkout.updated'],
-    surface: ['dashboard-chat'],
-    maturity: 'deprecated',
-    dependsOn: ['checkouts.set_exit_intent'],
-  },
+  // ── Legacy IDs (deprecated) — see sibling tier-1-products.part2.ts ──
+  ...TIER_1_PRODUCTS_CAPABILITIES_PART2,
 ];

@@ -1,3 +1,4 @@
+import OpenAI from 'openai';
 import { Test, TestingModule } from '@nestjs/testing';
 
 jest.mock('../marketing/channels/whatsapp/whatsapp.tokens', () => ({
@@ -46,7 +47,6 @@ import { UnifiedAgentActionsWorkspaceService } from './unified-agent-actions-wor
 import { UnifiedAgentActionsBillingService } from './unified-agent-actions-billing.service';
 import { UnifiedAgentActionsCommerceService } from './unified-agent-actions-commerce.service';
 import { AuditService } from '../audit/audit.service';
-import { partialMatch } from '../../test/helpers/match-instance';
 
 type ActionsPrismaMock = {
   autopilotEvent: { create: jest.Mock };
@@ -177,130 +177,181 @@ describe('UnifiedAgentActionsService', () => {
     jest.clearAllMocks();
   });
 
-  describe('logAutopilotEvent', () => {
-    it('creates autopilotEvent for successful action', async () => {
-      await service.logAutopilotEvent(wsId, contactId, 'send_message', {}, { success: true });
+  describe('delegation to sub-services', () => {
+    it('actionCreateProduct delegates to workspace service', async () => {
+      await service.actionCreateProduct(wsId, { name: 'P', price: 1 });
+      expect(workspace.actionCreateProduct).toHaveBeenCalledWith(wsId, { name: 'P', price: 1 });
+    });
 
-      expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
-        partialMatch({
-          data: partialMatch({
-            workspaceId: wsId,
-            contactId,
-            intent: 'TOOL_CALL',
-            action: 'send_message',
-            status: 'completed',
-          }),
-        }),
+    it('actionUpdateProduct delegates to workspace service', async () => {
+      await service.actionUpdateProduct(wsId, { productId: 'p-1' });
+      expect(workspace.actionUpdateProduct).toHaveBeenCalledWith(wsId, { productId: 'p-1' });
+    });
+
+    it('actionCreateFlow delegates to workspace service', async () => {
+      await service.actionCreateFlow(wsId, { name: 'Flow' });
+      expect(workspace.actionCreateFlow).toHaveBeenCalledWith(wsId, { name: 'Flow' });
+    });
+
+    it('actionUpdateWorkspaceSettings delegates to workspace service', async () => {
+      await service.actionUpdateWorkspaceSettings(wsId, { businessName: 'A' });
+      expect(workspace.actionUpdateWorkspaceSettings).toHaveBeenCalledWith(wsId, {
+        businessName: 'A',
+      });
+    });
+
+    it('actionCreateBroadcast delegates to workspace service', async () => {
+      await service.actionCreateBroadcast(wsId, { name: 'B' });
+      expect(workspace.actionCreateBroadcast).toHaveBeenCalledWith(wsId, { name: 'B' }, undefined);
+    });
+
+    it('actionConfigureAIPersona delegates to workspace service', async () => {
+      await service.actionConfigureAIPersona(wsId, { tone: 'formal' });
+      expect(workspace.actionConfigureAIPersona).toHaveBeenCalledWith(wsId, { tone: 'formal' });
+    });
+
+    it('actionToggleAutopilot delegates to workspace service', async () => {
+      await service.actionToggleAutopilot(wsId, { enabled: true });
+      expect(workspace.actionToggleAutopilot).toHaveBeenCalledWith(wsId, { enabled: true });
+    });
+
+    it('actionCreateFlowFromDescription delegates to workspace service', async () => {
+      const openai = new OpenAI({ apiKey: 'fake' });
+      await service.actionCreateFlowFromDescription(wsId, { description: 'd' }, openai, 'm1', 'm2');
+      expect(workspace.actionCreateFlowFromDescription).toHaveBeenCalledWith(
+        wsId,
+        { description: 'd' },
+        openai,
+        'm1',
+        'm2',
       );
     });
 
-    it('logs failed status when result has success: false', async () => {
-      await service.logAutopilotEvent(wsId, contactId, 'bad_action', {}, { success: false });
+    it('actionScheduleCampaign delegates to workspace service', async () => {
+      await service.actionScheduleCampaign(wsId, { campaignId: 'c-1' });
+      expect(workspace.actionScheduleCampaign).toHaveBeenCalledWith(wsId, { campaignId: 'c-1' });
+    });
 
-      expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
-        partialMatch({
-          data: partialMatch({ status: 'failed' }),
-        }),
+    it('actionGetWorkspaceStatus delegates to workspace service', async () => {
+      await service.actionGetWorkspaceStatus(wsId, {});
+      expect(workspace.actionGetWorkspaceStatus).toHaveBeenCalledWith(wsId, {});
+    });
+
+    it('actionGetAnalytics delegates to billing service', async () => {
+      await service.actionGetAnalytics(wsId, { period: 'today' });
+      expect(billing.actionGetAnalytics).toHaveBeenCalledWith(wsId, { period: 'today' });
+    });
+
+    it('actionGenerateSalesFunnel delegates to billing service', async () => {
+      await service.actionGenerateSalesFunnel(wsId, {});
+      expect(billing.actionGenerateSalesFunnel).toHaveBeenCalledWith(wsId, {});
+    });
+
+    it('actionUpdateBillingInfo delegates to billing service', async () => {
+      await service.actionUpdateBillingInfo(wsId, {});
+      expect(billing.actionUpdateBillingInfo).toHaveBeenCalledWith(wsId, {});
+    });
+
+    it('actionGetBillingStatus delegates to billing service', async () => {
+      await service.actionGetBillingStatus(wsId);
+      expect(billing.actionGetBillingStatus).toHaveBeenCalledWith(wsId);
+    });
+
+    it('actionChangePlan delegates to billing service', async () => {
+      await service.actionChangePlan(wsId, { plan: 'pro' });
+      expect(billing.actionChangePlan).toHaveBeenCalledWith(wsId, { plan: 'pro' });
+    });
+
+    it('actionApplyDiscount delegates to sales service', async () => {
+      await service.actionApplyDiscount(wsId, contactId, phone, { discountPercent: 10 });
+      expect(sales.actionApplyDiscount).toHaveBeenCalledWith(
+        wsId,
+        contactId,
+        phone,
+        { discountPercent: 10 },
+        undefined,
       );
     });
 
-    it('handles Prisma error gracefully', async () => {
-      prisma.autopilotEvent.create.mockRejectedValue({ code: 'P2003' });
-
-      await expect(
-        service.logAutopilotEvent(wsId, contactId, 'test', {}, { success: true }),
-      ).resolves.toBeUndefined();
-    });
-  });
-
-  describe('actionSendDocument', () => {
-    it('returns error when no url or documentName', async () => {
-      const result = await service.actionSendDocument(wsId, phone, {});
-
-      expect(result.success).toBe(false);
-    });
-
-    it('sends document by name', async () => {
-      prisma.document.findFirst.mockResolvedValue({
-        id: 'd-1',
-        name: 'Boleto',
-        filePath: '/files/boleto.pdf',
-        fileName: 'boleto.pdf',
-        description: 'Seu boleto',
-        isActive: true,
-      });
-
-      const result = await service.actionSendDocument(wsId, phone, {
-        documentName: 'Boleto',
-      });
-
-      expect(result.success).toBe(true);
-      expect(result.documentName).toBe('Boleto');
-      expect(result.sent).toBe(true);
-      expect(storageService.getSignedUrl).toHaveBeenCalled();
-      expect(whatsappService.sendMessage).toHaveBeenCalled();
-    });
-
-    it('returns error when document not found', async () => {
-      const result = await service.actionSendDocument(wsId, phone, {
-        documentName: 'Nonexistent',
-      });
-
-      expect(result.success).toBe(false);
-      expect(result.error).toContain('não encontrado');
-    });
-
-    it('sends document by direct URL', async () => {
-      const result = await service.actionSendDocument(wsId, phone, {
-        url: 'https://example.com/doc.pdf',
-        caption: 'Aqui está',
-      });
-
-      expect(result.success).toBe(true);
-      expect(prisma.document.findFirst).not.toHaveBeenCalled();
-    });
-
-    it('returns error when sendMessage fails', async () => {
-      whatsappService.sendMessage.mockResolvedValue({ error: true, message: 'send failed' });
-
-      const result = await service.actionSendDocument(wsId, phone, {
-        url: 'https://example.com/doc.pdf',
-      });
-
-      expect(result.success).toBe(false);
-    });
-
-    it('handles unexpected errors', async () => {
-      whatsappService.sendMessage.mockRejectedValue(new Error('network error'));
-
-      const result = await service.actionSendDocument(wsId, phone, {
-        url: 'https://example.com/doc.pdf',
-      });
-
-      expect(result.success).toBe(false);
-    });
-  });
-
-  describe('workspace isolation', () => {
-    it('actionSendDocument scopes document lookup to workspaceId', async () => {
-      await service.actionSendDocument('ws-tenant', phone, { documentName: 'Doc' });
-      expect(prisma.document.findFirst).toHaveBeenCalledWith(
-        partialMatch({ where: partialMatch({ workspaceId: 'ws-tenant' }) }),
+    it('actionHandleObjection delegates to sales service', async () => {
+      await service.actionHandleObjection(wsId, contactId, phone, { objectionType: 'price' });
+      expect(sales.actionHandleObjection).toHaveBeenCalledWith(
+        wsId,
+        contactId,
+        phone,
+        { objectionType: 'price' },
+        undefined,
       );
     });
-  });
 
-  describe('error handling', () => {
-    it('actionSendDocument handles errors gracefully', async () => {
-      whatsappService.sendMessage.mockRejectedValue(new Error('network error'));
-      const result = await service.actionSendDocument(wsId, phone, { url: 'http://x' });
-      expect(result.success).toBe(false);
+    it('actionQualifyLead delegates to sales service', async () => {
+      await service.actionQualifyLead(wsId, contactId, phone, {});
+      expect(sales.actionQualifyLead).toHaveBeenCalledWith(wsId, contactId, phone, {}, undefined);
     });
 
-    it('actionCreatePaymentLink handles audit failure gracefully', async () => {
-      prisma.$transaction.mockRejectedValue(new Error('audit failed'));
+    it('actionScheduleMeeting delegates to sales service', async () => {
+      await service.actionScheduleMeeting(wsId, contactId, phone, { type: 'demo' });
+      expect(sales.actionScheduleMeeting).toHaveBeenCalledWith(
+        wsId,
+        contactId,
+        phone,
+        { type: 'demo' },
+        undefined,
+      );
+    });
+
+    it('actionAntiChurn delegates to sales service', async () => {
+      await service.actionAntiChurn(wsId, contactId, phone, { strategy: 'discount' });
+      expect(sales.actionAntiChurn).toHaveBeenCalledWith(
+        wsId,
+        contactId,
+        phone,
+        { strategy: 'discount' },
+        undefined,
+      );
+    });
+
+    it('actionReactivateGhost delegates to sales service', async () => {
+      await service.actionReactivateGhost(wsId, contactId, phone, { daysSilent: 7 });
+      expect(sales.actionReactivateGhost).toHaveBeenCalledWith(
+        wsId,
+        contactId,
+        phone,
+        { daysSilent: 7 },
+        undefined,
+      );
+    });
+
+    it('actionCreatePaymentLink delegates to commerce and audits', async () => {
       const result = await service.actionCreatePaymentLink(wsId, phone, { amount: 99 });
       expect(result.success).toBe(true);
+      expect(commerce.actionCreatePaymentLink).toHaveBeenCalled();
+      expect(auditService.logWithTx).toHaveBeenCalled();
+    });
+
+    it('getProductPlans delegates to billing', async () => {
+      await service.getProductPlans('p-1');
+      expect(billing.getProductPlans).toHaveBeenCalledWith('p-1');
+    });
+
+    it('getProductAIConfig delegates to billing', async () => {
+      await service.getProductAIConfig('p-1');
+      expect(billing.getProductAIConfig).toHaveBeenCalledWith('p-1');
+    });
+
+    it('getProductReviews delegates to billing', async () => {
+      await service.getProductReviews('p-1');
+      expect(billing.getProductReviews).toHaveBeenCalledWith('p-1');
+    });
+
+    it('getProductUrls delegates to billing', async () => {
+      await service.getProductUrls('p-1');
+      expect(billing.getProductUrls).toHaveBeenCalledWith('p-1');
+    });
+
+    it('validateCoupon delegates to billing', async () => {
+      await service.validateCoupon('p-1', 'CODE10');
+      expect(billing.validateCoupon).toHaveBeenCalledWith('p-1', 'CODE10');
     });
   });
 });

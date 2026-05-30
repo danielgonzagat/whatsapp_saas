@@ -1,4 +1,5 @@
 import { AccountService } from './account.service';
+import { castMock } from '../../test/helpers/cast-mock';
 
 interface BankAccountCreateArgs {
   data: Record<string, unknown>;
@@ -106,10 +107,11 @@ describe('AccountService — payout DATA capabilities (updateBankAccount + setPi
     it('uses a transaction with ReadCommitted isolation', async () => {
       tx.bankAccount.findFirst.mockResolvedValue(null);
       await service.updateBankAccount('ws-1', { account: '1' });
-      expect(prisma.$transaction).toHaveBeenCalledWith(
-        expect.any(Function),
-        expect.objectContaining({ isolationLevel: 'ReadCommitted' }),
+      const [txCallback, txOptions] = castMock<[unknown, unknown]>(
+        prisma.$transaction.mock.calls[0],
       );
+      expect(typeof txCallback).toBe('function');
+      expect(txOptions).toEqual(expect.objectContaining({ isolationLevel: 'ReadCommitted' }));
     });
 
     it('scopes findFirst by workspace + isDefault', async () => {

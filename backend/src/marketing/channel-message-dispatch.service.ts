@@ -25,6 +25,7 @@
  * @cluster Marketing/Channels/Dispatch
  * @see backend/src/common/channel-dispatch/channel-dispatch.registry.ts
  * @see backend/src/common/channel-dispatch/channel-dispatch.port.ts
+ * @see backend/src/marketing/channel-message-dispatch.helpers.ts
  * @see docs/adr/0012-kloel-omnicore-channel-unification.md
  */
 import { Injectable, Logger } from '@nestjs/common';
@@ -35,39 +36,20 @@ import {
 } from '../common/channel-dispatch/channel-dispatch.port';
 import { ChannelDispatchRegistry } from '../common/channel-dispatch/channel-dispatch.registry';
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
+import {
+  buildEmail,
+  buildFacebook,
+  buildInstagram,
+  buildMessenger,
+  buildWhatsApp,
+  coerceArgString,
+  type DispatchChannel,
+  type DispatchOptions,
+  extractOptions,
+  normalizeChannel,
+} from './channel-message-dispatch.helpers';
 
-/**
- * Channel selector accepted by {@link ChannelMessageDispatchService.dispatch}.
- * Accepts either the canonical {@link ChannelKind} enum value or its raw
- * string form so HTTP/JSON callers don't need to import the enum.
- */
-export type DispatchChannel = ChannelKind | string;
-
-/**
- * Options carried through to the resolved channel adapter. The optional
- * credential overrides (`igAccountId`, `pageId`, `accessToken`,
- * `pageAccessToken`) let a caller bypass automatic Meta-connection resolution
- * when it already holds a token; when omitted they are resolved per-workspace.
- */
-export interface DispatchOptions {
-  // WhatsApp media / threading
-  mediaUrl?: string;
-  mediaType?: 'image' | 'video' | 'audio' | 'document';
-  caption?: string;
-  quotedMessageId?: string;
-  externalId?: string;
-  complianceMode?: 'reactive' | 'proactive';
-  forceDirect?: boolean;
-  // Email
-  subject?: string;
-  html?: string;
-  proactive?: boolean;
-  // Meta credential overrides (auto-resolved per workspace when omitted)
-  igAccountId?: string;
-  pageId?: string;
-  accessToken?: string;
-  pageAccessToken?: string;
-}
+export type { DispatchChannel, DispatchOptions } from './channel-message-dispatch.helpers';
 
 @Injectable()
 export class ChannelMessageDispatchService {
@@ -94,7 +76,7 @@ export class ChannelMessageDispatchService {
     message: string,
     options?: DispatchOptions,
   ): Promise<ChannelSendResult> {
-    const kind = this.normalizeChannel(channel);
+    const kind = normalizeChannel(channel);
     if (!kind) {
       return {
         success: false,
@@ -137,36 +119,13 @@ export class ChannelMessageDispatchService {
 
   /** Whether a channel has a registered, configured adapter for this workspace. */
   isConfigured(channel: DispatchChannel): boolean {
-    const kind = this.normalizeChannel(channel);
+    const kind = normalizeChannel(channel);
     return kind ? this.registry.isConfigured(kind) : false;
   }
 
   /** Canonical list of channels with a registered dispatch adapter. */
   supportedChannels(): ChannelKind[] {
     return this.registry.listKinds();
-  }
-
-  /** Map a loose channel selector onto the canonical ChannelKind, or null. */
-  private normalizeChannel(channel: DispatchChannel): ChannelKind | null {
-    const raw = String(channel).trim().toLowerCase();
-    switch (raw) {
-      case 'whatsapp':
-      case 'wa':
-        return ChannelKind.WHATSAPP;
-      case 'instagram':
-      case 'ig':
-        return ChannelKind.INSTAGRAM;
-      case 'messenger':
-        return ChannelKind.MESSENGER;
-      case 'facebook':
-      case 'fb':
-        return ChannelKind.FACEBOOK;
-      case 'email':
-      case 'mail':
-        return ChannelKind.EMAIL;
-      default:
-        return null;
-    }
   }
 
   /**
@@ -184,148 +143,24 @@ export class ChannelMessageDispatchService {
   ): Promise<ChannelSendInput> {
     switch (kind) {
       case ChannelKind.WHATSAPP:
-        return this.buildWhatsApp(workspaceId, to, message, opts);
-      case ChannelKind.INSTAGRAM:
-        return this.buildInstagram(workspaceId, to, message, opts);
-      case ChannelKind.MESSENGER:
-        return this.buildMessenger(workspaceId, to, message, opts);
-      case ChannelKind.FACEBOOK:
-        return this.buildFacebook(workspaceId, to, message, opts);
+        return buildWhatsApp(workspaceId, to, message, opts);
+      case ChannelKind.INSTAGRAM: {
+        const conn = await this.metaWhatsApp.resolveConnection(workspaceId, 'instagram');
+        return buildInstagram(workspaceId, to, message, opts, conn);
+      }
+      case ChannelKind.MESSENGER: {
+        const conn = await this.metaWhatsApp.resolveConnection(workspaceId, 'facebook');
+        return buildMessenger(workspaceId, to, message, opts, conn);
+      }
+      case ChannelKind.FACEBOOK: {
+        const conn = await this.metaWhatsApp.resolveConnection(workspaceId, 'facebook');
+        return buildFacebook(workspaceId, to, message, opts, conn);
+      }
       case ChannelKind.EMAIL:
-        return this.buildEmail(workspaceId, to, message, opts);
+        return buildEmail(workspaceId, to, message, opts);
       default:
         throw new Error('channel_not_supported');
     }
-  }
-
-  private buildWhatsApp(
-    workspaceId: string,
-    to: string,
-    message: string,
-    opts: DispatchOptions,
-  ): ChannelSendInput {
-    const input: ChannelSendInput = {
-      channelKind: ChannelKind.WHATSAPP,
-      workspaceId,
-      to,
-      message,
-    };
-    if (opts.mediaUrl !== undefined) {
-      input.mediaUrl = opts.mediaUrl;
-    }
-    if (opts.mediaType !== undefined) {
-      input.mediaType = opts.mediaType;
-    }
-    if (opts.caption !== undefined) {
-      input.caption = opts.caption;
-    }
-    if (opts.quotedMessageId !== undefined) {
-      input.quotedMessageId = opts.quotedMessageId;
-    }
-    if (opts.externalId !== undefined) {
-      input.externalId = opts.externalId;
-    }
-    if (opts.complianceMode !== undefined) {
-      input.complianceMode = opts.complianceMode;
-    }
-    if (opts.forceDirect !== undefined) {
-      input.forceDirect = opts.forceDirect;
-    }
-    return input;
-  }
-
-  private async buildInstagram(
-    workspaceId: string,
-    to: string,
-    message: string,
-    opts: DispatchOptions,
-  ): Promise<ChannelSendInput> {
-    const conn = await this.metaWhatsApp.resolveConnection(workspaceId, 'instagram');
-    const igAccountId = (opts.igAccountId || conn.instagramAccountId || '').trim();
-    const accessToken = (opts.accessToken || conn.accessToken || '').trim();
-    if (!accessToken) {
-      throw new Error('meta_instagram_connection_required');
-    }
-    if (!igAccountId) {
-      throw new Error('instagram_account_id_required');
-    }
-    return {
-      channelKind: ChannelKind.INSTAGRAM,
-      workspaceId,
-      igAccountId,
-      recipientId: to,
-      text: message,
-      accessToken,
-    };
-  }
-
-  private async buildMessenger(
-    workspaceId: string,
-    to: string,
-    message: string,
-    opts: DispatchOptions,
-  ): Promise<ChannelSendInput> {
-    const conn = await this.metaWhatsApp.resolveConnection(workspaceId, 'facebook');
-    const pageId = (opts.pageId || conn.pageId || '').trim();
-    const pageAccessToken = (
-      opts.pageAccessToken ||
-      conn.pageAccessToken ||
-      opts.accessToken ||
-      conn.accessToken ||
-      ''
-    ).trim();
-    if (!pageAccessToken) {
-      throw new Error('meta_connection_required');
-    }
-    if (!pageId) {
-      throw new Error('messenger_page_id_required');
-    }
-    const input: ChannelSendInput = {
-      channelKind: ChannelKind.MESSENGER,
-      workspaceId,
-      pageId,
-      recipientId: to,
-      text: message,
-      pageAccessToken,
-    };
-    if (opts.mediaUrl !== undefined) {
-      input.mediaUrl = opts.mediaUrl;
-    }
-    if (opts.mediaType !== undefined) {
-      input.mediaType = opts.mediaType;
-    }
-    return input;
-  }
-
-  private async buildFacebook(
-    workspaceId: string,
-    to: string,
-    message: string,
-    opts: DispatchOptions,
-  ): Promise<ChannelSendInput> {
-    const conn = await this.metaWhatsApp.resolveConnection(workspaceId, 'facebook');
-    const pageId = (opts.pageId || conn.pageId || '').trim();
-    const pageAccessToken = (
-      opts.pageAccessToken ||
-      conn.pageAccessToken ||
-      opts.accessToken ||
-      conn.accessToken ||
-      ''
-    ).trim();
-    if (!pageAccessToken) {
-      throw new Error('meta_connection_required');
-    }
-    if (!pageId) {
-      throw new Error('facebook_page_id_required');
-    }
-    return {
-      channelKind: ChannelKind.FACEBOOK,
-      workspaceId,
-      pageId,
-      recipientPsid: to,
-      text: message,
-      pageAccessToken,
-    };
   }
 
   /**
@@ -345,9 +180,9 @@ export class ChannelMessageDispatchService {
     workspaceId: string,
     args: Record<string, unknown>,
   ): Promise<ChannelSendResult> {
-    const channel = this.coerceArgString(args.channel);
-    const to = this.coerceArgString(args.to ?? args.recipient ?? args.phone ?? args.email);
-    const message = this.coerceArgString(args.message ?? args.body);
+    const channel = coerceArgString(args.channel);
+    const to = coerceArgString(args.to ?? args.recipient ?? args.phone ?? args.email);
+    const message = coerceArgString(args.message ?? args.body);
     if (!channel) {
       return {
         success: false,
@@ -365,7 +200,7 @@ export class ChannelMessageDispatchService {
         blockedReason: 'recipient_required',
       };
     }
-    const options = this.extractOptions(args);
+    const options = extractOptions(args);
     return this.dispatch(workspaceId, channel, to, message, options);
   }
 
@@ -381,7 +216,7 @@ export class ChannelMessageDispatchService {
    * @param args         tool arguments carrying the requested ad platform
    */
   createAdDraftTool(_workspaceId: string, args: Record<string, unknown>): ChannelSendResult {
-    const platform = this.coerceArgString(args.platform ?? args.channel, 'ads');
+    const platform = coerceArgString(args.platform ?? args.channel, 'ads');
     return {
       success: false,
       provider: platform,
@@ -389,76 +224,5 @@ export class ChannelMessageDispatchService {
       blocked: true,
       blockedReason: 'ads_integration_setup_required',
     };
-  }
-
-  /**
-   * Coerce a loose tool-arg value to a trimmed string.
-   *
-   * Only primitive scalars (string/number/boolean) are stringified; objects,
-   * arrays and null-ish values collapse to the empty string. This matches the
-   * honest blocked-path semantics — a non-scalar `channel`/`to`/`message` is
-   * never a valid value, so it must surface as a `*_required` block rather than
-   * a `[object Object]` stringification.
-   */
-  private coerceArgString(value: unknown, fallback = ''): string {
-    if (typeof value === 'string') {
-      return value.trim();
-    }
-    if (typeof value === 'number' || typeof value === 'boolean') {
-      return String(value).trim();
-    }
-    return fallback;
-  }
-
-  /** Build {@link DispatchOptions} from loose tool args, dropping unset keys. */
-  private extractOptions(args: Record<string, unknown>): DispatchOptions {
-    const opts: DispatchOptions = {};
-    const str = (v: unknown): string | undefined =>
-      typeof v === 'string' && v !== '' ? v : undefined;
-    const subject = str(args.subject);
-    if (subject !== undefined) {
-      opts.subject = subject;
-    }
-    const html = str(args.html);
-    if (html !== undefined) {
-      opts.html = html;
-    }
-    const mediaUrl = str(args.mediaUrl);
-    if (mediaUrl !== undefined) {
-      opts.mediaUrl = mediaUrl;
-    }
-    const caption = str(args.caption);
-    if (caption !== undefined) {
-      opts.caption = caption;
-    }
-    const externalId = str(args.externalId);
-    if (externalId !== undefined) {
-      opts.externalId = externalId;
-    }
-    return opts;
-  }
-
-  private buildEmail(
-    workspaceId: string,
-    to: string,
-    message: string,
-    opts: DispatchOptions,
-  ): ChannelSendInput {
-    const input: ChannelSendInput = {
-      channelKind: ChannelKind.EMAIL,
-      workspaceId,
-      toEmail: to,
-    };
-    if (opts.subject !== undefined) {
-      input.subject = opts.subject;
-    }
-    const html = opts.html ?? message;
-    if (html !== undefined && html !== '') {
-      input.html = html;
-    }
-    if (opts.proactive !== undefined) {
-      input.proactive = opts.proactive;
-    }
-    return input;
   }
 }

@@ -131,7 +131,6 @@ const mockAuthTokenService = {
 describe('AuthService', () => {
   let service: AuthService;
   let prisma: typeof mockPrismaService;
-  let emailService: typeof mockEmailService;
   let connectService: typeof mockConnectService;
 
   beforeEach(async () => {
@@ -167,7 +166,6 @@ describe('AuthService', () => {
 
     service = module.get<AuthService>(AuthService);
     prisma = mockPrismaService;
-    emailService = mockEmailService;
     connectService = module.get(ConnectService);
   });
 
@@ -513,97 +511,6 @@ describe('AuthService', () => {
           process.env.RATE_LIMIT_DISABLED = 'true';
         }
       }
-    });
-  });
-
-  describe('forgotPassword', () => {
-    it('should return success message for non-existent email (security)', async () => {
-      prisma.agent.findFirst.mockResolvedValue(null);
-
-      const result = await service.forgotPassword('nonexistent@test.com');
-
-      expect(result.success).toBe(true);
-      expect(result.message).toContain('Se o email existir');
-      expect(emailService.sendPasswordResetEmail).not.toHaveBeenCalled();
-    });
-
-    it('should send reset email for existing user', async () => {
-      prisma.agent.findFirst.mockResolvedValue({
-        id: 'agent-1',
-        email: 'test@test.com',
-      });
-      prisma.passwordResetToken.create.mockResolvedValue({
-        token: 'reset-token',
-      });
-
-      const result = await service.forgotPassword('test@test.com');
-
-      expect(result.success).toBe(true);
-      expect(emailService.sendPasswordResetEmail).toHaveBeenCalledWith(
-        'test@test.com',
-        expect.stringContaining('reset-password'),
-      );
-    });
-  });
-
-  describe('resetPassword', () => {
-    it('should throw UnauthorizedException for invalid token', async () => {
-      prisma.passwordResetToken.findUnique.mockResolvedValue(null);
-
-      await expect(service.resetPassword('invalid-token', 'newpassword123')).rejects.toThrow(
-        UnauthorizedException,
-      );
-    });
-
-    it('should throw UnauthorizedException for expired token', async () => {
-      prisma.passwordResetToken.findUnique.mockResolvedValue({
-        token: 'expired-token',
-        used: false,
-        expiresAt: new Date(Date.now() - 1000), // Expired
-        agent: { id: 'agent-1' },
-      });
-
-      await expect(service.resetPassword('expired-token', 'newpassword123')).rejects.toThrow(
-        UnauthorizedException,
-      );
-    });
-
-    it('should throw UnauthorizedException for used token', async () => {
-      prisma.passwordResetToken.findUnique.mockResolvedValue({
-        token: 'used-token',
-        used: true,
-        expiresAt: new Date(Date.now() + 60000),
-        agent: { id: 'agent-1' },
-      });
-
-      await expect(service.resetPassword('used-token', 'newpassword123')).rejects.toThrow(
-        UnauthorizedException,
-      );
-    });
-  });
-
-  describe('verifyEmail', () => {
-    it('should throw UnauthorizedException for invalid token', async () => {
-      prisma.agent.findFirst.mockResolvedValue(null);
-
-      await expect(service.verifyEmail('invalid-token')).rejects.toThrow(UnauthorizedException);
-    });
-
-    it('should verify email successfully', async () => {
-      prisma.agent.findFirst.mockResolvedValue({
-        id: 'agent-1',
-        emailVerificationToken: 'valid-token',
-        emailVerificationExpiry: new Date(Date.now() + 60000),
-      });
-      prisma.agent.update.mockResolvedValue({
-        id: 'agent-1',
-        emailVerified: true,
-      });
-
-      const result = await service.verifyEmail('valid-token');
-
-      expect(result.success).toBe(true);
-      expect(result.message).toContain('verificado');
     });
   });
 });

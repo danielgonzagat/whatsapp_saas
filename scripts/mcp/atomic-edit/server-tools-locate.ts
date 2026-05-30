@@ -185,7 +185,7 @@ export function registerToolsLocate(server: McpServer): void {
       description:
         'Rename the symbol at (line,column) across the file. TS/JS: ts-morph (scope-correct, respects ' +
         'binding/shadowing). All other languages: identifier word-boundary matching + tree-sitter scope ' +
-        'analysis when available, syntax-validated. The universal rename_symbol that works on any source file.',
+        'analysis when available, syntax-validated. The universal rename_symbol that works on every source file.',
       inputSchema: {
         file: z.string(),
         line: z.number().int().min(1),

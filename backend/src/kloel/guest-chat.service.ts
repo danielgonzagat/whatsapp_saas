@@ -54,6 +54,11 @@ import {
   writeStreamChunk as writeStreamChunkFn,
 } from './guest-chat.lifecycle.helpers';
 import { resolveDefaultWorkspaceId as resolveDefaultWorkspaceIdFn } from './guest-chat.default-workspace.helpers';
+import {
+  configureGuestSseResponse,
+  emitGuestEngageDecision,
+  injectGuestMindSignals,
+} from './guest-chat.sse.helpers';
 import { MindPredictorService } from './mind/inference/mind-predictor.service';
 
 // cache.invalidate — Redis is the primary guest conversation store; local Map is fallback.
@@ -222,26 +227,8 @@ export class GuestChatService implements OnModuleDestroy {
    * 💬 Chat com streaming SSE para visitantes
    */
   async chat(message: string, sessionId: string, req: Request, res: Response): Promise<void> {
-    // CORS manual — obrigatório porque estamos usando @Res() e streaming
-    // NestJS desativa CORS automático quando usamos @Res()
-    const origin = req.headers.origin || '*';
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Vary', 'Origin');
-    res.setHeader(
-      'Access-Control-Allow-Headers',
-      'Content-Type, Authorization, X-Session-Id, Accept',
-    );
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-
-    // Configurar SSE
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('X-Session-Id', sessionId);
-
-    // Enviar cabeçalhos antes de escrever dados
-    res.flushHeaders();
+    // SSE + manual CORS headers (extracted: see guest-chat.sse.helpers.ts).
+    configureGuestSseResponse(req, res, sessionId);
 
     const startedAt = Date.now();
     const chatWsId = sessionId;
@@ -293,20 +280,7 @@ export class GuestChatService implements OnModuleDestroy {
         surface: 'guest',
       });
 
-      void this.spineEmitter
-        ?.emit({
-          eventName: 'cognition.decision_made',
-          workspaceId: chatWsId,
-          truthMode: 'observed',
-          provenance: {
-            source: 'production',
-            processor: 'guest-chat',
-            processorVersion: '1.0.0',
-            schemaVersion: '1.0.0',
-          },
-          payload: { decision: 'engage', messageLength: message.length, surface: 'guest' },
-        })
-        .catch(() => {});
+      emitGuestEngageDecision(this.spineEmitter, chatWsId, message.length);
 
       // DETERMINISTIC ACTION ROUTER — classify intent and execute tools
       // BEFORE the LLM. The streaming path must not let the LLM decide whether
@@ -350,20 +324,7 @@ export class GuestChatService implements OnModuleDestroy {
       const { conversation, contextMessages } = await this.buildGuestMessages(message, sessionId);
 
       // Inject mindSignals into the cognitive context for the LLM
-      if (mindSignals) {
-        const lastMsg = contextMessages[contextMessages.length - 1];
-        if (lastMsg && lastMsg.role === 'user') {
-          const parsed = JSON.parse(lastMsg.content) as {
-            cognitiveState?: Record<string, unknown>;
-            [key: string]: unknown;
-          };
-          parsed.cognitiveState = { ...(parsed.cognitiveState ?? {}), mindSignals };
-          contextMessages[contextMessages.length - 1] = {
-            ...lastMsg,
-            content: JSON.stringify(parsed),
-          };
-        }
-      }
+      injectGuestMindSignals(contextMessages, mindSignals);
       this._lastCognitiveState = { mindSignals };
 
       fullResponse = await this.generateGuestReply(contextMessages, sessionId);
@@ -446,20 +407,7 @@ export class GuestChatService implements OnModuleDestroy {
       surface: 'guest',
     });
 
-    void this.spineEmitter
-      ?.emit({
-        eventName: 'cognition.decision_made',
-        workspaceId: metricWsId,
-        truthMode: 'observed',
-        provenance: {
-          source: 'production',
-          processor: 'guest-chat',
-          processorVersion: '1.0.0',
-          schemaVersion: '1.0.0',
-        },
-        payload: { decision: 'engage', messageLength: message.length, surface: 'guest' },
-      })
-      .catch(() => {});
+    emitGuestEngageDecision(this.spineEmitter, metricWsId, message.length);
 
     try {
       if (!message || message.trim().length === 0) {
@@ -536,20 +484,7 @@ export class GuestChatService implements OnModuleDestroy {
 
       const { conversation, contextMessages } = await this.buildGuestMessages(message, sessionId);
 
-      if (mindSignals) {
-        const lastMsg = contextMessages[contextMessages.length - 1];
-        if (lastMsg && lastMsg.role === 'user') {
-          const parsed = JSON.parse(lastMsg.content) as {
-            cognitiveState?: Record<string, unknown>;
-            [key: string]: unknown;
-          };
-          parsed.cognitiveState = { ...(parsed.cognitiveState ?? {}), mindSignals };
-          contextMessages[contextMessages.length - 1] = {
-            ...lastMsg,
-            content: JSON.stringify(parsed),
-          };
-        }
-      }
+      injectGuestMindSignals(contextMessages, mindSignals);
       this._lastCognitiveState = { mindSignals };
 
       this.logger.log(

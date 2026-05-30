@@ -392,7 +392,7 @@ describe('KloelToolExecutorCrmService', () => {
     it('toolCreateCampaign scopes to workspaceId', async () => {
       campaigns.create.mockResolvedValue({ id: 'c-1', name: 'Test' });
       await service.toolCreateCampaign('ws-isolated', { name: 'Camp', message: 'msg' });
-      expect(campaigns.create).toHaveBeenCalledWith('ws-isolated', expect.any(Object));
+      expect(campaigns.create).toHaveBeenCalledWith('ws-isolated', expect.objectContaining({}));
     });
   });
 

@@ -35,9 +35,6 @@
  * assertion to force green.
  */
 import { randomUUID } from 'crypto';
-import { existsSync } from 'fs';
-import { join } from 'path';
-import * as dotenv from 'dotenv';
 import { DecisionOutcomeService } from './decision-outcome.service';
 import { MindBeliefService } from './mind/inference/mind-belief.service';
 import { MindPredictorService } from './mind/inference/mind-predictor.service';
@@ -45,24 +42,11 @@ import { MindSurpriseService } from './mind/inference/mind-surprise.service';
 import { MindBanditService } from './mind/policy/mind-bandit.service';
 import { MindGlobalPriorService } from './mind/memory/mind-global-prior.service';
 import { PrismaService } from '../prisma/prisma.service';
-
-/**
- * Hydrate DATABASE_URL from backend/.env when it is not already set. The unit
- * jest config (package.json) does NOT load test/jest.env.ts, so a standalone
- * run has no env. PrismaClient reads DATABASE_URL at construction (`new
- * PrismaService()` in beforeAll), so calling this before that is sufficient —
- * no import-ordering trick needed. If it stays unset, the connect guard skips
- * with a precise blocker.
- */
-function hydrateDatabaseUrl(): void {
-  if (process.env.DATABASE_URL) {
-    return;
-  }
-  const envPath = join(__dirname, '..', '..', '.env');
-  if (existsSync(envPath)) {
-    dotenv.config({ path: envPath });
-  }
-}
+import {
+  detectUpdatedAtSchemaDrift,
+  hydrateDatabaseUrl,
+  waitFor,
+} from './cognitive-loop-realdb.proof.integration.helpers';
 
 const RUN = randomUUID().slice(0, 8);
 const WS = `ws-realdb-liveness-${RUN}`;
@@ -103,36 +87,12 @@ describe('Cognitive loop REAL-DB LIVENESS PROOF — one reply persists the four 
       // a mid-test assertion.
       await prisma.mindPrediction.count({ where: { workspaceId: WS } });
 
-      // Pre-flight schema-drift gate. MindBeliefService.getOrInit persists the
-      // belief through a raw `INSERT INTO "RAC_MindBelief" (...)` that does NOT
-      // list `updatedAt`, relying on the column's DB-level `DEFAULT NOW()`
-      // installed by migration 20260507120000_add_kloel_mind_updated_at. If a
-      // later `prisma db push` / `migrate reset` regenerated the column from
-      // schema.prisma (where `@updatedAt` carries NO DB default), the raw INSERT
-      // throws NOT NULL (23502) and the loop cannot persist beliefs. Detect that
-      // precise precondition here and SKIP with the exact blocker rather than
-      // dying mid-loop — this is an environment finding, not a weakened proof.
-      const driftRows = await prisma.$queryRaw<
-        Array<{ table_name: string; column_default: string | null }>
-      >`
-        SELECT table_name, column_default
-        FROM information_schema.columns
-        WHERE table_schema = 'public'
-          AND table_name IN ('RAC_MindBelief', 'RAC_MindPrediction')
-          AND column_name = 'updatedAt'
-      `;
-      const missingDefault = driftRows.filter((r) => !r.column_default);
-      if (missingDefault.length > 0) {
-        connectError =
-          'SCHEMA DRIFT: ' +
-          missingDefault.map((r) => `${r.table_name}.updatedAt`).join(', ') +
-          ' has NO DB-level default on this dev DB, yet migration ' +
-          '20260507120000_add_kloel_mind_updated_at set DEFAULT NOW(). ' +
-          "MindBeliefService.getOrInit's raw INSERT omits updatedAt and relies " +
-          'on that default, so the cognitive loop cannot persist new beliefs ' +
-          'here (Postgres 23502 NOT NULL). Fix the dev DB to match migrations: ' +
-          'ALTER COLUMN updatedAt SET DEFAULT NOW() on both RAC_MindBelief and ' +
-          'RAC_MindPrediction. Do NOT use `prisma db push`, which re-drops the default.';
+      // Pre-flight schema-drift gate (extracted to the helpers module). SKIP
+      // with the exact blocker rather than dying mid-loop — environment finding,
+      // not a weakened proof.
+      const drift = await detectUpdatedAtSchemaDrift(prisma);
+      if (drift) {
+        connectError = drift;
         try {
           await prisma.$disconnect();
         } catch {
@@ -375,28 +335,3 @@ describe('Cognitive loop REAL-DB LIVENESS PROOF — one reply persists the four 
     expect(beliefCount).toBeGreaterThan(0);
   }, 30000);
 });
-
-/**
- * Polls `predicate` until it returns true or the budget elapses. Used to await
- * the fire-and-forget bandit `register()` that recordDecision dispatches.
- */
-async function waitFor(
-  predicate: () => Promise<boolean>,
-  {
-    timeoutMs = 8000,
-    intervalMs = 100,
-    label = 'condition',
-  }: { timeoutMs?: number; intervalMs?: number; label?: string } = {},
-): Promise<void> {
-  const deadline = Date.now() + timeoutMs;
-  while (true) {
-    if (await predicate()) {
-      return;
-    }
-    if (Date.now() >= deadline) {
-      // Fail loudly rather than letting a later assertion read a confusing null.
-      throw new Error(`waitFor timed out after ${timeoutMs}ms waiting for ${label}`);
-    }
-    await new Promise((resolve) => setTimeout(resolve, intervalMs));
-  }
-}

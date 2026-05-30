@@ -85,7 +85,7 @@ describe('FacebookMessengerController — route boot-smoke', () => {
     expect(route?.method).toBe(expectedMethod);
   });
 
-  it('does not silently lose any of the 6 declared routes', () => {
+  it('preserves all 6 declared routes', () => {
     expect(routes).toHaveLength(6);
   });
 });

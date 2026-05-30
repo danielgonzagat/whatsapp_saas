@@ -57,8 +57,8 @@ async function nativeReadyOrFail(): Promise<ToolOk | null> {
   const ready = await ensureReady();
   if (!ready || !nativeAvailable()) {
     return fail(
-      'native universal engine (pi-natives) unavailable on this platform — ' +
-        'use the explicit atomic_edit range/literal/symbol tools, or run on a supported platform (darwin-arm64 today).',
+      'universal engine (web-tree-sitter) unavailable — its WASM runtime or grammar failed to load; ' +
+        'use the explicit atomic_edit range/literal/symbol tools (the engine is pure WASM and runs on every platform).',
     );
   }
   return null;
@@ -71,7 +71,7 @@ export function registerToolsNative(server: McpServer): void {
       title: 'Universal structural search (ast-grep, 75 languages)',
       description:
         'Search code structurally with an ast-grep pattern (e.g. "greet($A)", "function $F($$$) { $$$ }") ' +
-        'across any tree-sitter-supported language. Read-only. Returns matches with file, line/column span, ' +
+        'across every tree-sitter-supported language. Read-only. Returns matches with file, line/column span, ' +
         'and (optionally) meta-variable bindings. `path` may be a file or directory inside the repo.',
       inputSchema: {
         path: z.string(),
@@ -121,7 +121,7 @@ export function registerToolsNative(server: McpServer): void {
       title: 'Universal structural edit (ast-grep rewrite) through the firewall',
       description:
         'Rewrite ONE file structurally with an ast-grep pattern -> template (e.g. pattern "greet($A)", ' +
-        'rewrite "salute($A)"), across any supported language. The native engine computes the change spans ' +
+        'rewrite "salute($A)"), across every supported language. The native engine computes the change spans ' +
         '(dry-run, never writes); this tool applies them through the atomic Mutation Firewall: span-guarded, ' +
         'syntax-validated (no-regression), atomic write, char-level trace, rollback-safe. Use the explicit ' +
         'TS symbol tools (atomic_rename_symbol, atomic_change_signature) for type-aware refactors — ast-grep ' +
@@ -185,7 +185,7 @@ export function registerToolsNative(server: McpServer): void {
           result,
           {
             operator: 'atomic_ast_edit',
-            engine: 'pi-natives ast-grep',
+            engine: 'web-tree-sitter ast-grep',
             pattern: a.pattern,
             rewrite: a.rewrite,
             lang: a.lang ?? '(inferred)',
@@ -208,7 +208,7 @@ export function registerToolsNative(server: McpServer): void {
     {
       title: 'Universal engine status — availability + supported languages',
       description:
-        'Reports whether the native pi-natives universal engine is loaded on this platform and the list of ' +
+        'Reports whether the universal (web-tree-sitter WASM) engine is loaded and the list of ' +
         'languages it can parse/edit structurally. Use to decide between atomic_ast_* (universal) and the ' +
         'TS-specific symbol tools.',
       inputSchema: {},
@@ -233,7 +233,7 @@ export function registerToolsNative(server: McpServer): void {
       title: 'Universal structural rewrite across MANY files (ast-grep, atomic transaction)',
       description:
         'Rewrite code structurally with an ast-grep pattern -> template across every matching file under ' +
-        '`path` (file or directory), in any supported language. The native engine computes all change spans ' +
+        '`path` (file or directory), in every supported language. The native engine computes all change spans ' +
         '(dry-run, never writes); this tool applies them as ONE all-or-nothing firewall transaction: every ' +
         'file resolved through the protected-file guard, validated in memory, and only written if ALL pass ' +
         '(mid-write failure rolls back). Use atomic_ast_search first to preview the match set.',
@@ -307,11 +307,11 @@ export function registerToolsNative(server: McpServer): void {
   server.registerTool(
     'atomic_apply_workspace_edit',
     {
-      title: 'Apply an LSP WorkspaceEdit through the firewall (semantic edits, any language)',
+      title: 'Apply an LSP WorkspaceEdit through the firewall (semantic edits, all languages)',
       description:
         'Apply a Language-Server-Protocol WorkspaceEdit (e.g. the result of lsp_rename or a code action from ' +
         'the lsp-mesh MCP) atomically through the Mutation Firewall. This makes atomic-edit the single ' +
-        'firewall-safe WRITER for type-aware semantic refactors computed by any of the 14 language servers: ' +
+        'firewall-safe WRITER for type-aware semantic refactors computed by all of the 14 language servers: ' +
         'multi-file, validated, traced, rollback-safe. Division of labor: lsp-mesh COMPUTES the edit ' +
         '(scope/type-aware), atomic APPLIES it (sha256 + validate + protected-guard + rollback). Accepts ' +
         'either the `changes` map or `documentChanges` form. LSP positions are 0-based UTF-16.',

@@ -86,7 +86,7 @@ describe('InstagramMarketingController — route boot-smoke', () => {
     expect(route?.method).toBe(expectedMethod);
   });
 
-  it('does not silently lose any of the 8 declared routes', () => {
+  it('preserves all 8 declared routes', () => {
     expect(routes).toHaveLength(8);
   });
 });

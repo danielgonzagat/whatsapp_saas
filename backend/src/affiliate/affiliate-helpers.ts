@@ -1,8 +1,59 @@
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import type { AffiliateProduct, Prisma } from '@prisma/client';
 import { buildPayCheckoutUrl } from '../checkout/checkout-public-url.util';
 import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
 import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { PrismaService } from '../prisma/prisma.service';
+
+/** Standard result shape returned to the Kloel domain-service resolver. */
+export type AffiliateChatResult = {
+  success: true;
+  productId?: string;
+  [key: string]: unknown;
+};
+
+/** Canonical attribution models the affiliate program supports. */
+export const ATTRIBUTION_MODELS: Record<string, string> = {
+  primeiro: 'first_click',
+  first: 'first_click',
+  first_click: 'first_click',
+  ultimo: 'last_click',
+  último: 'last_click',
+  last: 'last_click',
+  last_click: 'last_click',
+  proporcional: 'proportional',
+  proportional: 'proportional',
+};
+
+/**
+ * Resolve a workspace-owned product or throw.
+ *
+ * All chat-surfaced affiliate mutations funnel through here so workspace
+ * isolation is enforced in exactly one place.
+ */
+export async function requireWorkspaceProduct(
+  prisma: PrismaService,
+  workspaceId: string,
+  productId: unknown,
+): Promise<{ id: string }> {
+  if (typeof productId !== 'string' || productId.length === 0) {
+    throw new BadRequestException('productId é obrigatório');
+  }
+  const product = await prisma.product.findFirst({
+    where: { id: productId, workspaceId },
+    select: { id: true },
+  });
+  if (!product) {
+    throw new NotFoundException('Produto não encontrado neste workspace');
+  }
+  return product;
+}
+
+/** Normalize a raw attribution-model input into its canonical form, or undefined. */
+export function resolveAttributionModel(model: unknown): string | undefined {
+  const normalized = typeof model === 'string' ? model.trim().toLowerCase() : '';
+  return ATTRIBUTION_MODELS[normalized];
+}
 
 /** Shared lookup type for enriching affiliate products. */
 export interface AffiliateProductLookup {

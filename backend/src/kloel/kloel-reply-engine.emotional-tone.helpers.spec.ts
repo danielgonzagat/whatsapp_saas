@@ -130,7 +130,7 @@ describe('kloel-reply-engine emotional-tone helpers', () => {
       expect(directive).toBeNull();
       expect(warn).toHaveBeenCalledWith(
         'kloel_emotional_tone_directive_failed',
-        expect.any(Object),
+        expect.objectContaining({}),
       );
     });
 

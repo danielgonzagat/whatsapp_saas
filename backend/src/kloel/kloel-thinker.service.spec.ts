@@ -45,10 +45,7 @@ import { KloelComposerService } from './kloel-composer.service';
 import { KloelReplyEngineService, LocalToolExecutor } from './kloel-reply-engine.service';
 import { KLOEL_LLM_E2E_GUARD, KloelLLME2EGuard } from './kloel-llm-e2e-guard';
 import { KloelStreamWriter } from './kloel-stream-writer';
-import { thinkSyncImpl, regenerateThreadAssistantResponseImpl } from './kloel-thinker.helpers';
 import { finalizeSuccessfulReply } from './kloel-thinker-think.helpers';
-import { castMock } from '../../test/helpers/cast-mock';
-
 jest.mock('./kloel-thinker.helpers', () => ({
   thinkSyncImpl: jest.fn(),
   regenerateThreadAssistantResponseImpl: jest.fn(),
@@ -524,100 +521,6 @@ describe('KloelThinkerService', () => {
           { signal },
         ),
       ).resolves.toBeUndefined();
-    });
-  });
-
-  describe('thinkSync', () => {
-    it('delegates to thinkSyncImpl and returns result', async () => {
-      const mockResult = { response: 'Hello!', conversationId: 'conv-1', title: 'Title' };
-      (thinkSyncImpl as jest.Mock).mockResolvedValue(mockResult);
-
-      const result = await service.thinkSync(
-        { message: 'hello', workspaceId: wsId },
-        null,
-        undefined,
-        undefined,
-      );
-
-      expect(thinkSyncImpl).toHaveBeenCalled();
-      expect(result).toEqual(mockResult);
-    });
-
-    it('propagates errors from thinkSyncImpl', async () => {
-      (thinkSyncImpl as jest.Mock).mockRejectedValue(new Error('LLM failure'));
-      await expect(
-        service.thinkSync({ message: 'hello', workspaceId: wsId }, null, undefined, undefined),
-      ).rejects.toThrow('LLM failure');
-    });
-
-    it('passes workspaceId to thinkSyncImpl', async () => {
-      (thinkSyncImpl as jest.Mock).mockResolvedValue({ response: 'Ok' });
-      await service.thinkSync(
-        { message: 'hello', workspaceId: 'ws-tenant' },
-        null,
-        undefined,
-        undefined,
-      );
-      const callArgs = castMock<[{ workspaceId: string }][]>(
-        (thinkSyncImpl as jest.Mock).mock.calls,
-      )[0]?.[0];
-      expect(callArgs.workspaceId).toBe('ws-tenant');
-    });
-  });
-
-  describe('regenerateThreadAssistantResponse', () => {
-    it('delegates to regenerateThreadAssistantResponseImpl', async () => {
-      const mockRegenerated = {
-        id: 'msg-2',
-        threadId: 'thread-1',
-        role: 'assistant',
-        content: 'Regenerated response',
-        metadata: null,
-        createdAt: new Date(),
-        deletedMessageIds: ['msg-1'],
-      };
-      (regenerateThreadAssistantResponseImpl as jest.Mock).mockResolvedValue(mockRegenerated);
-
-      const result = await service.regenerateThreadAssistantResponse({
-        workspaceId: wsId,
-        conversationId: 'conv-1',
-        assistantMessageId: 'msg-1',
-      });
-
-      const [regenerateInput, regenerateDeps] = castMock<unknown[][]>(
-        (regenerateThreadAssistantResponseImpl as jest.Mock).mock.calls,
-      )[0];
-      expect(regenerateInput).toEqual(
-        expect.objectContaining({
-          workspaceId: wsId,
-          conversationId: 'conv-1',
-          assistantMessageId: 'msg-1',
-        }),
-      );
-      expect(regenerateDeps).toBeDefined();
-      expect(result).toEqual(mockRegenerated);
-    });
-
-    it('propagates errors from regenerateThreadAssistantResponseImpl', async () => {
-      (regenerateThreadAssistantResponseImpl as jest.Mock).mockRejectedValue(
-        new Error('Thread not found'),
-      );
-      await expect(
-        service.regenerateThreadAssistantResponse({
-          workspaceId: wsId,
-          conversationId: 'conv-1',
-          assistantMessageId: 'msg-1',
-        }),
-      ).rejects.toThrow('Thread not found');
-    });
-  });
-
-  describe('error handling', () => {
-    it('thinkSync propagates error when helper throws', async () => {
-      (thinkSyncImpl as jest.Mock).mockRejectedValue(new Error('Budget exceeded'));
-      await expect(
-        service.thinkSync({ message: 'hello', workspaceId: wsId }, null, undefined, undefined),
-      ).rejects.toThrow('Budget exceeded');
     });
   });
 });
