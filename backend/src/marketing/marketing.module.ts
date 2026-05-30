@@ -38,7 +38,13 @@ import { EmailInboundService } from '../email/email-inbound.service';
 
 /** Marketing module. */
 @Module({
-  imports: [PrismaModule, AuthModule, WhatsappModule, InboxModule, forwardRef(() => KloelModule)],
+  imports: [
+    PrismaModule,
+    AuthModule,
+    forwardRef(() => WhatsappModule),
+    forwardRef(() => InboxModule),
+    forwardRef(() => KloelModule),
+  ],
   controllers: [
     MarketingController,
     MarketingConnectController,

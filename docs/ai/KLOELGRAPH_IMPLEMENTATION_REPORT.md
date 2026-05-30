@@ -112,6 +112,17 @@ As telas sao as rotas reais existentes:
 - Validacoes externas de canais, saque, antecipacao, envio de mensagem e OAuth
   dependem de ambiente/provedores.
 
+## Backend boot-smoke
+
+O pre-push do PR #462 tambem exercita boot real do backend quando ha arquivos
+backend no diff. Como os entrypoints de spec legados trouxeram backend para o
+slice, o boot-smoke expos ciclos DI preexistentes na canonicalizacao CIA /
+Meta / Marketing. Foram ajustados imports circulares com `forwardRef` em:
+
+- `backend/src/kloel/mind/cia/cia.module.ts`
+- `backend/src/meta/meta.module.ts`
+- `backend/src/marketing/marketing.module.ts`
+
 ## Compatibilidade de testes legados
 
 O pre-push do PR #462 ainda enxerga paths legados de specs removidos em ondas
@@ -133,6 +144,10 @@ specs canonicos atuais:
   - Resultado: passou para backend, frontend e worker no conjunto alterado.
 - `cd backend && npx jest src/cia/cia-backlog-run.service.spec.ts src/cia/cia-bootstrap.service.spec.ts src/cia/cia-chat-filter.service.spec.ts src/cia/cia-inline-fallback.service.spec.ts src/cia/cia-remote-backlog.service.spec.ts src/kloel/healthymoney/revenue-quality.scorer.service.spec.ts src/whatsapp/providers/waha.provider.spec.ts --runInBand --no-coverage`
   - Resultado: 7 arquivos passaram, 108 testes passaram.
+- `cd backend && npm run build`
+  - Resultado: passou.
+- `DATABASE_URL=postgresql://postgres:password@localhost:5432/whatsapp_saas_test JWT_SECRET=test_secret REDIS_URL=redis://localhost:6379 OPENAI_API_KEY=e2e-dummy-key METRICS_TOKEN=test-metrics-token DIAG_TOKEN=test-diag-token STRIPE_WEBHOOK_SECRET=whsec_test_scoped_prepush OPS_WEBHOOK_URL=https://example.com/ops-webhook DLQ_WEBHOOK_URL=https://example.com/dlq-webhook npm run backend:boot-smoke`
+  - Resultado: passou; `RoutesResolver reached with all cycle modules initialized`.
 - `cd frontend && npm test -- --run src/components/kloel/graph/KloelGraph.routes.spec.ts src/components/kloel/graph/KloelGraphShell.spec.tsx src/components/kloel/layouts/MainAppLayoutShell.spec.tsx src/components/kloel/products/product-nerve-tabs.graph-contract.spec.ts`
   - Resultado: 4 arquivos passaram, 18 testes passaram.
 - `cd frontend && npm run typecheck`

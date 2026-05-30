@@ -23,8 +23,8 @@ import { CIA_RUNTIME_SERVICE } from './cia-runtime.port';
 @Module({
   imports: [
     GoalFieldModule,
-    KloelModule,
-    MindModule,
+    forwardRef(() => KloelModule),
+    forwardRef(() => MindModule),
     SpineModule,
     forwardRef(() => WhatsappModule),
   ],
