@@ -21,7 +21,7 @@ export const DEFAULT_PROBE_DEFINITIONS: RuntimeProbeDefinition[] = [
     timeoutMs: 5000,
   },
   {
-    probeId: 'health-ready',
+    probeId: 'db-connectivity',
     target: 'GET /health/ready',
     method: 'GET',
     path: '/health/ready',
@@ -39,7 +39,7 @@ export const DEFAULT_PROBE_DEFINITIONS: RuntimeProbeDefinition[] = [
     timeoutMs: 5000,
   },
   {
-    probeId: 'root-health',
+    probeId: 'backend-health',
     target: 'GET /health',
     method: 'GET',
     path: '/health',
