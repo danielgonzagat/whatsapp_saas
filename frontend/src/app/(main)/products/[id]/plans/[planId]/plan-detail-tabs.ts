@@ -4,7 +4,6 @@ import {
   CreditCard,
   Package,
   ScrollText,
-  ShoppingCart,
   Store,
   Truck,
   Users,
@@ -16,7 +15,7 @@ export const SUB_TABS = [
   { id: 'packaging', label: kloelT(`Embalagem`), icon: Package },
   { id: 'shipping', label: kloelT(`Frete`), icon: Truck },
   { id: 'affiliate', label: kloelT(`Afiliacao`), icon: Users },
-  { id: 'orderbump', label: kloelT(`Order Bump`), icon: ShoppingCart },
+  { id: 'checkout', label: kloelT(`Checkout`), icon: CreditCard },
   { id: 'terms', label: kloelT(`Termos`), icon: ScrollText },
   { id: 'ai', label: kloelT(`IA`), icon: Brain },
 ] as const;

@@ -178,7 +178,7 @@ export default function CheckoutEditorPage() {
     ? (() => {
         switch (requestedFocus) {
           case 'order-bump':
-            return `/products/${productId}?tab=planos&planSub=bump&focus=order-bump`;
+            return `/products/${productId}?tab=checkouts&focus=order-bump`;
           case 'coupon':
             return `/products/${productId}?tab=cupons&modal=newCoupon&focus=coupon`;
           case 'urgency':
