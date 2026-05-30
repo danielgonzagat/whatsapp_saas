@@ -19,6 +19,7 @@ import { ok, fail } from './server-helpers-result.js';
 import { convergeStatic, type Mutation } from './server-helpers-converge.js';
 import { captureEffectSnapshot, diffEffect, rollbackEffect } from './server-helpers-effect.js';
 import { registerPendingWrites, clearPendingWrites } from './connection-gate.js';
+import { runGates, DYNAMIC_GATES } from './gates/registry.js';
 
 export function registerToolsConverge(server: McpServer): void {
   server.registerTool(
@@ -81,8 +82,9 @@ export function registerToolsConverge(server: McpServer): void {
           });
         }
 
-        // ── apply through the firewall (snapshot first for the effect gate) ──
-        const effectSnap = a.effectCommand ? captureEffectSnapshot(repoRoot) : null;
+        // ── apply through the firewall (snapshot first for the effect + probe gates) ──
+        const hasProbes = mutations.some((m) => /@probe-convergence/.test(m.newText));
+        const effectSnap = a.effectCommand || hasProbes ? captureEffectSnapshot(repoRoot) : null;
         const written: string[] = [];
         const targets = mutations.map((m) => ({ ...resolveSafeTarget(m.file), newText: m.newText }));
         // Register the whole set as pending so the byte-floor connection gate sees
@@ -119,6 +121,35 @@ export function registerToolsConverge(server: McpServer): void {
               summaryForHuman:
                 `⛔ refused — effect gate RED (exit ${res.status}); reverted ${reverted} file(s) byte-exact. ` +
                 `Construction = validation: a mutation that breaks at runtime never persists.\n${tail.slice(-500)}`,
+            });
+          }
+        }
+
+        // ── dynamic gates (probe-convergence): the candidate is on disk; each probe
+        // self-instruments → runs deterministically → reverts its instrumentation
+        // byte-exact. A RED means the mutation does not satisfy its own asserted
+        // runtime fact → revert the whole candidate write byte-exact, refuse.
+        if (hasProbes && effectSnap) {
+          const dyn = await runGates(DYNAMIC_GATES, repoRoot, new Map<string, string>(), written);
+          if (!dyn.green) {
+            const reverted = rollbackEffect(effectSnap, diffEffect(effectSnap));
+            return ok({
+              converged: false,
+              committed: false,
+              refusedGate: 'probe-convergence',
+              gates: [
+                ...conv.gates,
+                {
+                  gate: 'probe-convergence',
+                  green: false,
+                  reds: dyn.reds.map((r) => `${r.file}${r.locus ? `:${r.locus}` : ''} — ${r.fact}`),
+                },
+              ],
+              reverted,
+              summaryForHuman:
+                `⛔ refused — probe-convergence RED; reverted ${reverted} file(s) byte-exact. ` +
+                `A mutation that fails its own asserted runtime fact never persists.\n` +
+                `${dyn.reds.slice(0, 3).map((r) => r.fact).join('; ')}`,
             });
           }
         }
