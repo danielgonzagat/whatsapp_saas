@@ -1,11 +1,8 @@
 import * as fs from 'node:fs';
-import * as path from 'node:path';
-import { z } from 'zod';
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { applyEdits, validate, computeZones, type ValidationResult, type TextEditSpec, type ApplyResult } from './engine.js';
+import { computeZones, type ValidationResult, type ApplyResult } from './engine.js';
 import { resolveAllowedRootForAbsolutePath, REPO_ROOT } from './guard.js';
 import { buildTrace, levelFor, shapePayload, writeTrace } from './trace.js';
-import { atomicWrite, sha256, readUtf8, normalizeRepoRelPath, relPathAllowed, normalizeAllowedPath, log, targetDetails } from './server-helpers-io.js';
+import { atomicWrite, sha256, log, targetDetails } from './server-helpers-io.js';
 import { characterDiff, previewDiff } from './advanced.js';
 import { runPostEditVerify } from './server-helpers-verify.js';
 import { lockDir, autoLockCleanup, autoLockFile } from './server-helpers-product-locks.js';
@@ -216,10 +213,3 @@ export function commit(
     }
   }
 }
-
-const server = new McpServer({ name: 'kloel-atomic-edit', version: '4.0.0' });
-
-const pos = z.object({
-  line: z.number().int().min(1).describe('1-based line'),
-  column: z.number().int().min(1).describe('1-based column (UTF-16 units within the line)'),
-});

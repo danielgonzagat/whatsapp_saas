@@ -1,14 +1,7 @@
 import * as childProcess from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { resolveAllowedRootForAbsolutePath, REPO_ROOT } from './guard.js';
 import {
-  EslintDryRunResult,
-  hasArg,
-  normalizeEslintDryRunArgs,
-  normalizeRepoRelPath,
-  parseEslintJson,
-  requireEslintDryRunArgs,
   shellPath,
   nearestPackageRelPath,
 } from './server-helpers-io.js';
@@ -21,8 +14,6 @@ export function runPostEditVerify(
 ): { kind: string; command: string; passed: boolean; summary: string } | null {
   const pkg = nearestPackageRelPath(repoRoot, relPath);
   if (!pkg) return null;
-  const pkgDir = path.join(repoRoot, pkg);
-
   if (verify === 'typecheck') {
     // A bare `tsc --noEmit` in a directory without a tsconfig.json prints the
     // CLI help and exits non-zero — a false negative. Find the nearest

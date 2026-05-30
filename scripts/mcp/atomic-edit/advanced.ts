@@ -15,7 +15,6 @@ import * as path from 'node:path';
 import * as ts from 'typescript';
 import { validate, type ValidationResult } from './engine.js';
 import { resolveSymbol } from './symbols.js';
-import { graphemeDiff } from './textunit.js';
 export { previewDiff, characterDiff } from './advanced-diff.js';
 
 export type SymbolOp = 'replace' | 'insert_after' | 'remove';

@@ -3,12 +3,9 @@ import { fileURLToPath } from 'node:url';
 import {
   applyEdits, replaceText, renameSymbol, replaceLiteral, posToOffset, wrapRange,
 } from './engine.js';
-import { graphemeLength } from './textunit.js';
 import { check } from './smoke-state.js';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const SOURCE_DIR = path.basename(__dirname) === 'dist' ? path.dirname(__dirname) : __dirname;
 
 export async function partA(): Promise<void> {
   process.stdout.write('Part A — engine\n');

@@ -1,8 +1,5 @@
-import * as fs from 'node:fs';
-import * as path from 'node:path';
-import { z } from 'zod';
-import { validate, computeZones, type ValidationResult } from './engine.js';
-import { buildTrace, levelFor, shapePayload, writeTrace } from './trace.js';
+import { computeZones } from './engine.js';
+import { buildTrace, levelFor, shapePayload } from './trace.js';
 import { resolveAllowedRootForAbsolutePath, REPO_ROOT } from './guard.js';
 import { previewDiff, characterDiff, type SemanticEditResult } from './advanced.js';
 import { atomicWrite, sha256, log, targetDetails } from './server-helpers-io.js';
@@ -97,12 +94,3 @@ export function commitSemantic(
     ),
   );
 }
-
-const shaArg = {
-  expectedSha256: z
-    .string()
-    .optional()
-    .describe("optimistic-concurrency guard: refuse if the file's sha256 differs"),
-  preview: z.boolean().optional().describe('dry-run: validate + return diff, do not write'),
-};
-

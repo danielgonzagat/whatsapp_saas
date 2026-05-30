@@ -66,12 +66,12 @@ function factoryObject(init: unknown, kind: typeof ts.SyntaxKind): unknown {
   const fn = init as { getKind?: () => number; getBody?: () => unknown } | undefined;
   const fnKind = fn?.getKind?.();
   if (fnKind !== kind.ArrowFunction && fnKind !== kind.FunctionExpression) return undefined;
-  const body = fn.getBody?.() as { getKind?: () => number; getExpression?: () => unknown; getStatements?: () => unknown[] } | undefined;
+  const body = fn?.getBody?.() as { getKind?: () => number; getExpression?: () => unknown; getStatements?: () => unknown[] } | undefined;
   const bodyKind = body?.getKind?.();
-  if (bodyKind === kind.ParenthesizedExpression) return body.getExpression?.();
+  if (bodyKind === kind.ParenthesizedExpression) return body?.getExpression?.();
   if (bodyKind === kind.ObjectLiteralExpression) return body;
   if (bodyKind !== kind.Block) return undefined;
-  for (const statement of body.getStatements?.() ?? []) {
+  for (const statement of body?.getStatements?.() ?? []) {
     const s = statement as { getKind?: () => number; getExpression?: () => unknown };
     if (s.getKind?.() !== kind.ReturnStatement) continue;
     const expr = s.getExpression?.() as { getKind?: () => number; getExpression?: () => unknown } | undefined;

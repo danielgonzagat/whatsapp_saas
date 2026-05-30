@@ -52,6 +52,11 @@ const options = {
   sourceMap: false,
 };
 
+// Clean the output dir first so every build is deterministic — a stale or
+// anomalous dist entry (e.g. a leftover directory where a .js should be) can
+// otherwise leave a new module unregistered. Full recompile is cheap here.
+fs.rmSync(OUT, { recursive: true, force: true });
+
 const program = ts.createProgram(ENTRY, options);
 const emit = program.emit();
 const diagnostics = ts.getPreEmitDiagnostics(program).concat(emit.diagnostics);

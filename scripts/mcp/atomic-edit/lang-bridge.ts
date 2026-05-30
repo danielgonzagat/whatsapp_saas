@@ -286,14 +286,6 @@ const TREE_SITTER_SCRIPT = path.join(
   path.dirname(path.dirname(new URL(import.meta.url).pathname)),
   'lang-validate.py',
 );
-
-const TREE_SITTER_LANGS = new Set([
-  '.java', '.kt', '.c', '.h', '.cc', '.cpp', '.hpp', '.cs',
-  '.swift', '.scala', '.php', '.css', '.scss', '.less', '.sql',
-  '.go',  // fallback when gofmt not available
-  '.rs',  // fallback when rustc not available
-]);
-
 /** Map extension to tree-sitter language tag. */
 const EXT_TO_TS_LANG: Record<string, string> = {
   '.java': 'java',   '.kt': 'java',     // Kotlin uses Java grammar as approximation

@@ -1,6 +1,4 @@
-import { validate, type ValidationResult, type EditZones, computeZones, EMPTY_ZONES, type Position } from './engine.js';
-import { replaceText } from './engine.js';
-
+import { validate, type ValidationResult, type EditZones, computeZones, type Position } from './engine.js';
 // ─────────────────────────── helpers ───────────────────────────
 
 function posToOffset(text: string, pos: Position): number {

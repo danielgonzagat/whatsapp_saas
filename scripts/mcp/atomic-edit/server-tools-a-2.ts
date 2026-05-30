@@ -1,9 +1,7 @@
-import * as path from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { applyEdits, validate } from './engine.js';
-import { resolveSafeTarget, REPO_ROOT } from './guard.js';
-import { sha256, guardSha, log, atomicWrite, readUtf8, normalizeRepoRelPath } from './server-helpers-io.js';
+import { resolveSafeTarget } from './guard.js';
+import { atomicWrite, readUtf8 } from './server-helpers-io.js';
 import { ok, fail } from './server-helpers-result.js';
 import { replaceOperator, reorderListItem, changeSignature, replaceBodyKeepSignature, addDecorator, replaceDecorator, moveIntoScope } from './engine-complete.js';
 

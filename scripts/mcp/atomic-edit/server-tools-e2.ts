@@ -1,21 +1,10 @@
-import * as childProcess from 'node:child_process';
-import * as fs from 'node:fs';
-import * as os from 'node:os';
-import * as path from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { applyEdits, replaceText, renameSymbol, replaceLiteral, validate, wrapRange, type WrapKind, type TextEditSpec, type ApplyResult, type ValidationResult, computeZones } from './engine.js';
-import { resolveAllowedRootForAbsolutePath, resolveSafeTarget, REPO_ROOT } from './guard.js';
-import { buildTrace, levelFor, shapePayload, writeTrace } from './trace.js';
-import { browse, outline, readSymbol } from './nav.js';
-import { editSymbol, renameSymbolCrossFile, previewDiff, characterDiff, addNamedImport, removeNamedImport, replacePropertyValue, type SymbolOp, type SemanticEditResult, renamePropertyKey, addAwaitToCall } from './advanced.js';
-import { sha256, guardSha, log, atomicWrite, readUtf8, normalizeRepoRelPath, normalizeAllowedPath, relPathAllowed, changedSpanMetrics, hasArg, normalizeEslintDryRunArgs, requireEslintDryRunArgs, parseEslintJson, targetDetails, shellPath, nearestPackageRelPath, type EslintDryRunResult } from './server-helpers-io.js';
-import { runPostEditVerify, packageVerificationPlan, unusedSymbolFromLintMessage } from './server-helpers-verify.js';
-import { buildLintResidueActionCandidates, applyKnownLintResidueFixes } from './server-helpers-lint-fix.js';
-import { ok, fail, commit, type ToolOk } from './server-helpers-result.js';
+import { applyEdits } from './engine.js';
+import { resolveSafeTarget } from './guard.js';
+import { guardSha, readUtf8 } from './server-helpers-io.js';
+import { fail, commit } from './server-helpers-result.js';
 import { shaArg } from './server-helpers-schema.js';
-import { matchesGlob, matchesGlobPart, globFindFiles } from './server-helpers-glob.js';
-import { commitSemantic } from './server-helpers-commit-semantic.js';
 
 export function registerToolsE2(server: McpServer): void {
 server.registerTool(
