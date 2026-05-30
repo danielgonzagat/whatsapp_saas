@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { Test } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import type { Provider } from '@nestjs/common';
@@ -79,9 +79,18 @@ describe('AutopilotCycleExecutorService', () => {
     };
   }
 
+  function useDaytimeClock(): void {
+    jest.useFakeTimers().setSystemTime(new Date('2026-05-13T15:00:00.000Z'));
+  }
+
   beforeEach(() => {
     jest.clearAllMocks();
+    useDaytimeClock();
     mockConfig.get.mockReturnValue(undefined);
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   describe('decideAction — MindPolicy wiring', () => {
