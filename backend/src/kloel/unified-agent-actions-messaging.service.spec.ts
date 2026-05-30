@@ -9,6 +9,7 @@ import { DailyLimitService } from './daily-limit.service';
 import { MindEventSpine } from './mind/coordination';
 import type { IWhatsappMessaging } from '../marketing/channels/whatsapp/whatsapp.interfaces';
 import { type ChannelSendRequest } from './channel-transport.types';
+import { partialMatch, stringContains } from '../../test/helpers/match-instance';
 
 jest.mock('../marketing/mailbox-gmail-oauth.service', () => ({
   MailboxGmailOAuthService: jest.fn(),
@@ -137,7 +138,7 @@ describe('UnifiedAgentActionsMessagingService', () => {
         wsId,
         phone,
         'Olá, como vai?',
-        expect.objectContaining({
+        partialMatch({
           complianceMode: 'proactive',
           forceDirect: false,
         }),
@@ -217,7 +218,7 @@ describe('UnifiedAgentActionsMessagingService', () => {
         wsId,
         phone,
         'Reactive test',
-        expect.objectContaining({ complianceMode: 'reactive' }),
+        partialMatch({ complianceMode: 'reactive' }),
       );
     });
 
@@ -233,7 +234,7 @@ describe('UnifiedAgentActionsMessagingService', () => {
         wsId,
         phone,
         'Direct test',
-        expect.objectContaining({ forceDirect: true }),
+        partialMatch({ forceDirect: true }),
       );
     });
   });
@@ -252,7 +253,7 @@ describe('UnifiedAgentActionsMessagingService', () => {
         wsId,
         phone,
         'Check this out',
-        expect.objectContaining({
+        partialMatch({
           mediaUrl: 'https://example.com/photo.jpg',
           mediaType: 'image',
         }),
@@ -300,8 +301,8 @@ describe('UnifiedAgentActionsMessagingService', () => {
         wsId,
         phone,
         '',
-        expect.objectContaining({
-          mediaUrl: expect.stringContaining('data:audio/mp3;base64,'),
+        partialMatch({
+          mediaUrl: stringContains('data:audio/mp3;base64,'),
           mediaType: 'audio',
         }),
       );

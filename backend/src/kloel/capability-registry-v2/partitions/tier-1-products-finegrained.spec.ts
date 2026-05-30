@@ -21,21 +21,6 @@ describe('tier-1 fine-grained product capabilities (Wave7 L1)', () => {
   const ws = 'ws-fg-1';
   const productId = 'prod-fg-1';
 
-  // ── TEMP DEBUG (will be removed) ──
-  it('DEBUG: token map + cap domainService', () => {
-    const map = (KloelDomainServiceResolver as unknown as {
-      SERVICE_TOKEN_MAP: Map<string, unknown>;
-    }).SERVICE_TOKEN_MAP;
-    console.log('DEBUG ProductService token =', map.get('ProductService'));
-    console.log('DEBUG ProductService import =', ProductService);
-    console.log(
-      'DEBUG cap.domainService =',
-      CAPABILITY_MAP.get('products.set_sales_page')?.domainService,
-    );
-    console.log('DEBUG map size =', map.size, 'has ProductService =', map.has('ProductService'));
-    expect(true).toBe(true);
-  });
-
   const FINE_GRAINED = [
     'products.set_pixels',
     'products.set_shipping',

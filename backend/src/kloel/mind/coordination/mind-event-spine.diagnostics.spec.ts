@@ -6,6 +6,8 @@ import type {
   LeadEventPayload,
   ProductEventPayload,
 } from './mind-event-taxonomy';
+import { partialMatch } from '../../../../test/helpers/match-instance';
+import { castMock } from '../../../../test/helpers/cast-mock';
 
 function objectContaining<T extends object>(sample: T): T {
   const matcher: unknown = expect.objectContaining(sample);
@@ -55,11 +57,13 @@ describe('MindEventSpine diagnostics', () => {
         where: { id: 'outbox-1', workspaceId: 'ws-1', status: 'processing' },
         data: {
           status: 'dispatched',
-          dispatchedAt: expect.objectContaining({}),
+          dispatchedAt: partialMatch({}),
           lastError: null,
         },
       });
-      const call = prisma.mindOutboxEvent.updateMany.mock.calls[0][0];
+      const call = castMock<[{ data: { dispatchedAt: unknown } }]>(
+        prisma.mindOutboxEvent.updateMany.mock.calls[0],
+      )[0];
       expect(call.data.dispatchedAt).toBeInstanceOf(Date);
     });
 
@@ -114,8 +118,8 @@ describe('MindEventSpine diagnostics', () => {
       });
 
       expect(prisma.mindOutboxEvent.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
+        partialMatch({
+          where: partialMatch({
             eventType: { in: ['sale.created', 'commerce.sale.created', 'sale.completed'] },
           }),
         }),
@@ -131,8 +135,8 @@ describe('MindEventSpine diagnostics', () => {
       });
 
       expect(prisma.mindOutboxEvent.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
+        partialMatch({
+          where: partialMatch({
             eventType: {
               in: [
                 'product.created',
@@ -155,8 +159,8 @@ describe('MindEventSpine diagnostics', () => {
       });
 
       expect(prisma.mindOutboxEvent.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
+        partialMatch({
+          where: partialMatch({
             eventType: { in: ['mind.product.observed', 'product.created'] },
           }),
         }),
@@ -213,8 +217,8 @@ describe('MindEventSpine diagnostics', () => {
       await service.recordCommercial(event);
 
       expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
+        partialMatch({
+          data: partialMatch({
             intent: 'lead_lifecycle',
             action: 'lead.qualified',
           }),
@@ -234,8 +238,8 @@ describe('MindEventSpine diagnostics', () => {
       await service.recordCommercial(event);
 
       expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
+        partialMatch({
+          data: partialMatch({
             intent: 'campaign_lifecycle',
           }),
         }),
@@ -295,8 +299,8 @@ describe('MindEventSpine diagnostics', () => {
       await service.recordCommercial(event);
 
       expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
+        partialMatch({
+          data: partialMatch({
             intent: 'concept_lifecycle',
           }),
         }),
@@ -319,8 +323,8 @@ describe('MindEventSpine diagnostics', () => {
       await service.recordCommercial(event);
 
       expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
+        partialMatch({
+          data: partialMatch({
             status: 'error',
           }),
         }),
@@ -339,8 +343,8 @@ describe('MindEventSpine diagnostics', () => {
       await service.recordCommercial(event);
 
       expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
+        partialMatch({
+          data: partialMatch({
             status: 'skipped',
           }),
         }),

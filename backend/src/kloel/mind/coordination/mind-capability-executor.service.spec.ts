@@ -1,5 +1,6 @@
 import { MindCapabilityExecutor } from './mind-capability-executor.service';
 import { createPartialPrismaMock } from '../../../../test/helpers/prisma.mock';
+import { castMock } from '../../../../test/helpers/cast-mock';
 
 describe('MindCapabilityExecutor', () => {
   const eventsRecord = jest.fn().mockResolvedValue(undefined);
@@ -25,8 +26,8 @@ describe('MindCapabilityExecutor', () => {
     ensureTokenBudget.mockResolvedValue(undefined);
     service = new MindCapabilityExecutor(
       prismaMock as never,
-      { record: eventsRecord } as never,
-      { ensureTokenBudget } as never,
+      { record: eventsRecord },
+      { ensureTokenBudget },
     );
   });
 
@@ -41,7 +42,7 @@ describe('MindCapabilityExecutor', () => {
       expect(result.ok).toBe(true);
       expect(Array.isArray(result.data)).toBe(true);
       expect(productFindMany).toHaveBeenCalledTimes(1);
-      const call = productFindMany.mock.calls[0][0];
+      const call = castMock<[{ where: { workspaceId: string } }]>(productFindMany.mock.calls[0])[0];
       expect(call.where.workspaceId).toBe('ws-1');
       expect(eventsRecord).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -75,7 +76,7 @@ describe('MindCapabilityExecutor', () => {
     it('isolates contact search by workspaceId', async () => {
       contactFindMany.mockResolvedValue([]);
       await service.searchContact('ws-only', { query: 'john' });
-      const call = contactFindMany.mock.calls[0][0];
+      const call = castMock<[{ where: { workspaceId: string } }]>(contactFindMany.mock.calls[0])[0];
       expect(call.where.workspaceId).toBe('ws-only');
     });
   });
@@ -84,7 +85,9 @@ describe('MindCapabilityExecutor', () => {
     it('isolates conversation list by workspaceId and applies open status filter', async () => {
       conversationFindMany.mockResolvedValue([]);
       await service.listConversations('ws-9', { status: 'open' });
-      const call = conversationFindMany.mock.calls[0][0];
+      const call = castMock<[{ where: { workspaceId: string; status: unknown } }]>(
+        conversationFindMany.mock.calls[0],
+      )[0];
       expect(call.where.workspaceId).toBe('ws-9');
       expect(call.where.status).toEqual({ not: 'closed' });
     });
@@ -134,8 +137,12 @@ describe('MindCapabilityExecutor', () => {
       const result = await service.queryRevenueSummary('ws-rev', { days: 7 });
 
       expect(result.ok).toBe(true);
-      const aggArgs = orderAggregate.mock.calls[0][0];
-      const countArgs1 = orderCount.mock.calls[0][0];
+      const aggArgs = castMock<[{ where: { workspaceId: string } }]>(
+        orderAggregate.mock.calls[0],
+      )[0];
+      const countArgs1 = castMock<[{ where: { workspaceId: string } }]>(
+        orderCount.mock.calls[0],
+      )[0];
       expect(aggArgs.where.workspaceId).toBe('ws-rev');
       expect(countArgs1.where.workspaceId).toBe('ws-rev');
     });

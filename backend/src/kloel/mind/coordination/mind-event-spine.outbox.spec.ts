@@ -1,5 +1,6 @@
 import { MindEventSpine } from './mind-event-spine.service';
 import type { SaleEventPayload } from './mind-event-taxonomy';
+import { partialMatch } from '../../../../test/helpers/match-instance';
 
 describe('MindEventSpine outbox helpers', () => {
   let prisma: {
@@ -34,7 +35,7 @@ describe('MindEventSpine outbox helpers', () => {
 
     expect(prisma.mindOutboxEvent.updateMany).toHaveBeenCalledWith({
       where: { id: { in: ['outbox-1'] }, workspaceId: 'ws-1', status: 'pending' },
-      data: expect.objectContaining({
+      data: partialMatch({
         status: 'processing',
         attempts: { increment: 1 },
         dispatchedAt: null,
@@ -74,13 +75,13 @@ describe('MindEventSpine outbox helpers', () => {
         eventType: 'agent.job.due',
         status: 'pending',
       },
-      data: expect.objectContaining({
+      data: partialMatch({
         status: 'processing',
         attempts: { increment: 1 },
       }),
     });
     expect(result.events).toEqual([
-      expect.objectContaining({
+      partialMatch({
         id: 'outbox-1',
         eventType: 'agent.job.due',
         subject: 'agent_job:daily',

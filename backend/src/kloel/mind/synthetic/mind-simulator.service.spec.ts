@@ -341,7 +341,12 @@ describe('MindSimulatorService', () => {
       });
 
       const json = service.reportToJson(report);
-      const parsed = JSON.parse(json);
+      const parsed = JSON.parse(json) as {
+        workspaceId: string;
+        summary: unknown;
+        replay: unknown;
+        quality: unknown;
+      };
 
       expect(parsed.workspaceId).toBe('ws-1');
       expect(parsed.summary).toBeDefined();

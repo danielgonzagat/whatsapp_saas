@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { WalletLedgerService } from './wallet-ledger.service';
 import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 describe('WalletService', () => {
   let service: WalletService;
@@ -216,8 +217,8 @@ describe('WalletService', () => {
       await service.processSale('ws-1', 100, 'sale-1', 'Product X');
 
       expect(walletUpdateMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: 'ws-1' }),
+        partialMatch({
+          where: partialMatch({ workspaceId: 'ws-1' }),
         }) as never,
       );
     });
@@ -283,7 +284,7 @@ describe('WalletService', () => {
 
       // Anticipation record persisted.
       expect(anticipationCreate).toHaveBeenCalledWith({
-        data: expect.objectContaining({
+        data: partialMatch({
           workspaceId: 'ws-1',
           originalAmount: 1000,
           feePercent: 3.0,
@@ -336,7 +337,7 @@ describe('WalletService', () => {
 
       // 3% fee on 500 = 15, net = 485
       expect(walletUpdateMany).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           data: {
             pendingBalance: { decrement: 500 },
             availableBalance: { increment: 485 },
@@ -380,7 +381,7 @@ describe('WalletService', () => {
 
       expect(result.success).toBe(true);
       expect(anticipationCreate).toHaveBeenCalledWith({
-        data: expect.objectContaining({ installments: 3 }),
+        data: partialMatch({ installments: 3 }),
       });
     });
 
@@ -419,8 +420,8 @@ describe('WalletService', () => {
       await service.requestAnticipation('ws-1', 500);
 
       expect(walletUpdateMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: 'ws-1' }),
+        partialMatch({
+          where: partialMatch({ workspaceId: 'ws-1' }),
         }) as never,
       );
     });
@@ -484,7 +485,7 @@ describe('WalletService', () => {
 
       expect(result).toEqual({ id: 'wd-1', status: 'pending' });
       expect(txWalletFindUnique).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { workspaceId: 'ws-1' } }) as never,
+        partialMatch({ where: { workspaceId: 'ws-1' } }) as never,
       );
       const txCreateCalls0 = txCreate.mock.calls as Array<
         [{ data: { walletId: string; type: string; amountInCents: bigint; status: string } }]
@@ -501,7 +502,7 @@ describe('WalletService', () => {
       >;
       const createCallData = txCreateCalls[0]?.[0]?.data ?? { metadata: {} };
       expect(createCallData.metadata).toEqual(
-        expect.objectContaining({
+        partialMatch({
           workspaceId: 'ws-1',
           method: 'pix',
           pixKey: 'user@example.com',

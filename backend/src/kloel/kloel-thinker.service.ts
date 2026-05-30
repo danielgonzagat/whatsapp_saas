@@ -95,7 +95,7 @@ export class KloelThinkerService {
     } = request;
     const signal = opts?.signal;
     const isAborted = () => !!signal?.aborted;
-    const abortReason = () => signal?.reason;
+    const abortReason = (): unknown => signal?.reason;
     const isClientDisconnected = () => this.replyEngine.isClientDisconnected(abortReason());
     const streamWriter = new KloelStreamWriter(res, {
       ...(signal !== undefined ? { signal } : {}),
@@ -158,7 +158,9 @@ export class KloelThinkerService {
             createKloelErrorEvent({
               content: this.replyEngine.buildStreamAbortMessage(abortReason(), opts?.timeoutMs),
               error:
-                typeof abortReason() === 'string' ? abortReason() : 'request_aborted_before_start',
+                typeof abortReason() === 'string'
+                  ? (abortReason() as string)
+                  : 'request_aborted_before_start',
               done: true,
             }),
           );

@@ -46,6 +46,7 @@ import { UnifiedAgentActionsWorkspaceService } from './unified-agent-actions-wor
 import { UnifiedAgentActionsBillingService } from './unified-agent-actions-billing.service';
 import { UnifiedAgentActionsCommerceService } from './unified-agent-actions-commerce.service';
 import { AuditService } from '../audit/audit.service';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 type ActionsPrismaMock = {
   autopilotEvent: { create: jest.Mock };
@@ -308,7 +309,7 @@ describe('UnifiedAgentActionsService', () => {
     it('actionSendDocument scopes document lookup to workspaceId', async () => {
       await service.actionSendDocument('ws-tenant', phone, { documentName: 'Doc' });
       expect(prisma.document.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({ where: expect.objectContaining({ workspaceId: 'ws-tenant' }) }),
+        partialMatch({ where: partialMatch({ workspaceId: 'ws-tenant' }) }),
       );
     });
   });

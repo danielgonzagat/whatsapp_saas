@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { MindSelfModelService } from './mind-self-model.service';
+import { castMock } from '../../../../test/helpers/cast-mock';
 
 describe('MindSelfModelService', () => {
   let service: MindSelfModelService;
@@ -92,7 +93,21 @@ describe('MindSelfModelService', () => {
       const row = await service.snapshot('ws-1');
 
       expect(prisma.mindSelfModel.create).toHaveBeenCalledTimes(1);
-      const createArg = prisma.mindSelfModel.create.mock.calls[0][0].data;
+      const createArg = castMock<
+        [
+          {
+            data: {
+              workspaceId: string;
+              version: number;
+              beliefsAboutSelf: unknown;
+              decisionPatterns: unknown;
+              knownLimits: unknown;
+              contradictions: unknown;
+              id: string;
+            };
+          },
+        ]
+      >(prisma.mindSelfModel.create.mock.calls[0])[0].data;
       expect(createArg.workspaceId).toBe('ws-1');
       expect(createArg.version).toBe(1);
       expect(createArg.beliefsAboutSelf).toBeDefined();
@@ -113,7 +128,10 @@ describe('MindSelfModelService', () => {
       });
 
       await service.snapshot('ws-1');
-      expect(prisma.mindSelfModel.create.mock.calls[0][0].data.version).toBe(8);
+      expect(
+        castMock<[{ data: { version: number } }]>(prisma.mindSelfModel.create.mock.calls[0])[0].data
+          .version,
+      ).toBe(8);
     });
 
     it('flags a contradiction when a self-belief flips vs the previous version', async () => {
@@ -128,8 +146,9 @@ describe('MindSelfModelService', () => {
       });
 
       const row = await service.snapshot('ws-1');
-      const persistedContradictions = prisma.mindSelfModel.create.mock.calls[0][0].data
-        .contradictions as Array<{ field: string }>;
+      const persistedContradictions = castMock<
+        [{ data: { contradictions: Array<{ field: string }> } }]
+      >(prisma.mindSelfModel.create.mock.calls[0])[0].data.contradictions;
 
       expect(persistedContradictions.length).toBeGreaterThan(0);
       const fields = persistedContradictions.map((c) => c.field);
@@ -150,7 +169,11 @@ describe('MindSelfModelService', () => {
       });
 
       await service.snapshot('ws-1');
-      expect(prisma.mindSelfModel.create.mock.calls[0][0].data.contradictions).toEqual([]);
+      expect(
+        castMock<[{ data: { contradictions: unknown } }]>(
+          prisma.mindSelfModel.create.mock.calls[0],
+        )[0].data.contradictions,
+      ).toEqual([]);
     });
   });
 

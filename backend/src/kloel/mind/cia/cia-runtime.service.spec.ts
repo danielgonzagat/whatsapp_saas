@@ -24,6 +24,7 @@ import {
   type CiaBootstrapMock,
   type CiaBacklogRunMock,
 } from './cia-runtime.service.fixtures';
+import { partialMatch, stringContains } from '../../../../test/helpers/match-instance';
 
 const { autopilotQueue } = jest.requireMock<{ autopilotQueue: { add: jest.Mock } }>(
   '../../../queue/queue',
@@ -105,12 +106,12 @@ describe('CiaRuntimeService', () => {
     const result = await service.bootstrap('ws-1');
 
     expect(result).toEqual(
-      expect.objectContaining({
+      partialMatch({
         connected: true,
         pendingConversations: 2,
         pendingMessages: 7,
         autoStarted: true,
-        immediateRun: expect.objectContaining({
+        immediateRun: partialMatch({
           queued: true,
           autoStarted: true,
           totalQueued: 2,
@@ -120,7 +121,7 @@ describe('CiaRuntimeService', () => {
     );
     expect(catchupService.triggerCatchup).toHaveBeenCalledWith('ws-1', 'cia_bootstrap');
     expect(agentEvents.publish).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         type: 'status',
         workspaceId: 'ws-1',
         phase: 'instant_value',
@@ -128,7 +129,7 @@ describe('CiaRuntimeService', () => {
     );
     expect(autopilotQueue.add).toHaveBeenCalledWith(
       'sweep-unread-conversations',
-      expect.objectContaining({
+      partialMatch({
         workspaceId: 'ws-1',
         mode: 'reply_all_recent_first',
         limit: 2,
@@ -136,15 +137,15 @@ describe('CiaRuntimeService', () => {
       expectValueOf(Object),
     );
     expect(prisma.workspace.update).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         where: { id: 'ws-1' },
-        data: expect.objectContaining({
-          providerSettings: expect.objectContaining({
-            autonomy: expect.objectContaining({
+        data: partialMatch({
+          providerSettings: partialMatch({
+            autonomy: partialMatch({
               mode: 'FULL',
               reactiveEnabled: true,
             }),
-            ciaRuntime: expect.objectContaining({
+            ciaRuntime: partialMatch({
               state: 'EXECUTING_BACKLOG',
             }),
           }),
@@ -162,14 +163,14 @@ describe('CiaRuntimeService', () => {
     const result = await service.bootstrap('ws-1');
 
     expect(result).toEqual(
-      expect.objectContaining({
+      partialMatch({
         connected: false,
         pendingConversations: 0,
         pendingMessages: 0,
       }),
     );
     expect(agentEvents.publish).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         type: 'error',
         workspaceId: 'ws-1',
         phase: 'access',
@@ -181,18 +182,18 @@ describe('CiaRuntimeService', () => {
     const result = await service.getOperationalIntelligence('ws-1');
 
     expect(result).toEqual(
-      expect.objectContaining({
-        businessState: expect.objectContaining({ openBacklog: 12 }),
-        marketSignals: [expect.objectContaining({ normalizedKey: 'price_resistance' })],
+      partialMatch({
+        businessState: partialMatch({ openBacklog: 12 }),
+        marketSignals: [partialMatch({ normalizedKey: 'price_resistance' })],
         humanTasks: [expectValueOf(Object)],
         demandStates: [expectValueOf(Object)],
-        insights: [expect.objectContaining({ type: 'CIA_MARKET_SIGNAL' })],
+        insights: [partialMatch({ type: 'CIA_MARKET_SIGNAL' })],
         runtime: expectValueOf(Object),
         autonomy: expect.anything(),
       }),
     );
     expect(prisma.kloelMemory.findUnique).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         where: {
           workspaceId_key: {
             workspaceId: 'ws-1',
@@ -216,26 +217,26 @@ describe('CiaRuntimeService', () => {
     const result = await service.bootstrap('ws-1');
 
     expect(result).toEqual(
-      expect.objectContaining({
+      partialMatch({
         connected: true,
         pendingConversations: 0,
         autoStarted: false,
       }),
     );
     expect(prisma.workspace.update).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         where: { id: 'ws-1' },
-        data: expect.objectContaining({
-          providerSettings: expect.objectContaining({
-            autopilot: expect.objectContaining({
+        data: partialMatch({
+          providerSettings: partialMatch({
+            autopilot: partialMatch({
               enabled: true,
             }),
-            autonomy: expect.objectContaining({
+            autonomy: partialMatch({
               mode: 'FULL',
               reactiveEnabled: true,
               proactiveEnabled: false,
             }),
-            ciaRuntime: expect.objectContaining({
+            ciaRuntime: partialMatch({
               state: 'LIVE_READY',
               mode: 'reply_only_new',
             }),
@@ -245,7 +246,7 @@ describe('CiaRuntimeService', () => {
     );
     expect(autopilotQueue.add).toHaveBeenCalledWith(
       'catalog-contacts-30d',
-      expect.objectContaining({
+      partialMatch({
         workspaceId: 'ws-1',
         days: 30,
       }),
@@ -289,7 +290,7 @@ describe('CiaRuntimeService', () => {
     const result = await service.bootstrap('ws-1');
 
     expect(result).toEqual(
-      expect.objectContaining({
+      partialMatch({
         connected: true,
         pendingConversations: 1,
         autoStarted: true,
@@ -298,7 +299,7 @@ describe('CiaRuntimeService', () => {
     expect(catchupService.runCatchupNow).toHaveBeenCalledWith('ws-1', 'cia_bootstrap_inline');
     expect(autopilotQueue.add).toHaveBeenCalledWith(
       'sweep-unread-conversations',
-      expect.objectContaining({
+      partialMatch({
         workspaceId: 'ws-1',
         limit: 1,
       }),
@@ -321,7 +322,7 @@ describe('CiaRuntimeService', () => {
     const result = await service.bootstrap('ws-1');
 
     expect(result).toEqual(
-      expect.objectContaining({
+      partialMatch({
         connected: true,
         pendingConversations: 0,
         autoStarted: false,
@@ -329,7 +330,7 @@ describe('CiaRuntimeService', () => {
     );
     expect(autopilotQueue.add).toHaveBeenCalledWith(
       'catalog-contacts-30d',
-      expect.objectContaining({
+      partialMatch({
         workspaceId: 'ws-1',
       }),
       expectValueOf(Object),
@@ -350,7 +351,7 @@ describe('CiaRuntimeService', () => {
     const result = await service.bootstrap('ws-1');
 
     expect(result).toEqual(
-      expect.objectContaining({
+      partialMatch({
         connected: true,
         pendingConversations: 0,
         autoStarted: false,
@@ -358,7 +359,7 @@ describe('CiaRuntimeService', () => {
     );
     expect(autopilotQueue.add).toHaveBeenCalledWith(
       'catalog-contacts-30d',
-      expect.objectContaining({
+      partialMatch({
         workspaceId: 'ws-1',
       }),
       expectValueOf(Object),
@@ -372,7 +373,7 @@ describe('CiaRuntimeService', () => {
     const result = await service.bootstrap('ws-1');
 
     expect(result).toEqual(
-      expect.objectContaining({
+      partialMatch({
         connected: true,
         pendingConversations: 0,
         pendingMessages: 0,
@@ -381,14 +382,14 @@ describe('CiaRuntimeService', () => {
     );
     expect(catchupService.triggerCatchup).toHaveBeenCalledWith('ws-1', 'cia_bootstrap');
     expect(prisma.workspace.update).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         where: { id: 'ws-1' },
-        data: expect.objectContaining({
-          providerSettings: expect.objectContaining({
-            autopilot: expect.objectContaining({
+        data: partialMatch({
+          providerSettings: partialMatch({
+            autopilot: partialMatch({
               enabled: true,
             }),
-            autonomy: expect.objectContaining({
+            autonomy: partialMatch({
               mode: 'FULL',
               reason: 'session_connected_degraded_sync',
               proactiveEnabled: false,
@@ -398,11 +399,11 @@ describe('CiaRuntimeService', () => {
       }),
     );
     expect(agentEvents.publish).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         type: 'status',
         workspaceId: 'ws-1',
         phase: 'sync',
-        message: expect.stringContaining('Vou seguir no modo live'),
+        message: stringContains('Vou seguir no modo live'),
       }),
     );
   });
@@ -413,10 +414,10 @@ describe('CiaRuntimeService', () => {
     const result = await service.bootstrap('ws-1');
 
     expect(result).toEqual(
-      expect.objectContaining({
+      partialMatch({
         connected: true,
         autoStarted: true,
-        immediateRun: expect.objectContaining({
+        immediateRun: partialMatch({
           queued: true,
           inlineFallback: true,
           processedInline: 2,
@@ -429,13 +430,13 @@ describe('CiaRuntimeService', () => {
     expect(whatsappService.sendMessage).toHaveBeenCalledTimes(2);
     expect(autopilotQueue.add).toHaveBeenCalledWith(
       'catalog-contacts-30d',
-      expect.objectContaining({
+      partialMatch({
         workspaceId: 'ws-1',
       }),
       expectValueOf(Object),
     );
     expect(agentEvents.publish).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         type: 'status',
         workspaceId: 'ws-1',
         phase: 'backlog_inline_fallback',
@@ -473,7 +474,7 @@ describe('CiaRuntimeService', () => {
 
     expect(pending).toHaveLength(1);
     expect((pending[0] as { operational: Record<string, unknown> }).operational).toEqual(
-      expect.objectContaining({
+      partialMatch({
         pending: true,
         pendingMessages: 3,
         blockedReason: null,
@@ -504,7 +505,7 @@ describe('CiaRuntimeService', () => {
       data: { mode: 'AI', assignedAgentId: null },
     });
     expect(agentEvents.publish).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         type: 'status',
         phase: 'conversation_resumed',
         workspaceId: 'ws-1',
@@ -528,10 +529,10 @@ describe('CiaRuntimeService', () => {
     expect(result).toEqual({ paused: true, state: 'PAUSED' });
     expect(updateSpy).toHaveBeenCalledWith(
       'ws-1',
-      expect.objectContaining({ mode: 'OFF', reason: 'manual_pause' }),
+      partialMatch({ mode: 'OFF', reason: 'manual_pause' }),
     );
     expect(agentEvents.publish).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         type: 'status',
         phase: 'paused',
         workspaceId: 'ws-1',

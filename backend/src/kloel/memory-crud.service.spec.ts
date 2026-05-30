@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 type MemoryCrudPrismaMock = {
   kloelMemory: {
@@ -80,9 +81,9 @@ describe('MemoryCrudService', () => {
       expect(result.key).toBe('brandVoice');
       expect(result.category).toBe('general');
       expect(prisma.kloelMemory.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           where: { workspaceId_key: { workspaceId: wsId, key: 'brandVoice' } },
-          create: expect.objectContaining({
+          create: partialMatch({
             workspaceId: wsId,
             key: 'brandVoice',
             category: 'general',
@@ -102,11 +103,11 @@ describe('MemoryCrudService', () => {
       prisma.kloelMemory.upsert.mockResolvedValue(memoryRow);
       const result = await service.saveMemory(wsId, 'prefs', { lang: 'pt' });
       expect(result.key).toBe('prefs');
-      const expectedStringifiedCreate: Record<string, unknown> = expect.objectContaining({
+      const expectedStringifiedCreate: jest.AsymmetricMatcher = partialMatch({
         content: '{"lang":"pt"}',
       });
       expect(prisma.kloelMemory.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           create: expectedStringifiedCreate,
         }),
       );
@@ -123,11 +124,11 @@ describe('MemoryCrudService', () => {
       prisma.kloelMemory.upsert.mockResolvedValue(memoryRow);
       const result = await service.saveMemory(wsId, 'note', 'just a note');
       expect(result.key).toBe('note');
-      const expectedStringCreate: Record<string, unknown> = expect.objectContaining({
+      const expectedStringCreate: jest.AsymmetricMatcher = partialMatch({
         content: 'just a note',
       });
       expect(prisma.kloelMemory.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           create: expectedStringCreate,
         }),
       );
@@ -160,7 +161,7 @@ describe('MemoryCrudService', () => {
       expect(result.memories).toHaveLength(1);
       expect(result.total).toBe(1);
       expect(prisma.kloelMemory.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           where: { workspaceId: wsId },
           skip: 0,
           take: 20,
@@ -173,12 +174,12 @@ describe('MemoryCrudService', () => {
       prisma.kloelMemory.count.mockResolvedValue(0);
       await service.listMemories(wsId, 'product');
       expect(prisma.kloelMemory.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           where: { workspaceId: wsId, category: 'product' },
         }),
       );
       expect(prisma.kloelMemory.count).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           where: { workspaceId: wsId, category: 'product' },
         }),
       );
@@ -188,7 +189,7 @@ describe('MemoryCrudService', () => {
       prisma.kloelMemory.count.mockResolvedValue(42);
       await service.listMemories(wsId, undefined, 3, 10);
       expect(prisma.kloelMemory.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           skip: 20,
           take: 10,
         }),
@@ -244,7 +245,7 @@ describe('MemoryCrudService', () => {
       expect(result.totalMemories).toBe(3);
       expect(result.byCategory).toEqual({ product: 2, script: 1 });
       expect(prisma.kloelMemory.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           where: { workspaceId: wsId },
           select: { category: true, updatedAt: true },
           take: 5000,
@@ -274,7 +275,7 @@ describe('MemoryCrudService', () => {
         where: { workspaceId_key: { workspaceId: wsId, key: 'old-key' } },
       });
       expect(auditService.log).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           workspaceId: wsId,
           action: 'DELETE_MEMORY',
           resource: 'KloelMemory',
@@ -327,7 +328,7 @@ describe('MemoryCrudService', () => {
       await service.saveMemory('ws-tenant', 'k', 'v');
 
       expect(prisma.kloelMemory.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           where: {
             workspaceId_key: { workspaceId: 'ws-tenant', key: 'k' },
           },
@@ -342,7 +343,7 @@ describe('MemoryCrudService', () => {
       await service.listMemories('ws-tenant');
 
       expect(prisma.kloelMemory.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           where: { workspaceId: 'ws-tenant' },
         }),
       );
@@ -366,7 +367,7 @@ describe('MemoryCrudService', () => {
       await service.getMemoryStats('ws-tenant');
 
       expect(prisma.kloelMemory.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           where: { workspaceId: 'ws-tenant' },
         }),
       );

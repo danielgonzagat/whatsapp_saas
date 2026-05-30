@@ -1,4 +1,5 @@
 import { MindGlobalPriorService } from './mind-global-prior.service';
+import { partialMatch } from '../../../../test/helpers/match-instance';
 
 describe('MindGlobalPriorService', () => {
   describe('getPriorTuple', () => {
@@ -73,7 +74,7 @@ describe('MindGlobalPriorService', () => {
 
       expect(prisma.mindBanditArm.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ decisionType: 'promo', arm: 'coupon_10pct' }),
+          where: partialMatch({ decisionType: 'promo', arm: 'coupon_10pct' }),
         }),
       );
     });

@@ -2,6 +2,7 @@ import { MindBeliefService } from './inference/mind-belief.service';
 import { MindCaseMemoryService } from './memory/mind-case-memory.service';
 import { MindPolicyService } from './policy/mind-policy.service';
 import { MindWorkspaceStateService } from './memory/mind-workspace-state.service';
+import { partialMatch } from '../../../test/helpers/match-instance';
 
 describe('MIND cross-workspace isolation', () => {
   it('mantem crencas escopadas por workspace', async () => {
@@ -21,15 +22,15 @@ describe('MIND cross-workspace isolation', () => {
     const resultA = await service.list('ws-A', 'P(reply)');
     const resultB = await service.list('ws-B', 'P(reply)');
 
-    expect(resultA).toEqual([expect.objectContaining({ id: 'belief-A', workspaceId: 'ws-A' })]);
-    expect(resultB).toEqual([expect.objectContaining({ id: 'belief-B', workspaceId: 'ws-B' })]);
+    expect(resultA).toEqual([partialMatch({ id: 'belief-A', workspaceId: 'ws-A' })]);
+    expect(resultB).toEqual([partialMatch({ id: 'belief-B', workspaceId: 'ws-B' })]);
     expect(prisma.mindBelief.findMany).toHaveBeenNthCalledWith(
       1,
-      expect.objectContaining({ where: expect.objectContaining({ workspaceId: 'ws-A' }) }),
+      partialMatch({ where: partialMatch({ workspaceId: 'ws-A' }) }),
     );
     expect(prisma.mindBelief.findMany).toHaveBeenNthCalledWith(
       2,
-      expect.objectContaining({ where: expect.objectContaining({ workspaceId: 'ws-B' }) }),
+      partialMatch({ where: partialMatch({ workspaceId: 'ws-B' }) }),
     );
   });
 
@@ -72,11 +73,11 @@ describe('MIND cross-workspace isolation', () => {
     expect(resultB[0].workspaceId).toBe('ws-B');
     expect(prisma.mindCase.findMany).toHaveBeenNthCalledWith(
       1,
-      expect.objectContaining({ where: expect.objectContaining({ workspaceId: 'ws-A' }) }),
+      partialMatch({ where: partialMatch({ workspaceId: 'ws-A' }) }),
     );
     expect(prisma.mindCase.findMany).toHaveBeenNthCalledWith(
       2,
-      expect.objectContaining({ where: expect.objectContaining({ workspaceId: 'ws-B' }) }),
+      partialMatch({ where: partialMatch({ workspaceId: 'ws-B' }) }),
     );
   });
 
@@ -109,11 +110,11 @@ describe('MIND cross-workspace isolation', () => {
     expect(resultB.lift).toBe(-1);
     expect(prisma.mindPolicy.findMany).toHaveBeenNthCalledWith(
       1,
-      expect.objectContaining({ where: expect.objectContaining({ workspaceId: 'ws-A' }) }),
+      partialMatch({ where: partialMatch({ workspaceId: 'ws-A' }) }),
     );
     expect(prisma.mindPolicy.findMany).toHaveBeenNthCalledWith(
       2,
-      expect.objectContaining({ where: expect.objectContaining({ workspaceId: 'ws-B' }) }),
+      partialMatch({ where: partialMatch({ workspaceId: 'ws-B' }) }),
     );
   });
 
@@ -149,13 +150,13 @@ describe('MIND cross-workspace isolation', () => {
 
     expect(count).toBe(1);
     expect(prisma.mindPolicy.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({ workspaceId: 'ws-A', subject: 'contact:1' }),
+      partialMatch({
+        where: partialMatch({ workspaceId: 'ws-A', subject: 'contact:1' }),
       }),
     );
     expect(prisma.mindPolicy.updateMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({ id: 'policy-ws-A', workspaceId: 'ws-A' }),
+      partialMatch({
+        where: partialMatch({ id: 'policy-ws-A', workspaceId: 'ws-A' }),
       }),
     );
   });
@@ -190,15 +191,15 @@ describe('MIND cross-workspace isolation', () => {
 
     expect(watermark.toISOString()).toBe('2026-05-10T10:00:00.000Z');
     expect(prisma.mindWorkspaceState.findUnique).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { workspaceId: 'ws-A' } }),
+      partialMatch({ where: { workspaceId: 'ws-A' } }),
     );
     expect(prisma.mindWorkspaceState.updateMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { workspaceId: 'ws-A', tickLeaseOwner: 'owner-1' } }),
+      partialMatch({ where: { workspaceId: 'ws-A', tickLeaseOwner: 'owner-1' } }),
     );
     expect(prisma.mindWorkspaceState.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         where: { workspaceId: 'ws-A' },
-        create: expect.objectContaining({ workspaceId: 'ws-A' }),
+        create: partialMatch({ workspaceId: 'ws-A' }),
       }),
     );
   });

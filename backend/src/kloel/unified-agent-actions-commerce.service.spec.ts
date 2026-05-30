@@ -6,6 +6,7 @@ import { AuditService } from '../audit/audit.service';
 import { PaymentService } from './payment.service';
 import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-messaging.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { partialMatch, stringContains } from '../../test/helpers/match-instance';
 
 jest.mock('./money-format.util', () => ({
   formatBrlAmount: jest.fn((n: number) => `R$ ${n.toFixed(2)}`),
@@ -109,7 +110,7 @@ describe('UnifiedAgentActionsCommerceService', () => {
       expect(messaging.actionSendMessage).toHaveBeenCalledWith(
         wsId,
         phone,
-        expect.objectContaining({ message: expect.stringContaining('Produto Mem') }),
+        partialMatch({ message: stringContains('Produto Mem') }),
         undefined,
       );
     });
@@ -129,10 +130,10 @@ describe('UnifiedAgentActionsCommerceService', () => {
       expect(result.success).toBe(true);
       expect(result.product.name).toBe('DB Product');
       expect(prisma.product.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           where: {
             workspaceId: wsId,
-            name: expect.objectContaining({ contains: 'DB Product' }),
+            name: partialMatch({ contains: 'DB Product' }),
             active: true,
           },
         }),
@@ -170,7 +171,7 @@ describe('UnifiedAgentActionsCommerceService', () => {
       });
 
       expect(prisma.kloelMemory.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({ where: expect.objectContaining({ workspaceId: 'ws-tenant' }) }),
+        partialMatch({ where: partialMatch({ workspaceId: 'ws-tenant' }) }),
       );
     });
   });
@@ -186,7 +187,7 @@ describe('UnifiedAgentActionsCommerceService', () => {
       expect(result.success).toBe(true);
       expect(result.paymentLink).toBe('https://pay.test/link');
       expect(paymentService.createPayment).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           workspaceId: wsId,
           amount: 99.9,
           description: 'Pagamento curso',
@@ -203,8 +204,8 @@ describe('UnifiedAgentActionsCommerceService', () => {
 
       expect(auditService.logWithTx).toHaveBeenCalledWith(
         prisma,
-        expect.objectContaining({
-          details: expect.objectContaining({
+        partialMatch({
+          details: partialMatch({
             method: 'PIX',
             provider: 'mercadopago',
           }),
@@ -242,7 +243,7 @@ describe('UnifiedAgentActionsCommerceService', () => {
       });
 
       expect(paymentService.createPayment).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           customerName: 'João Silva',
           customerPhone: phone,
           customerEmail: 'joao@test.com',
@@ -271,13 +272,13 @@ describe('UnifiedAgentActionsCommerceService', () => {
       });
 
       expect(prisma.product.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: 'ws-isolated' }),
+        partialMatch({
+          where: partialMatch({ workspaceId: 'ws-isolated' }),
         }),
       );
       expect(prisma.kloelMemory.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: 'ws-isolated' }),
+        partialMatch({
+          where: partialMatch({ workspaceId: 'ws-isolated' }),
         }),
       );
     });
@@ -289,7 +290,7 @@ describe('UnifiedAgentActionsCommerceService', () => {
       });
 
       expect(prisma.contact.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           where: { workspaceId: 'ws-isolated', phone },
         }),
       );

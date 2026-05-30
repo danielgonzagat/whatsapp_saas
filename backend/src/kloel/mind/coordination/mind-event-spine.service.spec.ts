@@ -5,6 +5,8 @@ import type {
   MessageEventPayload,
   SaleEventPayload,
 } from './mind-event-taxonomy';
+import { partialMatch } from '../../../../test/helpers/match-instance';
+import { castMock } from '../../../../test/helpers/cast-mock';
 
 function buildSaleCreatedEvent(occurredAt: Date): SaleEventPayload {
   return {
@@ -76,7 +78,7 @@ describe('MindEventSpine', () => {
       $executeRaw: jest.fn().mockResolvedValue(1),
       $transaction: jest.fn(async (fn: (tx: unknown) => unknown) => fn(prisma)),
     };
-    service = new MindEventSpine(prisma as never);
+    service = new MindEventSpine(prisma);
   });
 
   describe('recordCommercial', () => {
@@ -86,7 +88,11 @@ describe('MindEventSpine', () => {
       const id = await service.recordCommercial(buildSaleCreatedEvent(occurredAt));
 
       expect(id).toBe('event-1');
-      assertSaleCreatedCall(prisma.autopilotEvent.create.mock.calls[0][0]);
+      assertSaleCreatedCall(
+        castMock<[{ data: Record<string, unknown> }]>(
+          prisma.autopilotEvent.create.mock.calls[0],
+        )[0],
+      );
     });
 
     it('records a sale.completed event with executed status', async () => {
@@ -106,8 +112,8 @@ describe('MindEventSpine', () => {
       await service.recordCommercial(event);
 
       expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
+        partialMatch({
+          data: partialMatch({
             action: 'sale.completed',
             intent: 'sale_lifecycle',
             status: 'executed',
@@ -132,8 +138,8 @@ describe('MindEventSpine', () => {
       await service.recordCommercial(event);
 
       expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
+        partialMatch({
+          data: partialMatch({
             action: 'sale.refunded',
             status: 'skipped',
           }),
@@ -160,8 +166,8 @@ describe('MindEventSpine', () => {
       await service.recordCommercial(event);
 
       expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
+        partialMatch({
+          data: partialMatch({
             action: 'message.sent',
             intent: 'message_lifecycle',
             status: 'executed',
@@ -188,8 +194,8 @@ describe('MindEventSpine', () => {
       await service.recordCommercial(event);
 
       expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
+        partialMatch({
+          data: partialMatch({
             workspaceId: 'ws-1',
             contactId: 'contact-1',
             action: 'message.received',
@@ -215,8 +221,10 @@ describe('MindEventSpine', () => {
 
       await service.recordCommercial(event);
 
-      const createCall = prisma.autopilotEvent.create.mock.calls[0][0];
-      const payload = createCall.data.meta.payload as Record<string, unknown>;
+      const createCall = castMock<[{ data: { meta: { payload: Record<string, unknown> } } }]>(
+        prisma.autopilotEvent.create.mock.calls[0],
+      )[0];
+      const payload = createCall.data.meta.payload;
       expect(payload).not.toHaveProperty('channel');
       expect(payload).toMatchObject({ providerMessageId: null });
     });
@@ -241,13 +249,13 @@ describe('MindEventSpine', () => {
       await service.recordCommercial(event);
 
       expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
+        partialMatch({
+          data: partialMatch({
             action: 'checkout.created',
             intent: 'checkout_lifecycle',
             status: 'executed',
-            meta: expect.objectContaining({
-              payload: expect.objectContaining({
+            meta: partialMatch({
+              payload: partialMatch({
                 priceBand: '100_499',
                 totalInCents: 14700,
                 utmSource: 'instagram',
@@ -276,8 +284,8 @@ describe('MindEventSpine', () => {
       await service.recordCommercial(event);
 
       expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
+        partialMatch({
+          data: partialMatch({
             status: 'skipped',
           }),
         }),

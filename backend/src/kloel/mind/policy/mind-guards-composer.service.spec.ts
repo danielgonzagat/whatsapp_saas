@@ -1,6 +1,7 @@
 import { KloelComposerService } from '../../kloel-composer.service';
 import { MindGuardsService } from './mind-guards.service';
 import { KloelRuleEngineService } from '../../rules/kloel-rule-engine.service';
+import { partialMatch } from '../../../../test/helpers/match-instance';
 
 describe('code-native MIND guards and composer', () => {
   let engine: KloelRuleEngineService;
@@ -21,7 +22,7 @@ describe('code-native MIND guards and composer', () => {
     });
 
     expect(result).toEqual(
-      expect.objectContaining({
+      partialMatch({
         allowed: false,
         decision: 'block',
         guardName: 'duplicate_payment',
@@ -42,7 +43,7 @@ describe('code-native MIND guards and composer', () => {
     });
 
     expect(result).toEqual(
-      expect.objectContaining({
+      partialMatch({
         allowed: false,
         guardName: 'payment_amount_exceeded',
         reasonTag: 'payment_amount_exceeded',
@@ -79,7 +80,7 @@ describe('code-native MIND guards and composer', () => {
     });
 
     expect(result).toEqual(
-      expect.objectContaining({
+      partialMatch({
         allowed: false,
         guardName: 'campaign_budget_exhausted',
         reasonTag: 'campaign_budget_exhausted',
@@ -99,7 +100,7 @@ describe('code-native MIND guards and composer', () => {
     });
 
     expect(result).toEqual(
-      expect.objectContaining({
+      partialMatch({
         allowed: false,
         guardName: 'campaign_inactive',
         reasonTag: 'campaign_inactive',
@@ -138,9 +139,9 @@ describe('code-native MIND guards and composer', () => {
     });
 
     expect(prisma.mindGuardAudit.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          context: expect.objectContaining({
+      partialMatch({
+        data: partialMatch({
+          context: partialMatch({
             channel: 'instagram',
             supportsAudio: true,
             supportsNativeAudio: true,
@@ -162,7 +163,7 @@ describe('code-native MIND guards and composer', () => {
     });
 
     expect(result).toEqual(
-      expect.objectContaining({
+      partialMatch({
         allowed: false,
         guardName: 'escalation_in_progress',
         reasonTag: 'escalation_in_progress',
@@ -182,7 +183,7 @@ describe('code-native MIND guards and composer', () => {
     });
 
     expect(result).toEqual(
-      expect.objectContaining({
+      partialMatch({
         allowed: false,
         guardName: 'no_human_available',
         reasonTag: 'no_human_available',

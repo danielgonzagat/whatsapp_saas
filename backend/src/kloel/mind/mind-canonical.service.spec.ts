@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { MindMessageService } from './aliases/mind-message.service';
 import { MindMemoryItemService } from './aliases/mind-memory-item.service';
 import { MindCanonicalService } from './mind-canonical.service';
+import { castMock } from '../../../test/helpers/cast-mock';
 
 /**
  * Wave5 L8 — `MindCanonicalService` is the Phase-1 canonical facade for the
@@ -115,7 +116,9 @@ describe('MindCanonicalService — Phase-1 facade delegation', () => {
     });
     expect(res).toEqual(caseRow);
     expect(prisma.mindCase.create).toHaveBeenCalledTimes(1);
-    const arg = prisma.mindCase.create.mock.calls[0][0];
+    const arg = castMock<{ data: Record<string, unknown> }>(
+      castMock<unknown[][]>(prisma.mindCase.create.mock.calls)[0]?.[0],
+    );
     expect(arg.data).toMatchObject({
       workspaceId: ws,
       subject: 's',
@@ -147,7 +150,9 @@ describe('MindCanonicalService — Phase-1 facade delegation', () => {
       fallbackActive: false,
     });
     expect(res).toEqual(policyRow);
-    const arg = prisma.mindPolicy.create.mock.calls[0][0];
+    const arg = castMock<{ data: Record<string, unknown> }>(
+      castMock<unknown[][]>(prisma.mindPolicy.create.mock.calls)[0]?.[0],
+    );
     expect(arg.data).toMatchObject({
       workspaceId: ws,
       subject: 's',
@@ -173,7 +178,11 @@ describe('MindCanonicalService — Phase-1 facade delegation', () => {
       metadata: { src: 'chat' },
     });
     expect(res).toEqual(nodeRow);
-    const arg = prisma.mindGraphNode.upsert.mock.calls[0][0];
+    const arg = castMock<{
+      where: Record<string, unknown>;
+      create: Record<string, unknown>;
+      update: Record<string, unknown>;
+    }>(castMock<unknown[][]>(prisma.mindGraphNode.upsert.mock.calls)[0]?.[0]);
     expect(arg.where).toEqual({
       workspaceId_kind_label: { workspaceId: ws, kind: 'concept', label: 'pricing' },
     });
@@ -190,7 +199,11 @@ describe('MindCanonicalService — Phase-1 facade delegation', () => {
 
   it('addGraphNode defaults weight to 1 and metadata to {} when omitted', async () => {
     await facade.addGraphNode({ workspaceId: ws, kind: 'k', label: 'l' });
-    const arg = prisma.mindGraphNode.upsert.mock.calls[0][0];
+    const arg = castMock<{
+      where: Record<string, unknown>;
+      create: Record<string, unknown>;
+      update: Record<string, unknown>;
+    }>(castMock<unknown[][]>(prisma.mindGraphNode.upsert.mock.calls)[0]?.[0]);
     expect(arg.create).toMatchObject({ weight: 1, metadata: {} });
     expect(arg.update).toEqual({ weight: 1, metadata: {} });
   });

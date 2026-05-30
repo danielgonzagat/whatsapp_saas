@@ -4,6 +4,8 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { ConversationalOnboardingToolsService } from './conversational-onboarding-tools.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AbiBuilderService } from './abi/abi-builder.service';
+import { partialMatch, stringContains } from '../../test/helpers/match-instance';
+import { castMock } from '../../test/helpers/cast-mock';
 
 jest.mock('openai', () => ({
   default: jest.fn().mockImplementation(() => ({
@@ -197,14 +199,14 @@ describe('ConversationalOnboardingService', () => {
     it('keeps legacy onboarding prompt as system message when ABI flag is off', async () => {
       await service.chat('ws-1', 'Olá');
 
-      const completionInput = chatCompletionWithRetryMock.mock.calls[0]?.[1] as {
-        messages: Array<{ role: string; content: string | null }>;
-      };
+      const completionInput = castMock<
+        [unknown, { messages: Array<{ role: string; content: string | null }> }][]
+      >(chatCompletionWithRetryMock.mock.calls)[0]?.[1];
 
       expect(completionInput.messages[0]).toEqual(
-        expect.objectContaining({
+        partialMatch({
           role: 'system',
-          content: expect.stringContaining('MODO: ONBOARDING CONVERSACIONAL'),
+          content: stringContains('MODO: ONBOARDING CONVERSACIONAL'),
         }),
       );
       expect(abiBuilder.build).not.toHaveBeenCalled();
@@ -215,9 +217,9 @@ describe('ConversationalOnboardingService', () => {
 
       await service.chat('ws-1', 'Olá');
 
-      const completionInput = chatCompletionWithRetryMock.mock.calls[0]?.[1] as {
-        messages: Array<{ role: string; content: string | null }>;
-      };
+      const completionInput = castMock<
+        [unknown, { messages: Array<{ role: string; content: string | null }> }][]
+      >(chatCompletionWithRetryMock.mock.calls)[0]?.[1];
       const firstMessage = completionInput.messages[0];
 
       expect(firstMessage?.role).toBe('user');
@@ -228,11 +230,11 @@ describe('ConversationalOnboardingService', () => {
       expect(abiBuilder.build).toHaveBeenCalledWith(
         expect.objectContaining({
           audience: 'public',
-          currentInput: expect.objectContaining({
+          currentInput: partialMatch({
             raw: 'Olá',
             channel: 'conversational_onboarding',
           }),
-          perceptionSnapshot: expect.objectContaining({
+          perceptionSnapshot: partialMatch({
             channel: 'conversational_onboarding',
             workspaceId: 'ws-1',
             activeStage: 'onboarding',

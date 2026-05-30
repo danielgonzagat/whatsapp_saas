@@ -5,12 +5,13 @@ import { MindGlobalPriorService } from './memory/mind-global-prior.service';
 import { MindGuardsService } from './policy/mind-guards.service';
 import { MindWorkspaceStateService } from './memory/mind-workspace-state.service';
 import { KloelRuleEngineService } from '../rules/kloel-rule-engine.service';
+import { partialMatch } from '../../../test/helpers/match-instance';
 
 describe('code-native MIND services', () => {
   it('detects commercial concepts and emits concept events', async () => {
     const prisma = {
       mindConceptDetection: {
-        create: jest.fn(async ({ data }) => data),
+        create: jest.fn(async ({ data }: { data: unknown }) => data),
       },
     };
     const events = { recordCommercial: jest.fn() };
@@ -28,7 +29,7 @@ describe('code-native MIND services', () => {
       expect.arrayContaining(['price_objection', 'hot_lead', 'imminent_purchase']),
     );
     expect(events.recordCommercial).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         workspaceId: 'ws-1',
         subject: 'contact:1',
         eventType: 'concept.detected',
@@ -39,7 +40,7 @@ describe('code-native MIND services', () => {
   it('returns no concepts and emits nothing for empty text', async () => {
     const prisma = {
       mindConceptDetection: {
-        create: jest.fn(async ({ data }) => data),
+        create: jest.fn(async ({ data }: { data: unknown }) => data),
       },
     };
     const events = { recordCommercial: jest.fn() };
@@ -59,7 +60,7 @@ describe('code-native MIND services', () => {
   it('keeps case-memory similarity scoped to the workspace', async () => {
     const prisma = {
       mindCase: {
-        create: jest.fn(async ({ data }) => data),
+        create: jest.fn(async ({ data }: { data: unknown }) => data),
         findMany: jest.fn().mockResolvedValue([
           {
             id: 'case-1',
@@ -98,7 +99,7 @@ describe('code-native MIND services', () => {
     });
 
     expect(prisma.mindCase.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { workspaceId: 'ws-1', caseType: 'objection' } }),
+      partialMatch({ where: { workspaceId: 'ws-1', caseType: 'objection' } }),
     );
     expect(similar[0].id).toBe('case-1');
   });
@@ -119,7 +120,7 @@ describe('code-native MIND services', () => {
       }),
     ).resolves.toEqual([]);
     expect(prisma.mindCase.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { workspaceId: 'ws-2', caseType: 'objection' } }),
+      partialMatch({ where: { workspaceId: 'ws-2', caseType: 'objection' } }),
     );
   });
 
@@ -136,7 +137,7 @@ describe('code-native MIND services', () => {
         context: { discountPercent: 50, maxDiscountPercent: 20 },
       }),
     ).resolves.toEqual(
-      expect.objectContaining({
+      partialMatch({
         allowed: false,
         decision: 'block',
         guardName: 'max_discount',
@@ -144,8 +145,8 @@ describe('code-native MIND services', () => {
       }),
     );
     expect(prisma.mindGuardAudit.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
+      partialMatch({
+        data: partialMatch({
           workspaceId: 'ws-1',
           guardName: 'max_discount',
           allowed: false,
@@ -167,15 +168,15 @@ describe('code-native MIND services', () => {
         context: { discountPercent: 10, maxDiscountPercent: 20 },
       }),
     ).resolves.toEqual(
-      expect.objectContaining({
+      partialMatch({
         allowed: true,
         decision: 'allow',
         reasonTag: 'all_guards_passed',
       }),
     );
     expect(prisma.mindGuardAudit.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
+      partialMatch({
+        data: partialMatch({
           workspaceId: 'ws-1',
           guardName: 'all_guards',
           allowed: true,
@@ -214,13 +215,13 @@ describe('code-native MIND services', () => {
     });
 
     expect(prisma.mindBanditArm.updateMany).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         where: { id: 'a', workspaceId: 'ws-1', decisionType: 'cart_recovery' },
         data: { pulls: { increment: 1 } },
       }),
     );
     expect(prisma.mindBanditArm.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         where: {
           workspaceId_decisionType_arm: {
             workspaceId: 'ws-1',
@@ -228,7 +229,7 @@ describe('code-native MIND services', () => {
             arm: 'proof',
           },
         },
-        update: expect.objectContaining({ alpha: { increment: 1 }, wins: { increment: 1 } }),
+        update: partialMatch({ alpha: { increment: 1 }, wins: { increment: 1 } }),
       }),
     );
   });
@@ -276,11 +277,11 @@ describe('code-native MIND services', () => {
     const service = new MindGlobalPriorService(prisma as never);
 
     await expect(service.getPrior('cart_recovery')).resolves.toEqual(
-      expect.objectContaining({
+      partialMatch({
         decisionType: 'cart_recovery',
         totalPulls: 8,
         arms: [
-          expect.objectContaining({
+          partialMatch({
             arm: 'proof',
             aggregateAlpha: 5,
             aggregateBeta: 3,
@@ -290,7 +291,7 @@ describe('code-native MIND services', () => {
       }),
     );
     expect(prisma.mindBanditArm.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         where: {
           workspaceId: { in: ['ws-1', 'ws-2'] },
           decisionType: 'cart_recovery',
@@ -329,9 +330,9 @@ describe('code-native MIND services', () => {
     });
 
     expect(prisma.mindWorkspaceState.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         where: { workspaceId: 'ws-1' },
-        update: expect.objectContaining({ tickCount: { increment: 1 }, lastTickMs: 12 }),
+        update: partialMatch({ tickCount: { increment: 1 }, lastTickMs: 12 }),
       }),
     );
   });

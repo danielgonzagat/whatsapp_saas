@@ -1,4 +1,5 @@
 import { KloelToolRouter } from './kloel-tool-router';
+import { castMock } from '../../test/helpers/cast-mock';
 
 interface TruncatedToolMessageContent {
   truncated: true;
@@ -108,7 +109,7 @@ describe('KloelToolRouter', () => {
     });
 
     const raw = result.toolMessages[0]?.content ?? '{}';
-    const content: TruncatedToolMessageContent = JSON.parse(raw);
+    const content = JSON.parse(raw) as TruncatedToolMessageContent;
     expect(content.truncated).toBe(true);
     expect(content.originalChars).toBeGreaterThan(6000);
     expect(content.preview.length).toBeLessThanOrEqual(6000);
@@ -148,7 +149,7 @@ describe('KloelToolRouter', () => {
     });
 
     const raw = result.toolMessages[0]?.content ?? '{}';
-    const content: TruncatedToolMessageContent = JSON.parse(raw);
+    const content = JSON.parse(raw) as TruncatedToolMessageContent;
     expect(content.truncated).toBe(true);
     expect(content.artifactId).toBeUndefined();
     expect(content.hint).toBeUndefined();
@@ -181,7 +182,7 @@ describe('KloelToolRouter', () => {
     });
 
     const raw = result.toolMessages[0]?.content ?? '{}';
-    const parsed = JSON.parse(raw);
+    const parsed = JSON.parse(raw) as TruncatedToolMessageContent;
     expect(parsed.truncated).toBeUndefined();
     expect(storeToolArtifact).not.toHaveBeenCalled();
     expect(result.receipts[0]?.artifactId).toBeUndefined();
@@ -265,7 +266,7 @@ describe('KloelToolRouter', () => {
       );
     });
     expect(toolResultCalls.length).toBe(1);
-    const toolResultEvent = toolResultCalls[0][0] as ToolResultSSEEvent;
+    const toolResultEvent = castMock<ToolResultSSEEvent[][]>(toolResultCalls)[0]?.[0];
     expect(typeof toolResultEvent.artifactId).toBe('string');
     expect(toolResultEvent.artifactId).toMatch(/^tool_artifact:search_agent_memory:\d+:[a-f0-9]+$/);
   });

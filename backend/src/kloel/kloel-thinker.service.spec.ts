@@ -47,6 +47,7 @@ import { KLOEL_LLM_E2E_GUARD, KloelLLME2EGuard } from './kloel-llm-e2e-guard';
 import { KloelStreamWriter } from './kloel-stream-writer';
 import { thinkSyncImpl, regenerateThreadAssistantResponseImpl } from './kloel-thinker.helpers';
 import { finalizeSuccessfulReply } from './kloel-thinker-think.helpers';
+import { castMock } from '../../test/helpers/cast-mock';
 
 jest.mock('./kloel-thinker.helpers', () => ({
   thinkSyncImpl: jest.fn(),
@@ -148,7 +149,9 @@ describe('KloelThinkerService', () => {
       $transaction: jest
         .fn()
         .mockImplementation((arg: unknown) =>
-          typeof arg === 'function' ? arg(prisma) : Promise.resolve(undefined),
+          typeof arg === 'function'
+            ? (arg as (p: typeof prisma) => unknown)(prisma)
+            : Promise.resolve(undefined),
         ),
     };
 
@@ -527,7 +530,7 @@ describe('KloelThinkerService', () => {
   describe('thinkSync', () => {
     it('delegates to thinkSyncImpl and returns result', async () => {
       const mockResult = { response: 'Hello!', conversationId: 'conv-1', title: 'Title' };
-      thinkSyncImpl.mockResolvedValue(mockResult);
+      (thinkSyncImpl as jest.Mock).mockResolvedValue(mockResult);
 
       const result = await service.thinkSync(
         { message: 'hello', workspaceId: wsId },
@@ -541,21 +544,23 @@ describe('KloelThinkerService', () => {
     });
 
     it('propagates errors from thinkSyncImpl', async () => {
-      thinkSyncImpl.mockRejectedValue(new Error('LLM failure'));
+      (thinkSyncImpl as jest.Mock).mockRejectedValue(new Error('LLM failure'));
       await expect(
         service.thinkSync({ message: 'hello', workspaceId: wsId }, null, undefined, undefined),
       ).rejects.toThrow('LLM failure');
     });
 
     it('passes workspaceId to thinkSyncImpl', async () => {
-      thinkSyncImpl.mockResolvedValue({ response: 'Ok' });
+      (thinkSyncImpl as jest.Mock).mockResolvedValue({ response: 'Ok' });
       await service.thinkSync(
         { message: 'hello', workspaceId: 'ws-tenant' },
         null,
         undefined,
         undefined,
       );
-      const callArgs = thinkSyncImpl.mock.calls[0][0];
+      const callArgs = castMock<[{ workspaceId: string }][]>(
+        (thinkSyncImpl as jest.Mock).mock.calls,
+      )[0]?.[0];
       expect(callArgs.workspaceId).toBe('ws-tenant');
     });
   });
@@ -571,7 +576,7 @@ describe('KloelThinkerService', () => {
         createdAt: new Date(),
         deletedMessageIds: ['msg-1'],
       };
-      regenerateThreadAssistantResponseImpl.mockResolvedValue(mockRegenerated);
+      (regenerateThreadAssistantResponseImpl as jest.Mock).mockResolvedValue(mockRegenerated);
 
       const result = await service.regenerateThreadAssistantResponse({
         workspaceId: wsId,
@@ -579,7 +584,9 @@ describe('KloelThinkerService', () => {
         assistantMessageId: 'msg-1',
       });
 
-      const [regenerateInput, regenerateDeps] = regenerateThreadAssistantResponseImpl.mock.calls[0];
+      const [regenerateInput, regenerateDeps] = castMock<unknown[][]>(
+        (regenerateThreadAssistantResponseImpl as jest.Mock).mock.calls,
+      )[0];
       expect(regenerateInput).toEqual(
         expect.objectContaining({
           workspaceId: wsId,
@@ -592,7 +599,9 @@ describe('KloelThinkerService', () => {
     });
 
     it('propagates errors from regenerateThreadAssistantResponseImpl', async () => {
-      regenerateThreadAssistantResponseImpl.mockRejectedValue(new Error('Thread not found'));
+      (regenerateThreadAssistantResponseImpl as jest.Mock).mockRejectedValue(
+        new Error('Thread not found'),
+      );
       await expect(
         service.regenerateThreadAssistantResponse({
           workspaceId: wsId,
@@ -605,7 +614,7 @@ describe('KloelThinkerService', () => {
 
   describe('error handling', () => {
     it('thinkSync propagates error when helper throws', async () => {
-      thinkSyncImpl.mockRejectedValue(new Error('Budget exceeded'));
+      (thinkSyncImpl as jest.Mock).mockRejectedValue(new Error('Budget exceeded'));
       await expect(
         service.thinkSync({ message: 'hello', workspaceId: wsId }, null, undefined, undefined),
       ).rejects.toThrow('Budget exceeded');

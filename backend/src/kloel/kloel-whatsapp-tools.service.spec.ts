@@ -252,7 +252,7 @@ describe('KloelWhatsAppToolsService', () => {
     });
 
     it('marks message as FAILED on send error', async () => {
-      transports.send.mockRejectedValue(new Error('rate limit'));
+      (transports.send as jest.Mock).mockRejectedValue(new Error('rate limit'));
 
       const result = await service.toolSendWhatsAppMessage(wsId, { phone, message: 'Olá!' });
 

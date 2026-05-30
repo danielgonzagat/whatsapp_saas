@@ -2,6 +2,8 @@ import { CiaCognitiveHealthService } from './cia-cognitive-health.service';
 import { GoalFieldService } from '../../goal-field/goal-field.service';
 import type { SpineEventRef } from '../mind.types';
 import type { Tension } from '../../goal-field/goal-field.types';
+import { partialMatch } from '../../../../test/helpers/match-instance';
+import { castMock } from '../../../../test/helpers/cast-mock';
 
 // ── helpers ───────────────────────────────────────────────────────────
 
@@ -65,41 +67,41 @@ describe('CiaCognitiveHealthService', () => {
 
     expect(createMock).toHaveBeenNthCalledWith(
       1,
-      expect.objectContaining({
-        data: expect.objectContaining({
+      partialMatch({
+        data: partialMatch({
           workspaceId: 'ws_test',
           key: `cog_health:${tMid.tensionId}`,
           category: 'cognitive_health_alert',
           type: 'alert',
-          value: expect.objectContaining({
+          value: partialMatch({
             tensionId: tMid.tensionId,
             severity: 0.7,
           }),
           content: 'mid',
-          metadata: expect.objectContaining({ severity: 0.7 }),
+          metadata: partialMatch({ severity: 0.7 }),
         }),
       }),
     );
 
     expect(createMock).toHaveBeenNthCalledWith(
       2,
-      expect.objectContaining({
-        data: expect.objectContaining({
+      partialMatch({
+        data: partialMatch({
           workspaceId: 'ws_test',
           key: `cog_health:${tHigh.tensionId}`,
           category: 'cognitive_health_alert',
           type: 'alert',
-          value: expect.objectContaining({
+          value: partialMatch({
             tensionId: tHigh.tensionId,
             severity: 0.95,
           }),
           content: 'high',
-          metadata: expect.objectContaining({ severity: 0.95 }),
+          metadata: partialMatch({ severity: 0.95 }),
         }),
       }),
     );
 
-    const lowCall = createMock.mock.calls.find((call: unknown[]) => {
+    const lowCall = castMock<unknown[][]>(createMock.mock.calls).find((call: unknown[]) => {
       const arg = call?.[0] as Record<string, unknown> | undefined;
       return (
         arg?.data &&

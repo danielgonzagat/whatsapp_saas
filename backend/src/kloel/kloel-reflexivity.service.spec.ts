@@ -1,4 +1,5 @@
 import { KloelReflexivityService } from './kloel-reflexivity.service';
+import { castMock } from '../../test/helpers/cast-mock';
 
 const GENERATED_AT = '2026-05-25T12:00:00.000Z';
 
@@ -37,7 +38,9 @@ describe('KloelReflexivityService', () => {
     await service.periodicReflexivity();
 
     expect(prisma.mindDailyReport.upsert).toHaveBeenCalledTimes(1);
-    const call = prisma.mindDailyReport.upsert.mock.calls.at(0);
+    const call = castMock<[{ create: { id: string } }][]>(
+      prisma.mindDailyReport.upsert.mock.calls,
+    ).at(0);
     if (!call) {
       throw new Error('expected mindDailyReport upsert call');
     }

@@ -1,4 +1,5 @@
 import { OnboardingService } from './onboarding.service';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 type KloelMemoryMock = {
   findUnique: jest.Mock;
@@ -73,9 +74,9 @@ describe('OnboardingService profile persistence', () => {
     });
 
     expect(tx.kloelMemory.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         where: { workspaceId_key: { workspaceId: 'ws-1', key: 'onboarding_profile' } },
-        create: expect.objectContaining({
+        create: partialMatch({
           workspaceId: 'ws-1',
           key: 'onboarding_profile',
           category: 'system',
@@ -84,9 +85,9 @@ describe('OnboardingService profile persistence', () => {
       }),
     );
     expect(tx.kloelMemory.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         where: { workspaceId_key: { workspaceId: 'ws-1', key: 'onboarding_setup_checklist' } },
-        create: expect.objectContaining({
+        create: partialMatch({
           workspaceId: 'ws-1',
           key: 'onboarding_setup_checklist',
           category: 'system',
@@ -120,9 +121,9 @@ describe('OnboardingService profile persistence', () => {
 
     expect(result.completed).toBe(true);
     expect(tx.kloelMemory.upsert).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         where: { workspaceId_key: { workspaceId: 'ws-1', key: 'onboarding_completed' } },
-        create: expect.objectContaining({
+        create: partialMatch({
           workspaceId: 'ws-1',
           key: 'onboarding_completed',
           category: 'system',

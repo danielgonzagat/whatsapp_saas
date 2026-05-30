@@ -12,6 +12,7 @@ import {
 import { UnknownProviderPricingModelError } from '../../../wallet/provider-pricing';
 import * as providerLlmBilling from '../../../wallet/provider-llm-billing';
 import { makeChargeUsageResult, makeMockWalletService } from './agent-assist.helpers.spec.helpers';
+import { partialMatch } from '../../../../test/helpers/match-instance';
 
 jest.mock('../../../wallet/wallet.service');
 jest.mock('../../../wallet/provider-llm-billing', () => ({
@@ -71,12 +72,12 @@ describe('agent-assist.helpers — charging', () => {
       expect(
         (mockWalletService as { chargeForUsage: jest.Mock }).chargeForUsage,
       ).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           workspaceId: 'ws-1',
           operation: 'ai_message',
           quotedCostCents: BigInt(1500),
           requestId: 'req-1',
-          metadata: expect.objectContaining({
+          metadata: partialMatch({
             channel: 'ai_assistant',
             capability: 'analyze_sentiment',
             test: true,
@@ -97,7 +98,7 @@ describe('agent-assist.helpers — charging', () => {
       expect(
         (mockWalletService as { chargeForUsage: jest.Mock }).chargeForUsage,
       ).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           units: 1,
         }),
       );
@@ -191,13 +192,13 @@ describe('agent-assist.helpers — charging', () => {
       expect(
         (mockWalletService as { settleUsageCharge: jest.Mock }).settleUsageCharge,
       ).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           workspaceId: 'ws-1',
           operation: 'ai_message',
           requestId: 'req-1',
           actualCostCents: BigInt(1200),
           reason: 'ai_assistant_provider_usage',
-          metadata: expect.objectContaining({
+          metadata: partialMatch({
             channel: 'ai_assistant',
             capability: 'generate_pitch',
             model: 'gpt-4',

@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { MindBanditService } from './mind-bandit.service';
+import { partialMatch } from '../../../../test/helpers/match-instance';
 
 type BanditUpsertArgs = {
   where: { workspaceId_decisionType_arm: { workspaceId: string } };
@@ -108,7 +109,7 @@ describe('MindBanditService', () => {
           beta: { increment: 0 },
           wins: { increment: 1 },
         },
-        create: expect.objectContaining({
+        create: partialMatch({
           workspaceId: 'ws-1',
           decisionType: 'subject',
           arm: 'A',

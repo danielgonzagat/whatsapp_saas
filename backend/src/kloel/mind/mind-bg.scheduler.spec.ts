@@ -226,7 +226,9 @@ describe('MindBackgroundScheduler (UTP gap B)', () => {
 
     it('calls scanAndEscalate when CIA_COGNITIVE_HEALTH_TICK_ENABLED=true', async () => {
       process.env[cogHealthKey] = 'true';
-      const scanMock = jest.fn().mockResolvedValue({ escalated: 0 });
+      const scanMock = jest
+        .fn<Promise<{ escalated: number }>, []>()
+        .mockResolvedValue({ escalated: 0 });
       const { scheduler } = buildScheduler({
         cognitiveHealth: { scanAndEscalate: scanMock },
       });
@@ -239,7 +241,9 @@ describe('MindBackgroundScheduler (UTP gap B)', () => {
 
     it('does NOT call scanAndEscalate when flag is absent', async () => {
       // flag deliberately not set
-      const scanMock = jest.fn().mockResolvedValue({ escalated: 0 });
+      const scanMock = jest
+        .fn<Promise<{ escalated: number }>, []>()
+        .mockResolvedValue({ escalated: 0 });
       const { scheduler } = buildScheduler({
         cognitiveHealth: { scanAndEscalate: scanMock },
       });
@@ -251,7 +255,9 @@ describe('MindBackgroundScheduler (UTP gap B)', () => {
 
     it('does NOT call scanAndEscalate when CIA_COGNITIVE_HEALTH_TICK_ENABLED=false', async () => {
       process.env[cogHealthKey] = 'false';
-      const scanMock = jest.fn().mockResolvedValue({ escalated: 0 });
+      const scanMock = jest
+        .fn<Promise<{ escalated: number }>, []>()
+        .mockResolvedValue({ escalated: 0 });
       const { scheduler } = buildScheduler({
         cognitiveHealth: { scanAndEscalate: scanMock },
       });
@@ -263,7 +269,9 @@ describe('MindBackgroundScheduler (UTP gap B)', () => {
 
     it('continues tick processing when scanAndEscalate throws', async () => {
       process.env[cogHealthKey] = 'true';
-      const scanMock = jest.fn().mockRejectedValue(new Error('goal-field explosion'));
+      const scanMock = jest
+        .fn<Promise<{ escalated: number }>, []>()
+        .mockRejectedValue(new Error('goal-field explosion'));
       const { scheduler } = buildScheduler({
         cognitiveHealth: { scanAndEscalate: scanMock },
       });

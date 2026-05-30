@@ -6,6 +6,8 @@ jest.mock('../../../queue/queue', () => ({
 import { CiaBacklogRunService } from './cia-backlog-run.service';
 import { CiaChatFilterService } from './cia-chat-filter.service';
 import type { PrismaMock, ProviderRegistryMock, WorkerRuntimeMock } from './cia-runtime.fixtures';
+import { partialMatch, stringMatch } from '../../../../test/helpers/match-instance';
+import { castMock } from '../../../../test/helpers/cast-mock';
 
 interface AutopilotQueueMock {
   add: jest.Mock;
@@ -180,7 +182,7 @@ describe('CiaBacklogRunService', () => {
 
       expect(result.queued).toBe(false);
       expect(agentEvents.publish).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           type: 'error',
           workspaceId: 'ws-a',
           phase: 'backlog_start',
@@ -194,11 +196,11 @@ describe('CiaBacklogRunService', () => {
       expect(result.queued).toBe(true);
       expect(autopilotQueue.add).toHaveBeenCalledWith(
         'sweep-unread-conversations',
-        expect.objectContaining({
+        partialMatch({
           workspaceId: 'ws-a',
           limit: 10,
         }),
-        expect.objectContaining({ removeOnComplete: true }),
+        partialMatch({ removeOnComplete: true }),
       );
     });
 
@@ -207,7 +209,9 @@ describe('CiaBacklogRunService', () => {
 
       await service.startBacklogRun('ws-a', 'reply_all_recent_first', 10);
 
-      const inlineArgs = inlineFallback.runBacklogInlineFallback.mock.calls[0];
+      const inlineArgs = castMock<[string, string, string, unknown[]]>(
+        inlineFallback.runBacklogInlineFallback.mock.calls[0],
+      );
       expect(inlineArgs[0]).toBe('ws-a');
       expect(typeof inlineArgs[1]).toBe('string');
       expect(inlineArgs[2]).toBe('reply_all_recent_first');
@@ -219,7 +223,7 @@ describe('CiaBacklogRunService', () => {
 
       expect(result.queued).toBe(true);
       expect(agentEvents.publish).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           type: 'status',
           workspaceId: 'ws-a',
           phase: 'live_ready',
@@ -256,7 +260,9 @@ describe('CiaBacklogRunService', () => {
 
       await service.startBacklogRun('ws-a', 'reply_all_recent_first', 10);
 
-      const remoteArgs = remoteBacklog.listRemotePendingChats.mock.calls[0];
+      const remoteArgs = castMock<[string, string, number]>(
+        remoteBacklog.listRemotePendingChats.mock.calls[0],
+      );
       expect(remoteArgs.slice(0, 2)).toEqual(['ws-a', 'session-xyz']);
       expect(typeof remoteArgs[2]).toBe('number');
       expect(remoteBacklog.runRemoteBacklogInlineFallback).toHaveBeenCalled();
@@ -268,13 +274,15 @@ describe('CiaBacklogRunService', () => {
       });
 
       expect(agentEvents.publish).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           type: 'status',
           phase: 'backlog_start',
-          meta: expect.objectContaining({ mode: 'prioritize_hot' }),
+          meta: partialMatch({ mode: 'prioritize_hot' }),
         }),
       );
-      const publishArgs = agentEvents.publish.mock.calls.at(-1)?.[0];
+      const publishArgs = castMock<[{ meta?: { totalQueued?: number } }]>(
+        agentEvents.publish.mock.calls.at(-1) ?? [],
+      )[0];
       expect(typeof publishArgs?.meta?.totalQueued).toBe('number');
     });
   });
@@ -301,10 +309,8 @@ describe('CiaBacklogRunService', () => {
       );
 
       expect(result).toEqual(
-        expect.objectContaining({
-          action: expect.stringMatching(
-            /backlog_started|idle|catalog_scheduled|skipped/,
-          ) as unknown,
+        partialMatch({
+          action: stringMatch(/backlog_started|idle|catalog_scheduled|skipped/),
         }),
       );
     });

@@ -1,30 +1,8 @@
-import { AuthorizationGatewayService } from './authorization.gateway';
 import { BeliefUpdateService } from './belief-update';
 import { DiscoveryNarrativeBuilderService } from './discovery-narrative.builder';
-import { ExperimentRunnerService } from './experiment-runner';
-import { HypothesisFormulatorService } from './hypothesis-formulator';
-import { MarketEntryDecisionService } from './market-entry-decision.service';
-import { MicroExperimentDesignerService } from './micro-experiment.designer';
-import { ObservationCollectorService } from './observation.collector';
 import { ProofEvaluatorService } from './proof-evaluator';
-import type {
-  SpineSignal,
-  Hypothesis,
-  MicroExperiment,
-  Observation,
-  ProofEvaluation,
-} from './types';
+import type { SpineSignal, Hypothesis, Observation, ProofEvaluation } from './types';
 import { SpineEmitterService } from '../spine/spine-emitter.service';
-
-function makeSignal(overrides: Partial<SpineSignal> = {}): SpineSignal {
-  return {
-    eventName: 'commerce.lead.went_silent',
-    workspaceId: 'ws-1',
-    truthMode: 'observed',
-    occurredAt: new Date().toISOString(),
-    ...overrides,
-  };
-}
 
 describe('Hypproof module (UTP-HYPPROOF-001..009)', () => {
   describe('ProofEvaluatorService (HYPPROOF-006)', () => {
@@ -142,7 +120,7 @@ describe('Hypproof module (UTP-HYPPROOF-001..009)', () => {
       const result = await svc.update(evaluation);
       expect(result).not.toBeNull();
       expect(result!.verdict).toBe('confirmed');
-      expect(mockSpine.emit).toHaveBeenCalledWith(
+      expect((mockSpine as { emit: jest.Mock }).emit).toHaveBeenCalledWith(
         expect.objectContaining({
           eventName: 'cognition.belief_updated',
           workspaceId: 'ws-1',

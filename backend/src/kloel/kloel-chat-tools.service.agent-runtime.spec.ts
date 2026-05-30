@@ -10,6 +10,7 @@ import {
   AgentRuntimeSkillRegistry,
   AgentRuntimeEvidenceStoreService,
 } from './agent-runtime';
+import { partialMatch, stringContains } from '../../test/helpers/match-instance';
 
 jest.mock('../common/products/legacy-products.util', () => ({
   filterLegacyProducts: jest.fn((products: unknown[]) => products),
@@ -86,7 +87,7 @@ describe('KloelChatToolsService', () => {
       auditLog: { create: jest.fn().mockResolvedValue({}) },
       $transaction: jest.fn().mockImplementation((arg: unknown) => {
         if (typeof arg === 'function') {
-          return arg(prisma);
+          return (arg as (p: ChatToolsPrismaMock) => unknown)(prisma);
         }
         return Promise.resolve(undefined);
       }),
@@ -314,8 +315,8 @@ describe('KloelChatToolsService', () => {
           workspaceId: wsId,
           sessionId: 'thread_1',
           eventType: 'runtime.delegation.recorded',
-          content: expect.stringContaining('Inspect Hermes delegation'),
-          metadata: expect.objectContaining({
+          content: stringContains('Inspect Hermes delegation'),
+          metadata: partialMatch({
             worker: 'D',
             childSessionId: 'child_1',
             source: 'kloel_tool',

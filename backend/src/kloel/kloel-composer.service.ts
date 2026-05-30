@@ -313,7 +313,7 @@ export class KloelComposerService {
             throw new InternalServerErrorException(`Anthropic API error ${status}: ${errorText}`);
           }
 
-          result = await response.json();
+          result = (await response.json()) as AnthropicSiteResult;
           break;
         } catch (err: unknown) {
           if (err instanceof InternalServerErrorException) {

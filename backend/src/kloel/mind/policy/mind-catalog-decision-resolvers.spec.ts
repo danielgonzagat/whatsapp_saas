@@ -5,6 +5,7 @@ import {
   resolveCouponDecision,
   resolveToneDecision,
 } from './mind-catalog-decision-resolvers';
+import { partialMatch } from '../../../../test/helpers/match-instance';
 
 function mockCases(rows: Array<Record<string, unknown>>): CaseMemoryLookup {
   return { similar: jest.fn().mockResolvedValue(rows) };
@@ -31,7 +32,7 @@ describe('resolveAudioVsTextDecision with memory', () => {
     const result = await resolveAudioVsTextDecision(policy, cases, 'ws-1', 'whatsapp', 0.05);
 
     expect(policy.choose).toHaveBeenCalledWith(
-      expect.objectContaining({ baseline: 'audio', decisionType: 'audio_vs_text' }),
+      partialMatch({ baseline: 'audio', decisionType: 'audio_vs_text' }),
     );
     expect(result.choice).toBe('audio');
   });
@@ -43,7 +44,7 @@ describe('resolveAudioVsTextDecision with memory', () => {
     const result = await resolveAudioVsTextDecision(policy, cases, 'ws-1', 'email', 0.01);
 
     expect(policy.choose).toHaveBeenCalledWith(
-      expect.objectContaining({ baseline: 'text', decisionType: 'audio_vs_text' }),
+      partialMatch({ baseline: 'text', decisionType: 'audio_vs_text' }),
     );
     expect(result.choice).toBe('text');
   });
@@ -55,7 +56,7 @@ describe('resolveAudioVsTextDecision with memory', () => {
     const result = await resolveAudioVsTextDecision(policy, cases, 'ws-1', 'whatsapp', 0.25);
 
     expect(policy.choose).toHaveBeenCalledWith(
-      expect.objectContaining({ baseline: 'audio', decisionType: 'audio_vs_text' }),
+      partialMatch({ baseline: 'audio', decisionType: 'audio_vs_text' }),
     );
     expect(result.choice).toBe('audio');
   });
@@ -73,7 +74,7 @@ describe('resolveToneDecision with memory', () => {
     const result = await resolveToneDecision(policy, cases, 'ws-1', 'whatsapp', 0.5, 0.2);
 
     expect(policy.choose).toHaveBeenCalledWith(
-      expect.objectContaining({ baseline: 'FRIENDLY', decisionType: 'tom' }),
+      partialMatch({ baseline: 'FRIENDLY', decisionType: 'tom' }),
     );
     expect(result.tone).toBe('FRIENDLY');
   });
@@ -85,7 +86,7 @@ describe('resolveToneDecision with memory', () => {
     const result = await resolveToneDecision(policy, cases, 'ws-1', 'email', 0.1, 0.05);
 
     expect(policy.choose).toHaveBeenCalledWith(
-      expect.objectContaining({ baseline: 'DIRECT', decisionType: 'tom' }),
+      partialMatch({ baseline: 'DIRECT', decisionType: 'tom' }),
     );
     expect(result.tone).toBe('DIRECT');
   });
@@ -101,14 +102,14 @@ describe('resolveToneDecision with memory', () => {
     await resolveToneDecision(policy, cases, 'ws-1', 'whatsapp', 0.2, 0.15, 'premium');
 
     expect(cases.similar).toHaveBeenCalledWith(
-      expect.objectContaining({
-        features: expect.objectContaining({ channel: 'whatsapp', segment: 'premium' }),
+      partialMatch({
+        features: partialMatch({ channel: 'whatsapp', segment: 'premium' }),
         caseType: 'tom',
       }),
     );
     expect(policy.choose).toHaveBeenCalledWith(
-      expect.objectContaining({
-        context: expect.objectContaining({ segment: 'premium' }),
+      partialMatch({
+        context: partialMatch({ segment: 'premium' }),
       }),
     );
   });
@@ -126,7 +127,7 @@ describe('resolveCouponDecision with memory', () => {
     const result = await resolveCouponDecision(policy, cases, 'ws-1', 'over_500', 0.05);
 
     expect(policy.choose).toHaveBeenCalledWith(
-      expect.objectContaining({ baseline: 'coupon_10', decisionType: 'coupon_offer' }),
+      partialMatch({ baseline: 'coupon_10', decisionType: 'coupon_offer' }),
     );
     expect(result.action).toBe('coupon_10');
   });
@@ -138,7 +139,7 @@ describe('resolveCouponDecision with memory', () => {
     const result = await resolveCouponDecision(policy, cases, 'ws-1', 'under_100', 0.05);
 
     expect(policy.choose).toHaveBeenCalledWith(
-      expect.objectContaining({ baseline: 'no_coupon', decisionType: 'coupon_offer' }),
+      partialMatch({ baseline: 'no_coupon', decisionType: 'coupon_offer' }),
     );
     expect(result.action).toBe('no_coupon');
   });
@@ -150,11 +151,11 @@ describe('resolveCouponDecision with memory', () => {
     await resolveCouponDecision(policy, cases, 'ws-1', 'over_300', 0.08, 'premium');
 
     expect(cases.similar).toHaveBeenCalledWith(
-      expect.objectContaining({ features: expect.objectContaining({ segment: 'premium' }) }),
+      partialMatch({ features: partialMatch({ segment: 'premium' }) }),
     );
     expect(policy.choose).toHaveBeenCalledWith(
-      expect.objectContaining({
-        context: expect.objectContaining({ segment: 'premium' }),
+      partialMatch({
+        context: partialMatch({ segment: 'premium' }),
       }),
     );
   });

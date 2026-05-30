@@ -71,74 +71,92 @@ export class KloelDomainServiceResolver {
   private readonly logger = StructuredLogger.from(KloelDomainServiceResolver.name);
 
   /**
-   * Static mapping of domainService name prefix → NestJS class token.
-   * Maps the service-name segment from domainService strings to the actual
-   * NestJS-injectable class reference used for ModuleRef lookup.
+   * Lazily-built mapping of domainService name prefix → NestJS class token.
+   *
+   * Built on first use (see {@link getServiceTokenMap}) instead of as an eager
+   * class-static initializer. The resolver participates in an import cycle
+   * (`product.service.ts → mind/coordination → … → domain-service-resolver →
+   * product.service.ts`), so an eager static map can snapshot a cycle-partner
+   * binding (e.g. `ProductService`) while it is still `undefined`, leaving the
+   * entry as `['ProductService', undefined]`. That silently broke every
+   * capability routed through a cyclic service (`unknown_service`). Deferring
+   * construction until first lookup guarantees all module bindings are fully
+   * assigned. The result is memoized so the map is built at most once.
    */
-  private static readonly SERVICE_TOKEN_MAP = new Map<string, new (...args: never[]) => unknown>([
-    // ── Kloel-local services ──
-    ['AccountService', AccountService],
-    ['CouponService', CouponService],
-    ['MemoryService', MemoryService],
-    ['ReportService', ReportService],
-    ['WalletService', KloelWalletService],
-    ['PaymentService', PaymentService],
-    ['DepsCoverageService', DepsCoverageService],
-    ['CodeAccessService', CodeAccessService],
-    ['SelfHealthService', SelfHealthService],
-    ['SelfGapsService', SelfGapsService],
-    ['CapabilityRegistry', CapabilityRegistryV2Service],
+  private static serviceTokenMap: Map<string, new (...args: never[]) => unknown> | undefined;
 
-    // ── Cross-module domain services ──
-    ['AffiliateService', AffiliateService],
-    ['AnalyticsService', AnalyticsService],
-    ['AuditService', AuditService],
-    ['AutopilotService', AutopilotService],
-    ['BillingService', BillingService],
-    ['CheckoutService', CheckoutService],
-    ['CrmService', CrmService],
-    ['DashboardService', DashboardService],
-    ['HealthService', HealthService],
-    ['MarketplaceService', MarketplaceService],
-    ['MediaService', MediaService],
-    ['PlanService', PlanService],
-    ['ProductService', ProductService],
-    ['ProductUrlService', ProductUrlService],
-    ['SalesService', SalesService],
-    ['WorkspaceService', WorkspaceService],
+  /** Build (or return the memoized) service-name → DI-token map. */
+  private static getServiceTokenMap(): Map<string, new (...args: never[]) => unknown> {
+    if (KloelDomainServiceResolver.serviceTokenMap) {
+      return KloelDomainServiceResolver.serviceTokenMap;
+    }
+    const map = new Map<string, new (...args: never[]) => unknown>([
+      // ── Kloel-local services ──
+      ['AccountService', AccountService],
+      ['CouponService', CouponService],
+      ['MemoryService', MemoryService],
+      ['ReportService', ReportService],
+      ['WalletService', KloelWalletService],
+      ['PaymentService', PaymentService],
+      ['DepsCoverageService', DepsCoverageService],
+      ['CodeAccessService', CodeAccessService],
+      ['SelfHealthService', SelfHealthService],
+      ['SelfGapsService', SelfGapsService],
+      ['CapabilityRegistry', CapabilityRegistryV2Service],
 
-    // ── Name-mismatch aliases (class name ≠ domainService prefix) ──
-    ['FlowService', FlowsService],
-    ['CampaignService', CampaignsService],
-    ['WhatsAppService', WhatsappService],
-    ['OrderService', CheckoutOrderService],
-    // Canonical cross-channel outbound send façade (Wave7 L5).
-    ['ChannelMessageDispatch', ChannelMessageDispatchService],
+      // ── Cross-module domain services ──
+      ['AffiliateService', AffiliateService],
+      ['AnalyticsService', AnalyticsService],
+      ['AuditService', AuditService],
+      ['AutopilotService', AutopilotService],
+      ['BillingService', BillingService],
+      ['CheckoutService', CheckoutService],
+      ['CrmService', CrmService],
+      ['DashboardService', DashboardService],
+      ['HealthService', HealthService],
+      ['MarketplaceService', MarketplaceService],
+      ['MediaService', MediaService],
+      ['PlanService', PlanService],
+      ['ProductService', ProductService],
+      ['ProductUrlService', ProductUrlService],
+      ['SalesService', SalesService],
+      ['WorkspaceService', WorkspaceService],
 
-    // ── services-v2 capability wiring (Wave 1 integration; deps boot-safe) ──
-    ['ThemeService', ThemeService],
-    ['AIConfigService', AIConfigService],
-    ['ProductAIConfigService', ProductAIConfigService],
-    ['NpsService', NpsService],
-    ['ChurnService', ChurnService],
-    ['AbandonmentService', AbandonmentService],
-    ['RefundService', RefundService],
-    ['ReviewService', ReviewService],
-    ['SubscriptionService', SubscriptionService],
-    ['ShippingService', ShippingService],
-    ['BrandService', BrandService],
-    ['LeadService', LeadService],
-    ['DocumentService', DocumentService],
-    ['SessionService', SessionService],
-    ['AudioService', AudioService],
-    ['PixelService', PixelService],
+      // ── Name-mismatch aliases (class name ≠ domainService prefix) ──
+      ['FlowService', FlowsService],
+      ['CampaignService', CampaignsService],
+      ['WhatsAppService', WhatsappService],
+      ['OrderService', CheckoutOrderService],
+      // Canonical cross-channel outbound send façade (Wave7 L5).
+      ['ChannelMessageDispatch', ChannelMessageDispatchService],
 
-    // ── services-v2 capability wiring (Wave 3 integration; deps now resolvable) ──
-    ['ChannelService', ChannelService],
-    ['MessagingService', MessagingService],
-    ['AgentJobService', AgentJobService],
-    ['SearchService', SearchService],
-  ]);
+      // ── services-v2 capability wiring (Wave 1 integration; deps boot-safe) ──
+      ['ThemeService', ThemeService],
+      ['AIConfigService', AIConfigService],
+      ['ProductAIConfigService', ProductAIConfigService],
+      ['NpsService', NpsService],
+      ['ChurnService', ChurnService],
+      ['AbandonmentService', AbandonmentService],
+      ['RefundService', RefundService],
+      ['ReviewService', ReviewService],
+      ['SubscriptionService', SubscriptionService],
+      ['ShippingService', ShippingService],
+      ['BrandService', BrandService],
+      ['LeadService', LeadService],
+      ['DocumentService', DocumentService],
+      ['SessionService', SessionService],
+      ['AudioService', AudioService],
+      ['PixelService', PixelService],
+
+      // ── services-v2 capability wiring (Wave 3 integration; deps now resolvable) ──
+      ['ChannelService', ChannelService],
+      ['MessagingService', MessagingService],
+      ['AgentJobService', AgentJobService],
+      ['SearchService', SearchService],
+    ]);
+    KloelDomainServiceResolver.serviceTokenMap = map;
+    return map;
+  }
 
   constructor(
     private readonly moduleRef: ModuleRef,
@@ -204,7 +222,7 @@ export class KloelDomainServiceResolver {
     args: UnknownRecord,
     toolName: string,
   ): Promise<ToolResult> {
-    const token = KloelDomainServiceResolver.SERVICE_TOKEN_MAP.get(serviceName);
+    const token = KloelDomainServiceResolver.getServiceTokenMap().get(serviceName);
     if (!token) {
       return {
         success: false,
@@ -397,7 +415,7 @@ export class KloelDomainServiceResolver {
     const actorId =
       typeof args.actorId === 'string' && args.actorId.trim() ? args.actorId.trim() : 'kloel-chat';
 
-    const token = KloelDomainServiceResolver.SERVICE_TOKEN_MAP.get(serviceName);
+    const token = KloelDomainServiceResolver.getServiceTokenMap().get(serviceName);
     if (!token) {
       return {
         success: false,

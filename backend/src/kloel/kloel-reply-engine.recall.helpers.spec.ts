@@ -1,5 +1,6 @@
 import { buildRecallDirective } from './kloel-reply-engine.recall.helpers';
 import type { LongTermMemoryService } from './mind/memory/long-term-memory.service';
+import { matchInstance } from '../../test/helpers/match-instance';
 
 type RecalledFact = Awaited<ReturnType<LongTermMemoryService['recallRelevant']>>[number];
 
@@ -53,7 +54,7 @@ describe('kloel-reply-engine recall helpers', () => {
       // recallRelevant was queried with the workspace + a bounded limit.
       expect(calls).toHaveLength(1);
       expect(calls[0]![0]).toBe('ws-1');
-      expect(calls[0]![1]).toEqual(expect.objectContaining({ limit: expect.any(Number) }));
+      expect(calls[0]![1]).toEqual(expect.objectContaining({ limit: matchInstance(Number) }));
       // The directive carries both the positive and the negative tendency.
       expect(out!.directive).toContain('MEMÓRIA DURÁVEL');
       expect(out!.directive).toContain('checkout.paid');

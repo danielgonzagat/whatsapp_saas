@@ -5,6 +5,7 @@ import { ChannelTransportRegistry } from '../../channel-transport.registry';
 import { OpsAlertService } from '../../../observability/ops-alert.service';
 import { SpineEmitterService } from '../../spine/spine-emitter.service';
 import { MindPolicyService } from '../policy/mind-policy.service';
+import { castMock } from '../../../../test/helpers/cast-mock';
 
 const REDIS_TOKEN = 'default_IORedisModuleConnectionToken';
 
@@ -97,7 +98,7 @@ describe('CiaSendHelpersService', () => {
     it('sets 48h TTL on first increment', async () => {
       redis.incr.mockResolvedValue(1);
       await service.reserveDailyMessageLimit('ws-1');
-      const [ttlKey, ttlSeconds] = redis.expire.mock.calls[0];
+      const [ttlKey, ttlSeconds] = castMock<[string, number]>(redis.expire.mock.calls[0]);
       expect(typeof ttlKey).toBe('string');
       expect(ttlSeconds).toBe(60 * 60 * 48);
     });

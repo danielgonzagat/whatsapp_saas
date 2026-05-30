@@ -5,6 +5,7 @@ import { matchInstance } from '../../test/helpers/match-instance';
 import type { KloelChatToolsService } from './kloel-chat-tools.service';
 import { runCreatePaymentLink } from './kloel-tool-dispatcher.create-payment-link.helpers';
 import type { CreatePaymentLinkDeps } from './kloel-tool-dispatcher.create-payment-link.helpers';
+import { castMock } from '../../test/helpers/cast-mock';
 
 type Stub = {
   prisma: { $transaction: jest.Mock };
@@ -31,7 +32,12 @@ const makeStubDeps = (): { stub: Stub; deps: CreatePaymentLinkDeps } => {
     logger: { warn: jest.fn() },
     applyReceipt: jest
       .fn()
-      .mockImplementation((cap, _ws, _a, result) => ({ ...result, capabilityId: cap })),
+      .mockImplementation(
+        (cap: string, _ws: unknown, _a: unknown, result: Record<string, unknown>) => ({
+          ...result,
+          capabilityId: cap,
+        }),
+      ),
   };
   const deps: CreatePaymentLinkDeps = {
     prisma: stub.prisma as unknown as PrismaService,
@@ -71,7 +77,9 @@ describe('kloel-tool-dispatcher.create-payment-link.helpers', () => {
     ];
     expect(options).toEqual({ isolationLevel: 'ReadCommitted' });
     expect(stub.auditService.logWithTx).toHaveBeenCalledTimes(1);
-    const auditCall = stub.auditService.logWithTx.mock.calls[0]?.[1] as { workspaceId: string };
+    const auditCall = castMock<[unknown, { workspaceId: string }][]>(
+      stub.auditService.logWithTx.mock.calls,
+    )[0]?.[1];
     expect(auditCall.workspaceId).toBe('ws1');
   });
 

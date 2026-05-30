@@ -1,5 +1,7 @@
 import { expectValueOf } from '../../test/expect-value-of';
 import { CommercialDecisionOrchestratorService } from './commercial-decision-orchestrator.service';
+import { partialMatch } from '../../test/helpers/match-instance';
+import { castMock } from '../../test/helpers/cast-mock';
 
 describe('CommercialDecisionOrchestratorService', () => {
   const mind = {
@@ -185,11 +187,11 @@ describe('CommercialDecisionOrchestratorService', () => {
       expect((justification!.reason as string).length).toBeGreaterThan(0);
     }
 
-    const eventCall = events.recordCommercial.mock.calls.find(
-      (call: Array<{ eventType: string }>) => call[0]?.eventType === 'predecided_actions.built',
-    );
+    const eventCall = castMock<Array<[{ eventType: string }]>>(
+      events.recordCommercial.mock.calls,
+    ).find((call) => call[0]?.eventType === 'predecided_actions.built');
     expect(eventCall).toBeTruthy();
-    const payload = eventCall[0].payload as Record<string, unknown>;
+    const payload = castMock<[{ payload: Record<string, unknown> }]>(eventCall)[0].payload;
     const payloadDecisions = payload.decisions as Record<string, Record<string, unknown>>;
     for (const key of decisionKeys) {
       const entry = payloadDecisions[key];
@@ -240,10 +242,10 @@ describe('CommercialDecisionOrchestratorService', () => {
     expect(decision.actions).toEqual([
       {
         tool: 'apply_discount',
-        args: expect.objectContaining({
-          couponDecision: expect.objectContaining({
+        args: partialMatch({
+          couponDecision: partialMatch({
             action: 'coupon_10',
-            hierarchyJustification: expect.objectContaining({
+            hierarchyJustification: partialMatch({
               level: expectValueOf(String),
               reason: expectValueOf(String),
             }),
@@ -276,22 +278,22 @@ describe('CommercialDecisionOrchestratorService', () => {
     expect(decision.actions).toEqual([
       {
         tool: 'send_message',
-        args: expect.objectContaining({
-          hierarchyTrace: expect.objectContaining({
-            audio_vs_text: expect.objectContaining({
-              hierarchyJustification: expect.objectContaining({
+        args: partialMatch({
+          hierarchyTrace: partialMatch({
+            audio_vs_text: partialMatch({
+              hierarchyJustification: partialMatch({
                 level: expectValueOf(String),
                 reason: expectValueOf(String),
               }),
             }),
-            cia_aggressiveness: expect.objectContaining({
-              hierarchyJustification: expect.objectContaining({
+            cia_aggressiveness: partialMatch({
+              hierarchyJustification: partialMatch({
                 level: expectValueOf(String),
                 reason: expectValueOf(String),
               }),
             }),
           }),
-          internalReplyPlan: expect.objectContaining({ concept: 'general' }),
+          internalReplyPlan: partialMatch({ concept: 'general' }),
         }),
       },
     ]);
@@ -348,7 +350,7 @@ describe('CommercialDecisionOrchestratorService', () => {
     });
     expect(prisma.pipelineState.update).toHaveBeenCalledWith({
       where: { workspaceId: 'ws-1' },
-      data: expect.objectContaining({ state: 'shadow' }),
+      data: partialMatch({ state: 'shadow' }),
     });
     expect(events.recordCommercial).toHaveBeenCalledWith(
       expect.objectContaining({ eventType: 'cognition.pipeline.auto_fallback' }),
@@ -412,7 +414,7 @@ describe('CommercialDecisionOrchestratorService', () => {
       message: 'Olá',
     });
 
-    const formatsArg = mind.resolveMessageFormat.mock.calls[0][3];
+    const formatsArg = castMock<unknown[][]>(mind.resolveMessageFormat.mock.calls)[0]?.[3];
     expect(formatsArg).not.toContain('audio');
     expect(formatsArg).not.toContain('video');
     expect(formatsArg).not.toContain('document');
@@ -470,7 +472,7 @@ describe('CommercialDecisionOrchestratorService', () => {
       message: 'Olá',
     });
 
-    const formatsArg = mind.resolveMessageFormat.mock.calls[0][3];
+    const formatsArg = castMock<unknown[][]>(mind.resolveMessageFormat.mock.calls)[0]?.[3];
     expect(formatsArg).toContain('text');
     expect(formatsArg).toContain('audio');
     expect(formatsArg).toContain('image');
@@ -490,7 +492,7 @@ describe('CommercialDecisionOrchestratorService', () => {
       message: 'Olá',
     });
 
-    const formatsArg = mind.resolveMessageFormat.mock.calls[0][3];
+    const formatsArg = castMock<unknown[][]>(mind.resolveMessageFormat.mock.calls)[0]?.[3];
     expect(formatsArg).toContain('audio');
     expect(formatsArg).toContain('image');
   });

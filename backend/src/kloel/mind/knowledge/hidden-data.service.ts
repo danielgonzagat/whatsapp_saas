@@ -73,7 +73,10 @@ export class HiddenDataExtractorService {
 
     let result: Record<string, unknown> = {};
     try {
-      result = JSON.parse(rawContent);
+      const parsed: unknown = JSON.parse(rawContent);
+      if (parsed !== null && typeof parsed === 'object') {
+        result = parsed as Record<string, unknown>;
+      }
       const keys = Object.keys(result);
       if (keys.length === 0) {
         this.logger.warn('hidden-data-extract empty result');

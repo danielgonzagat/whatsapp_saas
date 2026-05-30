@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { WalletLedgerService } from './wallet-ledger.service';
 import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 describe('WalletService', () => {
   let service: WalletService;
@@ -119,8 +120,8 @@ describe('WalletService', () => {
       await service.requestWithdrawal('ws-1', 500, { pixKey: 'key' });
 
       expect(walletUpdateMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: 'ws-1' }),
+        partialMatch({
+          where: partialMatch({ workspaceId: 'ws-1' }),
         }),
       );
     });
@@ -176,8 +177,8 @@ describe('WalletService', () => {
       await expect(service.reconcilePendingPayments()).resolves.toBeUndefined();
 
       expect(prismaMock.kloelWalletTransaction.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ status: 'pending', type: 'credit' }),
+        partialMatch({
+          where: partialMatch({ status: 'pending', type: 'credit' }),
           take: 100,
         }),
       );

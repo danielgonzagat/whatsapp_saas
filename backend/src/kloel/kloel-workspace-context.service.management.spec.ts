@@ -3,6 +3,8 @@ import { KloelWorkspaceContextService } from './kloel-workspace-context.service'
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelWorkspaceContextDataService } from './kloel-workspace-context-data.service';
 import { KloelWorkspaceContextLinkedProductService } from './kloel-workspace-context-linked-product.service';
+import { partialMatch } from '../../test/helpers/match-instance';
+import { castMock } from '../../test/helpers/cast-mock';
 
 jest.mock('../common/products/legacy-products.util', () => ({
   filterLegacyProducts: jest.fn((products: unknown[]) => products),
@@ -139,7 +141,7 @@ describe('KloelWorkspaceContextService', () => {
       expect(result.id).toBe('persona-1');
       expect(prisma.persona.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: partialMatch({
             workspaceId: wsId,
             name: 'Suporte',
             role: 'SUPPORT',
@@ -153,7 +155,7 @@ describe('KloelWorkspaceContextService', () => {
 
       expect(prisma.persona.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ role: 'SALES' }),
+          data: partialMatch({ role: 'SALES' }),
         }),
       );
     });
@@ -163,7 +165,7 @@ describe('KloelWorkspaceContextService', () => {
 
       expect(prisma.persona.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ basePrompt: 'System prompt text' }),
+          data: partialMatch({ basePrompt: 'System prompt text' }),
         }),
       );
     });
@@ -223,7 +225,9 @@ describe('KloelWorkspaceContextService', () => {
       });
 
       expect(result).toContain('PRODUTO VINCULADO AO PROMPT');
-      const linkedArgs = linkedProductService.buildLinkedProductPromptContext.mock.calls[0];
+      const linkedArgs = castMock<unknown[][]>(
+        linkedProductService.buildLinkedProductPromptContext.mock.calls,
+      )[0];
       expect(linkedArgs[0]).toBe(wsId);
       expect(linkedArgs[1]).toBeDefined();
       expect(linkedArgs[2]).toEqual({ source: 'owned', productId: 'p-1' });
@@ -250,7 +254,7 @@ describe('KloelWorkspaceContextService', () => {
     it('getWorkspaceContext passes workspaceId to dataService', async () => {
       await service.getWorkspaceContext('ws-tenant');
 
-      const fetchArgs = dataService.fetchAll.mock.calls[0];
+      const fetchArgs = castMock<unknown[][]>(dataService.fetchAll.mock.calls)[0];
       expect(fetchArgs[0]).toBe('ws-tenant');
       expect(fetchArgs[1]).toBeDefined();
       expect(fetchArgs[2]).toBeUndefined();
@@ -269,7 +273,7 @@ describe('KloelWorkspaceContextService', () => {
 
       expect(prisma.persona.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ workspaceId: 'ws-tenant' }),
+          data: partialMatch({ workspaceId: 'ws-tenant' }),
         }),
       );
     });
@@ -288,7 +292,9 @@ describe('KloelWorkspaceContextService', () => {
         productId: 'p-1',
       });
 
-      const linkedArgs = linkedProductService.buildLinkedProductPromptContext.mock.calls[0];
+      const linkedArgs = castMock<unknown[][]>(
+        linkedProductService.buildLinkedProductPromptContext.mock.calls,
+      )[0];
       expect(linkedArgs[0]).toBe('ws-tenant');
       expect(linkedArgs[1]).toBeDefined();
       expect(linkedArgs[2]).toBeDefined();

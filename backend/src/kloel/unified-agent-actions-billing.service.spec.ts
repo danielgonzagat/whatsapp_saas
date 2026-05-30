@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UnifiedAgentActionsBillingService } from './unified-agent-actions-billing.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 jest.mock('./unified-agent-actions-billing.helpers', () => ({
   createFunnelFlows: jest.fn().mockResolvedValue([
@@ -120,7 +121,7 @@ describe('UnifiedAgentActionsBillingService', () => {
         where: Record<string, unknown>;
       };
       expect(messageCountArgs.where).toEqual(
-        expect.objectContaining({
+        partialMatch({
           workspaceId: wsId,
           createdAt: messageCountArgs.where.createdAt,
         }),
@@ -275,8 +276,8 @@ describe('UnifiedAgentActionsBillingService', () => {
       await service.actionGetAnalytics('ws-tenant', { metric: 'messages' });
 
       expect(prisma.message.count).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: 'ws-tenant' }),
+        partialMatch({
+          where: partialMatch({ workspaceId: 'ws-tenant' }),
         }),
       );
     });

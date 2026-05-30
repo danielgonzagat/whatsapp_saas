@@ -6,6 +6,7 @@ import { KloelThreadService } from './kloel-thread.service';
 import { KloelWorkspaceContextService } from './kloel-workspace-context.service';
 import { UnifiedAgentService } from './unified-agent.service';
 import { MarketingSkillService } from './marketing-skills/marketing-skill.service';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 jest.mock('openai', () => ({
   default: jest.fn().mockImplementation(() => ({
@@ -235,13 +236,13 @@ describe('KloelReplyEngineService', () => {
       const userPayload = JSON.parse(messages[1].content as string) as Record<string, unknown>;
       expect(runtimeContext).toEqual(
         expect.objectContaining({
-          runtimeContext: expect.objectContaining({ dynamicContext: 'Dynamic context' }),
+          runtimeContext: partialMatch({ dynamicContext: 'Dynamic context' }),
         }),
       );
       expect(userPayload).toEqual(
         expect.objectContaining({
-          cognitiveState: expect.objectContaining({ abiStatus: 'builder_not_injected' }),
-          currentInput: expect.objectContaining({ raw: 'Hello', channel: 'web' }),
+          cognitiveState: partialMatch({ abiStatus: 'builder_not_injected' }),
+          currentInput: partialMatch({ raw: 'Hello', channel: 'web' }),
         }),
       );
     });

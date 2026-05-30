@@ -8,6 +8,10 @@ jest.mock('../wallet/provider-llm-billing', () => ({
 }));
 
 import { PdfProcessorController } from './pdf-processor.controller';
+import { partialMatch } from '../../test/helpers/match-instance';
+
+// Typed wrappers so nested jest matcher values stay typed (eslint no-unsafe-assignment).
+const anyValue = (): jest.AsymmetricMatcher => expect.anything() as jest.AsymmetricMatcher;
 
 jest.mock('../wallet/provider-llm-billing', () => ({
   estimateOpenAiChatQuoteCostCents: jest.fn(() => 7n),
@@ -42,7 +46,7 @@ describe('PdfProcessorController', () => {
       settleUsageCharge: jest.fn().mockResolvedValue(undefined),
       refundUsageCharge: jest.fn().mockResolvedValue(undefined),
     };
-    controller = new PdfProcessorController(pdfProcessor as never, walletService as never);
+    controller = new PdfProcessorController(pdfProcessor, walletService);
   });
 
   function textUploadFile(text = 'Conteudo comercial suficiente para analise completa.') {
@@ -87,18 +91,18 @@ describe('PdfProcessorController', () => {
       },
     });
     expect(walletService.chargeForUsage).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         workspaceId: 'ws_1',
         operation: 'ai_message',
-        quotedCostCents: expect.anything(),
+        quotedCostCents: anyValue(),
       }),
     );
     expect(walletService.settleUsageCharge).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         workspaceId: 'ws_1',
         operation: 'ai_message',
         reason: 'pdf_analysis_provider_usage',
-        actualCostCents: expect.anything(),
+        actualCostCents: anyValue(),
       }),
     );
   });
@@ -127,7 +131,7 @@ describe('PdfProcessorController', () => {
     );
 
     expect(walletService.refundUsageCharge).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         workspaceId: 'ws_1',
         operation: 'ai_message',
         reason: 'pdf_analysis_provider_exception',

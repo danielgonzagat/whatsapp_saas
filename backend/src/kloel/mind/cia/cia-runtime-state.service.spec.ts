@@ -5,6 +5,8 @@ import { OpsAlertService } from '../../../observability/ops-alert.service';
 import { CiaRuntimeStateService } from './cia-runtime-state.service';
 import { createPartialPrismaMock } from '../../../../test/helpers/prisma.mock';
 import { autopilotQueue } from '../../../queue/queue';
+import { partialMatch } from '../../../../test/helpers/match-instance';
+import { castMock } from '../../../../test/helpers/cast-mock';
 
 jest.mock('../../../queue/queue', () => {
   const mockAdd = jest.fn().mockResolvedValue(undefined);
@@ -68,8 +70,12 @@ describe('CiaRuntimeStateService', () => {
       await service.persistRuntimeSnapshot('ws-1', { state: 'LIVE_READY' });
 
       expect(prisma.workspace.update).toHaveBeenCalled();
-      const updateArg = prisma.workspace.update.mock.calls[0][0];
-      const settings = JSON.parse(JSON.stringify(updateArg.data.providerSettings));
+      const updateArg = castMock<[{ data: { providerSettings: unknown } }]>(
+        prisma.workspace.update.mock.calls[0],
+      )[0];
+      const settings = JSON.parse(JSON.stringify(updateArg.data.providerSettings)) as {
+        ciaRuntime: { state: string; mode: string };
+      };
       expect(settings.ciaRuntime.state).toBe('LIVE_READY');
       expect(settings.ciaRuntime.mode).toBe('off');
     });
@@ -91,8 +97,12 @@ describe('CiaRuntimeStateService', () => {
       await service.persistRuntimeSnapshot('ws-2', { state: 'BOOTING' });
 
       expect(prisma.workspace.update).toHaveBeenCalled();
-      const updateArg = prisma.workspace.update.mock.calls[0][0];
-      const settings = JSON.parse(JSON.stringify(updateArg.data.providerSettings));
+      const updateArg = castMock<[{ data: { providerSettings: unknown } }]>(
+        prisma.workspace.update.mock.calls[0],
+      )[0];
+      const settings = JSON.parse(JSON.stringify(updateArg.data.providerSettings)) as {
+        ciaRuntime: { state: string };
+      };
       expect(settings.ciaRuntime.state).toBe('BOOTING');
     });
   });
@@ -178,7 +188,7 @@ describe('CiaRuntimeStateService', () => {
     it('creates autonomy run with RUNNING status', async () => {
       await service.createAutonomyRun('run-1', 'ws-1', 'BACKLOG', { key: 'value' });
       expect(prisma.autonomyRun.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
+        data: partialMatch({
           id: 'run-1',
           workspaceId: 'ws-1',
           mode: 'BACKLOG',

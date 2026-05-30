@@ -20,6 +20,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { KloelService } from '../../kloel.service';
 import { DecisionOutcomeService } from '../../decision-outcome.service';
 import { includesAnyPhrase } from '../../../marketing/channels/whatsapp/whatsapp-normalization.util';
+import { partialMatch } from '../../../../test/helpers/match-instance';
 
 type BrainPrismaMock = {
   kloelLead: { findFirst: jest.Mock; create: jest.Mock };
@@ -92,7 +93,7 @@ describe('WhatsAppMindCoordinator', () => {
       );
 
       expect(kloelService.thinkSync).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           workspaceId: wsId,
           mode: 'sales',
         }),
@@ -164,8 +165,8 @@ describe('WhatsAppMindCoordinator', () => {
       });
 
       expect(prisma.kloelLead.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
+        partialMatch({
+          data: partialMatch({
             workspaceId: wsId,
             phone,
             status: 'new',
@@ -296,7 +297,7 @@ describe('WhatsAppMindCoordinator', () => {
       );
 
       expect(kloelService.thinkSync).toHaveBeenCalledWith(
-        expect.objectContaining({ workspaceId: 'ws-tenant' }),
+        partialMatch({ workspaceId: 'ws-tenant' }),
       );
     });
 
@@ -312,7 +313,7 @@ describe('WhatsAppMindCoordinator', () => {
       });
 
       expect(prisma.kloelLead.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({ where: expect.objectContaining({ workspaceId: 'ws-tenant' }) }),
+        partialMatch({ where: partialMatch({ workspaceId: 'ws-tenant' }) }),
       );
     });
   });

@@ -1,5 +1,8 @@
 import { CartRecoveryService } from './cart-recovery.service';
 import { type FlexMock } from '../../test/helpers/prisma.mock';
+import { partialMatch, stringMatch, stringContains } from '../../test/helpers/match-instance';
+import { castMock } from '../../test/helpers/cast-mock';
+
 type MockPrisma = {
   workspace: {
     findMany: FlexMock;
@@ -118,16 +121,18 @@ describe('CartRecoveryService', () => {
       await service.checkAbandonedCarts();
 
       expect(prisma.checkoutOrder.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: { in: ['ws-1'] } }),
+        partialMatch({
+          where: partialMatch({ workspaceId: { in: ['ws-1'] } }),
         }),
       );
       expect(sendEmail).toHaveBeenCalledTimes(1);
 
-      const updatePayload = prisma.checkoutOrder.updateMany.mock.calls[0][0].data.metadata;
+      const updatePayload = castMock<{ data: { metadata: Record<string, unknown> } }>(
+        prisma.checkoutOrder.updateMany.mock.calls[0]?.[0],
+      ).data.metadata;
       expect(updatePayload).toEqual({
         recoveryEmailSent: true,
-        recoveryEmailSentAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
+        recoveryEmailSentAt: stringMatch(/^\d{4}-\d{2}-\d{2}T/),
       });
     });
 
@@ -147,10 +152,10 @@ describe('CartRecoveryService', () => {
         expect.objectContaining({
           where: { id: 'order-2', workspaceId: 'ws-1' },
           data: {
-            metadata: expect.objectContaining({
+            metadata: partialMatch({
               source: 'checkout',
               recoveryEmailSent: true,
-              recoveryEmailSentAt: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/),
+              recoveryEmailSentAt: stringMatch(/^\d{4}-\d{2}-\d{2}T/),
             }),
           },
         }),
@@ -162,7 +167,7 @@ describe('CartRecoveryService', () => {
 
       await service.checkAbandonedCarts();
 
-      const payload = sendEmail.mock.calls[0][0];
+      const payload = castMock<[{ subject: string; html: string }][]>(sendEmail.mock.calls)[0]?.[0];
       expect(payload.subject).toContain('Seu pedido ainda esta aberto');
       expect(payload.html).toContain('Sua compra ficou em aberto');
       expect(payload.html).toContain('sem pressa');
@@ -181,7 +186,7 @@ describe('CartRecoveryService', () => {
 
       await service.checkAbandonedCarts();
 
-      const payload = sendEmail.mock.calls[0][0];
+      const payload = castMock<[{ subject: string; html: string }][]>(sendEmail.mock.calls)[0]?.[0];
       expect(payload.html).toContain('Pedido #1001');
       expect(payload.html).toContain('&lt;Plano &amp; Premium&gt;');
       expect(payload.html).not.toContain('{{productName}}');
@@ -246,7 +251,7 @@ describe('CartRecoveryService', () => {
         expect.objectContaining({
           workspaceId: 'ws-1',
           decisionType: 'cart_recovery',
-          context: expect.objectContaining({
+          context: partialMatch({
             channel: 'email',
             withinComplianceWindow: true,
           }),
@@ -309,8 +314,8 @@ describe('CartRecoveryService', () => {
         expect.objectContaining({
           channel: 'email',
           recipientId: 'cliente@kloel.test',
-          content: expect.stringContaining('Sua compra ficou em aberto'),
-          guardContext: expect.objectContaining({
+          content: stringContains('Sua compra ficou em aberto'),
+          guardContext: partialMatch({
             channel: 'email',
             withinComplianceWindow: true,
           }),
@@ -375,7 +380,9 @@ describe('CartRecoveryService', () => {
       });
       expect(stubBandit.choose).toHaveBeenCalledWith('ws-1', 'cart_recovery');
 
-      const updatePayload = prisma.checkoutOrder.updateMany.mock.calls[0][0].data.metadata;
+      const updatePayload = castMock<{ data: { metadata: Record<string, unknown> } }>(
+        prisma.checkoutOrder.updateMany.mock.calls[0]?.[0],
+      ).data.metadata;
       expect(updatePayload.banditArm).toBe('proof');
       expect(updatePayload.mindRecoveryAction).toBe('proof');
     });
@@ -389,7 +396,9 @@ describe('CartRecoveryService', () => {
 
         await service.checkAbandonedCarts();
 
-        const payload = sendEmail.mock.calls[0][0];
+        const payload = castMock<[{ subject: string; html: string }][]>(
+          sendEmail.mock.calls,
+        )[0]?.[0];
         expect(payload.html).not.toContain('Garanta agora');
         expect(payload.html).not.toContain('antes que acabe');
         expect(payload.html).not.toContain('VOLTEI10');
@@ -414,7 +423,9 @@ describe('CartRecoveryService', () => {
       await service.checkAbandonedCarts();
 
       expect(stubBandit.register).toHaveBeenCalledTimes(1);
-      const updatePayload = prisma.checkoutOrder.updateMany.mock.calls[0][0].data.metadata;
+      const updatePayload = castMock<{ data: { metadata: Record<string, unknown> } }>(
+        prisma.checkoutOrder.updateMany.mock.calls[0]?.[0],
+      ).data.metadata;
       expect(updatePayload.banditArm).toBeUndefined();
       expect(sendEmail).toHaveBeenCalledTimes(1);
     });

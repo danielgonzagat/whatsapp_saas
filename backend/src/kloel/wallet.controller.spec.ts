@@ -1,4 +1,5 @@
 import { WalletController } from './wallet.controller';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 describe('WalletController withdrawal approval gate', () => {
   let walletService: { requestWithdrawal: jest.Mock; getBalance: jest.Mock };
@@ -43,14 +44,14 @@ describe('WalletController withdrawal approval gate', () => {
 
     expect(walletService.requestWithdrawal).not.toHaveBeenCalled();
     expect(prisma.approvalRequest.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
+      partialMatch({
+        data: partialMatch({
           workspaceId: 'ws-1',
           kind: 'wallet:withdrawal',
           entityType: 'KloelWallet',
           entityId: 'ws-1',
           state: 'OPEN',
-          payload: expect.objectContaining({
+          payload: partialMatch({
             amount: 500,
             bankInfo: { pixKey: 'owner@example.com' },
             risk: 'critical',
@@ -60,7 +61,7 @@ describe('WalletController withdrawal approval gate', () => {
       }),
     );
     expect(result).toEqual(
-      expect.objectContaining({
+      partialMatch({
         success: true,
         approvalRequired: true,
         approvalRequestId: 'ap-wallet-1',
@@ -83,13 +84,13 @@ describe('WalletController withdrawal approval gate', () => {
       pixKey: 'owner@example.com',
     });
     expect(prisma.approvalRequest.updateMany).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         where: { id: 'ap-wallet-1', workspaceId: 'ws-1', state: 'APPROVED' },
-        data: expect.objectContaining({ state: 'COMPLETED' }),
+        data: partialMatch({ state: 'COMPLETED' }),
       }),
     );
     expect(result).toEqual(
-      expect.objectContaining({
+      partialMatch({
         success: true,
         transactionId: 'wtx-1',
         approvalExecuted: true,

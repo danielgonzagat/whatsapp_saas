@@ -1,4 +1,6 @@
 import { resolveCartRecoveryDecision } from './mind-recovery-decision-resolvers';
+import { partialMatch, stringMatch } from '../../../../test/helpers/match-instance';
+import { castMock } from '../../../../test/helpers/cast-mock';
 
 describe('mind recovery decision resolvers', () => {
   it('keeps cart recovery subject stable while creating attempt-specific outcome keys', async () => {
@@ -40,20 +42,20 @@ describe('mind recovery decision resolvers', () => {
 
     expect(policy.choose).toHaveBeenNthCalledWith(
       1,
-      expect.objectContaining({
+      partialMatch({
         subject: 'order:order-1',
-        outcomeKey: expect.stringMatching(/^cart_recovery:ws-1:order-1:\d+$/),
+        outcomeKey: stringMatch(/^cart_recovery:ws-1:order-1:\d+$/),
       }),
     );
     expect(policy.choose).toHaveBeenNthCalledWith(
       2,
-      expect.objectContaining({
+      partialMatch({
         subject: 'order:order-1',
-        outcomeKey: expect.stringMatching(/^cart_recovery:ws-1:order-1:\d+$/),
+        outcomeKey: stringMatch(/^cart_recovery:ws-1:order-1:\d+$/),
       }),
     );
-    expect(policy.choose.mock.calls[0][0].outcomeKey).not.toBe(
-      policy.choose.mock.calls[1][0].outcomeKey,
+    expect(castMock<[{ outcomeKey: unknown }]>(policy.choose.mock.calls[0])[0].outcomeKey).not.toBe(
+      castMock<[{ outcomeKey: unknown }]>(policy.choose.mock.calls[1])[0].outcomeKey,
     );
   });
 });

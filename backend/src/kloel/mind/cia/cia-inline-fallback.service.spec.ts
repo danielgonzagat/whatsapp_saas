@@ -1,5 +1,6 @@
 import { CiaInlineFallbackService } from './cia-inline-fallback.service';
 import { CiaChatFilterService } from './cia-chat-filter.service';
+import { partialMatch } from '../../../../test/helpers/match-instance';
 
 interface PrismaMock {
   message: { findFirst: jest.Mock; findMany: jest.Mock; create: jest.Mock };
@@ -146,8 +147,8 @@ describe('CiaInlineFallbackService', () => {
       });
 
       expect(prisma.message.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
+        partialMatch({
+          where: partialMatch({
             direction: 'INBOUND',
             createdAt: { gt: lastOutboundDate },
           }),
@@ -162,13 +163,13 @@ describe('CiaInlineFallbackService', () => {
       });
 
       expect(prisma.message.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: 'ws-tenant-b' }),
+        partialMatch({
+          where: partialMatch({ workspaceId: 'ws-tenant-b' }),
         }),
       );
       expect(prisma.message.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: 'ws-tenant-b' }),
+        partialMatch({
+          where: partialMatch({ workspaceId: 'ws-tenant-b' }),
         }),
       );
     });
@@ -218,10 +219,10 @@ describe('CiaInlineFallbackService', () => {
       expect(result.processed).toBeGreaterThan(0);
       expect(sendHelpers.redisSetNx).toHaveBeenCalled();
       expect(unifiedAgent.processIncomingMessage).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           workspaceId: 'ws-1',
           channel: 'whatsapp',
-          context: expect.objectContaining({ source: 'cia_backlog_inline' }),
+          context: partialMatch({ source: 'cia_backlog_inline' }),
         }),
       );
     });
@@ -314,13 +315,13 @@ describe('CiaInlineFallbackService', () => {
       );
 
       expect(agentEvents.publish).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           phase: 'backlog_inline_fallback',
           workspaceId: 'ws-1',
         }),
       );
       expect(agentEvents.publish).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           phase: 'backlog_inline_done',
           workspaceId: 'ws-1',
         }),

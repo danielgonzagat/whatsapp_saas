@@ -2,6 +2,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { OrderAlertsService } from './order-alerts.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { partialMatch } from '../../test/helpers/match-instance';
+
+// Typed wrappers so nested jest matcher values stay typed (eslint no-unsafe-assignment).
+const arrayContains = (items: unknown[]): jest.AsymmetricMatcher =>
+  expect.arrayContaining(items) as jest.AsymmetricMatcher;
 
 type OrderAlertRecord = {
   id: string;
@@ -92,8 +97,8 @@ describe('OrderAlertsService', () => {
 
       expect(result.created).toBe(1);
       expect(prisma.orderAlert.createMany).toHaveBeenCalledWith({
-        data: expect.arrayContaining([
-          expect.objectContaining({
+        data: arrayContains([
+          partialMatch({
             workspaceId: wsId,
             type: 'MISSING_TRACKING',
             severity: 'WARNING',
@@ -120,8 +125,8 @@ describe('OrderAlertsService', () => {
 
       expect(result.created).toBe(1);
       expect(prisma.orderAlert.createMany).toHaveBeenCalledWith({
-        data: expect.arrayContaining([
-          expect.objectContaining({
+        data: arrayContains([
+          partialMatch({
             type: 'CHARGEBACK',
             severity: 'CRITICAL',
             orderId: 'o-1',
@@ -144,7 +149,7 @@ describe('OrderAlertsService', () => {
 
       expect(result.created).toBe(1);
       expect(prisma.kloelSale.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           where: { workspaceId: wsId, status: 'refund_requested' },
         }),
       );
@@ -165,8 +170,8 @@ describe('OrderAlertsService', () => {
 
       expect(result.created).toBe(1);
       expect(prisma.orderAlert.createMany).toHaveBeenCalledWith({
-        data: expect.arrayContaining([
-          expect.objectContaining({
+        data: arrayContains([
+          partialMatch({
             type: 'POSSIBLE_LOSS',
             severity: 'WARNING',
           }),
@@ -196,8 +201,8 @@ describe('OrderAlertsService', () => {
       await service.generateAlerts(wsId);
 
       expect(prisma.physicalOrder.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: wsId }),
+        partialMatch({
+          where: partialMatch({ workspaceId: wsId }),
         }),
       );
     });
@@ -228,7 +233,7 @@ describe('OrderAlertsService', () => {
       await service.getAlerts(wsId, true);
 
       expect(prisma.orderAlert.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           where: { workspaceId: wsId, resolved: true },
         }),
       );
@@ -276,7 +281,7 @@ describe('OrderAlertsService', () => {
       await service.resolveAlert('a-1', wsId);
 
       expect(prisma.orderAlert.updateMany).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           where: { id: 'a-1', workspaceId: wsId },
         }),
       );
@@ -288,17 +293,17 @@ describe('OrderAlertsService', () => {
       await service.generateAlerts('ws-tenant');
 
       expect(prisma.physicalOrder.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: 'ws-tenant' }),
+        partialMatch({
+          where: partialMatch({ workspaceId: 'ws-tenant' }),
         }),
       );
       expect(prisma.checkoutPayment.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ order: { workspaceId: 'ws-tenant' } }),
+        partialMatch({
+          where: partialMatch({ order: { workspaceId: 'ws-tenant' } }),
         }),
       );
       expect(prisma.kloelSale.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           where: { workspaceId: 'ws-tenant', status: 'refund_requested' },
         }),
       );

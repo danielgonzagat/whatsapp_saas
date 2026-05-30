@@ -20,6 +20,7 @@ jest.mock('../logging/structured-logger', () => ({
 
 import { GuestChatService } from './guest-chat.service';
 import { ForbiddenException } from '@nestjs/common';
+import { castMock } from '../../test/helpers/cast-mock';
 
 const serviceMock = new GuestChatService(null as never, null as never, null as never);
 const chatMock = (serviceMock as { chat: jest.Mock }).chat;
@@ -66,7 +67,7 @@ describe('GuestChatController', () => {
       await controller.guestChat(dto, req, res);
 
       expect(chatMock).toHaveBeenCalledTimes(1);
-      const sessionIdArg = chatMock.mock.calls[0][1] as string;
+      const sessionIdArg = castMock<[unknown, string][]>(chatMock.mock.calls)[0]?.[1];
       expect(sessionIdArg).toMatch(/^guest_/);
     });
   });

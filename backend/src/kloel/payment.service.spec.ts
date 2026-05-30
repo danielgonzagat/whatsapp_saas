@@ -7,6 +7,7 @@ import { FraudEngine } from '../payments/fraud/fraud.engine';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { PaymentService } from './payment.service';
+import { partialMatch, stringContains } from '../../test/helpers/match-instance';
 
 type KloelSaleRecord = Record<string, unknown>;
 
@@ -123,19 +124,19 @@ describe('PaymentService — Mercado Pago Pix', () => {
     });
 
     expect(mercadoPagoPix.create).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         amountCents: 13_990n,
         payerEmail: 'cliente@example.com',
         payerName: 'Cliente Pix',
         description: 'Pagamento Kloel',
-        externalReference: expect.stringContaining('kloel-payment:'),
-        idempotencyKey: expect.stringContaining('kloel-payment:'),
-        notificationUrl: expect.stringContaining('/webhooks/mercadopago'),
+        externalReference: stringContains('kloel-payment:'),
+        idempotencyKey: stringContains('kloel-payment:'),
+        notificationUrl: stringContains('/webhooks/mercadopago'),
       }),
     );
 
     expect(prisma.kloelSale.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
+      data: partialMatch({
         leadId: 'lead-1',
         status: 'pending',
         amount: 139.9,
@@ -143,7 +144,7 @@ describe('PaymentService — Mercado Pago Pix', () => {
         paymentLink: 'https://www.mercadopago.com.br/payments/mp_pix_1/ticket',
         externalPaymentId: 'mp_pix_1',
         workspaceId: 'ws-1',
-        metadata: expect.objectContaining({
+        metadata: partialMatch({
           gateway: 'mercadopago',
           pixQrCodeUrl: 'data:image/png;base64,qr-base64',
           pixCopyPaste: '000201pixcopy',

@@ -1,5 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 import { AdRulesController } from './ad-rules.controller';
+import { castMock } from '../../test/helpers/cast-mock';
 
 describe('AdRulesController', () => {
   const findMany = jest.fn();
@@ -95,7 +96,8 @@ describe('AdRulesController', () => {
 
       await controller.create(req, body);
 
-      const callData = create.mock.calls[0][0].data;
+      const callData = castMock<[{ data: Record<string, unknown> }][]>(create.mock.calls)[0]?.[0]
+        .data;
       expect(callData.alertMethod).toBeUndefined();
       expect(callData.alertTarget).toBeUndefined();
     });

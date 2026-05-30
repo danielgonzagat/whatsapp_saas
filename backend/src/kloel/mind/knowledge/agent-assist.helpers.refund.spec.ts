@@ -1,6 +1,7 @@
 import { refundAiUsageIfNeeded } from './agent-assist.helpers';
 import { WalletService } from '../../../wallet/wallet.service';
 import { makeMockWalletService } from './agent-assist.helpers.spec.helpers';
+import { partialMatch } from '../../../../test/helpers/match-instance';
 
 jest.mock('../../../wallet/wallet.service');
 jest.mock('../../../wallet/provider-llm-billing', () => ({
@@ -47,7 +48,7 @@ describe('agent-assist.helpers — refund', () => {
           operation: 'ai_message',
           requestId: 'req-1',
           reason: 'provider_unavailable',
-          metadata: expect.objectContaining({
+          metadata: partialMatch({
             channel: 'ai_assistant',
             capability: 'suggest_reply',
           }),

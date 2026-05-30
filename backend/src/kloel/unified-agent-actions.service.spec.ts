@@ -47,6 +47,7 @@ import { UnifiedAgentActionsWorkspaceService } from './unified-agent-actions-wor
 import { UnifiedAgentActionsBillingService } from './unified-agent-actions-billing.service';
 import { UnifiedAgentActionsCommerceService } from './unified-agent-actions-commerce.service';
 import { AuditService } from '../audit/audit.service';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 type ActionsPrismaMock = {
   autopilotEvent: { create: jest.Mock };
@@ -182,8 +183,8 @@ describe('UnifiedAgentActionsService', () => {
       await service.logAutopilotEvent(wsId, contactId, 'send_message', {}, { success: true });
 
       expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
+        partialMatch({
+          data: partialMatch({
             workspaceId: wsId,
             contactId,
             intent: 'TOOL_CALL',
@@ -198,8 +199,8 @@ describe('UnifiedAgentActionsService', () => {
       await service.logAutopilotEvent(wsId, contactId, 'bad_action', {}, { success: false });
 
       expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ status: 'failed' }),
+        partialMatch({
+          data: partialMatch({ status: 'failed' }),
         }),
       );
     });
@@ -578,7 +579,7 @@ describe('UnifiedAgentActionsService', () => {
     it('actionSendDocument scopes document lookup to workspaceId', async () => {
       await service.actionSendDocument('ws-tenant', phone, { documentName: 'Doc' });
       expect(prisma.document.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({ where: expect.objectContaining({ workspaceId: 'ws-tenant' }) }),
+        partialMatch({ where: partialMatch({ workspaceId: 'ws-tenant' }) }),
       );
     });
   });

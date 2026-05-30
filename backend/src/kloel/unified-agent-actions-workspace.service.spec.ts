@@ -7,6 +7,7 @@ import { OpsAlertService } from '../observability/ops-alert.service';
 import { CANONICAL_MODEL_IDS } from '../lib/openai-models';
 import { chatCompletionWithFallback } from './openai-wrapper';
 import { actionGetWorkspaceStatus } from './unified-agent-actions-workspace.helpers';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 jest.mock('./openai-wrapper', () => ({
   chatCompletionWithFallback: jest.fn(),
@@ -110,11 +111,11 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
       expect(result.success).toBe(true);
       expect(result.productId).toBeDefined();
       expect(prisma.kloelMemory.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
+        partialMatch({
+          data: partialMatch({
             workspaceId: wsId,
             type: 'product',
-            value: expect.objectContaining({ name: 'Plano Pro', price: 199 }),
+            value: partialMatch({ name: 'Plano Pro', price: 199 }),
           }),
         }),
       );
@@ -197,10 +198,10 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
 
       expect(result.success).toBe(true);
       expect(prisma.kloelMemory.updateMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: wsId }),
-          data: expect.objectContaining({
-            value: expect.objectContaining({ name: 'New Name', price: 150 }),
+        partialMatch({
+          where: partialMatch({ workspaceId: wsId }),
+          data: partialMatch({
+            value: partialMatch({ name: 'New Name', price: 150 }),
           }),
         }),
       );
@@ -224,8 +225,8 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
       expect(result.success).toBe(true);
       expect(result.flowId).toBeDefined();
       expect(prisma.kloelMemory.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
+        partialMatch({
+          data: partialMatch({
             workspaceId: wsId,
             type: 'flow',
             category: 'automation',
@@ -243,9 +244,9 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
 
       expect(result.success).toBe(true);
       expect(prisma.workspace.update).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           where: { id: wsId },
-          data: expect.objectContaining({ name: 'NewCo' }),
+          data: partialMatch({ name: 'NewCo' }),
         }),
       );
     });
@@ -256,7 +257,7 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
       });
 
       expect(prisma.kloelMemory.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           where: { workspaceId_key: { workspaceId: wsId, key: 'businessHours' } },
         }),
       );
@@ -269,7 +270,7 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
       });
 
       expect(prisma.kloelMemory.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           where: { workspaceId_key: { workspaceId: wsId, key: 'autoReply' } },
         }),
       );
@@ -289,8 +290,8 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
       expect(result.success).toBe(true);
       expect(result.contactCount).toBe(42);
       expect(prisma.kloelMemory.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
+        partialMatch({
+          data: partialMatch({
             workspaceId: wsId,
             type: 'broadcast',
             category: 'campaign',
@@ -310,11 +311,11 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
 
       expect(result.success).toBe(true);
       expect(prisma.kloelMemory.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           where: { workspaceId_key: { workspaceId: wsId, key: 'aiPersona' } },
-          create: expect.objectContaining({
+          create: partialMatch({
             workspaceId: wsId,
-            value: expect.objectContaining({ name: 'Atendente' }),
+            value: partialMatch({ name: 'Atendente' }),
           }),
         }),
       );
@@ -324,9 +325,9 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
       await service.actionConfigureAIPersona(wsId, {});
 
       expect(prisma.kloelMemory.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          create: expect.objectContaining({
-            value: expect.objectContaining({
+        partialMatch({
+          create: partialMatch({
+            value: partialMatch({
               name: 'KLOEL',
               tone: 'friendly',
               language: 'pt-BR',
@@ -403,8 +404,8 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
       expect(chatCompletionWithFallback).toHaveBeenCalled();
       expect(planLimits.ensureTokenBudget).toHaveBeenCalledWith(wsId);
       expect(prisma.flow.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ workspaceId: wsId, isActive: true }),
+        partialMatch({
+          data: partialMatch({ workspaceId: wsId, isActive: true }),
         }),
       );
     });
@@ -429,7 +430,7 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
       await service.actionCreateFlowFromDescription(
         wsId,
         { description: 'Sell product', objective: 'convert' },
-        { apiKey: 'fake' } as never,
+        { apiKey: 'fake' },
         CANONICAL_MODEL_IDS.openAiLegacyGpt4,
         CANONICAL_MODEL_IDS.openAiLegacyGpt35Turbo,
       );
@@ -487,7 +488,7 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
 
       expect(result.success).toBe(true);
       expect(prisma.campaign.updateMany).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           where: { id: 'c-1', workspaceId: wsId },
         }),
       );
@@ -510,9 +511,7 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
       const result = await service.actionGetWorkspaceStatus(wsId, {});
 
       expect(result.workspaceId).toBe(wsId);
-      expect(actionGetWorkspaceStatus).toHaveBeenCalledWith(
-        expect.objectContaining({ workspaceId: wsId }),
-      );
+      expect(actionGetWorkspaceStatus).toHaveBeenCalledWith(partialMatch({ workspaceId: wsId }));
     });
   });
 
@@ -520,15 +519,15 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
     it('actionCreateProduct scopes to workspaceId', async () => {
       await service.actionCreateProduct('ws-tenant', { name: 'X', price: 1 });
       expect(prisma.product.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({ where: expect.objectContaining({ workspaceId: 'ws-tenant' }) }),
+        partialMatch({ where: partialMatch({ workspaceId: 'ws-tenant' }) }),
       );
     });
 
     it('actionCreateFlow scopes to workspaceId', async () => {
       await service.actionCreateFlow('ws-tenant', { name: 'Flow A', trigger: 'welcome' });
       expect(prisma.kloelMemory.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({ workspaceId: 'ws-tenant' }),
+        partialMatch({
+          data: partialMatch({ workspaceId: 'ws-tenant' }),
         }),
       );
     });
@@ -536,7 +535,7 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
     it('actionCreateBroadcast counts contacts by workspaceId', async () => {
       await service.actionCreateBroadcast('ws-tenant', { name: 'B', message: 'M' });
       expect(prisma.contact.count).toHaveBeenCalledWith(
-        expect.objectContaining({ where: expect.objectContaining({ workspaceId: 'ws-tenant' }) }),
+        partialMatch({ where: partialMatch({ workspaceId: 'ws-tenant' }) }),
       );
     });
   });

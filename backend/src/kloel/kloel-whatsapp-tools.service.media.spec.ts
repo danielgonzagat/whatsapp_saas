@@ -7,6 +7,7 @@ import { AudioService } from './audio.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { ChannelTransportRegistry } from './channel-transport.registry';
+import { partialMatch, stringContains } from '../../test/helpers/match-instance';
 
 jest.mock('../marketing/channels/whatsapp/providers/provider-registry');
 jest.mock('./audio.service');
@@ -153,7 +154,7 @@ describe('KloelWhatsAppToolsService', () => {
         channel: 'whatsapp',
         recipientId: '5511999999999',
         content: '',
-        mediaUrl: expect.stringContaining('data:audio/mpeg;base64,'),
+        mediaUrl: stringContains('data:audio/mpeg;base64,'),
         mediaType: 'audio',
       });
     });
@@ -255,7 +256,7 @@ describe('KloelWhatsAppToolsService', () => {
       expect(prisma.contact.upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { workspaceId_phone: { workspaceId: wsId, phone: '5511999999999' } },
-          create: expect.objectContaining({ workspaceId: wsId, phone: '5511999999999' }),
+          create: partialMatch({ workspaceId: wsId, phone: '5511999999999' }),
         }),
       );
     });

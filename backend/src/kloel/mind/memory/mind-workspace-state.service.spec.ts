@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { MindWorkspaceStateService } from './mind-workspace-state.service';
 import type { MindTick } from '../../mind.types';
+import { castMock } from '../../../../test/helpers/cast-mock';
 
 describe('MindWorkspaceStateService', () => {
   let service: MindWorkspaceStateService;
@@ -75,7 +76,15 @@ describe('MindWorkspaceStateService', () => {
         decisionsMade: 2,
       } as MindTick;
       await service.recordSuccess({ tick, lastWatermark: new Date('2026-01-01') });
-      const arg = prisma.mindWorkspaceState.upsert.mock.calls[0][0];
+      const arg = castMock<
+        [
+          {
+            where: unknown;
+            update: { tickCount: unknown };
+            create: { tickCount: unknown };
+          },
+        ]
+      >(prisma.mindWorkspaceState.upsert.mock.calls[0])[0];
       expect(arg.where).toEqual({ workspaceId: 'ws-1' });
       expect(arg.update.tickCount).toEqual({ increment: 1 });
       expect(arg.create.tickCount).toBe(1);
@@ -86,14 +95,18 @@ describe('MindWorkspaceStateService', () => {
     it('persists error message clipped to 500 chars + health=error', async () => {
       const longMsg = 'X'.repeat(1000);
       await service.recordFailure('ws-1', new Error(longMsg));
-      const arg = prisma.mindWorkspaceState.upsert.mock.calls[0][0];
+      const arg = castMock<[{ update: { lastError: string; health: unknown } }]>(
+        prisma.mindWorkspaceState.upsert.mock.calls[0],
+      )[0];
       expect(arg.update.lastError.length).toBe(500);
       expect(arg.update.health).toEqual({ status: 'error' });
     });
 
     it('stringifies non-Error values', async () => {
       await service.recordFailure('ws-1', 'crash code 5');
-      const arg = prisma.mindWorkspaceState.upsert.mock.calls[0][0];
+      const arg = castMock<[{ update: { lastError: string } }]>(
+        prisma.mindWorkspaceState.upsert.mock.calls[0],
+      )[0];
       expect(arg.update.lastError).toBe('crash code 5');
     });
   });

@@ -288,7 +288,10 @@ export function makeCiaBacklogRunMock(
           const skipped: string[] = [];
           for (const item of batch) {
             try {
-              const reply = await unifiedAgent.processIncomingMessage(item);
+              const reply = (await unifiedAgent.processIncomingMessage(item)) as {
+                reply?: string;
+                response?: string;
+              };
               if (reply?.reply || reply?.response) {
                 await whatsappService.sendMessage({
                   workspaceId: item.workspaceId,
@@ -333,13 +336,13 @@ export function makeCiaBacklogRunMock(
           }
 
           try {
-            const reply = await unifiedAgent.processIncomingMessage({
+            const reply = (await unifiedAgent.processIncomingMessage({
               workspaceId,
               runId,
               contactId: conversation.contactId,
               phone,
               message: messageContent,
-            });
+            })) as { reply?: string; response?: string };
             if (reply?.reply || reply?.response) {
               await whatsappService.sendMessage({
                 workspaceId,

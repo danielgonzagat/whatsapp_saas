@@ -1,5 +1,6 @@
 import { SalesController } from './sales.controller';
 import { SalesSubscriptionsController } from './sales-subscriptions.controller';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 // ─── SalesSubscriptionsController ────────────────────────────────────────────
 
@@ -59,9 +60,9 @@ describe('SalesSubscriptionsController', () => {
     );
 
     expect(prisma.customerSubscription.updateMany).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         where: { id: 'sub-1', workspaceId: 'ws-1' },
-        data: expect.objectContaining({
+        data: partialMatch({
           planName: 'Novo Plano',
           amount: 199,
           planId: 'plan-new',
@@ -93,8 +94,8 @@ describe('SalesSubscriptionsController', () => {
     );
 
     expect(prisma.customerSubscription.updateMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
+      partialMatch({
+        data: partialMatch({
           planId: 'plan-new',
           previousPlanId: null,
         }),
@@ -182,14 +183,14 @@ describe('SalesController', () => {
 
     expect(stripeService.stripe.refunds.create).not.toHaveBeenCalled();
     expect(prisma.approvalRequest.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
+      partialMatch({
+        data: partialMatch({
           workspaceId: 'ws-1',
           kind: 'sale:refund',
           entityType: 'KloelSale',
           entityId: 'sale-1',
           state: 'OPEN',
-          payload: expect.objectContaining({
+          payload: partialMatch({
             saleId: 'sale-1',
             amount: 139.9,
             externalPaymentId: 'pi_stripe_123',
@@ -201,7 +202,7 @@ describe('SalesController', () => {
       }),
     );
     expect(result).toEqual(
-      expect.objectContaining({
+      partialMatch({
         approvalRequired: true,
         approvalRequestId: 'apr_refund_1',
       }),
@@ -238,9 +239,9 @@ describe('SalesController', () => {
       },
     );
     expect(prisma.approvalRequest.updateMany).toHaveBeenCalledWith(
-      expect.objectContaining({
+      partialMatch({
         where: { id: 'apr_refund_1', workspaceId: 'ws-1', state: 'APPROVED' },
-        data: expect.objectContaining({ state: 'COMPLETED' }),
+        data: partialMatch({ state: 'COMPLETED' }),
       }),
     );
     expect(prisma.kloelSale.updateMany).toHaveBeenCalledWith({
@@ -248,13 +249,13 @@ describe('SalesController', () => {
       data: { status: 'refund_requested' },
     });
     expect(prisma.auditLog.create).toHaveBeenCalledWith({
-      data: expect.objectContaining({
+      data: partialMatch({
         workspaceId: 'ws-1',
         action: 'refund_requested',
         resource: 'sale',
         resourceId: 'sale-1',
         agentId: 'agent-1',
-        details: expect.objectContaining({ status: 'pending_webhook' }),
+        details: partialMatch({ status: 'pending_webhook' }),
       }),
     });
   });

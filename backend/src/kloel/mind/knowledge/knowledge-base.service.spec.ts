@@ -10,6 +10,8 @@ import {
   InsufficientWalletBalanceError,
   UsagePriceNotFoundError,
 } from '../../../wallet/wallet.types';
+import { partialMatch } from '../../../../test/helpers/match-instance';
+import { castMock } from '../../../../test/helpers/cast-mock';
 
 jest.mock('../../../queue/queue', () => ({
   memoryQueue: {
@@ -134,24 +136,28 @@ describe('KnowledgeBaseService', () => {
       });
 
       expect(walletService.chargeForUsage).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           workspaceId: 'ws_1',
           operation: 'kb_ingestion',
           quotedCostCents: expect.anything(),
           requestId: 'kb-req-1',
         }),
       );
-      expect(typeof walletService.chargeForUsage.mock.calls[0][0].quotedCostCents).toBe('bigint');
+      expect(
+        typeof castMock<[{ quotedCostCents: unknown }]>(
+          walletService.chargeForUsage.mock.calls[0],
+        )[0].quotedCostCents,
+      ).toBe('bigint');
       expect((memoryQueue as { add: jest.Mock }).add).toHaveBeenCalledWith(
         'ingest-source',
-        expect.objectContaining({
+        partialMatch({
           workspaceId: 'ws_1',
           sourceId: 'src_1',
           type: 'TEXT',
           walletUsage: {
             operation: 'kb_ingestion',
             requestId: 'kb-req-1',
-            billing: expect.objectContaining({
+            billing: partialMatch({
               model: 'text-embedding-3-small',
             }),
           },
@@ -159,7 +165,7 @@ describe('KnowledgeBaseService', () => {
         { jobId: 'ingest-source:src_1' },
       );
       expect(result).toEqual(
-        expect.objectContaining({
+        partialMatch({
           id: 'src_1',
           status: 'PENDING',
         }),
@@ -176,14 +182,14 @@ describe('KnowledgeBaseService', () => {
           requestId: 'kb-req-2',
         }),
       ).resolves.toEqual(
-        expect.objectContaining({
+        partialMatch({
           id: 'src_1',
         }),
       );
 
       expect((memoryQueue as { add: jest.Mock }).add).toHaveBeenCalledWith(
         'ingest-source',
-        expect.objectContaining({
+        partialMatch({
           walletUsage: null,
         }),
         { jobId: 'ingest-source:src_1' },
@@ -218,7 +224,7 @@ describe('KnowledgeBaseService', () => {
       ).rejects.toThrow('redis down');
 
       expect(walletService.refundUsageCharge).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           workspaceId: 'ws_1',
           operation: 'kb_ingestion',
           requestId: 'kb-req-4',

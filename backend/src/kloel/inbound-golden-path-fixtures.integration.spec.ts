@@ -18,7 +18,9 @@ function buildTracerInstrumentedEvents(
   tracer: RuntimeConversationTracerService,
   baseEvents: { recordCommercial: jest.Mock },
 ) {
-  const originalRecordCommercial = baseEvents.recordCommercial.getMockImplementation();
+  const originalRecordCommercial = baseEvents.recordCommercial.getMockImplementation() as
+    | ((event: unknown) => unknown)
+    | undefined;
   let policyChoseEmitted = false;
   let determinismGateEmitted = false;
   let composerProducedEmitted = false;

@@ -106,7 +106,7 @@ export async function setupChatToolsService(): Promise<ChatToolsSetup> {
     auditLog: { create: jest.fn().mockResolvedValue({}) },
     $transaction: jest.fn().mockImplementation((arg: unknown) => {
       if (typeof arg === 'function') {
-        return arg(prisma);
+        return (arg as (p: ChatToolsPrismaMock) => unknown)(prisma);
       }
       return Promise.resolve(undefined);
     }),

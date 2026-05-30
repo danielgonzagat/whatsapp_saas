@@ -3,6 +3,7 @@ import {
   type MultiModalVisionAdapter,
   type StructuredPerceptionEvent,
 } from './mind-multimodal-perception.service';
+import { castMock } from '../../../../test/helpers/cast-mock';
 
 describe('MindMultiModalPerceptionService', () => {
   type AnyEmit = { emit: jest.Mock };
@@ -280,8 +281,9 @@ describe('MindMultiModalPerceptionService', () => {
 
       expect(out.caseId).toBeTruthy();
       expect(prisma.mindCase.create).toHaveBeenCalledTimes(1);
-      const data = (prisma.mindCase.create.mock.calls[0]![0] as { data: Record<string, unknown> })
-        .data;
+      const data = castMock<[{ data: Record<string, unknown> }]>(
+        prisma.mindCase.create.mock.calls[0],
+      )[0].data;
       expect(data.caseType).toBe('perception_captured');
       expect(data.outcome).toBeNull();
       expect(data.action).toBe('perceive_image');
@@ -308,8 +310,9 @@ describe('MindMultiModalPerceptionService', () => {
         descriptor: 'ola mundo',
       });
 
-      const data = (prisma.mindCase.create.mock.calls[0]![0] as { data: Record<string, unknown> })
-        .data;
+      const data = castMock<[{ data: Record<string, unknown> }]>(
+        prisma.mindCase.create.mock.calls[0],
+      )[0].data;
       expect(String(data.text)).toContain('ola mundo');
       expect((data.features as { analyzed: boolean }).analyzed).toBe(true);
     });

@@ -18,6 +18,8 @@ import { GuestChatService } from './guest-chat.service';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { validateAbiPayload } from './abi/abi-validator';
 import { ABI_VERSION } from './abi/abi-schema';
+import { partialMatch } from '../../test/helpers/match-instance';
+import { castMock } from '../../test/helpers/cast-mock';
 
 jest.mock('./openai-wrapper', () => ({
   chatCompletionWithFallback: jest.fn(),
@@ -155,11 +157,11 @@ describe('GuestChatService ABI substitution (UTP-ABI-005)', () => {
       const payload = parseLastUserPayload(result.contextMessages);
       expect(payload).toEqual(
         expect.objectContaining({
-          cognitiveState: expect.objectContaining({
+          cognitiveState: partialMatch({
             abiStatus: 'builder_not_injected',
             audience: 'public',
           }),
-          currentInput: expect.objectContaining({
+          currentInput: partialMatch({
             raw: 'Hello guest',
             channel: 'web',
           }),
@@ -258,7 +260,9 @@ describe('GuestChatService ABI substitution (UTP-ABI-005)', () => {
       await buildGuestMessages(service, 'Hello guest', 'session-abi-5');
 
       expect((mockAbiBuilder as { build: jest.Mock }).build).toHaveBeenCalledTimes(1);
-      const callArg = (mockAbiBuilder as { build: jest.Mock }).build.mock.calls[0][0];
+      const callArg = castMock<[{ audience: string }][]>(
+        (mockAbiBuilder as { build: jest.Mock }).build.mock.calls,
+      )[0]?.[0];
       expect(callArg.audience).toBe('public');
     });
 

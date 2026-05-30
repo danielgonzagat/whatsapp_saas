@@ -139,7 +139,9 @@ export function codeNativeSearchWeb(query: string): WebSearchDigest {
  */
 export function normalizeWebSearchSources(output: unknown): Array<{ title: string; url: string }> {
   const rawSources = Array.isArray(output)
-    ? output.flatMap((item) => (Array.isArray(item?.action?.sources) ? item.action.sources : []))
+    ? (output as WebSearchOutputItem[]).flatMap((item) =>
+        Array.isArray(item?.action?.sources) ? item.action.sources : [],
+      )
     : [];
 
   const seen = new Set<string>();

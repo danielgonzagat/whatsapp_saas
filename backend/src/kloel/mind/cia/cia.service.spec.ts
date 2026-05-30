@@ -4,6 +4,8 @@ jest.mock('../../../queue/queue', () => ({
 }));
 
 import { CiaService } from './cia.service';
+import { partialMatch } from '../../../../test/helpers/match-instance';
+import { castMock } from '../../../../test/helpers/cast-mock';
 
 describe('CiaService', () => {
   let prisma: {
@@ -23,6 +25,9 @@ describe('CiaService', () => {
     };
     integration: {
       findMany: jest.Mock;
+    };
+    pipelineState: {
+      findUnique: jest.Mock;
     };
   };
   let runtime: {
@@ -150,9 +155,9 @@ describe('CiaService', () => {
     await service.approveHumanTask('ws-1', 'task-1', { resume: false });
 
     expect(prisma.kloelMemory.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          metadata: expect.objectContaining({
+      partialMatch({
+        data: partialMatch({
+          metadata: partialMatch({
             status: 'RESOLVED',
             resolvedAt: expectValueOf(String),
           }),
@@ -160,7 +165,9 @@ describe('CiaService', () => {
       }),
     );
 
-    const metadata = prisma.kloelMemory.update.mock.calls[0]?.[0]?.data?.metadata;
+    const metadata = castMock<[{ data?: { metadata?: unknown } }]>(
+      prisma.kloelMemory.update.mock.calls[0] ?? [],
+    )[0]?.data?.metadata;
     expect(metadata).not.toHaveProperty('0');
     expect(metadata).not.toHaveProperty('1');
   });

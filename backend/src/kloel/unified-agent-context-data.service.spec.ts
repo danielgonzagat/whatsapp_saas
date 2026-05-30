@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UnifiedAgentContextDataService } from './unified-agent-context-data.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 type ContextDataPrismaMock = {
   workspace: { findUnique: jest.Mock };
@@ -68,7 +69,7 @@ describe('UnifiedAgentContextDataService', () => {
       const result = await service.getWorkspaceContext(wsId);
 
       expect(prisma.workspace.findUnique).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id: wsId } }),
+        partialMatch({ where: { id: wsId } }),
       );
       expect(result.brandVoice).toBe('formal');
     });
@@ -114,7 +115,7 @@ describe('UnifiedAgentContextDataService', () => {
 
       expect(result.name).toBe('John');
       expect(prisma.contact.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id: contactId, workspaceId: wsId } }),
+        partialMatch({ where: { id: contactId, workspaceId: wsId } }),
       );
     });
 
@@ -166,8 +167,8 @@ describe('UnifiedAgentContextDataService', () => {
       await service.getConversationHistory(wsId, '', 10, phone);
 
       expect(prisma.message.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
+        partialMatch({
+          where: partialMatch({
             workspaceId: wsId,
             contact: { phone },
           }),
@@ -193,7 +194,7 @@ describe('UnifiedAgentContextDataService', () => {
       expect(summary).toContain('John');
       expect(summary).toContain(phone);
       expect(prisma.kloelMemory.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           where: {
             workspaceId_key: {
               workspaceId: wsId,
@@ -276,21 +277,21 @@ describe('UnifiedAgentContextDataService', () => {
     it('getWorkspaceContext scopes to workspaceId', async () => {
       await service.getWorkspaceContext('ws-tenant');
       expect(prisma.workspace.findUnique).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id: 'ws-tenant' } }),
+        partialMatch({ where: { id: 'ws-tenant' } }),
       );
     });
 
     it('getContactContext scopes to workspaceId', async () => {
       await service.getContactContext('ws-tenant', contactId, phone);
       expect(prisma.contact.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({ where: expect.objectContaining({ workspaceId: 'ws-tenant' }) }),
+        partialMatch({ where: partialMatch({ workspaceId: 'ws-tenant' }) }),
       );
     });
 
     it('getProducts scopes to workspaceId', async () => {
       await service.getProducts('ws-tenant');
       expect(prisma.product.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: expect.objectContaining({ workspaceId: 'ws-tenant' }) }),
+        partialMatch({ where: partialMatch({ workspaceId: 'ws-tenant' }) }),
       );
     });
 

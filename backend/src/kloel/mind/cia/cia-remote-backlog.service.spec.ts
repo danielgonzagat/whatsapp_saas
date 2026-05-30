@@ -1,6 +1,8 @@
 import { CiaRemoteBacklogService } from './cia-remote-backlog.service';
 import { CiaChatFilterService } from './cia-chat-filter.service';
 import type { WahaChatSummary } from '../../../marketing/channels/whatsapp/providers/whatsapp-api.provider';
+import { partialMatch } from '../../../../test/helpers/match-instance';
+
 function makeChat(overrides: Partial<WahaChatSummary> = {}): WahaChatSummary {
   return {
     id: '5511999999999@c.us',
@@ -185,8 +187,8 @@ describe('CiaRemoteBacklogService', () => {
       });
       expect(result).not.toBeNull();
       expect(prisma.contact.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          create: expect.objectContaining({
+        partialMatch({
+          create: partialMatch({
             workspaceId: 'ws-1',
             phone: '5511999999999',
           }),
@@ -215,7 +217,7 @@ describe('CiaRemoteBacklogService', () => {
         'session-1',
       );
       expect(agentEvents.publish).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           phase: 'backlog_remote_inline_fallback',
           workspaceId: 'ws-1',
         }),
@@ -286,8 +288,8 @@ describe('CiaRemoteBacklogService', () => {
       );
 
       expect(prisma.contact.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({
-          create: expect.objectContaining({
+        partialMatch({
+          create: partialMatch({
             workspaceId: 'ws-tenant-c',
           }),
         }),
@@ -319,10 +321,10 @@ describe('CiaRemoteBacklogService', () => {
       );
 
       expect(unifiedAgent.processIncomingMessage).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           workspaceId: 'ws-1',
           channel: 'whatsapp',
-          context: expect.objectContaining({
+          context: partialMatch({
             remoteChatId: '5511999999999@c.us',
             deliveryMode: expect.stringMatching(/reactive|proactive/) as unknown,
           }),

@@ -6,6 +6,7 @@ import {
   WORKSPACE_ACTION_TOOL_NAMES,
 } from './kloel-tool-dispatcher.workspace-actions.handlers';
 import type { WorkspaceActionToolDeps } from './kloel-tool-dispatcher.workspace-actions.handlers';
+import { castMock } from '../../test/helpers/cast-mock';
 
 type Stub = {
   chatToolsService: {
@@ -40,11 +41,15 @@ const makeStubDeps = (
       toolConfigureAiPersona: jest.fn().mockResolvedValue({ success: true }),
       toolCreateOrder: jest.fn().mockResolvedValue({ success: true, order: { id: 'o1' } }),
     },
-    applyReceipt: jest.fn().mockImplementation((cap, _ws, _a, result) => ({
-      ...result,
-      capabilityId: cap,
-      wrapped: true,
-    })),
+    applyReceipt: jest
+      .fn()
+      .mockImplementation(
+        (cap: string, _ws: unknown, _a: unknown, result: Record<string, unknown>) => ({
+          ...result,
+          capabilityId: cap,
+          wrapped: true,
+        }),
+      ),
   };
   const deps: WorkspaceActionToolDeps = {
     chatToolsService: stub.chatToolsService as unknown as KloelChatToolsService,
@@ -97,10 +102,9 @@ describe('kloel-tool-dispatcher.workspace-actions.handlers', () => {
     it('set_brand_voice enriches successful result with tone from args', async () => {
       const { stub, deps } = makeStubDeps();
       await dispatchWorkspaceActionTool(deps, 'ws1', 'set_brand_voice', { tone: 'friendly' });
-      const wrappedResult = stub.applyReceipt.mock.calls[0]?.[3] as {
-        success: boolean;
-        tone?: string;
-      };
+      const wrappedResult = castMock<
+        [unknown, unknown, unknown, { success: boolean; tone?: string }][]
+      >(stub.applyReceipt.mock.calls)[0]?.[3];
       expect(wrappedResult).toEqual({ success: true, tone: 'friendly' });
     });
 
@@ -111,17 +115,16 @@ describe('kloel-tool-dispatcher.workspace-actions.handlers', () => {
         error: 'boom',
       });
       await dispatchWorkspaceActionTool(deps, 'ws1', 'set_brand_voice', { tone: 'friendly' });
-      const wrappedResult = stub.applyReceipt.mock.calls[0]?.[3];
+      const wrappedResult = castMock<unknown[][]>(stub.applyReceipt.mock.calls)[0]?.[3];
       expect(wrappedResult).toEqual({ success: false, error: 'boom' });
     });
 
     it('set_brand_voice tone defaults to empty string when args.tone missing', async () => {
       const { stub, deps } = makeStubDeps();
       await dispatchWorkspaceActionTool(deps, 'ws1', 'set_brand_voice', {});
-      const wrappedResult = stub.applyReceipt.mock.calls[0]?.[3] as {
-        success: boolean;
-        tone?: string;
-      };
+      const wrappedResult = castMock<
+        [unknown, unknown, unknown, { success: boolean; tone?: string }][]
+      >(stub.applyReceipt.mock.calls)[0]?.[3];
       expect(wrappedResult.tone).toBe('');
     });
 
@@ -149,7 +152,7 @@ describe('kloel-tool-dispatcher.workspace-actions.handlers', () => {
         key: 'preferred_channel',
         value: 'whatsapp',
       });
-      const wrappedResult = stub.applyReceipt.mock.calls[0]?.[3];
+      const wrappedResult = castMock<unknown[][]>(stub.applyReceipt.mock.calls)[0]?.[3];
       expect(wrappedResult).toEqual({
         success: true,
         key: 'preferred_channel',
@@ -167,7 +170,7 @@ describe('kloel-tool-dispatcher.workspace-actions.handlers', () => {
         key: 'k',
         value: 'v',
       });
-      const wrappedResult = stub.applyReceipt.mock.calls[0]?.[3];
+      const wrappedResult = castMock<unknown[][]>(stub.applyReceipt.mock.calls)[0]?.[3];
       expect(wrappedResult).toEqual({ success: false, error: 'fail' });
     });
 
@@ -175,7 +178,7 @@ describe('kloel-tool-dispatcher.workspace-actions.handlers', () => {
       const { stub, deps } = makeStubDeps();
       await dispatchWorkspaceActionTool(deps, 'ws1', 'create_flow', { name: 'f1' });
       expect(stub.chatToolsService.toolCreateFlow).toHaveBeenCalledWith('ws1', { name: 'f1' });
-      expect(stub.applyReceipt.mock.calls[0]?.[0]).toBe('create_flow');
+      expect(castMock<unknown[][]>(stub.applyReceipt.mock.calls)[0]?.[0]).toBe('create_flow');
     });
 
     it('send_channel_message delegates without receipt (no applyReceipt call)', async () => {
@@ -195,13 +198,15 @@ describe('kloel-tool-dispatcher.workspace-actions.handlers', () => {
     it('create_broadcast wraps result with create_broadcast capability', async () => {
       const { stub, deps } = makeStubDeps();
       await dispatchWorkspaceActionTool(deps, 'ws1', 'create_broadcast', { name: 'b1' });
-      expect(stub.applyReceipt.mock.calls[0]?.[0]).toBe('create_broadcast');
+      expect(castMock<unknown[][]>(stub.applyReceipt.mock.calls)[0]?.[0]).toBe('create_broadcast');
     });
 
     it('configure_ai_persona wraps result with configure_ai_persona capability', async () => {
       const { stub, deps } = makeStubDeps();
       await dispatchWorkspaceActionTool(deps, 'ws1', 'configure_ai_persona', { persona: 'sales' });
-      expect(stub.applyReceipt.mock.calls[0]?.[0]).toBe('configure_ai_persona');
+      expect(castMock<unknown[][]>(stub.applyReceipt.mock.calls)[0]?.[0]).toBe(
+        'configure_ai_persona',
+      );
     });
 
     it('create_order delegates without receipt (no applyReceipt call)', async () => {

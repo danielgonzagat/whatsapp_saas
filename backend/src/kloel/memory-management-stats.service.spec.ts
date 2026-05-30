@@ -31,6 +31,7 @@ jest.mock('./memory-stats', () => ({
 import { computeMemoryStats } from './memory-stats';
 import type { MemoryStats } from './memory-stats';
 import { MindMemoryItemService } from './mind/aliases/mind-memory-item.service';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 type MemoryManagementPrismaMock = {
   kloelMemory: {
@@ -181,7 +182,7 @@ describe('MemoryManagementService', () => {
 
       await service.setMemoryPriority('ws-tenant', 'key', 'high');
 
-      const priorityWhere: Record<string, unknown> = expect.objectContaining({
+      const priorityWhere: jest.AsymmetricMatcher = partialMatch({
         workspaceId: 'ws-tenant',
         key: 'key',
       });

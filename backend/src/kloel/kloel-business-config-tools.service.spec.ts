@@ -2,6 +2,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { KloelBusinessConfigToolsService } from './kloel-business-config-tools.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { partialMatch } from '../../test/helpers/match-instance';
+import { castMock } from '../../test/helpers/cast-mock';
+
 jest.mock('../billing/stripe-runtime', () => ({
   StripeRuntime: jest.fn().mockImplementation(() => ({
     billingPortal: {
@@ -52,7 +55,7 @@ describe('KloelBusinessConfigToolsService', () => {
       subscription: { upsert: jest.fn().mockResolvedValue({}) },
       $transaction: jest.fn().mockImplementation((fn: unknown) => {
         if (typeof fn === 'function') {
-          return fn(prisma);
+          return (fn as (p: typeof prisma) => unknown)(prisma);
         }
         return Promise.resolve(undefined);
       }),
@@ -96,7 +99,7 @@ describe('KloelBusinessConfigToolsService', () => {
       prisma.contact.findMany.mockResolvedValue(contacts);
       const result = await service.toolListLeads(wsId, { limit: 5 });
       expect(prisma.contact.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: expect.objectContaining({ workspaceId: wsId }) }),
+        expect.objectContaining({ where: partialMatch({ workspaceId: wsId }) }),
       );
       expect(result.leads).toHaveLength(1);
       expect((result.leads as Array<{ name: string }>)[0].name).toBe('João');
@@ -104,13 +107,17 @@ describe('KloelBusinessConfigToolsService', () => {
     it('filters qualified leads by score >= 70', async () => {
       prisma.contact.findMany.mockResolvedValue([]);
       await service.toolListLeads(wsId, { status: 'qualified' });
-      const whereArg = prisma.contact.findMany.mock.calls[0][0].where;
+      const whereArg = castMock<[{ where: { leadScore: unknown } }][]>(
+        prisma.contact.findMany.mock.calls,
+      )[0]?.[0].where;
       expect(whereArg.leadScore).toEqual({ gte: 70 });
     });
     it('filters cold leads by score < 30', async () => {
       prisma.contact.findMany.mockResolvedValue([]);
       await service.toolListLeads(wsId, { status: 'cold' });
-      const whereArg = prisma.contact.findMany.mock.calls[0][0].where;
+      const whereArg = castMock<[{ where: { leadScore: unknown } }][]>(
+        prisma.contact.findMany.mock.calls,
+      )[0]?.[0].where;
       expect(whereArg.leadScore).toEqual({ lt: 30 });
     });
   });
@@ -159,7 +166,7 @@ describe('KloelBusinessConfigToolsService', () => {
       expect(result.success).toBe(true);
       expect(prisma.contact.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: wsId }),
+          where: partialMatch({ workspaceId: wsId }),
         }),
       );
     });
@@ -223,7 +230,7 @@ describe('KloelBusinessConfigToolsService', () => {
 
       expect(result.success).toBe(true);
       expect(prisma.campaign.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ workspaceId: wsId }) }),
+        expect.objectContaining({ data: partialMatch({ workspaceId: wsId }) }),
       );
     });
 
@@ -243,7 +250,7 @@ describe('KloelBusinessConfigToolsService', () => {
 
       expect(prisma.contact.count).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: wsId, leadScore: { gte: 70 } }),
+          where: partialMatch({ workspaceId: wsId, leadScore: { gte: 70 } }),
         }),
       );
     });
@@ -333,7 +340,7 @@ describe('KloelBusinessConfigToolsService', () => {
       await service.toolListLeads('ws-tenant', {});
       expect(prisma.contact.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: 'ws-tenant' }),
+          where: partialMatch({ workspaceId: 'ws-tenant' }),
         }),
       );
     });
@@ -345,7 +352,7 @@ describe('KloelBusinessConfigToolsService', () => {
 
       expect(result.success).toBe(false);
       expect(prisma.contact.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({ where: expect.objectContaining({ workspaceId: 'ws-other' }) }),
+        expect.objectContaining({ where: partialMatch({ workspaceId: 'ws-other' }) }),
       );
     });
   });

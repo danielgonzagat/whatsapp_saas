@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { KloelWorkspaceContextDataService } from './kloel-workspace-context-data.service';
 import { PrismaService } from '../prisma/prisma.service';
 import type { KloelContextFormatterLimits } from './kloel-context-formatter.types';
+import { partialMatch } from '../../test/helpers/match-instance';
+import { castMock } from '../../test/helpers/cast-mock';
 
 jest.mock('../common/products/legacy-products.util', () => ({
   filterLegacyProducts: jest.fn((products: unknown[]) => products),
@@ -115,7 +117,7 @@ describe('KloelWorkspaceContextDataService', () => {
 
       expect(prisma.workspace.findUnique).toHaveBeenCalledWith({
         where: { id: wsId },
-        select: expect.objectContaining({
+        select: partialMatch({
           providerSettings: true,
           customDomain: true,
           branding: true,
@@ -150,7 +152,7 @@ describe('KloelWorkspaceContextDataService', () => {
 
       expect(prisma.subscription.findUnique).toHaveBeenCalledWith({
         where: { workspaceId: wsId },
-        select: expect.objectContaining({ status: true, plan: true }),
+        select: partialMatch({ status: true, plan: true }),
       });
     });
 
@@ -319,7 +321,7 @@ describe('KloelWorkspaceContextDataService', () => {
       ];
 
       for (const call of workspaceScopedCalls) {
-        expect(call[0]).toHaveProperty(['where', 'workspaceId'], 'ws-tenant');
+        expect(castMock<unknown[]>(call)[0]).toHaveProperty(['where', 'workspaceId'], 'ws-tenant');
       }
 
       expect(prisma.affiliateRequest.findMany).toHaveBeenCalledWith(

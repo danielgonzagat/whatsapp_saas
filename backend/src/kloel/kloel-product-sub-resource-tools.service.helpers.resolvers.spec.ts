@@ -10,6 +10,7 @@ import {
   resolveFallbackProductIdForCoupon,
   resolvePlanIdFromArgs,
 } from './kloel-product-sub-resource-tools.service.helpers';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 function createPrismaStub() {
   return {
@@ -92,7 +93,7 @@ describe('kloel-product-sub-resource-tools.service.helpers (resolvers)', () => {
       expect(result).toBe('co-3');
       expect(prisma.productCheckout.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({
+          where: partialMatch({
             name: { contains: 'Gold', mode: 'insensitive' },
           }),
         }),

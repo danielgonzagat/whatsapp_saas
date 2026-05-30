@@ -1,6 +1,8 @@
 import { RuntimeConversationTracerService } from './runtime-conversation-tracer.service';
 import { DecisionOutcomeService } from './decision-outcome.service';
 import { buildDecisionOutcomeKey } from '../../test/fixtures/whatsapp-inbound.fixture';
+import { partialMatch } from '../../test/helpers/match-instance';
+
 const WS = 'ws-golden-path';
 const CHANNEL = 'whatsapp';
 const CONTACT_ID = 'contact-gp-1';
@@ -9,7 +11,9 @@ function buildTracerInstrumentedEvents(
   tracer: RuntimeConversationTracerService,
   baseEvents: { recordCommercial: jest.Mock },
 ) {
-  const originalRecordCommercial = baseEvents.recordCommercial.getMockImplementation();
+  const originalRecordCommercial = baseEvents.recordCommercial.getMockImplementation() as
+    | ((event: unknown) => unknown)
+    | undefined;
   let policyChoseEmitted = false;
   let determinismGateEmitted = false;
   let composerProducedEmitted = false;
@@ -257,7 +261,7 @@ describe('Inbound Golden Path — P12 WhatsApp integration proof', () => {
       expect(prisma.decisionOutcome.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { outcomeKey: key, workspaceId: { not: '' }, outcomeAt: null },
-          data: expect.objectContaining({
+          data: partialMatch({
             outcomeName: 'payment.succeeded',
             wonVsBaseline: true,
             economicValue: 100,
@@ -276,7 +280,7 @@ describe('Inbound Golden Path — P12 WhatsApp integration proof', () => {
       expect(count).toBe(1);
       expect(prisma.decisionOutcome.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: partialMatch({
             outcomeName: 'inbound.silent_24h',
             wonVsBaseline: false,
           }),

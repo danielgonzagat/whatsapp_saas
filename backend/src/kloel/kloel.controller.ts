@@ -238,7 +238,7 @@ export class KloelController {
       { storage: this.storageService },
       file,
       req.workspaceId || req.user?.workspaceId,
-      req.body?.folder || 'general',
+      (req.body as { folder?: string } | undefined)?.folder || 'general',
       req,
     );
   }

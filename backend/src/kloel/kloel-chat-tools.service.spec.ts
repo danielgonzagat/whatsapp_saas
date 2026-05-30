@@ -3,6 +3,7 @@ import {
   type ChatToolsPrismaMock,
   type ChatToolsSetup,
 } from './kloel-chat-tools.service.spec-helpers';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 type ProductRecord = {
   id: string;
@@ -317,7 +318,7 @@ describe('KloelChatToolsService — produto, autopilot e identidade', () => {
       expect(result.success).toBe(true);
       expect(result.period).toBe('month');
       expect(prisma.checkoutOrder.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: expect.objectContaining({ workspaceId: ctx.wsId }) }),
+        expect.objectContaining({ where: partialMatch({ workspaceId: ctx.wsId }) }),
       );
     });
 

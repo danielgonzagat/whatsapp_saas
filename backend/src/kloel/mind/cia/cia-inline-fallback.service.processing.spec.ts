@@ -1,5 +1,7 @@
 import { CiaInlineFallbackService } from './cia-inline-fallback.service';
 import { CiaChatFilterService } from './cia-chat-filter.service';
+import { partialMatch } from '../../../../test/helpers/match-instance';
+
 interface PrismaMock {
   message: { findFirst: jest.Mock; findMany: jest.Mock; create: jest.Mock };
   contact: { findFirst: jest.Mock; findUnique: jest.Mock };
@@ -123,7 +125,7 @@ describe('CiaInlineFallbackService', () => {
         expect.objectContaining({
           workspaceId: 'ws-1',
           channel: 'whatsapp',
-          context: expect.objectContaining({ source: 'cia_backlog_inline' }),
+          context: partialMatch({ source: 'cia_backlog_inline' }),
         }),
       );
     });

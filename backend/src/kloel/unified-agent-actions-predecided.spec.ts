@@ -2,6 +2,7 @@ import { UnifiedAgentActionsCrmService } from './unified-agent-actions-crm.servi
 import { UnifiedAgentActionsSalesService } from './unified-agent-actions-sales.service';
 import { UnifiedAgentActionsWorkspaceService } from './unified-agent-actions-workspace.service';
 import { buildPredecidedActionDraft } from './unified-agent-predecided-actions.part';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 describe('Unified agent predecided action execution', () => {
   it('does not describe blocked payment links as sent in the assistant draft', () => {
@@ -67,9 +68,9 @@ describe('Unified agent predecided action execution', () => {
     expect(mind.resolveCoupon).not.toHaveBeenCalled();
     expect(mind.resolveProductOffer).not.toHaveBeenCalled();
     expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          meta: expect.objectContaining({
+      partialMatch({
+        data: partialMatch({
+          meta: partialMatch({
             inboundCorrelationId: 'inbound-1',
             source: 'orchestrator_predecided',
           }),
@@ -112,7 +113,7 @@ describe('Unified agent predecided action execution', () => {
 
     expect(mind.resolveHumanTransfer).not.toHaveBeenCalled();
     expect(result).toEqual(
-      expect.objectContaining({
+      partialMatch({
         success: true,
         transferred: true,
       }),
@@ -160,9 +161,9 @@ describe('Unified agent predecided action execution', () => {
     };
     expect(createCall?.data?.scheduledFor).toBeInstanceOf(Date);
     expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          meta: expect.objectContaining({
+      partialMatch({
+        data: partialMatch({
+          meta: partialMatch({
             inboundCorrelationId: 'inbound-1',
             source: 'orchestrator_predecided',
           }),
@@ -203,7 +204,7 @@ describe('Unified agent predecided action execution', () => {
     expect(mind.resolveChannelChoice).not.toHaveBeenCalled();
     expect(mind.resolveBroadcastWindow).not.toHaveBeenCalled();
     expect(result).toEqual(
-      expect.objectContaining({
+      partialMatch({
         channel: 'instagram',
         contactCount: 12,
         source: 'orchestrator_predecided',

@@ -6,6 +6,8 @@ import { LLMBudgetService } from '../../llm-budget.service';
 import { UnifiedAgentService } from '../../unified-agent.service';
 import { SmartPaymentService } from '../../smart-payment.service';
 import { chatCompletionWithFallback } from '../../openai-wrapper';
+import { partialMatch } from '../../../../test/helpers/match-instance';
+import { castMock } from '../../../../test/helpers/cast-mock';
 
 jest.mock('../../openai-wrapper', () => ({
   chatCompletionWithFallback: jest.fn().mockResolvedValue({
@@ -316,21 +318,23 @@ describe('LeadMindCoordinator', () => {
         Promise.resolve('contexto do workspace'),
       );
 
-      const completionInput = (chatCompletionWithFallback as jest.Mock).mock.calls.at(-1)?.[1];
+      const completionInput = castMock<
+        [unknown, { messages: Array<{ role: string; content: string }> }]
+      >((chatCompletionWithFallback as jest.Mock).mock.calls.at(-1) ?? [])[1];
       expect(completionInput.messages).toEqual(
-        expect.not.arrayContaining([expect.objectContaining({ role: 'system' })]),
+        expect.not.arrayContaining([partialMatch({ role: 'system' })]),
       );
 
       const lastMessage = completionInput.messages.at(-1);
-      expect(lastMessage).toEqual(expect.objectContaining({ role: 'user' }));
-      const payload = JSON.parse(lastMessage.content) as Record<string, unknown>;
+      expect(lastMessage).toEqual(partialMatch({ role: 'user' }));
+      const payload = JSON.parse(lastMessage?.content ?? '') as Record<string, unknown>;
       expect(payload).toEqual(
-        expect.objectContaining({
-          cognitiveState: expect.objectContaining({
+        partialMatch({
+          cognitiveState: partialMatch({
             abiStatus: 'builder_not_injected',
             workspaceContext: 'contexto do workspace',
           }),
-          currentInput: expect.objectContaining({
+          currentInput: partialMatch({
             raw: 'Quero ajuda',
             channel: 'whatsapp',
           }),

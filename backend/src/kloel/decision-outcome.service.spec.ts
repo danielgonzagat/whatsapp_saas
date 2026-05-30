@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { DecisionOutcomeService } from './decision-outcome.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { MindBanditService } from './mind/policy/mind-bandit.service';
+import { partialMatch } from '../../test/helpers/match-instance';
+import { castMock } from '../../test/helpers/cast-mock';
 
 describe('DecisionOutcomeService', () => {
   let service: DecisionOutcomeService;
@@ -46,7 +48,7 @@ describe('DecisionOutcomeService', () => {
 
       expect((prisma.decisionOutcome as { create: jest.Mock }).create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: partialMatch({
             workspaceId: 'ws-1',
             decisionType: 'followup_timing',
             chosenAction: 'send_now',
@@ -75,7 +77,7 @@ describe('DecisionOutcomeService', () => {
             workspaceId: { not: '' },
             outcomeAt: null,
           },
-          data: expect.objectContaining({
+          data: partialMatch({
             outcomeName: 'inbound.received',
             economicValue: 99.9,
             wonVsBaseline: true,
@@ -192,7 +194,7 @@ describe('DecisionOutcomeService', () => {
       });
       expect((prisma.decisionOutcome as { create: jest.Mock }).create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ baselineAction: null }),
+          data: partialMatch({ baselineAction: null }),
         }),
       );
     });
@@ -210,9 +212,10 @@ describe('DecisionOutcomeService', () => {
           contextSnapshot: { channel: 'instagram', token: symbol },
         }),
       ).resolves.toBeUndefined();
-      const lastCall = (prisma.decisionOutcome.create as jest.Mock).mock.calls.at(-1);
-      const ctx = (lastCall![0].data as { contextSnapshot: Record<string, unknown> })
-        .contextSnapshot;
+      const lastCall = castMock<[{ data: { contextSnapshot: Record<string, unknown> } }][]>(
+        (prisma.decisionOutcome.create as jest.Mock).mock.calls,
+      ).at(-1);
+      const ctx = lastCall![0].data.contextSnapshot;
       expect(ctx.token).toBeUndefined();
       expect(ctx.channel).toBe('instagram');
     });
@@ -225,18 +228,17 @@ describe('DecisionOutcomeService', () => {
         outcomeName: 'payment.succeeded',
         outcomeValue: { amount: 99.9, currency: 'BRL' },
       });
-      const data = (prisma.decisionOutcome.updateMany as jest.Mock).mock.calls.at(-1)![0].data as {
-        outcomeValue?: { amount: number };
-      };
+      const data = castMock<[{ data: { outcomeValue?: { amount: number } } }][]>(
+        (prisma.decisionOutcome.updateMany as jest.Mock).mock.calls,
+      ).at(-1)![0].data;
       expect(data.outcomeValue).toEqual({ amount: 99.9, currency: 'BRL' });
     });
 
     it('defaults economicValue to null when not provided', async () => {
       await service.closeOutcome({ outcomeKey: 'k1', outcomeName: 'inbound.received' });
-      const data = (prisma.decisionOutcome.updateMany as jest.Mock).mock.calls.at(-1)![0].data as {
-        economicValue: number | null;
-        wonVsBaseline: boolean | null;
-      };
+      const data = castMock<
+        [{ data: { economicValue: number | null; wonVsBaseline: boolean | null } }][]
+      >((prisma.decisionOutcome.updateMany as jest.Mock).mock.calls).at(-1)![0].data;
       expect(data.economicValue).toBeNull();
       expect(data.wonVsBaseline).toBeNull();
     });
@@ -246,7 +248,9 @@ describe('DecisionOutcomeService', () => {
         outcomeKey: 'k-already-closed',
         outcomeName: 'payment.succeeded',
       });
-      const call = (prisma.decisionOutcome.updateMany as jest.Mock).mock.calls.at(-1);
+      const call = castMock<[{ where: Record<string, unknown> }][]>(
+        (prisma.decisionOutcome.updateMany as jest.Mock).mock.calls,
+      ).at(-1);
       expect(call![0].where).toEqual({
         outcomeKey: 'k-already-closed',
         workspaceId: { not: '' },
@@ -301,7 +305,7 @@ describe('DecisionOutcomeService', () => {
 
       expect((prisma.decisionOutcomeEvent as { create: jest.Mock }).create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({
+          data: partialMatch({
             workspaceId: 'ws-1',
             eventType: 'payment.succeeded',
             eventKey: 'pay_123',
@@ -354,10 +358,10 @@ describe('DecisionOutcomeService', () => {
       expect((prisma.decisionOutcome as { updateMany: jest.Mock }).updateMany).toHaveBeenCalledWith(
         {
           where: { id: { in: ['do-1', 'do-2'] }, workspaceId: 'ws-1' },
-          data: expect.objectContaining({
+          data: partialMatch({
             outcomeName: 'inbound.silent_24h',
             wonVsBaseline: false,
-            outcomeValue: expect.objectContaining({
+            outcomeValue: partialMatch({
               reason: 'expired_without_reply',
               maxAgeHours: 24,
               outcomeKeys: ['expired-key-1', 'expired-key-2'],

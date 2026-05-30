@@ -12,6 +12,7 @@ import { InstagramService } from '../marketing/channels/instagram/instagram.serv
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import { MessengerService } from '../marketing/channels/messenger/messenger.service';
 import { WhatsAppProviderRegistry } from '../marketing/channels/whatsapp/providers/provider-registry';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 class StubWhatsAppRegistry {
   sendMessage = jest.fn();
@@ -216,7 +217,7 @@ describe('ChannelTransportRegistry', () => {
           workspaceId: 'ws-1',
           decisionType: 'send_message',
           action: 'send_message',
-          context: expect.objectContaining({ contactOptOut: true, channel: 'whatsapp' }),
+          context: partialMatch({ contactOptOut: true, channel: 'whatsapp' }),
         }),
       );
       expect(stubWhatsApp.sendMessage).not.toHaveBeenCalled();
@@ -264,7 +265,7 @@ describe('ChannelTransportRegistry', () => {
       );
       expect(guards.evaluate).toHaveBeenCalledWith(
         expect.objectContaining({
-          context: expect.objectContaining({
+          context: partialMatch({
             contactId: 'contact-1',
             contactMessagesToday: 3,
             contactOptOut: false,

@@ -1,6 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { LeadsService } from './leads.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { partialMatch } from '../../test/helpers/match-instance';
+
+// Typed wrappers so nested jest matcher values stay typed (eslint no-unsafe-assignment).
+const arrayContains = (items: unknown[]): jest.AsymmetricMatcher =>
+  expect.arrayContaining(items) as jest.AsymmetricMatcher;
 
 type LeadsPrismaMock = {
   kloelLead: { findMany: jest.Mock };
@@ -55,8 +60,8 @@ describe('LeadsService', () => {
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe('lead-1');
       expect(prisma.kloelLead.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: wsId }),
+        partialMatch({
+          where: partialMatch({ workspaceId: wsId }),
         }),
       );
     });
@@ -72,8 +77,8 @@ describe('LeadsService', () => {
       await service.listLeads(wsId, { status: 'qualified' });
 
       expect(prisma.kloelLead.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
+        partialMatch({
+          where: partialMatch({
             workspaceId: wsId,
             status: 'qualified',
           }),
@@ -85,10 +90,10 @@ describe('LeadsService', () => {
       await service.listLeads(wsId, { search: 'joao' });
 
       expect(prisma.kloelLead.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
+        partialMatch({
+          where: partialMatch({
             workspaceId: wsId,
-            OR: expect.arrayContaining([
+            OR: arrayContains([
               { name: { contains: 'joao', mode: 'insensitive' } },
               { email: { contains: 'joao', mode: 'insensitive' } },
               { phone: { contains: 'joao', mode: 'insensitive' } },
@@ -102,9 +107,9 @@ describe('LeadsService', () => {
       await service.listLeads(wsId, { search: '  joao  ' });
 
       expect(prisma.kloelLead.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            OR: expect.arrayContaining([{ name: { contains: 'joao', mode: 'insensitive' } }]),
+        partialMatch({
+          where: partialMatch({
+            OR: arrayContains([{ name: { contains: 'joao', mode: 'insensitive' } }]),
           }),
         }),
       );
@@ -122,25 +127,21 @@ describe('LeadsService', () => {
     it('respects custom limit', async () => {
       await service.listLeads(wsId, { limit: 10 });
 
-      expect(prisma.kloelLead.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 10 }));
+      expect(prisma.kloelLead.findMany).toHaveBeenCalledWith(partialMatch({ take: 10 }));
     });
 
     it('defaults limit to 200', async () => {
       await service.listLeads(wsId);
 
-      expect(prisma.kloelLead.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ take: 200 }),
-      );
+      expect(prisma.kloelLead.findMany).toHaveBeenCalledWith(partialMatch({ take: 200 }));
     });
 
     it('clamps limit between 1 and 500', async () => {
       await service.listLeads(wsId, { limit: 0 });
-      expect(prisma.kloelLead.findMany).toHaveBeenCalledWith(expect.objectContaining({ take: 1 }));
+      expect(prisma.kloelLead.findMany).toHaveBeenCalledWith(partialMatch({ take: 1 }));
 
       await service.listLeads(wsId, { limit: 1000 });
-      expect(prisma.kloelLead.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ take: 500 }),
-      );
+      expect(prisma.kloelLead.findMany).toHaveBeenCalledWith(partialMatch({ take: 500 }));
     });
 
     it('maps lead fields to return shape', async () => {
@@ -211,7 +212,7 @@ describe('LeadsService', () => {
       await service.listLeads(wsId);
 
       expect(prisma.kloelLead.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ orderBy: { updatedAt: 'desc' } }),
+        partialMatch({ orderBy: { updatedAt: 'desc' } }),
       );
     });
 
@@ -219,7 +220,7 @@ describe('LeadsService', () => {
       await service.listLeads(wsId);
 
       expect(prisma.kloelLead.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
+        partialMatch({
           select: {
             id: true,
             phone: true,
@@ -243,8 +244,8 @@ describe('LeadsService', () => {
       await service.listLeads('ws-tenant');
 
       expect(prisma.kloelLead.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ workspaceId: 'ws-tenant' }),
+        partialMatch({
+          where: partialMatch({ workspaceId: 'ws-tenant' }),
         }),
       );
     });
@@ -253,8 +254,8 @@ describe('LeadsService', () => {
       await service.listLeads('ws-other', { status: 'contacted' });
 
       expect(prisma.kloelLead.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
+        partialMatch({
+          where: partialMatch({
             workspaceId: 'ws-other',
             status: 'contacted',
           }),
