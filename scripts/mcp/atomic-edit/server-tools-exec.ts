@@ -252,7 +252,11 @@ export function registerToolsExec(server: McpServer): void {
         }
 
         const snap = a.snapshot ? gitSnapshot(cwd) : null;
-        const effectSnap: EffectSnapshot | null = a.proveEffect ? captureEffectSnapshot(cwd) : null;
+        // rollbackOnNonZero IMPLIES effect capture: a byte-snapshot is the only
+        // honest rollback (the git-stash path is tracked-only and can't undo
+        // created/deleted/untracked files). So any requested rollback is byte-complete.
+        const effectSnap: EffectSnapshot | null =
+          a.proveEffect || a.rollbackOnNonZero ? captureEffectSnapshot(cwd) : null;
         const timeout = a.timeoutMs ?? 120000;
         const res = childProcess.spawnSync('/bin/bash', ['-c', a.command], {
           cwd,
