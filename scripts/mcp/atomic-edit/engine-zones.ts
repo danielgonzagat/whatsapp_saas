@@ -40,16 +40,24 @@ export function computeZones(
   after: string,
   opKind = 'changed_span',
 ): EditZones {
+{
   const preservedZones: PreservationZone[] = [];
   const modifiedZones: ModifiedZone[] = [];
 
+  // The diff SCAN runs over JS string code units (correct for char-by-char
+  // comparison); every EMITTED offset/length below is converted to a true UTF-8
+  // byte position via u8() so the trace's `byte*` fields mean bytes, not code
+  // units — "bytes are truth" made literal, even for multibyte files.
+  const u8 = (s: string): number => Buffer.byteLength(s, 'utf8');
+
   if (before === after) {
+    const total = u8(before);
     preservedZones.push({
       kind: 'unchanged_content',
-      description: `Full file (${before.length} bytes) unchanged`,
+      description: `Full file (${total} bytes) unchanged`,
       byteStart: 0,
-      byteEnd: before.length,
-      byteLength: before.length,
+      byteEnd: total,
+      byteLength: total,
       beforeHash: sha256(before),
       afterHash: sha256(after),
     });
@@ -78,14 +86,19 @@ export function computeZones(
   lastBeforeDiff++;
   lastAfterDiff++;
 
+  // Char-index boundaries → true UTF-8 byte offsets for emission.
+  const prefixBytes = u8(before.slice(0, firstDiff));
+  const changedEndBytes = u8(before.slice(0, lastBeforeDiff));
+  const totalBytes = u8(before);
+
   if (firstDiff > 0) {
     const prefixText = before.slice(0, firstDiff);
     preservedZones.push({
       kind: 'prefix_preserved',
-      description: `Bytes 0–${firstDiff - 1} — prefix preserved unchanged`,
+      description: `Bytes 0–${prefixBytes - 1} — prefix preserved unchanged`,
       byteStart: 0,
-      byteEnd: firstDiff,
-      byteLength: firstDiff,
+      byteEnd: prefixBytes,
+      byteLength: prefixBytes,
       beforeHash: sha256(prefixText),
       afterHash: sha256(prefixText),
       sample: prefixText.length > 80 ? prefixText.slice(-80) : prefixText,
@@ -94,21 +107,23 @@ export function computeZones(
 
   const oldChunk = before.slice(firstDiff, lastBeforeDiff);
   const newChunk = after.slice(firstDiff, lastAfterDiff);
+  const oldBytes = u8(oldChunk);
+  const newBytes = u8(newChunk);
   modifiedZones.push({
     kind: opKind,
-    byteStart: firstDiff,
-    byteEnd: lastBeforeDiff,
-    newByteLength: newChunk.length,
+    byteStart: prefixBytes,
+    byteEnd: changedEndBytes,
+    newByteLength: newBytes,
     oldTextHash: sha256(oldChunk),
     newTextHash: sha256(newChunk),
     oldSample: oldChunk.slice(0, 200),
     newSample: newChunk.slice(0, 200),
     description:
       oldChunk.length === 0
-        ? `Insert ${newChunk.length} bytes at offset ${firstDiff}`
+        ? `Insert ${newBytes} bytes at offset ${prefixBytes}`
         : newChunk.length === 0
-          ? `Delete ${oldChunk.length} bytes at offset ${firstDiff}`
-          : `Replace ${oldChunk.length} bytes at offset ${firstDiff} with ${newChunk.length} bytes`,
+          ? `Delete ${oldBytes} bytes at offset ${prefixBytes}`
+          : `Replace ${oldBytes} bytes at offset ${prefixBytes} with ${newBytes} bytes`,
   });
 
   if (lastBeforeDiff < before.length) {
@@ -116,10 +131,10 @@ export function computeZones(
     if (suffixText.length > 0) {
       preservedZones.push({
         kind: 'suffix_preserved',
-        description: `Bytes ${lastBeforeDiff}–${before.length - 1} — suffix preserved unchanged`,
-        byteStart: lastBeforeDiff,
-        byteEnd: before.length,
-        byteLength: suffixText.length,
+        description: `Bytes ${changedEndBytes}–${totalBytes - 1} — suffix preserved unchanged`,
+        byteStart: changedEndBytes,
+        byteEnd: totalBytes,
+        byteLength: u8(suffixText),
         beforeHash: sha256(suffixText),
         afterHash: sha256(suffixText),
         sample: suffixText.length > 80 ? suffixText.slice(0, 80) : suffixText,
@@ -128,4 +143,5 @@ export function computeZones(
   }
 
   return { preservedZones, modifiedZones, movementZones: [] };
+}
 }

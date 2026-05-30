@@ -1,6 +1,6 @@
 {
   "name": "atomic-edit-mcp",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "private": true,
   "description": "Atomic-edit MCP: verified-transaction code mutation engine with a self-contained universal (multi-language) tree-sitter engine on web-tree-sitter (WASM). Zero native binary, zero PI dependency.",
   "dependencies": {
