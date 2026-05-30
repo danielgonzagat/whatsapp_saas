@@ -108,3 +108,93 @@ describe('WalletController withdrawal approval gate', () => {
     expect(result).toEqual({ success: false, message: 'Saque aprovado nao encontrado.' });
   });
 });
+
+describe('WalletController money reads source bigint cents', () => {
+  let prisma: {
+    kloelWallet: { findUnique: jest.Mock };
+    kloelWalletTransaction: { findMany: jest.Mock };
+  };
+  let controller: WalletController;
+
+  beforeEach(() => {
+    prisma = {
+      kloelWallet: { findUnique: jest.fn() },
+      kloelWalletTransaction: { findMany: jest.fn() },
+    };
+    controller = new WalletController({} as never, prisma as never, {} as never);
+  });
+
+  describe('getMonthlyBreakdown', () => {
+    it('returns zeros when the wallet does not exist', async () => {
+      prisma.kloelWallet.findUnique.mockResolvedValue(null);
+
+      const result = await controller.getMonthlyBreakdown('ws-missing');
+
+      expect(result).toEqual({ income: 0, expense: 0, balance: 0, daily: [] });
+      expect(prisma.kloelWalletTransaction.findMany).not.toHaveBeenCalled();
+    });
+
+    it('sums income/expense from amountInCents (bigint), never the deprecated Float amount', async () => {
+      prisma.kloelWallet.findUnique.mockResolvedValue({ id: 'w-1' });
+      const now = new Date();
+      const dayA = new Date(now.getFullYear(), now.getMonth(), 5, 12);
+      const dayB = new Date(now.getFullYear(), now.getMonth(), 9, 12);
+      prisma.kloelWalletTransaction.findMany.mockResolvedValue([
+        // amount (Float) intentionally WRONG to prove it is not read.
+        { amountInCents: 150075n, amount: 999, createdAt: dayA },
+        { amountInCents: -50025n, amount: 999, createdAt: dayB },
+      ]);
+
+      const result = await controller.getMonthlyBreakdown('ws-1');
+
+      // amountInCents-sourced: 150075c -> R$1500.75 income, 50025c -> R$500.25 expense.
+      expect(result.income).toBe(1500.75);
+      expect(result.expense).toBe(500.25);
+      expect(result.balance).toBe(1000.5);
+      // The query must select the cents column, not the Float column.
+      const findManyArg = prisma.kloelWalletTransaction.findMany.mock.calls[0][0];
+      expect(findManyArg.select).toEqual({ amountInCents: true, createdAt: true });
+      // Daily buckets are also cents-sourced.
+      expect(result.daily[dayA.getDate() - 1]).toEqual({
+        day: dayA.getDate(),
+        income: 1500.75,
+        expense: 0,
+      });
+      expect(result.daily[dayB.getDate() - 1]).toEqual({
+        day: dayB.getDate(),
+        income: 0,
+        expense: 500.25,
+      });
+    });
+  });
+
+  describe('getRevenueChart', () => {
+    it('returns a zero-filled 7-slot chart when the wallet does not exist', async () => {
+      prisma.kloelWallet.findUnique.mockResolvedValue(null);
+
+      const result = await controller.getRevenueChart('ws-missing');
+
+      expect(result).toEqual({ chart: [0, 0, 0, 0, 0, 0, 0] });
+      expect(prisma.kloelWalletTransaction.findMany).not.toHaveBeenCalled();
+    });
+
+    it('buckets positive revenue from amountInCents (bigint) into the last 7 days', async () => {
+      prisma.kloelWallet.findUnique.mockResolvedValue({ id: 'w-1' });
+      prisma.kloelWalletTransaction.findMany.mockResolvedValue([
+        // today, amount (Float) intentionally WRONG to prove it is not read.
+        { amountInCents: 250050n, amount: 999, createdAt: new Date() },
+      ]);
+
+      const result = await controller.getRevenueChart('ws-1');
+
+      // Last slot (today) = 250050c -> R$2500.50.
+      expect(result.chart[6]).toBe(2500.5);
+      expect(result.chart.slice(0, 6)).toEqual([0, 0, 0, 0, 0, 0]);
+      // The query must filter + select on the cents column, not the Float column.
+      const findManyArg = prisma.kloelWalletTransaction.findMany.mock.calls[0][0];
+      expect(findManyArg.where.amountInCents).toEqual({ gt: 0 });
+      expect(findManyArg.where.amount).toBeUndefined();
+      expect(findManyArg.select).toEqual({ amountInCents: true, createdAt: true });
+    });
+  });
+});

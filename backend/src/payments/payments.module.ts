@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { BillingModule } from '../billing/billing.module';
+import { SpineModule } from '../kloel/spine/spine.module';
 import { PrismaModule } from '../prisma/prisma.module';
 
 import { ConnectController } from './connect/connect.controller';
@@ -30,7 +31,7 @@ import { StripeWebhookProcessor } from './stripe/stripe-webhook.processor';
  * `payments/split/split.engine` if you need it outside this module.
  */
 @Module({
-  imports: [PrismaModule, BillingModule, FraudModule, MercadoPagoModule],
+  imports: [PrismaModule, BillingModule, FraudModule, MercadoPagoModule, SpineModule],
   controllers: [ConnectController, SplitController],
   providers: [
     LedgerService,

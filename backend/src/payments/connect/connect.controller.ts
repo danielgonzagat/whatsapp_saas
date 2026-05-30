@@ -23,10 +23,7 @@ import { LedgerService } from '../ledger/ledger.service';
 import { ConnectPayoutApprovalService } from './connect-payout-approval.service';
 import { ConnectLedgerReconciliationService } from '../ledger/connect-ledger-reconciliation.service';
 import { ConnectService } from './connect.service';
-import {
-  ConnectAccountAlreadyExistsError,
-  type SubmitOnboardingProfileInput,
-} from './connect.types';
+import { ConnectAccountAlreadyExistsError } from './connect.types';
 import {
   buildBalanceById,
   buildOnboardingProfileInput,
@@ -45,6 +42,11 @@ import {
 import { RouteClass } from '../../common/throttler/route-class.decorator';
 import { WebhookEndpoint } from '../../common/decorators/webhook-endpoint.decorator';
 import { InternalEndpoint } from '../../common/decorators/internal-endpoint.decorator';
+import {
+  CreateConnectAccountDto,
+  CreatePayoutDto,
+  SubmitOnboardingProfileDto,
+} from './dto/connect.dto';
 
 const CONNECT_ACCOUNT_TYPES = Object.values(ConnectAccountType);
 
@@ -100,13 +102,7 @@ export class ConnectController {
   @Idempotent()
   async createAccount(
     @Param('workspaceId') workspaceId: string,
-    @Body()
-    body: {
-      accountType?: string;
-      email?: string;
-      country?: string;
-      displayName?: string;
-    },
+    @Body() body: CreateConnectAccountDto,
   ) {
     const accountType = String(body.accountType || '').trim();
     if (!CONNECT_ACCOUNT_TYPES.includes(accountType as ConnectAccountType)) {
@@ -150,7 +146,7 @@ export class ConnectController {
   async submitOnboardingProfile(
     @Param('workspaceId') workspaceId: string,
     @Param('accountBalanceId') accountBalanceId: string,
-    @Body() body: Omit<SubmitOnboardingProfileInput, 'stripeAccountId'>,
+    @Body() body: SubmitOnboardingProfileDto,
     @Headers('user-agent') userAgent?: string,
     @Headers('x-forwarded-for') forwardedFor?: string,
   ) {
@@ -350,16 +346,7 @@ export class ConnectController {
   @InternalEndpoint('admin payout creation handler')
   @Post(':workspaceId/payouts')
   @Idempotent()
-  async createPayout(
-    @Param('workspaceId') workspaceId: string,
-    @Body()
-    body: {
-      accountBalanceId?: string;
-      amountCents?: number;
-      requestId?: string;
-      currency?: string;
-    },
-  ) {
+  async createPayout(@Param('workspaceId') workspaceId: string, @Body() body: CreatePayoutDto) {
     const accountBalanceId = String(body.accountBalanceId || '').trim();
     if (!accountBalanceId) {
       throw new BadRequestException('accountBalanceId is required');
@@ -396,12 +383,7 @@ export class ConnectController {
   @Idempotent()
   async createPayoutRequest(
     @Param('workspaceId') workspaceId: string,
-    @Body()
-    body: {
-      accountBalanceId?: string;
-      amountCents?: number;
-      currency?: string;
-    },
+    @Body() body: CreatePayoutDto,
   ) {
     const accountBalanceId = String(body.accountBalanceId || '').trim();
     if (!accountBalanceId) {

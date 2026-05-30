@@ -1,5 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { StructuredLogger } from '../../logging/structured-logger';
+import { SpineEmitterService } from '../../kloel/spine/spine-emitter.service';
 import type { ConnectLedgerEntry } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 
@@ -57,7 +58,57 @@ import {
 export class LedgerService {
   private readonly logger = StructuredLogger.from(LedgerService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly spine?: SpineEmitterService,
+  ) {}
+
+  /**
+   * Emit a canonical commerce.payment.* spine event AFTER the ledger
+   * transaction has already committed successfully. Emission is
+   * fire-and-forget and never throws — the money path is sacred, exactly
+   * as documented on {@link SpineEmitterService}. A missing spine (DI
+   * @Optional) is a silent no-op so this stays decoupled from MIND wiring.
+   *
+   * This does NOT mutate any balance, amount, or ledger row — it only
+   * publishes a read-only signal so downstream cognitive consumers
+   * (analytics, autopilot, brain/mind) observe payment state changes.
+   */
+  private emitPaymentSpineEvent(
+    eventName:
+      | 'commerce.payment.approved'
+      | 'commerce.payment.refunded'
+      | 'commerce.payment.charged_back',
+    entry: ConnectLedgerEntry,
+    workspaceId: string,
+    payload: Readonly<Record<string, unknown>>,
+  ): void {
+    if (!this.spine) {
+      return;
+    }
+    void this.spine
+      .emit({
+        eventName,
+        workspaceId,
+        entityRef: { entityType: 'ledger_entry', entityId: entry.id },
+        truthMode: 'observed',
+        provenance: {
+          source: 'production',
+          processor: 'ledger-service',
+          processorVersion: '1.0.0',
+          schemaVersion: '1.0.0',
+        },
+        payload: {
+          ledgerEntryId: entry.id,
+          accountBalanceId: entry.accountBalanceId,
+          amountCents: entry.amountCents.toString(),
+          referenceType: entry.referenceType,
+          referenceId: entry.referenceId,
+          ...payload,
+        },
+      })
+      .catch(() => undefined);
+  }
 
   /**
    * Record a new pending credit with a maturation date. Idempotent on
@@ -66,7 +117,7 @@ export class LedgerService {
   async creditPending(input: CreditPendingInput): Promise<ConnectLedgerEntry> {
     assertPositiveAmount(input.amountCents, 'creditPending');
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const existing = await tx.connectLedgerEntry.findFirst({
         where: buildLedgerReferenceIdempotencyWhere(input.reference, 'CREDIT_PENDING'),
       });
@@ -74,7 +125,7 @@ export class LedgerService {
         this.logger.debug(
           `creditPending idempotent skip: ref=${input.reference.type}:${input.reference.id} entry=${existing.id}`,
         );
-        return existing;
+        return { entry: existing, isNew: false, workspaceId: undefined as string | undefined };
       }
 
       const balance = await tx.connectAccountBalance.findUnique({
@@ -133,8 +184,16 @@ export class LedgerService {
         buildCreditPendingAuditDetails(input.reference, newPending, balance.availableBalanceCents),
       );
 
-      return created;
+      return { entry: created, isNew: true, workspaceId: balance.workspaceId };
     }, FINANCIAL_TRANSACTION_OPTIONS);
+
+    if (result.isNew && result.workspaceId) {
+      this.emitPaymentSpineEvent('commerce.payment.approved', result.entry, result.workspaceId, {
+        phase: 'credit_pending',
+      });
+    }
+
+    return result.entry;
   }
 
   /**
@@ -143,8 +202,9 @@ export class LedgerService {
    * is a no-op once `matured` is true).
    */
   async moveFromPendingToAvailable(pendingEntryId: string): Promise<void> {
+    let matured: { entry: ConnectLedgerEntry; workspaceId: string } | undefined;
     try {
-      await this.prisma.$transaction(async (tx) => {
+      matured = await this.prisma.$transaction(async (tx) => {
         const entry = await tx.connectLedgerEntry.findUnique({
           where: { id: pendingEntryId },
         });
@@ -158,7 +218,7 @@ export class LedgerService {
         }
         if (entry.matured) {
           this.logger.debug(`moveFromPendingToAvailable idempotent skip: entry=${pendingEntryId}`);
-          return;
+          return undefined;
         }
 
         const balance = await tx.connectAccountBalance.findUnique({
@@ -218,6 +278,8 @@ export class LedgerService {
           },
           buildMatureAuditDetails(entry.id, newPending, newAvailable),
         );
+
+        return { entry: matureEntry, workspaceId: balance.workspaceId };
       }, FINANCIAL_TRANSACTION_OPTIONS);
     } catch (error: unknown) {
       if (
@@ -231,6 +293,12 @@ export class LedgerService {
         return;
       }
       throw error;
+    }
+
+    if (matured) {
+      this.emitPaymentSpineEvent('commerce.payment.approved', matured.entry, matured.workspaceId, {
+        phase: 'matured',
+      });
     }
   }
 
@@ -327,7 +395,7 @@ export class LedgerService {
   async debitForChargeback(input: DebitChargebackInput): Promise<ConnectLedgerEntry> {
     assertPositiveAmount(input.amountCents, 'debitForChargeback');
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const existing = await tx.connectLedgerEntry.findFirst({
         where: buildLedgerReferenceIdempotencyWhere(input.reference, 'DEBIT_CHARGEBACK'),
       });
@@ -335,7 +403,7 @@ export class LedgerService {
         this.logger.debug(
           `debitForChargeback idempotent skip: ref=${input.reference.type}:${input.reference.id}`,
         );
-        return existing;
+        return { entry: existing, isNew: false, workspaceId: undefined as string | undefined };
       }
 
       const balance = await tx.connectAccountBalance.findUnique({
@@ -403,8 +471,19 @@ export class LedgerService {
         ),
       );
 
-      return created;
+      return { entry: created, isNew: true, workspaceId: balance.workspaceId };
     }, FINANCIAL_TRANSACTION_OPTIONS);
+
+    if (result.isNew && result.workspaceId) {
+      this.emitPaymentSpineEvent(
+        'commerce.payment.charged_back',
+        result.entry,
+        result.workspaceId,
+        {},
+      );
+    }
+
+    return result.entry;
   }
 
   /**
@@ -415,7 +494,7 @@ export class LedgerService {
   async debitForRefund(input: DebitRefundInput): Promise<ConnectLedgerEntry> {
     assertPositiveAmount(input.amountCents, 'debitForRefund');
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const existing = await tx.connectLedgerEntry.findFirst({
         where: buildLedgerReferenceIdempotencyWhere(input.reference, 'DEBIT_REFUND'),
       });
@@ -423,7 +502,7 @@ export class LedgerService {
         this.logger.debug(
           `debitForRefund idempotent skip: ref=${input.reference.type}:${input.reference.id}`,
         );
-        return existing;
+        return { entry: existing, isNew: false, workspaceId: undefined as string | undefined };
       }
 
       const balance = await tx.connectAccountBalance.findUnique({
@@ -487,8 +566,14 @@ export class LedgerService {
         ),
       );
 
-      return created;
+      return { entry: created, isNew: true, workspaceId: balance.workspaceId };
     }, FINANCIAL_TRANSACTION_OPTIONS);
+
+    if (result.isNew && result.workspaceId) {
+      this.emitPaymentSpineEvent('commerce.payment.refunded', result.entry, result.workspaceId, {});
+    }
+
+    return result.entry;
   }
 
   /** Delegates to {@link creditAvailableByAdjustmentImpl}. */
