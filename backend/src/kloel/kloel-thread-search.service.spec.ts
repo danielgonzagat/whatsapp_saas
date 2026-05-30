@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { KloelThreadSearchService } from './kloel-thread-search.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 
 type ThreadSearchPrismaMock = {
   $queryRaw: jest.Mock;
@@ -133,7 +134,6 @@ describe('KloelThreadSearchService', () => {
 
   describe('result mapping', () => {
     it('maps row with Prisma.Decimal rank', async () => {
-      const { Prisma } = require('@prisma/client');
       prisma.$queryRaw.mockResolvedValue([
         {
           ...mockRow,

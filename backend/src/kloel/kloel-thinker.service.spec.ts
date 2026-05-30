@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { KloelThinkerService } from './kloel-thinker.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
-import { LLMBudgetService, estimateChatCostCents } from './llm-budget.service';
+import { LLMBudgetService } from './llm-budget.service';
 import { Response } from 'express';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { MindCapabilityExecutor } from './mind/coordination';
@@ -44,6 +44,8 @@ import { KloelComposerService } from './kloel-composer.service';
 import { KloelReplyEngineService, LocalToolExecutor } from './kloel-reply-engine.service';
 import { KLOEL_LLM_E2E_GUARD, KloelLLME2EGuard } from './kloel-llm-e2e-guard';
 import { KloelStreamWriter } from './kloel-stream-writer';
+import { thinkSyncImpl, regenerateThreadAssistantResponseImpl } from './kloel-thinker.helpers';
+import { finalizeSuccessfulReply } from './kloel-thinker-think.helpers';
 
 jest.mock('./kloel-thinker.helpers', () => ({
   thinkSyncImpl: jest.fn(),
@@ -121,11 +123,6 @@ describe('KloelThinkerService', () => {
   let llmE2EGuard: Pick<KloelLLME2EGuard, 'isEnabled' | 'buildStream'>;
   let abiBuilder: Pick<AbiBuilderService, 'build'>;
   let capabilityExecutor: Pick<MindCapabilityExecutor, 'buildCognitiveSubstrate'>;
-  const {
-    thinkSyncImpl,
-    regenerateThreadAssistantResponseImpl,
-  } = require('./kloel-thinker.helpers');
-  const { finalizeSuccessfulReply } = require('./kloel-thinker-think.helpers');
   const wsId = 'ws-1';
 
   beforeEach(async () => {

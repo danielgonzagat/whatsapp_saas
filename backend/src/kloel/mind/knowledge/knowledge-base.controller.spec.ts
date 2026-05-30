@@ -30,7 +30,7 @@ describe('KnowledgeBaseController', () => {
 
   let controller: KnowledgeBaseController;
 
-  const admin = { id: 'a-1', role: 'OWNER' } as never;
+  const _admin = { id: 'a-1', role: 'OWNER' } as never;
 
   beforeEach(() => {
     jest.clearAllMocks();

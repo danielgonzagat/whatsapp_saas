@@ -25,7 +25,9 @@ describe('agent-assist.helpers — refund', () => {
         assistantAction: 'analyze_sentiment',
         reason: 'provider_timeout',
       });
-      expect(mockWalletService.refundUsageCharge).not.toHaveBeenCalled();
+      expect(
+        (mockWalletService as { refundUsageCharge: jest.Mock }).refundUsageCharge,
+      ).not.toHaveBeenCalled();
     });
 
     it('should refund with reason', async () => {
@@ -37,7 +39,9 @@ describe('agent-assist.helpers — refund', () => {
         assistantAction: 'suggest_reply',
         reason: 'provider_unavailable',
       });
-      expect(mockWalletService.refundUsageCharge).toHaveBeenCalledWith(
+      expect(
+        (mockWalletService as { refundUsageCharge: jest.Mock }).refundUsageCharge,
+      ).toHaveBeenCalledWith(
         expect.objectContaining({
           workspaceId: 'ws-1',
           operation: 'ai_message',
@@ -59,7 +63,9 @@ describe('agent-assist.helpers — refund', () => {
         assistantAction: 'summarize_conversation',
         reason: 'user_cancelled',
       });
-      expect(mockWalletService.refundUsageCharge).not.toHaveBeenCalled();
+      expect(
+        (mockWalletService as { refundUsageCharge: jest.Mock }).refundUsageCharge,
+      ).not.toHaveBeenCalled();
     });
   });
 });

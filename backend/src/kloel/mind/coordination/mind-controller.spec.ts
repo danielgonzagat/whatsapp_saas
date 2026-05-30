@@ -232,8 +232,8 @@ describe('MindController', () => {
     await controller.tick('ws-exact');
     await controller.narrate('ws-exact');
 
-    expect(mind.tick).toHaveBeenCalledWith('ws-exact');
-    expect(verbalizer.narrate).toHaveBeenCalledWith('ws-exact');
+    expect((mind as { tick: jest.Mock }).tick).toHaveBeenCalledWith('ws-exact');
+    expect((verbalizer as { narrate: jest.Mock }).narrate).toHaveBeenCalledWith('ws-exact');
   });
 
   it('delegates decide body to policy.choose with workspaceId', async () => {
@@ -249,7 +249,10 @@ describe('MindController', () => {
     const controller = buildController({ policy });
     await controller.decide('ws-1', body);
 
-    expect(policy.choose).toHaveBeenCalledWith({ workspaceId: 'ws-1', ...body });
+    expect((policy as { choose: jest.Mock }).choose).toHaveBeenCalledWith({
+      workspaceId: 'ws-1',
+      ...body,
+    });
   });
 
   it('delegates resolve body to policy.resolveOutcome', async () => {
@@ -259,7 +262,12 @@ describe('MindController', () => {
     const controller = buildController({ policy });
     const result = await controller.resolve('ws-1', body);
 
-    expect(policy.resolveOutcome).toHaveBeenCalledWith('ws-1', 'k1', 0.5, undefined);
+    expect((policy as { resolveOutcome: jest.Mock }).resolveOutcome).toHaveBeenCalledWith(
+      'ws-1',
+      'k1',
+      0.5,
+      undefined,
+    );
     expect(result).toEqual({ ok: true });
   });
 
@@ -273,7 +281,7 @@ describe('MindController', () => {
       decisionType: 'coupon_offer',
     });
 
-    expect(guards.evaluate).toHaveBeenCalledWith({
+    expect((guards as { evaluate: jest.Mock }).evaluate).toHaveBeenCalledWith({
       workspaceId: 'ws-1',
       action: 'coupon_10',
       context: { maxDiscountPercent: 20, discountPercent: 10 },
@@ -294,13 +302,9 @@ describe('MindController', () => {
     const controller = buildController({ mind });
     const result = await controller.aggressiveness('ws-1', body);
 
-    expect(mind.resolveAggressiveness).toHaveBeenCalledWith(
-      'ws-1',
-      'whatsapp_sales',
-      0.12,
-      0.4,
-      9.99,
-    );
+    expect(
+      (mind as { resolveAggressiveness: jest.Mock }).resolveAggressiveness,
+    ).toHaveBeenCalledWith('ws-1', 'whatsapp_sales', 0.12, 0.4, 9.99);
     expect(result).toEqual({ aggressiveness: 'MEDIUM', confidence: 0.72, fallback: false });
   });
 
@@ -321,9 +325,24 @@ describe('MindController', () => {
       soldRate: 0.08,
     });
 
-    expect(mind.resolveAudioVsText).toHaveBeenCalledWith('ws-1', 'instagram', 0.2);
-    expect(mind.resolveTone).toHaveBeenCalledWith('ws-1', 'whatsapp', 0.4, 0.2, 'premium');
-    expect(mind.resolveCoupon).toHaveBeenCalledWith('ws-1', 'over_300', 0.08, 'premium');
+    expect((mind as { resolveAudioVsText: jest.Mock }).resolveAudioVsText).toHaveBeenCalledWith(
+      'ws-1',
+      'instagram',
+      0.2,
+    );
+    expect((mind as { resolveTone: jest.Mock }).resolveTone).toHaveBeenCalledWith(
+      'ws-1',
+      'whatsapp',
+      0.4,
+      0.2,
+      'premium',
+    );
+    expect((mind as { resolveCoupon: jest.Mock }).resolveCoupon).toHaveBeenCalledWith(
+      'ws-1',
+      'over_300',
+      0.08,
+      'premium',
+    );
   });
 
   it('exposes backend-first MIND observability endpoints', async () => {
@@ -352,9 +371,12 @@ describe('MindController', () => {
       text: 'lead pediu desconto',
     });
 
-    expect(observability.bandit).toHaveBeenCalledWith('ws-1', 'cart_recovery');
-    expect(globalPrior.getPrior).toHaveBeenCalledWith('cart_recovery');
-    expect(mind.retrieveSimilar).toHaveBeenCalledWith({
+    expect((observability as { bandit: jest.Mock }).bandit).toHaveBeenCalledWith(
+      'ws-1',
+      'cart_recovery',
+    );
+    expect((globalPrior as { getPrior: jest.Mock }).getPrior).toHaveBeenCalledWith('cart_recovery');
+    expect((mind as { retrieveSimilar: jest.Mock }).retrieveSimilar).toHaveBeenCalledWith({
       caseType: 'cart_recovery',
       features: { channel: 'email' },
       limit: 5,
@@ -378,8 +400,12 @@ describe('MindController', () => {
     });
     await controller.runtimeEvidence('ws-2');
 
-    expect(observability.runtimeEvidence).toHaveBeenNthCalledWith(1, 'ws-1');
-    expect(observability.runtimeEvidence).toHaveBeenNthCalledWith(2, 'ws-2');
+    expect(
+      (observability as { runtimeEvidence: jest.Mock }).runtimeEvidence,
+    ).toHaveBeenNthCalledWith(1, 'ws-1');
+    expect(
+      (observability as { runtimeEvidence: jest.Mock }).runtimeEvidence,
+    ).toHaveBeenNthCalledWith(2, 'ws-2');
     expect(() => controller.runtimeEvidenceByQuery('')).toThrow('workspaceId_required');
   });
 

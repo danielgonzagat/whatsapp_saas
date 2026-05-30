@@ -1,7 +1,5 @@
 import { buildMindSignals } from './build-mind-signals.helper';
 import { mockLogger, mockPrisma } from './build-mind-signals.helper.fixtures';
-import type { AgentAssistService } from './knowledge/agent-assist.service';
-
 describe('buildMindSignals — agent-assist suggestions (PI-K18-A)', () => {
   afterEach(() => {
     jest.clearAllMocks();

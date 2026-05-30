@@ -42,7 +42,9 @@ describe('agent-assist.helpers — charging', () => {
         metadata: {},
       });
       expect(result).toBe(false);
-      expect(mockWalletService.chargeForUsage).not.toHaveBeenCalled();
+      expect(
+        (mockWalletService as { chargeForUsage: jest.Mock }).chargeForUsage,
+      ).not.toHaveBeenCalled();
     });
 
     it('should return false when workspaceId is null', async () => {
@@ -66,7 +68,9 @@ describe('agent-assist.helpers — charging', () => {
         metadata: { test: true },
         estimatedCostCents: BigInt(1500),
       });
-      expect(mockWalletService.chargeForUsage).toHaveBeenCalledWith(
+      expect(
+        (mockWalletService as { chargeForUsage: jest.Mock }).chargeForUsage,
+      ).toHaveBeenCalledWith(
         expect.objectContaining({
           workspaceId: 'ws-1',
           operation: 'ai_message',
@@ -90,7 +94,9 @@ describe('agent-assist.helpers — charging', () => {
         assistantAction: 'suggest_reply',
         metadata: {},
       });
-      expect(mockWalletService.chargeForUsage).toHaveBeenCalledWith(
+      expect(
+        (mockWalletService as { chargeForUsage: jest.Mock }).chargeForUsage,
+      ).toHaveBeenCalledWith(
         expect.objectContaining({
           units: 1,
         }),
@@ -167,7 +173,9 @@ describe('agent-assist.helpers — charging', () => {
         model: 'gpt-4',
         usage: { completion_tokens: 10, prompt_tokens: 5 },
       });
-      expect(mockWalletService.settleUsageCharge).not.toHaveBeenCalled();
+      expect(
+        (mockWalletService as { settleUsageCharge: jest.Mock }).settleUsageCharge,
+      ).not.toHaveBeenCalled();
     });
 
     it('should settle with actual cost calculation', async () => {
@@ -180,7 +188,9 @@ describe('agent-assist.helpers — charging', () => {
         model: 'gpt-4',
         usage: { completion_tokens: 20, prompt_tokens: 10 },
       });
-      expect(mockWalletService.settleUsageCharge).toHaveBeenCalledWith(
+      expect(
+        (mockWalletService as { settleUsageCharge: jest.Mock }).settleUsageCharge,
+      ).toHaveBeenCalledWith(
         expect.objectContaining({
           workspaceId: 'ws-1',
           operation: 'ai_message',

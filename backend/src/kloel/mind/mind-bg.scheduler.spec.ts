@@ -227,7 +227,7 @@ describe('MindBackgroundScheduler (UTP gap B)', () => {
     it('calls scanAndEscalate when CIA_COGNITIVE_HEALTH_TICK_ENABLED=true', async () => {
       process.env[cogHealthKey] = 'true';
       const scanMock = jest.fn().mockResolvedValue({ escalated: 0 });
-      const { scheduler, cognitiveHealth } = buildScheduler({
+      const { scheduler } = buildScheduler({
         cognitiveHealth: { scanAndEscalate: scanMock },
       });
 

@@ -77,7 +77,7 @@ export class ChannelService {
     }
 
     const credentials = args.credentials ?? {};
-    const name = String(args.name ?? channel);
+    const name = typeof args.name === 'string' ? args.name : channel;
 
     const existing = await this.prisma.integration.findFirst({
       where: { workspaceId, type: channel },

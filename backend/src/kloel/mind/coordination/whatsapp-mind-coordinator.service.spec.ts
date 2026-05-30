@@ -19,6 +19,7 @@ import { WhatsAppMindCoordinator } from './whatsapp-mind-coordinator.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { KloelService } from '../../kloel.service';
 import { DecisionOutcomeService } from '../../decision-outcome.service';
+import { includesAnyPhrase } from '../../../marketing/channels/whatsapp/whatsapp-normalization.util';
 
 type BrainPrismaMock = {
   kloelLead: { findFirst: jest.Mock; create: jest.Mock };
@@ -192,9 +193,6 @@ describe('WhatsAppMindCoordinator', () => {
 
     it('detects purchase intent', async () => {
       prisma.kloelLead.findFirst.mockResolvedValue({ id: 'lead-1' });
-      const {
-        includesAnyPhrase,
-      } = require('../../../marketing/channels/whatsapp/whatsapp-normalization.util');
 
       const result = await service.handleIncomingMessage({
         from: phone,

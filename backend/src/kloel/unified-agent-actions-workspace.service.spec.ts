@@ -5,6 +5,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
 import { CANONICAL_MODEL_IDS } from '../lib/openai-models';
+import { chatCompletionWithFallback } from './openai-wrapper';
+import { actionGetWorkspaceStatus } from './unified-agent-actions-workspace.helpers';
 
 jest.mock('./openai-wrapper', () => ({
   chatCompletionWithFallback: jest.fn(),
@@ -367,7 +369,6 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
     });
 
     it('creates flow via OpenAI completion', async () => {
-      const { chatCompletionWithFallback } = require('./openai-wrapper');
       const fakeCompletion = {
         choices: [
           {
@@ -382,7 +383,7 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
         ],
         usage: { total_tokens: 500 },
       };
-      chatCompletionWithFallback.mockResolvedValue(fakeCompletion);
+      jest.mocked(chatCompletionWithFallback).mockResolvedValue(fakeCompletion);
 
       const result = await service.actionCreateFlowFromDescription(
         wsId,
@@ -404,7 +405,6 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
     });
 
     it('sends structured data only without persona or system role', async () => {
-      const { chatCompletionWithFallback } = require('./openai-wrapper');
       const fakeCompletion = {
         choices: [
           {
@@ -419,7 +419,7 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
         ],
         usage: { total_tokens: 100 },
       };
-      chatCompletionWithFallback.mockResolvedValue(fakeCompletion);
+      jest.mocked(chatCompletionWithFallback).mockResolvedValue(fakeCompletion);
 
       await service.actionCreateFlowFromDescription(
         wsId,
@@ -430,7 +430,7 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
       );
 
       expect(chatCompletionWithFallback).toHaveBeenCalled();
-      const callArgs = chatCompletionWithFallback.mock.calls[0] as [
+      const callArgs = jest.mocked(chatCompletionWithFallback).mock.calls[0] as [
         unknown,
         { messages?: Array<{ role: string; content: string }> },
       ];
@@ -459,8 +459,7 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
     });
 
     it('handles OpenAI error gracefully', async () => {
-      const { chatCompletionWithFallback } = require('./openai-wrapper');
-      chatCompletionWithFallback.mockRejectedValue(new Error('API error'));
+      jest.mocked(chatCompletionWithFallback).mockRejectedValue(new Error('API error'));
 
       const result = await service.actionCreateFlowFromDescription(
         wsId,
@@ -498,8 +497,7 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
 
   describe('actionGetWorkspaceStatus', () => {
     it('delegates to helper', async () => {
-      const { actionGetWorkspaceStatus } = require('./unified-agent-actions-workspace.helpers');
-      actionGetWorkspaceStatus.mockResolvedValue({
+      jest.mocked(actionGetWorkspaceStatus).mockResolvedValue({
         workspaceId: wsId,
         health: { status: 'healthy' },
       });

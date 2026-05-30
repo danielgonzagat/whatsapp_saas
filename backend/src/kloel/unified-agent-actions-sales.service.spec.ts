@@ -18,6 +18,7 @@ import { UnifiedAgentActionsSalesService } from './unified-agent-actions-sales.s
 import { PrismaService } from '../prisma/prisma.service';
 import { UnifiedAgentActionsMessagingService } from './unified-agent-actions-messaging.service';
 import { OpsAlertService } from '../observability/ops-alert.service';
+import { actionHandleObjection } from './unified-agent-actions-sales.service.helpers';
 
 type SalesPrismaMock = {
   kloelMemory: { findFirst: jest.Mock; findMany: jest.Mock };
@@ -143,8 +144,9 @@ describe('UnifiedAgentActionsSalesService', () => {
 
   describe('actionHandleObjection', () => {
     it('delegates to actionHandleObjection helper', async () => {
-      const { actionHandleObjection } = require('./unified-agent-actions-sales.service.helpers');
-      actionHandleObjection.mockResolvedValue({ success: true, technique: 'value_focus' });
+      jest
+        .mocked(actionHandleObjection)
+        .mockResolvedValue({ success: true, technique: 'value_focus' });
 
       const result = await service.actionHandleObjection(wsId, contactId, phone, {
         objectionType: 'price',

@@ -1,15 +1,5 @@
-import type { SpineEventRef } from '../mind/mind.types';
-import type { OfferDetectorInput, OfferInsight, RankedOfferInsight } from './offer.types';
+import type { OfferInsight, RankedOfferInsight } from './offer.types';
 
-import { detectBonusDesirability } from './detectors/bonus-desirability.detector';
-import { detectPromiseStrength } from './detectors/promise-strength.detector';
-import { detectProductVersionFit } from './detectors/product-version-fit.detector';
-import { detectPositioningMismatch } from './detectors/positioning-mismatch.detector';
-import { detectPagePromiseMismatch } from './detectors/page-promise-mismatch.detector';
-import { detectPricingPsychologySignal } from './detectors/pricing-psychology-signal.detector';
-
-import { rankOfferInsights } from './offer-insight.ranker';
-import { offerConfidenceFloor, filterOfferAboveFloor } from './offer-confidence.guard';
 import { OfferDeliveryService } from './offer-delivery.service';
 
 import type {
@@ -25,26 +15,6 @@ import { median } from './offer.types';
 
 const NOW = Date.parse('2026-05-13T22:00:00.000Z');
 const WKS = 'wks_offer_test';
-
-function ev(over?: Partial<SpineEventRef>): SpineEventRef {
-  const defaults: Record<string, unknown> = {
-    eventId: over?.eventId ?? `e_${Math.random().toString(36).slice(2, 8)}`,
-    eventName: over?.eventName ?? 'commerce.lead.replied',
-    workspaceId: over?.workspaceId ?? WKS,
-    occurredAt: over?.occurredAt ?? '2026-05-13T20:00:00.000Z',
-    truthMode: over?.truthMode ?? ('observed' as const),
-  };
-  if (over?.entityRef !== undefined) {
-    defaults['entityRef'] = over.entityRef;
-  }
-  if (over?.valence !== undefined) {
-    defaults['valence'] = over.valence;
-  }
-  if (over?.payload !== undefined) {
-    defaults['payload'] = over.payload;
-  }
-  return defaults as SpineEventRef;
-}
 
 function makeInsight(over?: Partial<OfferInsight>): OfferInsight {
   return {
@@ -71,12 +41,6 @@ function makeRanked(over?: Partial<OfferInsight>, product?: number): RankedOffer
     rankedProduct: product ?? insight.impactMultiplicative * insight.confidence,
   };
 }
-
-const input = (over?: Partial<OfferDetectorInput>): OfferDetectorInput => ({
-  events: over?.events ?? ([] as readonly SpineEventRef[]),
-  workspaceId: over?.workspaceId ?? WKS,
-  nowMs: over?.nowMs ?? NOW,
-});
 
 // =========================================================================
 // UTP-OFFER-001 — Bonus Desirability Detector

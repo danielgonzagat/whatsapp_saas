@@ -266,7 +266,9 @@ export class CiaRuntimeStateService {
           meta: meta as import('@prisma/client').Prisma.InputJsonValue,
         },
       });
-    } catch {}
+    } catch {
+      // best-effort run record; persistence failure must not block the autonomy cycle
+    }
   }
 
   async updateAutonomyRunStatus(workspaceId: string, runId: string | undefined, status: string) {
@@ -284,7 +286,9 @@ export class CiaRuntimeStateService {
             : {}),
         },
       });
-    } catch {}
+    } catch {
+      // best-effort status update; persistence failure must not block the autonomy cycle
+    }
   }
 
   async createExecution(workspaceId: string, runId: string, action: string) {

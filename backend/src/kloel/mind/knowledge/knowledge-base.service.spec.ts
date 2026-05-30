@@ -142,7 +142,7 @@ describe('KnowledgeBaseService', () => {
         }),
       );
       expect(typeof walletService.chargeForUsage.mock.calls[0][0].quotedCostCents).toBe('bigint');
-      expect(memoryQueue.add).toHaveBeenCalledWith(
+      expect((memoryQueue as { add: jest.Mock }).add).toHaveBeenCalledWith(
         'ingest-source',
         expect.objectContaining({
           workspaceId: 'ws_1',
@@ -181,7 +181,7 @@ describe('KnowledgeBaseService', () => {
         }),
       );
 
-      expect(memoryQueue.add).toHaveBeenCalledWith(
+      expect((memoryQueue as { add: jest.Mock }).add).toHaveBeenCalledWith(
         'ingest-source',
         expect.objectContaining({
           walletUsage: null,
@@ -205,7 +205,7 @@ describe('KnowledgeBaseService', () => {
       });
 
       expect(prisma.knowledgeSource.create).not.toHaveBeenCalled();
-      expect(memoryQueue.add).not.toHaveBeenCalled();
+      expect((memoryQueue as { add: jest.Mock }).add).not.toHaveBeenCalled();
     });
 
     it('refunds kb_ingestion when queue dispatch fails after the debit', async () => {
