@@ -16,6 +16,7 @@ import renderConformanceGate from './render-conformance-gate.js';
 import telemetryEmissionGate from './telemetry-emission-gate.js';
 import iacReferenceGate from './iac-reference-gate.js';
 import findingsDeltaGate from './findings-delta-gate.js';
+import typeSoundnessGate from './type-soundness-gate.js';
 import probeConvergenceGate from './probe-convergence-gate.js';
 import deterministicHarnessGate from './deterministic-harness.js';
 import propertyGate from './property-gate.js';
@@ -36,6 +37,10 @@ export const WRITE_GATES: GateModule[] = [
   telemetryEmissionGate,
   iacReferenceGate,
   findingsDeltaGate,
+  // Verification ladder, rung 3: in-memory overlay type-check — refuses a write that
+  // introduces a NEW TypeScript error (delta vs prior; pre-existing debt tolerated).
+  // Dynamic (runs the compiler) but side-effect-free; bails unjudged in the whole-repo lens.
+  typeSoundnessGate,
 ];
 
 /**
