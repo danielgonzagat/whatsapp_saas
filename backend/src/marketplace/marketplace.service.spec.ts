@@ -12,6 +12,8 @@ describe('MarketplaceService', () => {
       flowTemplate: ['findMany', 'findUnique', 'update'],
       flow: ['create'],
       product: ['findMany', 'count'],
+      affiliateProduct: ['findFirst'],
+      affiliateLink: ['findFirst'],
     });
 
     const module: TestingModule = await Test.createTestingModule({
@@ -241,6 +243,86 @@ describe('MarketplaceService', () => {
       const result = await service.installTemplate(workspaceId, templateId);
 
       expect(result).toBe(newFlow);
+    });
+  });
+
+  describe('getAffiliateLink', () => {
+    it('rejects when productId is missing', async () => {
+      await expect(service.getAffiliateLink('ws-1', { productId: '' })).rejects.toThrow(
+        'productId é obrigatório',
+      );
+    });
+
+    it('returns an honest zero baseline when the product is not on the marketplace', async () => {
+      prisma.affiliateProduct.findFirst.mockResolvedValue(null);
+
+      const result = await service.getAffiliateLink('ws-1', { productId: 'p-unknown' });
+
+      expect(result).toEqual({
+        success: true,
+        code: null,
+        path: null,
+        clicks: 0,
+        sales: 0,
+      });
+      expect(prisma.affiliateProduct.findFirst).toHaveBeenCalledWith({
+        where: { productId: 'p-unknown' },
+        select: { id: true },
+      });
+      // No product => no link lookup at all.
+      expect(prisma.affiliateLink.findFirst).not.toHaveBeenCalled();
+    });
+
+    it('returns an honest zero baseline when this workspace holds no link', async () => {
+      prisma.affiliateProduct.findFirst.mockResolvedValue({ id: 'ap-1' });
+      prisma.affiliateLink.findFirst.mockResolvedValue(null);
+
+      const result = await service.getAffiliateLink('ws-1', { productId: 'p-1' });
+
+      expect(result).toEqual({
+        success: true,
+        code: null,
+        path: null,
+        clicks: 0,
+        sales: 0,
+      });
+      expect(prisma.affiliateLink.findFirst).toHaveBeenCalledWith({
+        where: { affiliateProductId: 'ap-1', affiliateWorkspaceId: 'ws-1' },
+      });
+    });
+
+    it('returns the REAL persisted clicks/sales counters from the link row, not a hardcoded zero', async () => {
+      prisma.affiliateProduct.findFirst.mockResolvedValue({ id: 'ap-1' });
+      prisma.affiliateLink.findFirst.mockResolvedValue({
+        code: 'abc123',
+        clicks: 42,
+        sales: 7,
+      });
+
+      const result = await service.getAffiliateLink('ws-1', { productId: 'p-1' });
+
+      expect(result).toEqual({
+        success: true,
+        code: 'abc123',
+        path: '/pay/abc123',
+        clicks: 42,
+        sales: 7,
+      });
+    });
+
+    it('scopes the link lookup to the requesting workspace (workspace isolation)', async () => {
+      prisma.affiliateProduct.findFirst.mockResolvedValue({ id: 'ap-1' });
+      prisma.affiliateLink.findFirst.mockResolvedValue({
+        code: 'xyz',
+        clicks: 1,
+        sales: 0,
+      });
+
+      await service.getAffiliateLink('ws-owner', { productId: 'p-1' });
+
+      expect(prisma.affiliateLink.findFirst).toHaveBeenCalledWith({
+        where: { affiliateProductId: 'ap-1', affiliateWorkspaceId: 'ws-owner' },
+      });
     });
   });
 });

@@ -465,11 +465,14 @@ describe('InboundProcessorService', () => {
       mode: 'HUMAN',
       status: 'OPEN',
       assignedAgentId: 'agent-1',
-      lastMessageAt: new Date(),
+      // Stale human lock: last activity > AUTOPILOT_RECLAIM_HUMAN_IDLE_MINUTES (6h)
+      // ago, so the abandoned handoff is eligible for auto-reclaim. A FRESH human
+      // lock is intentionally NOT reclaimed (see inbound-processor.reclaim spec).
+      lastMessageAt: new Date(Date.now() - 7 * 60 * 60 * 1000),
       messages: [
         {
           direction: 'INBOUND',
-          createdAt: new Date(),
+          createdAt: new Date(Date.now() - 7 * 60 * 60 * 1000),
         },
       ],
     });

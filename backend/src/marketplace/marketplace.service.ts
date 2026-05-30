@@ -229,6 +229,15 @@ export class MarketplaceService {
    * Return the affiliate link/code this workspace holds for a marketplace product.
    *
    * Chat-surfaced via `marketplace.get_affiliate_link`. Read-only.
+   *
+   * `clicks` and `sales` are the persisted counters on the workspace's own
+   * {@link AffiliateLink} row — these are real, production-tracked metrics, not
+   * placeholders. `clicks` is incremented when the affiliate link is resolved at
+   * checkout ({@link CheckoutCodeLookupHelper}) and `sales` is incremented when a
+   * checkout attributed to the link is paid (`checkout-paid-effects/affiliate`).
+   * The `0` returned in the early-exit branches (no marketplace product, or this
+   * workspace holds no link) is an HONEST empty baseline: there genuinely is no
+   * link, so there are zero clicks and zero sales — not fabricated data.
    */
   async getAffiliateLink(
     workspaceId: string,

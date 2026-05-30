@@ -276,14 +276,56 @@ export function shouldBypassHumanLockExt(settings?: ProviderSettings): boolean {
   );
 }
 
+/**
+ * Idle window (minutes) after which an explicitly human-handed conversation is
+ * considered abandoned and may be auto-reclaimed by the autopilot. Defaults to
+ * 6 hours so a customer's fresh message never yanks an active human handoff
+ * back to the AI without the human's consent.
+ */
+export function resolveReclaimHumanIdleMinutesExt(): number {
+  const raw = String(process.env.AUTOPILOT_RECLAIM_HUMAN_IDLE_MINUTES || '').trim();
+  const parsed = Number.parseInt(raw, 10);
+  if (Number.isFinite(parsed) && parsed > 0) {
+    return parsed;
+  }
+  return 360;
+}
+
+function toEpochMsExt(value?: Date | string | null): number | null {
+  if (!value) {
+    return null;
+  }
+  const ms = value instanceof Date ? value.getTime() : new Date(value).getTime();
+  return Number.isFinite(ms) ? ms : null;
+}
+
+function isHumanHandoffAbandonedExt(
+  conversation: {
+    lastMessageAt?: Date | string | null;
+    messages?: Array<{ direction?: string | null; createdAt?: Date | string | null }>;
+  },
+  now: number,
+): boolean {
+  const latestMsg = (conversation.messages || [])[0];
+  const referenceMs =
+    toEpochMsExt(latestMsg?.createdAt) ?? toEpochMsExt(conversation.lastMessageAt);
+  if (referenceMs === null) {
+    return false;
+  }
+  const idleMs = resolveReclaimHumanIdleMinutesExt() * 60_000;
+  return now - referenceMs >= idleMs;
+}
+
 export function shouldAutoReclaimHumanLockExt(
   settings?: ProviderSettings,
   conversation?: {
     mode?: string | null;
     status?: string | null;
     assignedAgentId?: string | null;
+    lastMessageAt?: Date | string | null;
     messages?: Array<{ direction?: string | null; createdAt?: Date | string | null }>;
   } | null,
+  now: number = Date.now(),
 ): boolean {
   const override = String(process.env.AUTOPILOT_RECLAIM_HUMAN_LOCK_ON_INBOUND || 'true')
     .trim()
@@ -310,7 +352,15 @@ export function shouldAutoReclaimHumanLockExt(
   if (latestDirection !== 'INBOUND') {
     return false;
   }
-  return conversationMode === 'HUMAN' || Boolean(conversation.assignedAgentId);
+  // An explicit human handoff (mode === 'HUMAN') is consent: never reclaim it
+  // on a fresh inbound. Only reclaim once the handoff has gone idle/abandoned
+  // past the configured timeout. Conversations merely assigned to an agent
+  // (without the explicit HUMAN mode) keep the previous inbound-reclaim
+  // behavior so the AI can still pick up untouched, auto-routed threads.
+  if (conversationMode === 'HUMAN') {
+    return isHumanHandoffAbandonedExt(conversation, now);
+  }
+  return Boolean(conversation.assignedAgentId);
 }
 
 export function buildInlineFallbackReplyExt(messageContent: string): string {
