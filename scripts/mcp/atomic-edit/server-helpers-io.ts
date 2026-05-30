@@ -25,6 +25,15 @@ export const log = (...a: unknown[]): void => {
 export function atomicWrite(absPath: string, content: string): void {
   const dir = path.dirname(absPath);
   const tmp = path.join(dir, `.atomic-edit.${process.pid}.${Date.now()}.tmp`);
+  // Preserve the original file's mode: a temp-file + rename replaces the inode,
+  // so without this an existing executable file (e.g. 755) silently drops to the
+  // umask default (644) on the next atomic write. Capture it before writing.
+  let mode: number | undefined;
+  try {
+    mode = fs.statSync(absPath).mode;
+  } catch {
+    /* new file → leave the default mode */
+  }
   const fd = fs.openSync(tmp, 'w');
   try {
     fs.writeSync(fd, content);
@@ -32,6 +41,7 @@ export function atomicWrite(absPath: string, content: string): void {
   } finally {
     fs.closeSync(fd);
   }
+  if (mode !== undefined) fs.chmodSync(tmp, mode);
   fs.renameSync(tmp, absPath);
 }
 

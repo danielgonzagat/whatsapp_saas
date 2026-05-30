@@ -2,7 +2,7 @@ import { Logger } from '@nestjs/common';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
-import { REPO_ROOT, WORKSPACES } from './deps-coverage.helpers';
+import { REPO_ROOT, WORKSPACES, assertWithinRepo } from './deps-coverage.helpers';
 
 export interface AffectedResult {
   sourceFiles: string[];
@@ -27,18 +27,19 @@ async function collectTestCandidates(dir: string, logger: Logger): Promise<strin
     name.endsWith('.test.tsx');
 
   try {
-    const entries = await fs.readdir(dir, { withFileTypes: true });
+    const safeDir = assertWithinRepo(dir);
+    const entries = await fs.readdir(safeDir, { withFileTypes: true });
     for (const e of entries) {
       if (e.isFile() && matchSpec(e.name)) {
-        candidates.push(path.join(dir, e.name));
+        candidates.push(path.join(safeDir, e.name));
       }
     }
   } catch (err: unknown) {
     debug(logger, err);
   }
 
-  const testsDir = path.join(dir, '__tests__');
   try {
+    const testsDir = assertWithinRepo(path.join(dir, '__tests__'));
     const entries = await fs.readdir(testsDir, { withFileTypes: true });
     for (const e of entries) {
       if (e.isFile() && matchSpec(e.name)) {
@@ -67,7 +68,7 @@ async function scanCandidatesForSource(
     seen.add(cand);
 
     try {
-      const content = await fs.readFile(cand, 'utf-8');
+      const content = await fs.readFile(assertWithinRepo(cand), 'utf-8');
       const imports: string[] = [];
       const escaped = srcBase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const importRe = new RegExp(
@@ -112,7 +113,7 @@ export async function affectedTestsImpl(
 
 export async function parseImports(absPath: string, logger: Logger): Promise<string[]> {
   try {
-    const content = await fs.readFile(absPath, 'utf-8');
+    const content = await fs.readFile(assertWithinRepo(absPath), 'utf-8');
     const imports: string[] = [];
     const re =
       /(?:import\s+(?:[\s\S]*?\s+from\s+)?['"]([^'"]+)['"]|import\(['"]([^'"]+)['"]\)|require\(['"]([^'"]+)['"]\))/g;
@@ -140,7 +141,7 @@ async function scanDirForImporters(
 ): Promise<void> {
   let entries: unknown[];
   try {
-    entries = await fs.readdir(dir, { withFileTypes: true });
+    entries = await fs.readdir(assertWithinRepo(dir, root), { withFileTypes: true });
   } catch (err: unknown) {
     debug(logger, err);
     return;
@@ -159,7 +160,7 @@ async function scanDirForImporters(
       }
     } else if (e.isFile() && /\.(ts|tsx|js|jsx)$/.test(e.name)) {
       try {
-        const content = await fs.readFile(full, 'utf-8');
+        const content = await fs.readFile(assertWithinRepo(full, root), 'utf-8');
         const re = new RegExp(
           `(?:from\\s+['"]((?:\\.\\.?/)*${escapedBase}(?:/index)?)['"]|from\\s+['"]((?:\\.\\.?/)*${escapedRel})['"]|require\\(['"]((?:\\.\\.?/)*${escapedBase}(?:/index)?)['"]\\)|require\\(['"]((?:\\.\\.?/)*${escapedRel})['"]\\))`,
         );

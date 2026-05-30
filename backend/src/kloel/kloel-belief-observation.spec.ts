@@ -40,6 +40,13 @@ jest.mock('./kloel-reply-engine.helpers', () => ({
   buildAssistantReplyImpl: jest.fn().mockResolvedValue('Resposta do assistente'),
 }));
 describe('KloelReplyEngineService belief observation (PI-k6)', () => {
+  beforeAll(() => {
+    process.env.OPENAI_API_KEY = 'sk-test-key';
+  });
+  afterAll(() => {
+    delete process.env.OPENAI_API_KEY;
+  });
+
   let prisma: {
     workspace: { findUnique: jest.Mock };
     kloelMemory: { upsert: jest.Mock; findUnique: jest.Mock };

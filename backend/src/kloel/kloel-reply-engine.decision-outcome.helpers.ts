@@ -36,8 +36,14 @@ export function recordChatReplyDecision(
     messageLength: number;
   },
 ): void {
+  // Optional-injected service: guard explicitly (mirrors the sibling
+  // fire-and-forget helpers) so the call site can't trip over a nullish
+  // service. Behavior-identical to the prior `?.` short-circuit.
+  if (!decisionOutcomeService) {
+    return;
+  }
   decisionOutcomeService
-    ?.recordDecision({
+    .recordDecision({
       workspaceId: params.workspaceId,
       decisionType: 'chat_reply',
       chosenAction: 'engage',
@@ -267,9 +273,25 @@ export async function computeChatSurprise(
       });
     }
   } catch (err: unknown) {
-    logger.warn('kloel_surprise_skipped', {
-      reason: err instanceof Error ? err.message : String(err),
-    });
+    const reason = err instanceof Error ? err.message : String(err);
+    // Keep the canonical `kloel_surprise_skipped` event so the signal stays
+    // greppable, but when the 30ms belief lookup is what timed out, enrich the
+    // structured context (workspaceId/surface/timeoutMs/timedOut) so the
+    // surprise-drop is explicitly diagnosable in Railway — we can see HOW OFTEN
+    // the 30ms budget is exceeded without changing the budget itself.
+    const timedOut = reason === 'SURPRISE_TIMEOUT';
+    logger.warn(
+      'kloel_surprise_skipped',
+      timedOut
+        ? {
+            reason,
+            timedOut: true,
+            timeoutMs: 30,
+            workspaceId: params.workspaceId,
+            surface: params.surface,
+          }
+        : { reason },
+    );
   }
 }
 

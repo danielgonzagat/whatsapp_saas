@@ -94,7 +94,7 @@ export async function resolveProductIdByName(
 /**
  * Strips diacritics and lowercases — used for accent-insensitive fallback matching.
  */
-const DIACRITICS_RE = new RegExp('[\\u0300-\\u036f]', 'g');
+const DIACRITICS_RE = /[\\u0300-\\u036f]/g;
 
 function normalizeForAccentFallback(value: string): string {
   return value.normalize('NFD').replace(DIACRITICS_RE, '').toLowerCase();

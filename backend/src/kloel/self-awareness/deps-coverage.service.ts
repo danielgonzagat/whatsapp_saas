@@ -5,10 +5,10 @@ import {
   AffectedResult,
   DepResult,
   FileDeps,
-  REPO_ROOT,
   SBOM_DIR,
   SimpleCoverage,
   affectedTestsImpl,
+  assertWithinRepo,
   fileSimpleCoverage,
   filterDeps,
   findImporters,
@@ -64,7 +64,7 @@ export class DepsCoverageService {
     }
 
     try {
-      const sbomPath = path.join(SBOM_DIR, `sbom-${workspaceOrFile}.json`);
+      const sbomPath = assertWithinRepo(path.join(SBOM_DIR, `sbom-${workspaceOrFile}.json`));
       const raw = await fs.readFile(sbomPath, 'utf-8');
       const deps = parseSbom(raw);
       this.cacheSet(cacheKey, deps);
@@ -117,7 +117,7 @@ export class DepsCoverageService {
       return cached;
     }
 
-    const absPath = path.resolve(REPO_ROOT, filePath);
+    const absPath = assertWithinRepo(filePath);
     const importersCacheKey = `importers:${filePath}`;
     const cachedImporters = this.cacheShortGet<string[]>(importersCacheKey);
     const [imports, importedBy] = await Promise.all([

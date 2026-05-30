@@ -2,7 +2,13 @@ import { Logger } from '@nestjs/common';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
-import { WORKSPACES, Workspace, isWorkspace, workspaceCoverageDir } from './deps-coverage.helpers';
+import {
+  WORKSPACES,
+  Workspace,
+  assertWithinRepo,
+  isWorkspace,
+  workspaceCoverageDir,
+} from './deps-coverage.helpers';
 
 export interface CoverageTotal {
   lines: { total: number; covered: number; pct: number };
@@ -172,7 +178,7 @@ export async function fileCoverage(
   const wss: readonly Workspace[] = workspace && isWorkspace(workspace) ? [workspace] : WORKSPACES;
 
   for (const ws of wss) {
-    const finalPath = path.join(workspaceCoverageDir(ws), 'coverage-final.json');
+    const finalPath = assertWithinRepo(path.join(workspaceCoverageDir(ws), 'coverage-final.json'));
     try {
       const raw = await fs.readFile(finalPath, 'utf-8');
       const final = JSON.parse(raw) as CoverageDetailFile;
@@ -250,7 +256,7 @@ export async function simpleModuleCoverage(
     modulePath && isWorkspace(modulePath) ? [modulePath] : WORKSPACES;
 
   for (const ws of wss) {
-    const covPath = path.join(workspaceCoverageDir(ws), 'coverage-summary.json');
+    const covPath = assertWithinRepo(path.join(workspaceCoverageDir(ws), 'coverage-summary.json'));
     try {
       const raw = await fs.readFile(covPath, 'utf-8');
       const summary = JSON.parse(raw) as CoverageSummary;

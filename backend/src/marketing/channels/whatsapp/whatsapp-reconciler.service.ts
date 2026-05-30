@@ -27,6 +27,13 @@ import { NON_DIGIT_RE } from '../../../common/phone';
 
 type ExternalProviderPayload = Record<string, unknown>;
 
+/**
+ * Canonical inbound-message dedupe window (seconds). Kept consistent with the
+ * `inbound:dedupe:` TTL used by `InboundProcessorService` (300s) so the two
+ * inbound dedup paths share the same replay-protection horizon.
+ */
+const INBOUND_DEDUPE_TTL_SECONDS = 300;
+
 @Injectable()
 export class WhatsappReconcilerService {
   private readonly logger = StructuredLogger.from(WhatsappReconcilerService.name);
@@ -98,7 +105,7 @@ export class WhatsappReconcilerService {
     if (await this.redis.get(dedupeKey)) {
       return { skipped: true, reason: 'duplicate' };
     }
-    await this.redis.setex(dedupeKey, 60, '1');
+    await this.redis.setex(dedupeKey, INBOUND_DEDUPE_TTL_SECONDS, '1');
 
     const lower = (message || '').toLowerCase();
     if (

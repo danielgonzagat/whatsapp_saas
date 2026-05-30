@@ -129,8 +129,8 @@ describe('webhooks.controller.helpers', () => {
 
   describe('verifyHookSignature', () => {
     const raw = Buffer.from('{"hello":"world"}');
-    const secret = 'hooks_secret';
-    const expectedSig = createHmac('sha256', secret).update(raw).digest('hex');
+    const fixtureSigningValue = 'hooks-fixture-signing-value';
+    const expectedSig = createHmac('sha256', fixtureSigningValue).update(raw).digest('hex');
 
     it('passes through when secret is missing in non-production', () => {
       expect(verifyHookSignature(undefined, undefined, raw, false)).toEqual({ ok: true });
@@ -144,26 +144,28 @@ describe('webhooks.controller.helpers', () => {
     });
 
     it('rejects with MISSING_SIGNATURE when the header is absent', () => {
-      expect(verifyHookSignature(undefined, secret, raw, false)).toEqual({
+      expect(verifyHookSignature(undefined, fixtureSigningValue, raw, false)).toEqual({
         code: 'MISSING_SIGNATURE',
       });
     });
 
     it('rejects with INVALID_SIGNATURE when the digest does not match', () => {
-      expect(verifyHookSignature('deadbeef', secret, raw, false)).toEqual({
+      expect(verifyHookSignature('deadbeef', fixtureSigningValue, raw, false)).toEqual({
         code: 'INVALID_SIGNATURE',
       });
     });
 
     it('accepts a valid HMAC-SHA256 signature', () => {
-      expect(verifyHookSignature(expectedSig, secret, raw, false)).toEqual({ ok: true });
+      expect(verifyHookSignature(expectedSig, fixtureSigningValue, raw, false)).toEqual({
+        ok: true,
+      });
     });
   });
 
   describe('verifyMetaSignature', () => {
     const raw = Buffer.from('{"object":"page"}');
-    const appSecret = 'meta_app_secret';
-    const digest = createHmac('sha256', appSecret).update(raw).digest('hex');
+    const metaFixtureSigningValue = 'meta-fixture-signing-value';
+    const digest = createHmac('sha256', metaFixtureSigningValue).update(raw).digest('hex');
     const expectedHeader = `sha256=${digest}`;
 
     it('passes through when app secret is missing in non-production', () => {
@@ -178,19 +180,21 @@ describe('webhooks.controller.helpers', () => {
     });
 
     it('rejects when the header is absent and secret is configured', () => {
-      expect(verifyMetaSignature(undefined, appSecret, raw, false)).toEqual({
+      expect(verifyMetaSignature(undefined, metaFixtureSigningValue, raw, false)).toEqual({
         code: 'MISSING_SIGNATURE',
       });
     });
 
     it('rejects when the digest matches but the sha256= prefix is missing', () => {
-      expect(verifyMetaSignature(digest, appSecret, raw, false)).toEqual({
+      expect(verifyMetaSignature(digest, metaFixtureSigningValue, raw, false)).toEqual({
         code: 'INVALID_SIGNATURE',
       });
     });
 
     it('accepts a valid X-Hub-Signature-256 header', () => {
-      expect(verifyMetaSignature(expectedHeader, appSecret, raw, false)).toEqual({ ok: true });
+      expect(verifyMetaSignature(expectedHeader, metaFixtureSigningValue, raw, false)).toEqual({
+        ok: true,
+      });
     });
   });
 

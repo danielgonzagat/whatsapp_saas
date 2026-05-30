@@ -366,14 +366,34 @@ export class GuestChatService implements OnModuleDestroy {
         `Guest chat error: ${error instanceof Error ? error.message : 'unknown error'}`,
         error instanceof Error ? error.stack : undefined,
       );
-      this.writeStreamChunk(res, {
-        content: this.unavailableMessage,
-        chunk: this.unavailableMessage,
-        error: 'guest_chat_error',
-        done: true,
-      });
-      res.write(`data: [DONE]\n\n`);
-      res.end();
+      // Best-effort terminal emit: if the client already disconnected the
+      // socket, these writes throw (write-after-end / EPIPE). Swallow so the
+      // throw can't skip the finally-guaranteed res.end() below.
+      try {
+        this.writeStreamChunk(res, {
+          content: this.unavailableMessage,
+          chunk: this.unavailableMessage,
+          error: 'guest_chat_error',
+          done: true,
+        });
+        res.write(`data: [DONE]\n\n`);
+      } catch {
+        // socket already closed — nothing more to write
+      }
+    } finally {
+      // Terminal close-signal guarantee for EVERY exit path (success, early
+      // return, error, or a client socket close mid-stream). A bare half-open
+      // SSE socket leaves the frontend's isReplyInFlight flag stuck true until
+      // its 300s watchdog fires; res.end() is idempotent (a no-op once ended),
+      // so this never double-closes a healthy stream.
+      const response = res as Response & { writableEnded?: boolean };
+      if (response.writableEnded !== true) {
+        try {
+          res.end();
+        } catch {
+          // socket already broken — nothing more to do
+        }
+      }
     }
   }
   /**

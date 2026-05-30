@@ -16,8 +16,24 @@ export function isWorkspace(s: string): s is Workspace {
 
 export const REPO_ROOT = path.resolve(process.cwd(), '..');
 
+/**
+ * Path-containment guard: resolve `candidate` (optionally relative to `base`)
+ * and assert the result stays inside `base` (defaults to REPO_ROOT). Returns
+ * the resolved absolute path. Throws if the path escapes the base directory,
+ * preventing directory-traversal on every derived/non-literal filesystem path.
+ */
+export function assertWithinRepo(candidate: string, base: string = REPO_ROOT): string {
+  const resolvedBase = path.resolve(base);
+  const resolved = path.resolve(resolvedBase, candidate);
+  const baseWithSep = resolvedBase.endsWith(path.sep) ? resolvedBase : resolvedBase + path.sep;
+  if (resolved !== resolvedBase && !resolved.startsWith(baseWithSep)) {
+    throw new Error(`path_outside_base: ${candidate}`);
+  }
+  return resolved;
+}
+
 export function workspaceCoverageDir(ws: string): string {
-  return path.join(REPO_ROOT, ws, 'coverage');
+  return assertWithinRepo(path.join(ws, 'coverage'));
 }
 
 export function looksLikeFilePath(s: string): boolean {

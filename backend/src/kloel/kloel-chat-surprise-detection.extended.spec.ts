@@ -159,6 +159,13 @@ function makeSurpriseService() {
   return new MindSurpriseService(prisma as never, beliefs, predictor);
 }
 describe('kloel_chat_surprise_detection — replyEngine extended (PI-k9)', () => {
+  beforeAll(() => {
+    process.env.OPENAI_API_KEY = 'sk-test-key';
+  });
+  afterAll(() => {
+    delete process.env.OPENAI_API_KEY;
+  });
+
   beforeEach(() => {
     logCalls.length = 0;
     warnCalls.length = 0;
