@@ -81,7 +81,7 @@ import {
   isTestSource,
   buildMirrorSignalIndex,
 } from './obsidian-mirror-daemon-content.mjs';
-
+import { rewriteMirrorFrontmatterTags } from './obsidian-mirror-daemon-indexes-notes.mjs';
 
 function diagnosticHasNearbyTest(entry, sourceSet, testSources) {
   if (isTestSource(entry.source)) {

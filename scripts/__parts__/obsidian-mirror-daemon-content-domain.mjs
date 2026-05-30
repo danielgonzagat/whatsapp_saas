@@ -76,6 +76,12 @@ import {
   gitStateForSource,
 } from './obsidian-mirror-daemon-utils.mjs';
 
+import {
+  addVisualFact,
+  bucketNumber,
+  isCodeLikeSource,
+} from './obsidian-mirror-daemon-content-facts.mjs';
+
 export function extractDecoratorRoutes(content) {
   const routes = [];
   const controllerMatch = /@Controller\s*\(\s*['"`]([^'"`]*)['"`]\s*\)/.exec(content || '');

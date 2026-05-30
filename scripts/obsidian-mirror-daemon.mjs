@@ -59,6 +59,8 @@ import {
   persistManifestState,
   cleanupStaleMirrorFiles,
   writeDynamicWorkspaceStatus,
+  removeGeneratedGraphOverlays,
+  applyGraphDerivedTags,
 } from './__parts__/obsidian-mirror-daemon-indexes.mjs';
 // ── Cleanup Helpers ─────────────────────────────────────────────────────────
 function removeMirror(mirrorRelPath, manifest) {

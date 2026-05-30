@@ -1,12 +1,13 @@
-import { join, relative, dirname } from 'node:path';
-import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
+import { join, relative, dirname, basename, extname } from 'node:path';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, readdirSync, rmSync, unlinkSync } from 'node:fs';
 import { REPO_ROOT, SOURCE_MIRROR_DIR, GENERATED_PAGE_SIZE, CLUSTER_DIR, MACHINE_DIR, CAMERA_DIR, VISUAL_FACT_DIR } from '../obsidian-mirror-daemon-constants.mjs';
 import { applyGraphDerivedTags } from './obsidian-mirror-daemon-indexes-notes.mjs';
-import { removeGeneratedGraphOverlays } from './obsidian-mirror-daemon-indexes-camera.mjs';
+import { removeGeneratedGraphOverlays, writeCameraIndexes } from './obsidian-mirror-daemon-indexes-camera.mjs';
 import { writeSignalNotes, writeDomainIndexes } from './obsidian-mirror-daemon-indexes-domain-write.mjs';
 import { writeMachineIndexes, writeClusterIndexes } from './obsidian-mirror-daemon-indexes-machine.mjs';
 import { writeGeneratedNote, buildVisualFactNote, listGeneratedMarkdownRelPaths } from './obsidian-mirror-daemon-indexes-notes.mjs';
-import { isTestSource } from './obsidian-mirror-daemon-content.mjs';
+import { isTestSource, visualFactKey, visualFactRelPath, normalizeHttpPath } from './obsidian-mirror-daemon-content.mjs';
+import { log, normalizePath } from './obsidian-mirror-daemon-utils.mjs';
 
 /** Legacy writeGeneratedIndexes body — preserved but not invoked. */
 export function legacyWriteGeneratedIndexesBody(manifest) {

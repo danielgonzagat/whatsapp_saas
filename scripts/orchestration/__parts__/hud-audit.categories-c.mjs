@@ -1,7 +1,8 @@
 // hud-audit categories I-J — split from hud-audit.mjs for line budget.
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { ORCHESTRATION_DIR, PLUGINS_DIR, REPO_ROOT, SNIPPETS_DIR, VAULT_ROOT } from './hud-audit.constants.mjs';
+import { execSync, spawnSync } from 'node:child_process';
+import { OBSIDIAN_CONFIG, ORCHESTRATION_DIR, PLUGINS_DIR, REPO_ROOT, SNIPPETS_DIR, VAULT_ROOT } from './hud-audit.constants.mjs';
 import { checkFile } from './hud-audit.helpers.mjs';
 
 export function catI_theme() {

@@ -1,3 +1,37 @@
+import { createHash } from 'node:crypto';
+import { readdirSync, statSync, writeFileSync, unlinkSync } from 'node:fs';
+import { resolve, join, relative, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = resolve(process.env.KLOEL_REPO_ROOT || resolve(__dirname, '..', '..'));
+const PID_FILE = '/tmp/kloel-hud-orchestrator.pid';
+const WATCH_FILE_EXTENSIONS = new Set([
+  '.ts',
+  '.tsx',
+  '.mts',
+  '.mjs',
+  '.js',
+  '.jsx',
+  '.json',
+  '.prisma',
+  '.yml',
+  '.yaml',
+  '.md',
+  '.css',
+  '.scss',
+  '.html',
+]);
+const IGNORE_SEGMENTS = new Set([
+  '.git',
+  'node_modules',
+  'dist',
+  'build',
+  'coverage',
+  '.next',
+  '.obsidian',
+]);
+
 // Helpers extracted from hud-orchestrator
 export function hashSourceTree() {
   const hash = createHash('sha256');

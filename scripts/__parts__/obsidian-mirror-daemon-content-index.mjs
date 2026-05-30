@@ -76,6 +76,13 @@ import {
   gitStateForSource,
 } from './obsidian-mirror-daemon-utils.mjs';
 
+import {
+  visualFactKey,
+  clusterLink,
+  clusterKeyForSource,
+  machineHubLink,
+} from './obsidian-mirror-daemon-content-helpers.mjs';
+
 export function buildVisualFactsSection(facts) {
   if (facts.length === 0) return [];
   return [

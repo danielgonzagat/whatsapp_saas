@@ -81,7 +81,8 @@ import {
   isTestSource,
   buildMirrorSignalIndex,
 } from './obsidian-mirror-daemon-content.mjs';
-
+import { domainNoteLink, sourceEntryLink } from './obsidian-mirror-daemon-indexes-domain-write.mjs';
+import { writeGeneratedNote } from './obsidian-mirror-daemon-indexes-notes.mjs';
 
 export function domainPageRelPath(domain, pageIndex) {
   return join('_domains', '_pages', domain, `${String(pageIndex).padStart(3, '0')}.md`);

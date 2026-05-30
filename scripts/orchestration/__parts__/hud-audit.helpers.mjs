@@ -3,7 +3,7 @@
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { resolve, join, relative } from 'node:path';
 import { execSync, spawnSync } from 'node:child_process';
-import { REPO_ROOT, SOURCE_DIR } from './hud-audit.constants.mjs';
+import { MIRROR_ROOT, ORCHESTRATION_DIR, REPO_ROOT, SOURCE_DIR } from './hud-audit.constants.mjs';
 
 export function checkFile(label, filePath) {
   const pass = existsSync(filePath);
