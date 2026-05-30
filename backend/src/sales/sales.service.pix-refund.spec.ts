@@ -23,7 +23,9 @@ describe('SalesService (PI-K37 tier-5 capabilities)', () => {
   };
   let mpBoleto: { create: jest.Mock };
   let mpPix: { create: jest.Mock };
-  let stripe: { stripe: { checkout: { sessions: { create: jest.Mock } } } };
+  let stripe: {
+    stripe: { checkout: { sessions: { create: jest.Mock } }; refunds: { create: jest.Mock } };
+  };
   let audit: { logWithTx: jest.Mock; log: jest.Mock };
   let spine: { emit: jest.Mock };
 
@@ -43,7 +45,12 @@ describe('SalesService (PI-K37 tier-5 capabilities)', () => {
     };
     mpBoleto = { create: jest.fn() };
     mpPix = { create: jest.fn() };
-    stripe = { stripe: { checkout: { sessions: { create: jest.fn() } } } };
+    stripe = {
+      stripe: {
+        checkout: { sessions: { create: jest.fn() } },
+        refunds: { create: jest.fn().mockResolvedValue({ id: 're_test_1' }) },
+      },
+    };
     audit = { logWithTx: jest.fn().mockResolvedValue(undefined), log: jest.fn() };
     spine = { emit: jest.fn().mockResolvedValue(undefined) };
     const m: TestingModule = await Test.createTestingModule({
@@ -106,29 +113,42 @@ describe('SalesService (PI-K37 tier-5 capabilities)', () => {
       expect(r.expiresAt).toBeInstanceOf(Date);
     });
 
-    it('falls back to stub when SmartPaymentService is absent', async () => {
+    it('throws ServiceUnavailableException (no fabricated PIX) when SmartPaymentService is absent', async () => {
       (service as unknown as { smartPayment: undefined }).smartPayment = undefined;
       prisma.product = { findFirst: jest.fn().mockResolvedValue(product) };
       prisma.productPlan.findFirst.mockResolvedValue(plan);
       prisma.kloelSale.create.mockResolvedValue({});
 
-      const r = await service.createPixOrder(ws, dto);
-
-      expect(r.pixCopyPaste).toContain('BR.GOV.BCB.PIX');
-      expect(r.pixQrCode).toContain('stub_qr_');
-      expect(r.amountCents).toBe(9990n);
+      // The sale row is still created (pending) so a webhook can later settle
+      // it, but we MUST NOT return a synthetic copy-paste/QR that can't be paid.
+      await expect(service.createPixOrder(ws, dto)).rejects.toThrow(ServiceUnavailableException);
+      expect(prisma.kloelSale.create).toHaveBeenCalledTimes(1);
     });
 
-    it('falls back to stub when SmartPaymentService throws', async () => {
+    it('throws ServiceUnavailableException (no fabricated PIX) when SmartPaymentService throws', async () => {
       prisma.product = { findFirst: jest.fn().mockResolvedValue(product) };
       prisma.productPlan.findFirst.mockResolvedValue(plan);
       prisma.kloelSale.create.mockResolvedValue({});
       smartPayment.createSmartPayment.mockRejectedValue(new Error('down'));
 
-      const r = await service.createPixOrder(ws, dto);
+      await expect(service.createPixOrder(ws, dto)).rejects.toThrow(ServiceUnavailableException);
+    });
 
-      expect(r.pixCopyPaste).toContain('BR.GOV.BCB.PIX');
-      expect(r.amountCents).toBe(9990n);
+    it('throws ServiceUnavailableException when the gateway omits the PIX QR code', async () => {
+      prisma.product = { findFirst: jest.fn().mockResolvedValue(product) };
+      prisma.productPlan.findFirst.mockResolvedValue(plan);
+      prisma.kloelSale.create.mockResolvedValue({});
+      // Provider returned a copy-paste but no QR — an incomplete instrument
+      // that the buyer cannot pay; must surface honestly, never patched.
+      smartPayment.createSmartPayment.mockResolvedValue({
+        pixCopyPaste: 'CP_ONLY',
+        pixQrCode: null,
+        paymentUrl: 'url',
+        billingType: 'PIX',
+        suggestedMessage: 'msg',
+      });
+
+      await expect(service.createPixOrder(ws, dto)).rejects.toThrow(ServiceUnavailableException);
     });
 
     it('throws NotFoundException when product is missing', async () => {

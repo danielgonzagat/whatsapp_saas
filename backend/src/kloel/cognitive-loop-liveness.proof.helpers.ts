@@ -256,12 +256,15 @@ export class RecordingPrisma {
             a.arm === key.arm,
         );
         if (existing) {
+          const target = existing as Record<keyof BanditArmRow, unknown>;
           for (const [field, value] of Object.entries(args.update)) {
+            const key = field as keyof BanditArmRow;
             if (value && typeof value === 'object' && 'increment' in value) {
               const inc = (value as { increment: number }).increment;
-              (existing as unknown as Record<string, number>)[field] += inc;
+              const current = target[key];
+              target[key] = (typeof current === 'number' ? current : 0) + inc;
             } else {
-              (existing as unknown as Record<string, unknown>)[field] = value;
+              target[key] = value;
             }
           }
           return Promise.resolve(existing);

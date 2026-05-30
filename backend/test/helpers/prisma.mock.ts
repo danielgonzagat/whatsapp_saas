@@ -40,9 +40,8 @@ export type PrismaMockRecord = Record<string, PrismaMockModel> & {
  * same FlexMock (rather than `jest.Mock`). Replaces 6 local copies of
  * this type across `contacts/*.spec.ts`, `autopilot/*.spec.ts`, etc.
  */
-export type FlexMock<
-  T extends (...args: never[]) => unknown = (...args: unknown[]) => unknown,
-> = jest.Mock<ReturnType<T>, Parameters<T>> & {
+export type FlexMock<T extends (...args: never[]) => unknown = (...args: unknown[]) => unknown> =
+  jest.Mock<ReturnType<T>, Parameters<T>> & {
     mockResolvedValue: (v: Awaited<ReturnType<T>>) => FlexMock<T>;
     mockResolvedValueOnce: (v: Awaited<ReturnType<T>>) => FlexMock<T>;
     mockRejectedValue: (e: unknown) => FlexMock<T>;
@@ -61,7 +60,7 @@ export type FlexMock<
 export function mockFlex<
   T extends (...args: never[]) => unknown = (...args: unknown[]) => unknown,
 >(): FlexMock<T> {
-  return jest.fn() as unknown as FlexMock<T>;
+  return jest.fn();
 }
 
 const COMMON_MODELS = [
@@ -146,7 +145,7 @@ export function createPrismaMock(options: CreatePrismaMockOptions = {}): PrismaM
         return (arg as (tx: PrismaMockRecord) => unknown)(prisma);
       }
       // $transaction([promises...]) → resolve all
-      return Promise.all(arg as Promise<unknown>[]);
+      return Promise.all(arg);
     });
 
   if (options.overrides) {
@@ -186,7 +185,7 @@ export function createPartialPrismaMock(
     if (typeof arg === 'function') {
       return (arg as (tx: PrismaMockRecord) => unknown)(prisma);
     }
-    return Promise.all(arg as Promise<unknown>[]);
+    return Promise.all(arg);
   });
 
   if (overrides) {

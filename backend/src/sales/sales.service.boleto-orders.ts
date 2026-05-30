@@ -87,8 +87,8 @@ export async function createBoletoOrder(
           expiresAt,
           notificationUrl,
         });
-        await tx.kloelSale.update({
-          where: { id: sale.id },
+        await tx.kloelSale.updateMany({
+          where: { id: sale.id, workspaceId },
           data: {
             externalPaymentId: boletoResult.externalId,
             paymentLink: boletoResult.ticketUrl,

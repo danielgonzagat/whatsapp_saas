@@ -405,12 +405,55 @@ export class WebhooksService {
     // Normalize to Prisma's JSON shape; malformed provider payloads must not
     // turn audit logging into a webhook-processing failure.
     const jsonPayload = toPrismaJsonValue(payload);
-    return this.prisma.webhookEvent.upsert({
+
+    // Claim-once idempotency. Providers such as Stripe retry a delivery for up
+    // to 3 days, far beyond the ~5-minute Redis NX dedup window. The earlier
+    // implementation reset `status` to 'received' on every redelivery, which
+    // silently downgraded an already-`processed` row and re-armed the handler
+    // chain — double-crediting the ledger, re-running the sale/autopilot/
+    // post-purchase flow. We must NEVER downgrade a row that has advanced past
+    // 'received'.
+    //
+    // 1) Upsert the audit row without touching `status` on update — an
+    //    existing 'processed' / 'processing' / 'failed' row keeps its state.
+    const row = await this.prisma.webhookEvent.upsert({
       where: { provider_externalId: { provider, externalId } },
       create: { provider, eventType, externalId, payload: jsonPayload, status: 'received' },
-      update: { status: 'received', receivedAt: new Date() },
+      update: { receivedAt: new Date() },
     });
-  }
+
+    // Already advanced past 'received' on a prior delivery (processed, in
+    // flight, or terminally failed): hand the caller the authoritative status
+    // so its `status === 'processed'` guard short-circuits the replay. Do not
+    // attempt to claim — the row is not ours.
+    if (row.status !== 'received') {
+      return row;
+    }
+
+    // 2) Atomic claim: flip exactly one 'received' row to 'processing'. Two
+    //    deliveries racing through the upsert both observe 'received', but only
+    //    the writer whose conditional UPDATE matches the still-'received' row
+    //    gets count === 1. The loser sees count === 0 and must not proceed.
+    const claim = await this.prisma.webhookEvent.updateMany({
+      where: { provider, externalId, status: 'received' },
+      data: { status: 'processing' },
+    });
+
+    if (claim.count === 0) {
+      // Another concurrent delivery won the claim. Return the freshest status
+      // so the caller skips instead of double-processing.
+      const current = await this.prisma.webhookEvent.findUnique({
+        where: { provider_externalId: { provider, externalId } },
+      });
+      return current ?? row;
+    }
+
+    // We own this delivery. Report 'received' so the caller runs the handler
+    // chain and finalizes via markWebhookProcessed(). The DB row is already
+    // 'processing', which blocks any concurrent or post-TTL replay from
+    // re-claiming it.
+    return { ...row, status: 'received' as const };
+}
 
   /** Mark webhook processed. */
   async markWebhookProcessed(id: string) {

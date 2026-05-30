@@ -30,7 +30,8 @@ export { trimToUndefined, digitsOnly, buildPersonName, buildDateOfBirth, buildCo
 export type { UploadedFile, SubmitKycContext };
 import {
   doAdminApprove,
-  doAutoApproveIfComplete,
+  doApproveIfConnectEnabled,
+  isConnectKycApproved,
   syncSellerConnectOnboarding,
 } from './kyc.connect-onboarding';
 import {
@@ -343,15 +344,28 @@ export class KycService {
       context: 'KycService.submitKyc',
       action: 'syncSellerConnectOnboarding',
     });
-    await syncSellerConnectOnboarding(this.syncDeps, agentId, workspaceId, context);
+    const onboardingStatus = await syncSellerConnectOnboarding(
+      this.syncDeps,
+      agentId,
+      workspaceId,
+      context,
+    );
 
     this.kycEventEmitter.emitDocumentSubmitted({
       agentId,
       workspaceId,
     });
 
-    const autoResult = await this.autoApproveIfComplete(agentId, workspaceId);
-    if (autoResult.approved) {
+    // Approval is gated SOLELY by the Stripe Connect account being fully enabled
+    // (charges + payouts, no requirements due). Self-reported form completion is
+    // never sufficient — submitting only moves the agent to 'submitted'/'pending'
+    // review, and Stripe (via the account.updated webhook or this status check)
+    // is what flips it to 'approved'.
+    if (isConnectKycApproved(onboardingStatus)) {
+      await this.prisma.agent.update({
+        where: { id: agentId, workspaceId },
+        data: { kycStatus: 'approved', kycApprovedAt: new Date() },
+      });
       this.kycEventEmitter.emitApproved({
         agentId,
         workspaceId,
@@ -361,16 +375,20 @@ export class KycService {
         success: true,
         status: 'approved',
         autoApproved: true,
-        percentage: autoResult.percentage,
       };
     }
     return { success: true, status: 'submitted' };
   }
 
+  /**
+   * Re-checks a seller's live Stripe Connect onboarding status and promotes their
+   * KYC to 'approved' only when the account is fully enabled. Used by the
+   * auto-check endpoint and after webhook-driven account.updated events. NEVER
+   * approves based on self-reported form completion.
+   */
   async autoApproveIfComplete(agentId: string, workspaceId: string) {
-    return doAutoApproveIfComplete(
-      { prisma: this.prisma },
-      (a, w) => this.getCompletion(a, w),
+    return doApproveIfConnectEnabled(
+      { prisma: this.prisma, connectService: this.connectService },
       agentId,
       workspaceId,
     );

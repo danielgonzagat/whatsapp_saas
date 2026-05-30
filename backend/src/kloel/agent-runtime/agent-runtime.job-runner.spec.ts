@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { AgentRuntimeJobRunnerService } from './agent-runtime.job-runner';
-import { mindMemoryStub } from './agent-runtime.mind-memory-stub.helpers';
+import { mindMemoryStub } from '../../../test/helpers/mind-memory-stub';
 
 describe('AgentRuntimeJobRunnerService', () => {
   it('claims due agent jobs, executes through KloelService, records memory, and marks success', async () => {

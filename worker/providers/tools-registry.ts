@@ -10,7 +10,6 @@
  * truth for the tool catalog and risk handler/definition drift.
  */
 
-import { randomUUID } from 'node:crypto';
 import type Stripe from 'stripe';
 import { prisma } from '../db';
 import { CRM } from './crm';
@@ -101,10 +100,16 @@ async function createStripePaymentLink(
   }
 }
 
-function mockPaymentLink(productName: string, amount: number): string {
-  const linkId = randomUUID().slice(0, 12);
-  return `(MOCK) https://checkout.stripe.com/pay/${linkId}?amount=${amount}&product=${encodeURIComponent(productName)}`;
-}
+/**
+ * Honest signal returned to the AI agent when no payment provider is wired.
+ * The agent surfaces a "pagamento indisponível / setup-required" state to the
+ * customer instead of receiving (and forwarding) a fabricated checkout URL.
+ * NEVER return a fake/mock payment link to a real WhatsApp customer.
+ */
+const PAYMENT_LINK_UNAVAILABLE =
+  'Payment links are unavailable: no payment provider is configured for this workspace. ' +
+  'Do NOT invent a checkout URL. Tell the customer that payment is temporarily unavailable ' +
+  'and that a human will follow up to complete the purchase.';
 
 const stripeClient: Stripe.Stripe | null = process.env.STRIPE_SECRET_KEY
   ? new StripeRuntime(process.env.STRIPE_SECRET_KEY)
@@ -116,7 +121,7 @@ async function handleCreatePaymentLink(args: ToolArgs): Promise<string> {
   if (stripeClient) {
     return createStripePaymentLink(stripeClient, productName, amount);
   }
-  return mockPaymentLink(productName, amount);
+  return PAYMENT_LINK_UNAVAILABLE;
 }
 
 async function resolveDefaultStageId(workspaceId: string): Promise<string | undefined> {

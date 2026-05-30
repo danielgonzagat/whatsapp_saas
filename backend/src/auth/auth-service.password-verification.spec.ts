@@ -112,9 +112,12 @@ describe('auth-service.password-verification', () => {
       expect(prisma.passwordResetToken.create).toHaveBeenCalledWith(
         partialMatch({ data: partialMatch({ agentId: 'a-1', token: expect.anything() }) }),
       );
+      const mintedResetToken = firstArg<{ data: { token: string } }>(
+        prisma.passwordResetToken.create,
+      ).data.token;
       expect(email.sendPasswordResetEmail).toHaveBeenCalledWith(
         'user@test.com',
-        expect.stringContaining('reset-password?token='),
+        expect.stringContaining(`reset-password?token=${mintedResetToken}`),
       );
     });
   });
@@ -234,9 +237,12 @@ describe('auth-service.password-verification', () => {
           data: partialMatch({ emailVerificationToken: expect.anything() }),
         }),
       );
+      const mintedVerificationToken = firstArg<{ data: { emailVerificationToken: string } }>(
+        prisma.agent.update,
+      ).data.emailVerificationToken;
       expect(email.sendVerificationEmail).toHaveBeenCalledWith(
         'user@test.com',
-        expect.stringContaining('verify-email?token='),
+        expect.stringContaining(`verify-email?token=${mintedVerificationToken}`),
       );
     });
   });

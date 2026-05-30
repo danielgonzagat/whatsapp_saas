@@ -89,8 +89,8 @@ export async function createStripeCardLink(
           throw new ServiceUnavailableException('Stripe não retornou URL de checkout.');
         }
         const externalPaymentId = pickStripeExternalPaymentId(session.payment_intent, session.id);
-        await tx.kloelSale.update({
-          where: { id: sale.id },
+        await tx.kloelSale.updateMany({
+          where: { id: sale.id, workspaceId },
           data: {
             externalPaymentId,
             paymentLink: session.url,

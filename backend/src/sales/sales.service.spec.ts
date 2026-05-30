@@ -289,6 +289,7 @@ describe('SalesService', () => {
           metadata: {},
         }),
         update: jest.fn().mockResolvedValue({}),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
     });
 
@@ -334,7 +335,7 @@ describe('SalesService', () => {
           }),
         }),
       );
-      expect(t.kloelSale.update).toHaveBeenCalledWith(
+      expect(t.kloelSale.updateMany).toHaveBeenCalledWith(
         objectContaining({
           data: objectContaining({
             externalPaymentId: 'mp-boleto-1',
@@ -387,6 +388,7 @@ describe('SalesService', () => {
           metadata: {},
         }),
         update: jest.fn().mockResolvedValue({}),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
     });
 
@@ -466,7 +468,7 @@ describe('SalesService', () => {
           }),
         }),
       );
-      expect(t.kloelSale.update).toHaveBeenCalledWith(
+      expect(t.kloelSale.updateMany).toHaveBeenCalledWith(
         objectContaining({
           data: objectContaining({
             externalPaymentId: 'pi_card_1',

@@ -56,13 +56,14 @@ describe('MercadoPagoPixService — webhook & lookup', () => {
     });
 
     it('rejects invalid Mercado Pago webhook signatures', () => {
+      const fixtureSigningValue = 'mp-fixture-signing-value';
       const ts = String(Math.floor(Date.now() / 1000));
       expect(
         service.verifyWebhookSignature({
           dataId: '123456789',
           requestId: 'request-1',
           signatureHeader: `ts=${ts},v1=deadbeef`,
-          secret: 'mp-fixture-signing-value',
+          secret: fixtureSigningValue,
         }),
       ).toBe(false);
     });

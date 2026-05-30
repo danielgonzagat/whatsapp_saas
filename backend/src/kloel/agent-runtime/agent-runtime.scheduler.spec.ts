@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { AgentRuntimeSchedulerService } from './agent-runtime.scheduler';
-import { mindMemoryStub } from './agent-runtime.mind-memory-stub.helpers';
+import { mindMemoryStub } from '../../../test/helpers/mind-memory-stub';
 
 describe('AgentRuntimeSchedulerService', () => {
   it('audits due interval jobs and advances next run time', async () => {

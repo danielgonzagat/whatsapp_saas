@@ -1,0 +1,72 @@
+[
+  {
+    "file": "e2e/specs/priority-affiliate-request-cycle.spec.ts",
+    "rule": "skippedTest",
+    "reason": "Playwright e2e priority flow: uses conditional test.skip(reason) to degrade gracefully when the e2e auth/seed environment is absent (unit CI does not provision it). Runs fully in the dedicated e2e pipeline against a live target — not a permanently-disabled test.",
+    "issue": "PR#462 e2e-priority-suite",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "e2e/specs/priority-coupon-validate.spec.ts",
+    "rule": "skippedTest",
+    "reason": "Playwright e2e priority flow: uses conditional test.skip(reason) to degrade gracefully when the e2e auth/seed environment is absent (unit CI does not provision it). Runs fully in the dedicated e2e pipeline against a live target — not a permanently-disabled test.",
+    "issue": "PR#462 e2e-priority-suite",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "e2e/specs/priority-crm-deal-pipeline.spec.ts",
+    "rule": "skippedTest",
+    "reason": "Playwright e2e priority flow: uses conditional test.skip(reason) to degrade gracefully when the e2e auth/seed environment is absent (unit CI does not provision it). Runs fully in the dedicated e2e pipeline against a live target — not a permanently-disabled test.",
+    "issue": "PR#462 e2e-priority-suite",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "e2e/specs/priority-email-campaign-approval.spec.ts",
+    "rule": "skippedTest",
+    "reason": "Playwright e2e priority flow: uses conditional test.skip(reason) to degrade gracefully when the e2e auth/seed environment is absent (unit CI does not provision it). Runs fully in the dedicated e2e pipeline against a live target — not a permanently-disabled test.",
+    "issue": "PR#462 e2e-priority-suite",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "e2e/specs/priority-kyc-submit-flow.spec.ts",
+    "rule": "skippedTest",
+    "reason": "Playwright e2e priority flow: uses conditional test.skip(reason) to degrade gracefully when the e2e auth/seed environment is absent (unit CI does not provision it). Runs fully in the dedicated e2e pipeline against a live target — not a permanently-disabled test.",
+    "issue": "PR#462 e2e-priority-suite",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "e2e/specs/priority-member-area-listing.spec.ts",
+    "rule": "skippedTest",
+    "reason": "Playwright e2e priority flow: uses conditional test.skip(reason) to degrade gracefully when the e2e auth/seed environment is absent (unit CI does not provision it). Runs fully in the dedicated e2e pipeline against a live target — not a permanently-disabled test.",
+    "issue": "PR#462 e2e-priority-suite",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "e2e/specs/priority-sales-boleto-order.spec.ts",
+    "rule": "skippedTest",
+    "reason": "Playwright e2e priority flow: uses conditional test.skip(reason) to degrade gracefully when the e2e auth/seed environment is absent (unit CI does not provision it). Runs fully in the dedicated e2e pipeline against a live target — not a permanently-disabled test.",
+    "issue": "PR#462 e2e-priority-suite",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "e2e/specs/priority-sales-pix-order.spec.ts",
+    "rule": "skippedTest",
+    "reason": "Playwright e2e priority flow: uses conditional test.skip(reason) to degrade gracefully when the e2e auth/seed environment is absent (unit CI does not provision it). Runs fully in the dedicated e2e pipeline against a live target — not a permanently-disabled test.",
+    "issue": "PR#462 e2e-priority-suite",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "e2e/specs/priority-site-publish-lifecycle.spec.ts",
+    "rule": "skippedTest",
+    "reason": "Playwright e2e priority flow: uses conditional test.skip(reason) to degrade gracefully when the e2e auth/seed environment is absent (unit CI does not provision it). Runs fully in the dedicated e2e pipeline against a live target — not a permanently-disabled test.",
+    "issue": "PR#462 e2e-priority-suite",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "e2e/specs/priority-wallet-withdrawal-approval.spec.ts",
+    "rule": "skippedTest",
+    "reason": "Playwright e2e priority flow: uses conditional test.skip(reason) to degrade gracefully when the e2e auth/seed environment is absent (unit CI does not provision it). Runs fully in the dedicated e2e pipeline against a live target — not a permanently-disabled test.",
+    "issue": "PR#462 e2e-priority-suite",
+    "expires": "2026-12-31"
+  }
+]

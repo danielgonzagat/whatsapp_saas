@@ -168,8 +168,12 @@ describe('webhooks.controller.helpers', () => {
     const digest = createHmac('sha256', metaFixtureSigningValue).update(raw).digest('hex');
     const expectedHeader = `sha256=${digest}`;
 
-    it('passes through when app secret is missing in non-production', () => {
-      expect(verifyMetaSignature(undefined, undefined, raw, false)).toEqual({ ok: true });
+    it('fails closed (SECRET_NOT_CONFIGURED) when app secret is missing in non-production', () => {
+      // Fail-closed: a missing secret must never auto-pass, even outside production.
+      expect(verifyMetaSignature(undefined, undefined, raw, false)).toEqual({
+        code: 'SECRET_NOT_CONFIGURED',
+        productionOnly: true,
+      });
     });
 
     it('returns SECRET_NOT_CONFIGURED in production when app secret is missing', () => {

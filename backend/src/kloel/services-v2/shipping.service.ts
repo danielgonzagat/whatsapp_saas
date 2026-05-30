@@ -57,9 +57,12 @@ export class ShippingService {
       patch.afterPayShippingProvider = String(args.provider);
     }
 
-    const updated = await this.prisma.product.update({
-      where: { id: productId },
+    await this.prisma.product.updateMany({
+      where: { id: productId, workspaceId },
       data: patch,
+    });
+    const updated = await this.prisma.product.findFirst({
+      where: { id: productId, workspaceId },
       select: {
         id: true,
         shippingType: true,

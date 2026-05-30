@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { StripeService } from '../billing/stripe.service';
@@ -23,7 +23,9 @@ describe('SalesService (PI-K37 tier-5 capabilities) — refund', () => {
   };
   let mpBoleto: { create: jest.Mock };
   let mpPix: { create: jest.Mock };
-  let stripe: { stripe: { checkout: { sessions: { create: jest.Mock } } } };
+  let stripe: {
+    stripe: { checkout: { sessions: { create: jest.Mock } }; refunds: { create: jest.Mock } };
+  };
   let audit: { logWithTx: jest.Mock; log: jest.Mock };
   let spine: { emit: jest.Mock };
 
@@ -43,7 +45,12 @@ describe('SalesService (PI-K37 tier-5 capabilities) — refund', () => {
     };
     mpBoleto = { create: jest.fn() };
     mpPix = { create: jest.fn() };
-    stripe = { stripe: { checkout: { sessions: { create: jest.fn() } } } };
+    stripe = {
+      stripe: {
+        checkout: { sessions: { create: jest.fn() } },
+        refunds: { create: jest.fn().mockResolvedValue({ id: 're_test_1' }) },
+      },
+    };
     audit = { logWithTx: jest.fn().mockResolvedValue(undefined), log: jest.fn() };
     spine = { emit: jest.fn().mockResolvedValue(undefined) };
     const m: TestingModule = await Test.createTestingModule({
@@ -65,16 +72,36 @@ describe('SalesService (PI-K37 tier-5 capabilities) — refund', () => {
   describe('refund', () => {
     const orderId = 'order-1';
 
-    it('refunds order and returns refundId with pending status', async () => {
+    it('calls the real Stripe gateway refund BEFORE flipping the sale to refunded', async () => {
       prisma.kloelSale.findFirst.mockResolvedValue({
         id: orderId,
         status: 'paid',
         amount: 99.9,
-        externalPaymentId: 'ext-1',
+        externalPaymentId: 'pi_test_123',
       });
-      prisma.kloelSale.update.mockResolvedValue({});
+      // Capture call ordering: the gateway must run before the DB write.
+      const callOrder: string[] = [];
+      stripe.stripe.refunds.create.mockImplementation(() => {
+        callOrder.push('gateway');
+        return Promise.resolve({ id: 're_test_1' });
+      });
+      prisma.kloelSale.update.mockImplementation(() => {
+        callOrder.push('db');
+        return Promise.resolve({});
+      });
 
       const r = await service.refund(ws, orderId, { reason: 'customer request' });
+
+      // Real gateway refund happened, keyed idempotently by the refundId.
+      expect(stripe.stripe.refunds.create).toHaveBeenCalledTimes(1);
+      const refundArgs = stripe.stripe.refunds.create.mock.calls[0] as [
+        { payment_intent: string; amount?: number },
+        { idempotencyKey: string },
+      ];
+      expect(refundArgs[0].payment_intent).toBe('pi_test_123');
+      expect(refundArgs[1].idempotencyKey).toBe(`refund_${orderId}`);
+      // Money first, DB second.
+      expect(callOrder).toEqual(['gateway', 'db']);
 
       expect(r.refundId).toBe(`refund_${orderId}`);
       expect(r.status).toBe('pending');
@@ -93,6 +120,39 @@ describe('SalesService (PI-K37 tier-5 capabilities) — refund', () => {
         refundReason: 'customer request',
         originalStatus: 'paid',
       });
+    });
+
+    it('throws ServiceUnavailableException and does NOT flip DB when no Stripe payment is linked', async () => {
+      prisma.kloelSale.findFirst.mockResolvedValue({
+        id: orderId,
+        status: 'paid',
+        amount: 99.9,
+        externalPaymentId: 'ext-non-stripe',
+      });
+
+      await expect(service.refund(ws, orderId, { reason: 'customer request' })).rejects.toThrow(
+        ServiceUnavailableException,
+      );
+
+      // Honest failure: no gateway call, no fake "refunded" DB write.
+      expect(stripe.stripe.refunds.create).not.toHaveBeenCalled();
+      expect(prisma.kloelSale.update).not.toHaveBeenCalled();
+    });
+
+    it('throws and does NOT flip DB when the gateway refund itself fails', async () => {
+      prisma.kloelSale.findFirst.mockResolvedValue({
+        id: orderId,
+        status: 'paid',
+        amount: 99.9,
+        externalPaymentId: 'pi_test_123',
+      });
+      stripe.stripe.refunds.create.mockRejectedValue(new Error('stripe_down'));
+
+      await expect(service.refund(ws, orderId, { reason: 'customer request' })).rejects.toThrow(
+        'stripe_down',
+      );
+      // The provider rejected, so the sale must NOT be marked refunded.
+      expect(prisma.kloelSale.update).not.toHaveBeenCalled();
     });
 
     it('returns { status: "processed" } when already refunded (idempotent)', async () => {
@@ -124,16 +184,22 @@ describe('SalesService (PI-K37 tier-5 capabilities) — refund', () => {
       );
     });
 
-    it('uses provided amountCents for partial refund', async () => {
+    it('uses provided amountCents for partial refund (forwarded to the gateway)', async () => {
       prisma.kloelSale.findFirst.mockResolvedValue({
         id: orderId,
         status: 'paid',
         amount: 99.9,
-        externalPaymentId: 'ext-1',
+        externalPaymentId: 'pi_test_123',
       });
       prisma.kloelSale.update.mockResolvedValue({});
 
       await service.refund(ws, orderId, { amountCents: 5000n, reason: 'partial' });
+
+      // Partial amount must reach the real gateway as an integer cents value.
+      const refundArgs5 = stripe.stripe.refunds.create.mock.calls[0] as [
+        { payment_intent: string; amount?: number },
+      ];
+      expect(refundArgs5[0].amount).toBe(5000);
 
       const updCalls5 = prisma.kloelSale.update.mock.calls as Array<
         [
@@ -150,7 +216,7 @@ describe('SalesService (PI-K37 tier-5 capabilities) — refund', () => {
         id: orderId,
         status: 'paid',
         amount: 49.9,
-        externalPaymentId: 'ext-1',
+        externalPaymentId: 'pi_test_123',
       });
       prisma.kloelSale.update.mockResolvedValue({});
 

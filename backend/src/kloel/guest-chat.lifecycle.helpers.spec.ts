@@ -27,7 +27,7 @@ describe('guest-chat.lifecycle.helpers (K71 proof)', () => {
   describe('getOpenAiKey', () => {
     it('returns whatever resolveTextLlmApiKey delegates to (configService.get path)', () => {
       const cfg = {
-        get: jest.fn((k: string) => (k === 'OPENAI_API_KEY' ? 'sk-test-config-K71' : undefined)),
+        get: jest.fn((k: string) => (k === 'OPENAI_API_KEY' ? 'sk-test-key' : undefined)),
       } as unknown as ConfigService;
       const key = getOpenAiKey(cfg);
       expect(typeof key === 'string' || key === undefined).toBe(true);

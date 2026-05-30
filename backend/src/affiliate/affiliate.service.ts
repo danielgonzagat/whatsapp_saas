@@ -21,8 +21,8 @@ export class AffiliateService {
     if (typeof args.enabled !== 'boolean') {
       throw new BadRequestException('enabled deve ser booleano');
     }
-    await this.prisma.product.update({
-      where: { id },
+    await this.prisma.product.updateMany({
+      where: { id, workspaceId },
       data: { affiliateEnabled: args.enabled },
     });
     return { success: true, productId: id, enabled: args.enabled };
@@ -37,8 +37,8 @@ export class AffiliateService {
     if (typeof args.visible !== 'boolean') {
       throw new BadRequestException('visible deve ser booleano');
     }
-    await this.prisma.product.update({
-      where: { id },
+    await this.prisma.product.updateMany({
+      where: { id, workspaceId },
       data: { affiliateVisible: args.visible },
     });
     return { success: true, productId: id, visible: args.visible };
@@ -53,8 +53,8 @@ export class AffiliateService {
     if (typeof args.autoApprove !== 'boolean') {
       throw new BadRequestException('autoApprove deve ser booleano');
     }
-    await this.prisma.product.update({
-      where: { id },
+    await this.prisma.product.updateMany({
+      where: { id, workspaceId },
       data: { affiliateAutoApprove: args.autoApprove },
     });
     return { success: true, productId: id, autoApprove: args.autoApprove };
@@ -69,8 +69,8 @@ export class AffiliateService {
     if (typeof args.accessData !== 'boolean') {
       throw new BadRequestException('accessData deve ser booleano');
     }
-    await this.prisma.product.update({
-      where: { id },
+    await this.prisma.product.updateMany({
+      where: { id, workspaceId },
       data: { affiliateAccessData: args.accessData },
     });
     return { success: true, productId: id, accessData: args.accessData };
@@ -85,8 +85,8 @@ export class AffiliateService {
     if (typeof args.accessAbandoned !== 'boolean') {
       throw new BadRequestException('accessAbandoned deve ser booleano');
     }
-    await this.prisma.product.update({
-      where: { id },
+    await this.prisma.product.updateMany({
+      where: { id, workspaceId },
       data: { affiliateAccessAbandoned: args.accessAbandoned },
     });
     return { success: true, productId: id, accessAbandoned: args.accessAbandoned };
@@ -101,8 +101,8 @@ export class AffiliateService {
     if (typeof args.firstInstallment !== 'boolean') {
       throw new BadRequestException('firstInstallment deve ser booleano');
     }
-    await this.prisma.product.update({
-      where: { id },
+    await this.prisma.product.updateMany({
+      where: { id, workspaceId },
       data: { affiliateFirstInstallment: args.firstInstallment },
     });
     return { success: true, productId: id, firstInstallment: args.firstInstallment };
@@ -120,8 +120,8 @@ export class AffiliateService {
         'model deve ser primeiro clique, último clique ou proporcional',
       );
     }
-    await this.prisma.product.update({
-      where: { id },
+    await this.prisma.product.updateMany({
+      where: { id, workspaceId },
       data: { commissionType: canonical },
     });
     return { success: true, productId: id, model: canonical };
@@ -136,8 +136,8 @@ export class AffiliateService {
     if (!Number.isFinite(args.cookieDays) || args.cookieDays < 0 || args.cookieDays > 3650) {
       throw new BadRequestException('cookieDays deve estar entre 0 e 3650');
     }
-    await this.prisma.product.update({
-      where: { id },
+    await this.prisma.product.updateMany({
+      where: { id, workspaceId },
       data: { commissionCookieDays: Math.trunc(args.cookieDays) },
     });
     return { success: true, productId: id, cookieDays: Math.trunc(args.cookieDays) };
@@ -156,8 +156,8 @@ export class AffiliateService {
     ) {
       throw new BadRequestException('commissionPercent deve estar entre 0 e 100');
     }
-    await this.prisma.product.update({
-      where: { id },
+    await this.prisma.product.updateMany({
+      where: { id, workspaceId },
       data: { commissionPercent: args.commissionPercent },
     });
     return { success: true, productId: id, commissionPercent: args.commissionPercent };
@@ -237,8 +237,8 @@ export class AffiliateService {
     if (typeof args.terms !== 'string' || args.terms.trim().length === 0) {
       throw new BadRequestException('terms é obrigatório');
     }
-    await this.prisma.product.update({
-      where: { id },
+    await this.prisma.product.updateMany({
+      where: { id, workspaceId },
       data: { affiliateTerms: args.terms.trim() },
     });
     return { success: true, productId: id };
@@ -348,8 +348,8 @@ export class AffiliateService {
 
     const rules = (dto.rules ?? {}) as Record<string, unknown>;
 
-    await this.prisma.product.update({
-      where: { id: productId },
+    await this.prisma.product.updateMany({
+      where: { id: productId, workspaceId },
       data: {
         ...(dto.enabled !== undefined && { affiliateEnabled: dto.enabled }),
         ...(dto.commission !== undefined && { commissionPercent: dto.commission }),

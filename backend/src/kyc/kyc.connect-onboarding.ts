@@ -2,6 +2,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import type { PrismaService } from '../prisma/prisma.service';
 import type { ConnectService } from '../payments/connect/connect.service';
+import type { OnboardingStatus } from '../payments/connect/connect.types';
 import {
   trimToUndefined,
   digitsOnly,
@@ -44,23 +45,59 @@ export async function doAdminApprove(
   return { success: true, status: 'approved', agentId };
 }
 
-type AutoApprovePrisma = { prisma: Pick<PrismaService, 'agent'> };
+type AutoApprovePrisma = { prisma: Pick<PrismaService, 'agent' | 'connectAccountBalance'> };
 
-export async function doAutoApproveIfComplete(
-  deps: AutoApprovePrisma,
-  getCompletion: (agentId: string, workspaceId: string) => Promise<{ percentage: number }>,
+/**
+ * The ONLY source of truth for KYC approval: the Stripe Connect account must be
+ * able to both accept charges and receive payouts, with no outstanding
+ * verification requirements. Self-reported form completion is NEVER enough —
+ * approval unlocks payouts, so it must reflect a real, verified Connect account.
+ */
+export function isConnectKycApproved(
+  status: Pick<
+    OnboardingStatus,
+    'chargesEnabled' | 'payoutsEnabled' | 'requirementsCurrentlyDue'
+  > | null,
+): boolean {
+  if (!status) {
+    return false;
+  }
+  return (
+    status.chargesEnabled === true &&
+    status.payoutsEnabled === true &&
+    (status.requirementsCurrentlyDue?.length ?? 0) === 0
+  );
+}
+
+/**
+ * Auto-approve a seller's KYC ONLY when their Stripe Connect account reports it
+ * is fully enabled (charges + payouts, no requirements due). Looks up the live
+ * Connect onboarding status via ConnectService. If no Connect account exists yet
+ * or it is not fully enabled, the agent is left in its current (submitted/pending)
+ * state — never rubber-stamped to 'approved'.
+ */
+export async function doApproveIfConnectEnabled(
+  deps: { prisma: AutoApprovePrisma['prisma']; connectService: Pick<ConnectService, 'getOnboardingStatus'> },
   agentId: string,
   workspaceId: string,
-) {
-  const completion = await getCompletion(agentId, workspaceId);
-  if (completion.percentage >= 75) {
-    await deps.prisma.agent.update({
-      where: { id: agentId, workspaceId },
-      data: { kycStatus: 'approved', kycApprovedAt: new Date() },
-    });
-    return { approved: true, percentage: completion.percentage };
+): Promise<{ approved: boolean; connectEnabled: boolean }> {
+  const sellerBalance = await deps.prisma.connectAccountBalance.findFirst({
+    where: { workspaceId, accountType: 'SELLER' },
+  });
+  if (!sellerBalance?.stripeAccountId) {
+    return { approved: false, connectEnabled: false };
   }
-  return { approved: false, percentage: completion.percentage };
+
+  const status = await deps.connectService.getOnboardingStatus(sellerBalance.stripeAccountId);
+  if (!isConnectKycApproved(status)) {
+    return { approved: false, connectEnabled: false };
+  }
+
+  await deps.prisma.agent.update({
+    where: { id: agentId, workspaceId },
+    data: { kycStatus: 'approved', kycApprovedAt: new Date() },
+  });
+  return { approved: true, connectEnabled: true };
 }
 
 async function ensureSellerConnectAccount(
@@ -94,7 +131,7 @@ export async function syncSellerConnectOnboarding(
   agentId: string,
   workspaceId: string,
   context?: SubmitKycContext,
-): Promise<void> {
+): Promise<OnboardingStatus> {
   const [agent, workspace, fiscal, bankAccount] = await Promise.all([
     deps.prisma.agent.findUnique({
       where: { id: agentId, workspaceId },
@@ -176,7 +213,7 @@ export async function syncSellerConnectOnboarding(
   const tosIp = trimToUndefined(context?.ipAddress);
   const tosUa = trimToUndefined(context?.userAgent);
 
-  await deps.connectService.submitOnboardingProfile({
+  return deps.connectService.submitOnboardingProfile({
     stripeAccountId,
     email: agent.email,
     country: 'BR',

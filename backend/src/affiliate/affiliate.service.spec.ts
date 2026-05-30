@@ -10,7 +10,7 @@ describe('AffiliateService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     prisma = createPartialPrismaMock({
-      product: ['findFirst', 'update'],
+      product: ['findFirst', 'updateMany'],
       affiliatePartner: ['findMany'],
     });
     service = new AffiliateService(prisma as PrismaService);
@@ -75,7 +75,7 @@ describe('AffiliateService', () => {
 
     it('updates enabled and commission on the product', async () => {
       prisma.product.findFirst.mockResolvedValue(productStub);
-      prisma.product.update.mockResolvedValue({});
+      prisma.product.updateMany.mockResolvedValue({ count: 1 });
 
       const result = await service.configure('ws-1', 'p-1', {
         enabled: false,
@@ -83,9 +83,13 @@ describe('AffiliateService', () => {
       });
 
       expect(result).toEqual({ updated: true });
-      const updateCalls = prisma.product.update.mock.calls as Array<
-        [{ data: Record<string, unknown> }]
+      const updateCalls = prisma.product.updateMany.mock.calls as Array<
+        [{ where: Record<string, unknown>; data: Record<string, unknown> }]
       >;
+      expect(updateCalls[0]?.[0]?.where).toMatchObject({
+        id: 'p-1',
+        workspaceId: 'ws-1',
+      });
       expect(updateCalls[0]?.[0]?.data).toMatchObject({
         affiliateEnabled: false,
         commissionPercent: 40,
@@ -94,7 +98,7 @@ describe('AffiliateService', () => {
 
     it('maps known rules keys to product fields', async () => {
       prisma.product.findFirst.mockResolvedValue(productStub);
-      prisma.product.update.mockResolvedValue({});
+      prisma.product.updateMany.mockResolvedValue({ count: 1 });
 
       await service.configure('ws-1', 'p-1', {
         rules: {
@@ -104,7 +108,7 @@ describe('AffiliateService', () => {
         },
       });
 
-      const updateCalls = prisma.product.update.mock.calls as Array<
+      const updateCalls = prisma.product.updateMany.mock.calls as Array<
         [{ data: Record<string, unknown> }]
       >;
       expect(updateCalls[0]?.[0]?.data).toMatchObject({
@@ -116,7 +120,7 @@ describe('AffiliateService', () => {
 
     it('ignores unknown or wrong-type rules keys', async () => {
       prisma.product.findFirst.mockResolvedValue(productStub);
-      prisma.product.update.mockResolvedValue({});
+      prisma.product.updateMany.mockResolvedValue({ count: 1 });
 
       await service.configure('ws-1', 'p-1', {
         rules: {
@@ -125,7 +129,7 @@ describe('AffiliateService', () => {
         },
       });
 
-      const updateCalls2 = prisma.product.update.mock.calls as Array<
+      const updateCalls2 = prisma.product.updateMany.mock.calls as Array<
         [{ data: Record<string, unknown> }]
       >;
       expect(Object.keys(updateCalls2[0]?.[0]?.data ?? {})).not.toContain('unknownKey');

@@ -1,65 +1,52 @@
 [
   {
-    "file": "backend/src/checkout/checkout-social-lead.service.ts",
-    "rule": "unsafeQuery",
-    "model": "contact",
-    "method": "upsert",
-    "reason": "args built by buildContactUpsertArgs() which injects workspaceId before reaching prisma.contact.upsert. Static analyzer can't see inside the helper; workspace scoping is enforced upstream.",
-    "issue": "PR #462",
-    "expires": "2026-12-31"
-  },
-  {
-    "file": "backend/src/kloel/mind/policy/mind-policy.service.ts",
-    "rule": "unsafeQuery",
-    "model": "mindPolicy",
-    "method": "update",
-    "reason": "Update by primary key id (`row.id`) where the row was previously read inside the same loop iteration filtered by workspaceId. id is a workspace-scoped UUID; tenant isolation enforced upstream.",
-    "issue": "PR #462",
-    "expires": "2026-12-31"
-  },
-  {
-    "file": "backend/src/products/product.service.ts",
-    "rule": "unsafeQuery",
-    "model": "product",
-    "method": "findMany",
-    "reason": "where built by buildListWhere(workspaceId, filters) which always includes workspaceId. Static analyzer can't peer into helper.",
-    "issue": "PR #462",
-    "expires": "2026-12-31"
-  },
-  {
-    "file": "backend/src/products/product.service.ts",
-    "rule": "unsafeQuery",
-    "model": "product",
+    "file": "backend/src/kloel/mind/aliases/mind-memory-item.service.ts",
+    "line": 49,
+    "model": "kloelMemory",
     "method": "findUnique",
-    "reason": "assertOwnedProduct() reads by id then enforces workspaceId match in the next conditional. Tenant isolation guaranteed by the next throw branch, not by the prisma call itself.",
-    "issue": "PR #462",
+    "rule": "unsafeQuery",
+    "reason": "Mind canonical-alias findById(id) by-PK accessor mirroring legacy prisma.kloelMemory.findUnique({where:{id}}); id is the global primary key. Workspace-scoped lookups use the typed findByKey(workspaceId,key) on the same service. Adding workspaceId would break the byte-identical legacy-API parity this alias service exists to preserve.",
+    "issue": "PR #462 workspace-isolation review (2026-05-30)",
     "expires": "2026-12-31"
   },
   {
-    "file": "backend/src/sales/sales.service.ts",
+    "file": "backend/src/kloel/mind/aliases/mind-message.service.ts",
+    "line": 40,
+    "model": "kloelMessage",
+    "method": "findUnique",
     "rule": "unsafeQuery",
-    "model": "kloelSale",
+    "reason": "Mind canonical-alias findById(id) by-PK accessor mirroring legacy prisma.kloelMessage.findUnique; by primary key. Workspace-scoped reads use the typed methods on the same service.",
+    "issue": "PR #462 workspace-isolation review (2026-05-30)",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/kloel/mind/memory/mind-global-prior.service.ts",
+    "line": 251,
+    "model": "mindBanditArm",
+    "method": "findMany",
+    "rule": "unsafeQuery",
+    "reason": "getPriorTuple aggregates Thompson-sampling bandit priors ACROSS workspaces by design (global prior); read-only alpha/beta/pulls aggregate, no per-workspace narrowing until a future channel-column migration (documented in method JSDoc).",
+    "issue": "PR #462 workspace-isolation review (2026-05-30)",
+    "expires": "2026-12-31"
+  },
+  {
+    "file": "backend/src/kloel/mind/memory/mind-global-prior.service.ts",
+    "line": 312,
+    "model": "mindGlobalPrior",
     "method": "update",
-    "reason": "Update by primary key id (`sale.id`) inside a tx where the sale was just created with workspaceId set. Workspace scoping enforced by the create that precedes it.",
-    "issue": "PR #462",
+    "rule": "unsafeQuery",
+    "reason": "mindGlobalPrior is a GLOBAL model (workspaceId nullable); the updated row is the cross-workspace prior identified by its own id within a workspace-agnostic aggregate. No workspace scope applies by design.",
+    "issue": "PR #462 workspace-isolation review (2026-05-30)",
     "expires": "2026-12-31"
   },
   {
-    "file": "backend/src/webhooks/payment-webhook-stripe.handlers2.helpers.ts",
+    "file": "backend/src/kyc/kyc-approved.guard.ts",
+    "line": 31,
+    "model": "agent",
+    "method": "findUnique",
     "rule": "unsafeQuery",
-    "model": "kloelSale",
-    "method": "updateMany",
-    "reason": "where built by buildKloelSaleStripeWhere(workspaceId, ...) which always injects workspaceId. Static analyzer can't see inside the helper.",
-    "issue": "PR #462",
-    "expires": "2026-12-31"
-  },
-  {
-    "file": "backend/src/webhooks/payment-webhook-stripe.handlers2.ts",
-    "rule": "unsafeQuery",
-    "model": "kloelSale",
-    "method": "updateMany",
-    "reason": "where built by buildKloelSaleStripeWhere(workspaceId, ...) which always injects workspaceId. Two call sites at lines 69 and 106, both gated by `if (saleWhere)` after the helper returns a workspaceId-scoped clause.",
-    "issue": "PR #462",
+    "reason": "Auth guard looks up the authenticated user (Agent) by their JWT sub (own identity) to read global kycStatus. KYC is per-user, not per-workspace; scoping by workspaceId is semantically incorrect.",
+    "issue": "PR #462 workspace-isolation review (2026-05-30)",
     "expires": "2026-12-31"
   }
 ]

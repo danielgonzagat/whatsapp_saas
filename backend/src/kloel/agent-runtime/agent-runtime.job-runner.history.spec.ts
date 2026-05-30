@@ -1,5 +1,5 @@
 import { AgentRuntimeJobRunnerService } from './agent-runtime.job-runner';
-import { mindMemoryStub } from './agent-runtime.mind-memory-stub.helpers';
+import { mindMemoryStub } from '../../../test/helpers/mind-memory-stub';
 
 type KloelMemoryUpsertArgs = {
   update: { value: { history: unknown[] } };

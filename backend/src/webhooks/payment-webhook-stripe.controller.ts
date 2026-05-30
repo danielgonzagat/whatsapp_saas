@@ -277,7 +277,10 @@ export class PaymentWebhookStripeController {
       // credit, autopilot conversion, and post-purchase flow. Short-circuit
       // here when the event was already marked `processed` on a previous
       // delivery to preserve financial idempotency.
-      if (webhookEvent?.status === 'processed') {
+      // Also short-circuit when the event is still `processing`: a concurrent
+      // in-flight duplicate that lost the atomic claim-once race must not
+      // re-enter the handler chain and double-process the sale/ledger/flow.
+      if (webhookEvent?.status === 'processed' || webhookEvent?.status === 'processing') {
         this.logger.log(`Stripe webhook ${stripeExternalId} already processed; skipping replay`);
         return { received: true, skipped: true, reason: 'already_processed' };
       }

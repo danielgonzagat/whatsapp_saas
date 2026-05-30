@@ -47,23 +47,33 @@ export function computePixOrderV2AmountCents(planPriceFloat: number): bigint {
   return BigInt(Math.round(planPriceFloat * 100));
 }
 
+/** A real PIX instrument: both copy-paste and QR are non-empty strings. */
+export interface PixOrderV2Instrument {
+  pixCopyPaste: string;
+  pixQrCode: string;
+}
+
 /**
- * Pick the final PIX strings returned by V2: prefer the
- * {@link SmartPaymentService} response, falling back to the deterministic
- * fallback when the upstream payload is missing a copy-paste or QR string.
+ * Resolve the final PIX strings returned by V2 from the
+ * {@link SmartPaymentService} response. Returns `null` when the upstream
+ * payment provider did not produce a real PIX instrument (missing/blank
+ * copy-paste or QR). The caller MUST treat `null` as a provider failure and
+ * surface an honest error — never fabricate a payment instrument, since a
+ * synthetic QR/copy-paste cannot actually be paid and silently breaks the
+ * money flow (the buyer scans a code that goes nowhere).
  */
 export function pickPixOrderV2Result(
-  orderId: string,
   smart: { pixCopyPaste?: string | null; pixQrCode?: string | null } | null | undefined,
-  fallback: PixOrderV2FallbackResult,
-): PixOrderV2FallbackResult {
+): PixOrderV2Instrument | null {
   if (!smart) {
-    return fallback;
+    return null;
   }
-  return {
-    pixCopyPaste: smart.pixCopyPaste ?? `PIX_COPIA_E_COLA_${orderId}`,
-    pixQrCode: smart.pixQrCode ?? `PIX_QR_${orderId}`,
-  };
+  const pixCopyPaste = typeof smart.pixCopyPaste === 'string' ? smart.pixCopyPaste.trim() : '';
+  const pixQrCode = typeof smart.pixQrCode === 'string' ? smart.pixQrCode.trim() : '';
+  if (!pixCopyPaste || !pixQrCode) {
+    return null;
+  }
+  return { pixCopyPaste, pixQrCode };
 }
 
 export interface PixOrderV2SaleDataInput {
@@ -109,36 +119,14 @@ export function buildPixOrderV2SaleData(
   };
 }
 
-export interface PixOrderV2FallbackInput {
-  orderId: string;
-  amountCents: bigint;
-  buyerName: string;
-}
-
-export interface PixOrderV2FallbackResult {
-  pixCopyPaste: string;
-  pixQrCode: string;
-}
-
-/**
- * Build deterministic PIX copy-paste + QR code fallback strings used when
- * {@link SmartPaymentService} is unavailable or fails. The format mirrors
- * a minimal EMV-coded PIX payload so the rest of the pipeline (storage,
- * webhook fallback, audit) keeps working with realistic-looking values
- * during dev/test runs.
- */
-export function buildPixOrderV2FallbackResult(
-  input: PixOrderV2FallbackInput,
-): PixOrderV2FallbackResult {
-  const { orderId, amountCents, buyerName } = input;
-  const sanitizedOrderId = orderId.replace(/-/g, '');
-  const amountField = String(amountCents).padStart(2, '0');
-  const trimmedName = buyerName.slice(0, 25);
-  return {
-    pixCopyPaste: `00020126580014BR.GOV.BCB.PIX0136${sanitizedOrderId}5204000053039865405${amountField}5802BR5925${trimmedName}6009SAO PAULO62070503***6304AB12`,
-    pixQrCode: `data:image/png;base64,stub_qr_${orderId}`,
-  };
-}
+// NOTE: The previous `buildPixOrderV2FallbackResult` helper was removed
+// intentionally. It fabricated a synthetic EMV-coded PIX copy-paste string
+// and a `data:image/png;base64,stub_qr_*` QR code and returned them as if
+// they were a real payment instrument when SmartPaymentService was
+// unavailable. A buyer can never actually pay a fabricated QR/copy-paste, so
+// returning one silently broke the money flow. The V2 flow now surfaces an
+// honest `ServiceUnavailableException` when the gateway produces no real PIX
+// instrument — see `SalesService.createPixOrderV2` and `pickPixOrderV2Result`.
 
 // ---------------------------------------------------------------------------
 // fillBuyerData helpers

@@ -26,8 +26,8 @@ export class MindMessageService {
    * Raw delegate escape hatch for callers that need the full
    * `prisma.kloelMessage` surface (e.g. arbitrary `findMany` projections)
    * which the typed methods above do not cover. Returns the SAME delegate the
-   * typed methods use, so a migrated caller's `.items.findMany(...)` is
-   * byte-identical to the legacy `prisma.kloelMessage.findMany(...)`.
+   * typed methods use, so a migrated caller's `.items` read is
+   * byte-identical to the legacy raw `kloelMessage` delegate access.
    *
    * Mirrors {@link MindMemoryItemService.items}.
    */

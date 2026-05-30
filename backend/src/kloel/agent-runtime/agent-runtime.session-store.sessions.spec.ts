@@ -1,5 +1,5 @@
 import { AgentRuntimeSessionStore } from './agent-runtime.session-store';
-import { mindMemoryStub } from './agent-runtime.mind-memory-stub.helpers';
+import { mindMemoryStub } from '../../../test/helpers/mind-memory-stub';
 
 function makeStore(prismaOverrides: Record<string, unknown> = {}) {
   const prisma = {

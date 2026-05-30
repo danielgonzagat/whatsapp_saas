@@ -87,9 +87,12 @@ export class ChannelService {
     const credJson = credentials as Prisma.InputJsonValue;
     let result;
     if (existing) {
-      result = await this.prisma.integration.update({
-        where: { id: existing.id },
+      await this.prisma.integration.updateMany({
+        where: { id: existing.id, workspaceId },
         data: { credentials: credJson, isActive: true, name },
+      });
+      result = await this.prisma.integration.findFirst({
+        where: { id: existing.id, workspaceId },
         select: { id: true, type: true, name: true, isActive: true },
       });
     } else {

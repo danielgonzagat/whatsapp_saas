@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { AgentRuntimeEvidenceStoreService } from './agent-runtime.evidence-store';
-import { mindMemoryStub } from './agent-runtime.mind-memory-stub.helpers';
+import { mindMemoryStub } from '../../../test/helpers/mind-memory-stub';
 
 function sha256(content: string): string {
   return createHash('sha256').update(content, 'utf8').digest('hex');

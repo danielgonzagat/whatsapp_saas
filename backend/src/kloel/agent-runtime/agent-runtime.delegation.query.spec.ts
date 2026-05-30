@@ -1,5 +1,5 @@
 import { AgentRuntimeDelegationService } from './agent-runtime.delegation';
-import { mindMemoryStub } from './agent-runtime.mind-memory-stub.helpers';
+import { mindMemoryStub } from '../../../test/helpers/mind-memory-stub';
 
 function makeDelegationValue(params: {
   parentSessionId: string;

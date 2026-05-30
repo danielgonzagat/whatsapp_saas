@@ -58,6 +58,30 @@ function makePrisma(seed: GraphNodeRow[] = []) {
         return row;
       },
     ),
+    updateMany: jest.fn(
+      async ({
+        where,
+        data,
+      }: {
+        where: { id: string; workspaceId?: string };
+        data: Partial<GraphNodeRow>;
+      }) => {
+        const matched = rows.filter(
+          (r) =>
+            r.id === where.id &&
+            (where.workspaceId === undefined || r.workspaceId === where.workspaceId),
+        );
+        for (const row of matched) {
+          if (data.weight !== undefined) {
+            row.weight = data.weight;
+          }
+          if (data.metadata !== undefined) {
+            row.metadata = { ...data.metadata };
+          }
+        }
+        return { count: matched.length };
+      },
+    ),
     findMany: jest.fn(
       async ({ where, take }: { where: { workspaceId: string; kind: string }; take: number }) =>
         rows

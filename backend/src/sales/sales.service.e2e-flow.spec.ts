@@ -161,16 +161,17 @@ describe('SalesService.createPixOrder V2 (E2E flow)', () => {
     expect(smartPayment.createSmartPayment).not.toHaveBeenCalled();
   });
 
-  it('falls back to the deterministic EMV stub when SmartPaymentService throws (external resilience)', async () => {
+  it('surfaces ServiceUnavailableException (never a fabricated PIX) when SmartPaymentService throws', async () => {
     prisma.product.findFirst.mockResolvedValue(product);
     prisma.productPlan.findFirst.mockResolvedValue(plan);
     smartPayment.createSmartPayment.mockRejectedValue(new Error('mercadopago_unreachable'));
 
-    const result = await service.createPixOrder(ws, { productId, planId, buyer });
-
-    expect(result.pixCopyPaste).toContain('BR.GOV.BCB.PIX');
-    expect(result.pixQrCode).toContain('stub_qr_');
-    expect(result.amountCents).toBe(19_990n);
+    // The provider is down — the buyer must NOT receive a synthetic
+    // copy-paste/QR they can never pay. The sale row stays pending so a later
+    // webhook/retry can settle it; the call fails honestly.
+    await expect(service.createPixOrder(ws, { productId, planId, buyer })).rejects.toBeInstanceOf(
+      ServiceUnavailableException,
+    );
     expect(prisma.kloelSale.create).toHaveBeenCalledTimes(1);
   });
 
@@ -257,15 +258,15 @@ describe('SalesService.createPixOrder V2 (E2E flow)', () => {
     expect(persisted?.leadPhone).toBe(buyer.phone);
   });
 
-  it('still persists the sale and computes amountCents even when SmartPaymentService is absent', async () => {
+  it('persists the pending sale but fails honestly (ServiceUnavailableException) when SmartPaymentService is absent', async () => {
     (service as unknown as { smartPayment?: SmartPaymentService }).smartPayment = undefined;
     prisma.product.findFirst.mockResolvedValue(product);
     prisma.productPlan.findFirst.mockResolvedValue(plan);
 
-    const result = await service.createPixOrder(ws, { productId, planId, buyer });
-
-    expect(result.amountCents).toBe(19_990n);
+    await expect(service.createPixOrder(ws, { productId, planId, buyer })).rejects.toBeInstanceOf(
+      ServiceUnavailableException,
+    );
+    // Sale row was still persisted as pending (idempotent webhook can settle).
     expect(prisma.kloelSale.create).toHaveBeenCalledTimes(1);
-    expect(result.pixCopyPaste).toContain('BR.GOV.BCB.PIX');
   });
 });

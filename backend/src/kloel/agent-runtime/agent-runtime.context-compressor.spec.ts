@@ -1,5 +1,5 @@
 import { AgentRuntimeContextCompressorService } from './agent-runtime.context-compressor';
-import { mindMemoryStub } from './agent-runtime.mind-memory-stub.helpers';
+import { mindMemoryStub } from '../../../test/helpers/mind-memory-stub';
 
 function makePrisma() {
   return {

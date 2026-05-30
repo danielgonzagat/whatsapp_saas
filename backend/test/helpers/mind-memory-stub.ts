@@ -1,4 +1,4 @@
-import type { MindMemoryItemService } from '../mind/aliases/mind-memory-item.service';
+import type { MindMemoryItemService } from '../../src/kloel/mind/aliases/mind-memory-item.service';
 
 /**
  * Test-only stub that wraps a mocked Prisma client into the canonical

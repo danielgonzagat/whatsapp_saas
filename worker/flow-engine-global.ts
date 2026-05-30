@@ -46,7 +46,7 @@ import {
   flowTimeoutMember,
   normalizeUser as normalizeUserKey,
 } from './flow-engine.user-key.helpers';
-import { buildQueueJobId } from './job-id';
+import { buildQueueJobId, hashQueuePayload } from './job-id';
 import { WorkerLogger } from './logger';
 import { CRM } from './providers/crm';
 import { Queue } from './queue';
@@ -238,7 +238,15 @@ export class FlowEngineGlobal {
               messageContent: message,
             },
             {
-              jobId: buildQueueJobId('scan-contact', triggerWorkspaceId, contact.id, Date.now()),
+              // Dedup on the triggering inbound message content so a retried /
+              // re-fired user-response handler reuses the same scan job instead
+              // of enqueuing a duplicate scan (which would re-drive an outbound send).
+              jobId: buildQueueJobId(
+                'scan-contact',
+                triggerWorkspaceId,
+                contact.id,
+                hashQueuePayload(message),
+              ),
               removeOnComplete: true,
             },
           );

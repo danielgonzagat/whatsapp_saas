@@ -18,7 +18,6 @@ import { computePixExpiresAt } from './sales.helpers';
 import {
   buildFillBuyerDataPatch,
   buildPixOrderV2SaleData,
-  buildPixOrderV2FallbackResult,
   buildRefundId,
   buildRefundUpdateMetadata,
   computePixOrderV2AmountCents,
@@ -265,18 +264,26 @@ export class SalesService {
       }),
     });
 
-    const fallback = buildPixOrderV2FallbackResult({
-      orderId,
-      amountCents,
-      buyerName: dto.buyer.name,
-    });
     const smartResult = await this.tryCreateSmartPayment(
       workspaceId,
       dto,
       plan.price,
       product.name,
     );
-    const picked = pickPixOrderV2Result(orderId, smartResult, fallback);
+    const picked = pickPixOrderV2Result(smartResult);
+
+    // Honest failure: when the payment provider produced no real PIX
+    // instrument, surface a 503 instead of fabricating a copy-paste/QR that
+    // can never be paid. The sale row stays `pending` (created above) so a
+    // later webhook/retry can still settle it; we never report an unverified success.
+    if (!picked) {
+      this.logger.warn(
+        `createPixOrderV2: no real PIX instrument from gateway for order ${orderId} (workspace ${workspaceId}); refusing to fabricate one.`,
+      );
+      throw new ServiceUnavailableException(
+        'Não foi possível gerar o PIX agora: o provedor de pagamento está indisponível. Tente novamente em instantes.',
+      );
+    }
 
     return {
       orderId,
@@ -406,7 +413,7 @@ export class SalesService {
 
     if (sale.status === 'refunded') {
       const existingMeta = await this.prisma.kloelSale.findFirst({
-        where: { id: orderId },
+        where: { id: orderId, workspaceId },
         select: { metadata: true },
       });
       const meta = (existingMeta?.metadata as Record<string, unknown> | null) ?? {};
@@ -419,6 +426,12 @@ export class SalesService {
 
     const refundId = buildRefundId(orderId);
     const refundAmountCents = resolveRefundAmountCents(sale.amount, dto.amountCents);
+
+    // Money first, DB second. Execute the real gateway refund BEFORE flipping
+    // the sale to `refunded` — never report a refund the provider has not
+    // actually processed. `refundId` doubles as the Stripe idempotency key so
+    // retries (same orderId) do not issue duplicate refunds.
+    await this.runGatewayRefund(orderId, sale.externalPaymentId, refundId, refundAmountCents);
 
     await this.prisma.kloelSale.update({
       where: { id: orderId },
@@ -434,6 +447,47 @@ export class SalesService {
     });
 
     return { refundId, status: 'pending' };
+  }
+
+  /**
+   * Execute the real provider-side refund for a sale. In the Stripe-only
+   * runtime (ADR 0003) only Stripe PaymentIntents (`pi_*`) are refundable; the
+   * sale's `externalPaymentId` is the PaymentIntent id. Mirrors the proven
+   * `AdminTransactionsService.runGatewayRefund` path.
+   *
+   * Throws — never reports unverified success:
+   * - `ServiceUnavailableException` when the sale has no linked payment id or
+   *   the gateway is not a supported/wired provider (so the caller does NOT
+   *   flip the DB to `refunded`);
+   * - the Stripe SDK error (surfaced as 5xx) when the provider rejects the
+   *   refund call.
+   *
+   * `amountCents` (bigint) is forwarded as a partial-refund amount when it is
+   * below the original charge; an undefined/full amount issues a full refund.
+   */
+  private async runGatewayRefund(
+    orderId: string,
+    externalPaymentId: string | null | undefined,
+    idempotencyKey: string,
+    amountCents: bigint,
+  ): Promise<void> {
+    const paymentIntentId = String(externalPaymentId ?? '').trim();
+    if (!paymentIntentId.startsWith('pi_')) {
+      this.logger.warn(
+        `refund: order ${orderId} has no Stripe PaymentIntent (externalPaymentId=${paymentIntentId || 'none'}); refusing to report an unverified refund.`,
+      );
+      throw new ServiceUnavailableException(
+        'Estorno indisponível: o pedido não possui um pagamento Stripe vinculado e nenhum outro provedor de estorno está habilitado no runtime atual.',
+      );
+    }
+
+    await this.stripeService.stripe.refunds.create(
+      {
+        payment_intent: paymentIntentId,
+        ...(amountCents > 0n ? { amount: Number(amountCents) } : {}),
+      },
+      { idempotencyKey },
+    );
   }
 
   /**

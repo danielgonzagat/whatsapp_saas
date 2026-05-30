@@ -135,13 +135,15 @@ export function verifyMetaSignature(
   signature: string | undefined,
   appSecret: string | undefined,
   raw: Buffer,
-  isProduction: boolean,
+  // Retained for call-site signature parity; the Meta path now fails closed
+  // regardless of environment, so production-ness no longer gates the result.
+  _isProduction: boolean,
 ): { ok: true } | WebhookSignatureError {
+  // Fail closed regardless of NODE_ENV: a missing secret can never auto-pass.
+  // Previously, when META_APP_SECRET was unset outside production, unsigned Meta
+  // webhooks were accepted unconditionally — a fail-open hole now closed.
   if (!appSecret) {
-    if (isProduction) {
-      return { code: 'SECRET_NOT_CONFIGURED', productionOnly: true };
-    }
-    return { ok: true };
+    return { code: 'SECRET_NOT_CONFIGURED', productionOnly: true };
   }
   if (!signature) {
     return { code: 'MISSING_SIGNATURE' };

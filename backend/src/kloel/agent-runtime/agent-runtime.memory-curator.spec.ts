@@ -1,5 +1,5 @@
 import { AgentRuntimeMemoryCuratorService } from './agent-runtime.memory-curator';
-import { mindMemoryStub } from './agent-runtime.mind-memory-stub.helpers';
+import { mindMemoryStub } from '../../../test/helpers/mind-memory-stub';
 
 interface CuratedUpsertArg {
   create: {

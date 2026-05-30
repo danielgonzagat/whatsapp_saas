@@ -319,9 +319,9 @@ describe('CheckoutOrderService lifecycle (createOrder + updateTracking)', () => 
       expect(prisma.checkoutOrder.findFirst).toHaveBeenCalledWith(
         partialMatch({ where: { id: 'order_1', workspaceId: 'ws_1' } }),
       );
-      expect(prisma.checkoutOrder.update).toHaveBeenCalledWith(
+      expect(prisma.checkoutOrder.updateMany).toHaveBeenCalledWith(
         partialMatch({
-          where: { id: 'order_1' },
+          where: { id: 'order_1', workspaceId: 'ws_1' },
           data: partialMatch({ trackingCode: 'TRK123', trackingUrl: 'https://track/TRK123' }),
         }),
       );

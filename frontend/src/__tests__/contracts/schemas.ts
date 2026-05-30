@@ -111,12 +111,13 @@ export const AuthCheckEmailResponseSchema = z.object({
 });
 
 /**
- * Response to POST /auth/refresh — issues a new access token and
- * (sometimes) a rotated refresh token.
+ * Response to POST /auth/refresh — issues a new access token together with
+ * a rotated refresh token. Both fields are required so the frontend never
+ * silently degrades to a stale refresh token on rotation.
  */
 export const AuthRefreshResponseSchema = z.object({
   access_token: z.string(),
-  refresh_token: z.string().optional(),
+  refresh_token: z.string(),
 });
 
 // ─── Billing ───────────────────────────────────────────────────────────────

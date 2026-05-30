@@ -504,8 +504,8 @@ export class CheckoutOrderService {
     }
 
     const trackingUrl = typeof args?.trackingUrl === 'string' ? args.trackingUrl.trim() : undefined;
-    await this.prisma.checkoutOrder.update({
-      where: { id: orderId },
+    await this.prisma.checkoutOrder.updateMany({
+      where: { id: orderId, workspaceId },
       data: {
         trackingCode,
         ...(trackingUrl ? { trackingUrl } : {}),

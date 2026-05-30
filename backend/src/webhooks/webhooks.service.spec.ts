@@ -201,4 +201,100 @@ describe('WebhooksService', () => {
       }),
     );
   });
+
+  describe('logWebhookEvent claim-once idempotency', () => {
+    function buildService(
+      webhookEvent: Partial<Record<'upsert' | 'updateMany' | 'findUnique', jest.Mock>>,
+    ) {
+      const localPrisma = createPartialPrismaMock({
+        webhookEvent: ['upsert', 'updateMany', 'findUnique'],
+      });
+      if (webhookEvent.upsert) localPrisma.webhookEvent.upsert = webhookEvent.upsert;
+      if (webhookEvent.updateMany) localPrisma.webhookEvent.updateMany = webhookEvent.updateMany;
+      if (webhookEvent.findUnique) localPrisma.webhookEvent.findUnique = webhookEvent.findUnique;
+      const localService = new WebhooksService(
+        localPrisma as unknown as PrismaService,
+        { emitToWorkspace: jest.fn() } as unknown as InboxGateway,
+        { publish: jest.fn() } as unknown as never,
+        {} as unknown as OmnichannelService,
+      );
+      return { localService, localPrisma };
+    }
+
+    it('claims a fresh event by flipping received -> processing and reports received', async () => {
+      const upsert = jest.fn<() => Promise<unknown>>().mockResolvedValue({
+        id: 'evt-1',
+        provider: 'stripe',
+        externalId: 'pi_fresh',
+        status: 'received',
+      });
+      const updateMany = jest.fn<() => Promise<unknown>>().mockResolvedValue({ count: 1 });
+      const findUnique = jest.fn<() => Promise<unknown>>();
+      const { localService, localPrisma } = buildService({ upsert, updateMany, findUnique });
+
+      const result = await localService.logWebhookEvent('stripe', 'payment_intent.succeeded', 'pi_fresh', {
+        id: 'pi_fresh',
+      });
+
+      // The atomic claim must run, gated on the still-`received` row.
+      expect(localPrisma.webhookEvent.updateMany).toHaveBeenCalledWith({
+        where: { provider: 'stripe', externalId: 'pi_fresh', status: 'received' },
+        data: { status: 'processing' },
+      });
+      // Caller is told `received` so it runs the handler chain exactly once.
+      expect(result.status).toBe('received');
+      // The upsert must NOT downgrade an existing status — only refresh receivedAt.
+      const upsertArg = upsert.mock.calls[0]?.[0] as { update?: { status?: string } };
+      expect(upsertArg.update?.status).toBeUndefined();
+    });
+
+    it('is a no-op replay: a previously processed event is returned as processed and never re-claimed', async () => {
+      const upsert = jest.fn<() => Promise<unknown>>().mockResolvedValue({
+        id: 'evt-2',
+        provider: 'stripe',
+        externalId: 'pi_done',
+        status: 'processed',
+      });
+      const updateMany = jest.fn<() => Promise<unknown>>().mockResolvedValue({ count: 0 });
+      const { localService, localPrisma } = buildService({ upsert, updateMany });
+
+      const result = await localService.logWebhookEvent('stripe', 'payment_intent.succeeded', 'pi_done', {
+        id: 'pi_done',
+      });
+
+      // Post-TTL Stripe redelivery: the row is already `processed`. We must
+      // hand that status back so the controller short-circuits, and must NOT
+      // attempt to re-claim (which would re-arm double money processing).
+      expect(result.status).toBe('processed');
+      expect(localPrisma.webhookEvent.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('loses a concurrent claim race and returns the freshest row instead of re-processing', async () => {
+      const upsert = jest.fn<() => Promise<unknown>>().mockResolvedValue({
+        id: 'evt-3',
+        provider: 'stripe',
+        externalId: 'pi_race',
+        status: 'received',
+      });
+      // Another concurrent delivery already flipped received -> processing.
+      const updateMany = jest.fn<() => Promise<unknown>>().mockResolvedValue({ count: 0 });
+      const findUnique = jest.fn<() => Promise<unknown>>().mockResolvedValue({
+        id: 'evt-3',
+        provider: 'stripe',
+        externalId: 'pi_race',
+        status: 'processing',
+      });
+      const { localService } = buildService({ upsert, updateMany, findUnique });
+
+      const result = await localService.logWebhookEvent('stripe', 'payment_intent.succeeded', 'pi_race', {
+        id: 'pi_race',
+      });
+
+      // The loser must surface the live status (`processing`), not `received`,
+      // so the caller does not run the handler chain a second time.
+      expect(findUnique).toHaveBeenCalled();
+      expect(result.status).toBe('processing');
+    });
+  });
+
 });

@@ -149,7 +149,7 @@ describe('WebhookDispatcherService — fan-out, dedup, retry, isolation', () => 
       expect(jobIdA).not.toBe(jobIdB);
     });
 
-    it('produces a distinct jobId per dispatch invocation (BullMQ collapses true duplicates by jobId)', async () => {
+    it('produces a stable, deterministic jobId for identical deliveries so BullMQ dedups retries/replays', async () => {
       const { service } = makeService([
         { id: 'sub-a', url: 'https://a.example/hook', secret: 'sa', events: ['order.paid'] },
       ]);
@@ -159,9 +159,25 @@ describe('WebhookDispatcherService — fan-out, dedup, retry, isolation', () => 
 
       const firstJobId = addCallAt(0)[2].jobId as string;
       const secondJobId = addCallAt(1)[2].jobId as string;
+      // Same subscription + event + payload → identical jobId so a retry/replay
+      // of the same delivery collapses into one queued job (no duplicate send).
+      expect(firstJobId).toBe(secondJobId);
+      expect(firstJobId).toEqual(stringMatch(/^webhook-dispatch:sub-a:order\.paid:[0-9a-f]{32}$/));
+    });
+
+    it('produces a different jobId when the payload differs (distinct deliveries are not collapsed)', async () => {
+      const { service } = makeService([
+        { id: 'sub-a', url: 'https://a.example/hook', secret: 'sa', events: ['order.paid'] },
+      ]);
+
+      await service.dispatch('ws-1', 'order.paid', { orderId: 'o-1' });
+      await service.dispatch('ws-1', 'order.paid', { orderId: 'o-2' });
+
+      const firstJobId = addCallAt(0)[2].jobId as string;
+      const secondJobId = addCallAt(1)[2].jobId as string;
       expect(firstJobId).not.toBe(secondJobId);
-      expect(firstJobId).toEqual(stringMatch(/^webhook-dispatch:sub-a:order\.paid:/));
-      expect(secondJobId).toEqual(stringMatch(/^webhook-dispatch:sub-a:order\.paid:/));
+      expect(firstJobId).toEqual(stringMatch(/^webhook-dispatch:sub-a:order\.paid:[0-9a-f]{32}$/));
+      expect(secondJobId).toEqual(stringMatch(/^webhook-dispatch:sub-a:order\.paid:[0-9a-f]{32}$/));
     });
   });
 

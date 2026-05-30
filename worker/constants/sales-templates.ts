@@ -1,7 +1,3 @@
-/**
- * @capability SalesMessageTemplates
- * @domain autopilot
- */
 const CALENDAR_LINK_RE = /\{\{calendarLink\}\}/g;
 /**
  * Sales/autopilot message templates and helpers (PR P4-1).

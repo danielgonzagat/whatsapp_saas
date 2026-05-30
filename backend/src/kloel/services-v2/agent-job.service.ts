@@ -135,9 +135,12 @@ export class AgentJobService {
     const enabled = args.enabled !== false; // default true
     const newState = enabled ? 'OPEN' : 'PAUSED';
 
-    const updated = await this.prisma.agentWorkItem.update({
-      where: { id: jobId },
+    await this.prisma.agentWorkItem.updateMany({
+      where: { id: jobId, workspaceId },
       data: { state: newState },
+    });
+    const updated = await this.prisma.agentWorkItem.findFirst({
+      where: { id: jobId, workspaceId },
     });
 
     this.logger.log(`AgentJobService.setEnabled ws=${workspaceId} id=${jobId} enabled=${enabled}`);

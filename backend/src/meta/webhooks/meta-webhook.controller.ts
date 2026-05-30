@@ -166,22 +166,23 @@ export class MetaWebhookController {
     @Headers('x-event-id') eventId: string | undefined,
     @Req() req?: RawBodyRequest,
   ) {
-    // Validate signature
+    // Validate signature — fail closed: reject when the secret is unset/empty
+    // OR the signature is missing/invalid. Never accept an unsigned webhook.
     const appSecret = process.env.META_APP_SECRET;
-    if (appSecret) {
-      if (!signature) {
-        this.logger.warn('Missing Meta webhook signature — rejecting');
-        throw new ForbiddenException('Missing Meta webhook signature');
-      }
-      const expected = `sha256=${createHmac('sha256', appSecret)
-        .update(
-          Buffer.isBuffer(req?.rawBody) ? req.rawBody : Buffer.from(JSON.stringify(body || {})),
-        )
-        .digest('hex')}`;
-      if (!safeCompareStrings(signature, expected)) {
-        this.logger.warn('Invalid Meta webhook signature — rejecting');
-        throw new ForbiddenException('Invalid Meta webhook signature');
-      }
+    if (!appSecret) {
+      this.logger.warn('META_APP_SECRET not configured — rejecting Meta webhook (fail-closed)');
+      throw new ForbiddenException('Meta webhook secret not configured');
+    }
+    if (!signature) {
+      this.logger.warn('Missing Meta webhook signature — rejecting');
+      throw new ForbiddenException('Missing Meta webhook signature');
+    }
+    const expected = `sha256=${createHmac('sha256', appSecret)
+      .update(Buffer.isBuffer(req?.rawBody) ? req.rawBody : Buffer.from(JSON.stringify(body || {})))
+      .digest('hex')}`;
+    if (!safeCompareStrings(signature, expected)) {
+      this.logger.warn('Invalid Meta webhook signature — rejecting');
+      throw new ForbiddenException('Invalid Meta webhook signature');
     }
 
     // Double-layer idempotency: Redis SET NX + WebhookEvent unique constraint

@@ -254,8 +254,8 @@ export class LongTermMemoryService {
         decayed + LongTermMemoryService.REINFORCE_STEP,
       );
 
-      await this.prisma.mindGraphNode.update({
-        where: { id: existing.id },
+      await this.prisma.mindGraphNode.updateMany({
+        where: { id: existing.id, workspaceId },
         data: {
           weight: reinforced,
           metadata: {

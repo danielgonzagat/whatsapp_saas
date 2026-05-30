@@ -1,6 +1,6 @@
 import { AgentRuntimeSkillRegistry } from './agent-runtime.skill-registry';
 import type { AgentSkillDefinition } from './agent-runtime.types';
-import { mindMemoryStub } from './agent-runtime.mind-memory-stub.helpers';
+import { mindMemoryStub } from '../../../test/helpers/mind-memory-stub';
 
 function makePrisma(overrides: Record<string, unknown> = {}) {
   return {

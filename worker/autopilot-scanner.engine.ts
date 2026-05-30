@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from './db';
-import { buildQueueJobId } from './job-id';
+import { buildQueueJobId, hashQueuePayload } from './job-id';
 import { WorkerLogger } from './logger';
 import { autopilotDecisionCounter } from './metrics';
 import { PlanLimitsProvider } from './providers/plan-limits';
@@ -201,11 +201,15 @@ export async function autopilotScanner() {
               workspaceId: conv.workspaceId,
               to: conv.contact.phone,
               message: messageToSend,
+              // Deterministic dedup key: same conversation trigger (lastMsg.id)
+              // + same generated message collapses to ONE BullMQ job, so a
+              // scanner re-run / retry never produces a duplicate WhatsApp send.
               jobId: buildQueueJobId(
                 'legacy-scanner',
                 conv.workspaceId,
                 conv.contactId,
-                Date.now(),
+                lastMsg.id,
+                hashQueuePayload(messageToSend),
               ),
             });
           } catch (err: unknown) {

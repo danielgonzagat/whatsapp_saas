@@ -151,7 +151,7 @@ describe('MetaWebhookController', () => {
       ).rejects.toThrow('Missing Meta webhook signature');
     });
 
-    it('skips signature check when no app secret set outside CI', async () => {
+    it('fails closed (rejects) when no app secret set outside CI', async () => {
       const previousCi = process.env.CI;
       delete process.env.META_APP_SECRET;
       process.env.CI = 'false';
@@ -159,11 +159,12 @@ describe('MetaWebhookController', () => {
       try {
         const body = { object: 'ad_account', entry: [] };
 
-        const result = await controller.handleWebhook(body, 'sha256=anything', {
-          rawBody: undefined,
-        });
-
-        expect(result).toBe('ok');
+        await expect(
+          controller.handleWebhook(body, 'sha256=anything', {
+            rawBody: undefined,
+          }),
+        ).rejects.toThrow('Meta webhook secret not configured');
+        expect(mockWebhooksService.logWebhookEvent).not.toHaveBeenCalled();
       } finally {
         if (previousCi === undefined) {
           delete process.env.CI;

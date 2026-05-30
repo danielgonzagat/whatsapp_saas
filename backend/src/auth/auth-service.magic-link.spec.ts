@@ -108,7 +108,7 @@ describe('auth-service.magic-link', () => {
       expect(createArgs.data.tokenHash).not.toBe(result.token);
       expect(email.sendMagicLinkEmail).toHaveBeenCalledWith(
         'user@test.com',
-        expect.stringContaining('token='),
+        expect.stringContaining(`token=${result.token}`),
       );
     });
 
