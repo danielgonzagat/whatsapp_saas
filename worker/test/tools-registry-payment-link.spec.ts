@@ -111,10 +111,7 @@ describe('ToolsRegistry create_payment_link — no fake links to customers', () 
   });
 
   it('source file contains no fabricated payment-link literal in every code path', () => {
-    const src = readFileSync(
-      join(__dirname, '..', 'providers', 'tools-registry.ts'),
-      'utf8',
-    );
+    const src = readFileSync(join(__dirname, '..', 'providers', 'tools-registry.ts'), 'utf8');
     expect(src).not.toContain('(MOCK)');
     expect(src).not.toContain('checkout.stripe.com/pay');
     expect(src).not.toContain('mockPaymentLink');
