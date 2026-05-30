@@ -332,8 +332,8 @@ export class MindPolicyService {
         continue;
       }
 
-      await this.prisma.mindPolicy.update({
-        where: { id: row.id },
+      await this.prisma.mindPolicy.updateMany({
+        where: { id: row.id, workspaceId: params.workspaceId },
         data: {
           context: { ...ctx, outcomeConfidence: decision },
         },

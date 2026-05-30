@@ -18,7 +18,13 @@ describe('SalesService (PI-K37 tier-5 capabilities) — refund', () => {
   let prisma: {
     product: { findFirst: jest.Mock };
     productPlan: { findFirst: jest.Mock };
-    kloelSale: { create: jest.Mock; update: jest.Mock; findFirst: jest.Mock; findMany: jest.Mock };
+    kloelSale: {
+      create: jest.Mock;
+      update: jest.Mock;
+      updateMany: jest.Mock;
+      findFirst: jest.Mock;
+      findMany: jest.Mock;
+    };
     $transaction: jest.Mock;
   };
   let mpBoleto: { create: jest.Mock };
@@ -38,6 +44,7 @@ describe('SalesService (PI-K37 tier-5 capabilities) — refund', () => {
       kloelSale: {
         create: jest.fn(),
         update: jest.fn(),
+        updateMany: jest.fn(),
         findFirst: jest.fn().mockResolvedValue(null),
         findMany: jest.fn().mockResolvedValue([]),
       },
@@ -85,9 +92,9 @@ describe('SalesService (PI-K37 tier-5 capabilities) — refund', () => {
         callOrder.push('gateway');
         return Promise.resolve({ id: 're_test_1' });
       });
-      prisma.kloelSale.update.mockImplementation(() => {
+      prisma.kloelSale.updateMany.mockImplementation(() => {
         callOrder.push('db');
-        return Promise.resolve({});
+        return Promise.resolve({ count: 1 });
       });
 
       const r = await service.refund(ws, orderId, { reason: 'customer request' });
@@ -105,15 +112,15 @@ describe('SalesService (PI-K37 tier-5 capabilities) — refund', () => {
 
       expect(r.refundId).toBe(`refund_${orderId}`);
       expect(r.status).toBe('pending');
-      const updCalls4 = prisma.kloelSale.update.mock.calls as Array<
+      const updCalls4 = prisma.kloelSale.updateMany.mock.calls as Array<
         [
           {
-            where: { id: string };
+            where: { id: string; workspaceId: string };
             data: { status: string; metadata: Record<string, unknown> };
           },
         ]
       >;
-      expect(updCalls4[0]?.[0]?.where).toEqual({ id: orderId });
+      expect(updCalls4[0]?.[0]?.where).toEqual({ id: orderId, workspaceId: ws });
       expect(updCalls4[0]?.[0]?.data?.status).toBe('refunded');
       expect(updCalls4[0]?.[0]?.data?.metadata).toMatchObject({
         refundId: `refund_${orderId}`,
@@ -136,7 +143,7 @@ describe('SalesService (PI-K37 tier-5 capabilities) — refund', () => {
 
       // Honest failure: no gateway call, no fake "refunded" DB write.
       expect(stripe.stripe.refunds.create).not.toHaveBeenCalled();
-      expect(prisma.kloelSale.update).not.toHaveBeenCalled();
+      expect(prisma.kloelSale.updateMany).not.toHaveBeenCalled();
     });
 
     it('throws and does NOT flip DB when the gateway refund itself fails', async () => {
@@ -152,7 +159,7 @@ describe('SalesService (PI-K37 tier-5 capabilities) — refund', () => {
         'stripe_down',
       );
       // The provider rejected, so the sale must NOT be marked refunded.
-      expect(prisma.kloelSale.update).not.toHaveBeenCalled();
+      expect(prisma.kloelSale.updateMany).not.toHaveBeenCalled();
     });
 
     it('returns { status: "processed" } when already refunded (idempotent)', async () => {
@@ -169,7 +176,7 @@ describe('SalesService (PI-K37 tier-5 capabilities) — refund', () => {
 
       expect(r.refundId).toBe(`refund_${orderId}`);
       expect(r.status).toBe('processed');
-      expect(prisma.kloelSale.update).not.toHaveBeenCalled();
+      expect(prisma.kloelSale.updateMany).not.toHaveBeenCalled();
     });
 
     it('throws NotFoundException for missing order', async () => {
@@ -191,7 +198,7 @@ describe('SalesService (PI-K37 tier-5 capabilities) — refund', () => {
         amount: 99.9,
         externalPaymentId: 'pi_test_123',
       });
-      prisma.kloelSale.update.mockResolvedValue({});
+      prisma.kloelSale.updateMany.mockResolvedValue({ count: 1 });
 
       await service.refund(ws, orderId, { amountCents: 5000n, reason: 'partial' });
 
@@ -201,7 +208,7 @@ describe('SalesService (PI-K37 tier-5 capabilities) — refund', () => {
       ];
       expect(refundArgs5[0].amount).toBe(5000);
 
-      const updCalls5 = prisma.kloelSale.update.mock.calls as Array<
+      const updCalls5 = prisma.kloelSale.updateMany.mock.calls as Array<
         [
           {
             data: { metadata: Record<string, unknown> };
@@ -218,11 +225,11 @@ describe('SalesService (PI-K37 tier-5 capabilities) — refund', () => {
         amount: 49.9,
         externalPaymentId: 'pi_test_123',
       });
-      prisma.kloelSale.update.mockResolvedValue({});
+      prisma.kloelSale.updateMany.mockResolvedValue({ count: 1 });
 
       await service.refund(ws, orderId, { reason: 'full' });
 
-      const updCalls6 = prisma.kloelSale.update.mock.calls as Array<
+      const updCalls6 = prisma.kloelSale.updateMany.mock.calls as Array<
         [
           {
             data: { metadata: Record<string, unknown> };

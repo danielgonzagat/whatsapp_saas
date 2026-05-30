@@ -111,7 +111,7 @@ export async function updatePaymentAndSaleForSessionHelper(
       const saleWhere = buildKloelSaleStripeWhere(workspaceId, stripePaymentExternalId, saleId);
       if (saleWhere) {
         await deps.prisma.kloelSale.updateMany({
-          where: saleWhere,
+          where: { workspaceId, ...saleWhere },
           data: {
             status: 'paid',
             paidAt: new Date(),

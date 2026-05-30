@@ -10,6 +10,7 @@ describe('ProductService.update (resolver-compatible 2-arg)', () => {
   let prisma: {
     product: {
       findUnique: jest.Mock;
+      findFirst: jest.Mock;
       update: jest.Mock;
     };
   };
@@ -32,6 +33,7 @@ describe('ProductService.update (resolver-compatible 2-arg)', () => {
     prisma = {
       product: {
         findUnique: jest.fn(),
+        findFirst: jest.fn(),
         update: jest
           .fn()
           .mockImplementation(
@@ -65,7 +67,7 @@ describe('ProductService.update (resolver-compatible 2-arg)', () => {
   });
 
   it('updates product with 2-arg resolver convention (productId embedded in args)', async () => {
-    prisma.product.findUnique.mockResolvedValue(makeProduct());
+    prisma.product.findFirst.mockResolvedValue(makeProduct());
     // Resolver calls: update(workspaceId, { productId, name, ... })
     const result = await service.update(ws, { productId: 'prod-1', name: 'UpdatedViaResolver' });
     expect(result.success).toBe(true);
@@ -77,7 +79,7 @@ describe('ProductService.update (resolver-compatible 2-arg)', () => {
   });
 
   it('still works with 4-arg direct calling convention', async () => {
-    prisma.product.findUnique.mockResolvedValue(makeProduct());
+    prisma.product.findFirst.mockResolvedValue(makeProduct());
     const result = await service.update(
       ws,
       'prod-1',
@@ -90,7 +92,7 @@ describe('ProductService.update (resolver-compatible 2-arg)', () => {
   });
 
   it('handles resolver args with no additional fields gracefully', async () => {
-    prisma.product.findUnique.mockResolvedValue(makeProduct());
+    prisma.product.findFirst.mockResolvedValue(makeProduct());
     const result = await service.update(ws, { productId: 'prod-1' });
     expect(result.success).toBe(true);
     // No fields to update — should still succeed (prisma.update is called with empty data)

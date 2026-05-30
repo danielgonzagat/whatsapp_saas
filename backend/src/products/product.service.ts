@@ -194,7 +194,7 @@ export class ProductService {
 
     const [products, count] = await Promise.all([
       this.prisma.product.findMany({
-        where,
+        where: { workspaceId, ...where },
         skip,
         take: limit,
         orderBy: { createdAt: 'desc' },
@@ -539,20 +539,35 @@ export class ProductService {
   /**
    * Ensure the product exists and belongs to the workspace.
    * Throws NotFound / Forbidden — callers don't need to repeat the pattern.
+   *
+   * The data-returning read is workspace-scoped (`findFirst({ id, workspaceId })`).
+   * Only the existence-disambiguation probe is intentionally cross-workspace:
+   * it selects `{ id: true }` ONLY (no PII, no business data) so the guard can
+   * raise the contractually-required `ForbiddenException` for a product that
+   * exists in another workspace instead of masking it as `NotFound`. This is a
+   * by-design cross-tenant existence check, not an unscoped data query.
    */
   private async assertOwnedProduct(workspaceId: string, productId: string): Promise<Product> {
-    const existing = await this.prisma.product.findUnique({
-      where: { id: productId },
+    const existing = await this.prisma.product.findFirst({
+      where: { id: productId, workspaceId },
     });
 
-    if (!existing) {
-      throw new NotFoundException(`Product ${productId} not found`);
+    if (existing) {
+      return existing;
     }
 
-    if (existing.workspaceId !== workspaceId) {
+    // Distinguish "does not exist" (NotFound) from "exists in another
+    // workspace" (Forbidden) without leaking the other workspace's data.
+    // Existence-only probe: id is selected, nothing else. workspaceId does not
+    // (and must not) appear here — the whole point is to detect rows OUTSIDE
+    // the caller's workspace.
+    const crossWorkspace = await this.prisma.product.findUnique({
+      where: { id: productId },
+      select: { id: true },
+    });
+    if (crossWorkspace) {
       throw new ForbiddenException('Cross-workspace access denied');
     }
-
-    return existing;
+    throw new NotFoundException(`Product ${productId} not found`);
   }
 }

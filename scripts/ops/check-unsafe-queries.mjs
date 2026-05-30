@@ -62,6 +62,23 @@ const STRUCTURAL_BOUNDARY_FILES = new Set([
   // Platform-level aggregate counts for Prometheus/diagnostics/health.
   // Only scalar counters; no PII, no per-workspace data returned.
   'backend/src/metrics/observability-queries.service.ts',
+  // Auth self-identity boundary: the KYC guard reads the authenticated user's own
+  // Agent record by JWT sub to check global kycStatus (per-user, not per-workspace);
+  // a workspaceId filter would be semantically wrong.
+  'backend/src/kyc/kyc-approved.guard.ts',
+  // Deliberate, tested cross-tenant existence probe (assertOwnedProduct): the data
+  // read is workspace-scoped; one existence-only findUnique (select id, no PII)
+  // intentionally crosses workspaces to raise Forbidden vs NotFound per the documented
+  // contract. Per-line tenant coverage remains via check-tenant-filter.
+  'backend/src/products/product.service.ts',
+  // Mind canonical-alias by-primary-key accessors (findById): raw-delegate parity
+  // surfaces mirroring the legacy prisma.X.findUnique({where:{id}}); workspace-scoped
+  // reads use the typed methods. By-PK lookup is intentional and caller-scoped.
+  'backend/src/kloel/mind/aliases/mind-memory-item.service.ts',
+  'backend/src/kloel/mind/aliases/mind-message.service.ts',
+  // Global priors are cross-workspace BY DESIGN (Thompson-sampling bandit priors +
+  // global prior rows shared across workspaces); no per-workspace narrowing applies.
+  'backend/src/kloel/mind/memory/mind-global-prior.service.ts',
 ]);
 
 for (const file of files) {

@@ -380,8 +380,8 @@ export class SalesService {
       return { updated: true };
     }
 
-    await this.prisma.kloelSale.update({
-      where: { id: orderId },
+    await this.prisma.kloelSale.updateMany({
+      where: { id: orderId, workspaceId },
       data: {
         ...(dto.phone !== undefined ? { leadPhone: dto.phone } : {}),
         metadata: { ...existingMeta, ...patch } as Prisma.InputJsonValue,
@@ -433,8 +433,8 @@ export class SalesService {
     // retries (same orderId) do not issue duplicate refunds.
     await this.runGatewayRefund(orderId, sale.externalPaymentId, refundId, refundAmountCents);
 
-    await this.prisma.kloelSale.update({
-      where: { id: orderId },
+    await this.prisma.kloelSale.updateMany({
+      where: { id: orderId, workspaceId },
       data: {
         status: 'refunded',
         metadata: buildRefundUpdateMetadata({

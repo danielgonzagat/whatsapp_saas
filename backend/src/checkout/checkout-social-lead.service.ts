@@ -403,8 +403,10 @@ export class CheckoutSocialLeadService {
       return null;
     }
 
+    const { workspaceId } = input;
     const contact = await this.prisma.contact.upsert({
       ...args,
+      where: { workspaceId_phone: { workspaceId, phone: args.where.workspaceId_phone.phone } },
       select: { id: true },
     });
 

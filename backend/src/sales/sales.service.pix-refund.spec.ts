@@ -18,7 +18,13 @@ describe('SalesService (PI-K37 tier-5 capabilities)', () => {
   let prisma: {
     product: { findFirst: jest.Mock };
     productPlan: { findFirst: jest.Mock };
-    kloelSale: { create: jest.Mock; update: jest.Mock; findFirst: jest.Mock; findMany: jest.Mock };
+    kloelSale: {
+      create: jest.Mock;
+      update: jest.Mock;
+      updateMany: jest.Mock;
+      findFirst: jest.Mock;
+      findMany: jest.Mock;
+    };
     $transaction: jest.Mock;
   };
   let mpBoleto: { create: jest.Mock };
@@ -38,6 +44,7 @@ describe('SalesService (PI-K37 tier-5 capabilities)', () => {
       kloelSale: {
         create: jest.fn(),
         update: jest.fn(),
+        updateMany: jest.fn(),
         findFirst: jest.fn().mockResolvedValue(null),
         findMany: jest.fn().mockResolvedValue([]),
       },
@@ -266,7 +273,7 @@ describe('SalesService (PI-K37 tier-5 capabilities)', () => {
         id: orderId,
         metadata: { productId: 'p1' },
       });
-      prisma.kloelSale.update.mockResolvedValue({});
+      prisma.kloelSale.updateMany.mockResolvedValue({ count: 1 });
 
       const r = await service.fillBuyerData(ws, orderId, {
         name: 'Maria',
@@ -275,15 +282,15 @@ describe('SalesService (PI-K37 tier-5 capabilities)', () => {
       });
 
       expect(r).toEqual({ updated: true });
-      const updCalls = prisma.kloelSale.update.mock.calls as Array<
+      const updCalls = prisma.kloelSale.updateMany.mock.calls as Array<
         [
           {
-            where: { id: string };
+            where: { id: string; workspaceId: string };
             data: { metadata: Record<string, unknown> };
           },
         ]
       >;
-      expect(updCalls[0]?.[0]?.where).toEqual({ id: orderId });
+      expect(updCalls[0]?.[0]?.where).toEqual({ id: orderId, workspaceId: ws });
       expect(updCalls[0]?.[0]?.data?.metadata).toMatchObject({
         buyerName: 'Maria',
         buyerCpf: '11122233344',
@@ -308,7 +315,7 @@ describe('SalesService (PI-K37 tier-5 capabilities)', () => {
       prisma.kloelSale.findFirst.mockResolvedValue({ id: orderId, metadata: {} });
       const r = await service.fillBuyerData(ws, orderId, {});
       expect(r).toEqual({ updated: true });
-      expect(prisma.kloelSale.update).not.toHaveBeenCalled();
+      expect(prisma.kloelSale.updateMany).not.toHaveBeenCalled();
     });
 
     it('sanitizes CPF digits', async () => {
@@ -316,11 +323,11 @@ describe('SalesService (PI-K37 tier-5 capabilities)', () => {
         id: orderId,
         metadata: {},
       });
-      prisma.kloelSale.update.mockResolvedValue({});
+      prisma.kloelSale.updateMany.mockResolvedValue({ count: 1 });
 
       await service.fillBuyerData(ws, orderId, { cpf: '123.456.789-00' });
 
-      const updCalls2 = prisma.kloelSale.update.mock.calls as Array<
+      const updCalls2 = prisma.kloelSale.updateMany.mock.calls as Array<
         [
           {
             data: { metadata: Record<string, unknown> };
@@ -335,11 +342,11 @@ describe('SalesService (PI-K37 tier-5 capabilities)', () => {
         id: orderId,
         metadata: {},
       });
-      prisma.kloelSale.update.mockResolvedValue({});
+      prisma.kloelSale.updateMany.mockResolvedValue({ count: 1 });
 
       await service.fillBuyerData(ws, orderId, { phone: '+5511988888888' });
 
-      const updCalls3 = prisma.kloelSale.update.mock.calls as Array<
+      const updCalls3 = prisma.kloelSale.updateMany.mock.calls as Array<
         [
           {
             data: { leadPhone?: string };

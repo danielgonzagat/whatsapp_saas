@@ -122,14 +122,14 @@ describe('ProductService', () => {
 
   describe('update', () => {
     it('updates a product in the same workspace', async () => {
-      prisma.product.findUnique.mockResolvedValue(makeProduct());
+      prisma.product.findFirst.mockResolvedValue(makeProduct());
       const result = await service.update(ws, 'prod-1', { name: 'Updated' }, actor);
       expect(result.success).toBe(true);
       expect(eventEmitter.emit).toHaveBeenCalledWith('product.updated', anyObject());
     });
 
     it('records product edits in the commercial spine', async () => {
-      prisma.product.findUnique.mockResolvedValue(makeProduct());
+      prisma.product.findFirst.mockResolvedValue(makeProduct());
       prisma.product.update.mockResolvedValue(makeProduct({ name: 'Updated' }));
 
       await service.update(ws, 'prod-1', { name: 'Updated' }, actor);
@@ -216,7 +216,7 @@ describe('ProductService', () => {
 
   describe('setImage', () => {
     it('updates imageUrl on the product', async () => {
-      prisma.product.findUnique.mockResolvedValue(makeProduct());
+      prisma.product.findFirst.mockResolvedValue(makeProduct());
       prisma.product.update.mockResolvedValue(
         makeProduct({ imageUrl: 'https://img.example/pic.png' }),
       );
@@ -243,7 +243,7 @@ describe('ProductService', () => {
     });
 
     it('records image updates in the commercial spine', async () => {
-      prisma.product.findUnique.mockResolvedValue(makeProduct());
+      prisma.product.findFirst.mockResolvedValue(makeProduct());
       prisma.product.update.mockResolvedValue(
         makeProduct({ imageUrl: 'https://img.example/pic.png' }),
       );
@@ -267,7 +267,7 @@ describe('ProductService', () => {
 
   describe('publish', () => {
     it('sets status to APPROVED and active to true', async () => {
-      prisma.product.findUnique.mockResolvedValue(makeProduct());
+      prisma.product.findFirst.mockResolvedValue(makeProduct());
       prisma.product.update.mockResolvedValue(makeProduct({ status: 'APPROVED', active: true }));
       const result = await service.publish(ws, 'prod-1', { id: 'agent-1' });
       expect(result.success).toBe(true);
@@ -287,7 +287,7 @@ describe('ProductService', () => {
     });
 
     it('records published products in the commercial spine', async () => {
-      prisma.product.findUnique.mockResolvedValue(makeProduct());
+      prisma.product.findFirst.mockResolvedValue(makeProduct());
       prisma.product.update.mockResolvedValue(makeProduct({ status: 'APPROVED', active: true }));
 
       await service.publish(ws, 'prod-1', { id: 'agent-1' });
@@ -310,7 +310,7 @@ describe('ProductService', () => {
 
   describe('toggleAvailability', () => {
     it('activates a product', async () => {
-      prisma.product.findUnique.mockResolvedValue(makeProduct());
+      prisma.product.findFirst.mockResolvedValue(makeProduct());
       prisma.product.update.mockResolvedValue(makeProduct({ active: true }));
       const result = await service.toggleAvailability(ws, 'prod-1', true, { id: 'agent-1' });
       expect(result.success).toBe(true);
@@ -318,7 +318,7 @@ describe('ProductService', () => {
     });
 
     it('deactivates a product', async () => {
-      prisma.product.findUnique.mockResolvedValue(makeProduct());
+      prisma.product.findFirst.mockResolvedValue(makeProduct());
       prisma.product.update.mockResolvedValue(makeProduct({ active: false }));
       const result = await service.toggleAvailability(ws, 'prod-1', false, { id: 'agent-1' });
       expect(result.success).toBe(true);
@@ -337,7 +337,7 @@ describe('ProductService', () => {
     });
 
     it('records availability changes in the commercial spine', async () => {
-      prisma.product.findUnique.mockResolvedValue(makeProduct());
+      prisma.product.findFirst.mockResolvedValue(makeProduct());
       prisma.product.update.mockResolvedValue(makeProduct({ active: true }));
 
       await service.toggleAvailability(ws, 'prod-1', true, { id: 'agent-1' });
@@ -359,7 +359,7 @@ describe('ProductService', () => {
 
   describe('delete', () => {
     it('soft-deletes a product (sets status to DELETED)', async () => {
-      prisma.product.findUnique.mockResolvedValue(makeProduct());
+      prisma.product.findFirst.mockResolvedValue(makeProduct());
       prisma.product.update.mockResolvedValue(makeProduct({ status: 'DELETED', active: false }));
       const result = await service.delete(ws, 'prod-1', { id: 'agent-1' });
       expect(result.success).toBe(true);
@@ -379,7 +379,7 @@ describe('ProductService', () => {
     });
 
     it('records product deletion in the commercial spine', async () => {
-      prisma.product.findUnique.mockResolvedValue(makeProduct());
+      prisma.product.findFirst.mockResolvedValue(makeProduct());
       prisma.product.update.mockResolvedValue(makeProduct({ status: 'DELETED', active: false }));
 
       await service.delete(ws, 'prod-1', { id: 'agent-1' });
