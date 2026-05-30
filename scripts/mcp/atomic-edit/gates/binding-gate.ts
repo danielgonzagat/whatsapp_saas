@@ -73,6 +73,7 @@ const KNOWN_GLOBALS = new Set<string>([
   // test-runner ambient globals (jest / vitest / mocha — injected, not imported)
   'describe', 'it', 'test', 'expect', 'beforeEach', 'afterEach', 'beforeAll', 'afterAll',
   'jest', 'vi', 'vitest', 'xit', 'xdescribe', 'fit', 'fdescribe', 'suite', 'mock',
+  'fail', 'pending', 'spyOn', 'done', 'xtest', 'context', 'specify', 'before', 'after',
   // Python builtins (floor only)
   'print', 'len', 'range', 'dict', 'list', 'set', 'tuple', 'int', 'float',
   'str', 'bool', 'bytes', 'type', 'isinstance', 'enumerate', 'zip', 'map',
@@ -144,6 +145,7 @@ async function tsMorphUnbound(rel: string, text: string): Promise<Unbound[] | nu
       continue;
     }
     if (Node.isShorthandPropertyAssignment(parent)) continue; // { foo } — its own binding rule
+    if (Node.isBindingElement(parent) && parent.getPropertyNameNode() === id) continue; // const { key: local } — key is a property name, not a reference
     if (parent.getKind() === SyntaxKind.MetaProperty) continue; // import.meta / new.target
     // Skip identifiers that are not VALUE references: JSDoc/comment identifiers
     // (e.g. "@Controller(" written in a docstring) and any type-context name.
