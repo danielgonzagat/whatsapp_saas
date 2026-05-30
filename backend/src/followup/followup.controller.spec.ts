@@ -76,7 +76,7 @@ describe('FollowUpController', () => {
       };
 
       const result = await controller.create(mockReq, dto);
-      const { workspaceId, ...expectedRest } = dto;
+      const { workspaceId: _workspaceId, ...expectedRest } = dto;
 
       expect(resolveWorkspaceIdMock).toHaveBeenCalledWith(mockReq, 'ws-1');
       expect(createMock).toHaveBeenCalledWith('ws-1', expectedRest);
@@ -97,7 +97,7 @@ describe('FollowUpController', () => {
       const dto = { message: 'Updated', workspaceId: 'ws-1' };
 
       const result = await controller.update(mockReq, 'f-3', dto);
-      const { workspaceId, ...expectedRest } = dto;
+      const { workspaceId: _workspaceId, ...expectedRest } = dto;
 
       expect(resolveWorkspaceIdMock).toHaveBeenCalledWith(mockReq, 'ws-1');
       expect(updateMock).toHaveBeenCalledWith('ws-1', 'f-3', expectedRest);

@@ -1,5 +1,6 @@
 import { ChannelInboundHookService } from './channel-inbound-hook.service';
 import type { NormalizedMessage } from '../inbox/omnichannel.helpers';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 describe('ChannelInboundHookService', () => {
   const msg: NormalizedMessage = {
@@ -31,7 +32,7 @@ describe('ChannelInboundHookService', () => {
         subject: 'contact:contact-1',
         eventType: 'message.received',
         idempotencyKey: 'message.received:ws-1:message-1',
-        payload: expect.objectContaining({
+        payload: partialMatch({
           channel: 'instagram',
           direction: 'INBOUND',
           messageId: 'message-1',

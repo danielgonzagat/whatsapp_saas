@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ChatService } from './chat.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
+import { castMock } from '../../test/helpers/cast-mock';
 
 describe('ChatService', () => {
   let service: ChatService;
@@ -78,7 +79,9 @@ describe('ChatService', () => {
 
       await service.getMessages(workspaceId, conversationId, cursor);
 
-      const callArgs = mockPrisma.chatMessage.findMany.mock.calls[0][0] as Record<string, unknown>;
+      const callArgs = castMock<[Record<string, unknown>]>(
+        mockPrisma.chatMessage.findMany.mock.calls[0],
+      )[0];
       const where = callArgs['where'] as Record<string, unknown>;
       expect(where['createdAt']).toEqual({ lt: new Date(cursor) });
     });
@@ -88,7 +91,9 @@ describe('ChatService', () => {
 
       await service.getMessages(workspaceId, conversationId);
 
-      const callArgs = mockPrisma.chatMessage.findMany.mock.calls[0][0] as Record<string, unknown>;
+      const callArgs = castMock<[Record<string, unknown>]>(
+        mockPrisma.chatMessage.findMany.mock.calls[0],
+      )[0];
       const where = callArgs['where'] as Record<string, unknown>;
       expect(where['deletedAt']).toBeNull();
     });
@@ -98,7 +103,9 @@ describe('ChatService', () => {
 
       await service.getMessages(workspaceId, conversationId);
 
-      const callArgs = mockPrisma.chatMessage.findMany.mock.calls[0][0] as Record<string, unknown>;
+      const callArgs = castMock<[Record<string, unknown>]>(
+        mockPrisma.chatMessage.findMany.mock.calls[0],
+      )[0];
       const where = callArgs['where'] as Record<string, unknown>;
       expect(where['workspaceId']).toBe(workspaceId);
     });
@@ -108,7 +115,9 @@ describe('ChatService', () => {
 
       await service.getMessages(workspaceId, conversationId, undefined, 10);
 
-      const callArgs = mockPrisma.chatMessage.findMany.mock.calls[0][0] as Record<string, unknown>;
+      const callArgs = castMock<[Record<string, unknown>]>(
+        mockPrisma.chatMessage.findMany.mock.calls[0],
+      )[0];
       expect(callArgs['take']).toBe(11);
     });
   });
@@ -139,7 +148,9 @@ describe('ChatService', () => {
         data: { threadId: conversationId, workspaceId, userId, role: 'user', content: 'hello' },
         select: { id: true, role: true, content: true, createdAt: true, userId: true },
       });
-      const updateArgs = mockPrisma.chatThread.updateMany.mock.calls[0][0];
+      const updateArgs = castMock<
+        [{ where: Record<string, unknown>; data: { updatedAt: unknown } }]
+      >(mockPrisma.chatThread.updateMany.mock.calls[0])[0];
       expect(updateArgs.where).toEqual({ id: conversationId, workspaceId });
       expect(updateArgs.data.updatedAt).toBeInstanceOf(Date);
       expect(result.id).toBe('msg-1');

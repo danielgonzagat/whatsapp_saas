@@ -135,7 +135,12 @@ export class ApiKeysService {
           where: { id: apiKey.id, workspaceId: apiKey.workspaceId },
           data: { lastUsedAt: new Date() },
         })
-        .catch((err) => this.logger.warn('Failed to update apiKey lastUsedAt', err.message));
+        .catch((err: unknown) =>
+          this.logger.warn(
+            'Failed to update apiKey lastUsedAt',
+            err instanceof Error ? err.message : err,
+          ),
+        );
     }
 
     return apiKey ?? null;

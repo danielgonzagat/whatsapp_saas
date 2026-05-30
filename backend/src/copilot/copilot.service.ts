@@ -219,7 +219,7 @@ Cada resposta deve ser curta, direta e com CTA claro. Varie o tom: 1) amigável 
       this.logger.log(
         `copilot-suggest-multiple ws=${workspaceId} model=writer baseLen=${prompt.length} outLen=${content.length} tokens=${tokens}`,
       );
-      const parsed = JSON.parse(content);
+      const parsed = JSON.parse(content) as { suggestions?: string[] };
 
       // Determinar contexto da conversa
       const lastMessage = msgs[0]?.content || '';

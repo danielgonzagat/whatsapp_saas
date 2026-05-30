@@ -4,6 +4,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { PlanService } from './plan.service';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 /**
  * Wave7 L2 — fine-grained plan capability adapters (Y-1/Y-2).
@@ -51,7 +52,7 @@ describe('PlanService — Wave7 fine-grained adapters', () => {
       expect(prisma.productPlan.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: {
-            checkoutImages: expect.objectContaining({
+            checkoutImages: partialMatch({
               paymentMethods: { card: true, pix: true, boleto: false },
             }),
           },
@@ -88,7 +89,7 @@ describe('PlanService — Wave7 fine-grained adapters', () => {
       expect(r.success).toBe(true);
       expect(prisma.productPlan.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: { checkoutImages: expect.objectContaining({ acceptCoupons: true }) },
+          data: { checkoutImages: partialMatch({ acceptCoupons: true }) },
         }),
       );
     });
@@ -106,7 +107,7 @@ describe('PlanService — Wave7 fine-grained adapters', () => {
       expect(prisma.productPlan.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: {
-            checkoutImages: expect.objectContaining({
+            checkoutImages: partialMatch({
               shipping: { type: 'FIXED', fixedValue: 25, originCep: '01310-100' },
             }),
           },
@@ -137,7 +138,7 @@ describe('PlanService — Wave7 fine-grained adapters', () => {
       expect(r.success).toBe(true);
       expect(prisma.productPlan.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: { checkoutImages: expect.objectContaining({ customCommission: 30 }) },
+          data: { checkoutImages: partialMatch({ customCommission: 30 }) },
         }),
       );
     });
@@ -162,7 +163,7 @@ describe('PlanService — Wave7 fine-grained adapters', () => {
       expect(prisma.productPlan.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: {
-            checkoutImages: expect.objectContaining({
+            checkoutImages: partialMatch({
               orderBump: {
                 enabled: true,
                 bumpProductId: 'prod-2',
@@ -193,7 +194,7 @@ describe('PlanService — Wave7 fine-grained adapters', () => {
       expect(prisma.productPlan.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: {
-            checkoutImages: expect.objectContaining({ imageUrl: 'https://cdn.example/p.png' }),
+            checkoutImages: partialMatch({ imageUrl: 'https://cdn.example/p.png' }),
           },
         }),
       );

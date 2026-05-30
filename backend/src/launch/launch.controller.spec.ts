@@ -61,7 +61,7 @@ describe('LaunchController', () => {
       const dto = { name: 'New Launch', description: 'desc', workspaceId: 'ws-1' };
 
       const result = await controller.createLauncher(mockReq, dto);
-      const { workspaceId, ...expectedRest } = dto;
+      const { workspaceId: _workspaceId, ...expectedRest } = dto;
 
       expect(resolveWorkspaceIdMock).toHaveBeenCalledWith(mockReq, 'ws-1');
       expect(createLauncherMock).toHaveBeenCalledWith('ws-1', expectedRest);
@@ -82,7 +82,7 @@ describe('LaunchController', () => {
       const dto = { groupId: 'gid-1', role: 'member', workspaceId: 'ws-1' };
 
       const result = await controller.addGroup(mockReq, 'l-3', dto);
-      const { workspaceId, ...expectedRest } = dto;
+      const { workspaceId: _workspaceId, ...expectedRest } = dto;
 
       expect(resolveWorkspaceIdMock).toHaveBeenCalledWith(mockReq, 'ws-1');
       expect(addGroupMock).toHaveBeenCalledWith('ws-1', 'l-3', expectedRest);

@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import * as Sentry from '@sentry/node';
 import { PrismaService } from '../prisma/prisma.service';
 import { OpsAlertService } from './ops-alert.service';
+import { partialMatch } from '../../test/helpers/match-instance';
 import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 jest.mock('@sentry/node', () => ({
@@ -98,7 +99,7 @@ describe('OpsAlertService', () => {
       await service.alertOnCriticalError(error, 'Svc.method', extra);
 
       expect(prisma.opsEvent.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
+        data: partialMatch({
           type: 'critical_error',
           service: 'Svc.method',
           error: 'critical failure',
@@ -151,7 +152,7 @@ describe('OpsAlertService', () => {
       await service.alertOnDegradation('slow', 'Svc.m', { workspaceId: 'ws-2' });
 
       expect(prisma.opsEvent.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
+        data: partialMatch({
           type: 'degradation',
           service: 'Svc.m',
           error: 'slow',
@@ -186,7 +187,7 @@ describe('OpsAlertService', () => {
       });
 
       expect(prisma.opsEvent.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
+        data: partialMatch({
           type: 'recovery',
           service: 'Svc.m',
           error: 'back to normal',

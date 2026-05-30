@@ -202,8 +202,9 @@ export class I18nService {
     if (!workspaceId || !this.planLimits) {
       return;
     }
-    await this.planLimits.trackAiUsage(workspaceId, tokens).catch((error) => {
-      this.logger.warn(`[${source}] failed to track AI usage: ${error?.message || error}`);
+    await this.planLimits.trackAiUsage(workspaceId, tokens).catch((error: unknown) => {
+      const reason = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`[${source}] failed to track AI usage: ${reason}`);
     });
   }
 

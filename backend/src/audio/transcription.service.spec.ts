@@ -6,10 +6,10 @@ jest.mock('../observability/ops-alert.service', () => ({
 
 import { TranscriptionService } from './transcription.service';
 
-const mockExistsSync = jest.requireMock('node:fs').existsSync as jest.Mock;
-const mockReadFile = jest.requireMock('node:fs/promises').readFile as jest.Mock;
-const mockWriteFile = jest.requireMock('node:fs/promises').writeFile as jest.Mock;
-const mockUnlink = jest.requireMock('node:fs/promises').unlink as jest.Mock;
+const mockExistsSync = jest.requireMock<{ existsSync: jest.Mock }>('node:fs').existsSync;
+const mockReadFile = jest.requireMock<{ readFile: jest.Mock }>('node:fs/promises').readFile;
+const mockWriteFile = jest.requireMock<{ writeFile: jest.Mock }>('node:fs/promises').writeFile;
+const mockUnlink = jest.requireMock<{ unlink: jest.Mock }>('node:fs/promises').unlink;
 
 jest.mock('node:fs', () => ({
   existsSync: jest.fn(),
@@ -26,7 +26,7 @@ jest.mock('node:os', () => ({
 }));
 
 jest.mock('node:path', () => {
-  const actual = jest.requireActual('node:path');
+  const actual = jest.requireActual<typeof import('node:path')>('node:path');
   return {
     ...actual,
     basename: (p: string) => {
@@ -49,8 +49,9 @@ jest.mock('../lib/openai-models', () => ({
     type === 'audio_understanding' ? 'whisper-1' : 'whisper-1',
 }));
 
-const mockValidateNoInternalAccess = jest.requireMock('../common/utils/url-validator')
-  .validateNoInternalAccess as jest.Mock;
+const mockValidateNoInternalAccess = jest.requireMock<{ validateNoInternalAccess: jest.Mock }>(
+  '../common/utils/url-validator',
+).validateNoInternalAccess;
 
 describe('TranscriptionService', () => {
   let config: { get: jest.Mock };

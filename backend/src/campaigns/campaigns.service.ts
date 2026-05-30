@@ -214,7 +214,12 @@ export class CampaignsService {
    * @param args        tool arguments: `{ campaignId | id, useSmartTime? }`
    */
   async launchTool(workspaceId: string, args: Record<string, unknown>) {
-    const campaignId = String(args.campaignId ?? args.id ?? '').trim();
+    const rawCampaignId = args.campaignId ?? args.id;
+    const campaignId = (
+      typeof rawCampaignId === 'string' || typeof rawCampaignId === 'number'
+        ? String(rawCampaignId)
+        : ''
+    ).trim();
     if (!campaignId) {
       return { success: false, error: 'campaign_id_required' };
     }

@@ -55,9 +55,10 @@ describe('MarketplaceService', () => {
 
       await service.listTemplates('onboarding');
 
+      const anySelect: unknown = expect.anything();
       expect(prisma.flowTemplate.findMany).toHaveBeenCalledWith({
         where: { isPublic: true, category: 'onboarding' },
-        select: expect.anything(),
+        select: anySelect,
         orderBy: { downloads: 'desc' },
         take: 100,
       });

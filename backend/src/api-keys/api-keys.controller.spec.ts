@@ -1,7 +1,5 @@
 import { NotFoundException } from '@nestjs/common';
 import { ApiKeysController } from './api-keys.controller';
-import { ApiKeysService } from './api-keys.service';
-
 describe('ApiKeysController', () => {
   let service: {
     list: jest.Mock;

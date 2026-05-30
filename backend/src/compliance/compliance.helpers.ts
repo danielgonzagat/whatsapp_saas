@@ -62,7 +62,7 @@ export function extractSubjectIdentifier(
     readNestedString(eventPayload, ['subject', 'sub']) ||
     readNestedString(eventPayload, ['subject', 'subject']) ||
     readNestedString(eventPayload, ['sub']) ||
-    String(payload?.sub ?? '').trim()
+    (typeof payload?.sub === 'string' ? payload.sub.trim() : '')
   );
 }
 

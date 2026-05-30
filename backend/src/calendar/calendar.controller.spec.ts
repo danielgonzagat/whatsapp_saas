@@ -1,5 +1,6 @@
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { CalendarController } from './calendar.controller';
+import { castMock } from '../../test/helpers/cast-mock';
 
 jest.mock('../auth/workspace-access', () => ({
   resolveWorkspaceId: jest.fn(),
@@ -142,13 +143,13 @@ describe('CalendarController', () => {
       });
       await controller.cancelEvent(authReq as never, 'ev-4');
 
-      for (const call of listEvents.mock.calls) {
+      for (const call of castMock<unknown[][]>(listEvents.mock.calls)) {
         expect(call[0]).toBe('ws-alpha');
       }
-      for (const call of createEvent.mock.calls) {
+      for (const call of castMock<unknown[][]>(createEvent.mock.calls)) {
         expect(call[0]).toBe('ws-alpha');
       }
-      for (const call of cancelEvent.mock.calls) {
+      for (const call of castMock<unknown[][]>(cancelEvent.mock.calls)) {
         expect(call[0]).toBe('ws-alpha');
       }
     });

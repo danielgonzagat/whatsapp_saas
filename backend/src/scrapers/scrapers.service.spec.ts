@@ -2,6 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ScrapersService } from './scrapers.service';
 import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 jest.mock('../common/redis/redis.util', () => ({
   createBullMqConnectionOptions: jest.fn(() => ({
@@ -46,7 +47,7 @@ describe('ScrapersService', () => {
         query: 'restaurant',
       });
       expect(prisma.scrapingJob.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
+        data: partialMatch({
           workspaceId: 'ws-1',
           stats: { status: 'pending', found: 0, valid: 0, imported: 0 },
         }),

@@ -10,11 +10,11 @@ type ProductCreateArgs = { data: Record<string, unknown> };
 type ProductUpdateArgs = { where: { id: string }; data: Record<string, unknown> };
 
 function objectContaining<T extends object>(sample: T): T {
-  return expect.objectContaining(sample);
+  return expect.objectContaining(sample) as T;
 }
 
 function anyArray(): unknown[] {
-  return expect.arrayContaining([]);
+  return expect.arrayContaining([]) as unknown[];
 }
 
 function anyObject(): object {

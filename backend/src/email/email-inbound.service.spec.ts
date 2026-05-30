@@ -3,7 +3,6 @@ import { EmailInboundService, type InboundEmail } from './email-inbound.service'
 import { OmnichannelService } from '../inbox/omnichannel.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
-
 describe('EmailInboundService', () => {
   let service: EmailInboundService;
   let omnichannel: jest.Mocked<Partial<OmnichannelService>>;
@@ -77,7 +76,11 @@ describe('EmailInboundService', () => {
       const result = await service.processInboundEmail('ws-1', sampleEmail);
 
       expect(omnichannel.handleIncomingMessage).toHaveBeenCalledTimes(1);
-      const call = (omnichannel.handleIncomingMessage as jest.Mock).mock.calls[0][0];
+      const call = (
+        omnichannel.handleIncomingMessage as jest.MockedFunction<
+          OmnichannelService['handleIncomingMessage']
+        >
+      ).mock.calls[0][0];
       expect(call.channel).toBe('EMAIL');
       expect(call.workspaceId).toBe('ws-1');
       expect(call.from).toBe('cliente@example.com');
@@ -105,7 +108,11 @@ describe('EmailInboundService', () => {
 
       await service.processInboundEmail('ws-1', htmlEmail);
 
-      const call = (omnichannel.handleIncomingMessage as jest.Mock).mock.calls[0][0];
+      const call = (
+        omnichannel.handleIncomingMessage as jest.MockedFunction<
+          OmnichannelService['handleIncomingMessage']
+        >
+      ).mock.calls[0][0];
       expect(call.content).toContain('Ola mundo & time <3>');
     });
 
@@ -126,7 +133,11 @@ describe('EmailInboundService', () => {
 
       await service.processInboundEmail('ws-1', emailWithAtt);
 
-      const call = (omnichannel.handleIncomingMessage as jest.Mock).mock.calls[0][0];
+      const call = (
+        omnichannel.handleIncomingMessage as jest.MockedFunction<
+          OmnichannelService['handleIncomingMessage']
+        >
+      ).mock.calls[0][0];
       expect(call.attachments).toHaveLength(1);
       expect(call.attachments?.[0].name).toBe('nota.pdf');
       expect(call.attachments?.[0].mimeType).toBe('application/pdf');
@@ -142,7 +153,11 @@ describe('EmailInboundService', () => {
 
       await service.processInboundEmail('ws-1', noSubject);
 
-      const call = (omnichannel.handleIncomingMessage as jest.Mock).mock.calls[0][0];
+      const call = (
+        omnichannel.handleIncomingMessage as jest.MockedFunction<
+          OmnichannelService['handleIncomingMessage']
+        >
+      ).mock.calls[0][0];
       expect(call.content).toContain('Sem assunto');
       expect(call.content).toContain('Mensagem sem assunto.');
     });

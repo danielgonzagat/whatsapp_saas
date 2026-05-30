@@ -6,6 +6,7 @@ import { ApiKeysService } from './api-keys.service';
 import { AuditService } from '../audit/audit.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
+import { castMock } from '../../test/helpers/cast-mock';
 
 type MockedApiKeyRecord = {
   id: string;
@@ -118,7 +119,9 @@ describe('ApiKeysService', () => {
       expect(result.name).toBe('Production Key');
 
       // Stored key is a SHA-256 hash
-      const callArgs = mockApiKey.create.mock.calls[0][0] as { data: { key: string } };
+      const callArgs = castMock<unknown[][]>(mockApiKey.create.mock.calls)[0][0] as {
+        data: { key: string };
+      };
       const storedKey = callArgs.data.key;
       expect(storedKey).toMatch(/^[a-f0-9]{32}:[a-f0-9]{64}$/); // PBKDF2 salt:hash
     });
@@ -167,7 +170,9 @@ describe('ApiKeysService', () => {
       expect(result.id).toBe('ak-1');
       expect(result.name).toBe('Old Key');
 
-      const callArgs = mockApiKey.update.mock.calls[0][0] as { data: { key: string } };
+      const callArgs = castMock<unknown[][]>(mockApiKey.update.mock.calls)[0][0] as {
+        data: { key: string };
+      };
       const storedKey = callArgs.data.key;
       expect(storedKey).toMatch(/^[a-f0-9]{32}:[a-f0-9]{64}$/);
       expect(storedKey).not.toBe('old_hash');
@@ -301,7 +306,7 @@ describe('ApiKeysService', () => {
       const result = await service.validateKey(rawKey);
 
       expect(result).toEqual(apiKeyRecord);
-      const callArg = mockApiKey.update.mock.calls[0][0] as {
+      const callArg = castMock<unknown[][]>(mockApiKey.update.mock.calls)[0][0] as {
         where: { id: string; workspaceId: string };
         data: { lastUsedAt: Date };
       };

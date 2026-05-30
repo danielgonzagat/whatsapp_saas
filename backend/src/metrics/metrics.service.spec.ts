@@ -41,7 +41,13 @@ describe('MetricsService', () => {
   let _collectDefaultMetricsMock: jest.Mock;
 
   beforeEach(async () => {
-    const promClient = jest.requireMock('prom-client');
+    const promClient = jest.requireMock<{
+      __counterInc: jest.Mock;
+      __histogramObserve: jest.Mock;
+      __gaugeSet: jest.Mock;
+      __registryMetrics: jest.Mock;
+      __collectDefaultMetrics: jest.Mock;
+    }>('prom-client');
     counterInc = promClient.__counterInc;
     histogramObserve = promClient.__histogramObserve;
     gaugeSet = promClient.__gaugeSet;

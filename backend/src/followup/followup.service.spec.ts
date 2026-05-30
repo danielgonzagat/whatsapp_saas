@@ -3,15 +3,15 @@ import { PrismaService } from '../prisma/prisma.service';
 import { FollowUpService } from './followup.service';
 import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 describe('FollowUpService', () => {
-  let prisma: PrismaService & ReturnType<typeof createPartialPrismaMock>;
+  let prisma: ReturnType<typeof createPartialPrismaMock>;
   let service: FollowUpService;
 
   beforeEach(() => {
     prisma = createPartialPrismaMock({
       contact: ['findFirst'],
       followUp: ['create', 'findFirst', 'updateMany'],
-    }) as PrismaService & ReturnType<typeof createPartialPrismaMock>;
-    service = new FollowUpService(prisma);
+    });
+    service = new FollowUpService(prisma as unknown as PrismaService);
   });
 
   it('rejects invalid scheduledFor values on create', async () => {

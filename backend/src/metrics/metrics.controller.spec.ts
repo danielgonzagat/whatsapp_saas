@@ -1,5 +1,6 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { MetricsController } from './metrics.controller';
+import { partialMatch } from '../../test/helpers/match-instance';
 import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
 jest.mock('@sentry/node', () => ({}), { virtual: true });
@@ -52,8 +53,8 @@ describe('MetricsController', () => {
       expect(prismaMock.workspace.count as jest.Mock).toHaveBeenNthCalledWith(
         1,
         expect.objectContaining({
-          where: expect.objectContaining({
-            providerSettings: expect.objectContaining({
+          where: partialMatch({
+            providerSettings: partialMatch({
               path: ['billingSuspended'],
               equals: true,
             }),
@@ -103,7 +104,9 @@ describe('MetricsController', () => {
   describe('token identity propagated', () => {
     it('grants access when valid bearer token matches METRICS_TOKEN', async () => {
       process.env.METRICS_TOKEN = 'secret-token';
-      const { safeCompareStrings } = require('../common/utils/crypto-compare.util');
+      const { safeCompareStrings } = jest.requireMock<{ safeCompareStrings: jest.Mock }>(
+        '../common/utils/crypto-compare.util',
+      );
       safeCompareStrings.mockReturnValue(true);
 
       queueGetStatus.mockResolvedValue([]);
@@ -121,7 +124,9 @@ describe('MetricsController', () => {
 
     it('grants access when valid x-metrics-token header matches METRICS_TOKEN', async () => {
       process.env.METRICS_TOKEN = 'secret-token';
-      const { safeCompareStrings } = require('../common/utils/crypto-compare.util');
+      const { safeCompareStrings } = jest.requireMock<{ safeCompareStrings: jest.Mock }>(
+        '../common/utils/crypto-compare.util',
+      );
       safeCompareStrings.mockReturnValue(true);
 
       queueGetStatus.mockResolvedValue([]);

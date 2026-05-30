@@ -7,6 +7,9 @@
  * environment (Stripe CLI webhooks) for full end-to-end verification.
  */
 
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+
 const SCENARIOS: Array<{
   id: number;
   name: string;
@@ -214,9 +217,6 @@ describe('Certification E2E Scenario Coverage (Block 10)', () => {
   });
 
   it('every scenario moduleName maps to a file on disk that exports the expected entity', () => {
-    const fs = require('fs');
-    const path = require('path');
-
     const SERVICE_IMPORTS: Record<string, { relativePath: string; exportName: string }> = {
       CheckoutPaymentService: {
         relativePath: '../checkout/checkout-payment.service.ts',

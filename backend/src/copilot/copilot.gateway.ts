@@ -34,7 +34,7 @@ export class CopilotGateway implements OnGatewayConnection, OnGatewayDisconnect,
     await this.sub.psubscribe('ws:copilot:*');
     this.sub.on('pmessage', (_pattern, channel, message) => {
       try {
-        const payload = JSON.parse(message);
+        const payload: unknown = JSON.parse(message);
         const workspaceId = channel.split(':').pop();
         if (workspaceId) {
           this.server.to(`workspace:${workspaceId}`).emit('copilot:suggestion', payload);

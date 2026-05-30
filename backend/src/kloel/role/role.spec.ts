@@ -8,8 +8,8 @@
  * >= 14 tests.
  */
 import type { SpineEventRef } from '../mind/mind.types';
-import type { Role, RoleDetection } from './types';
-import { ALL_ROLES, ROLE_DESCRIPTIONS } from './types';
+import type { RoleDetection } from './types';
+import { ALL_ROLES } from './types';
 import { detectRoles, primaryRoleFromDetections } from './role.detector';
 import {
   projectRoleContext,
@@ -27,23 +27,6 @@ import {
   getAllMetrics,
   getMetricsForRoles,
 } from './role-metric.registry';
-import {
-  guardRecommendation,
-  guardRecommendations,
-  countBlocked,
-  allowedOnly,
-} from './recommendation-guard';
-import { MultiHatService } from './multi-hat.service';
-import {
-  extendHierarchyWithRole,
-  roleAwareReTier,
-  countTierChanges,
-} from './aware-hierarchy.extender';
-import {
-  filterWisdomByRole,
-  filterWisdomByMultiRole,
-  explainRelevance,
-} from './aware-wisdom.extender';
 const NOW = Date.parse('2026-05-14T10:00:00.000Z');
 
 function ev(over: Partial<SpineEventRef>): SpineEventRef {
