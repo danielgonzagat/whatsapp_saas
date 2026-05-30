@@ -312,4 +312,19 @@ export async function nativeGlob(opts: Record<string, unknown>): Promise<GlobRes
   return { matches, totalMatches: files.length };
 }
 
+/** Syntax validity via web-tree-sitter. realParser:false means no grammar (cannot judge); parsed reflects zero ERROR/MISSING nodes. */
+export async function validate(code: string, lang?: string): Promise<{ realParser: boolean; errorCount: number; parsed: boolean }> {
+  await ensureReady();
+  const parser = await parserFor(lang);
+  if (!parser) return { realParser: false, errorCount: -1, parsed: false };
+  const t = parser.parse(code);
+  let e = 0;
+  const w = (n: any): void => {
+    if (n.type === 'ERROR' || n.isMissing) e += 1;
+    for (let i = 0; i < n.childCount; i += 1) w(n.child(i));
+  };
+  w(t.rootNode);
+  return { realParser: true, errorCount: e, parsed: e === 0 };
+}
+
 export function disposeNative(): void { /* in-process WASM -- nothing to dispose */ }
