@@ -244,6 +244,36 @@ export function summarize(opts: Record<string, unknown>): Promise<Record<string,
   return call<Record<string, unknown>>('summarizeCode', opts, 15000);
 }
 
+export interface GrepMatch {
+  path: string;
+  lineNumber: number;
+  line: string;
+}
+export interface GrepResult {
+  matches: GrepMatch[];
+  totalMatches: number;
+  filesWithMatches: number;
+  filesSearched: number;
+  limitReached: boolean;
+}
+/** Native ripgrep search (read-only) across files/dirs. Beats a shell grep on speed + structure. */
+export function nativeGrep(opts: Record<string, unknown>): Promise<GrepResult> {
+  return call<GrepResult>('grep', opts, 15000);
+}
+
+export interface GlobMatch {
+  path: string;
+  fileType: number;
+}
+export interface GlobResult {
+  matches: GlobMatch[];
+  totalMatches: number;
+}
+/** Native glob file discovery (read-only), gitignore-aware. */
+export function nativeGlob(opts: Record<string, unknown>): Promise<GlobResult> {
+  return call<GlobResult>('glob', opts, 15000);
+}
+
 /** Release the worker (used by tests / shutdown). */
 export function disposeNative(): void {
   if (child) {

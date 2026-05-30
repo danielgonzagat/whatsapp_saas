@@ -118,6 +118,13 @@ process.on('message', async (msg) => {
       case 'summarizeCode':
         result = native.summarizeCode(args);
         break;
+      case 'grep':
+        // read-only native ripgrep; full matches returned in the result (no callback needed)
+        result = await native.grep(args);
+        break;
+      case 'glob':
+        result = await native.glob(args);
+        break;
       case 'getSupportedLanguages':
         result = native.getSupportedLanguages();
         break;
