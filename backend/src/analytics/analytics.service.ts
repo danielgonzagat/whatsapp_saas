@@ -191,7 +191,7 @@ export class AnalyticsService {
     const { salesByHour, salesByWeekday } = aggregateTimePatterns(paidSales);
 
     const wallet = await this.fetchWalletSafe(workspaceId);
-    const adSpend = 0;
+    const adSpend = await this.fetchAdSpendSafe(workspaceId, since);
 
     const [totalMessages, aiMessages] = await this.fetchMessageCountsSafe(workspaceId, since);
 
@@ -274,6 +274,26 @@ export class AnalyticsService {
       this.logger.warn(`Failed to fetch wallet for workspace ${workspaceId}: ${message}`);
       return null;
     });
+  }
+
+  /**
+   * Sums real ad spend (in cents) for the workspace within the report window
+   * from {@link AdSpend} (table `RAC_AdSpend`). Workspace-scoped. Returns 0 on
+   * query failure so the report degrades honestly (ROAS resolves to null) rather
+   * than throwing.
+   */
+  private async fetchAdSpendSafe(workspaceId: string, since: Date): Promise<number> {
+    return this.prisma.adSpend
+      .aggregate({
+        where: { workspaceId, date: { gte: since } },
+        _sum: { amount: true },
+      })
+      .then((result) => result._sum.amount ?? 0)
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : String(err);
+        this.logger.warn(`Failed to aggregate ad spend for workspace ${workspaceId}: ${message}`);
+        return 0;
+      });
   }
 
   private async fetchMessageCountsSafe(workspaceId: string, since: Date) {

@@ -102,4 +102,30 @@ describe('FlowsService', () => {
     );
     expect(result).toHaveProperty('id', 'ver-1');
   });
+
+  describe('sweepExpiredWaitTimeouts (cron)', () => {
+    it('delegates to expireWaitTimeouts across all workspaces', async () => {
+      const spy = jest.spyOn(service, 'expireWaitTimeouts').mockResolvedValue([
+        {
+          resumed: true,
+          executionId: 'exec-1',
+          flowId: 'flow-1',
+          workspaceId: 'ws-1',
+          resumeEdge: 'Timeout',
+        },
+      ]);
+
+      await service.sweepExpiredWaitTimeouts();
+
+      // No workspace filter — the cron sweeps every tenant.
+      expect(spy).toHaveBeenCalledTimes(1);
+      expect(spy).toHaveBeenCalledWith();
+    });
+
+    it('swallows errors so the scheduler keeps firing', async () => {
+      jest.spyOn(service, 'expireWaitTimeouts').mockRejectedValue(new Error('db down'));
+
+      await expect(service.sweepExpiredWaitTimeouts()).resolves.toBeUndefined();
+    });
+  });
 });

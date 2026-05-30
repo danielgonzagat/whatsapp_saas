@@ -7,7 +7,7 @@ import { prisma } from './db';
 import { buildQueueOptions } from './queue';
 import { isRetryableError, WorkerError } from './src/utils/error-handler';
 import { WorkerLogger } from './logger';
-import { checkIdempotent, endJob, logError, markCompleted, startJob } from './processor-base';
+import { checkIdempotent, endJob, logError, startJob } from './processor-base';
 
 const log = new WorkerLogger('media-worker');
 
@@ -44,27 +44,30 @@ export const mediaWorker = new Worker(
         data: { status: 'PROCESSING' },
       });
 
-      await job.updateProgress(50);
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      const outputUrl = process.env.CDN_BASE_URL
-        ? `${process.env.CDN_BASE_URL}/media/${jobId}.mp4`
-        : `${process.env.APP_URL || 'http://localhost:3001'}/uploads/media/${jobId}.mp4`;
+      // No video-rendering provider is integrated in this codebase yet. Rather
+      // than fabricating an output URL pointing at a non-existent .mp4 (which
+      // surfaces a dead link to the user), terminate the job in an honest
+      // FAILED state with an explicit unavailable reason. The UI reads
+      // status === 'FAILED' + null outputUrl as a setup-required/failed state.
+      // When a real renderer adapter ships, wire it here (call provider with a
+      // timeout + error handling, then persist the REAL outputUrl) and switch
+      // this path to status 'COMPLETED'.
+      const unavailableReason = 'media_renderer_unavailable';
 
       await job.updateProgress(90);
       await prisma.mediaJob.updateMany({
         where: { id: jobId, workspaceId: record.workspaceId },
         data: {
-          status: 'COMPLETED',
-          outputUrl,
+          status: 'FAILED',
+          outputUrl: null,
           prompt: prompt || undefined,
         },
       });
 
       await job.updateProgress(100);
-      await markCompleted(job);
-      endJob(meta, ctxLog, job.name, 'completed');
-      ctxLog.info('media_job_complete', { jobId });
-      return;
+      endJob(meta, ctxLog, job.name, 'failed');
+      ctxLog.warn('media_job_unavailable', { jobId, reason: unavailableReason });
+      return { ok: false, status: 'unavailable', reason: unavailableReason };
     } catch (err) {
       logError(meta, ctxLog, err, job.name);
       if (job.data?.jobId) {

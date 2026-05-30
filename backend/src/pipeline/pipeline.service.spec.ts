@@ -2,10 +2,12 @@ import { BadRequestException, ForbiddenException, NotFoundException } from '@nes
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { PIPELINE_STAGE_COLORS } from '../common/kloel-colors';
+import { CrmEventEmitterService } from '../kloel/crm-emitter/crm-event-emitter.service';
 import { PipelineService } from './pipeline.service';
 
 describe('PipelineService', () => {
   let service: PipelineService;
+  let crmEmitter: { emitStageChanged: jest.Mock };
   let prisma: {
     pipeline: {
       findFirst: jest.Mock;
@@ -53,8 +55,14 @@ describe('PipelineService', () => {
       },
     };
 
+    crmEmitter = { emitStageChanged: jest.fn().mockResolvedValue(undefined) };
+
     const module: TestingModule = await Test.createTestingModule({
-      providers: [PipelineService, { provide: PrismaService, useValue: prisma }],
+      providers: [
+        PipelineService,
+        { provide: PrismaService, useValue: prisma },
+        { provide: CrmEventEmitterService, useValue: crmEmitter },
+      ],
     }).compile();
 
     service = module.get<PipelineService>(PipelineService);
@@ -137,6 +145,55 @@ describe('PipelineService', () => {
       expect(prisma.deal.update).toHaveBeenCalledWith({
         where: { id: dealId },
         data: { stageId },
+      });
+    });
+
+    it('emits commerce.crm.stage_changed with from/to stage names on a stage move', async () => {
+      const deal = {
+        id: dealId,
+        contactId: 'c-1',
+        contact: { customFields: {} },
+        stage: { name: 'Lead', pipeline: { workspaceId: wsId } },
+      };
+      const stage = {
+        id: stageId,
+        name: 'Contacted',
+        pipeline: { workspaceId: wsId },
+      };
+
+      prisma.deal.findUnique.mockResolvedValue(deal);
+      prisma.stage.findUnique.mockResolvedValue(stage);
+      prisma.deal.update.mockResolvedValue({ id: dealId, stageId });
+
+      await service.updateDealStage(wsId, dealId, stageId);
+
+      expect(crmEmitter.emitStageChanged).toHaveBeenCalledWith(
+        wsId,
+        dealId,
+        'Lead',
+        'Contacted',
+        'c-1',
+      );
+    });
+
+    it('does not throw when the stage-changed emission rejects', async () => {
+      prisma.deal.findUnique.mockResolvedValue({
+        id: dealId,
+        contactId: 'c-1',
+        contact: { customFields: {} },
+        stage: { name: 'Lead', pipeline: { workspaceId: wsId } },
+      });
+      prisma.stage.findUnique.mockResolvedValue({
+        id: stageId,
+        name: 'Contacted',
+        pipeline: { workspaceId: wsId },
+      });
+      prisma.deal.update.mockResolvedValue({ id: dealId, stageId });
+      crmEmitter.emitStageChanged.mockRejectedValue(new Error('spine down'));
+
+      await expect(service.updateDealStage(wsId, dealId, stageId)).resolves.toEqual({
+        id: dealId,
+        stageId,
       });
     });
 

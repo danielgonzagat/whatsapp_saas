@@ -4,17 +4,22 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PIPELINE_STAGE_COLORS } from '../common/kloel-colors';
 import type { ContactCustomFields } from '../contacts/contact-custom-fields.types';
+import { CrmEventEmitterService } from '../kloel/crm-emitter/crm-event-emitter.service';
 
 /** Pipeline service. */
 @Injectable()
 export class PipelineService {
   private readonly logger = new Logger(PipelineService.name);
 
-  constructor(private prisma: PrismaService) {
+  constructor(
+    private prisma: PrismaService,
+    @Optional() private readonly crmEmitter?: CrmEventEmitterService,
+  ) {
     this.logger.log('PipelineService initialized');
   }
 
@@ -69,7 +74,7 @@ export class PipelineService {
           id: true,
           contactId: true,
           contact: { select: { customFields: true } },
-          stage: { select: { pipeline: { select: { workspaceId: true } } } },
+          stage: { select: { name: true, pipeline: { select: { workspaceId: true } } } },
         },
       }),
       this.prisma.stage.findUnique({
@@ -99,6 +104,14 @@ export class PipelineService {
       where: { id: dealId },
       data: { stageId },
     });
+
+    // Mirror the CRM write path: surface the stage move onto the cognitive
+    // spine so downstream consumers see /pipeline moves, not just /crm/deals.
+    const fromStage = deal.stage?.name ?? 'unknown';
+    const toStage = stage.name ?? 'unknown';
+    void this.crmEmitter
+      ?.emitStageChanged(workspaceId, dealId, fromStage, toStage, deal.contactId)
+      .catch(() => undefined);
 
     return updated;
   }
