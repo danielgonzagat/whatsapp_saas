@@ -28,16 +28,31 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 function binaryCandidates() {
   const plat = process.platform;
   const arch = process.arch;
-  if (plat === 'darwin') return [`pi_natives.${plat}-${arch}.node`];
-  if (plat === 'linux') {
-    return [
-      `pi_natives.${plat}-${arch}-gnu.node`,
-      `pi_natives.${plat}-${arch}-musl.node`,
-      `pi_natives.${plat}-${arch}.node`,
-    ];
+  const base = `pi_natives.${plat}-${arch}`;
+  // Order = most-capable first, safest fallback last. The npm-published
+  // @oh-my-pi/pi-natives ships AVX2-gated `-modern`/`-baseline` x64 variants
+  // plus bare arm64; older builds used `-gnu`/`-musl`/`-msvc`. Try all.
+  if (plat === 'darwin') {
+    return arch === 'arm64'
+      ? [`${base}.node`, `${base}-baseline.node`]
+      : [`${base}-modern.node`, `${base}-baseline.node`, `${base}.node`];
   }
-  if (plat === 'win32') return [`pi_natives.${plat}-${arch}-msvc.node`, `pi_natives.${plat}-${arch}.node`];
-  return [`pi_natives.${plat}-${arch}.node`];
+  if (plat === 'linux') {
+    if (arch === 'x64') {
+      return [
+        `${base}-modern.node`,
+        `${base}-baseline.node`,
+        `${base}-gnu.node`,
+        `${base}-musl.node`,
+        `${base}.node`,
+      ];
+    }
+    return [`${base}.node`, `${base}-gnu.node`, `${base}-musl.node`];
+  }
+  if (plat === 'win32') {
+    return [`${base}-baseline.node`, `${base}-modern.node`, `${base}-msvc.node`, `${base}.node`];
+  }
+  return [`${base}.node`];
 }
 
 function candidatePaths() {
