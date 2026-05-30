@@ -11,8 +11,8 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { applyEdits, type TextEditSpec } from './engine.js';
 import { resolveSafeTarget } from './guard.js';
-import { readUtf8, guardSha, atomicWrite, log } from './server-helpers-io.js';
-import { ok, fail, commit, type ToolOk } from './server-helpers-result.js';
+import { readUtf8, guardSha, log } from './server-helpers-io.js';
+import { ok, fail, commit, writeWithTrace, type ToolOk } from './server-helpers-result.js';
 
 /** UTF-16 string offset -> 1-based {line,column} (inverse of engine.posToOffset). */
 function offsetToPos(text: string, offset: number): { line: number; column: number } {
@@ -218,7 +218,7 @@ export function registerToolsLocate(server: McpServer): void {
             method: r.method,
           });
         }
-        atomicWrite(absPath, r.newText);
+        writeWithTrace(relPath, absPath, before, r.newText, 'atomic_rename_symbol_universal', r.validation);
         log(`universal rename ${r.oldName}->${r.newName}: ${r.occurrences} occurrences via ${r.method}`);
         return ok({
           ok: true,

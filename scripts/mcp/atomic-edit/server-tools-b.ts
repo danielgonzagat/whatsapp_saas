@@ -6,8 +6,8 @@ import { resolveSafeTarget } from './guard.js';
 import { buildTrace, levelFor, shapePayload, writeTrace } from './trace.js';
 import { browse, outline, readSymbol } from './nav.js';
 import { previewDiff, characterDiff } from './advanced.js';
-import { sha256, guardSha, log, atomicWrite, readUtf8, targetDetails } from './server-helpers-io.js';
-import { ok, fail, commit } from './server-helpers-result.js';
+import { sha256, guardSha, log, readUtf8, targetDetails } from './server-helpers-io.js';
+import { ok, fail, commit, writeWithTrace } from './server-helpers-result.js';
 
 const pos = z.object({
   line: z.number().int().min(1).describe('1-based line'),
@@ -192,7 +192,7 @@ server.registerTool(
       }
       if (r.newText === before)
         return ok({ ok: true, changed: false, note: 'no change', file: relPath });
-      atomicWrite(absPath, r.newText);
+      writeWithTrace(relPath, absPath, before, r.newText, 'atomic_rename_symbol', r.validation);
       log(`renamed ${r.symbol} in ${relPath} (${r.occurrences} refs)`);
       return ok({
         ok: true,

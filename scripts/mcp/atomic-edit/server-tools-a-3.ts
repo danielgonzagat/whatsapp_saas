@@ -4,8 +4,8 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { applyEdits } from './engine.js';
 import { resolveSafeTarget } from './guard.js';
-import { guardSha, atomicWrite, readUtf8 } from './server-helpers-io.js';
-import { ok, fail, commit } from './server-helpers-result.js';
+import { guardSha, readUtf8 } from './server-helpers-io.js';
+import { ok, fail, commit, writeWithTrace } from './server-helpers-result.js';
 import { replaceCalleeKeepArgs, replaceCallArg, insertCallArg, removeCallArg } from './engine-ops.js';
 import { universalReplaceLiteral, universalReplacePropertyValue, universalRenamePropertyKey } from './engine-universal.js';
 
@@ -150,7 +150,7 @@ server.registerTool(
       if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
       if (r.newText === before) return ok({ ok: true, changed: false, note: 'callee already matches', file: relPath });
       if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath, oldCallee: r.oldCallee, newCallee: r.newCallee });
-      atomicWrite(absPath, r.newText);
+      writeWithTrace(relPath, absPath, before, r.newText, 'atomic_replace_callee', r.validation);
       return ok({ ok: true, changed: true, file: relPath, oldCallee: r.oldCallee, newCallee: r.newCallee });
     } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
   },
@@ -177,7 +177,7 @@ server.registerTool(
       if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
       if (r.newText === before) return ok({ ok: true, changed: false, note: 'no change', file: relPath });
       if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath });
-      atomicWrite(absPath, r.newText);
+      writeWithTrace(relPath, absPath, before, r.newText, 'atomic_replace_arg', r.validation);
       return ok({ ok: true, changed: true, file: relPath });
     } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
   },
@@ -203,7 +203,7 @@ server.registerTool(
       const r = insertCallArg(relPath, before, a.line, a.column, a.argIndex, a.newText);
       if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
       if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath });
-      atomicWrite(absPath, r.newText);
+      writeWithTrace(relPath, absPath, before, r.newText, 'atomic_insert_arg', r.validation);
       return ok({ ok: true, changed: true, file: relPath });
     } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
   },
@@ -229,7 +229,7 @@ server.registerTool(
       if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
       if (r.newText === before) return ok({ ok: true, changed: false, note: 'no change', file: relPath });
       if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath });
-      atomicWrite(absPath, r.newText);
+      writeWithTrace(relPath, absPath, before, r.newText, 'atomic_remove_arg', r.validation);
       return ok({ ok: true, changed: true, file: relPath });
     } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
   },
@@ -256,7 +256,7 @@ server.registerTool(
       if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
       if (r.newText === before) return ok({ ok: true, changed: false, note: 'no change', file: relPath });
       if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath, oldText: r.oldText, newLiteral: r.newLiteral });
-      atomicWrite(absPath, r.newText);
+      writeWithTrace(relPath, absPath, before, r.newText, 'atomic_replace_literal_universal', r.validation);
       return ok({ ok: true, changed: true, file: relPath, oldText: r.oldText, newLiteral: r.newLiteral });
     } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
   },
@@ -277,7 +277,7 @@ server.registerTool(
       if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
       if (r.newText === before) return ok({ ok: true, changed: false, note: 'no change', file: relPath });
       if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath, key: r.key, oldValue: r.oldValue, newValue: r.newValue });
-      atomicWrite(absPath, r.newText);
+      writeWithTrace(relPath, absPath, before, r.newText, 'atomic_replace_property_value_universal', r.validation);
       return ok({ ok: true, changed: true, file: relPath, key: r.key, oldValue: r.oldValue, newValue: r.newValue });
     } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
   },
@@ -297,7 +297,7 @@ server.registerTool(
       const r = universalRenamePropertyKey(relPath, before, a.property, a.newKey);
       if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
       if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath, key: r.key, newKey: r.newKey });
-      atomicWrite(absPath, r.newText);
+      writeWithTrace(relPath, absPath, before, r.newText, 'atomic_rename_property_key_universal', r.validation);
       return ok({ ok: true, changed: true, file: relPath, key: r.key, newKey: r.newKey });
     } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
   },

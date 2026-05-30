@@ -1,8 +1,8 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { resolveSafeTarget } from './guard.js';
-import { atomicWrite, readUtf8 } from './server-helpers-io.js';
-import { ok, fail } from './server-helpers-result.js';
+import { readUtf8 } from './server-helpers-io.js';
+import { ok, fail, writeWithTrace } from './server-helpers-result.js';
 import { replaceOperator, reorderListItem, changeSignature, replaceBodyKeepSignature, addDecorator, replaceDecorator, moveIntoScope } from './engine-complete.js';
 
 export function registerToolsA2(server: McpServer): void {
@@ -20,7 +20,7 @@ server.registerTool('atomic_replace_operator', {
     if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
     if (r.newText === before) return ok({ ok: true, changed: false, note: 'operator already matches', file: relPath });
     if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath, oldOp: r.oldOp, newOp: r.newOp });
-    atomicWrite(absPath, r.newText);
+    writeWithTrace(relPath, absPath, before, r.newText, 'atomic_replace_operator', r.validation);
     return ok({ ok: true, changed: true, file: relPath, oldOp: r.oldOp, newOp: r.newOp });
   } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
 });
@@ -37,7 +37,7 @@ server.registerTool('atomic_reorder_list', {
     if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
     if (r.newText === before) return ok({ ok: true, changed: false, file: relPath });
     if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath, moved: r.moved, fromIndex: r.fromIndex, toIndex: r.toIndex });
-    atomicWrite(absPath, r.newText);
+    writeWithTrace(relPath, absPath, before, r.newText, 'atomic_reorder_list', r.validation);
     return ok({ ok: true, changed: true, file: relPath, moved: r.moved, fromIndex: r.fromIndex, toIndex: r.toIndex });
   } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
 });
@@ -54,7 +54,7 @@ server.registerTool('atomic_change_signature', {
     if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
     if (r.newText === before) return ok({ ok: true, changed: false, file: relPath });
     if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath });
-    atomicWrite(absPath, r.newText);
+    writeWithTrace(relPath, absPath, before, r.newText, 'atomic_change_signature', r.validation);
     return ok({ ok: true, changed: true, file: relPath });
   } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
 });
@@ -70,7 +70,7 @@ server.registerTool('atomic_replace_body', {
     const r = replaceBodyKeepSignature(relPath, before, a.fnLine, a.fnColumn, a.newBody);
     if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
     if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath });
-    atomicWrite(absPath, r.newText);
+    writeWithTrace(relPath, absPath, before, r.newText, 'atomic_replace_body', r.validation);
     return ok({ ok: true, changed: true, file: relPath });
   } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
 });
@@ -86,7 +86,7 @@ server.registerTool('atomic_add_decorator', {
     const r = addDecorator(relPath, before, a.targetLine, a.decorator);
     if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
     if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath });
-    atomicWrite(absPath, r.newText);
+    writeWithTrace(relPath, absPath, before, r.newText, 'atomic_add_decorator', r.validation);
     return ok({ ok: true, changed: true, file: relPath });
   } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
 });
@@ -102,7 +102,7 @@ server.registerTool('atomic_replace_decorator', {
     const r = replaceDecorator(relPath, before, a.targetLine, a.oldDecorator, a.newDecorator);
     if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
     if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath });
-    atomicWrite(absPath, r.newText);
+    writeWithTrace(relPath, absPath, before, r.newText, 'atomic_replace_decorator', r.validation);
     return ok({ ok: true, changed: true, file: relPath });
   } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
 });
@@ -119,7 +119,7 @@ server.registerTool('atomic_move_into_scope', {
     if (!r.validation.ok) return fail('rejected: ' + (r.validation.introduced ?? 'syntax regression'));
     if (r.newText === before) return ok({ ok: true, changed: false, file: relPath });
     if (a.preview ?? false) return ok({ ok: true, preview: true, changed: false, file: relPath });
-    atomicWrite(absPath, r.newText);
+    writeWithTrace(relPath, absPath, before, r.newText, 'atomic_move_into_scope', r.validation);
     return ok({ ok: true, changed: true, file: relPath });
   } catch (e) { return fail(e instanceof Error ? e.message : String(e)); }
 });

@@ -213,3 +213,50 @@ export function commit(
     }
   }
 }
+
+/**
+ * Single-file whole-content write THROUGH the trace ledger: atomicWrite +
+ * buildTrace + writeTrace. For tools that compute `after` themselves and return
+ * a CUSTOM payload (so they cannot use commit() without reshaping their result
+ * and breaking callers). This upholds the "every mutation persists an
+ * AtomicEditTrace" invariant for those tools without changing their return
+ * shape. Trace failure never aborts a successful write — the trace is the
+ * receipt, not the mutation.
+ */
+export function writeWithTrace(
+  relPath: string,
+  absPath: string,
+  before: string,
+  after: string,
+  operator: string,
+  validation: ValidationResult,
+): void {
+  atomicWrite(absPath, after);
+  try {
+    const repoRoot = resolveAllowedRootForAbsolutePath(absPath) ?? REPO_ROOT;
+    const zones = computeZones(before, after);
+    const trace = buildTrace({
+      file: relPath,
+      repoRoot,
+      operator,
+      before,
+      newText: after,
+      inlinePreview: characterDiff(before, after, relPath),
+      validation: { language: validation.language, before: validation.before, after: validation.after },
+      metrics: {
+        changedChars: 0,
+        lineRewriteSurfaceChars: 0,
+        expansionFactorAvoided: 1,
+        bytesNet: after.length - before.length,
+      },
+      preservedZones: zones.preservedZones,
+      modifiedZones: zones.modifiedZones,
+      movementZones: zones.movementZones,
+      preview: false,
+      changed: true,
+    });
+    writeTrace(trace);
+  } catch {
+    /* trace is the durable receipt, not the mutation — never fail a good write on it */
+  }
+}
