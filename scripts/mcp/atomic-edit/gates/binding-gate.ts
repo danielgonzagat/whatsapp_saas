@@ -325,18 +325,13 @@ const bindingGate: GateModule = {
       if (now === null) continue;
 
       const isTs = TS_RE.test(rel);
-      // before-content for NEW-only semantics: overlay never holds the prior, so
-      // we ask the tree (disk) for the pre-write content. A brand-new file has no
-      // prior → every unbound name in it is new (the change's full claim).
-      let beforeText: string | null = null;
-      if (ctx.existsInTree(rel) && ctx.overlay.has(rel.replaceAll('\\', '/'))) {
-        // overlay is the candidate; prior lives on disk — but ctx.readFile returns
-        // overlay-wins, so reconstruct prior via the resolver-free fs path:
-        beforeText = readPriorFromDisk(ctx, rel);
-      } else if (!ctx.overlay.has(rel.replaceAll('\\', '/'))) {
-        // read-direction (no overlay): there is no "before"; the whole file is judged.
-        beforeText = null;
-      }
+      // before-content via the SHARED context (consistent with every other gate):
+      // ctx.priorOf is the prior disk bytes in the WRITE direction (NEW-unbound-only
+      // delta) and '' in the LENS/read direction (judge the whole file/candidate
+      // absolutely). '' → null → every unbound name is this claim. This is what lets
+      // the repair engine judge a candidate-in-overlay absolutely, not delta-vs-disk.
+      const beforeRaw = ctx.priorOf(rel);
+      const beforeText: string | null = beforeRaw === '' ? null : beforeRaw;
 
       let nowUnbound: Unbound[] | null;
       let beforeUnbound: Unbound[] | null;

@@ -36,6 +36,7 @@ const ENTRY = [
   'smoke.ts',
   'gates/registry.ts',
   'gates/lens.ts',
+  'gates/repair.ts',
 ].map((f) => path.join(dir, f));
 const OUT = path.join(dir, 'dist');
 

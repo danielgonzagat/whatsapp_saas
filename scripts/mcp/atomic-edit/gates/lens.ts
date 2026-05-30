@@ -54,10 +54,35 @@ export interface LensReport {
   ran: string[];
 }
 
+/**
+ * Resolve a scope to the repo-relative source files to scan. Accepts a directory
+ * (recursed), a single source file, or a comma-separated list of files/dirs — so
+ * loose top-level files can be scanned IN PLACE (their real node_modules / relative
+ * imports resolve), never relocated to a temp dir (which fabricated supply-chain FPs).
+ */
+function resolveScope(repoRoot: string, scopeRel: string): string[] {
+  const parts = scopeRel.split(',').map((s) => s.trim()).filter(Boolean);
+  const out = new Set<string>();
+  for (const part of parts) {
+    const abs = path.resolve(repoRoot, part);
+    let st: fs.Stats | null = null;
+    try {
+      st = fs.statSync(abs);
+    } catch {
+      continue;
+    }
+    if (st.isDirectory()) {
+      for (const f of enumerateSource(repoRoot, abs)) out.add(f);
+    } else if (SOURCE_RE.test(abs) && !abs.endsWith('.proof.ts')) {
+      out.add(path.relative(repoRoot, abs).replaceAll('\\', '/'));
+    }
+  }
+  return [...out];
+}
+
 /** Sweep the lens over a repo-relative scope. Empty overlay → gates read committed bytes. */
 export async function runLens(repoRoot: string, scopeRel: string): Promise<LensReport> {
-  const scopeAbs = path.resolve(repoRoot, scopeRel);
-  const files = enumerateSource(repoRoot, scopeAbs);
+  const files = resolveScope(repoRoot, scopeRel);
   const run = await runGates(LENS_GATES, repoRoot, new Map<string, string>(), files, true);
   return { scanned: files.length, reds: run.reds, unjudged: run.unjudged, ran: run.ran };
 }
