@@ -11,7 +11,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { applyEdits, type TextEditSpec } from './engine.js';
 import { resolveSafeTarget } from './guard.js';
-import { readUtf8, guardSha } from './server-helpers-io.js';
+import { readUtf8, guardSha, atomicWrite, log } from './server-helpers-io.js';
 import { ok, fail, commit, type ToolOk } from './server-helpers-result.js';
 
 /** UTF-16 string offset -> 1-based {line,column} (inverse of engine.posToOffset). */
@@ -168,6 +168,66 @@ export function registerToolsLocate(server: McpServer): void {
           endLine: end.line,
           endColumn: end.column,
           matched: a.anchor,
+        });
+      } catch (e) {
+        return fail(e instanceof Error ? e.message : String(e));
+      }
+    },
+  );
+
+  // Recovered capability (was defined in the never-wired server-semantic-tools.ts):
+  // scope-correct rename across ANY language. The genuinely-absent tool the
+  // codebase intended to ship but never connected.
+  server.registerTool(
+    'atomic_rename_symbol_universal',
+    {
+      title: 'Scope-correct rename across ANY language (TS via ts-morph, others via tree-sitter/identifier)',
+      description:
+        'Rename the symbol at (line,column) across the file. TS/JS: ts-morph (scope-correct, respects ' +
+        'binding/shadowing). All other languages: identifier word-boundary matching + tree-sitter scope ' +
+        'analysis when available, syntax-validated. The universal rename_symbol that works on any source file.',
+      inputSchema: {
+        file: z.string(),
+        line: z.number().int().min(1),
+        column: z.number().int().min(1),
+        newName: z.string().min(1),
+        preview: z.boolean().optional(),
+      },
+    },
+    async (a) => {
+      try {
+        const { absPath, relPath } = resolveSafeTarget(a.file);
+        const before = readUtf8(absPath);
+        const { universalRename } = await import('./engine-rename.js');
+        const r = await universalRename(relPath, before, { line: a.line, column: a.column }, a.newName);
+        if (!r.validation.ok) {
+          return fail('Rename rejected: ' + (r.validation.introduced ?? 'syntax regression'));
+        }
+        if (r.newText === before) {
+          return ok({ ok: true, changed: false, note: 'no change (names already identical)', file: relPath });
+        }
+        if (a.preview ?? false) {
+          return ok({
+            ok: true,
+            preview: true,
+            changed: false,
+            file: relPath,
+            oldName: r.oldName,
+            newName: r.newName,
+            occurrences: r.occurrences,
+            method: r.method,
+          });
+        }
+        atomicWrite(absPath, r.newText);
+        log(`universal rename ${r.oldName}->${r.newName}: ${r.occurrences} occurrences via ${r.method}`);
+        return ok({
+          ok: true,
+          changed: true,
+          file: relPath,
+          oldName: r.oldName,
+          newName: r.newName,
+          occurrences: r.occurrences,
+          method: r.method,
         });
       } catch (e) {
         return fail(e instanceof Error ? e.message : String(e));

@@ -8,7 +8,8 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
   const names = tools.tools.map((t: { name: string }) => t.name).sort();
     check(
       'server lists all 62 tools (incl. content-addressed atomic_replace_at + atomic_locate + universal native engine: atomic_grep + atomic_glob + atomic_outline + atomic_ast_search + atomic_ast_edit + atomic_ast_rewrite + atomic_apply_workspace_edit + atomic_native_status + atomic_create_file + atomic_delete_file + code_file_stat + analyzer transaction + product apex layer + rename property key + add await to call + insert after anchor + insert before anchor + replace between anchors + replace text in anchor region + atomic_edit unified router + code_outline_batch)',
-      names.length === 63 &&
+      names.length === 64 &&
+          names.includes('atomic_rename_symbol_universal') &&
           names.includes('atomic_bypass_report') &&
           names.includes('atomic_replace_at') &&
           names.includes('atomic_locate') &&
