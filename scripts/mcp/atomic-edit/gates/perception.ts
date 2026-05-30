@@ -86,12 +86,18 @@ export async function importSpecs(content: string, rel: string): Promise<string[
   const nodes = await astNodes(content, lang, new Set(['import_statement', 'call_expression']));
   if (nodes === null) return null;
   const specs: string[] = [];
-  const re = /\bfrom\s+['"]([^'"]+)['"]|^\s*import\s+['"]([^'"]+)['"]|\brequire\s*\(\s*['"]([^'"]+)['"]/;
   for (const n of nodes) {
-    // n.text is a real import_statement / call_expression (code) — the regex over
-    // THIS node's own text is safe: it cannot be inside a comment or unrelated string.
-    const m = re.exec(n.text);
-    if (m) specs.push((m[1] ?? m[2] ?? m[3]) as string);
+    if (n.type === 'import_statement') {
+      // import { x } from 'spec'  |  import 'spec'  — the only string in the node is the specifier
+      const m = /\bfrom\s+['"]([^'"]+)['"]|^\s*import\s+['"]([^'"]+)['"]/.exec(n.text);
+      if (m) specs.push((m[1] ?? m[2]) as string);
+    } else {
+      // call_expression: ONLY a require(...)/import(...) whose callee STARTS the node text.
+      // Anchoring at ^ stops `it('… from "X" …')` / `foo('require("y")')` — a `from`/`require`
+      // appearing inside a STRING ARGUMENT of any other call — from being read as a specifier.
+      const m = /^(?:require|import)\s*\(\s*['"]([^'"]+)['"]/.exec(n.text.trimStart());
+      if (m) specs.push(m[1]);
+    }
   }
   return specs;
 }

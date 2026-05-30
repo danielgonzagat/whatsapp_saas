@@ -126,7 +126,10 @@ function splitAttribute(attrText: string): { name: string; value: string } | nul
 /** From a jsx_attribute value, the bare-identifier handler, if the value is `{ident}`. */
 function bareHandlerIdent(value: string): string | null {
   const m = /^\{\s*([A-Za-z_$][\w$]*)\s*\}$/.exec(value);
-  return m ? m[1] : null;
+  if (!m) return null;
+  // {null}/{undefined} is an explicit no-op handler (a nullable, guarded prop) — not a dead wire.
+  if (m[1] === 'null' || m[1] === 'undefined') return null;
+  return m[1];
 }
 
 /** From a jsx_attribute value, the literal absolute path, if `"/p"` or `{"/p"}`. */
