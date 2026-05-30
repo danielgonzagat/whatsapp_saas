@@ -4,7 +4,6 @@ import { ExporterService } from './exporter.service';
 import { AttributionGuard } from './attribution.guard';
 import { CommemExporterService } from './commem-exporter.service';
 import { ValueQuantifierService } from './value-quantifier.service';
-import type { SpineEventRef } from '../mind/mind.types';
 import { makeEventFactoryMs } from '../../../test/helpers/spine-event-factory';
 
 const makeEvent = makeEventFactoryMs();

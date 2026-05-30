@@ -12,25 +12,8 @@ import { detectDesperation } from './desperation-detector';
 import { evaluateTiming } from './timing-appropriateness';
 import { evaluateBrandRisk } from './brand-protection.guard';
 import { decideSilence } from './silence-as-action.policy';
-import { shouldHandoff } from './human-handoff.trigger';
-import { proposeRecoveryActions } from './trust-recovery.tactics';
-import { TrustStateTrackerService } from './trust-state-tracker.service';
-import { toTrustEvent } from './trust.types';
 
 import type { TrustEvent } from './trust.types';
-import type { SpineEventRef } from '../mind/mind.types';
-
-const baseSpineEvent = (over: Partial<SpineEventRef> = {}): SpineEventRef => ({
-  eventId: over.eventId ?? `evt_test_${Math.random().toString(36).slice(2, 8)}`,
-  eventName: over.eventName ?? 'commerce.lead.replied',
-  workspaceId: over.workspaceId ?? 'wks_demo',
-  occurredAt: over.occurredAt ?? new Date().toISOString(),
-  truthMode: over.truthMode ?? 'observed',
-  ...(over.entityRef !== undefined ? { entityRef: over.entityRef } : {}),
-  ...(over.valence !== undefined ? { valence: over.valence } : {}),
-  ...(over.payload !== undefined ? { payload: over.payload } : {}),
-});
-
 const baseTrustEvent = (over: Partial<TrustEvent> = {}): TrustEvent => ({
   eventId: over.eventId ?? `evt_test_${Math.random().toString(36).slice(2, 8)}`,
   eventName: over.eventName ?? 'commerce.lead.replied',
@@ -38,11 +21,6 @@ const baseTrustEvent = (over: Partial<TrustEvent> = {}): TrustEvent => ({
   ...(over.valence !== undefined ? { valence: over.valence } : {}),
   ...(over.payload !== undefined ? { payload: over.payload } : {}),
 });
-
-const conversationRef = {
-  entityType: 'conversation' as const,
-  entityId: 'conv_test_001',
-};
 
 // ─── TRUST-002: Fatigue Detection ──────────────────────────────────
 
