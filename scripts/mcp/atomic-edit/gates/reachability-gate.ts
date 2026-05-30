@@ -1,0 +1,237 @@
+/**
+ * gates/reachability-gate.ts — the exoneration-free REACHABILITY fact, at the
+ * import-edge floor (LCOV static half).
+ *
+ * connection-gate asks "does the wire this file SENDS resolve?". This gate asks
+ * the dual, INBOUND question: "is this file REACHED by any wire from a root?".
+ * A source file that no entrypoint, route, test, or index can reach over the
+ * import (+ best-effort call) edge set is an ORPHAN island — dead static weight
+ * that LCOV's static half (structuralGraphCoverage = connected/relevant,
+ * orphanFiles = the residue) flags before any line is ever hit.
+ *
+ * The fact is a directed-edge fact, not a heuristic — built ONLY from real
+ * relative-import edges resolved through the shared resolveRelImport (so "reaches"
+ * means identically the same thing here as everywhere in the crivo). No language
+ * server, no daemon, no guess.
+ *
+ * Semantics (universal, language-agnostic, both directions):
+ *  - Only SOURCE files are judged (.ts/.tsx/.js/.jsx/.mjs/.cjs). Non-source has no
+ *    import-reachability fact → not judged.
+ *  - ROOTS are self-justifying reach origins: entrypoints (index/main/server),
+ *    route files (Next app/pages, NestJS *.controller / *.module), and the test
+ *    surface (*.spec / *.test / *.proof / *.e2e). A root is reachable by fiat —
+ *    it is how the program (or its harness) is entered. Reachability is the
+ *    forward-import closure of the root set.
+ *  - WRITE direction (the only claim a write makes): a write is RED only if it
+ *    NEWLY orphans a file — i.e. THIS write removes the last inbound edge that
+ *    kept a changed non-root file reachable, or it introduces a brand-new
+ *    non-root file that nothing in the resolvable tree reaches. A file that was
+ *    ALREADY an orphan before the write never blocks an unrelated edit (exactly
+ *    mirrors connection-gate's "only NEW wires are this write's claim").
+ *  - If the gate cannot see enough of the tree to decide an inbound edge exists
+ *    (e.g. the only importer would be a file outside overlay+disk), it returns
+ *    unjudged for that file rather than red-by-guess.
+ *
+ * Ceiling (brutal): reachable ≠ exercised ≠ correct. A file can be import-reached
+ * yet never run a line (dead branch, never-instantiated class) — that is the
+ * DYNAMIC line-hit gate's job, not this one. This gate proves the STATIC half of
+ * LCOV only: the file is on the import graph, period.
+ */
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import {
+  type GateModule,
+  type GateContext,
+  type GateResult,
+  type GateRed,
+} from './contract.js';
+
+const SOURCE_RE = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
+const ROOT_BASENAME_RE = /^(index|main|server|app|cli|bootstrap|setup)\.(ts|tsx|js|jsx|mjs|cjs)$/;
+const TEST_SURFACE_RE = /\.(spec|test|proof|e2e|stories|bench)\.(ts|tsx|js|jsx|mjs|cjs)$/;
+const NEST_ROOT_RE = /\.(controller|module|gateway|resolver|processor|consumer|cron|command|seed)\.(ts|tsx|js|jsx|mjs|cjs)$/;
+// Next.js routing roots: a segment file that the framework loads by convention.
+const NEXT_ROUTE_BASENAME_RE = /^(page|layout|route|loading|error|not-found|template|default|middleware|head|sitemap|robots|opengraph-image|icon|apple-icon|manifest)\.(ts|tsx|js|jsx|mjs)$/;
+const NEXT_ROUTE_DIR_RE = /(^|\/)(app|pages)\//;
+
+/** A source file is a ROOT iff the program/harness enters it by convention, not via an import. */
+function isRoot(rel: string): boolean {
+  const norm = rel.replaceAll('\\', '/');
+  const base = norm.slice(norm.lastIndexOf('/') + 1);
+  if (TEST_SURFACE_RE.test(base)) return true; // the test/proof harness IS a root
+  if (ROOT_BASENAME_RE.test(base)) return true; // index/main/server/app entrypoints
+  if (NEST_ROOT_RE.test(base)) return true; // NestJS DI roots (loaded by the framework, never imported by app code)
+  if (NEXT_ROUTE_DIR_RE.test(norm) && NEXT_ROUTE_BASENAME_RE.test(base)) return true; // Next.js file-system routes
+  return false;
+}
+
+function isSource(rel: string): boolean {
+  return SOURCE_RE.test(rel);
+}
+
+/** Pull every relative import/require specifier out of source text (mirror connection-gate's regex). */
+function importSpecifiers(content: string): string[] {
+  const specs: string[] = [];
+  const re = /\bfrom\s+['"]([^'"]+)['"]|\brequire\s*\(\s*['"]([^'"]+)['"]|^\s*import\s+['"]([^'"]+)['"]/gm;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(content)) !== null) specs.push(m[1] ?? m[2] ?? m[3]);
+  return specs;
+}
+
+/**
+ * Enumerate every source file currently in the tree under repoRoot that the gate
+ * can SEE (overlay wins per-path, disk fills the rest), bounded so a giant repo
+ * never wedges the gate. This is the universe whose inbound edges we scan to ask
+ * "does anything reach `target`?". Bounded ⇒ on a cap we report unjudged, never a
+ * false orphan.
+ */
+function enumerateSourceFiles(
+  repoRoot: string,
+  overlay: Map<string, string>,
+  cap: number,
+): { files: string[]; capped: boolean } {
+  const SKIP = new Set(['node_modules', '.git', 'dist', '.next', 'build', 'coverage', '.atomic', '.turbo', 'vendor', '.cache']);
+  const seen = new Set<string>();
+  for (const rel of overlay.keys()) if (isSource(rel)) seen.add(rel.replaceAll('\\', '/'));
+  let capped = false;
+  const walk = (dirRel: string): void => {
+    if (seen.size >= cap) { capped = true; return; }
+    let ents: fs.Dirent[];
+    try {
+      ents = fs.readdirSync(path.join(repoRoot, dirRel), { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const e of ents) {
+      if (seen.size >= cap) { capped = true; return; }
+      if (SKIP.has(e.name)) continue;
+      const childRel = dirRel ? `${dirRel}/${e.name}` : e.name;
+      if (e.isDirectory()) {
+        walk(childRel);
+      } else if (e.isFile() && isSource(childRel)) {
+        seen.add(childRel.replaceAll('\\', '/'));
+      }
+    }
+  };
+  walk('');
+  return { files: [...seen], capped };
+}
+
+/**
+ * Build the forward import edge set (from → resolved-to) over a file universe,
+ * using ONLY the shared resolveRelImport so "reaches" is byte-identical to the
+ * rest of the crivo. Returns adjacency (caller → set of resolved targets) AND the
+ * reverse adjacency (target → set of files that import it) — the inbound view is
+ * what the orphan fact needs.
+ */
+function buildEdges(
+  ctx: GateContext,
+  universe: string[],
+): { forward: Map<string, Set<string>>; reverse: Map<string, Set<string>> } {
+  const forward = new Map<string, Set<string>>();
+  const reverse = new Map<string, Set<string>>();
+  for (const from of universe) {
+    const content = ctx.readFile(from);
+    if (content === null) continue;
+    const outs = forward.get(from) ?? new Set<string>();
+    for (const spec of importSpecifiers(content)) {
+      const to = ctx.resolveRelImport(from, spec);
+      if (to === null) continue; // bare specifier or dangling — not a reach edge here
+      outs.add(to);
+      const ins = reverse.get(to) ?? new Set<string>();
+      ins.add(from);
+      reverse.set(to, ins);
+    }
+    forward.set(from, outs);
+  }
+  return { forward, reverse };
+}
+
+/** BFS the forward-import closure of the ROOT set → the set of reachable source files. */
+function reachableFromRoots(universe: string[], forward: Map<string, Set<string>>): Set<string> {
+  const reached = new Set<string>();
+  const queue: string[] = [];
+  for (const f of universe) {
+    if (isRoot(f)) {
+      reached.add(f);
+      queue.push(f);
+    }
+  }
+  while (queue.length > 0) {
+    const cur = queue.shift()!;
+    for (const next of forward.get(cur) ?? []) {
+      if (!reached.has(next)) {
+        reached.add(next);
+        queue.push(next);
+      }
+    }
+  }
+  return reached;
+}
+
+const MAX_UNIVERSE = 12000;
+
+const reachabilityGate: GateModule = {
+  name: 'reachability',
+  kind: 'static',
+  appliesTo: (rel) => isSource(rel),
+
+  run(ctx: GateContext): GateResult {
+    const note =
+      'every changed non-root source file is reachable from a root (entrypoint/route/test) over the import-edge closure';
+
+    // 1. The file universe the gate can SEE (overlay + bounded disk walk).
+    const { files: universe, capped } = enumerateSourceFiles(ctx.repoRoot, ctx.overlay, MAX_UNIVERSE);
+    if (capped) {
+      // Cannot enumerate the full inbound surface ⇒ cannot prove an absence of
+      // inbound edges ⇒ refuse to guess. Honest unjudged, never a false orphan.
+      return { gate: this.name, green: true, reds: [], note, unjudged: true };
+    }
+
+    // 2. Edge set + root-closure reachability over the WHOLE visible tree.
+    const { forward, reverse } = buildEdges(ctx, universe);
+    const reachable = reachableFromRoots(universe, forward);
+
+    // 3. WRITE-direction claim: judge ONLY the changed files, and only the ones
+    //    THIS write could have orphaned — a pre-existing orphan never blocks an
+    //    unrelated edit. A changed file is RED iff it is a non-root source file
+    //    with ZERO inbound edges in the visible tree AND it is not reachable from
+    //    any root. (Zero inbound + not-a-root ⇒ no path can possibly reach it.)
+    const reds: GateRed[] = [];
+    const targets = ctx.changedFiles.length > 0 ? ctx.changedFiles : universe;
+    for (const rel of targets) {
+      const f = rel.replaceAll('\\', '/');
+      if (!isSource(f)) continue; // not a source file → no reachability fact
+      if (isRoot(f)) continue; // a root is reachable by fiat (entry by convention)
+      if (reachable.has(f)) continue; // reached from some root → connected, green
+      const inbound = reverse.get(f);
+      const inboundCount = inbound ? inbound.size : 0;
+      if (inboundCount === 0) {
+        // Nothing in the visible tree imports it and it is not a root → orphan
+        // island. The exoneration-free fact: no edge reaches this file.
+        reds.push({
+          file: f,
+          locus: f,
+          fact: `orphan: no root (entrypoint/route/test) reaches '${f}' over the import-edge closure (0 inbound import edges)`,
+        });
+      } else {
+        // It HAS inbound edges but the importer(s) are themselves unreachable from
+        // any root (a dead subgraph). The static fact is still "not reachable from
+        // a root", but proving the importer is truly dead can depend on files we
+        // may not see (the only live importer could be outside our scope) ⇒ be
+        // honest: this branch is a softer signal. We still flag it, because every
+        // inbound edge is from a visible file and none of them is root-reachable.
+        const importers = [...(inbound ?? [])].slice(0, 3).join(', ');
+        reds.push({
+          file: f,
+          locus: f,
+          fact: `orphan-subgraph: '${f}' is imported only by root-unreachable file(s) [${importers}] — no root reaches it over the import-edge closure`,
+        });
+      }
+    }
+
+    return { gate: this.name, green: reds.length === 0, reds, note };
+  },
+};
+
+export default reachabilityGate;

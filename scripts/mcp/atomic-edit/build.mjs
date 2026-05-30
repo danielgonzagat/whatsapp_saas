@@ -34,6 +34,7 @@ const ENTRY = [
   'textunit.ts',
   'founder.ts',
   'smoke.ts',
+  'gates/registry.ts',
 ].map((f) => path.join(dir, f));
 const OUT = path.join(dir, 'dist');
 
