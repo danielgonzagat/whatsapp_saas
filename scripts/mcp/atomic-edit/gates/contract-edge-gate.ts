@@ -363,6 +363,7 @@ async function run(ctx: GateContext): Promise<GateResult> {
     for (const raw of nowHttp ?? []) {
       if (beforeHttp.has(raw)) continue; // not this write's claim
       if (!raw.startsWith('/')) continue; // relative/external/proxy-composed → not a backend path we own
+      if (raw.startsWith('/api/') || raw === '/api') continue; // Next.js App-Router proxy namespace (frontend/src/app/api/**/route.ts) — not the NestJS @Controller graph this gate models
       const segs = normSegs(raw);
       if (segs.length === 0) continue; // root path — nothing to assert
       if (segs[0] === '*') continue; // dynamically-composed first segment → undecidable

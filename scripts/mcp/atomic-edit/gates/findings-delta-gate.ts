@@ -170,9 +170,20 @@ function caseLabel(caseText: string): string | null {
   const t = caseText.trimStart();
   if (/^default\b/.test(t)) return null;
   const after = t.slice(t.indexOf('case') + 'case'.length);
-  const colon = after.indexOf(':');
-  if (colon < 0) return after.trim();
-  return after.slice(0, colon).trim();
+  // the clause-terminating colon, NOT a ':' inside a string/template literal
+  // (`case 'message:new':` must key on `'message:new'`, not truncate at the inner colon)
+  let q = '';
+  for (let i = 0; i < after.length; i += 1) {
+    const c = after[i];
+    if (q) {
+      if (c === '\\') i += 1;
+      else if (c === q) q = '';
+      continue;
+    }
+    if (c === "'" || c === '"' || c === '`') q = c;
+    else if (c === ':') return after.slice(0, i).trim();
+  }
+  return after.trim();
 }
 
 /** The smallest-span node in `bodies` whose byte range contains [start,end). */

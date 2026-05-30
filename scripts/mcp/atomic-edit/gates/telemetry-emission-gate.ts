@@ -113,12 +113,14 @@ function handleDeclaredInFile(handle: string, content: string): boolean {
   // newline, or `{` — i.e. member/param position, not a property *access*).
   if (
     new RegExp(
-      String.raw`(?:private|protected|public|readonly|static|declare|[,({]|^|\n)\s*(?:readonly\s+)?${h}\s*[!?]?\s*[:=]`,
+      String.raw`(?:private|protected|public|readonly|static|declare|[,({)]|^|\n)\s*(?:readonly\s+)?${h}\s*[!?]?\s*[:=]`,
       'm',
     ).test(content)
   ) {
     return true;
   }
+  // get/set accessor: `get <h>(` / `set <h>(` — a getter is a real member declaration
+  if (new RegExp(String.raw`\b(?:get|set)\s+${h}\s*\(`).test(content)) return true;
   return false;
 }
 
