@@ -12,10 +12,13 @@ jest.mock('./openai-wrapper', () => ({
   chatCompletionWithFallback: jest.fn(),
 }));
 
-jest.mock('./unified-agent-actions-workspace.helpers', () => ({
-  ...jest.requireActual('./unified-agent-actions-workspace.helpers'),
-  actionGetWorkspaceStatus: jest.fn(),
-}));
+jest.mock(
+  './unified-agent-actions-workspace.helpers',
+  (): Record<string, unknown> => ({
+    ...jest.requireActual('./unified-agent-actions-workspace.helpers'),
+    actionGetWorkspaceStatus: jest.fn(),
+  }),
+);
 
 type WorkspacePrismaMock = {
   product: { findFirst: jest.Mock; create: jest.Mock; findMany: jest.Mock; updateMany: jest.Mock };
@@ -71,7 +74,9 @@ describe('UnifiedAgentActionsWorkspaceService', () => {
       $transaction: jest
         .fn()
         .mockImplementation((fnOrArg: unknown) =>
-          typeof fnOrArg === 'function' ? fnOrArg(prisma) : Promise.resolve(undefined),
+          typeof fnOrArg === 'function'
+            ? (fnOrArg as (tx: unknown) => unknown)(prisma)
+            : Promise.resolve(undefined),
         ),
     };
     planLimits = {

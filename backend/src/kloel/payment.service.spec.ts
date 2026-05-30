@@ -41,19 +41,19 @@ describe('PaymentService — Mercado Pago Pix', () => {
   beforeEach(async () => {
     prisma = {
       workspace: {
-        findUnique: jest.fn().mockResolvedValue({
+        findUnique: jest.fn<Promise<{ id: string; name: string }>, [unknown]>().mockResolvedValue({
           id: 'ws-1',
           name: 'Workspace Teste',
         }),
       },
       memberArea: {
-        findMany: jest.fn().mockResolvedValue([]),
+        findMany: jest.fn<Promise<{ slug: string }[]>, [unknown]>().mockResolvedValue([]),
       },
       kloelSale: {
-        create: jest.fn(),
-        findFirst: jest.fn(),
-        findMany: jest.fn().mockResolvedValue([]),
-        updateMany: jest.fn(),
+        create: jest.fn<Promise<KloelSaleRecord | undefined>, [unknown]>(),
+        findFirst: jest.fn<Promise<KloelSaleRecord | null>, [unknown]>(),
+        findMany: jest.fn<Promise<unknown[]>, [unknown?]>().mockResolvedValue([]),
+        updateMany: jest.fn<Promise<unknown>, [unknown]>(),
       },
       $transaction: jest.fn(async (cb: (tx: PaymentPrismaTransaction) => Promise<unknown>) =>
         cb({

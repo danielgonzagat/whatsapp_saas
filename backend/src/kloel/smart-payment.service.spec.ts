@@ -83,35 +83,49 @@ describe('SmartPaymentService — canonical Pix payment kernel', () => {
   beforeEach(() => {
     prisma = {
       workspace: {
-        findUnique: jest.fn().mockResolvedValue({
-          name: 'Workspace Teste',
-          providerSettings: {},
-        }),
+        findUnique: jest
+          .fn<Promise<{ name: string; providerSettings: Record<string, unknown> }>, [unknown]>()
+          .mockResolvedValue({
+            name: 'Workspace Teste',
+            providerSettings: {},
+          }),
       },
       contact: {
-        findFirst: jest.fn().mockResolvedValue({
+        findFirst: jest.fn<Promise<{ id: string; name: string }>, [unknown]>().mockResolvedValue({
           id: 'contact-1',
           name: 'Cliente Pix',
         }),
       },
       kloelSale: {
-        create: jest.fn(),
+        create: jest.fn<Promise<unknown>, [unknown]>(),
       },
     };
 
     paymentService = {
-      createPayment: jest.fn().mockResolvedValue({
-        id: 'mp_pix_1',
-        invoiceUrl: 'https://www.mercadopago.com.br/payments/mp_pix_1/ticket',
-        pixQrCodeUrl: 'data:image/png;base64,qr',
-        pixCopyPaste: '000201pixcopy',
-        paymentLink: 'https://www.mercadopago.com.br/payments/mp_pix_1/ticket',
-        status: 'pending',
-      }),
+      createPayment: jest
+        .fn<
+          Promise<{
+            id: string;
+            invoiceUrl: string;
+            pixQrCodeUrl: string;
+            pixCopyPaste: string;
+            paymentLink: string;
+            status: string;
+          }>,
+          [unknown]
+        >()
+        .mockResolvedValue({
+          id: 'mp_pix_1',
+          invoiceUrl: 'https://www.mercadopago.com.br/payments/mp_pix_1/ticket',
+          pixQrCodeUrl: 'data:image/png;base64,qr',
+          pixCopyPaste: '000201pixcopy',
+          paymentLink: 'https://www.mercadopago.com.br/payments/mp_pix_1/ticket',
+          status: 'pending',
+        }),
     };
     planLimits = {
-      ensureTokenBudget: jest.fn(),
-      trackAiUsage: jest.fn().mockResolvedValue(undefined),
+      ensureTokenBudget: jest.fn<void, [string]>(),
+      trackAiUsage: jest.fn<Promise<void>, [string, number]>().mockResolvedValue(undefined),
     };
 
     service = new SmartPaymentService(
