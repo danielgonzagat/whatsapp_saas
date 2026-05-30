@@ -1,4 +1,5 @@
 import { DepsCoverageService } from './deps-coverage.service';
+import type { DepResult } from './deps-coverage.sbom.helpers';
 
 const mockReadFile = jest.fn<Promise<string>, unknown[]>();
 const mockReaddir = jest.fn<Promise<unknown[]>, unknown[]>();
@@ -12,7 +13,7 @@ describe('DepsCoverageService', () => {
   let service: DepsCoverageService;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
     service = new DepsCoverageService();
   });
 
@@ -33,11 +34,12 @@ describe('DepsCoverageService', () => {
         }),
       );
 
-      const result = await service.dependencies('backend');
+      const result = await service.dependencies('backend', undefined);
       expect(result.success).toBe(true);
-      expect(result.deps).toHaveLength(2);
-      expect(result.deps![0].name).toBe('react');
-      expect(result.deps![0].version).toBe('18.2.0');
+      const deps: DepResult[] = result.deps ?? [];
+      expect(deps).toHaveLength(2);
+      expect(deps[0].name).toBe('react');
+      expect(deps[0].version).toBe('18.2.0');
     });
 
     it('filters dependencies by pattern', async () => {

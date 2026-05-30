@@ -8,7 +8,7 @@ import { ChannelTransportRegistry } from './channel-transport.registry';
 import { DailyLimitService } from './daily-limit.service';
 import { MindEventSpine } from './mind/coordination';
 import type { IWhatsappMessaging } from '../marketing/channels/whatsapp/whatsapp.interfaces';
-import type { ChannelSendResult } from './channel-transport.types';
+import { type ChannelSendRequest } from './channel-transport.types';
 
 jest.mock('../marketing/mailbox-gmail-oauth.service', () => ({
   MailboxGmailOAuthService: jest.fn(),
@@ -68,7 +68,7 @@ describe('UnifiedAgentActionsMessagingService', () => {
     // Delegate transports.send to whatsappService.sendMessage so legacy
     // assertions on whatsappService keep firing while the new architecture
     // (transport registry) is exercised end-to-end.
-    const delegatingSend = jest.fn(async (wid, params) => {
+    const delegatingSend = jest.fn(async (wid: string, params: ChannelSendRequest) => {
       const guardContext = (params?.guardContext ?? {}) as Record<string, unknown>;
       const fullContext = {
         ...guardContext,
@@ -133,7 +133,7 @@ describe('UnifiedAgentActionsMessagingService', () => {
 
       expect(result.success).toBe(true);
       expect(result.sent).toBe(true);
-      expect(whatsappService.sendMessage).toHaveBeenCalledWith(
+      expect((whatsappService as { sendMessage: jest.Mock }).sendMessage).toHaveBeenCalledWith(
         wsId,
         phone,
         'Olá, como vai?',
@@ -213,7 +213,7 @@ describe('UnifiedAgentActionsMessagingService', () => {
         { deliveryMode: 'reactive' },
       );
 
-      expect(whatsappService.sendMessage).toHaveBeenCalledWith(
+      expect((whatsappService as { sendMessage: jest.Mock }).sendMessage).toHaveBeenCalledWith(
         wsId,
         phone,
         'Reactive test',
@@ -229,7 +229,7 @@ describe('UnifiedAgentActionsMessagingService', () => {
         { forceDirect: true },
       );
 
-      expect(whatsappService.sendMessage).toHaveBeenCalledWith(
+      expect((whatsappService as { sendMessage: jest.Mock }).sendMessage).toHaveBeenCalledWith(
         wsId,
         phone,
         'Direct test',
@@ -248,7 +248,7 @@ describe('UnifiedAgentActionsMessagingService', () => {
 
       expect(result.success).toBe(true);
       expect(result.sent).toBe(true);
-      expect(whatsappService.sendMessage).toHaveBeenCalledWith(
+      expect((whatsappService as { sendMessage: jest.Mock }).sendMessage).toHaveBeenCalledWith(
         wsId,
         phone,
         'Check this out',
@@ -296,7 +296,7 @@ describe('UnifiedAgentActionsMessagingService', () => {
         'nova',
         wsId,
       );
-      expect(whatsappService.sendMessage).toHaveBeenCalledWith(
+      expect((whatsappService as { sendMessage: jest.Mock }).sendMessage).toHaveBeenCalledWith(
         wsId,
         phone,
         '',
@@ -443,7 +443,7 @@ describe('UnifiedAgentActionsMessagingService', () => {
         message: 'Test',
       });
 
-      const sendArgs = whatsappService.sendMessage.mock.calls[0];
+      const sendArgs = (whatsappService.sendMessage as jest.Mock).mock.calls[0] as unknown[];
       expect(sendArgs.slice(0, 3)).toEqual(['ws-tenant', phone, 'Test']);
       expect(sendArgs[3]).toBeDefined();
     });
@@ -453,7 +453,7 @@ describe('UnifiedAgentActionsMessagingService', () => {
         url: 'https://img.test',
       });
 
-      const mediaArgs = whatsappService.sendMessage.mock.calls[0];
+      const mediaArgs = (whatsappService.sendMessage as jest.Mock).mock.calls[0] as unknown[];
       expect(mediaArgs.slice(0, 2)).toEqual(['ws-tenant', phone]);
       expect(typeof mediaArgs[2]).toBe('string');
       expect(mediaArgs[3]).toBeDefined();

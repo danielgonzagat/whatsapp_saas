@@ -103,23 +103,6 @@ function makeWhatsappReplyEvents(
   ];
 }
 
-function makeStageTransitionEvents(
-  stages: string[],
-): Array<{ name: string; overrides: Partial<SpineEventRef> }> {
-  const events: Array<{ name: string; overrides: Partial<SpineEventRef> }> = [];
-  for (let i = 0; i < stages.length - 1; i++) {
-    for (let j = 0; j < 10 - i; j++) {
-      events.push({
-        name: 'commerce.crm.stage_changed' as const,
-        overrides: {
-          payload: { fromStage: stages[i], toStage: stages[i + 1] },
-        },
-      });
-    }
-  }
-  return events;
-}
-
 /* ------------------------------------------------------------------ */
 /*  k-anonymity gate scenarios                                         */
 /* ------------------------------------------------------------------ */

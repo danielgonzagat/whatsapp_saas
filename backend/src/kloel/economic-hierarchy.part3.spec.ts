@@ -1,8 +1,4 @@
-import {
-  attributeHierarchy,
-  type HierarchyDecision,
-  type HierarchyLevel,
-} from './economic-hierarchy';
+import { attributeHierarchy, type HierarchyDecision } from './economic-hierarchy';
 
 describe('economic-hierarchy', () => {
   const h = (overrides: Partial<HierarchyDecision> = {}): HierarchyDecision => ({

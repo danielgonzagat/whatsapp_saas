@@ -44,7 +44,7 @@ describe('DecisionOutcomeService', () => {
         contextSnapshot: { channel: 'whatsapp' },
       });
 
-      expect(prisma.decisionOutcome.create).toHaveBeenCalledWith(
+      expect((prisma.decisionOutcome as { create: jest.Mock }).create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             workspaceId: 'ws-1',
@@ -68,18 +68,20 @@ describe('DecisionOutcomeService', () => {
         wonVsBaseline: true,
       });
 
-      expect(prisma.decisionOutcome.updateMany).toHaveBeenCalledWith({
-        where: {
-          outcomeKey: 'followup:ws-1:c1:123',
-          workspaceId: { not: '' },
-          outcomeAt: null,
+      expect((prisma.decisionOutcome as { updateMany: jest.Mock }).updateMany).toHaveBeenCalledWith(
+        {
+          where: {
+            outcomeKey: 'followup:ws-1:c1:123',
+            workspaceId: { not: '' },
+            outcomeAt: null,
+          },
+          data: expect.objectContaining({
+            outcomeName: 'inbound.received',
+            economicValue: 99.9,
+            wonVsBaseline: true,
+          }),
         },
-        data: expect.objectContaining({
-          outcomeName: 'inbound.received',
-          economicValue: 99.9,
-          wonVsBaseline: true,
-        }),
-      });
+      );
     });
   });
 
@@ -188,7 +190,7 @@ describe('DecisionOutcomeService', () => {
         expectedWindow: 24,
         contextSnapshot: { channel: 'whatsapp' },
       });
-      expect(prisma.decisionOutcome.create).toHaveBeenCalledWith(
+      expect((prisma.decisionOutcome as { create: jest.Mock }).create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({ baselineAction: null }),
         }),
@@ -256,7 +258,7 @@ describe('DecisionOutcomeService', () => {
   describe('findOpenByWorkspace', () => {
     it('queries with outcomeAt: null and orders by createdAt desc', async () => {
       await service.findOpenByWorkspace('ws-1');
-      expect(prisma.decisionOutcome.findMany).toHaveBeenCalledWith({
+      expect((prisma.decisionOutcome as { findMany: jest.Mock }).findMany).toHaveBeenCalledWith({
         where: { workspaceId: 'ws-1', outcomeAt: null },
         orderBy: { createdAt: 'desc' },
       });
@@ -267,7 +269,7 @@ describe('DecisionOutcomeService', () => {
     it('filters by workspace, decisionType, and outcomeAt >= since', async () => {
       const since = new Date('2026-05-01T00:00:00Z');
       await service.findClosedByDecisionType('ws-1', 'followup_timing', since);
-      expect(prisma.decisionOutcome.findMany).toHaveBeenCalledWith({
+      expect((prisma.decisionOutcome as { findMany: jest.Mock }).findMany).toHaveBeenCalledWith({
         where: {
           workspaceId: 'ws-1',
           decisionType: 'followup_timing',
@@ -282,7 +284,7 @@ describe('DecisionOutcomeService', () => {
     it('returns all closed rows across workspaces since the given date', async () => {
       const since = new Date('2026-05-01T00:00:00Z');
       await service.findAllClosedSince(since);
-      expect(prisma.decisionOutcome.findMany).toHaveBeenCalledWith({
+      expect((prisma.decisionOutcome as { findMany: jest.Mock }).findMany).toHaveBeenCalledWith({
         where: { workspaceId: { not: '' }, outcomeAt: { not: null, gte: since } },
         orderBy: { outcomeAt: 'desc' },
       });
@@ -297,7 +299,7 @@ describe('DecisionOutcomeService', () => {
         eventKey: 'pay_123',
       });
 
-      expect(prisma.decisionOutcomeEvent.create).toHaveBeenCalledWith(
+      expect((prisma.decisionOutcomeEvent as { create: jest.Mock }).create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             workspaceId: 'ws-1',
@@ -349,18 +351,20 @@ describe('DecisionOutcomeService', () => {
       const count = await service.sweepExpired('ws-1', 24);
 
       expect(count).toBe(2);
-      expect(prisma.decisionOutcome.updateMany).toHaveBeenCalledWith({
-        where: { id: { in: ['do-1', 'do-2'] }, workspaceId: 'ws-1' },
-        data: expect.objectContaining({
-          outcomeName: 'inbound.silent_24h',
-          wonVsBaseline: false,
-          outcomeValue: expect.objectContaining({
-            reason: 'expired_without_reply',
-            maxAgeHours: 24,
-            outcomeKeys: ['expired-key-1', 'expired-key-2'],
+      expect((prisma.decisionOutcome as { updateMany: jest.Mock }).updateMany).toHaveBeenCalledWith(
+        {
+          where: { id: { in: ['do-1', 'do-2'] }, workspaceId: 'ws-1' },
+          data: expect.objectContaining({
+            outcomeName: 'inbound.silent_24h',
+            wonVsBaseline: false,
+            outcomeValue: expect.objectContaining({
+              reason: 'expired_without_reply',
+              maxAgeHours: 24,
+              outcomeKeys: ['expired-key-1', 'expired-key-2'],
+            }),
           }),
-        }),
-      });
+        },
+      );
     });
   });
 });

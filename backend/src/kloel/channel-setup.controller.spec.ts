@@ -17,9 +17,9 @@ import { ChannelSetupService } from './channel-setup.service';
 import { BadRequestException } from '@nestjs/common';
 
 const serviceMock = new ChannelSetupService('fake' as never, 'fake' as never);
-const getStateMock = serviceMock.getState as jest.Mock;
-const saveProductsMock = serviceMock.saveProducts as jest.Mock;
-const saveConfigMock = serviceMock.saveConfig as jest.Mock;
+const getStateMock = (serviceMock as { getState: jest.Mock }).getState;
+const saveProductsMock = (serviceMock as { saveProducts: jest.Mock }).saveProducts;
+const saveConfigMock = (serviceMock as { saveConfig: jest.Mock }).saveConfig;
 
 describe('ChannelSetupController', () => {
   let controller: ChannelSetupController;

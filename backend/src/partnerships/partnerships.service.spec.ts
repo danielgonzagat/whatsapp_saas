@@ -8,6 +8,7 @@ import { AuditService } from '../audit/audit.service';
 import { EmailService } from '../auth/email.service';
 import type { PartnershipsPrismaMock } from './partnerships.service.spec.fixtures';
 import { createPartnershipsPrismaMock } from './partnerships.service.spec.fixtures';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 describe('PartnershipsService', () => {
   let service: PartnershipsService;
@@ -169,13 +170,13 @@ describe('PartnershipsService', () => {
 
       expect(prisma.affiliatePartner.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({
+          where: partialMatch({
             workspaceId: 'ws-1',
             type: 'AFFILIATE',
             status: 'PENDING',
             partnerName: { contains: 'Ana', mode: 'insensitive' },
           }),
-          select: expect.objectContaining({
+          select: partialMatch({
             totalSales: true,
             temperature: true,
             productIds: true,
@@ -477,14 +478,14 @@ describe('PartnershipsService', () => {
       expect(result.monthlyPerformance[2]).toBe(2);
       expect(prisma.checkoutOrder.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({
+          where: partialMatch({
             workspaceId: 'ws-1',
             status: { in: ['PAID', 'SHIPPED', 'DELIVERED'] },
             OR: expect.arrayContaining([
               { affiliateId: 'aff-ws-1' },
               { metadata: { path: ['affiliateCode'], equals: 'AFF-CODE-1' } },
               { metadata: { path: ['affiliateWorkspaceId'], equals: 'aff-ws-1' } },
-            ]),
+            ] as jest.AsymmetricMatcher),
           }),
         }),
       );

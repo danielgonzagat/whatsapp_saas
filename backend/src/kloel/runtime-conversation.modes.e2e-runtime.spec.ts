@@ -1,9 +1,5 @@
 import { CommercialDecisionOrchestratorService } from './commercial-decision-orchestrator.service';
 import { RuntimeConversationTracerService } from './runtime-conversation-tracer.service';
-import {
-  composeCustomerMessage,
-  assertCustomerSafe,
-} from './commercial-decision-orchestrator.service';
 
 const WS = 'ws-tracer';
 const CHANNEL = 'WHATSAPP';
@@ -15,7 +11,9 @@ function buildTracerInstrumentedEvents(
   tracer: RuntimeConversationTracerService,
   baseEvents: { recordCommercial: jest.Mock },
 ) {
-  const originalRecordCommercial = baseEvents.recordCommercial.getMockImplementation();
+  const originalRecordCommercial = baseEvents.recordCommercial.getMockImplementation() as
+    | ((event: { eventType: string; payload: Record<string, unknown> }) => unknown)
+    | undefined;
   let policyChoseEmitted = false;
   let determinismGateEmitted = false;
   let composerProducedEmitted = false;

@@ -1,6 +1,7 @@
 import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import type { PrismaService } from '../prisma/prisma.service';
 import { MemberAreaPublicController } from './member-area-public.controller';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 type PublicMemberAreaPrismaMock = {
   memberArea: {
@@ -46,7 +47,7 @@ describe('MemberAreaPublicController', () => {
     });
 
     await expect(controller.getPublicArea('curso')).resolves.toEqual({
-      area: expect.objectContaining({ id: 'area-1', slug: 'curso' }),
+      area: partialMatch({ id: 'area-1', slug: 'curso' }),
     });
   });
 
@@ -64,7 +65,7 @@ describe('MemberAreaPublicController', () => {
     expect(result.token).toContain('.');
     expect(prisma.memberEnrollment.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({
+        where: partialMatch({
           status: 'active',
           memberArea: { slug: 'curso', active: true },
         }),

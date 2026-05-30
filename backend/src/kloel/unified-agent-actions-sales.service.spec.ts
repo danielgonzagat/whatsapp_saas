@@ -1,7 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
 jest.mock('./unified-agent-actions-sales.service.helpers', () => {
-  const actual = jest.requireActual('./unified-agent-actions-sales.service.helpers');
+  const actual: Record<string, unknown> = jest.requireActual(
+    './unified-agent-actions-sales.service.helpers',
+  );
   return {
     ...actual,
     actionHandleObjection: jest.fn(),

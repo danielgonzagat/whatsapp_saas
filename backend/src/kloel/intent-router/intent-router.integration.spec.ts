@@ -184,7 +184,7 @@ describe('IntentRouter + CapabilityRegistry Integration', () => {
   it('classifies CRM lead detail query', () => {
     const result = router.classify('Detalhes do lead de maria', 'dashboard-chat', ['*']);
     expect(result.isChat).toBe(false);
-    expect(result.classification?.capabilityId).toBe('get_lead_details');
+    expect(result.classification?.capabilityId).toBe('crm.get_lead');
   });
   it('classifies theme toggle', () => {
     const result = router.classify('Muda para tema escuro', 'dashboard-chat', ['*']);

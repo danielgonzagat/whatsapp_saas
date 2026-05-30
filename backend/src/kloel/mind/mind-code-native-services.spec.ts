@@ -219,7 +219,7 @@ describe('code-native MIND services', () => {
         data: { pulls: { increment: 1 } },
       }),
     );
-    expect(prisma.mindBanditArm.update).toHaveBeenCalledWith(
+    expect(prisma.mindBanditArm.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
           workspaceId_decisionType_arm: {
@@ -228,7 +228,7 @@ describe('code-native MIND services', () => {
             arm: 'proof',
           },
         },
-        data: expect.objectContaining({ alpha: { increment: 1 }, wins: { increment: 1 } }),
+        update: expect.objectContaining({ alpha: { increment: 1 }, wins: { increment: 1 } }),
       }),
     );
   });

@@ -65,7 +65,7 @@ describe('WalletService', () => {
     });
 
     it('processes withdrawal when balance is sufficient', async () => {
-      prismaMock.$transaction.mockImplementation(async (cb: Function) => {
+      prismaMock.$transaction.mockImplementation(async (cb: (tx: unknown) => Promise<unknown>) => {
         return cb({
           kloelWallet: prismaMock.kloelWallet,
           kloelWalletTransaction: {
@@ -86,7 +86,7 @@ describe('WalletService', () => {
     });
 
     it('fails closed when a concurrent writer changes the wallet before withdrawal debit', async () => {
-      prismaMock.$transaction.mockImplementation(async (cb: Function) => {
+      prismaMock.$transaction.mockImplementation(async (cb: (tx: unknown) => Promise<unknown>) => {
         return cb({
           kloelWallet: {
             ...prismaMock.kloelWallet,
@@ -107,7 +107,7 @@ describe('WalletService', () => {
 
     it('cross-tenant isolation: debit scoped to workspaceId in updateMany where clause', async () => {
       const walletUpdateMany = jest.fn().mockResolvedValue({ count: 1 });
-      prismaMock.$transaction.mockImplementation(async (cb: Function) => {
+      prismaMock.$transaction.mockImplementation(async (cb: (tx: unknown) => Promise<unknown>) => {
         return cb({
           kloelWallet: { ...prismaMock.kloelWallet, updateMany: walletUpdateMany },
           kloelWalletTransaction: {
@@ -147,7 +147,9 @@ describe('WalletService', () => {
 
       await service.getTransactionHistory('ws-1', 1, 20, 'withdrawal');
 
-      const findManyCall = prismaMock.kloelWalletTransaction.findMany.mock.calls[0][0];
+      const findManyCall = (
+        prismaMock.kloelWalletTransaction.findMany.mock.calls as unknown[][]
+      )[0][0] as { where: { wallet: { workspaceId: string }; type: string } };
       expect(findManyCall.where.wallet).toEqual({ workspaceId: 'ws-1' });
       expect(findManyCall.where.type).toBe('withdrawal');
     });
@@ -158,7 +160,9 @@ describe('WalletService', () => {
 
       await service.getTransactionHistory('ws-1');
 
-      const findManyCall = prismaMock.kloelWalletTransaction.findMany.mock.calls[0][0];
+      const findManyCall = (
+        prismaMock.kloelWalletTransaction.findMany.mock.calls as unknown[][]
+      )[0][0] as { where: { wallet: { workspaceId: string }; type: string } };
       expect(findManyCall.where.wallet).toEqual({ workspaceId: 'ws-1' });
       // ws-2 transactions are excluded at the DB level via the relation filter
       expect(findManyCall.where.wallet.workspaceId).not.toBe('ws-2');

@@ -284,7 +284,7 @@ describe('unified-agent.service.helpers', () => {
       const onErr = jest.fn();
       expect(parseToolArguments('{not json', onErr)).toEqual({});
       expect(onErr).toHaveBeenCalledTimes(1);
-      expect(onErr.mock.calls[0]?.[0]).toBeInstanceOf(Error);
+      expect((onErr.mock.calls as unknown[][])[0]?.[0]).toBeInstanceOf(Error);
     });
 
     it('does not throw when no error callback is supplied', () => {

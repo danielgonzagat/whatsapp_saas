@@ -60,7 +60,7 @@ describe('KycService.submitKyc', () => {
         acceptedAt: expectValueOf(String),
         ipAddress: '203.0.113.10',
         userAgent: 'Mozilla/5.0',
-      }),
+      }) as unknown,
       metadata: {
         kycWorkspaceId: 'ws_1',
         kycAgentId: 'agent_1',
@@ -151,7 +151,7 @@ describe('KycService.submitKyc', () => {
         acceptedAt: expectValueOf(String),
         ipAddress: '203.0.113.11',
         userAgent: 'Mozilla/5.0 (PJ)',
-      }),
+      }) as unknown,
       metadata: {
         kycWorkspaceId: 'ws_1',
         kycAgentId: 'agent_1',
@@ -219,7 +219,7 @@ describe('KycService.submitKyc', () => {
         name: 'Updated Name',
         kycStatus: 'pending',
         kycRejectedReason: null,
-      }),
+      }) as unknown,
     });
   });
 
@@ -236,8 +236,8 @@ describe('KycService.submitKyc', () => {
       where: { id: 'agent_1' },
       data: expect.objectContaining({
         kycStatus: 'approved',
-        kycApprovedAt: expect.anything(),
-      }),
+        kycApprovedAt: expect.anything() as unknown,
+      }) as unknown,
     });
     const adminUpdateCall = (prisma.agent.update.mock.calls as unknown[][]).at(-1)?.[0] as
       | { data: { kycApprovedAt: unknown } }
@@ -329,7 +329,7 @@ describe('KycService.submitKyc', () => {
         details: expect.objectContaining({
           deletedBy: 'user',
           type: 'DOCUMENT_FRONT',
-        }),
+        }) as unknown,
       }),
     );
   });
@@ -373,8 +373,8 @@ describe('KycService.submitKyc', () => {
       where: { id: 'agent_1', workspaceId: 'ws_1' },
       data: expect.objectContaining({
         kycStatus: 'approved',
-        kycApprovedAt: expect.anything(),
-      }),
+        kycApprovedAt: expect.anything() as unknown,
+      }) as unknown,
     });
     const autoApproveCall = (prisma.agent.update.mock.calls as unknown[][]).at(-1)?.[0] as
       | { data: { kycApprovedAt: unknown } }

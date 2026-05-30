@@ -7,6 +7,7 @@ import type { AuthenticatedRequest } from '../common/interfaces';
 import type { PrismaService } from '../prisma/prisma.service';
 import { MemberAreaStatsService } from './member-area-stats.service';
 import { MemberEnrollmentsController } from './member-enrollments.controller';
+import { partialMatch } from '../../test/helpers/match-instance';
 
 type MemberAreaPrismaMock = {
   memberArea: {
@@ -92,7 +93,7 @@ describe('MemberEnrollmentsController', () => {
 
     expect(prisma.memberEnrollment.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
+        data: partialMatch({
           studentName: 'Aluno Legacy',
           studentEmail: 'legacy@kloel.test',
           studentPhone: '5511999999999',
@@ -136,7 +137,7 @@ describe('MemberEnrollmentsController', () => {
 
     expect(prisma.memberEnrollment.aggregate).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({ memberAreaId: 'area-1', workspaceId: 'ws-1' }),
+        where: partialMatch({ memberAreaId: 'area-1', workspaceId: 'ws-1' }),
       }),
     );
   });

@@ -42,7 +42,7 @@ describe('UnifiedAgentActionsCommerceService', () => {
       },
       $transaction: jest.fn().mockImplementation((arg: unknown) => {
         if (typeof arg === 'function') {
-          return arg(prisma);
+          return (arg as (tx: unknown) => unknown)(prisma);
         }
         return Promise.resolve(undefined);
       }),

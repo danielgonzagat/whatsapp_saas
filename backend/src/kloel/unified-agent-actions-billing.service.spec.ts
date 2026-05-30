@@ -88,7 +88,7 @@ describe('UnifiedAgentActionsBillingService', () => {
       $queryRaw: jest.fn().mockResolvedValue([{ avg_minutes: 2.5 }]),
       $transaction: jest.fn().mockImplementation((arg: unknown) => {
         if (typeof arg === 'function') {
-          return arg(prisma);
+          return (arg as (tx: unknown) => unknown)(prisma);
         }
         return Promise.resolve(undefined);
       }),
@@ -116,7 +116,9 @@ describe('UnifiedAgentActionsBillingService', () => {
 
       expect(result.success).toBe(true);
       expect(result.data.total).toBe(100);
-      const messageCountArgs = prisma.message.count.mock.calls[0][0];
+      const messageCountArgs = (prisma.message.count.mock.calls as unknown[][])[0][0] as {
+        where: Record<string, unknown>;
+      };
       expect(messageCountArgs.where).toEqual(
         expect.objectContaining({
           workspaceId: wsId,
@@ -142,7 +144,9 @@ describe('UnifiedAgentActionsBillingService', () => {
         period: 'week',
       });
 
-      const eventCountArgs = prisma.autopilotEvent.count.mock.calls[0][0];
+      const eventCountArgs = (prisma.autopilotEvent.count.mock.calls as unknown[][])[0][0] as {
+        where: Record<string, unknown>;
+      };
       expect(eventCountArgs.where).toEqual({
         workspaceId: wsId,
         action: 'PAYMENT_RECEIVED',

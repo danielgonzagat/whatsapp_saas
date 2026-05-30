@@ -22,8 +22,8 @@ import { GuestChatService } from './guest-chat.service';
 import { ForbiddenException } from '@nestjs/common';
 
 const serviceMock = new GuestChatService(null as never, null as never, null as never);
-const chatMock = serviceMock.chat as jest.Mock;
-const chatSyncMock = serviceMock.chatSync as jest.Mock;
+const chatMock = (serviceMock as { chat: jest.Mock }).chat;
+const chatSyncMock = (serviceMock as { chatSync: jest.Mock }).chatSync;
 
 describe('GuestChatController', () => {
   let controller: GuestChatController;

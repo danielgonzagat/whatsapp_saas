@@ -193,7 +193,7 @@ describe('GdprController', () => {
 
       expect(response.body).toEqual(
         expect.objectContaining({
-          url: expect.stringContaining('/data-deletion/status/'),
+          url: expect.stringContaining('/data-deletion/status/') as unknown,
         }),
       );
       expect(typeof (response.body as { confirmation_code?: unknown }).confirmation_code).toBe(

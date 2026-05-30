@@ -21,7 +21,7 @@ export function workspaceCoverageDir(ws: string): string {
 }
 
 export function looksLikeFilePath(s: string): boolean {
-  return /[/\\]/.test(s) || /\.(ts|tsx|js|jsx)\$/.test(s);
+  return /[/\\]/.test(s) || /\.(ts|tsx|js|jsx)$/.test(s);
 }
 
 // Re-exports for backward compatibility — concerns now live in dedicated files.

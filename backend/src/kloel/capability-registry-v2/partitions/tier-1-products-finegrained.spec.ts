@@ -62,7 +62,14 @@ describe('tier-1 fine-grained product capabilities (Wave7 L1)', () => {
     let resolver: KloelDomainServiceResolver;
     let product: ProductService;
     let prisma: {
-      product: { findFirst: jest.Mock; findUnique: jest.Mock; update: jest.Mock };
+      product: {
+        findFirst: jest.Mock;
+        findUnique: jest.Mock;
+        update: jest.Mock<
+          Promise<Record<string, unknown>>,
+          [{ where: { id: string }; data: Record<string, unknown> }]
+        >;
+      };
     };
 
     const makeProduct = (overrides: Record<string, unknown> = {}) => ({
@@ -84,8 +91,11 @@ describe('tier-1 fine-grained product capabilities (Wave7 L1)', () => {
           findFirst: jest.fn().mockResolvedValue(makeProduct()),
           findUnique: jest.fn().mockResolvedValue(makeProduct()),
           update: jest
-            .fn()
-            .mockImplementation(({ where, data }: { where: { id: string }; data: object }) =>
+            .fn<
+              Promise<Record<string, unknown>>,
+              [{ where: { id: string }; data: Record<string, unknown> }]
+            >()
+            .mockImplementation(({ where, data }) =>
               Promise.resolve(makeProduct({ id: where.id, ...data })),
             ),
         },
@@ -141,7 +151,7 @@ describe('tier-1 fine-grained product capabilities (Wave7 L1)', () => {
         warrantyDays: 7,
       });
       expect(result!.success).toBe(true);
-      const data = prisma.product.update.mock.calls[0]![0].data as Record<string, unknown>;
+      const data = prisma.product.update.mock.calls[0]![0].data;
       expect(data.shippingType).toBe('FIXED');
       expect(data.shippingValue).toBe(25);
       expect(data.warrantyDays).toBe(7);
@@ -153,7 +163,7 @@ describe('tier-1 fine-grained product capabilities (Wave7 L1)', () => {
         provider: 'correios',
       });
       expect(result!.success).toBe(true);
-      const data = prisma.product.update.mock.calls[0]![0].data as Record<string, unknown>;
+      const data = prisma.product.update.mock.calls[0]![0].data;
       expect(data.afterPayShippingProvider).toBe('correios');
     });
 
@@ -163,7 +173,7 @@ describe('tier-1 fine-grained product capabilities (Wave7 L1)', () => {
         salesPageUrl: 'https://vendas.exemplo.com',
       });
       expect(result!.success).toBe(true);
-      const data = prisma.product.update.mock.calls[0]![0].data as Record<string, unknown>;
+      const data = prisma.product.update.mock.calls[0]![0].data;
       expect(data.salesPageUrl).toBe('https://vendas.exemplo.com');
     });
 
@@ -174,7 +184,7 @@ describe('tier-1 fine-grained product capabilities (Wave7 L1)', () => {
         supportEmail: 'suporte@exemplo.com',
       });
       expect(result!.success).toBe(true);
-      const data = prisma.product.update.mock.calls[0]![0].data as Record<string, unknown>;
+      const data = prisma.product.update.mock.calls[0]![0].data;
       expect(data.thankyouUrl).toBe('https://obrigado.exemplo.com');
       expect(data.supportEmail).toBe('suporte@exemplo.com');
     });
@@ -185,14 +195,14 @@ describe('tier-1 fine-grained product capabilities (Wave7 L1)', () => {
         available: true,
       });
       expect(result!.success).toBe(true);
-      const data = prisma.product.update.mock.calls[0]![0].data as Record<string, unknown>;
+      const data = prisma.product.update.mock.calls[0]![0].data;
       expect(data.active).toBe(true);
     });
 
     it('products.review_and_publish → ProductService.reviewAndPublish marks APPROVED+active', async () => {
       const result = await resolver.tryExecute('products.review_and_publish', ws, { productId });
       expect(result!.success).toBe(true);
-      const data = prisma.product.update.mock.calls[0]![0].data as Record<string, unknown>;
+      const data = prisma.product.update.mock.calls[0]![0].data;
       expect(data.status).toBe('APPROVED');
       expect(data.active).toBe(true);
     });

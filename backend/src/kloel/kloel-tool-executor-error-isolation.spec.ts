@@ -5,6 +5,7 @@ import { KloelToolExecutorBillingService } from './kloel-tool-executor-billing.s
 import { KloelToolExecutorCrmService } from './kloel-tool-executor-crm.service';
 import { KloelToolExecutorWhatsAppService } from './kloel-tool-executor-whatsapp.service';
 import { KloelToolExecutorService } from './kloel-tool-executor.service';
+import { KloelToolDispatcherService } from './kloel-tool-dispatcher.service';
 import { SmartPaymentService } from './smart-payment.service';
 
 jest.mock('./kloel-tool-executor.helpers', () => ({
@@ -41,6 +42,7 @@ async function buildSubject(): Promise<{
   prisma: ExecutorPrismaMock;
   whatsappTools: Partial<KloelToolExecutorWhatsAppService>;
   crmTools: Partial<KloelToolExecutorCrmService>;
+  toolDispatcher: { executeTool: jest.Mock };
 }> {
   const prisma: ExecutorPrismaMock = {
     workspace: {
@@ -61,6 +63,9 @@ async function buildSubject(): Promise<{
   const crmTools: Partial<KloelToolExecutorCrmService> = {
     toolListLeads: jest.fn().mockResolvedValue({ success: true, leads: [] }),
   };
+  const toolDispatcher = {
+    executeTool: jest.fn().mockResolvedValue({ success: true }),
+  };
   const planLimits = {
     ensureDailyMessageQuota: jest.fn().mockResolvedValue(undefined),
     ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
@@ -75,6 +80,7 @@ async function buildSubject(): Promise<{
       { provide: KloelToolExecutorWhatsAppService, useValue: whatsappTools },
       { provide: KloelToolExecutorBillingService, useValue: {} },
       { provide: KloelToolExecutorCrmService, useValue: crmTools },
+      { provide: KloelToolDispatcherService, useValue: toolDispatcher },
     ],
   }).compile();
 
@@ -83,6 +89,7 @@ async function buildSubject(): Promise<{
     prisma,
     whatsappTools,
     crmTools,
+    toolDispatcher,
   };
 }
 
@@ -137,13 +144,16 @@ describe('KloelToolExecutorService error and isolation paths', () => {
     expect(result.error).toBe('unknown error');
   });
 
-  it('toggle_autopilot queries providerSettings for correct workspace', async () => {
-    const { service, prisma } = await buildSubject();
+  it('toggle_autopilot routes through the canonical dispatcher for the correct workspace', async () => {
+    const { service, toolDispatcher } = await buildSubject();
 
     await service.executeTool('ws-tenant', 'toggle_autopilot', { enabled: true });
 
-    expect(prisma.workspace.findUnique).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 'ws-tenant' } }),
+    expect(toolDispatcher.executeTool).toHaveBeenCalledWith(
+      'ws-tenant',
+      'toggle_autopilot',
+      { enabled: true },
+      undefined,
     );
   });
 

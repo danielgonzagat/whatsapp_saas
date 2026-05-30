@@ -61,7 +61,9 @@ describe('CiaBacklogRunService', () => {
   let autopilotQueue: AutopilotQueueMock;
 
   beforeEach(() => {
-    const mockModule = jest.requireMock('../../../queue/queue');
+    const mockModule = jest.requireMock<{ autopilotQueue: { add: jest.Mock } }>(
+      '../../../queue/queue',
+    );
     autopilotQueue = { add: mockModule.autopilotQueue.add };
     autopilotQueue.add.mockClear();
 

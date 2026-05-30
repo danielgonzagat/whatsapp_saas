@@ -229,8 +229,8 @@ describe('SystemHealthService', () => {
         method: 'GET',
         headers: expect.objectContaining({
           Authorization: 'Bearer worker-token',
-          'X-Request-ID': expect.stringMatching(/.+/),
-        }),
+          'X-Request-ID': expect.stringMatching(/.+/) as unknown,
+        }) as unknown,
       }),
     );
   });
@@ -253,7 +253,11 @@ describe('SystemHealthService', () => {
     expect(result.details.config).toEqual(
       expect.objectContaining({
         status: 'DOWN',
-        missing: expect.arrayContaining(['META_APP_ID', 'META_APP_SECRET', 'META_VERIFY_TOKEN']),
+        missing: expect.arrayContaining([
+          'META_APP_ID',
+          'META_APP_SECRET',
+          'META_VERIFY_TOKEN',
+        ]) as unknown,
       }),
     );
   });

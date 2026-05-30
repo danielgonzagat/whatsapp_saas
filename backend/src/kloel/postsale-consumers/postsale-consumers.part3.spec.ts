@@ -5,10 +5,6 @@ import { baseInput } from '../../../test/helpers/detection-input-factory';
 
 const makeEvent = makeEventFactory();
 
-async function flushAsyncConsumers(): Promise<void> {
-  await new Promise((resolve) => setImmediate(resolve));
-}
-
 describe('POSTSALE-001 — Anti-Remorse Service', () => {
   let svc: AntiRemorseService;
 

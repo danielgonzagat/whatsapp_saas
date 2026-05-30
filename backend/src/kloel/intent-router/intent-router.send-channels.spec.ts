@@ -32,7 +32,7 @@ describe('IntentRouter — send-channel patterns (K13-A)', () => {
       it(`routes "${msg}" → whatsapp.send`, () => {
         const r = router.classify(msg, 'dashboard-chat', ['*']);
         expect(r.isChat).toBe(false);
-        expect(r.classification?.capabilityId).toBe('whatsapp.send');
+        expect(r.classification?.capabilityId).toBe('whatsapp.send_message');
       });
     }
   });
@@ -116,7 +116,7 @@ describe('IntentRouter — send-channel patterns (K13-A)', () => {
   it('does not misroute whatsapp zap to email', () => {
     const r = router.classify('manda zap pra ele', 'dashboard-chat', ['*']);
     expect(r.isChat).toBe(false);
-    expect(r.classification?.capabilityId).toBe('whatsapp.send');
+    expect(r.classification?.capabilityId).toBe('whatsapp.send_message');
   });
 
   // ── Edge: whatsapp.send does NOT catch "conectar whatsapp" ───

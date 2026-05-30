@@ -239,7 +239,7 @@ describe('WalletService.createTopupIntent', () => {
           type: 'wallet_topup',
           workspace_id: 'ws_new',
           method: 'card',
-        }),
+        }) as unknown,
       }),
     );
     expect(prisma.walletsByWorkspace.has('ws_new')).toBe(true);
@@ -335,8 +335,8 @@ describe('WalletService.createTopupIntent', () => {
         payerEmail: 'buyer@example.com',
         payerDocument: '12345678901',
         description: 'Kloel prepaid wallet top-up - workspace ws_pix',
-        externalReference: expect.stringMatching(/^wallet_topup:ws_pix:pwl_1:/),
-        notificationUrl: expect.stringContaining('/webhooks/mercadopago'),
+        externalReference: expect.stringMatching(/^wallet_topup:ws_pix:pwl_1:/) as unknown,
+        notificationUrl: expect.stringContaining('/webhooks/mercadopago') as unknown,
       }),
     );
     expect(result.paymentIntentId).toBe('mp_pix_wallet_1');

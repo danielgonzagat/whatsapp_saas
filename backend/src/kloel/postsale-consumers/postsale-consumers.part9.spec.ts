@@ -1,28 +1,10 @@
 import { SpineEmitterService } from '../spine/spine-emitter.service';
 import { makeSpine } from '../../../test/helpers/spine-factory';
-import type { SpineEventRef } from '../mind/mind.types';
-import { AntiRemorseService } from './anti-remorse.service';
-import { ActivationCompanionService } from './activation-companion.service';
-import { FirstValueDetector } from './first-value.detector';
-import { SatisfactionCollectorService } from './satisfaction-collector.service';
-import { TestimonialTimingAdvisor } from './testimonial-timing.advisor';
-import { ReferralPromptTimingAdvisor } from './referral-prompt-timing.advisor';
-import { RepurchaseWindowDetector } from './repurchase-window.detector';
-import { ExpansionFitDetector } from './expansion-fit.detector';
 import { ChurnRiskDetector } from './churn-risk.detector';
-import { RetentionHonestTactics } from './retention-honest.tactics';
-import { WinBackWindowAdvisor } from './winback-window.advisor';
-import { LtvProjectionService } from './ltv-projection.service';
-import { NoRegretPipelineService } from './no-regret-pipeline.service';
-import type { DetectionInput, LtvProjection } from './postsale-consumers.types';
 import { makeEventFactory } from '../../../test/helpers/spine-event-factory';
 import { baseInput } from '../../../test/helpers/detection-input-factory';
 
 const makeEvent = makeEventFactory();
-
-async function flushAsyncConsumers(): Promise<void> {
-  await new Promise((resolve) => setImmediate(resolve));
-}
 
 describe('POSTSALE-009 — Churn Risk Detector', () => {
   let spine: SpineEmitterService;

@@ -172,14 +172,14 @@ describe('GdprService', () => {
       expect(prismaMock.gdprRequest.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'gdpr_1', workspaceId: 'ws_1' },
-          data: expect.objectContaining({ status: GdprStatus.PROCESSING }),
+          data: expect.objectContaining({ status: GdprStatus.PROCESSING }) as unknown,
         }),
       );
       expect(prismaMock.$transaction).toHaveBeenCalled();
       expect(prismaMock.gdprRequest.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'gdpr_1', workspaceId: 'ws_1' },
-          data: expect.objectContaining({ status: GdprStatus.COMPLETE }),
+          data: expect.objectContaining({ status: GdprStatus.COMPLETE }) as unknown,
         }),
       );
     });
@@ -196,7 +196,7 @@ describe('GdprService', () => {
       expect(prismaMock.gdprRequest.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'gdpr_1', workspaceId: 'ws_1' },
-          data: expect.objectContaining({ status: GdprStatus.FAILED }),
+          data: expect.objectContaining({ status: GdprStatus.FAILED }) as unknown,
         }),
       );
       expect(prismaMock.$transaction).not.toHaveBeenCalled();
@@ -237,14 +237,14 @@ describe('GdprService', () => {
           userId: null,
           content: '[deleted by GDPR request]',
           deletedAt: updateArgs.data.deletedAt,
-        }),
+        }) as unknown,
       });
       expect(updateArgs.data.deletedAt).toBeInstanceOf(Date);
       expect(prismaMock.auditLog.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
-            details: expect.objectContaining({ chatMessagesAnonymized: 3 }),
-          }),
+            details: expect.objectContaining({ chatMessagesAnonymized: 3 }) as unknown,
+          }) as unknown,
         }),
       );
     });
@@ -269,8 +269,8 @@ describe('GdprService', () => {
             details: expect.objectContaining({
               conversationsUnassigned: 2,
               messagesUnassigned: 5,
-            }),
-          }),
+            }) as unknown,
+          }) as unknown,
         }),
       );
     });

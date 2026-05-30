@@ -1,6 +1,5 @@
 import type { SpineEventRef } from '../mind/mind.types';
 import type { DetectorInput, Insight } from './insight.types';
-import { median } from './insight.types';
 
 import { detectFunnelBottleneck } from './detectors/funnel-bottleneck.detector';
 import { detectOfferFit } from './detectors/offer-fit.detector';
@@ -12,8 +11,6 @@ import { detectChannelRoi } from './detectors/channel-roi.detector';
 import { detectProductPositioning } from './detectors/product-positioning.detector';
 
 import { rankInsights } from './insight-ranker';
-import { confidenceFloor, filterAboveFloor } from './insight-confidence.guard';
-import { InsightDeliveryService } from './insight-delivery.service';
 
 const NOW = Date.parse('2026-05-13T22:00:00.000Z');
 const WKS = 'wks_insight_test';

@@ -315,7 +315,7 @@ BENEFÍCIOS: A, B`,
         price: 10,
       });
 
-      const saveArgs = memoryCrud.saveMemory.mock.calls[0];
+      const saveArgs = ((memoryCrud.saveMemory as jest.Mock).mock.calls as unknown[][])[0];
       expect(saveArgs[0]).toBe('ws-tenant');
       expect(typeof saveArgs[1]).toBe('string');
       expect(saveArgs[2]).toBeDefined();

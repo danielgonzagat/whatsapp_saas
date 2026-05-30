@@ -257,8 +257,8 @@ describe('GuestChatService ABI substitution (UTP-ABI-005)', () => {
       const service = createService(mockAbiBuilder);
       await buildGuestMessages(service, 'Hello guest', 'session-abi-5');
 
-      expect(mockAbiBuilder.build).toHaveBeenCalledTimes(1);
-      const callArg = mockAbiBuilder.build.mock.calls[0][0];
+      expect((mockAbiBuilder as { build: jest.Mock }).build).toHaveBeenCalledTimes(1);
+      const callArg = (mockAbiBuilder as { build: jest.Mock }).build.mock.calls[0][0];
       expect(callArg.audience).toBe('public');
     });
 

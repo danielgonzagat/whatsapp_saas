@@ -71,16 +71,15 @@ describe('ProductReviewController', () => {
       expect(productFindFirst).toHaveBeenCalledWith(
         expect.objectContaining({ where: { id: 'prod-1', workspaceId: 'ws-1' } }),
       );
+      const expectedReviewData: unknown = expect.objectContaining({
+        productId: 'prod-1',
+        rating: 5,
+        authorName: 'John',
+        comment: 'Awesome',
+        verified: true,
+      });
       expect(reviewCreate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            productId: 'prod-1',
-            rating: 5,
-            authorName: 'John',
-            comment: 'Awesome',
-            verified: true,
-          }),
-        }),
+        expect.objectContaining({ data: expectedReviewData }),
       );
       expect(result).toMatchObject({ id: 'rv-3', name: 'John', text: 'Awesome' });
     });

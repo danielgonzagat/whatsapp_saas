@@ -113,7 +113,9 @@ describe('LeadsService', () => {
     it('does not apply search when empty string', async () => {
       await service.listLeads(wsId, { search: '   ' });
 
-      const callArg = prisma.kloelLead.findMany.mock.calls[0][0];
+      const callArg = (prisma.kloelLead.findMany.mock.calls as unknown[][])[0][0] as {
+        where: { OR?: unknown };
+      };
       expect(callArg.where.OR).toBeUndefined();
     });
 

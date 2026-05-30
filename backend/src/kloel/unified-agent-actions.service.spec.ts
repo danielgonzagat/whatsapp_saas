@@ -86,7 +86,9 @@ describe('UnifiedAgentActionsService', () => {
       $transaction: jest
         .fn()
         .mockImplementation((fnOrArg: unknown) =>
-          typeof fnOrArg === 'function' ? fnOrArg(prisma) : Promise.resolve(undefined),
+          typeof fnOrArg === 'function'
+            ? (fnOrArg as (tx: unknown) => unknown)(prisma)
+            : Promise.resolve(undefined),
         ),
     };
     storageService = {

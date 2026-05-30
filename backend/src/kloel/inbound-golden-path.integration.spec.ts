@@ -1,12 +1,10 @@
 import { RuntimeConversationTracerService } from './runtime-conversation-tracer.service';
 import { CommercialDecisionOrchestratorService } from './commercial-decision-orchestrator.service';
 import { DecisionOutcomeService } from './decision-outcome.service';
-import { MindLiftReportService } from './mind/observability/mind-lift-report.service';
 import { buildDecisionOutcomeKey } from '../../test/fixtures/whatsapp-inbound.fixture';
 const WS = 'ws-golden-path';
 const CHANNEL = 'whatsapp';
 const CONTACT_ID = 'contact-gp-1';
-const PHONE = '5511998887777';
 type ConceptRow = { concept: string; confidence: number };
 function buildTracerInstrumentedEvents(
   tracer: RuntimeConversationTracerService,
@@ -72,7 +70,6 @@ function buildTracerInstrumentedEvents(
 describe('Inbound Golden Path — P12 WhatsApp integration proof', () => {
   let tracer: RuntimeConversationTracerService;
   let outcome: DecisionOutcomeService;
-  let liftReport: MindLiftReportService;
   const concepts = { detect: jest.fn() };
   const events = { recordCommercial: jest.fn() };
   const mind = {
@@ -114,7 +111,6 @@ describe('Inbound Golden Path — P12 WhatsApp integration proof', () => {
     jest.clearAllMocks();
     tracer = new RuntimeConversationTracerService();
     outcome = new DecisionOutcomeService(prisma as never);
-    liftReport = new MindLiftReportService(outcome);
     concepts.detect.mockImplementation(
       async (input: {
         workspaceId: string;

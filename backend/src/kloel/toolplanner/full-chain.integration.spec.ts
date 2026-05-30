@@ -30,7 +30,7 @@ import { ToolPlannerService } from '../toolplanner/toolplanner.service';
       ['*'],
     );
     expect(result.isChat).toBe(false);
-    expect(result.classification?.capabilityId).toBe('create_product'); // Step 2: Resolve capability
+    expect(result.classification?.capabilityId).toBe('products.create'); // Step 2: Resolve capability
     const cap = registry.get(result.classification!.capabilityId!);
     expect(cap).toBeDefined(); // Step 3: ToolPlanner validates inputs
     const validation = planner.validateInputs(cap!, result.classification!.entities);
@@ -46,7 +46,7 @@ import { ToolPlannerService } from '../toolplanner/toolplanner.service';
       ['*'],
     );
     expect(result.isChat).toBe(false);
-    expect(result.classification?.capabilityId).toBe('generate_pix');
+    expect(result.classification?.capabilityId).toBe('sales.create_pix');
     expect(result.classification?.requiresConfirmation).toBe(true);
     const cap = registry.get(result.classification!.capabilityId!);
     expect(cap?.category).toBe('MUTATION_SENSITIVE');

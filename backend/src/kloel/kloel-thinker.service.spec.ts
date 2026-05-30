@@ -6,6 +6,7 @@ import { LLMBudgetService } from './llm-budget.service';
 import { Response } from 'express';
 import { AbiBuilderService } from './abi/abi-builder.service';
 import { MindCapabilityExecutor } from './mind/coordination';
+import { StateBuilderService } from './state/state-builder.service';
 
 jest.mock('./kloel-thread.service', () => ({
   KloelThreadService: class MockKloelThreadService {},
@@ -232,6 +233,22 @@ describe('KloelThinkerService', () => {
         { provide: KloelComposerService, useValue: composerService },
         { provide: KloelReplyEngineService, useValue: replyEngine },
         { provide: KLOEL_LLM_E2E_GUARD, useValue: llmE2EGuard },
+        {
+          provide: StateBuilderService,
+          useValue: {
+            build: jest.fn().mockResolvedValue({
+              workspace: { available: false },
+              actor: { available: false },
+              contact: null,
+              recentEvents: [],
+              memory: { shortTerm: [] },
+              capabilities: [],
+              risk: { available: false, reason: 'no risk service' },
+              missingSources: [],
+              assembledAt: new Date(),
+            }),
+          },
+        },
         { provide: AbiBuilderService, useValue: abiBuilder },
         { provide: MindCapabilityExecutor, useValue: capabilityExecutor },
       ],

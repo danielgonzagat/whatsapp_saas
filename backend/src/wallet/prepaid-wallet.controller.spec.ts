@@ -102,7 +102,7 @@ describe('PrepaidWalletController — balance & topup & lifecycle', () => {
         expect.objectContaining({
           amountCents: 5_000n,
           payerEmail: 'buyer@example.com',
-          externalReference: expect.stringMatching(/^wallet_topup:ws_1:pwl_1:/),
+          externalReference: expect.stringMatching(/^wallet_topup:ws_1:pwl_1:/) as unknown,
         }),
       );
       expect(result.paymentIntentId).toBe('mp_pix_wallet_1');
@@ -129,7 +129,7 @@ describe('PrepaidWalletController — balance & topup & lifecycle', () => {
       expect(stripe.stripe.paymentIntents.create).toHaveBeenCalledWith(
         expect.objectContaining({
           payment_method_types: ['card'],
-          metadata: expect.objectContaining({ workspace_id: 'ws_2', method: 'card' }),
+          metadata: expect.objectContaining({ workspace_id: 'ws_2', method: 'card' }) as unknown,
         }),
       );
     });

@@ -298,7 +298,7 @@ describe('MemoryManagementService', () => {
           where: expect.objectContaining({ workspaceId: wsId }),
         }),
       );
-      const deleteArg = prisma.kloelMemory.deleteMany.mock.calls[0][0] as {
+      const deleteArg = (prisma.kloelMemory.deleteMany.mock.calls as unknown[][])[0][0] as {
         where: { updatedAt: { lt: Date } };
       };
       expect(deleteArg.where.updatedAt.lt).toBeInstanceOf(Date);

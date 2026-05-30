@@ -115,7 +115,7 @@ export async function parseImports(absPath: string, logger: Logger): Promise<str
     const content = await fs.readFile(absPath, 'utf-8');
     const imports: string[] = [];
     const re =
-      /(?:import\\s+(?:[\\s\\S]*?\\s+from\\s+)?['"]([^'"]+)['"]|import\\(['"]([^'"]+)['"]\\)|require\\(['"]([^'"]+)['"]\\))/g;
+      /(?:import\s+(?:[\s\S]*?\s+from\s+)?['"]([^'"]+)['"]|import\(['"]([^'"]+)['"]\)|require\(['"]([^'"]+)['"]\))/g;
     let m: RegExpExecArray | null;
     while ((m = re.exec(content)) !== null) {
       const imp = m[1] ?? m[2] ?? m[3];
@@ -146,6 +146,10 @@ async function scanDirForImporters(
     return;
   }
 
+  if (!Array.isArray(entries)) {
+    return;
+  }
+
   const dirs: string[] = [];
   for (const e of entries as Array<{ name: string; isFile(): boolean; isDirectory(): boolean }>) {
     const full = path.join(dir, e.name);
@@ -153,7 +157,7 @@ async function scanDirForImporters(
       if (!e.name.startsWith('.') && e.name !== 'node_modules' && e.name !== '__tests__') {
         dirs.push(full);
       }
-    } else if (e.isFile() && /\.(ts|tsx|js|jsx)\$/.test(e.name)) {
+    } else if (e.isFile() && /\.(ts|tsx|js|jsx)$/.test(e.name)) {
       try {
         const content = await fs.readFile(full, 'utf-8');
         const re = new RegExp(
@@ -175,9 +179,9 @@ async function scanDirForImporters(
 
 export async function findImporters(filePath: string, logger: Logger): Promise<string[]> {
   const importers: string[] = [];
-  const base = path.basename(filePath).replace(/\.(ts|tsx|js|jsx)\$/, '');
+  const base = path.basename(filePath).replace(/\.(ts|tsx|js|jsx)$/, '');
   const escaped = base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const relPath = filePath.replace(/\\.[^.]+\$/, '');
+  const relPath = filePath.replace(/\.[^.]+$/, '');
   const escapedRel = relPath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
   const searchDirs = WORKSPACES.filter((w) => w !== 'root' && w !== 'e2e').map((w) =>

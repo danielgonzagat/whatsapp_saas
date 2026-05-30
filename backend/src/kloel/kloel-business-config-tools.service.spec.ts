@@ -25,21 +25,6 @@ type ContactRecord = {
     messages: Array<{ content: string; direction: string; createdAt: Date }>;
   }>;
 };
-type WorkspaceRecord = {
-  id: string;
-  name: string;
-  providerSettings: Record<string, unknown> | null;
-  stripeCustomerId: string | null;
-  subscription: { plan: string; stripeId: string | null } | null;
-};
-type CampaignRecord = {
-  id: string;
-  name: string;
-  messageTemplate: string;
-  status: string;
-  scheduledAt: Date | null;
-  filters: Record<string, unknown>;
-};
 type BusinessConfigPrismaMock = {
   contact: { findMany: jest.Mock; findFirst: jest.Mock; count: jest.Mock };
   workspace: { findUnique: jest.Mock; update: jest.Mock };

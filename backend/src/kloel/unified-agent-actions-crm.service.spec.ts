@@ -28,7 +28,7 @@ jest.mock('../common/kloel-colors', () => ({
     CRM_AUTO_BLUE: '#0000FF',
   },
 }));
-const { flowQueue } = jest.requireMock('../queue/queue');
+const { flowQueue }: { flowQueue: { add: jest.Mock } } = jest.requireMock('../queue/queue');
 type CrmPrismaMock = {
   contact: {
     findFirst: jest.Mock;
@@ -105,7 +105,7 @@ describe('UnifiedAgentActionsCrmService', () => {
       },
       $transaction: jest.fn().mockImplementation((arg: unknown) => {
         if (typeof arg === 'function') {
-          return arg(prisma);
+          return (arg as (tx: unknown) => unknown)(prisma);
         }
         return Promise.resolve(undefined);
       }),

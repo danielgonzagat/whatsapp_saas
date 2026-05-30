@@ -184,7 +184,7 @@ describe('GdprService', () => {
 
       expect(result).toEqual(
         expect.objectContaining({
-          url: expect.stringContaining('/data-deletion/status/'),
+          url: expect.stringContaining('/data-deletion/status/') as unknown,
         }),
       );
       expect(typeof result.confirmation_code).toBe('string');
@@ -193,7 +193,7 @@ describe('GdprService', () => {
           data: expect.objectContaining({
             type: GdprType.DELETE,
             status: GdprStatus.VERIFYING,
-          }),
+          }) as unknown,
         }),
       );
     });
@@ -257,7 +257,7 @@ describe('GdprService', () => {
       expect(prismaMock.gdprRequest.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'gdpr_1', workspaceId: 'ws_1' },
-          data: expect.objectContaining({ status: GdprStatus.PROCESSING }),
+          data: expect.objectContaining({ status: GdprStatus.PROCESSING }) as unknown,
         }),
       );
       expect(fs.writeFileSync).toHaveBeenCalled();
@@ -270,7 +270,7 @@ describe('GdprService', () => {
       expect(prismaMock.gdprRequest.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'gdpr_1', workspaceId: 'ws_1' },
-          data: expect.objectContaining({ status: GdprStatus.COMPLETE }),
+          data: expect.objectContaining({ status: GdprStatus.COMPLETE }) as unknown,
         }),
       );
     });
@@ -312,7 +312,7 @@ describe('GdprService', () => {
           where: expect.objectContaining({
             agentId: 'agent_1',
             workspaceId: 'ws_1',
-          }),
+          }) as unknown,
         }),
       );
       expect(prismaMock.chatMessage.findMany).toHaveBeenCalledWith(
@@ -320,7 +320,7 @@ describe('GdprService', () => {
           where: expect.objectContaining({
             userId: 'agent_1',
             workspaceId: 'ws_1',
-          }),
+          }) as unknown,
         }),
       );
       expect(fs.writeFileSync).toHaveBeenCalledTimes(5); // agent, conversations, messages, chat_messages, manifest

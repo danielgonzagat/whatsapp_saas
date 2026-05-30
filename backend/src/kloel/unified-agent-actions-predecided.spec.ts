@@ -155,7 +155,9 @@ describe('Unified agent predecided action execution', () => {
     );
 
     expect(mindPolicy.choose).not.toHaveBeenCalled();
-    const createCall = prisma.followUp.create.mock.calls[0]?.[0];
+    const createCall = (prisma.followUp.create.mock.calls as unknown[][])[0]?.[0] as {
+      data?: { scheduledFor?: unknown };
+    };
     expect(createCall?.data?.scheduledFor).toBeInstanceOf(Date);
     expect(prisma.autopilotEvent.create).toHaveBeenCalledWith(
       expect.objectContaining({

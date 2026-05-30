@@ -271,8 +271,24 @@ describe('WalletService', () => {
       //   1) debit pending  (the move-out)
       //   2) credit available (the move-in)
       expect(walletLedger.appendWithinTx).toHaveBeenCalledTimes(2);
-      const debit = walletLedger.appendWithinTx.mock.calls[0][1];
-      const credit = walletLedger.appendWithinTx.mock.calls[1][1];
+      const debit = (walletLedger.appendWithinTx.mock.calls as unknown[][])[0][1] as {
+        workspaceId: string;
+        walletId: string;
+        transactionId: string | null;
+        direction: 'credit' | 'debit';
+        bucket: 'available' | 'pending' | 'blocked';
+        amountInCents: bigint;
+        reason: string;
+      };
+      const credit = (walletLedger.appendWithinTx.mock.calls as unknown[][])[1][1] as {
+        workspaceId: string;
+        walletId: string;
+        transactionId: string | null;
+        direction: 'credit' | 'debit';
+        bucket: 'available' | 'pending' | 'blocked';
+        amountInCents: bigint;
+        reason: string;
+      };
 
       expect(debit.direction).toBe('debit');
       expect(debit.bucket).toBe('pending');

@@ -23,7 +23,7 @@ export const ENGAGEMENT_INTENT_PATTERNS: IntentPattern[] = [
   {
     regex:
       /(?:manda|envi[ae]r?|dispara)\s+(?:uma?\s+)?(?:mensagem|msg|zap)(?:\s+(?:no|via|por|pra)\s+(?:whatsapp|whats|zap))?/i,
-    capabilityId: 'whatsapp.send',
+    capabilityId: 'whatsapp.send_message',
     extract: () => ({}),
   },
   // === Profile / Bio ===

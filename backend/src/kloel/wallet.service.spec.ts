@@ -6,53 +6,6 @@ import { FinancialAlertService } from '../common/financial-alert.service';
 import { WalletLedgerService } from './wallet-ledger.service';
 import { createPartialPrismaMock } from '../../test/helpers/prisma.mock';
 
-type WalletTxClient = ReturnType<typeof buildTxClient>;
-type WalletTxCallback = (tx: WalletTxClient) => Promise<unknown>;
-
-/**
- * Build a fake transactional Prisma client. Tests that exercise confirmPayment
- * inject their own findUnique/updateMany behaviour; the default resolves the
- * happy path where tx-1 belongs to wallet-1/ws-1 and is pending.
- */
-function buildTxClient(overrides: {
-  findUnique?: jest.Mock;
-  updateMany?: jest.Mock;
-  update?: jest.Mock;
-  walletFindUnique?: jest.Mock;
-  walletUpdateMany?: jest.Mock;
-}) {
-  return {
-    kloelWallet: {
-      update: overrides.update ?? jest.fn().mockResolvedValue({}),
-      updateMany: overrides.walletUpdateMany ?? jest.fn().mockResolvedValue({ count: 1 }),
-      findUnique:
-        overrides.walletFindUnique ??
-        jest.fn().mockResolvedValue({
-          id: 'wallet-1',
-          workspaceId: 'ws-1',
-          updatedAt: new Date('2026-01-01T00:00:00.000Z'),
-        }),
-    },
-    kloelWalletTransaction: {
-      findUnique:
-        overrides.findUnique ??
-        jest.fn().mockResolvedValue({
-          id: 'tx-1',
-          walletId: 'wallet-1',
-          status: 'pending',
-          amount: 92.01,
-          amountInCents: BigInt(9201),
-          wallet: {
-            id: 'wallet-1',
-            workspaceId: 'ws-1',
-            updatedAt: new Date('2026-01-01T00:00:00.000Z'),
-          },
-        }),
-      updateMany: overrides.updateMany ?? jest.fn().mockResolvedValue({ count: 1 }),
-    },
-  };
-}
-
 describe('WalletService', () => {
   let service: WalletService;
   let prismaMock: ReturnType<typeof createPartialPrismaMock>;
@@ -182,7 +135,9 @@ describe('WalletService', () => {
       });
 
       // Transaction create must carry both amount and amountInCents.
-      const createCall = txCreate.mock.calls[0][0];
+      const createCall = (txCreate.mock.calls as unknown[][])[0][0] as {
+        data: { amount: number; amountInCents: bigint; metadata: Record<string, number> };
+      };
       expect(createCall.data.amount).toBe(92.01);
       expect(createCall.data.amountInCents).toBe(BigInt(9201));
       // Metadata also carries the integer-cent receipts for audit.
@@ -204,7 +159,15 @@ describe('WalletService', () => {
       await service.processSale('ws-1', 50, 'sale-ledger', 'Product L');
 
       expect(walletLedger.appendWithinTx).toHaveBeenCalledTimes(1);
-      const appendCall = walletLedger.appendWithinTx.mock.calls[0][1];
+      const appendCall = (walletLedger.appendWithinTx.mock.calls as unknown[][])[0][1] as {
+        workspaceId: string;
+        walletId: string;
+        transactionId: string | null;
+        direction: 'credit' | 'debit';
+        bucket: 'available' | 'pending' | 'blocked';
+        amountInCents: bigint;
+        reason: string;
+      };
       expect(appendCall.workspaceId).toBe('ws-1');
       expect(appendCall.walletId).toBe('wallet-1');
       expect(appendCall.transactionId).toBe('tx-ledger-1');
@@ -300,11 +263,19 @@ describe('WalletService', () => {
 
       // Ledger entries: debit pending (full amount), credit available (net).
       expect(walletLedger.appendWithinTx).toHaveBeenCalledTimes(2);
-      const debitCall = walletLedger.appendWithinTx.mock.calls[0][1];
+      const debitCall = (walletLedger.appendWithinTx.mock.calls as unknown[][])[0][1] as {
+        direction: 'credit' | 'debit';
+        bucket: 'available' | 'pending' | 'blocked';
+        amountInCents: bigint;
+      };
       expect(debitCall.direction).toBe('debit');
       expect(debitCall.bucket).toBe('pending');
       expect(debitCall.amountInCents).toBe(BigInt(100000));
-      const creditCall = walletLedger.appendWithinTx.mock.calls[1][1];
+      const creditCall = (walletLedger.appendWithinTx.mock.calls as unknown[][])[1][1] as {
+        direction: 'credit' | 'debit';
+        bucket: 'available' | 'pending' | 'blocked';
+        amountInCents: bigint;
+      };
       expect(creditCall.direction).toBe('credit');
       expect(creditCall.bucket).toBe('available');
       // net = 1000 - 30 = 970 => 97000 cents

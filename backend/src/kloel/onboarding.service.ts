@@ -363,7 +363,12 @@ export class OnboardingService {
             category: 'business',
           },
         })
-        .catch((err) => this.logger.warn('Failed to save onboarding memory', err.message));
+        .catch((err: unknown) =>
+          this.logger.warn(
+            'Failed to save onboarding memory',
+            err instanceof Error ? err.message : String(err),
+          ),
+        );
     });
     this.logger.log(`Onboarding finalizado para ${workspaceId}`);
   }

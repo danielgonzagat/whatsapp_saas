@@ -1,5 +1,6 @@
 import { expectValueOf } from '../../test/expect-value-of';
 import { NeuroCrmService } from './neuro-crm.service';
+import { partialMatch, stringMatch } from '../../test/helpers/match-instance';
 
 describe('NeuroCrmService', () => {
   let prisma: {
@@ -104,13 +105,13 @@ describe('NeuroCrmService', () => {
     );
     expect(prisma.contact.updateMany).toHaveBeenCalledWith({
       where: { id: 'contact-1', workspaceId: 'ws-1' },
-      data: expect.objectContaining({
+      data: partialMatch({
         leadScore: 91,
         sentiment: 'POSITIVE',
         purchaseProbability: 'VERY_HIGH',
         aiSummary: 'Lead pediu preço e forma de pagamento.',
         nextBestAction: 'SEND_OFFER',
-        customFields: expect.objectContaining({
+        customFields: partialMatch({
           existing: true,
           purchaseProbabilityScore: 0.91,
           probabilityReasons: ['asking_price', 'payment_signal'],
@@ -149,15 +150,15 @@ describe('NeuroCrmService', () => {
       expect.objectContaining({
         sentiment: 'POSITIVE',
         intent: 'BUY',
-        purchaseProbability: expect.stringMatching(/HIGH|VERY_HIGH/),
+        purchaseProbability: stringMatch(/HIGH|VERY_HIGH/),
       }),
     );
     expect(prisma.contact.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'contact-2', workspaceId: 'ws-1' },
-        data: expect.objectContaining({
+        data: partialMatch({
           sentiment: 'POSITIVE',
-          purchaseProbability: expect.stringMatching(/HIGH|VERY_HIGH/),
+          purchaseProbability: stringMatch(/HIGH|VERY_HIGH/),
         }),
       }),
     );

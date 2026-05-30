@@ -296,7 +296,9 @@ describe('UnifiedAgentContextDataService', () => {
 
     it('buildAndPersistCompressedContext scopes upsert to workspaceId', async () => {
       await service.buildAndPersistCompressedContext('ws-tenant', contactId, phone, { name: 'X' });
-      const upsertArgs = prisma.kloelMemory.upsert.mock.calls[0][0];
+      const upsertArgs = (prisma.kloelMemory.upsert.mock.calls as unknown[][])[0][0] as {
+        where: { workspaceId_key: { workspaceId: string; key: string } };
+      };
       expect(upsertArgs.where.workspaceId_key.workspaceId).toBe('ws-tenant');
       expect(typeof upsertArgs.where.workspaceId_key.key).toBe('string');
     });

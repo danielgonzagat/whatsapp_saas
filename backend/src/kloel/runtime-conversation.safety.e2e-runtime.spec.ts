@@ -1,4 +1,3 @@
-import { CommercialDecisionOrchestratorService } from './commercial-decision-orchestrator.service';
 import { RuntimeConversationTracerService } from './runtime-conversation-tracer.service';
 import {
   composeCustomerMessage,
@@ -6,7 +5,6 @@ import {
 } from './commercial-decision-orchestrator.service';
 
 const WS = 'ws-tracer';
-const CHANNEL = 'WHATSAPP';
 const CONTACT_ID = 'contact-trace-1';
 
 type ConceptRow = { concept: string; confidence: number };
@@ -15,7 +13,9 @@ function buildTracerInstrumentedEvents(
   tracer: RuntimeConversationTracerService,
   baseEvents: { recordCommercial: jest.Mock },
 ) {
-  const originalRecordCommercial = baseEvents.recordCommercial.getMockImplementation();
+  const originalRecordCommercial = baseEvents.recordCommercial.getMockImplementation() as
+    | ((event: { eventType: string; payload: Record<string, unknown> }) => unknown)
+    | undefined;
   let policyChoseEmitted = false;
   let determinismGateEmitted = false;
   let composerProducedEmitted = false;
@@ -217,35 +217,6 @@ describe('Runtime Conversation — 12-step tracer proof', () => {
     buildTracerInstrumentedEvents(tracer, events);
   });
 
-  function makeOrchestrator() {
-    return new CommercialDecisionOrchestratorService(
-      mind as never,
-      concepts as never,
-      events as never,
-      identity as never,
-      setup as never,
-      prisma as never,
-      tracer,
-    );
-  }
-
-  function traceBeforeOrchestration(input: {
-    workspaceId: string;
-    contactId?: string;
-    channel: string;
-  }) {
-    tracer.record('step1_inbox_recorded', {
-      workspaceId: input.workspaceId,
-      channel: input.channel,
-    });
-    if (input.contactId) {
-      tracer.record('step2_contact_resolved', {
-        contactId: input.contactId,
-        channel: input.channel,
-      });
-    }
-  }
-
   it('composer produces a safe customer-facing message for every concept', () => {
     const concepts_to_test = [
       'price_objection',
@@ -303,7 +274,7 @@ describe('Runtime Conversation — 12-step tracer proof', () => {
     tracer.record('step12_evidence_consultable', { lift: 0.12, samples: 45 });
 
     const json = tracer.toJSON();
-    const parsed = JSON.parse(json);
+    const parsed = JSON.parse(json) as Array<{ kind: string }>;
     expect(parsed).toHaveLength(12);
 
     const kinds = parsed.map((e: { kind: string }) => e.kind);

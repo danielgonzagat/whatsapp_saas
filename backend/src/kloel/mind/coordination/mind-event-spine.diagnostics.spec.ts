@@ -116,7 +116,7 @@ describe('MindEventSpine diagnostics', () => {
       expect(prisma.mindOutboxEvent.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            eventType: { in: ['sale.created', 'sale.completed'] },
+            eventType: { in: ['sale.created', 'commerce.sale.created', 'sale.completed'] },
           }),
         }),
       );

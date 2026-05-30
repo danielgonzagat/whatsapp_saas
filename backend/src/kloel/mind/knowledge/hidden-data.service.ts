@@ -31,7 +31,7 @@ export class HiddenDataExtractorService {
   private openai: OpenAI | null;
 
   constructor(private config: ConfigService) {
-    const apiKey = this.config.get('OPENAI_API_KEY');
+    const apiKey = this.config.get<string>('OPENAI_API_KEY');
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
   }
 

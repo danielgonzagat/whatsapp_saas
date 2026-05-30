@@ -15,23 +15,6 @@ jest.mock('../common/products/legacy-products.util', () => ({
   filterLegacyProducts: jest.fn((products: unknown[]) => products),
 }));
 
-type ProductRecord = {
-  id: string;
-  name: string;
-  price: number;
-  description: string | null;
-  active: boolean;
-  status: string;
-};
-
-type FlowRecord = {
-  id: string;
-  name: string;
-  isActive: boolean;
-  createdAt: Date;
-  _count: { executions: number };
-};
-
 type ChatToolsPrismaMock = {
   product: { create: jest.Mock; findMany: jest.Mock; findFirst: jest.Mock; updateMany: jest.Mock };
   workspace: { findUnique: jest.Mock; update: jest.Mock };

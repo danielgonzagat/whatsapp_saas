@@ -25,7 +25,9 @@ import {
   type CiaBacklogRunMock,
 } from './cia-runtime.service.fixtures';
 
-const { autopilotQueue } = jest.requireMock('../../../queue/queue');
+const { autopilotQueue } = jest.requireMock<{ autopilotQueue: { add: jest.Mock } }>(
+  '../../../queue/queue',
+);
 
 jest.mock('../../../queue/queue', () => ({
   autopilotQueue: { add: jest.fn().mockResolvedValue(undefined) },
