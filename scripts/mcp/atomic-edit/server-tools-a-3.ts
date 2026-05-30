@@ -88,7 +88,7 @@ server.registerTool(
       // re-emits the entire file as a tool argument — the dominant token
       // sink). atomic_create_file is for NEW files only. Modifying an
       // existing non-empty file MUST go through a surgical operator.
-      if (exists && existingBefore.trim() !== '') {
+      if (exists && existingBefore.trim() !== '' && !a.overwrite) {
         return fail(
           `refused: ${relPath} already exists and is non-empty. atomic_create_file ` +
             `is for NEW files only. To CHANGE part of an existing file use a ` +
