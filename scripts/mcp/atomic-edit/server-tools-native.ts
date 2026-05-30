@@ -1,6 +1,7 @@
 /**
- * server-tools-native.ts — universal (75-language) structural tools backed by
- * the isolated pi-natives engine (native-bridge / native-worker fork).
+ * server-tools-native.ts — universal (multi-language) structural tools backed by
+ * the in-process web-tree-sitter (WASM) engine (native-bridge.ts). No PI, no
+ * native binary, no fork.
  *
  *   atomic_ast_search  — ast-grep structural search across any supported
  *                        language. Read-only.
@@ -10,16 +11,16 @@
  *                        (resolveSafeTarget -> guardSha -> applyEdits/validate
  *                        -> commit). The native engine never writes.
  *
- * Correctness: pi-natives reports byte (UTF-8) offsets and 1-based CODEPOINT
- * columns; our engine uses UTF-16 string offsets. We therefore convert byte
- * offsets -> UTF-16 char offsets via Buffer (never trust the codepoint
- * columns), and span-guard every change (sliced source must equal the reported
- * `before`) before applying. Multibyte/astral-plane files are handled correctly.
+ * Correctness: the bridge reports byte (UTF-8) offsets + a verbatim `before`
+ * slice (web-tree-sitter works in UTF-16 internally; the bridge converts to
+ * bytes). This handler converts byte offsets -> UTF-16 char offsets via Buffer
+ * and span-guards every change (sliced source must equal the reported `before`)
+ * before applying. Multibyte/astral-plane files are handled correctly.
  *
- * Degradation: when the native engine is unavailable (wrong-platform binary,
- * repeated crashes) both tools fail cleanly with an honest message — callers
- * use the explicit TS/range tools instead. pi-natives is a dev accelerator,
- * never on the critical path.
+ * Degradation: if web-tree-sitter or a grammar wasm fails to load, both tools
+ * fail cleanly with an honest message — callers use the explicit TS/range tools
+ * instead. The universal engine is pure WASM (runs on every platform); the core
+ * firewall edit tools never depend on it.
  */
 import * as path from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -68,7 +69,7 @@ export function registerToolsNative(server: McpServer): void {
   server.registerTool(
     'atomic_ast_search',
     {
-      title: 'Universal structural search (ast-grep, 75 languages)',
+      title: 'Universal structural search (ast-grep, any supported language)',
       description:
         'Search code structurally with an ast-grep pattern (e.g. "greet($A)", "function $F($$$) { $$$ }") ' +
         'across every tree-sitter-supported language. Read-only. Returns matches with file, line/column span, ' +

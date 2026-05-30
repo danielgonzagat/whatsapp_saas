@@ -5,13 +5,13 @@
  *
  *   atomic_grep    — native ripgrep (structured {path,lineNumber,line})
  *   atomic_glob    — native glob, gitignore-aware
- *   atomic_outline — tree-sitter code outline for any of the 75 languages
+ *   atomic_outline — tree-sitter code outline for any supported language
  *
  * These are READ-ONLY: the firewall degrades correctly — no write, no sha,
  * rollback is a no-op; the value is structured results + (future) provenance in
- * the trace ledger. Degrade honestly when the native engine is unavailable
- * (wrong-platform binary): each tool fails with a clear message and the agent
- * falls back to Bash. pi-natives is a dev accelerator, never on the critical path.
+ * the trace ledger. Degrade honestly when the engine is unavailable (web-tree-
+ * sitter or a grammar wasm failed to load): each tool fails with a clear message
+ * and the agent falls back to Bash. The engine is pure WASM (runs everywhere).
  */
 import * as path from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -31,7 +31,7 @@ async function nativeReadyOrFail(alt: string): Promise<ToolOk | null> {
   const ready = await ensureReady();
   if (!ready || !nativeAvailable()) {
     return fail(
-      `native universal engine (pi-natives) unavailable on this platform — ${alt}`,
+      `universal engine (web-tree-sitter) unavailable — ${alt}`,
     );
   }
   return null;
@@ -131,7 +131,7 @@ export function registerToolsNativeIo(server: McpServer): void {
   server.registerTool(
     'atomic_outline',
     {
-      title: 'Tree-sitter code outline (all 75 languages)',
+      title: 'Tree-sitter code outline (any supported language)',
       description:
         'Structural outline of a source file via tree-sitter — for ANY supported language, not just TS. ' +
         'Returns {parsed, totalLines, language, segments:[{kind,startLine,endLine,text?}]}. Note: elided ' +

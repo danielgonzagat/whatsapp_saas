@@ -4,7 +4,9 @@
 # in .mcp.json (Claude Code) and the "atomic-edit" mcp entry in opencode.json
 # / ~/.config/opencode/opencode.json (every OpenCode agent + subagent).
 #
-# Permanent design: NO tsx, NO npx, NO network. The server graph is compiled
+# Permanent design: NO tsx, NO npx. Network only on first run, to install the
+# self-contained universal-engine deps (web-tree-sitter + grammars); offline
+# forever after. The server graph is compiled
 # once to dist/ with the already-installed `typescript`, then run as plain
 # `node dist/server.js` (sub-second cold start, deterministic, upgrade-proof).
 # It self-rebuilds ONLY when a source .ts is newer than dist/server.js, so it
@@ -22,6 +24,16 @@ SRC_DIR="${SCRIPT_DIR}/atomic-edit"
 DIST="${SRC_DIR}/dist/server.js"
 
 cd "${REPO_ROOT}"
+
+# First-run bootstrap: install the self-contained universal-engine deps
+# (web-tree-sitter + tree-sitter grammar wasm). One-time network; offline after.
+# Without these the dynamic import() degrades and only the universal (multi-lang)
+# tools are affected — the core TS/firewall tools work regardless.
+if [[ ! -d "${SRC_DIR}/node_modules/web-tree-sitter" ]]; then
+  echo "[atomic-edit-launcher] installing universal-engine deps (first run)…" >&2
+  (cd "${SRC_DIR}" && npm install --no-audit --no-fund --silent >&2) \
+    || echo "[atomic-edit-launcher] WARN: dep install failed — universal tools degrade, core tools still work" >&2
+fi
 
 needs_build() {
   [[ ! -f "${DIST}" ]] && return 0
