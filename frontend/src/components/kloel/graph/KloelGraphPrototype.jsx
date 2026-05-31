@@ -1,12 +1,10 @@
-// @ts-nocheck
-/* eslint-disable */
 'use client';
 // ─────────────────────────────────────────────────────────────────────────────
 // KLOEL · GRAPH UNIFICADO — owner-authored prototype, reproduced VERBATIM as the
 // application's primary surface (source of truth for the KloelGraph visual +
-// interaction model). Only these header lines were prepended: the Next.js "use
-// client" directive and lint/type suppression for this owner-authored single-file
-// React prototype. Phase 2 wires its internal seeds to the real Kloel APIs while
+// interaction model). Only the Next.js "use client" directive was prepended to
+// this owner-authored single-file React prototype; it passes lint + typecheck
+// with zero suppressions. Phase 2 wires its internal seeds to the real Kloel APIs while
 // keeping the rendered result 100% identical to this file. Do NOT alter visuals.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useRef, useReducer, useCallback, useMemo, useContext, createContext } from "react";
@@ -2682,7 +2680,7 @@ function AffiliateOverview({ affiliate }) {
           </div>
         ))}
       </div>
-      <Banner tone="success" icon={Icon.users(13)}>Cada produto que você se afilia vira um nó. Aprovação acende a conexão com "Minhas afiliações" e libera o link rastreável.</Banner>
+      <Banner tone="success" icon={Icon.users(13)}>Cada produto que você se afilia vira um nó. Aprovação acende a conexão com &quot;Minhas afiliações&quot; e libera o link rastreável.</Banner>
     </>
   );
 }
@@ -3281,7 +3279,7 @@ function AutopilotPanel({ conversar }) {
               <div style={{ fontFamily: MONO, fontSize: 9.5, color: C.dim, marginBottom: e.messageSent || e.reason ? 4 : 0 }}>
                 <span style={{ color: C.blue }}>{e.intent}</span> <span style={{ color: C.ember }}>→</span> {e.action}{e.latencyMs ? ` · ${e.latencyMs}ms` : ""}
               </div>
-              {e.messageSent && <div style={{ fontFamily: FONT, fontSize: 11, color: C.muted, fontStyle: "italic" }}>"{e.messageSent}"</div>}
+              {e.messageSent && <div style={{ fontFamily: FONT, fontSize: 11, color: C.muted, fontStyle: "italic" }}>&quot;{e.messageSent}&quot;</div>}
               {e.reason && !e.messageSent && <div style={{ fontFamily: FONT, fontSize: 10.5, color: e.status === "error" ? C.red : C.dim }}>{e.reason}</div>}
             </div>
           );
@@ -4415,7 +4413,7 @@ function StepVoice({ ch, update, onDone, onBack }) {
   return (
     <div>
       <h3 style={{ margin: "0 0 8px 0", fontFamily: FONT, fontSize: 17, fontWeight: 400, color: C.silver, letterSpacing: -0.3 }}>Calibre sua voz</h3>
-      <p style={{ margin: "0 0 22px 0", fontFamily: FONT, fontSize: 12.5, color: C.muted, lineHeight: 1.5 }}>{TONES[voice.tone]} · {EDGES[voice.edge]} · um sub-nó "voz" se materializa no graph</p>
+      <p style={{ margin: "0 0 22px 0", fontFamily: FONT, fontSize: 12.5, color: C.muted, lineHeight: 1.5 }}>{TONES[voice.tone]} · {EDGES[voice.edge]} · um sub-nó &quot;voz&quot; se materializa no graph</p>
       <Dial label="Temperatura" value={voice.tone} onChange={setTone} labels={TONES} />
       <div style={{ height: 20 }} />
       <Dial label="Postura" value={voice.edge} onChange={setEdge} labels={EDGES} />
@@ -5962,7 +5960,7 @@ function KloelSearchScreen({ data, onOpenNode, onClose }) {
               <div style={{ fontFamily: FONT, fontSize: 12.5, color: C.muted, maxWidth: 380, lineHeight: 1.5 }}>Produtos, planos, checkouts, conversas, contatos, vendas, campanhas, afiliados, cupons, URLs, carteira, imagens e chats.</div>
             </div>
           ) : groups.length === 0 ? (
-            <div style={{ padding: "40px 24px", textAlign: "center", fontFamily: FONT, fontSize: 13, color: C.muted }}>Nada encontrado para "{q}"</div>
+            <div style={{ padding: "40px 24px", textAlign: "center", fontFamily: FONT, fontSize: 13, color: C.muted }}>Nada encontrado para &quot;{q}&quot;</div>
           ) : groups.map(group => (
             <div key={group.label}>
               <div style={{ padding: "10px 10px 6px", fontFamily: MONO, fontSize: 10, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", color: C.dim }}>{group.label}</div>
@@ -6043,7 +6041,7 @@ function KloelRecentsScreen({ kloel, onOpenChat, onOpenNode }) {
     for (const c of (kloel.conversations || [])) arr.push({ ts: c.updatedAt || c.createdAt, kind: "Chat", label: c.title || "Conversa", onClick: () => onOpenChat(c.id) });
     for (const im of (kloel.images || [])) arr.push({ ts: im.createdAt, kind: "Imagem", label: im.name, onClick: () => onOpenNode(`kli-${im.id}`) });
     return arr.sort((a, b) => new Date(b.ts) - new Date(a.ts));
-  }, [kloel]);
+  }, [kloel, onOpenChat, onOpenNode]);
   const groups = useMemo(() => { const g = {}; for (const it of items) { const b = kloelDayBucket(it.ts); (g[b] = g[b] || []).push(it); } return g; }, [items]);
   const order = ["Hoje", "Ontem", "Antes"];
   return (
