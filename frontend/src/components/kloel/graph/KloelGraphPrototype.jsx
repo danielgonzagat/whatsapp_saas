@@ -10,6 +10,7 @@
 // keeping the rendered result 100% identical to this file. Do NOT alter visuals.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useRef, useReducer, useCallback, useMemo, useContext, createContext } from "react";
+import { sendAuthenticatedKloelMessage } from "@/lib/kloel-conversations";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    KLOEL · GRAPH UNIFICADO  ·  CRIAR reinventado (ProductNerveCenter → Graph)
@@ -5838,12 +5839,10 @@ function KloelChatScreen({ kloel, setKloel, conversationId, context, onClose }) 
     setKloel(k => ({ ...k, conversations: k.conversations.map(c => c.id === id ? { ...c, messages: [...c.messages, userMsg], updatedAt: nowISO() } : c) }));
     setInput(""); setLoading(true);
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, system: kloelSystemPrompt(context || {}), messages: [...prev, userMsg].map(m => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.content })) }),
-      });
-      const data = await res.json();
-      const reply = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("\n").trim() || "(sem resposta)";
+      // Kloel real engine — DeepSeek v4 pro via backend /kloel/think/sync. No 3rd-party LLM call from the browser.
+      void prev;
+      const res = await sendAuthenticatedKloelMessage({ message: text, mode: "chat", companyContext: kloelSystemPrompt(context || {}) });
+      const reply = String(res?.response ?? res?.reply ?? res?.content ?? res?.message ?? "").trim() || "(sem resposta)";
       const aiMsg = { id: `m-${Date.now() + 1}`, role: "assistant", content: reply, createdAt: nowISO() };
       setKloel(k => ({ ...k, conversations: k.conversations.map(c => c.id === id ? { ...c, messages: [...c.messages, aiMsg], updatedAt: nowISO() } : c) }));
     } catch (e) {
