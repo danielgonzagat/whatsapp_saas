@@ -821,7 +821,9 @@ function buildOperationalDays() {
   }
   return days;
 }
-const OPERATIONAL_DAYS = buildOperationalDays();
+// Honest-empty: sem dias operacionais fake. computeDesempenho([]) rende zeros reais
+// (R$ 0,00 / 0 vendas). Receita real entra via analytics quando o backend subir.
+const OPERATIONAL_DAYS = [];
 
 function dzSumRange(days, fromTs, toTs) {
   const sel = days.filter(x => x.ts >= fromTs && x.ts <= toTs);
@@ -6321,7 +6323,9 @@ function KloelInner() {
     setProducts(Array.isArray(realProducts) ? realProducts.map(adaptRealProduct) : []);
   }, [realProducts]);
   const [affiliate, setAffiliate] = useState({ marketplace: MARKETPLACE_SEED, myAffiliates: MY_AFFILIATES_SEED, partnerChats: PARTNER_CHATS_SEED, collaborators: COLLABORATORS_SEED });
-  const [wallet, setWallet] = useState(DEFAULT_WALLET);
+  // Carteira honest-empty (sem saldo/saque/antecipação fake). Saldos zerados reais;
+  // dados reais entram via useWallet quando o backend estiver disponível.
+  const [wallet, setWallet] = useState({ balance: { available: 0, pending: 0, blocked: 0, total: 0 }, withdrawals: [], anticipations: [], transactions: [] });
   const [educar, setEducar] = useState({ areas: MEMBER_AREAS_SEED });
   const [conversar, setConversar] = useState({ crm: CRM_SEED, contacts: CONTACTS_SEED, conversations: CONVERSATIONS_SEED, orders: ORDERS_SEED, adCampaigns: AD_CAMPAIGNS_SEED, adRules: AD_RULES_SEED, autopilotEvents: AUTOPILOT_EVENTS_SEED, followups: FOLLOWUPS_SEED, crmModules: { inbox: false, contatos: false, vendas: false, anuncios: false, autopilot: false } });
   const [desempenho, setDesempenho] = useState({ period: "30d", customFrom: "", customTo: "" });
