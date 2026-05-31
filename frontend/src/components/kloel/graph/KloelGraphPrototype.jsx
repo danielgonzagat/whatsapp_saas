@@ -11,6 +11,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useRef, useReducer, useCallback, useMemo, useContext, createContext } from "react";
 import { sendAuthenticatedKloelMessage } from "@/lib/kloel-conversations";
+import { useProducts } from "@/hooks/useProducts";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    KLOEL · GRAPH UNIFICADO  ·  CRIAR reinventado (ProductNerveCenter → Graph)
@@ -6280,6 +6281,26 @@ function NewProductModal({ onClose, onCreate }) {
 /* ════════════════════════════════════════════════════════════════════════
    ROOT INNER · estado de produtos + perfil + canais, tudo no graph
    ════════════════════════════════════════════════════════════════════════ */
+// Adapta o produto REAL do backend (GET /products via useProducts) para o shape
+// que o grafo do protótipo espera. Honest-empty: sem dado real → zero nós-produto
+// (nunca o seed PRODUCTS). Defensivo a campos ausentes do backend.
+function adaptRealProduct(p) {
+  const id = String((p && (p.id ?? p._id ?? p.slug)) ?? `prod-${Math.random().toString(36).slice(2, 8)}`);
+  const name = (p && (p.name ?? p.title)) ? String(p.name ?? p.title) : "Produto";
+  const category = (p && p.category) ? String(p.category) : "Outros";
+  const status = (p && p.status) ? String(p.status) : "draft";
+  const rawPrice = Number((p && (p.price ?? p.priceInCents ?? p.amount)) || 0);
+  const price = rawPrice > 1000 ? Math.round(rawPrice / 100) : rawPrice;
+  return {
+    id,
+    label: name,
+    status,
+    tags: [category.toLowerCase()].filter(Boolean),
+    meta: { category, price, revenue: 0, sales: 0, subtitle: status },
+    editor: defaultProductEditor({ name, category, status, price }),
+  };
+}
+
 function KloelInner() {
   const { C, mode } = useTheme();
   const [tab, setTab] = useState("criar");
@@ -6292,7 +6313,13 @@ function KloelInner() {
   const [settings, setSettings] = useState(defaultSettings(C));
   const [channels, setChannels] = useState(DEFAULT_CHANNELS);
   const [accountData, setAccountData] = useState(DEFAULT_ACCOUNT_DATA);
-  const [products, setProducts] = useState(PRODUCTS);
+  // Produtos REAIS via useProducts (GET /products). Honest-empty: backend ausente/
+  // loading/erro → []. Patches locais (optimistic) continuam via setProducts.
+  const { products: realProducts } = useProducts();
+  const [products, setProducts] = useState([]);
+  useEffect(() => {
+    setProducts(Array.isArray(realProducts) ? realProducts.map(adaptRealProduct) : []);
+  }, [realProducts]);
   const [affiliate, setAffiliate] = useState({ marketplace: MARKETPLACE_SEED, myAffiliates: MY_AFFILIATES_SEED, partnerChats: PARTNER_CHATS_SEED, collaborators: COLLABORATORS_SEED });
   const [wallet, setWallet] = useState(DEFAULT_WALLET);
   const [educar, setEducar] = useState({ areas: MEMBER_AREAS_SEED });
