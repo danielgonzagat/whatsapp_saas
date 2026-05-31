@@ -23,6 +23,11 @@ import propertyGate from './property-gate.js';
 import formalGate from './formal-gate.js';
 import livenessGate from './liveness-gate.js';
 import behaviorContractGate from './behavior-contract-gate.js';
+import reexportSymbolGate from './reexport-symbol-gate.js';
+import prismaReferenceGate from './prisma-reference-gate.js';
+import configKeyGate from './config-key-gate.js';
+import structuralLintGate from './structural-lint-gate.js';
+import lintFixGate from './lint-fix-gate.js';
 
 /**
  * Static gates safe in the WRITE direction — each asserts "this write did not
@@ -42,6 +47,23 @@ export const WRITE_GATES: GateModule[] = [
   // introduces a NEW TypeScript error (delta vs prior; pre-existing debt tolerated).
   // Dynamic (runs the compiler) but side-effect-free; bails unjudged in the whole-repo lens.
   typeSoundnessGate,
+  // Symbol half of the connection fact (red class #7): `export { Foo } from './m'` is
+  // a dangling NAMED re-export when './m' resolves but does not EXPORT Foo. Static,
+  // in-process ts-morph; NEW-only delta vs priorOf; star/unresolvable → unjudged.
+  reexportSymbolGate,
+  // Red class #11's tsc-blind escape hatch (Prisma): a `prismaAny.<accessor>` whose
+  // accessor is not a real model camelCase, or a $queryRaw `FROM "<table>"` whose
+  // quoted name is not a real @@map, dangles. Static, schema.prisma dictionary;
+  // dynamic accessors / interpolated SQL → unjudged.
+  prismaReferenceGate,
+  // Config-key membership (red class #12): a literal `config.get('KEY')` whose KEY is
+  // not in a CLOSED Joi validationSchema dangles (Joi rejects it at boot). Static,
+  // overlay-aware schema scan; OPEN schema / non-literal key / no schema → unjudged.
+  configKeyGate,
+  // Stratum-1 structural-lint (the type-independent ESLint slice: unused-import,
+  // no-useless-escape, no-empty, prefer-const). Static, tree-sitter perception; a
+  // write may not INTRODUCE one (NEW-only delta); type-aware rules stay deferred.
+  structuralLintGate,
 ];
 
 /**
@@ -69,6 +91,12 @@ export const DYNAMIC_GATES: GateModule[] = [
   // Needs prior-vs-new — converge runs it with the snapshotted prior on disk and
   // the candidate (NEW) in the overlay (see server-tools-converge dynamic path).
   behaviorContractGate,
+  // Canonical-form drain (the mechanically-fixable, idempotent lint subset, ~prettier).
+  // Pure in-process prettier.format over the overlay — NO file write, NO revert (safer
+  // than probe-convergence). Reds a non-canonical file and exposes the byte-splice to
+  // its canonical form via proposeFixes, so the convergence corpus spans formatting,
+  // not just imports. Syntax-broken / no-parser / ignored → unjudged, never red.
+  lintFixGate,
 ];
 
 export interface UnifiedRed {

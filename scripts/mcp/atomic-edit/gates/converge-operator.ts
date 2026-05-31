@@ -242,6 +242,41 @@ async function totalReds(repoRoot: string, overlay: Map<string, string>): Promis
   return [...reg.reds, ...connectionReds(repoRoot, overlay)];
 }
 
+/*
+ * TODO (A6 lint-fix proposer — deferred, NOT forced; the integration note explicitly
+ * permits "leave a documented TODO" when it does not cleanly compose). The A6 lint-fix
+ * gate IS fully wired into the crivo: registry.ts adds it to DYNAMIC_GATES, so it reds
+ * a non-canonical file on the WRITE floor and the READ lens, and it exposes the exact
+ * canonical-form byte-splice via its own proposeFixes — drainable through the dynamic
+ * path. What is deferred is adding a THIRD operator-side proposer here so the
+ * convergence CORPUS spans formatting, not import-only.
+ *
+ * WHY IT DOES NOT CLEANLY COMPOSE INTO THIS OPERATOR (the precise blocker, verified):
+ *   The operator's monotone HAND accepts a candidate ONLY if total reds STRICTLY
+ *   decrease. So a canonical-form splice is acceptance-valid only if the lint-fix red
+ *   it discharges is part of totalReds(). But unioning lint-fix reds into totalReds()
+ *   makes EVERY non-canonical overlay a counted red — and that breaks the operator's
+ *   own contract proof (converge-operator.proof.mjs), which was verified empirically:
+ *     - GREEN-ALREADY: the proof's already-green fixture `export const x = 1; ...` is
+ *       not prettier-canonical, so the operator would apply a format splice →
+ *       `appliedEdits===0` FAILS (the operator must invent NO work on a green overlay).
+ *     - RED→GREEN(binding/connection): after the import splice the file is still not
+ *       prettier-canonical, so a residual lint-fix red survives → `finalReds===0` and
+ *       `converged===true` FAIL.
+ *   The lint-fix fact is ABSOLUTE and ORTHOGONAL to the operator's dangling-wire
+ *   mission; counting it would redefine "converged" from "every wire resolves" to
+ *   "every wire resolves AND every file is canonical", a broader contract than this
+ *   operator promises. That is an intention decision for the operator's owner, not a
+ *   byte-determined fix — so per doctrine it is left to intent, not forced.
+ *
+ * HOW TO LAND IT CLEANLY (for the operator's owner): give the format pass its OWN
+ * fixpoint loop AFTER the wire-convergence loop reaches green (compose two operators
+ * sequentially, each sound on its own red class), or thread a per-class red budget so
+ * the HAND accepts a splice that strictly drains ITS OWN class. Either keeps each
+ * proof's invariant. The gate already exposes everything needed (run + proposeFixes);
+ * only the operator's acceptance contract needs the owner's decision.
+ */
+
 /** Search the file's OWN directory (overlay + disk) for a sibling exporting `name`; return its import specifier or null. */
 function findSiblingExport(repoRoot: string, overlay: Map<string, string>, fileRel: string, name: string): string | null {
   const esc = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
