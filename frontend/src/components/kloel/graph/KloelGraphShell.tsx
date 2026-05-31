@@ -37,11 +37,13 @@ import {
   type GraphPoint,
   type NodeDragState,
 } from './KloelGraphShell.helpers';
+import { GRAPH_FONT, GraphThemeProvider, useGraphTheme } from './KloelGraphTheme';
 
-export function KloelGraphShell({ children }: { readonly children: ReactNode }) {
+function KloelGraphShellSurface({ children }: { readonly children: ReactNode }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { C } = useGraphTheme();
   const { products } = useProducts();
   const { data: checkoutProducts = [] } = useSWR(
     'kloel-graph-checkout-products',
@@ -253,17 +255,15 @@ export function KloelGraphShell({ children }: { readonly children: ReactNode }) 
         inset: 0,
         minHeight: '100vh',
         overflow: 'hidden',
-        background: '#0A0A0C',
-        color: '#E0DDD8',
-        fontFamily: "'Sora', system-ui, sans-serif",
+        background: C.void,
+        color: C.text,
+        fontFamily: GRAPH_FONT,
         touchAction: 'none',
       }}
     >
       <CommandPalette {...paletteProps} onSelect={executeCommand} mode={commandPaletteMode} />
 
-      <div aria-hidden="true" style={{ position: 'absolute', inset: 0, opacity: 0.6 }}>
-        <div style={{ position: 'absolute', inset: 0, background: '#0A0A0C' }} />
-      </div>
+      <div aria-hidden="true" style={{ position: 'absolute', inset: 0, background: C.void }} />
 
       <div style={worldStyle}>
         <svg
@@ -286,7 +286,7 @@ export function KloelGraphShell({ children }: { readonly children: ReactNode }) 
                 y1={from.y}
                 x2={to.x}
                 y2={to.y}
-                stroke="rgba(232,93,48,0.22)"
+                stroke={C.emberBorder}
                 strokeWidth={1.2 / zoom}
               />
             );
@@ -326,5 +326,19 @@ export function KloelGraphShell({ children }: { readonly children: ReactNode }) 
         </KloelGraphOverlay>
       )}
     </div>
+  );
+}
+
+/**
+ * KloelGraph shell — the graph is the primary navigation surface and each route's
+ * real screen renders inside the 80% overlay with the live graph behind it. Wraps
+ * the surface in the prototype's own light/dark theme so the canvas matches the
+ * canonical KloelGraph look without touching the host app theme.
+ */
+export function KloelGraphShell({ children }: { readonly children: ReactNode }) {
+  return (
+    <GraphThemeProvider>
+      <KloelGraphShellSurface>{children}</KloelGraphShellSurface>
+    </GraphThemeProvider>
   );
 }

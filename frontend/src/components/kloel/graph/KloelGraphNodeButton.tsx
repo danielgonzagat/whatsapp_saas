@@ -4,7 +4,15 @@ import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerE
 
 import type { KloelGraphNode } from './KloelGraph.routes';
 import type { LayoutNode } from './KloelGraphShell.helpers';
+import { GRAPH_FONT, useGraphTheme } from './KloelGraphTheme';
 
+/**
+ * A single graph node — faithful port of the prototype: a circular body in ember
+ * (suns = silver core, active = ember) with the label rendered as text BELOW the
+ * circle, not inside a box. The interaction contract is unchanged from #473
+ * (pointer down/move/up + keyboard, aria-label "Abrir <label>") so the shell's
+ * drag-vs-click engine and all specs keep passing.
+ */
 export function KloelGraphNodeButton({
   node,
   point,
@@ -22,8 +30,14 @@ export function KloelGraphNodeButton({
   readonly onPointerUp: (node: KloelGraphNode, event: ReactPointerEvent<HTMLButtonElement>) => void;
   readonly onKeyDown: (node: KloelGraphNode, event: ReactKeyboardEvent<HTMLButtonElement>) => void;
 }) {
+  const { C } = useGraphTheme();
   const isSun = node.type === 'sun';
+  const isCore = node.id === 'perfil';
   const size = point.r * 2;
+
+  const dotColor = active ? C.ember : isSun ? C.silver : isCore ? C.silver : C.dim;
+  const labelColor = active ? C.silver : isSun ? C.text : C.muted;
+  const labelSize = isSun ? 12 : Math.max(8.5, Math.min(11, point.r / 2.2));
 
   return (
     <button
@@ -41,26 +55,46 @@ export function KloelGraphNodeButton({
         width: size,
         height: size,
         transform: 'translate(-50%, -50%)',
-        border: `1px solid ${active ? '#E85D30' : 'rgba(255,255,255,0.18)'}`,
-        borderRadius: 6,
-        background: active ? 'rgba(232,93,48,0.18)' : 'rgba(13,13,16,0.72)',
-        boxShadow: active ? '0 0 28px rgba(232,93,48,0.30)' : '0 10px 28px rgba(0,0,0,0.28)',
-        color: active ? '#E85D30' : '#E0DDD8',
+        border: 'none',
+        background: 'transparent',
+        padding: 0,
         cursor: 'grab',
-        fontFamily: "'JetBrains Mono', ui-monospace, monospace",
-        fontSize: isSun ? 10 : Math.max(7, Math.min(9.5, point.r / 2.4)),
-        fontWeight: 600,
-        letterSpacing: 0.8,
-        lineHeight: 1.15,
-        overflow: 'hidden',
-        padding: 4,
-        textAlign: 'center',
-        textTransform: 'uppercase',
         touchAction: 'none',
         userSelect: 'none',
       }}
     >
-      {node.label}
+      {/* circular node body */}
+      <span
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          borderRadius: '50%',
+          background: dotColor,
+          border: active ? `2px solid ${C.paper}` : 'none',
+          boxShadow: active ? `0 0 0 1.5px ${C.ember}, 0 0 22px ${C.emberGlow}` : 'none',
+          transition: 'background .28s ease, box-shadow .15s ease',
+        }}
+      />
+      {/* label below the circle */}
+      <span
+        style={{
+          position: 'absolute',
+          left: '50%',
+          top: `calc(100% + ${Math.max(4, point.r * 0.5)}px)`,
+          transform: 'translateX(-50%)',
+          whiteSpace: 'nowrap',
+          fontFamily: GRAPH_FONT,
+          fontSize: labelSize,
+          fontWeight: isSun ? 600 : 400,
+          color: labelColor,
+          textShadow: `0 1px 2px ${C.void}`,
+          pointerEvents: 'none',
+          transition: 'color .28s ease',
+        }}
+      >
+        {node.label}
+      </span>
     </button>
   );
 }
