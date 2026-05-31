@@ -2794,9 +2794,12 @@ function AffiliateProductPanel({ node, affiliate, patchAffiliate }) {
    ════════════════════════════════════════════════════════════════════════ */
 function Sparkline({ data, color }) {
   const { _C } = useTheme();
-  const max = Math.max(1, ...data);
-  const w = 100, h = 34, n = data.length;
-  const pts = data.map((v, i) => [(i / (n - 1)) * w, h - (v / max) * (h - 4) - 2]);
+  const safe = (data && data.length > 1)
+    ? data
+    : (data && data.length === 1) ? [data[0], data[0]] : [0, 0];
+  const max = Math.max(1, ...safe);
+  const w = 100, h = 34, n = safe.length;
+  const pts = safe.map((v, i) => [(i / (n - 1)) * w, h - (v / max) * (h - 4) - 2]);
   const path = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(" ");
   return (
     <svg viewBox={`0 0 ${w} ${h}`} width="100%" height={h} preserveAspectRatio="none" style={{ display: "block" }}>
@@ -5341,7 +5344,9 @@ function ChipMulti({ value, onChange, options }) {
    DESEMPENHO · painel mission-control + nós-métrica
    ════════════════════════════════════════════════════════════════════════ */
 function DzSparkline({ series, color, height = 44 }) {
-  const pts = (series && series.length > 1) ? series : [...(series || [0]), ...(series || [0])];
+  const pts = (series && series.length > 1)
+    ? series
+    : (series && series.length === 1) ? [series[0], series[0]] : [0, 0];
   const W = 300, H = height;
   const max = Math.max(...pts, 1);
   const n = pts.length;
