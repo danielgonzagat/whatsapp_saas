@@ -60,6 +60,8 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { LENS_GATES, runGates, type UnifiedRed } from './registry.js';
+import { makeContext } from './contract.js';
+import lintFixGate from './lint-fix-gate.js';
 import type { ConvergeResult } from './algebra.js';
 
 const SOURCE_RE = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
@@ -85,7 +87,7 @@ const BUILTIN_EXPORTS: Record<string, string> = {
 /** One proposed byte-splice: replace [byteStart, byteEnd) in `content` with `replacement`. */
 export interface SpliceProposal {
   /** the red class this proposal discharges (for the corpus / audit trail) */
-  kind: 'binding' | 'connection';
+  kind: 'binding' | 'connection' | 'format';
   /** the repo-relative overlay file this splice targets (its own attribution — no re-derivation) */
   file: string;
   /** byte offset (inclusive) into the CURRENT overlay content where the splice begins */
@@ -408,6 +410,11 @@ export interface ConvergeReport extends ConvergeResult {
   accepted: string[];
   /** the reds that survived to the fixpoint (present iff !converged) — never guessed away */
   residual: UnifiedRed[];
+  /** opt-in format-fixpoint pass: byte-splices applied to reach prettier-canonical form
+   *  (separate from appliedEdits, which is wire-only) — feeds the corpus beyond import-fix */
+  formatEdits: number;
+  /** the format rationales applied (corpus / audit trail), empty unless opts.format */
+  formatted: string[];
 }
 
 /**
@@ -419,7 +426,11 @@ export interface ConvergeReport extends ConvergeResult {
  * actually drive reds down is rejected, not trusted. Converged ⟺ finalReds === 0;
  * a residual the bytes cannot discharge yields needsIntent (never a guessed splice).
  */
-export async function converge(repoRoot: string, overlay: Map<string, string>): Promise<ConvergeReport> {
+export async function converge(
+  repoRoot: string,
+  overlay: Map<string, string>,
+  opts: { format?: boolean } = {},
+): Promise<ConvergeReport> {
   const work = new Map(overlay);
   const accepted: string[] = [];
   let reds = await totalReds(repoRoot, work);
@@ -464,6 +475,35 @@ export async function converge(repoRoot: string, overlay: Map<string, string>): 
     reds = after;
   }
 
+  // ── OPTIONAL format-fixpoint pass (the corpus-spanning drain) ──────────────
+  // Runs ONLY when opts.format AND the wire reds already converged, so it never
+  // changes converged/finalReds/appliedEdits (wire facts — the default path is
+  // byte-identical). Prettier is whitespace-only + idempotent → one pass reaches the
+  // canonical form and cannot touch a wire. Re-gated: the format splices are KEPT only
+  // if total reds stay 0 (monotone — formatting must never introduce a red), else
+  // discarded. Reported as formatEdits, feeding the convergence corpus beyond import-fix.
+  let formatEdits = 0;
+  const formatted: string[] = [];
+  if (opts.format && reds.length === 0) {
+    const ctx = makeContext(repoRoot, work, [...work.keys()]);
+    await lintFixGate.run(ctx); // populates the canonical-form stash that proposeFixes reads
+    const fixes = lintFixGate.proposeFixes?.(ctx) ?? [];
+    if (fixes.length > 0) {
+      const candidate = new Map(work);
+      const touched = new Set<string>();
+      for (const [rel, content] of work) {
+        const fileFixes = fixes.filter((f) => f.file === rel);
+        if (fileFixes.length === 0) continue;
+        candidate.set(rel, applySplices(content, fileFixes.map((f) => ({ kind: 'format' as const, ...f }))));
+        touched.add(rel);
+      }
+      if (touched.size > 0 && (await totalReds(repoRoot, candidate)).length === 0) {
+        for (const rel of touched) work.set(rel, candidate.get(rel)!);
+        for (const f of fixes) if (touched.has(f.file)) { formatEdits += 1; formatted.push(f.rationale); }
+      }
+    }
+  }
+
   const finalReds = reds.length;
   const converged = finalReds === 0;
   return {
@@ -475,6 +515,8 @@ export async function converge(repoRoot: string, overlay: Map<string, string>): 
     needsIntent: !converged,
     accepted,
     residual: converged ? [] : reds,
+    formatEdits,
+    formatted,
   };
 }
 

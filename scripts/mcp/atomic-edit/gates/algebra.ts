@@ -411,12 +411,20 @@ export function buildEditFact(
   repoRoot: string,
   trace: { file?: string; modifiedZones?: Array<{ byteStart?: number; byteEnd?: number }> },
   cache: Map<string, Set<string>> = new Map(),
+  closureProvider?: ClosureProvider,
 ): EditFact {
   const file = String(trace.file ?? '').replaceAll('\\', '/');
   const spans: Array<[number, number]> = (trace.modifiedZones ?? [])
     .filter((z) => typeof z.byteStart === 'number' && typeof z.byteEnd === 'number')
     .map((z) => [z.byteStart as number, z.byteEnd as number]);
-  const { set, capped } = perSymbolClosureOf(repoRoot, file, spans, cache);
+  // Default = TS-only per-symbol closure (preserves the empirical commute-rate band
+  // every existing caller/proof asserts against). Pass a ClosureProvider (e.g.
+  // closure-universal.makeUniversalClosureProvider()) to make commute language-universal
+  // on demand — a SOUND superset over-approximation; spans are unused by the provider
+  // path (it is per-file), so the universal path is conservative-but-correct.
+  const { set, capped } = closureProvider
+    ? closureProvider(repoRoot, file)
+    : perSymbolClosureOf(repoRoot, file, spans, cache);
   return { file, spans, closure: set, closureCapped: capped };
 }
 
@@ -430,16 +438,12 @@ function spansOverlap(a: Array<[number, number]>, b: Array<[number, number]>): b
  * is NOT modelled here — conservatively reported in the reason). DIFFERENT files ⇒
  * commute iff neither file lies in the other's resolution closure.
  *
- * INTEGRATOR TODO (B5 universal-closure injection — deliberately NOT forced): the
- * closure baked into each EditFact here is the TypeScript-only `closureOf` (via
- * `perSymbolClosureOf` in buildEditFact). gates/closure-universal.ts ships a
- * language-agnostic, shape-identical `ClosureProvider` (makeUniversalClosureProvider)
- * that would let commute couple py/go/ruby/rust/java/c/cpp edits too. Wiring it is a
- * SOUND superset over-approximation, but it is NOT a clean drop-in: buildEditFact
- * would have to take a ClosureProvider parameter, which changes a function that
- * algebra.proof.mjs + merge.proof.mjs both assert against (TS-closure semantics +
- * the EMPIRICAL commute-rate regression-lock band 0.50<r<0.99). Threading it in must
- * re-baseline those two proofs in the same change, so it is left for a dedicated PR.
+ * B5 universal-closure injection — DONE (non-breaking): buildEditFact takes an
+ * OPTIONAL `closureProvider`. Default = TS-only per-symbol closure, so every existing
+ * caller/proof (and the empirical commute-rate band 0.50<r<0.99) is byte-identical —
+ * no re-baseline needed. Pass closure-universal.makeUniversalClosureProvider() to make
+ * commute language-universal (py/go/ruby/rust/java/c/cpp) on demand — a SOUND superset
+ * over-approximation. The injection point the integrator deferred is now wired.
  */
 export function commute(a: EditFact, b: EditFact): CommuteVerdict {
   if (a.file === b.file) {
