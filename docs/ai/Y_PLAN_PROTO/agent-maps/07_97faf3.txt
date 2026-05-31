@@ -1,0 +1,134 @@
+{
+  "domain": "Conversar",
+  "decompositionModule": "frontend/src/components/kloel/graph/domains/conversar.jsx — extract the Conversar slice out of the literal monolith (the seeds + maps + buildConversarNodesEdges@604 + the 8 *Panel inline screens + ConversarScreen@5696 + ChannelOnboardingWizard@4298) into one per-domain module so the seed→real swap lands in a small file. The LITERAL prototype with the named screens/panels is the kg worktree copy: /Users/danielpenin/whatsapp_saas-kg/frontend/src/components/kloel/graph/KloelGraphPrototype.jsx (6576 lines, branch feat/kloelgraph-literal-prototype). THIS repo's branch (feat/kloelgraph-prototype-engine) holds only the 671-line seed+builder foundation (no *Panel screens) — confirm with owner which file Y targets.",
+  "protoSeeds": [
+    "CONVERSAR_BRANCHES@518 (kg) / @432 (this branch) — single branch {id:'cv-crm',key:'crm',label:'CRM'}",
+    "CRM_MODULES@523/@435 — cv-inbox, cv-contatos, cv-vendas, cv-anuncios, cv-autopilot",
+    "AUTOPILOT_EVENTS_SEED@533/@442 (consumed by AutopilotPanel, NOT by builder)",
+    "FOLLOWUPS_SEED@539/@448 (consumed by AutopilotPanel, NOT by builder)",
+    "AD_PLATFORMS@547/@453 (map)",
+    "AD_CAMPAIGNS_SEED@548/@454",
+    "AD_RULES_SEED@554/@460 (consumed by AnunciosPanel)",
+    "ORDERS_SEED@561/@465",
+    "ORDER_STATUS@567/@471 (map)",
+    "PAYMENT_LABEL@568/@472 (map)",
+    "CRM_SEED@569/@473 (pipeline+stages+deals; consumed by CrmPanel via conversar.crm)",
+    "CONTACTS_SEED@584/@488",
+    "CONVERSATIONS_SEED@589/@493"
+  ],
+  "protoBuilders": [
+    "buildConversarNodesEdges@604 (kg) / @508 (this branch) — (conversar)=>{nodes,edges}; early-returns {} when !conversar (line 606); gates on conversar.crmModules (mods.inbox/contatos/vendas/anuncios); reads conversar.conversations→cv-inbox, conversar.contacts→cv-contatos, conversar.orders→cv-vendas (ORDER_STATUS), conversar.adCampaigns→cv-anuncios (AD_PLATFORMS). It does NOT read autopilotEvents/followups (those are panel-only). ALREADY consumes a data object, so honest-empty swap = feed real-hook data with [] for loading/empty/error → its for-loops emit ZERO entity nodes; only cv-crm + the activated CRM_MODULES branch nodes remain."
+  ],
+  "protoInlineScreens": [
+    "(line numbers in the kg literal 6576-line prototype) CrmPanel@3005 ({conversar,patchConversar}) — reads conversar.crm + conversar.crmModules; renders module toggles + pipeline columns",
+    "VendasPanel@3073 ({conversar}) — reads conversar.orders",
+    "OrderPanel@3121 ({node,conversar,patchConversar})",
+    "AnunciosPanel@3154 ({conversar,patchConversar})",
+    "AdCampaignPanel@3209 ({node,conversar,patchConversar})",
+    "AutopilotPanel@3242 ({conversar}) — reads conversar.autopilotEvents + conversar.followups",
+    "ContactPanel@3302 ({node,conversar,patchConversar}) — finds conversar.contacts by node.meta.contactId",
+    "ConversationPanel@3355 ({node,conversar,patchConversar}) — finds conversar.conversations by node.meta.convId; has local send() that mutates state",
+    "ChannelOnboardingWizard@4298 ({channelKey,channels,setChannels,onClose,products,embedded})",
+    "ConversarScreen@5696 ({channels,onOpenNode}) — top screen: CRM card + channel grid. Panels mount in KloelOverlay@5793 overlay. On THIS branch all =0 (foundation has no panels)."
+  ],
+  "realScreens": [
+    {
+      "panel": "ConversationPanel / cv-inbox",
+      "realComponent": "frontend/src/components/kloel/inbox/InboxWorkspace.tsx (export function InboxWorkspace, HAS props interface InboxWorkspaceProps@25 — pass props; self-fetches via useInboxData.ts + useInboxRealtime.ts; honest states InboxNotAuthenticatedView/InboxNoWorkspaceView). Lighter alt: components/kloel/conversations/ConversationsView.tsx (no props, self-contained)"
+    },
+    {
+      "panel": "ContactPanel",
+      "realComponent": "frontend/src/components/kloel/crm/ContactDetailDrawer.tsx (export function ContactDetailDrawer({phone,onClose})@57 — REQUIRES props phone + onClose; map node.meta.contactId→phone). Sections: ContactInfoSection/ContactScoreSentimentSection/ContactNeuroSection/ContactTagsSection/ContactDealsSection + ContactDetailLoadingBody"
+    },
+    {
+      "panel": "CrmPanel",
+      "realComponent": "frontend/src/components/kloel/crm/CRMPipelineView.tsx (export default CRMPipelineView()@14 — NO props, fully self-fetching; + CRMPipelineView.parts.tsx, PipelineStageColumn, PipelineToolbar, NoPipelinesEmptyState honest-empty)"
+    },
+    {
+      "panel": "OrderPanel / VendasPanel",
+      "realComponent": "frontend/src/components/kloel/vendas/VendasView.tsx (export function VendasView({defaultTab='vendas'})@60 — optional prop only; + VendasView.Tabs, GestaoVendas({...props})@27, PipelineTab, OrderAlertsBanner)"
+    },
+    {
+      "panel": "AutopilotPanel",
+      "realComponent": "frontend/src/components/kloel/autopilot/AutopilotDecisionLog.tsx (export default AutopilotDecisionLog({...})@93 — HAS props, verify shape; + AutopilotPlanInspector, AutopilotSafetyBrakes*). API lib/api/autopilot.ts. Settings: components/kloel/settings/autopilot-section.tsx"
+    },
+    {
+      "panel": "AnunciosPanel / AdCampaignPanel",
+      "realComponent": "frontend/src/components/kloel/anuncios/AnunciosView.tsx (export default AnunciosView({defaultTab='visao'})@50 — optional prop; + AnunciosTabBar, AnunciosShared). Hook useAnuncios.ts → /api/anuncios/status + /api/anuncios/campaigns. CORRECTS earlier 'no anuncios' assumption — the surface AND hook AND api (campaigns.ts + ad-rules.ts) all exist"
+    },
+    {
+      "panel": "ChannelOnboardingWizard",
+      "realComponent": "frontend/src/components/kloel/marketing/OfficialMarketingChannelPage/ChannelOnboarding/ChannelOnboarding.tsx (spec at ChannelOnboarding.spec.tsx confirms file). API lib/api/channel-setup.ts + onboarding.ts — reuse candidate; verify props vs prototype wizard signature"
+    }
+  ],
+  "realHooks": [
+    {
+      "hook": "useCRM",
+      "path": "frontend/src/hooks/useCRM.ts (CONFIRMED)",
+      "endpoints": "/crm/contacts, /crm/pipelines, /crm/deals (apiFetch + swrFetcher)",
+      "for": "CrmPanel/ContactPanel"
+    },
+    {
+      "hook": "useSalesPipeline",
+      "path": "frontend/src/hooks/useSalesPipeline.ts (CONFIRMED)",
+      "endpoints": "/crm/pipelines + deals payload",
+      "for": "CrmPanel"
+    },
+    {
+      "hook": "useSales / useSalesStats / useSalesChart",
+      "path": "frontend/src/hooks/useSales.ts (CONFIRMED)",
+      "endpoints": "/sales, /sales/stats, /sales/chart",
+      "for": "OrderPanel/VendasPanel"
+    },
+    {
+      "hook": "useAnunciosStatus / useAnunciosCampaigns",
+      "path": "frontend/src/hooks/useAnuncios.ts (CONFIRMED)",
+      "endpoints": "/api/anuncios/status, /api/anuncios/campaigns (proxy route)",
+      "for": "AnunciosPanel/AdCampaignPanel"
+    },
+    {
+      "hook": "useConversationHistory",
+      "path": "frontend/src/hooks/useConversationHistory.tsx (CONFIRMED)",
+      "endpoints": "/kloel/threads, /kloel/threads?limit=50 (apiFetch)",
+      "for": "ConversationPanel (or use InboxWorkspace's own useInboxData/useInboxRealtime)"
+    },
+    {
+      "hook": "autopilot (no top-level useAutopilot hook)",
+      "path": "data via frontend/src/lib/api/autopilot.ts (CONFIRMED); AutopilotDecisionLog likely fetches internally",
+      "endpoints": "via lib/api/autopilot.ts",
+      "for": "AutopilotPanel"
+    },
+    {
+      "hook": "CORRECTION",
+      "path": "earlier-guessed paths (hooks/useConversations.ts, useContacts.ts, useOrders.ts, useAutopilot.ts; components/inbox/*, components/crm/CRMPipelineView.tsx at top-level, components/vendas/OrdersTable.tsx) are ALL WRONG — real files live under components/kloel/<domain>/ and hooks use useSales/useSalesPipeline/useAnuncios/useConversationHistory naming",
+      "endpoints": "",
+      "for": ""
+    }
+  ],
+  "overlaySwapStrategy": "Direct-import swap, no routing. Two layers. (1) DATA layer in buildConversarNodesEdges@604: keep the (conversar)=>{nodes,edges} contract; feed it from a data adapter (conversar.data) calling the real hooks — useCRM/useSalesPipeline (CRM+contacts), useSales (orders/vendas), useAnunciosCampaigns (adCampaigns), useConversationHistory (inbox) — mapping loading/empty/error → [] per slice (honest-empty) so the existing for-loops no-op; never the *_SEED arrays. (2) PANEL layer: inside each panel body (mounted in KloelOverlay@5793 / NodePanel overlay) render the real component instead of inline JSX, wrapped in the existing overlay chrome (no restyle). Props differ by component: CRMPipelineView/ConversationsView take NO props (mount and self-fetch); VendasView/AnunciosView take optional defaultTab; ContactDetailDrawer REQUIRES {phone,onClose} (map node.meta.contactId→phone, onClose=overlay close); InboxWorkspace/AutopilotDecisionLog take props (verify shapes). Required provider: the existing workspace/auth context apiFetch + useWorkspaceId.ts depend on (InboxWorkspace renders InboxNoWorkspaceView when absent — honest). Preserve all chrome/copy/casca (REGRA MESTRA).",
+  "wiringSteps": [
+    "0. DISAMBIGUATE TARGET: named *Panel/ConversarScreen symbols exist ONLY in /Users/danielpenin/whatsapp_saas-kg/.../KloelGraphPrototype.jsx (6576 lines); this repo's branch has the 671-line foundation (no panels). Confirm canonical file with owner before editing.",
+    "(a) DATA swap @604: keep contract; build conversar.data adapter calling useCRM/useSalesPipeline (CRM+contacts), useSales (orders), useAnunciosCampaigns (adCampaigns), useConversationHistory (inbox). Honest-empty: loading/empty/error → [] for that slice → builder emits zero entity nodes; keep cv-crm + activated CRM_MODULES branch nodes only. Never *_SEED.",
+    "(b) Delete the Conversar *_SEED constants (kg 533-589) only AFTER every consumer (builder AND the panels that read conversar.crm/contacts/conversations/orders/autopilotEvents/followups) is repointed.",
+    "(c) PANEL swaps in overlay bodies: CrmPanel@3005→<CRMPipelineView/> (no props); ContactPanel@3302→<ContactDetailDrawer phone=... onClose=.../>; ConversationPanel@3355→<InboxWorkspace .../> or <ConversationsView/>; OrderPanel@3121/VendasPanel@3073→<VendasView/>; AutopilotPanel@3242→<AutopilotDecisionLog .../>; AnunciosPanel@3154/AdCampaignPanel@3209→<AnunciosView/>; ChannelOnboardingWizard@4298→reuse marketing ChannelOnboarding.tsx. Keep panel chrome; swap inner body only.",
+    "(d) Verify props: ContactDetailDrawer needs {phone,onClose}; InboxWorkspace & AutopilotDecisionLog have prop interfaces to read; the others self-fetch or take optional defaultTab.",
+    "(e) Ensure overlay tree is inside the workspace/auth provider (useWorkspaceId.ts) apiFetch needs.",
+    "(f) Preserve shell; cd frontend && npm run lint && npm run build."
+  ],
+  "filesToCreate": [
+    "frontend/src/components/kloel/graph/domains/conversar.jsx (decomposed Conversar slice: branches/modules/maps + buildConversarNodesEdges + panel-mount wrappers for the real components)",
+    "frontend/src/components/kloel/graph/domains/conversar.data.ts (data adapter: calls useCRM/useSalesPipeline/useSales/useAnunciosCampaigns/useConversationHistory, normalizes loading/empty/error to honest-empty shape consumed by buildConversarNodesEdges)"
+  ],
+  "filesToEdit": [
+    "/Users/danielpenin/whatsapp_saas-kg/frontend/src/components/kloel/graph/KloelGraphPrototype.jsx (the LITERAL prototype WITH the *Panel screens — remove Conversar seeds, import from domains/conversar, mount real components in panel bodies) — OR, only if the foundation branch is chosen, this repo's frontend/src/components/kloel/graph/KloelGraphPrototype.jsx (671 lines, data-swap only; no panels to swap)"
+  ],
+  "collisionRisk": "HIGH. KloelGraphPrototype.jsx is the owner-authored monolith and shared source-of-truth for all four domains (Conversar/Construir/Crescer/Cuidar). It exists in DIVERGENT forms across 4+ active worktrees: this repo feat/kloelgraph-prototype-engine (671 lines), whatsapp_saas-kg feat/kloelgraph-literal-prototype (6576 lines, the one with panels), whatsapp_saas-kloelgraph-primary fix/kloelgraph-primary-shell, wg-kloelgraph feat/kloelgraph-foundation-criar. Parallel domain agents on the same file = severe merge risk. Mitigation: decompose into per-domain modules (domains/conversar.jsx) FIRST and pick ONE canonical prototype file before any edit; coordinate the one-time split.",
+  "feasibility": "HIGH. Every Conversar panel maps to a confirmed real surface with a verified entry signature: CRMPipelineView (no props, self-fetch), ContactDetailDrawer({phone,onClose}), InboxWorkspace(props)/ConversationsView(no props), VendasView({defaultTab?}), AutopilotDecisionLog(props), AnunciosView({defaultTab?}), marketing ChannelOnboarding. Real hooks confirmed with endpoints: useCRM (/crm/*), useSalesPipeline (/crm/pipelines), useSales (/sales*), useAnuncios (/api/anuncios/*), useConversationHistory (/kloel/threads). The earlier 'no anuncios backend' assumption is CORRECTED — useAnuncios.ts hits /api/anuncios/status + /api/anuncios/campaigns and lib/api/campaigns.ts + ad-rules.ts exist (still verify the live backend/proxy returns data, else show setup-required). The builder already takes a data object → honest-empty is a clean swap. Most real surfaces self-fetch + have built-in empty states (NoPipelinesEmptyState, InboxNoWorkspaceView, ConversationsEmpty), so the panel swap is mostly mount-and-let-it-fetch.",
+  "blockers": [
+    "WHICH-PROTOTYPE ambiguity: the named *Panel/ConversarScreen symbols exist ONLY in the kg worktree copy (6576 lines); this repo's branch has the 671-line foundation without panels. Owner must confirm the canonical literal file before editing.",
+    "MULTI-WORKTREE divergence: 4+ kloelgraph worktrees hold different copies of the monolith → editing without canonicalization risks lost/duplicated work.",
+    "ANUNCIOS live data unverified: useAnuncios.ts + /api/anuncios/* proxy + lib/api/campaigns.ts/ad-rules.ts all EXIST, but the backend controller behind /api/anuncios was not runtime-verified this run; if it 404s/empties, AnunciosPanel must render setup-required (its honest path), not seed.",
+    "Props of 2 components still need a one-line read before wiring: InboxWorkspaceProps@25 and AutopilotDecisionLog@93 prop shapes (others are confirmed: CRMPipelineView/ConversationsView no-props, VendasView/AnunciosView optional defaultTab, ContactDetailDrawer {phone,onClose}).",
+    "Panel-only seeds: AUTOPILOT_EVENTS_SEED + FOLLOWUPS_SEED + AD_RULES_SEED + CRM_SEED feed the panels directly (not the builder), so the data swap must also repoint the panel bodies, not just buildConversarNodesEdges."
+  ]
+}

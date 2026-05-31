@@ -1,0 +1,140 @@
+{
+  "sliceCount": 11,
+  "decompositionFirst": true,
+  "peakConcurrency": 7,
+  "slices": [
+    {
+      "id": "S0",
+      "name": "Decomposition + byte-identity gate",
+      "phase": "Fase 0 (SERIAL)",
+      "tier": "XL",
+      "owns": "engine/KloelGraphEngine.ts, engine/KloelGraphCanvas.tsx, overlays/KloelGraphOverlayChrome.tsx, overlays/KloelGraphNodePanel.tsx (router shell, empty SCREEN_BY_TYPE), state/useKloelGraphState.ts, seeds/*, domains/<name>/ skeletons, __tests__/KloelGraph.byte-identity.spec.ts",
+      "blockedBy": "DECISÃO owner-gate",
+      "prompt": "frontend/src/components/kloel/graph/_Y/slice-prompts/S0-decomposition.md"
+    },
+    {
+      "id": "S1",
+      "name": "Galaxy Perfil + Dashboard",
+      "phase": "parallel galaxy",
+      "tier": "S",
+      "owns": "domains/perfil/*",
+      "note": "route-based path already structurally done; remaining = honest-empty verify",
+      "prompt": "frontend/src/components/kloel/graph/_Y/slice-prompts/S1-perfil-dashboard.md"
+    },
+    {
+      "id": "S2",
+      "name": "Galaxy Kloel (IA central)",
+      "phase": "parallel galaxy",
+      "tier": "M",
+      "owns": "domains/kloel/*",
+      "note": "swap KloelChatScreen.send() api.anthropic -> streamAuthenticatedKloelMessage POST /kloel/think SSE; honest-empty conversations/images",
+      "prompt": "frontend/src/components/kloel/graph/_Y/slice-prompts/S2-kloel.md"
+    },
+    {
+      "id": "S3",
+      "name": "Galaxy Criar / Produtos",
+      "phase": "parallel galaxy",
+      "tier": "S",
+      "owns": "domains/criar/*",
+      "note": "core already live; residual = optional per-tab count badges (useProductNerveCenter absent)",
+      "prompt": "frontend/src/components/kloel/graph/_Y/slice-prompts/S3-criar-produtos.md"
+    },
+    {
+      "id": "S4",
+      "name": "Galaxy Afiliar",
+      "phase": "parallel galaxy",
+      "tier": "M",
+      "owns": "domains/afiliar/*",
+      "note": "shape A near-trivial (verify honest-empty); shape B resurrects seed-driven type-switch; pin to affiliateApi NOT marketplaceApi",
+      "prompt": "frontend/src/components/kloel/graph/_Y/slice-prompts/S4-afiliar.md"
+    },
+    {
+      "id": "S5",
+      "name": "Galaxy Educar (Área de Membros)",
+      "phase": "parallel galaxy",
+      "tier": "M",
+      "owns": "domains/educar/*",
+      "note": "favorable; EducarOverlayPanel wrapper mandatory (Tab is prop-driven); subtitle from list-item counts not aggregate stats",
+      "prompt": "frontend/src/components/kloel/graph/_Y/slice-prompts/S5-educar.md"
+    },
+    {
+      "id": "S6",
+      "name": "Galaxy Conversar",
+      "phase": "parallel galaxy",
+      "tier": "M-L",
+      "owns": "domains/conversar/*",
+      "note": "builder DATA + 7 panel swaps; panel-only seeds (autopilot/followups/adRules/crm) must repoint panel bodies too",
+      "prompt": "frontend/src/components/kloel/graph/_Y/slice-prompts/S6-conversar.md"
+    },
+    {
+      "id": "S7",
+      "name": "Galaxy Consultar (Carteira + Analytics)",
+      "phase": "parallel galaxy",
+      "tier": "S",
+      "owns": "domains/consultar/*",
+      "note": "overlay swap already done; de-seed DEFAULT_WALLET/ORDERS_SEED; Vendas overlap with S6 must share one real source",
+      "prompt": "frontend/src/components/kloel/graph/_Y/slice-prompts/S7-consultar.md"
+    },
+    {
+      "id": "S8",
+      "name": "Overlay / routing / deep-linking",
+      "phase": "SERIAL tail",
+      "tier": "M",
+      "owns": "overlays/KloelGraphNodePanel.tsx (SCREEN_BY_TYPE assembly), KloelGraphShell.tsx, KloelGraph.routes.ts",
+      "blockedBy": "all galaxies GREEN",
+      "prompt": "frontend/src/components/kloel/graph/_Y/slice-prompts/S8-overlay-routing-deeplink.md"
+    },
+    {
+      "id": "S9",
+      "name": "Mobile / a11y / perf",
+      "phase": "SERIAL tail",
+      "tier": "M",
+      "owns": "engine/KloelGraphCanvas.tsx, engine/KloelGraphEngine.ts (physics throttle WHEN not MATH), responsive overlay chrome",
+      "blockedBy": "S8 GREEN",
+      "prompt": "frontend/src/components/kloel/graph/_Y/slice-prompts/S9-mobile-a11y-perf.md"
+    },
+    {
+      "id": "S10",
+      "name": "Verify + integrate (flag flip)",
+      "phase": "SERIAL tail",
+      "tier": "M",
+      "owns": "spec files, byte-identity spec, sidebar feature flag",
+      "blockedBy": "S9 GREEN",
+      "prompt": "frontend/src/components/kloel/graph/_Y/slice-prompts/S10-verify-integrate.md"
+    }
+  ],
+  "dependencyOrder": [
+    "DECISÃO (owner gate: state-based Opção C vs route-based A)",
+    "S0 (decomposition + byte-identity GREEN)",
+    "S1|S2|S3|S4|S5|S6|S7 (7 galaxies in parallel)",
+    "S8 (overlay/routing/deep-link)",
+    "S9 (mobile/a11y/perf)",
+    "S10 (verify + integrate, flag flip)"
+  ],
+  "artifactsWritten": [
+    "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/graph/_Y/Y_PARTITION.md",
+    "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/graph/_Y/WIRING_CONTRACT.md",
+    "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/graph/_Y/slice-prompts/_PLAYBOOK.md",
+    "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/graph/_Y/slice-prompts/S0-decomposition.md",
+    "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/graph/_Y/slice-prompts/S1-perfil-dashboard.md",
+    "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/graph/_Y/slice-prompts/S2-kloel.md",
+    "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/graph/_Y/slice-prompts/S3-criar-produtos.md",
+    "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/graph/_Y/slice-prompts/S4-afiliar.md",
+    "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/graph/_Y/slice-prompts/S5-educar.md",
+    "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/graph/_Y/slice-prompts/S6-conversar.md",
+    "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/graph/_Y/slice-prompts/S7-consultar.md",
+    "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/graph/_Y/slice-prompts/S8-overlay-routing-deeplink.md",
+    "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/graph/_Y/slice-prompts/S9-mobile-a11y-perf.md",
+    "/Users/danielpenin/whatsapp_saas/frontend/src/components/kloel/graph/_Y/slice-prompts/S10-verify-integrate.md"
+  ],
+  "blockers": [
+    "DECISÃO owner-gate (PRIMARY, unresolved in task — supplied as undefined): state-based literal Opção C (KloelInner@6287 + NodePanel@4441 router, swaps the live navigation model) vs route-based shell (PR#473, currently in production). Every one of the 7 maps flags this as blocker #1. S0 and all ports are blocked until the owner picks. If route-based wins, S0 is a no-op and S1/S3/S7 are already largely done.",
+    "Source-of-truth worktree: the COMPLETE 6576-line literal lives in /Users/danielpenin/whatsapp_saas-kg (feat/kloelgraph-literal-prototype @172c924ae) + byte mirror docs/ai/assets/kloelgraph-harness.html (6593 lines). The 671-line .jsx in this checkout is a data-only partial (ends mid buildWalletNodesEdges, 0 engine symbols) and must NOT be used as the port source.",
+    "Concurrency: 4-6 active kloelgraph worktrees + 8 locked .claude/worktrees agents + a live .atomic-edit-locks entry on KloelGraphShell.spec.tsx all touch the same seam. Mitigation baked in: S0 splits the monolith into per-domain modules FIRST, then galaxies are disjoint-by-file under task-graph locks. Must coordinate landing with the whatsapp_saas-kg agent.",
+    "Math.random non-determinism in defaultPlan@123 (plan id) and physicsTick@1223 (alpha/jitter) must be seeded/normalized in the byte-identity gate or diffs are false positives.",
+    "Runtime instability: Bash tool returned empty on every call this session (documented intermittent degradation). Artifacts were written and verified via Write/Read. Before port edits land, re-read NodePanel@4441..5258 and KloelInner@6287..end on a stable runtime (planning was read-only, unaffected).",
+    "Per-domain unread/unconfirmed: lib/api/affiliate.ts marketplace method name (S4); InboxWorkspaceProps@25 + AutopilotDecisionLog@93 prop shapes and /api/anuncios/* live data (S6); image LIST endpoint for kloel.images (S2); whether the live shell builds nodes via static-nodes TS or the .jsx builder (S5/S7); Toaster/useToast above the overlay (S7).",
+    "codegraph index is STALE for KloelGraph* (reported phantom EducarScreen + wrong offsets). Trust the literal file offsets in WIRING_CONTRACT.md over codegraph for this dir."
+  ],
+  "summary": "Synthesized the executable Y partition that re-aims Y onto the LITERAL KloelGraph prototype (Opção C), grounded in the 7 domain maps (which override the task's undefined placeholders). Wrote 14 artifacts under frontend/src/components/kloel/graph/_Y/: Y_PARTITION.md (11 slices, concurrency, pipeline), WIRING_CONTRACT.md (monolith seam/carve order, byte-identity gate, node→data table, overlay→component SCREEN_BY_TYPE table, deep-linking), a shared _PLAYBOOK.md (full MCP loop: codegraph/gitnexus READ, task-graph locks COORDINATE, atomic-edit EDIT, test-runner+chrome-devtools+pulse VERIFY), and 11 per-slice prompts (S0 + 7 galaxies + S8/S9/S10), each with escopo/arquivos/protocolo. decompositionFirst=true: S0 is the SERIAL Fase 0 that splits the 6576-line literal into engine/overlays/state/seeds/domains modules and must render byte-identical (seeded Math.random, Chrome pixel diff vs harness.html) before the 7 galaxies run in parallel (peakConcurrency=7), each editing only its own domains/<name>/* module body + *.data adapter — disjoint by file. Then SERIAL S8 (overlay router wiring + deep-link, preserving the PR#473 ?graph= contract), S9 (mobile/a11y/perf without breaking desktop byte-identity), S10 (verify + flag flip to remove the old sidebar). Honest-empty is mandatory everywhere (zero entity nodes on loading/empty/error, never the *_SEED). The decisive blocker, left undefined by the task, is the owner DECISÃO between state-based Opção C and the live route-based shell — flagged by every map as the #1 gate; the canonical source worktree is whatsapp_saas-kg (feat/kloelgraph-literal-prototype @172c924ae), not this checkout's 671-line data-only partial. Note: Bash was mute all session (documented runtime degradation); artifacts were written/verified via Write/Read, and the partition itself is a synthesis of the maps, not a re-verification of the codebase."
+}
