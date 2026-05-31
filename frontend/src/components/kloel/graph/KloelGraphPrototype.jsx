@@ -4343,7 +4343,7 @@ function ChannelOnboardingWizard({ channelKey, channels, setChannels, onClose, p
     </div>
   );
   return (
-    <div style={{ position: "fixed", top: 72, right: 20, bottom: 20, width: 380, background: C.paper, border: `1px solid ${C.border}`, borderRadius: 8, boxShadow: "0 16px 50px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.04)", display: "flex", flexDirection: "column", zIndex: 40, animation: "panelSlide .3s cubic-bezier(.2,.7,.2,1) both", overflow: "hidden" }}>{inner}</div>
+    <div style={{ position: "fixed", inset: 0, margin: "auto", width: "80vw", height: "80vh", maxWidth: 1320, maxHeight: 900, background: C.paper, border: `1px solid ${C.border}`, borderRadius: 8, boxShadow: "0 16px 50px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.04)", display: "flex", flexDirection: "column", zIndex: 40, animation: "panelSlide .3s cubic-bezier(.2,.7,.2,1) both", overflow: "hidden" }}>{inner}</div>
   );
 }
 function StepIdentity({ meta, onConnect }) {
