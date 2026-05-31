@@ -6314,7 +6314,21 @@ function KloelInner() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settings, setSettings] = useState(defaultSettings(C));
   const [channels, setChannels] = useState(DEFAULT_CHANNELS);
-  const [accountData, setAccountData] = useState(DEFAULT_ACCOUNT_DATA);
+  // Perfil honest-empty (sem PII fake: nome/CNPJ/CPF/banco inventados). Mesma
+  // estrutura do form, valores em branco; documentos mostram os 2 slots exigidos
+  // como "pendente" (estado real de conta nova). Dados reais via hook de conta/KYC.
+  const [accountData, setAccountData] = useState({
+    pessoal: { nome: "", email: "", celular: "", nascimento: "" },
+    fiscal: { tipo: "cnpj", cnpj: "", razao: "", fantasia: "", ie: "", im: "", cpfResp: "", nomeResp: "", cep: "", rua: "", numero: "", complemento: "", bairro: "", cidade: "", uf: "" },
+    documentos: { identidade: { name: "Documento de identidade", status: "pendente", fileName: "", enviado: "", rejectedReason: null, reviewedAt: null }, contrato: { name: "Contrato social ou cartão CNPJ", status: "pendente", fileName: "", enviado: "", rejectedReason: null, reviewedAt: null } },
+    bancario: { tipo: "corrente", banco: "", codigo: "", agencia: "", conta: "", titular: "", cpfCnpj: "", pixChave: "", pixTipo: "" },
+    perfilPublico: { publicName: "", bio: "", website: "", instagram: "", avatarUrl: "" },
+    team: { members: [], invites: [] },
+    seguranca: { twoFactor: false, lastLogin: "", sessions: 0 },
+    idiomas: { language: "pt-BR" },
+    apps: { meta: { connected: false }, google: { connected: false }, tiktok: { connected: false }, zapier: { connected: false } },
+    referral: { code: "", invited: 0, earned: 0 },
+  });
   // Produtos REAIS via useProducts (GET /products). Honest-empty: backend ausente/
   // loading/erro → []. Patches locais (optimistic) continuam via setProducts.
   const { products: realProducts } = useProducts();
