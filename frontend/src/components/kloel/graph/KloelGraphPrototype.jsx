@@ -4666,11 +4666,7 @@ function CriarProdutosScreen({ products, educar, onOpenNode, onNewProduct }) {
     <div style={{ flex: 1, overflow: "auto", padding: "26px 24px 32px", fontFamily: FONT }}>
       <style>{`@keyframes kloelTicker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}`}</style>
       <div style={{ maxWidth: 1240, margin: "0 auto" }}>
-        <div style={{ display: "flex", gap: 4, padding: 4, background: C.raised, border: `1px solid ${C.divider}`, borderRadius: 10, marginBottom: 18, width: "fit-content" }}>
-          {[["Meus Produtos", true], ["Afiliar-se", false]].map(([l, on]) => (
-            <button key={l} onClick={on ? undefined : () => onOpenNode("sun-afiliar")} style={{ padding: "8px 18px", borderRadius: 7, border: "none", background: on ? C.paper : "transparent", color: on ? C.silver : C.muted, fontFamily: FONT, fontSize: 13, fontWeight: on ? 600 : 500, cursor: on ? "default" : "pointer", boxShadow: on ? `0 0 0 1px ${C.border}` : "none" }}>{l}</button>
-          ))}
-        </div>
+        {/* lixo legado removido: toggle "Meus Produtos | Afiliar-se" pressupunha sidebar/telas-fixas. No graph, Criar e Afiliar são galáxias próprias — a navegação é pelo grafo/nav flutuante. */}
         <div style={{ position: "relative", padding: "32px 0", marginBottom: 8 }}>
           <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 480, height: 180, borderRadius: "16%", pointerEvents: "none", background: "rgba(232,93,48,0.08)" }} />
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", position: "relative", textAlign: "center" }}>
@@ -5629,9 +5625,7 @@ function AfiliarScreen({ affiliate, onOpenNode }) {
     <div style={{ flex: 1, overflow: "auto", padding: "26px 24px 32px", fontFamily: FONT }}>
       <div style={{ maxWidth: 1240, margin: "0 auto" }}>
         <div style={{ display: "flex", gap: 4, padding: 4, background: C.raised, border: `1px solid ${C.divider}`, borderRadius: 10, marginBottom: 18, width: "fit-content" }}>
-          {[["Meus Produtos", false], ["Afiliar-se", true]].map(([l, on]) => (
-            <button key={l} onClick={on ? undefined : () => onOpenNode("sun-criar")} style={{ padding: "8px 18px", borderRadius: 7, border: "none", background: on ? C.paper : "transparent", color: on ? C.silver : C.muted, fontFamily: FONT, fontSize: 13, fontWeight: on ? 600 : 500, cursor: on ? "default" : "pointer", boxShadow: on ? `0 0 0 1px ${C.border}` : "none" }}>{l}</button>
-          ))}
+          {/* lixo legado removido: cross-nav "Meus Produtos | Afiliar-se" (sidebar legada). Afiliar é galáxia própria no graph. */}
         </div>
         <div style={{ position: "relative", padding: "32px 0", textAlign: "center", marginBottom: 8 }}>
           <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: 460, height: 170, borderRadius: "16%", pointerEvents: "none", background: "rgba(34,197,94,0.07)" }} />
