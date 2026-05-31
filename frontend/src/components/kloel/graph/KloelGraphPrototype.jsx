@@ -4459,7 +4459,7 @@ function NodePanel({ node, onClose, onAction, onSelectNode, onNewProduct, onAskK
   const wide = isProductTab || node.type === "product";
 
   return (
-    <div style={{ position: "fixed", top: 72, right: 20, bottom: 20, width: node.type === "product" ? 560 : wide ? 460 : 380, maxWidth: "calc(100vw - 40px)", background: C.paper, border: `1px solid ${C.border}`, borderRadius: 8, boxShadow: "0 16px 50px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.04)", display: "flex", flexDirection: "column", zIndex: 40, animation: "panelSlide .3s cubic-bezier(.2,.7,.2,1) both", overflow: "hidden" }}>
+    <div style={{ position: "fixed", inset: 0, margin: "auto", width: "80vw", height: "80vh", maxWidth: 1320, maxHeight: 900, background: C.paper, border: `1px solid ${C.border}`, borderRadius: 8, boxShadow: "0 16px 50px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.04)", display: "flex", flexDirection: "column", zIndex: 40, animation: "panelSlide .3s cubic-bezier(.2,.7,.2,1) both", overflow: "hidden" }}>
       <div style={{ padding: "16px 20px", borderBottom: `1px solid ${C.divider}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <Tag color={C.muted} weight={600}>{NODE_LABEL_KIND[node.type] || node.type}{node.meta?.productLabel && isProductTab ? ` · ${node.meta.productLabel}` : ""}</Tag>
         <button onClick={onClose} style={{ background: "transparent", border: "none", cursor: "pointer", padding: 4, color: C.muted, display: "flex" }}>{Icon.x(16)}</button>
@@ -5266,7 +5266,7 @@ function CoreSettingsPanel({ accountData, setAccountData, onClose, initialSectio
   const [section, setSection] = useState(initialSection || "pessoal");
   const update = (key) => (partial) => setAccountData(d => ({ ...d, [key]: { ...d[key], ...partial } }));
   return (
-    <div style={{ position: "fixed", top: 72, right: 20, bottom: 20, width: 440, background: C.paper, border: `1px solid ${C.border}`, borderRadius: 8, boxShadow: "0 16px 50px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.04)", display: "flex", flexDirection: "column", zIndex: 40, animation: "panelSlide .3s cubic-bezier(.2,.7,.2,1) both", overflow: "hidden" }}>
+    <div style={{ position: "fixed", inset: 0, margin: "auto", width: "80vw", height: "80vh", maxWidth: 1320, maxHeight: 900, background: C.paper, border: `1px solid ${C.border}`, borderRadius: 8, boxShadow: "0 16px 50px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.04)", display: "flex", flexDirection: "column", zIndex: 40, animation: "panelSlide .3s cubic-bezier(.2,.7,.2,1) both", overflow: "hidden" }}>
       <div style={{ padding: "18px 22px 16px", borderBottom: `1px solid ${C.divider}`, display: "flex", alignItems: "center", gap: 14 }}>
         <CoreAvatar avatarUrl={accountData.perfilPublico?.avatarUrl} initial={(accountData.pessoal?.nome || "D").trim()[0] || "D"} onUpload={(url) => setAccountData(d => ({ ...d, perfilPublico: { ...d.perfilPublico, avatarUrl: url } }))} />
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -5428,7 +5428,7 @@ function DesempenhoPanel({ desempenho, setDesempenho, data, accountData, onClose
   const metrics = data.cards.filter(c => c.group === "metric");
   const revenueCard = data.cards.find(c => c.key === "revenue");
   return (
-    <div style={{ position: "fixed", top: 72, right: 20, bottom: 20, width: "min(720px, calc(100vw - 40px))", background: C.paper, border: `1px solid ${C.border}`, borderRadius: 8, boxShadow: "0 16px 50px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.04)", display: "flex", flexDirection: "column", zIndex: 40, animation: "panelSlide .3s cubic-bezier(.2,.7,.2,1) both", overflow: "hidden" }}>
+    <div style={{ position: "fixed", inset: 0, margin: "auto", width: "80vw", height: "80vh", maxWidth: 1320, maxHeight: 900, background: C.paper, border: `1px solid ${C.border}`, borderRadius: 8, boxShadow: "0 16px 50px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.04)", display: "flex", flexDirection: "column", zIndex: 40, animation: "panelSlide .3s cubic-bezier(.2,.7,.2,1) both", overflow: "hidden" }}>
       <div style={{ padding: "20px 24px 16px", borderBottom: `1px solid ${C.divider}` }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
           <div style={{ minWidth: 0 }}>
@@ -5486,7 +5486,7 @@ function MetricDetailPanel({ node, data, onClose }) {
   const methods = Object.entries(byMethod).sort((a, b) => b[1] - a[1]);
   const showBreakdown = REVENUE_METRICS.includes(key);
   return (
-    <div style={{ position: "fixed", top: 72, right: 20, bottom: 20, width: 460, background: C.paper, border: `1px solid ${C.border}`, borderRadius: 8, boxShadow: "0 16px 50px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.04)", display: "flex", flexDirection: "column", zIndex: 40, animation: "panelSlide .3s cubic-bezier(.2,.7,.2,1) both", overflow: "hidden" }}>
+    <div style={{ position: "fixed", inset: 0, margin: "auto", width: "80vw", height: "80vh", maxWidth: 1320, maxHeight: 900, background: C.paper, border: `1px solid ${C.border}`, borderRadius: 8, boxShadow: "0 16px 50px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.04)", display: "flex", flexDirection: "column", zIndex: 40, animation: "panelSlide .3s cubic-bezier(.2,.7,.2,1) both", overflow: "hidden" }}>
       <div style={{ padding: "18px 22px 16px", borderBottom: `1px solid ${C.divider}`, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
         <div style={{ minWidth: 0 }}>
           <div style={{ fontFamily: MONO, fontSize: 9, color: C.dim, letterSpacing: 1.6, textTransform: "uppercase" }}>relatório · {data.label}</div>
@@ -6096,7 +6096,7 @@ function KloelMassPanel({ kloel, onClose, onSelectNode }) {
     <button onClick={() => onSelectNode(id)} style={{ flex: "1 0 auto", display: "flex", alignItems: "center", gap: 8, padding: "10px 13px", borderRadius: 8, background: id === "kl-new-chat" ? C.ember : "transparent", color: id === "kl-new-chat" ? "#fff" : C.text, border: id === "kl-new-chat" ? "none" : `1px solid ${C.border}`, cursor: "pointer", fontFamily: FONT, fontSize: 12.5, fontWeight: 500 }}>{icon}{label}</button>
   );
   return (
-    <div style={{ position: "fixed", top: 72, right: 20, bottom: 20, width: 420, maxWidth: "calc(100vw - 40px)", background: C.paper, border: `1px solid ${C.border}`, borderRadius: 8, boxShadow: "0 16px 50px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.04)", display: "flex", flexDirection: "column", zIndex: 40, animation: "panelSlide .3s cubic-bezier(.2,.7,.2,1) both", overflow: "hidden" }}>
+    <div style={{ position: "fixed", inset: 0, margin: "auto", width: "80vw", height: "80vh", maxWidth: 1320, maxHeight: 900, background: C.paper, border: `1px solid ${C.border}`, borderRadius: 8, boxShadow: "0 16px 50px rgba(0,0,0,0.10), 0 2px 6px rgba(0,0,0,0.04)", display: "flex", flexDirection: "column", zIndex: 40, animation: "panelSlide .3s cubic-bezier(.2,.7,.2,1) both", overflow: "hidden" }}>
       <div style={{ padding: "16px 20px", borderBottom: `1px solid ${C.divider}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <Tag color={C.muted} weight={600}>IA central</Tag>
         <button onClick={onClose} style={{ background: "transparent", border: "none", cursor: "pointer", padding: 4, color: C.muted, display: "flex" }}>{Icon.x(16)}</button>
