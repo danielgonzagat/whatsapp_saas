@@ -12,6 +12,9 @@
 import { useState, useEffect, useRef, useReducer, useCallback, useMemo, useContext, createContext } from "react";
 import { sendAuthenticatedKloelMessage } from "@/lib/kloel-conversations";
 import { useProducts } from "@/hooks/useProducts";
+import { useWalletBalance, useWalletWithdrawals, useWalletAnticipations } from "@/hooks/useWallet";
+import { useMemberAreas } from "@/hooks/useMemberAreas";
+import { useAffiliates } from "@/hooks/usePartnerships";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    KLOEL · GRAPH UNIFICADO  ·  CRIAR reinventado (ProductNerveCenter → Graph)
@@ -6303,6 +6306,44 @@ function adaptRealProduct(p) {
   };
 }
 
+// Adapters de dados reais → shape esperado pelos builders do grafo (honest-empty:
+// campos ausentes viram vazio/zero; nunca seed). Defensivos a undefined do backend.
+function adaptRealArea(a) {
+  return {
+    ...a,
+    id: String((a && (a.id ?? a._id ?? a.slug)) ?? `ma-${Math.random().toString(36).slice(2, 8)}`),
+    name: (a && (a.name ?? a.title)) ? String(a.name ?? a.title) : "Área de membros",
+    type: (a && a.type) ? String(a.type) : "course",
+    active: a ? a.active !== false : true,
+    avgRating: Number((a && a.avgRating) || 0),
+    modules: Array.isArray(a && a.modules) ? a.modules.map(m => ({ ...m, lessons: Array.isArray(m && m.lessons) ? m.lessons : [] })) : [],
+    enrollments: Array.isArray(a && a.enrollments) ? a.enrollments : [],
+  };
+}
+function adaptRealAffiliate(a) {
+  return {
+    id: String((a && (a.id ?? a._id)) ?? `aff-${Math.random().toString(36).slice(2, 8)}`),
+    name: (a && (a.name ?? a.agentName ?? a.email)) ? String(a.name ?? a.agentName ?? a.email) : "Parceiro",
+    email: (a && a.email) ? String(a.email) : "",
+    type: (a && a.type) ? String(a.type) : "affiliate",
+    status: (a && a.status) ? String(a.status) : "active",
+    totalSales: Number((a && (a.totalSales ?? a.sales)) || 0),
+    revenue: Number((a && a.revenue) || 0),
+    commission: Number((a && a.commission) || 0),
+    temperature: Number((a && a.temperature) || 0),
+    joined: (a && (a.joined ?? a.createdAt)) ? String(a.joined ?? a.createdAt) : "",
+    products: Array.isArray(a && a.products) ? a.products : [],
+    monthlyPerformance: Array.isArray(a && a.monthlyPerformance) ? a.monthlyPerformance : [0, 0, 0, 0, 0, 0],
+  };
+}
+function adaptRealWalletBalance(b) {
+  if (!b) return { available: 0, pending: 0, blocked: 0, total: 0 };
+  const available = Number(b.available ?? b.availableInCents ?? 0);
+  const pending = Number(b.pending ?? b.pendingInCents ?? 0);
+  const blocked = Number(b.blocked ?? b.blockedInCents ?? 0);
+  return { available, pending, blocked, total: Number(b.total ?? b.totalInCents ?? (available + pending + blocked)) };
+}
+
 function KloelInner() {
   const { C, mode } = useTheme();
   const [tab, setTab] = useState("criar");
@@ -6336,14 +6377,33 @@ function KloelInner() {
   useEffect(() => {
     setProducts(Array.isArray(realProducts) ? realProducts.map(adaptRealProduct) : []);
   }, [realProducts]);
-  // Afiliar honest-empty (sem marketplace/afiliados/chats fake). Dados reais entram
-  // via useAffiliates/usePartnerships quando o backend estiver disponível.
+  // Afiliar REAL via useAffiliates (GET /partnerships/affiliates). myAffiliates =
+  // parceiros reais; marketplace/partnerChats/collaborators honest-empty até endpoint.
+  const { affiliates: realAffiliates } = useAffiliates();
   const [affiliate, setAffiliate] = useState({ marketplace: [], myAffiliates: [], partnerChats: [], collaborators: [] });
-  // Carteira honest-empty (sem saldo/saque/antecipação fake). Saldos zerados reais;
-  // dados reais entram via useWallet quando o backend estiver disponível.
+  useEffect(() => {
+    setAffiliate(prev => ({ ...prev, myAffiliates: (Array.isArray(realAffiliates) ? realAffiliates : []).map(adaptRealAffiliate) }));
+  }, [realAffiliates]);
+  // Carteira REAL via useWallet* (GET /kloel/wallet/...). Honest-empty: backend
+  // ausente/loading/erro → saldos zerados + listas vazias (nunca DEFAULT_WALLET fake).
+  const { balance: realBalance } = useWalletBalance();
+  const { withdrawals: realWithdrawals } = useWalletWithdrawals();
+  const { anticipations: realAnticipations } = useWalletAnticipations();
   const [wallet, setWallet] = useState({ balance: { available: 0, pending: 0, blocked: 0, total: 0 }, withdrawals: [], anticipations: [], transactions: [] });
-  // Educar honest-empty (sem áreas de membros fake). Dados reais via useMemberAreas.
+  useEffect(() => {
+    setWallet({
+      balance: adaptRealWalletBalance(realBalance),
+      withdrawals: Array.isArray(realWithdrawals) ? realWithdrawals : [],
+      anticipations: Array.isArray(realAnticipations) ? realAnticipations : [],
+      transactions: [],
+    });
+  }, [realBalance, realWithdrawals, realAnticipations]);
+  // Educar REAL via useMemberAreas (GET /member-areas). Honest-empty: sem dado → [].
+  const { areas: realAreas } = useMemberAreas();
   const [educar, setEducar] = useState({ areas: [] });
+  useEffect(() => {
+    setEducar({ areas: (Array.isArray(realAreas) ? realAreas : []).map(adaptRealArea) });
+  }, [realAreas]);
   // Conversar honest-empty (sem CRM/contatos/conversas/pedidos/anúncios fake). crm
   // mantém só o scaffold do pipeline (sem deals). Dados reais via useCRM/conversations/
   // useAnuncios quando o backend estiver disponível.
