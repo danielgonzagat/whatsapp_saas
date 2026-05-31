@@ -37,6 +37,17 @@ export function registerPendingWrites(absPaths: string[]): void {
 export function clearPendingWrites(): void {
   pending.clear();
 }
+/**
+ * Count of files currently registered as pending in the active multi-file atomic
+ * set (0 when no transaction is in flight). The byte-floor type-soundness gate
+ * consults this: a per-file in-memory compile cannot see the sibling candidates of
+ * a multi-file A→B set (only their disk bytes), so when a multi-file set is in
+ * flight it bails UNJUDGED at the floor and defers to convergeStatic, which type-
+ * checks the full overlay. Single-file writes (count ≤ 1) type-check fully here.
+ */
+export function pendingWriteCount(): number {
+  return pending.size;
+}
 
 /**
  * Length-preserving blanking of // and block comments ONLY (never string literals —

@@ -22,6 +22,7 @@ import deterministicHarnessGate from './deterministic-harness.js';
 import propertyGate from './property-gate.js';
 import formalGate from './formal-gate.js';
 import livenessGate from './liveness-gate.js';
+import behaviorContractGate from './behavior-contract-gate.js';
 
 /**
  * Static gates safe in the WRITE direction — each asserts "this write did not
@@ -63,6 +64,11 @@ export const DYNAMIC_GATES: GateModule[] = [
   propertyGate,
   formalGate,
   livenessGate,
+  // Behavior-contract: a write must not silently change a fn's prior observed
+  // outputs (over K seeded inputs) unless it co-commits @behavior-change-approved.
+  // Needs prior-vs-new — converge runs it with the snapshotted prior on disk and
+  // the candidate (NEW) in the overlay (see server-tools-converge dynamic path).
+  behaviorContractGate,
 ];
 
 export interface UnifiedRed {

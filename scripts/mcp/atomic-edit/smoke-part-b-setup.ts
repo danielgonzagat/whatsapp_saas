@@ -8,8 +8,8 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
   const tools = await client.listTools();
   const names = tools.tools.map((t: { name: string }) => t.name).sort();
     check(
-      'server lists all 65 tools (incl. atomic_exec shell operator + content-addressed atomic_replace_at + atomic_locate + universal native engine: atomic_grep + atomic_glob + atomic_outline + atomic_ast_search + atomic_ast_edit + atomic_ast_rewrite + atomic_apply_workspace_edit + atomic_native_status + atomic_create_file + atomic_delete_file + code_file_stat + analyzer transaction + product apex layer + rename property key + add await to call + insert after anchor + insert before anchor + replace between anchors + replace text in anchor region + atomic_edit unified router + code_outline_batch)',
-      names.length === 66 &&
+      'server lists all 74 tools (incl. Y apex: lens (atomic_lens/atomic_grep_calls/atomic_repair_scope) + atomic_session_* (begin/savepoint/rollback/commit) + atomic_prove (gate-sourced receipt) + atomic_exec shell operator + content-addressed atomic_replace_at + atomic_locate + universal native engine: atomic_grep + atomic_glob + atomic_outline + atomic_ast_search + atomic_ast_edit + atomic_ast_rewrite + atomic_apply_workspace_edit + atomic_native_status + atomic_create_file + atomic_delete_file + code_file_stat + analyzer transaction + product apex layer + rename property key + add await to call + insert after anchor + insert before anchor + replace between anchors + replace text in anchor region + atomic_edit unified router + code_outline_batch)',
+      names.length === 74 &&
           names.includes('atomic_exec') &&
           names.includes('atomic_converge') &&
           names.includes('atomic_rename_symbol_universal') &&
@@ -19,6 +19,14 @@ export async function partBSetup(ctx: PartBCtx): Promise<void> {
           names.includes('atomic_grep') &&
           names.includes('atomic_glob') &&
           names.includes('atomic_outline') &&
+        names.includes('atomic_lens') &&
+        names.includes('atomic_grep_calls') &&
+        names.includes('atomic_repair_scope') &&
+        names.includes('atomic_session_begin') &&
+        names.includes('atomic_session_savepoint') &&
+        names.includes('atomic_session_rollback') &&
+        names.includes('atomic_session_commit') &&
+        names.includes('atomic_prove') &&
         names.includes('atomic_create_file') &&
         names.includes('atomic_delete_file') &&
         names.includes('code_file_stat') &&

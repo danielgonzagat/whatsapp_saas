@@ -2,7 +2,18 @@ import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { resolveAllowedRootForAbsolutePath, REPO_ROOT } from './guard.js';
-import { checkConnectionByteFloor, checkSupplyChainByteFloor } from './connection-gate.js';
+import { checkConnectionByteFloor, checkSupplyChainByteFloor, pendingWriteCount } from './connection-gate.js';
+// Full-gate byte floor. The async WRITE_GATES (contract-edge, render-conformance,
+// binding, telemetry-emission, findings-delta, supply-chain) pull the tree-sitter
+// engine and are enforced ahead of every write in convergeStatic. To keep this
+// leaf module engine-free AND keep atomicWrite synchronous (its sync contract is
+// load-bearing across every write helper), the floor runs the SYNC WRITE_GATES
+// in-process: type-soundness (a NEW tsc error — incl. an unresolved reference
+// TS2304/TS2305/TS2552, the dead-wire fact) and iac-reference (a dangling infra
+// reference). Each is pure in-process (typescript / fs+path) — no engine, no spawn.
+import typeSoundnessGate from './gates/type-soundness-gate.js';
+import iacReferenceGate from './gates/iac-reference-gate.js';
+import { makeContext, type GateModule } from './gates/contract.js';
 
 export const sha256 = (s: string): string => crypto.createHash('sha256').update(s).digest('hex');
 
@@ -22,13 +33,49 @@ export const log = (...a: unknown[]): void => {
   process.stderr.write(`[atomic-edit] ${a.map(String).join(' ')}\n`);
 };
 
+/** The SYNC subset of WRITE_GATES safe to run at the byte floor (no engine, no spawn). */
+const SYNC_WRITE_GATES: GateModule[] = [typeSoundnessGate, iacReferenceGate];
+
+/**
+ * Run the sync WRITE_GATES over a single-file overlay at the byte floor and return
+ * each gate's RED loci (gate+locus+fact), never throwing on its behalf. Honesty
+ * doctrine, mirrored from runGates: a gate whose `run` returns a thenable (an async
+ * gate) is NOT awaited here — it is honestly skipped (it already ran in
+ * convergeStatic). A gate that throws or returns `unjudged` is non-blocking. ONLY a
+ * concrete sync RED is reported — never red-by-guess, never green-by-assumption.
+ */
+function runSyncWriteGatesAt(relPath: string, content: string): { gate: string; locus: string; fact: string }[] {
+  const overlay = new Map<string, string>([[relPath, content]]);
+  const ctx = makeContext(REPO_ROOT, overlay, [relPath]);
+  const reds: { gate: string; locus: string; fact: string }[] = [];
+  for (const g of SYNC_WRITE_GATES) {
+    if (!g.appliesTo(relPath)) continue;
+    let res: ReturnType<typeof g.run>;
+    try {
+      res = g.run(ctx);
+    } catch {
+      continue; // threw → honest-unjudged → non-blocking
+    }
+    // An async gate returns a Promise: it cannot be judged synchronously here, so it
+    // is deferred to convergeStatic (where it is awaited). Never block on a half-
+    // resolved promise — that would either hang the sync write or red-by-guess.
+    if (res instanceof Promise || typeof (res as { then?: unknown }).then === 'function') continue;
+    if (res.unjudged) continue; // could not decide from the bytes → non-blocking
+    for (const r of res.reds) reds.push({ gate: res.gate, locus: r.locus ?? r.file, fact: r.fact });
+  }
+  return reds;
+}
+
 /** Atomic durable write: temp file in same dir, fsync, rename. */
 export function atomicWrite(absPath: string, content: string): void {
   // ── Inescapable convergence, at the byte floor — immutable by architecture ──
   // EVERY write, through EVERY tool, funnels through here. A source file that
-  // would INTRODUCE a dangling relative import never reaches disk. There is no
-  // env, no flag, no toggle, and no code path that writes around this — that is
-  // the point: the agent can only persist a connected tree.
+  // would INTRODUCE a dangling relative import, a dangling dependency, a NEW tsc
+  // error / unresolved reference, or a dangling infra reference never reaches disk.
+  // There is no env, no flag, no toggle, and no code path that writes around this —
+  // that is the point: the agent can only persist a connected, type-sound tree.
+  // (The async edge/render/binding/telemetry/findings gates run ahead of every
+  // write in convergeStatic; the sync rungs of that same WRITE_GATES set run HERE.)
   const conn = checkConnectionByteFloor(absPath, content);
   if (!conn.green) {
     throw new Error(
@@ -48,6 +95,29 @@ export function atomicWrite(absPath: string, content: string): void {
         `${sc.reds.slice(0, 5).join(', ')}. Install the package or fix the import. NOT written.`,
     );
   }
+  // ── full-gate byte floor: the SYNC WRITE_GATES, in-process, before the byte lands ──
+  // Connection + supply-chain (above) prove every wire RESOLVES. These prove the write
+  // is TYPE-SOUND and its infra references RESOLVE — so atomic_edit / atomic_rename_symbol
+  // (which reach disk through here, NOT through convergeStatic) can no longer land a NEW
+  // tsc error / unresolved reference / dangling IaC ref. The async edge/render/binding
+  // gates are enforced in convergeStatic ahead of every write; here we add the sync rungs
+  // that close the per-edit gap without the engine and without breaking the sync contract.
+  //
+  // Multi-file pending set: a per-file in-memory compile cannot see the sibling candidates
+  // of an A→B set (it would falsely red A's import of a not-yet-written B). When a set is in
+  // flight (pendingWriteCount > 1) type-soundness is honestly deferred to convergeStatic,
+  // which type-checks the full overlay. Single-file writes (count ≤ 1) run all sync gates.
+  const relPath = path.relative(REPO_ROOT, absPath);
+  const multiFileInFlight = pendingWriteCount() > 1;
+  for (const r of runSyncWriteGatesAt(relPath, content)) {
+    if (multiFileInFlight && r.gate === 'type-soundness') continue; // sibling-blind → defer to converge
+    throw new Error(
+      `refused (convergence): this write would introduce a ${r.gate} red — ` +
+        `${relPath}${r.locus ? `:${r.locus}` : ''} — ${r.fact}. ` +
+        `A write that does not converge green is not a change. NOT written.`,
+    );
+  }
+
   const dir = path.dirname(absPath);
   const tmp = path.join(dir, `.atomic-edit.${process.pid}.${Date.now()}.tmp`);
   // Preserve the original file's mode: a temp-file + rename replaces the inode,

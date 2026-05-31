@@ -20,6 +20,9 @@ import { convergeStatic, type Mutation } from './server-helpers-converge.js';
 import { captureEffectSnapshot, diffEffect, rollbackEffect } from './server-helpers-effect.js';
 import { registerPendingWrites, clearPendingWrites } from './connection-gate.js';
 import { runGates, DYNAMIC_GATES } from './gates/registry.js';
+import behaviorContractGate from './gates/behavior-contract-gate.js';
+import { buildTrace, writeTrace } from './trace.js';
+import * as fs from 'node:fs';
 
 export function registerToolsConverge(server: McpServer): void {
   server.registerTool(
@@ -82,11 +85,15 @@ export function registerToolsConverge(server: McpServer): void {
           });
         }
 
-        // ── apply through the firewall (snapshot first for the effect + probe gates) ──
+        // ── apply through the firewall (snapshot first for the effect + probe + behavior gates) ──
         const hasProbes = mutations.some((m) =>
           /@(probe-convergence|deterministic-harness|property|model)/.test(m.newText),
         );
-        const effectSnap = a.effectCommand || hasProbes ? captureEffectSnapshot(repoRoot) : null;
+        // A behavior contract needs prior-vs-new: snapshot so we can restore the
+        // prior bytes on disk while the gate runs, then byte-exact revert on red.
+        const hasBehaviorContract = mutations.some((m) => /@behavior-contract\b/.test(m.newText));
+        const effectSnap =
+          a.effectCommand || hasProbes || hasBehaviorContract ? captureEffectSnapshot(repoRoot) : null;
         const written: string[] = [];
         const targets = mutations.map((m) => ({ ...resolveSafeTarget(m.file), newText: m.newText }));
         // Register the whole set as pending so the byte-floor connection gate sees
@@ -154,6 +161,80 @@ export function registerToolsConverge(server: McpServer): void {
                 `${dyn.reds.slice(0, 3).map((r) => r.fact).join('; ')}`,
             });
           }
+        }
+
+        // ── behavior-contract gate: the candidate is on disk (= NEW). The gate
+        // needs prior-vs-new, but its ctx.priorOf reads disk — which is now NEW —
+        // so it would be inert. Honest coupling: temporarily restore each target's
+        // PRIOR bytes to disk and pass NEW through the overlay, so the gate compares
+        // prior (disk) vs new (overlay) exactly as its own proof drives it. A RED →
+        // revert the whole candidate write byte-exact, refuse. Then restore NEW.
+        if (hasBehaviorContract && effectSnap) {
+          const overlay = new Map<string, string>();
+          const priors = new Map<string, string>();
+          for (const t of targets) {
+            overlay.set(t.relPath, t.newText);
+            priors.set(t.relPath, effectSnap.files.get(t.relPath) ?? '');
+          }
+          let behavior;
+          try {
+            // Put PRIOR bytes on disk for ctx.priorOf; the target stays stable for
+            // the gate's own dirty-tree check (it only writes ephemeral siblings).
+            for (const t of targets) {
+              const prior = priors.get(t.relPath);
+              if (prior !== undefined && prior !== '') fs.writeFileSync(t.absPath, prior);
+            }
+            behavior = await runGates([behaviorContractGate], repoRoot, overlay, written);
+          } finally {
+            // Always restore the candidate (NEW) bytes — whatever the verdict.
+            for (const t of targets) fs.writeFileSync(t.absPath, t.newText);
+          }
+          if (!behavior.green) {
+            const reverted = rollbackEffect(effectSnap, diffEffect(effectSnap));
+            return ok({
+              converged: false,
+              committed: false,
+              refusedGate: 'behavior-contract',
+              gates: [
+                ...conv.gates,
+                {
+                  gate: 'behavior-contract',
+                  green: false,
+                  reds: behavior.reds.map((r) => `${r.file}${r.locus ? `:${r.locus}` : ''} — ${r.fact}`),
+                },
+              ],
+              reverted,
+              summaryForHuman:
+                `⛔ refused — behavior-contract RED; reverted ${reverted} file(s) byte-exact. ` +
+                `A write that silently changes a fn's prior observed behavior never persists ` +
+                `(co-commit \`@behavior-change-approved\` to admit an intentional change).\n` +
+                `${behavior.reds.slice(0, 3).map((r) => r.fact).join('; ')}`,
+            });
+          }
+        }
+
+        // ── proof-chained ledger: converge held the admitting verdict in conv.gates
+        // and used to throw it away. Persist it now — one trace per committed file,
+        // each binding the verdict that admitted it into the append-only chain.
+        const verdict = { green: true, reds: [], unjudged: [], ran: conv.gates.map((g) => g.gate) };
+        for (const t of targets) {
+          const prior = effectSnap?.files.get(t.relPath) ?? '';
+          writeTrace(
+            buildTrace({
+              file: t.relPath,
+              repoRoot,
+              operator: 'atomic_converge',
+              before: prior,
+              newText: t.newText,
+              inlinePreview: `converge committed ${t.relPath}`,
+              validation: { language: 'ts', before: 0, after: 0 },
+              targetUnit: 'converged_file',
+              intention: 'correct-by-construction commit',
+              semanticImpact: 'green_convergent_commit',
+              changed: true,
+              gateVerdict: verdict,
+            }),
+          );
         }
 
         return ok({
