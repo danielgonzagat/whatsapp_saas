@@ -15,6 +15,7 @@ import { useProducts } from "@/hooks/useProducts";
 import { useWalletBalance, useWalletWithdrawals, useWalletAnticipations } from "@/hooks/useWallet";
 import { useMemberAreas } from "@/hooks/useMemberAreas";
 import { useAffiliates } from "@/hooks/usePartnerships";
+import { useContacts, useDeals, usePipelines } from "@/hooks/useCRM";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    KLOEL · GRAPH UNIFICADO  ·  CRIAR reinventado (ProductNerveCenter → Graph)
@@ -6336,6 +6337,46 @@ function adaptRealAffiliate(a) {
     monthlyPerformance: Array.isArray(a && a.monthlyPerformance) ? a.monthlyPerformance : [0, 0, 0, 0, 0, 0],
   };
 }
+function adaptRealContact(ct) {
+  return {
+    id: String((ct && (ct.id ?? ct._id ?? ct.phone)) ?? `ct-${Math.random().toString(36).slice(2, 8)}`),
+    name: (ct && (ct.name ?? ct.fullName ?? ct.displayName ?? ct.phone)) ? String(ct.name ?? ct.fullName ?? ct.displayName ?? ct.phone) : "Contato",
+    phone: (ct && ct.phone) ? String(ct.phone) : "",
+    email: (ct && ct.email) ? String(ct.email) : "",
+    optIn: ct ? ct.optIn !== false : true,
+    tags: Array.isArray(ct && ct.tags) ? ct.tags : [],
+    leadScore: Number((ct && (ct.leadScore ?? ct.score)) || 0),
+    sentiment: (ct && ct.sentiment) ? String(ct.sentiment) : "neutral",
+    purchaseProbability: (ct && ct.purchaseProbability) ? String(ct.purchaseProbability) : "MEDIUM",
+    nextBestAction: (ct && ct.nextBestAction) ? String(ct.nextBestAction) : "",
+    aiSummary: (ct && ct.aiSummary) ? String(ct.aiSummary) : "",
+    insights: Array.isArray(ct && ct.insights) ? ct.insights : [],
+  };
+}
+function adaptRealDeal(d) {
+  const contact = (d && d.contact) || {};
+  return {
+    id: String((d && (d.id ?? d._id)) ?? `dl-${Math.random().toString(36).slice(2, 8)}`),
+    title: (d && (d.title ?? d.name)) ? String(d.title ?? d.name) : "Negócio",
+    value: Number((d && (d.value ?? d.amount)) || 0),
+    priority: (d && d.priority) ? String(d.priority) : "MEDIUM",
+    status: (d && d.status) ? String(d.status) : "OPEN",
+    stageId: (d && (d.stageId ?? d.stage)) ? String(d.stageId ?? d.stage) : "",
+    contact: { name: (contact.name ?? contact.fullName) ? String(contact.name ?? contact.fullName) : "", phone: contact.phone ? String(contact.phone) : "" },
+  };
+}
+function adaptRealPipeline(pipelines) {
+  const list = Array.isArray(pipelines) ? pipelines : [];
+  const first = list[0] || {};
+  const pipeline = { id: String(first.id ?? "pp1"), name: String(first.name ?? "Pipeline de Vendas"), isDefault: first.isDefault !== false };
+  const stages = Array.isArray(first.stages) ? first.stages.map((s, i) => ({
+    id: String((s && (s.id ?? s._id)) ?? `st-${i}`),
+    name: (s && (s.name ?? s.label)) ? String(s.name ?? s.label) : `Etapa ${i + 1}`,
+    color: (s && s.color) ? String(s.color) : "#6B7280",
+    order: Number((s && s.order) ?? i),
+  })) : [];
+  return { pipeline, stages };
+}
 function adaptRealWalletBalance(b) {
   if (!b) return { available: 0, pending: 0, blocked: 0, total: 0 };
   const available = Number(b.available ?? b.availableInCents ?? 0);
@@ -6407,7 +6448,21 @@ function KloelInner() {
   // Conversar honest-empty (sem CRM/contatos/conversas/pedidos/anúncios fake). crm
   // mantém só o scaffold do pipeline (sem deals). Dados reais via useCRM/conversations/
   // useAnuncios quando o backend estiver disponível.
+  // Conversar REAL: contatos via useContacts (/crm/contacts), deals+pipeline via
+  // useDeals/usePipelines (/crm/deals,/crm/pipelines). conversations/orders/anúncios/
+  // autopilot honest-empty até endpoint real. Sub-nós só aparecem com crmModules ativo.
+  const { contacts: realContacts } = useContacts();
+  const { deals: realDeals } = useDeals();
+  const { pipelines: realPipelines } = usePipelines();
   const [conversar, setConversar] = useState({ crm: { pipeline: { id: "pp1", name: "Pipeline de Vendas", isDefault: true }, stages: [], deals: [] }, contacts: [], conversations: [], orders: [], adCampaigns: [], adRules: [], autopilotEvents: [], followups: [], crmModules: { inbox: false, contatos: false, vendas: false, anuncios: false, autopilot: false } });
+  useEffect(() => {
+    const { pipeline, stages } = adaptRealPipeline(realPipelines);
+    setConversar(prev => ({
+      ...prev,
+      contacts: (Array.isArray(realContacts) ? realContacts : []).map(adaptRealContact),
+      crm: { pipeline, stages, deals: (Array.isArray(realDeals) ? realDeals : []).map(adaptRealDeal) },
+    }));
+  }, [realContacts, realDeals, realPipelines]);
   const [desempenho, setDesempenho] = useState({ period: "30d", customFrom: "", customTo: "" });
   const [kloel, setKloel] = useState({ conversations: [], images: [] });
   const [kloelCtx, setKloelCtx] = useState(null);
