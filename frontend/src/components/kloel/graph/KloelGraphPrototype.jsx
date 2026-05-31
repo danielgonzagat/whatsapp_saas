@@ -7,7 +7,7 @@
 // with zero suppressions. Phase 2 wires its internal seeds to the real Kloel APIs while
 // keeping the rendered result 100% identical to this file. Do NOT alter visuals.
 // ─────────────────────────────────────────────────────────────────────────────
-import { useState, useEffect, useRef, useReducer, useCallback, useMemo, useContext, createContext } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, useContext, createContext } from "react";
 import Image from "next/image";
 import { sendAuthenticatedKloelMessage } from "@/lib/kloel-conversations";
 import { useProducts } from "@/hooks/useProducts";
@@ -4043,11 +4043,11 @@ function GraphCanvas({ tab, recenterNonce, selectedId, onSelectNode, settings, d
       nodesRef.current.push({ ...n, x: cx + Math.cos(ang) * r, y: cy + Math.sin(ang) * r, vx: 0, vy: 0 });
     }
     const metaById = new Map(dynamicGraph.nodes.map(n => [n.id, n.meta]));
-    for (const rn of nodesRef.current) { const m = metaById.get(rn.id); if (m) {rn.meta = m;} }
+    for (let mi = 0; mi < nodesRef.current.length; mi++) { const m = metaById.get(nodesRef.current[mi].id); if (m) { nodesRef.current[mi] = { ...nodesRef.current[mi], meta: m }; } }
     targetsRef.current = anchors;
     if (added || existingIds.size === 0) {alphaRef.current = 1;}
     forceRender();
-  }, [dynamicGraph.nodes]);
+  }, [dynamicGraph.nodes, forceRender]);
 
   useEffect(() => {
     let raf;
@@ -4067,7 +4067,7 @@ function GraphCanvas({ tab, recenterNonce, selectedId, onSelectNode, settings, d
     };
     raf = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(raf);
-  }, [visibleNodes, visibleEdges, settings.forces, connectionCount, draggingId]);
+  }, [visibleNodes, visibleEdges, settings.forces, connectionCount, draggingId, forceRender]);
 
   useEffect(() => { alphaRef.current = 0.6; }, [settings.forces.centerForce, settings.forces.repelForce, settings.forces.linkForce, settings.forces.linkDistance]);
 
