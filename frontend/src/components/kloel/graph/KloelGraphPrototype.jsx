@@ -16,6 +16,7 @@ import { useWalletBalance, useWalletWithdrawals, useWalletAnticipations } from "
 import { useMemberAreas } from "@/hooks/useMemberAreas";
 import { useAffiliates } from "@/hooks/usePartnerships";
 import { useContacts, useDeals, usePipelines } from "@/hooks/useCRM";
+import { useProfile, useFiscalData, useKycDocuments, useBankAccount } from "@/hooks/useKyc";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    KLOEL · GRAPH UNIFICADO  ·  CRIAR reinventado (ProductNerveCenter → Graph)
@@ -6337,6 +6338,27 @@ function adaptRealAffiliate(a) {
     monthlyPerformance: Array.isArray(a && a.monthlyPerformance) ? a.monthlyPerformance : [0, 0, 0, 0, 0, 0],
   };
 }
+// Mescla o perfil/fiscal/banco/docs REAIS (KycProfile = Record<string,unknown>)
+// sobre o accountData honest-empty. Cada campo só sobrescreve se vier preenchido —
+// nunca reintroduz PII fake; sem backend, tudo permanece em branco.
+function s(v) { return v == null ? "" : String(v); }
+function mergeRealAccount(base, profile, fiscal, bank, docs) {
+  const p = profile || {};
+  const f = fiscal || {};
+  const b = bank || {};
+  const out = JSON.parse(JSON.stringify(base));
+  out.pessoal = { ...out.pessoal, nome: s(p.nome ?? p.name ?? p.fullName) || out.pessoal.nome, email: s(p.email) || out.pessoal.email, celular: s(p.celular ?? p.phone) || out.pessoal.celular, nascimento: s(p.nascimento ?? p.birthDate) || out.pessoal.nascimento };
+  out.fiscal = { ...out.fiscal, tipo: s(f.tipo) || out.fiscal.tipo, cnpj: s(f.cnpj) || out.fiscal.cnpj, razao: s(f.razao ?? f.razaoSocial) || out.fiscal.razao, fantasia: s(f.fantasia ?? f.nomeFantasia) || out.fiscal.fantasia, cpfResp: s(f.cpfResp ?? f.cpf) || out.fiscal.cpfResp, nomeResp: s(f.nomeResp ?? f.responsavel) || out.fiscal.nomeResp, cep: s(f.cep) || out.fiscal.cep, rua: s(f.rua ?? f.logradouro) || out.fiscal.rua, numero: s(f.numero) || out.fiscal.numero, complemento: s(f.complemento) || out.fiscal.complemento, bairro: s(f.bairro) || out.fiscal.bairro, cidade: s(f.cidade) || out.fiscal.cidade, uf: s(f.uf ?? f.estado) || out.fiscal.uf };
+  out.bancario = { ...out.bancario, banco: s(b.banco ?? b.bankName) || out.bancario.banco, agencia: s(b.agencia ?? b.agency) || out.bancario.agencia, conta: s(b.conta ?? b.account) || out.bancario.conta, titular: s(b.titular ?? b.holder) || out.bancario.titular, pixChave: s(b.pixChave ?? b.pixKey) || out.bancario.pixChave };
+  if (Array.isArray(docs)) {
+    for (const d of docs) {
+      const type = s(d && (d.type ?? d.kind)).toLowerCase();
+      const key = type.includes("ident") || type.includes("rg") ? "identidade" : type.includes("contr") || type.includes("cnpj") ? "contrato" : null;
+      if (key && out.documentos[key]) out.documentos[key] = { ...out.documentos[key], status: s(d.status) || "pendente", fileName: s(d.fileName ?? d.name) };
+    }
+  }
+  return out;
+}
 function adaptRealContact(ct) {
   return {
     id: String((ct && (ct.id ?? ct._id ?? ct.phone)) ?? `ct-${Math.random().toString(36).slice(2, 8)}`),
@@ -6411,6 +6433,14 @@ function KloelInner() {
     apps: { meta: { connected: false }, google: { connected: false }, tiktok: { connected: false }, zapier: { connected: false } },
     referral: { code: "", invited: 0, earned: 0 },
   });
+  // Perfil REAL: mescla profile/fiscal/banco/docs reais (KYC) sobre o honest-empty.
+  const { profile: realProfile } = useProfile();
+  const { fiscal: realFiscal } = useFiscalData();
+  const { documents: realDocs } = useKycDocuments();
+  const { bankAccount: realBank } = useBankAccount();
+  useEffect(() => {
+    setAccountData(base => mergeRealAccount(base, realProfile, realFiscal, realBank, realDocs));
+  }, [realProfile, realFiscal, realBank, realDocs]);
   // Produtos REAIS via useProducts (GET /products). Honest-empty: backend ausente/
   // loading/erro → []. Patches locais (optimistic) continuam via setProducts.
   const { products: realProducts } = useProducts();
