@@ -76,7 +76,7 @@ describe('MarketplaceService', () => {
   });
 
   describe('list', () => {
-    it('returns products filtered by workspaceId and active=true', async () => {
+    it('returns products filtered by an inline workspaceId and active=true query', async () => {
       prisma.product.findMany.mockResolvedValue([]);
       prisma.product.count.mockResolvedValue(0);
 

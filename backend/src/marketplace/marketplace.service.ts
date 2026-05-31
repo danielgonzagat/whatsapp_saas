@@ -72,7 +72,7 @@ export class MarketplaceService {
     const [total, products] = await Promise.all([
       this.prisma.product.count({ where }),
       this.prisma.product.findMany({
-        where,
+        where: { ...where, workspaceId },
         take: limit,
         orderBy: { createdAt: 'desc' },
       }),
