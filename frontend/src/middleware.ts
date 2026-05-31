@@ -186,7 +186,8 @@ function handleAppHost(request: NextRequest, host: string, isAuthenticated: bool
     }
 
     const rewrittenUrl = request.nextUrl.clone();
-    rewrittenUrl.pathname = '/chat';
+    rewrittenUrl.pathname = '/products';
+    rewrittenUrl.searchParams.set('graph', '1');
     return NextResponse.rewrite(rewrittenUrl);
   }
 

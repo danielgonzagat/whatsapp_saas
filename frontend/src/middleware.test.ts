@@ -230,9 +230,11 @@ describe('auth host routing', () => {
 /* ─── App host routing ─────────────────────────────────────────────────── */
 
 describe('app host routing', () => {
-  it('rewrites app host root to /chat for authenticated users', () => {
+  it('rewrites app host root to the graph-only Criar surface for authenticated users', () => {
     const response = middleware(buildRequest('https://app.kloel.com/'));
-    expectRewrite(response, '/chat');
+    const rewrite = response.headers.get('x-middleware-rewrite')!;
+    expect(rewrite).toContain('/products');
+    expect(rewrite).toContain('graph=1');
   });
 
   it('redirects app host root to login for unauthenticated users', () => {
@@ -274,9 +276,12 @@ describe('app host routing', () => {
     expectRedirect(response, 'https://app.kloel.com/');
   });
 
-  it('preserves query params when redirecting authenticated users from app root to /chat', () => {
+  it('preserves query params when rewriting authenticated users from app root to graph-only Criar', () => {
     const response = middleware(buildRequest('https://app.kloel.com/?ref=test'));
-    expectRewrite(response, '/chat');
+    const rewrite = response.headers.get('x-middleware-rewrite')!;
+    expect(rewrite).toContain('/products');
+    expect(rewrite).toContain('ref=test');
+    expect(rewrite).toContain('graph=1');
   });
 });
 

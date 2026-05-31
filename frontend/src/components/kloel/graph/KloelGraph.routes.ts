@@ -54,7 +54,11 @@ const NODE_BY_ID = new Map(KLOEL_GRAPH_NODES.map((node) => [node.id, node]));
 export function isKloelGraphEnabled(value?: string | null): boolean {
   const raw =
     value ?? process.env.NEXT_PUBLIC_KLOEL_GRAPH_ENABLED ?? process.env.KLOEL_GRAPH_ENABLED;
-  return raw === 'true' || raw === '1' || raw === 'on';
+  if (raw == null) {
+    return true;
+  }
+  const normalized = raw.trim().toLowerCase();
+  return normalized !== 'false' && normalized !== '0' && normalized !== 'off';
 }
 
 export function getKloelGraphNodeById(id: string): KloelGraphNode | undefined {

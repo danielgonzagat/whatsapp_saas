@@ -46,13 +46,16 @@ describe('KloelGraph route contract', () => {
     }
   });
 
-  it('normalizes the graph feature flag with explicit truthy values only', () => {
+  it('keeps the graph enabled by default and reserves explicit false values for rollback', () => {
+    expect(isKloelGraphEnabled(undefined)).toBe(true);
+    expect(isKloelGraphEnabled(null)).toBe(true);
+    expect(isKloelGraphEnabled('')).toBe(true);
     expect(isKloelGraphEnabled('true')).toBe(true);
     expect(isKloelGraphEnabled('1')).toBe(true);
     expect(isKloelGraphEnabled('on')).toBe(true);
     expect(isKloelGraphEnabled('false')).toBe(false);
-    expect(isKloelGraphEnabled('')).toBe(false);
-    expect(isKloelGraphEnabled(undefined)).toBe(false);
+    expect(isKloelGraphEnabled('0')).toBe(false);
+    expect(isKloelGraphEnabled('off')).toBe(false);
   });
 
   it('maps legacy product routes to graph nodes without changing the real screen route', () => {

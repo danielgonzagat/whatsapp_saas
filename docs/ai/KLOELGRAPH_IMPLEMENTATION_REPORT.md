@@ -1,20 +1,21 @@
 # KloelGraph implementation report
 
-Data: 2026-05-30.
+Data: 2026-05-31.
 
 ## O que foi implementado
 
-- `KloelGraphShell` passou a ser a casca principal quando
-  `NEXT_PUBLIC_KLOEL_GRAPH_ENABLED`, ou `KLOEL_GRAPH_ENABLED`, estiver ativo.
-- A sidebar antiga permanece como rollback por flag, mas deixa de ser a
-  experiencia principal no rollout do grafo.
+- `KloelGraphShell` passou a ser a casca principal por padrao no app autenticado.
+- `NEXT_PUBLIC_KLOEL_GRAPH_ENABLED=false`, `0` ou `off` fica reservado apenas
+  como rollback explicito para a sidebar antiga.
+- A raiz autenticada de `app.kloel.com/` entra em `/products?graph=1`, mostrando
+  o grafo sem overlay inicial e centralizado na massa Criar.
 - O grafo ocupa a viewport inteira, com massas canonicas:
   Perfil, Kloel, Criar, Afiliar, Educar, Conversar e Consultar.
 - O floating nav usa exatamente essas massas.
 - O overlay central renderiza a rota real atual como `children`, em casca
   neutra de aproximadamente 80vw x 80vh, com o grafo visivel atras.
-- O fechamento por botao ou `Esc` retorna para `/dashboard?graph=1`, preservando
-  a superficie do grafo.
+- O fechamento por botao ou `Esc` retorna para a rota atual com `graph=1`,
+  preservando a massa/no em foco sem reabrir overlay.
 - O clique em no respeita limiar de drag de 6px; arrastar nao abre tela.
 - Os nos dinamicos de produtos sao derivados de dados reais, nao seeds.
 - Planos, checkout e order bump foram reposicionados:
@@ -32,8 +33,9 @@ Arquivo de entrada:
 
 Comportamento:
 
-- Flag ligada: `KloelGraphShell`.
-- Flag desligada: `AppShell` antigo com sidebar, para rollback.
+- Sem flag: `KloelGraphShell`.
+- Flag `NEXT_PUBLIC_KLOEL_GRAPH_ENABLED=false`, `0` ou `off`: `AppShell` antigo
+  com sidebar, apenas para rollback.
 
 ## Como overlays funcionam
 
@@ -138,6 +140,16 @@ specs canonicos atuais:
 
 ## Testes rodados durante a implementacao
 
+- `npm --prefix frontend test -- --run src/middleware.test.ts src/components/kloel/layouts/MainAppLayoutShell.spec.tsx src/components/kloel/graph/KloelGraph.routes.spec.ts src/components/kloel/graph/KloelGraphShell.spec.tsx`
+  - Resultado em 2026-05-31: 4 arquivos passaram, 70 testes passaram.
+- `npm --prefix frontend run typecheck`
+  - Resultado em 2026-05-31: passou.
+- `NEXT_PUBLIC_API_URL=http://localhost:3001 npm --prefix frontend run build`
+  - Resultado em 2026-05-31: passou; 94 rotas geradas.
+- `npm run guard:changed-eslint`
+  - Resultado em 2026-05-31: passou.
+- `git diff --check`
+  - Resultado em 2026-05-31: passou.
 - `npm run guard:test-files`
   - Resultado: passou.
 - `npm run guard:changed-eslint`
@@ -163,6 +175,7 @@ specs canonicos atuais:
 
 ## Resultado
 
-O PR agora tem a casca do KloelGraph flagada, rotas reais em overlay, nos
-dinamicos de produtos/planos/checkouts, Order Bump dentro do checkout,
-documentacao canonica e validacao local de testes, lint, typecheck e build.
+O PR agora tem a casca do KloelGraph como default do app autenticado, rotas
+reais em overlay, entrada graph-only em `app.kloel.com/`, nos dinamicos de
+produtos/planos/checkouts, Order Bump dentro do checkout, documentacao canonica
+e validacao local de testes, lint, typecheck e build.
